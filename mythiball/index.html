@@ -232,7 +232,11 @@
   .arena .corner .val.gold{color:var(--gold);}
   .arena .corner.br .val{color:#0f2237;font-size:14px;}
   .arena .corner .short{display:none;}
-  @media (max-width:700px){
+  /* The short form is about how wide the FIELD is, not the window. A phone
+     held sideways is an 844 wide window with a 442 wide field beside its
+     furniture, so it took the long form and the count placard grew into
+     the inning placard next to it. A short window is a small field. */
+  @media (max-width:700px), (max-height:560px){
     .arena .corner .long{display:none;}
     .arena .corner .short{display:inline;}
   }
@@ -606,57 +610,100 @@
   .dugtabs .tab:hover{background:var(--gold);color:#fff6ea;}
   .dugtabs .tab:active{transform:translate(2px,2px);box-shadow:none;}
 
-  /* THE PHONE MENU.
-     The room is a 2.24 WIDE scene, so on a portrait phone its height is
-     decided by the width and it can only ever be a strip: 390 across gives
-     167 tall on a 664 tall screen, and the page ended at 320 with 344
-     pixels of empty card stock under it. More than half the screen.
-     Three things are wrong there and they have one fix.
-       1. The dead space.
-       2. A hotspot in the room is a 46 pixel target at this size, which is
-          under every thumb guideline there is.
-       3. The rail under it reads "Point at something to see what it does"
-          for ever, because a touch screen has no hover to point WITH. It
-          is an instruction for a mouse the player does not have.
-     So on a phone the room keeps its natural size and becomes the picture,
-     the rail goes, and the four doors come out of the room as tiles that
-     fill the rest of the screen. The tiles are built from the same
-     `things` array the room is, so a label cannot say one thing on the
-     wall and another underneath it. */
-  /* THE UPRIGHT ROOM.
-     The dugout is drawn to the SHAPE of the window it is going into (see
-     roomForWindow), so on a phone the canvas is already portrait and all
-     this has to do is let it be as big as the space it is in. The room is
-     the interface here, the way it is on the desktop: the four things on
-     the wall are what you touch, and at this size each one is a target
-     over a hundred pixels on its short side.
+  /* THE ROOM FILLS THE WINDOW.
+     On a phone the room IS the interface. The four things on the wall are
+     what you touch, the canvas takes the whole card, and the rail goes: it
+     says "Point at something to see what it does" to somebody holding a
+     touch screen, which is an instruction for a mouse they do not have,
+     and the signs on the wall already name every door.
 
-     The rail goes. It says "Point at something to see what it does" to a
-     player holding a touch screen, which is an instruction for a mouse
-     they do not have, and the signs on the wall already name every door. */
-  @media (max-width:600px), (max-aspect-ratio: 3/4){
-    body.inroom .wrap{display:flex;flex-direction:column;min-height:100vh;
-      min-height:100dvh;padding-bottom:8px;}
-    /* #app is the div every screen is rendered into. It is the one link in
-       the chain that is not the game's own markup, and leaving it a block
-       capped everything below it at its content height: the wrap filled the
-       screen and the card inside it still stopped short. */
-    body.inroom #app{flex:1;display:flex;flex-direction:column;min-height:0;}
-    body.inroom .screen{flex:1;display:flex;flex-direction:column;min-height:0;}
-    body.inroom .card{flex:1;display:flex;flex-direction:column;min-height:0;
-      padding:6px;}
-    body.inroom .roomwrap{flex:1;display:flex;flex-direction:column;min-height:0;
-      max-width:none;}
-    body.inroom .dugout{flex:1;min-height:0;display:flex;}
-    /* The canvas carries the room's own aspect, so it is told to fit
-       INSIDE the space both ways and centre. Height alone would overflow
-       the width on a wide phone; width alone would leave a band under it
-       on a narrow one. */
-    body.inroom .dugout canvas{width:100%;height:100%;object-fit:contain;
-      object-position:center;}
-    .dugout-rail{display:none;}
-    .dugtabs{margin:6px auto 0;width:100%;}
-    .dugtabs .tab{flex:1;text-align:center;border-top:3px solid var(--line);}
+     THE CONDITION IS A CLASS, NOT A MEDIA QUERY, and that is deliberate.
+     roomForWindow composes the scene to the shape of the box these rules
+     make, so the script and the stylesheet have to agree about which
+     windows they apply to. Written out in both places they drift, and the
+     way that shows is a letterboxed picture with the hotspots left where
+     they were. There is one matchMedia in the script and this keys off
+     what it sets. */
+  /* HEIGHT, NOT MIN-HEIGHT. With a minimum, the column is still content
+     sized: a canvas an inch too tall grows the wrap past the window
+     instead of being squeezed, every flex:1 below it grows with it, and
+     the page scrolls. That is what a min-height did here. A definite
+     height makes the free space a fixed quantity, so the room is handed
+     what is left and fits itself into it. */
+  body.inroom.roomfill .wrap{display:flex;flex-direction:column;height:100vh;
+    height:100dvh;padding-bottom:8px;max-width:none;}
+  /* #app is the div every screen is rendered into. It is the one link in
+     the chain that is not the game's own markup, and leaving it a block
+     capped everything below it at its content height: the wrap filled the
+     screen and the card inside it still stopped short. */
+  body.inroom.roomfill #app{flex:1;display:flex;flex-direction:column;min-height:0;}
+  body.inroom.roomfill .screen{flex:1;display:flex;flex-direction:column;min-height:0;}
+  body.inroom.roomfill .card{flex:1;display:flex;flex-direction:column;min-height:0;
+    padding:6px;}
+  body.inroom.roomfill .roomwrap{flex:1;display:flex;flex-direction:column;min-height:0;
+    max-width:none;}
+  body.inroom.roomfill .dugout{flex:1;min-height:0;display:flex;}
+  /* The canvas carries the room's own aspect, so it is told to fit INSIDE
+     the space both ways and centre. Height alone would overflow the width
+     on a wide phone; width alone would leave a band under it on a narrow
+     one. */
+  body.inroom.roomfill .dugout canvas{width:100%;height:100%;object-fit:contain;
+    object-position:center;}
+  body.roomfill .dugout-rail{display:none;}
+  body.roomfill .dugtabs{margin:6px auto 0;width:100%;}
+  body.roomfill .dugtabs .tab{flex:1;text-align:center;border-top:3px solid var(--line);}
+
+  /* A PHONE HELD SIDEWAYS HAS NO HEIGHT TO SPARE. 390 tall, and the
+     browser's own chrome has taken a third of it before the page draws
+     anything. Every band of the page above the room is therefore paid for
+     out of the room, so on a short window they all get thinner: the brand
+     strip loses its padding and most of its type, the tab loses a line of
+     letter spacing, and what is left goes to the picture. */
+  @media (max-height: 560px){
+    .brand{padding:2px 0 4px;margin-bottom:2px;}
+    .brand h1{font-size:14px;letter-spacing:.1em;text-shadow:1px 1px 0 var(--navy);}
+    .brand .tag{display:none;}
+    .brand button{font-size:9px;padding:3px 7px;}
+    body.inroom.roomfill .card{padding:4px;}
+    body.inroom.roomfill .screen{padding:4px 0 0;}
+    body.roomfill .dugtabs{margin:4px auto 0;}
+    body.roomfill .dugtabs .tab{padding:5px 10px;font-size:10px;}
+
+    /* THE GAME, SIDEWAYS. This screen is a stack: park, line score, field,
+       count, buttons, log. A 390 tall window cannot hold that stack, and
+       the FIELD paid for it, because its width is derived from a height
+       budget that assumed 265 pixels of furniture above and below it. In a
+       844 wide window it came out 182 pixels across, the placards spilled
+       off the grass they are positioned on, and the page scrolled anyway.
+       Turning the phone showed less of the game than holding it upright.
+
+       Sideways is not short of width. It is short of height. So the
+       furniture goes BESIDE the field rather than above and below it, and
+       the field gets the whole window's height to be derived from. */
+    body.ingame.roomfill .screen{display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(196px, 32%);
+      column-gap:10px;align-content:start;padding:4px 0 0;}
+    /* Everything that is not the field goes down the right hand column, in
+       the order it is built in. */
+    body.ingame.roomfill .screen > *{grid-column:2;}
+    /* span 30 rather than -1: the children are built by the game and their
+       number changes with the situation (the steal row, the meter), so a
+       row count is a number that would go stale. */
+    body.ingame.roomfill .arena{grid-column:1;grid-row:1 / span 30;
+      align-self:start;margin:0;}
+    body.ingame.roomfill #field{max-width:calc(min(100vh - 86px, 720px) * 1.4545);}
+    body.ingame.roomfill #field{max-width:calc(min(100dvh - 86px, 720px) * 1.4545);}
+    body.ingame.roomfill .linescore{margin-bottom:6px;}
+    body.ingame.roomfill .park-strip{display:none;}
+    body.ingame.roomfill .controls{margin-top:8px;}
+    /* The play by play grows without limit and is the least urgent thing
+       on the screen, so it is the one that gets a box to live in. */
+    body.ingame.roomfill .log{max-height:34vh;overflow-y:auto;}
+    /* A column a third of a phone wide does not hold a label and three
+       buttons on one line, and the row does not wrap on its own: the third
+       button hung off the panel with its name cut in half. */
+    body.ingame.roomfill .swing-modes{flex-wrap:wrap;gap:6px;}
+    body.ingame.roomfill .swing-modes .lbl{width:100%;}
   }
 
   /* THE TEAM PHOTO. Fifty five cards in a grid is a spreadsheet: it is how
@@ -3125,6 +3172,7 @@ function render() {
   document.body.classList.toggle('ingame', s === 'game');
   /* The dugout is the home page, so on the menu the page gets out of its way. */
   document.body.classList.toggle('inroom', s === 'menu');
+  document.body.classList.toggle('roomfill', ROOMFILL.matches);
   if (s === 'menu') renderMenu();
   else if (s === 'roster') renderRoster();
   else if (s === 'settings') renderSettings();
@@ -4080,11 +4128,30 @@ function renderFranchise() {
    they were authored, because every one of them measures in absolute
    pixels off t.x and t.y (bat lengths, row pitch, the diamond's radius).
    They are MOVED between layouts, never stretched. */
-function landscapeRoom() {
+function landscapeRoom(w) {
   const DX = 160, DY = 58;
+  /* WIDTH IS A PARAMETER for the same reason height is one upright: a phone
+     held sideways is a 3.4 wide window, and a 2.24 wide room in it leaves a
+     band of card stock down either side. The room is 500 tall whatever
+     happens, so the extra goes across.
+
+     Where it goes matters. Spread everything evenly and the room stretches;
+     what happens instead is that the FURNITURE stays the size it was drawn
+     and the SPACE between it opens up, which is what a wider room actually
+     looks like. The four things on the wall keep their gaps in proportion,
+     the props on the right stay the same distance from the right wall, and
+     what stands in the middle of the floor stays in the middle. */
+  const W = clamp(Math.round(w || 1120), 1120, 2200);
+  const ex = W - 1120;              /* how much wider than the drawn room */
+  const mid = Math.round(W / 2);
+  const gap = Math.round(ex * 0.20);   /* between two things on the wall */
+  const e = 200 + Math.round(ex * 0.12);
+  const se = e + 150 + 24 + gap;
+  const c = se + 176 + 34 + gap;
+  const ho = c + 150 + 36 + gap;
   return {
     port: false,
-    w: 1120, h: 500,
+    w: W, h: 500,
     beam: 40,            /* underside of the roof beam */
     rafter: 74,          /* where the rafters stop and the wall proper starts */
     rafterStep: 128,
@@ -4093,23 +4160,23 @@ function landscapeRoom() {
     floorSeams: [16, 74],   /* board seams, as offsets below the floor line */
     doorGlow: 0.34,
     door: { x: 26, y: 92, w: 124, h: 266 },
-    lights: [230, 620, 1000],
+    lights: [230, 620, 1000].map(x => Math.round(x / 1120 * W)),
     cones: [[32, 210, 0.13], [20, 120, 0.13]],
-    bench: { x: 460, y: 350, w: 340, leg: 46 },
-    glove: { x: 824, y: 390 },
-    ball: { x: 882, y: 402 },
+    bench: { x: mid - 100, y: 350, w: 340, leg: 46 },
+    glove: { x: W - 296, y: 390 },
+    ball: { x: W - 238, y: 402 },
     cooler: { x: 210, y: 372 },
-    helmets: { x: 906, y: 420 },
+    helmets: { x: W - 214, y: 420 },
     batbag: { x: 336, y: 434 },
-    jerseys: { x: 1042, y: 104 },
+    jerseys: { x: W - 78, y: 104 },
     castW: 74,
-    cast: [{ x: 534, foot: 486 }, { x: 726, foot: 472 }],
-    cups: [[520, 338], [548, 340], [742, 337]],
+    cast: [{ x: mid - 26, foot: 486 }, { x: mid + 166, foot: 472 }],
+    cups: [[mid - 40, 338], [mid - 12, 340], [mid + 182, 337]],
     slots: {
-      exhibition: { x: 40 + DX, y: 150 + DY, w: 150, h: 200 },
-      season:     { x: 214 + DX, y: 86 + DY, w: 176, h: 168 },
-      cup:        { x: 424 + DX, y: 86 + DY, w: 150, h: 168 },
-      howto:      { x: 610 + DX, y: 92 + DY, w: 246, h: 146 },
+      exhibition: { x: e,  y: 150 + DY, w: 150, h: 200 },
+      season:     { x: se, y: 86 + DY, w: 176, h: 168 },
+      cup:        { x: c,  y: 86 + DY, w: 150, h: 168 },
+      howto:      { x: ho, y: 92 + DY, w: 246, h: 146 },
     },
   };
 }
@@ -4184,20 +4251,53 @@ function portraitRoom(h) {
   };
 }
 
-/* Which one the window wants. Narrow OR portrait: a tablet held upright
-   is past any phone breakpoint and has a worse version of the same
-   problem, so what decides it is the SHAPE of the window. */
+/* THE ONE PLACE THE QUESTION IS ASKED. The stylesheet hands the room the
+   whole card in these windows, which is what makes the shape of the box
+   the shape of the window, which is what roomForWindow below composes to.
+   Both facts come from this line so they cannot disagree. */
+const ROOMFILL = window.matchMedia(
+  '(max-width: 600px), (max-aspect-ratio: 1/1), (max-height: 560px)');
+
+/* Which shape the window wants. Narrow OR upright gets the upright room: a
+   tablet held that way is past any phone breakpoint and has a worse version
+   of the same problem, so what decides it is the SHAPE of the window rather
+   than its size. Everything else gets the wide one, drawn to the width the
+   box will give it. */
 function roomForWindow() {
+  /* A window that is NOT being filled edge to edge gets no say in the
+     room's shape: on a desktop the canvas keeps its natural height and the
+     room is the one it was drawn as. Composing to the box there would
+     change a screen with nothing wrong with it. */
+  if (!ROOMFILL.matches) return landscapeRoom();
   const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
-  if (!(vw <= 600 || vh > vw * 1.05)) return landscapeRoom();
-  /* Drawn to the shape of the space it will be scaled into, so it lands
-     edge to edge instead of leaving a band of card stock under it. The
-     subtractions are the brand strip, the tab under the room and the
-     page's own padding. */
-  const availW = Math.max(240, vw - 36);
-  const availH = Math.max(320, vh - 104);
-  return portraitRoom(760 * availH / availW);
+  /* The subtractions are the brand strip, the tab under the room and the
+     page's own padding: what is left is roughly what the picture gets.
+     Roughly is enough, because renderMenu measures the real box and
+     recomposes if this was wrong. */
+  return roomForBox(Math.max(240, vw - 36),
+                    Math.max(180, vh - (vh <= 560 ? 78 : 104)));
 }
+
+/* WHICH WAY UP IS A QUESTION ABOUT THE BOX, not about a breakpoint. A 500
+   by 400 window is under every phone width there is and is still a wide
+   picture, and a browser window dragged square is neither. Taller than it
+   is wide gets the upright room, and everything else gets the wide one. */
+function roomForBox(w, h) {
+  return h > w ? portraitRoom(760 * h / w) : landscapeRoom(500 * w / h);
+}
+
+/* THE ROOM IS RECOMPOSED WHEN THE WINDOW CHANGES, and it has to be, because
+   the layout is chosen once per render. Turn the phone sideways without
+   this and the upright room stays: a 760x1202 scene in an 844x390 window,
+   which runs off the bottom of the page. That is what shipped. */
+let roomRedrawT = 0;
+function onRoomResize() {
+  if (State.screen !== 'menu') return;
+  clearTimeout(roomRedrawT);
+  roomRedrawT = setTimeout(() => { if (State.screen === 'menu') render(); }, 120);
+}
+window.addEventListener('resize', onRoomResize);
+window.addEventListener('orientationchange', onRoomResize);
 
 let ROOM = landscapeRoom();
 function dugoutThings() {
@@ -4617,13 +4717,20 @@ function renderMenu() {
       ? `<b>${t.label}</b>` + (t.note ? `<span>${t.note}</span>` : '')
       : idle;
   };
-  for (const t of things) {
-    const b = el('button', 'hot');
-    b.type = 'button';
+  /* The hotspots are a percentage of the room, so they follow it wherever
+     it is recomposed to. This is the one place that arithmetic lives. */
+  const hots = [];
+  const place = (b, t) => {
     b.style.left = (t.x - 6) / ROOM.w * 100 + '%';
     b.style.top = (t.y - SIGN_H - 12) / ROOM.h * 100 + '%';
     b.style.width = (t.w + 12) / ROOM.w * 100 + '%';
     b.style.height = (t.h + SIGN_H + 18) / ROOM.h * 100 + '%';
+  };
+  for (const t of things) {
+    const b = el('button', 'hot');
+    b.type = 'button';
+    place(b, t);
+    hots.push([b, t]);
     b.setAttribute('aria-label', t.note ? t.label + '. ' + t.note : t.label);
     b.textContent = t.label;
     b.onmouseenter = b.onfocus = () => paint(t.id);
@@ -4731,6 +4838,32 @@ function renderMenu() {
   }
 
   app.appendChild(s);
+
+  /* MEASURE, THEN COMPOSE AGAIN IF THE GUESS WAS OFF.
+     roomForWindow works off the window minus a subtraction for the page's
+     own furniture, and that subtraction is a guess: it is wrong the day
+     the brand strip changes height or a tab wraps to two lines. The canvas
+     is object-fit contained, so a scene whose shape has drifted from its
+     box does not overflow or stretch, it LETTERBOXES, and the hotspots
+     stay where they were: the player presses a door above its sign and
+     nothing throws.
+
+     The box is a fact once it is on the page. So it is measured, and if
+     the guess was off by more than a percent the room is composed again to
+     the real thing. One extra pass, and it terminates: the box is sized by
+     the flex column above it and does not move when the canvas changes. */
+  const fitToBox = () => {
+    if (!ROOMFILL.matches || State.screen !== 'menu') return;
+    const b = dug.getBoundingClientRect();
+    if (b.width < 40 || b.height < 40) return;
+    const want = b.width / b.height;
+    if (Math.abs(want - ROOM.w / ROOM.h) / (ROOM.w / ROOM.h) < 0.01) return;
+    ROOM = roomForBox(b.width, b.height);
+    cv.width = ROOM.w * DUG_SCALE; cv.height = ROOM.h * DUG_SCALE;
+    for (const [b2, t] of hots) place(b2, t);
+    paint(null);
+  };
+  requestAnimationFrame(fitToBox);
 }
 
 /* ============================================================================

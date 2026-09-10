@@ -272,19 +272,39 @@ its height is decided by its width and it can only ever be a strip. It shipped t
 way, a 167 tall room on a 664 tall screen with half the display left as empty card
 stock underneath.
 
-So `landscapeRoom()` and `portraitRoom(h)` return coordinates and `roomForWindow()`
+So `landscapeRoom(w)` and `portraitRoom(h)` return coordinates and `roomForWindow()`
 picks one, `drawDugout` reads every position out of `ROOM` and holds none of its own,
-and the portrait room is composed in BANDS (the wall takes a fixed share of the
-height, the floor takes the rest) so one composition works at every height it is
-asked for. A phone gets the room as the whole interface: the four doors are hotspots
-on the canvas, the hover rail is hidden because there is no pointer to hover with.
+and each layout is composed in BANDS (upright: the wall takes a fixed share of the
+height and the floor takes the rest; wide: the furniture keeps its drawn size and
+the SPACE between it opens up) so one composition works at every size it is asked
+for. A phone gets the room as the whole interface: the four doors are hotspots on
+the canvas, the hover rail is hidden because there is no pointer to hover with.
 
-Two things about that are easy to undo by accident. A coordinate written as a
-number inside `drawDugout` will look right on a desk and be wrong on a phone. And
-the canvas is `object-fit: contain`, so if the scene's shape and its box's shape
-drift apart the picture letterboxes while the hotspots stay where they were, and
-the player presses a door above its sign. `verify-rules.mjs` asserts the shape, the
-fill, the touch sizes and that drift, on a phone, a portrait tablet and a desktop.
+**A rotation is not a render, and that is the bug this class produces.** The layout
+is chosen once per render, so turning the phone left the upright room in a sideways
+window: a 760x1202 scene in an 844x390 one, running off the bottom of the page.
+Turning the phone showed LESS of the game than holding it upright. There is a
+resize and orientationchange listener now, and `verify-rules.mjs` rotates a phone
+both ways and asserts the room follows.
+
+Three more things are easy to undo by accident:
+
+- A coordinate written as a number inside `drawDugout` looks right on a desk and is
+  wrong on a phone.
+- The canvas is `object-fit: contain`, so if the scene's shape and its box's shape
+  drift apart the picture letterboxes while the hotspots stay where they were, and
+  the player presses a door above its sign. `renderMenu` measures the real box on
+  the frame after it mounts and recomposes if the guess was off; assertions measure
+  the PAINTED picture, never the element, or a letterboxed room reads as a full one.
+- `body.roomfill` is one `matchMedia` in the script that the stylesheet keys off.
+  Write that query out a second time in CSS and the two drift, which is the
+  letterbox above.
+
+The same arithmetic broke the GAME screen sideways, worse: `#field` derives its
+width from a height budget that assumed 265px of furniture above and below, which
+in a 390 tall window left 125, so an 844 wide phone drew a 182 wide field. Sideways
+is not short of width, it is short of height, so under `max-height: 560px` the
+furniture goes in a column beside the field instead of above and below it.
 
 The regression suite, which is the thing to run after editing:
 

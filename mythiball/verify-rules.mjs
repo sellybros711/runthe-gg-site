@@ -35,7 +35,9 @@
      the play moves       the plan's physics agree with the scorer: outs beaten, hits not
      the dive             a liner draws a lunge that lands short and breaks no duty
      the snow             the cold parks play under falling snow
-     the phone menu       the room screen fills a portrait phone, and the doors are reachable
+     the phone menu       the room fills the window it is in, whichever shape that is
+     turning it sideways  the room is recomposed on rotate rather than left upright
+     the game sideways    a phone held sideways gets a bigger field, not a smaller one
      the plate camera     the at bat is seen from behind the catcher and cut away from on contact
      the bat has a place  a pitch lands somewhere; the swing has to be there as well as on time
      the arm has a spot   aim plus a release is where a pitch goes; a strike is where it landed
@@ -1563,6 +1565,7 @@ async function main() {
          That fifth one is the quiet one. Letterboxing shifts what the player
          sees away from what the player can press, and nothing throws. */
       const sizes = [{ w: 390, h: 664, what: 'a phone', touch: true, port: true },
+                     { w: 844, h: 390, what: 'a phone sideways', touch: true, port: false },
                      { w: 768, h: 1024, what: 'a portrait tablet', touch: true, port: true },
                      { w: 1280, h: 860, what: 'a desktop', touch: false, port: false }];
       const seen = [];
@@ -1592,7 +1595,15 @@ async function main() {
             .filter(e => vis(e) && e.getBoundingClientRect().height > 0)
             .map(e => e.getBoundingClientRect().bottom);
           const roomAR = ROOM.w / ROOM.h, boxAR = cb.width / cb.height;
+          /* WHAT IS PAINTED, not what the element measures. The canvas is
+             object-fit contained, so a scene whose shape has drifted from
+             its box keeps the element's full size and paints a smaller
+             picture inside it with bars either side. Measuring the element
+             would call that a full screen. */
+          const shown = [Math.round(Math.min(cb.width, cb.height * roomAR)),
+                         Math.round(Math.min(cb.height, cb.width / roomAR))];
           return {
+            shown,
             inroom: document.body.classList.contains('inroom'),
             vw: innerWidth, vh: innerHeight,
             reach: Math.round(Math.max(0, ...bottoms)),
@@ -1608,7 +1619,8 @@ async function main() {
             roomThings: (window.dugoutThings ? dugoutThings().length : -1),
           };
         });
-        r.what = sz.what; r.wantPort = sz.port; r.wantRail = !sz.touch; r.errors = errors;
+        r.what = sz.what; r.wantPort = sz.port; r.wantRail = !sz.touch;
+        r.fills = sz.touch; r.errors = errors;
         seen.push(r);
         await pg.close(); await ctx.close();
       }
@@ -1638,22 +1650,180 @@ async function main() {
            'railShown=' + r.railShown);
         ok(r.errors.length === 0, `${r.what}: no page errors`, r.errors.join(' | '));
       }
-      /* Only the phone sizes owe the bottom of the window: the desktop room
+      /* Only the filled sizes owe the bottom of the window: the desktop room
          is a wide scene in a page that has never been full bleed. */
-      for (const r of seen.filter(x => x.wantPort)) {
+      for (const r of seen.filter(x => x.fills)) {
         ok(r.vh - r.reach <= 24,
            `${r.what}: the page reaches the bottom of the window`,
            `${r.vh - r.reach}px short of ${r.vh}`);
         /* Filling it is the whole ask. A room that reaches the bottom by
            padding rather than by picture passes the line above and fails
            this one. */
-        ok(r.box[1] >= r.vh * 0.6,
+        ok(r.shown[1] >= r.vh * (r.wantPort ? 0.6 : 0.7),
            `${r.what}: and the room is most of what is on it`,
-           `${r.box[1]}px of ${r.vh}`);
-        ok(r.box[0] >= r.vw * 0.85,
+           `${r.shown[1]}px painted of ${r.vh}`);
+        ok(r.shown[0] >= r.vw * 0.85,
            `${r.what}: and it runs the width of it`,
-           `${r.box[0]}px of ${r.vw}`);
+           `${r.shown[0]}px painted of ${r.vw}`);
       }
+    }
+
+    /* ---- turning the phone sideways ---- */
+    {
+      console.log('turning it sideways');
+      /* THE ROOM IS CHOSEN ONCE PER RENDER, and a rotation is not a render.
+         So the upright room stayed up: a 760x1202 scene scaled into an
+         844x390 window, which drew 314 wide by 492 tall, ran a hundred
+         pixels off the bottom of a 390 tall screen, and left a gutter of
+         card stock down both sides. Turning the phone sideways showed you
+         LESS of the game than holding it upright did, which is the exact
+         opposite of what the extra width is for.
+
+         Both halves are asserted: that the rotated window gets a room
+         composed for it, and that the room it had before is gone. The
+         second is the one that fails if somebody caches the layout. */
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 664 },
+                                             deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      const pg = await ctx.newPage();
+      const errors = [];
+      pg.on('pageerror', e => errors.push(e.message));
+      await pg.goto(URL);
+      await pg.evaluate(() => localStorage.clear());
+      await pg.goto(URL);
+      await wait(pg, 800);
+      const look = () => pg.evaluate(() => {
+        const b = document.querySelector('.dugout canvas').getBoundingClientRect();
+        const ar = ROOM.w / ROOM.h;
+        return { room: [ROOM.w, ROOM.h], upright: ROOM.h > ROOM.w,
+                 /* the painted picture, not the element: see the phone menu */
+                 box: [Math.round(Math.min(b.width, b.height * ar)),
+                       Math.round(Math.min(b.height, b.width / ar))],
+                 drift: Math.abs((b.width / b.height) - ar) / ar,
+                 vw: innerWidth, vh: innerHeight,
+                 over: document.documentElement.scrollHeight - innerHeight,
+                 sideways: document.documentElement.scrollWidth > innerWidth + 1 };
+      });
+      const up = await look();
+      await pg.setViewportSize({ width: 844, height: 390 });
+      /* Long enough for the resize to settle and the redraw to land. */
+      await wait(pg, 700);
+      const flat = await look();
+      /* and back, because a layout that only works one way round is half a
+         fix and reads as one that works */
+      await pg.setViewportSize({ width: 390, height: 664 });
+      await wait(pg, 700);
+      const again = await look();
+      await pg.close(); await ctx.close();
+
+      ok(up.upright, 'held upright, the room is upright', JSON.stringify(up));
+      ok(!flat.upright, 'turned sideways, the room is recomposed wide',
+         `${flat.room.join('x')} in a ${flat.vw}x${flat.vh} window`);
+      ok(flat.over <= 8, 'and it fits the window rather than running off it',
+         flat.over + 'px past the bottom');
+      ok(!flat.sideways, 'and does not scroll sideways', JSON.stringify(flat));
+      ok(flat.drift <= 0.02, 'and the picture still lines up with the doors',
+         'aspect off by ' + (flat.drift * 100).toFixed(1) + '%');
+      /* Sideways is WIDER. If the room does not use that, the rotation has
+         cost the player picture rather than gained them any, which is what
+         the bug looked like from the outside. */
+      ok(flat.box[0] >= up.box[0] * 1.6,
+         'sideways shows more room than upright, not less',
+         `${flat.box[0]}px of picture against ${up.box[0]}px`);
+      ok(again.upright && again.box[1] >= up.box[1] * 0.95,
+         'and turning back gets the upright room back',
+         JSON.stringify(again));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+    }
+
+    /* ---- the game, on a phone held sideways ---- */
+    {
+      console.log('the game sideways');
+      /* The game screen is a stack: park, line score, field, count, buttons,
+         play by play. A 390 tall window cannot hold that stack, and the
+         FIELD was the thing that paid, because its width is derived from a
+         height budget written for an upright phone: 100vh less 265 pixels
+         of furniture. Sideways that left 125 pixels, so an 844 wide window
+         drew a 182 wide field, the placards positioned on its corners grew
+         into each other, and the page scrolled anyway.
+
+         Sideways is not short of width, it is short of height. The
+         furniture goes beside the field there. What is asserted is the
+         outcome rather than the mechanism: the field is bigger sideways
+         than upright, both it and the button you press are on the screen
+         without scrolling, and nothing on the field has grown into
+         anything else. */
+      const shot = async (w, h) => {
+        const ctx = await browser.newContext({ viewport: { width: w, height: h },
+                                               deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+        const pg = await ctx.newPage();
+        const errors = [];
+        pg.on('pageerror', e => errors.push(e.message));
+        await pg.goto(URL);
+        await pg.evaluate(() => localStorage.clear());
+        await pg.goto(URL);
+        await wait(pg, 500);
+        await pg.evaluate(() => {
+          Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+          State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+          State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
+          startGame({ mode: 'exhibition', youHome: false });
+        });
+        await wait(pg, 900);
+        const r = await pg.evaluate(() => {
+          const R = (s) => { const e = document.querySelector(s); return e && e.getBoundingClientRect(); };
+          const f = R('#field');
+          const bl = R('.arena .corner.bl'), br = R('.arena .corner.br');
+          const tl = R('.arena .corner.tl'), tr = R('.arena .corner.tr');
+          const over = (a, b) => !!(a && b && a.right > b.left && b.right > a.left
+                                          && a.bottom > b.top && b.bottom > a.top);
+          /* The one button the at-bat is waiting on, whichever it is. Both
+             are built and one is hidden, so a hidden one measures zero and
+             would pass a test about the fold without being on the screen at
+             all: only a button that is actually laid out counts. */
+          const act = [...document.querySelectorAll('.controls button, .btn')]
+            .filter(b => /swing|throw/i.test(b.textContent || '') && b.offsetParent)
+            .map(b => b.getBoundingClientRect())
+            .filter(r => r.height > 0)[0];
+          /* Nothing in the right hand column may hang off its own panel. */
+          const card = R('.swing-modes') ? R('.swing-modes').right : 0;
+          const panel = (() => { const e = document.querySelector('.swing-modes');
+            return e && e.parentElement ? e.parentElement.getBoundingClientRect().right : 0; })();
+          return {
+            field: [Math.round(f.width), Math.round(f.height)],
+            fieldBottom: Math.round(f.bottom),
+            act: act ? Math.round(act.bottom) : -1,
+            placards: over(bl, br) || over(tl, tr),
+            spill: Math.max(0, Math.round(card - panel)),
+            vw: innerWidth, vh: innerHeight,
+            sideways: document.documentElement.scrollWidth > innerWidth + 1,
+          };
+        });
+        r.errors = errors;
+        await pg.close(); await ctx.close();
+        return r;
+      };
+      const up = await shot(390, 664);
+      const flat = await shot(844, 390);
+
+      ok(flat.field[0] > up.field[0],
+         'sideways draws a BIGGER field than upright, not a smaller one',
+         `${flat.field.join('x')} sideways against ${up.field.join('x')} upright`);
+      ok(flat.fieldBottom <= flat.vh,
+         'and the whole field is on the screen without scrolling',
+         `field ends at ${flat.fieldBottom} of ${flat.vh}`);
+      ok(flat.act > 0 && flat.act <= flat.vh,
+         'and so is the button the at-bat is waiting on',
+         `button ends at ${flat.act} of ${flat.vh}`);
+      ok(!flat.sideways, 'and the page does not scroll sideways', JSON.stringify(flat));
+      /* The placards are positioned on the field's own corners at a fixed
+         type size, so a small field is what makes them collide. */
+      ok(!flat.placards, 'the placards on the field do not grow into each other',
+         JSON.stringify(flat));
+      ok(!up.placards, 'and they do not upright either', JSON.stringify(up));
+      ok(flat.spill === 0, 'nothing in the side column hangs off its panel',
+         flat.spill + 'px past the edge');
+      ok(flat.errors.length === 0 && up.errors.length === 0, 'no page errors',
+         flat.errors.concat(up.errors).join(' | '));
     }
 
     /* ---- the mound: anyone can take it, and it is a swap ---- */
