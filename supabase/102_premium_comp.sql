@@ -13,14 +13,12 @@
 -- path has somebody looking at it:
 --   runnyj            premium: plays the site as somebody who bought the bundle
 --   malikwillislover  premium: access to everything, same as runnyj
---   slimeyb3          premium, added 2026-09-10 at the owner's request: the
---                     tester accounts should be able to hold a pro account.
---   csel8             NO ROW, on purpose, and he is now the ONLY one: plays the
---                     site as a signed-in user who has not bought, which after
---                     launch means the paywall at every dynasty door and the
---                     pitch at the Commish gate. DO NOT grant csel8 here, or the
---                     not-bought view he exists to judge has nobody looking at
---                     it, and that view is half of what was built.
+--   csel8             NO ROW, on purpose: plays the site as a signed-in user
+--                     who has not bought, which after launch means the paywall
+--                     at every dynasty door and the pitch at the Commish gate.
+--                     DO NOT grant csel8 here, or the not-bought view he
+--                     exists to judge has nobody looking at it.
+--   slimeyb3          no row either, so sees what csel8 sees until added below.
 --
 -- MATCHING: lower(username), the lesson 72_comp_passes.sql wrote down. The
 -- final SELECT reports who matched, so a name that matched nobody is seen
@@ -29,12 +27,12 @@
 -- TO REVOKE later:
 --   delete from public.premium_unlocks
 --   where source = 'comp' and user_id in (
---     select id from public.profiles where lower(username) in ('runnyj','malikwillislover','slimeyb3')
+--     select id from public.profiles where lower(username) in ('runnyj','malikwillislover')
 --   );
 -- ---------------------------------------------------------------------------
 
 with grantees as (
-  select array['runnyj','malikwillislover','slimeyb3']::text[] as usernames
+  select array['runnyj','malikwillislover']::text[] as usernames   -- add 'slimeyb3' to make them premium too
 ),
 products as (
   select unnest(array['ps_premium','cfb_premium']) as product

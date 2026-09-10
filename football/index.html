@@ -7713,30 +7713,16 @@ const canPlayDynasty=()=>{
   if(!authState.signedIn) return false;
   return A.allowed({name:authState.name,userId:authState.userId});
 };
-/* ONE FRANCHISE DYNASTY IS A PREMIUM MODE, and the paid tier exists now, so this is the
-   function that has learned about it, exactly as the note here said it would be.
-
-   IT WAS THE TESTER LIST AND NOTHING ELSE, which was right while nothing was on sale and
-   became a broken promise the day something was. The offer screen sells this mode by name,
-   in the Premium Bundle's own line: "Dynasty, Franchise and unlimited Trade Machine".
-   Somebody who paid for that got the ps_premium row, opened the modes sheet, and found no
-   Franchise door at all, because they were not on a list of four names. Buying it from the
-   college game made no difference: the same purchase grants ps_premium and cfb_premium
-   together, so a CFB buyer owned this mode and could not see it either.
-
-   TWO WAYS IN AND THEY ANSWER DIFFERENT QUESTIONS. A tester sees it because the mode is
-   unannounced and somebody has to look at it; an owner sees it because they bought it. The
-   door still asks dynastyOwned() before it opens rather than trusting this, so a tester
-   without the row gets the pitch, which is the view the free-view tester exists to judge.
-
-   IT IS STILL DELIBERATELY NOT canPlayDynasty(). That one answers true for everybody the
-   moment DYNASTY_LIVE flips, which is the point of that flag and exactly the wrong behaviour
-   here: opening the base mode to the site must not hand this one out with it. */
+/* ONE FRANCHISE DYNASTY IS A PREMIUM MODE, and there is no premium yet, so for now this is
+   the tester list and nothing else.
+   IT IS DELIBERATELY NOT canPlayDynasty(). That one answers true for everybody the moment
+   DYNASTY_LIVE flips, which is the point of that flag and exactly the wrong behaviour here:
+   opening the base mode to the site must not hand this one out with it. When the paid tier
+   exists, this is the single function that learns about it. */
 const canPlayClubDynasty=()=>{
   const A=window.PS_DYNASTY_ACCESS;
   if(!A||typeof A.isTester!=='function') return false;
   if(!authState.signedIn) return false;
-  if(dynastyOwned()) return true;
   return !!(A.isTester(authState.name)||A.isTesterId(authState.userId));
 };
 /* WHAT THE ACCOUNT OWNS, from the database rather than any list in a page, which is the
@@ -22635,16 +22621,12 @@ function isMyDynastyRow(r){
    comment says mixing free and club runs would do to the classic one: the open runs take it
    over and the club runs are ranked against a game they were not playing.
    THE DECIDED SHAPE IS ONE ALL-TIME BOARD PER TEAM, which is the same answer the classic
-   board reached for the same reason. Nothing here reads it yet.
+   board reached for the same reason. Nothing here reads it yet because the mode is behind
+   canPlayClubDynasty and there is no premium tier for it to be sold with.
    ps_runs already stores `franchise` on every row, so the runs being played now are
    distinguishable when that board is built: what is missing is only the column on
-   ps_dynasty_board and a filter on the read, not the data. Until then a club run does land
-   here, which is the one known wart.
-   IT WILL BE MORE THAN A HANDFUL OF ROWS NOW. This used to say a tester's club run, on the
-   reasoning that canPlayClubDynasty was the tester list and there was no premium tier for
-   the mode to be sold with. There is one, that gate now opens for anybody who owns
-   ps_premium, and every club run a customer plays lands on this board against open runs
-   until the per-team board exists. */
+   ps_dynasty_board and a filter on the read, not the data. Until then a tester's club run
+   does land here, which is the one known wart and is a handful of rows. */
 async function loadDynastyBoard(){
   lbBusy=true;
   boardChrome(false);
