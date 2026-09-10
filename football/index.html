@@ -7171,8 +7171,14 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
      blocked or stale copy hides an unannounced mode rather than opening it. -->
+<!-- ONE FLIP FOR THE BUNDLE. Dynasty and Commish Simulator are sold together at one
+     price, so the tester list and the launch flag live in one file that the college
+     game loads too, and the dynasty file below is a handle on it rather than a second
+     copy of the same three names. Full Team keeps its own flag on purpose: its blocker
+     is its own, the run_mode check constraint, and it is not in the bundle. -->
+<script src="/assets/bundle-access.js?v=1"></script>
 <script src="fullteam-access.js?v=1"></script>
-<script src="dynasty-access.js?v=2"></script>
+<script src="dynasty-access.js?v=3"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

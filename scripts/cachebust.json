@@ -1886,9 +1886,13 @@
       "v": "34",
       "sha": "b0d91d3b9bc45e50"
     },
+    "/assets/bundle-access.js": {
+      "v": "1",
+      "sha": "bae0766b8d20b734"
+    },
     "access.js": {
-      "v": "4",
-      "sha": "66210cbb22945863"
+      "v": "5",
+      "sha": "0396f307cf0d787a"
     },
     "ledger.js": {
       "v": "10",
@@ -1996,9 +2000,13 @@
       "v": "6",
       "sha": "13d061370a98bbe8"
     },
+    "/assets/bundle-access.js": {
+      "v": "1",
+      "sha": "bae0766b8d20b734"
+    },
     "commish/access.js": {
-      "v": "3",
-      "sha": "66210cbb22945863"
+      "v": "4",
+      "sha": "0396f307cf0d787a"
     }
   },
   "football/index.html": {
@@ -2010,13 +2018,17 @@
       "v": "97",
       "sha": "f1bdb2f9137d6fc6"
     },
+    "/assets/bundle-access.js": {
+      "v": "1",
+      "sha": "bae0766b8d20b734"
+    },
     "fullteam-access.js": {
       "v": "1",
       "sha": "5622b02a66897441"
     },
     "dynasty-access.js": {
-      "v": "2",
-      "sha": "0c18aed4f295af18"
+      "v": "3",
+      "sha": "444644303b93584e"
     },
     "board.js": {
       "v": "31",
