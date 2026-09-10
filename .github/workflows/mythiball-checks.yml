@@ -1,11 +1,11 @@
-name: All-Stars checks
+name: MythiBall checks
 
-# Run The All-Stars is one self contained file that touches the DOM on every
+# MythiBall is one self contained file that touches the DOM on every
 # line, so its rules are replayed in a headless browser rather than imported.
 # Both commands run locally, unchanged:
 #
-#   node allstars/check-posture.mjs   the game stays out of the indexed site
-#   node allstars/verify-rules.mjs    walk-offs, the mercy rule, extra innings,
+#   node mythiball/check-posture.mjs   the game stays out of the indexed site
+#   node mythiball/verify-rules.mjs    walk-offs, the mercy rule, extra innings,
 #                                     one standings order, abandoned games
 #
 # The second needs Playwright's Chromium, installed here and nowhere else.
@@ -14,21 +14,21 @@ name: All-Stars checks
 on:
   pull_request:
     paths:
-      - 'allstars/**'
+      - 'mythiball/**'
       - 'sitemap.xml'
       - 'index.html'
-      - '.github/workflows/allstars-checks.yml'
+      - '.github/workflows/mythiball-checks.yml'
   push:
     branches: [main]
     paths:
-      - 'allstars/**'
+      - 'mythiball/**'
       - 'sitemap.xml'
       - 'index.html'
-      - '.github/workflows/allstars-checks.yml'
+      - '.github/workflows/mythiball-checks.yml'
   workflow_dispatch: {}
 
 concurrency:
-  group: allstars-checks-${{ github.ref }}
+  group: mythiball-checks-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -44,7 +44,7 @@ jobs:
       # First, because it is the one with consequences beyond this game: the
       # robots tag is what keeps an unlaunched game out of the AdSense audit.
       - name: Discoverability posture
-        run: node allstars/check-posture.mjs
+        run: node mythiball/check-posture.mjs
 
       - name: Install Playwright
         run: |
@@ -52,4 +52,4 @@ jobs:
           npx playwright install --with-deps chromium
 
       - name: The rules, replayed
-        run: node allstars/verify-rules.mjs
+        run: node mythiball/verify-rules.mjs

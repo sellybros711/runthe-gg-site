@@ -23,3 +23,7 @@ ps_runs_export.csv
 # being listed by hand.
 __*.html
 __authstub.js
+
+# Python bytecode from the sprite generators
+__pycache__/
+*.pyc

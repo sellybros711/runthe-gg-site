@@ -1,8 +1,8 @@
 /* The four things that keep an unfinished game out of an AdSense review.
  *
- *   node allstars/check-posture.mjs
+ *   node mythiball/check-posture.mjs
  *
- * Run The All-Stars is an unlaunched preview, the same status as the wrestling
+ * MythiBall is an unlaunched preview, the same status as the wrestling
  * game and Run The Floor. That is a set of DELIBERATE choices rather than a
  * stage it happens to be at:
  *
@@ -10,6 +10,13 @@
  *   absent from sitemap    nothing points a crawler at it in the first place
  *   no ad tag              it is not trying to serve an ad it has not earned
  *   linked from nowhere    a visitor browsing runthe.gg cannot stumble on it
+ *
+ * THESE NOW CARRY WEIGHT THEY DID NOT BEFORE. The game is SERVED: it answers
+ * at runthe.gg/mythiball/ so testers can reach it, where before the directory
+ * sat in the repo and nothing on the internet returned it. Unlisted is the
+ * whole of the gate. Anyone who is handed the URL can play, which is what was
+ * asked for and is worth saying out loud: this is not access control, and if
+ * the game ever needs one, it needs a real one rather than a quiet path.
  *
  * WHY THIS IS A CHECK AND NOT A HABIT. scripts/check-adsense.mjs walks every
  * INDEXABLE page on the site and asserts each one can carry an ad and can reach
@@ -29,23 +36,25 @@ const ROOT = path.join(HERE, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 const problems = [];
-const page = read('allstars/index.html');
+const page = read('mythiball/index.html');
 
 /* 1. Noindexed. This is the line that does the work. */
 if (!/name=["']robots["'][^>]*noindex/i.test(page)) {
-  problems.push('allstars/index.html is not noindexed. That puts an unfinished game into the '
+  problems.push('mythiball/index.html is not noindexed. That puts an unfinished game into the '
     + 'indexable site, which is the surface AdSense reviews.');
 }
 
 /* 2. No ad tag. It is not a page that should be trying to serve one. */
 if (page.includes('pagead2.googlesyndication.com')) {
-  problems.push('allstars/index.html carries the AdSense publisher tag. An unlaunched preview '
+  problems.push('mythiball/index.html carries the AdSense publisher tag. An unlaunched preview '
     + 'with a placeholder roster should not be serving ads.');
 }
 
-/* 3. Not in the sitemap, which is what would invite a crawler in. */
-if (read('sitemap.xml').includes('/allstars')) {
-  problems.push('sitemap.xml lists /allstars/. A noindexed page in the sitemap is a '
+/* 3. Not in the sitemap, which is what would invite a crawler in. Case
+      insensitive, because /Mythiball/ is a second real URL (see 4b) and a
+      crawler pointed at either one has been pointed at the game. */
+if (/\/mythiball/i.test(read('sitemap.xml'))) {
+  problems.push('sitemap.xml lists /mythiball/. A noindexed page in the sitemap is a '
     + 'contradiction a crawler will report back to you.');
 }
 
@@ -53,9 +62,33 @@ if (read('sitemap.xml').includes('/allstars')) {
       against the pages that actually carry navigation, rather than the whole
       repo: this file, any build script and the game itself obviously mention it. */
 for (const nav of ['index.html', '404.html', 'about.html']) {
-  if (/href=["'][^"']*\/allstars\//i.test(read(nav))) {
-    problems.push(`${nav} links to /allstars/. Linking it from the site is the step that `
+  if (/href=["'][^"']*\/mythiball\//i.test(read(nav))) {
+    problems.push(`${nav} links to /mythiball/. Linking it from the site is the step that `
       + 'launches it, and that step has not been taken.');
+  }
+}
+
+/* 4b. THE CAPITAL ALIAS. The URL that gets typed and pasted is
+      runthe.gg/Mythiball, so Mythiball/index.html exists to answer it, the
+      way Wrestling/ and Tour/ answer theirs. It is a second public entry
+      point to an unlaunched game, so it carries the same robots tag and it
+      has to actually land on the game: a stub that redirects to a path that
+      no longer exists is a dead link nobody would find until a tester did. */
+{
+  const alias = 'Mythiball/index.html';
+  if (!fs.existsSync(path.join(ROOT, alias))) {
+    problems.push(`${alias} is missing. runthe.gg/Mythiball is the URL that gets shared, and `
+      + 'without the stub it is a 404 while the lower case path works.');
+  } else {
+    const stub = read(alias);
+    if (!/name=["']robots["'][^>]*noindex/i.test(stub)) {
+      problems.push(`${alias} is not noindexed. It is a second door to the same unlaunched `
+        + 'game, and it needs the same tag as the first.');
+    }
+    if (!stub.includes('/mythiball/')) {
+      problems.push(`${alias} does not point at /mythiball/. The alias has to land on the `
+        + 'game, or the shared URL is a dead end.');
+    }
   }
 }
 
@@ -66,7 +99,7 @@ for (const nav of ['index.html', '404.html', 'about.html']) {
       thins both sides of every game. */
 const rosterMatch = page.match(/const ROSTER = \[([\s\S]*?)\n\];/);
 if (!rosterMatch) {
-  problems.push('could not find the ROSTER array in allstars/index.html. Has the file been '
+  problems.push('could not find the ROSTER array in mythiball/index.html. Has the file been '
     + 'restructured? This check keeps the roster from silently shrinking.');
 } else {
   const count = (rosterMatch[1].match(/\{ k:/g) || []).length;
@@ -90,7 +123,7 @@ if (!rosterMatch) {
 }
 
 /* 5b. EVERY CHARACTER HAS A GENERATED SPRITE, AND IT IS THE DECLARED SIZE.
-      Sprites come from allstars/gen_sprites_v2.py as a V2_SPRITES table.
+      Sprites come from mythiball/gen_sprites_v2.py as a V2_SPRITES table.
       The renderer walks a fixed V2_W by V2_H box and reads row[x] per cell,
       so a short row renders transparent at the end and a long one silently
       loses its tail: both look like a slightly wrong drawing rather than a
@@ -102,7 +135,7 @@ if (!rosterMatch) {
   const hM = page.match(/V2_H = (\d+)/);
   const tableM = page.match(/const V2_SPRITES = \{([\s\S]*?)\n\};/);
   if (!wM || !hM || !tableM) {
-    problems.push('could not read V2_W / V2_H / V2_SPRITES from allstars/index.html. '
+    problems.push('could not read V2_W / V2_H / V2_SPRITES from mythiball/index.html. '
       + 'Has the generated sprite block been replaced by hand?');
   } else {
     const W = +wM[1], H = +hM[1];
@@ -164,7 +197,7 @@ if (!rosterMatch) {
       const noSprite = rosterCharKeys.filter(k => !spriteKeys.has(k));
       if (noSprite.length) {
         problems.push(`roster characters with no generated sprite: ${noSprite.join(', ')}. `
-          + 'Add a SPEC in allstars/gen_sprites_v2.py and regenerate.');
+          + 'Add a SPEC in mythiball/gen_sprites_v2.py and regenerate.');
       }
     }
   }
@@ -256,7 +289,7 @@ if (!opponentsMatch) {
 {
   const howto = page.match(/function renderHowTo\(\)[\s\S]*?\n\}\n/);
   if (!howto) {
-    problems.push('could not find renderHowTo() in allstars/index.html.');
+    problems.push('could not find renderHowTo() in mythiball/index.html.');
   } else {
     const text = howto[0];
     for (const stale of ['marker', 'meter under the field', 'five seconds', 'shakes off the sign',
@@ -282,7 +315,7 @@ if (!opponentsMatch) {
 }
 
 if (problems.length) {
-  console.error(`Run The All-Stars posture: ${problems.length} problem(s)\n`);
+  console.error(`MythiBall posture: ${problems.length} problem(s)\n`);
   for (const p of problems) console.error('  ' + p);
   console.error('\nIf one of these is now intentional, change THIS FILE in the same commit, so');
   console.error('launching the game is a decision somebody made rather than a guard nobody');
@@ -290,4 +323,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log('Run The All-Stars posture: noindexed, no ad tag, not in the sitemap, linked from nowhere.');
+console.log('MythiBall posture: noindexed, no ad tag, not in the sitemap, linked from nowhere.');

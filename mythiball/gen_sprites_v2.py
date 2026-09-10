@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Sprite engine v2 for Run The All-Stars.
+"""Sprite engine v2 for MythiBall.
 
-Generates every character sprite for allstars/index.html.
+Generates every character sprite for mythiball/index.html.
 
-    python3 allstars/gen_sprites_v2.py > allstars/sprites.js
+    python3 mythiball/gen_sprites_v2.py > mythiball/sprites.js
 
 WHY THIS EXISTS. The first sprites were hand placed color keys on a 20x24
 grid. Two things made them read flat no matter how much detail went in:

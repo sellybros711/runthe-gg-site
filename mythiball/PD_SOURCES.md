@@ -1,6 +1,6 @@
 # Where every character's look comes from
 
-Every character in Run The All-Stars is drawn from a PUBLIC DOMAIN source:
+Every character in MythiBall is drawn from a PUBLIC DOMAIN source:
 the original text, the original illustrator, classical art, folklore, or a
 pre-1930 film. Screen designs that are still owned (Disney, Universal, MGM,
 Warner) are not used, and the AVOID column is the list of what a redraw

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Run The All-Stars: the rules, replayed.
+/* MythiBall: the rules, replayed.
 
    The game is one file that touches the DOM everywhere, so unlike hoops there
    is no engine to import. Instead a headless Chromium loads the page and each
@@ -50,7 +50,7 @@
      phone                at 390 wide the placards stand apart, the ball keeps a size
 
    Needs Playwright with Chromium. Locally:
-     node allstars/verify-rules.mjs
+     node mythiball/verify-rules.mjs
    The sandbox's copy lives at /opt/node22/lib/node_modules/playwright; CI
    installs its own. No network, no deploy. */
 

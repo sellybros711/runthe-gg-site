@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Chibi hero sprite generator for Run The All-Stars.
+"""Chibi hero sprite generator for MythiBall.
 
 Composes a 24x32 chibi baseball player (big head, small body, facing the
 camera at a slight downward tilt) with top-left light-and-shadow shading
