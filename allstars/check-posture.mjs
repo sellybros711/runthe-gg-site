@@ -107,35 +107,58 @@ if (!rosterMatch) {
   } else {
     const W = +wM[1], H = +hM[1];
     const spriteKeys = new Set();
-    const entries = [...tableM[1].matchAll(/(\w+):\{p:\{([^}]*)\},f:\{([\s\S]*?)\}\},/g)];
-    for (const [, key, palSrc, framesSrc] of entries) {
-      spriteKeys.add(key);
-      const palKeys = new Set([...palSrc.matchAll(/(\w):'/g)].map(m => m[1]));
-      const frames = [...framesSrc.matchAll(/(\w+):\[([^\]]*)\]/g)];
-      const seen = new Set();
-      for (const [, pose, rowsSrc] of frames) {
-        seen.add(pose);
-        const rows = [...rowsSrc.matchAll(/'([^']*)'/g)].map(m => m[1]);
-        if (rows.length !== H) {
-          problems.push(`sprite "${key}" pose "${pose}" has ${rows.length} rows, expected ${H}.`);
-        }
-        const bad = rows.map((r, i) => [i, r.length]).filter(([, l]) => l !== W);
-        if (bad.length) {
-          problems.push(`sprite "${key}" pose "${pose}" has ${bad.length} row(s) not ${W} wide `
-            + `(first: row ${bad[0][0]} is ${bad[0][1]}).`);
-        }
-        const used = new Set();
-        for (const r of rows) for (const ch of r) if (ch !== '.') used.add(ch);
-        const missing = [...used].filter(c => !palKeys.has(c));
-        if (missing.length) {
-          problems.push(`sprite "${key}" pose "${pose}" uses palette keys with no color: ${missing.join(', ')}.`);
-        }
+    /* The table is one character per block: a palette line, then one
+       line per frame holding the run length encoded rows (see v2Frame in
+       the page). Parsed line by line, decoded the same way the page does,
+       and every decoded row has to be exactly the declared size. */
+    const decode = (raw) => raw.split('/').map(r => {
+      let out = '', num = '';
+      for (const ch of r) {
+        if (ch >= '0' && ch <= '9') { num += ch; continue; }
+        out += ch.repeat(num ? parseInt(num, 10) : 1);
+        num = '';
       }
+      return out;
+    });
+    let key = null, palKeys = null, seen = null;
+    const finish = () => {
+      if (!key) return;
       for (const need of ['idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2',
-                          'windup', 'release', 'swing']) {
+                          'windup', 'release', 'swing', 'catch', 'throw',
+                          'load', 'follow', 'kick', 'ready']) {
         if (!seen.has(need)) problems.push(`sprite "${key}" is missing the "${need}" frame.`);
       }
+    };
+    for (const line of tableM[1].split('\n')) {
+      const head = line.match(/^  (\w+):\{p:\{(.*)\},f:\{$/);
+      if (head) {
+        finish();
+        key = head[1]; spriteKeys.add(key);
+        palKeys = new Set([...head[2].matchAll(/'(.)':'#/g)].map(m => m[1]));
+        seen = new Set();
+        continue;
+      }
+      const fr = line.match(/^    (\w+):'(.*)',$/);
+      if (!fr || !key) continue;
+      const pose = fr[1];
+      seen.add(pose);
+      const rows = decode(fr[2]);
+      if (rows.length !== H) {
+        problems.push(`sprite "${key}" pose "${pose}" has ${rows.length} rows, expected ${H}.`);
+      }
+      const bad = rows.map((r, i) => [i, r.length]).filter(([, l]) => l !== W);
+      if (bad.length) {
+        problems.push(`sprite "${key}" pose "${pose}" has ${bad.length} row(s) not ${W} wide `
+          + `(first: row ${bad[0][0]} is ${bad[0][1]}).`);
+      }
+      const used = new Set();
+      for (const r of rows) for (const ch of r) if (ch !== '.') used.add(ch);
+      const missing = [...used].filter(c => !palKeys.has(c));
+      if (missing.length) {
+        problems.push(`sprite "${key}" pose "${pose}" uses palette keys with no color: ${missing.join(', ')}.`);
+      }
     }
+    finish();
     if (rosterMatch) {
       const rosterCharKeys = [...rosterMatch[1].matchAll(/\{ k:'([^']+)'/g)].map(m => m[1]);
       const noSprite = rosterCharKeys.filter(k => !spriteKeys.has(k));
@@ -226,7 +249,8 @@ if (!opponentsMatch) {
    The help once taught a marker sweeping a bar under the field, with green
    and yellow bands and a five second pitch clock, for a long time after the
    game had replaced all three with a ring at the plate and a Throw It
-   button. Nothing failed, because help text is not code. The figures are
+   button, and then taught the ring for a while after the plate camera had
+   replaced THAT with a zone. Nothing failed, because help text is not code. The figures are
    drawn by the game's own functions now, and the copy is held to the
    controls that exist. */
 {
@@ -235,16 +259,23 @@ if (!opponentsMatch) {
     problems.push('could not find renderHowTo() in allstars/index.html.');
   } else {
     const text = howto[0];
-    for (const stale of ['marker', 'meter under the field', 'five seconds', 'shakes off the sign']) {
+    for (const stale of ['marker', 'meter under the field', 'five seconds', 'shakes off the sign',
+                         'Throw It', 'howtoRing(', 'closes as the pitch']) {
       if (text.includes(stale)) {
         problems.push(`How To Play still says "${stale}". That control no longer exists; the help `
           + 'is describing a game the player is not playing.');
       }
     }
-    for (const live of ['ring', 'Throw It', 'STAT_LEGEND', 'howtoRing(', 'howtoCatch(', 'howtoThrow(']) {
+    /* Since the plate camera: the strike zone and the bat's cursor, the
+       reticle and the release bar, the Throw button, the stat legend and
+       the two drawn fielding reads. The ring is gone and the help must
+       not teach it. */
+    for (const live of ['strike zone', 'where your bat will be', 'reticle', 'Throw</b>',
+                        'STAT_LEGEND', 'howtoCatch(', 'howtoThrow(']) {
       if (!text.includes(live)) {
-        problems.push(`How To Play no longer mentions "${live}". The batting ring, the Throw It button, `
-          + 'the stat legend and the drawn figures are what keep the help honest.');
+        problems.push(`How To Play no longer mentions "${live}". The zone and the bat's cursor, the `
+          + 'reticle and the release, the Throw button, the stat legend and the drawn figures '
+          + 'are what keep the help honest.');
       }
     }
   }

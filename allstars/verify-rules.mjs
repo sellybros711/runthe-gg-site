@@ -35,6 +35,10 @@
      the play moves       the plan's physics agree with the scorer: outs beaten, hits not
      the dive             a liner draws a lunge that lands short and breaks no duty
      the snow             the cold parks play under falling snow
+     the plate camera     the at bat is seen from behind the catcher and cut away from on contact
+     the bat has a place  a pitch lands somewhere; the swing has to be there as well as on time
+     the arm has a spot   aim plus a release is where a pitch goes; a strike is where it landed
+     the frames           the swing is three drawings and the delivery has a leg kick
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -318,7 +322,9 @@ async function main() {
         g.half = 'top'; g.inning = 1; g.outs = 0;   /* you at home, so you pitch */
         startAtBat();
         await new Promise(r => setTimeout(r, BEAT.intoAtBat + 600));
-        const labels = [...document.querySelectorAll('#pitch-select .zl')].map(z => z.textContent);
+        const strip = { grid: !!document.querySelector('#pitch-select .zone-grid'),
+                        throwBtn: !!document.getElementById('throw-btn'),
+                        aiming: !!g.aiming };
         const rep = pitcherRepertoire(currentPitcher());
         /* The weak pitch is drawn on the first throw; fix it so the check knows. */
         g.batterCtx.weakPitch = rep[0];
@@ -337,10 +343,10 @@ async function main() {
         const card = document.getElementById('atbat').textContent;
         offerPitchSelection();
         const marked = [...document.querySelectorAll('#pitch-select button.weak')].map(b => b.dataset.pt);
-        return { labels, weak: rep[0], weakLabel, plaque1, known1, left, plaque2, known2, before, card, marked,
+        return { strip, weak: rep[0], weakLabel, plaque1, known1, left, plaque2, known2, before, card, marked,
                  said: g.log.some(l => /cannot handle/.test(l.text)), windup: BEAT.windup };
       });
-      ok(r.labels.join(',') === 'High,In,Out,Low', 'the zone grid reads High, In, Out, Low', JSON.stringify(r.labels));
+      ok(!r.strip.grid && r.strip.throwBtn && r.strip.aiming, 'the strip is pitch and Throw; the spot is aimed on the field', JSON.stringify(r.strip));
       ok(!r.known1 && !/WEAK/.test(r.plaque1), 'an ordinary pitch says nothing', JSON.stringify({ k: r.known1, p: r.plaque1 }));
       ok(r.left > 0 && r.left <= r.windup * 0.5, 'the windup is short when you pitch', `left ${Math.round(r.left)} of ${r.windup}`);
       ok(r.known2 && r.plaque2 === 'WEAK PITCH · ' + r.weakLabel && r.said, 'the weak pitch is announced and logged', JSON.stringify({ p: r.plaque2, w: r.weakLabel }));
@@ -1340,6 +1346,190 @@ async function main() {
          JSON.stringify(r));
       ok(!r.sandlot, 'and the sandlot does not', JSON.stringify(r));
       ok(r.moved > 4, 'flakes move between frames', 'moved=' + r.moved);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the plate camera: when it is up and when it cuts ---- */
+    {
+      console.log('the plate camera');
+      /* Every real baseball game plays the at bat from behind the catcher.
+         The picture is the plate whenever a pitch is live or has just been
+         called, and the wide field the instant anything leaves the plate:
+         a ball in play, a steal, the walk after ball four. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        g.half = 'top'; g.inning = 1;
+        const out = {};
+        const _st = window.setTimeout; window.setTimeout = () => 0;
+        startAtBat(); endAtBatCleanup();
+        out.beforePitch = plateViewActive(g);
+        throwPitch('fastball', 4);
+        out.windup = plateViewActive(g);
+        const p = g.pitch;
+        p.windupUntil = performance.now() - 1; p.start = performance.now() - 1;
+        out.flight = plateViewActive(g);
+        out.loc = p.loc; out.aim = p.aim; out.strikeIsPlace = p.isStrike === (Math.abs(p.loc.x) <= 1 && Math.abs(p.loc.y) <= 1);
+        /* a called pitch holds the picture for the beat */
+        p.resolved = true; resolveCalledPitch();
+        out.afterCall = plateViewActive(g);
+        out.holdMs = g.plateHold - performance.now();
+        /* contact cuts away */
+        g.balls = 0; g.strikes = 0;
+        endAtBatCleanup();
+        throwPitch('fastball', 4);
+        g.pitch.loc = { x: 0, y: 0 }; g.pci = { x: 0, y: 0 };
+        Math.random = () => 0.5;
+        scheduleContactPlay('single', currentBatter(), { off: 0, q: 0.9 });
+        out.onContact = plateViewActive(g);
+        out.pitchClosed = !!g.pitch.closed;
+        g.play = null; g.tail = null;
+        out.afterPlay = plateViewActive(g);
+        window.setTimeout = _st;
+        return out;
+      });
+      ok(!r.beforePitch && r.windup && r.flight, 'the plate comes up with the pitch', JSON.stringify(r));
+      ok(r.loc && typeof r.loc.x === 'number' && r.aim, 'the pitch has an aim and a landing spot', JSON.stringify(r.loc));
+      ok(r.strikeIsPlace, 'a strike is a fact about where it landed', JSON.stringify(r));
+      ok(r.afterCall && r.holdMs > 0, 'a called pitch holds the picture for the beat', JSON.stringify(r));
+      ok(!r.onContact && r.pitchClosed && !r.afterPlay, 'contact cuts to the field and the pitch is closed', JSON.stringify(r));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the bat has a place ---- */
+    {
+      console.log('the bat has a place');
+      /* The swing is timing AND place. Same timing: a bat on the ball beats
+         a bat a width away, a miss along the barrel costs less than a miss
+         over it, a bat far under it finds nothing at all, and swinging
+         under the ball lifts it. CON widens the reach and a power swing
+         narrows it. All pure geometry, no dice. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(() => {
+        State.difficulty = 'medium';
+        const pitch = { ideal: 0.5, loc: { x: 0.2, y: -0.3 } };
+        const ctx = { con: 70 };
+        const q = (aim, mode, t) => swingGeometry(t == null ? 0.5 : t, aim, pitch, ctx, mode || 'normal');
+        const on = q({ x: 0.2, y: -0.3 });
+        const along = q({ x: 0.5, y: -0.3 });
+        const over = q({ x: 0.2, y: 0.0 });
+        const under = q({ x: 0.2, y: -0.6 });
+        const far = q({ x: 0.2, y: 0.9 });
+        const late = q({ x: 0.2, y: -0.3 }, 'normal', 0.62);
+        return {
+          on: on.contact, along: along.contact, over: over.contact, far: far.contact,
+          farThrough: far.through, onThrough: on.through,
+          underLift: under.lift, overLift: over.lift,
+          reach: { c40: swingReach(40, 'normal'), c90: swingReach(90, 'normal'),
+                   contact: swingReach(70, 'contact'), power: swingReach(70, 'power') },
+          late: late.contact,
+        };
+      });
+      ok(r.on > 0.9 && r.on > r.along && r.along > r.over,
+         'on the ball beats along the barrel beats over it', JSON.stringify(r));
+      ok(r.farThrough && r.far === 0 && !r.onThrough, 'a bat far under it finds nothing', JSON.stringify(r));
+      ok(r.underLift > 0 && r.overLift < 0, 'under the ball lifts it, over it beats it down', JSON.stringify(r));
+      ok(r.reach.c90 > r.reach.c40 && r.reach.contact > r.reach.power,
+         'CON widens the reach, a power swing narrows it', JSON.stringify(r.reach));
+      ok(r.late < r.on, 'and timing still counts', JSON.stringify({ on: r.on, late: r.late }));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the arm has a spot ---- */
+    {
+      console.log('the arm has a spot');
+      /* Aim plus release is where a pitch goes. A better arm scatters
+         less, a bad release scatters more, a tired arm more again, and a
+         thrown pitch lands within the scatter of its aim: over many
+         throws at the corner, an ace with a clean release throws strikes
+         and a tired scrub letting it go late throws balls. The player's
+         meter is a real meter: released in the band it reads clean,
+         released off the end it reads wild. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        g.half = 'top'; g.inning = 1;
+        const out = { scatter: { ace: pitchScatter(95, 1, 0), scrub: pitchScatter(20, 1, 0),
+                                 aceLate: pitchScatter(95, 0.1, 0), aceTired: pitchScatter(95, 1, 3) } };
+        const _st = window.setTimeout; window.setTimeout = () => 0;
+        startAtBat(); endAtBatCleanup();
+        const pit = currentPitcher();
+        const realPit = pit.pit;
+        const trial = (pitv, release, nTries) => {
+          pit.pit = pitv;
+          let strikes = 0, drift = 0;
+          for (let i = 0; i < nTries; i++) {
+            endAtBatCleanup();
+            throwPitch('fastball', null, { aim: { x: 0.55, y: 0.55 }, release });
+            const p = g.pitch;
+            if (p.isStrike) strikes++;
+            drift += Math.hypot(p.loc.x - 0.55, p.loc.y - 0.55);
+          }
+          return { strikeRate: strikes / nTries, drift: drift / nTries };
+        };
+        out.ace = trial(95, 1, 200);
+        out.wild = trial(20, 0.1, 200);
+        pit.pit = realPit;
+        /* the meter itself */
+        endAtBatCleanup();
+        g.aimPt = { x: -0.4, y: 0.2 };
+        startReleaseMeter('fastball');
+        const m = g.meter;
+        out.meterUp = !!m && plateViewActive(g);
+        m.t0 = performance.now() - m.sweet * m.dur;      /* cursor dead in the band */
+        g.releaseNow();
+        out.clean = { q: g.meter.q, aim: g.pitch.aim, strip: !!document.getElementById('pitch-select') };
+        endAtBatCleanup();
+        startReleaseMeter('fastball');
+        g.meter.t0 = performance.now() - 0.02 * g.meter.dur;   /* let go at the very top */
+        g.releaseNow();
+        out.early = { q: g.meter.q };
+        window.setTimeout = _st;
+        return out;
+      });
+      const sc = r.scatter;
+      ok(sc.ace < sc.scrub && sc.ace < sc.aceLate && sc.ace < sc.aceTired,
+         'a better arm, a clean release and a fresh arm all scatter less', JSON.stringify(sc));
+      ok(r.ace.strikeRate > 0.8 && r.wild.strikeRate < 0.6 && r.ace.drift < r.wild.drift,
+         'an ace at the corner throws strikes; a scrub letting it go late does not', JSON.stringify({ ace: r.ace, wild: r.wild }));
+      ok(r.meterUp && r.clean.q > 0.9 && r.clean.aim.x === -0.4,
+         'released in the band the pitch is clean and goes where it was aimed', JSON.stringify(r.clean));
+      ok(r.early.q < 0.2, 'released at the top it is wild', JSON.stringify(r.early));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the frames ---- */
+    {
+      console.log('the frames');
+      /* Every character carries the three part swing (load, swing,
+         follow), the leg kick and the ready stance, and each is a
+         different drawing from the idle it grew out of. The table is
+         run length encoded and decodes to the declared size. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const keys = Object.keys(V2_SPRITES);
+        const missing = [], same = [], bad = [];
+        for (const k of keys) {
+          for (const fr of ['load', 'follow', 'kick', 'ready']) {
+            if (!V2_SPRITES[k].f[fr]) { missing.push(k + '/' + fr); continue; }
+            const rows = v2Frame(k, fr);
+            if (rows.length !== V2_H || rows.some(r => r.length !== V2_W)) bad.push(k + '/' + fr);
+            if (V2_SPRITES[k].f[fr] === V2_SPRITES[k].f.idle || V2_SPRITES[k].f[fr] === V2_SPRITES[k].f.back) same.push(k + '/' + fr);
+          }
+        }
+        return { n: keys.length, missing, same, bad, encoded: typeof V2_SPRITES[keys[0]].f.idle === 'string' };
+      });
+      ok(r.missing.length === 0, 'every character carries load, follow, kick and ready', r.missing.slice(0, 6).join(', '));
+      ok(r.bad.length === 0, 'and each decodes to the declared size', r.bad.slice(0, 6).join(', '));
+      ok(r.same.length === 0, 'and each is its own drawing', r.same.slice(0, 6).join(', '));
+      ok(r.encoded, 'the table is run length encoded', 'encoded=' + r.encoded);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

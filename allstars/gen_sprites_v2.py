@@ -977,6 +977,17 @@ ARM_OFF = {
     # back and up. This is not the pitcher's release (that follows through
     # low), because a shortstop throwing across the diamond fires high.
     'throw':   (2, -6),
+    # THE BATTER'S SWING, IN THREE. He was one frame: the bat coming
+    # round. Now he LOADS (hands back over the rear shoulder, weight on
+    # the back leg), comes through (the old swing frame), and FOLLOWS
+    # (both hands wrapped high across the lead shoulder). Seen from
+    # behind, like everything the batter does.
+    'load':    (-2, -8),
+    'follow':  (-8, -3),
+    # A fielder set for the pitch: hands low and forward toward the knees.
+    'ready':   (4, 4),
+    # the kick for a body that does not draw raised arms: hands up together
+    'kick':    (-4, -4),
 }
 LEG_OFF = {
     'run1':    (-1, 1),
@@ -986,6 +997,15 @@ LEG_OFF = {
     'swing':   (0, 0),
     'catch':   (0, 0),
     'throw':   (-1, 1),
+    # the load sits back: rear leg planted, front foot light
+    'load':    (-2, 0),
+    'follow':  (0, -1),
+    # THE LEG KICK, the frame every pitcher is photographed in: the
+    # stride leg lifted high, hands together at the chest (see
+    # raised_arms). It goes between the windup and the release, and it is
+    # the one that makes the delivery a motion rather than two poses.
+    'kick':    (-7, 0),
+    'ready':   (-1, -1),
 }
 
 
@@ -1057,10 +1077,19 @@ def raised_arms(cv, limb, skin, pose, wide=0, sy=0):
         cv.cyl(CX + w - 1, 14 + sy, CX + w + 2, 24 + sy, limb, round_bot=1)
         cv.cyl(CX + w - 2, 11 + sy, CX + w + 2, 15 + sy, skin, round_bot=1)
         return True
+    if pose == 'kick':
+        # Gathered: both hands together at the chest, elbows in, the ball
+        # hidden in the glove. The arms come IN rather than out, so the
+        # lifted leg below is the whole silhouette.
+        for side in (-1, 1):
+            x0 = CX + side * 6 - 1
+            cv.cyl(x0, 22 + sy, x0 + 2, 26 + sy, limb, round_bot=1)
+        cv.cyl(CX - 3, 24 + sy, CX + 3, 27 + sy, skin, round_bot=1)
+        return True
     return False
 
 
-RAISED_POSES = ('catch', 'throw', 'windup', 'release')
+RAISED_POSES = ('catch', 'throw', 'windup', 'release', 'kick')
 
 
 def arms(cv, sleeve, skin, pose, top=24, length=7, out=0):
@@ -1167,6 +1196,19 @@ def arch_robed(cv, spec, pose):
     cv.sphere(CX, HEAD_CY, HEAD_RX * 0.94, HEAD_RY * 0.94, skin)
 
 
+# A quadruped has no arms to load a bat with, so its answer to the batter's
+# and pitcher's poses is in its legs: weight back on the load and the kick
+# (front legs up, as a horse rears), forward on the follow and the ready.
+# Without this the four legged characters drew the idle for all of them,
+# and the suite is what said so.
+def quad_off(pose):
+    if pose in ('run1', 'load', 'kick'):
+        return 1
+    if pose in ('run2', 'follow', 'ready'):
+        return -1
+    return 0
+
+
 def arch_beast(cv, spec, pose):
     """Four legged or low slung: dog, chupacabra, nessie, dragon.
 
@@ -1188,7 +1230,7 @@ def arch_beast(cv, spec, pose):
         bw, bh, bcy, legtop, hy, hr = 11.0, 6.2, 26.5, 29, 14.0, 7.8
         hindx, frontx, thigh = (-8, -3), (2, 7), 4.6
     cv.sphere(CX, bcy, bw, bh, body, spec=False)
-    off = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
+    off = quad_off(pose)
     # FRONT and HIND legs are not the same leg. Four identical posts under
     # a barrel is a table, and it is what made the rabid dog and the
     # chupacabra read as one animal painted twice however their bodies
@@ -1242,7 +1284,7 @@ def arch_centaur(cv, spec, pose):
     for dx, dy in ((10.5, 26), (12, 28), (12.5, 31), (12, 34)):
         cv.sphere(CX + dx, dy, 1.3, 1.7, tail, spec=False)
     cv.sphere(CX, 28.0, 10.4, 6.0, horse, spec=False)
-    off = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
+    off = quad_off(pose)
     for lx in (-8, -3, 3, 8):
         o = off if lx < 0 else -off
         cv.cyl(CX + lx - 1, 30 + o, CX + lx + 1, 37 + o, horse)
@@ -1268,7 +1310,7 @@ def arch_nessie(cv, spec, pose):
     her after the body and it has to be built like a neck, tapering."""
     body = Ramp(spec.get('skin', '#2a7a5a'))
     lite = Ramp(spec.get('muzzle') or '#4aa878')
-    off = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
+    off = quad_off(pose)
     # the tail, curling up and away behind the second hump
     for i, (dx, dy, r) in enumerate(((10, 32, 3.0), (13, 30, 2.4),
                                      (14, 27, 1.8), (14, 24, 1.3))):
@@ -1311,7 +1353,7 @@ def arch_dragon(cv, spec, pose):
                        (13.5, 25.5, 1.8), (12.5, 22.5, 1.4)):
         cv.sphere(CX + dx, dy, r_, r_, body, spec=False)     # the tail curl
     cv.sphere(CX + 12.5, 21.0, 1.0, 1.0, belly, spec=False)  # tail tip
-    off = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
+    off = quad_off(pose)
     for side, o in ((-1, off), (1, -off)):
         cv.cyl(CX + side * 5 - 1, 32 + o, CX + side * 5 + 1, 38 + o, body, round_bot=1)
     cv.sphere(CX - 1, 27.5, 9.0, 7.6, body, spec=False)      # sitting body
@@ -1357,9 +1399,14 @@ def arch_bird(cv, spec, pose):
     wing = Ramp(spec.get('chest', '#f4922a'))
     cv.ball(CX, 25.0, 8.6, 9.4, body)
     off = 2 if pose == 'run1' else (-2 if pose == 'run2' else 0)
+    # Wings are what a bird has instead of arms: both spread and lifted on
+    # the load and the kick, both dropped and tucked on the follow and the
+    # ready. Before this every pose drew the phoenix standing still.
+    lift = -4 if pose in ('load', 'kick') else (3 if pose in ('follow', 'ready') else 0)
+    spread = 2 if pose in ('load', 'kick') else 0
     if not spec.get('nowings'):
         for side in (-1, 1):
-            cv.sphere(CX + side * 10, 24 + side * off, 4.6, 7.4, wing, spec=False)
+            cv.sphere(CX + side * (10 + spread), 24 + side * off + lift, 4.6, 7.4, wing, spec=False)
     cv.cyl(CX - 4, 31, CX - 2, 38, wing)
     cv.cyl(CX + 2, 31, CX + 4, 38, wing)
     cv.sphere(CX, 12.0, 8.4, 7.6, body)
@@ -2823,7 +2870,10 @@ def sig_phoenix(cv, spec, pose, back):
     red = Ramp('#c93018')
     org = Ramp('#f4922a')
     gold = (248, 216, 74)
-    flap = 2 if pose == 'run1' else (-2 if pose == 'run2' else 0)
+    # The wings flap on the run, sweep UP on the load and the kick, and
+    # settle on the follow and the ready: a phoenix has no arms, so this
+    # is its whole answer to the batter's and the pitcher's poses.
+    flap = {'run1': 2, 'run2': -2, 'load': -3, 'kick': -3, 'follow': 3, 'ready': 3}.get(pose, 0)
     for side in (-1, 1):
         sx = side
         f = flap * (1 if side > 0 else -1) * 0.0 + flap
@@ -3263,8 +3313,9 @@ SIGNATURES = {
 def build(spec, pose='idle', key=None):
     cv = Canvas()
     # The swing is seen from behind, like everything a batter does.
-    back = pose.startswith('back') or pose == 'swing'
-    body_pose = {'back': 'idle', 'backrun1': 'run1', 'backrun2': 'run2', 'swing': 'swing'}[pose] if back else pose
+    back = pose.startswith('back') or pose in ('swing', 'load', 'follow')
+    body_pose = {'back': 'idle', 'backrun1': 'run1', 'backrun2': 'run2',
+                 'swing': 'swing', 'load': 'load', 'follow': 'follow'}[pose] if back else pose
     sig = SIGNATURES.get(key, {})
     if back:
         # The archetype is drawn with its FRONT features stripped: the
@@ -3625,7 +3676,8 @@ SPECS = {
 # been asking for windup and release since the first camera, and the draw
 # routine answered with idle because no such frame existed.
 POSES = ('idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2',
-         'windup', 'release', 'swing', 'catch', 'throw')
+         'windup', 'release', 'swing', 'catch', 'throw',
+         'load', 'follow', 'kick', 'ready')
 
 
 # ------------------------------------------------------------------ faces
@@ -3751,26 +3803,53 @@ for _k, _s in SPECS.items():
     _seen[_sig] = _k
 
 
+# The palette alphabet carries NO DIGITS, because digits are run lengths
+# in the encoding below. The punctuation is everything a single quoted JS
+# string can hold bare, minus the row separator.
+ALPHA = ('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+         '!#$%&()*+,-:;<=>?@^_~|')
+
+
+def rle(row):
+    """A row of codes as runs: `12.3a` is twelve blanks then three of a.
+    A run of one is written as its character alone."""
+    out = []
+    i = 0
+    while i < len(row):
+        j = i
+        while j < len(row) and row[j] == row[i]:
+            j += 1
+        k = j - i
+        out.append((str(k) if k > 1 else '') + row[i])
+        i = j
+    return ''.join(out)
+
+
 def js_block(key, frames):
     """frames: {pose: (pal, rows)}. Palettes are merged so a character
-    carries one palette across all of its frames."""
+    carries one palette across all of its frames.
+
+    RUN LENGTH ENCODED. Fifteen frames of fifty rows of thirty two columns
+    is 24,000 characters per character as bare strings, and the table was
+    two thirds of the page before the last four frames existed. Runs cut
+    it by more than half: a sprite is mostly blank and mostly flat color,
+    which is what pixel art IS. The page decodes a frame the first time
+    it draws it and never again (v2Frame in index.html)."""
     merged = {}
     for pose in POSES:
         for ch, hexv in frames[pose][0].items():
             merged[hexv] = None
     order = sorted(merged.keys())
-    alpha = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    assert len(order) <= len(alpha), f'{key} needs {len(order)} colors'
-    code = {hexv: alpha[i] for i, hexv in enumerate(order)}
-    pal_str = ', '.join(f"{code[h]}:'{h}'" for h in order)
+    assert len(order) <= len(ALPHA), f'{key} needs {len(order)} colors'
+    code = {hexv: ALPHA[i] for i, hexv in enumerate(order)}
+    pal_str = ', '.join(f"'{code[h]}':'{h}'" for h in order)
     out = [f"  {key}:{{p:{{{pal_str}}},f:{{"]
     for pose in POSES:
         pal, rows = frames[pose]
         remapped = []
         for r in rows:
-            remapped.append(''.join('.' if c == '.' else code[pal[c]] for c in r))
-        body = ','.join(f"'{r}'" for r in remapped)
-        out.append(f"    {pose}:[{body}],")
+            remapped.append(rle(''.join('.' if c == '.' else code[pal[c]] for c in r)))
+        out.append(f"    {pose}:'{'/'.join(remapped)}',")
     out.append("  }},")
     return '\n'.join(out)
 
