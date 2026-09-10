@@ -2872,6 +2872,329 @@ def sig_ringmaster(cv, spec, pose, back):
     cv.dot(CX, 23, (58, 96, 168))
 
 
+
+# ==================== OLYMPUS, AND TWO FROM PARIS ====================
+# A god is usually a person in a robe, and a pack of people in robes is a
+# pack of nobody at thirty two pixels wide. So the test for getting in was
+# not fame, it was SILHOUETTE: is there a shape here that none of the other
+# seventy is going to have. A lion's head worn as a hood, a helmet crest, a
+# pair of goat legs, a trident, a hump. Palette and headgear alone do not
+# count, because that is how you end up with fourteen bearded men in
+# different hues who are all "the one in the yellow".
+#
+# What that ruled out, so nobody has to re-derive it:
+#   Demeter      the harvest is Mother Nature's, and she is already here
+#   Selene       a crescent and silver is Artemis, drawn twice
+#   Aphrodite    a shell behind the head is Hera's peacock fan, drawn twice
+#   Asclepius    one snake on a staff is Hermes' two, at this size
+#   Thanatos     a dark winged figure is Hades and Nike, drawn together
+#   Nemesis      the same, plus scales that would be four pixels
+#   Hestia       a hearth has no silhouette; she would be a robe in orange
+#   Hypnos       nor does sleep; he would be a robe with its eyes shut
+#   Hecate       three faces at this width is a smear, not three faces
+#   Helios       a radiate crown next to Nike's laurel reads as one idea
+
+def _laurel(cv, col='#e0b64a', hi='#f6dc94'):
+    """A wreath sitting ON the skull's curve rather than a ring floating
+    over it: the leaves follow the same ellipse the hair is cut to."""
+    import math
+    r = Ramp(col)
+    for i in range(13):
+        a = math.pi * (0.06 + 0.88 * i / 12.0)
+        x = CX - math.cos(a) * (HEAD_RX * 0.94)
+        y = HEAD_CY - math.sin(a) * (HEAD_RY * 0.80)
+        cv.dot(x, y, r.at(0.55))
+        cv.dot(x, y - 1, hex2rgb(hi) if i % 2 else r.at(0.35))
+
+
+def _staff(cv, x, y0, y1, col='#8a6a3a'):
+    cv.cyl(x - 1, y0, x + 1, y1, Ramp(col))
+
+
+def sig_zeus(cv, spec, pose, back):
+    # THE BOLT is the whole character, so it is drawn big and above the
+    # head where nothing else in the frame lives.
+    _laurel(cv)
+    if back:
+        return
+    hot, core, edge = Ramp('#f2c53a'), (255, 252, 226), (196, 132, 24)
+    # A zigzag drawn as filled bands rather than a line: a one pixel
+    # lightning bolt at this size is a scratch.
+    bands = [(6, 0, 3), (5, 2, 4), (4, 4, 5), (7, 6, 4), (6, 8, 4),
+             (5, 10, 4), (8, 12, 4), (7, 14, 3), (6, 16, 3), (5, 18, 2)]
+    for dx, y, w in bands:
+        cv.rect(CX + dx, y, CX + dx + w, y + 1, hot, l=0.66)
+        cv.dot(CX + dx + 1, y, core)
+        cv.dot(CX + dx + w, y + 1, edge)
+    # the arm that is holding it up
+    skin = Ramp(spec.get('skin', '#f0c99a'))
+    cv.cyl(CX + 7, 18, CX + 9, 27, skin, round_bot=1)
+
+
+def sig_hera(cv, spec, pose, back):
+    # THE PEACOCK FAN. An arc of eyed feathers standing behind the head:
+    # the only fan shape in the roster, which is why she is in and
+    # Aphrodite's shell is not.
+    import math
+    teal, gold = Ramp('#1f7a86'), Ramp('#e0b64a')
+    for i in range(9):
+        a = math.pi * (0.08 + 0.84 * i / 8.0)
+        cs, sn = -math.cos(a), math.sin(a)
+        # each feather is a solid run from the skull out to its eyespot,
+        # so nine of them make a fan rather than nine loose dots
+        for t in range(5, 16):
+            x, y = CX + cs * t, HEAD_CY - sn * (t * 0.88)
+            cv.dot(x, y, teal.at(0.26 + t * 0.028))
+            cv.dot(x + (1 if cs > 0 else -1), y, teal.at(0.20 + t * 0.02))
+        ex, ey = CX + cs * 16.4, HEAD_CY - sn * 14.4
+        cv.dot(ex, ey, gold.at(0.70))
+        cv.dot(ex, ey - 1, gold.at(0.50))
+        cv.dot(ex, ey + 1, (46, 62, 128))
+    _laurel(cv, '#e0b64a')
+
+
+def sig_poseidon(cv, spec, pose, back):
+    # THE TRIDENT, full height on the near side so the shaft crosses the
+    # whole sprite: that vertical is what you see first at any size.
+    shaft = Ramp('#c9a256')
+    x = CX - 11
+    cv.cyl(x - 1, 5, x + 1, 36, shaft)
+    tine = Ramp('#eadfc0')
+    for dx in (-4, 0, 4):
+        cv.cyl(x + dx - 0.5, 1, x + dx + 0.5, 7, tine)
+        cv.dot(x + dx, 0, (255, 252, 242))
+    cv.rect(x - 5, 7, x + 5, 8, tine, l=0.62)
+    if not back:
+        skin = Ramp(spec.get('skin', '#e8cfa8'))
+        cv.cyl(CX - 9, 22, CX - 7, 28, skin, round_bot=1)
+
+
+def sig_hades(cv, spec, pose, back):
+    # A crown of black spikes, and the two pronged bident that tells him
+    # apart from his brother's three.
+    dark, edge = Ramp('#171320'), (140, 124, 190)
+    for i, dx in enumerate((-7, -3.5, 0, 3.5, 7)):
+        h = 5 if i % 2 == 0 else 7
+        cv.tri([(CX + dx - 2, HEAD_CY - 5), (CX + dx + 2, HEAD_CY - 5),
+                (CX + dx, HEAD_CY - 5 - h)], dark, l=0.5)
+        cv.dot(CX + dx, HEAD_CY - 5 - h, edge)
+    cv.rect(CX - 9, HEAD_CY - 5, CX + 9, HEAD_CY - 3, dark, l=0.45)
+    if back:
+        return
+    x = CX + 11
+    cv.cyl(x - 1, 6, x + 1, 36, Ramp('#9a92ae'))
+    for dx in (-3.5, 3.5):
+        cv.cyl(x + dx - 1, 1, x + dx + 1, 9, Ramp('#d0c8de'))
+    cv.rect(x - 5, 8, x + 5, 10, Ramp('#d0c8de'), l=0.66)
+
+
+def sig_athena(cv, spec, pose, back):
+    # THE CREST. A Corinthian helmet's plume runs front to back along the
+    # top of the skull and stands two heads high: no other figure has
+    # anything above row 3 except Zeus's bolt, and his is off to the side.
+    br, plume = Ramp('#c9a256'), Ramp('#a8243a')
+    cv.sphere(CX, HEAD_CY - 1.0, HEAD_RX * 0.99, HEAD_RY * 0.98, br,
+              spec=False, ymax=HEAD_CY - 1)
+    cv.rect(CX - 3, HEAD_CY - 3, CX - 1, HEAD_CY + 5, br, l=0.35)   # nasal
+    # an arch: high at the crown, sweeping down behind the skull
+    import math
+    for i in range(16):
+        a = math.pi * (0.10 + 0.62 * i / 15.0)
+        x = CX + math.cos(a) * 8.6
+        y = HEAD_CY - 5.0 - math.sin(a) * 7.4
+        for w in range(3):
+            cv.dot(x, y + w, plume.at(0.66 - w * 0.14 - i * 0.012))
+    if back:
+        return
+    _staff(cv, CX + 11, 4, 36, '#8a6a3a')
+    cv.tri([(CX + 8, 6), (CX + 14, 6), (CX + 11, 0)], Ramp('#d8d2c6'), l=0.66)
+    # the owl, sat on her shoulder
+    ow = Ramp('#c9b48a')
+    cv.sphere(CX - 10, 21, 3.6, 3.8, ow, spec=True)
+    for dx in (-1.4, 1.4):
+        cv.dot(CX - 10 + dx, 20, (250, 246, 232))
+        cv.dot(CX - 10 + dx, 20, (250, 246, 232))
+    cv.dot(CX - 11.4, 20, (30, 26, 20)); cv.dot(CX - 8.6, 20, (30, 26, 20))
+    cv.dot(CX - 10, 22, (216, 160, 50))
+
+
+def sig_ares(cv, spec, pose, back):
+    # A helm with the plume swept BACK rather than up, so he cannot be
+    # read as Athena, and a shield big enough to be the silhouette.
+    br = Ramp('#d8ab4e')
+    cv.sphere(CX, HEAD_CY - 1.0, HEAD_RX * 0.99, HEAD_RY * 0.98, br,
+              spec=True, ymax=HEAD_CY - 2)
+    cv.rect(CX - 1.4, HEAD_CY - 3, CX + 1.4, HEAD_CY + 4, Ramp('#a8763c'), l=0.34)
+    plume = Ramp('#c92a30')
+    for i in range(9):
+        cv.rect(CX + 1 + i * 1.25, HEAD_CY - 9 + i * 0.95,
+                CX + 4.4 + i * 1.25, HEAD_CY - 5.6 + i * 0.95, plume, l=0.70 - i * 0.045)
+    if back:
+        return
+    cv.sphere(CX - 11, 31, 5.0, 5.2, Ramp('#4a1e14'), spec=False)   # the rim
+    cv.sphere(CX - 11, 31, 3.9, 4.1, Ramp('#c9902e'), spec=True)     # the face
+    cv.sphere(CX - 11, 31, 1.5, 1.6, Ramp('#4a1e14'), spec=False)    # the boss
+    cv.dot(CX - 11, 30, (255, 244, 205))
+
+
+def sig_apollo(cv, spec, pose, back):
+    _laurel(cv)
+    if back:
+        return
+    # THE LYRE, held across the chest: two horns, a crossbar, four strings.
+    w, dk = Ramp('#d8ab4e'), Ramp('#8a6a2a')
+    # the sound box, then two horns curling up off it
+    cv.sphere(CX - 10, 30, 4.6, 3.6, w, spec=True)
+    for dx, cur in ((-14, -1), (-6, 1)):
+        for i in range(9):
+            cv.dot(CX + dx + cur * (i * 0.22), 29 - i * 1.5, w.at(0.62 - i * 0.02))
+            cv.dot(CX + dx + cur * (i * 0.22) + cur, 29 - i * 1.5, dk.at(0.4))
+    cv.rect(CX - 15, 16, CX - 5, 17, w, l=0.70)
+    for dx in (-13, -11.5, -10, -8.5, -7):
+        for y in range(18, 29):
+            cv.dot(CX + dx, y, (250, 246, 232) if (y % 2) else (214, 208, 190))
+
+
+def sig_hermes(cv, spec, pose, back):
+    # WINGS IN THREE PLACES: the cap and both heels. One pair reads as a
+    # bird; three pairs read as the god who is late for something.
+    w = Ramp('#f2efe6')
+    for sgn in (-1, 1):
+        for i in range(4):
+            cv.rect(CX + sgn * (6 + i), HEAD_CY - 7 - i,
+                    CX + sgn * (7 + i), HEAD_CY - 5 - i * 0.6, w, l=0.66 - i * 0.06)
+    o = run_off(pose)
+    for sgn, oi in ((-1, 0), (1, 1)):
+        base = 36 + o[oi]
+        for i in range(3):
+            cv.rect(CX + sgn * (4 + i * 1.2), base - i * 1.3,
+                    CX + sgn * (5.4 + i * 1.2), base + 1 - i * 1.3, w, l=0.62 - i * 0.08)
+    if back:
+        return
+    # the caduceus: a staff with two snakes crossing it
+    _staff(cv, CX + 11, 10, 34, '#c9a256')
+    g = (110, 168, 96)
+    for i in range(7):
+        y = 12 + i * 3
+        cv.dot(CX + 11 + (2 if i % 2 else -2), y, g)
+        cv.dot(CX + 11 + (1 if i % 2 else -1), y + 1, g)
+    for dx in (-2, 2):
+        cv.rect(CX + 11 + dx - 1, 8, CX + 11 + dx + 1, 10, Ramp('#f2efe6'), l=0.62)
+
+
+def sig_dionysus(cv, spec, pose, back):
+    # Grapes for a crown, and a cup he is not putting down.
+    gr, leaf = Ramp('#6b4296'), Ramp('#4a8a3a')
+    import math
+    for i in range(11):
+        a = math.pi * (0.04 + 0.92 * i / 10.0)
+        x = CX - math.cos(a) * (HEAD_RX * 0.98)
+        y = HEAD_CY - math.sin(a) * (HEAD_RY * 0.86)
+        cv.dot(x, y, gr.at(0.6 if i % 2 else 0.38))
+        cv.dot(x, y - 1.6, gr.at(0.5) if i % 3 else leaf.at(0.58))
+    if back:
+        return
+    cup = Ramp('#d8b04a')
+    cv.taper(24, 28, 3.6, 2.2, cup, cx=CX + 10)
+    cv.rect(CX + 9, 28, CX + 11, 30, cup, l=0.45)
+    cv.rect(CX + 7, 30, CX + 13, 31, cup, l=0.6)
+    cv.rect(CX + 7, 23, CX + 13, 24, Ramp('#8a2a4a'), l=0.66)
+
+
+def sig_pan(cv, spec, pose, back):
+    # GOAT LEGS. Shaggy, and they replace the human ones rather than being
+    # drawn over them, which is why the spec gives him bare skin below.
+    fur = Ramp('#6a4a28')
+    o = run_off(pose)
+    for sgn, oi in ((-1, 0), (1, 1)):
+        x = CX + sgn * 3.2
+        cv.cyl(x - 2.4, 31 + o[oi], x + 2.4, 37 + o[oi], fur, round_bot=1)
+        for i in range(6):
+            cv.dot(x + sgn * 2.6, 31 + i + o[oi], fur.at(0.28))
+        cv.rect(x - 2.2, 37 + o[oi], x + 2.2, 38 + o[oi], Ramp('#2a2018'), l=0.4)
+    for sgn in (-1, 1):
+        for i in range(4):
+            cv.dot(CX + sgn * (5 + i * 0.9), HEAD_CY - 7 - i * 1.4, (206, 190, 150))
+            cv.dot(CX + sgn * (5.9 + i * 0.9), HEAD_CY - 7 - i * 1.4, (150, 132, 96))
+    if back:
+        return
+    # the pipes
+    pi, bd = Ramp('#e0c08a'), Ramp('#8a6a3a')
+    for i in range(6):
+        x = CX - 9 + i * 2.2
+        cv.rect(x, 23, x + 1.4, 30 - i * 0.9, pi, l=0.72 - i * 0.05)
+        cv.dot(x, 23, (255, 248, 226))
+    cv.rect(CX - 9.4, 24, CX + 4, 25, bd, l=0.5)
+
+
+def sig_nike(cv, spec, pose, back):
+    # The wings are the character, so they are drawn twice the size of the
+    # shared extra and BEHIND everything, which is what the pre hook is.
+    w = Ramp('#f6f3ec')
+    for sgn in (-1, 1):
+        # the leading edge sweeps up and out, the trailing edge steps down
+        for i in range(9):
+            x = CX + sgn * (6.0 + i * 1.15)
+            top = 10.5 - i * 0.95 + (i * i) * 0.10
+            bot = 24 + i * 1.35
+            cv.rect(x, top, x + 1.2, bot, w, l=0.74 - i * 0.045)
+            cv.dot(x, top, (255, 255, 252))
+        # a row of feather tips along the bottom of the sweep
+        for i in range(6):
+            x = CX + sgn * (8.0 + i * 1.9)
+            cv.rect(x - 0.6, 24 + i * 2.0, x + 0.6, 27 + i * 2.0, w, l=0.34)
+
+
+def sig_nike_post(cv, spec, pose, back):
+    # No palm frond. The wings are already the whole silhouette and a
+    # green rectangle beside them read as a hedge.
+    _laurel(cv)
+
+
+def sig_quasimodo(cv, spec, pose, back):
+    # THE HUMP, and it is drawn before the body so the tunic sits over it:
+    # a lump pasted on top reads as a backpack.
+    hp = Ramp(spec.get('shirt', '#6a5a3a'))
+    cv.sphere(CX + 5.5, 25.5, 6.4, 6.0, hp, spec=True)
+
+
+def sig_quasimodo_post(cv, spec, pose, back):
+    # the bell rope, coming down past him from the belfry
+    r = Ramp('#e0cba0')
+    for y in range(0, 36):
+        t = (y // 2) % 2
+        cv.dot(CX - 14, y, r.at(0.62 if t else 0.34))
+        cv.dot(CX - 13, y, r.at(0.30 if t else 0.66))
+        cv.dot(CX - 12, y, r.at(0.20 if t else 0.40))
+    if back:
+        return
+    # one shoulder carried higher than the other
+    sk = Ramp(spec.get('skin', '#d8b48a'))
+    cv.sphere(CX - 7, 25, 3.0, 2.8, sk, spec=False)
+
+
+def sig_esmeralda(cv, spec, pose, back):
+    # A tambourine held up, gold hoops, and a skirt that flares: three
+    # things a dancer has and nobody else in the roster does.
+    if not back:
+        for sgn in (-1, 1):
+            for dy in (0, 1, 2):
+                cv.dot(CX + sgn * 8, HEAD_CY + 3 + dy, (224, 182, 74))
+            cv.dot(CX + sgn * 9, HEAD_CY + 4, (240, 208, 120))
+    sk = Ramp(spec.get('pants', '#b83a4a'))
+    cv.taper(29, 37, 5.0, 8.4, sk, folds=3)
+    cv.rect(CX - 8, 36, CX + 8, 37, Ramp('#e0b64a'), l=0.6)
+    if back:
+        return
+    tam = Ramp('#c9a06a')
+    cv.sphere(CX + 10, 12, 4.6, 4.6, tam, spec=False)
+    cv.sphere(CX + 10, 12, 3.0, 3.0, Ramp('#f2ead4'), spec=False)
+    for dx, dy in ((-4, 0), (4, 0), (0, -4), (0, 4), (3, 3), (-3, -3)):
+        cv.dot(CX + 10 + dx, 12 + dy, (240, 208, 120))
+    sk2 = Ramp(spec.get('skin', '#d8a878'))
+    cv.cyl(CX + 6, 15, CX + 8, 25, sk2, round_bot=1)
+
+
 SIGNATURES = {
     'kong': {'post': sig_kong},
     'franky': {'post': sig_franky},
@@ -2921,6 +3244,19 @@ SIGNATURES = {
     'golem': {'post': sig_golem},
     'ichabod': {'post': sig_ichabod},
     'longjohn': {'post': sig_longjohn},
+    'zeus': {'post': sig_zeus},
+    'hera': {'pre': sig_hera},
+    'poseidon': {'post': sig_poseidon},
+    'hades': {'post': sig_hades},
+    'athena': {'post': sig_athena},
+    'ares': {'post': sig_ares},
+    'apollo': {'post': sig_apollo},
+    'hermes': {'post': sig_hermes},
+    'dionysus': {'post': sig_dionysus},
+    'pan': {'post': sig_pan},
+    'nike': {'pre': sig_nike, 'post': sig_nike_post},
+    'quasimodo': {'pre': sig_quasimodo, 'post': sig_quasimodo_post},
+    'esmeralda': {'post': sig_esmeralda},
 }
 
 
@@ -2987,6 +3323,45 @@ def build(spec, pose='idle', key=None):
 # archetype default, so a spec only says what makes that character
 # different from every other figure of the same build.
 SPECS = {
+ # ---------------------------------------------------------- OLYMPUS
+ 'zeus': dict(arch='hulk', skin='#f0c99a', shirt='#3f5a86', pants='#33496e',
+              hand='#f0c99a', hair='#f5efe8', hairstyle='wild',
+              beard='#f5efe8', beardsize='full', belt='#e0b64a'),
+ 'hera': dict(arch='robed', skin='#f2d0a8', shirt='#e8e2f0',
+              hair='#3a2418', hairstyle='long', folds=4),
+ 'poseidon': dict(arch='hulk', skin='#e8cfa8', shirt='#2f7f86', pants='#256a70',
+                  hand='#e8cfa8', hair='#8fd0c8', hairstyle='wild',
+                  beard='#8fd0c8', beardsize='full'),
+ 'hades': dict(arch='robed', skin='#d8cfc8', shirt='#463c66',
+               hair='#14101c', hairstyle='short', beard='#241c34',
+               beardsize='full', folds=3),
+ 'athena': dict(arch='human', skin='#f0c99a', shirt='#e6e0cc', pants='#c9a256',
+                hair='#5a3618', hairstyle='long', belt='#c9a256'),
+ 'ares': dict(arch='hulk', skin='#e0a878', shirt='#8a2a24', pants='#5a3a2a',
+              hand='#e0a878', hair='#241810', hairstyle='short',
+              beard='#241810', beardsize='moustache'),
+ 'apollo': dict(arch='human', skin='#f5d5a8', shirt='#f2efe6', pants='#e0b64a',
+                hair='#e6c76a', hairstyle='mop', belt='#c9a256'),
+ 'hermes': dict(arch='human', skin='#f0c99a', shirt='#f2efe6', pants='#c9a256',
+                hair='#a8763c', hairstyle='short', hat='cap', hatcolor='#e6e0cc',
+                boot='#f2efe6'),
+ 'dionysus': dict(arch='round', skin='#f2ceaa', shirt='#8a2a4a', pants='#6b4296',
+                  hair='#3a1e08', hairstyle='mop'),
+ 'pan': dict(arch='human', skin='#e8c088', shirt='#7a6a4a', pants='#6a4a28',
+             hair='#3a2a14', hairstyle='wild', beard='#3a2a14',
+             beardsize='moustache', boot='#6a4a28'),
+ 'nike': dict(arch='human', skin='#f2d0a8', shirt='#f6f2e8', pants='#eae4d4',
+              hair='#c9a256', hairstyle='long', belt='#e0b64a'),
+ # ------------------------------------------------------ HUGO, 1831
+ # Quasimodo is Hugo's, not Disney's: the novel gives him one eye buried
+ # under a wart, a hump, and the red and purple of the bellringer's dress
+ # he is put in for the Feast of Fools. The green tunic is the film's.
+ 'quasimodo': dict(arch='hulk', skin='#d8b48a', shirt='#6a5a3a', pants='#4a3a24',
+                   hand='#d8b48a', hair='#a8763c', hairstyle='mop'),
+ 'esmeralda': dict(arch='human', skin='#d8a878', shirt='#e8e2d0', pants='#b83a4a',
+                   hair='#1a1210', hairstyle='long', belt='#e0b64a',
+                   boot='#d8a878'),
+
  'kong': dict(arch='hulk', skin='#4a2f1a', muzzle='#c29a6a', chest='#9c7448',
               hand='#33200f', boot='#33200f',
               eyes='normal', eyespread=3, mouth='none'),
@@ -3278,6 +3653,24 @@ POSES = ('idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2',
 # Characters whose signature draws its own face are absent: Popeye, Pooh,
 # Felix, the Yeti, Nessie and the Headless Horseman.
 FACES = {
+    # ---- Olympus. Fourteen faces that have to differ from each other and
+    # from the fifty seven already here, which is what the guard below is for.
+    'zeus':       dict(eyes='wide',   eyespread=5, brow='bushy',   nose='bulb',   mouth='line'),
+    'hera':       dict(eyes='oval',   eyespread=5, brow='high',    nose='long',   mouth='line'),
+    'poseidon':   dict(eyes='angry',  eyespread=5, brow='bushy',   nose='bulb',   mouth='open'),
+    'hades':      dict(eyes='glow',   eyespread=4, brow='angry',   nose='long',   mouth='line',
+                       eyecolor='#6ad8c0'),
+    'athena':     dict(eyes='oval',   eyespread=2, brow='flat',    nose='long',   mouth='line'),
+    'ares':       dict(eyes='angry',  eyespread=3, brow='angry',   nose='bulb',   mouth='frown'),
+    'apollo':     dict(eyes='round',  eyespread=5, brow='high',    nose='button', mouth='grin'),
+    'hermes':     dict(eyes='round',  eyespread=5, brow='flat',    nose='button', mouth='smirk'),
+    'dionysus':   dict(eyes='sleepy', eyespread=4, brow='high',    nose='bulb',   mouth='grin',  blush=True),
+    'pan':        dict(eyes='bead',   eyespread=5, brow='angry',   nose='button', mouth='smirk'),
+    'nike':       dict(eyes='lash',   eyespread=4, brow='flat',    nose='dot',    mouth='grin'),
+    # ---- Hugo
+    'quasimodo':  dict(eyes='one',    eyespread=4, brow='worried', nose='bulb',   mouth='frown'),
+    'esmeralda':  dict(eyes='lash',   eyespread=3, brow='flat',    nose='button', mouth='smirk', blush=True),
+
     # the leads
     'kong':         dict(eyes='round',  eyespread=3, brow='bushy',   nose='bulb',   mouth='none'),
     'franky':       dict(eyes='wide',   eyespread=5, brow='flat',    nose='long',   mouth='frown'),

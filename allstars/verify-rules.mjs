@@ -666,7 +666,7 @@ async function main() {
             ordered: open.every((idx, j) => j === 0 || (S.dir === 1
               ? S.val(list[open[j - 1]]) <= S.val(list[idx])
               : S.val(list[open[j - 1]]) >= S.val(list[idx]))),
-            n: list.length,
+            n: list.length, roster: ROSTER.length,
           };
         }
         State.mode = 'exhibition'; State.screen = 'roster'; render();
@@ -684,7 +684,8 @@ async function main() {
       for (const S of ['name', 'pow', 'spd', 'con', 'def', 'pit']) {
         ok(r[S].last, `sort by ${S}: every locked card is behind every open one`);
         ok(r[S].ordered, `sort by ${S}: the open ones are in order`);
-        ok(r[S].n === 55, `sort by ${S}: nobody is dropped or duplicated`, 'n=' + r[S].n);
+        ok(r[S].n === r[S].roster, `sort by ${S}: nobody is dropped or duplicated`,
+           `${r[S].n} of ${r[S].roster}`);
       }
       ok(JSON.stringify(r.buttons) === JSON.stringify(
            ['A to Z','Power','Speed','Contact','Fielding','Pitching']),
@@ -774,6 +775,10 @@ async function main() {
         const spots = photoSpots();
         out.rows = spots.length && Math.max.apply(null, spots.map(s => s.row)) + 1;
         out.everyone = spots.length;
+        out.roster = ROSTER.length;
+        /* nobody may share a slot with anybody else, which is how the
+           fixed 11 by 5 grid quietly lost thirteen people */
+        out.slots = new Set(spots.map(s => s.row + ':' + s.col)).size;
         /* Still to earn stands at the back, same rule as the draft grid. */
         const lockRows = spots.filter(s => !isUnlocked(s.c.k)).map(s => s.row);
         const openRows = spots.filter(s => isUnlocked(s.c.k)).map(s => s.row);
@@ -810,9 +815,12 @@ async function main() {
          'cards=' + r.menuCards);
       ok(/Meet the players/i.test(r.tab || ''), 'and a tab that opens the squad', r.tab);
       ok(r.screen === 'meet', 'the tab goes to the photo', r.screen);
-      ok(r.faces === 55 && r.named === 55, 'all 55 are in the frame, once each',
-         `faces=${r.faces} named=${r.named}`);
-      ok(r.rows === 5 && r.everyone === 55, 'five rows on the risers', JSON.stringify({ rows: r.rows, n: r.everyone }));
+      ok(r.faces === r.roster && r.named === r.roster,
+         `all ${r.roster} are in the frame, once each`,
+         `faces=${r.faces} named=${r.named} roster=${r.roster}`);
+      ok(r.rows === 5 && r.everyone === r.roster && r.slots === r.roster,
+         'five rows on the risers, one slot each',
+         JSON.stringify({ rows: r.rows, n: r.everyone, slots: r.slots }));
       ok(r.statBlocks === 0, 'the picture carries no stat blocks: it is not the draft screen');
       ok(r.lockedBehind, 'the ones still to earn stand at the back');
       ok(r.hitsSelf, 'pointing at a face lands on that face, not on the row in front');
