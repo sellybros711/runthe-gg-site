@@ -120,6 +120,7 @@ shelf appears.
 ```
 node football/check-premium.mjs        the page, in a real browser, both views
 node scripts/stripe/verify-bundles.mjs the catalog against the webhook and the constraint
+node cfb/build/test/test_store.mjs     the same offer and receipt on the college page
 ```
 
 One store, not a store per game. `/assets/store.js` is the offer and both The Perfect
@@ -146,7 +147,28 @@ had been verified in the plain view. That is the first section of `check-premium
 It intercepts `/api/stripe/checkout-bundle` and answers with an error rather than a session
 url, deliberately: **Stripe is live and there is no test mode**, so a request that gets out
 ends at a real payment page and a url in the answer would navigate there. Use a 100% off
-promotion code for tester runs.
+promotion code for tester runs. `cfb/build/test/test_store.mjs` does the same on the
+college side, and never lets a request out either.
+
+**The college game sells and receipts it too, from `cfb/index.html`.** Both halves are on
+the profile: a Go Pro card for a non-owner and a Your Pro access row for an owner, the same
+two rows the football profile carries, and the receipt reads `premium_unlocks` through
+`premiumUnlocks()` in `cfb/auth.js`. The RECEIPT is deliberately ungated: a buyer who paid
+on the football page owns what they own here whether or not this game shows them a mode.
+The OFFER is gated on `commishOn()`, the same call the front page door makes, because while
+`COMMISH_LIVE` is false the only thing it sells is a mode the reader cannot see, and a card
+that takes money for a shut door is worse than no card.
+
+**A store you can only reach by being refused is a wall.** Before that card existed the sole
+way to the offer from this game was to open Commissioner Simulator and be turned away at its
+gate, which nobody who cannot see the mode will ever do.
+
+`/assets/store.js` **injects its stylesheet at load, not on first use**, and that is a fix
+rather than a preference. The block styles more than the offer: `.pw-pill` beside an account
+name and `.pw-line` on the receipt come out of it, and neither goes through `html()` or
+`art()`. `game()` injected nothing, so an OWNER was exactly the visitor who could reach the
+receipt without the CSS, because an owner is never shown the pitch card that would have
+warmed it. Four unstyled paragraphs, nothing thrown, nothing to report.
 
 ### A badge you add has to be proved reachable
 

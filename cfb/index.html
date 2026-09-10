@@ -202,6 +202,7 @@ window.GA_ID='G-L29P5MRWKE';
   .eyebrow{font-family:var(--fn);text-transform:uppercase;letter-spacing:.16em;
     font-size:11px;color:var(--dim-2)}
   .eyebrow.green{color:var(--green)}
+  .eyebrow.gold{color:#fbbf24}
   .num{font-family:var(--fd);font-variant-numeric:tabular-nums;letter-spacing:.02em}
 
   /* ── header ─────────────────────────────────────────────────── */
@@ -1932,6 +1933,31 @@ window.GA_ID='G-L29P5MRWKE';
   .pfrow .t span{display:block;font-size:11px;color:var(--dim-2);margin-top:2px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pfrow .go{flex:0 0 auto;color:var(--dim-2);font-size:19px;line-height:1}
+  /* THE OFFER'S OWN CSS LIVES IN /assets/store.js, which injects it once on load and reads
+     this page's tokens, so the store wears the college palette without a second copy of a
+     price card existing anywhere. What is here is only the PROMPT that opens it: the
+     same card the football game's profile draws, because one account holds both games and
+     a customer should recognise the offer from either side. */
+  .pw-card{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+    border:1px solid rgba(251,191,36,.34);border-radius:14px;padding:12px 13px;margin-top:14px;
+    background:linear-gradient(135deg,rgba(251,191,36,.10),rgba(251,191,36,.02));
+    color:var(--ink);cursor:pointer;font:inherit}
+  .pw-card:hover{border-color:rgba(251,191,36,.55)}
+  .pw-card:active{transform:scale(.985)}
+  .pw-card .pwc-ic{flex:0 0 34px;height:34px;border-radius:10px;display:grid;place-items:center;
+    background:rgba(251,191,36,.14)}
+  .pw-card .pwc-ic svg{width:22px;height:22px;display:block}
+  .pw-card .pwc-t{flex:1;min-width:0}
+  .pw-card .pwc-t b{display:block;font-size:14px;line-height:1.2}
+  .pw-card .pwc-t span{display:block;font-size:11.5px;color:var(--dim-2);margin-top:2px;
+    line-height:1.3}
+  /* VALUE, NEVER A PRICE ON ITS OWN. A bare figure on a card like this is a cost with
+     nothing attached to it: the reader has to decide against a number with nothing on the
+     other side of the scale. What the money buys belongs on the screen that can also show
+     it, so this says how much there is rather than how much it costs. */
+  .pw-card .pwc-go{flex:0 0 auto;text-align:right;line-height:1.15}
+  .pw-card .pwc-go b{display:block;font-family:var(--fn);font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:#fbbf24;font-weight:800}
   /* The page header. The back arrow is a real button at a real size, because it is the only
      way out of every page here and a 12px chevron is not a target. */
   .pfhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -3802,12 +3828,17 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="engine.js?v=34"></script>
 <script src="run.js?v=14"></script>
 <script src="achievements.js?v=11"></script>
-<script src="auth.js?v=5"></script>
+<script src="auth.js?v=6"></script>
 <script src="board.js?v=6"></script>
 <!-- The tester list for Commish Simulator, which this page reads to decide whether to draw
      the card on the modes sheet and cfb/commish/ reads to decide whether to open at all.
      One file so the two can never disagree. -->
 <script src="commish/access.js?v=4"></script>
+<!-- THE STORE, SHARED WITH THE FOOTBALL GAME AND WITH commish/index.html. One bundle is
+     sold on this site, it unlocks both games, and it is described in exactly one file. Two
+     copies of a price or a term is two chances to tell a customer something the other page
+     contradicts, and the one that is wrong is whichever was edited second. -->
+<script src="/assets/store.js?v=3"></script>
 <!-- NO ARCADE HOUSE AD ON THIS GAME. /assets/arcade-ad.js still runs on the homepage,
      the NFL game and the golf game; this one asks nobody. Somebody arriving here has come
      to draft a team, and the front page has its own way to the arcade in "More ways to
@@ -4334,7 +4365,7 @@ function updateAvatar(){
    to know that the hub exists. */
 let profileTab='account';
 const TAB_TITLE={account:'Your account',school:'Customize',case:'Trophy case',
-  seasons:'Your seasons'};
+  seasons:'Your seasons',pro:'Your Pro access'};
 
 /* THE HUB IS ONLY A HUB WHEN THERE IS SOMEBODY TO BE ONE FOR. Signed out, or signed
    in without a name yet, every row on it would lead to a gate card, and the useful
@@ -4347,7 +4378,7 @@ const pfHubOk=()=>!!(A()&&authState.ready&&authState.signedIn&&authState.name);
    one is writing it into a screen that reused the same id. */
 let pfPaint=0;
 
-const PF_PAGES={account:1,school:1,case:1,seasons:1};
+const PF_PAGES={account:1,school:1,case:1,seasons:1,pro:1};
 /* `badge` is a badge id to land on, which is what a tapped toast passes. It survives the
    case's own repaint: trophyCaseHtml paints a spinner while the seasons are fetched and
    calls back through here with no argument, so the wanted id is parked rather than passed,
@@ -4359,6 +4390,10 @@ function openProfile(tab,badge){
   const page=PF_PAGES[tab]?tab:(pfHubOk()?'hub':'account');
   if(page!=='case') achRevealWanted=null;
   if(page==='hub') return pfHub();
+  /* A receipt for an account that has bought nothing is a blank page, so a non-owner
+     asking for this one gets the hub instead. Only the row on the hub ever asks for it,
+     and that row is drawn only for owners, so this is the stale-tap case. */
+  if(page==='pro') return ownsCfb()?pfPro():pfHub();
   if(page==='seasons') return pfSeasons('recent');
   if(page==='school') return pfLook();
   if(page==='case') return pfCase();
@@ -4383,13 +4418,17 @@ const PF_ICON={
   seasons:'M4 7h2M9 7h11M4 12h2M9 12h11M4 17h2M9 17h7',
   case:'M8.6 13.6 7 21l5-2.7 5 2.7-1.6-7.4',
   look:'M4 8h8M4 16h6M16 8h4M14 16h6',
-  acct:'M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4'
+  acct:'M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4',
+  /* A key, for the page that says what this account has been given the run of. Not a
+     padlock: a lock is the thing in the way of a mode, and this row is the opposite. */
+  pro:'M20.4 3.6 12.9 11.1M17.6 6.4l2.1 2.1M15.6 8.4l2.1 2.1'
 };
-/* Three of them need a circle as well as a path, and a circle is not expressible as one. */
+/* Four of them need a circle as well as a path, and a circle is not expressible as one. */
 const PF_ICON_EXTRA={
   case:'<circle cx="12" cy="9" r="5.2"/>',
   look:'<circle cx="14" cy="8" r="2.1"/><circle cx="12" cy="16" r="2.1"/>',
-  acct:'<circle cx="12" cy="8.6" r="4"/>'
+  acct:'<circle cx="12" cy="8.6" r="4"/>',
+  pro:'<circle cx="8.4" cy="15.6" r="4.6"/>'
 };
 function pfNavRow(id,title,sub,icon){
   const ic=icon&&PF_ICON[icon]
@@ -4437,7 +4476,7 @@ function pfHub(){
   box.innerHTML=
     '<div class="eyebrow green">Your profile</div>'+
     '<div class="pfid"><span class="pfp">'+esc(initialsOf(nm))+'</span>'+
-      '<span class="pfn"><b>'+esc(nm)+'</b>'+
+      '<span class="pfn"><b>'+esc(nm)+pwPill()+'</b>'+
       '<span>'+esc(authState.email||'Your RunThe.GG account')+'</span></span></div>'+
     /* TWO NUMBERS, NOT THE CAREER ROW. These are the two worth checking often enough to
        earn a place on the front; titles, playoffs and best rank are one tap away in the
@@ -4451,12 +4490,44 @@ function pfHub(){
       pfNavRow('pf-go-case','Trophy case','Your career, your streaks and your badges','case')+
       pfNavRow('pf-go-look','Customize','The school colors you play in','look')+
       pfNavRow('pf-go-acct','Account','Your name, feedback, signing out','acct')+
-    '</div>'+pfClose();
+      /* THE CUSTOMER'S OWN ROW, and only a customer has it. The pill beside the name says
+         Pro and stops there, which answers "am I" and not one word of "what did I buy,
+         when, and does it run out". Those are the questions a refund request is made of,
+         and a buyer who paid on the football page has to be able to ask them here too. */
+      (acctTier()==='pro'
+        ? pfNavRow('pf-go-pro','Your Pro access','What you own, and your receipts','pro')
+        : '')+
+    '</div>'+
+    /* THE WAY IN THAT IS NOT A REFUSAL. Until this card existed the only way to see the
+       offer from the college game was to open Commissioner Simulator and be turned away at
+       its gate, which is a wall rather than an offer. It sits UNDER the nav rather than in
+       it, because nobody opens their profile to be sold something: a player who has just
+       looked at their seasons and their trophy case is somebody the modes are worth
+       mentioning to, and a player who has not is one scroll from Close. */
+    (premiumPitch()
+      ? pwCard('pf-prem','Go Pro','Commissioner Mode, plus every Pro mode in the NFL '+
+          'game. One payment.','3 modes')
+      : '')+
+    pfClose();
   openSheet(); pfWire(box);
   $('pf-go-seasons').onclick=()=>openProfile('seasons');
   $('pf-go-case').onclick=()=>openProfile('case');
   $('pf-go-look').onclick=()=>openProfile('school');
   $('pf-go-acct').onclick=()=>openProfile('account');
+  const pro=$('pf-go-pro'); if(pro) pro.onclick=()=>openProfile('pro');
+  const prem=$('pf-prem'); if(prem) prem.onclick=()=>openPremium('profile');
+  /* OWNERSHIP CAN STILL BE IN FLIGHT WHEN THIS PAINTS, and all three things on this screen
+     that tell a customer from a visitor read it: the pill, the row and the card. acctTier()
+     answers null while the question is open, which is right, but it means an owner who
+     opens their profile in the first moment of a load sees a hub with no pill and no way to
+     their own purchase, and nothing ever puts them there. So the answer is asked for and
+     the hub is painted again when it lands.
+     Guarded on the paint token, so a slow answer cannot redraw the hub over a page the
+     player has since moved to. */
+  if(authState.signedIn&&premiumSet===null){
+    const mine=pfPaint;
+    premiumRefresh().then(()=>{ if(mine===pfPaint&&profileTab==='hub') pfHub(); });
+  }
   pfHubStats();
 }
 
@@ -5327,6 +5398,363 @@ let authMode='in';        // 'in' | 'up', which form the panel is showing
 let authBusy=false;
 let authMsg=null;         // {err} or {ok}
 
+/* ── WHAT THIS ACCOUNT OWNS ───────────────────────────────────────────────────────────
+ *
+ * ONE STORE, NOT A STORE PER GAME. The bundle is bought once and unlocks both games, so
+ * this page sells exactly what the football page sells, out of exactly the same module
+ * (/assets/store.js), and the buttons emit the same two keys. There is no CFB price, no
+ * CFB product and no second payment path: every purchase on this site goes through
+ * POST /api/stripe/checkout-bundle.
+ *
+ * A STORE YOU CAN ONLY REACH BY BEING REFUSED IS A WALL. Until now the only way to see the
+ * offer from the college game was to open Commissioner Simulator and be turned away at its
+ * gate. Somebody who never opens a mode they cannot see was never shown a thing to buy.
+ * So the profile carries it, the way the football game's profile does.
+ *
+ * FROM THE DATABASE AND NEVER A LIST IN THIS PAGE. commish/access.js decides who can SEE
+ * the mode; the premium_unlocks row decides whether its door opens. null means not asked
+ * yet or the ask failed, and both read as owning nothing: wrong only in the harmless
+ * direction, and what that shows is an offer rather than a mode pretending not to exist. */
+let premiumSet=null;
+const ownsCfb=()=>!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
+/* `force` rides through to auth.js and skips its cache. Ordinary callers want the cache;
+   the walk back from Stripe must not have it, because a cached [] is exactly the answer
+   that makes a landed purchase look like a missing one. Returns the promise so that walk
+   can wait for a real answer rather than asking and hoping. */
+function premiumRefresh(force){
+  if(!authState.signedIn){ premiumSet=null; return Promise.resolve(null); }
+  const a=A();
+  if(!a||typeof a.premiumProducts!=='function'){ premiumSet=[]; return Promise.resolve([]); }
+  return a.premiumProducts(force).then((list)=>{ premiumSet=Array.isArray(list)?list:[]; return premiumSet; })
+    .catch(()=>{ premiumSet=[]; return premiumSet; });
+}
+/* THREE ANSWERS, NOT TWO. Signed out is not "Free": a free account is a thing somebody
+   has, and a visitor with none has nothing to show a status for. Not known yet is not
+   "Free" either, and that one matters more: premiumSet is null for the length of the
+   round trip, and a pill that says Free through it says it to the paying customer too.
+   Null both ways, and nothing is drawn until there is something true to draw. */
+function acctTier(){
+  if(!authState.signedIn) return null;
+  if(premiumSet===null) return null;
+  return ownsCfb()?'pro':'free';
+}
+/* AN <i> AND NOT A <span>. The profile writes `.pfid .pfn span{display:block}` for the
+   line under the name, and that selector outranks a single class: as a span the pill
+   inherits display:block and renders as a full width gold bar on its own row. */
+const pwPill=()=>{
+  const t=acctTier();
+  return t?'<i class="pw-pill '+t+'">'+(t==='pro'?'Pro':'Free')+'</i>':'';
+};
+/* SET WHEN A CHECKOUT COMES BACK SUCCESSFUL, and never unset. The entitlement is written
+   by a webhook that can land after the browser does, and for that gap the account still
+   reads as free: without this, the screen thanking somebody for their payment would sit
+   directly above a card offering to sell it to them. Session-lived on purpose. */
+let justPaid=false;
+/* AND IT IS GATED ON THE SAME ANSWER THE DOOR IS. The thing this card sells on this game
+   is Commissioner Simulator, and while the launch flag is false only the tester list can
+   see that mode at all: offering it to somebody who would still find nothing after paying
+   is selling a door that does not open for them. commishOn() is the same call the front
+   page door and the modes sheet make, so all three appear together on the day the flag
+   flips and none of them can advertise what the others hide.
+   The RECEIPT is deliberately not gated on it. An owner who bought from the football page
+   owns what they own whether or not this game shows them a mode, and a receipt is not an
+   advertisement. */
+const premiumPitch=()=>{
+  if(justPaid) return false;
+  if(!commishOn()) return false;
+  if(authState.signedIn&&premiumSet===null) return false;
+  return !ownsCfb();
+};
+/* THE PROMPT CARD, the same shape and the same gold mark the football game's profile
+   uses, because one account holds both and a customer should recognise the offer. */
+const pwCard=(id,title,sub,value)=>'<button class="pw-card" id="'+id+'">'+
+  '<span class="pwc-ic">'+(window.RTG_STORE?window.RTG_STORE.art('star'):'')+'</span>'+
+  '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span>'+
+  '<span class="pwc-go"><b>'+esc(value)+'</b></span></button>';
+
+/* WHERE THE SHEET WAS OPENED FROM, for the one question worth asking of this screen:
+   which of the ways in actually sells anything. Set by each caller, read once, cleared. */
+let premiumFrom=null;
+const openPremium=(from)=>{ premiumFrom=from||null; premiumSheet(); };
+function premiumSheet(){
+  const box=$('sheet-in');
+  box.dataset.kind='premium';
+  /* ALREADY PRO, and reachable: a second tab, a card painted before the products call came
+     back, the profile row tapped as a purchase lands. Selling somebody the thing they have
+     just bought is the worst screen in the flow, so it is answered rather than left to
+     chance. The receipts are one tap away from here. */
+  if(ownsCfb()){
+    box.innerHTML='<div class="eyebrow gold">Your account</div>'+
+      '<h2 class="display" style="font-size:26px;margin:4px 0 8px">You are Pro</h2>'+
+      '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
+        'Every Pro mode is unlocked, on every device you sign in on. There is nothing to '+
+        'renew.</p>'+pfClose();
+    openSheet(); pfWire(box);
+    ga('premium_sheet_shown',{from:premiumFrom||'profile',tier:'pro'});
+    premiumFrom=null;
+    return;
+  }
+  /* THE OFFER ITSELF COMES FROM THE SHARED MODULE. This page frames it: a sheet with a
+     Close under it. The store never learns who the visitor is beyond whether they are
+     signed in, because the only thing that changes is the two button labels: a purchase is
+     tied to an account, so there is a step before the money and the buttons name it. */
+  box.innerHTML=(window.RTG_STORE
+    ? window.RTG_STORE.html({signedOut:!authState.signedIn})
+    : '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">The store could '+
+      'not be loaded. Reload the page and try again.</p>')+
+    '<div style="margin-top:12px"><button class="btn ghost sm" id="sp-x" '+
+      'style="width:100%">Not now</button></div>';
+  if(window.RTG_STORE) window.RTG_STORE.wire(box,{buy:(kind,btn)=>buyBundle(kind,btn)});
+  openSheet(); pfWire(box);
+  ga('premium_sheet_shown',{from:premiumFrom||'profile',tier:acctTier()||'out'});
+  premiumFrom=null;
+}
+
+/* One POST, verdict by the `error` field and never the status, the contract
+   functions/api/stripe/checkout-bundle.js keeps on purpose. The verdict lands on the
+   button that was pressed. A signed out visitor is sent to the account panel instead:
+   the store's own labels already told them that step was coming. */
+async function buyBundle(kind,btn){
+  if(!authState.signedIn){ openProfile('account'); return; }
+  const a=A();
+  const t=a&&typeof a.token==='function'?a.token():null;
+  if(!t){ openProfile('account'); return; }
+  ga('checkout_started',{bundle:kind,from:'cfb'});
+  if(btn){ btn.disabled=true; btn.textContent='Opening checkout...'; }
+  try{
+    const r=await fetch('/api/stripe/checkout-bundle',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+      body:JSON.stringify({bundle:kind,return_path:'/cfb/'})
+    });
+    const d=await r.json().catch(()=>({}));
+    if(d&&d.url){ location.href=d.url; return; }
+    if(btn){
+      btn.disabled=false;
+      btn.textContent=
+        d&&d.error==='stripe_not_configured'?'Not on sale yet'
+        :d&&d.error==='already_owned'?'This account already owns it'
+        :'Checkout could not start. Try again';
+    }
+  }catch(e){
+    if(btn){ btn.disabled=false; btn.textContent='Checkout could not start. Try again'; }
+  }
+}
+
+/* COMING BACK FROM STRIPE.
+ *
+ * checkout-bundle.js sends the buyer back here with ?checkout=success on the URL. The
+ * grant is NOT done when the browser arrives: it is written by the Stripe webhook, and
+ * the redirect races it. Usually the webhook wins by a second, sometimes it does not.
+ * So this asks, and keeps asking for about ten seconds, FORCING past auth.js's cache each
+ * time, rather than reading one "not owned" and calling a paid-for purchase a failure.
+ *
+ * IT NEVER SAYS THE PAYMENT FAILED, because it cannot know that. If the grant has not
+ * appeared by the last try, what is on screen is that the payment went through and the
+ * account is catching up, which is exactly what is happening. */
+let checkoutPolled=false, checkoutWhat=null;
+/* READ AT LOAD RATHER THAN INSIDE THE FUNCTION BELOW, because premiumPitch() reads
+   justPaid and the profile can be opened before the account has even answered. A screen
+   thanking somebody for their payment must never carry a card offering to sell it to
+   them, and that is decided the moment the page has a URL. */
+try{ checkoutWhat=new URLSearchParams(location.search).get('checkout'); }catch(e){}
+justPaid=checkoutWhat==='success';
+function checkoutStrip(){
+  try{
+    const u=new URL(location.href);
+    u.searchParams.delete('checkout');
+    history.replaceState(null,'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():'')+u.hash);
+  }catch(e){}
+}
+async function checkoutReturn(){
+  if(!checkoutWhat||checkoutPolled) return;
+  checkoutPolled=true;
+  /* Stripped first, so a reload cannot replay it and a shared link cannot carry it to
+     somebody who bought nothing. */
+  checkoutStrip();
+  if(checkoutWhat!=='success'){
+    /* CANCELLED IS NOT A FAILURE AND GETS NO SCREEN. They pressed back on a payment form,
+       which is a thing people do, and being chased about it is how a store gets closed. */
+    ga('checkout_cancelled',{from:'cfb'});
+    return;
+  }
+  ga('checkout_returned',{from:'cfb'});
+  /* THE THANK YOU IS SHOWN BEFORE THE ANSWER LANDS, because the wait is the part that
+     needs covering. It repaints itself the moment ownership arrives. */
+  thanksSheet();
+  if(ownsCfb()) return;
+  const waits=[600,1200,2000,3000,3500];
+  for(const ms of waits){
+    await new Promise((r)=>setTimeout(r,ms));
+    await premiumRefresh(true);
+    if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='thanks') thanksSheet();
+    if(ownsCfb()) return;
+  }
+}
+function thanksSheet(){
+  const box=$('sheet-in');
+  box.dataset.kind='thanks';
+  const done=ownsCfb();
+  box.innerHTML='<div class="eyebrow gold">Thank you</div>'+
+    '<h2 class="display" style="font-size:26px;margin:4px 0 8px">You are Pro</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
+      (done
+        ? 'Commissioner Simulator is open on every device you sign in on. Your receipt is '+
+          'in your profile.'
+        : 'Your payment went through. Your account catches up in a few seconds.')+'</p>'+
+    (done
+      ? '<div style="margin-top:14px"><a class="btn" href="/cfb/commish/" id="th-go" '+
+        'style="width:100%;display:block;text-align:center;text-decoration:none">'+
+        'Open Commissioner Simulator</a></div>'
+      : '')+
+    pfClose();
+  openSheet(); pfWire(box);
+  const go=$('th-go');
+  if(go) go.onclick=()=>ga('mode_opened',{mode:'commish',from:'checkout'});
+}
+
+/* ── YOUR PRO ACCESS ──────────────────────────────────────────────────────────────────
+ *
+ * A RECEIPT NO MATTER WHICH GAME THEY BOUGHT FROM. One account, one purchase, two games,
+ * so a customer who paid on the football page and then came here must still be able to
+ * see what they own. This reads premium_unlocks through auth.js, the same rows the
+ * football game's Your Pro access page reads.
+ *
+ * SAID ONCE, PLAINLY. Not a second store: an owner is done being sold to. Four facts
+ * (what, from which game, when, and whether it ends) and one button.
+ *
+ * THE COLOURS ARE THE STORE'S OWN, out of RTG_STORE.game, so the receipt and the card
+ * somebody bought from cannot disagree about which game a line belongs to. */
+/* `wait` marks the one product this site cannot deliver by itself. Three of the four are
+   honored by the database the moment the row exists. The Run The Tour coins are not: the
+   wallet that holds them belongs to the golf backend, so the webhook files that row with
+   fulfilled_at null and the golf side stamps it on credit. Written here rather than read
+   off the column alone, because a row that arrives without the field reads as null, and
+   three permanent unlocks telling their owner they are still on the way is a worse lie
+   than the one this prevents. */
+const PRO_ITEM={
+  ps_premium:{game:'ps',text:'Dynasty, Franchise and unlimited Trade Machine'},
+  cfb_premium:{game:'cfb',text:'Commissioner Mode'},
+  arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
+  runtour_pack:{game:'tour',text:'100,000 coins and one Tour Pack',wait:true}
+};
+/* THE ORDER IS THE STORE'S, not the database's. granted_at is the same instant for every
+   row of one purchase, so sorting by it leaves four items in whatever order Postgres felt
+   like. */
+const PRO_ORDER=['ps_premium','cfb_premium','arcade_card_year','runtour_pack'];
+const proDate=(s)=>{
+  const d=new Date(s);
+  return isNaN(d)?'':d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+};
+function pfPro(){
+  profileTab='pro'; pfPaint++;
+  const box=$('sheet-in');
+  box.dataset.kind='profile';
+  ga('pro_page_opened');
+  box.innerHTML=pfHead('Your Pro access')+
+    '<div class="pfpro-h"><i class="pw-pill pro">Pro</i>'+
+      '<span>Unlocked on every device you sign in on.</span></div>'+
+    '<div id="pf-pro-list" class="dim" style="font-size:12.5px;margin-top:12px">'+
+      'Loading what you own.</div>'+
+    '<div id="pf-pro-bill" style="margin-top:15px"></div>'+
+    pfClose();
+  openSheet(); pfWire(box);
+  pfProLoad();
+}
+async function pfProLoad(){
+  const mine=pfPaint, a=A();
+  let rows=[];
+  try{ rows=(a&&a.premiumUnlocks)?await a.premiumUnlocks():[]; }catch(e){ rows=[]; }
+  /* The sheet is one element that every page rewrites, so a slow read landing after the
+     player has moved on must not paint over wherever they went. */
+  if(mine!==pfPaint) return;
+  const list=$('pf-pro-list'); if(!list) return;
+
+  const by={};
+  rows.forEach((r)=>{ if(r&&r.product) by[r.product]=r; });
+  const owned=PRO_ORDER.filter((k)=>by[k]&&PRO_ITEM[k]);
+
+  if(!owned.length){
+    /* REACHABLE, AND NOT A BUG. The row that opened this page was drawn from
+       premium_products(), which answers through an RPC; this reads the table. A blocked
+       request, an expired token or an account comped by hand outside the table all land
+       here, and none of them is a reason to tell somebody their purchase is gone. */
+    list.innerHTML='<p class="dim" style="font-size:12.5px;line-height:1.45;margin:0">'+
+      'Your Pro modes are unlocked. The list of what is in your bundle could not be loaded '+
+      'just now. Reload the page and it will come back.</p>';
+  }else{
+    let ends=null, endedOn=null;
+    list.innerHTML=owned.map((k)=>{
+      const it=PRO_ITEM[k], row=by[k];
+      const g=(window.RTG_STORE&&window.RTG_STORE.game(it.game))||{name:'',c:'#94a3b8'};
+      const when=proDate(row.granted_at);
+      const till=row.expires_at?proDate(row.expires_at):'';
+      /* AN END DATE IN THE PAST IS NOT AN END DATE. premium_products() filters on expiry,
+         so an Arcade year that has run out drops out of the account's live products and
+         the modes behave correctly. This page does not use that RPC: it reads the table,
+         because a receipt has to show what was bought rather than what is still running.
+         Telling a customer they hold something they do not hold is the one thing a receipt
+         must never do. */
+      const gone=!!row.expires_at&&Date.parse(row.expires_at)<Date.now();
+      if(till&&gone) endedOn=till;
+      else if(till) ends=till;
+      /* NOT EVERYTHING IN A BUNDLE ARRIVES AT ONCE. See the note on PRO_ITEM. Both halves
+         are required: the product has to be one that is delivered elsewhere, and it has to
+         be still unstamped. */
+      const waiting=!!it.wait&&row.fulfilled_at==null&&!gone;
+      const dates=till
+        ? 'Bought '+when+'. '+(gone?'Ended ':'Ends ')+till+'.'
+        : 'Bought '+when+'. Yours for good.';
+      return '<div class="pw-line'+(gone?' ended':'')+'" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
+        '<span>'+esc(it.text)+'</span>'+
+        (when||till
+          ? '<i>'+esc(dates)+(waiting?' On its way to your account.':'')+'</i>'
+          : '')+
+      '</div>';
+    }).join('')+
+      /* THE ONE THING A ONE-OFF PAYMENT HAS TO SAY OUT LOUD. An Arcade Card year sitting on
+         the page with an end date on it looks exactly like a subscription about to bill,
+         and a customer who thinks they are on a recurring charge cancels the whole account
+         to stop it. Nothing here renews, and the sentence says so before they have to ask. */
+      '<p class="dim" style="font-size:12px;line-height:1.45;margin:13px 0 0">'+
+        'You paid once. Nothing here renews and nothing charges you again.'+
+        (ends?' Your Arcade Card year simply ends on '+esc(ends)+'.':'')+
+        (endedOn?' Your Arcade Card year ended on '+esc(endedOn)+'.':'')+
+      '</p>';
+      /* AND IT STOPS THERE. Stating that the year ended is the receipt doing its job;
+         following it with a way to buy a fresh one is a shop, and a shop for a product
+         that lives in a different game. The Arcade sells the Arcade. */
+  }
+
+  const bill=$('pf-pro-bill'); if(!bill) return;
+  bill.innerHTML='<button class="btn ghost sm" id="pf-bill" style="width:100%">'+
+      'Receipts and billing</button>'+
+    '<p class="dim" style="font-size:11.5px;margin:8px 0 0">Opens Stripe, where your '+
+      'receipts and payment details live.</p>';
+  $('pf-bill').onclick=async()=>{
+    const b0=$('pf-bill'); if(b0){ b0.disabled=true; b0.textContent='Opening...'; }
+    /* auth.js is a sibling script with its own cache version, so a browser one bump behind
+       has a copy of it with no billingPortal on it. Asked for rather than assumed, because
+       the alternative is a TypeError on the one button a customer with a billing question
+       presses. It falls into the same "could not open" answer as any other failure. */
+    const a2=A();
+    const r=(a2&&typeof a2.billingPortal==='function')
+      ? await a2.billingPortal('/cfb/')
+      : {error:'unavailable'};
+    if(r&&r.url){ location.href=r.url; return; }
+    /* SAY WHICH KIND OF NOTHING IT IS. no_customer is not a failure: an account comped by
+       hand never went through Stripe and has no receipt to show, and telling that person
+       to try again is telling them to keep pressing a button that cannot work. */
+    const b=$('pf-bill'); if(!b) return;
+    b.disabled=true;
+    b.textContent=(r&&r.error==='no_customer')?'No Stripe receipt for this account':'Could not open Stripe';
+    const note=b.nextElementSibling;
+    if(note) note.textContent=(r&&r.error==='no_customer')
+      ? 'This account was unlocked without a card payment, so there is no receipt to show.'
+      : 'Try again in a moment. Your Pro access is not affected.';
+  };
+}
+
 /* The season just recorded, so it can be claimed the moment somebody signs in
    having already finished it. Cleared once claimed, so a later sign-in on a later
    day cannot re-claim a row that is no longer the one on screen. */
@@ -5466,6 +5894,16 @@ function bootAuth(){
     /* And so does the Commish door, for the same reason: it is drawn only for accounts
        that can open it, and the account arrives after the first paint. */
     ensureCommishDoor();
+    /* WHAT THE ACCOUNT OWNS FOLLOWS THE ACCOUNT TOO, and it has to be asked again on a
+       CHANGE of account rather than once: signing out and back in as somebody else on the
+       same tab would otherwise leave the previous person's purchases on screen. Cleared
+       first, so the gap between the two answers shows nothing rather than the old one. */
+    if(st.userId!==wasId) premiumSet=null;
+    if(st.signedIn) premiumRefresh();
+    else premiumSet=null;
+    /* The walk back from Stripe, once there is an account to ask about. It runs at most
+       once, and does nothing at all on a visit with no ?checkout=success on the URL. */
+    if(st.signedIn) checkoutReturn();
     /* Two sheets read the account and are repainted where they stand rather than left
        showing the state before the change. */
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='modes') modeMenu();

@@ -190,6 +190,17 @@
     el.textContent = CSS;
     (document.head || document.documentElement).appendChild(el);
   }
+  /* AT LOAD, AND NOT ONLY WHEN THE OFFER IS DRAWN.
+     This block styles more than the offer. It carries .pw-pill, which the profile puts
+     beside an account name, and .pw-line and .pfpro-h, which are the whole of the Your Pro
+     access receipt. None of those goes through html() or art(), and game() never injected
+     anything, so an OWNER was exactly the visitor who could reach them without the CSS: a
+     customer who has bought and is therefore never shown the pitch card opens their own
+     receipt and gets four unstyled paragraphs and a bare word where the pill should be.
+     Nothing throws and nothing looks broken enough to report, which is why it stood.
+     A page that loads this file is a page that shows one of these things, so the lazy
+     injection was buying nothing and costing that. */
+  ensureStyle();
 
   var pwUid = 0;
   const PW_ART={

@@ -1883,8 +1883,8 @@
   },
   "cfb/commish/index.html": {
     "/assets/store.js": {
-      "v": "2",
-      "sha": "4b11e7b7f27c7dff"
+      "v": "3",
+      "sha": "636dc4bb5be2f917"
     },
     "/cfb/engine.js": {
       "v": "34",
@@ -1975,8 +1975,8 @@
       "sha": "f50d1ebbe3d57d3a"
     },
     "/cfb/auth.js": {
-      "v": "5",
-      "sha": "d232cbdacabcfadc"
+      "v": "6",
+      "sha": "153192c9aeb27834"
     }
   },
   "cfb/index.html": {
@@ -1993,8 +1993,8 @@
       "sha": "f57edd42ef794134"
     },
     "auth.js": {
-      "v": "5",
-      "sha": "d232cbdacabcfadc"
+      "v": "6",
+      "sha": "153192c9aeb27834"
     },
     "board.js": {
       "v": "6",
@@ -2003,6 +2003,10 @@
     "commish/access.js": {
       "v": "4",
       "sha": "b6be18031ccfdea7"
+    },
+    "/assets/store.js": {
+      "v": "3",
+      "sha": "636dc4bb5be2f917"
     }
   },
   "football/index.html": {
@@ -2039,8 +2043,8 @@
       "sha": "44a62b6f74d67404"
     },
     "/assets/store.js": {
-      "v": "2",
-      "sha": "4b11e7b7f27c7dff"
+      "v": "3",
+      "sha": "636dc4bb5be2f917"
     },
     "auth.js": {
       "v": "5",
