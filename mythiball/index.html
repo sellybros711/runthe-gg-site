@@ -623,48 +623,39 @@
      fill the rest of the screen. The tiles are built from the same
      `things` array the room is, so a label cannot say one thing on the
      wall and another underneath it. */
-  .roomtiles{display:none;}
-  /* Narrow OR portrait. A 768 wide tablet held upright is past the phone
-     breakpoint and has exactly the same problem, worse: the room would be
-     328 tall in a 1024 tall window. What decides this is the SHAPE of the
-     window against the shape of the room, so the second half of the query
-     asks about shape. A desktop window is almost never taller than four
-     thirds of its width, so it keeps the room and the rail. */
+  /* THE UPRIGHT ROOM.
+     The dugout is drawn to the SHAPE of the window it is going into (see
+     roomForWindow), so on a phone the canvas is already portrait and all
+     this has to do is let it be as big as the space it is in. The room is
+     the interface here, the way it is on the desktop: the four things on
+     the wall are what you touch, and at this size each one is a target
+     over a hundred pixels on its short side.
+
+     The rail goes. It says "Point at something to see what it does" to a
+     player holding a touch screen, which is an instruction for a mouse
+     they do not have, and the signs on the wall already name every door. */
   @media (max-width:600px), (max-aspect-ratio: 3/4){
     body.inroom .wrap{display:flex;flex-direction:column;min-height:100vh;
-      min-height:100dvh;padding-bottom:10px;}
+      min-height:100dvh;padding-bottom:8px;}
     /* #app is the div every screen is rendered into. It is the one link in
        the chain that is not the game's own markup, and leaving it a block
        capped everything below it at its content height: the wrap filled the
        screen and the card inside it still stopped short. */
     body.inroom #app{flex:1;display:flex;flex-direction:column;min-height:0;}
     body.inroom .screen{flex:1;display:flex;flex-direction:column;min-height:0;}
-    body.inroom .card{flex:1;display:flex;flex-direction:column;min-height:0;padding:8px;}
+    body.inroom .card{flex:1;display:flex;flex-direction:column;min-height:0;
+      padding:6px;}
     body.inroom .roomwrap{flex:1;display:flex;flex-direction:column;min-height:0;
       max-width:none;}
-    body.inroom .dugout{flex:0 0 auto;}
+    body.inroom .dugout{flex:1;min-height:0;display:flex;}
+    /* The canvas carries the room's own aspect, so it is told to fit
+       INSIDE the space both ways and centre. Height alone would overflow
+       the width on a wide phone; width alone would leave a band under it
+       on a narrow one. */
+    body.inroom .dugout canvas{width:100%;height:100%;object-fit:contain;
+      object-position:center;}
     .dugout-rail{display:none;}
-    .roomtiles{display:flex;flex:1;flex-direction:column;gap:7px;margin-top:8px;
-      min-height:0;}
-    /* They split whatever the room leaves, evenly. A cap was tried and it
-       trades four tall tiles for four short ones with big gaps around
-       them, which looks like the layout failed rather than filled. Every
-       tile carries two lines (see the fallback note in the builder), so an
-       even split has nothing hollow in it. */
-    .roomtiles .rt{flex:1 1 0;min-height:52px;
-      display:flex;flex-direction:column;
-      justify-content:center;gap:3px;text-align:left;font:inherit;
-      background:var(--panel);color:var(--text);border:3px solid var(--line);
-      box-shadow:3px 3px 0 var(--navy);padding:6px 12px;cursor:pointer;}
-    .roomtiles .rt b{font-size:12px;letter-spacing:.12em;text-transform:uppercase;
-      color:var(--gold);}
-    /* Two lines of note at most. The franchise one is a paragraph, and a
-       tile that grows to fit it steals the height from the other three. */
-    .roomtiles .rt span{font-size:11px;line-height:1.3;color:var(--text-dim);
-      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-      overflow:hidden;}
-    .roomtiles .rt:active{transform:translate(2px,2px);box-shadow:none;}
-    .dugtabs{margin:8px auto 0;width:100%;}
+    .dugtabs{margin:6px auto 0;width:100%;}
     .dugtabs .tab{flex:1;text-align:center;border-top:3px solid var(--line);}
   }
 
@@ -4069,25 +4060,156 @@ function renderFranchise() {
    pixels off t.x and t.y (bat lengths, row pitch, the diamond's radius).
    They are moved, not stretched: ROOM_DX and ROOM_DY are the offset from
    the old frame to this one, and are here so that number appears once. */
-const DUGOUT_W = 1120, DUGOUT_H = 500;
-const ROOM_DX = 160, ROOM_DY = 58;
-/* Where the room's surfaces are, in the new frame. */
-const ROOM = {
-  beam: 40,            /* underside of the roof beam */
-  rafter: 74,          /* where the rafters stop and the wall proper starts */
-  floorY: 358,         /* the wall meets the floor here */
-  door: { x: 26, y: 92, w: 124, h: 266 },
-};
+/* THE ROOM HAS TWO SHAPES, AND THE REASON IS ARITHMETIC.
+   The dugout is a WIDE scene, 2.24 to 1. On a phone held upright its
+   height is therefore decided by the width and it can only ever be a
+   strip: 390 across gives a 167 tall room in a 664 tall window. No amount
+   of CSS fixes that, because the shape of the picture is the problem.
+   A room that fills a portrait screen has to be COMPOSED for one.
+
+   So there are two layouts and one drawing routine. Everything the scene
+   is made of reads its position out of the layout rather than off a
+   number typed into drawDugout, which is what makes a second composition
+   possible at all.
+
+   The landscape numbers below are exactly the ones this room has always
+   had, kept so the desktop screen is unchanged to the pixel: the offsets
+   that used to be ROOM_DX and ROOM_DY are folded into the slots.
+
+   The four things on the wall keep their own internal drawing at the size
+   they were authored, because every one of them measures in absolute
+   pixels off t.x and t.y (bat lengths, row pitch, the diamond's radius).
+   They are MOVED between layouts, never stretched. */
+function landscapeRoom() {
+  const DX = 160, DY = 58;
+  return {
+    port: false,
+    w: 1120, h: 500,
+    beam: 40,            /* underside of the roof beam */
+    rafter: 74,          /* where the rafters stop and the wall proper starts */
+    rafterStep: 128,
+    floorY: 358,         /* the wall meets the floor here */
+    plank: 46,
+    floorSeams: [16, 74],   /* board seams, as offsets below the floor line */
+    doorGlow: 0.34,
+    door: { x: 26, y: 92, w: 124, h: 266 },
+    lights: [230, 620, 1000],
+    cones: [[32, 210, 0.13], [20, 120, 0.13]],
+    bench: { x: 460, y: 350, w: 340, leg: 46 },
+    glove: { x: 824, y: 390 },
+    ball: { x: 882, y: 402 },
+    cooler: { x: 210, y: 372 },
+    helmets: { x: 906, y: 420 },
+    batbag: { x: 336, y: 434 },
+    jerseys: { x: 1042, y: 104 },
+    castW: 74,
+    cast: [{ x: 534, foot: 486 }, { x: 726, foot: 472 }],
+    cups: [[520, 338], [548, 340], [742, 337]],
+    slots: {
+      exhibition: { x: 40 + DX, y: 150 + DY, w: 150, h: 200 },
+      season:     { x: 214 + DX, y: 86 + DY, w: 176, h: 168 },
+      cup:        { x: 424 + DX, y: 86 + DY, w: 150, h: 168 },
+      howto:      { x: 610 + DX, y: 92 + DY, w: 246, h: 146 },
+    },
+  };
+}
+
+/* THE UPRIGHT ROOM. Same dugout, stood on end: the runway out is at the
+   left where it always was, the four things go on the wall in two
+   columns instead of one row, and the floor is deep enough to stand in.
+
+   `h` is passed in rather than fixed, because the point of this layout is
+   to fill the window it is going to be scaled into. The wall keeps its
+   shape at any height (floorY is fixed) and the FLOOR takes the slack,
+   which reads as a room with more space in front of you rather than as a
+   stretched picture. Everything on the floor is therefore placed as a
+   fraction of the floor's depth. */
+function portraitRoom(h) {
+  const W = 760;
+  const H = clamp(Math.round(h || 1180), 900, 1800);
+  /* BANDS, NOT ROWS. The wall keeps a fixed share of the window and the
+     floor keeps the rest, so a tall phone gets a taller room rather than
+     a bowling alley of floorboard under a squashed wall. Everything is
+     placed against its band, which is what makes one composition work at
+     every height the layout is asked for. */
+  const F = Math.round(H * 0.62);          /* the wall meets the floor */
+  const fd = H - F;                        /* how deep the floor runs */
+  const at = (f) => Math.round(F + fd * f);
+  /* Two rows of things on the wall, each centred in its band. The objects
+     are drawn at the size they were authored, so they are centred rather
+     than fitted. */
+  const row = (centre, height) => Math.round(H * centre - height / 2);
+  const benchY = at(0.10);
+  /* Board seams all the way down. Two fixed rows is right for a shallow
+     floor and reads as a blank slab on a deep one. */
+  const seams = [];
+  for (let d = 16; d < fd - 6; d += 58) seams.push(d);
+  return {
+    port: true,
+    w: W, h: H,
+    beam: Math.round(H * 0.040),
+    rafter: Math.round(H * 0.074),
+    rafterStep: 120,
+    floorY: F,
+    plank: 46,
+    floorSeams: seams,
+    /* Softer than the wide room's. The same wedge over a floor twice as
+       deep is a searchlight rather than a doorway. */
+    doorGlow: 0.20,
+    door: { x: 24, y: F - Math.round(H * 0.34), w: 124, h: Math.round(H * 0.34) },
+    lights: [150, 380, 610],
+    cones: [[30, 150, 0.13], [18, 90, 0.13]],
+    bench: { x: 300, y: benchY, w: 400, leg: 46 },
+    glove: { x: 236, y: at(0.62) },
+    ball: { x: 298, y: at(0.66) },
+    cooler: { x: 52, y: at(0.06) },
+    helmets: { x: 566, y: at(0.34) },
+    batbag: { x: 84, y: at(0.46) },
+    /* Above the doorway, which is the one piece of the left wall that is
+       not door. Anywhere on the right and it lands on the lineup board or
+       its sign. */
+    jerseys: { x: 86, y: Math.round(H * 0.11) },
+    /* Big enough to be people in the room rather than two figures left on
+       the floor. They stand nearest the camera, so they are the largest
+       thing in the frame, which is what makes the room feel occupied. */
+    castW: 122,
+    cast: [{ x: 296, foot: at(0.86) }, { x: 452, foot: at(0.99) }],
+    cups: [[340, benchY - 12], [368, benchY - 10], [600, benchY - 13]],
+    slots: {
+      exhibition: { x: 230, y: row(0.225, 200), w: 150, h: 200 },
+      season:     { x: 507, y: row(0.225, 168), w: 176, h: 168 },
+      cup:        { x: 230, y: row(0.470, 168), w: 150, h: 168 },
+      howto:      { x: 472, y: row(0.470, 146), w: 246, h: 146 },
+    },
+  };
+}
+
+/* Which one the window wants. Narrow OR portrait: a tablet held upright
+   is past any phone breakpoint and has a worse version of the same
+   problem, so what decides it is the SHAPE of the window. */
+function roomForWindow() {
+  const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+  if (!(vw <= 600 || vh > vw * 1.05)) return landscapeRoom();
+  /* Drawn to the shape of the space it will be scaled into, so it lands
+     edge to edge instead of leaving a band of card stock under it. The
+     subtractions are the brand strip, the tab under the room and the
+     page's own padding. */
+  const availW = Math.max(240, vw - 36);
+  const availH = Math.max(320, vh - 104);
+  return portraitRoom(760 * availH / availW);
+}
+
+let ROOM = landscapeRoom();
 function dugoutThings() {
   const seasonOn = !!State.season, cupOn = !!State.cup;
   const rec = seasonOn ? seasonRecord(State.season) : null;
   return [
-    { id: 'exhibition', x: 40 + ROOM_DX, y: 150 + ROOM_DY, w: 150, h: 200, sign: 'EXHIBITION',
+    { id: 'exhibition', ...ROOM.slots.exhibition, sign: 'EXHIBITION',
       label: 'Exhibition Game',
       note: 'Single game against a random club.',
       draw: drawBatRack,
       go: () => { State.mode = 'exhibition'; State.screen = 'roster'; render(); } },
-    { id: 'season', x: 214 + ROOM_DX, y: 86 + ROOM_DY, w: 176, h: 168, sign: 'FRANCHISE',
+    { id: 'season', ...ROOM.slots.season, sign: 'FRANCHISE',
       label: seasonOn ? 'Resume Franchise' : 'Start Franchise',
       note: seasonOn
         ? `Year ${State.season.year || 1}, ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7.`
@@ -4099,7 +4221,7 @@ function dugoutThings() {
                State.franchise = randomFranchise();
                State.screen = 'franchise'; render(); }
       } },
-    { id: 'cup', x: 424 + ROOM_DX, y: 86 + ROOM_DY, w: 150, h: 168, sign: 'PLAYOFFS',
+    { id: 'cup', ...ROOM.slots.cup, sign: 'PLAYOFFS',
       label: cupOn ? 'Resume Playoffs' : 'Playoff Mode',
       note: cupOn
         ? 'Your playoff run is still going.'
@@ -4109,7 +4231,7 @@ function dugoutThings() {
         if (State.cup) { State.screen = 'cup'; render(); }
         else { State.mode = 'cup'; State.screen = 'roster'; render(); }
       } },
-    { id: 'howto', x: 610 + ROOM_DX, y: 92 + ROOM_DY, w: 246, h: 146, sign: 'HOW TO PLAY',
+    { id: 'howto', ...ROOM.slots.howto, sign: 'HOW TO PLAY',
       label: 'How To Play',
       /* No note. The sign says the whole thing, and a second sentence
          restating it is the noise this rail was trimmed of. */
@@ -4313,11 +4435,11 @@ function drawSign(ctx, t, hot) {
 /* The room itself, then everything in it, with the one being pointed at
    lifted a couple of pixels and outlined. */
 function drawDugout(ctx, things, hotId) {
-  const W = DUGOUT_W, H = DUGOUT_H, F = ROOM.floorY;
+  const R = ROOM, W = R.w, H = R.h, F = R.floorY;
   ctx.clearRect(0, 0, W, H);
   /* back wall, vertical planks */
   ctx.fillStyle = DUG.wall; ctx.fillRect(0, 0, W, F);
-  for (let x = 0; x < W; x += 46) {
+  for (let x = 0; x < W; x += R.plank) {
     ctx.fillStyle = DUG.seam; ctx.fillRect(x, 0, 3, F);
     ctx.fillStyle = DUG.wallDark; ctx.fillRect(x + 3, 0, 6, F);
   }
@@ -4325,11 +4447,12 @@ function drawDugout(ctx, things, hotId) {
      is the only thing in the frame that is not brown: the room reads as
      somewhere you are standing rather than a wall you are facing, because
      there is visibly somewhere else to be. */
-  const D = ROOM.door;
+  const D = R.door;
   dugRect(ctx, D.x - 10, D.y - 10, D.w + 20, D.h + 10, '#6b4a24');
+  const hz = Math.round(D.h * 0.36);       /* where the grass starts */
   ctx.fillStyle = '#8fd3ef'; ctx.fillRect(D.x, D.y, D.w, D.h);
-  ctx.fillStyle = '#63ab45'; ctx.fillRect(D.x, D.y + 96, D.w, D.h - 96);
-  ctx.fillStyle = '#d8b070'; ctx.fillRect(D.x, D.y + 96, D.w, 16);
+  ctx.fillStyle = '#63ab45'; ctx.fillRect(D.x, D.y + hz, D.w, D.h - hz);
+  ctx.fillStyle = '#d8b070'; ctx.fillRect(D.x, D.y + hz, D.w, 16);
   /* Steps up to it. A rectangle of daylight is a window; three steps
      climbing into it is the way out, and that is the difference between
      a picture of a room and a room you are standing in. */
@@ -4345,19 +4468,28 @@ function drawDugout(ctx, things, hotId) {
   ctx.strokeStyle = DUG.line; ctx.lineWidth = 3;
   ctx.strokeRect(D.x + 1, D.y + 1, D.w - 2, D.h - 2);
   /* the light it throws across the floor, which is what sells it */
-  ctx.fillStyle = 'rgba(255,246,214,.34)';
-  ctx.beginPath();
-  ctx.moveTo(D.x, F); ctx.lineTo(D.x + D.w, F);
-  ctx.lineTo(D.x + D.w + 118, H); ctx.lineTo(D.x - 26, H);
-  ctx.closePath(); ctx.fill();
+  const doorLight = () => {
+    ctx.fillStyle = `rgba(255,246,214,${R.doorGlow})`;
+    ctx.beginPath();
+    ctx.moveTo(D.x, F); ctx.lineTo(D.x + D.w, F);
+    ctx.lineTo(D.x + D.w + 118, H); ctx.lineTo(D.x - 26, H);
+    ctx.closePath(); ctx.fill();
+  };
+  /* In the landscape room this goes down BEFORE the floor, which then
+     paints over it: the spill has never actually shown on the desktop
+     screen. It is left in that order rather than corrected, because this
+     pass is about the upright room and the wide one is not supposed to
+     change by a pixel. Upright, the spill lands after the floor, where it
+     does the job it is there for. */
+  if (!R.port) doorLight();
   /* roof beam, and rafters coming down off it into the room */
-  ctx.fillStyle = DUG.beam; ctx.fillRect(0, 0, W, ROOM.beam);
-  ctx.fillStyle = DUG.line; ctx.fillRect(0, ROOM.beam, W, 3);
+  ctx.fillStyle = DUG.beam; ctx.fillRect(0, 0, W, R.beam);
+  ctx.fillStyle = DUG.line; ctx.fillRect(0, R.beam, W, 3);
   ctx.fillStyle = '#6b4a24';
-  for (let x = 26; x < W; x += 128) {
-    ctx.fillRect(x, ROOM.beam + 3, 16, ROOM.rafter - ROOM.beam);
+  for (let x = 26; x < W; x += R.rafterStep) {
+    ctx.fillRect(x, R.beam + 3, 16, R.rafter - R.beam);
     ctx.fillStyle = DUG.line;
-    ctx.fillRect(x, ROOM.rafter, 16, 3);
+    ctx.fillRect(x, R.rafter, 16, 3);
     ctx.fillStyle = '#6b4a24';
   }
   /* THE LIGHTS ARE IN THE BEAM. A caged lamp on a cord is the better
@@ -4367,21 +4499,21 @@ function drawDugout(ctx, things, hotId) {
      instead, which is both what a real dugout has and the version that
      cannot collide with anything. Static, because a menu that pulses is a
      menu that will not sit still while you read it. */
-  for (const lx of [230, 620, 1000]) {
-    dugRect(ctx, lx - 32, ROOM.beam - 16, 64, 16, '#5c6773');
-    ctx.fillStyle = '#ffe9a8'; ctx.fillRect(lx - 26, ROOM.beam - 12, 52, 12);
+  for (const lx of R.lights) {
+    dugRect(ctx, lx - 32, R.beam - 16, 64, 16, '#5c6773');
+    ctx.fillStyle = '#ffe9a8'; ctx.fillRect(lx - 26, R.beam - 12, 52, 12);
     ctx.strokeStyle = DUG.line; ctx.lineWidth = 2;
     for (let i = 1; i < 4; i++) {
       ctx.beginPath();
-      ctx.moveTo(lx - 26 + i * 13, ROOM.beam - 12);
-      ctx.lineTo(lx - 26 + i * 13, ROOM.beam);
+      ctx.moveTo(lx - 26 + i * 13, R.beam - 12);
+      ctx.lineTo(lx - 26 + i * 13, R.beam);
       ctx.stroke();
     }
     /* the cone, in two bands so the edge of the light reads at all */
-    for (const [half, spread, a] of [[32, 210, .13], [20, 120, .13]]) {
+    for (const [half, spread, a] of R.cones) {
       ctx.fillStyle = `rgba(255,233,168,${a})`;
       ctx.beginPath();
-      ctx.moveTo(lx - half, ROOM.beam); ctx.lineTo(lx + half, ROOM.beam);
+      ctx.moveTo(lx - half, R.beam); ctx.lineTo(lx + half, R.beam);
       ctx.lineTo(lx + spread, H); ctx.lineTo(lx - spread, H);
       ctx.closePath(); ctx.fill();
     }
@@ -4390,26 +4522,30 @@ function drawDugout(ctx, things, hotId) {
   ctx.fillStyle = DUG.floor; ctx.fillRect(0, F, W, H - F);
   ctx.fillStyle = DUG.line; ctx.fillRect(0, F, W, 3);
   ctx.fillStyle = DUG.floorDark;
-  for (let x = 0; x < W; x += 30) ctx.fillRect(x, F + 16, 18, 4);
-  for (let x = 14; x < W; x += 30) ctx.fillRect(x, F + 74, 18, 4);
+  R.floorSeams.forEach((d, i) => {
+    for (let x = i % 2 ? 14 : 0; x < W; x += 30) ctx.fillRect(x, F + d, 18, 4);
+  });
+  if (R.port) doorLight();
   /* the bench, which is scenery: nothing to click on it */
-  dugRect(ctx, 460, 350, 340, 14, '#8a5f2a');
-  dugRect(ctx, 480, 364, 12, 46, '#7d5628');
-  dugRect(ctx, 768, 364, 12, 46, '#7d5628');
+  const B = R.bench;
+  dugRect(ctx, B.x, B.y, B.w, 14, '#8a5f2a');
+  dugRect(ctx, B.x + 20, B.y + 14, 12, B.leg, '#7d5628');
+  dugRect(ctx, B.x + B.w - 32, B.y + 14, 12, B.leg, '#7d5628');
   /* a glove and a ball left on the floor: the fingers are what stop it
      reading as a cardboard box */
-  dugRect(ctx, 824, 390, 36, 24, '#a4682e');
-  for (let i = 0; i < 3; i++) dugRect(ctx, 828 + i * 10, 380, 8, 12, '#b8763a');
+  dugRect(ctx, R.glove.x, R.glove.y, 36, 24, '#a4682e');
+  for (let i = 0; i < 3; i++) {
+    dugRect(ctx, R.glove.x + 4 + i * 10, R.glove.y - 10, 8, 12, '#b8763a');
+  }
   ctx.fillStyle = '#f2efe6';
-  ctx.beginPath(); ctx.arc(882, 402, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(R.ball.x, R.ball.y, 9, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = DUG.line; ctx.lineWidth = 2; ctx.stroke();
-  /* THE DEEP FLOOR. The room is 120 pixels taller at the bottom than it
-     was, and an empty 120 pixels of floorboard is worse than no floor at
-     all: it reads as a gap under the picture. */
-  drawCooler(ctx, 210, 372);
-  drawHelmets(ctx, 906, 420);
-  drawBatBag(ctx, 336, 434);
-  drawJerseys(ctx, 1042, 104);
+  /* THE DEEP FLOOR. An empty stretch of floorboard is worse than no floor
+     at all: it reads as a gap under the picture rather than as a room. */
+  drawCooler(ctx, R.cooler.x, R.cooler.y);
+  drawHelmets(ctx, R.helmets.x, R.helmets.y);
+  drawBatBag(ctx, R.batbag.x, R.batbag.y);
+  drawJerseys(ctx, R.jerseys.x, R.jerseys.y);
   /* TWO OF THE CAST, STANDING ABOUT. The room was furniture: a place the
      game happens near rather than a place anyone in the game lives. The
      first two on the roster you can actually draft stand here, which also
@@ -4418,18 +4554,17 @@ function drawDugout(ctx, things, hotId) {
      so they can never cover a board or a sign. */
   const here = ROSTER.filter(c => isUnlocked(c.k)).slice(0, 2);
   here.forEach((c, i) => {
-    const w = 74, h = Math.round(w * V2_H / V2_W);
-    const x = [534, 726][i], footY = [486, 472][i];
+    const spot = R.cast[i];
+    if (!spot) return;
+    const w = R.castW, h = Math.round(w * V2_H / V2_W);
     ctx.fillStyle = 'rgba(20,40,63,.24)';
     ctx.beginPath();
-    ctx.ellipse(x + w / 2, footY - 3, w * 0.34, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(spot.x + w / 2, spot.foot - 3, w * 0.34, 5, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.drawImage(photoMug(c.k, w, false), x, footY - h, w, h);
+    ctx.drawImage(photoMug(c.k, w, false), spot.x, spot.foot - h, w, h);
   });
   /* seed cups on the bench, because somebody sits here */
-  for (const [cx2, cy2] of [[520, 338], [548, 340], [742, 337]]) {
-    dugRect(ctx, cx2, cy2, 12, 14, '#e8f0e4');
-  }
+  for (const [cx2, cy2] of R.cups) dugRect(ctx, cx2, cy2, 12, 14, '#e8f0e4');
 
   /* Corners fall off, the way they do in a room with one lamp in it. */
   const vg = ctx.createLinearGradient(0, 0, W, 0);
@@ -4462,10 +4597,13 @@ function renderMenu() {
   /* The dugout: the art is a canvas, the controls are transparent buttons
      over it, and the rail underneath carries the one line about whichever
      one has the pointer or the focus. */
+  /* The layout is chosen BEFORE the things are built, because the slot a
+     thing sits in comes out of it. */
+  ROOM = roomForWindow();
   const things = dugoutThings();
   const dug = el('div','dugout');
   const cv = document.createElement('canvas');
-  cv.width = DUGOUT_W * DUG_SCALE; cv.height = DUGOUT_H * DUG_SCALE;
+  cv.width = ROOM.w * DUG_SCALE; cv.height = ROOM.h * DUG_SCALE;
   const dctx = cv.getContext('2d');
   dug.appendChild(cv);
   const rail = el('div','dugout-rail');
@@ -4482,10 +4620,10 @@ function renderMenu() {
   for (const t of things) {
     const b = el('button', 'hot');
     b.type = 'button';
-    b.style.left = (t.x - 6) / DUGOUT_W * 100 + '%';
-    b.style.top = (t.y - SIGN_H - 12) / DUGOUT_H * 100 + '%';
-    b.style.width = (t.w + 12) / DUGOUT_W * 100 + '%';
-    b.style.height = (t.h + SIGN_H + 18) / DUGOUT_H * 100 + '%';
+    b.style.left = (t.x - 6) / ROOM.w * 100 + '%';
+    b.style.top = (t.y - SIGN_H - 12) / ROOM.h * 100 + '%';
+    b.style.width = (t.w + 12) / ROOM.w * 100 + '%';
+    b.style.height = (t.h + SIGN_H + 18) / ROOM.h * 100 + '%';
     b.setAttribute('aria-label', t.note ? t.label + '. ' + t.note : t.label);
     b.textContent = t.label;
     b.onmouseenter = b.onfocus = () => paint(t.id);
@@ -4512,7 +4650,7 @@ function renderMenu() {
       dctx.imageSmoothingEnabled = false;
       /* Clear in untransformed space, or the scaled rect misses the edges. */
       dctx.fillStyle = '#6b4a24';
-      dctx.fillRect(0, 0, DUGOUT_W, DUGOUT_H);
+      dctx.fillRect(0, 0, ROOM.w, ROOM.h);
       dctx.save();
       dctx.translate(cx, cy);
       dctx.scale(1 + e * 2.4, 1 + e * 2.4);
@@ -4522,7 +4660,7 @@ function renderMenu() {
       /* and out to the page colour, so the next screen does not snap in */
       if (e > 0.5) {
         dctx.fillStyle = `rgba(241,226,187,${(e - 0.5) / 0.5})`;
-        dctx.fillRect(0, 0, DUGOUT_W, DUGOUT_H);
+        dctx.fillRect(0, 0, ROOM.w, ROOM.h);
       }
       if (p < 1) requestAnimationFrame(step); else then();
     };
@@ -4532,29 +4670,6 @@ function renderMenu() {
   paint(null);
   room.appendChild(dug);
   room.appendChild(rail);
-  /* The same four doors, as tiles. They are the interface on a phone and
-     invisible everywhere else (see .roomtiles), and they are built from
-     `things` rather than written out again, so the room and the tiles
-     cannot drift apart: a franchise in progress says the same record on
-     the wall and under it. */
-  /* How To Play carries no note in the room, on purpose: the sign on the
-     wall says the whole thing and the rail beside it would only repeat the
-     words. A tile is not the rail. It takes an even quarter of the screen
-     whatever is in it, so the one with a single line in it reads as a
-     mistake next to three with two. This is the tile's line, not the
-     room's, and it names the three cards the page actually has. */
-  const TILE_NOTE = { howto: 'Batting, pitching, fielding.' };
-  const tiles = el('div','roomtiles');
-  for (const t of things) {
-    const b = el('button', 'rt');
-    b.type = 'button';
-    b.appendChild(el('b', null, t.label));
-    const note = t.note || TILE_NOTE[t.id];
-    if (note) b.appendChild(el('span', null, note));
-    b.onclick = () => zoomInto(t, t.go);
-    tiles.appendChild(b);
-  }
-  room.appendChild(tiles);
   /* The one thing in here that is not a mode. It used to be the whole
      roster printed down the page under the room, which made the home page
      a wall of stat blocks with a picture on top of it. */

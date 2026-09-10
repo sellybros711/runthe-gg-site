@@ -892,7 +892,9 @@ async function main() {
                                   && b.top >= cv.top - 1 && b.bottom <= cv.bottom + 1),
             bottom: tabs.bottom, vh: window.innerHeight,
             docW: document.documentElement.scrollWidth, winW: window.innerWidth,
-            ratio: DUGOUT_W / DUGOUT_H,
+            /* The scene is composed to the shape of the window now, so the
+               ratio to keep is the one the layout chose for THIS window. */
+            ratio: ROOM.w / ROOM.h,
           };
         });
         const tag = `${w}x${h}`;
@@ -1535,84 +1537,122 @@ async function main() {
       await pg.close();
     }
 
-    /* ---- the phone menu fills the screen ---- */
+    /* ---- the room fills the screen, and the room IS the menu ---- */
     {
       console.log('the phone menu');
-      /* The dugout is a 2.24 WIDE scene, so on a portrait phone its height
-         is decided by the width and it can only be a strip. It shipped
-         that way: 390 across gave a 167 tall room on a 664 tall screen and
-         the page ended at 320, leaving 344 pixels of empty card stock, more
-         than half the display.
+      /* The dugout used to be one fixed 1120x500 scene. On a portrait phone
+         its height is decided by its width, so it could only ever be a
+         strip: 390 across gave a 167 tall room on a 664 tall screen, and the
+         page ended at 320, leaving more than half the display as empty card
+         stock. The fix was a room LAYOUT rather than a room drawing, so the
+         scene is composed to the shape of the window it is going into.
 
-         Three things are asserted here and they are one fix:
+         What is asserted here is that the room is the interface, on a phone
+         and on a portrait tablet and on a desktop:
+
            the page reaches the bottom of the window
-           the four doors exist as tiles, because a hotspot in the room is
-             a 46 pixel target at this width
-           the hover rail is GONE, because it reads "point at something" to
-             a player who has no pointer to point with
-         Checked on a phone and on a portrait tablet, which is past the
-         phone breakpoint and has the same shape problem. */
-      const sizes = [{ w: 390, h: 664, what: 'a phone' },
-                     { w: 768, h: 1024, what: 'a portrait tablet' }];
+           the scene is shaped like the window, so a portrait room is TALL
+           the canvas actually fills the space it was given
+           every door in the room is a hotspot, and every hotspot is a real
+             touch target
+           the drawn picture and the hotspot layer agree, because the canvas
+             is object-fit contained and any aspect mismatch letterboxes the
+             picture while leaving the hotspots where they were
+           the hover rail is gone on touch, and still there on desktop
+
+         That fifth one is the quiet one. Letterboxing shifts what the player
+         sees away from what the player can press, and nothing throws. */
+      const sizes = [{ w: 390, h: 664, what: 'a phone', touch: true, port: true },
+                     { w: 768, h: 1024, what: 'a portrait tablet', touch: true, port: true },
+                     { w: 1280, h: 860, what: 'a desktop', touch: false, port: false }];
       const seen = [];
       for (const sz of sizes) {
         const ctx = await browser.newContext({ viewport: { width: sz.w, height: sz.h },
-                                               deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+                                               deviceScaleFactor: 2, isMobile: sz.touch, hasTouch: sz.touch });
         const pg = await ctx.newPage();
         const errors = [];
         pg.on('pageerror', e => errors.push(e.message));
         await pg.goto(URL);
         await pg.evaluate(() => localStorage.clear());
         await pg.goto(URL);
-        await wait(pg, 700);
+        await wait(pg, 800);
         const r = await pg.evaluate(() => {
           const vis = (el) => el && getComputedStyle(el).display !== 'none';
-          const tiles = [...document.querySelectorAll('.roomtiles .rt')];
+          const cv = document.querySelector('.dugout canvas');
+          const cb = cv.getBoundingClientRect();
+          const hots = [...document.querySelectorAll('.dugout .hot')].map(h => {
+            const b = h.getBoundingClientRect();
+            return {
+              side: Math.min(Math.round(b.width), Math.round(b.height)),
+              inside: b.left >= cb.left - 1 && b.right <= cb.right + 1 &&
+                      b.top >= cb.top - 1 && b.bottom <= cb.bottom + 1,
+            };
+          });
           const bottoms = [...document.querySelectorAll('.wrap *')]
             .filter(e => vis(e) && e.getBoundingClientRect().height > 0)
             .map(e => e.getBoundingClientRect().bottom);
-          const smallest = tiles.map(t => {
-            const b = t.getBoundingClientRect();
-            return Math.min(Math.round(b.width), Math.round(b.height));
-          });
+          const roomAR = ROOM.w / ROOM.h, boxAR = cb.width / cb.height;
           return {
             inroom: document.body.classList.contains('inroom'),
-            vh: innerHeight,
+            vw: innerWidth, vh: innerHeight,
             reach: Math.round(Math.max(0, ...bottoms)),
             sideways: document.documentElement.scrollWidth > innerWidth + 1,
             railShown: vis(document.querySelector('.dugout-rail')),
-            tiles: tiles.length,
-            labels: tiles.map(t => (t.querySelector('b') || {}).textContent || ''),
-            lines: tiles.map(t => t.querySelectorAll('span').length),
-            minTouch: smallest.length ? Math.min(...smallest) : 0,
+            room: [ROOM.w, ROOM.h],
+            portrait: ROOM.h > ROOM.w,
+            box: [Math.round(cb.width), Math.round(cb.height)],
+            drift: Math.abs(roomAR - boxAR) / roomAR,
+            hots: hots.length,
+            minTouch: hots.length ? Math.min(...hots.map(h => h.side)) : 0,
+            strays: hots.filter(h => !h.inside).length,
             roomThings: (window.dugoutThings ? dugoutThings().length : -1),
           };
         });
-        r.what = sz.what; r.errors = errors;
+        r.what = sz.what; r.wantPort = sz.port; r.wantRail = !sz.touch; r.errors = errors;
         seen.push(r);
         await pg.close(); await ctx.close();
       }
       for (const r of seen) {
         ok(r.inroom, `${r.what}: the menu is the room screen`, JSON.stringify(r));
-        /* Within a hair of the bottom: the wrap keeps a little padding. */
+        ok(!r.sideways, `${r.what}: and does not scroll sideways`, JSON.stringify(r));
+        ok(r.portrait === r.wantPort,
+           `${r.what}: the scene is shaped like the window`,
+           `room ${r.room.join('x')} for a ${r.vw}x${r.vh} window`);
+        ok(r.hots === r.roomThings && r.hots > 0,
+           `${r.what}: every door in the room is a hotspot`,
+           `${r.hots} hotspots for ${r.roomThings} things`);
+        ok(r.minTouch >= 44,
+           `${r.what}: and every one is a real touch target`,
+           'smallest side ' + r.minTouch + 'px');
+        ok(r.strays === 0,
+           `${r.what}: and none of them sits off the canvas`,
+           r.strays + ' outside');
+        /* One percent of a 550 tall canvas is under three pixels of black
+           bar, which no hotspot notices. Ten percent is a door you press
+           above its sign. */
+        ok(r.drift <= 0.02,
+           `${r.what}: the picture and the hotspots agree`,
+           'aspect off by ' + (r.drift * 100).toFixed(1) + '%');
+        ok(r.railShown === r.wantRail,
+           `${r.what}: the hover rail is ${r.wantRail ? 'there' : 'gone'}`,
+           'railShown=' + r.railShown);
+        ok(r.errors.length === 0, `${r.what}: no page errors`, r.errors.join(' | '));
+      }
+      /* Only the phone sizes owe the bottom of the window: the desktop room
+         is a wide scene in a page that has never been full bleed. */
+      for (const r of seen.filter(x => x.wantPort)) {
         ok(r.vh - r.reach <= 24,
            `${r.what}: the page reaches the bottom of the window`,
            `${r.vh - r.reach}px short of ${r.vh}`);
-        ok(!r.sideways, `${r.what}: and does not scroll sideways`, JSON.stringify(r));
-        ok(r.tiles === r.roomThings && r.tiles > 0,
-           `${r.what}: every door in the room has a tile`,
-           `${r.tiles} tiles for ${r.roomThings} things`);
-        ok(!r.railShown, `${r.what}: the hover rail is gone`, JSON.stringify(r));
-        ok(r.minTouch >= 44,
-           `${r.what}: and every tile is a real touch target`,
-           'smallest side ' + r.minTouch + 'px');
-        /* Nothing hollow: a tile takes an even share of the height whatever
-           is in it, so one with a single line in it reads as a mistake. */
-        ok(r.lines.every(v => v === 1),
-           `${r.what}: no tile is missing its line`, JSON.stringify(r.lines));
-        ok(r.labels.every(v => v.trim().length > 0),
-           `${r.what}: and every tile is named`, JSON.stringify(r.labels));
-        ok(r.errors.length === 0, `${r.what}: no page errors`, r.errors.join(' | '));
+        /* Filling it is the whole ask. A room that reaches the bottom by
+           padding rather than by picture passes the line above and fails
+           this one. */
+        ok(r.box[1] >= r.vh * 0.6,
+           `${r.what}: and the room is most of what is on it`,
+           `${r.box[1]}px of ${r.vh}`);
+        ok(r.box[0] >= r.vw * 0.85,
+           `${r.what}: and it runs the width of it`,
+           `${r.box[0]}px of ${r.vw}`);
       }
     }
 

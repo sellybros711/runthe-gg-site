@@ -264,6 +264,28 @@ is the point. Disney's Peter Pan, Universal's Frankenstein, MGM's green witch an
 ruby slippers are all still owned, and a redraw that drifts back toward one of
 them is the failure mode.
 
+### The dugout is a layout, not a drawing
+
+The menu is a room the player stands in, and it has to fill whatever window it is
+given. A fixed scene cannot: the wide room is 2.24 across, so on a portrait phone
+its height is decided by its width and it can only ever be a strip. It shipped that
+way, a 167 tall room on a 664 tall screen with half the display left as empty card
+stock underneath.
+
+So `landscapeRoom()` and `portraitRoom(h)` return coordinates and `roomForWindow()`
+picks one, `drawDugout` reads every position out of `ROOM` and holds none of its own,
+and the portrait room is composed in BANDS (the wall takes a fixed share of the
+height, the floor takes the rest) so one composition works at every height it is
+asked for. A phone gets the room as the whole interface: the four doors are hotspots
+on the canvas, the hover rail is hidden because there is no pointer to hover with.
+
+Two things about that are easy to undo by accident. A coordinate written as a
+number inside `drawDugout` will look right on a desk and be wrong on a phone. And
+the canvas is `object-fit: contain`, so if the scene's shape and its box's shape
+drift apart the picture letterboxes while the hotspots stay where they were, and
+the player presses a door above its sign. `verify-rules.mjs` asserts the shape, the
+fill, the touch sizes and that drift, on a phone, a portrait tablet and a desktop.
+
 The regression suite, which is the thing to run after editing:
 
 ```
