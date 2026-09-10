@@ -606,6 +606,68 @@
   .dugtabs .tab:hover{background:var(--gold);color:#fff6ea;}
   .dugtabs .tab:active{transform:translate(2px,2px);box-shadow:none;}
 
+  /* THE PHONE MENU.
+     The room is a 2.24 WIDE scene, so on a portrait phone its height is
+     decided by the width and it can only ever be a strip: 390 across gives
+     167 tall on a 664 tall screen, and the page ended at 320 with 344
+     pixels of empty card stock under it. More than half the screen.
+     Three things are wrong there and they have one fix.
+       1. The dead space.
+       2. A hotspot in the room is a 46 pixel target at this size, which is
+          under every thumb guideline there is.
+       3. The rail under it reads "Point at something to see what it does"
+          for ever, because a touch screen has no hover to point WITH. It
+          is an instruction for a mouse the player does not have.
+     So on a phone the room keeps its natural size and becomes the picture,
+     the rail goes, and the four doors come out of the room as tiles that
+     fill the rest of the screen. The tiles are built from the same
+     `things` array the room is, so a label cannot say one thing on the
+     wall and another underneath it. */
+  .roomtiles{display:none;}
+  /* Narrow OR portrait. A 768 wide tablet held upright is past the phone
+     breakpoint and has exactly the same problem, worse: the room would be
+     328 tall in a 1024 tall window. What decides this is the SHAPE of the
+     window against the shape of the room, so the second half of the query
+     asks about shape. A desktop window is almost never taller than four
+     thirds of its width, so it keeps the room and the rail. */
+  @media (max-width:600px), (max-aspect-ratio: 3/4){
+    body.inroom .wrap{display:flex;flex-direction:column;min-height:100vh;
+      min-height:100dvh;padding-bottom:10px;}
+    /* #app is the div every screen is rendered into. It is the one link in
+       the chain that is not the game's own markup, and leaving it a block
+       capped everything below it at its content height: the wrap filled the
+       screen and the card inside it still stopped short. */
+    body.inroom #app{flex:1;display:flex;flex-direction:column;min-height:0;}
+    body.inroom .screen{flex:1;display:flex;flex-direction:column;min-height:0;}
+    body.inroom .card{flex:1;display:flex;flex-direction:column;min-height:0;padding:8px;}
+    body.inroom .roomwrap{flex:1;display:flex;flex-direction:column;min-height:0;
+      max-width:none;}
+    body.inroom .dugout{flex:0 0 auto;}
+    .dugout-rail{display:none;}
+    .roomtiles{display:flex;flex:1;flex-direction:column;gap:7px;margin-top:8px;
+      min-height:0;}
+    /* They split whatever the room leaves, evenly. A cap was tried and it
+       trades four tall tiles for four short ones with big gaps around
+       them, which looks like the layout failed rather than filled. Every
+       tile carries two lines (see the fallback note in the builder), so an
+       even split has nothing hollow in it. */
+    .roomtiles .rt{flex:1 1 0;min-height:52px;
+      display:flex;flex-direction:column;
+      justify-content:center;gap:3px;text-align:left;font:inherit;
+      background:var(--panel);color:var(--text);border:3px solid var(--line);
+      box-shadow:3px 3px 0 var(--navy);padding:6px 12px;cursor:pointer;}
+    .roomtiles .rt b{font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+      color:var(--gold);}
+    /* Two lines of note at most. The franchise one is a paragraph, and a
+       tile that grows to fit it steals the height from the other three. */
+    .roomtiles .rt span{font-size:11px;line-height:1.3;color:var(--text-dim);
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+      overflow:hidden;}
+    .roomtiles .rt:active{transform:translate(2px,2px);box-shadow:none;}
+    .dugtabs{margin:8px auto 0;width:100%;}
+    .dugtabs .tab{flex:1;text-align:center;border-top:3px solid var(--line);}
+  }
+
   /* THE TEAM PHOTO. Fifty five cards in a grid is a spreadsheet: it is how
      you DRAFT, and it was also the only way to look at anybody, so the two
      jobs wore the same face. This is the other one. Everybody on the
@@ -4470,6 +4532,29 @@ function renderMenu() {
   paint(null);
   room.appendChild(dug);
   room.appendChild(rail);
+  /* The same four doors, as tiles. They are the interface on a phone and
+     invisible everywhere else (see .roomtiles), and they are built from
+     `things` rather than written out again, so the room and the tiles
+     cannot drift apart: a franchise in progress says the same record on
+     the wall and under it. */
+  /* How To Play carries no note in the room, on purpose: the sign on the
+     wall says the whole thing and the rail beside it would only repeat the
+     words. A tile is not the rail. It takes an even quarter of the screen
+     whatever is in it, so the one with a single line in it reads as a
+     mistake next to three with two. This is the tile's line, not the
+     room's, and it names the three cards the page actually has. */
+  const TILE_NOTE = { howto: 'Batting, pitching, fielding.' };
+  const tiles = el('div','roomtiles');
+  for (const t of things) {
+    const b = el('button', 'rt');
+    b.type = 'button';
+    b.appendChild(el('b', null, t.label));
+    const note = t.note || TILE_NOTE[t.id];
+    if (note) b.appendChild(el('span', null, note));
+    b.onclick = () => zoomInto(t, t.go);
+    tiles.appendChild(b);
+  }
+  room.appendChild(tiles);
   /* The one thing in here that is not a mode. It used to be the whole
      roster printed down the page under the room, which made the home page
      a wall of stat blocks with a picture on top of it. */

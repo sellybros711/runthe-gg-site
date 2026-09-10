@@ -35,6 +35,7 @@
      the play moves       the plan's physics agree with the scorer: outs beaten, hits not
      the dive             a liner draws a lunge that lands short and breaks no duty
      the snow             the cold parks play under falling snow
+     the phone menu       the room screen fills a portrait phone, and the doors are reachable
      the plate camera     the at bat is seen from behind the catcher and cut away from on contact
      the bat has a place  a pitch lands somewhere; the swing has to be there as well as on time
      the arm has a spot   aim plus a release is where a pitch goes; a strike is where it landed
@@ -1532,6 +1533,87 @@ async function main() {
       ok(r.encoded, 'the table is run length encoded', 'encoded=' + r.encoded);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
+    }
+
+    /* ---- the phone menu fills the screen ---- */
+    {
+      console.log('the phone menu');
+      /* The dugout is a 2.24 WIDE scene, so on a portrait phone its height
+         is decided by the width and it can only be a strip. It shipped
+         that way: 390 across gave a 167 tall room on a 664 tall screen and
+         the page ended at 320, leaving 344 pixels of empty card stock, more
+         than half the display.
+
+         Three things are asserted here and they are one fix:
+           the page reaches the bottom of the window
+           the four doors exist as tiles, because a hotspot in the room is
+             a 46 pixel target at this width
+           the hover rail is GONE, because it reads "point at something" to
+             a player who has no pointer to point with
+         Checked on a phone and on a portrait tablet, which is past the
+         phone breakpoint and has the same shape problem. */
+      const sizes = [{ w: 390, h: 664, what: 'a phone' },
+                     { w: 768, h: 1024, what: 'a portrait tablet' }];
+      const seen = [];
+      for (const sz of sizes) {
+        const ctx = await browser.newContext({ viewport: { width: sz.w, height: sz.h },
+                                               deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+        const pg = await ctx.newPage();
+        const errors = [];
+        pg.on('pageerror', e => errors.push(e.message));
+        await pg.goto(URL);
+        await pg.evaluate(() => localStorage.clear());
+        await pg.goto(URL);
+        await wait(pg, 700);
+        const r = await pg.evaluate(() => {
+          const vis = (el) => el && getComputedStyle(el).display !== 'none';
+          const tiles = [...document.querySelectorAll('.roomtiles .rt')];
+          const bottoms = [...document.querySelectorAll('.wrap *')]
+            .filter(e => vis(e) && e.getBoundingClientRect().height > 0)
+            .map(e => e.getBoundingClientRect().bottom);
+          const smallest = tiles.map(t => {
+            const b = t.getBoundingClientRect();
+            return Math.min(Math.round(b.width), Math.round(b.height));
+          });
+          return {
+            inroom: document.body.classList.contains('inroom'),
+            vh: innerHeight,
+            reach: Math.round(Math.max(0, ...bottoms)),
+            sideways: document.documentElement.scrollWidth > innerWidth + 1,
+            railShown: vis(document.querySelector('.dugout-rail')),
+            tiles: tiles.length,
+            labels: tiles.map(t => (t.querySelector('b') || {}).textContent || ''),
+            lines: tiles.map(t => t.querySelectorAll('span').length),
+            minTouch: smallest.length ? Math.min(...smallest) : 0,
+            roomThings: (window.dugoutThings ? dugoutThings().length : -1),
+          };
+        });
+        r.what = sz.what; r.errors = errors;
+        seen.push(r);
+        await pg.close(); await ctx.close();
+      }
+      for (const r of seen) {
+        ok(r.inroom, `${r.what}: the menu is the room screen`, JSON.stringify(r));
+        /* Within a hair of the bottom: the wrap keeps a little padding. */
+        ok(r.vh - r.reach <= 24,
+           `${r.what}: the page reaches the bottom of the window`,
+           `${r.vh - r.reach}px short of ${r.vh}`);
+        ok(!r.sideways, `${r.what}: and does not scroll sideways`, JSON.stringify(r));
+        ok(r.tiles === r.roomThings && r.tiles > 0,
+           `${r.what}: every door in the room has a tile`,
+           `${r.tiles} tiles for ${r.roomThings} things`);
+        ok(!r.railShown, `${r.what}: the hover rail is gone`, JSON.stringify(r));
+        ok(r.minTouch >= 44,
+           `${r.what}: and every tile is a real touch target`,
+           'smallest side ' + r.minTouch + 'px');
+        /* Nothing hollow: a tile takes an even share of the height whatever
+           is in it, so one with a single line in it reads as a mistake. */
+        ok(r.lines.every(v => v === 1),
+           `${r.what}: no tile is missing its line`, JSON.stringify(r.lines));
+        ok(r.labels.every(v => v.trim().length > 0),
+           `${r.what}: and every tile is named`, JSON.stringify(r.labels));
+        ok(r.errors.length === 0, `${r.what}: no page errors`, r.errors.join(' | '));
+      }
     }
 
     /* ---- the mound: anyone can take it, and it is a swap ---- */
