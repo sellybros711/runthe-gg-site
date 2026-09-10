@@ -547,14 +547,28 @@
      width. Drawing the hotspots straight onto the canvas and reading
      clicks off coordinates would have cost the keyboard and the screen
      reader, and a menu nobody can tab through is not a menu. */
-  .dugout{position:relative;width:100%;max-width:900px;margin:0 auto;}
+  /* THE ROOM FILLS THE SCREEN. Everything in here was capped at 900 CSS
+     pixels inside a 920 page, so on any real monitor the room was a small
+     picture with two thirds of the window blank underneath it. On the menu
+     the page goes as wide as the window and the room is sized off the
+     HEIGHT budget through its own ratio, so it grows until either the
+     window's width or its height runs out, and never overflows either.
+     One wrapper carries that size and the rail and the tab follow it, so
+     the three pieces cannot disagree about how wide the room is. */
+  .roomwrap{width:100%;max-width:900px;margin:0 auto;}
+  body.inroom .wrap{max-width:min(1640px,98vw);}
+  body.inroom .roomwrap{max-width:min(96vw, calc(min(100vh - 250px, 760px) * 2.24));}
+  body.inroom .screen{padding:10px 0 0;}
+  body.inroom h2{margin-bottom:8px;}
+  body.inroom .card{padding:10px;}
+  .dugout{position:relative;width:100%;margin:0 auto;}
   .dugout canvas{display:block;width:100%;height:auto;image-rendering:pixelated;
     border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);background:#6b4a24;}
   .dugout .hot{position:absolute;background:none;border:0;padding:0;margin:0;
     cursor:pointer;font:inherit;color:transparent;}
   .dugout .hot:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
   /* The rail: one line about whatever is under the pointer. */
-  .dugout-rail{max-width:900px;margin:8px auto 0;background:var(--panel);
+  .dugout-rail{margin:8px auto 0;background:var(--panel);
     border:3px solid var(--line);box-shadow:var(--shadow-sm);padding:9px 14px;
     font-size:13px;color:var(--text-dim);min-height:42px;display:flex;
     align-items:center;gap:10px;}
@@ -568,7 +582,7 @@
   /* The tab strip under the dugout. The room is the home page now, so the
      one thing that is not a mode hangs off the bottom of it like a tab on
      a folder rather than sitting in the room pretending to be one. */
-  .dugtabs{max-width:900px;margin:-3px auto 0;display:flex;gap:8px;}
+  .dugtabs{margin:-3px auto 0;display:flex;gap:8px;}
   .dugtabs .tab{font:inherit;font-size:12px;font-weight:900;letter-spacing:.14em;
     text-transform:uppercase;background:var(--panel-2);color:var(--text);
     border:3px solid var(--line);border-top:0;padding:8px 18px;cursor:pointer;
@@ -2450,6 +2464,8 @@ function render() {
   app.innerHTML = '';
   const s = State.screen;
   document.body.classList.toggle('ingame', s === 'game');
+  /* The dugout is the home page, so on the menu the page gets out of its way. */
+  document.body.classList.toggle('inroom', s === 'menu');
   if (s === 'menu') renderMenu();
   else if (s === 'roster') renderRoster();
   else if (s === 'settings') renderSettings();
@@ -3372,17 +3388,41 @@ function renderFranchise() {
 /* WHAT IS IN THE ROOM. Each entry is a thing you can point at: where it
    sits on the 900x380 wall, what it is called, the one line the rail says
    about it, how it is drawn, and where it goes. Order is tab order. */
-const DUGOUT_W = 900, DUGOUT_H = 380;
+/* THE ROOM.
+
+   It used to be 900x380 capped at 900 CSS pixels: a letterbox strip of
+   wall with four things on it, sitting in the middle of a page that was
+   mostly empty paper. Bigger is most of the fix, and the page gives it the
+   whole viewport now, but scaling a strip up only gives you a bigger
+   strip. So the frame grew in both directions and the new space is doing
+   something: a ceiling with rafters and a lamp above, a floor deep enough
+   to put things on below, and a tunnel out to daylight at the left end, so
+   the room has somewhere to be rather than being a wall.
+
+   The four things on the wall keep their own internal drawing at the size
+   they were authored, because every one of them measures in absolute
+   pixels off t.x and t.y (bat lengths, row pitch, the diamond's radius).
+   They are moved, not stretched: ROOM_DX and ROOM_DY are the offset from
+   the old frame to this one, and are here so that number appears once. */
+const DUGOUT_W = 1120, DUGOUT_H = 500;
+const ROOM_DX = 160, ROOM_DY = 58;
+/* Where the room's surfaces are, in the new frame. */
+const ROOM = {
+  beam: 40,            /* underside of the roof beam */
+  rafter: 74,          /* where the rafters stop and the wall proper starts */
+  floorY: 358,         /* the wall meets the floor here */
+  door: { x: 26, y: 92, w: 124, h: 266 },
+};
 function dugoutThings() {
   const seasonOn = !!State.season, cupOn = !!State.cup;
   const rec = seasonOn ? seasonRecord(State.season) : null;
   return [
-    { id: 'exhibition', x: 40, y: 150, w: 150, h: 200, sign: 'EXHIBITION',
+    { id: 'exhibition', x: 40 + ROOM_DX, y: 150 + ROOM_DY, w: 150, h: 200, sign: 'EXHIBITION',
       label: 'Exhibition Game',
       note: 'Single game against a random club.',
       draw: drawBatRack,
       go: () => { State.mode = 'exhibition'; State.screen = 'roster'; render(); } },
-    { id: 'season', x: 214, y: 86, w: 176, h: 168, sign: 'FRANCHISE',
+    { id: 'season', x: 214 + ROOM_DX, y: 86 + ROOM_DY, w: 176, h: 168, sign: 'FRANCHISE',
       label: seasonOn ? 'Resume Franchise' : 'Start Franchise',
       note: seasonOn
         ? `Year ${State.season.year || 1}, ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7.`
@@ -3394,7 +3434,7 @@ function dugoutThings() {
                State.franchise = randomFranchise();
                State.screen = 'franchise'; render(); }
       } },
-    { id: 'cup', x: 424, y: 86, w: 150, h: 168, sign: 'PLAYOFFS',
+    { id: 'cup', x: 424 + ROOM_DX, y: 86 + ROOM_DY, w: 150, h: 168, sign: 'PLAYOFFS',
       label: cupOn ? 'Resume Playoffs' : 'Playoff Mode',
       note: cupOn
         ? 'Your playoff run is still going.'
@@ -3404,7 +3444,7 @@ function dugoutThings() {
         if (State.cup) { State.screen = 'cup'; render(); }
         else { State.mode = 'cup'; State.screen = 'roster'; render(); }
       } },
-    { id: 'howto', x: 610, y: 92, w: 246, h: 146, sign: 'HOW TO PLAY',
+    { id: 'howto', x: 610 + ROOM_DX, y: 92 + ROOM_DY, w: 246, h: 146, sign: 'HOW TO PLAY',
       label: 'How To Play',
       /* No note. The sign says the whole thing, and a second sentence
          restating it is the noise this rail was trimmed of. */
@@ -3540,8 +3580,60 @@ function drawChalkboard(ctx, t) {
   ctx.textAlign = 'center';
 }
 
+/* Floor furniture. None of it is clickable and none of it is decoration
+   for its own sake: each one says somebody uses this room. */
+function drawCooler(ctx, x, y) {
+  dugRect(ctx, x, y, 58, 74, '#e07a2c');
+  dugRect(ctx, x + 6, y + 6, 46, 16, '#f4a24c');
+  dugRect(ctx, x + 22, y - 8, 14, 8, '#c1631f');       /* the lid handle */
+  dugRect(ctx, x + 24, y + 44, 10, 12, '#5c6773');     /* the spigot */
+  dugRect(ctx, x + 4, y + 74, 50, 8, '#7d5628');       /* the stand */
+  /* a stack of paper cups beside it */
+  for (let i = 0; i < 3; i++) dugRect(ctx, x + 66, y + 44 - i * 6, 16, 20, '#fffcf2');
+}
+function drawHelmets(ctx, x, y) {
+  dugRect(ctx, x - 8, y + 26, 104, 10, '#8a5f2a');     /* the shelf */
+  for (let i = 0; i < 3; i++) {
+    const hx = x + i * 32;
+    ctx.fillStyle = i === 1 ? '#1b3a5c' : '#cf3229';
+    ctx.beginPath();
+    ctx.arc(hx + 11, y + 26, 12, Math.PI, 0);
+    ctx.fill();
+    ctx.strokeStyle = DUG.line; ctx.lineWidth = 2; ctx.stroke();
+    dugRect(ctx, hx + 18, y + 20, 10, 6, i === 1 ? '#1b3a5c' : '#cf3229');
+  }
+}
+function drawJerseys(ctx, x, y) {
+  /* Two shirts on a hook rail, filling the wall past the last board. An
+     empty plank at the end of the room reads as the picture running out
+     rather than as the room continuing. */
+  dugRect(ctx, x - 34, y, 68, 10, '#8a5f2a');
+  ctx.fillStyle = '#5c6773'; ctx.fillRect(x - 2, y + 10, 5, 12);
+  dugRect(ctx, x - 24, y + 22, 48, 62, '#fffcf2');        /* body */
+  dugRect(ctx, x - 38, y + 25, 15, 30, '#fffcf2');        /* sleeves */
+  dugRect(ctx, x + 23, y + 25, 15, 30, '#fffcf2');
+  dugRect(ctx, x - 24, y + 22, 48, 8, '#cf3229');         /* collar band */
+  ctx.fillStyle = '#cf3229';
+  ctx.font = 'bold 26px monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('1', x, y + 56);
+  ctx.textAlign = 'center';
+}
+function drawBatBag(ctx, x, y) {
+  dugRect(ctx, x, y, 128, 34, '#2c4257');
+  dugRect(ctx, x + 12, y + 10, 104, 6, '#456380');     /* the zip */
+  dugRect(ctx, x + 46, y - 8, 36, 10, '#456380');      /* the handle */
+  /* a bat knob poking out of the open end */
+  dugRect(ctx, x + 124, y + 8, 22, 12, '#c9a06a');
+}
+
 /* A painted board hung over each thing, so the room is readable without
    pointing at anything. Inverted when it is the one you are on. */
+/* The canvas is drawn at this multiple of the room's own coordinates. It
+   used to be 1.5, which was ample at 900 CSS pixels wide and soft at the
+   1500 the room takes now: the signs and the chalk are real text, and text
+   is the first thing that goes when a canvas is stretched. */
+const DUG_SCALE = 2;
 const SIGN_H = 26;
 function drawSign(ctx, t, hot) {
   const w = Math.max(96, t.sign.length * 11 + 24);
@@ -3556,32 +3648,131 @@ function drawSign(ctx, t, hot) {
 /* The room itself, then everything in it, with the one being pointed at
    lifted a couple of pixels and outlined. */
 function drawDugout(ctx, things, hotId) {
-  const W = DUGOUT_W, H = DUGOUT_H;
+  const W = DUGOUT_W, H = DUGOUT_H, F = ROOM.floorY;
   ctx.clearRect(0, 0, W, H);
   /* back wall, vertical planks */
-  ctx.fillStyle = DUG.wall; ctx.fillRect(0, 0, W, 300);
+  ctx.fillStyle = DUG.wall; ctx.fillRect(0, 0, W, F);
   for (let x = 0; x < W; x += 46) {
-    ctx.fillStyle = DUG.seam; ctx.fillRect(x, 0, 3, 300);
-    ctx.fillStyle = DUG.wallDark; ctx.fillRect(x + 3, 0, 6, 300);
+    ctx.fillStyle = DUG.seam; ctx.fillRect(x, 0, 3, F);
+    ctx.fillStyle = DUG.wallDark; ctx.fillRect(x + 3, 0, 6, F);
   }
-  /* roof beam and floor */
-  ctx.fillStyle = DUG.beam; ctx.fillRect(0, 0, W, 26);
-  ctx.fillStyle = DUG.line; ctx.fillRect(0, 26, W, 3);
-  ctx.fillStyle = DUG.floor; ctx.fillRect(0, 300, W, H - 300);
-  ctx.fillStyle = DUG.line; ctx.fillRect(0, 300, W, 3);
+  /* THE TUNNEL. One rectangle of daylight at the end of the room, and it
+     is the only thing in the frame that is not brown: the room reads as
+     somewhere you are standing rather than a wall you are facing, because
+     there is visibly somewhere else to be. */
+  const D = ROOM.door;
+  dugRect(ctx, D.x - 10, D.y - 10, D.w + 20, D.h + 10, '#6b4a24');
+  ctx.fillStyle = '#8fd3ef'; ctx.fillRect(D.x, D.y, D.w, D.h);
+  ctx.fillStyle = '#63ab45'; ctx.fillRect(D.x, D.y + 96, D.w, D.h - 96);
+  ctx.fillStyle = '#d8b070'; ctx.fillRect(D.x, D.y + 96, D.w, 16);
+  /* Steps up to it. A rectangle of daylight is a window; three steps
+     climbing into it is the way out, and that is the difference between
+     a picture of a room and a room you are standing in. */
+  for (let i = 0; i < 4; i++) {
+    const sy = D.y + D.h - 24 - i * 26, inset = i * 4;
+    dugRect(ctx, D.x + inset, sy, D.w - inset * 2, 26, i % 2 ? '#a98e63' : '#bb9f72');
+  }
+  /* a handrail up the near side */
+  ctx.strokeStyle = '#5c6773'; ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(D.x + 8, D.y + D.h - 6); ctx.lineTo(D.x + 40, D.y + D.h - 118);
+  ctx.stroke();
+  ctx.strokeStyle = DUG.line; ctx.lineWidth = 3;
+  ctx.strokeRect(D.x + 1, D.y + 1, D.w - 2, D.h - 2);
+  /* the light it throws across the floor, which is what sells it */
+  ctx.fillStyle = 'rgba(255,246,214,.34)';
+  ctx.beginPath();
+  ctx.moveTo(D.x, F); ctx.lineTo(D.x + D.w, F);
+  ctx.lineTo(D.x + D.w + 118, H); ctx.lineTo(D.x - 26, H);
+  ctx.closePath(); ctx.fill();
+  /* roof beam, and rafters coming down off it into the room */
+  ctx.fillStyle = DUG.beam; ctx.fillRect(0, 0, W, ROOM.beam);
+  ctx.fillStyle = DUG.line; ctx.fillRect(0, ROOM.beam, W, 3);
+  ctx.fillStyle = '#6b4a24';
+  for (let x = 26; x < W; x += 128) {
+    ctx.fillRect(x, ROOM.beam + 3, 16, ROOM.rafter - ROOM.beam);
+    ctx.fillStyle = DUG.line;
+    ctx.fillRect(x, ROOM.rafter, 16, 3);
+    ctx.fillStyle = '#6b4a24';
+  }
+  /* THE LIGHTS ARE IN THE BEAM. A caged lamp on a cord is the better
+     picture and there is nowhere to hang one: the wall is boards end to
+     end, and the widest gap between two of them is fifty pixels, so the
+     shade landed behind the PLAYOFFS sign. These are set into the roof
+     instead, which is both what a real dugout has and the version that
+     cannot collide with anything. Static, because a menu that pulses is a
+     menu that will not sit still while you read it. */
+  for (const lx of [230, 620, 1000]) {
+    dugRect(ctx, lx - 32, ROOM.beam - 16, 64, 16, '#5c6773');
+    ctx.fillStyle = '#ffe9a8'; ctx.fillRect(lx - 26, ROOM.beam - 12, 52, 12);
+    ctx.strokeStyle = DUG.line; ctx.lineWidth = 2;
+    for (let i = 1; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(lx - 26 + i * 13, ROOM.beam - 12);
+      ctx.lineTo(lx - 26 + i * 13, ROOM.beam);
+      ctx.stroke();
+    }
+    /* the cone, in two bands so the edge of the light reads at all */
+    for (const [half, spread, a] of [[32, 210, .13], [20, 120, .13]]) {
+      ctx.fillStyle = `rgba(255,233,168,${a})`;
+      ctx.beginPath();
+      ctx.moveTo(lx - half, ROOM.beam); ctx.lineTo(lx + half, ROOM.beam);
+      ctx.lineTo(lx + spread, H); ctx.lineTo(lx - spread, H);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+  /* floor */
+  ctx.fillStyle = DUG.floor; ctx.fillRect(0, F, W, H - F);
+  ctx.fillStyle = DUG.line; ctx.fillRect(0, F, W, 3);
   ctx.fillStyle = DUG.floorDark;
-  for (let x = 0; x < W; x += 30) ctx.fillRect(x, 316, 18, 4);
+  for (let x = 0; x < W; x += 30) ctx.fillRect(x, F + 16, 18, 4);
+  for (let x = 14; x < W; x += 30) ctx.fillRect(x, F + 74, 18, 4);
   /* the bench, which is scenery: nothing to click on it */
-  dugRect(ctx, 300, 292, 340, 14, '#8a5f2a');
-  dugRect(ctx, 320, 306, 12, 46, '#7d5628');
-  dugRect(ctx, 608, 306, 12, 46, '#7d5628');
+  dugRect(ctx, 460, 350, 340, 14, '#8a5f2a');
+  dugRect(ctx, 480, 364, 12, 46, '#7d5628');
+  dugRect(ctx, 768, 364, 12, 46, '#7d5628');
   /* a glove and a ball left on the floor: the fingers are what stop it
      reading as a cardboard box */
-  dugRect(ctx, 664, 332, 36, 24, '#a4682e');
-  for (let i = 0; i < 3; i++) dugRect(ctx, 668 + i * 10, 322, 8, 12, '#b8763a');
+  dugRect(ctx, 824, 390, 36, 24, '#a4682e');
+  for (let i = 0; i < 3; i++) dugRect(ctx, 828 + i * 10, 380, 8, 12, '#b8763a');
   ctx.fillStyle = '#f2efe6';
-  ctx.beginPath(); ctx.arc(722, 344, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(882, 402, 9, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = DUG.line; ctx.lineWidth = 2; ctx.stroke();
+  /* THE DEEP FLOOR. The room is 120 pixels taller at the bottom than it
+     was, and an empty 120 pixels of floorboard is worse than no floor at
+     all: it reads as a gap under the picture. */
+  drawCooler(ctx, 210, 372);
+  drawHelmets(ctx, 906, 420);
+  drawBatBag(ctx, 336, 434);
+  drawJerseys(ctx, 1042, 104);
+  /* TWO OF THE CAST, STANDING ABOUT. The room was furniture: a place the
+     game happens near rather than a place anyone in the game lives. The
+     first two on the roster you can actually draft stand here, which also
+     means the pair changes the first time an unlock lands and the room
+     quietly acknowledges it. Feet on the floor, well below the wall line,
+     so they can never cover a board or a sign. */
+  const here = ROSTER.filter(c => isUnlocked(c.k)).slice(0, 2);
+  here.forEach((c, i) => {
+    const w = 74, h = Math.round(w * V2_H / V2_W);
+    const x = [534, 726][i], footY = [486, 472][i];
+    ctx.fillStyle = 'rgba(20,40,63,.24)';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, footY - 3, w * 0.34, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.drawImage(photoMug(c.k, w, false), x, footY - h, w, h);
+  });
+  /* seed cups on the bench, because somebody sits here */
+  for (const [cx2, cy2] of [[520, 338], [548, 340], [742, 337]]) {
+    dugRect(ctx, cx2, cy2, 12, 14, '#e8f0e4');
+  }
+
+  /* Corners fall off, the way they do in a room with one lamp in it. */
+  const vg = ctx.createLinearGradient(0, 0, W, 0);
+  vg.addColorStop(0, 'rgba(20,25,40,.30)');
+  vg.addColorStop(0.16, 'rgba(20,25,40,0)');
+  vg.addColorStop(0.86, 'rgba(20,25,40,0)');
+  vg.addColorStop(1, 'rgba(20,25,40,.30)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
 
   for (const t of things) {
     const hot = t.id === hotId;
@@ -3604,19 +3795,20 @@ function renderMenu() {
     'Pick nine of fifty five. Swing on the ring, call your own pitches.'));
 
   const card = el('div','card');
+  const room = el('div','roomwrap');
   /* The dugout: the art is a canvas, the controls are transparent buttons
      over it, and the rail underneath carries the one line about whichever
      one has the pointer or the focus. */
   const things = dugoutThings();
   const dug = el('div','dugout');
   const cv = document.createElement('canvas');
-  cv.width = DUGOUT_W * 1.5; cv.height = DUGOUT_H * 1.5;
+  cv.width = DUGOUT_W * DUG_SCALE; cv.height = DUGOUT_H * DUG_SCALE;
   const dctx = cv.getContext('2d');
   dug.appendChild(cv);
   const rail = el('div','dugout-rail');
   const idle = '<b>The dugout</b><span>Point at something to see what it does.</span>';
   const paint = (id) => {
-    dctx.setTransform(1.5, 0, 0, 1.5, 0, 0);
+    dctx.setTransform(DUG_SCALE, 0, 0, DUG_SCALE, 0, 0);
     dctx.imageSmoothingEnabled = false;
     drawDugout(dctx, things, id);
     const t = things.find(x => x.id === id);
@@ -3653,7 +3845,7 @@ function renderMenu() {
     const step = () => {
       const p = Math.min(1, (performance.now() - start) / DUR);
       const e = p * p * (3 - 2 * p);                 /* smoothstep */
-      dctx.setTransform(1.5, 0, 0, 1.5, 0, 0);
+      dctx.setTransform(DUG_SCALE, 0, 0, DUG_SCALE, 0, 0);
       dctx.imageSmoothingEnabled = false;
       /* Clear in untransformed space, or the scaled rect misses the edges. */
       dctx.fillStyle = '#6b4a24';
@@ -3675,8 +3867,8 @@ function renderMenu() {
   };
 
   paint(null);
-  card.appendChild(dug);
-  card.appendChild(rail);
+  room.appendChild(dug);
+  room.appendChild(rail);
   /* The one thing in here that is not a mode. It used to be the whole
      roster printed down the page under the room, which made the home page
      a wall of stat blocks with a picture on top of it. */
@@ -3685,7 +3877,8 @@ function renderMenu() {
   meet.type = 'button';
   meet.onclick = () => { State.screen = 'meet'; render(); };
   tabs.appendChild(meet);
-  card.appendChild(tabs);
+  room.appendChild(tabs);
+  card.appendChild(room);
 
   if (State.season) {
     const rec = seasonRecord(State.season);

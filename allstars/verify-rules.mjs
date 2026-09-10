@@ -28,6 +28,7 @@
      locked last          a card you cannot draft sorts behind every card you can
      the hover card       says the requirement and how far along, and goes away after
      the squad photo      the room is the home page, and everyone stands in one frame
+     the room fills up    the dugout takes the window and still fits above the fold
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -804,6 +805,80 @@ async function main() {
          'a locked face reads out how to earn them and how far along', r.locked);
       ok(r.panels === 1, 'one panel, refilled', 'n=' + r.panels);
       ok(r.photoStill, 'and a longer bio does not walk the picture up the page');
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the room takes the window ---- */
+    {
+      console.log('the room fills up');
+      /* The room used to be capped at 900 CSS pixels inside a 920 page, so
+         on any real monitor it was a small picture over two thirds of a
+         blank window. It is sized off the height budget through its own
+         ratio now, which is easy to undo by accident: one stray max-width
+         anywhere up the tree puts it back in its box, and nothing else
+         would fail. */
+      for (const [w, h] of [[1440, 900], [1280, 800], [1680, 1050], [390, 844]]) {
+        const pg = await browser.newPage({ viewport: { width: w, height: h } });
+        const errors = [];
+        pg.on('pageerror', e => errors.push(e.message));
+        await pg.goto(URL);
+        await pg.evaluate(() => localStorage.clear());
+        await pg.goto(URL);
+        const r = await pg.evaluate(() => {
+          const el = document.querySelector('.dugout canvas');
+          const cv = el.getBoundingClientRect();
+          const tabs = document.querySelector('.dugtabs').getBoundingClientRect();
+          const hots = [...document.querySelectorAll('.dugout .hot')]
+            .map(b => b.getBoundingClientRect());
+          /* No two things in the room may claim the same pixel. */
+          let overlap = false;
+          for (let i = 0; i < hots.length; i++) {
+            for (let j = i + 1; j < hots.length; j++) {
+              if (hots[i].right > hots[j].left && hots[j].right > hots[i].left
+                  && hots[i].bottom > hots[j].top && hots[j].bottom > hots[i].top) overlap = true;
+            }
+          }
+          return {
+            /* the CONTENT box: the rect carries the 3px border, which is a
+               tenth of a phone-sized room's height and none of a desk one's,
+               so comparing rects makes the shape look wrong only on a phone */
+            cw: el.clientWidth, ch: el.clientHeight,
+            room: document.body.classList.contains('inroom'),
+            hots: hots.length, overlap,
+            inFrame: hots.every(b => b.left >= cv.left - 1 && b.right <= cv.right + 1
+                                  && b.top >= cv.top - 1 && b.bottom <= cv.bottom + 1),
+            bottom: tabs.bottom, vh: window.innerHeight,
+            docW: document.documentElement.scrollWidth, winW: window.innerWidth,
+            ratio: DUGOUT_W / DUGOUT_H,
+          };
+        });
+        const tag = `${w}x${h}`;
+        ok(r.room, `${tag}: the menu puts the page in room mode`);
+        ok(Math.abs(r.cw / r.ch - r.ratio) < 0.02,
+           `${tag}: the room keeps its shape rather than stretching`,
+           `drawn ${Math.round(r.cw)}x${Math.round(r.ch)} ratio ${(r.cw / r.ch).toFixed(2)} want ${r.ratio.toFixed(2)}`);
+        ok(r.bottom <= r.vh, `${tag}: the whole room and its tab are above the fold`,
+           `bottom=${Math.round(r.bottom)} vh=${r.vh}`);
+        ok(r.docW <= r.winW + 1, `${tag}: and the page does not scroll sideways`,
+           `doc=${r.docW} win=${r.winW}`);
+        ok(r.hots === 4 && !r.overlap && r.inFrame,
+           `${tag}: four things, none overlapping, all inside the frame`,
+           JSON.stringify({ n: r.hots, overlap: r.overlap, inFrame: r.inFrame }));
+        if (w >= 1280) {
+          ok(r.cw >= w * 0.82, `${tag}: it actually fills the window`,
+             `drawn ${Math.round(r.cw)} of ${w}`);
+        }
+        ok(errors.length === 0, `${tag}: no page errors`, errors.join(' | '));
+        await pg.close();
+      }
+      /* And it gives the page back on the way out. */
+      const { pg, errors } = await fresh(browser);
+      const off = await pg.evaluate(() => {
+        State.screen = 'howto'; render();
+        return document.body.classList.contains('inroom');
+      });
+      ok(!off, 'leaving the room hands the page layout back');
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
