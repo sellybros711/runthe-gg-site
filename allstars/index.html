@@ -5781,15 +5781,18 @@ const BASE_BEAT = {
   /* Tuned to Backyard Baseball's rhythm: every pitch is a deliberate
      event with air around it, not a stream. The playtest verdict was
      "slow down a lot", and these are the numbers that did it. */
-  windup:    1150,  /* pitcher into set, meter shows but does not sweep yet */
-  betweenPitches: 1700,  /* after ball/called strike/foul */
-  afterWhiff: 1500,
-  afterOut:   2100,
-  afterWalk:  2000,
-  afterHit:   2600,
-  afterHomer: 3200,
-  betweenHalfInnings: 3000,
-  intoAtBat: 1200,  /* new batter walks up */
+  /* Trimmed again once the play itself became three to five seconds of
+     continuous motion: the air around an event is there so the event can
+     land, and a play that runs its own length needs less of it. */
+  windup:     900,  /* pitcher into set, meter shows but does not sweep yet */
+  betweenPitches: 1200,  /* after ball/called strike/foul */
+  afterWhiff: 1100,
+  afterOut:   1500,
+  afterWalk:  1500,
+  afterHit:   1700,
+  afterHomer: 2600,
+  betweenHalfInnings: 2400,
+  intoAtBat:  900,  /* new batter walks up */
 };
 
 /* Game speed. A full five inning game at NORMAL runs past ten minutes,
@@ -5884,6 +5887,7 @@ function startAtBat() {
   if (g.walkoff) { g.over = true; g.winner = 'home'; return finishGame(); }
   hideInningBoard();
   closeBullpen();
+  g.tail = null;
   g.balls = 0; g.strikes = 0;
   /* Open this half inning's bucket on the line score so the board shows a
      zero for an inning in progress and stays blank for ones not reached. */
@@ -6470,6 +6474,10 @@ function resolveSwing(cursorT) {
   const pitcher = currentPitcher();
   const ctx = g.batterCtx || { pow: batter.pow, con: batter.con, spd: batter.spd, flags:{} };
   const diff = DIFF[State.difficulty];
+  /* THE BAT COMES ROUND ON EVERY SWING. It used to show only when the
+     ball was hit: a swing and a miss looked exactly like taking the
+     pitch, which is half of why nothing seemed to move. */
+  g.swingFx = { start: performance.now(), until: performance.now() + 340 };
   /* Swing selection, Backyard style. Contact widens the zone and trades
      power away; Power narrows it and swings for the fences; Bunt is its
      own play entirely, resolved below. The CPU brings the plan it made in
@@ -6552,6 +6560,15 @@ function resolveSwing(cursorT) {
     addLog(`${batter.n} fouls it off.`);
     showCallout('FOUL BALL', 'sub');
     Sound.play('foul');
+    /* the ball sprays up and back, out of play */
+    {
+      const G2 = fieldGeom();
+      g.foulFx = { start: performance.now(), dur: 700,
+        x0: G2.cx - 14, y0: G2.plateY - 6,
+        dx: (Math.random() - 0.5) * 260,
+        dy: 30 + Math.random() * 70,
+        arc: 70 + Math.random() * 70 };
+    }
     refreshHud();
     return setTimeout(nextPitch, BEAT.betweenPitches);
   }
@@ -6610,7 +6627,7 @@ function ballTrajectory(kind) {
     case 'home run':   return { dx: rand(0.55, 1.05)*sign(), dy: -1.55, arcH: 320, duration: 1700 };
     case 'triple':     return { dx: rand(0.75, 1.2)*sign(),  dy: -1.4, arcH: 150, duration: 1250 };
     case 'double':     return { dx: rand(0.5, 1.0)*sign(),   dy: -1.1, arcH: 110, duration: 1050 };
-    case 'single':     return { dx: rand(0.3, 0.7)*sign(),   dy: -0.7, arcH: 60,  duration: 850 };
+    case 'single':     return { dx: rand(0.25, 0.95)*sign(), dy: -0.7, arcH: 60,  duration: 850 };
     case 'fly out':    return { dx: rand(0.10,0.90)*sign(),  dy: rand(-1.4,-1.05), arcH: 170, duration: 1200, caught: true };
     case 'ground out': return { dx: rand(0.35,0.8)*sign(),   dy: -0.15,arcH: 18,  duration: 700,  caught: true };
     case 'bunt single':
@@ -6694,6 +6711,787 @@ function playHighlight() {
   refreshHud();
 }
 
+
+/* ============================================================================
+   THE PLAY SIMULATION
+
+   What was here before was not a simulation. A batted ball was one parabola
+   from the bat to a landing spot, on a timer; the runners were tweened
+   along the base paths on THE BALL'S clock, so a batter reached first in
+   six tenths of a second and a triple took a second and a quarter; one
+   fielder was tweened toward the landing spot and never got there before
+   the play was cleared; nothing was ever thrown to anyone; and the whole
+   thing ended at duration+700 by teleporting everybody to wherever the
+   scorekeeper had decided they were. It looked like the caption was true
+   and the picture was a rumour about it. That is why nobody moved right.
+
+   This is a play with kinematics in it. The DECISION is still made by the
+   same oracle it always was (the outcome kind, the send rule, the
+   minigames); nothing about the rules or the numbers changes. What
+   changes is that the picture is now an honest rendering of that outcome:
+
+     - the field has real coordinates (u toward first, v toward third,
+       one unit is ninety feet), and the screen is a projection of them,
+       so "nearest fielder" is nearest in feet, not in foreshortened pixels
+     - the ball flies, LANDS, bounces with restitution, and rolls out on
+       friction, and it is picked up by a man who ran to where it was
+       going to be, not to where it landed
+     - runners accelerate, cruise at a speed their SPD earns, round a base
+       they are going through, slow into one they are stopping at, run
+       through first, and slide when the throw is close
+     - the fielder who took the ball transfers and THROWS it, to the base
+       the outcome says, and the man covering that base catches it; on an
+       out the throw beats the runner, on a hit it does not, and you can
+       see which by watching
+     - the other fielders cover bases and back up instead of standing still
+     - the play is over when the ball is dead, and the runners who are
+       still finishing keep finishing (the "tail") while the game moves on
+
+   Everything is PLANNED ONCE when the play is built and sampled at 60 Hz
+   into arrays, and the draw loop just looks the time up. A plan can be
+   checked against the oracle before a frame is drawn (does the throw beat
+   the runner?), it survives a throttled tab, and it is what lets the apply
+   and finish timers be set from real events instead of from a duration.
+   ============================================================================ */
+const SIM_HZ = 60, SIM_DT = 1 / SIM_HZ;
+const SIM_MAX_S = 9;
+
+/* Diamond coordinates. home (0,0), first (1,0), second (1,1), third (0,1). */
+const SIM_BASE_UV = [[1, 0], [1, 1], [0, 1], [0, 0]];   /* 0..2 bases, 3 home */
+function simProject(G, u, v) {
+  return [G.cx + (u - v) * G.rx, G.plateY - (u + v) * G.ry];
+}
+function simUnproject(G, x, y) {
+  const sum = (G.plateY - y) / G.ry, diff = (x - G.cx) / G.rx;
+  return [(sum + diff) / 2, (sum - diff) / 2];
+}
+const simDist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+
+/* Speeds, in diamond units per second. A unit is ninety feet, so 0.40 is
+   thirty six feet a second: an arcade sprint, a little over real, because
+   two and a half seconds to first is a beat you can watch and four is a
+   beat you wait through. */
+function simRunnerSpeed(c) { return 0.34 + 0.22 * clamp((c.spd || 50) / 100, 0, 1); }
+function simFielderSpeed(c) { return 0.27 + 0.16 * clamp((c.def || 50) / 100, 0, 1); }
+const SIM_RUN_ACCEL = 1.5, SIM_RUN_DECEL = 1.8;
+const SIM_THROW_SPEED = 1.55;          /* about ninety miles an hour */
+const SIM_TRANSFER = 0.30;             /* glove to hand, on a catch */
+const SIM_PICKUP = 0.50;               /* glove to hand, off the ground */
+const SIM_REACT = 0.22;                /* a fielder's first step */
+/* A hit gets past the man before he has it: the ball is on the ground
+   this long before anyone may take it. Without it the outfield is close
+   enough that a double was gloved the instant it landed, which is a line
+   drive caught and then ruled a hit. */
+const SIM_HIT_BOUNCE = 0.35;
+
+/* Move a point along a polyline with a speed profile: accelerate, cruise,
+   and either stop at the end (decelerating into it) or run through it.
+   Returns samples of [u, v, s, moving] from t0 at SIM_DT, and the time
+   the end is reached. */
+function simRunPath(pts, vmax, t0, opts) {
+  opts = opts || {};
+  const out = [];
+  const segs = [];
+  let total = 0;
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const d = simDist(pts[i], pts[i + 1]);
+    segs.push({ a: pts[i], b: pts[i + 1], d, s0: total });
+    total += d;
+  }
+  const overrun = opts.runThrough ? 0.16 : 0;
+  const stopAt = total + overrun;
+  const at = (sd) => {
+    if (sd <= 0) return pts[0];
+    if (sd >= total) {
+      /* past the last waypoint: continue on the last segment's heading */
+      const L = segs[segs.length - 1];
+      if (!L || L.d === 0) return pts[pts.length - 1];
+      const f = (sd - L.s0) / L.d;
+      return [L.a[0] + (L.b[0] - L.a[0]) * f, L.a[1] + (L.b[1] - L.a[1]) * f];
+    }
+    for (const sg of segs) {
+      if (sd <= sg.s0 + sg.d) {
+        const f = sg.d ? (sd - sg.s0) / sg.d : 0;
+        return [sg.a[0] + (sg.b[0] - sg.a[0]) * f, sg.a[1] + (sg.b[1] - sg.a[1]) * f];
+      }
+    }
+    return pts[pts.length - 1];
+  };
+  let sd = 0, vel = 0, t = t0, reached = null;
+  const startDelay = opts.delay || 0;
+  const accel = opts.accel || SIM_RUN_ACCEL, decel = opts.decel || SIM_RUN_DECEL;
+  /* after running through the bag: a pause, then a jog back onto it */
+  let phase = 'run', pauseUntil = 0, backFrom = null;
+  for (let k = 0; k < SIM_MAX_S * SIM_HZ; k++) {
+    let moving = false;
+    if (phase === 'run') {
+      moving = t >= t0 + startDelay && sd < stopAt - 1e-4;
+      if (moving) {
+        const room = stopAt - sd;
+        const vstop = Math.sqrt(2 * decel * Math.max(0, room));
+        vel = Math.min(vmax, vel + accel * SIM_DT, vstop);
+        sd = Math.min(stopAt, sd + vel * SIM_DT);
+      }
+      if (reached === null && sd >= total - 1e-4) reached = t;
+      if (sd >= stopAt - 1e-4 && t > t0 + startDelay) {
+        if (overrun > 0) { phase = 'pause'; pauseUntil = t + 0.35; vel = 0; }
+        else { const p = at(sd); out.push([p[0], p[1], sd, false]); break; }
+      }
+    } else if (phase === 'pause') {
+      if (t >= pauseUntil) { phase = 'back'; backFrom = sd; }
+    } else {
+      moving = true;
+      vel = Math.min(vmax * 0.45, vel + accel * SIM_DT);
+      sd = Math.max(total, sd - vel * SIM_DT);
+      if (sd <= total + 1e-4) { const p = at(sd); out.push([p[0], p[1], sd, false]); t += SIM_DT; break; }
+    }
+    const p = at(sd);
+    out.push([p[0], p[1], sd, moving]);
+    t += SIM_DT;
+  }
+  return { samples: out, t0, total, reached: reached === null ? t : reached, end: t };
+}
+
+/* A runner's path through the bases, rounding the ones he goes through.
+   A base you are passing is taken wide, a base you are stopping at is
+   taken straight, and first is run through. */
+function simRunnerPoints(fromIdx, toIdx, opts) {
+  const pts = [];
+  const start = fromIdx === -1 ? [-0.07, 0.03] : SIM_BASE_UV[fromIdx];
+  pts.push(start);
+  for (let b = (fromIdx === -1 ? 0 : fromIdx + 1); b <= toIdx; b++) {
+    const B = SIM_BASE_UV[b];
+    const passing = b < toIdx;
+    if (passing && b < 3) {
+      /* swing wide of the bag: out and away from the middle of the diamond */
+      const away = [B[0] - 0.5, B[1] - 0.5];
+      const L = Math.hypot(away[0], away[1]) || 1;
+      pts.push([B[0] + away[0] / L * 0.09, B[1] + away[1] / L * 0.09]);
+    } else {
+      pts.push([B[0], B[1]]);
+    }
+  }
+  return pts;
+}
+
+/* THE BALL. Flight to a target on the ground at a chosen time, then the
+   bounce and the roll. Samples of [u, v, h] with h in screen pixels, the
+   unit the arcs were always authored in. `stopAt` is the moment a glove
+   takes it, after which it stops being a free ball. */
+/* The fence, in diamond units: the drawn wall sits about 1.4 down each
+   line and 2.8 along the diagonal, which is where the picture puts it. A
+   free ball stops there. */
+const SIM_WALL_SUM = 2.8;
+function simBallFlight(start, target, T, arcH, opts) {
+  opts = opts || {};
+  const out = [];
+  /* how far it runs on after landing, relative to a plain single */
+  const rollK = opts.rollK || 1;
+  const du = (target[0] - start[0]) / T, dv = (target[1] - start[1]) / T;
+  let t = 0;
+  /* in the air */
+  for (; t <= T + 1e-6; t += SIM_DT) {
+    const f = Math.min(1, t / T);
+    out.push([start[0] + du * t, start[1] + dv * t, 4 * arcH * f * (1 - f)]);
+  }
+  if (opts.caught || opts.stands) {
+    return { samples: out, landAt: T, restAt: T, restUV: target };
+  }
+  /* on the ground: bounce, then roll. Vertical speed at landing is the
+     slope of the arc there, which is what a real bounce keys off. */
+  let vh = -(4 * arcH) / T;         /* px per second, downward */
+  let hu = du, hv = dv;             /* units per second along the ground */
+  let h = 0, u = target[0], v = target[1];
+  let bounces = 0, restAt = null;
+  const REST = 0.02;
+  for (; t < SIM_MAX_S; t += SIM_DT) {
+    if (h <= 0 && vh <= 0 && bounces < 3 && Math.abs(vh) > 60) {
+      vh = -vh * 0.40; hu *= 0.62; hv *= 0.62; bounces++; h = 0.001;
+    } else if (h <= 0) {
+      h = 0; vh = 0;
+      /* rolling: friction, more of it for a ball the outcome says stays
+         short and less for one it says finds the gap */
+      const k = Math.exp(-(4.6 / rollK) * SIM_DT);
+      hu *= k; hv *= k;
+      if (Math.hypot(hu, hv) < REST) { restAt = t; out.push([u, v, 0]); break; }
+    }
+    if (h > 0 || vh > 0) { vh -= 900 * SIM_DT; h += vh * SIM_DT; if (h < 0) h = 0; }
+    u += hu * SIM_DT; v += hv * SIM_DT;
+    /* the fence: it stops there */
+    if (u + v >= SIM_WALL_SUM || u < -0.35 || v < -0.35) {
+      const back = Math.max(0, (u + v) - SIM_WALL_SUM) / 2;
+      u -= back; v -= back; hu = hv = 0; h = 0;
+      out.push([u, v, 0]); restAt = t; break;
+    }
+    out.push([u, v, h]);
+  }
+  if (restAt === null) restAt = t;
+  return { samples: out, landAt: T, restAt, restUV: [u, v] };
+}
+
+/* A throw from one point to another: straight, quick, a modest arc. */
+function simThrow(from, to, t0) {
+  const d = simDist(from, to);
+  const T = Math.max(0.25, d / SIM_THROW_SPEED);
+  const arcH = 10 + Math.min(50, d * 40);
+  const out = [];
+  for (let t = 0; t <= T + 1e-6; t += SIM_DT) {
+    const f = Math.min(1, t / T);
+    out.push([from[0] + (to[0] - from[0]) * f, from[1] + (to[1] - from[1]) * f, 4 * arcH * f * (1 - f)]);
+  }
+  return { samples: out, t0, T, arrive: t0 + T };
+}
+
+/* Who covers what. Post indices: 0 P, 1 RF, 2 SS, 3 2B, 4 1B, 5 3B, 6 LF,
+   7 CF, 8 C. Given who is fielding the ball, the man on each bag. */
+function simCoverers(fielderPost) {
+  const cover = { 0: 4, 1: 2, 2: 5, 3: 8 };       /* base -> post */
+  if (fielderPost === 4) cover[0] = 3;
+  if (fielderPost === 2) cover[1] = 3;
+  if (fielderPost === 3) cover[1] = 2;
+  if (fielderPost === 5) cover[2] = 2;
+  return cover;
+}
+
+/* Build the whole plan. `p` is the play object the game already made; the
+   plan reads its kind, its trajectory and its runner paths, and never
+   writes to the game. */
+function buildPlaySim(p, opts) {
+  opts = opts || {};
+  const G = fieldGeom();
+  const g = State.game;
+  const fteam = currentFieldingTeam();
+  const kind = p.kind;
+  /* The fielding team is baked in at build time: a play's tail can still
+     be drawing after the half flips, and currentFieldingTeam() is then
+     the OTHER club, which put the batting side's men in the field. */
+  const sim = { G, kind, fteam, t0: p.startedAt, runners: [], fielders: {}, ball: null,
+                events: {}, throws: [], holder: null, applyAt: 0, finishAt: 0, end: 0 };
+
+  /* ---- the ball ---- */
+  const contact = simUnproject(G, G.cx - 14, G.plateY - 4);
+  const traj = p.ball;
+  const target = simUnproject(G, G.cx - 14 + traj.dx * G.r, G.cy + traj.dy * G.r);
+  const T = traj.duration / 1000;
+  const flyOut = kind === 'fly out';
+  const stands = kind === 'home run';
+  const CONTACT_AT = 0.12;                        /* the bat gets round first */
+  const rollK = { 'single': 1.0, 'double': 1.9, 'triple': 3.0, 'ground out': 1.3,
+                  'bunt out': 0.4, 'bunt single': 0.4 }[kind] || 1.0;
+  const flight = simBallFlight(contact, target, T, traj.arcH,
+                               { caught: flyOut && !opts.uncertain, stands, rollK });
+  sim.ballT0 = CONTACT_AT;
+  sim.ball = flight.samples;
+  sim.landAt = CONTACT_AT + flight.landAt;
+  sim.restAt = CONTACT_AT + flight.restAt;
+  sim.restUV = flight.restUV;
+
+  /* ---- fielders: posts in diamond space ---- */
+  const posts = {};
+  for (const q of fielderPosts(G, G.w)) posts[q.i] = { uv: simUnproject(G, q.x, q.y), sc: q.sc };
+  posts[8] = { uv: simUnproject(G, G.cx + 18, G.plateY + 38), sc: 2.3 };
+  posts[0] = { uv: simUnproject(G, G.cx, G.moundY - 6), sc: 2.6 };
+  sim.posts = posts;
+
+  /* WHO TAKES IT. The man who can meet the ball soonest, which is the
+     rule the sport uses: for each of the seven, the first moment on the
+     ball's path that he can be standing at when the ball is. Nearest to
+     the landing spot is a different rule, and it hands a ball that rolls
+     into centre to the second baseman it rolled past. A caught fly is
+     met at its landing, by whoever gets there. */
+  const speedOf = (i) => { const m = fielderAt(fteam, i); return m ? simFielderSpeed(m) : 0.35; };
+  const isHit = !flyOut && !stands && kind !== 'ground out' && kind !== 'bunt out';
+  const earliest = sim.landAt + (isHit ? SIM_HIT_BOUNCE : 0);
+  const intercept = (i) => {
+    const sp = speedOf(i), from = posts[i].uv;
+    const reachT = (uv) => SIM_REACT + simDist(from, uv) / sp;
+    if (flyOut && !opts.uncertain) return { at: sim.landAt, uv: target, slack: sim.landAt - CONTACT_AT - reachT(target) };
+    for (let k = 0; k < sim.ball.length; k++) {
+      const t = CONTACT_AT + k * SIM_DT;
+      if (t < earliest) continue;
+      const uv = sim.ball[k];
+      if (reachT(uv) <= t - CONTACT_AT) return { at: t, uv: [uv[0], uv[1]], slack: 0 };
+    }
+    const at = Math.max(sim.restAt, CONTACT_AT + reachT(sim.restUV));
+    return { at, uv: [sim.restUV[0], sim.restUV[1]], slack: 0 };
+  };
+  let fp = -1, meetAt = null, meetUV = null;
+  if (kind === 'bunt out' || kind === 'bunt single') {
+    fp = simDist(posts[0].uv, target) < simDist(posts[8].uv, target) ? 0 : 8;
+    const ic = intercept(fp); meetAt = ic.at; meetUV = ic.uv;
+  } else if (stands) {
+    /* somebody still runs at it, for the picture; he never gets there */
+    let best = Infinity;
+    for (const i of [1, 6, 7]) { const d = simDist(posts[i].uv, target); if (d < best) { best = d; fp = i; } }
+  } else {
+    let best = Infinity, bestSlack = -Infinity;
+    for (const i of [1, 2, 3, 4, 5, 6, 7]) {
+      const ic = intercept(i);
+      /* soonest wins; on a fly ball everyone "arrives" at the landing, so
+         the one with the most time to spare takes it */
+      const better = flyOut ? ic.slack > bestSlack : ic.at < best - 1e-6;
+      if (better) { best = ic.at; bestSlack = ic.slack; fp = i; meetAt = ic.at; meetUV = ic.uv; }
+    }
+  }
+  sim.fielderPost = fp;
+  const fman = fielderAt(fteam, fp);
+  const fspeed = fman ? simFielderSpeed(fman) : 0.35;
+  sim.meetAt = meetAt; sim.meetUV = meetUV;
+  /* how long the ball is in his glove before it leaves his hand */
+  sim.transfer = (flyOut && !opts.uncertain) ? SIM_TRANSFER : SIM_PICKUP;
+
+  /* ---- runners ---- */
+  const addRunner = (c, fromIdx, toIdx, o) => {
+    o = o || {};
+    const pts = simRunnerPoints(fromIdx, toIdx);
+    const vmax = simRunnerSpeed(c) * (o.speedK || 1);
+    const run = simRunPath(pts, vmax, o.t0 != null ? o.t0 : CONTACT_AT,
+                           { runThrough: o.runThrough, delay: o.delay || 0 });
+    const r = { c, fromIdx, toIdx, run, slideFrom: null, isBatter: !!o.isBatter, holdBack: o.holdBack || null };
+    sim.runners.push(r);
+    return r;
+  };
+  const batterEnd = batterEndBase(kind);
+  let batter;
+  if (batterEnd === -2) {
+    batter = addRunner(p.batter, -1, 0, { isBatter: true, runThrough: true, delay: 0.18 });
+  } else if (batterEnd === -1) {
+    /* he watches it go, then goes: a trot, but a brisk one, because the
+       game is not waiting for him and neither is anybody watching */
+    batter = addRunner(p.batter, -1, 3, { isBatter: true, speedK: 1.6, delay: 0.55 });
+  } else {
+    batter = addRunner(p.batter, -1, batterEnd, { isBatter: true, runThrough: batterEnd === 0, delay: 0.18 });
+  }
+  (p.preBases || []).forEach((c, i) => {
+    if (!c) return;
+    const path = p.runnerPaths && p.runnerPaths[i];
+    if (!path || path.length < 2) {
+      /* holds: on a fly ball he takes two steps and comes back after the catch */
+      if (flyOut) {
+        const B = SIM_BASE_UV[i], N = SIM_BASE_UV[i + 1] || SIM_BASE_UV[3];
+        const lead = [B[0] + (N[0] - B[0]) * 0.12, B[1] + (N[1] - B[1]) * 0.12];
+        const out = simRunPath([B, lead], simRunnerSpeed(c) * 0.6, CONTACT_AT, { delay: 0.1 });
+        const back = simRunPath([lead, B], simRunnerSpeed(c) * 0.6, Math.max(out.end, sim.landAt + 0.15), {});
+        sim.runners.push({ c, fromIdx: i, toIdx: i, run: out, back, slideFrom: null });
+      } else {
+        sim.runners.push({ c, fromIdx: i, toIdx: i, run: simRunPath([SIM_BASE_UV[i]], 0.3, CONTACT_AT, {}), slideFrom: null });
+      }
+      return;
+    }
+    const toIdx = path[path.length - 1];
+    addRunner(c, i, toIdx, { speedK: stands ? 1.6 : 1, delay: stands ? 0.35 : 0.05 });
+  });
+
+  /* ---- the fielder's run, the transfer, the throw ---- */
+  const F = {};
+  sim.fielders = F;
+  const idle = (i) => ({ run: simRunPath([posts[i].uv], 0.3, 0, {}), post: i, role: 'hold' });
+  for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) F[i] = idle(i);
+  if (fp >= 0 && stands) {
+    const man = F[fp];
+    const toward = [posts[fp].uv[0] + (target[0] - posts[fp].uv[0]) * 0.5,
+                    posts[fp].uv[1] + (target[1] - posts[fp].uv[1]) * 0.5];
+    man.role = 'watch';
+    man.run = simRunPath([posts[fp].uv, toward], fspeed * 0.8, SIM_REACT, {});
+  }
+  if (fp >= 0 && meetUV) {
+    const man = F[fp];
+    man.role = 'field';
+    man.run = simRunPath([posts[fp].uv, meetUV], fspeed, SIM_REACT, {});
+    /* he must be there when the ball is: stretch or compress his speed to
+       hit meetAt exactly, within reason, so the glove and the ball agree */
+    const need = meetAt - SIM_REACT;
+    const have = man.run.reached - SIM_REACT;
+    if (have > 0 && need > 0.05) {
+      const k = clamp(have / need, 0.6, 1.6);
+      man.run = simRunPath([posts[fp].uv, meetUV], fspeed * k, SIM_REACT, {});
+    }
+    man.meetAt = meetAt;
+  }
+  /* THE CUTOFF. On a ball to the outfield the middle infielder on that
+     side goes out to meet the throw, and the ball comes in through him.
+     It is what fills the seconds between the pickup and the runners
+     arriving with something true, instead of an outfielder holding the
+     ball and staring, or a throw that beats a runner the book says is
+     safe. */
+  const isHitKind = kind === 'single' || kind === 'double' || kind === 'triple';
+  let cutoff = -1, cutoffUV = null;
+  if (isHitKind && meetUV && fp >= 1 && (fp === 1 || fp === 6 || fp === 7) ) {
+    cutoff = meetUV[0] > meetUV[1] ? 3 : 2;
+    if (cutoff === fp) cutoff = cutoff === 3 ? 2 : 3;
+    const B = SIM_BASE_UV[1];
+    const d = simDist(B, meetUV);
+    const f = d > 0.6 ? 0.45 : 0.3;
+    cutoffUV = [B[0] + (meetUV[0] - B[0]) * f, B[1] + (meetUV[1] - B[1]) * f];
+    if (simDist(cutoffUV, meetUV) < 0.28) cutoff = -1;
+  }
+  sim.cutoff = cutoff; sim.cutoffUV = cutoffUV;
+  /* covering and backing up */
+  const cov = simCoverers(fp);
+  if (cutoff >= 0 && cov[1] === cutoff) cov[1] = cutoff === 2 ? 3 : 2;
+  const covered = new Set();
+  if (cutoff >= 0) {
+    const fm = fielderAt(fteam, cutoff);
+    const speed = fm ? simFielderSpeed(fm) : 0.35;
+    F[cutoff].role = 'cutoff';
+    F[cutoff].run = simRunPath([posts[cutoff].uv, cutoffUV], speed, SIM_REACT + 0.05, {});
+    covered.add(cutoff);
+  }
+  for (const b of [0, 1, 2, 3]) {
+    const i = cov[b];
+    if (i === fp || i === 0 || i === undefined) continue;
+    if (covered.has(i)) continue;
+    covered.add(i);
+    const fm = fielderAt(fteam, i);
+    const speed = fm ? simFielderSpeed(fm) : 0.35;
+    F[i].role = 'cover'; F[i].base = b;
+    /* beside the bag, on the infield side, so the man and the runner both
+       read: two sprites on one base is one sprite */
+    const B = SIM_BASE_UV[b], mid = [0.5, 0.5];
+    const L = Math.hypot(mid[0] - B[0], mid[1] - B[1]) || 1;
+    const spot = b === 3 ? [B[0] + 0.05, B[1] - 0.04]
+                         : [B[0] + (mid[0] - B[0]) / L * 0.08, B[1] + (mid[1] - B[1]) / L * 0.08];
+    F[i].run = simRunPath([posts[i].uv, spot], speed * 0.85, SIM_REACT + 0.1, {});
+  }
+  for (const i of [1, 2, 3, 4, 5, 6, 7]) {
+    if (F[i].role !== 'hold' || !meetUV) continue;
+    /* drift a few steps toward the ball, the way a backup does */
+    const fm = fielderAt(fteam, i);
+    const from = posts[i].uv;
+    const d = simDist(from, meetUV);
+    if (d < 0.05) continue;
+    const step = Math.min(0.22, d * 0.3);
+    const to = [from[0] + (meetUV[0] - from[0]) / d * step, from[1] + (meetUV[1] - from[1]) / d * step];
+    F[i].role = 'backup';
+    F[i].run = simRunPath([from, to], (fm ? simFielderSpeed(fm) : 0.3) * 0.7, SIM_REACT + 0.15, {});
+  }
+
+  /* the throw: where it goes is the outcome's business */
+  sim.throws = [];
+  let deadAt = meetAt != null ? meetAt + sim.transfer : sim.landAt + 1.2;
+  const throwTo = (fromUV, base, at, mode) => {
+    const th = simThrow(fromUV, SIM_BASE_UV[base], at);
+    th.base = base; th.mode = mode || 'normal';
+    if (mode === 'wild') {
+      /* sails: past the bag and on into foul ground */
+      const dir = [SIM_BASE_UV[base][0] - fromUV[0], SIM_BASE_UV[base][1] - fromUV[1]];
+      const L = Math.hypot(dir[0], dir[1]) || 1;
+      const past = [SIM_BASE_UV[base][0] + dir[0] / L * 0.5, SIM_BASE_UV[base][1] + dir[1] / L * 0.5];
+      const th2 = simThrow(fromUV, past, at);
+      th2.base = base; th2.mode = 'wild';
+      sim.throws.push(th2);
+      return th2;
+    }
+    sim.throws.push(th);
+    return th;
+  };
+  if (!opts.noThrow && meetAt != null && !stands) {
+    const from = meetUV;
+    const at = meetAt + sim.transfer;
+    /* When the book says OUT, the picture has two honest knobs to make
+       the race come out that way: release the ball QUICKER (down to a
+       floor just past the pickup), and only then hold the runner in the
+       box a touch. The first cut only had the second knob, so a slow
+       fielder made the BATTER jog, which read as his fault. */
+    const beat = (th, runner, rebuild, margin) => {
+      const eta = runner.run.reached;
+      if (th.arrive <= eta - margin) return;
+      const pull = Math.min(th.arrive - (eta - margin),
+                            Math.max(0, th.t0 - (meetAt + 0.12)));
+      th.t0 -= pull; th.arrive -= pull;
+      if (th.arrive > eta - margin) rebuild(th.arrive - (eta - margin));
+    };
+    if (p.doublePlay) {
+      /* AHEAD OF the plain ground out check, because a double play IS a
+         ground out and the plain branch used to eat it: one throw, no
+         pivot, and the suite is what caught it. */
+      const th1 = throwTo(from, 1, at);
+      const th2 = throwTo(SIM_BASE_UV[1], 0, th1.arrive + SIM_TRANSFER);
+      const lead = sim.runners.find(r => !r.isBatter && r.fromIdx === 0);
+      if (lead) beat(th1, lead, (late) => {
+        lead.run = simRunPath(simRunnerPoints(0, 1), simRunnerSpeed(lead.c), CONTACT_AT,
+                              { delay: 0.05 + late });
+      }, 0.1);
+      /* the pivot rides the (possibly pulled) first leg */
+      const shift = th2.t0 - (th1.arrive + SIM_TRANSFER);
+      th2.t0 -= shift; th2.arrive -= shift;
+      beat(th2, batter, (late) => {
+        batter.run = simRunPath(simRunnerPoints(-1, 0), simRunnerSpeed(p.batter), CONTACT_AT,
+                                { runThrough: true, delay: 0.18 + late });
+      }, 0.1);
+      if (lead) lead.slideFrom = 0.8;
+      deadAt = th2.arrive + 0.25;
+      sim.applyAt = th2.arrive;
+    } else if (kind === 'ground out' || kind === 'bunt out') {
+      const th = throwTo(from, 0, at);
+      beat(th, batter, (late) => {
+        batter.run = simRunPath(simRunnerPoints(-1, 0), simRunnerSpeed(p.batter), CONTACT_AT,
+                                { runThrough: true, delay: 0.18 + late });
+      }, 0.12);
+      batter.slideFrom = null;
+      deadAt = th.arrive + 0.25;
+      sim.applyAt = th.arrive;
+    } else if (flyOut) {
+      /* caught. Throw it back in to second. */
+      const th = throwTo(from, 1, at);
+      deadAt = th.arrive + 0.2;
+      sim.applyAt = meetAt;
+    } else {
+      /* A HIT. The ball goes in to a base a runner is heading for and it
+         gets there just after he does: that is what a hit looks like,
+         and it is the whole difference between this and an out. The
+         fielder is allowed to hold it and look (he is deciding, the way
+         one does) for up to a second and a bit to make the timing true;
+         past that the throw goes to the base BEHIND the lead runner
+         instead, to keep the trailing man honest, with the same rule. */
+      const byLead = sim.runners.filter(r => r.toIdx >= 0 && r.toIdx <= 3)
+                                .sort((a, b) => b.toIdx - a.toIdx);
+      /* a throw from `origin` at or after `ready` to a base where a
+         runner is arriving, timed to get there just after him */
+      const lateThrow = (origin, ready, maxHold) => {
+        for (const r of byLead) {
+          const base = r.toIdx;
+          const trial = simThrow(origin, SIM_BASE_UV[base], ready);
+          const launch = Math.max(ready, r.run.reached + 0.22 - trial.T);
+          if (launch - ready <= maxHold) {
+            const th = throwTo(origin, base, launch);
+            if (Math.abs(th.arrive - r.run.reached) < 0.6) r.slideFrom = 0.82;
+            return th;
+          }
+        }
+        return null;
+      };
+      let th = lateThrow(from, at, 0.6);
+      if (!th && cutoff >= 0) {
+        /* through the cutoff man: out to him at once, then in from him */
+        const c = F[cutoff];
+        const toCut = simThrow(from, cutoffUV, at);
+        toCut.base = -1; toCut.mode = 'relay';
+        sim.throws.push(toCut);
+        const ready2 = Math.max(toCut.arrive, c.run.reached) + SIM_TRANSFER;
+        th = lateThrow(cutoffUV, ready2, 1.5);
+        if (!th) th = throwTo(cutoffUV, byLead.length ? Math.max(1, byLead[byLead.length - 1].toIdx) : 1, ready2 + 1.2);
+        c.relayAt = ready2;
+      }
+      if (!th) th = lateThrow(from, at, 1.4) || throwTo(from, 1, at + 1.0);
+      for (const r of sim.runners) if (r.toIdx === 3 && !r.isBatter) r.slideFrom = 0.84;
+      deadAt = Math.max(th.arrive, ...sim.runners.map(r => r.run.reached)) + 0.2;
+      sim.applyAt = sim.landAt;
+    }
+  } else if (stands) {
+    sim.applyAt = sim.landAt;
+    deadAt = Math.max(sim.landAt + 0.6, ...sim.runners.map(r => r.run.reached)) + 0.3;
+  } else {
+    /* a minigame owns the throw; the plan waits at the glove */
+    sim.applyAt = meetAt != null ? meetAt : sim.landAt;
+    deadAt = sim.applyAt + 2.5;
+  }
+  sim.deadAt = deadAt;
+  sim.finishAt = Math.min(deadAt, (sim.applyAt || 0) + 1.4) + 0.5;
+  sim.end = Math.max(deadAt, ...sim.runners.map(r => (r.back ? r.back.end : r.run.end))) + 0.4;
+  return sim;
+}
+
+/* A minigame decided the throw after the plan was made. */
+function simAddThrow(sim, base, mode, whenT) {
+  if (!sim || !sim.meetUV) return null;
+  const at = Math.max(whenT, sim.meetAt + (sim.transfer || SIM_TRANSFER));
+  const th = simThrow(sim.meetUV, mode === 'wild'
+    ? [SIM_BASE_UV[base][0] + (SIM_BASE_UV[base][0] - sim.meetUV[0]) * 0.6,
+       SIM_BASE_UV[base][1] + (SIM_BASE_UV[base][1] - sim.meetUV[1]) * 0.6]
+    : SIM_BASE_UV[base], at);
+  th.base = base; th.mode = mode || 'normal';
+  sim.throws.push(th);
+  const batter = sim.runners.find(r => r.isBatter);
+  if (batter && base === 0) {
+    if (mode === 'out' && th.arrive > batter.run.reached - 0.12) {
+      batter.run = simRunPath(simRunnerPoints(-1, 0), simRunnerSpeed(batter.c), sim.ballT0,
+                              { runThrough: true, delay: 0.18 + (th.arrive - batter.run.reached + 0.12) });
+    } else if (mode !== 'out' && th.arrive < batter.run.reached + 0.15) {
+      /* he beats it: the throw was late, so it is */
+      th.t0 += (batter.run.reached + 0.15) - th.arrive;
+      th.arrive = th.t0 + th.T;
+    }
+  }
+  sim.deadAt = th.arrive + 0.3;
+  sim.end = Math.max(sim.deadAt, ...sim.runners.map(r => r.run.end)) + 0.4;
+  return th;
+}
+
+/* The fly ball was not caught after all: it drops in, or gets past him. */
+function simDropBall(sim, mode) {
+  const G = sim.G;
+  const k = Math.round((sim.landAt - sim.ballT0) / SIM_DT);
+  const land = sim.ball[Math.min(k, sim.ball.length - 1)];
+  const start = [land[0], land[1]];
+  let target;
+  if (mode === 'miss') {
+    /* over his head: carries on another sixty feet before it lands */
+    const dir = [land[0] - 0.0, land[1] - 0.0];
+    const L = Math.hypot(dir[0], dir[1]) || 1;
+    target = [land[0] + dir[0] / L * 0.7, land[1] + dir[1] / L * 0.7];
+  } else {
+    target = [land[0] + 0.06, land[1] + 0.04];
+  }
+  const after = simBallFlight(start, target, mode === 'miss' ? 0.5 : 0.18, mode === 'miss' ? 40 : 8, {});
+  sim.ball = sim.ball.slice(0, k + 1).concat(after.samples.slice(1));
+  sim.restAt = sim.landAt + after.restAt;
+  sim.restUV = after.restUV;
+  /* he chases it down from where he was */
+  const F = sim.fielders[sim.fielderPost];
+  const fman = fielderAt(currentFieldingTeam(), sim.fielderPost);
+  const fs = fman ? simFielderSpeed(fman) : 0.35;
+  const at = Math.max(sim.landAt + 0.3, sim.restAt);
+  F.run = simRunPath([sim.meetUV, sim.restUV], fs, sim.landAt + 0.25, {});
+  sim.meetAt = Math.max(at, F.run.reached);
+  sim.meetUV = sim.restUV;
+  F.meetAt = sim.meetAt;
+  /* Runners take what the outcome gave them, FROM WHERE THEY ARE. The
+     first cut rebuilt each run from its base at contact time, so a man
+     who had taken his two-step lead and frozen for the catch jumped to
+     wherever a from-the-start sprint would have put him. */
+  const nowT = sim.landAt + 0.05;
+  for (const r of sim.runners) {
+    const to = mode === 'miss' ? (r.isBatter ? 2 : Math.min(3, r.fromIdx + 3)) : (r.isBatter ? 0 : Math.min(3, r.fromIdx + 1));
+    const cur = simSample(r.back && nowT >= r.back.t0 ? r.back : r.run, nowT).uv;
+    r.toIdx = to;
+    r.back = null;
+    const pts = [cur].concat(simRunnerPoints(r.fromIdx, to).slice(1));
+    r.run = simRunPath(pts, simRunnerSpeed(r.c), nowT,
+                       { runThrough: to === 0, delay: 0.1 });
+    if (!r.isBatter && to === 3) r.slideFrom = 0.84;
+  }
+  sim.transfer = SIM_PICKUP;
+  const th = simAddThrow(sim, mode === 'miss' ? 2 : 1, 'late', sim.meetAt + SIM_PICKUP);
+  sim.deadAt = Math.max(th ? th.arrive : sim.meetAt, ...sim.runners.map(r => r.run.reached)) + 0.3;
+  sim.end = sim.deadAt + 0.4;
+}
+
+/* Where everything is at time t (seconds since the play started). */
+function simSample(run, t) {
+  const k = Math.floor((t - run.t0) / SIM_DT);
+  const S = run.samples;
+  if (k < 0) return { uv: [S[0][0], S[0][1]], s: 0, moving: false };
+  if (k >= S.length) { const L = S[S.length - 1]; return { uv: [L[0], L[1]], s: L[2], moving: false }; }
+  const a = S[k];
+  return { uv: [a[0], a[1]], s: a[2], moving: a[3] };
+}
+/* One moving figure outside a full play: the walk jog, the steal. Same
+   sampling, same stride rule, so a man moves the same way everywhere. */
+function simMiniPose(run, t, slideFrom) {
+  const smp = simSample(run, t);
+  let pose = null;
+  if (smp.moving) {
+    const prev = simSample(run, t - 0.05);
+    const away = smp.uv[0] + smp.uv[1] > prev.uv[0] + prev.uv[1] + 0.002;
+    const stride = Math.floor(smp.s / 0.07) % 2 === 0;
+    pose = away ? (stride ? 'back-run-a' : 'back-run-b') : (stride ? 'run-a' : 'run-b');
+    if (slideFrom != null && run.total > 0 && smp.s / run.total > slideFrom) pose = 'slide';
+  }
+  return { uv: smp.uv, pose, moving: smp.moving };
+}
+
+function simBallAt(sim, t) {
+  /* a throw in the air overrides the free ball */
+  for (const th of sim.throws) {
+    if (t >= th.t0 && t <= th.arrive) {
+      const k = Math.min(th.samples.length - 1, Math.floor((t - th.t0) / SIM_DT));
+      const b = th.samples[k];
+      return { uv: [b[0], b[1]], h: b[2], held: false, thrown: true };
+    }
+  }
+  const lastThrow = sim.throws.filter(th => t > th.arrive).sort((a, b) => b.arrive - a.arrive)[0];
+  if (lastThrow) {
+    const end = lastThrow.samples[lastThrow.samples.length - 1];
+    return { uv: [end[0], end[1]], h: 0, held: lastThrow.mode !== 'wild', atBase: lastThrow.base,
+             relay: lastThrow.mode === 'relay' };
+  }
+  if (sim.meetAt != null && t >= sim.meetAt) {
+    return { uv: sim.meetUV, h: 0, held: true, byPost: sim.fielderPost };
+  }
+  const k = Math.floor((t - sim.ballT0) / SIM_DT);
+  if (k < 0) return null;
+  const b = sim.ball[Math.min(k, sim.ball.length - 1)];
+  return { uv: [b[0], b[1]], h: b[2], held: false };
+}
+
+/* Draw the plan at time t. Called from inside the world pass, with the
+   same G the field was drawn with. */
+function drawPlaySim(ctx, sim, t, G, opts) {
+  opts = opts || {};
+  const fteam = sim.fteam || currentFieldingTeam();
+  const ball = simBallAt(sim, t);
+  const items = [];       /* everything, sorted by screen y so nearer draws later */
+  /* fielders */
+  for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) {
+    const F = sim.fielders[i];
+    /* the pitcher only joins the picture when the play is his (a bunt);
+       otherwise the static mound draw owns him */
+    if (i === 0 && (!F || F.role !== 'field')) continue;
+    const man = fielderAt(fteam, i);
+    if (!man) continue;
+    const smp = simSample(F.run, t);
+    const [x, y] = simProject(G, smp.uv[0], smp.uv[1]);
+    let pose = null;
+    if (smp.moving) {
+      const prev = simSample(F.run, t - 0.05);
+      const away = smp.uv[0] + smp.uv[1] > prev.uv[0] + prev.uv[1] + 0.002;
+      const stride = Math.floor(smp.s / 0.075) % 2 === 0;
+      pose = away ? (stride ? 'back-run-a' : 'back-run-b') : (stride ? 'run-a' : 'run-b');
+    }
+    if (F.role === 'field' && F.meetAt != null) {
+      /* arms up for a ball in the air; a pickup is a stoop, which the
+         sprite has no frame for, so he simply stops and then throws */
+      if (sim.kind === 'fly out' && t >= F.meetAt - 0.12 && t < F.meetAt + 0.35) pose = 'catch';
+    }
+    /* whoever is standing where a throw leaves from is throwing it, and
+       whoever is standing where one lands is catching it */
+    for (const th of sim.throws) {
+      const o = th.samples[0], e = th.samples[th.samples.length - 1];
+      if (simDist(o, smp.uv) < 0.1 && t >= th.t0 - 0.32 && t < th.t0 + 0.22) pose = 'throw';
+      if (th.mode !== 'wild' && simDist(e, smp.uv) < 0.12 && t >= th.arrive - 0.25 && t < th.arrive + 0.45) pose = 'catch';
+    }
+    /* depth scale: taken from the post nearest in screen y, the way the
+       static draw sizes them */
+    const sc = sim.posts[i].sc;
+    items.push({ y, draw: () => drawRunner(ctx, x, y, man, sc, pose) });
+    if (i === sim.fielderPost) sim.chaseAt = { x, y };
+  }
+  /* runners */
+  for (const r of sim.runners) {
+    let smp = simSample(r.run, t);
+    if (r.back && t >= r.back.t0) smp = simSample(r.back, t);
+    const [x, y] = simProject(G, smp.uv[0], smp.uv[1]);
+    let pose = null;
+    if (smp.moving) {
+      const prev = simSample(r.back && t >= r.back.t0 ? r.back : r.run, t - 0.05);
+      const away = smp.uv[0] + smp.uv[1] > prev.uv[0] + prev.uv[1] + 0.002;
+      const stride = Math.floor(smp.s / 0.07) % 2 === 0;
+      pose = away ? (stride ? 'back-run-a' : 'back-run-b') : (stride ? 'run-a' : 'run-b');
+      if (r.slideFrom != null && r.run.total > 0 && smp.s / r.run.total > r.slideFrom) pose = 'slide';
+    } else if (r.isBatter && t < sim.ballT0 + 0.12) {
+      pose = 'swing';
+    }
+    const sc = r.isBatter && t < 0.5 ? 3.0 : (smp.uv[0] + smp.uv[1] > 1.4 ? 2.45 : 2.6);
+    items.push({ y, draw: () => drawRunner(ctx, x, y - 4, r.c, sc, pose) });
+  }
+  /* the ball, last among things on the ground at its depth */
+  if (ball && !ball.held) {
+    const [x, gy] = simProject(G, ball.uv[0], ball.uv[1]);
+    items.push({ y: gy + 1, draw: () => drawBaseball(ctx, x, gy - ball.h, gy) });
+  } else if (ball && ball.held && ball.byPost != null && opts.showHeld !== false) {
+    /* in the glove: a small ball by the fielder's hand for a beat */
+    const F = sim.fielders[ball.byPost];
+    if (F && t < (sim.meetAt + (sim.transfer || SIM_TRANSFER))) {
+      const smp = simSample(F.run, t);
+      const [x, y] = simProject(G, smp.uv[0], smp.uv[1]);
+      items.push({ y: y + 2, draw: () => drawBaseball(ctx, x + 12, y - 30) });
+    }
+  }
+  items.sort((a, b) => a.y - b.y);
+  for (const it of items) it.draw();
+}
+
 function scheduleContactPlay(kind, batter) {
   const g = State.game;
   /* Bat meets ball. The crack fires immediately, before the ball travels,
@@ -6761,16 +7559,26 @@ function scheduleContactPlay(kind, batter) {
     runnerPaths: preBases.map((r, i) => r ? existingRunnerPathIndices(i, effective) : null),
     applied: false,
   };
+  /* The plan. Everything below takes its clock from it. */
+  g.play.sim = buildPlaySim(g.play);
+  g.tail = null; g.jog = null; g.foulFx = null;
 
-  const applyMs = traj.duration;   /* apply mutation when ball arrives */
+  const applyMs = Math.round(g.play.sim.applyAt * 1000);   /* the decisive moment */
   setTimeout(() => {
     if (!g.play || g.play.applied) return;
     g.play.applied = true;
     /* Landing FX: dust on the ground where the ball comes down, glove
        flash on a caught fly ball, confetti + shake on a home run. */
     const geo = fieldGeom();
-    const landingX = geo.cx + g.play.ball.dx * geo.r;
-    const landingY = geo.cy + g.play.ball.dy * geo.r;
+    /* Where the SIM put the ball down, not the old straight-line guess.
+       An out's dust belongs at the bag the out happened at. */
+    const s0 = g.play.sim;
+    const k0 = Math.round((s0.landAt - s0.ballT0) / SIM_DT);
+    const lp = s0.ball[Math.min(k0, s0.ball.length - 1)];
+    let [landingX, landingY] = simProject(geo, lp[0], lp[1]);
+    if (g.play.kind === 'ground out' || g.play.kind === 'bunt out') {
+      [landingX, landingY] = simProject(geo, 1, 0);
+    }
     if (g.play.kind === 'home run') {
       confettiBurst(g, geo.cx, geo.cy);
       /* A white pop where the ball splashes down in the seats, so the
@@ -6833,14 +7641,17 @@ function scheduleContactPlay(kind, batter) {
     } else {
       applyHitMutation(effective, batter);
     }
+    simReconcile(g.play);
     refreshHud();
   }, applyMs);
 
-  const finishMs = traj.duration + 700;
+  const finishMs = Math.round(g.play.sim.finishAt * 1000);
   setTimeout(() => {
     if (!g.play) return;
     const wasOut = g.play.isOut && !g.play.onError;
     const wasDP = g.play.doublePlay;
+    /* The runners still finishing keep finishing while the game moves on. */
+    g.tail = g.play.sim;
     g.play = null;
     /* Check for a walk-off: home team leads at the end of a play in the
        bottom of the final inning or later. */
@@ -6849,6 +7660,32 @@ function scheduleContactPlay(kind, batter) {
     if (wasOut) afterOutTransition();
     else        afterHitTransition(g && g.away && g.home ? kind : kind);
   }, finishMs);
+}
+
+/* The mutation can send a runner further than the plan did (waved round
+   from second on a single, or thrown out at the plate). Extend his run
+   from where he is now so the picture agrees with the book. */
+function simReconcile(p) {
+  const g = State.game;
+  if (!p || !p.sim) return;
+  const sim = p.sim;
+  const now = (performance.now() - sim.t0) / 1000;
+  for (const r of sim.runners) {
+    if (r.isBatter) continue;
+    const still = g.bases.indexOf(r.c);
+    const dest = still >= 0 ? still : 3;          /* not on a base: he scored, or was put out at home */
+    if (dest === r.toIdx) continue;
+    const here = simSample(r.run, now).uv;
+    /* waved further: run on through the bags. Held short: turn and get
+       back to the bag the book kept him on. */
+    const pts = dest >= r.toIdx
+      ? [here].concat(simRunnerPoints(r.toIdx, dest).slice(1))
+      : [here, SIM_BASE_UV[dest]];
+    r.toIdx = dest;
+    r.run = simRunPath(pts, simRunnerSpeed(r.c), now, {});
+    if (dest === 3) r.slideFrom = 0.8;
+  }
+  sim.end = Math.max(sim.end, ...sim.runners.map(r => r.run.end)) + 0.3;
 }
 
 function applyDoublePlayMutation(batter) {
@@ -7006,19 +7843,20 @@ function scheduleThrowMinigame(kind, batter) {
     applied: false,
     throwActive: false,
   };
+  /* The plan runs the fielder to the ball and waits there: the throw is
+     the player's, and it is added when they make it. */
+  g.play.sim = buildPlaySim(g.play, { noThrow: true });
+  g.tail = null; g.jog = null; g.foulFx = null;
 
-  const geo = fieldGeom();
-  const angle = Math.atan2(traj.dy * geo.r, traj.dx * geo.r);
-  const landingX = geo.cx + Math.cos(angle) * geo.r * 0.9;
-  const landingY = geo.cy + Math.sin(angle) * geo.r * 0.9;
-
-  /* At ball-arrival time, spawn dust and open the throw window. */
+  /* When the fielder has it, open the throw window. */
   setTimeout(() => {
     if (!g.play || g.play.applied) return;
-    dustPuff(g, landingX, landingY, 'rgba(205,170,120,.9)');
+    const geo = fieldGeom();
+    const [lx, ly] = simProject(geo, g.play.sim.meetUV[0], g.play.sim.meetUV[1]);
+    dustPuff(g, lx, ly, 'rgba(205,170,120,.9)');
     Sound.play('catch');
     startThrowWindow(kind, batter);
-  }, traj.duration);
+  }, Math.round(g.play.sim.meetAt * 1000));
 }
 
 function startThrowWindow(kind, batter) {
@@ -7071,6 +7909,13 @@ function resolveThrow(outcome, kind, batter) {
   const g = State.game;
   if (!g.play || g.play.applied) return;
   g.play.applied = true;
+  /* the throw itself, now that it is decided */
+  let arriveMs = 900;
+  if (g.play.sim) {
+    const nowT = (performance.now() - g.play.sim.t0) / 1000;
+    const th = simAddThrow(g.play.sim, 0, outcome === 'out' ? 'out' : outcome === 'error' ? 'wild' : 'late', nowT);
+    if (th) arriveMs = Math.max(200, Math.round((th.arrive - nowT) * 1000));
+  }
   if (outcome === 'out') {
     applyOutMutation('ground out', batter);
     showCallout('OUT AT FIRST', 'hit');
@@ -7094,10 +7939,11 @@ function resolveThrow(outcome, kind, batter) {
   const wasOut = outcome === 'out';
   setTimeout(() => {
     if (!State.game) return;
+    if (State.game.play) State.game.tail = State.game.play.sim;
     State.game.play = null;
     if (wasOut) afterOutTransition();
     else afterHitTransition('single');
-  }, 900);
+  }, arriveMs + 500);
 }
 
 /* -------- Fly-ball catch minigame --------
@@ -7125,10 +7971,11 @@ function scheduleFlyCatchMinigame(kind, batter) {
     applied: false,
     catchActive: false,
   };
+  /* Planned as a catch; if the player misses it, the plan is amended. */
+  g.play.sim = buildPlaySim(g.play, { noThrow: true });
+  g.tail = null; g.jog = null; g.foulFx = null;
   const geo = fieldGeom();
-  const angle = Math.atan2(traj.dy * geo.r, traj.dx * geo.r);
-  const landingX = geo.cx + Math.cos(angle) * geo.r * 0.9;
-  const landingY = geo.cy + Math.sin(angle) * geo.r * 0.9;
+  const [landingX, landingY] = simProject(geo, g.play.sim.meetUV[0], g.play.sim.meetUV[1]);
   /* When the ball starts descending, the catch window opens. */
   const openAt = traj.duration * 0.6;
   setTimeout(() => {
@@ -7189,6 +8036,10 @@ function resolveCatch(outcome, kind, batter, landingX, landingY) {
   const g = State.game;
   if (!g.play || g.play.applied) return;
   g.play.applied = true;
+  if (g.play.sim) {
+    if (outcome === 'catch') simAddThrow(g.play.sim, 1, 'late', g.play.sim.meetAt + SIM_TRANSFER);
+    else simDropBall(g.play.sim, outcome);
+  }
   if (outcome === 'catch') {
     gloveFlash(g, landingX, landingY);
     Sound.play('catch');
@@ -7215,6 +8066,7 @@ function resolveCatch(outcome, kind, batter, landingX, landingY) {
   const hitKind = outcome === 'single' ? 'single' : 'triple';
   setTimeout(() => {
     if (!State.game) return;
+    if (State.game.play) State.game.tail = State.game.play.sim;
     State.game.play = null;
     if (wasOut) afterOutTransition();
     else afterHitTransition(hitKind);
@@ -7306,6 +8158,23 @@ function recordWalk() {
   const batter = currentBatter();
   addLog(`${batter.n} walks.`);
   showCallout('WALK', 'sub');
+  /* EVERYBODY JOGS. The batter used to appear on first and the forced
+     men on their new bags between two frames. Now the batter trots his
+     ninety feet and each forced runner trots his, at a walk-pace jog,
+     while the game gets on with the next at bat around them. */
+  {
+    const ents = [];
+    const jog = (c, from, to) => ents.push({
+      c, sc: 2.55,
+      run: simRunPath(simRunnerPoints(from, to), simRunnerSpeed(c) * 0.66, 0, { delay: from === -1 ? 0.15 : 0.3 }),
+    });
+    jog(batter, -1, 0);
+    if (g.bases[0]) jog(g.bases[0], 0, 1);
+    if (g.bases[0] && g.bases[1]) jog(g.bases[1], 1, 2);
+    if (g.bases[0] && g.bases[1] && g.bases[2]) jog(g.bases[2], 2, 3);
+    g.jog = { t0: performance.now(), ents,
+              end: Math.max(...ents.map(e => e.run.end)) + 0.2 };
+  }
   const bases = g.bases;
   let scored = 0;
   if (bases[0] && bases[1] && bases[2]) { scored = 1; g.bases = [batter, bases[0], bases[1]]; }
@@ -7412,6 +8281,7 @@ function endHalfInning() {
   g.bases = [null,null,null];
   g.outs = 0;
   g.balls = 0; g.strikes = 0;
+  g.jog = null; g.steal = null; g.foulFx = null;
   if (g.half === 'top') {
     g.half = 'bottom';
   } else {
@@ -7436,7 +8306,11 @@ function endHalfInning() {
      after SIDE RETIRED has had its moment. */
   if (g.half === 'top' && g.inning > g.innings) {
     addLog(`Tied after ${g.innings}. Extra innings.`, true);
-    setTimeout(() => { if (State.game === g && !g.over) showCallout('EXTRA INNINGS', 'homer'); }, 1200);
+    /* after SIDES CHANGE has had its moment and before the next batter
+       takes the plaque back: at Fast the whole beat is fourteen hundred
+       milliseconds, so this cannot be a fixed twelve hundred */
+    setTimeout(() => { if (State.game === g && !g.over) showCallout('EXTRA INNINGS', 'homer'); },
+               Math.min(1200, Math.round(BEAT.betweenHalfInnings * 0.5)));
   }
   /* The side that is about to field gets a look at its own staff first,
      so a change lands before the board draws and the board tells the
@@ -8299,6 +9173,41 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   const field = G;
 
   if (g) {
+    /* One answer to "is a planned play on the screen", used everywhere a
+       static figure would otherwise be drawn on top of a moving one. */
+    const simDrawing = !!((g.play && g.play.sim) ||
+                          (g.tail && (performance.now() - g.tail.t0) / 1000 < g.tail.end));
+    /* THE BATTER AT THE PLATE, every state of him: walking up from the on
+       deck circle, standing in, and the bat coming round when he swings.
+       Drawn by both the quiet branch and the tail branch, so he behaves
+       the same while the last play is still ending. */
+    const drawPlateBatter = () => {
+      const batter = currentBatter();
+      if (!batter) return;
+      const f = FG.at(1);
+      const nowB = performance.now();
+      if (g._plateWho !== batter) {
+        g._plateWho = batter;
+        g.batterIn = { t0: nowB, dur: 750 };
+      }
+      if (g.swingFx && nowB < g.swingFx.until) {
+        drawRunner(ctx, cx - 28 + f.dx, plateY + 6 + f.dy, batter, f.sc, 'swing');
+        const stw = clamp((nowB - g.swingFx.start) / 300, 0, 1);
+        drawBatSwing(ctx, cx - 28 + f.dx, plateY + 4 + f.dy, stw, f.sc / 3.2);
+        return;
+      }
+      if (g.batterIn && nowB < g.batterIn.t0 + g.batterIn.dur) {
+        const u = (nowB - g.batterIn.t0) / g.batterIn.dur;
+        const e = u * (2 - u);
+        const ox = cx - rx * 0.62, oy = plateY + 30;
+        const x = ox + (cx - 28 - ox) * e, y = oy + (plateY + 6 - oy) * e;
+        const stride = Math.floor(nowB / 130) % 2 === 0;
+        drawRunner(ctx, x + f.dx, y + f.dy, batter, f.sc * (0.82 + 0.18 * e),
+                   u < 0.9 ? (stride ? 'run-a' : 'run-b') : 'batting');
+        return;
+      }
+      drawRunner(ctx, cx - 28 + f.dx, plateY + 6 + f.dy, batter, f.sc, 'batting');
+    };
     /* Catcher behind plate */
     /* (This once gated on catcher.pal, a field the old sprite system
        carried and the rewrite removed, so no catcher drew at all.) */
@@ -8308,7 +9217,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
        trying to read, and the on deck circle lands underneath the
        foreground batter. Both fade out as the camera comes in. */
     const plateCrowd = 1 - cam.t;
-    if (plateCrowd > 0.02) {
+    if (plateCrowd > 0.02 && !simDrawing) {
       ctx.save();
       ctx.globalAlpha = plateCrowd;
       const catcher = fielderAt(currentFieldingTeam(), 8) || fielderAt(currentFieldingTeam(), 1);
@@ -8338,7 +9247,10 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     } else if (pitch && inWindup) {
       pitcherPose = 'windup';
     }
-    if (pit) drawRunner(ctx, cx, moundY - 6, pit, 2.6, pitcherPose);
+    const activeSim = (g.play && g.play.sim) || g.tail;
+    if (pit && !(simDrawing && activeSim && activeSim.fielderPost === 0)) {
+      drawRunner(ctx, cx, moundY - 6, pit, 2.6, pitcherPose);
+    }
     /* During the windup the ball shows raised at the pitcher's hand, so
        the eye is already on the spot the pitch will leave from. */
     if (pitch && inWindup) drawBaseball(ctx, cx + 10, moundY - 58);
@@ -8348,14 +9260,33 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     const fteam = currentFieldingTeam();
     /* The man chasing the ball is drawn on his path below, not here, or
        he appears twice: once sprinting and once still at his post. */
-    const chasing = (g.play && g.play.ball) ? chaseFor(g.play, G, w, r).i : -1;
+    const planned = simDrawing;
+    const chasing = (!planned && g.play && g.play.ball) ? chaseFor(g.play, G, w, r).i : -1;
     for (const q of fielderPosts(G, w)) {
+      if (planned) break;
       if (q.i === chasing) continue;
       const man = fielderAt(fteam, q.i);
       if (man) drawRunner(ctx, q.x, q.y, man, q.sc);
     }
 
-    if (g.play) {
+    const simT = (sim) => (performance.now() - sim.t0) / 1000;
+    if (g.play && g.play.sim) {
+      /* THE PLAN, drawn. Fielders, runners, the ball, all from one clock. */
+      const p = g.play;
+      drawPlaySim(ctx, p.sim, simT(p.sim), G);
+      p.chaseAt = p.sim.chaseAt;
+      const now = performance.now();
+      if (p.plateOut && now - p.plateOut.at < 1500) {
+        const catcher = fielderAt(currentFieldingTeam(), 8) || fielderAt(currentFieldingTeam(), 1);
+        if (catcher) drawRunner(ctx, cx + 8, plateY + 6, catcher, 2.3, 'catch');
+      }
+      /* Bat swing arc, first 240ms of the play */
+      if (now < p.swingUntil) {
+        const st = clamp((now - p.startedAt) / (p.swingUntil - p.startedAt), 0, 1);
+        const f = FG.at(1);
+        drawBatSwing(ctx, cx - 28 + f.dx, plateY + 4 + f.dy, st, f.sc / 3.2);
+      }
+    } else if (g.play) {
       /* A contact play is animating. Draw the pre-play runners along
          their paths, and the batter as another runner along their own
          path. The bases themselves are only rewritten when the play's
@@ -8463,29 +9394,66 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         const gy = startY + (endY - startY) * bt2;
         drawBaseball(ctx, bxx, byy, gy);
       }
-    } else {
-      /* No play in flight: runners are static on their bases, batter
-         stands in the batter's box. */
-      const bs = g.bases;
-      const st = g.steal;
-      const now2 = performance.now();
-      if (st && now2 < st.until && bs[0] === st.runner) {
-        /* Mid steal: along the line from first to second, run frames on,
-           and the last quarter is a slide into the bag. */
-        const u = clamp((now2 - st.start) / (st.until - st.start), 0, 1);
-        const [sx, sy] = pathPointAt(field, [0, 1], u);
-        const beat = Math.floor(now2 / 130) % 2 === 0;
-        const pose = u > 0.72 ? 'slide' : (beat ? 'back-run-a' : 'back-run-b');
-        drawRunner(ctx, sx, sy - 5, st.runner, 2.55, pose);
-      } else if (bs[0]) {
-        drawRunner(ctx, bases[0][0], bases[0][1] - 6, bs[0], 2.6);
-      }
-      if (bs[1]) drawRunner(ctx, bases[1][0], bases[1][1] - 6, bs[1], 2.45);
-      if (bs[2]) drawRunner(ctx, bases[2][0], bases[2][1] - 6, bs[2], 2.6);
+    } else if (g.tail && simT(g.tail) < g.tail.end) {
+      /* The last play's runners are still finishing and its fielders are
+         still walking back. Nothing about the game waits for this. */
+      drawPlaySim(ctx, g.tail, simT(g.tail), G, { showHeld: false });
       const batter = currentBatter();
-      if (batter) {
-        const f = FG.at(1);
-        drawRunner(ctx, cx - 28 + f.dx, plateY + 6 + f.dy, batter, f.sc, 'batting');
+      if (batter && !g.tail.runners.some(r => r.c === batter)) drawPlateBatter();
+    } else {
+      /* The quiet branch: nobody is mid-play, but a steal, a walk jog or
+         a foul ball can still be moving through it. Anyone being drawn in
+         motion is skipped by the static draw, or he appears twice. */
+      const bs = g.bases;
+      const now2 = performance.now();
+      const skipDraw = [];
+      const st = g.steal;
+      if (st && st.sim && now2 < st.sim.t0 + st.sim.end * 1000) {
+        const t = (now2 - st.sim.t0) / 1000;
+        skipDraw.push(st.runner);
+        const mp = simMiniPose(st.sim.run, t, 0.72);
+        const [sx, sy] = simProject(field, mp.uv[0], mp.uv[1]);
+        drawRunner(ctx, sx, sy - 5, st.runner, 2.5, mp.pose);
+        /* the shortstop takes the throw at the bag */
+        const ss = fielderAt(currentFieldingTeam(), 2);
+        if (ss) {
+          const cp = simMiniPose(st.sim.cover, t, null);
+          const [cxp, cyp] = simProject(field, cp.uv[0], cp.uv[1]);
+          const catching = t > st.sim.th.arrive - 0.25 && t < st.sim.th.arrive + 0.5;
+          drawRunner(ctx, cxp, cyp - 4, ss, 2.45, catching ? 'catch' : cp.pose);
+        }
+        /* the catcher's throw, in the air */
+        if (t >= st.sim.th.t0 && t <= st.sim.th.arrive) {
+          const k = Math.min(st.sim.th.samples.length - 1, Math.floor((t - st.sim.th.t0) / SIM_DT));
+          const bsm = st.sim.th.samples[k];
+          const [bx2, gy2] = simProject(field, bsm[0], bsm[1]);
+          drawBaseball(ctx, bx2, gy2 - bsm[2], gy2);
+        }
+      }
+      if (g.jog && now2 < g.jog.t0 + g.jog.end * 1000) {
+        const t = (now2 - g.jog.t0) / 1000;
+        for (const ent of g.jog.ents) {
+          skipDraw.push(ent.c);
+          const mp = simMiniPose(ent.run, t, null);
+          const [jx, jy] = simProject(field, mp.uv[0], mp.uv[1]);
+          drawRunner(ctx, jx, jy - 5, ent.c, ent.sc, mp.pose);
+        }
+      } else if (g.jog) {
+        g.jog = null;
+      }
+      if (bs[0] && skipDraw.indexOf(bs[0]) < 0) drawRunner(ctx, bases[0][0], bases[0][1] - 6, bs[0], 2.6);
+      if (bs[1] && skipDraw.indexOf(bs[1]) < 0) drawRunner(ctx, bases[1][0], bases[1][1] - 6, bs[1], 2.45);
+      if (bs[2] && skipDraw.indexOf(bs[2]) < 0) drawRunner(ctx, bases[2][0], bases[2][1] - 6, bs[2], 2.6);
+      const walker = g.jog && g.jog.ents.some(e => e.c === currentBatter());
+      if (!walker) drawPlateBatter();
+      /* a foul ball sprays up and away, out of play */
+      if (g.foulFx && now2 < g.foulFx.start + g.foulFx.dur) {
+        const u = (now2 - g.foulFx.start) / g.foulFx.dur;
+        const fx2 = g.foulFx.x0 + g.foulFx.dx * u;
+        const fy2 = g.foulFx.y0 + g.foulFx.dy * u - g.foulFx.arc * 4 * u * (1 - u);
+        drawBaseball(ctx, fx2, fy2);
+      } else if (g.foulFx) {
+        g.foulFx = null;
       }
     }
   }
@@ -8500,6 +9468,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
      travel is therefore remapped to finish at t = ideal. Past that
      point the ball sits in the catcher's mitt. */
   if (pitch && !inWindup && !(g && g.play)) {
+    if (g && g.tail) g.tail = null;     /* a new pitch ends the tail */
     const bx = cx;
     const by = moundY - 22;    /* release point, out of the pitcher's hand */
     const px = cx;
@@ -9651,14 +10620,27 @@ function attemptSteal() {
   const pitcher = currentPitcher();
   g.pitch.swung = true;
   endAtBatCleanup();
-  /* The runner used to appear on second 900ms later with a plaque. He
-     runs there now: the draw loop carries him up the line for the length
-     of the play, so a steal looks like a steal. */
-  g.steal = { runner, start: performance.now(), until: performance.now() + 900 };
-  addLog(`${runner.n} breaks for 2nd.`);
-  showCallout('STEAL ATTEMPT', 'sub');
   const odds = clamp(0.35 + (runner.spd - 60)/200 - ((pitcher.pit != null ? pitcher.pit : 50) - 55)/300, 0.15, 0.9);
   const success = Math.random() < odds;
+  /* THE PLAY, planned like any other. The runner sprints and slides, the
+     catcher comes up throwing, the shortstop slides over to take it at
+     the bag, and which of the two gets there first IS the outcome: the
+     tag or the dust cloud tells you before the plaque does. */
+  const run = simRunPath(simRunnerPoints(0, 1), simRunnerSpeed(runner) * 1.2, 0, { delay: 0.05 });
+  const reach = run.reached;
+  const arrive = success ? reach + 0.22 : reach - 0.28;
+  const flightT = simThrow([0, -0.02], SIM_BASE_UV[1], 0).T;
+  const th = simThrow([0, -0.02], SIM_BASE_UV[1], Math.max(0.15, arrive - flightT));
+  const ssMan = fielderAt(currentFieldingTeam(), 2);
+  const G2 = fieldGeom();
+  const ssFrom = simUnproject(G2, G2.cx - G2.rx * 0.42, G2.midY - G2.ry * 0.52);
+  const cover = simRunPath([ssFrom, [1.07, 1.03]], ssMan ? simFielderSpeed(ssMan) : 0.35, 0.1, {});
+  const end = Math.max(reach, th.arrive) + 1.0;
+  g.steal = { runner, start: performance.now(), until: performance.now() + Math.round(end * 1000),
+              sim: { t0: performance.now(), run, th, cover, end } };
+  addLog(`${runner.n} breaks for 2nd.`);
+  showCallout('STEAL ATTEMPT', 'sub');
+  const decideMs = Math.round((Math.max(reach, th.arrive) + 0.25) * 1000);
   setTimeout(() => {
     if (success) {
       g.bases[0] = null;
@@ -9673,9 +10655,9 @@ function attemptSteal() {
       showCallout('CAUGHT STEALING', 'strike');
     }
     refreshHud();
-    if (g.outs >= 3) return setTimeout(endHalfInning, 1200);
-    setTimeout(nextPitch, 1400);
-  }, 900);
+    if (g.outs >= 3) return setTimeout(endHalfInning, 900);
+    setTimeout(nextPitch, 1100);
+  }, decideMs);
 }
 
 function addLog(text, big=false) {

@@ -32,6 +32,7 @@
      the room fills up    the dugout takes the window and still fits above the fold
      fewer words          settings is headings and choices, and a rule sits behind a dot
      nothing cropped      the close shot still shows both foul lines, every fielder and the stands
+     the play moves       the plan's physics agree with the scorer: outs beaten, hits not
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -175,7 +176,9 @@ async function main() {
         g.half = 'bottom'; g.inning = 5; g.outs = 2; g.away.score = 2; g.home.score = 2;
         g.lineScore.away = [1, 0, 1, 0, 0]; g.lineScore.home = [0, 2, 0, 0, 0];
         recordOut('ground out', false);
-        await new Promise(r => setTimeout(r, 1500));
+        /* the plaque shows at half the beat and the next batter takes it
+           back at the full beat: read in between, whatever the speed */
+        await new Promise(r => setTimeout(r, Math.round(BEAT.betweenHalfInnings * 0.8)));
         const ths = document.querySelectorAll('#linescore thead th').length;
         const plaque = document.getElementById('callout');
         return { over: g.over, inning: g.inning, half: g.half, screen: State.screen,
@@ -1095,6 +1098,141 @@ async function main() {
       ok(r.view.t < r.standsBottom, 'the stands are in frame rather than above it',
          `view top ${Math.round(r.view.t)} vs stands to ${Math.round(r.standsBottom)}`);
       ok(r.zoom <= 1.10, 'the close shot is a push in, not a crop', 'zoom=' + r.zoom);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the play's plan agrees with the scorer ---- */
+    {
+      console.log('the play moves');
+      /* Every play is PLANNED before it is drawn: ball flight with bounce
+         and roll, runner kinematics, a fielder who intercepts, a throw.
+         The plan must agree with the outcome the rules already decided,
+         because the picture is a rendering of the book, not a second
+         opinion about it. These are the promises:
+
+           an OUT is a throw that beats the runner to the bag
+           a HIT is a throw that arrives after him
+           a DOUBLE PLAY is two throws that each beat their man
+           the ball moves continuously and dies inside the wall
+           the batter's run to first takes seconds, not the ball's clock
+
+         Each play is built with its timers stubbed and its dice loaded,
+         so the plan can be read as data without the game advancing. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const out = {};
+        const mk = (kind, withRunner) => {
+          g.play = null; g.tail = null; g.outs = 0;
+          /* the plain play path is the batter's; in the fielding half a
+             ground ball routes to the throw minigame instead */
+          g.half = g.away.isYou ? 'top' : 'bottom';
+          g.pitch = null;
+          g.bases = [withRunner ? g.away.batters[5] : null, null, null];
+          const realTimeout = window.setTimeout;
+          window.setTimeout = () => 0;
+          let i = 0; const dice = [0.9, 0.5, 0.3, 0.01];
+          const realRandom = Math.random;
+          Math.random = () => dice[i++ % dice.length];
+          scheduleContactPlay(kind, currentBatter());
+          window.setTimeout = realTimeout;
+          Math.random = realRandom;
+          const sim = g.play.sim;
+          const play = g.play;
+          g.play = null; g.tail = null;
+          return { sim, play };
+        };
+        const ballStats = (sim) => {
+          let step = 0, low = 0;
+          for (let k = 1; k < sim.ball.length; k++) {
+            const a = sim.ball[k - 1], b = sim.ball[k];
+            step = Math.max(step, Math.hypot(b[0] - a[0], b[1] - a[1]));
+            low = Math.min(low, b[2]);
+          }
+          const last = sim.ball[sim.ball.length - 1];
+          return { step: +step.toFixed(3), low, sum: +(last[0] + last[1]).toFixed(2) };
+        };
+
+        { /* the ground out */
+          const { sim, play } = mk('ground out', false);
+          const th = sim.throws.find(t => t.base === 0);
+          const bat = sim.runners.find(r => r.isBatter);
+          /* his own legs' time to first, for the same man */
+          const nat = simRunPath(simRunnerPoints(-1, 0), simRunnerSpeed(play.batter), 0.12,
+                                 { runThrough: true, delay: 0.18 }).reached;
+          out.go = { th: !!th, arrive: th && +th.arrive.toFixed(2),
+                     reach: +bat.run.reached.toFixed(2), nat: +nat.toFixed(2),
+                     beats: !!th && th.arrive < bat.run.reached,
+                     ball: ballStats(sim) };
+        }
+        { /* the single, with a man on */
+          const { sim } = mk('single', true);
+          const late = sim.throws.filter(t => t.base >= 0).every(t =>
+            sim.runners.filter(r => r.toIdx === t.base)
+                       .every(r => t.arrive > r.run.reached));
+          const bat = sim.runners.find(r => r.isBatter);
+          out.hit = { throws: sim.throws.length, late,
+                      batToFirst: +bat.run.reached.toFixed(2),
+                      ball: ballStats(sim),
+                      roles: Object.values(sim.fielders).map(f => f.role) };
+        }
+        { /* the double play */
+          const { sim, play } = mk('ground out', true);
+          const th1 = sim.throws[0], th2 = sim.throws[1];
+          const lead = sim.runners.find(r => !r.isBatter);
+          const bat = sim.runners.find(r => r.isBatter);
+          out.dp = { was: play.doublePlay, throws: sim.throws.length,
+                     firstBeatsLead: th1 && lead && th1.arrive < lead.run.reached,
+                     secondBeatsBatter: th2 && th2.arrive < bat.run.reached };
+        }
+        { /* the fly out: met in the air, where it lands, when it lands */
+          const { sim } = mk('fly out', false);
+          out.fly = { met: Math.abs(sim.meetAt - sim.landAt) < 0.001,
+                      fielderRole: sim.fielders[sim.fielderPost].role };
+        }
+        { /* the steal: the race is real both ways */
+          const realTimeout = window.setTimeout; window.setTimeout = () => 0;
+          const realRandom = Math.random;
+          g.bases = [g.away.batters[5], null, null];
+          g.pitch = { swung: false };
+          Math.random = () => 0.01;      /* safe */
+          attemptSteal();
+          const safe = State.game.steal.sim;
+          g.steal = null; g.bases = [g.away.batters[5], null, null];
+          g.pitch = { swung: false };
+          Math.random = () => 0.99;      /* caught */
+          attemptSteal();
+          const caught = State.game.steal.sim;
+          g.steal = null; g.pitch = null; g.bases = [null, null, null];
+          window.setTimeout = realTimeout; Math.random = realRandom;
+          out.steal = { safeWins: safe.th.arrive > safe.run.reached,
+                        caughtLoses: caught.th.arrive < caught.run.reached };
+        }
+        return out;
+      });
+      ok(r.go.th && r.go.beats, 'a ground out is a throw that beats the batter to first',
+         JSON.stringify(r.go));
+      ok(r.go.reach >= 1.4 && r.go.reach <= r.go.nat + 0.5,
+         'and his run to first is close to his own legs\' time',
+         `reach=${r.go.reach} natural=${r.go.nat}`);
+      ok(r.hit.late, 'a hit is a throw that arrives after the runner it chases',
+         JSON.stringify(r.hit));
+      ok(r.hit.throws >= 1, 'and the ball does come back in', 'throws=' + r.hit.throws);
+      ok(r.dp.was && r.dp.throws === 2 && r.dp.firstBeatsLead && r.dp.secondBeatsBatter,
+         'a double play is two throws that each beat their man', JSON.stringify(r.dp));
+      ok(r.fly.met && r.fly.fielderRole === 'field',
+         'a fly out is met in the air by the man who ran under it', JSON.stringify(r.fly));
+      for (const tag of ['go', 'hit']) {
+        ok(r[tag].ball.step < 0.09, `${tag}: the ball moves continuously, no teleports`,
+           'max step ' + r[tag].ball.step);
+        ok(r[tag].ball.low >= 0, `${tag}: and never goes underground`, 'low=' + r[tag].ball.low);
+        ok(r[tag].ball.sum <= 2.85, `${tag}: and dies inside the wall`, 'rest u+v=' + r[tag].ball.sum);
+      }
+      ok(r.steal.safeWins && r.steal.caughtLoses,
+         'a steal is a race: safe means the runner won it, caught means the throw did',
+         JSON.stringify(r.steal));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
