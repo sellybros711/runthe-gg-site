@@ -33,6 +33,8 @@
      fewer words          settings is headings and choices, and a rule sits behind a dot
      nothing cropped      the close shot still shows both foul lines, every fielder and the stands
      the play moves       the plan's physics agree with the scorer: outs beaten, hits not
+     the dive             a liner draws a lunge that lands short and breaks no duty
+     the snow             the cold parks play under falling snow
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -828,7 +830,7 @@ async function main() {
       ok(r.statBlocks === 0, 'the picture carries no stat blocks: it is not the draft screen');
       ok(r.lockedBehind, 'the ones still to earn stand at the back');
       ok(r.hitsSelf, 'pointing at a face lands on that face, not on the row in front');
-      ok(/Point at a face/.test(r.idle), 'the panel says what to do before you point', r.idle);
+      ok(/\d+ players/.test(r.idle), 'the idle panel carries the counts and nothing else', r.idle);
       ok(/Popeye/.test(r.open) && /POW 88/.test(r.open) && /SPD 55/.test(r.open)
          && /CON 60/.test(r.open) && /DEF 65/.test(r.open) && /PIT 62/.test(r.open),
          'hovering fills the panel with the name and all five numbers', r.open);
@@ -1124,7 +1126,7 @@ async function main() {
       const r = await pg.evaluate(() => {
         const g = State.game;
         const out = {};
-        const mk = (kind, withRunner) => {
+        const mk = (kind, withRunner, info) => {
           g.play = null; g.tail = null; g.outs = 0;
           /* the plain play path is the batter's; in the fielding half a
              ground ball routes to the throw minigame instead */
@@ -1136,7 +1138,7 @@ async function main() {
           let i = 0; const dice = [0.9, 0.5, 0.3, 0.01];
           const realRandom = Math.random;
           Math.random = () => dice[i++ % dice.length];
-          scheduleContactPlay(kind, currentBatter());
+          scheduleContactPlay(kind, currentBatter(), info);
           window.setTimeout = realTimeout;
           Math.random = realRandom;
           const sim = g.play.sim;
@@ -1192,6 +1194,14 @@ async function main() {
           out.fly = { met: Math.abs(sim.meetAt - sim.landAt) < 0.001,
                       fielderRole: sim.fielders[sim.fielderPost].role };
         }
+        { /* spray: the swing's timing owns the direction */
+          const early = mk('single', false, { off: -0.085, q: 0.6 }).play.ball.dx;
+          const late  = mk('single', false, { off:  0.085, q: 0.6 }).play.ball.dx;
+          const crush = mk('single', false, { off: 0, q: 0.95 }).play.ball;
+          const bloop = mk('single', false, { off: 0, q: 0.2 }).play.ball;
+          out.spray = { early: +early.toFixed(2), late: +late.toFixed(2),
+                        linerArc: Math.round(crush.arcH), bloopArc: Math.round(bloop.arcH) };
+        }
         { /* the steal: the race is real both ways */
           const realTimeout = window.setTimeout; window.setTimeout = () => 0;
           const realRandom = Math.random;
@@ -1230,9 +1240,106 @@ async function main() {
         ok(r[tag].ball.low >= 0, `${tag}: and never goes underground`, 'low=' + r[tag].ball.low);
         ok(r[tag].ball.sum <= 2.85, `${tag}: and dies inside the wall`, 'rest u+v=' + r[tag].ball.sum);
       }
+      ok(r.spray.early < -0.3 && r.spray.late > 0.3,
+         'an early swing pulls the ball, a late one goes the other way',
+         JSON.stringify(r.spray));
+      ok(r.spray.bloopArc > r.spray.linerArc + 40,
+         'square contact is a low liner, weak contact a blooper that hangs',
+         JSON.stringify(r.spray));
       ok(r.steal.safeWins && r.steal.caughtLoses,
          'a steal is a race: safe means the runner won it, caught means the throw did',
          JSON.stringify(r.steal));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the dive: spectacle that never contradicts the book ---- */
+    {
+      console.log('the dive');
+      /* A liner single is allowed to pull an infielder into a dive, and
+         the dive is pure decoration: the rules already scored the play a
+         hit, so the glove must land SHORT of the ball, the diver must
+         not be the man fielding it or the cutoff, and no base a throw is
+         coming to may lose its cover man to the dirt. The feature also
+         has to actually HAPPEN somewhere in the spray, or it is dead
+         code wearing a comment (the badge catalog taught that one). */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        g.half = g.away.isYou ? 'top' : 'bottom';
+        const out = { tries: 0, liners: 0, dives: 0, bad: [] };
+        const realTimeout = window.setTimeout;
+        const realRandom = Math.random;
+        for (const off of [-0.06, -0.03, 0, 0.03, 0.06]) {
+          g.play = null; g.tail = null; g.outs = 0; g.bases = [null, null, null];
+          window.setTimeout = () => 0;
+          let i = 0; const dice = [0.9, 0.5, 0.3, 0.01];
+          Math.random = () => dice[i++ % dice.length];
+          scheduleContactPlay('single', currentBatter(), { off, q: 0.9 });
+          window.setTimeout = realTimeout; Math.random = realRandom;
+          const play = g.play, sim = play.sim;
+          g.play = null; g.tail = null;
+          out.tries++;
+          if (play.ball.liner) out.liners++;
+          if (!sim.dive) continue;
+          out.dives++;
+          const F = sim.fielders[sim.dive.post];
+          const rest = simSample(F.run, 99).uv;
+          let minD = 1e9;
+          for (const bk of sim.ball) minD = Math.min(minD, simDist(rest, bk));
+          const thrown = new Set(sim.throws.filter(q2 => q2.base >= 0).map(q2 => q2.base));
+          if (sim.dive.post === sim.fielderPost) out.bad.push(off + ': dove at his own ball');
+          if (sim.dive.post === sim.cutoff) out.bad.push(off + ': the cutoff dove');
+          if (F.base != null && thrown.has(F.base) && !F.run2)
+            out.bad.push(off + ': a thrown-to base lost its cover');
+          if (minD < 0.02) out.bad.push(off + ': the glove reached the ball, dist ' + minD.toFixed(3));
+          if (sim.dive.at > 1.1) out.bad.push(off + ': dove at ' + sim.dive.at.toFixed(2) + 's, after the moment');
+        }
+        return out;
+      });
+      ok(r.liners === r.tries, 'q 0.9 is a liner every time', JSON.stringify(r));
+      ok(r.dives >= 1, 'and somewhere in the spray somebody actually dives',
+         `dives=${r.dives} of ${r.tries}`);
+      ok(r.bad.length === 0, 'every dive lands short, on the right man, breaking no duty',
+         r.bad.join(' | '));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the snow: the cold parks and only the cold parks ---- */
+    {
+      console.log('the snow');
+      /* Flag on the two winter grounds, off everywhere else, and the
+         flakes visibly MOVE between frames while nothing else in the
+         sky does. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const out = { icebox: !!(PARKS.icebox.theme && PARKS.icebox.theme.snow),
+                      pole: !!(STADIUM_THEMES['The Holiday Nine'] && STADIUM_THEMES['The Holiday Nine'].snow),
+                      sandlot: !!(PARKS.sandlot.theme && PARKS.sandlot.theme.snow) };
+        const base = currentTheme();
+        const forced = Object.assign({}, base, { snow: true });
+        const real = currentTheme;
+        currentTheme = () => forced;
+        const cv = document.getElementById('field');
+        const strip = () => cv.getContext('2d').getImageData(0, 0, cv.width, 24).data;
+        await new Promise(rz => requestAnimationFrame(() => requestAnimationFrame(rz)));
+        const a = strip();
+        await new Promise(rz => setTimeout(rz, 220));
+        await new Promise(rz => requestAnimationFrame(() => requestAnimationFrame(rz)));
+        const b = strip();
+        currentTheme = real;
+        let moved = 0;
+        for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b[i]) > 24) moved++;
+        out.moved = moved;
+        return out;
+      });
+      ok(r.icebox && r.pole, 'The Icebox and North Pole Yard carry the flag',
+         JSON.stringify(r));
+      ok(!r.sandlot, 'and the sandlot does not', JSON.stringify(r));
+      ok(r.moved > 4, 'flakes move between frames', 'moved=' + r.moved);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

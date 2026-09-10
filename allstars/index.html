@@ -1137,7 +1137,7 @@ const STADIUM_THEMES = {
   },
   'The Holiday Nine': {
     park:'North Pole Yard', sky:'#c3e7f6', wall:'#cc3434', wallLine:'#ffffff',
-    marker:'#ffffff', track:'#f0f2f6', grass:'#50b263',
+    marker:'#ffffff', track:'#f0f2f6', grass:'#50b263', snow:true,
     crowd:['#e05050','#f8f8fa','#40a060','#f0d060','#c0d8e8'],
     landmark(ctx, w, h) {
       /* Big evergreen tree on the horizon, garland lights, snow atop the
@@ -2344,6 +2344,14 @@ const Sound = {
         case 'whiff':
           this.tone(320, 0.16, { type:'sawtooth', slideTo: 90, vol: 0.10 });
           break;
+        case 'umpout':
+          this.tone(150, 0.07, { type:'square', vol: 0.20 });
+          this.tone(95, 0.16, { type:'square', vol: 0.24, delay: 0.06 });
+          break;
+        case 'umpsafe':
+          this.tone(290, 0.11, { type:'square', vol: 0.15 });
+          this.tone(290, 0.11, { type:'square', vol: 0.15, delay: 0.14 });
+          break;
         case 'strike':
           this.tone(220, 0.10, { vol: 0.14 });
           this.tone(175, 0.16, { vol: 0.14, delay: 0.10 });
@@ -3495,7 +3503,7 @@ const PARKS = {
     blurb:'Cold off the lake all season. The ball does not carry and everyone knows it.',
     effect:'Home runs -22% · extra base hits -6%',
     theme:{ sky:'#c3e7f6', wall:'#4a6a80', wallLine:'#ffffff', marker:'#ffffff',
-            track:'#c8ccd4', grass:'#5aa87a',
+            track:'#c8ccd4', grass:'#5aa87a', snow:true,
             crowd:['#c0d8e8','#f8f8fa','#9ab8cc','#e0eef6','#8aa8bc'] },
   },
   bowl: {
@@ -3553,9 +3561,6 @@ function renderFranchise() {
   const F = State.franchise || (State.franchise = randomFranchise());
   const s = el('div','screen');
   s.appendChild(el('h2', null, 'Found your franchise'));
-  s.appendChild(el('p', null,
-    'Four choices, and the park is the one that changes the baseball. '
-    + 'Everything here is saved with the season.'));
 
   /* The marquee, live: it is the thing all four choices are building. */
   const bannerCard = el('div','card');
@@ -4086,10 +4091,8 @@ function drawDugout(ctx, things, hotId) {
 
 function renderMenu() {
   const s = el('div','screen');
-  s.appendChild(el('h2', null, 'Choose a mode'));
-  s.appendChild(el('p', null,
-    `Pick nine of ${ROSTER.length}. Swing on the ring, call your own pitches.`));
-
+  /* No heading, no caption. The room is the menu and the rail already
+     says what everything does: a sentence on top of that is narration. */
   const card = el('div','card');
   const room = el('div','roomwrap');
   /* The dugout: the art is a canvas, the controls are transparent buttons
@@ -4321,7 +4324,7 @@ function hideLockPop() { if (LOCKPOP) LOCKPOP.style.visibility = 'hidden'; }
    the answer are a screen apart. */
 function headingWithInfo(parent, title, html) {
   const row = el('div','headrow');
-  row.appendChild(el('h3', null, title));
+  if (title) row.appendChild(el('h3', null, title));
   const dot = el('button','infodot','i');
   dot.type = 'button';
   dot.setAttribute('aria-label', title + ': details');
@@ -4346,10 +4349,11 @@ function renderRoster() {
           ? `Year ${(State.pendingFranchise.year || 1) + 1} lineup`
           : 'Build your franchise')
       : 'Pick your lineup'));
-  s.appendChild(el('p', null,
-    'Choose nine. <b>Your first pick starts on the mound</b>, so lead with a good '
-    + '<b>PIT</b> and keep a second: arms tire, and anyone can take over later.'));
-  s.appendChild(el('p', null, STAT_LEGEND));
+  /* The mound rule and the stat legend are worth having and not worth
+     reading every visit: behind the dot, like the standings rules. */
+  headingWithInfo(s, '', '<b>Your first pick starts on the mound.</b> '
+    + 'Lead with a good PIT and keep a second: arms tire, and anyone can '
+    + 'take over later.<br>' + STAT_LEGEND);
 
   const card = el('div','card');
 
@@ -4373,9 +4377,6 @@ function renderRoster() {
     sortBtns.set(S.k, b);
     bar.appendChild(b);
   }
-  const nLocked = ROSTER.filter(c => !isUnlocked(c.k)).length;
-  bar.appendChild(el('span','tail',
-    nLocked ? `${nLocked} still locked, at the end` : 'Every character unlocked'));
   card.appendChild(bar);
 
   const grid = el('div','roster');
@@ -5256,9 +5257,7 @@ function renderSeasonHub() {
     } else {
       const fin = seasonFinish(S);
       nextCard.appendChild(el('h3', null, 'Regular season complete'));
-      nextCard.appendChild(el('p', null, finishLine(S)
-        + (fin.madeIt ? ' The top four play a single elimination bracket; the higher seed hosts.'
-                      : ' You can watch the bracket play out, then close the season.')));
+      nextCard.appendChild(el('p', null, finishLine(S)));
       const b = el('button','btn', fin.madeIt ? 'Enter Playoffs' : 'See the Bracket');
       b.onclick = () => {
         S.playoffs = seedPlayoffs(S);
@@ -6231,7 +6230,8 @@ function throwPitch(chosenPt, chosenZone) {
      button, all for the rest of this at bat. The next batter hides a new one. */
   if (chosenPt && !playerIsBatting() && pt === g.batterCtx.weakPitch && !g.batterCtx.weakKnown) {
     g.batterCtx.weakKnown = true;
-    addLog(`${batter.n} cannot handle the ${PITCHES[pt].label.toLowerCase()}.`, true);
+    const pl = PITCHES[pt].label.toLowerCase();
+    addLog(`${batter.n} cannot handle ${pl.startsWith('the ') ? pl : 'the ' + pl}.`, true);
     showCallout(`WEAK PITCH · ${PITCHES[pt].label}`, 'hit');
   }
   let baseSpeed = diff.speed * meterScale()
@@ -6503,13 +6503,15 @@ function resolveSwing(cursorT) {
   /* Near misses foul the ball off; wide misses whiff. Contact hitters get
      a slightly wider foul band, which is what CON feels like in play. */
   const foulBand = half * (1.45 + ctx.con / 350);
+  /* What the ball needs to know about the swing that hit it. */
+  const swingInfo = { off: cursorT - p.ideal, q: contact };
 
   /* Lady Liberty is the joke and the mechanic. She is stone: on any real
      contact the ball leaves the yard, on anything else she strikes out
      looking like a statue would. Nothing in between. */
   if (batter.quirk === 'monument') {
     if (inZone && contact > 0.55) {
-      return scheduleContactPlay('home run', batter);
+      return scheduleContactPlay('home run', batter, swingInfo);
     }
     g.strikes = 3;
     addLog(`${batter.n} does not move. Strike three.`);
@@ -6594,20 +6596,20 @@ function resolveSwing(cursorT) {
   const pf = parkFactors();
   hrChance *= pf.hr;
   xbhChance *= pf.xbh;
-  if (Math.random() < hrChance) return scheduleContactPlay('home run', batter);
+  if (Math.random() < hrChance) return scheduleContactPlay('home run', batter, swingInfo);
 
   if (Math.random() < xbhChance) {
-    return scheduleContactPlay(Math.random() < 0.35 ? 'triple' : 'double', batter);
+    return scheduleContactPlay(Math.random() < 0.35 ? 'triple' : 'double', batter, swingInfo);
   }
   let hitOdds = 0.13 + contact * 0.36 + (ctx.spd - 50)/450;
   if (mode === 'contact') hitOdds += 0.09;
   if (mode === 'power') hitOdds -= 0.04;
   if (batter.k === 'invisible') hitOdds += 0.05;
-  if (Math.random() < hitOdds) return scheduleContactPlay('single', batter);
+  if (Math.random() < hitOdds) return scheduleContactPlay('single', batter, swingInfo);
   /* Out on contact: same staging, the callout fires when the fielder gets
      the ball. */
   const out = Math.random() < 0.55 ? 'ground out' : 'fly out';
-  return scheduleContactPlay(out, batter);
+  return scheduleContactPlay(out, batter, swingInfo);
 }
 
 /* -------- Play staging: bat, ball, runners, callout --------
@@ -6617,21 +6619,56 @@ function resolveSwing(cursorT) {
    mutation to the bases with an animated runner tween, then fires the
    callout and moves on. All the timing lives in BEAT. */
 
-function ballTrajectory(kind) {
+function ballTrajectory(kind, info) {
   const rand = (a,b) => a + Math.random() * (b - a);
   const sign = () => Math.random() < 0.5 ? -1 : 1;
+  /* SPRAY BY TIMING, the rule every serious mobile baseball game runs
+     on: swing EARLY and the ball is pulled, LATE and it goes the other
+     way, square and it goes up the middle. `off` is the swing cursor
+     minus the pitch's ideal, so the sweet zone maps across the whole
+     field. The old dx was a coin flip times a magnitude: where the ball
+     went had nothing to do with the swing that hit it, which is half of
+     why batting felt like pulling a lever.
+
+     CONTACT QUALITY shapes the ball too. Squared up is a low fast liner
+     that rolls; mistimed is a blooper that hangs and dies; a crushed
+     homer is majestic and a cheap one sneaks out on a line. Same
+     outcomes, decided by the same rules: the GEOMETRY now tells you how
+     you earned them. */
+  const off = info && typeof info.off === 'number' ? info.off : null;
+  const q = info && typeof info.q === 'number' ? info.q : 0.6;
+  const spray = (maxAbs, minAbs) => {
+    if (off === null) return rand(minAbs || 0.1, maxAbs) * sign();
+    const dir = clamp(off * 12 + (Math.random() - 0.5) * 0.45, -1, 1);
+    const mag = Math.max(minAbs || 0, Math.abs(dir)) * maxAbs;
+    return Math.max(mag, minAbs || 0) * (dir >= 0 ? 1 : -1);
+  };
   switch (kind) {
     /* A home run LANDS IN THE CROWD rather than exiting the top of the
-       frame: dy -1.55 puts the touchdown in the stands band, and the
-       taller arc keeps the flight majestic on the way there. */
-    case 'home run':   return { dx: rand(0.55, 1.05)*sign(), dy: -1.55, arcH: 320, duration: 1700 };
-    case 'triple':     return { dx: rand(0.75, 1.2)*sign(),  dy: -1.4, arcH: 150, duration: 1250 };
-    case 'double':     return { dx: rand(0.5, 1.0)*sign(),   dy: -1.1, arcH: 110, duration: 1050 };
-    case 'single':     return { dx: rand(0.25, 0.95)*sign(), dy: -0.7, arcH: 60,  duration: 850 };
-    case 'fly out':    return { dx: rand(0.10,0.90)*sign(),  dy: rand(-1.4,-1.05), arcH: 170, duration: 1200, caught: true };
-    case 'ground out': return { dx: rand(0.35,0.8)*sign(),   dy: -0.15,arcH: 18,  duration: 700,  caught: true };
+       frame: dy -1.55 puts the touchdown in the stands band. */
+    case 'home run':
+      return { dx: spray(1.05, 0.1), dy: -1.55,
+               arcH: 200 + 180 * q, duration: 1450 + 420 * q };
+    case 'triple':
+      return { dx: spray(1.2, 0.55), dy: -1.4,
+               arcH: 130 + 50 * (1 - q), duration: 1250, rollK: 3.0 };
+    case 'double':
+      return { dx: spray(1.0, 0.4), dy: -1.1,
+               arcH: 80 + 60 * (1 - q), duration: 1050, rollK: 1.9 };
+    case 'single':
+      if (q > 0.72) return { dx: spray(0.95, 0.06), dy: -0.7, arcH: 26,
+                             duration: 680, rollK: 1.7, liner: true };
+      if (q < 0.45) return { dx: spray(0.8, 0.06), dy: -0.62, arcH: 112,
+                             duration: 1020, rollK: 0.6 };
+      return { dx: spray(0.95, 0.06), dy: -0.7, arcH: 60, duration: 850, rollK: 1.0 };
+    case 'fly out':
+      return { dx: spray(0.9, 0.08), dy: -(1.0 + q * 0.34 + Math.random() * 0.05),
+               arcH: 150 + 60 * (1 - q), duration: 1150 + 150 * q, caught: true };
+    case 'ground out':
+      return { dx: spray(0.8, 0.18), dy: -0.15, arcH: 12 + 14 * (1 - q),
+               duration: 620 + 200 * (1 - q), caught: true, rollK: 1.3 };
     case 'bunt single':
-    case 'bunt out':   return { dx: rand(0.06,0.28)*sign(),  dy: -0.22,arcH: 10,  duration: 650,  caught: kind === 'bunt out' };
+    case 'bunt out':   return { dx: rand(0.06,0.28)*sign(),  dy: -0.22,arcH: 10,  duration: 650,  caught: kind === 'bunt out', rollK: 0.4 };
   }
   return { dx: 0, dy: 0, arcH: 0, duration: 700 };
 }
@@ -6783,6 +6820,10 @@ const SIM_REACT = 0.22;                /* a fielder's first step */
    enough that a double was gloved the instant it landed, which is a line
    drive caught and then ruled a hit. */
 const SIM_HIT_BOUNCE = 0.35;
+/* HIT STOP. The world holds its breath for a few frames at contact: the
+   crack fires on time, the motion starts a beat later, and that beat is
+   what sells the impact. The classic band is 40 to 80 milliseconds. */
+const HITSTOP_MS = 80;
 
 /* Move a point along a polyline with a speed profile: accelerate, cruise,
    and either stop at the end (decelerating into it) or run through it.
@@ -6976,8 +7017,7 @@ function buildPlaySim(p, opts) {
   const flyOut = kind === 'fly out';
   const stands = kind === 'home run';
   const CONTACT_AT = 0.12;                        /* the bat gets round first */
-  const rollK = { 'single': 1.0, 'double': 1.9, 'triple': 3.0, 'ground out': 1.3,
-                  'bunt out': 0.4, 'bunt single': 0.4 }[kind] || 1.0;
+  const rollK = traj.rollK || 1.0;
   const flight = simBallFlight(contact, target, T, traj.arcH,
                                { caught: flyOut && !opts.uncertain, stands, rollK });
   sim.ballT0 = CONTACT_AT;
@@ -6985,6 +7025,9 @@ function buildPlaySim(p, opts) {
   sim.landAt = CONTACT_AT + flight.landAt;
   sim.restAt = CONTACT_AT + flight.restAt;
   sim.restUV = flight.restUV;
+  sim.landUV = target;
+  /* the Baseball-9 landing marker: only for balls with real hang time */
+  sim.showMark = traj.arcH > 45 && kind !== 'home run';
 
   /* ---- fielders: posts in diamond space ---- */
   const posts = {};
@@ -7289,7 +7332,73 @@ function buildPlaySim(p, opts) {
   sim.deadAt = deadAt;
   sim.finishAt = Math.min(deadAt, (sim.applyAt || 0) + 1.4) + 0.5;
   sim.end = Math.max(deadAt, ...sim.runners.map(r => (r.back ? r.back.end : r.run.end))) + 0.4;
+  /* THE DIVE. A liner that gets through draws a lunge from the man it
+     passed: he launches at its early path, lands just short, eats dirt
+     while the ball goes on by, then gets up and goes back to work.
+     Decoration with rules: never the man fielding it, never the cutoff,
+     never a cover man whose base a throw is coming to, and the lunge
+     always ends SHORT of the ball, so the picture never contradicts the
+     book (a glove that touched it would make the single a lie). */
+  sim.dive = null;
+  if (!opts.noThrow && !opts.uncertain && traj.liner
+      && (kind === 'single' || kind === 'double')) {
+    const dvThrown = new Set(sim.throws.filter(q2 => q2.base >= 0).map(q2 => q2.base));
+    let dv = null;
+    for (const i of [2, 3, 5]) {
+      const Fi = F[i];
+      if (i === fp || Fi.role === 'cutoff' || Fi.role === 'field') continue;
+      if (Fi.role === 'cover' && dvThrown.has(Fi.base)) continue;
+      for (let k2 = 3; k2 < sim.ball.length; k2++) {
+        const tk = CONTACT_AT + k2 * SIM_DT;
+        if (tk > CONTACT_AT + 0.55) break;
+        const bk = sim.ball[k2];
+        if (bk[2] > 42) continue;
+        const dd = simDist(posts[i].uv, bk);
+        if (dd > 0.08 && dd < 0.34 && (!dv || dd < dv.d)) {
+          dv = { i, d: dd, at: tk, pt: [bk[0], bk[1]] };
+        }
+      }
+    }
+    if (dv) {
+      const Fi = F[dv.i];
+      const from2 = posts[dv.i].uv;
+      const short2 = [from2[0] + (dv.pt[0] - from2[0]) * 0.72,
+                      from2[1] + (dv.pt[1] - from2[1]) * 0.72];
+      const duty = simSample(Fi.run, 1e9).uv;
+      const dash = simRunPath([from2, short2], 0.55, SIM_REACT * 0.55, {});
+      Fi.diveAt = Math.max(dash.reached, dv.at);
+      Fi.run = dash;
+      /* a cover man gets up and finishes the job from where he landed */
+      if (Fi.role === 'cover') {
+        Fi.run2 = simRunPath([short2, duty], 0.42, Fi.diveAt + 0.75, {});
+      }
+      Fi.role = 'dive';
+      sim.dive = { post: dv.i, at: Fi.diveAt };
+    }
+  }
+  sim.closePlay = simFindClosePlay(sim);
   return sim;
+}
+
+/* THE CLOSE PLAY. If any throw and any runner arrive at the same bag
+   within half a second of each other, that bag is the story: the camera
+   punches in and the umpire sells the call. The verdict is read off the
+   race itself, which the builder has already made agree with the book. */
+function simFindClosePlay(sim) {
+  let best = null;
+  for (const th of sim.throws) {
+    if (th.base < 0) continue;
+    for (const r of sim.runners) {
+      if (r.toIdx !== th.base) continue;
+      const diff = Math.abs(th.arrive - r.run.reached);
+      if (diff < 0.5 && (!best || diff < best.diff)) {
+        best = { base: th.base, diff,
+                 at: Math.max(th.arrive, r.run.reached),
+                 verdict: th.arrive < r.run.reached ? 'OUT' : 'SAFE' };
+      }
+    }
+  }
+  return best;
 }
 
 /* A minigame decided the throw after the plan was made. */
@@ -7315,6 +7424,7 @@ function simAddThrow(sim, base, mode, whenT) {
   }
   sim.deadAt = th.arrive + 0.3;
   sim.end = Math.max(sim.deadAt, ...sim.runners.map(r => r.run.end)) + 0.4;
+  sim.closePlay = simFindClosePlay(sim);
   return th;
 }
 
@@ -7391,6 +7501,46 @@ function simMiniPose(run, t, slideFrom) {
   return { uv: smp.uv, pose, moving: smp.moving };
 }
 
+/* The man in blue, built from rects, at the bag a call is happening at.
+   Before the moment he is set, hands on knees; at it he punches the air
+   or spreads safe, with the word popping over his head. */
+function drawUmpCall(ctx, G, base, verdict, dt) {
+  const B = SIM_BASE_UV[base] || [0, 0];
+  const [bx, by] = simProject(G, B[0], B[1]);
+  const x = Math.round(bx + 18), y = Math.round(by + 6);
+  ctx.fillStyle = 'rgba(0,0,0,.3)';
+  ctx.beginPath(); ctx.ellipse(x, y + 1, 8, 2.6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#20304a';
+  ctx.fillRect(x - 5, y - 12, 4, 12); ctx.fillRect(x + 1, y - 12, 4, 12);
+  ctx.fillRect(x - 6, y - 24, 12, 13);
+  ctx.fillStyle = '#e8c9a0';
+  ctx.fillRect(x - 4, y - 31, 8, 7);
+  ctx.fillStyle = '#111a28';
+  ctx.fillRect(x - 5, y - 33, 10, 3);
+  const called = dt > 0;
+  ctx.fillStyle = '#20304a';
+  if (!called) {
+    ctx.fillRect(x - 8, y - 22, 3, 8); ctx.fillRect(x + 5, y - 22, 3, 8);
+  } else if (verdict === 'OUT') {
+    ctx.fillRect(x + 5, y - 23, 9, 3);
+    ctx.fillStyle = '#e8c9a0'; ctx.fillRect(x + 13, y - 25, 4, 4);
+    ctx.fillStyle = '#20304a'; ctx.fillRect(x - 8, y - 22, 3, 8);
+  } else {
+    ctx.fillRect(x - 15, y - 22, 10, 3); ctx.fillRect(x + 5, y - 22, 10, 3);
+    ctx.fillStyle = '#e8c9a0';
+    ctx.fillRect(x - 18, y - 23, 4, 4); ctx.fillRect(x + 14, y - 23, 4, 4);
+  }
+  if (called) {
+    const pop = Math.min(1, Math.max(0, dt) / 0.18);
+    ctx.font = `bold ${Math.round(10 + 5 * pop)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(20,40,63,.85)';
+    ctx.fillText(verdict + '!', x + 1, y - 40 + 1);
+    ctx.fillStyle = verdict === 'OUT' ? '#e04a40' : '#4ad07a';
+    ctx.fillText(verdict + '!', x, y - 40);
+  }
+}
+
 function simBallAt(sim, t) {
   /* a throw in the air overrides the free ball */
   for (const th of sim.throws) {
@@ -7421,6 +7571,17 @@ function drawPlaySim(ctx, sim, t, G, opts) {
   opts = opts || {};
   const fteam = sim.fteam || currentFieldingTeam();
   const ball = simBallAt(sim, t);
+  /* the landing marker, under everybody: where this one is coming down */
+  if (sim.showMark && sim.landUV && t > sim.ballT0 + 0.05 && t < sim.landAt) {
+    const [mx, my] = simProject(G, sim.landUV[0], sim.landUV[1]);
+    const pulse = 5.5 + Math.sin(t * 14) * 1.6;
+    ctx.strokeStyle = 'rgba(20,40,63,.4)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(mx, my, pulse * 1.5 + 1, pulse * 0.62 + 1, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,252,242,.85)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(mx, my, pulse * 1.5, pulse * 0.62, 0, 0, Math.PI * 2); ctx.stroke();
+  }
   const items = [];       /* everything, sorted by screen y so nearer draws later */
   /* fielders */
   for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) {
@@ -7430,11 +7591,13 @@ function drawPlaySim(ctx, sim, t, G, opts) {
     if (i === 0 && (!F || F.role !== 'field')) continue;
     const man = fielderAt(fteam, i);
     if (!man) continue;
-    const smp = simSample(F.run, t);
+    /* a diver has two legs to his path: the lunge, then back to duty */
+    const leg = (F.run2 && t >= F.run2.t0) ? F.run2 : F.run;
+    const smp = simSample(leg, t);
     const [x, y] = simProject(G, smp.uv[0], smp.uv[1]);
     let pose = null;
     if (smp.moving) {
-      const prev = simSample(F.run, t - 0.05);
+      const prev = simSample(leg, t - 0.05);
       const away = smp.uv[0] + smp.uv[1] > prev.uv[0] + prev.uv[1] + 0.002;
       const stride = Math.floor(smp.s / 0.075) % 2 === 0;
       pose = away ? (stride ? 'back-run-a' : 'back-run-b') : (stride ? 'run-a' : 'run-b');
@@ -7451,6 +7614,8 @@ function drawPlaySim(ctx, sim, t, G, opts) {
       if (simDist(o, smp.uv) < 0.1 && t >= th.t0 - 0.32 && t < th.t0 + 0.22) pose = 'throw';
       if (th.mode !== 'wild' && simDist(e, smp.uv) < 0.12 && t >= th.arrive - 0.25 && t < th.arrive + 0.45) pose = 'catch';
     }
+    /* the dive: face down in the dirt while the liner goes on by */
+    if (F.diveAt != null && t >= F.diveAt - 0.06 && t < F.diveAt + 0.75) pose = 'slide';
     /* depth scale: taken from the post nearest in screen y, the way the
        static draw sizes them */
     const sc = sim.posts[i].sc;
@@ -7474,11 +7639,37 @@ function drawPlaySim(ctx, sim, t, G, opts) {
     }
     const sc = r.isBatter && t < 0.5 ? 3.0 : (smp.uv[0] + smp.uv[1] > 1.4 ? 2.45 : 2.6);
     items.push({ y, draw: () => drawRunner(ctx, x, y - 4, r.c, sc, pose) });
+    /* THE BAT FLIP. He knows. Everyone knows. */
+    if (r.isBatter && sim.kind === 'home run' && t > 0.2 && t < 0.9) {
+      const ft = t - 0.2;
+      items.push({ y: y + 1, draw: () => {
+        ctx.save();
+        ctx.translate(x + 16, y - 30 - ft * 46 + ft * ft * 78);
+        ctx.rotate(ft * 13);
+        ctx.fillStyle = '#c9a06a';
+        ctx.fillRect(-7, -1.5, 14, 3);
+        ctx.fillStyle = '#8a6a3a';
+        ctx.fillRect(-7, -1.5, 4, 3);
+        ctx.restore();
+      } });
+    }
   }
   /* the ball, last among things on the ground at its depth */
   if (ball && !ball.held) {
     const [x, gy] = simProject(G, ball.uv[0], ball.uv[1]);
-    items.push({ y: gy + 1, draw: () => drawBaseball(ctx, x, gy - ball.h, gy) });
+    items.push({ y: gy + 1, draw: () => {
+      /* two ghosts behind it: the streak is what makes speed read */
+      for (const [back, al, rr] of [[0.07, 0.16, 2], [0.035, 0.32, 3]]) {
+        const b2 = simBallAt(sim, t - back);
+        if (!b2 || b2.held) continue;
+        const [gx2, gg2] = simProject(G, b2.uv[0], b2.uv[1]);
+        ctx.globalAlpha = al;
+        ctx.fillStyle = '#eaeaea';
+        ctx.beginPath(); ctx.arc(gx2, gg2 - b2.h, rr, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      drawBaseball(ctx, x, gy - ball.h, gy);
+    } });
   } else if (ball && ball.held && ball.byPost != null && opts.showHeld !== false) {
     /* in the glove: a small ball by the fielder's hand for a beat */
     const F = sim.fielders[ball.byPost];
@@ -7490,9 +7681,12 @@ function drawPlaySim(ctx, sim, t, G, opts) {
   }
   items.sort((a, b) => a.y - b.y);
   for (const it of items) it.draw();
+  if (sim.closePlay && t > sim.closePlay.at - 0.5 && t < sim.closePlay.at + 1.2) {
+    drawUmpCall(ctx, G, sim.closePlay.base, sim.closePlay.verdict, t - sim.closePlay.at);
+  }
 }
 
-function scheduleContactPlay(kind, batter) {
+function scheduleContactPlay(kind, batter, info) {
   const g = State.game;
   /* Bat meets ball. The crack fires immediately, before the ball travels,
      and a gold impact burst pops at the contact point so the hit visibly
@@ -7511,9 +7705,9 @@ function scheduleContactPlay(kind, batter) {
     }
   }
   const throwable = kind === 'ground out' && !playerIsBatting();
-  if (throwable) return scheduleThrowMinigame(kind, batter);
+  if (throwable) return scheduleThrowMinigame(kind, batter, info);
   const catchable = kind === 'fly out' && !playerIsBatting();
-  if (catchable) return scheduleFlyCatchMinigame(kind, batter);
+  if (catchable) return scheduleFlyCatchMinigame(kind, batter, info);
   /* Errors: on a ground or fly out, roll against the fielding team's DEF.
      A low-defense team lets the batter reach on a mishandled ball. */
   let effective = kind;
@@ -7530,7 +7724,7 @@ function scheduleContactPlay(kind, batter) {
       onError = true;
     }
   }
-  const traj = ballTrajectory(effective);
+  const traj = ballTrajectory(effective, info);
   rememberHighlight(effective, batter, traj);
   const isOut = effective === 'ground out' || effective === 'fly out'
              || effective === 'bunt out';
@@ -7562,8 +7756,16 @@ function scheduleContactPlay(kind, batter) {
   /* The plan. Everything below takes its clock from it. */
   g.play.sim = buildPlaySim(g.play);
   g.tail = null; g.jog = null; g.foulFx = null;
+  g.play.startedAt += HITSTOP_MS; g.play.swingUntil += HITSTOP_MS;
+  g.play.ballUntil += HITSTOP_MS; g.play.sim.t0 += HITSTOP_MS;
+  if (g.play.sim.closePlay) {
+    const cp = g.play.sim.closePlay;
+    setTimeout(() => {
+      if (State.game === g && (g.play || g.tail)) Sound.play(cp.verdict === 'OUT' ? 'umpout' : 'umpsafe');
+    }, Math.round(cp.at * 1000) + HITSTOP_MS);
+  }
 
-  const applyMs = Math.round(g.play.sim.applyAt * 1000);   /* the decisive moment */
+  const applyMs = Math.round(g.play.sim.applyAt * 1000) + HITSTOP_MS;
   setTimeout(() => {
     if (!g.play || g.play.applied) return;
     g.play.applied = true;
@@ -7645,7 +7847,7 @@ function scheduleContactPlay(kind, batter) {
     refreshHud();
   }, applyMs);
 
-  const finishMs = Math.round(g.play.sim.finishAt * 1000);
+  const finishMs = Math.round(g.play.sim.finishAt * 1000) + HITSTOP_MS;
   setTimeout(() => {
     if (!g.play) return;
     const wasOut = g.play.isOut && !g.play.onError;
@@ -7824,9 +8026,9 @@ function applyOutMutation(kind, batter) {
    and everything outside (error, batter safe and any runners take an
    extra base). Fielder DEF widens the green zone. */
 
-function scheduleThrowMinigame(kind, batter) {
+function scheduleThrowMinigame(kind, batter, info) {
   const g = State.game;
-  const traj = ballTrajectory(kind);
+  const traj = ballTrajectory(kind, info);
   const isOut = true;
   const preBases = [...g.bases];
   g.play = {
@@ -7847,6 +8049,8 @@ function scheduleThrowMinigame(kind, batter) {
      the player's, and it is added when they make it. */
   g.play.sim = buildPlaySim(g.play, { noThrow: true });
   g.tail = null; g.jog = null; g.foulFx = null;
+  g.play.startedAt += HITSTOP_MS; g.play.swingUntil += HITSTOP_MS;
+  g.play.ballUntil += HITSTOP_MS; g.play.sim.t0 += HITSTOP_MS;
 
   /* When the fielder has it, open the throw window. */
   setTimeout(() => {
@@ -7856,7 +8060,7 @@ function scheduleThrowMinigame(kind, batter) {
     dustPuff(g, lx, ly, 'rgba(205,170,120,.9)');
     Sound.play('catch');
     startThrowWindow(kind, batter);
-  }, Math.round(g.play.sim.meetAt * 1000));
+  }, Math.round(g.play.sim.meetAt * 1000) + HITSTOP_MS);
 }
 
 function startThrowWindow(kind, batter) {
@@ -7915,6 +8119,12 @@ function resolveThrow(outcome, kind, batter) {
     const nowT = (performance.now() - g.play.sim.t0) / 1000;
     const th = simAddThrow(g.play.sim, 0, outcome === 'out' ? 'out' : outcome === 'error' ? 'wild' : 'late', nowT);
     if (th) arriveMs = Math.max(200, Math.round((th.arrive - nowT) * 1000));
+    const cp = g.play.sim.closePlay;
+    if (cp && cp.at > nowT) {
+      setTimeout(() => {
+        if (State.game === g) Sound.play(cp.verdict === 'OUT' ? 'umpout' : 'umpsafe');
+      }, Math.round((cp.at - nowT) * 1000));
+    }
   }
   if (outcome === 'out') {
     applyOutMutation('ground out', batter);
@@ -7953,9 +8163,9 @@ function resolveThrow(outcome, kind, batter) {
    Nail the green center to catch; ok yellow band is a single that
    drops in; a miss is a triple over the fielder's head. */
 
-function scheduleFlyCatchMinigame(kind, batter) {
+function scheduleFlyCatchMinigame(kind, batter, info) {
   const g = State.game;
-  const traj = ballTrajectory(kind);
+  const traj = ballTrajectory(kind, info);
   const preBases = [...g.bases];
   g.play = {
     kind, batter, isOut: true,
@@ -7974,6 +8184,8 @@ function scheduleFlyCatchMinigame(kind, batter) {
   /* Planned as a catch; if the player misses it, the plan is amended. */
   g.play.sim = buildPlaySim(g.play, { noThrow: true });
   g.tail = null; g.jog = null; g.foulFx = null;
+  g.play.startedAt += HITSTOP_MS; g.play.swingUntil += HITSTOP_MS;
+  g.play.ballUntil += HITSTOP_MS; g.play.sim.t0 += HITSTOP_MS;
   const geo = fieldGeom();
   const [landingX, landingY] = simProject(geo, g.play.sim.meetUV[0], g.play.sim.meetUV[1]);
   /* When the ball starts descending, the catch window opens. */
@@ -7981,7 +8193,7 @@ function scheduleFlyCatchMinigame(kind, batter) {
   setTimeout(() => {
     if (!g.play || g.play.applied) return;
     startCatchWindow(kind, batter, landingX, landingY);
-  }, openAt);
+  }, openAt + HITSTOP_MS);
 }
 
 function startCatchWindow(kind, batter, landingX, landingY) {
@@ -8664,13 +8876,47 @@ function cameraWide(g) {
 }
 
 function cameraNow(g, w, h) {
+  /* BROADCAST GRAMMAR, the thing every big mobile baseball game does and
+     this one did not: the at-bat push-in, a loose TRACK that follows a
+     live ball, and a hard PUNCH into the bag when a throw and a runner
+     are about to arrive together. The punch is fast on purpose: it is a
+     cut, not a drift. */
   const want = cameraWide(g) ? CAM_WIDE : CAM_BAT;
-  const target = { zoom: want.zoom, x: want.fx * w, y: want.fy * h };
+  let target = { zoom: want.zoom, x: want.fx * w, y: want.fy * h };
+  let spdIn = CAM_IN_SPEED, spdOut = CAM_OUT_SPEED;
+  const nowMs = performance.now();
+  const simA = g && ((g.play && g.play.sim)
+    || (g.tail && (nowMs - g.tail.t0) / 1000 < g.tail.end ? g.tail : null));
+  const stealS = g && !simA && g.steal && g.steal.sim
+    && (nowMs - g.steal.sim.t0) / 1000 < g.steal.sim.end ? g.steal.sim : null;
+  if (simA) {
+    const G2 = fieldGeom();
+    const t = (nowMs - simA.t0) / 1000;
+    const cp = simA.closePlay;
+    if (cp && t > cp.at - 0.45 && t < cp.at + 1.15) {
+      const [bx, by] = simProject(G2, SIM_BASE_UV[cp.base][0], SIM_BASE_UV[cp.base][1]);
+      target = { zoom: 1.42, x: bx, y: by - 14 };
+      spdIn = spdOut = 11;
+    } else {
+      const ball = simBallAt(simA, t);
+      if (ball && !ball.held) {
+        const [bx, by] = simProject(G2, ball.uv[0], ball.uv[1]);
+        target = { zoom: 1.09, x: bx * 0.45 + w * 0.275,
+                   y: Math.max(by, h * 0.30) * 0.45 + h * 0.275 };
+        spdIn = spdOut = 5.5;
+      }
+    }
+  } else if (stealS) {
+    const G2 = fieldGeom();
+    const [bx, by] = simProject(G2, 1, 1);
+    target = { zoom: 1.30, x: bx, y: by - 8 };
+    spdIn = spdOut = 8;
+  }
   const now = performance.now();
   if (!Cam) Cam = { zoom: target.zoom, x: target.x, y: target.y, t: now };
   const dt = Math.min(64, Math.max(0, now - Cam.t));
   Cam.t = now;
-  const speed = target.zoom < Cam.zoom ? CAM_OUT_SPEED : CAM_IN_SPEED;
+  const speed = target.zoom < Cam.zoom ? spdOut : spdIn;
   const k = 1 - Math.exp(-speed * dt / 1000);
   Cam.zoom += (target.zoom - Cam.zoom) * k;
   Cam.x += (target.x - Cam.x) * k;
@@ -9429,6 +9675,9 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
           const [bx2, gy2] = simProject(field, bsm[0], bsm[1]);
           drawBaseball(ctx, bx2, gy2 - bsm[2], gy2);
         }
+        if (st.sim.closePlay && t > st.sim.closePlay.at - 0.4 && t < st.sim.closePlay.at + 1.1) {
+          drawUmpCall(ctx, field, 1, st.sim.closePlay.verdict, t - st.sim.closePlay.at);
+        }
       }
       if (g.jog && now2 < g.jog.t0 + g.jog.end * 1000) {
         const t = (now2 - g.jog.t0) / 1000;
@@ -9558,6 +9807,23 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
 
   ctx.restore();
   /* --------------------------- screen pass ---------------------------- */
+
+  /* SNOW. The Icebox and North Pole Yard play under a slow fall of it,
+     in screen space so it drifts over the whole scene: stateless,
+     deterministic from the clock, and cheap enough to never miss a
+     frame for. */
+  if (theme.snow) {
+    const snowNow = performance.now();
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 42; i++) {
+      const sp = 14 + (i * 29 % 17);
+      const fx = ((i * 379 + Math.sin(i * 3 + snowNow / 900) * 26 + snowNow * 0.006) % w + w) % w;
+      const fy = (i * 211 + snowNow * 0.001 * sp) % (h + 8) - 4;
+      ctx.globalAlpha = 0.35 + (i % 4) * 0.12;
+      ctx.beginPath(); ctx.arc(fx, fy, 1 + (i % 3) * 0.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
 
   /* Signature moment overlays: character-specific spectacle that lands
      on top of the field during a big at bat. Each one runs for its
@@ -10103,7 +10369,7 @@ function renderGame() {
   const meter = el('div','meter-wrap');
   meter.innerHTML = `<div class="label">`
     + `<span><b class="pt" id="pt-name">Get ready</b></span>`
-    + `<span id="meter-side">Click anywhere or press Space</span></div>`;
+    + `<span id="meter-side"></span></div>`;
   /* Swing selection, Backyard style: pick HOW you swing before the
      pitch arrives. Contact is wide and safe, Power is narrow and loud,
      Bunt lays it down. Keys 1/2/3 work too. */
@@ -10121,7 +10387,7 @@ function renderGame() {
     };
   }
   meter.appendChild(modes);
-  const hint = el('div','hint', 'Swing when the shrinking ring reaches the <b>green circle</b> at the plate.');
+  const hint = el('div','hint', '');
   hint.id = 'meter-hint';
   meter.appendChild(hint);
 
@@ -10518,7 +10784,7 @@ function refreshHud() {
   const hint = document.getElementById('meter-hint');
   const swingBtn = document.getElementById('swing-btn');
   const youBat = playerIsBatting();
-  if (side) side.textContent = youBat ? 'Click anywhere or press Space' : 'You are pitching · call a pitch each windup';
+  if (side) side.textContent = youBat ? '' : 'You pitch';
   if (hint) hint.style.display = youBat ? '' : 'none';
   const modesRow = document.getElementById('swing-modes');
   if (modesRow) modesRow.style.display = youBat ? '' : 'none';
@@ -10637,7 +10903,12 @@ function attemptSteal() {
   const cover = simRunPath([ssFrom, [1.07, 1.03]], ssMan ? simFielderSpeed(ssMan) : 0.35, 0.1, {});
   const end = Math.max(reach, th.arrive) + 1.0;
   g.steal = { runner, start: performance.now(), until: performance.now() + Math.round(end * 1000),
-              sim: { t0: performance.now(), run, th, cover, end } };
+              sim: { t0: performance.now(), run, th, cover, end,
+                     closePlay: { base: 1, at: Math.max(reach, th.arrive),
+                                  verdict: success ? 'SAFE' : 'OUT' } } };
+  setTimeout(() => {
+    if (State.game === g && g.steal) Sound.play(success ? 'umpsafe' : 'umpout');
+  }, Math.round(g.steal.sim.closePlay.at * 1000));
   addLog(`${runner.n} breaks for 2nd.`);
   showCallout('STEAL ATTEMPT', 'sub');
   const decideMs = Math.round((Math.max(reach, th.arrive) + 0.25) * 1000);
@@ -11102,9 +11373,6 @@ function renderMeet() {
   const s = el('div','screen');
   s.appendChild(el('h2', null, 'Meet the players'));
   const nOpen = ROSTER.filter(c => isUnlocked(c.k)).length;
-  s.appendChild(el('p', null,
-    `All ${ROSTER.length} of them, ${nOpen} of them yours. `
-    + 'Point at anybody to read them.'));
 
   const card = el('div','card');
   const wrap = el('div','photo');
@@ -11126,9 +11394,7 @@ function renderMeet() {
       bar.className = 'meetbar idle';
       bar.innerHTML = '<div class="mug"></div><div class="body">'
         + '<div class="mname">The squad</div>'
-        + '<div class="mrole">Public domain, every one of them</div>'
-        + '<div class="mbio">Point at a face for their numbers and their story. '
-        + 'The ones in grey are still to be earned.</div></div>';
+        + `<div class="mrole">${ROSTER.length} players · ${nOpen} unlocked</div></div>`;
       return;
     }
     bar.className = 'meetbar';
