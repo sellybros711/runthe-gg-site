@@ -449,24 +449,28 @@ window.GA_ID='G-L29P5MRWKE';
     .hp-side-name{font-size:17px}
     .hp-side-sub{font-size:9px;letter-spacing:.04em}
   }
-  /* ---- FULL TEAM, the third door ----
-     A DIFFERENT SHAPE FROM THE PAIR ABOVE IT, on purpose. The split is two halves of one
-     control; this is one control the full width of both, so the eye reads it as another
-     question rather than as a third answer to the last one.
-     The warm edge is the only warm thing on the front page, which is what makes an
-     unannounced mode noticeable without a colour that shouts. */
+  /* ---- THE LONGER MODES, and they share one card ----
+     Full Team and the Trade Machine used to be two different objects in two different
+     places: Full Team a gold panel wedged under the quick pair, the Trade Machine three taps
+     down inside the modes sheet. They are the same KIND of thing, a longer game than a
+     single draft, so they are now one card shape sitting side by side under one heading.
+     THE GOLD IS GONE FROM HERE. It was the only warm thing on the front page, which is what
+     made it work when it was alone. Two warm cards in a row is a menu of side modes, which
+     is exactly what the note on the dynasty door below warns about, and the gold is needed
+     more by the store card further down than by either of these. What marks a mode as new
+     or unfinished is its tag, which is what a tag is for. */
   .hp-full{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;
-    margin-top:6px;padding:15px 12px 13px;border-radius:12px;
-    background:linear-gradient(180deg,rgba(38,30,16,.92),rgba(22,20,14,.92));
-    border:1.5px solid rgba(226,178,90,.42);
-    box-shadow:0 8px 22px -14px #000,inset 0 1px 0 rgba(255,220,150,.10)}
+    margin-top:0;padding:15px 12px 13px;border-radius:12px;
+    background:linear-gradient(180deg,rgba(30,34,42,.92),rgba(16,18,23,.92));
+    border:1px solid var(--line-2);
+    box-shadow:0 8px 22px -14px #000,inset 0 1px 0 rgba(255,255,255,.05)}
   .hp-full[hidden]{display:none}
   .hp-full:before{display:none}
   .hp-full:active{transform:translateY(1px)}
   .hp-full-name{font-family:var(--fd,var(--fn));font-size:19px;font-weight:800;
-    letter-spacing:.02em;color:#F3DDAE;line-height:1}
+    letter-spacing:.02em;color:var(--ink);line-height:1}
   .hp-full-sub{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.05em;
-    text-transform:uppercase;color:rgba(243,221,174,.62);line-height:1.3;text-align:center}
+    text-transform:uppercase;color:var(--dim-2);line-height:1.3;text-align:center}
   /* Rides in the corner the way the New sticker on Defense does, and for the same reason:
      anything in the flow would shift the label off centre. */
   .hp-tag-pro{background:rgba(226,178,90,.16);border-color:rgba(226,178,90,.5);
@@ -563,22 +567,26 @@ window.GA_ID='G-L29P5MRWKE';
      visitor picks by size. Both are built by ensureDynastyButton, so they exist only where
      the door they organise does, and the page reads exactly as it did before that door is
      switched on. */
-  .hp-quick{display:flex;align-items:center;gap:9px;margin:2px 0 8px}
-  .hp-quick span{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.15em;
-    text-transform:uppercase;color:var(--dim-2);white-space:nowrap}
-  .hp-quick:after{content:'';height:1px;background:var(--line);flex:1}
-  .hp-leadin{display:flex;align-items:center;gap:10px;margin:17px 0 9px}
-  .hp-leadin span{font-family:var(--fn);font-size:11px;font-weight:600;color:var(--dim);
-    white-space:nowrap;font-style:italic}
-  .hp-leadin:before,.hp-leadin:after{content:'';height:1px;flex:1;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,.20),transparent)}
-  /* The lead-in already spaces the door off the pair above it, and .hp-full adds its own
-     margin on top of that. */
-  .hp-leadin+.hp-dyn{margin-top:0}
+  /* ONE HEADING STYLE, USED TWICE. There used to be two: this one, an uppercase eyebrow with
+     a rule running off to the right, and a second called .hp-leadin that was centred,
+     lowercase, italic, and fenced by a rule on BOTH sides, reading "or see how far you can
+     last on". Two headings doing one job in two visual languages is most of why the column
+     read as unsorted, because a reader cannot tell whether the difference is meaningful.
+     It also left Full Team orphaned: it sat above the italic line, so it read as a third
+     answer to "quick draft", which is the one thing it is not. */
+  /* The group owns the spacing between its heading, its pair and the dynasty door under
+     them, so no card needs a margin of its own and none of them can disagree. */
+  /* THE GROUP OWNS THE SPACING BETWEEN ITS DOORS, and its own margin owns the one above it.
+     Each door used to carry a margin-top of its own; moving them into a flex column with a
+     gap took that away, and the first door then sat flush against the Offense/Defense split
+     with no gap at all. Measured, not eyeballed: the strip read 0px there and 8px everywhere
+     else, which is the sort of thing that looks like a rendering fault rather than a choice. */
+  .hp-longer{display:flex;flex-direction:column;gap:8px;margin-top:8px}
   /* THE WAY OUT OF A SAVED DYNASTY, under the door back into it. Deliberately the quietest
      control on the front page: it throws a run away, and the thing somebody came back for
      is the one above it. */
-  .hp-dynnew{margin-top:6px;background:none;border:0;box-shadow:none;
+  /* No top margin: it sits inside .hp-longer, which owns the spacing between its children. */
+  .hp-dynnew{margin-top:0;background:none;border:0;box-shadow:none;
     font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.04em;
     text-transform:uppercase;color:rgba(226,233,245,.44);padding:6px 8px}
   .hp-dynnew[hidden]{display:none}
@@ -1457,7 +1465,18 @@ window.GA_ID='G-L29P5MRWKE';
      STILL DELIBERATELY SMALL. It sits under the thing the page is for and above three dim
      utilities, and it has to read as quieter than one and louder than the others. The
      compact centred shape is kept for that reason; only its execution changed. */
-  .hp-more{display:flex;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto;
+  /* FLUSH WITH EVERYTHING ELSE, and centred inside itself.
+     This was a width:fit-content pill floating in the middle of a column where every other
+     block runs edge to edge, which made it the one thing on the front page that did not line
+     up with anything. It was made narrow to stop a menu of side modes competing with the
+     main call to action, and that reasoning was right at the time. It no longer applies: the
+     Trade Machine has moved out of that menu and onto the page above, so what is left behind
+     this button is One Franchise, Eras and the college game, which are genuinely secondary
+     and do not need holding down by their width.
+     The quieting is done by weight instead, which is what weight is for: it keeps the dim
+     fill and the thin border, so it still sits below the doors above it and above the three
+     flat utility buttons below it, while sharing their edges. */
+  .hp-more{display:flex;width:100%;justify-content:center;
     margin-top:12px;gap:9px;font-size:13px;letter-spacing:.05em;
     border-radius:12px;border:1px solid var(--line-2);
     background:linear-gradient(180deg,rgba(255,255,255,.062),rgba(255,255,255,.018));
@@ -1770,8 +1789,12 @@ window.GA_ID='G-L29P5MRWKE';
     #s-intro .htitle{order:1;margin-bottom:12px}
     /* The starters and everything that belongs to them, so a phone held sideways gets the
        whole front page in one block instead of Dynasty door under the utility row. */
-    #s-intro #b-start,#s-intro #hp-split,#s-intro #hp-quick,#s-intro #hp-leadin,
-    #s-intro #b-start-full,#s-intro #b-start-dyn,#s-intro #b-dyn-new{order:2}
+    /* THE LONGER MODES TRAVEL AS ONE NODE NOW. They used to be named one at a time here,
+       which stopped working the moment they moved inside #hp-longer: `order` applies only to
+       a flex container's DIRECT children, so a descendant selector that still matches has no
+       effect at all and the group would silently fall to the catch-all order:5, landing
+       under the utility row. */
+    #s-intro #b-start,#s-intro #hp-split,#s-intro #hp-longer{order:2}
     #s-intro #b-teams{order:3}
     #s-intro .hp-util{order:4}
     #s-intro .hero{order:6;margin-top:16px;margin-bottom:0}
@@ -4585,8 +4608,7 @@ window.GA_ID='G-L29P5MRWKE';
        above, which is full width: Dynasty would span under the hero rather than sitting
        in the column with every other control. */
     #s-intro>#b-start,#s-intro>#hp-pick,#s-intro>#hp-split,
-    #s-intro>#hp-quick,#s-intro>#hp-leadin,#s-intro>#b-start-full,
-    #s-intro>#b-start-dyn,#s-intro>#b-dyn-new,
+    #s-intro>#hp-longer,
     #s-intro>#b-teams,#s-intro>.hrow.hp-util{grid-column:2}
     #s-intro>.htitle{margin-bottom:24px}
     /* AND THE CONTROLS STOP BEING PHONE-SIZED. Half of 1040 is 500px, and a 44px-tall button
@@ -4602,9 +4624,7 @@ window.GA_ID='G-L29P5MRWKE';
     /* The right column starts a little below the reels rather than level with them, so the
        two columns read as balanced against each other. The hero is the taller of the two by
        about a hundred pixels and always will be: it is a housing plus a field. */
-    #s-intro>#hp-pick,#s-intro>#b-start,#s-intro>#hp-quick{margin-top:30px}
-    /* Whichever of the two comes first pays the gap, not both. */
-    #s-intro>#hp-quick+#b-start{margin-top:0}
+    #s-intro>#hp-pick,#s-intro>#b-start{margin-top:30px}
     #s-intro>#b-teams{margin-top:14px}
     .hp-pick{font-size:13.5px;margin-bottom:12px}
     .hp-side{padding:36px 14px 26px}
@@ -5530,6 +5550,17 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.05em;text-transform:uppercase;color:var(--dim-2);margin-top:4px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+  /* THE ROSTER STRIP IS TWO BY TWO, not three across. It carries four facts about the six
+     men (the mode's own second number, chemistry, spend and where the season finished) and
+     four cells in a three column grid leaves one stranded on a row of its own. The record
+     card's strip above it stays three across because it holds exactly three board windows. */
+  .splits.sq{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .splits.sq>*:not(:nth-child(3n+1)){border-left:none}
+  .splits.sq>*:nth-child(2n){border-left:1px solid var(--line)}
+  .splits.sq>*:nth-child(n+3){border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+  /* The rank row is hidden outright when the board never answered, rather than drawing three
+     dashes. [hidden] needs saying because .splits sets display:grid. */
+  .splits.ranks[hidden]{display:none}
   .gateline:empty{display:none}
   .gateline{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
     font-size:12.5px;line-height:1.4;color:var(--dim)}
@@ -5746,112 +5777,11 @@ window.GA_ID='G-L29P5MRWKE';
      Red is already the colour of your own team on eight other screens, and the store is
      not a thing that happens to your team. */
   .eyebrow.gold{color:#fbbf24}
-  .pw-hero{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:13px 0 4px}
-  .pw-tile{border:1px solid var(--line);border-radius:12px;padding:11px 7px 10px;text-align:center;
-    background:linear-gradient(180deg,rgba(251,191,36,.09),rgba(255,255,255,.02))}
-  /* BIGGER, BECAUSE THE ART IS NOW WORTH THE ROOM. 28px was sized for line icons and it is
-     the size a favicon is: solid shapes with an inset detail need the space or the detail
-     closes up. */
-  .pw-tile svg{width:40px;height:40px;display:block;margin:0 auto;
-    filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))}
-  .pw-tile b{display:block;font-family:var(--fn);font-size:10.5px;letter-spacing:.07em;
-    text-transform:uppercase;margin-top:7px;line-height:1.15;color:var(--ink)}
-  .pw-tile i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);
-    margin-top:3px;line-height:1.25}
-  /* A PURCHASE AS A CARD, so the two can be compared side by side rather than one being
-     the offer and the other a footnote under it. */
-  .pw-tier{border:1px solid var(--line-2);border-radius:14px;padding:13px 13px 12px;margin-top:11px;
-    background:var(--panel)}
-  .pw-tier.best{border-color:rgba(251,191,36,.5);
-    background:linear-gradient(180deg,rgba(251,191,36,.10),var(--panel))}
-  .pw-th{display:flex;align-items:center;gap:8px}
-  .pw-name{font-family:var(--fn);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--dim)}
-  .pw-tier.best .pw-name{color:#fbbf24}
-  .pw-tag{margin-left:auto;font-family:var(--fn);font-size:9px;letter-spacing:.1em;
-    text-transform:uppercase;font-weight:800;padding:3px 8px;border-radius:999px;
-    background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}
-  /* THE PRICE SITS IN THE HEADER ROW NOW, beside the product name rather than on a line of
-     its own under it. Two cards each spending a 29px line on a number they had already made
-     the loudest thing on the card was most of why the sheet read as long. */
-  .pw-th .pw-cost{margin-left:auto}
-  .pw-cost{display:flex;align-items:baseline;gap:8px;margin:5px 0 0;flex-wrap:wrap}
-  .pw-cost b{font-family:var(--fd);font-size:24px;line-height:1;font-weight:400;color:var(--ink)}
-  /* WHAT THIS ACCOUNT IS, in two letters more than it needs. Drawn only when there is a true
-     answer: see acctTier(), which returns nothing at all for a signed out visitor and for one
-     whose ownership has not come back yet. */
-  .pw-pill{display:inline-block;font-style:normal;margin-left:8px;vertical-align:3px;
-    font-family:var(--fn);
-    font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
-    padding:2px 7px;border-radius:999px}
-  .pw-pill.free{background:rgba(255,255,255,.08);color:var(--dim);
-    box-shadow:inset 0 0 0 1px var(--line)}
-  .pw-pill.pro{background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}
-  .pw-was{font-size:13px;color:var(--dim-2);text-decoration:line-through}
-  .pw-save{font-size:11.5px;font-weight:800;color:#4ade80;font-family:var(--fn);letter-spacing:.04em}
-  /* WHICH GAME EACH LINE COMES FROM, IN THAT GAME'S OWN COLOUR. The colour code is
-     the dot plus the name in the same hue, and it is what makes Run The Bundle read
-     as buying things in four places rather than as one long list of nouns.
-
-     A BULLET RATHER THAN A RAIL DOWN THE SIDE. Owner's call, and the rail had a
-     real problem behind the preference: a 2px line the full height of a three line
-     block is a lot of coloured ink for a label, and four of them stacked read as a
-     table with borders rather than as a list of things you get. A dot is the same
-     information at a fraction of the weight.
-
-     THE DOT IS DRAWN, NOT A BULLET CHARACTER, because a real bullet inherits the
-     font's own size and baseline and lands in a different place in every one of the
-     four rows depending on what follows it.
-
-     LAID OUT AS A GRID so the name, the item and the term all hang off the same
-     left edge in column two, which is what makes it a bullet list rather than a dot
-     with three lines drifting under it. Two columns, and every child is pinned to
-     the second: the dot is the only thing in the first.
-
-     THIS BLOCK SHIPPED ONCE WITH NO RULE AT ALL, which is the failure mode a class
-     rename has. The trim that shortened this sheet replaced .pw-src with .pw-line
-     and took the old CSS with it, so every line went on setting --gc and nothing
-     read it: four identical grey paragraphs and no error anywhere. The colours are
-     measured, and the note on PW_GAME says what against. */
-  .pw-line{display:grid;grid-template-columns:7px 1fr;column-gap:10px;margin-top:11px}
-  .pw-line:before{content:"";grid-column:1;grid-row:1;width:7px;height:7px;
-    border-radius:999px;background:var(--gc);
-    /* Centred on the cap height of the 10px uppercase name above it, whose line box
-       is 12px, rather than on the line box itself: uppercase type sits high in its
-       own leading and a dot centred on the box reads low against it. */
-    margin-top:2px}
-  .pw-line b{display:block;font-family:var(--fn);font-size:10px;letter-spacing:.09em;
-    text-transform:uppercase;font-weight:800;color:var(--gc);line-height:1.2}
-  .pw-line b,.pw-line span,.pw-line i{grid-column:2}
-  .pw-line span{display:block;font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.35}
-  /* SOMETHING IN THE BUNDLE THAT HAS RUN OUT. Shown rather than hidden: a line that vanishes
-     on its own expiry date reads as a thing going missing from a receipt, which is the
-     opposite of what a receipt is for. The dot and the name go quiet instead, so "you had
-     this" sits legibly beside "you have this" without either being mistaken for the other. */
-  .pw-line.ended:before{opacity:.3}
-  .pw-line.ended b{opacity:.45}
-  .pw-line.ended span{color:var(--dim)}
-  /* THE DATE LINE, on the receipt and never in the store. The same block does both jobs, so
-     the third line is simply absent where there is nothing bought yet to date. */
-  .pw-line i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);margin-top:3px;
-    line-height:1.3}
-  /* The header of the Pro page: the pill the profile already uses, with the one sentence
-     that says what being Pro actually gets you, on the same line as it. */
-  .pfpro-h{display:flex;align-items:center;gap:10px;margin-top:12px}
-  .pfpro-h .pw-pill{margin-left:0;vertical-align:0}
-  .pfpro-h span{font-size:12.5px;color:var(--dim-2);line-height:1.35}
-  .pw-note{font-size:12px;color:var(--dim-2);margin:13px 0 12px;line-height:1.4}
-  /* THE BEST VALUE CARD GETS THE GOLD BUTTON. Both tiers shipped with the same red one,
-     which is the house colour for the primary action and cannot be the primary action
-     twice: two identical buttons a thumb apart is a choice presented as a coin toss. The
-     badge, the border and the button are now one thing. */
-  .pw-tier.best .btn{background:linear-gradient(135deg,#fbbf24 0%,#e08c07 100%);color:#3b2600}
-  .pw-tier.best .btn:before{background:linear-gradient(180deg,rgba(255,255,255,.34),transparent)}
-  .pw-foot{font-size:12px;color:var(--dim-2);text-align:center;margin:13px 0 0;line-height:1.4}
-  @media (max-width:360px){
-    .pw-hero{grid-template-columns:1fr 1fr}
-    .pw-tile:last-child{grid-column:1 / -1}
-  }
+  /* THE STORE'S OWN CSS LIVES IN /assets/store.js, which injects it once on first use.
+     It was a hundred and thirty eight lines here, and Commish Simulator now shows the same
+     offer: two copies of a price card is two chances to tell a customer something the other
+     page contradicts. Everything it uses comes from this page's own tokens, so the store
+     still wears whichever palette the host has. */
   /* THE HOME PAGE'S OWN PROMPT. Quiet on purpose: it sits under the buttons rather than
      over them, because a store that interrupts the way to the game is the thing everybody
      hates about stores. */
@@ -6215,12 +6145,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          anybody who asks. The guarantee is that nobody outside the list SEES a button, not
          that the feature is a secret. The thing that stops a forged list from mattering is
          the database, not this. -->
-    <!-- SMALLER, AND STILL THE ONLY THING ON ITS OWN LINE. This was a full-width button
-         directly under the main call to action, which put a menu of side modes at the same
-         weight as the thing the page is for, and left nowhere for Full Team to go.
-         It is a compact centre pill now: narrower than everything above it, wider and
-         brighter than the three dim utility buttons below, and alone on its row so it still
-         reads as a door rather than as a footnote. -->
+    <!-- ALONE ON ITS ROW, full width, and quieter than the doors above it. It was a compact
+         centred pill for a while, to stop a menu of side modes competing with the main call
+         to action. That cost the page its only column edge: see the note on .hp-more. -->
     <button class="btn hp-secondary hp-more locked" id="b-teams"><span>More ways to play</span><svg
       class="lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/>
       <path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><svg class="chev" viewBox="0 0 24 24"
@@ -7018,7 +6945,14 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="ovr" id="o-ovr"></div>
       <!-- Full Team only: the two unit ratings the headline above is the mean of. -->
       <div id="o-sides"></div>
-      <div class="splits" id="o-splits"></div>
+      <!-- WHERE IT PLACED, AND NOTHING ELSE.
+           This used to be a six cell grid: chemistry, spend and playoff seed on the top row
+           and the three board windows underneath. Six numbers under a record is a table, and
+           the first three of them are facts about the ROSTER rather than about the season,
+           so they have gone down to the lineup panel that shows the roster. What is left
+           here answers the second question a result raises after "what happened", which is
+           "was that any good". -->
+      <div class="splits ranks" id="o-splits"></div>
       <!-- One line, guests only. The full sign-in gate lives in the Where it ranks tab,
            which stopped being the tab this page opens on, and a prompt nobody sees is
            not a prompt. The placings above are real; what a guest is missing is the row. -->
@@ -7043,15 +6977,62 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            of the player who won it, three lines below, so counting them out loud in a
            sentence said the same thing twice and said it worse. -->
       <div class="rost" id="o-rost"></div>
+      <!-- THE FOUR FACTS ABOUT THE ROSTER ABOVE, under the roster rather than under the
+           record. Chemistry and spend are things the six men are, not things the season did,
+           and the ceiling is what this draft could have been. They were in the record card
+           and they were three of the eleven things it was trying to say at once. -->
+      <div class="splits sq" id="o-squad"></div>
       <!-- FULL TEAM ONLY: who coached it and how they played. Both move the score, so a
            results screen that does not say them is describing a season it cannot explain. -->
       <div id="o-coach"></div>
     </div>
 
-    <!-- 3. EVERYTHING ELSE, IN TABS.
+    <!-- 3. THE RUN, AND THEN THE WAY TO PLAY ANOTHER ONE.
+         BOTH USED TO BE BELOW THE TABS, and that was measured rather than felt: on a fresh
+         result, Draft again sat 2238px down a 2545px screen, which is about two and a half
+         phone screens of scrolling to reach the most common thing anybody does next. The
+         single "How close to perfect" pane above it was 857px of that on its own.
+
+         The order a result is read in is: what happened, who did it, play again. Everything
+         under this is somebody choosing to look further into a run they have already seen
+         the shape of, which is what the tabs are for, so the tabs go after.
+
+         The run card comes up with the buttons rather than staying below them because in a
+         dynasty it IS the headline: the card at the top of this screen scores one season and
+         this one scores the whole job. It is hidden in every other mode and on every season
+         but the last, so it costs nothing to have it here. -->
+    <!-- THE RUN, ONCE IT IS OVER.
+         The card above scores one season. This one is the whole thing: how many years you
+         held the job, what they were worth, and the handful of facts worth telling somebody
+         about. Only ever shown on a firing, because until then the run is not a story yet.
+         See paintRunCard(). -->
+    <div class="runcard" id="o-run" hidden>
+      <div class="rc-top"><span>The run</span><span id="rc-years"></span></div>
+      <div class="rc-hero">
+        <div class="rc-big" id="rc-seasons">0</div>
+        <div class="rc-lab" id="rc-seasonlab">seasons</div>
+      </div>
+      <div class="rc-pts"><b id="rc-score">0</b><span>points</span></div>
+      <div class="rc-hi" id="rc-hi"></div>
+    </div>
+
+    <div class="next-panel">
+      <div class="next-pair">
+        <button class="btn next-secondary" id="b-same"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 10a7 7 0 0 1 12.9-3.7M17 10a7 7 0 0 1-12.9 3.7"/><path d="M3 4v3h3M17 16v-3h-3"/></svg>Draft again</button>
+        <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
+      </div>
+      <button class="btn next-share" id="b-share"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="5" cy="10" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="15" cy="15" r="2"/><path d="M7 11l6 3M7 9l6-3"/></svg>Share your season</button>
+      <div class="next-footer">
+        <button class="btn-text next-foot" id="b-board2">Leaderboard</button>
+        <span class="next-dot"></span>
+        <button class="btn-text next-foot" id="b-again">Back to start</button>
+      </div>
+    </div>
+
+    <!-- 4. EVERYTHING ELSE, IN TABS.
          Six stacked panels put the buttons that end the run about two and a half screens
-         below the fold, so the most common next action, playing again, was the hardest thing
-         on the page to find. One panel at a time, and the buttons come straight after. -->
+         below the fold. One panel at a time keeps that from growing again; the buttons
+         themselves are above this now rather than after it. -->
     <div class="tabwrap"><div class="tabs" id="o-tabs">
       <button class="tab on" data-ot="perfect">How close</button>
       <button class="tab" data-ot="ranks">Where it ranks</button>
@@ -7086,21 +7067,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
 
-    <!-- THE RUN, ONCE IT IS OVER.
-         The card above scores one season. This one is the whole thing: how many years you
-         held the job, what they were worth, and the handful of facts worth telling somebody
-         about. Only ever shown on a firing, because until then the run is not a story yet.
-         See paintRunCard(). -->
-    <div class="runcard" id="o-run" hidden>
-      <div class="rc-top"><span>The run</span><span id="rc-years"></span></div>
-      <div class="rc-hero">
-        <div class="rc-big" id="rc-seasons">0</div>
-        <div class="rc-lab" id="rc-seasonlab">seasons</div>
-      </div>
-      <div class="rc-pts"><b id="rc-score">0</b><span>points</span></div>
-      <div class="rc-hi" id="rc-hi"></div>
-    </div>
-
     <div id="o-ledwrap" hidden style="margin-top:12px">
       <div class="rp-head"><span>Every season</span><span class="rp-head-n" id="o-ledn"></span></div>
       <div class="ledger" id="o-ledger"></div>
@@ -7119,18 +7085,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
 
-    <div class="next-panel">
-      <div class="next-pair">
-        <button class="btn next-secondary" id="b-same"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 10a7 7 0 0 1 12.9-3.7M17 10a7 7 0 0 1-12.9 3.7"/><path d="M3 4v3h3M17 16v-3h-3"/></svg>Draft again</button>
-        <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
-      </div>
-      <button class="btn next-share" id="b-share"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="5" cy="10" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="15" cy="15" r="2"/><path d="M7 11l6 3M7 9l6-3"/></svg>Share your season</button>
-      <div class="next-footer">
-        <button class="btn-text next-foot" id="b-board2">Leaderboard</button>
-        <span class="next-dot"></span>
-        <button class="btn-text next-foot" id="b-again">Back to start</button>
-      </div>
-    </div>
     <!-- The RunThe.GG house ad, at the very bottom of the results screen under the replay buttons. -->
     <a class="ggad" id="gg-over" href="/" target="_blank" rel="noopener" aria-label="More games at RunThe.GG">
       <span class="ggad-mark"><img class="ggad-logo" src="/assets/runthegames-icon_192.png" alt="RunThe.GG" width="46" height="46" loading="lazy" onerror="this.closest('.ggad-mark').classList.add('nologo')"><span class="ggad-tm"><b>RUN<br>THE</b><i>.GG</i></span></span>
@@ -7208,9 +7162,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     </div>
   </div>
 
-  <!-- THE MANDATE BRIEFING (seasons 5, 15, 25). Its own beat between the results screen and
-       the offseason: the challenge, the reward, the sting, and the one thing that most needs
-       saying, that missing it does not end the run. See mandateBriefing. -->
+  <!-- THE MANDATE BRIEFING (the odd milestones: 3, 9, 15). Its own beat between the results
+       screen and the offseason: the challenge, the reward, the sting, and the one thing that
+       most needs saying, that missing it does not end the run. See mandateBriefing. -->
   <div class="screen bossx" id="s-mbrief">
     <div class="eyebrow gold">Owner’s mandate &middot; Season <span id="mb-season">5</span></div>
     <h2 class="display bs-name" id="mb-name">The youth movement</h2>
@@ -7232,7 +7186,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <button class="btn dock-go" id="b-mb-go">Into the offseason</button>
   </div>
 
-  <!-- Freeze reward (seasons 10, 20, 30). Pick one man to hold off the clock for good. -->
+  <!-- Freeze reward (the even milestones: 6, 12, 18). Pick one man to hold off the clock for good. -->
   <div class="screen bossx" id="s-bfreeze">
     <div class="eyebrow gold">Boss beaten</div>
     <h2 class="display" style="font-size:24px;margin:4px 0 6px">Freeze a player</h2>
@@ -7402,8 +7356,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=86"></script>
-<script src="run.js?v=97"></script>
+<script src="engine.js?v=87"></script>
+<script src="run.js?v=98"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -7414,7 +7368,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=33"></script>
-<script src="achievements.js?v=12"></script>
+<script src="achievements.js?v=13"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
@@ -7422,7 +7376,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
 <script defer src="/assets/arcade-ad.js?v=3"></script>
-<script defer src="auth.js?v=4"></script>
+<!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
+     a door the moment the page is interactive, and a store that is not there yet draws the
+     fallback line instead of the offer. -->
+<script src="/assets/store.js?v=2"></script>
+<script defer src="auth.js?v=5"></script>
 <script>
 (function(){
 'use strict';
@@ -7646,7 +7604,10 @@ const canPlayClubDynasty=()=>{
    the premium doors at all; this decides whether a door opens or pitches. */
 let premiumSet=null;
 const dynastyOwned=()=>!!(premiumSet&&premiumSet.indexOf('ps_premium')>=0);
-function premiumRefresh(){
+/* `force` rides through to auth.js and skips its cache. Ordinary callers want the
+   cache; the walk back from Stripe must not have it, because a cached [] is exactly
+   the answer that would make a landed purchase look like a missing one. */
+function premiumRefresh(force){
   if(!authState.signedIn){ premiumSet=null; return Promise.resolve(null); }
   const a=A();
   if(!a||typeof a.premiumProducts!=='function'){ premiumSet=[]; return Promise.resolve([]); }
@@ -7659,7 +7620,7 @@ function premiumRefresh(){
      now, so painting it while premiumSet is still null drew the page for somebody whose tier
      was unknown and never drew it again. The pitch card was never appearing on an ordinary
      load at all: not gated wrong, just painted a moment too early and left there. */
-  return a.premiumProducts().then((list)=>{ premiumSet=Array.isArray(list)?list:[]; return premiumSet; })
+  return a.premiumProducts(force).then((list)=>{ premiumSet=Array.isArray(list)?list:[]; return premiumSet; })
     .catch(()=>{ premiumSet=[]; return premiumSet; })
     .then((v)=>{ try{ paintHomeStart(); }catch(_){} return v; });
 }
@@ -7710,7 +7671,7 @@ async function checkoutReturn(){
   const waits=[0,600,1200,2000,3000,3500];
   for(const ms of waits){
     if(ms) await new Promise((r)=>setTimeout(r,ms));
-    await premiumRefresh();
+    await premiumRefresh(true);
     if(dynastyOwned()) break;
   }
   paintHomeStart();
@@ -7859,7 +7820,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=47;
+const NEED_VERSION=48;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -9168,10 +9129,17 @@ function dailyClock(on){
 function dailySpentSheet(mode){
   const at=dailyResetsAt(mode), cd=at?dailyCountdown(at):null;
   const name=mode==='trade'?'Trade Machine':'Dynasty';
+  const st=dailyState[mode];
+  const allow=(st&&st.allowance)||1;
   $('sheet-in').innerHTML='<div class="eyebrow gold">'+esc(name)+'</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">That is today’s run</h2>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+
-      'You get one '+esc(name)+' run a day. '+
+      /* THE REAL NUMBER, not always one. The base allowance is one a day and the game hands
+       out two more: one for being fired in season one, one for beating a boss. A player who
+       earned both and used all three was being told they get one a day, which reads as the
+       game having lost count of the runs it just gave them. */
+    'That is '+(allow>1?'all '+allow+' of your ':'your ')+esc(name)+' run'+(allow>1?'s':'')+
+      ' for today. '+
       (cd?'The next one unlocks in <b>'+esc(cd)+'</b>.':'The next one unlocks at midnight Eastern.')+
     '</p>'+
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+
@@ -9253,46 +9221,9 @@ function tradeDoorShut(){
  * the note above it.
  */
 let pwUid=0;
-const PW_ART={
-  /* DYNASTY: a trophy, because the mode is measured in what you won over years. */
-  trophy:'<path fill="{g}" d="M15 7h18v9.5a9 9 0 0 1-18 0Z"/>'+
-    '<path fill="{g}" opacity=".5" d="M15 10.5h-4.5A6.5 6.5 0 0 0 17 17v-3.2a3.3 3.3 0 0 1-2-3.3Z"/>'+
-    '<path fill="{g}" opacity=".5" d="M33 10.5h4.5A6.5 6.5 0 0 1 31 17v-3.2a3.3 3.3 0 0 0 2-3.3Z"/>'+
-    '<path fill="{g}" d="M21.8 25.5h4.4V31h-4.4Z"/>'+
-    '<path fill="{g}" d="M15.5 31h17a2 2 0 0 1 2 2v3.5h-21V33a2 2 0 0 1 2-2Z"/>'+
-    '<path fill="#2a1a02" opacity=".34" d="M24 10.5l1.7 3.5 3.8.5-2.8 2.7.7 3.8-3.4-1.8-3.4 1.8.7-3.8-2.8-2.7 3.8-.5Z"/>',
-  /* FRANCHISE: a club crest, with the chevron the game's own crests use. */
-  shield:'<path fill="{g}" d="M24 5.5l15 5.3v10.9c0 8.7-6.1 15.4-15 17.8-8.9-2.4-15-9.1-15-17.8V10.8Z"/>'+
-    '<path fill="#2a1a02" opacity=".3" d="M24 13.5l8.5 5v6.2L24 30l-8.5-5.3v-6.2Z"/>'+
-    '<path fill="{g}" opacity=".85" d="M24 17.6l4.6 2.7v3.4L24 26.4l-4.6-2.7v-3.4Z"/>',
-  /* COMMISSIONER: a clipboard.
-     THIS IS THE THIRD ATTEMPT AND THE OTHER TWO ARE WORTH RECORDING. A stroked bracket was
-     unreadable at this size, twice. A whistle was drawn next and rendered, at 40px and at
-     3x, as an unmistakable PADLOCK: a round body with an arch over the top is a shackle, and
-     no amount of tuning the spout changes what the silhouette says first. A clipboard has no
-     such twin, and "run a league" is an admin job rather than a tournament. */
-  clipboard:'<rect x="9" y="8" width="30" height="34" rx="4.5" fill="{g}"/>'+
-    '<rect x="18" y="4" width="12" height="8" rx="3.2" fill="{g}"/>'+
-    '<rect x="20.4" y="6.4" width="7.2" height="3.2" rx="1.6" fill="#2a1a02" opacity=".4"/>'+
-    '<rect x="14" y="18" width="20" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>'+
-    '<rect x="14" y="25" width="20" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>'+
-    '<rect x="14" y="32" width="12" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>',
-  /* The little mark on the three prompt cards. */
-  star:'<path fill="{g}" d="M24 6.5l5.3 10.8 11.9 1.7-8.6 8.4 2 11.8L24 33.6l-10.6 5.6 2-11.8-8.6-8.4 11.9-1.7Z"/>'
-};
-/* ONE GRADIENT PER DRAWING, because an id is a document-wide name and the star is on screen
-   three times at once: a shared id makes every copy after the first point at the same def,
-   which works until the first one is removed from the DOM and the rest go black. */
-function pwArt(k){
-  const id='pwg'+(++pwUid);
-  return '<svg viewBox="0 0 48 48" aria-hidden="true">'+
-    '<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0.35" y2="1">'+
-      '<stop offset="0" stop-color="#fde68a"/><stop offset="0.55" stop-color="#f5b022"/>'+
-      '<stop offset="1" stop-color="#d97706"/></linearGradient></defs>'+
-    PW_ART[k].replace(/\{g\}/g,'url(#'+id+')')+'</svg>';
-}
-const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwArt(k)+'<b>'+esc(name)+'</b>'+
-  '<i>'+esc(line)+'</i></div>';
+/* PW_ART, pwArt, pwTile, PW_GAME and pwGroupText moved to /assets/store.js when Commish
+   Simulator started showing the same offer. What stays here is the college game's NAME,
+   because this page's mode cards use it and the store is not the only thing that says it. */
 /*
  * WHICH GAME EACH THING COMES FROM.
  *
@@ -9338,31 +9269,6 @@ const cfbNameHtml=()=>{
   return '<span>'+esc(CFB_NAME.slice(0,i+1))+'</span>'+
     '<span>'+esc(CFB_NAME.slice(i+1).trim())+'</span>';
 };
-const PW_GAME={
-  ps:{name:'The Perfect Season',c:'#f87171'},
-  cfb:{name:CFB_NAME,c:'#10b981'},
-  arcade:{name:'Run The Arcade',c:'#FF8A3D'},
-  tour:{name:'Run The Tour',c:'#22b8cf'}
-};
-/* THE COMPACT GROUP. The tiles at the top of the sheet already say what each mode IS, so a
-   tick list underneath repeating "Dynasty Mode. Unlimited runs" is the same sentence twice
-   in one screen. This keeps the thing the tiles cannot say, which is WHICH GAME each one
-   comes out of, and says it in one line. */
-/* AND FOR HOW LONG, WHICH IS THE THING THIS SHEET GOT WRONG.
- *
- * The lede promised "one payment, lifetime access" over BOTH cards, and one item in Run The
- * Bundle is not lifetime: the Arcade Card is twelve months. So the strongest claim on the
- * screen was false about the more expensive product, which is the one direction a pricing
- * claim must never be wrong in.
- *
- * The fix is not to delete the word. Three of the four things really are permanent and that
- * is worth saying. It is to put the term on the LINE rather than over the sheet, so each row
- * says what it is and how long it lasts, and the two bundles can be compared on it. */
-const pwGroupText=(key,text,term)=>{
-  const g=PW_GAME[key];
-  return '<div class="pw-line" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
-    '<span>'+esc(text)+'</span>'+(term?'<i>'+esc(term)+'</i>':'')+'</div>';
-};
 /* THE PROMPT, IN ONE PLACE. Three screens carry it and three copies of a price is three
    chances for one of them to go stale after a price change. `value` is what the money buys
    and it is never omitted: see the note on .pwc-go. */
@@ -9370,7 +9276,12 @@ const pwGroupText=(key,text,term)=>{
    been offered, and the reader has to decide against it with nothing on the other side of
    the scale. The card's job is to be worth opening; the price belongs on the screen that can
    also show what it buys. What stays is the value, which is what makes it worth opening. */
-const pwCardInner=(title,sub,value)=>'<span class="pwc-ic">'+pwArt('star')+'</span>'+
+/* THE MARK COMES FROM THE STORE MODULE, which owns the gold gradient and the id counter
+   that keeps two copies of it from sharing a def. This read pwArt('star') after that
+   function moved out, which is not a fallback situation: it threw at boot and took the
+   game to the loading screen for every account that sees this card. */
+const pwCardInner=(title,sub,value)=>'<span class="pwc-ic">'+
+  (window.RTG_STORE?window.RTG_STORE.art('star'):'')+'</span>'+
   '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span>'+
   '<span class="pwc-go"><b>'+esc(value)+'</b></span>';
 /* Two shapes because the front page BUILDS its node (see ensurePremiumCard) and the two
@@ -9405,57 +9316,19 @@ function premiumSheet(){
     return;
   }
 
-  /* SIGNED OUT. The purchase is tied to an account, so there is a step before the money and
-     the buttons say which one it is. A toast reading "Sign in first" over a dead button was
-     the version before this: correct, and a dead end. */
-  const out=!authState.signedIn;
-  const WORTH=80, RTB=34.99;
-  box.innerHTML='<div class="eyebrow gold">Pro</div>'+
-    '<h2 class="display" style="font-size:27px;margin:4px 0 0">Go Pro</h2>'+
-    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:7px 0 0">'+
-      /* NO BLANKET TERM UP HERE ANY MORE. "One payment" is true of both bundles and is the
-         thing worth leading with. "Lifetime access" was not true of both, and each line
-         below now carries its own term instead. */
-      'Unlimited dynasty runs, no daily limit, and every Pro mode. '+
-      'One payment. No subscription.</p>'+
-    '<div class="pw-hero">'+
-      pwTile('trophy','Dynasty','25 seasons, one job')+
-      pwTile('shield','Franchise','One club, for good')+
-      pwTile('clipboard','Commissioner','Run a league')+
-    '</div>'+
-
-    '<div class="pw-tier">'+
-      '<div class="pw-th"><span class="pw-name">Premium Bundle</span>'+
-        '<span class="pw-cost"><b>$19.99</b></span></div>'+
-      pwGroupText('ps','Dynasty Mode and Franchise Mode','Lifetime access')+
-      pwGroupText('cfb','Commissioner Mode','Lifetime access')+
-      '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+
-        (out?'Sign in to go Pro':'Go Pro')+'</button>'+
-    '</div>'+
-
-    '<div class="pw-tier best">'+
-      '<div class="pw-th"><span class="pw-name">Run The Bundle</span>'+
-        '<span class="pw-tag">Best value</span></div>'+
-      '<div class="pw-cost"><b>$'+RTB.toFixed(2)+'</b>'+
-        '<span class="pw-was">$'+WORTH+'</span>'+
-        '<span class="pw-save">Save $'+Math.round(WORTH-RTB)+'</span></div>'+
-      '<p class="pw-note" style="margin:9px 0 2px">Everything above, plus two more games.</p>'+
-      /* "Everything above" carries the two Lifetime access lines with it, so the two lines
-         this card adds have to say plainly that they are not that. The Arcade Card is twelve
-         months and then it stops. It is still not a subscription: nothing renews it and
-         nothing charges again, which is the half a buyer is actually anxious about. */
-      pwGroupText('arcade','1 year of the Arcade Card','12 months. It does not renew.')+
-      pwGroupText('tour','100,000 coins and one Tour Pack','Tour is the mid pack tier. Yours to spend.')+
-      '<button class="btn" id="b-buy-rtb" style="width:100%;margin-top:14px">'+
-        (out?'Sign in to get it':'Get Run The Bundle')+'</button>'+
-    '</div>'+
-
-    '<p class="pw-foot">Either one makes your account Pro. '+
-      'Secure checkout by Stripe.</p>'+
+  /* THE OFFER ITSELF COMES FROM /assets/store.js, which Commish Simulator draws from too.
+     This page frames it: a bottom sheet with a Close under it, and the analytics below.
+     The store never sees who the visitor is beyond whether they are signed in, because the
+     only thing that changes is the two button labels: a purchase is tied to an account, so
+     there is a step before the money and the buttons say which one it is. */
+  box.innerHTML=(window.RTG_STORE
+    ? window.RTG_STORE.html({signedOut:!authState.signedIn})
+    : '<p class="dim">The store could not be loaded. Reload the page and try again.</p>')+
     '<div style="margin-top:12px"><button class="btn ghost" id="sh-x" style="width:100%">Not now</button></div>';
+  if(window.RTG_STORE) window.RTG_STORE.wire(box,{buy:(kind)=>beginBundleCheckout(kind)});
   openSheet();
-  $('b-buy-ps').onclick=()=>beginBundleCheckout('perfect-season');
-  $('b-buy-rtb').onclick=()=>beginBundleCheckout('run-the-bundle');
+  /* The two buy buttons are bound by RTG_STORE.wire above, scoped to this box. Close is
+     this page's own, because the frame is this page's own. */
   $('sh-x').onclick=closeSheet;
   ga('premium_sheet_shown',{from:premiumFrom||'mode',tier:acctTier()||'out'});
   premiumFrom=null;
@@ -9513,8 +9386,11 @@ function paintHomeStart(){
   /* FULL TEAM IS ITS OWN QUESTION AND ITS OWN GATE. Not tied to `on`: the defense split
      and the full team preview are two different lists, and somebody could be on one and
      not the other. */
+  /* Each builder puts its own card in its own place inside #hp-longer, so the only thing
+     this sequence decides is that the group exists before the trim runs. */
   ensureFullButton();
   ensureDynastyButton();
+  trimLongGroup();
   ensurePremiumCard();
 }
 
@@ -9596,7 +9472,11 @@ function ensurePremiumCard(){
        stays. The word is only wrong when it is stretched over the Arcade year, which is why
        the sheet's lede lost it and the lines inside carry their own terms. */
     el.innerHTML=pwCardInner('Unlock every mode',
-      'Dynasty, Franchise and Commissioner. Unlimited runs, lifetime access.','3 modes');
+      /* ONE LINE. This was two sentences over three lines on the screen that has the least
+         room, and the second of them ("Unlimited runs, lifetime access") is the pitch, which
+         belongs in the sheet this card opens rather than in front of it. What a door needs
+         to say is where it goes. */
+      'Dynasty, Franchise and Commissioner.','3 modes');
     el.onclick=()=>openPremium('home_card');
     host.parentNode.insertBefore(el, host.nextSibling);
   }
@@ -9616,26 +9496,83 @@ function ensurePremiumCard(){
  * half: a control that lives on the page across a whole run has to be put back by hand, and
  * the honest place is the function that runs on every return to the front page rather than
  * the success path of the thing that set it. */
+/*
+ * ─── THE LONGER MODES, AS ONE GROUP ────────────────────────────────────────────────────
+ *
+ * Everything below the quick pair used to be built by whichever function happened to own
+ * it, inserted relative to whatever node was there at the time. Full Team went in after the
+ * split, Dynasty went in after Full Team or the split, and the two headings were made by
+ * ensureDynastyButton. So the order of the front page depended on the order those three
+ * ran, the headings existed only for a dynasty tester, and Full Team sat above the line
+ * that was supposed to introduce it.
+ *
+ * This owns that whole strip instead. It makes the heading and the container, the three
+ * door builders below only ever append into it, and it takes itself off the page when it
+ * ends up empty. Nothing else inserts anything relative to anything else.
+ *
+ * IT IS ALSO WHERE THE TRADE MACHINE FINALLY LIVES. That mode is live to every signed in
+ * player, canPlayTrade() has returned true unconditionally for a while, and the store now
+ * sells unlimited runs of it as one of the three things $19.99 buys. It was three taps down
+ * inside the modes sheet, under a lock icon, below One Franchise and Eras.
+ */
+/*
+ * ─── THE DOORS UNDER THE STARTER, IN ONE CONTAINER ──────────────────────────────────────
+ *
+ * This exists for ordering and nothing else. Each door used to insert itself relative to
+ * whatever node happened to be there, so the order of the front page depended on the order
+ * the builders ran in, and one of them put a caption back that another had just hidden.
+ * One container, appended into, fixes that class of bug. It draws nothing of its own.
+ *
+ * NO SECTION HEADINGS. There were two for a while, "Quick draft" over the pair and
+ * "Go longer" over this, meant to organise a column of buttons. They organised nothing a
+ * reader could not already see and they cost two lines of type plus their margins on the
+ * screen that has the least room, on a page whose actual problem is that there is too much
+ * to read. The controls are large, distinct and named; a label over each group was chrome
+ * explaining chrome.
+ */
+function ensureLongGroup(){
+  const intro=$('s-intro');
+  if(!intro) return null;
+  let box=$('hp-longer');
+  if(!box){
+    box=document.createElement('div');
+    box.className='hp-longer'; box.id='hp-longer';
+  }
+  /* AFTER WHICHEVER STARTER IS SHOWING. The split and the lone Start a run are the same
+     slot wearing two faces and only one is ever in the layout, so this anchors to the one
+     that is rather than to a fixed id. */
+  const split=$('hp-split'), one=$('b-start');
+  const top=(split&&!split.hidden)?split:one;
+  if(!top||!top.parentNode) return box;
+  if(box.previousSibling!==top) top.parentNode.insertBefore(box,top.nextSibling);
+  return box;
+}
+/* Takes the container off the page once nothing is left in it. */
+function trimLongGroup(){
+  const box=$('hp-longer');
+  if(!box) return;
+  if(box.children.length) return;
+  if(box.parentNode) box.parentNode.removeChild(box);
+}
+
 function ensureFullButton(){
-  const host=$('hp-split');
   let el=$('b-start-full');
   if(!canPlayFull()){
     if(el&&el.parentNode) el.parentNode.removeChild(el);
     return;
   }
-  if(!host||!host.parentNode) return;
+  const box=ensureLongGroup(); if(!box) return;
   if(!el){
     el=document.createElement('button');
     el.className='btn hp-full';
     el.id='b-start-full';
     el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
       '<span class="hp-full-name">Full Team</span>'+
-      '<span class="hp-full-sub">Six on offense &middot; six on defense &middot; one cap</span>';
+      '<span class="hp-full-sub">Six on offense &middot; six on defense</span>';
     el.onclick=()=>{ beginFullDraft(); };
-    /* Directly after the pair, which is where the layout expects it: the pill below reads
-       as smaller than this, and this reads as a separate question from the split. */
-    host.parentNode.insertBefore(el, host.nextSibling);
   }
+  /* FIRST IN THE GROUP, above the dynasty door. */
+  if(box.firstChild!==el) box.insertBefore(el,box.firstChild);
   el.hidden=false;
   el.disabled=false;
   el.classList.remove('hp-loading');
@@ -9658,51 +9595,26 @@ function ensureFullButton(){
    gives: a hidden node in the markup is a hidden node anybody can read, and signing out of
    a tester account on the same tab has to take the button with it. */
 function ensureDynastyButton(){
-  const host=$('b-start-full')||$('hp-split');
-  let el=$('b-start-dyn'), nb=$('b-dyn-new'), hd=$('hp-quick'), li=$('hp-leadin');
+  let el=$('b-start-dyn'), nb=$('b-dyn-new');
   if(!canPlayDynasty()){
-    /* THE HEADINGS COME OFF WITH THE DOOR, and that is not tidiness. "Quick draft" is only
-       true against something slow, and "or see how far you can last on" over a page with
-       nothing under it is a promise the page cannot keep. Signing out of a tester account on
-       the same tab has to take all three. */
-    [el,nb,hd,li].forEach(n=>{ if(n&&n.parentNode) n.parentNode.removeChild(n); });
-    const pick=$('hp-pick');
-    if(pick) pick.hidden=!canPlayDefense();
+    /* THE DOOR AND ITS "start a new one" GO TOGETHER. The two headings used to come off
+       here as well, because this function made them. They belong to the group now, and
+       trimLongGroup takes the group off once the Trade Machine card is the only thing that
+       could still be in it and is not. */
+    [el,nb].forEach(n=>{ if(n&&n.parentNode) n.parentNode.removeChild(n); });
+    trimLongGroup();
     return;
   }
-  if(!host||!host.parentNode) return;
+  const box=ensureLongGroup(); if(!box) return;
   if(!el){
     el=document.createElement('button');
     el.className='btn hp-full hp-dyn';
     el.id='b-start-dyn';
-    /* Directly after the pair, which is where the layout expects it. */
-    host.parentNode.insertBefore(el, host.nextSibling);
   }
-
-  /* THE TWO HEADINGS. Offense and Defense are two ways to do the same quick thing and the
-     Dynasty is a different question, so the page says which is which rather than leaving a
-     visitor to rank three buttons by size.
-     Built here rather than written into the markup for the reason the door itself is: a
-     hidden node still ships to everybody, and "or see how far you can last on" over a page
-     with no third door under it is worse than no line at all.
-     ABOVE WHICHEVER STARTER IS SHOWING. The split and the lone Start a run are the same slot
-     wearing two faces, and only one of them is ever in the layout. */
-  const one=$('b-start'), split=$('hp-split');
-  const top=(split&&!split.hidden)?split:one;
-  if(top&&top.parentNode){
-    if(!hd){
-      hd=document.createElement('div');
-      hd.className='hp-quick'; hd.id='hp-quick';
-      hd.innerHTML='<span>Quick draft</span>';
-    }
-    if(hd.nextSibling!==top) top.parentNode.insertBefore(hd, top);
-  }
-  if(!li){
-    li=document.createElement('div');
-    li.className='hp-leadin'; li.id='hp-leadin';
-    li.innerHTML='<span>or see how far you can last on</span>';
-  }
-  if(li.nextSibling!==el) el.parentNode.insertBefore(li, el);
+  /* LAST IN THE GROUP, under the pair. It is the anchor the other two lead up to, and
+     appending to the group rather than inserting after some other node is what stops the
+     order of the page depending on the order these builders happened to run in. */
+  if(el.parentNode!==box) box.appendChild(el);
   /* The caption over the pair asked which side of the ball you were drafting, which was the
      whole question when the pair was the whole page. It is one of two questions now, and the
      heading above it answers the same thing in three words. */
@@ -9803,7 +9715,9 @@ function ensureDynastyButton(){
     try{ dynSeen=localStorage.getItem('ps_dynintro')==='1'; }catch(_){ dynSeen=!!window.__dynIntro; }
     el.innerHTML=mark+(dynSeen?'':'<span class="hp-tag hp-tag-new">New</span>')+
       '<span class="hp-full-name">Start a Dynasty</span>'+
-      '<span class="hp-full-sub">One team. One life. How long can you last?</span>';
+      /* The question used to be here too ("How long can you last?"). START A DYNASTY above
+         it is already the invitation, so the caption only has to say what the mode is. */
+      '<span class="hp-full-sub">One team &middot; one life</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
     }
   }
@@ -9839,10 +9753,28 @@ function beginDynastyDraft(opts){
      the modes sheet, which is already drawn only for somebody entitled to it, but the option
      arrives from a caller and a caller is not the authority on who may use it. */
   if(opts&&opts.franchise&&!canPlayClubDynasty()) return;
-  /* THE PAID DOOR. Visibility above is the tester list; this is ownership, and a tester
-     without the row gets the pitch a paying customer's neighbour would get, which is the
-     view the free-view tester exists to judge. */
-  if(!dynastyOwned()) return openPremium('dynasty_draft');
+  /*
+   * NO OWNERSHIP GATE HERE, AND THAT IS THE DESIGN RATHER THAN AN OMISSION.
+   *
+   * There used to be one, and it sat ABOVE the allowance check below, which made the free
+   * run unreachable: every signed in player who had not bought was sent to the store before
+   * the game ever asked how many runs they had left today. The whole allowance system was
+   * built and could not be reached, which is the shape of bug that passes every test,
+   * because a store opening is not an error.
+   *
+   * The rule is one free run a day for anybody signed in, plus a second for being fired in
+   * season one, plus a second for beating a boss. All three live in
+   * supabase/100_daily_grace_reasons.sql, ps_attempts_state adds them up, and the two grace
+   * claims are already wired (see dailyGrace on a season-one firing and on a boss win).
+   * Buying the bundle removes the limit rather than unlocking the door: dailyOn() stops
+   * metering the moment ps_premium is owned, so dailyLeft() below always answers 1 for an
+   * owner and this reads exactly as it did for them.
+   *
+   * THE PITCH STILL HAPPENS, at the one moment somebody is actually asking for it. A player
+   * who has used the day's runs lands on dailySpentSheet, which says when the next one
+   * unlocks, says a run in progress is never affected, and offers the upgrade there. That
+   * is a card next to a Close, not a wall in front of a mode.
+   */
   if(!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','dynasty');
   }
@@ -9911,6 +9843,12 @@ function dynastyReplaceSheet(opts){
 function dynastyRulesHTML(go){
   const step=E.DYNASTY_STEP_SEASONS;   // seasons between steps up in the target
   const base=E.DYNASTY_BASE_WINS;      // the opening win bar
+  /* THE MILESTONE SEASONS, READ OFF THE ENGINE RATHER THAN TYPED. This block used to name
+     5, 15, 25 and 10, 20, 30 in the copy. Move the cadence and the page then teaches the
+     player a schedule the game does not keep, and nothing fails, because it is a string. */
+  const mev=E.DYNASTY_MILESTONE_EVERY;
+  const mand=[1,3,5].map((n)=>mev*n).join(', ');   // odd milestones: the roster mandates
+  const boss=[2,4,6].map((n)=>mev*n).join(', ');   // even milestones: the boss games
   return '<div class="eyebrow red">Dynasty</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 2px">One team. One life. '+
       'How long can you last?</h2>'+
@@ -9949,13 +9887,13 @@ function dynastyRulesHTML(go){
           'sign anyone new until you free up room.</li>'+
       '</ul>'+
     '</div>'+
-    /* THE FIVE-SEASON BEATS, said once so the mandate and the boss are not a surprise. */
-    '<div class="eyebrow" style="margin:16px 0 8px">Every five seasons</div>'+
+    /* THE MILESTONE BEATS, said once so the mandate and the boss are not a surprise. */
+    '<div class="eyebrow" style="margin:16px 0 8px">Every '+mev+' seasons</div>'+
     '<ul class="modenotes">'+
-      '<li><b>5, 15, 25: a roster mandate.</b> The owner names a way to build your team. Do it '+
+      '<li><b>'+mand+': a roster mandate.</b> The owner names a way to build your team. Do it '+
         'that offseason and your dead cap is wiped clean. Miss it and next season wants one '+
         'more win. Either way the run goes on.</li>'+
-      '<li><b>10, 20, 30: a boss game.</b> Beat a real all-time team and you freeze one player '+
+      '<li><b>'+boss+': a boss game.</b> Beat a real all-time team and you freeze one player '+
         'at his age and salary for good.</li>'+
       '<li><b>The target creeps up.</b> '+base+' wins, then '+(base+1)+' after season '+step+
         ', then '+(base+2)+' after '+(step*2)+'.</li>'+
@@ -10196,7 +10134,23 @@ function dynRestore(s){
 /* Same shape as beginDynastyDraft, and for the same reason: the defensive pool is not in
    the boot bundle, and half the roster is in it. */
 function dynResume(slot){
-  if(!dynastyOwned()) return openPremium('dynasty_resume');
+  /*
+   * A RUN IN PROGRESS IS NEVER GATED, and this used to check ownership.
+   *
+   * The front page draws this door as RESUME DYNASTY, over the season number and the score
+   * already banked. Pressing it opened the store. That is the worst shape a paywall can
+   * take: it is not selling access to something new, it is holding a run the player already
+   * made and telling them to pay to get back into it. A button that says Resume and does
+   * not resume is also just a lie on the screen.
+   *
+   * The rule is already written twice elsewhere and this was the one place that broke it.
+   * The daily allowance says an attempt is a START, so continuing costs nothing and asks
+   * the server nothing. The Trade Machine's own door says the same. Starting a NEW dynasty
+   * is the paid action and beginDynastyDraft still gates it; getting back into one is not.
+   *
+   * There is no access check here either. The door itself is built only for somebody
+   * canPlayDynasty() allows, so a visitor who cannot see the mode has no way to reach this.
+   */
   const want=slot==='club'?'club':'open';
   const s=dynRead(want);
   if(!s) return ensureDynastyButton();
@@ -10824,16 +10778,15 @@ function modeMenu(){
   const clubDyn=$('b-mc-clubdyn');
   if(clubDyn&&!locked&&cd) clubDyn.onclick=()=>{
     closeSheet();
-    /* The pitch comes BEFORE the club picker: choosing a club and then being told to pay
-       is the order that reads as a trick. */
-    if(!dynastyOwned()) return openPremium('club_dynasty');
-    /* Resume goes straight back into the run. Only a fresh one asks which club. */
+    /* NO OWNERSHIP GATE, for the reason written out in beginDynastyDraft: the day's
+       allowance decides, and it is checked there, once, for every way into the mode.
+       This one was worse than the open door's, because it sat in front of RESUME as well:
+       a saved One Franchise run could not be opened by the player who made it. */
     if(clubSave) dynResume('club'); else clubPicker(true);
   };
   const clubNew=$('b-mc-clubnew');
   if(clubNew&&!locked&&cd) clubNew.onclick=()=>{
     closeSheet();
-    if(!dynastyOwned()) return openPremium('club_dynasty_new');
     clubPicker(true);
   };
   const era=$('b-mc-era');
@@ -14290,7 +14243,9 @@ function runSim(){
   const step=()=>{
     if(run.phase!==R.PHASES.SEASON){after();return;}
     const r=R.advanceWeek(run,dataNow(),LEAGUE,CAL);
-    if(run.tradeMachine) checkHeadline(run.season.results);
+    /* Whether a streak headline took the banner this week, because the trade window wants it
+       too and there is one banner. See the window branch below. */
+    const said=run.tradeMachine?checkHeadline(run.season.results):false;
     paintSeasonBug(r.opponent_id,'Week '+r.week);
     $('v-you').textContent='0'; $('v-them').textContent='0';
     countTo($('v-you'),r.shownYou,380);
@@ -14322,6 +14277,14 @@ function runSim(){
       }
     }
     if(run.tradeMachine&&R.isTradeWindow(run)&&run.phase===R.PHASES.SEASON){
+      /* THE BEAT BEFORE THE PHONES RING, and the string for it has been sitting in HEADLINES
+         since the mode shipped with nothing able to show it. checkHeadline only ever emits
+         the six streak lines, so `trade` was written, styled and dead.
+         It goes in the 700ms this branch already waits before the window opens, so the
+         window is announced rather than simply appearing over the season.
+         NOT OVER A STREAK. There is one banner and a run of five wins is the rarer thing to
+         have earned, so a streak line keeps it and the window arrives unannounced that week. */
+      if(!said) showHeadline('trade');
       simTimer=setTimeout(()=>openTradeWindow(step),700);
       return;
     }
@@ -15704,22 +15667,30 @@ function showHeadline(key){
   el._h=setTimeout(()=>el.classList.remove('on'),2200);
 }
 
+/* ANSWERS WHETHER IT TOOK THE BANNER, because the trade window wants the same one and the
+   caller has to know whether it is free. Exact equality on the streak rather than a
+   threshold is deliberate and was already: a headline fires on the week the streak REACHES
+   the number, so a run of nine wins says something four times rather than nine. */
 function checkHeadline(results){
-  if(!results||!results.length)return;
+  if(!results||!results.length)return false;
   const last=results[results.length-1];
   let streak=0;
   for(let i=results.length-1;i>=0;i--){
     if(results[i].won===last.won) streak++; else break;
   }
+  let key=null;
   if(last.won){
-    if(streak===10) showHeadline('win10');
-    else if(streak===8) showHeadline('win8');
-    else if(streak===5) showHeadline('win5');
-    else if(streak===3) showHeadline('win3');
+    if(streak===10) key='win10';
+    else if(streak===8) key='win8';
+    else if(streak===5) key='win5';
+    else if(streak===3) key='win3';
   }else{
-    if(streak===5) showHeadline('lose5');
-    else if(streak===3) showHeadline('lose3');
+    if(streak===5) key='lose5';
+    else if(streak===3) key='lose3';
   }
+  if(!key) return false;
+  showHeadline(key);
+  return true;
 }
 
 /* ---------- seeding ---------- */
@@ -16974,7 +16945,7 @@ function paintOwner(){
      run survived to see it. The teaser goes on the owner's own bar rather than a panel of its
      own, because it is the same voice: you cleared the bar, now here is the marquee game. */
   const boss=(!v.fired&&R.bossPending(run))?R.bossFor(run):null;
-  /* THE OTHER MILESTONE. An odd season (5, 15, 25) hands you a roster mandate instead of a
+  /* THE OTHER MILESTONE. An odd milestone (3, 9, 15) hands you a roster mandate instead of a
      boss: named here, satisfied in the offseason that follows, judged when the next season
      starts. Same owner's bar, same voice. */
   const chal=(!v.fired&&!boss&&R.challengePending(run))?R.challengeFor(run):null;
@@ -17304,7 +17275,7 @@ function bossFinish(ev){
   $('bg-done').hidden=false;
 }
 
-/* THE FREEZE PICKER (seasons 10, 20, 30). One man held off the clock for good. */
+/* THE FREEZE PICKER (the even milestones: 6, 12, 18). One man held off the clock for good. */
 function bossFreeze(){
   const host=$('bf-roster'); host.innerHTML='';
   run.roster.forEach((p,i)=>{
@@ -17450,9 +17421,30 @@ function paintOver(){
     return bigcell('Offense share',share+'%',Math.max(2,Math.min(100,share)),'#60a5fa');
   };
   const secondCell=(fallback)=>run.tradeMachine?impCell():(run.full?splitCell():fallback());
+  /* THE SAME THREE ANSWERS IN THE OTHER SHAPE. The cells above are the big bar-and-number
+     tiles the record card used; the strip under the lineup is a plain value over a label, so
+     the mode's second number needs both. `best` is the best-possible percentage, null while
+     the optimizer is still working and '--' when it cannot answer. */
+  const secondSplit=(best)=>{
+    if(run.tradeMachine){
+      const g=rating-(run.startRating||rating);
+      return split((g>=0?'+':'')+g.toFixed(1),'Improvement');
+    }
+    if(run.full){
+      const off=run.roster.filter((p)=>E.DEFENSE_POSITIONS.indexOf(p.position)<0)
+        .reduce((t,p)=>t+p.price_musd,0);
+      const all=run.roster.reduce((t,p)=>t+p.price_musd,0);
+      return split((all>0?Math.round(100*off/all):0)+'%','Offense share');
+    }
+    return split(best==null?'\u2026':(best===false?'--':best+'%'),'Best possible');
+  };
+  /* ONE CELL, NOT TWO. The record card's job is what happened; the team overall is the one
+     number the board ranks that against, so it stays. Its old neighbour (best possible, or
+     the unit split, or offense share) describes the ROSTER, and it has gone to the strip
+     under the lineup with chemistry and spend. */
+  $('o-ovr').className='ovr solo';
   $('o-ovr').innerHTML=
-    bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
-    secondCell(()=>bigcell('Best possible','…',0,'#94a3b8'));
+    bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband);
   $('o-sides').innerHTML=sideLine();
   /* THE SAME NUMBER, ON DYNASTY RECAP. The card above is hidden in this mode, so the
      team overall is drawn once more into the lineup panel, which this mode does show. Same
@@ -17470,10 +17462,19 @@ function paintOver(){
      rather than making you find it. Painted with the ranks unknown, because the board
      is a network call and the page is on screen before it answers; paintRankStrip
      fills them in when it does. */
-  $('o-splits').innerHTML=
+  /* THE ROSTER'S OWN FACTS, under the roster. The fourth is whichever second cell the mode
+     used to put beside the team overall, which is a roster fact in every mode: the ceiling
+     this draft could have hit, the two unit ratings, or how much of the money went to the
+     offense. */
+  $('o-squad').innerHTML=
+    secondSplit(null)+
     split(pc(run.season.chemistry-1),'Chemistry')+
     split(M0(spendUsed),'Spent')+
-    split(o.seedLabel.replace(/^Missed.*/,'None'),'Playoff seed')+
+    split(o.seedLabel.replace(/^Missed.*/,'None'),'Playoff seed');
+  /* AND THE THREE BOARD WINDOWS ON THEIR OWN. Painted with the ranks unknown, because the
+     board is a network call and the page is on screen before it answers; paintRankStrip
+     fills them in when it does, and hides the row if it never does. */
+  $('o-splits').innerHTML=
     RANK_WINDOWS.map(([k,label])=>rankCell(k,label,null)).join('');
 
   /* Real team stats off the scores you were shown, not fantasy totals. Points
@@ -17615,11 +17616,20 @@ function paintOver(){
        matched. */
     if(share!==null && kept<6) share=Math.min(share,99);
     lastPerfectShare=share;
+    /* The band the "how close" pane below colours its bar with. It was declared alongside
+       the hero repaint that this replaced, and deleting it with that repaint threw a
+       ReferenceError out of this whole callback: the optimizer answered, nothing caught it,
+       and "How close to perfect" and the sign-in gate both silently stayed empty. */
     const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
-    $('o-ovr').innerHTML=
-      bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
-      secondCell(()=>bigcell('Best possible',share===null?'--':share+'%',
-        share===null?0:Math.max(2,share),share===null?'#94a3b8':sband));
+    /* THE HERO IS NOT REPAINTED HERE ANY MORE. It used to rewrite both of the record
+       card's tiles when the optimizer came back, which meant the team overall was redrawn
+       for a number that is not about it. Only the cell that was waiting changes. */
+    const sq=$('o-squad');
+    if(sq&&sq.firstChild){
+      const tmp=document.createElement('div');
+      tmp.innerHTML=secondSplit(share===null?false:share);
+      sq.firstChild.replaceWith(tmp.firstChild);
+    }
     /* FULL TEAM HAS NO PERFECT TO BE CLOSE TO, and "could not work this one out" reads as a
        failure rather than as the truth. Solving twelve slots across two pools under one cap
        is a budget split as well as a knapsack (see buildFullOptimal in the simulator), and
@@ -20421,7 +20431,10 @@ function pfHub(msg,ok){
    row that arrives without the field at all reads as null, and three permanent unlocks
    telling their owner they are still on the way is a worse lie than the one this prevents. */
 const PRO_ITEM={
-  ps_premium:{game:'ps',text:'Dynasty Mode and Franchise Mode'},
+  /* WORDED THE SAME AS THE STORE LINE IT IS THE RECEIPT FOR. A customer reads this after
+     paying, so a shorter description here than on the card they bought from reads as
+     something having been taken away. See pwGroupText('ps', ...) in the paywall. */
+  ps_premium:{game:'ps',text:'Dynasty, Franchise and unlimited Trade Machine'},
   cfb_premium:{game:'cfb',text:'Commissioner Mode'},
   arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
   runtour_pack:{game:'tour',text:'100,000 coins and one Tour Pack',wait:true}
@@ -20468,7 +20481,10 @@ async function pfProLoad(){
   }else{
     let ends=null, endedOn=null;
     list.innerHTML=owned.map((k)=>{
-      const it=PRO_ITEM[k], row=by[k], g=PW_GAME[it.game];
+      /* Same colour coding the offer uses, out of the same table, so the receipt and the
+         card somebody bought from cannot disagree about which game a line belongs to. */
+      const it=PRO_ITEM[k], row=by[k];
+      const g=(window.RTG_STORE&&window.RTG_STORE.game(it.game))||{name:'',c:'#94a3b8'};
       const when=proDate(row.granted_at);
       const till=row.expires_at?proDate(row.expires_at):'';
       /* AN END DATE IN THE PAST IS NOT AN END DATE, and this line did not check.
@@ -20507,22 +20523,13 @@ async function pfProLoad(){
         'You paid once. Nothing here renews and nothing charges you again.'+
         (ends?' Your Arcade Card year simply ends on '+esc(ends)+'.':'')+
         (endedOn?' Your Arcade Card year ended on '+esc(endedOn)+'.':'')+
-      '</p>'+
-      /* THE WAY BACK, AND ONLY ONCE THERE IS SOMETHING TO GO BACK TO.
-         "Nothing renews" is the promise this page is built on, so the moment the year ends
-         the page owes the other half of it: nothing renewed, and here is how to start
-         another one if you want it. Without this the honest sentence above becomes a dead
-         end, and a customer who wants to keep paying us cannot find out how.
-         A plain link to the Arcade rather than a checkout of our own: the Arcade Card is
-         that game's product and it has its own card screen, and a second place to sell it is
-         a second place for the price to go stale. */
-      (endedOn
-        ? '<div style="margin-top:12px"><a class="btn ghost sm" href="/arcade/" '+
-            'style="text-decoration:none;text-align:center;display:block">'+
-            'Start another Arcade year</a>'+
-          '<p class="dim" style="font-size:11.5px;margin:8px 0 0">Opens Run The Arcade, where '+
-            'the card lives. Your Pro modes here are not affected.</p></div>'
-        : '');
+      '</p>';
+      /* AND IT STOPS THERE. A "Start another Arcade year" button stood here for one commit
+         and came out on the owner's call: this page is a receipt for what this account
+         bought, and the football store is not where another game's card gets sold. Stating
+         that the year ended is the receipt doing its job; following it with a way to buy a
+         fresh one is a shop, and a shop for a product that lives in a different game.
+         So the ended line reports and does not offer. The Arcade sells the Arcade. */
   }
 
   const bill=$('pf-pro-bill');
@@ -21573,11 +21580,18 @@ function paintRankStrip(r){
     }
   }
   const el=$('o-splits'); if(!el) return;
+  /* NOTHING RATHER THAN THREE DASHES. When the board cannot be read this row used to draw
+     "--" three times with "no board" under each, which is ninety pixels spent saying that a
+     number is missing, directly under the number somebody came to look at. The gate line
+     below already says the board could not be read, once, in a sentence. */
+  const any=r&&RANK_WINDOWS.some(([k])=>r[k]);
+  el.hidden=!any;
+  if(!any) return;
   const cells=[...el.children];
-  /* The three rank cells are the second row of a six-cell grid. Replaced in place so
-     the top row, which has nothing to do with the board, never repaints. */
+  /* Replaced in place rather than rebuilt, so a window that already has a number does not
+     flicker when a later read fills in the other two. */
   RANK_WINDOWS.forEach(([k,label],i)=>{
-    const at=cells[3+i]; if(!at) return;
+    const at=cells[i]; if(!at) return;
     const tmp=document.createElement('div');
     tmp.innerHTML=rankCell(k,label,r&&r[k]?r[k]:false);
     at.replaceWith(tmp.firstChild);

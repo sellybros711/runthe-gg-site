@@ -181,7 +181,7 @@
       answers: [
         { id: 'hear', label: 'Say you hear it',
           body: 'Agree that it sounds exactly like that, and say the alternative was a league '
-            + 'leaving and taking the sport with it. Honest, and it concedes you were leant on.',
+            + 'leaving and taking the sport with it. Honest, and it concedes you were leaned on.',
           wrote: 'The commissioner conceded the optics and said the alternative was worse.',
           effects: { autonomy: -1.4, exposure: 0.6, tradition: 0.4 },
           aimed: { SEC: { autonomy: -1.2 }, 'Big Ten': { autonomy: -1.2 },
@@ -471,7 +471,7 @@
         { id: 'win', label: 'Tell them to win out',
           body: 'Go unbeaten and beat somebody in September. It is what the committee says and '
             + 'it is not quite what the committee does.',
-          wrote: 'The commissioner said an unbeaten season and a September win is the path.',
+          wrote: 'The commissioner said an unbeaten season and a September win are the path.',
           effects: { access: -1, tradition: 0.4 },
           aimed: { 'Group of Five': { access: -2 }, SEC: { access: 0.8 },
             'Big 12': { access: -0.6 } } },

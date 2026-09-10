@@ -37920,15 +37920,36 @@ async function maybeReferralFlow(){
 async function maybeBundleRewards(){
   if(!sb||!sbSignedIn()) return;
   try{
-    const {data,error}=await sb.rpc('runtour_redeem_bundle');
-    if(error||!data) return;                                   // nothing waiting, or a pre-103 server
-    const coins=Math.max(0,Math.floor(+data.coins||0));
-    const packs=Array.isArray(data.packs)?data.packs:[];
+    /* THE PACK COMES FROM THE ROW, THE COINS COME FROM THE RPC, and the split closes a
+       real (if narrow) loss in the first version, which granted the pack from the RPC's
+       return value. The same transaction that produces that answer also stamps the row
+       fulfilled, so a browser that died between the server committing and grantFreePack
+       running lost the pack PERMANENTLY: the coins were in, the row was stamped, and the
+       answer never came back. The row itself stays readable for the life of the account
+       (RLS owner-read on premium_unlocks), so the pack is granted from it under its own
+       cloud-synced claim flag, the exact posture of the pass packs and the bucket bonus
+       packs, and a death in that window now just grants on the next visit. The benign
+       direction of the same race (claim flag lost before it syncs, pack granted twice)
+       is the trade those two grants already accept. One bundle per account by design
+       (checkout answers 409 to an owner), so one flag is the whole ledger. */
     let pn=0, pname='pack';
-    packs.forEach(function(pk){ const n=Math.max(0,Math.floor(+(pk&&pk.n)||0)); if(!n) return;
-      const tier=String((pk&&pk.tier)||'base');
-      if(typeof grantFreePack==='function'&&grantFreePack(n,{tier:tier,silent:true})){ pn+=n; try{ pname=packType(tier).name; }catch(e){} }
-    });
+    try{
+      const res=await sb.from('premium_unlocks').select('payload').eq('product','runtour_pack').maybeSingle();
+      const row=(res&&!res.error)?res.data:null;
+      if(row){
+        const st=LS.get(acctKey('bag_bundle'),null)||{};
+        if(!st.claimed){
+          const packs=Array.isArray(row.payload&&row.payload.packs)?row.payload.packs:[];
+          packs.forEach(function(pk){ const n=Math.max(0,Math.floor(+(pk&&pk.n)||0)); if(!n) return;
+            const tier=String((pk&&pk.tier)||'base');
+            if(typeof grantFreePack==='function'&&grantFreePack(n,{tier:tier,silent:true})){ pn+=n; try{ pname=packType(tier).name; }catch(e){} }
+          });
+          if(pn>0){ st.claimed=1; LS.set(acctKey('bag_bundle'),st); }
+        }
+      }
+    }catch(e){}
+    const {data,error}=await sb.rpc('runtour_redeem_bundle');
+    const coins=(!error&&data)?Math.max(0,Math.floor(+data.coins||0)):0;
     if(!(coins>0)&&!(pn>0)) return;
     if(coins>0){ coinLog(coins,'Run The Bundle'); loadWallet(); }
     try{ cloudPush(); }catch(e){}

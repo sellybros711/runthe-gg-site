@@ -170,8 +170,16 @@
   /* LAST SEASON, for the four beats that have no football of their own. An offseason item
      about "the team that went unbeaten and got left out" is asking about the year that just
      finished, and the world carries the champion for exactly this. */
+  /* `champions`, WITH THE REST OF THE WORD. This read `world.champs` and the page has
+     always written `world.champions`, so nothing in a real term ever populated it and
+     `sit.previous` was permanently null. Six things read it and all six were silently off:
+     the confetti cutscene that fires the morning after a title, a media day question about
+     the reigning champion, two docket briefs that name them, and the champion line on the
+     desk's situation strip. Nothing failed, because the only code that ever wrote `champs` was the
+     four test files that set it up by hand, which is to say the guards encoded the typo and
+     then proved it worked. */
   function lastYearOf(world) {
-    var c = (world && world.champs) || {};
+    var c = (world && world.champions) || {};
     var y = world.year - 1;
     if (!c[y]) return null;
     var r = (world.ratings || {})[y] || null;

@@ -249,6 +249,31 @@ console.log('\n=== a whole term, headless ===');
   ok('  and a different one does not', JSON.stringify(a.w) !== JSON.stringify(c.w));
 }
 
+console.log('\n=== the written note is kept, which the desk promises ===');
+{
+  /* The desk has said for a while that a note written with a ruling "is kept on the record
+     with it", and for most of that while the ledger dropped it on the floor: applyOutcome
+     copied the id, the label and the effects and nothing else, so the promise was a promise
+     about a field that no longer existed one screen later. These three lines are the whole
+     contract: written in, clamped, and absent when nothing was written. */
+  let w = world0(2025);
+  const spoke = { id: 'spoke', effects: { access: 1 }, written: 'The line holds because I say it holds.' };
+  w = L.applyOutcome(L.applyEdit(w, spoke), spoke, B.deltas(w, spoke));
+  const row = w.history[w.history.length - 1];
+  ok('a note written with a ruling lands on its history row',
+    row.note === 'The line holds because I say it holds.', JSON.stringify(row.note));
+  const ranted = Object.assign({}, spoke, { id: 'ranted', written: 'x'.repeat(900) });
+  w = L.applyOutcome(L.applyEdit(w, ranted), ranted, B.deltas(w, ranted));
+  ok('  and a rant is clamped rather than stored whole',
+    w.history[w.history.length - 1].note.length === 280,
+    w.history[w.history.length - 1].note.length + ' chars kept of 900');
+  const silent = { id: 'silent', effects: { access: 1 } };
+  w = L.applyOutcome(L.applyEdit(w, silent), silent, B.deltas(w, silent));
+  ok('  and a ruling with no note carries none rather than an empty string',
+    w.history[w.history.length - 1].note === null,
+    JSON.stringify(w.history[w.history.length - 1].note));
+}
+
 console.log('\n=== the fuses go off, they do not tick down ===');
 {
   let w = world0(2025);

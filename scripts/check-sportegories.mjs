@@ -182,6 +182,52 @@ console.log('\n5) the reported case');
   }
 }
 
+/* ---- 6b. the three a player wrote in about, 10 September --------------- */
+/* One board, three refusals, three different causes. Pinned by name because
+ * that is how they were found and how they would come back:
+ *
+ *   Bruce Matthews, "Offensive Lineman who never left one franchise". He spent
+ *   nineteen years with one, and nflverse writes HOU for the Houston Oilers
+ *   AND the Houston Texans, so the scrape gave him two franchises. The Texans
+ *   were founded in 2002, a year after he retired.
+ *
+ *   Dee Brown, "NBA player from a Big Ten school". We held one Dee Brown, the
+ *   Celtics dunk champion, who went to Jacksonville. The other was Big Ten
+ *   Player of the Year at Illinois and was in no source at all.
+ *
+ *   Bobby Bonilla, "Outfielder who played for 3+ teams". Eight clubs, and more
+ *   of his career in the outfield than anywhere else. We hold one position per
+ *   player, and his says Third Baseman. A single label cannot deny a career,
+ *   so a mismatch now goes to the live check instead of being called wrong.
+ */
+console.log('\n6b) the three refusals reported on 10 September');
+{
+  const CASES = [
+    ['Offensive Lineman who never left one franchise', 'B', 'Bruce Matthews', 'fits'],
+    ['NBA player from a Big Ten school', 'B', 'Dee Brown', 'fits'],
+    ['Outfielder who played for 3+ teams', 'B', 'Bobby Bonilla', 'live']
+  ];
+  for (const [label, letter, name, want] of CASES) {
+    const cat = D.cats.find((c) => c.l === label);
+    if (!cat) { fail('the category "' + label + '" no longer exists'); continue; }
+    const r = S.check({ letter, cats: [cat] }, 0, name, []);
+    if (want === 'fits' && !r.ok) {
+      fail(name + ' is refused by "' + label + '" again (' + r.reason + ')');
+    } else if (want === 'live' && (r.ok || r.live)) {
+      ok(name + ': ' + (r.ok ? 'fits' : 'goes to the live check rather than being called wrong'));
+    } else if (want === 'live') {
+      fail(name + ' is called wrong by "' + label + '" again (' + r.reason + '), when our one position label cannot know');
+    } else ok(name + ' fits "' + label + '"');
+  }
+  /* And the cause of the first one, at the source, so a refreshed scrape that
+     reintroduces it fails here rather than on a player's screen. */
+  const bm = D.players.find((r) => r[0] === 'Bruce Matthews');
+  const teams = bm ? bm[3].map((i) => D.teams[i]) : [];
+  if (teams.indexOf('Houston Texans') >= 0) {
+    fail('Bruce Matthews is filed under the Houston Texans, who were founded the year after he retired');
+  } else ok('no Houston Texans on a career that ended in 2001: ' + teams.join(', '));
+}
+
 /* ---- 6. today's position counts, not just the career one ---------------- */
 /* Jalen Williams is a Small Forward by career label and the Guard his club
    lists him at this season, and the older label was refusing him his own

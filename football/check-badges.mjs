@@ -428,11 +428,11 @@ const GRIND = {
   full_coach_25: 'full_coach_10',        // 25 coaches hired, against 10
 };
 const SKILL = {
-  /* The bot's deepest run is around 19 seasons, and every season past that is the same job
-     done better rather than a new one. The mode itself has no ceiling: a dynasty ends when
-     the owner ends it. */
+  /* The bot's deepest measured run is 27 seasons and its ninetieth percentile is 15, so the
+     rungs above 18 are reached rarely enough that a single sweep cannot be relied on to get
+     there. Every season past that is the same job done better rather than a new one. The mode
+     itself has no ceiling: a dynasty ends when the owner ends it. */
   dyn_reach_20: 'dyn_reach_18',
-  dyn_reach_21: 'dyn_reach_18',
   dyn_reach_25: 'dyn_reach_18',
   /* A quarter million is reached by grinding seasons out and the bots do it. The two rungs
      above are that plus rings: a title pays 10,000 times the season number, so one in season

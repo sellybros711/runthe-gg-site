@@ -261,10 +261,17 @@
      ['ps_premium','cfb_premium']. Empty array when signed out, on error, or when
      the account simply owns nothing: all three read the same to a caller, and all
      three should. */
-  async function premiumProducts() {
+  /* `force` SKIPS THE CACHE, and it exists because of what an empty answer is in
+     JavaScript. `premium` holding [] is TRUTHY, so once a signed-in non-owner has
+     been cached as owning nothing, every later call returned that stale [] without
+     ever asking the server again. That is harmless at a gate and fatal on the walk
+     back from Stripe: the buyer returns, the page asks six times over ten seconds,
+     and gets the same cached "you own nothing" every time, so a purchase that
+     landed in one second reads as one that never arrived. Poll with force. */
+  async function premiumProducts(force) {
     if (!sb || !session) return [];
     const uid = session.user && session.user.id;
-    if (premium && premiumFor === uid) return premium;
+    if (!force && premium && premiumFor === uid) return premium;
     try {
       const r = await sb.rpc('premium_products');
       if (r && !r.error && Array.isArray(r.data)) {

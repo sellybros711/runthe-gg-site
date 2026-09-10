@@ -573,7 +573,7 @@ function createRun(opts) {
        leaderboard can rank runs by how many seasons they survived rather than ranking loose
        seasons. Null outside a dynasty. See ps_dynasty_tag and the recordRun tag in the page. */
     dynastyId: dynasty ? newDynastyId() : null,
-    /* THE BOSS SEASONS. Every fifth season ends with a marquee game against a real great
+    /* THE BOSS SEASONS. Every second milestone ends with a marquee game against a real great
        team: see E.dynastyBossFor. `boss` holds the pending game while it is being played and
        is cleared once resolved; `frozen` is the list of player ids a won freeze boss has
        taken off the clock; `bossFailSeason` is the one season whose win bar a lost boss
@@ -585,7 +585,7 @@ function createRun(opts) {
     bossFailSeason: null,
     /* What the last boss paid, for the screen that announces it. Cleared when spent. */
     bossReward: null,
-    /* THE ROSTER MANDATES, the odd milestones (5, 15, 25). `challenge` holds the mandate a
+    /* THE ROSTER MANDATES, the odd milestones (3, 9, 15). `challenge` holds the mandate a
        player is currently under: set when the offseason that follows the milestone opens, and
        carried through it because the roster it judges is the one at the far end. Resolved when
        the season starts and the final roster is read. Null outside a mandate offseason. See
@@ -1613,7 +1613,7 @@ function applyBossResult(run, won, freezeId) {
 }
 
 /*
- * IS A MANDATE WAITING. True on the results screen of an odd milestone (5, 15, 25) that the
+ * IS A MANDATE WAITING. True on the results screen of an odd milestone (3, 9, 15) that the
  * run survived: the owner is about to name how the team must be built, and the offseason that
  * follows is where you do it. Mirrors bossPending, and the two are mutually exclusive by the
  * milestone schedule, so a season is a boss OR a mandate, never both.
@@ -3892,7 +3892,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 47;
+const RUN_API_VERSION = 48;
 
 const api = {
   API_VERSION: RUN_API_VERSION,

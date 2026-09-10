@@ -1363,8 +1363,12 @@ const rankByValue = (rows) => rows.slice().sort((a, b) => worth(a) - worth(b));
    page will apply the same one and two implementations of a firing rule is how a player
    gets fired on one screen and not on another. The rest are the candidates it beat, kept so
    the comparison in dynastyWinBar's note can be reproduced. */
+/* The candidate owner rules. Every entry but the last is a road not taken, kept because the
+   spread between them is the argument for the one that shipped. There used to be a
+   'SHIPPED (2x ramp)' row at the top calling E.dynastySurvives, which is character for
+   character what 'one life' at the bottom does: two rows, one rule, identical numbers, and a
+   label claiming a ramp the function had stopped implementing. Gone. */
 const DYN_GOALS = {
-  'SHIPPED (2x ramp)': (h) => E.dynastySurvives(h),
   'win 9':       (h) => h[h.length - 1].wins >= 9,
   'win 10':      (h) => h[h.length - 1].wins >= 10,
   'playoffs':    (h) => h[h.length - 1].made,
@@ -1376,6 +1380,12 @@ const DYN_GOALS = {
   '2x losing':   (h) => h.length < 2 || h[h.length - 1].wins >= 9 || h[h.length - 2].wins >= 9,
   /* Two misses EVER rather than two in a row: the owner remembers. */
   'two total':   (h) => h.filter((x) => x.wins < 9).length < 2,
+  /* THE RULE THAT ACTUALLY SHIPS, and until now the one thing this report could not
+     measure. Every other entry above is a candidate that was considered and passed over;
+     the game itself calls E.dynastySurvives, which is one life against a bar that climbs.
+     A harness that cannot run the shipped rule can only ever tell you about roads not
+     taken. */
+  'one life':    (h) => E.dynastySurvives(h),
 };
 
 /* A SAFETY STOP, NOT A LENGTH, and now its own number rather than the game's.
@@ -1467,6 +1477,7 @@ const DYN_START = (rng, y, history) => (history.length
 
 function dynastyReport(n) {
   const coaches = E.coachTable(ctx) || [];
+  const MEV = E.DYNASTY_MILESTONE_EVERY;
   console.log('DYNASTY: how many seasons does the owner give you?');
   console.log(`N=${n} dynasties per cell, twelve men and a coach at $${E.FULL_CAP_MUSD}M, `
     + `starting years ${DYN_FIRST_SEASON} to ${DYN_LAST_SEASON - 10}.\n`);
@@ -1476,7 +1487,12 @@ function dynastyReport(n) {
 
   for (const [gname, goal] of Object.entries(DYN_GOALS)) {
     console.log('  ' + gname.toUpperCase());
-    console.log('    winter        median   mean    p75    p90    best   fired in yr 1   hit the stop');
+    /* THE THREE MILESTONE COLUMNS, NAMED BY THE CADENCE RATHER THAN BY A NUMBER. What they
+       are worth knowing is "did this run ever see the authored content", so they follow
+       E.DYNASTY_MILESTONE_EVERY: the first mandate, the first boss, the second boss. */
+    console.log('    winter        median   mean    p75    p90    best'
+      + `  reach ${MEV}`.padStart(9) + `  reach ${MEV * 2}`.padStart(10)
+      + `  reach ${MEV * 4}`.padStart(10));
     for (const [cname, cutter] of Object.entries(DYN_CUTS)) {
       const lens = [];
       for (let d = 0; d < n; d++) {
@@ -1489,11 +1505,57 @@ function dynastyReport(n) {
         + String(q(lens, 0.75)).padStart(7)
         + String(q(lens, 0.9)).padStart(7)
         + String(Math.max(...lens)).padStart(7)
-        + fmtPct(lens.filter((x) => x <= 1).length / lens.length).padStart(16)
-        + fmtPct(lens.filter((x) => x >= DYN_MAX_SEASONS).length / lens.length).padStart(15));
+        /* HOW MANY EVER SEE THE AUTHORED CONTENT: "met a mandate", "met a boss" and "met the
+           second boss". They replaced "fired in year 1" and "hit the stop": the first is the
+           median saying the same thing again, and the second is now always zero because the
+           safety stop is 200.
+
+           THESE COLUMNS ARE MILESTONE-BLIND AND THAT IS THE POINT. playDynasty below models
+           no mandate, no boss and neither reward, so moving the cadence cannot move these
+           numbers. They measure the reach curve, and the schedule is then laid over it by
+           hand. Read them as "where the players are", not as a balance check on the
+           milestones themselves. */
+        + fmtPct(lens.filter((x) => x >= MEV).length / lens.length).padStart(9)
+        + fmtPct(lens.filter((x) => x >= MEV * 2).length / lens.length).padStart(10)
+        + fmtPct(lens.filter((x) => x >= MEV * 4).length / lens.length).padStart(10));
     }
     console.log('');
   }
+  /*
+   * HOW MUCH OF THE AUTHORED CONTENT A RUN ACTUALLY MEETS, under the rule that ships. The
+   * reach columns above answer this one milestone at a time; this answers it in the unit the
+   * writing was done in. Six bosses and four mandates were written, and the question that
+   * matters is how many of them a player ever sees.
+   *
+   * The cadence was five when this was first measured, and the answer was brutal: on the
+   * bot's best winter, 46% of runs met one mandate, 32% met one boss, and 3.8% met a second
+   * boss. Nine of the ten authored things existed for almost nobody. Moving the cadence to
+   * three did not write anything new. It moved the schedule onto the reach curve.
+   */
+  console.log('  CONTENT MET, under ONE LIFE, at a milestone every ' + MEV + ' seasons');
+  console.log('    winter        mandates   bosses   saw a boss   saw two bosses');
+  const nMand = E.DYNASTY_CHALLENGES.length, nBoss = E.DYNASTY_BOSSES.length;
+  for (const [cname, cutter] of Object.entries(DYN_CUTS)) {
+    const seen = [];
+    for (let d = 0; d < n; d++) {
+      const rng = E.createSeededRNG(551100 + d * 7919);
+      const L = playDynasty(rng, cutter, DYN_GOALS['one life'], coaches).length;
+      /* Milestones at MEV, 2*MEV, 3*MEV ...: the odd ones mandates, the even ones bosses.
+         Distinct, because a run long enough to lap the list is seeing a repeat rather than
+         something new, and the list lengths are what was written. */
+      const milestones = Math.floor(L / MEV);
+      seen.push({
+        mand: Math.min(Math.ceil(milestones / 2), nMand),
+        boss: Math.min(Math.floor(milestones / 2), nBoss),
+      });
+    }
+    const avg = (f) => (seen.reduce((s, x) => s + f(x), 0) / seen.length).toFixed(2);
+    const share = (f) => fmtPct(seen.filter(f).length / seen.length);
+    console.log('    ' + cname.padEnd(12)
+      + avg((x) => x.mand).padStart(9) + avg((x) => x.boss).padStart(9)
+      + share((x) => x.boss >= 1).padStart(13) + share((x) => x.boss >= 2).padStart(17));
+  }
+  console.log('');
   console.log('WHAT TO LOOK FOR. The bot is crude, so the rule to ship is the one where its');
   console.log('best strategy sits around two or three seasons with a tail that reaches into');
   console.log('double figures: that leaves the room a human needs to be visibly better. A rule');

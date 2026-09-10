@@ -54,10 +54,10 @@ node scripts/check-dashes.mjs
 Exits non-zero and prints `file:line` for every offender. It runs in CI on any
 push or pull request touching `wrestling/**` (`.github/workflows/dash-check.yml`).
 
-The guarded list inside that script is currently just `wrestling/`. The rest of
-the repo predates the rule and still contains hundreds of em dashes; add a
-directory to `GUARDED` only after cleaning it, never before, or the check
-becomes noise people learn to ignore.
+The guarded list inside that script is `wrestling`, `hoops`, `globe` and
+`mythiball`. The rest of the repo predates the rule and still contains hundreds
+of em dashes; add a directory to `GUARDED` only after cleaning it, never
+before, or the check becomes noise people learn to ignore.
 
 Run the checker against anything ad hoc:
 
@@ -155,11 +155,30 @@ Measured, and worth knowing before writing a badge that names any of it:
   uncapped line asked for 17 of 17 at season 91 and 18 at season 101, which is a mode that
   becomes arithmetically impossible rather than hard. Difficulty past the cap comes from the
   squeeze the mode already runs on, a frozen cap against a roster that ages every winter.
-- Bosses come at seasons 10, 20, 30 and so on out of a list of **six**, and mandates at 5,
-  15, 25 and so on out of a list of **four**, both cycling. The bot's deepest measured run
-  is around **19 seasons**, so in practice a player meets two bosses and three mandates. A
-  badge naming the third boss is not wrong about the mode, it is unprovable by
-  `check-badges.mjs`, which is the same problem with a different cause.
+- **A milestone every `DYNASTY_MILESTONE_EVERY` seasons, alternating**: the odd ones are
+  roster mandates out of a list of **four**, the even ones are boss games out of a list of
+  **six**, both cycling. There is no separate boss constant. A boss is every second milestone,
+  so the boss interval is twice the cadence and is derived.
+  **The cadence is 3, and it shipped as 5.** `simulator.js --dynasty` runs the rule the game
+  actually ships (`one life`) and reports both how far runs get and how much of the authored
+  content they meet. On the bot's best winter, 200 runs:
+
+  | | every 5 | every 3 |
+  |---|---|---|
+  | mandates met, mean | 0.58 | **1.04** |
+  | bosses met, mean | 0.34 | **0.70** |
+  | met a boss | 30.5% | **42.0%** |
+  | met a second boss | 3.0% | **22.0%** |
+
+  Nothing was written to get there. Six bosses and four mandates already existed, and at a
+  cadence of five nine of the ten were content for almost nobody: the second boss sat at
+  season 20 against a median run of 3 and a ninetieth percentile of 15. Moving the cadence
+  moved the schedule onto the reach curve. The reach curve itself did not move, because
+  `playDynasty` in the simulator models no milestone and neither reward, which is worth
+  knowing before reading those columns as a balance check.
+  The bot is crude and a person does better. Even so, the third boss now sits at season 18
+  against a p90 of 15, so a badge naming it is unprovable by `check-badges.mjs`, which is the
+  same problem the old cadence had at every rung.
 - A Full Team squad reaches the Super Bowl in about one season in twenty and wins it in
   about one in a hundred, and never takes the top seed.
 
@@ -199,6 +218,101 @@ carries the blocklist; add to it when you remove something.
 
 The game is unlisted: not linked from the homepage, nav or sitemap, and
 noindexed. Keep it that way unless asked.
+
+## MythiBall, the baseball game
+
+`mythiball/index.html`, the same one-file convention as wrestling above. Sixty
+eight public domain characters play arcade baseball: a plate camera behind the
+catcher, hitting on timing plus where the bat is, pitching on aim plus a
+release meter.
+
+**It was called Run The All-Stars and lived at `allstars/`.** Both names are
+gone from the code. What did NOT change is the localStorage keys, which are
+still `allstars.season.v1` and its siblings: they are invisible to the player,
+and renaming them would throw away the save of every tester who has already
+played. Leave them.
+
+It is SERVED, and unlisted, and those are two different facts:
+
+| | wrestling | hoops | MythiBall | setlist |
+|---|---|---|---|---|
+| answers at a runthe.gg URL | yes | yes | **yes** | yes |
+| in `sitemap.xml` | no | no | no | **yes** |
+| indexable | no | no | no | **yes** |
+| carries the AdSense tag | no | no | no | yes |
+| linked from the homepage or nav | no | no | no | no |
+
+So a tester who is handed `runthe.gg/mythiball/` can play it and nobody else
+can find it. **Unlisted is the whole of the gate.** It is not access control:
+anyone with the URL is in, and if the game ever needs a real gate it needs a
+real one rather than a quiet path. Say so rather than implying the link is
+private.
+
+`Mythiball/index.html` (capital M) is a redirect stub to the lower case path,
+the way `Wrestling/` and `Tour/` answer theirs, because the capitalised URL is
+the one that gets typed and pasted. It carries its own robots tag.
+
+The sprites are generated, never hand-edited in the page:
+
+```
+python3 mythiball/gen_sprites_v2.py > sprites.js    # then splice V2_SPRITES in
+```
+
+Every character is drawn from a PUBLIC DOMAIN source and `mythiball/PD_SOURCES.md`
+is the register: source, what the sprite shows, what it avoids. The avoid column
+is the point. Disney's Peter Pan, Universal's Frankenstein, MGM's green witch and
+ruby slippers are all still owned, and a redraw that drifts back toward one of
+them is the failure mode.
+
+### The dugout is a layout, not a drawing
+
+The menu is a room the player stands in, and it has to fill whatever window it is
+given. A fixed scene cannot: the wide room is 2.24 across, so on a portrait phone
+its height is decided by its width and it can only ever be a strip. It shipped that
+way, a 167 tall room on a 664 tall screen with half the display left as empty card
+stock underneath.
+
+So `landscapeRoom(w)` and `portraitRoom(h)` return coordinates and `roomForWindow()`
+picks one, `drawDugout` reads every position out of `ROOM` and holds none of its own,
+and each layout is composed in BANDS (upright: the wall takes a fixed share of the
+height and the floor takes the rest; wide: the furniture keeps its drawn size and
+the SPACE between it opens up) so one composition works at every size it is asked
+for. A phone gets the room as the whole interface: the four doors are hotspots on
+the canvas, the hover rail is hidden because there is no pointer to hover with.
+
+**A rotation is not a render, and that is the bug this class produces.** The layout
+is chosen once per render, so turning the phone left the upright room in a sideways
+window: a 760x1202 scene in an 844x390 one, running off the bottom of the page.
+Turning the phone showed LESS of the game than holding it upright. There is a
+resize and orientationchange listener now, and `verify-rules.mjs` rotates a phone
+both ways and asserts the room follows.
+
+Three more things are easy to undo by accident:
+
+- A coordinate written as a number inside `drawDugout` looks right on a desk and is
+  wrong on a phone.
+- The canvas is `object-fit: contain`, so if the scene's shape and its box's shape
+  drift apart the picture letterboxes while the hotspots stay where they were, and
+  the player presses a door above its sign. `renderMenu` measures the real box on
+  the frame after it mounts and recomposes if the guess was off; assertions measure
+  the PAINTED picture, never the element, or a letterboxed room reads as a full one.
+- `body.roomfill` is one `matchMedia` in the script that the stylesheet keys off.
+  Write that query out a second time in CSS and the two drift, which is the
+  letterbox above.
+
+The same arithmetic broke the GAME screen sideways, worse: `#field` derives its
+width from a height budget that assumed 265px of furniture above and below, which
+in a 390 tall window left 125, so an 844 wide phone drew a 182 wide field. Sideways
+is not short of width, it is short of height, so under `max-height: 560px` the
+furniture goes in a column beside the field instead of above and below it.
+
+The regression suite, which is the thing to run after editing:
+
+```
+node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
+node mythiball/verify-rules.mjs    the rules replayed in a headless browser
+node scripts/check-dashes.mjs      mythiball is on the GUARDED list
+```
 
 ## Segue, the setlist game
 

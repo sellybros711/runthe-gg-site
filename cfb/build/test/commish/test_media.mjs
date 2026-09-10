@@ -119,7 +119,7 @@ console.log('\n=== every question can actually be asked ===');
     'q-unsold': () => {},
     'q-gambling-permitted': () => {},
     'q-deal': () => {},
-    'q-champion': (w) => { w.year = 2026; w.champs = { 2025: { school: 'Ohio State', color: '#bb0000' } }; },
+    'q-champion': (w) => { w.year = 2026; w.champions = { 2025: { school: 'Ohio State', color: '#bb0000' } }; },
     'q-coaches': () => {},
     'q-schedule': () => {},
   };

@@ -216,7 +216,7 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
     /* The offseason beats read LAST season, so they need a term that has one behind it. */
     const later = world0();
     later.year = base.startYear + 2;
-    later.champs = { [base.startYear + 1]: { school: 'Ohio State', color: '#bb0000' } };
+    later.champions = { [base.startYear + 1]: { school: 'Ohio State', color: '#bb0000' } };
     later.ratings = { [base.startYear + 1]: { total: 800, perGame: 1.5, title: 20 } };
     for (const beat of [D.BEATS.WINTER, D.BEATS.PORTAL, D.BEATS.SPRING, D.BEATS.MEDIA]) {
       const wb = Object.assign({}, later, { beat });

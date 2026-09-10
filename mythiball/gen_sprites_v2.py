@@ -1,0 +1,4189 @@
+#!/usr/bin/env python3
+"""Sprite engine v2 for MythiBall.
+
+Generates every character sprite for mythiball/index.html.
+
+    python3 mythiball/gen_sprites_v2.py > mythiball/sprites.js
+
+WHY THIS EXISTS. The first sprites were hand placed color keys on a 20x24
+grid. Two things made them read flat no matter how much detail went in:
+
+1. Every form was outlined in the same near black. Real chibi sprites edge
+   each form with a darker shade of that form's OWN color and reserve true
+   dark for the outer silhouette. That one change is most of the difference
+   between a sticker and a figure.
+
+2. Shading was a linear gradient across the shape, which is a diagonal
+   wash rather than light. Here the head is a sphere and the limbs are
+   cylinders: a surface normal is computed per pixel and lit with a
+   Lambert term against a fixed upper left source, which gives a real
+   terminator, a rim that closes the form, and a specular hotspot.
+
+A character is described by a SPEC (archetype, colors, features) rather
+than by hand placed pixels, so proportions and lighting stay consistent
+across fifty four of them and a run cycle is a pose argument rather than
+a redraw.
+"""
+import math
+import sys
+
+W, H = 32, 40
+# ------------------------------------------------------------ proportions
+# Every coordinate in this file is LOGICAL, on a 32 by 40 grid, and every
+# head coordinate means exactly what it says: rows above NECK are drawn one
+# to one. Below it the body is stretched on the way to the pixels.
+#
+# It has to be done here rather than by moving numbers, because the figures
+# were a head and a half tall. The skull runs rows 3 to 23 and everything
+# else, torso and legs together, ran 23 to 38: fifteen rows of body under
+# twenty rows of head, which is a bobblehead rather than the Backyard
+# proportion of roughly two and a quarter heads. Shrinking the skull was the
+# other way to get there and it is the wrong one, because the faces are
+# where all the work is and they are already tight at twenty rows.
+#
+# So the sprite grows downward instead. Everything the archetypes and the
+# signatures say about the body still reads on the 40 row grid; the stretch
+# happens in the primitives, once, so a leg drawn from 31 to 38 comes out
+# twelve pixels long instead of eight and no signature had to move.
+NECK = 22.0
+OUT_H = 50
+BODY_STRETCH = (OUT_H - NECK) / (H - NECK)
+
+
+def ymap(y):
+    """Logical row to physical row."""
+    return y if y <= NECK else NECK + (y - NECK) * BODY_STRETCH
+
+
+def yinv(py):
+    """Physical row back to logical, for shading a shape at the right point
+    along its own form rather than at the row it happens to land on."""
+    return py if py <= NECK else NECK + (py - NECK) / BODY_STRETCH
+
+
+WHITEISH = (252, 232, 200)
+LIGHT = (-0.55, -0.62, 0.56)   # upper left, slightly toward the viewer
+SIL = (14, 11, 20)             # shared outer silhouette line
+
+CX = 16.0
+
+# The skull is very slightly TALLER than it is wide. It has to be: a chibi
+# head is most of the silhouette, so a head one pixel wider than it is tall
+# reads as squashed at every size, and no amount of shading fixes it. Hair
+# and hats are then built INSIDE this box (see hair(), headwear()) so that
+# what the eye follows is always the skull's curve, never a wider lid
+# sitting on top of it.
+HEAD_CY, HEAD_RX, HEAD_RY = 13.0, 9.4, 10.2
+HEAD_BROW = HEAD_CY - 1.5     # hair stops here; below it is face
+TORSO_HW = 6.5                # torso half width, vs a 9.4 head half width
+
+
+# ---------------------------------------------------------------- color
+def hex2rgb(h):
+    h = h.lstrip('#')
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+def rgb2hex(c):
+    return '#%02x%02x%02x' % tuple(max(0, min(255, int(round(v)))) for v in c)
+
+
+def mix(a, b, t):
+    return tuple(a[i] + (b[i] - a[i]) * t for i in range(3))
+
+
+def shade(c, amt):
+    """Darken toward a cool shadow, lighten toward a warm highlight, never
+    toward flat grey."""
+    if isinstance(c, str):
+        c = hex2rgb(c)
+    if amt < 0:
+        return mix(c, (18, 14, 30), -amt)
+    return mix(c, (255, 248, 225), amt)
+
+
+def luma(c):
+    return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255.0
+
+
+class Ramp:
+    """One material: a base color, its tone ramp, and its own outline.
+
+    THE SHADOW END IS NOT A FIXED OFFSET. A near black material darkened
+    by a fixed amount lands on the silhouette color, so the form loses its
+    own edge into its own interior and reads as a hole rather than a
+    shape: that is what Hyde's hair was. The shadow tones are therefore
+    floored away from SIL in proportion to how dark the base already is.
+    The highlight end is left alone (see _floor).
+    """
+    def __init__(self, base):
+        self.base = hex2rgb(base) if isinstance(base, str) else base
+        y = luma(self.base)
+        # Only genuinely near black materials need help, and they need it
+        # from BELOW: lengthening their highlight instead just puts a white
+        # blob on a black shape, which is not a form either.
+        t = max(0.0, min(1.0, (0.16 - y) / 0.16))
+        # A near black material's LIT tone is the other half of the
+        # problem yesterday's shadow floor solved. At a flat 0.26 offset,
+        # black hair lands on mid grey over the whole upper half of a
+        # sphere, so Dracula and Frankenstein both wore grey caps. The
+        # lit band shrinks toward the base as the base gets darker; the
+        # small specular glint (spec, l > 0.93) still carries the sheen.
+        self.spec = shade(self.base, 0.55 - 0.18 * t)
+        self.lit = shade(self.base, 0.26 * (1 - 0.85 * t))
+        self.mid = self.base
+        self.dark = self._floor(shade(self.base, -0.26), t)
+        self.core = self._floor(shade(self.base, -0.44), t)
+        self.line = self._floor(shade(self.base, -0.58), t, extra=0.6)
+
+    @staticmethod
+    def _floor(c, t, extra=1.0):
+        """Keep a shadow tone clear of the silhouette color. Without this a
+        near black material's shadow IS the outline, the shape loses its
+        edge into its own interior, and what is left reads as a hole.
+
+        Only the SHADOW end moves. Lengthening the highlight instead is
+        the obvious fix and the wrong one: it turns a black cat grey while
+        the shadows stay welded to the outline, which is both problems at
+        once."""
+        if t <= 0:
+            return c
+        return mix(c, shade(SIL, 0.30), 0.35 * t * extra)
+
+    def at(self, l, spec=False):
+        if spec and l > 0.93:
+            return self.spec
+        if l > 0.72:
+            return self.lit
+        if l > 0.40:
+            return self.mid
+        if l > 0.16:
+            return self.dark
+        return self.core
+
+
+# --------------------------------------------------------------- canvas
+class Canvas:
+    def __init__(self):
+        self.px = [[None] * W for _ in range(OUT_H)]
+        self.owner = [[None] * W for _ in range(OUT_H)]
+
+    def set(self, x, y, rgb, ramp=None):
+        """x, y are PHYSICAL here. Only the primitives call this, and each
+        of them has already put its logical rows through ymap."""
+        x, y = int(x), int(y)
+        if 0 <= x < W and 0 <= y < OUT_H:
+            self.px[y][x] = rgb
+            self.owner[y][x] = ramp
+
+    def get(self, x, y):
+        if 0 <= x < W and 0 <= y < OUT_H:
+            return self.px[y][x]
+        return None
+
+    def sphere(self, cx, cy, rx, ry, ramp, spec=True, ymax=None):
+        """ymax cuts the sphere off below that row, so a hair or hat shape
+        can be a CAP that follows the skull's own curve rather than a
+        separate wider ellipse pasted over it."""
+        for py in range(OUT_H):
+            ly = yinv(py + 0.5)
+            if ymax is not None and ly > ymax + 0.5:
+                break
+            for x in range(W):
+                nx = (x + 0.5 - cx) / rx
+                # the normal comes from the LOGICAL position on the form, so
+                # a stretched sphere is lit like a stretched sphere and not
+                # like a circle whose bands got pulled apart
+                ny = (ly - cy) / ry
+                d2 = nx * nx + ny * ny
+                if d2 > 1.0:
+                    continue
+                nz = math.sqrt(max(0.0, 1.0 - d2))
+                n = (nx, ny, nz)
+                ln = math.sqrt(sum(v * v for v in n)) or 1.0
+                n = tuple(v / ln for v in n)
+                l = (sum(n[i] * LIGHT[i] for i in range(3)) + 1) / 2
+                if d2 > 0.90:
+                    l *= 0.55
+                self.set(x, py, ramp.at(l, spec), ramp)
+
+    def ball(self, cx, cy, rx, ry, ramp, spec=True):
+        """A sphere that comes out ROUND on the finished sprite.
+
+        Below the neck a plain sphere() is stretched along with everything
+        else, which is what a torso wants and is wrong for anything whose
+        shape IS its roundness: a fist, a belly, a bear, a tuft of fur.
+        ry here is the radius you want in PIXELS, and the centre lands at
+        ymap(cy) either way."""
+        self.sphere(cx, cy, rx, ry / BODY_STRETCH if cy > NECK else ry,
+                    ramp, spec=spec)
+
+    def cyl(self, x0, y0, x1, y1, ramp, round_top=0, round_bot=0, spec=False):
+        """Vertical cylinder; shading varies across x like a limb."""
+        x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
+        for py in range(int(round(ymap(y0))), int(round(ymap(y1 + 1)))):
+            ly = yinv(py + 0.5) - 0.5
+            for x in range(x0, x1 + 1):
+                u = 0.0 if x1 == x0 else (x + 0.5 - x0) / (x1 + 1 - x0) * 2 - 1
+                if round_top:
+                    ty = (ly - y0) / max(1, round_top)
+                    if ty < 1 and abs(u) > math.sqrt(max(0.0, 1 - (1 - ty) ** 2)):
+                        continue
+                if round_bot:
+                    by = (y1 - ly) / max(1, round_bot)
+                    if by < 1 and abs(u) > math.sqrt(max(0.0, 1 - (1 - by) ** 2)):
+                        continue
+                nz = math.sqrt(max(0.0, 1 - u * u))
+                n = (u, -0.15, nz)
+                ln = math.sqrt(sum(v * v for v in n)) or 1.0
+                n = tuple(v / ln for v in n)
+                l = (sum(n[i] * LIGHT[i] for i in range(3)) + 1) / 2
+                if abs(u) > 0.88:
+                    l *= 0.6
+                self.set(x, py, ramp.at(l, spec), ramp)
+
+    def taper(self, y0, y1, w0, w1, ramp, cx=CX, folds=0):
+        """A robe or gown: a cylinder whose width grows down the shape, so
+        it reads as cloth hanging rather than a box. Optional vertical
+        fold lines that darken with the same light model."""
+        for py in range(int(round(ymap(y0))), int(round(ymap(int(y1) + 1)))):
+            y = yinv(py + 0.5) - 0.5
+            t = (y - y0) / max(1, (y1 - y0))
+            half = (w0 + (w1 - w0) * t) / 2
+            for x in range(int(cx - half), int(cx + half) + 1):
+                u = (x + 0.5 - cx) / max(0.5, half)
+                if abs(u) > 1:
+                    continue
+                nz = math.sqrt(max(0.0, 1 - u * u))
+                n = (u, -0.1, nz)
+                ln = math.sqrt(sum(v * v for v in n)) or 1.0
+                n = tuple(v / ln for v in n)
+                l = (sum(n[i] * LIGHT[i] for i in range(3)) + 1) / 2
+                if abs(u) > 0.9:
+                    l *= 0.62
+                self.set(x, py, ramp.at(l), ramp)
+            if folds:
+                for k in range(folds):
+                    fu = -0.55 + 1.1 * (k / max(1, folds - 1))
+                    fx = int(cx + fu * half)
+                    if abs(fu) < 0.92:
+                        self.set(fx, py, ramp.at(0.22), ramp)
+
+    def rect(self, x0, y0, x1, y1, ramp, l=0.55):
+        for py in range(int(round(ymap(int(y0)))), int(round(ymap(int(y1) + 1)))):
+            for x in range(int(x0), int(x1) + 1):
+                u = (x - x0) / max(1, (x1 - x0))
+                self.set(x, py, ramp.at(l + 0.26 * (0.5 - u)), ramp)
+
+    def tri(self, pts, ramp, l=0.55):
+        pts = [(p[0], ymap(p[1])) for p in pts]
+        ys = [p[1] for p in pts]
+        for y in range(int(min(ys)), int(max(ys)) + 1):
+            xs = []
+            n = len(pts)
+            for i in range(n):
+                ax, ay = pts[i]
+                bx, by = pts[(i + 1) % n]
+                if (ay <= y < by) or (by <= y < ay):
+                    xs.append(ax + (bx - ax) * (y - ay) / (by - ay))
+            xs.sort()
+            for i in range(0, len(xs) - 1, 2):
+                lo, hi = int(round(xs[i])), int(round(xs[i + 1]))
+                span = max(1.0, hi - lo)
+                for x in range(lo, hi + 1):
+                    u = (x - lo) / span
+                    self.set(x, y, ramp.at(l + 0.28 * (0.5 - u)), ramp)
+
+    def dot(self, x, y, rgb):
+        """One logical pixel, which below the neck is one and a bit physical
+        ones. It has to fill its whole span or every hand drawn line in the
+        body region comes out dashed."""
+        y = int(y)
+        p0 = int(math.floor(ymap(y)))
+        p1 = max(p0, int(math.ceil(ymap(y + 1))) - 1)
+        for py in range(p0, p1 + 1):
+            self.set(x, py, rgb, None)
+
+    def outline(self):
+        """Outer silhouette in shared dark; interior material seams in the
+        darker material's own line color."""
+        adds = []
+        for y in range(OUT_H):
+            for x in range(W):
+                if self.px[y][x] is not None:
+                    continue
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    if self.get(x + dx, y + dy) is not None:
+                        o = self.owner[y + dy][x + dx] if 0 <= y + dy < OUT_H and 0 <= x + dx < W else None
+                        adds.append((x, y, o))
+                        break
+        for (x, y, o) in adds:
+            self.set(x, y, SIL, o)
+        edits = []
+        for y in range(OUT_H):
+            for x in range(W):
+                o = self.owner[y][x]
+                if o is None or self.px[y][x] is None:
+                    continue
+                for dx, dy in ((1, 0), (0, 1)):
+                    nx, ny = x + dx, y + dy
+                    if not (0 <= nx < W and 0 <= ny < OUT_H):
+                        continue
+                    o2 = self.owner[ny][nx]
+                    if o2 is None or o2 is o:
+                        continue
+                    # Materials of similar brightness get NO drawn seam.
+                    # Blond hair over a fair forehead was being edged in
+                    # dark skin tone, which drew a bar clear across the
+                    # face at brow height: safety glasses on every kid
+                    # on the roster. Where the two materials really
+                    # contrast (a jacket against skin), the seam stays.
+                    if abs(luma(o.mid) - luma(o2.mid)) < 0.17:
+                        continue
+                    edits.append((nx, ny, o2.line))
+        for (x, y, rgb) in edits:
+            self.set(x, y, rgb, self.owner[y][x])
+
+    def emit(self):
+        counts = {}
+        for row in self.px:
+            for c in row:
+                if c is None:
+                    continue
+                counts[rgb2hex(c)] = counts.get(rgb2hex(c), 0) + 1
+        ordered = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+        alpha = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        remap = {}
+        if len(ordered) > len(alpha):
+            keep = [c for c, _ in ordered[:len(alpha)]]
+            krgb = [hex2rgb(c) for c in keep]
+            for c, _ in ordered[len(alpha):]:
+                r = hex2rgb(c)
+                i = min(range(len(keep)),
+                        key=lambda j: sum((r[k] - krgb[j][k]) ** 2 for k in range(3)))
+                remap[c] = keep[i]
+            ordered = ordered[:len(alpha)]
+        pal, rev = {}, {}
+        for i, (c, _) in enumerate(ordered):
+            pal[alpha[i]] = c
+            rev[c] = alpha[i]
+        rows = []
+        for y in range(OUT_H):
+            r = ''
+            for x in range(W):
+                c = self.px[y][x]
+                if c is None:
+                    r += '.'
+                else:
+                    hx = rgb2hex(c)
+                    r += rev[remap.get(hx, hx)]
+            rows.append(r)
+        return pal, rows
+
+
+# ------------------------------------------------------------- features
+def face(cv, skin, spec, cy=HEAD_CY):
+    """Eyes, brow, nose and mouth, each its own parameter.
+
+    They used to be one block. The 'normal' eye drew a fixed googly pair
+    centred on CX that ignored eyespread entirely, so THIRTY ONE of the
+    fifty four characters had not similar eyes but the same eyes, pixel
+    for pixel, and the only mouths were a line and a slightly wider line.
+    Half the roster was one face in different clothes, which is what it
+    looked like.
+
+    So the face is four independent parts now. A brow is two pixels a side
+    and it is the single most identifying thing on a face at this size: it
+    is the difference between Tom Sawyer and Huck Finn when they are both
+    a boy in a straw hat. A nose is the second. Between brow, eye shape,
+    spread, nose and mouth there are enough combinations that no two
+    characters need share one.
+
+    Row budget, all relative to the eye row y:
+        y-1   brow, and the eye loses its top row to make space
+        y..y+1  the eye whites (y-1..y+1 when there is no brow)
+        y+2..y+4  the nose
+        y+6   the mouth
+    """
+    style = spec.get('eyes', 'normal')
+    ec = spec.get('eyecolor')
+    y = int(cy)
+    sp = spec.get('eyespread', 4)
+    if style == 'hidden':
+        return
+    if style == 'carved':
+        # A pumpkin is a pumpkin because of what is cut OUT of it. Two dots
+        # and a line on an orange sphere is just an orange sphere.
+        glow = hex2rgb(ec or '#3a1a08')
+        deep = shade(glow, -0.45)
+        # Triangle eyes, point down, drawn row by row so both sides mirror.
+        for i, wid in enumerate((3, 2, 1)):
+            for side in (-1, 1):
+                base = CX + side * 5
+                for k in range(wid):
+                    cv.dot(base - side * k, y - 2 + i, glow if i else deep)
+        # A nose notch, then a grin with two teeth left standing in it.
+        cv.dot(CX, y + 2, glow)
+        cv.dot(CX - 1, y + 3, glow)
+        cv.dot(CX, y + 3, glow)
+        cv.dot(CX + 1, y + 3, glow)
+        for dx in range(-5, 6):
+            drop = 1 if abs(dx) >= 4 else 0
+            if dx in (-2, 2):               # teeth
+                continue
+            cv.dot(CX + dx, y + 6 - drop, glow)
+            cv.dot(CX + dx, y + 7 - drop, deep)
+        return
+    if style == 'goggles':
+        # Dark round lenses on a strap. A fully hidden face on a bandaged
+        # head leaves nothing for the eye to land on, and the head reads
+        # as a bucket rather than as a head.
+        lens = hex2rgb(ec or '#1a1a24')
+        for side in (-1, 1):
+            cv.sphere(CX + side * 4, y, 3.0, 2.6, Ramp(rgb2hex(lens)), spec=True)
+        cv.rect(CX - 8, y - 1, CX + 8, y, Ramp(rgb2hex(shade(lens, 0.12))), l=0.35)
+        for side in (-1, 1):
+            cv.sphere(CX + side * 4, y, 2.2, 1.9, Ramp(rgb2hex(lens)), spec=True)
+        return
+
+    WHITE = (250, 250, 252)
+    pc = hex2rgb(ec or '#241e2e')
+    brow = spec.get('brow')
+    # A brow is the character's hair, but it has to READ against the face
+    # under it, and on the blond boys hair colour and skin colour are four
+    # points of luma apart: drawn honestly the brows were invisible and
+    # Tom and Huck went back to being the same face. Darken until it
+    # separates, however light the hair is.
+    bc = hex2rgb(spec.get('browcolor') or spec.get('hair') or
+                 rgb2hex(shade(skin.base, -0.52)))
+    for _ in range(6):
+        if luma(skin.base) - luma(bc) >= 0.26:
+            break
+        bc = shade(bc, -0.22)
+
+    if style == 'one':
+        # ONE eye, and a BIG one: it has to carry the whole face alone.
+        for dx in range(-3, 4):
+            for dy in (-2, -1, 0, 1, 2):
+                if abs(dx) == 3 and abs(dy) == 2:
+                    continue
+                cv.dot(CX + dx, y + dy, WHITE)
+        p1 = hex2rgb(ec or '#3a2412')
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                cv.dot(CX + dx, y + dy, p1)
+        cv.dot(CX - 1, y - 1, shade(p1, 0.55))
+    elif style == 'glow':
+        for side in (-1, 1):
+            x = int(CX + side * sp)
+            g = hex2rgb(ec or '#f4c25a')
+            for dx in (-1, 0):
+                cv.dot(x + dx, y, g)
+                cv.dot(x + dx, y + 1, shade(g, -0.30))
+            cv.dot(x - 1, y, shade(g, 0.50))
+    elif style == 'angry':
+        for side in (-1, 1):
+            x = int(CX + side * sp)
+            b = shade(skin.base, -0.50)
+            cv.dot(x - 1, y - 1, b); cv.dot(x, y - 1, b)
+            for dy in (0, 1):
+                cv.dot(x - 1, y + dy, WHITE)
+                cv.dot(x, y + dy, pc)
+    elif style == 'bead':
+        # No white at all: two beads of ink. Herge draws Tintin this way
+        # and so does every bear on the roster, and on a face otherwise
+        # made of big whites it is the most distinct eye there is.
+        for side in (-1, 1):
+            x = int(CX + side * sp)
+            for dy in (0, 1):
+                cv.dot(x, y + dy, pc)
+                cv.dot(x + (1 if side < 0 else -1), y + dy, pc)
+    elif style == 'squint':
+        # Shut, or near enough. A laugh or a scowl depending on the brow.
+        for side in (-1, 1):
+            x = int(CX + side * sp)
+            for dx in (-1, 0, 1):
+                cv.dot(x + dx, y + 1, shade(skin.base, -0.55))
+            cv.dot(x + side * 2, y, shade(skin.base, -0.55))
+    else:
+        # The white eye family. All of them respect eyespread, which is
+        # the parameter the old googly pair quietly ignored.
+        top = y if brow else y - 1
+        for side in (-1, 1):
+            x = int(CX + side * sp)
+            if style == 'wide':
+                cols, rows_, pw = (-2, -1, 0, 1), (top, y + 1), 2
+            elif style == 'oval':
+                cols, rows_, pw = (-1, 0), (top, y, y + 1), 1
+            else:                                   # round, cartoon, lash
+                cols, rows_, pw = (-1, 0, 1), (top, y, y + 1), 1
+            for dx in cols:
+                for yy in set(rows_):
+                    if yy <= y + 1:
+                        cv.dot(x + dx, yy, WHITE)
+            # The pupil sits in the SAME place in both eyes. Mirrored
+            # inward it made the whole roster cross eyed.
+            for dx in range(pw):
+                cv.dot(x + dx, y, pc)
+                cv.dot(x + dx, y + 1, pc)
+            if style == 'sleepy':
+                for dx in cols:                     # a heavy lid over the top
+                    cv.dot(x + dx, top, shade(skin.base, -0.42))
+            if style == 'lash':
+                cv.dot(x + side * 2, top - 1, pc)
+                cv.dot(x + side * 3, top, pc)
+
+    # ------------------------------------------------------------- brow
+    if brow:
+        by = y - 1
+        for side in (-1, 1):
+            x = int(CX + side * sp)
+            inner, outer = x - side, x + side
+            if brow == 'angry':                     # inner ends drive DOWN
+                cv.dot(inner, by + 1, bc)
+                cv.dot(x, by, bc)
+                cv.dot(outer, by - 1, bc)
+            elif brow == 'worried':                 # inner ends lift
+                cv.dot(inner, by - 1, bc)
+                cv.dot(x, by, bc)
+                cv.dot(outer, by + 1, bc)
+            elif brow == 'high':                    # raised, and clear of it
+                for dx in (-1, 0, 1):
+                    cv.dot(x + dx, by - 1, bc)
+            elif brow == 'bushy':
+                for dx in (-1, 0, 1, 2 * side):
+                    cv.dot(x + dx, by, bc)
+                    cv.dot(x + dx, by - 1, bc)
+            else:                                   # flat
+                for dx in (-1, 0, 1):
+                    cv.dot(x + dx, by, bc)
+
+    # ------------------------------------------------------------- nose
+    nose = spec.get('nose')
+    if nose:
+        nd = shade(skin.base, -0.34)
+        nl = skin.lit
+        ny = y + 3
+        if nose == 'dot':
+            cv.dot(CX, ny, nd)
+        elif nose == 'button':
+            cv.dot(CX, ny, nd)
+            cv.dot(CX - 1, ny, nd)
+            cv.dot(CX - 1, ny - 1, nl)
+        elif nose == 'bulb':
+            for dx in (-1, 0, 1):
+                cv.dot(CX + dx, ny, nl)
+            cv.dot(CX, ny - 1, nl)
+            for dx in (-1, 0, 1):
+                cv.dot(CX + dx, ny + 1, nd)
+        elif nose == 'long':
+            for dy in (-1, 0, 1):
+                cv.dot(CX, ny + dy, nl)
+            cv.dot(CX - 1, ny + 1, nd)
+            cv.dot(CX, ny + 2, nd)
+        elif nose == 'beak':
+            for i, wid in enumerate((2, 1, 0)):
+                for dx in range(-wid, wid + 1):
+                    cv.dot(CX + dx, ny - 1 + i, nd if i else nl)
+
+    if spec.get('freckles'):
+        f = shade(skin.base, -0.26)
+        for dx in (-6, -4, 4, 6):
+            cv.dot(CX + dx, y + 3, f)
+        cv.dot(CX - 5, y + 4, f)
+        cv.dot(CX + 5, y + 4, f)
+    if spec.get('blush'):
+        for dx in (-6, 6):
+            cv.dot(CX + dx, y + 3, (236, 156, 156))
+            cv.dot(CX + dx + (1 if dx < 0 else -1), y + 3, (236, 156, 156))
+
+    # ------------------------------------------------------------ mouth
+    m = spec.get('mouth', 'line')
+    my = int(cy + 6)
+    mc = shade(skin.base, -0.42)
+    if m == 'none':
+        return
+    # Every mouth is a SMILE unless the character says otherwise: the
+    # corners turn UP. A flat dark bar in the lower face reads as a
+    # grimace, and a red block reads as a wound.
+    if m == 'fang':
+        for x in range(int(CX) - 2, int(CX) + 3):
+            cv.dot(x, my, mc)
+        cv.dot(int(CX) - 3, my - 1, mc)
+        cv.dot(int(CX) + 3, my - 1, mc)
+        cv.dot(int(CX) - 2, my + 1, WHITE)
+        cv.dot(int(CX) + 2, my + 1, WHITE)
+    elif m == 'grin':
+        for x in range(int(CX) - 3, int(CX) + 4):
+            cv.dot(x, my, mc)
+        cv.dot(int(CX) - 4, my - 1, mc)
+        cv.dot(int(CX) + 4, my - 1, mc)
+    elif m == 'smirk':
+        # ONE corner up. Asymmetry is the cheapest character on a face:
+        # nothing else in three pixels says pleased with itself.
+        for x in range(int(CX) - 2, int(CX) + 3):
+            cv.dot(x, my, mc)
+        cv.dot(int(CX) + 3, my - 1, mc)
+        cv.dot(int(CX) + 4, my - 2, mc)
+    elif m == 'frown':
+        for x in range(int(CX) - 2, int(CX) + 3):
+            cv.dot(x, my, mc)
+        cv.dot(int(CX) - 3, my + 1, mc)
+        cv.dot(int(CX) + 3, my + 1, mc)
+    elif m == 'oh':
+        for dx in (-1, 0, 1):
+            cv.dot(CX + dx, my, mc)
+            cv.dot(CX + dx, my + 1, mc)
+        cv.dot(CX, my, (120, 60, 58))
+        cv.dot(CX, my + 1, (120, 60, 58))
+    elif m == 'buck':
+        for x in range(int(CX) - 2, int(CX) + 3):
+            cv.dot(x, my, mc)
+        cv.dot(int(CX) - 1, my + 1, (246, 244, 238))
+        cv.dot(int(CX), my + 1, (246, 244, 238))
+        cv.dot(int(CX) - 1, my + 2, (246, 244, 238))
+        cv.dot(int(CX), my + 2, (246, 244, 238))
+    elif m == 'open':
+        # happy open mouth: teeth over tongue, edged, corners up
+        for x in range(int(CX) - 1, int(CX) + 2):
+            cv.dot(x, my, (240, 238, 240))
+            cv.dot(x, my + 1, (150, 52, 54))
+        cv.dot(int(CX) - 2, my, mc)
+        cv.dot(int(CX) + 2, my, mc)
+        cv.dot(int(CX) - 3, my - 1, mc)
+        cv.dot(int(CX) + 3, my - 1, mc)
+    else:
+        for x in range(int(CX) - 2, int(CX) + 3):
+            cv.dot(x, my, mc)
+        cv.dot(int(CX) - 3, my - 1, mc)
+        cv.dot(int(CX) + 3, my - 1, mc)
+
+
+def head_edge(y, floor=0.72):
+    """Half width of the skull at row y. Below the jaw it stops narrowing
+    and holds at `floor` of the full width, because a fall of hair (or a
+    bandage) that keeps following the ellipse curls back under the chin
+    and closes into a ring around the face."""
+    ny = (y + 0.5 - HEAD_CY) / HEAD_RY
+    t = math.sqrt(max(0.0, 1.0 - min(1.0, ny * ny)))
+    return HEAD_RX * max(floor, t)
+
+
+def sidelock(cv, r, side, y0, y1, w=2.0):
+    """A fall of hair down the side of the head, following the skull's own
+    curve rather than hanging beside it as a straight bar."""
+    for y in range(int(y0), int(y1) + 1):
+        outer = CX + side * head_edge(y)
+        inner = outer - side * w
+        lo, hi = sorted((inner, outer))
+        cv.rect(lo, y, hi, y, r, l=0.52 if side < 0 else 0.40)
+
+
+def hair(cv, spec):
+    h = spec.get('hair')
+    if not h:
+        return
+    r = Ramp(h)
+    kind = spec.get('hairstyle', 'short')
+    # Every cap is drawn INSIDE the skull box and cut off at the brow, so
+    # the outline the eye follows is the head's, not the hair's.
+    # MATTE. Hair has no specular hotspot: a glint sized for wet skin
+    # put a grey cap on every dark haired character on the roster.
+    cap = lambda rx, ry, dy=0.0: cv.sphere(CX, HEAD_CY + dy, HEAD_RX * rx,
+                                           HEAD_RY * ry, r, spec=False,
+                                           ymax=HEAD_BROW)
+    if kind == 'short':
+        cap(0.99, 0.99, -0.6)
+    elif kind == 'long':
+        cap(1.0, 1.0, -0.3)
+        sidelock(cv, r, -1, HEAD_CY - 4, HEAD_CY + 9, 2.4)
+        sidelock(cv, r, 1, HEAD_CY - 4, HEAD_CY + 9, 2.4)
+    elif kind == 'wild':
+        cap(1.0, 1.0, -0.4)
+        # Pointed locks with real gaps between them. Evenly spaced bars of
+        # equal height read as the teeth of a comb; bars packed edge to
+        # edge read as one slab with notches cut in it. Neither reads as
+        # hair, so: four locks, uneven heights, daylight in between.
+        for dx, up, lean in ((-7.5, 3, -2), (-4.5, 6, -2), (-1.5, 8, 0),
+                            (1.5, 5, 1), (4.5, 7, 2), (7.5, 4, 3)):
+            top = HEAD_CY - HEAD_RY * math.sqrt(max(0.0, 1 - (dx / HEAD_RX) ** 2))
+            cv.tri([(CX + dx + lean, top - up),
+                    (CX + dx - 2.0, top + 2),
+                    (CX + dx + 2.0, top + 2)], r, l=0.5)
+    elif kind == 'mop':
+        # A shaggy fringe: the cap comes down past the brow in uneven
+        # points. Spikes would read as a crown on a blond character, which
+        # is what Jack looked like when he shared Hyde's wild hair.
+        cap(1.0, 1.0, -0.2)
+        for dx, drop in ((-6, 1), (-4, 2), (-2, 1), (0, 2), (2, 1), (4, 2), (6, 1)):
+            for k in range(drop):
+                cv.dot(CX + dx, HEAD_BROW + 1 + k, r.dark if k else r.mid)
+                cv.dot(CX + dx + 1, HEAD_BROW + 1 + k, r.dark if k else r.mid)
+    elif kind == 'quiff':
+        cap(0.99, 0.97, -0.8)
+        cv.tri([(CX - 3, 4), (CX + 4, 0), (CX + 5, 5)], r, l=0.7)
+    elif kind == 'braids':
+        cap(1.0, 0.99, -0.5)
+        sidelock(cv, r, -1, HEAD_CY - 2, HEAD_CY + 8, 2.0)
+        sidelock(cv, r, 1, HEAD_CY - 2, HEAD_CY + 8, 2.0)
+    elif kind == 'bald':
+        pass
+
+
+def beard(cv, spec):
+    b = spec.get('beard')
+    if not b:
+        return
+    r = Ramp(b)
+    size = spec.get('beardsize', 'full')
+    # A beard has to start BELOW the eyes. The old spheres were centered
+    # high enough that their top edge crossed row HEAD_CY, which is where
+    # face() puts the eyes: every bearded character came out as a blank
+    # oval with no face in it at all, and Father Time had no face to find.
+    if size == 'full':
+        cv.sphere(CX, HEAD_CY + 9.0, HEAD_RX * 0.94, HEAD_RY * 0.58, r, spec=False)
+    elif size == 'long':
+        # Starts BELOW the mouth and falls: centered higher it swallowed
+        # the whole face and Father Time had nothing above his beard.
+        cv.sphere(CX, HEAD_CY + 9.4, HEAD_RX * 0.90, HEAD_RY * 0.52, r, spec=False)
+        cv.taper(HEAD_CY + 11, HEAD_CY + 16, 12, 7, r)
+    elif size == 'moustache':
+        # One row plus drooping tips. Two rows of dark ten wide reads as
+        # a gaping mouth, which made the Ringmaster look mid holler.
+        cv.rect(CX - 4, HEAD_CY + 4, CX + 4, HEAD_CY + 4, r, l=0.6)
+        cv.dot(CX - 5, HEAD_CY + 5, r.mid)
+        cv.dot(CX + 5, HEAD_CY + 5, r.mid)
+        cv.dot(CX - 1, HEAD_CY + 5, r.mid)
+        cv.dot(CX, HEAD_CY + 5, r.mid)
+        cv.dot(CX + 1, HEAD_CY + 5, r.mid)
+
+
+def headwear(cv, spec):
+    hw = spec.get('hat')
+    if not hw:
+        return
+    c = Ramp(spec.get('hatcolor', '#c93030'))
+    trim = Ramp(spec.get('hattrim', '#f5efe8'))
+    # A hat is a CROWN plus a BRIM, and the crown is cut to the skull the
+    # same way hair is. Brims stay inside +/-11 of a 32 wide sprite: past
+    # that the hat becomes the character and the head underneath is gone.
+    crown = lambda rx, ry, dy: cv.sphere(CX, HEAD_CY + dy, HEAD_RX * rx,
+                                         HEAD_RY * ry, c, spec=False,
+                                         ymax=HEAD_CY - 2)
+    if hw == 'cap':
+        crown(0.99, 0.99, -0.8)
+        cv.rect(CX - 10, HEAD_CY - 3, CX + 3, HEAD_CY - 2, c, l=0.40)
+    elif hw == 'sailor':
+        # A Dixie cup rides HIGH on the skull, and that is the point of
+        # having it: a cap cut at the brow leaves four rows of face, and
+        # a face with a jaw in it needs nine. Crown to row 8, fold at
+        # 8 and 9, so the cap seam lands at row 10 instead of 12.
+        cv.sphere(CX, HEAD_CY - 2.0, HEAD_RX * 0.98, HEAD_RY * 0.92, c,
+                  spec=False, ymax=8)
+        cv.rect(CX - 9, 8, CX + 9, 9, Ramp(shade(c.base, -0.10)), l=0.50)
+    elif hw == 'deerstalker':
+        # The bill goes front AND back, which from the front reads as one
+        # wide flat brim, and the crown is two lobes with a seam between.
+        # A dome plus a narrow brim is a fedora, which is Watson's hat.
+        crown(0.97, 0.88, -2.4)
+        cv.rect(CX - 11, HEAD_CY - 2, CX + 11, HEAD_CY - 1, c, l=0.36)
+        seam = shade(c.base, -0.30)
+        for y in range(3, int(HEAD_CY) - 2):
+            cv.dot(CX, y, seam)
+        # tweed check, which is what stops the crown reading as a helmet
+        for gy in range(4, int(HEAD_CY) - 2, 3):
+            for gx in range(-7, 8, 3):
+                cv.dot(CX + gx, gy, seam)
+    elif hw == 'brim':                      # fedora / detective
+        crown(0.92, 0.92, -1.6)
+        cv.rect(CX - 11, HEAD_CY - 4, CX + 11, HEAD_CY - 3, c, l=0.42)
+        cv.rect(CX - 7, HEAD_CY - 6, CX + 7, HEAD_CY - 6, trim, l=0.55)
+    elif hw == 'top':
+        cv.rect(CX - 6, 0, CX + 6, HEAD_CY - 6, c, l=0.5)
+        cv.rect(CX - 6, HEAD_CY - 9, CX + 6, HEAD_CY - 8, trim, l=0.6)
+        cv.rect(CX - 10, HEAD_CY - 5, CX + 10, HEAD_CY - 4, c, l=0.42)
+    elif hw == 'point':                     # witch / wizard
+        cv.tri([(CX, 0), (CX - 7, HEAD_CY - 5), (CX + 7, HEAD_CY - 5)], c, l=0.52)
+        cv.rect(CX - 11, HEAD_CY - 5, CX + 11, HEAD_CY - 4, c, l=0.40)
+        cv.rect(CX - 5, HEAD_CY - 7, CX + 5, HEAD_CY - 6, trim, l=0.62)
+    elif hw == 'floppy':                    # a battered scarecrow hat
+        # Pointed, but the point has GIVEN UP and flopped over, and the
+        # brim waves. A clean cone is a wizard's hat, not a farm one.
+        cv.tri([(CX + 1, 1), (CX - 7, HEAD_CY - 5), (CX + 7, HEAD_CY - 5)], c, l=0.52)
+        cv.sphere(CX + 4, 1.5, 3.0, 2.0, c, spec=False)
+        # A CONTINUOUS brim that waves. Alternating two pixel chunks
+        # broke it into scattered bits of straw with gaps between them.
+        for dx in range(-11, 12):
+            dy = HEAD_CY - 4 + (0 if (dx + 12) % 6 < 3 else 1)
+            cv.rect(CX + dx, dy, CX + dx, dy + 1, c, l=0.42)
+        cv.rect(CX - 6, HEAD_CY - 7, CX + 6, HEAD_CY - 6, trim, l=0.6)
+    elif hw == 'straw':
+        crown(0.86, 0.80, -2.2)
+        cv.rect(CX - 11, HEAD_CY - 4, CX + 11, HEAD_CY - 3, c, l=0.46)
+    elif hw == 'santa':
+        cv.tri([(CX + 6, 1), (CX - 8, HEAD_CY - 4), (CX + 8, HEAD_CY - 4)], c, l=0.55)
+        cv.rect(CX - 10, HEAD_CY - 4, CX + 10, HEAD_CY - 2, trim, l=0.66)
+        cv.sphere(CX + 7, 2.0, 2.8, 2.6, trim)
+    elif hw == 'crown':
+        for dx in (-7, -3.5, 0, 3.5, 7):
+            cv.tri([(CX + dx, HEAD_CY - 12), (CX + dx - 2, HEAD_CY - 6),
+                    (CX + dx + 2, HEAD_CY - 6)], c, l=0.62)
+        cv.rect(CX - 8, HEAD_CY - 7, CX + 8, HEAD_CY - 5, c, l=0.5)
+    elif hw == 'tricorn':
+        crown(0.88, 0.84, -2.0)
+        cv.tri([(CX - 11, HEAD_CY - 3), (CX, HEAD_CY - 8), (CX + 11, HEAD_CY - 3)], c, l=0.46)
+        cv.rect(CX - 11, HEAD_CY - 4, CX + 11, HEAD_CY - 3, c, l=0.4)
+    elif hw == 'helm':                      # flat top, Frankenstein
+        cv.rect(CX - 8, HEAD_CY - 10, CX + 8, HEAD_CY - 5, c, l=0.42)
+    elif hw == 'bonnet':
+        # A SUNBONNET, Denslow's: a soft crown over the back of the head,
+        # a deep brim standing out in front of the face, and the ribbon
+        # tied under the chin. The brim is what reads: a bonnet with no
+        # brim is a bathing cap.
+        cv.sphere(CX, HEAD_CY - 1.0, HEAD_RX * 1.02, HEAD_RY * 1.0, c,
+                  spec=False, ymax=HEAD_CY - 2)
+        cv.rect(CX - 11, HEAD_CY - 4, CX + 11, HEAD_CY - 3, c, l=0.5)
+        cv.rect(CX - 11, HEAD_CY - 3, CX - 10, HEAD_CY + 4, c, l=0.42)
+        cv.rect(CX + 10, HEAD_CY - 3, CX + 11, HEAD_CY + 4, c, l=0.42)
+        for dy in range(int(HEAD_CY) + 6, int(HEAD_CY) + 11):
+            cv.dot(CX + 5, dy, trim.mid)
+    elif hw == 'hood':
+        # PYLE'S HOOD: a cowl cut close round the face, falling to the
+        # shoulders on both sides, with a short cape over them. It is the
+        # silhouette the ballads name him by, and a feathered cap is the
+        # 1938 film's.
+        cv.sphere(CX, HEAD_CY - 0.4, HEAD_RX * 1.04, HEAD_RY * 1.02, c,
+                  spec=False, ymax=HEAD_BROW)
+        sidelock(cv, c, -1, HEAD_CY - 4, HEAD_CY + 10, 2.6)
+        sidelock(cv, c, 1, HEAD_CY - 4, HEAD_CY + 10, 2.6)
+        cv.taper(21, 26, 19, 24, c)
+    elif hw == 'kerchief':
+        # A kerchief tied at the nape, Pyle's buccaneer: cloth close to
+        # the brow, the knot's two tails out one side.
+        crown(1.0, 1.0, -0.4)
+        cv.rect(CX - 10, HEAD_CY - 3, CX + 10, HEAD_CY - 2, c, l=0.45)
+        cv.tri([(CX + 9, HEAD_CY - 3), (CX + 14, HEAD_CY - 1), (CX + 11, HEAD_CY + 2)], c, l=0.5)
+        cv.tri([(CX + 9, HEAD_CY - 3), (CX + 13, HEAD_CY - 6), (CX + 12, HEAD_CY - 1)], c, l=0.42)
+    elif hw == 'tall':
+        # A tall black stovepipe, the schoolmaster's and the undertaker's:
+        # narrower and higher than the top hat, no coloured band.
+        cv.rect(CX - 5, 0, CX + 5, HEAD_CY - 6, c, l=0.48)
+        cv.rect(CX - 9, HEAD_CY - 5, CX + 9, HEAD_CY - 4, c, l=0.4)
+
+
+def extras(cv, spec, pose):
+    """Per character flourishes that sit on top of everything."""
+    for e in spec.get('extra', []):
+        kind = e[0]
+        if kind == 'pipe':
+            for x in range(int(CX) + 4, int(CX) + 8):
+                cv.dot(x, HEAD_CY + 7, (46, 34, 26))
+            cv.dot(int(CX) + 8, HEAD_CY + 6, (196, 112, 40))
+        elif kind == 'horns':
+            c = hex2rgb(e[1])
+            for sx in (-7, 7):
+                for i in range(4):
+                    cv.dot(CX + sx + (1 if sx > 0 else -1) * (i // 2), 4 - i, shade(c, 0.1 * i))
+        elif kind == 'ears':                # cat / animal ears, POINTED
+            r = Ramp(e[1])
+            # Upright triangles. The old pair splayed outward and down,
+            # which is a bat, not a cat.
+            cv.tri([(CX - 7, 0), (CX - 10, 8), (CX - 3, 7)], r, l=0.6)
+            cv.tri([(CX + 7, 0), (CX + 10, 8), (CX + 3, 7)], r, l=0.5)
+        elif kind == 'roundears':           # bear ears: semicircles
+            r = Ramp(e[1])
+            for side in (-1, 1):
+                cv.sphere(CX + side * 7.5, 5.0, 3.4, 3.4, r, spec=False)
+        elif kind == 'wings':
+            # A pair of shaped wings, big lobe over small, with veins.
+            # Two plain ovals read as balloons tied to her shoulders.
+            r = Ramp(e[1])
+            vein = Ramp(shade(r.base, -0.22))
+            for side in (-1, 1):
+                bx = CX + side * 10
+                cv.sphere(bx + side * 1.5, 21.5, 4.6, 5.6, r, spec=False)
+                cv.sphere(bx + side * 0.5, 28.5, 3.4, 4.0, r, spec=False)
+                for i in range(4):
+                    cv.dot(bx + side * (1 + i * 1.1), 20 + i * 1.3, vein.mid)
+                    cv.dot(bx + side * (0.5 + i * 0.9), 27 + i * 0.9, vein.mid)
+        elif kind == 'cape':
+            r = Ramp(e[1])
+            cv.taper(22, 36, 22, 26, r, folds=3)
+        elif kind == 'monocle':
+            cv.dot(CX + 5, HEAD_CY - 1, (240, 226, 150))
+            cv.dot(CX + 3, HEAD_CY - 1, (240, 226, 150))
+            cv.dot(CX + 4, HEAD_CY - 2, (240, 226, 150))
+            cv.dot(CX + 4, HEAD_CY + 1, (240, 226, 150))
+        elif kind == 'patch':               # eye patch
+            # An oval over ONE eye on a thin strap. The old version was
+            # an eight by four slab that blacked out half his face.
+            blk = Ramp('#141018')
+            cv.sphere(CX - 3.5, HEAD_CY, 3.0, 2.6, blk, spec=False)
+            for x in range(int(CX) - 8, int(CX) + 9):
+                cv.dot(x, HEAD_CY - 3 + (0 if x < CX else 1), blk.lit)
+        elif kind == 'bolt':
+            for sx in (-10, 10):
+                cv.dot(CX + sx, HEAD_CY + 3, (206, 170, 92))
+                cv.dot(CX + sx, HEAD_CY + 4, (150, 118, 56))
+        elif kind == 'breath':
+            # A plume blown UPWARD past his own face. On the crown it
+            # just read as orange hair on a fire eater who was not
+            # breathing anything.
+            hot = Ramp(e[1])
+            core = Ramp('#f8e07a')
+            # It leaves the MOUTH. Rooted at the head's edge it was a
+            # column of fire standing next to a man, which is a torch.
+            for i, (dx, dy, r_) in enumerate(
+                    ((5.0, 19, 1.5), (7.5, 17, 2.2), (10.0, 13, 3.0),
+                     (12.0, 8, 3.2), (12.5, 3, 2.2), (12.0, 0, 1.3))):
+                cv.sphere(CX + dx, dy, r_, r_ * 1.15, hot, spec=True)
+                if i >= 1:
+                    cv.sphere(CX + dx, dy, r_ * 0.45, r_ * 0.6, core, spec=True)
+        elif kind == 'flame':
+            r = Ramp(e[1])
+            # Rooted on the crown. Floating clear of the skull made it read
+            # as a separate object hovering over the character's head.
+            crown_y = HEAD_CY - HEAD_RY
+            for dx, dy, rr in ((0, -1.6, 3.6), (-3.4, 1.0, 2.6), (3.4, 0.6, 2.8)):
+                cv.sphere(CX + dx, crown_y + dy, rr, rr * 1.25, r, spec=True)
+        elif kind == 'shell':               # egg body highlight
+            pass
+        elif kind == 'bandage':
+            r = Ramp(e[1])
+            # A turned up trench collar under the wraps, the other half
+            # of the look: bandages plus a coat he is hiding inside.
+            coat = Ramp(shade(spec.get('shirt', '#4a4a5a'), -0.3))
+            cv.taper(21, 27, 20, 21, coat)
+            for i in range(4):
+                cv.dot(CX - 5 - i * 0.5, 22 + i, coat.lit)
+                cv.dot(CX + 5 + i * 0.5, 22 + i, coat.lit)
+            # Wrapped ON the head, so each turn is clipped to the skull's
+            # width at that row. Flat full width bars turned the head into
+            # a rectangular bucket with no shape under the wrapping.
+            #
+            # And drawn with rect, not cyl: a cylinder one row tall gets
+            # its shading from a normal that points sideways everywhere, so
+            # every band came out dark at both ends and the head read as
+            # corrugated metal.
+            # Only from the brow down. Wrapping the whole skull painted
+            # over the character's own hat, which is drawn first, and the
+            # head came out as a banded bucket with no hat on it at all.
+            for i, yy in enumerate(range(int(HEAD_CY) - 2, int(HEAD_CY) + 9, 2)):
+                half = head_edge(yy, floor=0.34) - (0.8 if i % 2 else 0)
+                cv.rect(CX - half, yy, CX + half, yy, r, l=0.66 if i % 2 else 0.52)
+
+
+# ----------------------------------------------------------- archetypes
+def legs(cv, pants, boot, pose, top=31, bot=38, spread=3):
+    """Three pose variants drive the run cycle."""
+    la, ra = LEG_OFF.get(pose, (0, 0))
+    cv.cyl(CX - spread - 3, top + max(0, la), CX - spread, bot + la, pants)
+    cv.cyl(CX + spread, top + max(0, ra), CX + spread + 3, bot + ra, pants)
+    cv.cyl(CX - spread - 3, bot - 1 + la, CX - spread, bot + la, boot)
+    cv.cyl(CX + spread, bot - 1 + ra, CX + spread + 3, bot + ra, boot)
+
+
+# THE POSES, AS OFFSETS. Every limb in every archetype is a cylinder at a
+# fixed x, so a pose is a vertical offset per arm and per leg: the run cycle
+# pumps them in opposition, the windup throws the pitching arm straight up
+# beside the head and lifts the stride leg, the release drives that arm
+# down and forward over a planted front leg, and the swing (seen from
+# behind) carries both arms up and through. The pitcher was drawn with the
+# idle frame all game before these existed: drawField asked for windup and
+# release and nothing answered.
+#
+# Arm offsets are given at the human amplitude (2 px per run beat); an
+# archetype with shorter arms asks for amp=1 and gets the same shape at
+# half the swing. The windup and release keep their full reach at any amp,
+# because a raised arm that is only raised a pixel is not a raised arm.
+ARM_OFF = {
+    'run1':    (-2, 2),
+    'run2':    (2, -2),
+    'windup':  (1, -7),
+    'release': (-2, 3),
+    'swing':   (-5, -5),
+    # A fielder looking up at a fly with both hands raised for the glove.
+    # Both arms UP is different from the pitcher's windup, which raises
+    # only one and drops the other back. The glove itself is drawn as a
+    # post overlay, so the arms have to reach the sky for it to sit on.
+    'catch':   (-9, -9),
+    # A fielder mid throw to first: front arm out, throwing arm cocked
+    # back and up. This is not the pitcher's release (that follows through
+    # low), because a shortstop throwing across the diamond fires high.
+    'throw':   (2, -6),
+    # THE BATTER'S SWING, IN THREE. He was one frame: the bat coming
+    # round. Now he LOADS (hands back over the rear shoulder, weight on
+    # the back leg), comes through (the old swing frame), and FOLLOWS
+    # (both hands wrapped high across the lead shoulder). Seen from
+    # behind, like everything the batter does.
+    'load':    (-2, -8),
+    'follow':  (-8, -3),
+    # A fielder set for the pitch: hands low and forward toward the knees.
+    'ready':   (4, 4),
+    # the kick for a body that does not draw raised arms: hands up together
+    'kick':    (-4, -4),
+}
+LEG_OFF = {
+    'run1':    (-1, 1),
+    'run2':    (1, -1),
+    'windup':  (-3, 0),
+    'release': (1, -1),
+    'swing':   (0, 0),
+    'catch':   (0, 0),
+    'throw':   (-1, 1),
+    # the load sits back: rear leg planted, front foot light
+    'load':    (-2, 0),
+    'follow':  (0, -1),
+    # THE LEG KICK, the frame every pitcher is photographed in: the
+    # stride leg lifted high, hands together at the chest (see
+    # raised_arms). It goes between the windup and the release, and it is
+    # the one that makes the delivery a motion rather than two poses.
+    'kick':    (-7, 0),
+    'ready':   (-1, -1),
+}
+
+
+def arm_off(pose, amp=2):
+    """(left, right) vertical offset for the arms in this pose."""
+    lo, ro = ARM_OFF.get(pose, (0, 0))
+    if pose in ('run1', 'run2'):
+        return lo * amp // 2, ro * amp // 2
+    return lo, ro
+
+
+def run_off(pose):
+    """The vertical swing the pose gives each arm, as (left, right).
+
+    Anything HELD has to ride it. A magnifying glass, a fishing pole or
+    a wand pinned to fixed coordinates hangs in the air beside a runner
+    whose arms are pumping, which reads as a bug rather than as a prop."""
+    return arm_off(pose, 2)
+
+
+# THE FOUR RAISED POSES, drawn rather than offset.
+#
+# ARM_OFF cannot express any of these, and the reason is geometry rather
+# than tuning. Every archetype hangs its arms at about CX plus or minus 9
+# and every head is drawn AFTER them at a half width of 9.4 or more, so an
+# arm lifted by any amount travels straight up BEHIND the skull and out of
+# the picture. The pitcher's windup and release shipped like that: both
+# were authored as offsets, both drew inside the head, and the frame a
+# player watches more than any other read as the idle with a leg out.
+#
+# So a raised pose gets real coordinates, out at CX plus or minus 11 to 14
+# where nothing covers it. `wide` scales that reach for the archetypes with
+# a bigger head (the hulk's is 9.8) and `sy` moves the shoulder for the
+# ones whose torso sits high or low. Quadrupeds have no arms to raise and
+# do not call this at all: a dragon pitching is a dragon pitching.
+def raised_arms(cv, limb, skin, pose, wide=0, sy=0):
+    w = 12 + wide
+    if pose == 'catch':
+        # Both arms straight up, hands over the cap: a fielder under a fly.
+        for side in (-1, 1):
+            x0 = CX + side * w - 1
+            cv.cyl(x0, 6 + sy, x0 + 2, 22 + sy, limb, round_bot=1)
+            cv.cyl(x0 - 1, 4 + sy, x0 + 3, 7 + sy, skin, round_bot=1)
+        return True
+    if pose == 'throw':
+        # A fielder firing across the diamond: throwing arm cocked high and
+        # back, glove side crossed low at the chest.
+        cv.cyl(CX + w - 4, 12 + sy, CX + w - 1, 23 + sy, limb, round_bot=1)
+        cv.cyl(CX + w - 2, 6 + sy, CX + w + 2, 10 + sy, skin, round_bot=1)
+        cv.cyl(CX - w, 22 + sy, CX - w + 3, 25 + sy, limb, round_bot=1)
+        cv.cyl(CX - w - 2, 24 + sy, CX - w + 2, 27 + sy, skin, round_bot=1)
+        return True
+    if pose == 'windup':
+        # Coiled: ball hand high and BACK over the throwing shoulder, glove
+        # hand tucked tight across the chest. The hand is the highest thing
+        # on the figure, above the cap, which is the whole read at 40px.
+        cv.cyl(CX + w - 2, 10 + sy, CX + w + 1, 23 + sy, limb, round_bot=1)
+        cv.cyl(CX + w - 3, 5 + sy, CX + w + 1, 11 + sy, skin, round_bot=1)
+        cv.cyl(CX - w + 1, 21 + sy, CX - w + 4, 27 + sy, limb, round_bot=1)
+        cv.cyl(CX - w + 2, 26 + sy, CX - w + 6, 29 + sy, skin, round_bot=1)
+        return True
+    if pose == 'release':
+        # Over the top and through: throwing arm driven DOWN and across to
+        # the glove side, hand below the waist, glove arm flung back high.
+        # The silhouette is the MIRROR of the windup, which is what makes
+        # the two frames read as one motion rather than as two poses.
+        cv.cyl(CX - w - 1, 22 + sy, CX - w + 2, 33 + sy, limb, round_bot=1)
+        cv.cyl(CX - w - 2, 32 + sy, CX - w + 2, 36 + sy, skin, round_bot=1)
+        cv.cyl(CX + w - 1, 14 + sy, CX + w + 2, 24 + sy, limb, round_bot=1)
+        cv.cyl(CX + w - 2, 11 + sy, CX + w + 2, 15 + sy, skin, round_bot=1)
+        return True
+    if pose == 'kick':
+        # Gathered: both hands together at the chest, elbows in, the ball
+        # hidden in the glove. The arms come IN rather than out, so the
+        # lifted leg below is the whole silhouette.
+        for side in (-1, 1):
+            x0 = CX + side * 6 - 1
+            cv.cyl(x0, 22 + sy, x0 + 2, 26 + sy, limb, round_bot=1)
+        cv.cyl(CX - 3, 24 + sy, CX + 3, 27 + sy, skin, round_bot=1)
+        return True
+    return False
+
+
+RAISED_POSES = ('catch', 'throw', 'windup', 'release', 'kick')
+
+
+def arms(cv, sleeve, skin, pose, top=24, length=7, out=0):
+    lo, ro = run_off(pose)
+    # Same reason as the hulk's arms: a sleeve in the shirt's own ramp
+    # melts into the shirt. One shade off is all it takes to read.
+    cuff = Ramp(shade(sleeve.base, -0.16))
+    if raised_arms(cv, cuff, skin, pose):
+        return
+    for side, off in ((-1, lo), (1, ro)):
+        x0 = CX + side * (9 + out) - 1
+        cv.cyl(x0, top + off, x0 + 2, top + length + off, cuff, round_bot=1)
+        cv.cyl(x0, top + length + off, x0 + 2, top + length + 2 + off, skin, round_bot=1)
+
+
+def arch_human(cv, spec, pose):
+    skin = Ramp(spec.get('skin', '#f0c088'))
+    shirt = Ramp(spec.get('shirt', '#c93030'))
+    pants = Ramp(spec.get('pants', '#2a3550'))
+    boot = Ramp(spec.get('boot', '#2a2018'))
+    legs(cv, pants, boot, pose, top=30)
+    if not spec.get('noarms'):
+        arms(cv, shirt, skin, pose)
+    cv.cyl(CX - TORSO_HW, 23, CX + TORSO_HW, 30, shirt, round_bot=1)
+    if spec.get('belt'):
+        cv.rect(CX - TORSO_HW, 28, CX + TORSO_HW, 29, Ramp(spec['belt']), l=0.45)
+    # A HEADLESS figure (the Horseman) stops at the collar. Irving's
+    # trooper had his head "carried off by a cannon-ball"; the pumpkin
+    # is under his arm, never on his shoulders.
+    if not spec.get('headless'):
+        cv.sphere(CX, HEAD_CY, HEAD_RX, HEAD_RY, skin)
+
+
+def arch_hulk(cv, spec, pose):
+    """Heavy, wide, long arms: Kong, Franky, Cyclops, Sasquatch, Yeti."""
+    body = Ramp(spec.get('shirt', spec.get('skin', '#3f2716')))
+    skin = Ramp(spec.get('skin', '#a87b4c'))
+    boot = Ramp(spec.get('boot', '#241608'))
+    hand = Ramp(spec.get('hand', shade(body.base, -0.3)))
+    pants = Ramp(spec['pants']) if spec.get('pants') else body
+    cv.sphere(CX, 27.0, 9.2, 7.4, body, spec=False)
+    legs(cv, pants, boot, pose, top=32, bot=38, spread=3)
+    lo, ro = arm_off(pose, 2)
+    # The arms take their OWN ramp, a shade off the body. Drawn in the
+    # body's ramp they share an owner, outline() skips the seam, and the
+    # whole figure reads as one blob with no limbs in it.
+    arm = Ramp(shade(body.base, -0.20))
+    # A wider head (9.8 here against the human's 9.4) needs the raised arm
+    # pushed a pixel further out to clear it.
+    if not raised_arms(cv, arm, hand, pose, wide=1):
+        for side, off in ((-1, lo), (1, ro)):
+            sx = CX + side * 8
+            cv.ball(sx, 23.0 + off, 4.6, 4.2, arm, spec=False)
+            cv.cyl(sx - 2, 23 + off, sx + 2, 33 + off, arm, round_bot=2)
+            cv.ball(sx, 33.5 + off, 3.0, 2.8, hand, spec=False)
+    if spec.get('chest'):
+        cv.sphere(CX, 27.5, 5.4, 4.2, Ramp(spec['chest']), spec=False)
+    # The head is SKIN, not body: for every ape and monster so far the two
+    # were the same color, but Frankenstein wears a jacket, and a jacket
+    # colored head is not a look anyone asked for.
+    cv.sphere(CX, 12.5, 9.8, 8.8, skin)
+    if spec.get('muzzle'):
+        cv.sphere(CX, 16.2, 6.2, 4.0, Ramp(spec['muzzle']))
+
+
+def arch_round(cv, spec, pose):
+    """A body that is mostly one big sphere: Pooh, Humpty, Bunny."""
+    body = Ramp(spec.get('shirt', '#f4c25a'))
+    skin = Ramp(spec.get('skin', body.base))
+    boot = Ramp(spec.get('boot', '#2a2018'))
+    cv.ball(CX, 28.0, 9.6, 8.6, body)
+    legs(cv, body, boot, pose, top=33, bot=38, spread=3)
+    lo, ro = arm_off(pose, 1)
+    limb = Ramp(shade(body.base, -0.18))
+    if not raised_arms(cv, limb, skin, pose, sy=1):
+        for side, off in ((-1, lo), (1, ro)):
+            cv.cyl(CX + side * 10 - 1, 24 + off, CX + side * 10 + 1, 31 + off, body, round_bot=1)
+    cv.sphere(CX, HEAD_CY + 1, HEAD_RX * 0.94, HEAD_RY * 0.94, skin)
+
+
+def arch_egg(cv, spec, pose):
+    """One continuous egg: head and body are the same form."""
+    body = Ramp(spec.get('skin', '#f2e2c4'))
+    boot = Ramp(spec.get('boot', '#3a2818'))
+    band = spec.get('shirt')
+    cv.sphere(CX, 16.0, 10.0, 13.0, body)
+    if band:
+        cv.rect(CX - 9, 22, CX + 9, 24, Ramp(band), l=0.5)
+    lo, ro = arm_off(pose, 1)
+    # The egg has no shoulders, so its raised arms come off the shell low
+    # and stay narrow: out at CX plus or minus 9 rather than 12.
+    if not raised_arms(cv, Ramp(shade(body.base, -0.22)), body, pose, wide=-3, sy=4):
+        for side, off in ((-1, lo), (1, ro)):
+            cv.cyl(CX + side * 4 - 1, 29 + off, CX + side * 4 + 1, 37 + off, body)
+            cv.cyl(CX + side * 4 - 1, 37 + off, CX + side * 4 + 1, 38 + off, boot)
+
+
+def arch_robed(cv, spec, pose):
+    """A figure in a floor length robe: Liberty, Father Time, Witch."""
+    robe = Ramp(spec.get('shirt', '#6db8a2'))
+    skin = Ramp(spec.get('skin', '#f0c088'))
+    cv.taper(21, 38, 12, 24, robe, folds=spec.get('folds', 3))
+    lo, ro = arm_off(pose, 1)
+    if not raised_arms(cv, Ramp(shade(robe.base, -0.18)), skin, pose):
+        for side, off in ((-1, lo), (1, ro)):
+            cv.cyl(CX + side * 8 - 1, 23 + off, CX + side * 8 + 1, 30 + off, robe, round_bot=1)
+            cv.cyl(CX + side * 8 - 1, 30 + off, CX + side * 8 + 1, 32 + off, skin, round_bot=1)
+    cv.sphere(CX, HEAD_CY, HEAD_RX * 0.94, HEAD_RY * 0.94, skin)
+
+
+# A quadruped has no arms to load a bat with, so its answer to the batter's
+# and pitcher's poses is in its legs: weight back on the load and the kick
+# (front legs up, as a horse rears), forward on the follow and the ready.
+# Without this the four legged characters drew the idle for all of them,
+# and the suite is what said so.
+def quad_off(pose):
+    if pose in ('run1', 'load', 'kick'):
+        return 1
+    if pose in ('run2', 'follow', 'ready'):
+        return -1
+    return 0
+
+
+def arch_beast(cv, spec, pose):
+    """Four legged or low slung: dog, chupacabra, nessie, dragon.
+
+    BUILD matters more than color here. Two quadrupeds sharing one body
+    plan read as the same animal painted twice, which is exactly what
+    the rabid dog and the chupacabra were. 'stocky' is a barrel chested
+    dog low to the ground; 'lean' is a long legged, narrow, hungry
+    thing."""
+    body = Ramp(spec.get('skin', '#5a3a20'))
+    boot = Ramp(spec.get('boot', shade(body.base, -0.4)))
+    build = spec.get('build', 'stocky')
+    # The body used to sit so low that only two rows of leg showed under
+    # it, which is why both quadrupeds read as a barrel on castors. It
+    # rides higher now and the legs get six to nine rows to be legs in.
+    if build == 'lean':
+        bw, bh, bcy, legtop, hy, hr = 8.2, 4.4, 24.5, 27, 12.5, 6.8
+        hindx, frontx, thigh = (-7, -2), (2, 7), 3.6
+    else:
+        bw, bh, bcy, legtop, hy, hr = 11.0, 6.2, 26.5, 29, 14.0, 7.8
+        hindx, frontx, thigh = (-8, -3), (2, 7), 4.6
+    cv.sphere(CX, bcy, bw, bh, body, spec=False)
+    off = quad_off(pose)
+    # FRONT and HIND legs are not the same leg. Four identical posts under
+    # a barrel is a table, and it is what made the rabid dog and the
+    # chupacabra read as one animal painted twice however their bodies
+    # differed. A front leg is a straight column off a shoulder; a hind
+    # leg is a thigh, then a shank angled FORWARD off the hock, then a
+    # foot that lands ahead of where the thigh started.
+    for lx in frontx:
+        o = -off
+        cv.sphere(CX + lx, legtop + o, 2.6, 2.4, body, spec=False)
+        cv.cyl(CX + lx - 1, legtop + o, CX + lx + 1, 36 + o, body)
+        cv.cyl(CX + lx - 1, 36 + o, CX + lx + 2, 37 + o, boot)
+    for lx in hindx:
+        o = off
+        hock = legtop + 3
+        cv.sphere(CX + lx, legtop - 1 + o, thigh, thigh * 0.86, body, spec=False)
+        cv.cyl(CX + lx - 1, legtop + o, CX + lx + 1, hock + o, body)
+        cv.cyl(CX + lx, hock + o, CX + lx + 2, 36 + o, body)
+        cv.cyl(CX + lx, 36 + o, CX + lx + 3, 37 + o, boot)
+    # neck, then a forward facing head centred over the body
+    if build == 'lean':
+        cv.cyl(CX - 2, 16, CX + 2, 25, body, round_top=1)
+    else:
+        cv.cyl(CX - 2, 19, CX + 2, 26, body, round_top=1)
+    cv.sphere(CX, hy, hr, hr * 1.08, body)
+    if spec.get('muzzle'):
+        # The muzzle needs its own value, not just its own hue. Drawn in a
+        # near neighbour of the body color, the only thing that showed was
+        # the sphere's rim shading, which read as a dark V scored into the
+        # face rather than as a snout.
+        m = Ramp(shade(spec['muzzle'], 0.18))
+        my = hy + 5.6
+        cv.sphere(CX, my, 5.2 if build != 'lean' else 4.4, 3.8, m)
+        # The seam where the muzzle meets the head is a straight bar two
+        # rows deep across the top of the snout. A round bead below it
+        # left the bar reading as a visor; a wedge sitting ON it reads as
+        # the nose it is.
+        nose = shade(spec['muzzle'], -0.62)
+        ny = int(my) - 2
+        for i, w in enumerate((2, 1, 0)):
+            for dx in range(-w, w + 1):
+                cv.dot(CX + dx, ny + i, nose)
+
+
+def arch_centaur(cv, spec, pose):
+    """Half human, half horse. The beast archetype alone is a quadruped
+    with an animal head, which is a pony, not a centaur."""
+    horse = Ramp(spec.get('pants', '#8b6a3a'))
+    skin = Ramp(spec.get('skin', '#e8b888'))
+    boot = Ramp(spec.get('boot', shade(horse.base, -0.4)))
+    tail = Ramp('#3a2412')
+    for dx, dy in ((10.5, 26), (12, 28), (12.5, 31), (12, 34)):
+        cv.sphere(CX + dx, dy, 1.3, 1.7, tail, spec=False)
+    cv.sphere(CX, 28.0, 10.4, 6.0, horse, spec=False)
+    off = quad_off(pose)
+    for lx in (-8, -3, 3, 8):
+        o = off if lx < 0 else -off
+        cv.cyl(CX + lx - 1, 30 + o, CX + lx + 1, 37 + o, horse)
+        cv.cyl(CX + lx - 1, 36 + o, CX + lx + 1, 37 + o, boot)
+    # the human half, rising from the horse's shoulders, in a tunic
+    cv.cyl(CX - 4, 15, CX + 4, 24, skin, round_top=2)
+    # A tunic that FOLLOWS the torso and flares at the waist. A straight
+    # box across his chest read as a signboard hung round his neck.
+    tunic = Ramp(spec.get('tunic', '#8a4a3a'))
+    cv.taper(19, 26, 7, 12, tunic, folds=2)
+    cv.rect(CX - 3, 18, CX + 3, 18, Ramp(shade(tunic.base, 0.2)), l=0.6)
+    lo, ro = arm_off(pose, 1)
+    for side, o in ((-1, lo), (1, ro)):
+        cv.cyl(CX + side * 6 - 1, 17 + o, CX + side * 6 + 1, 23 + o, skin, round_bot=1)
+    cv.sphere(CX, 9.5, 6.8, 7.4, skin)
+    cv.sphere(CX, 7.6, 6.4, 4.6, Ramp('#5a3a1c'), ymax=7)   # hair
+
+
+def arch_nessie(cv, spec, pose):
+    """The Loch Ness silhouette: humps low in the water and a long neck
+    rising to a small head. She was drawn thin and small inside the frame,
+    so she read as a lizard on a stick; the neck is the widest thing about
+    her after the body and it has to be built like a neck, tapering."""
+    body = Ramp(spec.get('skin', '#2a7a5a'))
+    lite = Ramp(spec.get('muzzle') or '#4aa878')
+    off = quad_off(pose)
+    # the tail, curling up and away behind the second hump
+    for i, (dx, dy, r) in enumerate(((10, 32, 3.0), (13, 30, 2.4),
+                                     (14, 27, 1.8), (14, 24, 1.3))):
+        cv.sphere(CX + dx, dy + (off if i > 1 else 0), r, r * 0.9, body,
+                  spec=False)
+    cv.sphere(CX + 7.5, 31.0, 5.0, 3.4, body, spec=False)   # second hump
+    cv.sphere(CX - 2.0, 30.5, 9.8, 5.8, body, spec=False)   # main hump
+    for side, o in ((-1, off), (1, -off)):                  # flippers
+        cv.sphere(CX + side * 6, 35.5 + o, 3.4, 2.2, body, spec=False)
+    # THE NECK, tapering in three stages and leaning as it rises, so it
+    # reads as a curve of muscle rather than a pipe stuck in a hump
+    cv.cyl(CX - 5, 20, CX + 2, 31, body)
+    cv.cyl(CX - 3, 12, CX + 3, 22, body)
+    cv.cyl(CX, 6, CX + 5, 14, body, round_top=2)
+    cv.sphere(CX + 3.4, 6.0, 5.2, 4.6, body)                # the head
+    cv.sphere(CX + 4.6, 8.4, 3.4, 2.0, lite)                # the muzzle
+    # her face lives here: the head is off centre, so face() cannot
+    for sx in (-2, 2):
+        x = int(CX + 3 + sx)
+        cv.dot(x - 1, 4, (250, 250, 252))
+        cv.dot(x, 4, (250, 250, 252))
+        cv.dot(x - 1, 5, (250, 250, 252))
+        cv.dot(x, 5, (24, 20, 30))
+    for dx in (2, 4, 6):                                    # a small smile
+        cv.dot(CX + dx, 10, shade(lite.base, -0.45))
+    cv.dot(CX + 3, 11, shade(lite.base, -0.45))
+    cv.dot(CX + 5, 11, shade(lite.base, -0.45))
+    # a run of lighter scutes down the neck and over the humps
+    for dx, dy in ((0, 14), (-2, 19), (-4, 24), (-6, 29), (1, 31), (8, 30)):
+        cv.dot(CX + dx, dy, lite.mid)
+        cv.dot(CX + dx + 1, dy, lite.lit)
+
+
+def arch_dragon(cv, spec, pose):
+    """A chunky dragon SITTING: lighter belly, a wing nub, and the thick
+    tail curling up beside him."""
+    body = Ramp(spec.get('skin', '#2e8a3a'))
+    belly = Ramp(spec.get('muzzle') or '#8fd06a')
+    for dx, dy, r_ in ((8, 34, 2.6), (11, 32, 2.4), (13, 29, 2.2),
+                       (13.5, 25.5, 1.8), (12.5, 22.5, 1.4)):
+        cv.sphere(CX + dx, dy, r_, r_, body, spec=False)     # the tail curl
+    cv.sphere(CX + 12.5, 21.0, 1.0, 1.0, belly, spec=False)  # tail tip
+    off = quad_off(pose)
+    for side, o in ((-1, off), (1, -off)):
+        cv.cyl(CX + side * 5 - 1, 32 + o, CX + side * 5 + 1, 38 + o, body, round_bot=1)
+    cv.sphere(CX - 1, 27.5, 9.0, 7.6, body, spec=False)      # sitting body
+    cv.sphere(CX - 2, 28.5, 5.4, 6.0, belly, spec=False)     # the belly
+    wing = Ramp(shade(body.base, -0.15))
+    cv.tri([(CX - 13, 14), (CX - 5, 22), (CX - 13, 26)], wing, l=0.55)
+    # belly ridge lines
+    ridge = Ramp(shade(belly.base, -0.14))
+    for yy in (26, 28, 30):
+        t = (yy - 28.5) / 6.0
+        halfw = 5.4 * math.sqrt(max(0.0, 1 - t * t)) - 0.8
+        if halfw > 1:
+            cv.rect(CX - 2 - halfw, yy, CX - 2 + halfw, yy, ridge, l=0.5)
+    cv.sphere(CX, 12.0, 8.2, 7.2, body)                      # broad head
+    cv.sphere(CX, 15.8, 5.6, 3.2, belly)                     # big muzzle
+    cv.dot(CX - 2, 15, shade(body.base, -0.4))               # nostrils
+    cv.dot(CX + 2, 15, shade(body.base, -0.4))
+    cv.dot(CX - 3, 17, (245, 243, 240))                      # little fangs
+    cv.dot(CX + 3, 17, (245, 243, 240))
+
+
+def arch_cat(cv, spec, pose):
+    body = Ramp(spec.get('skin', '#141018'))
+    belly = Ramp(spec.get('chest', '#eaeaea'))
+    cv.ball(CX, 27.0, 8.0, 9.4, body, spec=False)
+    cv.ball(CX, 28.0, 4.4, 5.4, belly, spec=False)
+    legs(cv, body, body, pose, top=33, bot=38, spread=3)
+    cv.sphere(CX, 13.0, 9.4, 8.2, body, spec=False)
+    # A cat drawn in near black loses its whole face. Give it a lighter
+    # muzzle so the eyes, nose and whiskers have something to sit on.
+    # muzzle=None (the back view) suppresses the whole face group.
+    if spec.get('muzzle', belly.base) is not None:
+        muz = Ramp(spec.get('muzzle', belly.base))
+        cv.sphere(CX, 16.4, 5.6, 3.6, muz, spec=False)
+        cv.dot(CX, 15, shade(muz.base, -0.45))
+        cv.dot(CX - 1, 15, shade(muz.base, -0.30))
+        for wx in (-5, -4, 4, 5):
+            cv.dot(CX + wx, 17, shade(muz.base, -0.35))
+
+
+def arch_bird(cv, spec, pose):
+    body = Ramp(spec.get('skin', '#e04520'))
+    wing = Ramp(spec.get('chest', '#f4922a'))
+    cv.ball(CX, 25.0, 8.6, 9.4, body)
+    off = 2 if pose == 'run1' else (-2 if pose == 'run2' else 0)
+    # Wings are what a bird has instead of arms: both spread and lifted on
+    # the load and the kick, both dropped and tucked on the follow and the
+    # ready. Before this every pose drew the phoenix standing still.
+    lift = -4 if pose in ('load', 'kick') else (3 if pose in ('follow', 'ready') else 0)
+    spread = 2 if pose in ('load', 'kick') else 0
+    if not spec.get('nowings'):
+        for side in (-1, 1):
+            cv.sphere(CX + side * (10 + spread), 24 + side * off + lift, 4.6, 7.4, wing, spec=False)
+    cv.cyl(CX - 4, 31, CX - 2, 38, wing)
+    cv.cyl(CX + 2, 31, CX + 4, 38, wing)
+    cv.sphere(CX, 12.0, 8.4, 7.6, body)
+
+
+ARCH = {
+    'human': arch_human, 'hulk': arch_hulk, 'round': arch_round,
+    'egg': arch_egg, 'robed': arch_robed, 'beast': arch_beast,
+    'cat': arch_cat, 'bird': arch_bird, 'centaur': arch_centaur,
+    'nessie': arch_nessie, 'dragon': arch_dragon,
+}
+
+
+def back_head(cv, spec):
+    """The back of the head: hair covers the whole rear of the skull down
+    to the collar, and there is no face. Characters with no hair (bald,
+    or a nonhuman skull) just show the skull itself, which the archetype
+    already drew."""
+    h = spec.get('hair')
+    if not h or spec.get('hairstyle') == 'bald':
+        return
+    r = Ramp(h)
+    cv.sphere(CX, HEAD_CY - 0.4, HEAD_RX * 0.99, HEAD_RY * 0.96, r,
+              spec=False, ymax=HEAD_CY + 6)
+    kind = spec.get('hairstyle', 'short')
+    if kind in ('long', 'braids'):
+        sidelock(cv, r, -1, HEAD_CY - 2, HEAD_CY + 9, 2.4)
+        sidelock(cv, r, 1, HEAD_CY - 2, HEAD_CY + 9, 2.4)
+
+
+# Extras that are anchored to the face and make no sense from behind.
+FRONT_ONLY_EXTRAS = {'pipe', 'monocle', 'patch'}
+
+
+# ------------------------------------------------------- signatures
+# The iconic thing about a character, drawn bespoke. The archetype
+# system keeps fifty four figures consistent, but consistency is also
+# how Popeye loses his forearms: canonical pixel art of these
+# characters leads with the one feature everyone recognizes, so each
+# entry here draws that feature over (or under, via 'pre') the shared
+# body. Keyed by character key; 'pre' runs before the archetype (a
+# cape hangs BEHIND the body), 'post' after everything but the
+# outline. Both receive (cv, spec, body_pose, back).
+
+def sig_kong(cv, spec, pose, back):
+    body = Ramp(spec.get('skin', '#3f2716'))
+    muz = Ramp(spec.get('muzzle', '#b0855a'))
+    for side in (-1, 1):
+        ex = CX + side * (HEAD_RX * 0.98)
+        cv.sphere(ex, 9.5, 2.6, 2.8, body, spec=False)
+        if not back:
+            cv.sphere(ex, 9.5, 1.2, 1.4, muz, spec=False)
+    if back:
+        return
+    # The muzzle takes over the whole lower face, the way the reference
+    # ape's does, with the eyes perched right on its top edge and the
+    # big happy grin across it.
+    cv.sphere(CX, 17.2, 7.0, 4.8, muz)
+    xC = int(CX)
+    for side in (-1, 1):
+        for dx in (1, 2, 3):
+            for dy in (11, 12, 13):
+                cv.dot(xC + side * dx, dy, (250, 250, 252))
+    cv.dot(xC, 12, (250, 250, 252))
+    for x in (xC - 1, xC + 1):
+        cv.dot(x, 12, (36, 28, 40))
+        cv.dot(x, 13, (36, 28, 40))
+    cv.dot(CX - 2, 15, shade(muz.base, -0.4))
+    cv.dot(CX + 2, 15, shade(muz.base, -0.4))
+    dk = shade(body.base, -0.5)
+    cv.dot(CX - 5, 16, dk)
+    cv.dot(CX + 5, 16, dk)
+    cv.dot(CX - 4, 17, dk)
+    cv.dot(CX + 4, 17, dk)
+    for x in range(int(CX) - 3, int(CX) + 4):
+        cv.dot(x, 17, (245, 243, 240))
+        cv.dot(x, 18, (245, 243, 240))
+    cv.dot(CX - 1, 19, (170, 60, 58))
+    cv.dot(CX, 19, (170, 60, 58))
+    cv.dot(CX + 1, 19, (170, 60, 58))
+
+
+def sig_franky(cv, spec, pose, back):
+    skin = Ramp(spec.get('skin', '#c9b46e'))
+    # A long neck, because he is stitched together, but NO BOLTS: the
+    # electrodes are Universal's 1931 makeup, not Shelley's. The novel
+    # gives the seams and the yellow skin, and those are what he gets.
+    cv.cyl(CX - 4, 20, CX + 4, 23, skin)
+    if not back:
+        # the stitch scar across one cheek
+        st = shade(skin.base, -0.5)
+        for dy in (14, 15, 16, 17):
+            cv.dot(CX - 7, dy, st)
+        cv.dot(CX - 8, 15, st)
+        cv.dot(CX - 6, 15, st)
+        cv.dot(CX - 8, 17, st)
+        cv.dot(CX - 6, 17, st)
+        # suit lapels over a white shirt V
+        coat = Ramp(shade(spec.get('shirt', '#3f2a1c'), -0.25))
+        for i in range(4):
+            cv.dot(CX - 2 - i, 24 + i, coat.mid)
+            cv.dot(CX - 1 - i, 24 + i, coat.dark)
+            cv.dot(CX + 2 + i, 24 + i, coat.mid)
+            cv.dot(CX + 1 + i, 24 + i, coat.dark)
+        for dy in (24, 25, 26):
+            cv.dot(CX, dy, (232, 232, 234))
+        cv.dot(CX, 27, (40, 40, 48))
+    ink = Ramp('#181418')
+    # "His hair was of a lustrous black, and flowing." Not a flat top:
+    # a rounded skull under long black hair that falls past the jaw on
+    # both sides, which is the one line of description everybody who has
+    # only seen the film gets wrong.
+    cv.sphere(CX, HEAD_CY - 1.4, HEAD_RX * 1.02, HEAD_RY, ink, spec=False, ymax=9)
+    # The locks stop at the jaw and stay narrow. Run past it and the hair
+    # closes over the face: he had one drawn to the collar and there was
+    # no monster in there, just a black oval with a chin.
+    for side in (-1, 1):
+        sidelock(cv, ink, side, 8, 16, 1.8)
+    # a centre parting, so the black mass reads as hair and not a hood
+    for dy in range(3, 8):
+        cv.dot(CX, dy, shade(ink.base, 0.35))
+    if back:
+        cv.sphere(CX, HEAD_CY, HEAD_RX * 0.99, HEAD_RY * 0.96, ink,
+                  spec=False, ymax=HEAD_CY + 4)
+        return
+
+
+def sig_popeye(cv, spec, pose, back):
+    skin = Ramp(spec.get('skin', '#f0c088'))
+    lo, ro = arm_off(pose, 2)
+    sleeve = Ramp(shade(spec.get('shirt', '#e9e9ea'), -0.16))
+    for side, off in ((-1, lo), (1, ro)):
+        ax = CX + side * 10.5
+        # THE forearms. They have to GROW out of a normal upper arm, or
+        # they read as two mittens floating beside him: short sleeve,
+        # then the swell, then the fist.
+        cv.cyl(CX + side * 8 - 1, 23 + off, CX + side * 8 + 1, 27 + off, sleeve, round_bot=1)
+        cv.ball(ax, 29.5 + off, 3.8, 5.4, skin, spec=False)
+        cv.ball(ax + side * 0.5, 34.5 + off, 2.8, 2.8,
+                Ramp(shade(skin.base, -0.12)), spec=False)
+    # THE JAW, which is the entire character. A skull ellipse tapers to
+    # about four pixels wide by row 22; his does the opposite, so the
+    # lantern chin is hung UNDER the face as its own mass, wider at row
+    # 21 than the cheeks are. Same ramp as the skin so no seam cuts him
+    # in half, and drawn before the collar so the collar sits in front.
+    if not back:
+        # THE JAW. A skull ellipse tapers to four pixels wide by row 22;
+        # his does the opposite. Hung under the face as its own mass so
+        # the silhouette goes SQUARE at the chin, which is the character.
+        cv.sphere(CX, 19.5, 7.8, 4.4, skin, spec=False)
+    # sailor collar, low enough that the chin clears it
+    col = Ramp('#2a4a8a')
+    cv.rect(CX - 5, 24, CX + 5, 25, col, l=0.55)
+    if back:
+        return
+    dk = shade(skin.base, -0.55)
+    mid = shade(skin.base, -0.32)
+    lit = skin.lit
+    # BOTH eyes are shut. He has one open eye in no drawing of him: the
+    # squint IS the face. The lash slopes DOWN toward the nose, which is
+    # what separates a squint from two flat bars ruled across a head.
+    for side in (-1, 1):
+        for dx in (4, 5, 6):
+            cv.dot(CX + side * dx, 12, dk)
+        cv.dot(CX + side * 3, 13, dk)
+        cv.dot(CX + side * 7, 13, dk)
+    # THE NOSE, and it has to be a bulb with a hard edge on it. Drawn as
+    # lighter skin on lighter skin it vanished: at this size a feature
+    # exists only if something dark closes it off.
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 14, lit)
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(CX + dx, 15, lit)
+        cv.dot(CX + dx, 16, skin.mid)
+    cv.dot(CX - 2, 15, WHITEISH)
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 17, dk)
+    for side in (-1, 1):
+        cv.dot(CX + side * 2, 17, mid)
+        cv.dot(CX + side * 3, 16, mid)
+    # the laugh: wide open, top teeth showing, corners hooked up ABOVE
+    # the lip line. A closed line here reads as a boxer, not a sailor.
+    mdk = (72, 32, 28)
+    cv.dot(CX - 5, 18, mdk)
+    cv.dot(CX + 5, 18, mdk)
+    for dx in range(-4, 5):
+        cv.dot(CX + dx, 19, mdk)
+    for dx in range(-3, 4):
+        cv.dot(CX + dx, 20, (246, 244, 240))
+    for dx in range(-2, 3):
+        cv.dot(CX + dx, 21, (150, 52, 54))
+    # two full rows of chin below it, which is the whole silhouette
+    cv.dot(CX, 22, shade(skin.base, -0.16))
+    for side in (-1, 1):
+        cv.dot(CX + side * 5, 21, mid)
+    # anchor tattoo on the right forearm
+    ink = (60, 74, 108)
+    cv.dot(CX + 10, 28, ink)
+    cv.dot(CX + 10, 29, ink)
+    cv.dot(CX + 9, 30, ink)
+    cv.dot(CX + 10, 30, ink)
+    cv.dot(CX + 11, 30, ink)
+    # the corncob pipe, CLENCHED in the corner of the mouth and angled
+    # up, which is where it lives. Beside the cheek it read as a stick
+    # somebody was holding near him.
+    wood = (168, 116, 48)
+    cv.dot(CX + 6, 18, wood)
+    cv.dot(CX + 7, 17, wood)
+    cv.dot(CX + 8, 16, wood)
+    cv.cyl(CX + 9, 12, CX + 10, 16, Ramp('#d9b45e'), spec=False)
+    cv.dot(CX + 11, 10, (206, 210, 216))
+    cv.dot(CX + 12, 8, (176, 182, 192))
+
+
+def sig_cape_pre(cv, spec, pose, back):
+    if back:
+        return              # from behind the cape covers the body: see post
+    cape = Ramp(spec.get('capecolor', '#1a1220'))
+    cv.taper(20, 37, 14, 30, cape, folds=2)
+    cv.rect(CX - 14, 36, CX + 14, 37, Ramp(spec.get('capehem', '#7a1620')), l=0.5)
+
+
+def sig_cape_post(cv, spec, pose, back):
+    cape = Ramp(spec.get('capecolor', '#1a1220'))
+    if not back:
+        # widow's peak: the hairline comes to a point on the forehead
+        ink = Ramp(spec.get('hair', '#141018'))
+        cv.dot(CX, 9, ink.mid)
+        cv.dot(CX - 1, 8, ink.mid)
+        cv.dot(CX, 8, ink.mid)
+        cv.dot(CX + 1, 8, ink.mid)
+    if back:
+        cv.taper(18, 38, 16, 30, cape, folds=3)
+        cv.rect(CX - 14, 37, CX + 14, 38, Ramp(spec.get('capehem', '#7a1620')), l=0.5)
+    # The high collar frames the SHOULDERS. Drawn up to row 8 it rose
+    # past his ears and read as two black horns on his head.
+    cv.tri([(CX - 9, 25), (CX - 13, 16), (CX - 6, 22)], cape, l=0.5)
+    cv.tri([(CX + 9, 25), (CX + 13, 16), (CX + 6, 22)], cape, l=0.4)
+
+
+def sig_dracula(cv, spec, pose, back):
+    # STOKER'S COUNT. "A tall old man, clean shaven save for a long white
+    # moustache, and clad in black from head to foot, without a single
+    # speck of colour about him anywhere." Bushy white brows that meet,
+    # pointed ears, a domed pale forehead with the hair scanty at the
+    # temples, ruddy lips and sharp teeth over them. No cape, no widow's
+    # peak, no red lining: those are the 1931 film's, which is not free.
+    skin = Ramp(spec.get('skin', '#e9e4dc'))
+    white = Ramp('#f2f0ea')
+    # the long black coat to the knee, over the black trousers
+    coat = Ramp('#141418')
+    cv.taper(23, 34, 7.5, 9.5, coat, folds=2)
+    # pointed ears, out past the skull on both facings
+    for side in (-1, 1):
+        cv.tri([(CX + side * 8, 12), (CX + side * 12, 7), (CX + side * 9, 15)], skin, l=0.5)
+    if back:
+        return
+    # THE MOUSTACHE: long, white, and drooping past the mouth
+    for dx in range(-5, 6):
+        cv.dot(CX + dx, HEAD_CY + 4, white.mid)
+    for side in (-1, 1):
+        cv.dot(CX + side * 5, HEAD_CY + 5, white.mid)
+        cv.dot(CX + side * 6, HEAD_CY + 6, white.dark)
+        cv.dot(CX + side * 6, HEAD_CY + 7, white.dark)
+    # the brows: massive, white, meeting over the nose
+    for dx in range(-6, 7):
+        cv.dot(CX + dx, HEAD_CY - 3 - (1 if abs(dx) > 3 else 0), white.mid)
+    # ruddy lips under the moustache
+    cv.dot(CX - 1, HEAD_CY + 6, (168, 50, 50))
+    cv.dot(CX, HEAD_CY + 6, (168, 50, 50))
+    cv.dot(CX + 1, HEAD_CY + 6, (168, 50, 50))
+    # the long pointed nails on the hands
+    lo, ro = run_off(pose)
+    for side, off in ((-1, lo), (1, ro)):
+        for dx in (-1, 0, 1):
+            cv.dot(CX + side * 9 + dx, 34 + off, (220, 214, 200))
+
+
+def sig_liberty(cv, spec, pose, back):
+    skin = Ramp(spec.get('skin', '#6db8a2'))
+    ax = CX + 9.5
+    # The arm has to reach the SHOULDER. Starting at row 22 it floated
+    # in the top corner with nothing holding it up.
+    cv.cyl(ax - 1, 9, ax + 1, 25, skin, round_bot=1)
+    cv.sphere(CX + 7, 24.5, 3.2, 3.0, skin, spec=False)   # the shoulder
+    cv.rect(ax - 2.5, 7, ax + 2.5, 8, Ramp('#3f7f6d'), l=0.5)
+    cv.sphere(ax, 3.4, 2.6, 3.4, Ramp('#f4b03a'), spec=True)  # the flame
+    cv.dot(ax, 3, (255, 248, 225))
+    # the tablet, held against her left side
+    tab = Ramp('#b8a888')
+    cv.rect(CX - 12, 25, CX - 8, 30, tab, l=0.6)
+    cv.rect(CX - 12, 25, CX - 12, 30, Ramp('#8a7a5c'), l=0.4)
+
+
+def sig_leafhem(cv, spec, pose, back):
+    # THE LEAF HEM. A tunic of leaves ends in points, not a straight
+    # line: a row of darker leaf tips hanging off the bottom of the shirt,
+    # plus a lighter vein on the chest, so the green reads as foliage
+    # rather than as a jersey.
+    leaf = Ramp(shade(spec.get('shirt', '#7a9a3a'), -0.28))
+    for i, dx in enumerate((-6, -3, 0, 3, 6)):
+        tip = 32 if i % 2 else 31
+        cv.tri([(CX + dx - 1.5, 29.5), (CX + dx + 1.5, 29.5), (CX + dx, tip)], leaf, l=0.5)
+    if not back:
+        vein = shade(spec.get('shirt', '#7a9a3a'), 0.3)
+        for dy in range(24, 29):
+            cv.dot(CX, dy, vein)
+        cv.dot(CX - 1, 26, vein); cv.dot(CX + 1, 25, vein)
+
+
+def sig_peter(cv, spec, pose, back):
+    # BARRIE'S PETER, 1911: "clad in skeleton leaves and the juices that
+    # ooze out of trees", barefoot, with tousled hair and no hat at all.
+    # The feathered cap and the bright green are the 1953 film's. What he
+    # carries is the pipes: Bedford draws him playing them, and they are
+    # the one prop that says which boy in a leaf tunic this is.
+    sig_leafhem(cv, spec, pose, back)
+    # leaves in the hair, a ragged crown of them
+    leaf = Ramp('#5f7a2e')
+    for dx, dy in ((-7, 4), (-3, 2), (2, 1), (6, 3), (9, 6)):
+        cv.tri([(CX + dx - 1.5, dy + 2), (CX + dx + 1.5, dy + 2), (CX + dx, dy - 1)], leaf, l=0.55)
+    # a second row of leaf points on the tunic, so it reads as leaves all
+    # the way down rather than a shirt with a fringe
+    leaf2 = Ramp(shade(spec.get('shirt', '#6f7a3a'), -0.2))
+    for dx in (-5, -1, 3, 7):
+        cv.tri([(CX + dx - 1.5, 26), (CX + dx + 1.5, 26), (CX + dx, 28)], leaf2, l=0.5)
+    if back:
+        return
+    # THE PAN PIPES, held up at his mouth in the right hand: five reeds
+    # of falling length, bound with a bar
+    reed = Ramp('#c8a86a')
+    o = run_off(pose)[1]
+    for i, h in enumerate((5, 4, 3, 3, 2)):
+        x = CX + 8 + i
+        cv.cyl(x, 16 - h + o, x, 18 + o, reed, spec=False)
+    cv.rect(CX + 8, 17 + o, CX + 12, 17 + o, Ramp('#7a5a2a'), l=0.5)
+
+
+
+
+
+
+def sig_paulbunyan(cv, spec, pose, back):
+    # BUFFALO PLAID. A lumberjack in a plain red shirt is a man on his way
+    # to a barn dance: the black grid over the red is the entire read, and
+    # it has to sit on the torso on both facings.
+    red = spec.get('shirt', '#a8302c')
+    blk = shade(red, -0.62)
+    lt = shade(red, 0.22)
+    for y in range(23, 31):
+        for x in range(int(CX) - 7, int(CX) + 8):
+            if y % 3 == 0 or x % 3 == 0:
+                cv.dot(x, y, blk if (y % 3 == 0 and x % 3 == 0) else shade(red, -0.34))
+            elif (x + y) % 6 == 1:
+                cv.dot(x, y, lt)
+    # THE AXE, over the shoulder: a double bit head on a long haft.
+    # The head sits OUT past the shoulder and low, at chest height. Up at
+    # row 15 it landed on his own skull and read as a hat.
+    o = run_off(pose)[1]
+    haft = (146, 100, 52)
+    for i in range(10):
+        cv.dot(CX + 9 + i * 0.22, 34 - i * 1.05 + o,
+               haft if i % 3 else shade(haft, -0.3))
+    steel = Ramp('#9aa2ae')
+    hx, hy = CX + 11, 24 + o
+    cv.sphere(hx, hy, 1.6, 2.8, steel, spec=False)
+    cv.tri([(hx - 2.8, hy - 2.6), (hx - 2.8, hy + 2.6), (hx, hy)], steel, l=0.72)
+    cv.tri([(hx + 2.8, hy - 2.6), (hx + 2.8, hy + 2.6), (hx, hy)], steel, l=0.52)
+
+
+def sig_pinocchio(cv, spec, pose, back):
+    # HE IS MADE OF WOOD, and at this size the only way to say so is the
+    # GRAIN and the JOINTS. No long nose: it was asked for without one, and
+    # it was never the interesting half of him.
+    wood = spec.get('skin', '#d9a860')
+    grain = shade(wood, -0.30)
+    # grain running down the legs, which are bare
+    for side in (-1, 1):
+        for dy in range(31, 38):
+            if dy % 3:
+                cv.dot(CX + side * 4, dy, grain)
+    # the marionette joints: a dark pin at each shoulder, elbow and knee
+    lo, ro = run_off(pose)
+    pin = shade(wood, -0.55)
+    hi = shade(wood, 0.32)
+    for side, off in ((-1, lo), (1, ro)):
+        for jy in (24, 29):
+            cv.dot(CX + side * 9, jy + off, pin)
+            cv.dot(CX + side * 9, jy + 1 + off, pin)
+            cv.dot(CX + side * 8, jy + off, hi)
+        cv.dot(CX + side * 4, 33, pin)
+        cv.dot(CX + side * 4, 34, pin)
+    if back:
+        return
+    # THE FLOWERED PAPER JACKET, Collodi's: white paper printed with
+    # little flowers, which is the one garment every Mazzanti and
+    # Chiostri plate agrees on, and the marionette strings at the
+    # shoulders
+    for dx, dy, col in ((-4, 25, (200, 48, 43)), (2, 24, (59, 93, 168)), (-1, 27, (59, 93, 168)),
+                        (5, 27, (200, 48, 43)), (-5, 29, (59, 93, 168)), (3, 30, (200, 48, 43))):
+        cv.dot(CX + dx, dy, col)
+        cv.dot(CX + dx, dy - 1, (232, 200, 90))
+    st = (232, 226, 210)
+    for side in (-1, 1):
+        for dy in (18, 19, 20):
+            cv.dot(CX + side * 8, dy, st)
+
+
+def sig_golem(cv, spec, pose, back):
+    # WET CLAY, roughly finished. The cracks and the thumb seams are what
+    # separate him from every other big grey monster: he was MADE, badly,
+    # in a hurry, by hand. Wegener's 1920 Golem adds the two things the
+    # eye remembers: the bowl cut sculpted as solid clay, square around
+    # the face, and the star of the shem fixed on his chest.
+    clay = spec.get('skin', '#8a6a52')
+    bowl = Ramp('#4a3a2a')
+    cv.sphere(CX, HEAD_CY - 2.0, HEAD_RX * 1.04, HEAD_RY * 0.98, bowl, spec=False, ymax=HEAD_CY - 3)
+    cv.rect(CX - 9, HEAD_CY - 3, CX + 9, HEAD_CY - 3, bowl, l=0.42)
+    for side in (-1, 1):
+        cv.rect(CX + side * 9, HEAD_CY - 3, CX + side * 9, HEAD_CY + 3, bowl, l=0.42)
+    # the wide belt
+    cv.rect(CX - 8, 30, CX + 8, 31, Ramp('#3a2a1a'), l=0.45)
+    if not back:
+        star = (201, 162, 39)
+        for dx, dy in ((0, -2), (0, -1), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (0, 1), (0, 2), (-1, -1), (1, -1), (-1, 1), (1, 1)):
+            cv.dot(CX + dx, 26 + dy, star)
+    crack = shade(clay, -0.48)
+    seam = shade(clay, 0.20)
+    for x, y, n in ((-6, 25, 4), (3, 27, 5), (-2, 32, 3), (5, 21, 3)):
+        for i in range(n):
+            cv.dot(CX + x + i * 0.7, y + i, crack)
+    for y in (24, 28, 33):
+        for x in range(int(CX) - 7, int(CX) + 8, 3):
+            cv.dot(x, y, seam)
+    if back:
+        return
+    # THE WORD OF LIFE, cut into the forehead. Three carved marks: real
+    # letters are illegible at this size and a smear would be worse, so it
+    # is drawn as an inscription rather than as text.
+    ink = shade(clay, -0.66)
+    for dy in (7, 8, 9):
+        cv.dot(CX - 3, dy, ink)
+        cv.dot(CX + 3, dy, ink)
+    cv.dot(CX, 7, ink)
+    cv.dot(CX, 8, ink)
+    cv.dot(CX, 9, ink)
+    cv.dot(CX - 1, 8, ink)
+    cv.dot(CX + 1, 8, ink)
+
+
+def sig_invisible(cv, spec, pose, back):
+    # Wells gives him one thing that is not bandage or goggle: "a shiny
+    # pink nose" poking out of the wrappings, and it is the only colour
+    # on the whole face.
+    if back:
+        return
+    for dx, dy in ((-1, 0), (0, 0), (1, 0), (0, 1)):
+        cv.dot(CX + dx, HEAD_CY + 3 + dy, (232, 160, 160))
+    cv.dot(CX, HEAD_CY + 3, (244, 190, 190))
+
+
+def sig_ichabod(cv, spec, pose, back):
+    # "HUGE EARS", says Irving, and a neck to match: he is drawn lank or he
+    # is not drawn. The ears stick out past the skull on both facings and
+    # the neck is a full four rows of it.
+    skin = Ramp(spec.get('skin', '#f0d8b8'))
+    for side in (-1, 1):
+        cv.sphere(CX + side * 8, 14.0, 2.2, 3.0, skin, spec=False)
+        cv.dot(CX + side * 8, 14, shade(skin.base, -0.34))
+    cv.cyl(CX - 2, 19, CX + 2, 23, skin)
+    if back:
+        return
+    # the schoolmaster's book, held under one arm
+    o = run_off(pose)[0]
+    bk = Ramp('#6a3a2a')
+    cv.rect(CX - 12, 27 + o, CX - 9, 32 + o, bk, l=0.55)
+    for dy in range(27, 33):
+        cv.dot(CX - 9, dy + o, (228, 222, 206))
+    # a white stock at the throat, which is the one bright thing on him
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(CX + dx, 22, (238, 234, 224))
+
+
+def sig_longjohn(cv, spec, pose, back):
+    # ONE LEG. The archetype draws two, so the coat goes over the top of
+    # them: a long tailed sea coat down to the boot tops, one boot showing
+    # under it, and the CRUTCH doing the work on the other side.
+    coat = Ramp(spec.get('shirt', '#2a4a7a'))
+    cv.taper(23, 36, 13, 17, coat, folds=2)
+    o = run_off(pose)[0]
+    # THE CRUTCH, from under the armpit to the ground
+    wood = (150, 104, 56)
+    dk = (104, 70, 36)
+    for dy in range(26, 38):
+        cv.dot(CX - 9, dy, wood if dy % 3 else dk)
+    cv.rect(CX - 11, 24 + o, CX - 7, 25 + o, Ramp('#96683a'), l=0.6)
+    cv.rect(CX - 11, 37, CX - 7, 38, Ramp('#5a3c20'), l=0.5)
+    # the one boot he has left, planted on the other side
+    cv.cyl(CX + 2, 35, CX + 6, 38, Ramp(spec.get('boot', '#241c14')), round_bot=1)
+    if back:
+        return
+    # gold buttons down the coat
+    for dy in (25, 28, 31):
+        cv.dot(CX - 3, dy, (208, 168, 60))
+        cv.dot(CX + 3, dy, (208, 168, 60))
+    # CAPTAIN FLINT on the shoulder. Green body, red head, one white eye:
+    # three colours is all a parrot needs to be a parrot.
+    px, py = CX + 9, 18
+    cv.sphere(px, py, 2.6, 3.0, Ramp('#2f9a4a'), spec=False)
+    cv.sphere(px, py - 3, 1.8, 1.8, Ramp('#c93a2a'), spec=False)
+    cv.dot(px + 1, py - 3, (250, 250, 252))
+    cv.dot(px + 2, py - 2, (232, 178, 48))
+    for i in range(3):
+        cv.dot(px + 1 + i * 0.5, py + 3 + i, (36, 122, 58))
+
+
+def sig_medusa(cv, spec, pose, back):
+    # THE GORGON of the vases and Caravaggio: a head of writhing olive
+    # snakes, a pale greenish face, the mouth open in a scream, a plain
+    # chiton with a bronze brooch. No snake tail: that is the 1981 film.
+    head = Ramp('#6b8e23')
+    for dx, ty in ((-8.5, 5), (-5.5, 1), (-2, 0), (2, 1), (5.5, 0), (8.5, 4), (-9, 10), (9, 9)):
+        hx, hy = CX + dx, ty
+        cv.sphere(hx, hy, 1.5, 1.2, head, spec=False)
+        cv.dot(hx - 1, hy, (240, 240, 244))
+        cv.dot(hx + 1, hy, (240, 240, 244))
+        cv.dot(hx, hy - 2, (201, 43, 43))
+    if back:
+        return
+    cv.dot(CX - 1, 24, (184, 115, 51))
+    cv.dot(CX, 24, (184, 115, 51))
+
+
+def sig_pooh(cv, spec, pose, back):
+    gold = spec.get('skin', '#f4c25a')
+    body = Ramp(gold)
+    # EARS on the upper SIDES of the skull, small and round. Sat on top
+    # they are Mickey's, and a bear with mouse ears is nobody.
+    for side in (-1, 1):
+        cv.sphere(CX + side * 7.6, 8.2, 3.4, 3.2, body, spec=False)
+        if not back:
+            cv.sphere(CX + side * 7.6, 8.4, 1.8, 1.7,
+                      Ramp(shade(gold, -0.22)), spec=False)
+    if back:
+        return
+    # the round belly, lighter, so a bear with no shirt still has a front
+    cv.ball(CX, 30.0, 5.6, 5.2, Ramp(shade(gold, 0.16)), spec=False)
+    # THE HONEY POT, hugged at his side: a little blue-grey crock with a
+    # pale band and a drip of honey over the lip. It rides the arm.
+    o = run_off(pose)[1]
+    px, py = CX + 11, 30 + o
+    pot = Ramp('#8fa4c4')
+    cv.cyl(px - 2, py - 3, px + 2, py + 2, pot, round_bot=1)
+    cv.rect(px - 2, py - 2, px + 2, py - 2, Ramp('#e8e4d8'), l=0.6)
+    honey = (232, 170, 48)
+    cv.dot(px - 1, py - 4, honey); cv.dot(px, py - 4, honey); cv.dot(px + 1, py - 4, honey)
+    cv.dot(px + 1, py - 3, honey)
+    # THE MUZZLE, which is the whole face. Pooh is a pale snout with a
+    # black bead on the end of it and two dots above; drawn with the
+    # roster's standard googly pair and a grin he was a yellow ball.
+    cv.sphere(CX, 17.4, 5.6, 3.8, Ramp(shade(gold, 0.42)), spec=False)
+    ink = (26, 20, 18)
+    # the nose is a rounded WEDGE on the top of the snout, not a square
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 14, ink)
+        cv.dot(CX + dx, 15, ink)
+    for dx in (-2, 2):
+        cv.dot(CX + dx, 14, ink)
+    cv.dot(CX, 16, ink)
+    cv.dot(CX - 1, 14, (96, 84, 78))        # one highlight, so it reads wet
+    # eyes: two beads set CLOSE, just above and outside the nose. Wide
+    # apart on a round head they read as a teddy bear rather than as him.
+    for side in (-1, 1):
+        x = int(CX + side * 4)
+        for dy in (11, 12):
+            cv.dot(x, dy, ink)
+    # the philtrum line and the smile under it, which is how every Pooh
+    # since Shepard has been drawn: nose, stroke down, small curve
+    md = shade(gold, -0.55)
+    cv.dot(CX, 17, md)
+    cv.dot(CX, 18, md)
+    for dx in (-1, 1):
+        cv.dot(CX + dx, 19, md)
+    for dx in (-2, 2):
+        cv.dot(CX + dx, 18, md)
+
+
+def sig_tom(cv, spec, pose, back):
+    # denim overalls: bib, straps, brass buttons
+    den = Ramp('#2a4a7a')
+    cv.rect(CX - 4, 25, CX + 4, 30, den, l=0.55)
+    for side in (-1, 1):
+        cv.dot(CX + side * 4, 24, den.mid)
+        cv.dot(CX + side * 5, 23, den.mid)
+        if not back:
+            cv.dot(CX + side * 3, 25, (201, 160, 48))
+    # the fishing pole over his shoulder: one clean unbroken diagonal
+    wood = (150, 96, 42)
+    o = run_off(pose)[1]
+    for i in range(13):
+        cv.dot(CX + 5 + i * 0.62, 24 - i + o, wood if i % 3 else (122, 82, 40))
+    for dy in (13, 14, 15, 16):
+        cv.dot(CX + 14, dy + o, (206, 212, 220))
+
+
+def sig_huck(cv, spec, pose, back):
+    # one strap overalls and a patch: the other strap is long gone
+    # ONE brace over the shoulder, in leather, and the trouser cuffs
+    # rolled. He is not in overalls: he is in cut down grown up clothes.
+    br = Ramp('#6a4a28')
+    for dy in range(24, 31):
+        cv.dot(CX - 4, dy, br.mid)
+        cv.dot(CX - 3, dy, br.dark)
+    cv.dot(CX - 5, 23, br.mid)
+    cuff = Ramp(shade(spec.get('pants', '#a8863f'), -0.28))
+    for side in (-1, 1):
+        cv.rect(CX + side * 3 - 2, 34, CX + side * 3 + 1, 35, cuff, l=0.55)
+    # THE RAFT POLE, straight up beside him, taller than he is
+    o = run_off(pose)[1]
+    wood = (150, 104, 56)
+    for dy in range(8, 36):
+        cv.dot(CX + 11, dy + o * 0.5, wood if dy % 4 else (112, 76, 40))
+    if not back:
+        cv.rect(CX + 2, 32, CX + 4, 33, Ramp('#7a5a2a'), l=0.5)
+
+
+
+def sig_hyde(cv, spec, pose, back):
+    """STEVENSON'S HYDE, 1886: "pale and dwarfish", with "an impression
+    of deformity without any nameable malformation", a "displeasing
+    smile", and hands "lean, corded, knuckly, of a dusky pallor and
+    thickly shaded with a swart growth of hair". He wears Jekyll's
+    clothes, which are far too big for him, the cuffs swallowing the
+    hands. The ape faced brute with fangs is the 1931 film; the big
+    green one is somebody else's monster altogether."""
+    coat = Ramp(spec.get('shirt', '#2e2e33'))
+    skin = Ramp(spec.get('skin', '#d9c7b8'))
+    lo, ro = run_off(pose)
+    # hunched: the shoulders ride up round the ears
+    for side, off in ((-1, lo), (1, ro)):
+        cv.sphere(CX + side * 7.4, 22.5 + off * 0.5, 4.4, 3.2, coat, spec=False)
+    # the coat, too long for him, to the knee
+    cv.taper(24, 34, 8.0, 9.6, coat, folds=1)
+    # the cuffs swallow the hands: sleeves that run past the wrist, with
+    # a knuckle of hairy hand showing under each
+    hairy = shade(skin.base, -0.42)
+    for side, off in ((-1, lo), (1, ro)):
+        x0 = CX + side * 9 - 1
+        cv.cyl(x0 - 1, 29 + off, x0 + 3, 33 + off, coat, round_bot=1)
+        cv.dot(CX + side * 9, 34 + off, skin.mid)
+        cv.dot(CX + side * 8, 34 + off, hairy)
+        cv.dot(CX + side * 10, 34 + off, hairy)
+    # the heavy cane
+    if not back:
+        cane = (40, 30, 24)
+        for dy in range(24, 38):
+            cv.dot(CX + 13, dy + ro, cane)
+        cv.dot(CX + 13, 23 + ro, (201, 160, 48))
+        cv.dot(CX + 12, 23 + ro, (201, 160, 48))
+    if back:
+        return
+    # hollow temples, and the displeasing smile: too wide, too many teeth
+    hollow = shade(skin.base, -0.30)
+    for dx in (-8, -7, 7, 8):
+        cv.dot(CX + dx, 11, hollow)
+        cv.dot(CX + dx, 12, hollow)
+    lip = (52, 26, 22)
+    for dx in range(-5, 6):
+        cv.dot(CX + dx, 17, lip)
+    for dx in range(-4, 5):
+        cv.dot(CX + dx, 18, (238, 232, 216) if dx % 2 == 0 else (214, 206, 188))
+    for dx in range(-4, 5):
+        cv.dot(CX + dx, 19, lip)
+    cv.dot(CX - 6, 16, lip)
+    cv.dot(CX + 6, 16, lip)
+
+
+def sig_sherlock(cv, spec, pose, back):
+    hat = Ramp(spec.get('hatcolor', '#8b6a3a'))
+    # The deerstalker's EAR FLAPS, the thing that makes the silhouette
+    # his. Without them it is any old fedora.
+    for side in (-1, 1):
+        cv.sphere(CX + side * 10.0, 7.6, 2.8, 3.6, hat, spec=False)
+        cv.dot(CX + side * 10, 4, shade(hat.base, -0.30))
+    # the Inverness cape over the shoulders, with a standing collar
+    cape = Ramp(shade(spec.get('shirt', '#8b6a3a'), -0.22))
+    cv.taper(22, 28, 19, 23, cape)
+    cv.rect(CX - 6, 21, CX + 6, 22, Ramp(shade(cape.base, -0.24)), l=0.5)
+    if back:
+        return
+    # A STRAIGHT briar, out of the corner of his mouth. The curved
+    # calabash is William Gillette's stage prop; Paget drew him with a
+    # straight stem or none.
+    wood = (122, 82, 40)
+    for dx, dy in ((-5, 19), (-6, 19), (-7, 20), (-8, 20)):
+        cv.dot(CX + dx, dy, wood)
+    cv.sphere(CX - 9.5, 21.5, 1.8, 1.8, Ramp('#8a5a28'), spec=False)
+    # the magnifying glass, held UP beside his face where he would use it
+    rim = (176, 142, 60)
+    gx, gy = CX + 11, 19 + run_off(pose)[1]
+    for dx, dy in ((-1, -3), (0, -3), (1, -3), (2, -2), (3, -1), (3, 0),
+                   (2, 1), (1, 2), (0, 2), (-1, 2), (-2, 1), (-3, 0),
+                   (-3, -1), (-2, -2)):
+        cv.dot(gx + dx, gy + dy, rim)
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            cv.dot(gx + dx, gy + dy, (188, 214, 232) if dx + dy else (214, 234, 246))
+    for i in range(4):
+        cv.dot(gx - 3 - i, gy + 3 + i, shade(rim, -0.3))
+
+
+
+def sig_alice(cv, spec, pose, back):
+    # TENNIEL'S ALICE as he coloured her himself for The Nursery Alice
+    # (1890): a yellow dress with blue trim under a frilled white
+    # pinafore, long fair hair pushed back, and NO headband: the band is
+    # Through the Looking-Glass, and the pale blue dress is the 1951 film.
+    ap = Ramp('#f6f6f8')
+    cv.rect(CX - 3, 24, CX + 3, 30, ap, l=0.58)
+    for side in (-1, 1):
+        cv.dot(CX + side * 3, 24, ap.mid)
+        cv.dot(CX + side * 4, 23, ap.mid)
+        # the frill at the shoulder
+        cv.dot(CX + side * 5, 24, ap.lit)
+        cv.dot(CX + side * 6, 25, ap.lit)
+    # blue trim at the hem and the cuffs
+    blue = (74, 120, 200)
+    for dx in range(-7, 8):
+        cv.dot(CX + dx, 31, blue)
+    lo, ro = run_off(pose)
+    for side, off in ((-1, lo), (1, ro)):
+        cv.dot(CX + side * 9, 30 + off, blue)
+        cv.dot(CX + side * 8, 30 + off, blue)
+
+
+def sig_dorothy(cv, spec, pose, back):
+    # DENSLOW'S DOROTHY, 1900: a small girl in blue and white gingham, two
+    # braids, a pink sunbonnet, and SILVER shoes. The ruby slippers are
+    # the 1939 film's. Gingham check on the dress; a bright toe on the
+    # silver shoes so they read as silver and not grey socks.
+    for side in (-1, 1):
+        cv.dot(CX + side * 4, 38, (236, 238, 244))
+        cv.dot(CX + side * 5, 38, (236, 238, 244))
+    if back:
+        return
+    chk = (207, 228, 242)
+    for yy in (25, 27, 29):
+        for xx in (-4, -2, 0, 2, 4):
+            off = 1 if yy == 27 else 0
+            cv.dot(CX + xx + off, yy, chk)
+
+
+def sig_scarecrow(cv, spec, pose, back):
+    # DENSLOW'S SCARECROW, 1900: "an old, pointed blue hat" and "a blue
+    # suit of clothes, worn and faded", stuffed with straw that pokes out
+    # at every seam, boots with blue tops, and a face painted on a sack.
+    # The tan burlap and the floppy brown hat are Ray Bolger's, 1939.
+    st = (232, 194, 90)
+    tunic = Ramp(spec.get('shirt', '#5a78b8'))
+    cv.taper(24, 31, 13, 19, tunic, folds=2)
+    # patches: faded squares on the worn suit
+    patch = Ramp('#8da3d0')
+    cv.rect(CX - 6, 26, CX - 4, 28, patch, l=0.55)
+    cv.rect(CX + 3, 28, CX + 5, 30, patch, l=0.5)
+    cv.rect(CX - 1, 33, CX + 1, 35, patch, l=0.5)
+    for i, dx in enumerate(range(-9, 10, 2)):
+        drop = (0, 2, 1, 2, 0, 2, 1, 2, 0, 1)[i % 10]
+        for k in range(drop + 1):
+            cv.dot(CX + dx, 31 + k, st)
+            cv.dot(CX + dx + 1, 31 + k, tunic.dark)
+    for dx in (-4, -2, 0, 2, 4):
+        cv.dot(CX + dx, 22 + (dx % 2 == 0), st)
+    for side in (-1, 1):
+        wx = CX + side * 10
+        cv.dot(wx, 33, st)
+        cv.dot(wx - side, 34, st)
+        cv.dot(wx + side, 34, st)
+    if back:
+        return
+    # the stitched smile
+    mc = shade(hex2rgb(spec.get('skin', '#eecc78')), -0.5)
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(CX + dx, 18, mc)
+    for dx in (-2, 0, 2):
+        cv.dot(CX + dx, 17, mc)
+        cv.dot(CX + dx, 19, mc)
+
+
+def sig_witch(cv, spec, pose, back):
+    # DENSLOW'S WICKED WITCH OF THE WEST, 1900: an old woman with ONE
+    # eye (the text gives her a single eye "as powerful as a telescope";
+    # Denslow draws a patch over the other), three thin grey pigtails, a
+    # yellow dress patterned in black, a pointed hat, and the umbrella
+    # she strikes Toto with. Green skin is Margaret Hamilton's, 1939.
+    hatc = Ramp(spec.get('hatcolor', '#141020'))
+    for side in (-1, 1):
+        for dx in (12, 13):
+            cv.dot(CX + side * dx, HEAD_CY - 5, hatc.mid)
+        cv.dot(CX + side * 12, HEAD_CY - 4, hatc.dark)
+    cv.dot(CX + 1, 0, hatc.mid); cv.dot(CX + 2, 0, hatc.mid)
+    cv.dot(CX + 3, 1, hatc.mid)
+    # the black pattern on the yellow dress: a diamond lattice
+    ink = (30, 30, 30)
+    for y in range(25, 37):
+        for x in range(int(CX) - 9, int(CX) + 10):
+            if (x + y) % 4 == 0 and abs(x - CX) < 4 + (y - 21) * 0.5:
+                cv.dot(x, y, ink)
+    # a third pigtail down the back
+    gr = Ramp(spec.get('hair', '#bdbdbd'))
+    if back:
+        cv.cyl(CX - 1, HEAD_CY + 6, CX + 1, HEAD_CY + 14, gr, round_bot=1)
+        return
+    # THE UMBRELLA, closed, held up at her side
+    o = run_off(pose)[0]
+    cane = (58, 58, 58)
+    for dy in range(8, 34):
+        cv.dot(CX - 12, dy + o, cane)
+    cv.taper(3, 9, 1.0, 3.2, Ramp('#2a2a2a'), cx=CX - 12)
+    cv.dot(CX - 12, 2 + o, (120, 120, 120))
+    cv.dot(CX - 11, 34 + o, (120, 90, 50))
+    # the nose, long and hooked
+    skin = Ramp(spec.get('skin', '#e6d2b5'))
+    nd = shade(skin.base, -0.45)
+    cv.dot(CX - 1, 13, skin.spec)
+    cv.dot(CX, 13, skin.lit)
+    cv.dot(CX - 1, 14, skin.lit)
+    cv.dot(CX, 14, skin.mid)
+    cv.dot(CX + 1, 14, nd)
+    cv.dot(CX, 15, skin.mid)
+    cv.dot(CX + 1, 15, nd)
+    cv.dot(CX, 16, skin.mid)
+    cv.dot(CX + 1, 16, nd)
+    cv.dot(CX, 17, nd)
+    mc = shade(skin.base, -0.5)
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(CX + dx, 18, mc)
+
+
+def sig_horseman(cv, spec, pose, back):
+    # IRVING'S HORSEMAN, 1820, as Darley and Rackham drew him: a Hessian
+    # trooper's dark coat with a high collar and brass buttons, a black
+    # cloak, buff breeches, tall boots, and the pumpkin carried UNDER THE
+    # ARM. There is no head. A pumpkin on the shoulders is the Halloween
+    # aisle, not the book.
+    coat = Ramp(spec.get('shirt', '#1a1f2b'))
+    cloak = Ramp('#0f0f12')
+    # the cloak, behind and past the shoulders
+    cv.taper(20, 36, 15, 28, cloak, folds=2)
+    # the coat over it, and the high collar standing open at the neck
+    cv.cyl(CX - TORSO_HW, 23, CX + TORSO_HW, 30, coat, round_bot=1)
+    cv.rect(CX - 6, 19, CX + 6, 22, coat, l=0.5)
+    cv.rect(CX - 6, 19, CX - 5, 22, Ramp(shade(coat.base, 0.2)), l=0.6)
+    cv.rect(CX + 5, 19, CX + 6, 22, Ramp(shade(coat.base, 0.2)), l=0.6)
+    # the sabre at the hip
+    if not back:
+        for dy in range(29, 38):
+            cv.dot(CX + 9, dy, (158, 167, 173))
+        cv.dot(CX + 9, 28, (201, 162, 39))
+        cv.dot(CX + 8, 28, (201, 162, 39))
+    if back:
+        return
+    # brass buttons down the coat
+    for dy in (24, 26, 28):
+        cv.dot(CX - 2, dy, (201, 162, 39))
+        cv.dot(CX + 2, dy, (201, 162, 39))
+    # THE PUMPKIN under the left arm, with its stem and a carved grin
+    pk = Ramp('#f57c00')
+    o = run_off(pose)[0]
+    cv.ball(CX - 11, 29 + o, 4.6, 4.2, pk)
+    cv.dot(CX - 11, 24 + o, (74, 100, 40))
+    cv.dot(CX - 11, 25 + o, (74, 100, 40))
+    for dx, dy in ((-2, -1), (1, -1), (-2, 1), (-1, 2), (0, 2), (1, 1)):
+        cv.dot(CX - 11 + dx, 29 + dy + o, (60, 30, 8))
+
+
+def sig_zombie(cv, spec, pose, back):
+    # THE LURCH: both arms straight out, one higher than the other,
+    # over a torn white tee and ragged cuffs.
+    skin = Ramp(spec.get('skin', '#8aae64'))
+    shirt = Ramp(spec.get('shirt', '#e8e8e6'))
+    lo, ro = arm_off(pose, 1)
+    for side, o in ((-1, 24 + lo), (1, 26 + ro)):
+        sx = side if side > 0 else side
+        x0 = CX + side * 6
+        x1 = CX + side * 13
+        lo2, hi = sorted((x0, x1))
+        cv.rect(lo2, o, hi, o + 1, shirt, l=0.6)
+        cv.rect(CX + side * 12, o, CX + side * 13, o + 1, skin, l=0.55)
+        cv.dot(CX + side * 14, o, skin.mid)
+    # torn shirt hem
+    for dx in (-5, -3, -1, 1, 3, 5):
+        cv.dot(CX + dx, 31, shirt.mid)
+        cv.dot(CX + dx, 32, shirt.dark)
+    # ragged pant cuffs
+    for side in (-1, 1):
+        cv.dot(CX + side * 4, 36, skin.mid)
+
+
+def sig_werewolf(cv, spec, pose, back):
+    # A real SNOUT with a toothy grin, tall pointed ears, fur tufts on
+    # the shoulders, and the bushy tail.
+    fur = Ramp(spec.get('skin', '#4a3524'))
+    for side in (-1, 1):
+        ex = CX + side * 6
+        cv.tri([(ex, 1), (ex - 2, 6), (ex + 2, 6)], fur, l=0.5)
+        if not back:
+            cv.dot(ex, 4, (168, 132, 88))
+    # the tail, swinging off his right hip
+    for dx, dy, r_ in ((11, 30, 1.6), (13, 27.5, 2.0), (14, 24.5, 1.8), (13.5, 22, 1.2)):
+        cv.sphere(CX + dx, dy, r_, r_ + 0.4, fur, spec=False)
+    # shoulder fur tufts
+    for side in (-1, 1):
+        cv.dot(CX + side * 10, 20, fur.mid)
+        cv.dot(CX + side * 11, 21, fur.mid)
+        cv.dot(CX + side * 10, 22, fur.dark)
+    # torn shorts: the tell that he WAS a person at moonrise
+    den = Ramp('#3a4e6a')
+    for x0 in (-5, 3):
+        cv.rect(CX + x0, 32, CX + x0 + 2, 34, den, l=0.5)
+    for dx in (-5, -3, 3, 5):
+        cv.dot(CX + dx, 35, den.mid)
+    if back:
+        return
+    muz = Ramp(spec.get('wolfmuzzle', '#a88458'))
+    cv.sphere(CX, 16.6, 6.4, 3.8, muz)
+    cv.dot(CX - 1, 14, shade(muz.base, -0.55))
+    cv.dot(CX, 14, shade(muz.base, -0.55))
+    # a wolfish grin: dark smile line with two fangs, not a grate of
+    # teeth across the whole snout
+    for dx in (-3, -2, -1, 0, 1, 2, 3):
+        cv.dot(CX + dx, 17, shade(muz.base, -0.5))
+    cv.dot(CX - 4, 16, shade(muz.base, -0.5))
+    cv.dot(CX + 4, 16, shade(muz.base, -0.5))
+    cv.dot(CX - 2, 18, (245, 243, 240))
+    cv.dot(CX + 2, 18, (245, 243, 240))
+
+
+def sig_humpty(cv, spec, pose, back):
+    # Humpty is DRESSED: the big grey collar, the red sash under it,
+    # blue trousers over the lower half of the egg, grey boots.
+    col = Ramp('#9a9aa2')
+    blue = Ramp('#3a6aa8')
+    # trousers: the egg's own curve, filled blue from the waist down
+    for y in range(25, 33):
+        t = (y + 0.5 - 18.0) / 15.0
+        half = 10.0 * math.sqrt(max(0.0, 1 - t * t)) - 0.6
+        cv.rect(CX - half, y, CX + half, y, blue, l=0.62 - (y - 25) * 0.03)
+    cv.rect(CX - 1, 26, CX, 32, Ramp(shade(blue.base, -0.25)), l=0.45)
+    # legs in blue, boots grey
+    for side in (-1, 1):
+        lx = CX + side * 4
+        cv.rect(lx - 1, 33, lx + 1, 35, blue, l=0.5)
+        cv.rect(lx - 1, 36, lx + 1, 38, col, l=0.5)
+    # the collar: BIG grey wings, wider than the egg, the sash beneath
+    for side in (-1, 1):
+        a, b = sorted((CX + side * 5, CX + side * 11))
+        cv.rect(a, 19, b, 20, col, l=0.66)
+        a, b = sorted((CX + side * 6, CX + side * 11))
+        cv.rect(a, 21, b, 21, col, l=0.5)
+        cv.dot(CX + side * 11, 22, col.dark)
+    cv.rect(CX - 5, 20, CX + 5, 21, col, l=0.55)
+
+
+def sig_lion(cv, spec, pose, back):
+    # DENSLOW'S LION is a LION, "as big as a small horse", on four legs
+    # with a great shaggy mane and a worried face in the middle of it.
+    # The man in the lion suit with the bow in his hair is Bert Lahr's,
+    # 1939. Drawn on the beast body: the mane goes down first so the head
+    # sits inside it, then the ears and the tufted tail.
+    mane = Ramp('#8b5a2b')
+    cv.sphere(CX, 13.0, 11.6, 10.4, mane, spec=False)
+    for a in range(20):
+        ang = a * math.pi / 10
+        tx = CX + math.cos(ang) * (11.6 + (1.6 if a % 2 else 0))
+        ty = 13.0 + math.sin(ang) * (10.4 + (1.2 if a % 3 else 0))
+        if 0 <= ty <= 24:
+            cv.dot(tx, ty, mane.dark if a % 2 else mane.mid)
+    ear = Ramp(spec.get('skin', '#c8963e'))
+    for side in (-1, 1):
+        cv.sphere(CX + side * 6.5, 4.0, 2.0, 2.0, ear, spec=False)
+        cv.dot(CX + side * 6.5, 4, shade(ear.base, -0.35))
+    tail = Ramp(spec.get('skin', '#c8963e'))
+    for dx, dy in ((12, 30), (13.5, 27), (14, 24), (13.5, 21)):
+        cv.sphere(CX + dx, dy, 1.2, 1.2, tail, spec=False)
+    cv.sphere(CX + 13, 19.0, 2.0, 2.2, mane, spec=False)
+
+
+def sig_lion_face(cv, spec, pose, back):
+    if back:
+        return
+    # orange nose over the tan muzzle
+    n = (92, 56, 30)
+    cv.dot(CX - 1, 14, n)
+    cv.dot(CX, 14, n)
+    cv.dot(CX, 15, shade(n, -0.3))
+    # GREEN eyes, over the face the roster draws, because a lion whose
+    # whole personality is being afraid needs to be looked at.
+    for side in (-1, 1):
+        cv.dot(CX + side * 3, 11, (90, 190, 120))
+        cv.dot(CX + side * 3, 12, (44, 120, 74))
+
+
+def sig_santa(cv, spec, pose, back):
+    """A white sphere for a beard and nothing else is a snowman in a hat.
+    What makes him Santa is the mouth and moustache INSIDE the beard, the
+    belt, and the fur cuffs."""
+    white = Ramp(spec.get('beard', '#f5efe8'))
+    # the black belt with its brass buckle, across the widest of him
+    cv.rect(CX - 10, 29, CX + 10, 31, Ramp('#2a2018'), l=0.42)
+    buck = Ramp('#e0b038')
+    cv.rect(CX - 3, 29, CX + 3, 31, buck, l=0.62)
+    cv.rect(CX - 1, 30, CX + 1, 30, Ramp('#8a6a20'), l=0.5)
+    # fur cuffs at both wrists and along the hem
+    for side in (-1, 1):
+        o = run_off(pose)[0 if side < 0 else 1]
+        cv.cyl(CX + side * 10 - 1, 28 + o, CX + side * 10 + 1, 29 + o, white)
+    if back:
+        return
+    # the moustache: one band with tips that DROOP, sitting on the beard
+    cv.rect(CX - 5, 18, CX + 5, 18, Ramp(shade(white.base, -0.10)), l=0.72)
+    for side in (-1, 1):
+        cv.dot(CX + side * 6, 19, white.mid)
+        cv.dot(CX + side * 6, 20, white.dark)
+    # a mouth in the gap below it, or the beard is a bib
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(CX + dx, 20, (122, 58, 54))
+    cv.dot(CX - 3, 19, (122, 58, 54))
+    cv.dot(CX + 3, 19, (122, 58, 54))
+    # the nose and two cheeks, which are the only skin left showing
+    nose = (226, 138, 118)
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 16, nose)
+    cv.dot(CX, 17, (200, 112, 96))
+    for side in (-1, 1):
+        cv.dot(CX + side * 6, 16, (238, 168, 160))
+        cv.dot(CX + side * 7, 16, (238, 168, 160))
+
+
+def sig_mrsclaus(cv, spec, pose, back):
+    """Long loose hair and a plain red dress is any woman in red. Hers is
+    a white BUN, an apron and half moon spectacles."""
+    hair = Ramp(spec.get('hair', '#dcdcd8'))
+    cv.sphere(CX, 2.6, 4.0, 3.0, hair, spec=False)          # the bun
+    cv.dot(CX - 4, 4, shade(hair.base, -0.28))
+    cv.dot(CX + 4, 4, shade(hair.base, -0.28))
+    # the white apron, edge to edge down the front of the dress
+    if not back:
+        ap = Ramp('#f2efe8')
+        cv.rect(CX - 4, 25, CX + 4, 31, ap, l=0.72)
+        cv.rect(CX - 5, 25, CX + 5, 25, ap, l=0.60)
+        cv.rect(CX - 6, 23, CX + 6, 24, ap, l=0.66)         # the collar
+    if back:
+        return
+    # HALF MOON spectacles. The old pair were two gold hoops the size of
+    # her eyes, which reads as goggles rather than as reading glasses.
+    rim = (201, 160, 48)
+    for side in (-1, 1):
+        x = int(CX + side * 4)
+        for dx in (-2, -1, 0, 1, 2):
+            cv.dot(x + dx, 16, rim)     # only the BOTTOM arc is rimmed
+            cv.dot(x + dx, 12, rim)
+        cv.dot(x - 3, 15, rim)
+        cv.dot(x + 3, 15, rim)
+        cv.dot(x - 3, 12, rim)
+        cv.dot(x + 3, 12, rim)
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 12, rim)
+    for side in (-1, 1):                                    # rosy cheeks
+        cv.dot(CX + side * 7, 16, (238, 168, 168))
+        cv.dot(CX + side * 6, 17, (238, 168, 168))
+
+
+def sig_bunny(cv, spec, pose, back):
+    # THE OSTERHASE of the 1900s postcards: a brown HARE, long ears, in a
+    # short jacket with a white collar, carrying a basket of coloured
+    # eggs. A white round bunny is a nursery toy.
+    fur = Ramp(spec.get('skin', '#8b6a45'))
+    pink = (240, 184, 200)
+    if not back:
+        cv.rect(CX - 4, 22, CX + 4, 23, Ramp('#f2f2f4'), l=0.7)
+    for side in (-1, 1):
+        ex = CX + side * 5
+        cv.cyl(ex - 1, 1, ex + 1, 9, fur, round_top=2)
+        if not back:
+            cv.dot(ex, 3, pink); cv.dot(ex, 4, pink)
+            cv.dot(ex, 5, pink); cv.dot(ex, 6, pink)
+    if back:
+        return
+    cv.dot(CX, 17, (232, 140, 160))
+    cv.dot(CX - 1, 17, (232, 140, 160))
+    cv.dot(CX - 1, 21, (250, 250, 252))
+    cv.dot(CX, 21, (250, 250, 252))
+    for side in (-1, 1):
+        cv.dot(CX + side * 4, 17, (208, 208, 212))
+        cv.dot(CX + side * 5, 16, (208, 208, 212))
+    # the Easter basket, eggs and all
+    bk = Ramp('#a8763a')
+    o = run_off(pose)[1]
+    cv.dot(CX + 9, 29 + o, (232, 140, 160))
+    cv.dot(CX + 10, 28 + o, (140, 180, 232))
+    cv.dot(CX + 11, 29 + o, (240, 214, 110))
+    cv.rect(CX + 8, 30 + o, CX + 12, 33 + o, bk, l=0.55)
+    cv.dot(CX + 8, 29 + o, bk.dark)
+    cv.dot(CX + 12, 29 + o, bk.dark)
+    cv.dot(CX + 9, 31 + o, bk.dark)
+    cv.dot(CX + 11, 32 + o, bk.dark)
+
+
+def sig_fairy(cv, spec, pose, back):
+    """She is the TOOTH fairy, and nothing on her said so: a gold star on
+    a stick is every fairy on every roster. The wand carries a tooth, and
+    there is a pouch on her hip to put them in."""
+    # a tulle skirt, so the body is not a rectangle of dress
+    tut = Ramp(shade(spec.get('shirt', '#b08ac6'), 0.24))
+    cv.taper(29, 33, 16, 22, tut, folds=2)
+    if back:
+        return
+    # a small tiara
+    g = (248, 216, 74)
+    for dx, dy in ((-3, 6), (-2, 5), (-1, 6), (0, 5), (1, 6), (2, 5), (3, 6)):
+        cv.dot(CX + dx, dy, g)
+    o = run_off(pose)[1]
+    # the wand: a stick with a MOLAR on the end of it, roots and all
+    cv.dot(CX + 11, 30 + o, (150, 118, 56))
+    cv.dot(CX + 12, 28 + o, (150, 118, 56))
+    cv.dot(CX + 12, 27 + o, (150, 118, 56))
+    tooth = (250, 248, 240)
+    shad = (206, 202, 192)
+    for dy in (21, 22, 23, 24):
+        for dx in (10, 11, 12, 13, 14):
+            cv.dot(CX + dx, dy + o, tooth)
+    cv.dot(CX + 10, 21 + o, shad)
+    cv.dot(CX + 14, 21 + o, shad)
+    for dx in (10, 11, 13, 14):                 # two roots, and the gap
+        cv.dot(CX + dx, 25 + o, shad)
+    cv.dot(CX + 11, 26 + o, shad)
+    cv.dot(CX + 13, 26 + o, shad)
+    cv.dot(CX + 11, 22 + o, (255, 255, 255))
+    # the pouch of collected teeth, on her other hip
+    pouch = Ramp('#7a5aa0')
+    cv.sphere(CX - 8, 30, 2.8, 3.0, pouch, spec=False)
+    cv.rect(CX - 10, 27, CX - 6, 27, Ramp('#c8b0e0'), l=0.6)
+    cv.dot(CX - 8, 29, tooth)
+    cv.dot(CX - 9, 30, tooth)
+
+
+def sig_pirate(cv, spec, pose, back):
+    """PYLE'S BUCCANEER, 1905: a kerchief tied at the nape (see
+    headwear), two gold hoops in the ears, a loose shirt under a short
+    crimson coat, the sash at the hip with a belt over it, and a
+    cutlass. The eye patch and the tricorn are everybody's pirate and
+    nobody's; the earrings and the kerchief are his."""
+    if not back:
+        for side in (-1, 1):
+            cv.dot(CX + side * 9, HEAD_CY + 3, (212, 160, 23))
+            cv.dot(CX + side * 9, HEAD_CY + 4, (212, 160, 23))
+            cv.dot(CX + side * 10, HEAD_CY + 4, (180, 130, 20))
+    coat = Ramp('#5a1c22')
+    for side in (-1, 1):
+        cv.cyl(CX + side * 6 - 1, 23, CX + side * 6 + 1, 31, coat, round_bot=1)
+    # the striped shirt in the gap the coat leaves
+    red = Ramp('#c93030')
+    for yy in (24, 26, 28):
+        cv.rect(CX - 4, yy, CX + 4, yy, red, l=0.5)
+    # the sash, tied at the hip with the tail hanging
+    sash = Ramp('#b8451c')
+    cv.rect(CX - 6, 29, CX + 6, 30, sash, l=0.58)
+    cv.dot(CX + 6, 31, sash.mid)
+    cv.dot(CX + 6, 32, sash.dark)
+    if back:
+        return
+    # A full beard puts its top edge at row 16 and the stock mouth at 19,
+    # so his grin was under it. Drawn on top, with the gold tooth.
+    for dx in range(-3, 4):
+        cv.dot(CX + dx, 19, (40, 24, 22))
+    for dx in (-2, 0, 2):
+        cv.dot(CX + dx, 20, (240, 236, 226))
+    cv.dot(CX + 1, 20, (222, 184, 66))
+    cv.dot(CX - 4, 18, (40, 24, 22))
+    cv.dot(CX + 4, 18, (40, 24, 22))
+    # gold buttons down the coat's near edge
+    for dy in (24, 27, 30):
+        cv.dot(CX - 6, dy, (222, 184, 66))
+    # the CUTLASS, hilt at the sash and the blade curving down and out
+    o = run_off(pose)[1]
+    cv.dot(CX + 8, 29 + o, (222, 184, 66))
+    cv.dot(CX + 8, 30 + o, (222, 184, 66))
+    steel = (206, 212, 222)
+    for dx, dy in ((9, 31), (10, 32), (11, 33), (12, 34), (12, 35), (11, 36)):
+        cv.dot(CX + dx, dy + o, steel)
+        cv.dot(CX + dx, dy + 1 + o, (150, 158, 170))
+
+
+def sig_centaur(cv, spec, pose, back):
+    # CHIRON, the wise one of the vases: bearded, wreathed, a teacher.
+    # The head sits higher than a human's on this body, so the wreath
+    # and the beard are placed for it rather than through the helpers.
+    lf = Ramp('#4e7a3a')
+    for i in range(11):
+        a = math.pi * (0.08 + 0.84 * i / 10.0)
+        x = CX - math.cos(a) * 6.2
+        y = 9.5 - math.sin(a) * 4.6
+        cv.dot(x, y, lf.at(0.55 if i % 2 else 0.35))
+    if back:
+        return
+    bd = Ramp('#4a3728')
+    cv.sphere(CX, 15.6, 5.2, 2.6, bd, spec=False)
+    cv.taper(16, 19, 6, 3, bd)
+
+
+def sig_krampus(cv, spec, pose, back):
+    # TALL BLACK HORNS, rising and then raking back. Gold ram's horns
+    # curled beside his ears made him a moose in a chain.
+    # They rise the FULL height above the skull and rake outward at the
+    # tip. Six rows starting at the ear read as ears, which is what the
+    # first pass drew: the horns have to leave the head behind.
+    h = Ramp('#0d0a10')
+    for side in (-1, 1):
+        for dy in range(0, 9):
+            dx = 4.6 + dy * 0.30
+            cv.dot(CX + side * dx, 8 - dy, h.mid)
+            cv.dot(CX + side * (dx + 0.9), 8 - dy, h.dark)
+        for i, (dx, dy) in enumerate(((7.4, 0), (8.4, 0), (9.2, 1))):
+            cv.dot(CX + side * dx, dy, h.mid)
+            cv.dot(CX + side * dx, dy + 1, h.dark)
+    # THE TAIL, out to one side with a tuft on the end
+    for i, (dx, dy) in enumerate(((10, 32), (12, 31), (13, 29), (13, 27))):
+        cv.sphere(CX + dx, dy, 1.3, 1.3, h, spec=False)
+    cv.sphere(CX + 13, 25.0, 2.0, 2.2, Ramp('#8f2a22'), spec=False)
+    # the bundle of birch switches, the postcards' other prop
+    sw = (176, 141, 87)
+    for i, dx in enumerate((-13, -12, -11, -10)):
+        for dy in range(20 + (i % 2), 33):
+            cv.dot(CX + dx, dy, sw if dy % 3 else (120, 96, 60))
+    cv.rect(CX - 13, 30, CX - 10, 30, Ramp('#6a4a2a'), l=0.4)
+    if back:
+        return
+    t = (201, 75, 75)
+    cv.dot(CX, 19, t); cv.dot(CX, 20, t)
+    cv.dot(CX, 21, t); cv.dot(CX + 1, 21, t)
+    # The chain hangs in a SWAG across his chest, links touching, with
+    # the bell at the low point. Scattered single dots read as noise.
+    ch = (168, 172, 182)
+    dk = (96, 100, 112)
+    for i in range(13):
+        u = i / 12.0
+        x = CX - 7 + u * 14
+        y = 24 + math.sin(u * math.pi) * 5
+        cv.dot(x, y, ch if i % 2 else dk)
+    g = (201, 160, 48)
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 30, g)
+        cv.dot(CX + dx, 31, shade(g, -0.2))
+    cv.dot(CX, 32, (110, 88, 30))
+
+
+def sig_fathertime(cv, spec, pose, back):
+    # THE SCYTHE, across the body, on both facings. He carries an
+    # hourglass and a scythe in every allegory anybody has painted of
+    # him, and the hourglass alone is a small gold smudge at this size
+    # while the scythe is a silhouette you can read across the field.
+    o = run_off(pose)[1]
+    haft = (122, 84, 44)
+    for i in range(26):
+        cv.dot(CX + 9 - i * 0.62, 34 - i * 1.05 + o,
+               haft if i % 4 else (88, 60, 32))
+    blade = Ramp('#c8d0da')
+    for i in range(9):
+        cv.dot(CX - 7 - i * 0.7, 8 + i * 0.55 + o, blade.lit)
+        cv.dot(CX - 7 - i * 0.7, 9 + i * 0.55 + o, blade.mid)
+        if i > 3:
+            cv.dot(CX - 7 - i * 0.7, 10 + i * 0.55 + o, blade.dark)
+    if back:
+        return
+    # the hourglass in his left hand
+    g = (201, 160, 48)
+    sand = (232, 194, 90)
+    x = int(CX) - 10
+    o = run_off(pose)[0]
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(x + dx, 26 + o, g)
+        cv.dot(x + dx, 31 + o, g)
+    cv.dot(x - 1, 27 + o, (207, 228, 242)); cv.dot(x + 1, 27 + o, (207, 228, 242))
+    cv.dot(x, 28 + o, (207, 228, 242))
+    cv.dot(x, 29 + o, sand)
+    cv.dot(x - 1, 30 + o, sand); cv.dot(x, 30 + o, sand); cv.dot(x + 1, 30 + o, sand)
+
+
+def sig_mothernature(cv, spec, pose, back):
+    # NATURA of the allegories, Gilbert's and Barrias's: a woman in a
+    # flowing green robe with a leafy mantle, a wreath of leaves and
+    # small flowers in long loose hair, barefoot, a bird on her hand.
+    # The green skinned one was a colour looking for an owner.
+    leaf = Ramp('#2f7a34')
+    for side in (-1, 1):
+        for i in range(5):
+            x = CX + side * (3 + i * 1.6)
+            y = 36 - i * 3.4
+            cv.dot(x, y, leaf.mid)
+            cv.dot(x, y - 1, leaf.lit)
+            if i % 2 == 0:
+                cv.sphere(x + side * 2, y - 1, 1.8, 1.1, leaf, spec=False)
+    # the leafy mantle over the shoulders
+    cv.taper(21, 26, 17, 22, Ramp('#4e8a2e'), folds=2)
+    # the wreath: leaves following the skull, small blooms between
+    _laurel(cv, '#4e8a2e', '#7ab34a')
+    for fx, fy in ((-6, 5), (0, 3), (6, 5)):
+        x, y = CX + fx, fy
+        cv.dot(x, y, (232, 140, 160))
+        cv.dot(x - 1, y, (250, 250, 252)); cv.dot(x + 1, y, (250, 250, 252))
+    if back:
+        return
+    # a bluebird on the raised hand
+    o = run_off(pose)[1]
+    bx, by = CX + 11, 26 + o
+    bird = Ramp('#3a7ac0')
+    cv.sphere(bx, by, 2.6, 2.0, bird, spec=False)
+    cv.sphere(bx + 2, by - 1.6, 1.4, 1.3, bird, spec=False)
+    cv.dot(bx + 3.5, by - 1.5, (232, 170, 48))
+    cv.dot(bx - 1, by, (250, 236, 200))
+
+
+def sig_raboddog(cv, spec, pose, back):
+    # A tail up and wagging, and a collar: he was somebody's dog once.
+    fur = Ramp(spec.get('skin', '#5a3a20'))
+    wag = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
+    for i, (dx, dy) in enumerate(((11, 27), (13, 24), (14, 21), (14, 18))):
+        cv.sphere(CX + dx + wag * i * 0.5, dy, 1.6, 1.8, fur, spec=False)
+    # ribs showing through the matted coat, and no collar: a cur
+    for dx in (-6, -3, 3, 6):
+        cv.dot(CX + dx, 27, shade(fur.base, -0.35))
+    if back:
+        return
+    # foam at the mouth: he is RABID
+    for dx, dy in ((-3, 21), (-2, 22), (-1, 21), (0, 22), (1, 21), (2, 22), (3, 21)):
+        cv.dot(CX + dx, dy, (245, 245, 247))
+
+
+def sig_chupacabra(cv, spec, pose, back):
+    # A ridge of spines running from the crown down the spine, plus tall
+    # bat ears. Colour alone never separated him from the dog.
+    sp = Ramp('#7a9c56')
+    for x, top in ((-4, 2), (0, 0), (4, 2)):
+        cv.tri([(CX + x, top), (CX + x - 1, top + 4), (CX + x + 1, top + 4)], sp, l=0.5)
+    # Ears ABOVE the eyes and swept back. Reaching down to row 12 they
+    # crossed his face and painted a dark bar over both eyes.
+    fur = Ramp(spec.get('skin', '#4a5a3a'))
+    for side in (-1, 1):
+        cv.tri([(CX + side * 4, 8), (CX + side * 11, 1), (CX + side * 9, 9)], fur, l=0.5)
+
+
+def sig_cupid(cv, spec, pose, back):
+    """A winged blond adult is an angel. Cupid is a BABY: curls, a nappy,
+    and a bow he is actually holding rather than one hanging beside him."""
+    skin = Ramp(spec.get('skin', '#f7dcb4'))
+    # the cloth, which is the only thing he is wearing
+    cloth = Ramp('#f4f2ee')
+    cv.rect(CX - 6, 30, CX + 6, 33, cloth, l=0.74)
+    cv.dot(CX - 6, 29, cloth.mid)
+    cv.dot(CX + 6, 29, cloth.mid)
+    if back:
+        return
+    # curls, so the head is not a bald dome
+    curl = Ramp(spec.get('hair', '#d8a24a'))
+    for dx, dy in ((-6, 8), (-3, 6), (0, 5), (3, 6), (6, 8), (-5, 5), (5, 5)):
+        cv.sphere(CX + dx, dy, 2.2, 1.9, curl, spec=False)
+    for side in (-1, 1):                        # apple cheeks
+        cv.dot(CX + side * 6, 17, (240, 172, 164))
+        cv.dot(CX + side * 7, 17, (240, 172, 164))
+    # THE BOW: a thick limb, a drawn string, and an arrow ON it. The old
+    # one was a line of single dots and read as a crack in the sprite.
+    wood = (150, 96, 42)
+    lit = (186, 128, 62)
+    o = run_off(pose)[1]
+    for dy, dx in ((21, 9), (22, 10), (23, 11), (24, 11), (25, 11), (26, 11),
+                   (27, 11), (28, 10), (29, 9)):
+        cv.dot(CX + dx, dy + o, wood)
+        cv.dot(CX + dx - 1, dy + o, lit)
+    for dy in range(21, 30):                    # the string, drawn back
+        cv.dot(CX + 6, dy + o, (232, 230, 234))
+    for dx in range(-1, 11):                    # the shaft
+        cv.dot(CX + dx, 25 + o, (214, 190, 140))
+    for dy in (24, 26):                         # fletching
+        cv.dot(CX - 1, dy + o, (240, 240, 244))
+        cv.dot(CX, dy + o, (200, 200, 208))
+    r = (210, 73, 73)                           # the heart on the tip
+    for dx, dy in ((10, 24), (12, 24), (10, 25), (11, 25), (12, 25), (11, 26)):
+        cv.dot(CX + dx, dy + o, r)
+
+
+def sig_yeti(cv, spec, pose, back):
+    """A grey oval on a white ball is a hippo mask. What a yeti has is a
+    shaggy MANE breaking the whole silhouette, a heavy brow of fur over
+    the eyes, and a roar with square teeth in it."""
+    fur = Ramp(spec.get('skin', '#f0f6fb'))
+    # the mane: tufts all round the head and shoulders, on both facings
+    # They have to OVERLAP and vary. Evenly spaced circles of one size at
+    # arm's length from the body read as a cog, not as fur.
+    for dx, dy, r_ in ((-9, 6, 3.0), (-10.5, 10, 2.4), (-10, 14, 3.2),
+                       (-11, 18, 2.5), (-10, 22, 3.0), (-9.5, 26, 2.4),
+                       (-9, 29, 2.8),
+                       (9, 6, 3.0), (10.5, 10, 2.4), (10, 14, 3.2),
+                       (11, 18, 2.5), (10, 22, 3.0), (9.5, 26, 2.4),
+                       (9, 29, 2.8), (-5, 3, 2.8), (0, 2, 2.4), (5, 3, 2.8)):
+        cv.sphere(CX + dx, dy, r_, r_ * 0.86, fur, spec=False)
+    if back:
+        return
+    # SLATE, not pale blue. On white fur a light grey face is the same
+    # value as the head it sits on, so there was no face there at all.
+    face = Ramp('#59636f')
+    cv.sphere(CX, 15.2, 6.6, 4.4, face, spec=False)
+    # the brow: a shelf of fur over the eyes, which is what keeps the
+    # face from reading as a patch stuck on the front of a snowball
+    for dx in range(-6, 7):
+        cv.dot(CX + dx, 11, fur.dark)
+    for dx in (-7, 7):
+        cv.dot(CX + dx, 12, fur.dark)
+    for side in (-1, 1):                        # eyes, deep under it
+        x = int(CX + side * 3)
+        for dy in (13, 14):
+            cv.dot(x, dy, (196, 32, 34))
+            cv.dot(x + side, dy, (150, 20, 24))
+        cv.dot(x, 13, (250, 120, 110))
+    # THE ROAR
+    for dx in range(-4, 5):
+        cv.dot(CX + dx, 16, (30, 34, 46))
+        cv.dot(CX + dx, 17, (30, 34, 46))
+    for dx in (-4, -2, 0, 2, 4):
+        cv.dot(CX + dx, 16, (246, 250, 252))
+    for dx in (-3, -1, 1, 3):
+        cv.dot(CX + dx, 17, (222, 232, 240))
+    for side in (-1, 1):                        # two tusks, pointing up
+        cv.dot(CX + side * 5, 16, (246, 250, 252))
+        cv.dot(CX + side * 5, 15, (246, 250, 252))
+
+
+def sig_sasquatch(cv, spec, pose, back):
+    # THE FEET. He is Bigfoot: wide flat feet and a heavy brow. Plus a
+    # shaggy edge, because a smooth silhouette reads as a bear suit.
+    fur = Ramp(spec.get('skin', '#4a2014'))
+    for side in (-1, 1):
+        cv.sphere(CX + side * 4, 37.4, 3.8, 1.8, Ramp(shade(fur.base, -0.2)), spec=False)
+        for dy in (18, 21, 24, 27, 30):
+            cv.dot(CX + side * 13, dy, fur.mid)
+            cv.dot(CX + side * 12, dy + 1, fur.lit)
+    if back:
+        return
+    brow = shade(fur.base, -0.5)
+    for dx in range(-6, 7):
+        cv.dot(CX + dx, 9, brow)
+    for dx in (-6, 6):
+        cv.dot(CX + dx, 10, brow)
+    # THE BAND OF EYES, and nothing else. Every photograph anybody has
+    # ever produced of him is a dark shape with a lighter smear across
+    # the face, and giving him a nose and a mouth made him a man in a
+    # suit, which is the one reading the character cannot survive.
+    band = shade(fur.base, 0.62)
+    for dx in range(-5, 6):
+        cv.dot(CX + dx, 13, band)
+        cv.dot(CX + dx, 12, shade(fur.base, 0.40))
+    for side in (-1, 1):
+        cv.dot(CX + side * 3, 13, (26, 16, 12))
+        cv.dot(CX + side * 3, 12, (26, 16, 12))
+
+
+
+def sig_jack_post(cv, spec, pose, back):
+    # THE JERKIN. A sleeveless brown over-tunic on top of the white shirt,
+    # open down the middle, which is how every illustrator since the
+    # chapbooks has dressed a farm boy who is about to steal from a giant.
+    # It runs POST: drawn with the beanstalk, before the archetype, the
+    # shirt goes straight over the top of it and he is in a plain smock.
+    jer = Ramp('#6e8b4e')
+    cv.rect(CX - 7, 23, CX - 2, 31, jer, l=0.58)
+    cv.rect(CX + 2, 23, CX + 7, 31, jer, l=0.46)
+    if not back:
+        for dy in range(23, 32):
+            cv.dot(CX - 2, dy, jer.dark)
+            cv.dot(CX + 2, dy, jer.dark)
+        for dy in (24, 27, 30):
+            cv.dot(CX - 5, dy, (201, 160, 48))
+
+
+def sig_jack(cv, spec, pose, back):
+    # THE BEANSTALK, climbing past his shoulder. A line of single dots
+    # was a piece of string hung beside a boy. It is a STALK: three wide,
+    # twisting the whole height of the frame, with tendrils curling off
+    # it and leaves big enough to read at this size.
+    vine = Ramp('#2f7a34')
+    dk = shade(vine.base, -0.34)
+    xs = []
+    for y in range(0, 39):
+        x = CX + 11.0 + math.sin(y / 38.0 * 6.0 + 0.7) * 2.0
+        xs.append(x)
+        cv.cyl(x - 1.5, y, x + 1.5, y, vine)
+        if y % 5 == 0:
+            cv.dot(x - 1, y, dk)      # the coil seam, so it reads twisted
+            cv.dot(x + 1, y, dk)
+    # tendrils: a curl of three off the stalk, alternating sides
+    for y, side in ((6, -1), (17, 1), (29, -1), (36, 1)):
+        x = xs[y]
+        cv.dot(x + side * 2, y, vine.lit)
+        cv.dot(x + side * 3, y - 1, vine.mid)
+        cv.dot(x + side * 3, y - 2, vine.lit)
+    leaf = Ramp('#3f9a44')
+    for y, side in ((3, -1), (12, 1), (21, -1), (31, 1), (37, -1)):
+        x = xs[y]
+        cv.sphere(x + side * 3.4, y, 3.2, 2.0, leaf, spec=False)
+        cv.dot(x + side * 3, y, shade(leaf.base, -0.28))
+    if back:
+        return
+    for dx in (8, 9):                       # a couple of beans in hand
+        cv.dot(CX + dx, 25, (232, 214, 140))
+        cv.dot(CX + dx, 26, (206, 188, 116))
+
+
+def sig_robin(cv, spec, pose, back):
+    # PYLE'S ROBIN, 1883: Lincoln green doublet and hose, the HOOD (see
+    # headwear), soft brown boots, a belt with a pouch, and the longbow
+    # with a quiver of arrows on his back. The tiny cap with a red feather
+    # is Errol Flynn's, 1938. The pouch on the belt:
+    if not back:
+        cv.sphere(CX + 6, 30.5, 2.2, 2.4, Ramp('#6b4423'), spec=False)
+    q = Ramp('#6a4326')
+    cv.cyl(CX + 8, 20, CX + 11, 30, q, round_bot=1)
+    for i, dx in enumerate((8, 9, 10)):
+        cv.dot(CX + dx, 19 - i % 2, (226, 226, 230))
+        cv.dot(CX + dx, 18 - i % 2, (201, 60, 48))
+    bow = (160, 112, 52)
+    o = run_off(pose)[0]
+    for dy, ddx in ((22, 0), (24, 1), (26, 1.4), (28, 1), (30, 0)):
+        cv.dot(CX - 10 - ddx, dy + o, bow)
+        cv.dot(CX - 10 - ddx, dy + 1 + o, bow)
+    for dy in range(22, 31):
+        cv.dot(CX - 10, dy + o, (226, 226, 230))
+
+
+
+def sig_lupin(cv, spec, pose, back):
+    # LEBLANC'S GENTLEMAN BURGLAR, as the 1907 covers and the 1908 play
+    # dressed him: white tie and a white waistcoat under the tails, the
+    # monocle, a red carnation in the buttonhole, and a cane with a gold
+    # knob. Without the waistcoat and the flower he is a man in a black box.
+    o = run_off(pose)[0]
+    cane = (26, 22, 28)
+    for dy in range(26, 38):
+        cv.dot(CX - 12, dy + o, cane)
+    cv.dot(CX - 12, 25 + o, (212, 175, 55))
+    cv.dot(CX - 13, 25 + o, (212, 175, 55))
+    if back:
+        return
+    wv = Ramp('#f0f0f2')
+    cv.rect(CX - 3, 23, CX + 3, 24, wv, l=0.72)
+    for dy in range(25, 30):
+        cv.dot(CX - 1, dy, wv.mid); cv.dot(CX, dy, wv.lit); cv.dot(CX + 1, dy, wv.mid)
+    bt = Ramp('#f6f6f8')
+    cv.dot(CX - 2, 25, bt.mid); cv.dot(CX + 2, 25, bt.mid); cv.dot(CX, 25, bt.dark)
+    cv.dot(CX + 4, 26, (200, 16, 46))
+    cv.dot(CX + 5, 26, (200, 16, 46))
+    cv.dot(CX + 4, 27, (160, 12, 36))
+
+
+def sig_acrobat(cv, spec, pose, back):
+    # THE BALANCE POLE, held level across the body and running off both
+    # edges of the frame. It is the entire silhouette of a wire walker,
+    # and it is what tells you which circus act this is from across a
+    # ball field. A gold sash and a star said only "circus".
+    o = run_off(pose)[1]
+    pole = Ramp('#8a929e')
+    cv.rect(0, 26 + o, 31, 27 + o, pole, l=0.6)
+    for x in (0, 31):
+        cv.dot(x, 25 + o, pole.dark)
+        cv.dot(x, 28 + o, pole.dark)
+    if back:
+        return
+    # dark braces over the white shirt
+    br = (30, 32, 44)
+    for dy in range(23, 31):
+        cv.dot(CX - 3, dy, br)
+        cv.dot(CX + 3, dy, br)
+
+
+def sig_cyclops(cv, spec, pose, back):
+    # The hide tunic over one shoulder, and a brow heavy enough to make
+    # the single eye read as deliberate rather than as a missing pair.
+    # A hide that DRAPES and flares, with a ragged hem and one strap over
+    # the shoulder. A straight rectangle read as a sandwich board.
+    hide = Ramp('#8a6a3a')
+    cv.taper(23, 33, 9, 15, hide, folds=2)
+    cv.cyl(CX - 6, 20, CX - 4, 25, hide)
+    for i, dx in enumerate(range(-7, 8, 2)):
+        for k in range((i * 5) % 3):
+            cv.dot(CX + dx, 33 + k, hide.dark)
+            cv.dot(CX + dx + 1, 33 + k, hide.dark)
+    # THE CLUB, Polyphemus's olive trunk, planted beside him
+    o = run_off(pose)[1]
+    wood = Ramp('#6f4e37')
+    cv.cyl(CX + 11, 12 + o, CX + 13, 36 + o, wood, round_bot=1)
+    cv.sphere(CX + 12, 10 + o, 3.0, 3.2, wood, spec=False)
+    cv.dot(CX + 13, 9 + o, shade(wood.base, -0.4))
+    if back:
+        return
+    brow = shade(spec.get('skin', '#c8956a'), -0.5)
+    for dx in range(-5, 6):
+        cv.dot(CX + dx, 9, brow)
+    for dx in (-5, 5):
+        cv.dot(CX + dx, 10, brow)
+
+
+def sig_firebreather(cv, spec, pose, back):
+    """The plume has to come out of an OPEN mouth. Out of a closed one it
+    reads as something burning behind him."""
+    if back:
+        return
+    for dx in range(-3, 4):
+        cv.dot(CX + dx, 18, (56, 26, 22))
+    for dx in range(-2, 3):
+        for dy in (19, 20):
+            cv.dot(CX + dx, dy, (120, 44, 40))
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 19, (196, 76, 52))
+    cv.dot(CX - 3, 19, (56, 26, 22))
+    cv.dot(CX + 3, 19, (56, 26, 22))
+    # THE PLUME, up and out to one side, three colours deep so it reads
+    # as fire rather than as an orange smear. The old one was a puff.
+    for i in range(11):
+        u = i / 10.0
+        fx = CX + 5 + u * 10
+        fy = 18 - u * 13
+        w = 2.6 - u * 1.4
+        cv.sphere(fx, fy, w + 0.8, w, Ramp('#c93a12'), spec=False)
+        cv.sphere(fx, fy, w * 0.62, w * 0.7, Ramp('#f4922a'), spec=False)
+        if i % 2 == 0:
+            cv.dot(fx, fy, (250, 232, 140))
+    # the torch he lit it from, held low on the other side
+    o = run_off(pose)[0]
+    cv.cyl(CX - 11, 28 + o, CX - 10, 35 + o, Ramp('#6a4a2a'))
+    for dy, r_ in ((26, 2.2), (23, 1.6)):
+        cv.sphere(CX - 10.5, dy + o, r_, r_ * 1.3, Ramp('#f4922a'), spec=True)
+    cv.dot(CX - 10, 26 + o, (250, 232, 140))
+
+
+def sig_strongman(cv, spec, pose, back):
+    """SANDOW'S STRONGMAN, 1890s: a leopard skin singlet over ONE
+    shoulder, a wide leather belt with a brass buckle, a waxed handlebar,
+    and a globe ended barbell in his hand. Without the weight he is a
+    large man in a leotard, which is the acrobat."""
+    skin = spec.get('skin', '#d9a07c')
+    leo = Ramp('#d9a441')
+    # the singlet: across the chest and over the left shoulder only
+    cv.taper(24, 33, 12, 15, leo, folds=0)
+    cv.cyl(CX - 8, 20, CX - 3, 25, leo, round_top=1)
+    spots = (27, 27, 27)
+    for dx, dy in ((-5, 25), (-1, 26), (3, 25), (-4, 29), (1, 30), (5, 28), (-6, 22), (-2, 32), (4, 32)):
+        cv.dot(CX + dx, dy, spots)
+        cv.dot(CX + dx + 1, dy + 1, spots)
+    # the belt and its buckle
+    cv.rect(CX - 8, 30, CX + 8, 31, Ramp('#5c3a21'), l=0.45)
+    cv.rect(CX - 2, 30, CX + 2, 31, Ramp('#c9a227'), l=0.62)
+    # the barbell, globe ended
+    o = run_off(pose)[1]
+    iron = Ramp('#3a3a3a')
+    cv.rect(CX + 9, 33 + o, CX + 13, 34 + o, iron, l=0.5)
+    cv.sphere(CX + 8.5, 33.5 + o, 2.4, 2.4, iron, spec=True)
+    cv.sphere(CX + 13.5, 33.5 + o, 2.4, 2.4, iron, spec=True)
+    if back:
+        return
+    # THE HANDLEBAR: one band, and ends that curl UP off the lip.
+    m = (43, 29, 20)
+    hi = (92, 62, 30)
+    for dx in range(-4, 5):
+        cv.dot(CX + dx, 16, m)
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(CX + dx, 17, m)
+    for side in (-1, 1):
+        cv.dot(CX + side * 5, 15, m)
+        cv.dot(CX + side * 6, 14, m)
+        cv.dot(CX + side * 6, 13, hi)
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 19, (120, 60, 52))
+    # the centre parting in the slicked hair
+    cv.dot(CX, 4, shade(spec.get('hair', '#2a1c10'), 0.3))
+    cv.dot(CX, 5, shade(spec.get('hair', '#2a1c10'), 0.3))
+
+
+def sig_phoenix(cv, spec, pose, back):
+    # wings SPREAD, swept up like flames: a red outer layer, an orange
+    # inner layer, gold feather tips flicking off the top edge. Drawn
+    # over the body (the bird archetype's own egg wings are suppressed
+    # with the nowings flag, or they paint over these).
+    red = Ramp('#c93018')
+    org = Ramp('#f4922a')
+    gold = (248, 216, 74)
+    # The wings flap on the run, sweep UP on the load and the kick, and
+    # settle on the follow and the ready: a phoenix has no arms, so this
+    # is its whole answer to the batter's and the pitcher's poses.
+    flap = {'run1': 2, 'run2': -2, 'load': -3, 'kick': -3, 'follow': 3, 'ready': 3}.get(pose, 0)
+    for side in (-1, 1):
+        sx = side
+        f = flap * (1 if side > 0 else -1) * 0.0 + flap
+        cv.tri([(CX + sx * 3, 26), (CX + sx * 15, 5 + f), (CX + sx * 12, 20 + f)], red, l=0.45)
+        cv.tri([(CX + sx * 4, 25), (CX + sx * 11, 8 + f), (CX + sx * 8, 20 + f)], org, l=0.62)
+        cv.dot(CX + sx * 15, 4 + f, gold)
+        cv.dot(CX + sx * 13, 4 + f, gold)
+        cv.dot(CX + sx * 11, 6 + f, gold)
+    # tail streamers, flowing long below the body
+    # flames at the feet: Herodotus's bird is reborn out of them
+    for fx, fh in ((-6, 3), (-3, 5), (0, 4), (3, 6), (6, 3)):
+        for k in range(fh):
+            cv.dot(CX + fx, 39 - k, (255, 122, 0) if k % 2 else (255, 210, 63))
+    # the tail streamers: "partly golden but mostly red", with the
+    # bestiaries' purple and de Vitry's azure among them
+    for dx, col in ((-4, (106, 13, 173)), (-2, (201, 48, 24)), (0, (248, 216, 74)),
+                    (2, (30, 111, 217)), (4, (201, 48, 24))):
+        for i, dy in enumerate(range(33, 40)):
+            wob = 1 if (i + abs(dx)) % 3 == 0 else 0
+            cv.dot(CX + dx + (wob if dx >= 0 else -wob), dy, col)
+
+
+def sig_beardedlady(cv, spec, pose, back):
+    # ANNIE JONES, as Brady photographed her: a full dark beard combed to
+    # the chest over a high necked Victorian gown with a lace collar and
+    # a cameo, hair pinned up. The dignity is the point.
+    if back:
+        return
+    lace = (244, 239, 230)
+    for dx in range(-5, 6):
+        cv.dot(CX + dx, 23, lace)
+    for dx in (-5, -3, -1, 1, 3, 5):
+        cv.dot(CX + dx, 24, lace)
+    cv.dot(CX, 25, (230, 203, 168))
+    cv.dot(CX, 26, (200, 160, 120))
+
+
+def sig_ringmaster(cv, spec, pose, back):
+    gold = (201, 160, 48)
+    glove = (245, 245, 247)
+    # gold cuffs and white gloves on both facings
+    for side in (-1, 1):
+        x = CX + side * 9
+        cv.rect(x - 1, 30, x + 1, 30, Ramp('#c9a030'), l=0.6)
+        for dx in (-1, 0, 1):
+            cv.dot(x + dx, 32, glove)
+            cv.dot(x + dx, 33, glove)
+    # THE WHIP, a long curled lash off his other hand, on both facings.
+    o2 = run_off(pose)[0]
+    lash = (28, 26, 32)
+    for i, (dx, dy) in enumerate(((-11, 30), (-13, 28), (-14, 25), (-14, 22),
+                                  (-13, 20), (-11, 19), (-9, 20), (-8, 22))):
+        cv.dot(CX + dx, dy + o2, lash)
+    if back:
+        return
+    # THE GOLD WAISTCOAT, filling the V of the coat. Without it the red
+    # coat closes over a red body and he is a man in a red sack.
+    vest = Ramp('#e8c04a')
+    cv.taper(23, 31, 5, 8, vest, folds=0)
+    # lapels over it, double breasted gold buttons, white collar
+    for i in range(4):
+        cv.dot(CX - 3 - i, 23 + i, gold)
+        cv.dot(CX + 3 + i, 23 + i, gold)
+    for dy in (26, 28, 30):
+        cv.dot(CX - 2, dy, gold); cv.dot(CX + 2, dy, gold)
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 22, (245, 245, 247))
+    cv.dot(CX, 23, (58, 96, 168))
+
+
+
+# ==================== OLYMPUS, AND TWO FROM PARIS ====================
+# A god is usually a person in a robe, and a pack of people in robes is a
+# pack of nobody at thirty two pixels wide. So the test for getting in was
+# not fame, it was SILHOUETTE: is there a shape here that none of the other
+# seventy is going to have. A lion's head worn as a hood, a helmet crest, a
+# pair of goat legs, a trident, a hump. Palette and headgear alone do not
+# count, because that is how you end up with fourteen bearded men in
+# different hues who are all "the one in the yellow".
+#
+# What that ruled out, so nobody has to re-derive it:
+#   Demeter      the harvest is Mother Nature's, and she is already here
+#   Selene       a crescent and silver is Artemis, drawn twice
+#   Aphrodite    a shell behind the head is Hera's peacock fan, drawn twice
+#   Asclepius    one snake on a staff is Hermes' two, at this size
+#   Thanatos     a dark winged figure is Hades and Nike, drawn together
+#   Nemesis      the same, plus scales that would be four pixels
+#   Hestia       a hearth has no silhouette; she would be a robe in orange
+#   Hypnos       nor does sleep; he would be a robe with its eyes shut
+#   Hecate       three faces at this width is a smear, not three faces
+#   Helios       a radiate crown next to Nike's laurel reads as one idea
+
+def _laurel(cv, col='#e0b64a', hi='#f6dc94'):
+    """A wreath sitting ON the skull's curve rather than a ring floating
+    over it: the leaves follow the same ellipse the hair is cut to."""
+    import math
+    r = Ramp(col)
+    for i in range(13):
+        a = math.pi * (0.06 + 0.88 * i / 12.0)
+        x = CX - math.cos(a) * (HEAD_RX * 0.94)
+        y = HEAD_CY - math.sin(a) * (HEAD_RY * 0.80)
+        cv.dot(x, y, r.at(0.55))
+        cv.dot(x, y - 1, hex2rgb(hi) if i % 2 else r.at(0.35))
+
+
+def _staff(cv, x, y0, y1, col='#8a6a3a'):
+    cv.cyl(x - 1, y0, x + 1, y1, Ramp(col))
+
+
+def sig_zeus(cv, spec, pose, back):
+    # THE BOLT is the whole character, so it is drawn big and above the
+    # head where nothing else in the frame lives.
+    _laurel(cv)
+    if back:
+        return
+    hot, core, edge = Ramp('#f2c53a'), (255, 252, 226), (196, 132, 24)
+    # A zigzag drawn as filled bands rather than a line: a one pixel
+    # lightning bolt at this size is a scratch.
+    bands = [(6, 0, 3), (5, 2, 4), (4, 4, 5), (7, 6, 4), (6, 8, 4),
+             (5, 10, 4), (8, 12, 4), (7, 14, 3), (6, 16, 3), (5, 18, 2)]
+    for dx, y, w in bands:
+        cv.rect(CX + dx, y, CX + dx + w, y + 1, hot, l=0.66)
+        cv.dot(CX + dx + 1, y, core)
+        cv.dot(CX + dx + w, y + 1, edge)
+    # the arm that is holding it up
+    skin = Ramp(spec.get('skin', '#f0c99a'))
+    cv.cyl(CX + 7, 18, CX + 9, 27, skin, round_bot=1)
+
+
+def sig_hera(cv, spec, pose, back):
+    # THE PEACOCK FAN. An arc of eyed feathers standing behind the head:
+    # the only fan shape in the roster, which is why she is in and
+    # Aphrodite's shell is not.
+    import math
+    teal, gold = Ramp('#1f7a86'), Ramp('#e0b64a')
+    for i in range(9):
+        a = math.pi * (0.08 + 0.84 * i / 8.0)
+        cs, sn = -math.cos(a), math.sin(a)
+        # each feather is a solid run from the skull out to its eyespot,
+        # so nine of them make a fan rather than nine loose dots
+        for t in range(5, 16):
+            x, y = CX + cs * t, HEAD_CY - sn * (t * 0.88)
+            cv.dot(x, y, teal.at(0.26 + t * 0.028))
+            cv.dot(x + (1 if cs > 0 else -1), y, teal.at(0.20 + t * 0.02))
+        ex, ey = CX + cs * 16.4, HEAD_CY - sn * 14.4
+        cv.dot(ex, ey, gold.at(0.70))
+        cv.dot(ex, ey - 1, gold.at(0.50))
+        cv.dot(ex, ey + 1, (46, 62, 128))
+    _laurel(cv, '#e0b64a')
+
+
+def sig_poseidon(cv, spec, pose, back):
+    # THE TRIDENT, full height on the near side so the shaft crosses the
+    # whole sprite: that vertical is what you see first at any size.
+    shaft = Ramp('#c9a256')
+    x = CX - 11
+    cv.cyl(x - 1, 5, x + 1, 36, shaft)
+    tine = Ramp('#eadfc0')
+    for dx in (-4, 0, 4):
+        cv.cyl(x + dx - 0.5, 1, x + dx + 0.5, 7, tine)
+        cv.dot(x + dx, 0, (255, 252, 242))
+    cv.rect(x - 5, 7, x + 5, 8, tine, l=0.62)
+    if not back:
+        skin = Ramp(spec.get('skin', '#e8cfa8'))
+        cv.cyl(CX - 9, 22, CX - 7, 28, skin, round_bot=1)
+
+
+def sig_hades(cv, spec, pose, back):
+    # A crown of black spikes, and the two pronged bident that tells him
+    # apart from his brother's three.
+    dark, edge = Ramp('#171320'), (140, 124, 190)
+    for i, dx in enumerate((-7, -3.5, 0, 3.5, 7)):
+        h = 5 if i % 2 == 0 else 7
+        cv.tri([(CX + dx - 2, HEAD_CY - 5), (CX + dx + 2, HEAD_CY - 5),
+                (CX + dx, HEAD_CY - 5 - h)], dark, l=0.5)
+        cv.dot(CX + dx, HEAD_CY - 5 - h, edge)
+    cv.rect(CX - 9, HEAD_CY - 5, CX + 9, HEAD_CY - 3, dark, l=0.45)
+    if back:
+        return
+    x = CX + 11
+    cv.cyl(x - 1, 6, x + 1, 36, Ramp('#9a92ae'))
+    for dx in (-3.5, 3.5):
+        cv.cyl(x + dx - 1, 1, x + dx + 1, 9, Ramp('#d0c8de'))
+    cv.rect(x - 5, 8, x + 5, 10, Ramp('#d0c8de'), l=0.66)
+
+
+def sig_athena(cv, spec, pose, back):
+    # THE CREST. A Corinthian helmet's plume runs front to back along the
+    # top of the skull and stands two heads high: no other figure has
+    # anything above row 3 except Zeus's bolt, and his is off to the side.
+    br, plume = Ramp('#c9a256'), Ramp('#a8243a')
+    cv.sphere(CX, HEAD_CY - 1.0, HEAD_RX * 0.99, HEAD_RY * 0.98, br,
+              spec=False, ymax=HEAD_CY - 1)
+    cv.rect(CX - 3, HEAD_CY - 3, CX - 1, HEAD_CY + 5, br, l=0.35)   # nasal
+    # an arch: high at the crown, sweeping down behind the skull
+    import math
+    for i in range(16):
+        a = math.pi * (0.10 + 0.62 * i / 15.0)
+        x = CX + math.cos(a) * 8.6
+        y = HEAD_CY - 5.0 - math.sin(a) * 7.4
+        for w in range(3):
+            cv.dot(x, y + w, plume.at(0.66 - w * 0.14 - i * 0.012))
+    if back:
+        return
+    _staff(cv, CX + 11, 4, 36, '#8a6a3a')
+    cv.tri([(CX + 8, 6), (CX + 14, 6), (CX + 11, 0)], Ramp('#d8d2c6'), l=0.66)
+    # the owl, sat on her shoulder
+    ow = Ramp('#c9b48a')
+    cv.sphere(CX - 10, 21, 3.6, 3.8, ow, spec=True)
+    for dx in (-1.4, 1.4):
+        cv.dot(CX - 10 + dx, 20, (250, 246, 232))
+        cv.dot(CX - 10 + dx, 20, (250, 246, 232))
+    cv.dot(CX - 11.4, 20, (30, 26, 20)); cv.dot(CX - 8.6, 20, (30, 26, 20))
+    cv.dot(CX - 10, 22, (216, 160, 50))
+
+
+def sig_ares(cv, spec, pose, back):
+    # A helm with the plume swept BACK rather than up, so he cannot be
+    # read as Athena, and a shield big enough to be the silhouette.
+    br = Ramp('#d8ab4e')
+    cv.sphere(CX, HEAD_CY - 1.0, HEAD_RX * 0.99, HEAD_RY * 0.98, br,
+              spec=True, ymax=HEAD_CY - 2)
+    cv.rect(CX - 1.4, HEAD_CY - 3, CX + 1.4, HEAD_CY + 4, Ramp('#a8763c'), l=0.34)
+    plume = Ramp('#c92a30')
+    for i in range(9):
+        cv.rect(CX + 1 + i * 1.25, HEAD_CY - 9 + i * 0.95,
+                CX + 4.4 + i * 1.25, HEAD_CY - 5.6 + i * 0.95, plume, l=0.70 - i * 0.045)
+    if back:
+        return
+    cv.sphere(CX - 11, 31, 5.0, 5.2, Ramp('#4a1e14'), spec=False)   # the rim
+    cv.sphere(CX - 11, 31, 3.9, 4.1, Ramp('#c9902e'), spec=True)     # the face
+    cv.sphere(CX - 11, 31, 1.5, 1.6, Ramp('#4a1e14'), spec=False)    # the boss
+    cv.dot(CX - 11, 30, (255, 244, 205))
+
+
+def sig_apollo(cv, spec, pose, back):
+    _laurel(cv)
+    if back:
+        return
+    # THE LYRE, held across the chest: two horns, a crossbar, four strings.
+    w, dk = Ramp('#d8ab4e'), Ramp('#8a6a2a')
+    # the sound box, then two horns curling up off it
+    cv.sphere(CX - 10, 30, 4.6, 3.6, w, spec=True)
+    for dx, cur in ((-14, -1), (-6, 1)):
+        for i in range(9):
+            cv.dot(CX + dx + cur * (i * 0.22), 29 - i * 1.5, w.at(0.62 - i * 0.02))
+            cv.dot(CX + dx + cur * (i * 0.22) + cur, 29 - i * 1.5, dk.at(0.4))
+    cv.rect(CX - 15, 16, CX - 5, 17, w, l=0.70)
+    for dx in (-13, -11.5, -10, -8.5, -7):
+        for y in range(18, 29):
+            cv.dot(CX + dx, y, (250, 246, 232) if (y % 2) else (214, 208, 190))
+
+
+def sig_hermes(cv, spec, pose, back):
+    # WINGS IN THREE PLACES: the cap and both heels. One pair reads as a
+    # bird; three pairs read as the god who is late for something.
+    w = Ramp('#f2efe6')
+    for sgn in (-1, 1):
+        for i in range(4):
+            cv.rect(CX + sgn * (6 + i), HEAD_CY - 7 - i,
+                    CX + sgn * (7 + i), HEAD_CY - 5 - i * 0.6, w, l=0.66 - i * 0.06)
+    o = run_off(pose)
+    for sgn, oi in ((-1, 0), (1, 1)):
+        base = 36 + o[oi]
+        for i in range(3):
+            cv.rect(CX + sgn * (4 + i * 1.2), base - i * 1.3,
+                    CX + sgn * (5.4 + i * 1.2), base + 1 - i * 1.3, w, l=0.62 - i * 0.08)
+    if back:
+        return
+    # the caduceus: a staff with two snakes crossing it
+    _staff(cv, CX + 11, 10, 34, '#c9a256')
+    g = (110, 168, 96)
+    for i in range(7):
+        y = 12 + i * 3
+        cv.dot(CX + 11 + (2 if i % 2 else -2), y, g)
+        cv.dot(CX + 11 + (1 if i % 2 else -1), y + 1, g)
+    for dx in (-2, 2):
+        cv.rect(CX + 11 + dx - 1, 8, CX + 11 + dx + 1, 10, Ramp('#f2efe6'), l=0.62)
+
+
+def sig_dionysus(cv, spec, pose, back):
+    # Grapes for a crown, and a cup he is not putting down.
+    gr, leaf = Ramp('#6b4296'), Ramp('#4a8a3a')
+    import math
+    for i in range(11):
+        a = math.pi * (0.04 + 0.92 * i / 10.0)
+        x = CX - math.cos(a) * (HEAD_RX * 0.98)
+        y = HEAD_CY - math.sin(a) * (HEAD_RY * 0.86)
+        cv.dot(x, y, gr.at(0.6 if i % 2 else 0.38))
+        cv.dot(x, y - 1.6, gr.at(0.5) if i % 3 else leaf.at(0.58))
+    if back:
+        return
+    cup = Ramp('#d8b04a')
+    cv.taper(24, 28, 3.6, 2.2, cup, cx=CX + 10)
+    cv.rect(CX + 9, 28, CX + 11, 30, cup, l=0.45)
+    cv.rect(CX + 7, 30, CX + 13, 31, cup, l=0.6)
+    cv.rect(CX + 7, 23, CX + 13, 24, Ramp('#8a2a4a'), l=0.66)
+
+
+def sig_pan(cv, spec, pose, back):
+    # GOAT LEGS. Shaggy, and they replace the human ones rather than being
+    # drawn over them, which is why the spec gives him bare skin below.
+    fur = Ramp('#6a4a28')
+    o = run_off(pose)
+    for sgn, oi in ((-1, 0), (1, 1)):
+        x = CX + sgn * 3.2
+        cv.cyl(x - 2.4, 31 + o[oi], x + 2.4, 37 + o[oi], fur, round_bot=1)
+        for i in range(6):
+            cv.dot(x + sgn * 2.6, 31 + i + o[oi], fur.at(0.28))
+        cv.rect(x - 2.2, 37 + o[oi], x + 2.2, 38 + o[oi], Ramp('#2a2018'), l=0.4)
+    for sgn in (-1, 1):
+        for i in range(4):
+            cv.dot(CX + sgn * (5 + i * 0.9), HEAD_CY - 7 - i * 1.4, (206, 190, 150))
+            cv.dot(CX + sgn * (5.9 + i * 0.9), HEAD_CY - 7 - i * 1.4, (150, 132, 96))
+    if back:
+        return
+    # the pipes
+    pi, bd = Ramp('#e0c08a'), Ramp('#8a6a3a')
+    for i in range(6):
+        x = CX - 9 + i * 2.2
+        cv.rect(x, 23, x + 1.4, 30 - i * 0.9, pi, l=0.72 - i * 0.05)
+        cv.dot(x, 23, (255, 248, 226))
+    cv.rect(CX - 9.4, 24, CX + 4, 25, bd, l=0.5)
+
+
+def sig_nike(cv, spec, pose, back):
+    # The wings are the character, so they are drawn twice the size of the
+    # shared extra and BEHIND everything, which is what the pre hook is.
+    w = Ramp('#f6f3ec')
+    for sgn in (-1, 1):
+        # the leading edge sweeps up and out, the trailing edge steps down
+        for i in range(9):
+            x = CX + sgn * (6.0 + i * 1.15)
+            top = 10.5 - i * 0.95 + (i * i) * 0.10
+            bot = 24 + i * 1.35
+            cv.rect(x, top, x + 1.2, bot, w, l=0.74 - i * 0.045)
+            cv.dot(x, top, (255, 255, 252))
+        # a row of feather tips along the bottom of the sweep
+        for i in range(6):
+            x = CX + sgn * (8.0 + i * 1.9)
+            cv.rect(x - 0.6, 24 + i * 2.0, x + 0.6, 27 + i * 2.0, w, l=0.34)
+
+
+def sig_nike_post(cv, spec, pose, back):
+    # No palm frond. The wings are already the whole silhouette and a
+    # green rectangle beside them read as a hedge.
+    _laurel(cv)
+
+
+def sig_quasimodo(cv, spec, pose, back):
+    # THE HUMP, and it is drawn before the body so the tunic sits over it:
+    # a lump pasted on top reads as a backpack.
+    hp = Ramp(spec.get('shirt', '#6a5a3a'))
+    cv.sphere(CX + 5.5, 25.5, 6.4, 6.0, hp, spec=True)
+
+
+def sig_quasimodo_post(cv, spec, pose, back):
+    # the bell rope, coming down past him from the belfry
+    r = Ramp('#e0cba0')
+    for y in range(0, 36):
+        t = (y // 2) % 2
+        cv.dot(CX - 14, y, r.at(0.62 if t else 0.34))
+        cv.dot(CX - 13, y, r.at(0.30 if t else 0.66))
+        cv.dot(CX - 12, y, r.at(0.20 if t else 0.40))
+    if back:
+        return
+    # one shoulder carried higher than the other
+    sk = Ramp(spec.get('skin', '#d8b48a'))
+    cv.sphere(CX - 7, 25, 3.0, 2.8, sk, spec=False)
+    # THE WART, "an enormous wart" that buries the right eye: Hugo's own
+    # words, and the thing every drawing of him leads with
+    wart = shade(sk.base, -0.28)
+    for dx, dy in ((3, -2), (4, -2), (5, -2), (3, -1), (4, -1), (5, -1), (4, 0)):
+        cv.dot(CX + dx, HEAD_CY + dy, wart)
+    cv.dot(CX + 4, HEAD_CY - 2, shade(sk.base, 0.1))
+
+
+def sig_esmeralda(cv, spec, pose, back):
+    # A tambourine held up, gold hoops, and a skirt that flares: three
+    # things a dancer has and nobody else in the roster does.
+    if not back:
+        for sgn in (-1, 1):
+            for dy in (0, 1, 2):
+                cv.dot(CX + sgn * 8, HEAD_CY + 3 + dy, (224, 182, 74))
+            cv.dot(CX + sgn * 9, HEAD_CY + 4, (240, 208, 120))
+    sk = Ramp(spec.get('pants', '#c0392b'))
+    cv.taper(29, 37, 5.0, 8.4, sk, folds=3)
+    # Hugo's "variegated gown": bands of green and blue through the red
+    for y, col in ((31, '#1e8c4e'), (34, '#1f3fa8')):
+        half = 5.0 + (y - 29) * 0.42
+        cv.rect(CX - half, y, CX + half, y, Ramp(col), l=0.55)
+    cv.rect(CX - 8, 36, CX + 8, 37, Ramp('#e0b64a'), l=0.6)
+    if back:
+        return
+    tam = Ramp('#c9a06a')
+    cv.sphere(CX + 10, 12, 4.6, 4.6, tam, spec=False)
+    cv.sphere(CX + 10, 12, 3.0, 3.0, Ramp('#f2ead4'), spec=False)
+    for dx, dy in ((-4, 0), (4, 0), (0, -4), (0, 4), (3, 3), (-3, -3)):
+        cv.dot(CX + 10 + dx, 12 + dy, (240, 208, 120))
+    sk2 = Ramp(spec.get('skin', '#d8a878'))
+    cv.cyl(CX + 6, 15, CX + 8, 25, sk2, round_bot=1)
+
+
+SIGNATURES = {
+    'kong': {'post': sig_kong},
+    'franky': {'post': sig_franky},
+    'popeye': {'post': sig_popeye},
+    'dracula': {'post': sig_dracula},
+    'liberty': {'post': sig_liberty},
+    'peter': {'post': sig_peter},
+    'robin': {'post': sig_robin},
+    'medusa': {'post': sig_medusa},
+    'pooh': {'post': sig_pooh},
+    'tom': {'post': sig_tom},
+    'huck': {'post': sig_huck},
+    'sherlock': {'post': sig_sherlock},
+    'invisible': {'post': sig_invisible},
+    'hyde': {'post': sig_hyde},
+    'alice': {'post': sig_alice},
+    'dorothy': {'post': sig_dorothy},
+    'scarecrow': {'post': sig_scarecrow},
+    'lion': {'pre': sig_lion, 'post': sig_lion_face},
+    'mrsclaus': {'post': sig_mrsclaus},
+    'santa': {'post': sig_santa},
+    'bunny': {'post': sig_bunny},
+    'fairy': {'post': sig_fairy},
+    'vampire': {'pre': sig_cape_pre, 'post': sig_cape_post},
+    'pirate': {'post': sig_pirate},
+    'krampus': {'post': sig_krampus},
+    'centaur': {'post': sig_centaur},
+    'fathertime': {'post': sig_fathertime},
+    'mothernature': {'post': sig_mothernature},
+    'raboddog': {'post': sig_raboddog},
+    'chupacabra': {'post': sig_chupacabra},
+    'cupid': {'post': sig_cupid},
+    'strongman': {'post': sig_strongman},
+    'firebreather': {'post': sig_firebreather},
+    'cyclops': {'post': sig_cyclops},
+    'acrobat': {'post': sig_acrobat},
+    'jack': {'pre': sig_jack, 'post': sig_jack_post},
+    'lupin': {'post': sig_lupin},
+    'phoenix': {'post': sig_phoenix},
+    'ringmaster': {'post': sig_ringmaster},
+    'beardedlady': {'post': sig_beardedlady},
+    'witch': {'post': sig_witch},
+    'zombie': {'post': sig_zombie},
+    'horseman': {'post': sig_horseman},
+    'werewolf': {'post': sig_werewolf},
+    'humpty': {'post': sig_humpty},
+    'yeti': {'post': sig_yeti},
+    'sasquatch': {'post': sig_sasquatch},
+    'paulbunyan': {'post': sig_paulbunyan},
+    'pinocchio': {'post': sig_pinocchio},
+    'golem': {'post': sig_golem},
+    'ichabod': {'post': sig_ichabod},
+    'longjohn': {'post': sig_longjohn},
+    'zeus': {'post': sig_zeus},
+    'hera': {'pre': sig_hera},
+    'poseidon': {'post': sig_poseidon},
+    'hades': {'post': sig_hades},
+    'athena': {'post': sig_athena},
+    'ares': {'post': sig_ares},
+    'apollo': {'post': sig_apollo},
+    'hermes': {'post': sig_hermes},
+    'dionysus': {'post': sig_dionysus},
+    'pan': {'post': sig_pan},
+    'nike': {'pre': sig_nike, 'post': sig_nike_post},
+    'quasimodo': {'pre': sig_quasimodo, 'post': sig_quasimodo_post},
+    'esmeralda': {'post': sig_esmeralda},
+}
+
+
+def build(spec, pose='idle', key=None):
+    cv = Canvas()
+    # The swing is seen from behind, like everything a batter does.
+    back = pose.startswith('back') or pose in ('swing', 'load', 'follow')
+    body_pose = {'back': 'idle', 'backrun1': 'run1', 'backrun2': 'run2',
+                 'swing': 'swing', 'load': 'load', 'follow': 'follow'}[pose] if back else pose
+    sig = SIGNATURES.get(key, {})
+    if back:
+        # The archetype is drawn with its FRONT features stripped: the
+        # muzzle and the chest patch belong to the side facing the
+        # camera, and Kong's back is not the side with his belly on it.
+        bspec = dict(spec)
+        bspec.pop('chest', None)
+        if spec.get('arch') in ('hulk', 'beast', 'cat'):
+            bspec['muzzle'] = None
+        if 'pre' in sig: sig['pre'](cv, spec, body_pose, True)
+        ARCH[spec.get('arch', 'human')](cv, bspec, body_pose)
+        if not spec.get('headless'):
+            back_head(cv, spec)
+            headwear(cv, spec)
+        ex = [e for e in spec.get('extra', []) if e[0] not in FRONT_ONLY_EXTRAS]
+        extras(cv, dict(spec, extra=ex), body_pose)
+        if 'post' in sig: sig['post'](cv, spec, body_pose, True)
+        cv.outline()
+        return cv
+    if 'pre' in sig: sig['pre'](cv, spec, body_pose, False)
+    ARCH[spec.get('arch', 'human')](cv, spec, body_pose)
+    if spec.get('headless'):
+        extras(cv, spec, pose)
+        if 'post' in sig: sig['post'](cv, spec, body_pose, False)
+        cv.outline()
+        return cv
+    hair(cv, spec)
+    headwear(cv, spec)
+    a = spec.get('arch', 'human')
+    cy = HEAD_CY
+    if a == 'hulk':
+        cy = 12.5
+    elif a == 'round':
+        cy = HEAD_CY + 1
+    elif a == 'egg':
+        cy = 12.0
+    elif a == 'beast':
+        cy = 11.0 if spec.get('build') == 'lean' else 12.5
+    elif a == 'cat':
+        cy = 12.0
+    elif a == 'centaur':
+        cy = 9.5
+    elif a == 'nessie':
+        cy = 7.0
+    elif a == 'dragon':
+        cy = 11.0
+    elif a == 'bird':
+        cy = 12.0
+    skin = Ramp(spec.get('skin', '#f0c088'))
+    if a == 'hulk':
+        skin = Ramp(spec.get('muzzle') or spec.get('skin', '#a87b4c'))
+    face(cv, skin, spec, cy=cy)
+    beard(cv, spec)
+    extras(cv, spec, pose)
+    if 'post' in sig: sig['post'](cv, spec, body_pose, False)
+    cv.outline()
+    return cv
+
+
+# ------------------------------------------------------------------ specs
+# One compact row per character. Anything omitted falls back to the
+# archetype default, so a spec only says what makes that character
+# different from every other figure of the same build.
+SPECS = {
+ # ---------------------------------------------------------- OLYMPUS
+ 'zeus': dict(arch='hulk', skin='#d9a679', shirt='#f2eee4', pants='#f2eee4',
+              hand='#d9a679', hair='#e8e8e8', hairstyle='wild',
+              beard='#e8e8e8', beardsize='full', belt='#5e2a84'),
+ 'hera': dict(arch='robed', skin='#efd5c0', shirt='#1f3f8f',
+              hair='#3b2a1a', hairstyle='long', folds=4),
+ 'poseidon': dict(arch='hulk', skin='#e8cfa8', shirt='#2f7f86', pants='#256a70',
+                  hand='#e8cfa8', hair='#8fd0c8', hairstyle='wild',
+                  beard='#8fd0c8', beardsize='full'),
+ 'hades': dict(arch='robed', skin='#d8cfc8', shirt='#463c66',
+               hair='#14101c', hairstyle='short', beard='#241c34',
+               beardsize='full', folds=3),
+ 'athena': dict(arch='human', skin='#f0c99a', shirt='#e6e0cc', pants='#c9a256',
+                hair='#5a3618', hairstyle='long', belt='#c9a256'),
+ 'ares': dict(arch='hulk', skin='#c58a5a', shirt='#c49a4a', pants='#b3122e',
+              hand='#c58a5a', hair='#2a1e14', hairstyle='short',
+              beard='#2a1e14', beardsize='moustache'),
+ 'apollo': dict(arch='human', skin='#f5d5a8', shirt='#f2efe6', pants='#e0b64a',
+                hair='#e6c76a', hairstyle='mop', belt='#c9a256'),
+ 'hermes': dict(arch='human', skin='#f0c99a', shirt='#f2efe6', pants='#c9a256',
+                hair='#a8763c', hairstyle='short', hat='cap', hatcolor='#e6e0cc',
+                boot='#f2efe6'),
+ 'dionysus': dict(arch='round', skin='#ebcba8', shirt='#e3a21a', pants='#6b4296',
+                  hair='#7a4b2a', hairstyle='mop'),
+ 'pan': dict(arch='human', skin='#e8c088', shirt='#7a6a4a', pants='#6a4a28',
+             hair='#3a2a14', hairstyle='wild', beard='#3a2a14',
+             beardsize='moustache', boot='#6a4a28'),
+ 'nike': dict(arch='human', skin='#f2d0a8', shirt='#f6f2e8', pants='#eae4d4',
+              hair='#c9a256', hairstyle='long', belt='#e0b64a'),
+ # ------------------------------------------------------ HUGO, 1831
+ # Quasimodo is Hugo's, not Disney's: the novel gives him one eye buried
+ # under a wart, a hump, and the red and purple of the bellringer's dress
+ # he is put in for the Feast of Fools. The green tunic is the film's.
+ 'quasimodo': dict(arch='hulk', skin='#d7b58f', shirt='#6b4a2a', pants='#4a3a24',
+                   hand='#d7b58f', hair='#b5451b', hairstyle='wild'),
+ 'esmeralda': dict(arch='human', skin='#c99a6e', shirt='#d9a21b', pants='#c0392b',
+                   hair='#111111', hairstyle='long', belt='#e0b64a',
+                   boot='#8e1b1b'),
+
+ 'kong': dict(arch='hulk', skin='#3b2a1e', muzzle='#6a5a52', chest='#4a4040',
+              hand='#33200f', boot='#33200f',
+              eyes='normal', eyespread=3, mouth='none'),
+ # SHELLEY'S CREATURE, not Universal's. The flat top, the neck bolts and
+ # the green skin are Jack Pierce's 1931 makeup design for Universal, who
+ # still assert rights in it; the novel is 1818 and free. Shelley gives
+ # him "yellow skin", "lustrous black hair" that is "flowing", "watery
+ # eyes", and "straight black lips", and he is eight feet tall, which the
+ # hulk archetype already covers.
+ 'franky': dict(arch='hulk', skin='#c9b87a', muzzle=None, shirt='#5a3d28',
+                hand='#c9b46e', pants='#22283a', chest=None,
+                eyes='normal', mouth='open'),
+ 'popeye': dict(arch='human', skin='#f0c8a0', shirt='#1c2a4a', pants='#2b3a6b',
+                hat='sailor', hatcolor='#f2f2f3', hair='#c25c1a', hairstyle='bald',
+                eyes='hidden', mouth='none'),
+ 'dracula': dict(arch='human', skin='#e9e4dc', shirt='#111114', pants='#111114',
+                 boot='#0a0a0c', hair='#d8d4cc', hairstyle='short',
+                 eyes='normal', eyecolor='#8a2430', mouth='fang'),
+ 'liberty': dict(arch='robed', skin='#6db8a2', shirt='#6db8a2', hat='crown',
+                 hatcolor='#f4c25a', eyes='normal', mouth='line', folds=4),
+ # Barrie's Peter is "clad in skeleton leaves and the juices that ooze out
+ # of trees", and the stage Peter that followed wore a leaf edged tunic and
+ # a feathered cap. The flat green tunic, green cap and belt are the 1953
+ # film's, which is not public domain, and they also made him Robin Hood
+ # with a different feather. Leaf green, a jagged leaf hem, red hair,
+ # and no shoes: he never wore any.
+ 'peter': dict(arch='human', skin='#f2ceaa', shirt='#6f7a3a', pants='#8a6a3c',
+               hair='#6b4a2a', hairstyle='wild',
+               boot='#f2ceaa', eyes='normal', mouth='grin'),
+ # Jack: a white shirt under a brown jerkin, and a brown bowl cut. He was
+ # a boy in a plain green tunic, which made him a smaller Peter Pan.
+ 'jack': dict(arch='human', skin='#f1d9b8', shirt='#e8e2d0', pants='#b58b3c', boot='#4a3220',
+              hair='#a8763c', hairstyle='mop', eyes='normal', mouth='oh'),
+ # Tom in a white shirt under blue denim overalls, with the blond mop
+ # showing under the straw brim. He and Huck were one boy in two hats:
+ # Tom is the one who is dressed by somebody, Huck is not.
+ 'tom': dict(arch='human', skin='#e8bf8f', shirt='#efe6c8', pants='#3a568e',
+             boot='#e8bf8f',
+             hat='straw', hatcolor='#d9b45a', hair='#7a4a22', hairstyle='mop',
+             eyes='normal', mouth='grin'),
+ # Huck: a loose cream shirt with the sleeves pushed up, ochre trousers
+ # rolled at the calf, ONE suspender, a wide straw brim, and no shoes. He
+ # has no shoes in any illustration anybody has ever drawn of him.
+ 'huck': dict(arch='human', skin='#efc9a0', shirt='#e6e0cc', pants='#a8863f',
+              hat='straw', hatcolor='#c2a05a', hair='#5a3618', hairstyle='short',
+              boot='#efc9a0', eyes='normal', mouth='grin'),
+ 'invisible': dict(arch='human', skin='#f0ece0', shirt='#3a3530', pants='#242430',
+                   hat='brim', hatcolor='#2e2a26', hattrim='#1e1a18',
+                   eyes='goggles', eyecolor='#1f3a6b', mouth='none',
+                   extra=[('bandage', '#eaeaea')]),
+ 'sherlock': dict(arch='human', skin='#ecd9bf', shirt='#7a6a50', pants='#241812',
+                  hat='deerstalker', hatcolor='#8a7a5e', hattrim='#5a4a38',
+                  hair='#3a1e08', hairstyle='bald', eyes='normal', mouth='line',
+                  extra=[('pipe',)]),
+ 'alice': dict(arch='human', skin='#f5e3d0', shirt='#f2d24a', pants='#f2d24a',
+               boot='#111111', hair='#e8d27a', hairstyle='long', eyes='normal', mouth='grin',
+               belt='#4a78c8'),
+ # SILVER shoes. In the 1900 book Dorothy's shoes are silver; the ruby
+ # slippers are the 1939 film's invention and the film is not public
+ # domain until 2035. The blue and white checked gingham is Baum's.
+ 'dorothy': dict(arch='human', skin='#f5d9c0', shirt='#5a86c8', pants='#eaeaea',
+                 hat='bonnet', hatcolor='#f2a0b8', hattrim='#e07898',
+                 hair='#8a5a2a', hairstyle='braids', eyes='normal', mouth='grin',
+                 boot='#c0c0c0'),
+ 'lupin': dict(arch='human', skin='#efc9a0', shirt='#151515', pants='#151515',
+               hat='top', hatcolor='#111111', hattrim='#2a2a2a',
+               hair='#2a1e14', hairstyle='short', beard='#2a1e14', beardsize='moustache',
+               eyes='normal', mouth='smirk', extra=[('monocle',)]),
+ 'hyde': dict(arch='human', skin='#d9c7b8', shirt='#2e2e33', pants='#2e2e33',
+              boot='#1a1a1e', hair='#2b2118', hairstyle='wild', eyes='wide',
+              mouth='none'),
+ # A dark tattered coat with straw bursting out of the collar and the
+ # cuffs, under a wide floppy hat that has seen a winter. The brown coat
+ # and the tan hat put a straw man in straw coloured clothes, so the only
+ # thing you could see was the hat.
+ 'scarecrow': dict(arch='human', skin='#e8d9b0', shirt='#5a78b8', pants='#5a78b8',
+                   boot='#2a2a2a',
+                   hat='point', hatcolor='#3b5da8', hattrim='#2c4a8a',
+                   eyes='cartoon', eyecolor='#3a2410', mouth='none'),
+ 'lion': dict(arch='beast', build='stocky', skin='#c8963e', muzzle='#e5c98b',
+              eyes='normal', eyespread=3, mouth='line'),
+ # NO SHIRT. Shepard's 1926 Pooh, the one that is public domain, is a bare
+ # honey coloured bear; the red shirt arrived on a 1932 licence and is not
+ # public domain until 2028. He carries the honey pot instead, which is
+ # the thing that was always his.
+ 'pooh': dict(arch='round', skin='#f4c25a', shirt='#f4c25a', eyes='hidden',
+              eyecolor='#141018', mouth='none'),
+ 'robin': dict(arch='human', skin='#f1c9a5', shirt='#5c7a2a', pants='#42601f',
+               boot='#6e4b2a', hat='hood', hatcolor='#5c7a2a',
+               eyes='normal', mouth='grin', belt='#6b4423'),
+ # The TRENCH COAT. The Tintin that is public domain is the 1929 one, who
+ # reports from the Soviet Union in a tan trench coat over plus-fours; the
+ # pale blue sweater is a later look and stays under copyright into the
+ # 2030s. The quiff is his in every year.
+ 'santa': dict(arch='round', skin='#f5d2a3', shirt='#c93030', hat='santa',
+               hatcolor='#c93030', hattrim='#f5efe8', beard='#f5efe8',
+               beardsize='full', eyes='normal', mouth='none'),
+ 'mrsclaus': dict(arch='human', skin='#f3c6b1', shirt='#b22222', pants='#b22222',
+                  hat='bonnet', hatcolor='#f4f4f4', hattrim='#f28c6b',
+                  hair='#ededed', hairstyle='short', eyes='normal', mouth='grin',
+                  belt='#f5efe8'),
+ 'bunny': dict(arch='round', skin='#8b6a45', shirt='#3b6ea5', eyes='normal',
+               mouth='line'),
+ 'fairy': dict(arch='human', skin='#f5d5a8', shirt='#b08ac6', pants='#8a5aa0',
+               hair='#e9c76a', hairstyle='long', eyes='normal', eyecolor='#6a4a9a',
+               mouth='grin', extra=[('wings', '#cfe8f5')]),
+ 'vampire': dict(arch='human', skin='#e9e4e6', shirt='#1a1a1a', pants='#1a1a1a',
+                 hair='#141414', hairstyle='long', eyes='glow', eyecolor='#bfc3c7',
+                 mouth='fang', capecolor='#1a1a1a', capehem='#242424'),
+ 'pirate': dict(arch='human', skin='#c68e5c', shirt='#f2ebdc', pants='#3b4a6b',
+                hat='kerchief', hatcolor='#b7332c', hair='#141010', hairstyle='bald',
+                beard='#241c1c', beardsize='full',
+                eyes='normal', mouth='grin'),
+ # NOT GREEN. A green witch is Margaret Hamilton's 1939 makeup; before
+ # that film every witch in the folklore and in Baum is an old woman with
+ # a bad complexion, and Baum's Wicked Witch is not green anywhere in the
+ # 1900 text. She gets the older look: ashen, drawn, and alive.
+ 'witch': dict(arch='robed', skin='#e6d2b5', shirt='#e8c547', hat='point',
+               hatcolor='#141020', hattrim='#e8c547', hair='#bdbdbd',
+               hairstyle='braids', eyes='normal', mouth='none',
+               folds=3, extra=[('patch',)]),
+ 'centaur': dict(arch='centaur', skin='#e8b888', pants='#8b6a3a',
+                 eyes='normal', mouth='grin'),
+ # Black shaggy body, a RED face in it, and long black horns that go up
+ # rather than curling into ram's horns. He was a brown ape with gold
+ # antlers, which is a moose.
+ 'krampus': dict(arch='hulk', skin='#1c1620', muzzle='#8f2a22', chest=None,
+                 hand='#0f0c12', boot='#0f0c12',
+                 eyes='glow', eyecolor='#f0b028', mouth='fang'),
+ # A BLUE robe and a scythe. Brown put him in the same sack as every
+ # other bearded man on the roster, and the scythe is the prop that says
+ # which one of them he is.
+ 'fathertime': dict(arch='robed', skin='#e5c8a5', shirt='#39569e',
+                    hair='#f5efe8', hairstyle='bald', beard='#f5efe8',
+                    beardsize='full', eyes='normal', mouth='none', folds=4),
+ # SHE IS GREEN. Not a woman in a green dress: green skin, green hair
+ # with leaves in it. The Witch just gave the colour up and Mother Nature
+ # is who should have had it all along.
+ 'mothernature': dict(arch='robed', skin='#e8b98f', shirt='#5f8f3a',
+                      hair='#6b3f1f', hairstyle='long', eyes='normal',
+                      mouth='grin', folds=3, boot='#e8b98f'),
+ 'raboddog': dict(arch='beast', skin='#4a3a2c', muzzle='#6a5a48',
+                  eyes='glow', eyecolor='#c94b1a', mouth='fang',
+                  extra=[('ears', '#4a3a2c')]),
+ 'chupacabra': dict(arch='beast', build='lean', skin='#6e7470', muzzle='#8a908c',
+                    eyes='glow', eyecolor='#c1121f', mouth='fang'),
+ 'cupid': dict(arch='round', skin='#f7dcb4', shirt='#f7dcb4', eyes='normal',
+               mouth='grin', hair='#d8a24a', hairstyle='bald',
+               extra=[('wings', '#f2f4ff')]),
+ 'medusa': dict(arch='robed', skin='#c9d3b0', shirt='#e8e8e8',
+                eyes='wide', mouth='open', folds=3,
+                hair='#6b8e23', hairstyle='wild'),
+ 'cyclops': dict(arch='hulk', skin='#c68e5a', muzzle='#c68e5a', chest=None,
+                 eyes='one', eyecolor='#5c3a1e', mouth='open',
+                 hair='#2f2418', hairstyle='wild', beard='#2f2418', beardsize='full'),
+ 'phoenix': dict(arch='bird', skin='#c8102e', chest='#ffb300', nowings=True,
+                 eyes='glow', eyecolor='#f8d84a', mouth='none',
+                 extra=[('flame', '#f8d84a')]),
+ 'dragon': dict(arch='dragon', skin='#2e7d32', muzzle='#c9b458',
+                eyes='normal', eyecolor='#141018', mouth='none',
+                extra=[('horns', '#3e2b1f')]),
+ # A dark red brown SILHOUETTE with nothing in it but a band of eyes.
+ # Every photograph anybody claims to have is exactly this and nothing
+ # more, and the tan muzzle and chest patch were turning him into a bear.
+ 'sasquatch': dict(arch='hulk', skin='#5a2018', muzzle=None, chest=None,
+                   hand='#3f150f', boot='#3f150f',
+                   eyes='hidden', mouth='none'),
+ # White fur, but a SLATE face and red eyes in it. An all white yeti is
+ # a snowman: the dark face is the only thing that gives the silhouette a
+ # front, and the red is what makes him worth being afraid of.
+ 'yeti': dict(arch='hulk', skin='#eef4fa', muzzle=None, chest='#d4e4f2',
+              hand='#4a5666', boot='#4a5666',
+              eyes='hidden', mouth='none'),
+ 'nessie': dict(arch='nessie', skin='#3b4f44', muzzle='#7a8f84',
+                eyes='hidden', mouth='none'),
+ 'horseman': dict(arch='human', skin='#1a1f2b', shirt='#1a1f2b', pants='#d9cba8',
+                  boot='#111111', headless=True, eyes='hidden', mouth='none'),
+ 'zombie': dict(arch='human', skin='#7a6a5c', shirt='#b8a88a', pants='#5a4a3a',
+                boot='#7a6a5c', hair='#2b2320', hairstyle='short', eyes='cartoon',
+                eyecolor='#d9d4c7', mouth='open', noarms=True),
+ 'werewolf': dict(arch='hulk', skin='#4a3524', muzzle=None, chest='#6a4e34',
+                  wolfmuzzle='#a88458', eyes='glow', eyecolor='#f4c25a',
+                  mouth='none'),
+ # Bare chested in dark trunks. He was wearing a red singlet that covered
+ # the one thing anybody comes to look at.
+ 'strongman': dict(arch='hulk', skin='#d9a07c', muzzle='#d9a07c', chest=None,
+                   pants='#1b1b1b', hair='#2a1c10', hairstyle='short',
+                   eyes='normal', mouth='grin'),
+ # The banner painting look: a yellow dress and a full dark beard. The
+ # magenta read as a circus costume; the yellow reads as a woman in her
+ # good dress, which is the joke and also the dignity of it.
+ 'beardedlady': dict(arch='human', skin='#efd6c3', shirt='#5e2750', pants='#5e2750',
+                     boot='#111111', hair='#2e2119', hairstyle='long', beard='#2e2119',
+                     beardsize='full', eyes='normal', mouth='none'),
+ # Red coat AND red trousers, over tall black boots, with a gold
+ # waistcoat under the coat. Black trousers cut him in half at the belt.
+ 'ringmaster': dict(arch='human', skin='#efd6c3', shirt='#b71c1c', pants='#ede3c8',
+                    hat='top', hatcolor='#0d0d0d', hattrim='#2a2a2a',
+                    beard='#2b1d14', beardsize='moustache', boot='#111111',
+                    eyes='normal', mouth='none', belt='#d4a017'),
+ # THE WIRE WALKER, not a gymnast in a leotard: black top hat with a red
+ # band, white shirt, dark braces, dark trousers, and a balance pole held
+ # across the body. The pole is the whole silhouette.
+ 'acrobat': dict(arch='human', skin='#e8b888', shirt='#eee8dc', pants='#22243a',
+                 hat='top', hatcolor='#16161e', hattrim='#a8202a',
+                 hair='#2a1c10', hairstyle='short', eyes='normal', mouth='grin',
+                 boot='#16161e'),
+ # Crimson and gold, because a fire breather in dark brown is a man
+ # standing in his own smoke. The flame reads off the costume, not in
+ # spite of it.
+ 'firebreather': dict(arch='human', skin='#c8956a', shirt='#a8203a', pants='#7a1830',
+                      hair='#141010', hairstyle='short', eyes='angry',
+                      mouth='open', belt='#e8c04a', extra=[('breath', '#f4922a')]),
+ 'blackcat': dict(arch='cat', skin='#141018', chest='#eaeaea', muzzle='#d8d8dc',
+                  eyes='glow', eyecolor='#f4c25a', mouth='none', eyespread=3,
+                  extra=[('ears', '#141018')]),
+ 'humpty': dict(arch='egg', skin='#f2e2c4', shirt='#c93030', boot='#6a6a72',
+                eyes='cartoon', eyecolor='#141018', mouth='grin'),
+ # ----------------------------------------------------- the folk and the tall
+ # PAUL BUNYAN, printed 1916 and told in the camps long before that. Red and
+ # black buffalo plaid, a black beard, and the axe. The plaid is the whole
+ # character: a lumberjack in a plain red shirt is a man on his way to a
+ # barn dance.
+ 'paulbunyan': dict(arch='human', skin='#e8b890', shirt='#b71c1c', pants='#2f4a7a',
+                    boot='#5a3a1e', hat='cap', hatcolor='#2b4a8a',
+                    hair='#141014', hairstyle='short',
+                    beard='#141014', beardsize='full', belt='#5a3a1c',
+                    eyes='round', mouth='none'),
+ # PINOCCHIO as Collodi wrote him in 1883: a wooden marionette with the joints
+ # showing and the grain running through him. NO LONG NOSE, by request, and it
+ # was never the interesting half of him anyway. A peaked cap, a short jacket
+ # and bare wooden legs.
+ 'pinocchio': dict(arch='human', skin='#d9b784', shirt='#f5f0e1', pants='#d9b784',
+                   hat='point', hatcolor='#e8d2a0', hattrim='#d8c090', boot='#7a5533',
+                   hair='#8a5a28', hairstyle='bald',
+                   eyes='cartoon', eyecolor='#241810', mouth='grin'),
+ # THE GOLEM OF PRAGUE. Wet clay, roughly finished, with the seams of the
+ # hands that made him still in the surface and the word of life cut into his
+ # forehead. The oldest unstoppable object in the roster.
+ 'golem': dict(arch='hulk', skin='#8b7d6b', muzzle='#8b7d6b', chest=None,
+               shirt='#6e5a44', hand='#5f4636', boot='#5f4636',
+               eyes='wide', eyecolor='#3a2a1c', mouth='line'),
+ # ICHABOD CRANE, and Irving is unusually specific: "exceedingly lank", with
+ # "huge ears, large green glassy eyes, and a long snipe nose", and a head
+ # "small, and flat at top". A schoolmaster's black coat over all of it.
+ 'ichabod': dict(arch='human', skin='#e5cfa8', shirt='#1c1c1c', pants='#33333f',
+                 hat='tall', hatcolor='#111111',
+                 hair='#2a2018', hairstyle='short', boot='#1a1a20',
+                 eyes='wide', eyecolor='#3f7a4a', mouth='line'),
+ # LONG JOHN SILVER: "very tall and strong, with a face as big as a ham, plain
+ # and pale, but intelligent and smiling", one leg gone at the hip, the crutch
+ # under his arm and Captain Flint on his shoulder. Nobody has ever drawn him
+ # without the crutch and the parrot, so those are what he is built around.
+ 'longjohn': dict(arch='human', skin='#e8c49a', shirt='#243b6b', pants='#c9b07a',
+                  hat='tricorn', hatcolor='#2a2a2a', boot='#241c14',
+                  hair='#b8a878', hairstyle='bald', belt='#6a4a28',
+                  eyes='oval', mouth='smirk'),
+}
+
+# The back poses exist because of where the camera stands: the viewer is
+# behind home plate, so the batter and any runner heading up the screen
+# are seen from behind. A batter who faces the camera while "looking at"
+# the pitcher breaks the whole view.
+# The pitcher's two frames and the batter's swing came later: drawField had
+# been asking for windup and release since the first camera, and the draw
+# routine answered with idle because no such frame existed.
+POSES = ('idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2',
+         'windup', 'release', 'swing', 'catch', 'throw',
+         'load', 'follow', 'kick', 'ready')
+
+
+# ------------------------------------------------------------------ faces
+# THE CASTING SHEET. One row per character, and the rule is that no two
+# rows may be identical: the check at the bottom of this file enforces it.
+#
+# It lives here rather than inside SPECS because SPECS is about what a
+# character is made of and this is about who they are, and because thirty
+# one characters ended up sharing one face precisely by nobody being able
+# to see, in a wall of dict literals, that they had. As a table you can
+# read down a column.
+#
+#   eyes      round oval wide bead squint sleepy lash, plus the special
+#             whole face styles (glow angry one carved goggles cartoon)
+#   sp        eye spread. 3 close set, 4 default, 5 wide set
+#   brow      flat angry worried high bushy, or None. Two pixels a side
+#             and the single most identifying thing on a face this size
+#   nose      dot button bulb long beak, or None
+#   mouth     line grin smirk frown oh buck fang open, or none.
+#             There was a 'teeth' as well and it is gone: white teeth
+#             between an upper and a lower lip read as a jaw clenched
+#             on them at this size, however the corners are curved, and
+#             a mouth that reads as a grimace on a hero is not a mouth
+#
+# Characters whose signature draws its own face are absent: Popeye, Pooh,
+# Felix, the Yeti, Nessie and the Headless Horseman.
+FACES = {
+    # ---- Olympus. Fourteen faces that have to differ from each other and
+    # from the fifty seven already here, which is what the guard below is for.
+    'zeus':       dict(eyes='wide',   eyespread=5, brow='bushy',   nose='bulb',   mouth='line'),
+    'hera':       dict(eyes='oval',   eyespread=5, brow='high',    nose='long',   mouth='line'),
+    'poseidon':   dict(eyes='angry',  eyespread=5, brow='bushy',   nose='bulb',   mouth='open'),
+    'hades':      dict(eyes='glow',   eyespread=4, brow='angry',   nose='long',   mouth='line',
+                       eyecolor='#6ad8c0'),
+    'athena':     dict(eyes='oval',   eyespread=2, brow='flat',    nose='long',   mouth='line'),
+    'ares':       dict(eyes='angry',  eyespread=3, brow='angry',   nose='bulb',   mouth='frown'),
+    'apollo':     dict(eyes='round',  eyespread=5, brow='high',    nose='button', mouth='grin'),
+    'hermes':     dict(eyes='round',  eyespread=5, brow='flat',    nose='button', mouth='smirk'),
+    'dionysus':   dict(eyes='sleepy', eyespread=4, brow='high',    nose='bulb',   mouth='grin',  blush=True),
+    'pan':        dict(eyes='bead',   eyespread=5, brow='angry',   nose='button', mouth='smirk'),
+    'nike':       dict(eyes='lash',   eyespread=4, brow='flat',    nose='dot',    mouth='grin'),
+    # ---- Hugo
+    'quasimodo':  dict(eyes='one',    eyespread=4, brow='worried', nose='bulb',   mouth='frown'),
+    'esmeralda':  dict(eyes='lash',   eyespread=3, brow='flat',    nose='button', mouth='smirk', blush=True),
+
+    # the leads
+    'kong':         dict(eyes='round',  eyespread=3, brow='bushy',   nose='bulb',   mouth='none'),
+    'franky':       dict(eyes='wide',   eyespread=5, brow='flat',    nose='long',   mouth='frown'),
+    'dracula':      dict(eyes='round',  eyespread=4, brow='angry',   nose='long',   mouth='fang'),
+    'liberty':      dict(eyes='oval',   eyespread=4, brow='flat',    nose='button', mouth='line'),
+    # the boys, who were the whole problem: four of them in hats, one face
+    'peter':        dict(eyes='round',  eyespread=3, brow='high',    nose='button', mouth='smirk', freckles=True),
+    'jack':         dict(eyes='round',  eyespread=4, brow='worried', nose='button', mouth='oh',    freckles=True),
+    'tom':          dict(eyes='round',  eyespread=3, brow='flat',    nose='button', mouth='smirk'),
+    'huck':         dict(eyes='sleepy', eyespread=5, brow='flat',    nose='button', mouth='grin',  freckles=True),
+    'robin':        dict(eyes='round',  eyespread=4, brow='flat',    nose='button', mouth='grin'),
+    # the detectives. Both wear a brim that owns the brow row, so neither
+    # gets one: drawn anyway it sits ON the hat.
+    'sherlock':     dict(eyes='oval',   eyespread=4,                 nose='long',   mouth='line'),
+    'lupin':        dict(eyes='oval',   eyespread=5, brow='flat',    nose='long',   mouth='smirk'),
+    # the girls
+    'alice':        dict(eyes='lash',   eyespread=4, brow='high',    nose='dot',    mouth='line',  blush=True),
+    'dorothy':      dict(eyes='lash',   eyespread=3, brow='worried', nose='dot',    mouth='grin',  freckles=True, blush=True),
+    'fairy':        dict(eyes='lash',   eyespread=5, brow='high',    nose='dot',    mouth='line',  blush=True),
+    'beardedlady':  dict(eyes='lash',   eyespread=4, brow='high',    nose='button', mouth='none',  blush=True),
+    'mothernature': dict(eyes='oval',   eyespread=5, brow='high',    nose='dot',    mouth='grin',  blush=True),
+    'mrsclaus':     dict(eyes='oval',   eyespread=4, brow='high',    nose='dot',    mouth='grin',  blush=True),
+    # the seasonal
+    'santa':        dict(eyes='squint', eyespread=5, brow='bushy',                  mouth='none'),
+    'bunny':        dict(eyes='round',  eyespread=5,                                mouth='buck'),
+    'cupid':        dict(eyes='round',  eyespread=4, brow='high',    nose='button', mouth='oh',    blush=True),
+    'fathertime':   dict(eyes='sleepy', eyespread=4, brow='bushy',   nose='bulb',   mouth='none'),
+    # the circus
+    'strongman':    dict(eyes='round',  eyespread=5, brow='flat',    nose='button', mouth='none'),
+    'ringmaster':   dict(eyes='round',  eyespread=3, brow='high',    nose='bulb',   mouth='none'),
+    'acrobat':      dict(eyes='round',  eyespread=5, brow='high',    nose='dot',    mouth='grin'),
+    'firebreather': dict(eyes='angry',  eyespread=4, brow='flat',    nose='bulb',   mouth='none'),
+    # the monsters
+    'hyde':         dict(eyes='angry',  eyespread=5, brow='bushy',   nose='button', mouth='none'),
+    'vampire':      dict(eyes='glow',   eyespread=3, brow='angry',   nose='long',   mouth='fang'),
+    'witch':        dict(eyes='glow',   eyespread=5, brow='angry',   nose='beak',   mouth='none'),
+    'krampus':      dict(eyes='glow',   eyespread=4, brow='angry',   nose='long',   mouth='fang'),
+    'medusa':       dict(eyes='glow',   eyespread=4, brow='flat',    nose='dot',    mouth='line'),
+    'werewolf':     dict(eyes='glow',   eyespread=5, brow='bushy',                  mouth='none'),
+    'blackcat':     dict(eyes='glow',   eyespread=4,                                mouth='none'),
+    'phoenix':      dict(eyes='glow',   eyespread=5,                                mouth='none'),
+    'raboddog':     dict(eyes='glow',   eyespread=3,                                mouth='fang'),
+    'chupacabra':   dict(eyes='glow',   eyespread=5,                                mouth='fang'),
+    'cyclops':      dict(eyes='one',                 brow='flat',    nose='bulb',   mouth='open'),
+    'dragon':       dict(eyes='wide',   eyespread=5, brow='angry',                  mouth='none'),
+    'sasquatch':    dict(eyes='sleepy', eyespread=3, brow='bushy',   nose='bulb',   mouth='line'),
+    'zombie':       dict(eyes='cartoon', eyespread=5, brow='worried',               mouth='open'),
+    'scarecrow':    dict(eyes='cartoon', eyespread=4, brow='worried',               mouth='none'),
+    'humpty':       dict(eyes='cartoon', eyespread=4, brow='high',   nose='button', mouth='grin', blush=True),
+    # the rest
+    'invisible':    dict(eyes='goggles',                                            mouth='none'),
+    'pirate':       dict(eyes='round',  eyespread=3, brow='angry',   nose='button', mouth='grin'),
+    'centaur':      dict(eyes='oval',   eyespread=3, brow='flat',    nose='long',   mouth='line'),
+    'lion':         dict(eyes='wide',   eyespread=3, brow='worried', nose='bulb',   mouth='frown'),
+    # the folk and the tall
+    'paulbunyan':   dict(eyes='round',  eyespread=4, brow='bushy',   nose='bulb',   mouth='none'),
+    'pinocchio':    dict(eyes='cartoon',eyespread=3, brow='high',    nose='button', mouth='grin'),
+    'golem':        dict(eyes='wide',   eyespread=4, brow='flat',                   mouth='line'),
+    'ichabod':      dict(eyes='wide',   eyespread=4, brow='worried', nose='long',   mouth='line'),
+    'longjohn':     dict(eyes='oval',   eyespread=4, brow='angry',   nose='bulb',   mouth='smirk'),
+}
+
+for _k, _f in FACES.items():
+    assert _k in SPECS, f'FACES has no character {_k}'
+    SPECS[_k].update(_f)
+
+# No two characters may wear the same face. This is the guard for the bug
+# that produced the table: the old eye routine ignored eyespread, so half
+# the roster was identical and nothing anywhere said so.
+_seen = {}
+for _k, _s in SPECS.items():
+    _sig = tuple(_s.get(_f) for _f in
+                 ('eyes', 'eyespread', 'brow', 'nose', 'mouth', 'freckles', 'blush'))
+    if _sig[0] == 'hidden':
+        continue                    # these draw their own face in a signature
+    if _sig in _seen:
+        raise SystemExit(f'same face: {_k} and {_seen[_sig]} -> {_sig}')
+    _seen[_sig] = _k
+
+
+# The palette alphabet carries NO DIGITS, because digits are run lengths
+# in the encoding below. The punctuation is everything a single quoted JS
+# string can hold bare, minus the row separator.
+ALPHA = ('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+         '!#$%&()*+,-:;<=>?@^_~|')
+
+
+def rle(row):
+    """A row of codes as runs: `12.3a` is twelve blanks then three of a.
+    A run of one is written as its character alone."""
+    out = []
+    i = 0
+    while i < len(row):
+        j = i
+        while j < len(row) and row[j] == row[i]:
+            j += 1
+        k = j - i
+        out.append((str(k) if k > 1 else '') + row[i])
+        i = j
+    return ''.join(out)
+
+
+def js_block(key, frames):
+    """frames: {pose: (pal, rows)}. Palettes are merged so a character
+    carries one palette across all of its frames.
+
+    RUN LENGTH ENCODED. Fifteen frames of fifty rows of thirty two columns
+    is 24,000 characters per character as bare strings, and the table was
+    two thirds of the page before the last four frames existed. Runs cut
+    it by more than half: a sprite is mostly blank and mostly flat color,
+    which is what pixel art IS. The page decodes a frame the first time
+    it draws it and never again (v2Frame in index.html)."""
+    merged = {}
+    for pose in POSES:
+        for ch, hexv in frames[pose][0].items():
+            merged[hexv] = None
+    order = sorted(merged.keys())
+    assert len(order) <= len(ALPHA), f'{key} needs {len(order)} colors'
+    code = {hexv: ALPHA[i] for i, hexv in enumerate(order)}
+    pal_str = ', '.join(f"'{code[h]}':'{h}'" for h in order)
+    out = [f"  {key}:{{p:{{{pal_str}}},f:{{"]
+    for pose in POSES:
+        pal, rows = frames[pose]
+        remapped = []
+        for r in rows:
+            remapped.append(rle(''.join('.' if c == '.' else code[pal[c]] for c in r)))
+        out.append(f"    {pose}:'{'/'.join(remapped)}',")
+    out.append("  }},")
+    return '\n'.join(out)
+
+
+def main():
+    blocks = []
+    for key, spec in SPECS.items():
+        frames = {}
+        for pose in POSES:
+            cv = build(spec, pose, key=key)
+            pal, rows = cv.emit()
+            assert len(rows) == OUT_H, f'{key}/{pose} rows={len(rows)}'
+            assert all(len(r) == W for r in rows), f'{key}/{pose} width'
+            frames[pose] = (pal, rows)
+        blocks.append(js_block(key, frames))
+    print(f"const V2_W = {W}, V2_H = {OUT_H};")
+    print("const V2_SPRITES = {")
+    print('\n'.join(blocks))
+    print("};")
+
+
+if __name__ == '__main__':
+    main()

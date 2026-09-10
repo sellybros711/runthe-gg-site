@@ -334,6 +334,39 @@ const NFL_TEAMS = {
   ARZ: 'Arizona Cardinals', BLT: 'Baltimore Ravens', CLV: 'Cleveland Browns', HST: 'Houston Texans', SL: 'St. Louis Rams',
   PHO: 'Phoenix Cardinals', RAM: 'Los Angeles Rams', RAI: 'Los Angeles Raiders'
 };
+
+/* A CITY CODE IS NOT A FRANCHISE.
+ *
+ * nflverse writes HOU for the Houston Oilers and for the Houston Texans, which
+ * are not one club under two names: the Oilers left for Tennessee in 1997 and
+ * the Texans were founded in 2002 as an expansion team. Reading the code alone
+ * filed 8 stints from 1990 to 1996 under the Texans, so Bruce Matthews, Eddie
+ * George, Frank Wycheck and Brad Hopkins each appeared to have played for two
+ * franchises when they played for one.
+ *
+ * A player wrote in about exactly that: Sportegories refused Bruce Matthews
+ * for "Offensive Lineman who never left one franchise". He spent nineteen
+ * years with one, through a relocation and a rename.
+ *
+ * This is the same trap the hoops pipeline documents at length: a table of
+ * clubs as they exist TODAY cannot name a club that no longer does. So the
+ * name is resolved from the code AND the season, and any code that has meant
+ * two different franchises belongs in here.
+ *
+ * Not the Tennessee side of the same move: the Oilers became the Titans, which
+ * IS one franchise renamed, and a stint that runs 1997 to 2001 straddles the
+ * rename and cannot be split without inventing a second one. */
+const NFL_ERA = {
+  // code: [[through this season, the club it was then], ...]
+  HOU: [[1996, 'Houston Oilers']],       // the Texans arrive in 2002
+  PHX: [[1993, 'Phoenix Cardinals']],
+  LA:  [[1994, 'Los Angeles Rams']]      // and again from 2016, which the default covers
+};
+function nflTeam(code, year) {
+  var era = NFL_ERA[code];
+  if (era) for (var i = 0; i < era.length; i++) if (year <= era[i][0]) return era[i][1];
+  return NFL_TEAMS[code] || null;
+}
 async function buildNFL(find) {
   const obs = new Map();
   for (let y = START; y <= NOW_YEAR; y++) {
@@ -341,7 +374,7 @@ async function buildNFL(find) {
     if (!rows) { await sleep(120); continue; }
     for (const r of rows) {
       const num = parseNum(r.jersey_number);
-      const team = NFL_TEAMS[r.team] || null;
+      const team = nflTeam(r.team, y);
       if (num == null || !team) continue;
       if (num === 0 && y < 2023) continue;   // #0 was illegal in the NFL until 2023; a 0 here is a data artifact
       /* EVERYONE, and no status filter, because a season's roster file IS
