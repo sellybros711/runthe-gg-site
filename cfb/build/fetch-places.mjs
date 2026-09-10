@@ -46,6 +46,16 @@ if ((process.env.HTTPS_PROXY || process.env.https_proxy) && !process.env.NODE_US
 const TITLES = {
   'Army': 'United States Military Academy',
   'Navy': 'United States Naval Academy',
+  /* ---- the whole division, which brought five more irregular names with it ----
+     The ordinary shapes below resolve a hundred and thirty-two of a hundred and thirty-seven.
+     These five cannot be guessed: three are initialisms whose expansion is not the school's
+     name plus a word, one is a service academy, and one is the Ohio university that is not
+     the Florida one. */
+  'Air Force': 'United States Air Force Academy',
+  /* "Miami" above is the private one in Coral Gables. This is the older one, in Oxford. */
+  'Miami (OH)': 'Miami University',
+  'UAB': 'University of Alabama at Birmingham',
+  'UTSA': 'University of Texas at San Antonio',
   'BYU': 'Brigham Young University',
   /* The university article carries no coordinate, so ask the stadium, which does. */
   'Ole Miss': ['University of Mississippi', 'Vaught-Hemingway Stadium', 'Oxford, Mississippi'],
@@ -92,8 +102,18 @@ function candidates(school) {
   return out;
 }
 
-/* THE CONTINENTAL UNITED STATES, generously drawn. Every school in this data plays in it,
-   so anything outside is a wrong article rather than a surprising campus. */
+/* NOT ON THIS MAP, AND SAYING SO IS BETTER THAN FAILING OVER IT. The map Commish draws is
+   the continental United States, so a school in Honolulu has no point on it: the article
+   resolves, the coordinate is right, and the bounds check below correctly refuses it. Left
+   unnamed, one school outside the lower forty-eight would block the whole file from being
+   written, which is a worse answer than drawing the sport without it. paintMap already skips
+   any school with no place, so Hawai'i is simply absent from the map and present everywhere
+   else in the mode. */
+const OFF_MAP = new Set(['Hawai\'i', 'Hawaii']);
+
+/* THE CONTINENTAL UNITED STATES, generously drawn. Every school in this data that can be
+   drawn at all plays in it, so anything outside is a wrong article rather than a surprising
+   campus, unless it is named above. */
 const US = { latMin: 24.0, latMax: 49.5, lonMin: -125.5, lonMax: -66.5 };
 const inUS = (c) => c && c.lat >= US.latMin && c.lat <= US.latMax
   && c.lon >= US.lonMin && c.lon <= US.lonMax;
@@ -152,14 +172,27 @@ async function placeOf(school, tries) {
   return null;
 }
 
-const teams = JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_team_seasons.json', 'utf8'));
-const schools = Array.from(new Set(teams.map((t) => t.school))).sort();
+/* EVERY SCHOOL THE MAP CAN BE ASKED TO DRAW, which is both files rather than the draft
+   game's. Commish plays the whole division and reads cfb_fbs.json when it is there, so a map
+   built off cfb_team_seasons.json alone had a location for eighty-three of the hundred and
+   thirty-six schools on the field: the four power conferences were drawn and the Group of
+   Five was invisible, on the one screen whose entire job is showing where the sport is. */
+const files = ['/cfb/data/cfb_fbs.json', '/cfb/data/cfb_team_seasons.json'];
+const named = new Set();
+for (const f of files) {
+  try {
+    JSON.parse(fs.readFileSync(ROOT + f, 'utf8')).forEach((t) => named.add(t.school));
+  } catch (e) { console.log('  (no ' + f + ', skipping it)'); }
+}
+const schools = Array.from(named).sort();
 console.log('resolving ' + schools.length + ' schools');
 
 const places = {};
 const missing = [];
 let done = 0;
+const offMap = [];
 for (const s of schools) {
+  if (OFF_MAP.has(s)) { offMap.push(s); continue; }
   const hit = await placeOf(s, candidates(s));
   done++;
   if (done % 10 === 0) { saveCache(); console.log('  ' + done + '/' + schools.length); }
@@ -186,6 +219,9 @@ for (const s in places) {
 }
 
 console.log('resolved ' + Object.keys(places).length + ' of ' + schools.length);
+if (offMap.length) {
+  console.log('off this map on purpose, drawn nowhere: ' + offMap.join(', '));
+}
 if (missing.length) { console.log('\nNOT RESOLVED:'); missing.forEach((m) => console.log('  ' + m)); }
 if (dupes.length) { console.log('\nSAME POINT:'); dupes.forEach((d) => console.log('  ' + d)); }
 

@@ -98,10 +98,35 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !d.hidden) close(); });
   }
 
-  function open(mode) {
+  /* WHERE THE ASK WAS MADE. Every "create a free account" button on the site
+     ends up here, and until now they were indistinguishable in a report: one
+     count of modal opens, no way to tell the tile lock from the wall after a
+     finished puzzle. open() takes an optional src, and the callers that matter
+     pass one.
+     It is also STASHED, because Google sign-up leaves the page and comes back:
+     by the time the account exists, the click that started it is two documents
+     ago. auth.js reads this stash when the new session lands, the same trick
+     card.js uses to resume a checkout across the redirect. */
+  var SRC_KEY = 'rtg:signupsrc';
+  function pageTag() {
+    try {
+      var m = (location.pathname || '').match(/\/arcade\/([a-z]+)\//);
+      if (m) return m[1];
+      return /\/arcade\/?$/.test(location.pathname) ? 'hub' : 'other';
+    } catch (e) { return 'other'; }
+  }
+  function ga(ev, p) {
+    try { if (typeof window.gtag === 'function') window.gtag('event', ev, p || {}); } catch (e) {}
+  }
+  function open(mode, opts) {
     // signed-in with a name → the account panel; otherwise sign in / up / username
     if (mode === 'account' || (cur.signedIn && cur.name && !mode)) st.mode = 'account';
     else st.mode = mode || 'signin';
+    if (st.mode === 'signup' && !cur.signedIn) {
+      var src = (opts && opts.src) || 'unknown', pg = pageTag();
+      try { localStorage.setItem(SRC_KEY, JSON.stringify({ s: src, g: pg, t: Date.now() })); } catch (e) {}
+      ga('arcade_signup_opened', { game_name: 'Run The Arcade', signup_src: src, signup_page: pg });
+    }
     st.err = ''; st.note = ''; st.busy = false;
     injectModal();   // the chip can be clicked before init() runs; build on demand
     $('rtgauthScrim').hidden = false;

@@ -13,7 +13,7 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Alma Mater: a daily sports streak game. Type the college each NBA, NFL or MLB player came from. Two points for typing it, one if you take the four choices." />
-<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
@@ -385,43 +385,45 @@ window.GA_ID='G-L29P5MRWKE';
 <div class="toast" id="toast"></div>
 
 <script src="../match/entities.js?v=12"></script>
-<script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/former.js?v=2"></script>
 <script src="/arcade/stars.js?v=4"></script>
-<script src="/arcade/awards.js?v=1"></script>
+<script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=4"></script>
-<script src="/arcade/data.js?v=2"></script>
-<script src="/arcade/rosters.js?v=1"></script>
+<script src="/arcade/primary.js?v=9"></script>
+<script src="/arcade/data.js?v=3"></script>
+<script src="/arcade/rosters.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=7"></script>
-<script src="/arcade/share.js?v=7"></script>
+<script src="/arcade/result.js?v=1"></script>
+<script src="/arcade/funnel.js?v=11"></script>
+<script src="/arcade/share.js?v=8"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=10"></script>
+<script src="/arcade/tokens.js?v=13"></script>
+<script src="/arcade/day.js?v=2"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
-<script src="/arcade/mode.js?v=6"></script>
+<script src="/arcade/mode.js?v=7"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="/arcade/favteam.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=18"></script>
+<script src="/arcade/board.js?v=20"></script>
 <script src="/arcade/leaderboard.js?v=14"></script>
 <script src="/arcade/alltime.js?v=3"></script>
-<script src="/arcade/auth.js?v=3"></script>
-<script src="/arcade/mycard.js?v=9"></script>
-<script src="/arcade/topbanner.js?v=7"></script>
-<script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=16"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script src="/arcade/mycard.js?v=12"></script>
+<script src="/arcade/topbanner.js?v=9"></script>
+<script src="/arcade/auth-ui.js?v=5"></script>
+<script src="/arcade/card.js?v=19"></script>
 <script src="/arcade/referral.js?v=9"></script>
 <script src="/arcade/gamemarks.js?v=3"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=20"></script>
-<script src="/arcade/howto.js?v=17"></script>
-<script src="/arcade/tour.js?v=1"></script>
-<script src="/arcade/tourdata.js?v=3"></script>
+<script src="/arcade/demo.js?v=3"></script>
+<script src="/arcade/pregame.js?v=24"></script>
+<script src="/arcade/howto.js?v=21"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
-<script src="/arcade/type.js?v=2"></script>
+<script src="/arcade/type.js?v=5"></script>
 <script src="/arcade/fact.js?v=1"></script>
 <script>
 (function(){
@@ -468,6 +470,12 @@ window.GA_ID='G-L29P5MRWKE';
      A player is included only if a college is on record; international players
      who never attended a US college simply aren't in the pool. College data is
      collected by the roster/former GitHub Actions, so the pool self-updates. ---- */
+  /* The feed writes some schools as abbreviations ("Miami, O.", "California,
+     Pa."). Those are answers a player reads, so they are printed the way a
+     person writes them. Display only: every comparison on this page still
+     runs on the raw value, and RTGType.sameCollege accepts both spellings. */
+  function label(c){ try{ return (window.RTGType && RTGType.schoolLabel) ? RTGType.schoolLabel(c) : c; }catch(e){ return c; } }
+
   function normCol(c){ return String(c||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
   function badCol(c){ return !c || /^(none|n\/?a|unknown|no college|--)$/i.test(String(c).trim()); }
   var corpF={}; ENT.forEach(function(e){ if(e&&TEAM_SPORTS[e.sport]){ var k=e.name+'|'+e.sport; corpF[k]=Math.max(corpF[k]||0, e.f||0); } });
@@ -488,7 +496,12 @@ window.GA_ID='G-L29P5MRWKE';
     colFreq[cc]=(colFreq[cc]||0)+1;
     var n=normCol(cc); if(!sportSeen[sport][n]){ sportSeen[sport][n]=1; collegesBySport[sport].push(cc); }
   }
-  ENT.forEach(function(e){ if(!e) return; addPlayer(e.name, e.sport, e.col, (e.t&&e.t.length?e.t[e.t.length-1]:null), e.f||0); });
+  /* THE CLUB UNDER THE NAME. e.pt is the club they spent longest at
+     (primary.js, folded on by data.js); e.t[0] is the club they came up with.
+     This used to take e.t LAST, which captioned Tom Seaver as a Red Sock for
+     sixteen games in 1986 after eleven years with the Mets, and is right 15%
+     of the time. A player wrote in about it. */
+  ENT.forEach(function(e){ if(!e) return; addPlayer(e.name, e.sport, e.col, (e.pt || (e.t&&e.t.length?e.t[0]:null)), e.f||0); });
   var ROS=(window.RTG_ROSTERS && Array.isArray(window.RTG_ROSTERS.players)) ? window.RTG_ROSTERS.players : null;
   if(ROS){ ROS.forEach(function(p){ if(p) addPlayer(p.n, p.s, p.col, p.t, 0, 1); }); }
   // distractor sampling leans on well-known (frequently attended) programs
@@ -639,7 +652,7 @@ window.GA_ID='G-L29P5MRWKE';
     startIfNeeded();
     bailed=true;
     choicesEl.hidden=false;
-    choicesEl.innerHTML = r.opts.map(function(c,i){ return '<button class="choice" type="button" data-i="'+i+'">'+esc(c)+'</button>'; }).join('');
+    choicesEl.innerHTML = r.opts.map(function(c,i){ return '<button class="choice" type="button" data-i="'+i+'">'+esc(label(c))+'</button>'; }).join('');
     [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ resolve(r.opts[+bt.dataset.i]===r.col, bt); }); });
     setAnswerEnabled(true);
     setSub('One of these four. Worth 1.');
@@ -706,13 +719,13 @@ window.GA_ID='G-L29P5MRWKE';
     if(right){
       ANSLOG.push(String(got));
       run+=got; document.getElementById('runN').textContent=run;
-      setSub('<span class="pts">+'+got+'</span> '+(got===1?'point':'points')+' <span class="school">'+esc(r.col)+'</span>', 'score');
+      setSub('<span class="pts">+'+got+'</span> '+(got===1?'point':'points')+' <span class="school">'+esc(label(r.col))+'</span>', 'score');
       if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); answerIn.focus(); }, 1400);
     } else {
       ANSLOG.push('x');
-      setSub('<span class="pts">Miss.</span> <span class="school">It was '+esc(r.col)+'.</span>', 'miss');
+      setSub('<span class="pts">Miss.</span> <span class="school">It was '+esc(label(r.col))+'.</span>', 'miss');
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 2000);
     }
@@ -811,6 +824,12 @@ window.GA_ID='G-L29P5MRWKE';
     document.getElementById('mRun').textContent=run;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
+      /* One line for the shared result row (result.js): the rank, the best
+         as an event, and the streak, in the same order on every game.
+         isBest is the only part this file has to supply, because by the
+         time the modal is open the new best is already in storage. */
+    try{ window.RTGResultSpec = { key:GAME, date:DATE, statInt:run, best:s.bestRun||0,
+      prevBest:(PREVBEST>0?PREVBEST:null), isBest:(!locked && attemptFirst && run>PREVBEST), streak:s.streak||0 }; }catch(e){}
     // Emotional copy ladder: new best > tied best > near miss > generic.
     var sub;
     if(locked) sub='Your run today';

@@ -1,5 +1,5 @@
 /* ============================================================================
-   RunTheGlobe — country task bank (seed pool)
+   RunTheGlobe: country task bank (seed pool)
    ----------------------------------------------------------------------------
    Data-only. Loaded before the engine as window.GLOBE_COUNTRIES.
 
@@ -12,15 +12,15 @@
 
    Category -> kind mapping used by the engine:
      trivia  -> mcq        (q, options[], a=correct index)
-     math    -> mcq        (q, options[], a)          — currency / ordering framed as choice
-     spatial -> order      (q, items[{label,value}], dir, unit) — order-by-stat
-     memory  -> sequence   (prompt, tiles[emoji])     — engine generates the sequence to repeat
-     reflex  -> reaction   (prompt)                   — reaction-window tap, engine-driven
-     word    -> scramble   (answer, hint)             — unscramble letters
+     math    -> mcq        (q, options[], a)          : currency / ordering framed as choice
+     spatial -> order      (q, items[{label,value}], dir, unit) : order-by-stat
+     memory  -> sequence   (prompt, tiles[emoji])     : engine generates the sequence to repeat
+     reflex  -> reaction   (prompt)                   : reaction-window tap, engine-driven
+     word    -> scramble   (answer, hint)             : unscramble letters
 
    This is a SEED pool (12 countries) proving the pipeline end to end. GDD §12
    targets ~40-50 countries at launch and ~100 long-term, ~27 tasks each; content
-   authoring scales by appending entries here with the same shape — no engine
+   authoring scales by appending entries here with the same shape. No engine
    changes required.
    ========================================================================== */
 (function () {
@@ -254,7 +254,7 @@
         ],
         word: [
           { cat: "word", type: "brain", answer: "TORONTO", hint: "Canada's largest city" },
-          { cat: "word", type: "brain", answer: "MAPLE", hint: "The syrup — and the flag — tree" },
+          { cat: "word", type: "brain", answer: "MAPLE", hint: "Syrup tree. It is on the flag too." },
         ],
         math: [
           { cat: "math", type: "brain", q: "C$40 at C$1.25 = $1 is how many US dollars?", options: ["$25", "$32", "$40", "$50"], a: 1 },
@@ -2273,7 +2273,7 @@
           { cat: "word", type: "brain", answer: "GALAPAGOS", hint: "Wildlife islands off Ecuador" },
         ],
         math: [
-          { cat: "math", type: "brain", q: "Ecuador uses US dollars. A hat costs $12 and you pay $20 — how much change?", options: ["$6", "$8", "$10", "$12"], a: 1 },
+          { cat: "math", type: "brain", q: "Ecuador uses US dollars. A hat costs $12 and you pay $20. How much change?", options: ["$6", "$8", "$10", "$12"], a: 1 },
         ],
         spatial: [
           { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",

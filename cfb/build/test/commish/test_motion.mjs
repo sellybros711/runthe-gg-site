@@ -46,10 +46,24 @@ const arm = `
    would otherwise sit through or, worse, time out on. Tapping it skips to the end. */
 async function skipSim(pg) {
   for (let i = 0; i < 60; i++) {
-    const up = await pg.$eval('#s-sim', (e) => e.classList.contains('on')).catch(() => false);
+    const up = await pg.$eval('#off-monthcard', (e) => e.classList.contains('running')).catch(() => false);
     if (!up) return;
-    await pg.click('#s-sim', { timeout: 1500 }).catch(() => {});
+    await pg.click('#off-monthcard', { timeout: 1500 }).catch(() => {});
     await pg.waitForTimeout(110);
+  }
+}
+
+
+/* A CUTSCENE CAN TAKE THE SCREEN THE MOMENT A TERM STARTS, and one that a walker does not
+   know about is a walker that stalls on the one screen with no dock. Skip it: the scenes have
+   their own suite in test_scene, and every other file here is testing something behind them.
+   Called after anything that could arrive at the office. */
+async function pastScene(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-scene', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#b-scene-skip').catch(() => {});
+    await pg.waitForTimeout(320);
   }
 }
 
@@ -77,6 +91,7 @@ async function walk(reduced) {
   await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
   await p.waitForTimeout(2400);
   await tap(p, '#g-start');
+  await pastScene(p);
   await p.waitForTimeout(1400);
 
   const office = {
@@ -115,7 +130,14 @@ async function walk(reduced) {
   for (let i = 0; i < 24 && !ruled; i++) {
     if (await on(p, 's-office')) { await tap(p, '#b-desk'); await skipSim(p); await p.waitForTimeout(350); continue; }
     if (await on(p, 's-desk')) {
-      const o = await p.$('#d-options .opt'); if (o) { await o.click(); await p.waitForTimeout(200); }
+      /* CLICKED IN THE PAGE RATHER THAN THROUGH THE POINTER. The dock is sticky at the
+         bottom of the desk, so whether an option happens to sit under it depends on how
+         tall the case above it is, and a walker that fails on a long brief is a walker
+         that reports layout as a broken ruling. What this suite is measuring is what the
+         bars do afterwards. */
+      const o = await p.$('#d-options .opt');
+      if (o) { await p.evaluate(() => document.querySelector('#d-options .opt').click());
+        await p.waitForTimeout(200); }
       if (!(await tap(p, '#b-rule'))) break;
       await p.waitForTimeout(1500);
       ruled = await on(p, 's-room');
@@ -144,7 +166,10 @@ const a = await walk(false);
     a.office.bars.filter((x) => parseFloat(x.got) > 0).length + ' non-zero');
   ok('the three meters show a number', a.office.meters.length === 3
     && a.office.meters.every((m) => /^\d+$/.test(m)), a.office.meters.join(' '));
-  ok('the calendar is a full term', a.office.calCells === 45, a.office.calCells + ' cells');
+  /* ONE YEAR, NINE BEATS. The strip stopped being five years across when it became a thing
+     you read rather than a thing you counted: five rows of nine cells said less about where
+     you are than one row does. */
+  ok('the calendar is one year of beats', a.office.calCells === 9, a.office.calCells + ' cells');
   ok('  with exactly one beat marked as now', a.office.calNow === 1);
   ok('the country is under the dots', a.office.states >= 48, a.office.states + ' states');
   ok('tapping a conference in the legend singles it out', a.office.focusOn === true);

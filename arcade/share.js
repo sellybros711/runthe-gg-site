@@ -53,16 +53,16 @@
   // OG card unfurls). This is the tappable link that carries the whole share.
   function url(key) { return 'https://runthe.gg/arcade/' + key + '/'; }
 
-  // "Run The Arcade — Number Game #142". The em-dash reads as brand→game; the
+  // "Run The Arcade · Number Game #142". The middot reads as brand, then game;
   // number is dropped only if the date can't be parsed (never, in practice).
   function header(key, dateIso) {
     var no = NO_NUMBER[key] ? null : puzzleNo(dateIso);
-    return 'Run The Arcade — ' + name(key) + (no ? ' #' + no : '');
+    return 'Run The Arcade · ' + name(key) + (no ? ' #' + no : '');
   }
 
   // Assemble the whole card from its three parts, so the blank-line rhythm and
   // the footer are identical everywhere:
-  //   Run The Arcade — Number Game #142
+  //   Run The Arcade · Number Game #142
   //   <grid>
   //   <stat line>
   //   runthe.gg/arcade/table
@@ -110,7 +110,7 @@
       if (navigator.share) { navigator.share({ text: text }).catch(function () {}); return; }
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text)
-          .then(function () { note('Copied — paste it anywhere'); })
+          .then(function () { note('Copied. Paste it anywhere'); })
           .catch(function () { note('Copy failed'); });
         return;
       }
@@ -437,7 +437,7 @@
         if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
           // Explicit empty title: omitting it lets some targets fall back to the
           // page's document.title ("Run The Arcade: ...") and print it as a line
-          // ABOVE the text, which already opens with "Run The Arcade — <game> #N".
+          // ABOVE the text, which already opens with "Run The Arcade · <game> #N".
           // title:'' suppresses that duplicate; the text carries everything.
           navigator.share({ files: [file], text: text, title: '' })
             .catch(function (e) { if (e && e.name === 'AbortError') return; if (blob) { download(blob, spec.key); copyText(text); } else fire(text, spec.statInt); });

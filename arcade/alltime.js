@@ -26,6 +26,8 @@
     almamater:  { timed: false, unit: 'in a row' },
     highlow:    { timed: false, unit: 'in a row' },
     sportegories: { timed: false, unit: 'pts' },
+    rollcall:   { timed: false, unit: 'named' },
+    chain:      { timed: true },
     match:      { timed: true },
     guess:      { timed: true },
     crossword:  { timed: true },

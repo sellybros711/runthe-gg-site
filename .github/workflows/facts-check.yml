@@ -1,0 +1,41 @@
+name: Trivia facts check
+
+# Rank It, High Low and the Number Game state career totals and jersey numbers
+# as fact. A wrong one tells the player who knows better that the GAME is
+# wrong, which is the fastest way to lose them. This asserts a fixed panel of
+# famous, settled, retired-player facts against the shipped data files.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-facts.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/stats.js'
+      - 'arcade/jerseys.js'
+      - 'scripts/check-facts.mjs'
+      - '.github/workflows/facts-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/stats.js'
+      - 'arcade/jerseys.js'
+      - 'scripts/check-facts.mjs'
+      - '.github/workflows/facts-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: facts-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-facts.mjs

@@ -15,6 +15,7 @@
       label: "career NBA points",
       unit: "pts",
       vals: {
+        'nba_carmelo-anthony': 28289,
         'nba_kareem-abdul-jabbar': 38387,
         'nba_karl-malone': 36928,
         'nba_kobe-bryant': 33643,
@@ -97,6 +98,8 @@
       label: "career home runs",
       unit: "HR",
       vals: {
+        'mlb_albert-pujols': 703,
+        'mlb_miguel-cabrera': 511,
         'mlb_barry-bonds': 762,
         'mlb_hank-aaron': 755,
         'mlb_babe-ruth': 714,
@@ -179,6 +182,11 @@
       label: "career passing touchdowns",
       unit: "pass TD",
       vals: {
+        'nfl_tom-brady': 649,
+        'nfl_drew-brees': 571,
+        'nfl_philip-rivers': 421,
+        'nfl_ben-roethlisberger': 418,
+        'nfl_matt-ryan': 381,
         'nfl_peyton-manning': 539,
         'nfl_brett-favre': 508,
         'nfl_dan-marino': 420,
@@ -345,6 +353,11 @@
       label: "career passing yards",
       unit: "pass yds",
       vals: {
+        'nfl_tom-brady': 89214,
+        'nfl_drew-brees': 80358,
+        'nfl_ben-roethlisberger': 64088,
+        'nfl_philip-rivers': 63440,
+        'nfl_matt-ryan': 62792,
         'nfl_peyton-manning': 71940,
         'nfl_brett-favre': 71838,
         'nfl_dan-marino': 61361,
@@ -369,6 +382,8 @@
       label: "career rushing yards",
       unit: "rush yds",
       vals: {
+        'nfl_frank-gore': 16000,
+        'nfl_adrian-peterson': 14918,
         'nfl_emmitt-smith': 18355,
         'nfl_walter-payton': 16726,
         'nfl_barry-sanders': 15269,
@@ -393,6 +408,7 @@
       label: "career receiving yards",
       unit: "rec yds",
       vals: {
+        'nfl_larry-fitzgerald': 17492,
         'nfl_jerry-rice': 22895,
         'nfl_terrell-owens': 15934,
         'nfl_randy-moss': 15292,
@@ -417,6 +433,7 @@
       label: "career receptions",
       unit: "rec",
       vals: {
+        'nfl_larry-fitzgerald': 1432,
         'nfl_jerry-rice': 1549,
         'nfl_tony-gonzalez': 1325,
         'nfl_jason-witten': 1228,
@@ -454,6 +471,8 @@
       label: "career hits",
       unit: "hits",
       vals: {
+        'mlb_albert-pujols': 3384,
+        'mlb_miguel-cabrera': 3174,
         'mlb_pete-rose': 4256,
         'mlb_ty-cobb': 4189,
         'mlb_hank-aaron': 3771,

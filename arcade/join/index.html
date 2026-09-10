@@ -13,7 +13,7 @@
 </script>
 <meta name="description" content="A friend invited you to Run The Arcade. Sign up through their link and you both get an extra go at today's daily sports puzzles and streak games." />
 <meta name="robots" content="noindex" />
-<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
@@ -68,6 +68,10 @@
   .ticket{display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:900; letter-spacing:.1em;
     text-transform:uppercase; color:var(--brandT); background:color-mix(in srgb, var(--brand) 15%, transparent);
     border:1px solid color-mix(in srgb, var(--brand) 40%, transparent); border-radius:999px; padding:6px 12px;}
+  /* 4.41:1 on its own 15% orange tint, against 4.5. A miss by a tenth is still
+     a miss, and this is 11px uppercase, which is the hardest thing on the page
+     to read. */
+  :root[data-theme="light"] .ticket{color:#AF510A;}
   .cap{width:74px; height:74px; margin:14px auto 12px; border-radius:16px; display:grid; place-items:center;
     background:var(--card2); border:1px solid var(--line2);}
   .cap img{width:52px; height:52px;}
@@ -82,6 +86,13 @@
   .perk:first-child{border-top:0;}
   .perk .n{flex:0 0 auto; width:26px; height:26px; border-radius:8px; display:grid; place-items:center;
     background:color-mix(in srgb, var(--green) 18%, var(--card2)); color:var(--greenT); font-weight:900; font-size:14px;}
+  /* A TINT UNDER A TINT NEEDS ITS OWN INK. --greenT is set for text on the
+     card, and these numbers sit on the card with 18% green on top of it, which
+     lifts the ground and drops the ratio to 2.7:1 in light mode. Darkened here
+     rather than in the token, because the token is right everywhere else and
+     moving it would repaint eleven other pages to fix one chip. Same reason
+     the ticket below carries its own. */
+  :root[data-theme="light"] .perk .n{color:#117736;}
   .perk .t{font-size:13.5px; line-height:1.5; color:var(--mut);}
   .perk .t b{color:var(--ink);}
 
@@ -103,7 +114,7 @@
 </head>
 <body>
   <div class="top">
-    <a class="brand" href="/arcade/"><img src="/arcade/assets/arcade-icon.png?v=2" alt="" width="30" height="30" />Run The Arcade</a>
+    <a class="brand" href="/arcade/"><img src="/arcade/assets/arcade-icon.png?v=3" alt="" width="30" height="30" />Run The Arcade</a>
     <button class="themeBtn" id="themeBtn" type="button" aria-label="Light or dark theme" title="Light / dark">
       <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
     </button>
@@ -114,9 +125,9 @@
     <div class="card" id="inviteCard">
       <div class="banner">
         <span class="ticket">Invite bonus</span>
-        <div class="cap"><img src="/arcade/assets/arcade-icon.png?v=2" alt="" width="52" height="52" /></div>
+        <div class="cap"><img src="/arcade/assets/arcade-icon.png?v=3" alt="" width="52" height="52" /></div>
         <h1><span class="who" id="whoLine">A friend</span> invited you to Run The Arcade</h1>
-        <p class="sub">Ten quick daily sports puzzles and streak games. Sign up through this invite and <b>you both get an extra go at today's games.</b></p>
+        <p class="sub">Twelve quick daily sports puzzles and streak games. Sign up through this invite and <b>you both get an extra go at today's games.</b></p>
       </div>
       <div class="body">
         <div class="perk"><span class="n">1</span><span class="t"><b>Create your free account.</b> It takes a few seconds and saves your streaks, trophies and leaderboard rank.</span></div>
@@ -151,11 +162,12 @@
 
   <!-- arcade shell: auth + entitlement + referral -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="/arcade/board.js?v=18"></script>
-  <script src="/arcade/tokens.js?v=10"></script>
-  <script src="/arcade/auth.js?v=3"></script>
-  <script src="/arcade/auth-ui.js?v=4"></script>
-  <script src="/arcade/card.js?v=16"></script>
+  <script src="/arcade/board.js?v=20"></script>
+  <script src="/arcade/tokens.js?v=13"></script>
+<script src="/arcade/day.js?v=2"></script>
+  <script src="/arcade/auth.js?v=4"></script>
+  <script src="/arcade/auth-ui.js?v=5"></script>
+  <script src="/arcade/card.js?v=19"></script>
   <script src="/arcade/referral.js?v=9"></script>
   <script>
   (function(){

@@ -1,0 +1,56 @@
+name: Contrast check
+
+# Walks every arcade page in BOTH themes and measures the real, computed
+# contrast of every element that paints its own text on a filled background.
+# The bug it exists for is invisible in source: the 1.61:1 "Get Arcade Card"
+# button took its fill from a CSS variable a script overwrote at runtime, so
+# nothing you could read in the stylesheet was wrong.
+#
+# It had not run in a long time. It needed a static server started by hand on
+# :8899, and without one it exited with ERR_CONNECTION_REFUSED and a stack
+# trace, which reads like a broken check rather than an unmet precondition. A
+# check with a setup step outside itself is a check nobody runs, so it starts
+# its own server now, and this runs it.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-contrast.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/**/*.html'
+      - 'arcade/*.css'
+      - 'arcade/*.js'
+      - 'scripts/check-contrast.mjs'
+      - '.github/workflows/contrast-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/**/*.html'
+      - 'arcade/*.css'
+      - 'arcade/*.js'
+      - 'scripts/check-contrast.mjs'
+      - '.github/workflows/contrast-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: contrast-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # The check reaches for the browser this repo's other browser checks use,
+      # at a path that only exists in the dev sandbox, and falls back to whatever
+      # npm and playwright install here when it is not there.
+      - run: npm install --no-save playwright@1.49.1
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/check-contrast.mjs

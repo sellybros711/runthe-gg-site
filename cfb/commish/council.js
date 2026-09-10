@@ -31,7 +31,7 @@
   var SEATS = [
     'Fans',           /* no vote, and they say it at a volume nobody can miss */
     'Networks',       /* no vote, and their position is in the rights negotiation */
-    'Players',        /* no vote, organising in public */
+    'Players',        /* no vote, organizing in public */
     'Group of Five',  /* half a vote, and their grievance is a press release */
     'Big 12',         /* one vote */
     'ACC',            /* one vote */
@@ -40,7 +40,7 @@
     'SEC',            /* two, and the other half */
   ];
 
-  /* SEATS YOU START WITH. Three, because a council of one is not a read, it is a rumour, and
+  /* SEATS YOU START WITH. Three, because a council of one is not a read, it is a rumor, and
      the first three hold no votes at all: at the start of a career you can tell what the
      sport FEELS about a ruling and not what the room will DO about it. That is the right
      shape for the beginning of this job. */

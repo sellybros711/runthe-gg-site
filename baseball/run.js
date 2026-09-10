@@ -18,6 +18,14 @@ const E = (typeof require !== 'undefined')
  * season functions don't need `data` threaded through every call. */
 let _data = null;
 
+/* Opponent pool for a run. Always the global all-time pool — even in Eras
+ * mode you're measured against the best teams ever, which keeps every era a
+ * real challenge. (Era-appropriate opponents were tested and made every era
+ * trivial, since an all-decade dream team crushes individual decade clubs.) */
+function poolFor(run) {
+  return _data ? _data.oppPool : null;
+}
+
 const PHASES = {
   DRAFT: 'draft',
   SEASON: 'season',
@@ -334,7 +342,7 @@ function playSeason(run) {
   if (run.phase !== PHASES.SEASON) throw new Error('not in season phase');
   const rng = rngFor(run);
   const slotNames = run.slotIndex.map(i => E.SLOTS[i]);
-  const pool = _data && _data.oppPool;
+  const pool = poolFor(run);
   const result = E.playRun(run.roster, rng, slotNames, pool);
   result.allTimeRank = _data ? E.nationalRank(result.rating, _data.ratingTable) : null;
 
@@ -379,7 +387,7 @@ function advanceGame(run, gameIndex) {
     const offense = E.rosterOffense(tagged, chem.multiplier, structure.multiplier);
     const defense = E.rosterRunPrevention(tagged, chem.multiplier);
     const savePct = E.closerSavePct(tagged);
-    const pool = _data && _data.oppPool;
+    const pool = poolFor(run);
     const schedule = E.generateSchedule(rng, E.CONSTANTS.REGULAR_SEASON_GAMES, pool);
     const rating = E.overallRating(E.teamWinPct(offense, defense));
 
@@ -418,7 +426,7 @@ function finalizeSeason(run) {
   if (!st) throw new Error('no sim state');
 
   const seed = E.seedFromRecord(st.wins);
-  const playoffs = E.generatePlayoffs(seed, st.offense, st.defense, st.savePct, st.rng, st.wins, st.rating);
+  const playoffs = E.generatePlayoffs(seed, st.offense, st.defense, st.savePct, st.rng, st.wins, st.rating, poolFor(run));
   const titleWon = playoffs && playoffs.won;
   const isGOAT = st.wins >= E.CONSTANTS.GOAT_WINS;
   const beatRecord = st.wins >= E.CONSTANTS.RECORD_WINS;
@@ -515,7 +523,7 @@ function bestPossibleSquad(run, data) {
 function projectSeason(run, trials) {
   const n = trials || 200;
   const slotNames = run.slotIndex.map(i => E.SLOTS[i]);
-  const pool = _data && _data.oppPool;
+  const pool = poolFor(run);
   const wins = [];
   let po = 0, title = 0, rec = 0;
   for (let i = 0; i < n; i++) {

@@ -60,7 +60,20 @@
   /* Single words only. An earlier version also listed "state university", and
      because the engine takes the first alternative that matches at a position,
      "Ohio State University" lost the word State and became Ohio. */
-  var SCHOOL_NOISE = /\b(university|univ|college|of|the|at|institute)\b/gi;
+  /* "and" is here so "William and Mary" reaches "William & Mary": the ampersand
+     is punctuation and vanishes in norm(), the spelled-out word did not.
+     University and College are NOT here, because where they sit changes what
+     they mean. In front they are institutional noise ("University of North
+     Carolina" is North Carolina); on the end they are the name ("Boston
+     College" and "Boston University" are two schools, and stripping both left
+     one "boston" that matched the other's players). See trailingKept below. */
+  var SCHOOL_NOISE = /\b(univ|of|the|at|institute|and)\b/gi;
+  var INSTITUTION = { university: 1, college: 1 };
+  /* WHOLE-NAME ALIASES. What a fan types is not what a database calls a school,
+     and the data is not even consistent with itself: it carries both "NC State"
+     and "North Carolina State", both "LSU" and "Louisiana State", both "USC" and
+     "Southern California". Somebody typed NC State for Philip Rivers and was
+     told he went to North Carolina State, which is the same place. */
   var SCHOOL_ALIAS = {
     unc: 'northcarolina', uconn: 'connecticut', ucf: 'centralflorida', ucla: 'ucla',
     usc: 'southerncalifornia', lsu: 'louisianastate', smu: 'southernmethodist',
@@ -69,30 +82,251 @@
     olemiss: 'mississippi', pitt: 'pittsburgh', cal: 'california',
     vatech: 'virginiatech', gatech: 'georgiatech', okstate: 'oklahomastate',
     ndstate: 'northdakotastate', fsu: 'floridastate', asu: 'arizonastate',
-    osu: 'ohiostate', psu: 'pennstate', msu: 'michiganstate'
+    osu: 'ohiostate', psu: 'pennstate', msu: 'michiganstate',
+    // the ones a fan actually types
+    ncstate: 'northcarolinastate', ncsu: 'northcarolinastate',
+    uab: 'alabamabirmingham', wvu: 'westvirginia', ecu: 'eastcarolina',
+    fau: 'floridaatlantic', fiu: 'floridainternational', odu: 'olddominion',
+    sdsu: 'sandiegostate', sjsu: 'sanjosestate', fresnostate: 'fresnostate',
+    southernmiss: 'southernmississippi', missstate: 'mississippistate',
+    penn: 'pennsylvania', upenn: 'pennsylvania',
+    calpoly: 'calpolysanluisobispo', ucsb: 'ucsantabarbara',
+    appstate: 'appalachianstate', bgsu: 'bowlinggreenstate', bowlinggreen: 'bowlinggreenstate',
+    vt: 'virginiatech', gt: 'georgiatech', tamu: 'texasam', am: 'texasam',
+    ou: 'oklahoma', uk: 'kentucky', uga: 'georgia', ufl: 'florida', uf: 'florida',
+    utsa: 'texassanantonio', unt: 'northtexas', usf: 'southflorida',
+    lbsu: 'longbeachstate', csufullerton: 'calstatefullerton', umd: 'maryland',
+    /* Two letters, and safe because a whole-name alias only fires when the
+       WHOLE thing typed is that: "BC" means Boston College to everybody, and
+       the schools it could be confused with are exactly the ones the rule
+       above keeps apart. */
+    bc: 'bostoncollege', bu: 'bostonuniversity', nd: 'notredame',
+    uva: 'virginia', vandy: 'vanderbilt', cuse: 'syracuse', nova: 'villanova',
+    mizzou: 'missouri', ncat: 'northcarolinaat', pennstate: 'pennstate'
   };
+  /* WORD-LEVEL ABBREVIATIONS, applied per word rather than to the whole name,
+     so they compose: "Ohio St", "Miss State" and "Southern Miss" are three
+     different names built from two of these. */
+  var WORD_ALIAS = { st: 'state', miss: 'mississippi', mich: 'michigan', calif: 'california',
+                     wash: 'washington', tenn: 'tennessee', ky: 'kentucky', la: 'louisiana',
+                     intl: 'international', so: 'southern', no: 'northern', cent: 'central',
+                     u: 'university' };
+  /* "St." IS TWO WORDS. In front it is Saint (St. Mary's, St. John's); on the
+     end it is State (Michigan St). The table above can only say one, and it
+     said State, so "St. Mary's (CA)" normalised to "state marys ca" and did
+     not match the same school written "Saint Mary's (CA)". Position decides. */
+  function expandWord(t, i) {
+    if (t === 'st') return i === 0 ? 'saint' : 'state';
+    return WORD_ALIAS[t] || t;
+  }
   function schoolWords(s) {
     var raw = String(s == null ? '' : s);
     var whole = norm(raw);
     if (SCHOOL_ALIAS[whole]) return [SCHOOL_ALIAS[whole]];
-    var w = raw.replace(SCHOOL_NOISE, ' ').split(/\s+/).map(norm).filter(Boolean);
+    /* "College of Idaho" is not the University of Idaho. The institutional
+       word is dropped in FRONT because that is the "University of ..." prefix,
+       which left one bare "idaho" for two different schools. When the raw
+       string literally begins "College of", the word is part of the name. */
+    var collegeOf = /^\s*college\s+of\s+/i.test(raw);
+    var all = raw.replace(SCHOOL_NOISE, ' ').split(/\s+/).map(norm).filter(Boolean);
+    if (collegeOf) return canonPrefix(all);
+    /* Keep University/College only in last position, where it is part of the
+       name. Anywhere else it is the "University of ..." prefix and goes. */
+    var w = all.filter(function (t, i) { return !INSTITUTION[t] || i === all.length - 1; });
+    if (!w.length) w = all;
     var joined = w.join('');
     if (SCHOOL_ALIAS[joined]) return [SCHOOL_ALIAS[joined]];
-    return w.length ? w : (whole ? [whole] : []);
+    /* Expand word by word, then look the whole thing up again: "Miss State"
+       becomes "mississippi state", which IS a school we hold, and one pass
+       would have stopped at the abbreviation. */
+    var x = w.map(expandWord);
+    var xj = x.join('');
+    if (xj !== joined && SCHOOL_ALIAS[xj]) return [SCHOOL_ALIAS[xj]];
+    return x.length ? x : (whole ? [whole] : []);
+  }
+  /* STATE SPELLINGS, COLLAPSED TO ONE TOKEN.
+     The feeds do not agree with each other about how to write the state that
+     separates two schools of the same name, and every spelling was its own
+     answer: the data holds "Miami (OH)", "Miami, O." and "Miami (Fla.)"
+     alongside "Miami (FL)". So somebody typed Miami (OH) for Ben
+     Roethlisberger, whose row says "Miami, O.", and was told he was wrong. He
+     was not wrong. Word by word the comparison saw "oh" against "o" and
+     stopped, which is the whole bug.
+     Only from the SECOND word on. The first word is the school's own name and
+     must never be turned into a state code, or Ohio University, Indiana,
+     Iowa and California stop being schools and become postcodes. */
+  var STATE_CANON = {
+    al:'al', alabama:'al', ak:'ak', alaska:'ak', az:'az', arizona:'az', ariz:'az',
+    ar:'ar', arkansas:'ar', ca:'ca', california:'ca', calif:'ca',
+    co:'co', colorado:'co', colo:'co', ct:'ct', connecticut:'ct', conn:'ct',
+    de:'de', delaware:'de', dc:'dc', fl:'fl', florida:'fl', fla:'fl',
+    ga:'ga', georgia:'ga', hi:'hi', hawaii:'hi', id:'id', idaho:'id',
+    il:'il', illinois:'il', ill:'il', 'in':'in', indiana:'in', ind:'in',
+    ia:'ia', iowa:'ia', ks:'ks', kansas:'ks', kan:'ks',
+    ky:'ky', kentucky:'ky', la:'la', louisiana:'la',
+    me:'me', maine:'me', md:'md', maryland:'md', ma:'ma', massachusetts:'ma', mass:'ma',
+    mi:'mi', michigan:'mi', mich:'mi', mn:'mn', minnesota:'mn', minn:'mn',
+    ms:'ms', mississippi:'ms', miss:'ms', mo:'mo', missouri:'mo',
+    mt:'mt', montana:'mt', mont:'mt', ne:'ne', nebraska:'ne', neb:'ne',
+    nv:'nv', nevada:'nv', nh:'nh', nj:'nj', nm:'nm', ny:'ny',
+    nc:'nc', nd:'nd', oh:'oh', o:'oh', ohio:'oh',
+    ok:'ok', oklahoma:'ok', okla:'ok', or:'or', oregon:'or', ore:'or',
+    pa:'pa', pennsylvania:'pa', penn:'pa', ri:'ri', sc:'sc', sd:'sd',
+    tn:'tn', tennessee:'tn', tenn:'tn', tx:'tx', texas:'tx', tex:'tx',
+    ut:'ut', utah:'ut', vt:'vt', va:'va', virginia:'va',
+    wa:'wa', washington:'wa', wash:'wa', wv:'wv', wi:'wi', wisconsin:'wi', wis:'wi',
+    wy:'wy', wyoming:'wy',
+    // not a state, but the same job in the same slot
+    can:'canada', canada:'canada'
+  };
+  /* Two tokens that name the same state, in whatever spelling. Only ever asked
+     about a word that is NOT the first: the head of a school's name is the
+     school ("Ohio", "Iowa", "Indiana"), and only what follows it is a
+     qualifier. Rewriting keys instead of comparisons was the first attempt and
+     it was wrong in a way worth recording: "Central Florida" ends in a state,
+     so its key became "centralfl" and UCF stopped reaching it. The spelling is
+     a fact about the COMPARISON, not about the school. */
+  // "College of X" keeps its first word; nothing else about it is special.
+  function canonPrefix(all) { return all.slice(); }
+  function sameState(a, b) {
+    var x = STATE_CANON[a], y = STATE_CANON[b];
+    return !!x && x === y;
+  }
+  /* WHAT THE PLAYER IS SHOWN. Matching and displaying are different jobs and
+     this file only did the first, so a correct guess was marked wrong AND the
+     reveal read "It was Miami, O.", which is not how anybody writes a school.
+     The abbreviation is the feed's, not ours: it ships "Miami, O.", "Miami
+     (Fla.)", "California, Pa." and "Regina, Can." for schools whose names are
+     Miami (OH), Miami (FL), California (PA) and Regina.
+     One rule, applied to the tail only: a trailing state, however the feed
+     spelled it, prints as "(XX)". Anything without one is returned exactly as
+     it came, because the feed is right about the other 454. */
+  var STATE_PRINT = {
+    al:'AL', ak:'AK', az:'AZ', ar:'AR', ca:'CA', co:'CO', ct:'CT', de:'DE', dc:'DC',
+    fl:'FL', ga:'GA', hi:'HI', id:'ID', il:'IL', 'in':'IN', ia:'IA', ks:'KS', ky:'KY',
+    la:'LA', me:'ME', md:'MD', ma:'MA', mi:'MI', mn:'MN', ms:'MS', mo:'MO', mt:'MT',
+    ne:'NE', nv:'NV', nh:'NH', nj:'NJ', nm:'NM', ny:'NY', nc:'NC', nd:'ND', oh:'OH',
+    ok:'OK', or:'OR', pa:'PA', ri:'RI', sc:'SC', sd:'SD', tn:'TN', tx:'TX', ut:'UT',
+    vt:'VT', va:'VA', wa:'WA', wv:'WV', wi:'WI', wy:'WY', canada:'Canada'
+  };
+  /* ONE SCHOOL, ONE PRINTED NAME.
+     The feeds disagree with each other and with themselves: 51 players are
+     out of "Louisiana State" and 16 out of "LSU", which is one school shown
+     two ways depending on which row came up that morning. The matcher has
+     always accepted both, so this costs nobody a point, but a game that calls
+     a place two names on two days looks like it does not know.
+     Keyed on schoolKey, so it is the SCHOOL that is named rather than a
+     string: a third spelling arriving from a future refresh lands on the same
+     key and prints the same name without anybody editing this list. The value
+     is the name a fan would say out loud, which is why the acronyms win here
+     and the full name wins for Bowling Green.
+     Every value must itself be an accepted answer. check-colleges section 5
+     proves that over the whole corpus rather than trusting this comment. */
+  var CANON = {
+    louisianastate: 'LSU', connecticut: 'UConn', nevadalasvegas: 'UNLV',
+    southerncalifornia: 'USC', texaselpaso: 'UTEP', texaschristian: 'TCU',
+    brighamyoung: 'BYU', southernmethodist: 'SMU',
+    northcarolinastate: 'NC State', calpolysanluisobispo: 'Cal Poly',
+    bowlinggreenstate: 'Bowling Green', detroitmercy: 'Detroit Mercy',
+    louisianamonroe: 'Louisiana-Monroe', louisianalafayette: 'Louisiana-Lafayette',
+    wisconsinoshkosh: 'Wisconsin-Oshkosh', saintmarysca: "Saint Mary's (CA)"
+  };
+  function schoolLabel(s) {
+    var raw = String(s == null ? '' : s).trim();
+    if (!raw) return raw;
+    var canon = CANON[schoolKey(raw)];
+    if (canon) return canon;
+    // the tails the feeds use for the state: ", O." / ", Pa." / " (Fla.)" / " (OH)"
+    var m = raw.match(/^(.*?)[\s,]*[(,]\s*([A-Za-z.]{1,12})\.?\)?$/);
+    if (!m) return raw;
+    var head = m[1].replace(/[\s,]+$/, ''), code = STATE_CANON[norm(m[2])];
+    if (!head || !code || !STATE_PRINT[code]) return raw;
+    return head + ' (' + STATE_PRINT[code] + ')';
   }
   function schoolKey(s) { return schoolWords(s).join(''); }
+  /* THE SCHOOL, not the string and not what the matcher will forgive.
+     schoolKey says "Miami (OH)" and "Miami, O." are different (the spelling
+     lives in the comparison), and sameCollege says "Miami" and "Miami (OH)"
+     are the same (it forgives a missing qualifier on purpose). Neither answers
+     "are these two rows the same school", which is what a data check needs.
+     This does: the set-off qualifier is canonicalised, and nothing else is
+     forgiven. */
+  function schoolIdent(s) {
+    var raw = String(s == null ? '' : s);
+    var w = schoolWords(raw);
+    if (!w.length) return '';
+    if (w.length > 1 && hasSetOffTail(raw)) {
+      var last = STATE_CANON[w[w.length - 1]];
+      if (last) { w = w.slice(0, -1).concat([last]); }
+    }
+    return w.join('');
+  }
   /* Word-wise, not prefix-wise. A plain prefix test cleared "Michigan" against
-     "Michigan State", which are two different schools and a wrong answer. The
-     only extra word allowed is a two-letter state code, which is how the data
-     disambiguates "Miami (FL)" from "Miami (OH)". */
-  var QUALIFIER = /^[a-z]{2}$/;
+     "Michigan State", which are two different schools and a wrong answer.
+     The only extra word allowed is a STATE, which is how the data separates
+     "Miami (FL)" from "Miami (OH)". It used to be any two-letter word, and that
+     is not the same thing: "A&M" and "A&T" normalise to two letters, so the
+     rule quietly accepted "Texas" for a Texas A&M man, "Florida" for a Florida
+     A&M man and "North Carolina" for a North Carolina A&T man. Naming the
+     states is the whole fix. */
+  var QUALIFIER = {
+    al:1, ak:1, az:1, ar:1, ca:1, co:1, ct:1, de:1, dc:1, fl:1, ga:1, hi:1, id:1,
+    il:1, ia:1, ks:1, ky:1, la:1, me:1, md:1, ma:1, mi:1, mn:1, ms:1, mo:1, mt:1,
+    ne:1, nv:1, nh:1, nj:1, nm:1, ny:1, nc:1, nd:1, oh:1, ok:1, pa:1, ri:1, sc:1,
+    sd:1, tn:1, tx:1, ut:1, vt:1, va:1, wa:1, wv:1, wi:1, wy:1,
+    // spellings the data actually uses in its parenthetical
+    fla:1, ohio:1, penn:1, tex:1, mich:1, wash:1, minn:1, conn:1, mass:1, canada:1,
+    /* A trailing institutional word is allowed as the extra one, so a bare
+       "Temple" still reaches the record spelled "Temple University". This
+       does NOT re-merge Boston College with Boston University: those two are
+       the same LENGTH, so they are compared word by word and differ. */
+    university:1, college:1
+  };
+  /* Is the state SET OFF in the raw string, "Miami (OH)" or "Miami, O."?
+     That punctuation is the only thing separating a qualifier from a word
+     that is part of the school's own name, and without asking, allowing any
+     state as the extra word accepted "Southern" for Southern Utah, Southern
+     Illinois and Southern Arkansas: four different schools collapsed into one
+     answer, which is the wrong-answer-marked-right direction and the worse
+     bug of the two. */
+  function dropInstitution(w) {
+    return (w.length > 1 && INSTITUTION[w[w.length - 1]]) ? w.slice(0, -1).join('') : w.join('');
+  }
+  function hasSetOffTail(raw) {
+    return /[(,]\s*[A-Za-z][A-Za-z. ]{0,13}\)?\s*$/.test(String(raw == null ? '' : raw));
+  }
   function sameCollege(typed, target) {
     var a = schoolWords(typed), b = schoolWords(target);
     if (!a.length || !b.length) return false;
-    if (a.join('') === b.join('')) return true;
-    var shortW = a.length <= b.length ? a : b, longW = a.length <= b.length ? b : a;
-    for (var i = 0; i < shortW.length; i++) if (shortW[i] !== longW[i]) return false;
-    for (var j = shortW.length; j < longW.length; j++) if (!QUALIFIER.test(longW[j])) return false;
+    var aj = a.join(''), bj = b.join('');
+    if (aj === bj) return true;
+    /* An alias resolves to ONE token ("TCU" becomes texaschristian), and a
+       one-token side can never survive the word-by-word loop against a
+       multi-word name: it only ever matches on this joined comparison. So the
+       joined form has to tolerate the trailing institutional word too, or the
+       day a feed starts writing "Texas Christian University" is the day TCU
+       stops being accepted. That is tonight's bug wearing a different hat. */
+    if (dropInstitution(a) === bj || aj === dropInstitution(b)) return true;
+    var aShort = a.length <= b.length;
+    var shortW = aShort ? a : b, longW = aShort ? b : a;
+    var longRaw = aShort ? target : typed;
+    for (var i = 0; i < shortW.length; i++) {
+      if (shortW[i] === longW[i]) continue;
+      // past the head, "OH" and "O." and "Ohio" are one word
+      if (i > 0 && sameState(shortW[i], longW[i])) continue;
+      return false;
+    }
+    /* The allowed extra word. A trailing institutional word always ("Temple"
+       reaches "Temple University"); a state ONLY when the longer name sets it
+       off with a bracket or a comma, which is how the data writes a qualifier
+       and not how it writes Southern Utah. */
+    var setOff = hasSetOffTail(longRaw);
+    for (var j = shortW.length; j < longW.length; j++) {
+      var w = longW[j];
+      if (INSTITUTION[w]) continue;
+      if (setOff && (QUALIFIER[w] || STATE_CANON[w])) continue;
+      return false;
+    }
     return true;
   }
 
@@ -430,7 +664,7 @@
   return {
     mount: mount, close: close, harden: harden,
     norm: norm, tokens: tokens, nameKey: nameKey, hasFullName: hasFullName,
-    sameName: sameName, schoolKey: schoolKey, sameCollege: sameCollege,
+    sameName: sameName, schoolKey: schoolKey, schoolIdent: schoolIdent, schoolLabel: schoolLabel, sameCollege: sameCollege,
     playerSource: playerSource, collegeSource: collegeSource
   };
 });

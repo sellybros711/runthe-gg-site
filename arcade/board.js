@@ -285,6 +285,32 @@
 
   // ---- submit a completed run. Returns {streak, best_streak} or null. ----
   function submit(game, dateStr, opts) {
+    opts = opts || {};
+    /* GA4 FIRST, POSTING SECOND, and the order is the point. A guest finishes a
+       puzzle and leaves here with no row posted, so while this sat below the
+       session gate every play by somebody without an account was invisible:
+       arcade_game_started fired for them and arcade_game_completed never did,
+       which reads in a report as a game nobody finishes rather than as the tier
+       that cannot be counted. Now both fire for every tier and carry the same
+       `tier` param, so started and completed divide into the same buckets. */
+    try{
+      if (typeof window.gtag === 'function') {
+        var GA_L = {'match':'Common Ground','crossword':'Daily Crossword','guess':'Guess the Player','table':'Number Game','oddone':'Odd One Out','career':'Career Path','rankit':'Rank It','almamater':'Alma Mater','sportegories':'Sportegories','highlow':'High Low','rollcall':'Roll Call','chain':'Chain'};
+        var tr = 'guest', ranked = !!session;
+        try { if (window.RTGTokens && RTGTokens.tier) tr = RTGTokens.tier(); } catch (e) {}
+        // posted answers "does this run reach a board", which is false for a
+        // guest AND for the rare signed-in run the server refused below.
+        try { if (ranked && window.RTGTokens && RTGTokens.rankAuthorized) ranked = RTGTokens.rankAuthorized(); } catch (e) {}
+        window.gtag('event','arcade_game_completed',{
+          game_name:'Run The Arcade', arcade_game: GA_L[game] || game,
+          tier: tr,
+          posted: ranked,                       // false = finished, on no leaderboard
+          seconds: Math.max(0, Math.round(opts.seconds || 0)),
+          mistakes: opts.mistakes || 0,
+          run_len: (opts.runLen == null ? 0 : Math.max(0, Math.round(opts.runLen)))
+        });
+      }
+    }catch(e){}
     if (!session) return Promise.resolve(null);   // signed-in only; guests keep local
     // Every game funnels its ranked result through here, so this is the one
     // place the server's token verdict has to be honoured. If the wallet was
@@ -296,20 +322,6 @@
     // made a win vanish with nothing said. Those carry run.replay instead and the
     // server decides: an empty slot gets filled, an existing row is left alone.
     try { if (window.RTGTokens && RTGTokens.rankAuthorized && !RTGTokens.rankAuthorized()) return Promise.resolve(null); } catch (e) {}
-    opts = opts || {};
-    /* GA4: a completed, ranked run. Carries the specific arcade game so each one
-       reports separately, plus the shape of the result. Inert without gtag. */
-    try{
-      if (typeof window.gtag === 'function') {
-        var GA_L = {'match':'Common Ground','crossword':'Daily Crossword','guess':'Guess the Player','table':'Number Game','oddone':'Odd One Out','career':'Career Path','rankit':'Rank It','almamater':'Alma Mater','sportegories':'Sportegories','highlow':'High Low','rollcall':'Roll Call','chain':'Chain'};
-        window.gtag('event','arcade_game_completed',{
-          game_name:'Run The Arcade', arcade_game: GA_L[game] || game,
-          seconds: Math.max(0, Math.round(opts.seconds || 0)),
-          mistakes: opts.mistakes || 0,
-          run_len: (opts.runLen == null ? 0 : Math.max(0, Math.round(opts.runLen)))
-        });
-      }
-    }catch(e){}
     var run = {
       game: game, date: dateStr,
       seconds: Math.max(0, Math.round(opts.seconds || 0)),
@@ -491,6 +503,22 @@
     return withTimeout(sb.rpc('arcade_game_status').then(function (r) { return (r && !r.error) ? r.data : null; }));
   }
 
+  /* ---- the arcade's own streak: days in a row with any game finished -------
+     One number for the whole arcade, which is the number a daily habit is
+     actually built on. The twelve per-game streaks in grid_streaks stay where
+     they are; this is the one the hub shows.
+     Resolves null when signed out, offline, OR when the RPC is not there yet,
+     which is deliberate: the site can deploy ahead of the migration and every
+     caller falls back to what it showed before rather than erroring. See
+     supabase/97_arcade_day_streak.sql. */
+  function dayStreak() {
+    if (!sb || !session) return Promise.resolve(null);
+    return withTimeout(sb.rpc('arcade_day_streak').then(function (r) {
+      if (!r || r.error || !r.data || r.data.signed_in === false) return null;
+      return r.data;                      // { streak, best, last_date, played_today }
+    }).catch(function () { return null; }));
+  }
+
   // ---- referrals (see supabase/83_referrals.sql). All resolve null when
   // signed-out / offline / the RPC is missing, so a site deployed ahead of the
   // migration simply shows no invite affordance rather than erroring. ----
@@ -628,6 +656,7 @@
     allTimeStats: allTimeStats,
     spendToken: spendToken,
     tokenStatus: tokenStatus,
+    dayStreak: dayStreak,
     referralCode: referralCode,
     referralClaim: referralClaim,
     referralLookup: referralLookup,

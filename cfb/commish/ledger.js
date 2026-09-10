@@ -59,6 +59,28 @@
      shares as a fraction of the pool, and they add to 1 with the Group of Five last. */
   const OPENING_SHARE = { SEC: 0.27, 'Big Ten': 0.27, ACC: 0.16, 'Big 12': 0.16, 'Group of Five': 0.14 };
 
+  /* WHICH POT A CONFERENCE DRINKS FROM, which is not the same question as which conference a
+     school is in and used to have no answer at all.
+
+     The money is split five ways and the sport has eleven leagues in it. Before the whole
+     division was on the field that mismatch was invisible, because the team file held only
+     power schools and the handful of others drifted by zero without anybody noticing. Put a
+     hundred and thirty-six clubs on the field and it becomes the bug: starve the Group of Five
+     to nothing and every Mountain West, MAC, Sun Belt, Conference USA and American team plays
+     exactly as well as before, because `moneyDrift` looked up 'Mountain West' in a table whose
+     keys are 'Group of Five'. The bloc would argue at the meeting and nothing would reach the
+     field, which is the thing this mode is supposed to be about.
+
+     THE INDEPENDENTS ARE NOT IN THE POOL AND THAT IS THE POINT OF BEING ONE. Notre Dame has
+     its own contract, so no distribution this office writes moves it. `null` rather than a
+     bloc, and `moneyDrift` reads that as no drift. */
+  function blocOf(conference) {
+    if (!conference) return null;
+    if (OPENING_SHARE[conference] != null) return conference;
+    if (conference === 'FBS Independents') return null;
+    return 'Group of Five';
+  }
+
   function createWorld(opts) {
     const o = opts || {};
     const year = o.year || 2025;
@@ -103,6 +125,37 @@
         employment: 'amateur',
         portalWindows: 2,
         eligibility: 4,
+
+        /* ---- THE ONE WAY DOOR ----
+           WHETHER A PLAYER WHO HAS BEEN A PROFESSIONAL CAN COME BACK. Declare for the draft,
+           go undrafted or get cut in August, and return to a college roster in September.
+           This is the live argument in the sport and the mode had no field for it at all.
+
+           'open'       the door swings both ways. Nobody loses a year for trying.
+           'window'     one return, inside a stated window, and then it shuts behind you.
+           'closed'     declare and you are gone. Which is the rule the Big Ten wrote first.
+
+           IT IS NOT A COSMETIC SETTING. See reentryDrift() in season.js: an open door sends
+           men who have been in professional camps back to the programs that can pay them,
+           which makes the top of the sport better and the middle worse, cumulatively, the
+           same way the distribution formula does. */
+        reentry: 'open',
+        /* How many years of professional football you may have played and still come back.
+           Only read when `reentry` is not 'closed'. */
+        proYears: 1,
+
+        /* ---- AND WHO GETS TO DECIDE ----
+           'national'   this office writes eligibility and everybody lives under it.
+           'conference' a conference may write its own, which is what happens in life the
+                        moment one of them stops waiting for you.
+
+           THE SECOND ONE IS NOT A TIDY DEVOLUTION. A player barred in one league and
+           eligible in the next is a transfer with a legal team attached, and `confReentry`
+           below is where the map of who allows what actually lives. */
+        rulesBy: 'national',
+        /* Per conference, only consulted while rulesBy is 'conference'. Empty means that
+           conference has not written one and falls back to the national rule. */
+        confReentry: { SEC: '', 'Big Ten': '', ACC: '', 'Big 12': '' },
       },
 
       rules: {
@@ -111,6 +164,38 @@
         replay: 'full',
         overtime: 'twopoint',
         targeting: 'strict',
+      },
+
+      /* ---- WHERE THE BIG GAMES ARE PLAYED, AND WHOSE NAME IS ON THEM ----
+         Ids into venues.js. Null means nobody has decided yet, which is a real state in year
+         one and reads as "wherever it was going anyway" rather than as a missing value.
+
+         The mode could move a kickoff and not a game: it had a setting for campus against
+         neutral sites and no idea what a neutral site IS. See venues.js. */
+      venues: {
+        /* The national title game. The single biggest thing this office places in a year. */
+        title: null,
+        /* Week one neutral site kickoffs, as a list of venue ids. */
+        openers: [],
+        /* What the last one was, so a bid cycle does not offer the incumbent by default. */
+        lastTitle: null,
+      },
+      brand: {
+        /* Sponsor ids from venues.js. The playoff's title sponsor, the trophy, and a jersey
+           patch, which are three separate arguments and three separate checks. */
+        playoff: null,
+        trophy: null,
+        patch: null,
+        /* Per bowl, bowl id to sponsor id, empty meaning unsold.
+
+           THE KEYS ARE LISTED RATHER THAN GROWN, because applyEdit throws on a path the world
+           does not have and that guard is the only thing standing between a ruling and doing
+           nothing at all. An empty map would make every `brand.bowls.rose` a thrown error and
+           every bowl sponsorship a ruling that could not be made.
+
+           These are the six that host a quarterfinal, from venues.js. The two lists have to
+           agree and nothing here can check that, so test_venues does. */
+        bowls: { rose: '', sugar: '', orange: '', fiesta: '', cotton: '', peach: '' },
       },
 
       posture: {
@@ -130,12 +215,31 @@
          a first one because of. */
       fired: { legal: 0, congress: 0, union: 0 },
 
+      /* THINGS THIS OFFICE DID THAT HAVE NOT FINISHED HAPPENING YET.
+         The mode resolved a ruling inside one beat: the room answered, the meters moved, a
+         tail sometimes fired, and it was over. Everything a commissioner does in life takes
+         longer than that to come back. The pressures above are the closest thing there was,
+         and they are the wrong shape for it: three accumulating dials that say the sport is
+         generally in trouble, not "the door you opened in 2026 has a twenty-four year old
+         behind it in 2029".
+
+         A thread is planted by a ruling, sits dormant, and ripens on a beat some distance
+         away. What it ripens INTO is a docket item gated on it, so this needed no new
+         plumbing on the desk: a thread is just another thing the situation knows. And a
+         payoff can plant another thread, which is where a term stops being nine independent
+         decisions and starts being a story with a middle. See plant() and ripe(). */
+      threads: [],
+      /* AND THE ONES THAT HAVE ALREADY PAID OFF, so a payoff fires once and the arc can ask
+         what came before it. Kept as a list rather than deleted, because "you have already
+         been through this" is a thing several items want to know. */
+      resolved: [],
+
       /* 0..100, all three. Revenue is what the sport makes, health is whether it is still
          worth watching, standing is whether the room still wants you. */
       meters: { revenue: 55, health: 62, standing: 60 },
 
       /* 0..100 satisfaction. Everybody starts wary rather than happy: a commissioner
-         arrives owing favours, not holding them. */
+         arrives owing favors, not holding them. */
       blocs: {
         SEC: 52, 'Big Ten': 52, ACC: 48, 'Big 12': 46, 'Group of Five': 40,
         Networks: 55, Players: 38, Presidents: 55, Fans: 50,
@@ -228,7 +332,7 @@
     /* The shares have to keep adding to one, whatever a ruling did to them, or the pool
        quietly grows or shrinks and nobody notices until the money stops meaning anything. */
     if (e.set && Object.keys(e.set).some((k) => k.indexOf('money.share.') === 0)) {
-      normaliseShare(next.money.share);
+      normalizeShare(next.money.share);
     }
 
     next.history.push({
@@ -239,7 +343,7 @@
     return next;
   }
 
-  function normaliseShare(share) {
+  function normalizeShare(share) {
     let total = 0;
     for (const k in share) { share[k] = Math.max(0, Number(share[k]) || 0); total += share[k]; }
     if (total <= 0) return;
@@ -349,6 +453,73 @@
     return { removed: false, angry };
   }
 
+  /* ---------------- threads ----------------
+     WHEN A THING COMES BACK, counted in beats rather than years, because the docket runs on
+     beats and "two years" is a different length of time depending which month you are in.
+     Nine beats to a year, so six is most of a season and twenty is a bit over two.
+
+     THE RANGE IS THE POINT. A thread that always ripens in exactly six beats is a timer, and
+     a player learns the timer and stops being surprised. Every plant takes a window and lands
+     somewhere inside it. */
+  function beatOf(world) { return (world.year * BEATS.length) + (world.beat || 0); }
+
+  /* PLANT ONE. `wait` is beats from now, and may be a two element window.
+     Idempotent per id: a ruling made twice does not stack two copies of the same future,
+     because the second one arriving would make the payoff fire twice for no reason a player
+     could see. A live thread simply keeps its original date. */
+  function plant(world, id, opts) {
+    const o = opts || {};
+    const next = JSON.parse(JSON.stringify(world));
+    next.threads = next.threads || [];
+    if (next.threads.some((t) => t.id === id)) return next;
+    const w = o.wait == null ? [9, 18] : o.wait;
+    const lo = Array.isArray(w) ? w[0] : w;
+    const hi = Array.isArray(w) ? w[1] : w;
+    /* Deterministic inside the window off the world's own clock and seed, so a term replays
+       with the same things coming back on the same days. */
+    const spread = Math.max(0, hi - lo);
+    const jitter = spread
+      ? Math.abs(hashish(String(next.seed) + '|' + id + '|' + beatOf(next))) % (spread + 1) : 0;
+    next.threads.push({
+      id: id,
+      from: o.from || null,
+      /* WHAT THE OFFICE IS ALLOWED TO SAY ABOUT IT while it is still out there. The point is
+         that a player can see consequences accumulating without being told the ending: "a
+         lawsuit this office chose to fight" is a thing you know you did, and it is not the
+         verdict. */
+      note: o.note || null,
+      /* What it was about, so a payoff written a year later can still name the school. */
+      data: o.data || null,
+      plantedYear: next.year,
+      plantedBeat: next.beat || 0,
+      ripe: beatOf(next) + lo + jitter,
+    });
+    return next;
+  }
+
+  function hashish(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h >>> 0;
+  }
+
+  /* WHICH ONES HAVE COME DUE. Everything at or past its beat, oldest first, so a term that
+     planted three things in one year pays them off in the order it caused them. */
+  function ripe(world) {
+    const now = beatOf(world);
+    return (world.threads || []).filter((t) => t.ripe <= now)
+      .sort((a, b) => a.ripe - b.ripe);
+  }
+
+  /* AND CLEARING ONE, which is what a payoff item does when it is ruled on. The id goes on
+     `resolved` rather than vanishing: several arcs want to know what already happened. */
+  function cut(world, id) {
+    const next = JSON.parse(JSON.stringify(world));
+    next.threads = (next.threads || []).filter((t) => t.id !== id);
+    next.resolved = (next.resolved || []).concat([id]);
+    return next;
+  }
+
   /* WHERE A FUSE GOES OFF. Not a hundred, because a fuse is not a meter being filled: the
      point at which a lawsuit is filed or a hearing is scheduled is a point somebody else
      chooses, and it is well short of the sport being completely on fire. */
@@ -371,6 +542,29 @@
   const BEATS = ['Winter meetings', 'Portal and signing day', 'Spring', 'Media days',
     'September', 'October', 'November', 'Championship weekend', 'The playoff'];
 
+  /* ---------------- what counts as a ruling ----------------
+     NOT EVERY ROW OF HISTORY IS A DECISION YOU MADE. A season plays itself and files a row so
+     the tape has a point on it; a press conference files one so the record shows what you
+     said. Neither is a ruling, and six different places count rulings: the advisory council's
+     gate, the doctrine profile, the situation's `ruled`, the docket's own recency, the term
+     card and the year in review.
+
+     ALL SIX USED TO SPELL THE TEST OUT, and all six spelled it the same way, which is exactly
+     the arrangement that goes wrong the first time a seventh kind of row exists. It did: media
+     days files three answers a year under `press:`, and five of the six would have counted
+     them and one would not, so the council would open early and the year in review would
+     disagree with the card above it about how many decisions a term contained. One predicate,
+     one prefix list, one place to add the next one. */
+  const NOT_RULINGS = ['season:', 'press:'];
+  function isRuling(row) {
+    if (!row || !row.id) return true;
+    const id = String(row.id);
+    return !NOT_RULINGS.some((p) => id.indexOf(p) === 0);
+  }
+  function rulingsIn(world) {
+    return ((world && world.history) || []).filter(isRuling);
+  }
+
   /* Move the clock on. The season rolls at the end of the ninth beat, which is the point
      the year in review lands and the consequences of the whole year come due. */
   function advance(world) {
@@ -381,12 +575,14 @@
   }
 
   const publicAPI = {
-    AXES, POWERS, BEATS, HOSTILE, OPENING_SHARE, VOTE_WEIGHT,
+    AXES, POWERS, BEATS, HOSTILE, OPENING_SHARE, VOTE_WEIGHT, blocOf,
     FUSE_LIMIT, FUSES, lit, defuse,
+    plant, ripe, cut, beatOf,
     createWorld, membershipFrom,
     getPath, membersOf, conferencesIn, isDefunct,
-    applyEdit, applyOutcome, normaliseShare, standingFrom,
+    applyEdit, applyOutcome, normalizeShare, standingFrom,
     coalition, removal, advance, hostileWeight, totalWeight, MIN_CONFERENCE,
+    isRuling, rulingsIn,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_LEDGER = publicAPI;

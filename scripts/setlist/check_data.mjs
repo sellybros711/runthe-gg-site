@@ -681,8 +681,19 @@ check(/class="segout"/.test(game) && /class="segmark"/.test(game),
   check(/S\.missed\.took\.subtotal/.test(ga), 'the card shows what the song you took scored');
   check(/S\.missed\.score\.subtotal/.test(ga), 'and what the one you left scored');
   check(/S\.missed\.instead\.song/.test(ga), 'naming the song it is measured against');
-  check(/class="ga-fine"/.test(ga) && /no longer than the one you took/.test(ga),
-    'and saying the clock was never what stopped you');
+  /* THE SWAP IS DRAWN, not described. 39 words compared two numbers that are
+     comparable by construction, which is the one case prose is worst at: same
+     show, same slot, same role, so they belong on one axis. Two bars on that
+     axis, and the running times beside them do the job the affordability
+     sentence used to: the one you left is visibly no longer than the one you
+     took, rather than being asserted to be. */
+  check(/class="ga-swap"/.test(ga), 'the two are drawn on one scale');
+  check((ga.match(/class="gs-bar"/g) || []).length === 2, 'one bar each');
+  check(/gs-miss/.test(ga) && /gs-took/.test(ga),
+    'the one you left and the one you took are told apart');
+  check((ga.match(/class="gs-t"/g) || []).length === 2,
+    'and both running times are shown, so the swap is visibly affordable');
+  check(!/class="ga-fine"/.test(gameBare), 'the sentence that asserted it is gone');
 }
 /* THE TWO MODULES CARRY A CACHE VERSION, and it has to be covered.
  *
@@ -761,10 +772,40 @@ check(/\.scoresheet\[open\] \.ss-open:after\{content:'Hide';?\}/.test(game),
    said they were a breakdown of the score at all. */
 check(/Where the \$\{r\.total\} came from/.test(game),
   'the four numbers say what they are a breakdown of');
-/* ALL FOUR, not "at least one". The first version of this passed with three of
-   the four captions deleted, which is exactly the state it exists to catch. */
-check((game.match(/class="bw"/g) || []).length === 4,
-  'and all four say what they reward');
+/* AND THEY ARE DRAWN AS A SUM. They were four tiles under the sentence "Four
+   things are scored, and they add up to your total", with a line of prose
+   under each saying what it rewarded: 37 words for a sum and four labels, and
+   still nothing showing the shape of the night. A stacked bar IS that
+   sentence, so the sentence is gone and the bar has to be real.
+   ALL FOUR, not "at least one". The caption version of this guard once passed
+   with three of the four deleted, which is the exact state it exists to catch,
+   so the parts are counted off the source rather than eyeballed. */
+{
+  const parts = (game.match(/\{ k: '[A-Za-z]+',\s+v: r\.[a-zA-Z]+,\s+c: 'var\(--[a-zA-Z]+\)' \}/g) || []);
+  check(parts.length === 4, `the breakdown has ${parts.length} parts`);
+  const totals = parts.map(x => (x.match(/v: r\.([a-zA-Z]+)/) || [])[1]).sort();
+  check(totals.join(',') === 'breadthTotal,flowTotal,songTotal,timeTotal',
+    'and they are the four the scoring actually produces', totals.join(','));
+  check(/class="stack"/.test(game), 'drawn as one stacked bar');
+  check(/flex:\$\{x\.v\}/.test(game),
+    'each segment sized by its own share, so the bar IS the sum');
+  /* .stk has a min-width so a small share stays visible, which drew a 3px
+     segment for a Flow of zero: points on the picture that were never scored.
+     The key row still reports the 0, which is the honest version. */
+  check(/parts\.filter\(x => x\.v > 0\)/.test(game),
+    'and a part worth nothing draws nothing');
+  check(/\.stk\{[^}]*min-width:\dpx/.test(game),
+    'while a part worth a little still shows');
+  check(/class="stkey"/.test(game) && /class="stk-p"/.test(game),
+    'with a key that names each part and its percentage');
+  /* gameBare, because the comment above the bar QUOTES the sentence it
+     replaced, and the file has caught itself with its own documentation
+     before. */
+  check(!/class="bw"/.test(gameBare) && !/Four things are scored/.test(gameBare),
+    'and the sentence that used to say all this is gone');
+  /* A bar is a picture, so it needs a text alternative. */
+  check(/aria-label="\$\{parts\.map/.test(game), 'and the bar reads out to a screen reader');
+}
 
 /* Two things that looked fine in the CSS and were wrong on the screen. */
 console.log('the header');
@@ -1231,6 +1272,68 @@ check(!!homePage, 'renderHome can be read');
   check(/running\s+time/i.test(hero), 'and what that song costs');
 }
 
+/* THE LOOP IS THREE ACTIONS AND THREE PICTURES. Five numbered sentences became
+   three panels, and the first of them described an OUTCOME ("A real show")
+   while the other two described things you do, so the row read as a list
+   rather than a sequence. Spinning is what you actually do first and it is
+   what the screen shows a tap later, so the panel says the verb and draws the
+   reel.
+   Guarded as a set: three panels, each with a picture and a verb, and the art
+   matching the screen it stands for. A panel whose label and art disagree is
+   the exact state this replaced. */
+{
+  const loop = cdSlice('<ol class="loop">', '</ol>');
+  check(!!loop, 'the home screen draws the loop');
+  const arts = [...loop.matchAll(/class="lp-art (lp-[a-z]+)"/g)].map(m => m[1]);
+  check(arts.length === 3, `three panels, drawn (${arts.join(', ')})`);
+  check(arts.join(',') === 'lp-spin,lp-take,lp-night',
+    'spin, then take, then fill', arts.join(','));
+  const verbs = [...loop.matchAll(/<b>([^<]+)<\/b>/g)].map(m => m[1]);
+  check(verbs.length === 3 && verbs.every(v => /^(Spin|Take|Fill|Pick|Play|Build)\b/.test(v)),
+    `each panel names an action (${verbs.join(' / ')})`);
+  /* The reel is the one that just changed, so it is the one asserted in
+     detail: a lit landing row between neighbours, under the same fade the real
+     .reel uses, or it reads as three stacked years rather than a spin. */
+  check(/<i class="on">/.test(loop), 'the reel has a landing row');
+  check(/\.lp-spin:after\{[^}]*linear-gradient/.test(game),
+    'and the rows above and below run off under a fade');
+  check(/\.lp-spin\{[^}]*overflow:hidden/.test(game), 'inside a window');
+  /* The set blocks are sized by the real budgets, so the encore is the sliver
+     it is. min-width:0 because a flex item defaults to its content width and
+     the encore label pushed the block past the panel edge at 390px. */
+  check(/\.lp-night i\{[^}]*min-width:0/.test(game),
+    'and the encore block can shrink to the sliver it really is');
+  /* NO HAND-WRITTEN ARCHIVE COUNT. sync_counts patches the numbers it knows
+     about by regex; one written here would simply go stale, which is the
+     failure the about copy already had once. */
+  check(!/\d{3,} shows/.test(loop), 'the loop states no count that would go stale');
+
+  /* AND THE STRATEGY LINE UNDER IT HAS TO BE TRUE. It is the one piece of copy
+     on the home screen that tells a player how to WIN, and the first attempt
+     at making it a dare got both halves backwards. Seven strategies, 400
+     identical show sequences each:
+
+       1170 chase segues · 1092 best-scoring pick · 1077 jamcharted first
+       1063 the most-played song · 1048 random · 1036 the rarest song
+        959 the longest song
+
+     So chasing rarity is second worst, below random, and taking the hits beats
+     random. "Rarities pay best. Anyone can pick the hits" was false twice over.
+     What survives is what the numbers actually show, and it happens to be the
+     better dare: segues are the one big lever, and the intuitive grab is the
+     trap. Both claims are asserted here so the line cannot drift back into
+     advice the scoring does not give, which is the same failure the banking
+     copy had. */
+  const dare = cdSlice('class="how-scores"', '</p>');
+  check(/segue/i.test(dare), 'the strategy line names the lever that actually pays');
+  check(/\blose\b|\btrap\b|\bhow you lose\b/i.test(dare),
+    'and warns off the intuitive grab');
+  check(!/rarit/i.test(dare) && !/rare songs/i.test(dare),
+    'and no longer sells rarity, which measures below random');
+  check(!/pick the hits/i.test(dare),
+    'nor sneers at the hits, which measure above it');
+}
+
 /* 2. THE SAMPLE BAND WAS ON THE LIVE PAGE, one tap under the real one, over the
       words "Made-up data we use for testing". Nothing on the page told a new
       player that is not part of the game. */
@@ -1320,8 +1423,23 @@ check(/<span class="sg-w">Their<\/span> \$\{\s*esc\(setLabel\(k\)\)\}/.test(game
   /* The interpolation is part of the anchor: rankCard reuses `.ceiling` for
      the leaderboard panel and comes first in the file, so `class="card
      ceiling` alone sliced the wrong card and the guard could not fail. */
-  const ceil = cdSlice('class="card ceiling${gap <= 0', 'ceil-fine');
-  check(!/\$\{pct\}%/.test(ceil), 'the card below does not repeat the figure');
+  const ceil = cdSlice('class="card ceiling${gap <= 0', '</div>`;');
+  /* NOT THE SAME SENTENCE TWICE. The figure itself may appear again, because
+     the ceiling bar labels its own axis with it and a comparison needs both
+     numbers on it; what must not come back is the scorebox's CLAIM restated
+     underneath, which is what made neither of them land. */
+  check(!/best show those nights had in them/.test(ceil),
+    'the card below does not restate the scorebox line');
+  /* AND THE BENCHMARK IS ON THE BAR. 29 words of fine print explained the
+     replay and ended with "picking at random gets about 77% of it", asking
+     the reader to compare that to their own percentage in their head. A tick
+     does the comparing. */
+  check(/class="ceil-mark"/.test(ceil) && /left:\$\{RANDOM_PCT\}%/.test(ceil),
+    'and marks what random play is worth');
+  check(/const RANDOM_PCT = \d+;/.test(gameBare), 'from one named constant');
+  /* gameBare for the same reason: the code comment beside the tick quotes the
+     fine print it replaced, word for word. */
+  check(!/Picking at\s+random gets about/.test(gameBare), 'rather than saying it in prose');
 }
 
 /* THE DRIFT GATE HAS TO COUNT LENGTH AS AN INPUT.
@@ -1685,6 +1803,14 @@ check(/\.song\.finishes \.tbar\{[^}]*background:var\(--greenT\)/.test(game),
    person can actually read. */
 console.log('the automatic refresh');
 const wf = read('.github/workflows/setlist-data.yml');
+/* AND A COPY WITH THE COMMENTS OUT, for the checks that assert a mechanism is
+   GONE. The comment block above the gate quotes the wall-clock line it
+   replaced, verbatim and on purpose, so a naive search finds it in the
+   explanation and reports the bug as still present. Same trap as gameBare,
+   which this file has fallen into twice. A '#' inside a quoted string would
+   be mangled by this, and there is none in the file: every '#' in it starts a
+   comment. */
+const wfBare = wf.split('\n').map(l => l.replace(/(^|\s)#.*$/, '')).join('\n');
 check(/cron:/.test(wf), 'the refresh is scheduled');
 /* --strict IS THE WHOLE SAFETY STORY. Without it the ingester warns about a
    throttled year, a truncated year or a jamchart outage and still exits 0,
@@ -2416,8 +2542,31 @@ check(/cron: '0 10 \* \* \*'/.test(wf) && /cron: '0 11 \* \* \*'/.test(wf),
   'the refresh runs daily on both UTC hours');
 /* TWO ENTRIES BECAUSE GITHUB CRON HAS NO DAYLIGHT SAVING. 6am Eastern is 10:00
    UTC from March to November and 11:00 UTC the rest of the year, so a single
-   entry would be 5am for half of it. The gate lets exactly one through. */
-check(/TZ=America\/New_York date \+%H/.test(wf), 'and only the one that is 6am in New York proceeds');
+   entry would be 5am for half of it. The gate lets exactly one through.
+ *
+ * AND IT DECIDES BY WHICH SCHEDULE FIRED, NOT BY THE WALL CLOCK. It used to
+ * read `TZ=America/New_York date +%H` and proceed only when that said 06,
+ * which is correct exactly as long as GitHub starts a scheduled run at the
+ * minute it is scheduled for. GitHub does not promise that.
+ *
+ * It broke that way silently for six days. Every run from 27 August started
+ * four to eleven hours late, so New York said 13:00 or 17:00 by the time the
+ * runner asked, both entries stopped, and the job reported SUCCESS with every
+ * later step skipped. Green ticks and no new setlists since 26 August.
+ *
+ * github.event.schedule carries the cron that actually fired and says so no
+ * matter how late the runner picks it up, so that is what the gate reads now,
+ * paired with the day's real UTC offset. */
+check(!/TZ=America\/New_York date \+%H/.test(wfBare),
+  'the gate does not depend on the runner starting on time');
+check(/github\.event\.schedule/.test(wf), 'it reads which schedule actually fired');
+check(/date \+%z/.test(wf), 'against the day\'s real UTC offset');
+/* BOTH ARMS, or half the year silently stops refreshing. The failure this
+   replaces was exactly one arm of a two-arm decision never being reachable. */
+check(/-0400.*\n?.*0 10 \* \* \*/.test(wf) || /"-0400" \] && \[ "\$FIRED" = "0 10 \* \* \*"/.test(wf),
+  'EDT proceeds on the 10:00 UTC entry');
+check(/"-0500" \] && \[ "\$FIRED" = "0 11 \* \* \*"/.test(wf),
+  'and EST on the 11:00 UTC one');
 check(/steps\.when\.outputs\.go == 'yes'/.test(wf), 'every later step is gated on it');
 check(/workflow_dispatch/.test(wf) && /github\.event_name.*workflow_dispatch/.test(wf),
   'a manual run is always let through');

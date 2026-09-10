@@ -1670,6 +1670,21 @@ const CHEMISTRY = {
    * One bonus per roster however many of the shapes hold.
    */
   QB_HUB: { VALUE: 0.08 },
+  /*
+   * THE COACH IS THE THIRTEENTH MAN ON THE CHEMISTRY BOARD. See coachLinks. Two links, both
+   * provable from data already in the repo, and both worth more than the player-to-player
+   * link they resemble, because a head coach is not a locker-room acquaintance:
+   *
+   *   coached   he was this man's head coach, that very season. Sits between teammates
+   *             (0.05) and battery (0.10): stronger than having shared a room, weaker than
+   *             having thrown a thousand passes to each other.
+   *   college   he was the head coach at this man's school. Above the player-to-player
+   *             college link (0.02) for the same reason: one of them recruited the other.
+   *
+   * They enter the same saturation curve as everything else, so a coach who knows four of
+   * your men is worth more than one who knows two and less than twice as much.
+   */
+  COACH: { coached: 0.06, college: 0.03 },
   /* "Same era" was undefined in the GDD; fixed as within this many seasons. */
   TARGET_CONFLICT_ERA_YEARS: 3,
   TARGET_CONFLICT_PERCENTILE: 0.95,
@@ -3039,7 +3054,8 @@ function resolveChemistry(roster, ctx, opts) {
     for (let j = i + 1; j < roster.length; j++) {
       if (split && sideOf(roster[i]) !== sideOf(roster[j])) continue;
       const best = pairLinks(roster[i], roster[j], ctx, opts)[0];
-      if (best) links.push({ ...best, a: roster[i].name, b: roster[j].name });
+      if (best) links.push({ ...best, a: roster[i].name, b: roster[j].name,
+        side: sideOf(roster[i]) ? 'def' : 'off' });
     }
   }
   /* THE QUARTERBACK AS A HUB, on top of the pairs. See CHEMISTRY.QB_HUB. */
@@ -3047,24 +3063,56 @@ function resolveChemistry(roster, ctx, opts) {
      already free of cross-side pairs. Passing only his own unit as well, so the count of
      "men he knows" cannot be inflated by a roster that merely has twelve men in it. */
   const hub = qbHubBonus(split ? roster.filter((p) => !sideOf(p)) : roster, links);
-  if (hub) links.push(hub);
+  if (hub) links.push({ ...hub, side: 'off' });
+  /* THE COACH, on top of both. See coachLinks. Only Full Team hires one, and only Full Team
+     splits, so this rides on the same flag rather than inventing a second one. */
+  if (split && opts.coach) {
+    const byName = {};
+    for (const p of roster) byName[p.name] = p;
+    for (const l of coachLinks(roster, ctx, opts.coach)) {
+      const man = byName[l.b];
+      links.push({ ...l, side: man && sideOf(man) ? 'def' : 'off' });
+    }
+  }
 
-  const positives = links.filter((l) => l.value > 0).sort((a, b) => b.value - a.value);
-  const negatives = links.filter((l) => l.value < 0);
+  /* ONE UNIT'S CHEMISTRY IS ITS OWN. Skipping the cross-side PAIRS was only half the rule:
+     a single roster-wide multiplier still handed the defence whatever the offence earned,
+     so a quarterback and his receiver were quietly making the cornerbacks better. Each side
+     now saturates its own links and multiplies its own points, which is what resolveGameFull
+     applies and what fullStrength rates. The one-sided modes take the old path untouched. */
+  const fold = (ls) => {
+    const positives = ls.filter((l) => l.value > 0).sort((a, b) => b.value - a.value);
+    const negatives = ls.filter((l) => l.value < 0);
+    const raw = positives.reduce((s, l) => s + l.value, 0);
+    const saturated = CHEMISTRY.MAX * (1 - Math.exp(-raw / CHEMISTRY.MAX));
+    // Penalties never diminish and are applied after saturation, so a negative
+    // always costs its full face value.
+    const penalties = negatives.reduce((s, l) => s + l.value, 0);
+    const net = Math.max(CHEMISTRY.MIN, Math.min(CHEMISTRY.MAX, saturated + penalties));
+    return { raw, saturated, net, links: positives.concat(negatives) };
+  };
 
-  const raw = positives.reduce((s, l) => s + l.value, 0);
-  const saturated = CHEMISTRY.MAX * (1 - Math.exp(-raw / CHEMISTRY.MAX));
-  // Penalties never diminish and are applied after saturation, so a negative
-  // always costs its full face value.
-  const penalties = negatives.reduce((s, l) => s + l.value, 0);
-  const net = Math.max(CHEMISTRY.MIN, Math.min(CHEMISTRY.MAX, saturated + penalties));
+  if (!split) {
+    const all = fold(links);
+    return { multiplier: 1 + all.net, raw: all.raw, saturated: all.saturated, net: all.net,
+      links: all.links };
+  }
 
+  const o = fold(links.filter((l) => l.side !== 'def'));
+  const d = fold(links.filter((l) => l.side === 'def'));
   return {
-    multiplier: 1 + net,
-    raw,
-    saturated,
-    net,
-    links: positives.concat(negatives),
+    /* The headline number is the average of the two, because that is what the team is
+       carrying: quoting the folded whole-roster figure would print a multiplier no side of
+       the ball actually plays with. */
+    multiplier: 1 + (o.net + d.net) / 2,
+    offMultiplier: 1 + o.net,
+    defMultiplier: 1 + d.net,
+    raw: o.raw + d.raw,
+    saturated: (o.saturated + d.saturated) / 2,
+    net: (o.net + d.net) / 2,
+    offNet: o.net,
+    defNet: d.net,
+    links: o.links.concat(d.links).sort((a, b) => b.value - a.value),
   };
 }
 
@@ -3556,9 +3604,131 @@ function defenseOverall(defenseTotal) {
 }
 
 /** The overall of a roster as drafted, either side of the ball, in one place. */
-function overallOf(roster, chemistryMultiplier, isDefense) {
+/*
+ * ─── WHAT A FULL TEAM IS WORTH, ON A SCALE THAT MEANS SOMETHING ────────────────────
+ *
+ * THE OLD NUMBER WAS TWO DIFFERENT QUANTITIES AVERAGED TOGETHER. The offensive half was
+ * points times three multipliers, which is unbounded and ran past 120 on a good roster; the
+ * defensive half was defenseOverall, which is mapped into 0 to 100. Averaging them is adding
+ * a distance to a percentage: the result had no ceiling, no floor, and no meaning, and a
+ * team rated 120 could lose because the rating was mostly saying "your offence is large".
+ *
+ * A RATING SHOULD ANSWER ONE QUESTION: how close is this to the best team I could have
+ * drafted. So it is measured as expected point margin against a league-average opponent,
+ * which is the thing that decides seasons, and then placed on the line between the worst
+ * legal roster and the best one:
+ *
+ *   0    the cheapest twelve men in the game, and the coach who makes them worse
+ *   100  the best roster the cap can buy, the best coach, and the chemistry to go with it
+ *
+ * Both ends are MEASURED, by solving for them, and both are stated below so they can be
+ * checked. Nothing here is a guess and nothing is a constant somebody liked the look of.
+ */
+const OPP_PTS_NEUTRAL = 22.08;   // mean pts_scored_mean over every team season
+
+/**
+ * The two halves of a full team's week, against a league-average opponent: what it would
+ * score and what it would allow. Everything below is built out of these two numbers, so
+ * there is one place that knows how a full team is valued rather than three that agree
+ * until somebody edits one of them.
+ */
+function fullParts(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
+  const { off, def } = splitSides(roster);
+  if (!off.length || !def.length) return { scored: 0, stops: 0, allowed: 0 };
+  const eff = coachEffect(coach);
+  const t = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
+  const offPts = off.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t * eff.off;
+  const defPts = def.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t * eff.def;
+  const scored = offPts * chemOff(chemistryMultiplier) * rosterStructure(off).multiplier;
+  /* WHAT THE DEFENCE PRODUCES, before it is turned into what the opponent scores. The two
+     are not interchangeable and the ratings below need this one: suppression is capped, so
+     every defence past a certain badness collapses onto the same `allowed`, and a rating
+     built on that reports a quarter of all careless drafts as exactly the same defence. */
+  const stops = defPts * chemDef(chemistryMultiplier) * defenseStructure(def).multiplier;
+  return {
+    scored,
+    stops,
+    allowed: OPP_PTS_NEUTRAL * constants.SCALE * defenseSuppression(stops, constants),
+  };
+}
+
+/** Expected margin per game against a league-average opponent. The raw scale. */
+function fullStrength(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
+  const p = fullParts(roster, chemistryMultiplier, coach, constants);
+  return p.scored - p.allowed;
+}
+
+/*
+ * ─── EACH UNIT ON ITS OWN MODE'S SCALE, AVERAGED, AND THEN THE COACH ────────────────
+ *
+ * A rating has to answer the question printed above it. "Offense" has to mean how good the
+ * offence is, "Defense" how good the defence is, and "Team overall" what those two come to
+ * together, because that is what anybody reading three numbers will assume.
+ *
+ * THIS GAME ALREADY HAS BOTH OF THOSE SCALES and they are the ones players have been reading
+ * for two modes. An offence is worth what overallOf scores it in the offence draft: points a
+ * game, times chemistry, times how the six fit. A defence is worth what defenseOverall
+ * scores it in the defence draft, which puts a unit whose fantasy points sum to a fraction
+ * of an offence's onto the offence's own 0 to 100 line, off measured percentiles. That
+ * function exists precisely so the two sides of the ball can be compared, so Full Team
+ * should use it rather than invent a third scale.
+ *
+ *   offense  = what these six would rate in the offence draft
+ *   defense  = what these six would rate in the defence draft
+ *   team     = the average of the two, then the coach's lift on top
+ *
+ * TWO EARLIER VERSIONS INVENTED THAT THIRD SCALE and both read wrong, in opposite
+ * directions, and both are worth writing down because the failure is not obvious either
+ * time. Splitting the team's point margin in half made "averaged" an exact identity but
+ * forced both units to share one span 50/50, and the two do not have equal reach: over 400
+ * realistic drafts the offence ran a median 74 against the defence's 61. Giving each unit
+ * its own solved floor and ceiling fixed that gap but left four constants nobody could
+ * check, all of which had to be re-solved after any change to the data.
+ *
+ * THE TALENT DIAL IS IN, and it has to be. Full Team scales both sides' output by
+ * FULL_TALENT, so six men here do not produce what the same six produce in their own mode.
+ * Rating them without it describes a unit that never takes the field: measured, it put a
+ * 9-8 team at 87 and left almost every roster in the game reading as elite, which also
+ * walks the seeding and the weekly edge into thresholds meant for a top team. Same formula,
+ * same scale, applied to what these men actually produce in this mode.
+ *
+ * THE COACH IS A LIFT ON THE TEAM, not a term inside each unit. It is the average of his two
+ * tilts, so a coach who is +8.2% offense and +6.4% defense is worth +7.3% to the team. His
+ * two tilts are shown separately wherever he is, because most coaches pull the two ways at
+ * once and one number cannot say which half he is helping. What DOES move the unit ratings
+ * when you hire him is his chemistry with your players, which is a fact about the roster and
+ * belongs in the roster's numbers.
+ *
+ * Measured over 400 seasons: correlation with regular-season wins 0.890, against 0.878 for
+ * the point margin the engine plays out and 0.875 for the version this replaces. The median
+ * gap between the two units is 1.1 points on realistic drafts and 0.6 on careful ones. It is
+ * the most legible version and also the most predictive, which does not usually happen.
+ */
+function fullSideRatings(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
+  const { off, def } = splitSides(roster);
+  if (!off.length || !def.length) return { off: 0, def: 0, coachBoost: 1, overall: 0 };
+  const t = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
+  const o = off.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t
+    * chemOff(chemistryMultiplier) * rosterStructure(off).multiplier;
+  const d = defenseOverall(def.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t
+    * chemDef(chemistryMultiplier) * defenseStructure(def).multiplier);
+  const eff = coachEffect(coach);
+  const coachBoost = (eff.off + eff.def) / 2;
+  /* The units are left alone: a great one passes 100 in its own mode too, and saying so is
+     the point. The headline is clamped because it is the number runs are compared by. */
+  return { off: o, def: d, coachBoost,
+    overall: Math.max(0, Math.min(100, (o + d) / 2 * coachBoost)) };
+}
+
+function fullOverall(roster, chemistryMultiplier, coach, constants) {
+  return fullSideRatings(roster, chemistryMultiplier, coach, constants).overall;
+}
+
+function overallOf(roster, chemistryMultiplier, isDefense, coach) {
   const pts = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
-  const chem = chemistryMultiplier || 1;
+  /* Full Team may hand this the two-sided chemistry object; every other mode hands it a
+     number. chemSide reads both, so the one-sided branches below stay arithmetic. */
+  const chem = chemSide(chemistryMultiplier, 'multiplier');
   /* 'full' rather than true or false, because a full team has two ratings and one number
      has to stand for both. A bare boolean could not say so: passing false scores twelve men
      through the offensive reading and hands a $110M defense to rosterStructure, which is
@@ -3566,26 +3736,15 @@ function overallOf(roster, chemistryMultiplier, isDefense) {
      mirror of it. Anything that is not the string is still read as the old boolean, so every
      existing caller means what it always meant. */
   if (isDefense === 'full') {
-    const { off, def } = splitSides(roster);
-    const offPts = off.reduce((t, p) => t + p.ppr_ppg_mean, 0);
-    const defPts = def.reduce((t, p) => t + p.ppr_ppg_mean, 0);
-    /* THE MEAN OF THE TWO SIDES, not the sum, and not the offense with a defensive bonus.
-       Both halves are already on the 0-to-100 scale the seeding and weekly-edge constants
-       expect, so averaging keeps a full team on that scale; adding would put every roster
-       off the top of it and seed a mediocre team first. It also says the right thing about
-       the mode: a 92 offense behind a 40 defense is a 66 team, which is the failure state
-       this mode exists to make possible. */
-    /* TALENT APPLIES HERE TOO, and leaving it out was worth a 67% title rate.
-       A rating is what the seeding, the weekly edge and the playoff home field are all
-       read off, so it has to describe the team that actually takes the field. Rating the
-       roster at full strength while it plays at FULL_TALENT put a full team at 111 on a
-       scale those constants treat as topping out near 100, so every one of them was pinned:
-       the mode reached the playoffs 98% of the time and won the title two seasons in three
-       against a reference of 3%. */
-    const t = FULL_TALENT;
-    const offRating = offPts * t * chem * rosterStructure(off).multiplier;
-    const defRating = defenseOverall(defPts * t * chem * defenseStructure(def).multiplier);
-    return (offRating + defRating) / 2;
+
+    /* ONE NUMBER, ON THE LINE BETWEEN THE WORST AND BEST DRAFTABLE TEAM. See fullOverall
+       above for why the old mean of two incompatible halves had to go.
+       The coach is in it, which is both correct and what lets the coach screen preview the
+       hire: he changes what the team scores and allows, so a rating without him describes a
+       team that never takes the field. */
+    /* The WHOLE chemistry value, not the flattened one above: the two units are rated with
+       their own multipliers, so handing this the average would rate a team nobody built. */
+    return fullOverall(roster, chemistryMultiplier, coach);
   }
   return isDefense
     ? defenseOverall(pts * chem * defenseStructure(roster).multiplier)
@@ -3687,9 +3846,618 @@ function resolveGameDefense(roster, chemistryMultiplier, opponent, leagueAvgAllo
  * beside the other two. At $280M a full team carries 2.3 floor men instead of 6.2 and its
  * mean man is a 66th percentile player instead of a 38th.
  *
- * Both are measured. Re-run simulator.js --fullteam after touching either.
+ * Both are measured. Re-run simulator.js --fullteam after touching either. Where they stand
+ * today, 400 seasons a row, against the offense mode printed beside them:
+ *
+ *                    win%    med rec   playoffs   title   rating
+ *   careless         8.8%      1-16       0.0%    0.0%      37.0
+ *   mid             55.8%       9-8      15.0%    1.0%      63.8
+ *   optimal         81.3%      14-3      92.3%    6.8%      81.4
+ *   (offense mode: careless 25.0%, mid 60.8%, optimal 80.8%)
+ *
+ * CARELESS PLAY IS PUNISHED HARDER HERE THAN IN THE OTHER TWO MODES, and that is the mode
+ * rather than a mis-fit. Offense mode hands you a league-average defense and defense mode
+ * hands you an offense; draft both badly and there is nothing left to carry you, so a bad
+ * full team allows 1.5x what an average one does AND scores half. The rating says so before
+ * the season starts, which is the point of putting it on a scale that means something.
  */
 const FULL_CAP_MUSD = 280;
+
+/*
+ * ─── THE THREE YEAR DEAL ────────────────────────────────────────────────────────────
+ *
+ * One roster carried through three real NFL seasons.
+ *
+ * THE MODE EXISTS BECAUSE OF WHAT THIS GAME'S ATOM IS. Everywhere else a franchise mode
+ * has to invent aging: a curve, a random roll, a progression system somebody tuned. Here
+ * the atom is a player-SEASON, so ageing is not a model at all. Draft Marshall Faulk's
+ * 2000 and the following winter he becomes Marshall Faulk's 2001, whose numbers are
+ * whatever they actually were, priced at whatever that year is actually worth. Nothing to
+ * tune and nothing to defend, because none of it is invented.
+ *
+ * WHAT THE DATA ALREADY SAYS, measured over all 26,397 player-seasons, by what a man cost:
+ *
+ *   tier            gone next year   worse   better   median change   median new price
+ *   star $36M+            12%         64%     14%         -2.3            $32M
+ *   good $24-36M          13%         55%     20%         -1.4            $23M
+ *   solid $12-24M         21%         40%     28%         -0.5            $16M
+ *   cheap $3-12M          38%         19%     31%         +0.5            $ 7M
+ *
+ * That is a dynasty curve: decline at the top, lottery tickets at the bottom, and men
+ * disappearing out of both ends. 22.3% of $40M men are gone or under $20M a year later;
+ * 1.0% of $3-12M men are worth $30M+. 67.6% of all rows have a next season to age into and
+ * 1,924 players have a five-year unbroken stretch, so three years is comfortably inside
+ * what the pool can carry.
+ *
+ * THE CALENDAR IS THE THING THAT MOVES, and that is what changes the wheel. Every other
+ * mode spins a year AND a club, and the freedom of the year is the whole point: 2000 Faulk
+ * beside 2019 Lamar Jackson. Here the year is the LEAGUE year, fixed, so the wheel spins
+ * clubs alone and the offseason is what advances the calendar. A dynasty walks forward
+ * through real NFL history, drafting out of the league as it actually was that autumn.
+ * There are about 349 skill players and 629 defenders in a season across 32 clubs, so a
+ * club-only wheel still offers about eleven men a spin.
+ *
+ * NOTHING IN THE LIVE GAME REACHES ANY OF THIS YET. It is measured by
+ * simulator.js --dynasty and gated to named accounts by dynasty-access.js.
+ */
+/*
+ * ─── THE OWNER, AND HOW LONG HE GIVES YOU ───────────────────────────────────────────
+ *
+ * A dynasty is not a fixed number of seasons. It is as many as you can keep the job for,
+ * and the score is how many that turned out to be: one integer, which ranks itself, and
+ * which lets somebody stop after any season with their run already banked. That last part
+ * matters more than it sounds. A three-season commitment is twenty-five minutes before you
+ * have a score; this is five minutes a season with a number that is already yours.
+ *
+ * THE BAR CLIMBS AND THE OWNER IS PATIENT ONCE.
+ *
+ *   season 1   8 wins        season 4   11 wins
+ *   season 2   9 wins        season 5+  12 wins, which is the playoffs
+ *   season 3  10 wins
+ *
+ * Miss your bar two seasons RUNNING and you are done. One bad year is a bad year; two in a
+ * row is a pattern, which is how football actually treats it. So the mode opens as "have a
+ * winning season" and becomes "make the playoffs every year, forever", and nobody is ever
+ * fired after their first season.
+ *
+ * MEASURED, not chosen. Seven rules were played to the firing, 200 dynasties each, against
+ * four winter strategies. Seasons survived by the best and worst of those strategies:
+ *
+ *   rule                       worst    best    fired in year 1   rode to the 25 stop
+ *   make the playoffs, always    1.2     1.4          79.0%              0.0%
+ *   10 wins, always             1.7     3.4          52.5%              0.0%
+ *   9 wins, always              2.5     5.4          36.0%              0.5%
+ *   climbing bar, no patience   2.1     3.8          27.5%              0.0%
+ *   playoffs, two in a row      2.7     4.5           0.0%              0.5%
+ *   9 wins, two in a row        5.7    12.8           0.0%              6.5%
+ *   THIS ONE                    4.0     9.5           0.0%              3.0%
+ *
+ * Demanding the playoffs every year fires four players in five after their FIRST season,
+ * which is a mode nobody plays twice. A flat nine-win bar with two strikes goes the other
+ * way: the crude bot's median run is thirteen seasons and 6.5% of them ride the safety stop,
+ * so there is nothing left for a human to be better at. This rule sits between them, and
+ * the bot's best strategy lasts 2.4 times as long as its worst, which is the room a person
+ * needs to visibly outplay it.
+ *
+ * AND THERE IS NO LENGTH. A dynasty ends when the owner ends it and at no other point.
+ *
+ * There used to be a DYNASTY_MAX_SEASONS = 25 sitting here, which nothing in the game ever
+ * read: run.js does not, the page does not, and the only code that ever touched it was the
+ * balance simulator using it as a safety stop so a run could not loop forever. It has been
+ * removed rather than corrected, because a constant that governs nothing is worse than no
+ * constant at all. This one was read as a design limit by everything that came near it, up
+ * to and including a note in CLAUDE.md claiming the mode was built to run twenty-five
+ * seasons and a badge catalog that would not name anything past them. The simulator keeps
+ * its own stop, named for what it is.
+ */
+
+/*
+ * ─── THE SCORE ─────────────────────────────────────────────────────────────────────
+ *
+ * Every other mode on this site is ranked on a rating, a number between 0 and 100 that says
+ * how good the roster was. Dynasty is not that shape. It is a run, it ends when you are
+ * fired, and the thing worth bragging about is how far you got and what you did on the way,
+ * so it is scored the way an arcade cabinet scores: points, named bonuses, and a multiplier
+ * that grows the longer you stay alive.
+ *
+ * SEASON N PAYS N TIMES. That is the whole multiplier and it is deliberately blunt: your
+ * fourth season is worth four times your first, so a run's total is roughly quadratic in
+ * seasons survived. The effect is that surviving dominates the score, which is correct,
+ * because surviving is the mode. Wins inside a season then break the tie between two people
+ * who lasted the same number of years.
+ *
+ * The parts are named rather than folded into one number, because an arcade score that
+ * cannot be read as a list of things you did is just a rating with more digits.
+ *
+ * REGULAR-SEASON WINS ONLY in the wins line. run.outcome.wins counts playoff games too, and
+ * paying 1,000 for a divisional round win and then 2,500 again for the same game is the kind
+ * of double count nobody notices until the leaderboard looks wrong.
+ */
+const DYNASTY_POINTS = {
+  WIN: 1000,          // per regular-season win
+  OVER_BAR: 500,      // per win clear of what the owner asked for
+  PLAYOFF_WIN: 2500,  // per playoff game won
+  TITLE: 10000,
+  UNDEFEATED: 10000,  // 17-0 in the regular season, title or not
+  PERFECT: 25000,     // undefeated AND the title, on top of both
+};
+
+/**
+ * Score one season. Takes the plain facts rather than a run, so the page, the checker and
+ * the leaderboard all read the same function and nothing has to build a run to ask.
+ *
+ * `seasonNo` counts from 1 and is the multiplier.
+ */
+function dynastySeasonScore(s) {
+  const P = DYNASTY_POINTS;
+  const wins = Math.max(0, s.wins || 0);
+  const parts = [];
+  if (wins) parts.push({ key: 'wins', label: `${wins} win${wins === 1 ? '' : 's'}`, points: wins * P.WIN });
+  const over = Math.max(0, wins - (s.bar || 0));
+  if (over) {
+    parts.push({ key: 'over', label: `${over} clear of the owner`, points: over * P.OVER_BAR });
+  }
+  const po = Math.max(0, s.playoffWins || 0);
+  if (po) {
+    parts.push({ key: 'playoffs', label: `${po} playoff win${po === 1 ? '' : 's'}`, points: po * P.PLAYOFF_WIN });
+  }
+  if (s.titleWon) parts.push({ key: 'title', label: 'Champions', points: P.TITLE });
+  if (s.undefeatedRegular) parts.push({ key: 'undefeated', label: 'Undefeated', points: P.UNDEFEATED });
+  if (s.perfect) parts.push({ key: 'perfect', label: 'Perfect season', points: P.PERFECT });
+  const base = parts.reduce((t, p) => t + p.points, 0);
+  const mult = Math.max(1, s.seasonNo || 1);
+  return { parts, base, mult, total: base * mult };
+}
+
+/** Every season added up, which is what the run is ranked on. */
+function dynastyRunScore(history) {
+  return (history || []).reduce((t, h) => t + (h.score || 0), 0);
+}
+
+/*
+ * ─── WHAT THE OWNER WANTS, AND WHY IT SITS STILL FOR A WHILE ────────────────────────
+ *
+ * Dynasty is six careers running at once. Every man ages into his own next real
+ * season, a man drafted at his last one is gone in the spring, and the run ends the first
+ * time you miss. What it needed was a target that a player could hold in his head, and
+ * that means one that does not move every year.
+ *
+ * So it is flat for a stretch and then goes up a win. The stretch is the mode's rhythm: a
+ * run of seasons you can settle into, a step you can see coming, and a milestone every
+ * time you clear one.
+ */
+const DYNASTY_BASE_WINS = 8;
+
+/*
+ * HOW OFTEN THE TARGET GOES UP. It was a formality and it is not one any more, and that
+ * change is worth the space because the reason is somewhere else in this file.
+ *
+ * It was 27 when a run walked the calendar and a lap of it was the goal, then 10 when the
+ * clock moved to the player and a mode that never ended was the risk. Freezing the cap took
+ * that risk away: with the salary ratchet in, nothing in sixty runs reached season
+ * twenty-five, and every candidate step landed within half a season of every other
+ * (+1 every 27 gave 5.1 seasons, every 6 gave 4.6, and this one 5.0). Ten was kept because
+ * it cost nothing and still closed the door.
+ *
+ * THEN THE CONTRACT WAS LOCKED, and the step became the only thing holding the door at all.
+ * See dynastySalary: a man is now on the deal he signed at the draft forever, payroll stops
+ * climbing, and a run lasts about twice as long. 80 runs, 30 seasons deep, one life, scored
+ * offline against one set of locked seasons so no rule gets a luckier board:
+ *
+ *   rule                  seasons mean / median    reach 10   reach 25
+ *   THIS ONE, 8 +1/10       10.1        10            51%         3%
+ *   8, +1 every 6            8.6         8            39%         0%
+ *   8, +1 every 5            7.9         7            31%         0%
+ *   8, +1 every 4            7.4         7            24%         0%
+ *   8, +1 every 3            6.8         6            21%         0%
+ *   9, +1 every 10           6.2         5            23%         1%
+ *   10, +1 every 10          3.7         3             6%         0%
+ *
+ * For scale, the ratcheted mode at this same rule measured 6.0 mean, median 5, 23% reaching
+ * season ten. So "9 wins, +1 every 10" reproduces the old difficulty almost exactly, and
+ * "8 wins, +1 every 3" gets close while keeping eight as the opening number.
+ *
+ * TEN IS KEPT ON PURPOSE AND NOT BY DEFAULT. Locking the contract was asked for as a game
+ * design change, not as a difficulty change, and the mode being twice as long is the
+ * mechanic working: a roster that holds its value is supposed to last. Anybody tightening
+ * this should move THIS constant rather than DYNASTY_BASE_WINS, because eight is on the
+ * front page, on the squad screen, on the season screen and in the rules sheet, and the
+ * step is on none of them.
+ */
+const DYNASTY_STEP_SEASONS = 10;
+
+/*
+ * AND THE TARGET ITSELF IS EIGHT, which is where it has been all along and now means
+ * something quite different.
+ *
+ * A growing cap paid for the roster getting older, so a competent manager won 12.7 games a
+ * season forever and eight was a formality. With the cap fixed at $140M the ratchet closes:
+ * wins run 11.1 in season one and then 9.4, 9.1, 9.3, 9.1, payroll pins at $133M of $140M
+ * from season five onward, and the team you field gets worse every year because the room to
+ * replace anybody is the room you free by letting somebody go.
+ *
+ *   target   seasons: mean / median   reach 10   reach 25
+ *   flat 7     8.0 / 6                 28%         3%
+ *   THIS ONE   5.1 / 4                 10%         0%
+ *   flat 9     3.3 / 3                  0%         0%
+ *
+ * A MEDIAN OF FOUR IS WHERE THIS MODE WAS ALWAYS TRYING TO SIT. The first version of this
+ * comment said so in as many words, back when it was aiming at it with a rising bar and a
+ * growing cap and hitting eight instead. It gets there now off the mechanic rather than off
+ * the number: you lose because your men got old, which is the mode.
+ *
+ * The bot drafts best-available inside a budget and releases whoever is worth less than half
+ * what he is paid. A person who reads the offseason should beat it.
+ */
+/*
+ * AND IT STOPS CLIMBING BEFORE IT STOPS BEING POSSIBLE.
+ *
+ * The bar was BASE + one win every ten seasons with nothing above it, and a season is
+ * seventeen games. Left to run, that asks for 17 of 17 at season 91 and 18 of 17 at season
+ * 101: a perfect season to survive, and then an arithmetic wall no roster can climb. This is
+ * an endless mode, so a season it is impossible to pass is a bug rather than a hard ending.
+ *
+ * FOURTEEN, WHICH LEAVES THREE LOSSES. It is where the old formula arrived at season 61
+ * anyway, so nothing inside the range anyone plays moves: the bot's median run is four
+ * seasons and none of a measured three hundred reached twenty-five. This changes the far
+ * tail only, and what it changes there is "cannot be done" into "very hard".
+ *
+ * THE MODE DOES NOT STOP GETTING HARDER WHEN THE NUMBER DOES, and that is the point of
+ * capping it here rather than raising the ceiling. The squeeze this mode runs on is a frozen
+ * cap against a roster that ages every winter, and that keeps tightening on its own for as
+ * long as the run lasts. The bar is the part of the difficulty that had a wall in it.
+ */
+const DYNASTY_WIN_BAR_MAX = 14;
+/* Wins needed in a given season, counting from 1. */
+function dynastyWinBar(season, stepEvery) {
+  const step = Math.floor(Math.max(0, Math.max(1, season) - 1)
+    / (stepEvery || DYNASTY_STEP_SEASONS));
+  return Math.min(DYNASTY_BASE_WINS + step, DYNASTY_WIN_BAR_MAX);
+}
+
+/**
+ * Whether the run goes on, given every season so far, newest last. Each entry needs only
+ * `wins`.
+ *
+ * ONE LIFE. Miss the year's target and the run is over, which is the whole of the
+ * structure: every season is a door and you either open it or you do not. It used to be
+ * two misses in a row, a rule that needed a paragraph to state and a sentence on screen
+ * that nobody read the same way twice ("on notice", "miss again and you are out").
+ *
+ * AGAINST ITS OWN SEASON'S TARGET, which matters now that the target moves: a run that
+ * cleared eight in season nine is not retroactively failed when season eleven asks nine.
+ */
+function dynastySurvives(history, stepEvery) {
+  if (!history || !history.length) return true;
+  const n = history.length;
+  return history[n - 1].wins >= dynastyWinBar(n, stepEvery);
+}
+
+/*
+ * AND A MAN YOU RELEASE DOES NOT COME BACK. A rule rather than a convenience: a contract is
+ * locked at what you paid, so without it every winter holds a free exploit, which is to cut
+ * your declining $40M star and re-sign the same man off the wheel at the $32M he is now
+ * worth. That is exactly the renegotiation a locked deal exists to forbid. Once he has
+ * played for you he is out of your pool for the rest of the dynasty, whatever season he
+ * would be drawn from.
+ */
+
+
+/*
+ * ─── THE THREE RULES A WINTER RUNS ON ───────────────────────────────────────────────
+ *
+ * 1. YOU PAY WHAT YOU DRAFTED HIM FOR, FOR AS LONG AS YOU HAVE HIM. It is a contract, and
+ *    the contract does not move. He improves and you still pay the old number, which is the
+ *    reward. He declines and you still pay the old number, which is the bill. Release him
+ *    and the number goes with him; sign somebody new and you pay what that man is worth
+ *    today.
+ *
+ * 2. YOU OPEN MONEY BY RELEASING PEOPLE, AND YOU DO NOT GET ALL OF IT. Three quarters of
+ *    his deal comes back. The last quarter stays on your books as dead money you cannot
+ *    spend on anybody. A man who leaves on his own costs you nothing: the difference is
+ *    that one of those was your decision. See DYNASTY_DEAD_SHARE.
+ *
+ * 3. THE CAP IS A SIGNING GATE, NOT A CEILING. Go over it and nothing happens: the roster
+ *    is legal and it plays. You simply cannot sign anybody until you are back under.
+ *
+ * RULE 1 HAS HAD THREE ANSWERS AND THIS IS THE THIRD. All three are written down because
+ * the two that lost were each losing for a reason worth keeping.
+ *
+ * THE FIRST WAS NO RULE AT ALL: a salary was re-read off the price list every winter, so it
+ * fell when he declined. Price in this pool tracks value, so an ageing roster got CHEAPER
+ * every year. Measured at twelve men and $280M, payroll ran $279M, $266M, $261M, the gate
+ * never came within $14M of closing, and STANDING PAT WAS THE BEST STRATEGY IN THE GAME:
+ * 29.7 three-year wins against 29.6, 29.5 and 29.3 for the three strategies that actually
+ * manage a roster. A winter in which doing nothing is optimal has no decision in it.
+ *
+ * THE SECOND WAS THE RATCHET: max(what you pay, what he is worth now). It fixed that, and
+ * at 6% cap growth it measured
+ *
+ *                        year 1        year 2        year 3     three-year   titles
+ *   stand pat          9.8  25% PO   7.3   7% PO   7.4   7% PO      24.6      0.3%
+ *   release on value   9.8  25% PO   9.8  31% PO  10.6  37% PO      30.2      1.7%
+ *
+ * five and a half wins between managing the roster and refusing to. But a ratchet is only
+ * half a contract. It charges you for a man getting better, which no real deal does, so the
+ * one thing a franchise mode is supposed to reward, finding a cheap young player before
+ * anybody else, paid nothing: his price simply followed him up and you were back where you
+ * started. Every road led to renting whoever was best this year.
+ *
+ * THE THIRD IS THE ONE HERE. The number you signed is the number you pay. It keeps
+ * everything the ratchet was protecting, because a declining man on his old deal is still
+ * an overpaid veteran, and it adds the half the ratchet was throwing away: a 24 year old
+ * signed at $9M who becomes a $40M player is $31M of cap you did not have to spend.
+ *
+ * WHAT IT COSTS, MEASURED. 100 runs, 30 seasons deep, same seeds, same bot, one life at
+ * eight wins with a win more every ten seasons:
+ *
+ *                          seasons survived      wins a season    roster worth
+ *                          mean  median  best    s3    s10        s3     s10
+ *   ratchet                 6.0     5     19     9.2    9.1      $121M  $118M
+ *   locked at draft price   9.9     9     30    10.5   10.9      $130M  $128M
+ *
+ * A run lasts about twice as long, and the reason is visible in the last column: under the
+ * ratchet a roster's VALUE bled away while its cost did not, and under a lock the men who
+ * improve hold the line for the men who do not. That is the mode working as intended and
+ * it is also a real difficulty cut, so the bar is where any correction belongs. The sweep
+ * over (base, step) lives beside DYNASTY_STEP_SEASONS.
+ *
+ * DOES IT ACTUALLY PAY TO DRAFT YOUNG? That was the point of the change, so it was measured
+ * rather than assumed. 80 runs, same seeds, same bar, four drafting bots:
+ *
+ *   best available on the wheel            10.1 seasons, median 10, drafted at 27.1
+ *   younger of two comparable men          10.9              10                26.0
+ *   youngest of the top third of the board  7.1               6                24.7
+ *   cheapest of the top third               3.3               2                26.9
+ *
+ * READ THAT SECOND ROW AND THEN THE THIRD. Taking the younger man when two are within a
+ * point and a half of each other is worth most of a season, so the incentive is real. Going
+ * down in quality to get a younger man costs three seasons, and going down in price costs
+ * seven. Under one life you have to survive season one before any of this pays, and a
+ * cheaper roster does not.
+ *
+ * So the lock rewards age as a TIE BREAK and not as a strategy, which is the right shape:
+ * it gives the draft a second question without making the first one wrong.
+ *
+ * WHAT WAS TRIED AND DROPPED. An earlier design had multi-year terms at a discount and dead
+ * money on a man who left mid-deal. Measured, the four term strategies landed within noise
+ * of each other, so term was not a decision, and the apparatus is gone. A locked price does
+ * the same job in one number and nobody has to sign anything.
+ *
+ * The second argument is what the market says he is worth now. It is no longer part of the
+ * answer and is kept because every caller has it and the screen needs it beside the answer:
+ * the gap between the two IS the state of your roster.
+ */
+function dynastySalary(currentSalaryMusd, _marketPriceMusd) {
+  return currentSalaryMusd || 0;
+}
+
+/*
+ * ─── WHAT A RELEASE COSTS ────────────────────────────────────────────────────────────
+ *
+ * Cutting a man returns three quarters of his deal. The last quarter is dead money: it sits
+ * against your cap and buys nothing, for the rest of the run.
+ *
+ * WHY IT EXISTS. Measured across 120 runs, a winter that took four or five men off you cost
+ * a quarter of a win the following season, and one that took all six cost nothing at all.
+ * Losing people was free, and so was cutting them, so the winter had one move in it and no
+ * price on that move: release whoever looked worst, sign the best man the wheel offered,
+ * repeat. Every roster converged on the same roster.
+ *
+ * A DEPARTURE STILL COSTS YOU NOTHING, AND THAT ASYMMETRY IS THE WHOLE POINT. Retiring,
+ * running out of seasons and signing elsewhere are things done to you, and charging for
+ * them would be charging for a dice roll. Cutting a man is a decision, and a decision is
+ * the only thing a game may charge for.
+ *
+ * IT ALSO GIVES THE DRAFT ITS TEETH BACK. An expensive man you regret is now expensive
+ * twice: once while you keep him and once when you stop. That is what makes a contract a
+ * commitment rather than a subscription, and it is the counterweight the mode lost when
+ * salaries stopped ratcheting.
+ *
+ * THE TWO NUMBERS WERE SWEPT RATHER THAN CHOSEN. A dead-money rule changes what a bot can
+ * afford mid-draft, so unlike a win bar it cannot be scored offline against one set of
+ * seasons: every rule was played, 80 runs each, same seeds, 30 seasons deep, one life.
+ *
+ *   rule                     seasons mean / median   reach 10   dead at s5 / s10 / s20
+ *   nothing dead              10.1        10            51%      $0M  /  $0M  /  $0M
+ *   15% dead, forever          8.7         9            46%      $6M  / $13M  / $26M
+ *   THIS ONE, 25% forever      7.1         7            25%     $10M  / $20M  / $38M
+ *   40% dead, forever          6.1         5            19%     $17M  / $30M  / $52M
+ *   25%, expiring after 1 yr   9.0         9            48%      $3M  /  $1M  /  $3M
+ *   25%, expiring after 2 yrs  9.2         9            45%      $5M  /  $4M  /  $5M
+ *   25%, expiring after 3 yrs  8.6         8            38%      $7M  /  $7M  /  $7M
+ *
+ * READ THE BOTTOM THREE FIRST, because they are the ones that settle the design. A charge
+ * that expires is barely a rule, and the reason is in their last column: it plateaus. One,
+ * two or three seasons of life all park at a handful of millions and stay there forever,
+ * because what expires each winter is about what the next cut adds. Nothing accumulates, so
+ * nothing closes in, and the run lands within a season or two of free cuts. The cost has to
+ * persist to be a cost, which is also what "dead money you cannot spend" plainly means to
+ * anybody reading it.
+ *
+ * A QUARTER IS THE NUMBER THAT SPLITS THE DIFFERENCE. Free cuts ran 10.1 seasons and the
+ * old ratcheted economy ran 6.0, so a quarter lands at 7.1: the mode keeps the length that
+ * locking the contract bought it and gives back most of the pressure that locking it took
+ * away. Forty percent lands on the old economy exactly, if that is ever wanted.
+ *
+ * THE CUT RATE BARELY MOVES: 0.39 cuts a season with nothing dead, 0.33 with a quarter. It
+ * is not stopping anybody from cutting. It is charging them for it, and the bill arrives
+ * ten seasons later as $20M of cap that buys nobody.
+ */
+const DYNASTY_DEAD_SHARE = 0.25;
+
+/*
+ * HOW LONG A CHARGE SITS ON THE BOOKS, counted in seasons from the one it was made for.
+ * Infinity is for the rest of the run, which is what "dead" plainly means and what a player
+ * will assume; 1 means it clears at the next offseason. The sweep beside DYNASTY_DEAD_SHARE
+ * is what decided between them.
+ */
+const DYNASTY_DEAD_SEASONS = Infinity;
+
+/*
+ * AND A CEILING ON IT, WHICH IS A GUARD RATHER THAN A BALANCE KNOB.
+ *
+ * Dead money is self-limiting on paper: you can only ever cut what you could afford, and
+ * what you can afford is the cap minus what is already dead, so the total converges on the
+ * cap without reaching it. Converging on the cap is close enough to be a bug. A winter can
+ * take all six men off you, and a run that arrives at an empty roster with no room to sign
+ * anybody reaches paintDryWheel offering "take the field with 0", which takeTheField
+ * refuses because a team needs somebody in it. That is a stranded run, and it would be
+ * stranded by arithmetic rather than by anything the player could have done about it.
+ *
+ * Half the cap is the ceiling. Measured, an ordinary run carries $10M dead by season five,
+ * $20M by season ten and $38M by season twenty, so this never binds in normal play: it is
+ * a floor under the failure mode, not a rule anybody meets.
+ */
+const DYNASTY_DEAD_CEILING = 0.5;
+
+/*
+ * WHAT IS DEAD RIGHT NOW. `charges` is every cut the run has ever made, each carrying the
+ * season it was made for, so expiry is arithmetic rather than bookkeeping: nothing has to
+ * be swept at the turn of a year and a save cannot restore a stale total.
+ */
+function dynastyDead(charges, seasonNo, lifeSeasons, capMusd) {
+  if (!charges || !charges.length) return 0;
+  const life = lifeSeasons == null ? DYNASTY_DEAD_SEASONS : lifeSeasons;
+  let total = 0;
+  for (const c of charges) {
+    if (!c || !(c.musd > 0)) continue;
+    if (!isFinite(life) || seasonNo < c.season + life) total += c.musd;
+  }
+  const cap = typeof capMusd === 'number' && capMusd > 0 ? capMusd : CONSTANTS.CAP_MUSD;
+  return Math.round(Math.min(total, cap * DYNASTY_DEAD_CEILING) * 10) / 10;
+}
+
+/*
+ * ─── THE CAP DOES NOT MOVE, AND THAT IS THE MODE ────────────────────────────────────
+ *
+ * It grew six percent a winter for most of this mode's life, as a counterweight: salaries
+ * ratchet and never fall, so payroll only ever climbs, and a rising budget was what stopped
+ * that becoming a slide nobody could arrest.
+ *
+ * It is $140M in season one and $140M in season thirty now, on purpose. The counterweight
+ * was the thing standing between the player and the mode's own mechanic. Your men age, they
+ * decline, they sign somewhere else and they retire, and the cap closing on you at exactly
+ * the rate that happens is what turns each of those into a decision instead of a caption.
+ *
+ * KEPT AS A RECORD, because the sweep behind it is worth not repeating and because it says
+ * what a growing cap actually did. 150 runs an arm, same seeds, one manager who never
+ * releases anybody against one who clears out whoever is worth less than half what he is
+ * paid, measured on the twelve man shape that preceded this one:
+ *
+ *   growth   stand pat     manage the roster   the gap   payroll of cap, season 6
+ *     0%     4.09 seasons   5.19 seasons        +1.10     $134M of $140M
+ *     3%     4.49           7.54                +3.05     $151M of $162M
+ *     6%     5.62           9.35                +3.73     $160M of $187M
+ *     9%     6.08          10.51                +4.43     $167M of $215M
+ *    12%     6.59          10.16                +3.57     $169M of $247M
+ *
+ * Two things in that table outlived the constant. Managing the roster beats standing pat at
+ * every budget, and the gap WIDENS with money rather than closing, because money is only
+ * worth what you have a slot to spend it on and releasing a man is what makes a slot. And a
+ * budget that outruns six slots stops being a constraint at all: at 12% a managed roster
+ * had $78M with nothing to buy.
+ *
+ * At 0%, the row this mode now sits on, payroll runs $134M of $140M by season six. That is
+ * the ceiling doing its job.
+ *
+ * Nothing reads this. It is here so that the next person to think a rising cap sounds
+ * generous can see what it was measured to do.
+ */
+const DYNASTY_CAP_GROWTH = 1.00;
+
+/**
+ * The same man, one league year on.
+ *
+ * `byKey` is a Map from `player_id|season` to the row, which the page already builds and
+ * the harness builds once. Returns null when he has no row for that year, which is the
+ * mode's central event rather than an error: 38% of cheap men and 12% of stars do not have
+ * one, and the hole they leave is what brings the wheel back out.
+ */
+function dynastyAge(player, byKey, leagueYear) {
+  if (!player || !byKey) return null;
+  return byKey.get(`${player.player_id}|${leagueYear}`) || null;
+}
+
+/**
+ * WHY A MAN IS GONE, and it is now three answers rather than two.
+ *
+ * This used to refuse to say "retired", and it was right to: a row for a later season means
+ * he missed this one, no row at all means only that the POOL has nothing more from him, and
+ * a pool with a playing-time floor on it drops plenty of men who were still playing. Calling
+ * that retirement is telling somebody a false thing about a real person.
+ *
+ * The data answers it properly now. `last_season` is the final year he appeared in an NFL
+ * game at all, floor or no floor, so:
+ *
+ *   retired  he never played again. Checkable, and true.
+ *   missed   he has a later season on record, so he was absent from this one.
+ *   out      he is below the pool's floor from here on but did play again, or the data
+ *            simply ends. Not retirement, and not claimed as it.
+ *
+ * A row written before last_season existed has none, and falls back to the old two answers
+ * rather than guessing.
+ */
+function dynastyGoneFor(player, byKey, leagueYear, lastSeason) {
+  /*
+   * PAST THE END OF THE POOL, NOTHING IS KNOWN, and this has to be the first question
+   * rather than the last. `last_season` is the final year the man appeared in an NFL game
+   * as of the day the data was built, so for anybody still playing it is the CURRENT year,
+   * and the test below then read "he never played after this" off a career that has not
+   * finished. George Kittle's last_season is 2026, the pool ends at 2025, and the screen
+   * said GEORGE KITTLE RETIRED about a man who is playing this autumn.
+   *
+   * He has not retired. He has run out of seasons in this game, which is a fact about the
+   * data and not about him, and it is the only honest thing to say here.
+   */
+  if (typeof lastSeason === 'number' && leagueYear > lastSeason) return 'end';
+  const last = player && player.last_season;
+  /*
+   * STRICTLY BEFORE. At `last === leagueYear` he PLAYED the year being asked for and the
+   * pool simply has no row for it, because a season under twelve minutes a game across
+   * twenty games does not make the cut. That is a man below the floor, not a man who
+   * stopped, and calling it retirement is the same false claim in a quieter place.
+   */
+  if (typeof last === 'number' && last < leagueYear) return 'retired';
+  for (let y = leagueYear + 1; y <= lastSeason; y++) {
+    if (byKey.get(`${player.player_id}|${y}`)) return 'missed';
+  }
+  return 'out';
+}
+
+/*
+ * WHAT A CORE IS WORTH, on top of what the men are worth.
+ *
+ * Every other chemistry link in this game is a fact about history: these two were
+ * teammates, went to the same school, came out of the same draft. This is the one link that
+ * belongs to YOUR run, and the mode needs it: without it a dynasty is just three drafts
+ * where some of the players carry over, and the correct play is to cut anybody whose price
+ * went up. It is the mechanical reason to keep a declining favourite, which is the feeling
+ * the mode is for.
+ *
+ * It counts SEASONS TOGETHER, averaged across the roster, so a team that keeps four men and
+ * replaces two is worth more than one that turns over every winter and less than one that
+ * keeps all six. Year one is worth nothing, because nobody has been anywhere yet.
+ */
+const DYNASTY_CONTINUITY_PER_YEAR = 0.02;
+
+function dynastyContinuity(roster, tenure) {
+  if (!roster || roster.length < 2 || !tenure) return null;
+  let total = 0;
+  for (const p of roster) total += Math.max(1, tenure[p.player_id] || 1);
+  const mean = total / roster.length;
+  const extra = mean - 1;
+  if (!(extra > 0.01)) return null;
+  const value = Math.round(DYNASTY_CONTINUITY_PER_YEAR * extra * 1000) / 1000;
+  return {
+    type: 'continuity', value,
+    a: 'This roster', b: `${mean.toFixed(1)} seasons together`,
+    label: mean >= 2.5
+      ? 'This group has been together three years'
+      : 'This group has played together before',
+    short: 'Been here before',
+  };
+}
 
 /* WHAT A FULL TEAM'S PRODUCTION IS WORTH, and the only reason it is not 1.
  *
@@ -3706,6 +4474,255 @@ const FULL_CAP_MUSD = 280;
  *
  * Fitted, not chosen. See simulator.js --fullteam. */
 const FULL_TALENT = 0.78;
+
+/*
+ * ─── THE COACH ─────────────────────────────────────────────────────────────────────
+ *
+ * Full Team's thirteenth asset, and the one pick in this game that is not a wheel. Twelve
+ * spins hand you what they hand you; the coach is chosen from everybody you can still
+ * afford, which is what makes the last decision of a draft a decision rather than a draw.
+ *
+ * WHAT A COACH IS, IS DERIVED, NOT WRITTEN DOWN. There is no scheme column in the data and
+ * inventing one would be inventing facts about real people. What there is: coaches.json
+ * names the head coach of all 861 team-seasons, and team_seasons.json says what each of
+ * those teams scored and allowed. So a coach's tilt is simply what his teams actually did,
+ * measured against the league average OF HIS OWN SEASONS, which is what stops a 2000s
+ * defensive coach being flattered by a decade when nobody scored:
+ *
+ *   Mike Martz      +5.6 offense  -1.9 defense   the Greatest Show on Turf, priced as such
+ *   Jim Harbaugh    +0.3 offense  +4.9 defense   a defensive coach, and the data says so
+ *   Bill Belichick  +4.1 offense  +3.2 defense   good at both, over 24 seasons
+ *
+ * THREE SEASONS MINIMUM. One good year is a roster, not a coach, and a single-season man
+ * would be the cheapest way to buy a big tilt. 115 of the 162 names clear it.
+ *
+ * A COACH IS NOT A PLAYER AND MUST NOT BE PRICED LIKE ONE. His effect is a multiplier on a
+ * whole unit, which is worth far more than any single man, so the price ladder is its own:
+ * see coachPrice.
+ */
+const COACH_MIN_SEASONS = 3;
+/* Points per game above his era, converted to a multiplier on a unit. The best offensive
+   coach in the data is +5.6 and the worst is -8.2, so at this scale the coaching job is
+   worth about +7% to -10% of a unit: enough to be the reason a season turned, never enough
+   to be worth more than the six men it stands behind. */
+/* MEASURED AGAINST WHAT HE COSTS, and the first value failed that test. At 0.012 the best
+   coach in the game returned about 4.4% of a unit for 9.8% of the cap, so the solver
+   declined to hire anybody at any budget: a feature whose optimal play is "never use it".
+   At 0.020 he is worth about 7.3%, which against a price ceiling pulled down to $22M is a
+   trade somebody would actually take. The two moved together because moving either one
+   alone would have had to move twice as far. */
+const COACH_K = 0.020;
+
+let COACH_TABLE = null;
+function coachTable(ctx) {
+  if (COACH_TABLE) return COACH_TABLE;
+  const coaches = (ctx && ctx.coaches) || {};
+  const seasons = (ctx && ctx.teamSeasons) || [];
+  if (!seasons.length) return (COACH_TABLE = []);
+
+  /* League average by season, so every coach is measured against the football that was
+     being played while he was doing it. */
+  const lg = {};
+  for (const t of seasons) {
+    const a = (lg[t.season] ??= { sc: 0, al: 0, n: 0 });
+    a.sc += t.pts_scored_mean; a.al += t.pts_allowed_mean; a.n++;
+  }
+  for (const k in lg) { lg[k].sc /= lg[k].n; lg[k].al /= lg[k].n; }
+
+  const byId = {};
+  for (const t of seasons) byId[t.team_season_id] = t;
+
+  const acc = {};
+  for (const id in coaches) {
+    const name = coaches[id] && coaches[id].hc;
+    const t = byId[id];
+    if (!name || !t || !lg[t.season]) continue;
+    const a = (acc[name] ??= { n: 0, off: 0, def: 0, w: 0, g: 0, first: 9e9, last: 0 });
+    a.n++;
+    a.off += t.pts_scored_mean - lg[t.season].sc;
+    a.def += lg[t.season].al - t.pts_allowed_mean;
+    const m = /^(\d+)-(\d+)/.exec(t.record || '');
+    if (m) { a.w += +m[1]; a.g += (+m[1]) + (+m[2]); }
+    a.first = Math.min(a.first, t.season);
+    a.last = Math.max(a.last, t.season);
+  }
+
+  COACH_TABLE = Object.keys(acc).map((name) => {
+    const a = acc[name];
+    const off = a.off / a.n, def = a.def / a.n;
+    return {
+      name,
+      seasons: a.n,
+      years: a.first === a.last ? String(a.first) : `${a.first}-${a.last}`,
+      off: Math.round(off * 10) / 10,
+      def: Math.round(def * 10) / 10,
+      winPct: a.g ? a.w / a.g : 0,
+      price_musd: coachPrice(off, def),
+    };
+  }).filter((c) => c.seasons >= COACH_MIN_SEASONS)
+    .sort((a, b) => b.price_musd - a.price_musd || a.name.localeCompare(b.name));
+  return COACH_TABLE;
+}
+
+/*
+ * WHAT A COACH COSTS. Priced off what he is worth rather than off what he did, which are
+ * different numbers: a coach who was +4 on offense and -4 on defense had a fine career and
+ * is worth nothing to a team that has to play both halves.
+ *
+ * So the price is driven by the SUM of the two tilts, floored so that a bad coach is cheap
+ * rather than free (somebody has to hold the clipboard) and capped so the best one in the
+ * game cannot eat a quarter of the roster.
+ */
+function coachPrice(off, def) {
+  const worth = off + def;                       // roughly -12 to +8 across the pool
+  const v = Math.max(0, Math.min(1, (worth + 6) / 14));
+  return Math.round((3 + 19 * v * v) * 10) / 10;  // $3M to $22M, steep at the top
+}
+
+/*
+ * ─── WHO THE COACH ALREADY KNOWS ───────────────────────────────────────────────────
+ *
+ * A coach's tilt above is the same wherever he goes, which makes hiring a lookup: read the
+ * two numbers, take the biggest you can afford. That is not a decision, and Full Team is
+ * supposed to be a mode of decisions.
+ *
+ * So a coach also has CHEMISTRY, with the men you actually drafted, and it is different for
+ * every roster in the game. Two links, both facts rather than flavour:
+ *
+ *   coached   he was the head coach of that man's team-season. coaches.json names the head
+ *             coach of all 861 seasons and every player row carries its team_season_id, so
+ *             this is a join. Marvin Harrison's 2002 was coached by Tony Dungy, and hiring
+ *             Dungy to coach him again is a thing that happened.
+ *   college   he was a head coach at the school the player attended. That half is not in the
+ *             football data at all; it comes out of the COLLEGE game's, through
+ *             football/build/coach-links.mjs, and 25 of the hireable names have one.
+ *
+ * BOTH SIDES OF THE BALL. The links run to whoever is on the roster, so a defensive coach
+ * with three of his old defenders is a different hire from the same man on a roster full of
+ * strangers, and the offence and the defence each keep what their own men earned.
+ *
+ * A LINK THIS CANNOT PROVE IS A LINK IT DOES NOT CLAIM. No coordinator jobs, no college post
+ * that predates the college data. The failure mode here is telling a player a false thing
+ * about a real person, which is worse than a thin feature.
+ */
+function coachLinks(roster, ctx, coach) {
+  const V = CHEMISTRY.COACH;
+  if (!coach || !coach.name || !V) return [];
+  const seasonCoaches = (ctx && ctx.coaches) || {};
+  const schools = ((ctx && ctx.coachColleges) || {})[coach.name] || [];
+  const out = [];
+  for (const p of roster) {
+    const hc = seasonCoaches[p.team_season_id] && seasonCoaches[p.team_season_id].hc;
+    if (hc === coach.name) {
+      out.push({ type: 'coach_coached', value: V.coached, a: coach.name, b: p.name,
+        label: `${lastWord(coach.name)} coached ${p.name} in ${p.season}`,
+        short: 'Coached him already' });
+      continue;   // one link per man, and the stronger one wins
+    }
+    if (p.college && schools.indexOf(p.college) >= 0) {
+      /* NAMES THE MAN, not just the school. "Belichick was the head coach at North Carolina"
+         is true and says nothing about your roster, which is the only reason the line is
+         there. */
+      out.push({ type: 'coach_college', value: V.college, a: coach.name, b: p.name,
+        label: `${lastWord(coach.name)} was a head coach at ${p.college}, where ${p.name} played`,
+        short: `Both at ${p.college}` });
+    }
+  }
+  return out;
+}
+
+/** The two multipliers a coach hands his team. */
+function coachEffect(coach) {
+  if (!coach) return { off: 1, def: 1 };
+  return { off: 1 + (coach.off || 0) * COACH_K, def: 1 + (coach.def || 0) * COACH_K };
+}
+
+/*
+ * ─── THE GAME PLAN ─────────────────────────────────────────────────────────────────
+ *
+ * Three choices made once, before the season, and they are the reason Full Team is not the
+ * draft with six more rounds.
+ *
+ * THEY ARE TRADES, NOT UPGRADES. Every one of them helps and hurts, and which way it lands
+ * depends on the roster you just built, so there is no correct answer to memorise:
+ *
+ *   TEMPO      fast raises BOTH scores, slow lowers both. Fast is right when your offence
+ *              is better than theirs and wrong when your defence is what you paid for.
+ *   FOURTH     aggressive scores a little more on average and swings a lot harder. A weak
+ *              team wants the swing, because it needs the tail. A strong team wants none of
+ *              it. Measured: +2.0 points of win rate to an underdog, -1.1 to a favourite.
+ *   PRESSURE   blitzing holds the opponent to less on average and gives up more when it
+ *              fails, so it is the mirror and the bigger lever: +8.3 to an underdog and
+ *              -5.2 to a favourite.
+ *
+ * EVERY ONE OF THOSE NUMBERS CHANGES SIGN, and that is the test each axis had to pass. The
+ * first set of constants made aggression worth +3.3 to an underdog and -0.3 to a favourite,
+ * which is not a trade, it is a free upgrade with a rounding error attached. They were swept
+ * until declining was genuinely right for somebody.
+ *
+ * WHY VARIANCE AND NOT JUST AVERAGES. A season is won game by game, so what decides it is
+ * how often your number beats theirs, not the gap over seventeen weeks. Two of these three
+ * move the spread rather than the middle, which is a real decision with no dominant answer
+ * and could not exist in a mode that only had one side of the ball to point them at.
+ *
+ * The coach picks the default, so a player who never opens this screen still fields a
+ * coherent team: see planFromCoach.
+ */
+const PLAN_AXES = ['tempo', 'fourth', 'pressure'];
+const PLAN = {
+  /* Both scores move together, so tempo is a bet on which offence is better. */
+  TEMPO: 0.085,
+  /* What aggression is worth on the scoreboard, and what it costs in consistency. The
+     second number is the one that matters: it is applied to the blend that damps a roster
+     toward its own expectation, so aggressive play lets a bad week be worse and a good one
+     better. */
+  /* SWEPT UNTIL THE SIGN FLIPS, which is the only test that matters for a choice. At the
+     first values (+3.5% mean, 0.55 swing) going for it was worth +3.3 points of win rate to
+     an underdog and cost a favourite 0.3: near enough to free that nobody would ever decline
+     it, which makes it an upgrade rather than a decision. At these it is +2.0 and -1.1. */
+  FOURTH_MEAN: 0.02,
+  FOURTH_SWING: 0.70,
+  /* Suppression bought with risk. A blitz that lands is a stop; one that does not is a
+     long touchdown, which is variance on THEIR score rather than on yours. */
+  /* Same sweep, same reason. At the first values a blitz was +8.0 for an underdog and -0.2
+     for a favourite, so everybody blitzes. At these it is +8.3 and -5.2: the biggest lever
+     on the screen and the one that most obviously belongs to a team that is behind. */
+  PRESSURE_MEAN: 0.015,
+  PRESSURE_SWING: 0.75,
+};
+
+/** A legal plan, from anything. Every axis is -1, 0 or +1 and nothing else. */
+function normalizePlan(plan) {
+  const out = {};
+  for (const k of PLAN_AXES) {
+    const v = plan && plan[k];
+    out[k] = v === 1 || v === -1 ? v : 0;
+  }
+  return out;
+}
+
+/*
+ * THE DEFAULT COMES OFF THE COACH, because a plan nobody chose still has to be a plan
+ * somebody would choose. An offensive coach pushes the tempo and goes for it; a defensive
+ * one shortens the game and sends pressure. A coach who is neither leaves all three level,
+ * which is the honest answer for a man whose teams were average at both.
+ */
+/*
+ * A COACH'S SCHEME IS HIS, NOT A SUGGESTION. Hiring one takes his philosophy with him,
+ * which is the whole shape of the decision: pay for a man who knows what he is doing and
+ * play his way, or keep the money and call it yourself. A screen that let you hire
+ * Belichick and then overrule him was offering the expertise for free.
+ */
+function planFromCoach(coach) {
+  if (!coach) return normalizePlan(null);
+  const off = coach.off || 0, def = coach.def || 0;
+  const tilt = off - def;
+  return normalizePlan({
+    tempo: tilt > 1.5 ? 1 : tilt < -1.5 ? -1 : 0,
+    fourth: off > 2 ? 1 : off < -2 ? -1 : 0,
+    pressure: def > 2 ? 1 : def < -2 ? -1 : 0,
+  });
+}
 
 /*
  * ─── FULL TEAM: BOTH SIDES OF THE BALL, TWELVE MEN, ONE CAP ────────────────────────
@@ -3737,6 +4754,24 @@ const FULL_TALENT = 0.78;
  * NOTHING IN THE LIVE GAME CALLS THIS YET. playRun reaches it only through opts.full, and
  * no caller passes opts.full outside the harness.
  */
+/*
+ * FULL TEAM HANDS THE TWO UNITS TWO DIFFERENT MULTIPLIERS and every other mode one, so the
+ * full path takes either: a bare number, meaning both sides carry the same figure, or the
+ * object resolveChemistry returns when it split them. Written as a reader rather than a
+ * second parameter because `chemistryMultiplier` reaches these functions through playRun,
+ * advanceWeek and the harness, and threading one more argument through all three is how a
+ * side ends up silently playing at 1.0.
+ */
+function chemSide(chem, key) {
+  if (chem && typeof chem === 'object') {
+    if (typeof chem[key] === 'number') return chem[key];
+    return typeof chem.multiplier === 'number' ? chem.multiplier : 1;
+  }
+  return typeof chem === 'number' && chem > 0 ? chem : 1;
+}
+const chemOff = (c) => chemSide(c, 'offMultiplier');
+const chemDef = (c) => chemSide(c, 'defMultiplier');
+
 function splitSides(roster) {
   const off = [], def = [];
   for (const p of roster) {
@@ -3746,9 +4781,15 @@ function splitSides(roster) {
 }
 
 function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed,
-  rng, constants = CONSTANTS, advantage = 1) {
+  rng, constants = CONSTANTS, advantage = 1, extra = null) {
   const { off, def } = splitSides(roster);
-  const C = constants.CONSISTENCY || 0;
+  const coach = coachEffect(extra && extra.coach);
+  const plan = normalizePlan(extra && extra.plan);
+  /* CONSISTENCY IS THE FOURTH DOWN DIAL. It is the blend that pulls a week's sampling back
+     toward the roster's own expectation, so lowering it is exactly what "we went for it"
+     should feel like: the same team, swinging harder in both directions. */
+  const C = Math.max(0, Math.min(0.95,
+    (constants.CONSISTENCY || 0) * (1 - PLAN.FOURTH_SWING * plan.fourth)));
 
   /* THE SAMPLES ARE DRAWN OVER THE WHOLE ROSTER IN ROSTER ORDER, one per man, before
      anything is split. Drawing offense first and defense second would work and would make
@@ -3774,17 +4815,32 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
   /* THE TALENT DIAL, applied once to each side's raw sum and to nothing else. Overridable
      through constants so the harness can sweep it without editing this file. */
   const talent = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
-  rawOff *= talent;
-  rawDef *= talent;
+  /* The coach lands here, on the unit he coaches, before anything downstream reads it. So
+     his offensive tilt is worth the same proportion to a great offence as to a poor one,
+     which is what a multiplier should mean and what a flat points bonus would not. */
+  rawOff *= talent * coach.off;
+  rawDef *= talent * coach.def;
 
   const defenseModifier = opponent.pts_allowed_mean / leagueAvgAllowed;
-  const offMul = chemistryMultiplier * offStructure * defenseModifier;
-  const yourScore = rawOff * offMul;
+  /* TEMPO MOVES BOTH SCORES THE SAME WAY, which is the whole point of it: playing fast is
+     not "score more", it is "more football happens", and more football helps whichever
+     offence is better. It multiplies the finished scores rather than any one term so the
+     two sides cannot drift apart. */
+  const tempo = 1 + PLAN.TEMPO * plan.tempo;
+  const offMul = chemOff(chemistryMultiplier) * offStructure * defenseModifier;
+  /* Aggression is worth a little on the average and a lot on the spread; the spread is in C
+     above. Both are wanted by a team that needs the tail and neither by one that does not. */
+  const yourScore = rawOff * offMul * tempo * (1 + PLAN.FOURTH_MEAN * plan.fourth);
 
-  const defenseTotal = rawDef * chemistryMultiplier * defStructure;
+  const defenseTotal = rawDef * chemDef(chemistryMultiplier) * defStructure;
   const suppression = defenseSuppression(defenseTotal, constants);
-  const oppScore = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng)
-    * constants.SCALE * suppression / advantage;
+  /* Pressure is the mirror of the fourth down call, pointed at their score instead of
+     yours: it holds them to less on average and gives up more when it misses. The swing is
+     applied to the opponent's own spread, because a blitz that fails is their big play. */
+  const oppScore = sampleGamma(opponent.pts_scored_mean,
+      opponent.pts_scored_sd * (1 + PLAN.PRESSURE_SWING * plan.pressure), rng)
+    * constants.SCALE * suppression * tempo
+    * (1 - PLAN.PRESSURE_MEAN * plan.pressure) / advantage;
 
   let won;
   if (yourScore > oppScore) won = true;
@@ -3800,8 +4856,8 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
      rawOff was scaled above; blend(i) was not, so each man's line has to take the same
      factor for the offensive column to sum to yourScore and the defensive one to the
      defensive total. */
-  const defMul = chemistryMultiplier * defStructure * talent;
-  const offLineMul = offMul * talent;
+  const defMul = chemistryMultiplier * defStructure * talent * coach.def;
+  const offLineMul = offMul * talent * coach.off * tempo * (1 + PLAN.FOURTH_MEAN * plan.fourth);
   const lines = roster.map((p, i) =>
     blend(i) * (DEFENSE_POSITIONS.indexOf(p.position) >= 0 ? defMul : offLineMul));
 
@@ -4044,7 +5100,7 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
      scale the seeding and edge constants below do not share, so a top defense projected as
      a bottom team. overallOf answers both. */
   const teamRating = overallOf(roster, chemistryMultiplier,
-    opts.full ? 'full' : !!opts.defense);
+    opts.full ? 'full' : !!opts.defense, opts.coach);
   const play = (opp, meta) => {
     const leagueAvg = leagueContext[opp.season] ?? 21.5;
     /* THE PROJECTION HAS TO PLAY THE GAME THE RUN PLAYED. A One Stop roster resolved
@@ -4054,7 +5110,7 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
       : opts.defense ? resolveGameDefense
         : resolveGame;
     const r = resolver(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
-      weeklyEdgeVs(teamRating, opp, constants));
+      weeklyEdgeVs(teamRating, opp, constants), opts.full ? opts : null);
     results.push({ opponent: opp.display, opponent_id: opp.team_season_id, ...meta, ...r });
     if (r.won) wins++; else losses++;
     return r.won;
@@ -4204,7 +5260,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 37;
+const ENGINE_API_VERSION = 48;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -4231,6 +5287,505 @@ function eraCode(franchise, season) {
   if (!rules) return franchise;
   for (const [from, code] of rules) if (season >= from) return code;
   return franchise;
+}
+
+/*
+ * ─── DYNASTY'S BOSS SEASONS ─────────────────────────────────────────────────────
+ *
+ * Every second milestone ends with a marquee game against a real great team, and
+ * that game is the one place in this mode where the player is not a spectator. Two levers,
+ * both genuine reads rather than buttons that always help:
+ *
+ *   THE SCOUT, before the game. The boss's tell is shown and you pick how to attack it. The
+ *   right read against THIS boss is worth BOSS_READ_EDGE on your own score; the wrong read
+ *   is worth nothing and the trap read costs you. It is a read because the tell points at the
+ *   answer without naming it, and because a boss weak to the pass is death to the run.
+ *
+ *   THE CALLS, during the game. A fourth down and a two-point try, each a seeded gamble with
+ *   a real downside. They widen the outcome, which is exactly what a trailing underdog wants
+ *   and exactly what a team in front does not: see the FOURTH axis in the game plan for the
+ *   same idea measured on a whole season. Pressing when you are already ahead of the boss is
+ *   how you hand it back.
+ *
+ * WHY OFFENSE-ONLY MAKES THIS WORK RATHER THAN BREAKING IT. Dynasty drafts an offense,
+ * so a wall-of-defense boss (the 2000 Ravens, the 2002 Buccaneers) throttles your score
+ * through the same defenseModifier every Sunday uses, and a juggernaut-offense boss (the
+ * 2007 Patriots, the 2013 Broncos) simply puts up a number you have to chase. The scout is
+ * the read on which of those two problems you are holding.
+ *
+ * A MILESTONE EVERY THIRD SEASON, AND THE TWO KINDS ALTERNATE. The odd multiples of three (3,
+ * 9, 15) are ROSTER MANDATES: the owner names a way the team must be built, and you have the
+ * offseason that follows to satisfy it. The even multiples (6, 12, 18) are BOSS GAMES, the
+ * marquee opponent above. Each kind pays its own reward, both aimed at the mode's one squeeze,
+ * the frozen cap closing on an ageing roster:
+ *
+ *   mandate met   (3, 9, 15)   every dead-money charge is cleared.
+ *   boss beaten   (6, 12, 18)  one man is frozen at his current age and salary for good.
+ *
+ * Miss either and the owner wants one more win next season, which is the existing win bar
+ * doing the punishing rather than a new way to die. See effectiveWinBar in run.js.
+ *
+ * WHY THREE AND NOT FIVE, which is what this shipped as. The mode is one life: a season under
+ * the bar ends the run and there is no second chance. The simulator measured what that costs
+ * in reach, and on the cadence of five the authored content was mostly unreachable. Roughly
+ * half of runs never got to season five, so half never met a MANDATE at all. Two thirds never
+ * got to ten, so two thirds never met a BOSS, and the third that did met the same one, because
+ * the second boss is season twenty and under four percent of runs got there. Six bosses and
+ * four mandates were written and a typical run saw one thing.
+ *
+ * On a cadence of three the same reach curve pays out very differently: a mandate at three, a
+ * boss at six, and the second boss at twelve rather than twenty. The content did not change.
+ * It just moved to where the players are.
+ *
+ * There is no separate boss cadence constant. A boss is every SECOND milestone, so the boss
+ * interval is twice this number and is derived rather than stored. There used to be a
+ * DYNASTY_BOSS_EVERY = 5 here, which nothing read and which had been wrong since the day
+ * mandates were added: bosses were already ten seasons apart, not five.
+ */
+const DYNASTY_MILESTONE_EVERY = 3;
+/* Which kind of milestone a season is, or null in an ordinary season. Odd multiples of the
+   cadence are mandates, even ones are bosses, which is the parity of (season / cadence). */
+function dynastyMilestoneKind(seasonNo, every) {
+  const step = every || DYNASTY_MILESTONE_EVERY;
+  if (!seasonNo || seasonNo < step || seasonNo % step !== 0) return null;
+  return (seasonNo / step) % 2 === 0 ? 'boss' : 'challenge';
+}
+
+/*
+ * WHAT A RIGHT READ IS WORTH, as a multiplier on your scoring power for the whole boss game.
+ * It shifts how far your offense moves the ball rather than adding points at the end, so a
+ * good read is felt on every drive. Measured with a headless harness that plays the sim over
+ * forty drafted rosters: a right read beats the trap read by five to ten points of win rate
+ * on every boss, and the trap comes in at or below not scouting at all. So the tell is worth
+ * reading and a confident wrong answer is worse than a shrug. The trap costs half the edge: a
+ * wrong guess should sting, not lose the game on its own.
+ */
+const BOSS_READ_EDGE = 0.06;
+
+/*
+ * ─── THE BOSS GAME IS A DRIVE PLAYED FORWARD ─────────────────────────────────────────
+ *
+ * The playoffs decide the result and then draw a plausible broadcast to it (scoringScript
+ * works backwards from a final). The boss game does the opposite: it plays down by down, the
+ * score, clock, field position and down-and-distance are the sim's own state, and when a real
+ * fourth down or two-point spot arrives it stops and asks. Your call then decides where the
+ * ball goes next, because the conversion is resolved here and the drive lives or dies on it.
+ *
+ * GROUNDED IN THE SAME NUMBERS AS EVERY SUNDAY. Each team's expected points come from the
+ * exact resolveGame expectation (your means times chemistry times structure times the boss's
+ * defenseModifier; the boss's own scoring rate), pushed through the same internal-to-football
+ * calibration toFootballScore uses. So a wall-of-defense boss holds your drives short and a
+ * juggernaut scores in bunches, at the rate the data says, and the difficulty matches the
+ * band the old resolver was measured at. Only the PATH is now real, and the two calls sit on
+ * that path instead of adjusting a final number.
+ *
+ * mu (yards per play) is fitted per team at kickoff so the auto-play drive model produces the
+ * team's expected points per drive; the fit runs on its own fixed-seed rng so it neither
+ * perturbs the game seed nor drifts if the drive rules change. See bossFitMu.
+ */
+const BOSS_SIM = {
+  DRIVES_PER_TEAM: 11,     // possessions a side in a 60 minute game, about
+  PLAY_SECS: 26,           // seconds a play burns, blended stopped and running clock
+  GAIN_SD: 6.4,            // yards per play, spread
+  TO_RATE: 0.021,          // per-play chance the drive ends in a giveaway
+  FG_MAX_YARD: 38,         // yards from the goal you will still try a field goal from (55 yd kick)
+  PUNT_NET: 39,            // net punt, gross minus the return
+  START_YARD: 26,          // where a drive starts after a kickoff, about your own 26
+};
+
+/* Expected football points for an internal (fantasy) score, deterministic: the same
+   internal-to-real mapping toFootballScore samples around, read at its centre. Falls back to
+   a plain divisor when a calibration is not supplied (the harness passes one). */
+function bossExpectedPoints(internalScore, cal) {
+  if (cal && cal.real_team_pts_q && cal.internal_offence_q) {
+    return valueAt(cal.real_team_pts_q, percentileIn(cal.internal_offence_q, internalScore));
+  }
+  return internalScore / 3.4;
+}
+
+/* One play's gain, in yards. A gentle floor so a loss is possible but a drive is not made of
+   them; the spread is what turns a strong offense into first downs rather than a fixed march. */
+function bossPlayGain(mu, rng) {
+  const g = mu + BOSS_SIM.GAIN_SD * gaussRand(rng);
+  return Math.max(-6, Math.round(g));
+}
+/* A unit gaussian from the seeded rng, two draws averaged toward the middle. */
+function gaussRand(rng) {
+  let s = 0; for (let i = 0; i < 3; i++) s += rng();
+  return (s - 1.5) / 0.5;   // mean 0, sd ~1
+}
+/* A field goal make, by kick distance. High and near automatic up close, falling with range,
+   floored so a long try is a real gamble rather than a coin flip. */
+function bossFgGood(yardsToGoal, rng) {
+  const kick = yardsToGoal + 17;
+  const p = Math.max(0.32, Math.min(0.99, 1.05 - Math.max(0, kick - 25) * 0.017));
+  return rng() < p;
+}
+
+/*
+ * PLAY ONE DRIVE, AUTO. Used both to fit mu and to run the boss's own possessions. Returns
+ * the points scored and the yard the drive ended on. A team-relative frame: y is 0 at your
+ * own goal and 100 at the opponent's, so 100 is a touchdown whichever side has the ball.
+ */
+function bossAutoDrive(mu, startY, rng, opts) {
+  let y = startY, down = 1, toGo = 10, plays = 0;
+  const desperate = opts && opts.desperate;
+  while (plays++ < 30) {
+    if (rng() < BOSS_SIM.TO_RATE) return { pts: 0, end: y, how: 'turnover' };
+    if (down === 4) {
+      const toGoal = 100 - y;
+      if (toGoal <= BOSS_SIM.FG_MAX_YARD && !desperate) {
+        return bossFgGood(toGoal, rng) ? { pts: 3, end: 100 - toGoal, how: 'fg' }
+          : { pts: 0, end: y, how: 'miss' };
+      }
+      if (toGo > 3 && !desperate) return { pts: 0, end: y, how: 'punt' };
+      // go for it
+    }
+    const gain = bossPlayGain(mu, rng);
+    y += gain;
+    if (y >= 100) return { pts: 6, end: 100, how: 'td' };
+    if (y < 1) y = 1;
+    if (gain >= toGo) { down = 1; toGo = 10; }
+    else {
+      toGo -= gain;
+      if (down === 4) return { pts: 0, end: y, how: 'downs' };
+      down++;
+    }
+  }
+  return { pts: 0, end: y, how: 'end' };
+}
+
+/* Fit mu so the auto drive model scores about `target` points a drive. Monotonic in mu, so a
+   short bisection settles it; a private fixed-seed rng keeps it deterministic and off the
+   game stream. */
+const bossMuCache = new Map();
+function bossFitMu(target) {
+  const key = Math.round(target * 20) / 20;   // 0.05 pts/drive buckets
+  if (bossMuCache.has(key)) return bossMuCache.get(key);
+  const avg = (mu) => {
+    /* A fresh fixed-seed stream per mu so the fit is deterministic and independent of the
+       game rng; the same stream each time keeps the bisection monotone. */
+    const rng = createSeededRNG(hashSeed('boss-mu-fit'));
+    let s = 0; const N = 1000;
+    for (let i = 0; i < N; i++) s += bossAutoDrive(mu, BOSS_SIM.START_YARD, rng, null).pts;
+    return s / N;
+  };
+  let lo = 1.2, hi = 9;
+  for (let i = 0; i < 18; i++) { const mid = (lo + hi) / 2; if (avg(mid) < key) lo = mid; else hi = mid; }
+  const mu = (lo + hi) / 2;
+  bossMuCache.set(key, mu);
+  return mu;
+}
+
+/*
+ * CREATE A BOSS GAME. Computes each team's expected points, applies the scout read to yours,
+ * fits the two mus, and hands back the live state the advance/resolve pair drives.
+ */
+function bossSimCreate(roster, chemistryMultiplier, boss, oppRow, leagueAvgAllowed, read,
+  constants = CONSTANTS, cal = null) {
+  const rawMean = roster.reduce((s, p) => s + (p.ppr_ppg_mean || 0), 0);
+  const structure = rosterStructure(roster).multiplier;
+  const defMod = oppRow.pts_allowed_mean / leagueAvgAllowed;
+  const yourInternal = rawMean * chemistryMultiplier * structure * defMod;
+  const themInternal = oppRow.pts_scored_mean * constants.SCALE;
+  const readRight = read != null && read === boss.weakTo;
+  const readTrap = read != null && read === boss.trap;
+  const readMult = readRight ? 1 + BOSS_READ_EDGE : readTrap ? 1 - BOSS_READ_EDGE / 2 : 1;
+  const youExp = bossExpectedPoints(yourInternal, cal) * readMult;
+  const themExp = bossExpectedPoints(themInternal, cal);
+  const per = BOSS_SIM.DRIVES_PER_TEAM;
+  return {
+    you: 0, them: 0,
+    youExp, themExp,
+    muYou: bossFitMu(Math.max(0.3, youExp / per)),
+    muThem: bossFitMu(Math.max(0.3, themExp / per)),
+    read: read || null, readRight, readTrap,
+    clock: 0, drives: [],
+    pos: null, cur: null, pending: null, over: false, won: null,
+    firstReceiver: null,
+  };
+}
+
+/*
+ * THE BOSSES, IN THE ORDER A RUN MEETS THEM. Every team_season_id here exists in
+ * team_seasons.json and was checked against it rather than typed from memory. `tell` is what
+ * the scout shows, written to point at the counter without naming it. `weakTo` is the attack
+ * that works, `trap` the one this team eats alive; the third attack is neutral. `note` is the
+ * one line the reward/relief screen and the scout share.
+ *
+ * ATTACK KEYS are the same three everywhere so the scout screen is a habit rather than a
+ * puzzle re-learned each time: `air` throws it, `ground` runs it, `trick` gets aggressive and
+ * gadgety. Which one beats a given boss is a fact about that boss's real weakness, not a
+ * dice roll: the 2000 Ravens front was run-proof and beatable over the top, the 2013 Broncos
+ * could be outscored but never out-passed.
+ *
+ * The list is walked by index and then cycled, so a run deep enough to see a seventh boss
+ * meets the first one again a season older. Bosses ramp in difficulty across the first lap
+ * by the strength of the real team, which is left to the data rather than a knob.
+ */
+const DYNASTY_BOSSES = [
+  { team_season_id: 'SEA-2013', weakTo: 'air', trap: 'ground',
+    tell: 'A secondary that swallows the run and dares you to throw deep.',
+    note: 'the Legion of Boom' },
+  { team_season_id: 'NE-2007', weakTo: 'ground', trap: 'air',
+    tell: 'An offense that never punts. Keep it on the sideline and shorten the game.',
+    note: 'the 16-0 Patriots' },
+  { team_season_id: 'BAL-2000', weakTo: 'air', trap: 'ground',
+    tell: 'The best run defense ever assembled. Do not try to run on it.',
+    note: 'the 2000 Ravens' },
+  { team_season_id: 'DEN-2013', weakTo: 'ground', trap: 'trick',
+    tell: 'A record-setting passing attack. Out-score it by keeping it off the field.',
+    note: 'the 606-point Broncos' },
+  { team_season_id: 'TB-2002', weakTo: 'trick', trap: 'ground',
+    tell: 'A Cover 2 that reads everything in front of it. You will need something it has not seen.',
+    note: 'the 2002 Buccaneers' },
+  { team_season_id: 'SF-2019', weakTo: 'air', trap: 'trick',
+    tell: 'A four-man rush that gets home on its own. Get the ball out quick and over the top.',
+    note: 'the 2019 49ers front' },
+];
+
+/* Which boss, if any, a season faces. Only the even milestones (6, 12, 18) are bosses; the odd
+   ones are mandates, so this is null there and dynastyChallengeFor answers instead. */
+function dynastyBossFor(seasonNo, every) {
+  const step = every || DYNASTY_MILESTONE_EVERY;
+  if (dynastyMilestoneKind(seasonNo, every) !== 'boss') return null;
+  /* Bosses land on every second milestone, so the nth boss (0-based) is (season/step)/2 - 1. */
+  const occ = (seasonNo / step) / 2 - 1;
+  return { ...DYNASTY_BOSSES[occ % DYNASTY_BOSSES.length], seasonNo, reward: 'freeze' };
+}
+
+/* Kept for callers that still ask, and honest about the new schedule: bosses freeze, mandates
+   wipe. Reads the milestone kind rather than the parity so it cannot drift from the schedule. */
+function dynastyBossReward(seasonNo, every) {
+  const kind = dynastyMilestoneKind(seasonNo, every);
+  return kind === 'boss' ? 'freeze' : kind === 'challenge' ? 'deadwipe' : null;
+}
+
+/*
+ * THE ROSTER MANDATES. Each is a way the owner tells you to build the team, checked on the
+ * roster you take into the next season, after the offseason you have to satisfy it. Reward is
+ * always a dead-cap wipe: you reshape the roster to comply, which usually means cutting men
+ * and taking on dead money, and meeting the mandate clears exactly that.
+ *
+ * TWO SHAPES. A 'count' mandate wants at least `need` players who match; a 'total' wants the
+ * whole payroll under a ceiling. Both are read off the same two facts the mode already tracks:
+ * a man's age, and the contract you drafted him at (run.salaries, not his list price). The
+ * thresholds are set so a mandate asks for real reshaping without being unmeetable off a
+ * typical mid-run roster: see the achievability sweep in check-dynasty.
+ */
+const DYNASTY_CHALLENGES = [
+  { id: 'young', name: 'The youth movement', kind: 'count', need: 3, unit: 'players 25 or under',
+    desc: 'Field three players aged 25 or younger.',
+    short: '3 aged 25 or under', match: (p) => !!p.age && p.age <= 25 },
+  { id: 'bargains', name: 'Moneyball', kind: 'count', need: 3, unit: 'contracts under $9M',
+    desc: 'Field three players each on a contract under $9M.',
+    short: '3 under $9M', match: (p, sal) => sal < 9 },
+  { id: 'rookie', name: 'New blood', kind: 'count', need: 1, unit: 'rookie',
+    desc: 'Field a rookie: a player in his very first NFL season.',
+    short: 'a rookie', match: (p) => !!(p.draft_year && p.season === p.draft_year) },
+  { id: 'vets', name: 'Win now', kind: 'count', need: 3, unit: 'players 31 or older',
+    desc: 'Field three players aged 31 or older.',
+    short: '3 aged 31 or older', match: (p) => !!p.age && p.age >= 31 },
+];
+
+/* Which mandate, if any, a season carries. Null unless the season is an odd milestone. */
+function dynastyChallengeFor(seasonNo, every) {
+  const step = every || DYNASTY_MILESTONE_EVERY;
+  if (dynastyMilestoneKind(seasonNo, every) !== 'challenge') return null;
+  /* Mandates land on every other milestone, so the nth (0-based) is ((season/step) - 1) / 2. */
+  const occ = ((seasonNo / step) - 1) / 2;
+  return { ...DYNASTY_CHALLENGES[occ % DYNASTY_CHALLENGES.length], seasonNo, reward: 'deadwipe' };
+}
+
+/* How far a roster is toward a mandate: how many match against how many are needed (or the
+   payroll against its ceiling), and whether it is met. Pure, so the offseason can call it live
+   on every cut and signing and the season-start check can call it once. `salaries` is the
+   contract array that lines up with `roster`. */
+function dynastyChallengeProgress(spec, roster, salaries) {
+  if (!spec) return { have: 0, need: 0, met: false, kind: 'count' };
+  if (spec.kind === 'total') {
+    const total = (salaries || []).reduce((s, x) => s + (x || 0), 0);
+    return { have: Math.round(total * 10) / 10, need: spec.need, met: total <= spec.need, kind: 'total' };
+  }
+  let have = 0;
+  for (let i = 0; i < roster.length; i++) if (spec.match(roster[i], (salaries || [])[i])) have++;
+  return { have, need: spec.need, met: have >= spec.need, kind: 'count' };
+}
+
+/* Absolute field yard (0 your goal, 100 theirs) from a team-relative yard (100 = the drive's
+   own score). A 'them' drive runs the other way, so its relative yards mirror. */
+function bossAbsYard(team, y) {
+  const v = team === 'you' ? y : 100 - y;
+  return Math.max(0, Math.min(100, v));
+}
+/* Where the ball sits, as a side of the field and a yard line, for the situation card. */
+function bossBallSpot(y) {
+  return y <= 50 ? { side: 'own', yard: Math.max(1, Math.round(y)) }
+    : { side: 'opp', yard: Math.max(1, Math.round(100 - y)) };
+}
+/* The clock, split into quarters for display. */
+function bossClock(sim) {
+  const q = Math.min(4, Math.floor(sim.clock / 900) + 1);
+  const rem = 900 - (sim.clock - (q - 1) * 900);
+  return { quarter: q, secs: Math.max(0, Math.round(rem)) };
+}
+/* Two-point conversion odds, a shade under a coin flip and better for a strong offense. */
+function bossTwoProb(sim) {
+  return Math.max(0.30, Math.min(0.60, 0.40 + (sim.muYou - 4.5) * 0.05));
+}
+/* Whether a two-point try is a real question here: second half, game within a score or two. */
+function bossTwoLive(sim) {
+  return sim.clock >= 1800 && Math.abs(sim.you - sim.them) <= 10;
+}
+/* Whether the player's fourth down is a genuine go-or-not, worth stopping for. Short yardage
+   in plus territory always is; late and trailing, any fourth down is. Everything else the sim
+   handles itself, so the pauses stay rare and real. */
+function bossGenuineFourth(sim, c) {
+  const short = c.toGo <= 3 && c.y >= 52;
+  const lateTrail = sim.clock >= 2400 && sim.you < sim.them && c.y >= 35;
+  return short || lateTrail;
+}
+
+function bossStartDrive(sim, team, startY) {
+  sim.pos = team;
+  sim.cur = { team, y: startY, down: 1, toGo: Math.min(10, 100 - startY),
+    startAbs: bossAbsYard(team, startY), tStart: sim.clock, plays: 0 };
+}
+
+/* Hand the ball over after a drive ends, and set the next start spot in the new team's own
+   relative frame. */
+function bossHandoff(sim, how, endY, scorer) {
+  const other = scorer === 'you' ? 'them' : 'you';
+  if (how === 'td' || how === 'fg') { sim.pos = other; sim.nextStart = BOSS_SIM.START_YARD; }
+  else if (how === 'punt') {
+    const land = Math.min(96, endY + BOSS_SIM.PUNT_NET);
+    sim.pos = other; sim.nextStart = land >= 100 ? 25 : Math.max(1, 100 - land);
+  } else { // downs, turnover, miss: other team takes the spot
+    sim.pos = other; sim.nextStart = Math.max(1, 100 - endY);
+  }
+}
+
+/*
+ * FINISH A DRIVE. Records it for the field chart, banks the points, and either pauses for a
+ * player's two-point try or hands the ball off. Returns the event the driver renders.
+ */
+function bossEndDrive(sim, how, endY, rng) {
+  const c = sim.cur;
+  const pts = how === 'td' ? 6 : how === 'fg' ? 3 : 0;
+  const endRel = how === 'td' ? 100 : how === 'fg' ? Math.min(97, c.y) : c.y;
+  const drive = { team: c.team, startYard: c.startAbs, endYard: bossAbsYard(c.team, endRel),
+    result: how, tStart: c.tStart, tEnd: sim.clock, plays: c.plays };
+  sim.drives.push(drive);
+  sim[c.team] += pts;
+  if (how === 'td' && c.team === 'you' && bossTwoLive(sim)) {
+    // Pause for the PAT decision; the handoff waits until it is resolved.
+    sim.pending = { kind: 'two', team: 'you', pat: { endY } };
+    sim.cur = null;
+    return { type: 'decision', decision: bossDecisionInfo(sim, drive) };
+  }
+  if (how === 'td') sim[c.team] += 1;   // automatic extra point otherwise
+  bossHandoff(sim, how, endY, c.team);
+  sim.cur = null;
+  return { type: 'drive', drive, you: sim.you, them: sim.them, clock: bossClock(sim) };
+}
+
+/* The situation the card shows: score, clock, and for a fourth down the down, distance, spot
+   and which safe option is on offer (a kick in range, a punt out of it). */
+function bossDecisionInfo(sim, drive) {
+  const p = sim.pending, cl = bossClock(sim);
+  if (p.kind === 'two') {
+    return { kind: 'two', quarter: cl.quarter, secs: cl.secs, you: sim.you, them: sim.them, drive };
+  }
+  const c = sim.cur, toGoal = 100 - c.y;
+  return { kind: 'fourth', quarter: cl.quarter, secs: cl.secs, you: sim.you, them: sim.them,
+    down: 4, toGo: Math.round(c.toGo), ball: bossBallSpot(c.y), toGoal: Math.round(toGoal),
+    inFgRange: toGoal <= BOSS_SIM.FG_MAX_YARD };
+}
+
+/*
+ * PLAY FORWARD until something the driver needs to show: a completed drive, a decision for the
+ * player, or the final whistle. Re-entrant, so it is called again after each drive is drawn
+ * and after each decision is resolved.
+ */
+function bossSimAdvance(sim, rng) {
+  if (sim.over) return { type: 'over', won: sim.won, you: sim.you, them: sim.them };
+  if (!sim.cur) {
+    if (sim.clock >= 3600) {
+      sim.over = true;
+      sim.won = sim.you > sim.them || (sim.you === sim.them && sim.youExp >= sim.themExp);
+      return { type: 'over', won: sim.won, you: sim.you, them: sim.them };
+    }
+    if (sim.pos == null) { sim.firstReceiver = rng() < 0.5 ? 'you' : 'them'; sim.pos = sim.firstReceiver; }
+    bossStartDrive(sim, sim.pos, sim.nextStart != null ? sim.nextStart : BOSS_SIM.START_YARD);
+    sim.nextStart = null;
+  }
+  const c = sim.cur;
+  const mu = c.team === 'you' ? sim.muYou : sim.muThem;
+  while (true) {
+    if (rng() < BOSS_SIM.TO_RATE) return bossEndDrive(sim, 'turnover', c.y, rng);
+    if (c.down === 4 && !c.forcedGo) {
+      const toGoal = 100 - c.y;
+      const trailing = sim[c.team] < sim[c.team === 'you' ? 'them' : 'you'];
+      const desperate = sim.clock >= 3360 && trailing;
+      if (c.team === 'you' && bossGenuineFourth(sim, c)) {
+        sim.pending = { kind: 'fourth', team: 'you' };
+        return { type: 'decision', decision: bossDecisionInfo(sim) };
+      }
+      if (toGoal <= BOSS_SIM.FG_MAX_YARD && !desperate) {
+        return bossFgGood(toGoal, rng) ? bossEndDrive(sim, 'fg', c.y, rng)
+          : bossEndDrive(sim, 'miss', c.y, rng);
+      }
+      if (toGoal > 5 && !desperate) return bossEndDrive(sim, 'punt', c.y, rng);
+      // otherwise go for it
+    }
+    c.forcedGo = false;
+    const gain = bossPlayGain(mu, rng);
+    sim.clock += BOSS_SIM.PLAY_SECS;
+    c.plays++;
+    c.y += gain;
+    if (c.y >= 100) return bossEndDrive(sim, 'td', 100, rng);
+    if (c.y < 1) c.y = 1;
+    if (gain >= c.toGo) { c.down = 1; c.toGo = Math.min(10, 100 - c.y); }
+    else {
+      c.toGo -= gain;
+      if (c.down === 4) return bossEndDrive(sim, 'downs', c.y, rng);
+      c.down++;
+    }
+  }
+}
+
+/*
+ * RESOLVE A PLAYER DECISION and hand back to the driver, which calls advance again to keep
+ * playing. A fourth-down go is a real play against the sticks: convert and the drive lives,
+ * come up short and the ball changes hands where you were stopped. A two-point try adds two
+ * or nothing; a kick adds the sure one.
+ */
+function bossSimResolve(sim, choice, rng) {
+  const p = sim.pending; sim.pending = null;
+  if (!p) return;
+  if (p.kind === 'two') {
+    const ok = choice === 'two' ? rng() < bossTwoProb(sim) : true;
+    if (choice === 'two') sim.you += ok ? 2 : 0; else sim.you += 1;
+    bossHandoff(sim, 'td', p.pat.endY, 'you');
+    return { converted: choice === 'two' ? ok : null, choice };
+  }
+  // fourth down
+  const c = sim.cur;
+  if (choice === 'fg') {
+    const toGoal = 100 - c.y;
+    return { end: bossFgGood(toGoal, rng) ? bossEndDrive(sim, 'fg', c.y, rng)
+      : bossEndDrive(sim, 'miss', c.y, rng), choice };
+  }
+  if (choice === 'punt') return { end: bossEndDrive(sim, 'punt', c.y, rng), choice };
+  // go for it: one play against the sticks
+  const gain = bossPlayGain(sim.muYou, rng);
+  sim.clock += BOSS_SIM.PLAY_SECS; c.plays++;
+  c.y += gain;
+  if (c.y >= 100) return { converted: true, td: true, end: bossEndDrive(sim, 'td', 100, rng), choice };
+  if (c.y < 1) c.y = 1;
+  if (gain >= c.toGo) { c.down = 1; c.toGo = Math.min(10, 100 - c.y); c.forcedGo = false;
+    return { converted: true, choice }; }
+  return { converted: false, end: bossEndDrive(sim, 'downs', c.y, rng), choice };
 }
 
 const publicAPI = {
@@ -4277,8 +5832,23 @@ const publicAPI = {
        offense and slot 11 completes the defense. */
     ['RB', 'WR', 'TE'], ['DL', 'LB', 'DB'],
   ],
+  /* The Three Year Deal. Nothing in the live game reaches these yet. */
+  DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
+  dynastyWinBar, dynastySurvives, DYNASTY_BASE_WINS, DYNASTY_STEP_SEASONS,
+  DYNASTY_WIN_BAR_MAX,
+  DYNASTY_MILESTONE_EVERY, DYNASTY_BOSSES, DYNASTY_CHALLENGES,
+  BOSS_READ_EDGE, BOSS_SIM,
+  dynastyMilestoneKind, dynastyBossFor, dynastyBossReward,
+  dynastyChallengeFor, dynastyChallengeProgress,
+  bossExpectedPoints, bossSimCreate, bossSimAdvance, bossSimResolve, bossClock,
+  DYNASTY_POINTS, dynastySeasonScore, dynastyRunScore,
+  dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
+  DYNASTY_DEAD_SHARE, DYNASTY_DEAD_SEASONS, DYNASTY_DEAD_CEILING, dynastyDead,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
+  fullStrength, fullOverall, fullParts, fullSideRatings,
+  coachTable, coachPrice, coachEffect, coachLinks, COACH_MIN_SEASONS,
+  PLAN, PLAN_AXES, normalizePlan, planFromCoach,
   resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, finalRecordEase,

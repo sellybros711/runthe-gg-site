@@ -13,7 +13,7 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Guess the mystery athlete in Run The Arcade. Each guess reveals how close you are on team, position, era, number and more." />
-<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
@@ -432,42 +432,44 @@ window.GA_ID='G-L29P5MRWKE';
 <div class="toast" id="toast"></div>
 
 <script src="../match/entities.js?v=12"></script>
-<script src="/arcade/former.js?v=1"></script>
+<script src="/arcade/former.js?v=2"></script>
 <script src="/arcade/stars.js?v=4"></script>
-<script src="/arcade/awards.js?v=1"></script>
+<script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=4"></script>
 <script src="/arcade/cluebank.js?v=2"></script>
-<script src="/arcade/data.js?v=2"></script>
-<script src="/arcade/rosters.js?v=1"></script>
+<script src="/arcade/primary.js?v=9"></script>
+<script src="/arcade/data.js?v=3"></script>
+<script src="/arcade/rosters.js?v=2"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=7"></script>
-<script src="/arcade/share.js?v=7"></script>
+<script src="/arcade/result.js?v=1"></script>
+<script src="/arcade/funnel.js?v=11"></script>
+<script src="/arcade/share.js?v=8"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=10"></script>
+<script src="/arcade/tokens.js?v=13"></script>
+<script src="/arcade/day.js?v=2"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
-<script src="/arcade/mode.js?v=6"></script>
+<script src="/arcade/mode.js?v=7"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=18"></script>
+<script src="/arcade/board.js?v=20"></script>
 <script src="/arcade/leaderboard.js?v=14"></script>
 <script src="/arcade/alltime.js?v=3"></script>
-<script src="/arcade/auth.js?v=3"></script>
-<script src="/arcade/mycard.js?v=9"></script>
-<script src="/arcade/topbanner.js?v=7"></script>
-<script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=16"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script src="/arcade/mycard.js?v=12"></script>
+<script src="/arcade/topbanner.js?v=9"></script>
+<script src="/arcade/auth-ui.js?v=5"></script>
+<script src="/arcade/card.js?v=19"></script>
 <script src="/arcade/referral.js?v=9"></script>
 <script src="/arcade/gamemarks.js?v=3"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/pregame.js?v=20"></script>
-<script src="/arcade/howto.js?v=17"></script>
-<script src="/arcade/tour.js?v=1"></script>
-<script src="/arcade/tourdata.js?v=3"></script>
+<script src="/arcade/demo.js?v=3"></script>
+<script src="/arcade/pregame.js?v=24"></script>
+<script src="/arcade/howto.js?v=21"></script>
 <script src="/arcade/fact.js?v=1"></script>
 <script>
 (function(){
@@ -507,7 +509,11 @@ window.GA_ID='G-L29P5MRWKE';
   function rosterOf(e){ return ROSTERS ? (rosterByKey[e.name+'|'+e.sport]||null) : null; }
   // ONE current team per player: the roster's team when known, else the last
   // (most recent) team in the corpus career list.
-  function curTeamOf(e){ var r=rosterOf(e); if(r && r.t) return r.t; return (e.t&&e.t.length)?e.t[e.t.length-1]:null; }
+  /* The current club if they are on a roster, else the club they spent
+     longest at (e.pt, from primary.js), else the one they came up with. The
+     last entry of e.t used to stand in for all three and is right 15% of the
+     time: it made Brett Favre a Falcon. */
+  function curTeamOf(e){ var r=rosterOf(e); if(r && r.t) return r.t; return e.pt || ((e.t&&e.t.length)?e.t[0]:null); }
   function jerseyOf(e){ var r=rosterOf(e); if(r && r.j!=null) return r.j; return (e.j&&e.j.length)?e.j[0]:null; }
   function divisionOf(e){ var tm=curTeamOf(e); return (tm && ROSTERS && ROSTERS.divisions) ? (ROSTERS.divisions[tm]||null) : null; }
 
@@ -702,7 +708,9 @@ window.GA_ID='G-L29P5MRWKE';
   var colCollege = { label:'College', cell:function(g,t){
     if(!g.col) return { st:'miss', v:'-' };
     var same = window.RTGType ? RTGType.sameCollege(g.col, t.col) : (g.col===t.col);
-    return { st: same ? 'hit' : 'miss', v:g.col };
+    // display form: the feed's "Miami, O." is a school nobody writes that way.
+    var shown = g.col; try{ if(window.RTGType && RTGType.schoolLabel) shown = RTGType.schoolLabel(g.col); }catch(e){}
+    return { st: same ? 'hit' : 'miss', v:shown };
   } };
   /* Honours, as four rungs rather than a list. A raw award list cannot be
      compared tile-to-tile, but "how decorated" can, and it is the axis people
@@ -1026,6 +1034,7 @@ window.GA_ID='G-L29P5MRWKE';
     try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), g:guesses.map(function(e){ return e.id; }), c:cluesUsed })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
+  var PREVBEST = 0;
   var MSTONE='';
   function streakMilestone(n){
     var map={3:'3-day streak. Rolling!',5:'5 days in a row!',7:'One-week streak!',
@@ -1041,6 +1050,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(s.lastDone!==today){
       // streak counts a day you SOLVED it; a loss breaks the streak
       s.streak = w ? ((s.lastDone===y)?(s.streak||0)+1:1) : 0;
+      PREVBEST = s.bestStreak||0;   // read before the write, for result.js
       s.bestStreak=Math.max(s.bestStreak||0, s.streak);
       if(w){ s.wins=(s.wins||0)+1; if(!ARCHIVE && attemptFirst) MSTONE=streakMilestone(s.streak); }
     }
@@ -1064,6 +1074,12 @@ window.GA_ID='G-L29P5MRWKE';
     document.getElementById('mGuesses').textContent=w?guesses.length:'-';
     document.getElementById('mTime').textContent=fmt(elapsed);
     document.getElementById('mStreak').textContent=s.streak||0;
+    /* One line for the shared result row (result.js). See arcade/result.js:
+       isBest is the only field this page has to supply, because the new
+       best is already in storage by the time the modal opens. */
+    try{ window.RTGResultSpec = { key:GAME, date:DATE, statInt:(s.streak||0),
+      best:(s.bestStreak||0), prevBest:(PREVBEST>0?PREVBEST:null),
+      isBest:(!ARCHIVE && attemptFirst && (s.streak||0)>PREVBEST), streak:s.streak||0 }; }catch(e){}
     document.getElementById('yourTm').textContent = w ? (guesses.length+' · '+fmt(elapsed)) : 'X';
     document.getElementById('yourBest').textContent = s.bestStreak||0;
     var mm=document.getElementById('mMilestone');

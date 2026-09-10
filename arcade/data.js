@@ -201,12 +201,37 @@
   }
 
   /* ------------------------------------------------------------------
-   * RTG_KNOWN — one answer to "would a fan recognise this name?"
+   * THE CLUB A PLAYER IS OF, from primary.js (window.RTG_PRIMARY) -> e.pt
+   *
+   * A player wrote in: Alma Mater captioned Tom Seaver "MLB . BOSTON RED
+   * SOX". He pitched sixteen games there in 1986, at the end of twenty
+   * years, eleven of them with the Mets. Two games were reading the LAST
+   * entry of e.t, which is right 15% of the time and produced California
+   * Angels for Nolan Ryan and Atlanta Falcons for Brett Favre.
+   *
+   * e.t is not a career order, so no index into it is the answer. This is
+   * counted from real tenure at build time. It does not cover everybody,
+   * so the contract is: READ e.pt, FALL BACK TO e.t[0]. Never e.t last.
+   * The fallback is right 62% where it is used, against 15%.
+   * ---------------------------------------------------------------- */
+  var PR = root.RTG_PRIMARY;
+  if (PR && PR.of) {
+    var ptHit = 0;
+    ENT.forEach(function (e) {
+      if (!e || !e.name || !e.sport || e.pt) return;
+      var t = PR.of(e.sport, e.name);
+      if (t) { e.pt = t; ptHit++; }
+    });
+    PR.matched = ptHit;
+  }
+
+  /* ------------------------------------------------------------------
+   * RTG_KNOWN: one answer to "would a fan recognise this name?"
    *
    * Every game had its own copy of this test and they all shared a flaw:
    * the fallback accepted LONGEVITY. `f >= 4` plus eight notable seasons
    * sounds like a credential until you notice f=4 is 5,048 of the 5,965
-   * entities — it is the default bucket, not a signal — and that lasting
+   * entities (the default bucket, not a signal), and that lasting
    * eight years in the NFL describes 2,625 players, most of them linemen
    * nobody outside their own city could name. That is how Bill Conaty,
    * Jerome Pathon and Brynden Trawick ended up as answers.
@@ -217,7 +242,7 @@
   /* An accolade is not one thing. MVP, All-Pro, a Hall of Fame plaque or a
      ring make a name stick in any sport. A Pro Bowl does not, on its own:
      the NFL sends about ninety players a year and most of them are linemen.
-     But it cannot simply be discounted either — for a lot of genuinely famous
+     But it cannot simply be discounted either. For a lot of genuinely famous
      quarterbacks it is the only tag this corpus carries, and dropping it took
      Russell Wilson, Tony Romo, Trevor Lawrence and Brock Purdy with it.
      Position is what separates the two cases. A Pro Bowl quarterback is a

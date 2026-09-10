@@ -94,7 +94,7 @@
       // plan selection, visible prices, consistent "Arcade Card" branding.
       // Signed-out users get the sign-in modal instead of a dead end.
       var st = (window.RTG_BOARD && window.RTG_BOARD.state()) || {};
-      if (!st.signedIn && window.RTGAuthUI) { close(); RTGAuthUI.open('signup'); return; }
+      if (!st.signedIn && window.RTGAuthUI) { close(); RTGAuthUI.open('signup', { src:'edition_switch' }); return; }
       if (window.RTGCard && RTGCard.paywall) { close(); RTGCard.paywall({ reason: 'upsell' }); return; }
       fine.textContent = 'Checkout isn’t live yet. Check back soon.';
     });

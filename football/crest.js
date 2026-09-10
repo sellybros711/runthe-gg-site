@@ -402,6 +402,12 @@ const MARK_KEYS=['init','pad','posts','egg','signal','rafters','wall','headset',
    player's tier without anybody touching this file, and it would do it silently, because a
    tier that drifts down looks exactly like a tier that was never earned. So it is asked of
    the catalog that is actually installed, every time. */
+/* AND IT MOVES ON ITS OWN NOW. Dynasty and Full Team keep their badges out of the catalog
+   until their LIVE flags say the modes have launched, so this number steps up on the day one
+   of them does. That is the behaviour that is wanted: GOAT means every badge in the game, and
+   the game got bigger. Only the fallback below is written down, and it is only ever used when
+   achievements.js failed to load at all, which is a state where the badge count is zero and
+   the denominator changes nothing anybody sees. */
 function achTotal(){
   const A=window.PS_ACH;
   return (A&&A.CATALOG&&A.CATALOG.length)||387;

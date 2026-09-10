@@ -266,6 +266,25 @@ function indexData(players) {
   ratingTable.sort((a, b) => a - b);
   const oppPool = buildOpponentPool(teamSeasons);
 
+  // Position scarcity: how many elite (6+ WAR) seasons can fill each slot.
+  // Catchers and closers are rare; outfielders and DH abundant. Drives the
+  // draft's "premium spot" nudge so you grab scarce positions when you can.
+  const eliteBySlot = {};
+  for (const slot of SLOTS) eliteBySlot[slot] = 0;
+  for (const p of players) {
+    if (p.t === 'TOT' || p.w < 6) continue;
+    for (const slot of SLOTS) {
+      if (slot === 'DH') continue; // everyone fills DH; not a scarcity signal
+      if (canFillSlot(p, slot)) eliteBySlot[slot]++;
+    }
+  }
+  // Scarcest slots (fewest elite options) get flagged premium.
+  const scarcity = {};
+  for (const slot of SLOTS) {
+    const n = eliteBySlot[slot];
+    scarcity[slot] = { elite: n, premium: slot !== 'DH' && n <= 60 };
+  }
+
   return {
     players,
     allPlayers,
@@ -275,6 +294,7 @@ function indexData(players) {
     teamStats,
     ratingTable,
     oppPool,
+    scarcity,
   };
 }
 
@@ -840,13 +860,26 @@ function playoffSeries(runsFor, runsAgainst, savePct, rng, bestOf, advantage) {
   };
 }
 
-function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins, rating) {
+function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins, rating, pool) {
   if (!seed.made) return null;
   const edge = titleEdge(rating);
 
   const rounds = playoffRoundNames(seed.rounds);
   const results = [];
   let alive = true;
+
+  // Escalating real opponents for flavor: each round draws a tougher all-time
+  // team from the elite pool, hardest saved for the World Series.
+  const eliteSorted = (pool && pool.marquee && pool.marquee.length)
+    ? pool.marquee.slice().sort((a, b) => a.rating - b.rating) : null;
+  const oppNameFor = (roundIdx) => {
+    if (!eliteSorted) return null;
+    const frac = rounds.length > 1 ? roundIdx / (rounds.length - 1) : 1;
+    const lo = Math.floor(frac * (eliteSorted.length - 1) * 0.7);
+    const hi = eliteSorted.length - 1;
+    const pick = eliteSorted[lo + Math.floor(rng() * Math.max(1, hi - lo + 1))];
+    return pick ? pick.name : null;
+  };
 
   // Home-field advantage scales with regular-season wins
   const baseAdv = 1 + CONSTANTS.PLAYOFF_HOME_FIELD *
@@ -879,6 +912,7 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
     const series = playoffSeries(offAdj, oppRA, savePct, rng, bestOf, adv);
     results.push({
       round: roundName,
+      oppName: oppNameFor(i),
       ...series,
     });
 
@@ -974,7 +1008,7 @@ function playRun(roster, rng, slotNames, pool) {
   const record = { wins, losses };
   const seed = seedFromRecord(wins);
   const rating = overallRating(teamWinPct(offense, defense));
-  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating);
+  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating, pool);
 
   const titleWon = playoffs && playoffs.won;
   const isGOAT = wins >= CONSTANTS.GOAT_WINS;

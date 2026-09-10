@@ -17,10 +17,12 @@ const require = createRequire(import.meta.url);
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(new URL('../../../..', import.meta.url).pathname);
+import { leagueTeams } from './league.mjs';
 const L = require(ROOT + '/cfb/commish/ledger.js');
 const S = require(ROOT + '/cfb/commish/season.js');
+const RV = require(ROOT + '/cfb/commish/rivals.js');
 const E = require(ROOT + '/cfb/engine.js');
-const teams = JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_team_seasons.json', 'utf8'));
+const teams = leagueTeams(ROOT);
 
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
@@ -39,8 +41,8 @@ console.log('\n=== a season happens at all ===');
   ok('a season plays', !!sim, sim ? sim.teams.length + ' teams' : 'nothing came back');
   /* TWELVE FOR EVERYBODY, AND THIRTEEN FOR WHOEVER PLAYED ON CHAMPIONSHIP WEEKEND, which is
      what a real season looks like. It used to be twelve flat, and the reason it is worth
-     asserting at all is the version in between: the schedule was coloured into weeks, the
-     colouring overflowed past the last week, and the overflow was quietly dropped. Teams
+     asserting at all is the version in between: the schedule was colored into weeks, the
+     coloring overflowed past the last week, and the overflow was quietly dropped. Teams
      finished 8-0 and 13-0 in the same league and nothing failed. */
   const inTitle = {};
   (sim.titles || []).forEach((t) => {
@@ -321,6 +323,359 @@ console.log('\n=== the pool is a promise the football has to pay for ===');
   ok('a bigger audience closes the gap at the same pool', grown.books.gap < flat.books.gap - 0.05,
     'grown ' + grown.books.gap.toFixed(2) + 'B vs ' + flat.books.gap.toFixed(2) + 'B, at '
     + grown.perGame.toFixed(2) + 'M a game vs ' + flat.perGame.toFixed(2) + 'M');
+}
+
+console.log('\n=== the one way door bends the football ===');
+{
+  /* THE CLAIM: whether a man who has been a professional can come back is not a posture, it
+     is a rule about who is good. An open door sends him to a program that can pay him and
+     start him, so the league stretches away from its middle.
+
+     ASSERTED ON THE SPREAD, NOT ON THE LEVEL. The first version of this drift moved the four
+     power conferences up and everybody else down, which in a seventy team league where
+     sixty-seven ARE the powers is a level shift wearing a costume: it moved the audience ten
+     per cent, which would have swamped the pool settlement, and moved who reached the bracket
+     by nothing. So what is checked here is the shape it is supposed to have. */
+  const at = (rule, year) => {
+    const w = world();
+    w.labour.reentry = rule;
+    w.year = year;
+    return w;
+  };
+  const spreadOf = (w, seed) => {
+    const sim = S.play(w, teams, rngFor(seed), { through: S.WEEKS, titles: true, bracket: true });
+    const zs = sim.teams.map((t) => t.z);
+    const m = zs.reduce((a, b) => a + b, 0) / zs.length;
+    return {
+      spread: Math.sqrt(zs.reduce((a, b) => a + (b - m) ** 2, 0) / zs.length),
+      perGame: sim.perGame,
+      blowouts: sim.games.filter((g) => g.margin >= 28).length / sim.games.length,
+    };
+  };
+  ok('nothing has happened in year one, whatever the rule is',
+    S.reentryDrift(at('open', 2025), 'SEC', 1.5) === 0
+    && S.reentryDrift(at('closed', 2025), 'SEC', 1.5) === 0);
+
+  const open = spreadOf(at('open', 2029), 31);
+  const shut = spreadOf(at('closed', 2029), 31);
+  ok('an open door stretches the league by year five', open.spread > shut.spread * 1.15,
+    'spread ' + open.spread.toFixed(3) + ' open vs ' + shut.spread.toFixed(3) + ' shut');
+  ok('  and the sport is visibly more lopsided for it',
+    open.blowouts > shut.blowouts,
+    (open.blowouts * 100).toFixed(1) + '% of games won by four scores vs '
+    + (shut.blowouts * 100).toFixed(1) + '%');
+  /* AND THE AUDIENCE BARELY MOVES, which is the half that has to stay small: viewership is
+     what the pool is settled against, so a labour posture that swung it would quietly rewrite
+     the money. */
+  ok('  while the audience barely notices', Math.abs(open.perGame - shut.perGame) < 0.16,
+    open.perGame.toFixed(2) + 'M vs ' + shut.perGame.toFixed(2) + 'M a game');
+
+  /* A CONFERENCE THAT SHUT ITS DOOR ALONE pays for it twice, which is the cost of going
+     first and the reason the divergence is a decision rather than a detail. */
+  const split = world();
+  split.year = 2029;
+  split.labour.rulesBy = 'conference';
+  split.labour.confReentry = { SEC: 'open', 'Big Ten': 'closed', ACC: 'open', 'Big 12': 'open' };
+  ok('a league that shuts its door alone is worse off than one that shuts it with everybody',
+    S.reentryDrift(split, 'Big Ten', 1.2) < S.reentryDrift(at('closed', 2029), 'Big Ten', 1.2),
+    'alone ' + S.reentryDrift(split, 'Big Ten', 1.2).toFixed(3)
+    + ' vs together ' + S.reentryDrift(at('closed', 2029), 'Big Ten', 1.2).toFixed(3));
+  ok('  and a league that kept its open while a rival shut is better off',
+    S.reentryDrift(split, 'SEC', 1.2) > 0, S.reentryDrift(split, 'SEC', 1.2).toFixed(3));
+  /* THE RULE A CONFERENCE IS LIVING UNDER is the national one until it writes its own AND
+     this office has let it, which is two conditions and the sort of thing that silently
+     becomes one. */
+  const notDevolved = world();
+  notDevolved.labour.confReentry = { SEC: 'closed', 'Big Ten': '', ACC: '', 'Big 12': '' };
+  ok('  a conference rule counts for nothing until the rules are devolved',
+    S.reentryRule(notDevolved, 'SEC') === 'open', S.reentryRule(notDevolved, 'SEC'));
+}
+
+console.log('\n=== the rivalries are on the calendar ===');
+{
+  const w = world();
+  const sim = run(w, 51);
+  const inLeague = {};
+  sim.teams.forEach((t) => { inLeague[t.school] = t; });
+  const want = RV.playable(inLeague);
+  const played = sim.games.filter((g) => g.rivalry);
+  ok('every rivalry both schools are here for gets played',
+    played.length === want.length, played.length + ' of ' + want.length);
+  ok('  and each one only once',
+    new Set(played.map((g) => g.rivalry)).size === played.length);
+  ok('  between the two schools it is actually between',
+    played.every((g) => {
+      const r = RV.BY_ID[g.rivalry];
+      return (g.a.school === r.a && g.b.school === r.b) || (g.a.school === r.b && g.b.school === r.a);
+    }));
+  /* THE DATE IS THE POINT. November is shaped by these games being at the end of it, and a
+     Game coloring into week three would be the whole thing failing quietly. */
+  const onDate = played.filter((g) => g.week === g.want).length;
+  ok('  and almost all of them on the date they want',
+    onDate >= played.length - 2, onDate + ' of ' + played.length + ' on their own date');
+
+  /* PROTECTED MEANS PROTECTED. Move one of them into another conference and the game still
+     has to happen: that is the difference between a rivalry and a scheduling coincidence. */
+  const moved = L.applyEdit(world(), { move: { Michigan: 'SEC' } });
+  const movedSim = S.play(moved, teams, rngFor(51));
+  const theGame = movedSim.games.filter((g) => g.rivalry === 'the-game');
+  ok('a rivalry survives one of them changing conference', theGame.length === 1,
+    theGame.length ? 'played in week ' + theGame[0].week
+      + (theGame[0].conf ? ' as a conference game' : ' as a non-conference game') : 'not played');
+  ok('  and it comes out of their non-conference dates',
+    theGame.length === 1 && !theGame[0].conf);
+
+  /* NOBODY PLAYS ANYBODY TWICE, which was true of nothing before the rivalries went on first
+     and forced the question: about thirteen pairs a season met twice, and the fixed pairings
+     made it worse because the later phases knew nothing about them. */
+  const pairs = {}; let twice = 0;
+  sim.games.forEach((g) => {
+    const k = [g.a.school, g.b.school].sort().join('|');
+    if (pairs[k]) twice++;
+    pairs[k] = 1;
+  });
+  ok('  and no two teams meet twice in a regular season', twice === 0, twice + ' repeat meetings');
+  /* AND EVERYBODY STILL PLAYS TWELVE, which is the thing all of this could quietly break. */
+  const short = sim.teams.filter((t) => t.wins + t.losses < S.GAMES).length;
+  ok('  with everybody still playing a full season', short === 0, short + ' teams short of twelve');
+}
+
+console.log('\n=== the sport has a poll to argue about ===');
+{
+  const w = world();
+  const sim = run(w, 41);
+  ok('there is a poll for every week and one before them',
+    sim.polls.length === sim.through + 1, sim.polls.length + ' polls, ' + sim.through + ' weeks');
+  ok('  and it is twenty-five long', sim.poll.length === S.POLL_SIZE, sim.poll.length + ' teams');
+  ok('  ranked one to twenty-five with nothing missing',
+    sim.poll.every((r, i) => r.rank === i + 1));
+  ok('  and nobody is in it twice',
+    new Set(sim.poll.map((r) => r.school)).size === sim.poll.length);
+  /* THE PRESEASON HAS NO MOVEMENT BECAUSE THERE IS NOTHING TO HAVE MOVED FROM, which is the
+     kind of thing that renders as a green arrow saying "up 0" if nobody checks. */
+  ok('  August has no arrows on it', sim.polls[0].top.every((r) => r.move === null && !r.fresh));
+  ok('  and every team in August has played nothing',
+    sim.polls[0].top.every((r) => r.wins === 0 && r.losses === 0));
+
+  /* A POLL IS LAST WEEK WITH THIS WEEK DONE TO IT. If it moved like a sorted list it would
+     not be a poll, and if it never moved it would not be one either. */
+  const moves = sim.polls.slice(1).flatMap((p) => p.top.filter((r) => !r.fresh && r.move != null)
+    .map((r) => Math.abs(r.move)));
+  const mean = moves.reduce((s, x) => s + x, 0) / moves.length;
+  ok('  it moves week to week', mean > 0.5 && mean < 6, 'mean move ' + mean.toFixed(2) + ' places');
+  ok('  and not by everything at once', moves.filter((m) => m > 15).length < moves.length * 0.02,
+    moves.filter((m) => m > 15).length + ' of ' + moves.length + ' moves over fifteen places');
+
+  /* AUGUST IS A GUESS AND HAS TO BE WRONG SOMETIMES. Ranking by strength alone made the
+     preseason poll an oracle: it was sorted by the very number that decides the games. */
+  const pre = new Set(sim.polls[0].top.slice(0, 10).map((r) => r.school));
+  const kept = sim.poll.slice(0, 10).filter((r) => pre.has(r.school)).length;
+  ok('  and August was wrong about somebody', kept < 10, kept + ' of the August top ten survived');
+
+  /* AND LOSING DOES NOT MOVE A TEAM UP, which is the one rule of a poll every voter gets
+     shouted at for breaking.
+
+     STATED CAREFULLY, BECAUSE THE OBVIOUS VERSION IS FALSE. A team that loses CAN finish the
+     week higher, when the teams in front of it lost too: that is not a reward, it is everyone
+     ahead falling past it, and it happens in real polls every November. What must not happen
+     is climbing while nobody above lost. Smoothing alone allowed about four of those a season
+     and pollSeason now clamps them, which leaves roughly one per thirty seasons where a team
+     above slid on an unimpressive win rather than a defeat. That one is real poll behavior,
+     so this allows it rather than chasing it to zero and making the poll rigid. */
+  let climbed = 0, unexplained = 0;
+  for (let n = 1; n < sim.polls.length; n++) {
+    const before = {}; sim.polls[n - 1].top.forEach((r) => { before[r.school] = r; });
+    const now = {}; sim.polls[n].top.forEach((r) => { now[r.school] = r; });
+    sim.polls[n].top.forEach((r) => {
+      const was = before[r.school];
+      if (!(was && r.losses > was.losses && r.rank < was.rank)) return;
+      climbed++;
+      const aboveLost = sim.polls[n - 1].top.filter((x) => x.rank < was.rank)
+        .some((x) => now[x.school] && now[x.school].losses > x.losses);
+      if (!aboveLost) unexplained++;
+    });
+  }
+  ok('  and losing only moves a team up when everyone ahead lost too', unexplained <= 1,
+    climbed + ' climbed in a week they lost, ' + unexplained + ' with nobody above them losing');
+}
+
+console.log('\n=== December is not just the bracket ===');
+{
+  /* FOURTEEN BOWLS SAT IN venues.js AND NEVER KICKED OFF, so a hundred and twenty-four teams
+     finished the year with nothing. Everything here is a rule a fan would state out loud. */
+  const w = world();
+  const sim = run(w, 31);
+  const seats = {};
+  sim.field.seats.forEach((s) => { seats[s.team.school] = true; });
+
+  ok('the bowls are played', sim.bowls.length > 0, sim.bowls.length + ' bowls');
+  ok('  and six wins is what gets you one',
+    sim.bowls.every((b) => b.a.wins >= S.BOWL_MIN_WINS && b.b.wins >= S.BOWL_MIN_WINS),
+    'lowest ' + Math.min(...sim.bowls.flatMap((b) => [b.a.wins, b.b.wins])) + ' wins');
+  ok('  and nobody in the playoff is also in one',
+    !sim.bowls.some((b) => seats[b.a.school] || seats[b.b.school]));
+  const seen = {}; let twice = null;
+  sim.bowls.forEach((b) => {
+    [b.a, b.b].forEach((t) => { if (seen[t.school]) twice = t.school; seen[t.school] = 1; });
+  });
+  ok('  and nobody plays two of them', !twice, twice || 'each team once');
+  ok('  and every scoreline is one football can produce',
+    sim.bowls.every((b) => S.plausible(b.score[0], b.score[1])),
+    sim.bowls.map((b) => b.score.join('-')).join(' '));
+
+  /* THE LADDER, which is the difference between a bowl slate and a list. The best bowl left
+     takes a better team than the worst one does, and the first version of this got it wrong
+     in the most visible way: Washington against Tennessee in the Bahamas Bowl. */
+  const first = sim.bowls[0], last = sim.bowls[sim.bowls.length - 1];
+  ok('  and the better bowl gets the better team',
+    first && last && S.resume(first.a) > S.resume(last.a),
+    first && last ? first.name + ' took ' + first.a.school + ', ' + last.name + ' took ' + last.a.school : 'not enough bowls');
+
+  /* THE BRACKET IS PLAYED IN THE BOWLS, late rounds only: the first round is on campus, which
+     is the part of the twelve team format people actually like. */
+  const rounds = sim.bracket.rounds;
+  const named = rounds.flatMap((r, i) => r.filter((g) => g.bowlName).map(() => i));
+  ok('the bracket is played in the bowls', named.length > 0, named.length + ' games in a bowl');
+  ok('  but never the first round, which is on campus', !named.includes(0),
+    'rounds with a bowl: ' + Array.from(new Set(named)).join(', '));
+  ok('  nor the final, which is its own game',
+    !(rounds[rounds.length - 1] || []).some((g) => g.bowlName));
+  /* ONE BOWL CANNOT HOST TWO GAMES, which is the way this would break silently: the slate is
+     filled from the same catalog the bracket just took six out of. */
+  const usedNames = rounds.flatMap((r) => r.filter((g) => g.bowl).map((g) => g.bowl))
+    .concat(sim.bowls.map((b) => b.bowl));
+  ok('  and no bowl hosts two games', new Set(usedNames).size === usedNames.length,
+    usedNames.length + ' games, ' + new Set(usedNames).size + ' distinct bowls');
+
+  /* A BIGGER PLAYOFF EATS THE BOWL POOL, which is a real argument about expansion and is the
+     thing this system lets the mode make. Asserted on the POOL rather than on the number of
+     bowls, because at these sizes there are still enough teams to fill all eight either way
+     and a count would pass without measuring anything. */
+  const eligible = (s) => {
+    const inField = {};
+    s.field.seats.forEach((x) => { inField[x.team.school] = true; });
+    return s.teams.filter((t) => t.wins >= S.BOWL_MIN_WINS && !inField[t.school]).length;
+  };
+  const big = world({ playoff: { teams: 24, byes: 8, autobids: 5 } });
+  const bigSim = run(big, 31);
+  ok('a bigger playoff eats into the bowl pool', eligible(bigSim) < eligible(sim),
+    eligible(sim) + ' teams free for a bowl at 12, ' + eligible(bigSim) + ' at 24');
+}
+
+/* THE FIELD IS SET A WHOLE BEAT BEFORE THE BRACKET IS PLAYED.
+   Standing in the office on the playoff, championship weekend has happened and the twelve are
+   known; none of the games have been. That gap is the one week a year the bracket IS the
+   sport, and the office had nothing to draw because the field was only computed on the way
+   into the bracket. It is on the sim as soon as the titles are, and the office previews it.
+
+   THE PREVIEW MUST NOT DISAGREE WITH THE GAMES IT PREVIEWS, which is the whole risk of
+   drawing a fixture list next to a simulation that pairs its own. So the pairing rule lives
+   in firstRound() and bracket() opens with it, and this walks every field size the mode can
+   produce to check the two say the same thing. */
+console.log('\n=== the field, before the bracket is played ===');
+{
+  const w = world();
+  const set = S.play(w, teams, rngFor(9), { through: 20, titles: true, bracket: false });
+  ok('the seats are filled without playing a game', !!(set && set.field && set.field.seats),
+    set && set.field ? set.field.seats.length + ' seats' : 'no field');
+  ok('  and no bracket came with them', !!set && !set.bracket);
+  ok('  every seat is seeded in order',
+    set.field.seats.every((x, i) => x.seed === i + 1));
+  ok('  and somebody is the first team out', !!set.field.snub,
+    set.field.snub ? set.field.snub.school : 'nobody');
+
+  /* AND THE FIXTURE LIST IS THE ONE THAT GETS PLAYED, at every size and every bye count. */
+  const shapes = [
+    { teams: 4, byes: 0, autobids: 0 },
+    { teams: 8, byes: 0, autobids: 4 },
+    { teams: 12, byes: 4, autobids: 5 },
+    { teams: 14, byes: 2, autobids: 5 },
+    { teams: 16, byes: 0, autobids: 6 },
+    { teams: 24, byes: 8, autobids: 5 },
+  ];
+  const off = [];
+  for (const shape of shapes) {
+    const ww = world({ playoff: shape });
+    const played = run(ww, 9);
+    if (!played || !played.bracket) { off.push(shape.teams + ': nothing played'); continue; }
+    const pre = S.firstRound(played.field.seats, ww);
+    const real = played.bracket.rounds[0] || [];
+    const asPlayed = real.map((g) => g.top.seed + 'v' + g.bottom.seed).join(' ');
+    const asDrawn = pre.games.map((g) => g[0].seed + 'v' + g[1].seed).join(' ');
+    if (asPlayed !== asDrawn) off.push(shape.teams + ': drew [' + asDrawn + '] played [' + asPlayed + ']');
+    /* And a team with a bye is a team the first round does not contain. */
+    const playing = {};
+    real.forEach((g) => { playing[g.top.seed] = 1; playing[g.bottom.seed] = 1; });
+    const wrong = pre.byes.filter((x) => playing[x.seed]).map((x) => x.seed);
+    if (wrong.length) off.push(shape.teams + ': seed ' + wrong.join(',') + ' had a bye and a game');
+  }
+  ok('the fixture list is the bracket that gets played', !off.length,
+    off.slice(0, 3).join('   |   ') || shapes.length + ' field sizes agree');
+}
+
+/* THE ONE INDIVIDUAL AWARD THIS SPORT FOLLOWS, and the two ways it could go wrong.
+   It could name somebody, which is the rule the whole mode is built on and the one place a
+   real board would be a list of twenty year olds. Or it could be a random number generator
+   with school names on it, which is what any straw poll looks like from the outside: put good
+   teams near the top, shuffle, and nobody would ever ask what it was made of. */
+console.log('\n=== the trophy ===');
+{
+  const w = world();
+  const sim = S.play(w, teams, rngFor(3), { through: 12, titles: false, bracket: false });
+  const race = S.heisman(sim.teams, w, 5);
+  ok('there is a race', race.length === 5, race.length + ' in it');
+  ok('  ranked one to five', race.every((r, i) => r.rank === i + 1));
+  ok('  and it is a share of a poll rather than a score nobody can read',
+    Math.abs(race.reduce((t, r) => t + r.share, 0) - 100) < 0.5,
+    race.map((r) => r.share).join(' + '));
+  ok('  the leader leads', race.every((r, i) => i === 0 || r.share <= race[i - 1].share));
+
+  /* NOBODY IS NAMED. A position and a program, which is how the argument sounds out loud
+     anyway, and the same rule blocs.js holds for everybody who speaks in this mode. */
+  const poses = S.HEISMAN_POS.map((p2) => p2.name);
+  ok('nobody in it is a person', race.every((r) => poses.indexOf(r.pos.name) >= 0),
+    race.map((r) => r.pos.name).join(', '));
+  ok('  and every one of them plays somewhere real',
+    race.every((r) => sim.teams.some((t) => t.school === r.school)));
+
+  /* AND IT IS ABOUT THE FOOTBALL. Winning is most of this award, which is the complaint
+     everybody has about it and is also true of it, so the front of the race has to be teams
+     that are winning. Measured over several seasons rather than one, because one season's
+     leader could be anybody. */
+  let led = 0, seasons = 0;
+  for (let sd = 1; sd <= 8; sd++) {
+    const s2 = S.play(world(), teams, rngFor(sd), { through: 12, titles: false, bracket: false });
+    const r2 = S.heisman(s2.teams, world(), 5)[0];
+    const t2 = s2.teams.find((t) => t.school === r2.school);
+    seasons++;
+    if (t2 && t2.losses <= 1) led++;
+  }
+  ok('the front of the race is a team that is winning', led >= 6,
+    led + ' of ' + seasons + ' leaders had a loss or fewer');
+
+  /* AND IT REPLAYS, because everything else in this mode does. */
+  const again = S.heisman(sim.teams, w, 5);
+  ok('the same season gives the same race',
+    JSON.stringify(race.map((r) => r.school + r.pos.id)) ===
+    JSON.stringify(again.map((r) => r.school + r.pos.id)));
+}
+
+/* EVERY LEAGUE HAS ITS OWN RACE and the office draws three rows of each, which is only worth
+   anything if the sim carries a conference record to sort them by. It does, and nothing had
+   ever read it. */
+console.log('\n=== and every league has a table of its own ===');
+{
+  const sim = S.play(world(), teams, rngFor(2), { through: 12, titles: false, bracket: false });
+  const withConf = sim.teams.filter((t) => (t.confWins + t.confLosses) > 0);
+  ok('teams have played inside their league', withConf.length > 100,
+    withConf.length + ' of ' + sim.teams.length);
+  ok('  and a conference record is never longer than the whole one',
+    sim.teams.every((t) => t.confWins <= t.wins && t.confLosses <= t.losses));
+  const by = {};
+  sim.teams.forEach((t) => { (by[t.conference] = by[t.conference] || []).push(t); });
+  ok('  and every league has somebody in it to lead',
+    Object.keys(by).filter((c) => by[c].length >= 2).length >= 8,
+    Object.keys(by).length + ' leagues');
 }
 
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');

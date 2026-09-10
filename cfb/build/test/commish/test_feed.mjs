@@ -23,6 +23,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const path = require('path');
 const ROOT = path.resolve(new URL('../../../..', import.meta.url).pathname);
+import { leagueTeams } from './league.mjs';
 const F = require(ROOT + '/cfb/commish/feed.js');
 const B = require(ROOT + '/cfb/commish/blocs.js');
 const L = require(ROOT + '/cfb/commish/ledger.js');
@@ -54,7 +55,7 @@ console.log('\n=== nobody in this feed is real ===');
 
   /* NO ACCOUNT IS A REAL INSTITUTION. A fictional fan account may talk ABOUT Alabama, which
      is the same use of a real name the rest of this game makes. An account CALLED Alabama
-     posting a statement is a real organisation saying something it never said. */
+     posting a statement is a real organization saying something it never said. */
   const REAL = /\b(SEC|Big Ten|ACC|Big 12|Pac-12|ESPN|Fox|CBS|NBC|NCAA|Alabama|Georgia|Ohio State|Michigan|Texas|Oregon|Clemson|Notre Dame|Nebraska|LSU)\b/i;
   const posing = accounts.filter((a) => REAL.test(F.WHO[a].name) || REAL.test(F.WHO[a].handle));
   ok('  no account is named after a real school, conference or network', !posing.length,
@@ -163,7 +164,7 @@ console.log('\n=== the recap and the feed do not tell the same story twice ===')
      the football. */
   const S = require(ROOT + '/cfb/commish/season.js');
   const fs = require('fs');
-  const teams = JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_team_seasons.json', 'utf8'));
+  const teams = leagueTeams(ROOT);
   const overlaps = [], counts = [];
   for (const sd of [99, 7, 42, 1234, 55]) {
     const w = L.createWorld({ year: 2025, membership: L.membershipFrom(teams, 2025) });
@@ -280,6 +281,13 @@ console.log('\n=== a whole term, and nothing comes out empty ===');
         edit = D.resolve(item, o.id, dials, cast);
       } catch (x) { return; }
       if (!edit || !edit.effects) return;
+      /* AN ITEM THAT COULD NOT BE DEALT HERE IS NOT A CONTENT GAP. Some items build their
+         options out of a cast: which three cities are bidding, which two sponsors called.
+         Resolved on a world where the item is not eligible the cast comes back null, the
+         edit comes back empty, and the feed correctly has nothing to say about a ruling that
+         could not have been made. Skip those rather than counting them as filler. */
+      if (!Object.keys(edit.effects).length && !Object.keys(edit.set || {}).length
+        && !cast && (item.cast || typeof o.edit === 'function')) return;
       const rows = B.react(world, edit);
       const posts = F.onRuling({ rows: rows, edit: edit, year: 2025, beat: n % 9, itemId: item.id, optionId: o.id });
       count++;

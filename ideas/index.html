@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Community Ideas | RunThe.GG</title>
+<meta name="description" content="Community Ideas: suggest a feature for any RunThe.GG game and vote on what everyone else wants. The most-wanted ideas rise to the top." />
+<!-- NOINDEX, AND NO AD TAG, AND THE TWO GO TOGETHER.
+     scripts/check-adsense.mjs audits every INDEXABLE page and skips noindexed ones, so this
+     line is what keeps the board out of the surface AdSense reviews. Remove it and the
+     checker immediately asks for a publisher tag, Consent Mode defaults and 250 words here,
+     which is the right question to be asked and the wrong one to answer by padding.
+
+     Two reasons it should stay off that surface for now, and neither is the checklist:
+
+     THE BOARD IS EMPTY. On day one this page is a heading, ten chips and the words
+     "Nothing here yet". That is the definition of the thin content AdSense turns sites down
+     for, and it would be submitted as a representative page of the site.
+
+     IT IS OTHER PEOPLE'S WRITING. Every word of the content here is submitted by whoever
+     signed up, and the publisher owns what sits beside an ad. Moderation today is one
+     `hidden` flag somebody has to notice and set by hand. Ads against unmoderated user text
+     is the risk that costs an account rather than a page.
+
+     WHAT WOULD HAVE TO BE TRUE to flip this to index and carry ads: real ideas on the board
+     rather than an empty state, and something that catches an abusive post before a person
+     does. Then add the publisher tag, the Consent Mode defaults and a sitemap entry, and
+     check-adsense will tell you if any of the three is missing. -->
+<meta name="robots" content="noindex, follow" />
+<meta name="theme-color" content="#0d1b2e" />
+<link rel="canonical" href="https://runthe.gg/ideas/" />
+
+<link rel="icon" href="/assets/runthegames-icon_48.png?v=5" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/runthegames-icon_32.png?v=5" />
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/runthegames-icon_180.png?v=5" />
+
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Run The Games" />
+<meta property="og:url" content="https://runthe.gg/ideas/" />
+<meta property="og:title" content="Community Ideas | RunThe.GG" />
+<meta property="og:description" content="Suggest a feature for any RunThe.GG game and vote on what everyone else wants." />
+<meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=4" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+  /* The site's own tokens, copied from index.html so this page belongs to runthe.gg
+     rather than to whichever game the visitor arrived from. */
+  :root{
+    --bg:#0d1b2e; --bg2:#102439; --card:#152e4a; --cardb:#234669;
+    --ink:#eaf1f8; --mut:#9bb0c6; --dim:#7d8fa8;
+    --gold:#6EE84E; --teal:#66D3DE; --line:rgba(255,255,255,.1);
+    --line2:rgba(255,255,255,.18);
+    --fd:'Anton',Impact,'Haettenschweiler',sans-serif;
+    --fn:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--fn);color:var(--ink);min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1100px 520px at 50% -8%, rgba(53,196,205,.16), transparent 60%),
+      radial-gradient(900px 460px at 88% 4%, rgba(110,232,78,.10), transparent 55%),
+      linear-gradient(180deg,#0e2036 0%, var(--bg) 46%, #0b1626 100%);
+    background-attachment:fixed}
+
+  /* 860 rather than the home page's 640. A card here is a vote column plus a paragraph,
+     and 640 puts the paragraph on five lines. Wider than 860 and the title of each card
+     runs twenty words across, which is documentation rather than a suggestion box. Same
+     number the game screens with more than a list use. */
+  .ic-wrap{max-width:860px;margin:0 auto;padding:22px 16px 64px}
+
+  /* The site header. Sticky because the account control is the one thing on this page you
+     might want at any scroll depth, and the page is a long list. */
+  .ic-top{position:sticky;top:0;z-index:60;display:flex;align-items:center;
+    justify-content:space-between;gap:12px;padding:12px 16px;
+    background:rgba(9,20,34,.86);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line)}
+  .ic-brand{font-family:var(--fd);font-size:20px;letter-spacing:.02em;color:var(--ink);
+    text-decoration:none;font-weight:400}
+  .ic-brand i{color:var(--gold);font-style:normal}
+  .ic-topr{display:flex;align-items:center;gap:10px}
+  .ic-crumb{color:var(--mut);text-decoration:none;font-size:12.5px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase}
+  .ic-crumb:hover{color:var(--ink)}
+  .ic-acct{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;
+    border-radius:999px;border:1px solid var(--line2);background:var(--card);color:var(--ink);
+    font-family:var(--fn);font-size:12.5px;font-weight:800;cursor:pointer;line-height:1;
+    max-width:190px}
+  .ic-acct:hover{border-color:var(--teal)}
+  .ic-acct svg{width:17px;height:17px;flex:0 0 auto;fill:none;stroke:currentColor;
+    stroke-width:2}
+  .ic-acct span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .ic-head{text-align:center;margin:6px 0 14px}
+  .ic-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
+  .ic-head h1{font-family:var(--fd);font-size:clamp(34px,9vw,52px);line-height:1;
+    letter-spacing:.01em;margin:4px 0 0;font-weight:400}
+  .ic-head p{color:var(--mut);margin:10px auto 0;max-width:34em;font-size:14px;line-height:1.5}
+
+  /* THE GAME CHIPS. A scrolling row rather than a wrapping block: ten of them wrap to
+     three lines on a phone and push the first card off the screen. Horizontal keeps the
+     header one thing tall at every width, and the scrollbar is hidden because the row
+     ends in a partial chip, which says "more" better than a bar does. */
+  .ic-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;margin:10px 0 2px;
+    scroll-snap-type:x proximity;scrollbar-width:none}
+  .ic-chips::-webkit-scrollbar{display:none}
+  .ic-chip{flex:0 0 auto;padding:9px 14px;border-radius:22px;border:1px solid var(--line);
+    background:rgba(255,255,255,.03);color:var(--mut);font-family:var(--fn);font-size:12.5px;
+    font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;white-space:nowrap;scroll-snap-align:start}
+  .ic-chip .sw{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+  .ic-chip.on{color:var(--ink);background:var(--card);border-color:var(--cardb)}
+
+  .ic-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin:8px 0 12px;flex-wrap:wrap}
+  .ic-sorts{display:flex;gap:6px;flex-wrap:wrap}
+  .ic-sort{padding:8px 12px;border-radius:9px;border:1px solid var(--line);
+    background:rgba(255,255,255,.02);color:var(--mut);font-family:var(--fn);font-size:11.5px;
+    font-weight:700;letter-spacing:.09em;text-transform:uppercase;cursor:pointer}
+  .ic-sort.on{color:var(--ink);background:var(--card);border-color:var(--cardb)}
+  .ic-new{padding:10px 14px;border-radius:10px;border:1px solid rgba(110,232,78,.5);
+    background:linear-gradient(180deg,rgba(110,232,78,.22),rgba(110,232,78,.08));
+    color:#e8fcd8;font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.09em;
+    text-transform:uppercase;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .ic-new svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;
+    stroke-linecap:round}
+
+  /* Reading the board needs no account; voting and posting do. Says which, once, rather
+     than letting somebody find out by tapping an arrow that does nothing. */
+  .ic-prompt{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:12px 14px;border-radius:11px;background:rgba(102,211,222,.08);
+    border:1px solid rgba(102,211,222,.32);margin:0 0 12px;color:#cbf3f8;font-size:13px}
+  .ic-prompt[hidden]{display:none}
+  .ic-prompt b{color:#fff}
+  .ic-prompt button{padding:7px 12px;border-radius:8px;background:var(--teal);color:#0a1a2c;
+    border:none;font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.06em;
+    text-transform:uppercase;cursor:pointer;flex:0 0 auto}
+
+  .ic-list{display:flex;flex-direction:column;gap:8px}
+  .ic-empty{color:var(--mut);text-align:center;padding:34px 10px;font-size:14px;
+    border:1px dashed var(--line2);border-radius:12px}
+
+  .ic-card{display:flex;gap:12px;padding:12px 14px;border-radius:12px;background:var(--card);
+    border:1px solid var(--line);transition:border-color .12s ease}
+  .ic-card:hover{border-color:var(--line2)}
+  .ic-vote{flex:0 0 46px;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:1px}
+  .ic-vote button{background:none;border:none;padding:2px 6px;cursor:pointer;color:var(--dim);
+    border-radius:6px;display:block;line-height:0}
+  .ic-vote button:hover{color:var(--ink)}
+  .ic-vote svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;
+    stroke-linejoin:round;stroke-linecap:round;display:block}
+  .ic-up.on{color:#4ade80}
+  .ic-dn.on{color:#f87171}
+  .ic-score{font-family:var(--fd);font-size:17px;color:var(--ink);font-weight:400;
+    font-variant-numeric:tabular-nums;line-height:1;padding:2px 0}
+  .ic-score.hot{color:#fcd34d}
+
+  .ic-body{flex:1;min-width:0}
+  .ic-titlerow{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+  .ic-title{font-size:15px;font-weight:700;color:var(--ink);line-height:1.3;flex:1;min-width:0}
+  .ic-desc{font-size:13px;color:var(--mut);line-height:1.5;margin:5px 0 0;
+    white-space:pre-wrap;overflow-wrap:anywhere}
+  .ic-meta{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;
+    color:var(--dim);flex-wrap:wrap}
+  .ic-who{color:var(--mut);font-weight:700}
+  .ic-dot{opacity:.5}
+  .ic-pfp{width:22px;height:22px;border-radius:50%;font-size:9px;font-weight:800;
+    display:grid;place-items:center;color:#fff;background:#2b3f5c;flex:0 0 auto;
+    overflow:hidden}
+  /* A crest draws its own disc, so the fallback's background has to go or it rims it.
+     Same rule the games use on .pfp.crested. */
+  .ic-pfp.crested{background:none}
+  .ic-pfp svg{display:block;width:100%;height:100%}
+
+  .ic-tag{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:800;letter-spacing:.11em;
+    text-transform:uppercase;background:rgba(255,255,255,.05);color:var(--mut);
+    border:1px solid var(--line);white-space:nowrap}
+  .ic-tag.planned{color:#93c5fd;background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.35)}
+  .ic-tag.shipped{color:#86efac;background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.35)}
+  .ic-tag.declined{color:#cbd5e1;background:rgba(148,163,184,.08);border-color:rgba(148,163,184,.3)}
+
+  /* ---- the post form ---- */
+  .ic-sheet{position:fixed;inset:0;z-index:80;display:flex;align-items:center;
+    justify-content:center;padding:16px;background:rgba(4,10,20,.72)}
+  .ic-sheet[hidden]{display:none}
+  .ic-sheet-in{width:100%;max-width:520px;background:var(--bg2);border:1px solid var(--cardb);
+    border-radius:16px;padding:18px;max-height:90vh;overflow:auto}
+  .ic-sheet h2{font-family:var(--fd);font-size:26px;font-weight:400;margin:0 0 2px;
+    letter-spacing:.01em}
+  .ic-sheet .hint{color:var(--mut);font-size:12.5px;margin:0 0 14px;line-height:1.45}
+  .ic-lab{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--mut);margin:12px 0 5px;font-weight:700}
+  .ic-fld{display:block;width:100%;padding:11px 12px;border-radius:10px;
+    background:rgba(255,255,255,.04);border:1px solid var(--line2);color:var(--ink);
+    font-family:var(--fn);font-size:14.5px}
+  .ic-fld:focus{outline:none;border-color:var(--teal)}
+  textarea.ic-fld{min-height:96px;resize:vertical;line-height:1.45}
+  .ic-frow{display:flex;gap:8px;margin-top:16px}
+  .ic-btn{flex:1;padding:12px;border-radius:10px;border:1px solid var(--line2);
+    background:rgba(255,255,255,.04);color:var(--ink);font-family:var(--fn);font-size:13px;
+    font-weight:800;letter-spacing:.07em;text-transform:uppercase;cursor:pointer}
+  .ic-btn.go{border-color:rgba(110,232,78,.5);
+    background:linear-gradient(180deg,rgba(110,232,78,.26),rgba(110,232,78,.1));color:#e8fcd8}
+  .ic-btn:disabled{opacity:.55;cursor:default}
+  .ic-err{color:#fca5a5;font-size:12.5px;min-height:16px;margin:10px 0 0}
+  .ic-x{float:right;background:none;border:none;color:var(--mut);font-size:22px;
+    line-height:1;cursor:pointer;padding:0 2px}
+
+  .ic-foot{text-align:center;color:var(--dim);font-size:12px;margin-top:26px;line-height:1.7}
+  .ic-foot a{color:#93c5fd;text-decoration:none}
+</style>
+</head>
+<body>
+
+<header class="ic-top">
+  <a class="ic-brand" href="/">Run<i>The</i>.GG</a>
+  <div class="ic-topr">
+    <a class="ic-crumb" href="/football/">Games</a>
+    <!-- Four states, painted by ideas.js. Empty here on purpose: the markup cannot know
+         which one is true, and guessing "Sign in" would flash it at every returning
+         player before auth answers. -->
+    <button class="ic-acct" type="button" id="ic-acct" aria-label="Your account"></button>
+  </div>
+</header>
+
+<div class="ic-wrap">
+  <div class="ic-head">
+    <div class="ic-eyebrow">What to build next</div>
+    <h1>COMMUNITY IDEAS</h1>
+    <p>Suggest a feature for any RunThe.GG game, or vote on what everyone else wants.
+       The most-wanted ideas rise to the top.</p>
+  </div>
+
+  <div class="ic-prompt" id="ic-signprompt" hidden>
+    <div><b>Sign in to vote or suggest an idea.</b> Reading the board is open to everyone.</div>
+    <button type="button" id="ic-signin">Sign in</button>
+  </div>
+
+  <div class="ic-chips" id="ic-chips"></div>
+
+  <div class="ic-bar">
+    <div class="ic-sorts" id="ic-sorts"></div>
+    <button class="ic-new" type="button" id="ic-new">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Suggest an idea
+    </button>
+  </div>
+
+  <div class="ic-list" id="ic-list"></div>
+
+  <!-- THE POLICY PAGES ARE REACHABLE EVEN THOUGH THIS PAGE IS NOINDEXED. check-adsense only
+       demands them on indexable pages, so this is not here to pass a check: it is here
+       because a page that collects what people write should say where the rules are, and
+       because it is three links that would otherwise have to be remembered on the day the
+       board goes indexable. -->
+  <p class="ic-foot">
+    <a href="/">RunThe.GG</a> &middot;
+    <a href="/football/">The Perfect Season</a> &middot;
+    <a href="/cfb/">College Football</a> &middot;
+    <a href="/arcade/">Run The Arcade</a>
+    <br>
+    <a href="/privacy.html">Privacy</a> &middot;
+    <a href="/terms.html">Terms</a> &middot;
+    <a href="/contact.html">Contact</a>
+  </p>
+</div>
+
+<!-- The post form. Hidden markup rather than built at open time, so the fields keep their
+     identity for the browser's own autofill and for a screen reader that has already been
+     told about them. -->
+<div class="ic-sheet" id="ic-sheet" hidden>
+  <div class="ic-sheet-in" role="dialog" aria-modal="true" aria-label="Suggest an idea">
+    <button class="ic-x" type="button" id="ic-f-x" aria-label="Close">&times;</button>
+    <h2>Suggest an idea</h2>
+    <p class="hint">Be specific. An idea that names a real feature gets more support than
+       one that asks for the game to be better.</p>
+
+    <label class="ic-lab" for="ic-f-game">Which game</label>
+    <select class="ic-fld" id="ic-f-game"></select>
+
+    <label class="ic-lab" for="ic-f-title">Title</label>
+    <input class="ic-fld" id="ic-f-title" type="text" maxlength="120"
+           placeholder="Custom leagues with 8 to 12 friends" />
+
+    <label class="ic-lab" for="ic-f-body">Description</label>
+    <textarea class="ic-fld" id="ic-f-body" maxlength="1000"
+              placeholder="What would it do, and why would you use it?"></textarea>
+
+    <p class="ic-err" id="ic-f-err"></p>
+    <div class="ic-frow">
+      <button class="ic-btn" type="button" id="ic-f-cancel">Cancel</button>
+      <button class="ic-btn go" type="button" id="ic-f-post">Post it</button>
+    </div>
+  </div>
+</div>
+
+<!-- THE SHARED ACCOUNT, and not a new one. auth.js is the RunThe.GG session: it takes the
+     default supabase-js storage key, which is per ORIGIN, so a sign-in on any game already
+     is a sign-in here and nothing on this page implements sign-in a second time. auth-ui.js
+     is that same sheet.
+
+     NOT topbanner.js, which is the other file these two usually travel with. It is hardcoded
+     to Run The Arcade, down to the wordmark and an Arcade-only tokens button, and this is a
+     runthe.gg page rather than an Arcade one. The header above is nine lines and wears the
+     right brand; what is worth sharing here is the account, not the chrome. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script src="/arcade/auth-ui.js?v=5"></script>
+<!-- NO CREST RENDERER HERE, and it was in this file for a while. crest.js reads every
+     colourway out of E.TEAM_COLORS, so drawing one costs crest.js AND the whole football
+     engine: 267KB of JavaScript to put a 22px circle next to a name, on a page whose entire
+     job is text. The initials disc is what shows instead.
+     Worth revisiting only if the colour table is ever split out of the engine, which would
+     make the crest cost about 69KB rather than 267. -->
+<script src="ideas.js?v=1"></script>
+</body>
+</html>

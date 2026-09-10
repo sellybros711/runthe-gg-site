@@ -141,10 +141,19 @@
     if (used.col && colKey(x.col) !== used.col) return false;
     return true;
   }
-  // colleges are spelled several ways across the sources ("Miami (FL)", "Ole
-  // Miss"); compare on a stripped key, the way Alma Mater does
+  /* Colleges are spelled several ways across the sources ("Miami (FL)", "Ole
+     Miss"); compare on a stripped key, the way Alma Mater does. The state
+     qualifier comes off in BOTH the feed's forms, parenthetical and comma: it
+     only stripped the first, so "Miami (OH)" keyed as "miami" while "Miami,
+     O." keyed as "miamio", and one school with two keys means the rival check
+     can clear a clue that in fact fits two men. Stripping both merges Miami
+     FL with Miami OH, which is the safe direction to be wrong in: it rejects
+     an honest clue now and then, and never prints an ambiguous one. */
   function colKey(c) {
-    return c ? String(c).toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z]/g, '') : null;
+    return c ? String(c).toLowerCase()
+      .replace(/\(.*?\)/g, ' ')
+      .replace(/,\s*[a-z][a-z.]{0,11}\.?\s*$/, ' ')
+      .replace(/[^a-z]/g, '') : null;
   }
   function ambiguous(used, rivals) {
     for (var i = 0; i < rivals.length; i++) if (factsFit(rivals[i], used)) return true;
@@ -361,7 +370,17 @@
     return a.length < 2 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
   }
   // "Miami (FL)" is a database spelling, not something anybody says
-  function colName(c) { return String(c || '').replace(/\s*\(.*?\)\s*/g, '').trim(); }
+  /* The state qualifier comes off the clue: "out of Miami" reads, "out of
+     Miami (OH)" does not, and the answer is the player's surname rather than
+     the school, so the ambiguity costs nothing. The feed writes that qualifier
+     two ways and only the parenthetical was being stripped, so a clue could
+     print "out of Miami, O." at a solver. Both forms now. */
+  function colName(c) {
+    return String(c || '')
+      .replace(/\s*\(.*?\)\s*/g, ' ')
+      .replace(/,\s*[A-Za-z][A-Za-z.]{0,11}\.?\s*$/, '')
+      .replace(/\s+/g, ' ').trim();
+  }
 
   /* How much a clue actually gives the solver. The club is worth the most: a
      fan searching their memory starts from a team and a position, never from

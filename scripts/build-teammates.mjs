@@ -39,7 +39,7 @@
  *
  *   node scripts/build-teammates.mjs
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
 
 const root = new URL('..', import.meta.url).pathname;
@@ -69,7 +69,50 @@ for (const e of ENT) if (e && e.name && e.sport) entBy.set(e.sport + '|' + nkey(
 const SPORTS = [], TEAMS = [], iS = new Map(), iT = new Map();
 const idx = (arr, map, v) => { if (!map.has(v)) { map.set(v, arr.length); arr.push(v); } return map.get(v); };
 
-const byPlayer = new Map();
+/* TWO MEN, ONE NAME.
+ *
+ * jerseys.js keys on the name, so a father and a son, or two unrelated players
+ * born twenty years apart, arrive as one record. 68 of its 2323 names are like
+ * that. The one that gave it away: Zach Thomas holds Miami 1996 to 2007 at
+ * number 54 and then the Rams, Texans, Colts and Titans from 2023 at 57, 74,
+ * 64 and 72. Those are a Hall of Fame linebacker and an offensive lineman who
+ * was two years old when the first one was drafted.
+ *
+ * It matters here more than anywhere else on the site, because THIS file is
+ * the one that says who played beside whom. Merged, Zach Thomas is a bridge:
+ * Chain will happily route a 1996 Dolphin to a 2026 Titan in three links
+ * through a man who is two men. The puzzle is unsolvable and looks fine, and
+ * check-teammates confirms the route, because the deck and the check read the
+ * same graph.
+ *
+ * SPLIT ON THE GAP, and only where the gap is not arguable. Every one of the
+ * 33 names with an 11 year hole in the middle is two people; I read all 33.
+ * Between 6 and 10 years it is about half and half, and the half that is real
+ * includes Michael Jordan (1995 Bulls to 2002 Wizards), John Smoltz, Charlie
+ * Batch and Klay Thompson, so a threshold of 6 would cut the most recognisable
+ * node in the graph in half to fix a handful of others. Those keep their merge
+ * and it is recorded here rather than left to be rediscovered.
+ *
+ * The named list below is for the clear ones inside that band: fathers and
+ * sons, and two cases where the positions make it plain. Add to it the day
+ * somebody spots another; it needs nothing else rebuilt.
+ *
+ * Splitting cannot invent an edge. The worst a wrong split does is drop a real
+ * teammate link, which makes the deck slightly smaller. A wrong merge makes
+ * the game lie, so where the two errors are not equal this leans to splitting. */
+const SPLIT_GAP = 11;   // an 11 year hole, inclusive: every one of those 33 was two men
+const ALSO_SPLIT = new Set([
+  'NBA|Patrick Ewing',        // and Patrick Ewing Jr.
+  'NBA|Glen Rice',            // and Glen Rice Jr.
+  'NBA|Glenn Robinson',       // and Glenn Robinson III
+  'NFL|Antoine Winfield',     // and Antoine Winfield Jr.
+  'NFL|Jimmy Smith',          // Jaguars receiver, then a Ravens cornerback
+  'NFL|Andre Johnson',        // a 1996 lineman, then the Texans receiver
+  'NFL|Mario Williams',       // the Texans end, then a 2025 Ram
+  'MLB|Luis Castillo'         // the Marlins second baseman, then the Reds pitcher
+]);
+
+const byName = new Map();
 let joined = 0, skipped = 0;
 for (const s of JERSEYS.stints) {
   if (!s || !s.name || !s.sport || !s.team) continue;
@@ -78,12 +121,35 @@ for (const s of JERSEYS.stints) {
   const y0 = +s.y0 || 0, y1 = +s.y1 || y0;
   if (!y0) continue;
   const k = s.sport + '|' + s.name;
-  let p = byPlayer.get(k);
-  if (!p) { p = { name: s.name, sport: s.sport, f: e.f | 0, st: [] }; byPlayer.set(k, p); }
-  p.st.push({ team: s.team, y0, y1: Math.max(y0, y1), num: (s.num == null ? -1 : +s.num) });
+  let g = byName.get(k);
+  if (!g) { g = { name: s.name, sport: s.sport, f: e.f | 0, st: [] }; byName.set(k, g); }
+  g.st.push({ team: s.team, y0, y1: Math.max(y0, y1), num: (s.num == null ? -1 : +s.num) });
   joined++;
 }
-const P = [...byPlayer.values()].sort((a, b) => a.sport.localeCompare(b.sport) || a.name.localeCompare(b.name));
+
+/* Walk each name's stints in year order and start a new person wherever the
+   next one begins more than the threshold after everything before it has
+   ended. `reach` is the running end, not the previous stint's, because a
+   player holds two clubs in one year often enough that sorting alone would
+   invent a gap. */
+const byPlayer = [];
+let split = 0;
+for (const g of byName.values()) {
+  const gap = ALSO_SPLIT.has(g.sport + '|' + g.name) ? 5 : SPLIT_GAP;
+  const st = g.st.slice().sort((a, b) => a.y0 - b.y0 || a.y1 - b.y1);
+  let cur = [], reach = 0;
+  const people = [];
+  for (const s of st) {
+    if (cur.length && s.y0 - reach >= gap) { people.push(cur); cur = []; reach = 0; }
+    cur.push(s);
+    reach = Math.max(reach, s.y1);
+  }
+  if (cur.length) people.push(cur);
+  if (people.length > 1) split++;
+  for (const stints of people) byPlayer.push({ name: g.name, sport: g.sport, f: g.f, st: stints });
+}
+const P = byPlayer.sort((a, b) => a.sport.localeCompare(b.sport) || a.name.localeCompare(b.name) ||
+                                  a.st[0].y0 - b.st[0].y0);
 P.forEach((p, i) => { p.i = i; });
 
 // ---------- teammates ---------------------------------------------------------
@@ -106,6 +172,41 @@ for (const list of rosterOf.values()) {
   }
 }
 
+// ---------- the answer key a board is judged against --------------------------
+/* Roll Call prints the recognizable part of a squad as blanks and judges every
+   OTHER name the player types against arcade/rosters/<sport>-<decade>.js. So
+   a board is only playable if that page exists and carries the men on it.
+   Neither used to be checked here, and both were false: seven team seasons had
+   no page at all, and two boards printed a slot the page denies.
+   check-teammates.mjs found the second pair and this is where they came from,
+   so the filter belongs at the point the board is made rather than in a check
+   that can only say no afterwards. */
+const nkRoster = (x) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]/g, '');
+const lkRoster = (x) => nkRoster(String(x || '').replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i, ''));
+const ROSTER_PAGES = (() => {
+  const box = { console };
+  box.self = box; box.window = box; box.globalThis = box;
+  createContext(box);
+  let files = [];
+  try { files = readdirSync(root + 'arcade/rosters').filter((f) => /-\d{4}\.js$/.test(f)); } catch { files = []; }
+  for (const f of files) runInContext(readFileSync(root + 'arcade/rosters/' + f, 'utf8'), box);
+  return { box, files };
+})();
+/* The set of names a given club and season will accept, or null when there is
+   no page for it. Null means the board cannot be judged and must not ship. */
+function rosterNames(sport, team, year) {
+  const pack = ROSTER_PAGES.box['RTG_ROSTERS_' + sport + '_' + (Math.floor(year / 10) * 10)];
+  if (!pack) return null;
+  const ti = pack.teams.indexOf(team);
+  if (ti < 0) return null;
+  const list = (pack.r[ti] || {})[year];
+  if (!list || !list.length) return null;
+  const exact = new Set(), fuzzy = new Set();
+  for (const x of list) { exact.add(nkRoster(pack.names[x[0]])); fuzzy.add(lkRoster(pack.names[x[0]])); }
+  return { exact, fuzzy };
+}
+
 // ---------- Roll Call deck ----------------------------------------------------
 /* A club and a single season. The slots ARE the answer list, so the count on
    screen is a promise: every blank has a name behind it that we hold. */
@@ -120,10 +221,24 @@ for (const p of P) for (const s of p.st) {
   }
 }
 const roll = [];
+let noPage = 0, offPage = 0, thinned = 0;
 for (const [k, set] of season) {
   if (set.size < MIN_ROSTER) continue;
   const [sport, team, year] = k.split('|');
-  const ids = [...set].sort((a, b) => (P[b].f | 0) - (P[a].f | 0) || P[a].name.localeCompare(P[b].name));
+  /* No answer key, no board. Every name the player types that is not a printed
+     slot is judged against this page, so a season without one refuses correct
+     answers all round. */
+  const page = rosterNames(sport, team, +year);
+  if (!page) { noPage++; continue; }
+  let ids = [...set].sort((a, b) => (P[b].f | 0) - (P[a].f | 0) || P[a].name.localeCompare(P[b].name));
+  /* And no slot the page denies. The stints and the roster pages are separate
+     scrapes on separate schedules, so they disagree at the edges: a player who
+     moved in free agency lands in one before the other. The page wins, because
+     the page is what the game will judge against. */
+  const before = ids.length;
+  ids = ids.filter((i) => page.exact.has(nkRoster(P[i].name)) || page.fuzzy.has(lkRoster(P[i].name)));
+  offPage += before - ids.length;
+  if (ids.length < MIN_ROSTER) { thinned++; continue; }
   const kept = ids.slice(0, MAX_ROSTER);
   // One name on the board has to be a household one, or the round opens with
   // nothing at all to grab hold of.
@@ -235,10 +350,14 @@ for (const p of P) sportCount[p.sport] = (sportCount[p.sport] || 0) + 1;
 const rollSizes = spaced.map((r) => r.ids.length);
 console.log('players          ' + P.length + '  ' + JSON.stringify(sportCount));
 console.log('stints           ' + joined + ' kept, ' + skipped + ' dropped as unrecognisable');
+console.log('  same name      ' + split + ' names held two careers too far apart to be one man, split');
 console.log('teammate edges   ' + edges + '  (median ' + degs[degs.length >> 1] + ' per player)');
 console.log('Roll Call deck   ' + spaced.length + ' team seasons, ' +
   Math.round(rollSizes.reduce((a, b) => a + b, 0) / rollSizes.length) + ' names each on average, ' +
   (spaced.length / 365).toFixed(1) + ' years of daily puzzles');
+console.log('  answer keys    ' + ROSTER_PAGES.files.length + ' roster pages; dropped ' + noPage +
+  ' seasons with no page, ' + thinned + ' left too thin, and ' + offPage +
+  ' slots the page denies');
 console.log('Chain deck       ' + chainOut.length + ' pairs at ' + CHAIN_LINKS + ' links, ' +
   (chainOut.length / 365).toFixed(1) + ' years');
 console.log('data file        ' + Math.round(body.length / 1024) + ' KB  -> arcade/teammates.js');

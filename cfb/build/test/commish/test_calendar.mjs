@@ -17,6 +17,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const path = require('path');
 const ROOT = path.resolve(new URL('../../../..', import.meta.url).pathname);
+import { leagueTeams } from './league.mjs';
 const C = require(ROOT + '/cfb/commish/calendar.js');
 const L = require(ROOT + '/cfb/commish/ledger.js');
 const S = require(ROOT + '/cfb/commish/season.js');
@@ -130,7 +131,7 @@ console.log('\n=== a decision lands on a day the calendar is showing ===');
 console.log('\n=== the football is on the Saturday it was played ===');
 {
   const fs = require('fs');
-  const teams = JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_team_seasons.json', 'utf8'));
+  const teams = leagueTeams(ROOT);
   const E = require(ROOT + '/cfb/engine.js');
   const w = L.createWorld({ year: 2025, membership: L.membershipFrom(teams, 2025) });
   const sim = S.play(w, teams, E.createSeededRNG(11), S.segmentFor(6));
@@ -167,7 +168,7 @@ console.log('\n=== every event has an icon the page can actually draw ===');
   const drawn = new Set([...block.matchAll(/^\s{2}([a-z]+):/gm)].map((m) => m[1]));
   ok('the page draws a set of icons', drawn.size >= 8, [...drawn].join(', '));
 
-  const teams = JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_team_seasons.json', 'utf8'));
+  const teams = leagueTeams(ROOT);
   const E = require(ROOT + '/cfb/engine.js');
   const w = L.createWorld({ year: 2025, membership: L.membershipFrom(teams, 2025) });
   const sim = S.play(w, teams, E.createSeededRNG(4), null);
