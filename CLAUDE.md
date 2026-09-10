@@ -54,10 +54,10 @@ node scripts/check-dashes.mjs
 Exits non-zero and prints `file:line` for every offender. It runs in CI on any
 push or pull request touching `wrestling/**` (`.github/workflows/dash-check.yml`).
 
-The guarded list inside that script is currently just `wrestling/`. The rest of
-the repo predates the rule and still contains hundreds of em dashes; add a
-directory to `GUARDED` only after cleaning it, never before, or the check
-becomes noise people learn to ignore.
+The guarded list inside that script is `wrestling`, `hoops`, `globe` and
+`mythiball`. The rest of the repo predates the rule and still contains hundreds
+of em dashes; add a directory to `GUARDED` only after cleaning it, never
+before, or the check becomes noise people learn to ignore.
 
 Run the checker against anything ad hoc:
 
@@ -218,6 +218,101 @@ carries the blocklist; add to it when you remove something.
 
 The game is unlisted: not linked from the homepage, nav or sitemap, and
 noindexed. Keep it that way unless asked.
+
+## MythiBall, the baseball game
+
+`mythiball/index.html`, the same one-file convention as wrestling above. Sixty
+eight public domain characters play arcade baseball: a plate camera behind the
+catcher, hitting on timing plus where the bat is, pitching on aim plus a
+release meter.
+
+**It was called Run The All-Stars and lived at `allstars/`.** Both names are
+gone from the code. What did NOT change is the localStorage keys, which are
+still `allstars.season.v1` and its siblings: they are invisible to the player,
+and renaming them would throw away the save of every tester who has already
+played. Leave them.
+
+It is SERVED, and unlisted, and those are two different facts:
+
+| | wrestling | hoops | MythiBall | setlist |
+|---|---|---|---|---|
+| answers at a runthe.gg URL | yes | yes | **yes** | yes |
+| in `sitemap.xml` | no | no | no | **yes** |
+| indexable | no | no | no | **yes** |
+| carries the AdSense tag | no | no | no | yes |
+| linked from the homepage or nav | no | no | no | no |
+
+So a tester who is handed `runthe.gg/mythiball/` can play it and nobody else
+can find it. **Unlisted is the whole of the gate.** It is not access control:
+anyone with the URL is in, and if the game ever needs a real gate it needs a
+real one rather than a quiet path. Say so rather than implying the link is
+private.
+
+`Mythiball/index.html` (capital M) is a redirect stub to the lower case path,
+the way `Wrestling/` and `Tour/` answer theirs, because the capitalised URL is
+the one that gets typed and pasted. It carries its own robots tag.
+
+The sprites are generated, never hand-edited in the page:
+
+```
+python3 mythiball/gen_sprites_v2.py > sprites.js    # then splice V2_SPRITES in
+```
+
+Every character is drawn from a PUBLIC DOMAIN source and `mythiball/PD_SOURCES.md`
+is the register: source, what the sprite shows, what it avoids. The avoid column
+is the point. Disney's Peter Pan, Universal's Frankenstein, MGM's green witch and
+ruby slippers are all still owned, and a redraw that drifts back toward one of
+them is the failure mode.
+
+### The dugout is a layout, not a drawing
+
+The menu is a room the player stands in, and it has to fill whatever window it is
+given. A fixed scene cannot: the wide room is 2.24 across, so on a portrait phone
+its height is decided by its width and it can only ever be a strip. It shipped that
+way, a 167 tall room on a 664 tall screen with half the display left as empty card
+stock underneath.
+
+So `landscapeRoom(w)` and `portraitRoom(h)` return coordinates and `roomForWindow()`
+picks one, `drawDugout` reads every position out of `ROOM` and holds none of its own,
+and each layout is composed in BANDS (upright: the wall takes a fixed share of the
+height and the floor takes the rest; wide: the furniture keeps its drawn size and
+the SPACE between it opens up) so one composition works at every size it is asked
+for. A phone gets the room as the whole interface: the four doors are hotspots on
+the canvas, the hover rail is hidden because there is no pointer to hover with.
+
+**A rotation is not a render, and that is the bug this class produces.** The layout
+is chosen once per render, so turning the phone left the upright room in a sideways
+window: a 760x1202 scene in an 844x390 one, running off the bottom of the page.
+Turning the phone showed LESS of the game than holding it upright. There is a
+resize and orientationchange listener now, and `verify-rules.mjs` rotates a phone
+both ways and asserts the room follows.
+
+Three more things are easy to undo by accident:
+
+- A coordinate written as a number inside `drawDugout` looks right on a desk and is
+  wrong on a phone.
+- The canvas is `object-fit: contain`, so if the scene's shape and its box's shape
+  drift apart the picture letterboxes while the hotspots stay where they were, and
+  the player presses a door above its sign. `renderMenu` measures the real box on
+  the frame after it mounts and recomposes if the guess was off; assertions measure
+  the PAINTED picture, never the element, or a letterboxed room reads as a full one.
+- `body.roomfill` is one `matchMedia` in the script that the stylesheet keys off.
+  Write that query out a second time in CSS and the two drift, which is the
+  letterbox above.
+
+The same arithmetic broke the GAME screen sideways, worse: `#field` derives its
+width from a height budget that assumed 265px of furniture above and below, which
+in a 390 tall window left 125, so an 844 wide phone drew a 182 wide field. Sideways
+is not short of width, it is short of height, so under `max-height: 560px` the
+furniture goes in a column beside the field instead of above and below it.
+
+The regression suite, which is the thing to run after editing:
+
+```
+node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
+node mythiball/verify-rules.mjs    the rules replayed in a headless browser
+node scripts/check-dashes.mjs      mythiball is on the GUARDED list
+```
 
 ## Segue, the setlist game
 

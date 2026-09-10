@@ -28,3 +28,7 @@ __authstub.js
 # golf/__shots/). They are there to be looked at once and thrown away, and they are
 # rewritten on every run.
 __shots/
+
+# Python bytecode from the sprite generators
+__pycache__/
+*.pyc
