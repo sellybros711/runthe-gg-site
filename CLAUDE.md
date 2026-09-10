@@ -115,6 +115,39 @@ ranks. One number for everybody, and it steps up on the day a mode launches. Nob
 anything: ranks are derived, so seasons a tester already played are counted the moment the
 shelf appears.
 
+### The premium bundle, and the check that boots both views
+
+```
+node football/check-premium.mjs        the page, in a real browser, both views
+node scripts/stripe/verify-bundles.mjs the catalog against the webhook and the constraint
+```
+
+One store, not a store per game. `/assets/store.js` is the offer and both The Perfect
+Season and Commish Simulator draw it; its two buttons post `perfect-season` and
+`run-the-bundle` to `/api/stripe/checkout-bundle`, and **both bundles unlock both games**
+(the $19.99 grants `ps_premium` AND `cfb_premium`). Never build a bundle, a price or an
+unlock belonging to one game, and never a second payment path. The catalog is
+`functions/api/stripe/_bundles.js` and the runbook is that folder's README.
+
+**What decides is the `premium_unlocks` row, read only through `premium_products()`.** The
+tester lists in `dynasty-access.js` and `fullteam-access.js` decide who SEES any of this
+and are feature flags, never permissions. A signed in account without the row gets the free
+allowance and then the store; the row removes the limit rather than unlocking the door.
+
+**`arcade_card_year` is the one grant that ends.** Twelve months, and it does not renew. No
+copy anywhere may imply it does, and the receipt has to show the end date.
+
+**Boot BOTH views before shipping anything that touches this.** A crash that only hit
+testers has already shipped: moving the store out of `football/index.html` left
+`pwArt('star')` behind on the home prompt card, which only a tester sees, so
+`pwArt is not defined` threw during boot and took the game to the loading screen. The store
+had been verified in the plain view. That is the first section of `check-premium.mjs`.
+
+It intercepts `/api/stripe/checkout-bundle` and answers with an error rather than a session
+url, deliberately: **Stripe is live and there is no test mode**, so a request that gets out
+ends at a real payment page and a url in the answer would navigate there. Use a 100% off
+promotion code for tester runs.
+
 ### A badge you add has to be proved reachable
 
 ```
