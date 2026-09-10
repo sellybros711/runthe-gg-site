@@ -347,5 +347,24 @@
     if (rtb && f.buy) rtb.onclick = function () { f.buy('run-the-bundle', rtb); };
   }
 
-  root.RTG_STORE = { html: storeHTML, wire: wire, CFB_NAME: CFB_NAME };
+  /*
+   * THE TWO PIECES A HOST STILL NEEDS ON ITS OWN.
+   *
+   * art() draws one of the gold marks. The football page's home prompt card uses the star,
+   * which is not part of the offer but is the same gradient, and one implementation of that
+   * gradient is the point (see the note on pwArt's id counter).
+   *
+   * game() is the colour and display name of one of the four games. The Your Pro access
+   * receipt lists what an account owns in the same colour coding the offer uses, so the two
+   * screens agree about which game a line belongs to.
+   *
+   * BOTH ARE EXPORTED BECAUSE THE PAGE ALREADY CALLED THEM. Moving the store out and leaving
+   * pwArt('star') and PW_GAME behind on the page threw "pwArt is not defined" at boot, on
+   * exactly the accounts that see the prompt card, and took the whole game down to the
+   * loading screen. Nothing in the store itself was wrong; the two lines that stayed were.
+   */
+  function art(k) { ensureStyle(); return pwArt(k); }
+  function game(k) { return PW_GAME[k] || null; }
+
+  root.RTG_STORE = { html: storeHTML, wire: wire, art: art, game: game, CFB_NAME: CFB_NAME };
 })(typeof self !== 'undefined' ? self : this);

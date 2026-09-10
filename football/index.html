@@ -7379,7 +7379,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=1"></script>
+<script src="/assets/store.js?v=2"></script>
 <script defer src="auth.js?v=5"></script>
 <script>
 (function(){
@@ -9129,10 +9129,17 @@ function dailyClock(on){
 function dailySpentSheet(mode){
   const at=dailyResetsAt(mode), cd=at?dailyCountdown(at):null;
   const name=mode==='trade'?'Trade Machine':'Dynasty';
+  const st=dailyState[mode];
+  const allow=(st&&st.allowance)||1;
   $('sheet-in').innerHTML='<div class="eyebrow gold">'+esc(name)+'</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">That is today’s run</h2>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+
-      'You get one '+esc(name)+' run a day. '+
+      /* THE REAL NUMBER, not always one. The base allowance is one a day and the game hands
+       out two more: one for being fired in season one, one for beating a boss. A player who
+       earned both and used all three was being told they get one a day, which reads as the
+       game having lost count of the runs it just gave them. */
+    'That is '+(allow>1?'all '+allow+' of your ':'your ')+esc(name)+' run'+(allow>1?'s':'')+
+      ' for today. '+
       (cd?'The next one unlocks in <b>'+esc(cd)+'</b>.':'The next one unlocks at midnight Eastern.')+
     '</p>'+
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+
@@ -9269,7 +9276,12 @@ const cfbNameHtml=()=>{
    been offered, and the reader has to decide against it with nothing on the other side of
    the scale. The card's job is to be worth opening; the price belongs on the screen that can
    also show what it buys. What stays is the value, which is what makes it worth opening. */
-const pwCardInner=(title,sub,value)=>'<span class="pwc-ic">'+pwArt('star')+'</span>'+
+/* THE MARK COMES FROM THE STORE MODULE, which owns the gold gradient and the id counter
+   that keeps two copies of it from sharing a def. This read pwArt('star') after that
+   function moved out, which is not a fallback situation: it threw at boot and took the
+   game to the loading screen for every account that sees this card. */
+const pwCardInner=(title,sub,value)=>'<span class="pwc-ic">'+
+  (window.RTG_STORE?window.RTG_STORE.art('star'):'')+'</span>'+
   '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span>'+
   '<span class="pwc-go"><b>'+esc(value)+'</b></span>';
 /* Two shapes because the front page BUILDS its node (see ensurePremiumCard) and the two
@@ -9741,10 +9753,28 @@ function beginDynastyDraft(opts){
      the modes sheet, which is already drawn only for somebody entitled to it, but the option
      arrives from a caller and a caller is not the authority on who may use it. */
   if(opts&&opts.franchise&&!canPlayClubDynasty()) return;
-  /* THE PAID DOOR. Visibility above is the tester list; this is ownership, and a tester
-     without the row gets the pitch a paying customer's neighbour would get, which is the
-     view the free-view tester exists to judge. */
-  if(!dynastyOwned()) return openPremium('dynasty_draft');
+  /*
+   * NO OWNERSHIP GATE HERE, AND THAT IS THE DESIGN RATHER THAN AN OMISSION.
+   *
+   * There used to be one, and it sat ABOVE the allowance check below, which made the free
+   * run unreachable: every signed in player who had not bought was sent to the store before
+   * the game ever asked how many runs they had left today. The whole allowance system was
+   * built and could not be reached, which is the shape of bug that passes every test,
+   * because a store opening is not an error.
+   *
+   * The rule is one free run a day for anybody signed in, plus a second for being fired in
+   * season one, plus a second for beating a boss. All three live in
+   * supabase/100_daily_grace_reasons.sql, ps_attempts_state adds them up, and the two grace
+   * claims are already wired (see dailyGrace on a season-one firing and on a boss win).
+   * Buying the bundle removes the limit rather than unlocking the door: dailyOn() stops
+   * metering the moment ps_premium is owned, so dailyLeft() below always answers 1 for an
+   * owner and this reads exactly as it did for them.
+   *
+   * THE PITCH STILL HAPPENS, at the one moment somebody is actually asking for it. A player
+   * who has used the day's runs lands on dailySpentSheet, which says when the next one
+   * unlocks, says a run in progress is never affected, and offers the upgrade there. That
+   * is a card next to a Close, not a wall in front of a mode.
+   */
   if(!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','dynasty');
   }
@@ -10748,16 +10778,15 @@ function modeMenu(){
   const clubDyn=$('b-mc-clubdyn');
   if(clubDyn&&!locked&&cd) clubDyn.onclick=()=>{
     closeSheet();
-    /* The pitch comes BEFORE the club picker: choosing a club and then being told to pay
-       is the order that reads as a trick. */
-    if(!dynastyOwned()) return openPremium('club_dynasty');
-    /* Resume goes straight back into the run. Only a fresh one asks which club. */
+    /* NO OWNERSHIP GATE, for the reason written out in beginDynastyDraft: the day's
+       allowance decides, and it is checked there, once, for every way into the mode.
+       This one was worse than the open door's, because it sat in front of RESUME as well:
+       a saved One Franchise run could not be opened by the player who made it. */
     if(clubSave) dynResume('club'); else clubPicker(true);
   };
   const clubNew=$('b-mc-clubnew');
   if(clubNew&&!locked&&cd) clubNew.onclick=()=>{
     closeSheet();
-    if(!dynastyOwned()) return openPremium('club_dynasty_new');
     clubPicker(true);
   };
   const era=$('b-mc-era');
@@ -20452,7 +20481,10 @@ async function pfProLoad(){
   }else{
     let ends=null, endedOn=null;
     list.innerHTML=owned.map((k)=>{
-      const it=PRO_ITEM[k], row=by[k], g=PW_GAME[it.game];
+      /* Same colour coding the offer uses, out of the same table, so the receipt and the
+         card somebody bought from cannot disagree about which game a line belongs to. */
+      const it=PRO_ITEM[k], row=by[k];
+      const g=(window.RTG_STORE&&window.RTG_STORE.game(it.game))||{name:'',c:'#94a3b8'};
       const when=proDate(row.granted_at);
       const till=row.expires_at?proDate(row.expires_at):'';
       /* AN END DATE IN THE PAST IS NOT AN END DATE, and this line did not check.
