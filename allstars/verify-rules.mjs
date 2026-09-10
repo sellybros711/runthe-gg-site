@@ -27,6 +27,7 @@
      the ladder           every rung has a metric and a goal, and the tail is a long one
      locked last          a card you cannot draft sorts behind every card you can
      the hover card       says the requirement and how far along, and goes away after
+     the squad photo      the room is the home page, and everyone stands in one frame
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -723,6 +724,86 @@ async function main() {
       ok(/On the roster/.test(r.openText), 'a character who needs no unlock says so', r.openText);
       ok(!r.stillLocked && /Earned/.test(r.earned),
          'and once earned the same hover says how it was earned', r.earned);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the squad photo ---- */
+    {
+      console.log('the squad photo');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const out = {};
+        State.screen = 'menu'; render();
+        /* The home page is the room. The roster used to print underneath
+           it, which made the first thing anybody saw a wall of numbers. */
+        out.menuCards = document.querySelectorAll('#app .charcard').length;
+        out.tab = (document.querySelector('.dugtabs .tab') || {}).textContent;
+        document.querySelector('.dugtabs .tab').click();
+        out.screen = State.screen;
+
+        const hots = [...document.querySelectorAll('.photo .hot')];
+        out.faces = hots.length;
+        out.named = new Set(hots.map(h => h.textContent)).size;
+        /* Not the draft screen wearing a different hat: no stat block and
+           no pick counter anywhere on the picture. */
+        out.statBlocks = document.querySelectorAll('.photo .statgrid, .photo .charcard').length;
+
+        const spots = photoSpots();
+        out.rows = spots.length && Math.max.apply(null, spots.map(s => s.row)) + 1;
+        out.everyone = spots.length;
+        /* Still to earn stands at the back, same rule as the draft grid. */
+        const lockRows = spots.filter(s => !isUnlocked(s.c.k)).map(s => s.row);
+        const openRows = spots.filter(s => isUnlocked(s.c.k)).map(s => s.row);
+        out.lockedBehind = Math.min.apply(null, lockRows) >= Math.max.apply(null, openRows);
+        /* A hot zone covers only the visible band, so pointing at a back
+           row lands on that person rather than on whoever stands in front. */
+        out.hitsSelf = hots.every(h => {
+          const b = h.getBoundingClientRect();
+          if (b.bottom < 0 || b.top > window.innerHeight) return true;   /* off screen */
+          const el = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+          return el === h;
+        });
+
+        /* The panel is the only place a number appears. */
+        const show = (name) => {
+          const h = hots.find(x => x.textContent === name);
+          h.dispatchEvent(new MouseEvent('mouseenter'));
+          return document.querySelector('.meetbar').textContent;
+        };
+        out.idle = document.querySelector('.meetbar').textContent;
+        out.open = show('Popeye');
+        const lockedName = spots.filter(s => !isUnlocked(s.c.k))[0].c.n;
+        out.lockedName = lockedName;
+        out.locked = show(lockedName);
+        /* One panel, refilled, and it does not grow a line and shove the
+           picture up the page when a bio runs long. */
+        out.panels = document.querySelectorAll('.meetbar').length;
+        const box = document.querySelector('.photo').getBoundingClientRect();
+        show('Dracula');
+        out.photoStill = Math.abs(document.querySelector('.photo').getBoundingClientRect().top - box.top) < 1;
+        return out;
+      });
+      ok(r.menuCards === 0, 'the dugout is the home page, with no roster printed under it',
+         'cards=' + r.menuCards);
+      ok(/Meet the players/i.test(r.tab || ''), 'and a tab that opens the squad', r.tab);
+      ok(r.screen === 'meet', 'the tab goes to the photo', r.screen);
+      ok(r.faces === 55 && r.named === 55, 'all 55 are in the frame, once each',
+         `faces=${r.faces} named=${r.named}`);
+      ok(r.rows === 5 && r.everyone === 55, 'five rows on the risers', JSON.stringify({ rows: r.rows, n: r.everyone }));
+      ok(r.statBlocks === 0, 'the picture carries no stat blocks: it is not the draft screen');
+      ok(r.lockedBehind, 'the ones still to earn stand at the back');
+      ok(r.hitsSelf, 'pointing at a face lands on that face, not on the row in front');
+      ok(/Point at a face/.test(r.idle), 'the panel says what to do before you point', r.idle);
+      ok(/Popeye/.test(r.open) && /POW 88/.test(r.open) && /SPD 55/.test(r.open)
+         && /CON 60/.test(r.open) && /DEF 65/.test(r.open) && /PIT 62/.test(r.open),
+         'hovering fills the panel with the name and all five numbers', r.open);
+      ok(/forearm day/.test(r.open), 'and the bio', r.open);
+      ok(new RegExp(r.lockedName).test(r.locked) && /Locked:/.test(r.locked)
+         && /\d+ of \d+/.test(r.locked),
+         'a locked face reads out how to earn them and how far along', r.locked);
+      ok(r.panels === 1, 'one panel, refilled', 'n=' + r.panels);
+      ok(r.photoStill, 'and a longer bio does not walk the picture up the page');
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

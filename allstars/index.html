@@ -565,6 +565,60 @@
     .dugout-rail b{font-size:10px;}
   }
 
+  /* The tab strip under the dugout. The room is the home page now, so the
+     one thing that is not a mode hangs off the bottom of it like a tab on
+     a folder rather than sitting in the room pretending to be one. */
+  .dugtabs{max-width:900px;margin:-3px auto 0;display:flex;gap:8px;}
+  .dugtabs .tab{font:inherit;font-size:12px;font-weight:900;letter-spacing:.14em;
+    text-transform:uppercase;background:var(--panel-2);color:var(--text);
+    border:3px solid var(--line);border-top:0;padding:8px 18px;cursor:pointer;
+    box-shadow:3px 3px 0 var(--navy);}
+  .dugtabs .tab:hover{background:var(--gold);color:#fff6ea;}
+  .dugtabs .tab:active{transform:translate(2px,2px);box-shadow:none;}
+
+  /* THE TEAM PHOTO. Fifty five cards in a grid is a spreadsheet: it is how
+     you DRAFT, and it was also the only way to look at anybody, so the two
+     jobs wore the same face. This is the other one. Everybody on the
+     bleachers at once, the way a squad photo is taken, and the panel below
+     is the only place any number appears, so the picture stays a picture.
+     Same canvas-plus-transparent-buttons trick as the dugout, for the same
+     reason: hit testing on coordinates would cost the keyboard. */
+  .photo{position:relative;width:100%;max-width:940px;margin:0 auto;}
+  .photo canvas{display:block;width:100%;height:auto;image-rendering:pixelated;
+    border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);background:#7fc9ea;}
+  .photo .hot{position:absolute;background:none;border:0;padding:0;margin:0;
+    cursor:pointer;font:inherit;color:transparent;}
+  .photo .hot:focus-visible{outline:3px solid var(--gold);outline-offset:1px;}
+  /* The card under the photo. Fixed height, because a bio one line longer
+     than the last one must not walk the picture up and down the page while
+     the pointer moves across a row. */
+  .meetbar{max-width:940px;margin:10px auto 0;background:var(--panel);
+    border:3px solid var(--line);box-shadow:var(--shadow);padding:12px 14px;
+    display:flex;gap:14px;align-items:flex-start;min-height:132px;}
+  .meetbar .mug{flex:0 0 auto;width:64px;height:100px;background:#bfe4f7;
+    border:2px solid var(--line);display:flex;align-items:flex-end;justify-content:center;
+    overflow:hidden;}
+  .meetbar .mug canvas{image-rendering:pixelated;}
+  .meetbar .body{flex:1;min-width:0;}
+  .meetbar .mname{font-size:18px;font-weight:900;letter-spacing:.06em;}
+  .meetbar .mrole{font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--text-dim);margin-top:1px;}
+  .meetbar .mstats{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;font-size:12px;
+    color:var(--text-dim);letter-spacing:.06em;}
+  .meetbar .mstats b{color:var(--text);}
+  .meetbar .mstats .arm b{color:var(--gold);}
+  .meetbar .mbio{margin-top:9px;font-size:13px;line-height:1.5;color:var(--purple);}
+  .meetbar .mlock{margin-top:8px;font-size:12px;color:var(--gold);font-weight:700;}
+  .meetbar .mlock i{font-style:normal;color:var(--text-dim);font-weight:400;}
+  .meetbar.idle .body{color:var(--text-dim);}
+  @media (max-width:600px){
+    .meetbar{min-height:150px;padding:9px 10px;gap:10px;}
+    .meetbar .mug{width:44px;height:70px;}
+    .meetbar .mname{font-size:15px;}
+    .meetbar .mbio{font-size:12px;}
+    .dugtabs .tab{font-size:10px;padding:7px 12px;letter-spacing:.1em;}
+  }
+
   /* Mode cards on the menu: a button and the one line that says what it is. */
   .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
   .mode{display:flex;flex-direction:column;gap:8px;}
@@ -2405,6 +2459,7 @@ function render() {
   else if (s === 'season-end') renderSeasonEnd();
   else if (s === 'bracket') renderBracket();
   else if (s === 'howto') renderHowTo();
+  else if (s === 'meet') renderMeet();
   else if (s === 'cup') renderCup();
   else if (s === 'cutscene') renderCutscene();
   else if (s === 'franchise') renderFranchise();
@@ -3622,6 +3677,15 @@ function renderMenu() {
   paint(null);
   card.appendChild(dug);
   card.appendChild(rail);
+  /* The one thing in here that is not a mode. It used to be the whole
+     roster printed down the page under the room, which made the home page
+     a wall of stat blocks with a picture on top of it. */
+  const tabs = el('div','dugtabs');
+  const meet = el('button','tab','Meet the players');
+  meet.type = 'button';
+  meet.onclick = () => { State.screen = 'meet'; render(); };
+  tabs.appendChild(meet);
+  card.appendChild(tabs);
 
   if (State.season) {
     const rec = seasonRecord(State.season);
@@ -3671,30 +3735,6 @@ function renderMenu() {
     }
     s.appendChild(tc);
   }
-
-  const roster = el('div','card');
-  roster.appendChild(el('h3', null, 'Roster'));
-  roster.appendChild(el('p', null, STAT_LEGEND));
-  const grid = el('div','roster');
-  ROSTER.forEach(c => {
-    const cc = el('div','charcard');
-    const cv = spriteCanvas(c, 64);
-    cc.appendChild(cv);
-    cc.appendChild(el('div','name', c.n));
-    cc.appendChild(el('div','role', c.role));
-    const st = el('div','statgrid');
-    st.innerHTML = `<span>POW <b>${c.pow}</b></span><span>SPD <b>${c.spd}</b></span>`
-                 + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`
-                 + `<span class="arm">PIT <b>${c.pit}</b></span>`;
-    cc.appendChild(st);
-    if (c.note) {
-      const nt = el('div','quirk', c.note);
-      cc.appendChild(nt);
-    }
-    grid.appendChild(cc);
-  });
-  roster.appendChild(grid);
-  s.appendChild(roster);
 
   app.appendChild(s);
 }
@@ -9411,6 +9451,250 @@ function howtoGrid() {
     + '<b>Edges</b> (light green): harder to hit, sometimes a ball.<br>'
     + '<b>Corners</b> (tan): hardest to hit, a miss is a ball.'));
   return wrap;
+}
+
+/* ============================================================================
+   MEET THE PLAYERS
+   The squad photo. Five rows on the bleachers, the whole cabinet in one
+   frame, and not a single number on the picture: everything you might want
+   to read sits in the panel underneath and changes as you point.
+
+   The rows are laid out FRONT FIRST and drawn BACK first. That is the one
+   thing about this that is not obvious: a row further back has to be
+   painted before the row that overlaps it, but the people who belong at
+   the front are the ones you can actually draft, so the ordering of the
+   list and the ordering of the painting run opposite ways.
+   ============================================================================ */
+const PHOTO_W = 940, PHOTO_H = 548, PHOTO_GRASS = 150;
+const PHOTO_COLS = 11, PHOTO_ROWS = 5;
+/* Row geometry, front row first. `y` is the tier a row stands on, `h` the
+   drawn height: further back is higher up the frame and a little smaller,
+   which is the whole of the perspective here.
+
+   The gaps matter more than the numbers. A row is hidden from its own
+   feet up to the heads of the row in front, so a spacing shorter than
+   about half a sprite leaves nothing but a head showing, which is what
+   the first cut of this did: five rows of hats. Roughly sixty of the
+   hundred-odd pixels stay visible now, which is a head and a torso. */
+const PHOTO_ROWDEF = [
+  { y: 520, h: 112 },
+  { y: 452, h: 105 },
+  { y: 388, h:  99 },
+  { y: 328, h:  93 },
+  { y: 272, h:  88 },
+];
+/* The band of a row that is not behind the row in front. The hot zones
+   use it, because a target you cannot see is a target you cannot point
+   at: the back row's midriff is under three other people, and a button
+   over it just steals the click from whoever is standing there. */
+function photoBand(r) {
+  const R = PHOTO_ROWDEF[r];
+  const top = R.y - R.h;
+  const front = r > 0 ? PHOTO_ROWDEF[r - 1] : null;
+  return { top, bottom: front ? front.y - front.h : R.y };
+}
+/* The order everyone stands in: draftable at the front, still to earn at
+   the back, and inside each group the roster's own order, so the photo
+   does not rearrange itself every time somebody is unlocked. */
+function photoOrder() {
+  const open = [], shut = [];
+  for (const c of ROSTER) (isUnlocked(c.k) ? open : shut).push(c);
+  return open.concat(shut);
+}
+/* Where each character stands. Deterministic jitter off the index, so the
+   rows read as people on a bench rather than as a table with pictures in
+   it, and so the same character is in the same spot on every visit. */
+function photoSpots() {
+  const list = photoOrder(), out = [];
+  const M = 14, colW = (PHOTO_W - M * 2) / PHOTO_COLS;
+  list.forEach((c, i) => {
+    const r = Math.min(PHOTO_ROWS - 1, Math.floor(i / PHOTO_COLS));
+    const j = i % PHOTO_COLS;
+    const R = PHOTO_ROWDEF[r];
+    const w = R.h * V2_W / V2_H;
+    const wob = ((i * 37) % 7) - 3;             /* -3..3 px sideways */
+    const bob = ((i * 53) % 5) - 2;             /* -2..2 px up or down */
+    const band = photoBand(r);
+    out.push({ c, row: r, col: j,
+      x: Math.round(M + j * colW + (colW - w) / 2 + wob),
+      y: Math.round(R.y - R.h + bob), w: Math.round(w), h: R.h,
+      /* what you can actually see of them, and so what you can point at */
+      hitY: Math.round(band.top + bob), hitH: Math.round(band.bottom - band.top) });
+  });
+  return out;
+}
+function drawPhotoScene(ctx, spots, hotKey) {
+  /* Sky and the fence at the back of the lot. */
+  ctx.fillStyle = '#8fd3ef'; ctx.fillRect(0, 0, PHOTO_W, PHOTO_GRASS);
+  ctx.strokeStyle = 'rgba(27,58,92,.30)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = -PHOTO_GRASS; x < PHOTO_W + PHOTO_GRASS; x += 12) {
+    ctx.moveTo(x, 30); ctx.lineTo(x + 114, 144);
+    ctx.moveTo(x, 144); ctx.lineTo(x + 114, 30);
+  }
+  ctx.stroke();
+  ctx.fillStyle = DUG.line;
+  ctx.fillRect(0, 26, PHOTO_W, 5); ctx.fillRect(0, 142, PHOTO_W, 5);
+  for (let x = 24; x < PHOTO_W; x += 148) ctx.fillRect(x, 26, 5, 121);
+  /* Grass from the fence down to the back of the top tier. */
+  ctx.fillStyle = '#63ab45';
+  ctx.fillRect(0, PHOTO_GRASS, PHOTO_W, PHOTO_ROWDEF[PHOTO_ROWS - 1].y - PHOTO_GRASS);
+  /* THE RISERS. One step per row: the top of a step is where that row
+     stands, and its front face runs down to the step in front. Drawn as
+     the ground rather than as furniture, so the rows read as standing on
+     something instead of floating over a lawn. */
+  for (let r = PHOTO_ROWS - 1; r >= 0; r--) {
+    const top = PHOTO_ROWDEF[r].y;
+    const bottom = r > 0 ? PHOTO_ROWDEF[r - 1].y : PHOTO_H;
+    ctx.fillStyle = r % 2 ? '#a98e63' : '#bb9f72';
+    ctx.fillRect(0, top, PHOTO_W, bottom - top);
+    ctx.fillStyle = 'rgba(255,250,235,.30)';       /* the lit edge of the step */
+    ctx.fillRect(0, top, PHOTO_W, 3);
+    ctx.fillStyle = DUG.line;
+    ctx.fillRect(0, top + 3, PHOTO_W, 2);
+    /* plank seams, so a step is boards rather than a slab */
+    ctx.fillStyle = 'rgba(27,58,92,.18)';
+    for (let x = 0; x < PHOTO_W; x += 118) ctx.fillRect(x, top + 5, 2, bottom - top - 5);
+  }
+  /* People. Back row first, so a front row head can cover a back row
+     shoulder the way it does in a real photograph. */
+  const byRow = [];
+  for (const sp of spots) (byRow[sp.row] || (byRow[sp.row] = [])).push(sp);
+  for (let r = PHOTO_ROWS - 1; r >= 0; r--) {
+    for (const sp of byRow[r] || []) {
+      const locked = !isUnlocked(sp.c.k);
+      const cv = photoMug(sp.c.k, sp.w, locked);
+      /* A soft shadow under everyone, or the row appears to float above
+         its own bench. */
+      ctx.fillStyle = 'rgba(20,40,63,.22)';
+      ctx.beginPath();
+      ctx.ellipse(sp.x + sp.w / 2, sp.y + sp.h - 2, sp.w * 0.36, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.drawImage(cv, sp.x, sp.y, sp.w, sp.h);
+      if (sp.c.k === hotKey) {
+        ctx.strokeStyle = DUG.red; ctx.lineWidth = 3;
+        ctx.strokeRect(sp.x - 3, sp.y - 3, sp.w + 6, sp.h + 6);
+      }
+    }
+  }
+}
+/* Sprites are cached per key and per drawn width: fifty five of them get
+   repainted on every hover otherwise, and the greyed copy of a locked
+   character costs a second pass over every pixel. */
+const PHOTO_MUGS = new Map();
+function photoMug(key, w, locked) {
+  const id = key + '|' + w + '|' + (locked ? 'x' : 'o');
+  let cv = PHOTO_MUGS.get(id);
+  if (cv) return cv;
+  cv = heroSpriteCanvas(key, w, 'idle');
+  if (locked) {
+    /* Not a filter: canvas filters do not survive drawImage on every
+       browser this has to run on. Grey it by hand instead. */
+    const c2 = cv.getContext('2d');
+    const im = c2.getImageData(0, 0, cv.width, cv.height);
+    const d = im.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (!d[i + 3]) continue;
+      const g = (d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11) * 0.72 + 34;
+      d[i] = d[i + 1] = d[i + 2] = g;
+    }
+    c2.putImageData(im, 0, 0);
+  }
+  PHOTO_MUGS.set(id, cv);
+  return cv;
+}
+
+function renderMeet() {
+  const s = el('div','screen');
+  s.appendChild(el('h2', null, 'Meet the players'));
+  const nOpen = ROSTER.filter(c => isUnlocked(c.k)).length;
+  s.appendChild(el('p', null,
+    `All ${ROSTER.length} of them, ${nOpen} of them yours. `
+    + 'Point at anybody to read them.'));
+
+  const card = el('div','card');
+  const wrap = el('div','photo');
+  const cv = document.createElement('canvas');
+  cv.width = PHOTO_W * 1.5; cv.height = PHOTO_H * 1.5;
+  const ctx = cv.getContext('2d');
+  wrap.appendChild(cv);
+
+  const bar = el('div','meetbar');
+  const spots = photoSpots();
+
+  const paint = (key) => {
+    ctx.setTransform(1.5, 0, 0, 1.5, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    drawPhotoScene(ctx, spots, key);
+  };
+  const show = (c) => {
+    if (!c) {
+      bar.className = 'meetbar idle';
+      bar.innerHTML = '<div class="mug"></div><div class="body">'
+        + '<div class="mname">The squad</div>'
+        + '<div class="mrole">Public domain, every one of them</div>'
+        + '<div class="mbio">Point at a face for their numbers and their story. '
+        + 'The ones in grey are still to be earned.</div></div>';
+      return;
+    }
+    bar.className = 'meetbar';
+    bar.innerHTML = '';
+    const mug = el('div','mug');
+    mug.appendChild(heroSpriteCanvas(c.k, 62, 'idle'));
+    const body = el('div','body');
+    body.appendChild(el('div','mname', c.n));
+    body.appendChild(el('div','mrole', c.role));
+    const st = el('div','mstats');
+    st.innerHTML = `<span>POW <b>${c.pow}</b></span><span>SPD <b>${c.spd}</b></span>`
+                 + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`
+                 + `<span class="arm">PIT <b>${c.pit}</b></span>`;
+    body.appendChild(st);
+    if (c.note) body.appendChild(el('div','mbio', c.note));
+    if (!isUnlocked(c.k)) {
+      const pr = unlockProgress(c.k);
+      const u = UNLOCKS[c.k];
+      const band = UNLOCK_BANDS[u.band] || UNLOCK_BANDS.short;
+      body.appendChild(el('div','mlock',
+        `Locked: ${u.how} <i>${pr.have} of ${pr.goal} ${pr.unit} · ${band.label}</i>`));
+    }
+    bar.append(mug, body);
+  };
+
+  /* One transparent button per face, appended back row first so a front
+     row button wins the overlap the same way the drawing does. */
+  const ordered = spots.slice().sort((a, b) => b.row - a.row);
+  for (const sp of ordered) {
+    const b = el('button','hot');
+    b.type = 'button';
+    b.style.left = sp.x / PHOTO_W * 100 + '%';
+    b.style.top = sp.hitY / PHOTO_H * 100 + '%';
+    b.style.width = sp.w / PHOTO_W * 100 + '%';
+    b.style.height = sp.hitH / PHOTO_H * 100 + '%';
+    b.textContent = sp.c.n;
+    b.setAttribute('aria-label', isUnlocked(sp.c.k)
+      ? `${sp.c.n}. ${sp.c.role}. ${sp.c.note || ''}`
+      : `${sp.c.n}, locked. ${UNLOCKS[sp.c.k].how}`);
+    const on = () => { paint(sp.c.k); show(sp.c); };
+    b.onmouseenter = b.onfocus = on;
+    /* A tap is the only hover a phone has, so a click reads the player
+       out rather than doing nothing. */
+    b.onclick = on;
+    wrap.appendChild(b);
+  }
+  wrap.onmouseleave = () => { paint(null); show(null); };
+
+  paint(null);
+  show(null);
+  card.appendChild(wrap);
+  card.appendChild(bar);
+  s.appendChild(card);
+
+  const row = el('div','btn-row');
+  const back = el('button','btn ghost','Back to the dugout');
+  back.onclick = () => { State.screen = 'menu'; render(); };
+  row.appendChild(back);
+  s.appendChild(row);
+  app.appendChild(s);
 }
 
 function renderHowTo() {
