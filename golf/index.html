@@ -35167,6 +35167,15 @@ function maybeBucketRewards(){ try{
     if(got.length){ try{ toast('<span style="color:var(--gold);font-weight:800">🎁 Bonus packs added!</span><br><span class="small">'+got.join('<br>')+'<br>Open them in the Pro Shop → Packs.</span>', 6200); render(); }catch(e){} }
   }).catch(function(){ _bucketRewardsBusy=false; });
 }catch(e){ _bucketRewardsBusy=false; } }
+// Run The Bundle's Tour Pack, handed over once per ACCOUNT. Union, never un-claimed: the row it is
+// granted from stays readable forever, so without this a second device reads the same row, finds no local
+// flag, and hands over a second pack. The coins cannot double (the server stamps the row inside the
+// transaction that credits them) but the pack could, and did: proved by signing the same account in on a
+// fresh browser and watching tourEarned go to 2.
+function mergeBundle(local, server){
+  var l=(local&&typeof local==='object')?local:{}, s=(server&&typeof server==='object')?server:{};
+  return { claimed: (l.claimed||s.claimed) ? 1 : 0 };
+}
 // union merge of the granted-purchase set (grow-only): once a purchase's packs are granted on ANY device,
 // no other device re-grants them.
 function mergeBucketPacks(local, server){
@@ -37033,6 +37042,7 @@ function cloudBundle(){
     coins: LS.get(acctKey('bag_coins'), null),                   // CS183 currency: {spent,seen,owned} (earned is derived)
     packs: LS.get(acctKey('bag_packs'), null),                   // pack pity counters + first-pack-free flag
     bucketpacks: LS.get(acctKey('bag_bucket_packs'), null),      // coin-bucket bonus packs already granted (stripe_event set)
+    bundle: LS.get(acctKey('bag_bundle'), null),                 // Run The Bundle: the Tour Pack already handed over {claimed:1}
     login: LS.get(acctKey('bag_login'), null),                   // CS461: daily-login bonus loop {day, n}
     primes: LS.get(acctKey('bag_primes'), null),                 // distinct Prime cards rolled on the draft wheel (name→1 map)
     firsts: LS.get(acctKey('bag_firsts'), null),                 // first-time inductions already taught (id→1 map)
@@ -37295,6 +37305,7 @@ async function cloudPull(){
     { const mp=mergePrimes(LS.get(acctKey('bag_primes'),null), server.primes); if(mp&&Object.keys(mp).length) LS.set(acctKey('bag_primes'), mp); }   // distinct Prime pulls cross-device
     { const mf=mergePrimes(LS.get(acctKey('bag_firsts'),null), server.firsts); if(mf&&Object.keys(mf).length) LS.set(acctKey('bag_firsts'), mf); }   // first-time inductions already taught: union only, a teaching flag is never un-taught
     { const mpass=mergePass(LS.get(acctKey('bag_pass'),null), server.pass); if(mpass&&mpass.claimed) LS.set(acctKey('bag_pass'), mpass); }   // Tour Pass per-period pack-claim flag cross-device
+    { const mbd=mergeBundle(LS.get(acctKey('bag_bundle'),null), server.bundle); if(mbd&&mbd.claimed) LS.set(acctKey('bag_bundle'), mbd); }   // Run The Bundle pack-claim flag cross-device
     { const mtp=mergeTourPass(LS.get(acctKey('bag_tourpass'),null), server.tourpass); if(mtp) LS.set(acctKey('bag_tourpass'), mtp); }   // Tour Pass Track progress cross-device
     { const mw=mergeWheel(LS.get(acctKey('bag_wheel'),null), server.wheel); if(mw) LS.set(acctKey('bag_wheel'), mw); }   // Prize Wheel: used free spin / banked spins / boost cross-device
     LS.set(acctKey(SEASON_LOG_KEY), mergeLog(seasonLog(), server.seasonlog, SEASON_LOG_MAX));   // your season history follows the account
