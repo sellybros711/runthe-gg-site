@@ -729,6 +729,158 @@
   .cterm.out em{color:var(--red)}
   .cmore{font-size:11.5px;color:var(--dim-2);margin-top:8px}
 
+  /* ── THE PAYWALL, PORTED FROM THE NFL GAME ──────────────────────────────────────
+     ONE PRODUCT MEANS ONE OFFER SCREEN. Commish Simulator is sold in the same bundle as
+     the two dynasty modes, and the football game already had the screen that sells it:
+     three tiles for what you get, two cards for the two ways to buy, a strike through on
+     the one that saves money. This gate had the same prices and the same two buttons in a
+     far plainer shape, so a buyer who saw the offer in one game and then the other saw two
+     different products at the same price.
+
+     COPIED RATHER THAN SHARED, which is this repo's convention for cross game design: there
+     is no shared stylesheet, every game carries its own, and football/index.html is the
+     source these rules were lifted from verbatim. If the offer changes, it changes in two
+     places on purpose, and the guard in test_gate walks the rendered result here. */
+  .pw-hero{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:13px 0 4px}
+  .pw-tile{border:1px solid var(--line);border-radius:12px;padding:11px 7px 10px;text-align:center;
+    background:linear-gradient(180deg,rgba(251,191,36,.09),rgba(255,255,255,.02))}
+  /* BIGGER, BECAUSE THE ART IS NOW WORTH THE ROOM. 28px was sized for line icons and it is
+     the size a favicon is: solid shapes with an inset detail need the space or the detail
+     closes up. */
+  .pw-tile svg{width:40px;height:40px;display:block;margin:0 auto;
+    filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))}
+  .pw-tile b{display:block;font-family:var(--fn);font-size:10.5px;letter-spacing:.07em;
+    text-transform:uppercase;margin-top:7px;line-height:1.15;color:var(--ink)}
+  .pw-tile i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);
+    margin-top:3px;line-height:1.25}
+  /* A PURCHASE AS A CARD, so the two can be compared side by side rather than one being
+     the offer and the other a footnote under it. */
+  .pw-tier{border:1px solid var(--line-2);border-radius:14px;padding:13px 13px 12px;margin-top:11px;
+    background:var(--panel)}
+  .pw-tier.best{border-color:rgba(251,191,36,.5);
+    background:linear-gradient(180deg,rgba(251,191,36,.10),var(--panel))}
+  /* THE HEADER ROW IS THE SAME HEIGHT ON BOTH CARDS whether or not it carries a tag. The
+     "Best value" pill is 19px against a bare name's 16px, so without this the two price
+     rows below sit three pixels out of step with each other, which is exactly enough to
+     stop them reading as a pair and not enough for anybody to see why. */
+  .pw-th{display:flex;align-items:center;gap:8px;min-height:19px}
+  .pw-name{font-family:var(--fn);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--dim)}
+  .pw-tier.best .pw-name{color:#fbbf24}
+  .pw-tag{margin-left:auto;font-family:var(--fn);font-size:9px;letter-spacing:.1em;
+    text-transform:uppercase;font-weight:800;padding:3px 8px;border-radius:999px;
+    background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}
+  /* BOTH PRICES IN THE SAME PLACE, WHICH THEY WERE NOT.
+     The price used to sit in the header row, pushed to the right edge by margin-left:auto.
+     That works on a card whose header holds nothing else and fails on the one that does:
+     Run The Bundle's "Best value" tag already owned the right slot, so its price dropped to
+     a line of its own. The result was $19.99 hard right on one card and $34.99 hard left on
+     the next, and a reader comparing two numbers had to go and find each one.
+     Now both sit on their own line directly under the name, left aligned, so the eye runs
+     down a single edge: name, price, what you get, button, twice. That costs the Premium
+     card one line back, which is the trade, and it is the right way round. The saving is a
+     shorter sheet or a legible one. */
+  .pw-cost{display:flex;align-items:baseline;gap:9px;margin:8px 0 2px;flex-wrap:wrap}
+  /* TABULAR FIGURES so the two prices are the same shape as well as the same place: in the
+     proportional cut, the 1 in $19.99 is half the width of the 3 in $34.99 and the numbers
+     stop lining up exactly where somebody is trying to compare them. */
+  .pw-cost b{font-family:var(--fd);font-size:28px;line-height:1;font-weight:400;color:var(--ink);
+    font-variant-numeric:tabular-nums}
+  /* WHAT THIS ACCOUNT IS, in two letters more than it needs. Drawn only when there is a true
+     answer: see acctTier(), which returns nothing at all for a signed out visitor and for one
+     whose ownership has not come back yet. */
+  .pw-pill{display:inline-block;font-style:normal;margin-left:8px;vertical-align:3px;
+    font-family:var(--fn);
+    font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    padding:2px 7px;border-radius:999px}
+  .pw-pill.free{background:rgba(255,255,255,.08);color:var(--dim);
+    box-shadow:inset 0 0 0 1px var(--line)}
+  .pw-pill.pro{background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}
+  .pw-was{font-size:13.5px;color:var(--dim-2);text-decoration:line-through;
+    font-variant-numeric:tabular-nums}
+  /* THE SAVING IS A CHIP, not loose green text. It is the one thing in the price row that is
+     not a price, and as bare text at the same baseline it read as a third number to work out.
+     A pill says "label" at a glance, and it answers the gold pill in the header above it. */
+  .pw-save{font-size:10px;font-weight:800;color:#4ade80;font-family:var(--fn);letter-spacing:.07em;
+    text-transform:uppercase;padding:3px 8px;border-radius:999px;align-self:center;
+    background:rgba(74,222,128,.13);box-shadow:inset 0 0 0 1px rgba(74,222,128,.34)}
+  /* WHICH GAME EACH LINE COMES FROM, IN THAT GAME'S OWN COLOUR. The colour code is
+     the dot plus the name in the same hue, and it is what makes Run The Bundle read
+     as buying things in four places rather than as one long list of nouns.
+
+     A BULLET RATHER THAN A RAIL DOWN THE SIDE. Owner's call, and the rail had a
+     real problem behind the preference: a 2px line the full height of a three line
+     block is a lot of coloured ink for a label, and four of them stacked read as a
+     table with borders rather than as a list of things you get. A dot is the same
+     information at a fraction of the weight.
+
+     THE DOT IS DRAWN, NOT A BULLET CHARACTER, because a real bullet inherits the
+     font's own size and baseline and lands in a different place in every one of the
+     four rows depending on what follows it.
+
+     LAID OUT AS A GRID so the name, the item and the term all hang off the same
+     left edge in column two, which is what makes it a bullet list rather than a dot
+     with three lines drifting under it. Two columns, and every child is pinned to
+     the second: the dot is the only thing in the first.
+
+     THIS BLOCK SHIPPED ONCE WITH NO RULE AT ALL, which is the failure mode a class
+     rename has. The trim that shortened this sheet replaced .pw-src with .pw-line
+     and took the old CSS with it, so every line went on setting --gc and nothing
+     read it: four identical grey paragraphs and no error anywhere. The colours are
+     measured, and the note on PW_GAME says what against. */
+  .pw-line{display:grid;grid-template-columns:7px 1fr;column-gap:10px;margin-top:11px}
+  .pw-line:before{content:"";grid-column:1;grid-row:1;width:7px;height:7px;
+    border-radius:999px;background:var(--gc);
+    /* Centred on the cap height of the 10px uppercase name above it, whose line box
+       is 12px, rather than on the line box itself: uppercase type sits high in its
+       own leading and a dot centred on the box reads low against it. */
+    margin-top:2px}
+  .pw-line b{display:block;font-family:var(--fn);font-size:10px;letter-spacing:.09em;
+    text-transform:uppercase;font-weight:800;color:var(--gc);line-height:1.2}
+  .pw-line b,.pw-line span,.pw-line i{grid-column:2}
+  .pw-line span{display:block;font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.35}
+  /* SOMETHING IN THE BUNDLE THAT HAS RUN OUT. Shown rather than hidden: a line that vanishes
+     on its own expiry date reads as a thing going missing from a receipt, which is the
+     opposite of what a receipt is for. The dot and the name go quiet instead, so "you had
+     this" sits legibly beside "you have this" without either being mistaken for the other. */
+  .pw-line.ended:before{opacity:.3}
+  .pw-line.ended b{opacity:.45}
+  .pw-line.ended span{color:var(--dim)}
+  /* THE DATE LINE, on the receipt and never in the store. The same block does both jobs, so
+     the third line is simply absent where there is nothing bought yet to date. */
+  .pw-line i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);margin-top:3px;
+    line-height:1.3}
+  /* The header of the Pro page: the pill the profile already uses, with the one sentence
+     that says what being Pro actually gets you, on the same line as it. */
+  .pfpro-h{display:flex;align-items:center;gap:10px;margin-top:12px}
+  .pfpro-h .pw-pill{margin-left:0;vertical-align:0}
+  .pfpro-h span{font-size:12.5px;color:var(--dim-2);line-height:1.35}
+  .pw-note{font-size:12px;color:var(--dim-2);margin:13px 0 12px;line-height:1.4}
+  /* THE BEST VALUE CARD GETS THE GOLD BUTTON. Both tiers shipped with the same red one,
+     which is the house colour for the primary action and cannot be the primary action
+     twice: two identical buttons a thumb apart is a choice presented as a coin toss. The
+     badge, the border and the button are now one thing. */
+  .pw-tier.best .btn{background:linear-gradient(135deg,#fbbf24 0%,#e08c07 100%);color:#3b2600}
+  .pw-tier.best .btn:before{background:linear-gradient(180deg,rgba(255,255,255,.34),transparent)}
+  .pw-foot{font-size:12px;color:var(--dim-2);text-align:center;margin:13px 0 0;line-height:1.4}
+  /* TWO ACROSS ON EVERY PHONE, THREE ONLY WHERE THREE FIT. This was 360px, which put every
+     handset made in the last decade into the three column layout, and the names outgrew it:
+     a viewport sweep at 10px steps with three columns forced found TRADE MACHINE wrapping to
+     two lines at every width up to 420px and COMMISSIONER clipping up to 400px. A wrapped
+     name pushes that tile's description down twelve pixels while its neighbours stay put, so
+     the row reads as a mistake rather than a layout.
+     WHY 449 AND NOT 429, which is the last width that actually fails. At 430px the three
+     names fit with about two pixels to spare on TRADE MACHINE, which is not a margin, it is
+     a coincidence. 450px is the first width with real room (roughly eight pixels), so the
+     switch waits for it. Renaming a tile to something longer moves both numbers.
+     MEASURE THIS WITH THE REAL FACES LOADED. Anton and Archivo are Google webfonts, and the
+     generic sans a headless browser falls back to is far wider: the first sweep of this said
+     three columns failed up to 450px, which was the fallback face talking. */
+  @media (max-width:449px){
+    .pw-hero{grid-template-columns:1fr 1fr}
+    .pw-tile:last-child{grid-column:1 / -1}
+  }
+
   /* ── THE DATA CENTER ──────────────────────────────────────────────────────────────
      Chart chrome recedes and the data does not. Every rule here has a reason written next
      to it in the painter; what is here is the paint. */
@@ -2581,7 +2733,6 @@
 </div>
 
 <script src="/cfb/engine.js?v=34"></script>
-<script src="/assets/bundle-access.js?v=1"></script>
 <script src="access.js?v=5"></script>
 <script src="ledger.js?v=10"></script>
 <script src="blocs.js?v=12"></script>
@@ -2626,7 +2777,7 @@
 <!-- Reads window.PS_CFB_AUTH at CALL time, not at load time, so it may sit either side of
      auth.js. It is here rather than up with the rest because nothing else reads it. -->
 <script src="splits.js?v=3"></script>
-<script src="/cfb/auth.js?v=3"></script>
+<script src="/cfb/auth.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
 (function(){
@@ -2667,10 +2818,20 @@ const VEN=window.PS_CFB_VENUES;
 let TEAMS=[];
 const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
-/* TESTERS ARE TREATED AS PAYING, on purpose and only while this is closed. The paid tier
-   is most of what there is to test: the dials, writing your own ruling, taking office in
-   an older sport. A tester locked out of it would be testing the half that is easy. */
+/* THE TESTER LIST IS THE DOOR'S DOOR AND THE PREMIUM ROW IS THE KEY. Owner decision
+   (2026-09-08): Commish is FULLY premium. A visitor who has not bought does not play a
+   free tier; they reach the gate, see what the mode is part of and what it costs, and
+   stop there. So: the tester list decides who can find this page at all (unchanged,
+   nothing here reaches the public), and the cfb_premium row (fetched below through
+   PS_CFB_AUTH.premiumProducts, granted by supabase/102_premium_comp.sql) decides
+   whether the gate opens or pitches.
+
+   The free/pro dial split in docket.js stays in the data, unused by the public model:
+   ?tier=free remains a switch for a PREMIUM tester to inspect the reduced dials, and
+   the data costs nothing to keep against a future free tier. null premiumSet means not
+   answered yet, and the gate waits for the answer rather than guessing. */
 let authState={ready:false,waiting:true,signedIn:false};
+let premiumSet=null;
 const allowed=()=>ACCESS.allowed(authState);
 /* AND A TESTER HAS TO BE ABLE TO SEE THE OTHER TIER. Testers are treated as paying, which
    means the half of the design most likely to be got wrong is the half nobody on the list
@@ -2679,7 +2840,8 @@ const allowed=()=>ACCESS.allowed(authState);
    because nobody else can reach this page at all. */
 let forceFree=false;
 try{ forceFree=new URLSearchParams(location.search).get('tier')==='free'; }catch(e){}
-const isPro=()=>allowed()&&!forceFree;
+const ownsCfb=()=>!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
+const isPro=()=>allowed()&&!forceFree&&ownsCfb();
 
 /* ── the career ───────────────────────────────────────────────────────────────────
    HOW LONG YOU HAVE BEEN DOING THIS JOB, counted in rulings and kept OUTSIDE the term.
@@ -8508,6 +8670,141 @@ $('b-term-share').onclick=async()=>{
 };
 
 /* ── the door ─────────────────────────────────────────────────────────────────── */
+/* One POST, verdict by the `error` field and never the status, the contract
+   functions/api/stripe/checkout-bundle.js keeps on purpose. The verdict lands on the
+   button that was pressed, because the gate has no toast to speak through. */
+async function buyBundle(kind,btn){
+  const A=window.PS_CFB_AUTH;
+  const t=A&&typeof A.token==='function'?A.token():null;
+  if(!t){ if(btn) btn.textContent='Sign in on the game first'; return; }
+  try{
+    const r=await fetch('/api/stripe/checkout-bundle',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+      body:JSON.stringify({bundle:kind,return_path:'/cfb/commish/'})
+    });
+    const d=await r.json().catch(()=>({}));
+    if(d&&d.url){ location.href=d.url; return; }
+    if(btn) btn.textContent=
+      d&&d.error==='stripe_not_configured'?'Not on sale yet'
+      :d&&d.error==='already_owned'?'This account already owns it'
+      :'Checkout could not start. Try again';
+  }catch(e){ if(btn) btn.textContent='Checkout could not start. Try again'; }
+}
+/* COMING BACK FROM STRIPE.
+ *
+ * buyBundle sends the player out with success_url pointing back here plus
+ * ?checkout=success, and nothing read it. The gate asked the database ONCE, on the
+ * auth change, and drew whatever that one answer said. Since the entitlement is
+ * written by the Stripe WEBHOOK and the redirect races it, the usual outcome of a
+ * successful purchase was the paywall again, on the screen right after paying.
+ *
+ * So it asks, and keeps asking for about ten seconds, FORCING past auth.js's cache
+ * each time (a cached [] is precisely the wrong answer here, see premiumProducts).
+ * The gate opening is the acknowledgement: no separate thank you, because the door
+ * they just bought swinging open says it better than a message would.
+ *
+ * It never says the payment failed, because this cannot know that. If the grant has
+ * not appeared by the last try, the paywall is still what is on screen, and the
+ * account catches up on the next visit. */
+let justPaid=false, checkoutPolled=false;
+try{ justPaid=new URLSearchParams(location.search).get('checkout')==='success'; }catch(e){}
+function checkoutStrip(){
+  try{
+    const u=new URL(location.href);
+    u.searchParams.delete('checkout');
+    history.replaceState(null,'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():'')+u.hash);
+  }catch(e){}
+}
+async function checkoutReturn(){
+  if(!justPaid||checkoutPolled) return;
+  checkoutPolled=true;
+  /* Stripped first, so a reload cannot replay it and a shared link cannot carry it
+     to somebody who bought nothing. */
+  checkoutStrip();
+  if(ownsCfb()) return;                 // the webhook beat the redirect, nothing to wait for
+  const A=window.PS_CFB_AUTH;
+  if(!A||typeof A.premiumProducts!=='function') return;
+  const waits=[600,1200,2000,3000,3500];
+  for(const ms of waits){
+    await new Promise((r)=>setTimeout(r,ms));
+    try{ const l=await A.premiumProducts(true); premiumSet=Array.isArray(l)?l:[]; }catch(e){}
+    paintTag(); gate();
+    if(ownsCfb()) return;
+  }
+}
+/* The corner tag tells a tester which tier they are looking at, which matters exactly
+   when it is not the one they expected. */
+function paintTag(){
+  const t=$('tag'); if(!t) return;
+  t.textContent=!allowed()?'In testing'
+    :!ownsCfb()?'Premium'
+    :forceFree?'Tester, free view':'Tester';
+}
+const PW_ART={
+  /* DYNASTY: a trophy, because the mode is measured in what you won over years. */
+  trophy:'<path fill="{g}" d="M15 7h18v9.5a9 9 0 0 1-18 0Z"/>'+
+    '<path fill="{g}" opacity=".5" d="M15 10.5h-4.5A6.5 6.5 0 0 0 17 17v-3.2a3.3 3.3 0 0 1-2-3.3Z"/>'+
+    '<path fill="{g}" opacity=".5" d="M33 10.5h4.5A6.5 6.5 0 0 1 31 17v-3.2a3.3 3.3 0 0 0 2-3.3Z"/>'+
+    '<path fill="{g}" d="M21.8 25.5h4.4V31h-4.4Z"/>'+
+    '<path fill="{g}" d="M15.5 31h17a2 2 0 0 1 2 2v3.5h-21V33a2 2 0 0 1 2-2Z"/>'+
+    '<path fill="#2a1a02" opacity=".34" d="M24 10.5l1.7 3.5 3.8.5-2.8 2.7.7 3.8-3.4-1.8-3.4 1.8.7-3.8-2.8-2.7 3.8-.5Z"/>',
+  /* THE TRADE MACHINE: two arrows going opposite ways, which is what a trade is.
+     THE SILHOUETTE TEST THE CLIPBOARD BELOW PAID FOR. A pair of CURVED arrows chasing each
+     other round a circle is the reload glyph and nothing else, at any size. Two straight
+     arrows passing has no such twin: it is the exchange mark, and it says swap before it
+     says anything. The shaft of each one is set against the other's head so the pair reads
+     as one movement rather than two signs stacked.
+     A club crest used to live at this key, for a Franchise tile that no longer exists.
+     Franchise is a kind of dynasty, so it sits under the trophy now. */
+  swap:'<rect x="7" y="13" width="24" height="6" rx="3" fill="{g}"/>'+
+    '<path fill="{g}" d="M29 8l13 8-13 8Z"/>'+
+    '<rect x="17" y="29" width="24" height="6" rx="3" fill="{g}"/>'+
+    '<path fill="{g}" d="M19 24L6 32l13 8Z"/>'+
+    '<rect x="11" y="14.6" width="9" height="2.8" rx="1.4" fill="#2a1a02" opacity=".32"/>'+
+    '<rect x="28" y="30.6" width="9" height="2.8" rx="1.4" fill="#2a1a02" opacity=".32"/>',
+  /* COMMISSIONER: a clipboard.
+     THIS IS THE THIRD ATTEMPT AND THE OTHER TWO ARE WORTH RECORDING. A stroked bracket was
+     unreadable at this size, twice. A whistle was drawn next and rendered, at 40px and at
+     3x, as an unmistakable PADLOCK: a round body with an arch over the top is a shackle, and
+     no amount of tuning the spout changes what the silhouette says first. A clipboard has no
+     such twin, and "run a league" is an admin job rather than a tournament. */
+  clipboard:'<rect x="9" y="8" width="30" height="34" rx="4.5" fill="{g}"/>'+
+    '<rect x="18" y="4" width="12" height="8" rx="3.2" fill="{g}"/>'+
+    '<rect x="20.4" y="6.4" width="7.2" height="3.2" rx="1.6" fill="#2a1a02" opacity=".4"/>'+
+    '<rect x="14" y="18" width="20" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>'+
+    '<rect x="14" y="25" width="20" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>'+
+    '<rect x="14" y="32" width="12" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>',
+  /* The little mark on the three prompt cards. */
+  star:'<path fill="{g}" d="M24 6.5l5.3 10.8 11.9 1.7-8.6 8.4 2 11.8L24 33.6l-10.6 5.6 2-11.8-8.6-8.4 11.9-1.7Z"/>'
+};
+/* Each gradient needs an id of its own or every svg on the screen fills from the first
+   one that was defined, which is the bug the football game hit and solved this way. */
+let pwUid=0;
+function pwArt(k){
+  const id='pwg'+(++pwUid);
+  return '<svg viewBox="0 0 48 48" aria-hidden="true">'+
+    '<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0.35" y2="1">'+
+      '<stop offset="0" stop-color="#fde68a"/><stop offset="0.55" stop-color="#f5b022"/>'+
+      '<stop offset="1" stop-color="#d97706"/></linearGradient></defs>'+
+    PW_ART[k].replace(/\{g\}/g,'url(#'+id+')')+'</svg>';
+}
+const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwArt(k)+'<b>'+esc(name)+'</b>'+
+  '<i>'+esc(line)+'</i></div>';
+/* WHICH GAME EACH THING COMES FROM. "100,000 coins and one Tour Pack" means nothing to
+   somebody who has only ever played this one, so every line says which game it is out of. */
+const PW_GAME={
+  ps:{name:'The Perfect Season',c:'#f87171'},
+  cfb:{name:'Perfect College Season',c:'#10b981'},
+  arcade:{name:'Run The Arcade',c:'#FF8A3D'},
+  tour:{name:'Run The Tour',c:'#22b8cf'}
+};
+const pwGroupText=(key,text,term)=>{
+  const g=PW_GAME[key];
+  return '<div class="pw-line" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
+    '<span>'+esc(text)+'</span>'+(term?'<i>'+esc(term)+'</i>':'')+'</div>';
+};
+
 function gate(){
   const say=$('gate-say'), act=$('gate-act');
   if(authState.waiting&&!authState.ready){ say.textContent='Checking your account.'; act.innerHTML=''; return; }
@@ -8549,6 +8846,76 @@ function gate(){
       try{ navigator.clipboard.writeText(t).then(()=>done(true),()=>done(false)); }
       catch(e){ done(false); }
     };
+    return;
+  }
+  /* Ownership decides the tier and it comes from the database, so the door holds the
+     extra beat for the answer. Without this a pro tester would take office in the free
+     view and watch it flip a second later. The fetch below always settles premiumSet,
+     to [] on any failure, so this cannot hold the door forever. */
+  if(premiumSet===null){ say.textContent='Checking your account.'; act.innerHTML=''; return; }
+  /* THE PAYWALL. A tester without the row is exactly a visitor who has not bought: they
+     know the mode is here, they see what it is part of and what it costs, and the door
+     does not open. The Buy buttons are real; while nothing is on sale the endpoint
+     answers 503 and the button says so, truthfully. */
+  if(!ownsCfb()){
+    /* "Yours for good" belongs to the Premium Bundle sentence and is true of it: both its
+       products are permanent. The second button was the problem. It sat directly under that
+       claim with no terms of its own, and one of the things it sells is a TWELVE MONTH
+       Arcade Card. So the sentence that names it also says so. */
+    /* THE SAME OFFER SCREEN THE NFL GAME SHOWS, because it is the same purchase. What was
+       here was the same two prices and the same two buttons in a much plainer shape: a
+       sentence and two bars. Somebody who met the bundle in one game and then the other saw
+       what looked like two different products at one price. Now both games show the three
+       things the money buys, both ways to buy them, and which game each part comes out of.
+
+       COMMISSIONER LEADS HERE AND DYNASTY LEADS THERE. The tiles are the same three and the
+       order is the one you arrived through, because a visitor who tapped Commish Simulator
+       and got a screen headed by an NFL mode has to work out whether they are in the right
+       place before they can read the offer.
+
+       THE WORTH AND THE SAVING ARE THE NFL GAME'S NUMBERS, kept in step by hand: there is no
+       shared stylesheet or shared module between the two games, which is this repo's
+       convention, so the price living in two files is the cost of that and is why the guard
+       walks both. */
+    const out=!authState.signedIn;
+    const WORTH=80, RTB=34.99;
+    /* THE LEDE THE NFL SHEET LEADS WITH, and it is not decoration: "one payment, no
+       subscription" is the thing a buyer is actually anxious about on a screen with two
+       prices on it, and blanking this line to make room for the cards took it away. Each
+       card still carries its own term underneath, because one of the four things Run The
+       Bundle sells is twelve months and stops. */
+    say.textContent='Commissioner Mode in full, and every Pro mode in the NFL game. '
+      +'One payment. No subscription.';
+    act.innerHTML='<div class="pw-hero">'
+        +pwTile('clipboard','Commissioner','Can you save College Football?')
+        +pwTile('trophy','Dynasty','Endless arcade mode')
+        +pwTile('swap','Trade Machine','Unlimited runs')
+      +'</div>'
+      +'<div class="pw-tier">'
+        +'<div class="pw-th"><span class="pw-name">Premium Bundle</span></div>'
+        +'<div class="pw-cost"><b>$19.99</b></div>'
+        +pwGroupText('cfb','Commissioner Mode','Lifetime access')
+        +pwGroupText('ps','Dynasty, Franchise and unlimited Trade Machine','Lifetime access')
+        +'<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'
+          +(out?'Sign in to go Pro':'Go Pro')+'</button>'
+      +'</div>'
+      +'<div class="pw-tier best">'
+        +'<div class="pw-th"><span class="pw-name">Run The Bundle</span>'
+          +'<span class="pw-tag">Best value</span></div>'
+        +'<div class="pw-cost"><b>$'+RTB.toFixed(2)+'</b>'
+          +'<span class="pw-was">$'+WORTH+'</span>'
+          +'<span class="pw-save">Save $'+Math.round(WORTH-RTB)+'</span></div>'
+        +'<p class="pw-note" style="margin:9px 0 2px">Everything above, plus two more games.</p>'
+        +pwGroupText('arcade','1 year of the Arcade Card','12 months. It does not renew.')
+        +pwGroupText('tour','100,000 coins and one Tour Pack','Tour is the mid pack tier. Yours to spend.')
+        +'<button class="btn" id="b-buy-rtb" style="width:100%;margin-top:14px">'
+          +(out?'Sign in to get it':'Get Run The Bundle')+'</button>'
+      +'</div>'
+      +'<p class="pw-foot">Either one makes your account Pro. Secure checkout by Stripe.</p>'
+      +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center;margin-top:12px">Back to the game</a>';
+    const ps=$('b-buy-ps'), rtb=$('b-buy-rtb');
+    if(ps) ps.onclick=()=>buyBundle('perfect-season',ps);
+    if(rtb) rtb.onclick=()=>buyBundle('run-the-bundle',rtb);
     return;
   }
   /* THE FIRST LINE IS THE JOB OFFER, not a description of the mode. "You run college
@@ -8628,8 +8995,22 @@ function gate(){
   load();
   const A=window.PS_CFB_AUTH;
   if(!A){ authState={ready:false,waiting:false,signedIn:false}; gate(); return; }
-  A.onChange((st)=>{ authState=st;
-    $('tag').textContent=!allowed()?'In testing':forceFree?'Tester, free view':'Tester';
+  A.onChange((st)=>{
+    const moved=st.userId!==authState.userId;
+    authState=st;
+    if(moved||!st.signedIn) premiumSet=null;
+    if(st.signedIn&&premiumSet===null){
+      if(typeof A.premiumProducts==='function'){
+        A.premiumProducts().then((l)=>{ premiumSet=Array.isArray(l)?l:[]; paintTag(); gate(); try{ checkoutReturn(); }catch(e){} })
+          .catch(()=>{ premiumSet=[]; paintTag(); gate(); try{ checkoutReturn(); }catch(e){} });
+      }else{
+        /* An older cached auth.js has no premiumProducts. Owning nothing is the safe
+           reading, and it unsticks the gate rather than waiting on a call that will
+           never come. */
+        premiumSet=[];
+      }
+    }
+    paintTag();
     gate(); });
   A.boot();
   gate();

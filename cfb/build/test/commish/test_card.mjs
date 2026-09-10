@@ -41,7 +41,7 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:${username?"{username:'"+username+"'}":'null'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
 
 /* PUT A NAME ON THE REAL LIST, by trapping the assignment access.js makes, so a green run
    never depends on a real person's leaderboard name. The shipped list is empty and only

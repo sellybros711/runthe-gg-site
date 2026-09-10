@@ -42,7 +42,7 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:{username:'${TESTER}'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
 const arm = `
 (function(){ var v;
   Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,

@@ -1,59 +1,83 @@
-/* WHO CAN SEE COMMISH SIMULATOR. The list and the flag now live in one file for the whole
- * bundle, at /assets/bundle-access.js, and this is the college game's handle on it.
+/* WHO CAN SEE COMMISH SIMULATOR, in one file, because two pages ask.
  *
- * IT USED TO OWN THE LIST. Commish Simulator is sold with Dynasty as one product at one
- * price, and until that was true it was reasonable for this file to carry its own three
- * names and its own COMMISH_LIVE flag beside football's two copies of the same three names.
- * It is not reasonable now: three flags is a launch that can half happen, and a bundle where
- * one half opens and the other says it is in testing is a bug the customer finds first.
+ * The mode lives at /cfb/commish/ and it is reached from a card inside the game at
+ * /cfb/. Both of those have to agree about who is on the list, and a list written twice
+ * is a list that drifts: add a name to the door and not to the card and the tester never
+ * finds the mode; add it to the card and not the door and they find a locked door with
+ * their name on the other side. So the list is here and both pages load it.
  *
- * So the policy moved and the handle stayed. Two pages ask this question, /cfb/ to decide
- * whether to draw the card and /cfb/commish/ to decide whether to open the door, and both go
- * on asking PS_CFB_COMMISH_ACCESS exactly as before. What changed is where the answer comes
- * from.
+ * The shape is the one supabase/80_football_defense_mode.sql writes down: a list in the
+ * page and a LIVE flag. Flipping COMMISH_LIVE opens the mode to everybody AND puts the
+ * card on the modes sheet for everybody, in one edit, which is the point of this file.
  *
- * FAIL CLOSED IF THE SHARED FILE IS BLOCKED, which is the same rule football's two access
- * files hold. A missing script is not permission: it is one card fewer on a modes sheet and a
- * door that stays shut, and both of those are recoverable. The alternative is keeping a
- * second copy of the list here as a fallback, which is the drift this file was merged to end.
+ * TWO WAYS TO BE ON THE LIST, and the second one exists because the first one silently
+ * failed. A username is what somebody typed on the leaderboard, and it is NOT their email
+ * address, their login, or anything you can work out from those. The first version of this
+ * list had a username guessed from an email address and it matched nobody: the card refused
+ * to draw, the door refused to open, and both were behaving correctly. Worse, an account
+ * that signed in with Google and never chose a name has NO username at all, so there is
+ * nothing to write down for it.
+ *
+ * So an account id counts too. It is the uuid Supabase issues, it exists from the moment
+ * the account does, and it is what the gate screen shows you about your own account so it
+ * can be read off and added here.
+ *
+ * NO EMAIL ADDRESSES IN THIS FILE. It is served to anybody who asks for it at
+ * runthe.gg/cfb/commish/access.js, so anything written here is published. A username is
+ * already public, because it is printed on the leaderboard. An account id is opaque. An
+ * email address is neither, and putting one here would publish it.
  */
 (function (root) {
   'use strict';
 
-  var B = root.PS_BUNDLE_ACCESS
-    || (typeof require === 'function' ? require('../../assets/bundle-access.js') : null);
+  /* Usernames, as typed on the leaderboard. Lowercased when matched, because set_username
+     stores the casing somebody typed and an exact-case match silently misses them.
+     72_comp_passes.sql hit this and wrote it down. */
+  var COMMISH_TESTERS = [
+    'malikwillislover',
+    'runnyj',
+    'slimeyb3',
+    'csel8',      /* the free-view tester: through the door, but holds no premium row */
+  ];
 
-  var EMPTY = [];
+  /* Supabase account ids. For an account with no username chosen, this is the only way on
+     the list. The gate screen at /cfb/commish/ prints the signed-in account's id. */
+  var COMMISH_TESTER_IDS = [];
 
-  function isTester(name) { return !!B && B.isTester(name); }
-  function isTesterId(id) { return !!B && B.isTesterId(id); }
+  var COMMISH_LIVE = false;
 
-  /* THE ONE QUESTION BOTH PAGES ASK. Takes the auth state whole, or a bare username, which is
-     what the first version took and what a caller that has not been updated still sends. */
-  function commishAllowed(who) { return !!B && B.allowed(who); }
+  function isTester(name) {
+    return COMMISH_TESTERS.indexOf(String(name || '').toLowerCase()) >= 0;
+  }
 
-  /* WHETHER THIS ACCOUNT IS TREATED AS HAVING PAID WITHOUT PAYING. Separate from the question
-     above on purpose: after the bundle launches, allowed() is true for everybody and this is
-     true for the comp list alone. The purchase itself is a database row, not this file. */
-  function commishComped(who) { return !!B && B.comped(who); }
+  function isTesterId(id) {
+    return !!id && COMMISH_TESTER_IDS.indexOf(String(id)) >= 0;
+  }
 
-  /* WHAT TO SEND TO GET ADDED, in the words the gate screen uses. */
+  /* THE ONE QUESTION BOTH PAGES ASK. Takes the auth state whole rather than a name, so
+     adding a third way onto the list later does not mean editing both callers. A bare
+     string is still accepted, because that is what the first version took and a caller
+     that has not been updated should keep working rather than match everybody. */
+  function commishAllowed(who) {
+    if (COMMISH_LIVE) return true;
+    if (typeof who === 'string' || who == null) return isTester(who);
+    return isTester(who.name) || isTesterId(who.userId);
+  }
+
+  /* WHAT TO SEND TO GET ADDED, in the words the gate screen uses. Kept beside the list so
+     the instruction and the thing it is about cannot drift apart. */
   function identityOf(who) {
     if (!who || !who.signedIn) return null;
     return { name: who.name || null, userId: who.userId || null };
   }
 
   var api = {
-    /* The shared arrays themselves rather than copies, so a test that arms this object and
-       pushes its own name onto TESTERS is putting that name on the real list, which is the
-       gate the guards are meant to be walking through. */
-    TESTERS: B ? B.TESTERS : EMPTY,
-    TESTER_IDS: B ? B.TESTER_IDS : EMPTY,
-    LIVE: !!B && B.LIVE,
+    TESTERS: COMMISH_TESTERS,
+    TESTER_IDS: COMMISH_TESTER_IDS,
+    LIVE: COMMISH_LIVE,
     isTester: isTester,
     isTesterId: isTesterId,
     allowed: commishAllowed,
-    comped: commishComped,
     identityOf: identityOf,
   };
 

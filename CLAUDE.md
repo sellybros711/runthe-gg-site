@@ -91,6 +91,97 @@ It runs in CI on any push or pull request touching an `.html` or `.js` file
 (`.github/workflows/cachebust-check.yml`), and it covers every page on the site that
 versions a script beside it, found rather than listed.
 
+## The football game's badge cabinet
+
+`football/achievements.js` is the badge catalog for The Perfect Season, and every badge in
+it is DERIVED from the run rows the leaderboard already keeps rather than stored anywhere.
+That is what makes a cabinet retroactive, account-shaped rather than browser-shaped, and
+impossible to lose by clearing site data. It is also the constraint: a badge can only ask
+about something that actually reaches `ps_runs`. A dynasty knows whether its boss game was
+won and never writes it down, so no badge asks. Reaching season 11 is the honest version of
+the same claim.
+
+Two shelves are gated on their mode's own launch flag:
+
+| shelf | appears when |
+|---|---|
+| Dynasty | `dynasty-access.js` sets `DYNASTY_LIVE = true` |
+| Full Team | `fullteam-access.js` sets `FULLTEAM_LIVE = true` |
+
+**On the LIVE flag and not on the tester list, deliberately.** `CATALOG.length` is the
+denominator `crest.js` divides by and it is the definition of GOAT, so a catalog whose size
+depended on who was looking would give two players with identical cabinets two different
+ranks. One number for everybody, and it steps up on the day a mode launches. Nobody replays
+anything: ranks are derived, so seasons a tester already played are counted the moment the
+shelf appears.
+
+### A badge you add has to be proved reachable
+
+```
+node football/check-badges.mjs           # the full sweep, a few minutes
+node football/check-badges.mjs --quick   # fewer runs, for a fast loop
+```
+
+It plays Dynasty and Full Team for real through `run.js`, in the order the screens drive it,
+turns each finished season into the board row the page would file, and names any badge that
+nothing lit. The basketball game is why it exists: its first catalog asked for three things
+that game could not produce and **nothing failed**, because a badge that cannot be earned
+throws no error and breaks no test.
+
+It has already caught the same class of thing twice here:
+
+- "Field a full squad rated 90 or better" was impossible. A Full Team rating is clamped to
+  100 and averaged across two units, while a six man offense is unclamped and a good one is
+  already past 110, so the threshold had been read off the wrong ladder. 350 simulated
+  squads peaked at 54.9.
+- The dynasty score ladder went to two million against a measured best of 198,000.
+
+A badge reported UNREACHED is a question, not a number to move: it means either the mode
+cannot do it or no strategy in the checker was trying. Two lists excuse one, `GRIND` for a
+bigger count of a proved thing and `SKILL` for a feat the bots are not good enough for, and
+neither is a free pass. Each entry names another badge that must actually light on that run,
+chains resolve to the end, and only the end counts.
+
+### What the mode can actually produce
+
+Measured, and worth knowing before writing a badge that names any of it:
+
+- **A dynasty has no length.** It ends when the owner ends it and at no other point. There
+  was a `DYNASTY_MAX_SEASONS = 25` in `engine.js` that nothing in the game read, and this
+  file used to call it the design ceiling; it was the balance simulator's loop guard, and it
+  has been removed. The simulator keeps its own, named for what it is.
+- The win bar is `DYNASTY_BASE_WINS` plus one every `DYNASTY_STEP_SEASONS`, **capped at
+  `DYNASTY_WIN_BAR_MAX`**. The cap is not decoration: a season is 17 games, so the old
+  uncapped line asked for 17 of 17 at season 91 and 18 at season 101, which is a mode that
+  becomes arithmetically impossible rather than hard. Difficulty past the cap comes from the
+  squeeze the mode already runs on, a frozen cap against a roster that ages every winter.
+- **A milestone every `DYNASTY_MILESTONE_EVERY` seasons, alternating**: the odd ones are
+  roster mandates out of a list of **four**, the even ones are boss games out of a list of
+  **six**, both cycling. There is no separate boss constant. A boss is every second milestone,
+  so the boss interval is twice the cadence and is derived.
+  **The cadence is 3, and it shipped as 5.** `simulator.js --dynasty` runs the rule the game
+  actually ships (`one life`) and reports both how far runs get and how much of the authored
+  content they meet. On the bot's best winter, 200 runs:
+
+  | | every 5 | every 3 |
+  |---|---|---|
+  | mandates met, mean | 0.58 | **1.04** |
+  | bosses met, mean | 0.34 | **0.70** |
+  | met a boss | 30.5% | **42.0%** |
+  | met a second boss | 3.0% | **22.0%** |
+
+  Nothing was written to get there. Six bosses and four mandates already existed, and at a
+  cadence of five nine of the ten were content for almost nobody: the second boss sat at
+  season 20 against a median run of 3 and a ninetieth percentile of 15. Moving the cadence
+  moved the schedule onto the reach curve. The reach curve itself did not move, because
+  `playDynasty` in the simulator models no milestone and neither reward, which is worth
+  knowing before reading those columns as a balance check.
+  The bot is crude and a person does better. Even so, the third boss now sits at season 18
+  against a p90 of 15, so a badge naming it is unprovable by `check-badges.mjs`, which is the
+  same problem the old cadence had at every rung.
+- A Full Team squad reaches the Super Bowl in about one season in twenty and wins it in
+  about one in a hundred, and never takes the top seed.
+
 ## The wrestling game
 
 `wrestling/index.html` is the whole career game in one self-contained file, by
