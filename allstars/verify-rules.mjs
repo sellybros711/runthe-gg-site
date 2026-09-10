@@ -24,6 +24,9 @@
      field frames         every biped carries a distinct catch and throw frame
      franchise years      a club runs year on year, carrying its record book
      long unlocks         three characters take a franchise rather than an afternoon
+     the ladder           every rung has a metric and a goal, and the tail is a long one
+     locked last          a card you cannot draft sorts behind every card you can
+     the hover card       says the requirement and how far along, and goes away after
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -587,6 +590,139 @@ async function main() {
       ok(r.b.includes('medusa'), 'twenty five wins earns the second', JSON.stringify(r.b));
       ok(r.c.includes('krampus'), 'two championships earn the third', JSON.stringify(r.c));
       ok(r.after.every(x => x), 'and they stay unlocked', JSON.stringify(r.after));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the ladder: declared, not hand written, and paced ---- */
+    {
+      console.log('the ladder');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const rows = Object.entries(UNLOCKS).map(([k, u]) => ({
+          k, band: u.band, goal: u.goal, how: u.how, unit: u.unit,
+          fn: typeof u.have === 'function', real: !!ROSTER_BY_KEY[k],
+        }));
+        /* Every rung agrees with the one function that decides it. */
+        const p = { wins: 25, titles: 1 };
+        const agrees = rows.every(x => unlockMet(x.k, Object.assign({}, PROGRESS, p))
+          === (UNLOCKS[x.k].have(Object.assign({}, PROGRESS, p)) >= UNLOCKS[x.k].goal));
+        return { rows, agrees, roster: ROSTER.length,
+                 bands: Object.keys(UNLOCK_BANDS) };
+      });
+      const bad = r.rows.filter(x => !(x.fn && x.real && x.goal > 0 && x.how && x.unit && x.band));
+      ok(bad.length === 0, 'every rung names a real character and declares metric, goal, band',
+         JSON.stringify(bad));
+      ok(r.agrees, 'the sentence and the test cannot drift: one function decides both');
+      ok(r.rows.every(x => r.bands.indexOf(x.band) !== -1), 'every band is a declared one',
+         JSON.stringify(r.rows.map(x => x.band)));
+      const short = r.rows.filter(x => x.band === 'short');
+      const legend = r.rows.filter(x => x.band === 'legend');
+      ok(r.rows.length >= 18, 'the ladder is long enough to be a ladder', 'rungs=' + r.rows.length);
+      ok(r.roster - r.rows.length >= 30,
+         'and still leaves a full cabinet open on day one', 'open=' + (r.roster - r.rows.length));
+      ok(short.length >= 6, 'a new player can earn several in a sitting', 'short=' + short.length);
+      ok(legend.length >= 3, 'and three or more are the long tail', 'legend=' + legend.length);
+      /* THE POINT OF THE TAIL. Nothing at the top of the ladder may be
+         reachable in an evening, or the cabinet empties in two days and
+         a franchise has nothing left to run toward. */
+      ok(legend.every(x => x.goal >= 5), 'no legend rung falls inside one session',
+         JSON.stringify(legend.map(x => x.k + ' ' + x.goal)));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- a card you cannot draft sorts behind every card you can ---- */
+    {
+      console.log('locked last');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const out = {};
+        for (const S of ROSTER_SORTS) {
+          const list = sortedRoster(S.k);
+          const lock = [], open = [];
+          list.forEach((c, i) => (isUnlocked(c.k) ? open : lock).push(i));
+          out[S.k] = {
+            last: Math.min.apply(null, lock) > Math.max.apply(null, open),
+            ordered: open.every((idx, j) => j === 0 || (S.dir === 1
+              ? S.val(list[open[j - 1]]) <= S.val(list[idx])
+              : S.val(list[open[j - 1]]) >= S.val(list[idx]))),
+            n: list.length,
+          };
+        }
+        State.mode = 'exhibition'; State.screen = 'roster'; render();
+        out.buttons = [...document.querySelectorAll('.sortbar .sb')].map(b => b.textContent);
+        /* Clicking one reorders the grid in place rather than rebuilding it. */
+        const before = document.querySelectorAll('.roster .charcard').length;
+        [...document.querySelectorAll('.sortbar .sb')].find(b => b.textContent === 'Pitching').click();
+        out.after = document.querySelectorAll('.roster .charcard').length;
+        out.same = before === out.after;
+        out.firstByPit = document.querySelector('.roster .charcard .name').textContent;
+        out.gridLastLocked = [...document.querySelectorAll('.roster .charcard')]
+          .slice(-1)[0].classList.contains('locked');
+        return out;
+      });
+      for (const S of ['name', 'pow', 'spd', 'con', 'def', 'pit']) {
+        ok(r[S].last, `sort by ${S}: every locked card is behind every open one`);
+        ok(r[S].ordered, `sort by ${S}: the open ones are in order`);
+        ok(r[S].n === 55, `sort by ${S}: nobody is dropped or duplicated`, 'n=' + r[S].n);
+      }
+      ok(JSON.stringify(r.buttons) === JSON.stringify(
+           ['A to Z','Power','Speed','Contact','Fielding','Pitching']),
+         'the six ways to read the cabinet are on the screen', JSON.stringify(r.buttons));
+      ok(r.same, 'sorting moves the cards it already made rather than making new ones');
+      ok(r.gridLastLocked, 'and the last card in the grid is a locked one');
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the hover card ---- */
+    {
+      console.log('the hover card');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        PROGRESS.wins = 3;
+        State.mode = 'exhibition'; State.screen = 'roster'; render();
+        const out = {};
+        const cat = [...document.querySelectorAll('.charcard')]
+          .find(c => c.querySelector('.name').textContent === 'Black Cat');
+        cat.dispatchEvent(new MouseEvent('mouseenter'));
+        const pop = document.querySelector('.lockpop');
+        out.text = pop.textContent;
+        out.vis = getComputedStyle(pop).visibility;
+        const box = pop.getBoundingClientRect();
+        out.onScreen = box.left >= 0 && box.top >= 0
+          && box.right <= window.innerWidth && box.bottom <= window.innerHeight;
+        out.bar = pop.querySelector('.pop-bar i').style.width;
+        cat.dispatchEvent(new MouseEvent('mouseleave'));
+        out.gone = getComputedStyle(pop).visibility;
+        /* One popup, reused, not one per card. */
+        const open = [...document.querySelectorAll('.charcard:not(.locked)')][0];
+        open.dispatchEvent(new MouseEvent('mouseenter'));
+        out.openText = document.querySelector('.lockpop').textContent;
+        out.count = document.querySelectorAll('.lockpop').length;
+        /* Earning it flips what the card says. */
+        PROGRESS.wins = 5; refreshUnlocks();
+        State.screen = 'roster'; render();
+        const cat2 = [...document.querySelectorAll('.charcard')]
+          .find(c => c.querySelector('.name').textContent === 'Black Cat');
+        cat2.dispatchEvent(new MouseEvent('mouseenter'));
+        out.earned = document.querySelector('.lockpop').textContent;
+        out.stillLocked = cat2.classList.contains('locked');
+        return out;
+      });
+      ok(r.vis === 'visible', 'hovering a locked card raises the popup', r.vis);
+      ok(/Locked/.test(r.text) && /To unlock: Win 5 games\./.test(r.text),
+         'it states the requirement in full', r.text);
+      ok(/3 of 5 wins/.test(r.text), 'and how far along you are, which the card itself cannot say', r.text);
+      ok(r.bar === '60%', 'the bar matches the count', r.bar);
+      ok(/Early/.test(r.text), 'and it says roughly how long this one takes', r.text);
+      ok(r.onScreen, 'the popup is placed inside the window rather than off its edge');
+      ok(r.gone === 'hidden', 'it goes away when the pointer leaves', r.gone);
+      ok(r.count === 1, 'there is one popup, reused, not fifty five', 'n=' + r.count);
+      ok(/On the roster/.test(r.openText), 'a character who needs no unlock says so', r.openText);
+      ok(!r.stillLocked && /Earned/.test(r.earned),
+         'and once earned the same hover says how it was earned', r.earned);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

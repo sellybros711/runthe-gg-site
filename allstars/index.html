@@ -121,6 +121,42 @@
   .charcard.locked:hover{transform:none;box-shadow:var(--shadow-sm);}
   .quirk.lockhint{color:var(--gold);}
 
+  /* The sort rail above the grid. */
+  .sortbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+  .sortbar .lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--text-dim);margin-right:2px;}
+  .sortbar .sb{font:inherit;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    font-weight:700;background:var(--panel);color:var(--text);border:2px solid var(--line);
+    padding:5px 10px;cursor:pointer;box-shadow:var(--shadow-sm);}
+  .sortbar .sb:active{transform:translate(2px,2px);box-shadow:none;}
+  .sortbar .sb.on{background:var(--gold);color:#fff6ea;}
+  .sortbar .tail{font-size:10px;color:var(--text-dim);letter-spacing:.06em;
+    text-transform:none;margin-left:auto;}
+
+  /* THE HOVER CARD. The lock line at the foot of a card says what to do
+     and cannot say how close you are, because it is the same string for
+     everybody. This one is per player and live: the requirement, the
+     count, and a bar. It is position:fixed and parented to the body so
+     the grid's own bounds cannot clip it, and it never takes the pointer,
+     so moving toward it does not make it flicker. */
+  .lockpop{position:fixed;z-index:400;width:250px;background:var(--panel);
+    border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);padding:10px 12px;
+    pointer-events:none;font-size:12px;color:var(--text);line-height:1.5;}
+  .lockpop .pop-name{font-weight:900;font-size:13px;letter-spacing:.06em;}
+  .lockpop .pop-chip{display:inline-block;margin-top:4px;padding:1px 6px;font-size:9px;
+    letter-spacing:.16em;text-transform:uppercase;font-weight:900;border:2px solid var(--line);}
+  .lockpop .pop-chip.lk{background:var(--gold);color:#fff6ea;}
+  .lockpop .pop-chip.ok{background:var(--green);color:#fff6ea;}
+  .lockpop .pop-chip.base{background:var(--panel-2);color:var(--text-dim);}
+  .lockpop .pop-how{margin-top:7px;}
+  .lockpop .pop-band{margin-top:5px;font-size:10px;color:var(--text-dim);
+    letter-spacing:.06em;}
+  .lockpop .pop-count{margin-top:7px;font-size:11px;font-weight:900;
+    letter-spacing:.06em;color:var(--gold);}
+  .lockpop .pop-bar{margin-top:4px;height:9px;background:#e2d6b4;border:2px solid var(--line);}
+  .lockpop .pop-bar i{display:block;height:100%;background:var(--gold);}
+  @media (max-width:600px){.lockpop{display:none;}}
+
   .toggle-row{display:flex;gap:6px;flex-wrap:wrap;}
   .toggle{padding:8px 12px;background:var(--panel);border:2px solid var(--line);border-radius:0;
     cursor:pointer;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text);
@@ -2177,6 +2213,7 @@ function savePrefs() {
       coach: PREFS.coach !== false,
       coach_bat: !!PREFS.coach_bat,
       coach_pitch: !!PREFS.coach_pitch,
+      rosterSort: PREFS.rosterSort || 'name',
       progress: PROGRESS,
     }));
   } catch (e) {}
@@ -2189,24 +2226,92 @@ function savePrefs() {
    says exactly what to do, so a locked slot reads as a goal rather than a
    missing feature. Progress lives in prefs beside the other settings.
    ============================================================================ */
-const UNLOCKS = {
-  kong:      { how:'Hit 6 home runs in a season.',        check:(p)=> (p.seasonHR|0) >= 6 },
-  liberty:   { how:'Win a playoff game.',                  check:(p)=> (p.playoffWins|0) >= 1 },
-  dragon:    { how:'Win the championship.',                check:(p)=> (p.titles|0) >= 1 },
-  phoenix:   { how:'Come back and win after trailing.',    check:(p)=> (p.comebacks|0) >= 1 },
-  chupacabra:{ how:'Win a game by 10 or more runs.',       check:(p)=> (p.blowouts|0) >= 1 },
-  fathertime:{ how:'Play a full 9 inning game.',           check:(p)=> (p.nineInningGames|0) >= 1 },
-  /* THE LONG ONES. Everything above can be had inside a single season,
-     which left a franchise with nothing to run TOWARD once its first year
-     was in the book. These three take years, and they are the three best
-     arms on the roster, so what a long franchise earns you is a rotation. */
-  robin:     { how:'Reach year three of a franchise.',     check:(p)=> (p.franchiseYears|0) >= 3 },
-  medusa:    { how:'Win 25 games.',                        check:(p)=> (p.wins|0) >= 25 },
-  krampus:   { how:'Win two championships.',               check:(p)=> (p.titles|0) >= 2 },
+/* A rung is one metric, one goal. `check` used to be a hand written
+   predicate per character, which meant the card could say WHAT to do and
+   never how far along you were. Declaring the metric and the number
+   separately buys the progress readout for free, and makes it impossible
+   for the sentence and the test to drift apart, which they had already
+   started to do.
+
+   BANDS pace the ladder. Everything at `short` is reachable in a sitting
+   or two, so a new player earns something on day one. `long` is a run of
+   evenings. `legend` is the tail: five championships and a hundred wins
+   are not meant to fall inside the first week, and if the whole cabinet
+   empties in two days there is nothing left to play toward. */
+const UNLOCK_BANDS = {
+  short:  { label:'Early',     note:'A sitting or two.' },
+  long:   { label:'Long haul', note:'A run of evenings.' },
+  legend: { label:'Legend', note:'Months, not days.' },
 };
+const UNLOCKS = {
+  /* ---- Early: the first evening should hand you something ---- */
+  fathertime:{ band:'short', how:'Play a full nine inning game.',
+               unit:'nine inning games', goal:1,   have:(p)=> p.nineInningGames|0 },
+  chupacabra:{ band:'short', how:'Win a game by 10 runs or more.',
+               unit:'blowout wins',      goal:1,   have:(p)=> p.blowouts|0 },
+  phoenix:   { band:'short', how:'Come back and win after trailing.',
+               unit:'comeback wins',     goal:1,   have:(p)=> p.comebacks|0 },
+  liberty:   { band:'short', how:'Win a playoff game.',
+               unit:'playoff wins',      goal:1,   have:(p)=> p.playoffWins|0 },
+  kong:      { band:'short', how:'Hit 6 home runs in one season.',
+               unit:'home runs in a season', goal:6, have:(p)=> p.seasonHR|0 },
+  blackcat:  { band:'short', how:'Win 5 games.',
+               unit:'wins',              goal:5,   have:(p)=> p.wins|0 },
+  horseman:  { band:'short', how:'Shut a club out.',
+               unit:'shutouts',          goal:1,   have:(p)=> p.shutouts|0 },
+  dragon:    { band:'short', how:'Win a championship.',
+               unit:'championships',     goal:1,   have:(p)=> p.titles|0 },
+  nessie:    { band:'short', how:'Hit 25 career home runs.',
+               unit:'career home runs',  goal:25,  have:(p)=> p.careerHR|0 },
+
+  /* ---- Long haul: a franchise has something to run toward ---- */
+  robin:     { band:'long',  how:'Reach year three of a franchise.',
+               unit:'franchise years',   goal:3,   have:(p)=> p.franchiseYears|0 },
+  werewolf:  { band:'long',  how:'Strike out 100 batters.',
+               unit:'strikeouts thrown', goal:100, have:(p)=> p.careerK|0 },
+  medusa:    { band:'long',  how:'Win 25 games.',
+               unit:'wins',              goal:25,  have:(p)=> p.wins|0 },
+  cyclops:   { band:'long',  how:'Hit 100 career home runs.',
+               unit:'career home runs',  goal:100, have:(p)=> p.careerHR|0 },
+  krampus:   { band:'long',  how:'Win two championships.',
+               unit:'championships',     goal:2,   have:(p)=> p.titles|0 },
+  golem:     { band:'long',  how:'Shut out 10 clubs.',
+               unit:'shutouts',          goal:10,  have:(p)=> p.shutouts|0 },
+  centaur:   { band:'long',  how:'Play 100 games.',
+               unit:'games played',      goal:100, have:(p)=> p.games|0 },
+  firebreather:{ band:'long', how:'Strike out 250 batters.',
+               unit:'strikeouts thrown', goal:250, have:(p)=> p.careerK|0 },
+
+  /* ---- Legend: the tail, and it is meant to be a long one ---- */
+  humpty:    { band:'legend', how:'Reach year eight of a franchise.',
+               unit:'franchise years',   goal:8,   have:(p)=> p.franchiseYears|0 },
+  sasquatch: { band:'legend', how:'Win 100 games.',
+               unit:'wins',              goal:100, have:(p)=> p.wins|0 },
+  paulbunyan:{ band:'legend', how:'Win five championships.',
+               unit:'championships',     goal:5,   have:(p)=> p.titles|0 },
+};
+/* One place decides whether a rung is cleared, so the bar on the card and
+   the grant at the end of a game can never disagree. */
+function unlockMet(k, p) {
+  const u = UNLOCKS[k];
+  return !u || u.have(p || PROGRESS) >= u.goal;
+}
+/* What to print under the sentence: how far along, and never past the
+   goal, because a player who won 40 games should read "25 of 25" on a
+   rung they cleared at 25 rather than a number that keeps climbing. */
+function unlockProgress(k, p) {
+  const u = UNLOCKS[k];
+  if (!u) return null;
+  const have = Math.min(u.have(p || PROGRESS), u.goal);
+  return { have, goal: u.goal, unit: u.unit, pct: Math.round(have / u.goal * 100) };
+}
 const PROGRESS = Object.assign(
   { seasonHR:0, playoffWins:0, titles:0, comebacks:0, blowouts:0, nineInningGames:0,
-    wins:0, games:0, franchiseYears:0, unlocked:[], seasons:[] },
+    wins:0, games:0, franchiseYears:0, unlocked:[], seasons:[],
+    /* The career counters. These are what the long rungs are measured in:
+       a season high resets, and a ladder built only on season highs tops
+       out on a good afternoon. */
+    careerHR:0, careerK:0, shutouts:0 },
   PREFS.progress || {}
 );
 function saveProgress() {
@@ -2226,7 +2331,7 @@ function isUnlocked(k) {
 function refreshUnlocks() {
   const fresh = [];
   for (const k of Object.keys(UNLOCKS)) {
-    if (PROGRESS.unlocked.indexOf(k) === -1 && UNLOCKS[k].check(PROGRESS)) {
+    if (PROGRESS.unlocked.indexOf(k) === -1 && unlockMet(k, PROGRESS)) {
       PROGRESS.unlocked.push(k);
       fresh.push(k);
     }
@@ -3613,6 +3718,74 @@ const STAT_LEGEND_LONG =
   + '<b>DEF</b> wider catch and throw windows when you field · '
   + '<b>PIT</b> how well he throws when it is his turn on the mound';
 
+/* The six ways to read the cabinet, plus the rule that outranks all of
+   them: a character you cannot draft sorts last. Fifty five cards is more
+   than a screen, and with the locked ones scattered through it the ones
+   you can actually pick were the minority in every row. */
+const ROSTER_SORTS = [
+  { k:'name',  label:'A to Z',    val:(c)=> c.n.toLowerCase(), dir:1 },
+  { k:'pow',   label:'Power',     val:(c)=> c.pow, dir:-1 },
+  { k:'spd',   label:'Speed',     val:(c)=> c.spd, dir:-1 },
+  { k:'con',   label:'Contact',   val:(c)=> c.con, dir:-1 },
+  { k:'def',   label:'Fielding',  val:(c)=> c.def, dir:-1 },
+  { k:'pit',   label:'Pitching',  val:(c)=> c.pit, dir:-1 },
+];
+function sortedRoster(key) {
+  const S = ROSTER_SORTS.find(x => x.k === key) || ROSTER_SORTS[0];
+  /* Sort a copy: ROSTER's own order is the authored one and other screens
+     read it. Ties break on name so the grid does not reshuffle under a
+     player who sorted by POW twice. */
+  return ROSTER.slice().sort((a, b) => {
+    const la = isUnlocked(a.k) ? 0 : 1, lb = isUnlocked(b.k) ? 0 : 1;
+    if (la !== lb) return la - lb;
+    const va = S.val(a), vb = S.val(b);
+    if (va < vb) return -S.dir;
+    if (va > vb) return S.dir;
+    return a.n.localeCompare(b.n);
+  });
+}
+
+/* One popup element, moved and refilled rather than one per card: fifty
+   five of these in the DOM is fifty five things to keep in sync with
+   progress that changes while the screen is open. */
+let LOCKPOP = null;
+function lockPopHTML(c) {
+  const u = UNLOCKS[c.k];
+  const nm = `<div class="pop-name">${c.n}</div>`;
+  if (!u) return nm + '<span class="pop-chip base">On the roster</span>'
+    + '<div class="pop-how">Available from the start. No unlock needed.</div>';
+  const done = isUnlocked(c.k);
+  const pr = unlockProgress(c.k);
+  const band = UNLOCK_BANDS[u.band] || UNLOCK_BANDS.short;
+  return nm
+    + `<span class="pop-chip ${done ? 'ok' : 'lk'}">${done ? 'Earned' : 'Locked'}</span>`
+    + `<div class="pop-how">${done ? 'Earned by: ' : 'To unlock: '}${u.how}</div>`
+    + (done ? ''
+       : `<div class="pop-band">${band.label} · ${band.note}</div>`
+         + `<div class="pop-count">${pr.have} of ${pr.goal} ${pr.unit}</div>`
+         + `<div class="pop-bar"><i style="width:${pr.pct}%"></i></div>`);
+}
+function showLockPop(c, anchor) {
+  if (!LOCKPOP) { LOCKPOP = el('div','lockpop'); document.body.appendChild(LOCKPOP); }
+  LOCKPOP.innerHTML = lockPopHTML(c);
+  LOCKPOP.style.visibility = 'hidden';
+  LOCKPOP.style.left = '0px'; LOCKPOP.style.top = '0px';
+  const r = anchor.getBoundingClientRect();
+  const pop = LOCKPOP.getBoundingClientRect();
+  /* To the right of the card, or to its left when that would run off the
+     screen, and never above the fold or below it. */
+  let x = r.right + 10;
+  if (x + pop.width > window.innerWidth - 8) x = r.left - pop.width - 10;
+  if (x < 8) x = 8;
+  let y = r.top;
+  if (y + pop.height > window.innerHeight - 8) y = window.innerHeight - pop.height - 8;
+  if (y < 8) y = 8;
+  LOCKPOP.style.left = Math.round(x) + 'px';
+  LOCKPOP.style.top = Math.round(y) + 'px';
+  LOCKPOP.style.visibility = 'visible';
+}
+function hideLockPop() { if (LOCKPOP) LOCKPOP.style.visibility = 'hidden'; }
+
 function renderRoster() {
   const picked = new Set();
   const s = el('div','screen');
@@ -3628,6 +3801,32 @@ function renderRoster() {
   s.appendChild(el('p', null, STAT_LEGEND));
 
   const card = el('div','card');
+
+  /* Sort row. The choice sticks, because someone who reads the cabinet by
+     PIT reads it by PIT every time they draft. */
+  let sortKey = PREFS.rosterSort || 'name';
+  if (!ROSTER_SORTS.some(x => x.k === sortKey)) sortKey = 'name';
+  const bar = el('div','sortbar');
+  bar.appendChild(el('span','lbl','Sort'));
+  const sortBtns = new Map();
+  for (const S of ROSTER_SORTS) {
+    const b = el('button','sb', S.label);
+    b.type = 'button';
+    b.onclick = () => {
+      sortKey = S.k;
+      PREFS.rosterSort = S.k;
+      savePrefs();
+      for (const [k, btn] of sortBtns) btn.classList.toggle('on', k === S.k);
+      layout();
+    };
+    sortBtns.set(S.k, b);
+    bar.appendChild(b);
+  }
+  const nLocked = ROSTER.filter(c => !isUnlocked(c.k)).length;
+  bar.appendChild(el('span','tail',
+    nLocked ? `${nLocked} still locked, at the end` : 'Every character unlocked'));
+  card.appendChild(bar);
+
   const grid = el('div','roster');
   const cards = new Map();
   ROSTER.forEach(c => {
@@ -3645,13 +3844,21 @@ function renderRoster() {
       const nt = el('div','quirk', c.note);
       cc.appendChild(nt);
     }
-    /* Locked characters can't be drafted; the card says how to earn them. */
+    /* Locked characters can't be drafted; the card says how to earn them,
+       and hovering says how far along you are. */
     const locked = !isUnlocked(c.k);
     if (locked) {
       cc.classList.add('locked');
       const lk = el('div','quirk lockhint', 'LOCKED: ' + UNLOCKS[c.k].how);
       cc.appendChild(lk);
     }
+    cc.tabIndex = 0;
+    cc.onmouseenter = () => showLockPop(c, cc);
+    cc.onfocus = () => showLockPop(c, cc);
+    cc.onmouseleave = cc.onblur = hideLockPop;
+    cc.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cc.onclick(); }
+    };
     cc.onclick = () => {
       if (locked) return;
       if (picked.has(c.k)) {
@@ -3673,9 +3880,17 @@ function renderRoster() {
         }, 220);
       }
     };
-    grid.appendChild(cc);
     cards.set(c.k, cc);
   });
+  /* Order is decided in one place and re-applied on every sort, so the
+     cards themselves never need rebuilding and a half made selection
+     survives changing how the list reads. */
+  function layout() {
+    hideLockPop();
+    for (const c of sortedRoster(sortKey)) grid.appendChild(cards.get(c.k));
+  }
+  sortBtns.get(sortKey).classList.add('on');
+  layout();
   card.appendChild(grid);
   s.appendChild(card);
 
@@ -6845,6 +7060,12 @@ function finishGame() {
   }
   if (win && (you.score - foe.score) >= 10) PROGRESS.blowouts = (PROGRESS.blowouts|0) + 1;
   if (g.innings >= 9) PROGRESS.nineInningGames = (PROGRESS.nineInningGames|0) + 1;
+  /* Career counters. A shutout is the OPPONENT held to nothing, which is
+     not the same as a win: a forfeit hands you a win with no innings in
+     it, so the check is on their runs rather than on the result. */
+  PROGRESS.careerHR = (PROGRESS.careerHR|0) + yourHR;
+  PROGRESS.careerK = (PROGRESS.careerK|0) + (g.yourK|0);
+  if (win && foe.score === 0 && !g.forfeit) PROGRESS.shutouts = (PROGRESS.shutouts|0) + 1;
   /* Comeback: you trailed at some point on the line score and still won. */
   if (win) {
     let aw = 0, hm = 0, trailed = false;
@@ -9409,20 +9630,26 @@ function renderSeasonEnd() {
 
   /* What the next year could earn: the locked characters and how close
      they are, so a franchise has something to run toward. */
-  const locked = Object.keys(UNLOCKS).filter(k => !isUnlocked(k));
+  const locked = Object.keys(UNLOCKS).filter(k => !isUnlocked(k))
+    /* Nearest first, and only the front of the queue. Twenty dark squares
+       is a wall; the six you are closest to is a shortlist. */
+    .sort((a, b) => unlockProgress(b).pct - unlockProgress(a).pct)
+    .slice(0, 6);
   if (locked.length) {
     const lc = el('div','card');
-    lc.appendChild(el('h3', null, 'Still to earn'));
+    lc.appendChild(el('h3', null, 'Closest to earning'));
     const grid = el('div','awards');
     for (const k of locked) {
       const c = ROSTER_BY_KEY[k];
       if (!c) continue;
+      const pr = unlockProgress(k);
       const box = el('div','earn');
       const cv = spriteCanvas(c, 48);
       cv.style.opacity = '.45';
       box.appendChild(cv);
       box.appendChild(el('div','nm', c.n));
       box.appendChild(el('div','ln', UNLOCKS[k].how));
+      box.appendChild(el('div','ln', `<b>${pr.have} of ${pr.goal}</b>`));
       grid.appendChild(box);
     }
     lc.appendChild(grid);
@@ -9469,6 +9696,11 @@ try {
 } catch (e) {
   State.season = null;
 }
+/* Grant anything the saved progress has already earned. The ladder grows
+   between builds, and without this a rung added today stays dark for a
+   player who cleared it months ago, because the only other place that
+   grants is the end of a game. */
+try { refreshUnlocks(); } catch (e) {}
 render();
 </script>
 </body>
