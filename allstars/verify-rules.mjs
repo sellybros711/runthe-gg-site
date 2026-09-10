@@ -23,12 +23,14 @@
      season awards        a fixed season hands out the same hardware, archived once
      field frames         every biped carries a distinct catch and throw frame
      franchise years      a club runs year on year, carrying its record book
-     long unlocks         three characters take a franchise rather than an afternoon
+     long unlocks         no good afternoon reaches the top of the ladder, and a career reaches all of it
      the ladder           every rung has a metric and a goal, and the tail is a long one
+     harder is better     the better the character, the harder the rung, and the arms are earned by pitching
      locked last          a card you cannot draft sorts behind every card you can
      the hover card       says the requirement and how far along, and goes away after
      the squad photo      the room is the home page, and everyone stands in one frame
      the room fills up    the dugout takes the window and still fits above the fold
+     fewer words          settings is headings and choices, and a rule sits behind a dot
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -575,25 +577,40 @@ async function main() {
       await pg.close();
     }
 
-    /* ---- the long unlocks need a franchise, not a good afternoon ---- */
+    /* ---- the tail is a tail: the top rungs cannot fall out early ---- */
     {
       console.log('long unlocks');
       const { pg, errors } = await fresh(browser);
       const r = await pg.evaluate(() => {
-        const long = ['robin', 'medusa', 'krampus'];
-        const before = long.map(k => isUnlocked(k));
-        PROGRESS.franchiseYears = 3; const a = refreshUnlocks();
-        PROGRESS.wins = 25; const b = refreshUnlocks();
-        PROGRESS.titles = 2; const c = refreshUnlocks();
-        return { before, a, b, c, after: long.map(k => isUnlocked(k)) };
+        const top = Object.entries(UNLOCKS)
+          .sort((a, b) => b[1].rank - a[1].rank).slice(0, 5).map(x => x[0]);
+        const before = top.map(k => isUnlocked(k));
+        /* A very good first evening: a nine inning win, a blowout, a
+           comeback, a playoff win, a big strikeout game, a title. None of
+           it may touch the top of the ladder. */
+        Object.assign(PROGRESS, {
+          nineInningGames: 3, blowouts: 3, comebacks: 5, playoffWins: 3,
+          gameK: 20, seasonHR: 12, shutouts: 1, wins: 9, games: 12, titles: 1,
+        });
+        const early = refreshUnlocks();
+        /* Then a career. */
+        Object.assign(PROGRESS, {
+          careerSB: 900, careerHR: 400, careerK: 2000, shutouts: 40,
+          wins: 400, games: 700, titles: 9, franchiseYears: 20,
+        });
+        const late = refreshUnlocks();
+        return { top, before, early, late, after: top.map(k => isUnlocked(k)),
+                 stillDark: Object.keys(UNLOCKS).filter(k => !isUnlocked(k)) };
       });
-      ok(r.before.every(x => !x), 'the three long ones start locked', JSON.stringify(r.before));
-      ok(r.a.includes('robin'), 'a third franchise year earns the best arm on the roster', JSON.stringify(r.a));
-      ok(r.b.includes('medusa'), 'twenty five wins earns the second', JSON.stringify(r.b));
-      ok(r.c.includes('krampus'), 'two championships earn the third', JSON.stringify(r.c));
+      ok(r.before.every(x => !x), 'the five hardest start locked', JSON.stringify(r.before));
+      ok(r.top.every(k => !r.early.includes(k)),
+         'a very good first evening earns none of them', JSON.stringify(r.early));
+      ok(r.early.length > 0, 'though it does earn something', JSON.stringify(r.early));
+      ok(r.top.every(k => r.late.includes(k)),
+         'and a career earns all five', JSON.stringify(r.late));
+      ok(r.stillDark.length === 0, 'with nothing left unreachable', JSON.stringify(r.stillDark));
       ok(r.after.every(x => x), 'and they stay unlocked', JSON.stringify(r.after));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
-      await pg.close();
     }
 
     /* ---- the ladder: declared, not hand written, and paced ---- */
@@ -683,11 +700,11 @@ async function main() {
       console.log('the hover card');
       const { pg, errors } = await fresh(browser);
       const r = await pg.evaluate(() => {
-        PROGRESS.wins = 3;
+        PROGRESS.careerSB = 30;
         State.mode = 'exhibition'; State.screen = 'roster'; render();
         const out = {};
         const cat = [...document.querySelectorAll('.charcard')]
-          .find(c => c.querySelector('.name').textContent === 'Black Cat');
+          .find(c => c.querySelector('.name').textContent === 'Acrobat');
         cat.dispatchEvent(new MouseEvent('mouseenter'));
         const pop = document.querySelector('.lockpop');
         out.text = pop.textContent;
@@ -699,32 +716,36 @@ async function main() {
         cat.dispatchEvent(new MouseEvent('mouseleave'));
         out.gone = getComputedStyle(pop).visibility;
         /* One popup, reused, not one per card. */
+        out.count = document.querySelectorAll('.lockpop').length;
+        /* A card you can already draft raises nothing: the popup answers
+           "how do I get this one", and that card has no answer to give. */
         const open = [...document.querySelectorAll('.charcard:not(.locked)')][0];
         open.dispatchEvent(new MouseEvent('mouseenter'));
-        out.openText = document.querySelector('.lockpop').textContent;
-        out.count = document.querySelectorAll('.lockpop').length;
-        /* Earning it flips what the card says. */
-        PROGRESS.wins = 5; refreshUnlocks();
+        out.openVis = getComputedStyle(document.querySelector('.lockpop')).visibility;
+        /* Earning it stops the popup entirely, because there is no longer
+           a question to answer. */
+        PROGRESS.careerSB = 50; refreshUnlocks();
         State.screen = 'roster'; render();
         const cat2 = [...document.querySelectorAll('.charcard')]
-          .find(c => c.querySelector('.name').textContent === 'Black Cat');
+          .find(c => c.querySelector('.name').textContent === 'Acrobat');
         cat2.dispatchEvent(new MouseEvent('mouseenter'));
-        out.earned = document.querySelector('.lockpop').textContent;
+        out.earnedVis = getComputedStyle(document.querySelector('.lockpop')).visibility;
         out.stillLocked = cat2.classList.contains('locked');
         return out;
       });
       ok(r.vis === 'visible', 'hovering a locked card raises the popup', r.vis);
-      ok(/Locked/.test(r.text) && /To unlock: Win 5 games\./.test(r.text),
+      ok(/Locked/.test(r.text) && /To unlock: Steal 50 bases\./.test(r.text),
          'it states the requirement in full', r.text);
-      ok(/3 of 5 wins/.test(r.text), 'and how far along you are, which the card itself cannot say', r.text);
+      ok(/30 of 50 stolen bases/.test(r.text),
+         'and how far along you are, which the card itself cannot say', r.text);
       ok(r.bar === '60%', 'the bar matches the count', r.bar);
       ok(/Early/.test(r.text), 'and it says roughly how long this one takes', r.text);
       ok(r.onScreen, 'the popup is placed inside the window rather than off its edge');
       ok(r.gone === 'hidden', 'it goes away when the pointer leaves', r.gone);
       ok(r.count === 1, 'there is one popup, reused, not fifty five', 'n=' + r.count);
-      ok(/On the roster/.test(r.openText), 'a character who needs no unlock says so', r.openText);
-      ok(!r.stillLocked && /Earned/.test(r.earned),
-         'and once earned the same hover says how it was earned', r.earned);
+      ok(r.openVis === 'hidden', 'a character you can already draft raises nothing', r.openVis);
+      ok(!r.stillLocked && r.earnedVis === 'hidden',
+         'and once earned, that card stops raising it too', r.earnedVis);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -879,6 +900,147 @@ async function main() {
         return document.body.classList.contains('inroom');
       });
       ok(!off, 'leaving the room hands the page layout back');
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the better the character, the harder the rung ---- */
+    {
+      console.log('harder is better');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const rows = Object.entries(UNLOCKS).map(([k, u]) => {
+          const c = ROSTER_BY_KEY[k];
+          return { k, n: c.n, rank: u.rank, cost: u.cost, kind: u.kind, goal: u.goal,
+                   metric: u.unit, v: charValue(c), pit: c.pit, spd: c.spd, pow: c.pow };
+        }).sort((a, b) => a.rank - b.rank);
+        const free = ROSTER.filter(c => !UNLOCKS[c.k]);
+        return {
+          rows,
+          ranks: rows.map(x => x.rank),
+          freeBest: Math.max.apply(null, free.map(charValue)),
+          freeN: free.length,
+          lockWorst: Math.min.apply(null, rows.map(x => x.v)),
+          bestArm: Math.max.apply(null, ROSTER.map(c => c.pit)),
+          bestLegs: Math.max.apply(null, ROSTER.map(c => c.spd)),
+        };
+      });
+      const rise = (a) => a.every((v, i) => i === 0 || v > a[i - 1]);
+      ok(JSON.stringify(r.ranks) === JSON.stringify(r.rows.map((_, i) => i + 1)),
+         'the rungs are numbered 1 to ' + r.rows.length + ' with no gaps and no repeats',
+         JSON.stringify(r.ranks));
+
+      /* THE RULE. Value is the game's own teamRating read for one of the
+         nine, so this cannot be argued with by adjusting an opinion. */
+      ok(rise(r.rows.map(x => x.v)),
+         'a higher rung always pays a better character',
+         r.rows.map(x => `${x.rank}:${x.n} ${x.v.toFixed(1)}`).join(' | '));
+      ok(rise(r.rows.map(x => x.cost)),
+         'and always costs more to reach',
+         r.rows.map(x => x.rank + ':' + x.cost).join(' '));
+      /* And the rule only means something if the best players are behind
+         it: with them free, the hardest rung is not the best character. */
+      ok(r.lockWorst > r.freeBest,
+         'every locked character outranks every free one, so the top of the ladder is the top of the roster',
+         `worst locked ${r.lockWorst.toFixed(2)} vs best free ${r.freeBest.toFixed(2)}`);
+      ok(r.freeN >= 30, 'and a full cabinet is still open on day one', 'free=' + r.freeN);
+
+      /* Two rungs on the same counter must not invert: an "easier" rung
+         you can only clear after a harder one is a lie about the order. */
+      const byMetric = {};
+      for (const x of r.rows) (byMetric[x.metric] || (byMetric[x.metric] = [])).push(x);
+      const inverted = Object.entries(byMetric)
+        .filter(([, list]) => !rise(list.map(x => x.goal)))
+        .map(([m, list]) => m + ': ' + list.map(x => x.rank + ':' + x.goal).join(','));
+      ok(inverted.length === 0,
+         'where two rungs count the same thing, the higher one asks for more',
+         inverted.join(' | '));
+
+      /* THE ARMS. The point of the pitching rungs: the better the arm, the
+         harder the pitching feat, and the game's best arm sits at the top. */
+      const arms = r.rows.filter(x => x.kind === 'pitch');
+      ok(arms.length >= 4, 'there are several pitching rungs', 'n=' + arms.length);
+      ok(rise(arms.map(x => x.pit)),
+         'each pitching rung pays a better arm than the one below it',
+         arms.map(x => `${x.rank}:${x.n} PIT ${x.pit}`).join(' | '));
+      const topArm = arms[arms.length - 1];
+      ok(topArm.pit >= r.bestArm,
+         'and the hardest pitching feat pays the best arm in the game',
+         `${topArm.n} PIT ${topArm.pit} vs best ${r.bestArm}`);
+      ok(topArm.rank === r.rows.length,
+         'which is the top of the whole ladder', 'rank ' + topArm.rank);
+
+      /* The same shape for the other two stats that have a rung of their own. */
+      const legs = r.rows.filter(x => x.kind === 'speed');
+      ok(rise(legs.map(x => x.spd)), 'each running rung pays a faster character',
+         legs.map(x => `${x.rank}:${x.n} SPD ${x.spd}`).join(' | '));
+      ok(legs[legs.length - 1].spd >= r.bestLegs,
+         'and the hardest one pays the fastest in the game',
+         `${legs[legs.length - 1].n} ${legs[legs.length - 1].spd} vs ${r.bestLegs}`);
+      const bats = r.rows.filter(x => x.kind === 'power');
+      ok(rise(bats.map(x => x.pow)), 'each hitting rung pays a bigger bat',
+         bats.map(x => `${x.rank}:${x.n} POW ${x.pow}`).join(' | '));
+
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- fewer words ---- */
+    {
+      console.log('fewer words');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const out = {};
+        /* SETTINGS. Every group carried a paragraph explaining what its own
+           words already said. A settings screen that has to be read is a
+           settings screen nobody reads. */
+        State.team = ROSTER.filter(c => isUnlocked(c.k)).slice(0, 9).map(c => c.k);
+        State.mode = 'season'; State.franchise = randomFranchise();
+        State.screen = 'settings'; render();
+        out.heads = [...document.querySelectorAll('#app h3')].map(h => h.textContent);
+        out.prose = [...document.querySelectorAll('#app p')].map(p => p.textContent);
+        out.toggles = [...document.querySelectorAll('#app .toggle')].map(t => t.textContent);
+        out.btns = [...document.querySelectorAll('#app .btn')].map(t => t.textContent);
+        /* and they still do what they say */
+        const pick = (label) => [...document.querySelectorAll('#app .toggle')]
+          .find(t => t.textContent === label);
+        pick('9').click();
+        out.innings = State.innings;
+        State.screen = 'settings'; render();
+        out.nineOn = pick('9').classList.contains('on');
+
+        /* THE INFO DOT. The standings rule was three lines of small print
+           under the table on every visit. */
+        startSeason();
+        State.screen = 'season-hub'; render();
+        const dot = document.querySelector('.infodot');
+        const box = document.querySelector('.infobox');
+        out.startsShut = box.hidden;
+        out.aria = dot.getAttribute('aria-expanded');
+        dot.click();
+        out.opens = !box.hidden;
+        out.ariaOpen = dot.getAttribute('aria-expanded');
+        out.rule = box.textContent;
+        dot.click();
+        out.shutsAgain = box.hidden;
+        out.hubProse = [...document.querySelectorAll('#app .card > p')].map(p => p.textContent);
+        return out;
+      });
+      ok(JSON.stringify(r.heads) === JSON.stringify(
+           ['Innings','Difficulty','Game speed','Cutscenes','Coaching tips']),
+         'settings is five headings', JSON.stringify(r.heads));
+      ok(r.prose.length === 0, 'and not one line of prose', JSON.stringify(r.prose));
+      ok(JSON.stringify(r.toggles) === JSON.stringify(
+           ['5','9','easy','medium','hard','Relaxed','Normal','Fast','On','Off','On','Off']),
+         'the choices are the words themselves', JSON.stringify(r.toggles));
+      ok(r.btns.length === 2, 'two buttons and no more', JSON.stringify(r.btns));
+      ok(r.innings === 9 && r.nineOn, 'and the switches still switch', 'innings=' + r.innings);
+      ok(r.startsShut && r.aria === 'false', 'the standings rule starts folded away');
+      ok(r.opens && r.ariaOpen === 'true' && /head to head/.test(r.rule),
+         'the dot opens it for anyone who wants it', r.rule.slice(0, 60));
+      ok(r.shutsAgain, 'and folds it back');
+      ok(!r.hubProse.some(p => /head to head|Top four make/.test(p)),
+         'so the rule is not printed under the table any more', JSON.stringify(r.hubProse));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

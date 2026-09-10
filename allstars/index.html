@@ -121,6 +121,22 @@
   .charcard.locked:hover{transform:none;box-shadow:var(--shadow-sm);}
   .quirk.lockhint{color:var(--gold);}
 
+  /* THE INFO DOT. A rule a player needs once (how a tie breaks, when IN
+     and OUT are certain) was printed under the table every single visit,
+     which is three lines of small print between them and the thing they
+     came to read. It lives behind this instead: on the heading, off by
+     default, one click away forever. */
+  .headrow{display:flex;align-items:center;gap:8px;}
+  .headrow h3{margin:14px 0 6px;}
+  .infodot{font:inherit;font-size:11px;font-weight:900;line-height:1;
+    width:20px;height:20px;border:2px solid var(--line);background:var(--panel);
+    color:var(--text-dim);cursor:pointer;padding:0;border-radius:50%;
+    box-shadow:1px 1px 0 var(--navy);}
+  .infodot:hover,.infodot[aria-expanded="true"]{background:var(--gold);color:#fff6ea;}
+  .infodot:active{transform:translate(1px,1px);box-shadow:none;}
+  .infobox{margin-top:8px;padding:8px 10px;background:var(--panel-2);
+    border:2px solid var(--line);font-size:11px;line-height:1.5;color:var(--text-dim);}
+
   /* The sort rail above the grid. */
   .sortbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
   .sortbar .lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;
@@ -2309,55 +2325,92 @@ function savePrefs() {
 const UNLOCK_BANDS = {
   short:  { label:'Early',     note:'A sitting or two.' },
   long:   { label:'Long haul', note:'A run of evenings.' },
-  legend: { label:'Legend', note:'Months, not days.' },
+  legend: { label:'Legend',    note:'Months, not days.' },
 };
+
+/* THE LADDER.
+
+   Two rules, and both of them are asserted rather than trusted.
+
+   ONE: the better the character, the harder the rung. "Better" is not a
+   judgement call here, it is the game's own `teamRating` read for a single
+   member of a nine (charValue below), so the ordering cannot drift from
+   how the simulation actually values a club. The twenty locked characters
+   are the twenty best on the roster by that number, which is what makes
+   the claim mean anything: if the best players were free, the hardest
+   unlock would not be the best player in the game. `rank` counts up with
+   value, and `cost` is roughly how many games of play a rung takes, so
+   the two orderings can be checked against each other.
+
+   TWO: the rung matches what the character is for. The four best arms in
+   the game are earned by the four hardest PITCHING feats, in order:
+   Fire Breather 86, Witch 88, Medusa 92, and Robin Hood at 94, the best
+   arm on the roster, for the hardest thing a pitcher can do. Speed is
+   earned by running, power by hitting the ball a long way. A rung that
+   asks for one thing and pays in another teaches nothing.
+
+   The `cost` numbers are not decoration. Several are set from a soak of
+   real games rather than from taste, because the difference between a
+   rung a good player clears in a week and one nobody clears at all is a
+   measurement, and guessing it is how a badge catalogue ends up asking
+   for things the game cannot produce. */
 const UNLOCKS = {
   /* ---- Early: the first evening should hand you something ---- */
-  fathertime:{ band:'short', how:'Play a full nine inning game.',
-               unit:'nine inning games', goal:1,   have:(p)=> p.nineInningGames|0 },
-  chupacabra:{ band:'short', how:'Win a game by 10 runs or more.',
-               unit:'blowout wins',      goal:1,   have:(p)=> p.blowouts|0 },
-  phoenix:   { band:'short', how:'Come back and win after trailing.',
-               unit:'comeback wins',     goal:1,   have:(p)=> p.comebacks|0 },
-  liberty:   { band:'short', how:'Win a playoff game.',
-               unit:'playoff wins',      goal:1,   have:(p)=> p.playoffWins|0 },
-  kong:      { band:'short', how:'Hit 6 home runs in one season.',
+  mrsclaus:  { rank:1,  cost:1,   band:'short', kind:'all', how:'Play a full nine inning game.',
+               unit:'nine inning games',  goal:1,   have:(p)=> p.nineInningGames|0 },
+  dorothy:   { rank:2,  cost:5,   band:'short', kind:'all', how:'Win 3 games.',
+               unit:'wins',               goal:3,   have:(p)=> p.wins|0 },
+  firebreather:{ rank:3, cost:9,  band:'short', kind:'pitch', how:'Strike out 8 in one game.',
+               unit:'strikeouts in a game', goal:8, have:(p)=> p.gameK|0 },
+  fairy:     { rank:4,  cost:15,  band:'short', kind:'speed', how:'Steal 15 bases.',
+               unit:'stolen bases',       goal:15,  have:(p)=> p.careerSB|0 },
+  popeye:    { rank:5,  cost:22,  band:'short', kind:'power', how:'Hit 6 home runs in one season.',
                unit:'home runs in a season', goal:6, have:(p)=> p.seasonHR|0 },
-  blackcat:  { band:'short', how:'Win 5 games.',
-               unit:'wins',              goal:5,   have:(p)=> p.wins|0 },
-  horseman:  { band:'short', how:'Shut a club out.',
-               unit:'shutouts',          goal:1,   have:(p)=> p.shutouts|0 },
-  dragon:    { band:'short', how:'Win a championship.',
-               unit:'championships',     goal:1,   have:(p)=> p.titles|0 },
-  nessie:    { band:'short', how:'Hit 25 career home runs.',
-               unit:'career home runs',  goal:25,  have:(p)=> p.careerHR|0 },
+  beardedlady:{ rank:6, cost:30,  band:'short', kind:'all', how:'Win two games by 10 runs or more.',
+               unit:'blowout wins',       goal:2,   have:(p)=> p.blowouts|0 },
+  acrobat:   { rank:7,  cost:45,  band:'short', kind:'speed', how:'Steal 50 bases.',
+               unit:'stolen bases',       goal:50,  have:(p)=> p.careerSB|0 },
+  witch:     { rank:8,  cost:58,  band:'short', kind:'pitch', how:'Shut a club out.',
+               unit:'shutouts',           goal:1,   have:(p)=> p.shutouts|0 },
 
   /* ---- Long haul: a franchise has something to run toward ---- */
-  robin:     { band:'long',  how:'Reach year three of a franchise.',
-               unit:'franchise years',   goal:3,   have:(p)=> p.franchiseYears|0 },
-  werewolf:  { band:'long',  how:'Strike out 100 batters.',
-               unit:'strikeouts thrown', goal:100, have:(p)=> p.careerK|0 },
-  medusa:    { band:'long',  how:'Win 25 games.',
-               unit:'wins',              goal:25,  have:(p)=> p.wins|0 },
-  cyclops:   { band:'long',  how:'Hit 100 career home runs.',
-               unit:'career home runs',  goal:100, have:(p)=> p.careerHR|0 },
-  krampus:   { band:'long',  how:'Win two championships.',
-               unit:'championships',     goal:2,   have:(p)=> p.titles|0 },
-  golem:     { band:'long',  how:'Shut out 10 clubs.',
-               unit:'shutouts',          goal:10,  have:(p)=> p.shutouts|0 },
-  centaur:   { band:'long',  how:'Play 100 games.',
-               unit:'games played',      goal:100, have:(p)=> p.games|0 },
-  firebreather:{ band:'long', how:'Strike out 250 batters.',
-               unit:'strikeouts thrown', goal:250, have:(p)=> p.careerK|0 },
+  ringmaster:{ rank:9,  cost:72,  band:'long',  kind:'all',  how:'Win three playoff games.',
+               unit:'playoff wins',       goal:3,   have:(p)=> p.playoffWins|0 },
+  phoenix:   { rank:10, cost:88,  band:'long',  kind:'all',  how:'Come back and win after trailing, five times.',
+               unit:'comeback wins',      goal:5,   have:(p)=> p.comebacks|0 },
+  invisible: { rank:11, cost:108, band:'long',  kind:'all',  how:'Reach year five of a franchise.',
+               unit:'franchise years',    goal:5,   have:(p)=> p.franchiseYears|0 },
+  dragon:    { rank:12, cost:130, band:'long',  kind:'power',  how:'Hit 150 career home runs.',
+               unit:'career home runs',   goal:150, have:(p)=> p.careerHR|0 },
+  lupin:     { rank:13, cost:158, band:'long',  kind:'all',  how:'Win 80 games.',
+               unit:'wins',               goal:80,  have:(p)=> p.wins|0 },
+  cupid:     { rank:14, cost:190, band:'long',  kind:'all', how:'Reach year eight of a franchise.',
+               unit:'franchise years',    goal:8,   have:(p)=> p.franchiseYears|0 },
+  medusa:    { rank:15, cost:230, band:'long',  kind:'pitch',  how:'Strike out 700 batters.',
+               unit:'strikeouts thrown',  goal:700, have:(p)=> p.careerK|0 },
+  sherlock:  { rank:16, cost:275, band:'long',  kind:'all',  how:'Win two championships.',
+               unit:'championships',      goal:2,   have:(p)=> p.titles|0 },
 
   /* ---- Legend: the tail, and it is meant to be a long one ---- */
-  humpty:    { band:'legend', how:'Reach year eight of a franchise.',
-               unit:'franchise years',   goal:8,   have:(p)=> p.franchiseYears|0 },
-  sasquatch: { band:'legend', how:'Win 100 games.',
-               unit:'wins',              goal:100, have:(p)=> p.wins|0 },
-  paulbunyan:{ band:'legend', how:'Win five championships.',
-               unit:'championships',     goal:5,   have:(p)=> p.titles|0 },
+  fathertime:{ rank:17, cost:340, band:'legend', kind:'all', how:'Play 340 games.',
+               unit:'games played',       goal:340, have:(p)=> p.games|0 },
+  centaur:   { rank:18, cost:420, band:'legend', kind:'speed', how:'Steal 600 bases.',
+               unit:'stolen bases',       goal:600, have:(p)=> p.careerSB|0 },
+  mothernature:{ rank:19, cost:520, band:'legend', kind:'all', how:'Win five championships.',
+               unit:'championships',      goal:5,   have:(p)=> p.titles|0 },
+  /* THE TOP OF THE LADDER. The best arm in the game for the hardest thing
+     an arm can do, and the number comes from a soak rather than from
+     taste: see UNLOCK_TOP_NOTE. */
+  robin:     { rank:20, cost:650, band:'legend', kind:'pitch', how:'Shut out 30 clubs.',
+               unit:'shutouts',           goal:30,  have:(p)=> p.shutouts|0 },
 };
+/* What the simulation thinks one member of a nine is worth. This is
+   `teamRating` with the nine collapsed to one, deliberately: the ladder's
+   ordering has to come from the game's own idea of value rather than from
+   a second opinion invented for the cabinet. */
+function charValue(c) {
+  return (c.pow * 0.4 + c.con * 0.4 + c.spd * 0.2) * 0.55 + c.def * 0.30 + c.pit * 0.15;
+}
 /* One place decides whether a rung is cleared, so the bar on the card and
    the grant at the end of a game can never disagree. */
 function unlockMet(k, p) {
@@ -2379,7 +2432,8 @@ const PROGRESS = Object.assign(
     /* The career counters. These are what the long rungs are measured in:
        a season high resets, and a ladder built only on season highs tops
        out on a good afternoon. */
-    careerHR:0, careerK:0, shutouts:0 },
+    careerHR:0, careerK:0, shutouts:0,
+    gameK:0, gameHR:0, careerSB:0, noHitters:0 },
   PREFS.progress || {}
 );
 function saveProgress() {
@@ -3982,23 +4036,23 @@ function sortedRoster(key) {
    five of these in the DOM is fifty five things to keep in sync with
    progress that changes while the screen is open. */
 let LOCKPOP = null;
+/* ONLY THE ONES YOU CANNOT USE. The popup answers one question, how do I
+   get this character, and a card you can already draft has no answer to
+   give: "available from the start" is a box in your way telling you
+   nothing. So a character you can pick raises nothing at all. */
 function lockPopHTML(c) {
   const u = UNLOCKS[c.k];
-  const nm = `<div class="pop-name">${c.n}</div>`;
-  if (!u) return nm + '<span class="pop-chip base">On the roster</span>'
-    + '<div class="pop-how">Available from the start. No unlock needed.</div>';
-  const done = isUnlocked(c.k);
   const pr = unlockProgress(c.k);
   const band = UNLOCK_BANDS[u.band] || UNLOCK_BANDS.short;
-  return nm
-    + `<span class="pop-chip ${done ? 'ok' : 'lk'}">${done ? 'Earned' : 'Locked'}</span>`
-    + `<div class="pop-how">${done ? 'Earned by: ' : 'To unlock: '}${u.how}</div>`
-    + (done ? ''
-       : `<div class="pop-band">${band.label} · ${band.note}</div>`
-         + `<div class="pop-count">${pr.have} of ${pr.goal} ${pr.unit}</div>`
-         + `<div class="pop-bar"><i style="width:${pr.pct}%"></i></div>`);
+  return `<div class="pop-name">${c.n}</div>`
+    + '<span class="pop-chip lk">Locked</span>'
+    + `<div class="pop-how">To unlock: ${u.how}</div>`
+    + `<div class="pop-band">${band.label} · ${band.note}</div>`
+    + `<div class="pop-count">${pr.have} of ${pr.goal} ${pr.unit}</div>`
+    + `<div class="pop-bar"><i style="width:${pr.pct}%"></i></div>`;
 }
 function showLockPop(c, anchor) {
+  if (isUnlocked(c.k)) return hideLockPop();
   if (!LOCKPOP) { LOCKPOP = el('div','lockpop'); document.body.appendChild(LOCKPOP); }
   LOCKPOP.innerHTML = lockPopHTML(c);
   LOCKPOP.style.visibility = 'hidden';
@@ -4018,6 +4072,27 @@ function showLockPop(c, anchor) {
   LOCKPOP.style.visibility = 'visible';
 }
 function hideLockPop() { if (LOCKPOP) LOCKPOP.style.visibility = 'hidden'; }
+
+/* A heading with a rule tucked behind a dot. Returns the heading row; the
+   panel is appended after whatever the caller adds next, so the rule sits
+   under the thing it is about rather than above it. */
+function headingWithInfo(parent, title, html) {
+  const row = el('div','headrow');
+  row.appendChild(el('h3', null, title));
+  const dot = el('button','infodot','i');
+  dot.type = 'button';
+  dot.setAttribute('aria-label', title + ': details');
+  dot.setAttribute('aria-expanded', 'false');
+  row.appendChild(dot);
+  parent.appendChild(row);
+  const box = el('div','infobox', html);
+  box.hidden = true;
+  dot.onclick = () => {
+    box.hidden = !box.hidden;
+    dot.setAttribute('aria-expanded', String(!box.hidden));
+  };
+  return box;
+}
 
 function renderRoster() {
   const picked = new Set();
@@ -4203,83 +4278,51 @@ function renderSettings() {
   s.appendChild(el('h2', null, State.mode === 'season' ? 'Season settings' : 'Game settings'));
 
   const card = el('div','card');
-
-  card.appendChild(el('h3', null, 'Innings'));
-  const innRow = el('div','toggle-row');
-  [5,9].forEach(n => {
-    const t = el('div','toggle', `${n} innings`);
-    if (State.innings === n) t.classList.add('on');
-    t.onclick = () => { State.innings = n; savePrefs(); render(); };
-    innRow.appendChild(t);
-  });
-  card.appendChild(innRow);
-  card.appendChild(el('p', null,
-    'Five innings is about ten minutes at Normal speed. Nine is about twenty, and '
-    + 'finishing one unlocks Father Time. '
-    + `A tie goes to extra innings. A lead of ${MERCY_RUNS} from the `
-    + `${ordinal(Math.max(3, State.innings - 1))} inning on ends the game early (mercy rule). `
-    + 'Ending a Season or Cup game early counts as a loss.'));
-
-  card.appendChild(el('h3', null, 'Difficulty'));
-  const dRow = el('div','toggle-row');
-  ['easy','medium','hard'].forEach(d => {
-    const t = el('div','toggle', d);
-    if (State.difficulty === d) t.classList.add('on');
-    t.onclick = () => { State.difficulty = d; savePrefs(); render(); };
-    dRow.appendChild(t);
-  });
-  card.appendChild(dRow);
-
-  card.appendChild(el('h3', null, 'Game speed'));
-  const spRow = el('div','toggle-row');
-  ['relaxed','normal','fast'].forEach(sp => {
-    const t = el('div','toggle', SPEEDS[sp].label);
-    if (State.gameSpeed === sp) t.classList.add('on');
-    t.onclick = () => { State.gameSpeed = sp; applyGameSpeed(); savePrefs(); render(); };
-    spRow.appendChild(t);
-  });
-  card.appendChild(spRow);
-  card.appendChild(el('p', null,
-    'How long the game pauses between pitches and plays. Fast also brings the '
-    + 'pitch in a little quicker, so the timing is slightly tighter.'));
-
-  card.appendChild(el('h3', null, 'Press room'));
-  const csRow = el('div','toggle-row');
-  const csT = el('div','toggle', PREFS.cutscenes !== false ? 'Cutscenes: on' : 'Cutscenes: off');
-  if (PREFS.cutscenes !== false) csT.classList.add('on');
-  csT.onclick = () => { PREFS.cutscenes = (PREFS.cutscenes === false); savePrefs(); render(); };
-  csRow.appendChild(csT);
-  card.appendChild(csRow);
-
-  card.appendChild(el('h3', null, 'Coach'));
-  const coRow = el('div','toggle-row');
-  const coOn = PREFS.coach !== false;
-  const coT = el('div','toggle', coOn ? 'First-timer tips: on' : 'First-timer tips: off');
-  if (coOn) coT.classList.add('on');
-  coT.onclick = () => {
-    PREFS.coach = !coOn;
-    /* Turning them back on means seeing them again. */
-    if (!coOn) { PREFS.coach_bat = false; PREFS.coach_pitch = false; }
-    savePrefs(); render();
+  /* A HEADING AND ITS CHOICES. Nothing else. Every one of these carried a
+     paragraph explaining what the words already say: five innings takes
+     about ten minutes, Fast is faster, tips are tips. A settings screen
+     that has to be read is a settings screen nobody reads. The rules the
+     paragraphs were smuggling in (the mercy rule, extra innings, what the
+     press room is) belong on How To Play, which is where somebody looks
+     when they want them. */
+  const group = (title, opts, isOn, pick) => {
+    card.appendChild(el('h3', null, title));
+    const row = el('div','toggle-row');
+    for (const o of opts) {
+      const t = el('div','toggle', o.label);
+      if (isOn(o.v)) t.classList.add('on');
+      t.onclick = () => { pick(o.v); savePrefs(); render(); };
+      row.appendChild(t);
+    }
+    card.appendChild(row);
   };
-  coRow.appendChild(coT);
-  card.appendChild(coRow);
-  card.appendChild(el('p', null,
-    'Three short notes over the field before your first swing and before your '
-    + 'first pitch, then never again unless you switch them back on.'));
-  card.appendChild(el('p', null,
-    'Reporters before and after every Season and Cup game. They react to the '
-    + 'actual score, they remember what you said to them, and they are not '
-    + 'always reasonable. Exhibition games are never interrupted.'));
 
-  if (State.mode === 'season') {
-    const ny = State.pendingFranchise;
-    card.appendChild(el('h3', null, ny ? `Year ${(ny.year || 1) + 1}` : 'Season format'));
-    card.appendChild(el('p', null, ny
-      ? `${ny.teamName} play seven more, then the bracket. The record book carries over.`
-      : 'Seven regular season games against random opponents from the league. '
-        + 'The top four records make a single elimination playoff bracket.'));
-  }
+  group('Innings', [{ v:5, label:'5' }, { v:9, label:'9' }],
+        (v) => State.innings === v,
+        (v) => { State.innings = v; });
+
+  group('Difficulty',
+        ['easy','medium','hard'].map(d => ({ v:d, label:d })),
+        (v) => State.difficulty === v,
+        (v) => { State.difficulty = v; });
+
+  group('Game speed',
+        ['relaxed','normal','fast'].map(sp => ({ v:sp, label:SPEEDS[sp].label })),
+        (v) => State.gameSpeed === v,
+        (v) => { State.gameSpeed = v; applyGameSpeed(); });
+
+  group('Cutscenes', [{ v:true, label:'On' }, { v:false, label:'Off' }],
+        (v) => (PREFS.cutscenes !== false) === v,
+        (v) => { PREFS.cutscenes = v; });
+
+  group('Coaching tips', [{ v:true, label:'On' }, { v:false, label:'Off' }],
+        (v) => (PREFS.coach !== false) === v,
+        (v) => {
+          /* Switching them back on means seeing them again, so the two
+             "already shown" marks come off with it. */
+          if (v && PREFS.coach === false) { PREFS.coach_bat = false; PREFS.coach_pitch = false; }
+          PREFS.coach = v;
+        });
 
   const row = el('div','btn-row');
   const back = el('button','btn ghost','Back');
@@ -4994,7 +5037,11 @@ function renderSeasonHub() {
 
   /* Standings */
   const stCard = el('div','card');
-  stCard.appendChild(el('h3', null, 'League standings'));
+  const stInfo = headingWithInfo(stCard, 'League standings',
+    'Top four make the playoffs; the line runs above fifth. '
+    + 'IN and OUT appear only once the games left make them certain. '
+    + 'Ties: head to head in a two way tie, then run differential, then a '
+    + 'coin drawn once at the start of the season.');
   const table = el('table','table');
   table.innerHTML = '<thead><tr><th>Team</th><th class="n">W</th><th class="n">L</th>'
     + '<th class="n" title="Games behind the leader">GB</th><th class="n" title="Run differential">RD</th>'
@@ -5020,9 +5067,7 @@ function renderSeasonHub() {
   }
   table.appendChild(tbody);
   stCard.appendChild(table);
-  stCard.appendChild(el('p', null, 'Top four make the playoffs; the line runs above fifth. '
-    + 'IN and OUT appear only once the games left make them certain. '
-    + 'Ties: head to head in a two way tie, then run differential, then a coin drawn once at the start of the season.'));
+  stCard.appendChild(stInfo);
   s.appendChild(stCard);
 
   /* The schedule: all seven, home or away and where, with the results
@@ -7299,6 +7344,19 @@ function finishGame() {
   PROGRESS.careerHR = (PROGRESS.careerHR|0) + yourHR;
   PROGRESS.careerK = (PROGRESS.careerK|0) + (g.yourK|0);
   if (win && foe.score === 0 && !g.forfeit) PROGRESS.shutouts = (PROGRESS.shutouts|0) + 1;
+  /* THE ONE GAME BESTS. A career total measures how long you have played;
+     these measure how well one afternoon went, which is what the top of
+     the ladder is for. Kept as a high water mark rather than a count, so
+     the number on the card only ever goes up. */
+  const yourSB = you.batters.reduce((a,b) => a + ((g.stats.sb && g.stats.sb[b.k]) || 0), 0);
+  const foeHits = foe.batters.reduce((a,b) => a + (g.stats.hits[b.k] || 0), 0);
+  PROGRESS.gameK = Math.max(PROGRESS.gameK|0, g.yourK|0);
+  PROGRESS.gameHR = Math.max(PROGRESS.gameHR|0, yourHR);
+  PROGRESS.careerSB = (PROGRESS.careerSB|0) + yourSB;
+  /* A no-hitter is the opponent's HIT column at zero, which is not the
+     same as a shutout: a club can score on walks and errors without ever
+     squaring one up. A forfeit has no innings in it and is not one. */
+  if (!g.forfeit && foeHits === 0) PROGRESS.noHitters = (PROGRESS.noHitters|0) + 1;
   /* Comeback: you trailed at some point on the line score and still won. */
   if (win) {
     let aw = 0, hm = 0, trailed = false;
