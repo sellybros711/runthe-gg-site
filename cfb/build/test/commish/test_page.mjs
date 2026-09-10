@@ -37,8 +37,16 @@ const SS='/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1a
 const UID='11111111-1111-1111-1111-111111111111';
 const URL='http://localhost:8080/cfb/commish/index.html';
 
-/* The account, with the username the page's tester list is written against. */
-const stub=(signedIn,username)=>`
+/* The account: the username the page's tester list is written against, and what it has
+   PAID for. Those are two different questions now and the page asks both. The list decides
+   who can find the mode at all; premium_products() decides whether the gate opens or
+   pitches, because Commish is sold rather than free (owner, 2026-09-08).
+
+   THE RPC STUB HAS TO KNOW WHICH FUNCTION IT IS ANSWERING. It used to answer every rpc()
+   with `true`, which premiumProducts() correctly refuses (it is not an array), so every
+   signed-in tester read as owning nothing and every door in this file shut. That is the
+   whole reason this argument exists. */
+const stub=(signedIn,username,products)=>`
 window.supabase={createClient(){
   const session=${signedIn}?{access_token:'x',user:{id:'${UID}',email:'c@e.com'}}:null;
   return {auth:{onAuthStateChange(){return{data:{}}},
@@ -49,7 +57,9 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:${username?"{username:'"+username+"'}":'null'}})}}}}}},
-    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve(fn==='premium_products'
+      ? {data:${JSON.stringify(products||[])},error:null}
+      : {data:true,error:null})}}};`;
 
 /* PUT A NAME ON THE REAL LIST, by trapping the assignment access.js makes. Deterministic:
    the name is added the instant the file defines the object, which is before any page code
@@ -62,8 +72,11 @@ const arm=(name)=>`
     get:function(){ return v; },
     set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(name)}); }catch(e){} }});
 })();`;
-/* Signed in as that account, and on the list. */
-const tester=()=>arm(TESTER)+stub(true,TESTER);
+/* Signed in as that account, on the list, and HOLDING the thing the mode is sold as.
+   Every walk below is a paying player's walk, which is the only one that reaches a desk.
+   Pass [] for a tester who has not bought: that is the gate's pitch, checked on its own
+   below rather than at the top of every section. */
+const tester=(products)=>arm(TESTER)+stub(true,TESTER,products||['cfb_premium']);
 
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
 /* THE SIMULATION SITS BETWEEN THE OFFICE AND THE DESK NOW. Pressing on walks the days of the
@@ -241,6 +254,45 @@ console.log('\n=== the door ===');
   ok('    and it does not print an email address',
     !/@/.test(await txt(p,'#whoami')), await txt(p,'#whoami'));
   await p.screenshot({path:SS+'commish_notlisted.png'});
+  if(errs.length) bad++;
+  await p.close();
+}
+
+{
+  /* ON THE LIST, HAS NOT BOUGHT. This is the view a signed-in visitor gets after launch,
+     and the one nobody was looking at until an account was set aside to hold it: the mode
+     is real, they know it is there, and the door does not open. It is a DIFFERENT screen
+     from the two above, which say "in testing" and are about the list. This one names a
+     price, because the answer to this visitor is not no, it is how much. */
+  const {p,errs}=await open(tester([]));
+  ok('on the list but has not bought, the mode does not open', await on(p,'s-gate'));
+  ok('  and nothing to press that starts a term', !(await p.$('#g-start')));
+  /* THE STORE ITSELF IS THE SCREEN, out of /assets/store.js, which the football game shows
+     too. The gate hides its own lede on this branch because the store carries a heading and
+     a lede of its own, so the copy is asserted where it actually lives. */
+  ok('  it shows the store rather than a dead end',
+    /go pro/i.test(await txt(p,'#gate-act')));
+  /* AND THE STORE NAMES THE MODE THEY ARE STANDING AT. A shared store is worth having and
+     is exactly the kind of thing that drifts: the football game owns that file, and a tile
+     dropped from it would leave this door selling a bundle whose visible contents never
+     mention Commissioner. The visitor is at the Commish gate. It has to say Commissioner. */
+  ok('  and the store names the mode this door is selling',
+    /commissioner/i.test(await txt(p,'#gate-act')));
+  /* One payment, not a subscription, which is the question a buyer actually has. */
+  ok('  and says the shape of the purchase',
+    /no subscription/i.test(await txt(p,'#gate-act')));
+  /* BOTH PRICES, because the cheaper one is not always the one they want and finding the
+     other later is how a bundle sells nobody the bigger thing. */
+  ok('  and offers both bundles', !!(await p.$('#b-buy-ps')) && !!(await p.$('#b-buy-rtb')));
+  ok('  the badge says Premium rather than testing', (await txt(p,'#tag'))==='Premium');
+  ok('  with a way back to the game', !!(await p.$('#gate-act a[href="/cfb/"]')));
+  /* AND IT NEVER CLAIMS TO HAVE SOLD ANYTHING. The store is switched off until the price
+     ids are in Cloudflare, so pressing buy has to say that rather than fail silently. */
+  await p.click('#b-buy-ps').catch(()=>{});
+  await p.waitForTimeout(600);
+  ok('  pressing buy is honest while the store is off',
+    /not on sale|could not start|sign in/i.test(await txt(p,'#b-buy-ps')), await txt(p,'#b-buy-ps'));
+  console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();
 }
