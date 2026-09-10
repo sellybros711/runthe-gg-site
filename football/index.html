@@ -7510,7 +7510,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
 <script defer src="/assets/arcade-ad.js?v=3"></script>
-<script defer src="auth.js?v=4"></script>
+<script defer src="auth.js?v=5"></script>
 <script>
 (function(){
 'use strict';
@@ -7734,7 +7734,10 @@ const canPlayClubDynasty=()=>{
    the premium doors at all; this decides whether a door opens or pitches. */
 let premiumSet=null;
 const dynastyOwned=()=>!!(premiumSet&&premiumSet.indexOf('ps_premium')>=0);
-function premiumRefresh(){
+/* `force` rides through to auth.js and skips its cache. Ordinary callers want the
+   cache; the walk back from Stripe must not have it, because a cached [] is exactly
+   the answer that would make a landed purchase look like a missing one. */
+function premiumRefresh(force){
   if(!authState.signedIn){ premiumSet=null; return Promise.resolve(null); }
   const a=A();
   if(!a||typeof a.premiumProducts!=='function'){ premiumSet=[]; return Promise.resolve([]); }
@@ -7747,7 +7750,7 @@ function premiumRefresh(){
      now, so painting it while premiumSet is still null drew the page for somebody whose tier
      was unknown and never drew it again. The pitch card was never appearing on an ordinary
      load at all: not gated wrong, just painted a moment too early and left there. */
-  return a.premiumProducts().then((list)=>{ premiumSet=Array.isArray(list)?list:[]; return premiumSet; })
+  return a.premiumProducts(force).then((list)=>{ premiumSet=Array.isArray(list)?list:[]; return premiumSet; })
     .catch(()=>{ premiumSet=[]; return premiumSet; })
     .then((v)=>{ try{ paintHomeStart(); }catch(_){} return v; });
 }
@@ -7798,7 +7801,7 @@ async function checkoutReturn(){
   const waits=[0,600,1200,2000,3000,3500];
   for(const ms of waits){
     if(ms) await new Promise((r)=>setTimeout(r,ms));
-    await premiumRefresh();
+    await premiumRefresh(true);
     if(dynastyOwned()) break;
   }
   paintHomeStart();

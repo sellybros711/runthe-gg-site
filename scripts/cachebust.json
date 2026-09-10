@@ -1967,8 +1967,8 @@
       "sha": "f50d1ebbe3d57d3a"
     },
     "/cfb/auth.js": {
-      "v": "4",
-      "sha": "ce17e5d6091910ee"
+      "v": "5",
+      "sha": "d232cbdacabcfadc"
     }
   },
   "cfb/index.html": {
@@ -1985,8 +1985,8 @@
       "sha": "f57edd42ef794134"
     },
     "auth.js": {
-      "v": "4",
-      "sha": "ce17e5d6091910ee"
+      "v": "5",
+      "sha": "d232cbdacabcfadc"
     },
     "board.js": {
       "v": "6",
@@ -2031,8 +2031,8 @@
       "sha": "44a62b6f74d67404"
     },
     "auth.js": {
-      "v": "4",
-      "sha": "384fa7cf9c2dffac"
+      "v": "5",
+      "sha": "4267faaaa07774a5"
     }
   },
   "hoops/index.html": {
