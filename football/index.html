@@ -10358,7 +10358,23 @@ function dynRestore(s){
 /* Same shape as beginDynastyDraft, and for the same reason: the defensive pool is not in
    the boot bundle, and half the roster is in it. */
 function dynResume(slot){
-  if(!dynastyOwned()) return openPremium('dynasty_resume');
+  /*
+   * A RUN IN PROGRESS IS NEVER GATED, and this used to check ownership.
+   *
+   * The front page draws this door as RESUME DYNASTY, over the season number and the score
+   * already banked. Pressing it opened the store. That is the worst shape a paywall can
+   * take: it is not selling access to something new, it is holding a run the player already
+   * made and telling them to pay to get back into it. A button that says Resume and does
+   * not resume is also just a lie on the screen.
+   *
+   * The rule is already written twice elsewhere and this was the one place that broke it.
+   * The daily allowance says an attempt is a START, so continuing costs nothing and asks
+   * the server nothing. The Trade Machine's own door says the same. Starting a NEW dynasty
+   * is the paid action and beginDynastyDraft still gates it; getting back into one is not.
+   *
+   * There is no access check here either. The door itself is built only for somebody
+   * canPlayDynasty() allows, so a visitor who cannot see the mode has no way to reach this.
+   */
   const want=slot==='club'?'club':'open';
   const s=dynRead(want);
   if(!s) return ensureDynastyButton();
