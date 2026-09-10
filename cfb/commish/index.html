@@ -2591,7 +2591,7 @@
 <!-- Reads window.PS_CFB_AUTH at CALL time, not at load time, so it may sit either side of
      auth.js. It is here rather than up with the rest because nothing else reads it. -->
 <script src="splits.js?v=3"></script>
-<script src="/cfb/auth.js?v=4"></script>
+<script src="/cfb/auth.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
 (function(){
@@ -8189,6 +8189,48 @@ async function buyBundle(kind,btn){
       :'Checkout could not start. Try again';
   }catch(e){ if(btn) btn.textContent='Checkout could not start. Try again'; }
 }
+/* COMING BACK FROM STRIPE.
+ *
+ * buyBundle sends the player out with success_url pointing back here plus
+ * ?checkout=success, and nothing read it. The gate asked the database ONCE, on the
+ * auth change, and drew whatever that one answer said. Since the entitlement is
+ * written by the Stripe WEBHOOK and the redirect races it, the usual outcome of a
+ * successful purchase was the paywall again, on the screen right after paying.
+ *
+ * So it asks, and keeps asking for about ten seconds, FORCING past auth.js's cache
+ * each time (a cached [] is precisely the wrong answer here, see premiumProducts).
+ * The gate opening is the acknowledgement: no separate thank you, because the door
+ * they just bought swinging open says it better than a message would.
+ *
+ * It never says the payment failed, because this cannot know that. If the grant has
+ * not appeared by the last try, the paywall is still what is on screen, and the
+ * account catches up on the next visit. */
+let justPaid=false, checkoutPolled=false;
+try{ justPaid=new URLSearchParams(location.search).get('checkout')==='success'; }catch(e){}
+function checkoutStrip(){
+  try{
+    const u=new URL(location.href);
+    u.searchParams.delete('checkout');
+    history.replaceState(null,'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():'')+u.hash);
+  }catch(e){}
+}
+async function checkoutReturn(){
+  if(!justPaid||checkoutPolled) return;
+  checkoutPolled=true;
+  /* Stripped first, so a reload cannot replay it and a shared link cannot carry it
+     to somebody who bought nothing. */
+  checkoutStrip();
+  if(ownsCfb()) return;                 // the webhook beat the redirect, nothing to wait for
+  const A=window.PS_CFB_AUTH;
+  if(!A||typeof A.premiumProducts!=='function') return;
+  const waits=[600,1200,2000,3000,3500];
+  for(const ms of waits){
+    await new Promise((r)=>setTimeout(r,ms));
+    try{ const l=await A.premiumProducts(true); premiumSet=Array.isArray(l)?l:[]; }catch(e){}
+    paintTag(); gate();
+    if(ownsCfb()) return;
+  }
+}
 /* The corner tag tells a tester which tier they are looking at, which matters exactly
    when it is not the one they expected. */
 function paintTag(){
@@ -8335,8 +8377,8 @@ function gate(){
     if(moved||!st.signedIn) premiumSet=null;
     if(st.signedIn&&premiumSet===null){
       if(typeof A.premiumProducts==='function'){
-        A.premiumProducts().then((l)=>{ premiumSet=Array.isArray(l)?l:[]; paintTag(); gate(); })
-          .catch(()=>{ premiumSet=[]; paintTag(); gate(); });
+        A.premiumProducts().then((l)=>{ premiumSet=Array.isArray(l)?l:[]; paintTag(); gate(); try{ checkoutReturn(); }catch(e){} })
+          .catch(()=>{ premiumSet=[]; paintTag(); gate(); try{ checkoutReturn(); }catch(e){} });
       }else{
         /* An older cached auth.js has no premiumProducts. Owning nothing is the safe
            reading, and it unsticks the gate rather than waiting on a call that will
