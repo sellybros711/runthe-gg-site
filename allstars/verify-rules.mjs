@@ -31,6 +31,7 @@
      the squad photo      the room is the home page, and everyone stands in one frame
      the room fills up    the dugout takes the window and still fits above the fold
      fewer words          settings is headings and choices, and a rule sits behind a dot
+     nothing cropped      the close shot still shows both foul lines, every fielder and the stands
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -1049,6 +1050,51 @@ async function main() {
       ok(r.shutsAgain, 'and folds it back');
       ok(!r.hubProse.some(p => /head to head|Top four make/.test(p)),
          'so the rule is not printed under the table any more', JSON.stringify(r.hubProse));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the close shot shows the whole field ---- */
+    {
+      console.log('nothing cropped');
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(() => {
+        const g = fieldGeom();
+        /* What the camera can see at the plate, in field coordinates. */
+        const c = { ...CAM_BAT };
+        const z = Math.max(1, c.zoom);
+        const halfW = g.w / (2 * z), halfH = g.h / (2 * z);
+        const cx = Math.min(Math.max(c.fx * g.w, halfW), g.w - halfW);
+        const cy = Math.min(Math.max(c.fy * g.h, halfH), g.h - halfH);
+        const view = { l: cx - halfW, r: cx + halfW, t: cy - halfH, b: cy + halfH };
+        const pts = [];
+        pts.push(['home plate', g.cx, g.plateY]);
+        pts.push(['first base', g.cx + g.rx, g.midY]);
+        pts.push(['third base', g.cx - g.rx, g.midY]);
+        pts.push(['second base', g.cx, g.topY]);
+        for (const [i, f] of (typeof FIELDER_SPOTS !== 'undefined' ? FIELDER_SPOTS : []).entries()) {
+          const p = typeof f === 'function' ? f(g) : f;
+          if (p && isFinite(p.x)) pts.push(['fielder ' + i, p.x, p.y]);
+        }
+        return {
+          view, pts,
+          /* the batter stands a little below the plate and must fit too */
+          batterFoot: g.plateY + 34,
+          /* the stands, which are the top of the frame */
+          standsBottom: g.h * 0.175,
+          zoom: CAM_BAT.zoom,
+        };
+      });
+      const out = r.pts.filter(([, x, y]) =>
+        x < r.view.l || x > r.view.r || y < r.view.t || y > r.view.b);
+      ok(out.length === 0, 'every base and every fielder is inside the close shot',
+         JSON.stringify(out));
+      ok(r.batterFoot <= r.view.b, 'and the batter is not cut off at the bottom',
+         `foot ${Math.round(r.batterFoot)} vs ${Math.round(r.view.b)}`);
+      ok(r.view.t < r.standsBottom, 'the stands are in frame rather than above it',
+         `view top ${Math.round(r.view.t)} vs stands to ${Math.round(r.standsBottom)}`);
+      ok(r.zoom <= 1.10, 'the close shot is a push in, not a crop', 'zoom=' + r.zoom);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

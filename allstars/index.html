@@ -7667,9 +7667,13 @@ function fieldGeom() {
      code aim with; they approximate the diamond's center and scale. */
   const w = 960, h = 660;
   const cx = w / 2;
-  const plateY = h * 0.86;
+  /* The diamond sits LOWER and is a touch shallower than it was, which
+     buys the stands at the top of the frame room to be stands rather than
+     a stripe. The grass between second base and the wall is unchanged, so
+     the outfielders keep the same relationship to it. */
+  const plateY = h * 0.885;
   const rx = w * 0.315;
-  const ry = h * 0.255;
+  const ry = h * 0.232;
   const midY = plateY - ry;
   const topY = plateY - 2 * ry;
   const moundY = plateY - ry * 0.92;
@@ -7762,7 +7766,12 @@ function updateAndDrawFx(ctx, g) {
    has no business being scaled by where the camera is.
    ============================================================================ */
 const CAM_WIDE = { zoom: 1.00, fx: 0.500, fy: 0.500 };
-const CAM_BAT  = { zoom: 1.25, fx: 0.520, fy: 0.521 };
+/* THE CLOSE SHOT STOPPED CROPPING. At 1.25 it cut the batter's feet off
+   the bottom and the outfielders' heads off the top, so the one frame you
+   spend most of the game looking at was the one frame that did not show
+   the field. It is barely a push in now: enough that the plate is the
+   subject, not enough to lose anybody. */
+const CAM_BAT  = { zoom: 1.06, fx: 0.512, fy: 0.508 };
 /* How fast each way, in e-folds per second. Pulling OUT is quick because
    it happens on contact and wants to feel like a launch; settling back IN
    is slower, so the next hitter walks up rather than snapping into place. */
@@ -7920,7 +7929,9 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     },
   };
 
-  const skyH = h * 0.105;
+  /* The stands, and they are worth the room: a ballpark with four rows of
+     confetti above the wall reads as a diagram of a ballpark. */
+  const skyH = h * 0.175;
   /* Sky with depth: darker at the zenith, a warm stadium-light glow low
      over the stands, instead of one flat slab of color. */
   ctx.fillStyle = theme.sky;
