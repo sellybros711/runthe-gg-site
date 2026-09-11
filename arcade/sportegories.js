@@ -162,8 +162,27 @@
       case 'act':      return !!p.act;
       case 'decades':  return bitCount(p.decBits) >= pr.min ? true : null;
       case 'decade':   return p.decBits ? !!(p.decBits & (1 << Math.round((pr.v - D.dec0) / 10))) : null;
-      // present most of the time; absence is not a no
-      case 'pos':      return (p.pos || p.rpos) ? posAllows2(p, pr.v) : null;
+      /* POSITION CONFIRMS, IT DOES NOT DENY.
+       *
+       * A player wrote in: "Outfielder who played for 3+ teams", answer Bobby
+       * Bonilla, told it did not fit. He played for eight clubs and spent more
+       * of his career in the outfield than anywhere else. We hold him as a
+       * Third Baseman, because we hold exactly ONE position for every player
+       * and 1,776 of 1,776 MLB records carry a single label.
+       *
+       * A career is not one position. Bonilla played third and the outfield,
+       * Ohtani pitches and hits, a safety covers the slot, and Jalen Williams
+       * is a forward by career label and the guard his club lists him at. So a
+       * label that disagrees is not evidence against: it is one of several,
+       * and the one we happened to write down.
+       *
+       * This is the same rule the awards two lines down already follow, for
+       * the same reason, in the same words: ours are partial, so they can
+       * confirm but never deny. A mismatch goes to the live check, which reads
+       * ALL of a player's positions from a public source and can settle it.
+       * The puzzle BUILDER still requires proof (test() uses posProves2), so
+       * this loosens judging without loosening what gets asked. */
+      case 'pos':      return posAllows2(p, pr.v) ? true : null;
       case 'team':     return p.teams.length ? (p.teams.indexOf(pr.v) >= 0) : null;
       case 'col':      return p.col ? (p.col === pr.v) : null;
       case 'conf':     return p.col ? ((D.conf[pr.v] || []).indexOf(p.col) >= 0) : null;

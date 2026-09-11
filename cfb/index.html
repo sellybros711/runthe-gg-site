@@ -586,6 +586,50 @@ window.GA_ID='G-L29P5MRWKE';
      wrapping is refused, which keeps the three on one line at one height. */
   .cta3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
   .cta3 .btn{white-space:nowrap;letter-spacing:0;padding-left:6px;padding-right:6px}
+
+  /* ---- THE COMMISH DOOR ----
+     The football game's front page carries Dynasty as a card under the quick draft, with a
+     line of lead-in over it, and this is that shape in this game's colours. Ported rather
+     than invented: the two front pages are already the same three-up layout on purpose, and
+     a second game inventing a second way to show its second mode is how they drift.
+
+     PURPLE, because the mode's own page is purple and the modes sheet card already is. A
+     card that changes colour between the place you tap it and the thing it opens reads as
+     two different features.
+
+     BUILT BY SCRIPT, NEVER SHIPPED HIDDEN. See ensureCommishDoor(). A hidden node still
+     ships to everybody, and a lead-in line reading "or run it instead of playing it" above
+     a page with no door under it is worse than no line at all. */
+  .hp-leadin{display:flex;align-items:center;gap:9px;margin:4px 2px -1px;
+    font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .hp-leadin:before,.hp-leadin:after{content:"";flex:1;height:1px;background:var(--line)}
+  .hp-commish{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:15px 12px 13px;border-radius:12px;cursor:pointer;text-decoration:none;
+    background:linear-gradient(180deg,rgba(45,26,66,.92),rgba(24,18,35,.92));
+    border:1.5px solid rgba(168,85,247,.42);
+    box-shadow:0 8px 22px -14px #000,inset 0 1px 0 rgba(216,180,254,.10)}
+  .hp-commish:active{transform:translateY(1px)}
+  .hp-commish:focus-visible{outline:2px solid #c084fc;outline-offset:2px}
+  .hp-commish .hp-name{font-family:var(--fd);font-size:19px;font-weight:800;letter-spacing:.02em;
+    color:#e9d5ff;line-height:1}
+  .hp-commish .hp-sub{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.05em;
+    text-transform:uppercase;color:rgba(233,213,255,.62);line-height:1.3;text-align:center}
+  /* IN THE CORNER, out of the flow, for the reason the football game found: anything in the
+     flow shifts the label off centre. */
+  .hp-commish .hp-tag{position:absolute;top:-8px;right:10px;
+    font-family:var(--fn);font-size:9.5px;font-weight:900;letter-spacing:.1em;
+    text-transform:uppercase;padding:3px 8px;border-radius:6px;
+    background:rgba(168,85,247,.18);border:1px solid rgba(168,85,247,.55);color:#e9d5ff}
+  /* NEW is the green one every other surface uses for something anybody can play. PREVIEW is
+     purple and quieter, because while the flip is false this card is only drawn for the
+     handful of accounts on the list and telling them it is finished is a lie they report. */
+  .hp-commish .hp-tag.new{background:linear-gradient(150deg,#6ee7b7 0%,#34d399 45%,#10b981 100%);
+    border-color:rgba(255,255,255,.55);color:#04241c}
+  @media (max-width:340px){
+    .hp-commish .hp-name{font-size:17px}
+    .hp-commish .hp-sub{font-size:9px;letter-spacing:.03em}
+  }
   /* 11px, not 12: at 12px "Leaderboard" wanted 108px of a 104px button on a 360 screen.
      Same word, same cause as the 340 rule below, one breakpoint up. */
   @media(max-width:440px){ .cta3 .btn{font-size:11px;padding-left:4px;padding-right:4px} }
@@ -5021,6 +5065,80 @@ const commishOn=()=>{
   return !!(a&&authState.signedIn&&a.allowed(authState));
 };
 
+/* ── THE COMMISH DOOR ON THE FRONT PAGE ───────────────────────────────────────────
+   IT WAS BURIED AND IT IS THE SECOND GAME IN THE BUNDLE. Commish Simulator was one card
+   inside the "More ways to play" sheet, which is two taps and a scroll from the front page
+   and is where a mode goes when it is a variant of the draft. It is not a variant of the
+   draft: it is the other half of a product with a price on it, and the football game puts
+   its half on its own front page under the quick draft. This is that door, in this game's
+   colours and this game's layout.
+
+   BUILT RATHER THAN HIDDEN, which is the football game's rule and worth repeating: a hidden
+   node ships to everybody who opens the page, so a lead-in line reading "or run it instead
+   of playing it" would sit over a missing door for every visitor who is not on the list.
+   Nothing is in the markup, and nothing is created until the answer is yes.
+
+   THE ANSWER IS commishOn(), the same call the modes sheet uses and the same file the mode's
+   own door reads, so the front page, the sheet and the mode cannot disagree about who gets
+   in. While the bundle flip is false that is the tester list; when it flips it is everybody,
+   in one edit, on both games at once. */
+let commishDoor=null, commishLead=null;
+function ensureCommishDoor(){
+  const ctas=document.querySelector('.ctas');
+  if(!ctas) return;
+  const on=commishOn();
+  if(!on){
+    if(commishDoor&&commishDoor.parentNode) commishDoor.parentNode.removeChild(commishDoor);
+    if(commishLead&&commishLead.parentNode) commishLead.parentNode.removeChild(commishLead);
+    commishDoor=null; commishLead=null;
+    return;
+  }
+  if(!commishLead){
+    commishLead=document.createElement('div');
+    commishLead.className='hp-leadin'; commishLead.id='hp-leadin';
+    commishLead.innerHTML='<span>or run it instead of playing it</span>';
+  }
+  if(!commishDoor){
+    commishDoor=document.createElement('a');
+    commishDoor.className='hp-commish'; commishDoor.id='b-hp-commish';
+    commishDoor.href='/cfb/commish/';
+    commishDoor.onclick=()=>{
+      /* SEEN ONCE IS NOT NEW ANY MORE. The badge is the only thing on this card that
+         changes, and it changes for good the first time somebody opens the mode. */
+      try{ localStorage.setItem('cfb_commish_seen','1'); }catch(e){}
+      ga('mode_opened',{mode:'commish',from:'home'});
+    };
+  }
+  /* THE BADGE SAYS WHICH OF TWO THINGS THIS IS. Before the flip only the list sees this
+     card at all, and "New" over an unfinished mode is a promise it cannot keep, so it reads
+     Preview. After the flip it is genuinely new to everybody, once. */
+  const ACC=window.PS_CFB_COMMISH_ACCESS;
+  const live=!!(ACC&&ACC.LIVE);
+  let seen=false; try{ seen=localStorage.getItem('cfb_commish_seen')==='1'; }catch(e){}
+  const tag=!live?'<span class="hp-tag">Preview</span>'
+    :seen?'':'<span class="hp-tag new">New</span>';
+  commishDoor.innerHTML=tag
+    +'<span class="hp-name">Commish Simulator</span>'
+    /* THREE BEATS, ONE LINE. The first version was a full sentence about running the sport
+       for five years, which is what the lead-in above the card already says and which wrapped
+       to two lines of uppercase at this size. The lead-in gives the what; this gives the
+       stakes, in the football game's rhythm. */
+    +'<span class="hp-sub">Five years. Nine groups. One chair.</span>';
+  /* UNDER THE TWO WAYS IN AND ABOVE THE ROW OF THREE, which is where the football game puts
+     its second door: after the thing most people came for, before the things they came back
+     for. Re-anchored on every call rather than appended once, so a repaint after an account
+     lands cannot leave it below the row. */
+  const three=ctas.querySelector('.cta3');
+  if(three){
+    if(commishLead.nextSibling!==commishDoor||commishDoor.nextSibling!==three){
+      ctas.insertBefore(commishLead,three);
+      ctas.insertBefore(commishDoor,three);
+    }
+  }else{
+    ctas.appendChild(commishLead); ctas.appendChild(commishDoor);
+  }
+}
+
 /* The padlock on the home screen's button, so the lock is visible before the tap.
    Re-run on every auth change, because the page paints long before auth answers and a
    member should never see a lock on something they own. */
@@ -5056,14 +5174,23 @@ function modeMenu(){
       '</'+(locked?'div':'button')+'>'+
       (locked?gateCard({with:'Conference Draft comes with an account',
                         needs:'Conference Draft needs an account.'}):'')+
-      /* COMMISH SIMULATOR IS A MODE OF THIS GAME, so this sheet is where it lives rather
-         than the site's front page. It is drawn only for people who can actually open it,
-         which today is the tester list in cfb/commish/access.js and after COMMISH_LIVE is
-         everybody. A "coming soon" card for the rest is a different decision than the one
-         that was made: this game is live, indexed and carries ads, and advertising an
-         unfinished mode on it is a launch. Flipping the flag in that one file turns both
-         the card and the door on together, which is the whole reason the list is there
-         and not written out twice. */
+      /* COMMISH SIMULATOR HAS ITS OWN DOOR ON THE FRONT PAGE NOW, and this card stayed.
+         It used to be the only way in, on the reasoning that a mode of this game belongs on
+         this game's sheet rather than the site's front page. That was right while it was a
+         variant of the draft and it is not right now: it is the other half of a bundle with
+         a price on it, and the football game puts its half on its own front page. See
+         ensureCommishDoor(). Both surfaces ask commishOn(), so neither can advertise a door
+         the other keeps shut, and somebody who came looking through this sheet still finds
+         it here with the room for a paragraph the front page does not have.
+
+         Drawn only for accounts that can actually open it, which while the bundle flip is
+         false is the tester list and after it is everybody. A "coming soon" card for the
+         rest is a different decision than the one that was made: this game is live, indexed
+         and carries ads, and advertising an unfinished mode on it is a launch. Flipping
+         COMMISH_LIVE in cfb/commish/access.js turns the card, the front page door and the
+         mode's own gate on together, because all three read that one file. Whether the gate
+         then OPENS or pitches is a different question and a different file: that is the
+         cfb_premium row, and see ownsCfb() in the mode itself. */
       (commishOn()?
         '<a class="modecard mc-commish" href="/cfb/commish/" id="b-mc-commish">'+
           '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
@@ -5328,7 +5455,7 @@ function bootAuth(){
   const a=A();
   /* auth.js itself did not load, so nothing is coming. Say so now rather than
      leaving every gate spinning forever. */
-  if(!a){ authState={ready:false,waiting:false,signedIn:false}; syncModesLock(); return; }
+  if(!a){ authState={ready:false,waiting:false,signedIn:false}; syncModesLock(); ensureCommishDoor(); return; }
   a.onChange((st)=>{
     const wasId=authState.userId;
     authState=st;
@@ -5336,6 +5463,9 @@ function bootAuth(){
     /* The padlock on the home screen follows the account. The page paints long before
        auth answers, so without this a member would find a lock on something they own. */
     syncModesLock();
+    /* And so does the Commish door, for the same reason: it is drawn only for accounts
+       that can open it, and the account arrives after the first paint. */
+    ensureCommishDoor();
     /* Two sheets read the account and are repainted where they stand rather than left
        showing the state before the change. */
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='modes') modeMenu();

@@ -37,8 +37,16 @@ const SS='/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1a
 const UID='11111111-1111-1111-1111-111111111111';
 const URL='http://localhost:8080/cfb/commish/index.html';
 
-/* The account, with the username the page's tester list is written against. */
-const stub=(signedIn,username)=>`
+/* The account: the username the page's tester list is written against, and what it has
+   PAID for. Those are two different questions now and the page asks both. The list decides
+   who can find the mode at all; premium_products() decides whether the gate opens or
+   pitches, because Commish is sold rather than free (owner, 2026-09-08).
+
+   THE RPC STUB HAS TO KNOW WHICH FUNCTION IT IS ANSWERING. It used to answer every rpc()
+   with `true`, which premiumProducts() correctly refuses (it is not an array), so every
+   signed-in tester read as owning nothing and every door in this file shut. That is the
+   whole reason this argument exists. */
+const stub=(signedIn,username,products)=>`
 window.supabase={createClient(){
   const session=${signedIn}?{access_token:'x',user:{id:'${UID}',email:'c@e.com'}}:null;
   return {auth:{onAuthStateChange(){return{data:{}}},
@@ -49,7 +57,9 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:${username?"{username:'"+username+"'}":'null'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve(fn==='premium_products'
+      ? {data:${JSON.stringify(products||[])},error:null}
+      : {data:true,error:null})}}};`;
 
 /* PUT A NAME ON THE REAL LIST, by trapping the assignment access.js makes. Deterministic:
    the name is added the instant the file defines the object, which is before any page code
@@ -62,8 +72,11 @@ const arm=(name)=>`
     get:function(){ return v; },
     set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(name)}); }catch(e){} }});
 })();`;
-/* Signed in as that account, and on the list. */
-const tester=()=>arm(TESTER)+stub(true,TESTER);
+/* Signed in as that account, on the list, and HOLDING the thing the mode is sold as.
+   Every walk below is a paying player's walk, which is the only one that reaches a desk.
+   Pass [] for a tester who has not bought: that is the gate's pitch, checked on its own
+   below rather than at the top of every section. */
+const tester=(products)=>arm(TESTER)+stub(true,TESTER,products||['cfb_premium']);
 
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
 /* THE SIMULATION SITS BETWEEN THE OFFICE AND THE DESK NOW. Pressing on walks the days of the
@@ -141,6 +154,7 @@ console.log('\n=== every module the page needs is actually loaded ===');
     situation:!!window.PS_CFB_SITUATION, fallout:!!window.PS_CFB_FALLOUT,
     recruiting:!!window.PS_CFB_RECRUITING,
     churn:!!window.PS_CFB_CHURN, rivals:!!window.PS_CFB_RIVALS, report:!!window.PS_CFB_REPORT,
+    note:!!window.PS_CFB_NOTE,
   }));
   const dead=Object.keys(mods).filter((k)=>k!=='engine'&&!mods[k]);
   ok('every module is on the page',!dead.length,dead.join(', ')||Object.keys(mods).length+' modules');
@@ -240,6 +254,45 @@ console.log('\n=== the door ===');
   ok('    and it does not print an email address',
     !/@/.test(await txt(p,'#whoami')), await txt(p,'#whoami'));
   await p.screenshot({path:SS+'commish_notlisted.png'});
+  if(errs.length) bad++;
+  await p.close();
+}
+
+{
+  /* ON THE LIST, HAS NOT BOUGHT. This is the view a signed-in visitor gets after launch,
+     and the one nobody was looking at until an account was set aside to hold it: the mode
+     is real, they know it is there, and the door does not open. It is a DIFFERENT screen
+     from the two above, which say "in testing" and are about the list. This one names a
+     price, because the answer to this visitor is not no, it is how much. */
+  const {p,errs}=await open(tester([]));
+  ok('on the list but has not bought, the mode does not open', await on(p,'s-gate'));
+  ok('  and nothing to press that starts a term', !(await p.$('#g-start')));
+  /* THE STORE ITSELF IS THE SCREEN, out of /assets/store.js, which the football game shows
+     too. The gate hides its own lede on this branch because the store carries a heading and
+     a lede of its own, so the copy is asserted where it actually lives. */
+  ok('  it shows the store rather than a dead end',
+    /go pro/i.test(await txt(p,'#gate-act')));
+  /* AND THE STORE NAMES THE MODE THEY ARE STANDING AT. A shared store is worth having and
+     is exactly the kind of thing that drifts: the football game owns that file, and a tile
+     dropped from it would leave this door selling a bundle whose visible contents never
+     mention Commissioner. The visitor is at the Commish gate. It has to say Commissioner. */
+  ok('  and the store names the mode this door is selling',
+    /commissioner/i.test(await txt(p,'#gate-act')));
+  /* One payment, not a subscription, which is the question a buyer actually has. */
+  ok('  and says the shape of the purchase',
+    /no subscription/i.test(await txt(p,'#gate-act')));
+  /* BOTH PRICES, because the cheaper one is not always the one they want and finding the
+     other later is how a bundle sells nobody the bigger thing. */
+  ok('  and offers both bundles', !!(await p.$('#b-buy-ps')) && !!(await p.$('#b-buy-rtb')));
+  ok('  the badge says Premium rather than testing', (await txt(p,'#tag'))==='Premium');
+  ok('  with a way back to the game', !!(await p.$('#gate-act a[href="/cfb/"]')));
+  /* AND IT NEVER CLAIMS TO HAVE SOLD ANYTHING. The store is switched off until the price
+     ids are in Cloudflare, so pressing buy has to say that rather than fail silently. */
+  await p.click('#b-buy-ps').catch(()=>{});
+  await p.waitForTimeout(600);
+  ok('  pressing buy is honest while the store is off',
+    /not on sale|could not start|sign in/i.test(await txt(p,'#b-buy-ps')), await txt(p,'#b-buy-ps'));
+  console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();
 }
@@ -377,35 +430,32 @@ console.log('\n=== what a free player is shown ===');
   /* NOT EVERY ITEM HAS DIALS, so landing on one and skipping is landing on nothing: the
      first run of this block drew an item with no settings, printed a skip, and asserted
      that an EMPTY list of numbers read correctly. That is a check that can never fail.
-     Rule through beats until an item with settings comes up, and fail if none does. */
-  /* AND A BUDGET WIDE ENOUGH THAT LUCK CANNOT DECIDE IT. A test that fails one run in ten is
-     a test people learn to re-run rather than read.
 
-     THE NUMBER IN THE OLD NOTE WAS STALE AND THAT IS WHY IT KEPT FLAKING. It said roughly a
-     quarter of the docket carries settings; six of ninety-one do, which is seven per cent, and
-     the docket has grown a lot since somebody counted. Drawing without replacement, twenty-five
-     items miss one about fourteen times in a hundred, which is exactly the rate this was
-     failing at. Fifty-five items misses three times in a thousand.
+     SO IT IS ASKED FOR BY NAME RATHER THAN WALKED TO, and the walk it replaces is worth
+     writing down because its own note was confidently wrong. It ruled through beats until
+     an item with settings turned up, on the arithmetic that six of a hundred items carry
+     dials, so fifty-five draws would miss about three times in a thousand. All six live in
+     the OFF-SEASON: winter meetings, spring, the portal, media days. Five of a term's nine
+     beats are football, no dial item can be dealt on any of them, and the six compete on
+     weight with everything else inside the four that are left. The real miss rate is
+     nothing like three in a thousand, which is why this went red on a clean tree after
+     fifty-four desks.
 
-     Each item costs about three turns of this loop, so the budget is sized off ITEMS rather
-     than turns, and off the docket rather than a number typed once. */
-  let steps=[], seen=0, beat=0, stuck='';
-  while(beat++<Math.max(75,DOCKET_ITEMS*2)){
-    if(await on(p,'s-office')){ await tap(p,'#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
-    if(await on(p,'s-room')){ await tap(p,'#b-next'); await p.waitForTimeout(450); continue; }
-    if(await on(p,'s-press')){ await podium(p); continue; }
-    if(await on(p,'s-scene')){ await pastScene(p); continue; }
-    if(await on(p,'s-year')){ await tap(p,'#b-year-next'); await p.waitForTimeout(450); continue; }
-    if(!(await on(p,'s-desk'))){ stuck='no screen the loop knows'; break; }
-    seen++;
-    const opt=await p.$('#d-options .opt'); if(opt){ await opt.click(); await p.waitForTimeout(400); }
-    steps=await p.$$eval('.steps button',(e)=>e.map((x)=>({t:x.textContent.trim(),dead:x.disabled})));
-    if(steps.length) break;
-    if(!(await tap(p,'#b-rule'))){ stuck='Rule would not press on item '+seen; break; }
-    await p.waitForTimeout(450);
-  }
-  ok('an item with settings comes up inside a season',
-    steps.length>0, stuck || (seen+' items on the desk before one had settings'));
+     deskItem() opens a named case on the desk the same way the game does, so the assertion
+     is about what a free player SEES on an item that definitely has settings, which is what
+     it was always trying to say. */
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.deskItem('playoff-format'));
+  await p.waitForTimeout(500);
+  const onDesk=await on(p,'s-desk');
+  ok('an item with settings can be put on the desk', onDesk);
+  /* AND A RULING HAS TO BE PICKED BEFORE THEY DRAW. paintDials returns early on `!choice`,
+     because a dial is a refinement of a decision and there is nothing to refine until one is
+     made. The walk this replaced clicked an option without saying why; dropping that click
+     was the whole of the first rewrite's failure, and it reported "0 steps" on an item that
+     certainly has them. */
+  const opt=await p.$('#d-options .opt'); if(opt){ await opt.click(); await p.waitForTimeout(400); }
+  const steps=await p.$$eval('.steps button',(e)=>e.map((x)=>({t:x.textContent.trim(),dead:x.disabled})));
+  ok('  and it draws its settings', steps.length>0, steps.length+' steps');
   ok('  the settings a free player cannot reach are still drawn',
     steps.some((x)=>x.dead), steps.map((x)=>x.t+(x.dead?'*':'')).join(' '));
   ok('  and dead rather than missing', steps.some((x)=>!x.dead));
@@ -543,6 +593,95 @@ console.log('\n=== nine settings you cannot set, and can put on the agenda ===')
   console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();
+}
+
+console.log('\n=== the agenda is tiered: free picks one case a year ===');
+{
+  /* Premium set the agenda all winter in the section above. Free gets ONE
+     put-it-on-your-desk a year, and the charge lands when the case is taken, because there
+     is no way off the desk without ruling: a charge is always a ruling. */
+  const p=await b.newPage({viewport:{width:390,height:900}});
+  const errs=[]; p.on('pageerror',(e)=>errs.push(e.message));
+  await p.addInitScript(tester());
+  await p.goto(URL+'?tier=free',{waitUntil:'domcontentloaded',timeout:40000});
+  await p.waitForTimeout(2600);
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  await p.waitForTimeout(500);
+  const sheet=async()=>{
+    await p.evaluate(()=>{
+      const el=document.querySelector('#off-year .yr[data-p="playoff.teams"]');
+      if(el) el.click();
+    });
+    await p.waitForTimeout(400);
+  };
+  await sheet();
+  ok('a free winter still offers the pick',
+    (await p.$$eval('#fact-body [data-take]',(e)=>e.length))>0);
+  ok('  and says what the allowance is', /One a year\./.test(await txt(p,'#fact-body')));
+  await p.click('#fact-body [data-take]');
+  await p.waitForTimeout(900);
+  ok('taking it opens the case', await on(p,'s-desk'));
+  const used=await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.world().agenda);
+  ok('  and the year\'s pick is charged', used&&used.used===1, JSON.stringify(used));
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.repaint());
+  await p.waitForTimeout(400);
+  await sheet();
+  ok('the same winter offers no second pick',
+    (await p.$$eval('#fact-body [data-take]',(e)=>e.length))===0);
+  ok('  and says why', /pick of the year is spent/i.test(await txt(p,'#fact-body')),
+    (await txt(p,'#fact-body')).slice(0,200));
+  /* A NEW YEAR IS A NEW PICK. The count is keyed to the year on the world, not to the term. */
+  await p.evaluate(()=>{ const T=window.PS_CFB_COMMISH_TEST;
+    T.world().year=2026; T.world().beat=0; T.repaint(); });
+  await p.waitForTimeout(400);
+  await sheet();
+  ok('next winter the pick is back',
+    (await p.$$eval('#fact-body [data-take]',(e)=>e.length))>0);
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
+console.log('\n=== the inheritances: premium can start in the middle of a mess ===');
+{
+  /* A scenario is a term that starts in the middle: the paths are written BEFORE the
+     opening snapshot, so every "was" line and the ending's grade measure from the sport as
+     you found it rather than blaming you for the inheritance. That ordering is the whole
+     feature and it is what this section pins. */
+  const {p,errs}=await open(tester());
+  const names=await p.$$eval('.inh b',(e)=>e.map((x)=>x.textContent));
+  ok('the gate offers the inherited jobs', names.length===3, names.join(' | '));
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.takeJob('paid'));
+  await p.waitForTimeout(900);
+  await pastScene(p);
+  const w=await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.world());
+  ok('the pay era is already in force on day one',
+    w.labour.employment==='employee'&&w.labour.revShare===0.25,
+    w.labour.employment+', '+w.labour.revShare);
+  ok('  and the save knows which job was taken', w.scenario==='paid', String(w.scenario));
+  ok('  and the opening snapshot IS the inheritance',
+    Array.isArray(w.start&&w.start.facts)&&w.start.facts.indexOf('25%')>=0,
+    (w.start&&w.start.facts||[]).join(' | '));
+  ok('  with no rulings on a record you have not touched', w.history.length===0,
+    w.history.length+' rulings');
+  await p.reload({waitUntil:'domcontentloaded'});
+  await p.waitForTimeout(2600);
+  const back=await p.evaluate(()=>JSON.parse(localStorage.getItem('cfb_commish_term')).world);
+  ok('the inheritance survives the browser closing', back.scenario==='paid'
+    &&back.labour.employment==='employee', String(back.scenario));
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+
+  /* And the free gate simply does not have them, on the same silent gate as the note. */
+  const f=await b.newPage({viewport:{width:390,height:900}});
+  await f.addInitScript(tester());
+  await f.goto(URL+'?tier=free',{waitUntil:'domcontentloaded',timeout:40000});
+  await f.waitForTimeout(2600);
+  ok('the free gate has no inherited jobs on it',
+    (await f.$$eval('.inh',(e)=>e.length))===0);
+  await f.close();
 }
 
 console.log('\n=== the office is a commissioner\'s desk in November ===');

@@ -125,7 +125,13 @@
      `edit.aimed` is the part that only one bloc feels. Money moving is not money moving in
      general, it is money moving TO somebody, and a rule that guarantees the Group of Five a
      bid is not the same push for the SEC. Without it every ruling reads as weather. */
-  function react(world, edit) {
+  /* `soften` is the note being read: a map of bloc id to a positive amount, built by
+     note.js from the words a paid ruling rode in with. Applied after memory and before the
+     quote is chosen, so the mood, the number and the line all describe the softened
+     reaction rather than the one the note talked them down from. One-directional by
+     construction here as well as there: it can only shrink a negative delta toward zero,
+     never past it, so a memo cannot turn a loss into applause. */
+  function react(world, edit, soften) {
     const fx = (edit && edit.effects) || {};
     const aimed = (edit && edit.aimed) || {};
     return BLOCS.map((b) => {
@@ -135,7 +141,12 @@
       /* Memory amplifies rather than shifts: it never turns a win into a loss, it only
          changes how much the bloc cares that it happened. */
       const g = grudge(world, b.id);
-      const delta = raw * GAIN * (1 + Math.abs(g) * MEMORY * (g > 0 === raw < 0 ? 1 : 0.5));
+      let delta = raw * GAIN * (1 + Math.abs(g) * MEMORY * (g > 0 === raw < 0 ? 1 : 0.5));
+      let read = false;
+      if (soften && soften[b.id] > 0 && delta < 0) {
+        delta = Math.min(0, delta + soften[b.id]);
+        read = true;
+      }
       const was = world.blocs[b.id] == null ? 50 : world.blocs[b.id];
       const now = clamp(was + delta, 0, 100);
       return {
@@ -143,6 +154,7 @@
         delta: Math.round(delta * 10) / 10,
         was: Math.round(was), now: Math.round(now),
         mood: moodOf(now),
+        read: read,
         /* `own` is this bloc's own push, aimed effects included, which is what lets the line
            be about the thing that moved rather than only about how much. The seed is the
            world's clock plus the bloc, so a beat replays word for word and two blocs never
@@ -472,7 +484,7 @@
           good: ['Our members can afford that, which is not nothing these days.',
             'A rule that does not cost us anything is a rule we can pass.'],
           bad: ['Half our athletic departments are already running a deficit.',
-            'That bill closes an olympic sport somewhere. It always does.'],
+            'That bill closes an Olympic sport somewhere. It always does.'],
         },
         tradition: {
           good: ['Those games are what our brand is. Keep them.',
@@ -769,7 +781,7 @@
           'Everybody in that room gets paid to decide what happens to our knees.',
           'They keep saying student athlete and never once ask a student athlete.'],
         ['We are organizing.',
-          'There are guys on this call who have already spoken to a labour lawyer.',
+          'There are guys on this call who have already spoken to a labor lawyer.',
           'Every one of these decisions makes the case for us better.',
           'There are guys on this team who have already signed something.',
           'We are the only ones in this sport who cannot say no to anything.',
@@ -813,7 +825,7 @@
           good: ['That is money and time that actually reaches a locker room.',
             'A real share, in writing. That is what we came for.',
             'Guys who were going to leave in December are staying now.'],
-          bad: ['You want the revenue of a professional league and the labour costs of a club team.',
+          bad: ['You want the revenue of a professional league and the labor costs of a club team.',
             'We are the only people in that room who are not paid to be in it.',
             'Another year of being told we are students on a Tuesday and inventory on a Saturday.'],
         },

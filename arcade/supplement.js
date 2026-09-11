@@ -194,7 +194,20 @@
       { id:'sup_mlb_willie-mccovey-fix', name:'Willie McCovey', sport:'MLB', f:5, t:['San Francisco Giants','San Diego Padres','Athletics'], j:[44], pos:'First Baseman', decade:[1950,1960,1970,1980], col:'', ns:22, hp:0 },
       { id:'sup_nba_patrick-ewing-fix', name:'Patrick Ewing',   sport:'NBA', f:5, t:['New York Knicks','Oklahoma City Thunder','Orlando Magic'], j:[33], pos:'Center', decade:[1980,1990,2000], col:'Georgetown', ns:17, hp:1 },
 
-      { id:'sup_mlb_lee-smith',       name:'Lee Smith',         sport:'MLB', f:5, t:['Chicago Cubs','Boston Red Sox','St. Louis Cardinals','New York Yankees','Baltimore Orioles','Angels','Cincinnati Reds','Washington Nationals'], j:[46], pos:'Pitcher', decade:[1980,1990], col:'Northwestern State', ns:18, hp:0 }
+      { id:'sup_mlb_lee-smith',       name:'Lee Smith',         sport:'MLB', f:5, t:['Chicago Cubs','Boston Red Sox','St. Louis Cardinals','New York Yankees','Baltimore Orioles','Angels','Cincinnati Reds','Washington Nationals'], j:[46], pos:'Pitcher', decade:[1980,1990], col:'Northwestern State', ns:18, hp:0 },
+
+      /* THE SECOND MAN OF A NAME WE ALREADY HELD.
+       *
+       * A player wrote in: Sportegories refused Dee Brown for "NBA player from
+       * a Big Ten school". We held one Dee Brown, the Celtics guard who won the
+       * 1991 dunk contest and went to Jacksonville, so the game answered about
+       * the wrong man and told him he was wrong.
+       *
+       * The other Dee Brown was Big Ten Player of the Year at Illinois in 2005
+       * and took them to the national final. Sportegories keeps same-named
+       * players apart already (it holds three Josh Allens), so the only thing
+       * missing was the record. */
+      { id:'sup_nba_dee-brown-illinois', name:'Dee Brown',      sport:'NBA', f:4, t:['Utah Jazz','Washington Wizards','Phoenix Suns'], j:[5,11], pos:'Point Guard', decade:[2000,2010], col:'Illinois', ns:4, hp:0 }
     ]
   };
 })(typeof self !== 'undefined' ? self : this);

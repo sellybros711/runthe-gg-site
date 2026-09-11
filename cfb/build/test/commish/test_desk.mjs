@@ -41,7 +41,7 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:{username:'${TESTER}'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
 const arm = `
 (function(){ var v;
   Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,
@@ -346,60 +346,77 @@ console.log('\n=== you get to answer the room ===');
      screen back into the standings screen, which is exactly what the first version did: it
      dropped all nine quotes and the delta column off the one screen the mode is remembered
      for, and nothing failed. */
-  /* THE OFFER IS RARE NOW, ON PURPOSE: the trigger fires when a ruling singles somebody
-     out, which is about three rulings in ten (measured; see REBUT_FLOOR in the page). At the
-     old 80% a budget of eight rulings was plenty; at 30% it is a one-in-twenty flake, so the
-     walk sees about eighteen rulings before it concludes the mechanic is missing. */
-  let offered = 0, onForecast = 0, answered = null;
-  for (let i = 0; i < 60 && !answered; i++) {
-    if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(340); continue; }
-    if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(400); continue; }
-    if (await on('s-room')) {
-      const st = await p.evaluate(() => {
-        const c = document.getElementById('r-rebutcard');
-        if (!c || c.hidden) return null;
-        return { forecast: /if you ruled/i.test(document.getElementById('r-eyebrow').textContent),
-          opts: c.querySelectorAll('.reb').length };
-      });
-      if (st && st.forecast) onForecast++;
-      if (st && !st.forecast) {
-        offered++;
-        /* THE REAL NUMBERS, NOT THE PRINTED ONES. A rebuttal moves a bloc by six tenths of a
-           point on purpose (see REBUT_ANGRY and REBUTTALS), and the reaction screen prints
-           standings rounded to whole numbers. So "did the room move" read off the page is
-           really "did any of nine fractional moves happen to cross a rounding boundary",
-           which is true on some draws and false on others: the assertion passed for months
-           and then failed the first time the docket dealt a different case first. Read the
-           ledger the page is drawing from, and the question is the one being asked. */
-        const before = await p.evaluate(() =>
-          Object.assign({}, window.PS_CFB_COMMISH_TEST.world().blocs));
-        const says = await p.$$eval('#r-room .bl .say', (e) => e.length);
-        await p.click('#r-rebutcard .reb:nth-child(1)');
-        await p.waitForTimeout(500);
-        answered = await p.evaluate(() => ({
-          said: !!document.querySelector('#r-rebut .rebd'),
-          chips: [...document.querySelectorAll('#r-rebut .rebm span')].map((x) => x.textContent),
-          gone: !document.querySelector('#r-rebut .reb'),
-          says: document.querySelectorAll('#r-room .bl .say').length,
-          deltas: document.querySelectorAll('#r-room .bl .dl').length,
-        }));
-        answered.opts = st.opts;
-        answered.before = before;
-        answered.after = await p.evaluate(() =>
-          Object.assign({}, window.PS_CFB_COMMISH_TEST.world().blocs));
-        answered.saysBefore = says;
-      }
-      await tap('#b-next'); await p.waitForTimeout(400); continue;
-    }
-    if (await on('s-desk')) {
-      const o = await p.$('#d-options .opt'); if (o) await o.click();
-      await p.waitForTimeout(200);
-      if (!(await tap('#b-rule'))) break;
-      await p.waitForTimeout(200); await pastScene(p);
-    await p.waitForTimeout(200); await pastScene(p);
-      await p.waitForTimeout(650); continue;
-    }
-    break;
+  /* ASKED FOR BY NAME RATHER THAN WALKED TO, and the walk it replaces flaked three times
+     in one afternoon before it was replaced. The offer is rare on purpose: it fires when a
+     ruling singles somebody out, which is about three rulings in ten, and a sixty step walk
+     reaches maybe fifteen of them. A guard that goes red a few runs in a hundred is worse
+     than no guard, because it teaches everybody to re-run rather than read.
+
+     welcome-suit / defend puts the Players at -11.5 against a room that barely moves, which
+     clears REBUT_FLOOR and REBUT_OUTLIER by a distance, and welcome-suit is the first case
+     of every term so it is always there to be asked for. Measured across the whole docket:
+     ninety-five of three hundred and nine options single somebody out, so this is one of
+     many rather than a special case built for the test. */
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.deskItem('welcome-suit'));
+  await p.waitForTimeout(500);
+  /* THE FORECAST FIRST, because the rule this guard exists for is that a rebuttal never
+     appears over a ruling nobody has made yet. Same option, tested rather than ruled. */
+  await p.evaluate(()=>{ try{ window.PS_CFB_COMMISH_TEST.setNote(''); }catch(e){} });
+  const optSel='#d-options .opt';
+  await p.$$eval(optSel,(els)=>{
+    const b=els.map((e)=>e.querySelector('.opick')).filter(Boolean)[1]
+      ||els[1]&&els[1].querySelector('.opick');
+    if(b) b.click();
+  }).catch(()=>{});
+  await p.waitForTimeout(300);
+  await tap('#b-test');
+  await p.waitForTimeout(700);
+  let onForecast = (await p.evaluate(()=>{
+    const c=document.getElementById('r-rebutcard');
+    const fc=/if you ruled/i.test((document.getElementById('r-eyebrow')||{}).textContent||'');
+    return (c&&!c.hidden&&fc)?1:0;
+  }))||0;
+  await tap('#b-next'); await p.waitForTimeout(500);
+
+  /* AND NOW THE RULING ITSELF. forceChoice presses the real Rule button on a named option,
+     so what lands on the room screen is what a player would land on. */
+  let offered = 0, answered = null;
+  await p.evaluate(()=>{ window.PS_CFB_COMMISH_TEST.deskItem('welcome-suit'); });
+  await p.waitForTimeout(450);
+  await p.evaluate(()=>{ window.PS_CFB_COMMISH_TEST.forceChoice('defend'); });
+  await p.waitForTimeout(900);
+  await pastScene(p);
+  await p.waitForTimeout(400);
+  const st = await p.evaluate(() => {
+    const c = document.getElementById('r-rebutcard');
+    if (!c || c.hidden) return null;
+    return { forecast: /if you ruled/i.test(document.getElementById('r-eyebrow').textContent),
+      opts: c.querySelectorAll('.reb').length };
+  });
+  if (st && st.forecast) onForecast++;
+  if (st && !st.forecast) {
+    offered++;
+    /* THE REAL NUMBERS, NOT THE PRINTED ONES. A rebuttal moves a bloc by six tenths of a
+       point on purpose, and the screen prints standings rounded to whole numbers, so
+       "did the room move" read off the page is really "did a fractional move happen to
+       cross a rounding boundary". Read the ledger the page is drawing from. */
+    const before = await p.evaluate(() =>
+      Object.assign({}, window.PS_CFB_COMMISH_TEST.world().blocs));
+    const says = await p.$$eval('#r-room .bl .say', (e) => e.length);
+    await p.click('#r-rebutcard .reb:nth-child(1)');
+    await p.waitForTimeout(500);
+    answered = await p.evaluate(() => ({
+      said: !!document.querySelector('#r-rebut .rebd'),
+      chips: [...document.querySelectorAll('#r-rebut .rebm span')].map((x) => x.textContent),
+      gone: !document.querySelector('#r-rebut .reb'),
+      says: document.querySelectorAll('#r-room .bl .say').length,
+      deltas: document.querySelectorAll('#r-room .bl .dl').length,
+    }));
+    answered.opts = st.opts;
+    answered.before = before;
+    answered.after = await p.evaluate(() =>
+      Object.assign({}, window.PS_CFB_COMMISH_TEST.world().blocs));
+    answered.saysBefore = says;
   }
   ok('somebody eventually wants a word', offered > 0, offered + ' times');
   ok('  and never about a ruling you have not made', onForecast === 0, onForecast + ' on a forecast');
@@ -566,17 +583,21 @@ console.log('\n=== reading an option is not choosing it, and the note survives e
       (await p.$eval('#d-text', (e) => e.value)) === NOTE);
     ok('  and marks that option as the ruling', after.opts[after.opts.length - 1].on);
     ok('  and lets you rule', after.rule === false);
-    /* THE BUTTON NAMES WHICH OF THE TWO THINGS IT IS ABOUT TO FORECAST. */
+    /* THE BUTTON NAMES BOTH THINGS IT IS ABOUT TO FORECAST, because the note is read now. */
     ok('  with the test button saying what it will test',
-      /selected ruling/i.test(after.test.txt), after.test.txt);
+      /ruling and your note/i.test(after.test.txt), after.test.txt);
     await tap('#b-test');
     await p.waitForTimeout(900);
     const fc = await p.evaluate(() => ({
       title: document.getElementById('r-title').textContent,
       hidden: document.getElementById('r-note').hidden,
+      note: document.getElementById('r-note').textContent,
     }));
     ok('  and the forecast names the ruling it forecast', /^If you ruled: /.test(fc.title), fc.title);
-    ok('  and says the note is not what the room answered', fc.hidden === false);
+    /* The note is substantial, so whichever of the three states applies, the screen says
+       what the room did with the words rather than nothing. */
+    ok('  and says what the room did with the note', fc.hidden === false
+      && /note/i.test(fc.note), fc.note.slice(0, 80));
     await tap('#b-next');
     await p.waitForTimeout(500);
   } else {
