@@ -29,13 +29,14 @@
      locked last          a card you cannot draft sorts behind every card you can
      the hover card       says the requirement and how far along, and goes away after
      the squad photo      the room is the home page, and everyone stands in one frame
-     the room fills up    the dugout takes the window and still fits above the fold
+     the room fills up    the clubhouse takes the window and still fits above the fold
      fewer words          settings is headings and choices, and a rule sits behind a dot
      nothing cropped      the close shot still shows both foul lines, every fielder and the stands
      the play moves       the plan's physics agree with the scorer: outs beaten, hits not
      the dive             a liner draws a lunge that lands short and breaks no duty
      the snow             the cold parks play under falling snow
      the phone menu       the room fills the window it is in, whichever shape that is
+     legible on a phone   and is DRAWN big enough to read, which is a separate thing
      turning it sideways  the room is recomposed on rotate rather than left upright
      the game sideways    a phone held sideways gets a bigger field, not a smaller one
      the plate camera     the at bat is seen from behind the catcher and cut away from on contact
@@ -577,7 +578,7 @@ async function main() {
         startSeason(y2);
         out.y3Year = State.season.year; out.y3Book = State.season.history.length;
         out.reached = PROGRESS.franchiseYears;
-        out.signs = dugoutThings().map(t => t.sign);
+        out.signs = clubhouseThings().map(t => t.sign);
         return out;
       });
       ok(JSON.stringify(r.signs) === JSON.stringify(['EXHIBITION','FRANCHISE','PLAYOFFS','HOW TO PLAY']),
@@ -776,8 +777,8 @@ async function main() {
         /* The home page is the room. The roster used to print underneath
            it, which made the first thing anybody saw a wall of numbers. */
         out.menuCards = document.querySelectorAll('#app .charcard').length;
-        out.tab = (document.querySelector('.dugtabs .tab') || {}).textContent;
-        document.querySelector('.dugtabs .tab').click();
+        out.tab = (document.querySelector('.clubtabs .tab') || {}).textContent;
+        document.querySelector('.clubtabs .tab').click();
         out.screen = State.screen;
 
         const hots = [...document.querySelectorAll('.photo .hot')];
@@ -826,7 +827,7 @@ async function main() {
         out.photoStill = Math.abs(document.querySelector('.photo').getBoundingClientRect().top - box.top) < 1;
         return out;
       });
-      ok(r.menuCards === 0, 'the dugout is the home page, with no roster printed under it',
+      ok(r.menuCards === 0, 'the clubhouse is the home page, with no roster printed under it',
          'cards=' + r.menuCards);
       ok(/Meet the players/i.test(r.tab || ''), 'and a tab that opens the squad', r.tab);
       ok(r.screen === 'meet', 'the tab goes to the photo', r.screen);
@@ -870,10 +871,10 @@ async function main() {
         await pg.evaluate(() => localStorage.clear());
         await pg.goto(URL);
         const r = await pg.evaluate(() => {
-          const el = document.querySelector('.dugout canvas');
+          const el = document.querySelector('.clubhouse canvas');
           const cv = el.getBoundingClientRect();
-          const tabs = document.querySelector('.dugtabs').getBoundingClientRect();
-          const hots = [...document.querySelectorAll('.dugout .hot')]
+          const tabs = document.querySelector('.clubtabs').getBoundingClientRect();
+          const hots = [...document.querySelectorAll('.clubhouse .hot')]
             .map(b => b.getBoundingClientRect());
           /* No two things in the room may claim the same pixel. */
           let overlap = false;
@@ -1542,7 +1543,7 @@ async function main() {
     /* ---- the room fills the screen, and the room IS the menu ---- */
     {
       console.log('the phone menu');
-      /* The dugout used to be one fixed 1120x500 scene. On a portrait phone
+      /* The clubhouse used to be one fixed 1120x500 scene. On a portrait phone
          its height is decided by its width, so it could only ever be a
          strip: 390 across gave a 167 tall room on a 664 tall screen, and the
          page ended at 320, leaving more than half the display as empty card
@@ -1581,9 +1582,9 @@ async function main() {
         await wait(pg, 800);
         const r = await pg.evaluate(() => {
           const vis = (el) => el && getComputedStyle(el).display !== 'none';
-          const cv = document.querySelector('.dugout canvas');
+          const cv = document.querySelector('.clubhouse canvas');
           const cb = cv.getBoundingClientRect();
-          const hots = [...document.querySelectorAll('.dugout .hot')].map(h => {
+          const hots = [...document.querySelectorAll('.clubhouse .hot')].map(h => {
             const b = h.getBoundingClientRect();
             return {
               side: Math.min(Math.round(b.width), Math.round(b.height)),
@@ -1602,13 +1603,19 @@ async function main() {
              would call that a full screen. */
           const shown = [Math.round(Math.min(cb.width, cb.height * roomAR)),
                          Math.round(Math.min(cb.height, cb.width / roomAR))];
+          /* CSS pixels per room pixel: what decides how big everything in
+             here actually lands on the glass. */
+          const k = shown[0] / ROOM.w;
+          const S = ROOM.sign || SIGN;
           return {
             shown,
+            scale: +k.toFixed(3),
+            signPx: +(S.fs * k).toFixed(1),
             inroom: document.body.classList.contains('inroom'),
             vw: innerWidth, vh: innerHeight,
             reach: Math.round(Math.max(0, ...bottoms)),
             sideways: document.documentElement.scrollWidth > innerWidth + 1,
-            railShown: vis(document.querySelector('.dugout-rail')),
+            railShown: vis(document.querySelector('.clubhouse-rail')),
             room: [ROOM.w, ROOM.h],
             portrait: ROOM.h > ROOM.w,
             box: [Math.round(cb.width), Math.round(cb.height)],
@@ -1616,7 +1623,7 @@ async function main() {
             hots: hots.length,
             minTouch: hots.length ? Math.min(...hots.map(h => h.side)) : 0,
             strays: hots.filter(h => !h.inside).length,
-            roomThings: (window.dugoutThings ? dugoutThings().length : -1),
+            roomThings: (window.clubhouseThings ? clubhouseThings().length : -1),
           };
         });
         r.what = sz.what; r.wantPort = sz.port; r.wantRail = !sz.touch;
@@ -1668,6 +1675,75 @@ async function main() {
       }
     }
 
+    /* ---- and it is drawn big enough to read ---- */
+    {
+      console.log('legible on a phone');
+      /* FILLING THE WINDOW AND BEING READABLE IN IT ARE TWO DIFFERENT
+         THINGS, and the first one shipped without the second.
+
+         Everything in the room is drawn at a fixed pixel size: the bats are
+         74 long, the signs are set in a point size. So how big any of it
+         lands on the glass is decided by one number, how many room pixels
+         the layout asks for against how many CSS pixels it gets to draw
+         them in. A desktop draws at about 1.07 and a 13px sign arrives at
+         14. The first phone layout asked for 760 room pixels inside 358,
+         which is 0.47, and every sign arrived at SIX.
+
+         Nothing failed. The room filled the screen, the hotspots were
+         honest touch targets, the suite was green, and the menu was
+         unreadable. So the drawn size is asserted here directly, against
+         the desktop it is supposed to match rather than against a number
+         somebody liked, because the desktop is the version that works. */
+      const look = async (w, h, touch) => {
+        const ctx = await browser.newContext({ viewport: { width: w, height: h },
+                                               deviceScaleFactor: 2, isMobile: touch, hasTouch: touch });
+        const pg = await ctx.newPage();
+        const errors = [];
+        pg.on('pageerror', e => errors.push(e.message));
+        await pg.goto(URL);
+        await pg.evaluate(() => localStorage.clear());
+        await pg.goto(URL);
+        await wait(pg, 800);
+        const r = await pg.evaluate(() => {
+          const b = document.querySelector('.clubhouse canvas').getBoundingClientRect();
+          const ar = ROOM.w / ROOM.h;
+          const shownW = Math.min(b.width, b.height * ar);
+          const k = shownW / ROOM.w;
+          const S = ROOM.sign || SIGN;
+          /* The smallest thing on the wall, as it is actually drawn. */
+          const things = clubhouseThings();
+          const small = Math.min(...things.map(t => Math.min(t.w, t.h))) * k;
+          return { scale: k, signPx: S.fs * k, smallest: small,
+                   room: [ROOM.w, ROOM.h] };
+        });
+        r.errors = errors;
+        await pg.close(); await ctx.close();
+        return r;
+      };
+      const desk = await look(1280, 860, false);
+      const sizes = [{ w: 390, h: 664, what: 'a phone' },
+                     { w: 360, h: 640, what: 'a small phone' },
+                     { w: 844, h: 390, what: 'a phone sideways' },
+                     { w: 768, h: 1024, what: 'a portrait tablet' }];
+      for (const sz of sizes) {
+        const r = await look(sz.w, sz.h, true);
+        /* Two thirds of the desktop's is the line. Below it the signs are
+           under 10 CSS pixels and the menu stops being readable at arm's
+           length, which is where a phone is held. */
+        ok(r.scale >= desk.scale * 0.66,
+           `${sz.what}: the room is drawn near the size the desktop draws it`,
+           `${r.scale.toFixed(2)} against the desktop's ${desk.scale.toFixed(2)}`
+           + ` (room ${r.room.join('x')})`);
+        ok(r.signPx >= 11,
+           `${sz.what}: and the signs come out readable`,
+           r.signPx.toFixed(1) + 'px against the desktop\'s ' + desk.signPx.toFixed(1));
+        ok(r.smallest >= 100,
+           `${sz.what}: and the smallest thing on the wall is a real object`,
+           Math.round(r.smallest) + 'px on its short side');
+        ok(r.errors.length === 0, `${sz.what}: no page errors`, r.errors.join(' | '));
+      }
+    }
+
     /* ---- turning the phone sideways ---- */
     {
       console.log('turning it sideways');
@@ -1692,7 +1768,7 @@ async function main() {
       await pg.goto(URL);
       await wait(pg, 800);
       const look = () => pg.evaluate(() => {
-        const b = document.querySelector('.dugout canvas').getBoundingClientRect();
+        const b = document.querySelector('.clubhouse canvas').getBoundingClientRect();
         const ar = ROOM.w / ROOM.h;
         return { room: [ROOM.w, ROOM.h], upright: ROOM.h > ROOM.w,
                  /* the painted picture, not the element: see the phone menu */

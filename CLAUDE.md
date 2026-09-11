@@ -264,46 +264,61 @@ is the point. Disney's Peter Pan, Universal's Frankenstein, MGM's green witch an
 ruby slippers are all still owned, and a redraw that drifts back toward one of
 them is the failure mode.
 
-### The dugout is a layout, not a drawing
+### The menu is a room, and it is a LAYOUT rather than a drawing
 
-The menu is a room the player stands in, and it has to fill whatever window it is
-given. A fixed scene cannot: the wide room is 2.24 across, so on a portrait phone
-its height is decided by its width and it can only ever be a strip. It shipped that
-way, a 167 tall room on a 664 tall screen with half the display left as empty card
-stock underneath.
+The menu is a clubhouse the player stands in. It is called the clubhouse
+everywhere the player can see, and in the code; the seven places a character
+says "dugout" mean the one beside the field during a game and are left alone.
 
-So `landscapeRoom(w)` and `portraitRoom(h)` return coordinates and `roomForWindow()`
-picks one, `drawDugout` reads every position out of `ROOM` and holds none of its own,
-and each layout is composed in BANDS (upright: the wall takes a fixed share of the
-height and the floor takes the rest; wide: the furniture keeps its drawn size and
-the SPACE between it opens up) so one composition works at every size it is asked
-for. A phone gets the room as the whole interface: the four doors are hotspots on
-the canvas, the hover rail is hidden because there is no pointer to hover with.
+The room has to fill whatever window it is given, and a fixed scene cannot: the
+wide room is 2.24 across, so on a portrait phone its height is decided by its
+width and it can only ever be a strip. So `landscapeRoom()` and `closeRoom(ar)`
+return coordinates, `roomForWindow()` picks one, and `drawClubhouse` reads every
+position out of `ROOM` and holds none of its own.
 
-**A rotation is not a render, and that is the bug this class produces.** The layout
-is chosen once per render, so turning the phone left the upright room in a sideways
-window: a 760x1202 scene in an 844x390 one, running off the bottom of the page.
-Turning the phone showed LESS of the game than holding it upright. There is a
-resize and orientationchange listener now, and `verify-rules.mjs` rotates a phone
-both ways and asserts the room follows.
+**How big a thing is drawn is the whole ball game, and it has no symptom.**
+Everything in the room is a fixed pixel size: the bats are 74 long, the signs
+are set in a point size. So what decides how big any of it lands on the GLASS is
+one number, how many room pixels the layout asks for against how many CSS pixels
+it gets to draw them in. A desktop asks for 1120 and gets about 1202, draws at
+1.07, and a 13px sign arrives at 14.
 
-Three more things are easy to undo by accident:
+The first phone layout fitted the whole room onto the phone: 760 room pixels
+inside 358, which is **0.47**. Every sign, bat and trophy arrived at less than
+half its desktop size and the menu was unreadable. Nothing failed. The room
+filled the screen, the hotspots were honest touch targets, the suite was green.
 
-- A coordinate written as a number inside `drawDugout` looks right on a desk and is
-  wrong on a phone.
-- The canvas is `object-fit: contain`, so if the scene's shape and its box's shape
-  drift apart the picture letterboxes while the hotspots stay where they were, and
-  the player presses a door above its sign. `renderMenu` measures the real box on
-  the frame after it mounts and recomposes if the guess was off; assertions measure
-  the PAINTED picture, never the element, or a letterboxed room reads as a full one.
-- `body.roomfill` is one `matchMedia` in the script that the stylesheet keys off.
-  Write that query out a second time in CSS and the two drift, which is the
+`closeRoom` is the fix and it is a different idea, not a tuning: the phone gets
+the room seen from CLOSER IN. About 460 across upright and 1060 sideways, which
+draws at 0.72 to 0.87, with the four things at their authored size in two rows
+of two (or one row of four in a wide window) and a floor with the two teammates
+on it. The tunnel, the shirt rail and the bat bag are what that costs. They are
+the right things to spend: the doorway is atmosphere, the four signs are the
+menu. `verify-rules.mjs` asserts the drawn scale against the desktop's directly.
+
+Four more things are easy to undo by accident:
+
+- **A rotation is not a render.** The layout is chosen once per render, so
+  turning the phone left the upright room in a sideways window, showing a fifth
+  of the picture. There is a resize and orientationchange listener, and the
+  suite turns a phone both ways. It has already been deleted once by a patch
+  that replaced the block around it, and only the suite noticed.
+- A coordinate written as a number inside `drawClubhouse` looks right on a desk
+  and is wrong on a phone.
+- The canvas is `object-fit: contain`, so if the scene's shape and its box's
+  shape drift apart the picture letterboxes while the hotspots stay where they
+  were, and the player presses a door above its sign. `renderMenu` measures the
+  real box on the frame after it mounts and recomposes if the guess was off.
+  Assertions measure the PAINTED picture, never the element, or a letterboxed
+  room reads as a full one.
+- `body.roomfill` is one `matchMedia` in the script that the stylesheet keys
+  off. Write that query out a second time in CSS and the two drift, which is the
   letterbox above.
 
-The same arithmetic broke the GAME screen sideways, worse: `#field` derives its
-width from a height budget that assumed 265px of furniture above and below, which
-in a 390 tall window left 125, so an 844 wide phone drew a 182 wide field. Sideways
-is not short of width, it is short of height, so under `max-height: 560px` the
+The same arithmetic broke the GAME screen sideways: `#field` derives its width
+from a height budget that assumed 265px of furniture above and below, which in a
+390 tall window left 125, so an 844 wide phone drew a 182 wide field. Sideways is
+not short of width, it is short of height, so under `max-height: 560px` the
 furniture goes in a column beside the field instead of above and below it.
 
 The regression suite, which is the thing to run after editing:
