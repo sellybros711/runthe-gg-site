@@ -4190,108 +4190,124 @@ function landscapeRoom() {
    composed to the window rather than fitted into it afterwards. */
 function closeRoom(ar) {
   const S = { h: 34, lift: 10, fs: 17, per: 10.6, pad: 20, min: 104 };
-  const over = S.h + S.lift;              /* what a sign takes above its thing */
-  const TOP = 44;                         /* the beam and its rafters */
-  /* WIDE OR UPRIGHT IS DECIDED BY THE BOX. Four things in a row need three
-     times the width and half the height of two rows of two, so which one
-     fits is a question about the shape of the window and nothing else. */
-  const wide = ar >= 1.35;
+  const over = S.h + S.lift;        /* what a sign takes above its thing */
+  const TOP = 44;                   /* the beam and its rafters */
+  const PAD = 16;                   /* wall left below the last thing */
   const E = { w: 150, h: 200 }, N = { w: 176, h: 168 },
         C = { w: 150, h: 168 }, O = { w: 246, h: 146 };
-  let W, H, F, floor, slots, minW;
-  if (wide) {
-    const row = TOP + over + 4;
-    F = row + E.h + 14;
-    floor = 84;
-    H = F + floor;
-    minW = E.w + N.w + C.w + O.w + 5 * 28;
-    W = Math.max(minW, Math.round(H * ar));
-    /* Four across, evenly spaced, with a half gap against each wall. */
-    const spare = W - (E.w + N.w + C.w + O.w);
-    const g = Math.round(spare / 5);
-    const xs = [g];
-    xs.push(xs[0] + E.w + g); xs.push(xs[1] + N.w + g); xs.push(xs[2] + C.w + g);
-    slots = {
-      exhibition: { x: xs[0], y: row, ...E },
-      season:     { x: xs[1], y: row, ...N },
-      cup:        { x: xs[2], y: row, ...C },
-      howto:      { x: xs[3], y: row, ...O },
-    };
-  } else {
-    const r1 = TOP + over + 8;
-    const r2 = r1 + E.h + 22 + over;
-    F = r2 + C.h + 16;
-    /* Deep enough that the bench sits ABOVE the heads of the two standing
-       in front of it. Shallower and the bench crosses them at the shoulder,
-       which reads as a plank through a person rather than as furniture
-       behind one. */
-    floor = 150;
-    H = F + floor;
-    minW = O.w + C.w + 18 + 44;
-    W = Math.max(minW, Math.round(H * ar));
-    /* A row is centred as a pair, so neither hangs toward one wall when the
-       window is wider than the minimum. */
-    const pair = (aw, bw, gap) => {
-      const left = Math.round((W - aw - bw - gap) / 2);
-      return [left, left + aw + gap];
-    };
-    const [ex, nx] = pair(E.w, N.w, 40);
-    const [cx, ox] = pair(C.w, O.w, 18);
-    slots = {
-      exhibition: { x: ex, y: r1, ...E },
-      season:     { x: nx, y: r1, ...N },
-      cup:        { x: cx, y: r2, ...C },
-      howto:      { x: ox, y: r2, ...O },
-    };
+
+  /* THREE WAYS TO HANG FOUR THINGS, and the window picks one.
+
+     Each is described rather than coded: its rows, the gap inside a row,
+     the gap between rows, the margin against the wall, and how deep a floor
+     it wants. Everything else below is worked out from that, so adding a
+     fifth thing to the clubhouse is a row in a list rather than a third
+     branch of arithmetic. */
+  const PLANS = [
+    { id: 'row',  rows: [[E, N, C, O]], gapX: 28, gapY: 0,  side: 35, floor: 84 },
+    { id: 'grid', rows: [[E, N], [C, O]], gapX: 18, gapY: 22, side: 13, floor: 140 },
+    { id: 'col',  rows: [[E], [N], [C], [O]], gapX: 0, gapY: 18, side: 22, floor: 130 },
+  ];
+  for (const p of PLANS) {
+    p.rowW = p.rows.map(r => r.reduce((t, o) => t + o.w, 0) + p.gapX * (r.length - 1));
+    p.rowH = p.rows.map(r => over + Math.max(...r.map(o => o.h)));
+    p.minW = Math.max(...p.rowW) + p.side * 2;
+    p.contentH = p.rowH.reduce((t, h) => t + h, 0) + p.gapY * (p.rows.length - 1);
+    p.minH = TOP + p.contentH + PAD + p.floor;
+    /* The room has to be at least this wide to hold the plan, and at least
+       this wide again to come out the shape of the box. */
+    p.w = Math.max(p.minW, Math.round(p.minH * ar));
   }
-  /* A window narrower than the row it has to hold gets a TALLER room rather
-     than a crushed one, and the extra height goes to the floor. */
-  if (W === minW) H = Math.round(W / ar);
-  const fd = H - F;
-  const at = (f) => Math.round(F + fd * f);
+  /* THE NARROWEST ROOM WINS, and that is the same rule as everything else
+     here: fewer room pixels across the same box means everything in it is
+     drawn bigger. A tall narrow window gets four things in a column, not
+     because a column is prettier but because it is the arrangement that
+     asks for the least width, and width is what legibility costs. */
+  const plan = PLANS.reduce((best, p) => p.w < best.w ? p : best);
+  const W = plan.w;
+  const H = Math.round(W / ar);
+
+  /* THE FLOOR IS A SHARE OF THE ROOM, NOT WHATEVER IS LEFT OVER. It used to
+     be the remainder, so every pixel a tall window had spare went into
+     floorboard: a 320 wide window came out 65 percent bare floor, which is
+     a warehouse rather than a clubhouse. It takes about a quarter, and the
+     wall keeps the rest. */
+  const spare = H - TOP - plan.contentH - PAD;
+  const floor = Math.max(60, Math.min(spare, 240,
+                         Math.max(plan.floor, Math.round(H * 0.24))));
+  const F = H - floor;
+  /* What the wall has spare goes ABOVE and BELOW the things on it in equal
+     measure, which reads as a room with a high ceiling. Hung from the top
+     instead, the same slack reads as four things that have slid up it. */
+  let y = TOP + Math.round((F - TOP - plan.contentH) / 2);
   const mid = Math.round(W / 2);
+  const slots = {};
+  const NAMES = [['exhibition', E], ['season', N], ['cup', C], ['howto', O]];
+  let i = 0;
+  plan.rows.forEach((row, r) => {
+    let x = mid - Math.round(plan.rowW[r] / 2);
+    for (const o of row) {
+      /* `y` walks the top of each row's BLOCK, and a block is the sign plus
+         the thing under it. The slot is the thing, so it starts a sign's
+         height down. Without that the top sign is drawn at zero, over the
+         roof beam and through the lamps. */
+      slots[NAMES[i][0]] = { x, y: y + over, w: o.w, h: o.h };
+      x += o.w + plan.gapX;
+      i++;
+    }
+    y += plan.rowH[r] + plan.gapY;
+  });
+
+  const fd = H - F;
   const seams = [];
   for (let d = 18; d < fd - 8; d += 42) seams.push(d);
-  /* THE BENCH IS THE ONE THING THAT CANNOT SHARE A SHALLOW FLOOR. A person
-     is 92 tall and the wide room's floor is 84 deep, so a bench anywhere on
-     it crosses the two standing in front at the shin and reads as a plank
-     through a person. Standing in front of a wall with your head above the
-     floor line is just what standing near the camera looks like, so the
-     people stay and the bench goes. Upright there is room for both. */
-  const benchW = 270, benchX = mid - Math.round(benchW / 2);
-  const benchY = at(0.10);
+  /* THE BENCH CANNOT SHARE A SHALLOW FLOOR. A person is 92 tall, and on the
+     wide plan's 84 deep floor a bench anywhere crosses the two standing in
+     front of it at the shin: a plank through a person rather than furniture
+     behind one. Standing in front of a wall with your head above the floor
+     line is just what standing near the camera looks like, so on that plan
+     the people stay and the bench goes. */
+  const benchW = Math.min(270, W - 80), benchX = mid - Math.round(benchW / 2);
+  const benchY = F + Math.round(fd * 0.10);
   return {
-    port: !wide,
+    port: plan.id !== 'row',
     w: W, h: H,
     sign: S,
     beam: 26,
     rafter: TOP,
-    rafterStep: Math.round(W / (wide ? 9 : 5)),
+    rafterStep: Math.max(88, Math.round(W / (plan.id === 'row' ? 9 : 5))),
     floorY: F,
     plank: 46,
     floorSeams: seams,
     doorGlow: 0.2,
     /* NOT EVERY ROOM HAS EVERY THING IN IT. Closer in means less of it is in
-       frame, and a doorway squeezed in beside the trophy case would cost
-       the four signs the size this whole layout exists to give them. */
+       frame, and a doorway squeezed in beside the trophy case would cost the
+       four signs the size this whole layout exists to give them. */
     door: null,
     jerseys: null,
-    batbag: null,
     glove: null,
     ball: null,
-    lights: (wide ? [0.16, 0.5, 0.84] : [0.2, 0.5, 0.8]).map(f => Math.round(W * f)),
+    lights: (plan.id === 'row' ? [0.16, 0.5, 0.84] : [0.2, 0.5, 0.8])
+      .map(f => Math.round(W * f)),
     cones: [[30, 120, 0.13], [18, 70, 0.13]],
-    bench: wide ? null : { x: benchX, y: benchY, w: benchW, leg: 34 },
+    bench: fd >= 140 ? { x: benchX, y: benchY, w: benchW, leg: 34 } : null,
     /* PLACED BY THEIR FEET, not by a fraction of the floor. Both are drawn
        downward from the y they are given, so on a shallow floor a fraction
-       puts the cooler's legs through the bottom of the picture. */
-    cooler: { x: 12, y: H - 96 },
-    helmets: { x: W - 116, y: H - 56 },
+       puts the cooler's legs through the bottom of the picture.
+
+       And only in a room wide enough to have corners. Both stand against a
+       wall while the two teammates stand in the middle, so under about 430
+       across there is no gap between them and the props end up behind
+       somebody's legs. An empty corner beats a crowded one. */
+    cooler: W >= 430 ? { x: 12, y: H - 96 } : null,
+    helmets: W >= 430 ? { x: W - 116, y: H - 56 } : null,
+    /* Only once the floor is deep enough to be worth furnishing. */
+    batbag: fd >= 200 ? { x: 20, y: H - 150 } : null,
     castW: 74,
     /* Either side of the bench's legs rather than in front of them: a bench
        whose legs are both hidden behind a person is a plank on a wall. */
     cast: [{ x: mid - 96, foot: H - 8 }, { x: mid + 16, foot: H - 2 }],
-    cups: wide ? [] : [[benchX + 34, benchY - 12], [benchX + 56, benchY - 11]],
+    cups: fd >= 140 ? [[benchX + 34, benchY - 12], [benchX + 56, benchY - 11]] : [],
     slots,
   };
 }

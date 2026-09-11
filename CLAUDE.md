@@ -322,12 +322,29 @@ half its desktop size and the menu was unreadable. Nothing failed. The room
 filled the screen, the hotspots were honest touch targets, the suite was green.
 
 `closeRoom` is the fix and it is a different idea, not a tuning: the phone gets
-the room seen from CLOSER IN. About 460 across upright and 1060 sideways, which
-draws at 0.72 to 0.87, with the four things at their authored size in two rows
-of two (or one row of four in a wide window) and a floor with the two teammates
-on it. The tunnel, the shirt rail and the bat bag are what that costs. They are
-the right things to spend: the doorway is atmosphere, the four signs are the
-menu. `verify-rules.mjs` asserts the drawn scale against the desktop's directly.
+the room seen from CLOSER IN, with the four things at their authored size. The
+tunnel and the shirt rail are what that costs, and they are the right things to
+spend: the doorway is atmosphere, the four signs are the menu. `verify-rules.mjs`
+asserts the drawn scale against the desktop's directly.
+
+**It hangs those four from a PLAN, and the window picks the plan.** There are
+three, described as data rather than coded as branches: one row of four, two rows
+of two, one column of four. Each states its rows, its gaps, its margin and how
+deep a floor it wants, and everything else is worked out from that, so a fifth
+thing in the clubhouse is a row in a list. The one that wins is **the one that
+asks for the narrowest room**, which is the same rule as everything else here:
+fewer room pixels across the same box means everything is drawn bigger. A tall
+narrow panel gets a column, not because a column is prettier but because width is
+what legibility costs.
+
+**And the floor is a SHARE of the room, not the remainder.** It was the leftover,
+so every pixel a tall window had spare went into floorboard: a 320 wide panel came
+out 65 percent bare floor with the four things crushed into a strip above an empty
+brown hall. It takes about a quarter now and the wall keeps the rest, centred, so
+slack reads as a high ceiling. Capping the floor alone is only half of it: without
+the column plan the same slack just moves onto the wall and looks equally empty,
+so the suite asserts BOTH, and each guard was checked against the version that
+fails only the other.
 
 Four more things are easy to undo by accident:
 

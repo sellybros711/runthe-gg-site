@@ -37,6 +37,7 @@
      the snow             the cold parks play under falling snow
      the phone menu       the room fills the window it is in, whichever shape that is
      legible on a phone   and is DRAWN big enough to read, which is a separate thing
+     a room, not a hall   the floor never takes the room over on a narrow window
      turning it sideways  the room is recomposed on rotate rather than left upright
      the game sideways    a phone held sideways gets a bigger field, not a smaller one
      the plate camera     the at bat is seen from behind the catcher and cut away from on contact
@@ -1724,6 +1725,8 @@ async function main() {
       const sizes = [{ w: 390, h: 664, what: 'a phone' },
                      { w: 360, h: 640, what: 'a small phone' },
                      { w: 844, h: 390, what: 'a phone sideways' },
+                     { w: 374, h: 851, what: 'a narrow panel' },
+                     { w: 320, h: 1100, what: 'a very narrow panel' },
                      { w: 768, h: 1024, what: 'a portrait tablet' }];
       for (const sz of sizes) {
         const r = await look(sz.w, sz.h, true);
@@ -1740,6 +1743,73 @@ async function main() {
         ok(r.smallest >= 100,
            `${sz.what}: and the smallest thing on the wall is a real object`,
            Math.round(r.smallest) + 'px on its short side');
+        ok(r.errors.length === 0, `${sz.what}: no page errors`, r.errors.join(' | '));
+      }
+    }
+
+    /* ---- the floor is a floor, not the room ---- */
+    {
+      console.log('a room, not a hall');
+      /* THE FLOOR USED TO BE WHATEVER WAS LEFT OVER. The wall's content is a
+         fixed height, so every pixel a window had spare above that went into
+         floorboard: a 320 wide panel came out 65 percent bare floor, with
+         the four things crushed into a strip at the top and an empty brown
+         hall under them. It is a clubhouse, and a clubhouse is mostly wall.
+
+         The floor takes about a quarter now and the wall keeps the rest,
+         and when a window is so tall that even that leaves the wall with
+         slack, the four things go into a COLUMN instead: an arrangement
+         that spends the height on the things rather than on the gaps. Both
+         halves are asserted, because the second one is what stops the first
+         from just moving the empty space onto the wall. */
+      const look = async (w, h) => {
+        const ctx = await browser.newContext({ viewport: { width: w, height: h },
+                                               deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+        const pg = await ctx.newPage();
+        const errors = [];
+        pg.on('pageerror', e => errors.push(e.message));
+        await pg.goto(URL);
+        await pg.evaluate(() => localStorage.clear());
+        await pg.goto(URL);
+        await wait(pg, 800);
+        const r = await pg.evaluate(() => {
+          const things = clubhouseThings();
+          const S = ROOM.sign || SIGN;
+          const tops = things.map(t => t.y - S.h - S.lift);
+          const bottoms = things.map(t => t.y + t.h);
+          return {
+            room: [ROOM.w, ROOM.h],
+            floorShare: (ROOM.h - ROOM.floorY) / ROOM.h,
+            /* How much of the WALL the four things actually cover. A wall
+               with the slack pushed into it instead of the floor scores
+               badly here and looks just as empty. */
+            wallFill: (Math.max(...bottoms) - Math.min(...tops)) / ROOM.floorY,
+            /* Nothing may be drawn over the roof beam or under the floor. */
+            aboveRoof: Math.min(...tops) < ROOM.rafter,
+            belowFloor: Math.max(...bottoms) > ROOM.floorY,
+          };
+        });
+        r.errors = errors;
+        await pg.close(); await ctx.close();
+        return r;
+      };
+      const shapes = [{ w: 390, h: 664, what: 'a phone' },
+                      { w: 374, h: 851, what: 'a narrow panel' },
+                      { w: 340, h: 1000, what: 'a narrower panel' },
+                      { w: 320, h: 1100, what: 'a very narrow panel' },
+                      { w: 844, h: 390, what: 'a phone sideways' }];
+      for (const sz of shapes) {
+        const r = await look(sz.w, sz.h);
+        ok(r.floorShare <= 0.34,
+           `${sz.what}: the floor is a floor rather than the room`,
+           Math.round(r.floorShare * 100) + '% of a ' + r.room.join('x') + ' room');
+        ok(r.wallFill >= 0.55,
+           `${sz.what}: and the wall is hung rather than left bare`,
+           Math.round(r.wallFill * 100) + '% of the wall covered');
+        ok(!r.aboveRoof, `${sz.what}: no sign is drawn through the roof beam`,
+           JSON.stringify(r.room));
+        ok(!r.belowFloor, `${sz.what}: and nothing on the wall runs onto the floor`,
+           JSON.stringify(r.room));
         ok(r.errors.length === 0, `${sz.what}: no page errors`, r.errors.join(' | '));
       }
     }
