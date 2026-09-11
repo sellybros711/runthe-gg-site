@@ -731,6 +731,68 @@ section('the pass, the streak and the daily objectives');
     : bad('daily objectives did not pay out: '+JSON.stringify({done:r.dailyAllDone,paid:r.dailyPaid,bonus:r.dailyBonus}));
   await page.close();
 }
+/* ---------- 4k. a scene that promises a consequence has to deliver it ----------
+   The shoulder dilemma said "You sit it out. It costs you the night", took the
+   standing hit, and then the match ran anyway: the option wrote prose about a
+   consequence the code never applied. That is a CLASS of bug, not one scene, so
+   this is a lint over every outcome in the deck plus a behavioural check that
+   the effect it needs actually clears the booking. */
+section('a scene that says you are not going out takes you off the card');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={liars:[], pulled:null, started:null};
+    // any outcome whose prose says you did not work that night
+    const SITS=/\b(sit it out|sat it out|sits it out|cannot go|could not go|not going out|pulled? (yourself )?out|off the card|miss(ed)? the show|somebody else (works|worked) your spot)\b/i;
+    // Many scenes build their options around a cast member and throw without
+    // one, so each is attempted on its own and the skipped count is reported
+    // rather than swallowed: a lint that silently covers nothing is worse than
+    // no lint at all.
+    out.scanned=0; out.skipped=[];
+    // sceneCtx() leaves the cast slots null, and most scenes reach straight
+    // into them, so fill them with real roster members: the lint should cover
+    // the whole deck rather than only the cast-free dilemmas.
+    const _r=houseRoster(myPromoId());
+    const x=sceneCtx(); x.a=_r[0]||null; x.b=_r[1]||null;
+    SCENES.forEach(s=>{
+      const b=s.beats&&s.beats.start; if(!b) return;
+      let opts=null;
+      try{ opts=(typeof b.opts==='function'?b.opts(x):b.opts)||[]; }
+      catch(_e){ out.skipped.push(s.id); return; }
+      out.scanned++;
+      opts.forEach(o=>{
+        (o.outcomes||[]).forEach(oc=>{
+          let t=''; try{ t=String((typeof oc.text==='function')?oc.text(x):oc.text||''); }catch(_e){ return; }
+          if(SITS.test(t) && !(oc.eff&&oc.eff.pullOut)) out.liars.push(s.id+': '+t.slice(0,70));
+        });
+      });
+    });
+    // and the effect does what it says: a booked match becomes an off night,
+    // and the walk to gorilla does not start a fight
+    const roster=houseRoster(myPromoId()), opp=roster[0];
+    G.car.booking={type:'match', o:{oppId:opp.id, oppName:opp.name, oppOvr:40, stip:'singles',
+      stipLabel:'Singles Match', mult:1, purse:400, stakes:'standard', card:'Opener'}};
+    applySceneEffect({pullOut:'test'}, sceneCtx());
+    out.pulled = !!(G.car.booking && G.car.booking.pulled && G.car.booking.type==='dark');
+    let started=false; const realStart=window.startFight;
+    window.startFight=function(){ started=true; };
+    try{ goBooking(); }catch(_){}
+    window.startFight=realStart;
+    out.started=started;
+    return out;
+  });
+  if(errs.length) bad('scene promises: page errors: '+errs.slice(0,2).join(' | '));
+  r.liars.length ? bad(`${r.liars.length} outcome(s) say you sat out without taking you off the card:\n       `+r.liars.join('\n       '))
+                 : ok(`every outcome that says you sat out actually pulls you from the card (${r.scanned} scenes scanned, ${r.skipped.length} need a cast and were skipped)`);
+  r.pulled ? ok('pullOut turns a booked match into an off night') : bad('pullOut left the match on the card');
+  r.started===false ? ok('and the walk to gorilla does not start a fight after it')
+                    : bad('the walk to gorilla started the match anyway after a pull-out');
+  await page.close();
+}
+
 section('dilemmas roll, bite, and come back later');
 {
   const {page, errs} = await fresh(URL+'/wrestling/');

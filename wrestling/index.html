@@ -54,11 +54,13 @@
      under the notch on any modern iPhone, which is exactly how the first pass
      shipped. env() is the only thing that knows how tall the status bar is. */
   body{padding-top:calc(env(safe-area-inset-top,0px) + 48px);}
+  body.hasnav{padding-top:calc(env(safe-area-inset-top,0px) + 82px);}
   body.hasnav main{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px));}
-  .sitebar{position:fixed;top:0;left:0;right:0;z-index:45;display:flex;align-items:center;gap:9px;
+  .sitebar{position:fixed;top:0;left:0;right:0;z-index:45;display:flex;flex-direction:column;gap:6px;
     padding:calc(env(safe-area-inset-top,0px) + 7px) 12px 7px;
     background:rgba(14,11,11,.9);-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
     border-bottom:1px solid rgba(244,232,219,.10);}
+  .sb-row{display:flex;align-items:center;gap:9px;}
   .sb-home{flex:0 0 auto;display:inline-flex;align-items:center;height:34px;padding:0 11px;
     font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
     color:var(--text-dim);text-decoration:none;background:rgba(244,232,219,.05);
@@ -89,6 +91,25 @@
   .sb-prof .pf-av svg{width:28px;height:28px;display:block;}
   .sb-prof .pf-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px;}
   .sb-prof .pf-o{flex:none;font-family:var(--mono);font-size:11px;color:var(--gold);}
+
+  /* THE SAME DESTINATIONS, AT THE TOP. The tab bar at the bottom is where a
+     thumb goes; the header is where a lot of people look first. Both drive the
+     same goGroup(), so there is one idea of where you are and one badge. */
+  .sb-nav{display:none;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .sb-nav::-webkit-scrollbar{display:none;}
+  body.hasnav .sb-nav{display:flex;}
+  .sb-nav button{flex:1 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+    height:28px;padding:0 11px;background:rgba(244,232,219,.045);border:1px solid var(--line);
+    border-radius:999px;cursor:pointer;color:var(--text-faint);font-family:var(--mono);font-size:9.5px;
+    font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;position:relative;}
+  .sb-nav button svg{width:14px;height:14px;display:block;flex:none;}
+  .sb-nav button.on{color:var(--gold);border-color:rgba(224,179,65,.45);background:rgba(224,179,65,.10);}
+  .sb-nav button.pass{color:#cbb46a;border-color:rgba(224,179,65,.32);background:rgba(224,179,65,.07);}
+  .sb-nav button:active{transform:translateY(1px);}
+  .sb-nav .navdot{position:absolute;top:-5px;right:-3px;min-width:15px;height:15px;border-radius:8px;
+    padding:0 4px;background:var(--brandred);border:1.5px solid #0e0b0b;font-family:var(--mono);
+    font-size:9px;font-weight:900;line-height:12px;color:#fff;letter-spacing:0;}
+  @media(max-width:520px){ .sb-nav button span{display:none;} .sb-nav button{padding:0 9px;} }
 
   .botnav{position:fixed;left:0;right:0;bottom:0;z-index:44;overflow:visible;
     background:linear-gradient(180deg,#171112,#0b0909);border-top:1px solid var(--line);
@@ -499,10 +520,17 @@
   /* The steel cage: four bar columns on the back apron, a chain-link mesh
      overlay across the front, and a bar frame around the ring. Only visible
      when the arena carries .cage; every other stipulation ignores it. */
+  /* A CAGE IS A ROOM, NOT A BACKDROP. The old one drew a single flat mesh and a
+     fan of bars in ONE layer above the wrestlers, so the chain link lay across
+     their chests and the cage had no sides. It is two layers now: the far wall
+     and the two side walls sit BEHIND the bodies, the near wall sits in front of
+     them at low opacity, and you look at the match through the links the way a
+     camera does. */
+  .arena .cageback{position:absolute;inset:0;pointer-events:none;z-index:2;display:none;}
   .arena .cagelayer{position:absolute;inset:0;pointer-events:none;z-index:5;display:none;}
-  .arena.cage .cagelayer{display:block;}
-  .arena.cage{box-shadow:inset 0 0 90px 30px rgba(0,0,0,.55);}
-  .arena .cagelayer svg{width:100%;height:100%;display:block;}
+  .arena.cage .cageback,.arena.cage .cagelayer{display:block;}
+  .arena.cage{box-shadow:inset 0 0 90px 30px rgba(0,0,0,.62);}
+  .arena .cageback svg,.arena .cagelayer svg{width:100%;height:100%;display:block;}
   /* THE FLOOR. The ring fills the frame, so there was nowhere for a count-out to
      happen: a wrestler "rolled to the floor" and stood in the middle of the ring
      while the referee counted. When a spot spills outside, the camera pulls back
@@ -511,8 +539,8 @@
   .arena .floor{position:absolute;left:0;right:0;bottom:0;height:16%;z-index:0;opacity:0;transition:opacity .45s;
     background:linear-gradient(180deg,#1a1516,#0e0c0c);border-top:1px solid rgba(255,255,255,.06);}
   .arena.wide .floor{opacity:1;}
-  .arena .ringback,.arena .ringfront,.arena .cagelayer{transform-origin:50% 100%;transition:transform .45s ease-out;}
-  .arena.wide .ringback,.arena.wide .ringfront,.arena.wide .cagelayer{transform:scale(.74);}
+  .arena .ringback,.arena .ringfront,.arena .cagelayer,.arena .cageback{transform-origin:50% 100%;transition:transform .45s ease-out;}
+  .arena.wide .ringback,.arena.wide .ringfront,.arena.wide .cagelayer,.arena.wide .cageback{transform:scale(.74);}
   .arena.wide .ringback,.arena.wide .ringfront{height:78%;}
   /* the fourth body is off stage until a spot needs it */
   .fighter.extra{display:none;z-index:3;}
@@ -525,6 +553,39 @@
 
   /* Fighters are positioned from the arena centre and driven entirely from JS,
      so a move can place one wrestler exactly on top of the other. */
+  /* The mash window: big enough to hit without looking away from the match. */
+  .tapwin{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;width:min(86%,420px);
+    text-align:center;background:rgba(8,6,6,.86);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+    padding:16px 18px 14px;border:2px solid var(--gold);border-radius:16px;pointer-events:auto;
+    box-shadow:0 18px 50px -12px rgba(0,0,0,.9), 0 0 0 1px rgba(0,0,0,.6);}
+  .tapwin .tw-p{font-family:var(--display);font-size:26px;line-height:1;color:var(--cream);
+    letter-spacing:.07em;text-transform:uppercase;text-shadow:0 3px 0 #000;}
+  .tapwin .tw-hint{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--gold);opacity:.8;margin-top:5px;}
+  .tapwin .tw-b{display:block;width:100%;margin:11px 0 0;padding:20px 10px 16px;border-radius:14px;
+    border:2px solid #f2d27a;background:linear-gradient(180deg,#f6d97a,#c69a2c);color:#241706;cursor:pointer;
+    font-family:var(--display);letter-spacing:.1em;text-transform:uppercase;
+    box-shadow:0 7px 0 #7a5c12, 0 14px 26px -8px rgba(0,0,0,.8);touch-action:manipulation;
+    -webkit-user-select:none;user-select:none;transition:transform .05s, box-shadow .05s;}
+  .tapwin .tw-b .tw-lab{display:block;font-size:34px;line-height:1;}
+  .tapwin .tw-b .tw-n{display:block;font-family:var(--mono);font-size:13px;font-weight:800;
+    letter-spacing:.14em;margin-top:5px;opacity:.72;}
+  .tapwin .tw-b.hit{transform:translateY(5px);box-shadow:0 2px 0 #7a5c12, 0 6px 14px -6px rgba(0,0,0,.8);}
+  .tapwin .tw-meter{margin-top:11px;height:14px;background:#2a1f0c;border-radius:8px;overflow:hidden;
+    border:1px solid rgba(224,179,65,.35);}
+  .tapwin .tw-meter i{display:block;height:100%;width:0%;border-radius:7px;
+    background:linear-gradient(90deg,#c69a2c,#f6d97a);transition:width .07s linear;}
+  .tapwin .tw-time{margin-top:6px;height:5px;background:#3a1614;border-radius:3px;overflow:hidden;}
+  .tapwin .tw-time i{display:block;height:100%;width:100%;background:var(--brandred);transition:width linear;}
+  @media(max-width:640px){
+    .tapwin{padding:11px 13px 10px;width:min(90%,360px);}
+    .tapwin .tw-p{font-size:20px;} .tapwin .tw-hint{margin-top:3px;}
+    .tapwin .tw-b{padding:15px 8px 12px;margin-top:8px;}
+    .tapwin .tw-b .tw-lab{font-size:28px;}
+    .tapwin .tw-b .tw-n{font-size:12px;margin-top:3px;}
+    .tapwin .tw-meter{margin-top:8px;height:12px;}
+  }
+
   .fighter{position:absolute;bottom:13%;left:50%;width:250px;margin-left:-125px;z-index:3;
     transform-origin:50% 88%;transition:transform .16s ease-out;will-change:transform;}
   .fighter .fbob{animation:bob 1.7s ease-in-out infinite;transform-origin:50% 90%;}
@@ -1451,12 +1512,15 @@
      screen, so on a phone there was no way back to RunThe.gg and no way to see
      where you were. -->
 <div class="sitebar" id="sitebar">
-  <a class="sb-home" href="https://runthe.gg" title="RunThe.GG">RunThe<span>.GG</span></a>
-  <div class="sb-mark" onclick="go('home')">RUN <b>THE</b> ROPES</div>
-  <div class="sb-right">
-    <button class="sb-coin" id="sbCoin" onclick="go('shop')" title="Coins"></button>
-    <button class="sb-prof" id="sbProf" onclick="openProfile()" title="Your wrestler"></button>
+  <div class="sb-row">
+    <a class="sb-home" href="https://runthe.gg" title="RunThe.GG">RunThe<span>.GG</span></a>
+    <div class="sb-mark" onclick="go('home')">RUN <b>THE</b> ROPES</div>
+    <div class="sb-right">
+      <button class="sb-coin" id="sbCoin" onclick="go('shop')" title="Coins"></button>
+      <button class="sb-prof" id="sbProf" onclick="openProfile()" title="Your wrestler"></button>
+    </div>
   </div>
+  <div class="sb-nav" id="sbNav"></div>
 </div>
 
 <!-- The name, the promotion and the wallet all live in the banner now, so this
@@ -1736,6 +1800,7 @@
     <div class="crowd" id="crowd"></div>
     <div class="floor"></div>
     <div class="ringback"></div>
+    <div class="cageback" id="fCageB"></div>
     <div class="fighter me" id="fMe"></div>
     <div class="fighter opp" id="fOpp"></div>
     <div class="fighter ref" id="fRef"></div>
@@ -3969,17 +4034,26 @@ const POSES={
   // stretched out behind. The old pin was a starfish rotated onto its back.
   pin:      { body:[0,22,84], shL:150, elL:-20, shR:-40, elR:-70, hipL:8, knL:-14, hipR:-8, knR:12, head:-14 },
   submit:   { body:[0,8,-14], shL:-58, elL:-44, shR:-88, elR:-28, hipL:66, knL:-92, hipR:-12, knR:22, head:-10 },
-  taunt:    { shL:166, elL:-16, shR:-166, elR:16, hipL:-6, hipR:6, body:[0,-2,0] },
-  celebrate:{ shL:176, elL:-6, shR:-176, elR:6, hipL:-14, hipR:14, body:[0,-5,0] },
+  /* WORKING THE CROWD, NOT LEADING A CHEER. These two had both arms straight up
+     in a narrow symmetric V with the hip rotations the wrong way round: a
+     negative hipL against a positive hipR swings the legs TOWARD each other, so
+     the wrestler stood with his feet crossed under a pom-pom pose. Feet apart is
+     positive hipL against negative hipR, the way `guard` and `stagger` do it.
+     The taunt is asymmetric now (one arm up and out, the other cocked in at the
+     chest) because a wrestler calling for a reaction is never symmetrical, and
+     the celebrate is a wide Y with the feet planted rather than a narrow V. */
+  taunt:    { shL:152, elL:-28, shR:-102, elR:-54, hipL:9, knL:-11, hipR:-9, knR:11,
+              torso:-4, head:4, body:[0,-1,0] },
+  celebrate:{ shL:158, elL:-13, shR:-158, elR:13, hipL:12, knL:-13, hipR:-12, knR:13, body:[0,-4,0] },
   point:    { shR:-98, elR:-4, shL:22, elL:-40, torso:4, head:4 },
   stagger:  { body:[0,1,-14], head:9, torso:-6, shL:-42, elL:22, shR:28, elR:-18, hipL:18, knL:-22, hipR:-8 },
   reel:     { body:[0,0,13], head:-19, torso:7, shL:26, elL:-52, shR:-48, elR:32, hipL:-10, hipR:14, knR:-18 },
-  guard:    { shL:62, elL:-124, shR:-62, elR:124, hipL:10, knL:-14, hipR:-10, body:[0,2,-2] },
+  guard:    { shL:62, elL:-124, shR:-62, elR:124, hipL:10, knL:-14, hipR:-10, knR:14, body:[0,2,-2] },
   corner:   { body:[0,2,-9], shL:126, elL:-20, shR:-44, elR:26, hipL:12, knL:-18, head:8 },
   whip:     { shR:-74, elR:-44, shL:44, elL:-20, torso:7, body:[1,0,6] },
   ropes:    { shL:150, elL:-18, shR:-150, elR:18, hipL:-8, knL:14, hipR:10, knR:-16, body:[0,1,0] },
   // the winner, arm held aloft by the official
-  raised:   { shL:172, elL:-6, shR:-18, elR:8, torso:2, body:[0,-1,0] },
+  raised:   { shL:172, elL:-6, shR:-18, elR:8, torso:2, hipL:8, knL:-9, hipR:-8, knR:9, body:[0,-1,0] },
   // ---- the referee ----
   refIdle:  { shL:22, elL:-40, shR:-22, elR:40 },
   refWatch: { body:[0,2,-7], shL:40, elL:-70, shR:-30, elR:50, hipL:12, knL:-14, head:6 },
@@ -5416,23 +5490,35 @@ function hubBadge(){ try{
   const d=dailyState(); return dailyList().filter(o=>!d.done[o.id]).length;
 }catch(_){ return 0; } }
 function paintBotNav(scr){
-  const bar=$('botnav'); if(!bar) return;
+  const bar=$('botnav'), top=$('sbNav');
   const playing = !!G && scr!=='create' && scr!=='start';
-  bar.style.display = playing ? 'block' : 'none';
+  if(bar) bar.style.display = playing ? 'block' : 'none';
   document.body.classList.toggle('hasnav', playing);
-  if(!playing) return;
+  if(top) top.innerHTML='';
+  if(!playing || !bar) return;
   const g=groupOf(scr)||NAVG[0];
   const cur = (scr==='pass') ? 'pass' : g.id;
   const dot=(n)=>n?`<i class="navdot">${n}</i>`:'';
-  const tab=(x)=>`<button class="${x.id===cur&&scr!=='pass'?'on':''}" onclick="goGroup('${x.id}')">
-      ${pico(NAV_ICON[x.id]||'star',21)}<span>${x.label}</span>${x.id==='hub'?dot(hubBadge()):''}</button>`;
+  const on=(id)=>id===cur&&scr!=='pass'?'on':'';
   const half=Math.ceil(NAVG.length/2);
+  const tab=(x)=>`<button class="${on(x.id)}" onclick="goGroup('${x.id}')">
+      ${pico(NAV_ICON[x.id]||'star',21)}<span>${x.label}</span>${x.id==='hub'?dot(hubBadge()):''}</button>`;
   bar.innerHTML=`<div class="botnav-in">`
     + NAVG.slice(0,half).map(tab).join('')
     + `<button class="navfab ${scr==='pass'?'on':''}" onclick="go('pass')">
          <span class="nf-disc">${pico('ticket',25)}</span><span class="nf-lab">Pass</span>${dot(passBadge())}</button>`
     + NAVG.slice(half).map(tab).join('')
     + `</div>`;
+  // The same six destinations in the header. One source of truth for which one
+  // is current and where the badges sit, so the two rails can never disagree.
+  if(top){
+    const ttab=(x)=>`<button class="${on(x.id)}" onclick="goGroup('${x.id}')">
+        ${pico(NAV_ICON[x.id]||'star',14)}<span>${x.label}</span>${x.id==='hub'?dot(hubBadge()):''}</button>`;
+    top.innerHTML = NAVG.slice(0,half).map(ttab).join('')
+      + `<button class="pass ${scr==='pass'?'on':''}" onclick="go('pass')">
+           ${pico('ticket',14)}<span>Pass</span>${dot(passBadge())}</button>`
+      + NAVG.slice(half).map(ttab).join('');
+  }
 }
 /* Who you are, top right. Tapping it opens your card; with no career it is the
    way back to the front page. */
@@ -5463,7 +5549,7 @@ function paintNav(s){ const sc=$('s-'+s); if(sc){ const el=sc.querySelector('.gn
 const TOURS={
  hub:[
   {sel:'#weekBody .advice', title:'This is your week',
-   body:'A week has two halves. <b>Yours</b>: how you prepare behind the scenes. <b>Theirs</b>: what the office books you to do. You do not write the card. You make the most of it. Forty weeks make a year.'},
+   body:'A week has two halves. <b>Yours</b>: how you prepare behind the scenes. <b>Theirs</b>: what the office books you to do. You do not write the card. You make the most of it.'},
   {sel:'#weekBody .preprow', title:'Prepare like a pro',
    body:'One piece of prep a week, paid on the spot. <b>Gym</b> banks XP, <b>tape study</b> raises your odds against tonight\'s opponent, <b>rest</b> buys back condition, and <b>working the room</b> nudges your standing. Benched weeks pay double: nothing but time.'},
   {sel:'#weekBody .bksheet', title:'The office books you',
@@ -5691,7 +5777,7 @@ const RULES=[
   <p class="log">You are an employee before you are a star.</p>
   <ul class="ruleul">
     <li><b>Standing with the office</b> is what they think of you. Great matches raise it; working hurt and no-showing quality lowers it. It decides how well you get booked.</li>
-    <li><b>Your contract</b> has a weekly downside, a merch cut and a length. You can renegotiate, but asking costs standing if they say no.</li>
+    <li><b>Your contract</b> pays a weekly base whether they book you or not. Merch money sits on top. You can renegotiate, but asking costs standing if they say no.</li>
     <li><b>Schedule</b> trades pay and exposure against wear and injury risk.</li>
     <li><b>Injuries</b> cost you real weeks and take an attribute hit. Serious ones can leave permanent damage. Working hurt makes all of it worse.</li>
     <li><b>Mileage</b> never resets. It is what decides how early you decline.</li>
@@ -5898,7 +5984,9 @@ function dressArena(root,pid){
   if(back) back.innerHTML=ringSVG(false,T);
   if(front) front.innerHTML=ringSVG(true,T);
   const cage=root.querySelector('.cagelayer');
-  if(cage) cage.innerHTML=cageSVG();
+  if(cage) cage.innerHTML=cageSVG(true);
+  const cageB=root.querySelector('.cageback');
+  if(cageB) cageB.innerHTML=cageSVG(false);
   const cr=root.querySelector('.crowd,.hr-crowd');
   if(cr){
     cr.style.background=venueCSS(T);
@@ -5907,57 +5995,62 @@ function dressArena(root,pid){
   }
   root.style.setProperty('--arGlow',T.glow);
 }
-// The steel cage: four bar posts, a chain-link mesh across the back and front,
-// and a bar frame around the top. Painted once on every arena; the .cage class
-// on the arena decides whether it is visible.
-function cageSVG(){
+/* THE STEEL CAGE, IN TWO HALVES.
+   A cage encloses the ring, so it cannot be one flat sheet of mesh: the far
+   wall and the two side walls belong BEHIND the wrestlers, and only the near
+   wall is between them and the camera. Called twice per arena, once for each
+   layer, and the .cage class on the arena decides whether either is visible.
+
+   The side walls are drawn as converging line sets rather than a pattern fill,
+   because a flat chain-link texture on a surface running away from the camera
+   reads as a wall lying on its side. */
+function cageSVG(front){
   const R=RING;
   const u='cg'+(++RINGN);
-  const bar='#8a8a90', barD='#3a3a40', mesh='#5a5a62';
-  // Chain-link pattern: two diagonal lines per tile
-  const pat = `<defs>
-    <pattern id="${u}m" width="4" height="4" patternUnits="userSpaceOnUse">
-      <line x1="0" y1="0" x2="4" y2="4" stroke="${mesh}" stroke-width="0.6" opacity=".7"/>
-      <line x1="4" y1="0" x2="0" y2="4" stroke="${mesh}" stroke-width="0.6" opacity=".7"/>
-    </pattern>
-  </defs>`;
-  // Top rail runs from post to post; then vertical bars every ~6 units
-  const topY = Math.max(0, R.yTopB - 8);
-  const bars = [];
-  const barCount = 18;
-  for(let i=0;i<=barCount;i++){
-    const x = R.bx1 - 4 + (i/barCount)*(R.bx2 - R.bx1 + 8);
-    bars.push(`<line x1="${x}" y1="${topY}" x2="${x}" y2="${R.yBack}" stroke="${bar}" stroke-width="0.7" opacity=".85" vector-effect="non-scaling-stroke"/>`);
+  const bar='#9a9aa2', barD='#2e2e35', mesh='#7a7a86';
+  const topB=2, topF=16;                    // the cage stands well above the posts
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const ln=(x1,y1,x2,y2,c,w,op)=>`<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${c}" stroke-width="${w}" opacity="${op}" vector-effect="non-scaling-stroke"/>`;
+  const pat=(op)=>`<defs><pattern id="${u}m" width="3.4" height="3.4" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="3.4" y2="3.4" stroke="${mesh}" stroke-width="0.55" opacity="${op}"/>
+      <line x1="3.4" y1="0" x2="0" y2="3.4" stroke="${mesh}" stroke-width="0.55" opacity="${op}"/>
+    </pattern></defs>`;
+
+  /* ---- one wall, as a run of verticals and horizontals that follow its
+     corners. t runs 0 to 1 from the left edge of the wall to the right. ---- */
+  const wall=(ax,aTop,aBot, bx,bTop,bBot, n, op, w)=>{
+    let o='';
+    for(let i=0;i<=n;i++){ const t=i/n;
+      o+=ln(lerp(ax,bx,t), lerp(aTop,bTop,t), lerp(ax,bx,t), lerp(aBot,bBot,t), mesh, w, op); }
+    for(let j=0;j<=5;j++){ const v=j/5;
+      o+=ln(ax, lerp(aTop,aBot,v), bx, lerp(bTop,bBot,v), mesh, w, op*0.85); }
+    return o;
+  };
+
+  if(!front){
+    // ---- behind the wrestlers: the far wall and both sides ----
+    const far=`<polygon points="${R.bx1},${topB} ${R.bx2},${topB} ${R.bx2},${R.yBack} ${R.bx1},${R.yBack}" fill="url(#${u}m)" opacity=".85"/>`;
+    const shade=`<polygon points="${R.bx1},${topB} ${R.bx2},${topB} ${R.bx2},${R.yBack} ${R.bx1},${R.yBack}" fill="rgba(0,0,0,.34)"/>`;
+    const left = wall(R.fx1, topF, R.yFront, R.bx1, topB, R.yBack, 9, 0.5, 0.55);
+    const right= wall(R.bx2, topB, R.yBack,  R.fx2, topF, R.yFront, 9, 0.5, 0.55);
+    // the two far posts, and the rail they carry
+    const post=(x,y1,y2)=>ln(x,y1,x,y2,barD,3.4,1)+ln(x,y1,x,y2,bar,1.5,1);
+    return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      ${pat(0.7)}${shade}${far}${left}${right}
+      ${post(R.bx1,topB,R.yBack)}${post(R.bx2,topB,R.yBack)}
+      ${ln(R.bx1,topB,R.bx2,topB,barD,2.6,1)}${ln(R.bx1,topB,R.bx2,topB,bar,1.3,1)}
+    </svg>`;
   }
-  // Front cage bars angle out with the ring perspective
-  const fbars = [];
-  const frontBarCount = 22;
-  for(let i=0;i<=frontBarCount;i++){
-    const t = i/frontBarCount;
-    const xB = R.bx1 - 4 + t*(R.bx2 - R.bx1 + 8);
-    const xF = R.fx1 - 6 + t*(R.fx2 - R.fx1 + 12);
-    fbars.push(`<line x1="${xB}" y1="${topY}" x2="${xF}" y2="${R.yFront}" stroke="${bar}" stroke-width="0.55" opacity=".55" vector-effect="non-scaling-stroke"/>`);
-  }
-  // Four corner posts, taller and darker so the cage reads as a frame
-  const cornerH = topY - 6;
-  const corners = [R.bx1, R.bx2, R.fx1, R.fx2].map((x,i)=>{
-    const yTop = i<2 ? topY : R.yTopF - 6;
-    const yBot = i<2 ? R.yBack : R.yFront;
-    return `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBot}" stroke="${barD}" stroke-width="3" vector-effect="non-scaling-stroke"/>
-            <line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBot}" stroke="${bar}" stroke-width="1.4" vector-effect="non-scaling-stroke"/>`;
-  }).join('');
-  // Top horizontal rail
-  const topRail = `<line x1="${R.bx1-4}" y1="${topY}" x2="${R.bx2+4}" y2="${topY}" stroke="${barD}" stroke-width="2.4" vector-effect="non-scaling-stroke"/>
-                   <line x1="${R.bx1-4}" y1="${topY}" x2="${R.bx2+4}" y2="${topY}" stroke="${bar}" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`;
-  // A translucent mesh polygon behind the bars to sell the chain-link
-  const meshBack = `<polygon points="${R.bx1-4},${topY} ${R.bx2+4},${topY} ${R.bx2+4},${R.yBack} ${R.bx1-4},${R.yBack}" fill="url(#${u}m)"/>`;
+  // ---- in front of them: the near wall, faint enough to see the match through ----
+  const near = wall(R.fx1, topF, R.yFront, R.fx2, topF, R.yFront, 22, 0.30, 0.5);
+  const post=(x)=>ln(x,topF,x,R.yFront,barD,3.8,0.9)+ln(x,topF,x,R.yFront,bar,1.6,0.75);
+  // the rails that join the near posts to the far ones, which is what makes it
+  // read as a box rather than two separate fences
+  const rails = ln(R.fx1,topF,R.bx1,topB,bar,1.1,0.55)+ln(R.fx2,topF,R.bx2,topB,bar,1.1,0.55);
   return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-    ${pat}
-    ${meshBack}
-    ${bars.join('')}
-    ${topRail}
-    ${corners}
-    ${fbars.join('')}
+    ${pat(0.5)}${near}${rails}
+    ${post(R.fx1)}${post(R.fx2)}
+    ${ln(R.fx1,topF,R.fx2,topF,barD,2.8,0.92)}${ln(R.fx1,topF,R.fx2,topF,bar,1.4,0.8)}
   </svg>`;
 }
 
@@ -6725,7 +6818,8 @@ function renderWeek(){
     // game forgot about.
     const _offScene = (function(){ try{ return pickScene('any'); }catch(_){ return null; } })();
     sheet=`<div class="bksheet dark">
-      <div class="bs-vs">${(c.standing||50)<45?'No card this week. Weeks like this build careers.':'No card this week. Get ready for the ones coming.'}</div>
+      <div class="bs-vs">${b.pulled ? (b.why||'You are off tonight\'s card.')
+        : (c.standing||50)<45?'No card this week. Weeks like this build careers.':'No card this week. Get ready for the ones coming.'}</div>
       ${_offScene?`<div class="bs-scene-tease">${pico('microphone',12)} Something happens on the way out: <b>${String(_offScene.tag||'').trim().toLowerCase()}</b></div>`:''}
       ${!c.prep?`<div class="bs-scene-tease">${pico('dumbbell',12)} The gym pays double on an off week. Pick it below.</div>`:''}
       <button class="big" style="width:100%;margin-top:13px;" onclick="endDarkWeek()">Call It A Week →</button>
@@ -6834,7 +6928,7 @@ function promptCatchphrase(){
   const w=G.w;
   const cur=w.catch||'';
   modal('The bit hit.',
-    `<p class="log">${w.gimmick&&w.gimmick.name?w.gimmick.name:'Your character'} is over. What are you saying every time now?</p>
+    `<p class="log">The crowd has bought ${w.gimmick&&w.gimmick.name?w.gimmick.name:'your character'}. Time to give it a catchphrase.</p>
      <input type="text" id="_catchIn" maxlength="60" style="width:100%;padding:8px 10px;font-size:14px;" value="${cur}" placeholder="Believe that.">
      <p class="hint" style="margin-top:6px;">The line opens every promo you cut from now on.</p>`,
     [{label:'Skip',cls:'ghost',fn:closeModal},
@@ -7443,23 +7537,57 @@ function fLog(html,cls){ const el=$('fLog'); const d=document.createElement('div
 // A shared tap window. Shows a big prompt with a Tap button for `ms` and
 // resolves true if the player taps in time. Used by the kickout beat, the
 // submission escape and the ladder climb. One primitive, three uses.
-function tapWindow(ms, prompt){
+/* THE MASH WINDOW.
+   Kicking out, beating the count and getting up a ladder are the three moments
+   the player actually DOES something, and they were a single small button on a
+   short timer: one tap, done, and easy to miss entirely on a phone. They are a
+   mash now. The button is big enough to hit without looking, the window is long
+   enough to react to, and the meter DRAINS while it is open, so filling it means
+   hitting the thing repeatedly rather than tapping once and waiting.
+
+   `ms` stays the caller's sense of how urgent the moment is; the real window is
+   a multiple of it. Callers can pass `taps` to make a moment harder. */
+function tapWindow(ms, prompt, opts){
+  opts=opts||{};
   // a headless harness cannot press the button: RTR_AUTO.tap answers for it
   if(window.RTR_AUTO && RTR_AUTO.tap!=null){ return sleep(Math.min(ms,120)).then(()=>!!RTR_AUTO.tap); }
   return new Promise(res=>{
     const arena=$('arena'); if(!arena){ res(false); return; }
+    const need = Math.max(3, opts.taps||8);
+    const dur  = Math.round((ms||600) * (opts.slow||2.6));
     const wrap=document.createElement('div');
     wrap.className='tapwin';
-    wrap.style.cssText='position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:9;text-align:center;background:rgba(0,0,0,.72);padding:14px 22px;border:2px solid var(--gold);border-radius:12px;pointer-events:auto;';
-    wrap.innerHTML=`<div style="font-family:var(--display);font-size:18px;color:var(--cream);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">${prompt||'TAP NOW'}</div>
-      <button class="big" style="min-width:120px;padding:10px 26px;" id="_tapBtn">TAP</button>
-      <div class="_tapBar" style="margin-top:8px;height:6px;background:#3a2a10;border-radius:3px;overflow:hidden;"><i id="_tapFill" style="display:block;height:100%;width:100%;background:var(--gold);transition:width ${ms}ms linear;"></i></div>`;
+    wrap.innerHTML=`<div class="tw-p">${prompt||'TAP NOW'}</div>
+      <div class="tw-hint">hit it, fast</div>
+      <button class="tw-b" id="_tapBtn" type="button"><span class="tw-lab">TAP</span><span class="tw-n" id="_tapN">0 / ${need}</span></button>
+      <div class="tw-meter"><i id="_tapFill"></i></div>
+      <div class="tw-time"><i id="_tapTime"></i></div>`;
     arena.appendChild(wrap);
-    let done=false;
-    const finish=(ok)=>{ if(done) return; done=true; try{ arena.removeChild(wrap); }catch(_e){} res(!!ok); };
-    document.getElementById('_tapBtn').onclick=()=>finish(true);
-    requestAnimationFrame(()=>{ const f=document.getElementById('_tapFill'); if(f) f.style.width='0%'; });
-    setTimeout(()=>finish(false), ms);
+    let done=false, hits=0;
+    const btn=document.getElementById('_tapBtn');
+    const paint=()=>{
+      const f=document.getElementById('_tapFill');
+      if(f) f.style.width=Math.max(0,Math.min(100,(hits/need)*100)).toFixed(1)+'%';
+      const n=document.getElementById('_tapN');
+      if(n) n.textContent=Math.max(0,Math.min(need,Math.floor(hits)))+' / '+need;
+    };
+    const finish=(ok)=>{ if(done) return; done=true; clearInterval(drain);
+      try{ arena.removeChild(wrap); }catch(_e){} res(!!ok); };
+    const hit=(e)=>{
+      if(e){ e.preventDefault(); e.stopPropagation(); }
+      if(done) return;
+      hits++; paint();
+      btn.classList.remove('hit'); void btn.offsetWidth; btn.classList.add('hit');
+      try{ sfx('count'); }catch(_e){}
+      if(hits>=need) finish(true);
+    };
+    // pointerdown, not click: a mash should register on the way down
+    btn.addEventListener('pointerdown', hit);
+    // and it drains, so this is a mash rather than eight taps at your leisure
+    const drain=setInterval(()=>{ if(done) return; if(hits>0){ hits=Math.max(0,hits-0.30); paint(); } }, 150);
+    const tm=document.getElementById('_tapTime');
+    requestAnimationFrame(()=>{ if(tm){ tm.style.transitionDuration=dur+'ms'; tm.style.width='0%'; } });
+    setTimeout(()=>finish(false), dur);
   });
 }
 /* Commentator colour: one voice for each move category, one for phase turns.
@@ -7981,8 +8109,12 @@ async function spotGuard(byMe){           // cover up and eat the shots
 async function spotTaunt(byMe,big){       // work the crowd
   const A=byMe?'me':'opp'; busy(true);
   FIG[A].el.classList.add('glow');
-  fmv(A,{pose:'taunt',fwd:ST.close*0.3,sc:1.04},240); await sleep(360);
-  fmv(A,{pose:'point',fwd:ST.close*0.5},180); await sleep(260);
+  // alternate the opening beat, so calling for the crowd twice in a match does
+  // not play the identical motion twice
+  MS._tauntN=(MS._tauntN||0)+1;
+  const first=(MS._tauntN%2)?'taunt':'point', second=(MS._tauntN%2)?'point':'taunt';
+  fmv(A,{pose:first,fwd:ST.close*0.3,sc:1.04},240); await sleep(360);
+  fmv(A,{pose:second,fwd:ST.close*0.5},180); await sleep(260);
   if(big){ fmv(A,{pose:'celebrate',sc:1.07},220); await sleep(320); }
   FIG[A].el.classList.remove('glow'); await settle(280);
 }
@@ -8894,6 +9026,12 @@ async function startFight(o){
   }
   figLook('me',G.w.look);
   figLook('opp',oc?oc.look:oppLook(o.oppId,o.oppName));
+  /* CLEAR THE RING BEFORE ANYBODY SEES IT. figLook() parks each figure on its
+     home mark, so both wrestlers stood in the ring through the video package
+     and then snapped off-screen to make an entrance they were already inside
+     for. The arena starts empty; each entrance is a real walk-in. */
+  fmv('me', {pose:'run',fwd:-ST.W*0.62},0);
+  fmv('opp',{pose:'run',fwd:-ST.W*0.62},0);
   $('fClock').textContent='BELL';
   // ---- video package (big matches only), then entrances ----
   busy(true);
@@ -9075,7 +9213,7 @@ async function runFight(){
         MS.me.hp=clamp(MS.me.hp-7); setBar('hpMe',MS.me.hp);
         MS.quality+=5;
         await sleep(420); await settle(280);
-      } else if(theirs && MS.opp.limb[theirs]>=80 && !MS.gaveOut_opp && rnd()<0.16){
+      } else if(theirs && MS.opp.limb[theirs]>=80 && !MS.gaveOut_opp && !randomBeatsOff() && rnd()<0.16){
         MS.gaveOut_opp=true; trace('limb');
         busy(true);
         fmv('opp',{pose:'stagger',rot:-6},170); await sleep(180);
@@ -9287,7 +9425,11 @@ async function runFight(){
     // do not permit weapons. Tolerance from the referee's personality
     // decides how far you can push before the bell.
     const _tol = (MS.ref && MS.ref.tolerate) || 0;
-    if(!MS.ended && !stipRules(o).noDQ && !stipRules(o).lenient && (forced('dq') || (MS.mom<-40 && MS.opp.hp>50 && rnd()<Math.max(0, 0.02 - _tol*0.03)))){
+    // The random branch honours randomBeatsOff() like every other beat in this
+    // loop. It did not, so a match pinned to prove some other spot could still
+    // be ended by a stray disqualification before that spot ever got a turn.
+    if(!MS.ended && !stipRules(o).noDQ && !stipRules(o).lenient
+       && (forced('dq') || (!randomBeatsOff() && MS.mom<-40 && MS.opp.hp>50 && rnd()<Math.max(0, 0.02 - _tol*0.03)))){
       // the shot, with the referee turned; then he turns round
       busy(true);
       if(FIG.ref){ refTo(Math.round((atX('me')<0?-1:1)*ST.W*0.30),'refIdle',260,0.86); FIG.ref.dir = atX('ref')<0?-1:1; fmv('ref',{},0); }
@@ -9361,7 +9503,7 @@ async function runFight(){
     // losing late, and only if you work heel. Wins ugly, real character cost.
     const refTolDirty = (MS.ref && MS.ref.tolerate) || 0;
     if(!MS.ended && !MS.dirty && G.w.align==='heel' && !stipRules(o).noDQ
-       && (forced('belt') || (ph.id==='stretch' && MS.mom<-40 && MS.opp.hp>40 && rnd()<Math.max(0.10, 0.20 + refTolDirty*0.6)))){
+       && (forced('belt') || (!randomBeatsOff() && ph.id==='stretch' && MS.mom<-40 && MS.opp.hp>40 && rnd()<Math.max(0.10, 0.20 + refTolDirty*0.6)))){
       MS.dirty=true;
       // the official's back is turned, and the stage shows it
       if(FIG.ref){ refTo(Math.round((atX('me')<0?-1:1)*ST.W*0.30),'refIdle',260,0.86); FIG.ref.dir = atX('ref')<0?-1:1; fmv('ref',{},0); }
@@ -9637,6 +9779,19 @@ async function submissionAttempt(byMe, mvName){
     }
   }
   const rulesAllowSub = stipRules(MS.o).ends.includes('sub');
+  /* AND THE THIRD BODY BREAKS THE HOLD. A tap in a triple threat with somebody
+     free at ringside is the fall he exists to prevent, so a hold is no safer
+     than a cover here. This was only wired into pinSequence, which meant a
+     triple threat that went to a submission never saw him at all. */
+  if(isTriple() && !MS.thirdBusy && !MS.ended && rulesAllowSub && MS.phase>=3 && pTap>0.25
+     && (MS.thirdBreaks||0)<2 && (pinnedIs('breakup') || !MS.thirdBreaks || rnd()<0.45)){
+    MS.thirdBreaks=(MS.thirdBreaks||0)+1;
+    await tripleBreakUp(Math.round(atX(D)*0.30), A);
+    if(!MS||MS.ended) return false;
+    MS.mom=clamp(MS.mom+(byMe?-10:10),-100,100); setMom();
+    refDrift(); await settle(300);
+    return false;
+  }
   /* THE ARM DROP. The referee lifts the arm and lets it fall. Once. Twice. On
      the third the building is silent, and it either drops or it stops halfway
      and the fist closes. It is the pin count of submissions, and this hold had
@@ -9733,9 +9888,9 @@ async function climbAttempt(){
   // If YOU are on the mat, tapping brings you back to your feet to intercept.
   let climbBoost=0;
   if(iAmClimbing){
-    climbBoost = (await tapWindow(650, 'CLIMB!')) ? 0.20 : 0;
+    climbBoost = (await tapWindow(650, 'CLIMB!', {taps:11, slow:3.2})) ? 0.20 : 0;
   } else {
-    climbBoost = (await tapWindow(650, 'STOP THEM!')) ? -0.30 : 0;
+    climbBoost = (await tapWindow(650, 'STOP THEM!', {taps:11, slow:3.2})) ? -0.30 : 0;
   }
   // The one on the mat has a puncher's chance to reach up and drag them back.
   const dragPow = (100 - (iAmClimbing?MS.opp.hp:MS.me.hp))*0.4;
@@ -9937,7 +10092,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     // the two-count. Beat the timer and the crowd erupts, momentum spikes.
     let hardKickout=false;
     if(!iAmPinning){
-      hardKickout = await tapWindow(560, 'KICK OUT!');
+      hardKickout = await tapWindow(560, 'KICK OUT!', {taps:7, slow:2.8});
     }
     poseSet('ref','refUp'); await sleep(430);
     if(stale()) return false;
@@ -10126,19 +10281,29 @@ async function endFight(iWon){
   // ---- the official raises the winner's arm (skip if no winner) ----
   if(MS.wide){ await cameraBack(); if(stale()) return; }
   extraHide();                                    // whoever ran in has had their moment
+  /* THE POSE-DOWN, AND WHY EVERY STEP OF IT IS GUARDED. This block is roughly
+     1.7 seconds of awaits that pose figures and draw a WINNER burst. It used to
+     run start to finish with no staleness check, so a match that had already
+     been replaced could still walk its ceremony onto the new one: the next
+     wrestler arrives at the bell standing with his arm raised. Every await
+     here now re-checks the generation it started under. */
   if(FIG.ref && !noWinner){
     const wx=Math.round(FIG[W].home*0.42);          // step toward the middle for the pose-down
     fmv(W,{pose:'ready',x:wx,up:0,rot:0,sc:1},320);
     FIG.ref.el.classList.remove('up');
     refTo(wx + (wx<0?1:-1)*Math.round(ST.W*0.13),'refWatch',440,0.86);
     await sleep(460);
+    if(stale()) return;
     poseSet('ref','refRaise');
     fmv(W,{pose:'raised',sc:1.05},260);
     await sleep(140);
+    if(stale()) return;
     burst(wx,'WINNER');
     for(let i=0;i<3;i++){                       // arm pumped up, three times
       fmv(W,{up:6},170); fmv('ref',{up:5},170); await sleep(190);
+      if(stale()) return;
       fmv(W,{up:0},170); fmv('ref',{up:0},170); await sleep(180);
+      if(stale()) return;
     }
   }
   if(f.type==='sub'){
@@ -10173,11 +10338,13 @@ async function endFight(iWon){
     fLog(`<b>${pc.name}</b>: <span class="say">"${say}"</span>`);
   }
   await sleep(700);
+  if(stale()) return;
   // ---- after the bell ----
   // Two things that only happen once the match is over, and both of them are
   // how a feud moves on television rather than in a hallway.
   try{ await postBellBeats(iWon); }catch(_){}
   await sleep(300);
+  if(stale()) return;                 // a replaced match must not be finalized twice
   stopCrowdAmbient();
   finalizeFight(iWon);
 }
@@ -10593,8 +10760,17 @@ function doAsk(id){
 function goBooking(){
   const b=G.car.booking; if(!b) return;
   const proceed = () => {
-    if(b.type==='match') startFight(b.o);
-    else if(b.type==='promo') beginPromo(b.targetId?'callout':'crowd', b.targetId);
+    // Re-read the booking rather than using the one captured above: the scene
+    // that just played on the walk to gorilla is allowed to take you off the
+    // card, and if it did there is no match to start.
+    const bb=G.car.booking;
+    if(!bb || bb.pulled || bb.type==='dark'){
+      save(); renderCareer(); go('career');
+      toast('You are not going out tonight.');
+      return;
+    }
+    if(bb.type==='match') startFight(bb.o);
+    else if(bb.type==='promo') beginPromo(bb.targetId?'callout':'crowd', bb.targetId);
   };
   // For matches, a segment plays on the walk to gorilla when one is available
   // and one has not already run this week. Non-match bookings skip it because
@@ -11218,7 +11394,6 @@ function showDirtSheet(o,res,onDone){
   const best=under.slice().sort((a,b)=>b.q-a.q)[0];
   const motn = (best && best.q>res.quality) ? `${best.winner} vs ${best.loser} (${starStr(best.q)}★)` : `yours, ${o.oppName} (${starStr(res.quality)}★)`;
   const spot = o.ppv ? `Main event of ${o.ppv}` : `${o.card||'Mid-Card'}${o.stakes==='title'?', for the belt':o.stakes==='defense'?', defending':''}`;
-  const rooms = c._sentDelta ? [['crowd','Crowd'],['locker','Locker room'],['office','Office']].map(([k,l])=>{ const d=Math.round(c._sentDelta[k]||0); return `${l} ${d>0?'+'+d:d<0?d:'='}`; }).join(' · ') : '';
   const body=`<div class="media-frame"><div class="media-portrait">${punditPortrait(p)}</div></div>
     <div class="media-plate">
       <div class="media-name" style="color:${p.color}">${p.name.toUpperCase()}</div>
@@ -11229,7 +11404,6 @@ function showDirtSheet(o,res,onDone){
         <div class="dirt-row"><span class="dirt-l">Your spot</span><span>${spot}</span></div>
         <div class="dirt-row"><span class="dirt-l">Your match</span><span>${starStr(res.quality)}★ · ${starBand(s)}</span></div>
         <div class="dirt-row"><span class="dirt-l">Match of the night</span><span>${motn}</span></div>
-        ${rooms?`<div class="dirt-row"><span class="dirt-l">The rooms, this month</span><span>${rooms}</span></div>`:''}
       </div>
     </div>`;
   modal('The dirt sheet', body, [{label:'On to next week',cls:'primary',fn:()=>{ closeModal(); if(onDone) onDone(); }}]);
@@ -11928,7 +12102,7 @@ async function runRumble(o){
   // a real exchange for it, and a window: the last shove is yours to time
   await exchange(true,'a forearm',6,8,'POW!','strike');
   await exchange(false,'a clothesline',6,-8,null,'runner');
-  const timed = await tapWindow(720,'DUMP THEM!');
+  const timed = await tapWindow(720,'DUMP THEM!', {taps:10, slow:2.8});
   const meScore = ovr(G.w) + rnd()*20 + (timed?7:0);
   const otherScore = (other?other.ovr:60) + rnd()*20;
   const iWin = meScore > otherScore;
@@ -14956,7 +15130,7 @@ function renderDeal(){
         <div class="hint" style="margin-top:4px;font-style:italic;">Booked by <b style="color:${pr.color}">${bk.name}</b>. ${bk.voice}</div>
         <div class="fa-clauses">
           ${bonus?`<span class="fa-cl good">${pico('money',12)} ${money(bonus)} signing bonus</span>`:''}
-          <span class="fa-cl">${pico('shield',12)} ${money(downside)} weekly downside</span>
+          <span class="fa-cl">${pico('shield',12)} ${money(downside)} a week, guaranteed</span>
           ${nc?`<span class="fa-cl ${nc>=6?'red':''}">${pico('clipboard',12)} ${nc}mo no-compete</span>`:'<span class="fa-cl good">no no-compete</span>'}
         </div>
         <div class="hint" style="margin-top:6px;">Guaranteed over the term: <b>${money((o.weekly*WEEKS_PER_YEAR*o.years)+bonus)}</b> · interest ${o.want}</div>
@@ -14972,7 +15146,7 @@ function renderDeal(){
     <h3 style="margin-top:0;">${p.name} <span class="sub2">${p.short} · ${p.region}</span></h3>
     <p class="log">${p.blurb}</p>
     <div class="grid g3" style="margin-top:10px;">
-      ${[['Weekly downside',money(d.weekly)],['Term left',`${d.weeksLeft} wks`],['Merch cut',`${Math.round((d.merch||0)*100)}%`],
+      ${[['Weekly base pay',money(d.weekly)],['Term left',`${d.weeksLeft} wks`],['Merch cut',`${Math.round((d.merch||0)*100)}%`],
          ['Creative control',d.creative?'Yes':'No'],['Standing',Math.round(c.standing||50)],['Working tier',workTier().name]]
         .map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')}
     </div>
@@ -15868,10 +16042,11 @@ const SCENES = [
         { t:'"Tell them I cannot go."', outcomes:[
           { p:1.5, tone:'good', mem:'dil_shoulder_'+x.c.year,
             text:'You sit it out. It costs you the night and the office notices, but the shoulder is right again inside a fortnight.',
-            eff:{standing:-4}, head:'Sat out a night to protect a shoulder.' },
+            eff:{standing:-4, pullOut:'You pulled yourself out to protect the shoulder. Somebody else worked your spot.'},
+            head:'Sat out a night to protect a shoulder.' },
           { p:1, tone:'mixed', mem:'dil_shoulder_'+x.c.year,
             text:'You sit it out. The booker says all the right things and books somebody else in your spot for a month.',
-            eff:{standing:-7} } ]},
+            eff:{standing:-7, pullOut:'The booker put somebody else in your spot tonight.'} } ]},
       ]}}},
   { id:'dil_offer', tag:'THE CAR PARK', trig:'any', weight:6,
     when:x=>x.c.year>=2 && (x.c.standing||50)>=45 && !sceneRecalls('dil_offer_'+x.c.year),
@@ -17056,6 +17231,14 @@ function outcomeChips(out){
 }
 function applySceneEffect(eff, x){
   const c=G.car, w=G.w;
+  /* PULLED FROM THE CARD. A scene that says you are not going out tonight has
+     to actually take you off the card. Copy promising a consequence the code
+     never applies is the worst kind of bug in this game: the player pays the
+     price the scene named and then gets handed the thing anyway. */
+  if(eff.pullOut && c.booking && c.booking.type==='match'){
+    c.booking={type:'dark', pulled:true,
+      why: typeof eff.pullOut==='string' ? eff.pullOut : 'You told them you could not go tonight.'};
+  }
   if(eff.standing) c.standing=clamp((c.standing||50)+eff.standing);
   if(eff.cond)     c.cond=clamp((c.cond||100)+eff.cond, 0, 100);
   if(eff.gimHeat && w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+eff.gimHeat,0,100);
@@ -17133,6 +17316,7 @@ function summarizeEffect(eff){
   if(eff.respectA) chips.push(`<span class="pchip ${eff.respectA>0?'':'red'}" style="animation:none;opacity:1;">Respect ${fmt(eff.respectA)}</span>`);
   if(eff.loyaltyA) chips.push(`<span class="pchip" style="animation:none;opacity:1;">Loyalty ${fmt(eff.loyaltyA)}</span>`);
   if(eff.heatAll)  chips.push(`<span class="pchip" style="animation:none;opacity:1;">Locker room ${fmt(eff.heatAll)}</span>`);
+  if(eff.pullOut)  chips.push(`<span class="pchip red" style="animation:none;opacity:1;">Off tonight's card</span>`);
   if(!chips.length) return '';
   return `<div class="scene-outcome-note"><div class="paychips" style="margin-top:4px;">${chips.join('')}</div></div>`;
 }
