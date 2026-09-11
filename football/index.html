@@ -8955,7 +8955,21 @@ function beginDraft(opts){
   /* Checked here as well as at the button, because the DOM is not the authority on what is
      playable. Same belt and braces the Trade Machine and the defense draft use. */
   if(opts&&opts.dynasty&&!canPlayDynasty()) return;
-  if(opts&&opts.dynasty&&!dynastyOwned()) return;
+  /*
+   * AND NO OWNERSHIP CHECK, WHICH USED TO BE THE NEXT LINE.
+   *
+   * It was the second of two, and removing only the one in beginDynastyDraft left this one
+   * holding the door: pressing Start a dynasty did nothing at all. Not the store, not a
+   * message, nothing. `return` with no branch is the worst possible failure for a gate,
+   * because a button that silently does nothing reads as a broken game rather than as a
+   * paywall, and it threw no error for anything to catch.
+   *
+   * Ownership is not what decides any more. Every way into a dynasty goes through
+   * beginDynastyDraft, which checks the day's allowance and sends a player with none left
+   * to the store. Both calls into here are inside that function. A belt-and-braces check
+   * only works if it is braces for the same belt: this one was guarding a rule the game had
+   * stopped having.
+   */
   /* A dynasty sets full, so the Full Team gate would refuse it to a tester who is on one
      list and not the other. Its own gate is above and this one is for Full Team proper. */
   if(opts&&opts.full&&!opts.dynasty&&!canPlayFull()) return;
