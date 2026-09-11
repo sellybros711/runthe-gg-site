@@ -553,6 +553,11 @@
 
   /* Fighters are positioned from the arena centre and driven entirely from JS,
      so a move can place one wrestler exactly on top of the other. */
+  /* A belt icon sits on the text baseline, and a chip carrying two of them
+     should not grow a second line. */
+  .beltico{display:inline-block;vertical-align:-3px;}
+  .beltchip{display:inline-flex;align-items:center;gap:5px;flex-wrap:nowrap;}
+
   /* The mash window: big enough to hit without looking away from the match. */
   .tapwin{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;width:min(86%,420px);
     text-align:center;background:rgba(8,6,6,.86);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
@@ -1257,6 +1262,7 @@
     border:1.5px solid rgba(224,179,65,.65);background:linear-gradient(180deg,rgba(224,179,65,.20),rgba(0,0,0,.28));
     animation:bannerIn .5s cubic-bezier(.2,1.4,.4,1);}
   .champbanner .cb-kick{font-size:10.5px;letter-spacing:.30em;color:var(--gold);font-weight:800;text-transform:uppercase;}
+  .champbanner .cb-belt{margin:7px 0 3px;line-height:0;}
   .champbanner .cb-t{font-family:var(--display);font-size:clamp(21px,4.6vw,30px);color:var(--cream);text-transform:uppercase;line-height:1.12;margin-top:3px;}
   .champbanner.lost{border-color:rgba(198,57,44,.55);background:linear-gradient(180deg,rgba(198,57,44,.16),rgba(0,0,0,.28));}
   .champbanner.lost .cb-kick{color:#f0907f;}
@@ -2177,6 +2183,218 @@ const BELT_CONFIG = {
   eterna: { world:'LE Universal Championship',        secondary:'LE Trios Cup',                     tag:null },
   cwf:    { world:'CWF World Heavyweight Championship',secondary:'CWF International Championship',  tag:'CWF World Tag Team Titles' },
 };
+/* ============================================================
+   EVERY BELT IS ITS OWN OBJECT
+   ------------------------------------------------------------
+   A championship is the only thing in this game a player carries
+   between weeks, and until now every one of them was a string.
+   Each belt in BELT_CONFIG above gets a design here: a plate
+   shape, a metal, an accent stone and a strap colour. The four
+   together make each of the twenty four distinguishable at the
+   size of a chip, which is the size most of them are ever seen.
+
+   A plate is a 11x9 pixel mask so the shapes are genuinely
+   different silhouettes rather than one rectangle in six colours:
+     .  nothing      M  metal        D  engraved shadow
+     G  the stone    H  the highlight on it
+   ============================================================ */
+const BELT_PLATE={
+  round:[  '...MMMMM...',
+           '..MMMMMMM..',
+           '.MMMDDDMMM.',
+           'MMMDGGGDMMM',
+           'MMMDGHGDMMM',
+           'MMMDGGGDMMM',
+           '.MMMDDDMMM.',
+           '..MMMMMMM..',
+           '...MMMMM...'],
+  shield:[ 'MMMMMMMMMMM',
+           'MMDDDDDDDMM',
+           'MMDGGGGGDMM',
+           'MMDGHHHGDMM',
+           '.MMDGGGDMM.',
+           '.MMMDDDMMM.',
+           '..MMMMMMM..',
+           '...MMMMM...',
+           '....MMM....'],
+  star:[   '.....M.....',
+           '....MMM....',
+           '.MMMMGMMMM.',
+           '..MMGGGMM..',
+           '...MGHGM...',
+           '..MMGGGMM..',
+           '.MMMMGMMMM.',
+           '...MM.MM...',
+           '..MM...MM..'],
+  block:[  'MMMMMMMMMMM',
+           'MHHHHHHHHHM',
+           'MDDDDDDDDDM',
+           'MDGGGGGGGDM',
+           'MDGHHHHHGDM',
+           'MDGGGGGGGDM',
+           'MDDDDDDDDDM',
+           'MHHHHHHHHHM',
+           'MMMMMMMMMMM'],
+  oval:[   '...........',
+           '..MMMMMMM..',
+           '.MMMMMMMMM.',
+           'MMDDDDDDDMM',
+           'MMDGGGGGDMM',
+           'MMDDDDDDDMM',
+           '.MMMMMMMMM.',
+           '..MMMMMMM..',
+           '...........'],
+  diamond:['.....M.....',
+           '....MMM....',
+           '...MMMMM...',
+           '..MMDDDMM..',
+           '.MMDGGGDMM.',
+           '..MMDDDMM..',
+           '...MMMMM...',
+           '....MMM....',
+           '.....M.....'],
+};
+/* One design per belt, keyed the way BELT_CONFIG is. A promotion's belts share
+   a house style without being the same object: Grit City's are bronze and
+   gunmetal on oxblood, the west coast pair are chrome under neon. */
+const BELT_ART={
+  'gcw:world':     {shape:'block',   metal:'#c0763a', gem:'#C6392C', strap:'#1d1a1a'},
+  'gcw:secondary': {shape:'star',    metal:'#8d949c', gem:'#C6392C', strap:'#4a1f1f'},
+  'gcw:tag':       {shape:'oval',    metal:'#8d949c', gem:'#e0b341', strap:'#6b4423'},
+  'cdp:world':     {shape:'round',   metal:'#e0b341', gem:'#3f6fd0', strap:'#1d1a1a'},
+  'cdp:secondary': {shape:'diamond', metal:'#c8ced4', gem:'#e0b341', strap:'#6b4423'},
+  'cdp:tag':       {shape:'oval',    metal:'#c8ced4', gem:'#C6392C', strap:'#1d1a1a'},
+  'sbcw:world':    {shape:'shield',  metal:'#e0b341', gem:'#2f7d4f', strap:'#6b4423'},
+  'sbcw:secondary':{shape:'round',   metal:'#c0763a', gem:'#ddd3c4', strap:'#6b4423'},
+  'sbcw:tag':      {shape:'block',   metal:'#c0763a', gem:'#2f7d4f', strap:'#4a1f1f'},
+  'scw:world':     {shape:'oval',    metal:'#c8ced4', gem:'#39c6c6', strap:'#1e2a44'},
+  'scw:secondary': {shape:'star',    metal:'#6b6f75', gem:'#e858a8', strap:'#1d1a1a'},
+  'rose:world':    {shape:'round',   metal:'#e0b341', gem:'#C6392C', strap:'#ddd3c4'},
+  'rose:secondary':{shape:'diamond', metal:'#d99a8a', gem:'#ddd3c4', strap:'#3a2450'},
+  'acw:world':     {shape:'shield',  metal:'#e0b341', gem:'#3f6fd0', strap:'#1d1a1a'},
+  'acw:secondary': {shape:'round',   metal:'#c8ced4', gem:'#C6392C', strap:'#1d1a1a'},
+  'acw:tag':       {shape:'block',   metal:'#c8ced4', gem:'#e0b341', strap:'#1e2a44'},
+  'kaiju:world':   {shape:'star',    metal:'#e0b341', gem:'#C6392C', strap:'#1d1a1a'},
+  'kaiju:secondary':{shape:'diamond',metal:'#c8ced4', gem:'#39c6c6', strap:'#ddd3c4'},
+  'kaiju:tag':     {shape:'oval',    metal:'#e0b341', gem:'#7ac943', strap:'#1d1a1a'},
+  'eterna:world':  {shape:'oval',    metal:'#e0b341', gem:'#7a4fd0', strap:'#3a2450'},
+  'eterna:secondary':{shape:'shield',metal:'#c0763a', gem:'#e0b341', strap:'#1d1a1a'},
+  'cwf:world':     {shape:'round',   metal:'#e0b341', gem:'#C6392C', strap:'#1d1a1a'},
+  'cwf:secondary': {shape:'shield',  metal:'#c8ced4', gem:'#3f6fd0', strap:'#1e2a44'},
+  'cwf:tag':       {shape:'block',   metal:'#e0b341', gem:'#c8ced4', strap:'#1d1a1a'},
+};
+const BELT_ART_DEFAULT={shape:'round', metal:'#e0b341', gem:'#C6392C', strap:'#1d1a1a'};
+/* Career state stores a belt's NAME, so the art is found by name. The index is
+   built once from BELT_CONFIG rather than kept as a third parallel list, or a
+   renamed belt would quietly fall back to the default and nobody would see it
+   until somebody noticed two promotions carrying the same plate. */
+let _BELT_BY_NAME=null;
+function beltArtIndex(){
+  if(_BELT_BY_NAME) return _BELT_BY_NAME;
+  _BELT_BY_NAME={};
+  Object.keys(BELT_CONFIG).forEach(pid=>{
+    const b=BELT_CONFIG[pid]||{};
+    ['world','secondary','tag'].forEach(kind=>{
+      if(b[kind]) _BELT_BY_NAME[b[kind]] = BELT_ART[pid+':'+kind] || BELT_ART_DEFAULT;
+    });
+  });
+  return _BELT_BY_NAME;
+}
+function beltArtFor(name){ return (name && beltArtIndex()[name]) || BELT_ART_DEFAULT; }
+// the belt a champion would actually walk out carrying: the world title first
+function myBelt(){
+  const c=G&&G.car; if(!c) return null;
+  const n=c.title||c.secondary||c.tagTitle; if(!n) return null;
+  return {name:n, art:beltArtFor(n)};
+}
+function beltCarry(){ return (G&&G.w&&G.w.look&&G.w.look.beltCarry) || 'waist'; }
+/* The figure option for whoever is carrying a belt right now, or null. Every
+   call site that draws the player passes this rather than working it out. */
+function myFigBelt(){
+  const b=myBelt(); if(!b) return null;
+  return {art:b.art, carry:beltCarry()};
+}
+const BELT_CARRY_OPTS=[
+  ['waist',    'Around the waist', 'Buckled on, the way a champion walks.'],
+  ['shoulder', 'Over the shoulder','Slung across, like it weighs nothing.'],
+  ['hand',     'In your hand',     'Held low at your side, and raised when it matters.'],
+];
+/* Draw one plate from its mask. Returns rect strings in the figure's own pixel
+   space, so the same function serves the wrestler and the standalone icon. */
+function beltPlate(art, ox, oy, px){
+  const rows=BELT_PLATE[art.shape]||BELT_PLATE.round;
+  const m=art.metal, mD=shade(m,-42), mH=shade(m,30), g=art.gem, gH=shade(g,42);
+  const COL={M:m, D:mD, H:gH, G:g};
+  const u=px||1;
+  let out='';
+  for(let r=0;r<rows.length;r++){
+    const row=rows[r];
+    let runStart=-1, runChar=null;
+    const flush=(end)=>{ if(runStart<0) return;
+      out+=P(ox+runStart*u, oy+r*u, (end-runStart)*u, u, COL[runChar]||m); runStart=-1; runChar=null; };
+    for(let cIdx=0;cIdx<row.length;cIdx++){
+      const ch=row[cIdx];
+      if(ch===runChar) continue;
+      flush(cIdx);
+      if(ch!=='.'){ runStart=cIdx; runChar=ch; }
+    }
+    flush(row.length);
+    // the top row of metal catches the light
+    if(r===0) out+='';
+  }
+  return out;
+}
+/* The belt on the wrestler, in whichever way they carry it. Returns the rect
+   strings for each rig bone that needs them, because a belt in the hand has to
+   move with the forearm and a belt on the waist has to move with the torso. */
+function beltOnFigure(art, carry){
+  if(!art) return {torso:'', loArmR:''};
+  const st=art.strap, stD=shade(st,-22), stL=shade(st,20);
+  if(carry==='hand'){
+    // Hanging from the near hand. The strap has to be TALLER than the plate or
+    // the plate covers it end to end and the whole thing reads as a coloured
+    // block: strap above, plate, strap below is what makes it a belt.
+    let o=P(46,58,5,9,OUTLINE)+LIMB(47,58,3,9,st);
+    o+=P(42,66,15,18,OUTLINE);
+    o+=LIMB(43,67,13,16,st);
+    o+=P(43,67,13,1,stL)+P(43,82,13,1,stD);
+    o+=beltPlate(art,44,70,1);
+    return {torso:'', loArmR:o};
+  }
+  if(carry==='shoulder'){
+    // over one shoulder and across the chest, drawn as a staircase so it reads
+    // as a strap lying on a body rather than a drawn line
+    let o='';
+    const steps=[[22,26],[24,29],[26,32],[28,35],[30,38],[32,41],[34,44]];
+    steps.forEach(([x,y])=>{ o+=P(x-1,y-1,7,5,OUTLINE)+LIMB(x,y,5,3,st); });
+    o+=P(21,25,7,4,OUTLINE)+LIMB(22,25,5,3,stL);       // the pad on the shoulder
+    // the plate sits low on the chest where there is room for it to be read
+    o+=P(24,32,15,13,OUTLINE)+LIMB(25,33,13,11,stD);
+    o+=beltPlate(art,26,34,1);
+    return {torso:o, loArmR:''};
+  }
+  // around the waist
+  let o=P(20,42,25,9,OUTLINE)+LIMB(21,43,23,7,st);
+  o+=P(21,43,23,1,stL)+P(21,49,23,1,stD);
+  o+=beltPlate(art,26,42,1);
+  // the two side plates that make a strap read as a title belt
+  const sm=shade(art.metal,-8);
+  o+=P(22,45,3,3,sm)+P(40,45,3,3,sm);
+  return {torso:o, loArmR:''};
+}
+/* The standalone icon: the object on its own, for chips, the hub and the card. */
+function beltSVG(art, size){
+  art=art||BELT_ART_DEFAULT;
+  const s=size||34, st=art.strap, stD=shade(st,-24), stL=shade(st,18);
+  const sm=shade(art.metal,-6), smD=shade(art.metal,-40);
+  let o=P(0,7,44,10,OUTLINE)+LIMB(1,8,42,8,st)+P(1,8,42,1,stL)+P(1,15,42,1,stD);
+  // two side plates, then the main one over the middle
+  [5,34].forEach(x=>{ o+=P(x-1,8,6,8,OUTLINE)+LIMB(x,9,4,6,sm)+P(x+1,10,2,3,smD); });
+  o+=P(15,5,14,15,OUTLINE)+LIMB(16,6,12,13,shade(st,-34));
+  o+=beltPlate(art,16,7,1);
+  return `<svg class="beltico" viewBox="-1 4 46 17" width="${s}" height="${Math.round(s*17/46)}"
+    shape-rendering="crispEdges" aria-hidden="true">${o}</svg>`;
+}
 function beltsForPromo(pid){
   return BELT_CONFIG[pid] || {
     world: `${(promoById(pid)||{}).short||''} World Championship`.trim(),
@@ -4313,6 +4531,16 @@ function wrestlerSVG(L,opt){
   const aL=arm(-1), aR=arm(1);
   B.upArmL+=aL[0]; B.loArmL+=aL[1]; B.upArmR+=aR[0]; B.loArmR+=aR[1];
 
+  /* THE CHAMPIONSHIP, IF THEY ARE CARRYING ONE. Drawn after the arms because a
+     belt held in the hand belongs to the forearm bone and has to move with it,
+     and drawn after the torso so a strap across the chest sits on top of the
+     gear rather than under it. opt.belt is {art, carry}; nothing else in the
+     figure knows or cares which belt it is. */
+  if(opt.belt && opt.belt.art){
+    const bp=beltOnFigure(opt.belt.art, opt.belt.carry||'waist');
+    B.torso+=bp.torso; B.loArmR+=bp.loArmR;
+  }
+
   // ================= HEAD =================
   B.head+=OL(28,24,8,4)+LIMB(28,24,8,4,skD);
   B.head+=HEAD(sk);
@@ -4693,7 +4921,7 @@ let LOOKCTX=null, LOOKTAB='hairStyle';
 
 function renderLookEditor(bodyId, avId, L, ownedOnly){
   LOOKCTX={bodyId,avId,L,ownedOnly};
-  const tabs=[...LOOK_TABS.map(t=>({id:t.k,label:t.label})),{id:'build',label:'Build'},{id:'colour',label:'Colours'}];
+  const tabs=[...LOOK_TABS.map(t=>({id:t.k,label:t.label})),{id:'build',label:'Build'},{id:'belt',label:'Title'},{id:'colour',label:'Colours'}];
   let h='<div class="tabrow">'+tabs.map(t=>`<button class="tab ${LOOKTAB===t.id?'on':''}" onclick="setLookTab('${t.id}')">${t.label}</button>`).join('')+'</div>';
   h+='<div class="tilegrid">';
   if(LOOKTAB==='colour'){
@@ -4707,6 +4935,25 @@ function renderLookEditor(bodyId, avId, L, ownedOnly){
   // frame each preview on the part being changed
   const FRAME={hairStyle:'head',face:'head',mask:'head',boots:'legs'};
   const fr=FRAME[LOOKTAB]||'full';
+  if(LOOKTAB==='belt'){
+    /* HOW YOU CARRY IT. Previewed on the belt you actually hold, or on your
+       promotion's world title if you do not hold one yet, because the point of
+       the choice is what winning is going to look like. */
+    const _b=myBelt();
+    const art=_b?_b.art:beltArtFor(beltName());
+    const cur=(L.beltCarry)||'waist';
+    BELT_CARRY_OPTS.forEach(([v,label,desc])=>{
+      const prev=Object.assign({},L,{beltCarry:v});
+      h+=`<div class="tile-opt ${cur===v?'on':''}" onclick="setLook('beltCarry','${v}')">
+        <div class="tp"><div class="tpf full">${wrestlerSVG(prev,{frame:'full',belt:{art,carry:v}})}</div></div>
+        <div class="tn">${label}</div></div>`;
+    });
+    h+='</div>';
+    h+=`<p class="hint" style="margin-top:9px;">${_b?`You are carrying the <b>${_b.name}</b>.`:'You are not carrying a title yet. This is the one your promotion puts on its champion.'} Every belt in the game has its own design.</p>`;
+    $(bodyId).innerHTML=h;
+    $(avId).innerHTML=wrestlerSVG(L,{belt:{art,carry:cur}});
+    return;
+  }
   if(LOOKTAB==='build'){
     ['lean','athletic','heavy'].forEach(b=>{
       const prev=Object.assign({},L,{build:b});
@@ -4729,7 +4976,8 @@ function renderLookEditor(bodyId, avId, L, ownedOnly){
   }
   h+='</div>';
   $(bodyId).innerHTML=h;
-  $(avId).innerHTML=wrestlerSVG(L);
+  const _fb=(G&&G.w&&G.w.look===L)?myFigBelt():null;
+  $(avId).innerHTML=wrestlerSVG(L, _fb?{belt:_fb}:undefined);
 }
 function setLookTab(t){ LOOKTAB=t; if(LOOKCTX) renderLookEditor(LOOKCTX.bodyId,LOOKCTX.avId,LOOKCTX.L,LOOKCTX.ownedOnly); }
 function setLook(k,v){ if(!LOOKCTX) return; LOOKCTX.L[k]=v;
@@ -6327,7 +6575,7 @@ function renderCareer(){
     ? `<span class="ppvchip soon">${pico('starBig',12)} ${_npv.name} in ${_npv.weeksUntil} wk${_npv.weeksUntil===1?'':'s'}</span>`
     : `<span class="ppvchip">${pico('starBig',12)} Next PPV: ${_npv.name} in ${_npv.weeksUntil} wks</span>`;
   $('carTitle').innerHTML=`${t.name} <span class="sub2">${myPromo().short} · Year ${c.year}, Week ${c.week} of ${WEEKS_PER_YEAR}</span> ${_ppvChip}`;
-  $('carAv').innerHTML=wrestlerSVG(G.w.look);
+  $('carAv').innerHTML=wrestlerSVG(G.w.look, (()=>{ const b=myFigBelt(); return b?{belt:b}:undefined; })());
   // Reputation buys you the next rung; your promotion decides whether you can climb it.
   const et=TIERS[ei], nextEarn=TIERS[ei+1];
   const repPct=nextEarn? clamp((c.rep-et.rep)/(nextEarn.rep-et.rep)*100):100;
@@ -6342,7 +6590,7 @@ function renderCareer(){
   const tb = trajectoryBand(traj), hb = heatBand(heat);
   const held = heldBelts();
   const notesRow = [
-    (c.title||c.secondary||c.tagTitle) ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('crown',12)} ${held.length===1?held[0].name:held.length+' belts'} · ${reignChip()}</span>` : '',
+    (c.title||c.secondary||c.tagTitle) ? `<span class="pchip gold beltchip" style="animation:none;opacity:1;">${held.map(b=>beltSVG(beltArtFor(b.name),30)).join('')} ${held.length===1?held[0].name:held.length+' belts'} · ${reignChip()}</span>` : '',
     c.titleShot ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Title shot in hand</span>` : '',
     c.mitb ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Holding the briefcase</span>` : '',
     c.tourn ? `<span class="pchip gold" style="animation:none;opacity:1;"><a href="#" onclick="showBracket();return false;">In ${c.tourn.name}, round ${c.tourn.round}/${c.tourn.rounds}</a></span>` : '',
@@ -7870,8 +8118,11 @@ function refDrift(){
   refTo(mid+side*Math.round(ST.W*0.20),'refWatch',600);
 }
 function figLook(k,L){ const f=FIG[k]; f.look=L; f.pose=null; poseSet(k,'ready'); fmv(k,{fwd:0,up:0,rot:0,sc:1},0); }
-function poseSet(k,name){ const f=FIG[k]; if(f.pose===name) return;
-  f.pose=name; f.inner.innerHTML=wrestlerSVG(f.look,{pose:name,frame:'action'}); }
+function poseSet(k,name,force){ const f=FIG[k]; if(f.pose===name && !force) return;
+  f.pose=name; f.inner.innerHTML=wrestlerSVG(f.look,{pose:name,frame:'action',belt:f.belt||null}); }
+// A champion walks out with it and celebrates with it. Nobody wrestles in one,
+// so the stage carries the belt as figure state and the bell takes it off.
+function figBelt(k,b){ const f=FIG[k]; if(!f) return; f.belt=b||null; poseSet(k, f.pose||'ready', true); }
 function atX(k){ return FIG[k].x; }
 function fmv(k,o,ms){
   const f=FIG[k]; if(!f||f.x==null) return;   // a stale call from a finished match
@@ -9054,6 +9305,8 @@ async function startFight(o){
   fmv('opp',{pose:'run',fwd:0},700);
   await playEntrance('opp', THEME_LINE[themeFor(_opc||{id:o.oppId,name:o.oppName})], o.oppName, _opc&&_opc.nick||'');
   if(stale()) return;
+  MS.myBelt = myFigBelt();             // what you walked out carrying, if anything
+  figBelt('me', MS.myBelt);            // a champion walks out with it
   fmv('me',{pose:'run',fwd:-ST.W*0.62},0);
   await sleep(40);
   fmv('me',{pose:'run',fwd:0},700);
@@ -9061,6 +9314,7 @@ async function startFight(o){
   if(stale()) return;
   fmv('me',{pose:'taunt'},220); fmv('opp',{pose:'taunt'},220); await sleep(420);
   if(stale()) return;
+  figBelt('me', null);                 // and hands it to the official at the bell
   fmv('me',{pose:'ready'},220); fmv('opp',{pose:'ready'},220);
   refTo(Math.round(ST.W*0.30),'refIdle',420,0.86);
   busy(false);
@@ -10295,6 +10549,18 @@ async function endFight(iWon){
     await sleep(460);
     if(stale()) return;
     poseSet('ref','refRaise');
+    /* THE BELT AT THE POSE-DOWN is the one you LEAVE with, which is not always
+       the one you arrived with and is never what myFigBelt() says here: the
+       record has not been applied yet, so a new champion still reads as holding
+       nothing and somebody who just dropped one still reads as holding it. */
+    if(W==='me'){
+      const _o=MS.o||{}, _tw=(_o.stakes==='title'||_o.stakes==='secondary'||_o.stakes==='tag_title');
+      const _td=(_o.stakes==='defense'||_o.stakes==='secondary_defense'||_o.stakes==='tag_defense');
+      let _fb = MS.myBelt||null;
+      if(iWon && _tw && _o.belt) _fb={art:beltArtFor(_o.belt), carry:beltCarry()};
+      if(!iWon && _td) _fb=null;
+      figBelt('me', _fb);
+    }
     fmv(W,{pose:'raised',sc:1.05},260);
     await sleep(140);
     if(stale()) return;
@@ -11443,14 +11709,18 @@ function renderMatch(o,res){
   else if(_dk && !_challenging && !draw)
     banner=`<div class="champbanner"><div class="cb-kick">And STILL</div><div class="cb-t">${_beltOf}<span style="color:var(--gold)"> · retained by ${_dk}</span></div></div>`;
   else if(banner) {}
-  else if(o.stakes==='title'&&res.win)
-    banner=`<div class="champbanner"><div class="cb-kick">And NEW</div><div class="cb-t">${c.title||beltName(workTier())}</div></div>`;
+  else if(o.stakes==='title'&&res.win){
+    const _bn=c.title||beltName(workTier());
+    banner=`<div class="champbanner"><div class="cb-kick">And NEW</div><div class="cb-belt">${beltSVG(beltArtFor(_bn),120)}</div><div class="cb-t">${_bn}</div></div>`;
+  }
   else if(o.stakes==='defense'&&(res.win||draw))
     banner=`<div class="champbanner"><div class="cb-kick">And STILL</div><div class="cb-t">${c.title}<span style="color:var(--gold)"> · defence #${c.defenses||0}</span></div></div>`;
   else if(o.stakes==='defense')
     banner=`<div class="champbanner lost"><div class="cb-kick">Title lost</div><div class="cb-t">${o.oppName} takes the belt</div></div>`;
-  else if(o.stakes==='secondary'&&res.win)
-    banner=`<div class="champbanner"><div class="cb-kick">And NEW</div><div class="cb-t">${c.secondary||beltName(workTier(),'secondary')}</div></div>`;
+  else if(o.stakes==='secondary'&&res.win){
+    const _bn=c.secondary||beltName(workTier(),'secondary');
+    banner=`<div class="champbanner"><div class="cb-kick">And NEW</div><div class="cb-belt">${beltSVG(beltArtFor(_bn),120)}</div><div class="cb-t">${_bn}</div></div>`;
+  }
   else if(o.stakes==='secondary_defense'&&res.win)
     banner=`<div class="champbanner"><div class="cb-kick">And STILL</div><div class="cb-t">${c.secondary}<span style="color:var(--gold)"> · defence #${c.secDefenses||0}</span></div></div>`;
   else if(o.stakes==='secondary_defense')

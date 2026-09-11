@@ -793,6 +793,60 @@ section('a scene that says you are not going out takes you off the card');
   await page.close();
 }
 
+/* ---------- 4l. every championship is its own object ----------
+   A belt was a string, so all of them looked identical everywhere they were
+   shown. Each now carries a plate shape, a metal, a stone and a strap. The
+   point is that they are TELLABLE APART, so the check is that no two share all
+   four, not merely that each has a design. */
+section('every belt has its own design, and no two are the same');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={missing:[], dupes:[], carries:{}, names:0};
+    const idx=beltArtIndex();
+    const seen={};
+    Object.keys(BELT_CONFIG).forEach(pid=>{
+      const b=BELT_CONFIG[pid]||{};
+      ['world','secondary','tag'].forEach(kind=>{
+        if(!b[kind]) return;
+        out.names++;
+        const art=idx[b[kind]];
+        if(!art || art===BELT_ART_DEFAULT) out.missing.push(pid+':'+kind+' ('+b[kind]+')');
+        if(!art) return;
+        const key=[art.shape,art.metal,art.gem,art.strap].join('|');
+        if(seen[key]) out.dupes.push(b[kind]+' looks identical to '+seen[key]);
+        seen[key]=b[kind];
+      });
+    });
+    // and each way of carrying it actually draws something on the figure
+    const art=beltArtFor(Object.keys(idx)[0]);
+    ['waist','shoulder','hand'].forEach(cr=>{
+      const bare=wrestlerSVG(DEFLOOK,{pose:'ready'});
+      const worn=wrestlerSVG(DEFLOOK,{pose:'ready',belt:{art,carry:cr}});
+      out.carries[cr]=worn.length-bare.length;
+    });
+    // the standalone icon renders for every belt without throwing
+    out.icons=0;
+    try{ Object.keys(idx).forEach(n=>{ if(beltSVG(beltArtFor(n),30).indexOf('<svg')===0) out.icons++; }); }
+    catch(e){ out.iconErr=String(e); }
+    return out;
+  });
+  if(errs.length) bad('belts: page errors: '+errs.slice(0,2).join(' | '));
+  r.missing.length ? bad(`${r.missing.length} belt(s) fall back to the default design: `+r.missing.join(', '))
+                   : ok(`all ${r.names} belts carry their own design`);
+  r.dupes.length ? bad(`${r.dupes.length} belt(s) cannot be told apart:\n       `+r.dupes.join('\n       '))
+                 : ok('no two belts share a shape, metal, stone and strap');
+  const thin=Object.keys(r.carries).filter(k=>r.carries[k]<200);
+  thin.length ? bad('these ways of carrying it draw next to nothing: '+thin.map(k=>k+' (+'+r.carries[k]+' chars)').join(', '))
+              : ok(`all three carries draw on the figure: ${Object.keys(r.carries).map(k=>k+' +'+r.carries[k]).join(' · ')}`);
+  r.iconErr ? bad('the belt icon threw: '+r.iconErr)
+            : (r.icons===r.names ? ok(`the standalone icon renders for all ${r.icons}`) : bad(`the icon rendered for ${r.icons} of ${r.names}`));
+  await page.close();
+}
+
 section('dilemmas roll, bite, and come back later');
 {
   const {page, errs} = await fresh(URL+'/wrestling/');
