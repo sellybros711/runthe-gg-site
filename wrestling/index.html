@@ -54,11 +54,13 @@
      under the notch on any modern iPhone, which is exactly how the first pass
      shipped. env() is the only thing that knows how tall the status bar is. */
   body{padding-top:calc(env(safe-area-inset-top,0px) + 48px);}
+  body.hasnav{padding-top:calc(env(safe-area-inset-top,0px) + 82px);}
   body.hasnav main{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px));}
-  .sitebar{position:fixed;top:0;left:0;right:0;z-index:45;display:flex;align-items:center;gap:9px;
+  .sitebar{position:fixed;top:0;left:0;right:0;z-index:45;display:flex;flex-direction:column;gap:6px;
     padding:calc(env(safe-area-inset-top,0px) + 7px) 12px 7px;
     background:rgba(14,11,11,.9);-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
     border-bottom:1px solid rgba(244,232,219,.10);}
+  .sb-row{display:flex;align-items:center;gap:9px;}
   .sb-home{flex:0 0 auto;display:inline-flex;align-items:center;height:34px;padding:0 11px;
     font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
     color:var(--text-dim);text-decoration:none;background:rgba(244,232,219,.05);
@@ -89,6 +91,25 @@
   .sb-prof .pf-av svg{width:28px;height:28px;display:block;}
   .sb-prof .pf-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px;}
   .sb-prof .pf-o{flex:none;font-family:var(--mono);font-size:11px;color:var(--gold);}
+
+  /* THE SAME DESTINATIONS, AT THE TOP. The tab bar at the bottom is where a
+     thumb goes; the header is where a lot of people look first. Both drive the
+     same goGroup(), so there is one idea of where you are and one badge. */
+  .sb-nav{display:none;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .sb-nav::-webkit-scrollbar{display:none;}
+  body.hasnav .sb-nav{display:flex;}
+  .sb-nav button{flex:1 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+    height:28px;padding:0 11px;background:rgba(244,232,219,.045);border:1px solid var(--line);
+    border-radius:999px;cursor:pointer;color:var(--text-faint);font-family:var(--mono);font-size:9.5px;
+    font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;position:relative;}
+  .sb-nav button svg{width:14px;height:14px;display:block;flex:none;}
+  .sb-nav button.on{color:var(--gold);border-color:rgba(224,179,65,.45);background:rgba(224,179,65,.10);}
+  .sb-nav button.pass{color:#cbb46a;border-color:rgba(224,179,65,.32);background:rgba(224,179,65,.07);}
+  .sb-nav button:active{transform:translateY(1px);}
+  .sb-nav .navdot{position:absolute;top:-5px;right:-3px;min-width:15px;height:15px;border-radius:8px;
+    padding:0 4px;background:var(--brandred);border:1.5px solid #0e0b0b;font-family:var(--mono);
+    font-size:9px;font-weight:900;line-height:12px;color:#fff;letter-spacing:0;}
+  @media(max-width:400px){ .sb-nav button span{display:none;} .sb-nav button{padding:0 9px;} }
 
   .botnav{position:fixed;left:0;right:0;bottom:0;z-index:44;overflow:visible;
     background:linear-gradient(180deg,#171112,#0b0909);border-top:1px solid var(--line);
@@ -1451,12 +1472,15 @@
      screen, so on a phone there was no way back to RunThe.gg and no way to see
      where you were. -->
 <div class="sitebar" id="sitebar">
-  <a class="sb-home" href="https://runthe.gg" title="RunThe.GG">RunThe<span>.GG</span></a>
-  <div class="sb-mark" onclick="go('home')">RUN <b>THE</b> ROPES</div>
-  <div class="sb-right">
-    <button class="sb-coin" id="sbCoin" onclick="go('shop')" title="Coins"></button>
-    <button class="sb-prof" id="sbProf" onclick="openProfile()" title="Your wrestler"></button>
+  <div class="sb-row">
+    <a class="sb-home" href="https://runthe.gg" title="RunThe.GG">RunThe<span>.GG</span></a>
+    <div class="sb-mark" onclick="go('home')">RUN <b>THE</b> ROPES</div>
+    <div class="sb-right">
+      <button class="sb-coin" id="sbCoin" onclick="go('shop')" title="Coins"></button>
+      <button class="sb-prof" id="sbProf" onclick="openProfile()" title="Your wrestler"></button>
+    </div>
   </div>
+  <div class="sb-nav" id="sbNav"></div>
 </div>
 
 <!-- The name, the promotion and the wallet all live in the banner now, so this
@@ -3969,17 +3993,26 @@ const POSES={
   // stretched out behind. The old pin was a starfish rotated onto its back.
   pin:      { body:[0,22,84], shL:150, elL:-20, shR:-40, elR:-70, hipL:8, knL:-14, hipR:-8, knR:12, head:-14 },
   submit:   { body:[0,8,-14], shL:-58, elL:-44, shR:-88, elR:-28, hipL:66, knL:-92, hipR:-12, knR:22, head:-10 },
-  taunt:    { shL:166, elL:-16, shR:-166, elR:16, hipL:-6, hipR:6, body:[0,-2,0] },
-  celebrate:{ shL:176, elL:-6, shR:-176, elR:6, hipL:-14, hipR:14, body:[0,-5,0] },
+  /* WORKING THE CROWD, NOT LEADING A CHEER. These two had both arms straight up
+     in a narrow symmetric V with the hip rotations the wrong way round: a
+     negative hipL against a positive hipR swings the legs TOWARD each other, so
+     the wrestler stood with his feet crossed under a pom-pom pose. Feet apart is
+     positive hipL against negative hipR, the way `guard` and `stagger` do it.
+     The taunt is asymmetric now (one arm up and out, the other cocked in at the
+     chest) because a wrestler calling for a reaction is never symmetrical, and
+     the celebrate is a wide Y with the feet planted rather than a narrow V. */
+  taunt:    { shL:152, elL:-28, shR:-102, elR:-54, hipL:9, knL:-11, hipR:-9, knR:11,
+              torso:-4, head:4, body:[0,-1,0] },
+  celebrate:{ shL:158, elL:-13, shR:-158, elR:13, hipL:12, knL:-13, hipR:-12, knR:13, body:[0,-4,0] },
   point:    { shR:-98, elR:-4, shL:22, elL:-40, torso:4, head:4 },
   stagger:  { body:[0,1,-14], head:9, torso:-6, shL:-42, elL:22, shR:28, elR:-18, hipL:18, knL:-22, hipR:-8 },
   reel:     { body:[0,0,13], head:-19, torso:7, shL:26, elL:-52, shR:-48, elR:32, hipL:-10, hipR:14, knR:-18 },
-  guard:    { shL:62, elL:-124, shR:-62, elR:124, hipL:10, knL:-14, hipR:-10, body:[0,2,-2] },
+  guard:    { shL:62, elL:-124, shR:-62, elR:124, hipL:10, knL:-14, hipR:-10, knR:14, body:[0,2,-2] },
   corner:   { body:[0,2,-9], shL:126, elL:-20, shR:-44, elR:26, hipL:12, knL:-18, head:8 },
   whip:     { shR:-74, elR:-44, shL:44, elL:-20, torso:7, body:[1,0,6] },
   ropes:    { shL:150, elL:-18, shR:-150, elR:18, hipL:-8, knL:14, hipR:10, knR:-16, body:[0,1,0] },
   // the winner, arm held aloft by the official
-  raised:   { shL:172, elL:-6, shR:-18, elR:8, torso:2, body:[0,-1,0] },
+  raised:   { shL:172, elL:-6, shR:-18, elR:8, torso:2, hipL:8, knL:-9, hipR:-8, knR:9, body:[0,-1,0] },
   // ---- the referee ----
   refIdle:  { shL:22, elL:-40, shR:-22, elR:40 },
   refWatch: { body:[0,2,-7], shL:40, elL:-70, shR:-30, elR:50, hipL:12, knL:-14, head:6 },
@@ -5416,23 +5449,35 @@ function hubBadge(){ try{
   const d=dailyState(); return dailyList().filter(o=>!d.done[o.id]).length;
 }catch(_){ return 0; } }
 function paintBotNav(scr){
-  const bar=$('botnav'); if(!bar) return;
+  const bar=$('botnav'), top=$('sbNav');
   const playing = !!G && scr!=='create' && scr!=='start';
-  bar.style.display = playing ? 'block' : 'none';
+  if(bar) bar.style.display = playing ? 'block' : 'none';
   document.body.classList.toggle('hasnav', playing);
-  if(!playing) return;
+  if(top) top.innerHTML='';
+  if(!playing || !bar) return;
   const g=groupOf(scr)||NAVG[0];
   const cur = (scr==='pass') ? 'pass' : g.id;
   const dot=(n)=>n?`<i class="navdot">${n}</i>`:'';
-  const tab=(x)=>`<button class="${x.id===cur&&scr!=='pass'?'on':''}" onclick="goGroup('${x.id}')">
-      ${pico(NAV_ICON[x.id]||'star',21)}<span>${x.label}</span>${x.id==='hub'?dot(hubBadge()):''}</button>`;
+  const on=(id)=>id===cur&&scr!=='pass'?'on':'';
   const half=Math.ceil(NAVG.length/2);
+  const tab=(x)=>`<button class="${on(x.id)}" onclick="goGroup('${x.id}')">
+      ${pico(NAV_ICON[x.id]||'star',21)}<span>${x.label}</span>${x.id==='hub'?dot(hubBadge()):''}</button>`;
   bar.innerHTML=`<div class="botnav-in">`
     + NAVG.slice(0,half).map(tab).join('')
     + `<button class="navfab ${scr==='pass'?'on':''}" onclick="go('pass')">
          <span class="nf-disc">${pico('ticket',25)}</span><span class="nf-lab">Pass</span>${dot(passBadge())}</button>`
     + NAVG.slice(half).map(tab).join('')
     + `</div>`;
+  // The same six destinations in the header. One source of truth for which one
+  // is current and where the badges sit, so the two rails can never disagree.
+  if(top){
+    const ttab=(x)=>`<button class="${on(x.id)}" onclick="goGroup('${x.id}')">
+        ${pico(NAV_ICON[x.id]||'star',14)}<span>${x.label}</span>${x.id==='hub'?dot(hubBadge()):''}</button>`;
+    top.innerHTML = NAVG.slice(0,half).map(ttab).join('')
+      + `<button class="pass ${scr==='pass'?'on':''}" onclick="go('pass')">
+           ${pico('ticket',14)}<span>Pass</span>${dot(passBadge())}</button>`
+      + NAVG.slice(half).map(ttab).join('');
+  }
 }
 /* Who you are, top right. Tapping it opens your card; with no career it is the
    way back to the front page. */
@@ -5463,7 +5508,7 @@ function paintNav(s){ const sc=$('s-'+s); if(sc){ const el=sc.querySelector('.gn
 const TOURS={
  hub:[
   {sel:'#weekBody .advice', title:'This is your week',
-   body:'A week has two halves. <b>Yours</b>: how you prepare behind the scenes. <b>Theirs</b>: what the office books you to do. You do not write the card. You make the most of it. Forty weeks make a year.'},
+   body:'A week has two halves. <b>Yours</b>: how you prepare behind the scenes. <b>Theirs</b>: what the office books you to do. You do not write the card. You make the most of it.'},
   {sel:'#weekBody .preprow', title:'Prepare like a pro',
    body:'One piece of prep a week, paid on the spot. <b>Gym</b> banks XP, <b>tape study</b> raises your odds against tonight\'s opponent, <b>rest</b> buys back condition, and <b>working the room</b> nudges your standing. Benched weeks pay double: nothing but time.'},
   {sel:'#weekBody .bksheet', title:'The office books you',
@@ -5691,7 +5736,7 @@ const RULES=[
   <p class="log">You are an employee before you are a star.</p>
   <ul class="ruleul">
     <li><b>Standing with the office</b> is what they think of you. Great matches raise it; working hurt and no-showing quality lowers it. It decides how well you get booked.</li>
-    <li><b>Your contract</b> has a weekly downside, a merch cut and a length. You can renegotiate, but asking costs standing if they say no.</li>
+    <li><b>Your contract</b> pays a weekly base whether they book you or not. Merch money sits on top. You can renegotiate, but asking costs standing if they say no.</li>
     <li><b>Schedule</b> trades pay and exposure against wear and injury risk.</li>
     <li><b>Injuries</b> cost you real weeks and take an attribute hit. Serious ones can leave permanent damage. Working hurt makes all of it worse.</li>
     <li><b>Mileage</b> never resets. It is what decides how early you decline.</li>
@@ -6725,7 +6770,8 @@ function renderWeek(){
     // game forgot about.
     const _offScene = (function(){ try{ return pickScene('any'); }catch(_){ return null; } })();
     sheet=`<div class="bksheet dark">
-      <div class="bs-vs">${(c.standing||50)<45?'No card this week. Weeks like this build careers.':'No card this week. Get ready for the ones coming.'}</div>
+      <div class="bs-vs">${b.pulled ? (b.why||'You are off tonight\'s card.')
+        : (c.standing||50)<45?'No card this week. Weeks like this build careers.':'No card this week. Get ready for the ones coming.'}</div>
       ${_offScene?`<div class="bs-scene-tease">${pico('microphone',12)} Something happens on the way out: <b>${String(_offScene.tag||'').trim().toLowerCase()}</b></div>`:''}
       ${!c.prep?`<div class="bs-scene-tease">${pico('dumbbell',12)} The gym pays double on an off week. Pick it below.</div>`:''}
       <button class="big" style="width:100%;margin-top:13px;" onclick="endDarkWeek()">Call It A Week →</button>
@@ -6834,7 +6880,7 @@ function promptCatchphrase(){
   const w=G.w;
   const cur=w.catch||'';
   modal('The bit hit.',
-    `<p class="log">${w.gimmick&&w.gimmick.name?w.gimmick.name:'Your character'} is over. What are you saying every time now?</p>
+    `<p class="log">The crowd has bought ${w.gimmick&&w.gimmick.name?w.gimmick.name:'your character'}. Time to give it a catchphrase.</p>
      <input type="text" id="_catchIn" maxlength="60" style="width:100%;padding:8px 10px;font-size:14px;" value="${cur}" placeholder="Believe that.">
      <p class="hint" style="margin-top:6px;">The line opens every promo you cut from now on.</p>`,
     [{label:'Skip',cls:'ghost',fn:closeModal},
@@ -7981,8 +8027,12 @@ async function spotGuard(byMe){           // cover up and eat the shots
 async function spotTaunt(byMe,big){       // work the crowd
   const A=byMe?'me':'opp'; busy(true);
   FIG[A].el.classList.add('glow');
-  fmv(A,{pose:'taunt',fwd:ST.close*0.3,sc:1.04},240); await sleep(360);
-  fmv(A,{pose:'point',fwd:ST.close*0.5},180); await sleep(260);
+  // alternate the opening beat, so calling for the crowd twice in a match does
+  // not play the identical motion twice
+  MS._tauntN=(MS._tauntN||0)+1;
+  const first=(MS._tauntN%2)?'taunt':'point', second=(MS._tauntN%2)?'point':'taunt';
+  fmv(A,{pose:first,fwd:ST.close*0.3,sc:1.04},240); await sleep(360);
+  fmv(A,{pose:second,fwd:ST.close*0.5},180); await sleep(260);
   if(big){ fmv(A,{pose:'celebrate',sc:1.07},220); await sleep(320); }
   FIG[A].el.classList.remove('glow'); await settle(280);
 }
@@ -8894,6 +8944,12 @@ async function startFight(o){
   }
   figLook('me',G.w.look);
   figLook('opp',oc?oc.look:oppLook(o.oppId,o.oppName));
+  /* CLEAR THE RING BEFORE ANYBODY SEES IT. figLook() parks each figure on its
+     home mark, so both wrestlers stood in the ring through the video package
+     and then snapped off-screen to make an entrance they were already inside
+     for. The arena starts empty; each entrance is a real walk-in. */
+  fmv('me', {pose:'run',fwd:-ST.W*0.62},0);
+  fmv('opp',{pose:'run',fwd:-ST.W*0.62},0);
   $('fClock').textContent='BELL';
   // ---- video package (big matches only), then entrances ----
   busy(true);
@@ -10126,19 +10182,29 @@ async function endFight(iWon){
   // ---- the official raises the winner's arm (skip if no winner) ----
   if(MS.wide){ await cameraBack(); if(stale()) return; }
   extraHide();                                    // whoever ran in has had their moment
+  /* THE POSE-DOWN, AND WHY EVERY STEP OF IT IS GUARDED. This block is roughly
+     1.7 seconds of awaits that pose figures and draw a WINNER burst. It used to
+     run start to finish with no staleness check, so a match that had already
+     been replaced could still walk its ceremony onto the new one: the next
+     wrestler arrives at the bell standing with his arm raised. Every await
+     here now re-checks the generation it started under. */
   if(FIG.ref && !noWinner){
     const wx=Math.round(FIG[W].home*0.42);          // step toward the middle for the pose-down
     fmv(W,{pose:'ready',x:wx,up:0,rot:0,sc:1},320);
     FIG.ref.el.classList.remove('up');
     refTo(wx + (wx<0?1:-1)*Math.round(ST.W*0.13),'refWatch',440,0.86);
     await sleep(460);
+    if(stale()) return;
     poseSet('ref','refRaise');
     fmv(W,{pose:'raised',sc:1.05},260);
     await sleep(140);
+    if(stale()) return;
     burst(wx,'WINNER');
     for(let i=0;i<3;i++){                       // arm pumped up, three times
       fmv(W,{up:6},170); fmv('ref',{up:5},170); await sleep(190);
+      if(stale()) return;
       fmv(W,{up:0},170); fmv('ref',{up:0},170); await sleep(180);
+      if(stale()) return;
     }
   }
   if(f.type==='sub'){
@@ -10173,11 +10239,13 @@ async function endFight(iWon){
     fLog(`<b>${pc.name}</b>: <span class="say">"${say}"</span>`);
   }
   await sleep(700);
+  if(stale()) return;
   // ---- after the bell ----
   // Two things that only happen once the match is over, and both of them are
   // how a feud moves on television rather than in a hallway.
   try{ await postBellBeats(iWon); }catch(_){}
   await sleep(300);
+  if(stale()) return;                 // a replaced match must not be finalized twice
   stopCrowdAmbient();
   finalizeFight(iWon);
 }
@@ -10593,8 +10661,17 @@ function doAsk(id){
 function goBooking(){
   const b=G.car.booking; if(!b) return;
   const proceed = () => {
-    if(b.type==='match') startFight(b.o);
-    else if(b.type==='promo') beginPromo(b.targetId?'callout':'crowd', b.targetId);
+    // Re-read the booking rather than using the one captured above: the scene
+    // that just played on the walk to gorilla is allowed to take you off the
+    // card, and if it did there is no match to start.
+    const bb=G.car.booking;
+    if(!bb || bb.pulled || bb.type==='dark'){
+      save(); renderCareer(); go('career');
+      toast('You are not going out tonight.');
+      return;
+    }
+    if(bb.type==='match') startFight(bb.o);
+    else if(bb.type==='promo') beginPromo(bb.targetId?'callout':'crowd', bb.targetId);
   };
   // For matches, a segment plays on the walk to gorilla when one is available
   // and one has not already run this week. Non-match bookings skip it because
@@ -11218,7 +11295,6 @@ function showDirtSheet(o,res,onDone){
   const best=under.slice().sort((a,b)=>b.q-a.q)[0];
   const motn = (best && best.q>res.quality) ? `${best.winner} vs ${best.loser} (${starStr(best.q)}★)` : `yours, ${o.oppName} (${starStr(res.quality)}★)`;
   const spot = o.ppv ? `Main event of ${o.ppv}` : `${o.card||'Mid-Card'}${o.stakes==='title'?', for the belt':o.stakes==='defense'?', defending':''}`;
-  const rooms = c._sentDelta ? [['crowd','Crowd'],['locker','Locker room'],['office','Office']].map(([k,l])=>{ const d=Math.round(c._sentDelta[k]||0); return `${l} ${d>0?'+'+d:d<0?d:'='}`; }).join(' · ') : '';
   const body=`<div class="media-frame"><div class="media-portrait">${punditPortrait(p)}</div></div>
     <div class="media-plate">
       <div class="media-name" style="color:${p.color}">${p.name.toUpperCase()}</div>
@@ -11229,7 +11305,6 @@ function showDirtSheet(o,res,onDone){
         <div class="dirt-row"><span class="dirt-l">Your spot</span><span>${spot}</span></div>
         <div class="dirt-row"><span class="dirt-l">Your match</span><span>${starStr(res.quality)}★ · ${starBand(s)}</span></div>
         <div class="dirt-row"><span class="dirt-l">Match of the night</span><span>${motn}</span></div>
-        ${rooms?`<div class="dirt-row"><span class="dirt-l">The rooms, this month</span><span>${rooms}</span></div>`:''}
       </div>
     </div>`;
   modal('The dirt sheet', body, [{label:'On to next week',cls:'primary',fn:()=>{ closeModal(); if(onDone) onDone(); }}]);
@@ -14956,7 +15031,7 @@ function renderDeal(){
         <div class="hint" style="margin-top:4px;font-style:italic;">Booked by <b style="color:${pr.color}">${bk.name}</b>. ${bk.voice}</div>
         <div class="fa-clauses">
           ${bonus?`<span class="fa-cl good">${pico('money',12)} ${money(bonus)} signing bonus</span>`:''}
-          <span class="fa-cl">${pico('shield',12)} ${money(downside)} weekly downside</span>
+          <span class="fa-cl">${pico('shield',12)} ${money(downside)} a week, guaranteed</span>
           ${nc?`<span class="fa-cl ${nc>=6?'red':''}">${pico('clipboard',12)} ${nc}mo no-compete</span>`:'<span class="fa-cl good">no no-compete</span>'}
         </div>
         <div class="hint" style="margin-top:6px;">Guaranteed over the term: <b>${money((o.weekly*WEEKS_PER_YEAR*o.years)+bonus)}</b> · interest ${o.want}</div>
@@ -14972,7 +15047,7 @@ function renderDeal(){
     <h3 style="margin-top:0;">${p.name} <span class="sub2">${p.short} · ${p.region}</span></h3>
     <p class="log">${p.blurb}</p>
     <div class="grid g3" style="margin-top:10px;">
-      ${[['Weekly downside',money(d.weekly)],['Term left',`${d.weeksLeft} wks`],['Merch cut',`${Math.round((d.merch||0)*100)}%`],
+      ${[['Weekly base pay',money(d.weekly)],['Term left',`${d.weeksLeft} wks`],['Merch cut',`${Math.round((d.merch||0)*100)}%`],
          ['Creative control',d.creative?'Yes':'No'],['Standing',Math.round(c.standing||50)],['Working tier',workTier().name]]
         .map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')}
     </div>
@@ -15868,10 +15943,11 @@ const SCENES = [
         { t:'"Tell them I cannot go."', outcomes:[
           { p:1.5, tone:'good', mem:'dil_shoulder_'+x.c.year,
             text:'You sit it out. It costs you the night and the office notices, but the shoulder is right again inside a fortnight.',
-            eff:{standing:-4}, head:'Sat out a night to protect a shoulder.' },
+            eff:{standing:-4, pullOut:'You pulled yourself out to protect the shoulder. Somebody else worked your spot.'},
+            head:'Sat out a night to protect a shoulder.' },
           { p:1, tone:'mixed', mem:'dil_shoulder_'+x.c.year,
             text:'You sit it out. The booker says all the right things and books somebody else in your spot for a month.',
-            eff:{standing:-7} } ]},
+            eff:{standing:-7, pullOut:'The booker put somebody else in your spot tonight.'} } ]},
       ]}}},
   { id:'dil_offer', tag:'THE CAR PARK', trig:'any', weight:6,
     when:x=>x.c.year>=2 && (x.c.standing||50)>=45 && !sceneRecalls('dil_offer_'+x.c.year),
@@ -17056,6 +17132,14 @@ function outcomeChips(out){
 }
 function applySceneEffect(eff, x){
   const c=G.car, w=G.w;
+  /* PULLED FROM THE CARD. A scene that says you are not going out tonight has
+     to actually take you off the card. Copy promising a consequence the code
+     never applies is the worst kind of bug in this game: the player pays the
+     price the scene named and then gets handed the thing anyway. */
+  if(eff.pullOut && c.booking && c.booking.type==='match'){
+    c.booking={type:'dark', pulled:true,
+      why: typeof eff.pullOut==='string' ? eff.pullOut : 'You told them you could not go tonight.'};
+  }
   if(eff.standing) c.standing=clamp((c.standing||50)+eff.standing);
   if(eff.cond)     c.cond=clamp((c.cond||100)+eff.cond, 0, 100);
   if(eff.gimHeat && w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+eff.gimHeat,0,100);
@@ -17133,6 +17217,7 @@ function summarizeEffect(eff){
   if(eff.respectA) chips.push(`<span class="pchip ${eff.respectA>0?'':'red'}" style="animation:none;opacity:1;">Respect ${fmt(eff.respectA)}</span>`);
   if(eff.loyaltyA) chips.push(`<span class="pchip" style="animation:none;opacity:1;">Loyalty ${fmt(eff.loyaltyA)}</span>`);
   if(eff.heatAll)  chips.push(`<span class="pchip" style="animation:none;opacity:1;">Locker room ${fmt(eff.heatAll)}</span>`);
+  if(eff.pullOut)  chips.push(`<span class="pchip red" style="animation:none;opacity:1;">Off tonight's card</span>`);
   if(!chips.length) return '';
   return `<div class="scene-outcome-note"><div class="paychips" style="margin-top:4px;">${chips.join('')}</div></div>`;
 }
