@@ -747,13 +747,25 @@ section('a scene that says you are not going out takes you off the card');
     const out={liars:[], pulled:null, started:null};
     // any outcome whose prose says you did not work that night
     const SITS=/\b(sit it out|sat it out|sits it out|cannot go|could not go|not going out|pulled? (yourself )?out|off the card|miss(ed)? the show|somebody else (works|worked) your spot)\b/i;
-    const x=sceneCtx();
+    // Many scenes build their options around a cast member and throw without
+    // one, so each is attempted on its own and the skipped count is reported
+    // rather than swallowed: a lint that silently covers nothing is worse than
+    // no lint at all.
+    out.scanned=0; out.skipped=[];
+    // sceneCtx() leaves the cast slots null, and most scenes reach straight
+    // into them, so fill them with real roster members: the lint should cover
+    // the whole deck rather than only the cast-free dilemmas.
+    const _r=houseRoster(myPromoId());
+    const x=sceneCtx(); x.a=_r[0]||null; x.b=_r[1]||null;
     SCENES.forEach(s=>{
       const b=s.beats&&s.beats.start; if(!b) return;
-      const opts=(typeof b.opts==='function'?b.opts(x):b.opts)||[];
+      let opts=null;
+      try{ opts=(typeof b.opts==='function'?b.opts(x):b.opts)||[]; }
+      catch(_e){ out.skipped.push(s.id); return; }
+      out.scanned++;
       opts.forEach(o=>{
         (o.outcomes||[]).forEach(oc=>{
-          const t=String((typeof oc.text==='function')?oc.text(x):oc.text||'');
+          let t=''; try{ t=String((typeof oc.text==='function')?oc.text(x):oc.text||''); }catch(_e){ return; }
           if(SITS.test(t) && !(oc.eff&&oc.eff.pullOut)) out.liars.push(s.id+': '+t.slice(0,70));
         });
       });
@@ -774,7 +786,7 @@ section('a scene that says you are not going out takes you off the card');
   });
   if(errs.length) bad('scene promises: page errors: '+errs.slice(0,2).join(' | '));
   r.liars.length ? bad(`${r.liars.length} outcome(s) say you sat out without taking you off the card:\n       `+r.liars.join('\n       '))
-                 : ok('every outcome that says you sat out actually pulls you from the card');
+                 : ok(`every outcome that says you sat out actually pulls you from the card (${r.scanned} scenes scanned, ${r.skipped.length} need a cast and were skipped)`);
   r.pulled ? ok('pullOut turns a booked match into an off night') : bad('pullOut left the match on the card');
   r.started===false ? ok('and the walk to gorilla does not start a fight after it')
                     : bad('the walk to gorilla started the match anyway after a pull-out');
