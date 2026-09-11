@@ -297,73 +297,66 @@ is the point. Disney's Peter Pan, Universal's Frankenstein, MGM's green witch an
 ruby slippers are all still owned, and a redraw that drifts back toward one of
 them is the failure mode.
 
-### The menu is a room, and it is a LAYOUT rather than a drawing
+### The menu is a room, and a phone gets LOCKERS
 
-The menu is a clubhouse the player stands in. It is called the clubhouse
-everywhere the player can see, and in the code; the seven places a character
-says "dugout" mean the one beside the field during a game and are left alone.
+The menu is a clubhouse. It is called the clubhouse everywhere the player can
+see and in the code; the seven places a character says "dugout" mean the one
+beside the field during a game and are left alone.
 
-The room has to fill whatever window it is given, and a fixed scene cannot: the
-wide room is 2.24 across, so on a portrait phone its height is decided by its
-width and it can only ever be a strip. So `landscapeRoom()` and `closeRoom(ar)`
-return coordinates, `roomForWindow()` picks one, and `drawClubhouse` reads every
-position out of `ROOM` and holds none of its own.
+**There are two arrangements and they are different designs, not two sizes of
+one.** A desktop gets `landscapeRoom()`: four objects hung on a wall with a
+small sign floating over each, and a rail underneath that says what the thing
+under the pointer does. A phone gets `closeRoom(boxW, boxH)`: four LOCKERS,
+one frame per mode, all the same size, each with a nameplate on it and its
+object scaled to fit inside. `drawClubhouse` draws whichever `ROOM.lockers`
+says, and reads every position out of `ROOM`.
 
-**How big a thing is drawn is the whole ball game, and it has no symptom.**
-Everything in the room is a fixed pixel size: the bats are 74 long, the signs
-are set in a point size. So what decides how big any of it lands on the GLASS is
-one number, how many room pixels the layout asks for against how many CSS pixels
-it gets to draw them in. A desktop asks for 1120 and gets about 1202, draws at
-1.07, and a 13px sign arrives at 14.
+**Why they had to diverge.** The wall-and-signs arrangement depends on the
+rail, and a phone has no pointer to drive one. What a first-time player got
+was a picture with four labels on it and no way to tell the picture was the
+menu. The four also carry very different weight as drawings: authored, they
+are 150x200, 176x168, 150x168 and 246x146, so the chalkboard is the biggest,
+loudest thing on the screen and it is the least important door in the room.
+**Three rounds went into making everything bigger and neither fault was a
+size.** A locker fixes both at once: it obviously presses, and four of them
+are four equal boxes whatever is inside.
 
-The first phone layout fitted the whole room onto the phone: 760 room pixels
-inside 358, which is **0.47**. Every sign, bat and trophy arrived at less than
-half its desktop size and the menu was unreadable. Nothing failed. The room
-filled the screen, the hotspots were honest touch targets, the suite was green.
+**A locker is a container, and that inverts the whole layout problem.** Before,
+every drawing was a fixed pixel size, so the ROOM had to shrink until four of
+them fit, and how big anything came out was whatever the browser's scaling left
+it. Ask for 760 room pixels in a 358 pixel box and a 13px sign arrives at six,
+with nothing in the code saying so. A locker scales its contents, so the layout
+can size the lockers to the window instead. `closeRoom` therefore composes **one
+to one with the screen**: a room pixel IS a CSS pixel, type asked for at 18
+arrives at 18, and the canvas keeps its 2x backing store so it stays crisp.
 
-`closeRoom` is the fix and it is a different idea, not a tuning: the phone gets
-the room seen from CLOSER IN, with the four things at their authored size. The
-tunnel and the shirt rail are what that costs, and they are the right things to
-spend: the doorway is atmosphere, the four signs are the menu. `verify-rules.mjs`
-asserts the drawn scale against the desktop's directly.
+Which grid (four across, two by two, one column) is picked by **the worst
+drawing in it**: for each shape, work out what a locker leaves for the object
+inside, fit all four, and take the arrangement where the one that comes out
+smallest comes out largest. That is the thing a player squints at.
 
-**It hangs those four from a PLAN, and the window picks the plan.** There are
-three, described as data rather than coded as branches: one row of four, two rows
-of two, one column of four. Each states its rows, its gaps, its margin and how
-deep a floor it wants, and everything else is worked out from that, so a fifth
-thing in the clubhouse is a row in a list. The one that wins is **the one that
-asks for the narrowest room**, which is the same rule as everything else here:
-fewer room pixels across the same box means everything is drawn bigger. A tall
-narrow panel gets a column, not because a column is prettier but because width is
-what legibility costs.
+The tunnel, the shirt rail and the bat bag belong to the wide room. In a locker
+room the wall is lockers, which is what a clubhouse wall is.
 
-**And the floor is a SHARE of the room, not the remainder.** It was the leftover,
-so every pixel a tall window had spare went into floorboard: a 320 wide panel came
-out 65 percent bare floor with the four things crushed into a strip above an empty
-brown hall. It takes about a quarter now and the wall keeps the rest, centred, so
-slack reads as a high ceiling. Capping the floor alone is only half of it: without
-the column plan the same slack just moves onto the wall and looks equally empty,
-so the suite asserts BOTH, and each guard was checked against the version that
-fails only the other.
-
-Four more things are easy to undo by accident:
+Four things are easy to undo by accident:
 
 - **A rotation is not a render.** The layout is chosen once per render, so
   turning the phone left the upright room in a sideways window, showing a fifth
   of the picture. There is a resize and orientationchange listener, and the
   suite turns a phone both ways. It has already been deleted once by a patch
   that replaced the block around it, and only the suite noticed.
-- A coordinate written as a number inside `drawClubhouse` looks right on a desk
-  and is wrong on a phone.
+- **`thingBox(t)` is the only thing that knows where a door really starts**, and
+  a sign floating above an object and a nameplate inside a locker are not the
+  same rectangle. Work it out by hand anywhere (the hotspot, the pointer
+  outline, a check) and that copy measures a box half the layouts do not have.
+  One guard did exactly that and passed for a week.
 - The canvas is `object-fit: contain`, so if the scene's shape and its box's
   shape drift apart the picture letterboxes while the hotspots stay where they
-  were, and the player presses a door above its sign. `renderMenu` measures the
-  real box on the frame after it mounts and recomposes if the guess was off.
-  Assertions measure the PAINTED picture, never the element, or a letterboxed
-  room reads as a full one.
+  were. `renderMenu` measures the real box on the frame after it mounts and
+  recomposes if the guess was off. Assertions measure the PAINTED picture,
+  never the element, or a letterboxed room reads as a full one.
 - `body.roomfill` is one `matchMedia` in the script that the stylesheet keys
-  off. Write that query out a second time in CSS and the two drift, which is the
-  letterbox above.
+  off. Write that query out a second time in CSS and the two drift.
 
 The same arithmetic broke the GAME screen sideways: `#field` derives its width
 from a height budget that assumed 265px of furniture above and below, which in a

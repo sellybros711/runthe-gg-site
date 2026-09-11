@@ -4188,126 +4188,106 @@ function landscapeRoom() {
 
    `ar` is the shape of the box this is going into, because the layout is
    composed to the window rather than fitted into it afterwards. */
-function closeRoom(ar) {
-  const S = { h: 34, lift: 10, fs: 17, per: 10.6, pad: 20, min: 104 };
-  const over = S.h + S.lift;        /* what a sign takes above its thing */
-  const TOP = 44;                   /* the beam and its rafters */
-  const PAD = 16;                   /* wall left below the last thing */
-  const E = { w: 150, h: 200 }, N = { w: 176, h: 168 },
-        C = { w: 150, h: 168 }, O = { w: 246, h: 146 };
+/* THE LOCKER ROOM, which is what a phone gets.
 
-  /* THREE WAYS TO HANG FOUR THINGS, and the window picks one.
+   ONE TO ONE WITH THE SCREEN. Everything before this asked for some number
+   of room pixels and let the browser scale them into the box, which meant a
+   17px sign might arrive at 8 or at 22 and nothing in the code said which.
+   This composes at the size of the box itself, so a room pixel IS a CSS
+   pixel: type asked for at 18 arrives at 18. The canvas keeps its 2x
+   backing store, so it is still crisp.
 
-     Each is described rather than coded: its rows, the gap inside a row,
-     the gap between rows, the margin against the wall, and how deep a floor
-     it wants. Everything else below is worked out from that, so adding a
-     fifth thing to the clubhouse is a row in a list rather than a third
-     branch of arithmetic. */
-  const PLANS = [
-    { id: 'row',  rows: [[E, N, C, O]], gapX: 28, gapY: 0,  side: 35, floor: 84 },
-    { id: 'grid', rows: [[E, N], [C, O]], gapX: 18, gapY: 22, side: 13, floor: 140 },
-    { id: 'col',  rows: [[E], [N], [C], [O]], gapX: 0, gapY: 18, side: 22, floor: 130 },
-  ];
-  for (const p of PLANS) {
-    p.rowW = p.rows.map(r => r.reduce((t, o) => t + o.w, 0) + p.gapX * (r.length - 1));
-    p.rowH = p.rows.map(r => over + Math.max(...r.map(o => o.h)));
-    p.minW = Math.max(...p.rowW) + p.side * 2;
-    p.contentH = p.rowH.reduce((t, h) => t + h, 0) + p.gapY * (p.rows.length - 1);
-    p.minH = TOP + p.contentH + PAD + p.floor;
-    /* The room has to be at least this wide to hold the plan, and at least
-       this wide again to come out the shape of the box. */
-    p.w = Math.max(p.minW, Math.round(p.minH * ar));
-  }
-  /* THE NARROWEST ROOM WINS, and that is the same rule as everything else
-     here: fewer room pixels across the same box means everything in it is
-     drawn bigger. A tall narrow window gets four things in a column, not
-     because a column is prettier but because it is the arrangement that
-     asks for the least width, and width is what legibility costs. */
-  const plan = PLANS.reduce((best, p) => p.w < best.w ? p : best);
-  const W = plan.w;
-  const H = Math.round(W / ar);
-
-  /* THE FLOOR IS A SHARE OF THE ROOM, NOT WHATEVER IS LEFT OVER. It used to
-     be the remainder, so every pixel a tall window had spare went into
-     floorboard: a 320 wide window came out 65 percent bare floor, which is
-     a warehouse rather than a clubhouse. It takes about a quarter, and the
-     wall keeps the rest. */
-  const spare = H - TOP - plan.contentH - PAD;
-  const floor = Math.max(60, Math.min(spare, 240,
-                         Math.max(plan.floor, Math.round(H * 0.24))));
+   That is only possible because the four things are in LOCKERS now. A
+   locker is a container and its contents are scaled to fit it, so the
+   layout can size the lockers to the window and let the drawings follow.
+   Before, the drawings were a fixed size and the ROOM had to shrink until
+   four of them fit, which is backwards and is what made every version of
+   this either unreadable or a room with a warehouse floor. */
+function closeRoom(boxW, boxH) {
+  const W = Math.round(clamp(boxW || 360, 240, 1600));
+  const H = Math.round(clamp((boxH || 640) * (W / (boxW || 360)), 200, 2000));
+  const wide = W > H;
+  /* The room around the lockers: a beam with its lamps, and a strip of
+     floor with the two teammates standing on it. Both are a share of the
+     window and both are capped, because they are the frame and the lockers
+     are the picture. */
+  const beam = Math.round(clamp(H * 0.05, 16, 34));
+  const roof = beam + Math.round(clamp(H * 0.03, 8, 22));
+  const floor = Math.round(clamp(H * (wide ? 0.20 : 0.17), 76, 150));
   const F = H - floor;
-  /* What the wall has spare goes ABOVE and BELOW the things on it in equal
-     measure, which reads as a room with a high ceiling. Hung from the top
-     instead, the same slack reads as four things that have slid up it. */
-  let y = TOP + Math.round((F - TOP - plan.contentH) / 2);
-  const mid = Math.round(W / 2);
-  const slots = {};
-  const NAMES = [['exhibition', E], ['season', N], ['cup', C], ['howto', O]];
-  let i = 0;
-  plan.rows.forEach((row, r) => {
-    let x = mid - Math.round(plan.rowW[r] / 2);
-    for (const o of row) {
-      /* `y` walks the top of each row's BLOCK, and a block is the sign plus
-         the thing under it. The slot is the thing, so it starts a sign's
-         height down. Without that the top sign is drawn at zero, over the
-         roof beam and through the lamps. */
-      slots[NAMES[i][0]] = { x, y: y + over, w: o.w, h: o.h };
-      x += o.w + plan.gapX;
-      i++;
-    }
-    y += plan.rowH[r] + plan.gapY;
-  });
+  const edge = Math.round(clamp(W * 0.03, 8, 22));
+  const gap = Math.round(clamp(Math.min(W, H) * 0.025, 7, 18));
+  const wallY = roof + gap, wallH = F - wallY - gap, wallW = W - edge * 2;
 
-  const fd = H - F;
+  /* WHICH GRID, DECIDED BY THE WORST DRAWING IN IT. Four across, two by
+     two, or one column: each gives a different locker shape, and the four
+     objects are four different shapes, so the one to pick is the one where
+     the object that comes out SMALLEST comes out largest. That is the thing
+     a player is squinting at, and it is the only score that matters. */
+  const ART = [{ w: 150, h: 200 }, { w: 176, h: 168 },
+               { w: 150, h: 168 }, { w: 246, h: 146 }];
+  const shapes = [[1, 4], [2, 2], [4, 1]];
+  let best = null;
+  for (const [rows, cols] of shapes) {
+    const lw = (wallW - gap * (cols - 1)) / cols;
+    const lh = (wallH - gap * (rows - 1)) / rows;
+    if (lw < 74 || lh < 74) continue;
+    /* what a locker leaves for the object inside it, per drawLocker */
+    const cw = lw - 8, ch = lh - 8 - clamp(lh * 0.17, 24, 44) - clamp(lh * 0.12, 18, 32) - 6;
+    if (ch < 30) continue;
+    const worst = Math.min(...ART.map(A =>
+      Math.min((cw - 12) / A.w, (ch - 12) / A.h)));
+    if (!best || worst > best.worst) best = { rows, cols, lw, lh, worst };
+  }
+  /* A window too small for any grid still gets the biggest one it can. */
+  if (!best) best = { rows: 2, cols: 2, lw: wallW / 2, lh: wallH / 2, worst: 0 };
+
+  const slots = {};
+  const NAMES = ['exhibition', 'season', 'cup', 'howto'];
+  for (let i = 0; i < 4; i++) {
+    const r = Math.floor(i / best.cols), c = i % best.cols;
+    slots[NAMES[i]] = {
+      x: Math.round(edge + c * (best.lw + gap)),
+      y: Math.round(wallY + r * (best.lh + gap)),
+      w: Math.round(best.lw), h: Math.round(best.lh),
+    };
+  }
+
+  const mid = Math.round(W / 2);
   const seams = [];
-  for (let d = 18; d < fd - 8; d += 42) seams.push(d);
-  /* THE BENCH CANNOT SHARE A SHALLOW FLOOR. A person is 92 tall, and on the
-     wide plan's 84 deep floor a bench anywhere crosses the two standing in
-     front of it at the shin: a plank through a person rather than furniture
-     behind one. Standing in front of a wall with your head above the floor
-     line is just what standing near the camera looks like, so on that plan
-     the people stay and the bench goes. */
-  const benchW = Math.min(270, W - 80), benchX = mid - Math.round(benchW / 2);
-  const benchY = F + Math.round(fd * 0.10);
+  for (let d = 14; d < floor - 8; d += 34) seams.push(d);
+  /* Big enough to be people rather than pieces on the floor, and never so
+     big they reach the lockers. */
+  const castW = Math.round(clamp(floor * 0.62, 44, 96));
+  const castH = Math.round(castW * V2_H / V2_W);
+  const benchW = Math.min(Math.round(W * 0.46), 280);
+  const benchX = mid - Math.round(benchW / 2);
   return {
-    port: plan.id !== 'row',
+    port: !wide,
+    lockers: true,
     w: W, h: H,
-    sign: S,
-    beam: 26,
-    rafter: TOP,
-    rafterStep: Math.max(88, Math.round(W / (plan.id === 'row' ? 9 : 5))),
+    /* Every locker is the same size, so the plate is worked out once. */
+    sign: lockerMetrics(Math.round(best.lh)),
+    beam,
+    rafter: roof,
+    rafterStep: Math.max(80, Math.round(W / (wide ? 8 : 4))),
     floorY: F,
-    plank: 46,
+    plank: Math.round(clamp(W * 0.09, 34, 58)),
     floorSeams: seams,
     doorGlow: 0.2,
-    /* NOT EVERY ROOM HAS EVERY THING IN IT. Closer in means less of it is in
-       frame, and a doorway squeezed in beside the trophy case would cost the
-       four signs the size this whole layout exists to give them. */
-    door: null,
-    jerseys: null,
-    glove: null,
-    ball: null,
-    lights: (plan.id === 'row' ? [0.16, 0.5, 0.84] : [0.2, 0.5, 0.8])
-      .map(f => Math.round(W * f)),
-    cones: [[30, 120, 0.13], [18, 70, 0.13]],
-    bench: fd >= 140 ? { x: benchX, y: benchY, w: benchW, leg: 34 } : null,
-    /* PLACED BY THEIR FEET, not by a fraction of the floor. Both are drawn
-       downward from the y they are given, so on a shallow floor a fraction
-       puts the cooler's legs through the bottom of the picture.
-
-       And only in a room wide enough to have corners. Both stand against a
-       wall while the two teammates stand in the middle, so under about 430
-       across there is no gap between them and the props end up behind
-       somebody's legs. An empty corner beats a crowded one. */
-    cooler: W >= 430 ? { x: 12, y: H - 96 } : null,
-    helmets: W >= 430 ? { x: W - 116, y: H - 56 } : null,
-    /* Only once the floor is deep enough to be worth furnishing. */
-    batbag: fd >= 200 ? { x: 20, y: H - 150 } : null,
-    castW: 74,
-    /* Either side of the bench's legs rather than in front of them: a bench
-       whose legs are both hidden behind a person is a plank on a wall. */
-    cast: [{ x: mid - 96, foot: H - 8 }, { x: mid + 16, foot: H - 2 }],
-    cups: fd >= 140 ? [[benchX + 34, benchY - 12], [benchX + 56, benchY - 11]] : [],
+    /* The tunnel and the shirt rail belong to the wide room. In here the
+       wall is lockers, which is what a clubhouse wall is. */
+    door: null, jerseys: null, glove: null, ball: null, batbag: null,
+    lights: [0.18, 0.5, 0.82].map(f => Math.round(W * f)),
+    cones: [[26, 90, 0.12], [16, 54, 0.12]],
+    /* Only once there is floor enough for it to be behind them rather than
+       through them. */
+    bench: floor >= castH + 34 ? { x: benchX, y: F + 12, w: benchW, leg: 26 } : null,
+    cooler: W >= 380 ? { x: edge, y: H - 84 } : null,
+    helmets: W >= 380 ? { x: W - edge - 100, y: H - 48 } : null,
+    castW,
+    cast: [{ x: mid - castW - 14, foot: H - 6 }, { x: mid + 14, foot: H - 2 }],
+    cups: [],
     slots,
   };
 }
@@ -4335,7 +4315,7 @@ function roomForWindow() {
                     Math.max(180, vh - (vh <= 560 ? 78 : 104)));
 }
 
-function roomForBox(w, h) { return closeRoom(w / h); }
+function roomForBox(w, h) { return closeRoom(w, h); }
 
 /* THE ROOM IS RECOMPOSED WHEN THE WINDOW CHANGES, and it has to be, because
    the layout is chosen once per render and a rotation is not a render. Turn
@@ -4358,6 +4338,8 @@ function clubhouseThings() {
     { id: 'exhibition', ...ROOM.slots.exhibition, sign: 'EXHIBITION',
       label: 'Exhibition Game',
       note: 'Single game against a random club.',
+      blurb: 'One game',
+      art: { w: 150, h: 200 },
       draw: drawBatRack,
       go: () => { State.mode = 'exhibition'; State.screen = 'roster'; render(); } },
     { id: 'season', ...ROOM.slots.season, sign: 'FRANCHISE',
@@ -4365,6 +4347,8 @@ function clubhouseThings() {
       note: seasonOn
         ? `Year ${State.season.year || 1}, ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7.`
         : 'Select your team and run it. Unlock players and either add them to your group, or roll with what you already have.',
+      blurb: seasonOn ? `Year ${State.season.year || 1} · ${rec.w}-${rec.l}` : 'Run a club',
+      art: { w: 176, h: 168 },
       draw: drawLineupBoard,
       go: () => {
         if (State.season) { State.screen = 'season-hub'; render(); }
@@ -4377,6 +4361,8 @@ function clubhouseThings() {
       note: cupOn
         ? 'Your playoff run is still going.'
         : 'Eight clubs, knockout. Lose once and you are out.',
+      blurb: cupOn ? 'Still running' : 'Knockout',
+      art: { w: 150, h: 168 },
       draw: drawCupCase,
       go: () => {
         if (State.cup) { State.screen = 'cup'; render(); }
@@ -4387,6 +4373,8 @@ function clubhouseThings() {
       /* No note. The sign says the whole thing, and a second sentence
          restating it is the noise this rail was trimmed of. */
       note: '',
+      blurb: 'The basics',
+      art: { w: 246, h: 146 },
       draw: drawChalkboard,
       go: () => { State.screen = 'howto'; render(); } },
   ];
@@ -4591,10 +4579,84 @@ function drawSign(ctx, t, hot) {
   ctx.fillText(t.sign, t.x + t.w / 2, y + S.h / 2 + 1);
 }
 /* The box a thing and its sign share: what the pointer outline draws and
-   what the hotspot button covers, which must be the same rectangle. */
+   what the hotspot button covers, which must be the same rectangle. In a
+   room of lockers the locker IS that box, which is the point of them. */
 function thingBox(t) {
+  if (ROOM.lockers) return { x: t.x, y: t.y, w: t.w, h: t.h };
   const S = signOf(), top = S.h + S.lift + 4;
   return { x: t.x - 6, y: t.y - top, w: t.w + 12, h: t.h + top + 6 };
+}
+
+/* A LOCKER, which is the whole of this redesign.
+
+   The wide room hangs four objects on a wall and floats a little sign over
+   each. That works with a pointer, because the rail under it says what the
+   thing under the pointer does. On a phone there is no pointer and no rail,
+   so what a first time player got was a PICTURE, with four labels on it and
+   no way to know the picture was the menu. The four also carry wildly
+   different weight as drawings: the chalkboard is the biggest, loudest
+   thing on the screen and it is the least important door in the room.
+
+   A locker fixes both. It is a frame with a nameplate on it, the object
+   inside, and a line underneath: a box that obviously presses, the same
+   size as the other three whatever is in it. The art is SCALED to fit its
+   cubby rather than drawn at the size it was authored, so the layout sizes
+   the lockers to the window and the drawings follow, instead of the room
+   having to shrink until four fixed-size objects fit. */
+/* A locker's furniture, from its height. One function so the drawing and
+   anything that checks the drawing cannot disagree about how big the
+   nameplate came out, which is the number that decides whether this screen
+   is readable. */
+function lockerMetrics(h) {
+  const plate = Math.round(clamp(h * 0.17, 24, 44));
+  const foot = Math.round(clamp(h * 0.12, 18, 32));
+  return { h: plate, foot, lift: 0,
+           fs: Math.round(clamp(plate * 0.52, 11, 22)),
+           footFs: Math.round(clamp(foot * 0.5, 9, 16)) };
+}
+
+function drawLocker(ctx, t, hot) {
+  const B = 4;                                  /* the frame */
+  const M = ROOM.sign || lockerMetrics(t.h);
+  const plate = M.h, foot = t.blurb ? M.foot : 0;
+  const x = t.x, y = t.y, w = t.w, h = t.h;
+  /* The shadow is what makes it read as a thing on a wall rather than a
+     rectangle painted on one. */
+  ctx.fillStyle = 'rgba(20,40,63,.34)';
+  ctx.fillRect(x + 5, y + 5, w, h);
+  roomRect(ctx, x, y, w, h, hot ? '#9a6c33' : '#84592a');
+  /* THE NAMEPLATE. Red on cream is the game's own placard, and it is the
+     one thing on this screen that has to be readable across a room. */
+  roomRect(ctx, x + B, y + B, w - B * 2, plate, hot ? CLUB.red : CLUB.cream);
+  ctx.fillStyle = hot ? CLUB.cream : CLUB.red;
+  ctx.font = `bold ${M.fs}px monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(t.sign, x + w / 2, y + B + plate / 2 + 1);
+  /* THE CUBBY, recessed and darker, with the object inside it. */
+  const cy = y + B + plate + 3;
+  const ch = h - B - plate - 3 - foot - (foot ? 3 : B);
+  const cw = w - B * 2;
+  roomRect(ctx, x + B, cy, cw, ch, '#6b4a24');
+  ctx.fillStyle = 'rgba(20,25,40,.18)';
+  ctx.fillRect(x + B + 2, cy + 2, cw - 4, 6);
+  /* CONTAIN, never stretch. The four objects are four different shapes and
+     a locker is one shape, so each is fitted and centred in its cubby. */
+  const A = t.art || { w: t.w, h: t.h };
+  const pad = Math.max(6, Math.round(Math.min(cw, ch) * 0.08));
+  const k = Math.min((cw - pad * 2) / A.w, (ch - pad * 2) / A.h);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x + B, cy, cw, ch); ctx.clip();
+  ctx.translate(x + B + cw / 2 - A.w * k / 2, cy + ch / 2 - A.h * k / 2);
+  ctx.scale(k, k);
+  t.draw(ctx, { ...t, x: 0, y: 0, w: A.w, h: A.h });
+  ctx.restore();
+  if (foot) {
+    roomRect(ctx, x + B, y + h - B - foot, w - B * 2, foot, '#f1e2bb');
+    ctx.fillStyle = CLUB.line;
+    ctx.font = `bold ${M.footFs}px monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(t.blurb, x + w / 2, y + h - B - foot / 2 + 1);
+  }
 }
 
 /* The room itself, then everything in it, with the one being pointed at
@@ -4752,8 +4814,12 @@ function drawClubhouse(ctx, things, hotId) {
     const hot = t.id === hotId;
     ctx.save();
     if (hot) ctx.translate(0, -3);
-    t.draw(ctx, t);
-    drawSign(ctx, t, hot);
+    if (R.lockers) {
+      drawLocker(ctx, t, hot);
+    } else {
+      t.draw(ctx, t);
+      drawSign(ctx, t, hot);
+    }
     ctx.restore();
     if (hot) {
       ctx.strokeStyle = CLUB.red; ctx.lineWidth = 3;

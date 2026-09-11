@@ -38,6 +38,7 @@
      the phone menu       the room fills the window it is in, whichever shape that is
      legible on a phone   and is DRAWN big enough to read, which is a separate thing
      a room, not a hall   the floor never takes the room over on a narrow window
+     four doors           on a phone they are lockers of equal weight, not four pictures
      turning it sideways  the room is recomposed on rotate rather than left upright
      the game sideways    a phone held sideways gets a bigger field, not a smaller one
      the plate camera     the at bat is seen from behind the catcher and cut away from on contact
@@ -1774,9 +1775,13 @@ async function main() {
         await wait(pg, 800);
         const r = await pg.evaluate(() => {
           const things = clubhouseThings();
-          const S = ROOM.sign || SIGN;
-          const tops = things.map(t => t.y - S.h - S.lift);
-          const bottoms = things.map(t => t.y + t.h);
+          /* thingBox is the ONE function that knows where a thing really
+             starts: a sign floats above its object in the wide room and a
+             nameplate sits inside the locker in the close one. Working it
+             out here instead meant this check measured a box that does not
+             exist in half the layouts. */
+          const tops = things.map(t => thingBox(t).y);
+          const bottoms = things.map(t => thingBox(t).y + thingBox(t).h);
           return {
             room: [ROOM.w, ROOM.h],
             floorShare: (ROOM.h - ROOM.floorY) / ROOM.h,
@@ -1812,6 +1817,92 @@ async function main() {
            JSON.stringify(r.room));
         ok(r.errors.length === 0, `${sz.what}: no page errors`, r.errors.join(' | '));
       }
+    }
+
+    /* ---- four doors, not four pictures ---- */
+    {
+      console.log('four doors');
+      /* WHAT WAS WRONG WITH THIS SCREEN WAS NOT ITS SIZE.
+
+         The wide room hangs four objects on a wall and floats a small sign
+         over each. With a pointer that works, because the rail underneath
+         says what the thing under the pointer does. A phone has no pointer
+         and no rail, so what arrived was a PICTURE with four labels on it
+         and no way to tell that the picture was the menu.
+
+         And the four carry wildly different weight as drawings. Authored,
+         they are 150x200, 176x168, 150x168 and 246x146: the chalkboard is
+         by some way the biggest, loudest thing on the screen, and it is the
+         least important door in the room. Three rounds of making everything
+         bigger could not fix either of those, because neither was a size.
+
+         A phone gets LOCKERS: one frame per mode, the same size whatever is
+         in it, with a nameplate on it and the object scaled to fit inside.
+         That is what is asserted here. Equal boxes is the whole of "equal
+         weight", and a nameplate bigger than the sign it replaces is the
+         whole of "you can read it". */
+      const look = async (w, h, touch) => {
+        const ctx = await browser.newContext({ viewport: { width: w, height: h },
+                                               deviceScaleFactor: 2, isMobile: touch, hasTouch: touch });
+        const pg = await ctx.newPage();
+        const errors = [];
+        pg.on('pageerror', e => errors.push(e.message));
+        await pg.goto(URL);
+        await pg.evaluate(() => localStorage.clear());
+        await pg.goto(URL);
+        await wait(pg, 800);
+        const r = await pg.evaluate(() => {
+          const cb = document.querySelector('.clubhouse canvas').getBoundingClientRect();
+          const ar = ROOM.w / ROOM.h;
+          const k = Math.min(cb.width, cb.height * ar) / ROOM.w;
+          const box = clubhouseThings().map(t => thingBox(t));
+          const area = box.map(b => b.w * b.h);
+          return {
+            lockers: !!ROOM.lockers,
+            /* how far the biggest door is off the smallest, by area */
+            spread: Math.max(...area) / Math.min(...area),
+            plate: (ROOM.sign || SIGN).fs * k,
+            /* the share of the picture the four doors take between them */
+            share: area.reduce((t, a) => t + a, 0) / (ROOM.w * ROOM.h),
+            blurbs: clubhouseThings().map(t => (t.blurb || '').length),
+          };
+        });
+        r.errors = errors;
+        await pg.close(); await ctx.close();
+        return r;
+      };
+      const sizes = [{ w: 390, h: 664, what: 'a phone' },
+                     { w: 844, h: 390, what: 'a phone sideways' },
+                     { w: 320, h: 1100, what: 'a narrow panel' },
+                     { w: 768, h: 1024, what: 'a portrait tablet' }];
+      for (const sz of sizes) {
+        const r = await look(sz.w, sz.h, true);
+        ok(r.lockers, `${sz.what}: the four modes are lockers`, JSON.stringify(r));
+        /* Authored, the four drawings are 1.4x apart in height and the
+           chalkboard is 2.2x the trophy case by area. As lockers they are
+           the same box, and that is the point. */
+        ok(r.spread <= 1.05,
+           `${sz.what}: and every one is the same size as the others`,
+           'biggest is ' + r.spread.toFixed(2) + 'x the smallest');
+        ok(r.plate >= 14,
+           `${sz.what}: the nameplate beats the sign it replaced`,
+           r.plate.toFixed(1) + 'px against the old sign at 13.2');
+        ok(r.share >= 0.4,
+           `${sz.what}: and the doors are most of what is on the screen`,
+           Math.round(r.share * 100) + '% of the picture');
+        ok(r.blurbs.every(v => v > 0),
+           `${sz.what}: each says what it is in a few words`,
+           JSON.stringify(r.blurbs));
+        ok(r.errors.length === 0, `${sz.what}: no page errors`, r.errors.join(' | '));
+      }
+      /* And the wide room is NOT lockered, so none of the above can be
+         satisfied by changing the screen that already works. */
+      const desk = await look(1280, 860, false);
+      ok(!desk.lockers, 'a desktop: the wide room keeps its own arrangement',
+         JSON.stringify(desk));
+      ok(desk.spread > 1.3,
+         'a desktop: where the four are four different drawings, as authored',
+         'spread ' + desk.spread.toFixed(2));
     }
 
     /* ---- turning the phone sideways ---- */
