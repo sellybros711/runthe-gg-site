@@ -106,6 +106,11 @@ for (const [label, tester, url] of [
 
 console.log('\nTHE premium_unlocks ROW IS WHAT DECIDES, NOT THE TESTER LIST');
 const INJECT = 'beginDynastyDraft,premiumSheet,profileSheet,pfPro,acctTier,premiumPitch,dailyOn,'
+  + 'dailyGrace,dailySpentSheet,dynastyRulesHTML,'
+  /* A grace server that grants each reason once, standing in for ps_attempt_grace. */
+  + 'stubGrace:()=>{const got={};B.attemptGrace=async(m,reason)=>{got[reason]=true;'
+  + 'return {ok:true,used:dailyState[m].used,allowance:1+Object.keys(got).length,'
+  + 'resetsAt:dailyState[m].resetsAt};};},'
   + 'setPremium:(v)=>{premiumSet=v;},setDaily:(m,v)=>{dailyState[m]=v;},'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 const t = await openPage(browser, 'http://local.test/football/', { tester: true, inject: INJECT });
@@ -207,6 +212,62 @@ ok('all four grants are listed',
 ok('the Arcade year carries its end date', rec.text.includes(rec.ends), 'expected ' + rec.ends);
 ok('and it says nothing renews', /Nothing here renews/i.test(rec.text));
 ok('the Tour drop, unfulfilled, says it is on its way', /on its way/i.test(rec.text));
+
+console.log('\nTHE TWO WAYS TO EARN ANOTHER RUN ARE SAID OUT LOUD');
+/*
+ * The game grants a second run for being fired in season one and a third for winning a boss
+ * game, and for a long time it granted them SILENTLY: the allowance moved on the server, the
+ * door quietly went back to playable, and nobody was told either thing had happened. A rule
+ * nobody knows about is not a reward.
+ */
+const grace = await t.page.evaluate(async () => {
+  const T = window.__t;
+  T.setPremium([]);
+  T.setDaily('dynasty', { used: 1, allowance: 1, resetsAt: new Date(Date.now() + 3600e3).toISOString() });
+  /* A server that grants each reason once, which is the rule 100_daily_grace_reasons.sql
+     keeps. Without the "once" half, the repeat claim below cannot be checked. */
+  const got = {};
+  window.PS_BOARD_GRACE_STUB = true;
+  T.stubGrace();
+  const said = () => document.getElementById('toast').textContent;
+  const out = {};
+  document.getElementById('toast').textContent = '';
+  await T.dailyGrace('dynasty', 'fired'); out.fired = said();
+  document.getElementById('toast').textContent = '';
+  await T.dailyGrace('dynasty', 'fired'); out.again = said();
+  document.getElementById('toast').textContent = '';
+  await T.dailyGrace('dynasty', 'boss'); out.boss = said();
+  /* And the spent sheet, in the three states that decide whether it offers the rule. */
+  const sheetFor = (mode, allow) => {
+    T.setDaily(mode, { used: allow, allowance: allow, resetsAt: new Date(Date.now() + 3600e3).toISOString() });
+    document.getElementById('sheet').classList.remove('on');
+    T.dailySpentSheet(mode);
+    return !!document.getElementById('sheet-in').querySelector('.dgrace');
+  };
+  out.none = sheetFor('dynasty', 1);
+  out.both = sheetFor('dynasty', 3);
+  out.trade = sheetFor('trade', 1);
+  /* And the rules sheet, before anybody starts. */
+  T.setDaily('dynasty', { used: 0, allowance: 1, resetsAt: new Date(Date.now() + 3600e3).toISOString() });
+  const d = document.createElement('div');
+  d.innerHTML = T.dynastyRulesHTML('go');
+  out.rules = (d.innerText || '').replace(/\s+/g, ' ');
+  T.setPremium(['ps_premium']);
+  const o = document.createElement('div');
+  o.innerHTML = T.dynastyRulesHTML('go');
+  out.ownerRules = (o.innerText || '').replace(/\s+/g, ' ');
+  T.setPremium([]);
+  return out;
+});
+ok('a season one firing announces the extra run', /another run today/i.test(grace.fired), grace.fired);
+ok('the same reason twice announces nothing', grace.again === '', '"' + grace.again + '"');
+ok('a boss win announces the extra run', /another run today/i.test(grace.boss), grace.boss);
+ok('the spent sheet lists the two ways', grace.none === true);
+ok('and stops once both are earned', grace.both === false);
+ok('the Trade Machine, which earns neither, is not offered them', grace.trade === false);
+ok('the rules sheet states all three', /One run a day/i.test(grace.rules)
+  && /Fired in season one/i.test(grace.rules) && /Win a boss game/i.test(grace.rules));
+ok('an owner is told about no limit at all', !/One run a day/i.test(grace.ownerRules));
 await t.page.close();
 
 console.log('\nAN ACCOUNT OFF THE TESTER LISTS SEES NONE OF IT');
