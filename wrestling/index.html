@@ -109,7 +109,7 @@
   .sb-nav .navdot{position:absolute;top:-5px;right:-3px;min-width:15px;height:15px;border-radius:8px;
     padding:0 4px;background:var(--brandred);border:1.5px solid #0e0b0b;font-family:var(--mono);
     font-size:9px;font-weight:900;line-height:12px;color:#fff;letter-spacing:0;}
-  @media(max-width:400px){ .sb-nav button span{display:none;} .sb-nav button{padding:0 9px;} }
+  @media(max-width:520px){ .sb-nav button span{display:none;} .sb-nav button{padding:0 9px;} }
 
   .botnav{position:fixed;left:0;right:0;bottom:0;z-index:44;overflow:visible;
     background:linear-gradient(180deg,#171112,#0b0909);border-top:1px solid var(--line);
@@ -520,10 +520,17 @@
   /* The steel cage: four bar columns on the back apron, a chain-link mesh
      overlay across the front, and a bar frame around the ring. Only visible
      when the arena carries .cage; every other stipulation ignores it. */
+  /* A CAGE IS A ROOM, NOT A BACKDROP. The old one drew a single flat mesh and a
+     fan of bars in ONE layer above the wrestlers, so the chain link lay across
+     their chests and the cage had no sides. It is two layers now: the far wall
+     and the two side walls sit BEHIND the bodies, the near wall sits in front of
+     them at low opacity, and you look at the match through the links the way a
+     camera does. */
+  .arena .cageback{position:absolute;inset:0;pointer-events:none;z-index:2;display:none;}
   .arena .cagelayer{position:absolute;inset:0;pointer-events:none;z-index:5;display:none;}
-  .arena.cage .cagelayer{display:block;}
-  .arena.cage{box-shadow:inset 0 0 90px 30px rgba(0,0,0,.55);}
-  .arena .cagelayer svg{width:100%;height:100%;display:block;}
+  .arena.cage .cageback,.arena.cage .cagelayer{display:block;}
+  .arena.cage{box-shadow:inset 0 0 90px 30px rgba(0,0,0,.62);}
+  .arena .cageback svg,.arena .cagelayer svg{width:100%;height:100%;display:block;}
   /* THE FLOOR. The ring fills the frame, so there was nowhere for a count-out to
      happen: a wrestler "rolled to the floor" and stood in the middle of the ring
      while the referee counted. When a spot spills outside, the camera pulls back
@@ -532,8 +539,8 @@
   .arena .floor{position:absolute;left:0;right:0;bottom:0;height:16%;z-index:0;opacity:0;transition:opacity .45s;
     background:linear-gradient(180deg,#1a1516,#0e0c0c);border-top:1px solid rgba(255,255,255,.06);}
   .arena.wide .floor{opacity:1;}
-  .arena .ringback,.arena .ringfront,.arena .cagelayer{transform-origin:50% 100%;transition:transform .45s ease-out;}
-  .arena.wide .ringback,.arena.wide .ringfront,.arena.wide .cagelayer{transform:scale(.74);}
+  .arena .ringback,.arena .ringfront,.arena .cagelayer,.arena .cageback{transform-origin:50% 100%;transition:transform .45s ease-out;}
+  .arena.wide .ringback,.arena.wide .ringfront,.arena.wide .cagelayer,.arena.wide .cageback{transform:scale(.74);}
   .arena.wide .ringback,.arena.wide .ringfront{height:78%;}
   /* the fourth body is off stage until a spot needs it */
   .fighter.extra{display:none;z-index:3;}
@@ -546,6 +553,39 @@
 
   /* Fighters are positioned from the arena centre and driven entirely from JS,
      so a move can place one wrestler exactly on top of the other. */
+  /* The mash window: big enough to hit without looking away from the match. */
+  .tapwin{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;width:min(86%,420px);
+    text-align:center;background:rgba(8,6,6,.86);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+    padding:16px 18px 14px;border:2px solid var(--gold);border-radius:16px;pointer-events:auto;
+    box-shadow:0 18px 50px -12px rgba(0,0,0,.9), 0 0 0 1px rgba(0,0,0,.6);}
+  .tapwin .tw-p{font-family:var(--display);font-size:26px;line-height:1;color:var(--cream);
+    letter-spacing:.07em;text-transform:uppercase;text-shadow:0 3px 0 #000;}
+  .tapwin .tw-hint{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--gold);opacity:.8;margin-top:5px;}
+  .tapwin .tw-b{display:block;width:100%;margin:11px 0 0;padding:20px 10px 16px;border-radius:14px;
+    border:2px solid #f2d27a;background:linear-gradient(180deg,#f6d97a,#c69a2c);color:#241706;cursor:pointer;
+    font-family:var(--display);letter-spacing:.1em;text-transform:uppercase;
+    box-shadow:0 7px 0 #7a5c12, 0 14px 26px -8px rgba(0,0,0,.8);touch-action:manipulation;
+    -webkit-user-select:none;user-select:none;transition:transform .05s, box-shadow .05s;}
+  .tapwin .tw-b .tw-lab{display:block;font-size:34px;line-height:1;}
+  .tapwin .tw-b .tw-n{display:block;font-family:var(--mono);font-size:13px;font-weight:800;
+    letter-spacing:.14em;margin-top:5px;opacity:.72;}
+  .tapwin .tw-b.hit{transform:translateY(5px);box-shadow:0 2px 0 #7a5c12, 0 6px 14px -6px rgba(0,0,0,.8);}
+  .tapwin .tw-meter{margin-top:11px;height:14px;background:#2a1f0c;border-radius:8px;overflow:hidden;
+    border:1px solid rgba(224,179,65,.35);}
+  .tapwin .tw-meter i{display:block;height:100%;width:0%;border-radius:7px;
+    background:linear-gradient(90deg,#c69a2c,#f6d97a);transition:width .07s linear;}
+  .tapwin .tw-time{margin-top:6px;height:5px;background:#3a1614;border-radius:3px;overflow:hidden;}
+  .tapwin .tw-time i{display:block;height:100%;width:100%;background:var(--brandred);transition:width linear;}
+  @media(max-width:640px){
+    .tapwin{padding:11px 13px 10px;width:min(90%,360px);}
+    .tapwin .tw-p{font-size:20px;} .tapwin .tw-hint{margin-top:3px;}
+    .tapwin .tw-b{padding:15px 8px 12px;margin-top:8px;}
+    .tapwin .tw-b .tw-lab{font-size:28px;}
+    .tapwin .tw-b .tw-n{font-size:12px;margin-top:3px;}
+    .tapwin .tw-meter{margin-top:8px;height:12px;}
+  }
+
   .fighter{position:absolute;bottom:13%;left:50%;width:250px;margin-left:-125px;z-index:3;
     transform-origin:50% 88%;transition:transform .16s ease-out;will-change:transform;}
   .fighter .fbob{animation:bob 1.7s ease-in-out infinite;transform-origin:50% 90%;}
@@ -1760,6 +1800,7 @@
     <div class="crowd" id="crowd"></div>
     <div class="floor"></div>
     <div class="ringback"></div>
+    <div class="cageback" id="fCageB"></div>
     <div class="fighter me" id="fMe"></div>
     <div class="fighter opp" id="fOpp"></div>
     <div class="fighter ref" id="fRef"></div>
@@ -5943,7 +5984,9 @@ function dressArena(root,pid){
   if(back) back.innerHTML=ringSVG(false,T);
   if(front) front.innerHTML=ringSVG(true,T);
   const cage=root.querySelector('.cagelayer');
-  if(cage) cage.innerHTML=cageSVG();
+  if(cage) cage.innerHTML=cageSVG(true);
+  const cageB=root.querySelector('.cageback');
+  if(cageB) cageB.innerHTML=cageSVG(false);
   const cr=root.querySelector('.crowd,.hr-crowd');
   if(cr){
     cr.style.background=venueCSS(T);
@@ -5952,57 +5995,62 @@ function dressArena(root,pid){
   }
   root.style.setProperty('--arGlow',T.glow);
 }
-// The steel cage: four bar posts, a chain-link mesh across the back and front,
-// and a bar frame around the top. Painted once on every arena; the .cage class
-// on the arena decides whether it is visible.
-function cageSVG(){
+/* THE STEEL CAGE, IN TWO HALVES.
+   A cage encloses the ring, so it cannot be one flat sheet of mesh: the far
+   wall and the two side walls belong BEHIND the wrestlers, and only the near
+   wall is between them and the camera. Called twice per arena, once for each
+   layer, and the .cage class on the arena decides whether either is visible.
+
+   The side walls are drawn as converging line sets rather than a pattern fill,
+   because a flat chain-link texture on a surface running away from the camera
+   reads as a wall lying on its side. */
+function cageSVG(front){
   const R=RING;
   const u='cg'+(++RINGN);
-  const bar='#8a8a90', barD='#3a3a40', mesh='#5a5a62';
-  // Chain-link pattern: two diagonal lines per tile
-  const pat = `<defs>
-    <pattern id="${u}m" width="4" height="4" patternUnits="userSpaceOnUse">
-      <line x1="0" y1="0" x2="4" y2="4" stroke="${mesh}" stroke-width="0.6" opacity=".7"/>
-      <line x1="4" y1="0" x2="0" y2="4" stroke="${mesh}" stroke-width="0.6" opacity=".7"/>
-    </pattern>
-  </defs>`;
-  // Top rail runs from post to post; then vertical bars every ~6 units
-  const topY = Math.max(0, R.yTopB - 8);
-  const bars = [];
-  const barCount = 18;
-  for(let i=0;i<=barCount;i++){
-    const x = R.bx1 - 4 + (i/barCount)*(R.bx2 - R.bx1 + 8);
-    bars.push(`<line x1="${x}" y1="${topY}" x2="${x}" y2="${R.yBack}" stroke="${bar}" stroke-width="0.7" opacity=".85" vector-effect="non-scaling-stroke"/>`);
+  const bar='#9a9aa2', barD='#2e2e35', mesh='#7a7a86';
+  const topB=2, topF=16;                    // the cage stands well above the posts
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const ln=(x1,y1,x2,y2,c,w,op)=>`<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${c}" stroke-width="${w}" opacity="${op}" vector-effect="non-scaling-stroke"/>`;
+  const pat=(op)=>`<defs><pattern id="${u}m" width="3.4" height="3.4" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="3.4" y2="3.4" stroke="${mesh}" stroke-width="0.55" opacity="${op}"/>
+      <line x1="3.4" y1="0" x2="0" y2="3.4" stroke="${mesh}" stroke-width="0.55" opacity="${op}"/>
+    </pattern></defs>`;
+
+  /* ---- one wall, as a run of verticals and horizontals that follow its
+     corners. t runs 0 to 1 from the left edge of the wall to the right. ---- */
+  const wall=(ax,aTop,aBot, bx,bTop,bBot, n, op, w)=>{
+    let o='';
+    for(let i=0;i<=n;i++){ const t=i/n;
+      o+=ln(lerp(ax,bx,t), lerp(aTop,bTop,t), lerp(ax,bx,t), lerp(aBot,bBot,t), mesh, w, op); }
+    for(let j=0;j<=5;j++){ const v=j/5;
+      o+=ln(ax, lerp(aTop,aBot,v), bx, lerp(bTop,bBot,v), mesh, w, op*0.85); }
+    return o;
+  };
+
+  if(!front){
+    // ---- behind the wrestlers: the far wall and both sides ----
+    const far=`<polygon points="${R.bx1},${topB} ${R.bx2},${topB} ${R.bx2},${R.yBack} ${R.bx1},${R.yBack}" fill="url(#${u}m)" opacity=".85"/>`;
+    const shade=`<polygon points="${R.bx1},${topB} ${R.bx2},${topB} ${R.bx2},${R.yBack} ${R.bx1},${R.yBack}" fill="rgba(0,0,0,.34)"/>`;
+    const left = wall(R.fx1, topF, R.yFront, R.bx1, topB, R.yBack, 9, 0.5, 0.55);
+    const right= wall(R.bx2, topB, R.yBack,  R.fx2, topF, R.yFront, 9, 0.5, 0.55);
+    // the two far posts, and the rail they carry
+    const post=(x,y1,y2)=>ln(x,y1,x,y2,barD,3.4,1)+ln(x,y1,x,y2,bar,1.5,1);
+    return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      ${pat(0.7)}${shade}${far}${left}${right}
+      ${post(R.bx1,topB,R.yBack)}${post(R.bx2,topB,R.yBack)}
+      ${ln(R.bx1,topB,R.bx2,topB,barD,2.6,1)}${ln(R.bx1,topB,R.bx2,topB,bar,1.3,1)}
+    </svg>`;
   }
-  // Front cage bars angle out with the ring perspective
-  const fbars = [];
-  const frontBarCount = 22;
-  for(let i=0;i<=frontBarCount;i++){
-    const t = i/frontBarCount;
-    const xB = R.bx1 - 4 + t*(R.bx2 - R.bx1 + 8);
-    const xF = R.fx1 - 6 + t*(R.fx2 - R.fx1 + 12);
-    fbars.push(`<line x1="${xB}" y1="${topY}" x2="${xF}" y2="${R.yFront}" stroke="${bar}" stroke-width="0.55" opacity=".55" vector-effect="non-scaling-stroke"/>`);
-  }
-  // Four corner posts, taller and darker so the cage reads as a frame
-  const cornerH = topY - 6;
-  const corners = [R.bx1, R.bx2, R.fx1, R.fx2].map((x,i)=>{
-    const yTop = i<2 ? topY : R.yTopF - 6;
-    const yBot = i<2 ? R.yBack : R.yFront;
-    return `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBot}" stroke="${barD}" stroke-width="3" vector-effect="non-scaling-stroke"/>
-            <line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBot}" stroke="${bar}" stroke-width="1.4" vector-effect="non-scaling-stroke"/>`;
-  }).join('');
-  // Top horizontal rail
-  const topRail = `<line x1="${R.bx1-4}" y1="${topY}" x2="${R.bx2+4}" y2="${topY}" stroke="${barD}" stroke-width="2.4" vector-effect="non-scaling-stroke"/>
-                   <line x1="${R.bx1-4}" y1="${topY}" x2="${R.bx2+4}" y2="${topY}" stroke="${bar}" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`;
-  // A translucent mesh polygon behind the bars to sell the chain-link
-  const meshBack = `<polygon points="${R.bx1-4},${topY} ${R.bx2+4},${topY} ${R.bx2+4},${R.yBack} ${R.bx1-4},${R.yBack}" fill="url(#${u}m)"/>`;
+  // ---- in front of them: the near wall, faint enough to see the match through ----
+  const near = wall(R.fx1, topF, R.yFront, R.fx2, topF, R.yFront, 22, 0.30, 0.5);
+  const post=(x)=>ln(x,topF,x,R.yFront,barD,3.8,0.9)+ln(x,topF,x,R.yFront,bar,1.6,0.75);
+  // the rails that join the near posts to the far ones, which is what makes it
+  // read as a box rather than two separate fences
+  const rails = ln(R.fx1,topF,R.bx1,topB,bar,1.1,0.55)+ln(R.fx2,topF,R.bx2,topB,bar,1.1,0.55);
   return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-    ${pat}
-    ${meshBack}
-    ${bars.join('')}
-    ${topRail}
-    ${corners}
-    ${fbars.join('')}
+    ${pat(0.5)}${near}${rails}
+    ${post(R.fx1)}${post(R.fx2)}
+    ${ln(R.fx1,topF,R.fx2,topF,barD,2.8,0.92)}${ln(R.fx1,topF,R.fx2,topF,bar,1.4,0.8)}
   </svg>`;
 }
 
@@ -7489,23 +7537,57 @@ function fLog(html,cls){ const el=$('fLog'); const d=document.createElement('div
 // A shared tap window. Shows a big prompt with a Tap button for `ms` and
 // resolves true if the player taps in time. Used by the kickout beat, the
 // submission escape and the ladder climb. One primitive, three uses.
-function tapWindow(ms, prompt){
+/* THE MASH WINDOW.
+   Kicking out, beating the count and getting up a ladder are the three moments
+   the player actually DOES something, and they were a single small button on a
+   short timer: one tap, done, and easy to miss entirely on a phone. They are a
+   mash now. The button is big enough to hit without looking, the window is long
+   enough to react to, and the meter DRAINS while it is open, so filling it means
+   hitting the thing repeatedly rather than tapping once and waiting.
+
+   `ms` stays the caller's sense of how urgent the moment is; the real window is
+   a multiple of it. Callers can pass `taps` to make a moment harder. */
+function tapWindow(ms, prompt, opts){
+  opts=opts||{};
   // a headless harness cannot press the button: RTR_AUTO.tap answers for it
   if(window.RTR_AUTO && RTR_AUTO.tap!=null){ return sleep(Math.min(ms,120)).then(()=>!!RTR_AUTO.tap); }
   return new Promise(res=>{
     const arena=$('arena'); if(!arena){ res(false); return; }
+    const need = Math.max(3, opts.taps||8);
+    const dur  = Math.round((ms||600) * (opts.slow||2.6));
     const wrap=document.createElement('div');
     wrap.className='tapwin';
-    wrap.style.cssText='position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:9;text-align:center;background:rgba(0,0,0,.72);padding:14px 22px;border:2px solid var(--gold);border-radius:12px;pointer-events:auto;';
-    wrap.innerHTML=`<div style="font-family:var(--display);font-size:18px;color:var(--cream);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">${prompt||'TAP NOW'}</div>
-      <button class="big" style="min-width:120px;padding:10px 26px;" id="_tapBtn">TAP</button>
-      <div class="_tapBar" style="margin-top:8px;height:6px;background:#3a2a10;border-radius:3px;overflow:hidden;"><i id="_tapFill" style="display:block;height:100%;width:100%;background:var(--gold);transition:width ${ms}ms linear;"></i></div>`;
+    wrap.innerHTML=`<div class="tw-p">${prompt||'TAP NOW'}</div>
+      <div class="tw-hint">hit it, fast</div>
+      <button class="tw-b" id="_tapBtn" type="button"><span class="tw-lab">TAP</span><span class="tw-n" id="_tapN">0 / ${need}</span></button>
+      <div class="tw-meter"><i id="_tapFill"></i></div>
+      <div class="tw-time"><i id="_tapTime"></i></div>`;
     arena.appendChild(wrap);
-    let done=false;
-    const finish=(ok)=>{ if(done) return; done=true; try{ arena.removeChild(wrap); }catch(_e){} res(!!ok); };
-    document.getElementById('_tapBtn').onclick=()=>finish(true);
-    requestAnimationFrame(()=>{ const f=document.getElementById('_tapFill'); if(f) f.style.width='0%'; });
-    setTimeout(()=>finish(false), ms);
+    let done=false, hits=0;
+    const btn=document.getElementById('_tapBtn');
+    const paint=()=>{
+      const f=document.getElementById('_tapFill');
+      if(f) f.style.width=Math.max(0,Math.min(100,(hits/need)*100)).toFixed(1)+'%';
+      const n=document.getElementById('_tapN');
+      if(n) n.textContent=Math.max(0,Math.min(need,Math.floor(hits)))+' / '+need;
+    };
+    const finish=(ok)=>{ if(done) return; done=true; clearInterval(drain);
+      try{ arena.removeChild(wrap); }catch(_e){} res(!!ok); };
+    const hit=(e)=>{
+      if(e){ e.preventDefault(); e.stopPropagation(); }
+      if(done) return;
+      hits++; paint();
+      btn.classList.remove('hit'); void btn.offsetWidth; btn.classList.add('hit');
+      try{ sfx('count'); }catch(_e){}
+      if(hits>=need) finish(true);
+    };
+    // pointerdown, not click: a mash should register on the way down
+    btn.addEventListener('pointerdown', hit);
+    // and it drains, so this is a mash rather than eight taps at your leisure
+    const drain=setInterval(()=>{ if(done) return; if(hits>0){ hits=Math.max(0,hits-0.30); paint(); } }, 150);
+    const tm=document.getElementById('_tapTime');
+    requestAnimationFrame(()=>{ if(tm){ tm.style.transitionDuration=dur+'ms'; tm.style.width='0%'; } });
+    setTimeout(()=>finish(false), dur);
   });
 }
 /* Commentator colour: one voice for each move category, one for phase turns.
@@ -9131,7 +9213,7 @@ async function runFight(){
         MS.me.hp=clamp(MS.me.hp-7); setBar('hpMe',MS.me.hp);
         MS.quality+=5;
         await sleep(420); await settle(280);
-      } else if(theirs && MS.opp.limb[theirs]>=80 && !MS.gaveOut_opp && rnd()<0.16){
+      } else if(theirs && MS.opp.limb[theirs]>=80 && !MS.gaveOut_opp && !randomBeatsOff() && rnd()<0.16){
         MS.gaveOut_opp=true; trace('limb');
         busy(true);
         fmv('opp',{pose:'stagger',rot:-6},170); await sleep(180);
@@ -9343,7 +9425,11 @@ async function runFight(){
     // do not permit weapons. Tolerance from the referee's personality
     // decides how far you can push before the bell.
     const _tol = (MS.ref && MS.ref.tolerate) || 0;
-    if(!MS.ended && !stipRules(o).noDQ && !stipRules(o).lenient && (forced('dq') || (MS.mom<-40 && MS.opp.hp>50 && rnd()<Math.max(0, 0.02 - _tol*0.03)))){
+    // The random branch honours randomBeatsOff() like every other beat in this
+    // loop. It did not, so a match pinned to prove some other spot could still
+    // be ended by a stray disqualification before that spot ever got a turn.
+    if(!MS.ended && !stipRules(o).noDQ && !stipRules(o).lenient
+       && (forced('dq') || (!randomBeatsOff() && MS.mom<-40 && MS.opp.hp>50 && rnd()<Math.max(0, 0.02 - _tol*0.03)))){
       // the shot, with the referee turned; then he turns round
       busy(true);
       if(FIG.ref){ refTo(Math.round((atX('me')<0?-1:1)*ST.W*0.30),'refIdle',260,0.86); FIG.ref.dir = atX('ref')<0?-1:1; fmv('ref',{},0); }
@@ -9417,7 +9503,7 @@ async function runFight(){
     // losing late, and only if you work heel. Wins ugly, real character cost.
     const refTolDirty = (MS.ref && MS.ref.tolerate) || 0;
     if(!MS.ended && !MS.dirty && G.w.align==='heel' && !stipRules(o).noDQ
-       && (forced('belt') || (ph.id==='stretch' && MS.mom<-40 && MS.opp.hp>40 && rnd()<Math.max(0.10, 0.20 + refTolDirty*0.6)))){
+       && (forced('belt') || (!randomBeatsOff() && ph.id==='stretch' && MS.mom<-40 && MS.opp.hp>40 && rnd()<Math.max(0.10, 0.20 + refTolDirty*0.6)))){
       MS.dirty=true;
       // the official's back is turned, and the stage shows it
       if(FIG.ref){ refTo(Math.round((atX('me')<0?-1:1)*ST.W*0.30),'refIdle',260,0.86); FIG.ref.dir = atX('ref')<0?-1:1; fmv('ref',{},0); }
@@ -9693,6 +9779,19 @@ async function submissionAttempt(byMe, mvName){
     }
   }
   const rulesAllowSub = stipRules(MS.o).ends.includes('sub');
+  /* AND THE THIRD BODY BREAKS THE HOLD. A tap in a triple threat with somebody
+     free at ringside is the fall he exists to prevent, so a hold is no safer
+     than a cover here. This was only wired into pinSequence, which meant a
+     triple threat that went to a submission never saw him at all. */
+  if(isTriple() && !MS.thirdBusy && !MS.ended && rulesAllowSub && MS.phase>=3 && pTap>0.25
+     && (MS.thirdBreaks||0)<2 && (pinnedIs('breakup') || !MS.thirdBreaks || rnd()<0.45)){
+    MS.thirdBreaks=(MS.thirdBreaks||0)+1;
+    await tripleBreakUp(Math.round(atX(D)*0.30), A);
+    if(!MS||MS.ended) return false;
+    MS.mom=clamp(MS.mom+(byMe?-10:10),-100,100); setMom();
+    refDrift(); await settle(300);
+    return false;
+  }
   /* THE ARM DROP. The referee lifts the arm and lets it fall. Once. Twice. On
      the third the building is silent, and it either drops or it stops halfway
      and the fist closes. It is the pin count of submissions, and this hold had
@@ -9789,9 +9888,9 @@ async function climbAttempt(){
   // If YOU are on the mat, tapping brings you back to your feet to intercept.
   let climbBoost=0;
   if(iAmClimbing){
-    climbBoost = (await tapWindow(650, 'CLIMB!')) ? 0.20 : 0;
+    climbBoost = (await tapWindow(650, 'CLIMB!', {taps:11, slow:3.2})) ? 0.20 : 0;
   } else {
-    climbBoost = (await tapWindow(650, 'STOP THEM!')) ? -0.30 : 0;
+    climbBoost = (await tapWindow(650, 'STOP THEM!', {taps:11, slow:3.2})) ? -0.30 : 0;
   }
   // The one on the mat has a puncher's chance to reach up and drag them back.
   const dragPow = (100 - (iAmClimbing?MS.opp.hp:MS.me.hp))*0.4;
@@ -9993,7 +10092,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     // the two-count. Beat the timer and the crowd erupts, momentum spikes.
     let hardKickout=false;
     if(!iAmPinning){
-      hardKickout = await tapWindow(560, 'KICK OUT!');
+      hardKickout = await tapWindow(560, 'KICK OUT!', {taps:7, slow:2.8});
     }
     poseSet('ref','refUp'); await sleep(430);
     if(stale()) return false;
@@ -12003,7 +12102,7 @@ async function runRumble(o){
   // a real exchange for it, and a window: the last shove is yours to time
   await exchange(true,'a forearm',6,8,'POW!','strike');
   await exchange(false,'a clothesline',6,-8,null,'runner');
-  const timed = await tapWindow(720,'DUMP THEM!');
+  const timed = await tapWindow(720,'DUMP THEM!', {taps:10, slow:2.8});
   const meScore = ovr(G.w) + rnd()*20 + (timed?7:0);
   const otherScore = (other?other.ovr:60) + rnd()*20;
   const iWin = meScore > otherScore;
