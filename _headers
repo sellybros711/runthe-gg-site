@@ -55,3 +55,41 @@
 # cache hard (override the broad no-cache above for these extensions).
 /arcade/assets/*
   Cache-Control: public, max-age=604800
+
+# EVERY OTHER PAGE SERVED AT A DIRECTORY URL, for the reason the arcade block
+# above states: the request path for runthe.gg/mythiball/ is "/mythiball/",
+# which does not end in ".html", so the /*.html rule never matched it. Only
+# /setlist/ and /arcade/ had ever been given their own line, so the other
+# eighteen pages on this site fell through to whatever the browser decided.
+#
+# That is the rule this file opens by stating, applied to the pages it was
+# missing. A push to main should reach a phone on the next load; without this
+# a tester can sit on a cached copy and report a screen that no longer exists.
+/baseball/
+  Cache-Control: no-cache
+/cfb/
+  Cache-Control: no-cache
+/challenge/
+  Cache-Control: no-cache
+/football/
+  Cache-Control: no-cache
+/globe/
+  Cache-Control: no-cache
+/golf/
+  Cache-Control: no-cache
+/hoops/
+  Cache-Control: no-cache
+/ideas/
+  Cache-Control: no-cache
+/mythiball/
+  Cache-Control: no-cache
+/pitch/
+  Cache-Control: no-cache
+/soccer/
+  Cache-Control: no-cache
+/touchdown/
+  Cache-Control: no-cache
+/watch/
+  Cache-Control: no-cache
+/wrestling/
+  Cache-Control: no-cache
