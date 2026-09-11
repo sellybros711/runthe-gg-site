@@ -116,20 +116,59 @@ const INJECT = 'beginDynastyDraft,premiumSheet,profileSheet,pfPro,acctTier,premi
 const t = await openPage(browser, 'http://local.test/football/', { tester: true, inject: INJECT });
 await t.page.evaluate(() => window.__t.signIn());
 
-for (const [who, owns] of [['a tester with no row', []], ['a tester holding ps_premium', ['ps_premium', 'cfb_premium']]]) {
-  const r = await t.page.evaluate((owns) => {
+/* THE RULES SHEET IS SHOWN ONCE PER BROWSER, so the first dynasty and every later one take
+   different paths through dynastyIntro. The dead button only appeared on the second, which
+   is the path almost every real press is. Both are driven. */
+for (const seenIntro of [false, true]) {
+console.log('  ' + (seenIntro ? 'having already seen the rules sheet:' : 'first dynasty in this browser:'));
+await t.page.evaluate((seen) => {
+  try { if (seen) localStorage.setItem('ps_dynintro', '1');
+    else localStorage.removeItem('ps_dynintro'); } catch (e) {}
+  window.__dynIntro = seen || undefined;
+}, seenIntro);
+/*
+ * THREE ACCOUNTS, AND THE FIRST ONE IS THE ONE THAT BROKE.
+ *
+ * A rowless tester WITH A RUN LEFT is the ordinary case: almost every press of Start a
+ * dynasty is this. The two cases below it were the only ones being checked, and both have a
+ * reason not to reach the draft (one is out of runs, the other owns the mode), so a gate
+ * that silently refused everybody without a row passed the whole suite while the button did
+ * nothing at all for the people using it.
+ */
+for (const [who, owns, day, want] of [
+  ['a tester with no row and a run left', [], { used: 0, allowance: 1 }, 'the mode'],
+  ['a tester with no row and none left', [], { used: 9, allowance: 1 }, 'the store on the spent sheet'],
+  ['a tester holding ps_premium', ['ps_premium', 'cfb_premium'], { used: 9, allowance: 1 }, 'the mode'],
+]) {
+  const r = await t.page.evaluate(([owns, day]) => {
     const T = window.__t;
     T.setPremium(owns);
-    const spent = { used: 9, allowance: 1, resetsAt: new Date(Date.now() + 3600e3).toISOString() };
-    T.setDaily('dynasty', spent); T.setDaily('trade', spent);
+    const st = { used: day.used, allowance: day.allowance,
+      resetsAt: new Date(Date.now() + 3600e3).toISOString() };
+    T.setDaily('dynasty', st); T.setDaily('trade', st);
+    /* And no saved run, or the replace sheet stands between the press and the draft. */
+    try { localStorage.removeItem('ps_dynasty_save'); } catch (e) {}
     document.getElementById('sheet').classList.remove('on');
     document.getElementById('sheet-in').dataset.kind = '';
     T.beginDynastyDraft();
+    /*
+     * THE END OF THE JOURNEY, NOT THE FIRST STEP OF IT.
+     *
+     * This used to count the rules sheet (#b-dyni-go) as "the mode", and that is exactly
+     * how a dead button got shipped: a SECOND ownership gate inside beginDraft returned
+     * silently one step later, so the rules sheet opened, Draft my team did nothing, and
+     * this check said the door was fine. Press through whatever stands in the way and
+     * insist on the draft screen itself.
+     */
+    const go = document.getElementById('b-dyni-go');
+    if (go) go.click();
     const kind = document.getElementById('sheet-in').dataset.kind;
-    const door = kind === 'premium' ? 'store' : kind === 'daily' ? 'the store on the spent sheet'
-      : (document.getElementById('b-dyni-go')
-        || [...document.querySelectorAll('.screen.on')].some((s) => s.id === 's-draft')
-        ? 'the mode' : 'nowhere (' + kind + ')');
+    const onDraft = [...document.querySelectorAll('.screen.on')].some((s) => s.id === 's-draft');
+    const door = onDraft ? 'the mode'
+      : kind === 'premium' ? 'store'
+      : kind === 'daily' ? 'the store on the spent sheet'
+      : 'nowhere (sheet=' + (kind || 'none') + ', screens='
+        + [...document.querySelectorAll('.screen.on')].map((s) => s.id).join(',') + ')';
     /* THE SPENT DOOR CARRIES THE OFFER ITSELF, not a card that opens it. Read before the
        profile sheet replaces the box. */
     const box = document.getElementById('sheet-in');
@@ -141,18 +180,17 @@ for (const [who, owns] of [['a tester with no row', []], ['a tester holding ps_p
     return { door, store, tier: T.acctTier(), pitch: T.premiumPitch(), metered: T.dailyOn(),
       goPro: !!document.getElementById('pf-prem'),
       proAccess: !!document.getElementById('pf-go-pro') };
-  }, owns);
+  }, [owns, day]);
   console.log('  ' + who + ':');
   const owner = owns.length > 0;
-  ok('    a spent day opens ' + (owner ? 'the mode' : 'the store'),
-    r.door === (owner ? 'the mode' : 'the store on the spent sheet'), r.door);
+  ok('    pressing the door reaches ' + want, r.door === want, r.door);
   ok('    dailyOn() is ' + (owner ? 'off' : 'on'), r.metered === !owner, String(r.metered));
   ok('    acctTier() is ' + (owner ? 'pro' : 'free'), r.tier === (owner ? 'pro' : 'free'), r.tier);
   ok('    premiumPitch() ' + (owner ? 'stands down' : 'offers'), r.pitch === !owner);
   ok('    the profile shows ' + (owner ? 'Your Pro access' : 'Go Pro'),
     owner ? (r.proAccess && !r.goPro) : (r.goPro && !r.proAccess),
     'goPro=' + r.goPro + ' proAccess=' + r.proAccess);
-  if (!owner) {
+  if (!owner && want !== 'the mode') {
     /* The spent door was a card linking to the store, which is a second tap between
        somebody who has just decided they want more and the thing that sells it. */
     ok('    the spent door draws the bundle itself',
@@ -162,6 +200,14 @@ for (const [who, owns] of [['a tester with no row', []], ['a tester holding ps_p
       r.store.from.join(' | ') === 'Perfect Season | Perfect Season | College Football',
       r.store.from.join(' | '));
   }
+  /* Back to the front page for the next case, whichever screen the last one ended on. */
+  await t.page.evaluate(() => {
+    document.getElementById('sheet').classList.remove('on');
+    if (typeof window.__t.backToStart === 'function') window.__t.backToStart();
+    document.querySelectorAll('.screen.on').forEach((s) => s.classList.remove('on'));
+    document.getElementById('s-intro').classList.add('on');
+  });
+}
 }
 
 console.log('\nTHE STORE POSTS THE CATALOG KEYS AND NOTHING ELSE');
