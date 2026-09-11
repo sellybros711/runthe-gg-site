@@ -47,6 +47,9 @@
     '  /* BIGGER, BECAUSE THE ART IS NOW WORTH THE ROOM. 28px was sized for line icons and it is\n' +
     '     the size a favicon is: solid shapes with an inset detail need the space or the detail\n' +
     '     closes up. */\n' +
+    '  .pw-from{display:block;font-family:var(--fn);font-size:7.5px;font-weight:800;\n' +
+    '    letter-spacing:.1em;text-transform:uppercase;color:var(--gc);line-height:1.2;\n' +
+    '    margin:0 0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n' +
     '  .pw-tile svg{width:40px;height:40px;display:block;margin:0 auto;\n' +
     '    filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))}\n' +
     '  .pw-tile b{display:block;font-family:var(--fn);font-size:10.5px;letter-spacing:.07em;\n' +
@@ -240,11 +243,25 @@
         '<stop offset="1" stop-color="#d97706"/></linearGradient></defs>'+
       PW_ART[k].replace(/\{g\}/g,'url(#'+id+')')+'</svg>';
   }
-  const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwArt(k)+'<b>'+esc(name)+'</b>'+
+  /* WHICH GAME EACH MODE IS IN, on the tile.
+     The three tiles named Dynasty, Trade Machine and Commissioner and left a reader to work
+     out that the first two are the NFL game and the third is the college one. That is the
+     whole reason the bundle is worth $19.99 rather than feeling like three things from one
+     game, and it was only said further down, in the itemised cards. Same colour coding as
+     those cards, out of the same PW_GAME table, so the tile and the line it is sold on
+     cannot disagree about which game a mode belongs to. */
+  const pwTile=(k,name,line,gameKey)=>'<div class="pw-tile">'+
+    (gameKey&&PW_GAME[gameKey]
+      ? '<span class="pw-from" style="--gc:'+PW_GAME[gameKey].c+'">'+
+          esc(PW_GAME[gameKey].shortName||PW_GAME[gameKey].name)+'</span>'
+      : '')+
+    pwArt(k)+'<b>'+esc(name)+'</b>'+
     '<i>'+esc(line)+'</i></div>';
   const PW_GAME={
-    ps:{name:'The Perfect Season',c:'#f87171'},
-    cfb:{name:CFB_NAME,c:'#10b981'},
+    /* shortName is for the tiles, where the full name does not fit a third of a phone.
+     The cards below always use `name`. */
+    ps:{name:'The Perfect Season',c:'#f87171',shortName:'Perfect Season'},
+    cfb:{name:CFB_NAME,c:'#10b981',shortName:'College Football'},
     arcade:{name:'Run The Arcade',c:'#FF8A3D'},
     tour:{name:'Run The Tour',c:'#22b8cf'}
   };
@@ -295,9 +312,9 @@
     Dynasty is invisible to everybody off the tester list, so the row used to promote
     two doors most readers cannot open and stay quiet about the one they can. Buying
     ps_premium switches the Trade Machine's daily meter off. See dailyOn(). */
-    pwTile('trophy','Dynasty','Endless arcade mode')+
-    pwTile('swap','Trade Machine','Unlimited runs')+
-    pwTile('clipboard','Commissioner','Can you save College Football?')+
+    pwTile('trophy','Dynasty','Endless arcade mode','ps')+
+    pwTile('swap','Trade Machine','Unlimited runs','ps')+
+    pwTile('clipboard','Commissioner','Can you save College Football?','cfb')+
     '</div>'+
 
     '<div class="pw-tier">'+

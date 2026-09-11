@@ -125,9 +125,15 @@ for (const [who, owns] of [['a tester with no row', []], ['a tester holding ps_p
       : (document.getElementById('b-dyni-go')
         || [...document.querySelectorAll('.screen.on')].some((s) => s.id === 's-draft')
         ? 'the mode' : 'nowhere (' + kind + ')');
+    /* THE SPENT DOOR CARRIES THE OFFER ITSELF, not a card that opens it. Read before the
+       profile sheet replaces the box. */
+    const box = document.getElementById('sheet-in');
+    const store = { tiles: [...box.querySelectorAll('.pw-tile b')].map((x) => x.textContent),
+      from: [...box.querySelectorAll('.pw-from')].map((x) => x.textContent),
+      buys: box.querySelectorAll('.pw-tier .btn').length };
     document.getElementById('sheet').classList.remove('on');
     T.profileSheet();
-    return { door, tier: T.acctTier(), pitch: T.premiumPitch(), metered: T.dailyOn(),
+    return { door, store, tier: T.acctTier(), pitch: T.premiumPitch(), metered: T.dailyOn(),
       goPro: !!document.getElementById('pf-prem'),
       proAccess: !!document.getElementById('pf-go-pro') };
   }, owns);
@@ -141,6 +147,16 @@ for (const [who, owns] of [['a tester with no row', []], ['a tester holding ps_p
   ok('    the profile shows ' + (owner ? 'Your Pro access' : 'Go Pro'),
     owner ? (r.proAccess && !r.goPro) : (r.goPro && !r.proAccess),
     'goPro=' + r.goPro + ' proAccess=' + r.proAccess);
+  if (!owner) {
+    /* The spent door was a card linking to the store, which is a second tap between
+       somebody who has just decided they want more and the thing that sells it. */
+    ok('    the spent door draws the bundle itself',
+      r.store.tiles.length === 3 && r.store.buys === 2,
+      r.store.tiles.join(', ') + ' / ' + r.store.buys + ' buy buttons');
+    ok('    and every tile says which game it is in',
+      r.store.from.join(' | ') === 'Perfect Season | Perfect Season | College Football',
+      r.store.from.join(' | '));
+  }
 }
 
 console.log('\nTHE STORE POSTS THE CATALOG KEYS AND NOTHING ELSE');

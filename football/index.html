@@ -7379,7 +7379,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=2"></script>
+<script src="/assets/store.js?v=3"></script>
 <script defer src="auth.js?v=5"></script>
 <script>
 (function(){
@@ -9145,24 +9145,30 @@ function dailySpentSheet(mode){
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+
       'A run you have already started is never affected. You can carry it on any day, for as '+
       'many days as it lasts.</p>'+
-    /* THE UPGRADE, AT THE ONE MOMENT SOMEBODY IS ACTUALLY ASKING FOR IT. This screen exists
-       because a player wanted another run and could not have one, which makes it the most
-       honest place in the game to mention that another run is for sale. It is a card rather
-       than a wall: Close is still right there, and nothing here blocks tomorrow's free run.
+    /* THE OFFER ITSELF, AT THE ONE MOMENT SOMEBODY IS ACTUALLY ASKING FOR IT.
+       This screen exists because a player wanted another run and could not have one, which
+       makes it the most honest place in the game to show what another run costs.
+       IT USED TO BE A CARD THAT OPENED THE STORE, and a card is a second tap between
+       somebody who has just decided they want more and the thing that gives it to them. The
+       spent door is not a place to advertise the store, it IS the store, so the offer is
+       drawn here in full: the same two bundles, out of /assets/store.js, the same as every
+       other premium door.
+       WHAT STAYS ABOVE IT is the part only this screen knows: how many runs today was worth,
+       when the next one unlocks, and that a run already going is never affected. None of
+       that is a sales line and all of it is true whether or not anybody buys.
        Left off entirely for an owner, who is not being limited, and before launch for
-       anybody outside the tester list.
-       THE HEADLINE NAMES THE MODE THE DOOR BELONGS TO. It said "unlimited dynasty runs" on
-       both, so the Trade Machine's own limit was answered by an offer about a different
-       mode. Pro lifts both, which is what the line under it says. */
-    (premiumPitch()
-      ? pwCard('b-daily-prem','Play unlimited '+(mode==='trade'?'Trade Machine':'Dynasty')+' runs',
-          'Pro removes the daily limit on every mode, and unlocks the Pro ones.','Unlimited')
+       anybody outside the tester list, which is what premiumPitch() answers. */
+    (premiumPitch()&&window.RTG_STORE
+      ? '<div style="margin-top:15px;padding-top:15px;border-top:1px solid var(--line)">'+
+          window.RTG_STORE.html({signedOut:!authState.signedIn})+'</div>'
       : '')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>';
   $('sheet-in').dataset.kind='daily';
   openSheet();
-  const up=$('b-daily-prem');
-  if(up) up.onclick=()=>openPremium('daily_limit_'+mode);
+  if(premiumPitch()&&window.RTG_STORE){
+    window.RTG_STORE.wire($('sheet-in'),{buy:(kind)=>beginBundleCheckout(kind)});
+    ga('premium_sheet_shown',{from:'daily_limit_'+mode,tier:acctTier()||'out'});
+  }
   $('sh-x').onclick=closeSheet;
 }
 
