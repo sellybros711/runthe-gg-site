@@ -610,6 +610,45 @@
   .clubtabs .tab:hover{background:var(--gold);color:#fff6ea;}
   .clubtabs .tab:active{transform:translate(2px,2px);box-shadow:none;}
 
+  /* THE PHONE MENU.
+     A DEPICTED ROOM CANNOT CARRY THIS SCREEN ON A PHONE, and five goes at
+     it is enough evidence. Four modes need four labels a thumb's length
+     apart and readable at arm's length. Four lockers side by side in 358
+     CSS pixels are 89 each, and EXHIBITION does not fit on 89. Force them
+     into a grid instead and they stop being lockers: frames hung on a wall
+     holding a bat rack, a clipboard, a framed photo and a chalkboard, four
+     objects whose real sizes are nothing like each other, above two people
+     as tall as one frame. It stopped depicting anything.
+
+     So the phone stops pretending. This is a menu: real buttons with real
+     text at a real size, each with the mode's own drawing as an icon, and
+     the clubhouse present as a strip of floor with the team standing on it
+     rather than as a room the page is trying to be inside. Nothing here
+     can arrive at half the size it was asked for, because none of it is
+     painted into a canvas that gets scaled.
+
+     The desktop keeps the room. It has the width for it and a pointer to
+     drive the rail, which is what the room was designed around. */
+  .ph-strip{display:block;width:100%;height:auto;image-rendering:pixelated;
+    border:3px solid var(--line);box-shadow:4px 4px 0 var(--navy);
+    background:#9c6b3a;}
+  .ph-menu{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+  .ph-door{display:flex;align-items:center;gap:12px;width:100%;
+    font:inherit;text-align:left;cursor:pointer;padding:10px 12px;
+    background:var(--panel);border:3px solid var(--line);
+    box-shadow:4px 4px 0 var(--navy);}
+  .ph-door:active{transform:translate(3px,3px);box-shadow:none;}
+  .ph-door canvas{display:block;flex:none;width:58px;height:58px;
+    image-rendering:pixelated;background:#6b4a24;border:2px solid var(--line);}
+  .ph-door .ph-txt{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .ph-door b{font-size:19px;font-weight:900;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--red);line-height:1.05;}
+  .ph-door span{font-size:12px;color:var(--text-dim);letter-spacing:.04em;}
+  @media (max-width:340px){
+    .ph-door b{font-size:16px;letter-spacing:.04em;}
+    .ph-door canvas{width:48px;height:48px;}
+  }
+
   /* THE ROOM FILLS THE WINDOW.
      On a phone the room IS the interface. The four things on the wall are
      what you touch, the canvas takes the whole card, and the rail goes: it
@@ -618,37 +657,10 @@
      and the signs on the wall already name every door.
 
      THE CONDITION IS A CLASS, NOT A MEDIA QUERY, and that is deliberate.
-     roomForWindow composes the scene to the shape of the box these rules
-     make, so the script and the stylesheet have to agree about which
-     windows they apply to. Written out in both places they drift, and the
-     way that shows is a letterboxed picture with the hotspots left where
-     they were. There is one matchMedia in the script and this keys off
-     what it sets. */
-  /* HEIGHT, NOT MIN-HEIGHT. With a minimum, the column is still content
-     sized: a canvas an inch too tall grows the wrap past the window
-     instead of being squeezed, every flex:1 below it grows with it, and
-     the page scrolls. That is what a min-height did here. A definite
-     height makes the free space a fixed quantity, so the room is handed
-     what is left and fits itself into it. */
-  body.inroom.roomfill .wrap{display:flex;flex-direction:column;height:100vh;
-    height:100dvh;padding-bottom:8px;max-width:none;}
-  /* #app is the div every screen is rendered into. It is the one link in
-     the chain that is not the game's own markup, and leaving it a block
-     capped everything below it at its content height: the wrap filled the
-     screen and the card inside it still stopped short. */
-  body.inroom.roomfill #app{flex:1;display:flex;flex-direction:column;min-height:0;}
-  body.inroom.roomfill .screen{flex:1;display:flex;flex-direction:column;min-height:0;}
-  body.inroom.roomfill .card{flex:1;display:flex;flex-direction:column;min-height:0;
-    padding:6px;}
-  body.inroom.roomfill .roomwrap{flex:1;display:flex;flex-direction:column;min-height:0;
-    max-width:none;}
-  body.inroom.roomfill .clubhouse{flex:1;min-height:0;display:flex;}
-  /* The canvas carries the room's own aspect, so it is told to fit INSIDE
-     the space both ways and centre. Height alone would overflow the width
-     on a wide phone; width alone would leave a band under it on a narrow
-     one. */
-  body.inroom.roomfill .clubhouse canvas{width:100%;height:100%;object-fit:contain;
-    object-position:center;}
+     The script decides which MENU a window gets (the room, or the phone
+     one above), and the stylesheet has to agree about which windows those
+     are. Written out in both places they drift. There is one matchMedia in
+     the script and this keys off what it sets. */
   body.roomfill .clubhouse-rail{display:none;}
   body.roomfill .clubtabs{margin:6px auto 0;width:100%;}
   body.roomfill .clubtabs .tab{flex:1;text-align:center;border-top:3px solid var(--line);}
@@ -664,8 +676,6 @@
     .brand h1{font-size:14px;letter-spacing:.1em;text-shadow:1px 1px 0 var(--navy);}
     .brand .tag{display:none;}
     .brand button{font-size:9px;padding:3px 7px;}
-    body.inroom.roomfill .card{padding:4px;}
-    body.inroom.roomfill .screen{padding:4px 0 0;}
     body.roomfill .clubtabs{margin:4px auto 0;}
     body.roomfill .clubtabs .tab{padding:5px 10px;font-size:10px;}
 
@@ -3171,7 +3181,9 @@ function render() {
   const s = State.screen;
   document.body.classList.toggle('ingame', s === 'game');
   /* The clubhouse is the home page, so on the menu the page gets out of its way. */
-  document.body.classList.toggle('inroom', s === 'menu');
+  /* `inroom` is the ROOM's page layout, so it is off when the menu is the
+     phone one: there is no canvas to fill the window with. */
+  document.body.classList.toggle('inroom', s === 'menu' && !ROOMFILL.matches);
   document.body.classList.toggle('roomfill', ROOMFILL.matches);
   if (s === 'menu') renderMenu();
   else if (s === 'roster') renderRoster();
@@ -4188,110 +4200,6 @@ function landscapeRoom() {
 
    `ar` is the shape of the box this is going into, because the layout is
    composed to the window rather than fitted into it afterwards. */
-/* THE LOCKER ROOM, which is what a phone gets.
-
-   ONE TO ONE WITH THE SCREEN. Everything before this asked for some number
-   of room pixels and let the browser scale them into the box, which meant a
-   17px sign might arrive at 8 or at 22 and nothing in the code said which.
-   This composes at the size of the box itself, so a room pixel IS a CSS
-   pixel: type asked for at 18 arrives at 18. The canvas keeps its 2x
-   backing store, so it is still crisp.
-
-   That is only possible because the four things are in LOCKERS now. A
-   locker is a container and its contents are scaled to fit it, so the
-   layout can size the lockers to the window and let the drawings follow.
-   Before, the drawings were a fixed size and the ROOM had to shrink until
-   four of them fit, which is backwards and is what made every version of
-   this either unreadable or a room with a warehouse floor. */
-function closeRoom(boxW, boxH) {
-  const W = Math.round(clamp(boxW || 360, 240, 1600));
-  const H = Math.round(clamp((boxH || 640) * (W / (boxW || 360)), 200, 2000));
-  const wide = W > H;
-  /* The room around the lockers: a beam with its lamps, and a strip of
-     floor with the two teammates standing on it. Both are a share of the
-     window and both are capped, because they are the frame and the lockers
-     are the picture. */
-  const beam = Math.round(clamp(H * 0.05, 16, 34));
-  const roof = beam + Math.round(clamp(H * 0.03, 8, 22));
-  const floor = Math.round(clamp(H * (wide ? 0.20 : 0.17), 76, 150));
-  const F = H - floor;
-  const edge = Math.round(clamp(W * 0.03, 8, 22));
-  const gap = Math.round(clamp(Math.min(W, H) * 0.025, 7, 18));
-  const wallY = roof + gap, wallH = F - wallY - gap, wallW = W - edge * 2;
-
-  /* WHICH GRID, DECIDED BY THE WORST DRAWING IN IT. Four across, two by
-     two, or one column: each gives a different locker shape, and the four
-     objects are four different shapes, so the one to pick is the one where
-     the object that comes out SMALLEST comes out largest. That is the thing
-     a player is squinting at, and it is the only score that matters. */
-  const ART = [{ w: 150, h: 200 }, { w: 176, h: 168 },
-               { w: 150, h: 168 }, { w: 246, h: 146 }];
-  const shapes = [[1, 4], [2, 2], [4, 1]];
-  let best = null;
-  for (const [rows, cols] of shapes) {
-    const lw = (wallW - gap * (cols - 1)) / cols;
-    const lh = (wallH - gap * (rows - 1)) / rows;
-    if (lw < 74 || lh < 74) continue;
-    /* what a locker leaves for the object inside it, per drawLocker */
-    const cw = lw - 8, ch = lh - 8 - clamp(lh * 0.17, 24, 44) - clamp(lh * 0.12, 18, 32) - 6;
-    if (ch < 30) continue;
-    const worst = Math.min(...ART.map(A =>
-      Math.min((cw - 12) / A.w, (ch - 12) / A.h)));
-    if (!best || worst > best.worst) best = { rows, cols, lw, lh, worst };
-  }
-  /* A window too small for any grid still gets the biggest one it can. */
-  if (!best) best = { rows: 2, cols: 2, lw: wallW / 2, lh: wallH / 2, worst: 0 };
-
-  const slots = {};
-  const NAMES = ['exhibition', 'season', 'cup', 'howto'];
-  for (let i = 0; i < 4; i++) {
-    const r = Math.floor(i / best.cols), c = i % best.cols;
-    slots[NAMES[i]] = {
-      x: Math.round(edge + c * (best.lw + gap)),
-      y: Math.round(wallY + r * (best.lh + gap)),
-      w: Math.round(best.lw), h: Math.round(best.lh),
-    };
-  }
-
-  const mid = Math.round(W / 2);
-  const seams = [];
-  for (let d = 14; d < floor - 8; d += 34) seams.push(d);
-  /* Big enough to be people rather than pieces on the floor, and never so
-     big they reach the lockers. */
-  const castW = Math.round(clamp(floor * 0.62, 44, 96));
-  const castH = Math.round(castW * V2_H / V2_W);
-  const benchW = Math.min(Math.round(W * 0.46), 280);
-  const benchX = mid - Math.round(benchW / 2);
-  return {
-    port: !wide,
-    lockers: true,
-    w: W, h: H,
-    /* Every locker is the same size, so the plate is worked out once. */
-    sign: lockerMetrics(Math.round(best.lh)),
-    beam,
-    rafter: roof,
-    rafterStep: Math.max(80, Math.round(W / (wide ? 8 : 4))),
-    floorY: F,
-    plank: Math.round(clamp(W * 0.09, 34, 58)),
-    floorSeams: seams,
-    doorGlow: 0.2,
-    /* The tunnel and the shirt rail belong to the wide room. In here the
-       wall is lockers, which is what a clubhouse wall is. */
-    door: null, jerseys: null, glove: null, ball: null, batbag: null,
-    lights: [0.18, 0.5, 0.82].map(f => Math.round(W * f)),
-    cones: [[26, 90, 0.12], [16, 54, 0.12]],
-    /* Only once there is floor enough for it to be behind them rather than
-       through them. */
-    bench: floor >= castH + 34 ? { x: benchX, y: F + 12, w: benchW, leg: 26 } : null,
-    cooler: W >= 380 ? { x: edge, y: H - 84 } : null,
-    helmets: W >= 380 ? { x: W - edge - 100, y: H - 48 } : null,
-    castW,
-    cast: [{ x: mid - castW - 14, foot: H - 6 }, { x: mid + 14, foot: H - 2 }],
-    cups: [],
-    slots,
-  };
-}
-
 const ROOMFILL = window.matchMedia(
   '(max-width: 600px), (max-aspect-ratio: 1/1), (max-height: 560px)');
 
@@ -4300,27 +4208,14 @@ const ROOMFILL = window.matchMedia(
    of the same problem, so what decides it is the SHAPE of the window rather
    than its size. Everything else gets the wide one, drawn to the width the
    box will give it. */
-function roomForWindow() {
-  /* A window that is NOT being filled edge to edge gets no say in the
-     room's shape: on a desktop the canvas keeps its natural height and the
-     room is the one it was drawn as. Composing to the box there would
-     change a screen with nothing wrong with it. */
-  if (!ROOMFILL.matches) return landscapeRoom();
-  const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
-  /* The subtractions are the brand strip, the tab under the room and the
-     page's own padding: what is left is roughly what the picture gets.
-     Roughly is enough, because renderMenu measures the real box and
-     recomposes if this was wrong. */
-  return roomForBox(Math.max(240, vw - 36),
-                    Math.max(180, vh - (vh <= 560 ? 78 : 104)));
-}
+/* There is one room and a desktop is the only thing that gets it: a window
+   small enough to be composed for is given the phone MENU instead, before
+   this is ever reached. */
+function roomForWindow() { return landscapeRoom(); }
 
-function roomForBox(w, h) { return closeRoom(w, h); }
-
-/* THE ROOM IS RECOMPOSED WHEN THE WINDOW CHANGES, and it has to be, because
-   the layout is chosen once per render and a rotation is not a render. Turn
-   the phone sideways without this and the upright room stays: a 460x696
-   scene in an 844x390 window, showing a fifth of the picture it should. */
+/* WHICH MENU IS CHOSEN ONCE PER RENDER, and a rotation is not a render, so
+   without this a phone turned sideways keeps whichever one it had. It used
+   to be the room that went stale; now it is the choice between the two. */
 let roomRedrawT = 0;
 function onRoomResize() {
   if (State.screen !== 'menu') return;
@@ -4338,7 +4233,7 @@ function clubhouseThings() {
     { id: 'exhibition', ...ROOM.slots.exhibition, sign: 'EXHIBITION',
       label: 'Exhibition Game',
       note: 'Single game against a random club.',
-      blurb: 'One game',
+      blurb: 'One game against a random club',
       art: { w: 150, h: 200 },
       draw: drawBatRack,
       go: () => { State.mode = 'exhibition'; State.screen = 'roster'; render(); } },
@@ -4347,7 +4242,9 @@ function clubhouseThings() {
       note: seasonOn
         ? `Year ${State.season.year || 1}, ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7.`
         : 'Select your team and run it. Unlock players and either add them to your group, or roll with what you already have.',
-      blurb: seasonOn ? `Year ${State.season.year || 1} · ${rec.w}-${rec.l}` : 'Run a club',
+      blurb: seasonOn
+        ? `Year ${State.season.year || 1} · ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7`
+        : 'Run a club for seven games',
       art: { w: 176, h: 168 },
       draw: drawLineupBoard,
       go: () => {
@@ -4361,7 +4258,7 @@ function clubhouseThings() {
       note: cupOn
         ? 'Your playoff run is still going.'
         : 'Eight clubs, knockout. Lose once and you are out.',
-      blurb: cupOn ? 'Still running' : 'Knockout',
+      blurb: cupOn ? 'Your run is still going' : 'Eight clubs, knockout',
       art: { w: 150, h: 168 },
       draw: drawCupCase,
       go: () => {
@@ -4582,81 +4479,8 @@ function drawSign(ctx, t, hot) {
    what the hotspot button covers, which must be the same rectangle. In a
    room of lockers the locker IS that box, which is the point of them. */
 function thingBox(t) {
-  if (ROOM.lockers) return { x: t.x, y: t.y, w: t.w, h: t.h };
   const S = signOf(), top = S.h + S.lift + 4;
   return { x: t.x - 6, y: t.y - top, w: t.w + 12, h: t.h + top + 6 };
-}
-
-/* A LOCKER, which is the whole of this redesign.
-
-   The wide room hangs four objects on a wall and floats a little sign over
-   each. That works with a pointer, because the rail under it says what the
-   thing under the pointer does. On a phone there is no pointer and no rail,
-   so what a first time player got was a PICTURE, with four labels on it and
-   no way to know the picture was the menu. The four also carry wildly
-   different weight as drawings: the chalkboard is the biggest, loudest
-   thing on the screen and it is the least important door in the room.
-
-   A locker fixes both. It is a frame with a nameplate on it, the object
-   inside, and a line underneath: a box that obviously presses, the same
-   size as the other three whatever is in it. The art is SCALED to fit its
-   cubby rather than drawn at the size it was authored, so the layout sizes
-   the lockers to the window and the drawings follow, instead of the room
-   having to shrink until four fixed-size objects fit. */
-/* A locker's furniture, from its height. One function so the drawing and
-   anything that checks the drawing cannot disagree about how big the
-   nameplate came out, which is the number that decides whether this screen
-   is readable. */
-function lockerMetrics(h) {
-  const plate = Math.round(clamp(h * 0.17, 24, 44));
-  const foot = Math.round(clamp(h * 0.12, 18, 32));
-  return { h: plate, foot, lift: 0,
-           fs: Math.round(clamp(plate * 0.52, 11, 22)),
-           footFs: Math.round(clamp(foot * 0.5, 9, 16)) };
-}
-
-function drawLocker(ctx, t, hot) {
-  const B = 4;                                  /* the frame */
-  const M = ROOM.sign || lockerMetrics(t.h);
-  const plate = M.h, foot = t.blurb ? M.foot : 0;
-  const x = t.x, y = t.y, w = t.w, h = t.h;
-  /* The shadow is what makes it read as a thing on a wall rather than a
-     rectangle painted on one. */
-  ctx.fillStyle = 'rgba(20,40,63,.34)';
-  ctx.fillRect(x + 5, y + 5, w, h);
-  roomRect(ctx, x, y, w, h, hot ? '#9a6c33' : '#84592a');
-  /* THE NAMEPLATE. Red on cream is the game's own placard, and it is the
-     one thing on this screen that has to be readable across a room. */
-  roomRect(ctx, x + B, y + B, w - B * 2, plate, hot ? CLUB.red : CLUB.cream);
-  ctx.fillStyle = hot ? CLUB.cream : CLUB.red;
-  ctx.font = `bold ${M.fs}px monospace`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(t.sign, x + w / 2, y + B + plate / 2 + 1);
-  /* THE CUBBY, recessed and darker, with the object inside it. */
-  const cy = y + B + plate + 3;
-  const ch = h - B - plate - 3 - foot - (foot ? 3 : B);
-  const cw = w - B * 2;
-  roomRect(ctx, x + B, cy, cw, ch, '#6b4a24');
-  ctx.fillStyle = 'rgba(20,25,40,.18)';
-  ctx.fillRect(x + B + 2, cy + 2, cw - 4, 6);
-  /* CONTAIN, never stretch. The four objects are four different shapes and
-     a locker is one shape, so each is fitted and centred in its cubby. */
-  const A = t.art || { w: t.w, h: t.h };
-  const pad = Math.max(6, Math.round(Math.min(cw, ch) * 0.08));
-  const k = Math.min((cw - pad * 2) / A.w, (ch - pad * 2) / A.h);
-  ctx.save();
-  ctx.beginPath(); ctx.rect(x + B, cy, cw, ch); ctx.clip();
-  ctx.translate(x + B + cw / 2 - A.w * k / 2, cy + ch / 2 - A.h * k / 2);
-  ctx.scale(k, k);
-  t.draw(ctx, { ...t, x: 0, y: 0, w: A.w, h: A.h });
-  ctx.restore();
-  if (foot) {
-    roomRect(ctx, x + B, y + h - B - foot, w - B * 2, foot, '#f1e2bb');
-    ctx.fillStyle = CLUB.line;
-    ctx.font = `bold ${M.footFs}px monospace`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(t.blurb, x + w / 2, y + h - B - foot / 2 + 1);
-  }
 }
 
 /* The room itself, then everything in it, with the one being pointed at
@@ -4814,12 +4638,8 @@ function drawClubhouse(ctx, things, hotId) {
     const hot = t.id === hotId;
     ctx.save();
     if (hot) ctx.translate(0, -3);
-    if (R.lockers) {
-      drawLocker(ctx, t, hot);
-    } else {
-      t.draw(ctx, t);
-      drawSign(ctx, t, hot);
-    }
+    t.draw(ctx, t);
+    drawSign(ctx, t, hot);
     ctx.restore();
     if (hot) {
       ctx.strokeStyle = CLUB.red; ctx.lineWidth = 3;
@@ -4829,7 +4649,113 @@ function drawClubhouse(ctx, things, hotId) {
   }
 }
 
+/* One mode's own drawing, fitted into a square. The four objects are four
+   different shapes, so each is contained and centred rather than stretched:
+   an icon that is the thing itself is worth more than a glyph. */
+function modeIcon(t, px) {
+  const cv = document.createElement('canvas');
+  cv.width = px * 2; cv.height = px * 2;
+  const c = cv.getContext('2d');
+  c.setTransform(2, 0, 0, 2, 0, 0);
+  c.imageSmoothingEnabled = false;
+  const A = t.art;
+  const k = Math.min((px - 8) / A.w, (px - 8) / A.h);
+  c.translate(px / 2 - A.w * k / 2, px / 2 - A.h * k / 2);
+  c.scale(k, k);
+  t.draw(c, { ...t, x: 0, y: 0, w: A.w, h: A.h });
+  return cv;
+}
+
+/* The clubhouse, as a strip rather than as a room: a run of floorboard with
+   the two you can draft standing on it. It is the one piece of the room
+   that survives a phone honestly, because a floor with people on it needs
+   no depth to make sense. */
+function teamStrip(w) {
+  const h = Math.round(clamp(w * 0.30, 84, 150));
+  const cv = document.createElement('canvas');
+  cv.width = w * 2; cv.height = h * 2;
+  const c = cv.getContext('2d');
+  c.setTransform(2, 0, 0, 2, 0, 0);
+  c.imageSmoothingEnabled = false;
+  c.fillStyle = CLUB.wall; c.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 44) {
+    c.fillStyle = CLUB.seam; c.fillRect(x, 0, 3, h);
+    c.fillStyle = CLUB.wallDark; c.fillRect(x + 3, 0, 6, h);
+  }
+  const F = Math.round(h * 0.46);
+  c.fillStyle = CLUB.floor; c.fillRect(0, F, w, h - F);
+  c.fillStyle = CLUB.line; c.fillRect(0, F, w, 3);
+  c.fillStyle = CLUB.floorDark;
+  for (let d = 16; d < h - F - 6; d += 26) {
+    for (let x = (d / 26) % 2 ? 12 : 0; x < w; x += 28) c.fillRect(x, F + d, 16, 3);
+  }
+  /* a bench behind them, and the two of them in front of it */
+  const cast = ROSTER.filter(ch => isUnlocked(ch.k)).slice(0, 2);
+  const cw = Math.round(clamp(h * 0.62, 40, 92));
+  const chh = Math.round(cw * V2_H / V2_W);
+  const mid = Math.round(w / 2);
+  roomRect(c, mid - 110, F + 8, 220, 9, '#8a5f2a');
+  roomRect(c, mid - 92, F + 17, 9, 22, '#7d5628');
+  roomRect(c, mid + 83, F + 17, 9, 22, '#7d5628');
+  cast.forEach((ch, i) => {
+    const x = i ? mid + 12 : mid - cw - 12, foot = h - 4;
+    c.fillStyle = 'rgba(20,40,63,.24)';
+    c.beginPath(); c.ellipse(x + cw / 2, foot - 3, cw * 0.34, 4, 0, 0, Math.PI * 2); c.fill();
+    c.drawImage(photoMug(ch.k, cw, false), x, foot - chh, cw, chh);
+  });
+  return { cv, w, h };
+}
+
+/* THE PHONE MENU. Four buttons, and that is the whole of it. */
+function renderPhoneMenu() {
+  const s = el('div', 'screen');
+  const card = el('div', 'card');
+  const wide = Math.max(240, (window.innerWidth || 360) - 44);
+  const strip = teamStrip(Math.min(wide, 640));
+  strip.cv.className = 'ph-strip';
+  strip.cv.setAttribute('aria-hidden', 'true');
+  card.appendChild(strip.cv);
+
+  const menu = el('div', 'ph-menu');
+  for (const t of clubhouseThings()) {
+    const b = el('button', 'ph-door');
+    b.type = 'button';
+    b.appendChild(modeIcon(t, 58));
+    const txt = el('div', 'ph-txt');
+    txt.appendChild(el('b', null, t.sign));
+    /* The BLURB, not the note. The note was written for a rail with a
+       whole line to itself; the franchise one ran to four lines here and
+       made one button twice the height of its neighbours. */
+    txt.appendChild(el('span', null, t.blurb || ''));
+    b.appendChild(txt);
+    b.setAttribute('aria-label', t.note ? t.label + '. ' + t.note : t.label);
+    b.onclick = t.go;
+    menu.appendChild(b);
+  }
+  card.appendChild(menu);
+  s.appendChild(card);
+
+  const tabs = el('div', 'clubtabs');
+  const meet = el('button', 'tab', 'Meet the players');
+  meet.type = 'button';
+  meet.onclick = () => { State.screen = 'meet'; render(); };
+  tabs.appendChild(meet);
+  card.appendChild(tabs);
+
+  if (State.season) {
+    const rec = seasonRecord(State.season);
+    const gp = State.season.results.length;
+    card.appendChild(el('p', null,
+      `Season in progress: ${rec.w}-${rec.l}, game ${gp + 1} of 7.`
+      + (State.season.playoffs ? ' (Playoffs)' : '')));
+  }
+  app.appendChild(s);
+}
+
 function renderMenu() {
+  /* A phone gets a menu, a desktop gets the room. See the note by .ph-door
+     for why these are two designs rather than two sizes of one. */
+  if (ROOMFILL.matches) return renderPhoneMenu();
   const s = el('div','screen');
   /* No heading, no caption. The room is the menu and the rail already
      says what everything does: a sentence on top of that is narration. */
@@ -4981,31 +4907,6 @@ function renderMenu() {
 
   app.appendChild(s);
 
-  /* MEASURE, THEN COMPOSE AGAIN IF THE GUESS WAS OFF.
-     roomForWindow works off the window minus a subtraction for the page's
-     own furniture, and that subtraction is a guess: it is wrong the day
-     the brand strip changes height or a tab wraps to two lines. The canvas
-     is object-fit contained, so a scene whose shape has drifted from its
-     box does not overflow or stretch, it LETTERBOXES, and the hotspots
-     stay where they were: the player presses a door above its sign and
-     nothing throws.
-
-     The box is a fact once it is on the page. So it is measured, and if
-     the guess was off by more than a percent the room is composed again to
-     the real thing. One extra pass, and it terminates: the box is sized by
-     the flex column above it and does not move when the canvas changes. */
-  const fitToBox = () => {
-    if (!ROOMFILL.matches || State.screen !== 'menu') return;
-    const b = club.getBoundingClientRect();
-    if (b.width < 40 || b.height < 40) return;
-    const want = b.width / b.height;
-    if (Math.abs(want - ROOM.w / ROOM.h) / (ROOM.w / ROOM.h) < 0.01) return;
-    ROOM = roomForBox(b.width, b.height);
-    cv.width = ROOM.w * ROOM_SCALE; cv.height = ROOM.h * ROOM_SCALE;
-    for (const [b2, t] of hots) place(b2, t);
-    paint(null);
-  };
-  requestAnimationFrame(fitToBox);
 }
 
 /* ============================================================================

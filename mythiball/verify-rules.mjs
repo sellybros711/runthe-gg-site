@@ -35,11 +35,9 @@
      the play moves       the plan's physics agree with the scorer: outs beaten, hits not
      the dive             a liner draws a lunge that lands short and breaks no duty
      the snow             the cold parks play under falling snow
-     the phone menu       the room fills the window it is in, whichever shape that is
-     legible on a phone   and is DRAWN big enough to read, which is a separate thing
-     a room, not a hall   the floor never takes the room over on a narrow window
-     four doors           on a phone they are lockers of equal weight, not four pictures
-     turning it sideways  the room is recomposed on rotate rather than left upright
+     the phone menu       a phone gets four real buttons, and a desktop the room
+     the doors open       and pressing one arrives where it says
+     turning it sideways  which of the two a window gets follows the window
      the game sideways    a phone held sideways gets a bigger field, not a smaller one
      the plate camera     the at bat is seen from behind the catcher and cut away from on contact
      the bat has a place  a pitch lands somewhere; the swing has to be there as well as on time
@@ -864,8 +862,13 @@ async function main() {
          blank window. It is sized off the height budget through its own
          ratio now, which is easy to undo by accident: one stray max-width
          anywhere up the tree puts it back in its box, and nothing else
-         would fail. */
-      for (const [w, h] of [[1440, 900], [1280, 800], [1680, 1050], [390, 844]]) {
+         would fail.
+
+         DESKTOP WINDOWS ONLY. A phone gets the button menu instead of the
+         room, so a 390 wide case here would be asserting the shape of a
+         canvas that is deliberately not on the page. The phone menu has its
+         own scenario further down. */
+      for (const [w, h] of [[1440, 900], [1280, 800], [1680, 1050], [1024, 768]]) {
         const pg = await browser.newPage({ viewport: { width: w, height: h } });
         const errors = [];
         pg.on('pageerror', e => errors.push(e.message));
@@ -1542,160 +1545,34 @@ async function main() {
       await pg.close();
     }
 
-    /* ---- the room fills the screen, and the room IS the menu ---- */
+    /* ---- the phone gets a MENU, not a room ---- */
     {
       console.log('the phone menu');
-      /* The clubhouse used to be one fixed 1120x500 scene. On a portrait phone
-         its height is decided by its width, so it could only ever be a
-         strip: 390 across gave a 167 tall room on a 664 tall screen, and the
-         page ended at 320, leaving more than half the display as empty card
-         stock. The fix was a room LAYOUT rather than a room drawing, so the
-         scene is composed to the shape of the window it is going into.
+      /* FIVE GOES AT MAKING A DEPICTED ROOM WORK ON A PHONE IS ENOUGH.
 
-         What is asserted here is that the room is the interface, on a phone
-         and on a portrait tablet and on a desktop:
+         The room hangs four objects on a wall and floats a sign over each,
+         and a rail underneath says what the thing under the pointer does.
+         A phone has no pointer, so the rail cannot exist, and what arrived
+         was a picture with four labels on it. Every attempt to fix that by
+         SIZE failed, because size was never the fault:
 
-           the page reaches the bottom of the window
-           the scene is shaped like the window, so a portrait room is TALL
-           the canvas actually fills the space it was given
-           every door in the room is a hotspot, and every hotspot is a real
-             touch target
-           the drawn picture and the hotspot layer agree, because the canvas
-             is object-fit contained and any aspect mismatch letterboxes the
-             picture while leaving the hotspots where they were
-           the hover rail is gone on touch, and still there on desktop
+           fill the window   the room became a strip over dead card stock
+           draw it closer    legible, and still a picture, not a menu
+           make them lockers four frames holding a bat rack, a clipboard, a
+                             framed photo and a chalkboard, four objects of
+                             wildly different real size, above two people as
+                             tall as one frame. It stopped depicting anything.
 
-         That fifth one is the quiet one. Letterboxing shifts what the player
-         sees away from what the player can press, and nothing throws. */
-      const sizes = [{ w: 390, h: 664, what: 'a phone', touch: true, port: true },
-                     { w: 844, h: 390, what: 'a phone sideways', touch: true, port: false },
-                     { w: 768, h: 1024, what: 'a portrait tablet', touch: true, port: true },
-                     { w: 1280, h: 860, what: 'a desktop', touch: false, port: false }];
-      const seen = [];
-      for (const sz of sizes) {
-        const ctx = await browser.newContext({ viewport: { width: sz.w, height: sz.h },
-                                               deviceScaleFactor: 2, isMobile: sz.touch, hasTouch: sz.touch });
-        const pg = await ctx.newPage();
-        const errors = [];
-        pg.on('pageerror', e => errors.push(e.message));
-        await pg.goto(URL);
-        await pg.evaluate(() => localStorage.clear());
-        await pg.goto(URL);
-        await wait(pg, 800);
-        const r = await pg.evaluate(() => {
-          const vis = (el) => el && getComputedStyle(el).display !== 'none';
-          const cv = document.querySelector('.clubhouse canvas');
-          const cb = cv.getBoundingClientRect();
-          const hots = [...document.querySelectorAll('.clubhouse .hot')].map(h => {
-            const b = h.getBoundingClientRect();
-            return {
-              side: Math.min(Math.round(b.width), Math.round(b.height)),
-              inside: b.left >= cb.left - 1 && b.right <= cb.right + 1 &&
-                      b.top >= cb.top - 1 && b.bottom <= cb.bottom + 1,
-            };
-          });
-          const bottoms = [...document.querySelectorAll('.wrap *')]
-            .filter(e => vis(e) && e.getBoundingClientRect().height > 0)
-            .map(e => e.getBoundingClientRect().bottom);
-          const roomAR = ROOM.w / ROOM.h, boxAR = cb.width / cb.height;
-          /* WHAT IS PAINTED, not what the element measures. The canvas is
-             object-fit contained, so a scene whose shape has drifted from
-             its box keeps the element's full size and paints a smaller
-             picture inside it with bars either side. Measuring the element
-             would call that a full screen. */
-          const shown = [Math.round(Math.min(cb.width, cb.height * roomAR)),
-                         Math.round(Math.min(cb.height, cb.width / roomAR))];
-          /* CSS pixels per room pixel: what decides how big everything in
-             here actually lands on the glass. */
-          const k = shown[0] / ROOM.w;
-          const S = ROOM.sign || SIGN;
-          return {
-            shown,
-            scale: +k.toFixed(3),
-            signPx: +(S.fs * k).toFixed(1),
-            inroom: document.body.classList.contains('inroom'),
-            vw: innerWidth, vh: innerHeight,
-            reach: Math.round(Math.max(0, ...bottoms)),
-            sideways: document.documentElement.scrollWidth > innerWidth + 1,
-            railShown: vis(document.querySelector('.clubhouse-rail')),
-            room: [ROOM.w, ROOM.h],
-            portrait: ROOM.h > ROOM.w,
-            box: [Math.round(cb.width), Math.round(cb.height)],
-            drift: Math.abs(roomAR - boxAR) / roomAR,
-            hots: hots.length,
-            minTouch: hots.length ? Math.min(...hots.map(h => h.side)) : 0,
-            strays: hots.filter(h => !h.inside).length,
-            roomThings: (window.clubhouseThings ? clubhouseThings().length : -1),
-          };
-        });
-        r.what = sz.what; r.wantPort = sz.port; r.wantRail = !sz.touch;
-        r.fills = sz.touch; r.errors = errors;
-        seen.push(r);
-        await pg.close(); await ctx.close();
-      }
-      for (const r of seen) {
-        ok(r.inroom, `${r.what}: the menu is the room screen`, JSON.stringify(r));
-        ok(!r.sideways, `${r.what}: and does not scroll sideways`, JSON.stringify(r));
-        ok(r.portrait === r.wantPort,
-           `${r.what}: the scene is shaped like the window`,
-           `room ${r.room.join('x')} for a ${r.vw}x${r.vh} window`);
-        ok(r.hots === r.roomThings && r.hots > 0,
-           `${r.what}: every door in the room is a hotspot`,
-           `${r.hots} hotspots for ${r.roomThings} things`);
-        ok(r.minTouch >= 44,
-           `${r.what}: and every one is a real touch target`,
-           'smallest side ' + r.minTouch + 'px');
-        ok(r.strays === 0,
-           `${r.what}: and none of them sits off the canvas`,
-           r.strays + ' outside');
-        /* One percent of a 550 tall canvas is under three pixels of black
-           bar, which no hotspot notices. Ten percent is a door you press
-           above its sign. */
-        ok(r.drift <= 0.02,
-           `${r.what}: the picture and the hotspots agree`,
-           'aspect off by ' + (r.drift * 100).toFixed(1) + '%');
-        ok(r.railShown === r.wantRail,
-           `${r.what}: the hover rail is ${r.wantRail ? 'there' : 'gone'}`,
-           'railShown=' + r.railShown);
-        ok(r.errors.length === 0, `${r.what}: no page errors`, r.errors.join(' | '));
-      }
-      /* Only the filled sizes owe the bottom of the window: the desktop room
-         is a wide scene in a page that has never been full bleed. */
-      for (const r of seen.filter(x => x.fills)) {
-        ok(r.vh - r.reach <= 24,
-           `${r.what}: the page reaches the bottom of the window`,
-           `${r.vh - r.reach}px short of ${r.vh}`);
-        /* Filling it is the whole ask. A room that reaches the bottom by
-           padding rather than by picture passes the line above and fails
-           this one. */
-        ok(r.shown[1] >= r.vh * (r.wantPort ? 0.6 : 0.7),
-           `${r.what}: and the room is most of what is on it`,
-           `${r.shown[1]}px painted of ${r.vh}`);
-        ok(r.shown[0] >= r.vw * 0.85,
-           `${r.what}: and it runs the width of it`,
-           `${r.shown[0]}px painted of ${r.vw}`);
-      }
-    }
+         Four modes need four labels a thumb apart and readable at arm's
+         length, and four lockers side by side in 358 CSS pixels are 89 each,
+         which does not hold the word EXHIBITION. The room cannot carry this
+         screen at phone width and no drawing of it will.
 
-    /* ---- and it is drawn big enough to read ---- */
-    {
-      console.log('legible on a phone');
-      /* FILLING THE WINDOW AND BEING READABLE IN IT ARE TWO DIFFERENT
-         THINGS, and the first one shipped without the second.
-
-         Everything in the room is drawn at a fixed pixel size: the bats are
-         74 long, the signs are set in a point size. So how big any of it
-         lands on the glass is decided by one number, how many room pixels
-         the layout asks for against how many CSS pixels it gets to draw
-         them in. A desktop draws at about 1.07 and a 13px sign arrives at
-         14. The first phone layout asked for 760 room pixels inside 358,
-         which is 0.47, and every sign arrived at SIX.
-
-         Nothing failed. The room filled the screen, the hotspots were
-         honest touch targets, the suite was green, and the menu was
-         unreadable. So the drawn size is asserted here directly, against
-         the desktop it is supposed to match rather than against a number
-         somebody liked, because the desktop is the version that works. */
+         So a phone gets real buttons with real text, and the clubhouse is a
+         strip of floor with the team on it rather than a space the page is
+         pretending to be inside. What is asserted here is that it IS a menu:
+         one button per mode, each a real target, each named in real type,
+         each carrying one line, and the desktop still getting the room. */
       const look = async (w, h, touch) => {
         const ctx = await browser.newContext({ viewport: { width: w, height: h },
                                                deviceScaleFactor: 2, isMobile: touch, hasTouch: touch });
@@ -1705,220 +1582,80 @@ async function main() {
         await pg.goto(URL);
         await pg.evaluate(() => localStorage.clear());
         await pg.goto(URL);
-        await wait(pg, 800);
+        await wait(pg, 700);
         const r = await pg.evaluate(() => {
-          const b = document.querySelector('.clubhouse canvas').getBoundingClientRect();
-          const ar = ROOM.w / ROOM.h;
-          const shownW = Math.min(b.width, b.height * ar);
-          const k = shownW / ROOM.w;
-          const S = ROOM.sign || SIGN;
-          /* The smallest thing on the wall, as it is actually drawn. */
-          const things = clubhouseThings();
-          const small = Math.min(...things.map(t => Math.min(t.w, t.h))) * k;
-          return { scale: k, signPx: S.fs * k, smallest: small,
-                   room: [ROOM.w, ROOM.h] };
+          const doors = [...document.querySelectorAll('.ph-door')];
+          const rect = doors.map(d => d.getBoundingClientRect());
+          const nameFs = doors.map(d =>
+            parseFloat(getComputedStyle(d.querySelector('b')).fontSize));
+          return {
+            doors: doors.length,
+            room: !!document.querySelector('.clubhouse canvas'),
+            strip: !!document.querySelector('.ph-strip'),
+            names: doors.map(d => (d.querySelector('b').textContent || '').trim()),
+            lines: doors.map(d => (d.querySelector('span').textContent || '').trim().length),
+            icons: doors.filter(d => d.querySelector('canvas')).length,
+            minTouch: rect.length ? Math.min(...rect.map(b => Math.min(b.width, b.height))) : 0,
+            /* even weight: the tallest button against the shortest */
+            spread: rect.length ? Math.max(...rect.map(b => b.height)) / Math.min(...rect.map(b => b.height)) : 99,
+            width: rect.length ? Math.min(...rect.map(b => b.width)) / innerWidth : 0,
+            nameFs: nameFs.length ? Math.min(...nameFs) : 0,
+            sideways: document.documentElement.scrollWidth > innerWidth + 1,
+            vw: innerWidth,
+          };
         });
         r.errors = errors;
         await pg.close(); await ctx.close();
         return r;
       };
-      const desk = await look(1280, 860, false);
       const sizes = [{ w: 390, h: 664, what: 'a phone' },
                      { w: 360, h: 640, what: 'a small phone' },
-                     { w: 844, h: 390, what: 'a phone sideways' },
-                     { w: 374, h: 851, what: 'a narrow panel' },
-                     { w: 320, h: 1100, what: 'a very narrow panel' },
-                     { w: 768, h: 1024, what: 'a portrait tablet' }];
-      for (const sz of sizes) {
-        const r = await look(sz.w, sz.h, true);
-        /* Two thirds of the desktop's is the line. Below it the signs are
-           under 10 CSS pixels and the menu stops being readable at arm's
-           length, which is where a phone is held. */
-        ok(r.scale >= desk.scale * 0.66,
-           `${sz.what}: the room is drawn near the size the desktop draws it`,
-           `${r.scale.toFixed(2)} against the desktop's ${desk.scale.toFixed(2)}`
-           + ` (room ${r.room.join('x')})`);
-        ok(r.signPx >= 11,
-           `${sz.what}: and the signs come out readable`,
-           r.signPx.toFixed(1) + 'px against the desktop\'s ' + desk.signPx.toFixed(1));
-        ok(r.smallest >= 100,
-           `${sz.what}: and the smallest thing on the wall is a real object`,
-           Math.round(r.smallest) + 'px on its short side');
-        ok(r.errors.length === 0, `${sz.what}: no page errors`, r.errors.join(' | '));
-      }
-    }
-
-    /* ---- the floor is a floor, not the room ---- */
-    {
-      console.log('a room, not a hall');
-      /* THE FLOOR USED TO BE WHATEVER WAS LEFT OVER. The wall's content is a
-         fixed height, so every pixel a window had spare above that went into
-         floorboard: a 320 wide panel came out 65 percent bare floor, with
-         the four things crushed into a strip at the top and an empty brown
-         hall under them. It is a clubhouse, and a clubhouse is mostly wall.
-
-         The floor takes about a quarter now and the wall keeps the rest,
-         and when a window is so tall that even that leaves the wall with
-         slack, the four things go into a COLUMN instead: an arrangement
-         that spends the height on the things rather than on the gaps. Both
-         halves are asserted, because the second one is what stops the first
-         from just moving the empty space onto the wall. */
-      const look = async (w, h) => {
-        const ctx = await browser.newContext({ viewport: { width: w, height: h },
-                                               deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-        const pg = await ctx.newPage();
-        const errors = [];
-        pg.on('pageerror', e => errors.push(e.message));
-        await pg.goto(URL);
-        await pg.evaluate(() => localStorage.clear());
-        await pg.goto(URL);
-        await wait(pg, 800);
-        const r = await pg.evaluate(() => {
-          const things = clubhouseThings();
-          /* thingBox is the ONE function that knows where a thing really
-             starts: a sign floats above its object in the wide room and a
-             nameplate sits inside the locker in the close one. Working it
-             out here instead meant this check measured a box that does not
-             exist in half the layouts. */
-          const tops = things.map(t => thingBox(t).y);
-          const bottoms = things.map(t => thingBox(t).y + thingBox(t).h);
-          return {
-            room: [ROOM.w, ROOM.h],
-            floorShare: (ROOM.h - ROOM.floorY) / ROOM.h,
-            /* How much of the WALL the four things actually cover. A wall
-               with the slack pushed into it instead of the floor scores
-               badly here and looks just as empty. */
-            wallFill: (Math.max(...bottoms) - Math.min(...tops)) / ROOM.floorY,
-            /* Nothing may be drawn over the roof beam or under the floor. */
-            aboveRoof: Math.min(...tops) < ROOM.rafter,
-            belowFloor: Math.max(...bottoms) > ROOM.floorY,
-          };
-        });
-        r.errors = errors;
-        await pg.close(); await ctx.close();
-        return r;
-      };
-      const shapes = [{ w: 390, h: 664, what: 'a phone' },
-                      { w: 374, h: 851, what: 'a narrow panel' },
-                      { w: 340, h: 1000, what: 'a narrower panel' },
-                      { w: 320, h: 1100, what: 'a very narrow panel' },
-                      { w: 844, h: 390, what: 'a phone sideways' }];
-      for (const sz of shapes) {
-        const r = await look(sz.w, sz.h);
-        ok(r.floorShare <= 0.34,
-           `${sz.what}: the floor is a floor rather than the room`,
-           Math.round(r.floorShare * 100) + '% of a ' + r.room.join('x') + ' room');
-        ok(r.wallFill >= 0.55,
-           `${sz.what}: and the wall is hung rather than left bare`,
-           Math.round(r.wallFill * 100) + '% of the wall covered');
-        ok(!r.aboveRoof, `${sz.what}: no sign is drawn through the roof beam`,
-           JSON.stringify(r.room));
-        ok(!r.belowFloor, `${sz.what}: and nothing on the wall runs onto the floor`,
-           JSON.stringify(r.room));
-        ok(r.errors.length === 0, `${sz.what}: no page errors`, r.errors.join(' | '));
-      }
-    }
-
-    /* ---- four doors, not four pictures ---- */
-    {
-      console.log('four doors');
-      /* WHAT WAS WRONG WITH THIS SCREEN WAS NOT ITS SIZE.
-
-         The wide room hangs four objects on a wall and floats a small sign
-         over each. With a pointer that works, because the rail underneath
-         says what the thing under the pointer does. A phone has no pointer
-         and no rail, so what arrived was a PICTURE with four labels on it
-         and no way to tell that the picture was the menu.
-
-         And the four carry wildly different weight as drawings. Authored,
-         they are 150x200, 176x168, 150x168 and 246x146: the chalkboard is
-         by some way the biggest, loudest thing on the screen, and it is the
-         least important door in the room. Three rounds of making everything
-         bigger could not fix either of those, because neither was a size.
-
-         A phone gets LOCKERS: one frame per mode, the same size whatever is
-         in it, with a nameplate on it and the object scaled to fit inside.
-         That is what is asserted here. Equal boxes is the whole of "equal
-         weight", and a nameplate bigger than the sign it replaces is the
-         whole of "you can read it". */
-      const look = async (w, h, touch) => {
-        const ctx = await browser.newContext({ viewport: { width: w, height: h },
-                                               deviceScaleFactor: 2, isMobile: touch, hasTouch: touch });
-        const pg = await ctx.newPage();
-        const errors = [];
-        pg.on('pageerror', e => errors.push(e.message));
-        await pg.goto(URL);
-        await pg.evaluate(() => localStorage.clear());
-        await pg.goto(URL);
-        await wait(pg, 800);
-        const r = await pg.evaluate(() => {
-          const cb = document.querySelector('.clubhouse canvas').getBoundingClientRect();
-          const ar = ROOM.w / ROOM.h;
-          const k = Math.min(cb.width, cb.height * ar) / ROOM.w;
-          const box = clubhouseThings().map(t => thingBox(t));
-          const area = box.map(b => b.w * b.h);
-          return {
-            lockers: !!ROOM.lockers,
-            /* how far the biggest door is off the smallest, by area */
-            spread: Math.max(...area) / Math.min(...area),
-            plate: (ROOM.sign || SIGN).fs * k,
-            /* the share of the picture the four doors take between them */
-            share: area.reduce((t, a) => t + a, 0) / (ROOM.w * ROOM.h),
-            blurbs: clubhouseThings().map(t => (t.blurb || '').length),
-          };
-        });
-        r.errors = errors;
-        await pg.close(); await ctx.close();
-        return r;
-      };
-      const sizes = [{ w: 390, h: 664, what: 'a phone' },
                      { w: 844, h: 390, what: 'a phone sideways' },
                      { w: 320, h: 1100, what: 'a narrow panel' },
                      { w: 768, h: 1024, what: 'a portrait tablet' }];
       for (const sz of sizes) {
         const r = await look(sz.w, sz.h, true);
-        ok(r.lockers, `${sz.what}: the four modes are lockers`, JSON.stringify(r));
-        /* Authored, the four drawings are 1.4x apart in height and the
-           chalkboard is 2.2x the trophy case by area. As lockers they are
-           the same box, and that is the point. */
-        ok(r.spread <= 1.05,
-           `${sz.what}: and every one is the same size as the others`,
-           'biggest is ' + r.spread.toFixed(2) + 'x the smallest');
-        ok(r.plate >= 14,
-           `${sz.what}: the nameplate beats the sign it replaced`,
-           r.plate.toFixed(1) + 'px against the old sign at 13.2');
-        ok(r.share >= 0.4,
-           `${sz.what}: and the doors are most of what is on the screen`,
-           Math.round(r.share * 100) + '% of the picture');
-        ok(r.blurbs.every(v => v > 0),
-           `${sz.what}: each says what it is in a few words`,
-           JSON.stringify(r.blurbs));
+        ok(r.doors === 4 && !r.room,
+           `${sz.what}: the menu is four buttons, not a drawn room`,
+           `${r.doors} buttons, room canvas ${r.room}`);
+        ok(r.names.every(v => v.length > 0) && r.icons === 4,
+           `${sz.what}: each is named and carries its own art`,
+           JSON.stringify(r.names));
+        ok(r.lines.every(v => v > 0),
+           `${sz.what}: and says in one line what it is`, JSON.stringify(r.lines));
+        /* A caption long enough to wrap makes one button twice its
+           neighbour's height, which is what the note did before the blurb
+           replaced it. */
+        ok(r.spread <= 1.25,
+           `${sz.what}: and no button towers over the others`,
+           'tallest is ' + r.spread.toFixed(2) + 'x the shortest');
+        ok(r.minTouch >= 44,
+           `${sz.what}: every one is a real touch target`,
+           'smallest side ' + Math.round(r.minTouch) + 'px');
+        ok(r.width >= 0.8,
+           `${sz.what}: and runs the width of the screen`,
+           Math.round(r.width * 100) + '% of ' + r.vw);
+        /* Real text at a real size, which a canvas could never promise:
+           the room's signs came out at six CSS pixels once and nothing in
+           the code said so. */
+        ok(r.nameFs >= 16,
+           `${sz.what}: the names are set in real type`,
+           r.nameFs + 'px');
+        ok(r.strip, `${sz.what}: the clubhouse is there as a strip`, JSON.stringify(r));
+        ok(!r.sideways, `${sz.what}: no sideways scroll`, JSON.stringify(r));
         ok(r.errors.length === 0, `${sz.what}: no page errors`, r.errors.join(' | '));
       }
-      /* And the wide room is NOT lockered, so none of the above can be
-         satisfied by changing the screen that already works. */
+      /* The desktop keeps the room, which is the screen the rail and the
+         wall of objects were designed for. */
       const desk = await look(1280, 860, false);
-      ok(!desk.lockers, 'a desktop: the wide room keeps its own arrangement',
-         JSON.stringify(desk));
-      ok(desk.spread > 1.3,
-         'a desktop: where the four are four different drawings, as authored',
-         'spread ' + desk.spread.toFixed(2));
+      ok(desk.doors === 0 && desk.room,
+         'a desktop: still gets the clubhouse room', JSON.stringify(desk));
+      ok(desk.errors.length === 0, 'a desktop: no page errors', desk.errors.join(' | '));
     }
 
-    /* ---- turning the phone sideways ---- */
+    /* ---- the buttons go somewhere ---- */
     {
-      console.log('turning it sideways');
-      /* THE ROOM IS CHOSEN ONCE PER RENDER, and a rotation is not a render.
-         So the upright room stayed up: a 760x1202 scene scaled into an
-         844x390 window, which drew 314 wide by 492 tall, ran a hundred
-         pixels off the bottom of a 390 tall screen, and left a gutter of
-         card stock down both sides. Turning the phone sideways showed you
-         LESS of the game than holding it upright did, which is the exact
-         opposite of what the extra width is for.
-
-         Both halves are asserted: that the rotated window gets a room
-         composed for it, and that the room it had before is gone. The
-         second is the one that fails if somebody caches the layout. */
+      console.log('the doors open');
       const ctx = await browser.newContext({ viewport: { width: 390, height: 664 },
                                              deviceScaleFactor: 2, isMobile: true, hasTouch: true });
       const pg = await ctx.newPage();
@@ -1927,48 +1664,65 @@ async function main() {
       await pg.goto(URL);
       await pg.evaluate(() => localStorage.clear());
       await pg.goto(URL);
-      await wait(pg, 800);
-      const look = () => pg.evaluate(() => {
-        const b = document.querySelector('.clubhouse canvas').getBoundingClientRect();
-        const ar = ROOM.w / ROOM.h;
-        return { room: [ROOM.w, ROOM.h], upright: ROOM.h > ROOM.w,
-                 /* the painted picture, not the element: see the phone menu */
-                 box: [Math.round(Math.min(b.width, b.height * ar)),
-                       Math.round(Math.min(b.height, b.width / ar))],
-                 drift: Math.abs((b.width / b.height) - ar) / ar,
-                 vw: innerWidth, vh: innerHeight,
-                 over: document.documentElement.scrollHeight - innerHeight,
-                 sideways: document.documentElement.scrollWidth > innerWidth + 1 };
+      await wait(pg, 700);
+      /* HOW TO PLAY is the one door that goes somewhere without asking for
+         a roster first, so it is the one to press. */
+      const went = await pg.evaluate(async () => {
+        const doors = [...document.querySelectorAll('.ph-door')];
+        const howto = doors.find(d => /HOW TO PLAY/i.test(d.textContent));
+        if (!howto) return { found: false };
+        howto.click();
+        return { found: true, screen: State.screen };
       });
+      ok(went.found, 'the how to play button is there to press', JSON.stringify(went));
+      ok(went.screen === 'howto', 'and pressing it arrives at how to play',
+         'screen=' + went.screen);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close(); await ctx.close();
+    }
+
+    /* ---- turning the phone sideways ---- */
+    {
+      console.log('turning it sideways');
+      /* WHICH MENU A WINDOW GETS IS DECIDED ONCE PER RENDER, and a rotation
+         is not a render. The room used to be what went stale that way, a
+         760x1202 scene left in an 844x390 window; now it is the choice
+         between the two menus. Same listener, same failure if it goes. */
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 664 },
+                                             deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      const pg = await ctx.newPage();
+      const errors = [];
+      pg.on('pageerror', e => errors.push(e.message));
+      await pg.goto(URL);
+      await pg.evaluate(() => localStorage.clear());
+      await pg.goto(URL);
+      await wait(pg, 700);
+      const look = () => pg.evaluate(() => ({
+        doors: document.querySelectorAll('.ph-door').length,
+        room: !!document.querySelector('.clubhouse canvas'),
+        over: document.documentElement.scrollWidth - innerWidth,
+      }));
       const up = await look();
       await pg.setViewportSize({ width: 844, height: 390 });
-      /* Long enough for the resize to settle and the redraw to land. */
       await wait(pg, 700);
       const flat = await look();
-      /* and back, because a layout that only works one way round is half a
-         fix and reads as one that works */
+      /* and out to a desktop, where the room takes over */
+      await pg.setViewportSize({ width: 1280, height: 860 });
+      await wait(pg, 700);
+      const desk = await look();
       await pg.setViewportSize({ width: 390, height: 664 });
       await wait(pg, 700);
       const again = await look();
       await pg.close(); await ctx.close();
 
-      ok(up.upright, 'held upright, the room is upright', JSON.stringify(up));
-      ok(!flat.upright, 'turned sideways, the room is recomposed wide',
-         `${flat.room.join('x')} in a ${flat.vw}x${flat.vh} window`);
-      ok(flat.over <= 8, 'and it fits the window rather than running off it',
-         flat.over + 'px past the bottom');
-      ok(!flat.sideways, 'and does not scroll sideways', JSON.stringify(flat));
-      ok(flat.drift <= 0.02, 'and the picture still lines up with the doors',
-         'aspect off by ' + (flat.drift * 100).toFixed(1) + '%');
-      /* Sideways is WIDER. If the room does not use that, the rotation has
-         cost the player picture rather than gained them any, which is what
-         the bug looked like from the outside. */
-      ok(flat.box[0] >= up.box[0] * 1.6,
-         'sideways shows more room than upright, not less',
-         `${flat.box[0]}px of picture against ${up.box[0]}px`);
-      ok(again.upright && again.box[1] >= up.box[1] * 0.95,
-         'and turning back gets the upright room back',
-         JSON.stringify(again));
+      ok(up.doors === 4, 'held upright, a phone gets the menu', JSON.stringify(up));
+      ok(flat.doors === 4 && flat.over <= 1,
+         'turned sideways it is still the menu, and still fits',
+         JSON.stringify(flat));
+      ok(desk.room && desk.doors === 0,
+         'stretched to a desktop, the room takes over', JSON.stringify(desk));
+      ok(again.doors === 4 && !again.room,
+         'and back to a phone gets the menu again', JSON.stringify(again));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
     }
 

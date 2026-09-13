@@ -297,64 +297,48 @@ is the point. Disney's Peter Pan, Universal's Frankenstein, MGM's green witch an
 ruby slippers are all still owned, and a redraw that drifts back toward one of
 them is the failure mode.
 
-### The menu is a room, and a phone gets LOCKERS
+### A phone gets a MENU, a desktop gets the room
 
-The menu is a clubhouse. It is called the clubhouse everywhere the player can
-see and in the code; the seven places a character says "dugout" mean the one
-beside the field during a game and are left alone.
+The home screen is the clubhouse. It is called the clubhouse everywhere the
+player can see and in the code; the seven places a character says "dugout" mean
+the one beside the field during a game and are left alone.
 
-**There are two arrangements and they are different designs, not two sizes of
-one.** A desktop gets `landscapeRoom()`: four objects hung on a wall with a
-small sign floating over each, and a rail underneath that says what the thing
-under the pointer does. A phone gets `closeRoom(boxW, boxH)`: four LOCKERS,
-one frame per mode, all the same size, each with a nameplate on it and its
-object scaled to fit inside. `drawClubhouse` draws whichever `ROOM.lockers`
-says, and reads every position out of `ROOM`.
+**These are two designs, not two sizes of one, and that is the whole lesson of
+this screen.** `landscapeRoom()` draws a room: four objects hung on a wall, a
+small sign over each, and a rail underneath that names whatever the pointer is
+on. `renderPhoneMenu()` draws four buttons: real text, real type sizes, the
+mode's own drawing as an icon, one line of caption, and the clubhouse present as
+a strip of floor with the team standing on it. `renderMenu` picks by `ROOMFILL`.
 
-**Why they had to diverge.** The wall-and-signs arrangement depends on the
-rail, and a phone has no pointer to drive one. What a first-time player got
-was a picture with four labels on it and no way to tell the picture was the
-menu. The four also carry very different weight as drawings: authored, they
-are 150x200, 176x168, 150x168 and 246x146, so the chalkboard is the biggest,
-loudest thing on the screen and it is the least important door in the room.
-**Three rounds went into making everything bigger and neither fault was a
-size.** A locker fixes both at once: it obviously presses, and four of them
-are four equal boxes whatever is inside.
+**The room cannot carry this screen at phone width, and five attempts is enough
+evidence.** The rail is what tells you what the objects do, and a phone has no
+pointer to drive one, so what arrived was a picture with four labels on it.
+Every fix aimed at SIZE failed, because size was never the fault:
 
-**A locker is a container, and that inverts the whole layout problem.** Before,
-every drawing was a fixed pixel size, so the ROOM had to shrink until four of
-them fit, and how big anything came out was whatever the browser's scaling left
-it. Ask for 760 room pixels in a 358 pixel box and a 13px sign arrives at six,
-with nothing in the code saying so. A locker scales its contents, so the layout
-can size the lockers to the window instead. `closeRoom` therefore composes **one
-to one with the screen**: a room pixel IS a CSS pixel, type asked for at 18
-arrives at 18, and the canvas keeps its 2x backing store so it stays crisp.
+| attempt | what came back |
+|---|---|
+| fill the window | a strip of room over half a screen of dead card stock |
+| draw it closer in | legible, and still a picture rather than a menu |
+| make them lockers | four frames holding a bat rack, a clipboard, a framed photo and a chalkboard: four objects of wildly different real size, above two people as tall as one frame. It stopped depicting anything. |
 
-Which grid (four across, two by two, one column) is picked by **the worst
-drawing in it**: for each shape, work out what a locker leaves for the object
-inside, fit all four, and take the arrangement where the one that comes out
-smallest comes out largest. That is the thing a player squints at.
+The arithmetic underneath: four modes need four labels a thumb apart and
+readable at arm's length, and four lockers side by side in 358 CSS pixels are 89
+each, which does not hold the word EXHIBITION. Any grid that fixes that stops
+being a room.
 
-The tunnel, the shirt rail and the bat bag belong to the wide room. In a locker
-room the wall is lockers, which is what a clubhouse wall is.
+**Real text is the point, not a detail.** Everything in a canvas is drawn at
+whatever the browser's scaling leaves it: the room's signs came out at six CSS
+pixels once and nothing in the code said so. A button's label is set in CSS and
+arrives at the size it asks for, and the suite asserts the computed font size
+rather than a number derived from a layout.
 
-Four things are easy to undo by accident:
+Two things are easy to undo by accident:
 
-- **A rotation is not a render.** The layout is chosen once per render, so
-  turning the phone left the upright room in a sideways window, showing a fifth
-  of the picture. There is a resize and orientationchange listener, and the
-  suite turns a phone both ways. It has already been deleted once by a patch
-  that replaced the block around it, and only the suite noticed.
-- **`thingBox(t)` is the only thing that knows where a door really starts**, and
-  a sign floating above an object and a nameplate inside a locker are not the
-  same rectangle. Work it out by hand anywhere (the hotspot, the pointer
-  outline, a check) and that copy measures a box half the layouts do not have.
-  One guard did exactly that and passed for a week.
-- The canvas is `object-fit: contain`, so if the scene's shape and its box's
-  shape drift apart the picture letterboxes while the hotspots stay where they
-  were. `renderMenu` measures the real box on the frame after it mounts and
-  recomposes if the guess was off. Assertions measure the PAINTED picture,
-  never the element, or a letterboxed room reads as a full one.
+- **A rotation is not a render.** Which menu a window gets is decided once per
+  render, so without the resize and orientationchange listener a phone turned
+  sideways keeps whichever one it had. It used to be the room that went stale
+  that way; now it is the choice between the two. It has already been deleted
+  once by a patch that replaced the block around it, and only the suite noticed.
 - `body.roomfill` is one `matchMedia` in the script that the stylesheet keys
   off. Write that query out a second time in CSS and the two drift.
 
