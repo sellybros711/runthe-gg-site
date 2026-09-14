@@ -7444,9 +7444,15 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
 <script src="crest.js?v=10"></script>
-<!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
-     panel looks the same everywhere and one "don't show this again" covers the lot. -->
-<script defer src="/assets/arcade-ad.js?v=3"></script>
+<!-- NO ARCADE HOUSE AD ON THIS GAME, by request, the same call the college game took
+     earlier and for the same reason. /assets/arcade-ad.js still runs on the homepage and
+     the golf game; this one asks nobody. Somebody who has opened this page has come to
+     draft a team, and interrupting that to sell them a different game is the one thing on
+     the site that takes something away from the player rather than adding to it. The
+     arcade is still one tap away in the prose on the front page and, for anybody who owns
+     the Arcade Card, on the "What you unlocked" sheet. Neither of those interrupts.
+     The script tag is gone as well as the call: a panel that loads is a panel one line
+     away from being back. cfb/build/test/test_arcade_ad.mjs holds both games to it. -->
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
@@ -8762,11 +8768,9 @@ async function boot(){
     ga('game_loaded');
     /* A beat after the intro lands, because the auth client decides on ITS first change
        whether it is opening a sheet of its own, and this must not get there first.
-       askArcadeAd() re-reads the screen and the sheet when the timer fires, so the delay
-       is politeness rather than the actual guard. */
-    /* The guide first, and only ever to somebody who has never started a run. The arcade
-       ad checks for it and stands down, so the two can share the same beat. */
-    setTimeout(()=>{ firstRunGuide(); askArcadeAd(); },1200);
+       ONLY THE GUIDE NOW. askArcadeAd() shared this timer and has been removed: this game
+       does not put up a house ad for another one. */
+    setTimeout(()=>{ firstRunGuide(); },1200);
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
@@ -11865,27 +11869,14 @@ function firstRunGuide(){
 }
 
 /* ---- RUN THE ARCADE ----
-   The panel itself is /assets/arcade-ad.js: one look and one set of storage keys for every
-   surface on the site, so ticking "don't show this again" anywhere silences it everywhere
-   and nobody is told twice in a sitting. All this game decides is WHEN it is polite to
-   ask, which is the only part that is local knowledge. */
-function askArcadeAd(){
-  const A=window.RTG_ARCADE_AD; if(!A) return;
-  if(A.forced()){ A.show({from:'football'}); return; }
-  if(!A.due()) return;
-  /* NOT OVER THE GUIDE. Somebody being told how to play this game for the first time does
-     not also want to be sold a different one; the guide is once per browser and the ad is
-     once per session, so the ad simply comes back next visit. */
-  if(frgUp()) return;
-  /* The front page, and nothing on top of it. A challenge link takes over the first
-     screen, and a sheet is already open when somebody is mid sign-up or has been sent to
-     the club picker; covering either would replace the thing they asked for with a thing
-     they did not. */
-  if(!$('s-intro').classList.contains('on')) return;
-  if($('sheet').classList.contains('on')) return;
-  if(wantModes||wantOneTeam||wantDefense||wantFull||wantDynasty) return;
-  A.show({from:'football'});
-}
+   THERE IS NO HOUSE AD ON THIS GAME ANY MORE. askArcadeAd() stood here and decided when it
+   was polite to interrupt: not over the first-run guide, not over a sheet, only on the front
+   page. Every one of those guards was right and the answer was still no, because the
+   politest possible interruption is still an interruption, and this is a game somebody
+   opened in order to play it.
+   REMOVED WITH ITS SCRIPT TAG rather than left loaded behind a disabled call, for the reason
+   written up there: a loaded panel is one line away from coming back. window.RTG_ARCADE_AD
+   does not exist on this page and nothing here may reintroduce it. */
 
 function eraPicker(){
   const eras=Object.keys(E.ERAS);
