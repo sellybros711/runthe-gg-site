@@ -7101,7 +7101,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="ar-sum"><span>Points this season</span><b id="ar-base">0</b></div>
       <div class="ar-x" id="ar-x"><span id="ar-xwhy">Season 1 pays once</span><b id="ar-mult">&times;1</b></div>
       <div class="ar-total" id="ar-season">0</div>
-      <div class="ar-run"><span>Dynasty score</span><b id="ar-run">0</b></div>
+      <div class="ar-run"><span id="ar-runlab">Current score</span><b id="ar-run">0</b></div>
       <!-- The owner's verdict, as the card's foot rather than a bar of its own. Its state is
            the only place red or green appears on this card. -->
       <div class="ownerbar" id="o-owner" hidden></div>
@@ -13822,7 +13822,11 @@ function paintWinter(){
      says at four times the size and with the consequence attached. A player who has
      arrived here confused is better served by being told which game he is in. */
   $('w-step').textContent='Dynasty';
-  $('w-score').innerHTML='Dynasty score: <span class="scorechip">'+SCORE(run.score||0)+'</span>';
+  /* "CURRENT SCORE", NOT "DYNASTY SCORE". The whole screen is already labelled Dynasty two
+     lines above this, so the word was doing nothing here except taking the space that says
+     WHEN the number is from. It is a running total that moves every season, and this screen
+     only exists for a run that survived, so it is always the current one. */
+  $('w-score').innerHTML='Current score: <span class="scorechip">'+SCORE(run.score||0)+'</span>';
   /* WHAT THE CAREER HAS DONE AND WHAT IT IS WALKING INTO, the same strip the season screen
      carries. The card already says the score, which is a points total rather than a record,
      and it says the bar and when it moves; neither of those is what the run has actually
@@ -17535,6 +17539,10 @@ function paintScore(v){
   xRow.classList.remove('in');
   baseEl.textContent='0';
   totalEl.textContent='0';
+  /* Same two states as the ledger heading under it: the number this counts up to is where
+     the run stands, and where a fired run stands is where it finished. */
+  const runLab=$('ar-runlab');
+  if(runLab) runLab.textContent=v.fired?'Final score':'Current score';
   const before=Math.max(0,(v.score||0)-h.score);
   runEl.textContent=SCORE(before);
 
@@ -17706,7 +17714,11 @@ function paintOwner(){
   if(wrap&&led){
     wrap.hidden=false;
     const n=$('o-ledn');
-    if(n) n.innerHTML='Dynasty score: <span class="scorechip">'+SCORE(v.score||0)+'</span>';
+    /* CURRENT WHILE IT IS STILL RUNNING, FINAL WHEN IT IS NOT. This heading is drawn on the
+       results screen after every season including the one somebody is fired in, so a flat
+       "current" would be the last thing a dead run said about itself. */
+    if(n) n.innerHTML=(v.fired?'Final score: ':'Current score: ')+
+      '<span class="scorechip">'+SCORE(v.score||0)+'</span>';
     led.innerHTML=run.history.map((h,i)=>{
       const cls=h.cleared?'pass':((i===run.history.length-1&&v.fired)?'fired':'miss');
       /* Rows that banked their roster can be opened; the OVR cell is always rendered, empty
