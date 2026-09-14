@@ -114,7 +114,15 @@ const INJECT = 'beginDynastyDraft,premiumSheet,profileSheet,pfPro,acctTier,premi
   + 'stubGrace:()=>{const got={};B.attemptGrace=async(m,reason)=>{const first=!got[reason];'
   + 'got[reason]=true;const s=dailyState[m]||{};'
   + 'return Object.assign({},s,{ok:true,allowance:(s.allowance||0)+(first?1:0)});};},'
+  /* A server that closes the window and stamps the wait, which is what the real
+     ps_attempt_day_end does. It counts its calls, because the assertion that matters is
+     how often the page asks rather than what comes back. */
+  + 'dailyStop,dailyDayEnd,'
+  + 'stubDayEnd:()=>{const n={c:0,fired:null};B.attemptDayEnd=async(m,f)=>{n.c++;n.fired=f;'
+  + 'const s=dailyState[m]||{};return Object.assign({},s,{used:s.allowance,ended:!!f,'
+  + 'resetsAt:new Date(Date.now()+864e5).toISOString()});};return n;},'
   + 'setPremium:(v)=>{premiumSet=v;},setDaily:(m,v)=>{dailyState[m]=v;},'
+  + 'getDaily:(m)=>dailyState[m],'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 const t = await openPage(browser, 'http://local.test/football/', { tester: true, inject: INJECT });
 await t.page.evaluate(() => window.__t.signIn());
@@ -341,7 +349,7 @@ ok('the rules sheet states all three', /One run a day/i.test(grace.rules)
   && /Fired in season one/i.test(grace.rules) && /Win a boss battle/i.test(grace.rules));
 ok('an owner is told about no limit at all', !/One run a day/i.test(grace.ownerRules));
 
-console.log('\nTHE SEASON RULE, ONCE 101 IS DEPLOYED');
+console.log('\nTHE SEASON RULE, ONCE 101 AND 102 ARE DEPLOYED');
 /*
  * THREE SEASONS A DAY ON ONE RUN, not one run a day. The unit arrives on the state row, so
  * every screen below is driven by setting it and nothing else: that is the contract between
@@ -391,23 +399,72 @@ const seas = await t.page.evaluate(async () => {
   return out;
 });
 ok('a spent day names the seasons, not a run',
-  /Out of seasons today/i.test(seas.capped.text) && /all 3 of your free seasons/i.test(seas.capped.text),
+  /That is your 3 seasons/i.test(seas.capped.text)
+    && /all 3 of your free seasons/i.test(seas.capped.text),
   seas.capped.text.slice(0, 120));
 ok('and says the dynasty is still there',
   /saved exactly where it stands/i.test(seas.capped.text), seas.capped.text.slice(0, 160));
+ok('and that the clock is theirs and 24 hours long',
+  /runs 24 hours/i.test(seas.capped.text), seas.capped.text.slice(0, 260));
 ok('the boss battle is the one way to earn another', seas.capped.grace === true);
 ok('and stops being offered once it is earned', seas.boss.grace === false);
 ok('a firing ends the day in its own words',
   /That is the day/i.test(seas.fired.text) && /a firing ends the day/i.test(seas.fired.text),
   seas.fired.text.slice(0, 120));
 ok('and is offered no boss battle, having no run to play one in', seas.fired.grace === false);
+ok('nothing anywhere promises a calendar reset',
+  ![seas.capped.text, seas.fired.text, seas.rules].some((s) => /midnight/i.test(s)));
 ok('a boss win announces a season, not a run',
-  /one more season today/i.test(seas.said), seas.said);
-ok('the rules sheet states the budget and the firing',
-  /Up to 3 seasons a day/i.test(seas.rules) && /Getting fired ends the day/i.test(seas.rules)
-    && !/One run a day/i.test(seas.rules), seas.rules.slice(0, 200));
+  /one more season\./i.test(seas.said) && !/today/i.test(seas.said), seas.said);
+ok('the rules sheet states the budget, the clock and the firing',
+  /3 seasons, then a wait/i.test(seas.rules) && /The clock is 24 hours/i.test(seas.rules)
+    && /Getting fired starts it early/i.test(seas.rules)
+    && !/One run a day/i.test(seas.rules), seas.rules.slice(0, 240));
 ok('an ended day sends the door to the spent sheet rather than the draft',
   seas.shut === 'daily' && seas.onDraft === false, seas.shut + ' onDraft=' + seas.onDraft);
+
+/*
+ * THE CLOCK STARTS WHEN THE DAY ENDS, AND EXACTLY ONCE.
+ *
+ * A dynasty day ends in two steps: the budget goes, then the page reports it and the server
+ * stamps 24 hours from that instant. Between them the door is shut with nothing counting
+ * down, and a player left in that state is stuck for good with no clock to wait out. It is
+ * only reachable by leaving in the seconds between a season's last snap and the screen that
+ * reports it, which is exactly the kind of bug nobody can reproduce.
+ *
+ * THE OTHER HALF MATTERS MORE. A results screen is reopened from a save every time somebody
+ * comes back to a finished run, so a second call that re-stamped the wait would turn looking
+ * at your own dynasty into another day's punishment. The page must not ask twice, and the
+ * server must not extend it if it does.
+ */
+const clock = await t.page.evaluate(async () => {
+  const T = window.__t;
+  T.setPremium([]);
+  const n = T.stubDayEnd();
+  const out = {};
+  /* Shut, with no clock running: the gate has a day to end before it says anything. */
+  T.setDaily('dynasty', { used: 3, allowance: 3, unit: 'season', ended: false, resetsAt: null });
+  document.getElementById('sheet').classList.remove('on');
+  await T.dailyStop('dynasty');
+  out.started = n.c;
+  out.ticking = !!(T.getDaily('dynasty') || {}).resetsAt;
+  out.said = (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' ');
+  /* Shut with a clock already running: nothing to do but say so. */
+  const was = n.c;
+  document.getElementById('sheet').classList.remove('on');
+  await T.dailyStop('dynasty');
+  out.again = n.c - was;
+  /* And the firing carries its reason through, because the two endings read differently. */
+  await T.dailyDayEnd('dynasty', true);
+  out.fired = n.fired;
+  return out;
+});
+ok('a spent day with no clock on it starts one', clock.started === 1, String(clock.started));
+ok('and the sheet it opens can name a countdown', clock.ticking === true);
+ok('and says how long rather than a time of day',
+  /unlocks in/i.test(clock.said) && !/midnight/i.test(clock.said), clock.said.slice(0, 140));
+ok('a clock already running is never restarted', clock.again === 0, String(clock.again));
+ok('a firing says which ending it was', clock.fired === true, String(clock.fired));
 await t.page.close();
 
 /*

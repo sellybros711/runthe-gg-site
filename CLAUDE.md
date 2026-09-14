@@ -171,6 +171,34 @@ player out of seasons is refused before the winter rather than after it. Blockin
 cannot start; it is still guarded there, as a backstop for a second dynasty in the other
 slot spending the budget out from under this one.
 
+**The dynasty clock is 24 hours from when the day ENDS, per account.**
+`supabase/102_dynasty_rolling_day.sql` moved it off the shared Eastern midnight, because a
+calendar reset hands somebody who sits down at 11pm three more seasons an hour later and
+makes somebody who sits down at 9am wait fifteen hours for the same three. Same budget,
+different game, decided by nothing the player did. The wait starts at one of exactly two
+moments, and `paintOver` is where both of them land: the last season of the budget finishes,
+or the run is fired. A run that merely stops in the middle has not ended a day, so no clock
+runs and the seasons left are still there whenever they come back.
+
+**The Trade Machine keeps the calendar day and that is not an oversight.** One run there IS
+one sitting, so there is no finished-the-day moment separate from the run for a personal
+clock to hang on. `unit` is still what tells the two apart, and every countdown and fallback
+sentence on the page is written off `dailySeasons()` for exactly that reason.
+
+**Dynasty has its own table now.** `ps_daily_attempts` is keyed on (user, mode, DAY), and a
+rolling window that happened to cross midnight would silently become two rows and hand out a
+second budget. The shape of the key is the rule, so `ps_dynasty_day` holds one row per
+player with no day in it: `locked_until` null means open, in the future means waiting, in
+the past means the row is stale and the next WRITE rolls it forward. Rolling lazily is what
+keeps `ps_attempts_state` `stable`, which is what keeps drawing the front page from ever
+being able to cost somebody a season.
+
+**`ps_attempt_day_end` must never extend a wait that is already running.** The results
+screen it is called from is reopened from a save every time somebody comes back to a
+finished run, so a second stamp would turn looking at your own dynasty into another day's
+punishment. `check-premium.mjs` asserts both halves: that a shut day with no clock on it
+starts one, and that a clock already running is never restarted.
+
 **Boot BOTH views before shipping anything that touches this.** A crash that only hit
 testers has already shipped: moving the store out of `football/index.html` left
 `pwArt('star')` behind on the home prompt card, which only a tester sees, so

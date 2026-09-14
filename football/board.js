@@ -1181,10 +1181,14 @@
      so a typo here fails loudly rather than quietly handing something out. */
   const attemptGrace = (mode, reason) =>
     attemptsCall('ps_attempt_grace', mode, { p_reason: reason });
-  /* The run is over, so the day is. Only Dynasty calls it, and only on a firing.
+  /* THE ONE CALL THAT STARTS A WAIT. Made at the moment a dynasty day ends, which
+     is the third season's results screen or any season's if it fired them, and
+     `fired` is which of the two it was. It never extends a wait already running,
+     so a results screen reopened from a save costs nothing.
      Answers 404 on a database still on 100_daily_grace_reasons.sql, which fail()
      turns into null, which the page reads as no opinion and lets the player play. */
-  const attemptDayEnd = (mode) => attemptsCall('ps_attempt_day_end', mode);
+  const attemptDayEnd = (mode, fired) =>
+    attemptsCall('ps_attempt_day_end', mode, { p_fired: !!fired });
 
   window.PS_BOARD = {
     API_VERSION: 16,
