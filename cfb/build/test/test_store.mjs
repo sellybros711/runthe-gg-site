@@ -230,13 +230,13 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
      a state said, and on a card whose only other line is a slogan they read as decoration.
      The line has to carry the verb. */
   ok('the line under the name is the call to go Pro',
-    (await txt(p, '#b-hp-commish .hp-go')) === 'Go Pro and leave your mark on College Football forever',
-    await txt(p, '#b-hp-commish .hp-go'));
-  ok('and the slogan has stepped aside for it', !(await has(p, '#b-hp-commish .hp-sub')));
-  /* SENTENCE CASE, because spaced caps at this size is the setting that gets skimmed and
-     this is the one line on the card somebody has to actually read. */
+    (await txt(p, '#b-hp-commish .hp-sub')) === 'Go Pro and leave your mark on College Football forever',
+    await txt(p, '#b-hp-commish .hp-sub'));
+  ok('and it is marked as the selling one', await has(p, '#b-hp-commish .hp-sub.sell'));
+  /* SENTENCE CASE, because spaced caps at this size is the setting a sentence gets skimmed
+     in, and this is the one line on the card somebody has to actually read. */
   ok('it is set to be read rather than skimmed',
-    (await p.$eval('#b-hp-commish .hp-go', (e) => getComputedStyle(e).textTransform)) === 'none');
+    (await p.$eval('#b-hp-commish .hp-sub', (e) => getComputedStyle(e).textTransform)) === 'none');
   /* NO FIGURE ON THE FRONT PAGE. A price quoted before anything has been offered is a cost
      the reader has to decide against with nothing on the other side of the scale, and it is
      a second copy of a number that lives in the store. */
@@ -262,10 +262,13 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
   const p = await open(stub(true, ['cfb_premium'], BOUGHT), 'an owner gets the door back, with no lock on it');
   ok('the badge is not the gold one', !(await p.$eval('#b-hp-commish .hp-tag', (e) => e.classList.contains('pro')).catch(() => false)));
   ok('no padlock', !(await has(p, '#b-hp-commish .hp-namerow .mc-pad')));
-  ok('and nothing selling anything', !(await has(p, '#b-hp-commish .hp-go')));
-  /* An owner is done being sold to, so they get the stakes line back. */
-  ok('the slogan is back under the name',
-    (await txt(p, '#b-hp-commish .hp-sub')) === 'Five years. Nine groups. One chair.');
+  ok('and nothing selling anything', !(await has(p, '#b-hp-commish .hp-sub.sell')));
+  /* THE SAME SENTENCE, WITHOUT THE PRICE OF ADMISSION IN FRONT OF IT. An owner has the
+     thing, so they read the promise rather than an offer of it. */
+  ok('the line is the promise on its own',
+    (await txt(p, '#b-hp-commish .hp-sub')) === 'Leave your mark on College Football forever',
+    await txt(p, '#b-hp-commish .hp-sub'));
+  ok('and it never says Go Pro to somebody who has', !/Go Pro/.test(await txt(p, '#b-hp-commish')));
   /* A tap goes to the mode, because that is what they bought. */
   ok('the link still points at the mode',
     (await p.$eval('#b-hp-commish', (e) => e.getAttribute('href'))) === '/cfb/commish/');

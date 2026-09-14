@@ -614,8 +614,14 @@ window.GA_ID='G-L29P5MRWKE';
   .hp-commish:focus-visible{outline:2px solid #c084fc;outline-offset:2px}
   .hp-commish .hp-name{font-family:var(--fd);font-size:19px;font-weight:800;letter-spacing:.02em;
     color:#e9d5ff;line-height:1}
-  .hp-commish .hp-sub{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.05em;
-    text-transform:uppercase;color:rgba(233,213,255,.62);line-height:1.3;text-align:center}
+  /* NOT UPPERCASE, unlike the rest of this card, and that is the point rather than an
+     oversight. This was spaced caps while it held "Five years. Nine groups. One chair.",
+     three fragments doing the work of an image. It holds a sentence now, and spaced caps at
+     10px is the setting a sentence gets skimmed in. Capped at 30ch so it breaks into two
+     balanced lines on a phone and a desktop cannot stretch it into one long one. */
+  .hp-commish .hp-sub{font-family:var(--fn);font-size:11.5px;font-weight:700;
+    letter-spacing:.01em;color:rgba(233,213,255,.72);line-height:1.35;text-align:center;
+    max-width:30ch;margin-top:1px}
   /* IN THE CORNER, out of the flow, for the reason the football game found: anything in the
      flow shifts the label off centre. */
   .hp-commish .hp-tag{position:absolute;top:-8px;right:10px;
@@ -641,24 +647,19 @@ window.GA_ID='G-L29P5MRWKE';
      the padlock away from the name it is locking and off centre the whole row. */
   .hp-commish .hp-namerow .mc-pad{width:15px;height:15px;flex:0 0 auto;margin:0;fill:none;
     stroke:#fbbf24;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-  /* THE SELL, WHERE THE STAKES LINE GOES FOR SOMEBODY WHO CANNOT PLAY IT YET.
-     NOT UPPERCASE, unlike everything else on this card, and that is the point rather than an
-     oversight. The slogan above it is set in spaced caps because it is three fragments doing
-     the work of an image; this is a sentence somebody has to READ, and spaced caps at 10px
-     is the setting that gets skimmed. Sentence case in gold is the one line on the card that
-     looks like it is talking to you.
+  /* THE SAME LINE, IN THE COLOUR THAT MEANS MONEY. Only the colour changes, because only two
+     words of the sentence changed: gold is what the pill beside an account name and the
+     store's own tag wear, so the line matches the tag above it and the padlock beside the
+     name rather than being a third unrelated signal.
      NO PRICE IN IT, which is the rule the football game's own front page card follows. A
      number quoted before anything has been offered is a cost the reader must weigh with
      nothing on the other side of the scale, and it would be a second copy of a figure that
      lives in the store. This has one job: stop the card reading as free. The store is one
      tap away and it can show what the money buys. */
-  .hp-commish .hp-go{font-family:var(--fn);font-size:11.5px;font-weight:700;
-    letter-spacing:.01em;color:#fbbf24;line-height:1.35;text-align:center;
-    max-width:30ch;margin-top:1px}
+  .hp-commish .hp-sub.sell{color:#fbbf24}
   @media (max-width:340px){
     .hp-commish .hp-name{font-size:17px}
-    .hp-commish .hp-sub{font-size:9px;letter-spacing:.03em}
-    .hp-commish .hp-go{font-size:11px}
+    .hp-commish .hp-sub{font-size:11px}
   }
   /* 11px, not 12: at 12px "Leaderboard" wanted 108px of a 104px button on a 360 screen.
      Same word, same cause as the 340 rule below, one breakpoint up. */
@@ -5270,23 +5271,26 @@ function ensureCommishDoor(){
   commishDoor.innerHTML=tag
     +'<span class="hp-namerow">'+(locked?PADLOCK:'')
       +'<span class="hp-name">Commish Simulator</span></span>'
-    /* THE LINE UNDER THE NAME IS THE ONE THING THAT CHANGES, and which of the two it is
-       depends on whether this account can play the mode.
+    /* ONE SENTENCE, AND THE PRICE OF ADMISSION IN FRONT OF IT WHEN THERE IS ONE.
+       The line under the name says the same thing in both states, because it is the same
+       promise either way: what the mode is actually for is that the sport stays changed.
+       A buyer has it, so they read the promise. Somebody who has not bought reads the
+       promise with the two words that get them there in front of it.
 
-       A LOCK AND A GOLD TAG ARE NOT ENOUGH ON THEIR OWN. That was the first attempt at this
-       and it is a picture of a state rather than a sentence about it: a padlock is read as
-       decoration on a card whose only other line is a slogan, and PRO is a word this site
-       uses about an ACCOUNT rather than a price. Somebody skimming the front page still had
-       to infer it. So the line says the words. "Go Pro" is the verb, and what follows is
-       what the money is actually for, which is not five years of anything: it is that the
-       sport stays changed.
+       A LOCK AND A GOLD TAG ARE NOT ENOUGH ON THEIR OWN. That was the first attempt and it
+       is a picture of a state rather than a sentence about it: a padlock reads as decoration
+       on a card whose only other line is a slogan, and PRO is a word this site uses about an
+       ACCOUNT rather than about a price. Somebody skimming still had to infer it. "Go Pro"
+       is the verb, and it is the only difference between the two lines.
 
-       AND THE OTHER ONE IS NOT A PITCH. Somebody who has bought it does not need selling,
-       so they keep the stakes line, which is three beats in the football game's rhythm. The
-       lead-in above the card gives the what; this gives the weather. */
-    +(locked
-      ? '<span class="hp-go">Go Pro and leave your mark on College Football forever</span>'
-      : '<span class="hp-sub">Five years. Nine groups. One chair.</span>');
+       WHAT WENT, AND WHY IT IS NOT A LOSS. "Five years. Nine groups. One chair." was three
+       beats in the football game's rhythm, and it described the SHAPE of the mode: how long,
+       how many, how alone. The lead-in directly above the card ("or run it instead of
+       playing it") already gives that, and a card gets one line. Shape is what a mode is;
+       this is what it is for. */
+    +'<span class="hp-sub'+(locked?' sell':'')+'">'
+      +(locked?'Go Pro and leave your mark on College Football forever'
+              :'Leave your mark on College Football forever')+'</span>';
   /* UNDER THE TWO WAYS IN AND ABOVE THE ROW OF THREE, which is where the football game puts
      its second door: after the thing most people came for, before the things they came back
      for. Re-anchored on every call rather than appended once, so a repaint after an account
