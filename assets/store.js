@@ -312,7 +312,10 @@
     Dynasty is invisible to everybody off the tester list, so the row used to promote
     two doors most readers cannot open and stay quiet about the one they can. Buying
     ps_premium switches the Trade Machine's daily meter off. See dailyOn(). */
-    pwTile('trophy','Dynasty','Endless arcade mode','ps')+
+    /* NOT "Endless arcade mode". Run The Arcade and the Arcade Card are both products on
+       this site, and one of them is sold two cards below this one, so "arcade" as a genre
+       word reads as a place rather than a kind of game. */
+    pwTile('trophy','Dynasty','Endless. One life.','ps')+
     pwTile('swap','Trade Machine','Unlimited runs','ps')+
     pwTile('clipboard','Commissioner','Can you save College Football?','cfb')+
     '</div>'+
@@ -325,7 +328,14 @@
     so leaving it off would advertise a thing and then not sell it. It is a real part of
     the product rather than a nice side effect: dailyOn() stops metering the moment
     ps_premium is owned. */
-    pwGroupText('ps','Dynasty, Franchise and unlimited Trade Machine','Lifetime access')+
+    /* WHAT THE ROW ACTUALLY DELIVERS, named. This read "Dynasty, Franchise and unlimited
+       Trade Machine", which was wrong twice. Nothing in the game is called "Franchise": the
+       mode is One Franchise, and its quick draft half is FREE to any signed in account, so
+       the line was selling something a buyer already had. And it said nothing about what
+       changes, which is the limit: all three of these are playable without paying, on one
+       run a day. What is bought is that the counting stops. */
+    pwGroupText('ps','Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine',
+      'Lifetime access')+
     pwGroupText('cfb','Commissioner Mode','Lifetime access')+
     '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+
     (o.signedOut?'Sign in to go Pro':'Go Pro')+'</button>'+
