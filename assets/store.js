@@ -185,6 +185,27 @@
     '     MEASURE THIS WITH THE REAL FACES LOADED. Anton and Archivo are Google webfonts, and the\n' +
     '     generic sans a headless browser falls back to is far wider: the first sweep of this said\n' +
     '     three columns failed up to 450px, which was the fallback face talking. */\n' +
+    '  /* THE OFFER THAT DOES NOT COME BACK. Run The Bundle is refused to anybody who already\n' +
+    '     holds any product inside it, which is every buyer of the Premium Bundle: see the\n' +
+    '     already_owned answer in functions/api/stripe/checkout-bundle.js. So the cheaper card\n' +
+    '     is not a smaller version of this one, it is the end of this one, and a reader who\n' +
+    '     works that out after paying has been told something by silence.\n' +
+    '\n' +
+    '     IT SAYS ONE TIME AND NOT LIMITED TIME, on purpose. Nothing expires on a date. There\n' +
+    '     is no countdown to honour and no day this stops being sold, so a limited time claim\n' +
+    '     would be a deadline we never intend to keep, and the reader who comes back next\n' +
+    '     month and finds it unchanged has learned what our claims are worth. One time is the\n' +
+    '     literal truth about what the checkout will and will not sell.\n' +
+    '\n' +
+    '     THE SECOND SENTENCE IS NOT DECORATION. The sheet already says "One payment. No\n' +
+    '     subscription." three inches above this, so the words ONE TIME on their own read as\n' +
+    '     that same promise a second time. Naming what closes it is what makes it a different\n' +
+    '     fact. */\n' +
+    '  .pw-once{display:block;font-size:11.5px;line-height:1.4;color:var(--dim-2);\n' +
+    '    margin:13px 0 0;padding:9px 11px;border-radius:10px;\n' +
+    '    background:rgba(251,191,36,.08);box-shadow:inset 0 0 0 1px rgba(251,191,36,.3)}\n' +
+    '  .pw-once b{display:block;font-family:var(--fn);font-size:9.5px;font-weight:800;\n' +
+    '    letter-spacing:.11em;text-transform:uppercase;color:#fbbf24;margin:0 0 3px}\n' +
     '  @media (max-width:549px){\n' +
     '    .pw-hero{grid-template-columns:1fr 1fr}\n' +
     '    .pw-tile:last-child{grid-column:1 / -1}\n' +
@@ -382,6 +403,10 @@
     thing. What the Tour tier is worth belongs in Run The Tour, not on a receipt line. */
     pwGroupText('arcade','1 year of the Arcade Card','No auto-renewal')+
     pwGroupText('tour','100,000 coins and one Tour Pack')+
+    /* Last thing read before the button, because it is the thing that changes the
+       decision rather than describing it. See the note on .pw-once above. */
+    '<p class="pw-once"><b>One time offer</b>Buy the Premium Bundle on its own and '+
+    'this one closes. It is not offered again.</p>'+
     '<button class="btn" id="b-buy-rtb" style="width:100%;margin-top:14px">'+
     (o.signedOut?'Sign in to get it':'Get Run The Bundle')+'</button>'+
     '</div>'+
