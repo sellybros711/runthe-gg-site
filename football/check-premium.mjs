@@ -106,41 +106,123 @@ for (const [label, tester, url] of [
 
 console.log('\nTHE premium_unlocks ROW IS WHAT DECIDES, NOT THE TESTER LIST');
 const INJECT = 'beginDynastyDraft,premiumSheet,profileSheet,pfPro,acctTier,premiumPitch,dailyOn,'
+  + 'dailyGrace,dailySpentSheet,dynastyRulesHTML,canPlayClubDynasty,'
+  /* A grace server that grants each reason once, standing in for ps_attempt_grace. */
+  + 'stubGrace:()=>{const got={};B.attemptGrace=async(m,reason)=>{got[reason]=true;'
+  + 'return {ok:true,used:dailyState[m].used,allowance:1+Object.keys(got).length,'
+  + 'resetsAt:dailyState[m].resetsAt};};},'
   + 'setPremium:(v)=>{premiumSet=v;},setDaily:(m,v)=>{dailyState[m]=v;},'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 const t = await openPage(browser, 'http://local.test/football/', { tester: true, inject: INJECT });
 await t.page.evaluate(() => window.__t.signIn());
 
-for (const [who, owns] of [['a tester with no row', []], ['a tester holding ps_premium', ['ps_premium', 'cfb_premium']]]) {
-  const r = await t.page.evaluate((owns) => {
+/* THE RULES SHEET IS SHOWN ONCE PER BROWSER, so the first dynasty and every later one take
+   different paths through dynastyIntro. The dead button only appeared on the second, which
+   is the path almost every real press is. Both are driven. */
+for (const seenIntro of [false, true]) {
+console.log('  ' + (seenIntro ? 'having already seen the rules sheet:' : 'first dynasty in this browser:'));
+await t.page.evaluate((seen) => {
+  try { if (seen) localStorage.setItem('ps_dynintro', '1');
+    else localStorage.removeItem('ps_dynintro'); } catch (e) {}
+  window.__dynIntro = seen || undefined;
+}, seenIntro);
+/*
+ * THREE ACCOUNTS, AND THE FIRST ONE IS THE ONE THAT BROKE.
+ *
+ * A rowless tester WITH A RUN LEFT is the ordinary case: almost every press of Start a
+ * dynasty is this. The two cases below it were the only ones being checked, and both have a
+ * reason not to reach the draft (one is out of runs, the other owns the mode), so a gate
+ * that silently refused everybody without a row passed the whole suite while the button did
+ * nothing at all for the people using it.
+ */
+for (const [who, owns, day, want] of [
+  ['a tester with no row and a run left', [], { used: 0, allowance: 1 }, 'the mode'],
+  ['a tester with no row and none left', [], { used: 9, allowance: 1 }, 'the store on the spent sheet'],
+  ['a tester holding ps_premium', ['ps_premium', 'cfb_premium'], { used: 9, allowance: 1 }, 'the mode'],
+]) {
+  const r = await t.page.evaluate(([owns, day]) => {
     const T = window.__t;
     T.setPremium(owns);
-    const spent = { used: 9, allowance: 1, resetsAt: new Date(Date.now() + 3600e3).toISOString() };
-    T.setDaily('dynasty', spent); T.setDaily('trade', spent);
+    const st = { used: day.used, allowance: day.allowance,
+      resetsAt: new Date(Date.now() + 3600e3).toISOString() };
+    T.setDaily('dynasty', st); T.setDaily('trade', st);
+    /* And no saved run, or the replace sheet stands between the press and the draft. */
+    try { localStorage.removeItem('ps_dynasty_save'); } catch (e) {}
     document.getElementById('sheet').classList.remove('on');
     document.getElementById('sheet-in').dataset.kind = '';
     T.beginDynastyDraft();
+    /*
+     * THE END OF THE JOURNEY, NOT THE FIRST STEP OF IT.
+     *
+     * This used to count the rules sheet (#b-dyni-go) as "the mode", and that is exactly
+     * how a dead button got shipped: a SECOND ownership gate inside beginDraft returned
+     * silently one step later, so the rules sheet opened, Draft my team did nothing, and
+     * this check said the door was fine. Press through whatever stands in the way and
+     * insist on the draft screen itself.
+     */
+    const go = document.getElementById('b-dyni-go');
+    if (go) go.click();
     const kind = document.getElementById('sheet-in').dataset.kind;
-    const door = kind === 'premium' ? 'store' : kind === 'daily' ? 'the store on the spent sheet'
-      : (document.getElementById('b-dyni-go')
-        || [...document.querySelectorAll('.screen.on')].some((s) => s.id === 's-draft')
-        ? 'the mode' : 'nowhere (' + kind + ')');
+    const onDraft = [...document.querySelectorAll('.screen.on')].some((s) => s.id === 's-draft');
+    const door = onDraft ? 'the mode'
+      : kind === 'premium' ? 'store'
+      : kind === 'daily' ? 'the store on the spent sheet'
+      : 'nowhere (sheet=' + (kind || 'none') + ', screens='
+        + [...document.querySelectorAll('.screen.on')].map((s) => s.id).join(',') + ')';
+    /* THE SPENT DOOR CARRIES THE OFFER ITSELF, not a card that opens it. Read before the
+       profile sheet replaces the box. */
+    const box = document.getElementById('sheet-in');
+    const store = { tiles: [...box.querySelectorAll('.pw-tile b')].map((x) => x.textContent),
+      from: [...box.querySelectorAll('.pw-from')].map((x) => x.textContent),
+      buys: box.querySelectorAll('.pw-tier .btn').length };
     document.getElementById('sheet').classList.remove('on');
     T.profileSheet();
-    return { door, tier: T.acctTier(), pitch: T.premiumPitch(), metered: T.dailyOn(),
+    return { door, store, tier: T.acctTier(), pitch: T.premiumPitch(), metered: T.dailyOn(),
       goPro: !!document.getElementById('pf-prem'),
       proAccess: !!document.getElementById('pf-go-pro') };
-  }, owns);
+  }, [owns, day]);
   console.log('  ' + who + ':');
   const owner = owns.length > 0;
-  ok('    a spent day opens ' + (owner ? 'the mode' : 'the store'),
-    r.door === (owner ? 'the mode' : 'the store on the spent sheet'), r.door);
+  ok('    pressing the door reaches ' + want, r.door === want, r.door);
   ok('    dailyOn() is ' + (owner ? 'off' : 'on'), r.metered === !owner, String(r.metered));
   ok('    acctTier() is ' + (owner ? 'pro' : 'free'), r.tier === (owner ? 'pro' : 'free'), r.tier);
   ok('    premiumPitch() ' + (owner ? 'stands down' : 'offers'), r.pitch === !owner);
   ok('    the profile shows ' + (owner ? 'Your Pro access' : 'Go Pro'),
     owner ? (r.proAccess && !r.goPro) : (r.goPro && !r.proAccess),
     'goPro=' + r.goPro + ' proAccess=' + r.proAccess);
+  if (!owner && want !== 'the mode') {
+    /* The spent door was a card linking to the store, which is a second tap between
+       somebody who has just decided they want more and the thing that sells it. */
+    ok('    the spent door draws the bundle itself',
+      r.store.tiles.length === 3 && r.store.buys === 2,
+      r.store.tiles.join(', ') + ' / ' + r.store.buys + ' buy buttons');
+    ok('    and every tile says which game it is in',
+      r.store.from.join(' | ') === 'Perfect Season | Perfect Season | College Football',
+      r.store.from.join(' | '));
+  }
+  /* THE CARD PROMISES ONE FRANCHISE DYNASTY, so the row has to open it. This was the gate
+     that had not learned the paid tier exists: it read the tester list and nothing else, so
+     the store sold a mode the purchase did not deliver. Checked with the tester list EMPTY,
+     because with a tester on it the list answers and the row is never consulted. */
+  const club = await t.page.evaluate((owns) => {
+    const A = window.PS_DYNASTY_ACCESS;
+    const keptNames = A.TESTERS.slice(), keptIds = A.TESTER_IDS.slice();
+    A.TESTERS.length = 0; A.TESTER_IDS.length = 0;
+    const answer = window.__t.canPlayClubDynasty();
+    A.TESTERS.push.apply(A.TESTERS, keptNames);
+    A.TESTER_IDS.push.apply(A.TESTER_IDS, keptIds);
+    return answer;
+  }, owns);
+  ok('    One Franchise Dynasty ' + (owner ? 'opens on the row alone' : 'stays shut without one'),
+    club === owner, String(club));
+  /* Back to the front page for the next case, whichever screen the last one ended on. */
+  await t.page.evaluate(() => {
+    document.getElementById('sheet').classList.remove('on');
+    if (typeof window.__t.backToStart === 'function') window.__t.backToStart();
+    document.querySelectorAll('.screen.on').forEach((s) => s.classList.remove('on'));
+    document.getElementById('s-intro').classList.add('on');
+  });
+}
 }
 
 console.log('\nTHE STORE POSTS THE CATALOG KEYS AND NOTHING ELSE');
@@ -191,6 +273,62 @@ ok('all four grants are listed',
 ok('the Arcade year carries its end date', rec.text.includes(rec.ends), 'expected ' + rec.ends);
 ok('and it says nothing renews', /Nothing here renews/i.test(rec.text));
 ok('the Tour drop, unfulfilled, says it is on its way', /on its way/i.test(rec.text));
+
+console.log('\nTHE TWO WAYS TO EARN ANOTHER RUN ARE SAID OUT LOUD');
+/*
+ * The game grants a second run for being fired in season one and a third for winning a boss
+ * game, and for a long time it granted them SILENTLY: the allowance moved on the server, the
+ * door quietly went back to playable, and nobody was told either thing had happened. A rule
+ * nobody knows about is not a reward.
+ */
+const grace = await t.page.evaluate(async () => {
+  const T = window.__t;
+  T.setPremium([]);
+  T.setDaily('dynasty', { used: 1, allowance: 1, resetsAt: new Date(Date.now() + 3600e3).toISOString() });
+  /* A server that grants each reason once, which is the rule 100_daily_grace_reasons.sql
+     keeps. Without the "once" half, the repeat claim below cannot be checked. */
+  const got = {};
+  window.PS_BOARD_GRACE_STUB = true;
+  T.stubGrace();
+  const said = () => document.getElementById('toast').textContent;
+  const out = {};
+  document.getElementById('toast').textContent = '';
+  await T.dailyGrace('dynasty', 'fired'); out.fired = said();
+  document.getElementById('toast').textContent = '';
+  await T.dailyGrace('dynasty', 'fired'); out.again = said();
+  document.getElementById('toast').textContent = '';
+  await T.dailyGrace('dynasty', 'boss'); out.boss = said();
+  /* And the spent sheet, in the three states that decide whether it offers the rule. */
+  const sheetFor = (mode, allow) => {
+    T.setDaily(mode, { used: allow, allowance: allow, resetsAt: new Date(Date.now() + 3600e3).toISOString() });
+    document.getElementById('sheet').classList.remove('on');
+    T.dailySpentSheet(mode);
+    return !!document.getElementById('sheet-in').querySelector('.dgrace');
+  };
+  out.none = sheetFor('dynasty', 1);
+  out.both = sheetFor('dynasty', 3);
+  out.trade = sheetFor('trade', 1);
+  /* And the rules sheet, before anybody starts. */
+  T.setDaily('dynasty', { used: 0, allowance: 1, resetsAt: new Date(Date.now() + 3600e3).toISOString() });
+  const d = document.createElement('div');
+  d.innerHTML = T.dynastyRulesHTML('go');
+  out.rules = (d.innerText || '').replace(/\s+/g, ' ');
+  T.setPremium(['ps_premium']);
+  const o = document.createElement('div');
+  o.innerHTML = T.dynastyRulesHTML('go');
+  out.ownerRules = (o.innerText || '').replace(/\s+/g, ' ');
+  T.setPremium([]);
+  return out;
+});
+ok('a season one firing announces the extra run', /another run today/i.test(grace.fired), grace.fired);
+ok('the same reason twice announces nothing', grace.again === '', '"' + grace.again + '"');
+ok('a boss win announces the extra run', /another run today/i.test(grace.boss), grace.boss);
+ok('the spent sheet lists the two ways', grace.none === true);
+ok('and stops once both are earned', grace.both === false);
+ok('the Trade Machine, which earns neither, is not offered them', grace.trade === false);
+ok('the rules sheet states all three', /One run a day/i.test(grace.rules)
+  && /Fired in season one/i.test(grace.rules) && /Win a boss game/i.test(grace.rules));
+ok('an owner is told about no limit at all', !/One run a day/i.test(grace.ownerRules));
 await t.page.close();
 
 console.log('\nAN ACCOUNT OFF THE TESTER LISTS SEES NONE OF IT');

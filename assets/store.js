@@ -47,6 +47,9 @@
     '  /* BIGGER, BECAUSE THE ART IS NOW WORTH THE ROOM. 28px was sized for line icons and it is\n' +
     '     the size a favicon is: solid shapes with an inset detail need the space or the detail\n' +
     '     closes up. */\n' +
+    '  .pw-from{display:block;font-family:var(--fn);font-size:7.5px;font-weight:800;\n' +
+    '    letter-spacing:.1em;text-transform:uppercase;color:var(--gc);line-height:1.2;\n' +
+    '    margin:0 0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n' +
     '  .pw-tile svg{width:40px;height:40px;display:block;margin:0 auto;\n' +
     '    filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))}\n' +
     '  .pw-tile b{display:block;font-family:var(--fn);font-size:10.5px;letter-spacing:.07em;\n' +
@@ -251,11 +254,25 @@
         '<stop offset="1" stop-color="#d97706"/></linearGradient></defs>'+
       PW_ART[k].replace(/\{g\}/g,'url(#'+id+')')+'</svg>';
   }
-  const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwArt(k)+'<b>'+esc(name)+'</b>'+
+  /* WHICH GAME EACH MODE IS IN, on the tile.
+     The three tiles named Dynasty, Trade Machine and Commissioner and left a reader to work
+     out that the first two are the NFL game and the third is the college one. That is the
+     whole reason the bundle is worth $19.99 rather than feeling like three things from one
+     game, and it was only said further down, in the itemised cards. Same colour coding as
+     those cards, out of the same PW_GAME table, so the tile and the line it is sold on
+     cannot disagree about which game a mode belongs to. */
+  const pwTile=(k,name,line,gameKey)=>'<div class="pw-tile">'+
+    (gameKey&&PW_GAME[gameKey]
+      ? '<span class="pw-from" style="--gc:'+PW_GAME[gameKey].c+'">'+
+          esc(PW_GAME[gameKey].shortName||PW_GAME[gameKey].name)+'</span>'
+      : '')+
+    pwArt(k)+'<b>'+esc(name)+'</b>'+
     '<i>'+esc(line)+'</i></div>';
   const PW_GAME={
-    ps:{name:'The Perfect Season',c:'#f87171'},
-    cfb:{name:CFB_NAME,c:'#10b981'},
+    /* shortName is for the tiles, where the full name does not fit a third of a phone.
+     The cards below always use `name`. */
+    ps:{name:'The Perfect Season',c:'#f87171',shortName:'Perfect Season'},
+    cfb:{name:CFB_NAME,c:'#10b981',shortName:'College Football'},
     arcade:{name:'Run The Arcade',c:'#FF8A3D'},
     tour:{name:'Run The Tour',c:'#22b8cf'}
   };
@@ -306,9 +323,12 @@
     Dynasty is invisible to everybody off the tester list, so the row used to promote
     two doors most readers cannot open and stay quiet about the one they can. Buying
     ps_premium switches the Trade Machine's daily meter off. See dailyOn(). */
-    pwTile('trophy','Dynasty','Endless arcade mode')+
-    pwTile('swap','Trade Machine','Unlimited runs')+
-    pwTile('clipboard','Commissioner','Can you save College Football?')+
+    /* NOT "Endless arcade mode". Run The Arcade and the Arcade Card are both products on
+       this site, and one of them is sold two cards below this one, so "arcade" as a genre
+       word reads as a place rather than a kind of game. */
+    pwTile('trophy','Dynasty','Endless. One life.','ps')+
+    pwTile('swap','Trade Machine','Unlimited runs','ps')+
+    pwTile('clipboard','Commissioner','Can you save College Football?','cfb')+
     '</div>'+
 
     '<div class="pw-tier">'+
@@ -319,7 +339,14 @@
     so leaving it off would advertise a thing and then not sell it. It is a real part of
     the product rather than a nice side effect: dailyOn() stops metering the moment
     ps_premium is owned. */
-    pwGroupText('ps','Dynasty, Franchise and unlimited Trade Machine','Lifetime access')+
+    /* WHAT THE ROW ACTUALLY DELIVERS, named. This read "Dynasty, Franchise and unlimited
+       Trade Machine", which was wrong twice. Nothing in the game is called "Franchise": the
+       mode is One Franchise, and its quick draft half is FREE to any signed in account, so
+       the line was selling something a buyer already had. And it said nothing about what
+       changes, which is the limit: all three of these are playable without paying, on one
+       run a day. What is bought is that the counting stops. */
+    pwGroupText('ps','Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine',
+      'Lifetime access')+
     pwGroupText('cfb','Commissioner Mode','Lifetime access')+
     '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+
     (o.signedOut?'Sign in to go Pro':'Go Pro')+'</button>'+
@@ -332,12 +359,17 @@
     '<span class="pw-was">$'+WORTH+'</span>'+
     '<span class="pw-save">Save $'+Math.round(WORTH-RTB)+'</span></div>'+
     '<p class="pw-note" style="margin:9px 0 2px">Everything above, plus two more games.</p>'+
-    /* "Everything above" carries the two Lifetime access lines with it, so the two lines
-    this card adds have to say plainly that they are not that. The Arcade Card is twelve
-    months and then it stops. It is still not a subscription: nothing renews it and
-    nothing charges again, which is the half a buyer is actually anxious about. */
-    pwGroupText('arcade','1 year of the Arcade Card','12 months. It does not renew.')+
-    pwGroupText('tour','100,000 coins and one Tour Pack','Tour is the mid pack tier. Yours to spend.')+
+    /* "Everything above" carries the two Lifetime access lines with it, so the Arcade line
+    has to say plainly that it is not one. The term column is for the TERM and nothing else:
+    "12 months" was already said by the line above it, and what a buyer is anxious about is
+    not the length, it is whether a card will be sold to them again next year without being
+    asked. So the column answers only that.
+    THE TOUR LINE CARRIES NO TERM AT ALL, because it has none. Coins and a pack are handed
+    over once and then they are just yours, and a column that reads "Lifetime access,
+    No auto-renewal, Tour is the mid pack tier" is a column that has stopped meaning one
+    thing. What the Tour tier is worth belongs in Run The Tour, not on a receipt line. */
+    pwGroupText('arcade','1 year of the Arcade Card','No auto-renewal')+
+    pwGroupText('tour','100,000 coins and one Tour Pack')+
     '<button class="btn" id="b-buy-rtb" style="width:100%;margin-top:14px">'+
     (o.signedOut?'Sign in to get it':'Get Run The Bundle')+'</button>'+
     '</div>'+

@@ -272,17 +272,39 @@
   }
   // Already a member - manage/cancel instead of buying a second card (mirrors
   // how the golf Tour Pass won't sell you a pass you already own).
+  /* NOT EVERY MEMBER HAS A SUBSCRIPTION.
+   *
+   * A card can be held without one: it can come with a one-time purchase made
+   * elsewhere on the site, and it can be comped. Offering one of those "Manage
+   * subscription" names a thing they do not have, and sends them to a billing
+   * portal with nothing in it. It also implies the card renews, which for a
+   * membership bought outright is a false statement about something somebody
+   * paid for: it runs its term and stops.
+   *
+   * So the button appears when Stripe is actually billing the account, and not
+   * otherwise. board.js answers that from the subscriptions table, which is the
+   * one question that table is still asked. Null is "not known yet" (offline,
+   * or the read has not landed), and an unknown is treated as no claim either
+   * way: the button is held back rather than shown on a guess, because showing
+   * it wrongly is the failure being fixed. */
+  function billed(){
+    try{ return !!(window.RTG_BOARD && RTG_BOARD.billing && RTG_BOARD.billing()===true); }catch(e){ return false; }
+  }
   function renderMember(){
     var b=$('rtgcardBody');
+    var bills=billed();
     b.innerHTML =
       '<div class="rtgc-kick">Arcade Card</div>'+
       '<h2 class="rtgc-h">You’re a member</h2>'+
       '<p class="rtgc-sub">You’ve got unlimited plays and the full archive. Thanks for supporting Run The Arcade.</p>'+
       '<div class="rtgc-card"><div class="name">' + ICN.ticket + 'Arcade Card</div>'+benefitsHTML()+'</div>'+
-      '<button class="rtgc-go" id="rtgcardManage" type="button">Manage subscription</button>'+
+      (bills
+        ? '<button class="rtgc-go" id="rtgcardManage" type="button">Manage subscription</button>'
+        : '<div class="rtgc-fine">No recurring billing on this membership. Nothing to cancel.</div>')+
       '<div id="rtgcardErr"></div>'+
       '<button class="rtgc-ghost" id="rtgcardLater" type="button">Close</button>';
     $('rtgcardLater').onclick=close;
+    if(!bills) return;
     $('rtgcardManage').onclick=function(){
       var go=$('rtgcardManage'); if(go){ go.disabled=true; go.textContent='Opening…'; }
       Promise.resolve(portal()).then(function(d){
