@@ -5783,7 +5783,13 @@ function thanksSheet(){
    three permanent unlocks telling their owner they are still on the way is a worse lie
    than the one this prevents. */
 const PRO_ITEM={
-  ps_premium:{game:'ps',text:'Dynasty, Franchise and unlimited Trade Machine'},
+  /* WORDED THE SAME AS THE STORE LINE IT IS THE RECEIPT FOR, and as the football game's own
+     copy of this table. It read "Dynasty, Franchise and unlimited Trade Machine", which was
+     wrong twice: nothing in the game is called Franchise (the mode is One Franchise Dynasty),
+     and it implied only the Trade Machine was unlimited when the limit lifts on all three.
+     A receipt that describes less than the card somebody bought from reads as something
+     having been taken away. See pwGroupText('ps', ...) in /assets/store.js. */
+  ps_premium:{game:'ps',text:'Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine'},
   cfb_premium:{game:'cfb',text:'Commissioner Mode'},
   arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
   runtour_pack:{game:'tour',text:'100,000 coins and one Tour Pack',wait:true}
