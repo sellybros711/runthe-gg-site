@@ -7389,7 +7389,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=4"></script>
+<script src="/assets/store.js?v=5"></script>
 <script defer src="auth.js?v=5"></script>
 <script>
 (function(){
@@ -7593,16 +7593,29 @@ const canPlayDynasty=()=>{
   if(!authState.signedIn) return false;
   return A.allowed({name:authState.name,userId:authState.userId});
 };
-/* ONE FRANCHISE DYNASTY IS A PREMIUM MODE, and there is no premium yet, so for now this is
-   the tester list and nothing else.
-   IT IS DELIBERATELY NOT canPlayDynasty(). That one answers true for everybody the moment
-   DYNASTY_LIVE flips, which is the point of that flag and exactly the wrong behaviour here:
-   opening the base mode to the site must not hand this one out with it. When the paid tier
-   exists, this is the single function that learns about it. */
+/*
+ * ONE FRANCHISE DYNASTY IS A PREMIUM MODE, and the premium now exists.
+ *
+ * This used to read the tester list and nothing else, with a note saying "when the paid
+ * tier exists, this is the single function that learns about it". The tier exists, the
+ * store sells it by name, and this function had not learned: the card promised One
+ * Franchise Dynasty and the row did not open it. A tile advertising something that does
+ * not open is worse than no tile.
+ *
+ * SO THE ROW GRANTS IT, and the tester list still does too. Those are two different jobs
+ * and both are wanted: the list is who can SEE an unannounced mode, the row is who has
+ * bought it. Keeping the list here is what lets a tester holding no row walk the
+ * not-bought view of the rest of the store without losing the mode they are testing.
+ *
+ * STILL DELIBERATELY NOT canPlayDynasty(). That one answers true for everybody the moment
+ * DYNASTY_LIVE flips, and opening the base mode to the site must not hand this one out
+ * with it. Ownership is the thing that opens it after launch, which is what the store says.
+ */
 const canPlayClubDynasty=()=>{
+  if(!authState.signedIn) return false;
+  if(dynastyOwned()) return true;
   const A=window.PS_DYNASTY_ACCESS;
   if(!A||typeof A.isTester!=='function') return false;
-  if(!authState.signedIn) return false;
   return !!(A.isTester(authState.name)||A.isTesterId(authState.userId));
 };
 /* WHAT THE ACCOUNT OWNS, from the database rather than any list in a page, which is the
@@ -20510,7 +20523,7 @@ const PRO_ITEM={
   /* WORDED THE SAME AS THE STORE LINE IT IS THE RECEIPT FOR. A customer reads this after
      paying, so a shorter description here than on the card they bought from reads as
      something having been taken away. See pwGroupText('ps', ...) in the paywall. */
-  ps_premium:{game:'ps',text:'Dynasty, Franchise and unlimited Trade Machine'},
+  ps_premium:{game:'ps',text:'Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine'},
   cfb_premium:{game:'cfb',text:'Commissioner Mode'},
   arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
   runtour_pack:{game:'tour',text:'100,000 coins and one Tour Pack',wait:true}

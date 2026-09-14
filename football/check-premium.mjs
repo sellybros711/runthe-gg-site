@@ -106,7 +106,7 @@ for (const [label, tester, url] of [
 
 console.log('\nTHE premium_unlocks ROW IS WHAT DECIDES, NOT THE TESTER LIST');
 const INJECT = 'beginDynastyDraft,premiumSheet,profileSheet,pfPro,acctTier,premiumPitch,dailyOn,'
-  + 'dailyGrace,dailySpentSheet,dynastyRulesHTML,'
+  + 'dailyGrace,dailySpentSheet,dynastyRulesHTML,canPlayClubDynasty,'
   /* A grace server that grants each reason once, standing in for ps_attempt_grace. */
   + 'stubGrace:()=>{const got={};B.attemptGrace=async(m,reason)=>{got[reason]=true;'
   + 'return {ok:true,used:dailyState[m].used,allowance:1+Object.keys(got).length,'
@@ -200,6 +200,21 @@ for (const [who, owns, day, want] of [
       r.store.from.join(' | ') === 'Perfect Season | Perfect Season | College Football',
       r.store.from.join(' | '));
   }
+  /* THE CARD PROMISES ONE FRANCHISE DYNASTY, so the row has to open it. This was the gate
+     that had not learned the paid tier exists: it read the tester list and nothing else, so
+     the store sold a mode the purchase did not deliver. Checked with the tester list EMPTY,
+     because with a tester on it the list answers and the row is never consulted. */
+  const club = await t.page.evaluate((owns) => {
+    const A = window.PS_DYNASTY_ACCESS;
+    const keptNames = A.TESTERS.slice(), keptIds = A.TESTER_IDS.slice();
+    A.TESTERS.length = 0; A.TESTER_IDS.length = 0;
+    const answer = window.__t.canPlayClubDynasty();
+    A.TESTERS.push.apply(A.TESTERS, keptNames);
+    A.TESTER_IDS.push.apply(A.TESTER_IDS, keptIds);
+    return answer;
+  }, owns);
+  ok('    One Franchise Dynasty ' + (owner ? 'opens on the row alone' : 'stays shut without one'),
+    club === owner, String(club));
   /* Back to the front page for the next case, whichever screen the last one ended on. */
   await t.page.evaluate(() => {
     document.getElementById('sheet').classList.remove('on');
