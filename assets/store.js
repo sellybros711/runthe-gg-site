@@ -54,6 +54,9 @@
     '    filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))}\n' +
     '  .pw-tile b{display:block;font-family:var(--fn);font-size:10.5px;letter-spacing:.07em;\n' +
     '    text-transform:uppercase;margin-top:7px;line-height:1.15;color:var(--ink)}\n' +
+    '  .pw-also{display:block;font-size:10px;line-height:1.3;\n' +
+    '    margin-top:6px;padding-top:6px;border-top:1px solid var(--line);\n' +
+    '    color:var(--dim-2);opacity:.85}\n' +
     '  .pw-tile i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);\n' +
     '    margin-top:3px;line-height:1.25}\n' +
     '  /* A PURCHASE AS A CARD, so the two can be compared side by side rather than one being\n' +
@@ -250,13 +253,16 @@
      game, and it was only said further down, in the itemised cards. Same colour coding as
      those cards, out of the same PW_GAME table, so the tile and the line it is sold on
      cannot disagree about which game a mode belongs to. */
-  const pwTile=(k,name,line,gameKey)=>'<div class="pw-tile">'+
+  const pwTile=(k,name,line,gameKey,also)=>'<div class="pw-tile">'+
     (gameKey&&PW_GAME[gameKey]
       ? '<span class="pw-from" style="--gc:'+PW_GAME[gameKey].c+'">'+
           esc(PW_GAME[gameKey].shortName||PW_GAME[gameKey].name)+'</span>'
       : '')+
     pwArt(k)+'<b>'+esc(name)+'</b>'+
-    '<i>'+esc(line)+'</i></div>';
+    '<i>'+esc(line)+'</i>'+
+    /* A SECOND, QUIETER LINE for the thing a tile carries that is not the headline. The
+       Dynasty tile covers two modes and only one of them is the pitch. */
+    (also?'<span class="pw-also">'+esc(also)+'</span>':'')+'</div>';
   const PW_GAME={
     /* shortName is for the tiles, where the full name does not fit a third of a phone.
      The cards below always use `name`. */
@@ -315,7 +321,8 @@
     /* NOT "Endless arcade mode". Run The Arcade and the Arcade Card are both products on
        this site, and one of them is sold two cards below this one, so "arcade" as a genre
        word reads as a place rather than a kind of game. */
-    pwTile('trophy','Dynasty','Endless. One life.','ps')+
+    pwTile('trophy','Dynasty Mode','Draft a team and build up your legacy.','ps',
+      'Also available with Pro: One Franchise Dynasty Mode')+
     pwTile('swap','Trade Machine','Unlimited runs','ps')+
     pwTile('clipboard','Commissioner','Can you save College Football?','cfb')+
     '</div>'+
