@@ -175,14 +175,17 @@
     '     two lines at every width up to 420px and COMMISSIONER clipping up to 400px. A wrapped\n' +
     '     name pushes that tile\'s description down twelve pixels while its neighbours stay put, so\n' +
     '     the row reads as a mistake rather than a layout.\n' +
-    '     WHY 449 AND NOT 429, which is the last width that actually fails. At 430px the three\n' +
-    '     names fit with about two pixels to spare on TRADE MACHINE, which is not a margin, it is\n' +
-    '     a coincidence. 450px is the first width with real room (roughly eight pixels), so the\n' +
-    '     switch waits for it. Renaming a tile to something longer moves both numbers.\n' +
+    '     RENAMING A TILE MOVES THIS NUMBER, and it already has. The breakpoint was 449 when the\n' +
+    '     longest name was TRADE MACHINE. COMMISSIONER MODE is longer, and the same sweep now\n' +
+    '     shows it wrapping at every width from 440 up to 520.\n' +
+    '     WHY 549 AND NOT 529, which is the last width that actually fails. At 530px the longest\n' +
+    '     name fits with TWO pixels to spare, which is not a margin, it is a coincidence, and the\n' +
+    '     previous number was picked the same way for the same reason. 550px is the first width\n' +
+    '     with real room, about eight pixels.\n' +
     '     MEASURE THIS WITH THE REAL FACES LOADED. Anton and Archivo are Google webfonts, and the\n' +
     '     generic sans a headless browser falls back to is far wider: the first sweep of this said\n' +
     '     three columns failed up to 450px, which was the fallback face talking. */\n' +
-    '  @media (max-width:449px){\n' +
+    '  @media (max-width:549px){\n' +
     '    .pw-hero{grid-template-columns:1fr 1fr}\n' +
     '    .pw-tile:last-child{grid-column:1 / -1}\n' +
     '  }';
@@ -335,7 +338,9 @@
     pwTile('trophy','Dynasty Mode','Draft a team and build up your legacy.','ps',
       'Also available with Pro: One Franchise Dynasty Mode')+
     pwTile('swap','Trade Machine','Unlimited runs','ps')+
-    pwTile('clipboard','Commissioner','Can you save College Football?','cfb')+
+    /* COMMISSIONER MODE, which is what the game calls it and what the card below this one
+       calls it. The tile was the only place saying just "Commissioner". */
+    pwTile('clipboard','Commissioner Mode','Can you save College Football?','cfb')+
     '</div>'+
 
     '<div class="pw-tier">'+
