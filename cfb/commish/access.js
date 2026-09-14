@@ -38,6 +38,7 @@
     'runnyj',
     'slimeyb3',
     'csel8',      /* the free-view tester: through the door, but holds no premium row */
+    'jordantest', /* second free-view tester: same shape as csel8, no premium row */
   ];
 
   /* Supabase account ids. For an account with no username chosen, this is the only way on

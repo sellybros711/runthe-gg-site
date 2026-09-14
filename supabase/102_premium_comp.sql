@@ -18,6 +18,11 @@
 --                     at every dynasty door and the pitch at the Commish gate.
 --                     DO NOT grant csel8 here, or the not-bought view he
 --                     exists to judge has nobody looking at it.
+--   jordantest        NO ROW, on purpose: a second account shaped exactly like
+--                     csel8, on the same two tester lists (dynasty and commish,
+--                     NOT fullteam) and holding nothing. Two people can walk the
+--                     not-bought path at once without either of them buying and
+--                     ending their own view of it. Same rule: DO NOT grant here.
 --   slimeyb3          no row either, so sees what csel8 sees until added below.
 --
 -- MATCHING: lower(username), the lesson 72_comp_passes.sql wrote down. The
