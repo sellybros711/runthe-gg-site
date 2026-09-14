@@ -32970,8 +32970,40 @@ function dDecTargets(g, sc){
       return {agg:[g.cx(y1),y1], safe:[g.cx(y2),y2], al:CA('Chase it'), sl:CS('Lay back')};
     }
   }
-  const off=Math.max(3,(g.greenR?g.greenR[0]:12)*0.6)*(pin[0]>gcx?-1:1);     // pin-hunt vs middle of the green
-  return {agg:[pin[0],pin[1]], safe:[gcx+off,L], al:'At the pin', sl:'Middle'};
+  // Pin-hunt vs the fat of the green. The safe point is SEARCHED for rather than stepped to, and that is
+  // the fix rather than a refinement: it used to be gcx plus 0.6 of the green's x-radius on the side away
+  // from the pin, which is two separate wrongs. The pin itself only ever sits 0.42 to 0.58 of that radius
+  // out, so "Middle" was aiming FURTHER off centre than the flag. And nothing consulted g.bunkers, which
+  // is right here in the same coordinates, so on a green with sand on the side away from the pin the
+  // option labelled Middle pointed into it while the card beside it warned that the aggressive line was
+  // 33% bunker (owner: "why does middle look like its pointed in the bunker").
+  // A grid of points across the middle of the green, scored on how far each sits from the nearest hazard.
+  // Clearance is capped, so once a point is comfortably clean the tie breaks toward the side away from the
+  // pin and then toward the centre. Clearance outranks the pin side ON PURPOSE, and the card beside this
+  // says why: the option is captioned "Play to the open side", not "play away from the flag". When the
+  // side away from the pin is the side holding the sand, the open side is the other one, and aiming there
+  // is the option doing its job rather than breaking its rule.
+  const R=g.greenR||[12,12], away=(pin[0]>gcx?-1:1);
+  let best=null;
+  for(let ix=-3; ix<=3; ix++) for(let iy=-2; iy<=2; iy++){
+    const x=gcx+ix*R[0]*0.17, y=L+iy*R[1]*0.17;
+    // Sand only, and deliberately. Every candidate here is on the putting surface by construction (the
+    // grid never reaches past 0.51 of the green's radius), and a point on the green is on grass: a pond
+    // is drawn around a green, never under it. Water WAS in this sum, measured as a circle of its longer
+    // radius, and that is wrong in the one place it matters most. An island green's pond wraps the whole
+    // surface, so every candidate read as deep underwater, the deepest right in the middle, and the
+    // scoring turned into noise that pushed the target toward the edge of the green. Caught by a hole
+    // with no hazard within 190 yards whose safe target still crossed to the pin's side.
+    let clear=999;
+    (g.bunkers||[]).forEach(b=>{ clear=Math.min(clear, Math.hypot(x-b.x,y-b.y)-b.r); });
+    // Room is capped at 16, so once a point is comfortably clear more room stops earning anything and the
+    // side preference decides. Banding room into steps instead was tried and is worse at the only job
+    // this has: it put the target within six of sand on 2.2% of holes against 0.8%, and dropped the
+    // worst hole on the site from 3.02 of room to 2.32.
+    const sc2=Math.min(clear,16) + ix*away*1.2 - Math.abs(iy)*0.6 - Math.abs(ix)*0.25;
+    if(!best || sc2>best.s) best={x,y,s:sc2};
+  }
+  return {agg:[pin[0],pin[1]], safe:[best.x,best.y], al:'At the pin', sl:'Middle'};
 }
 // place the two tappable targets on the window shell (called from drawWindow when a decision is pending)
 function dPlaceTargets(shell, g, sc, pick){
