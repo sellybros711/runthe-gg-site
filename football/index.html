@@ -1315,6 +1315,12 @@ window.GA_ID='G-L29P5MRWKE';
     white-space:nowrap}
   .gb-foot .gb-next{text-align:right;flex:0 0 auto}
   .gb-foot:empty{display:none}
+  /* THE STRIP INSIDE THE WINTER CARD. That card pads its own children by 15px and the strip
+     was written for a box that pads itself, so it takes the inset here rather than carrying
+     a padding that would be wrong on the season screen. */
+  .wc-strip{padding:0 15px}
+  .wc-strip[hidden]{display:none}
+  .wc-strip .gb-foot{margin-top:11px}
   /* STACKED RATHER THAN SQUEEZED on a narrow phone. Two halves of a sentence fighting over
      one line is how the record came to be split in the first place; given their own lines
      they both read, and the strip costs one more line on the screen that has room for it. */
@@ -6770,6 +6776,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <!-- The same mandate banner on the winter screen, where the cuts that reshape the roster
            happen. Updates live as you release a man. -->
       <div class="mandate" id="w-mandate" hidden></div>
+      <!-- THE SAME STRIP THE SEASON SCREEN CARRIES, from the same function, because it is
+           the same two facts and a player who has learned to read it on one screen should
+           not have to learn it again on the other. -->
+      <div class="wc-strip" id="w-career"></div>
       <div class="wc-foot">
         <span class="wsum" id="w-summary"></span>
         <button class="wrules" id="b-w-rules">Dynasty rules</button>
@@ -13813,6 +13823,18 @@ function paintWinter(){
      arrived here confused is better served by being told which game he is in. */
   $('w-step').textContent='Dynasty';
   $('w-score').innerHTML='Dynasty score: <span class="scorechip">'+SCORE(run.score||0)+'</span>';
+  /* WHAT THE CAREER HAS DONE AND WHAT IT IS WALKING INTO, the same strip the season screen
+     carries. The card already says the score, which is a points total rather than a record,
+     and it says the bar and when it moves; neither of those is what the run has actually
+     won, and nothing here said whether the season being planned for is a boss season. That
+     is the one fact on this screen that should change who you keep.
+     FROM run.seasonNo AND NOT seasonNo+1: beginOffseason has already advanced it, so on this
+     screen it is the season about to be played. The bar half is off because the goal block
+     under this one already says the bar and when it steps, much larger. */
+  {
+    const cr=$('w-career');
+    if(cr){ cr.innerHTML=dynFootStrip(run.seasonNo,false); cr.hidden=!cr.innerHTML; }
+  }
   /* THE CAP MOVED AND NOTHING SAID SO. It grows six percent every winter, which is the one
      thing working in your favour against salaries that only ever rise, and it was happening
      silently behind a bar whose ceiling quietly changed between two paints. */
@@ -14714,7 +14736,7 @@ function paintDynastyBar(s){
             : need+' more from '+left+' game'+(left===1?'':'s')+'.'))+'</div>'+
       '</div>'+
     '</div>'+
-    dynFootStrip()+GD_HELP;
+    dynFootStrip(run.seasonNo+1,true)+GD_HELP;
   bindGdHelp(el);
 }
 
@@ -14754,42 +14776,66 @@ function dynSeasonChip(){
  * SEASON ONE GETS NO LEFT HALF rather than "0-0". There is nothing behind it, and a zero is a
  * claim about a career that has not started.
  */
-function dynFootStrip(){
+/* WHAT THE CAREER HAS PRODUCED, identical on both screens that show it. run.history holds
+   FINISHED seasons only, which is what makes one function serve both: on the season screen
+   it is every season before the live one, and in the offseason it is every season including
+   the one just played, and in both cases it is exactly "behind you".
+   NO SEASON COUNT. Both screens print the season number in the display face inches away,
+   and "5 seasons behind you" beside a 6 is two numbers for one fact. What is left is the
+   part that number cannot say: what those seasons actually produced. */
+function dynBehindSpan(){
   const h=Array.isArray(run.history)?run.history:[];
-  let left='';
-  if(h.length){
-    const w=h.reduce((t,x)=>t+(x.wins||0),0);
-    const l=h.reduce((t,x)=>t+(x.losses||0),0);
-    const titles=h.filter((x)=>x.title).length;
-    /* NO SEASON COUNT HERE. The numeral two inches to the left already says which season
-       this is, and "5 seasons behind you" beside a chip reading 6 is two numbers for one
-       fact and the longest line in the strip. What is left is the part the chip cannot
-       say: what those seasons actually produced. */
-    left='<span>Behind you <b>'+w+'-'+l+'</b>'+
-      (titles?' &middot; <b>'+titles+'</b> title'+(titles===1?'':'s'):'')+'</span>';
-  }
-  /* WHAT IS COMING, one line, most imminent first. A bar that steps up next season is the
-     only one of these the player cannot see coming from the rules sheet's schedule, so it
-     outranks a milestone that is still seasons away. */
-  let next='';
+  if(!h.length) return '';
+  const w=h.reduce((t,x)=>t+(x.wins||0),0);
+  const l=h.reduce((t,x)=>t+(x.losses||0),0);
+  const titles=h.filter((x)=>x.title).length;
+  return '<span>Behind you <b>'+w+'-'+l+'</b>'+
+    (titles?' &middot; <b>'+titles+'</b> title'+(titles===1?'':'s'):'')+'</span>';
+}
+/*
+ * WHAT IS IN FRONT OF THE RUN, and the two screens are standing at different points in the
+ * calendar, which is the whole reason this takes an argument.
+ *
+ * run.seasonNo IS INCREMENTED INSIDE beginOffseason. So on the season screen it is the
+ * season being played and the horizon starts at the next one, while on the offseason screen
+ * it is already the season about to be played and the horizon starts at THAT one. Written as
+ * one function with an offset because getting it wrong is silent: both readings produce a
+ * sentence, and only one of them is true.
+ *
+ * `bar` is off on the offseason screen because the goal block directly above it already says
+ * the bar and when it moves, at four times the size and with the consequence attached.
+ */
+function dynAheadText(from,bar){
   try{
     const n=run.seasonNo, ev=E.DYNASTY_MILESTONE_EVERY;
-    /* stepSeasons IS per-run and is passed, so a run started under a different ladder is
-       told its own next bar rather than the default one. */
-    const barNow=R.effectiveWinBar(run), barNext=E.dynastyWinBar(n+1,run.stepSeasons);
-    const kindNext=E.dynastyMilestoneKind(n+1);
-    if(barNext>barNow) next='Bar goes to '+barNext+' next season';
-    else if(kindNext==='boss') next='Boss game next season';
-    else if(kindNext==='challenge') next='Mandate next season';
-    else{
-      /* The next milestone of either kind, named and counted, so the schedule is visible from
-         the screen it lands on rather than only from the rules sheet. */
-      for(let k=n+2;k<=n+ev*2;k++){
-        const kk=E.dynastyMilestoneKind(k);
-        if(kk){ next=(kk==='boss'?'Boss game':'Mandate')+' in '+(k-n)+' seasons'; break; }
-      }
+    if(bar){
+      /* stepSeasons IS per-run and is passed, so a run started under a different ladder is
+         told its own next bar rather than the default one. A bar that steps up is the only
+         thing here the rules sheet's schedule cannot tell you, so it outranks a milestone. */
+      const barNow=R.effectiveWinBar(run), barNext=E.dynastyWinBar(n+1,run.stepSeasons);
+      if(barNext>barNow) return 'Bar goes to '+barNext+' next season';
     }
-  }catch(_){ next=''; }
+    const here=E.dynastyMilestoneKind(from);
+    if(here) return (here==='boss'?'Boss game':'Mandate')+
+      (from===n?' this season':' next season');
+    for(let k=from+1;k<=from+ev*2;k++){
+      const kk=E.dynastyMilestoneKind(k);
+      if(!kk) continue;
+      const what=kk==='boss'?'Boss game':'Mandate';
+      /* "IN 1 SEASONS" IS WHAT THIS SAID, on the offseason screen only. There the horizon
+         starts at the season being planned for, so a milestone one year further out came
+         through the loop rather than through the branch above it, which is where the season
+         screen's "next season" wording lives. Counted off n either way, so both screens
+         measure from the season the reader is standing in. */
+      const away=k-n;
+      return away===1?(what+' next season'):(what+' in '+away+' seasons');
+    }
+  }catch(_){}
+  return '';
+}
+function dynFootStrip(from,bar){
+  const left=dynBehindSpan();
+  const next=dynAheadText(from,bar);
   if(!left&&!next) return '';
   /* No placeholder for a missing left half. space-between puts a lone child on the left,
      which is where a season-one run wants its one line anyway, and an empty span would take
