@@ -345,6 +345,7 @@ await t.page.close();
  */
 console.log('\nTHE WALK BACK FROM STRIPE');
 const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,'
+  + 'premiumRefresh,paintHomeStart,setDaily:(m,v)=>{dailyState[m]=v;},'
   + 'setPremium:(v)=>{premiumSet=v;},'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
@@ -423,6 +424,120 @@ ok('    does not fire confetti', pend.confetti === false);
 ok('    never suggests the payment failed', !/fail|problem|wrong|error/i.test(pend.text), pend.text.slice(0, 140));
 ok('    offers to ask again', /ck-again/.test(pend.buttons), pend.buttons);
 ok('    it really did keep asking', pend.polls >= 6, String(pend.polls));
+
+/*
+ * A GRANT THAT LANDS AFTER THE THANK YOU IS ALREADY ON SCREEN.
+ *
+ * Thirteen seconds covers a slow webhook and not an outage, and the version that stopped
+ * there left a buyer on a free-looking front page with a receipt in their email until they
+ * thought to reload. checkoutWatch keeps asking for about two minutes and turns the sheet
+ * into the celebration in place. Nobody should have to reload to learn their money arrived.
+ */
+console.log('\nA WEBHOOK THAT LANDS AFTER THE SHEET IS ALREADY DRAWN');
+for (const stillOpen of [true, false]) {
+  const late = await ck.page.evaluate(async (stillOpen) => {
+    const T = window.__t;
+    document.getElementById('sheet').classList.remove('on');
+    document.querySelectorAll('.confetti-cv').forEach((c) => c.remove());
+    document.getElementById('toast').textContent = '';
+    T.setPremium(null);
+    T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+    window.__ckNow = [];
+    window.PS_AUTH = Object.assign({}, window.PS_AUTH, {
+      premiumProducts: async () => window.__ckNow,
+    });
+    T.onSuccessUrl();
+    await T.checkoutReturn();               // ends pending, and starts the watch
+    const during = document.getElementById('sheet-in').innerText || '';
+    if (!stillOpen) document.getElementById('sheet').classList.remove('on');
+    /* The webhook arrives while nobody is pressing anything. */
+    window.__ckNow = ['ps_premium', 'cfb_premium'];
+    await new Promise((r) => setTimeout(r, 6500));   // the watch's first wait is 5s
+    return {
+      during: during.replace(/\s+/g, ' '),
+      after: (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' '),
+      sheetOpen: document.getElementById('sheet').classList.contains('on'),
+      confetti: !!document.querySelector('.confetti-cv'),
+      toast: document.getElementById('toast').textContent,
+      /* THE HEADER IS THE ONLY THING ON THE FRONT PAGE THAT SAYS PRO. Everything else
+         ownership does is a subtraction, and a screen that differs from the free one only
+         by what is missing is the screen that makes a buyer think it did not take. */
+      proRing: document.getElementById('b-profile').classList.contains('pro'),
+    };
+  }, stillOpen);
+  console.log('  ' + (stillOpen ? 'with the sheet still up:' : 'after they closed it:'));
+  ok('    it said it was setting up first', !/You are Pro/i.test(late.during), late.during.slice(0, 70));
+  ok('    the header gains the Pro ring', late.proRing === true);
+  if (stillOpen) {
+    ok('    the sheet becomes the celebration', /You are Pro/i.test(late.after), late.after.slice(0, 70));
+    ok('    and the confetti fires then', late.confetti === true);
+  } else {
+    /* A popup over whatever they went back to is the wrong way to deliver good news. */
+    ok('    it does not reopen a sheet over them', late.sheetOpen === false);
+    ok('    it says so in a line of toast', /Pro account is ready/i.test(late.toast), late.toast);
+  }
+}
+
+/* AND THE RING FOLLOWS OWNERSHIP RATHER THAN THE ACCOUNT. The row lands a second or two
+   behind the session it belongs to, so paintAvatar has to run when premiumRefresh answers
+   and not only on the auth change, or a fresh buyer keeps a free-looking header until their
+   next load. */
+const ring = await ck.page.evaluate(async () => {
+  const T = window.__t;
+  const cls = () => document.getElementById('b-profile').classList.contains('pro');
+  T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+  window.PS_AUTH = Object.assign({}, window.PS_AUTH, { premiumProducts: async () => [] });
+  await T.premiumRefresh(true);
+  const free = cls();
+  window.PS_AUTH = Object.assign({}, window.PS_AUTH,
+    { premiumProducts: async () => ['ps_premium', 'cfb_premium'] });
+  await T.premiumRefresh(true);
+  return { free, pro: cls() };
+});
+ok('a free account has no Pro ring', ring.free === false);
+ok('and premiumRefresh alone puts it there', ring.pro === true);
+
+/*
+ * THE DYNASTY DOOR IS GOLD, AND THE SPENT ONE IS NOT.
+ *
+ * Gold is this mode's colour everywhere else on that card (the pool of light behind the
+ * ball, the NEW badge, the Pro tag) and the border was the last part still reading as the
+ * generic white hairline every other button has. Asserted because a glow is exactly the kind
+ * of thing a later patch replaces without noticing, and because the other half matters more:
+ * a glowing, breathing border on a door that will not open until midnight is the page being
+ * loud about a disappointment.
+ */
+console.log('\nTHE DYNASTY DOOR CARRIES THE GOLD, EXCEPT WHEN THE DAY IS SPENT');
+const gold = await ck.page.evaluate(async () => {
+  const T = window.__t;
+  const read = () => {
+    const el = document.getElementById('b-start-dyn');
+    if (!el) return null;
+    const s = getComputedStyle(el);
+    return { border: s.borderTopColor, shadow: s.boxShadow, anim: s.animationName };
+  };
+  const at = new Date(Date.now() + 3600e3).toISOString();
+  T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+  T.setPremium([]);
+  try { localStorage.removeItem('ps_dynasty_save'); } catch (e) {}
+  T.setDaily('dynasty', { used: 0, allowance: 1, resetsAt: at });
+  T.paintHomeStart();
+  const open = read();
+  T.setDaily('dynasty', { used: 1, allowance: 1, resetsAt: at });
+  T.paintHomeStart();
+  return { open, spent: read() };
+});
+/* Gold is any colour whose red clearly leads its blue. Read off the computed value rather
+   than compared to a literal, so a designer nudging the exact hex does not fail this. */
+const isGold = (c) => {
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c || '');
+  return !!m && +m[1] > 180 && +m[1] - +m[3] > 60;
+};
+ok('a playable door has a gold border', gold.open && isGold(gold.open.border), gold.open && gold.open.border);
+ok('and a gold glow around it', gold.open && /rgba?\(2\d\d,\s*1\d\d/.test(gold.open.shadow || ''),
+  gold.open && String(gold.open.shadow).slice(0, 80));
+ok('a spent door drops the gold', gold.spent && !isGold(gold.spent.border), gold.spent && gold.spent.border);
+ok('and stops breathing', gold.spent && gold.spent.anim === 'none', gold.spent && gold.spent.anim);
 
 console.log('\nWHAT YOU UNLOCKED, AND EVERY ROW IS A DOOR');
 /*
