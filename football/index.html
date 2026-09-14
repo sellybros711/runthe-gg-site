@@ -931,6 +931,25 @@ window.GA_ID='G-L29P5MRWKE';
   .wrow.snap .sp-n,.wrow.snap .sp-d{transition:none}
   .wmoney{text-align:right;font-family:var(--fn);font-variant-numeric:tabular-nums}
   .wsal{font-size:15px;font-weight:800;line-height:1;transition:color .3s ease}
+  /* WHAT HE PRODUCES, UNDER WHAT HE COSTS. Those two numbers are the whole question this
+     screen asks, and only one of them was here: the strip below carries four position
+     stats, which is what he did rather than what he was worth doing it, and comparing a
+     quarterback's PASS/G to a receiver's REC/G tells you nothing about which to cut. FPPG
+     is the one figure that puts every man on this roster on the same scale, so it belongs
+     beside the salary it has to justify rather than in a strip of four.
+     SAME CONTRACT AS A .wst, deliberately: a `b` with data-from, data-to and data-dec, and
+     a .wsd beside it. winterLand animates both off one loop, so this number counts up at
+     his beat with the rest of him instead of being the one figure already sitting there. */
+  .wfppg{display:block;margin-top:3px;line-height:1;white-space:nowrap}
+  .wfppg b{font-size:13px;font-weight:800}
+  .wfppg i{font-style:normal;font-size:8.5px;font-weight:800;letter-spacing:.07em;
+    color:var(--dim-2);margin-left:3px}
+  /* THE DELTA GOES UNDER THE NUMBER, NOT BESIDE IT, and that is a measurement rather than a
+     preference. Beside it the money column is 90px wide at 320px and the name's own line
+     ("2019 Ravens 22 yrs") breaks into four; under it the column is 58px, which is what it
+     was before FPPG existed, and the name keeps the two lines it has always had. The widest
+     line in this block is still "worth $00M", so the whole addition costs no width at all. */
+  .wfppg .wsd{display:block;margin-left:0}
   /* WHAT HE IS WORTH AGAINST WHAT HE COSTS, and it lands at his beat rather than sitting
      there from the start, because a number appearing out of nothing is the moment somebody
      asks why.
@@ -13645,6 +13664,25 @@ function winterEdge(a){
 function winterOverpaid(a){ return winterEdge(a)<=-WIN_OVERPAY; }
 function winterBargain(a){ return winterEdge(a)>=WIN_OVERPAY; }
 
+/* FPPG, LAST YEAR'S, READY TO COUNT UP TO THIS YEAR'S. Built to the same shape winterStats
+   gives a chip so the one loop in winterLand drives both. ppr_ppg_mean is the unrounded
+   source the reveal card and the roster panel already display; the `fppg` column beside it
+   is the same number pre-rounded, and reading one here and the other there is how two
+   screens end up disagreeing about a man by a tenth. */
+function winterFppg(a){
+  const now=+(a.now&&a.now.ppr_ppg_mean)||0;
+  const was=+(a.was&&a.was.ppr_ppg_mean)||0;
+  const diff=now-was;
+  const moved=Math.abs(diff)>=0.05;
+  const f=(v)=>v.toFixed(1);
+  return '<span class="wfppg">'+
+    '<b data-from="'+was+'" data-to="'+now+'" data-dec="1">'+f(was)+'</b>'+
+    '<i>FPPG</i>'+
+    '<em class="wsd '+(moved?(diff>0?'up':'down'):'')+'">'+
+      (moved?(diff>0?'+':'')+f(diff):'&middot;')+'</em>'+
+  '</span>';
+}
+
 function winterRow(a,i){
   const p=a.now;
   /* WHAT HE IS WORTH AGAINST WHAT HE COSTS, which is now the whole story of the row. His
@@ -13663,6 +13701,7 @@ function winterRow(a,i){
       '</span></span>'+
     winterSpark(a)+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
+      winterFppg(a)+
       '<span class="wraise'+(up?' up':(over?' over':''))+'">'+
         (up||over?'worth '+M0(a.market):'')+'</span></span>'+
     '<span class="wcut"><button class="wcutb" data-cut="'+i+'" '+
@@ -13823,7 +13862,10 @@ function winterLand(r,a,animate){
      small line under it, where it can be green while his chart is red, which is a thing
      that happens all the time: a man can lose value all year and still be worth double
      what you pay him. */
-  r.querySelectorAll('.wst').forEach((st)=>{
+  /* .wfppg JOINS THE STRIP'S LOOP rather than getting a second copy of this. It carries the
+     same three data attributes and the same .wsd, so one loop counts every number on the
+     card up at his beat and there is no way for the money column to fall out of step. */
+  r.querySelectorAll('.wst,.wfppg').forEach((st)=>{
     const b=st.querySelector('b'); if(!b) return;
     const dec=b.dataset.dec==='1';
     const fmt=(v)=>(dec?v.toFixed(1):String(Math.round(v)));

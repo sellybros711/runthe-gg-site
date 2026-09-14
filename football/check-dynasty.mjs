@@ -235,6 +235,21 @@ for (let s = 0; s < 30; s++) {
     w.aged.every((a) => a.now.season === a.was.season + 1
       && a.now.player_id === a.was.player_id),
     w.aged.map((a) => `${a.was.season}->${a.now.season}`).join(' '));
+  /* AND BOTH SEASONS CARRY AN FPPG, because the offseason card now prints one.
+     The roster card shows what he costs against what he produces, and FPPG is the half
+     that puts a quarterback and a tight end on the same scale. It is read straight off
+     ppr_ppg_mean on both sides of the ageing, so a pool row that ever arrives without it,
+     or an ageing path that builds `now` from something other than a pool row, would put
+     "0.0 FPPG" on the card and look like a man who scored nothing. No error, no crash, and
+     a false statement about a real season, which is the one failure this data must never
+     produce. Checked as a number rather than as truthy: zero is a real FPPG and undefined
+     is not. */
+  ok('both seasons of every kept man carry an FPPG',
+    w.aged.every((a) => Number.isFinite(a.was.ppr_ppg_mean)
+      && Number.isFinite(a.now.ppr_ppg_mean)),
+    w.aged.filter((a) => !Number.isFinite(a.was.ppr_ppg_mean)
+      || !Number.isFinite(a.now.ppr_ppg_mean))
+      .map((a) => a.was.name).join(', '));
   /* AND EVERYBODY KEPT IS STILL AT THE SAME CLUB, because a man who changes club leaves.
      This is the assertion that would catch the old behaviour coming back. */
   ok('and everybody kept is at the club he was at',
