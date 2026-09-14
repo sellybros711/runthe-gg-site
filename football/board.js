@@ -1153,8 +1153,12 @@
     const row = Array.isArray(r) ? r[0] : r;
     if (!row) return null;
     const n = (v) => (v === null || v === undefined ? null : Number(v));
+    /* `unit` and `ended` arrive only from 101_dynasty_seasons.sql. Left NULL rather
+       than defaulted, because null is how the page tells a server that has not been
+       migrated yet from one that has, and it keeps the old rule until it has. */
     return { ok: row.ok !== false, used: n(row.used), allowance: n(row.allowance),
-      resetsAt: row.resets_at || null };
+      resetsAt: row.resets_at || null,
+      unit: row.unit || null, ended: row.ended === true };
   };
   async function attemptsCall(fn, mode, extra) {
     try {
@@ -1169,21 +1173,29 @@
   const attemptsState = (mode) => attemptsCall('ps_attempts_state', mode);
   /* Spend one, at kickoff. Answers ok:false when the day is done. */
   const attemptSpend = (mode) => attemptsCall('ps_attempt_spend', mode);
-  /* One more chance today. Two things earn one: 'fired', a run that died in its first
-     season, and 'boss', a boss game won. Each is worth one extra start per day and no
-     more, so the reason has to travel. Sending the same one twice is not an error and
-     is not a second attempt: the server holds a flag per reason, not a count. A reason
-     the server does not know is refused outright, so a typo here fails loudly rather
-     than quietly handing out a run. */
+  /* One more today. 'boss' is a boss battle won and is the only reason that pays;
+     'fired' is still accepted by the server and grants nothing, which is where the
+     season one mercy went when Dynasty started counting seasons. Sending the same
+     reason twice is not an error and is not a second grant: the server holds a flag
+     per reason, not a count. A reason the server does not know is refused outright,
+     so a typo here fails loudly rather than quietly handing something out. */
   const attemptGrace = (mode, reason) =>
     attemptsCall('ps_attempt_grace', mode, { p_reason: reason });
+  /* THE ONE CALL THAT STARTS A WAIT. Made at the moment a dynasty day ends, which
+     is the third season's results screen or any season's if it fired them, and
+     `fired` is which of the two it was. It never extends a wait already running,
+     so a results screen reopened from a save costs nothing.
+     Answers 404 on a database still on 100_daily_grace_reasons.sql, which fail()
+     turns into null, which the page reads as no opinion and lets the player play. */
+  const attemptDayEnd = (mode, fired) =>
+    attemptsCall('ps_attempt_day_end', mode, { p_fired: !!fired });
 
   window.PS_BOARD = {
     API_VERSION: 16,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
     dynastyTag, dynastyTop, dynastyMine, dynastyRank, dynastyTotal,
-    attemptsState, attemptSpend, attemptGrace,
+    attemptsState, attemptSpend, attemptGrace, attemptDayEnd,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsAccountsMigration() { return needsAccountsMigration; },

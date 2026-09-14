@@ -317,7 +317,11 @@
     /* NO BLANKET TERM UP HERE ANY MORE. "One payment" is true of both bundles and is the
     thing worth leading with. "Lifetime access" was not true of both, and each line
     below now carries its own term instead. */
-    'Unlimited dynasty runs, no daily limit, and every Pro mode. '+
+    /* SEASONS RATHER THAN RUNS, because seasons are what the free tier counts. A free
+    account gets three dynasty seasons a day and unlimited runs, so "unlimited dynasty runs"
+    sold something the reader already had and stayed quiet about the thing they were
+    actually hitting. See 101_dynasty_seasons.sql. */
+    'Unlimited dynasty seasons, no daily limit, and every Pro mode. '+
     'One payment. No subscription.</p>'+
     '<div class="pw-hero">'+
     /* NO SEASON COUNT ON THE DYNASTY TILE. This read "25 seasons, one job" until recently,
@@ -355,9 +359,10 @@
        Trade Machine", which was wrong twice. Nothing in the game is called "Franchise": the
        mode is One Franchise, and its quick draft half is FREE to any signed in account, so
        the line was selling something a buyer already had. And it said nothing about what
-       changes, which is the limit: all three of these are playable without paying, on one
-       run a day. What is bought is that the counting stops. */
-    pwGroupText('ps','Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine',
+       changes, which is the limit: all three of these are playable without paying, on three
+       dynasty seasons a day and one Trade Machine run. What is bought is that the counting
+       stops. */
+    pwGroupText('ps','Unlimited play: Dynasty, One Franchise Dynasty, Trade Machine',
       'Lifetime access')+
     pwGroupText('cfb','Commissioner Mode','Lifetime access')+
     '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+

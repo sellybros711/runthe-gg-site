@@ -500,10 +500,31 @@ window.GA_ID='G-L29P5MRWKE';
      football in a way no amount of background can, and it cannot be mistaken for a grid.
      The glow behind it is the only atmosphere left: a single warm pool, which is stadium
      light rather than a pattern, and it dies out well before the button's edges. */
+  /* THE BORDER IS GOLD, AND IT GLOWS. Gold is already this mode's colour everywhere else on
+     the card (the pool of light behind the ball, the NEW badge, the Pro tag), and the edge
+     was the one part still reading as the generic white hairline every other button on the
+     page has. It is the anchor of the group and now looks like it.
+     THE GLOW IS OUTSIDE THE BOX, so `overflow:hidden` above does not clip it: that property
+     is there to hold the light pool in and has nothing to say about a box-shadow. */
   .hp-dyn{overflow:hidden;gap:9px;padding:16px 15px 15px;border-radius:15px;
     background:linear-gradient(180deg,#20242c 0%,#12141a 58%,#0b0d11 100%);
-    border:1.5px solid rgba(255,255,255,.30);
-    box-shadow:0 18px 40px -20px #000,inset 0 1px 0 rgba(255,255,255,.14)}
+    border:1.5px solid rgba(240,198,116,.58);
+    box-shadow:0 18px 40px -20px #000,inset 0 1px 0 rgba(255,255,255,.14),
+      0 0 0 1px rgba(226,178,90,.16),0 0 20px -4px rgba(226,178,90,.34)}
+  /* A SLOW BREATH ON THE SAME 2.6s AS THE NEW BADGE, deliberately the same period rather
+     than a near miss: two gold things on one card pulsing at 2.6 and 3.4 read as two
+     separate nags, and on the same beat they read as one object. Every keyframe restates
+     the base shadows, because a box-shadow animates as a whole list and dropping the drop
+     shadow for half of each cycle would make the card bob. */
+  @media (prefers-reduced-motion:no-preference){
+    .hp-dyn{animation:hpdynglow 2.6s ease-in-out infinite}
+  }
+  @keyframes hpdynglow{
+    0%,100%{box-shadow:0 18px 40px -20px #000,inset 0 1px 0 rgba(255,255,255,.14),
+      0 0 0 1px rgba(226,178,90,.16),0 0 20px -4px rgba(226,178,90,.34)}
+    50%{box-shadow:0 18px 40px -20px #000,inset 0 1px 0 rgba(255,255,255,.14),
+      0 0 0 1px rgba(226,178,90,.30),0 0 30px -2px rgba(226,178,90,.60)}
+  }
   /* The pool of light the ball sits in. On the button rather than on the mark so it is not
      clipped by the mark's own box, and behind everything because it is the ground. */
   .hp-dyn:after{content:'';position:absolute;left:50%;top:-14px;width:190px;height:120px;
@@ -515,6 +536,27 @@ window.GA_ID='G-L29P5MRWKE';
      without a stacking order of their own the words paint under it. */
   .hp-dyn .hp-full-name,.hp-dyn .hp-full-sub{position:relative;z-index:1}
   .hp-dyn .hp-tag{z-index:1}
+  /* THE TWO NUMBERS, top left, opposite the tag. A mode with a leaderboard should say what
+     the leaderboard says on the door to it: the bar to clear, and where this player is
+     against it. Quiet on purpose. It is context for the press rather than the invitation,
+     and the headline under it is the invitation.
+     ONE GRID FOR THE WHOLE BLOCK rather than a grid per row, so the two values line up in a
+     column. Per-row grids size independently and a five figure number under a six figure one
+     would sit half a character out.
+     NO COLOUR OF ITS OWN. The card already spends gold on the border, the light behind the
+     ball and the NEW badge, and a fourth gold thing in the corner turns an accent into a
+     texture. Tabular figures because these two are read against each other. */
+  .hp-dyn .hp-hi{position:absolute;top:8px;left:10px;z-index:1;
+    display:grid;grid-template-columns:auto auto;column-gap:7px;row-gap:1px;
+    align-items:baseline;pointer-events:none;text-align:left}
+  .hp-dyn .hp-hi u{font-family:var(--fn);font-size:7.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:rgba(226,233,245,.42);text-decoration:none}
+  .hp-dyn .hp-hi b{font-family:var(--fn);font-size:10.5px;font-weight:700;
+    color:rgba(238,242,249,.88);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+  /* IT WAITS WITH THE REST OF THE CARD, the same as the ball and the headline do. A spent
+     door is one state and the corner must not be the one bright thing left on it. */
+  .hp-dyn:has(.hp-tag-spent) .hp-hi u{color:rgba(226,233,245,.26)}
+  .hp-dyn:has(.hp-tag-spent) .hp-hi b{color:rgba(238,242,249,.45)}
   /* Set in the display face, which nothing else on the front page is, and uppercased here
      rather than in the string so the accessible name stays a name. */
   /* BOTH LABELS FIT ONE LINE, and the widths were measured rather than guessed: at 330px of
@@ -541,6 +583,12 @@ window.GA_ID='G-L29P5MRWKE';
   .hp-dyn .hp-tag-spent{background:rgba(255,255,255,.06);
     border-color:rgba(255,255,255,.18);color:rgba(238,242,249,.5)}
   .hp-dyn:has(.hp-tag-spent) .hp-full-name{color:rgba(244,247,252,.58)}
+  /* AND THE GOLD GOES OUT WITH IT. A glowing, breathing border on a door that will not open
+     until midnight is the page being loud about a disappointment, which is the exact thing
+     the note above this says the spent state exists to avoid. The animation is killed as
+     well as the colour, or the keyframes keep repainting the shadow this rule just set. */
+  .hp-dyn:has(.hp-tag-spent){animation:none;border-color:rgba(255,255,255,.18);
+    box-shadow:0 18px 40px -20px #000,inset 0 1px 0 rgba(255,255,255,.14)}
   /* THE BALL WAITS WITH THE REST OF THE CARD. Without this it is the one thing that stays
      fully lit on a door that has gone quiet, which makes the loudest element on a spent card
      the one part of it that is pure decoration. */
@@ -883,6 +931,25 @@ window.GA_ID='G-L29P5MRWKE';
   .wrow.snap .sp-n,.wrow.snap .sp-d{transition:none}
   .wmoney{text-align:right;font-family:var(--fn);font-variant-numeric:tabular-nums}
   .wsal{font-size:15px;font-weight:800;line-height:1;transition:color .3s ease}
+  /* WHAT HE PRODUCES, UNDER WHAT HE COSTS. Those two numbers are the whole question this
+     screen asks, and only one of them was here: the strip below carries four position
+     stats, which is what he did rather than what he was worth doing it, and comparing a
+     quarterback's PASS/G to a receiver's REC/G tells you nothing about which to cut. FPPG
+     is the one figure that puts every man on this roster on the same scale, so it belongs
+     beside the salary it has to justify rather than in a strip of four.
+     SAME CONTRACT AS A .wst, deliberately: a `b` with data-from, data-to and data-dec, and
+     a .wsd beside it. winterLand animates both off one loop, so this number counts up at
+     his beat with the rest of him instead of being the one figure already sitting there. */
+  .wfppg{display:block;margin-top:3px;line-height:1;white-space:nowrap}
+  .wfppg b{font-size:13px;font-weight:800}
+  .wfppg i{font-style:normal;font-size:8.5px;font-weight:800;letter-spacing:.07em;
+    color:var(--dim-2);margin-left:3px}
+  /* THE DELTA GOES UNDER THE NUMBER, NOT BESIDE IT, and that is a measurement rather than a
+     preference. Beside it the money column is 90px wide at 320px and the name's own line
+     ("2019 Ravens 22 yrs") breaks into four; under it the column is 58px, which is what it
+     was before FPPG existed, and the name keeps the two lines it has always had. The widest
+     line in this block is still "worth $00M", so the whole addition costs no width at all. */
+  .wfppg .wsd{display:block;margin-left:0}
   /* WHAT HE IS WORTH AGAINST WHAT HE COSTS, and it lands at his beat rather than sitting
      there from the start, because a number appearing out of nothing is the moment somebody
      asks why.
@@ -1003,10 +1070,41 @@ window.GA_ID='G-L29P5MRWKE';
      shuffle while they count, a gold that appears nowhere else on the results screen, and
      the parts dealt out underneath as a list of things you did rather than folded into the
      total. */
-  .arcade{border:1.5px solid rgba(226,178,90,.4);border-radius:16px;overflow:hidden;
-    margin-bottom:12px;
-    background:linear-gradient(180deg,rgba(40,32,17,.96),rgba(19,17,13,.96));
-    box-shadow:0 14px 34px -20px #000,inset 0 1px 0 rgba(255,220,150,.10)}
+  /* ---- THE SCORE CARD, AS A CABINET SCREEN ----
+   *
+   * DYNASTY ONLY. paintScore returns early for every other mode, so nothing below this can
+   * reach Offense, Defense, Full Team or the Trade Machine.
+   *
+   * It was warm gold on brown with the site's body face, which is a handsome receipt. This
+   * mode is scored like an arcade game (a tally, a multiplier, a running total that only
+   * goes up) and the card said none of that in its materials.
+   *
+   * SO IT IS A SCREEN, NOT A PANEL. Black ground rather than brown, because a CRT is black
+   * and everything on it is light. Orbitron for every figure, which is already loaded and is
+   * already what the 2000s jumbotron score bug uses, so the arcade face on this site is a
+   * face this site already has. Amber phosphor, which is the one the eye reads as a cabinet
+   * rather than as a warning.
+   *
+   * THE SCANLINES ARE AN OVERLAY AND NOT A BACKGROUND, so they sit over the numbers the way
+   * a real screen's do rather than under them, and they are clipped by the card's own
+   * overflow. pointer-events:none, or the card stops taking taps.
+   *
+   * NO FLICKER. A CRT flickers and the reference is obvious, and a flickering block of text
+   * is a photosensitivity risk for a real and specific set of people. The glow carries it. */
+  .arcade{position:relative;border:2px solid rgba(240,198,116,.5);border-radius:14px;
+    overflow:hidden;margin-bottom:12px;
+    background:
+      radial-gradient(120% 80% at 50% 0%,rgba(226,178,90,.10),transparent 62%),
+      linear-gradient(180deg,#0b0a08,#070706);
+    box-shadow:0 14px 34px -20px #000,
+      inset 0 0 0 1px rgba(255,220,150,.07),
+      inset 0 0 44px -12px rgba(226,178,90,.22),
+      0 0 22px -10px rgba(226,178,90,.45)}
+  .arcade:before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:repeating-linear-gradient(180deg,
+      rgba(0,0,0,.26) 0 1px,rgba(0,0,0,0) 1px 3px)}
+  /* Everything real sits above the scanlines' stacking context. */
+  .arcade>*{position:relative;z-index:1}
   .arcade[hidden]{display:none}
   /* WHICH SEASON, AND HOW IT ENDED, on one line at the top. The record used to be a 44px
      hero in a red card of its own, competing with the number this mode is actually played
@@ -1015,14 +1113,14 @@ window.GA_ID='G-L29P5MRWKE';
     flex-wrap:wrap;
     padding:11px 15px;border-bottom:1px solid rgba(226,178,90,.16);
     background:rgba(255,255,255,.02)}
-  .ar-season{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.15em;
-    text-transform:uppercase;color:rgba(243,221,174,.66)}
+  .ar-season{font-family:var(--fled);font-size:11px;font-weight:700;letter-spacing:.2em;
+    text-transform:uppercase;color:#f0c674;text-shadow:0 0 10px rgba(240,198,116,.5)}
   /* WRAPS RATHER THAN TRUNCATES. "Out in the Conference Championship" beside a record does
      not fit a 320px phone on one line, and half a sentence with an ellipsis on it is worse
      than a second line. */
   .ar-rec{font-family:var(--fn);font-size:11.5px;font-weight:700;color:rgba(243,221,174,.5);
     text-align:right;min-width:0}
-  .ar-rec b{font-family:var(--fd,var(--fn));font-size:15px;font-weight:800;color:#F3DDAE;
+  .ar-rec b{font-family:var(--fled);font-size:14px;font-weight:700;color:#F3DDAE;
     font-variant-numeric:tabular-nums;margin-right:6px}
 
   /* THE TALLY, TOP TO BOTTOM, AS ARITHMETIC YOU CAN FOLLOW.
@@ -1030,18 +1128,27 @@ window.GA_ID='G-L29P5MRWKE';
      lines adding to 18,500 above a number reading 55,500, with the multiplier applied
      silently in between. Every step is on the page now, in the order it happens. */
   .ar-parts{display:flex;flex-direction:column;gap:3px;padding:12px 15px 0}
-  .ar-p{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-    font-family:var(--fn);font-size:12.5px;color:rgba(243,221,174,.78);
+  /* DOT LEADERS, which is how a bonus tally is read on a cabinet and also the thing that
+     makes a two column list of reasons and points scan as arithmetic. Drawn as a flexible
+     middle cell rather than with a dotted border on the label, so a long reason shortens the
+     leader instead of wrapping under it. */
+  .ar-p{display:flex;align-items:baseline;gap:8px;
+    font-family:var(--fn);font-size:12.5px;color:rgba(243,221,174,.8);
     opacity:0;transform:translateY(4px);
     transition:opacity .26s ease,transform .26s cubic-bezier(.22,1,.36,1)}
   .ar-p.in{opacity:1;transform:none}
-  .ar-p b{font-weight:800;font-variant-numeric:tabular-nums;color:#F3DDAE}
-  .ar-p.big{color:#e2b25a}
-  .ar-p.big b{color:#ffd98a}
+  .ar-p>span:first-child{flex:0 1 auto;min-width:0}
+  .ar-p:after{content:'';flex:1 1 auto;min-width:10px;order:1;
+    margin-bottom:3px;border-bottom:1px dotted rgba(240,198,116,.3)}
+  .ar-p b{order:2;flex:0 0 auto;font-family:var(--fled);font-weight:700;
+    font-variant-numeric:tabular-nums;color:#F3DDAE}
+  .ar-p.big{color:#f0c674}
+  .ar-p.big b{color:#ffd98a;text-shadow:0 0 12px rgba(255,217,138,.55)}
   .ar-sum,.ar-x{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
     font-family:var(--fn);font-size:12.5px;margin:9px 15px 0;padding-top:8px;
     border-top:1px solid rgba(226,178,90,.18);color:rgba(243,221,174,.6)}
-  .ar-sum b{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px;color:#F3DDAE}
+  .ar-sum b{font-family:var(--fled);font-weight:700;font-variant-numeric:tabular-nums;
+    font-size:15px;color:#F3DDAE}
   /* When the subtotal is hidden the multiplier row inherits the divider above the tally. */
   .ar-sum[hidden]{display:none}
   /* The multiplier is the mode's whole shape, so it lands rather than appears. */
@@ -1050,11 +1157,27 @@ window.GA_ID='G-L29P5MRWKE';
     transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1)}
   .ar-sum[hidden]+.ar-x{border-top:1px solid rgba(226,178,90,.18);margin-top:9px;padding-top:8px}
   .ar-x.in{opacity:1;transform:none}
-  .ar-x b{font-family:var(--fd,var(--fn));font-size:20px;font-weight:800;color:#ffd98a;
-    font-variant-numeric:tabular-nums}
-  .ar-total{font-family:var(--fd,var(--fn));font-size:52px;line-height:1;font-weight:800;
-    font-variant-numeric:tabular-nums;letter-spacing:.01em;color:#F3DDAE;
-    text-align:center;padding:10px 15px 12px;text-shadow:0 0 32px rgba(226,178,90,.36)}
+  /* The multiplier as a chip, because on a cabinet a multiplier is a thing that lights up
+     rather than a number in a sentence. */
+  .ar-x b{font-family:var(--fled);font-size:18px;font-weight:900;color:#241a08;
+    font-variant-numeric:tabular-nums;padding:2px 9px;border-radius:6px;
+    background:linear-gradient(180deg,#ffd98a,#e2b25a);
+    box-shadow:0 0 16px -2px rgba(255,217,138,.6)}
+  /* THE NUMBER THE MODE IS PLAYED FOR, lit like phosphor: a tight white-hot core, a wide
+     amber bloom, and enough letter-spacing that Orbitron's digits read as a readout rather
+     than as a word. Smaller than the 52px it replaces because Orbitron is a wide face and 52
+     put a six figure score over two lines on a 320px phone. */
+  /* SIZED OFF THE VIEWPORT, because the score has no ceiling and this cell does. Orbitron is
+     a wide face: measured, a seven figure score is 238px of the 258px a 320px phone leaves
+     inside this card, and an eight figure one is 272px, which the card's own overflow:hidden
+     would CLIP rather than wrap. Nothing in the mode reaches eight figures today, and a score
+     sliced in half is a bad enough failure that it is worth one clamp not to depend on that
+     staying true. 40px is unchanged from about 400px up. */
+  .ar-total{font-family:var(--fled);font-size:clamp(30px,10vw,40px);line-height:1.04;font-weight:900;
+    font-variant-numeric:tabular-nums;letter-spacing:.02em;color:#fff6de;
+    text-align:center;padding:12px 15px 14px;
+    text-shadow:0 0 6px rgba(255,246,222,.55),0 0 18px rgba(255,200,90,.6),
+      0 0 44px rgba(226,178,90,.45)}
   .ar-total.pop{animation:arpop .42s cubic-bezier(.2,1.5,.4,1)}
   @keyframes arpop{0%{transform:scale(1)}38%{transform:scale(1.13)}100%{transform:scale(1)}}
   .ar-run{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
@@ -1062,8 +1185,10 @@ window.GA_ID='G-L29P5MRWKE';
     background:rgba(0,0,0,.22);
     font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;
     text-transform:uppercase;color:rgba(243,221,174,.62)}
-  .ar-run b{font-family:var(--fd,var(--fn));font-size:24px;letter-spacing:0;
-    font-variant-numeric:tabular-nums;color:#F3DDAE}
+  .ar-run{font-family:var(--fled)}
+  .ar-run b{font-family:var(--fled);font-size:21px;font-weight:700;letter-spacing:.02em;
+    font-variant-numeric:tabular-nums;color:#F3DDAE;
+    text-shadow:0 0 14px rgba(226,178,90,.5)}
 
   /* ---- THE OWNER, AS THE FOOT OF THAT CARD ----
      A strip inside the card rather than a box beside it, so the only border on the screen
@@ -1102,6 +1227,100 @@ window.GA_ID='G-L29P5MRWKE';
   #s-over.gaunt .next-pair{grid-template-columns:minmax(0,1fr)}
   /* Room for the dock, which is fixed and would otherwise sit on the last panel. */
   #s-over.gaunt{padding-bottom:84px}
+
+  /* ---- THE REST OF THE DYNASTY RESULTS SCREEN, IN THE SAME MATERIALS ----
+   *
+   * The score card above is a cabinet screen and everything under it was still the site's
+   * ordinary panels, so the page read as one arcade element followed by a normal results
+   * page. Same amber phosphor, same Orbitron figures, same black ground.
+   *
+   * EVERY RULE HERE IS SCOPED TO #s-over.gaunt, which is the dynasty class on this screen.
+   * Offense, Defense, Full Team and the Trade Machine draw the same markup and keep the
+   * panels that are right for them. Nothing below changes a shared element's own styles.
+   */
+  /* The section headings, which were grey on grey and are the only thing tying four
+     separate blocks into one screen. */
+  #s-over.gaunt .panel>.eyebrow,#s-over.gaunt #o-ledwrap .rp-head>span:first-child{
+    font-family:var(--fled);font-size:10px;letter-spacing:.18em;color:#f0c674;
+    text-shadow:0 0 10px rgba(240,198,116,.35)}
+  #s-over.gaunt .panel{border-color:rgba(240,198,116,.2)}
+
+  /* THE FOUR FACTS ABOUT THE ROSTER, as a readout panel rather than four numbers floating
+     under the lineup on hairlines. The ids win on specificity over .splits.sq's own
+     borders, which are the page's grey and were the loudest thing saying "ordinary panel". */
+  #s-over.gaunt #o-squad{border:1px solid rgba(240,198,116,.26);border-radius:12px;
+    padding:13px 4px;margin-top:14px;
+    background:linear-gradient(180deg,#0b0a08,#070706)}
+  #s-over.gaunt #o-squad b{font-family:var(--fled);font-weight:700;font-size:16px;
+    color:#F3DDAE;text-shadow:0 0 12px rgba(226,178,90,.4)}
+  #s-over.gaunt #o-squad span{color:rgba(243,221,174,.5);letter-spacing:.09em}
+  #s-over.gaunt #o-squad>*:nth-child(2n){border-left:1px solid rgba(226,178,90,.2)}
+  #s-over.gaunt #o-squad>*:nth-child(n+3){border-top:1px solid rgba(226,178,90,.2)}
+
+  /* THE SEASON'S GAMES, AS A CABINET LOG. Scores in the readout face, the result as a lit
+     block rather than a rounded pill, and the week in the dim amber a cabinet uses for the
+     things that are not the number you are reading. */
+  #s-over.gaunt .glist .g{background:linear-gradient(180deg,#0b0a08,#070706);
+    border-color:rgba(240,198,116,.16)}
+  #s-over.gaunt .glist .g .wk{font-family:var(--fled);font-size:10px;letter-spacing:.06em;
+    color:rgba(240,198,116,.5)}
+  #s-over.gaunt .glist .g .opp{color:rgba(243,221,174,.92)}
+  #s-over.gaunt .glist .g .sc{font-family:var(--fled);font-weight:700;font-size:13px;
+    color:#F3DDAE}
+  #s-over.gaunt .glist .g .res{border-radius:4px;font-family:var(--fled);font-weight:700;
+    font-size:11px}
+  #s-over.gaunt .glist .g .res.w{background:#1c7a3c;box-shadow:0 0 11px -2px rgba(34,197,94,.75)}
+  #s-over.gaunt .glist .g .res.l{background:#8e2626;box-shadow:0 0 11px -2px rgba(248,113,113,.6)}
+  /* A PLAYOFF ROW IS THE MODE'S OWN GOLD HERE, not the purple every other mode uses. That
+     purple is this page's playoff colour everywhere else and it is the one thing on the log
+     that belonged to a different screen. */
+  #s-over.gaunt .glist .g.po{background:linear-gradient(90deg,rgba(226,178,90,.2),#0b0a08);
+    border-color:rgba(240,198,116,.34)}
+  #s-over.gaunt .glist .g.tap:hover{border-color:rgba(240,198,116,.6)}
+  #s-over.gaunt .glist .g .gchev{color:rgba(240,198,116,.45)}
+
+  /* THE TEAM OVERALL, ON ONE LINE. It is one number and it was taking 84px: a caption, a
+     33px numeral under it and a bar under that, all centred in a bordered box, which is the
+     treatment the draft modes give it when it sits beside "best possible" and has a column
+     to fill. Dynasty shows it alone, so it lies down: label, figure, and the bar taking the
+     rest of the row. The bar keeps its full width, which is the part that actually reads. */
+  #s-over.gaunt #o-dyn-ovr>div{display:grid;grid-template-columns:auto auto minmax(0,1fr);
+    gap:10px;align-items:center;text-align:left;padding:8px 12px}
+  #s-over.gaunt #o-dyn-ovr .k{margin:0;font-family:var(--fled);letter-spacing:.14em;
+    color:rgba(240,198,116,.6)}
+  #s-over.gaunt #o-dyn-ovr .v{margin:0;font-family:var(--fled);font-size:21px;line-height:1}
+  #s-over.gaunt #o-dyn-ovr .t{margin:0}
+
+  /* ---- THE FIELD, ONLY AT THE END ----
+     A dynasty plays this screen every season and the field is the same six men the rows
+     under it already list, in the same order, so for fifteen seasons it is 178px of
+     restatement. At the END it is the thing worth looking at, because that is where the
+     picker below lets it become any year of the run.
+     THE CHEMISTRY RAIL STAYS EVERY SEASON. It is not a restatement of the rows: it is the
+     only place the links between the six are drawn, and it is what tells somebody why a
+     roster scored what it did. drawField fills it whether or not the field itself is on
+     screen, so hiding one keeps the other. */
+  #s-over.gaunt #field3{display:none}
+  #s-over.gaunt.over #field3{display:block}
+
+  /* The picker. Native select, because this is a list of years and a custom menu here would
+     be a worse version of the control every phone already draws well. */
+  .seasonpick{display:flex;align-items:center;gap:9px;margin:12px 0 2px}
+  .seasonpick[hidden]{display:none}
+  .seasonpick label{font-family:var(--fled);font-size:9.5px;font-weight:700;
+    letter-spacing:.16em;text-transform:uppercase;color:rgba(240,198,116,.6)}
+  .seasonpick select{flex:1;min-width:0;font-family:var(--fn);font-size:12.5px;font-weight:700;
+    color:#F3DDAE;background:linear-gradient(180deg,#0b0a08,#070706);
+    border:1px solid rgba(240,198,116,.3);border-radius:9px;padding:7px 10px;
+    appearance:none;-webkit-appearance:none;cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,rgba(240,198,116,.7) 50%),
+      linear-gradient(135deg,rgba(240,198,116,.7) 50%,transparent 50%);
+    background-position:calc(100% - 15px) 50%,calc(100% - 10px) 50%;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px}
+  /* The options themselves are drawn by the OS, which on a dark page is usually a light
+     menu, so they are given a ground rather than left to inherit a colour they cannot use. */
+  .seasonpick select option{background:#12110e;color:#F3DDAE}
+  .seasonpick select:focus-visible{outline:2px solid rgba(240,198,116,.7);outline-offset:2px}
 
   /* ---- THE RUN, ONCE IT IS OVER ----
      Deliberately the same material as the season card above it: same gold, same bands, same
@@ -1200,10 +1419,74 @@ window.GA_ID='G-L29P5MRWKE';
      read and eight boxes with six lit is a fact you see. The two states that change the
      season are colored rather than only worded: cleared goes green and stays there, and
      out of reach goes red the moment the arithmetic closes. */
+  /* ---- THE DYNASTY HEADER ----
+     This card used to be the win bar and nothing else, which made the busiest screen in the
+     mode identical to every other mode's season screen apart from one strip of pips. A
+     dynasty is a CAREER and this screen said nothing about the career: not which season it
+     was, not what was behind it, not what was coming.
+     So it is three parts now. The season numeral on the left, which is the thing the mode is
+     counting. The bar in the middle, unchanged, because it works. And a foot strip with what
+     the run has done and what it is walking into.
+     GOLD THROUGHOUT, which is the mode's colour everywhere else it appears: the front page
+     door, the NEW badge, the boss scout card. */
   .gauntbar{position:relative;margin-top:11px;padding:11px 42px 10px 13px;border-radius:12px;
     border:1.5px solid rgba(226,178,90,.34);
     background:linear-gradient(180deg,rgba(40,32,17,.9),rgba(19,17,13,.9))}
   .gauntbar[hidden]{display:none}
+  /* The numeral and the bar side by side. minmax(0,1fr) on the right or a long note pushes
+     the whole card wider than the screen. */
+  .gb-main{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center}
+  /* THE SEASON, AS A NUMBER ON A WALL. Big, in the display face, with the word under it, so
+     the first thing read on this screen is which year of the dynasty it is. The right rule
+     rather than a box: a second bordered panel inside a bordered card is two frames deep and
+     reads as a widget, and this is meant to read as a banner. */
+  .gb-yr{flex:0 0 auto;padding-right:12px;border-right:1px solid rgba(226,178,90,.22);
+    text-align:center;line-height:1}
+  .gb-yr b{display:block;font-family:var(--fd,var(--fn));font-size:30px;color:#F3DDAE;
+    font-variant-numeric:tabular-nums;letter-spacing:.01em}
+  .gb-yr i{display:block;font-style:normal;margin-top:3px;font-family:var(--fn);font-size:8px;
+    font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:rgba(243,221,174,.5)}
+  /* THE SEASON THAT IS NOT LIKE THE OTHERS. A boss or mandate season is the authored content
+     the mode is built around and the player walked into it without being told. Filled rather
+     than outlined, because it is an announcement. */
+  .gb-tag{display:inline-block;margin-top:5px;padding:2px 6px;border-radius:5px;
+    font-family:var(--fn);font-size:7.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;background:linear-gradient(180deg,#f0c674,#e2b25a);color:#241a08}
+  /* WHAT IS BEHIND YOU AND WHAT IS COMING, on one line under a hairline. Both halves are
+     derived from run.history and the milestone schedule, so neither can claim something the
+     run has not done. */
+  .gb-foot{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    margin-top:10px;padding-top:9px;border-top:1px solid rgba(226,178,90,.18);
+    font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.07em;
+    text-transform:uppercase;color:rgba(243,221,174,.45)}
+  /* A RECORD NEVER BREAKS ACROSS TWO LINES. Without this the strip wrapped mid-figure and
+     printed "40-" above "45", which is not a hard number to misread, it is an impossible
+     one. Every bold thing in here is a figure, so the rule goes on the element rather than
+     on one of them. */
+  .gb-foot b{color:#F3DDAE;font-weight:800;font-variant-numeric:tabular-nums;
+    white-space:nowrap}
+  .gb-foot .gb-next{text-align:right;flex:0 0 auto}
+  .gb-foot:empty{display:none}
+  /* THE STRIP INSIDE THE WINTER CARD. That card pads its own children by 15px and the strip
+     was written for a box that pads itself, so it takes the inset here rather than carrying
+     a padding that would be wrong on the season screen. */
+  .wc-strip{padding:0 15px}
+  .wc-strip[hidden]{display:none}
+  .wc-strip .gb-foot{margin-top:11px}
+  /* STACKED RATHER THAN SQUEEZED on a narrow phone. Two halves of a sentence fighting over
+     one line is how the record came to be split in the first place; given their own lines
+     they both read, and the strip costs one more line on the screen that has room for it. */
+  @media (max-width:400px){
+    .gb-foot{display:block}
+    .gb-foot .gb-next{display:block;text-align:left;margin-top:3px;
+      color:rgba(243,221,174,.62)}
+  }
+  @media (max-width:360px){
+    .gb-yr b{font-size:25px}
+    .gb-main{gap:9px}
+    .gb-yr{padding-right:9px}
+    .gb-foot{font-size:9px;letter-spacing:.04em}
+  }
   .gb-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
     font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.09em;
     text-transform:uppercase;color:rgba(243,221,174,.58)}
@@ -1392,8 +1675,33 @@ window.GA_ID='G-L29P5MRWKE';
     color:#e2b25a}
   .ldg .lsc{font-weight:800;font-variant-numeric:tabular-nums;color:#e2b25a}
 
-  .ldg{display:grid;grid-template-columns:auto auto auto minmax(0,1fr) auto auto;gap:9px;align-items:center;
-    font-family:var(--fn);font-size:11.5px;padding:7px 10px;border-radius:9px;
+  /* THE LEDGER IS A TABLE AND HAD NO HEADINGS. Six columns of four different kinds of value
+     ran together as one line: "1 11-6 83.6 needed 8 KEPT 12,500", where the 83.6 was a team
+     rating nothing on screen named and "needed 8" carried its own label inline because there
+     was nowhere else to put it. A career of ten seasons is the thing this mode is played for,
+     so it gets a header row and reads down its columns.
+     THE SAME TEMPLATE ON BOTH, declared once through the shared selector below, because a
+     header whose columns can drift from its rows is worse than no header. */
+  .ldg-h{color:var(--dim-2);font-size:8.5px;font-weight:800;letter-spacing:.09em;
+    text-transform:uppercase;padding:0 10px 5px;background:none}
+  .ldg-h .lo,.ldg-h .lsc{text-align:right}
+  /* THE SHARED RULE CARRIES THE COLUMNS AND NOTHING ELSE, which is the whole reason it is
+     shared: the header's cells must line up with the rows' and cannot be allowed to drift.
+     Everything below it belongs to a ROW. The first version of this put the deal-out
+     animation in here too, so the header inherited opacity:0, never got the .in that the
+     rows get, and simply did not render. The text was in the DOM and the table had a blank
+     band where its headings should be. */
+  /* FIXED WIDTHS ON THE THREE LEFT COLUMNS, and this is the part that actually makes a
+     header work. The header and the rows are SEPARATE grid containers, so `auto` columns
+     size to each container's own content: the first attempt shared the template and still
+     came out ragged, because "SEASON" is wider than "1" and each row sized itself. Columns
+     that must line up across containers have to be told a width. Each is set to its widest
+     cell, which is the heading rather than the figure in all three.
+     The last two stay auto: the verdict is a status word of varying length and POINTS is
+     right-aligned against the container edge, so their right edges agree without help. */
+  .ldg,.ldg-h{display:grid;grid-template-columns:46px 50px 38px minmax(0,1fr) auto auto;
+    gap:9px;align-items:center}
+  .ldg{font-family:var(--fn);font-size:11.5px;padding:7px 10px;border-radius:9px;
     background:rgba(0,0,0,.24);opacity:0;transform:translateY(5px);
     transition:opacity .3s ease,transform .3s cubic-bezier(.22,1,.36,1)}
   .ldg.in{opacity:1;transform:none}
@@ -1673,6 +1981,17 @@ window.GA_ID='G-L29P5MRWKE';
      thrown that away for exactly those four. */
   .avatar .in{font-family:var(--fn);font-size:12px;font-weight:600;color:currentColor;
     letter-spacing:.04em}
+  /* THE PRO RING, which is the only thing on the front page that says an account is Pro.
+     Everything else ownership does is a subtraction: the store card goes away, the daily
+     meter stops, a door stops pitching. Somebody who has just paid and come back needs to
+     SEE something, and a screen that differs from the free one only by what is missing is
+     the screen that makes them think the purchase did not take.
+     ON :after, NOT :before, because the rule right below turns :before off for a crest and
+     a Pro owner with a crest would otherwise lose the ring. Outside the 34px disc, so it
+     sits clear of whatever colour or crest is inside it. */
+  .avatar.pro:after{content:'';position:absolute;width:41px;height:41px;border-radius:50%;
+    pointer-events:none;border:1.5px solid rgba(240,198,116,.72);
+    box-shadow:0 0 10px -2px rgba(226,178,90,.5)}
   /* A CREST IN THE HEADER BUTTON. Two rules above have to be undone for it: the :before
      that draws the 34px disc, which would show as a rim around a crest that draws its own,
      and the svg rule, which is sized and stroked for the anonymous person glyph and would
@@ -5571,6 +5890,29 @@ window.GA_ID='G-L29P5MRWKE';
     font-size:12.5px;line-height:1.4;color:var(--ink);margin-top:7px}
   .dgrace span:before{content:"";width:6px;height:6px;border-radius:999px;
     background:rgba(255,255,255,.32);margin-top:6px}
+  /* WHAT A BUYER JUST UNLOCKED, one door per row, and every row really opens.
+     A receipt lists; this one goes. The colour on the left is the game's own out of the
+     store's PW_GAME table, so a row cannot claim a different game from the card it was
+     sold on. Marked up as <button> or <a> and never a div: this is the screen straight
+     after a payment and a thing that looks pressable has to be pressable by keyboard too. */
+  .ulk{display:grid;gap:9px;margin-top:13px}
+  .ulk-row{position:relative;display:flex;align-items:center;gap:11px;width:100%;
+    text-align:left;padding:11px 13px 11px 17px;border-radius:12px;
+    border:1px solid var(--line);background:rgba(255,255,255,.045);
+    color:var(--ink);font:inherit;cursor:pointer;text-decoration:none;
+    transition:background .15s ease,border-color .15s ease}
+  .ulk-row:before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;
+    border-radius:0 3px 3px 0;background:var(--gc)}
+  .ulk-row:hover{background:rgba(255,255,255,.09);border-color:var(--gc)}
+  .ulk-row:focus-visible{outline:2px solid var(--gc);outline-offset:2px}
+  .ulk-row>span{flex:1;min-width:0}
+  .ulk-row u{display:block;font-family:var(--fn);font-size:9px;font-weight:800;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--gc);text-decoration:none}
+  .ulk-row b{display:block;font-size:14px;font-weight:700;margin-top:3px;line-height:1.25}
+  .ulk-row i{display:block;font-style:normal;font-size:12px;color:var(--dim);
+    margin-top:3px;line-height:1.35}
+  .ulk-row em{flex:none;color:var(--dim-2);line-height:0}
+  .ulk-row:hover em{color:var(--gc)}
   .gateline:empty{display:none}
   .gateline{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
     font-size:12.5px;line-height:1.4;color:var(--dim)}
@@ -5643,7 +5985,15 @@ window.GA_ID='G-L29P5MRWKE';
   .rrow .nm{flex:1;min-width:0}
   .rrow .nm b{display:block;font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis}
-  .rrow .nm span{display:block;font-size:11px;color:var(--dim-2);white-space:nowrap;overflow:hidden;
+  /* THE DIRECT CHILD, and the missing > is why a dynasty roster row was 87px tall.
+     This rule dresses the sub-line under the name, and as a descendant selector it also
+     matched every span INSIDE that line. Dynasty is the only mode that puts one there (the
+     age, coloured by how old the man is), so its sub-line had a display:block in the middle
+     of it: the one line it is written to be, with nowrap and an ellipsis, was broken into
+     three and the row grew by 37px. Six rows, so 222px of the results screen, from one
+     character. The other two roster builders emit no nested span here, so the > changes
+     nothing for Offense, Defense, Full Team or the Trade Machine. */
+  .rrow .nm>span{display:block;font-size:11px;color:var(--dim-2);white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;margin-top:1px}
   .rrow .num{flex:0 0 auto;text-align:right}
   .rrow .num b{display:block;font-family:var(--fn);font-size:15px;line-height:1.1}
@@ -6611,6 +6961,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <!-- The same mandate banner on the winter screen, where the cuts that reshape the roster
            happen. Updates live as you release a man. -->
       <div class="mandate" id="w-mandate" hidden></div>
+      <!-- THE SAME STRIP THE SEASON SCREEN CARRIES, from the same function, because it is
+           the same two facts and a player who has learned to read it on one screen should
+           not have to learn it again on the other. -->
+      <div class="wc-strip" id="w-career"></div>
       <div class="wc-foot">
         <span class="wsum" id="w-summary"></span>
         <button class="wrules" id="b-w-rules">Dynasty rules</button>
@@ -6745,7 +7099,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="rp-body" id="season-rp-body"></div>
     </details>
     <!-- The whole season laid out in order, weeks first, playoff rounds after. -->
-    <div class="caleye"><span>The season</span><b id="v-calrec">0-0</b></div>
+    <div class="caleye"><span id="v-caleye">The season</span><b id="v-calrec">0-0</b></div>
     <div class="cal" id="v-list"></div>
   </div>
 
@@ -6932,7 +7286,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="ar-sum"><span>Points this season</span><b id="ar-base">0</b></div>
       <div class="ar-x" id="ar-x"><span id="ar-xwhy">Season 1 pays once</span><b id="ar-mult">&times;1</b></div>
       <div class="ar-total" id="ar-season">0</div>
-      <div class="ar-run"><span>Dynasty score</span><b id="ar-run">0</b></div>
+      <div class="ar-run"><span id="ar-runlab">Current score</span><b id="ar-run">0</b></div>
       <!-- The owner's verdict, as the card's foot rather than a bar of its own. Its state is
            the only place red or green appears on this card. -->
       <div class="ownerbar" id="o-owner" hidden></div>
@@ -6980,6 +7334,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            last, not one season's rating), so it rides here on the lineup it describes instead.
            paintOver fills it for dynasty and leaves it hidden otherwise. -->
       <div class="ovr solo" id="o-dyn-ovr" hidden></div>
+      <!-- ANY YEAR OF THE DYNASTY, ON THE FIELD. Only drawn once the run is over and only
+           when there is more than one season to choose between; paintSeasonPicker builds
+           the options and leaves this hidden otherwise. -->
+      <div class="seasonpick" id="o-seasonpick" hidden>
+        <label for="o-seasonsel">Lineup</label>
+        <select id="o-seasonsel"></select>
+      </div>
       <div class="field short" id="field3"></div>
       <div class="rail" id="rail3"></div>
       <p class="railnote"></p>
@@ -7108,10 +7469,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
        Three screens for the one flow that reaches them, and only in a dynasty: SCOUT the
        boss and pick how to attack, PLAY the game making two live calls, then a result that
        either pays a reward or stings next season. See bossScout / bossPlay / bossFinish. The
-       scoreboard is the same bug the playoffs and the Bowl use, so a boss game reads like a
+       scoreboard is the same bug the playoffs and the Bowl use, so a boss battle reads like a
        game and not like a menu. -->
   <div class="screen bossx" id="s-bscout">
-    <div class="eyebrow red">Boss game &middot; Season <span id="bs-season">5</span></div>
+    <div class="eyebrow red">Boss battle &middot; Season <span id="bs-season">5</span></div>
     <h2 class="display bs-name" id="bs-name">The Boss</h2>
     <div class="bs-line" id="bs-rec">13-3, and the best of their era.</div>
     <div class="bs-stats">
@@ -7141,7 +7502,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   </div>
 
   <div class="screen bossx" id="s-bgame">
-    <div class="eyebrow red" id="bg-eye">Boss game</div>
+    <div class="eyebrow red" id="bg-eye">Boss battle</div>
     <h2 class="display bg-opp" id="bg-opp">The Boss</h2>
     <div class="bug big bossbug" id="bg-bug">
       <div class="btop">
@@ -7377,19 +7738,25 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=33"></script>
+<script src="board.js?v=35"></script>
 <script src="achievements.js?v=13"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
 <script src="crest.js?v=10"></script>
-<!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
-     panel looks the same everywhere and one "don't show this again" covers the lot. -->
-<script defer src="/assets/arcade-ad.js?v=3"></script>
+<!-- NO ARCADE HOUSE AD ON THIS GAME, by request, the same call the college game took
+     earlier and for the same reason. /assets/arcade-ad.js still runs on the homepage and
+     the golf game; this one asks nobody. Somebody who has opened this page has come to
+     draft a team, and interrupting that to sell them a different game is the one thing on
+     the site that takes something away from the player rather than adding to it. The
+     arcade is still one tap away in the prose on the front page and, for anybody who owns
+     the Arcade Card, on the "What you unlocked" sheet. Neither of those interrupts.
+     The script tag is gone as well as the call: a panel that loads is a panel one line
+     away from being back. cfb/build/test/test_arcade_ad.mjs holds both games to it. -->
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=8"></script>
+<script src="/assets/store.js?v=10"></script>
 <script defer src="auth.js?v=5"></script>
 <script>
 (function(){
@@ -7535,6 +7902,7 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
      the page reads no opinion as permission. A blocked board.js must not lock anybody out
      of a mode. */
   attemptsState:async()=>null, attemptSpend:async()=>null, attemptGrace:async()=>null,
+  attemptDayEnd:async()=>null,
 };
 const $=(id)=>document.getElementById(id);
 function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
@@ -7645,7 +8013,10 @@ function premiumRefresh(force){
      load at all: not gated wrong, just painted a moment too early and left there. */
   return a.premiumProducts(force).then((list)=>{ premiumSet=Array.isArray(list)?list:[]; return premiumSet; })
     .catch(()=>{ premiumSet=[]; return premiumSet; })
-    .then((v)=>{ try{ paintHomeStart(); }catch(_){} return v; });
+    /* AND THE HEADER, which carries the Pro ring. Ownership arrives after the account does,
+       so leaving this to the auth change alone left a fresh buyer looking at a free-looking
+       header until their next load. */
+    .then((v)=>{ try{ paintHomeStart(); paintAvatar(); }catch(_){} return v; });
 }
 
 /*
@@ -7689,43 +8060,267 @@ async function checkoutReturn(){
   }
   ga('checkout_returned',{});
   justPaid=true;
-  /* Roughly ten seconds of asking, leaning on the early tries where the webhook usually
-     lands, and none of it blocks the page: boot has already finished by here. */
-  const waits=[0,600,1200,2000,3000,3500];
+  /*
+   * THE ACCOUNT FIRST, THE ENTITLEMENT SECOND, AND THAT ORDER IS THE BUG THIS FIXES.
+   *
+   * This used to poll straight away. authBoot() is one line above the call to this function
+   * and it is asynchronous: authState starts {ready:false,signedIn:false} and only becomes
+   * real when PS_AUTH fires its first change, after getSession() has resolved. So the first
+   * two or three polls here ran as NOBODY. premiumRefresh returns immediately when signed
+   * out, which cost nothing and proved nothing, and if the session never arrived at all the
+   * loop ran its full ten seconds against an empty account and then apologised for a slow
+   * webhook that had actually delivered.
+   *
+   * Waiting is also what makes the three answers below distinguishable. "Signed out" and
+   * "signed in, row not here yet" want completely different screens, and before this they
+   * were the same screen.
+   */
+  await authSettled(8000);
+  if(!authState.signedIn){
+    paintHomeStart();
+    checkoutThanks('signedout');
+    ga('checkout_confirmed',{owned:false,state:'signedout'});
+    return;
+  }
+  const got=await checkoutPoll();
+  paintHomeStart();
+  checkoutThanks(got?'owned':'pending');
+  ga('checkout_confirmed',{owned:got});
+  /* AND IF IT HAS NOT LANDED, KEEP LOOKING WITHOUT BEING ASKED. Thirteen seconds is a long
+     webhook and a short outage, and the version of this that stopped there left somebody
+     sitting on a free-looking front page with a receipt in their email until they thought
+     to reload. Nobody should have to reload a page to find out whether their money arrived. */
+  if(!got) checkoutWatch();
+}
+/*
+ * THE SLOW WATCH, for a grant that lands after the thank you has already been drawn.
+ *
+ * Backs off from five seconds to forty across about two minutes, which is long enough to
+ * cover a webhook retry and short enough that it is not still running when somebody has
+ * moved on. It costs nothing while it waits and it stops the moment the row appears.
+ *
+ * WHAT IT DOES WHEN IT FINDS IT depends on where the player is. Still looking at the sheet
+ * that said the account was being set up: that sheet becomes the celebration, in place, so
+ * the last thing they saw was the answer to the thing it was apologising for. Gone back to
+ * the game: a line of toast, because replacing whatever they are doing with a popup is the
+ * wrong way to deliver good news.
+ */
+/* ONE ASK, NOT THIRTEEN SECONDS OF THEM. By the time somebody has read the signedout sheet
+   and signed back in, minutes have passed and the webhook is long done, so the row is either
+   there on the first question or something slower is wrong. Celebrate if it is; hand the
+   slow watch the case where it is not, so they still get told without pressing anything. */
+async function checkoutAfterSignIn(){
+  await premiumRefresh(true);
+  paintHomeStart();
+  if(dynastyOwned()){ checkoutThanks('owned'); return; }
+  checkoutWatch();
+}
+/* A GENERATION RATHER THAN A BUSY FLAG, so a later call SUPERSEDES an earlier watch instead
+   of being dropped by it. A flag would have been the obvious guard and it is the wrong one:
+   the second caller is always the more recent news (a sign-in after a signed out return, a
+   second Check again), and leaving an older watch running means the page is waiting on the
+   older question and any answer it finds arrives against stale state. Nothing here cancels a
+   pending timer, which cannot be done; the check on the other side of the await is what
+   makes the old loop fall out. */
+let checkoutWatchGen=0;
+async function checkoutWatch(){
+  const gen=++checkoutWatchGen;
+  for(const ms of [5000,8000,12000,15000,20000,30000,40000]){
+    await new Promise((r)=>setTimeout(r,ms));
+    if(gen!==checkoutWatchGen) return;      // a newer return took over
+    /* Signed out mid-wait: nothing to ask on behalf of, and asking anyway would set
+       premiumSet to null and repaint the page as free for no reason. Keep waiting: they
+       may be signing back in, which is exactly the case the signedout sheet sends them to. */
+    if(!authState.signedIn) continue;
+    await premiumRefresh(true);
+    if(gen!==checkoutWatchGen) return;
+    if(!dynastyOwned()) continue;
+    paintHomeStart();
+    const openNow=$('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='premium';
+    if(openNow) checkoutThanks('owned');
+    else toast('Your Pro account is ready.');
+    ga('checkout_landed_late',{onsheet:openNow});
+    return;
+  }
+}
+/* Roughly thirteen seconds of asking, leaning on the early tries where the webhook usually
+   lands, and none of it blocks the page: boot has already finished by here. */
+async function checkoutPoll(){
+  const waits=[0,600,1200,2000,3000,3500,3000];
   for(const ms of waits){
     if(ms) await new Promise((r)=>setTimeout(r,ms));
     await premiumRefresh(true);
-    if(dynastyOwned()) break;
+    if(dynastyOwned()) return true;
   }
-  paintHomeStart();
-  checkoutThanks(dynastyOwned());
-  ga('checkout_confirmed',{owned:dynastyOwned()});
+  return false;
 }
-function checkoutThanks(owned){
+/* RESOLVES WHEN THE AUTH CLIENT HAS ANSWERED ONCE, or when the cap runs out, whichever comes
+   first. authState.ready is only ever set from a PS_AUTH change, and PS_AUTH fires its first
+   one after getSession() has settled, so the flag means "we know who this is" rather than
+   "a client exists". Resolves either way: a checkout return must still reach a screen when
+   accounts are unavailable altogether. */
+function authSettled(cap){
+  const stop=Date.now()+(cap||6000);
+  return new Promise((done)=>{
+    const tick=()=>{
+      if(authState.ready||Date.now()>=stop) return done(!!authState.ready);
+      setTimeout(tick,70);
+    };
+    tick();
+  });
+}
+
+/*
+ * THE SCREEN AFTER THE MONEY.
+ *
+ * Somebody has just paid this site real money and this is the first thing they see, so it
+ * gets three separate versions rather than one shrug that covers all of them:
+ *
+ *   owned      the row is there. Confetti, thanks meant sincerely, and a door list.
+ *   pending    signed in, webhook not landed yet. Not an apology and not a failure: the
+ *              payment is through, and there is a button that asks again.
+ *   signedout  the browser has no session. THIS IS THE ONE THE OLD CODE GOT WRONG, and it
+ *              is not rare: www.runthe.gg and runthe.gg are separate localStorage jars, and
+ *              until _site.js the return from Stripe went to whichever one SITE_URL named
+ *              rather than the one they bought from. The purchase is fine, the row exists,
+ *              and the only true sentence is that signing back in brings it all with them.
+ */
+function checkoutThanks(state){
+  const owned=state==='owned';
   const box=$('sheet-in');
   box.dataset.kind='premium';
-  box.innerHTML='<div class="eyebrow gold">'+(owned?'You are Pro':'Payment received')+'</div>'+
-    '<h2 class="display" style="font-size:27px;margin:4px 0 8px">'+
-      (owned?'Everything is unlocked':'Thanks for that')+'</h2>'+
-    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
+  const HEAD={owned:'Pro unlocked',pending:'Payment received',signedout:'Payment received'};
+  const TITLE={owned:'You are Pro',pending:'Thank you',signedout:'Thank you'};
+  /* WRITTEN AS GRATITUDE AND NOT AS A STATUS LINE. The version this replaces opened with
+     "Your payment went through", which is what a card terminal prints. */
+  const BODY={
+    owned:'Thank you. Genuinely. This is a small site and a bundle like yours is what keeps '+
+      'it being made. Your account is Pro on every device you sign in on.',
+    pending:'Thank you. Genuinely. Your payment is through and your account is being set up '+
+      'right now. It usually takes a few seconds.',
+    signedout:'Thank you. Genuinely. Your purchase is safe on your account. This browser is '+
+      'just not signed in to it right now, which can happen coming back from the payment '+
+      'page. Sign in and everything you bought is there.'
+  };
+  box.innerHTML='<div class="eyebrow gold">'+HEAD[state]+'</div>'+
+    '<h2 class="display" style="font-size:30px;margin:4px 0 8px">'+TITLE[state]+'</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.5;margin:0">'+BODY[state]+'</p>'+
+    '<div style="margin-top:16px">'+
       (owned
-        ? 'Dynasty, Franchise and Commissioner are open, with no daily limit, on every '+
-          'device you sign in on.'
-        : 'Your payment went through. The account can take a moment to catch up, so if a '+
-          'mode is still locked, give it a minute and reopen the game.')+
-    '</p>'+
-    '<div style="margin-top:15px">'+
-      (owned
-        ? '<button class="btn" id="ck-go" style="width:100%">Start a Dynasty</button>'+
+        ? '<button class="btn" id="ck-see" style="width:100%">See what you unlocked</button>'+
           '<div style="margin-top:10px"><button class="btn ghost" id="sh-x" style="width:100%">Not now</button></div>'
-        : '<button class="btn ghost" id="sh-x" style="width:100%">Close</button>')+
+        : state==='pending'
+          ? '<button class="btn" id="ck-again" style="width:100%">Check again</button>'+
+            '<div style="margin-top:10px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>'
+          : '<button class="btn" id="ck-in" style="width:100%">Sign in</button>'+
+            '<div style="margin-top:10px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>')+
     '</div>';
   openSheet();
-  const go=$('ck-go');
+  /* THE CONFETTI ONLY FIRES ON A PURCHASE THE PAGE CAN ACTUALLY SEE. Celebrating over a
+     screen that has just told somebody their account is not ready would be worse than the
+     flat message this replaces. Gold, the same palette a perfect season gets, because this
+     is the other thing on the site worth a burst. fireConfetti already returns without
+     drawing anything for a player who has asked for reduced motion. */
+  if(owned) try{ fireConfetti({colors:['#fde68a','#fcd34d','#f59e0b','#fffbeb','#ffffff'],count:200,duration:4200}); }catch(_){}
+  const see=$('ck-see');
   /* STRAIGHT INTO THE THING THEY BOUGHT. Landing somebody back on the front page to go and
-     find it is the same as not acknowledging the purchase at all. */
-  if(go) go.onclick=()=>{ closeSheet(); setTimeout(()=>beginDynastyDraft(),260); };
+     find it is the same as not acknowledging the purchase at all. This used to be one
+     button into Dynasty; the bundle has five other things in it and the sheet below names
+     every one of them. */
+  if(see) see.onclick=()=>unlockedSheet();
+  const again=$('ck-again');
+  if(again) again.onclick=async()=>{
+    again.disabled=true; again.textContent='Checking';
+    const got=await checkoutPoll();
+    paintHomeStart();
+    checkoutThanks(got?'owned':'pending');
+    if(!got) toast('Still setting up. Give it a moment.');
+  };
+  const inb=$('ck-in');
+  /* profileSheet() IS the sign-in sheet when there is nobody signed in, and authMode is set
+     first so it opens on Welcome back rather than on the new-account form: this person has
+     an account, they paid with it, and being shown a sign-up here would be the sheet
+     arguing with the sentence above it. */
+  if(inb) inb.onclick=()=>{ authMode='in'; profileSheet(); };
   $('sh-x').onclick=closeSheet;
+}
+
+/*
+ * WHAT YOU UNLOCKED, AND EVERY ROW GOES SOMEWHERE.
+ *
+ * The profile already holds a receipt (pfPro) and this is deliberately not that. A receipt
+ * answers "what did I pay for and does it renew"; this answers "what can I do now", which is
+ * the only question anybody has thirty seconds after buying. So the rows are doors rather
+ * than line items: three of them start a mode on this page, two open another game, and the
+ * Run The Tour coins say they are on their way, because the golf backend credits those and
+ * this page cannot pretend otherwise.
+ *
+ * BUILT FROM premiumSet, WHICH IS THE ROW. Not from the bundle key, which this page never
+ * learns, and not from a list of what the store sells. Somebody holding the cheaper bundle
+ * sees four doors and somebody holding Run The Bundle sees six, out of the same table,
+ * because what is drawn is what the account actually owns.
+ */
+const UNLOCK_DOORS=[
+  {prod:'ps_premium',game:'ps',name:'Dynasty Mode',
+   line:'Draft a team and run it for as long as you can hold the job.',
+   go:()=>{ closeSheet(); setTimeout(()=>beginDynastyDraft(),260); }},
+  {prod:'ps_premium',game:'ps',name:'One Franchise Dynasty',
+   line:'The same run, with the pool locked to one club.',
+   go:()=>{ closeSheet(); setTimeout(()=>clubPicker(true),260); }},
+  {prod:'ps_premium',game:'ps',name:'Trade Machine',
+   line:'No daily limit on it any more. Play it as often as you like.',
+   go:()=>{ closeSheet(); setTimeout(()=>beginTradeMachine(),260); }},
+  /* ROOT-RELATIVE, NEVER ABSOLUTE, and for exactly the reason the CFB header carries a note
+     about: an absolute https://runthe.gg link takes somebody who arrived on www and drops
+     them on the apex, where their session does not exist. A buyer following a link off this
+     sheet into a game they have just paid for must not be signed out by the link. */
+  {prod:'cfb_premium',game:'cfb',name:'Commissioner Mode',
+   line:'Can you save College Football?',href:'/cfb/commish/'},
+  {prod:'arcade_card_year',game:'arcade',name:'Arcade Card, one year',
+   line:'Every daily game, unlimited plays, plus the archive.',href:'/arcade/'},
+  {prod:'runtour_pack',game:'tour',name:'100,000 coins and one Tour Pack',
+   line:'On its way to your Run The Tour wallet.',href:'/golf/'}
+];
+const ULK_CHEV='<svg width="9" height="14" viewBox="0 0 9 14" fill="none" aria-hidden="true">'+
+  '<path d="M1.5 1.5 L7 7 L1.5 12.5" stroke="currentColor" stroke-width="2" '+
+  'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function unlockedSheet(){
+  const have=Array.isArray(premiumSet)?premiumSet:[];
+  const rows=UNLOCK_DOORS.filter((d)=>have.indexOf(d.prod)>=0);
+  const box=$('sheet-in');
+  box.dataset.kind='unlocked';
+  const cell=(d,i)=>{
+    const g=(window.RTG_STORE&&window.RTG_STORE.game(d.game))||{name:'',c:'#94a3b8'};
+    const inner='<span><u>'+esc(g.name)+'</u><b>'+esc(d.name)+'</b>'+
+      '<i>'+esc(d.line)+'</i></span><em>'+ULK_CHEV+'</em>';
+    return d.href
+      ? '<a class="ulk-row" style="--gc:'+g.c+'" href="'+d.href+'" data-ulk="'+i+'">'+inner+'</a>'
+      : '<button type="button" class="ulk-row" style="--gc:'+g.c+'" data-ulk="'+i+'">'+inner+'</button>';
+  };
+  box.innerHTML='<div class="eyebrow gold">Pro</div>'+
+    '<h2 class="display" style="font-size:27px;margin:4px 0 7px">What you unlocked</h2>'+
+    '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+
+      'Tap any of these to go straight there. They stay unlocked on every device you sign '+
+      'in on.</p>'+
+    (rows.length
+      ? '<div class="ulk">'+rows.map(cell).join('')+'</div>'
+      /* REACHABLE WITHOUT BEING A BUG, the same way pfProLoad's empty case is. This draws off
+         premiumSet, and a blocked request leaves that empty while the purchase is perfectly
+         fine. Never tell somebody their bundle is gone. */
+      : '<p class="dim" style="font-size:12.5px;line-height:1.45;margin:14px 0 0">'+
+          'Your Pro modes are unlocked. The list of what is in your bundle could not be '+
+          'loaded just now. Reload the page and it will come back.</p>')+
+    '<p class="dim" style="font-size:12px;line-height:1.45;margin:14px 0 0">'+
+      'You paid once. Nothing here renews and nothing charges you again.</p>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>';
+  openSheet();
+  box.querySelectorAll('.ulk-row[data-ulk]').forEach((el)=>{
+    const d=rows[+el.dataset.ulk];
+    if(!d||!d.go) return;                       // an <a> navigates on its own
+    el.onclick=(e)=>{ e.preventDefault(); d.go(); };
+  });
+  $('sh-x').onclick=closeSheet;
+  ga('unlocked_sheet_shown',{n:rows.length});
 }
 const canPlayDefense=()=>{
   if(DEFENSE_LIVE) return true;
@@ -8374,7 +8969,7 @@ function show(id){
      line about Andre Johnson's contract pinned across the front page while timers went on
      firing at rows nobody can see. */
   if(id!=='s-winter'&&typeof winterNarrOff==='function'){ winterClear(); winterNarrOff(); }
-  /* The boss game runs on its own timer and rAF, the way the playoffs do; leaving its screen
+  /* The boss battle runs on its own timer and rAF, the way the playoffs do; leaving its screen
      by any door has to stop them, or a drive keeps animating over whatever comes next. */
   if(id!=='s-bgame'&&typeof bossStop==='function') bossStop();
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
@@ -8474,11 +9069,9 @@ async function boot(){
     ga('game_loaded');
     /* A beat after the intro lands, because the auth client decides on ITS first change
        whether it is opening a sheet of its own, and this must not get there first.
-       askArcadeAd() re-reads the screen and the sheet when the timer fires, so the delay
-       is politeness rather than the actual guard. */
-    /* The guide first, and only ever to somebody who has never started a run. The arcade
-       ad checks for it and stands down, so the two can share the same beat. */
-    setTimeout(()=>{ firstRunGuide(); askArcadeAd(); },1200);
+       ONLY THE GUIDE NOW. askArcadeAd() shared this timer and has been removed: this game
+       does not put up a house ad for another one. */
+    setTimeout(()=>{ firstRunGuide(); },1200);
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
@@ -8652,16 +9245,30 @@ function fieldState(el){
   return el._ps;
 }
 
-function drawField(el,live){
+/*
+ * `view` IS AN OPTIONAL LINEUP TO DRAW INSTEAD OF THE LIVE ONE: {roster, slotIndex, slots}.
+ *
+ * Every existing caller passes nothing and gets exactly what it always got, which is the
+ * point of making it a third argument rather than a mode flag. What it buys is the season
+ * picker on the dynasty results screen: a finished run can point this field at any year it
+ * played, and the chemistry rail beside it follows, because the rail is drawn from the same
+ * bySlot and the same resolveChemistry call a few lines down.
+ *
+ * NOT A SECOND FIELD RENDERER. The alternative was a read-only copy of this function for
+ * history, which is how two fields end up disagreeing about what a flex slot is called.
+ */
+function drawField(el,live,view){
   const st=fieldState(el);
   /* THE RUN'S OWN SLOT COUNT, not the module's six. Full Team has twelve, and a six-long
      array here silently dropped every man in a slot past the fifth. */
-  const bySlot=new Array(slotsNow().length).fill(null);
-  if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
-  const links=(run&&run.roster.length>1)?E.resolveChemistry(run.roster,CTX,chemOpts()).links:[];
+  const src=view||run;
+  const slots=(view&&view.slots&&view.slots.length)?view.slots:slotsNow();
+  const bySlot=new Array(slots.length).fill(null);
+  if(src) src.roster.forEach((p,i)=>{ bySlot[src.slotIndex[i]]=p; });
+  const links=(src&&src.roster.length>1)?E.resolveChemistry(src.roster,CTX,chemOpts()).links:[];
   const at=new Map();
-  if(run) run.roster.forEach((p,i)=>at.set(p.name,run.slotIndex[i]));
-  const openCount=slotsNow().length-(run?run.roster.length:0);
+  if(src) src.roster.forEach((p,i)=>at.set(p.name,src.slotIndex[i]));
+  const openCount=slots.length-(src?src.roster.length:0);
 
   // The sticky bar's pips are the same six slots, so they are drawn from the same data.
   // The sticky bar's pips are the same six slots, so they come off the same data.
@@ -8672,6 +9279,8 @@ function drawField(el,live){
      team and have no pick to be in the middle of, and lighting half of one would be saying
      something about a draft that is over. */
   if(live){
+    /* Still the LIVE run: `live` and a history view are mutually exclusive, and a draft in
+       progress is a fact about the run rather than about the lineup being drawn. */
     const picking=!!(run&&run.full&&run.roster.length<slotsNow().length);
     const def=picking&&fullSlotIsDefensive(run.roster.length);
     el.classList.toggle('pick-def',picking&&def);
@@ -8688,8 +9297,8 @@ function drawField(el,live){
     const justFilled=!!p&&!wasFilled;
     c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
     const disc=c.querySelector('.disc');
-    disc.querySelector('.dl').textContent=p?p.position:slotsNow()[i];
-    disc.style.cssText=p?posPaint(p.position):posTint(slotsNow()[i]);
+    disc.querySelector('.dl').textContent=p?p.position:slots[i];
+    disc.style.cssText=p?posPaint(p.position):posTint(slots[i]);
     c.querySelector('.who').textContent=p?lastName(p.name):'';
     /* Team code before the year, so a chip says which team-season the player came out of
        rather than just when. Era code, not the current one: a 2014 Raider is OAK, and
@@ -9046,12 +9655,25 @@ $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
  * the layout, out of the tab order and invisible to a screen reader in one attribute. */
 /* ── THE DAILY ALLOWANCE, ON THE PAGE ────────────────────────────────────────────────
  *
- * One start a day for Dynasty and one for the Trade Machine. The count itself is the
- * server's and lives in 99_daily_attempts.sql, which explains why it cannot live here. This
- * is the half that reads it, spends it at the right moment, and says so on the button.
+ * Three Dynasty SEASONS a day, and one Trade Machine RUN. The count itself is the server's
+ * and lives in 101_dynasty_seasons.sql, which explains why it cannot live here. This is the
+ * half that reads it, spends it at the right moment, and says so on the button.
  *
- * AN ATTEMPT IS A START. Continuing a run costs nothing on any day, so resuming never asks
- * the server anything: there is nothing to check. A run already under way is already paid for.
+ * THE UNIT IS THE WHOLE DIFFERENCE BETWEEN THE TWO MODES, and the server names it rather
+ * than the page deciding:
+ *
+ *   'season'  Dynasty. A kickoff spends one, on any run, new or twenty seasons old. The run
+ *             itself is never the thing being counted, so a dynasty survives the budget
+ *             running out: it is saved where it stands and the next season is there after
+ *             the reset. A firing ends the day outright, whatever is left.
+ *   'run'     The Trade Machine. One run is one season there, so a start and a season are
+ *             the same event and one a day means what it always meant.
+ *
+ * AND A MISSING UNIT IS THE OLD RULE. A database still on 100_daily_grace_reasons.sql
+ * answers without the column, and every read below falls back to 'run', which is exactly
+ * what that database is counting. So the page is correct on both sides of the migration and
+ * changes behaviour the moment the migration lands, rather than needing to be shipped with
+ * it in the same breath.
  *
  * NO OPINION IS PERMISSION. Every call here fails OPEN, which is the opposite of how the
  * rest of the board fails. A board that cannot be reached costs somebody a rank. A LIMIT
@@ -9096,13 +9718,36 @@ let dailyTick=0;
    somebody a run. */
 const dailyOn=()=>dailyLimited()&&!!authState.signedIn
   &&premiumSet!==null&&!dynastyOwned();
-/* How many starts are left today, and 1 whenever the page has no answer. */
+/* How many are left today, and 1 whenever the page has no answer. What one of them buys is
+   dailyUnit's question, not this one. */
 function dailyLeft(mode){
   if(!dailyOn()) return 1;
   const s=dailyState[mode];
   if(!s||s.used==null||s.allowance==null) return 1;
   return Math.max(0,s.allowance-s.used);
 }
+/* 'season' or 'run', from the server, defaulting to the rule a database without
+   101_dynasty_seasons.sql is still keeping. See the block above. */
+const dailyUnit=(mode)=>((dailyState[mode]&&dailyState[mode].unit)||'run');
+const dailySeasons=(mode)=>dailyUnit(mode)==='season';
+/* The day is over because the run is, which only season metering has a notion of. */
+const dailyEnded=(mode)=>!!(dailyState[mode]&&dailyState[mode].ended);
+/* Nothing more today, for either reason. The one question every gate asks. */
+const dailyShut=(mode)=>dailyOn()&&(dailyEnded(mode)||dailyLeft(mode)<=0);
+/* AND WHETHER A CLOCK IS ACTUALLY RUNNING ON IT, which is a separate question under the
+   rolling window. A dynasty day ends in two steps: the budget goes, then the page reports
+   the day over and the server stamps 24 hours from that instant. In between, `resetsAt` is
+   null and there is no countdown to draw yet. That gap is normally a few hundred
+   milliseconds, and dailyStop below is what closes it whenever anything finds it open. */
+const dailyTicking=(mode)=>dailyResetsAt(mode)!=null;
+/* What the copy says when it has to name the budget. Off the server's own number so the
+   page is never the second place the allowance is written down, with the shipped value as
+   the fallback for a page that has not been answered yet. */
+const DYN_DAY_SEASONS=3;
+const dailyAllow=(mode)=>{
+  const s=dailyState[mode];
+  return (s&&s.allowance!=null)?s.allowance:(mode==='dynasty'?DYN_DAY_SEASONS:1);
+};
 const dailyResetsAt=(mode)=>{
   const s=dailyState[mode];
   const t=s&&s.resetsAt?Date.parse(s.resetsAt):NaN;
@@ -9131,30 +9776,42 @@ function dailyCountdown(at){
   return Math.max(1,Math.round(ms/1000))+'s';
 }
 /* SPENT AT KICKOFF, NOT AT THE WHEEL, so a draft somebody backs out of costs nothing.
-   Answers true when the run may go ahead, which includes every case where the server could
-   not be asked. */
+   Answers true when the season may go ahead, which includes every case where the server
+   could not be asked. */
 async function dailySpend(mode){
   if(!dailyOn()) return true;
   let r=null;
   try{ r=await B.attemptSpend(mode); }catch(_){ r=null; }
-  if(r&&r.used!=null){ dailyState[mode]={used:r.used,allowance:r.allowance,resetsAt:r.resetsAt}; }
+  /* The whole row, not three fields off it: `unit` and `ended` ride in the same answer and
+     picking fields out by hand is how the page ends up holding a state that says 'run'
+     because the last write forgot to copy the column across. */
+  if(r&&r.used!=null) dailyState[mode]=r;
   return !r||r.ok!==false;
 }
-/* One more chance today. Two things earn one and the reason has to travel, because the
-   server holds a flag per reason rather than a count:
+/* One more today, and the reason has to travel because the server holds a flag per reason
+   rather than a count:
 
-     'fired'  a run that ended in its first season
-     'boss'   a boss game won
+     'boss'   a boss battle won, worth one more season
+     'fired'  kept only for a database still on 100_daily_grace_reasons.sql, where it is the
+              season one mercy. Under season metering the server accepts it and grants
+              nothing, because the mercy became the reroll button the moment a day was worth
+              three seasons instead of one run.
 
-   So a player can earn both in one day and get three starts. Calling the same reason twice
-   costs nothing and grants nothing. */
-/* WHAT EACH REASON IS CALLED WHEN IT IS HANDED OVER. A run that is given and not mentioned
-   is a run nobody knows they have: the allowance moved on the server, the door quietly went
-   back to playable, and the player had no idea either thing happened. */
+   Calling the same reason twice costs nothing and grants nothing. */
+/* WHAT A GRANT IS CALLED WHEN IT IS HANDED OVER. Something given and not mentioned is
+   something nobody knows they have: the allowance moved on the server, the door quietly went
+   back to playable, and the player had no idea either thing happened.
+   THE BOSS LINE IS WRITTEN PER UNIT, because "another run" is simply false under season
+   metering: the run in progress was never at risk, and what was just handed over is one more
+   season of it. It says no "today" either, the window being 24 hours from whenever this
+   player's day ends rather than a date. */
 const GRACE_SAID={
   fired:'Fired in season one. You have another run today.',
   boss:'Boss beaten. You have another run today.',
 };
+const graceSaid=(mode,reason)=>(reason==='boss'&&dailySeasons(mode))
+  ? 'Boss beaten. One more season.'
+  : GRACE_SAID[reason];
 async function dailyGrace(mode,reason){
   if(!dailyOn()) return;
   /* READ BEFORE, SO THE MESSAGE ONLY GOES OUT ON A REAL GRANT. Each reason is earned at
@@ -9162,11 +9819,52 @@ async function dailyGrace(mode,reason){
      first, which is the right answer and would otherwise be announced as a new run every
      time the screen that claims it was reopened. */
   const was=(dailyState[mode]&&dailyState[mode].allowance)||0;
+  /* WORDED BEFORE THE ANSWER LANDS, because the answer replaces the state the wording is read
+     off. What was claimed is a season or a run according to the rule in force when it was
+     claimed, and that is the rule the player was just playing under. */
+  const line=graceSaid(mode,reason);
   let r=null;
   try{ r=await B.attemptGrace(mode,reason); }catch(_){ r=null; }
-  if(r&&r.used!=null){ dailyState[mode]={used:r.used,allowance:r.allowance,resetsAt:r.resetsAt}; }
+  if(r&&r.used!=null) dailyState[mode]=r;
   paintHomeStart();
-  if(r&&r.allowance!=null&&was&&r.allowance>was&&GRACE_SAID[reason]) toast(GRACE_SAID[reason]);
+  if(r&&r.allowance!=null&&was&&r.allowance>was&&line) toast(line);
+}
+/* THE DAY IS OVER, AND THIS IS THE CALL THAT STARTS THE CLOCK. Only under season metering.
+   Two things end a dynasty day and `fired` is which:
+
+     the last season of the budget finished and the run survived
+     the run was fired, whenever that landed
+
+   Both cost the same 24 hours. They read differently on screen, which is the only thing the
+   flag decides.
+
+   MADE WHEN THE SEASON ENDS, NOT WHEN IT KICKS OFF, because the wait runs from the moment
+   the player actually finished. Spending the last season starts no clock; see the note over
+   ps_attempt_spend.
+
+   Silent: the results screen in front of the player is already the announcement, and a toast
+   over it saying the day is done would be the game gloating.
+
+   Idempotent on the server, and specifically it never pushes a wait that is already running
+   further out. That matters because this screen is reopened from a save every time somebody
+   comes back to a finished run. */
+async function dailyDayEnd(mode,fired){
+  if(!dailyOn()||!dailySeasons(mode)) return;
+  let r=null;
+  try{ r=await B.attemptDayEnd(mode,fired); }catch(_){ r=null; }
+  if(r&&r.used!=null) dailyState[mode]=r;
+  paintHomeStart();
+}
+/* THE GATE, AND THE REPAIR BEHIND IT. Every refusal goes through here rather than straight
+   to the sheet, because a spent day with no clock running is a day that never ends: the
+   budget is gone, nothing is counting down, and the door would say "come back" without ever
+   being able to say when.
+   That state is only reachable by leaving between a season's last snap and the screen that
+   reports it, which is a few hundred milliseconds. It is worth the round trip anyway, since
+   the alternative is a player stuck for good and a bug nobody could reproduce. */
+async function dailyStop(mode){
+  if(dailySeasons(mode)&&!dailyTicking(mode)) await dailyDayEnd(mode,false);
+  dailySpentSheet(mode);
 }
 /* The countdown only moves while it is on screen. Started by the painter that draws it and
    stopped by the one that does not, so the page is not running a timer all day. */
@@ -9175,40 +9873,73 @@ function dailyClock(on){
   else if(!on&&dailyTick){ clearInterval(dailyTick); dailyTick=0; }
 }
 /* What a spent day says when the door is tapped. The place the upgrade goes when there is
-   one to offer. */
+   one to offer.
+   THREE SHEETS, NOT ONE, because a spent day has three different meanings and only one of
+   them used to be written down:
+     the budget is gone   the dynasty is saved and the next season is on the clock
+     the run is over      a firing, which ends the day whatever is left in it
+     one run a day        the Trade Machine, and Dynasty on a database still on 100
+   Saying "that is today's run" to somebody mid-dynasty who has just played three seasons is
+   wrong twice over: they played three, and the run they are worried about is not going
+   anywhere. */
 function dailySpentSheet(mode){
   const at=dailyResetsAt(mode), cd=at?dailyCountdown(at):null;
   const name=mode==='trade'?'Trade Machine':'Dynasty';
-  const st=dailyState[mode];
-  const allow=(st&&st.allowance)||1;
+  const allow=dailyAllow(mode);
+  const seasons=dailySeasons(mode), ended=dailyEnded(mode);
+  /* TWO CLOCKS, AND THE UNIT SAYS WHICH. Dynasty's is 24 hours from the moment the day
+     ended, so it belongs to this account and no date is the right word for it. The Trade
+     Machine's is still the Eastern calendar day. Getting that fallback wrong is the kind of
+     wrong nobody reports: the countdown is nearly always there, and the sentence underneath
+     it only shows when it is not. */
+  const when=(one)=>cd
+    ? 'The '+one+' unlocks in <b>'+esc(cd)+'</b>.'
+    : seasons
+    ? 'The '+one+' unlocks 24 hours after that.'
+    : 'The '+one+' unlocks at midnight Eastern.';
+  const head=ended?'That is the day'
+    :seasons?'That is your '+allow+' seasons'
+    :'That is today’s run';
+  const body=ended
+    ? 'The run is over, and a firing ends the day with it. '+when('next one')+
+      ' Every run gets '+allow+' free seasons.'
+    :seasons
+    ? 'You have played all '+allow+' of your free seasons. '+when('next season')+
+      ' Your dynasty is saved exactly where it stands.'
+    /* THE REAL NUMBER, not always one. Under the old rule the base allowance is one a day
+       and the game hands out two more: one for being fired in season one, one for beating a
+       boss. A player who earned both and used all three was being told they get one a day,
+       which reads as the game having lost count of the runs it just gave them. */
+    : 'That is '+(allow>1?'all '+allow+' of your ':'your ')+esc(name)+' run'+(allow>1?'s':'')+
+      ' for today. '+when('next one');
+  const note=ended
+    ? 'Nothing you scored is lost. The run is on the board and in your cabinet.'
+    :seasons
+    ? 'Nothing is lost and nothing expires. The clock is yours. It started when that last '+
+      'season finished and it runs 24 hours. Come back and carry the same run on.'
+    : 'A run you have already started is never affected. You can carry it on any day, for as '+
+      'many days as it lasts.';
   $('sheet-in').innerHTML='<div class="eyebrow gold">'+esc(name)+'</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">That is today’s run</h2>'+
-    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+
-      /* THE REAL NUMBER, not always one. The base allowance is one a day and the game hands
-       out two more: one for being fired in season one, one for beating a boss. A player who
-       earned both and used all three was being told they get one a day, which reads as the
-       game having lost count of the runs it just gave them. */
-    'That is '+(allow>1?'all '+allow+' of your ':'your ')+esc(name)+' run'+(allow>1?'s':'')+
-      ' for today. '+
-      (cd?'The next one unlocks in <b>'+esc(cd)+'</b>.':'The next one unlocks at midnight Eastern.')+
-    '</p>'+
-    '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+
-      'A run you have already started is never affected. You can carry it on any day, for as '+
-      'many days as it lasts.</p>'+
-    /* HOW TO EARN ANOTHER ONE, which the game has always granted and never mentioned.
-       DYNASTY ONLY, because that is where the two reasons live: getting fired in season one
-       and winning a boss game both come off a dynasty, and the Trade Machine earns neither.
-       Offering them on its spent sheet would be promising a run that mode cannot give.
-       HIDDEN ONCE BOTH ARE IN. The allowance is 1 plus one per reason earned, so a 3 means
-       there is nothing left to earn and a list of ways to earn it would be taunting
-       somebody who has already done both. It cannot say WHICH of the two is still going
-       (ps_attempts_state returns the total and not the flags), so it states the rule rather
-       than ticking a box, which is true either way. */
-    (mode==='dynasty'&&allow<3
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">'+esc(head)+'</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+body+'</p>'+
+    '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+note+'</p>'+
+    /* HOW TO EARN ANOTHER ONE, which the game grants and would otherwise never mention.
+       DYNASTY ONLY, because the boss battle is a dynasty beat and the Trade Machine has
+       none. Offering it on that mode's spent sheet would promise something it cannot give.
+       HIDDEN ONCE IT IS IN. An allowance above the base means the boss bonus has already
+       been paid, and listing a way to earn something already earned is taunting. Compared
+       against the page's own copy of the base, so DYN_DAY_SEASONS and ps_day_allowance have
+       to move together; they are the same rule written in the two places that need it.
+       NOT OFFERED ON A DAY THAT HAS ENDED. A boss battle needs a run, and this player does
+       not have one until the reset. */
+    ((mode==='dynasty'&&!ended&&(seasons?allow<=DYN_DAY_SEASONS:allow<3))
       ? '<div class="dgrace">'+
-          '<b>Two things earn you another run today</b>'+
-          '<span>Get fired in season one. That one does not count.</span>'+
-          '<span>Win a boss game.</span>'+
+          (seasons
+            ? '<b>One thing earns you another season today</b>'+
+              '<span>Win a boss battle.</span>'
+            : '<b>Two things earn you another run today</b>'+
+              '<span>Get fired in season one. That one does not count.</span>'+
+              '<span>Win a boss battle.</span>')+
         '</div>'
       : '')+
     /* THE OFFER ITSELF, AT THE ONE MOMENT SOMEBODY IS ACTUALLY ASKING FOR IT.
@@ -9219,8 +9950,8 @@ function dailySpentSheet(mode){
        spent door is not a place to advertise the store, it IS the store, so the offer is
        drawn here in full: the same two bundles, out of /assets/store.js, the same as every
        other premium door.
-       WHAT STAYS ABOVE IT is the part only this screen knows: how many runs today was worth,
-       when the next one unlocks, and that a run already going is never affected. None of
+       WHAT STAYS ABOVE IT is the part only this screen knows: what today was worth, when the
+       next one unlocks, and what happens to the run in the meantime. None of
        that is a sales line and all of it is true whether or not anybody buys.
        Left off entirely for an owner, who is not being limited, and before launch for
        anybody outside the tester list, which is what premiumPitch() answers. */
@@ -9547,8 +10278,18 @@ function ensurePremiumCard(){
       /* ONE LINE. This was two sentences over three lines on the screen that has the least
          room, and the second of them ("Unlimited runs, lifetime access") is the pitch, which
          belongs in the sheet this card opens rather than in front of it. What a door needs
-         to say is where it goes. */
-      'Dynasty, Franchise and Commissioner.','3 modes');
+         to say is where it goes.
+         NOT "Dynasty, Franchise and Commissioner", which this read until now. Nothing in the
+         game is called Franchise: the mode is One Franchise Dynasty, and the store had
+         already been corrected everywhere else while this card kept the old name on the
+         front page. Naming all four modes correctly does not fit the line at any width, and
+         this card was cut TO one line on purpose, so it names the change instead: the limit
+         lifting is what ps_premium actually does, and Commissioner Mode is the one thing in
+         the bundle that is genuinely shut. The sheet it opens itemises all four.
+         AND THE COUNT MOVES TO FOUR, which is what the store sells: Dynasty, One Franchise
+         Dynasty and the Trade Machine stop being metered, and Commissioner Mode opens. The
+         three was from before the Trade Machine was part of the offer. */
+      'Unlimited runs and Commissioner Mode.','4 modes');
     el.onclick=()=>openPremium('home_card');
     host.parentNode.insertBefore(el, host.nextSibling);
   }
@@ -9663,6 +10404,82 @@ function ensureFullButton(){
    Same order of checks as the defense entry point, and that order is the lesson written up
    there: the account wall comes BEFORE the download, or a walled visitor waits out six
    megabytes to be told no and comes back to a button still spinning. */
+/*
+ * THE TWO NUMBERS ON THE DYNASTY DOOR: the best run anybody has had, and the best this
+ * account has had.
+ *
+ * ASKED ONCE PER ACCOUNT, NOT PER PAINT. ensureDynastyButton rebuilds its contents on every
+ * return to the front page, and a fetch in there would be a request per repaint. Keyed on
+ * the user id rather than a plain "have we asked" flag, because the personal best belongs to
+ * an account: signing out or signing in as somebody else has to re-ask, and until it answers
+ * the previous account's number must not still be sitting on the door.
+ *
+ * BOTH ARE ALLOWED TO FAIL. The board is unreachable more often than anybody would like and
+ * a front page that cannot draw its main button because a leaderboard timed out is a worse
+ * page than one with no numbers in the corner. Every failure leaves the value null and the
+ * corner simply stays empty. Nothing here is awaited by anything.
+ *
+ * THE SCORE AXIS, ALL TIME. The board offers seasons as well and 'seasons' is the mode's
+ * own headline axis, but "best score" is the one a number in a corner can state without a
+ * second word of explanation. A seasons figure would need to say seasons, and then the two
+ * rows are four columns wide on a button.
+ */
+let dynHiTop=null, dynHiMine=null, dynHiFor;
+function dynHiEnsure(){
+  const uid=authState.signedIn?(authState.userId||null):null;
+  if(dynHiFor===uid) return;
+  dynHiFor=uid;
+  dynHiMine=null;
+  /* paintHomeStart comes back through here and finds dynHiFor already set, so this cannot
+     recur. */
+  try{
+    B.dynastyTop(1,'score','all').then((rows)=>{
+      dynHiTop=(rows&&rows[0])||null; paintHomeStart();
+    }).catch(()=>{});
+    if(uid) B.dynastyMine(uid,1,'score','all').then((rows)=>{
+      dynHiMine=(rows&&rows[0])||null; paintHomeStart();
+    }).catch(()=>{});
+  }catch(_){}
+}
+/*
+ * A SCORE THAT CANNOT OUTGROW ITS CORNER.
+ *
+ * Exact below a million, which is every real number today: a dynasty's measured best is
+ * around 198,000 and six figures with a comma is seven characters, which fits at every width
+ * the site supports. Above that it abbreviates, because a record is not bounded and this slot
+ * is. Measured rather than assumed: at 320px an eight figure record printed in full runs 2px
+ * INTO the football above the headline, and at 300px twelve past it.
+ *
+ * ROUNDING IS ALLOWED HERE AND WOULD NOT BE ON A RESULT SCREEN. This is the bar to clear,
+ * read at a glance on a door; the exact figure is on the leaderboard, which is where somebody
+ * checking whether they beat it by four hundred points is going to look anyway.
+ */
+const dynHiNum=(n)=>{
+  n=Math.round(n||0);
+  if(n<1e6) return SCORE(n);
+  const m=n/1e6;
+  /* Two decimals under ten and one above, so the abbreviation keeps three significant
+     figures either way. The trailing zeros come off, or 1,000,000 reads "1.00M". */
+  return (m<10?m.toFixed(2):m.toFixed(1)).replace(/\.?0+$/,'')+'M';
+};
+/* The corner block, or nothing at all. Never a dash and never a zero: a board that has not
+   answered and a board with nothing on it are both "no number to show", and printing a
+   placeholder would be the door reporting a result it does not have. */
+function dynHiHTML(){
+  const top=dynHiTop&&dynHiTop.score>0?dynHiTop:null;
+  const mine=dynHiMine&&dynHiMine.score>0?dynHiMine:null;
+  if(!top&&!mine) return '';
+  /* THE PLAYER WHO HOLDS THE RECORD GETS ONE ROW, NOT THE SAME NUMBER TWICE. Matched on the
+     run's own id rather than on the score, because two runs can tie and only one of them is
+     the row the board is showing at the top. */
+  if(top&&mine&&top.dynasty_id===mine.dynasty_id)
+    return '<span class="hp-hi"><u>Your record</u><b>'+dynHiNum(mine.score)+'</b></span>';
+  return '<span class="hp-hi">'+
+    (top?'<u>Record</u><b>'+dynHiNum(top.score)+'</b>':'')+
+    (mine?'<u>Your best</u><b>'+dynHiNum(mine.score)+'</b>':'')+
+  '</span>';
+}
+
 /* DYNASTY'S BUTTON, made rather than revealed, for every reason ensureFullButton
    gives: a hidden node in the markup is a hidden node anybody can read, and signing out of
    a tester account on the same tab has to take the button with it. */
@@ -9677,6 +10494,9 @@ function ensureDynastyButton(){
     trimLongGroup();
     return;
   }
+  /* Asked here rather than at boot, so the two requests only ever go out for somebody who
+     can actually see this door. */
+  dynHiEnsure();
   const box=ensureLongGroup(); if(!box) return;
   if(!el){
     el=document.createElement('button');
@@ -9737,13 +10557,32 @@ function ensureDynastyButton(){
        does. The verb moves up into the headline and comes out of the caption, which is a
        field shorter for it.
        RESUME RATHER THAN CONTINUE, and not only because it is shorter. "Continue" already
-       does two jobs on this page: it is the boss game's advance button and it is the verb on
+       does two jobs on this page: it is the boss battle's advance button and it is the verb on
        "Continue with Google". A third use dulls all three. Resume is also what the code has
        always called this: see dynResume() below. */
-    /* A run in progress is never gated, so nothing here reads the allowance, and the
-       countdown's timer stops because there is no countdown on this branch to move. */
+    /* A RUN IN PROGRESS IS STILL A RUN IN PROGRESS, and it is never taken away. What can run
+       out is the seasons to spend on it, and when that happens the door says when the next
+       one lands rather than opening a dynasty that cannot kick off.
+       ONLY UNDER SEASON METERING. On the old rule a start was the only thing counted, so a
+       saved run was free for ever and this branch read nothing. dailyEnsure is called for
+       both, because the door now has a question to ask on either.
+       AND ONLY ON A RUN SITTING AT ITS RESULTS SCREEN, which is the one phase where the next
+       thing the player does costs a season. A run mid-season has already paid for the season
+       it is in and must not be shut out of finishing it; a run mid-draft or mid-offseason has
+       work to do that costs nothing, and its kickoff is guarded by startSeason. Gating on the
+       day alone would lock somebody out of a game that was already under way. */
+    dailyEnsure('dynasty');
+    if(dailySeasons('dynasty')&&r.phase===R.PHASES.OVER&&dailyShut('dynasty')){
+      const at=dailyResetsAt('dynasty'), cd=at?dailyCountdown(at):null;
+      dailyClock(true);
+      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">Day done</span>'+
+        '<span class="hp-full-name">Dynasty</span>'+
+        '<span class="hp-full-sub">Season '+(r.seasonNo+1)+' '+
+          (cd?'in '+esc(cd):'in 24 hours')+'</span>';
+      el.onclick=()=>{ dailyStop('dynasty'); };
+    }else{
     dailyClock(false);
-    el.innerHTML=mark+'<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
+    el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
       '<span class="hp-full-name">Resume Dynasty</span>'+
       /* THE SCORE ONCE THERE IS ONE. A first draft has played nothing, and "0 points" on
          the card offering it back reads like a run that went badly rather than one that has
@@ -9752,6 +10591,7 @@ function ensureDynastyButton(){
         (r.score>0?SCORE(r.score)+' points':r.roster.length+' signed')+
         ' &middot; '+dynWhere(r)+'</span>';
     el.onclick=()=>{ dynResume('open'); };
+    }
   }else{
     /* THE NUMBER, AND THAT IT MOVES. The old caption ran three fields wide and carried the
        ageing and the endlessness as well, which is the rules sheet on the first tap doing
@@ -9764,17 +10604,24 @@ function ensureDynastyButton(){
        there is a career here and one life to spend on it. */
     dailyEnsure('dynasty');
     /* THE DAY IS SPENT, and the door says when the next one lands rather than going grey.
-       Only ever reached with no save: a run in progress is the branch above, and that one is
-       never gated. Tapping opens the explainer rather than doing nothing, because a button
-       that ignores you reads as broken. */
-    if(dailyLeft('dynasty')<=0){
+       Only ever reached with no save, so there is no run waiting on the other side of the
+       clock and the line is about starting rather than resuming. Tapping opens the explainer
+       rather than doing nothing, because a button that ignores you reads as broken.
+       THE TAG FOLLOWS THE UNIT, so "Used today" is never said about three seasons. The line
+       under it says New run either way on this branch, because there is no saved dynasty for
+       the clock to be holding: whether the budget ran out or a firing ended the day, what
+       lands at the reset is a fresh one. */
+    if(dailyShut('dynasty')){
       const at=dailyResetsAt('dynasty'), cd=at?dailyCountdown(at):null;
       dailyClock(true);
-      el.innerHTML=mark+'<span class="hp-tag hp-tag-spent">Used today</span>'+
+      const word=dailySeasons('dynasty')?'New run':'Next run';
+      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">'+
+          (dailySeasons('dynasty')?'Day done':'Used today')+'</span>'+
         '<span class="hp-full-name">Dynasty</span>'+
         '<span class="hp-full-sub">'+
-          (cd?'Next run in '+esc(cd):'Next run at midnight Eastern')+'</span>';
-      el.onclick=()=>{ dailySpentSheet('dynasty'); };
+          (cd?word+' in '+esc(cd)
+            :dailySeasons('dynasty')?word+' in 24 hours':word+' at midnight Eastern')+'</span>';
+      el.onclick=()=>{ dailyStop('dynasty'); };
     }else{
     dailyClock(false);
     /* THE NEW BADGE, AND IT RETIRES ITSELF. The corner tag is the only thing on the front
@@ -9785,11 +10632,14 @@ function ensureDynastyButton(){
        a run in progress never sees it either, because that branch carries the season instead. */
     let dynSeen=false;
     try{ dynSeen=localStorage.getItem('ps_dynintro')==='1'; }catch(_){ dynSeen=!!window.__dynIntro; }
-    el.innerHTML=mark+(dynSeen?'':'<span class="hp-tag hp-tag-new">New</span>')+
+    el.innerHTML=mark+dynHiHTML()+(dynSeen?'':'<span class="hp-tag hp-tag-new">New</span>')+
       '<span class="hp-full-name">Start a Dynasty</span>'+
-      /* The question used to be here too ("How long can you last?"). START A DYNASTY above
-         it is already the invitation, so the caption only has to say what the mode is. */
-      '<span class="hp-full-sub">One team &middot; one life</span>';
+      /* THE STAKE, NOT THE SHAPE. "One team, one life" described the rule and named nothing
+         a player wants: two facts about how the mode is configured, in a slot that gets one
+         line. Getting fired is what a life actually means here, it is already the game's own
+         word for it (see the grace_fired allowance), and phrased as a question it is the
+         only line on this card that asks for an answer. */
+      '<span class="hp-full-sub">How long before they fire you?</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
     }
   }
@@ -9834,13 +10684,12 @@ function beginDynastyDraft(opts){
    * built and could not be reached, which is the shape of bug that passes every test,
    * because a store opening is not an error.
    *
-   * The rule is one free run a day for anybody signed in, plus a second for being fired in
-   * season one, plus a second for beating a boss. All three live in
-   * supabase/100_daily_grace_reasons.sql, ps_attempts_state adds them up, and the two grace
-   * claims are already wired (see dailyGrace on a season-one firing and on a boss win).
-   * Buying the bundle removes the limit rather than unlocking the door: dailyOn() stops
-   * metering the moment ps_premium is owned, so dailyLeft() below always answers 1 for an
-   * owner and this reads exactly as it did for them.
+   * The rule is three free SEASONS a day for anybody signed in, plus one more for winning a
+   * boss battle, spent on whatever run they are in. A firing ends the day. All of it lives in
+   * supabase/101_dynasty_seasons.sql, ps_attempts_state adds it up, and the boss claim is
+   * already wired (see dailyGrace on a boss win). Buying the bundle removes the limit rather
+   * than unlocking the door: dailyOn() stops metering the moment ps_premium is owned, so
+   * dailyShut() below always answers false for an owner and this reads exactly as it did.
    *
    * THE PITCH STILL HAPPENS, at the one moment somebody is actually asking for it. A player
    * who has used the day's runs lands on dailySpentSheet, which says when the next one
@@ -9852,8 +10701,8 @@ function beginDynastyDraft(opts){
   }
   /* CHECKED HERE, SPENT AT KICKOFF. The two happen at different moments on purpose: reading
      is free, so it can guard the door and save somebody a draft they would not be allowed to
-     play, while the write waits until they have actually committed to the run. */
-  if(dailyLeft('dynasty')<=0) return dailySpentSheet('dynasty');
+     play, while the write waits until they have actually committed to the season. */
+  if(dailyShut('dynasty')) return dailyStop('dynasty');
   /* AND A RUN IN PROGRESS IS NOT SOMETHING TO OVERWRITE QUIETLY. Asked of the slot being
      STARTED, not of dynasties in general: an open run and a club run live in their own slots
      now, so starting one has nothing to say about the other. Only a second run of the same
@@ -9909,10 +10758,19 @@ function dynastyReplaceSheet(opts){
  * meeting each of those for the first time in the middle of a run. That is not difficulty,
  * it is a missing sentence.
  *
- * Same shape as tradeIntro, which solved this for the Trade Machine: shown once, remembered,
- * and reachable again from the screen where the rules actually bite.
+ * SHOWN BEFORE EVERY RUN, AND TURNED OFF BY THE READER RATHER THAN BY THE SECOND VIEW.
+ * It used to be once per browser, the same shape as tradeIntro. That is right for a mode you
+ * learn once and wrong for this one: a dynasty is a calendar, a win bar that moves, a cap
+ * that does not, and the ageing rule, and somebody coming back a fortnight later is starting
+ * a run against rules they half remember. So the sheet stands in front of every run and
+ * carries its own off switch, which is the arrangement that lets a player who HAS learned it
+ * stop seeing it without taking it away from everybody else.
+ *
+ * `opts.offer` draws that switch. Only the intro passes it: a "do not show this again" on a
+ * sheet somebody deliberately opened from the How to play pill would be offering to hide a
+ * thing they just asked for.
  */
-function dynastyRulesHTML(go){
+function dynastyRulesHTML(go,opts){
   const step=E.DYNASTY_STEP_SEASONS;   // seasons between steps up in the target
   const base=E.DYNASTY_BASE_WINS;      // the opening win bar
   /* THE MILESTONE SEASONS, READ OFF THE ENGINE RATHER THAN TYPED. This block used to name
@@ -9920,7 +10778,7 @@ function dynastyRulesHTML(go){
      player a schedule the game does not keep, and nothing fails, because it is a string. */
   const mev=E.DYNASTY_MILESTONE_EVERY;
   const mand=[1,3,5].map((n)=>mev*n).join(', ');   // odd milestones: the roster mandates
-  const boss=[2,4,6].map((n)=>mev*n).join(', ');   // even milestones: the boss games
+  const boss=[2,4,6].map((n)=>mev*n).join(', ');   // even milestones: the boss battles
   return '<div class="eyebrow red">Dynasty</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 2px">One team. One life. '+
       'How long can you last?</h2>'+
@@ -9965,47 +10823,107 @@ function dynastyRulesHTML(go){
       '<li><b>'+mand+': a roster mandate.</b> The owner names a way to build your team. Do it '+
         'that offseason and your dead cap is wiped clean. Miss it and next season wants one '+
         'more win. Either way the run goes on.</li>'+
-      '<li><b>'+boss+': a boss game.</b> Beat a real all-time team and you freeze one player '+
+      '<li><b>'+boss+': a boss battle.</b> Beat a real all-time team and you freeze one player '+
         'at his age and salary for good.</li>'+
       '<li><b>The target creeps up.</b> '+base+' wins, then '+(base+1)+' after season '+step+
         ', then '+(base+2)+' after '+(step*2)+'.</li>'+
     '</ul>'+
-    /* HOW MANY RUNS A DAY, said in the rules rather than discovered at a locked door.
-       The two extra ones are the point of putting it here: a player who reads "one run a
-       day" and then gets fired in season one has been handed another and has no reason to
-       look for it. Only drawn for somebody the meter applies to, so an owner is not told
-       about a limit they do not have and a visitor before launch is not told about one
-       that is not switched on yet. */
+    /* WHAT THE FREE DAY IS WORTH, said in the rules rather than discovered at a locked door.
+       The third line is the point of putting it here: a player who reads the budget and then
+       wins a boss has been handed a season and has no reason to go looking for it. Only drawn
+       for somebody the meter applies to, so an owner is not told about a limit they do not
+       have and a visitor before launch is not told about one that is not switched on yet.
+       WRITTEN PER UNIT, off the same dailySeasons() the gates read, so a page talking to a
+       database still on 100_daily_grace_reasons.sql describes the rule that database is
+       actually keeping. Rules that do not match the door are worse than no rules. */
     (dailyOn()
-      ? '<div class="eyebrow" style="margin:16px 0 8px">Runs a day</div>'+
-        '<ul class="modenotes">'+
-          '<li><b>One run a day, free.</b> Carrying on a run you have already started never '+
-            'costs one. Play it over as many days as it lasts.</li>'+
-          '<li><b>Fired in season one? Have another.</b> A run that dies in its first '+
-            'season does not count against the day.</li>'+
-          '<li><b>Win a boss game, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
-            ' and beat the marquee team, and the day gives you one more.</li>'+
-        '</ul>'
+      ? (dailySeasons('dynasty')
+        ? '<div class="eyebrow" style="margin:16px 0 8px">Your free seasons</div>'+
+          '<ul class="modenotes">'+
+            /* NO ORDINAL HERE. "Play the 5th" reads fine and "the 3th" does not, and the
+               number comes off the server, so the sentence has to work for whatever it
+               answers. "Spend them all" needs no agreement with anything. */
+            '<li><b>'+dailyAllow('dynasty')+' seasons, then a wait.</b> One run, carried as '+
+              'far as you can take it. Spend them all and your dynasty waits exactly where it '+
+              'is.</li>'+
+            /* THE CLOCK IS THE THING PEOPLE GET WRONG, so it is its own line and it says both
+               halves: how long, and what starts it. A shared midnight punished whoever sat
+               down in the morning; this one is theirs. */
+            '<li><b>The clock is 24 hours.</b> It starts the moment your last season ends, '+
+              'not at some hour of the night.</li>'+
+            '<li><b>Getting fired starts it early.</b> The run is over and a new one waits out '+
+              'the same 24 hours. Every season you banked still counts.</li>'+
+            '<li><b>Win a boss battle, get another season.</b> Reach season '+
+              (E.DYNASTY_MILESTONE_EVERY*2)+' and beat the marquee team, and you get one '+
+              'more.</li>'+
+          '</ul>'
+        : '<div class="eyebrow" style="margin:16px 0 8px">Runs a day</div>'+
+          '<ul class="modenotes">'+
+            '<li><b>One run a day, free.</b> Carrying on a run you have already started never '+
+              'costs one. Play it over as many days as it lasts.</li>'+
+            '<li><b>Fired in season one? Have another.</b> A run that dies in its first '+
+              'season does not count against the day.</li>'+
+            '<li><b>Win a boss battle, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
+              ' and beat the marquee team, and the day gives you one more.</li>'+
+          '</ul>')
       : '')+
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:13px 0 0">'+
       'You score points every season, more for the playoffs and a title, and later seasons '+
       'pay multiples. Lasting is the whole game.</p>'+
-    '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>';
+    '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>'+
+    /* UNDER THE BUTTON, which is where the site already puts this control: see .wnchk on the
+       crest's What's new sheet, whose markup and storage idiom this follows exactly so the
+       two cannot end up looking like two different products. */
+    ((opts&&opts.offer)
+      ? '<label class="wnchk"><input type="checkbox" id="b-dyni-off"'+
+          (dynIntroOff()?' checked':'')+'><span>Don\'t show this again</span></label>'
+      : '');
 }
 
+/*
+ * TWO KEYS, BECAUSE THEY ANSWER TWO QUESTIONS.
+ *
+ * ps_dynintro means "has read the rules at least once" and is what retires the NEW badge on
+ * the front page door. ps_dynintro_off means "has asked not to be shown them again" and is
+ * the only thing that skips the sheet. Folding them into one was the obvious move and it is
+ * wrong in both directions: the badge would never retire for somebody who reads the rules
+ * every time and never ticks the box, and ticking the box would silently also mean "this
+ * mode is no longer new to me", which the player did not say.
+ *
+ * Both fall back to a window flag when localStorage throws, which is a real state on iOS in
+ * private mode. A checkbox that cannot persist should still work for the session it is in.
+ */
+const DYN_INTRO_KEY='ps_dynintro';
+const DYN_INTRO_OFF='ps_dynintro_off';
+function dynIntroOff(){
+  try{ return localStorage.getItem(DYN_INTRO_OFF)==='1'; }catch(_){ return !!window.__dynIntroOff; }
+}
 function dynastyIntro(go){
-  let seen=false;
-  try{ seen=localStorage.getItem('ps_dynintro')==='1'; }catch(_){ seen=!!window.__dynIntro; }
-  if(seen){ go(); return; }
+  if(dynIntroOff()){ go(); return; }
+  /* Marked as read on the way in, not on the way out: the badge is about whether this mode
+     is still new to them, and it stops being new the moment the sheet is on screen. */
   window.__dynIntro=true;
-  try{ localStorage.setItem('ps_dynintro','1'); }catch(_){}
-  $('sheet-in').innerHTML=dynastyRulesHTML('Draft my team');
+  try{ localStorage.setItem(DYN_INTRO_KEY,'1'); }catch(_){}
+  $('sheet-in').innerHTML=dynastyRulesHTML('Draft my team',{offer:true});
   $('sheet-in').dataset.kind='dynintro';
   /* However it is dismissed the draft proceeds, because a rules popup that can strand a run
      is worse than no rules at all. The Trade Machine's intro writes this out at length. */
   sheetOnClose=go;
   openSheet();
   $('b-dyni-go').onclick=closeSheet;
+  /* WRITTEN THE MOMENT IT IS TICKED rather than on the way out, so the promise holds however
+     the sheet is dismissed: the backdrop, the button, or a phone back gesture. Unticking puts
+     it back, because a control that only goes one way is a trap on a sheet this one is about
+     to stop showing. */
+  const off=$('b-dyni-off');
+  if(off) off.onchange=()=>{
+    window.__dynIntroOff=off.checked;
+    try{
+      if(off.checked) localStorage.setItem(DYN_INTRO_OFF,'1');
+      else localStorage.removeItem(DYN_INTRO_OFF);
+    }catch(_){}
+    ga('dynasty_intro_off',{off:off.checked});
+  };
 }
 /* The same card on demand, with no continuation: it closes back to wherever you were. */
 function reviewDynastyRules(){
@@ -10096,8 +11014,35 @@ const dynKey=(p)=>(p?p.player_id+'|'+p.season:null);
 /* The phases a run can be put back at, which is the whole of the rule above in one
    function. Week zero is the squad screen: the season exists because paintSquad built it,
    but not a game of it has been played. */
+/*
+ * A DRAFT NOBODY HAS SIGNED ANYBODY IN IS NOT A RUN, and until this existed the front page
+ * said it was.
+ *
+ * Opening the draft screen is enough to write a save. Every exported mutation in run.js is
+ * wrapped to call dynSave (see the note on that list), dynAtRest counts the DRAFT phase as a
+ * resting place, and the draft screen reaches into run.js before a single player is on the
+ * board. So somebody who pressed Start a Dynasty, looked at the wheel and left came back to a
+ * front page offering to RESUME a dynasty, captioned "0 signed, still drafting". Reported by
+ * an owner who had just bought the bundle and never played the mode: the new What you
+ * unlocked sheet puts a Dynasty door one tap from the receipt, which is why a fault older
+ * than that sheet started being hit the moment somebody paid.
+ *
+ * ONE PREDICATE, READ AND WRITE. The write side stops making them and the read side refuses
+ * the ones already sitting in people's browsers, which is the half that fixes anybody who has
+ * one today. Two rules in two places would eventually disagree about what an empty run is.
+ *
+ * SCOPED TO THE DRAFT rather than "any run with an empty roster", deliberately. Later phases
+ * have their own reasons to be briefly short-handed (a release in the offseason) and losing
+ * one of those would be losing a real run, which is the thing this file exists to prevent.
+ *
+ * NOTHING IS LOST BY REFUSING IT. The day is checked at the door and spent at kickoff, so an
+ * abandoned draft costs no allowance, and an unsigned spin is a board that gets dealt again.
+ */
+const dynUnstarted=(r)=>!!(r&&r.dynasty&&r.phase===R.PHASES.DRAFT
+  &&!(r.roster&&r.roster.length));
 function dynAtRest(){
   if(!run||!run.dynasty) return false;
+  if(dynUnstarted(run)) return false;
   const P=R.PHASES;
   if(run.phase===P.DRAFT||run.phase===P.COACH||run.phase===P.OFFSEASON
     ||run.phase===P.OVER) return true;
@@ -10157,6 +11102,11 @@ function dynRead(slot){
      stops a club run resumed from the open door (or the reverse) from opening a game the
      screen it came from was not describing. */
   if(dynSlotOf(s.run)!==want) return null;
+  /* AND THE ONES ALREADY WRITTEN. dynAtRest stops making these now, which does nothing for a
+     browser that is holding one, and holding one is exactly the state the report came from.
+     Refused here, not deleted: a reader that writes is a surprise, and beginDynastyDraft
+     clears the slot on the way into the next draft anyway, so it heals itself. */
+  if(dynUnstarted(s.run)) return null;
   /* Whoever saved it and nobody else. Both sides normalised to null so a signed-out run,
      which is only reachable once the mode goes live to everybody, still finds its own. */
   if((s.user||null)!==(authState.userId||null)) return null;
@@ -11577,27 +12527,14 @@ function firstRunGuide(){
 }
 
 /* ---- RUN THE ARCADE ----
-   The panel itself is /assets/arcade-ad.js: one look and one set of storage keys for every
-   surface on the site, so ticking "don't show this again" anywhere silences it everywhere
-   and nobody is told twice in a sitting. All this game decides is WHEN it is polite to
-   ask, which is the only part that is local knowledge. */
-function askArcadeAd(){
-  const A=window.RTG_ARCADE_AD; if(!A) return;
-  if(A.forced()){ A.show({from:'football'}); return; }
-  if(!A.due()) return;
-  /* NOT OVER THE GUIDE. Somebody being told how to play this game for the first time does
-     not also want to be sold a different one; the guide is once per browser and the ad is
-     once per session, so the ad simply comes back next visit. */
-  if(frgUp()) return;
-  /* The front page, and nothing on top of it. A challenge link takes over the first
-     screen, and a sheet is already open when somebody is mid sign-up or has been sent to
-     the club picker; covering either would replace the thing they asked for with a thing
-     they did not. */
-  if(!$('s-intro').classList.contains('on')) return;
-  if($('sheet').classList.contains('on')) return;
-  if(wantModes||wantOneTeam||wantDefense||wantFull||wantDynasty) return;
-  A.show({from:'football'});
-}
+   THERE IS NO HOUSE AD ON THIS GAME ANY MORE. askArcadeAd() stood here and decided when it
+   was polite to interrupt: not over the first-run guide, not over a sheet, only on the front
+   page. Every one of those guards was right and the answer was still no, because the
+   politest possible interruption is still an interruption, and this is a game somebody
+   opened in order to play it.
+   REMOVED WITH ITS SCRIPT TAG rather than left loaded behind a disabled call, for the reason
+   written up there: a loaded panel is one line away from coming back. window.RTG_ARCADE_AD
+   does not exist on this page and nothing here may reintroduce it. */
 
 function eraPicker(){
   const eras=Object.keys(E.ERAS);
@@ -13174,6 +14111,25 @@ function winterEdge(a){
 function winterOverpaid(a){ return winterEdge(a)<=-WIN_OVERPAY; }
 function winterBargain(a){ return winterEdge(a)>=WIN_OVERPAY; }
 
+/* FPPG, LAST YEAR'S, READY TO COUNT UP TO THIS YEAR'S. Built to the same shape winterStats
+   gives a chip so the one loop in winterLand drives both. ppr_ppg_mean is the unrounded
+   source the reveal card and the roster panel already display; the `fppg` column beside it
+   is the same number pre-rounded, and reading one here and the other there is how two
+   screens end up disagreeing about a man by a tenth. */
+function winterFppg(a){
+  const now=+(a.now&&a.now.ppr_ppg_mean)||0;
+  const was=+(a.was&&a.was.ppr_ppg_mean)||0;
+  const diff=now-was;
+  const moved=Math.abs(diff)>=0.05;
+  const f=(v)=>v.toFixed(1);
+  return '<span class="wfppg">'+
+    '<b data-from="'+was+'" data-to="'+now+'" data-dec="1">'+f(was)+'</b>'+
+    '<i>FPPG</i>'+
+    '<em class="wsd '+(moved?(diff>0?'up':'down'):'')+'">'+
+      (moved?(diff>0?'+':'')+f(diff):'&middot;')+'</em>'+
+  '</span>';
+}
+
 function winterRow(a,i){
   const p=a.now;
   /* WHAT HE IS WORTH AGAINST WHAT HE COSTS, which is now the whole story of the row. His
@@ -13192,6 +14148,7 @@ function winterRow(a,i){
       '</span></span>'+
     winterSpark(a)+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
+      winterFppg(a)+
       '<span class="wraise'+(up?' up':(over?' over':''))+'">'+
         (up||over?'worth '+M0(a.market):'')+'</span></span>'+
     '<span class="wcut"><button class="wcutb" data-cut="'+i+'" '+
@@ -13244,7 +14201,23 @@ function paintWinter(){
      says at four times the size and with the consequence attached. A player who has
      arrived here confused is better served by being told which game he is in. */
   $('w-step').textContent='Dynasty';
-  $('w-score').innerHTML='Dynasty score: <span class="scorechip">'+SCORE(run.score||0)+'</span>';
+  /* "CURRENT SCORE", NOT "DYNASTY SCORE". The whole screen is already labelled Dynasty two
+     lines above this, so the word was doing nothing here except taking the space that says
+     WHEN the number is from. It is a running total that moves every season, and this screen
+     only exists for a run that survived, so it is always the current one. */
+  $('w-score').innerHTML='Current score: <span class="scorechip">'+SCORE(run.score||0)+'</span>';
+  /* WHAT THE CAREER HAS DONE AND WHAT IT IS WALKING INTO, the same strip the season screen
+     carries. The card already says the score, which is a points total rather than a record,
+     and it says the bar and when it moves; neither of those is what the run has actually
+     won, and nothing here said whether the season being planned for is a boss season. That
+     is the one fact on this screen that should change who you keep.
+     FROM run.seasonNo AND NOT seasonNo+1: beginOffseason has already advanced it, so on this
+     screen it is the season about to be played. The bar half is off because the goal block
+     under this one already says the bar and when it steps, much larger. */
+  {
+    const cr=$('w-career');
+    if(cr){ cr.innerHTML=dynFootStrip(run.seasonNo,false); cr.hidden=!cr.innerHTML; }
+  }
   /* THE CAP MOVED AND NOTHING SAID SO. It grows six percent every winter, which is the one
      thing working in your favour against salaries that only ever rise, and it was happening
      silently behind a bar whose ceiling quietly changed between two paints. */
@@ -13352,7 +14325,10 @@ function winterLand(r,a,animate){
      small line under it, where it can be green while his chart is red, which is a thing
      that happens all the time: a man can lose value all year and still be worth double
      what you pay him. */
-  r.querySelectorAll('.wst').forEach((st)=>{
+  /* .wfppg JOINS THE STRIP'S LOOP rather than getting a second copy of this. It carries the
+     same three data attributes and the same .wsd, so one loop counts every number on the
+     card up at his beat and there is no way for the money column to fall out of step. */
+  r.querySelectorAll('.wst,.wfppg').forEach((st)=>{
     const b=st.querySelector('b'); if(!b) return;
     const dec=b.dataset.dec==='1';
     const fmt=(v)=>(dec?v.toFixed(1):String(Math.round(v)));
@@ -14090,6 +15066,12 @@ function paintCalendar(justPlayed){
   $('v-list').innerHTML=cells.join('');
   const w=s.results.filter(r=>r.won).length;
   $('v-calrec').textContent=w+'-'+(s.results.length-w);
+  /* THE SCHEDULE BELONGS TO A SEASON OF THE DYNASTY, so it says which one. Reset explicitly
+     for every other mode rather than only set for this one: the same element is drawn for
+     the Trade Machine and free play on the same page, and a heading left over from a dynasty
+     would tell a free-play run it was in season seven. */
+  const eye=$('v-caleye');
+  if(eye) eye.textContent=(run&&run.dynasty)?('Season '+run.seasonNo):'The season';
   paintDynastyBar(s);
 }
 
@@ -14122,17 +15104,127 @@ function paintDynastyBar(s){
   el.className='gauntbar'+(done?' safe':(dead?' dead':''));
   let track='';
   for(let i=0;i<bar;i++) track+='<i'+(i<wins?' class="won"':'')+'></i>';
-  el.innerHTML='<div class="gb-top">'+
-      '<span>Wins <b>'+wins+'</b> of <b>'+bar+'</b></span>'+
-      '<span class="gb-or">'+(done?'You keep your job':'or you are fired')+'</span>'+
+  el.innerHTML='<div class="gb-main">'+
+      dynSeasonChip()+
+      '<div class="gb-rt">'+
+        '<div class="gb-top">'+
+          '<span>Wins <b>'+wins+'</b> of <b>'+bar+'</b></span>'+
+          '<span class="gb-or">'+(done?'You keep your job':'or you are fired')+'</span>'+
+        '</div>'+
+        '<div class="gb-track">'+track+'</div>'+
+        '<div class="gb-note">'+(done
+          ? 'Job saved. Season '+(run.seasonNo+1)+' is next.'
+          : (dead
+            ? 'You cannot get there. This is the last season.'
+            : need+' more from '+left+' game'+(left===1?'':'s')+'.'))+'</div>'+
+      '</div>'+
     '</div>'+
-    '<div class="gb-track">'+track+'</div>'+
-    '<div class="gb-note">'+(done
-      ? 'Job saved. Season '+(run.seasonNo+1)+' is next.'
-      : (dead
-        ? 'You cannot get there. This is the last season.'
-        : need+' more from '+left+' game'+(left===1?'':'s')+'.'))+'</div>'+GD_HELP;
+    dynFootStrip(run.seasonNo+1,true)+GD_HELP;
   bindGdHelp(el);
+}
+
+/*
+ * WHICH SEASON OF THE DYNASTY THIS IS, which the screen a player spends the most time on
+ * never said. Seventeen weeks of watching a record climb, on a page identical to every other
+ * mode's, with the one number the whole run is counting nowhere on it.
+ *
+ * The tag under it names a season that is not like the others. A boss or a mandate is the
+ * authored content this mode is built around, and a player walked into both without warning:
+ * the schedule is in the rules sheet and nowhere on the screen where it lands.
+ */
+function dynSeasonChip(){
+  const n=run.seasonNo;
+  let tag='';
+  try{
+    /* No cadence argument. stepSeasons is a real per-run field and this is not: nothing
+       sets run.milestoneEvery, so passing it would read as a per-run schedule that does not
+       exist. The engine defaults to DYNASTY_MILESTONE_EVERY, which is what the rules sheet
+       reads too, so the screen and the sheet cannot teach two different schedules. */
+    const kind=E.dynastyMilestoneKind(n);
+    if(kind==='boss') tag='<span class="gb-tag">Boss season</span>';
+    else if(kind==='challenge') tag='<span class="gb-tag">Mandate</span>';
+  }catch(_){}
+  return '<div class="gb-yr"><b>'+n+'</b><i>Season</i>'+tag+'</div>';
+}
+
+/*
+ * WHAT IS BEHIND THE RUN AND WHAT IS IN FRONT OF IT.
+ *
+ * Both halves are DERIVED, from run.history and the milestone schedule, so neither can claim
+ * a thing the run has not done. history holds finished seasons only, so during season seven
+ * it has six entries and the line is about those six: the live record is already on the score
+ * bug and in the calendar heading, and printing it a third time here would be the same number
+ * three times on one screen.
+ *
+ * SEASON ONE GETS NO LEFT HALF rather than "0-0". There is nothing behind it, and a zero is a
+ * claim about a career that has not started.
+ */
+/* WHAT THE CAREER HAS PRODUCED, identical on both screens that show it. run.history holds
+   FINISHED seasons only, which is what makes one function serve both: on the season screen
+   it is every season before the live one, and in the offseason it is every season including
+   the one just played, and in both cases it is exactly "behind you".
+   NO SEASON COUNT. Both screens print the season number in the display face inches away,
+   and "5 seasons behind you" beside a 6 is two numbers for one fact. What is left is the
+   part that number cannot say: what those seasons actually produced. */
+function dynBehindSpan(){
+  const h=Array.isArray(run.history)?run.history:[];
+  if(!h.length) return '';
+  const w=h.reduce((t,x)=>t+(x.wins||0),0);
+  const l=h.reduce((t,x)=>t+(x.losses||0),0);
+  const titles=h.filter((x)=>x.title).length;
+  return '<span>Behind you <b>'+w+'-'+l+'</b>'+
+    (titles?' &middot; <b>'+titles+'</b> title'+(titles===1?'':'s'):'')+'</span>';
+}
+/*
+ * WHAT IS IN FRONT OF THE RUN, and the two screens are standing at different points in the
+ * calendar, which is the whole reason this takes an argument.
+ *
+ * run.seasonNo IS INCREMENTED INSIDE beginOffseason. So on the season screen it is the
+ * season being played and the horizon starts at the next one, while on the offseason screen
+ * it is already the season about to be played and the horizon starts at THAT one. Written as
+ * one function with an offset because getting it wrong is silent: both readings produce a
+ * sentence, and only one of them is true.
+ *
+ * `bar` is off on the offseason screen because the goal block directly above it already says
+ * the bar and when it moves, at four times the size and with the consequence attached.
+ */
+function dynAheadText(from,bar){
+  try{
+    const n=run.seasonNo, ev=E.DYNASTY_MILESTONE_EVERY;
+    if(bar){
+      /* stepSeasons IS per-run and is passed, so a run started under a different ladder is
+         told its own next bar rather than the default one. A bar that steps up is the only
+         thing here the rules sheet's schedule cannot tell you, so it outranks a milestone. */
+      const barNow=R.effectiveWinBar(run), barNext=E.dynastyWinBar(n+1,run.stepSeasons);
+      if(barNext>barNow) return 'Bar goes to '+barNext+' next season';
+    }
+    const here=E.dynastyMilestoneKind(from);
+    if(here) return (here==='boss'?'Boss battle':'Mandate')+
+      (from===n?' this season':' next season');
+    for(let k=from+1;k<=from+ev*2;k++){
+      const kk=E.dynastyMilestoneKind(k);
+      if(!kk) continue;
+      const what=kk==='boss'?'Boss battle':'Mandate';
+      /* "IN 1 SEASONS" IS WHAT THIS SAID, on the offseason screen only. There the horizon
+         starts at the season being planned for, so a milestone one year further out came
+         through the loop rather than through the branch above it, which is where the season
+         screen's "next season" wording lives. Counted off n either way, so both screens
+         measure from the season the reader is standing in. */
+      const away=k-n;
+      return away===1?(what+' next season'):(what+' in '+away+' seasons');
+    }
+  }catch(_){}
+  return '';
+}
+function dynFootStrip(from,bar){
+  const left=dynBehindSpan();
+  const next=dynAheadText(from,bar);
+  if(!left&&!next) return '';
+  /* No placeholder for a missing left half. space-between puts a lone child on the left,
+     which is where a season-one run wants its one line anyway, and an empty span would take
+     a line of its own once the narrow rule turns this into a block. */
+  return '<div class="gb-foot">'+left+
+    (next?'<span class="gb-next">'+esc(next)+'</span>':'')+'</div>';
 }
 
 /* WHOSE COLORS YOUR SIDE OF THE SCORE BUG WEARS.
@@ -14262,10 +15354,19 @@ function paintCapTracker(inf){
     $('cap-event').textContent='';
   }
 }
-/* KICKOFF IS WHERE THE DAY IS SPENT, and only the FIRST kickoff of a run. Every season after
-   it belongs to a run that is already paid for, which is the whole rule: an attempt is a
-   start, not a sitting. Marked on the run rather than counted here, so a reload in the
-   middle of season one cannot charge somebody twice.
+/* KICKOFF IS WHERE THE DAY IS SPENT, and under season metering that is EVERY kickoff rather
+   than only the first. Which of the two applies is the server's answer, not a constant here:
+   see dailyUnit and the block above it.
+
+     'season'  one per kickoff, marked with run.paidSeason so a reload in the middle of a
+               season cannot charge for it twice, and so a run carried across three days
+               charges three times rather than once.
+     'run'     the old rule and the Trade Machine's: the first kickoff only, marked with
+               run.attemptPaid. Every season after belongs to a run already paid for.
+
+   BOTH MARKS TRAVEL INSIDE THE SAVE, because dynPack copies the run wholesale, and dynSave
+   is called here for the same reason: nothing else on the kickoff path is a run.js mutation,
+   so without it a reload between the spend and the first snap would spend a second one.
 
    THERE ARE TWO KICKOFFS AND THAT IS THE ENTIRE REASON THIS IS A FUNCTION.
 
@@ -14284,13 +15385,34 @@ function paintCapTracker(inf){
    whether there was one to spend; making the player watch a round trip before their season
    begins would be paying for that authority twice. */
 function spendTheDay(){
-  if(!run||run.attemptPaid) return;
+  if(!run) return;
   if(!(run.dynasty||run.tradeMachine)) return;
+  const mode=run.dynasty?'dynasty':'trade';
+  if(dailySeasons(mode)){
+    const n=run.seasonNo||1;
+    if(run.paidSeason===n) return;
+    run.paidSeason=n;
+    run.attemptPaid=true;
+    dailySpend(mode);
+    if(run.dynasty) dynSave();
+    return;
+  }
+  if(run.attemptPaid) return;
   if(run.seasonNo!=null&&run.seasonNo>1) return;
   run.attemptPaid=true;
-  dailySpend(run.dynasty?'dynasty':'trade');
+  dailySpend(mode);
+}
+/* THE BACKSTOP, not the gate anybody is meant to meet. A dynasty that runs out of seasons is
+   stopped at dynToWinter, before the offseason rather than after it, so nobody does a winter's
+   work and then finds the kickoff shut. This catches the ways round that: a second dynasty in
+   the other slot spending the budget while this one sat mid-offseason, or a save reopened at
+   the squad screen on a day that has since run out. */
+function seasonIsPaid(){
+  if(!run||!run.dynasty||!dailySeasons('dynasty')) return true;
+  return run.paidSeason===(run.seasonNo||1);
 }
 function startSeason(){
+  if(!seasonIsPaid()&&dailyShut('dynasty')) return dailyStop('dynasty');
   spendTheDay();
   ga('season_started',{mode:runMode(),club:run&&run.franchise||null});
   const sp=$('season-roster'); if(sp) sp.style.display='none';
@@ -16826,6 +17948,10 @@ function paintScore(v){
   xRow.classList.remove('in');
   baseEl.textContent='0';
   totalEl.textContent='0';
+  /* Same two states as the ledger heading under it: the number this counts up to is where
+     the run stands, and where a fired run stands is where it finished. */
+  const runLab=$('ar-runlab');
+  if(runLab) runLab.textContent=v.fired?'Final score':'Current score';
   const before=Math.max(0,(v.score||0)-h.score);
   runEl.textContent=SCORE(before);
 
@@ -16997,8 +18123,17 @@ function paintOwner(){
   if(wrap&&led){
     wrap.hidden=false;
     const n=$('o-ledn');
-    if(n) n.innerHTML='Dynasty score: <span class="scorechip">'+SCORE(v.score||0)+'</span>';
-    led.innerHTML=run.history.map((h,i)=>{
+    /* CURRENT WHILE IT IS STILL RUNNING, FINAL WHEN IT IS NOT. This heading is drawn on the
+       results screen after every season including the one somebody is fired in, so a flat
+       "current" would be the last thing a dead run said about itself. */
+    if(n) n.innerHTML=(v.fired?'Final score: ':'Current score: ')+
+      '<span class="scorechip">'+SCORE(v.score||0)+'</span>';
+    /* Emitted from the same function as the rows, so a column added to one is added to the
+       other or neither. TARGET rather than "needed", which frees the cell to be a number. */
+    const head='<div class="ldg-h"><span>Season</span><span>Record</span>'+
+      '<span class="lo">Ovr</span><span>Target</span><span></span>'+
+      '<span class="lsc">Points</span></div>';
+    led.innerHTML=head+run.history.map((h,i)=>{
       const cls=h.cleared?'pass':((i===run.history.length-1&&v.fired)?'fired':'miss');
       /* Rows that banked their roster can be opened; the OVR cell is always rendered, empty
          when a pre-snapshot season has no rating, so every row keeps the same six columns. */
@@ -17007,30 +18142,63 @@ function paintOwner(){
         :'<span class="lo" style="color:'+ovrBand(h.rating)+'">'+Number(h.rating).toFixed(1)+'</span>';
       return '<div class="ldg '+cls+tap+'" data-i="'+i+'"><span class="ly">'+h.year+'</span>'+
         '<span class="lr">'+h.wins+'-'+h.losses+'</span>'+ov+
-        '<span class="lb">needed '+h.bar+'</span>'+
+        '<span class="lb">'+h.bar+'</span>'+
         '<span class="lv">'+(h.title?'TITLE':(h.cleared?(h.made?'PLAYOFFS':'KEPT'):
           (i===run.history.length-1&&v.fired?'FIRED':'MISSED')))+'</span>'+
         '<span class="lsc">'+SCORE(h.score||0)+'</span></div>';
     }).join('');
     /* Dealt out rather than dropped in, oldest first, so the run reads as a sequence of
        years and the last row lands last. */
-    [...led.children].forEach((r,i)=>setTimeout(()=>r.classList.add('in'),120+i*70));
+    /* THE HEADER IS NOT A SEASON. It is a child of the same element, so a blanket walk over
+       children would deal it out with the rows and, worse, leave it stuck at opacity 0 until
+       its turn came. Only the rows are dealt. */
+    [...led.querySelectorAll('.ldg')].forEach((r,i)=>setTimeout(()=>r.classList.add('in'),120+i*70));
   }
 
   /* A FIRED RUN IS NOT WAITING FOR ANYBODY. The autosave's whole job is to hold a dynasty
      that is still going, and this one is over: leaving it on disk would put "Continue" on
      the front page over a run whose only remaining move is Draft again. */
   if(v.fired) dynClear();
-  /* THE MERCY, ON A RUN THAT DIED IN ITS FIRST SEASON. That is the one firing that teaches
-     nobody anything: the economy takes several seasons to make sense, and being shut out for
-     a day fifteen minutes after arriving is the worst first impression this mode can make.
-     The server caps it at one a day, so a reload of this screen re-asks and changes nothing. */
-  if(v.fired&&seasons<=1) dailyGrace('dynasty','fired');
+  /* A FIRING ENDS THE DAY, and that is the rule the whole free tier turns on. Three seasons a
+     day with a firing costing nothing would make the cheapest way to spend them a string of
+     fresh season ones, rerolled until one drafts well, which is both the thing the meter
+     exists to discourage and the worst possible way to meet this mode. So the run ending ends
+     the day with it. Idempotent on the server, so reopening this screen re-asks and changes
+     nothing.
+     THE OLD MERCY IS THE OTHER BRANCH, and it belongs to the old rule rather than to this
+     one. Where a day was a single run, a run that died in its first season was worth handing
+     back: being shut out fifteen minutes after arriving is the worst first impression the
+     mode can make, and the economy takes several seasons to make any sense. A budget of three
+     removes the problem it solved. Kept for a database still on 100_daily_grace_reasons.sql,
+     where it is still the rule being enforced. */
+  /* AND THIS SCREEN IS WHERE THE CLOCK STARTS, for both endings, because this screen is the
+     moment a season actually finished. The wait is 24 hours from here rather than from a
+     shared midnight, so where it is called from IS the rule: a gate further on would start it
+     whenever the player next looked, and spending the last season would start it before they
+     had played it.
+     THE BUDGET RUNNING OUT IS AN ENDING TOO, not only a firing. A player who clears the third
+     season has finished their day exactly as surely as one who was sacked in it, and the only
+     difference is what the sheet says afterwards.
+     NOT WHILE A BOSS BATTLE IS STILL TO COME. Winning one buys a fourth season, so closing
+     the window in front of it would take the reward away before it was paid. The boss path
+     comes back through dynToWinter, which ends the day there if the win did not arrive. */
+  if(run&&run.dynasty&&dailySeasons('dynasty')){
+    if(v.fired) dailyDayEnd('dynasty',true);
+    else if(dailyLeft('dynasty')<=0&&!R.bossPending(run)) dailyDayEnd('dynasty',false);
+  }else if(v.fired&&run&&run.dynasty&&seasons<=1){
+    /* THE OLD MERCY, and it belongs to the old rule rather than to this one. Where a day was
+       a single run, a run that died in its first season was worth handing back: being shut
+       out fifteen minutes after arriving is the worst first impression the mode can make, and
+       the economy takes several seasons to make any sense. A budget of three removes the
+       problem it solved. Kept for a database still on 100_daily_grace_reasons.sql, where it
+       is still the rule being enforced. */
+    dailyGrace('dynasty','fired');
+  }
   /* Which unlocks the exits: see the .gaunt.over rule. */
   if(over) over.classList.toggle('over',!!v.fired);
   paintRunCard(v);
 
-  /* A BOSS GAME STANDS BETWEEN THE SEASON AND THE WINTER, and only when there is one and the
+  /* A BOSS BATTLE STANDS BETWEEN THE SEASON AND THE WINTER, and only when there is one and the
      run survived to see it. The teaser goes on the owner's own bar rather than a panel of its
      own, because it is the same voice: you cleared the bar, now here is the marquee game. */
   const boss=(!v.fired&&R.bossPending(run))?R.bossFor(run):null;
@@ -17075,7 +18243,7 @@ function paintOwner(){
 
 /*
  * INTO THE WINTER. The one way from a finished season to the next offseason, shared by the
- * ordinary Next button and the far side of a boss game.
+ * ordinary Next button and the far side of a boss battle.
  *
  * THE SEASON THAT JUST ENDED IS RECORDED; THE NEXT ONE IS NOT YET. `submitted` and the
  * placings belong to one season, and outside a dynasty a run only ever has one, so nothing
@@ -17085,6 +18253,15 @@ function paintOwner(){
  * is written the instant it returns and the cleared value is the one that belongs in it.
  */
 function dynToWinter(){
+  /* AND THIS IS WHERE A SPENT DAY STOPS, at the door out of the results screen rather than at
+     the kickoff on the far side of a winter. Both would be honest; only this one refuses
+     before the player has spent twenty minutes ageing a roster and working the wheel for a
+     season they cannot start. The run is already saved at this phase, so nothing is lost and
+     the front page carries the countdown until the next season lands.
+     THE BOSS BATTLE IS ON THE OTHER PATH and reaches here after it, which is the order it has
+     to be: winning one buys a season, and a gate in front of the boss would have taken the
+     reward away before it was paid. */
+  if(run&&run.dynasty&&dailyShut('dynasty')) return dailyStop('dynasty');
   submitted=null; myRanks=null; myGmRank=null; ranksP=null; gmRankP=null;
   lastPerfectShare=null;
   try{ R.beginOffseason(run,BYKEY,DATA_LAST_SEASON); }
@@ -17122,7 +18299,7 @@ function mandateBriefing(){
 }
 
 /*
- * ─── THE BOSS GAME, ON SCREEN ──────────────────────────────────────────────────────
+ * ─── THE BOSS BATTLE, ON SCREEN ──────────────────────────────────────────────────────
  *
  * Three screens, one flow: SCOUT (pick how to attack), PLAY (a game played forward on the
  * playoff field), RESULT (a reward or a sting, then into the winter).
@@ -17134,7 +18311,7 @@ function mandateBriefing(){
  * straight back into bossSimResolve, which runs the play and decides where the ball goes. So
  * the situation is the sim's own and the choice genuinely branches it.
  *
- * NOT SAVED MID-GAME. run.js autosaves at rest, and a boss game is not rest: a reload lands
+ * NOT SAVED MID-GAME. run.js autosaves at rest, and a boss battle is not rest: a reload lands
  * on the OVER screen (dynResume routes phase OVER to paintOver), which offers the boss again.
  * The result is banked only when applyBossResult runs on the far side, and that call IS
  * wrapped, so once the reward is taken it survives a reload.
@@ -17222,7 +18399,7 @@ function bossPlay(read){
   themEl.querySelector('.cd').textContent=bossThreeLetter(o);
   bossYouCol=me.a;
   bossThemCol=(them.a&&them.a.toLowerCase()!=='#000000'&&them.a!==me.a)?them.a:'#e87461';
-  $('bg-eye').textContent='Boss game · Season '+run.seasonNo;
+  $('bg-eye').textContent='Boss battle · Season '+run.seasonNo;
   $('bg-opp').textContent=o.display;
   $('bg-syou').textContent='0'; $('bg-sthem').textContent='0';
   youEl.classList.add('lead'); themEl.classList.remove('lead');
@@ -17337,12 +18514,13 @@ function bossFinish(ev){
   $('bg-outcome').textContent=ev.won?'You win':'You lose';
   const cont=$('b-boss-continue');
   if(ev.won){
-    /* A BOSS WON BUYS ANOTHER RUN TODAY. Getting here at all means ten seasons cleared, so
-       it is not a consolation the way the first-season mercy is: it is the reward for the
-       one thing in this mode that is genuinely hard. Fired on every boss win rather than
-       only the first, because the server holds one flag for the reason and a second win in
-       the same day changes nothing. The run this player is in continues either way. What
-       they get is the freedom to start a NEW one without waiting for midnight. */
+    /* A BOSS WON BUYS ONE MORE TODAY, and it is the only bonus the mode still hands out.
+       Getting here at all means six seasons cleared, so it is never a consolation: it is the
+       reward for the one thing in this mode that is genuinely hard, and it pays in exactly
+       what the mode is counting. Claimed on every boss win rather than only the first,
+       because the server holds one flag for the reason and a second win in the same day
+       changes nothing. The run continues either way; what the win buys is another season of
+       it today rather than at the reset. */
     if(run&&run.dynasty) dailyGrace('dynasty','boss');
     if(b.reward==='freeze'){
       $('bg-note').textContent='You beat '+o.display+'. Now pick a player to keep forever.';
@@ -17606,8 +18784,10 @@ function paintOver(){
       : 'which is a <b>'+rating.toFixed(1)+'</b> team overall against an average defense.')+
     schemeTail(st)+' You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
 
-  /* The lineup, which the old results page never showed at all. */
-  drawField($('field3'),false);
+  /* The lineup, which the old results page never showed at all. Drawn through the shared
+     painter so the picker below and the first paint cannot disagree about it. */
+  paintDynLineup(null);
+  paintSeasonPicker();
   const bySlot=new Array(E.SLOTS.length).fill(null);
   run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
   /* Walks the run's own slot order (QB RB WR WR TE FLEX for most modes; QB RB WR TE
@@ -17615,16 +18795,7 @@ function paintOver(){
      player actually plays rather than the word FLEX, because "FLEX" tells you about the
      slot and you want to know about the player; slotTag still marks which rows are flex. */
   const dynOver=!!(run&&run.dynasty);
-  $('o-rost').innerHTML=slotsNow().map((slot,i)=>{
-    const p=bySlot[i]; if(!p) return '';
-    const a=topAward(p);
-    return '<div class="rrow">'+slotTag(slot,p.position)+
-      '<span class="nm"><b>'+dynRookieHtml(p,dynOver)+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
-        (dynOver&&p.age?' &middot; '+dynAgeHtml(p,true):'')+
-        (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
-      (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
-      '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
-  }).join('');
+  $('o-rost').innerHTML=rosterRowsHTML(bySlot,slotsNow(),dynOver);
 
   $('o-miss').innerHTML='<div class="rload"><i></i><i></i><i></i>'+
     '<span>Working out the best you could have drafted</span></div>';
@@ -19081,6 +20252,11 @@ function authBoot(){
       if(submitted==='guest') submitAfterSignIn();
       else if(submitted) claimThisRun();
     }
+    /* CAME BACK FROM STRIPE WITHOUT A SESSION, AND HAS JUST SIGNED BACK IN. This closes the
+       one loop the thank-you screen could not close on its own: the signedout sheet's only
+       button sends them here, and without this they would land back on an ordinary front
+       page with no word about the thing they had just paid for. See checkoutThanks. */
+    if(justPaid&&!was&&st.signedIn) checkoutAfterSignIn();
     /* Turned away from One Franchise, and now qualified. Straight into the picker: they asked for
        that mode, the sign-up was the thing in the way, and dropping them back on the front
        page to press the same button again is the sort of thing that loses people at exactly
@@ -19534,6 +20710,10 @@ function paintAvatar(){
   const out=authState.ready&&!authState.signedIn;
   b.classList.toggle('signed',!!authState.signedIn);
   b.classList.toggle('signin',out);
+  /* FOLLOWS OWNERSHIP, WHICH ARRIVES SEPARATELY FROM THE ACCOUNT. premiumRefresh calls this
+     as well as the auth change, or the ring would only ever appear on the load AFTER a
+     purchase: the row lands a second or two behind the session it belongs to. */
+  b.classList.toggle('pro',acctTier()==='pro');
   b.setAttribute('aria-label',out?'Sign in or create an account':'Your profile');
   if(out) b.innerHTML='<span class="lbl">Sign in</span>';
   else if(nm){
@@ -23294,6 +24474,90 @@ function drawPips(bySlot){
   }).join('');
 }
 
+/*
+ * ONE LINEUP PAINTER, USED BY THE FIRST PAINT AND BY THE SEASON PICKER.
+ *
+ * The rows and the field have to agree about who played, and the way they stop agreeing is
+ * two call sites building them from two sources. So the rows are a function of a bySlot and
+ * a slot list, exactly as the field is, and `view` being null means the live run.
+ */
+function rosterRowsHTML(bySlot,slots,dynOver){
+  return slots.map((slot,i)=>{
+    const p=bySlot[i]; if(!p) return '';
+    const a=topAward(p);
+    return '<div class="rrow">'+slotTag(slot,p.position)+
+      '<span class="nm"><b>'+dynRookieHtml(p,dynOver)+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
+        (dynOver&&p.age?' &middot; '+dynAgeHtml(p,true):'')+
+        (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
+      (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
+      '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
+  }).join('');
+}
+/* A season out of run.history as something drawField can draw: the six men looked up by the
+   same key the board and the detail sheet use, in the slots that season recorded.
+   RETURNS NULL RATHER THAN A HALF TEAM. A pick that does not resolve means this browser's
+   player pool no longer has that man, and a field with two empty spots on it is a worse
+   answer than not offering the year at all. paintSeasonPicker drops those years. */
+function dynSeasonView(h){
+  if(!h||!Array.isArray(h.picks)||!h.picks.length) return null;
+  const roster=[],slotIndex=[];
+  const slots=(Array.isArray(h.slots)&&h.slots.length)?h.slots.slice():E.SLOTS.slice();
+  for(let i=0;i<h.picks.length;i++){
+    const p=fromPickKey(h.picks[i]);
+    if(!p) return null;
+    roster.push(p);
+    /* The slot a man played, as an index into this season's own slot list. Falls back to
+       his pick order, which is what the list is in when a season stored no slots. */
+    const want=h.slots&&h.slots[i];
+    let idx=want?slots.indexOf(want):-1;
+    if(idx<0||slotIndex.indexOf(idx)>=0) idx=i;
+    slotIndex.push(idx);
+  }
+  return {roster,slotIndex,slots};
+}
+/* Draws the field, its chemistry rail and the rows from one lineup. null is the live run. */
+function paintDynLineup(view){
+  drawField($('field3'),false,view);
+  const slots=(view&&view.slots&&view.slots.length)?view.slots:slotsNow();
+  const src=view||run;
+  const bySlot=new Array(slots.length).fill(null);
+  if(src) src.roster.forEach((p,i)=>{ bySlot[src.slotIndex[i]]=p; });
+  const rost=$('o-rost');
+  if(rost) rost.innerHTML=rosterRowsHTML(bySlot,slots,!!(run&&run.dynasty));
+}
+/*
+ * THE YEARS THIS RUN PLAYED, as a menu over the field.
+ *
+ * ONLY ONCE THE RUN IS OVER. While it is going there is one team that matters, the one that
+ * just played, and a picker offering to look at season four during season five is a museum
+ * on a screen somebody is still playing through. At the end the whole run is the subject.
+ *
+ * ONLY WHEN THERE IS A CHOICE. One season is not a menu.
+ */
+function paintSeasonPicker(){
+  const wrap=$('o-seasonpick'), sel=$('o-seasonsel');
+  if(!wrap||!sel) return;
+  const over=!!(run&&run.dynasty&&run.fired);
+  const hist=(run&&Array.isArray(run.history))?run.history:[];
+  const years=hist.map((h,i)=>({i,h,v:dynSeasonView(h)})).filter((x)=>x.v);
+  if(!over||years.length<2){ wrap.hidden=true; return; }
+  wrap.hidden=false;
+  sel.innerHTML=years.map(({i,h})=>'<option value="'+i+'">Season '+h.seasonNo+
+    ' \u00b7 '+h.wins+'-'+h.losses+(h.title?' \u00b7 Champions':(h.made?' \u00b7 Playoffs':''))+
+    '</option>').join('');
+  /* Opens on the last season played, which is the team on screen when the picker appears. */
+  const last=years[years.length-1];
+  sel.value=String(last.i);
+  sel.onchange=()=>{
+    const pick=years.find((x)=>String(x.i)===sel.value);
+    if(!pick) return;
+    paintDynLineup(pick.v);
+    ga('dynasty_season_viewed',{season:pick.h.seasonNo});
+  };
+  /* The field is showing the live roster at this point, which for a fired run IS the last
+     season, so nothing is repainted here: the menu already says which year that is. */
+}
+
 /* The results page tabs. Delegated, so it survives every repaint, and the panes are shown by
    display so a hidden one costs no page height. */
 function setOverTab(k){
@@ -23486,13 +24750,16 @@ $('b-quit').onclick=()=>{
   const b=$('b-quit');
   if(quitArmed){ resetQuit(); toIntro(); return; }
   quitArmed=setTimeout(resetQuit,6000);
-  /* WHAT QUITTING COSTS, ON THE BUTTON THAT DOES IT. Abandoning is a finished run as far as
-     the allowance is concerned, or "quit and restart" would be an unlimited reroll and the
-     limit would mean nothing. That is a fair rule and an unfair surprise, so the armed state
-     says it outright rather than leaving somebody to discover it on the front page.
-     Only when the day is actually being spent: outside that it is the plain confirmation it
-     has always been. */
-  const costs=dailyOn()&&run&&(run.dynasty||run.tradeMachine)&&run.attemptPaid;
+  /* WHAT QUITTING COSTS, ON THE BUTTON THAT DOES IT. Under the run rule, abandoning is a
+     finished run as far as the allowance is concerned, or "quit and restart" would be an
+     unlimited reroll and the limit would mean nothing. That is a fair rule and an unfair
+     surprise, so the armed state says it outright rather than leaving somebody to discover it
+     on the front page.
+     UNDER SEASON METERING IT SAYS NOTHING, because there is nothing to say. Seasons already
+     played are spent whatever happens to the run, and the next one costs the same on a fresh
+     draft as on this one. The warning would be a threat the game does not carry out. */
+  const costs=dailyOn()&&run&&(run.dynasty||run.tradeMachine)&&run.attemptPaid
+    &&!dailySeasons(run.dynasty?'dynasty':'trade');
   b.textContent=costs?'Tap again. This uses today’s run':'Tap again to quit';
   b.classList.add('armed');
 };

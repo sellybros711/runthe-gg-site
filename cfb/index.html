@@ -3896,7 +3896,7 @@ or endorsed by the NCAA, the CFP or any school.
      sold on this site, it unlocks both games, and it is described in exactly one file. Two
      copies of a price or a term is two chances to tell a customer something the other page
      contradicts, and the one that is wrong is whichever was edited second. -->
-<script src="/assets/store.js?v=8"></script>
+<script src="/assets/store.js?v=10"></script>
 <!-- NO ARCADE HOUSE AD ON THIS GAME. /assets/arcade-ad.js still runs on the homepage,
      the NFL game and the golf game; this one asks nobody. Somebody arriving here has come
      to draft a team, and the front page has its own way to the arcade in "More ways to
@@ -5783,7 +5783,13 @@ function thanksSheet(){
    three permanent unlocks telling their owner they are still on the way is a worse lie
    than the one this prevents. */
 const PRO_ITEM={
-  ps_premium:{game:'ps',text:'Dynasty, Franchise and unlimited Trade Machine'},
+  /* WORDED THE SAME AS THE STORE LINE IT IS THE RECEIPT FOR, and as the football game's own
+     copy of this table. It read "Dynasty, Franchise and unlimited Trade Machine", which was
+     wrong twice: nothing in the game is called Franchise (the mode is One Franchise Dynasty),
+     and it implied only the Trade Machine was unlimited when the limit lifts on all three.
+     A receipt that describes less than the card somebody bought from reads as something
+     having been taken away. See pwGroupText('ps', ...) in /assets/store.js. */
+  ps_premium:{game:'ps',text:'Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine'},
   cfb_premium:{game:'cfb',text:'Commissioner Mode'},
   arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
   runtour_pack:{game:'tour',text:'100,000 coins and one Tour Pack',wait:true}

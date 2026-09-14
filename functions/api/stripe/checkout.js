@@ -22,6 +22,7 @@
  * anyone could start checkout bound to another user's account.
  */
 import { verifyUser } from './_verify.js';
+import { siteBase } from './_site.js';
 
 export async function onRequestPost(context) {
   const { env, request } = context;
@@ -46,7 +47,7 @@ export async function onRequestPost(context) {
     return json({ error: 'already_active' }, 409);
   }
 
-  const site = env.SITE_URL || new URL(request.url).origin;
+  const site = siteBase(env, request);   // the host they came in on. See _site.js.
   // return the player to where they were (defends against open-redirect: must be a local /arcade path)
   let ret = typeof body.return_path === 'string' ? body.return_path : '/arcade/';
   if (!/^\/arcade\//.test(ret)) ret = '/arcade/';
