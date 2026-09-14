@@ -7738,7 +7738,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=33"></script>
+<script src="board.js?v=34"></script>
 <script src="achievements.js?v=13"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
@@ -7756,7 +7756,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=8"></script>
+<script src="/assets/store.js?v=9"></script>
 <script defer src="auth.js?v=5"></script>
 <script>
 (function(){
@@ -7902,6 +7902,7 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
      the page reads no opinion as permission. A blocked board.js must not lock anybody out
      of a mode. */
   attemptsState:async()=>null, attemptSpend:async()=>null, attemptGrace:async()=>null,
+  attemptDayEnd:async()=>null,
 };
 const $=(id)=>document.getElementById(id);
 function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
@@ -9654,12 +9655,25 @@ $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
  * the layout, out of the tab order and invisible to a screen reader in one attribute. */
 /* ── THE DAILY ALLOWANCE, ON THE PAGE ────────────────────────────────────────────────
  *
- * One start a day for Dynasty and one for the Trade Machine. The count itself is the
- * server's and lives in 99_daily_attempts.sql, which explains why it cannot live here. This
- * is the half that reads it, spends it at the right moment, and says so on the button.
+ * Five Dynasty SEASONS a day, and one Trade Machine RUN. The count itself is the server's
+ * and lives in 101_dynasty_seasons.sql, which explains why it cannot live here. This is the
+ * half that reads it, spends it at the right moment, and says so on the button.
  *
- * AN ATTEMPT IS A START. Continuing a run costs nothing on any day, so resuming never asks
- * the server anything: there is nothing to check. A run already under way is already paid for.
+ * THE UNIT IS THE WHOLE DIFFERENCE BETWEEN THE TWO MODES, and the server names it rather
+ * than the page deciding:
+ *
+ *   'season'  Dynasty. A kickoff spends one, on any run, new or twenty seasons old. The run
+ *             itself is never the thing being counted, so a dynasty survives the budget
+ *             running out: it is saved where it stands and the next season is there after
+ *             the reset. A firing ends the day outright, whatever is left.
+ *   'run'     The Trade Machine. One run is one season there, so a start and a season are
+ *             the same event and one a day means what it always meant.
+ *
+ * AND A MISSING UNIT IS THE OLD RULE. A database still on 100_daily_grace_reasons.sql
+ * answers without the column, and every read below falls back to 'run', which is exactly
+ * what that database is counting. So the page is correct on both sides of the migration and
+ * changes behaviour the moment the migration lands, rather than needing to be shipped with
+ * it in the same breath.
  *
  * NO OPINION IS PERMISSION. Every call here fails OPEN, which is the opposite of how the
  * rest of the board fails. A board that cannot be reached costs somebody a rank. A LIMIT
@@ -9704,13 +9718,30 @@ let dailyTick=0;
    somebody a run. */
 const dailyOn=()=>dailyLimited()&&!!authState.signedIn
   &&premiumSet!==null&&!dynastyOwned();
-/* How many starts are left today, and 1 whenever the page has no answer. */
+/* How many are left today, and 1 whenever the page has no answer. What one of them buys is
+   dailyUnit's question, not this one. */
 function dailyLeft(mode){
   if(!dailyOn()) return 1;
   const s=dailyState[mode];
   if(!s||s.used==null||s.allowance==null) return 1;
   return Math.max(0,s.allowance-s.used);
 }
+/* 'season' or 'run', from the server, defaulting to the rule a database without
+   101_dynasty_seasons.sql is still keeping. See the block above. */
+const dailyUnit=(mode)=>((dailyState[mode]&&dailyState[mode].unit)||'run');
+const dailySeasons=(mode)=>dailyUnit(mode)==='season';
+/* The day is over because the run is, which only season metering has a notion of. */
+const dailyEnded=(mode)=>!!(dailyState[mode]&&dailyState[mode].ended);
+/* Nothing more today, for either reason. The one question every gate asks. */
+const dailyShut=(mode)=>dailyOn()&&(dailyEnded(mode)||dailyLeft(mode)<=0);
+/* What the copy says when it has to name the budget. Off the server's own number so the
+   page is never the second place the allowance is written down, with the shipped value as
+   the fallback for a page that has not been answered yet. */
+const DYN_DAY_SEASONS=5;
+const dailyAllow=(mode)=>{
+  const s=dailyState[mode];
+  return (s&&s.allowance!=null)?s.allowance:(mode==='dynasty'?DYN_DAY_SEASONS:1);
+};
 const dailyResetsAt=(mode)=>{
   const s=dailyState[mode];
   const t=s&&s.resetsAt?Date.parse(s.resetsAt):NaN;
@@ -9739,30 +9770,41 @@ function dailyCountdown(at){
   return Math.max(1,Math.round(ms/1000))+'s';
 }
 /* SPENT AT KICKOFF, NOT AT THE WHEEL, so a draft somebody backs out of costs nothing.
-   Answers true when the run may go ahead, which includes every case where the server could
-   not be asked. */
+   Answers true when the season may go ahead, which includes every case where the server
+   could not be asked. */
 async function dailySpend(mode){
   if(!dailyOn()) return true;
   let r=null;
   try{ r=await B.attemptSpend(mode); }catch(_){ r=null; }
-  if(r&&r.used!=null){ dailyState[mode]={used:r.used,allowance:r.allowance,resetsAt:r.resetsAt}; }
+  /* The whole row, not three fields off it: `unit` and `ended` ride in the same answer and
+     picking fields out by hand is how the page ends up holding a state that says 'run'
+     because the last write forgot to copy the column across. */
+  if(r&&r.used!=null) dailyState[mode]=r;
   return !r||r.ok!==false;
 }
-/* One more chance today. Two things earn one and the reason has to travel, because the
-   server holds a flag per reason rather than a count:
+/* One more today, and the reason has to travel because the server holds a flag per reason
+   rather than a count:
 
-     'fired'  a run that ended in its first season
-     'boss'   a boss battle won
+     'boss'   a boss battle won, worth one more season
+     'fired'  kept only for a database still on 100_daily_grace_reasons.sql, where it is the
+              season one mercy. Under season metering the server accepts it and grants
+              nothing, because the mercy became the reroll button the moment a day was worth
+              five seasons instead of one run.
 
-   So a player can earn both in one day and get three starts. Calling the same reason twice
-   costs nothing and grants nothing. */
-/* WHAT EACH REASON IS CALLED WHEN IT IS HANDED OVER. A run that is given and not mentioned
-   is a run nobody knows they have: the allowance moved on the server, the door quietly went
-   back to playable, and the player had no idea either thing happened. */
+   Calling the same reason twice costs nothing and grants nothing. */
+/* WHAT A GRANT IS CALLED WHEN IT IS HANDED OVER. Something given and not mentioned is
+   something nobody knows they have: the allowance moved on the server, the door quietly went
+   back to playable, and the player had no idea either thing happened.
+   THE BOSS LINE IS WRITTEN PER UNIT, because "another run" is simply false under season
+   metering: the run in progress was never at risk, and what was just handed over is one more
+   season of it. */
 const GRACE_SAID={
   fired:'Fired in season one. You have another run today.',
   boss:'Boss beaten. You have another run today.',
 };
+const graceSaid=(mode,reason)=>(reason==='boss'&&dailySeasons(mode))
+  ? 'Boss beaten. One more season today.'
+  : GRACE_SAID[reason];
 async function dailyGrace(mode,reason){
   if(!dailyOn()) return;
   /* READ BEFORE, SO THE MESSAGE ONLY GOES OUT ON A REAL GRANT. Each reason is earned at
@@ -9770,11 +9812,27 @@ async function dailyGrace(mode,reason){
      first, which is the right answer and would otherwise be announced as a new run every
      time the screen that claims it was reopened. */
   const was=(dailyState[mode]&&dailyState[mode].allowance)||0;
+  /* WORDED BEFORE THE ANSWER LANDS, because the answer replaces the state the wording is read
+     off. What was claimed is a season or a run according to the rule in force when it was
+     claimed, and that is the rule the player was just playing under. */
+  const line=graceSaid(mode,reason);
   let r=null;
   try{ r=await B.attemptGrace(mode,reason); }catch(_){ r=null; }
-  if(r&&r.used!=null){ dailyState[mode]={used:r.used,allowance:r.allowance,resetsAt:r.resetsAt}; }
+  if(r&&r.used!=null) dailyState[mode]=r;
   paintHomeStart();
-  if(r&&r.allowance!=null&&was&&r.allowance>was&&GRACE_SAID[reason]) toast(GRACE_SAID[reason]);
+  if(r&&r.allowance!=null&&was&&r.allowance>was&&line) toast(line);
+}
+/* THE RUN IS OVER, SO THE DAY IS. Only under season metering, and only Dynasty has a firing
+   to report. Silent: the results screen in front of the player is already the announcement,
+   and a toast over it saying the day is done would be the game gloating.
+   Idempotent on the server, so reopening a fired run's results from a save re-asks and
+   changes nothing. */
+async function dailyDayEnd(mode){
+  if(!dailyOn()||!dailySeasons(mode)) return;
+  let r=null;
+  try{ r=await B.attemptDayEnd(mode); }catch(_){ r=null; }
+  if(r&&r.used!=null) dailyState[mode]=r;
+  paintHomeStart();
 }
 /* The countdown only moves while it is on screen. Started by the painter that draws it and
    stopped by the one that does not, so the page is not running a timer all day. */
@@ -9783,40 +9841,66 @@ function dailyClock(on){
   else if(!on&&dailyTick){ clearInterval(dailyTick); dailyTick=0; }
 }
 /* What a spent day says when the door is tapped. The place the upgrade goes when there is
-   one to offer. */
+   one to offer.
+   THREE SHEETS, NOT ONE, because a spent day has three different meanings and only one of
+   them used to be written down:
+     the budget is gone   the dynasty is saved and the next season is on the clock
+     the run is over      a firing, which ends the day whatever is left in it
+     one run a day        the Trade Machine, and Dynasty on a database still on 100
+   Saying "that is today's run" to somebody mid-dynasty who has just played five seasons is
+   wrong twice over: they played five, and the run they are worried about is not going
+   anywhere. */
 function dailySpentSheet(mode){
   const at=dailyResetsAt(mode), cd=at?dailyCountdown(at):null;
   const name=mode==='trade'?'Trade Machine':'Dynasty';
-  const st=dailyState[mode];
-  const allow=(st&&st.allowance)||1;
+  const allow=dailyAllow(mode);
+  const seasons=dailySeasons(mode), ended=dailyEnded(mode);
+  const when=(one)=>cd
+    ? 'The '+one+' unlocks in <b>'+esc(cd)+'</b>.'
+    : 'The '+one+' unlocks at midnight Eastern.';
+  const head=ended?'That is the day'
+    :seasons?'Out of seasons today'
+    :'That is today’s run';
+  const body=ended
+    ? 'The run is over, and a firing ends the day with it. '+when('next one')+
+      ' You get '+allow+' seasons a day, free.'
+    :seasons
+    ? 'You have played all '+allow+' of your free seasons today. '+when('next season')+
+      ' Your dynasty is saved exactly where it stands.'
+    /* THE REAL NUMBER, not always one. Under the old rule the base allowance is one a day
+       and the game hands out two more: one for being fired in season one, one for beating a
+       boss. A player who earned both and used all three was being told they get one a day,
+       which reads as the game having lost count of the runs it just gave them. */
+    : 'That is '+(allow>1?'all '+allow+' of your ':'your ')+esc(name)+' run'+(allow>1?'s':'')+
+      ' for today. '+when('next one');
+  const note=ended
+    ? 'Nothing you scored is lost. The run is on the board and in your cabinet.'
+    :seasons
+    ? 'Nothing is lost and nothing expires. Come back and carry the same run on, for as many '+
+      'days as it lasts.'
+    : 'A run you have already started is never affected. You can carry it on any day, for as '+
+      'many days as it lasts.';
   $('sheet-in').innerHTML='<div class="eyebrow gold">'+esc(name)+'</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">That is today’s run</h2>'+
-    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+
-      /* THE REAL NUMBER, not always one. The base allowance is one a day and the game hands
-       out two more: one for being fired in season one, one for beating a boss. A player who
-       earned both and used all three was being told they get one a day, which reads as the
-       game having lost count of the runs it just gave them. */
-    'That is '+(allow>1?'all '+allow+' of your ':'your ')+esc(name)+' run'+(allow>1?'s':'')+
-      ' for today. '+
-      (cd?'The next one unlocks in <b>'+esc(cd)+'</b>.':'The next one unlocks at midnight Eastern.')+
-    '</p>'+
-    '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+
-      'A run you have already started is never affected. You can carry it on any day, for as '+
-      'many days as it lasts.</p>'+
-    /* HOW TO EARN ANOTHER ONE, which the game has always granted and never mentioned.
-       DYNASTY ONLY, because that is where the two reasons live: getting fired in season one
-       and winning a boss battle both come off a dynasty, and the Trade Machine earns neither.
-       Offering them on its spent sheet would be promising a run that mode cannot give.
-       HIDDEN ONCE BOTH ARE IN. The allowance is 1 plus one per reason earned, so a 3 means
-       there is nothing left to earn and a list of ways to earn it would be taunting
-       somebody who has already done both. It cannot say WHICH of the two is still going
-       (ps_attempts_state returns the total and not the flags), so it states the rule rather
-       than ticking a box, which is true either way. */
-    (mode==='dynasty'&&allow<3
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">'+esc(head)+'</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+body+'</p>'+
+    '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+note+'</p>'+
+    /* HOW TO EARN ANOTHER ONE, which the game grants and would otherwise never mention.
+       DYNASTY ONLY, because the boss battle is a dynasty beat and the Trade Machine has
+       none. Offering it on that mode's spent sheet would promise something it cannot give.
+       HIDDEN ONCE IT IS IN. An allowance above the base means the boss bonus has already
+       been paid, and listing a way to earn something already earned is taunting. Compared
+       against the page's own copy of the base, so DYN_DAY_SEASONS and ps_day_allowance have
+       to move together; they are the same rule written in the two places that need it.
+       NOT OFFERED ON A DAY THAT HAS ENDED. A boss battle needs a run, and this player does
+       not have one until the reset. */
+    ((mode==='dynasty'&&!ended&&(seasons?allow<=DYN_DAY_SEASONS:allow<3))
       ? '<div class="dgrace">'+
-          '<b>Two things earn you another run today</b>'+
-          '<span>Get fired in season one. That one does not count.</span>'+
-          '<span>Win a boss battle.</span>'+
+          (seasons
+            ? '<b>One thing earns you another season today</b>'+
+              '<span>Win a boss battle.</span>'
+            : '<b>Two things earn you another run today</b>'+
+              '<span>Get fired in season one. That one does not count.</span>'+
+              '<span>Win a boss battle.</span>')+
         '</div>'
       : '')+
     /* THE OFFER ITSELF, AT THE ONE MOMENT SOMEBODY IS ACTUALLY ASKING FOR IT.
@@ -9827,8 +9911,8 @@ function dailySpentSheet(mode){
        spent door is not a place to advertise the store, it IS the store, so the offer is
        drawn here in full: the same two bundles, out of /assets/store.js, the same as every
        other premium door.
-       WHAT STAYS ABOVE IT is the part only this screen knows: how many runs today was worth,
-       when the next one unlocks, and that a run already going is never affected. None of
+       WHAT STAYS ABOVE IT is the part only this screen knows: what today was worth, when the
+       next one unlocks, and what happens to the run in the meantime. None of
        that is a sales line and all of it is true whether or not anybody buys.
        Left off entirely for an owner, who is not being limited, and before launch for
        anybody outside the tester list, which is what premiumPitch() answers. */
@@ -10437,8 +10521,27 @@ function ensureDynastyButton(){
        does two jobs on this page: it is the boss battle's advance button and it is the verb on
        "Continue with Google". A third use dulls all three. Resume is also what the code has
        always called this: see dynResume() below. */
-    /* A run in progress is never gated, so nothing here reads the allowance, and the
-       countdown's timer stops because there is no countdown on this branch to move. */
+    /* A RUN IN PROGRESS IS STILL A RUN IN PROGRESS, and it is never taken away. What can run
+       out is the seasons to spend on it, and when that happens the door says when the next
+       one lands rather than opening a dynasty that cannot kick off.
+       ONLY UNDER SEASON METERING. On the old rule a start was the only thing counted, so a
+       saved run was free for ever and this branch read nothing. dailyEnsure is called for
+       both, because the door now has a question to ask on either.
+       AND ONLY ON A RUN SITTING AT ITS RESULTS SCREEN, which is the one phase where the next
+       thing the player does costs a season. A run mid-season has already paid for the season
+       it is in and must not be shut out of finishing it; a run mid-draft or mid-offseason has
+       work to do that costs nothing, and its kickoff is guarded by startSeason. Gating on the
+       day alone would lock somebody out of a game that was already under way. */
+    dailyEnsure('dynasty');
+    if(dailySeasons('dynasty')&&r.phase===R.PHASES.OVER&&dailyShut('dynasty')){
+      const at=dailyResetsAt('dynasty'), cd=at?dailyCountdown(at):null;
+      dailyClock(true);
+      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">Day done</span>'+
+        '<span class="hp-full-name">Dynasty</span>'+
+        '<span class="hp-full-sub">Season '+(r.seasonNo+1)+' '+
+          (cd?'in '+esc(cd):'at midnight Eastern')+'</span>';
+      el.onclick=()=>{ dailySpentSheet('dynasty'); };
+    }else{
     dailyClock(false);
     el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
       '<span class="hp-full-name">Resume Dynasty</span>'+
@@ -10449,6 +10552,7 @@ function ensureDynastyButton(){
         (r.score>0?SCORE(r.score)+' points':r.roster.length+' signed')+
         ' &middot; '+dynWhere(r)+'</span>';
     el.onclick=()=>{ dynResume('open'); };
+    }
   }else{
     /* THE NUMBER, AND THAT IT MOVES. The old caption ran three fields wide and carried the
        ageing and the endlessness as well, which is the rules sheet on the first tap doing
@@ -10461,16 +10565,22 @@ function ensureDynastyButton(){
        there is a career here and one life to spend on it. */
     dailyEnsure('dynasty');
     /* THE DAY IS SPENT, and the door says when the next one lands rather than going grey.
-       Only ever reached with no save: a run in progress is the branch above, and that one is
-       never gated. Tapping opens the explainer rather than doing nothing, because a button
-       that ignores you reads as broken. */
-    if(dailyLeft('dynasty')<=0){
+       Only ever reached with no save, so there is no run waiting on the other side of the
+       clock and the line is about starting rather than resuming. Tapping opens the explainer
+       rather than doing nothing, because a button that ignores you reads as broken.
+       THE TAG FOLLOWS THE UNIT, so "Used today" is never said about five seasons. The line
+       under it says New run either way on this branch, because there is no saved dynasty for
+       the clock to be holding: whether the budget ran out or a firing ended the day, what
+       lands at the reset is a fresh one. */
+    if(dailyShut('dynasty')){
       const at=dailyResetsAt('dynasty'), cd=at?dailyCountdown(at):null;
       dailyClock(true);
-      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">Used today</span>'+
+      const word=dailySeasons('dynasty')?'New run':'Next run';
+      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">'+
+          (dailySeasons('dynasty')?'Day done':'Used today')+'</span>'+
         '<span class="hp-full-name">Dynasty</span>'+
         '<span class="hp-full-sub">'+
-          (cd?'Next run in '+esc(cd):'Next run at midnight Eastern')+'</span>';
+          (cd?word+' in '+esc(cd):word+' at midnight Eastern')+'</span>';
       el.onclick=()=>{ dailySpentSheet('dynasty'); };
     }else{
     dailyClock(false);
@@ -10534,13 +10644,12 @@ function beginDynastyDraft(opts){
    * built and could not be reached, which is the shape of bug that passes every test,
    * because a store opening is not an error.
    *
-   * The rule is one free run a day for anybody signed in, plus a second for being fired in
-   * season one, plus a second for beating a boss. All three live in
-   * supabase/100_daily_grace_reasons.sql, ps_attempts_state adds them up, and the two grace
-   * claims are already wired (see dailyGrace on a season-one firing and on a boss win).
-   * Buying the bundle removes the limit rather than unlocking the door: dailyOn() stops
-   * metering the moment ps_premium is owned, so dailyLeft() below always answers 1 for an
-   * owner and this reads exactly as it did for them.
+   * The rule is five free SEASONS a day for anybody signed in, plus one more for winning a
+   * boss battle, spent on whatever run they are in. A firing ends the day. All of it lives in
+   * supabase/101_dynasty_seasons.sql, ps_attempts_state adds it up, and the boss claim is
+   * already wired (see dailyGrace on a boss win). Buying the bundle removes the limit rather
+   * than unlocking the door: dailyOn() stops metering the moment ps_premium is owned, so
+   * dailyShut() below always answers false for an owner and this reads exactly as it did.
    *
    * THE PITCH STILL HAPPENS, at the one moment somebody is actually asking for it. A player
    * who has used the day's runs lands on dailySpentSheet, which says when the next one
@@ -10552,8 +10661,8 @@ function beginDynastyDraft(opts){
   }
   /* CHECKED HERE, SPENT AT KICKOFF. The two happen at different moments on purpose: reading
      is free, so it can guard the door and save somebody a draft they would not be allowed to
-     play, while the write waits until they have actually committed to the run. */
-  if(dailyLeft('dynasty')<=0) return dailySpentSheet('dynasty');
+     play, while the write waits until they have actually committed to the season. */
+  if(dailyShut('dynasty')) return dailySpentSheet('dynasty');
   /* AND A RUN IN PROGRESS IS NOT SOMETHING TO OVERWRITE QUIETLY. Asked of the slot being
      STARTED, not of dynasties in general: an open run and a club run live in their own slots
      now, so starting one has nothing to say about the other. Only a second run of the same
@@ -10679,22 +10788,36 @@ function dynastyRulesHTML(go,opts){
       '<li><b>The target creeps up.</b> '+base+' wins, then '+(base+1)+' after season '+step+
         ', then '+(base+2)+' after '+(step*2)+'.</li>'+
     '</ul>'+
-    /* HOW MANY RUNS A DAY, said in the rules rather than discovered at a locked door.
-       The two extra ones are the point of putting it here: a player who reads "one run a
-       day" and then gets fired in season one has been handed another and has no reason to
-       look for it. Only drawn for somebody the meter applies to, so an owner is not told
-       about a limit they do not have and a visitor before launch is not told about one
-       that is not switched on yet. */
+    /* WHAT THE FREE DAY IS WORTH, said in the rules rather than discovered at a locked door.
+       The third line is the point of putting it here: a player who reads the budget and then
+       wins a boss has been handed a season and has no reason to go looking for it. Only drawn
+       for somebody the meter applies to, so an owner is not told about a limit they do not
+       have and a visitor before launch is not told about one that is not switched on yet.
+       WRITTEN PER UNIT, off the same dailySeasons() the gates read, so a page talking to a
+       database still on 100_daily_grace_reasons.sql describes the rule that database is
+       actually keeping. Rules that do not match the door are worse than no rules. */
     (dailyOn()
-      ? '<div class="eyebrow" style="margin:16px 0 8px">Runs a day</div>'+
-        '<ul class="modenotes">'+
-          '<li><b>One run a day, free.</b> Carrying on a run you have already started never '+
-            'costs one. Play it over as many days as it lasts.</li>'+
-          '<li><b>Fired in season one? Have another.</b> A run that dies in its first '+
-            'season does not count against the day.</li>'+
-          '<li><b>Win a boss battle, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
-            ' and beat the marquee team, and the day gives you one more.</li>'+
-        '</ul>'
+      ? (dailySeasons('dynasty')
+        ? '<div class="eyebrow" style="margin:16px 0 8px">Seasons a day</div>'+
+          '<ul class="modenotes">'+
+            '<li><b>Up to '+dailyAllow('dynasty')+' seasons a day, free.</b> One run, carried '+
+              'as far as you can take it. Play the '+dailyAllow('dynasty')+'th and your '+
+              'dynasty waits exactly where it is until the next day.</li>'+
+            '<li><b>Getting fired ends the day.</b> The run is over and the next one starts '+
+              'after the reset. Every season you banked still counts.</li>'+
+            '<li><b>Win a boss battle, get another season.</b> Reach season '+
+              (E.DYNASTY_MILESTONE_EVERY*2)+' and beat the marquee team, and the day gives '+
+              'you one more.</li>'+
+          '</ul>'
+        : '<div class="eyebrow" style="margin:16px 0 8px">Runs a day</div>'+
+          '<ul class="modenotes">'+
+            '<li><b>One run a day, free.</b> Carrying on a run you have already started never '+
+              'costs one. Play it over as many days as it lasts.</li>'+
+            '<li><b>Fired in season one? Have another.</b> A run that dies in its first '+
+              'season does not count against the day.</li>'+
+            '<li><b>Win a boss battle, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
+              ' and beat the marquee team, and the day gives you one more.</li>'+
+          '</ul>')
       : '')+
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:13px 0 0">'+
       'You score points every season, more for the playoffs and a title, and later seasons '+
@@ -15183,10 +15306,19 @@ function paintCapTracker(inf){
     $('cap-event').textContent='';
   }
 }
-/* KICKOFF IS WHERE THE DAY IS SPENT, and only the FIRST kickoff of a run. Every season after
-   it belongs to a run that is already paid for, which is the whole rule: an attempt is a
-   start, not a sitting. Marked on the run rather than counted here, so a reload in the
-   middle of season one cannot charge somebody twice.
+/* KICKOFF IS WHERE THE DAY IS SPENT, and under season metering that is EVERY kickoff rather
+   than only the first. Which of the two applies is the server's answer, not a constant here:
+   see dailyUnit and the block above it.
+
+     'season'  one per kickoff, marked with run.paidSeason so a reload in the middle of a
+               season cannot charge for it twice, and so a run carried across three days
+               charges three times rather than once.
+     'run'     the old rule and the Trade Machine's: the first kickoff only, marked with
+               run.attemptPaid. Every season after belongs to a run already paid for.
+
+   BOTH MARKS TRAVEL INSIDE THE SAVE, because dynPack copies the run wholesale, and dynSave
+   is called here for the same reason: nothing else on the kickoff path is a run.js mutation,
+   so without it a reload between the spend and the first snap would spend a second one.
 
    THERE ARE TWO KICKOFFS AND THAT IS THE ENTIRE REASON THIS IS A FUNCTION.
 
@@ -15205,13 +15337,34 @@ function paintCapTracker(inf){
    whether there was one to spend; making the player watch a round trip before their season
    begins would be paying for that authority twice. */
 function spendTheDay(){
-  if(!run||run.attemptPaid) return;
+  if(!run) return;
   if(!(run.dynasty||run.tradeMachine)) return;
+  const mode=run.dynasty?'dynasty':'trade';
+  if(dailySeasons(mode)){
+    const n=run.seasonNo||1;
+    if(run.paidSeason===n) return;
+    run.paidSeason=n;
+    run.attemptPaid=true;
+    dailySpend(mode);
+    if(run.dynasty) dynSave();
+    return;
+  }
+  if(run.attemptPaid) return;
   if(run.seasonNo!=null&&run.seasonNo>1) return;
   run.attemptPaid=true;
-  dailySpend(run.dynasty?'dynasty':'trade');
+  dailySpend(mode);
+}
+/* THE BACKSTOP, not the gate anybody is meant to meet. A dynasty that runs out of seasons is
+   stopped at dynToWinter, before the offseason rather than after it, so nobody does a winter's
+   work and then finds the kickoff shut. This catches the ways round that: a second dynasty in
+   the other slot spending the budget while this one sat mid-offseason, or a save reopened at
+   the squad screen on a day that has since run out. */
+function seasonIsPaid(){
+  if(!run||!run.dynasty||!dailySeasons('dynasty')) return true;
+  return run.paidSeason===(run.seasonNo||1);
 }
 function startSeason(){
+  if(!seasonIsPaid()&&dailyShut('dynasty')) return dailySpentSheet('dynasty');
   spendTheDay();
   ga('season_started',{mode:runMode(),club:run&&run.franchise||null});
   const sp=$('season-roster'); if(sp) sp.style.display='none';
@@ -17958,11 +18111,22 @@ function paintOwner(){
      that is still going, and this one is over: leaving it on disk would put "Continue" on
      the front page over a run whose only remaining move is Draft again. */
   if(v.fired) dynClear();
-  /* THE MERCY, ON A RUN THAT DIED IN ITS FIRST SEASON. That is the one firing that teaches
-     nobody anything: the economy takes several seasons to make sense, and being shut out for
-     a day fifteen minutes after arriving is the worst first impression this mode can make.
-     The server caps it at one a day, so a reload of this screen re-asks and changes nothing. */
-  if(v.fired&&seasons<=1) dailyGrace('dynasty','fired');
+  /* A FIRING ENDS THE DAY, and that is the rule the whole free tier turns on. Five seasons a
+     day with a firing costing nothing would make the cheapest way to spend them a string of
+     fresh season ones, rerolled until one drafts well, which is both the thing the meter
+     exists to discourage and the worst possible way to meet this mode. So the run ending ends
+     the day with it. Idempotent on the server, so reopening this screen re-asks and changes
+     nothing.
+     THE OLD MERCY IS THE OTHER BRANCH, and it belongs to the old rule rather than to this
+     one. Where a day was a single run, a run that died in its first season was worth handing
+     back: being shut out fifteen minutes after arriving is the worst first impression the
+     mode can make, and the economy takes several seasons to make any sense. A budget of five
+     removes the problem it solved. Kept for a database still on 100_daily_grace_reasons.sql,
+     where it is still the rule being enforced. */
+  if(v.fired&&run&&run.dynasty){
+    if(dailySeasons('dynasty')) dailyDayEnd('dynasty');
+    else if(seasons<=1) dailyGrace('dynasty','fired');
+  }
   /* Which unlocks the exits: see the .gaunt.over rule. */
   if(over) over.classList.toggle('over',!!v.fired);
   paintRunCard(v);
@@ -18022,6 +18186,15 @@ function paintOwner(){
  * is written the instant it returns and the cleared value is the one that belongs in it.
  */
 function dynToWinter(){
+  /* AND THIS IS WHERE A SPENT DAY STOPS, at the door out of the results screen rather than at
+     the kickoff on the far side of a winter. Both would be honest; only this one refuses
+     before the player has spent twenty minutes ageing a roster and working the wheel for a
+     season they cannot start. The run is already saved at this phase, so nothing is lost and
+     the front page carries the countdown until the next season lands.
+     THE BOSS BATTLE IS ON THE OTHER PATH and reaches here after it, which is the order it has
+     to be: winning one buys a season, and a gate in front of the boss would have taken the
+     reward away before it was paid. */
+  if(run&&run.dynasty&&dailyShut('dynasty')) return dailySpentSheet('dynasty');
   submitted=null; myRanks=null; myGmRank=null; ranksP=null; gmRankP=null;
   lastPerfectShare=null;
   try{ R.beginOffseason(run,BYKEY,DATA_LAST_SEASON); }
@@ -18274,12 +18447,13 @@ function bossFinish(ev){
   $('bg-outcome').textContent=ev.won?'You win':'You lose';
   const cont=$('b-boss-continue');
   if(ev.won){
-    /* A BOSS WON BUYS ANOTHER RUN TODAY. Getting here at all means ten seasons cleared, so
-       it is not a consolation the way the first-season mercy is: it is the reward for the
-       one thing in this mode that is genuinely hard. Fired on every boss win rather than
-       only the first, because the server holds one flag for the reason and a second win in
-       the same day changes nothing. The run this player is in continues either way. What
-       they get is the freedom to start a NEW one without waiting for midnight. */
+    /* A BOSS WON BUYS ONE MORE TODAY, and it is the only bonus the mode still hands out.
+       Getting here at all means six seasons cleared, so it is never a consolation: it is the
+       reward for the one thing in this mode that is genuinely hard, and it pays in exactly
+       what the mode is counting. Claimed on every boss win rather than only the first,
+       because the server holds one flag for the reason and a second win in the same day
+       changes nothing. The run continues either way; what the win buys is another season of
+       it today rather than at the reset. */
     if(run&&run.dynasty) dailyGrace('dynasty','boss');
     if(b.reward==='freeze'){
       $('bg-note').textContent='You beat '+o.display+'. Now pick a player to keep forever.';
@@ -24509,13 +24683,16 @@ $('b-quit').onclick=()=>{
   const b=$('b-quit');
   if(quitArmed){ resetQuit(); toIntro(); return; }
   quitArmed=setTimeout(resetQuit,6000);
-  /* WHAT QUITTING COSTS, ON THE BUTTON THAT DOES IT. Abandoning is a finished run as far as
-     the allowance is concerned, or "quit and restart" would be an unlimited reroll and the
-     limit would mean nothing. That is a fair rule and an unfair surprise, so the armed state
-     says it outright rather than leaving somebody to discover it on the front page.
-     Only when the day is actually being spent: outside that it is the plain confirmation it
-     has always been. */
-  const costs=dailyOn()&&run&&(run.dynasty||run.tradeMachine)&&run.attemptPaid;
+  /* WHAT QUITTING COSTS, ON THE BUTTON THAT DOES IT. Under the run rule, abandoning is a
+     finished run as far as the allowance is concerned, or "quit and restart" would be an
+     unlimited reroll and the limit would mean nothing. That is a fair rule and an unfair
+     surprise, so the armed state says it outright rather than leaving somebody to discover it
+     on the front page.
+     UNDER SEASON METERING IT SAYS NOTHING, because there is nothing to say. Seasons already
+     played are spent whatever happens to the run, and the next one costs the same on a fresh
+     draft as on this one. The warning would be a threat the game does not carry out. */
+  const costs=dailyOn()&&run&&(run.dynasty||run.tradeMachine)&&run.attemptPaid
+    &&!dailySeasons(run.dynasty?'dynasty':'trade');
   b.textContent=costs?'Tap again. This uses today’s run':'Tap again to quit';
   b.classList.add('armed');
 };

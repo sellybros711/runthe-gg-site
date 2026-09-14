@@ -1883,8 +1883,8 @@
   },
   "cfb/commish/index.html": {
     "/assets/store.js": {
-      "v": "8",
-      "sha": "05bd384beb736819"
+      "v": "9",
+      "sha": "af9c8c263f303a22"
     },
     "/cfb/engine.js": {
       "v": "34",
@@ -2005,8 +2005,8 @@
       "sha": "4a8981681eb30450"
     },
     "/assets/store.js": {
-      "v": "8",
-      "sha": "05bd384beb736819"
+      "v": "9",
+      "sha": "af9c8c263f303a22"
     }
   },
   "football/index.html": {
@@ -2027,8 +2027,8 @@
       "sha": "ce3c14e0ad759b4a"
     },
     "board.js": {
-      "v": "33",
-      "sha": "e6eae22585d7581c"
+      "v": "34",
+      "sha": "1273ce42e37fec1e"
     },
     "achievements.js": {
       "v": "13",
@@ -2039,8 +2039,8 @@
       "sha": "39ae7ad9335c19bc"
     },
     "/assets/store.js": {
-      "v": "8",
-      "sha": "05bd384beb736819"
+      "v": "9",
+      "sha": "af9c8c263f303a22"
     },
     "auth.js": {
       "v": "5",

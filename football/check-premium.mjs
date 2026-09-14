@@ -107,10 +107,13 @@ for (const [label, tester, url] of [
 console.log('\nTHE premium_unlocks ROW IS WHAT DECIDES, NOT THE TESTER LIST');
 const INJECT = 'beginDynastyDraft,premiumSheet,profileSheet,pfPro,acctTier,premiumPitch,dailyOn,'
   + 'dailyGrace,dailySpentSheet,dynastyRulesHTML,canPlayClubDynasty,'
-  /* A grace server that grants each reason once, standing in for ps_attempt_grace. */
-  + 'stubGrace:()=>{const got={};B.attemptGrace=async(m,reason)=>{got[reason]=true;'
-  + 'return {ok:true,used:dailyState[m].used,allowance:1+Object.keys(got).length,'
-  + 'resetsAt:dailyState[m].resetsAt};};},'
+  /* A grace server that grants each reason once, standing in for ps_attempt_grace. Built on
+     top of whatever the state already holds rather than from three fields, so `unit` survives
+     the answer: a stub that drops it would put the page back on the run rule mid-check and
+     the season copy would never be the thing being read. */
+  + 'stubGrace:()=>{const got={};B.attemptGrace=async(m,reason)=>{const first=!got[reason];'
+  + 'got[reason]=true;const s=dailyState[m]||{};'
+  + 'return Object.assign({},s,{ok:true,allowance:(s.allowance||0)+(first?1:0)});};},'
   + 'setPremium:(v)=>{premiumSet=v;},setDaily:(m,v)=>{dailyState[m]=v;},'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 const t = await openPage(browser, 'http://local.test/football/', { tester: true, inject: INJECT });
@@ -278,12 +281,16 @@ ok('the Arcade year carries its end date', rec.text.includes(rec.ends), 'expecte
 ok('and it says nothing renews', /Nothing here renews/i.test(rec.text));
 ok('the Tour drop, unfulfilled, says it is on its way', /on its way/i.test(rec.text));
 
-console.log('\nTHE TWO WAYS TO EARN ANOTHER RUN ARE SAID OUT LOUD');
+console.log('\nTHE OLD RUN RULE, WHICH IS STILL THE RULE UNTIL 101 IS DEPLOYED');
 /*
  * The game grants a second run for being fired in season one and a third for winning a boss
  * game, and for a long time it granted them SILENTLY: the allowance moved on the server, the
  * door quietly went back to playable, and nobody was told either thing had happened. A rule
  * nobody knows about is not a reward.
+ *
+ * DRIVEN WITH NO `unit` ON THE STATE, which is exactly what a database still on
+ * 100_daily_grace_reasons.sql answers, and is the whole reason this section stays: the page
+ * has to keep describing and enforcing that rule correctly until the migration lands.
  */
 const grace = await t.page.evaluate(async () => {
   const T = window.__t;
@@ -333,6 +340,74 @@ ok('the Trade Machine, which earns neither, is not offered them', grace.trade ==
 ok('the rules sheet states all three', /One run a day/i.test(grace.rules)
   && /Fired in season one/i.test(grace.rules) && /Win a boss battle/i.test(grace.rules));
 ok('an owner is told about no limit at all', !/One run a day/i.test(grace.ownerRules));
+
+console.log('\nTHE SEASON RULE, ONCE 101 IS DEPLOYED');
+/*
+ * FIVE SEASONS A DAY ON ONE RUN, not one run a day. The unit arrives on the state row, so
+ * every screen below is driven by setting it and nothing else: that is the contract between
+ * 101_dynasty_seasons.sql and this page, and it is the thing that would break silently.
+ *
+ * THE THREE SHEETS ARE THREE DIFFERENT SENTENCES and the wrong one is not a typo. Telling
+ * somebody mid-dynasty that "that is today's run" says the run is gone, which is the single
+ * most alarming thing this screen could say and is false.
+ */
+const seas = await t.page.evaluate(async () => {
+  const T = window.__t;
+  T.setPremium([]);
+  const at = new Date(Date.now() + 3600e3).toISOString();
+  const day = (o) => Object.assign({ unit: 'season', resetsAt: at, ended: false }, o);
+  const sheet = (o) => {
+    T.setDaily('dynasty', day(o));
+    document.getElementById('sheet').classList.remove('on');
+    T.dailySpentSheet('dynasty');
+    const box = document.getElementById('sheet-in');
+    return { text: (box.innerText || '').replace(/\s+/g, ' '), grace: !!box.querySelector('.dgrace') };
+  };
+  const out = {};
+  out.capped = sheet({ used: 5, allowance: 5 });
+  out.boss = sheet({ used: 6, allowance: 6 });
+  out.fired = sheet({ used: 2, allowance: 5, ended: true });
+  /* The boss toast, which cannot say "another run" when no run was ever at risk. */
+  T.setDaily('dynasty', day({ used: 5, allowance: 5 }));
+  T.stubGrace();
+  document.getElementById('toast').textContent = '';
+  await T.dailyGrace('dynasty', 'boss');
+  out.said = document.getElementById('toast').textContent;
+  /* And the rules, before anybody starts. */
+  T.setDaily('dynasty', day({ used: 0, allowance: 5 }));
+  const d = document.createElement('div');
+  d.innerHTML = T.dynastyRulesHTML('go');
+  out.rules = (d.innerText || '').replace(/\s+/g, ' ');
+  /* THE DOOR, with the day ended and no run to resume. */
+  T.setDaily('dynasty', day({ used: 2, allowance: 5, ended: true }));
+  document.getElementById('sheet').classList.remove('on');
+  document.getElementById('sheet-in').dataset.kind = '';
+  T.beginDynastyDraft();
+  const go = document.getElementById('b-dyni-go');
+  if (go) go.click();
+  out.shut = document.getElementById('sheet-in').dataset.kind;
+  out.onDraft = [...document.querySelectorAll('.screen.on')].some((s) => s.id === 's-draft');
+  document.getElementById('sheet').classList.remove('on');
+  return out;
+});
+ok('a spent day names the seasons, not a run',
+  /Out of seasons today/i.test(seas.capped.text) && /all 5 of your free seasons/i.test(seas.capped.text),
+  seas.capped.text.slice(0, 120));
+ok('and says the dynasty is still there',
+  /saved exactly where it stands/i.test(seas.capped.text), seas.capped.text.slice(0, 160));
+ok('the boss battle is the one way to earn another', seas.capped.grace === true);
+ok('and stops being offered once it is earned', seas.boss.grace === false);
+ok('a firing ends the day in its own words',
+  /That is the day/i.test(seas.fired.text) && /a firing ends the day/i.test(seas.fired.text),
+  seas.fired.text.slice(0, 120));
+ok('and is offered no boss battle, having no run to play one in', seas.fired.grace === false);
+ok('a boss win announces a season, not a run',
+  /one more season today/i.test(seas.said), seas.said);
+ok('the rules sheet states the budget and the firing',
+  /Up to 5 seasons a day/i.test(seas.rules) && /Getting fired ends the day/i.test(seas.rules)
+    && !/One run a day/i.test(seas.rules), seas.rules.slice(0, 200));
+ok('an ended day sends the door to the spent sheet rather than the draft',
+  seas.shut === 'daily' && seas.onDraft === false, seas.shut + ' onDraft=' + seas.onDraft);
 await t.page.close();
 
 /*
@@ -354,7 +429,10 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,'
      the same way ownership is. dynHiFor is pinned alongside them, or the next repaint
      sees a user it has not asked for and fires a real request that overwrites them. */
   + 'setHi:(t,m)=>{dynHiTop=t;dynHiMine=m;dynHiFor=(authState.userId||null);},'
-  + 'dynRead,beginDynastyDraft,DYN_SAVE_VERSION,getRun:()=>run,'
+  + 'dynRead,beginDynastyDraft,DYN_SAVE_VERSION,getRun:()=>run,setRun:(v)=>{run=v;},'
+  + 'spendTheDay,dynToWinter,countSpends:()=>{const n={c:0};'
+  + 'B.attemptSpend=async(m)=>{n.c++;const s=dailyState[m]||{};'
+  + 'return Object.assign({},s,{ok:true,used:(s.used||0)+1});};return n;},'
   + 'reviewDynastyRules,dynIntroOff,'
   + 'setPremium:(v)=>{premiumSet=v;},'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
@@ -701,6 +779,60 @@ console.log('\nAN ABANDONED DRAFT IS NOT A RUN TO RESUME');
     document.getElementById('s-intro').classList.add('on');
     try { localStorage.removeItem('ps_dynasty_save'); } catch (e) {}
   });
+}
+
+console.log('\nA SEASON IS WHAT COSTS, AND IT COSTS ONCE');
+/*
+ * THE ONE RULE EVERYTHING ELSE HANGS OFF. Under the old unit a kickoff charged only on season
+ * one, so the entire mode past its first winter was free for ever; under the new one every
+ * kickoff charges, and charging twice for the same season is the way that breaks. Driven
+ * against a bare run object rather than a played one, because what is being tested is
+ * spendTheDay's arithmetic and nothing downstream of it.
+ */
+{
+  const spent = await ck.page.evaluate(async () => {
+    const T = window.__t;
+    T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+    T.setPremium([]);
+    const at = new Date(Date.now() + 3600e3).toISOString();
+    const n = T.countSpends();
+    const drive = (unit) => {
+      T.setDaily('dynasty', { used: 0, allowance: 5, resetsAt: at, unit: unit, ended: false });
+      T.setRun({ dynasty: true, seasonNo: 1, roster: [], phase: 'season' });
+      const before = n.c;
+      const r = T.getRun();
+      /* Season one, twice: the second is the reload in the middle of it. */
+      T.spendTheDay(); T.spendTheDay();
+      r.seasonNo = 2; T.spendTheDay();
+      r.seasonNo = 3; T.spendTheDay(); T.spendTheDay();
+      return n.c - before;
+    };
+    const out = { season: drive('season'), run: drive('run') };
+    /* AND THE DOOR OUT OF THE RESULTS SCREEN, which is where a spent day stops a dynasty. */
+    T.setDaily('dynasty', { used: 5, allowance: 5, resetsAt: at, unit: 'season', ended: false });
+    T.setRun({ dynasty: true, seasonNo: 5, roster: [], phase: 'over' });
+    document.getElementById('sheet').classList.remove('on');
+    document.getElementById('sheet-in').dataset.kind = '';
+    T.dynToWinter();
+    out.shut = document.getElementById('sheet-in').dataset.kind;
+    T.setDaily('dynasty', { used: 4, allowance: 5, resetsAt: at, unit: 'season', ended: false });
+    document.getElementById('sheet').classList.remove('on');
+    document.getElementById('sheet-in').dataset.kind = '';
+    /* With a season left it must go THROUGH, and this run has no engine state behind it, so
+       beginOffseason throwing is the proof it got past the gate. Anything else means the gate
+       swallowed it. */
+    let threw = false;
+    try { T.dynToWinter(); } catch (e) { threw = true; }
+    out.through = threw || document.getElementById('sheet-in').dataset.kind !== 'daily';
+    T.setRun(null);
+    document.getElementById('sheet').classList.remove('on');
+    return out;
+  });
+  ok('three seasons charge three times, however often the page reloads',
+    spent.season === 3, String(spent.season));
+  ok('and the old unit still charges once for the whole run', spent.run === 1, String(spent.run));
+  ok('a spent day stops the run at its results screen', spent.shut === 'daily', spent.shut);
+  ok('and a day with a season left in it does not', spent.through === true);
 }
 
 console.log('\nTHE RECORD AND YOUR BEST, IN THE CORNER OF THE DOOR');

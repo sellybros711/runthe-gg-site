@@ -138,6 +138,39 @@ allowance and then the store; the row removes the limit rather than unlocking th
 **`arcade_card_year` is the one grant that ends.** Twelve months, and it does not renew. No
 copy anywhere may imply it does, and the receipt has to show the end date.
 
+### What the free allowance actually counts
+
+**Dynasty counts SEASONS, the Trade Machine counts RUNS, and the server says which.**
+`supabase/101_dynasty_seasons.sql` is the whole rule: five dynasty seasons a day, one more
+for a boss battle won, spent one per kickoff on whatever run the player is in. A firing ends
+the day outright. The Trade Machine is one run a day, unchanged, because a run there IS one
+season.
+
+The old rule metered a START, and the mode it produced was the entire game with a wait in
+front of it: begin on Monday, still be playing that same run at season 60 without the game
+asking again. The only thing the bundle sold was re-drafting.
+
+**A firing ending the day is not spite, it is what stops the budget buying a reroll.** Fired
+in season two with three seasons left, the cheapest use of them is a string of fresh season
+ones until one drafts well. That is both the behaviour the meter exists to discourage and
+the worst possible way to meet the mode. The season one mercy from
+`100_daily_grace_reasons.sql` is gone for exactly the same reason: under a budget of five it
+IS the reroll button.
+
+**`unit` is what makes the page correct on both sides of the migration.** SQL is deployed by
+hand, the page is not, so `ps_attempts_state` returns `'season'` or `'run'` and every gate
+and every line of copy reads `dailySeasons()`. A database still on 100 answers without the
+column, the page falls back to `'run'`, and it goes on enforcing and describing the rule
+that database is actually keeping. Both rules are asserted in `check-premium.mjs`, which is
+why that file has two sections rather than one, and the season section can go when the
+migration has been deployed everywhere it needs to be.
+
+**The stop is at the results screen, not the kickoff.** `dynToWinter` is the gate, so a
+player out of seasons is refused before the winter rather than after it. Blocking at
+`startSeason` alone would let somebody age a roster and work the wheel for a season they
+cannot start; it is still guarded there, as a backstop for a second dynasty in the other
+slot spending the budget out from under this one.
+
 **Boot BOTH views before shipping anything that touches this.** A crash that only hit
 testers has already shipped: moving the store out of `football/index.html` left
 `pwArt('star')` behind on the home prompt card, which only a tester sees, so
