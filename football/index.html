@@ -10314,10 +10314,19 @@ function dynastyReplaceSheet(opts){
  * meeting each of those for the first time in the middle of a run. That is not difficulty,
  * it is a missing sentence.
  *
- * Same shape as tradeIntro, which solved this for the Trade Machine: shown once, remembered,
- * and reachable again from the screen where the rules actually bite.
+ * SHOWN BEFORE EVERY RUN, AND TURNED OFF BY THE READER RATHER THAN BY THE SECOND VIEW.
+ * It used to be once per browser, the same shape as tradeIntro. That is right for a mode you
+ * learn once and wrong for this one: a dynasty is a calendar, a win bar that moves, a cap
+ * that does not, and the ageing rule, and somebody coming back a fortnight later is starting
+ * a run against rules they half remember. So the sheet stands in front of every run and
+ * carries its own off switch, which is the arrangement that lets a player who HAS learned it
+ * stop seeing it without taking it away from everybody else.
+ *
+ * `opts.offer` draws that switch. Only the intro passes it: a "do not show this again" on a
+ * sheet somebody deliberately opened from the How to play pill would be offering to hide a
+ * thing they just asked for.
  */
-function dynastyRulesHTML(go){
+function dynastyRulesHTML(go,opts){
   const step=E.DYNASTY_STEP_SEASONS;   // seasons between steps up in the target
   const base=E.DYNASTY_BASE_WINS;      // the opening win bar
   /* THE MILESTONE SEASONS, READ OFF THE ENGINE RATHER THAN TYPED. This block used to name
@@ -10395,22 +10404,60 @@ function dynastyRulesHTML(go){
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:13px 0 0">'+
       'You score points every season, more for the playoffs and a title, and later seasons '+
       'pay multiples. Lasting is the whole game.</p>'+
-    '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>';
+    '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>'+
+    /* UNDER THE BUTTON, which is where the site already puts this control: see .wnchk on the
+       crest's What's new sheet, whose markup and storage idiom this follows exactly so the
+       two cannot end up looking like two different products. */
+    ((opts&&opts.offer)
+      ? '<label class="wnchk"><input type="checkbox" id="b-dyni-off"'+
+          (dynIntroOff()?' checked':'')+'><span>Don\'t show this again</span></label>'
+      : '');
 }
 
+/*
+ * TWO KEYS, BECAUSE THEY ANSWER TWO QUESTIONS.
+ *
+ * ps_dynintro means "has read the rules at least once" and is what retires the NEW badge on
+ * the front page door. ps_dynintro_off means "has asked not to be shown them again" and is
+ * the only thing that skips the sheet. Folding them into one was the obvious move and it is
+ * wrong in both directions: the badge would never retire for somebody who reads the rules
+ * every time and never ticks the box, and ticking the box would silently also mean "this
+ * mode is no longer new to me", which the player did not say.
+ *
+ * Both fall back to a window flag when localStorage throws, which is a real state on iOS in
+ * private mode. A checkbox that cannot persist should still work for the session it is in.
+ */
+const DYN_INTRO_KEY='ps_dynintro';
+const DYN_INTRO_OFF='ps_dynintro_off';
+function dynIntroOff(){
+  try{ return localStorage.getItem(DYN_INTRO_OFF)==='1'; }catch(_){ return !!window.__dynIntroOff; }
+}
 function dynastyIntro(go){
-  let seen=false;
-  try{ seen=localStorage.getItem('ps_dynintro')==='1'; }catch(_){ seen=!!window.__dynIntro; }
-  if(seen){ go(); return; }
+  if(dynIntroOff()){ go(); return; }
+  /* Marked as read on the way in, not on the way out: the badge is about whether this mode
+     is still new to them, and it stops being new the moment the sheet is on screen. */
   window.__dynIntro=true;
-  try{ localStorage.setItem('ps_dynintro','1'); }catch(_){}
-  $('sheet-in').innerHTML=dynastyRulesHTML('Draft my team');
+  try{ localStorage.setItem(DYN_INTRO_KEY,'1'); }catch(_){}
+  $('sheet-in').innerHTML=dynastyRulesHTML('Draft my team',{offer:true});
   $('sheet-in').dataset.kind='dynintro';
   /* However it is dismissed the draft proceeds, because a rules popup that can strand a run
      is worse than no rules at all. The Trade Machine's intro writes this out at length. */
   sheetOnClose=go;
   openSheet();
   $('b-dyni-go').onclick=closeSheet;
+  /* WRITTEN THE MOMENT IT IS TICKED rather than on the way out, so the promise holds however
+     the sheet is dismissed: the backdrop, the button, or a phone back gesture. Unticking puts
+     it back, because a control that only goes one way is a trap on a sheet this one is about
+     to stop showing. */
+  const off=$('b-dyni-off');
+  if(off) off.onchange=()=>{
+    window.__dynIntroOff=off.checked;
+    try{
+      if(off.checked) localStorage.setItem(DYN_INTRO_OFF,'1');
+      else localStorage.removeItem(DYN_INTRO_OFF);
+    }catch(_){}
+    ga('dynasty_intro_off',{off:off.checked});
+  };
 }
 /* The same card on demand, with no continuation: it closes back to wherever you were. */
 function reviewDynastyRules(){

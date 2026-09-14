@@ -116,16 +116,20 @@ const INJECT = 'beginDynastyDraft,premiumSheet,profileSheet,pfPro,acctTier,premi
 const t = await openPage(browser, 'http://local.test/football/', { tester: true, inject: INJECT });
 await t.page.evaluate(() => window.__t.signIn());
 
-/* THE RULES SHEET IS SHOWN ONCE PER BROWSER, so the first dynasty and every later one take
-   different paths through dynastyIntro. The dead button only appeared on the second, which
-   is the path almost every real press is. Both are driven. */
-for (const seenIntro of [false, true]) {
-console.log('  ' + (seenIntro ? 'having already seen the rules sheet:' : 'first dynasty in this browser:'));
-await t.page.evaluate((seen) => {
-  try { if (seen) localStorage.setItem('ps_dynintro', '1');
-    else localStorage.removeItem('ps_dynintro'); } catch (e) {}
-  window.__dynIntro = seen || undefined;
-}, seenIntro);
+/* THE RULES SHEET STANDS IN FRONT OF EVERY RUN NOW, unless the reader has ticked its own
+   "don't show this again", so the two paths through dynastyIntro are opted-in and opted-out
+   rather than first-time and later. The dead button only ever appeared on the path where no
+   sheet was in the way, which is why both are still driven.
+   DRIVEN ON ps_dynintro_off, NOT ps_dynintro. The second key still exists and still retires
+   the NEW badge, and it no longer has anything to do with whether the sheet appears; a check
+   left on the old key would run the same path twice and say it had run two. */
+for (const introOff of [false, true]) {
+console.log('  ' + (introOff ? 'having turned the rules sheet off:' : 'with the rules sheet in front of it:'));
+await t.page.evaluate((off) => {
+  try { if (off) localStorage.setItem('ps_dynintro_off', '1');
+    else localStorage.removeItem('ps_dynintro_off'); } catch (e) {}
+  window.__dynIntroOff = off || undefined;
+}, introOff);
 /*
  * THREE ACCOUNTS, AND THE FIRST ONE IS THE ONE THAT BROKE.
  *
@@ -351,6 +355,7 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,'
      sees a user it has not asked for and fires a real request that overwrites them. */
   + 'setHi:(t,m)=>{dynHiTop=t;dynHiMine=m;dynHiFor=(authState.userId||null);},'
   + 'dynRead,beginDynastyDraft,DYN_SAVE_VERSION,getRun:()=>run,'
+  + 'reviewDynastyRules,dynIntroOff,'
   + 'setPremium:(v)=>{premiumSet=v;},'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
@@ -574,6 +579,70 @@ ok('and stops breathing', gold.spent && gold.spent.anim === 'none', gold.spent &
  * man in it must still come back. A fix for a phantom resume that eats real runs is worse
  * than the phantom.
  */
+/*
+ * THE RULES SHEET STANDS IN FRONT OF EVERY RUN, AND THE READER TURNS IT OFF.
+ *
+ * It used to be once per browser. A dynasty is a calendar, a moving win bar, a frozen cap
+ * and an ageing rule, and somebody coming back a fortnight later starts a run against rules
+ * they half remember. So it shows every time and carries its own off switch.
+ *
+ * THE TWO KEYS ARE THE POINT. ps_dynintro still means "has read them once" and is what
+ * retires the NEW badge; ps_dynintro_off is the only thing that skips the sheet. Folding
+ * them together is the obvious move and breaks both: a reader who never ticks the box keeps
+ * a NEW badge forever, and ticking the box silently also claims the mode is no longer new to
+ * them. Asserted because nothing on screen would look wrong either way.
+ */
+console.log('\nTHE RULES SHEET, BEFORE EVERY RUN, UNTIL THEY SAY OTHERWISE');
+{
+  const open = () => ck.page.evaluate(() => {
+    const T = window.__t;
+    T.setPremium(['ps_premium', 'cfb_premium']);
+    T.setDaily('dynasty', { used: 0, allowance: 1, resetsAt: new Date(Date.now() + 3600e3).toISOString() });
+    document.getElementById('sheet').classList.remove('on');
+    document.getElementById('sheet-in').dataset.kind = '';
+    document.querySelectorAll('.screen.on').forEach((s) => s.classList.remove('on'));
+    document.getElementById('s-intro').classList.add('on');
+    try { localStorage.removeItem('ps_dynasty_save'); } catch (e) {}
+    T.beginDynastyDraft();
+    return { up: document.getElementById('sheet').classList.contains('on'),
+      kind: document.getElementById('sheet-in').dataset.kind,
+      box: !!document.getElementById('b-dyni-off') };
+  });
+  await ck.page.evaluate(() => {
+    try { localStorage.removeItem('ps_dynintro'); localStorage.removeItem('ps_dynintro_off'); } catch (e) {}
+    window.__dynIntro = undefined; window.__dynIntroOff = undefined;
+  });
+  /* Three in a row, because "once per browser" passes a check that only opens it twice. */
+  for (const n of [1, 2, 3]) {
+    const r = await open();
+    ok('run ' + n + ' gets the sheet', r.up && r.kind === 'dynintro', JSON.stringify(r));
+    ok('  carrying its own off switch', r.box === true);
+  }
+  const ticked = await ck.page.evaluate(() => {
+    const c = document.getElementById('b-dyni-off');
+    c.checked = true; c.onchange();
+    return { off: window.__t.dynIntroOff(), read: localStorage.getItem('ps_dynintro') };
+  });
+  ok('ticking it is remembered', ticked.off === true);
+  const after = await open();
+  ok('and the next run goes straight to the draft', after.up === false, JSON.stringify(after));
+  /* THE OTHER KEY SURVIVED IT. They have read the rules, so the badge is retired, and that
+     has to be true whether or not they ticked the box. */
+  ok('while the mode still counts as read', ticked.read === '1', String(ticked.read));
+  /* AND THE ON-DEMAND SHEET NEVER OFFERS IT. Hiding a thing somebody just asked to see. */
+  const demand = await ck.page.evaluate(() => {
+    window.__t.reviewDynastyRules();
+    return !!document.getElementById('b-dyni-off');
+  });
+  ok('the How to play sheet has no off switch', demand === false);
+  await ck.page.evaluate(() => {
+    document.getElementById('sheet').classList.remove('on');
+    document.querySelectorAll('.screen.on').forEach((s) => s.classList.remove('on'));
+    document.getElementById('s-intro').classList.add('on');
+    try { localStorage.removeItem('ps_dynasty_save'); } catch (e) {}
+  });
+}
+
 console.log('\nAN ABANDONED DRAFT IS NOT A RUN TO RESUME');
 {
   /* Planted rather than played, so the reader is tested on exactly the two shapes that
@@ -603,7 +672,9 @@ console.log('\nAN ABANDONED DRAFT IS NOT A RUN TO RESUME');
     const T = window.__t;
     T.setPremium(['ps_premium', 'cfb_premium']);
     T.setDaily('dynasty', { used: 0, allowance: 1, resetsAt: new Date(Date.now() + 3600e3).toISOString() });
-    try { localStorage.removeItem('ps_dynasty_save'); localStorage.setItem('ps_dynintro', '1'); } catch (e) {}
+    /* Opted out of the rules sheet, so beginDynastyDraft goes straight to the draft and
+       this section is testing the save rather than the sheet in front of it. */
+    try { localStorage.removeItem('ps_dynasty_save'); localStorage.setItem('ps_dynintro_off', '1'); } catch (e) {}
     T.beginDynastyDraft();
   });
   await ck.page.waitForTimeout(1500);
