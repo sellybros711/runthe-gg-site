@@ -47,10 +47,16 @@
     '  /* BIGGER, BECAUSE THE ART IS NOW WORTH THE ROOM. 28px was sized for line icons and it is\n' +
     '     the size a favicon is: solid shapes with an inset detail need the space or the detail\n' +
     '     closes up. */\n' +
+    '  .pw-from{display:block;font-family:var(--fn);font-size:7.5px;font-weight:800;\n' +
+    '    letter-spacing:.1em;text-transform:uppercase;color:var(--gc);line-height:1.2;\n' +
+    '    margin:0 0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n' +
     '  .pw-tile svg{width:40px;height:40px;display:block;margin:0 auto;\n' +
     '    filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))}\n' +
     '  .pw-tile b{display:block;font-family:var(--fn);font-size:10.5px;letter-spacing:.07em;\n' +
     '    text-transform:uppercase;margin-top:7px;line-height:1.15;color:var(--ink)}\n' +
+    '  .pw-also{display:block;font-size:10px;line-height:1.3;\n' +
+    '    margin-top:6px;padding-top:6px;border-top:1px solid var(--line);\n' +
+    '    color:var(--dim-2);opacity:.85}\n' +
     '  .pw-tile i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);\n' +
     '    margin-top:3px;line-height:1.25}\n' +
     '  /* A PURCHASE AS A CARD, so the two can be compared side by side rather than one being\n' +
@@ -169,14 +175,17 @@
     '     two lines at every width up to 420px and COMMISSIONER clipping up to 400px. A wrapped\n' +
     '     name pushes that tile\'s description down twelve pixels while its neighbours stay put, so\n' +
     '     the row reads as a mistake rather than a layout.\n' +
-    '     WHY 449 AND NOT 429, which is the last width that actually fails. At 430px the three\n' +
-    '     names fit with about two pixels to spare on TRADE MACHINE, which is not a margin, it is\n' +
-    '     a coincidence. 450px is the first width with real room (roughly eight pixels), so the\n' +
-    '     switch waits for it. Renaming a tile to something longer moves both numbers.\n' +
+    '     RENAMING A TILE MOVES THIS NUMBER, and it already has. The breakpoint was 449 when the\n' +
+    '     longest name was TRADE MACHINE. COMMISSIONER MODE is longer, and the same sweep now\n' +
+    '     shows it wrapping at every width from 440 up to 520.\n' +
+    '     WHY 549 AND NOT 529, which is the last width that actually fails. At 530px the longest\n' +
+    '     name fits with TWO pixels to spare, which is not a margin, it is a coincidence, and the\n' +
+    '     previous number was picked the same way for the same reason. 550px is the first width\n' +
+    '     with real room, about eight pixels.\n' +
     '     MEASURE THIS WITH THE REAL FACES LOADED. Anton and Archivo are Google webfonts, and the\n' +
     '     generic sans a headless browser falls back to is far wider: the first sweep of this said\n' +
     '     three columns failed up to 450px, which was the fallback face talking. */\n' +
-    '  @media (max-width:449px){\n' +
+    '  @media (max-width:549px){\n' +
     '    .pw-hero{grid-template-columns:1fr 1fr}\n' +
     '    .pw-tile:last-child{grid-column:1 / -1}\n' +
     '  }';
@@ -190,6 +199,17 @@
     el.textContent = CSS;
     (document.head || document.documentElement).appendChild(el);
   }
+  /* AT LOAD, AND NOT ONLY WHEN THE OFFER IS DRAWN.
+     This block styles more than the offer. It carries .pw-pill, which the profile puts
+     beside an account name, and .pw-line and .pfpro-h, which are the whole of the Your Pro
+     access receipt. None of those goes through html() or art(), and game() never injected
+     anything, so an OWNER was exactly the visitor who could reach them without the CSS: a
+     customer who has bought and is therefore never shown the pitch card opens their own
+     receipt and gets four unstyled paragraphs and a bare word where the pill should be.
+     Nothing throws and nothing looks broken enough to report, which is why it stood.
+     A page that loads this file is a page that shows one of these things, so the lazy
+     injection was buying nothing and costing that. */
+  ensureStyle();
 
   var pwUid = 0;
   const PW_ART={
@@ -240,11 +260,28 @@
         '<stop offset="1" stop-color="#d97706"/></linearGradient></defs>'+
       PW_ART[k].replace(/\{g\}/g,'url(#'+id+')')+'</svg>';
   }
-  const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwArt(k)+'<b>'+esc(name)+'</b>'+
-    '<i>'+esc(line)+'</i></div>';
+  /* WHICH GAME EACH MODE IS IN, on the tile.
+     The three tiles named Dynasty, Trade Machine and Commissioner and left a reader to work
+     out that the first two are the NFL game and the third is the college one. That is the
+     whole reason the bundle is worth $19.99 rather than feeling like three things from one
+     game, and it was only said further down, in the itemised cards. Same colour coding as
+     those cards, out of the same PW_GAME table, so the tile and the line it is sold on
+     cannot disagree about which game a mode belongs to. */
+  const pwTile=(k,name,line,gameKey,also)=>'<div class="pw-tile">'+
+    (gameKey&&PW_GAME[gameKey]
+      ? '<span class="pw-from" style="--gc:'+PW_GAME[gameKey].c+'">'+
+          esc(PW_GAME[gameKey].shortName||PW_GAME[gameKey].name)+'</span>'
+      : '')+
+    pwArt(k)+'<b>'+esc(name)+'</b>'+
+    '<i>'+esc(line)+'</i>'+
+    /* A SECOND, QUIETER LINE for the thing a tile carries that is not the headline. The
+       Dynasty tile covers two modes and only one of them is the pitch. */
+    (also?'<span class="pw-also">'+esc(also)+'</span>':'')+'</div>';
   const PW_GAME={
-    ps:{name:'The Perfect Season',c:'#f87171'},
-    cfb:{name:CFB_NAME,c:'#10b981'},
+    /* shortName is for the tiles, where the full name does not fit a third of a phone.
+     The cards below always use `name`. */
+    ps:{name:'The Perfect Season',c:'#f87171',shortName:'Perfect Season'},
+    cfb:{name:CFB_NAME,c:'#10b981',shortName:'College Football'},
     arcade:{name:'Run The Arcade',c:'#FF8A3D'},
     tour:{name:'Run The Tour',c:'#22b8cf'}
   };
@@ -295,9 +332,15 @@
     Dynasty is invisible to everybody off the tester list, so the row used to promote
     two doors most readers cannot open and stay quiet about the one they can. Buying
     ps_premium switches the Trade Machine's daily meter off. See dailyOn(). */
-    pwTile('trophy','Dynasty','Endless arcade mode')+
-    pwTile('swap','Trade Machine','Unlimited runs')+
-    pwTile('clipboard','Commissioner','Can you save College Football?')+
+    /* NOT "Endless arcade mode". Run The Arcade and the Arcade Card are both products on
+       this site, and one of them is sold two cards below this one, so "arcade" as a genre
+       word reads as a place rather than a kind of game. */
+    pwTile('trophy','Dynasty Mode','Draft a team and build up your legacy.','ps',
+      'Also available with Pro: One Franchise Dynasty Mode')+
+    pwTile('swap','Trade Machine','Unlimited runs','ps')+
+    /* COMMISSIONER MODE, which is what the game calls it and what the card below this one
+       calls it. The tile was the only place saying just "Commissioner". */
+    pwTile('clipboard','Commissioner Mode','Can you save College Football?','cfb')+
     '</div>'+
 
     '<div class="pw-tier">'+
@@ -308,7 +351,14 @@
     so leaving it off would advertise a thing and then not sell it. It is a real part of
     the product rather than a nice side effect: dailyOn() stops metering the moment
     ps_premium is owned. */
-    pwGroupText('ps','Dynasty, Franchise and unlimited Trade Machine','Lifetime access')+
+    /* WHAT THE ROW ACTUALLY DELIVERS, named. This read "Dynasty, Franchise and unlimited
+       Trade Machine", which was wrong twice. Nothing in the game is called "Franchise": the
+       mode is One Franchise, and its quick draft half is FREE to any signed in account, so
+       the line was selling something a buyer already had. And it said nothing about what
+       changes, which is the limit: all three of these are playable without paying, on one
+       run a day. What is bought is that the counting stops. */
+    pwGroupText('ps','Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine',
+      'Lifetime access')+
     pwGroupText('cfb','Commissioner Mode','Lifetime access')+
     '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+
     (o.signedOut?'Sign in to go Pro':'Go Pro')+'</button>'+
@@ -321,12 +371,17 @@
     '<span class="pw-was">$'+WORTH+'</span>'+
     '<span class="pw-save">Save $'+Math.round(WORTH-RTB)+'</span></div>'+
     '<p class="pw-note" style="margin:9px 0 2px">Everything above, plus two more games.</p>'+
-    /* "Everything above" carries the two Lifetime access lines with it, so the two lines
-    this card adds have to say plainly that they are not that. The Arcade Card is twelve
-    months and then it stops. It is still not a subscription: nothing renews it and
-    nothing charges again, which is the half a buyer is actually anxious about. */
-    pwGroupText('arcade','1 year of the Arcade Card','12 months. It does not renew.')+
-    pwGroupText('tour','100,000 coins and one Tour Pack','Tour is the mid pack tier. Yours to spend.')+
+    /* "Everything above" carries the two Lifetime access lines with it, so the Arcade line
+    has to say plainly that it is not one. The term column is for the TERM and nothing else:
+    "12 months" was already said by the line above it, and what a buyer is anxious about is
+    not the length, it is whether a card will be sold to them again next year without being
+    asked. So the column answers only that.
+    THE TOUR LINE CARRIES NO TERM AT ALL, because it has none. Coins and a pack are handed
+    over once and then they are just yours, and a column that reads "Lifetime access,
+    No auto-renewal, Tour is the mid pack tier" is a column that has stopped meaning one
+    thing. What the Tour tier is worth belongs in Run The Tour, not on a receipt line. */
+    pwGroupText('arcade','1 year of the Arcade Card','No auto-renewal')+
+    pwGroupText('tour','100,000 coins and one Tour Pack')+
     '<button class="btn" id="b-buy-rtb" style="width:100%;margin-top:14px">'+
     (o.signedOut?'Sign in to get it':'Get Run The Bundle')+'</button>'+
     '</div>'+

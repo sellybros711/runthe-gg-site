@@ -65,11 +65,12 @@
     } catch (e) { sb = null; offline = true; return false; }
     sb.auth.onAuthStateChange(function (_evt, s) {
       session = s || null;
-      if (session) { syncPro(); Promise.all([loadName(), loadFav()]).then(fire); } else { name = null; favTeam = null; fire(); }
+      if (session) { syncPro(); syncBilling(); Promise.all([loadName(), loadFav()]).then(fire); }
+      else { name = null; favTeam = null; billing = null; fire(); }
     });
     sb.auth.getSession().then(function (r) {
       session = (r && r.data && r.data.session) || null;
-      if (session) { syncPro(); return Promise.all([loadName(), loadFav()]).then(fire).then(flush); }
+      if (session) { syncPro(); syncBilling(); return Promise.all([loadName(), loadFav()]).then(fire).then(flush); }
       fire();
     }).catch(fire);
 
@@ -83,28 +84,74 @@
     return true;
   }
 
-  // Pro entitlement: server truth for signed-in subscribers. Reads the
-  // `subscriptions` row written by the Stripe webhook and mirrors it into
-  // localStorage 'runthegrid_pro' (which tokens.js/archive.js read). Fails
-  // open: on any error we leave the local flag as-is (so the rollout preview
-  // unlock keeps working and a flaky network never strips a paying user).
+  /* Pro entitlement: mirrors the server's answer into localStorage
+   * 'runthegrid_pro', which tokens.js and archive.js read.
+   *
+   * IT ASKS THE SERVER THE QUESTION, IT DOES NOT RE-DERIVE THE ANSWER.
+   *
+   * This used to select from `subscriptions` and work out for itself whether
+   * the row was live. That made it a SECOND copy of a rule the database
+   * already owns in arcade_card_active(), and the two disagreed the moment a
+   * card could be held any other way. An account holding a year of the card
+   * from a one-time purchase has no subscriptions row at all, so the read
+   * succeeded, found nothing, took the "no row, therefore free" branch and
+   * DELETED the flag. card.js reconciles the same flag from the status RPC and
+   * set it back, so the two raced; and this one runs on every auth event while
+   * that one runs once, so this one won every refresh. The account paid, the
+   * server agreed they were a member, and the arcade showed them locked tiles
+   * and a locked archive.
+   *
+   * arcade_game_status() is the same call every play gate makes, and its
+   * `unlimited` is arcade_card_active() itself. One question, one answer,
+   * nothing here to drift.
+   *
+   * Fails open on error, offline, or a site deployed ahead of the migration:
+   * tokenStatus() resolves null and the local flag is left alone, so a flaky
+   * network never strips a paying user. On a SUCCESSFUL read the answer is
+   * authoritative in both directions, which is what stops a stale flag (a
+   * browser that was once a cardholder) granting unlimited plays for free. */
   function syncPro() {
     if (!sb || !session) return;
-    sb.from('subscriptions').select('status,current_period_end').eq('user_id', session.user.id).maybeSingle()
-      .then(function (r) {
-        if (!r || r.error) return;                     // table missing / RLS → leave as-is
-        var row = r.data;
-        var active = !!row && (row.status === 'active' || row.status === 'trialing') &&
-          (!row.current_period_end || new Date(row.current_period_end).getTime() > Date.now() - 86400000);
+    /* NOTHING IN HERE MAY THROW INTO boot(). This is called synchronously from
+       the session branch, which goes on to flush the outbox, so an exception
+       raised while asking about entitlement would take the queued runs with
+       it: scores already played, already stored, silently never re-sent. It
+       shipped that way for one run of the suite, caught by check-outbox. */
+    var p; try { p = tokenStatus(); } catch (e) { return; }
+    if (!p || !p.then) return;
+    p
+      .then(function (s) {
+        if (!s || !s.signed_in) return;                // null = offline / RPC missing → leave as-is
         try {
-          // On a SUCCESSFUL read (still fail-open on error/offline above), the
-          // subscriptions row is authoritative: grant when active, otherwise
-          // clear the flag - including when there is NO row (free user). This
-          // stops a stale flag (e.g. a browser that was once a cardholder) from
-          // granting unlimited plays to a free account.
-          if (active) localStorage.setItem('runthegrid_pro', '1');
+          if (s.unlimited) localStorage.setItem('runthegrid_pro', '1');
           else localStorage.removeItem('runthegrid_pro');
         } catch (e) {}
+        fire();
+      })
+      .catch(function () {});
+  }
+
+  /* IS STRIPE BILLING THIS ACCOUNT? A different question from "are they a
+   * member", and the only one the subscriptions table is still asked.
+   *
+   * A member can hold the card without a subscription, and telling one of
+   * those "Manage subscription" offers them something they do not have. So the
+   * card menu asks this before it offers a billing portal. Null means we do not
+   * know yet (signed out, offline, or the read has not landed), and the caller
+   * treats that as "do not claim either way". */
+  var billing = null;
+  function syncBilling() {
+    if (!sb || !session) { billing = null; return; }
+    var p;
+    try { p = sb.from('subscriptions').select('status,current_period_end').eq('user_id', session.user.id).maybeSingle(); }
+    catch (e) { return; }                            // same rule as syncPro above
+    if (!p || !p.then) return;
+    p
+      .then(function (r) {
+        if (!r || r.error) return;                     // table missing / RLS → stays unknown
+        var row = r.data;
+        billing = !!row && (row.status === 'active' || row.status === 'trialing') &&
+          (!row.current_period_end || new Date(row.current_period_end).getTime() > Date.now() - 86400000);
         fire();
       })
       .catch(function () {});
@@ -656,6 +703,8 @@
     allTimeStats: allTimeStats,
     spendToken: spendToken,
     tokenStatus: tokenStatus,
+    // true = Stripe is billing this account, false = it is not, null = not known
+    billing: function () { return billing; },
     dayStreak: dayStreak,
     referralCode: referralCode,
     referralClaim: referralClaim,

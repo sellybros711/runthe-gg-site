@@ -5561,6 +5561,16 @@ window.GA_ID='G-L29P5MRWKE';
   /* The rank row is hidden outright when the board never answered, rather than drawing three
      dashes. [hidden] needs saying because .splits sets display:grid. */
   .splits.ranks[hidden]{display:none}
+  /* THE TWO WAYS TO EARN A SECOND RUN, on the screen that tells somebody they are out of
+     them. Quiet: it is information, not an offer, and the offer is directly under it. */
+  .dgrace{margin:13px 0 0;padding:11px 13px;border-radius:11px;
+    background:rgba(255,255,255,.04);border:1px solid var(--line)}
+  .dgrace b{display:block;font-family:var(--fn);font-size:9.5px;font-weight:800;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2)}
+  .dgrace span{display:grid;grid-template-columns:6px 1fr;column-gap:9px;align-items:start;
+    font-size:12.5px;line-height:1.4;color:var(--ink);margin-top:7px}
+  .dgrace span:before{content:"";width:6px;height:6px;border-radius:999px;
+    background:rgba(255,255,255,.32);margin-top:6px}
   .gateline:empty{display:none}
   .gateline{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
     font-size:12.5px;line-height:1.4;color:var(--dim)}
@@ -7363,7 +7373,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
      blocked or stale copy hides an unannounced mode rather than opening it. -->
 <script src="fullteam-access.js?v=1"></script>
-<script src="dynasty-access.js?v=3"></script>
+<script src="dynasty-access.js?v=4"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -7379,7 +7389,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=2"></script>
+<script src="/assets/store.js?v=8"></script>
 <script defer src="auth.js?v=5"></script>
 <script>
 (function(){
@@ -7583,16 +7593,29 @@ const canPlayDynasty=()=>{
   if(!authState.signedIn) return false;
   return A.allowed({name:authState.name,userId:authState.userId});
 };
-/* ONE FRANCHISE DYNASTY IS A PREMIUM MODE, and there is no premium yet, so for now this is
-   the tester list and nothing else.
-   IT IS DELIBERATELY NOT canPlayDynasty(). That one answers true for everybody the moment
-   DYNASTY_LIVE flips, which is the point of that flag and exactly the wrong behaviour here:
-   opening the base mode to the site must not hand this one out with it. When the paid tier
-   exists, this is the single function that learns about it. */
+/*
+ * ONE FRANCHISE DYNASTY IS A PREMIUM MODE, and the premium now exists.
+ *
+ * This used to read the tester list and nothing else, with a note saying "when the paid
+ * tier exists, this is the single function that learns about it". The tier exists, the
+ * store sells it by name, and this function had not learned: the card promised One
+ * Franchise Dynasty and the row did not open it. A tile advertising something that does
+ * not open is worse than no tile.
+ *
+ * SO THE ROW GRANTS IT, and the tester list still does too. Those are two different jobs
+ * and both are wanted: the list is who can SEE an unannounced mode, the row is who has
+ * bought it. Keeping the list here is what lets a tester holding no row walk the
+ * not-bought view of the rest of the store without losing the mode they are testing.
+ *
+ * STILL DELIBERATELY NOT canPlayDynasty(). That one answers true for everybody the moment
+ * DYNASTY_LIVE flips, and opening the base mode to the site must not hand this one out
+ * with it. Ownership is the thing that opens it after launch, which is what the store says.
+ */
 const canPlayClubDynasty=()=>{
+  if(!authState.signedIn) return false;
+  if(dynastyOwned()) return true;
   const A=window.PS_DYNASTY_ACCESS;
   if(!A||typeof A.isTester!=='function') return false;
-  if(!authState.signedIn) return false;
   return !!(A.isTester(authState.name)||A.isTesterId(authState.userId));
 };
 /* WHAT THE ACCOUNT OWNS, from the database rather than any list in a page, which is the
@@ -8945,7 +8968,21 @@ function beginDraft(opts){
   /* Checked here as well as at the button, because the DOM is not the authority on what is
      playable. Same belt and braces the Trade Machine and the defense draft use. */
   if(opts&&opts.dynasty&&!canPlayDynasty()) return;
-  if(opts&&opts.dynasty&&!dynastyOwned()) return;
+  /*
+   * AND NO OWNERSHIP CHECK, WHICH USED TO BE THE NEXT LINE.
+   *
+   * It was the second of two, and removing only the one in beginDynastyDraft left this one
+   * holding the door: pressing Start a dynasty did nothing at all. Not the store, not a
+   * message, nothing. `return` with no branch is the worst possible failure for a gate,
+   * because a button that silently does nothing reads as a broken game rather than as a
+   * paywall, and it threw no error for anything to catch.
+   *
+   * Ownership is not what decides any more. Every way into a dynasty goes through
+   * beginDynastyDraft, which checks the day's allowance and sends a player with none left
+   * to the store. Both calls into here are inside that function. A belt-and-braces check
+   * only works if it is braces for the same belt: this one was guarding a rule the game had
+   * stopped having.
+   */
   /* A dynasty sets full, so the Full Team gate would refuse it to a tester who is on one
      list and not the other. Its own gate is above and this one is for Full Team proper. */
   if(opts&&opts.full&&!opts.dynasty&&!canPlayFull()) return;
@@ -9111,12 +9148,25 @@ async function dailySpend(mode){
 
    So a player can earn both in one day and get three starts. Calling the same reason twice
    costs nothing and grants nothing. */
+/* WHAT EACH REASON IS CALLED WHEN IT IS HANDED OVER. A run that is given and not mentioned
+   is a run nobody knows they have: the allowance moved on the server, the door quietly went
+   back to playable, and the player had no idea either thing happened. */
+const GRACE_SAID={
+  fired:'Fired in season one. You have another run today.',
+  boss:'Boss beaten. You have another run today.',
+};
 async function dailyGrace(mode,reason){
   if(!dailyOn()) return;
+  /* READ BEFORE, SO THE MESSAGE ONLY GOES OUT ON A REAL GRANT. Each reason is earned at
+     most once a day and the server answers a repeat claim with the same numbers as the
+     first, which is the right answer and would otherwise be announced as a new run every
+     time the screen that claims it was reopened. */
+  const was=(dailyState[mode]&&dailyState[mode].allowance)||0;
   let r=null;
   try{ r=await B.attemptGrace(mode,reason); }catch(_){ r=null; }
   if(r&&r.used!=null){ dailyState[mode]={used:r.used,allowance:r.allowance,resetsAt:r.resetsAt}; }
   paintHomeStart();
+  if(r&&r.allowance!=null&&was&&r.allowance>was&&GRACE_SAID[reason]) toast(GRACE_SAID[reason]);
 }
 /* The countdown only moves while it is on screen. Started by the painter that draws it and
    stopped by the one that does not, so the page is not running a timer all day. */
@@ -9145,24 +9195,46 @@ function dailySpentSheet(mode){
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+
       'A run you have already started is never affected. You can carry it on any day, for as '+
       'many days as it lasts.</p>'+
-    /* THE UPGRADE, AT THE ONE MOMENT SOMEBODY IS ACTUALLY ASKING FOR IT. This screen exists
-       because a player wanted another run and could not have one, which makes it the most
-       honest place in the game to mention that another run is for sale. It is a card rather
-       than a wall: Close is still right there, and nothing here blocks tomorrow's free run.
+    /* HOW TO EARN ANOTHER ONE, which the game has always granted and never mentioned.
+       DYNASTY ONLY, because that is where the two reasons live: getting fired in season one
+       and winning a boss game both come off a dynasty, and the Trade Machine earns neither.
+       Offering them on its spent sheet would be promising a run that mode cannot give.
+       HIDDEN ONCE BOTH ARE IN. The allowance is 1 plus one per reason earned, so a 3 means
+       there is nothing left to earn and a list of ways to earn it would be taunting
+       somebody who has already done both. It cannot say WHICH of the two is still going
+       (ps_attempts_state returns the total and not the flags), so it states the rule rather
+       than ticking a box, which is true either way. */
+    (mode==='dynasty'&&allow<3
+      ? '<div class="dgrace">'+
+          '<b>Two things earn you another run today</b>'+
+          '<span>Get fired in season one. That one does not count.</span>'+
+          '<span>Win a boss game.</span>'+
+        '</div>'
+      : '')+
+    /* THE OFFER ITSELF, AT THE ONE MOMENT SOMEBODY IS ACTUALLY ASKING FOR IT.
+       This screen exists because a player wanted another run and could not have one, which
+       makes it the most honest place in the game to show what another run costs.
+       IT USED TO BE A CARD THAT OPENED THE STORE, and a card is a second tap between
+       somebody who has just decided they want more and the thing that gives it to them. The
+       spent door is not a place to advertise the store, it IS the store, so the offer is
+       drawn here in full: the same two bundles, out of /assets/store.js, the same as every
+       other premium door.
+       WHAT STAYS ABOVE IT is the part only this screen knows: how many runs today was worth,
+       when the next one unlocks, and that a run already going is never affected. None of
+       that is a sales line and all of it is true whether or not anybody buys.
        Left off entirely for an owner, who is not being limited, and before launch for
-       anybody outside the tester list.
-       THE HEADLINE NAMES THE MODE THE DOOR BELONGS TO. It said "unlimited dynasty runs" on
-       both, so the Trade Machine's own limit was answered by an offer about a different
-       mode. Pro lifts both, which is what the line under it says. */
-    (premiumPitch()
-      ? pwCard('b-daily-prem','Play unlimited '+(mode==='trade'?'Trade Machine':'Dynasty')+' runs',
-          'Pro removes the daily limit on every mode, and unlocks the Pro ones.','Unlimited')
+       anybody outside the tester list, which is what premiumPitch() answers. */
+    (premiumPitch()&&window.RTG_STORE
+      ? '<div style="margin-top:15px;padding-top:15px;border-top:1px solid var(--line)">'+
+          window.RTG_STORE.html({signedOut:!authState.signedIn})+'</div>'
       : '')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>';
   $('sheet-in').dataset.kind='daily';
   openSheet();
-  const up=$('b-daily-prem');
-  if(up) up.onclick=()=>openPremium('daily_limit_'+mode);
+  if(premiumPitch()&&window.RTG_STORE){
+    window.RTG_STORE.wire($('sheet-in'),{buy:(kind)=>beginBundleCheckout(kind)});
+    ga('premium_sheet_shown',{from:'daily_limit_'+mode,tier:acctTier()||'out'});
+  }
   $('sh-x').onclick=closeSheet;
 }
 
@@ -9898,6 +9970,23 @@ function dynastyRulesHTML(go){
       '<li><b>The target creeps up.</b> '+base+' wins, then '+(base+1)+' after season '+step+
         ', then '+(base+2)+' after '+(step*2)+'.</li>'+
     '</ul>'+
+    /* HOW MANY RUNS A DAY, said in the rules rather than discovered at a locked door.
+       The two extra ones are the point of putting it here: a player who reads "one run a
+       day" and then gets fired in season one has been handed another and has no reason to
+       look for it. Only drawn for somebody the meter applies to, so an owner is not told
+       about a limit they do not have and a visitor before launch is not told about one
+       that is not switched on yet. */
+    (dailyOn()
+      ? '<div class="eyebrow" style="margin:16px 0 8px">Runs a day</div>'+
+        '<ul class="modenotes">'+
+          '<li><b>One run a day, free.</b> Carrying on a run you have already started never '+
+            'costs one. Play it over as many days as it lasts.</li>'+
+          '<li><b>Fired in season one? Have another.</b> A run that dies in its first '+
+            'season does not count against the day.</li>'+
+          '<li><b>Win a boss game, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
+            ' and beat the marquee team, and the day gives you one more.</li>'+
+        '</ul>'
+      : '')+
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:13px 0 0">'+
       'You score points every season, more for the playoffs and a title, and later seasons '+
       'pay multiples. Lasting is the whole game.</p>'+
@@ -20434,7 +20523,7 @@ const PRO_ITEM={
   /* WORDED THE SAME AS THE STORE LINE IT IS THE RECEIPT FOR. A customer reads this after
      paying, so a shorter description here than on the card they bought from reads as
      something having been taken away. See pwGroupText('ps', ...) in the paywall. */
-  ps_premium:{game:'ps',text:'Dynasty, Franchise and unlimited Trade Machine'},
+  ps_premium:{game:'ps',text:'Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine'},
   cfb_premium:{game:'cfb',text:'Commissioner Mode'},
   arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
   runtour_pack:{game:'tour',text:'100,000 coins and one Tour Pack',wait:true}

@@ -115,6 +115,61 @@ ranks. One number for everybody, and it steps up on the day a mode launches. Nob
 anything: ranks are derived, so seasons a tester already played are counted the moment the
 shelf appears.
 
+### The premium bundle, and the check that boots both views
+
+```
+node football/check-premium.mjs        the page, in a real browser, both views
+node scripts/stripe/verify-bundles.mjs the catalog against the webhook and the constraint
+node cfb/build/test/test_store.mjs     the same offer and receipt on the college page
+```
+
+One store, not a store per game. `/assets/store.js` is the offer and both The Perfect
+Season and Commish Simulator draw it; its two buttons post `perfect-season` and
+`run-the-bundle` to `/api/stripe/checkout-bundle`, and **both bundles unlock both games**
+(the $19.99 grants `ps_premium` AND `cfb_premium`). Never build a bundle, a price or an
+unlock belonging to one game, and never a second payment path. The catalog is
+`functions/api/stripe/_bundles.js` and the runbook is that folder's README.
+
+**What decides is the `premium_unlocks` row, read only through `premium_products()`.** The
+tester lists in `dynasty-access.js` and `fullteam-access.js` decide who SEES any of this
+and are feature flags, never permissions. A signed in account without the row gets the free
+allowance and then the store; the row removes the limit rather than unlocking the door.
+
+**`arcade_card_year` is the one grant that ends.** Twelve months, and it does not renew. No
+copy anywhere may imply it does, and the receipt has to show the end date.
+
+**Boot BOTH views before shipping anything that touches this.** A crash that only hit
+testers has already shipped: moving the store out of `football/index.html` left
+`pwArt('star')` behind on the home prompt card, which only a tester sees, so
+`pwArt is not defined` threw during boot and took the game to the loading screen. The store
+had been verified in the plain view. That is the first section of `check-premium.mjs`.
+
+It intercepts `/api/stripe/checkout-bundle` and answers with an error rather than a session
+url, deliberately: **Stripe is live and there is no test mode**, so a request that gets out
+ends at a real payment page and a url in the answer would navigate there. Use a 100% off
+promotion code for tester runs. `cfb/build/test/test_store.mjs` does the same on the
+college side, and never lets a request out either.
+
+**The college game sells and receipts it too, from `cfb/index.html`.** Both halves are on
+the profile: a Go Pro card for a non-owner and a Your Pro access row for an owner, the same
+two rows the football profile carries, and the receipt reads `premium_unlocks` through
+`premiumUnlocks()` in `cfb/auth.js`. The RECEIPT is deliberately ungated: a buyer who paid
+on the football page owns what they own here whether or not this game shows them a mode.
+The OFFER is gated on `commishOn()`, the same call the front page door makes, because while
+`COMMISH_LIVE` is false the only thing it sells is a mode the reader cannot see, and a card
+that takes money for a shut door is worse than no card.
+
+**A store you can only reach by being refused is a wall.** Before that card existed the sole
+way to the offer from this game was to open Commissioner Simulator and be turned away at its
+gate, which nobody who cannot see the mode will ever do.
+
+`/assets/store.js` **injects its stylesheet at load, not on first use**, and that is a fix
+rather than a preference. The block styles more than the offer: `.pw-pill` beside an account
+name and `.pw-line` on the receipt come out of it, and neither goes through `html()` or
+`art()`. `game()` injected nothing, so an OWNER was exactly the visitor who could reach the
+receipt without the CSS, because an owner is never shown the pitch card that would have
+warmed it. Four unstyled paragraphs, nothing thrown, nothing to report.
+
 ### A badge you add has to be proved reachable
 
 ```
@@ -264,46 +319,55 @@ is the point. Disney's Peter Pan, Universal's Frankenstein, MGM's green witch an
 ruby slippers are all still owned, and a redraw that drifts back toward one of
 them is the failure mode.
 
-### The dugout is a layout, not a drawing
+### A phone gets a MENU, a desktop gets the room
 
-The menu is a room the player stands in, and it has to fill whatever window it is
-given. A fixed scene cannot: the wide room is 2.24 across, so on a portrait phone
-its height is decided by its width and it can only ever be a strip. It shipped that
-way, a 167 tall room on a 664 tall screen with half the display left as empty card
-stock underneath.
+The home screen is the clubhouse. It is called the clubhouse everywhere the
+player can see and in the code; the seven places a character says "dugout" mean
+the one beside the field during a game and are left alone.
 
-So `landscapeRoom(w)` and `portraitRoom(h)` return coordinates and `roomForWindow()`
-picks one, `drawDugout` reads every position out of `ROOM` and holds none of its own,
-and each layout is composed in BANDS (upright: the wall takes a fixed share of the
-height and the floor takes the rest; wide: the furniture keeps its drawn size and
-the SPACE between it opens up) so one composition works at every size it is asked
-for. A phone gets the room as the whole interface: the four doors are hotspots on
-the canvas, the hover rail is hidden because there is no pointer to hover with.
+**These are two designs, not two sizes of one, and that is the whole lesson of
+this screen.** `landscapeRoom()` draws a room: four objects hung on a wall, a
+small sign over each, and a rail underneath that names whatever the pointer is
+on. `renderPhoneMenu()` draws four buttons: real text, real type sizes, the
+mode's own drawing as an icon, one line of caption, and the clubhouse present as
+a strip of floor with the team standing on it. `renderMenu` picks by `ROOMFILL`.
 
-**A rotation is not a render, and that is the bug this class produces.** The layout
-is chosen once per render, so turning the phone left the upright room in a sideways
-window: a 760x1202 scene in an 844x390 one, running off the bottom of the page.
-Turning the phone showed LESS of the game than holding it upright. There is a
-resize and orientationchange listener now, and `verify-rules.mjs` rotates a phone
-both ways and asserts the room follows.
+**The room cannot carry this screen at phone width, and five attempts is enough
+evidence.** The rail is what tells you what the objects do, and a phone has no
+pointer to drive one, so what arrived was a picture with four labels on it.
+Every fix aimed at SIZE failed, because size was never the fault:
 
-Three more things are easy to undo by accident:
+| attempt | what came back |
+|---|---|
+| fill the window | a strip of room over half a screen of dead card stock |
+| draw it closer in | legible, and still a picture rather than a menu |
+| make them lockers | four frames holding a bat rack, a clipboard, a framed photo and a chalkboard: four objects of wildly different real size, above two people as tall as one frame. It stopped depicting anything. |
 
-- A coordinate written as a number inside `drawDugout` looks right on a desk and is
-  wrong on a phone.
-- The canvas is `object-fit: contain`, so if the scene's shape and its box's shape
-  drift apart the picture letterboxes while the hotspots stay where they were, and
-  the player presses a door above its sign. `renderMenu` measures the real box on
-  the frame after it mounts and recomposes if the guess was off; assertions measure
-  the PAINTED picture, never the element, or a letterboxed room reads as a full one.
-- `body.roomfill` is one `matchMedia` in the script that the stylesheet keys off.
-  Write that query out a second time in CSS and the two drift, which is the
-  letterbox above.
+The arithmetic underneath: four modes need four labels a thumb apart and
+readable at arm's length, and four lockers side by side in 358 CSS pixels are 89
+each, which does not hold the word EXHIBITION. Any grid that fixes that stops
+being a room.
 
-The same arithmetic broke the GAME screen sideways, worse: `#field` derives its
-width from a height budget that assumed 265px of furniture above and below, which
-in a 390 tall window left 125, so an 844 wide phone drew a 182 wide field. Sideways
-is not short of width, it is short of height, so under `max-height: 560px` the
+**Real text is the point, not a detail.** Everything in a canvas is drawn at
+whatever the browser's scaling leaves it: the room's signs came out at six CSS
+pixels once and nothing in the code said so. A button's label is set in CSS and
+arrives at the size it asks for, and the suite asserts the computed font size
+rather than a number derived from a layout.
+
+Two things are easy to undo by accident:
+
+- **A rotation is not a render.** Which menu a window gets is decided once per
+  render, so without the resize and orientationchange listener a phone turned
+  sideways keeps whichever one it had. It used to be the room that went stale
+  that way; now it is the choice between the two. It has already been deleted
+  once by a patch that replaced the block around it, and only the suite noticed.
+- `body.roomfill` is one `matchMedia` in the script that the stylesheet keys
+  off. Write that query out a second time in CSS and the two drift.
+
+The same arithmetic broke the GAME screen sideways: `#field` derives its width
+from a height budget that assumed 265px of furniture above and below, which in a
+390 tall window left 125, so an 844 wide phone drew a 182 wide field. Sideways is
+not short of width, it is short of height, so under `max-height: 560px` the
 furniture goes in a column beside the field instead of above and below it.
 
 The regression suite, which is the thing to run after editing:
