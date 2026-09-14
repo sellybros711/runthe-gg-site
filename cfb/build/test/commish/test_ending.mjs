@@ -106,13 +106,21 @@ async function runTerm(mode) {
     }
   };
   /* THE TERM HAS TO ACTUALLY END. A year in review and an ending are the same screen, and
-     the button's own text is what tells them apart: mid-term it carries on, at the end it
-     offers the job again. Walking off the ending would test the wrong screen. */
+     something has to tell them apart, or the walk clicks straight off the ending and tests
+     the wrong screen.
+     THE SHARE BUTTON, NOT THE COPY ON THE NEXT ONE. This read the label of #b-year-next and
+     looked for "take the job again", which was the only thing that button ever said at the
+     end of a term. It says four different things now (an extension with a number of years
+     in it, another job after a sacking, or the Pro offer to a free account), and a walk
+     keyed to one of them silently stops recognising the ending, clicks through it, and
+     starts a fresh term instead: the symptom was this file reporting seven terms and seven
+     removals rather than one. #b-term-share is hidden on a year in review and shown on an
+     ending, which is structural rather than a sentence somebody may reword. */
   let ended = false;
   for (let i = 0; i < 460; i++) {
     if (await on('s-year')) {
-      const t = await p.$eval('#b-year-next', (e) => e.textContent).catch(() => '');
-      if (/take the job again/i.test(t)) { ended = true; break; }
+      const done = await p.$eval('#b-term-share', (e) => !e.hidden).catch(() => false);
+      if (done) { ended = true; break; }
       await p.click('#b-year-next').catch(() => {}); await p.waitForTimeout(220); continue;
     }
     if (await on('s-office')) { await p.click('#b-desk').catch(() => {}); await skip(); await p.waitForTimeout(180); continue; }

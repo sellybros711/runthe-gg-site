@@ -2620,7 +2620,7 @@
 <script src="note.js?v=1"></script>
 <!-- The free tier's one season a day. Its clock is the SERVER's
      (supabase/104_commish_free_clock.sql); this is only the transport and the countdown. -->
-<script src="clock.js?v=1"></script>
+<script src="clock.js?v=3"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
@@ -2815,7 +2815,7 @@ function paintWait(st){
   /* ONE SENTENCE ABOUT WHERE THEY ARE, because the wall is the screen most likely to be
      met by somebody who has been away a day and does not remember what they were doing. */
   $('w-say').textContent='You are '+done+' season'+(done===1?'':'s')+' into a '
-    +TERM_SEASONS+' season term. On the free tier the sport moves one year a day.';
+    +termLen(world)+' season term. On the free tier the sport moves one year a day.';
   $('w-clock').hidden=false;
   $('w-when').textContent='until season '+next;
   waitPaintClock(st);
@@ -2923,6 +2923,17 @@ function seedCareer(w){
 function logTerm(w,p,rep){
   if(!w||w.careerLogged) return;
   w.careerLogged=1; save();
+  /* AND THE SAME EVENT GOES TO THE SERVER, for the free tier's one contract limit. It
+     rides this guard rather than carrying its own because this is the one place that
+     knows a term's identity: the flag above is on the SAVE, so it survives the reload of
+     a finished ending, which is exactly the case that would otherwise file two.
+     The server ignores it for a paying account, so there is no tier check here. Nothing
+     waits on it: the ending is already painted and a term that could not be filed simply
+     is not counted, which is the open direction this whole module fails in. */
+  try{
+    const C=window.PS_CFB_COMMISH_CLOCK;
+    if(C&&typeof C.termDone==='function') C.termDone();
+  }catch(e){}
   const c=careerData();
   const over=!!(w.outcome&&(w.outcome.removed||w.outcome.reason==='quit'));
   c.terms.push({
@@ -2934,8 +2945,14 @@ function logTerm(w,p,rep){
     scenario:w.scenario||null,
     grade:rep?rep.grade:null,
     score:rep&&isFinite(rep.score)?rep.score:null,
-    rulings:w.history.filter((h)=>L.isRuling(h)).length,
-    champions:Object.keys(w.champions||{}).length,
+    /* SCOPED TO THIS CONTRACT, because the shelf is a list of terms and a renewal keeps
+       the world. Without this, term three's row would claim every ruling of terms one and
+       two as well and the career would read as one enormous term repeated. */
+    rulings:sinceTerm(w).filter((h)=>L.isRuling(h)).length,
+    champions:termTitles(w),
+    /* How long this one was signed for, so the shelf can show a three year leash and an
+       eight year mandate as the different things they are. */
+    seasons:termLen(w),
   });
   if(c.terms.length>CAREER_TERMS_MAX) c.terms=c.terms.slice(-CAREER_TERMS_MAX);
   careerPut(c);
@@ -2943,7 +2960,87 @@ function logTerm(w,p,rep){
 
 /* ── the term ─────────────────────────────────────────────────────────────────── */
 const SAVE_KEY='cfb_commish_term';
+/* THE FIRST CONTRACT, and the only one a free account ever gets. A renewal can be longer
+   or shorter than this, so nothing below should read it to mean "how long is this term":
+   that is termLen(), which asks the world. This is the number a career STARTS on. */
 const TERM_SEASONS=5;
+
+/* ── HOW LONG THE NEXT CONTRACT IS ────────────────────────────────────────────────
+ *
+ * A TERM USED TO BE FIVE SEASONS AND THEN THE MODE WAS OVER. "Take the job again" built a
+ * brand new 2025 and threw away the sport: the playoff you expanded, the money you moved
+ * and the conferences you let die all reverted, which is the one thing this mode is about.
+ * A renewal keeps all of it. The sport you changed is the sport you have to keep running,
+ * which is the mode's own sentence and was not true across the term boundary until now.
+ *
+ * THE LENGTH IS THE VERDICT ON THE LAST ONE. A commissioner who leaves the room happy gets
+ * a long extension; one who scraped through gets a short leash and has to fix it fast. It
+ * is read off standing, which is the meter the room actually votes with, so the number is
+ * something the player earned rather than a difficulty setting.
+ *
+ * READ AS A LADDER FROM THE TOP, so a standing of 100 takes the first row it fits. The
+ * words are what the offer screen says out loud, because "7 years" and "7 years, and they
+ * would have given you ten" are different sentences about the same number.
+ */
+const RENEWALS=[
+  {at:80,years:8,word:'They would have signed you for life. Eight years.'},
+  {at:65,years:7,word:'A long extension, and nobody argued about it. Seven years.'},
+  {at:50,years:6,word:'Comfortable. Six more years.'},
+  {at:35,years:5,word:'They renewed you, without much warmth. Five years.'},
+  {at:0, years:3,word:'A short leash. Three years, and they will be watching.'},
+];
+const renewalFor=(standing)=>{
+  const s=Number(standing);
+  const v=isFinite(s)?s:0;
+  for(let i=0;i<RENEWALS.length;i++) if(v>=RENEWALS[i].at) return RENEWALS[i];
+  return RENEWALS[RENEWALS.length-1];
+};
+/* HOW LONG THIS CONTRACT IS, which is not a constant any more. A save written before
+   renewals existed has no termSeasons on it and is a five season term, which is what it
+   was signed as. */
+const termLen=(w)=>{
+  const n=w&&w.termSeasons;
+  return (isFinite(n)&&n>0)?n:TERM_SEASONS;
+};
+/* THE CURRENT CONTRACT'S PAPERWORK, and nothing from the one before it.
+ *
+ * A RENEWAL KEEPS THE WORLD, so world.history and world.champions carry every term a
+ * career has played. Four things read them to mean "this term": the doctrine, the rulings
+ * count, the titles count and the career shelf row. Left alone, a second term would be
+ * graded on the first one's work and a third on both.
+ *
+ * SCOPED BY YEAR RATHER THAN BY CLEARING THEM, because the record is worth keeping: an
+ * entry already carries the year it happened (see ledger.js), champions are keyed by year,
+ * and situation.js reads last year's champion across the boundary to open a term with the
+ * sport's actual memory instead of a blank one. report.js needed nothing: it already
+ * scopes everything through years(world), which is startYear to year. */
+const sinceTerm=(w)=>(w&&w.history?w.history:[]).filter((h)=>h&&h.year>=w.startYear);
+const termWorld=(w)=>Object.assign({},w,{history:sinceTerm(w)});
+const termTitles=(w)=>Object.keys((w&&w.champions)||{})
+  .filter((y)=>Number(y)>=w.startYear).length;
+
+/* SIGN THE EXTENSION. The sport is kept exactly as it stands and only the CONTRACT is
+   replaced: a new start year, a new length, and a clean sheet of paperwork to be graded
+   on. Everything about the sport itself (the rules, the money, the map, the meters, the
+   blocs, who is angry with you) carries, which is the entire point.
+   `world.start` is re-snapshotted here, so the next report card grades what you do from
+   NOW rather than measuring term four against the sport as it was in 2025. */
+function renewTerm(years){
+  world.term=(world.term||1)+1;
+  world.startYear=world.year;
+  world.termSeasons=Math.max(1,years|0);
+  world.outcome=null;
+  /* THE SHELF GUARD IS RELEASED WITH THE CONTRACT. logTerm refuses to file a term twice
+     and it keys on this flag, so a renewal that did not clear it would leave every term
+     after the first off the career shelf. */
+  world.careerLogged=0;
+  world.start=openingSnapshot(world);
+  /* A NEW CONTRACT IS NOT A NEW SEASON. The year that opens it has already been paid for
+     by the season that ended the last one, and a pro account is not metered anyway; this
+     keeps a free save (one that bought mid term) from being charged twice for one year. */
+  world.cleared=world.year;
+  save();
+}
 let world=null, rng=null, item=null, cast=null, choice=null, dials={}, written='';
 /* PER ITEM, AND CLEARED WITH IT. `optOpen` is which paragraphs somebody has opened without
    choosing; `optLong` is which ones have anything folded away to open, measured rather than
@@ -4017,8 +4114,8 @@ function paintYearStrip(el,w){
   });
   const champs=w.champions||{};
   const y=w.year;
-  const spent=Math.min(w.year-w.startYear,TERM_SEASONS-1);
-  const over=(w.year-w.startYear)>=TERM_SEASONS||!!w.outcome;
+  const spent=Math.min(w.year-w.startYear,termLen(w)-1);
+  const over=(w.year-w.startYear)>=termLen(w)||!!w.outcome;
   const here=phaseOf(w.beat);
   /* Base weight is how many beats the phase owns, so a four beat phase is already wider
      than a two beat one. The phase in play gets three more, which is roughly "half the
@@ -4048,7 +4145,7 @@ function paintYearStrip(el,w){
   const foot='<b>'+esc(L.BEATS[w.beat])+'</b><span>'
     +(over?'the term is over'
       :'next: '+esc(w.beat+1<L.BEATS.length?L.BEATS[w.beat+1]
-        :(w.year+1<=w.startYear+TERM_SEASONS-1?'the '+w.year+' season':'the end of the term')))
+        :(w.year+1<=w.startYear+termLen(w)-1?'the '+w.year+' season':'the end of the term')))
     +'</span>';
 
   /* THIS IS THE WHOLE CARD'S HEADER NOW. The strip lives inside the month card, so it names
@@ -4056,7 +4153,7 @@ function paintYearStrip(el,w){
      its own smaller heading under the rule. Two cards each headed as a calendar was the thing
      that read as two calendars. */
   el.innerHTML='<div class="ch"><b>The '+y+' calendar</b><span>'
-      +(over?'The term, in full':'Year '+(spent+1)+' of '+TERM_SEASONS)+'</span></div>'
+      +(over?'The term, in full':'Year '+(spent+1)+' of '+termLen(w))+'</span></div>'
     +'<div class="phrow" style="grid-template-columns:'
       +groups.map((g)=>g.w+'fr').join(' ')+'">'+groups.map((g)=>{
       let cells='';
@@ -4098,18 +4195,18 @@ function paintCalendar(el,w){
     ruled[h.year+':'+h.beat]=(ruled[h.year+':'+h.beat]||0)+1;
   });
   const champs=w.champions||{};
-  const years=[]; for(let y=0;y<TERM_SEASONS;y++) years.push(w.startYear+y);
+  const years=[]; for(let y=0;y<termLen(w);y++) years.push(w.startYear+y);
   /* CLAMPED, because a finished term reads year six of five. `spent` is the number of seasons
      behind you, and on the ending screen that is five out of five: printing spent+1 was
      correct on every screen except the one the player finishes on. `over` is also what stops
      the footer offering a next beat on a term that has none. */
-  const spent=Math.min(w.year-w.startYear,TERM_SEASONS-1);
-  const over=(w.year-w.startYear)>=TERM_SEASONS||!!w.outcome;
+  const spent=Math.min(w.year-w.startYear,termLen(w)-1);
+  const over=(w.year-w.startYear)>=termLen(w)||!!w.outcome;
   const nextBeat=w.beat+1<L.BEATS.length?L.BEATS[w.beat+1]
-    :(w.year+1<=w.startYear+TERM_SEASONS-1?'The '+w.year+' season, then the winter':'The end of the term');
+    :(w.year+1<=w.startYear+termLen(w)-1?'The '+w.year+' season, then the winter':'The end of the term');
 
   el.innerHTML='<div class="ch"><b>The calendar</b><span>'
-      +(over?'The term, in full':'Year '+(spent+1)+' of '+TERM_SEASONS)+'</span></div>'
+      +(over?'The term, in full':'Year '+(spent+1)+' of '+termLen(w))+'</span></div>'
     +'<div class="phases"><i></i>'
       +PHASES.map((p)=>'<i class="'+p[3]+'">'+esc(p[2])+'</i>').join('')+'</div>'
     +years.map((y)=>{
@@ -4133,7 +4230,7 @@ function paintCalendar(el,w){
     }).join('')
     +'<div class="calnow">'
       +(over
-        ? '<b>'+w.startYear+' to '+(w.startYear+TERM_SEASONS-1)+'</b><span class="done">'
+        ? '<b>'+w.startYear+' to '+(w.startYear+termLen(w)-1)+'</b><span class="done">'
           +'five seasons, served</span>'
         : '<b>'+esc(L.BEATS[w.beat])+'</b><span>'+esc(nextBeat)+'</span>')
       +'<em>'+(w.history||[]).filter((h)=>L.isRuling(h)).length
@@ -4231,7 +4328,7 @@ function office(){
      forty-five categories never feels like five years of anybody's life. */
   const win=CAL.windowFor(world.year,world.beat);
   $('off-when').textContent=L.BEATS[world.beat]+' · '+CAL.label(win.from)+' to '
-    +CAL.label(win.to)+' · year '+(world.year-world.startYear+1)+' of '+TERM_SEASONS;
+    +CAL.label(win.to)+' · year '+(world.year-world.startYear+1)+' of '+termLen(world);
   const angry=L.removal(world).angry||[];
   /* A LIT FUSE OUTRANKS AN UNHAPPY ROOM AT THE TOP OF THIS SCREEN, because one of them has
      happened and the other might. It was buried at the bottom of a card three panels down. */
@@ -8257,7 +8354,7 @@ function yearVerdict(angry,w){
 function paintTerm(el,w){
   if(!el) return;
   const champs=w.champions||{}, rat=w.ratings||{};
-  const years=[]; for(let y=0;y<TERM_SEASONS;y++) years.push(w.startYear+y);
+  const years=[]; for(let y=0;y<termLen(w);y++) years.push(w.startYear+y);
   const done=years.filter((y)=>champs[y]);
   if(!done.length){ el.hidden=true; return; }
   el.hidden=false;
@@ -8352,11 +8449,11 @@ function yearEnd(year){
   paintSport($('y-sport'),world,null);
   paintWhip($('y-whip'),world,null);
   paintRoom($('y-room'),world,null);
-  if(done>=TERM_SEASONS){ ending(); return; }
+  if(done>=termLen(world)){ ending(); return; }
   /* NO CARD ON A YEAR IN REVIEW. It states what a TERM turned out to believe, and a term with
      two seasons in it has not turned out to believe anything yet. */
   $('b-term-share').hidden=true;
-  $('b-year-next').textContent='Season '+(done+1)+' of '+TERM_SEASONS;
+  $('b-year-next').textContent='Season '+(done+1)+' of '+termLen(world);
   show('s-year');
 }
 $('b-year-next').onclick=()=>office();
@@ -8455,8 +8552,10 @@ function ending(){
      commissioner is judged on, over 31 rulings", which is accurate and reads like a receipt.
      What a term is actually judged on is what the sport looks like now and who is still
      talking to you, so it says both. */
-  const ruled=world.history.filter((h)=>L.isRuling(h)).length;
-  const titles=Object.keys(world.champions||{}).length;
+  /* THIS TERM'S, not the career's. A renewal keeps the world, so both of these would
+     otherwise be totals across every contract the player has served. See sinceTerm(). */
+  const ruled=sinceTerm(world).filter((h)=>L.isRuling(h)).length;
+  const titles=termTitles(world);
   $('y-say').textContent=(o.say||'')+' '+ruled+' rulings, '+titles
     +(titles===1?' champion crowned, ':' champions crowned, ')
     +(moved?moved+' of the four numbers moved.':'and not one of the four numbers moved.')
@@ -8465,7 +8564,9 @@ function ending(){
   /* WHAT YOU TURNED OUT TO BELIEVE, before the grade rather than after it. See doctrine.js:
      the four arguments this job is actually made of, read off the effect vectors of every
      ruling rather than off where the sport ended up. */
-  const doc=paintDoctrine($('y-doctrine'),world);
+  /* THE TERM'S OWN RULINGS. doctrine.js reads world.history whole, and a renewal keeps it,
+     so a second term would be labelled with the beliefs of the first. */
+  const doc=paintDoctrine($('y-doctrine'),termWorld(world));
   /* AND THEN THE THING THE SENTENCE ABOVE CANNOT DO, which is say whether any of it worked.
      See report.js: six grades, each read off something the player did. */
   const rep=REPORT?REPORT.report(world):null;
@@ -8489,8 +8590,7 @@ function ending(){
   paintWhip($('y-whip'),world,null);
   paintRoom($('y-room'),world,null);
   $('b-term-share').hidden=false;
-  $('b-year-next').textContent='Take the job again';
-  $('b-year-next').onclick=()=>{ newTerm(2025); office(); };
+  paintNext(o);
   $('b-quit').textContent='Back to the game';
   $('b-quit').onclick=()=>{ location.href='/cfb/'; };
   /* THE LAST MORNING, BEFORE THE REPORT CARD RATHER THAN AFTER IT. A verdict read out over
@@ -8506,6 +8606,74 @@ function ending(){
      The ending is finished before this is asked for, and if it never answers the card
      simply has no comparison on it. */
   recordTerm(world,doc);
+}
+
+/* ── WHAT HAPPENS AFTER A TERM ────────────────────────────────────────────────────
+ *
+ * THREE ANSWERS, and which one you get is the whole shape of the two tiers.
+ *
+ *   served, pro     the extension. The sport is kept and the room decides how many
+ *                   years you get, off the standing you finished on.
+ *   removed, pro    a new job. They fired you, so there is no extension to sign; what
+ *                   is on offer is somebody else's sport, from the top.
+ *   free, either    the career ends. One contract is the free tier, and this screen is
+ *                   where that is said, to somebody who has just played five seasons
+ *                   and knows exactly what they would be buying.
+ *
+ * THE FREE WALL IS HERE AND NOT ONLY AT THE GATE, because both are reachable: this is
+ * the one a player meets in the natural course of finishing, and gateCapped() is the one
+ * they meet on the next visit.
+ */
+function paintNext(o){
+  const btn=$('b-year-next');
+  const removed=!!(o&&o.removed);
+  if(isPro()){
+    if(removed){
+      /* NO EXTENSION AFTER A SACKING, which is not a punishment so much as the plain
+         meaning of it: the room voted you out, so there is nothing to renew. The sport
+         you broke stays broken and somebody else inherits it. */
+      btn.textContent='Take another job';
+      btn.onclick=()=>{ newTerm(2025); office(); };
+      return;
+    }
+    const deal=renewalFor(world.meters&&world.meters.standing);
+    btn.textContent='Sign the extension: '+deal.years+' more years';
+    btn.onclick=()=>{ renewTerm(deal.years); office(); };
+    /* THE ROOM'S WORDING, under the button, because the number on its own does not say
+       whether it is a reward or a warning and those are the same button. */
+    const say=$('y-say');
+    if(say) say.textContent=say.textContent+' '+deal.word;
+    return;
+  }
+  /* FREE. The term is the whole of it, and the offer is the continuation rather than a
+     repeat: what Pro buys here is that this sport keeps going. */
+  btn.textContent='Go Pro and keep this sport';
+  btn.onclick=()=>{ freeCareerEnd(); };
+}
+
+/* THE END OF A FREE CAREER, as its own screen. It reuses the wait screen, because it is
+   the same conversation one step further on: you have run out of the free thing and here
+   is what continuing costs. The clock's countdown has nothing to say here, so it comes
+   down and the sentence changes. */
+function freeCareerEnd(){
+  /* REACHED FROM TWO PLACES, and one of them may have no save to read. paintNext() calls
+     it with the term still in hand; the gate calls it on a later visit, where the save may
+     have been cleared or may never have existed on this device. So the sentence only
+     mentions what was served when there is something to count. */
+  const done=world?Math.max(0,world.year-world.startYear):0;
+  $('w-head').innerHTML='The contract <br>is up';
+  $('w-say').textContent=(done?'You served '+done+' season'+(done===1?'':'s')+'. ':'')
+    +'The free tier is one contract, and you have played it. Pro commissioners get renewed, '
+    +'keep the sport they built, and the room decides how many years they get next.';
+  $('w-clock').hidden=true;
+  waitClock(false);
+  $('w-act').innerHTML=(window.RTG_STORE
+    ? window.RTG_STORE.html({signedOut:false})
+    : '<p class="lede">The store could not be loaded. Reload the page and try again.</p>')
+    +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center;'
+    +'margin-top:12px">Back to the game</a>';
+  if(window.RTG_STORE) window.RTG_STORE.wire($('w-act'),{buy:(kind,btn)=>buyBundle(kind,btn)});
+  show('s-wait');
 }
 
 /* ── the card that states a fact ───────────────────────────────────────────────────
@@ -8912,7 +9080,35 @@ function gate(){
      straight to it means the last thing a new player sees before the cutscene is the button
      they pressed rather than a briefing they have not read yet. */
   $('g-start').onclick=()=>{ newTerm(2025); office(); };
+  /* AND THE FREE TIER'S ONE CONTRACT, CHECKED ON THE WAY IN AS WELL AS ON THE WAY OUT.
+     paintNext() ends a free career on the screen where it runs out, which is the version
+     a player meets in the natural course of finishing. This is the OTHER door: come back
+     tomorrow, or on another device, and the gate would otherwise hand out a fresh term.
+     ASKED AFTER THE PAINT, not before it, because the gate must not sit blank waiting on a
+     network call. A capped account sees the offer for the moment it takes to answer, which
+     is the honest way round: the wrong screen briefly beats an empty one, and a free
+     account that is NOT capped never notices anything.
+     RESUMING IS NEVER CAPPED. A save with a term still running is that one contract, and
+     somebody halfway through it has not used it up yet. */
+  if(!isPro()&&!resumable){
+    const C=window.PS_CFB_COMMISH_CLOCK;
+    if(C&&typeof C.state==='function'){
+      const mine=++gatePaint;
+      /* NOT FORCED. The cache is empty on a fresh load and the gate paints more than once
+         on the way through an auth change, so forcing here is two identical requests for
+         one answer that cannot have changed between them. The one case where a stale
+         answer would matter is the walk back from a purchase, and that account is pro by
+         then, so this branch is not reached at all. */
+      C.state().then((st)=>{
+        if(mine!==gatePaint) return;          // the gate repainted under us
+        if(st&&!st.pro&&st.terms>=1) freeCareerEnd();
+      });
+    }
+  }
 }
+/* Every paint of the gate bumps this, so a slow answer cannot take over a screen the
+   player has since moved off. Same token trick the profile sheets use. */
+let gatePaint=0;
 
 /* ── boot ─────────────────────────────────────────────────────────────────────── */
 (async function boot(){

@@ -186,6 +186,47 @@ select ok('state answers for a guest',
 -- Spending is a write and needs an account. The mode is behind the account wall
 -- anyway, so this is the second lock on a door that already has one.
 select throws('a guest spending', 'select * from commish_clock_spend()');
+select throws('a guest finishing a term', 'select * from commish_term_done()');
+
+-- ---------------------------------------------------------------------------
+\echo ''
+\echo '=== a free account gets one contract, and one only ==='
+-- ---------------------------------------------------------------------------
+-- THE OTHER HALF OF THE FREE TIER. The clock paces a term at one season a day;
+-- this ends the career after it. What is bought is the renewal.
+select be(3);
+select ok('a new account has no terms behind it',
+  (select terms::text from commish_clock_state()), '0');
+select ok('finishing one counts it',
+  (select terms::text from commish_term_done()), '1');
+select ok('and the state agrees',
+  (select terms::text from commish_clock_state()), '1');
+-- A TERM THAT ENDED BADLY STILL SPENDS IT. Removed in year two is a finished
+-- contract, and so is walking away. Anything else makes quitting a free reroll.
+select ok('a second finish counts again rather than being ignored',
+  (select terms::text from commish_term_done()), '2');
+-- Finishing a term does not itself cost a day: the season that ended it already
+-- did. So somebody who finishes a term is not also locked out of the game.
+update commish_free_clock set next_at = now() - interval '1 minute'
+ where user_id = who(3);
+select ok('and finishing does not start a wait of its own',
+  (select locked::text from commish_clock_state()), 'false');
+
+-- ---------------------------------------------------------------------------
+\echo ''
+\echo '=== a paying account has no contract limit ==='
+-- ---------------------------------------------------------------------------
+select be(4);
+insert into premium_unlocks (user_id, product, source)
+values (who(4), 'cfb_premium', 'perfect-season');
+select ok('finishing a term reads as pro',
+  (select pro::text from commish_term_done()), 'true');
+select ok('and counts nothing',
+  (select terms::text from commish_term_done()), '0');
+select ok('and wrote no row',
+  (select count(*)::text from commish_free_clock where user_id = who(4)), '0');
+select ok('the state reports no terms either',
+  (select terms::text from commish_clock_state()), '0');
 
 -- ---------------------------------------------------------------------------
 \echo ''
@@ -199,6 +240,9 @@ select ok('the spend takes no arguments',
      and pronargs = 0), '1');
 select ok('and neither does the state',
   (select count(*)::text from pg_proc where proname = 'commish_clock_state'
+     and pronargs = 0), '1');
+select ok('nor the term counter',
+  (select count(*)::text from pg_proc where proname = 'commish_term_done'
      and pronargs = 0), '1');
 -- RLS on the table itself, for anything that reads it directly.
 select ok('the table has row level security on',

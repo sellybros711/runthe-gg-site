@@ -102,9 +102,16 @@ create table if not exists public.commish_free_clock (
   -- Telemetry, and the only reason it is here is to answer "is anybody actually
   -- coming back on day two" without joining anything.
   seasons  int not null default 0,
+  -- FINISHED CONTRACTS, and this one is not telemetry: it is the free tier's other
+  -- limit. A free account plays ONE five season term and the career ends there;
+  -- renewal is the paid half. It lives here rather than in the browser for the same
+  -- reason the clock does, and it is a separate count from `seasons` on purpose,
+  -- because a term that ended early (removed, or walked away) still spends it.
+  terms    int not null default 0,
   first_at timestamptz not null default now(),
   last_at  timestamptz not null default now(),
-  constraint commish_free_clock_seasons_ck check (seasons >= 0)
+  constraint commish_free_clock_seasons_ck check (seasons >= 0),
+  constraint commish_free_clock_terms_ck check (terms >= 0)
 );
 
 alter table public.commish_free_clock enable row level security;
@@ -128,7 +135,7 @@ grant select on public.commish_free_clock to authenticated;
 -- there, which is the same trick ps_eastern_reset() exists for.
 create or replace function public.commish_clock_state()
 returns table (pro boolean, locked boolean, next_at timestamptz,
-               now_at timestamptz, seasons int)
+               now_at timestamptz, seasons int, terms int)
 language plpgsql
 security definer
 set search_path = public
@@ -142,19 +149,19 @@ begin
      screen drawable rather than making it depend on being signed in. Nothing is
      given away: the gate in front of the mode is a separate question. */
   if v_user is null then
-    return query select false, false, null::timestamptz, now(), 0;
+    return query select false, false, null::timestamptz, now(), 0, 0;
     return;
   end if;
   if public.commish_is_pro() then
-    return query select true, false, null::timestamptz, now(), 0;
+    return query select true, false, null::timestamptz, now(), 0, 0;
     return;
   end if;
   select * into v_row from public.commish_free_clock where user_id = v_user;
   if not found then
-    return query select false, false, null::timestamptz, now(), 0;
+    return query select false, false, null::timestamptz, now(), 0, 0;
   else
     return query select false, (v_row.next_at > now()), v_row.next_at, now(),
-                        v_row.seasons;
+                        v_row.seasons, v_row.terms;
   end if;
 end $$;
 
@@ -168,7 +175,7 @@ end $$;
 -- means the wait always has a season behind it.
 create or replace function public.commish_clock_spend()
 returns table (ok boolean, pro boolean, locked boolean, next_at timestamptz,
-               now_at timestamptz, seasons int)
+               now_at timestamptz, seasons int, terms int)
 language plpgsql
 security definer
 set search_path = public
@@ -187,7 +194,7 @@ begin
      no row at all, so cancelling a subscription cannot uncover a stale clock
      that has been quietly ticking behind the paid tier the whole time. */
   if public.commish_is_pro() then
-    return query select true, true, false, null::timestamptz, now(), 0;
+    return query select true, true, false, null::timestamptz, now(), 0, 0;
     return;
   end if;
 
@@ -202,7 +209,8 @@ begin
    where user_id = v_user for update;
 
   if v_row.next_at > now() then
-    return query select false, false, true, v_row.next_at, now(), v_row.seasons;
+    return query select false, false, true, v_row.next_at, now(), v_row.seasons,
+                        v_row.terms;
     return;
   end if;
 
@@ -221,17 +229,73 @@ begin
    where c.user_id = v_user
    returning c.next_at, c.seasons into v_next, v_seas;
 
-  return query select true, false, true, v_next, now(), v_seas;
+  return query select true, false, true, v_next, now(), v_seas,
+                      (select c2.terms from public.commish_free_clock c2
+                        where c2.user_id = v_user);
 end $$;
 
--- ---------- 6) grants ------------------------------------------------------
+-- ---------- 6) a finished contract -----------------------------------------
+-- Called once when a term ends, however it ended. The free tier gets ONE, and
+-- what is bought is the renewal: a paying commissioner signs an extension and
+-- keeps the sport they built, a free one reaches the end of a whole five season
+-- term and the career stops there.
+--
+-- IT COUNTS A TERM THAT ENDED BADLY TOO. Removed in year two is a finished
+-- contract, and so is walking away. Anything else makes quitting a free reroll,
+-- which is the same hole metering starts would have left in the clock.
+--
+-- IDEMPOTENCE IS THE CALLER'S, NOT THIS FUNCTION'S, and that is a deliberate
+-- split. The page already guards logTerm against running twice for one term
+-- (`careerLogged` on the save), because a reload of a finished ending must not
+-- file a second row on the career shelf. This is the same event, so it is
+-- guarded by the same flag in the same place. Counting here as well would need a
+-- term id this table has no reason to know.
+create or replace function public.commish_term_done()
+returns table (pro boolean, terms int)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_terms int;
+begin
+  if v_user is null then
+    raise exception 'sign in to play';
+  end if;
+
+  /* A paying account is never written to this table, the same rule the spend
+     follows. Their terms are not counted because nothing is capped. */
+  if public.commish_is_pro() then
+    return query select true, 0;
+    return;
+  end if;
+
+  /* next_at is now() rather than a wait: finishing a term does not itself cost a
+     day. The season that ended it already did, through commish_clock_spend(). */
+  /* QUALIFIED, for the reason the spend's update is: `terms` is both an OUT
+     parameter of this function and a column of this table, so a bare
+     `returning terms` is ambiguous. It creates cleanly and throws the first time
+     a term ends, which is the worst possible moment to find out. */
+  insert into public.commish_free_clock as c (user_id, next_at, terms)
+  values (v_user, now(), 1)
+  on conflict (user_id)
+    do update set terms = c.terms + 1, last_at = now()
+  returning c.terms into v_terms;
+
+  return query select false, v_terms;
+end $$;
+
+-- ---------- 7) grants ------------------------------------------------------
 revoke all on function public.commish_free_wait() from public;
 revoke all on function public.commish_is_pro() from public;
 revoke all on function public.commish_clock_state() from public;
 revoke all on function public.commish_clock_spend() from public;
+revoke all on function public.commish_term_done() from public;
 grant execute on function public.commish_free_wait() to anon, authenticated;
 grant execute on function public.commish_is_pro() to authenticated;
 grant execute on function public.commish_clock_state() to anon, authenticated;
 grant execute on function public.commish_clock_spend() to authenticated;
+grant execute on function public.commish_term_done() to authenticated;
 
 notify pgrst, 'reload schema';

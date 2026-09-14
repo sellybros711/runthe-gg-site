@@ -200,6 +200,44 @@ costs a player who was engaged enough to come back. `clock.js`'s header argues i
 shorten `commish_free_wait()` to about twenty hours rather than moving to a calendar day: a
 shorter wait walks the window backwards into the player's evening instead of out of it.
 
+### A term is a contract, and Pro gets renewed
+
+**A TERM IS NO LONGER FIVE SEASONS AND THEN THE MODE IS OVER.** "Take the job again" built a
+brand new 2025 and threw the sport away, which is the one thing this mode is about. A pro
+account that serves its term is offered an EXTENSION that keeps the sport: the playoff it
+expanded, the money it moved, the conferences it let die, the room that is angry with it.
+
+**The length is the verdict on the last term**, read off `meters.standing` through
+`RENEWALS`: 3 years on a short leash up to 8 for a room that would have signed you for life.
+A sacking is not renewed at all, because the room voted you out and there is nothing to
+extend; what is offered there is somebody else's sport from the top.
+
+**`TERM_SEASONS` is now only the FIRST contract.** Anything asking how long the current one
+is must call `termLen(w)`, which reads `w.termSeasons`. A save written before renewals has
+none and is a five season term, which is what it was signed as.
+
+**A renewal keeps the world, so four things need a term floor**, and `report.js` is not one
+of them: it already scopes everything through `years(world)`, which is `startYear` to
+`year`. The four that read the world whole are the doctrine (`sinceTerm`), the rulings
+count, the titles count (`termTitles`) and the career shelf row. Left alone, term three
+would be graded on the work of terms one and two. They are scoped BY YEAR rather than by
+clearing the record, because history entries carry their year, champions are keyed by year,
+and `situation.js` reads last year's champion across the boundary so a new contract opens
+with the sport's actual memory.
+
+**A free account gets ONE contract**, counted by `commish_term_done()` in the same
+migration. It is filed from `logTerm()`, which already guards a term against being recorded
+twice (`careerLogged` lives on the save, so it survives the reload of a finished ending).
+The cap is enforced at BOTH doors: `paintNext()` ends the career on the screen where it runs
+out, and the gate checks on the next visit, because otherwise coming back tomorrow hands out
+a fresh term. **Resuming is never capped**: a term still running is that one contract.
+
+**A walk that detects the ending by the NEXT button's label will break.** It says four
+different things now. `cfb/build/test/commish/test_ending.mjs` keys on `#b-term-share` being
+shown instead, which is structural; the old string check silently stopped recognising the
+ending, clicked through it and started a fresh term, and reported seven terms and seven
+removals rather than one.
+
 `/assets/store.js` **injects its stylesheet at load, not on first use**, and that is a fix
 rather than a preference. The block styles more than the offer: `.pw-pill` beside an account
 name and `.pw-line` on the receipt come out of it, and neither goes through `html()` or

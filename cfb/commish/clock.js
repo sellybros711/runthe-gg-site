@@ -42,6 +42,7 @@
  *   PS_CFB_COMMISH_CLOCK.spend()        take a season, and start the wait
  *   PS_CFB_COMMISH_CLOCK.remaining()    milliseconds left, off the SERVER's clock
  *   PS_CFB_COMMISH_CLOCK.countdown()    that, as "5h 12m"
+ *   PS_CFB_COMMISH_CLOCK.termDone()     a contract ended, count it against the free one
  */
 (function () {
   'use strict';
@@ -100,7 +101,8 @@
 
   /* THE OPEN DOOR, and the only place null becomes a decision. Written as a function
      rather than a constant so nobody can hold a reference to it and mutate the cache. */
-  const OPEN = () => ({ pro: false, locked: false, nextAt: null, seasons: 0, offline: true });
+  const OPEN = () => ({ pro: false, locked: false, nextAt: null, seasons: 0, terms: 0,
+    offline: true });
 
   function shape(j) {
     const r = row(j);
@@ -117,6 +119,9 @@
       locked: !!r.locked,
       nextAt: r.next_at ? Date.parse(r.next_at) : null,
       seasons: Number(r.seasons) || 0,
+      /* FINISHED CONTRACTS. The free tier gets one; what is bought is the renewal. Pro
+         always reads zero, because nothing is counted for an account with no cap. */
+      terms: Number(r.terms) || 0,
       skew: isFinite(serverNow) ? serverNow - Date.now() : 0,
       offline: false,
     };
@@ -126,9 +131,20 @@
      each paint must not be a round trip. `force` is for after a spend and after a
      purchase, where the cached answer is precisely the wrong one. */
   let cached = null;
+  /* THE REQUEST IN FLIGHT IS CACHED TOO, not just the answer. Caching only the result
+     looks right and is not: `cached` is set when the promise RESOLVES, so two callers in
+     the same tick both find it null and both go to the network. That is exactly what the
+     gate does, because it paints more than once on the way through an auth change, and the
+     symptom is two identical requests for one answer rather than anything visibly wrong.
+     Cleared on settle so a later caller gets a fresh one. */
+  let inflight = null;
   function state(force) {
     if (cached && !force) return Promise.resolve(cached);
-    return call('commish_clock_state').then((j) => { cached = shape(j); return cached; });
+    if (inflight && !force) return inflight;
+    inflight = call('commish_clock_state').then((j) => {
+      cached = shape(j); inflight = null; return cached;
+    }, (e) => { inflight = null; throw e; });
+    return inflight;
   }
 
   /* Take a season. Resolves the state AFTER the spend, with `ok` saying whether it was
@@ -145,9 +161,29 @@
     });
   }
 
+  /* A TERM ENDED. Counted for a free account and ignored for a paying one, by the server
+     rather than by this call. Resolves the new state so the ending screen can draw what
+     comes next without a second round trip.
+     NOT GUARDED HERE. The page already stops one term being filed twice (`careerLogged` on
+     the save, which survives the reload of a finished ending), and that is the same event,
+     so the guard belongs in the one place that knows a term's identity. A second call is a
+     second contract as far as this module is concerned, and that is correct. */
+  function termDone() {
+    return call('commish_term_done').then((j) => {
+      const r = row(j);
+      /* Unreachable is the open door here as everywhere else, but the shape differs: this
+         one has no clock in its answer, so the cached state is left alone rather than
+         replaced with a half empty one. A term that could not be filed is a term the next
+         successful state() call will simply not know about, which is the open direction. */
+      if (!r) return { pro: false, terms: 0, offline: true };
+      if (cached) cached.terms = Number(r.terms) || 0;
+      return { pro: !!r.pro, terms: Number(r.terms) || 0, offline: false };
+    });
+  }
+
   /* Forget everything, for a sign out or a switch of account on the same tab. Without
      this the next account inherits the last one's clock until something forces a read. */
-  function forget() { cached = null; }
+  function forget() { cached = null; inflight = null; }
 
   /* Milliseconds until the next season, through the measured skew, floored at zero. */
   function remaining(st) {
@@ -172,7 +208,7 @@
 
   const api = {
     API_VERSION: 1,
-    state: state, spend: spend, forget: forget,
+    state: state, spend: spend, termDone: termDone, forget: forget,
     remaining: remaining, countdown: countdown,
     get cached() { return cached; },
   };

@@ -105,10 +105,12 @@ async function job(p) {
 const nextYear = (p, y) => p.evaluate((yy) => window.PS_CFB_COMMISH_TEST.jump(0, yy), y);
 
 const iso = (ms) => new Date(Date.now() + ms).toISOString();
-const LOCKED = (hrs) => ({ ok: false, pro: false, locked: true,
-  next_at: iso(hrs * 3600000), now_at: new Date().toISOString(), seasons: 1 });
-const FREE = () => ({ ok: true, pro: false, locked: true,
-  next_at: iso(24 * 3600000), now_at: new Date().toISOString(), seasons: 1 });
+const LOCKED = (hrs, terms) => ({ ok: false, pro: false, locked: true,
+  next_at: iso(hrs * 3600000), now_at: new Date().toISOString(), seasons: 1,
+  terms: terms || 0 });
+const FREE = (terms) => ({ ok: true, pro: false, locked: true,
+  next_at: iso(24 * 3600000), now_at: new Date().toISOString(), seasons: 1,
+  terms: terms || 0 });
 
 /* ── the first season is free ────────────────────────────────────────────────────── */
 {
@@ -120,8 +122,10 @@ const FREE = () => ({ ok: true, pro: false, locked: true,
   /* NOT ONE ROUND TRIP, which is the point of world.cleared. Taking the job pays for the
      season it starts on, so the very first thing a new player does is not a request that
      could hang, fail, or cost them a day. */
-  ok('and the clock was never asked', p.calls.spend === 0 && p.calls.state === 0,
-    'spend=' + p.calls.spend + ' state=' + p.calls.state);
+  /* NO SEASON IS CHARGED. The gate does ask the clock once, to check the free tier's one
+     contract limit, and that is a read rather than a spend. */
+  ok('and no season was charged for it', p.calls.spend === 0, p.calls.spend);
+  ok('the gate read the clock once, and only once', p.calls.state === 1, p.calls.state);
   ok('no page errors', p.errs.length === 0, p.errs[0]);
   await p.close();
 }
@@ -280,6 +284,171 @@ const FREE = () => ({ ok: true, pro: false, locked: true,
   await p.waitForTimeout(900);
   ok('the office opens', await on(p, 's-office'));
   ok('and no wall was left on screen', !(await on(p, 's-wait')));
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+/* ── the contract, and what comes after it ───────────────────────────────────────────────
+ *
+ * A TERM USED TO BE FIVE SEASONS AND THEN THE MODE WAS OVER: "take the job again" built a
+ * fresh 2025 and threw away the sport, which is the one thing this mode is about. A pro
+ * account now signs an extension that KEEPS the sport, for a number of years the room
+ * decides off the standing they finished on. A free account gets one contract.
+ *
+ * ending() is reached through the test hook rather than by playing five seasons, the same
+ * way test_ending does it. */
+/* ending() plays the last morning as a cutscene before it shows the screen, so a walk
+   that goes straight to reading the button finds it behind a scene. Same skip every other
+   suite here does. */
+async function endTerm(p) {
+  await p.evaluate(() => window.PS_CFB_COMMISH_TEST.ending());
+  await p.waitForTimeout(400);
+  for (let i = 0; i < 8; i++) {
+    if (!(await on(p, 's-scene'))) break;
+    await p.click('#b-scene-skip').catch(() => {});
+    await p.waitForTimeout(320);
+  }
+  await p.waitForTimeout(300);
+}
+
+{
+  const p = await open('a pro term ends in an extension, not a reset',
+    { products: ['cfb_premium'], clock: () => LOCKED(9) });
+  await job(p);
+  /* Change the sport, so the renewal can be checked for keeping it rather than for
+     merely continuing. A sixteen team playoff is the loudest single thing to move. */
+  await p.evaluate(() => window.PS_CFB_COMMISH_TEST.plant('playoff-format', { option: 'expand-16' }));
+  /* SERVE THE TERM, or the renewal starts on the same year it started on and the check
+     below that the sport did not reset to 2025 proves nothing. Five seasons on. */
+  await nextYear(p, 2030);
+  await p.waitForTimeout(400);
+  const before = await p.evaluate(() => {
+    const w = window.PS_CFB_COMMISH_TEST.world();
+    return { playoff: JSON.stringify(w.playoff), start: w.startYear, year: w.year };
+  });
+  await endTerm(p);
+  await p.waitForTimeout(700);
+  const label = await txt(p, '#b-year-next');
+  ok('the offer is an extension', /Sign the extension/.test(label), label);
+  ok('and it names a number of years', /\d+ more years/.test(label), label);
+  await p.click('#b-year-next');
+  await p.waitForTimeout(800);
+  const after = await p.evaluate(() => {
+    const w = window.PS_CFB_COMMISH_TEST.world();
+    return { playoff: JSON.stringify(w.playoff), start: w.startYear, year: w.year,
+      term: w.term, len: w.termSeasons, outcome: w.outcome, logged: w.careerLogged };
+  });
+  ok('it opens the office', await on(p, 's-office'));
+  /* THE WHOLE POINT. The sport is the one you built, not a fresh 2025. */
+  ok('the sport is kept', after.playoff === before.playoff, after.playoff);
+  ok('and the year did not go back to 2025', after.year > 2025, String(after.year));
+  ok('the new contract starts now', after.start === after.year,
+    after.start + ' vs ' + after.year);
+  ok('it is the second term', after.term === 2, String(after.term));
+  ok('with a length of its own', after.len >= 3 && after.len <= 8, String(after.len));
+  /* THE SHELF GUARD HAS TO BE RELEASED WITH THE CONTRACT, or every term after the first
+     is missing from the career. */
+  ok('and the career shelf can file the next one', !after.logged, String(after.logged));
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+{
+  /* THE LENGTH IS THE VERDICT ON THE LAST TERM. Standing is set by hand at both ends of
+     the ladder, because the interesting claim is that the two differ. */
+  const p = await open('the room decides how many years, off the standing',
+    { products: ['cfb_premium'], clock: () => LOCKED(9) });
+  await job(p);
+  await p.evaluate(() => { window.PS_CFB_COMMISH_TEST.world().meters.standing = 95; });
+  await endTerm(p);
+  await p.waitForTimeout(600);
+  const high = await txt(p, '#b-year-next');
+  await p.close();
+
+  const q = await open('  and a bad one gets a short leash',
+    { products: ['cfb_premium'], clock: () => LOCKED(9) });
+  await job(q);
+  await q.evaluate(() => { window.PS_CFB_COMMISH_TEST.world().meters.standing = 5; });
+  await endTerm(q);
+  await q.waitForTimeout(600);
+  const low = await txt(q, '#b-year-next');
+  const yrs = (t) => Number((t.match(/(\d+) more years/) || [])[1] || 0);
+  ok('a room that loves you signs a longer deal', yrs(high) > yrs(low),
+    yrs(high) + ' vs ' + yrs(low));
+  ok('and both are real contracts', yrs(low) >= 3 && yrs(high) <= 8,
+    yrs(low) + '..' + yrs(high));
+  /* AND THE NUMBER IS EXPLAINED, because "3 more years" and "8 more years" are the same
+     button and opposite news. */
+  ok('the room says which it is', /leash|watching/i.test(await txt(q, '#y-say')));
+  ok('no page errors', q.errs.length === 0, q.errs[0]);
+  await q.close();
+}
+
+{
+  /* SACKED IS NOT RENEWED. The room voted you out, so there is nothing to extend, and the
+     offer is somebody else's sport from the top. */
+  const p = await open('a sacking is not an extension',
+    { products: ['cfb_premium'], clock: () => LOCKED(9) });
+  await job(p);
+  await p.evaluate(() => {
+    const w = window.PS_CFB_COMMISH_TEST.world();
+    w.outcome = { removed: true, reason: 'voted', say: 'They voted you out.' };
+  });
+  await endTerm(p);
+  await p.waitForTimeout(700);
+  const label = await txt(p, '#b-year-next');
+  ok('no extension is offered', !/extension/i.test(label), label);
+  ok('a new job is', /another job/i.test(label), label);
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+{
+  /* THE FREE TIER IS ONE CONTRACT. The offer at the end is the continuation rather than
+     a repeat: what Pro buys is that THIS sport keeps going. */
+  const p = await open('a free career ends with the term', { clock: () => FREE() });
+  await job(p);
+  await endTerm(p);
+  await p.waitForTimeout(700);
+  const label = await txt(p, '#b-year-next');
+  ok('there is no extension to sign', !/extension/i.test(label), label);
+  ok('and no fresh term either', !/take the job|another job/i.test(label), label);
+  ok('the offer is to keep this sport', /Go Pro and keep this sport/.test(label), label);
+  await p.click('#b-year-next');
+  await p.waitForTimeout(700);
+  ok('it lands on the end of the career', await on(p, 's-wait'));
+  ok('which says the free tier is one contract',
+    /free tier is one contract/.test(await txt(p, '#w-say')), await txt(p, '#w-say'));
+  /* NO COUNTDOWN HERE. There is no next season to wait for, and a clock ticking toward
+     one would be a promise the tier does not keep. */
+  ok('and shows no countdown', await p.$eval('#w-clock', (e) => e.hidden));
+  ok('the offer is on it', (await has(p, '#b-buy-ps')) && (await has(p, '#b-buy-rtb')));
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+{
+  /* AND THE GATE HOLDS IT TOO, which is the other door. Come back tomorrow, or on another
+     device, and the gate would otherwise hand out a fresh term. The clock answers terms:1
+     from the first call here, standing in for an account that finished one yesterday. */
+  const p = await open('the gate does not hand a capped account a second term',
+    { clock: () => FREE(1) });
+  await p.waitForTimeout(1200);
+  ok('the career end screen takes over the gate', await on(p, 's-wait'));
+  ok('and there is no way to take the job', !(await on(p, 's-gate')));
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+{
+  /* A TERM STILL RUNNING IS NOT CAPPED. Somebody halfway through their one contract has
+     not used it up, and a gate that refused them would strand a save mid term. */
+  const p = await open('a half played term is still resumable', { clock: () => FREE(1) });
+  await job(p);
+  await p.reload({ waitUntil: 'domcontentloaded' });
+  await p.waitForTimeout(2600);
+  ok('the gate offers to resume', !!(await p.$('#g-resume')));
+  ok('and did not end the career', !(await on(p, 's-wait')));
   ok('no page errors', p.errs.length === 0, p.errs[0]);
   await p.close();
 }
