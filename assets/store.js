@@ -338,12 +338,17 @@
     '<span class="pw-was">$'+WORTH+'</span>'+
     '<span class="pw-save">Save $'+Math.round(WORTH-RTB)+'</span></div>'+
     '<p class="pw-note" style="margin:9px 0 2px">Everything above, plus two more games.</p>'+
-    /* "Everything above" carries the two Lifetime access lines with it, so the two lines
-    this card adds have to say plainly that they are not that. The Arcade Card is twelve
-    months and then it stops. It is still not a subscription: nothing renews it and
-    nothing charges again, which is the half a buyer is actually anxious about. */
-    pwGroupText('arcade','1 year of the Arcade Card','12 months. It does not renew.')+
-    pwGroupText('tour','100,000 coins and one Tour Pack','Tour is the mid pack tier. Yours to spend.')+
+    /* "Everything above" carries the two Lifetime access lines with it, so the Arcade line
+    has to say plainly that it is not one. The term column is for the TERM and nothing else:
+    "12 months" was already said by the line above it, and what a buyer is anxious about is
+    not the length, it is whether a card will be sold to them again next year without being
+    asked. So the column answers only that.
+    THE TOUR LINE CARRIES NO TERM AT ALL, because it has none. Coins and a pack are handed
+    over once and then they are just yours, and a column that reads "Lifetime access,
+    No auto-renewal, Tour is the mid pack tier" is a column that has stopped meaning one
+    thing. What the Tour tier is worth belongs in Run The Tour, not on a receipt line. */
+    pwGroupText('arcade','1 year of the Arcade Card','No auto-renewal')+
+    pwGroupText('tour','100,000 coins and one Tour Pack')+
     '<button class="btn" id="b-buy-rtb" style="width:100%;margin-top:14px">'+
     (o.signedOut?'Sign in to get it':'Get Run The Bundle')+'</button>'+
     '</div>'+
