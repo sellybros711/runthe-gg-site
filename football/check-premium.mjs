@@ -343,7 +343,7 @@ ok('an owner is told about no limit at all', !/One run a day/i.test(grace.ownerR
 
 console.log('\nTHE SEASON RULE, ONCE 101 IS DEPLOYED');
 /*
- * FIVE SEASONS A DAY ON ONE RUN, not one run a day. The unit arrives on the state row, so
+ * THREE SEASONS A DAY ON ONE RUN, not one run a day. The unit arrives on the state row, so
  * every screen below is driven by setting it and nothing else: that is the contract between
  * 101_dynasty_seasons.sql and this page, and it is the thing that would break silently.
  *
@@ -364,22 +364,22 @@ const seas = await t.page.evaluate(async () => {
     return { text: (box.innerText || '').replace(/\s+/g, ' '), grace: !!box.querySelector('.dgrace') };
   };
   const out = {};
-  out.capped = sheet({ used: 5, allowance: 5 });
-  out.boss = sheet({ used: 6, allowance: 6 });
-  out.fired = sheet({ used: 2, allowance: 5, ended: true });
+  out.capped = sheet({ used: 3, allowance: 3 });
+  out.boss = sheet({ used: 4, allowance: 4 });
+  out.fired = sheet({ used: 1, allowance: 3, ended: true });
   /* The boss toast, which cannot say "another run" when no run was ever at risk. */
-  T.setDaily('dynasty', day({ used: 5, allowance: 5 }));
+  T.setDaily('dynasty', day({ used: 3, allowance: 3 }));
   T.stubGrace();
   document.getElementById('toast').textContent = '';
   await T.dailyGrace('dynasty', 'boss');
   out.said = document.getElementById('toast').textContent;
   /* And the rules, before anybody starts. */
-  T.setDaily('dynasty', day({ used: 0, allowance: 5 }));
+  T.setDaily('dynasty', day({ used: 0, allowance: 3 }));
   const d = document.createElement('div');
   d.innerHTML = T.dynastyRulesHTML('go');
   out.rules = (d.innerText || '').replace(/\s+/g, ' ');
   /* THE DOOR, with the day ended and no run to resume. */
-  T.setDaily('dynasty', day({ used: 2, allowance: 5, ended: true }));
+  T.setDaily('dynasty', day({ used: 1, allowance: 3, ended: true }));
   document.getElementById('sheet').classList.remove('on');
   document.getElementById('sheet-in').dataset.kind = '';
   T.beginDynastyDraft();
@@ -391,7 +391,7 @@ const seas = await t.page.evaluate(async () => {
   return out;
 });
 ok('a spent day names the seasons, not a run',
-  /Out of seasons today/i.test(seas.capped.text) && /all 5 of your free seasons/i.test(seas.capped.text),
+  /Out of seasons today/i.test(seas.capped.text) && /all 3 of your free seasons/i.test(seas.capped.text),
   seas.capped.text.slice(0, 120));
 ok('and says the dynasty is still there',
   /saved exactly where it stands/i.test(seas.capped.text), seas.capped.text.slice(0, 160));
@@ -404,7 +404,7 @@ ok('and is offered no boss battle, having no run to play one in', seas.fired.gra
 ok('a boss win announces a season, not a run',
   /one more season today/i.test(seas.said), seas.said);
 ok('the rules sheet states the budget and the firing',
-  /Up to 5 seasons a day/i.test(seas.rules) && /Getting fired ends the day/i.test(seas.rules)
+  /Up to 3 seasons a day/i.test(seas.rules) && /Getting fired ends the day/i.test(seas.rules)
     && !/One run a day/i.test(seas.rules), seas.rules.slice(0, 200));
 ok('an ended day sends the door to the spent sheet rather than the draft',
   seas.shut === 'daily' && seas.onDraft === false, seas.shut + ' onDraft=' + seas.onDraft);
@@ -797,7 +797,7 @@ console.log('\nA SEASON IS WHAT COSTS, AND IT COSTS ONCE');
     const at = new Date(Date.now() + 3600e3).toISOString();
     const n = T.countSpends();
     const drive = (unit) => {
-      T.setDaily('dynasty', { used: 0, allowance: 5, resetsAt: at, unit: unit, ended: false });
+      T.setDaily('dynasty', { used: 0, allowance: 3, resetsAt: at, unit: unit, ended: false });
       T.setRun({ dynasty: true, seasonNo: 1, roster: [], phase: 'season' });
       const before = n.c;
       const r = T.getRun();
@@ -809,13 +809,13 @@ console.log('\nA SEASON IS WHAT COSTS, AND IT COSTS ONCE');
     };
     const out = { season: drive('season'), run: drive('run') };
     /* AND THE DOOR OUT OF THE RESULTS SCREEN, which is where a spent day stops a dynasty. */
-    T.setDaily('dynasty', { used: 5, allowance: 5, resetsAt: at, unit: 'season', ended: false });
-    T.setRun({ dynasty: true, seasonNo: 5, roster: [], phase: 'over' });
+    T.setDaily('dynasty', { used: 3, allowance: 3, resetsAt: at, unit: 'season', ended: false });
+    T.setRun({ dynasty: true, seasonNo: 3, roster: [], phase: 'over' });
     document.getElementById('sheet').classList.remove('on');
     document.getElementById('sheet-in').dataset.kind = '';
     T.dynToWinter();
     out.shut = document.getElementById('sheet-in').dataset.kind;
-    T.setDaily('dynasty', { used: 4, allowance: 5, resetsAt: at, unit: 'season', ended: false });
+    T.setDaily('dynasty', { used: 2, allowance: 3, resetsAt: at, unit: 'season', ended: false });
     document.getElementById('sheet').classList.remove('on');
     document.getElementById('sheet-in').dataset.kind = '';
     /* With a season left it must go THROUGH, and this run has no engine state behind it, so

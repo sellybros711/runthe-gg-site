@@ -7756,7 +7756,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=9"></script>
+<script src="/assets/store.js?v=10"></script>
 <script defer src="auth.js?v=5"></script>
 <script>
 (function(){
@@ -9655,7 +9655,7 @@ $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
  * the layout, out of the tab order and invisible to a screen reader in one attribute. */
 /* ── THE DAILY ALLOWANCE, ON THE PAGE ────────────────────────────────────────────────
  *
- * Five Dynasty SEASONS a day, and one Trade Machine RUN. The count itself is the server's
+ * Three Dynasty SEASONS a day, and one Trade Machine RUN. The count itself is the server's
  * and lives in 101_dynasty_seasons.sql, which explains why it cannot live here. This is the
  * half that reads it, spends it at the right moment, and says so on the button.
  *
@@ -9737,7 +9737,7 @@ const dailyShut=(mode)=>dailyOn()&&(dailyEnded(mode)||dailyLeft(mode)<=0);
 /* What the copy says when it has to name the budget. Off the server's own number so the
    page is never the second place the allowance is written down, with the shipped value as
    the fallback for a page that has not been answered yet. */
-const DYN_DAY_SEASONS=5;
+const DYN_DAY_SEASONS=3;
 const dailyAllow=(mode)=>{
   const s=dailyState[mode];
   return (s&&s.allowance!=null)?s.allowance:(mode==='dynasty'?DYN_DAY_SEASONS:1);
@@ -9789,7 +9789,7 @@ async function dailySpend(mode){
      'fired'  kept only for a database still on 100_daily_grace_reasons.sql, where it is the
               season one mercy. Under season metering the server accepts it and grants
               nothing, because the mercy became the reroll button the moment a day was worth
-              five seasons instead of one run.
+              three seasons instead of one run.
 
    Calling the same reason twice costs nothing and grants nothing. */
 /* WHAT A GRANT IS CALLED WHEN IT IS HANDED OVER. Something given and not mentioned is
@@ -9847,8 +9847,8 @@ function dailyClock(on){
      the budget is gone   the dynasty is saved and the next season is on the clock
      the run is over      a firing, which ends the day whatever is left in it
      one run a day        the Trade Machine, and Dynasty on a database still on 100
-   Saying "that is today's run" to somebody mid-dynasty who has just played five seasons is
-   wrong twice over: they played five, and the run they are worried about is not going
+   Saying "that is today's run" to somebody mid-dynasty who has just played three seasons is
+   wrong twice over: they played three, and the run they are worried about is not going
    anywhere. */
 function dailySpentSheet(mode){
   const at=dailyResetsAt(mode), cd=at?dailyCountdown(at):null;
@@ -10568,7 +10568,7 @@ function ensureDynastyButton(){
        Only ever reached with no save, so there is no run waiting on the other side of the
        clock and the line is about starting rather than resuming. Tapping opens the explainer
        rather than doing nothing, because a button that ignores you reads as broken.
-       THE TAG FOLLOWS THE UNIT, so "Used today" is never said about five seasons. The line
+       THE TAG FOLLOWS THE UNIT, so "Used today" is never said about three seasons. The line
        under it says New run either way on this branch, because there is no saved dynasty for
        the clock to be holding: whether the budget ran out or a firing ended the day, what
        lands at the reset is a fresh one. */
@@ -10644,7 +10644,7 @@ function beginDynastyDraft(opts){
    * built and could not be reached, which is the shape of bug that passes every test,
    * because a store opening is not an error.
    *
-   * The rule is five free SEASONS a day for anybody signed in, plus one more for winning a
+   * The rule is three free SEASONS a day for anybody signed in, plus one more for winning a
    * boss battle, spent on whatever run they are in. A firing ends the day. All of it lives in
    * supabase/101_dynasty_seasons.sql, ps_attempts_state adds it up, and the boss claim is
    * already wired (see dailyGrace on a boss win). Buying the bundle removes the limit rather
@@ -10800,9 +10800,12 @@ function dynastyRulesHTML(go,opts){
       ? (dailySeasons('dynasty')
         ? '<div class="eyebrow" style="margin:16px 0 8px">Seasons a day</div>'+
           '<ul class="modenotes">'+
+            /* NO ORDINAL HERE. "Play the 5th" reads fine and "the 3th" does not, and the
+               number comes off the server, so the sentence has to work for whatever it
+               answers. "Spend them all" needs no agreement with anything. */
             '<li><b>Up to '+dailyAllow('dynasty')+' seasons a day, free.</b> One run, carried '+
-              'as far as you can take it. Play the '+dailyAllow('dynasty')+'th and your '+
-              'dynasty waits exactly where it is until the next day.</li>'+
+              'as far as you can take it. Spend them all and your dynasty waits exactly where '+
+              'it is until the next day.</li>'+
             '<li><b>Getting fired ends the day.</b> The run is over and the next one starts '+
               'after the reset. Every season you banked still counts.</li>'+
             '<li><b>Win a boss battle, get another season.</b> Reach season '+
@@ -18111,7 +18114,7 @@ function paintOwner(){
      that is still going, and this one is over: leaving it on disk would put "Continue" on
      the front page over a run whose only remaining move is Draft again. */
   if(v.fired) dynClear();
-  /* A FIRING ENDS THE DAY, and that is the rule the whole free tier turns on. Five seasons a
+  /* A FIRING ENDS THE DAY, and that is the rule the whole free tier turns on. Three seasons a
      day with a firing costing nothing would make the cheapest way to spend them a string of
      fresh season ones, rerolled until one drafts well, which is both the thing the meter
      exists to discourage and the worst possible way to meet this mode. So the run ending ends
@@ -18120,7 +18123,7 @@ function paintOwner(){
      THE OLD MERCY IS THE OTHER BRANCH, and it belongs to the old rule rather than to this
      one. Where a day was a single run, a run that died in its first season was worth handing
      back: being shut out fifteen minutes after arriving is the worst first impression the
-     mode can make, and the economy takes several seasons to make any sense. A budget of five
+     mode can make, and the economy takes several seasons to make any sense. A budget of three
      removes the problem it solved. Kept for a database still on 100_daily_grace_reasons.sql,
      where it is still the rule being enforced. */
   if(v.fired&&run&&run.dynasty){

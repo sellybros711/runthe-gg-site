@@ -318,7 +318,7 @@
     thing worth leading with. "Lifetime access" was not true of both, and each line
     below now carries its own term instead. */
     /* SEASONS RATHER THAN RUNS, because seasons are what the free tier counts. A free
-    account gets five dynasty seasons a day and unlimited runs, so "unlimited dynasty runs"
+    account gets three dynasty seasons a day and unlimited runs, so "unlimited dynasty runs"
     sold something the reader already had and stayed quiet about the thing they were
     actually hitting. See 101_dynasty_seasons.sql. */
     'Unlimited dynasty seasons, no daily limit, and every Pro mode. '+
@@ -359,7 +359,7 @@
        Trade Machine", which was wrong twice. Nothing in the game is called "Franchise": the
        mode is One Franchise, and its quick draft half is FREE to any signed in account, so
        the line was selling something a buyer already had. And it said nothing about what
-       changes, which is the limit: all three of these are playable without paying, on five
+       changes, which is the limit: all three of these are playable without paying, on three
        dynasty seasons a day and one Trade Machine run. What is bought is that the counting
        stops. */
     pwGroupText('ps','Unlimited play: Dynasty, One Franchise Dynasty, Trade Machine',

@@ -141,7 +141,7 @@ copy anywhere may imply it does, and the receipt has to show the end date.
 ### What the free allowance actually counts
 
 **Dynasty counts SEASONS, the Trade Machine counts RUNS, and the server says which.**
-`supabase/101_dynasty_seasons.sql` is the whole rule: five dynasty seasons a day, one more
+`supabase/101_dynasty_seasons.sql` is the whole rule: three dynasty seasons a day, one more
 for a boss battle won, spent one per kickoff on whatever run the player is in. A firing ends
 the day outright. The Trade Machine is one run a day, unchanged, because a run there IS one
 season.
@@ -151,10 +151,10 @@ front of it: begin on Monday, still be playing that same run at season 60 withou
 asking again. The only thing the bundle sold was re-drafting.
 
 **A firing ending the day is not spite, it is what stops the budget buying a reroll.** Fired
-in season two with three seasons left, the cheapest use of them is a string of fresh season
+in season one with two seasons left, the cheapest use of them is a string of fresh season
 ones until one drafts well. That is both the behaviour the meter exists to discourage and
 the worst possible way to meet the mode. The season one mercy from
-`100_daily_grace_reasons.sql` is gone for exactly the same reason: under a budget of five it
+`100_daily_grace_reasons.sql` is gone for exactly the same reason: under a budget of three it
 IS the reroll button.
 
 **`unit` is what makes the page correct on both sides of the migration.** SQL is deployed by

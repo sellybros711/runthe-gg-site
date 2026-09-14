@@ -13,9 +13,9 @@
 -- the entire mode with a wait in front of it, and the only thing the bundle
 -- actually sold was the right to re-draft.
 --
--- The rule now is a budget of SEASONS. Five a day, spent one per kickoff, on
--- whichever run the player is in. The run itself never expires. Spend the fifth
--- and the dynasty is saved exactly where it stands; the sixth season is waiting
+-- The rule now is a budget of SEASONS. Three a day, spent one per kickoff, on
+-- whichever run the player is in. The run itself never expires. Spend the third
+-- and the dynasty is saved exactly where it stands; the fourth season is waiting
 -- after the reset. What the bundle sells is the budget going away.
 --
 -- THE TRADE MACHINE IS UNCHANGED. It has no seasons to count: one run is one
@@ -27,15 +27,15 @@
 -- A FIRING ENDS THE DAY
 -- ---------------------------------------------------------------------------
 -- Otherwise the budget buys the one thing the meter exists to discourage. Fired
--- in season two with three seasons left, the cheapest move is to re-draft and
--- spend them on fresh season ones, over and over, which is also the worst way
--- anybody could meet this mode. So the day ends where the run does, and `ended`
--- is the flag that says so.
+-- in season one with two seasons left, the cheapest move is to re-draft and spend
+-- them on fresh season ones, over and over, which is also the worst way anybody
+-- could meet this mode. So the day ends where the run does, and `ended` is the
+-- flag that says so.
 --
 -- THE SEASON ONE MERCY GOES WITH IT. In 99 and 100 a run that died in its first
 -- season handed back the day, because losing your single daily run a quarter of
 -- an hour after arriving was the worst first impression the mode could make.
--- Under a five season budget that mercy would be the reroll button: die early,
+-- Under a three season budget that mercy would be the reroll button: die early,
 -- take the refund, draft again. The firing is the end of the day now whenever
 -- it lands. 'fired' stays a legal reason below and does nothing, so a page
 -- still holding the old script asks for something it cannot have and gets a
@@ -45,9 +45,9 @@
 -- WHAT A BOSS BATTLE IS STILL WORTH
 -- ---------------------------------------------------------------------------
 -- One more season that day, and it is the only bonus left. Reaching a boss at
--- all takes six seasons, so it is never a consolation: it is the reward for the
--- hardest thing the mode asks, and it pays in exactly the currency the mode is
--- now counting.
+-- all takes six seasons, which is two full days of the budget, so it is never a
+-- consolation: it is the reward for the hardest thing the mode asks, and it pays
+-- in exactly the currency the mode is now counting.
 --
 -- ---------------------------------------------------------------------------
 -- THESE FUNCTIONS ARE DROPPED AND REBUILT, NOT REPLACED
@@ -78,7 +78,7 @@ language sql
 immutable
 as $$
   select case when p_mode = 'dynasty'
-              then 5 + (case when p_boss then 1 else 0 end)
+              then 3 + (case when p_boss then 1 else 0 end)
               else 1 end
 $$;
 
@@ -154,7 +154,7 @@ begin
   end if;
 
   /* The row is created on the first spend of the day and locked for the rest of
-     this statement, so two taps in the same second cannot both read four and
+     this statement, so two taps in the same second cannot both read two and
      both be allowed. */
   insert into public.ps_daily_attempts (user_id, mode, day, used)
   values (v_user, p_mode, v_day, 0)
