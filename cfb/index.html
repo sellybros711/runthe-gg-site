@@ -617,11 +617,18 @@ window.GA_ID='G-L29P5MRWKE';
   /* NOT UPPERCASE, unlike the rest of this card, and that is the point rather than an
      oversight. This was spaced caps while it held "Five years. Nine groups. One chair.",
      three fragments doing the work of an image. It holds a sentence now, and spaced caps at
-     10px is the setting a sentence gets skimmed in. Capped at 30ch so it breaks into two
-     balanced lines on a phone and a desktop cannot stretch it into one long one. */
+     10px is the setting a sentence gets skimmed in.
+     THE MEASURE IS WHAT MAKES IT TWO LINES, together with the unbreakable tail below. It has
+     to be wider than the longest FIRST line ("Go Pro and leave your mark on", 29 characters)
+     or that half wraps too and the card grows to three, and narrower than the shortest WHOLE
+     sentence (42 characters) or a desktop stretches it into one. 34ch sits in the middle of
+     that band with room at both ends, so the same two lines survive a phone, a tablet and a
+     desk. Rewording either half moves both numbers, so measure again if you do. */
   .hp-commish .hp-sub{font-family:var(--fn);font-size:11.5px;font-weight:700;
     letter-spacing:.01em;color:rgba(233,213,255,.72);line-height:1.35;text-align:center;
-    max-width:30ch;margin-top:1px}
+    max-width:34ch;margin-top:1px}
+  /* The last three words, kept together. See the note where this is written. */
+  .hp-commish .hp-sub .hp-nb{white-space:nowrap}
   /* IN THE CORNER, out of the flow, for the reason the football game found: anything in the
      flow shifts the label off centre. */
   .hp-commish .hp-tag{position:absolute;top:-8px;right:10px;
@@ -5288,9 +5295,19 @@ function ensureCommishDoor(){
        how many, how alone. The lead-in directly above the card ("or run it instead of
        playing it") already gives that, and a card gets one line. Shape is what a mode is;
        this is what it is for. */
+    /* TWO LINES, AND THE SECOND ONE IS "College Football forever".
+       Left to itself the line broke wherever it ran out of room, which on a phone put the
+       word forever alone on a line under a full one. A one word last line is a widow, and a
+       widow made of the word this sentence turns on is the worst one available.
+       THE TAIL IS HELD TOGETHER RATHER THAN A BREAK BEING FORCED. A <br> would do it at one
+       width and be wrong at every other, and it would also weld the two halves together in
+       textContent, where a screen reader and a copy-paste both lose the space. Marking the
+       last three words unbreakable lets the browser find the only break left, which is the
+       space in front of them. Both states share that second line, so the locked card and the
+       bought one are the same shape with two more words on the front. */
     +'<span class="hp-sub'+(locked?' sell':'')+'">'
-      +(locked?'Go Pro and leave your mark on College Football forever'
-              :'Leave your mark on College Football forever')+'</span>';
+      +(locked?'Go Pro and leave your mark on ':'Leave your mark on ')
+      +'<span class="hp-nb">College Football forever</span></span>';
   /* UNDER THE TWO WAYS IN AND ABOVE THE ROW OF THREE, which is where the football game puts
      its second door: after the thing most people came for, before the things they came back
      for. Re-anchored on every call rather than appended once, so a repaint after an account
