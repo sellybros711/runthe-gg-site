@@ -490,7 +490,7 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,'
   + 'spendTheDay,dynToWinter,countSpends:()=>{const n={c:0};'
   + 'B.attemptSpend=async(m)=>{n.c++;const s=dailyState[m]||{};'
   + 'return Object.assign({},s,{ok:true,used:(s.used||0)+1});};return n;},'
-  + 'reviewDynastyRules,dynIntroOff,'
+  + 'reviewDynastyRules,dynIntroOff,dynNewSheet,dailyStop,'
   + 'setPremium:(v)=>{premiumSet=v;},'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
@@ -890,6 +890,69 @@ console.log('\nA SEASON IS WHAT COSTS, AND IT COSTS ONCE');
   ok('and the old unit still charges once for the whole run', spent.run === 1, String(spent.run));
   ok('a spent day stops the run at its results screen', spent.shut === 'daily', spent.shut);
   ok('and a day with a season left in it does not', spent.through === true);
+}
+
+console.log('\nA SPENT DAY NEVER COSTS SOMEBODY THEIR RUN');
+/*
+ * A free player loses a dynasty on exactly two things: ending it themselves, and being
+ * fired. A clock is not one of them, and every way the clock could take one is checked here
+ * because each of them is silent. Nothing throws when a save is removed.
+ *
+ * THE ONE THAT SHIPPED was the trade this game offers and could not honour. "Start a new
+ * run" cleared the save first and asked the allowance second, so a player out of seasons
+ * pressed it, watched their dynasty go, and got the spent sheet instead of a draft. Both
+ * halves of the trade gone in one tap.
+ *
+ * AND THE DOOR ITSELF. For one release it refused to open a saved run on a spent day, which
+ * protects nothing: the wall that matters is inside the run, at the winter. A dynasty the
+ * game will not let you look at reads as a dynasty the game has taken.
+ */
+{
+  const kept = await ck.page.evaluate(async () => {
+    const T = window.__t;
+    T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+    T.setPremium([]);
+    T.setHi(null, null);
+    const at = new Date(Date.now() + 8 * 3600e3).toISOString();
+    const plant = () => localStorage.setItem('ps_dynasty_save', JSON.stringify({
+      v: T.DYN_SAVE_VERSION, user: 'u1', at: Date.now(), submitted: null,
+      run: { dynasty: true, phase: 'over', roster: ['x|2019'], seasonNo: 3, score: 402500 },
+    }));
+    const shut = () => T.setDaily('dynasty',
+      { used: 3, allowance: 3, unit: 'season', ended: false, resetsAt: at });
+    const out = {};
+
+    /* The door, with the day gone and a run sitting at its results screen. */
+    plant(); shut();
+    T.paintHomeStart();
+    const el = document.getElementById('b-start-dyn');
+    out.door = ((el && el.innerText) || '').replace(/\s+/g, ' ').trim();
+
+    /* Start a new run, on a day that cannot start one. */
+    document.getElementById('sheet').classList.remove('on');
+    document.getElementById('sheet-in').dataset.kind = '';
+    await T.dynNewSheet();
+    out.asked = document.getElementById('sheet-in').dataset.kind;
+    out.survived = !!T.dynRead('open');
+
+    /* And with a season left, the same press has to still offer the trade. */
+    T.setDaily('dynasty', { used: 1, allowance: 3, unit: 'season', ended: false, resetsAt: null });
+    document.getElementById('sheet').classList.remove('on');
+    document.getElementById('sheet-in').dataset.kind = '';
+    await T.dynNewSheet();
+    out.open = document.getElementById('sheet-in').dataset.kind;
+
+    document.getElementById('sheet').classList.remove('on');
+    try { localStorage.removeItem('ps_dynasty_save'); } catch (e) {}
+    return out;
+  });
+  ok('the door still offers the run back', /Resume Dynasty/i.test(kept.door), kept.door);
+  ok('and says when the next season lands instead of where they left off',
+    /season 4 in /i.test(kept.door) && !/season played/i.test(kept.door), kept.door);
+  ok('Start a new run is refused rather than honoured halfway', kept.asked === 'daily', kept.asked);
+  ok('and the run is still there afterwards', kept.survived === true);
+  ok('with a season left it asks the question as it always did',
+    kept.open === 'dynnew', kept.open);
 }
 
 console.log('\nTHE RECORD AND YOUR BEST, IN THE CORNER OF THE DOOR');

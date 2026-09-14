@@ -199,6 +199,27 @@ finished run, so a second stamp would turn looking at your own dynasty into anot
 punishment. `check-premium.mjs` asserts both halves: that a shut day with no clock on it
 starts one, and that a clock already running is never restarted.
 
+**A free player loses a dynasty on two things and a clock is not one of them.** Ending it
+themselves, and being fired. Every other way one can go is a bug, and every one of them is
+silent, because nothing throws when a save is removed. Two have already been found:
+
+- **`dynNewSheet` cleared the save and asked the allowance afterwards.** So the trade this
+  sheet exists to make (this run for a new one) could be taken halfway: the dynasty went,
+  `beginDynastyDraft` then refused on a spent day, and the player was left with the spent
+  sheet and nothing. Every `dynClear` that trades one run for another now checks the day
+  BEFORE it clears, and `dynastyReplaceSheet` checks again on the press, because it is the
+  one path that reaches `beginDraft` without going back through the gate.
+- **The front door refused to open a saved run on a spent day.** It protected nothing: the
+  wall that matters is inside the run, at `dynToWinter`. A dynasty the game will not let you
+  look at reads as a dynasty the game has taken, however good the countdown beside it is. The
+  door resumes always; a spent day only changes the line under it, to when the next season
+  lands.
+
+The mid-season gap is already covered and worth not re-breaking: `spendTheDay` calls
+`dynSave` immediately, and `dynAtRest` allows a save at `SEASON` week 0, so a tab closed
+mid-season comes back to the squad screen with `paidSeason` already set. The season is
+replayed and not re-charged.
+
 **Boot BOTH views before shipping anything that touches this.** A crash that only hit
 testers has already shipped: moving the store out of `football/index.html` left
 `pwArt('star')` behind on the home prompt card, which only a tester sees, so

@@ -10560,28 +10560,26 @@ function ensureDynastyButton(){
        does two jobs on this page: it is the boss battle's advance button and it is the verb on
        "Continue with Google". A third use dulls all three. Resume is also what the code has
        always called this: see dynResume() below. */
-    /* A RUN IN PROGRESS IS STILL A RUN IN PROGRESS, and it is never taken away. What can run
-       out is the seasons to spend on it, and when that happens the door says when the next
-       one lands rather than opening a dynasty that cannot kick off.
-       ONLY UNDER SEASON METERING. On the old rule a start was the only thing counted, so a
-       saved run was free for ever and this branch read nothing. dailyEnsure is called for
-       both, because the door now has a question to ask on either.
-       AND ONLY ON A RUN SITTING AT ITS RESULTS SCREEN, which is the one phase where the next
-       thing the player does costs a season. A run mid-season has already paid for the season
-       it is in and must not be shut out of finishing it; a run mid-draft or mid-offseason has
-       work to do that costs nothing, and its kickoff is guarded by startSeason. Gating on the
-       day alone would lock somebody out of a game that was already under way. */
+    /* A RUN IN PROGRESS IS NEVER TAKEN AWAY AND NEVER SHUT BEHIND A CLOCK. What runs out is
+       the seasons to spend on it, and that is a wall INSIDE the run, at dynToWinter, not a
+       lock on the door to it.
+       THIS DOOR REFUSED TO OPEN FOR ONE RELEASE, and it was wrong for the reason written over
+       dynResume: a saved dynasty the game will not let you look at reads as a dynasty the
+       game has taken, and no amount of countdown next to it says otherwise. Nothing is
+       protected by keeping somebody out of their own results screen. So it resumes, always,
+       and what a spent day changes is only the line underneath: when the next season lands
+       instead of where they left off.
+       THE TIMER RUNS ON THIS BRANCH NOW, because that line is a countdown and a countdown
+       that does not move is a screenshot. */
     dailyEnsure('dynasty');
-    if(dailySeasons('dynasty')&&r.phase===R.PHASES.OVER&&dailyShut('dynasty')){
-      const at=dailyResetsAt('dynasty'), cd=at?dailyCountdown(at):null;
-      dailyClock(true);
-      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">Day done</span>'+
-        '<span class="hp-full-name">Dynasty</span>'+
-        '<span class="hp-full-sub">Season '+(r.seasonNo+1)+' '+
-          (cd?'in '+esc(cd):'in 24 hours')+'</span>';
-      el.onclick=()=>{ dailyStop('dynasty'); };
-    }else{
-    dailyClock(false);
+    /* ONLY A RUN AT ITS RESULTS SCREEN has a next season to wait for. One mid-season has
+       already paid for the season it is in, and one mid-draft or mid-offseason has work to do
+       that costs nothing, so neither is waiting on anything and both say where they left
+       off. */
+    const waiting=dailySeasons('dynasty')&&r.phase===R.PHASES.OVER&&dailyShut('dynasty');
+    const wat=waiting?dailyResetsAt('dynasty'):null;
+    const wcd=wat?dailyCountdown(wat):null;
+    dailyClock(waiting);
     el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
       '<span class="hp-full-name">Resume Dynasty</span>'+
       /* THE SCORE ONCE THERE IS ONE. A first draft has played nothing, and "0 points" on
@@ -10589,9 +10587,10 @@ function ensureDynastyButton(){
          not started: before the first season it says what is signed instead. */
       '<span class="hp-full-sub">'+
         (r.score>0?SCORE(r.score)+' points':r.roster.length+' signed')+
-        ' &middot; '+dynWhere(r)+'</span>';
+        ' &middot; '+(waiting
+          ? 'season '+(r.seasonNo+1)+(wcd?' in '+esc(wcd):' in 24 hours')
+          : dynWhere(r))+'</span>';
     el.onclick=()=>{ dynResume('open'); };
-    }
   }else{
     /* THE NUMBER, AND THAT IT MOVES. The old caption ran three fields wide and carried the
        ageing and the endlessness as well, which is the rules sheet on the first tap doing
@@ -10743,6 +10742,13 @@ function dynastyReplaceSheet(opts){
   openSheet();
   $('b-dr-keep').onclick=()=>{ closeSheet(); dynResume(slot); };
   $('b-dr-new').onclick=()=>{
+    /* ASKED AGAIN, ON THE PRESS. beginDynastyDraft checked the day before drawing this sheet,
+       and a sheet can sit open for as long as somebody leaves it open: the other slot's run,
+       or another tab, can spend the last season in between. This handler is also the one path
+       that goes straight to beginDraft, so the check that guards every other way in does not
+       stand in front of it. Both reasons point at the same line, and it has to come before
+       dynClear or the run is gone by the time the answer arrives. */
+    if(dailyShut('dynasty')){ closeSheet(); dailyStop('dynasty'); return; }
     dynClear(slot);
     closeSheet();
     dynastyIntro(()=>beginDraft(Object.assign({dynasty:true},opts||{})));
@@ -11210,6 +11216,14 @@ function dynResume(slot){
 function dynNewSheet(){
   const s=dynRead();
   if(!s) return beginDynastyDraft();
+  /* AND NOT OFFERED AT ALL ON A SPENT DAY, which is the trade this sheet exists to make and
+     the one it could not honour. It cleared the save and then handed the press to
+     beginDynastyDraft, which refuses when the seasons are gone: the run was destroyed, the
+     new one never started, and the player was left with the spent sheet and nothing.
+     REFUSED BEFORE THE QUESTION, not after the answer. "Give up on this run?" is a question
+     the game has no business asking when the only thing on the other side of yes is a
+     countdown. */
+  if(dailyShut('dynasty')) return dailyStop('dynasty');
   const r=s.run, n=(r.history||[]).length;
   $('sheet-in').innerHTML='<div class="eyebrow red">Start over</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Give up on this run?</h2>'+
