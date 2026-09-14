@@ -10501,8 +10501,35 @@ const dynKey=(p)=>(p?p.player_id+'|'+p.season:null);
 /* The phases a run can be put back at, which is the whole of the rule above in one
    function. Week zero is the squad screen: the season exists because paintSquad built it,
    but not a game of it has been played. */
+/*
+ * A DRAFT NOBODY HAS SIGNED ANYBODY IN IS NOT A RUN, and until this existed the front page
+ * said it was.
+ *
+ * Opening the draft screen is enough to write a save. Every exported mutation in run.js is
+ * wrapped to call dynSave (see the note on that list), dynAtRest counts the DRAFT phase as a
+ * resting place, and the draft screen reaches into run.js before a single player is on the
+ * board. So somebody who pressed Start a Dynasty, looked at the wheel and left came back to a
+ * front page offering to RESUME a dynasty, captioned "0 signed, still drafting". Reported by
+ * an owner who had just bought the bundle and never played the mode: the new What you
+ * unlocked sheet puts a Dynasty door one tap from the receipt, which is why a fault older
+ * than that sheet started being hit the moment somebody paid.
+ *
+ * ONE PREDICATE, READ AND WRITE. The write side stops making them and the read side refuses
+ * the ones already sitting in people's browsers, which is the half that fixes anybody who has
+ * one today. Two rules in two places would eventually disagree about what an empty run is.
+ *
+ * SCOPED TO THE DRAFT rather than "any run with an empty roster", deliberately. Later phases
+ * have their own reasons to be briefly short-handed (a release in the offseason) and losing
+ * one of those would be losing a real run, which is the thing this file exists to prevent.
+ *
+ * NOTHING IS LOST BY REFUSING IT. The day is checked at the door and spent at kickoff, so an
+ * abandoned draft costs no allowance, and an unsigned spin is a board that gets dealt again.
+ */
+const dynUnstarted=(r)=>!!(r&&r.dynasty&&r.phase===R.PHASES.DRAFT
+  &&!(r.roster&&r.roster.length));
 function dynAtRest(){
   if(!run||!run.dynasty) return false;
+  if(dynUnstarted(run)) return false;
   const P=R.PHASES;
   if(run.phase===P.DRAFT||run.phase===P.COACH||run.phase===P.OFFSEASON
     ||run.phase===P.OVER) return true;
@@ -10562,6 +10589,11 @@ function dynRead(slot){
      stops a club run resumed from the open door (or the reverse) from opening a game the
      screen it came from was not describing. */
   if(dynSlotOf(s.run)!==want) return null;
+  /* AND THE ONES ALREADY WRITTEN. dynAtRest stops making these now, which does nothing for a
+     browser that is holding one, and holding one is exactly the state the report came from.
+     Refused here, not deleted: a reader that writes is a surprise, and beginDynastyDraft
+     clears the slot on the way into the next draft anyway, so it heals itself. */
+  if(dynUnstarted(s.run)) return null;
   /* Whoever saved it and nobody else. Both sides normalised to null so a signed-out run,
      which is only reachable once the mode goes live to everybody, still finds its own. */
   if((s.user||null)!==(authState.userId||null)) return null;

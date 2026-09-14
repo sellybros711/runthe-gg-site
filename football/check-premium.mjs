@@ -350,6 +350,7 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,'
      the same way ownership is. dynHiFor is pinned alongside them, or the next repaint
      sees a user it has not asked for and fires a real request that overwrites them. */
   + 'setHi:(t,m)=>{dynHiTop=t;dynHiMine=m;dynHiFor=(authState.userId||null);},'
+  + 'dynRead,beginDynastyDraft,DYN_SAVE_VERSION,getRun:()=>run,'
   + 'setPremium:(v)=>{premiumSet=v;},'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
@@ -556,6 +557,81 @@ ok('and stops breathing', gold.spent && gold.spent.anim === 'none', gold.spent &
  * at 320px and twelve past it at 300, which was measured rather than guessed, so the widths
  * below are the check on that arithmetic rather than a formatting preference.
  */
+/*
+ * AN ABANDONED DRAFT IS NOT A RUN TO RESUME.
+ *
+ * Reported by an owner who had just bought the bundle: the front page offered to RESUME a
+ * dynasty they had never played, captioned "0 signed, still drafting". Opening the draft
+ * screen is enough to write a save, because every exported mutation in run.js is wrapped to
+ * call dynSave and dynAtRest counted the DRAFT phase as a resting place. Older than the
+ * What you unlocked sheet, and first hit the moment that sheet put a Dynasty door one tap
+ * from a receipt.
+ *
+ * BOTH SIDES ARE CHECKED, and the read side matters more: the write side only stops NEW
+ * junk, and the browsers holding one today are fixed by the reader refusing it.
+ *
+ * AND THE OTHER HALF, which is the one that would be a disaster to get wrong: a run with a
+ * man in it must still come back. A fix for a phantom resume that eats real runs is worse
+ * than the phantom.
+ */
+console.log('\nAN ABANDONED DRAFT IS NOT A RUN TO RESUME');
+{
+  /* Planted rather than played, so the reader is tested on exactly the two shapes that
+     matter without depending on a wheel landing. The version is read off the page, or this
+     check quietly passes forever the next time DYN_SAVE_VERSION is bumped. */
+  const planted = await ck.page.evaluate(() => {
+    const T = window.__t;
+    T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+    const save = (roster) => JSON.stringify({
+      v: T.DYN_SAVE_VERSION, user: 'u1', at: Date.now(), submitted: null,
+      run: { dynasty: true, phase: 'draft', roster: roster, seasonNo: 1, score: 0 },
+    });
+    const read = (roster) => {
+      localStorage.setItem('ps_dynasty_save', save(roster));
+      return !!T.dynRead('open');
+    };
+    const empty = read([]);
+    const one = read(['x|2019']);
+    try { localStorage.removeItem('ps_dynasty_save'); } catch (e) {}
+    return { empty, one };
+  });
+  ok('a saved draft with nobody signed is refused', planted.empty === false);
+  ok('and one with a man in it is not', planted.one === true);
+
+  /* THE REPORTED PATH, PLAYED. Open the door, go no further, come back. */
+  await ck.page.evaluate(() => {
+    const T = window.__t;
+    T.setPremium(['ps_premium', 'cfb_premium']);
+    T.setDaily('dynasty', { used: 0, allowance: 1, resetsAt: new Date(Date.now() + 3600e3).toISOString() });
+    try { localStorage.removeItem('ps_dynasty_save'); localStorage.setItem('ps_dynintro', '1'); } catch (e) {}
+    T.beginDynastyDraft();
+  });
+  await ck.page.waitForTimeout(1500);
+  const walked = await ck.page.evaluate(() => {
+    const T = window.__t;
+    const r = T.getRun();
+    T.paintHomeStart();
+    const el = document.getElementById('b-start-dyn');
+    return { onDraft: !!(r && r.dynasty), signed: (r && r.roster || []).length,
+      door: el ? (el.innerText || '').replace(/\s+/g, ' ').trim() : '' };
+  });
+  ok('  opening the draft really does reach it', walked.onDraft && walked.signed === 0,
+    'signed=' + walked.signed);
+  ok('  and walking away leaves Start, not Resume', /Start a Dynasty/i.test(walked.door)
+    && !/Resume/i.test(walked.door), walked.door.slice(0, 60));
+  /* PUT THE PAGE BACK ON THE FRONT SCREEN, which is not tidiness. This section is the only
+     one that leaves the game inside a draft, and the next one reads the door with innerText:
+     on a hidden screen innerText degrades to textContent, so every corner assertion came
+     back unspaced and un-uppercased and failed for a reason that had nothing to do with the
+     corner. The suite caught it, which is the point of asserting rendered text. */
+  await ck.page.evaluate(() => {
+    document.getElementById('sheet').classList.remove('on');
+    document.querySelectorAll('.screen.on').forEach((s) => s.classList.remove('on'));
+    document.getElementById('s-intro').classList.add('on');
+    try { localStorage.removeItem('ps_dynasty_save'); } catch (e) {}
+  });
+}
+
 console.log('\nTHE RECORD AND YOUR BEST, IN THE CORNER OF THE DOOR');
 for (const [label, top, mine, want] of [
   ['the board answered and they have a run', { dynasty_id: 'a', score: 402500 }, { dynasty_id: 'b', score: 198000 },
