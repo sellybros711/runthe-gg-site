@@ -7757,6 +7757,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
 <script src="/assets/store.js?v=10"></script>
+<!-- THE RUN, KEPT AGAINST THE ACCOUNT. Shared with Commish Simulator, which had the same
+     save in localStorage and the same way of losing it. Optional like everything else up
+     here: without it the game keeps its runs exactly where it always did, in this browser
+     and nowhere else. See supabase/103_cloud_saves.sql. -->
+<script src="/assets/cloudsave.js?v=1"></script>
 <script defer src="auth.js?v=5"></script>
 <script>
 (function(){
@@ -11080,17 +11085,119 @@ function dynPack(){
   };
 }
 
+/* ── THE RUN BELONGS TO THE ACCOUNT ───────────────────────────────────────────────────
+ *
+ * localStorage is the CACHE now and supabase/103_cloud_saves.sql is the record. The browser
+ * copy is written first and synchronously, exactly as it always was, because a dynasty
+ * autosaves on every cut and every signing and a game that waited on a round trip for each of
+ * those would be a worse game than one that loses a save. The upload follows behind through
+ * RTG_SAVE.queue, which keeps one request in flight per slot and always sends the run as it
+ * stands when the wire is free rather than as it stood when the tap happened.
+ *
+ * WHAT WAS ACTUALLY BEING LOST, because none of it throws: site data cleared by hand or by a
+ * browser short of disk, a private window, iOS evicting a site nobody visited for a week, a
+ * phone that is not the laptop the run was started on, and a second account signing in on the
+ * same browser. Every one of those ends at a front page reading Start a Dynasty over a run
+ * forty seasons deep, with nothing in the game able to say why.
+ *
+ * PROGRESS IS THE CONFLICT RULE, and dynProgress below is this game's answer to how far along
+ * a run is. The server refuses a write that would move a save backwards, which is the only
+ * rule that never loses a dynasty. See 103 for what that costs and why it is the right way
+ * round. */
+const DYN_CLOUD_GAME='ps_dynasty';
+/* HOW FAR IS THIS RUN. Seasons finished first, then the phase inside the season being played,
+   so the number rises through a run and never falls: draft, offseason, season, results. Score
+   is deliberately NOT in it. A dynasty can finish a season worth fewer points than the last
+   one, and a save that went backwards on a bad year would be refused by its own server. */
+const DYN_PHASE_RANK={draft:0,coach:0,offseason:1,season:2,seeding:2,playoffs:2,over:3};
+function dynProgress(r){
+  if(!r) return 0;
+  const done=(r.history&&r.history.length)||0;
+  return done*8+(DYN_PHASE_RANK[r.phase]||0)+1;
+}
 /* localStorage throws rather than returning null in a browser with storage blocked, and a
    dynasty that cannot be saved is still a dynasty worth playing, so every door here is
    quiet. */
 function dynSave(){
   if(!dynAtRest()) return;
-  try{ localStorage.setItem(dynKeyFor(dynSlotOf(run)),JSON.stringify(dynPack())); }catch(_){}
+  const slot=dynSlotOf(run);
+  try{ localStorage.setItem(dynKeyFor(slot),JSON.stringify(dynPack())); }catch(_){}
+  dynCloudPush(slot);
+}
+/* PACKED AT SEND TIME, NOT AT QUEUE TIME. Half a dozen of these can be queued inside one
+   offseason, and what belongs on the server is the run as it is when the request goes out. */
+function dynCloudPush(slot){
+  if(!window.RTG_SAVE||!authState.signedIn) return;
+  RTG_SAVE.queue(DYN_CLOUD_GAME,slot,()=>{
+    const s=dynReadRaw(slot);
+    return s?{payload:s,progress:dynProgress(s.run)}:null;
+  });
 }
 /* Clears one slot, and by default the one the live run belongs to, so a firing or a quit
-   takes away the run that ended rather than whichever was written first. */
+   takes away the run that ended rather than whichever was written first.
+   AND IT DELETES RATHER THAN OVERWRITING, up there too. That is what makes the progress rule
+   safe: a run that really ended leaves no row for a stale browser to argue with, where a
+   zeroed one would be a save the next device is told it is ahead of. */
 function dynClear(slot){
-  try{ localStorage.removeItem(dynKeyFor(slot||dynSlotOf(run))); }catch(_){}
+  const want=slot||dynSlotOf(run);
+  try{ localStorage.removeItem(dynKeyFor(want)); }catch(_){}
+  if(window.RTG_SAVE&&authState.signedIn) RTG_SAVE.drop(DYN_CLOUD_GAME,want);
+}
+
+/*
+ * THE SHELF, PULLED DOWN ONCE PER SIGN IN.
+ *
+ * Called from the auth change, because until there is an account there is nothing to ask for
+ * and nowhere to ask. What comes back is written into localStorage only when it is AHEAD of
+ * what is already there, and what is already there is pushed up when it is ahead instead. So
+ * the two copies converge on whichever holds more play, in both directions, from one call.
+ *
+ * NOT WHILE A RUN IS ON SCREEN. Replacing the save under somebody mid-dynasty would do
+ * nothing visible until they next resumed, and then it would hand them a different team. The
+ * front page is the only place this can safely land, and it is also the only place the answer
+ * is read, so nothing is lost by waiting.
+ */
+let dynCloudPulled=null;
+function dynCloudForget(){ dynCloudPulled=null; }
+async function dynCloudPull(){
+  if(!window.RTG_SAVE||!authState.signedIn||!authState.userId) return;
+  if(dynCloudPulled===authState.userId) return;
+  dynCloudPulled=authState.userId;
+  const rows=await RTG_SAVE.all(DYN_CLOUD_GAME);
+  /* Null is "no opinion", never "you have no save". A shelf that cannot be reached must not
+     be the reason a run goes, so the local copy simply stands and the mark is dropped so the
+     next auth change tries again. */
+  if(!rows){ dynCloudPulled=null; return; }
+  const by={};
+  rows.forEach((r)=>{ if(r&&r.slot) by[r.slot]=r; });
+  let painted=false;
+  for(const slot of ['open','club']){
+    const here=dynReadRaw(slot), there=by[slot];
+    const hp=here?dynProgress(here.run):-1;
+    const tp=there&&there.payload&&there.payload.run?Number(there.progress):-1;
+    if(tp>hp){
+      /* THE ACCOUNT'S RUN IS FURTHER ON, so it becomes this browser's. Written through the
+         same key the game reads, so every screen picks it up without knowing this happened. */
+      try{ localStorage.setItem(dynKeyFor(slot),JSON.stringify(there.payload)); }catch(_){}
+      painted=true;
+    }else if(hp>tp&&here){
+      dynCloudPush(slot);
+    }
+  }
+  if(painted) ensureDynastyButton();
+}
+
+/* The save as it sits, before the checks dynRead makes. What goes up has to be the bytes that
+   came down, or a run would be reshaped on every trip through the network. */
+function dynReadRaw(slot){
+  const want=slot==='club'?'club':'open';
+  let raw=null;
+  try{ raw=localStorage.getItem(dynKeyFor(want)); }catch(_){ return null; }
+  if(!raw) return null;
+  try{
+    const s=JSON.parse(raw);
+    return (s&&s.run&&s.run.dynasty)?s:null;
+  }catch(_){ return null; }
 }
 
 /* The header only. Cheap enough to call from every repaint of the front page, and it never
@@ -20240,6 +20347,10 @@ function authBoot(){
     /* The day's allowance belongs to an account, so a different one (or none) has a
        different day. Cleared before authState moves so the next paint re-asks. */
     if(!st.signedIn||st.userId!==authState.userId) dailyForget();
+    /* SO DOES THE RUN. A different account (or none) means the shelf that was pulled belongs
+       to somebody else, and the next sign in has to ask again rather than trust a mark left
+       by the last one. */
+    if(!st.signedIn||st.userId!==authState.userId) dynCloudForget();
     authState=st;
     paintAvatar();
     /* Ownership follows the account. Not awaited: it is read at the doors, so all this
@@ -20251,6 +20362,10 @@ function authBoot(){
        would otherwise sit there looking at a single Start button. Losing eligibility (a sign
        out, a rename) puts it back the same way. */
     paintHomeStart();
+    /* AND THE RUN THE ACCOUNT IS HOLDING, which is the one thing on this page that can arrive
+       from another device. Not awaited: it repaints the door itself if what comes back is
+       further on than what this browser had, and does nothing at all otherwise. */
+    dynCloudPull();
     /* The color and initials belong to the account, so they are re-read whenever the
        account changes and cleared when there is none. Not awaited: the circle is already
        drawn from the derived default and this only ever replaces it with something more

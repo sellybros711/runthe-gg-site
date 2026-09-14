@@ -2629,6 +2629,11 @@
      auth.js. It is here rather than up with the rest because nothing else reads it. -->
 <script src="splits.js?v=3"></script>
 <script src="/cfb/auth.js?v=6"></script>
+<!-- THE TERM AND THE CAREER, KEPT AGAINST THE ACCOUNT. Shared with The Perfect Season,
+     which had the same save in localStorage and the same way of losing it. Optional like
+     everything else here: without it the mode keeps its term exactly where it always did,
+     in this browser and nowhere else. See supabase/103_cloud_saves.sql. -->
+<script src="/assets/cloudsave.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
 (function(){
@@ -2730,7 +2735,13 @@ function careerData(){
   }catch(e){}
   return {v:1,rulings:0,terms:[]};
 }
-function careerPut(c){ try{ localStorage.setItem(CAREER_KEY,JSON.stringify(c)); }catch(e){} }
+/* THE CAREER GOES UP TOO, and it is the half worth more. A term can be played again; a
+   council seat earned over eleven years of service cannot be. cloudPush and careerProgress
+   are defined with the term's save below, which is fine: this only ever runs from a click. */
+function careerPut(c){
+  try{ localStorage.setItem(CAREER_KEY,JSON.stringify(c)); }catch(e){}
+  cloudPush('career',()=>{ const now=careerData(); return {payload:now,progress:careerProgress(now)}; });
+}
 function careerRulings(){
   if(careerOverride!=null) return careerOverride;
   return careerData().rulings;
@@ -2840,6 +2851,14 @@ function scenApply(w,scen){
 }
 
 function newTerm(year,scen){
+  /* THE OLD TERM IS DROPPED RATHER THAN OVERWRITTEN, and that is what makes the progress
+     rule in 103 safe. A fresh term is progress 1 and the one it replaces is whatever it got
+     to, so a write would be REFUSED as moving the save backwards and the next sign in on
+     another device would hand the player back the term they had just abandoned. Taking the
+     job again is the one moment a commissioner really does throw one away, so it deletes.
+     RTG_SAVE.drop is queued behind the same slot as every save, so it discards whatever write
+     of the old term was still pending and lands before the new term's first one. */
+  if(window.RTG_SAVE&&authState.signedIn) RTG_SAVE.drop(CLOUD_GAME,'term');
   const seed=E.hashSeed(String(Date.now())+Math.random());
   world=L.createWorld({year:year||2025,membership:MEMBERSHIP[year||2025]||{},seed});
   rng=E.createSeededRNG(seed);
@@ -2881,8 +2900,45 @@ function openingSnapshot(w){
 /* The world IS the save file, which is what ledger.js is built for. The rng is rebuilt
    from the seed and a call count, the same trick every other mode here uses to make a run
    replayable, so nothing but plain data is ever stored. */
+/* ── AND IT BELONGS TO THE ACCOUNT, NOT TO THIS BROWSER ───────────────────────────
+ *
+ * localStorage is the cache and supabase/103_cloud_saves.sql is the record, the same move
+ * the football game's dynasty made and for the same reasons: site data cleared by hand or
+ * by a browser short of disk, a private window, iOS evicting a site nobody visited for a
+ * week, and a phone that is not the laptop the term was started on. None of those throws.
+ * A commissioner four years into a term simply arrives at a door offering to give them the
+ * job, and nothing in the mode can tell them why.
+ *
+ * WRITTEN LOCALLY FIRST AND ALWAYS. save() is called on every beat, every ruling and every
+ * repaint of the office, so the upload rides behind through RTG_SAVE.queue, which keeps one
+ * request in flight per slot and sends the world as it stands when the wire is free.
+ *
+ * TWO SLOTS, BECAUSE THEY ARE TWO DIFFERENT LIVES. The term is the run. The career is the
+ * count of rulings the council ladder reads and the list of finished terms the shelf draws,
+ * and it outlives every term there has ever been: losing it is worse than losing the run,
+ * because a term can be played again and eleven years of service cannot.
+ */
+const CLOUD_GAME='cfb_commish';
+/* HOW FAR ALONG, which is the whole conflict rule: a write that would move a save backwards
+   is refused by the server. Rulings only ever accumulate inside a term and a finished term
+   is further on than the same term unfinished, so this rises and never falls. */
+function termProgress(w){
+  if(!w) return 0;
+  return ((w.history&&w.history.length)||0)*2+(w.outcome?1:0)+1;
+}
+/* A finished term always outranks any number of rulings, because the terms list is the part
+   that can never be rebuilt. */
+function careerProgress(c){
+  if(!c) return 0;
+  return ((c.terms&&c.terms.length)||0)*100000+(Math.max(0,c.rulings|0))+1;
+}
+function cloudPush(slot,build){
+  if(!window.RTG_SAVE||!authState.signedIn) return;
+  RTG_SAVE.queue(CLOUD_GAME,slot,build);
+}
 function save(){
   try{ localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,world})); }catch(e){}
+  cloudPush('term',()=>world?{payload:{v:1,world:world},progress:termProgress(world)}:null);
 }
 function load(){
   try{
@@ -2900,6 +2956,57 @@ function load(){
     return true;
   }catch(e){ return false; }
 }
+/*
+ * THE SHELF, PULLED DOWN ONCE PER SIGN IN.
+ *
+ * Called from the auth change, because until there is an account there is nothing to ask for
+ * and nowhere to ask. What comes back is written into localStorage only when it is AHEAD of
+ * what is there, and what is there is pushed up when it is ahead instead, so the two copies
+ * converge on whichever holds more play from one call.
+ *
+ * ONLY WHILE THE DOOR IS STILL SHOWING. Replacing `world` under a commissioner mid-beat would
+ * swap the sport out from under a decision they are in the middle of making. The door is the
+ * one screen where adopting is safe, and it is also the only screen that reads the answer, so
+ * nothing is lost by waiting: the mark is dropped rather than kept, and the next visit to the
+ * door asks again.
+ *
+ * THE CAREER IS ADOPTED WHEREVER THEY ARE. It is a count and a list, nothing on screen reads
+ * it mid-beat, and it is the half that cannot be replayed.
+ */
+let cloudPulled=null;
+const onTheDoor=()=>{ const g=$('s-gate'); return !!(g&&g.classList.contains('on')); };
+async function cloudPull(){
+  if(!window.RTG_SAVE||!authState.signedIn||!authState.userId) return;
+  if(cloudPulled===authState.userId) return;
+  cloudPulled=authState.userId;
+  const rows=await RTG_SAVE.all(CLOUD_GAME);
+  /* Null is "no opinion", never "you have nothing". A shelf that cannot be reached must not
+     be the reason a term goes, so the local copy stands and the next change tries again. */
+  if(!rows){ cloudPulled=null; return; }
+  const by={};
+  rows.forEach((r)=>{ if(r&&r.slot) by[r.slot]=r; });
+
+  const cHere=careerData(), cThere=by.career&&by.career.payload;
+  if(cThere&&Number(by.career.progress)>careerProgress(cHere)){
+    try{ localStorage.setItem(CAREER_KEY,JSON.stringify(cThere)); }catch(e){}
+  }else if(careerProgress(cHere)>Number((by.career&&by.career.progress)||0)){
+    cloudPush('career',()=>({payload:cHere,progress:careerProgress(cHere)}));
+  }
+
+  const tThere=by.term&&by.term.payload&&by.term.payload.world;
+  const tHere=world?termProgress(world):0;
+  if(tThere&&Number(by.term.progress)>tHere){
+    if(!onTheDoor()){ cloudPulled=null; return; }
+    try{ localStorage.setItem(SAVE_KEY,JSON.stringify(by.term.payload)); }catch(e){}
+    /* Read back through load() rather than assigned, so the rng is rebuilt from the seed and
+       the call count exactly as it is on a reload. A world assigned straight in would draw
+       different numbers from the one that was saved. */
+    if(load()) gate();
+  }else if(world&&tHere>Number((by.term&&by.term.progress)||0)){
+    cloudPush('term',()=>({payload:{v:1,world:world},progress:termProgress(world)}));
+  }
+}
+
 const draw=()=>{ world.rngCalls=(world.rngCalls||0)+1; return rng(); };
 
 /* Membership per year, fetched rather than duplicated, so there is one answer in this repo
@@ -8730,7 +8837,7 @@ function gate(){
         +'<b>'+esc(s.name)+'</b><span>'+esc(s.line)+'</span></button>').join('')
       +'</div>':'')
     +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:11px;text-align:center">'
-      +'Your term is kept in this browser while the mode is in testing.<br>'
+      +'Your term is saved to your account. Sign in anywhere and it is there.<br>'
       +(forceFree
         ?'You are looking at the free version. <a href="?">Switch back</a>.'
         :'<a href="?tier=free">See what a free player sees</a>.')+'</p>';
@@ -8759,8 +8866,15 @@ function gate(){
   if(!A){ authState={ready:false,waiting:false,signedIn:false}; gate(); return; }
   A.onChange((st)=>{
     const moved=st.userId!==authState.userId;
+    /* The shelf belongs to an account, so a different one (or none) has to be asked again
+       rather than trusting a mark left by the last. */
+    if(moved||!st.signedIn) cloudPulled=null;
     authState=st;
     if(moved||!st.signedIn) premiumSet=null;
+    /* THE TERM AND THE CAREER THE ACCOUNT IS HOLDING, which is the one thing on this page
+       that can arrive from another device. Not awaited: it redraws the door itself if what
+       comes back is further on, and does nothing at all otherwise. */
+    cloudPull();
     if(st.signedIn&&premiumSet===null){
       if(typeof A.premiumProducts==='function'){
         A.premiumProducts().then((l)=>{ premiumSet=Array.isArray(l)?l:[]; paintTag(); gate(); try{ checkoutReturn(); }catch(e){} })
