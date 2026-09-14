@@ -1267,10 +1267,68 @@ window.GA_ID='G-L29P5MRWKE';
      read and eight boxes with six lit is a fact you see. The two states that change the
      season are colored rather than only worded: cleared goes green and stays there, and
      out of reach goes red the moment the arithmetic closes. */
+  /* ---- THE DYNASTY HEADER ----
+     This card used to be the win bar and nothing else, which made the busiest screen in the
+     mode identical to every other mode's season screen apart from one strip of pips. A
+     dynasty is a CAREER and this screen said nothing about the career: not which season it
+     was, not what was behind it, not what was coming.
+     So it is three parts now. The season numeral on the left, which is the thing the mode is
+     counting. The bar in the middle, unchanged, because it works. And a foot strip with what
+     the run has done and what it is walking into.
+     GOLD THROUGHOUT, which is the mode's colour everywhere else it appears: the front page
+     door, the NEW badge, the boss scout card. */
   .gauntbar{position:relative;margin-top:11px;padding:11px 42px 10px 13px;border-radius:12px;
     border:1.5px solid rgba(226,178,90,.34);
     background:linear-gradient(180deg,rgba(40,32,17,.9),rgba(19,17,13,.9))}
   .gauntbar[hidden]{display:none}
+  /* The numeral and the bar side by side. minmax(0,1fr) on the right or a long note pushes
+     the whole card wider than the screen. */
+  .gb-main{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center}
+  /* THE SEASON, AS A NUMBER ON A WALL. Big, in the display face, with the word under it, so
+     the first thing read on this screen is which year of the dynasty it is. The right rule
+     rather than a box: a second bordered panel inside a bordered card is two frames deep and
+     reads as a widget, and this is meant to read as a banner. */
+  .gb-yr{flex:0 0 auto;padding-right:12px;border-right:1px solid rgba(226,178,90,.22);
+    text-align:center;line-height:1}
+  .gb-yr b{display:block;font-family:var(--fd,var(--fn));font-size:30px;color:#F3DDAE;
+    font-variant-numeric:tabular-nums;letter-spacing:.01em}
+  .gb-yr i{display:block;font-style:normal;margin-top:3px;font-family:var(--fn);font-size:8px;
+    font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:rgba(243,221,174,.5)}
+  /* THE SEASON THAT IS NOT LIKE THE OTHERS. A boss or mandate season is the authored content
+     the mode is built around and the player walked into it without being told. Filled rather
+     than outlined, because it is an announcement. */
+  .gb-tag{display:inline-block;margin-top:5px;padding:2px 6px;border-radius:5px;
+    font-family:var(--fn);font-size:7.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;background:linear-gradient(180deg,#f0c674,#e2b25a);color:#241a08}
+  /* WHAT IS BEHIND YOU AND WHAT IS COMING, on one line under a hairline. Both halves are
+     derived from run.history and the milestone schedule, so neither can claim something the
+     run has not done. */
+  .gb-foot{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    margin-top:10px;padding-top:9px;border-top:1px solid rgba(226,178,90,.18);
+    font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.07em;
+    text-transform:uppercase;color:rgba(243,221,174,.45)}
+  /* A RECORD NEVER BREAKS ACROSS TWO LINES. Without this the strip wrapped mid-figure and
+     printed "40-" above "45", which is not a hard number to misread, it is an impossible
+     one. Every bold thing in here is a figure, so the rule goes on the element rather than
+     on one of them. */
+  .gb-foot b{color:#F3DDAE;font-weight:800;font-variant-numeric:tabular-nums;
+    white-space:nowrap}
+  .gb-foot .gb-next{text-align:right;flex:0 0 auto}
+  .gb-foot:empty{display:none}
+  /* STACKED RATHER THAN SQUEEZED on a narrow phone. Two halves of a sentence fighting over
+     one line is how the record came to be split in the first place; given their own lines
+     they both read, and the strip costs one more line on the screen that has room for it. */
+  @media (max-width:400px){
+    .gb-foot{display:block}
+    .gb-foot .gb-next{display:block;text-align:left;margin-top:3px;
+      color:rgba(243,221,174,.62)}
+  }
+  @media (max-width:360px){
+    .gb-yr b{font-size:25px}
+    .gb-main{gap:9px}
+    .gb-yr{padding-right:9px}
+    .gb-foot{font-size:9px;letter-spacing:.04em}
+  }
   .gb-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
     font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.09em;
     text-transform:uppercase;color:rgba(243,221,174,.58)}
@@ -6846,7 +6904,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="rp-body" id="season-rp-body"></div>
     </details>
     <!-- The whole season laid out in order, weeks first, playoff rounds after. -->
-    <div class="caleye"><span>The season</span><b id="v-calrec">0-0</b></div>
+    <div class="caleye"><span id="v-caleye">The season</span><b id="v-calrec">0-0</b></div>
     <div class="cal" id="v-list"></div>
   </div>
 
@@ -14603,6 +14661,12 @@ function paintCalendar(justPlayed){
   $('v-list').innerHTML=cells.join('');
   const w=s.results.filter(r=>r.won).length;
   $('v-calrec').textContent=w+'-'+(s.results.length-w);
+  /* THE SCHEDULE BELONGS TO A SEASON OF THE DYNASTY, so it says which one. Reset explicitly
+     for every other mode rather than only set for this one: the same element is drawn for
+     the Trade Machine and free play on the same page, and a heading left over from a dynasty
+     would tell a free-play run it was in season seven. */
+  const eye=$('v-caleye');
+  if(eye) eye.textContent=(run&&run.dynasty)?('Season '+run.seasonNo):'The season';
   paintDynastyBar(s);
 }
 
@@ -14635,17 +14699,103 @@ function paintDynastyBar(s){
   el.className='gauntbar'+(done?' safe':(dead?' dead':''));
   let track='';
   for(let i=0;i<bar;i++) track+='<i'+(i<wins?' class="won"':'')+'></i>';
-  el.innerHTML='<div class="gb-top">'+
-      '<span>Wins <b>'+wins+'</b> of <b>'+bar+'</b></span>'+
-      '<span class="gb-or">'+(done?'You keep your job':'or you are fired')+'</span>'+
+  el.innerHTML='<div class="gb-main">'+
+      dynSeasonChip()+
+      '<div class="gb-rt">'+
+        '<div class="gb-top">'+
+          '<span>Wins <b>'+wins+'</b> of <b>'+bar+'</b></span>'+
+          '<span class="gb-or">'+(done?'You keep your job':'or you are fired')+'</span>'+
+        '</div>'+
+        '<div class="gb-track">'+track+'</div>'+
+        '<div class="gb-note">'+(done
+          ? 'Job saved. Season '+(run.seasonNo+1)+' is next.'
+          : (dead
+            ? 'You cannot get there. This is the last season.'
+            : need+' more from '+left+' game'+(left===1?'':'s')+'.'))+'</div>'+
+      '</div>'+
     '</div>'+
-    '<div class="gb-track">'+track+'</div>'+
-    '<div class="gb-note">'+(done
-      ? 'Job saved. Season '+(run.seasonNo+1)+' is next.'
-      : (dead
-        ? 'You cannot get there. This is the last season.'
-        : need+' more from '+left+' game'+(left===1?'':'s')+'.'))+'</div>'+GD_HELP;
+    dynFootStrip()+GD_HELP;
   bindGdHelp(el);
+}
+
+/*
+ * WHICH SEASON OF THE DYNASTY THIS IS, which the screen a player spends the most time on
+ * never said. Seventeen weeks of watching a record climb, on a page identical to every other
+ * mode's, with the one number the whole run is counting nowhere on it.
+ *
+ * The tag under it names a season that is not like the others. A boss or a mandate is the
+ * authored content this mode is built around, and a player walked into both without warning:
+ * the schedule is in the rules sheet and nowhere on the screen where it lands.
+ */
+function dynSeasonChip(){
+  const n=run.seasonNo;
+  let tag='';
+  try{
+    /* No cadence argument. stepSeasons is a real per-run field and this is not: nothing
+       sets run.milestoneEvery, so passing it would read as a per-run schedule that does not
+       exist. The engine defaults to DYNASTY_MILESTONE_EVERY, which is what the rules sheet
+       reads too, so the screen and the sheet cannot teach two different schedules. */
+    const kind=E.dynastyMilestoneKind(n);
+    if(kind==='boss') tag='<span class="gb-tag">Boss season</span>';
+    else if(kind==='challenge') tag='<span class="gb-tag">Mandate</span>';
+  }catch(_){}
+  return '<div class="gb-yr"><b>'+n+'</b><i>Season</i>'+tag+'</div>';
+}
+
+/*
+ * WHAT IS BEHIND THE RUN AND WHAT IS IN FRONT OF IT.
+ *
+ * Both halves are DERIVED, from run.history and the milestone schedule, so neither can claim
+ * a thing the run has not done. history holds finished seasons only, so during season seven
+ * it has six entries and the line is about those six: the live record is already on the score
+ * bug and in the calendar heading, and printing it a third time here would be the same number
+ * three times on one screen.
+ *
+ * SEASON ONE GETS NO LEFT HALF rather than "0-0". There is nothing behind it, and a zero is a
+ * claim about a career that has not started.
+ */
+function dynFootStrip(){
+  const h=Array.isArray(run.history)?run.history:[];
+  let left='';
+  if(h.length){
+    const w=h.reduce((t,x)=>t+(x.wins||0),0);
+    const l=h.reduce((t,x)=>t+(x.losses||0),0);
+    const titles=h.filter((x)=>x.title).length;
+    /* NO SEASON COUNT HERE. The numeral two inches to the left already says which season
+       this is, and "5 seasons behind you" beside a chip reading 6 is two numbers for one
+       fact and the longest line in the strip. What is left is the part the chip cannot
+       say: what those seasons actually produced. */
+    left='<span>Behind you <b>'+w+'-'+l+'</b>'+
+      (titles?' &middot; <b>'+titles+'</b> title'+(titles===1?'':'s'):'')+'</span>';
+  }
+  /* WHAT IS COMING, one line, most imminent first. A bar that steps up next season is the
+     only one of these the player cannot see coming from the rules sheet's schedule, so it
+     outranks a milestone that is still seasons away. */
+  let next='';
+  try{
+    const n=run.seasonNo, ev=E.DYNASTY_MILESTONE_EVERY;
+    /* stepSeasons IS per-run and is passed, so a run started under a different ladder is
+       told its own next bar rather than the default one. */
+    const barNow=R.effectiveWinBar(run), barNext=E.dynastyWinBar(n+1,run.stepSeasons);
+    const kindNext=E.dynastyMilestoneKind(n+1);
+    if(barNext>barNow) next='Bar goes to '+barNext+' next season';
+    else if(kindNext==='boss') next='Boss game next season';
+    else if(kindNext==='challenge') next='Mandate next season';
+    else{
+      /* The next milestone of either kind, named and counted, so the schedule is visible from
+         the screen it lands on rather than only from the rules sheet. */
+      for(let k=n+2;k<=n+ev*2;k++){
+        const kk=E.dynastyMilestoneKind(k);
+        if(kk){ next=(kk==='boss'?'Boss game':'Mandate')+' in '+(k-n)+' seasons'; break; }
+      }
+    }
+  }catch(_){ next=''; }
+  if(!left&&!next) return '';
+  /* No placeholder for a missing left half. space-between puts a lone child on the left,
+     which is where a season-one run wants its one line anyway, and an empty span would take
+     a line of its own once the narrow rule turns this into a block. */
+  return '<div class="gb-foot">'+left+
+    (next?'<span class="gb-next">'+esc(next)+'</span>':'')+'</div>';
 }
 
 /* WHOSE COLORS YOUR SIDE OF THE SCORE BUG WEARS.
