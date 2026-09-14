@@ -1070,10 +1070,41 @@ window.GA_ID='G-L29P5MRWKE';
      shuffle while they count, a gold that appears nowhere else on the results screen, and
      the parts dealt out underneath as a list of things you did rather than folded into the
      total. */
-  .arcade{border:1.5px solid rgba(226,178,90,.4);border-radius:16px;overflow:hidden;
-    margin-bottom:12px;
-    background:linear-gradient(180deg,rgba(40,32,17,.96),rgba(19,17,13,.96));
-    box-shadow:0 14px 34px -20px #000,inset 0 1px 0 rgba(255,220,150,.10)}
+  /* ---- THE SCORE CARD, AS A CABINET SCREEN ----
+   *
+   * DYNASTY ONLY. paintScore returns early for every other mode, so nothing below this can
+   * reach Offense, Defense, Full Team or the Trade Machine.
+   *
+   * It was warm gold on brown with the site's body face, which is a handsome receipt. This
+   * mode is scored like an arcade game (a tally, a multiplier, a running total that only
+   * goes up) and the card said none of that in its materials.
+   *
+   * SO IT IS A SCREEN, NOT A PANEL. Black ground rather than brown, because a CRT is black
+   * and everything on it is light. Orbitron for every figure, which is already loaded and is
+   * already what the 2000s jumbotron score bug uses, so the arcade face on this site is a
+   * face this site already has. Amber phosphor, which is the one the eye reads as a cabinet
+   * rather than as a warning.
+   *
+   * THE SCANLINES ARE AN OVERLAY AND NOT A BACKGROUND, so they sit over the numbers the way
+   * a real screen's do rather than under them, and they are clipped by the card's own
+   * overflow. pointer-events:none, or the card stops taking taps.
+   *
+   * NO FLICKER. A CRT flickers and the reference is obvious, and a flickering block of text
+   * is a photosensitivity risk for a real and specific set of people. The glow carries it. */
+  .arcade{position:relative;border:2px solid rgba(240,198,116,.5);border-radius:14px;
+    overflow:hidden;margin-bottom:12px;
+    background:
+      radial-gradient(120% 80% at 50% 0%,rgba(226,178,90,.10),transparent 62%),
+      linear-gradient(180deg,#0b0a08,#070706);
+    box-shadow:0 14px 34px -20px #000,
+      inset 0 0 0 1px rgba(255,220,150,.07),
+      inset 0 0 44px -12px rgba(226,178,90,.22),
+      0 0 22px -10px rgba(226,178,90,.45)}
+  .arcade:before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:repeating-linear-gradient(180deg,
+      rgba(0,0,0,.26) 0 1px,rgba(0,0,0,0) 1px 3px)}
+  /* Everything real sits above the scanlines' stacking context. */
+  .arcade>*{position:relative;z-index:1}
   .arcade[hidden]{display:none}
   /* WHICH SEASON, AND HOW IT ENDED, on one line at the top. The record used to be a 44px
      hero in a red card of its own, competing with the number this mode is actually played
@@ -1082,14 +1113,14 @@ window.GA_ID='G-L29P5MRWKE';
     flex-wrap:wrap;
     padding:11px 15px;border-bottom:1px solid rgba(226,178,90,.16);
     background:rgba(255,255,255,.02)}
-  .ar-season{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.15em;
-    text-transform:uppercase;color:rgba(243,221,174,.66)}
+  .ar-season{font-family:var(--fled);font-size:11px;font-weight:700;letter-spacing:.2em;
+    text-transform:uppercase;color:#f0c674;text-shadow:0 0 10px rgba(240,198,116,.5)}
   /* WRAPS RATHER THAN TRUNCATES. "Out in the Conference Championship" beside a record does
      not fit a 320px phone on one line, and half a sentence with an ellipsis on it is worse
      than a second line. */
   .ar-rec{font-family:var(--fn);font-size:11.5px;font-weight:700;color:rgba(243,221,174,.5);
     text-align:right;min-width:0}
-  .ar-rec b{font-family:var(--fd,var(--fn));font-size:15px;font-weight:800;color:#F3DDAE;
+  .ar-rec b{font-family:var(--fled);font-size:14px;font-weight:700;color:#F3DDAE;
     font-variant-numeric:tabular-nums;margin-right:6px}
 
   /* THE TALLY, TOP TO BOTTOM, AS ARITHMETIC YOU CAN FOLLOW.
@@ -1097,18 +1128,27 @@ window.GA_ID='G-L29P5MRWKE';
      lines adding to 18,500 above a number reading 55,500, with the multiplier applied
      silently in between. Every step is on the page now, in the order it happens. */
   .ar-parts{display:flex;flex-direction:column;gap:3px;padding:12px 15px 0}
-  .ar-p{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-    font-family:var(--fn);font-size:12.5px;color:rgba(243,221,174,.78);
+  /* DOT LEADERS, which is how a bonus tally is read on a cabinet and also the thing that
+     makes a two column list of reasons and points scan as arithmetic. Drawn as a flexible
+     middle cell rather than with a dotted border on the label, so a long reason shortens the
+     leader instead of wrapping under it. */
+  .ar-p{display:flex;align-items:baseline;gap:8px;
+    font-family:var(--fn);font-size:12.5px;color:rgba(243,221,174,.8);
     opacity:0;transform:translateY(4px);
     transition:opacity .26s ease,transform .26s cubic-bezier(.22,1,.36,1)}
   .ar-p.in{opacity:1;transform:none}
-  .ar-p b{font-weight:800;font-variant-numeric:tabular-nums;color:#F3DDAE}
-  .ar-p.big{color:#e2b25a}
-  .ar-p.big b{color:#ffd98a}
+  .ar-p>span:first-child{flex:0 1 auto;min-width:0}
+  .ar-p:after{content:'';flex:1 1 auto;min-width:10px;order:1;
+    margin-bottom:3px;border-bottom:1px dotted rgba(240,198,116,.3)}
+  .ar-p b{order:2;flex:0 0 auto;font-family:var(--fled);font-weight:700;
+    font-variant-numeric:tabular-nums;color:#F3DDAE}
+  .ar-p.big{color:#f0c674}
+  .ar-p.big b{color:#ffd98a;text-shadow:0 0 12px rgba(255,217,138,.55)}
   .ar-sum,.ar-x{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
     font-family:var(--fn);font-size:12.5px;margin:9px 15px 0;padding-top:8px;
     border-top:1px solid rgba(226,178,90,.18);color:rgba(243,221,174,.6)}
-  .ar-sum b{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px;color:#F3DDAE}
+  .ar-sum b{font-family:var(--fled);font-weight:700;font-variant-numeric:tabular-nums;
+    font-size:15px;color:#F3DDAE}
   /* When the subtotal is hidden the multiplier row inherits the divider above the tally. */
   .ar-sum[hidden]{display:none}
   /* The multiplier is the mode's whole shape, so it lands rather than appears. */
@@ -1117,11 +1157,27 @@ window.GA_ID='G-L29P5MRWKE';
     transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1)}
   .ar-sum[hidden]+.ar-x{border-top:1px solid rgba(226,178,90,.18);margin-top:9px;padding-top:8px}
   .ar-x.in{opacity:1;transform:none}
-  .ar-x b{font-family:var(--fd,var(--fn));font-size:20px;font-weight:800;color:#ffd98a;
-    font-variant-numeric:tabular-nums}
-  .ar-total{font-family:var(--fd,var(--fn));font-size:52px;line-height:1;font-weight:800;
-    font-variant-numeric:tabular-nums;letter-spacing:.01em;color:#F3DDAE;
-    text-align:center;padding:10px 15px 12px;text-shadow:0 0 32px rgba(226,178,90,.36)}
+  /* The multiplier as a chip, because on a cabinet a multiplier is a thing that lights up
+     rather than a number in a sentence. */
+  .ar-x b{font-family:var(--fled);font-size:18px;font-weight:900;color:#241a08;
+    font-variant-numeric:tabular-nums;padding:2px 9px;border-radius:6px;
+    background:linear-gradient(180deg,#ffd98a,#e2b25a);
+    box-shadow:0 0 16px -2px rgba(255,217,138,.6)}
+  /* THE NUMBER THE MODE IS PLAYED FOR, lit like phosphor: a tight white-hot core, a wide
+     amber bloom, and enough letter-spacing that Orbitron's digits read as a readout rather
+     than as a word. Smaller than the 52px it replaces because Orbitron is a wide face and 52
+     put a six figure score over two lines on a 320px phone. */
+  /* SIZED OFF THE VIEWPORT, because the score has no ceiling and this cell does. Orbitron is
+     a wide face: measured, a seven figure score is 238px of the 258px a 320px phone leaves
+     inside this card, and an eight figure one is 272px, which the card's own overflow:hidden
+     would CLIP rather than wrap. Nothing in the mode reaches eight figures today, and a score
+     sliced in half is a bad enough failure that it is worth one clamp not to depend on that
+     staying true. 40px is unchanged from about 400px up. */
+  .ar-total{font-family:var(--fled);font-size:clamp(30px,10vw,40px);line-height:1.04;font-weight:900;
+    font-variant-numeric:tabular-nums;letter-spacing:.02em;color:#fff6de;
+    text-align:center;padding:12px 15px 14px;
+    text-shadow:0 0 6px rgba(255,246,222,.55),0 0 18px rgba(255,200,90,.6),
+      0 0 44px rgba(226,178,90,.45)}
   .ar-total.pop{animation:arpop .42s cubic-bezier(.2,1.5,.4,1)}
   @keyframes arpop{0%{transform:scale(1)}38%{transform:scale(1.13)}100%{transform:scale(1)}}
   .ar-run{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
@@ -1129,8 +1185,10 @@ window.GA_ID='G-L29P5MRWKE';
     background:rgba(0,0,0,.22);
     font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;
     text-transform:uppercase;color:rgba(243,221,174,.62)}
-  .ar-run b{font-family:var(--fd,var(--fn));font-size:24px;letter-spacing:0;
-    font-variant-numeric:tabular-nums;color:#F3DDAE}
+  .ar-run{font-family:var(--fled)}
+  .ar-run b{font-family:var(--fled);font-size:21px;font-weight:700;letter-spacing:.02em;
+    font-variant-numeric:tabular-nums;color:#F3DDAE;
+    text-shadow:0 0 14px rgba(226,178,90,.5)}
 
   /* ---- THE OWNER, AS THE FOOT OF THAT CARD ----
      A strip inside the card rather than a box beside it, so the only border on the screen
