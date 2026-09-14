@@ -261,6 +261,30 @@ costs a player who was engaged enough to come back. `clock.js`'s header argues i
 shorten `commish_free_wait()` to about twenty hours rather than moving to a calendar day: a
 shorter wait walks the window backwards into the player's evening instead of out of it.
 
+#### The two games give different daily allowances, ON PURPOSE
+
+| | free allowance | clock starts |
+|---|---|---|
+| Dynasty | **3 seasons a day**, plus one for a boss battle won | when the budget is spent, or on a firing |
+| Commissioner | **1 season a day** | when each season ends |
+
+**Do not unify these.** They are two different units of play wearing the same word. A
+dynasty season is a draft and a schedule, and three of them is one sitting. A Commissioner
+season is a whole year of rulings, a media day and a playoff, and one of them is already a
+longer sitting than three dynasty seasons. Matching the numbers would make one of the two
+modes wrong, and which one depends on nothing but which file somebody edited second.
+
+The mechanism IS shared and should stay shared: both are a rolling 24 hours held by the
+server, both read `premium_unlocks` themselves, and both fail open. It is only the count and
+the trigger that differ.
+
+**The player is told, on the screen where it would otherwise look like a bug.** The
+Commissioner wall says the rule is one a day, says why (a season here is a full year of
+rulings), and says the NFL game sets its own pace. It does NOT print Dynasty's number: that
+number lives on Dynasty's own server and its own screen, and a copy here is a copy that goes
+stale the next time somebody tunes it. `ps_day_allowance` and `commish_free_wait()` are each
+the single place their own rule lives.
+
 ### A term is a contract, and Pro gets renewed
 
 **A TERM IS NO LONGER FIVE SEASONS AND THEN THE MODE IS OVER.** "Take the job again" built a

@@ -142,6 +142,19 @@ const FREE = (terms) => ({ ok: true, pro: false, locked: true,
     await txt(p, '#w-head'));
   ok('it says where the term stands', /1 season into a 5 season term/.test(await txt(p, '#w-say')),
     await txt(p, '#w-say'));
+  /* AND WHY IT IS ONE HERE. The other game in the same bundle gives a different number, and
+     a player who owns both meets both: unexplained, this reads as the college game being
+     stingy or broken. The two are different on purpose (see CLAUDE.md), so the screen says
+     so rather than leaving somebody to guess. */
+  ok('  and that the rule here is one a day', /Free plays one season a day/.test(await txt(p, '#w-say')));
+  ok('  and why it is one', /full year of rulings/.test(await txt(p, '#w-say')));
+  ok('  and that the other game differs', /NFL game sets its own pace/.test(await txt(p, '#w-say')));
+  /* NO FIGURE FOR THE OTHER GAME, because that number lives on its own server and its own
+     screen. A second copy here is one that goes stale the next time somebody tunes it, and
+     a wrong number about the thing you are being sold is worse than no number. */
+  ok('  without quoting the other game\'s number',
+    !/\b(two|three|four|five|2|3|4|5) seasons a day/i.test(await txt(p, '#w-say')),
+    await txt(p, '#w-say'));
   ok('the countdown reads about five hours', /^[45]h /.test(await txt(p, '#w-left')),
     await txt(p, '#w-left'));
   ok('the offer is on it', (await has(p, '#b-buy-ps')) && (await has(p, '#b-buy-rtb')));

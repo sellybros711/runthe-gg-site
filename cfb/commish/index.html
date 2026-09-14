@@ -2814,8 +2814,18 @@ function paintWait(st){
   }
   /* ONE SENTENCE ABOUT WHERE THEY ARE, because the wall is the screen most likely to be
      met by somebody who has been away a day and does not remember what they were doing. */
+  /* AND WHY IT IS ONE HERE, said out loud, because the other game in the same bundle gives
+     a different number and a player who owns both will meet both. Dynasty's free day is a
+     budget of several seasons; this is one. That is deliberate (a dynasty season is a
+     draft and a schedule, a season here is a whole year of rulings), and unexplained it
+     reads as the college game being stingy or broken.
+     NO FIGURE FOR THE OTHER GAME. Its number lives on its own server and its own screen,
+     and a copy of it here is a copy that goes stale the next time somebody tunes it. What
+     this says is that the two are different on purpose, which is the part that confuses. */
   $('w-say').textContent='You are '+done+' season'+(done===1?'':'s')+' into a '
-    +termLen(world)+' season term. On the free tier the sport moves one year a day.';
+    +termLen(world)+' season term. Free plays one season a day. A season here is a full '
+    +'year of rulings, so Commissioner counts them one at a time. The NFL game sets its '
+    +'own pace.';
   $('w-clock').hidden=false;
   $('w-when').textContent='until season '+next;
   waitPaintClock(st);
