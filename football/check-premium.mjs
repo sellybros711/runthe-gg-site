@@ -331,7 +331,7 @@ ok('the spent sheet lists the two ways', grace.none === true);
 ok('and stops once both are earned', grace.both === false);
 ok('the Trade Machine, which earns neither, is not offered them', grace.trade === false);
 ok('the rules sheet states all three', /One run a day/i.test(grace.rules)
-  && /Fired in season one/i.test(grace.rules) && /Win a boss game/i.test(grace.rules));
+  && /Fired in season one/i.test(grace.rules) && /Win a boss battle/i.test(grace.rules));
 ok('an owner is told about no limit at all', !/One run a day/i.test(grace.ownerRules));
 await t.page.close();
 

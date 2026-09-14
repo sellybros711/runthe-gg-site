@@ -1523,8 +1523,33 @@ window.GA_ID='G-L29P5MRWKE';
     color:#e2b25a}
   .ldg .lsc{font-weight:800;font-variant-numeric:tabular-nums;color:#e2b25a}
 
-  .ldg{display:grid;grid-template-columns:auto auto auto minmax(0,1fr) auto auto;gap:9px;align-items:center;
-    font-family:var(--fn);font-size:11.5px;padding:7px 10px;border-radius:9px;
+  /* THE LEDGER IS A TABLE AND HAD NO HEADINGS. Six columns of four different kinds of value
+     ran together as one line: "1 11-6 83.6 needed 8 KEPT 12,500", where the 83.6 was a team
+     rating nothing on screen named and "needed 8" carried its own label inline because there
+     was nowhere else to put it. A career of ten seasons is the thing this mode is played for,
+     so it gets a header row and reads down its columns.
+     THE SAME TEMPLATE ON BOTH, declared once through the shared selector below, because a
+     header whose columns can drift from its rows is worse than no header. */
+  .ldg-h{color:var(--dim-2);font-size:8.5px;font-weight:800;letter-spacing:.09em;
+    text-transform:uppercase;padding:0 10px 5px;background:none}
+  .ldg-h .lo,.ldg-h .lsc{text-align:right}
+  /* THE SHARED RULE CARRIES THE COLUMNS AND NOTHING ELSE, which is the whole reason it is
+     shared: the header's cells must line up with the rows' and cannot be allowed to drift.
+     Everything below it belongs to a ROW. The first version of this put the deal-out
+     animation in here too, so the header inherited opacity:0, never got the .in that the
+     rows get, and simply did not render. The text was in the DOM and the table had a blank
+     band where its headings should be. */
+  /* FIXED WIDTHS ON THE THREE LEFT COLUMNS, and this is the part that actually makes a
+     header work. The header and the rows are SEPARATE grid containers, so `auto` columns
+     size to each container's own content: the first attempt shared the template and still
+     came out ragged, because "SEASON" is wider than "1" and each row sized itself. Columns
+     that must line up across containers have to be told a width. Each is set to its widest
+     cell, which is the heading rather than the figure in all three.
+     The last two stay auto: the verdict is a status word of varying length and POINTS is
+     right-aligned against the container edge, so their right edges agree without help. */
+  .ldg,.ldg-h{display:grid;grid-template-columns:46px 50px 38px minmax(0,1fr) auto auto;
+    gap:9px;align-items:center}
+  .ldg{font-family:var(--fn);font-size:11.5px;padding:7px 10px;border-radius:9px;
     background:rgba(0,0,0,.24);opacity:0;transform:translateY(5px);
     transition:opacity .3s ease,transform .3s cubic-bezier(.22,1,.36,1)}
   .ldg.in{opacity:1;transform:none}
@@ -7277,10 +7302,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
        Three screens for the one flow that reaches them, and only in a dynasty: SCOUT the
        boss and pick how to attack, PLAY the game making two live calls, then a result that
        either pays a reward or stings next season. See bossScout / bossPlay / bossFinish. The
-       scoreboard is the same bug the playoffs and the Bowl use, so a boss game reads like a
+       scoreboard is the same bug the playoffs and the Bowl use, so a boss battle reads like a
        game and not like a menu. -->
   <div class="screen bossx" id="s-bscout">
-    <div class="eyebrow red">Boss game &middot; Season <span id="bs-season">5</span></div>
+    <div class="eyebrow red">Boss battle &middot; Season <span id="bs-season">5</span></div>
     <h2 class="display bs-name" id="bs-name">The Boss</h2>
     <div class="bs-line" id="bs-rec">13-3, and the best of their era.</div>
     <div class="bs-stats">
@@ -7310,7 +7335,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   </div>
 
   <div class="screen bossx" id="s-bgame">
-    <div class="eyebrow red" id="bg-eye">Boss game</div>
+    <div class="eyebrow red" id="bg-eye">Boss battle</div>
     <h2 class="display bg-opp" id="bg-opp">The Boss</h2>
     <div class="bug big bossbug" id="bg-bug">
       <div class="btop">
@@ -8776,7 +8801,7 @@ function show(id){
      line about Andre Johnson's contract pinned across the front page while timers went on
      firing at rows nobody can see. */
   if(id!=='s-winter'&&typeof winterNarrOff==='function'){ winterClear(); winterNarrOff(); }
-  /* The boss game runs on its own timer and rAF, the way the playoffs do; leaving its screen
+  /* The boss battle runs on its own timer and rAF, the way the playoffs do; leaving its screen
      by any door has to stop them, or a drive keeps animating over whatever comes next. */
   if(id!=='s-bgame'&&typeof bossStop==='function') bossStop();
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
@@ -9544,7 +9569,7 @@ async function dailySpend(mode){
    server holds a flag per reason rather than a count:
 
      'fired'  a run that ended in its first season
-     'boss'   a boss game won
+     'boss'   a boss battle won
 
    So a player can earn both in one day and get three starts. Calling the same reason twice
    costs nothing and grants nothing. */
@@ -9597,7 +9622,7 @@ function dailySpentSheet(mode){
       'many days as it lasts.</p>'+
     /* HOW TO EARN ANOTHER ONE, which the game has always granted and never mentioned.
        DYNASTY ONLY, because that is where the two reasons live: getting fired in season one
-       and winning a boss game both come off a dynasty, and the Trade Machine earns neither.
+       and winning a boss battle both come off a dynasty, and the Trade Machine earns neither.
        Offering them on its spent sheet would be promising a run that mode cannot give.
        HIDDEN ONCE BOTH ARE IN. The allowance is 1 plus one per reason earned, so a 3 means
        there is nothing left to earn and a list of ways to earn it would be taunting
@@ -9608,7 +9633,7 @@ function dailySpentSheet(mode){
       ? '<div class="dgrace">'+
           '<b>Two things earn you another run today</b>'+
           '<span>Get fired in season one. That one does not count.</span>'+
-          '<span>Win a boss game.</span>'+
+          '<span>Win a boss battle.</span>'+
         '</div>'
       : '')+
     /* THE OFFER ITSELF, AT THE ONE MOMENT SOMEBODY IS ACTUALLY ASKING FOR IT.
@@ -10226,7 +10251,7 @@ function ensureDynastyButton(){
        does. The verb moves up into the headline and comes out of the caption, which is a
        field shorter for it.
        RESUME RATHER THAN CONTINUE, and not only because it is shorter. "Continue" already
-       does two jobs on this page: it is the boss game's advance button and it is the verb on
+       does two jobs on this page: it is the boss battle's advance button and it is the verb on
        "Continue with Google". A third use dulls all three. Resume is also what the code has
        always called this: see dynResume() below. */
     /* A run in progress is never gated, so nothing here reads the allowance, and the
@@ -10421,7 +10446,7 @@ function dynastyRulesHTML(go,opts){
      player a schedule the game does not keep, and nothing fails, because it is a string. */
   const mev=E.DYNASTY_MILESTONE_EVERY;
   const mand=[1,3,5].map((n)=>mev*n).join(', ');   // odd milestones: the roster mandates
-  const boss=[2,4,6].map((n)=>mev*n).join(', ');   // even milestones: the boss games
+  const boss=[2,4,6].map((n)=>mev*n).join(', ');   // even milestones: the boss battles
   return '<div class="eyebrow red">Dynasty</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 2px">One team. One life. '+
       'How long can you last?</h2>'+
@@ -10466,7 +10491,7 @@ function dynastyRulesHTML(go,opts){
       '<li><b>'+mand+': a roster mandate.</b> The owner names a way to build your team. Do it '+
         'that offseason and your dead cap is wiped clean. Miss it and next season wants one '+
         'more win. Either way the run goes on.</li>'+
-      '<li><b>'+boss+': a boss game.</b> Beat a real all-time team and you freeze one player '+
+      '<li><b>'+boss+': a boss battle.</b> Beat a real all-time team and you freeze one player '+
         'at his age and salary for good.</li>'+
       '<li><b>The target creeps up.</b> '+base+' wins, then '+(base+1)+' after season '+step+
         ', then '+(base+2)+' after '+(step*2)+'.</li>'+
@@ -10484,7 +10509,7 @@ function dynastyRulesHTML(go,opts){
             'costs one. Play it over as many days as it lasts.</li>'+
           '<li><b>Fired in season one? Have another.</b> A run that dies in its first '+
             'season does not count against the day.</li>'+
-          '<li><b>Win a boss game, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
+          '<li><b>Win a boss battle, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
             ' and beat the marquee team, and the day gives you one more.</li>'+
         '</ul>'
       : '')+
@@ -14820,12 +14845,12 @@ function dynAheadText(from,bar){
       if(barNext>barNow) return 'Bar goes to '+barNext+' next season';
     }
     const here=E.dynastyMilestoneKind(from);
-    if(here) return (here==='boss'?'Boss game':'Mandate')+
+    if(here) return (here==='boss'?'Boss battle':'Mandate')+
       (from===n?' this season':' next season');
     for(let k=from+1;k<=from+ev*2;k++){
       const kk=E.dynastyMilestoneKind(k);
       if(!kk) continue;
-      const what=kk==='boss'?'Boss game':'Mandate';
+      const what=kk==='boss'?'Boss battle':'Mandate';
       /* "IN 1 SEASONS" IS WHAT THIS SAID, on the offseason screen only. There the horizon
          starts at the season being planned for, so a milestone one year further out came
          through the loop rather than through the branch above it, which is where the season
@@ -17719,7 +17744,12 @@ function paintOwner(){
        "current" would be the last thing a dead run said about itself. */
     if(n) n.innerHTML=(v.fired?'Final score: ':'Current score: ')+
       '<span class="scorechip">'+SCORE(v.score||0)+'</span>';
-    led.innerHTML=run.history.map((h,i)=>{
+    /* Emitted from the same function as the rows, so a column added to one is added to the
+       other or neither. TARGET rather than "needed", which frees the cell to be a number. */
+    const head='<div class="ldg-h"><span>Season</span><span>Record</span>'+
+      '<span class="lo">Ovr</span><span>Target</span><span></span>'+
+      '<span class="lsc">Points</span></div>';
+    led.innerHTML=head+run.history.map((h,i)=>{
       const cls=h.cleared?'pass':((i===run.history.length-1&&v.fired)?'fired':'miss');
       /* Rows that banked their roster can be opened; the OVR cell is always rendered, empty
          when a pre-snapshot season has no rating, so every row keeps the same six columns. */
@@ -17728,14 +17758,17 @@ function paintOwner(){
         :'<span class="lo" style="color:'+ovrBand(h.rating)+'">'+Number(h.rating).toFixed(1)+'</span>';
       return '<div class="ldg '+cls+tap+'" data-i="'+i+'"><span class="ly">'+h.year+'</span>'+
         '<span class="lr">'+h.wins+'-'+h.losses+'</span>'+ov+
-        '<span class="lb">needed '+h.bar+'</span>'+
+        '<span class="lb">'+h.bar+'</span>'+
         '<span class="lv">'+(h.title?'TITLE':(h.cleared?(h.made?'PLAYOFFS':'KEPT'):
           (i===run.history.length-1&&v.fired?'FIRED':'MISSED')))+'</span>'+
         '<span class="lsc">'+SCORE(h.score||0)+'</span></div>';
     }).join('');
     /* Dealt out rather than dropped in, oldest first, so the run reads as a sequence of
        years and the last row lands last. */
-    [...led.children].forEach((r,i)=>setTimeout(()=>r.classList.add('in'),120+i*70));
+    /* THE HEADER IS NOT A SEASON. It is a child of the same element, so a blanket walk over
+       children would deal it out with the rows and, worse, leave it stuck at opacity 0 until
+       its turn came. Only the rows are dealt. */
+    [...led.querySelectorAll('.ldg')].forEach((r,i)=>setTimeout(()=>r.classList.add('in'),120+i*70));
   }
 
   /* A FIRED RUN IS NOT WAITING FOR ANYBODY. The autosave's whole job is to hold a dynasty
@@ -17751,7 +17784,7 @@ function paintOwner(){
   if(over) over.classList.toggle('over',!!v.fired);
   paintRunCard(v);
 
-  /* A BOSS GAME STANDS BETWEEN THE SEASON AND THE WINTER, and only when there is one and the
+  /* A BOSS BATTLE STANDS BETWEEN THE SEASON AND THE WINTER, and only when there is one and the
      run survived to see it. The teaser goes on the owner's own bar rather than a panel of its
      own, because it is the same voice: you cleared the bar, now here is the marquee game. */
   const boss=(!v.fired&&R.bossPending(run))?R.bossFor(run):null;
@@ -17796,7 +17829,7 @@ function paintOwner(){
 
 /*
  * INTO THE WINTER. The one way from a finished season to the next offseason, shared by the
- * ordinary Next button and the far side of a boss game.
+ * ordinary Next button and the far side of a boss battle.
  *
  * THE SEASON THAT JUST ENDED IS RECORDED; THE NEXT ONE IS NOT YET. `submitted` and the
  * placings belong to one season, and outside a dynasty a run only ever has one, so nothing
@@ -17843,7 +17876,7 @@ function mandateBriefing(){
 }
 
 /*
- * ─── THE BOSS GAME, ON SCREEN ──────────────────────────────────────────────────────
+ * ─── THE BOSS BATTLE, ON SCREEN ──────────────────────────────────────────────────────
  *
  * Three screens, one flow: SCOUT (pick how to attack), PLAY (a game played forward on the
  * playoff field), RESULT (a reward or a sting, then into the winter).
@@ -17855,7 +17888,7 @@ function mandateBriefing(){
  * straight back into bossSimResolve, which runs the play and decides where the ball goes. So
  * the situation is the sim's own and the choice genuinely branches it.
  *
- * NOT SAVED MID-GAME. run.js autosaves at rest, and a boss game is not rest: a reload lands
+ * NOT SAVED MID-GAME. run.js autosaves at rest, and a boss battle is not rest: a reload lands
  * on the OVER screen (dynResume routes phase OVER to paintOver), which offers the boss again.
  * The result is banked only when applyBossResult runs on the far side, and that call IS
  * wrapped, so once the reward is taken it survives a reload.
@@ -17943,7 +17976,7 @@ function bossPlay(read){
   themEl.querySelector('.cd').textContent=bossThreeLetter(o);
   bossYouCol=me.a;
   bossThemCol=(them.a&&them.a.toLowerCase()!=='#000000'&&them.a!==me.a)?them.a:'#e87461';
-  $('bg-eye').textContent='Boss game · Season '+run.seasonNo;
+  $('bg-eye').textContent='Boss battle · Season '+run.seasonNo;
   $('bg-opp').textContent=o.display;
   $('bg-syou').textContent='0'; $('bg-sthem').textContent='0';
   youEl.classList.add('lead'); themEl.classList.remove('lead');

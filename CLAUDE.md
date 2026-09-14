@@ -97,7 +97,7 @@ versions a script beside it, found rather than listed.
 it is DERIVED from the run rows the leaderboard already keeps rather than stored anywhere.
 That is what makes a cabinet retroactive, account-shaped rather than browser-shaped, and
 impossible to lose by clearing site data. It is also the constraint: a badge can only ask
-about something that actually reaches `ps_runs`. A dynasty knows whether its boss game was
+about something that actually reaches `ps_runs`. A dynasty knows whether its boss battle was
 won and never writes it down, so no badge asks. Reaching season 11 is the honest version of
 the same claim.
 
@@ -221,7 +221,7 @@ Measured, and worth knowing before writing a badge that names any of it:
   becomes arithmetically impossible rather than hard. Difficulty past the cap comes from the
   squeeze the mode already runs on, a frozen cap against a roster that ages every winter.
 - **A milestone every `DYNASTY_MILESTONE_EVERY` seasons, alternating**: the odd ones are
-  roster mandates out of a list of **four**, the even ones are boss games out of a list of
+  roster mandates out of a list of **four**, the even ones are boss battles out of a list of
   **six**, both cycling. There is no separate boss constant. A boss is every second milestone,
   so the boss interval is twice the cadence and is derived.
   **The cadence is 3, and it shipped as 5.** `simulator.js --dynasty` runs the rule the game
