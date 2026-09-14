@@ -1228,6 +1228,57 @@ window.GA_ID='G-L29P5MRWKE';
   /* Room for the dock, which is fixed and would otherwise sit on the last panel. */
   #s-over.gaunt{padding-bottom:84px}
 
+  /* ---- THE REST OF THE DYNASTY RESULTS SCREEN, IN THE SAME MATERIALS ----
+   *
+   * The score card above is a cabinet screen and everything under it was still the site's
+   * ordinary panels, so the page read as one arcade element followed by a normal results
+   * page. Same amber phosphor, same Orbitron figures, same black ground.
+   *
+   * EVERY RULE HERE IS SCOPED TO #s-over.gaunt, which is the dynasty class on this screen.
+   * Offense, Defense, Full Team and the Trade Machine draw the same markup and keep the
+   * panels that are right for them. Nothing below changes a shared element's own styles.
+   */
+  /* The section headings, which were grey on grey and are the only thing tying four
+     separate blocks into one screen. */
+  #s-over.gaunt .panel>.eyebrow,#s-over.gaunt #o-ledwrap .rp-head>span:first-child{
+    font-family:var(--fled);font-size:10px;letter-spacing:.18em;color:#f0c674;
+    text-shadow:0 0 10px rgba(240,198,116,.35)}
+  #s-over.gaunt .panel{border-color:rgba(240,198,116,.2)}
+
+  /* THE FOUR FACTS ABOUT THE ROSTER, as a readout panel rather than four numbers floating
+     under the lineup on hairlines. The ids win on specificity over .splits.sq's own
+     borders, which are the page's grey and were the loudest thing saying "ordinary panel". */
+  #s-over.gaunt #o-squad{border:1px solid rgba(240,198,116,.26);border-radius:12px;
+    padding:13px 4px;margin-top:14px;
+    background:linear-gradient(180deg,#0b0a08,#070706)}
+  #s-over.gaunt #o-squad b{font-family:var(--fled);font-weight:700;font-size:16px;
+    color:#F3DDAE;text-shadow:0 0 12px rgba(226,178,90,.4)}
+  #s-over.gaunt #o-squad span{color:rgba(243,221,174,.5);letter-spacing:.09em}
+  #s-over.gaunt #o-squad>*:nth-child(2n){border-left:1px solid rgba(226,178,90,.2)}
+  #s-over.gaunt #o-squad>*:nth-child(n+3){border-top:1px solid rgba(226,178,90,.2)}
+
+  /* THE SEASON'S GAMES, AS A CABINET LOG. Scores in the readout face, the result as a lit
+     block rather than a rounded pill, and the week in the dim amber a cabinet uses for the
+     things that are not the number you are reading. */
+  #s-over.gaunt .glist .g{background:linear-gradient(180deg,#0b0a08,#070706);
+    border-color:rgba(240,198,116,.16)}
+  #s-over.gaunt .glist .g .wk{font-family:var(--fled);font-size:10px;letter-spacing:.06em;
+    color:rgba(240,198,116,.5)}
+  #s-over.gaunt .glist .g .opp{color:rgba(243,221,174,.92)}
+  #s-over.gaunt .glist .g .sc{font-family:var(--fled);font-weight:700;font-size:13px;
+    color:#F3DDAE}
+  #s-over.gaunt .glist .g .res{border-radius:4px;font-family:var(--fled);font-weight:700;
+    font-size:11px}
+  #s-over.gaunt .glist .g .res.w{background:#1c7a3c;box-shadow:0 0 11px -2px rgba(34,197,94,.75)}
+  #s-over.gaunt .glist .g .res.l{background:#8e2626;box-shadow:0 0 11px -2px rgba(248,113,113,.6)}
+  /* A PLAYOFF ROW IS THE MODE'S OWN GOLD HERE, not the purple every other mode uses. That
+     purple is this page's playoff colour everywhere else and it is the one thing on the log
+     that belonged to a different screen. */
+  #s-over.gaunt .glist .g.po{background:linear-gradient(90deg,rgba(226,178,90,.2),#0b0a08);
+    border-color:rgba(240,198,116,.34)}
+  #s-over.gaunt .glist .g.tap:hover{border-color:rgba(240,198,116,.6)}
+  #s-over.gaunt .glist .g .gchev{color:rgba(240,198,116,.45)}
+
   /* ---- THE RUN, ONCE IT IS OVER ----
      Deliberately the same material as the season card above it: same gold, same bands, same
      radius. They are two views of one run and looking like two different products was the
