@@ -208,6 +208,75 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
   await p.close();
 }
 
+/* ── the door has to look like it costs money ────────────────────────────────────────────
+ *
+ * THIS IS THE BUG THE CARD SHIPPED WITH. A purple Preview tag on a purple card, sitting in
+ * a row of free buttons, with nothing on it that said Pro and nothing that said locked. It
+ * read as one more free mode, and the first time a reader learned otherwise was at a gate
+ * after the tap. A store reached that way is a refusal rather than an offer.
+ *
+ * The unknown window is checked too, and it is the one place the lock must NOT appear:
+ * premiumSet is null for the length of one round trip, and a padlock drawn through it tells
+ * a paying customer their mode was taken away and then hands it back.
+ */
+{
+  const p = await open(stub(true, [], []), 'the front page door says Pro and carries a lock');
+  const door = await p.$('#b-hp-commish');
+  ok('the door is drawn', !!door);
+  ok('the badge reads Pro, not Preview', (await txt(p, '#b-hp-commish .hp-tag')) === 'Pro');
+  ok('the badge is the gold one', await p.$eval('#b-hp-commish .hp-tag', (e) => e.classList.contains('pro')));
+  ok('a padlock sits on the name', await has(p, '#b-hp-commish .hp-namerow .mc-pad'));
+  ok('and it says what it is part of', /Part of the Pro bundle/.test(await txt(p, '#b-hp-commish .hp-cost')));
+  /* NO FIGURE ON THE FRONT PAGE. A price quoted before anything has been offered is a cost
+     the reader has to decide against with nothing on the other side of the scale, and it is
+     a second copy of a number that lives in the store. */
+  ok('and never quotes a price out here', !/\$/.test(await txt(p, '#b-hp-commish')));
+  /* THE LOCK IS CENTRED ON THE NAME. The shared .mc-pad rule carries margin-left:auto, so
+     without a reset the padlock is pushed to the far edge of the row. */
+  const gap = await p.evaluate(() => {
+    const pad = document.querySelector('#b-hp-commish .hp-namerow .mc-pad');
+    const nm = document.querySelector('#b-hp-commish .hp-name');
+    if (!pad || !nm) return null;
+    return Math.round(nm.getBoundingClientRect().left - pad.getBoundingClientRect().right);
+  });
+  ok('the padlock is beside the name rather than shoved off it', gap !== null && gap < 14, gap + 'px');
+  /* A TAP OPENS THE OFFER, not a gate that refuses you. */
+  await p.click('#b-hp-commish');
+  await p.waitForTimeout(700);
+  ok('tapping it opens the store', (await p.$eval('#sheet-in', (e) => e.dataset.kind)) === 'premium');
+  ok('and never navigates to the gate', /\/cfb\/index\.html$/.test(p.url()), p.url());
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+{
+  const p = await open(stub(true, ['cfb_premium'], BOUGHT), 'an owner gets the door back, with no lock on it');
+  ok('the badge is not the gold one', !(await p.$eval('#b-hp-commish .hp-tag', (e) => e.classList.contains('pro')).catch(() => false)));
+  ok('no padlock', !(await has(p, '#b-hp-commish .hp-namerow .mc-pad')));
+  ok('and nothing selling anything', !(await has(p, '#b-hp-commish .hp-cost')));
+  /* A tap goes to the mode, because that is what they bought. */
+  ok('the link still points at the mode',
+    (await p.$eval('#b-hp-commish', (e) => e.getAttribute('href'))) === '/cfb/commish/');
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+{
+  /* THE MODES SHEET CARRIES THE SAME CARD and had the same problem: a Testing sticker
+     beside two free modes, with nothing saying it was sold. */
+  const p = await open(stub(true, [], []), 'the modes sheet card is locked too');
+  await p.click('#b-modes');
+  await p.waitForTimeout(700);
+  ok('the sticker reads Pro', (await txt(p, '#b-mc-commish .mc-sticker')) === 'Pro');
+  ok('the card is marked pro', await p.$eval('#b-mc-commish', (e) => e.classList.contains('pro')));
+  ok('a padlock replaces the arrow', (await has(p, '#b-mc-commish .mc-pad')) && !(await has(p, '#b-mc-commish .mc-arrow')));
+  /* THE THING A READER OF THIS GAME CANNOT KNOW, which is that one payment covers both. */
+  ok('and it says the payment covers the NFL game too', /unlocks the NFL game too/.test(await txt(p, '#b-mc-commish .mc-pro')));
+  await p.click('#b-mc-commish');
+  await p.waitForTimeout(700);
+  ok('tapping it opens the store in place', (await p.$eval('#sheet-in', (e) => e.dataset.kind)) === 'premium');
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
 /* ── an account the mode is not open to ─────────────────────────────────────────────── */
 {
   /* THE OFFER IS GATED ON THE DOOR, not just on ownership. While the launch flag is false
