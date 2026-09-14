@@ -2133,13 +2133,31 @@ window.GA_ID='G-L29P5MRWKE';
        with hvViewEx(), which sizes the camera to this exact box. */
     .screen.scr-dailyround > .holeview{margin:0 auto 8px; max-width:none;
       width:min(calc(100vw - 48px), 1600px, calc((100vh - 296px) * 1.7142857))}
-    /* the scorecard has the width to be a real one: front nine and back nine side by side, one row */
-    .screen.scr-dailyround > .dcardwrap{max-width:1100px}
+    /* The scorecard has the width to be a real one: front nine and back nine side by side, one row.
+       A WIDTH and not just a max-width, for the same reason the control bar below needs one. This screen
+       is a flex column, and auto side margins turn off the stretch a flex child would otherwise get, so
+       a max-width alone left the card shrink-wrapped around its own cells: 586px under a 1552px tracer,
+       which is the "skinny scorecard" (owner). The cells are 1fr tracks, so the width lands on them. */
+    .screen.scr-dailyround > .dcardwrap{max-width:1100px; width:min(1100px, 100%)}
     .screen.scr-dailyround .rsc{max-width:none; flex-direction:row; flex-wrap:wrap; gap:6px 16px; align-items:flex-start}
     .screen.scr-dailyround .rsc-leg{flex:1 0 100%}
     .screen.scr-dailyround .rsc-block{flex:1 1 0; min-width:0}
-    /* everything else stays a readable column, centred under the window */
-    .screen.scr-dailyround > *:not(.holeview):not(.bcasthd){max-width:760px; margin-left:auto; margin-right:auto}
+    /* The width is only half of not being skinny. At phone sizing a 1100px card is small type stranded in
+       wide boxes, so the rows and the digits grow with it: this is the card a desk reads at a desk's
+       distance. Cells are 1fr tracks, so only the type and the padding are set here. */
+    .screen.scr-dailyround .rsc-c{font-size:15px; padding:9px 0}
+    .screen.scr-dailyround .rsc-par{font-size:13px}
+    .screen.scr-dailyround .rsc-lab{font-size:11px; padding:9px 9px}
+    .screen.scr-dailyround .rsc-pl.rsc-lab{font-size:13px}
+    .screen.scr-dailyround .rsc-legi{font-size:13px}
+    .screen.scr-dailyround .dcardhd{margin-bottom:10px}
+    .screen.scr-dailyround .dcardhd .t{font-size:12px}
+    .screen.scr-dailyround .dcardhd .h{font-size:12px}
+    /* everything else stays a readable column, centred under the window. The scorecard is excluded by
+       name: this selector outweighs the rule above it (four class-level parts against three), so without
+       the exclusion it quietly clamped the card back to 760 and the 1100 above did nothing. */
+    .screen.scr-dailyround > *:not(.holeview):not(.bcasthd):not(.dcardwrap){max-width:760px; margin-left:auto; margin-right:auto}
+    .screen.scr-dailyround > .dcardwrap{margin-left:auto; margin-right:auto}
     .screen.scr-dailyround > .dcardwrap{margin-top:0}
     /* On desktop the control bar sits IN FLOW directly under the window (order:1) with the scorecard
        below it (order:2), so the fixed bottom bar can never cover the card - which it did, leaving a
