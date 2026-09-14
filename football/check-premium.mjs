@@ -346,6 +346,10 @@ await t.page.close();
 console.log('\nTHE WALK BACK FROM STRIPE');
 const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,'
   + 'premiumRefresh,paintHomeStart,setDaily:(m,v)=>{dailyState[m]=v;},'
+  /* The board is never called in this harness, so the two corner numbers are set by hand
+     the same way ownership is. dynHiFor is pinned alongside them, or the next repaint
+     sees a user it has not asked for and fires a real request that overwrites them. */
+  + 'setHi:(t,m)=>{dynHiTop=t;dynHiMine=m;dynHiFor=(authState.userId||null);},'
   + 'setPremium:(v)=>{premiumSet=v;},'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
@@ -538,6 +542,68 @@ ok('and a gold glow around it', gold.open && /rgba?\(2\d\d,\s*1\d\d/.test(gold.o
   gold.open && String(gold.open.shadow).slice(0, 80));
 ok('a spent door drops the gold', gold.spent && !isGold(gold.spent.border), gold.spent && gold.spent.border);
 ok('and stops breathing', gold.spent && gold.spent.anim === 'none', gold.spent && gold.spent.anim);
+
+/*
+ * THE TWO NUMBERS IN THE CORNER, AND THE FOUR STATES THEY HAVE.
+ *
+ * The board answers or it does not, and the player has a run on it or does not, so this
+ * corner has to be right with either half missing. The failure that matters is the quiet
+ * one: a dash, a zero, or a stale number from the previous account sitting on the door as
+ * though it were a result.
+ *
+ * AND IT MUST NOT GROW INTO THE FOOTBALL. A score has no ceiling and this slot does. The
+ * abbreviation exists because an eight figure record printed in full runs 2px into the ball
+ * at 320px and twelve past it at 300, which was measured rather than guessed, so the widths
+ * below are the check on that arithmetic rather than a formatting preference.
+ */
+console.log('\nTHE RECORD AND YOUR BEST, IN THE CORNER OF THE DOOR');
+for (const [label, top, mine, want] of [
+  ['the board answered and they have a run', { dynasty_id: 'a', score: 402500 }, { dynasty_id: 'b', score: 198000 },
+    'RECORD 402,500 YOUR BEST 198,000'],
+  ['they hold the record themselves', { dynasty_id: 'a', score: 402500 }, { dynasty_id: 'a', score: 402500 },
+    'YOUR RECORD 402,500'],
+  ['signed out, or never played one', { dynasty_id: 'a', score: 402500 }, null, 'RECORD 402,500'],
+  /* THE BOARD IS UNREACHABLE MORE OFTEN THAN ANYBODY WOULD LIKE. Nothing at all is the
+     right answer; a dash would be the door reporting a result it does not have. */
+  ['the board said nothing', null, null, ''],
+  ['a run worth nothing yet', { dynasty_id: 'a', score: 0 }, { dynasty_id: 'b', score: 0 }, ''],
+  ['a record past a million', { dynasty_id: 'a', score: 12845000 }, { dynasty_id: 'b', score: 1200000 },
+    'RECORD 12.8M YOUR BEST 1.2M'],
+]) {
+  const r = await ck.page.evaluate(([top, mine]) => {
+    const T = window.__t;
+    const at = new Date(Date.now() + 3600e3).toISOString();
+    T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+    T.setPremium([]);
+    try { localStorage.removeItem('ps_dynasty_save'); } catch (e) {}
+    T.setDaily('dynasty', { used: 0, allowance: 1, resetsAt: at });
+    T.setHi(top, mine);
+    T.paintHomeStart();
+    const el = document.getElementById('b-start-dyn');
+    const hi = el && el.querySelector('.hp-hi');
+    const ball = el && el.querySelector('.hp-mark');
+    const h = hi && hi.getBoundingClientRect(), bb = ball && ball.getBoundingClientRect();
+    return {
+      text: hi ? (hi.innerText || '').replace(/\s+/g, ' ').trim() : '',
+      /* The ball sits centred above the headline and the block starts at the left edge, so
+         the only way they meet is the block getting wider than the space beside it. */
+      hitsBall: !!(h && bb && h.right > bb.left),
+      sub: el ? (el.querySelector('.hp-full-sub').innerText || '').trim() : '',
+    };
+  }, [top, mine]);
+  ok(label, r.text === want, '"' + r.text + '"' + (r.text === want ? '' : ' wanted "' + want + '"'));
+  ok('  clear of the football', !r.hitsBall);
+}
+/* THE CAPTION. "One team, one life" described how the mode was configured and named nothing
+   anybody wants. Asserted as the stake rather than as an exact string, so it can be reworded
+   without failing, but not quietly reverted to a spec line. */
+const cap = await ck.page.evaluate(() =>
+  (document.getElementById('b-start-dyn').querySelector('.hp-full-sub').innerText || '').trim());
+ok('the caption names the stake', /fire/i.test(cap), cap);
+ok('and it is one line', await ck.page.evaluate(() => {
+  const s = document.getElementById('b-start-dyn').querySelector('.hp-full-sub');
+  return s.getBoundingClientRect().height < parseFloat(getComputedStyle(s).lineHeight) * 1.6;
+}));
 
 console.log('\nWHAT YOU UNLOCKED, AND EVERY ROW IS A DOOR');
 /*

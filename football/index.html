@@ -536,6 +536,27 @@ window.GA_ID='G-L29P5MRWKE';
      without a stacking order of their own the words paint under it. */
   .hp-dyn .hp-full-name,.hp-dyn .hp-full-sub{position:relative;z-index:1}
   .hp-dyn .hp-tag{z-index:1}
+  /* THE TWO NUMBERS, top left, opposite the tag. A mode with a leaderboard should say what
+     the leaderboard says on the door to it: the bar to clear, and where this player is
+     against it. Quiet on purpose. It is context for the press rather than the invitation,
+     and the headline under it is the invitation.
+     ONE GRID FOR THE WHOLE BLOCK rather than a grid per row, so the two values line up in a
+     column. Per-row grids size independently and a five figure number under a six figure one
+     would sit half a character out.
+     NO COLOUR OF ITS OWN. The card already spends gold on the border, the light behind the
+     ball and the NEW badge, and a fourth gold thing in the corner turns an accent into a
+     texture. Tabular figures because these two are read against each other. */
+  .hp-dyn .hp-hi{position:absolute;top:8px;left:10px;z-index:1;
+    display:grid;grid-template-columns:auto auto;column-gap:7px;row-gap:1px;
+    align-items:baseline;pointer-events:none;text-align:left}
+  .hp-dyn .hp-hi u{font-family:var(--fn);font-size:7.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:rgba(226,233,245,.42);text-decoration:none}
+  .hp-dyn .hp-hi b{font-family:var(--fn);font-size:10.5px;font-weight:700;
+    color:rgba(238,242,249,.88);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+  /* IT WAITS WITH THE REST OF THE CARD, the same as the ball and the headline do. A spent
+     door is one state and the corner must not be the one bright thing left on it. */
+  .hp-dyn:has(.hp-tag-spent) .hp-hi u{color:rgba(226,233,245,.26)}
+  .hp-dyn:has(.hp-tag-spent) .hp-hi b{color:rgba(238,242,249,.45)}
   /* Set in the display face, which nothing else on the front page is, and uppercased here
      rather than in the string so the accessible name stays a name. */
   /* BOTH LABELS FIT ONE LINE, and the widths were measured rather than guessed: at 330px of
@@ -9955,6 +9976,82 @@ function ensureFullButton(){
    Same order of checks as the defense entry point, and that order is the lesson written up
    there: the account wall comes BEFORE the download, or a walled visitor waits out six
    megabytes to be told no and comes back to a button still spinning. */
+/*
+ * THE TWO NUMBERS ON THE DYNASTY DOOR: the best run anybody has had, and the best this
+ * account has had.
+ *
+ * ASKED ONCE PER ACCOUNT, NOT PER PAINT. ensureDynastyButton rebuilds its contents on every
+ * return to the front page, and a fetch in there would be a request per repaint. Keyed on
+ * the user id rather than a plain "have we asked" flag, because the personal best belongs to
+ * an account: signing out or signing in as somebody else has to re-ask, and until it answers
+ * the previous account's number must not still be sitting on the door.
+ *
+ * BOTH ARE ALLOWED TO FAIL. The board is unreachable more often than anybody would like and
+ * a front page that cannot draw its main button because a leaderboard timed out is a worse
+ * page than one with no numbers in the corner. Every failure leaves the value null and the
+ * corner simply stays empty. Nothing here is awaited by anything.
+ *
+ * THE SCORE AXIS, ALL TIME. The board offers seasons as well and 'seasons' is the mode's
+ * own headline axis, but "best score" is the one a number in a corner can state without a
+ * second word of explanation. A seasons figure would need to say seasons, and then the two
+ * rows are four columns wide on a button.
+ */
+let dynHiTop=null, dynHiMine=null, dynHiFor;
+function dynHiEnsure(){
+  const uid=authState.signedIn?(authState.userId||null):null;
+  if(dynHiFor===uid) return;
+  dynHiFor=uid;
+  dynHiMine=null;
+  /* paintHomeStart comes back through here and finds dynHiFor already set, so this cannot
+     recur. */
+  try{
+    B.dynastyTop(1,'score','all').then((rows)=>{
+      dynHiTop=(rows&&rows[0])||null; paintHomeStart();
+    }).catch(()=>{});
+    if(uid) B.dynastyMine(uid,1,'score','all').then((rows)=>{
+      dynHiMine=(rows&&rows[0])||null; paintHomeStart();
+    }).catch(()=>{});
+  }catch(_){}
+}
+/*
+ * A SCORE THAT CANNOT OUTGROW ITS CORNER.
+ *
+ * Exact below a million, which is every real number today: a dynasty's measured best is
+ * around 198,000 and six figures with a comma is seven characters, which fits at every width
+ * the site supports. Above that it abbreviates, because a record is not bounded and this slot
+ * is. Measured rather than assumed: at 320px an eight figure record printed in full runs 2px
+ * INTO the football above the headline, and at 300px twelve past it.
+ *
+ * ROUNDING IS ALLOWED HERE AND WOULD NOT BE ON A RESULT SCREEN. This is the bar to clear,
+ * read at a glance on a door; the exact figure is on the leaderboard, which is where somebody
+ * checking whether they beat it by four hundred points is going to look anyway.
+ */
+const dynHiNum=(n)=>{
+  n=Math.round(n||0);
+  if(n<1e6) return SCORE(n);
+  const m=n/1e6;
+  /* Two decimals under ten and one above, so the abbreviation keeps three significant
+     figures either way. The trailing zeros come off, or 1,000,000 reads "1.00M". */
+  return (m<10?m.toFixed(2):m.toFixed(1)).replace(/\.?0+$/,'')+'M';
+};
+/* The corner block, or nothing at all. Never a dash and never a zero: a board that has not
+   answered and a board with nothing on it are both "no number to show", and printing a
+   placeholder would be the door reporting a result it does not have. */
+function dynHiHTML(){
+  const top=dynHiTop&&dynHiTop.score>0?dynHiTop:null;
+  const mine=dynHiMine&&dynHiMine.score>0?dynHiMine:null;
+  if(!top&&!mine) return '';
+  /* THE PLAYER WHO HOLDS THE RECORD GETS ONE ROW, NOT THE SAME NUMBER TWICE. Matched on the
+     run's own id rather than on the score, because two runs can tie and only one of them is
+     the row the board is showing at the top. */
+  if(top&&mine&&top.dynasty_id===mine.dynasty_id)
+    return '<span class="hp-hi"><u>Your record</u><b>'+dynHiNum(mine.score)+'</b></span>';
+  return '<span class="hp-hi">'+
+    (top?'<u>Record</u><b>'+dynHiNum(top.score)+'</b>':'')+
+    (mine?'<u>Your best</u><b>'+dynHiNum(mine.score)+'</b>':'')+
+  '</span>';
+}
+
 /* DYNASTY'S BUTTON, made rather than revealed, for every reason ensureFullButton
    gives: a hidden node in the markup is a hidden node anybody can read, and signing out of
    a tester account on the same tab has to take the button with it. */
@@ -9969,6 +10066,9 @@ function ensureDynastyButton(){
     trimLongGroup();
     return;
   }
+  /* Asked here rather than at boot, so the two requests only ever go out for somebody who
+     can actually see this door. */
+  dynHiEnsure();
   const box=ensureLongGroup(); if(!box) return;
   if(!el){
     el=document.createElement('button');
@@ -10035,7 +10135,7 @@ function ensureDynastyButton(){
     /* A run in progress is never gated, so nothing here reads the allowance, and the
        countdown's timer stops because there is no countdown on this branch to move. */
     dailyClock(false);
-    el.innerHTML=mark+'<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
+    el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
       '<span class="hp-full-name">Resume Dynasty</span>'+
       /* THE SCORE ONCE THERE IS ONE. A first draft has played nothing, and "0 points" on
          the card offering it back reads like a run that went badly rather than one that has
@@ -10062,7 +10162,7 @@ function ensureDynastyButton(){
     if(dailyLeft('dynasty')<=0){
       const at=dailyResetsAt('dynasty'), cd=at?dailyCountdown(at):null;
       dailyClock(true);
-      el.innerHTML=mark+'<span class="hp-tag hp-tag-spent">Used today</span>'+
+      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">Used today</span>'+
         '<span class="hp-full-name">Dynasty</span>'+
         '<span class="hp-full-sub">'+
           (cd?'Next run in '+esc(cd):'Next run at midnight Eastern')+'</span>';
@@ -10077,11 +10177,14 @@ function ensureDynastyButton(){
        a run in progress never sees it either, because that branch carries the season instead. */
     let dynSeen=false;
     try{ dynSeen=localStorage.getItem('ps_dynintro')==='1'; }catch(_){ dynSeen=!!window.__dynIntro; }
-    el.innerHTML=mark+(dynSeen?'':'<span class="hp-tag hp-tag-new">New</span>')+
+    el.innerHTML=mark+dynHiHTML()+(dynSeen?'':'<span class="hp-tag hp-tag-new">New</span>')+
       '<span class="hp-full-name">Start a Dynasty</span>'+
-      /* The question used to be here too ("How long can you last?"). START A DYNASTY above
-         it is already the invitation, so the caption only has to say what the mode is. */
-      '<span class="hp-full-sub">One team &middot; one life</span>';
+      /* THE STAKE, NOT THE SHAPE. "One team, one life" described the rule and named nothing
+         a player wants: two facts about how the mode is configured, in a slot that gets one
+         line. Getting fired is what a life actually means here, it is already the game's own
+         word for it (see the grace_fired allowance), and phrased as a question it is the
+         only line on this card that asks for an answer. */
+      '<span class="hp-full-sub">How long before they fire you?</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
     }
   }
