@@ -259,39 +259,31 @@ console.log('\n=== the door ===');
 }
 
 {
-  /* ON THE LIST, HAS NOT BOUGHT. This is the view a signed-in visitor gets after launch,
-     and the one nobody was looking at until an account was set aside to hold it: the mode
-     is real, they know it is there, and the door does not open. It is a DIFFERENT screen
-     from the two above, which say "in testing" and are about the list. This one names a
-     price, because the answer to this visitor is not no, it is how much. */
+  /* ON THE LIST, HAS NOT BOUGHT, AND THE DOOR OPENS. This branch used to assert the
+     opposite, and the change is the point rather than a regression: the mode was fully
+     paid, so a visitor who had not bought met the store on this screen and stopped, which
+     meant the only way to find out whether it was worth $19.99 was to pay $19.99.
+
+     A free account now plays a whole five season term at one season a day. The store it
+     used to be refused by moved to the wall BETWEEN seasons, where somebody has felt the
+     wait it would end and knows what they would be buying. The wall, the clock and that
+     offer are cfb/build/test/commish/test_clock.mjs; what THIS file still owns is that the
+     door itself no longer refuses anybody who is on the list.
+     See seasonCleared() and supabase/104_commish_free_clock.sql. */
   const {p,errs}=await open(tester([]));
-  ok('on the list but has not bought, the mode does not open', await on(p,'s-gate'));
-  ok('  and nothing to press that starts a term', !(await p.$('#g-start')));
-  /* THE STORE ITSELF IS THE SCREEN, out of /assets/store.js, which the football game shows
-     too. The gate hides its own lede on this branch because the store carries a heading and
-     a lede of its own, so the copy is asserted where it actually lives. */
-  ok('  it shows the store rather than a dead end',
-    /go pro/i.test(await txt(p,'#gate-act')));
-  /* AND THE STORE NAMES THE MODE THEY ARE STANDING AT. A shared store is worth having and
-     is exactly the kind of thing that drifts: the football game owns that file, and a tile
-     dropped from it would leave this door selling a bundle whose visible contents never
-     mention Commissioner. The visitor is at the Commish gate. It has to say Commissioner. */
-  ok('  and the store names the mode this door is selling',
-    /commissioner/i.test(await txt(p,'#gate-act')));
-  /* One payment, not a subscription, which is the question a buyer actually has. */
-  ok('  and says the shape of the purchase',
-    /no subscription/i.test(await txt(p,'#gate-act')));
-  /* BOTH PRICES, because the cheaper one is not always the one they want and finding the
-     other later is how a bundle sells nobody the bigger thing. */
-  ok('  and offers both bundles', !!(await p.$('#b-buy-ps')) && !!(await p.$('#b-buy-rtb')));
-  ok('  the badge says Premium rather than testing', (await txt(p,'#tag'))==='Premium');
-  ok('  with a way back to the game', !!(await p.$('#gate-act a[href="/cfb/"]')));
-  /* AND IT NEVER CLAIMS TO HAVE SOLD ANYTHING. The store is switched off until the price
-     ids are in Cloudflare, so pressing buy has to say that rather than fail silently. */
-  await p.click('#b-buy-ps').catch(()=>{});
-  await p.waitForTimeout(600);
-  ok('  pressing buy is honest while the store is off',
-    /not on sale|could not start|sign in/i.test(await txt(p,'#b-buy-ps')), await txt(p,'#b-buy-ps'));
+  ok('on the list without having bought, the door opens', !!(await p.$('#g-start')));
+  ok('  and the badge says which tier that is', (await txt(p,'#tag'))==='Free');
+  /* AND THE STORE IS NOT ON THIS SCREEN ANY MORE. Asserted rather than assumed gone: a
+     store here and a store on the wall would be the same offer twice, and the one a player
+     met before playing anything is the one that reads as a toll. */
+  ok('  and nothing is being sold at the door', !(await p.$('#b-buy-ps')));
+  ok('  with the mode name still on it', /commish/i.test(await txt(p,'#s-gate')));
+  /* IT REALLY PLAYS, rather than opening onto a second refusal. The first season is paid
+     for by taking the job, so this must reach the office without asking anything. */
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  ok('  and a free account reaches the office', await on(p,'s-office'));
+  await p.screenshot({path:SS+'commish_free_gate.png'});
   console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();

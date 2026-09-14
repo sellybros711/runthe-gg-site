@@ -146,6 +146,18 @@
   h2{font-family:var(--fd);font-size:23px;line-height:1.08;text-transform:uppercase;
     letter-spacing:.01em;margin:4px 0 8px}
   p.lede{color:var(--dim);font-size:15px;margin-bottom:14px}
+  /* THE WAIT, and the clock is the screen rather than a note on it. Somebody who opens the
+     game during their off season came back for exactly one number, so it is the biggest
+     thing on the page and it is above the offer rather than beside it: the countdown is
+     what makes the offer worth reading, so it has to be read first.
+     TABULAR FIGURES, because the last minute counts seconds down and proportional digits
+     make the whole line jitter sideways once a second while somebody watches it. */
+  .waitclock{border:1px solid var(--line-2);border-radius:14px;padding:18px 14px 15px;
+    margin:4px 0 16px;text-align:center;background:var(--panel)}
+  .waitclock b{display:block;font-family:var(--fd);font-size:clamp(38px,12vw,56px);
+    line-height:1;font-weight:400;color:var(--gold);font-variant-numeric:tabular-nums}
+  .waitclock span{display:block;font-family:var(--fn);font-size:11px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2);margin-top:9px}
   /* THE GOAL AND THE DARE, under the premise and set apart from it. Two blocks rather than
      one paragraph because they are doing opposite jobs: the first tells a player what they
      are judged on, the second tells them that is not the same as what they should do. Run
@@ -2103,6 +2115,24 @@
     <div class="foot">A mode of <a href="/cfb/">College Football: Perfect Season</a>.</div>
   </div>
 
+  <!-- THE WAIT. A free account plays a season a day, and this is the day in between.
+       It is its own screen rather than a panel on the office because the office is the
+       place you make rulings from, and a commissioner who cannot move the year forward
+       should not be looking at a docket he cannot act on. See seasonCleared(). -->
+  <div class="screen" id="s-wait" data-in="rise">
+    <div class="eyebrow gold">The off season</div>
+    <h1 id="w-head">Next season<br>opens soon</h1>
+    <p class="lede" id="w-say"></p>
+    <!-- The clock is the whole screen. Big, because it is the thing somebody came back
+         to look at, and because it is also the argument for the button under it. -->
+    <div class="waitclock" id="w-clock" hidden>
+      <b id="w-left">&hellip;</b>
+      <span id="w-when"></span>
+    </div>
+    <div id="w-act"></div>
+    <div class="foot">A mode of <a href="/cfb/">College Football: Perfect Season</a>.</div>
+  </div>
+
   <!-- The office: where you stand before you rule. -->
   <div class="screen" id="s-office" data-in="rise">
     <!-- ── TWO COLUMNS ON A BIG SCREEN, ONE ON A PHONE ────────────────────────────
@@ -2588,6 +2618,9 @@
 <script src="ledger.js?v=10"></script>
 <script src="blocs.js?v=12"></script>
 <script src="note.js?v=1"></script>
+<!-- The free tier's one season a day. Its clock is the SERVER's
+     (supabase/104_commish_free_clock.sql); this is only the transport and the countdown. -->
+<script src="clock.js?v=1"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
@@ -2693,6 +2726,138 @@ let forceFree=false;
 try{ forceFree=new URLSearchParams(location.search).get('tier')==='free'; }catch(e){}
 const ownsCfb=()=>!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
 const isPro=()=>allowed()&&!forceFree&&ownsCfb();
+
+/* ── ONE SEASON A DAY, FOR AN ACCOUNT THAT HAS NOT BOUGHT ─────────────────────────
+ *
+ * THE MODE IS NO LONGER A DOOR THAT OPENS OR REFUSES. It used to be: a tester without the
+ * cfb_premium row met the store and stopped there, which meant the only way to find out
+ * whether the mode was worth nineteen dollars was to pay nineteen dollars. A five season
+ * term at one season a day is a whole term, played properly, for nothing. What is bought
+ * is the impatience.
+ *
+ * THE CLOCK IS THE SERVER'S. supabase/104_commish_free_clock.sql holds it, keyed on the
+ * account, and it reads premium_unlocks itself rather than being told who is paying.
+ * Nothing in this page can move it, which is the only version of this that survives a
+ * private window. clock.js is the transport and its header carries the rest.
+ *
+ * WHAT THIS PAIR OF FUNCTIONS IS FOR is making the check happen exactly once per season
+ * and at a place a reload cannot miss. `world.cleared` is the last year this save has paid
+ * for, so:
+ *
+ *   cleared === world.year     play, and no request at all
+ *   cleared <  world.year      ask the server for the season, then play or wait
+ *
+ * A pro account short circuits before any of it. So does a term that has not started.
+ */
+/* SYNCHRONOUS ON PURPOSE, because office() is called from nine places and several of them
+   are inside a repaint. Everything it needs is already in hand: the tier came with the auth
+   change and the cleared year came with the save. The only asynchronous part is the ask,
+   and that happens on the wall screen where there is somewhere to say "checking". */
+function seasonCleared(){
+  if(isPro()) return true;
+  if(!world) return true;
+  /* A SAVE FROM BEFORE THIS EXISTED has no `cleared` at all, and the honest reading of it
+     is the year it is on rather than zero. Anything else would open a wall in front of a
+     term somebody was already halfway through, on the day this shipped, for a limit that
+     did not exist when they started it. They get the rest of that term free and the meter
+     starts at their next one. */
+  if(world.cleared==null) return true;
+  return world.year<=world.cleared;
+}
+/* The one place a season is bought with a day. Resolves nothing: it either moves to the
+   office or paints the wall, and both are screens. */
+let seasonAsking=false;
+function seasonWall(){
+  const C=window.PS_CFB_COMMISH_CLOCK;
+  /* clock.js is a sibling script with its own cache version, so a browser one bump behind
+     has a page that knows about the meter and no module to ask. Letting them play is the
+     same call the module itself makes on any failure, and for the same reason: see the
+     header of clock.js on which way a gate should fail. */
+  if(!C){ world.cleared=world.year; save(); office(); return; }
+  if(seasonAsking) return;
+  seasonAsking=true;
+  paintWait({checking:true});
+  show('s-wait');
+  C.spend().then((st)=>{
+    seasonAsking=false;
+    if(st&&st.ok){
+      /* WRITTEN DOWN, so the next paint of the office costs no round trip and a reload
+         inside the same season does not spend a second day. */
+      world.cleared=world.year; save();
+      office();
+      return;
+    }
+    paintWait(st||null);
+  });
+}
+
+/* THE SCREEN SOMEBODY COMES BACK TO. It has three jobs and they are in this order on the
+   page for a reason: say where you are in the term, show the clock, then make the offer.
+   The clock has to come before the offer, because the clock is what makes the offer worth
+   reading. Leading with the offer is a paywall; leading with the clock is a season that is
+   nearly here, sold by the wait rather than by the wall. */
+let waitTick=0;
+function paintWait(st){
+  const done=world?Math.max(0,world.year-world.startYear):0;
+  const next=done+1;
+  /* The space before the break is not a typo. A <br> contributes nothing to textContent,
+     so "Season 2<br>needs a day" reads back as "Season 2needs a day" to a screen reader,
+     to a copy-paste and to the suite that asserts on it. */
+  $('w-head').innerHTML=st&&st.checking?'Next season <br>opens soon'
+    :'Season '+next+' <br>needs a day';
+  if(st&&st.checking){
+    $('w-say').textContent='Checking your account.';
+    $('w-clock').hidden=true;
+    $('w-act').innerHTML='';
+    waitClock(false);
+    return;
+  }
+  /* ONE SENTENCE ABOUT WHERE THEY ARE, because the wall is the screen most likely to be
+     met by somebody who has been away a day and does not remember what they were doing. */
+  $('w-say').textContent='You are '+done+' season'+(done===1?'':'s')+' into a '
+    +TERM_SEASONS+' season term. On the free tier the sport moves one year a day.';
+  $('w-clock').hidden=false;
+  $('w-when').textContent='until season '+next;
+  waitPaintClock(st);
+  waitClock(true);
+  /* THE OFFER, UNDER THE CLOCK, and it is the same store both games sell. No second price
+     and no second payment path: the buttons post the two bundle keys the shared module
+     emits, exactly as the gate did when the gate was the only way to see this. */
+  $('w-act').innerHTML=(window.RTG_STORE
+    ? '<p class="lede" style="font-size:13.5px;margin:0 0 2px">Or take the rest of the term '
+      +'now. Pro plays every season back to back, on this game and the NFL one.</p>'
+      +window.RTG_STORE.html({signedOut:false})
+    : '')
+    +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center;'
+    +'margin-top:12px">Back to the game</a>';
+  if(window.RTG_STORE) window.RTG_STORE.wire($('w-act'),{buy:(kind,btn)=>buyBundle(kind,btn)});
+}
+function waitPaintClock(st){
+  const C=window.PS_CFB_COMMISH_CLOCK;
+  const left=C?C.countdown(st||undefined):'';
+  $('w-left').textContent=left||'Ready';
+  /* THE MOMENT IT REACHES ZERO THE SCREEN STOPS BEING A WALL. Nobody should have to guess
+     whether a countdown that has run out means anything, and nobody should have to reload
+     to find out: the button appears under their thumb. */
+  if(!left&&!$('w-go')){
+    const go=document.createElement('button');
+    go.className='btn'; go.id='w-go'; go.style.width='100%';
+    go.textContent='Play season '+((world?world.year-world.startYear:0)+1);
+    go.onclick=()=>{ go.disabled=true; seasonWall(); };
+    $('w-clock').insertAdjacentElement('afterend',go);
+  }
+}
+/* A SECOND, not a minute. The number is in hours for most of the wait and a minute would
+   do, but the last sixty seconds count down in seconds and a clock that updates once a
+   minute freezes exactly where somebody is watching it. One timer, one screen, and it is
+   stopped whenever the screen is not up so it cannot tick behind the office forever. */
+function waitClock(on){
+  if(on&&!waitTick){ waitTick=setInterval(()=>{
+    if(!$('s-wait').classList.contains('on')){ waitClock(false); return; }
+    waitPaintClock(null);
+  },1000); }
+  else if(!on&&waitTick){ clearInterval(waitTick); waitTick=0; const g=$('w-go'); if(g) g.remove(); }
+}
 
 /* ── the career ───────────────────────────────────────────────────────────────────
    HOW LONG YOU HAVE BEEN DOING THIS JOB, counted in rulings and kept OUTSIDE the term.
@@ -2853,6 +3018,10 @@ function newTerm(year,scen){
      It lives here rather than in ledger.js because it is a thing the SCREENS need. The
      ledger's job is the sport as it is now, and nothing in the model reads this. */
   world.start=openingSnapshot(world);
+  /* THE FIRST SEASON IS PAID FOR BY TAKING THE JOB. See seasonCleared(): a free account
+     owes a day for every season AFTER the one it starts on, and this is what makes the
+     first one free without a special case anywhere else. A pro account never reads it. */
+  world.cleared=world.year;
   save();
 }
 /* Only what the screens compare against, not a second copy of the world. */
@@ -4021,6 +4190,12 @@ function paintFuses(el,w){
 
 /* ── the office ───────────────────────────────────────────────────────────────── */
 function office(){
+  /* THE DAY'S SEASON IS CHARGED HERE, BEFORE ANYTHING ELSE, because the office is the one
+     door every path into a season goes through. There are nine callers and a save that can
+     be reloaded at any point, so a gate on any one of them is a gate with eight holes in
+     it: the one that matters most is a reload, where the year has already advanced in the
+     save and the office is simply where the page comes back to. See seasonCleared(). */
+  if(!seasonCleared()){ seasonWall(); return; }
   /* A CUTSCENE COMES BEFORE THE BRIEFING AND NEVER INSTEAD OF IT. The office is the one
      screen a scene may take, because it is the only one you arrive at rather than work on:
      landing a lawsuit in the middle of a ruling would be interrupting a decision. Guarded on
@@ -8595,8 +8770,13 @@ async function checkoutReturn(){
    when it is not the one they expected. */
 function paintTag(){
   const t=$('tag'); if(!t) return;
+  /* IT SAYS WHAT THIS ACCOUNT IS, not what the mode costs. It read "Premium" for an
+     account that had NOT bought, which was the old paywall talking: back then the only
+     people who got past the door were the ones who had paid, so the word described the
+     screen. A free account plays now, and a badge reading Premium over a player who is
+     about to be asked to wait a day is the exact opposite of true. */
   t.textContent=!allowed()?'In testing'
-    :!ownsCfb()?'Premium'
+    :!ownsCfb()?'Free'
     :forceFree?'Tester, free view':'Tester';
 }
 function gate(){
@@ -8653,33 +8833,18 @@ function gate(){
      view and watch it flip a second later. The fetch below always settles premiumSet,
      to [] on any failure, so this cannot hold the door forever. */
   if(premiumSet===null){ say.textContent='Checking your account.'; act.innerHTML=''; return; }
-  /* THE PAYWALL. A tester without the row is exactly a visitor who has not bought: they
-     know the mode is here, they see what it is part of and what it costs, and the door
-     does not open. The Buy buttons are real; while nothing is on sale the endpoint
-     answers 503 and the button says so, truthfully. */
-  if(!ownsCfb()){
-    /* THE SAME STORE THE FOOTBALL GAME SHOWS, out of /assets/store.js.
-       This used to be a paragraph and two buttons carrying their prices in their labels. It
-       said the right things and it looked like a different product from the one a player
-       had just been reading about in Perfect Season, which for a shared bundle sold on two
-       pages is the wrong impression to leave. It also meant the terms were written twice:
-       the Arcade Card's twelve months lived in that paragraph here and on a line of its own
-       there, which is exactly the sentence a customer should never find two versions of.
-       The lede goes with it. The store's own heading and lede say what this is, and the
-       screen already carries the mode's name above them. */
-    say.textContent='';
-    say.hidden=true;
-    act.innerHTML=(window.RTG_STORE
-      ? window.RTG_STORE.html({signedOut:false})
-      : '<p class="lede">The store could not be loaded. Reload the page and try again.</p>')
-      +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center;'
-      +'margin-top:12px">Back to the game</a>';
-    /* signedOut is false above rather than read off the session because this door is past
-       the sign-in wall already: the branches over it send a signed out visitor and a
-       nameless account somewhere else, so anybody reaching here has an account to buy on. */
-    if(window.RTG_STORE) window.RTG_STORE.wire(act,{buy:(kind,btn)=>buyBundle(kind,btn)});
-    return;
-  }
+  /* AND THERE IS NO PAYWALL BRANCH HERE ANY MORE. There used to be: an account without
+     the cfb_premium row met the store on this screen and stopped, which meant the only way
+     to find out whether the mode was worth nineteen dollars was to pay nineteen dollars.
+     A free account now plays a whole five season term, one season a day, and the store it
+     used to be refused by sits on the wall BETWEEN seasons instead. That is a better place
+     for it in both directions: it is an offer to skip a wait somebody has already felt
+     rather than a toll on a door they have never been through, and it is read by a player
+     who knows what they would be buying. See seasonCleared() and paintWait(), and
+     supabase/104_commish_free_clock.sql for the clock itself.
+     THE TIER STILL HAS TO BE KNOWN BEFORE THE DOOR OPENS, which is what the wait above is
+     for: seasonCleared() asks isPro(), and a null premiumSet would make a paying account
+     spend a day on the first season of every term. */
   /* THE FIRST LINE IS THE JOB OFFER, not a description of the mode. "You run college
      football" states a premise; being NAMED to the post is a thing that just happened to
      you, and the whole mode is written in that tense. It is also the sentence a player

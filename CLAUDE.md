@@ -163,6 +163,43 @@ that takes money for a shut door is worse than no card.
 way to the offer from this game was to open Commissioner Simulator and be turned away at its
 gate, which nobody who cannot see the mode will ever do.
 
+### Commissioner Mode is free at one season a day
+
+```
+node cfb/build/test/commish/test_clock.mjs        the page obeys the clock
+psql -d clock_test -f supabase/test/commish_clock_base.sql
+psql -d clock_test -f supabase/104_commish_free_clock.sql
+psql -d clock_test -f supabase/test/commish_clock_test.sql   the clock counts
+```
+
+**There is no paywall on the door any more.** A signed in account without `cfb_premium`
+plays a whole five season term, one season every 24 hours. What is bought is the
+impatience, not the game: Pro plays the next season immediately. The gate in
+`cfb/commish/index.html` used to stop a non-owner dead, which meant the only way to find
+out whether the mode was worth $19.99 was to pay $19.99.
+
+**The clock is the server's**, in `supabase/104_commish_free_clock.sql`, for the reason
+`99_daily_attempts.sql` spells out: a limit that gates a paid tier is worth bypassing, and
+in a browser it is bypassed by clearing site data. Every function there reads
+`premium_unlocks` itself, so a paying account is **never written to that table at all** and
+cannot be metered by a client bug or unmetered by a client lie.
+
+**It meters a SEASON, not a start**, and that is the difference from Dynasty. Meter the
+start here and a player quits after season one, takes the job again, and replays season one
+forever. The check lives at the top of `office()` because that is the one door every path
+into a season goes through, and `world.cleared` records the last year the save paid for, so
+a **reload cannot walk around it**: the year has already advanced in the save by the time
+the wall appears.
+
+**It fails OPEN.** An unreachable clock lets the season through. The two mistakes are not
+symmetric: a wrongly granted season costs a fraction of one sale, and a wrongly refused one
+costs a player who was engaged enough to come back. `clock.js`'s header argues it at length.
+
+**A rolling 24 hours drifts, and that is a known cost.** Play at 6pm and tomorrow opens at
+6pm, but nobody taps at exactly 6pm, so the window walks later each day. If it ever bites,
+shorten `commish_free_wait()` to about twenty hours rather than moving to a calendar day: a
+shorter wait walks the window backwards into the player's evening instead of out of it.
+
 `/assets/store.js` **injects its stylesheet at load, not on first use**, and that is a fix
 rather than a preference. The block styles more than the offer: `.pw-pill` beside an account
 name and `.pw-line` on the receipt come out of it, and neither goes through `html()` or
