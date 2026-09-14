@@ -1291,6 +1291,37 @@ window.GA_ID='G-L29P5MRWKE';
   #s-over.gaunt #o-dyn-ovr .v{margin:0;font-family:var(--fled);font-size:21px;line-height:1}
   #s-over.gaunt #o-dyn-ovr .t{margin:0}
 
+  /* ---- THE FIELD, ONLY AT THE END ----
+     A dynasty plays this screen every season and the field is the same six men the rows
+     under it already list, in the same order, so for fifteen seasons it is 178px of
+     restatement. At the END it is the thing worth looking at, because that is where the
+     picker below lets it become any year of the run.
+     THE CHEMISTRY RAIL STAYS EVERY SEASON. It is not a restatement of the rows: it is the
+     only place the links between the six are drawn, and it is what tells somebody why a
+     roster scored what it did. drawField fills it whether or not the field itself is on
+     screen, so hiding one keeps the other. */
+  #s-over.gaunt #field3{display:none}
+  #s-over.gaunt.over #field3{display:block}
+
+  /* The picker. Native select, because this is a list of years and a custom menu here would
+     be a worse version of the control every phone already draws well. */
+  .seasonpick{display:flex;align-items:center;gap:9px;margin:12px 0 2px}
+  .seasonpick[hidden]{display:none}
+  .seasonpick label{font-family:var(--fled);font-size:9.5px;font-weight:700;
+    letter-spacing:.16em;text-transform:uppercase;color:rgba(240,198,116,.6)}
+  .seasonpick select{flex:1;min-width:0;font-family:var(--fn);font-size:12.5px;font-weight:700;
+    color:#F3DDAE;background:linear-gradient(180deg,#0b0a08,#070706);
+    border:1px solid rgba(240,198,116,.3);border-radius:9px;padding:7px 10px;
+    appearance:none;-webkit-appearance:none;cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,rgba(240,198,116,.7) 50%),
+      linear-gradient(135deg,rgba(240,198,116,.7) 50%,transparent 50%);
+    background-position:calc(100% - 15px) 50%,calc(100% - 10px) 50%;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px}
+  /* The options themselves are drawn by the OS, which on a dark page is usually a light
+     menu, so they are given a ground rather than left to inherit a colour they cannot use. */
+  .seasonpick select option{background:#12110e;color:#F3DDAE}
+  .seasonpick select:focus-visible{outline:2px solid rgba(240,198,116,.7);outline-offset:2px}
+
   /* ---- THE RUN, ONCE IT IS OVER ----
      Deliberately the same material as the season card above it: same gold, same bands, same
      radius. They are two views of one run and looking like two different products was the
@@ -7303,6 +7334,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            last, not one season's rating), so it rides here on the lineup it describes instead.
            paintOver fills it for dynasty and leaves it hidden otherwise. -->
       <div class="ovr solo" id="o-dyn-ovr" hidden></div>
+      <!-- ANY YEAR OF THE DYNASTY, ON THE FIELD. Only drawn once the run is over and only
+           when there is more than one season to choose between; paintSeasonPicker builds
+           the options and leaves this hidden otherwise. -->
+      <div class="seasonpick" id="o-seasonpick" hidden>
+        <label for="o-seasonsel">Lineup</label>
+        <select id="o-seasonsel"></select>
+      </div>
       <div class="field short" id="field3"></div>
       <div class="rail" id="rail3"></div>
       <p class="railnote"></p>
@@ -9206,16 +9244,30 @@ function fieldState(el){
   return el._ps;
 }
 
-function drawField(el,live){
+/*
+ * `view` IS AN OPTIONAL LINEUP TO DRAW INSTEAD OF THE LIVE ONE: {roster, slotIndex, slots}.
+ *
+ * Every existing caller passes nothing and gets exactly what it always got, which is the
+ * point of making it a third argument rather than a mode flag. What it buys is the season
+ * picker on the dynasty results screen: a finished run can point this field at any year it
+ * played, and the chemistry rail beside it follows, because the rail is drawn from the same
+ * bySlot and the same resolveChemistry call a few lines down.
+ *
+ * NOT A SECOND FIELD RENDERER. The alternative was a read-only copy of this function for
+ * history, which is how two fields end up disagreeing about what a flex slot is called.
+ */
+function drawField(el,live,view){
   const st=fieldState(el);
   /* THE RUN'S OWN SLOT COUNT, not the module's six. Full Team has twelve, and a six-long
      array here silently dropped every man in a slot past the fifth. */
-  const bySlot=new Array(slotsNow().length).fill(null);
-  if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
-  const links=(run&&run.roster.length>1)?E.resolveChemistry(run.roster,CTX,chemOpts()).links:[];
+  const src=view||run;
+  const slots=(view&&view.slots&&view.slots.length)?view.slots:slotsNow();
+  const bySlot=new Array(slots.length).fill(null);
+  if(src) src.roster.forEach((p,i)=>{ bySlot[src.slotIndex[i]]=p; });
+  const links=(src&&src.roster.length>1)?E.resolveChemistry(src.roster,CTX,chemOpts()).links:[];
   const at=new Map();
-  if(run) run.roster.forEach((p,i)=>at.set(p.name,run.slotIndex[i]));
-  const openCount=slotsNow().length-(run?run.roster.length:0);
+  if(src) src.roster.forEach((p,i)=>at.set(p.name,src.slotIndex[i]));
+  const openCount=slots.length-(src?src.roster.length:0);
 
   // The sticky bar's pips are the same six slots, so they are drawn from the same data.
   // The sticky bar's pips are the same six slots, so they come off the same data.
@@ -9226,6 +9278,8 @@ function drawField(el,live){
      team and have no pick to be in the middle of, and lighting half of one would be saying
      something about a draft that is over. */
   if(live){
+    /* Still the LIVE run: `live` and a history view are mutually exclusive, and a draft in
+       progress is a fact about the run rather than about the lineup being drawn. */
     const picking=!!(run&&run.full&&run.roster.length<slotsNow().length);
     const def=picking&&fullSlotIsDefensive(run.roster.length);
     el.classList.toggle('pick-def',picking&&def);
@@ -9242,8 +9296,8 @@ function drawField(el,live){
     const justFilled=!!p&&!wasFilled;
     c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
     const disc=c.querySelector('.disc');
-    disc.querySelector('.dl').textContent=p?p.position:slotsNow()[i];
-    disc.style.cssText=p?posPaint(p.position):posTint(slotsNow()[i]);
+    disc.querySelector('.dl').textContent=p?p.position:slots[i];
+    disc.style.cssText=p?posPaint(p.position):posTint(slots[i]);
     c.querySelector('.who').textContent=p?lastName(p.name):'';
     /* Team code before the year, so a chip says which team-season the player came out of
        rather than just when. Era code, not the current one: a 2014 Raider is OAK, and
@@ -18489,8 +18543,10 @@ function paintOver(){
       : 'which is a <b>'+rating.toFixed(1)+'</b> team overall against an average defense.')+
     schemeTail(st)+' You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
 
-  /* The lineup, which the old results page never showed at all. */
-  drawField($('field3'),false);
+  /* The lineup, which the old results page never showed at all. Drawn through the shared
+     painter so the picker below and the first paint cannot disagree about it. */
+  paintDynLineup(null);
+  paintSeasonPicker();
   const bySlot=new Array(E.SLOTS.length).fill(null);
   run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
   /* Walks the run's own slot order (QB RB WR WR TE FLEX for most modes; QB RB WR TE
@@ -18498,16 +18554,7 @@ function paintOver(){
      player actually plays rather than the word FLEX, because "FLEX" tells you about the
      slot and you want to know about the player; slotTag still marks which rows are flex. */
   const dynOver=!!(run&&run.dynasty);
-  $('o-rost').innerHTML=slotsNow().map((slot,i)=>{
-    const p=bySlot[i]; if(!p) return '';
-    const a=topAward(p);
-    return '<div class="rrow">'+slotTag(slot,p.position)+
-      '<span class="nm"><b>'+dynRookieHtml(p,dynOver)+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
-        (dynOver&&p.age?' &middot; '+dynAgeHtml(p,true):'')+
-        (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
-      (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
-      '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
-  }).join('');
+  $('o-rost').innerHTML=rosterRowsHTML(bySlot,slotsNow(),dynOver);
 
   $('o-miss').innerHTML='<div class="rload"><i></i><i></i><i></i>'+
     '<span>Working out the best you could have drafted</span></div>';
@@ -24184,6 +24231,90 @@ function drawPips(bySlot){
     return '<i class="on" style="'+posPaint(p.position)+'"><b>'+esc(lastName(p.name))+'</b>'+
       '<span>'+M(p.price_musd)+'</span></i>';
   }).join('');
+}
+
+/*
+ * ONE LINEUP PAINTER, USED BY THE FIRST PAINT AND BY THE SEASON PICKER.
+ *
+ * The rows and the field have to agree about who played, and the way they stop agreeing is
+ * two call sites building them from two sources. So the rows are a function of a bySlot and
+ * a slot list, exactly as the field is, and `view` being null means the live run.
+ */
+function rosterRowsHTML(bySlot,slots,dynOver){
+  return slots.map((slot,i)=>{
+    const p=bySlot[i]; if(!p) return '';
+    const a=topAward(p);
+    return '<div class="rrow">'+slotTag(slot,p.position)+
+      '<span class="nm"><b>'+dynRookieHtml(p,dynOver)+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
+        (dynOver&&p.age?' &middot; '+dynAgeHtml(p,true):'')+
+        (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
+      (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
+      '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
+  }).join('');
+}
+/* A season out of run.history as something drawField can draw: the six men looked up by the
+   same key the board and the detail sheet use, in the slots that season recorded.
+   RETURNS NULL RATHER THAN A HALF TEAM. A pick that does not resolve means this browser's
+   player pool no longer has that man, and a field with two empty spots on it is a worse
+   answer than not offering the year at all. paintSeasonPicker drops those years. */
+function dynSeasonView(h){
+  if(!h||!Array.isArray(h.picks)||!h.picks.length) return null;
+  const roster=[],slotIndex=[];
+  const slots=(Array.isArray(h.slots)&&h.slots.length)?h.slots.slice():E.SLOTS.slice();
+  for(let i=0;i<h.picks.length;i++){
+    const p=fromPickKey(h.picks[i]);
+    if(!p) return null;
+    roster.push(p);
+    /* The slot a man played, as an index into this season's own slot list. Falls back to
+       his pick order, which is what the list is in when a season stored no slots. */
+    const want=h.slots&&h.slots[i];
+    let idx=want?slots.indexOf(want):-1;
+    if(idx<0||slotIndex.indexOf(idx)>=0) idx=i;
+    slotIndex.push(idx);
+  }
+  return {roster,slotIndex,slots};
+}
+/* Draws the field, its chemistry rail and the rows from one lineup. null is the live run. */
+function paintDynLineup(view){
+  drawField($('field3'),false,view);
+  const slots=(view&&view.slots&&view.slots.length)?view.slots:slotsNow();
+  const src=view||run;
+  const bySlot=new Array(slots.length).fill(null);
+  if(src) src.roster.forEach((p,i)=>{ bySlot[src.slotIndex[i]]=p; });
+  const rost=$('o-rost');
+  if(rost) rost.innerHTML=rosterRowsHTML(bySlot,slots,!!(run&&run.dynasty));
+}
+/*
+ * THE YEARS THIS RUN PLAYED, as a menu over the field.
+ *
+ * ONLY ONCE THE RUN IS OVER. While it is going there is one team that matters, the one that
+ * just played, and a picker offering to look at season four during season five is a museum
+ * on a screen somebody is still playing through. At the end the whole run is the subject.
+ *
+ * ONLY WHEN THERE IS A CHOICE. One season is not a menu.
+ */
+function paintSeasonPicker(){
+  const wrap=$('o-seasonpick'), sel=$('o-seasonsel');
+  if(!wrap||!sel) return;
+  const over=!!(run&&run.dynasty&&run.fired);
+  const hist=(run&&Array.isArray(run.history))?run.history:[];
+  const years=hist.map((h,i)=>({i,h,v:dynSeasonView(h)})).filter((x)=>x.v);
+  if(!over||years.length<2){ wrap.hidden=true; return; }
+  wrap.hidden=false;
+  sel.innerHTML=years.map(({i,h})=>'<option value="'+i+'">Season '+h.seasonNo+
+    ' \u00b7 '+h.wins+'-'+h.losses+(h.title?' \u00b7 Champions':(h.made?' \u00b7 Playoffs':''))+
+    '</option>').join('');
+  /* Opens on the last season played, which is the team on screen when the picker appears. */
+  const last=years[years.length-1];
+  sel.value=String(last.i);
+  sel.onchange=()=>{
+    const pick=years.find((x)=>String(x.i)===sel.value);
+    if(!pick) return;
+    paintDynLineup(pick.v);
+    ga('dynasty_season_viewed',{season:pick.h.seasonNo});
+  };
+  /* The field is showing the live roster at this point, which for a fired run IS the last
+     season, so nothing is repainted here: the menu already says which year that is. */
 }
 
 /* The results page tabs. Delegated, so it survives every repaint, and the panes are shown by
