@@ -1883,8 +1883,8 @@
   },
   "cfb/commish/index.html": {
     "/assets/store.js": {
-      "v": "6",
-      "sha": "83bf7ee1246994a0"
+      "v": "7",
+      "sha": "edf6b853d8a4f166"
     },
     "/cfb/engine.js": {
       "v": "34",
@@ -2039,8 +2039,8 @@
       "sha": "44a62b6f74d67404"
     },
     "/assets/store.js": {
-      "v": "6",
-      "sha": "83bf7ee1246994a0"
+      "v": "7",
+      "sha": "edf6b853d8a4f166"
     },
     "auth.js": {
       "v": "5",
