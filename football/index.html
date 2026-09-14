@@ -1279,6 +1279,18 @@ window.GA_ID='G-L29P5MRWKE';
   #s-over.gaunt .glist .g.tap:hover{border-color:rgba(240,198,116,.6)}
   #s-over.gaunt .glist .g .gchev{color:rgba(240,198,116,.45)}
 
+  /* THE TEAM OVERALL, ON ONE LINE. It is one number and it was taking 84px: a caption, a
+     33px numeral under it and a bar under that, all centred in a bordered box, which is the
+     treatment the draft modes give it when it sits beside "best possible" and has a column
+     to fill. Dynasty shows it alone, so it lies down: label, figure, and the bar taking the
+     rest of the row. The bar keeps its full width, which is the part that actually reads. */
+  #s-over.gaunt #o-dyn-ovr>div{display:grid;grid-template-columns:auto auto minmax(0,1fr);
+    gap:10px;align-items:center;text-align:left;padding:8px 12px}
+  #s-over.gaunt #o-dyn-ovr .k{margin:0;font-family:var(--fled);letter-spacing:.14em;
+    color:rgba(240,198,116,.6)}
+  #s-over.gaunt #o-dyn-ovr .v{margin:0;font-family:var(--fled);font-size:21px;line-height:1}
+  #s-over.gaunt #o-dyn-ovr .t{margin:0}
+
   /* ---- THE RUN, ONCE IT IS OVER ----
      Deliberately the same material as the season card above it: same gold, same bands, same
      radius. They are two views of one run and looking like two different products was the
@@ -5942,7 +5954,15 @@ window.GA_ID='G-L29P5MRWKE';
   .rrow .nm{flex:1;min-width:0}
   .rrow .nm b{display:block;font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis}
-  .rrow .nm span{display:block;font-size:11px;color:var(--dim-2);white-space:nowrap;overflow:hidden;
+  /* THE DIRECT CHILD, and the missing > is why a dynasty roster row was 87px tall.
+     This rule dresses the sub-line under the name, and as a descendant selector it also
+     matched every span INSIDE that line. Dynasty is the only mode that puts one there (the
+     age, coloured by how old the man is), so its sub-line had a display:block in the middle
+     of it: the one line it is written to be, with nowrap and an ellipsis, was broken into
+     three and the row grew by 37px. Six rows, so 222px of the results screen, from one
+     character. The other two roster builders emit no nested span here, so the > changes
+     nothing for Offense, Defense, Full Team or the Trade Machine. */
+  .rrow .nm>span{display:block;font-size:11px;color:var(--dim-2);white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;margin-top:1px}
   .rrow .num{flex:0 0 auto;text-align:right}
   .rrow .num b{display:block;font-family:var(--fn);font-size:15px;line-height:1.1}
