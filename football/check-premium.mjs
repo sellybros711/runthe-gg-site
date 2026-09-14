@@ -331,6 +331,173 @@ ok('the rules sheet states all three', /One run a day/i.test(grace.rules)
 ok('an owner is told about no limit at all', !/One run a day/i.test(grace.ownerRules));
 await t.page.close();
 
+/*
+ * THE WALK BACK FROM STRIPE, which is the screen a paying customer sees first and the one
+ * with the least margin for being wrong. It shipped wrong: a buyer who bought from
+ * www.runthe.gg was returned to the apex by SITE_URL, where their session does not exist,
+ * and the page spent ten seconds polling premium_products() as nobody before printing the
+ * apology meant for a slow webhook. The server half is fixed in _site.js. This is the page
+ * half, and there are three outcomes rather than the two it used to have.
+ *
+ * THE CONFETTI IS AN ASSERTION HERE, not decoration. Celebrating over a screen that has just
+ * told somebody their account is not ready is worse than not celebrating at all, so each
+ * case checks whether the canvas appeared as well as what the sheet says.
+ */
+console.log('\nTHE WALK BACK FROM STRIPE');
+const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,'
+  + 'setPremium:(v)=>{premiumSet=v;},'
+  + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
+  + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
+  + 'onSuccessUrl:()=>{history.replaceState(null,"","/football/?checkout=success");}';
+const ck = await openPage(browser, 'http://local.test/football/', { tester: true, inject: CK_INJECT });
+
+/* A helper the three cases share: put the success parameter back, answer premiumProducts
+   with `answers` (an array of arrays, one per poll, so a webhook that lands late can be
+   modelled), and report what the sheet came out as. */
+await ck.page.evaluate(() => {
+  window.__ck = async (opts) => {
+    const T = window.__t;
+    document.getElementById('sheet').classList.remove('on');
+    document.querySelectorAll('.confetti-cv').forEach((c) => c.remove());
+    T.setPremium(null);
+    if (opts.signedIn === false) T.clearAuth();
+    else T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+    let n = 0;
+    const answers = opts.answers || [[]];
+    window.PS_AUTH = Object.assign({}, window.PS_AUTH, {
+      premiumProducts: async () => answers[Math.min(n++, answers.length - 1)],
+    });
+    /* Auth arriving LATE is the regression: checkoutReturn used to poll before the session
+       existed and read its own impatience as a missing purchase. */
+    if (opts.authAfter) {
+      T.clearAuth();
+      setTimeout(() => T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' }),
+        opts.authAfter);
+    }
+    T.onSuccessUrl();
+    await T.checkoutReturn();
+    const box = document.getElementById('sheet-in');
+    return {
+      kind: box.dataset.kind,
+      text: (box.innerText || '').replace(/\s+/g, ' '),
+      confetti: !!document.querySelector('.confetti-cv'),
+      buttons: [...box.querySelectorAll('.btn')].map((b) => b.id + ':' + b.textContent).join(' | '),
+      polls: n,
+    };
+  };
+});
+
+const cases = [
+  ['the row is there', { answers: [['ps_premium', 'cfb_premium']] }, 'owned'],
+  ['the webhook lands on the third ask',
+    { answers: [[], [], ['ps_premium', 'cfb_premium']] }, 'owned'],
+  ['the session came back on the other hostname', { signedIn: false }, 'signedout'],
+  ['auth arrives a second late', { authAfter: 1000, answers: [['ps_premium', 'cfb_premium']] }, 'owned'],
+];
+for (const [label, opts, want] of cases) {
+  const r = await ck.page.evaluate((o) => window.__ck(o), opts);
+  console.log('  ' + label + ':');
+  if (want === 'owned') {
+    /* CASE-INSENSITIVE, because .display is uppercased in CSS and innerText reports what
+       is rendered. A case-sensitive match here fails on a heading that is perfectly right. */
+    ok('    says You are Pro', /You are Pro/i.test(r.text), r.text.slice(0, 90));
+    ok('    thanks them in so many words', /Thank you\. Genuinely\./i.test(r.text));
+    ok('    fires confetti', r.confetti === true);
+    ok('    offers the door list', /ck-see/.test(r.buttons), r.buttons);
+  } else {
+    ok('    does NOT claim Pro', !/You are Pro/i.test(r.text), r.text.slice(0, 90));
+    ok('    does NOT fire confetti', r.confetti === false);
+    ok('    still thanks them', /Thank you\. Genuinely\./i.test(r.text));
+    ok('    says the purchase is safe', /purchase is safe/i.test(r.text), r.text.slice(0, 140));
+    ok('    offers a way back in', /ck-in/.test(r.buttons), r.buttons);
+  }
+}
+
+/* A signed-in account whose row never appears is the third outcome, and it must read as a
+   wait rather than as a failure: this page cannot know a payment failed and must never
+   imply it. */
+const pend = await ck.page.evaluate(() => window.__ck({ answers: [[]] }));
+console.log('  the webhook has not landed at all:');
+ok('    does not claim Pro', !/You are Pro/i.test(pend.text));
+ok('    does not fire confetti', pend.confetti === false);
+ok('    never suggests the payment failed', !/fail|problem|wrong|error/i.test(pend.text), pend.text.slice(0, 140));
+ok('    offers to ask again', /ck-again/.test(pend.buttons), pend.buttons);
+ok('    it really did keep asking', pend.polls >= 6, String(pend.polls));
+
+console.log('\nWHAT YOU UNLOCKED, AND EVERY ROW IS A DOOR');
+/*
+ * The catalog sells two bundles and this sheet is drawn from the ROW rather than the bundle
+ * key, so the cheaper one has to come out four doors and Run The Bundle six. A door that
+ * lists something the account does not own is the same lie as a tile promising a mode the
+ * purchase does not open, which this file already exists because of.
+ */
+for (const [label, owns, want] of [
+  ['perfect-season', ['ps_premium', 'cfb_premium'], 4],
+  ['run-the-bundle', ['ps_premium', 'cfb_premium', 'arcade_card_year', 'runtour_pack'], 6],
+  ['nothing readable', [], 0],
+]) {
+  const r = await ck.page.evaluate((owns) => {
+    const T = window.__t;
+    T.setPremium(owns);
+    document.getElementById('sheet').classList.remove('on');
+    T.unlockedSheet();
+    const box = document.getElementById('sheet-in');
+    const rows = [...box.querySelectorAll('.ulk-row')];
+    return {
+      n: rows.length,
+      names: rows.map((x) => x.querySelector('b').textContent).join(' | '),
+      games: rows.map((x) => x.querySelector('u').textContent).join(' | '),
+      /* EVERY ROW REALLY GOES SOMEWHERE. A link carries an href, a mode row carries a
+         click handler. A row with neither is a button that does nothing, which is the
+         exact fault this suite was strengthened for twice already. */
+      dead: rows.filter((x) => !(x.tagName === 'A' ? x.getAttribute('href') : x.onclick)).length,
+      /* Root-relative, never absolute: an absolute link would move a www buyer to the
+         apex and sign them out on the way to a game they just paid for. */
+      abs: rows.filter((x) => /^https?:/.test(x.getAttribute('href') || '')).length,
+      text: (box.innerText || '').replace(/\s+/g, ' '),
+    };
+  }, owns);
+  console.log('  ' + label + ':');
+  ok('    ' + want + ' doors', r.n === want, r.n + ': ' + r.names);
+  ok('    none of them is dead', r.dead === 0, String(r.dead));
+  ok('    no absolute links', r.abs === 0, String(r.abs));
+  if (want) {
+    ok('    each says which game it is in', !/\|\s*\|/.test(' ' + r.games + ' ') && r.games.length > 0, r.games);
+    ok('    and it says nothing renews', /Nothing here renews/i.test(r.text));
+  } else {
+    ok('    never says the bundle is gone', !/gone|expired|no longer/i.test(r.text), r.text.slice(0, 120));
+  }
+}
+
+/* AND ONE OF THEM PRESSED FOR REAL. The Trade Machine is the one door an owner can walk
+   through with nothing else set up: no saved run to replace, no rules sheet in front of it,
+   and dailyOn() is off for somebody holding the row. */
+const walked = await ck.page.evaluate(async () => {
+  const T = window.__t;
+  T.setPremium(['ps_premium', 'cfb_premium']);
+  T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+  document.getElementById('sheet').classList.remove('on');
+  T.unlockedSheet();
+  const row = [...document.querySelectorAll('.ulk-row')]
+    .find((x) => /Trade Machine/.test(x.textContent));
+  if (!row) return { got: 'no Trade Machine row' };
+  row.click();
+  await new Promise((r) => setTimeout(r, 600));
+  /* THE ONE-TIME RULES SHEET STANDS IN THE WAY, the same way the dynasty one does above, and
+     for the same reason the dynasty case learned the hard way: stopping at the first sheet
+     counts a popup as the mode, and that is how a dead button passed this suite once. Press
+     through it and insist on the game itself. Note tradeIntro adds .on to #sheet WITHOUT
+     setting dataset.kind, so a check reading the kind would call this door dead. */
+  const go = document.getElementById('b-tmi-go');
+  if (go) go.click();
+  await new Promise((r) => setTimeout(r, 700));
+  return { got: [...document.querySelectorAll('.screen.on')].map((s) => s.id).join(','),
+    viaRules: !!go };
+});
+ok('pressing Trade Machine reaches the game', /s-(draft|game|reveal)/.test(walked.got),
+  walked.got + (walked.viaRules ? ' (through the rules sheet)' : ''));
+await ck.page.close();
+
 console.log('\nAN ACCOUNT OFF THE TESTER LISTS SEES NONE OF IT');
 const plain = await openPage(browser, 'http://local.test/football/', { tester: false,
   inject: 'acctTier,premiumPitch,dailyOn,'

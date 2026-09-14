@@ -148,6 +148,16 @@ url, deliberately: **Stripe is live and there is no test mode**, so a request th
 ends at a real payment page and a url in the answer would navigate there. Use a 100% off
 promotion code for tester runs.
 
+**A redirect back from Stripe must land on the host the buyer left from.** Both
+`www.runthe.gg` and `runthe.gg` serve this site and neither redirects to the other, so they
+are two localStorage jars and a session signed in on one does not exist on the other. Every
+Stripe endpoint built its return url out of `SITE_URL`, which is the apex, always: a www
+buyer came back signed out, the page polled `premium_products()` as nobody, and the screen
+straight after paying apologised for a slow webhook that had already delivered. The base is
+`siteBase()` in `functions/api/stripe/_site.js` now, which prefers the request's own origin
+when it is this site. The same trap has bitten a link in the CFB header. Never write an
+absolute `https://runthe.gg` url in anything a player follows.
+
 ### A badge you add has to be proved reachable
 
 ```

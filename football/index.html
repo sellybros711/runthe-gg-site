@@ -5571,6 +5571,29 @@ window.GA_ID='G-L29P5MRWKE';
     font-size:12.5px;line-height:1.4;color:var(--ink);margin-top:7px}
   .dgrace span:before{content:"";width:6px;height:6px;border-radius:999px;
     background:rgba(255,255,255,.32);margin-top:6px}
+  /* WHAT A BUYER JUST UNLOCKED, one door per row, and every row really opens.
+     A receipt lists; this one goes. The colour on the left is the game's own out of the
+     store's PW_GAME table, so a row cannot claim a different game from the card it was
+     sold on. Marked up as <button> or <a> and never a div: this is the screen straight
+     after a payment and a thing that looks pressable has to be pressable by keyboard too. */
+  .ulk{display:grid;gap:9px;margin-top:13px}
+  .ulk-row{position:relative;display:flex;align-items:center;gap:11px;width:100%;
+    text-align:left;padding:11px 13px 11px 17px;border-radius:12px;
+    border:1px solid var(--line);background:rgba(255,255,255,.045);
+    color:var(--ink);font:inherit;cursor:pointer;text-decoration:none;
+    transition:background .15s ease,border-color .15s ease}
+  .ulk-row:before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;
+    border-radius:0 3px 3px 0;background:var(--gc)}
+  .ulk-row:hover{background:rgba(255,255,255,.09);border-color:var(--gc)}
+  .ulk-row:focus-visible{outline:2px solid var(--gc);outline-offset:2px}
+  .ulk-row>span{flex:1;min-width:0}
+  .ulk-row u{display:block;font-family:var(--fn);font-size:9px;font-weight:800;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--gc);text-decoration:none}
+  .ulk-row b{display:block;font-size:14px;font-weight:700;margin-top:3px;line-height:1.25}
+  .ulk-row i{display:block;font-style:normal;font-size:12px;color:var(--dim);
+    margin-top:3px;line-height:1.35}
+  .ulk-row em{flex:none;color:var(--dim-2);line-height:0}
+  .ulk-row:hover em{color:var(--gc)}
   .gateline:empty{display:none}
   .gateline{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
     font-size:12.5px;line-height:1.4;color:var(--dim)}
@@ -7689,43 +7712,211 @@ async function checkoutReturn(){
   }
   ga('checkout_returned',{});
   justPaid=true;
-  /* Roughly ten seconds of asking, leaning on the early tries where the webhook usually
-     lands, and none of it blocks the page: boot has already finished by here. */
-  const waits=[0,600,1200,2000,3000,3500];
+  /*
+   * THE ACCOUNT FIRST, THE ENTITLEMENT SECOND, AND THAT ORDER IS THE BUG THIS FIXES.
+   *
+   * This used to poll straight away. authBoot() is one line above the call to this function
+   * and it is asynchronous: authState starts {ready:false,signedIn:false} and only becomes
+   * real when PS_AUTH fires its first change, after getSession() has resolved. So the first
+   * two or three polls here ran as NOBODY. premiumRefresh returns immediately when signed
+   * out, which cost nothing and proved nothing, and if the session never arrived at all the
+   * loop ran its full ten seconds against an empty account and then apologised for a slow
+   * webhook that had actually delivered.
+   *
+   * Waiting is also what makes the three answers below distinguishable. "Signed out" and
+   * "signed in, row not here yet" want completely different screens, and before this they
+   * were the same screen.
+   */
+  await authSettled(8000);
+  if(!authState.signedIn){
+    paintHomeStart();
+    checkoutThanks('signedout');
+    ga('checkout_confirmed',{owned:false,state:'signedout'});
+    return;
+  }
+  const got=await checkoutPoll();
+  paintHomeStart();
+  checkoutThanks(got?'owned':'pending');
+  ga('checkout_confirmed',{owned:got});
+}
+/* Roughly thirteen seconds of asking, leaning on the early tries where the webhook usually
+   lands, and none of it blocks the page: boot has already finished by here. */
+async function checkoutPoll(){
+  const waits=[0,600,1200,2000,3000,3500,3000];
   for(const ms of waits){
     if(ms) await new Promise((r)=>setTimeout(r,ms));
     await premiumRefresh(true);
-    if(dynastyOwned()) break;
+    if(dynastyOwned()) return true;
   }
-  paintHomeStart();
-  checkoutThanks(dynastyOwned());
-  ga('checkout_confirmed',{owned:dynastyOwned()});
+  return false;
 }
-function checkoutThanks(owned){
+/* RESOLVES WHEN THE AUTH CLIENT HAS ANSWERED ONCE, or when the cap runs out, whichever comes
+   first. authState.ready is only ever set from a PS_AUTH change, and PS_AUTH fires its first
+   one after getSession() has settled, so the flag means "we know who this is" rather than
+   "a client exists". Resolves either way: a checkout return must still reach a screen when
+   accounts are unavailable altogether. */
+function authSettled(cap){
+  const stop=Date.now()+(cap||6000);
+  return new Promise((done)=>{
+    const tick=()=>{
+      if(authState.ready||Date.now()>=stop) return done(!!authState.ready);
+      setTimeout(tick,70);
+    };
+    tick();
+  });
+}
+
+/*
+ * THE SCREEN AFTER THE MONEY.
+ *
+ * Somebody has just paid this site real money and this is the first thing they see, so it
+ * gets three separate versions rather than one shrug that covers all of them:
+ *
+ *   owned      the row is there. Confetti, thanks meant sincerely, and a door list.
+ *   pending    signed in, webhook not landed yet. Not an apology and not a failure: the
+ *              payment is through, and there is a button that asks again.
+ *   signedout  the browser has no session. THIS IS THE ONE THE OLD CODE GOT WRONG, and it
+ *              is not rare: www.runthe.gg and runthe.gg are separate localStorage jars, and
+ *              until _site.js the return from Stripe went to whichever one SITE_URL named
+ *              rather than the one they bought from. The purchase is fine, the row exists,
+ *              and the only true sentence is that signing back in brings it all with them.
+ */
+function checkoutThanks(state){
+  const owned=state==='owned';
   const box=$('sheet-in');
   box.dataset.kind='premium';
-  box.innerHTML='<div class="eyebrow gold">'+(owned?'You are Pro':'Payment received')+'</div>'+
-    '<h2 class="display" style="font-size:27px;margin:4px 0 8px">'+
-      (owned?'Everything is unlocked':'Thanks for that')+'</h2>'+
-    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
+  const HEAD={owned:'Pro unlocked',pending:'Payment received',signedout:'Payment received'};
+  const TITLE={owned:'You are Pro',pending:'Thank you',signedout:'Thank you'};
+  /* WRITTEN AS GRATITUDE AND NOT AS A STATUS LINE. The version this replaces opened with
+     "Your payment went through", which is what a card terminal prints. */
+  const BODY={
+    owned:'Thank you. Genuinely. This is a small site and a bundle like yours is what keeps '+
+      'it being made. Your account is Pro on every device you sign in on.',
+    pending:'Thank you. Genuinely. Your payment is through and your account is being set up '+
+      'right now. It usually takes a few seconds.',
+    signedout:'Thank you. Genuinely. Your purchase is safe on your account. This browser is '+
+      'just not signed in to it right now, which can happen coming back from the payment '+
+      'page. Sign in and everything you bought is there.'
+  };
+  box.innerHTML='<div class="eyebrow gold">'+HEAD[state]+'</div>'+
+    '<h2 class="display" style="font-size:30px;margin:4px 0 8px">'+TITLE[state]+'</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.5;margin:0">'+BODY[state]+'</p>'+
+    '<div style="margin-top:16px">'+
       (owned
-        ? 'Dynasty, Franchise and Commissioner are open, with no daily limit, on every '+
-          'device you sign in on.'
-        : 'Your payment went through. The account can take a moment to catch up, so if a '+
-          'mode is still locked, give it a minute and reopen the game.')+
-    '</p>'+
-    '<div style="margin-top:15px">'+
-      (owned
-        ? '<button class="btn" id="ck-go" style="width:100%">Start a Dynasty</button>'+
+        ? '<button class="btn" id="ck-see" style="width:100%">See what you unlocked</button>'+
           '<div style="margin-top:10px"><button class="btn ghost" id="sh-x" style="width:100%">Not now</button></div>'
-        : '<button class="btn ghost" id="sh-x" style="width:100%">Close</button>')+
+        : state==='pending'
+          ? '<button class="btn" id="ck-again" style="width:100%">Check again</button>'+
+            '<div style="margin-top:10px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>'
+          : '<button class="btn" id="ck-in" style="width:100%">Sign in</button>'+
+            '<div style="margin-top:10px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>')+
     '</div>';
   openSheet();
-  const go=$('ck-go');
+  /* THE CONFETTI ONLY FIRES ON A PURCHASE THE PAGE CAN ACTUALLY SEE. Celebrating over a
+     screen that has just told somebody their account is not ready would be worse than the
+     flat message this replaces. Gold, the same palette a perfect season gets, because this
+     is the other thing on the site worth a burst. fireConfetti already returns without
+     drawing anything for a player who has asked for reduced motion. */
+  if(owned) try{ fireConfetti({colors:['#fde68a','#fcd34d','#f59e0b','#fffbeb','#ffffff'],count:200,duration:4200}); }catch(_){}
+  const see=$('ck-see');
   /* STRAIGHT INTO THE THING THEY BOUGHT. Landing somebody back on the front page to go and
-     find it is the same as not acknowledging the purchase at all. */
-  if(go) go.onclick=()=>{ closeSheet(); setTimeout(()=>beginDynastyDraft(),260); };
+     find it is the same as not acknowledging the purchase at all. This used to be one
+     button into Dynasty; the bundle has five other things in it and the sheet below names
+     every one of them. */
+  if(see) see.onclick=()=>unlockedSheet();
+  const again=$('ck-again');
+  if(again) again.onclick=async()=>{
+    again.disabled=true; again.textContent='Checking';
+    const got=await checkoutPoll();
+    paintHomeStart();
+    checkoutThanks(got?'owned':'pending');
+    if(!got) toast('Still setting up. Give it a moment.');
+  };
+  const inb=$('ck-in');
+  /* profileSheet() IS the sign-in sheet when there is nobody signed in, and authMode is set
+     first so it opens on Welcome back rather than on the new-account form: this person has
+     an account, they paid with it, and being shown a sign-up here would be the sheet
+     arguing with the sentence above it. */
+  if(inb) inb.onclick=()=>{ authMode='in'; profileSheet(); };
   $('sh-x').onclick=closeSheet;
+}
+
+/*
+ * WHAT YOU UNLOCKED, AND EVERY ROW GOES SOMEWHERE.
+ *
+ * The profile already holds a receipt (pfPro) and this is deliberately not that. A receipt
+ * answers "what did I pay for and does it renew"; this answers "what can I do now", which is
+ * the only question anybody has thirty seconds after buying. So the rows are doors rather
+ * than line items: three of them start a mode on this page, two open another game, and the
+ * Run The Tour coins say they are on their way, because the golf backend credits those and
+ * this page cannot pretend otherwise.
+ *
+ * BUILT FROM premiumSet, WHICH IS THE ROW. Not from the bundle key, which this page never
+ * learns, and not from a list of what the store sells. Somebody holding the cheaper bundle
+ * sees four doors and somebody holding Run The Bundle sees six, out of the same table,
+ * because what is drawn is what the account actually owns.
+ */
+const UNLOCK_DOORS=[
+  {prod:'ps_premium',game:'ps',name:'Dynasty Mode',
+   line:'Draft a team and run it for as long as you can hold the job.',
+   go:()=>{ closeSheet(); setTimeout(()=>beginDynastyDraft(),260); }},
+  {prod:'ps_premium',game:'ps',name:'One Franchise Dynasty',
+   line:'The same run, with the pool locked to one club.',
+   go:()=>{ closeSheet(); setTimeout(()=>clubPicker(true),260); }},
+  {prod:'ps_premium',game:'ps',name:'Trade Machine',
+   line:'No daily limit on it any more. Play it as often as you like.',
+   go:()=>{ closeSheet(); setTimeout(()=>beginTradeMachine(),260); }},
+  /* ROOT-RELATIVE, NEVER ABSOLUTE, and for exactly the reason the CFB header carries a note
+     about: an absolute https://runthe.gg link takes somebody who arrived on www and drops
+     them on the apex, where their session does not exist. A buyer following a link off this
+     sheet into a game they have just paid for must not be signed out by the link. */
+  {prod:'cfb_premium',game:'cfb',name:'Commissioner Mode',
+   line:'Can you save College Football?',href:'/cfb/commish/'},
+  {prod:'arcade_card_year',game:'arcade',name:'Arcade Card, one year',
+   line:'Every daily game, unlimited plays, plus the archive.',href:'/arcade/'},
+  {prod:'runtour_pack',game:'tour',name:'100,000 coins and one Tour Pack',
+   line:'On its way to your Run The Tour wallet.',href:'/golf/'}
+];
+const ULK_CHEV='<svg width="9" height="14" viewBox="0 0 9 14" fill="none" aria-hidden="true">'+
+  '<path d="M1.5 1.5 L7 7 L1.5 12.5" stroke="currentColor" stroke-width="2" '+
+  'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function unlockedSheet(){
+  const have=Array.isArray(premiumSet)?premiumSet:[];
+  const rows=UNLOCK_DOORS.filter((d)=>have.indexOf(d.prod)>=0);
+  const box=$('sheet-in');
+  box.dataset.kind='unlocked';
+  const cell=(d,i)=>{
+    const g=(window.RTG_STORE&&window.RTG_STORE.game(d.game))||{name:'',c:'#94a3b8'};
+    const inner='<span><u>'+esc(g.name)+'</u><b>'+esc(d.name)+'</b>'+
+      '<i>'+esc(d.line)+'</i></span><em>'+ULK_CHEV+'</em>';
+    return d.href
+      ? '<a class="ulk-row" style="--gc:'+g.c+'" href="'+d.href+'" data-ulk="'+i+'">'+inner+'</a>'
+      : '<button type="button" class="ulk-row" style="--gc:'+g.c+'" data-ulk="'+i+'">'+inner+'</button>';
+  };
+  box.innerHTML='<div class="eyebrow gold">Pro</div>'+
+    '<h2 class="display" style="font-size:27px;margin:4px 0 7px">What you unlocked</h2>'+
+    '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+
+      'Tap any of these to go straight there. They stay unlocked on every device you sign '+
+      'in on.</p>'+
+    (rows.length
+      ? '<div class="ulk">'+rows.map(cell).join('')+'</div>'
+      /* REACHABLE WITHOUT BEING A BUG, the same way pfProLoad's empty case is. This draws off
+         premiumSet, and a blocked request leaves that empty while the purchase is perfectly
+         fine. Never tell somebody their bundle is gone. */
+      : '<p class="dim" style="font-size:12.5px;line-height:1.45;margin:14px 0 0">'+
+          'Your Pro modes are unlocked. The list of what is in your bundle could not be '+
+          'loaded just now. Reload the page and it will come back.</p>')+
+    '<p class="dim" style="font-size:12px;line-height:1.45;margin:14px 0 0">'+
+      'You paid once. Nothing here renews and nothing charges you again.</p>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>';
+  openSheet();
+  box.querySelectorAll('.ulk-row[data-ulk]').forEach((el)=>{
+    const d=rows[+el.dataset.ulk];
+    if(!d||!d.go) return;                       // an <a> navigates on its own
+    el.onclick=(e)=>{ e.preventDefault(); d.go(); };
+  });
+  $('sh-x').onclick=closeSheet;
+  ga('unlocked_sheet_shown',{n:rows.length});
 }
 const canPlayDefense=()=>{
   if(DEFENSE_LIVE) return true;
