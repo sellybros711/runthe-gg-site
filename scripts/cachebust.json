@@ -1981,6 +1981,10 @@
     "/cfb/auth.js": {
       "v": "6",
       "sha": "153192c9aeb27834"
+    },
+    "/assets/cloudsave.js": {
+      "v": "1",
+      "sha": "5f24ea88454d0669"
     }
   },
   "cfb/index.html": {
@@ -2045,6 +2049,10 @@
     "/assets/store.js": {
       "v": "10",
       "sha": "dd9ef15b93f7c520"
+    },
+    "/assets/cloudsave.js": {
+      "v": "1",
+      "sha": "5f24ea88454d0669"
     },
     "auth.js": {
       "v": "5",

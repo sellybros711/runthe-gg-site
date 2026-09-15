@@ -220,6 +220,53 @@ The mid-season gap is already covered and worth not re-breaking: `spendTheDay` c
 mid-season comes back to the squad screen with `paidSeason` already set. The season is
 replayed and not re-charged.
 
+## A run in progress belongs to the account
+
+```
+node football/check-cloudsave.mjs                    the dynasty, both directions
+node cfb/build/test/commish/test_cloudsave.mjs       the term and the career (needs :8080)
+```
+
+`supabase/103_cloud_saves.sql` is the record and `/assets/cloudsave.js` is the one client
+both games use. A dynasty and a commissioner's term were both in localStorage and nowhere
+else, which loses them to clearing site data, a private window, iOS evicting a site nobody
+visited for a week, a phone that is not the laptop, and a second account signing in on the
+same browser. **None of those throws.** The only symptom is a front page offering to start
+something the player was forty seasons into.
+
+**localStorage is still written first and synchronously, and that is deliberate.** A dynasty
+autosaves on every cut and every signing, and a game that waited on a round trip for each of
+those would be worse than one that loses a save. The browser copy is a cache of the table
+now; the upload rides behind through `RTG_SAVE.queue`, which keeps one request in flight per
+slot and builds the payload at SEND time so what goes up is the run as it stands when the
+wire is free.
+
+**Every call fails soft, and null means "no opinion", never "you have no save".** A shelf
+that cannot be reached must never be the reason a run goes, which is the entire point of the
+file. Both suites assert the mode is exactly as playable with the network on fire.
+
+**Progress decides a conflict, not a clock.** Every write carries how far the run has got
+(`dynProgress`, `termProgress`, `careerProgress`), and the server refuses one that would move
+a save backwards, handing back what is stored so the caller can adopt it. Device clocks are
+wrong often enough to matter and last-write-wins fails in exactly the direction this exists
+to prevent. It costs one thing: a deliberate restart on a second device would lose to a stale
+browser holding season 40. That is why **starting over DELETES rather than overwriting**, in
+`dynClear`, in `beginDynastyDraft` and in `newTerm`, and the trade is the right way round.
+Losing a restart costs a redraft; losing a forty season dynasty cannot be undone.
+
+**A delete goes through the same queue as the saves.** Starting over deletes the row and
+saves the new run a moment later, and raced over the open network the delete can arrive
+second and take the NEW run with it. `RTG_SAVE.drop` is queued per slot, so it also discards
+whatever write of the old run was still pending.
+
+**Adopting only happens where it is safe.** The football pull lands on the front page and the
+commish pull only while `#s-gate` is showing, because replacing `world` under somebody
+mid-beat swaps the sport out from under a decision they are making. The mark is dropped
+rather than kept when it has to skip, so the next visit asks again.
+
+The Trade Machine's save is still browser-only. It is one season and one sitting, so there is
+much less to lose, but it is the obvious next one.
+
 **Boot BOTH views before shipping anything that touches this.** A crash that only hit
 testers has already shipped: moving the store out of `football/index.html` left
 `pwArt('star')` behind on the home prompt card, which only a tester sees, so
