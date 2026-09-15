@@ -940,6 +940,18 @@ section('the generated text is deep enough not to repeat');
     Object.keys(OPP_MOVES_BY_STYLE).forEach(k=>need('opp moves '+k, OPP_MOVES_BY_STYLE[k].length, 16));
     need('opp moves base', OPP_MOVES_BASE.length, 12);
 
+    // a dilemma is the only scene that ROLLS rather than paying out, so it is
+    // the one worth having most of
+    need('dilemmas', SCENES.filter(x=>/^dil_/.test(x.id)).length, 7);
+    // and the cuts that every feud walks through need more than one wording
+    const cc={ me:G.w, opp:{name:'Rival',nick:'X',id:'x'}, hist:{count:3,wins:2,losses:1,best:{q:72}},
+               feud:{kind:'grudge',weeks:2}, events:{}, venue:{promoShort:'GCW'},
+               champion:{name:'Somebody',you:false}, weekCount:1 };
+    let multi=0;
+    CUT_BANK.forEach(k=>{ let o=null; try{ o=k.line(cc); }catch(_){ return; }
+      if(Array.isArray(o) && o.length>1) multi++; });
+    need('cuts with more than one wording', multi, 14);
+
     // every wrestler on the roster can say more than one thing per situation
     const roster=houseRoster(myPromoId());
     let worst=99, worstWho='';

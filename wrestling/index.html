@@ -14348,16 +14348,36 @@ const CUT_BANK=[
       : (c.me.align==='heel' ? `${c.opp.name}. Something started between us and I want everybody to know I started it on purpose.` : `${c.opp.name}, you and I have a problem now. I did not go looking for it. I am not walking away from it either.`))
       : `Something started this week. I am on this microphone so nobody can pretend it did not.`},
   {id:'cut_st_open_meat', phase:['meat','thesis'], stakes:['stage_opening'], tags:['ref','boast'], hostile:-0.3, intensity:0.7,
-    line:c=>c.opp ? `Here is what ${c.opp.name} does not understand yet. I do not do this for a week. I do this until it is finished.` : `I do not start things for a week. I start them so they finish.`},
+    line:c=>c.opp ? [`Here is what ${c.opp.name} does not understand yet. I do not do this for a week. I do this until it is finished.`,
+                     `${c.opp.name} thinks this is a booking. It is not a booking. It is a thing I have decided to do.`,
+                     `I have been doing this long enough to know the difference between a bad night and a problem. ${c.opp.name} is a problem.`]
+                  : [`I do not start things for a week. I start them so they finish.`,
+                     `Whoever it turns out to be, they should know I do not get bored of things.`]},
   {id:'cut_st_open_close', phase:['close'], stakes:['stage_opening'], tags:['threat'], hostile:-0.5, intensity:0.8,
-    line:c=>c.opp ? (c.me.align==='heel' ? `${c.opp.name}, this is the last week you get to be surprised by me.` : `${c.opp.name}, find me. Any night. I will be the one who did not blink.`) : `Whoever it is: find me. I will be easy to find.`},
+    line:c=>c.opp ? (c.me.align==='heel'
+        ? [`${c.opp.name}, this is the last week you get to be surprised by me.`,
+           `Enjoy the part where you still think you know what I am going to do, ${c.opp.name}.`,
+           `${c.opp.name}. I am going to be the most inconvenient thing that has ever happened to you.`]
+        : [`${c.opp.name}, find me. Any night. I will be the one who did not blink.`,
+           `${c.opp.name}, I am not hard to find. I am the one who keeps turning up.`,
+           `You know where I am, ${c.opp.name}. I have not moved.`])
+      : [`Whoever it is: find me. I will be easy to find.`,
+         `I am not going anywhere. That is the entire message.`]},
 
   {id:'cut_st_esc_hook', phase:['hook'], stakes:['stage_escalation'], tags:['ref','threat'], hostile:-0.45, intensity:0.8,
     line:c=>c.opp ? `Week ${c.feud&&c.feud.weeks?c.feud.weeks:'two'} of ${c.opp.name} and me, and it is not business any more. Everybody back there knows it. Now you do too.` : `This has gone past business. I am fine with that.`},
   {id:'cut_st_esc_meat', phase:['meat'], stakes:['stage_escalation'], tags:['ref','question'], hostile:-0.35, intensity:0.8,
     line:c=>c.opp ? (c.hist.wins>c.hist.losses ? `${c.opp.name} keeps coming back after I keep beating them. Ask yourself why. Then ask what they think happens differently this time.` : `${c.opp.name} has beaten me. Fine. Ask them how many nights they slept afterwards. I know the answer, because I am in their head.`) : `Ask anybody back there what this is now. They will not answer. That is the answer.`},
   {id:'cut_st_esc_close', phase:['close'], stakes:['stage_escalation'], tags:['threat','callback'], hostile:-0.55, intensity:0.85,
-    line:c=>c.opp ? (c.me.align==='heel' ? `Next time I see ${c.opp.name} there will not be a referee close enough to matter.` : `${c.opp.name}, you have made this personal. Good. I am better when it is personal.`) : `Next time. Not a referee in the building close enough to matter.`},
+    line:c=>c.opp ? (c.me.align==='heel'
+        ? [`Next time I see ${c.opp.name} there will not be a referee close enough to matter.`,
+           `There is going to be a night with no bell on it, ${c.opp.name}. You will know it when it starts.`,
+           `${c.opp.name} keeps hiding behind the rules. The rules are not always going to be there.`]
+        : [`${c.opp.name}, you have made this personal. Good. I am better when it is personal.`,
+           `${c.opp.name} wanted this to be personal. It is. I hope that was the plan.`,
+           `You went past the job, ${c.opp.name}. Now so have I.`])
+      : [`Next time. Not a referee in the building close enough to matter.`,
+         `Somebody made this personal. I am not the one who has to be careful now.`]},
 
   {id:'cut_st_pers_hook', phase:['hook','personal'], stakes:['stage_personal'], tags:['ref','twist'], hostile:-0.3, intensity:0.9,
     line:c=>c.opp ? (c.events.attacked ? `${c.opp.name} put hands on me where there was no bell and no referee. Remember that, when you decide who to feel sorry for tonight.`
@@ -14367,7 +14387,11 @@ const CUT_BANK=[
   {id:'cut_st_pers_meat', phase:['meat','personal'], stakes:['stage_personal'], tags:['concession','threat'], hostile:-0.2, intensity:0.9,
     line:c=>c.opp ? (c.me.align==='heel' ? `I will say this once, and honestly: ${c.opp.name} is good. Good enough that hurting them will mean something.` : `I respect ${c.opp.name}. I want everybody to hear that. It changes nothing about what I have to do to them.`) : `Honestly: they are good. Good enough that this will mean something.`},
   {id:'cut_st_pers_close', phase:['close'], stakes:['stage_personal'], tags:['threat'], hostile:-0.6, intensity:0.95,
-    line:c=>c.opp ? `${c.opp.name}, one of us leaves this with something we cannot get back. I have made my peace with it being me. Have you?` : `One of us leaves this with something we cannot get back.`},
+    line:c=>c.opp ? [`${c.opp.name}, one of us leaves this with something we cannot get back. I have made my peace with it being me. Have you?`,
+                     `There is no version of this where we both walk out the same, ${c.opp.name}. I stopped looking for one.`,
+                     `${c.opp.name}, I have thought about what this costs. I am still here. That should worry you.`]
+                  : [`One of us leaves this with something we cannot get back.`,
+                     `I have thought about what this costs. I am still standing here.`]},
 
   {id:'cut_st_final_hook', phase:['hook'], stakes:['stage_final'], tags:['ref','callout'], hostile:-0.5, intensity:0.95,
     line:c=>c.opp ? (c.feud&&c.feud.kind==='title' ? `${c.opp.name}, the belt is on the line and so is everything I have said about you for ${c.feud.weeks||'these'} weeks. One of those two things is coming home with me.`
@@ -14381,9 +14405,17 @@ const CUT_BANK=[
   {id:'cut_st_post_hook', phase:['hook'], stakes:['stage_post'], tags:['ref','concession'], hostile:0.3, intensity:0.7,
     line:c=>c.opp ? (c.resolved&&c.resolved.resolution==='respect' ? `${c.opp.name} and I settled it ${c.resolved.weeks?c.resolved.weeks+' weeks ago':'recently'}. In the middle of the ring, with a handshake. I meant it then. I mean it now.` : `${c.opp.name} and I are done. Not settled. Done. There is a difference and I am not pretending otherwise.`) : `That one is finished. I am not going to pretend it is not.`},
   {id:'cut_st_post_meat', phase:['meat','personal'], stakes:['stage_post'], tags:['ref','twist'], hostile:0.1, intensity:0.75,
-    line:c=>c.opp ? `What ${c.opp.name} and I did out there made both of us. Anybody who watched it knows what I am capable of. Anybody who did not is about to find out.` : `What we did out there made both of us. Anybody who watched it knows.`},
+    line:c=>c.opp ? [`What ${c.opp.name} and I did out there made both of us. Anybody who watched it knows what I am capable of. Anybody who did not is about to find out.`,
+                     `People are still talking about ${c.opp.name} and me. They should be. Neither of us is the same after it.`,
+                     `I do not need to run ${c.opp.name} down. Go and watch what we did and then tell me who else here could have been in it.`]
+                  : [`What we did out there made both of us. Anybody who watched it knows.`,
+                     `That match is the only reference I need. Go and watch it.`]},
   {id:'cut_st_post_close', phase:['close'], stakes:['stage_post'], tags:['callback','threat'], hostile:-0.2, intensity:0.8,
-    line:c=>c.opp ? `So here is my problem, ${c.opp.name}. I know exactly what it took to finish with you. And I am looking around this room for the next one who thinks they can go there.` : `I know exactly what it took to finish that. I am looking around this room for the next one.`},
+    line:c=>c.opp ? [`So here is my problem, ${c.opp.name}. I know exactly what it took to finish with you. And I am looking around this room for the next one who thinks they can go there.`,
+                     `${c.opp.name} took everything I had. That is the bar now. Somebody in this building has to clear it.`,
+                     `I am not done. I am just out of ${c.opp.name}. Those are different problems.`]
+                  : [`I know exactly what it took to finish that. I am looking around this room for the next one.`,
+                     `That is the bar now. Somebody here has to clear it.`]},
 
   // ----- FIRST-MEETING cuts -----
   {id:'cut_first_open',   phase:['hook'],   stakes:['first'], tags:['boast','ref'],
@@ -14399,15 +14431,21 @@ const CUT_BANK=[
   {id:'cut_first_close',  phase:['close'],  stakes:['first'], tags:['threat','callback'],
     hostile:-0.55, intensity:0.85,
     line:c=>c.opp
-      ? `${c.opp.name}, welcome to the deep end. Nobody in this building is going to help you out of it, and I am the one holding your head under.`
-      : `Everybody has a first impression to make. This is mine. Get used to it. You are going to see a lot of it.`},
+      ? [`${c.opp.name}, welcome to the deep end. Nobody in this building is going to help you out of it, and I am the one holding your head under.`,
+         `${c.opp.name} has never been in a match with me. They are about to find out what that is like, in front of everybody.`,
+         `First time for ${c.opp.name} and me. I intend to make it memorable for exactly one of us.`]
+      : [`Everybody has a first impression to make. This is mine. Get used to it. You are going to see a lot of it.`,
+         `You do not know me yet. That is about to stop being true.`]},
 
   // ----- REMATCH cuts -----
   {id:'cut_re_open',      phase:['hook'],   stakes:['rematch','series'], tags:['ref','threat'],
     hostile:-0.35, intensity:0.8,
     line:c=>c.opp
-      ? `${c.opp.name} and I have unfinished business, and every one of you in this building knows exactly what it is. Do not pretend you came here for anything else tonight.`
-      : `We are back. Same ring, different chapter. If you were here last time, you already know why this matters.`},
+      ? [`${c.opp.name} and I have unfinished business, and every one of you in this building knows exactly what it is. Do not pretend you came here for anything else tonight.`,
+         `Nobody in here needs the recap. ${c.opp.name} and I have been doing this long enough that you all have an opinion.`,
+         `There is a thing between ${c.opp.name} and me that neither of us has been able to put down. Tonight we try again.`]
+      : [`We are back. Same ring, different chapter. If you were here last time, you already know why this matters.`,
+         `Same ring. Different chapter. You know why this one matters.`]},
   {id:'cut_re_learned',   phase:['meat'],   stakes:['rematch'], tags:['ref','boast'],
     hostile:-0.2, intensity:0.75,
     line:c=>c.opp
@@ -14421,8 +14459,11 @@ const CUT_BANK=[
   {id:'cut_meat_history', phase:['meat'],   tags:['ref','boast'],
     hostile:-0.2, intensity:0.8,
     line:c=>c.opp
-      ? `Look at both records. Look at what I have done this year and look at what ${c.opp.name} has done this year. If you are honest about what those two columns say, you already know how tonight ends.`
-      : `Wrestling has a way of settling debates. Every one of them. It always has. That is what tonight is for.`},
+      ? [`Look at both records. Look at what I have done this year and look at what ${c.opp.name} has done this year. If you are honest about what those two columns say, you already know how tonight ends.`,
+         `Put my year next to ${c.opp.name}'s year. One of those is an argument and one of those is a résumé.`,
+         `You can like ${c.opp.name}. Liking somebody has never once changed a result.`]
+      : [`Wrestling has a way of settling debates. Every one of them. It always has. That is what tonight is for.`,
+         `Everything gets settled in there eventually. That is the only thing I still trust about this business.`]},
 
   {id:'cut_personal_gut', phase:['personal'], tags:['twist','concession'],
     hostile:-0.05, intensity:0.85,
@@ -14454,8 +14495,11 @@ const CUT_BANK=[
   {id:'cut_feud_close',   phase:['close'],  stakes:['feud_end'], tags:['threat','callback'],
     hostile:-0.7, intensity:0.95,
     line:c=>c.opp
-      ? `${c.opp.name}. Look at me. Bell to bell tonight. No draws. No count-outs. One of us walks. It will be me.`
-      : `The bell is about to ring on this whole thing. I am ready. I have been ready for a month.`},
+      ? [`${c.opp.name}. Look at me. Bell to bell tonight. No draws. No count-outs. One of us walks. It will be me.`,
+         `No more talking after this, ${c.opp.name}. The next noise either of us makes is in that ring.`,
+         `Everything we have said for weeks gets settled in about twenty minutes, ${c.opp.name}. Finally.`]
+      : [`The bell is about to ring on this whole thing. I am ready. I have been ready for a month.`,
+         `No more build. No more talking. Just the bell.`]},
 
   // ----- TITLE CHASE cuts -----
   {id:'cut_chase_open',   phase:['hook'],   stakes:['title_chase','title_call'], tags:['boast','ref'],
@@ -14466,7 +14510,9 @@ const CUT_BANK=[
     ][c.me.streak>=3?1:0]},
   {id:'cut_chase_close',  phase:['close'],  stakes:['title_chase','title_call'], tags:['threat'],
     hostile:-0.4, intensity:0.9,
-    line:c=>`I am going to make it so uncomfortable to be the champion of this company that they call my name because it is easier than saying no. ${c.champion?c.champion.name:'Whoever is carrying it'} can hold that title as long as it takes me to get to them. It will not be very long.`},
+    line:c=>[`I am going to make it so uncomfortable to be the champion of this company that they call my name because it is easier than saying no. ${c.champion?c.champion.name:'Whoever is carrying it'} can hold that title as long as it takes me to get to them. It will not be very long.`,
+             `${c.champion?c.champion.name:'The champion'} is going to run out of people to defend against before I run out of patience.`,
+             `I am not asking for the shot any more. I am making it the cheapest way out of the problem I am about to become.`]},
 
   // ----- TITLE DEFENSE cuts -----
   {id:'cut_def_open',     phase:['hook'],   stakes:['title_defense'], tags:['boast','callback'],
@@ -14474,12 +14520,16 @@ const CUT_BANK=[
     line:c=>`I am the ${c.me.title||'champion of this company'}. I have been the ${c.me.title||'champion'} for ${c.me.defenses||'every one of those'} defences. This is not a segment where I explain what I am going to do to ${c.opp?c.opp.name:'the challenger'}. It is a segment where I remind you why nobody has been able to stop it yet.`},
   {id:'cut_def_close',    phase:['close'],  stakes:['title_defense'], tags:['threat','callback'],
     hostile:-0.35, intensity:0.9,
-    line:c=>`Same finish. Same result. Same champion walking out. Somebody wake me up when this locker room produces a challenger who is actually going to change the ending.`},
+    line:c=>[`Same finish. Same result. Same champion walking out. Somebody wake me up when this locker room produces a challenger who is actually going to change the ending.`,
+             `I have defended this against everybody they have got. I am running out of names and they are running out of ideas.`,
+             `You all keep turning up hoping tonight is the night. It is not. It has not been for a long time.`]},
 
   // ----- CHAMPIONSHIP-WIN-INCOMING cuts (title match) -----
   {id:'cut_title_open',   phase:['hook'],   stakes:['title_call'], tags:['boast','ref'],
     hostile:-0.1, intensity:0.9,
-    line:c=>`Every wrestler in this business tells themselves the same story. That the belt is coming. That the moment is coming. Most of them are lying to themselves. I am not. My moment is booked. It is on the card. It is tonight.`},
+    line:c=>[`Every wrestler in this business tells themselves the same story. That the belt is coming. That the moment is coming. Most of them are lying to themselves. I am not. My moment is booked. It is on the card. It is tonight.`,
+             `There is a version of me that waits another two years for this. I killed him. Tonight is the night.`,
+             `I have watched people walk out of this building with that belt and thought, that should be me. Tonight I stop thinking it.`]},
 
   // ----- OPEN-MIC cuts -----
   {id:'cut_open_call',    phase:['hook'],   stakes:['open_mic','callout'], tags:['boast','threat'],
@@ -14492,8 +14542,11 @@ const CUT_BANK=[
   {id:'cut_callout_open', phase:['hook'],   stakes:['callout'], tags:['boast','ref'],
     hostile:-0.4, intensity:0.85,
     line:c=>c.opp
-      ? `I did not come out here to have a nice conversation. I came out here to name ${c.opp.name}, because they have been avoiding me, and this microphone is the one thing they cannot walk away from.`
-      : `Somebody in this locker room is about to hear their name from this microphone. They have been earning it. Sit tight.`},
+      ? [`I did not come out here to have a nice conversation. I came out here to name ${c.opp.name}, because they have been avoiding me, and this microphone is the one thing they cannot walk away from.`,
+         `${c.opp.name} can ignore me in the corridor. They cannot ignore me while I am saying their name in front of this many people.`,
+         `I am going to keep saying ${c.opp.name} until somebody books it.`]
+      : [`Somebody in this locker room is about to hear their name from this microphone. They have been earning it. Sit tight.`,
+         `There is a name coming. Whoever it belongs to already knows.`]},
   {id:'cut_callout_close',phase:['close'],  stakes:['callout'], tags:['threat','callback'],
     hostile:-0.55, intensity:0.9,
     line:c=>c.opp
@@ -14503,14 +14556,20 @@ const CUT_BANK=[
   // ----- MAIN EVENT cuts -----
   {id:'cut_me_open',      phase:['hook'],   stakes:['main_event'], tags:['boast','crowd'],
     hostile:0, intensity:0.8,
-    line:c=>`${c.venue.promoShort}. Main event of the evening. You paid the ticket price for this specific hour of your night. So let us make it worth it.`},
+    line:c=>[`${c.venue.promoShort}. Main event of the evening. You paid the ticket price for this specific hour of your night. So let us make it worth it.`,
+             `${c.venue.promoShort}. Last match of the night. Everything before this was the warm-up and everybody in here knows it.`,
+             `You could be anywhere tonight. You are here, in ${c.venue.promoShort}, for this. I do not take that lightly.`]},
 
   // ----- GENERIC EVERGREEN cuts (any phase, any stakes) -----
   {id:'cut_ev_hook',      phase:['hook'],   tags:['boast','crowd'],
     hostile:-0.05, intensity:0.75,
     line:c=>c.me.align==='heel'
-      ? `Nobody in this building came to hear me be quiet. So let us not waste each other's time.`
-      : `Every one of you in this building. Thank you. Now let me tell you why I am standing here.`},
+      ? [`Nobody in this building came to hear me be quiet. So let us not waste each other's time.`,
+         `You can boo. I will wait. I have got all night and you have got jobs in the morning.`,
+         `I did not ask for the microphone. I took it. There is a difference and it matters.`]
+      : [`Every one of you in this building. Thank you. Now let me tell you why I am standing here.`,
+         `I am not going to keep you long. I just need to say one thing out loud where everybody can hear it.`,
+         `That noise you are making is the reason I get to stand here. I will not forget it.`]},
   {id:'cut_ev_close',     phase:['close'],  tags:['callback','threat'],
     hostile:-0.25, intensity:0.85,
     line:c=>c.me.gimmick
@@ -14521,6 +14580,20 @@ const CUT_BANK=[
    seeded by chip id + current beat so a chip renders the same wording in
    its preview and when it is delivered, but a chip picked in a later promo
    comes up different. */
+/* A CUT CAN HAVE MORE THAN ONE WORDING, the way a chip already could. Every
+   cut returned exactly one string per branch, so the same beat of the same feud
+   read identically in week two of every rivalry a player ever has. Same FNV-1a
+   over id, phase and week as chipLine: deterministic, so a promo does not
+   reshuffle under the player, and different across weeks and phases. */
+function cutLine(cut, ctx){
+  let out; try{ out = cut.line(ctx); }catch(e){ return ''; }
+  if(!Array.isArray(out)) return out||'';
+  if(!out.length) return '';
+  const key = cut.id+'|'+((PM&&PM.phase)||'hook')+'|'+((ctx&&ctx.weekCount)||0);
+  let h = 2166136261;
+  for(let i=0;i<key.length;i++) h = ((h ^ key.charCodeAt(i))*16777619) >>> 0;
+  return out[h % out.length] || '';
+}
 function chipLine(ch,ctx){
   let out;
   try{ out = ch.fn(ctx); }
@@ -15076,7 +15149,7 @@ function pmChoices(){
   // ---- signature cuts: authored one-click beats for this stakes/phase ----
   const cuts=cutsFor(PM.phase);
   const cutHTML = cuts.length ? cuts.map(cut=>{
-    let line=''; try{ line=cut.line(PMCTX); }catch(e){}
+    let line=cutLine(cut, PMCTX);
     if(!line) return '';
     return `<div class="cutcard" onclick="pmSayCut('${cut.id}')">
       <div class="cc-k">Signature cut${cut.align?`<span class="ch-al ${cut.align}">${cut.align}</span>`:''}${(cut.stakes||[]).some(t=>/^stage_/.test(t))?`<span class="ch-al stage">this beat</span>`:''}</div>
@@ -15132,7 +15205,7 @@ function pmToggleChip(id){
 }
 function pmSayCut(id){
   const cut=CUT_BANK.find(c=>c.id===id); if(!cut) return;
-  const line=cut.line(PMCTX); if(!line) return;
+  const line=cutLine(cut, PMCTX); if(!line) return;
   PM.usedCuts[id]=true;
   const tags=cut.tags||[];
   // A cut is a hand-authored full beat, so it always fits its phase and reads
@@ -15327,7 +15400,7 @@ async function pmQuickCut(){
   </div>`;
   for(let i=0;i<cuts.length;i++){
     const cut = cuts[i]; if(!cut) continue;
-    let line=''; try{ line=cut.line(PMCTX); }catch(e){}
+    let line=cutLine(cut, PMCTX);
     if(!line) continue;
     // "phase" this cut lives in, so any downstream reads make sense
     PM.phase = cut.phase && cut.phase[0] || PPHASE_ORDER[Math.min(i,PPHASE_ORDER.length-1)];
@@ -15407,7 +15480,7 @@ async function pmRhythm(){
       cut = CUT_BANK.find(c=>c.phase.includes(PM.phase) && (!c.when||c.when(PMCTX)));
     }
     if(!cut) continue;
-    let line=''; try{ line=cut.line(PMCTX); }catch(e){}
+    let line=cutLine(cut, PMCTX);
     if(!line) continue;
     const hit = await pmRhythmBeat(cut, line, i, phases.length);
     // hit is 0..1: 0 = miss, 1 = perfect
@@ -16973,6 +17046,151 @@ const SCENES = [
             text:'They ring you back at nine and talk for an hour. Half of it stings. All of it is right.',
             fx:{attr:'ps', amt:+4, weeks:5, label:'Took the notes'}, eff:{respectA:+8} },
           { p:0.9, tone:'mixed', mem:'dil_tape_'+x.c.year, text:'They say it was great, brother. They did not watch it.', eff:{respectA:+2} } ]},
+      ]}}},
+  /* Five more bets. Three dilemmas meant a player met the same three decisions
+     every year, and a dilemma is the only scene where the game rolls rather than
+     pays out, so it is the one worth having most of. Each is gated on a
+     different place in a career, so which one turns up says where you are. */
+  { id:'dil_favour', tag:'THE FAVOUR', trig:'any', weight:6,
+    when:x=>x.c.year>=2 && (x.c.standing||50)>=48 && !sceneRecalls('dil_favour_'+x.c.year),
+    beats:{ start:{ who:null, tag:'SOMEBODY ASKS',
+      line:x=>`Somebody you came up with is three weeks from being released and they know it. They ask you, straight out, to go to the office and put your name on them. It is the kind of ask you only get to make once.`,
+      opts:x=>[
+        { t:'Go in and say it out loud.', outcomes:[
+          { p:x=>1+((x.c.standing||50)/70), tone:'good', mem:'dil_favour_'+x.c.year,
+            text:'The office listens, because it costs you something to say it. They get another eight weeks, and they know exactly who bought them.',
+            eff:{standing:-3, heatAll:-4}, head:'Spent his own standing keeping somebody employed.' },
+          { p:1, tone:'mixed', mem:'dil_favour_'+x.c.year,
+            text:'They hear you out and release them anyway. Everybody in the back knows you went in, which is worth something and costs something.',
+            eff:{standing:-5}, fx:{attr:'ch', amt:+4, weeks:5, label:'The room noticed'} },
+          { p:0.7, tone:'bad', mem:'dil_favour_'+x.c.year,
+            text:'It lands badly. You are told, politely, to worry about your own spot. It follows you around for a month.',
+            eff:{standing:-9}, head:'Went to bat for somebody and got told to sit down.' } ]},
+        { t:'"I cannot spend it on this."', outcomes:[
+          { p:1.3, tone:'mixed', mem:'dil_favour_'+x.c.year,
+            text:'You are honest about it, which is worse than lying and better than nothing. They nod. You do not speak again for a long time.',
+            eff:{heatAll:+4}, head:'Said no to a friend, and meant it.' },
+          { p:1, tone:'good', mem:'dil_favour_'+x.c.year,
+            text:'They take it well. Everybody in this business has said no to somebody. Most of them have been on both sides of it.',
+            eff:{standing:+1} } ]},
+        { t:'Say yes and never go.', outcomes:[
+          { p:1.2, tone:'bad', mem:'dil_favour_'+x.c.year,
+            text:'They find out. They always find out. Nobody says anything to you about it, which is somehow worse.',
+            eff:{heatAll:+9, standing:+1}, head:'Promised to help and did not.' },
+          { p:0.8, tone:'mixed', mem:'dil_favour_'+x.c.year,
+            text:'They are released without ever knowing. You know.',
+            fx:{attr:'ps', amt:-3, weeks:3, label:'Not sleeping on it'} } ]},
+      ]}}},
+  { id:'dil_green', tag:'THE GREEN BOY', trig:'prematch', weight:6,
+    when:x=>(x.c.standing||50)>=52 && ((x.c.rec.w||0)+(x.c.rec.l||0))>=8 && !sceneRecalls('dil_green_'+x.c.year),
+    beats:{ start:{ who:null, tag:'TEN MINUTES TO BELL',
+      line:x=>`Your opponent tonight has nine matches to his name and he is grey. He gets hold of your wrist in the corridor. "I do not know how to get us out of the second one. Can you call it?"`,
+      opts:x=>[
+        { t:'"I will call the whole thing. Follow me."', outcomes:[
+          { p:x=>1+(attrOf(G.w,'ps')/45), tone:'good', mem:'dil_green_'+x.c.year,
+            text:'You lead him through it a step at a time and nobody watching has any idea. He finds you afterwards and cannot get the words out.',
+            eff:{standing:+4, respectA:+18}, fx:{attr:'ps', amt:+3, weeks:4, label:'Carried one'},
+            head:'Called a whole match for somebody who could not.' },
+          { p:0.9, tone:'mixed', mem:'dil_green_'+x.c.year,
+            text:'You get him through it, and it is obvious from the hard camera that you are doing the steering. The room knows. The crowd does not.',
+            eff:{standing:+2, respectA:+10} },
+          { p:0.6, tone:'bad', mem:'dil_green_'+x.c.year,
+            text:'He panics anyway, halfway through, and takes you both somewhere neither of you planned. You land badly getting out of it.',
+            eff:{cond:-9, respectA:+6}, head:'Tried to carry somebody and paid for it.' } ]},
+        { t:'"Do the three things you know. I will do the rest."', outcomes:[
+          { p:1.4, tone:'good', mem:'dil_green_'+x.c.year,
+            text:'Simplest advice in the business and it works every time. He does three things well and you build the match around them.',
+            eff:{standing:+2, respectA:+12} } ]},
+        { t:'"Not my job."', outcomes:[
+          { p:1.1, tone:'bad', mem:'dil_green_'+x.c.year,
+            text:'The match is exactly as bad as it was always going to be. Half the locker room watched it, and every one of them knew whose night it was to fix.',
+            eff:{standing:-5, heatAll:+6}, head:'Let a rookie drown in front of everybody.' },
+          { p:0.9, tone:'mixed', mem:'dil_green_'+x.c.year,
+            text:'He gets through it on his own, badly, and looks at you differently for a long time afterwards.',
+            eff:{respectA:-12} } ]},
+      ]}}},
+  { id:'dil_gimmick', tag:'THE NOTE', trig:'any', weight:6,
+    when:x=>x.w.gimmick && gimHeat()<=42 && x.c.week>8 && !sceneRecalls('dil_gimmick_'+x.c.year),
+    beats:{ start:{ who:null, tag:'A CHANGE OF DIRECTION',
+      line:x=>`There is a note in your bag with a new direction for your character written on it. It is not terrible. It is also not you, and whoever wrote it did not ask.`,
+      opts:x=>[
+        { t:'Do it exactly as written.', outcomes:[
+          { p:1.2, tone:'good', mem:'dil_gimmick_'+x.c.year,
+            text:'It works better than you expected. You hate that it works.',
+            eff:{gimHeat:+14, standing:+4}, head:'Took the note and it got over.' },
+          { p:1, tone:'bad', mem:'dil_gimmick_'+x.c.year,
+            text:'It dies in front of a live crowd and everybody involved pretends it was never written down.',
+            eff:{gimHeat:-8, standing:+2}, fx:{attr:'ch', amt:-4, weeks:4, label:'Somebody else\'s idea'} } ]},
+        { t:'Take the half of it that is true.', outcomes:[
+          { p:x=>1.2+(attrOf(G.w,'ch')/70), tone:'good', mem:'dil_gimmick_'+x.c.year,
+            text:'You keep the one real idea in it and throw the rest away. Nobody notices the difference except you, and it lands.',
+            eff:{gimHeat:+10, standing:+1}, fx:{attr:'ch', amt:+4, weeks:5, label:'Made it his own'},
+            head:'Rewrote a creative note without telling anybody.' },
+          { p:0.9, tone:'mixed', mem:'dil_gimmick_'+x.c.year,
+            text:'Whoever wrote it notices immediately. They are not angry. They are taking notes on you now.',
+            eff:{gimHeat:+5, standing:-2} } ]},
+        { t:'Put it back in the bag and say nothing.', outcomes:[
+          { p:1.1, tone:'mixed', mem:'dil_gimmick_'+x.c.year,
+            text:'Nobody mentions it again. The act stays exactly where it was, which was the problem.',
+            eff:{standing:-2} },
+          { p:0.8, tone:'bad', mem:'dil_gimmick_'+x.c.year,
+            text:'It gets read as you being difficult. That word travels faster than any other word in this business.',
+            eff:{standing:-6, heatAll:+4}, head:'Got a reputation for being hard to work with.' } ]},
+      ]}}},
+  { id:'dil_travel', tag:'THE DRIVE', trig:'any', weight:5,
+    when:x=>x.c.week>4 && (x.c.cond||100)<=72 && !sceneRecalls('dil_travel_'+x.c.year),
+    beats:{ start:{ who:null, tag:'FOUR HUNDRED MILES',
+      line:x=>`It is a four hundred mile drive and you are the only one in the car who is awake enough to do it. There is a hotel an hour back the way you came and a show you have to be at by four.`,
+      opts:x=>[
+        { t:'Drive it. Sleep when you are dead.', outcomes:[
+          { p:1.3, tone:'mixed', mem:'dil_travel_'+x.c.year,
+            text:'You get there at half three. You have no idea what happened between hour two and hour four.',
+            eff:{cond:-8}, fx:{attr:'st', amt:-4, weeks:2, label:'Drove all night'} },
+          { p:0.8, tone:'bad', mem:'dil_travel_'+x.c.year,
+            text:'You wake up in the wrong lane at sixty miles an hour. Nothing happens. You have to pull over for twenty minutes afterwards.',
+            eff:{cond:-12}, fx:{attr:'ps', amt:-5, weeks:3, label:'Shaken up'},
+            head:'Nearly put a car off the road on the way to a show.' } ]},
+        { t:'Get the room. Be late and be rested.', outcomes:[
+          { p:1.2, tone:'good', mem:'dil_travel_'+x.c.year,
+            text:'You walk in at ten past four with four hours of sleep and have the best match on the card.',
+            eff:{cond:+8, standing:-2} },
+          { p:1, tone:'mixed', mem:'dil_travel_'+x.c.year,
+            text:'The agent notices you were late before he notices you were good.',
+            eff:{cond:+8, standing:-5} } ]},
+        { t:'Wake somebody up and swap.', outcomes:[
+          { p:1.4, tone:'good', mem:'dil_travel_'+x.c.year,
+            text:'They drive two hours without complaining once. This is how road friendships actually get made.',
+            eff:{cond:+4, respectA:+10, heatAll:-3} },
+          { p:0.7, tone:'mixed', mem:'dil_travel_'+x.c.year,
+            text:'They drive, badly, and you do not sleep anyway.',
+            eff:{cond:+1} } ]},
+      ]}}},
+  { id:'dil_ceiling', tag:'THE CONVERSATION', trig:'any', weight:6,
+    when:x=>x.c.year>=3 && (x.c.standing||50)>=55 && !x.c.title && !sceneRecalls('dil_ceiling_'+x.c.year),
+    beats:{ start:{ who:null, tag:'A STRAIGHT ANSWER',
+      line:x=>`You get five minutes with the person who actually decides, and they offer you a straight answer for once. "Ask me anything. I will tell you the truth, and you might not want it."`,
+      opts:x=>[
+        { t:'"Am I ever going to be the guy here?"', outcomes:[
+          { p:x=>1+((x.c.standing||50)/60), tone:'good', mem:'dil_ceiling_'+x.c.year,
+            text:'"Yes. Not this year." It is the first time anybody has said it without hedging, and you can work with a date.',
+            eff:{standing:+3}, fx:{attr:'ps', amt:+5, weeks:8, label:'Knows the plan'},
+            head:'Got a straight answer about the top of the card.' },
+          { p:1, tone:'bad', mem:'dil_ceiling_'+x.c.year,
+            text:'"No." No cushion on it, no apology. You asked for the truth and they respected you enough to hand it over.',
+            eff:{standing:+2}, fx:{attr:'ch', amt:-5, weeks:6, label:'Told the truth'},
+            head:'Told to his face that he is not the plan.' } ]},
+        { t:'"What is the one thing stopping me?"', outcomes:[
+          { p:1.5, tone:'good', mem:'dil_ceiling_'+x.c.year,
+            text:'They name one thing. It is specific, it is fixable, and it is fair. Nobody has ever been that useful to you in five minutes.',
+            fx:{attr:'ps', amt:+6, weeks:7, label:'One thing to fix'}, eff:{standing:+4},
+            head:'Asked what was holding him back and actually got told.' },
+          { p:0.8, tone:'mixed', mem:'dil_ceiling_'+x.c.year,
+            text:'They name three things and two of them are about how you look. You take the one that was real.',
+            fx:{attr:'ps', amt:+3, weeks:4, label:'Took the note'} } ]},
+        { t:'Do not ask. Just work.', outcomes:[
+          { p:1.2, tone:'mixed', mem:'dil_ceiling_'+x.c.year,
+            text:'They respect that more than any question you could have asked. You also still have no idea where you stand.',
+            eff:{standing:+5} } ]},
       ]}}},
   /* ---------- ARC PAYOFFS ----------
      These never come up on their own: they are seeded by a decision above and
