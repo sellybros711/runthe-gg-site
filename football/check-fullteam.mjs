@@ -240,5 +240,7 @@ console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
 }
 
 await browser.close();
-console.log(bad ? '\n' + bad + ' FAILED\n' : '\nall full team checks passed\n');
+/* NO TRAILING NEWLINE ON THE VERDICT. Every other checker here is run in a loop that reports
+   `tail -1`, and a final blank line makes a passing suite read as one that printed nothing. */
+console.log(bad ? '\n' + bad + ' FAILED' : '\nall full team checks passed');
 process.exit(bad ? 1 : 0);
