@@ -264,8 +264,19 @@ commish pull only while `#s-gate` is showing, because replacing `world` under so
 mid-beat swaps the sport out from under a decision they are making. The mark is dropped
 rather than kept when it has to skip, so the next visit asks again.
 
-The Trade Machine's save is still browser-only. It is one season and one sitting, so there is
-much less to lose, but it is the obvious next one.
+**The football page has ONE game key and three slots**, and `FB_SLOTS` is where the three
+become one thing. `open` and `club` are the two dynasties, `trade` is a Trade Machine season.
+The key is still `ps_dynasty`, which is historical rather than descriptive: it was written
+when a dynasty was the only run being kept. Changing it now would strand every row already on
+the shelf, which is the one thing a save table must never do to itself. One key is also what
+keeps the boot to a single round trip; a second key for the Trade Machine would be a second
+request on every boot for every signed in player, which is most of them, to ask something the
+first request already answered.
+
+A trade run measures progress by phase and week rather than by seasons finished, because it
+IS one season. `TRADE_PHASE_RANK` exists because the playoff weeks do not continue the
+regular season's numbering, so a week-only measure goes backwards at the seeding screen and
+the server then refuses every save for the rest of the run, with nothing on screen to say so.
 
 **Boot BOTH views before shipping anything that touches this.** A crash that only hit
 testers has already shipped: moving the store out of `football/index.html` left

@@ -99,6 +99,7 @@ Object.defineProperty(window,'PS_AUTH',{configurable:true,
 
 const INJECT = 'dynCloudPush,dynCloudPull,dynCloudForget,dynClear,dynProgress,dynRead,'
   + 'DYN_SAVE_VERSION,ensureDynastyButton,paintHomeStart,'
+  + 'tradeClear,tradeRead,tradeProgress,TRADE_SAVE_KEY,TRADE_SAVE_VERSION,'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);}';
 
 async function openPage(browser, seed) {
@@ -312,6 +313,67 @@ console.log('\nA RUN THAT REALLY ENDED LEAVES NO ROW BEHIND');
   }));
   ok('the account\'s copy goes with the local one', r.row === false && r.local === false,
     'row=' + r.row + ' local=' + r.local);
+  ok('no page errors', boom.length === 0, boom.join(' | '));
+  await page.close();
+}
+
+console.log('\nTHE TRADE MACHINE IS THE THIRD SLOT, NOT A SECOND SHELF');
+{
+  /* ONE GAME KEY AND THREE SLOTS, which is what keeps the boot to one round trip. A second
+     key for the Trade Machine would be a second request on every boot for every signed in
+     player, which is most of them, asking a question the first request already answered.
+     The mode is live to every signed in account, so this was the last run on the site a
+     cleared cache still took. */
+  const { page: seedPage } = await openPage(browser);
+  const version = await seedPage.evaluate(() => window.__t.TRADE_SAVE_VERSION);
+  await seedPage.close();
+  const TRADE = (v, phase, week) => ({
+    v: v, api: 1, user: UID, at: Date.now(), submitted: null,
+    run: { tradeMachine: true, phase: phase, roster: ['x|2019'], seasonNo: 1,
+      season: { week: week } },
+  });
+  const { page, boom } = await openPage(browser, {
+    'ps_dynasty/trade': { slot: 'trade', progress: 9999, saved_at: new Date().toISOString(),
+      payload: TRADE(version, 'season', 11) },
+  });
+  const r = await page.evaluate(async () => {
+    const T = window.__t;
+    try { localStorage.removeItem(T.TRADE_SAVE_KEY); } catch (e) {}
+    T.dynCloudForget();
+    await T.dynCloudPull();
+    const s = T.tradeRead();
+    return { week: s && s.run.season.week,
+      calls: window.__calls.filter((c) => c.fn === 'ps_save_all').length };
+  });
+  ok('a season in progress comes down with the dynasties', r.week === 11, String(r.week));
+  ok('and all three slots cost one request between them', r.calls === 1, String(r.calls));
+
+  /* AND A SEASON THAT ENDED LEAVES NO ROW. tradeClear runs when the run reaches its results
+     screen and again at the top of every new run, so a stale row cannot sit on the shelf
+     offering a resume to somebody who already walked away from it. */
+  await page.evaluate(() => window.__t.tradeClear());
+  await quiet(page);
+  const gone = await page.evaluate(() => ({
+    row: !!window.__shelf['ps_dynasty/trade'],
+    local: !!localStorage.getItem(window.__t.TRADE_SAVE_KEY),
+  }));
+  ok('finishing it takes the account\'s copy too',
+    gone.row === false && gone.local === false, 'row=' + gone.row + ' local=' + gone.local);
+
+  /* THE PROGRESS NUMBER HAS TO RISE THROUGH A SEASON AND NEVER FALL, or the server refuses
+     every save after the first dip and the run stops syncing with nothing on screen to say
+     so. The playoff weeks do not continue the regular season's numbering, which is exactly
+     where a week-only measure would go backwards. */
+  const climb = await page.evaluate(() => {
+    const T = window.__t, P = [];
+    [['draft', 0], ['season', 1], ['season', 9], ['season', 17], ['seeding', 0],
+      ['playoffs', 1], ['over', 0]].forEach(([phase, week]) => {
+      P.push(T.tradeProgress({ phase: phase, season: { week: week } }));
+    });
+    return P;
+  });
+  ok('progress only ever climbs through a season',
+    climb.every((n, i) => i === 0 || n > climb[i - 1]), climb.join(' '));
   ok('no page errors', boom.length === 0, boom.join(' | '));
   await page.close();
 }

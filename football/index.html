@@ -11104,6 +11104,13 @@ function dynPack(){
  * a run is. The server refuses a write that would move a save backwards, which is the only
  * rule that never loses a dynasty. See 103 for what that costs and why it is the right way
  * round. */
+/* THE GAME KEY IS THIS PAGE, NOT THE MODE, and the value is historical rather than descriptive:
+   it was written when a dynasty was the only run being kept and the Trade Machine moved in
+   beside it afterwards. It stays 'ps_dynasty' because changing it would strand every row
+   already on the shelf, which is the one thing a save table must never do to itself.
+   ONE KEY AND THREE SLOTS is also what makes the pull ONE round trip. A second game key for
+   the Trade Machine would be a second request on every boot for every signed in player, which
+   is most of them, to ask a question the first request could have answered. */
 const DYN_CLOUD_GAME='ps_dynasty';
 /* HOW FAR IS THIS RUN. Seasons finished first, then the phase inside the season being played,
    so the number rises through a run and never falls: draft, offseason, season, results. Score
@@ -11124,14 +11131,36 @@ function dynSave(){
   try{ localStorage.setItem(dynKeyFor(slot),JSON.stringify(dynPack())); }catch(_){}
   dynCloudPush(slot);
 }
+/*
+ * THE THREE RUNS THIS PAGE CAN BE HOLDING, and what each of them is in localStorage.
+ *
+ * Two dynasties (the open draft and the one franchise) and a Trade Machine season. They pack
+ * differently, they are read back differently and they measure progress differently, and every
+ * one of those differences lives here rather than in three copies of the sync.
+ *
+ * READ LAZILY, on purpose. TRADE_SAVE_KEY and tradeProgress are declared several hundred lines
+ * below this, and nothing in here runs before the script has finished evaluating: the first
+ * call is from an auth change.
+ */
+const FB_SLOTS={
+  open:{ key:()=>dynKeyFor('open'),  read:()=>dynReadRaw('open'),  prog:(s)=>dynProgress(s.run) },
+  club:{ key:()=>dynKeyFor('club'),  read:()=>dynReadRaw('club'),  prog:(s)=>dynProgress(s.run) },
+  trade:{key:()=>TRADE_SAVE_KEY,     read:()=>tradeReadRaw(),      prog:(s)=>tradeProgress(s.run) },
+};
 /* PACKED AT SEND TIME, NOT AT QUEUE TIME. Half a dozen of these can be queued inside one
    offseason, and what belongs on the server is the run as it is when the request goes out. */
 function dynCloudPush(slot){
-  if(!window.RTG_SAVE||!authState.signedIn) return;
+  const S=FB_SLOTS[slot];
+  if(!S||!window.RTG_SAVE||!authState.signedIn) return;
   RTG_SAVE.queue(DYN_CLOUD_GAME,slot,()=>{
-    const s=dynReadRaw(slot);
-    return s?{payload:s,progress:dynProgress(s.run)}:null;
+    const s=S.read();
+    return s?{payload:s,progress:S.prog(s)}:null;
   });
+}
+/* The other half of it, and the reason a run that ended leaves no row: see dynClear. */
+function dynCloudDrop(slot){
+  if(!FB_SLOTS[slot]||!window.RTG_SAVE||!authState.signedIn) return;
+  RTG_SAVE.drop(DYN_CLOUD_GAME,slot);
 }
 /* Clears one slot, and by default the one the live run belongs to, so a firing or a quit
    takes away the run that ended rather than whichever was written first.
@@ -11141,7 +11170,7 @@ function dynCloudPush(slot){
 function dynClear(slot){
   const want=slot||dynSlotOf(run);
   try{ localStorage.removeItem(dynKeyFor(want)); }catch(_){}
-  if(window.RTG_SAVE&&authState.signedIn) RTG_SAVE.drop(DYN_CLOUD_GAME,want);
+  dynCloudDrop(want);
 }
 
 /*
@@ -11171,19 +11200,23 @@ async function dynCloudPull(){
   const by={};
   rows.forEach((r)=>{ if(r&&r.slot) by[r.slot]=r; });
   let painted=false;
-  for(const slot of ['open','club']){
-    const here=dynReadRaw(slot), there=by[slot];
-    const hp=here?dynProgress(here.run):-1;
+  for(const slot of Object.keys(FB_SLOTS)){
+    const S=FB_SLOTS[slot];
+    const here=S.read(), there=by[slot];
+    const hp=here?S.prog(here):-1;
     const tp=there&&there.payload&&there.payload.run?Number(there.progress):-1;
     if(tp>hp){
       /* THE ACCOUNT'S RUN IS FURTHER ON, so it becomes this browser's. Written through the
          same key the game reads, so every screen picks it up without knowing this happened. */
-      try{ localStorage.setItem(dynKeyFor(slot),JSON.stringify(there.payload)); }catch(_){}
+      try{ localStorage.setItem(S.key(),JSON.stringify(there.payload)); }catch(_){}
       painted=true;
     }else if(hp>tp&&here){
       dynCloudPush(slot);
     }
   }
+  /* THE DYNASTY DOOR IS THE ONLY THING ON SCREEN THAT READS ONE OF THESE. The Trade Machine's
+     card lives inside the modes sheet, which reads tradeRead() every time it is drawn, so a
+     season that just came down is already there the moment somebody opens it. */
   if(painted) ensureDynastyButton();
 }
 
@@ -11387,6 +11420,18 @@ function tradePack(){
     }),
   };
 }
+/* HOW FAR THROUGH THE SEASON, for the same reason dynProgress exists: the server refuses a
+   write that would move a save backwards, so the number has to rise and never fall. A trade
+   run is ONE season, so what rises is the phase and the week inside it rather than a count of
+   seasons. Ranked explicitly rather than off the week alone, because the playoff weeks do not
+   continue the regular season's numbering and a save that went backwards at the seeding
+   screen would be refused by its own server for the rest of the run. */
+const TRADE_PHASE_RANK={draft:0,coach:0,season:1,seeding:2,playoffs:3,over:4};
+function tradeProgress(r){
+  if(!r) return 0;
+  const wk=Math.max(0,(r.season&&r.season.week)||0);
+  return (TRADE_PHASE_RANK[r.phase]||0)*200+wk+1;
+}
 /* Quiet, like the dynasty one: storage throws rather than returning null in a browser with
    it blocked, and a run that cannot be written down is still a run worth playing.
    NOT PAST THE END. A season that is over has given the player what they paid the day for,
@@ -11394,9 +11439,27 @@ function tradePack(){
 function tradeSave(){
   if(!run||!run.tradeMachine||run.phase===R.PHASES.OVER) return;
   try{ localStorage.setItem(TRADE_SAVE_KEY,JSON.stringify(tradePack())); }catch(_){}
+  /* AND ON TO THE ACCOUNT, as the third slot of this page's shelf. A trade season is one
+     sitting rather than forty, so there is less to lose than a dynasty and exactly the same
+     number of ways to lose it: this was the last run on the site that a cleared cache still
+     took. See FB_SLOTS and supabase/103_cloud_saves.sql. */
+  dynCloudPush('trade');
 }
 function tradeClear(){
   try{ localStorage.removeItem(TRADE_SAVE_KEY); }catch(_){}
+  dynCloudDrop('trade');
+}
+/* The save as it sits, before the checks tradeRead makes, so what goes up is the bytes that
+   came down. The dynasty's dynReadRaw and this are the same idea twice because the two saves
+   have different keys and different shapes; FB_SLOTS is where they are one thing again. */
+function tradeReadRaw(){
+  let raw=null;
+  try{ raw=localStorage.getItem(TRADE_SAVE_KEY); }catch(_){ return null; }
+  if(!raw) return null;
+  try{
+    const s=JSON.parse(raw);
+    return (s&&s.run&&s.run.tradeMachine)?s:null;
+  }catch(_){ return null; }
 }
 function tradeRead(){
   let raw=null;
