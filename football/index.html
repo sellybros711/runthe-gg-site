@@ -7580,7 +7580,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
        screen and the offseason: the challenge, the reward, the sting, and the one thing that
        most needs saying, that missing it does not end the run. See mandateBriefing. -->
   <div class="screen bossx" id="s-mbrief">
-    <div class="eyebrow gold">Owner’s mandate &middot; Season <span id="mb-season">5</span></div>
+    <div class="eyebrow gold">Owner's mandate &middot; Season <span id="mb-season">5</span></div>
     <h2 class="display bs-name" id="mb-name">The youth movement</h2>
     <div class="mb-ask" id="mb-ask">Field three players aged 25 or younger.</div>
     <p class="mb-when">You have this whole offseason to build it. Keep who fits, cut who does
@@ -9967,7 +9967,7 @@ function dailySpentSheet(mode){
     : 'The '+one+' unlocks at midnight Eastern.';
   const head=ended?'That is the day'
     :seasons?'That is your '+allow+' seasons'
-    :'That is today’s run';
+    :'That is today\'s run';
   const body=ended
     ? 'The run is over, and a firing ends the day with it. '+when('next one')+
       ' Every run gets '+allow+' free seasons.'
@@ -12965,7 +12965,7 @@ function paintMandate(){
     el.hidden=false;
     el.className='mandate'+(met?' met':'');
     el.innerHTML=
-      '<div class="mn-top"><span class="mn-tag">Owner’s mandate</span>'
+      '<div class="mn-top"><span class="mn-tag">Owner\'s mandate</span>'
         +'<span class="mn-count">'+(met?'Met':prog.have+' of '+prog.need)+'</span></div>'
       +'<div class="mn-desc">'+esc(spec.desc)+'</div>'
       +(pips?'<div class="mn-pips">'+pips+'</div>':'')
@@ -16189,7 +16189,7 @@ function paintGmParts(p,gm){
        ? 'every deal is graded against the best version of itself, then averaged. Your '+
          'costliest was '+(p.worstDeal&&p.worstDeal.week>0?'the week '+p.worstDeal.week+' deal':
          'the preseason deal')+', '+(p.worstDeal?p.worstDeal.miss.toFixed(1):p.leftOnTable.toFixed(1))+
-         ' team rating short of that board’s strongest card and release'
+         ' team rating short of that board\'s strongest card and release'
        : 'you took the strongest version of every deal you accepted, '+
          p.dealsMade+' of '+p.dealsMade},
     {k:'Value',w:legacy?15:20,v:p.value,
@@ -19948,7 +19948,7 @@ function enterChallengeAccept(t){ challengeTeam=t; pendingChallenge=false; paint
 function paintChallengeIntro(t){
   const rb=rosterFromBlob(t);
   const rating=rb?teamRating(rb.roster,rb.chemistry):null;
-  $('ch-title').textContent = t.n ? (t.n+'’s team') : 'Beat this team';
+  $('ch-title').textContent = t.n ? (t.n+'\'s team') : 'Beat this team';
   $('ch-sub').textContent = (t.n?(t.n+' drafted a team. '):'Someone drafted a team. ')+
     'Build your own six to beat it in the Challenge Bowl, then take your team into a full ranked season.';
   $('ch-mode').textContent = challengeModeLabel(t);
@@ -25023,7 +25023,7 @@ $('b-quit').onclick=()=>{
      draft as on this one. The warning would be a threat the game does not carry out. */
   const costs=dailyOn()&&run&&(run.dynasty||run.tradeMachine)&&run.attemptPaid
     &&!dailySeasons(run.dynasty?'dynasty':'trade');
-  b.textContent=costs?'Tap again. This uses today’s run':'Tap again to quit';
+  b.textContent=costs?'Tap again. This uses today\'s run':'Tap again to quit';
   b.classList.add('armed');
 };
 

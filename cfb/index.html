@@ -8296,7 +8296,7 @@ function guestPitch(){
     ['Your name on the leaderboard', 'Guest seasons are ranked but never listed.'],
     ['Conference Draft', 'Draft a single Power 5 conference.'],
     [badges?('All '+badges+' badges'):'Every badge in the game', 'Earned as a guest, kept with an account.'],
-    ['Your school’s colors', 'They theme the whole game.'],
+    ['Your school\'s colors', 'They theme the whole game.'],
   ];
   $('sheet-in').dataset.kind='pitch';
   $('sheet-in').innerHTML=
@@ -11146,7 +11146,7 @@ function enterChallengeAccept(t){ challengeTeam=t; pendingChallenge=false; paint
 function paintChallengeIntro(t){
   const rb=rosterFromBlob(t);
   const rating=rb?overallOf(teamRating(rb.roster,rb.chemistry)):null;
-  $('ch-title').textContent = t.n ? (t.n+'’s team') : 'Beat this team';
+  $('ch-title').textContent = t.n ? (t.n+'\'s team') : 'Beat this team';
   $('ch-sub').textContent = (t.n?(t.n+' drafted a team. '):'Someone drafted a team. ')+
     'Build your own six to beat it in the Challenge Bowl, then take your team into a full ranked season.';
   $('ch-mode').textContent = chModeLabel(t);
@@ -11156,7 +11156,7 @@ function paintChallengeIntro(t){
     if(draftBtn) draftBtn.textContent='Draft your team'; }
   else { $('ch-rating').textContent='--';
     $('ch-rost').innerHTML='<p class="dim" style="font-size:12.5px;margin:8px 0 0">This team was built with newer '+
-      'player data than this page has, so it can’t be shown here. You can still play a normal game.</p>';
+      'player data than this page has, so it can\'t be shown here. You can still play a normal game.</p>';
     if(draftBtn) draftBtn.textContent='Play a normal game'; }
 }
 
@@ -11170,7 +11170,7 @@ function bowlBroadcast(cfg){
   const themWash={bg:'#7d1c2f',accent:'#d33656'};
   const youEl=$('bowl-you'), themEl=$('bowl-them'), bug=$('bowl-bug');
   $('bowl-chhead').hidden=false;
-  $('bowl-title').textContent='Your team vs '+(cfg.themName?cfg.themName+'’s':'their team');
+  $('bowl-title').textContent='Your team vs '+(cfg.themName?cfg.themName+'\'s':'their team');
   $('bowl-tagline').textContent='The Challenge Bowl. One game, winner brags.';
   youEl.style.setProperty('--tcol',me.bg); youEl.style.setProperty('--tcol2',me.accent);
   themEl.style.setProperty('--tcol',themWash.bg); themEl.style.setProperty('--tcol2',themWash.accent);
