@@ -262,7 +262,7 @@
       var vs = document.createElement('div');
       vs.className = 'chlVs';
       vs.innerHTML = '<div><span class="k">' + esc(TARGET.who) + '</span><span class="v">' + esc(TARGET.mark) + '</span></div>' +
-        '<div><span class="k">You</span><span class="v">' + esc(mine || '—') + '</span></div>';
+        '<div><span class="k">You</span><span class="v">' + esc(mine || '-') + '</span></div>';
       put(vs);
       var v = verdict(sheet);
       if (v) {

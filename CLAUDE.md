@@ -983,6 +983,50 @@ must never be shown to a player as a fact about a real season. The dev banner
 said so and has come off, because saying it now would be false in the other
 direction.
 
+## The arcade's "How to play" blocks
+
+```
+node scripts/check-howto.mjs
+```
+
+Each of the twelve game pages carries a `<details class="gj">` block: what the game
+is, the rules, what a day costs, and three tips. The tips and the entitlement
+paragraph are two different kinds of copy and they go wrong in the same way, which
+is why one checker covers both.
+
+**Nothing reads a tip, so a tip goes stale in silence.** It is not a rule, no code
+consults it, and the game keeps working perfectly while the advice stops being true.
+Two of the three Sportegories tips were wrong on inspection: "bank the easy
+categories" asked the player to work out which those were, and the page prints the
+tier on every row. A draft tip naming the hard rows by position would have been true
+and useless for the same reason, and false the day anyone retuned `TIER_PLAN`.
+
+**So write a tip from the code, not from the game's description.** Read what the
+screen actually shows before writing advice about it. The good tips are the ones
+naming a mechanic the rules state but never draw a conclusion from: a player can only
+be used once in Sportegories, a clue costs no guess in Guess the Player, an
+unrecognised spelling costs nothing in Alma Mater, a Reveal never reaches the
+crossword board.
+
+**The entitlement paragraph is the same fact written by hand twelve times**, and it
+was wrong on all twelve. It said the four free games "come free with a RunThe.GG
+account". They do not: `tokens.js` gives them to a signed-out visitor with no
+sign-up, and what an account adds is that the result is SAVED, plus one play of each
+card game, once ever. So twelve pages asked a stranger to sign up for something
+already free, which is the wall the "A VISITOR PLAYS FIRST" note in `tokens.js`
+exists to knock down. Nothing failed, and nothing could.
+
+`check-howto.mjs` holds the names and the numbers to `tokens.js`: the free four by
+name, "all twelve" against `GAMES`, "five of the games" against the pages that
+actually load `mode.js`, and that every card game says its free play is once ever
+rather than daily. It runs in CI on any arcade page or on `tokens.js`
+(`.github/workflows/howto-check.yml`). Section 8 of `check-sportegories.mjs` does the
+narrower job for that game's tips.
+
+**Two surfaces say "how to play" and both need the edit.** The block above is the
+long one; `arcade/howto.js` is the "?" modal that AUTO-OPENS on a first visit, which
+makes it the more read of the two.
+
 ## Segue's data
 
 Its data refreshes itself daily at 6am Eastern

@@ -53,13 +53,25 @@ const GUARDED = [
   'cfb/index.html',
   'cfb/commish/index.html',
   'assets/store.js',
-  /* A BUILD SCRIPT THAT WRITES WORDS ONTO AN IMAGE IS COPY. 06-og.mjs had a curly
-     apostrophe in "You've been Challenged", which every other instance of that
-     phrase on the site writes straight, and it was baked into og-challenge.png:
-     the most public piece of text the college game produces, since it is what a
-     shared challenge link shows in a feed. Nothing renders it wrong, and nobody
-     reading the source of a build step was looking for it. */
+  /* A BUILD SCRIPT THAT WRITES WORDS ONTO AN IMAGE IS COPY. 06-og.mjs writes the
+     headline baked into og-challenge.png, which is the most public text the college
+     game produces: it is what a shared challenge link shows in a feed, and nobody
+     reading the source of a build step reads it as prose.
+     Its curly apostrophe is NOT a hit and must not become one again: see the note on
+     the curly quote rule below, which is the same case and was already settled. */
   'cfb/build/06-og.mjs',
+  // The wrestling game and its data files. Added after the audit that cleared
+  // them, per the rule on the dash checker: guard a directory only once it is
+  // clean, never before, or the check becomes noise people learn to ignore.
+  'wrestling/index.html',
+  'wrestling/booking/index.html',
+  'wrestling/world.js',
+  'wrestling/roster.js',
+  'wrestling/legends.js',
+  'wrestling/personalities.js',
+  'wrestling/moves.js',
+  'wrestling/cosmetics.js',
+  'wrestling/corrections.js',
 ];
 
 /* ---------------------------------------------------------------------------
@@ -67,14 +79,26 @@ const GUARDED = [
  * says no is a checker people argue with.
  * ------------------------------------------------------------------------- */
 const RULES = [
+  /* NOT THE APOSTROPHE. The right single quote is the apostrophe in "today's"
+     and "couldn't", and in this repo it is deliberate: inside a single-quoted
+     JavaScript string a straight one has to be escaped, so the arcade writes
+     105 of them rather than 105 backslashes. The owner confirmed they stay.
+     The rule is about the ones that arrive by PASTE: a left single quote is
+     never an apostrophe, and a pair of curly double quotes around a phrase is
+     the shape text takes when it comes out of a chat window rather than a
+     keyboard. Those are still worth catching. */
   { id: 'curly quote',
-    re: /[‘’“”]/,
+    re: /[‘“”]/,
     say: 'use a straight quote. Inside a single-quoted string that is \\\'' },
   /* Rule 4 and 7 of the humanizer guide, trimmed to the words that would actually
      turn up in a sports game. A word here is banned in COPY and nowhere else: the
      comments in these files use several of them correctly. */
   { id: 'promotional language',
-    re: /\b(boasts?|vibrant|breathtaking|stunning|renowned|must-visit|world-class|cutting-edge|state of the art|unparalleled|unrivall?ed|immersive|seamless(ly)?|elevate your|unleash|take it to the next level)\b/i,
+    // "boasts a roster of" is the tell. The NOUN is ordinary English, and in a
+    // wrestling game it is something a heel says out loud: "That is not a
+    // boast. It is just the record." Match the verb with its object, not the
+    // bare word, or the rule fires on dialogue and gets ignored.
+    re: /(\bboasts\s+(?:a|an|the|over|more than|its)\b|\b(vibrant|breathtaking|stunning|renowned|must-visit|world-class|cutting-edge|state of the art|unparalleled|unrivall?ed|immersive|seamless(ly)?|elevate your|unleash|take it to the next level)\b)/i,
     say: 'say what it does instead' },
   /* "underscore" is on every list of these words and it is also the name of a
      character, which the username rules talk about. Matched as a VERB only, which
@@ -109,8 +133,14 @@ const RULES = [
   { id: 'chat artifact',
     re: /\b(let me know if|i hope this helps|feel free to|great question|you'?re absolutely right)\b/i,
     say: 'this is chatbot correspondence, not copy' },
+  /* AN ARROW IS NOT AN EMOJI. U+2190 to U+21FF is the Arrows block, and the
+     rule was catching the arrow on a button: "Pick a day ->", "See your day
+     ->", "Next board ->". That is a typographic mark doing the job a mark
+     does, telling you which way the button goes, and the advice it drew
+     ("draw it, or say it in words") would have taken an affordance off five
+     buttons to fix nothing. Pictographs only. */
   { id: 'emoji',
-    re: /[\u{1F300}-\u{1FAFF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}]/u,
+    re: /[\u{1F300}-\u{1FAFF}]/u,
     say: 'draw it, or say it in words' },
 ];
 /* Printed, never failed. See the note at the top. */
@@ -254,6 +284,20 @@ export function copyOf(file) {
  * that runs its whole check on import would print a second report inside the first
  * and, on a failure, process.exit out of the middle of the caller's run.
  * ------------------------------------------------------------------------- */
+/* A GENERATED DATA FILE IS NAMES, NOT COPY.
+ *
+ * Pointed at arcade/, this walked into former.js, rosters.js and awards.js and
+ * read six thousand player names as prose. It reported three problems, all of
+ * them the same one: Montorie Foster and Harold E. Foster are called Foster,
+ * and "foster" is on the AI vocabulary list. Garner, Leverage and Delve are
+ * surnames too, and the next roster refresh decides how many of them the
+ * check finds.
+ *
+ * Nobody writes these files and nobody reads them as sentences, so a hit in
+ * one is noise by construction, and noise is how a checker stops being run.
+ * They are all generated with a banner saying so, which is the honest test:
+ * a file that says "GENERATED ... Do not edit" is not somewhere copy lives. */
+const GENERATED = /^\/\*[\s\S]{0,400}?GENERATED\b[\s\S]{0,200}?Do not edit/i;
 export function filesUnder(p) {
   if (statSync(p).isFile()) return [p];
   const out = [];
@@ -261,7 +305,11 @@ export function filesUnder(p) {
     const f = join(p, e);
     if (/(^|\/)(node_modules|\.git)$/.test(f)) continue;
     if (statSync(f).isDirectory()) out.push(...filesUnder(f));
-    else if (/\.(html|js|mjs)$/i.test(f)) out.push(f);
+    else if (/\.(html|js|mjs)$/i.test(f)) {
+      let head = '';
+      try { head = readFileSync(f, 'utf8').slice(0, 700); } catch (x) { /* unreadable: check it */ }
+      if (!GENERATED.test(head)) out.push(f);
+    }
   }
   return out;
 }

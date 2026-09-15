@@ -1,0 +1,49 @@
+name: How to play check
+
+# The "How to play" block on each arcade game page describes what a visitor gets
+# free, what an account adds and what the Arcade Card opens. That is the same
+# product fact written by hand twelve times, and no code reads any of it, so when
+# the entitlement model changed the copy did not: all twelve pages went on saying
+# the four free games "come free with a RunThe.GG account" when tokens.js gives
+# them to a signed-out visitor with no sign-up at all.
+#
+# Nothing failed and nothing could. The pages render, the games work, and the
+# only symptom is twelve pages being false about the product. This holds the
+# names and the numbers in those blocks to arcade/tokens.js.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-howto.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/*/index.html'
+      - 'arcade/tokens.js'
+      - 'arcade/calendar.js'
+      - 'scripts/check-howto.mjs'
+      - '.github/workflows/howto-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/*/index.html'
+      - 'arcade/tokens.js'
+      - 'arcade/calendar.js'
+      - 'scripts/check-howto.mjs'
+      - '.github/workflows/howto-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: howto-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-howto.mjs

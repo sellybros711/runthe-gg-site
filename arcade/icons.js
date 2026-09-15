@@ -1,4 +1,5 @@
-/* Run The Arcade - shared game icon family.
+/* Run The Arcade - shared icon family. Mostly the games, plus the few marks the
+ * arcade needs around them (see the note beside `ticket`).
  * One consistent look: monochrome, thick square-cut strokes, minimal geometry,
  * drawn on a 24x24 grid, colored via `currentColor` so each icon inherits its
  * surrounding accent. No team logos, no images.
@@ -30,6 +31,28 @@
     almamater: '<path d="M6 3.5v17"/><path d="M6 4.5 L20 8 L6 11.5 Z"/>',
     // Daily Crossword - scoreboard grid (one filled cell)
     crossword: '<rect x="4" y="4" width="16" height="16"/><path d="M4 12h16M12 4v16"/><rect x="4" y="4" width="8" height="8" fill="currentColor" stroke="none" opacity=".9"/>',
+    /* Not a game, and here on purpose: these two are the marks the arcade needs
+       OUTSIDE a game tile, and they belong to the same family as the eight above
+       rather than to whichever file drew them first.
+
+       The ticket is the Arcade Card's mark everywhere the card is named, so it
+       has to be one drawing. card.js and mycard.js each carry a byte-identical
+       private copy of it, both commented "same family as RTGIcons" while this
+       file did not have it. Point those at this one next time either is opened;
+       a fourth copy is how three marks start disagreeing.
+
+       Two things about it are measured rather than inherited, because the marks
+       here are read at 15px in a button and the original was a blob at that
+       size. The stroke is 1.9 rather than the family's 2.2: a ticket is the only
+       glyph in the set that encloses a narrow interior, and 2.2 closed it up.
+       And the perforation is three drawn dashes rather than a stroke-dasharray,
+       which was the first thing to disappear: the wrapper asks for square caps,
+       so each 2-long dash grew 2.2 of cap and the gaps filled in. */
+    ticket: '<g stroke-width="1.9">' +
+            '<path d="M2.6 6.4h18.8v4a1.6 1.6 0 0 0 0 3.2v4H2.6v-4a1.6 1.6 0 0 0 0-3.2z"/>' +
+            '<path d="M15 8.2v1.6M15 11.2v1.6M15 14.2v1.6" stroke-linecap="butt"/></g>',
+    // Invite a friend - one figure, and the plus is the one being added
+    invite: '<circle cx="9" cy="7" r="3.4"/><path d="M3.2 20.6v-1.1a5.8 5.8 0 0 1 11.6 0v1.1"/><path d="M20 9.5v5.6M17.2 12.3h5.6"/>',
   };
   // route hub cards through the same keys the games use
   var ALIAS = { cross: 'crossword', odd: 'oddone', alma: 'almamater' };
