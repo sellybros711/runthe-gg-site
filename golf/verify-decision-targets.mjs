@@ -86,11 +86,18 @@ window.__DT = {
     shell.appendChild($(hvHoleChipHTML(ck, hole, true)));
     var g=hole._hv.g;
     dPlaceTargets(shell, g, sc, function(){}, [g.cx(0), 0]);
+    shell.appendChild(dDecisionPanel(sc, function(){}, null, h));
     await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
     var rects=function(sel){ return Array.prototype.map.call(shell.querySelectorAll(sel), function(e){
       var r=e.getBoundingClientRect(); return {l:r.left,t:r.top,r:r.right,b:r.bottom,w:r.width,h:r.height}; }); };
     var over=function(p,q){ return !(p.r<=q.l||q.r<=p.l||p.b<=q.t||q.b<=p.t); };
     var mk=rects('.dctarget .dtr'), lb=rects('.dctarget .dtw'), lines=shell.querySelectorAll('svg.dclines').length;
+    /* Paint order, as computed styles rather than a hit test: the lines carry pointer-events:none, so
+       elementFromPoint can never return them and would report the panel on top whatever the z-index said.
+       Everything docked on this window is .hvob, and the lines run the full height of the frame, so they
+       have to sit UNDER it or they are drawn straight across the YOUR CALL card. */
+    var zOf=function(sel){ var e=shell.querySelector(sel); return e?+getComputedStyle(e).zIndex:null; };
+    var zLine=zOf('svg.dclines'), zPanel=zOf('.hvob'), zMark=zOf('.dctarget');
     var chip=shell.querySelector('.hvhole'), cr=chip?chip.getBoundingClientRect():null;
     return {markers:mk.length, labels:lb.length, lines:lines,
       markerOverlap:(mk.length===2 && over(mk[0],mk[1])),
@@ -98,6 +105,7 @@ window.__DT = {
       sameSize:(mk.length===2 && Math.abs(mk[0].w-mk[1].w)<1.5 && Math.abs(mk[0].h-mk[1].h)<1.5),
       labelOverChip:(cr!=null && lb.some(function(r){ return over(r,{l:cr.left,t:cr.top,r:cr.right,b:cr.bottom}); })),
       gap:(mk.length===2?+Math.hypot((mk[0].l+mk[0].r)/2-(mk[1].l+mk[1].r)/2,(mk[0].t+mk[0].b)/2-(mk[1].t+mk[1].b)/2).toFixed(1):null),
+      zLine:zLine, zPanel:zPanel, zMark:zMark,
       nums:Array.prototype.map.call(shell.querySelectorAll('.dctarget .dtr i'), function(e){ return e.textContent; })};
   },
   /* the numbers on the CARDS, which have to match the numbers on the course */
@@ -172,7 +180,7 @@ const run = async () => {
   head('rendered and measured, every decision on the site');
   const seen = {};
   const sample = rows.filter(r => { const k = r.course + '|' + r.hole; if (seen[k]) return false; seen[k] = 1; return true; });
-  let mOv = 0, lOv = 0, notSame = 0, noLine = 0, chipHit = 0, minGap = 1e9, bad2 = [];
+  let mOv = 0, lOv = 0, notSame = 0, noLine = 0, chipHit = 0, minGap = 1e9, bad2 = [], zBad = 0;
   for (const r of sample) {
     const m2 = await page.evaluate(a => window.__DT.render(a[0], a[1]), [r.course, r.hole]);
     if (!m2) continue;
@@ -181,6 +189,7 @@ const run = async () => {
     if (!m2.sameSize) notSame++;
     if (m2.lines !== 1) noLine++;
     if (m2.labelOverChip) chipHit++;
+    if (!(m2.zLine < m2.zPanel && m2.zPanel < m2.zMark)) zBad++;
     if (m2.gap != null) minGap = Math.min(minGap, m2.gap);
   }
   console.log(`    rendered ${sample.length} of them in a real browser`);
@@ -190,6 +199,12 @@ const run = async () => {
   ok('both markers are always the same size, so neither can swallow the other', notSame === 0, notSame);
   ok('the leader lines are drawn on every one', noLine === 0, noLine);
   ok('and no label is left sitting under the hole chip', chipHit === 0, chipHit);
+  const z = await page.evaluate(() => window.__DT.render('Augusta National', 0));
+  console.log(`    paint order, back to front: lines ${z.zLine}, docked panels ${z.zPanel}, markers ${z.zMark}`);
+  ok('the leader lines paint BEHIND the docked cards, never across them',
+    zBad === 0 && z.zLine < z.zPanel, { wrong: zBad, line: z.zLine, panel: z.zPanel });
+  ok('and the markers stay on top, because they are the tap targets', z.zMark > z.zPanel,
+    { marker: z.zMark, panel: z.zPanel });
 
   head('the numbers tie the course to the cards');
   const nums = await page.evaluate(() => window.__DT.render('Augusta National', 0));
