@@ -52,6 +52,18 @@ const GUARDED = [
   'cfb/index.html',
   'cfb/commish/index.html',
   'assets/store.js',
+  // The wrestling game and its data files. Added after the audit that cleared
+  // them, per the rule on the dash checker: guard a directory only once it is
+  // clean, never before, or the check becomes noise people learn to ignore.
+  'wrestling/index.html',
+  'wrestling/booking/index.html',
+  'wrestling/world.js',
+  'wrestling/roster.js',
+  'wrestling/legends.js',
+  'wrestling/personalities.js',
+  'wrestling/moves.js',
+  'wrestling/cosmetics.js',
+  'wrestling/corrections.js',
 ];
 
 /* ---------------------------------------------------------------------------
@@ -74,7 +86,11 @@ const RULES = [
      turn up in a sports game. A word here is banned in COPY and nowhere else: the
      comments in these files use several of them correctly. */
   { id: 'promotional language',
-    re: /\b(boasts?|vibrant|breathtaking|stunning|renowned|must-visit|world-class|cutting-edge|state of the art|unparalleled|unrivall?ed|immersive|seamless(ly)?|elevate your|unleash|take it to the next level)\b/i,
+    // "boasts a roster of" is the tell. The NOUN is ordinary English, and in a
+    // wrestling game it is something a heel says out loud: "That is not a
+    // boast. It is just the record." Match the verb with its object, not the
+    // bare word, or the rule fires on dialogue and gets ignored.
+    re: /(\bboasts\s+(?:a|an|the|over|more than|its)\b|\b(vibrant|breathtaking|stunning|renowned|must-visit|world-class|cutting-edge|state of the art|unparalleled|unrivall?ed|immersive|seamless(ly)?|elevate your|unleash|take it to the next level)\b)/i,
     say: 'say what it does instead' },
   /* "underscore" is on every list of these words and it is also the name of a
      character, which the username rules talk about. Matched as a VERB only, which
