@@ -498,6 +498,81 @@ ok('and says how long rather than a time of day',
   /unlocks in/i.test(clock.said) && !/midnight/i.test(clock.said), clock.said.slice(0, 140));
 ok('a clock already running is never restarted', clock.again === 0, String(clock.again));
 ok('a firing says which ending it was', clock.fired === true, String(clock.fired));
+console.log('\nTHE DYNASTY LEDGER READS ACROSS, NOT DOWN');
+/*
+ * ONE FIGURE SAT FIVE PIXELS LOW FOR A WHILE AND NOTHING REPORTED IT. The target cell was
+ * class "lb", which is also the LEADERBOARD's row container four hundred lines up the same
+ * stylesheet: `.lb{display:grid;gap:5px;margin-top:11px}`, unscoped. `.ldg .lb` only ever set
+ * a colour, so the board's rule kept the rest and the number the season is judged against
+ * hung below the four figures it is read against.
+ *
+ * MEASURED RATHER THAN NAMED. Asserting the class would only prove the rename happened; what
+ * makes this table readable is that a row's cells share a top edge, and that is true or false
+ * whatever anybody calls them. The one legitimate exception is the verdict, which is set two
+ * points smaller and is centred rather than aligned, so it is allowed its own offset and
+ * checked to be within a pixel and a half of the rest.
+ *
+ * PLANTED, NOT PLAYED, AND THE CLASSES COME OFF THE PAGE. Reaching a real results screen
+ * means drafting and simulating two seasons, and what is being tested is the stylesheet. But
+ * a planted row written out by hand here would go on passing after somebody renamed a cell
+ * back in the page, which is exactly the change that caused this. So the six class names are
+ * read out of paintOver's own row template and the row is built from them: rename one there
+ * and this plants the new name, collides all over again, and fails.
+ */
+{
+  /* The row template, as paintOver emits it. Refused loudly rather than skipped if the shape
+     moves, because a check that quietly finds nothing to look at is worse than no check. */
+  const src = fs.readFileSync(path.join(ROOT, 'football/index.html'), 'utf8');
+  const tpl = /'<div class="ldg '\+cls\+tap\+'"[\s\S]*?lsc[^\n]*\n/.exec(src);
+  /* THE OVERALL CELL IS SPLICED IN FROM A VARIABLE, because it has an empty form for a season
+     saved before ratings existed. Put back at its own position so the six come out in the
+     order the row draws them, which is the order this then measures. */
+  const body = tpl ? tpl[0].replace(/\+\s*ov\s*\+/, '<span class="lo">') : '';
+  const CELLS = (body.match(/<span class="([a-z]+)"/g) || [])
+    .map((m) => /"([a-z]+)"/.exec(m)[1]);
+  ok('the ledger row template is still readable from the page', CELLS.length === 6,
+    CELLS.join(' ') || 'not found');
+  const led = CELLS.length !== 6 ? null : await t.page.evaluate((cells) => {
+    const VAL = { ly: '1', lr: '11-6', lo: '89.8', lv: 'KEPT', lsc: '12,500' };
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:0;top:0;width:358px;padding:8px';
+    host.innerHTML = '<div class="ldg-h"><span>Season</span><span>Record</span>'
+      + '<span class="lo">Ovr</span><span>Target</span><span></span>'
+      + '<span class="lsc">Points</span></div>'
+      + '<div class="ldg pass in">'
+      + cells.map((c) => '<span class="' + c + '">' + (VAL[c] || '8') + '</span>').join('')
+      + '</div>';
+    document.body.appendChild(host);
+    const row = host.querySelector('.ldg');
+    const seen = [...row.children].map((c) => ({
+      cls: c.className, top: c.getBoundingClientRect().top,
+      size: parseFloat(getComputedStyle(c).fontSize) }));
+    /* The header's labels have to start where the row's figures do, or the column is a
+       heading over nothing. Read on the two that are not right-aligned against an edge. */
+    const hOvr = host.querySelector('.ldg-h .lo').getBoundingClientRect();
+    const hTgt = host.querySelectorAll('.ldg-h span')[3].getBoundingClientRect();
+    const rOvr = host.querySelector('.ldg .lo').getBoundingClientRect();
+    /* The target cell by POSITION rather than by name, because its name is the thing under
+       test and hard-coding it here would put the bug back in the check. */
+    const rTgt = row.children[3].getBoundingClientRect();
+    host.remove();
+    return { cells: seen,
+      ovr: Math.round(hOvr.right - rOvr.right), tgt: Math.round(hTgt.left - rTgt.left) };
+  }, CELLS);
+  if (!led) { ok('the ledger could not be measured', false); } else {
+  const full = led.cells.filter((c) => c.size > 10.5);
+  const spread = Math.max(...full.map((c) => c.top)) - Math.min(...full.map((c) => c.top));
+  ok('every figure in a season sits on one line', spread < 0.5,
+    led.cells.map((c) => c.cls + '@' + Math.round(c.top * 10) / 10).join(' '));
+  const verdict = led.cells.find((c) => c.cls === 'lv');
+  const base = full[0].top;
+  ok('and the verdict, set smaller, is centred against them',
+    Math.abs(verdict.top - base) < 1.5, String(Math.round((verdict.top - base) * 10) / 10));
+  ok('the Ovr heading is over the Ovr column', Math.abs(led.ovr) <= 1, String(led.ovr));
+  ok('and the Target heading over the Target column', Math.abs(led.tgt) <= 1, String(led.tgt));
+  }
+}
+
 await t.page.close();
 
 /*
