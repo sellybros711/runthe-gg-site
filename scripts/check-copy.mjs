@@ -41,6 +41,7 @@
  */
 import { readdirSync, readFileSync, statSync } from 'fs';
 import { join, relative } from 'path';
+import { pathToFileURL } from 'url';
 
 /* The pages a player reads. Narrower than check-dashes.mjs's directory walk on
    purpose: this looks at English, so it wants the files that hold copy rather
@@ -52,6 +53,13 @@ const GUARDED = [
   'cfb/index.html',
   'cfb/commish/index.html',
   'assets/store.js',
+  /* A BUILD SCRIPT THAT WRITES WORDS ONTO AN IMAGE IS COPY. 06-og.mjs had a curly
+     apostrophe in "You've been Challenged", which every other instance of that
+     phrase on the site writes straight, and it was baked into og-challenge.png:
+     the most public piece of text the college game produces, since it is what a
+     shared challenge link shows in a feed. Nothing renders it wrong, and nobody
+     reading the source of a build step was looking for it. */
+  'cfb/build/06-og.mjs',
 ];
 
 /* ---------------------------------------------------------------------------
@@ -225,7 +233,11 @@ function isCopy(s) {
   return looksLikeProse(s);
 }
 
-function copyOf(file) {
+/* EXPORTED, because check-numbers.mjs reads the same strings and a second copy of
+   this walker would be a second copy of two bugs that were expensive to find: the
+   `</` filter that hid twenty dashes, and the regex literal in store.js that
+   desynced the string reader. One extractor, both checkers. */
+export function copyOf(file) {
   const raw = readFileSync(file, 'utf8');
   const html = /\.html?$/i.test(file);
   const js = html ? scriptBlocks(raw).join('\n') : raw;
@@ -237,12 +249,12 @@ function copyOf(file) {
 
 /* ---------------------------------------------------------------------------
  * Run
+ *
+ * GUARDED BY isMain, because copyOf is imported by check-numbers.mjs and a module
+ * that runs its whole check on import would print a second report inside the first
+ * and, on a failure, process.exit out of the middle of the caller's run.
  * ------------------------------------------------------------------------- */
-const args = process.argv.slice(2);
-const list = args.includes('--list');
-const targets = args.filter((a) => !a.startsWith('--'));
-
-function filesUnder(p) {
+export function filesUnder(p) {
   if (statSync(p).isFile()) return [p];
   const out = [];
   for (const e of readdirSync(p)) {
@@ -253,6 +265,16 @@ function filesUnder(p) {
   }
   return out;
 }
+export { GUARDED };
+
+const isMain = !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain) main();
+
+function main() {
+const args = process.argv.slice(2);
+const list = args.includes('--list');
+const targets = args.filter((a) => !a.startsWith('--'));
+
 const files = (targets.length ? targets.flatMap(filesUnder) : GUARDED);
 
 let bad = 0, longCount = 0;
@@ -296,3 +318,4 @@ for (const [f, r, hit, s] of found) {
 }
 console.log('\nSee CLAUDE.md. Run with --list to see every string this reads.');
 process.exit(1);
+}

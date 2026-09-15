@@ -109,6 +109,77 @@ four commas and exactly right. And it does not look for the rule of three: three
 is the number of kinds of special college season there are, and whether a group of
 three is information or padding is a person's job.
 
+### A number a player reads has to be the number the game plays
+
+```
+node scripts/check-numbers.mjs            the guarded pages
+node scripts/check-numbers.mjs --list     every claim it found
+node scripts/check-numbers.mjs --update   re-record the coverage counts
+```
+
+The in-game rules sheet in `cfb/index.html` already does this right:
+
+```js
+const cap = M0(E.CONSTANTS.CAP_MUSD);
+const R1  = E.CONSTANTS.RESPIN_LADDER_MUSD.map(M0).join(', then ');
+```
+
+So tuning `CAP_MUSD` rewrites the sheet. **It rewrites nothing else.** `$11M` is
+hardcoded twenty-two times across six files (`cfb/index.html`,
+`cfb/how-to-play.html`, the homepage, `about.html`, `cfb/og-source.html`,
+`football/index.html`), and a static page cannot interpolate. Change the cap and
+the game charges the new one while every page describing it promises the old one.
+Nothing throws. The only symptom is a guide that lies, found by a player.
+
+This is the same class as "five years" surviving on six Commissioner screens after
+a term stopped being five seasons. **When a number is in copy, either interpolate
+it or write the sentence without it.** This is the checker for the half of the site
+that cannot interpolate.
+
+**The JSON-LD is the worst place to keep a stale number.** `cfb/how-to-play.html`
+carries a schema.org `HowTo` block repeating the budget, the re-spin ladder, the
+game count and the top-twelve rule, and that block is what Google renders in a rich
+result. It is covered because `copyOf()` already reads it: the step text comes out
+as string literals like any other copy.
+
+**A claim is accepted if it matches EITHER game, and that is a deliberate
+weakening.** `cfb/index.html` sells the NFL game on its own front page and the
+homepage describes both, so a page cannot be tied to one engine. The cost is that
+two games sharing a value would hide a stale claim about one behind the other. They
+share none today (11 against 140, 12 against 17), and the collision is checked on
+every run, so the day they collide is a failure here rather than a silent hole. The
+season range is the one fact allowed to overlap, because both games are refreshed
+to the same last season by definition; what it still catches is the end that moves.
+
+**Coverage is half the check.** A regex that finds nothing passes. Reword
+`$11M NIL budget` to `eleven million in NIL` and this file goes quiet and green
+while the thing it guards walks away. That is how an extractor in this repo has
+failed twice already, so the counts are RECORDED in `scripts/numbers.json` the way
+`check-cachebust.mjs` records hashes. A dropped claim and a new one both fail, and
+both want thirty seconds and a re-record. It runs in CI on the engines, the pages,
+the player data and its own files (`.github/workflows/numbers-check.yml`).
+
+**It has a sibling, and they do not overlap.** `scripts/check-howto.mjs` holds the
+arcade's twelve "How to play" blocks to `arcade/tokens.js`, after every one of them
+said four already-free games "come free with a RunThe.GG account". Same lesson,
+different surface: `check-howto` covers `arcade/`, `check-numbers` covers the
+football and college games plus the homepage and `about.html`. Neither checks
+English; `check-copy.mjs` does that.
+
+**A build script that writes words onto an image is copy**, so `cfb/build/06-og.mjs`
+is on `check-copy.mjs`'s guarded list. It writes the headline baked into
+`og-challenge.png`, which is the most public text the college game produces, since
+it is what a shared challenge link shows in a feed, and nobody reading the source of
+a build step is reading it as prose.
+
+**Its curly apostrophe stays, and that is the second time this has been settled.**
+An audit flagged `You’ve been Challenged` there because every other instance of
+that phrase on the site writes it straight. It is the same case the curly-quote
+rule was narrowed for: a single-quoted JavaScript string, where a straight
+apostrophe costs a backslash. The rule now catches a LEFT single quote and curly
+DOUBLE quotes, which is what arrives by paste, and leaves `’` alone. Changing it
+back would also be worse typography in a display face.
+
 ## A school is singular
 
 `Oregon is 12-0.` `Oregon has not lost a game.` `Georgia wins it.`
