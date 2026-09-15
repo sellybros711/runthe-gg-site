@@ -466,7 +466,7 @@ window.GA_ID='G-L29P5MRWKE';
 <h3>Solving faster without guessing</h3>
 <ul>
   <li>Sweep the gimmes first pass, no lingering. Crossing letters solve the stubborn clues for you.</li>
-  <li>Short answers in sports grids repeat: legendary nicknames, team codes, arena names. They become free squares within a week.</li>
+  <li>Short answers repeat in sports grids. The same nicknames and team codes come round most weeks, and inside a fortnight they are free squares.</li>
   <li>If a corner will not break, flip direction. The down clue you skipped is usually the key to the across you are stuck on.</li>
 </ul>
 <p>Prefer ordering to spelling? Try <a href="/arcade/rankit/">Rank It</a>, or find four hidden groups in <a href="/arcade/match/">Common Ground</a>.</p>
@@ -564,7 +564,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/share.js?v=8"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
-<script src="/arcade/challenge.js?v=3"></script>
+<script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=13"></script>
 <script src="/arcade/day.js?v=2"></script>
@@ -577,7 +577,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=13"></script>
 <script src="/arcade/topbanner.js?v=9"></script>
-<script src="/arcade/auth-ui.js?v=5"></script>
+<script src="/arcade/auth-ui.js?v=6"></script>
 <script src="/arcade/card.js?v=20"></script>
 <script src="/arcade/referral.js?v=9"></script>
 <script src="/arcade/gamemarks.js?v=3"></script>
@@ -1024,7 +1024,7 @@ window.GA_ID='G-L29P5MRWKE';
       if(flawless) s.perfects=(s.perfects||0)+1;
       save(s);
       milestone = streakMilestone(s.streak);
-      if(newBestT && !milestone) milestone = '\ud83c\udfc6 New best time!';
+      if(newBestT && !milestone) milestone = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg> New best time!';
     }
     if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest){
       RTGArchive.recordBest('crossword', Math.round(elapsed), { higherIsBetter:false, label:'sec' });

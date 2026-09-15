@@ -639,7 +639,7 @@
           // We looked in two places and came up empty; a typo is the likeliest
           // reason, so point at that instead of at the player.
           out[p.i] = { ok: false, reason: 'unknown', live: 'missing',
-            msg: 'Couldn’t find them — check the spelling?' };
+            msg: 'Couldn’t find them. Check the spelling?' };
           return;
         }
         var s = shape(prof, D);
@@ -669,14 +669,14 @@
             player: { idx: -1, name: s.name || p.text, sport: s.sports[0] || s.occSports[0] || null, f: 0, key: nk },
             base: mk, allit: mk, points: mk,
             rarity: { pct: 20, bonus: 0, tier: 'Counted', est: true, live: true },
-            msg: 'Counted — we couldn’t double-check this one.'
+            msg: 'Counted. We couldn’t double-check this one.'
           };
           report(p.text, puz, p.i, 'soft', gaps.kinds);
           return;
         }
         if (v === null) {
           out[p.i] = { ok: false, reason: 'unverified', live: 'maybe',
-            msg: 'Real player — we couldn’t verify this category.' };
+            msg: 'Real player. We couldn’t verify this category.' };
           report(p.text, puz, p.i, 'unverified', gaps.kinds);
           return;
         }
