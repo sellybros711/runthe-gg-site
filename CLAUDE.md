@@ -442,6 +442,23 @@ extend; what is offered there is somebody else's sport from the top.
 is must call `termLen(w)`, which reads `w.termSeasons`. A save written before renewals has
 none and is a five season term, which is what it was signed as.
 
+**`situation.js` is the second place that number lives, and it is not in the page.**
+`sit.lastYear` and `sit.seasonsLeft` are how an authored item asks whether this is the final
+season, and both were arithmetic on a literal 5. Nothing threw. Media day's "this is the last
+July of your contract" fired in year five of an eight year term, three summers early, and
+then never again in the year it was true, while a three year leash reached its last summer
+with the item still locked. Both read `world.termSeasons` now, with the same five season
+fallback the page uses, and `test_situation.mjs` asserts a three, an eight and a save from
+before renewals, through the media item's own gate rather than through the flag.
+
+**And the copy has to survive a renewal too, which is where most of this hid.** Six
+player-facing strings said "five" on a screen the contract had already made wrong: the
+calendar footer, the situation strip's "Season 3 of 5", the ending's champions heading, the
+tape's lede, the share card's opening sentence and two lines in `report.js`. None of them is
+reachable by a checker, because "five years" is a correct English sentence. **When a number
+is in copy, either interpolate it or write the sentence without it.** The share card now
+names the years rather than counting them, which is true whatever the contract said and true
+when a sacking cut it short.
 **A renewal keeps the world, so four things need a term floor**, and `report.js` is not one
 of them: it already scopes everything through `years(world)`, which is `startYear` to
 `year`. The four that read the world whole are the doctrine (`sinceTerm`), the rulings

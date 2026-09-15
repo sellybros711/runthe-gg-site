@@ -489,5 +489,56 @@ console.log('\n=== both ends of the range reach the whole thing ===');
     stillMissing.join(', ') || tails.size + ' in play, the rest gated on a state that exists');
 }
 
+/* ================================================================
+   THE CONTRACT IS NOT FIVE SEASONS ANY MORE.
+
+   Renewals sign a term for three to eight seasons and the world carries the number on
+   `termSeasons`. `lastYear` and `seasonsLeft` were written when five was the only length
+   there was, and the way that failed was silent: media day's "this is the last July you
+   stand up here with the job" fired in year five of an eight year term, three summers
+   early, and then never again in the year it was true. Nothing threw. The item simply
+   turned up on the wrong morning and the right one came and went empty.
+   ================================================================ */
+console.log('\n=== the term is however long the room signed you for ===');
+{
+  const at = (len, year) => SIT.build(
+    world({ termSeasons: len, startYear: 2025, year: year, beat: 0 }), L, { calendar: CAL });
+  const shape = (len, year) => { const s = at(len, year); return [s.seasonOfTerm, s.seasonsLeft, s.lastYear]; };
+
+  ok('a three year leash is in its last year in 2027',
+    String(shape(3, 2027)) === String([3, 0, true]), shape(3, 2027).join(' · '));
+  ok('  and is not in it in 2026',
+    shape(3, 2026)[2] === false, shape(3, 2026).join(' · '));
+  ok('an eight year mandate has three summers left in 2030',
+    String(shape(8, 2030)) === String([6, 2, false]), shape(8, 2030).join(' · '));
+  ok('  and reaches its last year in 2032',
+    String(shape(8, 2032)) === String([8, 0, true]), shape(8, 2032).join(' · '));
+  ok('  rather than in 2029, which is where five would have put it',
+    shape(8, 2029)[2] === false, shape(8, 2029).join(' · '));
+  /* A SAVE FROM BEFORE RENEWALS carries no termSeasons and was signed as five seasons,
+     which is what it has to go on being. */
+  const old = SIT.build(world({ startYear: 2025, year: 2029, beat: 0 }), L, { calendar: CAL });
+  ok('a save written before renewals is still a five season term',
+    old.lastYear === true && old.seasonsLeft === 0 && old.seasonOfTerm === 5,
+    old.seasonOfTerm + ' · ' + old.seasonsLeft + ' · ' + old.lastYear);
+
+  /* AND THE MEDIA DAY ITEM IS THE ONE THAT READS IT, which is the whole reason the two
+     fields matter. Asserted through the item's own gate rather than through the flag, so
+     a rename of either end fails here rather than going quiet again. */
+  const M = require(ROOT + '/cfb/commish/media.js');
+  const qLast = (M.QUESTIONS || M.ASKS || []).filter((q) => q.id === 'q-last')[0];
+  if (qLast) {
+    const fires = (len, year) => {
+      const w = world({ termSeasons: len, startYear: 2025, year: year, beat: 0 });
+      try { return !!qLast.when(w, L, SIT.build(w, L, { calendar: CAL })); } catch (e) { return false; }
+    };
+    ok('  and the last media day of an eight year term is in 2032', fires(8, 2032));
+    ok('  not in 2029', !fires(8, 2029));
+    ok('  and a three year term gets its last one in 2027', fires(3, 2027));
+  } else {
+    ok('  the media day item q-last is still there to read it', false, 'not found');
+  }
+}
+
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');
 process.exit(bad ? 1 : 0);

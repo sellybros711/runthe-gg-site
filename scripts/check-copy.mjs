@@ -71,9 +71,20 @@ const RULES = [
   /* "underscore" is on every list of these words and it is also the name of a
      character, which the username rules talk about. Matched as a VERB only, which
      means it has to be doing something to an object. Same trick would be needed
-     for "key" and "landscape" if they were ever worth adding. */
+     for "key" and "landscape" if they were ever worth adding.
+
+     "leverage" needs the same treatment and the object test is not enough for it. The
+     AI tic is the verb, as in leverage the synergies. The NOUN is the ordinary English
+     word for what one side of a negotiation has over the other, and this site has a
+     college football game about labour and television money in it: "the only leverage
+     the other side has" is not a word to swap for a plainer one, it IS the plainer one,
+     and it takes an object exactly the way the verb does.
+     So only the INFLECTED forms are matched. Nothing but a verb is ever leveraging or
+     leveraged. That misses a bare imperative ("leverage the moment"), which is a miss
+     worth taking: the alternative flags every correct use in the game and a check people
+     learn to scroll past is worse than no check. */
   { id: 'AI vocabulary',
-    re: /\b(delve|pivotal|tapestry|testament to|showcases?|intricate|interplay|myriad|plethora|holistic|robust|leverage|utilize|foster(s|ing)?|garner)\b|\bunderscor(e|es|ed|ing) (the|its|his|her|their|a|an|how|that|why)\b/i,
+    re: /\b(delve|pivotal|tapestry|testament to|showcases?|intricate|interplay|myriad|plethora|holistic|robust|utilize|foster(s|ing)?|garner|leverag(es|ed|ing))\b|\bunderscor(e|es|ed|ing) (the|its|his|her|their|our|a|an|how|that|why)\b/i,
     say: 'plainer word' },
   { id: 'inflated significance',
     re: /\b(stands as|serves as|marks a (pivotal|key|defining)|represents a shift|evolving landscape|indelible|a (vital|crucial) (role|part))\b/i,

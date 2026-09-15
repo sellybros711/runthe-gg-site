@@ -2246,9 +2246,12 @@
            fourteen teams and the two disagree most weeks, which is correct and is the whole
            argument the sport has, and NOTHING ON EITHER CARD SAID SO. A player looked at them
            side by side and asked why they are different. -->
-      <p class="dcsub" style="margin-bottom:9px">Who would be seeded, under your own rules. This
-        is a committee: it rates how good teams are, so a one loss team it rates highly can sit
-        above an unbeaten one.</p>
+      <!-- AND IT NAMES WHICHEVER ONE YOU ACTUALLY RULED FOR. This said "This is a committee"
+           in static markup, on a page whose whole subject is that the player writes the rules:
+           move the selection to a formula or a published standard and the card went on
+           describing the thing you replaced. Written by office() off the same word map the
+           ledger and the settled panel use, so all three agree. -->
+      <p class="dcsub" style="margin-bottom:9px" id="off-tablesub"></p>
       <div id="off-table"></div>
     </div>
     <!-- THE ONE INDIVIDUAL AWARD EVERY FAN IN THIS SPORT FOLLOWS, and it names nobody: the
@@ -2432,7 +2435,7 @@
          thing to look at. Every one of those is obvious once and confusing the first time. -->
     <p class="lede" style="margin-bottom:14px">The office tells you where every number in
       the sport is standing right now. This is where each of them has BEEN: one reading
-      every beat, one more every time you rule on something, kept for the whole five years.</p>
+      every beat, one more every time you rule, kept for the whole term.</p>
     <!-- ONE FILTER ROW, ABOVE EVERYTHING IT SCOPES, and never inside a chart card. Both
          controls re-render the chart, the room and the table together, so the numbers on
          this screen always agree with each other.
@@ -2625,7 +2628,7 @@
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=8"></script>
-<script src="docket.js?v=29"></script>
+<script src="docket.js?v=30"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -2642,15 +2645,15 @@
 <script src="council.js?v=3"></script>
 <script src="feed.js?v=6"></script>
 <script src="calendar.js?v=5"></script>
-<script src="situation.js?v=9"></script>
+<script src="situation.js?v=10"></script>
 <script src="fallout.js?v=7"></script>
 <!-- The podium. Reads nothing at load time; see media.js. -->
-<script src="media.js?v=5"></script>
+<script src="media.js?v=6"></script>
 <!-- The cutscenes. Reads blocs.js at load time, so after it. -->
 <script src="scene.js?v=9"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
-<script src="report.js?v=3"></script>
+<script src="report.js?v=4"></script>
 <!-- Captures nothing off window at load time: it is handed the world by the page and the
      beat names by the caller, so its position here is free. -->
 <script src="metrics.js?v=3"></script>
@@ -4347,7 +4350,7 @@ function paintCalendar(el,w){
     +'<div class="calnow">'
       +(over
         ? '<b>'+w.startYear+' to '+(w.startYear+termLen(w)-1)+'</b><span class="done">'
-          +'five seasons, served</span>'
+          +termLen(w)+(termLen(w)===1?' season, served':' seasons, served')+'</span>'
         : '<b>'+esc(L.BEATS[w.beat])+'</b><span>'+esc(nextBeat)+'</span>')
       +'<em>'+(w.history||[]).filter((h)=>L.isRuling(h)).length
       +' rulings</em></div>'
@@ -4496,6 +4499,13 @@ function office(){
     paintWeek($('off-week'),sim);
     if(done.titles) paintTitles($('off-titles'),sim);
     $('off-tablehead').textContent=done.titles?'The field as it stands':'The top of the sport';
+    /* THE SELECTOR YOU RULED FOR, in the ledger's own words. Falls back to the committee,
+       which is what the world opens on, so an old save or an unknown value still reads as
+       a sentence rather than as a gap. */
+    const selWord=(PATH_WORD['playoff.selection']||{})[(world.playoff||{}).selection]||'a committee';
+    $('off-tablesub').textContent='Who would be seeded, under your own rules. '
+      +selWord.charAt(0).toUpperCase()+selWord.slice(1)+' picks the field. It rates teams '
+      +'rather than counting wins. A one loss team can sit above an unbeaten one.';
     paintStandings($('off-table'),sim);
     /* THE WEEK IT IS, NOT THE YEAR IT WILL BE. `sim.polls` is one entry a week, so an office
        opened in October draws October's poll: a final top twenty-five in week six would be
@@ -4844,7 +4854,9 @@ function paintSituation(el,s){
     else if(s.leader) bits.push(['Leading',s.leader.school]);
     if(s.perGame) bits.push(['A game',s.perGame.toFixed(2)+'M']);
   }else{
-    bits.push(['Season',s.seasonOfTerm+' of 5']);
+    /* THE CONTRACT'S OWN LENGTH, not five. seasonOfTerm plus what is left after it IS the
+       term, so this needs no second source and cannot disagree with the calendar. */
+    bits.push(['Season',s.seasonOfTerm+' of '+(s.seasonOfTerm+s.seasonsLeft)]);
     if(s.previous&&s.previous.champion) bits.push([s.previous.year+' champion',s.previous.champion]);
     if(s.endangered.length) bits.push(['Shorthanded',s.endangered[0]]);
     else if(s.previous&&s.previous.perGame) bits.push(['A game',s.previous.perGame.toFixed(2)+'M']);
@@ -7139,7 +7151,7 @@ const PATH_ABOUT={
     +'windows and a signed class is a class. More and a roster is never finished.',
   'labour.reentry':'Whether a player who declares for the draft and goes undrafted can come '
     +'back. Somebody falls through the middle of this rule every spring, and this is what '
-    +'happens to him.',
+    +'happens to them.',
   'labour.proYears':'How long a player can be paid to play somewhere else and still return '
     +'to college. It is the line between a college sport and a waiting room.',
   'labour.rulesBy':'Whether this office writes the rules that govern players or each '
@@ -8475,7 +8487,7 @@ function paintTerm(el,w){
   if(!done.length){ el.hidden=true; return; }
   el.hidden=false;
   const avg=ratingsAverage();
-  el.innerHTML='<div class="eyebrow gold" style="margin-bottom:9px">The five seasons</div>'
+  el.innerHTML='<div class="eyebrow gold" style="margin-bottom:9px">The seasons you served</div>'
     +'<div class="tbl">'+done.map((y)=>
       '<div class="tr" style="--tc2:'+esc(champs[y].color||'#64748b')+'">'
       +'<i>'+String(y).slice(2)+'</i><b>'+esc(champs[y].school)+'</b>'
@@ -8828,7 +8840,12 @@ function termCardData(){
        show. Narrowed here rather than at the point it is drawn, so a card that never asks
        for a score cannot be handed one by accident. */
     loudest:rep&&rep.loudest?{label:rep.loudest.label,line:rep.loudest.line}:null,
-    years:world.startYear+' to '+(world.year-1),
+    /* CLAMPED THE WAY logTerm CLAMPS IT. A term that ends inside its first year has not
+       reached a winter, so world.year is still the year it opened and year-1 is the season
+       before the job started: the card read "2025 to 2024". Same guard, same reason. */
+    from:world.startYear,
+    to:Math.max(world.startYear,world.year-1),
+    years:world.startYear+' to '+Math.max(world.startYear,world.year-1),
     removed:!!(world.outcome&&world.outcome.removed),
   };
 }
@@ -8952,7 +8969,13 @@ function drawTermCard(){
    strip the image and keep the text. Same rule as the card, so neither of them is a score. */
 function termShareText(){
   const d=termCardData();
-  const bits=['I ran college football for five years.'];
+  /* THE YEARS, NOT A COUNT. A term is three to eight seasons now depending on what the
+     room signed you for, and a sacking can cut any of them short, so the honest version
+     is the span the card already knows. One year is "in 2025", because "from 2025 to
+     2025" is the sentence of somebody who did not read their own share text. */
+  const bits=[d.to>d.from
+    ? 'I ran college football from '+d.years+'.'
+    : 'I ran college football in '+d.from+'.'];
   if(d.evidence[0]) bits.push(d.evidence[0].say);
   if(d.evidence[1]) bits.push(d.evidence[1].say);
   if(d.doc&&d.doc.name) bits.push('They called me '+d.doc.name+'.');

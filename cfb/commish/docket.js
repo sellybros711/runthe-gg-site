@@ -148,7 +148,7 @@
           'Read what landed. One case a screen, and this is the whole of it.',
           'The room argues first. Nine groups, and six of them hold a vote on your job.',
           'Pick a ruling. The chips under it say what it moves and who it upsets.',
-          'Press Rule. The room answers, and the record keeps it for five years.',
+          'Press Rule. The room answers, and the record keeps it for the rest of your term.',
         ],
       },
       eyebrow: 'Your first call',
@@ -859,7 +859,12 @@
       id: 'playoff-format',
       beats: [WINTER],
       weight: 9,
-      when: (w) => w.playoff.teams < 16,
+      /* TWELVE EXACTLY, not "anything under sixteen". Every string in this item names the
+         field it is arguing about: the brief calls it twelve-team and the first ruling is
+         "leave it at twelve". Two other items already move the field to fourteen, and on a
+         fourteen team field this one came back offering to leave it at twelve and to add
+         two more seats it already had. */
+      when: (w) => w.playoff.teams === 12,
       eyebrow: 'The format',
       title: 'The playoff is up for renewal',
       brief: 'The twelve-team field has been through one cycle and every part of it is '
@@ -878,7 +883,7 @@
           body: 'Two more seats. The smallest change that can be called a change.',
           edit: { set: { 'playoff.teams': 14 }, effects: { access: 1, inventory: 1, money: 1, tradition: -1 } } },
         { id: 'to16', scene: 'r-format', label: 'Sixteen',
-          body: 'A fourth of the country in the bracket. The regular season becomes '
+          body: 'Sixteen seats puts a three loss team in the bracket. The regular season becomes '
             + 'something else, and nobody agrees what.',
           edit: { set: { 'playoff.teams': 16 },
             effects: { access: 2, inventory: 3, money: 2, tradition: -3 },
@@ -2509,19 +2514,45 @@
       beats: [CHAMP],
       weight: 5,
       when: () => true,
+      /* TWO TEAMS FROM ONE CONFERENCE, because a conference title game has never been
+         anything else. This took the two best teams on the board wherever they played, so
+         the item regularly stood an SEC side opposite a Big Ten one and called it their
+         league's championship. Walked in board order, so what comes back is the best pair
+         a single league can put on the field.
+
+         AND IT NO LONGER INVENTS A RESULT. The brief used to say one beat the other by
+         twenty-eight in October, on a cast whose first branch is teams that have not lost
+         all year: two unbeaten teams cannot have played each other. The season keeps no
+         head-to-head by school (season.js records opponents by rating), so there is no
+         honest way to name a margin here. The story does not need one. */
       cast: (w, L, rng, sit) => {
-        const t = sit.unbeaten.length >= 2 ? sit.unbeaten : sit.teams.slice(0, 2);
-        return t.length >= 2 ? { a: t[0].school, b: t[1].school } : null;
+        /* THE FALLBACK IS THE FIELD, not the whole board. The brief's first claim is that
+           both of them are already in, so the second pool is cut to however many seats the
+           playoff currently has and that sentence is true by construction. The unbeaten are
+           tried first and then dropped rather than kept: two unbeaten teams in different
+           leagues are not a conference title game, and a one loss pair from one league is. */
+        const seats = Math.max(2, (w.playoff && w.playoff.teams) || 12);
+        const pair = (pool) => {
+          for (let i = 0; i < pool.length; i++) {
+            for (let j = i + 1; j < pool.length; j++) {
+              if (pool[i].conference && pool[i].conference === pool[j].conference) {
+                return { a: pool[i].school, b: pool[j].school, conf: pool[i].conference };
+              }
+            }
+          }
+          return null;
+        };
+        return pair(sit.unbeaten || []) || pair((sit.teams || []).slice(0, seats));
       },
       eyebrow: 'The weekend',
-      title: (c) => (c ? c.a + ' and ' + c.b + ', again' : 'Nobody wants this rematch'),
+      title: (c) => (c ? c.a + ' and ' + c.b + ', for nothing' : 'A title game nobody needs'),
       brief: (c) => (c
-        ? c.a + ' beat ' + c.b + ' by twenty-eight in October and they meet again on Saturday '
-          + 'for the conference title. Both are already in the field whatever happens. The '
-          + 'winner gains a trophy and the loser loses nothing, and the injury risk is real '
-          + 'for both of them two weeks before the playoff.'
-        : 'A championship game between two teams already in the field, three weeks after one '
-          + 'beat the other by twenty-eight.'),
+        ? c.a + ' and ' + c.b + ' meet on Saturday for the ' + c.conf + ' title. Both are '
+          + 'already in the field whatever happens. The winner gets a trophy. The loser '
+          + 'loses nothing except whoever comes off the turf, two weeks before a playoff '
+          + 'game that counts.'
+        : 'A conference title game between two teams already in the field. The winner gets '
+          + 'a trophy. The loser loses nothing except whoever comes off the turf.'),
       voices: [
         { id: 'Networks', say: 'It is a championship game. It has a trophy in it. People will watch.' },
         { id: 'Players', say: 'A meaningless game with a real ACL in it is not meaningless to us.' },
@@ -2542,7 +2573,7 @@
             aimed: { Networks: { inventory: 2.6 }, SEC: { access: 1.4 },
               'Group of Five': { access: -2 } } } },
         { id: 'scrap', label: 'Scrap championship games in a wide field',
-          body: 'A twelve team playoff already answers the question these games were invented '
+          body: 'A playoff this wide already answers the question these games were invented '
             + 'to answer. Give everybody a week off and one fewer chance to lose a quarterback.',
           edit: { effects: { labour: 2.8, inventory: -3, money: -2.2, tradition: -2 },
             aimed: { Players: { labour: 3 }, Networks: { inventory: -3.2, money: -2 },
