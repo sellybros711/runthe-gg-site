@@ -805,6 +805,56 @@ straight after paying apologised for a slow webhook that had already delivered. 
 when it is this site. The same trap has bitten a link in the CFB header. Never write an
 absolute `https://runthe.gg` url in anything a player follows.
 
+### Full Team, and the screen that has to say the most
+
+```
+node football/check-fullteam.mjs   the door, the gate, and the draft screen
+```
+
+Twelve slots instead of six, and the side of the ball alternating pick by pick. Everything
+that goes wrong here goes wrong SILENTLY: the draft renders, the wheels turn, the game is
+playable, and the picture is describing a different pick from the one the board is offering.
+
+**The field lit the wrong half, and it was not a corner case.** The glow read
+`run.roster.length` and the BOARD chose its pool from `nextOpenSlot()`. Those are not the
+same number: a man goes into whatever open slot fits him rather than the next one along, so
+the two come apart the first time anybody signs against the slot order. Of the roster shapes
+reachable inside six men, **1,190 have the two readings naming different sides**, and the
+cheapest is the second pick of the game. Take a running back first and he lands in slot 2,
+so `roster.length` is 1 (slot 1 is a DL) while the first open slot is 0 (the QB). The board
+then served quarterbacks while the field glowed blue over the defense. Driven for real, the
+old reading was wrong on **four of six picks**. Anything asking which side is picking must
+call `nextOpenSlot()`, which is what `dataNow()` uses to choose the pool.
+
+**The checker proves it is testing something.** A run where the two readings never diverged
+would pass green having exercised nothing, which is the badge-that-cannot-be-lit trap in a
+different coat, so it takes a running back first on purpose and then ASSERTS that the old
+reading disagreed at least once.
+
+**What the screen shows for it.** The lit half says which side the man comes from, the open
+chips on the other side are dimmed to .5 so they recede without leaving, and the unit label
+already printed at the line of scrimmage comes up to that half's colour. The first attempt
+dimmed to .26 and a phone screenshot showed the offensive half of a defensive pick with
+visibly nothing in it: the field read as a six man squad. Dimmed, not hidden.
+
+**The side is NOT in the HUD, and that was tried.** `Spin 6 of 12 · Defense` truncates to
+`DEF...` at 390px against the money line beside it, which answers the question with the
+first three letters of the answer. The field carries it instead.
+
+**`hp-ft` is the door's own fill and the checker asserts it.** `.hp-full` is the shared card
+shape, worn by the Trade Machine too, and on it alone this door had no colour at all:
+shot on a 390px phone between a saturated red/blue pair and a gold-bordered dynasty card, it
+read as a control you cannot press rather than as a quiet one. The fill is red, a dark seam,
+then blue, which is the pair above joined into one control, which is what the mode is. Not
+warm, so the note on `.hp-full` about two warm cards reading as a menu of side modes still
+holds.
+
+**It is still unannounced and this file is one of the two things checking that.**
+`fullteam-access.js` ships `FULLTEAM_LIVE = false`, the door is BUILT by
+`ensureFullButton()` rather than revealed, and the checker asserts from the reader's end
+that an account off the list gets no door, no node, and the words nowhere in the page.
+`check-premium.mjs` asserts the same thing from the other end.
+
 ### A badge you add has to be proved reachable
 
 ```
