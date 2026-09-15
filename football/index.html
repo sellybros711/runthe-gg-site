@@ -798,7 +798,10 @@ window.GA_ID='G-L29P5MRWKE';
   .cocell .cnm{font-size:12.5px;font-weight:800;letter-spacing:.01em;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cocell .cdl{font-family:var(--fn);font-size:19px;font-weight:800;line-height:1;color:var(--dim)}
-  .cocell .cdl.pos{color:var(--good,#4ade80)} .cocell .cdl.neg{color:var(--bad,#f87171)}
+  /* THERE IS NO RED HERE ANY MORE, because there is nothing left for it to mark. A coach who
+     lowers the rating is not offered at all, so every cell is a gain or a wash, and the only
+     two states are green and the quiet default. */
+  .cocell .cdl.pos{color:var(--good,#4ade80)}
   .cocell .cdl i{font-style:normal;font-size:9.5px;font-weight:600;color:var(--dim-2);
     letter-spacing:.06em;margin-left:3px}
   .cocell .cft{display:flex;align-items:center;gap:6px;font-family:var(--fn);font-size:10px;
@@ -852,7 +855,13 @@ window.GA_ID='G-L29P5MRWKE';
      was written for on the home screen. */
   /* #co-knows is in this list for the same reason: .coknows sets display:flex, so without
      it the box stays on screen holding the LAST coach's links. Third time. */
-  #b-coach-go[hidden],#co-planwrap[hidden],#co-knows[hidden]{display:none}
+  /* AND #co-grid IS THE FIFTH. `.cogrid` sets display:grid, so the `hidden` the painter has
+     always written on an empty market never took. It cost nothing while the empty case was
+     "you can afford nobody", which is rare and leaves the grid with no children anyway. Now
+     that the grid is also emptied when nobody affordable would HELP, which is a third of
+     cap-spending drafts, it is a padded and margined box between the rating card and the
+     line explaining why there is nothing in it. */
+  #b-coach-go[hidden],#co-planwrap[hidden],#co-knows[hidden],#co-grid[hidden]{display:none}
   .coknows{margin:8px 0 0;display:flex;flex-direction:column;gap:4px}
   /* The two units' own chemistry, under the average of them. Same [hidden] trap. */
   #q-chemsplit[hidden]{display:none}
@@ -13924,9 +13933,9 @@ function paintCoach(){
   const left=R.remaining(run);
   const base=coRating(null);
 
-  $('co-sub').innerHTML=coMarket.length
-    ? '<b>$'+left.toFixed(1)+'M left.</b> A coach comes out of it, and his scheme comes with him.'
-    : '<b>$'+left.toFixed(1)+'M left</b>, which hires nobody. You call the game plan.';
+  /* Filled in after the grid below decides how many are worth offering: this line has three
+     states now, not two, and the third one is the interesting one. */
+  const subEl=$('co-sub');
 
   /* WHAT THE TEAM IS WORTH RIGHT NOW, and the two units it is the average of, because every
      number in the grid below is a change to this one. */
@@ -13936,14 +13945,56 @@ function paintCoach(){
     '<span class="cb-half">offense <b>'+rate1(b0.off)+'</b> &middot; defense <b>'+
       rate1(b0.def)+'</b>, averaged</span>';
 
-  /* EVERY MAN IN THE MARKET, PRICED IN RATING POINTS. Fifty-odd cells, each of which costs
-     one chemistry resolve and one strength evaluation, which is about a millisecond of work
-     in total and buys the whole screen. */
-  const cells=coMarket.map((c)=>({ c, d:coRating(c)-base, knows:coKnows(c).length }))
+  /* EVERY MAN IN THE MARKET, PRICED IN RATING POINTS. A hundred-odd cells, each of which
+     costs one chemistry resolve and one strength evaluation, which is about a millisecond of
+     work in total and buys the whole screen. */
+  const priced=coMarket.map((c)=>({ c, d:coRating(c)-base, knows:coKnows(c).length }))
     .sort((x,y)=>y.d-x.d||x.c.price_musd-y.c.price_musd);
+  /* ---- AND THE ONES WHO WOULD MAKE THE TEAM WORSE ARE NOT OFFERED ----
+   *
+   * MEASURED FIRST, over sixty drafted rosters: the table holds 115 coaches, an average run
+   * can afford 114 of them, and 66 of those, FIFTY-EIGHT PERCENT, lower this roster's
+   * rating. The screen sorted them best-first and marked the top one, so the answer was
+   * always at the top and the other two thirds of the page was a list of men whose only
+   * function was to be scrolled past.
+   *
+   * THERE IS NO TRADE BEING HIDDEN HERE, which is what makes the cut safe rather than
+   * paternalistic. By this screen the roster is drafted and the money that is left buys
+   * nothing else: unspent cap is "production you never fielded", worth zero. So a coach who
+   * costs money and lowers the rating is not a cheap option or a risky one, he is strictly
+   * worse than the No coach button sitting under the grid, which is free and already there.
+   *
+   * FLAT MEN STAY. A coach at zero on the headline is not doing nothing: the rating is the
+   * MEAN of his two sides, so +6% offense and -6% defense nets to zero here and still
+   * changes what this team scores and what it allows. That is a real choice and it is the
+   * player's to make.
+   *
+   * AND WHEN NOBODY HELPS, THE SCREEN SAYS SO RATHER THAN HANDING THE LIST BACK. That is
+   * not the rare case it looks like. Measured over 75 real drafts through run.js, three
+   * ways a person plays:
+   *
+   *              affordable   would help   money left
+   *   greedy         22.7         1.1        $3.5M
+   *   thrifty       115.0        52.6      $219.2M
+   *   value         115.0        49.1      $188.6M
+   *
+   * A player who SPENDS THE CAP, which is the good way to draft, arrives here with about
+   * three million and twenty-odd coaches in reach, and on 24 of those 75 drafts not one of
+   * them improves the team. Showing everybody again on exactly that run would put the whole
+   * sift back in front of the player who earned the cleanest answer. The answer is that
+   * there is nobody worth hiring, the No coach button under the grid is free and already
+   * there, and the screen can simply say it. */
+  const flat=(d)=>d>-0.05&&d<0.05;
+  const cells=priced.filter((r)=>!(r.d<-0.05));
+  const hidden=priced.length-cells.length;
   $('co-grid').innerHTML=cells.map((r,i)=>{
-    const d=r.d, cls=d>0.05?'pos':(d<-0.05?'neg':'');
-    return '<button class="cocell'+(i===0&&d>0.05?' best':'')+'" data-n="'+esc(r.c.name)+'">'+
+    /* PRINTED FLAT IS FLAT. A coach at -0.04 is inside the band this screen calls no change
+       and is offered for that reason, and `(-0.04).toFixed(1)` is the string "-0.0", which is
+       a minus sign on a man the filter above just certified as costing nothing. Round to the
+       band before printing, the same way the results screen decides "moved" on the printed
+       value rather than the raw one. */
+    const d=flat(r.d)?0:r.d, cls=d>0?'pos':'';
+    return '<button class="cocell'+(i===0&&d>0?' best':'')+'" data-n="'+esc(r.c.name)+'">'+
       '<span class="cnm">'+esc(r.c.name)+'</span>'+
       '<span class="cdl '+cls+'">'+(d>0?'+':'')+d.toFixed(1)+'<i>RATING</i></span>'+
       '<span class="cft"><span class="cpr">$'+r.c.price_musd.toFixed(1)+'M</span>'+
@@ -13951,11 +14002,27 @@ function paintCoach(){
         (r.knows?'<span class="cknow">knows '+r.knows+'</span>':'')+'</span>'+
       '</button>';
   }).join('');
-  $('co-grid').hidden=!coMarket.length;
+  $('co-grid').hidden=!cells.length;
+  /* THE THREE STATES, said plainly. Nothing affordable at all is a different sentence from
+     nothing WORTH hiring, and both are different from a real market: the first is about the
+     money, the second is about the roster, and telling them apart is the whole job of this
+     line. The middle one used to be impossible to reach and is now a third of cap-spending
+     drafts. */
+  if(subEl) subEl.innerHTML=!coMarket.length
+    ? '<b>$'+left.toFixed(1)+'M left</b>, which hires nobody. You call the game plan.'
+    : (!cells.length
+      ? '<b>$'+left.toFixed(1)+'M left.</b> Nobody you can afford would improve this roster, '
+        +'so the money stays on the field and the game plan is yours.'
+      : '<b>$'+left.toFixed(1)+'M left.</b> A coach comes out of it, and his scheme comes '
+        +'with him.');
+  /* WHAT THE LIST IS, and why it is shorter than the money says it could be. Saying the
+     number alone would read as the market having shrunk; saying what was left out is what
+     stops somebody hunting for a name they remember and concluding it is a bug. */
   const mk=$('co-market');
-  if(mk) mk.textContent=coMarket.length
-    ? coMarket.length+' coaches you can afford, best for this roster first'
-    : '';
+  if(mk) mk.textContent=!cells.length
+    ? (coMarket.length?coMarket.length+' are affordable and every one of them would make this team worse.':'')
+    : cells.length+' who would help this roster, best first'
+      +(hidden?'. '+hidden+' more are affordable and would make it worse.':'');
   paintPlan();
   show('s-coach');
 }
