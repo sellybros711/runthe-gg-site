@@ -2496,8 +2496,12 @@ window.GA_ID='G-L29P5MRWKE';
   /* The leader lines back to the ball. `.holeview svg` styles the COURSE drawing (a border, a radius and
      a 464/560 aspect ratio), and this is a transparent overlay rather than a second course, so it has to
      opt out of all three or it paints a full panel over the hole. */
+  /* BELOW the docked panels, above the course. Everything floating on this window (.hvob: the decision
+     cards, the hole chip, the scoreboard) sits at z-index 2, and the lines run the full height of the
+     frame, so at 5 they were drawn straight across the YOUR CALL card at the bottom. The markers stay
+     above at 6: they are the tap targets, and they sit up on the course rather than over a panel. */
   svg.dclines{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;
-    background:none;pointer-events:none;overflow:visible;z-index:5}
+    background:none;pointer-events:none;overflow:visible;z-index:1}
   .dctarget:active .dtw{transform:translateX(calc(-50% + var(--dtx,0px))) translateY(2px)}
   @keyframes dtRing{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.9}
     50%{transform:translate(-50%,-50%) scale(1.28);opacity:.45}}
