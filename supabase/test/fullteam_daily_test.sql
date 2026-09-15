@@ -12,6 +12,10 @@
 --
 -- Every line below should read " ok ".
 --
+-- ON A FRESH DATABASE EVERY TIME. This file SPENDS the allowances it is testing, so a second
+-- run against the same database fails on the budget it emptied the first time, which reads
+-- exactly like a broken migration. createdb, load, run, drop.
+--
 -- ---------------------------------------------------------------------------
 -- WHY THIS FILE EXISTS AT ALL
 -- ---------------------------------------------------------------------------

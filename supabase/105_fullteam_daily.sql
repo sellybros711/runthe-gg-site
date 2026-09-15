@@ -3,7 +3,17 @@
 --                          removes the limit.
 --
 -- Safe to run more than once. Run it AFTER 102_dynasty_rolling_day.sql, whose
--- four functions it replaces.
+-- four functions it replaces and whose ps_dynasty_day table it reads. On a
+-- database that has never had 102 it stops at the first function with
+--
+--     ERROR: relation "public.ps_dynasty_day" does not exist
+--
+-- which is the honest failure: run 102 first.
+--
+-- ON A DATABASE THAT ALREADY HAS 102, THIS FILE IS ENOUGH ON ITS OWN, including
+-- for the ambiguity bug described below: it restates ps_attempt_spend, so the
+-- corrected increment arrives with it and 102 does not need running again.
+-- Verified by deploying the unpatched 102 and then this file alone.
 --
 -- ---------------------------------------------------------------------------
 -- WHY A METER AND NOT A DOOR
