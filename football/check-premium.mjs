@@ -498,6 +498,60 @@ ok('and says how long rather than a time of day',
   /unlocks in/i.test(clock.said) && !/midnight/i.test(clock.said), clock.said.slice(0, 140));
 ok('a clock already running is never restarted', clock.again === 0, String(clock.again));
 ok('a firing says which ending it was', clock.fired === true, String(clock.fired));
+console.log('\nTHE PINNED BUTTON POINTS THE WAY THE RUN GOES');
+/*
+ * THE CHEVRON IS DRAWN IN CSS AND NUDGED, and the nudge is the part that breaks quietly. It
+ * is a square turned 45 degrees, so a transform after that rotation moves along the TURNED
+ * axes: translate(a,-a) comes out as straight right, and the obvious-looking translate(a,0)
+ * comes out diagonally up. Both animate, both look deliberate in a diff, and only one of them
+ * keeps the mark on the line of the text.
+ *
+ * SO THE ASSERTION IS ON THE MATRIX RATHER THAN ON THE KEYFRAME. What matters is where the
+ * thing actually goes, sampled while it is going there.
+ */
+{
+  const arrow = await t.page.evaluate(async () => {
+    const dock = document.getElementById('o-dock');
+    const btn = document.getElementById('b-next-season');
+    dock.hidden = false;
+    btn.textContent = 'Offseason 2';
+    const at = () => {
+      const m = getComputedStyle(btn, ':after').transform.match(/matrix\(([^)]+)\)/);
+      if (!m) return null;
+      const v = m[1].split(',').map(Number);
+      return { x: v[4], y: v[5] };
+    };
+    const seen = [];
+    for (let i = 0; i < 14; i++) {
+      seen.push(at());
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    const s = getComputedStyle(btn, ':after');
+    return { seen: seen.filter(Boolean), anim: s.animationName,
+      w: parseFloat(s.width), borders: s.borderTopWidth + '/' + s.borderLeftWidth };
+  });
+  const xs = arrow.seen.map((p) => p.x), ys = arrow.seen.map((p) => p.y);
+  ok('the dock button carries a mark', arrow.w > 4 && arrow.borders === '2px/0px',
+    arrow.w + 'px ' + arrow.borders);
+  ok('and it is animated', arrow.anim === 'dockarrow', arrow.anim);
+  ok('it travels to the right', Math.max(...xs) > 1.5, String(Math.round(Math.max(...xs) * 100) / 100));
+  /* THE ONE THAT CATCHES THE SIMPLIFICATION. A translate written in page axes instead of the
+     rotated ones drifts the chevron up and out of line with the text. */
+  ok('and never off the line of the text', Math.max(...ys.map(Math.abs)) < 0.01,
+    String(Math.max(...ys.map(Math.abs))));
+  /* Asked not to be moved, it still says which way the button goes: the direction is
+     information and only the nudging is the part somebody opted out of. */
+  await t.page.emulateMedia({ reducedMotion: 'reduce' });
+  const still = await t.page.evaluate(() => {
+    const s = getComputedStyle(document.getElementById('b-next-season'), ':after');
+    return { anim: s.animationName, w: parseFloat(s.width) };
+  });
+  await t.page.emulateMedia({ reducedMotion: null });
+  ok('reduced motion stops the nudge and keeps the arrow',
+    still.anim === 'none' && still.w > 4, still.anim + ' ' + still.w + 'px');
+  await t.page.evaluate(() => { document.getElementById('o-dock').hidden = true; });
+}
+
 console.log('\nTHE DYNASTY LEDGER READS ACROSS, NOT DOWN');
 /*
  * ONE FIGURE SAT FIVE PIXELS LOW FOR A WHILE AND NOTHING REPORTED IT. The target cell was

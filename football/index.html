@@ -1375,7 +1375,34 @@ window.GA_ID='G-L29P5MRWKE';
     0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5),var(--shadow)}
     55%{box-shadow:0 0 0 9px rgba(239,68,68,0),var(--shadow)}
   }
-  @media (prefers-reduced-motion:reduce){ .dock-go{animation:none} }
+  /* WHICH WAY THE RUN GOES, on the button that takes it there.
+     A CHEVRON RATHER THAN THE ARROW CHARACTER. This label is set through textContent and
+     changes four times (Offseason N, Face <boss>, Take on the mandate, Into the offseason),
+     so the mark cannot live in the text: it is drawn here and survives every one of them.
+     A literal arrow would also be at the mercy of whatever glyph the condensed nav face has
+     for it, and two of its three weights in this family have none.
+     ON .dock-go RATHER THAN ON ONE ID. Three buttons wear this class and every one of them
+     is the same gesture, which is the run moving forward a beat.
+     :after AND NOT :before, which .btn already uses for the gloss over its top 40%.
+     THE TRANSLATE IS IN THE ROTATED FRAME. The chevron is a square turned 45 degrees, so a
+     transform after that rotation moves along the turned axes: translate(a,-a) is what comes
+     out as straight right on screen. Written as translate(.12em,0) it drifts diagonally up
+     and out of line with the text, which looks like a bug rather than a nudge. */
+  .dock-go:after{content:'';display:inline-block;width:.46em;height:.46em;
+    margin:0 0 0 .6em;vertical-align:.06em;
+    border:.13em solid currentColor;border-left:0;border-bottom:0;
+    transform:rotate(45deg);animation:dockarrow 1.4s ease-in-out infinite}
+  @keyframes dockarrow{
+    0%,100%{transform:rotate(45deg) translate(0,0)}
+    50%{transform:rotate(45deg) translate(.13em,-.13em)}
+  }
+  /* BOTH ANIMATIONS OFF TOGETHER. The arrow still shows: it is saying which way the button
+     goes, which is information rather than decoration, and only the nudging is the part
+     somebody asked not to see. */
+  @media (prefers-reduced-motion:reduce){
+    .dock-go{animation:none}
+    .dock-go:after{animation:none}
+  }
 
   /* ---- HOW LONG THIS TARGET LASTS ----
      A featureless five-pixel bar under a sentence, which is what this was, tells you a
