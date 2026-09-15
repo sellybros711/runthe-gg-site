@@ -59,8 +59,16 @@ const GUARDED = [
  * says no is a checker people argue with.
  * ------------------------------------------------------------------------- */
 const RULES = [
+  /* NOT THE APOSTROPHE. The right single quote is the apostrophe in "today's"
+     and "couldn't", and in this repo it is deliberate: inside a single-quoted
+     JavaScript string a straight one has to be escaped, so the arcade writes
+     105 of them rather than 105 backslashes. The owner confirmed they stay.
+     The rule is about the ones that arrive by PASTE: a left single quote is
+     never an apostrophe, and a pair of curly double quotes around a phrase is
+     the shape text takes when it comes out of a chat window rather than a
+     keyboard. Those are still worth catching. */
   { id: 'curly quote',
-    re: /[‘’“”]/,
+    re: /[‘“”]/,
     say: 'use a straight quote. Inside a single-quoted string that is \\\'' },
   /* Rule 4 and 7 of the humanizer guide, trimmed to the words that would actually
      turn up in a sports game. A word here is banned in COPY and nowhere else: the
@@ -90,8 +98,14 @@ const RULES = [
   { id: 'chat artifact',
     re: /\b(let me know if|i hope this helps|feel free to|great question|you'?re absolutely right)\b/i,
     say: 'this is chatbot correspondence, not copy' },
+  /* AN ARROW IS NOT AN EMOJI. U+2190 to U+21FF is the Arrows block, and the
+     rule was catching the arrow on a button: "Pick a day ->", "See your day
+     ->", "Next board ->". That is a typographic mark doing the job a mark
+     does, telling you which way the button goes, and the advice it drew
+     ("draw it, or say it in words") would have taken an affordance off five
+     buttons to fix nothing. Pictographs only. */
   { id: 'emoji',
-    re: /[\u{1F300}-\u{1FAFF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}]/u,
+    re: /[\u{1F300}-\u{1FAFF}]/u,
     say: 'draw it, or say it in words' },
 ];
 /* Printed, never failed. See the note at the top. */
@@ -231,6 +245,20 @@ const args = process.argv.slice(2);
 const list = args.includes('--list');
 const targets = args.filter((a) => !a.startsWith('--'));
 
+/* A GENERATED DATA FILE IS NAMES, NOT COPY.
+ *
+ * Pointed at arcade/, this walked into former.js, rosters.js and awards.js and
+ * read six thousand player names as prose. It reported three problems, all of
+ * them the same one: Montorie Foster and Harold E. Foster are called Foster,
+ * and "foster" is on the AI vocabulary list. Garner, Leverage and Delve are
+ * surnames too, and the next roster refresh decides how many of them the
+ * check finds.
+ *
+ * Nobody writes these files and nobody reads them as sentences, so a hit in
+ * one is noise by construction, and noise is how a checker stops being run.
+ * They are all generated with a banner saying so, which is the honest test:
+ * a file that says "GENERATED ... Do not edit" is not somewhere copy lives. */
+const GENERATED = /^\/\*[\s\S]{0,400}?GENERATED\b[\s\S]{0,200}?Do not edit/i;
 function filesUnder(p) {
   if (statSync(p).isFile()) return [p];
   const out = [];
@@ -238,7 +266,11 @@ function filesUnder(p) {
     const f = join(p, e);
     if (/(^|\/)(node_modules|\.git)$/.test(f)) continue;
     if (statSync(f).isDirectory()) out.push(...filesUnder(f));
-    else if (/\.(html|js|mjs)$/i.test(f)) out.push(f);
+    else if (/\.(html|js|mjs)$/i.test(f)) {
+      let head = '';
+      try { head = readFileSync(f, 'utf8').slice(0, 700); } catch (x) { /* unreadable: check it */ }
+      if (!GENERATED.test(head)) out.push(f);
+    }
   }
   return out;
 }
