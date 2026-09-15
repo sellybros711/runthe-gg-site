@@ -396,8 +396,13 @@
     thing. What the Tour tier is worth belongs in Run The Tour, not on a receipt line. */
     pwGroupText('arcade','1 year of the Arcade Card','No auto-renewal')+
     pwGroupText('tour','100,000 coins and one Tour Pack')+
+    /* THE BUNDLE IS ALREADY NAMED, twice, in the heading of this card and in the tag beside
+       it. Spelling it out a third time on the button ran to eighteen characters and set at
+       the button's own size it filled the width edge to edge on a phone, which reads as a
+       label rather than a thing to press. THE is the article, and a button under a card
+       headed RUN THE BUNDLE cannot be offering a different one. */
     '<button class="btn" id="b-buy-rtb" style="width:100%;margin-top:14px">'+
-    (o.signedOut?'Sign in to get it':'Get Run The Bundle')+'</button>'+
+    (o.signedOut?'Sign in to get it':'Get the bundle')+'</button>'+
     '</div>'+
 
     '<p class="pw-foot">Either one makes your account Pro. '+
