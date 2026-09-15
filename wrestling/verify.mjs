@@ -913,6 +913,58 @@ section('the announcers have a line for every move family and every phase');
   await page.close();
 }
 
+/* ---------- 4n. the generated text is deep enough not to repeat ----------
+   Depth is the thing a player feels and the thing nothing else measures. A
+   bank that is technically present but three lines deep reads as one line by
+   the tenth match. These are floors, not targets: they are set below where the
+   pools actually sit, so ordinary authoring never trips them and DELETING
+   content does. */
+section('the generated text is deep enough not to repeat');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={thin:[], sizes:{}};
+    const need=(label, n, floor)=>{ out.sizes[label]=n; if(n<floor) out.thin.push(`${label}: ${n}, floor ${floor}`); };
+
+    MCATS.forEach(c=>need('commentary '+c.id, (COLOR_LINES[c.id]||[]).length, 10));
+    PHASES.forEach(p=>need('phase '+p.id, (COLOR_PHASE[p.id]||[]).length, 8));
+    need('mid-match exchanges', MID_EXCHANGES.length, 8);
+    need('backstage segments', SEGMENT_LIB.length, 11);
+    Object.keys(SAY_BANK).forEach(v=>{
+      need('voice '+v+' win',  (SAY_BANK[v].win||[]).length, 6);
+      need('voice '+v+' lose', (SAY_BANK[v].lose||[]).length, 6);
+    });
+    Object.keys(OPP_MOVES_BY_STYLE).forEach(k=>need('opp moves '+k, OPP_MOVES_BY_STYLE[k].length, 16));
+    need('opp moves base', OPP_MOVES_BASE.length, 12);
+
+    // every wrestler on the roster can say more than one thing per situation
+    const roster=houseRoster(myPromoId());
+    let worst=99, worstWho='';
+    roster.forEach(ch=>{ ['win','lose','taunt','respect'].forEach(k=>{
+      const n=(((ch.lines||{})[k]||[]).length) + (((SAY_BANK[voiceOf(ch)]||{})[k]||[]).length);
+      if(n<worst){ worst=n; worstWho=ch.name+' '+k; } }); });
+    out.worstChar=worst; out.worstWho=worstWho;
+
+    // and saysLine does not hand back the same sentence twice in a row
+    const ch=roster[0]; SAY_SAID={};
+    const got=[]; for(let i=0;i<6;i++) got.push(saysLine(ch,'win',''));
+    out.sayDupes = got.length - new Set(got).size;
+    out.sayDraws = got.length;
+    return out;
+  });
+  if(errs.length) bad('depth: page errors: '+errs.slice(0,2).join(' | '));
+  r.thin.length ? bad(`${r.thin.length} pool(s) below the floor:\n       `+r.thin.join('\n       '))
+                : ok(`every generated pool is above its floor (${Object.keys(r.sizes).length} checked)`);
+  r.worstChar>=5 ? ok(`the thinnest wrestler-and-situation on the roster has ${r.worstChar} lines (${r.worstWho})`)
+                 : bad(`${r.worstWho} has only ${r.worstChar} line(s) to say`);
+  r.sayDupes===0 ? ok(`${r.sayDraws} things said by one opponent, none of them twice`)
+                 : bad(`an opponent repeated itself ${r.sayDupes} time(s) in ${r.sayDraws}`);
+  await page.close();
+}
+
 section('dilemmas roll, bite, and come back later');
 {
   const {page, errs} = await fresh(URL+'/wrestling/');
