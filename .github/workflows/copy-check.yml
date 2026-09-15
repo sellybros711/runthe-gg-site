@@ -1,0 +1,43 @@
+name: Copy check
+
+# The copy rules that are not about dashes: promotional language, AI vocabulary,
+# curly quotes, filler, chat artifacts. See CLAUDE.md and the header of
+# scripts/check-copy.mjs, which explains why this reads player-facing strings
+# rather than whole files the way the dash check does.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-copy.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'football/**'
+      - 'cfb/**'
+      - 'assets/**'
+      - 'scripts/check-copy.mjs'
+      - '.github/workflows/copy-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'football/**'
+      - 'cfb/**'
+      - 'assets/**'
+      - 'scripts/check-copy.mjs'
+      - '.github/workflows/copy-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: copy-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-copy.mjs

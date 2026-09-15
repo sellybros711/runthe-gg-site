@@ -200,6 +200,28 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
      them the football game. */
   ok('the store names Commissioner', /Commissioner/.test(sheet));
   ok('both bundles are offered', (await has(p, '#b-buy-ps')) && (await has(p, '#b-buy-rtb')));
+  /* THE BAND THAT SAYS THIS IS NOT A SUBSCRIPTION, which is the anxiety that actually stops
+     people on a screen like this. Drawn loud on purpose. */
+  const band = await p.evaluate(() => {
+    const el = document.querySelector('#sheet-in .pw-alert');
+    if (!el) return null;
+    const lamp = el.querySelector('i');
+    return { text: (el.innerText || '').replace(/\s+/g, ' '),
+      anim: getComputedStyle(el).animationName,
+      lamp: lamp ? getComputedStyle(lamp).animationName : 'none' };
+  });
+  ok('the one time payment band is on the sheet', !!band && /one time payment/i.test(band.text),
+    band && band.text);
+  ok('and it is doing something to be noticed',
+    !!band && band.anim === 'pwalert' && band.lamp === 'pwlamp',
+    band && (band.anim + ' / ' + band.lamp));
+  /* AND IT NEVER CLAIMS A DEADLINE IT DOES NOT KEEP. Both bundles are permanent products at
+     permanent prices, so an expiring-offer line would be the one claim on a payment screen
+     that could not be defended. If a real window is ever wanted it needs an end date in
+     _bundles.js and a store that stops selling at it; until then this is the guard. */
+  ok('and promises no deadline the checkout does not keep',
+    !/(offer ends|limited time|today only|ends soon|expires|hurry|last chance|act now)/i.test(sheet),
+    sheet.slice(0, 120));
   ok('and both prices are on it', /\$19\.99/.test(sheet) && /\$34\.99/.test(sheet));
   /* ONE STORE, NOT A STORE PER GAME, AND ONE PAYMENT PATH. The buttons post the same two
      bundle keys the football page posts, to the same endpoint, so both land on the same two

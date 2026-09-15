@@ -731,5 +731,101 @@ console.log('\n=== what the sign said ===');
     new Set(drawn).size + ' of ' + SIGNS.length);
 }
 
+/* ================================================================
+   A SCHOOL IS SINGULAR IN THIS SPORT.
+
+   "Oregon is 12-0." "Oregon has not lost a game." A place name standing in for a program
+   takes a singular verb in American usage, and the plural is the British habit for club
+   sides. A player caught "Oregon are 12-0 and nobody is watching" on the screen, and once
+   it is pointed at you cannot unsee it: it reads as a game written by somebody who does not
+   watch this sport.
+
+   ASSERTED ON THE RENDERED SENTENCE, not on the source, which is the only place it is
+   checkable. The name is never in the string: every one of these is `c.school + ' is '` or a
+   {champ} token, so grepping docket.js for "Oregon are" finds nothing and always will. So
+   the docket, the podium and the cutscenes are all played against real seasons and the
+   output is read.
+
+   TWO SUBJECTS JOINED BY "and" TAKE A PLURAL VERB and that is not a miss: "Oregon and Ohio
+   State are both unbeaten" is right, and so is "Houston and West Virginia want their kickoff
+   back". Masked to one token before the scan, so the pair reads as the pair.
+
+   MASKING IS ALSO WHAT KEEPS "West Virginia" FROM BEING READ AS "Virginia". Longest name
+   first, or the check reports a false plural on the school whose name ends another school's
+   and somebody goes and breaks a correct sentence to satisfy it.
+   ================================================================ */
+console.log('\n=== a school is singular ===');
+{
+  const M2 = require(ROOT + '/cfb/commish/media.js');
+  const SC2 = require(ROOT + '/cfb/commish/scene.js');
+  const SCHOOLS = Object.keys(L.membershipFrom(teams, 2025)).sort((a, b) => b.length - a.length);
+  const ONE = String.fromCharCode(1), TWO = String.fromCharCode(2);
+  const PLURAL = new RegExp(ONE + ' (are|have|were|do|win|lose|play|go|come|take|make'
+    + '|keep|need|want|get|sit|look)\\b', 'g');
+  const PAIR = new RegExp(ONE + ' and ' + ONE, 'g');
+  const found = [];
+  const scan = (where, t) => {
+    if (!t) return;
+    let s = String(t);
+    for (const sch of SCHOOLS) if (s.indexOf(sch) >= 0) s = s.split(sch).join(ONE);
+    s = s.replace(PAIR, TWO);
+    let m;
+    PLURAL.lastIndex = 0;
+    while ((m = PLURAL.exec(s))) {
+      found.push(where + ': ' + s.slice(Math.max(0, m.index - 34), m.index + 34)
+        .split(ONE).join('<school>').split(TWO).join('<school> and <school>'));
+    }
+  };
+  let sd2 = 7;
+  const rng2 = () => { sd2 = (sd2 * 1103515245 + 12345) % 2147483648; return sd2 / 2147483648; };
+  for (let beat = 0; beat <= 8; beat++) {
+    for (let sd = 1; sd <= 6; sd++) {
+      const w = L.createWorld({ year: 2025, membership: L.membershipFrom(teams, 2025), seed: sd });
+      w.beat = beat;
+      const seg = S.segmentFor(beat);
+      const sim = seg ? S.play(Object.assign({}, w, { beat }), teams, E.createSeededRNG(sd),
+        { through: seg.through, titles: !!seg.titles, bracket: !!seg.bracket }) : null;
+      const sit = SIT.build(w, L, { sim, calendar: CAL });
+      D.ITEMS.forEach((it) => {
+        let c = null;
+        try { c = D.castOf(it, w, L, rng2, sit); } catch (e) { return; }
+        const at = (v) => { try { return D.text(v, c, it, sit); } catch (e) { return ''; } };
+        scan('docket ' + it.id, at(it.title));
+        scan('docket ' + it.id, at(it.brief));
+        (it.options || []).forEach((o) => {
+          scan('docket ' + it.id + ':' + o.id, at(o.label));
+          scan('docket ' + it.id + ':' + o.id, at(o.body));
+        });
+        (it.voices || []).forEach((v) => scan('docket ' + it.id + ' voice', at(v.say)));
+        (it.asks || []).forEach((q) => {
+          scan('docket ' + it.id + ' ask', at(q.q));
+          scan('docket ' + it.id + ' ask', at(q.a));
+        });
+      });
+      M2.QUESTIONS.forEach((q) => {
+        let c = null;
+        try { c = M2.castOf(q, w, L, rng2, sit); } catch (e) { return; }
+        const at = (v) => { try { return M2.text(v, c, q, sit, w); } catch (e) { return ''; } };
+        scan('media ' + q.id, at(q.ask));
+        (q.answers || []).forEach((a) => {
+          scan('media ' + q.id + ':' + a.id, at(a.body));
+          scan('media ' + q.id + ':' + a.id, at(a.wrote));
+        });
+      });
+      (SC2.SCENES || []).forEach((s2) => {
+        let c = null;
+        try { c = SC2.castOf(s2, w, L, sit); } catch (e) { return; }
+        (s2.lines || []).forEach((ln) => {
+          try { scan('scene ' + s2.id, typeof ln.say === 'function' ? ln.say(c, w) : ln.say); }
+          catch (e) { /* a scene with no cast for this world says nothing */ }
+        });
+      });
+    }
+  }
+  const uniq = [...new Set(found)];
+  ok('no school takes a plural verb, over 54 played beats', !uniq.length,
+    uniq.slice(0, 3).join('  |  ') || 'docket, podium and cutscenes');
+}
+
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');
 process.exit(bad ? 1 : 0);

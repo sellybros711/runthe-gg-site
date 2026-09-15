@@ -298,7 +298,7 @@
   /* ---------------- the football itself ---------------- */
   const ON_SEASON = {
     champion: [
-      { who: 'wire', say: '{champ} are national champions. {seedline}' },
+      { who: 'wire', say: '{champ} is the national champion. {seedline}' },
       { who: 'tv', say: 'Confetti on {champ}. Whatever anybody thinks of the format, that was a season.' },
       { who: 'numbers', say: '{champ}, {record}, {seed} seed. The bracket did what a bracket does.' },
     ],
@@ -308,7 +308,7 @@
       { who: 'column', say: 'A {seed} seed wins the thing and half the sport spends January explaining why that is bad, actually.' },
     ],
     chalk: [
-      { who: 'column', say: '{champ} were the best team in September and the best team in January. The bracket agreed with the preseason and everybody feels slightly cheated.' },
+      { who: 'column', say: '{champ} was the best team in September and the best team in January. The bracket agreed with the preseason and everybody feels slightly cheated.' },
       { who: 'numbers', say: 'Top seed wins it. That is the outcome the committee model predicts and it is the outcome nobody buys a ticket for.' },
     ],
     blowouts: [

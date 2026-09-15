@@ -493,7 +493,7 @@ const CONSTANTS = {
    * 2007 Patriots and the 1972 Dolphins and beating them is the whole point. In
    * GM mode the goal is different: you inherit a bad roster and try to turn the
    * season around. Measured against the shipped ladder, a GM who did exactly that
-   * — finishing at a 94 rating, up thirty points — won the title 1.5% of the time,
+   * (finishing at a 94 rating, up thirty points) won the title 1.5% of the time,
    * because a title still meant beating both legends. The story the mode tells and
    * the ending it allows did not match.
    *
@@ -501,25 +501,25 @@ const CONSTANTS = {
    *
    * The bracket (generateContenderPlayoffs) is real playoff teams instead of two of
    * them plus the two myths: the weakest team in, then the ordinary playoff field,
-   * then a top-decile season in the final. Still a gauntlet — the team you meet for
-   * the title is one of the best seasons since 1999 — but a bracket a contender can
+   * then a top-decile season in the final. Still a gauntlet (the team you meet for
+   * the title is one of the best seasons since 1999), but a bracket a contender can
    * come through.
    *
-   * LATE_BYE_*: the bye is also reachable. On record alone it never was — the
+   * LATE_BYE_*: the bye is also reachable. On record alone it never was, because the
    * first six weeks are played with the roster you were handed, so 15 wins is out
    * of reach no matter how well you trade, and over 200 measured seasons a
    * deliberate GM earned it 14 times. So GM mode adds a second route: win
    * LATE_BYE_WINS of your last LATE_BYE_GAMES and you are the hottest team going
    * in, and you get the week off. It rewards precisely what the mode is about, it
    * gives the eight weeks after the deadline something to play for, and it
-   * discriminates hard — a team winning 70% of its games clears it about a
+   * discriminates hard: a team winning 70% of its games clears it about a
    * quarter of the time, a .500 team about one time in thirty.
    *
    * GM_FINAL_HOME_FIELD: how much of that seeding edge survives into the final,
    * GM mode only. Everywhere else the answer is none, and measured on the new
    * bracket that made the Super Bowl unwinnable by construction: a top seed rated
    * 100 was still a 7.7-point underdog in it, because the two hardest things about
-   * the game — a top-decile opponent and no home-field — landed on the same night.
+   * the game (a top-decile opponent and no home-field) landed on the same night.
    * Home-field here is not a crowd, it is the stated reward for the regular season,
    * so on neutral ground it is halved rather than erased. At 0.5 a juggernaut plays
    * the final about even (+0.8 at a 100 rating) and a merely good team is still a
@@ -1415,7 +1415,7 @@ const PLAYOFF_ROUND_NAMES = ['Wild Card', 'Divisional', 'Conference Championship
  * That ordering is the whole guarantee that a perfect season gets no easier: at 17-0 the
  * record already scores 1, so strength can never add to it.
  *
- * `rating` is optional, and without it this is exactly the old record-only arithmetic —
+ * `rating` is optional, and without it this is exactly the old record-only arithmetic,
  * which is what keeps callers with no rating to hand honest rather than quietly generous.
  */
 function playoffShare(wins, rating) {
@@ -1601,7 +1601,7 @@ function finalRecordEase(losses, rating, constants = CONSTANTS) {
  *
  * `opts.lateWins` is how many of the last LATE_BYE_GAMES games were won, and it is
  * only ever passed in GM mode. Given it, a hot finish earns the bye even without
- * the 15-win record — see CONSTANTS.LATE_BYE_*. The three labels are unchanged in
+ * the 15-win record. See CONSTANTS.LATE_BYE_*. The three labels are unchanged in
  * every mode, because badges and the leaderboard read them.
  *
  * `opts.rating` is the team overall, and given it an elite roster (ELITE_BYE_RATING) that
@@ -2462,10 +2462,10 @@ function rosterStructure(roster) {
   /* TEAM SHAPE, HALF STRENGTH. The raw product of the four shape terms is centerd on 1.0
      (a perfectly average build scores 1.0; a strong QB and a clean shape push it up, the
      balance/concentration/floor penalties pull it down). Left alone it swings the rating
-     hard — a great build was worth +12% on its own, which dwarfed the offensive scheme.
+     hard: a great build was worth +12% on its own, which dwarfed the offensive scheme.
      SHAPE_STRENGTH scales that swing: at 0.5 the deviation from 1.0 is halved, so the same
      build is worth +6% and a penalty bites half as much, while good and bad rosters still
-     separate. The scheme bonus (1–3%) then sits on top as its own signal, not buried under
+     separate. The scheme bonus (1-3%) then sits on top as its own signal, not buried under
      a much larger shape term. This multiplier drives both the displayed rating and the game
      sim, so the two stay one number. */
   const shape = (effective / total) * balance * concentration * Math.max(0.3, floor);
@@ -3368,7 +3368,7 @@ function generatePlayoffs(data, rng, opts = {}) {
  * The legends ladder is sliced off the front because a bye must never let you skip
  * the Dolphins. Applied here that was backwards: the last two rungs were both
  * top-decile draws, so slicing the front meant the reward for the #1 seed was
- * skipping the WEAKEST team and then playing both of the strongest — the opposite
+ * skipping the WEAKEST team and then playing both of the strongest, the opposite
  * of a real bracket, where the top seed hosts the lowest remaining seed. Measured,
  * that made the bye worth less than nothing: 1.8% of byes won the title against
  * 3.3% of wild cards.
@@ -4866,7 +4866,7 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
 }
 
 /*
- * HEAD-TO-HEAD — the "Challenge Bowl". Two drafted rosters, neither of which has a defense
+ * HEAD-TO-HEAD: the "Challenge Bowl". Two drafted rosters, neither of which has a defense
  * (both are six offensive skill players), so each side is scored as its OFFENSE against a
  * neutral, league-average defense: the same raw x chemistry x structure the season uses,
  * with defenseModifier fixed at 1 and no SCALE (SCALE converts an opponent's real points
@@ -4878,8 +4878,8 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
  * upsets still possible for drama.
  *
  * Scoring is in a FIXED order (a then b) so the result is identical for everyone who
- * recomputes it from the same seed — the challenger, the friend, and anyone they show it to
- * — regardless of whose screen it is. Callers always pass a = challenger, b = friend; the
+ * recomputes it from the same seed (the challenger, the friend, and anyone they show it
+ * to) regardless of whose screen it is. Callers always pass a = challenger, b = friend; the
  * UI decides which side is labeled "you".
  */
 const BOWL_CONSISTENCY = 0.62;
@@ -5124,7 +5124,7 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
   const regularLosses = losses;
   const seed = seedFromRecord(regularWins, { rating: teamRating });
   /* A bye means you were seeded on top, so the share is read at no less than the record
-     that route normally takes — the same floor run.js applies in the live game. */
+     that route normally takes, the same floor run.js applies in the live game. */
   const byeWins = seed.bye ? Math.max(regularWins, constants.BYE_SEED_WINS) : regularWins;
   const advantage = 1 + (constants.PLAYOFF_HOME_FIELD || 0)
     * playoffShare(byeWins, teamRating);

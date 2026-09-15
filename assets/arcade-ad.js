@@ -1,5 +1,5 @@
 /* ============================================================================
- * RUN THE ARCADE — the house ad, once, for the whole site.
+ * RUN THE ARCADE: the house ad, once, for the whole site.
  *
  * WHY THIS IS ONE FILE AND NOT FOUR. It started as four: the homepage, the NFL
  * game, the college game and the golf game each grew their own panel, each with
@@ -35,9 +35,9 @@
   /* ONE SET OF KEYS FOR THE WHOLE SITE. Both stores are scoped to the ORIGIN and
      not the path, so /, /football/, /cfb/ and /golf/ genuinely share them. That is
      what makes the tickbox mean what it says everywhere. */
-  var OFF  = 'rtg_arcade_ad_off';    // localStorage   — "never again"
-  var SEEN = 'rtg_arcade_ad_seen';   // sessionStorage — shown in this tab
-  var AT   = 'rtg_arcade_ad_at';     // localStorage   — when, so other TABS know
+  var OFF  = 'rtg_arcade_ad_off';    // localStorage   'never again'
+  var SEEN = 'rtg_arcade_ad_seen';   // sessionStorage shown in this tab
+  var AT   = 'rtg_arcade_ad_at';     // localStorage   when, so other TABS know
 
   /* THIRTY MINUTES, ACROSS TABS. sessionStorage alone is per-tab, so somebody with
      the homepage and two games open in three tabs would be told three times -- the

@@ -169,7 +169,7 @@
 
     if (m === 'username') {
       t.textContent = cur.name ? 'Change username' : 'Pick a username';
-      l.textContent = 'This is how you show up on the leaderboards. 3–20 letters, numbers or _.';
+      l.textContent = 'This is how you show up on the leaderboards. 3 to 20 letters, numbers or _.';
       b.innerHTML =
         '<input type="text" id="rtgauthU" maxlength="20" placeholder="e.g. HoopsHana" autocomplete="off" value="' + esc(cur.name || '') + '">' +
         (st.err ? '<div class="rtgauth-err">' + esc(st.err) + '</div>' : '') +
@@ -178,7 +178,7 @@
         '<button class="rtgauth-ghost" id="rtgauthUCancel" type="button">' + (cur.name ? 'Cancel' : 'Sign out') + '</button>';
       $('rtgauthSaveU').onclick = function () {
         var v = $('rtgauthU').value.trim();
-        if (!/^[A-Za-z0-9_]{3,20}$/.test(v)) { st.err = 'Username: 3–20 letters, numbers or _.'; renderModal(); return; }
+        if (!/^[A-Za-z0-9_]{3,20}$/.test(v)) { st.err = 'Username: 3 to 20 letters, numbers or _.'; renderModal(); return; }
         run(function () { return A.setName(v); });
       };
       $('rtgauthUCancel').onclick = cur.name ? function () { st.mode = 'account'; renderModal(); } : function () { run(function () { return A.signOut(); }, true); };
@@ -241,7 +241,7 @@
     var pw = $('rtgauthPw').value;
     if (isUp) {
       var u = $('rtgauthUp').value.trim(), em = $('rtgauthEm').value.trim();
-      if (!/^[A-Za-z0-9_]{3,20}$/.test(u)) { st.err = 'Username: 3–20 letters, numbers or _.'; renderModal(); return; }
+      if (!/^[A-Za-z0-9_]{3,20}$/.test(u)) { st.err = 'Username: 3 to 20 letters, numbers or _.'; renderModal(); return; }
       if (!em || !pw) { st.err = 'Enter an email and password.'; renderModal(); return; }
       run(function () {
         return A.signUp(em, pw, u).then(function (r) {

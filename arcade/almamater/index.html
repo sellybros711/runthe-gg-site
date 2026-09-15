@@ -32,7 +32,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/arcade/arcade.css?v=3" />
-<script src="/arcade/icons.js?v=2"></script>
+<script src="/arcade/icons.js?v=3"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -345,15 +345,15 @@ window.GA_ID='G-L29P5MRWKE';
   <li>Typing the school is worth 2 points.</li>
   <li>Stuck? Take four choices instead, for 1 point.</li>
   <li>One wrong school ends the run. A spelling the game does not recognise costs nothing.</li>
-  <li>Famous names start the run; the deeper you go, the tougher the pulls.</li>
+  <li>Famous names start the run. It gets deeper the longer you last.</li>
 </ul>
 <h3>Streaks and the daily reset</h3>
-<p>The slate refreshes at midnight local time, and every finished day extends your streak. It is one of the four games that come free with a RunThe.GG account, alongside the Daily Crossword, Sportegories and Career Path, with one play in each per day. The Arcade Card opens all twelve Arcade games with unlimited plays, the <a href="/arcade/archive/">Archive</a> of every past day, and NBA, NFL and MLB editions of five of the games.</p>
-<h3>Recalling a campus you never visited</h3>
+<p>The slate refreshes at midnight local time, and every finished day extends your streak. It is one of the four games free every day with no account at all, alongside the Daily Crossword, Sportegories and Career Path. An account saves the result: the board, the streak and the achievements. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
+<h3>Getting the school</h3>
 <ul>
-  <li>Draft-night memories are the best index. The school is usually said in the same breath as the pick.</li>
-  <li>Programs have types. Linemen factories, point-guard schools and quarterback pipelines are real patterns; use them.</li>
-  <li>When torn between a powerhouse and a mid-major, remember the great ones come from everywhere. Check the era before defaulting to the blue blood.</li>
+  <li>A spelling we do not recognise costs nothing, so type the school you half remember before you take the four choices. Only a real school that is the wrong one ends the run.</li>
+  <li>Think back to draft night. The school gets said in the same breath as the pick, which is where most people actually learned it.</li>
+  <li>Programs specialise. Some schools have turned out linemen for thirty years, so the position on screen narrows the list before a name arrives.</li>
 </ul>
 <p>Follow the same careers club by club in <a href="/arcade/career/">Career Path</a>, or race a letter in <a href="/arcade/sportegories/">Sportegories</a>.</p>
 </div>
@@ -398,7 +398,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/share.js?v=8"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
-<script src="/arcade/challenge.js?v=3"></script>
+<script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=13"></script>
 <script src="/arcade/day.js?v=2"></script>
@@ -413,18 +413,18 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=13"></script>
 <script src="/arcade/topbanner.js?v=9"></script>
-<script src="/arcade/auth-ui.js?v=5"></script>
+<script src="/arcade/auth-ui.js?v=6"></script>
 <script src="/arcade/card.js?v=20"></script>
-<script src="/arcade/referral.js?v=9"></script>
+<script src="/arcade/referral.js?v=10"></script>
 <script src="/arcade/gamemarks.js?v=3"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/demo.js?v=3"></script>
-<script src="/arcade/pregame.js?v=24"></script>
-<script src="/arcade/howto.js?v=21"></script>
+<script src="/arcade/pregame.js?v=25"></script>
+<script src="/arcade/howto.js?v=22"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/type.js?v=5"></script>
-<script src="/arcade/fact.js?v=1"></script>
+<script src="/arcade/fact.js?v=2"></script>
 <script>
 (function(){
   'use strict';
@@ -835,7 +835,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(locked) sub='Your run today';
     else if(!attemptFirst) sub='Practice run, not ranked';
     else if(run>=SEQ.length) sub='You named them all!';
-    else if(NEWBEST) sub='\ud83c\udfc6 NEW PERSONAL BEST';
+    else if(NEWBEST) sub='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg> NEW PERSONAL BEST';
     else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best. One more tomorrow!';
     else if(PREVBEST>0 && run>0 && PREVBEST-run<=2) sub=(PREVBEST-run)+' off your best. So close!';
     else sub='Your run ended';

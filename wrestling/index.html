@@ -5799,24 +5799,24 @@ const TOURS={
   {sel:'#weekBody .advice', title:'This is your week',
    body:'A week has two halves. <b>Yours</b>: how you prepare behind the scenes. <b>Theirs</b>: what the office books you to do. You do not write the card. You make the most of it.'},
   {sel:'#weekBody .preprow', title:'Prepare like a pro',
-   body:'One piece of prep a week, paid on the spot. <b>Gym</b> banks XP, <b>tape study</b> raises your odds against tonight\'s opponent, <b>rest</b> buys back condition, and <b>working the room</b> nudges your standing. Benched weeks pay double: nothing but time.'},
+   body:'One piece of prep a week, paid on the spot. <b>Gym</b> banks XP. <b>Tape study</b> raises your odds tonight. <b>Rest</b> buys back condition. <b>Working the room</b> nudges your standing. Benched weeks pay double: nothing but time.'},
   {sel:'#weekBody .bksheet', title:'The office books you',
-   body:'A wrestler does not pick their own matches. Each week the company tells you what you are doing, and the sheet shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> and the <b>injury risk</b>. Get your standing up and they start listening to you.'},
+   body:'A wrestler does not pick their own matches. Each week the company tells you what you are doing. The sheet shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> and the <b>injury risk</b>. Get your standing up and they start listening to you.'},
   {sel:'#weekBody .bksheet', title:'Winning is not the point',
-   body:'You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more reputation, standing and popularity than a <b>50-rated win</b>. So a night where they feed you to somebody better is an opportunity, not a punishment.'},
+   body:'You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more than a <b>50-rated win</b>. A night where they feed you to somebody better is an opportunity.'},
   {sel:'.planwhy', title:'Game plan',
    body:'The two <b>move categories you emphasise</b> in every match. They build mastery, and mastery unlocks better moves. Change them any time you want to grow differently.',
    before:()=>{ if(G && G.car && !G.car._wkExtras){ G.car._wkExtras=true; try{ renderWeek(); }catch(_){} } }},
   {sel:'#carTiles', title:'Three rooms are watching',
-   body:'<b>The crowd</b> decides if you are over. <b>The locker room</b> decides who wants to work with you. <b>The office</b> decides if you are on television. They do not agree, and most weeks you pick one to disappoint. Tap any of the three to see exactly what moves it, and the arrow tells you what last week did.'},
+   body:'<b>The crowd</b> decides if you are over. <b>The locker room</b> decides who wants to work with you. <b>The office</b> decides if you are on television. They do not agree. Most weeks you pick one to disappoint. Tap any of them to see what moves it. The arrow shows what last week did.'},
   {sel:'.hud', title:'The clock is running',
-   body:'You start at <b>21</b>. Attributes grow fast until your mid twenties, peak around <b>30-32</b>, then decline, and mileage brings that forward. A careful main-eventer can work at world-class level well into their forties, and legends have gone longer. You can walk away any time from <b>34</b>; the ones who never quit end up in somebody else\'s corner years later, still on the road.'},
+   body:'You start at <b>21</b>. Attributes grow fast, peak around <b>30-32</b>, then decline. Mileage brings that forward. Look after yourself and you can still be OVR 80 in your forties. You can walk away any time from <b>34</b>. The ones who never quit end up in somebody else\'s corner, years later, still on the road.'},
   {sel:'[data-nav="skills"]', title:'Skills: get better',
-   body:'Matches earn <b>XP</b>. Every 100 XP is a <b>training point</b> you spend on attributes here. Attributes plus mastery unlock new <b>moves</b> in your Arsenal, up through Signature and Finisher tiers. <b>Mentors</b> cost three weeks and teach you a legend\'s finisher outright.'},
+   body:'Matches earn <b>XP</b>. Every 100 XP is a <b>training point</b> you spend on attributes here. Attributes plus mastery unlock new <b>moves</b> in your Arsenal, up to Signature and Finisher. <b>Mentors</b> cost three weeks and teach you a legend\'s finisher outright.'},
   {sel:'[data-nav="gear"]', title:'Gear: how you look',
    body:'Change your look any week in the <b>Locker</b>, and open packs in the <b>Merch Stand</b>.'},
   {sel:'[data-nav="roster"]', title:'Roster: who is out there',
-   body:'The <b>Locker Room</b> has your allies, your tag team, your stable, and everyone with a grudge against you. Earn enough respect and you can team up, or turn on them. <b>The World</b> is all nine promotions and everyone on them.'},
+   body:'The <b>Locker Room</b> has your allies, your team, your stable and everyone with a grudge against you. Earn enough respect and you can team up. Or turn on them. <b>The World</b> is all nine promotions and everyone on them.'},
   {sel:'[data-nav="legacy"]', title:'Career: the paperwork',
    body:'<b>Business</b> holds your contract, your schedule, your character and your injuries. <b>Record</b> is every match, title reign and accolade you have earned.'},
   {sel:null, title:'Where to start', goals:true},
@@ -5824,7 +5824,7 @@ const TOURS={
  // fires the first time a match asks you to call a spot, while the match is paused
  dec:[
   {sel:'#fDec', title:'This is where you play',
-   body:'The wrestling calls itself. <b>These moments are yours.</b> Each option shows its real chance of coming off. Hitting a big spot sends the crowd up and lifts the match rating; missing one costs you. Pick one to continue.'},
+   body:'The wrestling calls itself. <b>These moments are yours.</b> Each option shows its real chance of coming off. Hit a big spot and the crowd goes up. Miss one and it costs you. Pick one to continue.'},
  ],
 };
 let TOURN='hub', TOUR_I=-1;
@@ -5920,7 +5920,7 @@ function tourGoalsHTML(){
     steps=[
       `Tonight you are <b>${slot}</b> against <b>${o.oppName}</b>. That is the sheet below.`,
       `Under <b>Your week</b>, pick <b>${lbl('tape','Study the tape')}</b>. It raises your odds tonight.`,
-      `Hit <b>Head To The Ring</b>. Build to your near-falls, do not go home early, and when the match asks you to call a spot, call it.`,
+      `Hit <b>Head To The Ring</b>. Build to your near-falls. Do not go home early. When the match asks you to call a spot, call it.`,
       `After the bell, read what moved, then the dirt sheet. That is how you find out what the three rooms thought.`,
     ];
   } else if(b.type==='promo'){
@@ -5968,7 +5968,7 @@ const RULES=[
     <li><b>A live microphone</b>, when they want your character louder than your wrestling.</li>
     <li><b>Nothing.</b> Not booked means not in the plans. Train, rest, and make them regret it.</li>
   </ul>
-  <p class="log"><b>Pull</b> grows with standing, the title and crowd reaction. It buys one conversation a week with the office (more time, a different opponent, a stipulation, even the finish), and being told no costs standing, so asking is a real decision. Your <b>downside guarantee</b> pays every week whether you wrestle or not.</p>`},
+  <p class="log"><b>Pull</b> grows with standing, the title and crowd reaction. It buys one conversation a week with the office: more time, a different opponent, a stipulation, even the finish. Being told no costs standing. Asking is a real decision. Your <b>downside guarantee</b> pays every week whether you wrestle or not.</p>`},
  {n:'Matches', h:`
   <p class="log"><b>Momentum</b> is how you are running right now, 0 to 100. Wins and good matches push it up. Losses and weeks off pull it back to 50. It nudges your odds in the next match.</p>
   <p class="log">Matches are wrestled, not simulated. They play out live and end the way real matches end.</p>
@@ -5993,7 +5993,7 @@ const RULES=[
     <li><b>Moves unlock</b> when you hit both an attribute gate and a mastery gate. Tiers run Fundamentals (0 mastery), Refined (70), Advanced (200), Signature (420), Finisher (750).</li>
     <li><b>Mentors</b> cost three weeks of your career and hand you a legend's signature move plus a permanent attribute boost.</li>
   </ul>
-  <p class="log">Attributes grow on their own each year until your mid twenties, peak around <b>30-32</b>, then decline. Careful main-eventers still work at world-class level into their forties, and legends have gone on into their fifties and sixties. You can retire any time from <b>34</b>, and the Hall of Immortals will grade you on everything you did.</p>`},
+  <p class="log">Attributes grow on their own each year until your mid twenties, peak around <b>30-32</b>, then decline. Careful main-eventers still hold OVR 80 into their forties, and legends have gone on into their fifties and sixties. You can retire any time from <b>34</b>, and the Hall of Immortals will grade you on everything you did.</p>`},
  {n:'Crowd & Character', h:`
   <p class="log">The crowd is measured on <b>two separate axes</b>, and confusing them is the most common mistake.</p>
   <ul class="ruleul">
@@ -6432,8 +6432,8 @@ function renderHome(){
     // (Happens when the active slot is empty but another slot has a career.)
     const anySave = SLOT_KEYS.some(k=>{ try{ return !!localStorage.getItem(k); }catch(_){ return false; } });
     el.innerHTML=`<div class="startcard">
-      <div class="sc-kick">Start your journey<br>to greatness</div>
-      <div class="sc-sub">Create a rookie, break into the business, and live a full career. Every attribute point and every move is earned in the ring, never bought.</div>
+      <div class="sc-kick">Nobody starts<br>in the main event</div>
+      <div class="sc-sub">Create a rookie and work your way up. Every attribute point and every move is earned in the ring, never bought.</div>
       <button class="big btnglow" style="font-size:18px;padding:15px 36px;" onclick="go('start')">Start Career →</button>
       ${hasBackup?`<button class="ghost" style="margin-top:10px;padding:8px 16px;font-size:12px;" onclick="restoreBackup()">Restore last career</button>`:''}
       <div class="featstrip">
@@ -7699,7 +7699,7 @@ function backstageEvent(){
   const c=charById(st.charId); if(!c) return false;
   st.events++;
   const R=rel(st.charId);
-  const taunt=c.lines.taunt[Math.floor(rnd()*c.lines.taunt.length)];
+  const taunt=saysLine(c,'taunt','Say the name.');
   const POOL=[
     { head:`${c.name} jumps you in the parking lot`,
       body:`You never saw them coming. <span class="say">"${taunt}"</span>`,
@@ -7840,28 +7840,170 @@ function tapWindow(ms, prompt, opts){
 }
 /* Commentator colour: one voice for each move category, one for phase turns.
    Fired sparingly so the log stays readable, keyed to the moment. */
+/* COMMENTARY.
+   Two things were wrong with this and both were silent. The bank keys did not
+   match the things that get passed in: `suplex` and `showman` are two of the
+   eight move categories and had no bank at all, so a third of the move list
+   produced no commentary ever, while `brawl` was a bank nothing called. Same
+   on the phase side: `feel` and `come` had no bank and `finish` was not a
+   phase id, so the COMEBACK, which is the biggest beat in a wrestling match,
+   was the one stretch the announcers said nothing during.
+
+   The keys below are now exactly the eight move category ids in moves.js and
+   exactly the five phase ids in PHASES. Adding a category means adding a bank,
+   and the suite fails if the two lists ever drift apart again. */
 const COLOR_LINES={
-  strike:      ['"He is walking into these hard."','"That woke the front row up."','"The chops are coming in bunches."'],
-  slam:        ['"He folded him in half. In HALF."','"That is a five-star spot right there."','"Nobody is kicking out of that one."'],
-  submission:  ['"He is pulling on it. He is really pulling on it."','"That hold has been tested in every basement of the country."','"The referee is checking. That is a submission attempt."'],
-  aerial:      ['"He is going upstairs."','"You do not see that at 240 pounds."','"He nailed the landing. That is impossible."'],
-  technical:   ['"That is textbook. Wrestling matters."','"He is teaching in there."','"He is picking his opponent apart. Piece. By. Piece."'],
-  hardcore:    ['"Oh, he is bleeding hard-way there."','"That was a shot heard in the back."','"Somebody is going to have to answer for that later."'],
-  brawl:       ['"They are throwing bombs."','"This has become a fight, not a match."','"Neither one of these two is backing off an inch."'],
+  strike:      ['"He is walking into these hard."','"That woke the front row up."',
+                '"The chops are coming in bunches."','"You can hear that in the back row."',
+                '"Stiff. That was not for show."','"He is not aiming for the body any more."',
+                '"Every one of those is landing clean."','"That is the fourth one, and he is not slowing down."',
+                '"He is chopping him into the corner and the crowd is counting."',
+                '"That is a forearm, not a punch. There is a difference and you can hear it."',
+                '"He has changed his stance. He is looking for the head now."',
+                '"Somebody is going to have to eat one of those cleanly."',
+                '"He backed him up with three and finished him off with the fourth."',
+                '"That is the kind of shot that changes how a man wrestles."'],
+  slam:        ['"He folded him in half. In HALF."','"That is a five-star spot right there."',
+                '"Nobody is kicking out of that one."','"He got all of that. All of it."',
+                '"The ring moved. I felt the ring move."','"Dropped him on the back of his neck."',
+                '"He picked him up like it was nothing."','"That is how you end a night early."',
+                '"Straight up and straight back down. No hesitation in it."',
+                '"He drove him through the canvas and held on."',
+                '"You could hear that one hit the boards underneath."',
+                '"He is throwing him around like he is annoyed with him."',
+                '"That is a lot of man going a long way down."',
+                '"Look at the height on it. Look at where he came from."'],
+  suplex:      ['"Textbook. Feet together, hips through."','"He held the bridge. The referee had to count it."',
+                '"Right over the top and onto the shoulders."','"That is amateur wrestling with bad intentions."',
+                '"Three of them. He is counting them out loud."','"He threw him and did not let go."',
+                '"Deadlift, from flat on the mat."','"He is folding him up every single time."',
+                '"Over and through. He never let go of the wrist."',
+                '"Hips in, and he is up before the other man knows he has moved."',
+                '"That is a throw. Nothing fancy about it and nothing to counter."',
+                '"He caught him mid-stride and put him on his shoulders."',
+                '"Straight from the clinch. That is a wrestler wrestling."',
+                '"Arched all the way back and held the bridge for the count."'],
+  submission:  ['"He is pulling on it. He is really pulling on it."',
+                '"That hold has been tested in every basement of the country."',
+                '"The referee is checking. That is a submission attempt."',
+                '"He has it cinched in. There is nowhere to go."',
+                '"Look at the leg. The leg is the whole match now."',
+                '"He is screaming. He is not tapping, but he is screaming."',
+                '"That is torque. That is real torque."','"He is reaching, and the ropes are a long way away."',
+                '"He is wrenching on the wrist and turning the whole body with it."',
+                '"That is a leg lock with nowhere to go. He has to make a decision."',
+                '"Look at where his hands are. That is a man who has studied this."',
+                '"He is dragging him back to the middle. No ropes. No escape."',
+                '"The referee is down there asking. The answer is still no."',
+                '"He has changed the angle twice. That is the difference."'],
+  aerial:      ['"He is going upstairs."','"You do not see that at 240 pounds."',
+                '"He nailed the landing. That is impossible."','"He hung in the air. He actually hung there."',
+                '"From the top, all the way across the ring."','"That is a lot of trust in a set of ropes."',
+                '"He does not land on his feet every time he tries that."',
+                '"Somebody is going to have to scrape him up."',
+                '"Off the top, all the way to the floor, and nobody caught him."',
+                '"He measured that from twelve feet in the air."',
+                '"Corner to corner. He should not be able to cover that ground."',
+                '"Up, over, and straight into the cover."',
+                '"He is climbing again. Somebody stop him climbing."',
+                '"That is not bravery. That is arithmetic, and he got it right."'],
+  technical:   ['"That is textbook. Wrestling matters."','"He is teaching in there."',
+                '"He is picking his opponent apart. Piece. By. Piece."','"Countered it before it started."',
+                '"He saw that coming a week ago."','"Every hold turns into another hold."',
+                '"That is the chain. That is what the chain looks like."',
+                '"He has an answer for everything tonight."',
+                '"Hold, counter, counter, back to the hold. That is a conversation."',
+                '"He has switched behind him three times in ten seconds."',
+                '"Every time he tries something he ends up worse off."',
+                '"That is a wrist lock turned into something a lot less friendly."',
+                '"No wasted motion anywhere in that sequence."',
+                '"He is a step ahead and he is not hiding it any more."'],
+  hardcore:    ['"Oh, he is bleeding hard-way there."','"That was a shot heard in the back."',
+                '"Somebody is going to have to answer for that later."','"They are throwing bombs."',
+                '"This has become a fight, not a match."','"Neither one of these two is backing off an inch."',
+                '"The referee has stopped asking them to stop."',
+                '"There is nothing legal happening any more."',
+                '"That is not a wrestling move. That is just violence with a name on it."',
+                '"The chair did not survive that. Neither did his back."',
+                '"Somebody in the front row has covered their eyes."',
+                '"They have stopped wrestling and started settling something."',
+                '"That is going to be on the highlight reel and in his medical file."',
+                '"There is no referee in the world who can control this now."'],
+  showman:     ['"He is working them. Listen to that."','"He has the whole building in his hand."',
+                '"He is taking his time, and they love him for it."','"That is not offence. That is theatre."',
+                '"He is playing to the hard camera. Of course he is."','"The crowd did that on cue. On cue."',
+                '"He stopped the match to pose, and it worked."',
+                '"Some of this is wrestling. Some of this is showing off."',
+                '"He has stopped to soak it in and the place is going with him."',
+                '"That is pure showmanship and every single person is buying it."',
+                '"He is milking this for everything it is worth. Good for him."',
+                '"He has not thrown a punch in thirty seconds and they are louder than ever."',
+                '"That is a man who knows exactly which camera is live."',
+                '"Half the building hates that and the other half is copying it."'],
 };
 const COLOR_PHASE={
-  shine:   ['"Beautiful chain wrestling to open."','"You can feel the energy in this building."','"He is playing to them, and they love it."'],
-  heat:    ['"Now the cutoff. Beautifully timed."','"The champ is working the leg. That is smart wrestling."','"You feel the mood shift in the room."'],
-  stretch: ['"Business is picking up."','"The finish stretch. Anything can happen."','"Both wrestlers are pulling out everything they have."'],
-  finish:  ['"He is going for it here."','"This could be it."','"He is going home."'],
+  feel:    ['"They are feeling each other out."','"Nobody wants to make the first mistake."',
+            '"Collar and elbow to start. Very old school."','"Early, and both of them are still measuring."',
+            '"This is the part where you learn what you are dealing with."',
+                '"Feeling out process. Neither one has committed yet."',
+                '"Two wrestlers deciding what kind of match this is going to be."',
+                '"A clean break in the corner. That will not last."',
+                '"They have wrestled before. You can tell by how carefully they are starting."',
+                '"Nothing has happened yet and I cannot look away."'],
+  shine:   ['"Beautiful chain wrestling to open."','"You can feel the energy in this building."',
+            '"He is playing to them, and they love it."','"Everything is landing for him right now."',
+            '"This is his stretch, and he knows it."',
+                '"He is in complete control and he has not broken sweat."',
+                '"One move into the next into the next. They cannot get a foothold."',
+                '"The crowd found their man early tonight."',
+                '"This is the part of the match he was looking forward to."',
+                '"Everything he touches is working."'],
+  heat:    ['"Now the cutoff. Beautifully timed."','"The champ is working the leg. That is smart wrestling."',
+            '"You feel the mood shift in the room."','"He has slowed this right down, and that is deliberate."',
+            '"The crowd has gone quiet. That is by design."',
+                '"He has taken over, and he is taking his time about it."',
+                '"Grounded. Slowed down. Exactly where he wants this."',
+                '"This is the long stretch. This is where matches are won."',
+                '"He keeps going back to the same body part and the crowd hates it."',
+                '"You can feel them willing him to make the tag, or the move, or anything."'],
+  come:    ['"Wait. Wait. He is getting up."','"The building just stood up."',
+            '"He is firing back with nothing left to fire with."','"This is the one they came for."',
+            '"He would not stay down. He would not stay down."',
+                '"Here he comes. HERE HE COMES."',
+                '"He has found something and this place has found it with him."',
+                '"Everything he has been taking for ten minutes is coming back at once."',
+                '"They are on their feet and I do not think they are sitting down again."',
+                '"You cannot teach this. This is just a person refusing."'],
+  stretch: ['"Business is picking up."','"The finish stretch. Anything can happen."',
+            '"Both of them are pulling out everything they have."','"He is going for it here."',
+            '"This could be it."','"He is going home."',
+                '"Anything ends this now. Anything at all."',
+                '"They are trading and neither one is blocking any more."',
+                '"Somebody is about to do something they cannot take back."',
+                '"Every near-fall from here is the last one until it is not."',
+                '"This is what you paid for. Both of them know it."'],
 };
+let COMM_SAID={};                 // which colour lines have been used lately
 function commLine(cat, phase){
   if(!G.prefs||!G.prefs.commentary){ G.prefs=G.prefs||{}; if(G.prefs.commentary===undefined) G.prefs.commentary=true; }
   if(G.prefs.commentary===false) return;
   const bank = cat && COLOR_LINES[cat] ? COLOR_LINES[cat]
              : phase && COLOR_PHASE[phase] ? COLOR_PHASE[phase] : null;
   if(!bank) return;
-  const line = bank[Math.floor(rnd()*bank.length)];
+  /* Do not say the same thing twice. The promo system already tracks what it
+     has used and hashes the wording so two phases of one promo do not repeat;
+     commentary picked uniformly from a bank with no memory at all, so with a
+     pool this size a repeat inside a single match was closer to certain than
+     not. Exhaust the bank, then start it over.
+
+     The memory belongs to the commentary system rather than to MS, for two
+     reasons: it then also holds across consecutive matches, and it can be
+     driven without standing up a whole fight, which is what lets the suite
+     prove it works instead of asserting on zero draws. */
+  let pool = bank.filter(l=>!COMM_SAID[l]);
+  if(!pool.length){ bank.forEach(l=>{ delete COMM_SAID[l]; }); pool = bank; }
+  const line = pool[Math.floor(rnd()*pool.length)];
+  COMM_SAID[line]=1;
   const el = $('fLog'); if(!el) return;
   const d = document.createElement('div');
   d.style.color = '#c8b273';
@@ -9025,6 +9167,10 @@ const OPP_MOVES_BASE=[
   {name:'a back elbow',cat:'strike'},    {name:'a knife-edge chop',cat:'strike'},
   {name:'a running boot',cat:'runner'},  {name:'a clothesline',cat:'runner'},
   {name:'a snapmare',cat:'technical'},   {name:'a scoop slam',cat:'slam'},
+  {name:'a short-arm clothesline',cat:'runner'}, {name:'a body slam',cat:'slam'},
+  {name:'a shoulder block',cat:'runner'},{name:'a knee to the midsection',cat:'strike'},
+  {name:'an arm drag',cat:'technical'},  {name:'a hip toss',cat:'technical'},
+  {name:'a forearm to the jaw',cat:'strike'}, {name:'a stomp to the chest',cat:'strike'},
 ];
 const OPP_MOVES_BY_STYLE={
   brawler:[
@@ -9033,8 +9179,18 @@ const OPP_MOVES_BY_STYLE={
     {name:'a discus lariat',cat:'runner'},{name:'a running knee',cat:'runner'},
     {name:'a chair shot',cat:'hardcore'},{name:'a rake to the eyes',cat:'strike'},
     {name:'a headbutt',cat:'strike'},{name:'a chest kick',cat:'strike'},
+    {name:'a jumping knee strike',cat:'strike'},{name:'a back fist',cat:'strike'},
+    {name:'a roaring elbow',cat:'strike'},{name:'a low kick to the thigh',cat:'strike'},
+    {name:'a running uppercut',cat:'runner'},{name:'a lariat in the corner',cat:'runner'},
+    {name:'a boot to the face',cat:'strike'},{name:'a knee on the apron',cat:'strike'},
+    {name:'a trash can lid',cat:'hardcore'},{name:'a closed fist behind the referee',cat:'strike'},
   ],
   powerhouse:[
+    {name:'a military press drop',cat:'slam'},{name:'a gutwrench suplex',cat:'suplex'},
+    {name:'a corner avalanche',cat:'slam'},{name:'a one-armed slam',cat:'slam'},
+    {name:'a tilt-a-whirl backbreaker',cat:'slam'},{name:'a double underhook suplex',cat:'suplex'},
+    {name:'a running powerslam',cat:'slam'},{name:'a bearhug into a throw',cat:'slam'},
+    {name:'a pendulum backbreaker',cat:'slam'},{name:'an overhead belly-to-belly',cat:'suplex'},
     {name:'a spinebuster',cat:'slam'},{name:'a fallaway slam',cat:'slam'},
     {name:'a delayed vertical suplex',cat:'suplex'},{name:'a belly-to-belly',cat:'suplex'},
     {name:'a snap powerslam',cat:'slam'},{name:'a chokeslam',cat:'slam'},
@@ -9048,6 +9204,11 @@ const OPP_MOVES_BY_STYLE={
     {name:'a triangle choke',cat:'submission'},{name:'a wrist lock',cat:'submission'},
     {name:'a chop block',cat:'technical'},{name:'a rear naked choke',cat:'submission'},
     {name:'a headlock takedown',cat:'submission'},{name:'a dragon screw',cat:'technical'},
+    {name:'a single leg crab',cat:'submission'},{name:'a knee bar',cat:'submission'},
+    {name:'a cravate',cat:'submission'},{name:'an abdominal stretch',cat:'submission'},
+    {name:'a northern lights suplex',cat:'suplex'},{name:'a butterfly lock',cat:'submission'},
+    {name:'a drop toe hold into a hold',cat:'technical'},{name:'a bow and arrow',cat:'submission'},
+    {name:'a grounded headscissors',cat:'submission'},{name:'a stepover toe hold',cat:'submission'},
   ],
   highflyer:[
     {name:'a diving elbow drop',cat:'aerial'},{name:'a springboard dropkick',cat:'aerial'},
@@ -9055,12 +9216,22 @@ const OPP_MOVES_BY_STYLE={
     {name:'a suicide dive',cat:'aerial'},{name:'a corkscrew plancha',cat:'aerial'},
     {name:'a top-rope crossbody',cat:'aerial'},{name:'a springboard elbow',cat:'aerial'},
     {name:'a running dropkick',cat:'runner'},{name:'a leg lariat',cat:'runner'},
+    {name:'a tope con giro',cat:'aerial'},{name:'a missile dropkick',cat:'aerial'},
+    {name:'a shooting star press',cat:'aerial'},{name:'a springboard cutter',cat:'aerial'},
+    {name:'a senton off the top',cat:'aerial'},{name:'an asai moonsault',cat:'aerial'},
+    {name:'a handspring back elbow',cat:'aerial'},{name:'a slingshot senton',cat:'aerial'},
+    {name:'a dive through the ropes',cat:'aerial'},{name:'a headscissors takeover',cat:'aerial'},
   ],
   showman:[
     {name:'a strut and a slap',cat:'strike'},{name:'a stalling suplex',cat:'suplex'},
     {name:'a hip toss with the pose',cat:'technical'},{name:'a jumping fist drop',cat:'aerial'},
     {name:'a piece of business',cat:'showman'},{name:'a chinlock and a wink',cat:'submission'},
     {name:'a rope-shake big boot',cat:'strike'},{name:'a cover and a wave',cat:'showman'},
+    {name:'a theatrical knee drop',cat:'aerial'},{name:'a slow-motion elbow',cat:'strike'},
+    {name:'a pose on the middle rope',cat:'showman'},{name:'a chop with a flourish',cat:'strike'},
+    {name:'a mocking headlock',cat:'submission'},{name:'a bow to the hard camera',cat:'showman'},
+    {name:'an atomic drop and a point',cat:'slam'},{name:'a strutting elbow drop',cat:'aerial'},
+    {name:'a playing-to-the-back suplex',cat:'suplex'},{name:'a taunt into a boot',cat:'strike'},
   ],
 };
 // legacy alias used elsewhere; the flattened union covers stipulation fallbacks
@@ -9166,6 +9337,108 @@ const MID_EXCHANGES = [
       { name:'"Then beat me."', desc:'Cold, quiet, straight back at them.', p:0.80, eff:{mom:+10, q:+8, heat:+8, react:true} },
       { name:'Break character and grin', desc:'Let them see you enjoying it. Disarming.', p:0.74, eff:{q:+10, respect:+10, react:true} },
     ]},
+  /* Seven more, each gated on a DIFFERENT state, so the one that fires is about
+     the match you are actually having rather than a random line. Three of them
+     could only ever be about this match: a limb you have spent ten minutes on,
+     blood, a belt. */
+  { id:'mid_limb', when:(ms)=>{ const w=worstLimb(ms.me); return !!(w && ms.me.limb[w]>=52); },
+    line:(ch)=>voiced(ch,{
+      brash:`"I found it. Everybody watching found it. Say goodnight."`,
+      cold:`"It goes in about ninety seconds. I have done the arithmetic."`,
+      warm:`"I am going to keep going there. You know I have to. I am sorry."`,
+      unhinged:`"I can HEAR it. Can you hear it? Listen."`,
+      pro:`"That joint is done. Protect it or I take it."`,
+      bitter:`"Somebody did this to me once. Nobody stopped it then either."`,
+    }),
+    opts:(ch)=>[
+      { name:'Hide the limp', desc:'Sell nothing. Give them no target.', p:0.62, eff:{q:+9, mom:+8, cond:-4} },
+      { name:'Make them pay for it', desc:'One good shot, right now, while they are admiring their work.', p:0.58, eff:{mom:+20, q:+6, heat:+10} },
+      { name:'Let them have it', desc:'Give them the limb. Bank the sympathy.', p:0.86, eff:{q:+12, react:true, mom:-6} },
+    ]},
+  { id:'mid_blood', when:(ms)=>!!(ms.blood_me || ms.blood_opp),
+    line:(ch)=>voiced(ch,{
+      brash:`"Look at the front row. They came to see exactly this."`,
+      cold:`"You are wearing it now. That tends to change how people wrestle."`,
+      warm:`"That is enough of that. Do you want to go home?"`,
+      unhinged:`"THERE it is. That is the good part. That is the whole point."`,
+      pro:`"Keep it out of your eyes. Work off the other side."`,
+      bitter:`"They will put this on the poster and pay you nothing extra for it."`,
+    }),
+    opts:(ch)=>[
+      { name:'Wear it. Keep coming.', desc:'Do not wipe it. Walk straight through them.', p:0.70, eff:{q:+14, react:true, mom:+12, cond:-4} },
+      { name:'Point at it and smile', desc:'Show the hard camera. Heel move, and it works.', p:0.64, eff:{heat:+22, q:+8, mom:+8} },
+      { name:'Call for the finish', desc:'Nobody needs to see any more of this.', p:0.72, eff:{mom:+16, q:+4, respect:+8} },
+    ]},
+  { id:'mid_title', when:(ms)=>ms.o && (ms.o.stakes==='title'||ms.o.stakes==='defense'),
+    line:(ch)=>voiced(ch,{
+      brash:`"That belt has been on the wrong shoulder for months."`,
+      cold:`"It is an object. I want it because of what it does to the schedule."`,
+      warm:`"Whoever leaves with it, we gave them a real one. Agreed?"`,
+      unhinged:`"I do not even want to WEAR it. I want to take it off you."`,
+      pro:`"Title matches are won in the last four minutes. Pace yourself."`,
+      bitter:`"They put it on you in eighteen months. I waited eleven years."`,
+    }),
+    opts:(ch)=>[
+      { name:'"It is staying where it is."', desc:'Flat. Certain. No performance.', p:0.78, eff:{mom:+12, q:+8, react:true} },
+      { name:'Grab the belt and hold it up', desc:'Right in front of them, mid-match.', p:0.60, eff:{heat:+24, q:+10, mom:+10} },
+      { name:'Say nothing. Go up a gear.', desc:'Answer it in the ring instead.', p:0.84, eff:{mom:+14, q:+6, cond:-3} },
+    ]},
+  { id:'mid_hot', when:(ms)=>ms.quality>=70 && ms.nearFalls>=2,
+    line:(ch)=>voiced(ch,{
+      brash:`"Hear that? That is for ME. Some of it is for you. Most of it is for me."`,
+      cold:`"They are invested now. That makes the finish worth more. Do not waste it."`,
+      warm:`"Listen to them. This is the reason. This right here."`,
+      unhinged:`"MORE. Give them more. I do not care what it costs either of us."`,
+      pro:`"We have them. Slow the next one down and they will come further."`,
+      bitter:`"Remember this noise. It is the only thing in this business they cannot take back."`,
+    }),
+    opts:(ch)=>[
+      { name:'Feed the room', desc:'Hold the moment. Let it build.', p:0.80, eff:{q:+16, react:true, mom:+6} },
+      { name:'Go straight to the next one', desc:'Do not let them breathe.', p:0.66, eff:{mom:+18, q:+10, cond:-5} },
+      { name:'Point at them, then at the crowd', desc:'Share it. Costs you nothing, buys a lot.', p:0.88, eff:{q:+8, respect:+14, react:true} },
+    ]},
+  { id:'mid_flat', when:(ms)=>ms.quality<44 && ms.beat>=7,
+    line:(ch)=>voiced(ch,{
+      brash:`"They are sitting on their hands. That is on you, not me."`,
+      cold:`"This is not working. Change something or I will."`,
+      warm:`"Hey. Look at me. Let us pick it up together, right now."`,
+      unhinged:`"Boring. BORING. Make me feel something or I will make you."`,
+      pro:`"We are out of sync. Take the lead and I will follow you."`,
+      bitter:`"Nobody out there cares. They stopped caring about me years ago."`,
+    }),
+    opts:(ch)=>[
+      { name:'Call an audible', desc:'Throw the plan out and lead.', p:0.64, eff:{q:+18, mom:+10, cond:-4} },
+      { name:'Go somewhere it hurts', desc:'Wake them up the ugly way.', p:0.70, eff:{q:+10, heat:+16, mom:+12} },
+      { name:'Reset and slow down', desc:'Stop rushing. Build one thing properly.', p:0.86, eff:{q:+12, respect:+8} },
+    ]},
+  { id:'mid_late', when:(ms)=>ms.phase>=4 && ms.clock>=420,
+    line:(ch)=>voiced(ch,{
+      brash:`"You are blowing up. I can hear it from here."`,
+      cold:`"Your breathing changed four minutes ago. I have been waiting."`,
+      warm:`"Nearly there. Whatever happens, we go out on our feet."`,
+      unhinged:`"I never get tired. I get HUNGRY."`,
+      pro:`"Last stretch. Do not get clever now."`,
+      bitter:`"Twenty years of this and it still gets to the same place."`,
+    }),
+    opts:(ch)=>[
+      { name:'Empty the tank', desc:'Everything left, all at once.', p:0.58, eff:{mom:+24, q:+14, cond:-9} },
+      { name:'Steal a breath', desc:'Buy five seconds. Nobody at home notices.', p:0.88, eff:{cond:+6, mom:+4} },
+      { name:'Bait the big one', desc:'Let them go for it and be ready.', p:0.62, eff:{mom:+18, q:+12} },
+    ]},
+  { id:'mid_back', when:(ms)=>ms.mom>18 && ms.me.hp<52,
+    line:(ch)=>voiced(ch,{
+      brash:`"Oh, now you show up? Where was this twenty minutes ago?"`,
+      cold:`"A comeback is just a delay. I have accounted for it."`,
+      warm:`"There you are. THAT is what I came here for."`,
+      unhinged:`"YES. Get up. Get up so I can put you back down."`,
+      pro:`"Do not rush the comeback. You will run out before the finish."`,
+      bitter:`"They love this bit. They never loved it when I did it."`,
+    }),
+    opts:(ch)=>[
+      { name:'Ride the noise', desc:'Let the building carry you.', p:0.82, eff:{mom:+16, q:+12, react:true} },
+      { name:'One big shot, now', desc:'Cash the whole comeback on a single spot.', p:0.56, eff:{mom:+26, q:+16, cond:-6} },
+      { name:'Walk them down', desc:'No hurry. Let them see it coming.', p:0.76, eff:{q:+14, heat:+10, mom:+8} },
+    ]},
 ];
 async function midMatchExchange(){
   if(MS._exchanged || MS.ended) return;
@@ -9236,6 +9509,7 @@ async function startFight(o){
        // in a face-vs-heel match the babyface shines and the heel cuts him off
        shineMe: (meFace&&!oppFace) ? true : (!meFace&&oppFace) ? false : rnd()<0.5 };
   MS.pinned = window.RTR_FORCE || null;    // the one beat this match is meant to prove
+  COMM_SAID={};                            // the announcers start the night fresh
   MS.opp.id = o.oppId;
   MS.opp.look = oc0 ? oc0.look : oppLook(o.oppId, o.oppName);
   // THE THIRD BODY. MS.opp is whoever is in the ring with you right now and
@@ -9321,9 +9595,7 @@ async function startFight(o){
   await sleep(240);
   const ch=charById(o.oppId), r=ch?rel(ch.id):null;
   if(ch){
-    const line = (r&&r.respect>=55&&ch.lines.respect) ? ch.lines.respect
-               : ch.lines.taunt[Math.floor(rnd()*ch.lines.taunt.length)];
-    const say = Array.isArray(line)? line[0] : line;
+    const say = saysLine(ch, (r&&r.respect>=55) ? 'respect' : 'taunt', 'Let us go.');
     fLog(`<b>${ch.name}</b> <span class="hint">(${ch.nick})</span>: <span class="say">"${say}"</span>`);
     if(r&&r.heat>=45) fLog(`<span class="bad">There is real bad blood here: ${r.matches} previous meeting${r.matches!==1?'s':''}.</span>`);
     await sleep(700);
@@ -10051,6 +10323,27 @@ async function submissionAttempt(byMe, mvName){
      and the fist closes. It is the pin count of submissions, and this hold had
      no equivalent: it either ended or it did not. Only when the finish is
      genuinely live, or the drama is free and means nothing. */
+  /* THE ROPE BREAK, ON A HOLD. Reaching the bottom rope breaks a submission
+     the same way a foot on it kills a three count, and it is the same beat:
+     the crowd has decided the match is over and then it is not. This only
+     existed on the pin path, so a match that went to a hold had no version of
+     it. A stipulation with no disqualification has no rope breaks either. */
+  if(rulesAllowSub && !MS.ropeBreak && MS.phase>=3 && !stipRules(MS.o).noDQ && pTap>0.3
+     && (pinnedIs('ropebreak') || rnd()<0.14)){
+    MS.ropeBreak=true; trace('ropebreak');
+    poseSet('ref','refNo'); sfx('crowdRise');
+    fmv(D,{rot:byMe?18:-18},180); await sleep(200);
+    burst(atX(D),'ROPE BREAK');
+    await callout('HE GOT THE ROPES!');
+    fLog(byMe
+      ? `<span class="bad">${MS.opp.name} drags a hand onto the bottom rope. The referee makes you break it.</span>`
+      : `<span class="hi">You get a hand on the bottom rope. The hold has to break.</span>`);
+    MS.nearFalls++; MS.quality+=7; MS.big++;
+    MS.mom=clamp(MS.mom+(byMe?-12:12),-100,100); setMom();
+    $('arena').classList.remove('tense');
+    refDrift(); await settle(300);
+    return false;
+  }
   const willTap = rulesAllowSub && MS.phase>=3 && rnd()<pTap;
   if(rulesAllowSub && MS.phase>=3 && (pTap>0.25 || willTap)){
     $('arena').classList.add('tense');
@@ -10599,8 +10892,7 @@ async function endFight(iWon){
   const pc=charById(MS.o.oppId);
   if(pc){
     const pr=rel(pc.id);
-    const pool = (pr.respect>=50&&pc.lines.respect)? pc.lines.respect : (iWon?pc.lines.lose:pc.lines.win);
-    const say = Array.isArray(pool)? pool[Math.floor(rnd()*pool.length)] : pool;
+    const say = saysLine(pc, (pr.respect>=50) ? 'respect' : (iWon?'lose':'win'), 'Good match.');
     fLog(`<b>${pc.name}</b>: <span class="say">"${say}"</span>`);
   }
   await sleep(700);
@@ -11629,26 +11921,123 @@ function leaveResult(){
     showDirtSheet(lr.o, lr.res, after); return; }
   go('career');
 }
+/* THE MORNING AFTER.
+   Five pundits with five leans, and the nights that MATTER used to return one
+   sentence each: winning your first world title read the same way the second
+   and third time, word for word. The common nights already rotated. The
+   memorable ones now do too, and every branch is written per lean, because
+   "Dave Kesler the newsletter man" and "Mickey Brandt who shouts" filing the
+   identical headline is the tell that there is one writer behind both. */
 function dirtHeadline(o,res,s,p){
   const me=G.w.name, opp=o.oppName, q=res.quality;
   const win=res.win===true, loss=res.win===false;
-  const title=o.stakes==='title'||o.stakes==='defense';
-  const by=p.lean;
-  if(res.retainedDirty) return `${res.retainedDirty==='disqualification'?'DQ':'Count-out'} finish. Belt stays put. Nobody is happy.`;
-  if(title&&win&&o.stakes==='title') return by==='hot'?`${me.toUpperCase()} WINS THE BELT. DID YOU SEE THAT?`:`New champion. ${me} takes the belt off ${opp}.`;
-  if(o.stakes==='defense'&&loss) return by==='cynic'?`Reign over. ${opp} was better, and it was not close.`:`${opp} ends the reign.`;
-  if(res.pinnedChamp) return `${me} pins the champion. Somebody book the title match.`;
-  if(s>=4.5) return by==='fan'?`I am still shaking. ${me} vs ${opp}. Watch it twice.`:`${me} and ${opp} tore the house down.`;
-  if(s>=3.5) return by==='cynic'?`Fine. That was good. Do not let it go to your heads.`:`${me} and ${opp} had the match of the night.`;
-  if(q<=35) return by==='hot'?`WHAT WAS THAT.`:by==='cynic'?`The business died a little more tonight.`:`${me} and ${opp} never got out of first gear.`;
-  // the common nights rotate through a few lines each, so eight weeks of
-  // openers do not read as the same sentence eight times
-  const rot=(arr)=>arr[((G.car.year*WEEKS_PER_YEAR+G.car.week)+arr.length)%arr.length];
-  if(win&&o.card==='Opener') return rot([`${me} wins the opener. Warmed the room up nicely.`,`Opener: ${me} over ${opp}. A good ten minutes.`,`${me} sends the early crowd home happy. ${opp} did the job.`,`${me} opens with a win. The office will have noticed the near-falls.`]);
-  if(win) return rot([by==='analyst'?`${me} goes over ${opp}. Quietly efficient.`:`${me} beats ${opp}.`,`${me} over ${opp}, clean. Nothing to argue with.`,`Another one for ${me}. ${opp} is going to want that back.`]);
-  if(loss&&q>=62) return rot([by==='analyst'?`${me} loses, and comes out of it looking better than the winner.`:`${opp} takes it. ${me} took the whole match to lose it.`,`${opp} wins. ${me} was the story of the match anyway.`,`A loss for ${me} that reads like a win on tape.`]);
-  if(loss) return rot([`${opp} over ${me}. Not much to say.`,`${opp} beats ${me}. Forgettable, and that is the problem.`,`${me} drops one to ${opp}. The room did not mind either way.`,`${opp} gets the fall. ${me} needs a better night than that.`]);
-  return `${me} and ${opp} wrestled to a draw.`;
+  const by=(p&&p.lean)||'fair';
+  // Rotate on the WEEK, so the same branch two weeks running reads differently
+  // and a replayed week does not shuffle under the player.
+  const rot=(arr)=>arr[(((G.car.year*WEEKS_PER_YEAR+G.car.week)|0)+arr.length)%arr.length];
+  // pick(map) takes this pundit's version, or the shared one
+  const pick=(map)=>rot(map[by]||map.any);
+
+  if(res.retainedDirty) return pick({
+    hot:[`${res.retainedDirty==='disqualification'?'A DQ':'A COUNT-OUT'}. IN A TITLE MATCH. I AM FURIOUS.`,
+         `THEY DID NOT EVEN FINISH IT. Belt stays. Nobody is happy.`],
+    cynic:[`Of course it was a ${res.retainedDirty==='disqualification'?'disqualification':'count-out'}. Of course the belt stays.`,
+           `A finish designed by somebody who wanted to book a rematch. It worked, and it was cheap.`],
+    any:[`${res.retainedDirty==='disqualification'?'DQ':'Count-out'} finish. Belt stays put. Nobody is happy.`,
+         `No clean finish, no title change. ${opp} keeps it on a technicality.`,
+         `The bell went for the wrong reason. The belt does not move.`]});
+
+  if(o.stakes==='title'&&win) return pick({
+    hot:[`${me.toUpperCase()} WINS THE BELT. DID YOU SEE THAT?`,
+         `NEW CHAMPION. NEW CHAMPION. I HAVE LOST MY VOICE.`,
+         `THEY DID IT. ${me.toUpperCase()} DID IT.`],
+    cynic:[`So ${me} is champion. Let us see how long the company stays interested.`,
+           `${me} takes the belt. The hard part starts on Monday.`],
+    analyst:[`Title change. ${me} over ${opp}, clean, and the booking has been pointing here for weeks.`,
+             `${me} wins the championship. Expect the programme to reset around them immediately.`],
+    fan:[`I have waited for this. ${me} is the champion and I am not okay.`,
+         `${me}. Champion. Say it out loud, it is better that way.`],
+    any:[`New champion. ${me} takes the belt off ${opp}.`,
+         `${me} is the new champion. ${opp} leaves with nothing.`,
+         `It is over. ${me} beat ${opp} for the title.`]});
+
+  if(o.stakes==='defense'&&loss) return pick({
+    cynic:[`Reign over. ${opp} was better, and it was not close.`,
+           `That is how a reign ends. Quietly, and to somebody who wanted it more.`],
+    hot:[`THE TITLE HAS CHANGED HANDS. ${opp.toUpperCase()} HAS DONE IT.`,
+         `IT IS OVER. ${me.toUpperCase()} HAS LOST THE BELT.`],
+    analyst:[`${opp} ends the reign. Worth noting how little the finish protected ${me}.`,
+             `Title change. ${opp} takes it off ${me}, and the division opens up.`],
+    any:[`${opp} ends the reign.`,
+         `${me} drops the belt to ${opp}.`,
+         `The reign is over. ${opp} is the champion.`]});
+
+  if(o.stakes==='defense'&&win) return pick({
+    hot:[`STILL THE CHAMPION. ${me.toUpperCase()} WOULD NOT STAY DOWN.`],
+    cynic:[`${me} retains. Nobody in that building thought otherwise.`,
+           `Another defence, another challenger who was never going to win.`],
+    any:[`${me} retains against ${opp}.`,
+         `Defence made. ${me} keeps the belt.`,
+         `${opp} came close enough to be worth a rematch. ${me} still has it.`]});
+
+  if(res.pinnedChamp) return pick({
+    hot:[`${me.toUpperCase()} PINNED THE CHAMPION. BOOK IT. BOOK IT NOW.`],
+    analyst:[`${me} pins the champion in a non-title match. That is the whole angle written for you.`],
+    any:[`${me} pins the champion. Somebody book the title match.`,
+         `The champion just got beaten by ${me}. Non-title, and it does not matter.`]});
+
+  if(s>=4.5) return pick({
+    fan:[`I am still shaking. ${me} vs ${opp}. Watch it twice.`,
+         `Whatever you are doing, stop, and go and watch ${me} and ${opp}.`],
+    hot:[`MATCH OF THE YEAR. I AM CALLING IT IN SEPTEMBER.`,
+         `WHAT DID I JUST WATCH. WHAT DID THOSE TWO JUST DO.`],
+    cynic:[`I did not want to like it. I liked it. ${me} and ${opp} were outstanding.`],
+    analyst:[`${me} and ${opp} went ${res.time||'the distance'} and there is not a wasted minute in it.`],
+    any:[`${me} and ${opp} tore the house down.`,
+         `${me} and ${opp} had the kind of match people bring up years later.`]});
+
+  if(s>=3.5) return pick({
+    cynic:[`Fine. That was good. Do not let it go to your heads.`,
+           `Good match. I am as surprised as you are.`],
+    any:[`${me} and ${opp} had the match of the night.`,
+         `${me} and ${opp} were comfortably the best thing on the card.`,
+         `The best match on the show, and it was not close.`]});
+
+  if(q<=35) return pick({
+    hot:[`WHAT WAS THAT.`, `NO. NO. WE ARE NOT DOING THIS.`],
+    cynic:[`The business died a little more tonight.`,
+           `Somebody got paid for that. I want them to think about it.`],
+    fan:[`I love this company and I did not enjoy that.`],
+    any:[`${me} and ${opp} never got out of first gear.`,
+         `${me} and ${opp} had a match. That is the kindest way to put it.`,
+         `Flat. The crowd sat on their hands and I do not blame them.`]});
+
+  if(win&&o.card==='Opener') return rot([
+    `${me} wins the opener. Warmed the room up nicely.`,
+    `Opener: ${me} over ${opp}. A good ten minutes.`,
+    `${me} sends the early crowd home happy.`,
+    `${me} opened the show and did the job it needed doing.`,
+    `First match, first win. ${me} over ${opp}.`]);
+  if(win) return rot([
+    by==='analyst'?`${me} goes over ${opp}. Quietly efficient.`:`${me} beats ${opp}.`,
+    `${me} over ${opp}, clean. Nothing to argue with.`,
+    `Another one for ${me}.`,
+    `${me} gets the win. ${opp} will be fine.`,
+    `${me} takes it. The right call, on the night.`]);
+  if(loss&&q>=62) return rot([
+    by==='analyst'?`${me} loses, and comes out of it looking better than the winner.`:`${opp} takes it. ${me} took the whole match to lose it.`,
+    `${opp} beat ${me} and had to earn every second of it.`,
+    `${me} lost. Nobody watching thought less of them for it.`,
+    `A loss that does ${me} no harm at all.`]);
+  if(loss) return rot([
+    `${opp} over ${me}. Not much to say.`,
+    `${opp} beats ${me}. Forgettable, and that is the problem.`,
+    `${me} drops one to ${opp}. The room did not mind either way.`,
+    `${opp} wins. ${me} was there.`]);
+  return rot([
+    `${me} and ${opp} wrestled to a draw.`,
+    `Nobody won. Nobody really lost either.`,
+    `A draw, and both of them looked annoyed about it.`]);
 }
 function showDirtSheet(o,res,onDone){
   const c=G.car;
@@ -13529,7 +13918,9 @@ const CHIP_BANK=[
     ]},
   {id:'ref_best_match',  tag:'ref', phase:['personal','meat'],
     when:c=>c.opp&&c.hist.best&&c.hist.best.q>=70,
-    fn:c=>`You and I put on a ${c.hist.best.q}-rated match in ${c.venue.promoShort}, and we both know it. We could do it again tonight.`},
+    fn:c=>[`You and I put on a ${c.hist.best.q}-rated match in ${c.venue.promoShort}, and we both know it. We could do it again tonight.`,
+           `Go and find our match from ${c.venue.promoShort}. ${c.hist.best.q} out of a hundred. Neither of us has been that good since.`,
+           `There are maybe four people in this company who could have had that match with me. ${c.opp.name} is one of them. That is the problem.`]},
   {id:'ref_series',      tag:'ref', phase:['hook','meat'],
     when:c=>c.opp&&c.hist.count>=2,
     fn:c=>[
@@ -13569,7 +13960,9 @@ const CHIP_BANK=[
     ]},
   {id:'ref_belt_target', tag:'ref', phase:['hook','thesis','close'],
     when:c=>c.opp&&c.opp.holdsBelt,
-    fn:c=>`${c.opp.name} carries a title I know I can win. Everyone in this building can see it.`},
+    fn:c=>[`${c.opp.name} carries a title I know I can win. Everyone in this building can see it.`,
+           `There is a belt in this match. I have looked at it for months. Tonight I take it off ${c.opp.name}.`,
+           `${c.opp.name} has held that thing long enough to get comfortable. That is usually when it changes hands.`]},
   {id:'ref_feud',        tag:'ref', phase:['thesis','meat','personal'],
     when:c=>c.feud,
     fn:c=>[
@@ -13590,10 +13983,14 @@ const CHIP_BANK=[
     ]},
   {id:'ref_opp_veteran', tag:'ref', phase:['meat','personal'],
     when:c=>c.opp&&(c.opp.matches>=3||c.opp.overness>=70),
-    fn:c=>`${c.opp.name} has been in this business longer than most people in this building. That will not save them tonight.`},
+    fn:c=>[`${c.opp.name} has been in this business longer than most people in this building. That will not save them tonight.`,
+           `Experience is a real thing. So are the miles. ${c.opp.name} has both, and only one of them helps.`,
+           `They will tell you ${c.opp.name} has seen it all. They have not seen me.`]},
   {id:'ref_opp_rookie',  tag:'ref', phase:['meat','personal'],
     when:c=>c.opp&&c.opp.matches<=1&&c.opp.overness<=55,
-    fn:c=>`${c.opp.name} is new here. Somebody has to be the one to welcome them properly.`},
+    fn:c=>[`${c.opp.name} is new here. Somebody has to be the one to welcome them properly.`,
+           `Everybody gets a first real night in this business. ${c.opp.name} is having theirs with me.`,
+           `They are excited. They should be. It is a big night for them.`]},
 
   // ---------- CONCESSIONS: credit is what makes the punch land ----------
   {id:'conc_respect',    tag:'concession', phase:['personal','meat'],
@@ -13604,13 +14001,19 @@ const CHIP_BANK=[
     ]},
   {id:'conc_worked',     tag:'concession', phase:['personal'],
     when:c=>c.opp,
-    fn:c=>`${c.opp.name} worked for this too. This is not about who cares more.`},
+    fn:c=>[`${c.opp.name} worked for this too. This is not about who cares more.`,
+           `I am not going to stand here and pretend ${c.opp.name} does not want it. They do. So do I.`,
+           `We drove the same roads to get here. That is the only thing we have in common.`]},
   {id:'conc_belt',       tag:'concession', phase:['personal','meat'],
     when:c=>c.opp&&c.opp.holdsBelt,
-    fn:c=>`That belt on ${c.opp.name}'s shoulder was not gifted. I know exactly what it costs.`},
+    fn:c=>[`That belt on ${c.opp.name}'s shoulder was not gifted. I know exactly what it costs.`,
+           `Nobody hands one of those out. ${c.opp.name} paid for it, and I am about to send the invoice.`,
+           `I have never once said ${c.opp.name} did not earn that. I am saying the reign is over.`]},
   {id:'conc_locker',     tag:'concession', phase:['personal'],
     when:c=>c.opp&&c.opp.overness>=65,
-    fn:c=>`This locker room respects ${c.opp.name}. That is not a small thing to say around here.`},
+    fn:c=>[`This locker room respects ${c.opp.name}. That is not a small thing to say around here.`,
+           `Ask anybody in the back about ${c.opp.name}. You will not hear a bad word. I have tried.`,
+           `The room likes them. The room is going to have to get over it.`]},
 
   // ---------- BOASTS: about you ----------
   {id:'boast_iam',       tag:'boast', phase:['hook','thesis','meat'],
@@ -13714,13 +14117,19 @@ const CHIP_BANK=[
          `We are going to give this building the finish it paid for. I promise you that.`]},
   {id:'thr_title',       tag:'threat', phase:['close'],
     when:c=>c.opp&&c.opp.holdsBelt,
-    fn:c=>`I am walking out of this building with that belt. Bet on anything else.`},
+    fn:c=>[`I am walking out of this building with that belt. Bet on anything else.`,
+           `That title leaves with me tonight. Everything after that is detail.`,
+           `Look at it now, while it is still on them.`]},
   {id:'thr_run',         tag:'threat', phase:['close','meat'],
     when:c=>c.me.streak>=3||c.me.title,
-    fn:c=>`This does not stop tonight. I have got a run going and it does not stop for anybody.`},
+    fn:c=>[`This does not stop tonight. I have got a run going and it does not stop for anybody.`,
+           `Nobody has found the end of this yet. Plenty have looked.`,
+           `I am not slowing down for one booking. Ask the last four people.`]},
   {id:'thr_next',        tag:'threat', phase:['close'],
     when:c=>c.champion&&!c.champion.you,
-    fn:c=>`After tonight, ${c.champion.name}, I want the belt. Do not act surprised.`},
+    fn:c=>[`After tonight, ${c.champion.name}, I want the belt. Do not act surprised.`,
+           `${c.champion.name} is watching this on a monitor. Good. Keep watching.`,
+           `When I am done here, there is exactly one name left on my list, and ${c.champion.name} knows it.`]},
 
   // ---------- CALLBACKS: the repeatable phrase, only in Close ----------
   {id:'cb_signature',    tag:'callback', phase:['close'],
@@ -13740,13 +14149,19 @@ const CHIP_BANK=[
     ]},
   {id:'tw_realtarget',   tag:'twist', phase:['personal','close'],
     when:c=>c.champion&&!c.champion.you&&(!c.opp||c.champion.name!==c.opp.name),
-    fn:c=>`The person I actually came for is standing backstage with a belt on their shoulder. ${c.champion.name}, I am coming.`},
+    fn:c=>[`The person I actually came for is standing backstage with a belt on their shoulder. ${c.champion.name}, I am coming.`,
+           `None of this is really about tonight. ${c.champion.name}, this is about you.`,
+           `Everybody in here thinks they know why I am angry. ${c.champion.name} knows.`]},
   {id:'tw_office',       tag:'twist', phase:['personal','meat'],
     when:c=>c.me.standing<=45,
-    fn:c=>`This company knows exactly who I am, and they have decided to test me for another year. Fine.`},
+    fn:c=>[`This company knows exactly who I am, and they have decided to test me for another year. Fine.`,
+           `They have my number. They have had it a while. They keep not dialling it.`,
+           `Another year of proving it. Alright. I have got another year in me.`]},
   {id:'tw_business',     tag:'twist', phase:['personal','close'],
     when:c=>true,
-    fn:c=>`Wrestling. That is what we are supposed to be doing here. Not politics, not favors. Wrestling. I still believe in it.`},
+    fn:c=>[`Wrestling. That is what we are supposed to be doing here. Not politics. Wrestling. I still believe in it.`,
+           `Strip all of it away and there is a ring and two people. That is the part I came for.`,
+           `I did not get into this for the meetings.`]},
 
   // ---------- CROWD WORK: face and heel grammar diverges here ----------
   {id:'crowd_thanks',    tag:'crowd', phase:['personal','close'],
@@ -13763,7 +14178,9 @@ const CHIP_BANK=[
     ]},
   {id:'crowd_challenge', tag:'crowd', phase:['personal'],
     when:c=>c.me.align!=='heel',
-    fn:c=>`If you want it, I want it. Make it loud enough that they cannot cut around it.`},
+    fn:c=>[`If you want it, I want it. Make it loud enough that they cannot cut around it.`,
+           `You decide what happens next in this company. You always have. So decide.`,
+           `I can hear you. I want the people in the back to hear you too.`]},
 
   // ---------- FIRST-MEETING chips ----------
   {id:'first_intro',      tag:'boast', phase:['hook','thesis'], stakes:['first'],
@@ -13858,7 +14275,9 @@ const CHIP_BANK=[
     ]},
   {id:'open_target',      tag:'threat', phase:['close'], stakes:['open_mic'],
     when:c=>c.champion&&!c.champion.you,
-    fn:c=>`${c.champion.name}, this is your notice. I will see you in this ring, in front of this building, with that title on the line.`},
+    fn:c=>[`${c.champion.name}, this is your notice. I will see you in this ring, in front of this building, with that title on the line.`,
+           `${c.champion.name}. Name the night. I will be there early.`,
+           `This is the part where I say the champion's name out loud so nobody can pretend they did not hear it. ${c.champion.name}.`]},
 
   // ---------- MAIN EVENT chips ----------
   {id:'me_deserved',      tag:'boast', phase:['hook','close'], stakes:['main_event'],
@@ -13929,16 +14348,36 @@ const CUT_BANK=[
       : (c.me.align==='heel' ? `${c.opp.name}. Something started between us and I want everybody to know I started it on purpose.` : `${c.opp.name}, you and I have a problem now. I did not go looking for it. I am not walking away from it either.`))
       : `Something started this week. I am on this microphone so nobody can pretend it did not.`},
   {id:'cut_st_open_meat', phase:['meat','thesis'], stakes:['stage_opening'], tags:['ref','boast'], hostile:-0.3, intensity:0.7,
-    line:c=>c.opp ? `Here is what ${c.opp.name} does not understand yet. I do not do this for a week. I do this until it is finished.` : `I do not start things for a week. I start them so they finish.`},
+    line:c=>c.opp ? [`Here is what ${c.opp.name} does not understand yet. I do not do this for a week. I do this until it is finished.`,
+                     `${c.opp.name} thinks this is a booking. It is not a booking. It is a thing I have decided to do.`,
+                     `I have been doing this long enough to know the difference between a bad night and a problem. ${c.opp.name} is a problem.`]
+                  : [`I do not start things for a week. I start them so they finish.`,
+                     `Whoever it turns out to be, they should know I do not get bored of things.`]},
   {id:'cut_st_open_close', phase:['close'], stakes:['stage_opening'], tags:['threat'], hostile:-0.5, intensity:0.8,
-    line:c=>c.opp ? (c.me.align==='heel' ? `${c.opp.name}, this is the last week you get to be surprised by me.` : `${c.opp.name}, find me. Any night. I will be the one who did not blink.`) : `Whoever it is: find me. I will be easy to find.`},
+    line:c=>c.opp ? (c.me.align==='heel'
+        ? [`${c.opp.name}, this is the last week you get to be surprised by me.`,
+           `Enjoy the part where you still think you know what I am going to do, ${c.opp.name}.`,
+           `${c.opp.name}. I am going to be the most inconvenient thing that has ever happened to you.`]
+        : [`${c.opp.name}, find me. Any night. I will be the one who did not blink.`,
+           `${c.opp.name}, I am not hard to find. I am the one who keeps turning up.`,
+           `You know where I am, ${c.opp.name}. I have not moved.`])
+      : [`Whoever it is: find me. I will be easy to find.`,
+         `I am not going anywhere. That is the entire message.`]},
 
   {id:'cut_st_esc_hook', phase:['hook'], stakes:['stage_escalation'], tags:['ref','threat'], hostile:-0.45, intensity:0.8,
     line:c=>c.opp ? `Week ${c.feud&&c.feud.weeks?c.feud.weeks:'two'} of ${c.opp.name} and me, and it is not business any more. Everybody back there knows it. Now you do too.` : `This has gone past business. I am fine with that.`},
   {id:'cut_st_esc_meat', phase:['meat'], stakes:['stage_escalation'], tags:['ref','question'], hostile:-0.35, intensity:0.8,
     line:c=>c.opp ? (c.hist.wins>c.hist.losses ? `${c.opp.name} keeps coming back after I keep beating them. Ask yourself why. Then ask what they think happens differently this time.` : `${c.opp.name} has beaten me. Fine. Ask them how many nights they slept afterwards. I know the answer, because I am in their head.`) : `Ask anybody back there what this is now. They will not answer. That is the answer.`},
   {id:'cut_st_esc_close', phase:['close'], stakes:['stage_escalation'], tags:['threat','callback'], hostile:-0.55, intensity:0.85,
-    line:c=>c.opp ? (c.me.align==='heel' ? `Next time I see ${c.opp.name} there will not be a referee close enough to matter.` : `${c.opp.name}, you have made this personal. Good. I am better when it is personal.`) : `Next time. Not a referee in the building close enough to matter.`},
+    line:c=>c.opp ? (c.me.align==='heel'
+        ? [`Next time I see ${c.opp.name} there will not be a referee close enough to matter.`,
+           `There is going to be a night with no bell on it, ${c.opp.name}. You will know it when it starts.`,
+           `${c.opp.name} keeps hiding behind the rules. The rules are not always going to be there.`]
+        : [`${c.opp.name}, you have made this personal. Good. I am better when it is personal.`,
+           `${c.opp.name} wanted this to be personal. It is. I hope that was the plan.`,
+           `You went past the job, ${c.opp.name}. Now so have I.`])
+      : [`Next time. Not a referee in the building close enough to matter.`,
+         `Somebody made this personal. I am not the one who has to be careful now.`]},
 
   {id:'cut_st_pers_hook', phase:['hook','personal'], stakes:['stage_personal'], tags:['ref','twist'], hostile:-0.3, intensity:0.9,
     line:c=>c.opp ? (c.events.attacked ? `${c.opp.name} put hands on me where there was no bell and no referee. Remember that, when you decide who to feel sorry for tonight.`
@@ -13948,7 +14387,11 @@ const CUT_BANK=[
   {id:'cut_st_pers_meat', phase:['meat','personal'], stakes:['stage_personal'], tags:['concession','threat'], hostile:-0.2, intensity:0.9,
     line:c=>c.opp ? (c.me.align==='heel' ? `I will say this once, and honestly: ${c.opp.name} is good. Good enough that hurting them will mean something.` : `I respect ${c.opp.name}. I want everybody to hear that. It changes nothing about what I have to do to them.`) : `Honestly: they are good. Good enough that this will mean something.`},
   {id:'cut_st_pers_close', phase:['close'], stakes:['stage_personal'], tags:['threat'], hostile:-0.6, intensity:0.95,
-    line:c=>c.opp ? `${c.opp.name}, one of us leaves this with something we cannot get back. I have made my peace with it being me. Have you?` : `One of us leaves this with something we cannot get back.`},
+    line:c=>c.opp ? [`${c.opp.name}, one of us leaves this with something we cannot get back. I have made my peace with it being me. Have you?`,
+                     `There is no version of this where we both walk out the same, ${c.opp.name}. I stopped looking for one.`,
+                     `${c.opp.name}, I have thought about what this costs. I am still here. That should worry you.`]
+                  : [`One of us leaves this with something we cannot get back.`,
+                     `I have thought about what this costs. I am still standing here.`]},
 
   {id:'cut_st_final_hook', phase:['hook'], stakes:['stage_final'], tags:['ref','callout'], hostile:-0.5, intensity:0.95,
     line:c=>c.opp ? (c.feud&&c.feud.kind==='title' ? `${c.opp.name}, the belt is on the line and so is everything I have said about you for ${c.feud.weeks||'these'} weeks. One of those two things is coming home with me.`
@@ -13962,9 +14405,17 @@ const CUT_BANK=[
   {id:'cut_st_post_hook', phase:['hook'], stakes:['stage_post'], tags:['ref','concession'], hostile:0.3, intensity:0.7,
     line:c=>c.opp ? (c.resolved&&c.resolved.resolution==='respect' ? `${c.opp.name} and I settled it ${c.resolved.weeks?c.resolved.weeks+' weeks ago':'recently'}. In the middle of the ring, with a handshake. I meant it then. I mean it now.` : `${c.opp.name} and I are done. Not settled. Done. There is a difference and I am not pretending otherwise.`) : `That one is finished. I am not going to pretend it is not.`},
   {id:'cut_st_post_meat', phase:['meat','personal'], stakes:['stage_post'], tags:['ref','twist'], hostile:0.1, intensity:0.75,
-    line:c=>c.opp ? `What ${c.opp.name} and I did out there made both of us. Anybody who watched it knows what I am capable of. Anybody who did not is about to find out.` : `What we did out there made both of us. Anybody who watched it knows.`},
+    line:c=>c.opp ? [`What ${c.opp.name} and I did out there made both of us. Anybody who watched it knows what I am capable of. Anybody who did not is about to find out.`,
+                     `People are still talking about ${c.opp.name} and me. They should be. Neither of us is the same after it.`,
+                     `I do not need to run ${c.opp.name} down. Go and watch what we did and then tell me who else here could have been in it.`]
+                  : [`What we did out there made both of us. Anybody who watched it knows.`,
+                     `That match is the only reference I need. Go and watch it.`]},
   {id:'cut_st_post_close', phase:['close'], stakes:['stage_post'], tags:['callback','threat'], hostile:-0.2, intensity:0.8,
-    line:c=>c.opp ? `So here is my problem, ${c.opp.name}. I know exactly what it took to finish with you. And I am looking around this room for the next one who thinks they can go there.` : `I know exactly what it took to finish that. I am looking around this room for the next one.`},
+    line:c=>c.opp ? [`So here is my problem, ${c.opp.name}. I know exactly what it took to finish with you. And I am looking around this room for the next one who thinks they can go there.`,
+                     `${c.opp.name} took everything I had. That is the bar now. Somebody in this building has to clear it.`,
+                     `I am not done. I am just out of ${c.opp.name}. Those are different problems.`]
+                  : [`I know exactly what it took to finish that. I am looking around this room for the next one.`,
+                     `That is the bar now. Somebody here has to clear it.`]},
 
   // ----- FIRST-MEETING cuts -----
   {id:'cut_first_open',   phase:['hook'],   stakes:['first'], tags:['boast','ref'],
@@ -13980,15 +14431,21 @@ const CUT_BANK=[
   {id:'cut_first_close',  phase:['close'],  stakes:['first'], tags:['threat','callback'],
     hostile:-0.55, intensity:0.85,
     line:c=>c.opp
-      ? `${c.opp.name}, welcome to the deep end. Nobody in this building is going to help you out of it, and I am the one holding your head under.`
-      : `Everybody has a first impression to make. This is mine. Get used to it. You are going to see a lot of it.`},
+      ? [`${c.opp.name}, welcome to the deep end. Nobody in this building is going to help you out of it, and I am the one holding your head under.`,
+         `${c.opp.name} has never been in a match with me. They are about to find out what that is like, in front of everybody.`,
+         `First time for ${c.opp.name} and me. I intend to make it memorable for exactly one of us.`]
+      : [`Everybody has a first impression to make. This is mine. Get used to it. You are going to see a lot of it.`,
+         `You do not know me yet. That is about to stop being true.`]},
 
   // ----- REMATCH cuts -----
   {id:'cut_re_open',      phase:['hook'],   stakes:['rematch','series'], tags:['ref','threat'],
     hostile:-0.35, intensity:0.8,
     line:c=>c.opp
-      ? `${c.opp.name} and I have unfinished business, and every one of you in this building knows exactly what it is. Do not pretend you came here for anything else tonight.`
-      : `We are back. Same ring, different chapter. If you were here last time, you already know why this matters.`},
+      ? [`${c.opp.name} and I have unfinished business, and every one of you in this building knows exactly what it is. Do not pretend you came here for anything else tonight.`,
+         `Nobody in here needs the recap. ${c.opp.name} and I have been doing this long enough that you all have an opinion.`,
+         `There is a thing between ${c.opp.name} and me that neither of us has been able to put down. Tonight we try again.`]
+      : [`We are back. Same ring, different chapter. If you were here last time, you already know why this matters.`,
+         `Same ring. Different chapter. You know why this one matters.`]},
   {id:'cut_re_learned',   phase:['meat'],   stakes:['rematch'], tags:['ref','boast'],
     hostile:-0.2, intensity:0.75,
     line:c=>c.opp
@@ -14002,8 +14459,11 @@ const CUT_BANK=[
   {id:'cut_meat_history', phase:['meat'],   tags:['ref','boast'],
     hostile:-0.2, intensity:0.8,
     line:c=>c.opp
-      ? `Look at both records. Look at what I have done this year and look at what ${c.opp.name} has done this year. If you are honest about what those two columns say, you already know how tonight ends.`
-      : `Wrestling has a way of settling debates. Every one of them. It always has. That is what tonight is for.`},
+      ? [`Look at both records. Look at what I have done this year and look at what ${c.opp.name} has done this year. If you are honest about what those two columns say, you already know how tonight ends.`,
+         `Put my year next to ${c.opp.name}'s year. One of those is an argument and one of those is a résumé.`,
+         `You can like ${c.opp.name}. Liking somebody has never once changed a result.`]
+      : [`Wrestling has a way of settling debates. Every one of them. It always has. That is what tonight is for.`,
+         `Everything gets settled in there eventually. That is the only thing I still trust about this business.`]},
 
   {id:'cut_personal_gut', phase:['personal'], tags:['twist','concession'],
     hostile:-0.05, intensity:0.85,
@@ -14035,8 +14495,11 @@ const CUT_BANK=[
   {id:'cut_feud_close',   phase:['close'],  stakes:['feud_end'], tags:['threat','callback'],
     hostile:-0.7, intensity:0.95,
     line:c=>c.opp
-      ? `${c.opp.name}. Look at me. Bell to bell tonight. No draws. No count-outs. One of us walks. It will be me.`
-      : `The bell is about to ring on this whole thing. I am ready. I have been ready for a month.`},
+      ? [`${c.opp.name}. Look at me. Bell to bell tonight. No draws. No count-outs. One of us walks. It will be me.`,
+         `No more talking after this, ${c.opp.name}. The next noise either of us makes is in that ring.`,
+         `Everything we have said for weeks gets settled in about twenty minutes, ${c.opp.name}. Finally.`]
+      : [`The bell is about to ring on this whole thing. I am ready. I have been ready for a month.`,
+         `No more build. No more talking. Just the bell.`]},
 
   // ----- TITLE CHASE cuts -----
   {id:'cut_chase_open',   phase:['hook'],   stakes:['title_chase','title_call'], tags:['boast','ref'],
@@ -14047,7 +14510,9 @@ const CUT_BANK=[
     ][c.me.streak>=3?1:0]},
   {id:'cut_chase_close',  phase:['close'],  stakes:['title_chase','title_call'], tags:['threat'],
     hostile:-0.4, intensity:0.9,
-    line:c=>`I am going to make it so uncomfortable to be the champion of this company that they call my name because it is easier than saying no. ${c.champion?c.champion.name:'Whoever is carrying it'} can hold that title as long as it takes me to get to them. It will not be very long.`},
+    line:c=>[`I am going to make it so uncomfortable to be the champion of this company that they call my name because it is easier than saying no. ${c.champion?c.champion.name:'Whoever is carrying it'} can hold that title as long as it takes me to get to them. It will not be very long.`,
+             `${c.champion?c.champion.name:'The champion'} is going to run out of people to defend against before I run out of patience.`,
+             `I am not asking for the shot any more. I am making it the cheapest way out of the problem I am about to become.`]},
 
   // ----- TITLE DEFENSE cuts -----
   {id:'cut_def_open',     phase:['hook'],   stakes:['title_defense'], tags:['boast','callback'],
@@ -14055,12 +14520,16 @@ const CUT_BANK=[
     line:c=>`I am the ${c.me.title||'champion of this company'}. I have been the ${c.me.title||'champion'} for ${c.me.defenses||'every one of those'} defences. This is not a segment where I explain what I am going to do to ${c.opp?c.opp.name:'the challenger'}. It is a segment where I remind you why nobody has been able to stop it yet.`},
   {id:'cut_def_close',    phase:['close'],  stakes:['title_defense'], tags:['threat','callback'],
     hostile:-0.35, intensity:0.9,
-    line:c=>`Same finish. Same result. Same champion walking out. Somebody wake me up when this locker room produces a challenger who is actually going to change the ending.`},
+    line:c=>[`Same finish. Same result. Same champion walking out. Somebody wake me up when this locker room produces a challenger who is actually going to change the ending.`,
+             `I have defended this against everybody they have got. I am running out of names and they are running out of ideas.`,
+             `You all keep turning up hoping tonight is the night. It is not. It has not been for a long time.`]},
 
   // ----- CHAMPIONSHIP-WIN-INCOMING cuts (title match) -----
   {id:'cut_title_open',   phase:['hook'],   stakes:['title_call'], tags:['boast','ref'],
     hostile:-0.1, intensity:0.9,
-    line:c=>`Every wrestler in this business tells themselves the same story. That the belt is coming. That the moment is coming. Most of them are lying to themselves. I am not. My moment is booked. It is on the card. It is tonight.`},
+    line:c=>[`Every wrestler in this business tells themselves the same story. That the belt is coming. That the moment is coming. Most of them are lying to themselves. I am not. My moment is booked. It is on the card. It is tonight.`,
+             `There is a version of me that waits another two years for this. I killed him. Tonight is the night.`,
+             `I have watched people walk out of this building with that belt and thought, that should be me. Tonight I stop thinking it.`]},
 
   // ----- OPEN-MIC cuts -----
   {id:'cut_open_call',    phase:['hook'],   stakes:['open_mic','callout'], tags:['boast','threat'],
@@ -14073,8 +14542,11 @@ const CUT_BANK=[
   {id:'cut_callout_open', phase:['hook'],   stakes:['callout'], tags:['boast','ref'],
     hostile:-0.4, intensity:0.85,
     line:c=>c.opp
-      ? `I did not come out here to have a nice conversation. I came out here to name ${c.opp.name}, because they have been avoiding me, and this microphone is the one thing they cannot walk away from.`
-      : `Somebody in this locker room is about to hear their name from this microphone. They have been earning it. Sit tight.`},
+      ? [`I did not come out here to have a nice conversation. I came out here to name ${c.opp.name}, because they have been avoiding me, and this microphone is the one thing they cannot walk away from.`,
+         `${c.opp.name} can ignore me in the corridor. They cannot ignore me while I am saying their name in front of this many people.`,
+         `I am going to keep saying ${c.opp.name} until somebody books it.`]
+      : [`Somebody in this locker room is about to hear their name from this microphone. They have been earning it. Sit tight.`,
+         `There is a name coming. Whoever it belongs to already knows.`]},
   {id:'cut_callout_close',phase:['close'],  stakes:['callout'], tags:['threat','callback'],
     hostile:-0.55, intensity:0.9,
     line:c=>c.opp
@@ -14084,14 +14556,20 @@ const CUT_BANK=[
   // ----- MAIN EVENT cuts -----
   {id:'cut_me_open',      phase:['hook'],   stakes:['main_event'], tags:['boast','crowd'],
     hostile:0, intensity:0.8,
-    line:c=>`${c.venue.promoShort}. Main event of the evening. You paid the ticket price for this specific hour of your night. So let us make it worth it.`},
+    line:c=>[`${c.venue.promoShort}. Main event of the evening. You paid the ticket price for this specific hour of your night. So let us make it worth it.`,
+             `${c.venue.promoShort}. Last match of the night. Everything before this was the warm-up and everybody in here knows it.`,
+             `You could be anywhere tonight. You are here, in ${c.venue.promoShort}, for this. I do not take that lightly.`]},
 
   // ----- GENERIC EVERGREEN cuts (any phase, any stakes) -----
   {id:'cut_ev_hook',      phase:['hook'],   tags:['boast','crowd'],
     hostile:-0.05, intensity:0.75,
     line:c=>c.me.align==='heel'
-      ? `Nobody in this building came to hear me be quiet. So let us not waste each other's time.`
-      : `Every one of you in this building. Thank you. Now let me tell you why I am standing here.`},
+      ? [`Nobody in this building came to hear me be quiet. So let us not waste each other's time.`,
+         `You can boo. I will wait. I have got all night and you have got jobs in the morning.`,
+         `I did not ask for the microphone. I took it. There is a difference and it matters.`]
+      : [`Every one of you in this building. Thank you. Now let me tell you why I am standing here.`,
+         `I am not going to keep you long. I just need to say one thing out loud where everybody can hear it.`,
+         `That noise you are making is the reason I get to stand here. I will not forget it.`]},
   {id:'cut_ev_close',     phase:['close'],  tags:['callback','threat'],
     hostile:-0.25, intensity:0.85,
     line:c=>c.me.gimmick
@@ -14102,6 +14580,20 @@ const CUT_BANK=[
    seeded by chip id + current beat so a chip renders the same wording in
    its preview and when it is delivered, but a chip picked in a later promo
    comes up different. */
+/* A CUT CAN HAVE MORE THAN ONE WORDING, the way a chip already could. Every
+   cut returned exactly one string per branch, so the same beat of the same feud
+   read identically in week two of every rivalry a player ever has. Same FNV-1a
+   over id, phase and week as chipLine: deterministic, so a promo does not
+   reshuffle under the player, and different across weeks and phases. */
+function cutLine(cut, ctx){
+  let out; try{ out = cut.line(ctx); }catch(e){ return ''; }
+  if(!Array.isArray(out)) return out||'';
+  if(!out.length) return '';
+  const key = cut.id+'|'+((PM&&PM.phase)||'hook')+'|'+((ctx&&ctx.weekCount)||0);
+  let h = 2166136261;
+  for(let i=0;i<key.length;i++) h = ((h ^ key.charCodeAt(i))*16777619) >>> 0;
+  return out[h % out.length] || '';
+}
 function chipLine(ch,ctx){
   let out;
   try{ out = ch.fn(ctx); }
@@ -14657,7 +15149,7 @@ function pmChoices(){
   // ---- signature cuts: authored one-click beats for this stakes/phase ----
   const cuts=cutsFor(PM.phase);
   const cutHTML = cuts.length ? cuts.map(cut=>{
-    let line=''; try{ line=cut.line(PMCTX); }catch(e){}
+    let line=cutLine(cut, PMCTX);
     if(!line) return '';
     return `<div class="cutcard" onclick="pmSayCut('${cut.id}')">
       <div class="cc-k">Signature cut${cut.align?`<span class="ch-al ${cut.align}">${cut.align}</span>`:''}${(cut.stakes||[]).some(t=>/^stage_/.test(t))?`<span class="ch-al stage">this beat</span>`:''}</div>
@@ -14713,7 +15205,7 @@ function pmToggleChip(id){
 }
 function pmSayCut(id){
   const cut=CUT_BANK.find(c=>c.id===id); if(!cut) return;
-  const line=cut.line(PMCTX); if(!line) return;
+  const line=cutLine(cut, PMCTX); if(!line) return;
   PM.usedCuts[id]=true;
   const tags=cut.tags||[];
   // A cut is a hand-authored full beat, so it always fits its phase and reads
@@ -14908,7 +15400,7 @@ async function pmQuickCut(){
   </div>`;
   for(let i=0;i<cuts.length;i++){
     const cut = cuts[i]; if(!cut) continue;
-    let line=''; try{ line=cut.line(PMCTX); }catch(e){}
+    let line=cutLine(cut, PMCTX);
     if(!line) continue;
     // "phase" this cut lives in, so any downstream reads make sense
     PM.phase = cut.phase && cut.phase[0] || PPHASE_ORDER[Math.min(i,PPHASE_ORDER.length-1)];
@@ -14988,7 +15480,7 @@ async function pmRhythm(){
       cut = CUT_BANK.find(c=>c.phase.includes(PM.phase) && (!c.when||c.when(PMCTX)));
     }
     if(!cut) continue;
-    let line=''; try{ line=cut.line(PMCTX); }catch(e){}
+    let line=cutLine(cut, PMCTX);
     if(!line) continue;
     const hit = await pmRhythmBeat(cut, line, i, phases.length);
     // hit is 0..1: 0 = miss, 1 = perfect
@@ -15170,7 +15662,7 @@ async function pmFinish(suppressPop){
       sfx('boo'); sfx('impact');
       pmLog(`<span class="bad">The music cuts. <b>${rc.name}</b>'s music hits. They are marching down the aisle.</span>`);
       await sleep(600);
-      pmLog(`<span class="say">"${(rc.lines.taunt[0]||'This is not about you tonight.')}"</span>`);
+      pmLog(`<span class="say">"${saysLine(rc,'taunt','This is not about you tonight.')}"</span>`);
       // If you have a manager, they can get in front of the rival and eat the
       // hit for you: you keep the segment, they take the loyalty ding.
       const mgr = myManager();
@@ -16139,6 +16631,203 @@ function voiceOf(ch){
 }
 const VOICE_LABEL = {brash:'Loud',warm:'Warm',cold:'Cold',unhinged:'Unhinged',pro:'Professional',bitter:'Bitter'};
 /* Pick the phrasing for whoever is speaking. Falls back to `any`. */
+/* ============================================================
+   WHAT THEY SAY, AND HOW MANY WAYS THEY CAN SAY IT
+   ------------------------------------------------------------
+   Every wrestler on the roster carried exactly ONE thing to say
+   when they won, one when they lost and one when they respected
+   you. A career is hundreds of matches against the same forty
+   three people, so a player read the same sentence from the same
+   opponent every single time.
+
+   Writing six more lines for forty three characters is 258 lines
+   that only ever fit one person. voiceOf() already derives a
+   VOICE for everybody, from their traits or a stable hash, so a
+   bank keyed by voice is worth far more: it fits the character,
+   it never shifts, and a wrestler added tomorrow inherits all of
+   it without a word being written for them.
+
+   A character's own line is kept and weighted first, because that
+   is their signature. The bank is what stops it being their only
+   one.
+   ============================================================ */
+const SAY_BANK = {
+  brash: {
+    win:['"Told you. I told all of you."',
+         '"Next. Bring me somebody who can go."',
+         '"That is the tape they will show. Me, standing."',
+         '"I did not even need the whole match."',
+         '"Anybody else? No? Thought not."',
+         '"Write it down, and say it right."',
+         '"That is what the top of the card looks like."',
+         '"You can all stop asking who I am now."'],
+    lose:['"Fluke. Run it back and watch."',
+          '"One night. One. That is all that was."',
+          '"I want them again. Tonight, if they have got it in them."',
+          '"Nobody remembers this one. I will make sure of that."',
+          '"Enjoy it. It does not happen twice."',
+          '"That is going to bother me all week. Then it will bother them."',
+          '"Good. Now I am angry."',
+          '"Count it. It is the only one you get."'],
+    respect:['"You can go. I will say that once."',
+             '"Alright. You are not nothing."',
+             '"I still beat you, but you can go."',
+             '"Do not let that go to your head. Let it go to mine."'],
+    taunt:['"You are in my ring now."',
+           '"They booked you with me. Somebody up there hates you."',
+           '"I have been waiting for an easy night."',
+           '"Do you know who you are standing across from?"'],
+  },
+  cold: {
+    win:['"That went the way it was always going to go."',
+         '"There was never another result."',
+         '"I did what I came here to do."',
+         '"You should have believed the tape."',
+         '"It was over before the bell. You had not noticed yet."',
+         '"I do not enjoy this. I am simply good at it."',
+         '"Nothing about that surprised me."',
+         '"Next."'],
+    lose:['"Noted."',
+          '"I will correct it."',
+          '"That will not happen again. I mean that literally."',
+          '"I have the whole thing memorised already."',
+          '"Congratulations. Use it while you have it."',
+          '"I know exactly where it went wrong. So will they, soon."',
+          '"One variable. I will remove it."',
+          '"Enjoy your evening."'],
+    respect:['"You are competent. That is rarer than it sounds."',
+             '"I will prepare properly for you. Take that as the compliment it is."',
+             '"You did not make the mistake I was waiting for."',
+             '"Good. Now I have something to work on."'],
+    taunt:['"I have watched forty minutes of you. I have seen enough."',
+           '"You have a habit. I am going to use it."',
+           '"This will be quick. That is not a threat."',
+           '"You are the easiest read on this card."'],
+  },
+  warm: {
+    win:['"Good match. Thank you."',
+         '"You made me work. I will not forget it."',
+         '"That is the business. Nothing personal in it."',
+         '"Hand up. You went out on your shield."',
+         '"I have had worse nights than the one you just gave me."',
+         '"That was a proper wrestling match."',
+         '"Get your wind back. You earned it."',
+         '"We both go home better than we came."'],
+    lose:['"You were better. Simple as that."',
+          '"No excuses. Take it."',
+          '"I have lost to worse. This one I can live with."',
+          '"That is the right result, and I hate that."',
+          '"Well done. Genuinely."',
+          '"I will get my hand up next time. Or I will not."',
+          '"You did it clean. That matters to me."',
+          '"Good for you. Go and do something with it."'],
+    respect:['"You are going to be alright in this business."',
+             '"Anytime. Anywhere. I mean that."',
+             '"I would work you every night of the week."',
+             '"You listen in there. Not many do."'],
+    taunt:['"No hard feelings after. Let us give them a match."',
+           '"You ready? Properly ready?"',
+           '"Do nothing stupid and we both go home."',
+           '"I have been doing this a long time. Come on then."'],
+  },
+  unhinged: {
+    win:['"MORE. I want MORE."',
+         '"Did you see it? Did you SEE it?"',
+         '"That is the only time I feel anything."',
+         '"I could go again. Right now. Get somebody."',
+         '"I did not want it to end."',
+         '"They are still screaming. Listen to them."',
+         '"Beautiful. That was beautiful."',
+         '"Again. We do it again."'],
+    lose:['"AGAIN. Get them back out here."',
+          '"I am not done. The bell does not decide that."',
+          '"That was the best part of my month."',
+          '"You have to kill me. That is the only way."',
+          '"I felt every second of it. Thank you."',
+          '"It does not hurt. Nothing hurts."',
+          '"Ring it again. Ring the bell again."',
+          '"I will be here. I am always here."'],
+    respect:['"You are as sick as I am, and I love it."',
+             '"You did not blink. Nobody does not blink."',
+             '"We should do something terrible together."',
+             '"You are the only one who understands."'],
+    taunt:['"I have been looking forward to this ALL WEEK."',
+           '"Do you want to find out? I want to find out."',
+           '"They put us in the same building. Their mistake."',
+           '"Nothing in here is going to stop me. Not even you."'],
+  },
+  pro: {
+    win:['"Leg, leg, cover. That is the whole match."',
+         '"Executed. Nothing more to say about it."',
+         '"I picked a limb and I stayed on it."',
+         '"The plan worked. Plans usually do."',
+         '"Clean finish. Check the tape."',
+         '"That is what the training is for."',
+         '"No wasted motion. None."',
+         '"Right result, right way."'],
+    lose:['"I got the sequence wrong. My fault."',
+          '"Two mistakes. I only needed to make one."',
+          '"The tape will show exactly what happened."',
+          '"I was out of position. Nothing else to blame."',
+          '"Well worked. I will study it."',
+          '"They were sharper. That is measurable."',
+          '"I will fix the transition."',
+          '"Better wrestler won."'],
+    respect:['"Your timing is good, and timing cannot be taught."',
+             '"You know where your feet are. That is the whole job."',
+             '"Nothing sloppy in there. I noticed."',
+             '"I would put you in front of a class."'],
+    taunt:['"You drop your elbow on the third one. Every time."',
+           '"I have your tape. All of it."',
+           '"Let us see if you can wrestle or only perform."',
+           '"Take your time. I am patient."'],
+  },
+  bitter: {
+    win:['"Took long enough for somebody to notice."',
+         '"Put that in the write-up. If you can be bothered."',
+         '"Nobody will mention this next week. They never do."',
+         '"I have been doing this the whole time. You looked away."',
+         '"That is ten years of being overlooked, right there."',
+         '"Still here. Still better."',
+         '"Do I get the poster now?"',
+         '"Good. Now forget about me again."'],
+    lose:['"Of course. Of course it went that way."',
+          '"Somebody decided this a week ago."',
+          '"I know how this business works. I have always known."',
+          '"Enjoy the push. They are lending it to you."',
+          '"Same story, different night."',
+          '"I am not surprised. I stopped being surprised."',
+          '"Ask who it suited. Then ask why."',
+          '"Fine. Whatever."'],
+    respect:['"You are not one of them. Not yet."',
+             '"You did not take a short cut. That is worth something."',
+             '"Do not let them change you."',
+             '"You earned yours. Most of them did not."'],
+    taunt:['"They gave you my spot. Let us see what you do with it."',
+           '"I have been on this card since before they knew your name."',
+           '"You get the entrance. I get the result."',
+           '"Everybody loves you. That will pass."'],
+  },
+};
+/* One place that answers "what does this person say now", with a memory so the
+   same opponent does not open with the same sentence two weeks running. The
+   character's own line is weighted first: it is the thing written FOR them. */
+let SAY_SAID={};
+function saysLine(ch, kind, fallback){
+  if(!ch) return fallback||'';
+  const own = ((ch.lines||{})[kind]||[]).filter(Boolean);
+  const shared = ((SAY_BANK[voiceOf(ch)]||{})[kind]||[]);
+  // the signature line counts twice, so it stays the one you hear most
+  const pool = own.concat(own).concat(shared);
+  if(!pool.length) return fallback||'';
+  const key = (ch.id||ch.name||'x')+'|'+kind;
+  const said = SAY_SAID[key] = SAY_SAID[key] || {};
+  let fresh = pool.filter(l=>!said[l]);
+  if(!fresh.length){ SAY_SAID[key]={}; fresh = pool; }
+  const line = fresh[Math.floor(rnd()*fresh.length)];
+  SAY_SAID[key][line]=1;
+  return String(line).replace(/^"|"$/g,'');
+}
 function voiced(ch, map){
   const v = voiceOf(ch);
   return map[v] || map.any || Object.values(map)[0] || '';
@@ -16357,6 +17046,151 @@ const SCENES = [
             text:'They ring you back at nine and talk for an hour. Half of it stings. All of it is right.',
             fx:{attr:'ps', amt:+4, weeks:5, label:'Took the notes'}, eff:{respectA:+8} },
           { p:0.9, tone:'mixed', mem:'dil_tape_'+x.c.year, text:'They say it was great, brother. They did not watch it.', eff:{respectA:+2} } ]},
+      ]}}},
+  /* Five more bets. Three dilemmas meant a player met the same three decisions
+     every year, and a dilemma is the only scene where the game rolls rather than
+     pays out, so it is the one worth having most of. Each is gated on a
+     different place in a career, so which one turns up says where you are. */
+  { id:'dil_favour', tag:'THE FAVOUR', trig:'any', weight:6,
+    when:x=>x.c.year>=2 && (x.c.standing||50)>=48 && !sceneRecalls('dil_favour_'+x.c.year),
+    beats:{ start:{ who:null, tag:'SOMEBODY ASKS',
+      line:x=>`Somebody you came up with is three weeks from being released and they know it. They ask you, straight out, to go to the office and put your name on them. It is the kind of ask you only get to make once.`,
+      opts:x=>[
+        { t:'Go in and say it out loud.', outcomes:[
+          { p:x=>1+((x.c.standing||50)/70), tone:'good', mem:'dil_favour_'+x.c.year,
+            text:'The office listens, because it costs you something to say it. They get another eight weeks, and they know exactly who bought them.',
+            eff:{standing:-3, heatAll:-4}, head:'Spent his own standing keeping somebody employed.' },
+          { p:1, tone:'mixed', mem:'dil_favour_'+x.c.year,
+            text:'They hear you out and release them anyway. Everybody in the back knows you went in, which is worth something and costs something.',
+            eff:{standing:-5}, fx:{attr:'ch', amt:+4, weeks:5, label:'The room noticed'} },
+          { p:0.7, tone:'bad', mem:'dil_favour_'+x.c.year,
+            text:'It lands badly. You are told, politely, to worry about your own spot. It follows you around for a month.',
+            eff:{standing:-9}, head:'Went to bat for somebody and got told to sit down.' } ]},
+        { t:'"I cannot spend it on this."', outcomes:[
+          { p:1.3, tone:'mixed', mem:'dil_favour_'+x.c.year,
+            text:'You are honest about it, which is worse than lying and better than nothing. They nod. You do not speak again for a long time.',
+            eff:{heatAll:+4}, head:'Said no to a friend, and meant it.' },
+          { p:1, tone:'good', mem:'dil_favour_'+x.c.year,
+            text:'They take it well. Everybody in this business has said no to somebody. Most of them have been on both sides of it.',
+            eff:{standing:+1} } ]},
+        { t:'Say yes and never go.', outcomes:[
+          { p:1.2, tone:'bad', mem:'dil_favour_'+x.c.year,
+            text:'They find out. They always find out. Nobody says anything to you about it, which is somehow worse.',
+            eff:{heatAll:+9, standing:+1}, head:'Promised to help and did not.' },
+          { p:0.8, tone:'mixed', mem:'dil_favour_'+x.c.year,
+            text:'They are released without ever knowing. You know.',
+            fx:{attr:'ps', amt:-3, weeks:3, label:'Not sleeping on it'} } ]},
+      ]}}},
+  { id:'dil_green', tag:'THE GREEN BOY', trig:'prematch', weight:6,
+    when:x=>(x.c.standing||50)>=52 && ((x.c.rec.w||0)+(x.c.rec.l||0))>=8 && !sceneRecalls('dil_green_'+x.c.year),
+    beats:{ start:{ who:null, tag:'TEN MINUTES TO BELL',
+      line:x=>`Your opponent tonight has nine matches to his name and he is grey. He gets hold of your wrist in the corridor. "I do not know how to get us out of the second one. Can you call it?"`,
+      opts:x=>[
+        { t:'"I will call the whole thing. Follow me."', outcomes:[
+          { p:x=>1+(attrOf(G.w,'ps')/45), tone:'good', mem:'dil_green_'+x.c.year,
+            text:'You lead him through it a step at a time and nobody watching has any idea. He finds you afterwards and cannot get the words out.',
+            eff:{standing:+4, respectA:+18}, fx:{attr:'ps', amt:+3, weeks:4, label:'Carried one'},
+            head:'Called a whole match for somebody who could not.' },
+          { p:0.9, tone:'mixed', mem:'dil_green_'+x.c.year,
+            text:'You get him through it, and it is obvious from the hard camera that you are doing the steering. The room knows. The crowd does not.',
+            eff:{standing:+2, respectA:+10} },
+          { p:0.6, tone:'bad', mem:'dil_green_'+x.c.year,
+            text:'He panics anyway, halfway through, and takes you both somewhere neither of you planned. You land badly getting out of it.',
+            eff:{cond:-9, respectA:+6}, head:'Tried to carry somebody and paid for it.' } ]},
+        { t:'"Do the three things you know. I will do the rest."', outcomes:[
+          { p:1.4, tone:'good', mem:'dil_green_'+x.c.year,
+            text:'Simplest advice in the business and it works every time. He does three things well and you build the match around them.',
+            eff:{standing:+2, respectA:+12} } ]},
+        { t:'"Not my job."', outcomes:[
+          { p:1.1, tone:'bad', mem:'dil_green_'+x.c.year,
+            text:'The match is exactly as bad as it was always going to be. Half the locker room watched it, and every one of them knew whose night it was to fix.',
+            eff:{standing:-5, heatAll:+6}, head:'Let a rookie drown in front of everybody.' },
+          { p:0.9, tone:'mixed', mem:'dil_green_'+x.c.year,
+            text:'He gets through it on his own, badly, and looks at you differently for a long time afterwards.',
+            eff:{respectA:-12} } ]},
+      ]}}},
+  { id:'dil_gimmick', tag:'THE NOTE', trig:'any', weight:6,
+    when:x=>x.w.gimmick && gimHeat()<=42 && x.c.week>8 && !sceneRecalls('dil_gimmick_'+x.c.year),
+    beats:{ start:{ who:null, tag:'A CHANGE OF DIRECTION',
+      line:x=>`There is a note in your bag with a new direction for your character written on it. It is not terrible. It is also not you, and whoever wrote it did not ask.`,
+      opts:x=>[
+        { t:'Do it exactly as written.', outcomes:[
+          { p:1.2, tone:'good', mem:'dil_gimmick_'+x.c.year,
+            text:'It works better than you expected. You hate that it works.',
+            eff:{gimHeat:+14, standing:+4}, head:'Took the note and it got over.' },
+          { p:1, tone:'bad', mem:'dil_gimmick_'+x.c.year,
+            text:'It dies in front of a live crowd and everybody involved pretends it was never written down.',
+            eff:{gimHeat:-8, standing:+2}, fx:{attr:'ch', amt:-4, weeks:4, label:'Somebody else\'s idea'} } ]},
+        { t:'Take the half of it that is true.', outcomes:[
+          { p:x=>1.2+(attrOf(G.w,'ch')/70), tone:'good', mem:'dil_gimmick_'+x.c.year,
+            text:'You keep the one real idea in it and throw the rest away. Nobody notices the difference except you, and it lands.',
+            eff:{gimHeat:+10, standing:+1}, fx:{attr:'ch', amt:+4, weeks:5, label:'Made it his own'},
+            head:'Rewrote a creative note without telling anybody.' },
+          { p:0.9, tone:'mixed', mem:'dil_gimmick_'+x.c.year,
+            text:'Whoever wrote it notices immediately. They are not angry. They are taking notes on you now.',
+            eff:{gimHeat:+5, standing:-2} } ]},
+        { t:'Put it back in the bag and say nothing.', outcomes:[
+          { p:1.1, tone:'mixed', mem:'dil_gimmick_'+x.c.year,
+            text:'Nobody mentions it again. The act stays exactly where it was, which was the problem.',
+            eff:{standing:-2} },
+          { p:0.8, tone:'bad', mem:'dil_gimmick_'+x.c.year,
+            text:'It gets read as you being difficult. That word travels faster than any other word in this business.',
+            eff:{standing:-6, heatAll:+4}, head:'Got a reputation for being hard to work with.' } ]},
+      ]}}},
+  { id:'dil_travel', tag:'THE DRIVE', trig:'any', weight:5,
+    when:x=>x.c.week>4 && (x.c.cond||100)<=72 && !sceneRecalls('dil_travel_'+x.c.year),
+    beats:{ start:{ who:null, tag:'FOUR HUNDRED MILES',
+      line:x=>`It is a four hundred mile drive and you are the only one in the car who is awake enough to do it. There is a hotel an hour back the way you came and a show you have to be at by four.`,
+      opts:x=>[
+        { t:'Drive it. Sleep when you are dead.', outcomes:[
+          { p:1.3, tone:'mixed', mem:'dil_travel_'+x.c.year,
+            text:'You get there at half three. You have no idea what happened between hour two and hour four.',
+            eff:{cond:-8}, fx:{attr:'st', amt:-4, weeks:2, label:'Drove all night'} },
+          { p:0.8, tone:'bad', mem:'dil_travel_'+x.c.year,
+            text:'You wake up in the wrong lane at sixty miles an hour. Nothing happens. You have to pull over for twenty minutes afterwards.',
+            eff:{cond:-12}, fx:{attr:'ps', amt:-5, weeks:3, label:'Shaken up'},
+            head:'Nearly put a car off the road on the way to a show.' } ]},
+        { t:'Get the room. Be late and be rested.', outcomes:[
+          { p:1.2, tone:'good', mem:'dil_travel_'+x.c.year,
+            text:'You walk in at ten past four with four hours of sleep and have the best match on the card.',
+            eff:{cond:+8, standing:-2} },
+          { p:1, tone:'mixed', mem:'dil_travel_'+x.c.year,
+            text:'The agent notices you were late before he notices you were good.',
+            eff:{cond:+8, standing:-5} } ]},
+        { t:'Wake somebody up and swap.', outcomes:[
+          { p:1.4, tone:'good', mem:'dil_travel_'+x.c.year,
+            text:'They drive two hours without complaining once. This is how road friendships actually get made.',
+            eff:{cond:+4, respectA:+10, heatAll:-3} },
+          { p:0.7, tone:'mixed', mem:'dil_travel_'+x.c.year,
+            text:'They drive, badly, and you do not sleep anyway.',
+            eff:{cond:+1} } ]},
+      ]}}},
+  { id:'dil_ceiling', tag:'THE CONVERSATION', trig:'any', weight:6,
+    when:x=>x.c.year>=3 && (x.c.standing||50)>=55 && !x.c.title && !sceneRecalls('dil_ceiling_'+x.c.year),
+    beats:{ start:{ who:null, tag:'A STRAIGHT ANSWER',
+      line:x=>`You get five minutes with the person who actually decides, and they offer you a straight answer for once. "Ask me anything. I will tell you the truth, and you might not want it."`,
+      opts:x=>[
+        { t:'"Am I ever going to be the guy here?"', outcomes:[
+          { p:x=>1+((x.c.standing||50)/60), tone:'good', mem:'dil_ceiling_'+x.c.year,
+            text:'"Yes. Not this year." It is the first time anybody has said it without hedging, and you can work with a date.',
+            eff:{standing:+3}, fx:{attr:'ps', amt:+5, weeks:8, label:'Knows the plan'},
+            head:'Got a straight answer about the top of the card.' },
+          { p:1, tone:'bad', mem:'dil_ceiling_'+x.c.year,
+            text:'"No." No cushion on it, no apology. You asked for the truth and they respected you enough to hand it over.',
+            eff:{standing:+2}, fx:{attr:'ch', amt:-5, weeks:6, label:'Told the truth'},
+            head:'Told to his face that he is not the plan.' } ]},
+        { t:'"What is the one thing stopping me?"', outcomes:[
+          { p:1.5, tone:'good', mem:'dil_ceiling_'+x.c.year,
+            text:'They name one thing. It is specific, it is fixable, and it is fair. Nobody has ever been that useful to you in five minutes.',
+            fx:{attr:'ps', amt:+6, weeks:7, label:'One thing to fix'}, eff:{standing:+4},
+            head:'Asked what was holding him back and actually got told.' },
+          { p:0.8, tone:'mixed', mem:'dil_ceiling_'+x.c.year,
+            text:'They name three things and two of them are about how you look. You take the one that was real.',
+            fx:{attr:'ps', amt:+3, weeks:4, label:'Took the note'} } ]},
+        { t:'Do not ask. Just work.', outcomes:[
+          { p:1.2, tone:'mixed', mem:'dil_ceiling_'+x.c.year,
+            text:'They respect that more than any question you could have asked. You also still have no idea where you stand.',
+            eff:{standing:+5} } ]},
       ]}}},
   /* ---------- ARC PAYOFFS ----------
      These never come up on their own: they are seeded by a decision above and
@@ -17106,6 +17940,83 @@ const SEGMENT_LIB = [
       { t:'"Not now, kid."',
         eff:{ standing:-1, respect:{id:who?who.id:null,d:-6} }, note:'They heard it.' },
     ] },
+  /* Six more. A segment fires on the walk to gorilla most weeks, so seven of
+     them meant a player saw the same handful on a loop by the middle of year
+     one. Each of these is gated on a state the others are not, so which one
+     turns up says something about where the career actually is. */
+  { id:'agentNote', tag:'THE AGENT',
+    when: (c) => (c.rec.w+c.rec.l) >= 4,
+    stage: (c) => ({who:null,
+      line:`One of the agents catches you by the monitors with a folded sheet of paper. "Finish. Time. Who goes over. Read it twice, because I am not saying it again."`}),
+    opts: (c,who) => [
+      { t:'Read it twice.',
+        eff:{ standing:+3 }, note:'You knew the whole match before the bell.' },
+      { t:'"I have got it." (you have not)',
+        eff:{ standing:-2, gimHeat:+2 }, note:'You improvised. It mostly held together.' },
+      { t:'Ask him to walk you through the finish.',
+        eff:{ standing:+4, cond:-1 }, note:'He likes being asked. Most of them do.' },
+    ] },
+  { id:'cameraman', tag:'THE HARD CAMERA',
+    when: (c) => (c.pop||30) >= 35,
+    stage: (c) => ({who:null,
+      line:`The camera operator leans in on the way past. "Your good side is the left one. Nobody has told you that, have they."`}),
+    opts: (c,who) => [
+      { t:'"Nobody has. Thank you."',
+        eff:{ reactionBoost:true, gimHeat:+3 }, note:'Small thing. It shows up on television.' },
+      { t:'"I do not have a bad side."',
+        eff:{ gimHeat:+5, standing:-1 }, note:'He laughed. He also remembered it.' },
+      { t:'Ask him what else he has noticed.',
+        eff:{ gimHeat:+4, standing:+2 }, note:'Turns out he has been watching for years.' },
+    ] },
+  { id:'medic', tag:'THE TRAINER',
+    when: (c) => (c.cond||100) <= 62,
+    stage: (c) => ({who:null,
+      line:`The trainer blocks the corridor with a clipboard. "I have seen your numbers. You are running on nothing. What do you want me to write down?"`}),
+    opts: (c,who) => [
+      { t:'"Write down that I am fine."',
+        eff:{ standing:+3, cond:-4 }, note:'The office loved it. Your body did not.' },
+      { t:'"Write down the truth."',
+        eff:{ standing:-3, cond:+6 }, note:'Honest. Expensive.' },
+      { t:'"Write down whatever keeps me on the card."',
+        eff:{ standing:+1, cond:-2 }, note:'He wrote something vague, and said nothing else.' },
+    ] },
+  { id:'merchTable', tag:'THE MERCH TABLE',
+    when: (c) => (c.pop||30) >= 45,
+    stage: (c) => ({who:null,
+      line:`There is a queue at your table and nobody behind it. Somebody in the line has your name on a homemade sign with the letters running out of room.`}),
+    opts: (c,who) => [
+      { t:'Work the table for an hour.',
+        eff:{ reactionBoost:true, cond:-3 }, note:'Every one of them tells somebody tomorrow.' },
+      { t:'Sign the sign, then go and get ready.',
+        eff:{ reactionBoost:true }, note:'Ten minutes. Worth more than ten minutes.' },
+      { t:'Send somebody to cover it.',
+        eff:{ standing:+2 }, note:'Professional. A little cold.' },
+    ] },
+  { id:'roadStory', tag:'THE CAR PARK',
+    when: (c) => (c.year||1) >= 2,
+    stage: (c) => { const v=castVeteran&&castVeteran(); return {who:v||null,
+      line: v ? `${v.name} is sitting on the boot of a car in the loading bay, boots off, telling a story to nobody in particular. They stop when they see you and start again from the beginning.`
+              : `Somebody in the loading bay is telling a story to nobody in particular, boots off, half an hour before doors.`}; },
+    opts: (c,who) => [
+      { t:'Sit down and listen to all of it.',
+        eff:{ standing:+2, respectA:+12 }, note:'Two hours. You would do it again.' },
+      { t:'Listen to five minutes and go.',
+        eff:{ respectA:+4 }, note:'Enough to be polite.' },
+      { t:'"I have heard this one."',
+        eff:{ respectA:-8, gimHeat:+2 }, note:'They had not finished it the last time either.' },
+    ] },
+  { id:'writerPitch', tag:'CREATIVE',
+    when: (c) => (c.standing||50) >= 60,
+    stage: (c) => ({who:null,
+      line:`Somebody from creative finds you with a laptop open. "We have an idea for you. It is a big swing. It might be the worst thing you have ever heard."`}),
+    opts: (c,who) => [
+      { t:'"Say it out loud."',
+        eff:{ gimHeat:+7, standing:+2 }, note:'It was not the worst thing. It was not the best either.' },
+      { t:'"Is it a good idea or a new idea?"',
+        eff:{ standing:+4, gimHeat:-2 }, note:'They shut the laptop. They respected it.' },
+      { t:'"I will do anything once."',
+        eff:{ gimHeat:+10, standing:-2 }, note:'You are going to regret saying that in about a month.' },
+    ] },
 ];
 function segmentsPlayedThisWeek(){
   const c=G.car;
@@ -17650,7 +18561,7 @@ function charProfile(id){
   const bar=(k,v)=>`<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-dim)">${k}</span><span class="mono">${v}</span></div><div class="bar"><i style="width:${v}%"></i></div>`;
   const gim = c.gimmick || (c.debut?'A rookie still working out who they are in the ring.':'');
   const fin = c.finisher || 'No signature finish on tape yet.';
-  const taunt = (c.lines&&c.lines.taunt&&c.lines.taunt[0]) || (c.nick?'Say the name.':'');
+  const taunt = saysLine(c,'taunt', c.nick?'Say the name.':'');
   const nick = c.nick || '';
   modal(c.name, `<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
       <div style="width:110px;flex:none;">${wrestlerSVG(c.look)}</div>
