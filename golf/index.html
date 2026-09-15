@@ -30556,6 +30556,46 @@ const HV_PX_BASEH=254;    // base tile vertical pixel count (pxTerrainURL defaul
 // On a real zoom-in (putt close-up), return an expanded close-up region so hvBackdrop can render a
 // higher-density detail tile there: the resolution-independent renderer (os factor) keeps every object
 // at its true COURSE scale while the pixels get finer to match the golfer sprite (owner's ask).
+/* THE CAMERA FOR A DECISION THAT IS PLAYED ON THE GREEN, and it is the fix for the markers rather than
+   a flourish. The tracer frames the whole hole, so a green comes out about 37 CSS pixels across on a
+   phone, and the two things the player is choosing between (the flag, and the middle) are a median 10.7
+   pixels apart on it. A marker anybody can read and tap is 22 pixels wide and needs about 26 from its
+   partner. Those numbers do not fit and no amount of nudging makes them fit: measured over all 762
+   pin-hunts the site can ask, both markers land on the green on 32% of them at 22px and on 66% even at
+   an unreadable 13px. Every remaining pixel of "off" is the frame, not the placement (owner: "the
+   markers are still off. They need to make a lot more sense logically. Their locations don't match
+   where they should").
+   Framed on the green instead, the same two points are four times further apart than the markers need,
+   so they sit exactly on the flag and exactly in the middle with nothing pushed at all. A 113-yard
+   approach also has nothing to say about the 340 yards of fairway behind the ball, and everything to say
+   about the green and what guards it, which is what this frames. A DRIVING decision keeps the whole
+   hole, because there the shape of the hole is the entire question. */
+function hvGreenCam(g, ball){
+  const R=g.greenR||[12,12], pts=[];
+  const add=(x,y)=>pts.push(hvProj(g,x,y));
+  add(g.gcx-R[0], g.L); add(g.gcx+R[0], g.L);
+  add(g.gcx, g.L-R[1]); add(g.gcx, g.L+R[1]);
+  if(g.pin) add(g.pin[0], g.pin[1]);
+  let x0=Math.min(...pts.map(p=>p[0])), x1=Math.max(...pts.map(p=>p[0]));
+  let y0=Math.min(...pts.map(p=>p[1])), y1=Math.max(...pts.map(p=>p[1]));
+  const px=(x1-x0)*0.85+10, py=(y1-y0)*0.85+10;    // a green's worth of surround: the sand and water it is about
+  x0-=px; x1+=px; y0-=py; y1+=py;
+  /* Bring the ball into shot when it does not cost the green too much. The leader lines start there, and
+     a line running off the bottom edge reads as pointing at nothing. Past about half again the frame it
+     is not worth it: the green shrinks back toward the size this exists to fix, so the lines are allowed
+     to leave instead. In SVG space the tee is at the BOTTOM, so the ball has the larger y. */
+  if(ball){ const B=hvProj(g,ball[0],ball[1]), grow=(B[1]-y1)/Math.max(1,y1-y0);
+    if(grow>0 && grow<1.5){ y1=B[1]+8; x0=Math.min(x0,B[0]-10); x1=Math.max(x1,B[0]+10); } }
+  const AR=HV_CAML[2]/HV_CAML[3];                   // the shell's own shape, or the SVG slices the frame
+  let w=x1-x0, h=y1-y0;
+  if(w/h>AR) h=w/AR; else w=h*AR;
+  let cx=(x0+x1)/2, cy=(y0+y1)/2;
+  // keep the box over the painted tile rather than off the top of the world, by MOVING it, never resizing
+  const tx0=-HV_EXL, tx1=HV_W+HV_EXL;
+  if(w<tx1-tx0){ cx=Math.max(tx0+w/2, Math.min(tx1-w/2, cx)); }
+  if(h<HV_H){ cy=Math.max(h/2, Math.min(HV_H-h/2, cy)); }
+  return [cx-w/2, cy-h/2, w, h];
+}
 const hvDetailCam=(camTarget,live)=>{
   if(!live || !camTarget || camTarget[2] >= HV_W*0.6) return null;   // only when genuinely zoomed
   const m=0.12, c=camTarget;
@@ -31254,7 +31294,7 @@ function hvThemeAccent(courseKey){ const k=courseKey||'_';
   return _hvAccentCache[k]; }
 function hvFrameStyle(courseKey){ const a=hvThemeAccent(courseKey);
   return `border-color:${a}99;box-shadow:0 0 0 2px ${a}3d, 0 0 20px -6px ${a}66, 0 16px 36px -22px rgba(0,0,0,.82), inset 0 1px 0 rgba(255,255,255,.05)`; }
-function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
+function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay, decCam){
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
   // Pin the camera for THIS build: one hvSetCam per node, so the viewBox, the terrain tile, the close-up
   // target and the HUD are all computed against the same frame even if the window is resized mid-render.
@@ -31309,8 +31349,13 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     if(holeIdx==null || !courseKey || hole.par==null) return null;
     const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx);
     hole._hv={g, plots:[]};
+    /* A PAR 3 ASKS ITS DECISION HERE, with no shots played yet, so the decision camera has to reach this
+       branch too. It was the one place a green decision could still be framed on the whole hole, which
+       is every par-3 pin-hunt on the site. The yardage references are dropped under a zoom for the same
+       reason the close-up drops them elsewhere: they are drawn for the full frame. */
+    const pcam=decCam||HV_CAML, pzoom=!!decCam;
     return $(`<div class="holeview${hin?' hv-in':''}"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span><span class="ttrep">NEXT HOLE</span></div>
-      <div class="hvshell"><svg viewBox="${HV_CAML.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey))}${hvYardageSVG(g)}</svg></div></div>`);
+      <div class="hvshell"><svg viewBox="${pcam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey),hvDetailCam(decCam,pzoom))}${pzoom?'':hvYardageSVG(g)}</svg></div></div>`);
   }
   if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400, courseKey, holeIdx);
     hole._hv={g, plots:hvPlots(g, shots, seedN)}; }
@@ -31332,8 +31377,10 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   const holed=(showN>=shots.length);
   if(live && idx>=0 && plots[idx]) inner+=hvLiveShot(g,plots[idx],small,null,camTarget);
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&inCam(plots[idx]));
-  const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAML;
-  const detailCam=hvDetailCam(camTarget, live&&idx>=0&&!!plots[idx]);
+  /* A decision camera only applies while the round is PAUSED on the call. The moment a shot is live the
+     animator owns the frame again, so the two can never fight over the viewBox. */
+  const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):(decCam||HV_CAML);
+  const detailCam=live?hvDetailCam(camTarget, idx>=0&&!!plots[idx]):hvDetailCam(decCam, !!decCam);
   // ITEM 13: the map's yardage references (full-hole camera only) sit under the tracers; the
   // distance-to-pin chip rides the current shot's resting ball, hidden until the ball settles.
   const curP=(idx>=0&&plots[idx])?plots[idx]:null;
@@ -33201,9 +33248,19 @@ function dPlaceTargets(shell, g, sc, pick, ball){
      to the ball so which marker is which is never a guess. */
   const tg=dDecTargets(g,sc);
   const R=22;                                        // one marker size, for both options
+  /* THE MARKERS PROJECT THROUGH THE CAMERA THAT IS ACTUALLY ON SCREEN, read off the SVG rather than
+     assumed. This used to hard-code the full-hole frame, which is the same thing only while the window
+     is showing the full hole: the moment a green decision frames the green, a marker computed against
+     the whole hole lands somewhere else entirely. Reading the viewBox back makes it right at any zoom
+     and is exactly the old arithmetic when the camera is HV_CAML, since that frame IS
+     [-HV_EXL, 0, HV_W+2*HV_EXL, HV_H]. */
+  let CAM=HV_CAML;
+  { const sv=shell.querySelector('svg'); const vb=sv&&sv.getAttribute('viewBox');
+    if(vb){ const v=vb.trim().split(/[\s,]+/).map(Number);
+      if(v.length===4 && v[2]>0 && v[3]>0 && v.every(n=>isFinite(n))) CAM=v; } }
   const proj=(pt)=>{ const p=hvProj(g,pt[0],pt[1]);
-    return {lf:Math.max(4,Math.min(96,(p[0]+HV_EXL)/(HV_W+2*HV_EXL)*100)),
-            tp:Math.max(3,Math.min(97,p[1]/HV_H*100))}; };
+    return {lf:Math.max(4,Math.min(96,(p[0]-CAM[0])/CAM[2]*100)),
+            tp:Math.max(3,Math.min(97,(p[1]-CAM[1])/CAM[3]*100))}; };
   const a=proj(tg.agg), b=proj(tg.safe);
   /* BOTH MARKERS GO EXACTLY WHERE THE SHOT GOES, and any gap they need is opened later, after layout,
      by the measured amount. A minimum written as a percent of the frame cannot be right: the marker is a
@@ -33269,7 +33326,7 @@ function dPlaceTargets(shell, g, sc, pick, ball){
       if(tg.green && g.greenR){
         const g0=proj([g.gcx,g.L]), g1=proj([g.gcx+g.greenR[0],g.L]);
         const halfPx=Math.abs(g1.lf-g0.lf)/100*rw;
-        const fit=Math.max(13, Math.min(R, halfPx-2));
+        const fit=Math.max(13, Math.min(R, halfPx-4));   // the far marker sits ring+4 out, so it needs halfPx-4 to stay on
         if(fit<R-0.5) ms.forEach(el=>{
           const r=el.querySelector('.dtr'); if(!r) return;
           r.style.width=fit+'px'; r.style.height=fit+'px';
@@ -33279,38 +33336,53 @@ function dPlaceTargets(shell, g, sc, pick, ball){
       }
       const d0=ms[0].querySelector('.dtr').getBoundingClientRect();
       const d1=ms[1].querySelector('.dtr').getBoundingClientRect();
-      const across=!alongHole;
-      const gap=across ? Math.abs((d0.left+d0.right)/2-(d1.left+d1.right)/2)
-                       : Math.abs((d0.top+d0.bottom)/2-(d1.top+d1.bottom)/2);
-      const want=(across?d0.width:d0.height)+(tg.green?4:7);
-      if(gap<want){
-        const push=want-gap;
-        const moveOne=(el, px)=>{
-          const prop=across?'left':'top', cur=parseFloat(el.style[prop])||0;
-          el.style[prop]=Math.max(2,Math.min(98, cur + px/(across?rw:rh)*100))+'%';
-        };
-        const dir=across ? (((d1.left+d1.right)/2 >= (d0.left+d0.right)/2)?1:-1)
-                         : (((d1.top+d1.bottom)/2 >= (d0.top+d0.bottom)/2)?1:-1);
-        /* OUTWARD IS MEASURED FROM THE GREEN'S CENTRE, not from the safe marker. Away from the safe marker
-           is nearly always the same direction and is wrong exactly when it matters: the safe point sits a
-           hair off centre, so when it lands on the pin's own side and slightly beyond it, away-from-safe
-           points back ACROSS the middle and the aggressive marker crosses the green to the wrong side.
-           The green's centre cannot drift like that. A pin projecting dead on the centre has no side of
-           its own, and there the safe marker is the only thing left to move away from.
-           And it is PLACED rather than nudged. A delta big enough to clear the gap, applied in a direction
-           that is not simply away from the other marker, overshoots by the gap it started with and lands
-           the aggressive marker on the far side of the safe one: East Lake 3 came out 13.6px apart when it
-           was asking for 17. Naming the destination cannot do that. The max is what keeps a placement from
-           ever pulling the marker back IN toward the middle. */
-        if(tg.green){
-          const gm=g.greenR?proj([g.gcx,g.L]).lf:null;
-          const a0=parseFloat(ms[0].style.left)||0, s0=parseFloat(ms[1].style.left)||0;
-          const side=(gm==null||Math.abs(a0-gm)<0.05) ? ((a0>=s0)?1:-1) : (a0>=gm?1:-1);
-          const tgt=s0 + side*(want/rw*100);
-          const put=(side>0) ? Math.max(a0,tgt) : Math.min(a0,tgt);
-          ms[0].style.left=Math.max(2,Math.min(98,put))+'%';         // the middle stays the middle
+      const cx0=(d0.left+d0.right)/2, cy0=(d0.top+d0.bottom)/2;
+      const cx1=(d1.left+d1.right)/2, cy1=(d1.top+d1.bottom)/2;
+      if(tg.green){
+        /* A PIN-HUNT MEASURES THE REAL DISTANCE BETWEEN THE TWO RINGS, not one axis of it. Measuring
+           across the hole alone was the last thing wrong here: framed on the green, a pin cut at the BACK
+           sits 47 pixels from the middle, which is nearly twice what two markers need, and the code still
+           pushed it sideways because only 8 of those 47 pixels were horizontal. So the flag's marker left
+           the flag on a green with room to spare.
+           Two circles need their own width between their centres, in any direction, and that is the whole
+           rule. When they do not have it the AGGRESSIVE one moves, outward along the line the two options
+           actually differ on, so a back pin reads as long and a left pin reads as left instead of every
+           pin reading as sideways. The middle never moves. */
+        const want=d0.width+4, gap=Math.hypot(cx1-cx0, cy1-cy0);
+        if(gap<want){
+          let ux, uy;
+          if(gap>0.5){ ux=(cx0-cx1)/gap; uy=(cy0-cy1)/gap; }
+          else { const gm=proj([g.gcx,g.L]), pn=proj(tg.agg);   // coincident: fall back to the pin's side of the green
+            let vx=(pn.lf-gm.lf)/100*rw, vy=(pn.tp-gm.tp)/100*rh, vl=Math.hypot(vx,vy);
+            if(vl<0.5){ vx=0; vy=-1; vl=1; } ux=vx/vl; uy=vy/vl; }
+          // PLACED at the destination, not nudged by a delta: a delta in a direction that is not simply
+          // away from the other marker overshoots by the gap it started with and lands on the far side.
+          const lf=(cx1-shell.getBoundingClientRect().left+ux*want)/rw*100;
+          const tp=(cy1-shell.getBoundingClientRect().top +uy*want)/rh*100;
+          ms[0].style.left=Math.max(2,Math.min(98,lf))+'%';
+          ms[0].style.top =Math.max(2,Math.min(98,tp))+'%';
         }
-        else { moveOne(ms[0], -dir*push/2); moveOne(ms[1], dir*push/2); }
+      } else {
+        // a layup or a drive is a choice of DISTANCE, so its two stops separate down the hole
+        const gap=Math.abs(cy0-cy1), want=d0.height+7;
+        if(gap<want){
+          const push=want-gap, dir=(cy1>=cy0)?1:-1;
+          const moveOne=(el,px)=>{ const cur=parseFloat(el.style.top)||0;
+            el.style.top=Math.max(2,Math.min(98, cur + px/rh*100))+'%'; };
+          moveOne(ms[0], -dir*push/2); moveOne(ms[1], dir*push/2);
+        }
+      }
+    }
+    /* THE FLAG HAS TO STAY VISIBLE, now that marker 1 sits exactly on the pin. It is drawn from the cup
+       upward, so the marker's own label, which hangs 9px above the marker, lands straight on top of it:
+       the ring is on the flag and the flag is behind a chip reading "Aggressive", which tells the player
+       nothing about where the flag is. Measured and lifted, so the label clears the flagstick instead. */
+    if(tg.green && ms.length===2){
+      const pinEl=shell.querySelector('#hv-pin');
+      if(pinEl){
+        const pr=pinEl.getBoundingClientRect(), mr=ms[0].getBoundingClientRect();
+        const lift=(mr.top-mr.height/2) - pr.top + 6;
+        if(pr.height>4 && lift>9 && lift<80) ms[0].style.setProperty('--dtgap', lift.toFixed(1)+'px');
       }
     }
     if(lineSvg && ms.length===2){
@@ -33603,7 +33675,16 @@ function scrDailyRound(){
     // OWNER (2026-08-23): the postseason bracket match no longer overlays the opponent's ball on
     // the tracer - it painted their whole shot path as a stock image every render, hiding your
     // own ball. Opponent's score/total + the hole-by-hole box score stay on the board below.
-    const hvn=hvNode(hole, reveal, holeIdx, S.dailyCourse, null, revNonce!=null?revNonce:null, overlay||null);
+    /* A decision whose two options are both ON THE GREEN is framed on the green. Everything else, a
+       driver-or-3-wood call and a layup among them, keeps the whole hole: there the shape of the hole IS
+       the question being asked. dDecTargets is the one that knows which kind this is. */
+    let decCam=null;
+    if(dec && dec.sc && hole._hv && hole._hv.g){
+      try{ const tg=dDecTargets(hole._hv.g, dec.sc);
+        if(tg && tg.green){ const pl=hole._hv.plots||[], lst=pl.length?pl[pl.length-1]:null;
+          decCam=hvGreenCam(hole._hv.g, (lst&&lst.to)?lst.to:null); } }catch(e){}
+    }
+    const hvn=hvNode(hole, reveal, holeIdx, S.dailyCourse, null, revNonce!=null?revNonce:null, overlay||null, decCam);
     if(!hvn) return;
     const shell=hvn.querySelector('.hvshell'), h=hole;
     // TRACER REVAMP: the HUD chips slide in the first time a hole's window is drawn (hvnew), and stay

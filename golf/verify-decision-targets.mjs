@@ -79,13 +79,25 @@ window.__DT = {
     CATS.forEach(function(c){ S.dailySkills[c.k]=80; });
     var holes=(DAILY_COURSES[ck]||{}).holes||[];
     var sc; try{ sc=dScenario(ck,h,0,71); }catch(e){ return null; }
-    var hole={n:h+1, par:holes[h][0], yards:holes[h][1], shots:[]};
-    var node=hvNode(hole, null, h, ck, null, null, null);
+    /* RENDERED THE WAY drawWindow RENDERS IT, decision camera and all. A green decision frames the
+       green, so a suite that measured the full-hole frame would be grading a screen the game no longer
+       draws: the markers would look pushed around a 37px green that is really 122px wide. */
+    var seedN=(dHash(ck||'x')^Math.imul((h|0)+1,0x9e3779b1))>>>0;
+    var drive={k:'tee', d:'drive, fairway', lie:'fw', fromY:holes[h][1], toY:Math.min(150,Math.round(holes[h][1]*0.3))};
+    var shots=(holes[h][0]===3)?[]:[drive];
+    var hole={n:h+1, par:holes[h][0], yards:holes[h][1], shots:shots};
+    var g0=hvGeom(seedN, holes[h][0], holes[h][1], ck, h);
+    hole._hv={g:g0, plots:shots.length?hvPlots(g0,shots,seedN):[]};
+    var tg0=dDecTargets(g0,sc);
+    var pl0=hole._hv.plots, lst=pl0.length?pl0[pl0.length-1]:null;
+    var ballPt=(lst&&lst.to)?lst.to:[g0.cx(0),0];
+    var decCam=tg0.green?hvGreenCam(g0, (lst&&lst.to)?lst.to:null):null;
+    var node=hvNode(hole, null, h, ck, null, null, null, decCam);
     var host=document.getElementById('dthost'); host.innerHTML=''; host.appendChild(node);
     var shell=node.querySelector('.hvshell');
     shell.appendChild($(hvHoleChipHTML(ck, hole, true)));
     var g=hole._hv.g;
-    dPlaceTargets(shell, g, sc, function(){}, [g.cx(0), 0]);
+    dPlaceTargets(shell, g, sc, function(){}, ballPt);
     shell.appendChild(dDecisionPanel(sc, function(){}, null, h));
     await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
     var rects=function(sel){ return Array.prototype.map.call(shell.querySelectorAll(sel), function(e){
@@ -113,9 +125,10 @@ window.__DT = {
            normalised number there reads over 1 for a pin that is plainly on the putting surface. What
            matters vertically is that nothing moved it, which is asserted directly. */
     var tg=dDecTargets(g,sc);
+    var CAM=decCam||HV_CAML;
     var P=function(pt){ var p=hvProj(g,pt[0],pt[1]);
-      return {lf:Math.max(4,Math.min(96,(p[0]+HV_EXL)/(HV_W+2*HV_EXL)*100)),
-              tp:Math.max(3,Math.min(97,p[1]/HV_H*100))}; };
+      return {lf:Math.max(4,Math.min(96,(p[0]-CAM[0])/CAM[2]*100)),
+              tp:Math.max(3,Math.min(97,(p[1]-CAM[1])/CAM[3]*100))}; };
     var gc=P([g.gcx,g.L]), gL=P([g.gcx-g.greenR[0],g.L]), gR=P([g.gcx+g.greenR[0],g.L]);
     var hx=Math.abs(gR.lf-gL.lf)/2||1;
     // the green and the ring in real pixels, because whether the pair CAN both sit on it is a pixel question
@@ -123,9 +136,16 @@ window.__DT = {
     var greenPx=+(hx*2/100*sw).toFixed(1), ringPx=+(mk.length?mk[0].w:0).toFixed(1);
     // the separation the pair ended up with, against the least that keeps two rings tappable, and against
     // the separation the two chosen aim points already had before anything moved
-    var gapPx=(mk.length===2)?+Math.abs((mk[0].l+mk[0].r)/2-(mk[1].l+mk[1].r)/2).toFixed(2):null;
+    /* MEASURED IN TWO DIMENSIONS, because that is what two circles on a green actually need. Measuring
+       the horizontal alone was the last thing wrong in the game and it was wrong here too: a back pin
+       sits 47px from the middle with only 8 of those pixels horizontal, and a one-axis test calls that
+       an overlap and demands a sideways shove that takes the flag's marker off the flag. */
+    var sh2=shell.getBoundingClientRect();
+    var gapPx=(mk.length===2)?+Math.hypot((mk[0].l+mk[0].r)/2-(mk[1].l+mk[1].r)/2,
+                                          (mk[0].t+mk[0].b)/2-(mk[1].t+mk[1].b)/2).toFixed(2):null;
     var needPx=+(ringPx+(tg.green?4:7)).toFixed(2);
-    var natPx=+Math.abs((P(tg.agg).lf-P(tg.safe).lf)/100*sw).toFixed(2);
+    var pA=P(tg.agg), pS=P(tg.safe);
+    var natPx=+Math.hypot((pA.lf-pS.lf)/100*sw, (pA.tp-pS.tp)/100*sh2.height).toFixed(2);
     var at=function(el){ return {lf:parseFloat(el.style.left)||0, tp:parseFloat(el.style.top)||0}; };
     var offs=Array.prototype.map.call(shell.querySelectorAll('.dctarget'), function(el){
       return +Math.abs((at(el).lf-gc.lf)/hx).toFixed(3); });
@@ -140,17 +160,23 @@ window.__DT = {
     // THE SAFE ONE IS THE ONE THAT MAY NEVER MOVE. It is captioned the middle of the green, so it is read
     // against the green, and a push is what took it off the putting surface.
     var onMid=(ms2.length===2) && Math.abs(at(ms2[1]).lf-safeP.lf)<0.01 && Math.abs(at(ms2[1]).tp-safeP.tp)<0.01;
-    // and nothing may move either marker DOWN the hole: that would change how far the shot is
-    var vHeld=(ms2.length===2) && Math.abs(at(ms2[0]).tp-pinP.tp)<0.01 && Math.abs(at(ms2[1]).tp-safeP.tp)<0.01;
-    /* The aggressive one may be pushed, but only OUTWARD: never back across the middle toward the safe
-       marker. Outward is its own side of the green's centre, and a pin projecting dead ON that centre has
-       no side of its own, so there the only rule left is that it moves AWAY from the safe marker. */
-    var outward=true;
+    /* The SAFE one may not move on either axis. The aggressive one may, and must be allowed to: a pin at
+       the back of the green differs from the middle in DEPTH, so a marker pinned to one axis could only
+       ever say "sideways" about it. That is what the outward check above tests instead. */
+    var safeHeld=(ms2.length===2) && Math.abs(at(ms2[1]).lf-safeP.lf)<0.01 && Math.abs(at(ms2[1]).tp-safeP.tp)<0.01;
+    /* The aggressive one may be pushed, but only straight OUT along the line the two options differ on:
+       further from the middle than the flag is, and on the flag's own side of it. That keeps a back pin
+       reading as long and a left pin as left, instead of every pin reading as sideways. */
+    var outward=true, pushPx=0;
     if(ms2.length===2){
-      var a0=at(ms2[0]).lf, want=pinP.lf-gc.lf;
-      outward = (Math.abs(a0-pinP.lf)<0.01) ||
-        (Math.abs(want)<0.05 ? (Math.abs(a0-safeP.lf) >= Math.abs(pinP.lf-safeP.lf)-0.01)
-                             : (want>=0 ? (a0>=pinP.lf-0.01) : (a0<=pinP.lf+0.01)));
+      var a=at(ms2[0]), mid=at(ms2[1]);
+      var vx=(pinP.lf-mid.lf)/100*sw, vy=(pinP.tp-mid.tp)/100*sh2.height, vl=Math.hypot(vx,vy);
+      var ax=(a.lf-mid.lf)/100*sw, ay=(a.tp-mid.tp)/100*sh2.height, al=Math.hypot(ax,ay);
+      pushPx=+(al-vl).toFixed(2);
+      if(Math.hypot(a.lf-pinP.lf, a.tp-pinP.tp)<0.01) outward=true;          // never moved at all
+      else if(vl<0.5) outward=(al>=vl-0.01);                                 // pin on the middle: any way out
+      else { var cosang=(ax*vx+ay*vy)/Math.max(0.001, al*vl);
+        outward=(al>=vl-0.5 && cosang>0.985); }                              // same ray, further out
     }
     /* A LINE MUST END ON ITS MARKER. The markers can move after they are placed, so the paths are drawn
        from the settled positions; drawing them at append time is the bug this reads back. */
@@ -165,13 +191,18 @@ window.__DT = {
       if(Math.hypot(ends[1].lf-mAt[0].lf, ends[1].tp-mAt[0].tp)>0.02) lineMiss++;
     }
     return {markers:mk.length, labels:lb.length, lines:lines,
-      green:!!tg.green, offs:offs, inGreen:inGreen, onMid:onMid, vHeld:vHeld, outward:outward,
+      green:!!tg.green, offs:offs, inGreen:inGreen, onMid:onMid, safeHeld:safeHeld, outward:outward, pushPx:pushPx,
       safeOff:(ms2.length===2)?+Math.abs((at(ms2[1]).lf-gc.lf)/hx).toFixed(3):null, lineMiss:lineMiss,
       greenPx:greenPx, ringPx:ringPx, gapPx:gapPx, needPx:needPx, natPx:natPx, pastPx:pastPx,
       outFrame:outFrame,
       labs:Array.prototype.map.call(shell.querySelectorAll('.dctarget .dtl'), function(e){ return e.textContent; }),
       aria:Array.prototype.map.call(shell.querySelectorAll('.dctarget'), function(e){ return e.getAttribute('aria-label'); }),
-      markerOverlap:(mk.length===2 && over(mk[0],mk[1])),
+      /* The markers are CIRCLES (border-radius 50%), so they overlap when their centres are closer than
+         their diameter, not when their bounding boxes touch. A box test fails two rings sitting neatly
+         apart on a diagonal, which is exactly how a back pin sits against the middle of a green. The
+         labels below are rectangles and keep the box test. */
+      markerOverlap:(mk.length===2 && Math.hypot((mk[0].l+mk[0].r)/2-(mk[1].l+mk[1].r)/2,
+                                                 (mk[0].t+mk[0].b)/2-(mk[1].t+mk[1].b)/2) < (mk[0].w+mk[1].w)/2 - 0.5),
       labelOverlap:(lb.length===2 && over(lb[0],lb[1])),
       sameSize:(mk.length===2 && Math.abs(mk[0].w-mk[1].w)<1.5 && Math.abs(mk[0].h-mk[1].h)<1.5),
       labelOverChip:(cr!=null && lb.some(function(r){ return over(r,{l:cr.left,t:cr.top,r:cr.right,b:cr.bottom}); })),
@@ -292,7 +323,7 @@ const run = async () => {
     if (m2.green) {
       greenN++;
       if (!m2.onMid) { midMoved++; }
-      if (!m2.vHeld) { vSlid++; }
+      if (!m2.safeHeld) { vSlid++; }
       if (!m2.outward) { inward++; }
       if (m2.safeOff != null) { safeWorst = Math.max(safeWorst, m2.safeOff); if (m2.safeOff > 1) safeOffGreen++; }
       greenPxMin = Math.min(greenPxMin, m2.greenPx); ringMin = Math.min(ringMin, m2.ringPx);
@@ -371,8 +402,7 @@ const run = async () => {
      marker is inside the green and the aggressive one is exactly a ring's width from it. */
   ok('and no marker is ever more than one ring past the green edge', worstPast <= worstRing + 0.6,
     { worstPast: +worstPast.toFixed(1), ring: +worstRing.toFixed(1) });
-  ok('neither marker is ever slid up or down the hole, which would change the distance',
-    vSlid === 0, vSlid);
+  ok('the safe marker is held on both axes, not just one', vSlid === 0, vSlid);
 
   head('the markers say which option they are');
   ok('every marker reads Aggressive or Safe, in that order', badLab === 0, { wrong: badLab, examples: labEx });
