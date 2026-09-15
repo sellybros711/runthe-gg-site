@@ -619,11 +619,11 @@ window.GA_ID='G-L29P5MRWKE';
      three fragments doing the work of an image. It holds a sentence now, and spaced caps at
      10px is the setting a sentence gets skimmed in.
      THE MEASURE IS WHAT MAKES IT TWO LINES, together with the unbreakable tail below. It has
-     to be wider than the longest FIRST line ("Go Pro and leave your mark on", 29 characters)
-     or that half wraps too and the card grows to three, and narrower than the shortest WHOLE
-     sentence (42 characters) or a desktop stretches it into one. 34ch sits in the middle of
-     that band with room at both ends, so the same two lines survive a phone, a tablet and a
-     desk. Rewording either half moves both numbers, so measure again if you do. */
+     to be wider than the first line ("Leave your mark on", 18 characters) or that half wraps
+     too and the card grows to three, and narrower than the whole sentence (42 characters) or
+     a desktop stretches it into one. 34ch sits in the middle of that band with room at both
+     ends, so the same two lines survive a phone, a tablet and a desk. Rewording either half
+     moves both numbers, so measure again if you do. */
   .hp-commish .hp-sub{font-family:var(--fn);font-size:11.5px;font-weight:700;
     letter-spacing:.01em;color:rgba(233,213,255,.72);line-height:1.35;text-align:center;
     max-width:34ch;margin-top:1px}
@@ -640,30 +640,14 @@ window.GA_ID='G-L29P5MRWKE';
      handful of accounts on the list and telling them it is finished is a lie they report. */
   .hp-commish .hp-tag.new{background:linear-gradient(150deg,#6ee7b7 0%,#34d399 45%,#10b981 100%);
     border-color:rgba(255,255,255,.55);color:#04241c}
-  /* PRO IS GOLD, and gold on this site means money. It is the same gradient as the pill
-     beside an account name and the same one the store's Best value tag wears, so somebody
-     who has seen either of those knows what this card is before they read the word. */
-  .hp-commish .hp-tag.pro{background:linear-gradient(135deg,#fde047,#f59e0b);
-    border-color:rgba(255,255,255,.5);color:#3b2600}
-  /* THE PADLOCK SITS ON THE NAME, not in the corner with the tag. A lock beside the thing
-     it is locking is read as one statement; a lock in the opposite corner from the word Pro
-     is two decorations that have to be assembled. */
+  /* THERE WAS A GOLD PRO TAG, A PADLOCK AND A GOLD SELL LINE HERE, and all three are gone
+     rather than being restyled. They were correct while Commissioner Simulator was sold at
+     the door. It is free now at a season a day (supabase/104_commish_free_clock.sql), so a
+     lock on this card would say the one thing about the mode that is no longer true, and it
+     is the exact complaint that sent me back here: "just looks like the game is fully locked
+     with no way to play for free". The pitch moved to the screen where it is honest, which
+     is the wait wall inside the mode, after a season has been played. */
   .hp-commish .hp-namerow{display:flex;align-items:center;gap:7px}
-  /* margin:0 is not tidying. The shared .mc-pad rule carries margin-left:auto, for the
-     card rows where the lock is pushed to the far edge, and inherited here it would shove
-     the padlock away from the name it is locking and off centre the whole row. */
-  .hp-commish .hp-namerow .mc-pad{width:15px;height:15px;flex:0 0 auto;margin:0;fill:none;
-    stroke:#fbbf24;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-  /* THE SAME LINE, IN THE COLOUR THAT MEANS MONEY. Only the colour changes, because only two
-     words of the sentence changed: gold is what the pill beside an account name and the
-     store's own tag wear, so the line matches the tag above it and the padlock beside the
-     name rather than being a third unrelated signal.
-     NO PRICE IN IT, which is the rule the football game's own front page card follows. A
-     number quoted before anything has been offered is a cost the reader must weigh with
-     nothing on the other side of the scale, and it would be a second copy of a figure that
-     lives in the store. This has one job: stop the card reading as free. The store is one
-     tap away and it can show what the money buys. */
-  .hp-commish .hp-sub.sell{color:#fbbf24}
   @media (max-width:340px){
     .hp-commish .hp-name{font-size:17px}
     .hp-commish .hp-sub{font-size:11px}
@@ -2726,31 +2710,22 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard.mc-commish{border-color:rgba(168,85,247,.38);text-decoration:none}
   .modecard.mc-commish .mc-icon{background:linear-gradient(135deg,#a855f7 0%,#6d28d9 100%)}
   .modecard.mc-commish .mc-title{color:#c084fc}
-  /* THE STICKER SAYS TESTING, not New, and it is not the green one. Green "New" is what
-     this sheet puts on something anybody can play; this card is only drawn for people on
-     the list, and telling them it is finished would be a lie they then report as a bug. */
+  /* THE STICKER SAYS TESTING BEFORE THE FLIP, and it is not the green one. Green "New" is
+     what this sheet puts on something anybody can play, and before the launch flag turns
+     this card is only drawn for people on the list, so telling them it is finished would be
+     a lie they then report as a bug. After the flip the word is New and the sticker stays
+     purple, because purple is this mode's own colour on every surface it appears on and the
+     word is what changed, not the thing.
+     THERE WAS A GOLD Pro VARIANT OF THIS and it is gone with the padlock beside it. See the
+     note at commishMetered(): the mode is free at a season a day now. */
   .modecard.mc-commish .mc-sticker{background:linear-gradient(150deg,#d8b4fe 0%,#c084fc 45%,#a855f7 100%);
     color:#2a0a45;box-shadow:0 6px 18px -4px rgba(168,85,247,.85),0 2px 6px rgba(0,0,0,.55);
     animation:none}
-  /* UNLESS IT IS SOLD TO THIS ACCOUNT, and then the sticker is gold and reads Pro. Purple
-     is this mode's colour and says nothing about money; gold is what the pill beside an
-     account name and the store's own tag wear, so it is the one that carries the meaning.
-     The card keeps its purple border, because it is still the same mode. */
-  .modecard.mc-commish.pro .mc-sticker{background:linear-gradient(135deg,#fde047,#f59e0b);
-    color:#3b2600;box-shadow:0 6px 18px -4px rgba(245,158,11,.8),0 2px 6px rgba(0,0,0,.55)}
-  /* AND THE CARD DROPS FAR ENOUGH FOR IT TO LAND ON NOTHING. The sticker overhangs its own
-     card by 19px against a 14px gap, so it sat across the bottom edge of the card ABOVE:
-     harmless while it was a purple Testing label, and wrong the moment it went gold, because
-     a price tag lying on Conference Draft says Conference Draft costs money. Measured rather
-     than guessed: 19 of overhang, 14 of gap, so 10 puts the whole sticker in clear space
-     with room to spare. Only the locked card moves, since only the locked card has a claim
-     that could be misread. */
-  .modecards .modecard.mc-commish.pro{margin-top:10px}
-  .modecard.mc-commish.pro .mc-pad{stroke:#fbbf24}
-  /* THE CALL, UNDER THE PARAGRAPH THAT DESCRIBES THE MODE. No figure: see the note on
-     .hp-go. It carries the same first sentence the front page door does, so the two
-     surfaces read as one offer, and then the thing a reader of THIS game cannot know,
-     which is that the same payment opens a mode in the other one. */
+  /* THE PACE, UNDER THE PARAGRAPH THAT DESCRIBES THE MODE. No figure in money on this sheet:
+     a price quoted before anything has been offered is a cost the reader weighs with nothing
+     on the other side of the scale, and it is a second copy of a number that lives in the
+     store one tap away. Gold because the second half of the line is the offer, and gold is
+     what the pill beside an account name and the store's own tag wear. */
   .modecard .mc-pro{margin:7px 0 0;font-family:var(--fn);font-size:11.5px;font-weight:700;
     color:#fbbf24;line-height:1.35}
 
@@ -5193,18 +5168,37 @@ const commishOn=()=>{
   const a=window.PS_CFB_COMMISH_ACCESS;
   return !!(a&&authState.signedIn&&a.allowed(authState));
 };
-/* AND WHETHER THAT DOOR OPENS OR SELLS, which is the other half and a different file. The
-   tester list above decides who can SEE the mode; the cfb_premium row decides whether it
-   plays. Both answers go on the same card, because a card that shows one and not the other
-   is a card that looks free.
+/* AND WHETHER THE MODE HAS LAUNCHED, which is a different question from whether this reader
+   gets in. Before the flip the only accounts that see any of this are the tester list, so a
+   sticker reading New is a claim about the mode rather than about the account, and it is
+   false. Guarded the same way, for the same reason: this page opens with the script blocked. */
+const commishLive=()=>{
+  const a=window.PS_CFB_COMMISH_ACCESS;
+  return !!(a&&a.LIVE);
+};
+/* AND AT WHAT PACE IT PLAYS, which is the other half and a different file. The tester list
+   above decides who can SEE the mode. The cfb_premium row decides whether the mode is played
+   a season a day or as fast as the player wants.
 
-   NOT LOCKED WHILE THE ANSWER IS STILL COMING. premiumSet is null for the length of one
-   round trip, and drawing a padlock through it would tell a paying customer their mode had
-   been taken away and then hand it back a second later. The same rule syncModesLock follows
-   below, for the same reason. It is safe in the other direction: a failed or blocked ask
-   settles on the empty array rather than staying null, so it lands on locked, and locked is
-   the harmless way to be wrong about this. */
-const commishLocked=()=>premiumSet!==null&&!ownsCfb();
+   THIS USED TO BE commishLocked() AND IT GATED THE DOOR. That was right while Commissioner
+   was sold at the entrance: a non-owner's tap was taken over and turned into the store, and
+   the card wore a padlock and a gold Pro tag to say so before the tap. The free tier
+   (supabase/104_commish_free_clock.sql) made every one of those wrong on the same day and
+   none of them failed, because selling somebody a mode they already have access to throws
+   nothing. What it produced was the bug report: a signed in free account tapped the door,
+   got the store, and read the whole mode as locked with no way in.
+
+   SO NOTHING HERE GATES ANYTHING ANY MORE. It picks copy. The door is an ordinary link to
+   the mode in both states, and the pitch lives at the wait wall inside it, which is the one
+   screen where a reader has played a season and knows what the money is for.
+
+   STILL NOT METERED WHILE THE ANSWER IS COMING. premiumSet is null for the length of one
+   round trip, and a line about a daily pace drawn through it would tell a paying customer
+   their mode had been slowed down and then hand it back a second later. The same rule
+   syncModesLock follows below. It is safe in the other direction: a failed or blocked ask
+   settles on the empty array rather than staying null, so it lands on metered, which now
+   costs a wrong reader one line of copy rather than the door. */
+const commishMetered=()=>premiumSet!==null&&!ownsCfb();
 
 /* ── THE COMMISH DOOR ON THE FRONT PAGE ───────────────────────────────────────────
    IT WAS BURIED AND IT IS THE SECOND GAME IN THE BUNDLE. Commish Simulator was one card
@@ -5243,56 +5237,44 @@ function ensureCommishDoor(){
     commishDoor=document.createElement('a');
     commishDoor.className='hp-commish'; commishDoor.id='b-hp-commish';
     commishDoor.href='/cfb/commish/';
-    /* STILL AN ANCHOR FOR A NON-OWNER, so middle click and copy link behave, and so that a
-       browser with the handler broken lands on the gate rather than on nothing. The plain
-       click is taken over below: a gate that refuses you is a worse first look at a product
-       than the offer itself. */
-    commishDoor.onclick=(e)=>{
-      if(commishLocked()){
-        if(e&&e.preventDefault) e.preventDefault();
-        openPremium('home');
-        return;
-      }
+    /* A PLAIN LINK, AND THE HANDLER NEVER TAKES THE CLICK. It used to, for a non-owner:
+       preventDefault and the store instead. Every account that can see this card can play
+       the mode now, so there is nothing here to refuse and nothing to sell in front of it. */
+    commishDoor.onclick=()=>{
       /* SEEN ONCE IS NOT NEW ANY MORE. The badge is the only thing on this card that
          changes, and it changes for good the first time somebody opens the mode. */
       try{ localStorage.setItem('cfb_commish_seen','1'); }catch(e2){}
       ga('mode_opened',{mode:'commish',from:'home'});
     };
   }
-  /* THE BADGE SAYS WHICH OF THREE THINGS THIS IS, and the third one is the one that was
-     missing. Before the flip only the list sees this card at all, and "New" over an
-     unfinished mode is a promise it cannot keep, so it reads Preview. After the flip it is
-     genuinely new to everybody, once.
-     NEITHER OF THOSE SAYS IT COSTS MONEY, and the card was drawing one of them at a player
-     who does not own the mode. A purple Preview tag over a purple card in a row of free
-     buttons reads as one more free thing, and the first time that reader learns otherwise
-     is at a gate. Gold, a padlock and a line saying Pro, before the tap rather than after
-     it. */
-  const ACC=window.PS_CFB_COMMISH_ACCESS;
-  const live=!!(ACC&&ACC.LIVE);
+  /* THE BADGE SAYS WHICH OF TWO THINGS THIS IS. Before the flip only the list sees this card
+     at all, and "New" over an unfinished mode is a promise it cannot keep, so it reads
+     Preview. After the flip it is genuinely new to everybody, once.
+     THERE WAS A THIRD, A GOLD "Pro", and it is gone. It was there to stop a purple Preview
+     tag in a row of free buttons reading as one more free thing, which was the right worry
+     while the mode was sold at the door. The mode IS one more free thing now, at a season a
+     day, so the tag that said otherwise was the lie rather than the fix. */
   let seen=false; try{ seen=localStorage.getItem('cfb_commish_seen')==='1'; }catch(e){}
-  const locked=commishLocked();
-  const tag=locked?'<span class="hp-tag pro">Pro</span>'
-    :!live?'<span class="hp-tag">Preview</span>'
+  const tag=!commishLive()?'<span class="hp-tag">Preview</span>'
     :seen?'':'<span class="hp-tag new">New</span>';
   commishDoor.innerHTML=tag
-    +'<span class="hp-namerow">'+(locked?PADLOCK:'')
+    +'<span class="hp-namerow">'
       +'<span class="hp-name">Commish Simulator</span></span>'
-    /* ONE SENTENCE, AND THE PRICE OF ADMISSION IN FRONT OF IT WHEN THERE IS ONE.
-       The line under the name says the same thing in both states, because it is the same
-       promise either way: what the mode is actually for is that the sport stays changed.
-       A buyer has it, so they read the promise. Somebody who has not bought reads the
-       promise with the two words that get them there in front of it.
+    /* ONE SENTENCE, AND IT IS THE SAME ONE FOR EVERYBODY NOW.
+       What the mode is actually for is that the sport stays changed, and that is as true for
+       an account playing it a season a day as for one playing it flat out. There were two
+       versions of this line, and the other one opened "Go Pro and". It was the verb that
+       made a locked card say so in words rather than in pictures, and with the door open it
+       would be asking for money in front of a thing already included.
 
-       A LOCK AND A GOLD TAG ARE NOT ENOUGH ON THEIR OWN. That was the first attempt and it
-       is a picture of a state rather than a sentence about it: a padlock reads as decoration
-       on a card whose only other line is a slogan, and PRO is a word this site uses about an
-       ACCOUNT rather than about a price. Somebody skimming still had to infer it. "Go Pro"
-       is the verb, and it is the only difference between the two lines.
+       WHERE THE PITCH WENT. To the wait wall inside the mode, which is the screen a free
+       account reaches after playing a season. That reader knows what the sport is, what
+       their rulings did to it, and exactly what the money would buy them, which is none of
+       the things a slogan on a front page can tell them.
 
-       WHAT WENT, AND WHY IT IS NOT A LOSS. "Five years. Nine groups. One chair." was three
-       beats in the football game's rhythm, and it described the SHAPE of the mode: how long,
-       how many, how alone. The lead-in directly above the card ("or run it instead of
+       WHAT WENT EARLIER, AND WHY IT IS NOT A LOSS. "Five years. Nine groups. One chair." was
+       three beats in the football game's rhythm, and it described the SHAPE of the mode: how
+       long, how many, how alone. The lead-in directly above the card ("or run it instead of
        playing it") already gives that, and a card gets one line. Shape is what a mode is;
        this is what it is for. */
     /* TWO LINES, AND THE SECOND ONE IS "College Football forever".
@@ -5303,10 +5285,8 @@ function ensureCommishDoor(){
        width and be wrong at every other, and it would also weld the two halves together in
        textContent, where a screen reader and a copy-paste both lose the space. Marking the
        last three words unbreakable lets the browser find the only break left, which is the
-       space in front of them. Both states share that second line, so the locked card and the
-       bought one are the same shape with two more words on the front. */
-    +'<span class="hp-sub'+(locked?' sell':'')+'">'
-      +(locked?'Go Pro and leave your mark on ':'Leave your mark on ')
+       space in front of them. */
+    +'<span class="hp-sub">Leave your mark on '
       +'<span class="hp-nb">College Football forever</span></span>';
   /* UNDER THE TWO WAYS IN AND ABOVE THE ROW OF THREE, which is where the football game puts
      its second door: after the thing most people came for, before the things they came back
@@ -5375,12 +5355,14 @@ function modeMenu(){
          mode's own gate on together, because all three read that one file. Whether the gate
          then OPENS or pitches is a different question and a different file: that is the
          cfb_premium row, and see ownsCfb() in the mode itself. */
-      /* AND THE SAME LOCK THE FRONT PAGE DOOR CARRIES. This card sat beside two free modes
-         with a Testing sticker on it and nothing that said it was sold, which is the same
-         way the front page door read before it was fixed. A padlock instead of the arrow,
-         the sticker saying Pro rather than Testing, and one sentence under the paragraph. */
+      /* THIS CARD CARRIED A PADLOCK AND A GOLD Pro STICKER, matching the front page door, and
+         both are gone for the reason written at commishMetered(): the mode is free at a
+         season a day and neither of those was true any more. What is left is the sentence
+         under the paragraph, which no longer asks a free account to pay to get IN. It tells
+         them the pace they will play at and what Pro changes about it, which is the one thing
+         this sheet can say that the mode itself cannot say until they are a season deep. */
       (commishOn()?
-        '<a class="modecard mc-commish'+(commishLocked()?' pro':'')+'" href="/cfb/commish/" '+
+        '<a class="modecard mc-commish" href="/cfb/commish/" '+
           'id="b-mc-commish">'+
           '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
             /* A GAVEL. Not a trophy and not a pennant: the other cards on this sheet are
@@ -5388,16 +5370,21 @@ function modeMenu(){
             '<path d="M14.5 3.5l6 6"/><path d="M17.5 2l4 4-3 3-4-4z"/>'+
             '<path d="M15.5 7.5L7 16"/><path d="M4 21h9"/><path d="M8.5 12.5l3 3"/>'+
           '</svg></div><div class="mc-title">Commish Simulator</div>'+
-          (commishLocked()?PADLOCK:ARROW)+'</div>'+
-          '<span class="mc-sticker">'+(commishLocked()?'Pro':'Testing')+'</span>'+
+          ARROW+'</div>'+
+          '<span class="mc-sticker">'+(commishLive()?'New':'Testing')+'</span>'+
           '<p>Run college football instead of playing it. Expand the playoff, split the '+
           'money, let a conference die. Nine blocs answer every ruling, and the sport you '+
           'changed is the one you have to run next year.</p>'+
-          /* THE SAME VERB THE FRONT PAGE DOOR USES, so the two surfaces are one offer rather
-             than two. The second sentence is the thing a reader of THIS game cannot know,
-             which is that the same payment opens a mode in the other one. */
-          (commishLocked()?'<p class="mc-pro">Go Pro and leave your mark on College Football '+
-            'forever. One payment, and it unlocks the NFL game too.</p>':'')+
+          /* THE PACE, AND WHAT PRO DOES TO IT. The old version of this line sold the door,
+             and it is the second sentence that survived the free tier: the thing a reader of
+             THIS game cannot know is that the same payment opens a mode in the other one.
+             THE NUMBER IS HERE AND IT IS NOT A THIRD COPY OF THE RULE. commish_free_wait()
+             holds the rule and the wait wall inside the mode states it. This is the offer
+             saying what is being offered, which it cannot do without naming the pace, and it
+             is the same one sentence the wall opens with. Dynasty's own number is not here
+             and must not be: that rule lives on Dynasty's server and its own screen. */
+          (commishMetered()?'<p class="mc-pro">Free plays one season a day. Go Pro to run the '+
+            'whole term at your own pace, and it unlocks the NFL game too.</p>':'')+
         '</a>':'')+
     '</div>'+
     '<div class="xpromo">'+
@@ -5448,19 +5435,10 @@ function modeMenu(){
   const gin=$('sheet-in').querySelector('#gate-in');
   if(gin) gin.onclick=()=>{ ga('gate_clicked',{from:'modes'}); openProfile('account'); };
   const cm=$('b-mc-commish');
-  /* Same handover the front page door makes: a locked card opens the offer where it stands
-     rather than walking somebody to a gate to be refused by it. Still an anchor underneath,
-     so middle click and copy link go to the mode. */
-  if(cm) cm.onclick=(e)=>{
-    if(commishLocked()){
-      if(e&&e.preventDefault) e.preventDefault();
-      /* Repainted where it stands rather than closed and reopened: the sheet is already
-         up, and closing it first plays the dismiss animation under the new contents. */
-      openPremium('modes');
-      return;
-    }
-    ga('mode_opened',{mode:'commish'});
-  };
+  /* An ordinary link, like the front page door. This used to take a non-owner's click and
+     repaint the sheet as the store; see the note at commishMetered() for why that stopped
+     being true the day the free tier shipped. */
+  if(cm) cm.onclick=()=>ga('mode_opened',{mode:'commish'});
   $('b-mc-nfl').onclick=()=>ga('crosspromo_clicked',{to:'football'});
   $('b-mc-alma').onclick=()=>ga('crosspromo_clicked',{to:'almamater'});
   $('mm-x').onclick=closeSheet;
