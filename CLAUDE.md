@@ -81,6 +81,34 @@ Run the checker against anything ad hoc:
 node scripts/check-dashes.mjs path/to/file-or-dir
 ```
 
+### The rest of the copy rules
+
+```
+node scripts/check-copy.mjs              the guarded pages
+node scripts/check-copy.mjs path/to/file something else
+node scripts/check-copy.mjs --list       every string it reads
+```
+
+The dash rule can be enforced over whole files because a dash is a character. The
+rest of the rules are about ENGLISH, and a code comment here is prose for the next
+person that is allowed to run long and use whatever words it needs. So this one
+reads the strings a PLAYER sees and nothing else: promotional language, AI
+vocabulary, curly quotes, filler, hedging, chat artifacts, emoji.
+
+**Getting the extraction wrong is silent, and it already happened twice.** The
+first walk dropped every string containing `</` as code, which is most of the
+strings that build UI, and reported zero problems in a game that had twenty. The
+second desynced on the regex literal `/[&<>"']/g` in `store.js`, read its double
+quote as a string opener, and fed every comment after it to the rules. The walker
+knows a regex literal from a division now. If this checker ever reports a problem
+inside a code comment, that is the bug, not the comment.
+
+**Two things it deliberately does not fail on.** Sentence length is printed as a
+warning and ignored by the exit code, because "QB, RB, two WR, TE and a flex" is
+four commas and exactly right. And it does not look for the rule of three: three
+is the number of kinds of special college season there are, and whether a group of
+three is information or padding is a person's job.
+
 ## Sibling scripts carry a hand-written cache version
 
 The game pages load their engine and run loop as separate files:
