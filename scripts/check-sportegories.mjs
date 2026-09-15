@@ -245,5 +245,41 @@ console.log('\n6) a roster position proves a category too');
   }
 }
 
+/* ---- 7. either name takes the letter, and the game says so --------------- */
+/* The rule players get wrong most often, and the one they have written in
+ * about twice: the letter can be the FIRST name or the LAST. It was stated
+ * correctly on the play screen, in the how-to and in the demo caption, and
+ * then the refusal a player meets when they get it wrong said only "Needs to
+ * start with B", which is the one moment they are actually reading it.
+ *
+ * So this checks both halves: that a last-name match really does clear the
+ * letter gate, and that the message names both names when it does not. */
+console.log('\n7) the letter may be the first name or the last');
+{
+  const cat = D.cats[0];
+  const ask = (name) => S.check({ letter: 'B', cats: [cat] }, 0, name, []);
+  const first = ask('Barry Bonds');      // B on the first name
+  const last = ask('Chris Bosh');        // B on the last name
+  const neither = ask('Michael Jordan');
+  if (first.reason === 'letter') fail('Barry Bonds is refused on the letter B, matching on the first name');
+  else ok('Barry Bonds clears the letter on his first name');
+  if (last.reason === 'letter') fail('Chris Bosh is refused on the letter B, matching on the last name');
+  else ok('Chris Bosh clears the letter on his last name');
+  if (neither.reason !== 'letter') fail('Michael Jordan should be refused on the letter B');
+  else if (!/first or last/i.test(neither.msg || '')) {
+    fail('the refusal says ' + JSON.stringify(neither.msg) + ', which does not tell them either name will do');
+  } else ok('and the refusal says it: ' + JSON.stringify(neither.msg));
+
+  /* The how-to has to agree, and its example has to be a legal answer. It used
+     to offer "Bosh", one line under a rule saying a bare "Chris" will not
+     count. */
+  const page = readFileSync('arcade/sportegories/index.html', 'utf8');
+  const rule = /<span class="b">2<\/span><div>([\s\S]{0,220}?)<\/div>/.exec(page);
+  const txt = rule ? rule[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ') : '';
+  if (!/first name or the last/i.test(txt)) fail('rule 2 no longer says the letter can be the first name or the last: ' + JSON.stringify(txt));
+  else if (/[\u201c"]\s*Bosh\s*[\u201d"]/.test(txt)) fail('rule 2 offers a bare surname as an answer, which rule 1 forbids');
+  else ok('rule 2 reads: ' + txt.trim());
+}
+
 if (bad) { console.error('\n' + bad + ' problem' + (bad === 1 ? '' : 's')); process.exit(1); }
 console.log('\nsportegories ok');
