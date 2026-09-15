@@ -25,8 +25,8 @@
       "sha": "9e6f92406cb46897"
     },
     "/arcade/primary.js": {
-      "v": "14",
-      "sha": "d9f7af94afff85b0"
+      "v": "15",
+      "sha": "38bfe471a4e063ec"
     },
     "/arcade/data.js": {
       "v": "3",
@@ -253,8 +253,8 @@
       "sha": "9e6f92406cb46897"
     },
     "/arcade/primary.js": {
-      "v": "14",
-      "sha": "d9f7af94afff85b0"
+      "v": "15",
+      "sha": "38bfe471a4e063ec"
     },
     "/arcade/data.js": {
       "v": "3",
@@ -475,8 +475,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/teammates.js": {
-      "v": "16",
-      "sha": "ba2acb332da425b4"
+      "v": "17",
+      "sha": "6072b30b2e77cd19"
     },
     "/arcade/livecheck.js": {
       "v": "8",
@@ -529,8 +529,8 @@
       "sha": "a4222cc200670d79"
     },
     "/arcade/primary.js": {
-      "v": "14",
-      "sha": "d9f7af94afff85b0"
+      "v": "15",
+      "sha": "38bfe471a4e063ec"
     },
     "/arcade/data.js": {
       "v": "3",
@@ -679,8 +679,8 @@
       "sha": "a4222cc200670d79"
     },
     "/arcade/primary.js": {
-      "v": "14",
-      "sha": "d9f7af94afff85b0"
+      "v": "15",
+      "sha": "38bfe471a4e063ec"
     },
     "/arcade/data.js": {
       "v": "3",
@@ -829,16 +829,16 @@
       "sha": "42bbabae620fcfbf"
     },
     "/arcade/primary.js": {
-      "v": "14",
-      "sha": "d9f7af94afff85b0"
+      "v": "15",
+      "sha": "38bfe471a4e063ec"
     },
     "/arcade/data.js": {
       "v": "3",
       "sha": "3864cdc8af60812f"
     },
     "/arcade/jerseys.js": {
-      "v": "15",
-      "sha": "0a2d726f7434a9c3"
+      "v": "16",
+      "sha": "720ec231fffed274"
     },
     "/arcade/stats.js": {
       "v": "3",
@@ -1071,8 +1071,8 @@
       "sha": "9e6f92406cb46897"
     },
     "/arcade/primary.js": {
-      "v": "14",
-      "sha": "d9f7af94afff85b0"
+      "v": "15",
+      "sha": "38bfe471a4e063ec"
     },
     "/arcade/data.js": {
       "v": "3",
@@ -1221,8 +1221,8 @@
       "sha": "9e6f92406cb46897"
     },
     "/arcade/primary.js": {
-      "v": "14",
-      "sha": "d9f7af94afff85b0"
+      "v": "15",
+      "sha": "38bfe471a4e063ec"
     },
     "/arcade/data.js": {
       "v": "3",
@@ -1367,8 +1367,8 @@
       "sha": "9e6f92406cb46897"
     },
     "/arcade/primary.js": {
-      "v": "14",
-      "sha": "d9f7af94afff85b0"
+      "v": "15",
+      "sha": "38bfe471a4e063ec"
     },
     "/arcade/data.js": {
       "v": "3",
@@ -1585,8 +1585,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/teammates.js": {
-      "v": "16",
-      "sha": "ba2acb332da425b4"
+      "v": "17",
+      "sha": "6072b30b2e77cd19"
     },
     "/arcade/livecheck.js": {
       "v": "8",
@@ -1737,16 +1737,16 @@
       "sha": "9e6f92406cb46897"
     },
     "/arcade/primary.js": {
-      "v": "14",
-      "sha": "d9f7af94afff85b0"
+      "v": "15",
+      "sha": "38bfe471a4e063ec"
     },
     "/arcade/data.js": {
       "v": "3",
       "sha": "3864cdc8af60812f"
     },
     "/arcade/jerseys.js": {
-      "v": "15",
-      "sha": "0a2d726f7434a9c3"
+      "v": "16",
+      "sha": "720ec231fffed274"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
