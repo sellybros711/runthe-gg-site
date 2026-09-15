@@ -7895,7 +7895,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=14"></script>
+<script src="/assets/store.js?v=15"></script>
 <!-- THE RUN, KEPT AGAINST THE ACCOUNT. Shared with Commish Simulator, which had the same
      save in localStorage and the same way of losing it. Optional like everything else up
      here: without it the game keeps its runs exactly where it always did, in this browser
@@ -8133,6 +8133,11 @@ const canPlayFull=()=>{
   if(!authState.signedIn) return false;
   return A.allowed({name:authState.name,userId:authState.userId});
 };
+/* WHETHER THE MODE IS PART OF THE PRODUCT, which is a different question from whether the
+   reader may play it and has a different answer for a tester. The store, the receipt and the
+   unlocked sheet's wording all read THIS; the door and the draft read canPlayFull(). One
+   product for everybody who paid, on the same rule the badge catalog's denominator uses. */
+const fullTeamSold=()=>!!(window.PS_FULLTEAM_ACCESS&&window.PS_FULLTEAM_ACCESS.LIVE);
 /* DYNASTY, asked the same way and read just as defensively: a blocked, stale or
    failed dynasty-access.js leaves PS_DYNASTY_ACCESS undefined, and the honest answer to
    "can this person see an unannounced mode" when the list cannot be read is no. */
@@ -8472,6 +8477,14 @@ const UNLOCK_DOORS=[
   {prod:'ps_premium',game:'ps',name:'Trade Machine',
    line:'No daily limit on it any more. Play it as often as you like.',
    go:()=>{ closeSheet(); setTimeout(()=>beginTradeMachine(),260); }},
+  /* GATED ON canPlayFull() AND NOT ON fullTeamSold(), which is the one row here where the
+     two come apart. This is a DOOR: it closes the sheet and walks the reader into the mode,
+     so what it has to answer is whether they can get in, and a tester can. Offering an owner
+     a door to a mode their own front page does not build is worse than not offering it. */
+  {prod:'ps_premium',game:'ps',name:'Full Team',
+   line:'No daily limit on it any more. Play it as often as you like.',
+   when:()=>canPlayFull(),
+   go:()=>{ closeSheet(); setTimeout(()=>fullDoor(),260); }},
   /* ROOT-RELATIVE, NEVER ABSOLUTE, and for exactly the reason the CFB header carries a note
      about: an absolute https://runthe.gg link takes somebody who arrived on www and drops
      them on the apex, where their session does not exist. A buyer following a link off this
@@ -8488,7 +8501,9 @@ const ULK_CHEV='<svg width="9" height="14" viewBox="0 0 9 14" fill="none" aria-h
   'stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function unlockedSheet(){
   const have=Array.isArray(premiumSet)?premiumSet:[];
-  const rows=UNLOCK_DOORS.filter((d)=>have.indexOf(d.prod)>=0);
+  /* `when` is optional and absent on every row but one: a door the reader cannot walk
+     through has no business being drawn, however much of it they own. */
+  const rows=UNLOCK_DOORS.filter((d)=>have.indexOf(d.prod)>=0&&(!d.when||d.when()));
   const box=$('sheet-in');
   box.dataset.kind='unlocked';
   const cell=(d,i)=>{
@@ -9781,6 +9796,10 @@ function newRun(opts){
      the mode card that leads somewhere the player already walked away from.
      Safe on the trade path itself: R.startSeason writes the new run back a moment later. */
   tradeClear();
+  /* AND A SAVED FULL TEAM SEASON, on the same rule and for the same reason. Safe on the Full
+     Team path itself: the first mutation after this writes the new run back through the
+     autosave wrapper. */
+  fullClear();
   submitted=null;
   myRanks=null;
   myGmRank=null; ranksP=null; gmRankP=null;
@@ -9925,8 +9944,8 @@ $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
  * on every visit, so flipping either needs no cache bump and takes effect immediately. */
 const DAILY_LIMIT_ALL=false;
 const dailyLimited=()=>DAILY_LIMIT_ALL||canPlayDynasty();
-let dailyState={dynasty:null,trade:null};
-let dailyAsked={dynasty:false,trade:false};
+let dailyState={dynasty:null,trade:null,full:null};
+let dailyAsked={dynasty:false,trade:false,full:false};
 let dailyTick=0;
 
 /* PREMIUM IS NOT METERED. Without this line the store sells "unlimited runs" and the page
@@ -9985,8 +10004,8 @@ function dailyEnsure(mode){
 }
 /* Called from the auth change, because the answer belongs to an account. */
 function dailyForget(){
-  dailyState={dynasty:null,trade:null};
-  dailyAsked={dynasty:false,trade:false};
+  dailyState={dynasty:null,trade:null,full:null};
+  dailyAsked={dynasty:false,trade:false,full:false};
 }
 /* "4h 12m", "12m", "40s". Coarse above an hour on purpose: a counter ticking every second
    for four hours is a distraction rather than information. */
@@ -10107,7 +10126,11 @@ function dailyClock(on){
    anywhere. */
 function dailySpentSheet(mode){
   const at=dailyResetsAt(mode), cd=at?dailyCountdown(at):null;
-  const name=mode==='trade'?'Trade Machine':'Dynasty';
+  /* NAMED, because this sheet says the name three times and an unnamed mode would read as
+     the Dynasty's sheet on a door that is not the Dynasty. Full Team takes the same one-run
+     wording the Trade Machine does, which is what its `unit` of 'run' already selects
+     everywhere below. */
+  const name=mode==='trade'?'Trade Machine':(mode==='full'?'Full Team':'Dynasty');
   const allow=dailyAllow(mode);
   const seasons=dailySeasons(mode), ended=dailyEnded(mode);
   /* TWO CLOCKS, AND THE UNIT SAYS WHICH. Dynasty's is 24 hours from the moment the day
@@ -10602,6 +10625,11 @@ function ensureFullButton(){
     return;
   }
   const box=ensureLongGroup(); if(!box) return;
+  /* ASKED HERE, ONCE PER SIGN-IN, because the line under the name is drawn from the answer.
+     Free, on a free call: dailyEnsure is a no-op for an owner and for anybody it has already
+     asked, and ps_attempts_state is declared stable and writes nothing, so drawing this door
+     can never cost somebody their run. */
+  dailyEnsure('full');
   if(!el){
     el=document.createElement('button');
     /* hp-ft is Full Team's own fill. On the shared card class alone this door had no
@@ -10611,13 +10639,43 @@ function ensureFullButton(){
     el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
       '<span class="hp-full-name">Full Team</span>'+
       '<span class="hp-full-sub">Six on offense &middot; six on defense</span>';
-    el.onclick=()=>{ beginFullDraft(); };
+    el.onclick=()=>{ fullDoor(); };
   }
   /* FIRST IN THE GROUP, above the dynasty door. */
   if(box.firstChild!==el) box.insertBefore(el,box.firstChild);
   el.hidden=false;
   el.disabled=false;
   el.classList.remove('hp-loading');
+  /* ---- AND WHAT THE LINE UNDER THE NAME SAYS ----
+   *
+   * THE DOOR ITSELF NEVER SHUTS. That is the lesson the dynasty door already carries and it
+   * was learned the hard way there: refusing to open a saved run on a spent day protected
+   * nothing, because the wall that matters is at the kickoff, and a run the game will not let
+   * you look at reads as a run the game has taken.
+   *
+   * So a save in progress always says Resume, whatever the meter says, and a spent day only
+   * ever changes this line. */
+  const saved=fullRead();
+  const sub=el.querySelector('.hp-full-sub');
+  if(sub){
+    if(saved){
+      sub.textContent='Resume your season';
+    }else if(dailyShut('full')){
+      const t=dailyCountdown(dailyResetsAt('full'));
+      sub.textContent=t?('Next run in '+t):'Next run tomorrow';
+    }else{
+      sub.innerHTML='Six on offense &middot; six on defense';
+    }
+  }
+}
+
+/* THE DOOR'S ONE HANDLER, because it has two jobs and the player presses one button.
+   A saved season is resumed and is never metered: the day it cost was charged at its own
+   kickoff, and charging it twice is what the paid flag on the run exists to stop. Anything
+   else is a new run and goes through the allowance. */
+function fullDoor(){
+  if(fullRead()) return fullResume();
+  return beginFullDraft();
 }
 
 /* THE DEFENSE DRAFT HAS TO FETCH ITS PEOPLE FIRST, which is the one thing no other mode
@@ -11370,6 +11428,9 @@ const FB_SLOTS={
   open:{ key:()=>dynKeyFor('open'),  read:()=>dynReadRaw('open'),  prog:(s)=>dynProgress(s.run) },
   club:{ key:()=>dynKeyFor('club'),  read:()=>dynReadRaw('club'),  prog:(s)=>dynProgress(s.run) },
   trade:{key:()=>TRADE_SAVE_KEY,     read:()=>tradeReadRaw(),      prog:(s)=>tradeProgress(s.run) },
+  /* THE FOURTH SLOT, and it does not cost a fourth round trip: ps_save_list hands back every
+     slot of one game at once, which is the whole reason this page keeps one game key. */
+  full:{ key:()=>FULL_SAVE_KEY,      read:()=>fullReadRaw(),       prog:(s)=>fullProgress(s.run) },
 };
 /* PACKED AT SEND TIME, NOT AT QUEUE TIME. Half a dozen of these can be queued inside one
    offseason, and what belongs on the server is the run as it is when the request goes out. */
@@ -11441,7 +11502,7 @@ async function dynCloudPull(){
   /* THE DYNASTY DOOR IS THE ONLY THING ON SCREEN THAT READS ONE OF THESE. The Trade Machine's
      card lives inside the modes sheet, which reads tradeRead() every time it is drawn, so a
      season that just came down is already there the moment somebody opens it. */
-  if(painted) ensureDynastyButton();
+  if(painted){ ensureDynastyButton(); ensureFullButton(); }
 }
 
 /* The save as it sits, before the checks dynRead makes. What goes up has to be the bytes that
@@ -11741,6 +11802,146 @@ function tradeResume(){
   return true;
 }
 
+/* ===================== FULL TEAM'S SAVE =====================================
+ *
+ * WRITTEN BEFORE THE METER, AND THAT ORDER IS THE POINT. Full Team was the last run on this
+ * page kept nowhere at all: no localStorage key, no slot in FB_SLOTS, so a closed tab lost
+ * twelve picks and a season. That was survivable while the mode was unmetered, because
+ * starting again cost nothing but the time.
+ *
+ * It stops being survivable the moment a run costs a day. dailySpend fires at KICKOFF, so
+ * without this a dropped connection in week three takes the run AND the allowance, and the
+ * player is left looking at a door that says come back tomorrow for a season they never got
+ * to finish. That is the dynNewSheet mistake exactly: the trade taken halfway.
+ *
+ * It is the Trade Machine's save with the guard changed, for the reason the two modes are
+ * alike: a Full Team run IS one season, so there is one of these per account and progress
+ * rises through the phases of a single year rather than through a count of them.
+ *
+ * WHAT IT IS NOT IS THE TRADE MACHINE'S RESTORE. That one force-starts a self-driving
+ * season, because the Trade Machine drives itself. Full Team is played by hand, so the
+ * restore is dynRestore's: put the run back, then put the player on the screen its phase
+ * names.
+ */
+const FULL_SAVE_KEY='ps_full_save';
+/* Bumped whenever a change would put a saved run under rules it was not started on, which is
+   the rule both older keys follow. It refuses rather than migrates: a wrong resume is worse
+   than a fresh start. */
+const FULL_SAVE_VERSION=1;
+
+function fullPack(){
+  return {
+    v:FULL_SAVE_VERSION,
+    api:NEED_VERSION,
+    user:authState.userId||null,
+    at:Date.now(),
+    /* The row id travels so a resumed results screen cannot file a second board row. */
+    submitted:submitted,
+    /* AND WHETHER THE DAY HAS ALREADY BEEN CHARGED FOR THIS RUN. Without it, coming back to
+       a saved season and reaching any gate would spend a second run for the same kickoff.
+       The dynasty carries paidSeason for the same reason and it is the same bug. */
+    run:Object.assign({},run,{
+      roster:run.roster.map(dynKey),
+      coach:run.coach?run.coach.name:null,
+    }),
+  };
+}
+/* The same ladder the Trade Machine climbs, and shared rather than copied: both are one
+   season, and the playoff weeks do not continue the regular season's numbering, so a
+   week-only measure goes backwards at the seeding screen and the server then refuses every
+   save for the rest of the run with nothing on screen to say so. */
+function fullProgress(r){
+  if(!r) return 0;
+  const wk=Math.max(0,(r.season&&r.season.week)||0);
+  return (TRADE_PHASE_RANK[r.phase]||0)*200+wk+1;
+}
+/* GUARDED ON full AND NOT dynasty. Nothing builds a Full Team dynasty today, and beginDraft
+   already carries the same pair in its own guard, so this stays correct rather than becoming
+   correct-by-accident if one ever exists: a dynasty is dynSave's, whatever shape it is. */
+const fullAtRest=()=>!!(run&&run.full&&!run.dynasty&&run.phase!==R.PHASES.OVER);
+function fullSave(){
+  if(!fullAtRest()) return;
+  try{ localStorage.setItem(FULL_SAVE_KEY,JSON.stringify(fullPack())); }catch(_){}
+  dynCloudPush('full');
+}
+function fullClear(){
+  try{ localStorage.removeItem(FULL_SAVE_KEY); }catch(_){}
+  dynCloudDrop('full');
+}
+/* The bytes as they sit, before the checks fullRead makes, so what goes up is what came
+   down. See the note over tradeReadRaw. */
+function fullReadRaw(){
+  let raw=null;
+  try{ raw=localStorage.getItem(FULL_SAVE_KEY); }catch(_){ return null; }
+  if(!raw) return null;
+  try{
+    const s=JSON.parse(raw);
+    return (s&&s.run&&s.run.full)?s:null;
+  }catch(_){ return null; }
+}
+function fullRead(){
+  let raw=null;
+  try{ raw=localStorage.getItem(FULL_SAVE_KEY); }catch(_){ return null; }
+  if(!raw) return null;
+  let s=null;
+  try{ s=JSON.parse(raw); }catch(_){ return null; }
+  if(!s||s.v!==FULL_SAVE_VERSION||!s.run||!s.run.full||!Array.isArray(s.run.roster)){
+    return null;
+  }
+  /* Whoever saved it and nobody else, both sides normalised so a signed out run finds its own
+     rather than the last account's. */
+  if((s.user||null)!==(authState.userId||null)) return null;
+  return s;
+}
+function fullRestore(s){
+  const r=s.run;
+  let missing=false;
+  /* HALF THIS ROSTER IS DEFENDERS, so BYKEY has to have been fed the second pool before this
+     runs. fullResume awaits loadDefensePool for that reason, the same way dynResume does.
+     Skip it and every defender reads as missing and a perfectly good run is cleared. */
+  r.roster=r.roster.map((k)=>{ const p=k?BYKEY.get(k)||null:null; if(!p) missing=true; return p; });
+  if(missing) return false;
+  if(r.coach){
+    const name=r.coach;
+    r.coach=coachList().find((c)=>c.name===name)||null;
+    if(!r.coach) return false;
+  }
+  endRun();
+  run=r;
+  lastChem=1;
+  submitted=(s.submitted===undefined?null:s.submitted);
+  /* Played by hand, so the manual advance is visible. The Trade Machine hides its own. */
+  $('b-sim').style.display='';
+  closeSheet();
+  dressTeam();
+  const P=R.PHASES;
+  if(run.phase===P.COACH){ paintCoach(); return true; }
+  if(run.phase===P.OVER){ paintOver(); return true; }
+  if(run.phase===P.SEASON){ paintSquad(!!run.season); return true; }
+  show('s-draft');
+  nextSpin(run.currentDraw||null);
+  return true;
+}
+function fullResume(){
+  const s=fullRead();
+  if(!s) return false;
+  /* The pool first, then the run, for the reason fullRestore's own note gives. */
+  loadDefensePool().then(()=>{
+    let ok=false;
+    try{ ok=fullRestore(s); }catch(err){ console.error(err); ok=false; }
+    if(ok) return;
+    /* Unopenable, so it goes, and it is said out loud: a silent clear looks exactly like the
+       bug this block exists to fix. */
+    fullClear();
+    endRun();
+    show('s-intro');
+    toast('That saved run could not be opened. It has been cleared.');
+  },()=>{
+    toast('Could not load the defensive players. Check your connection and try again.');
+  });
+  return true;
+}
+
 /*
  * EVERY MUTATION SAVES, AND NOT ONE CALL SITE SAYS SO.
  *
@@ -11769,7 +11970,7 @@ function tradeResume(){
   .forEach((fn)=>{
     const orig=R[fn];
     if(typeof orig!=='function') return;
-    R[fn]=function(){ const out=orig.apply(this,arguments); dynSave(); tradeSave(); return out; };
+    R[fn]=function(){ const out=orig.apply(this,arguments); dynSave(); tradeSave(); fullSave(); return out; };
   });
 
 function beginFullDraft(){
@@ -11777,6 +11978,13 @@ function beginFullDraft(){
   if(!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','full');
   }
+  /* ONE RUN A DAY, AND THE STORE IS WHAT A SPENT DAY OPENS, never a wall in front of the
+     mode. Checked here and spent at kickoff, the two on purpose at different moments: reading
+     is free, so it can save somebody the twelve picks of a draft they would not be allowed to
+     play, while the write waits until they have actually committed to the season.
+     dailyOn() stops metering the moment ps_premium is owned, so an owner never reaches this.
+     A SAVED RUN NEVER GETS HERE AT ALL: fullDoor() resumes before it calls this. */
+  if(dailyShut('full')) return dailyStop('full');
   const b=$('b-start-full');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
   /* THE CATCH IS ON THE FETCH AND NOTHING ELSE.
@@ -15942,8 +16150,11 @@ function paintCapTracker(inf){
    begins would be paying for that authority twice. */
 function spendTheDay(){
   if(!run) return;
-  if(!(run.dynasty||run.tradeMachine)) return;
-  const mode=run.dynasty?'dynasty':'trade';
+  if(!(run.dynasty||run.tradeMachine||run.full)) return;
+  /* FULL TEAM IS A RUN LIKE THE TRADE MACHINE'S, so it falls through to the branch below:
+     one run a day, charged once, at the kickoff of the one season it has. A Full Team
+     dynasty is a dynasty first, which is why that arm is tested before this one. */
+  const mode=run.dynasty?'dynasty':(run.tradeMachine?'trade':'full');
   if(dailySeasons(mode)){
     const n=run.seasonNo||1;
     if(run.paidSeason===n) return;
@@ -15969,6 +16180,15 @@ function seasonIsPaid(){
 }
 function startSeason(){
   if(!seasonIsPaid()&&dailyShut('dynasty')) return dailyStop('dynasty');
+  /* THE SAME BACKSTOP FOR FULL TEAM, and a backstop is all it is: the wall that matters is at
+     the door, which is where somebody is turned away before they spend twelve picks on a run
+     they cannot play. This catches the ways round it, all of which start with a draft saved
+     on a day that still had a run in it and finished on a day that does not.
+     ON attemptPaid AND NOT ON THE CLOCK, so resuming a season already charged for is never
+     stopped by it. That is the rule the dynasty's seasonIsPaid() keeps and it is the one that
+     matters: a run in progress belongs to the player, and a mode that refuses to let them
+     finish a season they have already paid for reads as a mode that took it. */
+  if(run&&run.full&&!run.dynasty&&!run.attemptPaid&&dailyShut('full')) return dailyStop('full');
   spendTheDay();
   ga('season_started',{mode:runMode(),club:run&&run.franchise||null});
   const sp=$('season-roster'); if(sp) sp.style.display='none';
@@ -16112,6 +16332,7 @@ function after(){
        has been played; what is left is the results screen, and a mode card offering to
        resume something that is over is a door back to a place with nothing behind it. */
     if(run.tradeMachine) tradeClear();
+    if(run.full&&!run.dynasty) fullClear();
     paintOver();
   }
 }
@@ -22313,7 +22534,14 @@ const PRO_ITEM={
   /* WORDED THE SAME AS THE STORE LINE IT IS THE RECEIPT FOR. A customer reads this after
      paying, so a shorter description here than on the card they bought from reads as
      something having been taken away. See pwGroupText('ps', ...) in the paywall. */
-  ps_premium:{game:'ps',text:'Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine'},
+  /* FULL TEAM ON THE LAUNCH FLAG, in step with the store line this is the receipt for. Read
+     through PS_FULLTEAM_ACCESS.LIVE and never through canPlayFull(), for the reason the store
+     gives: a receipt itemises the PRODUCT, and the product cannot differ between two people
+     who paid the same $19.99 because one of them is on a tester list. */
+  ps_premium:{game:'ps',get text(){
+    return 'Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine'+
+      (fullTeamSold()?', Full Team':'');
+  }},
   cfb_premium:{game:'cfb',text:'Commissioner Mode'},
   arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
   runtour_pack:{game:'tour',text:'100,000 coins and one Tour Pack',wait:true}

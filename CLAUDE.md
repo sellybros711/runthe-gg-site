@@ -439,9 +439,9 @@ commish pull only while `#s-gate` is showing, because replacing `world` under so
 mid-beat swaps the sport out from under a decision they are making. The mark is dropped
 rather than kept when it has to skip, so the next visit asks again.
 
-**The football page has ONE game key and three slots**, and `FB_SLOTS` is where the three
-become one thing. `open` and `club` are the two dynasties, `trade` is a Trade Machine season.
-The key is still `ps_dynasty`, which is historical rather than descriptive: it was written
+**The football page has ONE game key and FOUR slots**, and `FB_SLOTS` is where the four
+become one thing. `open` and `club` are the two dynasties, `trade` is a Trade Machine season,
+`full` is a Full Team season. The key is still `ps_dynasty`, which is historical rather than descriptive: it was written
 when a dynasty was the only run being kept. Changing it now would strand every row already on
 the shelf, which is the one thing a save table must never do to itself. One key is also what
 keeps the boot to a single round trip; a second key for the Trade Machine would be a second
@@ -452,6 +452,15 @@ A trade run measures progress by phase and week rather than by seasons finished,
 IS one season. `TRADE_PHASE_RANK` exists because the playoff weeks do not continue the
 regular season's numbering, so a week-only measure goes backwards at the seeding screen and
 the server then refuses every save for the rest of the run, with nothing on screen to say so.
+A Full Team run is one season too and shares that ladder rather than copying it.
+
+**`full` was added because the mode grew a meter, and the order is the lesson.** Full Team was
+the last run on this page kept nowhere at all: no key, no slot, so a closed tab lost twelve
+picks and a season. That was survivable while starting again cost nothing but time. It stops
+being survivable the moment a run costs a day, because the charge lands at KICKOFF: a dropped
+connection in week three would take the run AND the allowance, and leave somebody looking at a
+door telling them to come back tomorrow for a season they never finished. That is `dynNewSheet`
+again, the trade taken halfway. **Save first, then meter.**
 
 **Boot BOTH views before shipping anything that touches this.** A crash that only hit
 testers has already shipped: moving the store out of `football/index.html` left
@@ -521,6 +530,8 @@ shorter wait walks the window backwards into the player's evening instead of out
 |---|---|---|
 | Dynasty | **3 seasons a day**, plus one for a boss battle won | when the budget is spent, or on a firing |
 | Commissioner | **1 season a day** | when each season ends |
+| Trade Machine | **1 run a day** | Eastern midnight |
+| Full Team | **1 run a day** | Eastern midnight |
 
 **Do not unify these.** They are two different units of play wearing the same word. A
 dynasty season is a draft and a schedule, and three of them is one sitting. A Commissioner
@@ -939,6 +950,73 @@ real team before it asserts anything about it.**
 `ensureFullButton()` rather than revealed, and the checker asserts from the reader's end
 that an account off the list gets no door, no node, and the words nowhere in the page.
 `check-premium.mjs` asserts the same thing from the other end.
+
+#### One run a day, free, and the bundle removes the counting
+
+```
+node football/check-fullteam.mjs                    the door, the save and the allowance
+psql -d fullteam -f supabase/test/daily_base.sql    then 99, 100, 101, 102, 105, then
+psql -d fullteam -f supabase/test/fullteam_daily_test.sql
+```
+
+**It could have been sold outright and is not.** Full Team is the most distinctive mode on the
+page and the obvious thing to put behind the bundle at launch. Three things say no, and the
+third is the one that settles it:
+
+- **The site already ran this experiment and reversed it.** Commissioner Mode's gate used to
+  stop a non-owner dead, which meant the only way to find out whether the mode was worth $19.99
+  was to pay $19.99. And "a store you can only reach by being refused is a wall".
+- **The card's one word.** The bundle leads with **Unlimited** over three tiles, chosen because
+  what a free account meets is the counting. One access-gated mode makes that word cover
+  something it does not.
+- **THE GOAT DENOMINATOR, which is a ceiling and not a wait.** `CATALOG.length` is what
+  `crest.js` divides by and it is deliberately one number for everybody. Full Team's shelf is
+  **24 badges** and the catalog goes **457 to 481** the day the mode launches. Behind a hard
+  gate, every free account's GOAT is capped at **95.0% permanently**, by badges no amount of
+  play can reach. Every other limit here is a wait.
+
+**It takes the Trade Machine's rule, not Dynasty's**, because a Full Team run IS one season, so
+there is no finished-the-day moment separate from the run for a personal rolling clock to hang
+on. Eastern calendar day, one run, which is what `ps_day_allowance` already answers for
+anything that is not a dynasty.
+
+**What `105_fullteam_daily.sql` actually changes is small.** `ps_day_allowance` and
+`ps_day_unit` already answered 1 and `'run'` for every non-dynasty mode. What stood in the way
+was the table's CHECK constraint and the `p_mode not in ('dynasty','trade')` guard at the top
+of four functions, under which the branch said `'trade'` eight times where it meant "the mode
+that was asked for". Generalising that branch to `p_mode` is the only reason those bodies are
+restated rather than altered in a line.
+
+**And writing its test found that 102 had none, and was broken.**
+`ps_attempt_spend('dynasty')` incremented with an unqualified `set used = used + 1`, and that
+function `RETURNS TABLE (ok, used, ...)`, so `used` is an OUT parameter and Postgres refused the
+statement as ambiguous. **It threw on every dynasty kickoff.** Nothing said so, because
+`dailySpend()` catches and fails open by design, so the season went ahead and was never counted
+and a three-a-day budget silently never decremented. The trade branch below it always had the
+alias. `supabase/test/fullteam_daily_test.sql` opens with the regression written as what a
+player would notice (spend three, the third is the last) rather than as the error text.
+
+**The gate is at the door, the charge is at the kickoff, and the two are different moments on
+purpose.** Reading is free, so it can save somebody the twelve picks of a draft they would not
+be allowed to play; the write waits until they commit. `startSeason()` carries a backstop on
+`attemptPaid` for the ways round it, and never on the clock, so finishing a season already paid
+for is never refused.
+
+**The door never shuts.** A saved run always says Resume, whatever the meter says, and a spent
+day changes only the line under the name. That is the dynasty door's lesson arriving a second
+time.
+
+**Two different questions, and they have different answers for a tester.** Who may PLAY it is
+`canPlayFull()`, which the door and the draft read. Whether it is part of the PRODUCT is
+`fullTeamSold()`, which reads the LIVE flag alone, and the store line, the receipt and the
+unlocked sheet's wording read that: a price is one product for everybody, or two people are
+shown different things for $19.99. Same rule as the badge catalog's denominator, for the same
+reason. `check-premium.mjs` asserts both, and asserts the store and the receipt still sell the
+same list, because they live in two files and nothing else notices when they drift.
+
+**Full Team is a LINE in the bundle and not a fourth tile.** The hero row is three tiles and the
+prompt card's `.pwc-marks` mirrors it at three; a fourth desyncs them, and both suites assert
+that count.
 
 #### A coach who would make the team worse is not offered
 

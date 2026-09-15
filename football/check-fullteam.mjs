@@ -77,6 +77,19 @@ const ok = (n, p, x) => {
    and the same reason: these are internals of one enormous script, and driving them is the
    only way to ask the page a question about a mode three taps in. */
 const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,fullPickIsDefensive,canPlayFull,'
+  /* The meter section drives the door, the save and the allowance. */
+  + 'fullDoor,fullRead,fullClear,dailyShut,ensureFullButton,setPremium:(v)=>{premiumSet=v;},'
+  /* A ONE-A-DAY SERVER standing in for ps_attempt_spend and ps_attempts_state, with a counter
+     on it, because what matters is how often the PAGE asks rather than what comes back.
+     IT HAS TO BE BUILT IN HERE rather than eval'd from the test: B is a binding inside the
+     page's own script and is not on window, so a stub assembled outside cannot see it. */
+  + 'meter:(used)=>{const n={spend:0};let u=used||0;'
+  + "const row=()=>({used:u,allowance:1,unit:'run',ended:false,"
+  + 'resetsAt:new Date(Date.now()+864e5).toISOString()});'
+  + 'B.attemptsState=async()=>row();'
+  + 'B.attemptSpend=async()=>{n.spend++;const ok=u<1;if(ok)u++;'
+  + 'return Object.assign({ok:ok},row());};'
+  + 'dailyForget();return n;},'
   + 'getRun:()=>run,'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 
@@ -345,6 +358,162 @@ console.log('\nTHE OVERALL IS THE PARTS, MULTIPLIED OUT');
     !near(p.offFit, wholeTwelve) || !near(p.defFit, wholeTwelve),
     'sides ' + p.offFit.toFixed(3) + ' / ' + p.defFit.toFixed(3)
       + ', all twelve would be ' + wholeTwelve.toFixed(3));
+}
+
+/* ================================================================
+   ONE RUN A DAY, AND THE RUN IN PROGRESS BELONGS TO THE ACCOUNT
+
+   Full Team is metered like the Trade Machine (a run IS one season) and the bundle removes
+   the counting rather than unlocking the door, for the reasons argued at the top of
+   supabase/105_fullteam_daily.sql.
+
+   THE SAVE IS WHY THIS SECTION EXISTS AT ALL. Before the meter, a Full Team run was kept
+   nowhere: no localStorage key and no slot in FB_SLOTS. That was survivable while starting
+   again cost nothing. It stops being survivable the moment a run costs a day, because the
+   charge lands at KICKOFF, so a closed tab in week three would take the run and the
+   allowance together and leave the player looking at a door telling them to come back
+   tomorrow for a season they never finished.
+
+   So the four things asserted here are the four that can go wrong silently:
+     the draft is free      twelve picks is the longest browse on the site
+     the kickoff is charged ONCE, and the run carries the mark that says so
+     a spent day still opens a saved run, and changes only the line under the name
+     an owner is never metered at all
+   ================================================================ */
+console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
+{
+  const sub = (p) => p.evaluate(() =>
+    ((document.querySelector('#b-start-full .hp-full-sub') || {}).textContent || '').trim());
+
+  const m = await open(browser, { tester: true });
+  await m.page.evaluate(() => {
+    window.__C = window.__t.meter(0);
+    window.__t.setPremium([]);
+    window.__t.fullClear();
+    window.__t.ensureFullButton();
+  });
+  await m.page.waitForTimeout(600);
+
+  ok('a free day offers the mode', !/next run|resume/i.test(await sub(m.page)), await sub(m.page));
+
+  await m.page.evaluate(() => window.__t.fullDoor());
+  await m.page.waitForTimeout(6000);
+  for (let i = 0; i < 12; i++) {
+    const n = await m.page.evaluate(() => {
+      const run = window.__t.getRun();
+      if (!run || run.roster.length >= run.slots.length) return 'done';
+      const t = document.querySelector('#opts .tile:not(.off)');
+      if (!t) return 'stuck';
+      t.click();
+      return run.roster.length;
+    });
+    if (n === 'done' || n === 'stuck') break;
+    await m.page.waitForTimeout(2600);
+  }
+  await m.page.waitForTimeout(1500);
+  ok('  twelve picks were made',
+    await m.page.evaluate(() => { const r = window.__t.getRun(); return !!r && r.roster.length === 12; }));
+  ok('  and the draft itself cost nothing',
+    await m.page.evaluate(() => window.__C.spend) === 0);
+  ok('  while already being saved',
+    await m.page.evaluate(() => !!window.__t.fullRead()));
+
+  /* Decline the coach, take the squad screen, then kick off. b-play is the one path through
+     the page's own startSeason(), which is where the day is spent; finishHiring only paints
+     the squad, and a walk that stopped there would assert nothing about the charge. */
+  await m.page.evaluate(() => { const b = document.getElementById('b-coach-none'); if (b) b.click(); });
+  await m.page.waitForTimeout(800);
+  await m.page.evaluate(() => { const b = document.getElementById('b-coach-go'); if (b) b.click(); });
+  await m.page.waitForTimeout(2500);
+  await m.page.evaluate(() => { const b = document.getElementById('b-play'); if (b) b.click(); });
+  await m.page.waitForTimeout(3500);
+  ok('the kickoff charges the day exactly once',
+    await m.page.evaluate(() => window.__C.spend) === 1,
+    'spends: ' + await m.page.evaluate(() => window.__C.spend));
+  ok('  and marks the run paid, so a reload cannot be charged again',
+    await m.page.evaluate(() => !!window.__t.getRun().attemptPaid));
+  ok('  the season is in the save',
+    await m.page.evaluate(() => { const s = window.__t.fullRead(); return !!s && s.run.roster.length === 12; }));
+  ok('  nothing threw', !m.boom.length, m.boom.join(' | ') || 'no errors');
+
+  /* A SPENT DAY, WITH THE RUN STILL ON THE SHELF. The door must open it: the wall that
+     matters is at the kickoff, and a run the game will not let you look at reads as a run
+     the game has taken. Same lesson the dynasty door already carries.
+
+     RELOADED RATHER THAN REOPENED, and that is not a detail. open() calls newPage(), which in
+     Playwright is a fresh CONTEXT with its own empty localStorage, so a second page would
+     find no save and this whole block would assert against a browser that had never played.
+     It has to be the same page coming back, which is also what the thing being tested is. */
+  const s = m;
+  await s.page.goto('http://local.test/football/', { waitUntil: 'domcontentloaded' });
+  await s.page.waitForTimeout(5000);
+  await s.page.evaluate(() => window.__t.signIn());
+  await s.page.evaluate(() => {
+    const b = [...document.querySelectorAll('button')]
+      .find((x) => /NO THANKS|I WILL TRY IT/i.test(x.textContent || ''));
+    if (b) b.click();
+  });
+  await s.page.waitForTimeout(1200);
+  await s.page.evaluate(() => {
+    window.__C = window.__t.meter(1);
+    window.__t.setPremium([]);
+    window.__t.ensureFullButton();
+  });
+  await s.page.waitForTimeout(600);
+  ok('a spent day is shut', await s.page.evaluate(() => window.__t.dailyShut('full')));
+  ok('  but the saved run survived', await s.page.evaluate(() => !!window.__t.fullRead()));
+  ok('  and the door says Resume, not a countdown', /resume/i.test(await sub(s.page)), await sub(s.page));
+  await s.page.evaluate(() => window.__t.fullDoor());
+  await s.page.waitForTimeout(6000);
+  ok('  pressing it puts the run back',
+    await s.page.evaluate(() => { const r = window.__t.getRun(); return !!r && !!r.full && r.roster.length === 12; }),
+    await s.page.evaluate(() => { const r = window.__t.getRun(); return r ? r.phase + ' / ' + r.roster.length : 'none'; }));
+  ok('  and resuming charged nothing',
+    await s.page.evaluate(() => window.__C.spend) === 0);
+
+  /* AND WITH NOTHING ON THE SHELF, the same spent day is the store rather than the mode. */
+  await s.page.evaluate(() => {
+    window.__t.fullClear();
+    window.__C = window.__t.meter(1);
+    window.__t.ensureFullButton();
+  });
+  await s.page.waitForTimeout(400);
+  ok('with no save, the door counts down instead', /next run/i.test(await sub(s.page)), await sub(s.page));
+  await s.page.evaluate(() => window.__t.fullDoor());
+  await s.page.waitForTimeout(1500);
+  const sheet = await s.page.evaluate(() => ({
+    on: document.getElementById('sheet').classList.contains('on'),
+    kind: document.getElementById('sheet-in').dataset.kind,
+    text: (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' '),
+  }));
+  ok('  and opens the spent sheet', sheet.on && sheet.kind === 'daily', sheet.kind);
+  /* NAMED. This sheet says the mode three times, and an unnamed one reads as the Dynasty's
+     sheet on a door that is not the Dynasty. */
+  ok('  which names Full Team', /Full Team/.test(sheet.text), sheet.text.slice(0, 90));
+  /* AND THE DRAFT NEVER OPENED, which is the claim. Not "there is no run": this page has
+     been reloaded rather than reopened, so the run resumed a moment ago is still in memory,
+     and asserting its absence would be asserting something the block never did. What a
+     refusal means on screen is that the draft screen is not the thing now showing. */
+  ok('  and no draft was opened',
+    await s.page.evaluate(() =>
+      [...document.querySelectorAll('.screen.on')].every((x) => x.id !== 's-draft')),
+    await s.page.evaluate(() =>
+      [...document.querySelectorAll('.screen.on')].map((x) => x.id).join(',')));
+  ok('  and it cost nothing', await s.page.evaluate(() => window.__C.spend) === 0);
+
+  /* THE THING THE BUNDLE ACTUALLY BUYS. dailyOn() stops metering the moment ps_premium is
+     owned, so an owner never reaches any of the above. */
+  await s.page.evaluate(() => {
+    window.__t.setPremium(['ps_premium']);
+    window.__t.fullClear();
+    window.__t.ensureFullButton();
+  });
+  await s.page.waitForTimeout(400);
+  ok('an owner is not metered at all',
+    await s.page.evaluate(() => window.__t.dailyShut('full')) === false);
+  ok('  and their door offers the mode', !/next run/i.test(await sub(s.page)), await sub(s.page));
+  ok('  nothing threw', !s.boom.length, s.boom.join(' | ') || 'no errors');
+  await s.page.close();
 }
 
 await browser.close();

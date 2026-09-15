@@ -1,104 +1,87 @@
 -- ---------------------------------------------------------------------------
--- 102_dynasty_rolling_day.sql : the dynasty day is 24 hours from the moment it
--- ends, per account, rather than a calendar day everybody shares.
+-- 105_fullteam_daily.sql : Full Team is one run a day, free, and the bundle
+--                          removes the limit.
 --
--- Safe to run more than once. Run 99, 100 and 101 first.
---
--- ---------------------------------------------------------------------------
--- WHAT A CALENDAR RESET DOES TO A PLAYER WHO ARRIVES LATE
--- ---------------------------------------------------------------------------
--- 99 reset everybody at midnight Eastern, which is the right rule for a
--- leaderboard and the wrong one for an allowance. Somebody who sits down at
--- 11pm plays three seasons and gets three more an hour later. Somebody who sits
--- down at 9am waits fifteen hours for the same three. Same budget, wildly
--- different game, decided by nothing the player did.
---
--- So the clock is theirs now. It starts when their day ENDS, which is one of
--- exactly two moments:
---
---   they finish the third season and were not fired
---   they are fired, whenever that lands
---
--- and it runs for 24 hours from there. A run that stops in the middle is not a
--- day that ended: the seasons left are still there next time, whenever that is,
--- and no clock is running. What the wait follows is spending the budget, not
--- opening the game.
+-- Safe to run more than once. Run it AFTER 102_dynasty_rolling_day.sql, whose
+-- four functions it replaces.
 --
 -- ---------------------------------------------------------------------------
--- THE TRADE MACHINE KEEPS THE CALENDAR DAY, AND THAT IS NOT AN OVERSIGHT
+-- WHY A METER AND NOT A DOOR
 -- ---------------------------------------------------------------------------
--- One run there IS one sitting, so there is no "finished the day" moment
--- separate from the run itself, and nothing for a personal clock to hang on.
--- Its ledger is untouched: `ps_daily_attempts` still holds it, still keyed on
--- the Eastern day, and `unit` still answers 'run' for it. The page words every
--- countdown off that, so the two clocks never have to be told apart by hand.
+-- Full Team could have been sold outright: it is the most distinctive mode on
+-- the page and the obvious thing to put behind the bundle at launch. It is not,
+-- for a reason this repo has already written down twice and learned the hard way
+-- once. Commissioner Mode used to stop a non-owner dead, which meant the only
+-- way to find out whether the mode was worth $19.99 was to pay $19.99, and "a
+-- store you can only reach by being refused is a wall".
+--
+-- It is also the badge cabinet. CATALOG.length is the denominator crest.js
+-- divides by and it is deliberately ONE NUMBER FOR EVERYBODY, so that two
+-- identical cabinets cannot rank differently. Full Team's shelf is 24 badges and
+-- the catalog goes 457 -> 481 the day the mode launches. Behind a hard gate that
+-- caps every free account's GOAT at 95.0% permanently, by badges no amount of
+-- play can reach. Every other limit on this site is a WAIT. That one would be a
+-- ceiling, and a ceiling nobody can see the reason for.
+--
+-- So: one run a day, and ps_premium removes the counting. Which is what the
+-- store card has always promised, in the one word it leads with.
 --
 -- ---------------------------------------------------------------------------
--- WHY DYNASTY GETS ITS OWN TABLE
+-- WHY IT IS THE TRADE MACHINE'S RULE AND NOT DYNASTY'S
 -- ---------------------------------------------------------------------------
--- `ps_daily_attempts` is keyed on (user, mode, DAY). A rolling window has no
--- day to be keyed on, and one that happened to cross midnight would silently
--- become two rows and hand out a second budget. The shape of the key is the
--- rule, so a different rule needs a different table rather than a column bolted
--- to this one. The dynasty rows already in `ps_daily_attempts` stop being read
--- here; they are left alone rather than deleted, because nothing is cheaper
--- than not writing a migration that touches live rows for no reason.
+-- The two allowances differ on purpose and must not be unified: a dynasty season
+-- is a draft and a schedule and three of them is one sitting, while a dynasty
+-- itself has no length. A FULL TEAM RUN IS ONE SEASON, exactly as a Trade
+-- Machine run is, so there is no finished-the-day moment separate from the run
+-- for a personal rolling clock to hang on. It takes the Eastern calendar day and
+-- the count of 1 that ps_day_allowance already answers for anything that is not
+-- a dynasty.
+--
+-- ---------------------------------------------------------------------------
+-- WHAT ACTUALLY CHANGES BELOW
+-- ---------------------------------------------------------------------------
+-- Less than it looks. ps_day_allowance and ps_day_unit already answer 1 and
+-- 'run' for every mode that is not 'dynasty', so neither is touched. What stood
+-- in the way was two things:
+--
+--   1. the table's CHECK constraint, which named the two modes that existed
+--   2. the `p_mode not in ('dynasty','trade')` guard at the top of four
+--      functions, and the literal 'trade' hardcoded through the branch under it
+--
+-- So the non-dynasty branch is generalised to p_mode. It was already the
+-- "anything that is not a dynasty" branch in shape; it just said 'trade' eight
+-- times where it meant "the mode that was asked for". That is the only reason
+-- these four bodies are restated here rather than a one-line alter.
+--
+-- ---------------------------------------------------------------------------
+-- AND IT CARRIES A FIX 102 NEEDED ANYWAY
+-- ---------------------------------------------------------------------------
+-- ps_attempt_spend's dynasty branch incremented with an unqualified
+--
+--     update public.ps_dynasty_day set used = used + 1
+--
+-- and this function RETURNS TABLE (ok, used, allowance, ...), which makes `used`
+-- an OUT parameter. Postgres refuses the statement as ambiguous, so the call
+-- THREW on every dynasty kickoff that reached it. Nothing said so: dailySpend()
+-- in the page catches and fails open by design, so the season went ahead and was
+-- never counted, and a three-a-day budget silently never decremented. The trade
+-- branch below it has always had the alias, which is why only one mode was hit.
+-- 102 is corrected in place as well; this file would carry the fix regardless,
+-- since it restates the function.
 -- ---------------------------------------------------------------------------
 
--- ---------- 1) the window ---------------------------------------------------
--- One row per player. No day, no mode: this table is Dynasty's and Dynasty has
--- one window at a time.
---
--- `locked_until` is the whole state machine, in one nullable column:
---
---   null                  the window is open. Seasons may be spent.
---   in the future         the day has ended and the wait is running.
---   in the past           the wait is over. Everything else in the row is stale
---                         and is rolled forward by the next write.
---
--- Rolling forward LAZILY rather than on a schedule is what lets the read below
--- stay `stable`: drawing the front page must never be able to change anybody's
--- allowance, so the reader computes the fresh view and only a spend writes it.
-create table if not exists public.ps_dynasty_day (
-  user_id      uuid primary key references auth.users(id) on delete cascade,
-  used         int     not null default 0,
-  grace_boss   boolean not null default false,
-  -- WHICH OF THE TWO ENDINGS this window had, because they are different
-  -- sentences on screen: one says the dynasty is waiting where it stands, the
-  -- other says the run is over.
-  ended_fired  boolean not null default false,
-  locked_until timestamptz,
-  started_at   timestamptz not null default now(),
-  last_at      timestamptz not null default now(),
-  constraint ps_dynasty_day_used_ck check (used >= 0 and used <= 100)
-);
+-- ---------- 1) the ledger admits a third mode -------------------------------
+-- Dropped and re-added rather than altered, because a CHECK cannot be widened in
+-- place. Nothing is rewritten: every existing row names a mode still in the
+-- list, so the validation pass finds nothing to complain about.
+alter table public.ps_daily_attempts
+  drop constraint if exists ps_daily_attempts_mode_ck;
+alter table public.ps_daily_attempts
+  add constraint ps_daily_attempts_mode_ck
+  check (mode in ('dynasty', 'trade', 'full'));
 
-alter table public.ps_dynasty_day enable row level security;
-
--- A player may read their own window and nothing else. Writes go through the
--- functions below, which are the only things that may spend or lock.
-drop policy if exists "own dynasty day" on public.ps_dynasty_day;
-create policy "own dynasty day" on public.ps_dynasty_day
-  for select using (auth.uid() = user_id);
-
-grant select on public.ps_dynasty_day to authenticated;
-
--- ---------- 2) how long the wait is, named once -----------------------------
-create or replace function public.ps_dynasty_wait()
-returns interval
-language sql
-immutable
-as $$ select interval '24 hours' $$;
-
--- ---------- 3) how the day stands, without spending any of it ---------------
--- Never writes, so drawing the front page can never cost somebody a season.
---
--- A LOCKED WINDOW REPORTS `used` AT THE ALLOWANCE whatever it really was. A run
--- that died in season one leaves two seasons unspent, and reporting that
--- honestly would have the page work out "two left" and draw a playable door
--- over a locked account. The one thing this answer has to be unambiguous about
--- is whether the player may play, and every reader of it gets that from the
--- numbers alone rather than from remembering to check `ended` as well.
+-- ---------- 2) how the day stands, without spending any of it ---------------
+-- Never writes, so drawing the front page can never cost somebody a run.
 create or replace function public.ps_attempts_state(p_mode text)
 returns table (used int, allowance int, resets_at timestamptz, unit text, ended boolean)
 language plpgsql
@@ -112,7 +95,7 @@ declare
   v_dyn   public.ps_dynasty_day%rowtype;
   v_allow int;
 begin
-  if p_mode is null or p_mode not in ('dynasty', 'trade') then
+  if p_mode is null or p_mode not in ('dynasty', 'trade', 'full') then
     raise exception 'unknown mode';
   end if;
 
@@ -141,30 +124,30 @@ begin
     return;
   end if;
 
-  -- The Trade Machine, on the Eastern calendar day, exactly as 99 left it.
+  -- The calendar-day modes: the Trade Machine, and now Full Team. One row per
+  -- player per mode per day, exactly as 99 left it, with p_mode where the mode
+  -- used to be spelled out.
   if v_user is null then
-    return query select 0, public.ps_day_allowance('trade', false),
-      public.ps_eastern_reset(), 'run'::text, false;
+    return query select 0, public.ps_day_allowance(p_mode, false),
+      public.ps_eastern_reset(), public.ps_day_unit(p_mode), false;
     return;
   end if;
   select * into v_row from public.ps_daily_attempts
-   where user_id = v_user and mode = 'trade' and day = public.ps_eastern_day();
+   where user_id = v_user and mode = p_mode and day = public.ps_eastern_day();
   if not found then
-    return query select 0, public.ps_day_allowance('trade', false),
-      public.ps_eastern_reset(), 'run'::text, false;
+    return query select 0, public.ps_day_allowance(p_mode, false),
+      public.ps_eastern_reset(), public.ps_day_unit(p_mode), false;
   else
-    return query select v_row.used, public.ps_day_allowance('trade', v_row.grace_boss),
-      public.ps_eastern_reset(), 'run'::text, v_row.ended;
+    return query select v_row.used, public.ps_day_allowance(p_mode, v_row.grace_boss),
+      public.ps_eastern_reset(), public.ps_day_unit(p_mode), v_row.ended;
   end if;
 end $$;
 
--- ---------- 4) spending one -------------------------------------------------
--- Called at KICKOFF, once per season, and the page marks the run with the season
--- it paid for so a reload in the middle of one cannot be charged twice.
---
--- SPENDING THE LAST ONE DOES NOT START THE CLOCK. The wait runs from the moment
--- the season ENDS, which is a different moment and is ps_attempt_day_end's job.
--- Starting it here would quietly hand back however long that season took.
+-- ---------- 3) spending one -------------------------------------------------
+-- Called at KICKOFF, not when the draft wheel opens, so a draft somebody backs
+-- out of costs nothing. For Full Team that gap is twelve picks wide, which is
+-- the longest browse on the site, and charging for it would be charging for
+-- looking.
 create or replace function public.ps_attempt_spend(p_mode text)
 returns table (ok boolean, used int, allowance int, resets_at timestamptz, unit text, ended boolean)
 language plpgsql
@@ -179,7 +162,7 @@ declare
   v_allow int;
   v_ended boolean;
 begin
-  if p_mode is null or p_mode not in ('dynasty', 'trade') then
+  if p_mode is null or p_mode not in ('dynasty', 'trade', 'full') then
     raise exception 'unknown mode';
   end if;
   if v_user is null then
@@ -222,14 +205,10 @@ begin
       return;
     end if;
 
-    /* ALIASED, AND THAT IS NOT A STYLE CHOICE. This function RETURNS TABLE (ok, used,
-       allowance, ...), which makes `used` an OUT parameter, so an unqualified `set used =
-       used + 1` is ambiguous between that parameter and the column and Postgres refuses the
-       whole statement. It threw on every dynasty kickoff that got this far, and nothing said
-       so on screen: dailySpend() catches and fails open, by design, so the season went ahead
-       and was never counted. A three-a-day budget that silently never decrements is not a
-       budget. The trade branch below has always had the alias, which is why only one of the
-       two modes was affected. */
+    /* ALIASED. See the note at the top of this file: unqualified, `used` is
+       ambiguous with this function's own OUT parameter and the whole statement
+       is refused, which threw on every dynasty kickoff and was swallowed by a
+       client that fails open. */
     update public.ps_dynasty_day d set used = d.used + 1, last_at = now()
      where d.user_id = v_user
      returning d.* into v_dyn;
@@ -237,40 +216,36 @@ begin
     return;
   end if;
 
-  -- The Trade Machine, unchanged.
+  -- The calendar-day modes.
   insert into public.ps_daily_attempts (user_id, mode, day, used)
-  values (v_user, 'trade', v_day, 0)
+  values (v_user, p_mode, v_day, 0)
   on conflict (user_id, mode, day) do nothing;
 
-  select a.used, public.ps_day_allowance('trade', a.grace_boss), a.ended
+  select a.used, public.ps_day_allowance(p_mode, a.grace_boss), a.ended
     into v_used, v_allow, v_ended
     from public.ps_daily_attempts a
-   where a.user_id = v_user and a.mode = 'trade' and a.day = v_day
+   where a.user_id = v_user and a.mode = p_mode and a.day = v_day
      for update;
 
   if v_ended or v_used >= v_allow then
     return query select false, v_used, v_allow, public.ps_eastern_reset(),
-      'run'::text, v_ended;
+      public.ps_day_unit(p_mode), v_ended;
     return;
   end if;
 
   update public.ps_daily_attempts a
      set used = a.used + 1, last_at = now()
-   where a.user_id = v_user and a.mode = 'trade' and a.day = v_day
+   where a.user_id = v_user and a.mode = p_mode and a.day = v_day
    returning a.used into v_used;
 
   return query select true, v_used, v_allow, public.ps_eastern_reset(),
-    'run'::text, v_ended;
+    public.ps_day_unit(p_mode), v_ended;
 end $$;
 
--- ---------- 5) earning one --------------------------------------------------
--- 'boss' is a boss battle won and is worth one more season in the window it was
--- won in, once. 'fired' is accepted and does nothing, for the reason 101 gives.
---
--- NOT GRANTED INTO A CLOSED WINDOW. A boss is won during play, so this can only
--- arrive while the window is open; the guard is there because the one way it
--- could arrive late is a retry after the day ended, and crediting that would put
--- a fourth season into a budget nobody has started spending yet.
+-- ---------- 4) earning one --------------------------------------------------
+-- Full Team earns neither reason and never calls this. Answered anyway, the way
+-- the Trade Machine's branch always has been, so a client that asks gets a state
+-- back rather than an exception.
 create or replace function public.ps_attempt_grace(p_mode text, p_reason text)
 returns table (used int, allowance int, resets_at timestamptz, unit text, ended boolean)
 language plpgsql
@@ -285,7 +260,7 @@ declare
   v_allow int;
   v_ended boolean;
 begin
-  if p_mode is null or p_mode not in ('dynasty', 'trade') then
+  if p_mode is null or p_mode not in ('dynasty', 'trade', 'full') then
     raise exception 'unknown mode';
   end if;
   if p_reason is null or p_reason not in ('fired', 'boss') then
@@ -323,36 +298,25 @@ begin
     return;
   end if;
 
-  -- The Trade Machine earns neither and never calls this. Answered anyway.
   insert into public.ps_daily_attempts (user_id, mode, day, used, grace_boss)
-  values (v_user, 'trade', v_day, 0, p_reason = 'boss')
+  values (v_user, p_mode, v_day, 0, p_reason = 'boss')
   on conflict (user_id, mode, day)
     do update set grace_boss = public.ps_daily_attempts.grace_boss or p_reason = 'boss',
                   last_at = now();
 
-  select a.used, public.ps_day_allowance('trade', a.grace_boss), a.ended
+  select a.used, public.ps_day_allowance(p_mode, a.grace_boss), a.ended
     into v_used, v_allow, v_ended
     from public.ps_daily_attempts a
-   where a.user_id = v_user and a.mode = 'trade' and a.day = v_day;
+   where a.user_id = v_user and a.mode = p_mode and a.day = v_day;
 
-  return query select v_used, v_allow, public.ps_eastern_reset(), 'run'::text, v_ended;
+  return query select v_used, v_allow, public.ps_eastern_reset(),
+    public.ps_day_unit(p_mode), v_ended;
 end $$;
 
--- ---------- 6) ending the day, and starting the clock -----------------------
--- The one call that starts a wait. Made at the moment the day ends and at no
--- other: the third season's results screen, or any season's if it fired them.
---
--- p_fired is which of the two endings it was, and it only decides what the page
--- says. Both cost the same 24 hours.
---
--- IT NEVER EXTENDS A WAIT THAT IS ALREADY RUNNING. The results screen it is
--- called from can be reopened from a save, and a second call that pushed the
--- clock out another day would turn revisiting your own run into a punishment.
--- Only an open window is closed here.
---
--- A LYING CLIENT CAN ONLY HURT ITSELF, which is why this needs no proof: the
--- sole thing it can do is end a day that belongs to it.
-drop function if exists public.ps_attempt_day_end(text);
+-- ---------- 5) ending the day -----------------------------------------------
+-- Only the dynasty has a clock for this to start. A calendar-day mode's day ends
+-- at Eastern midnight whatever happens to the run, so this marks the ledger and
+-- changes no clock.
 create or replace function public.ps_attempt_day_end(p_mode text, p_fired boolean default false)
 returns table (used int, allowance int, resets_at timestamptz, unit text, ended boolean)
 language plpgsql
@@ -366,7 +330,7 @@ declare
   v_used  int;
   v_allow int;
 begin
-  if p_mode is null or p_mode not in ('dynasty', 'trade') then
+  if p_mode is null or p_mode not in ('dynasty', 'trade', 'full') then
     raise exception 'unknown mode';
   end if;
   if v_user is null then
@@ -378,6 +342,10 @@ begin
     on conflict (user_id) do nothing;
     select * into v_dyn from public.ps_dynasty_day where user_id = v_user for update;
 
+    /* NEVER EXTENDS A WAIT THAT IS ALREADY RUNNING. The results screen this is
+       called from can be reopened from a save, and a second call that pushed the
+       clock out another day would turn revisiting your own run into a
+       punishment. */
     if v_dyn.locked_until is null or v_dyn.locked_until <= now() then
       update public.ps_dynasty_day
          set locked_until = now() + public.ps_dynasty_wait(),
@@ -392,22 +360,24 @@ begin
     return;
   end if;
 
-  -- The Trade Machine's day ends at midnight whatever happens to the run, so
-  -- this marks the ledger and changes no clock.
   insert into public.ps_daily_attempts (user_id, mode, day, used, ended)
-  values (v_user, 'trade', v_day, 0, true)
+  values (v_user, p_mode, v_day, 0, true)
   on conflict (user_id, mode, day)
     do update set ended = true, last_at = now();
 
-  select a.used, public.ps_day_allowance('trade', a.grace_boss)
+  select a.used, public.ps_day_allowance(p_mode, a.grace_boss)
     into v_used, v_allow
     from public.ps_daily_attempts a
-   where a.user_id = v_user and a.mode = 'trade' and a.day = v_day;
+   where a.user_id = v_user and a.mode = p_mode and a.day = v_day;
 
-  return query select v_used, v_allow, public.ps_eastern_reset(), 'run'::text, true;
+  return query select v_used, v_allow, public.ps_eastern_reset(),
+    public.ps_day_unit(p_mode), true;
 end $$;
 
--- ---------- 7) grants -------------------------------------------------------
+-- ---------- 6) grants -------------------------------------------------------
+-- Unchanged from 102 and restated because create or replace does not reset them
+-- but a dropped and recreated function would. Guests can read state and can call
+-- nothing that writes.
 revoke all on function public.ps_attempts_state(text) from public;
 revoke all on function public.ps_attempt_spend(text) from public;
 revoke all on function public.ps_attempt_grace(text, text) from public;
@@ -416,6 +386,5 @@ grant execute on function public.ps_attempts_state(text) to anon, authenticated;
 grant execute on function public.ps_attempt_spend(text) to authenticated;
 grant execute on function public.ps_attempt_grace(text, text) to authenticated;
 grant execute on function public.ps_attempt_day_end(text, boolean) to authenticated;
-grant execute on function public.ps_dynasty_wait() to anon, authenticated;
 
 notify pgrst, 'reload schema';

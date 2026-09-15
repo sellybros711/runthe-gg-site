@@ -342,6 +342,12 @@
    * The fix is not to delete the word. Three of the four things really are permanent and that
    * is worth saying. It is to put the term on the LINE rather than over the sheet, so each row
    * says what it is and how long it lasts, and the two bundles can be compared on it. */
+  /* Whether Full Team has launched, asked of the flag file the football page loads. False
+     everywhere it is not loaded, which includes the college game and every page before
+     launch day, so the offer names it in exactly one place: after the flag flips. */
+  const PW_FULL_LIVE=()=>{
+    try{ return !!(window.PS_FULLTEAM_ACCESS&&window.PS_FULLTEAM_ACCESS.LIVE); }catch(_){ return false; }
+  };
   const pwGroupText=(key,text,term)=>{
     const g=PW_GAME[key];
     return '<div class="pw-line" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
@@ -429,7 +435,20 @@
        changes, which is the limit: all three of these are playable without paying, on three
        dynasty seasons a day and one Trade Machine run. What is bought is that the counting
        stops. */
-    pwGroupText('ps','Unlimited play: Dynasty, One Franchise Dynasty, Trade Machine',
+    /* FULL TEAM JOINS THE LIST ON ITS LAUNCH FLAG AND NOT ON THE TESTER LIST, which is the
+       rule the badge catalog already follows and for the same reason. CATALOG.length is one
+       number for everybody so two identical cabinets cannot rank differently; a PRICE is one
+       product for everybody so two people cannot be shown different things for $19.99. Who
+       may PLAY the mode today is a different question, answered by canPlayFull(), and it is
+       not this one.
+       READ DEFENSIVELY, and off the global rather than through the football page: this file
+       is drawn by the college game too, where fullteam-access.js is not loaded at all and
+       the honest answer is to say nothing.
+       IT IS A LINE AND NOT A FOURTH TILE. The hero row above is three tiles and the prompt
+       card's .pwc-marks mirrors it at three; a fourth would desync the two, and both suites
+       assert that count. The tiles are the shape of the offer, this is the itemisation. */
+    pwGroupText('ps','Unlimited play: Dynasty, One Franchise Dynasty, Trade Machine'+
+      (PW_FULL_LIVE()?', Full Team':''),
       'Lifetime access')+
     pwGroupText('cfb','Commissioner Mode','Lifetime access')+
     '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+

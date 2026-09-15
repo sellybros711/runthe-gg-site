@@ -652,7 +652,11 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,prof
   + 'spendTheDay,dynToWinter,countSpends:()=>{const n={c:0};'
   + 'B.attemptSpend=async(m)=>{n.c++;const s=dailyState[m]||{};'
   + 'return Object.assign({},s,{ok:true,used:(s.used||0)+1});};return n;},'
-  + 'reviewDynastyRules,dynIntroOff,dynNewSheet,dailyStop,'
+  + 'reviewDynastyRules,dynIntroOff,dynNewSheet,dailyStop,PRO_ITEM,'
+  /* The two Full Team questions, which have different answers for a tester: who may PLAY it
+     and whether it is part of the PRODUCT. The unlocked sheet reads the first, the receipt
+     and the store read the second. */
+  + 'canPlayFull,fullTeamSold,'
   + 'setPremium:(v)=>{premiumSet=v;},'
   /* The walk back from Stripe runs earlier on this page and leaves justPaid set, which is
      itself a reason premiumPitch() stands down. Cleared rather than worked around, so the
@@ -1221,9 +1225,17 @@ console.log('\nWHAT YOU UNLOCKED, AND EVERY ROW IS A DOOR');
  * lists something the account does not own is the same lie as a tile promising a mode the
  * purchase does not open, which this file already exists because of.
  */
+/* FULL TEAM IS THE ONE DOOR WHOSE PRESENCE DEPENDS ON THE READER, so the count is derived
+   rather than written down. This view flips FULLTEAM_LIVE to true, which is the launched
+   world; before launch the row is absent and the old 4 and 6 are still the answer. Deriving
+   it is what keeps this assertion meaningful on both sides of the flag instead of being a
+   magic number somebody bumps whenever it goes red. The row's own presence is asserted
+   against the flag straight after the loop, which is the half a count cannot check. */
+const fullDoorShows = await ck.page.evaluate(() => !!window.__t.canPlayFull());
 for (const [label, owns, want] of [
-  ['perfect-season', ['ps_premium', 'cfb_premium'], 4],
-  ['run-the-bundle', ['ps_premium', 'cfb_premium', 'arcade_card_year', 'runtour_pack'], 6],
+  ['perfect-season', ['ps_premium', 'cfb_premium'], 4 + (fullDoorShows ? 1 : 0)],
+  ['run-the-bundle', ['ps_premium', 'cfb_premium', 'arcade_card_year', 'runtour_pack'],
+    6 + (fullDoorShows ? 1 : 0)],
   ['nothing readable', [], 0],
 ]) {
   const r = await ck.page.evaluate((owns) => {
@@ -1258,6 +1270,46 @@ for (const [label, owns, want] of [
     ok('    never says the bundle is gone', !/gone|expired|no longer/i.test(r.text), r.text.slice(0, 120));
   }
 }
+
+/* AND THE FULL TEAM ROW IS THERE EXACTLY WHEN THE READER CAN WALK THROUGH IT. The count above
+   would pass just as green if some other row had appeared and this one had not, which is the
+   badge-that-cannot-be-lit trap in yet another coat. */
+const ftRow = await ck.page.evaluate(() => {
+  const T = window.__t;
+  T.setPremium(['ps_premium']);
+  document.getElementById('sheet').classList.remove('on');
+  T.unlockedSheet();
+  const rows = [...document.getElementById('sheet-in').querySelectorAll('.ulk-row')];
+  const r = rows.find((x) => /Full Team/.test(x.querySelector('b').textContent));
+  return { present: !!r, live: !!window.__t.fullTeamSold(), clickable: !!(r && r.onclick) };
+});
+ok('  the Full Team door matches who can play it', ftRow.present === fullDoorShows,
+  'door ' + ftRow.present + ', canPlayFull ' + fullDoorShows);
+ok('  and it goes somewhere', !ftRow.present || ftRow.clickable);
+/* THE RECEIPT IS THE OTHER RULE AND NOT THIS ONE. A door asks who may play; a receipt
+   itemises what was BOUGHT, and that cannot differ between two people who paid the same
+   $19.99 because one of them is on a tester list. So it reads the LAUNCH flag, the same rule
+   the badge catalog's denominator uses.
+   READ OFF PRO_ITEM RATHER THAN OFF A RENDERED SHEET, deliberately: pfPro paints from a real
+   premiumUnlocks() round trip that this harness has no account for, so driving it would be
+   asserting against the empty state. The line itself is the thing with the rule in it. */
+const receipt = await ck.page.evaluate(() => ({
+  ps: window.__t.PRO_ITEM.ps_premium.text,
+  live: !!window.__t.fullTeamSold(),
+}));
+ok('  the receipt names Full Team only once it has launched',
+  /Full Team/.test(receipt.ps) === receipt.live, receipt.ps);
+/* AND IT IS THE SAME SENTENCE THE STORE SELLS. The comment over PRO_ITEM says a receipt
+   shorter than the card it is the receipt for reads as something having been taken away, and
+   the two are in two different files, so nothing but this notices when they drift. */
+const sold = await ck.page.evaluate(() => {
+  const m = (window.RTG_STORE.html({ signedOut: false }) || '')
+    .match(/Unlimited play:[^<]*/);
+  return m ? m[0] : '';
+});
+ok('  and the store sells the same list', !!sold
+  && sold.replace(/^Unlimited play:\s*/, '') === receipt.ps.replace(/^Unlimited runs:\s*/, ''),
+  sold + '   ||   ' + receipt.ps);
 
 /* AND ONE OF THEM PRESSED FOR REAL. The Trade Machine is the one door an owner can walk
    through with nothing else set up: no saved run to replace, no rules sheet in front of it,
