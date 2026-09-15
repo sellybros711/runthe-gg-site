@@ -97,7 +97,7 @@ versions a script beside it, found rather than listed.
 it is DERIVED from the run rows the leaderboard already keeps rather than stored anywhere.
 That is what makes a cabinet retroactive, account-shaped rather than browser-shaped, and
 impossible to lose by clearing site data. It is also the constraint: a badge can only ask
-about something that actually reaches `ps_runs`. A dynasty knows whether its boss game was
+about something that actually reaches `ps_runs`. A dynasty knows whether its boss battle was
 won and never writes it down, so no badge asks. Reaching season 11 is the honest version of
 the same claim.
 
@@ -138,6 +138,146 @@ allowance and then the store; the row removes the limit rather than unlocking th
 **`arcade_card_year` is the one grant that ends.** Twelve months, and it does not renew. No
 copy anywhere may imply it does, and the receipt has to show the end date.
 
+### What the free allowance actually counts
+
+**Dynasty counts SEASONS, the Trade Machine counts RUNS, and the server says which.**
+`supabase/101_dynasty_seasons.sql` is the whole rule: three dynasty seasons a day, one more
+for a boss battle won, spent one per kickoff on whatever run the player is in. A firing ends
+the day outright. The Trade Machine is one run a day, unchanged, because a run there IS one
+season.
+
+The old rule metered a START, and the mode it produced was the entire game with a wait in
+front of it: begin on Monday, still be playing that same run at season 60 without the game
+asking again. The only thing the bundle sold was re-drafting.
+
+**A firing ending the day is not spite, it is what stops the budget buying a reroll.** Fired
+in season one with two seasons left, the cheapest use of them is a string of fresh season
+ones until one drafts well. That is both the behaviour the meter exists to discourage and
+the worst possible way to meet the mode. The season one mercy from
+`100_daily_grace_reasons.sql` is gone for exactly the same reason: under a budget of three it
+IS the reroll button.
+
+**`unit` is what makes the page correct on both sides of the migration.** SQL is deployed by
+hand, the page is not, so `ps_attempts_state` returns `'season'` or `'run'` and every gate
+and every line of copy reads `dailySeasons()`. A database still on 100 answers without the
+column, the page falls back to `'run'`, and it goes on enforcing and describing the rule
+that database is actually keeping. Both rules are asserted in `check-premium.mjs`, which is
+why that file has two sections rather than one, and the season section can go when the
+migration has been deployed everywhere it needs to be.
+
+**The stop is at the results screen, not the kickoff.** `dynToWinter` is the gate, so a
+player out of seasons is refused before the winter rather than after it. Blocking at
+`startSeason` alone would let somebody age a roster and work the wheel for a season they
+cannot start; it is still guarded there, as a backstop for a second dynasty in the other
+slot spending the budget out from under this one.
+
+**The dynasty clock is 24 hours from when the day ENDS, per account.**
+`supabase/102_dynasty_rolling_day.sql` moved it off the shared Eastern midnight, because a
+calendar reset hands somebody who sits down at 11pm three more seasons an hour later and
+makes somebody who sits down at 9am wait fifteen hours for the same three. Same budget,
+different game, decided by nothing the player did. The wait starts at one of exactly two
+moments, and `paintOver` is where both of them land: the last season of the budget finishes,
+or the run is fired. A run that merely stops in the middle has not ended a day, so no clock
+runs and the seasons left are still there whenever they come back.
+
+**The Trade Machine keeps the calendar day and that is not an oversight.** One run there IS
+one sitting, so there is no finished-the-day moment separate from the run for a personal
+clock to hang on. `unit` is still what tells the two apart, and every countdown and fallback
+sentence on the page is written off `dailySeasons()` for exactly that reason.
+
+**Dynasty has its own table now.** `ps_daily_attempts` is keyed on (user, mode, DAY), and a
+rolling window that happened to cross midnight would silently become two rows and hand out a
+second budget. The shape of the key is the rule, so `ps_dynasty_day` holds one row per
+player with no day in it: `locked_until` null means open, in the future means waiting, in
+the past means the row is stale and the next WRITE rolls it forward. Rolling lazily is what
+keeps `ps_attempts_state` `stable`, which is what keeps drawing the front page from ever
+being able to cost somebody a season.
+
+**`ps_attempt_day_end` must never extend a wait that is already running.** The results
+screen it is called from is reopened from a save every time somebody comes back to a
+finished run, so a second stamp would turn looking at your own dynasty into another day's
+punishment. `check-premium.mjs` asserts both halves: that a shut day with no clock on it
+starts one, and that a clock already running is never restarted.
+
+**A free player loses a dynasty on two things and a clock is not one of them.** Ending it
+themselves, and being fired. Every other way one can go is a bug, and every one of them is
+silent, because nothing throws when a save is removed. Two have already been found:
+
+- **`dynNewSheet` cleared the save and asked the allowance afterwards.** So the trade this
+  sheet exists to make (this run for a new one) could be taken halfway: the dynasty went,
+  `beginDynastyDraft` then refused on a spent day, and the player was left with the spent
+  sheet and nothing. Every `dynClear` that trades one run for another now checks the day
+  BEFORE it clears, and `dynastyReplaceSheet` checks again on the press, because it is the
+  one path that reaches `beginDraft` without going back through the gate.
+- **The front door refused to open a saved run on a spent day.** It protected nothing: the
+  wall that matters is inside the run, at `dynToWinter`. A dynasty the game will not let you
+  look at reads as a dynasty the game has taken, however good the countdown beside it is. The
+  door resumes always; a spent day only changes the line under it, to when the next season
+  lands.
+
+The mid-season gap is already covered and worth not re-breaking: `spendTheDay` calls
+`dynSave` immediately, and `dynAtRest` allows a save at `SEASON` week 0, so a tab closed
+mid-season comes back to the squad screen with `paidSeason` already set. The season is
+replayed and not re-charged.
+
+## A run in progress belongs to the account
+
+```
+node football/check-cloudsave.mjs                    the dynasty, both directions
+node cfb/build/test/commish/test_cloudsave.mjs       the term and the career (needs :8080)
+```
+
+`supabase/103_cloud_saves.sql` is the record and `/assets/cloudsave.js` is the one client
+both games use. A dynasty and a commissioner's term were both in localStorage and nowhere
+else, which loses them to clearing site data, a private window, iOS evicting a site nobody
+visited for a week, a phone that is not the laptop, and a second account signing in on the
+same browser. **None of those throws.** The only symptom is a front page offering to start
+something the player was forty seasons into.
+
+**localStorage is still written first and synchronously, and that is deliberate.** A dynasty
+autosaves on every cut and every signing, and a game that waited on a round trip for each of
+those would be worse than one that loses a save. The browser copy is a cache of the table
+now; the upload rides behind through `RTG_SAVE.queue`, which keeps one request in flight per
+slot and builds the payload at SEND time so what goes up is the run as it stands when the
+wire is free.
+
+**Every call fails soft, and null means "no opinion", never "you have no save".** A shelf
+that cannot be reached must never be the reason a run goes, which is the entire point of the
+file. Both suites assert the mode is exactly as playable with the network on fire.
+
+**Progress decides a conflict, not a clock.** Every write carries how far the run has got
+(`dynProgress`, `termProgress`, `careerProgress`), and the server refuses one that would move
+a save backwards, handing back what is stored so the caller can adopt it. Device clocks are
+wrong often enough to matter and last-write-wins fails in exactly the direction this exists
+to prevent. It costs one thing: a deliberate restart on a second device would lose to a stale
+browser holding season 40. That is why **starting over DELETES rather than overwriting**, in
+`dynClear`, in `beginDynastyDraft` and in `newTerm`, and the trade is the right way round.
+Losing a restart costs a redraft; losing a forty season dynasty cannot be undone.
+
+**A delete goes through the same queue as the saves.** Starting over deletes the row and
+saves the new run a moment later, and raced over the open network the delete can arrive
+second and take the NEW run with it. `RTG_SAVE.drop` is queued per slot, so it also discards
+whatever write of the old run was still pending.
+
+**Adopting only happens where it is safe.** The football pull lands on the front page and the
+commish pull only while `#s-gate` is showing, because replacing `world` under somebody
+mid-beat swaps the sport out from under a decision they are making. The mark is dropped
+rather than kept when it has to skip, so the next visit asks again.
+
+**The football page has ONE game key and three slots**, and `FB_SLOTS` is where the three
+become one thing. `open` and `club` are the two dynasties, `trade` is a Trade Machine season.
+The key is still `ps_dynasty`, which is historical rather than descriptive: it was written
+when a dynasty was the only run being kept. Changing it now would strand every row already on
+the shelf, which is the one thing a save table must never do to itself. One key is also what
+keeps the boot to a single round trip; a second key for the Trade Machine would be a second
+request on every boot for every signed in player, which is most of them, to ask something the
+first request already answered.
+
+A trade run measures progress by phase and week rather than by seasons finished, because it
+IS one season. `TRADE_PHASE_RANK` exists because the playoff weeks do not continue the
+regular season's numbering, so a week-only measure goes backwards at the seeding screen and
+the server then refuses every save for the rest of the run, with nothing on screen to say so.
+
 **Boot BOTH views before shipping anything that touches this.** A crash that only hit
 testers has already shipped: moving the store out of `football/index.html` left
 `pwArt('star')` behind on the home prompt card, which only a tester sees, so
@@ -169,6 +309,16 @@ name and `.pw-line` on the receipt come out of it, and neither goes through `htm
 `art()`. `game()` injected nothing, so an OWNER was exactly the visitor who could reach the
 receipt without the CSS, because an owner is never shown the pitch card that would have
 warmed it. Four unstyled paragraphs, nothing thrown, nothing to report.
+
+**A redirect back from Stripe must land on the host the buyer left from.** Both
+`www.runthe.gg` and `runthe.gg` serve this site and neither redirects to the other, so they
+are two localStorage jars and a session signed in on one does not exist on the other. Every
+Stripe endpoint built its return url out of `SITE_URL`, which is the apex, always: a www
+buyer came back signed out, the page polled `premium_products()` as nobody, and the screen
+straight after paying apologised for a slow webhook that had already delivered. The base is
+`siteBase()` in `functions/api/stripe/_site.js` now, which prefers the request's own origin
+when it is this site. The same trap has bitten a link in the CFB header. Never write an
+absolute `https://runthe.gg` url in anything a player follows.
 
 ### A badge you add has to be proved reachable
 
@@ -211,7 +361,7 @@ Measured, and worth knowing before writing a badge that names any of it:
   becomes arithmetically impossible rather than hard. Difficulty past the cap comes from the
   squeeze the mode already runs on, a frozen cap against a roster that ages every winter.
 - **A milestone every `DYNASTY_MILESTONE_EVERY` seasons, alternating**: the odd ones are
-  roster mandates out of a list of **four**, the even ones are boss games out of a list of
+  roster mandates out of a list of **four**, the even ones are boss battles out of a list of
   **six**, both cycling. There is no separate boss constant. A boss is every second milestone,
   so the boss interval is twice the cadence and is derived.
   **The cadence is 3, and it shipped as 5.** `simulator.js --dynasty` runs the rule the game

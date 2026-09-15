@@ -14,6 +14,7 @@
  * user_id would let anyone open another member's billing portal.
  */
 import { verifyUser } from './_verify.js';
+import { siteBase } from './_site.js';
 
 export async function onRequestPost(context) {
   const { env, request } = context;
@@ -35,7 +36,7 @@ export async function onRequestPost(context) {
     const customer = await findCustomer(env, userId);
     if (!customer) return json({ error: 'no_customer' }, 404);
 
-    const site = env.SITE_URL || new URL(request.url).origin;
+    const site = siteBase(env, request);   // the host they came in on. See _site.js.
     /* WHERE TO COME BACK TO. An allow-list rather than a pattern, because this
      * value ends up in a redirect and an unchecked one is an open redirect.
      *

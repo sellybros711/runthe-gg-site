@@ -35,6 +35,7 @@
  */
 import { verifyUser } from './_verify.js';
 import { bundleByKey } from './_bundles.js';
+import { siteBase } from './_site.js';
 
 export async function onRequestPost(context) {
   try {
@@ -75,7 +76,10 @@ async function handle(context) {
   const clash = bundle.grants.some(function (g) { return owned.indexOf(g.product) >= 0; });
   if (clash) return json({ error: 'already_owned' }, 409);
 
-  const site = env.SITE_URL || new URL(request.url).origin;
+  /* THE HOST THEY BOUGHT FROM, not the one in SITE_URL. www.runthe.gg and the apex are
+     separate localStorage jars, so returning a www buyer to the apex hands them a signed
+     out page and a purchase the browser cannot see. See _site.js. */
+  const site = siteBase(env, request);
   // return the player to where they were (defends against open-redirect: the
   // path must live under one of this bundle's own games)
   let ret = typeof body.return_path === 'string' ? body.return_path : bundle.defaultReturn;

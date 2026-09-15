@@ -112,6 +112,13 @@ async function hub(p) {
   await p.waitForTimeout(900);
 }
 const txt = (p, sel) => p.$eval(sel, (e) => (e.textContent || '').replace(/\s+/g, ' ').trim()).catch(() => '');
+/* HOW MANY LINES THE ELEMENT ACTUALLY OCCUPIES, off its painted height rather than its
+   text. The sell line has to be exactly two at every width: one is a desktop stretching it
+   flat, three means a half wrapped and the card grew. */
+const lineCount = (p, sel) => p.$eval(sel, (e) => {
+  const lh = parseFloat(getComputedStyle(e).lineHeight);
+  return Math.round(e.getBoundingClientRect().height / lh);
+}).catch(() => 0);
 const has = (p, sel) => p.$(sel).then((e) => !!e);
 
 /* ── the stylesheet, which is the bug that made this file worth writing ──────────────────
@@ -237,6 +244,23 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
      in, and this is the one line on the card somebody has to actually read. */
   ok('it is set to be read rather than skimmed',
     (await p.$eval('#b-hp-commish .hp-sub', (e) => getComputedStyle(e).textTransform)) === 'none');
+  /* TWO LINES, WITH "College Football forever" AS THE SECOND ONE. Left to itself the line
+     broke wherever it ran out of room, which on a phone put the word forever alone under a
+     full line. A one word last line is a widow, and a widow made of the word the sentence
+     turns on is the worst one available. The measure and the unbreakable tail are what stop
+     it, and both are easy to undo by rewording either half, so this is measured off the
+     PAINTED height at the widths a phone and a desk actually are. */
+  ok('the tail is held together', await has(p, '#b-hp-commish .hp-sub .hp-nb'));
+  ok('and it is the three words that must not split',
+    (await txt(p, '#b-hp-commish .hp-sub .hp-nb')) === 'College Football forever');
+  for (const w of [320, 390, 430, 1200]) {
+    await p.setViewportSize({ width: w, height: 900 });
+    await p.waitForTimeout(250);
+    ok('  two lines at ' + w + 'px', (await lineCount(p, '#b-hp-commish .hp-sub')) === 2,
+      (await lineCount(p, '#b-hp-commish .hp-sub')) + ' lines');
+  }
+  await p.setViewportSize({ width: 390, height: 844 });
+  await p.waitForTimeout(250);
   /* NO FIGURE ON THE FRONT PAGE. A price quoted before anything has been offered is a cost
      the reader has to decide against with nothing on the other side of the scale, and it is
      a second copy of a number that lives in the store. */
@@ -269,6 +293,14 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
     (await txt(p, '#b-hp-commish .hp-sub')) === 'Leave your mark on College Football forever',
     await txt(p, '#b-hp-commish .hp-sub'));
   ok('and it never says Go Pro to somebody who has', !/Go Pro/.test(await txt(p, '#b-hp-commish')));
+  /* The bought line is the shorter of the two, so it is the one that could go flat on a
+     wide screen if the measure were ever removed. */
+  for (const w of [320, 390, 1200]) {
+    await p.setViewportSize({ width: w, height: 900 });
+    await p.waitForTimeout(250);
+    ok('  two lines at ' + w + 'px', (await lineCount(p, '#b-hp-commish .hp-sub')) === 2,
+      (await lineCount(p, '#b-hp-commish .hp-sub')) + ' lines');
+  }
   /* A tap goes to the mode, because that is what they bought. */
   ok('the link still points at the mode',
     (await p.$eval('#b-hp-commish', (e) => e.getAttribute('href'))) === '/cfb/commish/');
