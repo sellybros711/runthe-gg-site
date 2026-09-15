@@ -845,6 +845,11 @@ window.GA_ID='G-L29P5MRWKE';
      two unit rows above them. */
   .fbrow.sum{margin-top:2px;border-top:1px solid rgba(255,255,255,.14)}
   .fbrow.sum .fbn,.fbrow.coach .fbn{color:var(--dim)}
+  /* WHAT THE ONE ARROW IN THE TABLE MEANS. Under it rather than in the defense row, because
+     on a 390px phone a fourth term there wraps and pushes the value off its own line, which
+     breaks the one pairing every row exists to make. */
+  .fbfoot{font-family:var(--fn);font-size:9.5px;line-height:1.4;color:var(--line-2);
+    margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,.05)}
   @media (max-width:340px){
     .fbrow{font-size:11px;gap:5px}
     .fbv{font-size:13px}
@@ -15361,6 +15366,11 @@ function fullBreakdown(){
   const p=s&&s.parts; if(!p) return '';
   const mean=(s.off+s.def)/2;
   const boost=s.coachBoost||1;
+  /* OFF THE ENGINE, never off a copy of its arithmetic. The squad and results screens have
+     already under-reported every coach by 40% once, by multiplying the tilt by a 1.2 that was
+     right when COACH_K was 0.012 and silently wrong the day it moved to 0.020. */
+  let coEff=null;
+  try{ coEff=run.coach?E.coachEffect(run.coach):null; }catch(_){ coEff=null; }
   /* THE COACH ROW APPEARS WHENEVER THERE IS A COACH, not only when his effect is large.
      A threshold on the boost printed "Gary Kubiak 0%" over a mean of 65.9 and an overall
      of 66.0: a row saying he did nothing, directly above a number he had moved. And with
@@ -15379,24 +15389,60 @@ function fullBreakdown(){
   /* THE FPPG IS THE ROSTER'S OWN, not the scaled one the arithmetic uses. A player can add
      the six numbers up off the lineup on this same screen, so printing 78% of their sum
      under the label FPPG would be a figure that matches nothing they can see. */
-  const row=(cls,name,pts,chem,fit,val)=>
+  /* ── AND THE STEP BETWEEN THEM IS PRINTED NOW, WHICH IT WAS NOT ──
+   *
+   * The rows used to read `76 FPPG +7% chemistry -1% fit → 46.0` and the arrow was doing the
+   * work: FULL_TALENT scales both sides, and nothing on the screen said so, so a reader who
+   * multiplied the three printed terms got a different number from the one beside them. The
+   * arrow was chosen as an honest signal that something sat in the gap, and a symbol meaning
+   * "trust me" is not the same as showing the step. A player asked for a rating system they
+   * could follow, and this was the half that could not be followed.
+   *
+   * IT IS NOT A LEVER AND THE LABEL HAS TO SAY SO. Every other term on the row is something
+   * the player did: who they signed, how the six fit, who knows whom. This one is the same
+   * constant for everybody, and it is here because twelve men share one cap, so six of them
+   * do not produce what six produce in a mode that spends the whole cap on one unit. */
+  const scale=(t)=>(t===undefined||t===null||Math.abs(t-1)<0.005)?''
+    :'<i>&times;'+t.toFixed(2)+' <u>full team</u></i>';
+  const row=(cls,name,pts,chem,fit,val,eq)=>
     '<div class="fbrow '+cls+'"><span class="fbn">'+name+'</span>'+
     '<span class="fbw"><i><b>'+Math.round(pts)+'</b> <u>FPPG</u></i>'+
-      term(chem,'chemistry')+term(fit,'fit')+'</span>'+
-    '<span class="fbe">→</span><b class="fbv">'+rate1(val)+'</b></div>';
+      scale(p.talent)+term(chem,'chemistry')+term(fit,'fit')+'</span>'+
+    '<span class="fbe">'+eq+'</span><b class="fbv">'+rate1(val)+'</b></div>';
   return '<div class="fbreak">'+
     '<div class="fbhead">How that is made</div>'+
-    row('off','Offense',p.offPts,p.offChem,p.offFit,s.off)+
-    row('def','Defense',p.defPts,p.defChem,p.defFit,s.def)+
+    /* OFFENSE EQUALS, DEFENSE ARROWS, and the difference is the point rather than a
+       typographic tic: with the scale printed, the offense really is the four terms
+       multiplied and a reader can check it on a calculator. The defense cannot be, because
+       its product is points it GIVES UP and defenseOverall is what puts that on the
+       offense's own ladder so the mean below means anything. One more step, one different
+       sign, and a line under the table saying which. */
+    row('off','Offense',p.offPts,p.offChem,p.offFit,s.off,'=')+
+    row('def','Defense',p.defPts,p.defChem,p.defFit,s.def,'→')+
     '<div class="fbrow sum"><span class="fbn">The two, averaged</span>'+
       '<span class="fbw"></span><span class="fbe">=</span>'+
       '<b class="fbv">'+rate1(mean)+'</b></div>'+
     (moved
+      /* HIS TWO TILTS, NOT JUST THE NET, and this is the line a player was misread by.
+         Most coaches in this game pull the two ways at once: Kliff Kingsbury is +1.0%
+         offense and -3.0% defense, which is -1.0% to the team. The hire sheet says all
+         three; this row said only the last one, so somebody who had read "+1.0% offense"
+         when they hired him met a bare "-1.0%" here and reasonably concluded the game had
+         changed its mind. Measured: 41 of the 115 coaches in the table pull opposite ways,
+         and 68 of them are net negative, so this is the common case rather than the odd one.
+         His chemistry with your players is NOT in this row, deliberately: that moves the two
+         unit ratings above, because it is a fact about the roster rather than about him. */
       ? '<div class="fbrow coach"><span class="fbn">'+
           esc((run.coach&&run.coach.name)||'Your coach')+'</span>'+
-        '<span class="fbw"><i>'+pc(boost-1)+'</i></span>'+
+        '<span class="fbw"><i>'+pc(boost-1)+' <u>team</u></i>'+
+          '<i>'+pc((coEff?coEff.off:1)-1)+' <u>off</u></i>'+
+          '<i>'+pc((coEff?coEff.def:1)-1)+' <u>def</u></i></span>'+
         '<span class="fbe">=</span><b class="fbv">'+rate1(s.overall)+'</b></div>'
       : '')+
+    /* WHAT THE ARROW MEANS, said once, under the table. The alternative is a longer defense
+       row on a 390px phone, where it would wrap and push the value off its own line. */
+    '<div class="fbfoot">Defense counts what you stop, so it is placed on the offense\'s '+
+      'scale to be averaged with it.</div>'+
     '</div>';
 }
 /* The old name, kept because two screens call it and only one of them has room for the
@@ -25319,8 +25365,47 @@ function drawPips(bySlot){
  * two call sites building them from two sources. So the rows are a function of a bySlot and
  * a slot list, exactly as the field is, and `view` being null means the live run.
  */
+/* ─── WHAT ORDER TWELVE MEN GO IN ──────────────────────────────────────────────────────
+ *
+ * SLOT ORDER IS THE WRONG ORDER HERE, and only in Full Team. FULL_SLOTS is interleaved
+ * (QB, DL, RB, DL, WR, LB, ...) because that is what makes the DRAFT alternate sides and
+ * makes one shared cap felt on every pick. Printed as a list after the season it is just a
+ * shuffle: a quarterback, then a defensive lineman, then a running back, and a reader
+ * looking for their defense has to pick it out of alternating rows.
+ *
+ * Every other mode is six men on one side of the ball, where slot order IS position order
+ * and there is nothing to group. So this sorts only when there is something to sort.
+ *
+ * WITHIN A SIDE IT IS THE UNIT'S OWN ORDER, not alphabetical and not by rating: the offense
+ * reads QB, RB, WR, TE and the defense reads DL, LB, DB, which is how both are written on
+ * every other screen in the game and on a depth chart. A FLEX is sorted by the position the
+ * man in it actually plays, because "flex" is a fact about the slot and the reader is
+ * looking at a player. Ties keep their draft order, which is a stable sort's default and
+ * the only remaining thing the original order was carrying.
+ */
+const OFF_ORDER=['QB','RB','WR','TE'];
+const DEF_ORDER=['DL','LB','DB'];
+function rosterSortOrder(slots,bySlot){
+  const idx=slots.map((_,i)=>i);
+  /* Not a full run: the list is already one unit in its own order. */
+  if(!(run&&run.full)) return idx;
+  const rank=(i)=>{
+    const p=bySlot[i];
+    /* An empty slot keeps its place rather than sorting to one end, so a part-drafted
+       roster does not reshuffle under the player between two signings. */
+    if(!p) return [1,99,i];
+    const def=E.DEFENSE_POSITIONS.indexOf(p.position)>=0;
+    const within=(def?DEF_ORDER:OFF_ORDER).indexOf(p.position);
+    return [def?1:0,within<0?98:within,i];
+  };
+  return idx.slice().sort((a,b)=>{
+    const ra=rank(a),rb=rank(b);
+    return ra[0]-rb[0]||ra[1]-rb[1]||ra[2]-rb[2];
+  });
+}
 function rosterRowsHTML(bySlot,slots,dynOver){
-  return slots.map((slot,i)=>{
+  return rosterSortOrder(slots,bySlot).map((i)=>{
+    const slot=slots[i];
     const p=bySlot[i]; if(!p) return '';
     const a=topAward(p);
     return '<div class="rrow">'+slotTag(slot,p.position)+
