@@ -29595,7 +29595,54 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
       addBunk(g.cx(yy)+sd*(g.fww(yy)+6+hh(74+i)*10), yy, 9+hh(76+i)*10); }   // scattered fairway waste
     for(let i=0;i<3;i++){ const a=hh(80+i)*6.283; addBunk(gx+Math.cos(a)*(R[0]+5+hh(83+i)*4), L+Math.sin(a)*(R[1]+4), 6+hh(86+i)*4); }  // heavy greenside sand
   }
+  hvWetInit(g, seedN);
   return g;
+}
+/* WHERE THE WATER ACTUALLY IS, as ONE function that both the painter and the tracer read.
+   They used to each have their own idea and the two did not match. The pond is painted as an ellipse
+   whose radius is modulated by `1 + 0.30*(...)`, so its shore bulges out to 1.30 of the ellipse and
+   pulls in to 0.70 of it, and the tracer's "push this ball onto land" tested the PLAIN ellipse and
+   stopped at 1.06 of it. Every bulge between 1.06 and 1.30 is a place the tracer called dry land and
+   the painter filled with water, which is the ball drawn sitting in a pond (owner: "balls that are
+   bouncing off of water or bouncing in water"). A shape written twice is a shape that disagrees with
+   itself, so it is written once here and pxTerrainURL calls it.
+   The noise is deliberately NOT seeded: hsh() is a pure function of its two arguments in the painter,
+   so reproducing the shore needs nothing but the hole's seedN, which fixes the three phases. */
+function hvHsh(a,b){ const n=Math.sin(a*127.1+b*311.7)*43758.5453; return n-Math.floor(n); }
+function hvVNoise(x,y){ const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const a=hvHsh(xi,yi),b=hvHsh(xi+1,yi),c=hvHsh(xi,yi+1),d=hvHsh(xi+1,yi+1);
+  return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
+function hvWetInit(g, seedN){
+  const wPh=[hvHash(seedN,210,1)*6.283, hvHash(seedN,211,1)*6.283, hvHash(seedN,212,1)*6.283];
+  /* THE GREEN AND ITS FRINGE BEAT THE WATER, which is the painter's own precedence and has to be part
+     of this answer or it is not the same shape. A pond drawn up to the front edge overlaps the green's
+     ellipse, and the painter fills those cells GREEN. Without this the test calls a ball putting on a
+     front-edge green "in the water" and something well-meaning then shoves it off the putting surface,
+     which is a worse bug than the one being fixed. */
+  const gIrr=g.greenIrr||0.14, gp=[hvHash(seedN,201,1)*6.283, hvHash(seedN,202,1)*6.283, hvHash(seedN,203,1)*6.283];
+  const grx=(g.greenR&&g.greenR[0])||12, gry=(g.greenR&&g.greenR[1])||10, gcx=g.gcx, gcy=g.L;
+  g.gMod=(x,y)=>{ const a=Math.atan2((y-gcy)/gry,(x-gcx)/grx);
+    return 1+gIrr*(Math.sin(a*3+gp[0])*0.55+Math.sin(a*2+gp[1])*0.34+Math.sin(a*5+gp[2])*0.22); };
+  g.onGreenPaint=(x,y,mult)=>{ const gd=(x-gcx)*(x-gcx)/(grx*grx)+(y-gcy)*(y-gcy)/(gry*gry);
+    const gm=g.gMod(x,y); return gd<=gm*gm*(mult||1.32); };   // 1.32 is the painter's fringe band
+  const ckA=hvHash(seedN,270,1)*6.283, ckB=hvHash(seedN,271,1)*6.283, ckW=hvHash(seedN,272,1);
+  g.wMod=(x,y)=>{ const w=g.water, a=Math.atan2((y-w.y)/w.ry,(x-w.x)/w.rx);
+    return 1+0.30*(Math.sin(a*3+wPh[0])*0.5+Math.sin(a*2+wPh[1])*0.34+Math.sin(a*5+wPh[2])*0.24+(hvVNoise(x*0.34+40,y*0.34+9)-0.5)*0.44); };
+  g.creekMid=(x)=> g.creek.y + Math.sin(x*0.055+ckA)*4.6 + Math.sin(x*0.15+ckB)*2.1 + (hvVNoise(x*0.3+90,4)-0.5)*3;
+  g.creekHalf=(x)=> Math.max(1.4, 2.4 + Math.sin(x*0.11+ckB)*0.9 + (hvVNoise(x*0.4+12,7)-0.5)*1.5 + ckW*0.5);
+  /* true where the PAINTER fills this course point with water. `pad` in yards grows the body, which is
+     what a "keep the ball this far clear of the edge" test wants: a ball drawn tangent to the shore
+     still reads as being in it. */
+  g.wet=(x,y,pad)=>{
+    pad=pad||0;
+    if(g.onGreenPaint(x,y)) return false;                     // green and fringe are painted over water
+    if(g.water){ const w=g.water, rx=w.rx+pad, ry=w.ry+pad;
+      const dd=(x-w.x)*(x-w.x)/(rx*rx)+(y-w.y)*(y-w.y)/(ry*ry);
+      if(dd<=2.6){ const m=g.wMod(x,y); if(dd<=m*m) return true; } }
+    if(g.creek && Math.abs(y-g.creek.y)<13+pad){ if(Math.abs(y-g.creekMid(x))<g.creekHalf(x)+pad) return true; }
+    return false;
+  };
 }
 // projection: course yards (x lateral, y from tee) → SVG px, with a far-end perspective taper
 function hvProj(g,x,y){ const f=Math.max(0,Math.min(1,y/g.span));
@@ -29605,15 +29652,42 @@ function hvProj(g,x,y){ const f=Math.max(0,Math.min(1,y/g.span));
 // ball's rest position are computed independently, so they can overlap). Push it just onto land - radially
 // out of the pond ellipse, or short of the crossing creek. (owner/Jordo: "it told me I wasn't in the
 // water… im blue lol" - the blue ball marker was drawn in the water on a dry lie.)
+const HV_DRY_PAD=1.5;   // yards of shore a dry ball keeps, so it never reads as sitting tangent to the water
+/* The mirror of hvOutOfWater: the nearest point that IS water, for a ball the engine drowned. Same ring
+   search, same shape, so the two can never disagree about where the edge is. */
+function hvIntoWater(g, pt){
+  let x=pt[0], y=pt[1];
+  if(!g.wet || (!g.water && !g.creek)) return [x,y];
+  if(g.wet(x,y,-0.8)) return [x,y];
+  for(let r=1; r<=54; r+=1){
+    for(let a=0; a<24; a++){
+      const th=a/24*6.283, nx=x+Math.cos(th)*r, ny=y+Math.sin(th)*r;
+      if(g.wet(nx,ny,-0.8)) return [nx,ny];
+    }
+  }
+  return [x,y];
+}
 function hvOutOfWater(g, pt){
   let x=pt[0], y=pt[1];
-  if(g.water){ const w=g.water, rx=(w.rx||16)+2.5, ry=(w.ry||12)+2.5;
-    const dx=(x-w.x)/rx, dy=(y-w.y)/ry, d2=dx*dx+dy*dy;
-    if(d2<1){ const d=Math.sqrt(d2);
-      if(d<0.15){ x=w.x; y=w.y+ry*1.08; }               // at the pond center → drop it just short of the water
-      else { const k=1.06/d; x=w.x+(x-w.x)*k; y=w.y+(y-w.y)*k; } } }
-  if(g.creek){ const cy=g.creek.y, band=8;
-    if(Math.abs(y-cy)<band) y=(y>=cy?cy+band:cy-band); }   // nudge to the near side of the crossing creek
+  /* NEAREST DRY GROUND, found against the shape the painter fills rather than against a plain ellipse.
+     The old version pushed the ball radially out to 1.06 of the pond's ellipse. Two things were wrong
+     with that and both put a ball on the water. The painted shore modulates out to 1.37 of the ellipse,
+     so 1.06 is inside the pond on every bulge. And radially-from-the-centre is not the nearest way out:
+     on a long pond it walks a ball the length of the thing when six yards sideways was dry.
+     Searching rings outward takes the first dry point, which IS the nearest to within the step, and the
+     angles start pointing away from the pond so a tie breaks the way the ball was already heading. */
+  if(g.wet && g.wet(x,y,HV_DRY_PAD)){
+    const w=g.water, ax=w?Math.atan2(y-w.y, x-w.x):0;
+    let found=null;
+    for(let r=1.5; r<=46 && !found; r+=1.5){
+      for(let a=0; a<24; a++){
+        const th=ax + (a%2?-1:1)*Math.ceil(a/2)/24*6.283;
+        const nx=x+Math.cos(th)*r, ny=y+Math.sin(th)*r;
+        if(!g.wet(nx,ny,HV_DRY_PAD)){ found=[nx,ny]; break; }
+      }
+    }
+    if(found){ x=found[0]; y=found[1]; }
+  }
   if(g.ocean){ const P=hvProj(g,x,y), shore=g.ocean.edge(P[1]), m=8, side=g.ocean.side;   // never draw a dry-lie ball out in the sea
     if(side>0 ? P[0]>shore-m : P[0]<shore+m){ const tx=side>0?shore-m:shore+m, denom=g.sx*g.t(y)||1; x=(tx-HV_W/2)/denom; } }
   return [x,y];
@@ -29679,11 +29753,20 @@ function hvPlots(g, shots, seedN, opts){
       case 'fc': rest=[gx+jj(i,1)*8, L-g.greenR[1]-2.5]; break;
       case 'gb': { const b=g.bunkers.filter(x=>x.y>L-18); const bb=b.find(x=>Math.sign(x.x-gx)===sgn)||b[0];
         if(bb) rest=[bb.x,bb.y]; else { rest=[gx+sgn*(g.greenR[0]+5), L-2]; g.bunkers.push({x:rest[0],y:rest[1],r:6}); } p.sand=true; break; }
+      /* A BALL THE ENGINE PUT IN THE WATER HAS TO BE DRAWN IN IT, which is the other half of the same
+         rule and was failing on a quarter of them. The creek is the reason: the ball was placed on the
+         creek's straight centre LINE while the painter draws a meander that wanders seven yards either
+         side of it, so a splash marker regularly sat on the bank with a penalty stroke on the card and
+         nothing on screen to explain it. Placing it on the meander is exact; hvIntoWater is the backstop
+         for a pond whose noisy shore has pulled in past the chosen point. */
       case 'water':
         if(g.water) rest=[g.water.x-(g.water.side||1)*Math.min(3,g.water.rx*0.3), g.water.y-2];
-        else if(g.creek) rest=[g.cx(g.creek.y)+jj(i,1)*8, g.creek.y];   // drowned in the crossing creek
+        else if(g.creek){ const wx=g.cx(g.creek.y)+jj(i,1)*8; rest=[wx, g.creekMid?g.creekMid(wx):g.creek.y]; }
         else rest=[g.cx(L*0.6), L*0.6];
+        rest=hvIntoWater(g,rest);
         p.splash=true; break;
+      // the drop is the shot that puts you BACK IN PLAY, so it lands on grass. It used to be exempt from
+      // the dry-ball guard along with the water lie itself, which is how nine of them came down in a pond.
       case 'drop': y=L-toY; rest=[g.cx(y)+jj(i,1)*5, y]; p.drop=true; break;
       case 'green': { const d=Math.max(1.8/g.vy,(s.ft||15)/3.6); let ang;   // ft→units calibrated to green size (owner: an 11ft shot looked farther than 11ft); screen-aware min keeps short leaves visible on long holes
         if(s.side==='left') ang=Math.PI+jj(i,2)*0.9; else if(s.side==='right') ang=jj(i,2)*0.9; else ang=-Math.PI/2+jj(i,2)*1.2;
@@ -29727,7 +29810,8 @@ function hvPlots(g, shots, seedN, opts){
       } }
     // dry lie (not water/drop) that overlaps a pond/creek → push the resting ball onto land so it's never
     // drawn in the water when the shot didn't find it. (Green shots are handled by the carry safety below.)
-    if(rest && !p.onGreen && s.lie!=='water' && s.lie!=='drop' && (g.water||g.creek||g.ocean)) rest=hvOutOfWater(g,rest);
+    if(rest && s.lie!=='water' && p.k!=='putt' && p.k!=='hole'
+       && (g.water||g.creek||g.ocean)) rest=hvOutOfWater(g,rest);
     p.rest=rest;
     p.dist=hvDistYds(rest,p.from);
     // landing = a bit short of rest (the ball bounces + rolls out); putts/drops roll only
@@ -29748,17 +29832,35 @@ function hvPlots(g, shots, seedN, opts){
       if(u[1]>0.001){ const maxRoll=(rest[1]-frontY)/u[1]; if(maxRoll<roll) roll=Math.max(0,maxRoll); }   // clamp so the landing sits on the green
     }
     p.land=[rest[0]-u[0]*roll, rest[1]-u[1]*roll];
-    if(!p.onGreen && s.lie!=='water' && s.lie!=='drop' && (g.water||g.creek||g.ocean)) p.land=hvOutOfWater(g,p.land);   // touchdown can't be on water either
-    // final safety: if a green-ending shot's landing still dips into a fronting water body while the
-    // rest is on dry green, walk it forward toward the rest until it clears the water - the ball must
-    // carry the hazard fully and land on the surface, it can never touch down on the water.
-    if(p.onGreen && g.water){
-      const inW=(x,y)=>{ const dx=(x-g.water.x)/(g.water.rx+2), dy=(y-g.water.y)/(g.water.ry+2); return dx*dx+dy*dy<1; };
-      if(inW(p.land[0],p.land[1])){
+    const dry=(s.lie!=='water' && p.k!=='putt' && p.k!=='hole');
+    if(dry && (g.water||g.creek||g.ocean)) p.land=hvOutOfWater(g,p.land);   // touchdown can't be on water either
+    /* AND THE ROLL BETWEEN THEM, which nothing had ever looked at. Both ends can be dry with the pond
+       sitting in the middle, and the tracer draws the roll as a straight line from one to the other, so
+       the ball visibly runs across the water (owner: "balls that are bouncing off of water"). No test of
+       the two endpoints can see it. A ball cannot roll over a pond: either it carried the hazard and
+       came down beyond it, or it went in and the engine would have said so. So the landing walks FORWARD
+       toward the rest until the whole segment is dry, which is the same thing as saying it carried
+       further than the drawing first assumed. When nothing on the line is dry the roll goes to zero and
+       the ball stops where it landed. */
+    if(dry && g.wet && (g.water||g.creek)){
+      /* Sampled by LENGTH, about three points a yard, not by a fixed count. A fixed count steps further
+         apart the longer the roll is, so a thin arm of a pond fits between two samples of a long one and
+         the check reports dry ground the painter fills blue. Eight a yard puts the samples 4 inches
+         apart, which is narrower than the ball, so anything this walks over is not on the screen.
+         check-water.mjs verifies at six a yard with a floor of 32, and BOTH numbers have to stay below
+         these: a floor is what decides a short roll, and a guard whose floor was 16 against a suite's 32
+         missed a two-foot roll clipping a pond on a par 3, which is the only case left after the rate
+         was fixed. The guard has to be the finer of the two at every length. */
+      const crosses=(a,b)=>{ const n=Math.max(48, Math.ceil(Math.hypot(b[0]-a[0], b[1]-a[1])*8));
+        for(let t=0;t<=n;t++){ const f=t/n;
+          if(g.wet(a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f)) return true; } return false; };
+      if(crosses(p.land, rest)){
         let done=false;
-        for(let t=0.2;t<=1;t+=0.2){ const lx=p.land[0]+(rest[0]-p.land[0])*t, ly=p.land[1]+(rest[1]-p.land[1])*t;
-          if(!inW(lx,ly)){ p.land=[lx,ly]; done=true; break; } }
-        if(!done) p.land=rest.slice();   // rest itself is at/over the water (island / front-edge) → land where it stops, no roll across water
+        for(let t=0.12; t<=1.0001; t+=0.12){
+          const c=[p.land[0]+(rest[0]-p.land[0])*t, p.land[1]+(rest[1]-p.land[1])*t];
+          if(!g.wet(c[0],c[1]) && !crosses(c, rest)){ p.land=c; done=true; break; }
+        }
+        if(!done) p.land=rest.slice();
       }
     }
     // ITEM 16: flight curve (draw/fade), signed bend magnitude. Three terms, and the old version only
@@ -30514,16 +30616,15 @@ function pxTerrainURL(g, seedN, B, opts){
   // CS512 (owner): ponds, creeks and bunkers get ORGANIC, natural outlines instead of plain ellipses/circles/
   // straight bands - multi-frequency angular perturbation + value-noise (like the green), so they read as
   // part of the landscape. All in course-space (resolution-independent → identical on the base + zoom tiles).
-  const wPh=[hvHash(seed,210,1)*6.283,hvHash(seed,211,1)*6.283,hvHash(seed,212,1)*6.283];
-  const wMod=(x,y)=>{const w=g.water,a=Math.atan2((y-w.y)/w.ry,(x-w.x)/w.rx);
-    return 1+0.30*(Math.sin(a*3+wPh[0])*0.5+Math.sin(a*2+wPh[1])*0.34+Math.sin(a*5+wPh[2])*0.24+(vnoise(x*0.34+40,y*0.34+9)-0.5)*0.44);};
+  // the pond and creek outlines come from hvWetInit, which the TRACER also reads. They were written out
+  // twice and drifted, and a shore the two disagree about is a ball drawn floating on a pond.
+  if(!g.wet) hvWetInit(g, seed);
+  const wMod=g.wMod;
   // each bunker: its own rotated, elongated (kidney) outline with scalloped edges
   const bMod=g.bunkers.map((bk,i)=>({p0:hvHash(seed,220+i,1)*6.283,p1:hvHash(seed,230+i,1)*6.283,p2:hvHash(seed,240+i,1)*6.283,
     asp:0.6+hvHash(seed,250+i,1)*0.85, rot:hvHash(seed,260+i,1)*3.1416}));
   // creek: a MEANDERING centerline + varying width (not a straight horizontal band)
-  const ckA=hvHash(seed,270,1)*6.283, ckB=hvHash(seed,271,1)*6.283, ckW=hvHash(seed,272,1);
-  const creekMid=(x)=> g.creek.y + Math.sin(x*0.055+ckA)*4.6 + Math.sin(x*0.15+ckB)*2.1 + (vnoise(x*0.3+90,4)-0.5)*3;
-  const creekHalf=(x)=> Math.max(1.4, 2.4 + Math.sin(x*0.11+ckB)*0.9 + (vnoise(x*0.4+12,7)-0.5)*1.5 + ckW*0.5);
+  const creekMid=g.creekMid, creekHalf=g.creekHalf;
   const XY=new Float32Array(GW*GH*2);
   for(let cy=0;cy<GH;cy++){const vy=cam[1]+(cy+0.5)/GH*cam[3],y=g.span*(HV_H-34-vy)/(HV_H-78);
     const beyond=(y<0||y>g.span),tf=g.t(Math.max(0,Math.min(g.span,y)));
