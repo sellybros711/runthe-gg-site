@@ -2401,7 +2401,12 @@ window.GA_ID='G-L29P5MRWKE';
   /* the colour-coded ACCENT EDGE replaces the old inline icon - no glyph, nothing to mis-render */
   .hvdec .dkc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
   .hvdec .dkc:active{transform:translateY(2px)}
-  .hvdec .dkc .l{font:900 12.5px/1.15 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* display:block is what makes the three properties after it MEAN anything. This span computed to inline,
+     where overflow and text-overflow are both ignored, so "Land past, let it feed back" was not
+     ellipsised: it ran 205px wide inside a 195px card and the card's own clip took the last letters off
+     mid-word. Nothing reported it, and it got worse rather than appeared when the option number went in
+     front of the label and took 20px of the line. */
+  .hvdec .dkc .l{display:block;font:900 12.5px/1.15 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   /* the odds read as a PAIR of big numbers with a tiny caption, not three sentences */
   .hvdec .dkc .o{display:flex;gap:10px;margin-top:6px;padding-top:5px;border-top:1px solid rgba(255,255,255,.13)}
   .hvdec .dkc .o span{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -33051,7 +33056,17 @@ function dDecTargets(g, sc){
     // side preference decides. Banding room into steps instead was tried and is worse at the only job
     // this has: it put the target within six of sand on 2.2% of holes against 0.8%, and dropped the
     // worst hole on the site from 3.02 of room to 2.32.
-    const sc2=Math.min(clear,16) + ix*away*1.2 - Math.abs(iy)*0.6 - Math.abs(ix)*0.25;
+    /* THE CENTRE WINS UNLESS MOVING OFF IT BUYS REAL ROOM, and that ordering is the fix rather than a
+       tuning pass. Clearance is capped at 16, so on a green with no sand near it every candidate scored
+       the same 16 and the tie fell to the away-from-pin term, which is maximised at the FAR EDGE of the
+       grid: the option captioned "Middle of the green" was aiming 0.51 of the green's radius off centre
+       on exactly the greens with nothing to avoid (owner: "saying middle and not having it in the middle
+       is just misleading"). Distance from the middle is now a real cost, 2.4 a step against a clearance
+       worth up to 16, so a point only leaves the centre to escape sand and only as far as the sand makes
+       it worth. The pin side is what it always should have been: a tiebreak between two points the other
+       two terms cannot separate. */
+    const rad=Math.hypot(ix,iy)*0.17;
+    const sc2=Math.min(clear,16) - 14*rad + ix*away*0.5;
     if(!best || sc2>best.s) best={x,y,s:sc2};
   }
   return {agg:[pin[0],pin[1]], safe:[best.x,best.y], al:'At the pin', sl:'Middle', green:true};
@@ -33120,7 +33135,14 @@ function dPlaceTargets(shell, g, sc, pick, ball){
        enough to overlap, and this is the only place the real distance is knowable: 22 CSS pixels against
        a frame whose width is not decided until it is laid out. They are moved by the measured overlap and
        not a pixel more, so a marker leaves its shot's position only when it has to, and by the least that
-       works. On a pin-hunt only the SAFE one moves: number one is the flag, and the flag does not move. */
+       works.
+       ON A PIN-HUNT IT IS ALWAYS THE AGGRESSIVE ONE THAT MOVES, and never the safe one. Moving the safe
+       one was the first try and it is backwards: it is the option captioned "Middle of the green", so a
+       player reads its ring against the green it names, and a ring shoved off the putting surface is
+       either a lie or an option nobody would ever take (owner: "nobody would ever choose the option that
+       shows off the green. That's not logical for the safe option"). The aggressive one carries a push
+       far better. It is captioned at the flag, it moves OUTWARD along its own side, and the worst it can
+       read as is a pin tucked harder against the edge than it really is. */
     const ms=shell.querySelectorAll('.dctarget');
     if(ms.length===2){
       const rw=shell.getBoundingClientRect().width||1, rh=shell.getBoundingClientRect().height||1;
@@ -33156,7 +33178,25 @@ function dPlaceTargets(shell, g, sc, pick, ball){
         };
         const dir=across ? (((d1.left+d1.right)/2 >= (d0.left+d0.right)/2)?1:-1)
                          : (((d1.top+d1.bottom)/2 >= (d0.top+d0.bottom)/2)?1:-1);
-        if(tg.green) moveOne(ms[1], dir*push);                       // the flag stays put
+        /* OUTWARD IS MEASURED FROM THE GREEN'S CENTRE, not from the safe marker. Away from the safe marker
+           is nearly always the same direction and is wrong exactly when it matters: the safe point sits a
+           hair off centre, so when it lands on the pin's own side and slightly beyond it, away-from-safe
+           points back ACROSS the middle and the aggressive marker crosses the green to the wrong side.
+           The green's centre cannot drift like that. A pin projecting dead on the centre has no side of
+           its own, and there the safe marker is the only thing left to move away from.
+           And it is PLACED rather than nudged. A delta big enough to clear the gap, applied in a direction
+           that is not simply away from the other marker, overshoots by the gap it started with and lands
+           the aggressive marker on the far side of the safe one: East Lake 3 came out 13.6px apart when it
+           was asking for 17. Naming the destination cannot do that. The max is what keeps a placement from
+           ever pulling the marker back IN toward the middle. */
+        if(tg.green){
+          const gm=g.greenR?proj([g.gcx,g.L]).lf:null;
+          const a0=parseFloat(ms[0].style.left)||0, s0=parseFloat(ms[1].style.left)||0;
+          const side=(gm==null||Math.abs(a0-gm)<0.05) ? ((a0>=s0)?1:-1) : (a0>=gm?1:-1);
+          const tgt=s0 + side*(want/rw*100);
+          const put=(side>0) ? Math.max(a0,tgt) : Math.min(a0,tgt);
+          ms[0].style.left=Math.max(2,Math.min(98,put))+'%';         // the middle stays the middle
+        }
         else { moveOne(ms[0], -dir*push/2); moveOne(ms[1], dir*push/2); }
       }
     }
@@ -33180,20 +33220,42 @@ function dPlaceTargets(shell, g, sc, pick, ball){
       if(c.classList.contains('lo')) c.style.setProperty('--dtx',((parseFloat(c.style.getPropertyValue('--dtx'))||0)+(hr.right-r.left+8))+'px');
       else c.classList.add('lo');
     });
-    /* And the two labels against each other, MEASURED. Alternating them above and below their markers
-       handles almost everything, but a long label on a narrow gap can still reach across, and a threshold
-       in percent cannot know how wide a word is once it has a font. So the last word is the real box:
-       if they still touch, the lower one slides sideways by exactly the overlap. */
+    /* And the two labels, against the WINDOW and then against each other, MEASURED. Alternating them above
+       and below their markers handles almost everything, but a long label on a narrow gap can still reach
+       across, and a threshold in percent cannot know how wide a word is once it has a font.
+       These two are one pass and not two, which is the thing that was got wrong first. Sliding a label off
+       its partner knows nothing about where the window ends, so a marker near an edge gets its label
+       pushed clean off it: East Lake 3 has its green up the left side and "Safe" hung past the left edge
+       with the word cut in half. Clamping afterwards fixes that and puts six of them back UNDER their
+       partner, because the clamp knows nothing about the other label either. So the window is squared away
+       first, and the de-collision then tries each label each way and keeps the first move that clears the
+       other label AND stays inside the frame. Four candidates, measured; if none of them works the pair is
+       left where the frame put it, which is the half that matters more. */
+    const sr=shell.getBoundingClientRect();
+    const dtx=w=>parseFloat(w.parentElement.style.getPropertyValue('--dtx'))||0;
+    const slide=(w,px)=>w.parentElement.style.setProperty('--dtx',(dtx(w)+px)+'px');
+    const escapes=w=>{ const r=w.getBoundingClientRect();
+      if(r.left<sr.left+4) return sr.left+4-r.left;
+      if(r.right>sr.right-4) return sr.right-4-r.right;
+      return 0; };
     const ls=shell.querySelectorAll('.dctarget .dtw');
+    ls.forEach(w=>{ const f=escapes(w); if(f) slide(w,f); });
     if(ls.length===2){
-      const r0=ls[0].getBoundingClientRect(), r1=ls[1].getBoundingClientRect();
-      if(!(r0.right<=r1.left||r1.right<=r0.left||r0.bottom<=r1.top||r1.bottom<=r0.top)){
-        const lower=(r0.top>=r1.top)?0:1, lo=ls[lower], hi=ls[1-lower];
-        const lr=(lower?r1:r0), hr2=(lower?r0:r1);
-        const dir=(lr.left+lr.right)/2 <= (hr2.left+hr2.right)/2 ? -1 : 1;
-        const push=(dir<0 ? (hr2.left-lr.right) : (hr2.right-lr.left)) + dir*10;
-        const host=lo.parentElement;
-        host.style.setProperty('--dtx',((parseFloat(host.style.getPropertyValue('--dtx'))||0)+push)+'px');
+      const clash2=()=>{ const a=ls[0].getBoundingClientRect(), b=ls[1].getBoundingClientRect();
+        return !(a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top); };
+      if(clash2()){
+        const r0=ls[0].getBoundingClientRect(), r1=ls[1].getBoundingClientRect();
+        const lower=(r0.top>=r1.top)?0:1;
+        const tries=[[lower,-1],[lower,1],[1-lower,-1],[1-lower,1]];
+        for(let t=0; t<tries.length; t++){
+          const w=ls[tries[t][0]], d=tries[t][1], other=ls[1-tries[t][0]];
+          const wr=w.getBoundingClientRect(), orr=other.getBoundingClientRect();
+          const keep=dtx(w);
+          slide(w, (d<0 ? (orr.left-wr.right) : (orr.right-wr.left)) + d*10);
+          const f=escapes(w); if(f) slide(w,f);
+          if(!clash2() && !escapes(w)) break;
+          w.parentElement.style.setProperty('--dtx',keep+'px');
+        }
       }
     }
   });

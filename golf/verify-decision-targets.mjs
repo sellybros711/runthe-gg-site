@@ -99,6 +99,9 @@ window.__DT = {
     var zOf=function(sel){ var e=shell.querySelector(sel); return e?+getComputedStyle(e).zIndex:null; };
     var zLine=zOf('svg.dclines'), zPanel=zOf('.hvob'), zMark=zOf('.dctarget');
     var chip=shell.querySelector('.hvhole'), cr=chip?chip.getBoundingClientRect():null;
+    // a label pushed past the window's own edge is a word cut in half, so measure both labels against it
+    var sr=shell.getBoundingClientRect();
+    var outFrame=lb.filter(function(r){ return r.l<sr.left-0.6 || r.r>sr.right+0.6; }).length;
     /* WHERE THE MARKERS ENDED UP, against the green they are supposed to be on. Two measures, because one
        would be dishonest on its own:
          - IN COURSE YARDS, the green is an ellipse and the test is exact. This is what dDecTargets chose.
@@ -133,11 +136,22 @@ window.__DT = {
     // the same two points in course yards, where the green really is an ellipse
     var inGreen=[tg.agg,tg.safe].map(function(pt){
       return +Math.hypot((pt[0]-g.gcx)/g.greenR[0],(pt[1]-g.L)/g.greenR[1]).toFixed(3); });
-    var pinP=P(tg.agg), safeP=P(tg.safe), m0=shell.querySelector('.dctarget');
-    var onPin=(m0!=null) && Math.abs(at(m0).lf-pinP.lf)<0.01 && Math.abs(at(m0).tp-pinP.tp)<0.01;
-    // nothing may move a marker DOWN the hole on a pin-hunt: that would change how far the shot is
-    var ms2=shell.querySelectorAll('.dctarget');
+    var pinP=P(tg.agg), safeP=P(tg.safe), ms2=shell.querySelectorAll('.dctarget');
+    // THE SAFE ONE IS THE ONE THAT MAY NEVER MOVE. It is captioned the middle of the green, so it is read
+    // against the green, and a push is what took it off the putting surface.
+    var onMid=(ms2.length===2) && Math.abs(at(ms2[1]).lf-safeP.lf)<0.01 && Math.abs(at(ms2[1]).tp-safeP.tp)<0.01;
+    // and nothing may move either marker DOWN the hole: that would change how far the shot is
     var vHeld=(ms2.length===2) && Math.abs(at(ms2[0]).tp-pinP.tp)<0.01 && Math.abs(at(ms2[1]).tp-safeP.tp)<0.01;
+    /* The aggressive one may be pushed, but only OUTWARD: never back across the middle toward the safe
+       marker. Outward is its own side of the green's centre, and a pin projecting dead ON that centre has
+       no side of its own, so there the only rule left is that it moves AWAY from the safe marker. */
+    var outward=true;
+    if(ms2.length===2){
+      var a0=at(ms2[0]).lf, want=pinP.lf-gc.lf;
+      outward = (Math.abs(a0-pinP.lf)<0.01) ||
+        (Math.abs(want)<0.05 ? (Math.abs(a0-safeP.lf) >= Math.abs(pinP.lf-safeP.lf)-0.01)
+                             : (want>=0 ? (a0>=pinP.lf-0.01) : (a0<=pinP.lf+0.01)));
+    }
     /* A LINE MUST END ON ITS MARKER. The markers can move after they are placed, so the paths are drawn
        from the settled positions; drawing them at append time is the bug this reads back. */
     var ends=Array.prototype.map.call(shell.querySelectorAll('svg.dclines path'), function(p){
@@ -151,8 +165,10 @@ window.__DT = {
       if(Math.hypot(ends[1].lf-mAt[0].lf, ends[1].tp-mAt[0].tp)>0.02) lineMiss++;
     }
     return {markers:mk.length, labels:lb.length, lines:lines,
-      green:!!tg.green, offs:offs, inGreen:inGreen, onPin:onPin, vHeld:vHeld, lineMiss:lineMiss,
+      green:!!tg.green, offs:offs, inGreen:inGreen, onMid:onMid, vHeld:vHeld, outward:outward,
+      safeOff:(ms2.length===2)?+Math.abs((at(ms2[1]).lf-gc.lf)/hx).toFixed(3):null, lineMiss:lineMiss,
       greenPx:greenPx, ringPx:ringPx, gapPx:gapPx, needPx:needPx, natPx:natPx, pastPx:pastPx,
+      outFrame:outFrame,
       labs:Array.prototype.map.call(shell.querySelectorAll('.dctarget .dtl'), function(e){ return e.textContent; }),
       aria:Array.prototype.map.call(shell.querySelectorAll('.dctarget'), function(e){ return e.getAttribute('aria-label'); }),
       markerOverlap:(mk.length===2 && over(mk[0],mk[1])),
@@ -168,6 +184,23 @@ window.__DT = {
     var sc=dScenario(ck,h,0,71);
     var p=dDecisionPanel(sc, function(){}, null, h);
     return Array.prototype.map.call(p.querySelectorAll('.dkc .l .dcn'), function(e){ return e.textContent; });
+  },
+  /* A CARD LABEL THAT OVERRUNS ITS CARD, which is only visible once it is laid out inside the real panel
+     inside the real window. It has to ellipsise rather than be cut mid-word, and ellipsis needs the span
+     to be a block: as an inline it silently ignores both overflow and text-overflow. */
+  cardFit(ck,h){
+    S.daily=true; S.dailySeed=20260101; S.dailyCourse=ck; S.dailySkills={};
+    CATS.forEach(function(c){ S.dailySkills[c.k]=80; });
+    var holes=(DAILY_COURSES[ck]||{}).holes||[];
+    var sc; try{ sc=dScenario(ck,h,0,71); }catch(e){ return null; }
+    var node=hvNode({n:h+1,par:holes[h][0],yards:holes[h][1],shots:[]}, null, h, ck, null,null,null);
+    var host=document.getElementById('dthost'); host.innerHTML=''; host.appendChild(node);
+    var shell=node.querySelector('.hvshell');
+    shell.appendChild(dDecisionPanel(sc, function(){}, null, h));
+    return Array.prototype.map.call(shell.querySelectorAll('.dkc .l'), function(e){
+      return {over:+(e.getBoundingClientRect().width-e.parentElement.getBoundingClientRect().width).toFixed(1),
+              block:(getComputedStyle(e).display!=='inline')};
+    });
   }
 };
 (function(){ var d=document.createElement('div'); d.id='dthost';
@@ -236,9 +269,11 @@ const run = async () => {
   const seen = {};
   const sample = rows.filter(r => { const k = r.course + '|' + r.hole; if (seen[k]) return false; seen[k] = 1; return true; });
   let mOv = 0, lOv = 0, notSame = 0, noLine = 0, chipHit = 0, minGap = 1e9, bad2 = [], zBad = 0;
-  let greenN = 0, offGreen = 0, pinMoved = 0, lineMiss = 0, badLab = 0, worstOff = 0, offSum = 0;
+  let frameHit = 0; const frameEx = [];
+  let greenN = 0, offGreen = 0, lineMiss = 0, badLab = 0, worstOff = 0, offSum = 0;
   let notInGreen = 0, vSlid = 0, worstIn = 0, tooNarrow = 0, overPush = 0, shortPush = 0;
-  let greenPxMin = 1e9, ringMin = 1e9, stillTouch = 0, clearOff = 0;
+  let midMoved = 0, inward = 0, safeWorst = 0, safeOffGreen = 0;
+  let greenPxMin = 1e9, ringMin = 1e9, stillTouch = 0, clearOff = 0, worstPast = 0, worstRing = 0;
   const offEx = [], labEx = [], inEx = [], pushEx = [], past = [];
   for (const r of sample) {
     const m2 = await page.evaluate(a => window.__DT.render(a[0], a[1]), [r.course, r.hole]);
@@ -248,6 +283,7 @@ const run = async () => {
     if (!m2.sameSize) notSame++;
     if (m2.lines !== 1) noLine++;
     if (m2.labelOverChip) chipHit++;
+    if (m2.outFrame) { frameHit += m2.outFrame; if (frameEx.length < 3) frameEx.push({ course: r.course, hole: r.hole, n: m2.outFrame }); }
     if (!(m2.zLine < m2.zPanel && m2.zPanel < m2.zMark)) zBad++;
     if (m2.gap != null) minGap = Math.min(minGap, m2.gap);
     if (m2.lineMiss) lineMiss += m2.lineMiss;
@@ -255,8 +291,10 @@ const run = async () => {
     if (labs.join('|') !== 'Aggressive|Safe') { badLab++; if (labEx.length < 3) labEx.push({ course: r.course, hole: r.hole, labs }); }
     if (m2.green) {
       greenN++;
-      if (!m2.onPin) { pinMoved++; }
+      if (!m2.onMid) { midMoved++; }
       if (!m2.vHeld) { vSlid++; }
+      if (!m2.outward) { inward++; }
+      if (m2.safeOff != null) { safeWorst = Math.max(safeWorst, m2.safeOff); if (m2.safeOff > 1) safeOffGreen++; }
       greenPxMin = Math.min(greenPxMin, m2.greenPx); ringMin = Math.min(ringMin, m2.ringPx);
       if (m2.greenPx < 2 * m2.ringPx + 4) tooNarrow++;
       // the pair must end up exactly as far apart as two tappable rings need, or as far as the two aim
@@ -271,6 +309,7 @@ const run = async () => {
       (m2.pastPx || []).forEach((p, k) => {
         if (p <= 0) return;
         past.push(p);
+        if (p > worstPast) { worstPast = p; worstRing = m2.ringPx; }
         if (p < m2.ringPx / 2) stillTouch++; else clearOff++;
       });
       (m2.inGreen || []).forEach(o => {
@@ -286,6 +325,7 @@ const run = async () => {
   ok('both markers are always the same size, so neither can swallow the other', notSame === 0, notSame);
   ok('the leader lines are drawn on every one', noLine === 0, noLine);
   ok('and no label is left sitting under the hole chip', chipHit === 0, chipHit);
+  ok('nor hanging off the edge of the window with its word cut in half', frameHit === 0, { off: frameHit, examples: frameEx });
   const z = await page.evaluate(() => window.__DT.render('Augusta National', 0));
   console.log(`    paint order, back to front: lines ${z.zLine}, docked panels ${z.zPanel}, markers ${z.zMark}`);
   ok('the leader lines paint BEHIND the docked cards, never across them',
@@ -309,17 +349,29 @@ const run = async () => {
   const pMed = past.length ? past.slice().sort((x, y) => x - y)[Math.floor(past.length / 2)] : 0;
   console.log(`    a marker whose centre is past the green's edge: ${past.length} of ${greenN * 2}, median ${pMed.toFixed(1)}px past`);
   console.log(`    of those, the ring still overlaps the putting surface on ${stillTouch}, and clears it on ${clearOff}`);
-  /* The bound is arithmetic rather than taste. The tracer draws the whole hole, so a 30 yard green is about
-     30 pixels across, and two rings anybody can tap are wider than that on most holes. Where they are, the
-     pair cannot both be inside the green and the only honest promise is that NEITHER IS MOVED FURTHER THAN
-     IT HAS TO BE: exactly one ring's width apart, no more. That is what these two assert. */
+
+  /* THE ONE THAT MATTERS. The safe option is captioned the middle of the green on the card beside it, so
+     it is read against the green, and a ring off the putting surface is either a lie or an option nobody
+     would take (owner). It is therefore never the marker that moves: the aggressive one absorbs the whole
+     push, outward along its own side, where the worst it can read as is a harder tuck than the real one. */
+  console.log(`    the safe marker, sideways from the green centre, 1.0 being its edge: worst ${safeWorst.toFixed(3)}`);
+  ok('the safe marker is never moved off the middle it is named for', midMoved === 0, midMoved);
+  ok('so it is never once drawn off the green, on any hole on the site', safeOffGreen === 0, safeOffGreen);
+  ok('and the aggressive one is only ever pushed OUTWARD, never back across the middle', inward === 0, inward);
+
+  /* The bound on the push is arithmetic rather than taste. The tracer draws the whole hole, so a 30 yard
+     green is about 30 pixels across, and two rings anybody can tap are wider than that on most holes.
+     Where they are, the pair cannot both be inside the green, and the honest promise is that the one that
+     moves is not moved further than it has to be: exactly one ring's width apart, no more. */
   ok('the pair is never spread wider than two tappable rings need', overPush === 0, { wider: overPush, examples: pushEx });
   ok('and never packed closer than that either, so both stay tappable', shortPush === 0, { closer: shortPush, examples: pushEx });
-  ok('nothing ends up more than a green-width from the middle', worstOff < 3, worstOff.toFixed(3));
-  ok('so a ring clear of the putting surface stays rare, on the smallest greens only',
-    clearOff / Math.max(1, greenN * 2) < 0.04, { clear: clearOff, of: greenN * 2, share: pct(clearOff, greenN * 2) });
-  ok('number one sits exactly on the pin, because the flag does not move', pinMoved === 0, pinMoved);
-  ok('and neither marker is ever slid up or down the hole, which would change the distance',
+  /* Stated in PIXELS, because a fraction of a green's own width is meaningless on the holes this is about:
+     a green drawn 10px across has a 5px half width, so a marker a single ring away from it reads as three
+     green-widths out while being 13 pixels from the middle. The arithmetic bound is one ring: the safe
+     marker is inside the green and the aggressive one is exactly a ring's width from it. */
+  ok('and no marker is ever more than one ring past the green edge', worstPast <= worstRing + 0.6,
+    { worstPast: +worstPast.toFixed(1), ring: +worstRing.toFixed(1) });
+  ok('neither marker is ever slid up or down the hole, which would change the distance',
     vSlid === 0, vSlid);
 
   head('the markers say which option they are');
@@ -337,6 +389,21 @@ const run = async () => {
   ok('the markers are numbered 1 and 2', nums.nums.join(',') === '1,2', nums.nums);
   const cardNums = await page.evaluate(() => window.__DT.cardNums('Augusta National', 0));
   ok('and the cards carry the same numbers in the same order', cardNums.join(',') === '1,2', cardNums);
+
+  head('and a card label never runs off its own card');
+  let wide = 0, notBlock = 0, worstWide = 0; const wideEx = [];
+  for (const r of sample) {
+    const f = await page.evaluate(a => window.__DT.cardFit(a[0], a[1]), [r.course, r.hole]);
+    if (!f) continue;
+    f.forEach(c => {
+      if (!c.block) notBlock++;
+      if (c.over > 0.6) { wide++; worstWide = Math.max(worstWide, c.over); if (wideEx.length < 3) wideEx.push({ course: r.course, hole: r.hole, over: c.over }); }
+    });
+  }
+  console.log(`    widest a label overran its card by: ${worstWide.toFixed(1)}px`);
+  ok('every card label is a block, so nowrap and the ellipsis actually apply', notBlock === 0, notBlock);
+  ok('and none is wider than the card it sits in, on any decision on the site',
+    wide === 0, { over: wide, examples: wideEx });
 
   head('page errors');
   ok('none', errs.length === 0, errs.slice(0, 3));
