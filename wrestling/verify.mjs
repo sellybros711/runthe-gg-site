@@ -99,7 +99,14 @@ const fresh = async (url)=>{
   const page = await browser.newPage({viewport:{width:1200,height:900}});
   const errs = [];
   page.on('pageerror', e=>errs.push(String(e)));
-  page.on('console', m=>{ if(m.type()==='error' && !/ERR_CONNECTION|favicon/.test(m.text())) errs.push('console: '+m.text()); });
+  /* The page pulls its display face from fonts.googleapis.com. A sandbox with no
+     route out, or one whose proxy CA chromium does not trust, fails that request
+     and every section that watches the console then reports a game error for a
+     webfont. The game does not need the font to work and the suite does not test
+     typography, so a failed EXTERNAL asset is not a finding. Anything from the
+     page's own origin still counts. */
+  const NOT_OURS=/ERR_CONNECTION|ERR_CERT|ERR_PROXY|ERR_NAME_NOT_RESOLVED|favicon|fonts\.googleapis\.com|fonts\.gstatic\.com/;
+  page.on('console', m=>{ if(m.type()==='error' && !NOT_OURS.test(m.text())) errs.push('console: '+m.text()); });
   await page.goto(url, {waitUntil:'domcontentloaded'});
   await page.waitForTimeout(600);
   await page.evaluate(()=>{ try{ localStorage.clear(); }catch(_){} });
@@ -844,6 +851,65 @@ section('every belt has its own design, and no two are the same');
               : ok(`all three carries draw on the figure: ${Object.keys(r.carries).map(k=>k+' +'+r.carries[k]).join(' · ')}`);
   r.iconErr ? bad('the belt icon threw: '+r.iconErr)
             : (r.icons===r.names ? ok(`the standalone icon renders for all ${r.icons}`) : bad(`the icon rendered for ${r.icons} of ${r.names}`));
+  await page.close();
+}
+
+/* ---------- 4m. the announcers cover the whole match ----------
+   The commentary banks were keyed by hand against the move categories and the
+   phase list, and the two had drifted: `suplex` and `showman` are two of the
+   eight move families and had no bank, so a third of the move list was silent,
+   while `brawl` was a bank nothing ever called. The phase side was worse. The
+   COMEBACK had no lines, which is the one stretch of a wrestling match the
+   announcers exist for. Nothing failed, because a missing bank returns early.
+   This asserts the keys MATCH, rather than that they are non-empty. */
+section('the announcers have a line for every move family and every phase');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const cats=MCATS.map(c=>c.id), phases=PHASES.map(p=>p.id);
+    const out={
+      missingCat: cats.filter(c=>!(COLOR_LINES[c]||[]).length),
+      deadCat:    Object.keys(COLOR_LINES).filter(k=>cats.indexOf(k)<0),
+      missingPhase: phases.filter(p=>!(COLOR_PHASE[p]||[]).length),
+      deadPhase:  Object.keys(COLOR_PHASE).filter(k=>phases.indexOf(k)<0),
+      thin: [].concat(
+        cats.filter(c=>(COLOR_LINES[c]||[]).length<5).map(c=>'move '+c),
+        phases.filter(p=>(COLOR_PHASE[p]||[]).length<4).map(p=>'phase '+p)),
+      cats:cats.length, phases:phases.length,
+    };
+    /* And it does not repeat itself inside one match. commLine appends to #fLog
+       directly rather than going through fLog(), so read the DOM: stubbing the
+       logger captured nothing and the check passed on zero draws, which is the
+       shape of test that proves nothing. */
+    COMM_SAID={};
+    G.prefs=Object.assign(G.prefs||{},{commentary:true});
+    const log=document.getElementById('fLog'); log.innerHTML='';
+    const n=(COLOR_LINES.strike||[]).length;
+    for(let i=0;i<n;i++) commLine('strike', null);
+    const got=[...log.children].map(d=>d.textContent.trim()).filter(Boolean);
+    const seen={}; let dupeBefore=0;
+    got.forEach(t=>{ if(seen[t]) dupeBefore++; seen[t]=1; });
+    out.strikeDraws=got.length; out.strikeUnique=Object.keys(seen).length; out.dupes=dupeBefore;
+    out.bankSize=n;
+    return out;
+  });
+  if(errs.length) bad('commentary: page errors: '+errs.slice(0,2).join(' | '));
+  r.missingCat.length ? bad(`${r.missingCat.length} move categor(ies) have no commentary: `+r.missingCat.join(', '))
+                      : ok(`all ${r.cats} move categories have commentary`);
+  r.deadCat.length ? bad('commentary banks nothing calls: '+r.deadCat.join(', '))
+                   : ok('no dead move-commentary banks');
+  r.missingPhase.length ? bad(`${r.missingPhase.length} phase(s) have no commentary: `+r.missingPhase.join(', '))
+                        : ok(`all ${r.phases} match phases have commentary`);
+  r.deadPhase.length ? bad('phase banks nothing calls: '+r.deadPhase.join(', '))
+                     : ok('no dead phase-commentary banks');
+  r.thin.length ? bad('banks too shallow to avoid repeating in one match: '+r.thin.join(', '))
+                : ok('every bank is deep enough for a full match');
+  (r.strikeDraws===r.bankSize && r.dupes===0)
+    ? ok(`${r.strikeDraws} draws from a bank of ${r.bankSize} gave ${r.strikeUnique} different lines, no repeats`)
+    : bad(`commentary repeated itself ${r.dupes} time(s) in ${r.strikeDraws} draws from a bank of ${r.bankSize}`);
   await page.close();
 }
 

@@ -5799,24 +5799,24 @@ const TOURS={
   {sel:'#weekBody .advice', title:'This is your week',
    body:'A week has two halves. <b>Yours</b>: how you prepare behind the scenes. <b>Theirs</b>: what the office books you to do. You do not write the card. You make the most of it.'},
   {sel:'#weekBody .preprow', title:'Prepare like a pro',
-   body:'One piece of prep a week, paid on the spot. <b>Gym</b> banks XP, <b>tape study</b> raises your odds against tonight\'s opponent, <b>rest</b> buys back condition, and <b>working the room</b> nudges your standing. Benched weeks pay double: nothing but time.'},
+   body:'One piece of prep a week, paid on the spot. <b>Gym</b> banks XP. <b>Tape study</b> raises your odds tonight. <b>Rest</b> buys back condition. <b>Working the room</b> nudges your standing. Benched weeks pay double: nothing but time.'},
   {sel:'#weekBody .bksheet', title:'The office books you',
-   body:'A wrestler does not pick their own matches. Each week the company tells you what you are doing, and the sheet shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> and the <b>injury risk</b>. Get your standing up and they start listening to you.'},
+   body:'A wrestler does not pick their own matches. Each week the company tells you what you are doing. The sheet shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> and the <b>injury risk</b>. Get your standing up and they start listening to you.'},
   {sel:'#weekBody .bksheet', title:'Winning is not the point',
-   body:'You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more reputation, standing and popularity than a <b>50-rated win</b>. So a night where they feed you to somebody better is an opportunity, not a punishment.'},
+   body:'You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more than a <b>50-rated win</b>. A night where they feed you to somebody better is an opportunity.'},
   {sel:'.planwhy', title:'Game plan',
    body:'The two <b>move categories you emphasise</b> in every match. They build mastery, and mastery unlocks better moves. Change them any time you want to grow differently.',
    before:()=>{ if(G && G.car && !G.car._wkExtras){ G.car._wkExtras=true; try{ renderWeek(); }catch(_){} } }},
   {sel:'#carTiles', title:'Three rooms are watching',
-   body:'<b>The crowd</b> decides if you are over. <b>The locker room</b> decides who wants to work with you. <b>The office</b> decides if you are on television. They do not agree, and most weeks you pick one to disappoint. Tap any of the three to see exactly what moves it, and the arrow tells you what last week did.'},
+   body:'<b>The crowd</b> decides if you are over. <b>The locker room</b> decides who wants to work with you. <b>The office</b> decides if you are on television. They do not agree. Most weeks you pick one to disappoint. Tap any of them to see what moves it. The arrow shows what last week did.'},
   {sel:'.hud', title:'The clock is running',
-   body:'You start at <b>21</b>. Attributes grow fast until your mid twenties, peak around <b>30-32</b>, then decline, and mileage brings that forward. A careful main-eventer can work at world-class level well into their forties, and legends have gone longer. You can walk away any time from <b>34</b>; the ones who never quit end up in somebody else\'s corner years later, still on the road.'},
+   body:'You start at <b>21</b>. Attributes grow fast, peak around <b>30-32</b>, then decline. Mileage brings that forward. Look after yourself and you can work at world-class level into your forties. You can walk away any time from <b>34</b>. The ones who never quit end up in somebody else\'s corner, years later, still on the road.'},
   {sel:'[data-nav="skills"]', title:'Skills: get better',
-   body:'Matches earn <b>XP</b>. Every 100 XP is a <b>training point</b> you spend on attributes here. Attributes plus mastery unlock new <b>moves</b> in your Arsenal, up through Signature and Finisher tiers. <b>Mentors</b> cost three weeks and teach you a legend\'s finisher outright.'},
+   body:'Matches earn <b>XP</b>. Every 100 XP is a <b>training point</b> you spend on attributes here. Attributes plus mastery unlock new <b>moves</b> in your Arsenal, up to Signature and Finisher. <b>Mentors</b> cost three weeks and teach you a legend\'s finisher outright.'},
   {sel:'[data-nav="gear"]', title:'Gear: how you look',
    body:'Change your look any week in the <b>Locker</b>, and open packs in the <b>Merch Stand</b>.'},
   {sel:'[data-nav="roster"]', title:'Roster: who is out there',
-   body:'The <b>Locker Room</b> has your allies, your tag team, your stable, and everyone with a grudge against you. Earn enough respect and you can team up, or turn on them. <b>The World</b> is all nine promotions and everyone on them.'},
+   body:'The <b>Locker Room</b> has your allies, your team, your stable and everyone with a grudge against you. Earn enough respect and you can team up. Or turn on them. <b>The World</b> is all nine promotions and everyone on them.'},
   {sel:'[data-nav="legacy"]', title:'Career: the paperwork',
    body:'<b>Business</b> holds your contract, your schedule, your character and your injuries. <b>Record</b> is every match, title reign and accolade you have earned.'},
   {sel:null, title:'Where to start', goals:true},
@@ -5824,7 +5824,7 @@ const TOURS={
  // fires the first time a match asks you to call a spot, while the match is paused
  dec:[
   {sel:'#fDec', title:'This is where you play',
-   body:'The wrestling calls itself. <b>These moments are yours.</b> Each option shows its real chance of coming off. Hitting a big spot sends the crowd up and lifts the match rating; missing one costs you. Pick one to continue.'},
+   body:'The wrestling calls itself. <b>These moments are yours.</b> Each option shows its real chance of coming off. Hit a big spot and the crowd goes up. Miss one and it costs you. Pick one to continue.'},
  ],
 };
 let TOURN='hub', TOUR_I=-1;
@@ -5920,7 +5920,7 @@ function tourGoalsHTML(){
     steps=[
       `Tonight you are <b>${slot}</b> against <b>${o.oppName}</b>. That is the sheet below.`,
       `Under <b>Your week</b>, pick <b>${lbl('tape','Study the tape')}</b>. It raises your odds tonight.`,
-      `Hit <b>Head To The Ring</b>. Build to your near-falls, do not go home early, and when the match asks you to call a spot, call it.`,
+      `Hit <b>Head To The Ring</b>. Build to your near-falls. Do not go home early. When the match asks you to call a spot, call it.`,
       `After the bell, read what moved, then the dirt sheet. That is how you find out what the three rooms thought.`,
     ];
   } else if(b.type==='promo'){
@@ -5968,7 +5968,7 @@ const RULES=[
     <li><b>A live microphone</b>, when they want your character louder than your wrestling.</li>
     <li><b>Nothing.</b> Not booked means not in the plans. Train, rest, and make them regret it.</li>
   </ul>
-  <p class="log"><b>Pull</b> grows with standing, the title and crowd reaction. It buys one conversation a week with the office (more time, a different opponent, a stipulation, even the finish), and being told no costs standing, so asking is a real decision. Your <b>downside guarantee</b> pays every week whether you wrestle or not.</p>`},
+  <p class="log"><b>Pull</b> grows with standing, the title and crowd reaction. It buys one conversation a week with the office: more time, a different opponent, a stipulation, even the finish. Being told no costs standing. Asking is a real decision. Your <b>downside guarantee</b> pays every week whether you wrestle or not.</p>`},
  {n:'Matches', h:`
   <p class="log"><b>Momentum</b> is how you are running right now, 0 to 100. Wins and good matches push it up. Losses and weeks off pull it back to 50. It nudges your odds in the next match.</p>
   <p class="log">Matches are wrestled, not simulated. They play out live and end the way real matches end.</p>
@@ -6432,8 +6432,8 @@ function renderHome(){
     // (Happens when the active slot is empty but another slot has a career.)
     const anySave = SLOT_KEYS.some(k=>{ try{ return !!localStorage.getItem(k); }catch(_){ return false; } });
     el.innerHTML=`<div class="startcard">
-      <div class="sc-kick">Start your journey<br>to greatness</div>
-      <div class="sc-sub">Create a rookie, break into the business, and live a full career. Every attribute point and every move is earned in the ring, never bought.</div>
+      <div class="sc-kick">Nobody starts<br>in the main event</div>
+      <div class="sc-sub">Create a rookie and work your way up. Every attribute point and every move is earned in the ring, never bought.</div>
       <button class="big btnglow" style="font-size:18px;padding:15px 36px;" onclick="go('start')">Start Career →</button>
       ${hasBackup?`<button class="ghost" style="margin-top:10px;padding:8px 16px;font-size:12px;" onclick="restoreBackup()">Restore last career</button>`:''}
       <div class="featstrip">
@@ -7840,28 +7840,97 @@ function tapWindow(ms, prompt, opts){
 }
 /* Commentator colour: one voice for each move category, one for phase turns.
    Fired sparingly so the log stays readable, keyed to the moment. */
+/* COMMENTARY.
+   Two things were wrong with this and both were silent. The bank keys did not
+   match the things that get passed in: `suplex` and `showman` are two of the
+   eight move categories and had no bank at all, so a third of the move list
+   produced no commentary ever, while `brawl` was a bank nothing called. Same
+   on the phase side: `feel` and `come` had no bank and `finish` was not a
+   phase id, so the COMEBACK, which is the biggest beat in a wrestling match,
+   was the one stretch the announcers said nothing during.
+
+   The keys below are now exactly the eight move category ids in moves.js and
+   exactly the five phase ids in PHASES. Adding a category means adding a bank,
+   and the suite fails if the two lists ever drift apart again. */
 const COLOR_LINES={
-  strike:      ['"He is walking into these hard."','"That woke the front row up."','"The chops are coming in bunches."'],
-  slam:        ['"He folded him in half. In HALF."','"That is a five-star spot right there."','"Nobody is kicking out of that one."'],
-  submission:  ['"He is pulling on it. He is really pulling on it."','"That hold has been tested in every basement of the country."','"The referee is checking. That is a submission attempt."'],
-  aerial:      ['"He is going upstairs."','"You do not see that at 240 pounds."','"He nailed the landing. That is impossible."'],
-  technical:   ['"That is textbook. Wrestling matters."','"He is teaching in there."','"He is picking his opponent apart. Piece. By. Piece."'],
-  hardcore:    ['"Oh, he is bleeding hard-way there."','"That was a shot heard in the back."','"Somebody is going to have to answer for that later."'],
-  brawl:       ['"They are throwing bombs."','"This has become a fight, not a match."','"Neither one of these two is backing off an inch."'],
+  strike:      ['"He is walking into these hard."','"That woke the front row up."',
+                '"The chops are coming in bunches."','"You can hear that in the back row."',
+                '"Stiff. That was not for show."','"He is not aiming for the body any more."',
+                '"Every one of those is landing clean."','"That is the fourth one, and he is not slowing down."'],
+  slam:        ['"He folded him in half. In HALF."','"That is a five-star spot right there."',
+                '"Nobody is kicking out of that one."','"He got all of that. All of it."',
+                '"The ring moved. I felt the ring move."','"Dropped him on the back of his neck."',
+                '"He picked him up like it was nothing."','"That is how you end a night early."'],
+  suplex:      ['"Textbook. Feet together, hips through."','"He held the bridge. The referee had to count it."',
+                '"Right over the top and onto the shoulders."','"That is amateur wrestling with bad intentions."',
+                '"Three of them. He is counting them out loud."','"He threw him and did not let go."',
+                '"Deadlift, from flat on the mat."','"He is folding him up every single time."'],
+  submission:  ['"He is pulling on it. He is really pulling on it."',
+                '"That hold has been tested in every basement of the country."',
+                '"The referee is checking. That is a submission attempt."',
+                '"He has it cinched in. There is nowhere to go."',
+                '"Look at the leg. The leg is the whole match now."',
+                '"He is screaming. He is not tapping, but he is screaming."',
+                '"That is torque. That is real torque."','"He is reaching, and the ropes are a long way away."'],
+  aerial:      ['"He is going upstairs."','"You do not see that at 240 pounds."',
+                '"He nailed the landing. That is impossible."','"He hung in the air. He actually hung there."',
+                '"From the top, all the way across the ring."','"That is a lot of trust in a set of ropes."',
+                '"He does not land on his feet every time he tries that."',
+                '"Somebody is going to have to scrape him up."'],
+  technical:   ['"That is textbook. Wrestling matters."','"He is teaching in there."',
+                '"He is picking his opponent apart. Piece. By. Piece."','"Countered it before it started."',
+                '"He saw that coming a week ago."','"Every hold turns into another hold."',
+                '"That is the chain. That is what the chain looks like."',
+                '"He has an answer for everything tonight."'],
+  hardcore:    ['"Oh, he is bleeding hard-way there."','"That was a shot heard in the back."',
+                '"Somebody is going to have to answer for that later."','"They are throwing bombs."',
+                '"This has become a fight, not a match."','"Neither one of these two is backing off an inch."',
+                '"The referee has stopped asking them to stop."',
+                '"There is nothing legal happening any more."'],
+  showman:     ['"He is working them. Listen to that."','"He has the whole building in his hand."',
+                '"He is taking his time, and they love him for it."','"That is not offence. That is theatre."',
+                '"He is playing to the hard camera. Of course he is."','"The crowd did that on cue. On cue."',
+                '"He stopped the match to pose, and it worked."',
+                '"Some of this is wrestling. Some of this is showing off."'],
 };
 const COLOR_PHASE={
-  shine:   ['"Beautiful chain wrestling to open."','"You can feel the energy in this building."','"He is playing to them, and they love it."'],
-  heat:    ['"Now the cutoff. Beautifully timed."','"The champ is working the leg. That is smart wrestling."','"You feel the mood shift in the room."'],
-  stretch: ['"Business is picking up."','"The finish stretch. Anything can happen."','"Both wrestlers are pulling out everything they have."'],
-  finish:  ['"He is going for it here."','"This could be it."','"He is going home."'],
+  feel:    ['"They are feeling each other out."','"Nobody wants to make the first mistake."',
+            '"Collar and elbow to start. Very old school."','"Early, and both of them are still measuring."',
+            '"This is the part where you learn what you are dealing with."'],
+  shine:   ['"Beautiful chain wrestling to open."','"You can feel the energy in this building."',
+            '"He is playing to them, and they love it."','"Everything is landing for him right now."',
+            '"This is his stretch, and he knows it."'],
+  heat:    ['"Now the cutoff. Beautifully timed."','"The champ is working the leg. That is smart wrestling."',
+            '"You feel the mood shift in the room."','"He has slowed this right down, and that is deliberate."',
+            '"The crowd has gone quiet. That is by design."'],
+  come:    ['"Wait. Wait. He is getting up."','"The building just stood up."',
+            '"He is firing back with nothing left to fire with."','"This is the one they came for."',
+            '"He would not stay down. He would not stay down."'],
+  stretch: ['"Business is picking up."','"The finish stretch. Anything can happen."',
+            '"Both of them are pulling out everything they have."','"He is going for it here."',
+            '"This could be it."','"He is going home."'],
 };
+let COMM_SAID={};                 // which colour lines have been used lately
 function commLine(cat, phase){
   if(!G.prefs||!G.prefs.commentary){ G.prefs=G.prefs||{}; if(G.prefs.commentary===undefined) G.prefs.commentary=true; }
   if(G.prefs.commentary===false) return;
   const bank = cat && COLOR_LINES[cat] ? COLOR_LINES[cat]
              : phase && COLOR_PHASE[phase] ? COLOR_PHASE[phase] : null;
   if(!bank) return;
-  const line = bank[Math.floor(rnd()*bank.length)];
+  /* Do not say the same thing twice. The promo system already tracks what it
+     has used and hashes the wording so two phases of one promo do not repeat;
+     commentary picked uniformly from a bank with no memory at all, so with a
+     pool this size a repeat inside a single match was closer to certain than
+     not. Exhaust the bank, then start it over.
+
+     The memory belongs to the commentary system rather than to MS, for two
+     reasons: it then also holds across consecutive matches, and it can be
+     driven without standing up a whole fight, which is what lets the suite
+     prove it works instead of asserting on zero draws. */
+  let pool = bank.filter(l=>!COMM_SAID[l]);
+  if(!pool.length){ bank.forEach(l=>{ delete COMM_SAID[l]; }); pool = bank; }
+  const line = pool[Math.floor(rnd()*pool.length)];
+  COMM_SAID[line]=1;
   const el = $('fLog'); if(!el) return;
   const d = document.createElement('div');
   d.style.color = '#c8b273';
@@ -9236,6 +9305,7 @@ async function startFight(o){
        // in a face-vs-heel match the babyface shines and the heel cuts him off
        shineMe: (meFace&&!oppFace) ? true : (!meFace&&oppFace) ? false : rnd()<0.5 };
   MS.pinned = window.RTR_FORCE || null;    // the one beat this match is meant to prove
+  COMM_SAID={};                            // the announcers start the night fresh
   MS.opp.id = o.oppId;
   MS.opp.look = oc0 ? oc0.look : oppLook(o.oppId, o.oppName);
   // THE THIRD BODY. MS.opp is whoever is in the ring with you right now and
@@ -10051,6 +10121,27 @@ async function submissionAttempt(byMe, mvName){
      and the fist closes. It is the pin count of submissions, and this hold had
      no equivalent: it either ended or it did not. Only when the finish is
      genuinely live, or the drama is free and means nothing. */
+  /* THE ROPE BREAK, ON A HOLD. Reaching the bottom rope breaks a submission
+     the same way a foot on it kills a three count, and it is the same beat:
+     the crowd has decided the match is over and then it is not. This only
+     existed on the pin path, so a match that went to a hold had no version of
+     it. A stipulation with no disqualification has no rope breaks either. */
+  if(rulesAllowSub && !MS.ropeBreak && MS.phase>=3 && !stipRules(MS.o).noDQ && pTap>0.3
+     && (pinnedIs('ropebreak') || rnd()<0.14)){
+    MS.ropeBreak=true; trace('ropebreak');
+    poseSet('ref','refNo'); sfx('crowdRise');
+    fmv(D,{rot:byMe?18:-18},180); await sleep(200);
+    burst(atX(D),'ROPE BREAK');
+    await callout('HE GOT THE ROPES!');
+    fLog(byMe
+      ? `<span class="bad">${MS.opp.name} drags a hand onto the bottom rope. The referee makes you break it.</span>`
+      : `<span class="hi">You get a hand on the bottom rope. The hold has to break.</span>`);
+    MS.nearFalls++; MS.quality+=7; MS.big++;
+    MS.mom=clamp(MS.mom+(byMe?-12:12),-100,100); setMom();
+    $('arena').classList.remove('tense');
+    refDrift(); await settle(300);
+    return false;
+  }
   const willTap = rulesAllowSub && MS.phase>=3 && rnd()<pTap;
   if(rulesAllowSub && MS.phase>=3 && (pTap>0.25 || willTap)){
     $('arena').classList.add('tense');
