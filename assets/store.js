@@ -162,6 +162,40 @@
     '  .pfpro-h .pw-pill{margin-left:0;vertical-align:0}\n' +
     '  .pfpro-h span{font-size:12.5px;color:var(--dim-2);line-height:1.35}\n' +
     '  .pw-note{font-size:12px;color:var(--dim-2);margin:13px 0 12px;line-height:1.4}\n' +
+    '  /* THE BAND THAT SAYS THIS IS NOT A SUBSCRIPTION.\n' +
+    '     Hazard stripes and a live lamp, because that is the visual language of "read this\n' +
+    '     one" and a reader scanning a price screen gives the prose about a second and a\n' +
+    '     half. Gold rather than red: red on this site is the primary action and a red band\n' +
+    '     over two buy buttons reads as something having gone wrong with them. */\n' +
+    '  .pw-alert{display:flex;align-items:center;gap:9px;margin:13px 0 2px;\n' +
+    '    padding:9px 11px;border-radius:10px;border:1px solid rgba(251,191,36,.55);\n' +
+    '    background:repeating-linear-gradient(135deg,rgba(251,191,36,.17) 0 9px,\n' +
+    '      rgba(251,191,36,.055) 9px 18px);\n' +
+    '    animation:pwalert 1.7s ease-in-out infinite}\n' +
+    '  @keyframes pwalert{\n' +
+    '    0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.5)}\n' +
+    '    60%{box-shadow:0 0 0 8px rgba(251,191,36,0)}\n' +
+    '  }\n' +
+    '  /* The lamp. Its own faster beat, so the band breathes and the light blinks rather\n' +
+    '     than the two moving as one object. */\n' +
+    '  .pw-alert i{flex:0 0 8px;width:8px;height:8px;border-radius:999px;background:#fbbf24;\n' +
+    '    box-shadow:0 0 7px rgba(251,191,36,.9);animation:pwlamp .9s steps(1,end) infinite}\n' +
+    '  @keyframes pwlamp{0%,55%{opacity:1}56%,100%{opacity:.22}}\n' +
+    '  .pw-alert b{flex:0 0 auto;font-family:var(--fn);font-size:10.5px;letter-spacing:.11em;\n' +
+    '    text-transform:uppercase;font-weight:800;color:#fbbf24}\n' +
+    '  .pw-alert span{font-size:11.5px;line-height:1.3;color:var(--ink)}\n' +
+    '  /* UNDER 380px THE THREE PIECES DO NOT FIT ON ONE LINE and the sentence wraps to two\n' +
+    '     words a row. The lamp and the label keep the top line and the sentence takes the\n' +
+    '     one under it, indented past the lamp so the band still reads as one block. */\n' +
+    '  @media (max-width:379px){\n' +
+    '    .pw-alert{flex-wrap:wrap}\n' +
+    '    .pw-alert span{flex:1 0 100%;margin-left:17px}\n' +
+    '  }\n' +
+    '  /* Asked not to be moved, it keeps the stripes, the border and the lamp, and stops\n' +
+    '     pulsing and blinking. What it is saying is not the movement. */\n' +
+    '  @media (prefers-reduced-motion:reduce){\n' +
+    '    .pw-alert,.pw-alert i{animation:none}\n' +
+    '  }\n' +
     '  /* THE PROMPT CARD\x27S MARKS, in a row under the word it is selling. Both games draw the\n' +
     '     card and both had their own .pw-card block, so this one rule lives here instead: it\n' +
     '     is the only part of the card that has to match the hero row it opens, and the hero\n' +
@@ -330,8 +364,32 @@
     account gets three dynasty seasons a day and unlimited runs, so "unlimited dynasty runs"
     sold something the reader already had and stayed quiet about the thing they were
     actually hitting. See 101_dynasty_seasons.sql. */
-    'Unlimited dynasty seasons, no daily limit, and every Pro mode. '+
-    'One payment. No subscription.</p>'+
+    /* AND THE TERM COMES OUT OF THIS SENTENCE, because it is now said once and loudly in the
+    band below rather than twice and quietly: here and in the foot. */
+    'Unlimited dynasty seasons, no daily limit, and every Pro mode.</p>'+
+    /* THE BAND, AND WHAT IT IS ALLOWED TO CLAIM.
+    It is built to be the loudest thing on the sheet, because the anxiety it answers is the
+    one that actually stops people: everything else sold this way is a subscription, and a
+    reader who assumes this is one is deciding against a monthly charge that does not exist.
+    IT SAYS PAYMENT AND NOT OFFER, AND THAT IS DELIBERATE. "One time offer" says the price
+    goes away, and nothing here goes away: both bundles are permanent products at permanent
+    prices. Manufacturing a deadline the checkout does not keep is the one claim on a payment
+    screen that could not be defended, and this file already refuses to stretch "lifetime"
+    over the Arcade year for the same reason. If a real limited window is ever wanted it
+    needs a real end date in _bundles.js and a store that stops selling at it.
+    WHAT IT SAYS IS TRUE OF BOTH BUNDLES. Nothing renews: three of the four grants are
+    permanent and the Arcade year simply ends, which is why the word is "renew" rather than
+    "lifetime". See pwGroupText. */
+    /* WRAPPED, AND THE WRAPPER IS LEAD IN THE PAGE RATHER THAN NOTHING. Both games style the
+    sheet's direct children with `#sheet-in.swap>*{animation:sheetSwap ... both}`, an id
+    selector that outranks anything this file can write with a class, so a band sitting
+    directly in the sheet has its pulse replaced by the entrance animation and, because that
+    one is `both`, sits on its last frame for ever. It would simply never pulse, on either
+    game, with nothing to report. The wrapper takes the entrance and the band inside keeps its
+    own beat, which is how the lamp was accidentally fine already. */
+    '<div class="pw-alertwrap"><div class="pw-alert" role="note"><i></i>'+
+      '<b>One time payment</b>'+
+      '<span>Pay once. No subscription. No second charge.</span></div></div>'+
     '<div class="pw-hero">'+
     /* NO SEASON COUNT ON THE DYNASTY TILE. This read "25 seasons, one job" until recently,
     and there is no ceiling: the 25 was DYNASTY_MAX_SEASONS, a loop guard in the balance

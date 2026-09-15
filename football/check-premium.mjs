@@ -642,7 +642,7 @@ await t.page.close();
  * case checks whether the canvas appeared as well as what the sheet says.
  */
 console.log('\nTHE WALK BACK FROM STRIPE');
-const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,'
+const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,profileSheet,'
   + 'premiumRefresh,paintHomeStart,setDaily:(m,v)=>{dailyState[m]=v;},'
   /* The board is never called in this harness, so the two corner numbers are set by hand
      the same way ownership is. dynHiFor is pinned alongside them, or the next repaint
@@ -654,6 +654,10 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,'
   + 'return Object.assign({},s,{ok:true,used:(s.used||0)+1});};return n;},'
   + 'reviewDynastyRules,dynIntroOff,dynNewSheet,dailyStop,'
   + 'setPremium:(v)=>{premiumSet=v;},'
+  /* The walk back from Stripe runs earlier on this page and leaves justPaid set, which is
+     itself a reason premiumPitch() stands down. Cleared rather than worked around, so the
+     section below is testing the ownership rule and not that one. */
+  + 'setPaid:(v)=>{justPaid=v;},'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
   + 'onSuccessUrl:()=>{history.replaceState(null,"","/football/?checkout=success");}';
@@ -998,6 +1002,50 @@ console.log('\nAN ABANDONED DRAFT IS NOT A RUN TO RESUME');
     document.getElementById('s-intro').classList.add('on');
     try { localStorage.removeItem('ps_dynasty_save'); } catch (e) {}
   });
+}
+
+console.log('\nTHE OFFER COMES OFF THE SCREEN WHEN THE ACCOUNT OWNS IT');
+/*
+ * THE FRONT PAGE'S CARD ALREADY WENT: ensurePremiumCard removes the node when premiumPitch()
+ * turns false, and paintHomeStart runs it when the products answer lands. The PROFILE's card
+ * had nothing doing that. It is written in when the sheet is drawn and the sheet is not
+ * redrawn on ownership, so a buyer whose purchase confirmed while their profile was open sat
+ * looking at Go Pro, on a Pro account, under a gold pill saying so.
+ *
+ * NARROW BUT REAL. An owner never sees the card on an ordinary load, because premiumPitch()
+ * answers false for the whole round trip as well as after it. What reaches this is the walk
+ * back from Stripe, which polls premiumRefresh(true) for ten seconds: open the profile during
+ * that and ownership lands underneath it.
+ *
+ * AND THE SHEET IS NOT REDRAWN, which is the other half of the assertion. Rebuilding it would
+ * throw somebody back to the top of their profile, or off the page they were reading, to fix
+ * something they were not looking at.
+ */
+{
+  const gone = await ck.page.evaluate(async () => {
+    const T = window.__t;
+    T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+    T.setPremium([]);
+    T.setPaid(false);
+    document.getElementById('sheet').classList.remove('on');
+    T.profileSheet();
+    const before = !!document.getElementById('pf-prem');
+    /* Mark the sheet, so a redraw can be told from a removal. */
+    const box = document.getElementById('sheet-in');
+    box.dataset.witness = 'here';
+    /* Ownership lands the way it really does: the products call answers, and premiumRefresh
+       is what the walk back from Stripe is already calling on a timer. */
+    window.PS_AUTH = Object.assign({}, window.PS_AUTH,
+      { premiumProducts: async () => ['ps_premium', 'cfb_premium'] });
+    await T.premiumRefresh(true);
+    return { before: before, after: !!document.getElementById('pf-prem'),
+      kind: box.dataset.kind, kept: box.dataset.witness === 'here',
+      tier: T.acctTier ? T.acctTier() : null };
+  });
+  ok('a free account is shown the offer', gone.before === true);
+  ok('and it is taken away the moment the account turns Pro', gone.after === false);
+  ok('without redrawing the sheet underneath them', gone.kept === true && gone.kind === 'profile',
+    gone.kind + ' witness=' + gone.kept);
 }
 
 console.log('\nA SEASON IS WHAT COSTS, AND IT COSTS ONCE');

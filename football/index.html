@@ -7799,7 +7799,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=12"></script>
+<script src="/assets/store.js?v=14"></script>
 <!-- THE RUN, KEPT AGAINST THE ACCOUNT. Shared with Commish Simulator, which had the same
      save in localStorage and the same way of losing it. Optional like everything else up
      here: without it the game keeps its runs exactly where it always did, in this browser
@@ -8064,7 +8064,27 @@ function premiumRefresh(force){
     /* AND THE HEADER, which carries the Pro ring. Ownership arrives after the account does,
        so leaving this to the auth change alone left a fresh buyer looking at a free-looking
        header until their next load. */
-    .then((v)=>{ try{ paintHomeStart(); paintAvatar(); }catch(_){} return v; });
+    .then((v)=>{ try{ paintHomeStart(); paintAvatar(); dropPitchCard(); }catch(_){} return v; });
+}
+
+/*
+ * THE OFFER COMES OFF THE SCREEN THE MOMENT THE ACCOUNT OWNS IT.
+ *
+ * paintHomeStart takes the front page's card away on its own, because ensurePremiumCard
+ * removes the node when premiumPitch() turns false. The PROFILE's card had nothing doing
+ * that: it is written into the sheet when the sheet is drawn, and the sheet is not redrawn
+ * when ownership lands. So a buyer whose purchase confirmed while their profile was open sat
+ * looking at Go Pro, on a Pro account, with a gold pill two inches above it saying so.
+ *
+ * THE NODE IS REMOVED RATHER THAN THE SHEET REDRAWN, and that is the whole point of doing it
+ * this way. A redraw would throw somebody back to the top of their profile, or off the badge
+ * page they were reading, to fix something they were not looking at. Taking one card out
+ * disturbs nothing else on the screen.
+ */
+function dropPitchCard(){
+  if(premiumPitch()) return;
+  const el=$('pf-prem');
+  if(el&&el.parentNode) el.parentNode.removeChild(el);
 }
 
 /*

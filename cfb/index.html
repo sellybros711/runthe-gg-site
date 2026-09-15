@@ -3871,7 +3871,7 @@ or endorsed by the NCAA, the CFP or any school.
      sold on this site, it unlocks both games, and it is described in exactly one file. Two
      copies of a price or a term is two chances to tell a customer something the other page
      contradicts, and the one that is wrong is whichever was edited second. -->
-<script src="/assets/store.js?v=12"></script>
+<script src="/assets/store.js?v=14"></script>
 <!-- NO ARCADE HOUSE AD ON THIS GAME. /assets/arcade-ad.js still runs on the homepage,
      the NFL game and the golf game; this one asks nobody. Somebody arriving here has come
      to draft a team, and the front page has its own way to the arcade in "More ways to
@@ -5556,8 +5556,20 @@ function premiumRefresh(force){
       try{
         if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='modes') modeMenu();
       }catch(e){}
+      /* AND THE OFFER COMES OFF THE PROFILE, which nothing was doing. The card is written in
+         when the hub is drawn and the hub is not redrawn when ownership lands, so a buyer
+         whose purchase confirmed with their profile open sat looking at Go Pro on a Pro
+         account, under a gold pill saying so. The node is removed rather than the sheet
+         redrawn: a redraw would throw somebody back to the top of their profile to fix
+         something they were not looking at. Same fix, same reasoning, in the football game. */
+      try{ dropPitchCard(); }catch(e){}
       return v;
     });
+}
+function dropPitchCard(){
+  if(premiumPitch()) return;
+  const el=$('pf-prem');
+  if(el&&el.parentNode) el.parentNode.removeChild(el);
 }
 /* THREE ANSWERS, NOT TWO. Signed out is not "Free": a free account is a thing somebody
    has, and a visitor with none has nothing to show a status for. Not known yet is not
