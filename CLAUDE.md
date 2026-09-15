@@ -684,6 +684,61 @@ in the source: `posture.bowlTieIns` holds a BOOLEAN and an item wrote the string
 it, and an option `set` a METER directly. Meters are derived from effects, which is why there
 is no name for one in `PATH_NAME` and why the desk had nothing to print.
 
+**`cross()` enforces the chain as well as `open()` does**, and that is not belt and braces.
+`open()` is what an item's `when()` asks, and an item is hand-written data: the one thing an
+author can forget is the gate. Forget it and `opens: 'colony'` puts a team on another planet
+in a sport that has not let anybody hire an agent yet, with nothing anywhere complaining. It
+THROWS, the same way `applyEdit` throws on a path the world does not have and for the reason
+that file gives.
+
+#### An allowlist in the middle of a ruling ate the whole mechanic
+
+**`fallout.merge` folded the tail into the edit by naming the keys worth keeping**, so it
+silently deleted anything added later, and only on the rulings a tail happened to roll on.
+`written` had already been bolted back on at the bottom of that function for exactly this
+reason, years earlier, which was the warning nobody read.
+
+What it cost, in order: `opens` went missing, so `applyEdit` no longer crossed the frontier,
+so it was asked to write a field the crossing grafts, so it threw by design in the middle of
+the ruling handler. No ledger write, no room, the screen frozen on the desk, and the button
+the player had just pressed doing nothing for ever. **Every headless suite passed**: the
+docket resolved the option correctly, the ledger applied the edit correctly, and the two were
+only ever wrong together, in the page, when a third thing fired.
+
+It starts from a copy of the whole edit now. `test_docket` asserts the PROPERTY rather than
+the key: every field of the ruling survives the merge, whatever the fields turn out to be
+next year.
+
+#### The walk that found it
+
+```
+node cfb/build/test/commish/test_longterm.mjs              a term, the ladder, both tiers
+node cfb/build/test/commish/test_longterm.mjs --seasons 12
+```
+
+Nothing else here plays the mode. Every other suite asks whether one screen is right, and the
+bug above lived in the join between three files that were each individually correct. This one
+takes beats the way a player does, then crosses all ten rungs through the real desk, and
+collects `pageerror` throughout, because a mid-beat exception leaves the last screen up and
+stops responding, which is the only symptom a player ever gets.
+
+**Four screens a walker has to know about**, each of which cost a round of hunting:
+
+| screen | what it needs |
+|---|---|
+| `#b-desk` | ONE button, two jobs: it starts the month, relabels to "Tap to skip", and only opens the desk on the press after the walk finishes |
+| `s-press` | media days is a lectern: the answers are `.opt` divs, not buttons, then `#b-say` |
+| `s-room` | media days ends here too, not just rulings. One button, `#b-next` |
+| `s-year` | drawn at the end of EVERY season. `#b-year-next` carries on; only `#b-term-share` marks a term that is really over |
+
+That last row is `test_ending`'s lesson arriving a second time: **key on structure, never on
+what a button says.** Reading `s-year` as the ending stopped a five season walk after the
+first autumn and reported a mode that had seized up.
+
+**The bot takes the middle option**, which is the fixture bot every other suite here uses.
+Measured over forty terms: always-first is fired 36 times of 40 and 12 of those in year one,
+random 30 of 40, middle 11 of 40. Always-first tests the removal screen rather than the mode.
+
 ### A setting has to LOOK like a setting
 
 **The mode is nothing but named rules and what they currently say, so a value printed as

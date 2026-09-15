@@ -343,6 +343,42 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
     });
     ok('  and nobody is reading somebody else\'s line', !dupes.length,
       dupes.slice(0, 4).join(', ') || Object.keys(said).length + ' distinct lines');
+
+    /* ── A TAIL MUST NOT EAT THE RULING IT LANDS ON ────────────────────────────────────
+       fallout.merge folds what happened next into the edit, and it used to do it by naming
+       the keys worth keeping. An allowlist drops anything added later, silently, and only on
+       the rulings a tail happens to roll on.
+
+       IT ALREADY COST A DEAD BUTTON. `opens` went missing that way, so applyEdit stopped
+       crossing the frontier, was then asked to write a field the crossing grafts, and threw
+       by design in the middle of the ruling handler: no ledger write, the screen stuck on the
+       desk, and the button the player just pressed doing nothing for ever. `written` had been
+       bolted back on at the bottom of that function years earlier for the same reason, which
+       was the warning nobody read.
+
+       SO THIS CHECKS THE PROPERTY RATHER THAN THE KEY. Every key on the edit survives the
+       merge, whatever the keys turn out to be next year. */
+    const FALL = require(ROOT + '/cfb/commish/fallout.js');
+    const rung = D.BY_ID['fr-capital'];
+    const base = D.resolve(rung, 'sell', {});
+    const merged = FALL.merge(base, { id: 'test-tail', effects: { money: -1 }, aimed: {} });
+    const lost = Object.keys(base).filter((k) => merged[k] === undefined);
+    ok('a fallout tail keeps every field of the ruling it lands on', !lost.length,
+      lost.join(', ') || Object.keys(base).length + ' fields kept');
+    ok('  including the one that enlarges the sport', merged.opens === base.opens,
+      String(merged.opens));
+    /* AND THE WHOLE PATH STILL WORKS WITH A TAIL ON IT, which is the failure as a player met
+       it: the ruling goes through and the frontier is crossed even when something else
+       happened that day. */
+    {
+      let w = world0();
+      w = FR.cross(w, 'union');
+      let threw = null, after = null;
+      try { after = L.applyEdit(w, merged); } catch (e) { threw = e.message; }
+      ok('  and the ruling still applies with a tail folded in', !threw, threw || 'applied');
+      ok('  and the frontier is still crossed', !!(after && after.frontier && after.frontier.capital),
+        after ? Object.keys(after.frontier).join(', ') : 'threw');
+    }
   }
   /* ---- asking about the case ----
      AN ITEM WITH FOUR QUESTIONS AND TWO ANSWERS has three ways to fail and all three are

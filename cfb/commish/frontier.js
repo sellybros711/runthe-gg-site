@@ -194,6 +194,20 @@
     var f = BY_ID[id];
     if (!f) throw new Error('frontier: no such frontier "' + id + '"');
     if (has(world, id)) return world;
+    /* AND THE CHAIN IS ENFORCED HERE AS WELL AS AT THE GATE, which is not belt and braces.
+       `open()` is what an item's when() asks, and an item is hand-written data: the one thing
+       an author can forget is the gate itself. Forget it and `opens: 'colony'` puts a team on
+       another planet in a sport that has not yet let a player hire an agent, and nothing
+       anywhere complains, because every part of the crossing works perfectly.
+       IT THROWS RATHER THAN REFUSING, the same way applyEdit throws on a path the world does
+       not have and for the same reason that file states: a ruling that silently does
+       something other than what it says is the failure mode this whole design is built to
+       avoid. A thrown error is an authoring mistake found by the suite that walks the ladder
+       (test_docket) rather than a sport that quietly makes no sense. */
+    var short = f.needs.filter(function (n) { return !has(world, n); });
+    if (short.length) {
+      throw new Error('frontier: cannot open "' + id + '" before ' + short.join(', '));
+    }
     var next = JSON.parse(JSON.stringify(world));
     next.frontier = next.frontier || {};
     next.frontier[id] = { year: next.year, beat: next.beat || 0 };
