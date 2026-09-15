@@ -550,6 +550,17 @@ console.log('\n=== nine settings you cannot set, and can put on the agenda ===')
   const paths=await p.$$eval('#off-year .yr',(e)=>e.map((x)=>x.dataset.p));
   ok('every row on the year card opens', paths.length>=8 && paths.every((x)=>!!x),
     paths.length+' rows');
+  /* NINE ROWS ARE READ BY SCANNING DOWN THE VALUES, and bold ink against dim ink is a
+     difference you have to look for. The chip is what the eye finds. Same idea as the state
+     card on the sheet a row opens, which is the point: a setting looks like a setting
+     wherever this mode prints one. */
+  const chip=await p.$eval('#off-year .yr u',(e)=>{
+    const s=getComputedStyle(e);
+    return { bw:parseFloat(s.borderTopWidth), bg:s.backgroundColor, pad:parseFloat(s.paddingLeft) };
+  }).catch((x)=>({err:String(x)}));
+  ok('  and carries its value as a chip rather than as bolder text',
+    !chip.err && chip.bw>0 && chip.pad>=4 && !/rgba\(0, 0, 0, 0\)/.test(chip.bg||''),
+    JSON.stringify(chip));
   await p.evaluate(()=>document.querySelector('#off-year .yr[data-p="playoff.teams"]').click());
   await p.waitForTimeout(400);
   ok('  onto a sheet about that one setting',
@@ -557,8 +568,59 @@ console.log('\n=== nine settings you cannot set, and can put on the agenda ===')
   ok('  named in words rather than as a ledger path',
     /playoff/i.test(await txt(p,'#fact-title')) && !/\./.test(await txt(p,'#fact-title')),
     await txt(p,'#fact-title'));
+  /* ── THE SETTING HAS TO LOOK LIKE A SETTING ──────────────────────────────────────────
+     THE VALUE USED TO BE THE SECOND LINE OF THE HEADING. A rule is named in display caps
+     and its state sat straight under it in bigger display type, so "Going pro and coming
+     back" over "allowed" read as one sentence with a line break in it. A reader could not
+     tell which half was the name, and nothing failed: the sheet rendered, the words were
+     right, and the screen was unreadable (owner, from a phone).
+     So this checks the parts that carry the meaning rather than the words. The value is
+     labelled, it is in its own box, and the box is not the heading. */
+  const card=await p.$eval('#fact-body .now',(e)=>({
+    lab:((e.querySelector('i')||{}).textContent||'').trim(),
+    val:((e.querySelector('b')||{}).textContent||'').trim(),
+    box:getComputedStyle(e).borderLeftWidth,
+    size:parseFloat(getComputedStyle(e.querySelector('b')).fontSize),
+    head:parseFloat(getComputedStyle(document.querySelector('#fact-title')).fontSize),
+  })).catch((x)=>({err:String(x)}));
+  ok('  the value is drawn as a state, not as more heading', !card.err, card.err);
+  ok('    and it is labelled as one', /^right now$/i.test(card.lab||''), card.lab);
+  ok('    the setting itself is in there', /\d|team/i.test(card.val||''), card.val);
+  /* THE RULE DOWN THE LEFT EDGE is what makes it a block on the page rather than another
+     line of it, and it is one CSS rule away from being nothing at all. */
+  ok('    in a box of its own', parseFloat(card.box)>=2, card.box);
+  /* AND IT NO LONGER OUT-SHOUTS THE THING IT IS THE STATE OF. It was 34px under a 25px
+     heading, which is the whole reason it read as the headline rather than as the answer.
+     The label and the box are what make it findable; the size never was. */
+  /* A FLOOR AS WELL AS A CEILING, and this is not belt and braces. Writing that ceiling is
+     what put a paragraph of prose outside a CSS comment, which swallowed every rule for the
+     value after it: the card rendered, the check read 15px against a 25px name, and it
+     PASSED. A one-sided bound on a size passes just as happily when the rule is gone. */
+  ok('    without out-sizing the name above it', card.size<=card.head&&card.size>=18,
+    card.size+'px value, '+card.head+'px name');
   ok('  saying you do not set it directly',
     /do not set this directly/i.test(await txt(p,'#fact-body')));
+  /* A SECOND SETTING OPENS AT THE TOP OF ITSELF. One pane serves every one of these and it
+     scrolls, so it used to keep wherever the last one was left: read one to the bottom, tap
+     the next row, and you land in the middle of a sheet that has only just opened, under the
+     heading and the state card that are the answer to what you tapped. */
+  await p.evaluate(()=>{ const pn=document.querySelector('#s-fact .pane'); if(pn) pn.scrollTop=400; });
+  await p.waitForTimeout(150);
+  await p.click('#fact-close');
+  await p.waitForTimeout(300);
+  await p.evaluate(()=>{
+    const el=document.querySelector('#off-year .yr[data-p="labour.reentry"]')
+      ||document.querySelector('#off-year .yr');
+    el.click();
+  });
+  await p.waitForTimeout(400);
+  ok('  and the next one opens at the top of itself',
+    (await p.$eval('#s-fact .pane',(e)=>e.scrollTop))===0,
+    await p.$eval('#s-fact .pane',(e)=>e.scrollTop));
+  await p.click('#fact-close');
+  await p.waitForTimeout(300);
+  await p.evaluate(()=>document.querySelector('#off-year .yr[data-p="playoff.teams"]').click());
+  await p.waitForTimeout(400);
   const take=await p.$$eval('#fact-body [data-take]',(e)=>e.map((x)=>x.dataset.take));
   ok('  and offering the case that would move it', take.length>0, take.join(', '));
   await p.click('#fact-body [data-take]');

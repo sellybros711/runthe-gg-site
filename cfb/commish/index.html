@@ -503,8 +503,13 @@
   .yr:hover,.yr:focus-visible{border-color:var(--line-2);outline:none}
   .yr:focus-visible{box-shadow:0 0 0 2px var(--green)}
   .yr b{font-family:var(--fn);font-size:11.5px;font-weight:700;color:var(--dim)}
-  .yr u{text-decoration:none;font-family:var(--fn);font-size:12.5px;font-weight:800;
-    color:var(--ink);text-align:right}
+  /* A CHIP, NOT JUST BOLDER TEXT. Nine rows are read by scanning down the values, and bold
+     ink against dim ink is a difference you have to look for on a phone in daylight. A box
+     around it is one the eye finds. Same idea as the state card on the sheet a row opens:
+     wherever this mode prints a setting, the setting looks like a setting. */
+  .yr u{text-decoration:none;font-family:var(--fn);font-size:11.5px;font-weight:800;
+    color:var(--ink);text-align:right;padding:2px 7px;border-radius:6px;
+    border:1px solid var(--line-2);background:rgba(255,255,255,.055)}
   .yr em{grid-column:1/-1;font-style:normal;font-size:10.5px;color:var(--gold)}
   /* MOVED BY YOU, MARKED. The whole point of the card is telling the two apart. */
   .yr.moved{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.06)}
@@ -535,6 +540,13 @@
   .setl:last-child{margin-bottom:0}
   .setl b{display:block;font-family:var(--fn);font-size:11.5px;font-weight:700;
     color:var(--ink)}
+  /* THE SAME CHIP, AND IT REPLACED A SENTENCE. This row read "Going pro and coming back is
+     allowed" in one bold line, where the only thing telling the name from the value was the
+     word is. Green here rather than neutral, because this card is the green one and the chip
+     is the settled state it is about. */
+  .setl i{display:inline-block;margin-top:5px;font-style:normal;font-family:var(--fn);
+    font-size:11px;font-weight:800;color:var(--green);padding:2px 8px;border-radius:6px;
+    border:1px solid rgba(16,185,129,.42);background:rgba(16,185,129,.1)}
   .setl span{display:block;font-size:12px;line-height:1.45;color:var(--dim);margin-top:3px}
   .setl u{display:block;text-decoration:none;font-size:11px;color:var(--dim-2);margin-top:3px}
 
@@ -992,12 +1004,54 @@
     margin:0 auto 14px}
   .sheet h3{font-family:var(--fd);font-size:25px;line-height:1;text-transform:uppercase;
     margin-bottom:4px}
-  .sheet .now{display:flex;align-items:baseline;gap:9px;margin:12px 0 4px}
-  .sheet .now b{font-family:var(--fd);font-size:34px;line-height:1;color:var(--ink)}
-  .sheet .now u{text-decoration:none;font-family:var(--fn);font-size:10px;font-weight:700;
-    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2)}
-  .sheet .now em{margin-left:auto;font-style:normal;font-family:var(--fn);font-size:10px;
-    font-weight:700;color:var(--gold);white-space:nowrap}
+  /* ---- WHERE A SETTING STANDS ----
+     THE VALUE WAS READING AS THE SECOND LINE OF THE HEADING. A rule is named in 25px display
+     caps and its setting sat directly under it in 34px display, so "Going pro and coming
+     back" over "allowed" was one sentence with a line break in it rather than a name and a
+     state. Nothing in the text can tell those apart: pathValue answers in ordinary words, so
+     the treatment has to do the work.
+
+     A LABELLED BOX IS WHAT DOES IT, and each part of it is carrying something. The eyebrow
+     says what the reader is looking at. The rule down the left edge makes it a block on the
+     page rather than another line of it. The value sits inside in caps, which is the setting
+     a token gets and a sentence does not. Gold when you moved it off what you inherited,
+     which is the one thing about a setting this mode is actually about.
+
+     THE SAME LOGIC IS OWED EVERYWHERE A VALUE IS SHOWN, so the year card's rows and the
+     settled card below carry the same idea in one line: the name is quiet, the value is a
+     chip you can find by scanning. */
+  .sheet .now{position:relative;margin:13px 0 2px;padding:10px 13px 11px;border-radius:12px;
+    background:var(--panel);border:1px solid var(--line-2);border-left:3px solid var(--dim-2)}
+  .sheet .now.moved{border-color:rgba(245,158,11,.34);background:rgba(245,158,11,.07);
+    border-left-color:var(--gold)}
+  .sheet .now i{display:block;font-style:normal;font-family:var(--fn);font-size:9.5px;
+    font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--dim-2);
+    margin-bottom:5px}
+  .sheet .now.moved i{color:var(--gold)}
+  /* SET TO ITS OWN LENGTH, see stateCard(). One call answers "yes", "12 teams", "22%", "a
+     phone company" and "Mercedes-Benz Stadium, Atlanta", and one size for all of those turns
+     the last into four lines of 30px display type. The longest band drops the caps too: caps
+     are what makes a short value read as a token, and on a full stadium name they only make
+     it harder to read.
+
+     AND NEVER BIGGER THAN THE NAME ABOVE IT, which is the original mistake stated as a rule:
+     34px of value under a 25px heading is a screen whose loudest thing is the answer to a
+     question the reader has not been asked yet. The sheet is about the rule; the card is what
+     the rule currently says. The label and the box are what make it findable, not the size. */
+  .sheet .now b{display:block;font-family:var(--fd);font-size:25px;line-height:1.04;
+    text-transform:uppercase;color:var(--ink);overflow-wrap:anywhere}
+  .sheet .now b.mid{font-size:20px;line-height:1.1}
+  .sheet .now b.long{font-size:15.5px;line-height:1.25;text-transform:none;letter-spacing:.01em}
+  /* THE SECOND FACT, which only the four headline tiles have: a twelve team field, five
+     automatic bids. Under the value rather than beside it, because beside it is a line that
+     wraps into the value at the first long one. */
+  .sheet .now u{display:block;text-decoration:none;margin-top:5px;font-family:var(--fn);
+    font-size:12px;font-weight:700;color:var(--dim)}
+  /* WHAT YOU INHERITED, on a rule of its own. It is a different year, not a footnote to the
+     value, and it was sitting on the same baseline as it. */
+  .sheet .now em{display:block;margin-top:8px;padding-top:8px;font-style:normal;
+    border-top:1px solid rgba(245,158,11,.25);font-family:var(--fn);font-size:11px;
+    font-weight:700;color:var(--gold)}
   .sheet p{font-size:14px;line-height:1.45;color:var(--dim);margin-top:8px}
   .sheet .sec{margin-top:17px;padding-top:14px;border-top:1px solid var(--line)}
   .sheet .sec>.eyebrow{margin-bottom:8px}
@@ -4102,6 +4156,34 @@ function itemsForFact(i){
   return out.map((id)=>D.BY_ID[id]).filter(Boolean);
 }
 
+/* ── WHAT A SETTING IS RIGHT NOW, AS A CARD ─────────────────────────────────────────
+   ONE BUILDER FOR BOTH SHEETS, because the two of them are answering the same question and
+   were answering it in two shapes. See the .sheet .now block for what each part carries and
+   for why a value printed as a line under a heading is unreadable.
+
+   THE SIZE IS PICKED OFF THE VALUE'S OWN LENGTH. pathValue answers "yes", "12 teams", "22%",
+   "a phone company" and "Mercedes-Benz Stadium, Atlanta" out of the same call, so there is no
+   one size: the first three want the big display setting and the last would be four lines of
+   it. Three bands rather than a continuous scale, so two sheets opened one after the other
+   look like the same screen.
+
+   MOVED IS DECIDED ON THE PRINTED VALUE, not the raw one. The shares are rounded to whole
+   percent, so 0.224 against 0.221 is a change in the ledger and no change at all on this
+   card, and a gold "was 22%" under a value reading 22% is the mode telling somebody they did
+   something they cannot see. */
+function stateCard(value,second,was){
+  const v=String(value==null?'':value);
+  const w=was==null?'':String(was);
+  const moved=!!w&&w!==v;
+  const size=v.length<=14?'':v.length<=26?'mid':'long';
+  return '<div class="now'+(moved?' moved':'')+'">'
+    +'<i>Right now</i>'
+    +'<b'+(size?' class="'+size+'"':'')+'>'+esc(v)+'</b>'
+    +(second?'<u>'+esc(second)+'</u>':'')
+    +(moved?'<em>Was '+esc(w)+' when you took the job</em>':'')
+    +'</div>';
+}
+
 function openFact(i){
   const facts=sportFacts(world);
   if(!facts[i]) return;
@@ -4117,9 +4199,7 @@ function openFact(i){
   const mine=(world.history||[]).filter((h)=>h.id&&ids.indexOf(String(h.id).split(':')[0])>=0);
   const live=D.eligible(world,L,situationNow()).map((it)=>it.id);
 
-  let html='<div class="now"><b>'+esc(big)+'</b><u>'+esc(label)+'</u>'
-    +(was!=null&&was!==String(big)?'<em>was '+esc(was)+' when you took the job</em>':'')+'</div>'
-    +'<p>'+esc(FACT_ABOUT[i])+'</p>';
+  let html=stateCard(big,label,was)+'<p>'+esc(FACT_ABOUT[i])+'</p>';
 
   /* The two percentage tiles are a share of a number that is on another screen. */
   if(i===1||i===2){
@@ -4150,8 +4230,22 @@ function openFact(i){
   html+='</div>';
 
   $('fact-body').innerHTML=html;
+  showFact();
+}
+/* BACK TO THE TOP EVERY TIME. One pane serves both sheets and it scrolls, so it kept
+   wherever the last one was left. Opening a second setting after reading to the bottom of
+   the first one landed on the middle of it, under a heading and a state card the reader
+   never saw: the answer to what they just tapped was above the fold of a sheet that had
+   only just opened. */
+function showFact(){
   const sh=$('s-fact');
+  /* AFTER THE CLASS, NOT BEFORE IT. The sheet is display:none while shut, and a scrollTop
+     written to an element with no layout box is dropped on the floor and then handed back
+     the moment it becomes visible again. Written first this reset did nothing at all, and
+     nothing said so: the pane simply carried on landing where the last sheet was left. */
   sh.classList.add('on'); sh.setAttribute('aria-hidden','false');
+  const pane=sh.querySelector('.pane');
+  if(pane) pane.scrollTop=0;
 }
 function closeFact(){
   const sh=$('s-fact');
@@ -6725,11 +6819,9 @@ function openPath(path){
      fact (a twelve team field, five automatic bids), and this sheet was filling it with
      pathName, which is what the heading two lines above it already says: the same phrase,
      twice, stacked. What belongs here is what the setting IS, which the tiles have always
-     had and this sheet never did. */
-  let html='<div class="now"><b>'+esc(pathValue(path,now))+'</b>'
-    +(was!=null&&String(was)!==String(now)
-      ? '<em>was '+esc(pathValue(path,was))+' when you took the job</em>' : '')
-    +'</div>';
+     had and this sheet never did. The card's own eyebrow says which of the two it is. */
+  let html=stateCard(pathValue(path,now),null,
+    was!=null?pathValue(path,was):null);
   const about=pathAbout(path);
   if(about) html+='<p>'+esc(about)+'</p>';
 
@@ -6768,8 +6860,7 @@ function openPath(path){
   $('fact-body').querySelectorAll('[data-take]').forEach((btn)=>{
     btn.onclick=()=>{ closeFact(); if(openCase(btn.dataset.take)) chargeAgenda(); };
   });
-  const sh=$('s-fact');
-  sh.classList.add('on'); sh.setAttribute('aria-hidden','false');
+  showFact();
 }
 
 function paintSettled(el,card){
@@ -6783,7 +6874,11 @@ function paintSettled(el,card){
     +n+(n===1?' argument this office':' arguments this office')+' will not have again, because '
     +'of how you ruled. This is what a decision is worth after the week it was made.</p>'
     +rows.map((r)=>'<div class="setl">'
-      +'<b>'+esc(pathName(r.p))+' is '+esc(pathValue(r.p,r.now))+'</b>'
+      /* THE NAME AND THE STATE, NOT A SENTENCE JOINING THEM. This was one bold line reading
+         "Going pro and coming back is allowed", where the only thing separating the rule from
+         its setting was the word is. Same fix as the sheet and the year card: the value is a
+         chip. */
+      +'<b>'+esc(pathName(r.p))+'</b><i>'+esc(pathValue(r.p,r.now))+'</i>'
       +'<span>Settled: '+esc(r.items.join(', '))+'</span>'
       +'<u>It was '+esc(pathValue(r.p,r.was))+' when you took the job.</u>'
       +'</div>').join('');

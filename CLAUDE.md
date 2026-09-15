@@ -420,6 +420,55 @@ shown instead, which is structural; the old string check silently stopped recogn
 ending, clicked through it and started a fresh term, and reported seven terms and seven
 removals rather than one.
 
+### A setting has to LOOK like a setting
+
+**The mode is nothing but named rules and what they currently say, so a value printed as
+ordinary text is unreadable.** The doctrine sheet named a rule in 25px display caps and set
+its state directly under it in 34px display, which produced this:
+
+```
+GOING PRO AND COMING BACK
+allowed
+```
+
+One sentence with a line break in it. Nothing failed: the sheet rendered, the words were
+right, and a reader could not tell which half was the name. `pathValue()` answers in ordinary
+English (`allowed`, `this office`, `12 teams`, `a phone company`), so there is never anything
+in the TEXT to tell a rule from its state. The treatment has to do all of it.
+
+**Three surfaces, one idea, and they must not drift apart:**
+
+| where | what a value looks like |
+|---|---|
+| the sheet a rule opens | `stateCard()`: a labelled box, eyebrow reading `Right now`, a rule down the left edge, gold when you moved it off what you inherited |
+| the year card's nine rows | the value is a chip, the name is quiet beside it |
+| the settled card | the same chip, in green, because that card is the green one |
+
+**The value is never bigger than the name above it.** That is the original mistake stated as a
+rule. The label and the box are what make it findable; the size never was, and a value set
+louder than the rule it belongs to is a screen whose loudest thing answers a question the
+reader has not been asked yet.
+
+**`stateCard()` sizes the value off its own length**, in three bands, because one call answers
+`yes` and `Mercedes-Benz Stadium, Atlanta`. Bands rather than a continuous scale, so two
+sheets opened one after the other look like the same screen. The longest band drops the caps
+too: caps are what make a short value read as a token and what make a long one hard to read.
+
+**`moved` is decided on the PRINTED value, not the raw one.** Shares round to whole percent,
+so 0.224 against 0.221 is a change in the ledger and no change at all on the card, and a gold
+"was 22%" under a value reading 22% tells somebody they did something they cannot see.
+
+**`test_page.mjs` checks the parts that carry the meaning, not the words**: that the value is
+labelled, that it is in a box, and that it is between 18px and the heading's own size. That
+floor is not belt and braces. Writing the ceiling is what put a paragraph of prose outside a
+CSS comment, which swallowed every rule for the value after it, and the one-sided check read
+15px against a 25px name and PASSED.
+
+**One pane serves every one of these sheets and it scrolls.** `showFact()` resets it, AFTER
+adding the `on` class: the sheet is `display:none` while shut, and a `scrollTop` written to an
+element with no layout box is dropped and then handed back the moment it becomes visible. Put
+first, the reset did nothing at all and nothing said so.
+
 `/assets/store.js` **injects its stylesheet at load, not on first use**, and that is a fix
 rather than a preference. The block styles more than the offer: `.pw-pill` beside an account
 name and `.pw-line` on the receipt come out of it, and neither goes through `html()` or
