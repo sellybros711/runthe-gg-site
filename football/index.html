@@ -15252,7 +15252,7 @@ function boxScore(r){
       esc(when)+' &middot; '+(r.won?'Win':'Loss')+'</div>'+
     '<h2 class="display" style="font-size:21px;margin:4px 0 2px">'+esc(r.opponent)+'</h2>'+
     '<div class="bx-score"><span class="bs '+(r.won?'win':'lose')+'">'+r.shownYou+'</span>'+
-      '<span class="bd">&ndash;</span><span class="bs">'+r.shownThem+'</span></div>'+
+      '<span class="bd">-</span><span class="bs">'+r.shownThem+'</span></div>'+
     '<div class="bx-matchup">'+
       '<div class="bx-cell"><div class="k">Fantasy output</div>'+
         '<div class="v">'+total.toFixed(1)+'</div>'+
@@ -16430,7 +16430,7 @@ function openTradeWindow(step,opts){
     }else if(cashOut<0){
       /* The other direction: selling talent grew the ceiling, and the war chest is the
          point of having sold. Said plainly so the bigger number reads as earned, not odd. */
-      rise.innerHTML='<b>Your cap has grown to $'+CAP().toFixed(1)+'M</b> &mdash; $'+
+      rise.innerHTML='<b>Your cap has grown to $'+CAP().toFixed(1)+'M</b>. $'+
         (-cashOut).toFixed(1)+'M of it is cash from selling talent. Payroll <b>$'+
         payroll.toFixed(1)+'M</b>, <b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
         (deadline?'. Last window to use it.':'.');
@@ -16588,7 +16588,7 @@ function ghostTile(pos){
       '<span class="pr">~'+M(R.FA_TYPICAL_MUSD)+'</span></span>'+
     '<span class="nm">Free agent</span>'+
     '<span class="sn">You sign him after the trade</span>'+
-    '<span class="tf"><span class="pts"><b>&mdash;</b><i>FPPG</i></span></span></div>';
+    '<span class="tf"><span class="pts"><b>-</b><i>FPPG</i></span></span></div>';
 }
 
 /* The LEAST salary a deal's release can free, for the over-the-cap line. The least, not the
@@ -16882,7 +16882,7 @@ function paintTradePreview(offer){
       tradePreviewPlayers.push(null);
       h+='<div class="tt-row open"><span class="tr-pos">'+esc(slots[slot])+'</span>'+
         '<span class="tr-nm">Free agent</span><span></span>'+
-        '<span class="tr-pts">&mdash;</span></div>';
+        '<span class="tr-pts">-</span></div>';
       continue;
     }
     const p=e.p;
@@ -16908,7 +16908,7 @@ function paintTradePreview(offer){
        string ate the tags and printed "Tre Mason</b>, <b>Benny Cunningham" on screen. */
     note.innerHTML=cuts.length
       ? 'Not shown: '+cuts.map(p=>'<b>'+esc(p.name)+'</b>').join(', ')+
-        ' &mdash; released to get back to six. You pick who at the next step.'
+        '. Released to get back to six. You pick who at the next step.'
       : '';
     note.style.display=cuts.length?'':'none';
   }
@@ -20150,7 +20150,7 @@ if($('b-bowl-share')) $('b-bowl-share').onclick=()=>{ if(!challengeTeam||!lastBo
   const cr={v:1,a:challengeTeam,b:teamBlob()};
   const link=location.origin+location.pathname+'?cr='+b64urlEnc(JSON.stringify(cr));
   const who=(challengeTeam.n||'your friend');
-  const text=(lastBowl.youWon?('I beat '+who+' '+lastBowl.shownYou+'–'+lastBowl.shownThem+' in the Challenge Bowl. See it: ')
+  const text=(lastBowl.youWon?('I beat '+who+' '+lastBowl.shownYou+'-'+lastBowl.shownThem+' in the Challenge Bowl. See it: ')
     :('The Challenge Bowl vs '+who+', see how it went: '))+link;
   ga('challenge_result_shared',{won:lastBowl.youWon}); shareTextFile(text,null,'bowl.png'); };
 if($('b-challenge')) $('b-challenge').onclick=async()=>{
@@ -21852,8 +21852,8 @@ function pfHub(msg,ok){
         '<span id="pf-sub">Your RunThe.GG account</span></span></div>'+
     (msg?authMsg(msg,ok):'')+
     '<div class="pfstats">'+
-      '<div class="pfstat"><b id="pf-runs">&mdash;</b><span>Runs played</span></div>'+
-      '<div class="pfstat"><b id="pf-best">&mdash;</b><span>Best rating</span></div>'+
+      '<div class="pfstat"><b id="pf-runs">-</b><span>Runs played</span></div>'+
+      '<div class="pfstat"><b id="pf-best">-</b><span>Best rating</span></div>'+
     '</div>'+
     '<div class="pfnav">'+
       /* Reversed, so the two pages that are about YOU sit under your name and the two that
@@ -22103,7 +22103,7 @@ async function pfHubStats(userId){
   if(!runs||!best) return;
   const s=careerStats(c.rows,c.total);
   runs.textContent=(s.runs||0).toLocaleString();
-  best.textContent=s.bestRating!=null?Number(s.bestRating).toFixed(1):'—';
+  best.textContent=s.bestRating!=null?Number(s.bestRating).toFixed(1):'-';
 }
 
 /* ---------- DRAFTS ----------
@@ -22166,7 +22166,7 @@ async function pfDraftsPaint(userId,tab){
            its own colour. Everything after it is still escaped text. */
         '<span>'+[modeTag(r),esc(rosterLine(r.picks)),esc(day(r.created_at))]
           .filter(Boolean).join(' · ')+'</span></span>'+
-      '<span class="rt"><b>'+(r.team_rating!=null?Number(r.team_rating).toFixed(1):'—')+
+      '<span class="rt"><b>'+(r.team_rating!=null?Number(r.team_rating).toFixed(1):'-')+
         '</b><span>rating</span></span>'+
       '<span class="go">&rsaquo;</span></button>').join('')+'</div>'+
     (c.rows.length>list.length?'<p class="caveat" style="margin:8px 0 0">Showing '+
