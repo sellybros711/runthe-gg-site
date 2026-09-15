@@ -290,18 +290,35 @@ const run = async () => {
   ok('and it is a SEASON 1 promotion, gone in season 2', (await rigPending({ kind: 'plain', season: 2 })) === false);
 
   head('it waits its turn in the launch queue');
-  await rig({ kind: 'plain' });
-  const q1 = await page.evaluate(() => { S._loginPending = true; S.overlay = null; S.screen = 'title';
-    maybeS1EndPopup(); var o = S.overlay || null; S._loginPending = false; return o; });
-  ok('a queued login bonus goes first', q1 === null, q1);
-  ok('and the popup is still pending afterwards', (await pending()) === true);
-  const q2 = await page.evaluate(() => { S.overlay = 'shop'; maybeS1EndPopup(); return S.overlay; });
-  ok('it never lands on top of an open overlay', q2 === 'shop', q2);
-  const q3 = await page.evaluate(() => { S.overlay = null; S.screen = 'play'; maybeS1EndPopup(); return { s: S.screen, o: S.overlay || null }; });
-  ok('or in the middle of a round', q3.o === null, q3);
-  const q4 = await rigFire({ kind: 'plain', launchUnseen: true });
+  /* The whole section runs in ONE tick, rig included. Each of these three cases needs a player who is
+     still OWED the popup, and the title screen's own 420ms queue is allowed to fire between any two
+     evaluate calls and spend it. Rigging in one call and checking in the next lost that race about one
+     run in ten, and the failure looked like the queue letting the popup through when it had simply
+     already been shown. */
+  const q = await page.evaluate(() => {
+    const out = {};
+    window.__S1.rig({ kind: 'plain' });
+    S._loginPending = true; S.overlay = null; S.screen = 'title';
+    maybeS1EndPopup();
+    out.login = S.overlay || null; out.stillPending = s1EndPending(); S._loginPending = false;
+
+    window.__S1.rig({ kind: 'plain' });
+    S.overlay = 'shop'; maybeS1EndPopup(); out.overOverlay = S.overlay;
+
+    window.__S1.rig({ kind: 'plain' });
+    S.overlay = null; S.screen = 'play'; maybeS1EndPopup(); out.inRound = S.overlay || null;
+    return out;
+  });
+  ok('a queued login bonus goes first', q.login === null, q);
+  ok('and the popup is still pending afterwards', q.stillPending === true, q);
+  ok('it never lands on top of an open overlay', q.overOverlay === 'shop', q);
+  ok('or in the middle of a round', q.inRound === null, q);
+  const q4 = await page.evaluate(() => {
+    const f = window.__S1.rigFire({ kind: 'plain', launchUnseen: true });
+    return { overlay: f.overlay, stillPending: s1EndPending() };
+  });
   ok('and a player who never saw the SEASON LAUNCH popup gets that one first', q4.overlay === null, q4);
-  ok('with the closing popup still owed to them', (await pending()) === true);
+  ok('with the closing popup still owed to them', q4.stillPending === true, q4);
 
   // ── what it says ───────────────────────────────────────────────────────────
   head('what a player below tier 20 reads');
@@ -370,9 +387,16 @@ const run = async () => {
   await page.evaluate(() => window.__S1.paint());
   await page.click('.ov.s1eov .look');
   ok('"See the track first" opens the pass track', await page.evaluate(() => S.overlay) === 'tourpass');
-  await page.evaluate(() => window.__S1.paint());
-  await page.click('.ov.s1eov .later');
-  ok('"Not now" closes it', await page.evaluate(() => S.overlay) === null);
+  /* Pressed and read in ONE tick. "Not now" leaves S.overlay null, which is exactly the state the title
+     screen's own 420ms popup queue is allowed to fill, so a stray timer landing between the click and a
+     separate read of S.overlay makes this fail about one run in six. The same race is why rigPending and
+     rigVisit exist further up. */
+  const later = await page.evaluate(() => {
+    window.__S1.paint();
+    document.querySelector('.ov.s1eov .later').click();
+    return S.overlay || null;
+  });
+  ok('"Not now" closes it', later === null, later);
   await page.evaluate(() => window.__S1.paint());
   await page.click('.ov.s1eov .buy');
   ok('and the buy button starts the real purchase', await page.evaluate(() => window.__S1.bought) === 1);
