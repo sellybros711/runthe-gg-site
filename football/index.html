@@ -814,6 +814,38 @@ window.GA_ID='G-L29P5MRWKE';
     font-family:var(--fn);font-size:11.5px;color:var(--dim-2);margin:9px 0 2px}
   .sidesplit b{font-weight:800;font-size:14px;color:var(--dim)}
   .sidesplit .sep{color:var(--line-2);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+  /* ---- HOW A FULL TEAM OVERALL IS MADE ----
+     Four columns, and the third is one character wide on purpose: an equals sign in its own
+     column is what makes four rows read as one sum rather than as four facts. The value
+     column is the only thing right-aligned, so the numbers being added stack. */
+  .fbreak{margin:10px 0 2px;padding:9px 10px 7px;border:1px solid var(--line);
+    border-radius:10px;background:rgba(255,255,255,.02);text-align:left}
+  .fbhead{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--dim-2);margin-bottom:6px}
+  .fbrow{display:grid;grid-template-columns:auto 1fr 12px auto;align-items:baseline;gap:7px;
+    padding:4px 0;font-family:var(--fn);font-size:11.5px;color:var(--dim-2)}
+  .fbrow+.fbrow{border-top:1px solid rgba(255,255,255,.05)}
+  .fbn{font-weight:800;color:var(--dim);white-space:nowrap}
+  .fbrow.off .fbn{color:#f08a8a}
+  .fbrow.def .fbn{color:#8fb3ff}
+  /* The working wraps on a narrow phone and the value stays on the first line with the
+     name, which is the pairing that matters: every row is "this side came out at that". */
+  .fbw{display:flex;flex-wrap:wrap;gap:3px 8px;min-width:0}
+  .fbw i{font-style:normal;white-space:nowrap}
+  .fbw b{font-weight:800;color:var(--dim)}
+  .fbw u{text-decoration:none;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--line-2)}
+  .fbe{text-align:center;color:var(--line-2);font-size:11px}
+  .fbv{font-weight:800;font-size:14px;color:var(--ink);text-align:right;
+    font-variant-numeric:tabular-nums}
+  /* The mean and the coach are the answer rather than an input, so they sit apart from the
+     two unit rows above them. */
+  .fbrow.sum{margin-top:2px;border-top:1px solid rgba(255,255,255,.14)}
+  .fbrow.sum .fbn,.fbrow.coach .fbn{color:var(--dim)}
+  @media (max-width:340px){
+    .fbrow{font-size:11px;gap:5px}
+    .fbv{font-size:13px}
+  }
   /* HIDDEN HAS TO BEAT .btn, which sets its own display. The UA rule for [hidden] is
      display:none at the same specificity as a class, so the later class wins and the
      button stayed on screen with hidden=true set on it: exactly the trap .hp-full[hidden]
@@ -7825,7 +7857,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=88"></script>
+<script src="engine.js?v=89"></script>
 <script src="run.js?v=99"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
@@ -14972,6 +15004,90 @@ const schemeIconSvg=(key)=>{
 /* THE TEAM OVERALL, SAID AS THE TWO NUMBERS IT IS THE MEAN OF. See fullSideRatings: the
    mean of these two IS the headline, exactly, so this is a decomposition of it and not a
    second opinion about it. Full Team only, because it is the only mode with two units. */
+/* ─── HOW A FULL TEAM OVERALL IS MADE ────────────────────────────────────────────────
+ *
+ * THE ONE LINE THIS REPLACES SAID "Offense 15.7 and Defense 99.4, averaged" AND STOPPED.
+ * Two numbers and a verb. Nothing said where either came from, why a 15.7 and a 99.4 are
+ * comparable enough to average, or what the twelve men on the screen above had to do with
+ * it. On the mode that asks for twelve picks instead of six, the screen that grades them
+ * explained less than the one that grades six.
+ *
+ * Every other mode already does this properly, in one sentence under the lineup: so many
+ * squad FPPG, this much chemistry, this much for how the six fit, which IS the overall.
+ * A player can check it by hand. That is the standard this owes and did not meet, and it
+ * could not meet it in a sentence: a full team has two of every term, and a mean and a
+ * coach on top of them.
+ *
+ * So it is a table, and it is the engine's own working. Every number is read off
+ * fullSideRatings().parts rather than recomputed here, so a breakdown that disagrees with
+ * the rating is not a thing that can happen.
+ *
+ * BOTH UNIT ROWS ARROW RATHER THAN EQUAL, AND THAT IS THE HONEST SIGN. Two things sit
+ * between the inputs and a unit's rating and neither is a lever: FULL_TALENT scales both
+ * sides' production (a fitted balance constant, identical for every player, so printing it
+ * would dress a tuning number up as a decision), and a defence's product is points it GIVES
+ * UP, which defenseOverall() then puts on the offence's ladder. Without that second step the
+ * mean underneath is two different units added together, which is what the old line's bare
+ * "averaged" was quietly doing.
+ *
+ * So the rows say "these inputs produce that rating" rather than claiming an identity that
+ * does not hold. The mean and the coach below them DO equal, and they carry equals signs.
+ * The single-unit summary draws the same distinction in words for the same reason: see the
+ * note on o-squadline about why a defence cannot say "which is".
+ *
+ * WHAT THE SCALE MEANS IS ALREADY WRITTEN, in the How close tab: each unit reads what those
+ * six would rate in their own mode, "at what they produce HERE, which is a shade under what
+ * the same men manage with only one side of the ball to carry". That paragraph is the talent
+ * factor in a sentence a player can use, and it is why this table does not need to print the
+ * constant. The two are halves of one explanation; do not delete that one as a duplicate of
+ * this.
+ */
+function fullBreakdown(){
+  if(!(run&&run.full&&run.roster&&run.roster.length)) return '';
+  let s; try{ s=E.fullSideRatings(run.roster,liveChem(),run.coach||null); }catch(_){ return ''; }
+  const p=s&&s.parts; if(!p) return '';
+  const mean=(s.off+s.def)/2;
+  const boost=s.coachBoost||1;
+  /* THE COACH ROW APPEARS WHENEVER THERE IS A COACH, not only when his effect is large.
+     A threshold on the boost printed "Gary Kubiak 0%" over a mean of 65.9 and an overall
+     of 66.0: a row saying he did nothing, directly above a number he had moved. And with
+     no coach the mean IS the overall, so the table ends correctly one row earlier.
+     ONE DECIMAL, because that is the resolution the ratings beside it are printed at. A
+     coach whose two sides cancel really is a 0.0% on the headline, and that is worth
+     seeing: it is the thing the coach screen's own rating delta is telling you. */
+  const moved=!!(run.coach);
+  /* A term is only worth a column when it is doing something, and "doing something" is
+     decided on the PRINTED value rather than the raw one. A fit of 1.004 rounds to 0% and
+     a guard on the raw number let it through, so the first draft of this table carried a
+     "0% FIT" column that made the two terms which had actually moved harder to find. Same
+     rule as `moved` on the commish state card, and the same reason. */
+  const term=(v,lbl)=>Math.round((v-1)*100)===0?''
+    :'<i>'+fitPct(v)+' <u>'+lbl+'</u></i>';
+  /* THE FPPG IS THE ROSTER'S OWN, not the scaled one the arithmetic uses. A player can add
+     the six numbers up off the lineup on this same screen, so printing 78% of their sum
+     under the label FPPG would be a figure that matches nothing they can see. */
+  const row=(cls,name,pts,chem,fit,val)=>
+    '<div class="fbrow '+cls+'"><span class="fbn">'+name+'</span>'+
+    '<span class="fbw"><i><b>'+Math.round(pts)+'</b> <u>FPPG</u></i>'+
+      term(chem,'chemistry')+term(fit,'fit')+'</span>'+
+    '<span class="fbe">→</span><b class="fbv">'+rate1(val)+'</b></div>';
+  return '<div class="fbreak">'+
+    '<div class="fbhead">How that is made</div>'+
+    row('off','Offense',p.offPts,p.offChem,p.offFit,s.off)+
+    row('def','Defense',p.defPts,p.defChem,p.defFit,s.def)+
+    '<div class="fbrow sum"><span class="fbn">The two, averaged</span>'+
+      '<span class="fbw"></span><span class="fbe">=</span>'+
+      '<b class="fbv">'+rate1(mean)+'</b></div>'+
+    (moved
+      ? '<div class="fbrow coach"><span class="fbn">'+
+          esc((run.coach&&run.coach.name)||'Your coach')+'</span>'+
+        '<span class="fbw"><i>'+pc(boost-1)+'</i></span>'+
+        '<span class="fbe">=</span><b class="fbv">'+rate1(s.overall)+'</b></div>'
+      : '')+
+    '</div>';
+}
+/* The old name, kept because two screens call it and only one of them has room for the
+   table: the squad screen draws it under a lineup that is already twelve rows long. */
 function sideLine(){
   if(!(run&&run.full&&run.roster&&run.roster.length)) return '';
   let s; try{ s=E.fullSideRatings(run.roster,liveChem(),run.coach||null); }catch(_){ return ''; }
@@ -18981,6 +19097,19 @@ function paintOver(){
      (see the afterPaint block at the end) so the record and every cheap number appear
      at once instead of waiting on them. Its cell shows a brief working state until then. */
   const spendUsed=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
+  /* WHAT THE RUN'S CAP ACTUALLY IS, not the default one. The summary below printed
+     E.CONSTANTS.CAP_MUSD unconditionally, which is $140M, and a Full Team run is given
+     $280M. So the screen that grades the mode ended on "You spent $277.0M of $140.0M":
+     a legal roster reported as $137M over a cap it was never under. Nothing threw, the
+     roster was fine, and the sentence was the one thing a player would have believed.
+     capOf() is what every gate and every affordability check in run.js already asks.
+     AND THE COACH IS SPENT MONEY. He comes out of the same cap (see remaining()), so a
+     hire was money gone that neither the summary nor the Spent cell was counting.
+     DECLARED HERE, beside the figure they are built from, because the Spent cell is
+     painted a hundred lines above the summary and a const read before its own line is a
+     TDZ throw that takes the whole results screen down. It did, once. */
+  const runCap=R.capOf(run);
+  const spentAll=spendUsed+((run.coach&&run.coach.price_musd)||0);
   const squadFppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
   /* A DEFENSE IS READ BY ITS OWN FUNCTION. The two return the same shape of object where
      this panel touches it (multiplier, scheme, schemeBonus, floorShare) and differ where
@@ -19047,7 +19176,9 @@ function paintOver(){
   $('o-ovr').className='ovr solo';
   $('o-ovr').innerHTML=
     bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband);
-  $('o-sides').innerHTML=sideLine();
+  /* THE RESULTS SCREEN GETS THE TABLE, not the one line. This is the screen that grades
+     twelve picks, so it is the one that owes the working. */
+  $('o-sides').innerHTML=fullBreakdown();
   /* THE SAME NUMBER, ON DYNASTY RECAP. The card above is hidden in this mode, so the
      team overall is drawn once more into the lineup panel, which this mode does show. Same
      cell, same band, so a Dynasty season is read the way an offense or defense draft is. */
@@ -19068,10 +19199,27 @@ function paintOver(){
      used to put beside the team overall, which is a roster fact in every mode: the ceiling
      this draft could have hit, the two unit ratings, or how much of the money went to the
      offense. */
+  /* FULL TEAM'S CHEMISTRY IS TWO NUMBERS AND THIS CELL HOLDS ONE. `run.season.chemistry`
+     is the flattened average, which is the value the engine warns against rating a team
+     with, and it sat on the same screen as the breakdown above showing the two the units
+     are actually rated with: one strip said "+2.1%" while the table said "+0.0% offense,
+     +4.3% defense". Both were drawn from the same run. The table is the one that matches
+     the arithmetic, so this cell prints the pair rather than an average of them.
+     AND THE SPEND INCLUDES THE COACH here too, for the reason the sentence below does:
+     he comes out of the same cap, so a hire is money this cell was not counting. */
+  /* Read once, and only trusted when it really is the two sided shape: seasonChem falls
+     back to a plain number whenever the season has no per unit figures on it, and reaching
+     for .offMultiplier on a number prints NaN%. */
+  const lc=liveChem();
+  const twoSided=!!(run.full&&lc&&typeof lc.offMultiplier==='number'
+    &&typeof lc.defMultiplier==='number');
+  const chemCell=twoSided
+    ? split(pc(lc.offMultiplier-1)+' / '+pc(lc.defMultiplier-1),'Chemistry, off / def')
+    : split(pc(run.season.chemistry-1),'Chemistry');
   $('o-squad').innerHTML=
     secondSplit(null)+
-    split(pc(run.season.chemistry-1),'Chemistry')+
-    split(M0(spendUsed),'Spent')+
+    chemCell+
+    split(M0(spentAll),'Spent')+
     split(o.seedLabel.replace(/^Missed.*/,'None'),'Playoff seed');
   /* AND THE THREE BOARD WINDOWS ON THEIR OWN. Painted with the ranks unknown, because the
      board is a network call and the page is on screen before it answers; paintRankStrip
@@ -19112,12 +19260,22 @@ function paintOver(){
      out to the team overall, so the sentence is an equals sign. On a defense the overall is
      that product put on the offense's scale, so saying "which is" would be arithmetic that
      does not check out; and a defense does not play against an average defense. */
-  $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(0)+' squad FPPG, '+
-    pc(run.season.chemistry-1)+' chemistry and '+fitPct(st.multiplier)+
-    ' '+fitPhrase()+', '+(isDefRun()
-      ? 'which grades out as a <b>'+rating.toFixed(1)+'</b> team overall.'
-      : 'which is a <b>'+rating.toFixed(1)+'</b> team overall against an average defense.')+
-    schemeTail(st)+' You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
+  /* A FULL TEAM DOES NOT GET THIS SENTENCE, and could not be made to. It says three terms
+     multiply out to the overall, and a full team has two of every term plus a mean and a
+     coach: run over twelve men these numbers are not merely imprecise, they are a
+     different calculation from the one that produced the rating. It printed "-44% for how
+     the six fit together" on a team whose halves were at -12% and +3%, because
+     rosterStructure over a twelve man roster is the reading overallOf warns about. The
+     table under the record does this properly; here the mode says what it spent. */
+  $('o-squadline').innerHTML='<span>'+(run.full
+    ? 'Twelve men, and the working is under the record above.'
+    : squadFppg.toFixed(0)+' squad FPPG, '+
+      pc(run.season.chemistry-1)+' chemistry and '+fitPct(st.multiplier)+
+      ' '+fitPhrase()+', '+(isDefRun()
+        ? 'which grades out as a <b>'+rating.toFixed(1)+'</b> team overall.'
+        : 'which is a <b>'+rating.toFixed(1)+'</b> team overall against an average defense.')+
+      schemeTail(st))+
+    ' You spent '+M(spentAll)+' of '+M(runCap)+'.</span>';
 
   /* The lineup, which the old results page never showed at all. Drawn through the shared
      painter so the picker below and the first paint cannot disagree about it. */

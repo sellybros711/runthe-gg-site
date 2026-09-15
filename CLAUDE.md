@@ -849,6 +849,61 @@ then blue, which is the pair above joined into one control, which is what the mo
 warm, so the note on `.hp-full` about two warm cards reading as a menu of side modes still
 holds.
 
+#### The results screen had to show its working, and two of its numbers were wrong
+
+The mode that asks for twelve picks explained less than the one that asks for six. Every
+single-unit mode ends on a sentence a player can check by hand: so many squad FPPG, this
+much chemistry, this much for how the six fit, which IS the overall. Full Team got
+`Offense 15.7 and Defense 99.4, averaged` and stopped. Two numbers and a verb.
+
+**Composing that sentence in the page is what made it wrong, three ways at once.** Driven
+to a real results screen it read:
+
+```
+99 squad FPPG, +2.1% chemistry and -44% for how the six fit together,
+which is a 57.5 team overall.  You spent $277.0M of $140.0M.
+```
+
+- **`-44% fit`** was `rosterStructure()` over all TWELVE men, which is the
+  0.57-for-everybody reading `overallOf` warns about. That team's halves were at -12% and
+  +3%.
+- **`+2.1% chemistry`** was the flattened average. The units are rated with their own two,
+  and the same screen was printing those a few hundred pixels lower.
+- **`You spent $277.0M of $140.0M`** printed `CONSTANTS.CAP_MUSD` on a mode given
+  `FULL_CAP_MUSD`. A legal roster reported as $137M over a cap it was never under. Use
+  `R.capOf(run)`, which is what every gate in run.js already asks, **and count the coach**:
+  he comes out of the same cap, so a hire was money neither this line nor the Spent cell
+  saw.
+
+**So the parts ship with the answer.** `fullSideRatings()` returns `parts` (each side's
+points, chemistry, fit, men, the talent scale and the defence's raw product) and the table
+is drawn from them. A breakdown that disagrees with the rating is no longer a thing that
+can happen, because it IS the rating's working.
+
+**Both unit rows arrow rather than equal, and that is the honest sign.** Two things sit
+between the inputs and a unit's rating and neither is a lever: `FULL_TALENT` scales both
+sides (a fitted constant, identical for everybody, so printing it would dress tuning up as
+a decision) and a defence's product is points it GIVES UP, which `defenseOverall()` puts on
+the offence's ladder. The mean and the coach below them do equal, and carry equals signs.
+**The How close tab already explains the scale in a sentence a player can use**, so the two
+are halves of one explanation; do not delete that paragraph as a duplicate of the table.
+
+**Three display bugs found by looking at it rather than by reasoning**, all the same shape:
+a term at 1.004 printed `0% FIT`, a coach at +0.08% printed `0%` above a number he had
+moved from 65.9 to 66.0, and a `const` read a hundred lines before its own line threw TDZ
+and took the whole results screen down. **Decide on the PRINTED value, not the raw one**,
+which is the rule the commish state card already carries.
+
+**The arithmetic is guarded in the ENGINE, not through a played season**, because what can
+go wrong is multiplication. `check-fullteam.mjs` rebuilds each side from its own parts and
+asserts the fit is per side rather than over all twelve. Building that fixture caught the
+same class twice: `player_seasons.json` holds no defenders at all (they are a second
+download, which is why every path into the mode calls `loadDefensePool` first), and a
+defender's production is `idp_ppg_mean` on disk, copied onto `ppr_ppg_mean` as the pool
+arrives. Both mistakes put twelve men with no production into the empty branch, where every
+identity holds at zero and the whole section passes green. **It asserts the fixture is a
+real team before it asserts anything about it.**
+
 **It is still unannounced and this file is one of the two things checking that.**
 `fullteam-access.js` ships `FULLTEAM_LIVE = false`, the door is BUILT by
 `ensureFullButton()` rather than revealed, and the checker asserts from the reader's end

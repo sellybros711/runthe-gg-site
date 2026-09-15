@@ -239,6 +239,84 @@ console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
   await page.close();
 }
 
+/* ================================================================
+   THE BREAKDOWN IS THE RATING'S OWN WORKING
+
+   This is checked in the ENGINE rather than through a played season, because what can go
+   wrong is arithmetic and a browser adds nothing to it. The screen reads
+   fullSideRatings().parts and multiplies nothing itself, so the only way the table can lie
+   is if the parts stop being the terms the rating was built from.
+
+   THEY DID LIE, WHICH IS WHY THIS EXISTS. The page used to compose its own sentence and it
+   was wrong three ways at once: rosterStructure over all TWELVE men (the reading overallOf
+   warns about, printing "-44% for how the six fit together" on a team whose halves were at
+   -12% and +3%), the flattened chemistry rather than the two the units are rated with, and
+   "which is a 57.5 team overall" on a product that was not the overall. Nothing threw.
+   ================================================================ */
+console.log('\nTHE OVERALL IS THE PARTS, MULTIPLIED OUT');
+{
+  const { createRequire } = await import('module');
+  const req = createRequire(import.meta.url);
+  const E = req(path.join(ROOT, 'football/engine.js'));
+  /* TWO FILES, AND THAT IS THE POINT OF THE MODE. The offensive pool ships in the boot
+     bundle and the defenders are a second download, which is why every path into Full Team
+     calls loadDefensePool first. A fixture built from player_seasons alone finds no
+     defenders at all, falls into fullSideRatings' empty-roster branch, and every assertion
+     below then passes against a row of zeros. It did, on the first run of this section. */
+  const players = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'football/data/player_seasons.json'), 'utf8'));
+  const defenders = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'football/data/defender_seasons.json'), 'utf8'));
+  /* AND A DEFENDER'S POINTS ARE CALLED SOMETHING ELSE ON DISK. The file carries
+     idp_ppg_mean; the engine samples ppr_ppg_mean, and loadDefensePool() in the page copies
+     one onto the other as the pool arrives. A fixture that skips that step hands the engine
+     twelve men with undefined production, which reduces to NaN and then to the empty branch.
+     Normalised here exactly as the page does it, so this is checking the arithmetic the
+     game runs rather than a shape only this file produces. */
+  defenders.forEach((p) => { p.ppr_ppg_mean = p.idp_ppg_mean; p.ppr_ppg_sd = p.idp_ppg_sd; });
+  const isDef = (p) => E.DEFENSE_POSITIONS.indexOf(p.position) >= 0;
+  const off = players.filter((p) => !isDef(p) && p.ppr_ppg_mean > 5).slice(0, 6);
+  const def = defenders.filter(isDef).filter((p) => p.ppr_ppg_mean > 2).slice(0, 6);
+  ok('a twelve man roster can be built to check against', off.length === 6 && def.length === 6,
+    off.length + ' offense, ' + def.length + ' defense');
+  const roster = off.concat(def);
+  const chem = { multiplier: 1.03, offMultiplier: 1.05, defMultiplier: 1.01 };
+  const s = E.fullSideRatings(roster, chem, null);
+  const p = s.parts;
+  ok('the parts come back with the answer', !!p && typeof p.offPts === 'number');
+  /* NOT THE EMPTY BRANCH. Every identity below holds trivially at zero, so the fixture has
+     to be shown to have produced a real team before any of them means anything. */
+  ok('  and the fixture is a real team rather than the zero case',
+    s.off > 1 && s.def > 1 && p.offPts > 1 && p.defPts > 1,
+    'off ' + s.off.toFixed(1) + ', def ' + s.def.toFixed(1));
+  const near = (a, b, eps) => Math.abs(a - b) < (eps || 1e-6);
+  /* EACH SIDE, REBUILT FROM ITS OWN PARTS. If the engine ever changes what a unit is made
+     of and forgets to say so here, this is what goes red. */
+  ok('  offense = points x talent x chemistry x fit',
+    near(p.offPts * p.talent * p.offChem * p.offFit, s.off, 1e-9),
+    s.off.toFixed(4));
+  ok('  the defense raw product is the same shape',
+    near(p.defPts * p.talent * p.defChem * p.defFit, p.defRaw, 1e-9),
+    p.defRaw.toFixed(4));
+  ok('  and the defense rating is that product put on the offense ladder',
+    near(E.defenseOverall(p.defRaw), s.def, 1e-9), s.def.toFixed(4));
+  ok('  the overall is the two averaged, times the coach',
+    near(Math.max(0, Math.min(100, (s.off + s.def) / 2 * s.coachBoost)), s.overall, 1e-9),
+    s.overall.toFixed(4));
+  /* THE TWO CHEMISTRY FIGURES ARE THE ONES THE UNITS WERE RATED WITH, not the flattened
+     one. This is the exact substitution the old sentence made. */
+  ok('  and each side used its OWN chemistry, not the average',
+    near(p.offChem, chem.offMultiplier) && near(p.defChem, chem.defMultiplier),
+    p.offChem + ' / ' + p.defChem + ' against a flattened ' + chem.multiplier);
+  /* AND THE FIT IS PER SIDE. Running the whole twelve through the offensive reading is the
+     bug this replaced, so assert the parts are NOT that number. */
+  const wholeTwelve = E.rosterStructure(roster).multiplier;
+  ok('  and the fit is per side rather than over all twelve',
+    !near(p.offFit, wholeTwelve) || !near(p.defFit, wholeTwelve),
+    'sides ' + p.offFit.toFixed(3) + ' / ' + p.defFit.toFixed(3)
+      + ', all twelve would be ' + wholeTwelve.toFixed(3));
+}
+
 await browser.close();
 /* NO TRAILING NEWLINE ON THE VERDICT. Every other checker here is run in a loop that reports
    `tail -1`, and a final blank line makes a passing suite read as one that printed nothing. */

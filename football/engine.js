@@ -3704,20 +3704,46 @@ function fullStrength(roster, chemistryMultiplier, coach, constants = CONSTANTS)
  * gap between the two units is 1.1 points on realistic drafts and 0.6 on careful ones. It is
  * the most legible version and also the most predictive, which does not usually happen.
  */
+/* EVERY PART IS RETURNED, NOT JUST THE ANSWER.
+ *
+ * The results screen has to show a player how a Full Team overall is made, and the only
+ * honest way to do that is to hand it the numbers this function actually multiplied. The
+ * page used to build its own version of the sentence and it was wrong three ways: it ran
+ * rosterStructure over all TWELVE men (the 0.57-for-everybody reading overallOf warns
+ * about, which printed "-44% for how the six fit together" on a team whose halves were at
+ * -12% and +3%), it printed the flattened chemistry rather than the two the units are rated
+ * with, and it claimed the product equalled the overall when the overall is a mean of two
+ * sides with a coach on top.
+ *
+ * So the parts ship with the answer. A breakdown drawn from these cannot disagree with the
+ * rating, because it IS the rating's working. Additive only: `off`, `def`, `coachBoost` and
+ * `overall` are unchanged and every existing caller reads exactly what it read before. */
 function fullSideRatings(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
   const { off, def } = splitSides(roster);
-  if (!off.length || !def.length) return { off: 0, def: 0, coachBoost: 1, overall: 0 };
+  if (!off.length || !def.length) {
+    return { off: 0, def: 0, coachBoost: 1, overall: 0,
+      parts: { offPts: 0, defPts: 0, offChem: 1, defChem: 1, offFit: 1, defFit: 1,
+        offMen: 0, defMen: 0, talent: 1, defRaw: 0 } };
+  }
   const t = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
-  const o = off.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t
-    * chemOff(chemistryMultiplier) * rosterStructure(off).multiplier;
-  const d = defenseOverall(def.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t
-    * chemDef(chemistryMultiplier) * defenseStructure(def).multiplier);
+  const offPts = off.reduce((a, p) => a + p.ppr_ppg_mean, 0);
+  const defPts = def.reduce((a, p) => a + p.ppr_ppg_mean, 0);
+  const offChem = chemOff(chemistryMultiplier), defChem = chemDef(chemistryMultiplier);
+  const offFit = rosterStructure(off).multiplier, defFit = defenseStructure(def).multiplier;
+  const o = offPts * t * offChem * offFit;
+  /* The defense's raw product is points it gives up. defenseOverall is what puts it on the
+     offense's ladder, which is the step that makes the mean below mean anything, and it is
+     the step a reader cannot infer. Kept so the screen can say it happened. */
+  const defRaw = defPts * t * defChem * defFit;
+  const d = defenseOverall(defRaw);
   const eff = coachEffect(coach);
   const coachBoost = (eff.off + eff.def) / 2;
   /* The units are left alone: a great one passes 100 in its own mode too, and saying so is
      the point. The headline is clamped because it is the number runs are compared by. */
   return { off: o, def: d, coachBoost,
-    overall: Math.max(0, Math.min(100, (o + d) / 2 * coachBoost)) };
+    overall: Math.max(0, Math.min(100, (o + d) / 2 * coachBoost)),
+    parts: { offPts, defPts, offChem, defChem, offFit, defFit,
+      offMen: off.length, defMen: def.length, talent: t, defRaw } };
 }
 
 function fullOverall(roster, chemistryMultiplier, coach, constants) {
