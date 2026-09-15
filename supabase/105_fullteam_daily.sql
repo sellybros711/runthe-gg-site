@@ -327,6 +327,17 @@ end $$;
 -- Only the dynasty has a clock for this to start. A calendar-day mode's day ends
 -- at Eastern midnight whatever happens to the run, so this marks the ledger and
 -- changes no clock.
+-- DROPPED FIRST, AND THIS FILE HAS TO DO IT ITSELF. 101 shipped a ONE-argument
+-- ps_attempt_day_end(text) and 102 replaced it with this two-argument version,
+-- so 102 carries the same drop. Without it here, the 101 overload is still on
+-- the database and `ps_attempt_day_end('full')` binds to THAT one, which knows
+-- nothing about 'full' and raises 'unknown mode'. Postgres prefers an exact
+-- one-argument match over a two-argument function with a default, so the newer
+-- definition never gets a look in and nothing about it looks wrong.
+--
+-- Found by deploying 102's table alone and then this file: every other check
+-- passed and the day-end one failed on its own.
+drop function if exists public.ps_attempt_day_end(text);
 create or replace function public.ps_attempt_day_end(p_mode text, p_fired boolean default false)
 returns table (used int, allowance int, resets_at timestamptz, unit text, ended boolean)
 language plpgsql
