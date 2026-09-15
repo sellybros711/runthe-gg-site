@@ -5829,14 +5829,23 @@ const publicAPI = {
   })),
   resolveGame, resolveGameDefense, defenseSuppression, defenseOverall, overallOf,
   /* FULL TEAM'S TWELVE, INTERLEAVED, and the order is the design rather than a listing.
-     The draft fills slots in this order, so alternating them is what makes the shared cap
-     felt continuously instead of discovered at pick seven: every offensive signing is
-     immediately followed by a defensive one out of the same wallet. Six then six would let
-     somebody spend $140M on an offense before the game ever mentioned a defense.
+     Alternating the sides is what makes the shared cap felt continuously instead of
+     discovered at pick seven: every offensive signing is immediately followed by a defensive
+     one out of the same wallet. Six then six would let somebody spend $140M on an offense
+     before the game ever mentioned a defense.
 
-     It also makes the pool switch fall out for free. The draft screen asks which data set
-     to spin at each pick, and with the sides interleaved that question is answered by the
-     slot rather than by counting picks. */
+     WHAT THIS LIST DOES NOT DO IS DRIVE THAT ALTERNATION, and a sentence here used to say it
+     did: that with the sides interleaved, the draft screen's question of which pool to spin
+     was answered by the slot rather than by counting picks. It is not, because THE DRAFT DOES
+     NOT FILL THESE IN ORDER. A man goes into whatever open slot fits him, so the lowest open
+     slot only moves when somebody happens to fit it: take a tight end first and he lands at
+     index 8 with index 0 still open, and the next pick is offensive again. Measured over 360
+     completed drafts, reading the side off this list alternated on NONE of them and usually
+     produced the whole offense and then the whole defense.
+
+     So the parity of these entries is the ANSWER the page checks its pick count against, and
+     never the thing it reads the current side from. That is fullPickIsDefensive() in the
+     page, whose header carries the measurement. */
   FULL_SLOTS: ['QB', 'DL', 'RB', 'DL', 'WR', 'LB', 'WR', 'DB', 'TE', 'DB', 'FLEX', 'FLEX'],
   resolveGameFull, splitSides,
   /* FLEX IS AMBIGUOUS IN THIS MODE AND IN NEITHER OF THE OTHER TWO, which is why this

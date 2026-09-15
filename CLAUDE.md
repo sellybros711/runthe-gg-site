@@ -823,13 +823,43 @@ reachable inside six men, **1,190 have the two readings naming different sides**
 cheapest is the second pick of the game. Take a running back first and he lands in slot 2,
 so `roster.length` is 1 (slot 1 is a DL) while the first open slot is 0 (the QB). The board
 then served quarterbacks while the field glowed blue over the defense. Driven for real, the
-old reading was wrong on **four of six picks**. Anything asking which side is picking must
-call `nextOpenSlot()`, which is what `dataNow()` uses to choose the pool.
+old reading was wrong on **four of six picks**. One source for both, always.
 
-**The checker proves it is testing something.** A run where the two readings never diverged
-would pass green having exercised nothing, which is the badge-that-cannot-be-lit trap in a
-different coat, so it takes a running back first on purpose and then ASSERTS that the old
-reading disagreed at least once.
+**Then they agreed on the wrong reading, and that shipped too.** They were made to agree on
+`nextOpenSlot()`, and the LOWEST OPEN SLOT is not the side the mode is meant to be picking.
+`FULL_SLOTS` is interleaved (QB, DL, RB, DL, ...) so that reading the side off it would
+alternate for free, and the premise is false for the reason above: the lowest open slot only
+moves when somebody happens to FIT it. Take a tight end first and he lands in slot 8 while
+slot 0 stays open, so the next pick is offensive again, and again, until a quarterback turns
+up.
+
+A player reported three defenders in a row. Measured over **360 completed drafts** across
+three ways of drafting, **not one alternated**, every one had a run of three or more picks on
+the same side, and the longest was six. The usual shape was the whole offense and then the
+whole defense:
+
+```
+O:TE O:RB O:WR O:RB O:WR O:QB  D:DL D:LB D:DB D:DL D:LB D:DB
+```
+
+**So the side is COUNTED, not read off a slot.** `fullPickIsDefensive()` is the one source
+both the pool and the glow draw from: twelve picks, even offensive and odd defensive, which
+is `FULL_SLOTS`' own parity and six a side either way. **The slot is still free**, because
+this decides the POOL and not where the man lands: `slotChoices()` still puts him in whatever
+open spot on that side fits him, so the defensive FLEX and the two DL spots are unchanged.
+
+It also **strands fewer drafts**. Under the old reading two of those three bots failed to
+fill twelve slots on 14 and 15 of 120 attempts, since taking a whole side before starting the
+other is how a draft runs out of money for the second half. Alternating, all 120 finished for
+all three.
+
+**The checker proves it is testing something, and the alternation is its own assertion.** A
+run where the lowest open slot never disagreed with the pick count would pass green having
+exercised nothing, which is the badge-that-cannot-be-lit trap in a different coat, so it takes
+a running back first on purpose and then ASSERTS that the replaced reading disagreed at least
+once. Asserting only that everything on screen AGREES is what let five defenders in a row
+pass: reintroduce the old reading and the glow, the tiles and the pool are still unanimous,
+and the sequence reads `ODDDDD`. The suite now fails on the sequence itself.
 
 **What the screen shows for it.** The lit half says which side the man comes from, the open
 chips on the other side are dimmed to .5 so they recede without leaving, and the unit label

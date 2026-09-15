@@ -29,6 +29,22 @@
  * against a first pick chosen to break them apart.
  *
  * ---------------------------------------------------------------------------
+ * AND THE BUG THAT AGREEMENT HID
+ * ---------------------------------------------------------------------------
+ * Making them agree was right and was not enough: they were made to agree on the LOWEST
+ * OPEN SLOT, and that is not the side the mode is supposed to be picking. The slot list is
+ * interleaved so that reading the side off it would alternate for free, and the premise is
+ * false for exactly the reason above. The lowest open slot only moves when somebody happens
+ * to fit it, so taking a tight end first leaves the QB spot open and the next pick is
+ * offensive again.
+ *
+ * A player reported three defenders in a row. Measured over 360 completed drafts across
+ * three ways of drafting, NOT ONE alternated, every one had a run of three or more, and the
+ * usual shape was the whole offense and then the whole defense. The side is counted now
+ * (`fullPickIsDefensive`), so this file asserts the alternation itself rather than only
+ * asserting that everything on screen agrees about it.
+ *
+ * ---------------------------------------------------------------------------
  * AND THE THING THAT MUST NOT CHANGE
  * ---------------------------------------------------------------------------
  * Full Team is unannounced. fullteam-access.js ships FULLTEAM_LIVE = false and the door is
@@ -60,7 +76,7 @@ const ok = (n, p, x) => {
 /* The handles the page does not otherwise expose. Same injection point check-premium uses,
    and the same reason: these are internals of one enormous script, and driving them is the
    only way to ask the page a question about a mode three taps in. */
-const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,canPlayFull,'
+const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,fullPickIsDefensive,canPlayFull,'
   + 'getRun:()=>run,'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 
@@ -170,8 +186,10 @@ console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
       const open = window.__t.nextOpenSlot();
       return {
         n: run.roster.length,
+        /* The page's own answer, which is what the pool and the glow are both drawn from. */
+        side: window.__t.fullPickIsDefensive() ? 'def' : 'off',
+        /* The reading this replaced, kept only to prove the run exercises the difference. */
         byOpen: window.__t.fullSlotIsDefensive(open) ? 'def' : 'off',
-        byCount: window.__t.fullSlotIsDefensive(run.roster.length) ? 'def' : 'off',
         field: document.getElementById('field').dataset.live,
         /* What the board is actually offering, read off the tiles rather than inferred. */
         boardDef: [...document.querySelectorAll('#opts .tile:not(.off)')]
@@ -191,23 +209,35 @@ console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
   }
 
   ok('  six picks were driven', agree.length >= 5, agree.length + ' measured');
-  const wrongHalf = agree.filter((r) => r.field !== r.byOpen);
+  const wrongHalf = agree.filter((r) => r.field !== r.side);
   ok('  the lit half is always the half the pool comes from', !wrongHalf.length,
-    wrongHalf.map((r) => 'pick ' + (r.n + 1) + ' lit ' + r.field + ' pool ' + r.byOpen).join(', ')
+    wrongHalf.map((r) => 'pick ' + (r.n + 1) + ' lit ' + r.field + ' pool ' + r.side).join(', ')
       || agree.map((r) => r.field).join(' '));
   /* The board is read as a third opinion: if the tiles are all defenders the pool is the
      defensive one, whatever either variable says. */
-  const boardWrong = agree.filter((r) => r.tiles > 0 && r.boardDef !== (r.byOpen === 'def'));
+  const boardWrong = agree.filter((r) => r.tiles > 0 && r.boardDef !== (r.side === 'def'));
   ok('  and the tiles on the board are that side', !boardWrong.length,
     boardWrong.map((r) => 'pick ' + (r.n + 1)).join(', ') || agree.length + ' picks');
-  /* THE PROOF THE TEST IS TESTING SOMETHING. If roster.length never disagreed with the
-     open slot on this run, the run did not exercise the bug and a green result means
-     nothing. This is the same trap as a badge nothing can light. */
-  const diverged = agree.filter((r) => r.byCount !== r.byOpen);
-  ok('  and the old reading disagreed at least once, so this run exercises it',
+
+  /* ---- AND IT ACTUALLY ALTERNATES, which is the thing a player can see ----
+     This is the assertion the file was missing. Every pick agreed with every other reading
+     of itself and the mode still served three defenders in a row, because all of them were
+     reading the LOWEST OPEN SLOT and a man goes into whatever slot fits him. Measured over
+     360 completed drafts, not one alternated and the longest run of one side was six. */
+  const flips = agree.slice(1).filter((r, i) => r.side === agree[i].side);
+  ok('  and the side flips on every pick', !flips.length,
+    agree.map((r) => (r.side === 'def' ? 'D' : 'O')).join('')
+      + (flips.length ? '   repeated at pick ' + flips.map((r) => r.n + 1).join(', ') : ''));
+
+  /* THE PROOF THE TEST IS TESTING SOMETHING. If the lowest open slot had named the same
+     side as the pick count on every pick of this run, the run never met the case and a
+     green result means nothing. This is the same trap as a badge nothing can light, and it
+     is why the first pick above is deliberately a running back. */
+  const diverged = agree.filter((r) => r.byOpen !== r.side);
+  ok('  and the reading this replaced disagreed at least once, so this run exercises it',
     diverged.length > 0,
-    diverged.map((r) => 'pick ' + (r.n + 1) + ': count says ' + r.byCount
-      + ', open slot says ' + r.byOpen).join(' | ') || 'never diverged');
+    diverged.map((r) => 'pick ' + (r.n + 1) + ': the count says ' + r.side
+      + ', the lowest open slot says ' + r.byOpen).join(' | ') || 'never diverged');
 
   /* ---- what the screen shows for it ---- */
   const look = await page.evaluate(() => {

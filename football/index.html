@@ -7866,7 +7866,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=89"></script>
+<script src="engine.js?v=90"></script>
 <script src="run.js?v=99"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
@@ -7967,9 +7967,47 @@ const nextOpenSlot=()=>{
   try{ const open=R.openSlots(run); if(open.length) return open[0]; }catch(_){}
   return run.roster.length;
 };
+/* WHICH SIDE OF THE BALL THIS PICK IS, AND IT IS THE PICK NUMBER RATHER THAN A SLOT.
+ *
+ * The mode is meant to flip sides every other pick, and FULL_SLOTS is written interleaved
+ * (QB, DL, RB, DL, ...) so that reading the side off the next open slot would give that for
+ * free. IT DOES NOT, because the premise is false: a man goes into whatever open slot fits
+ * him rather than into the lowest one, so the lowest open slot only moves when somebody
+ * happens to fit it. Sign a tight end first and he lands in slot 8 while slot 0 stays open,
+ * so the next pick is offensive again, and again, until a quarterback finally turns up.
+ *
+ * MEASURED OVER 360 COMPLETED DRAFTS, three ways of drafting: NOT ONE of them alternated.
+ * Every single one had a run of three or more picks on the same side, the longest was six,
+ * and the common shape was the whole offense and then the whole defense:
+ *
+ *   O:TE O:RB O:WR O:RB O:WR O:QB  D:DL D:LB D:DB D:DL D:LB D:DB
+ *
+ * So the side is counted, which is what the mode says it is. Twelve picks, even ones
+ * offensive and odd ones defensive, matching FULL_SLOTS' own parity. Six a side either way.
+ *
+ * THE SLOT IS STILL FREE. This decides which POOL the wheel spins, not where the man lands:
+ * slotChoices() still puts him in whatever open spot on that side fits him, so the defensive
+ * FLEX and the two DL spots work exactly as before.
+ *
+ * AND IT STRANDS FEWER DRAFTS than the reading it replaces. Under the old one two of those
+ * three bots failed to fill twelve slots on 14 and 15 of 120 attempts, because taking a
+ * whole side before starting the other is how a draft runs out of money for the second half.
+ * At a strict alternation all 120 finished for all three.
+ *
+ * The fallback is for a shape this mode cannot reach today and should not depend on not
+ * reaching: if the side the count asks for has no open slot left, take the other one. A
+ * roster with holes in it (dynasty's winter, which is a different mode) would otherwise
+ * spin a pool it cannot sign anybody from. */
+const fullPickIsDefensive=()=>{
+  if(!run||!run.full) return false;
+  const want=(run.roster.length%2)===1;
+  let open=[]; try{ open=R.openSlots(run)||[]; }catch(_){ open=[]; }
+  if(!open.length) return want;
+  return open.some((i)=>fullSlotIsDefensive(i)===want)?want:!want;
+};
 const dataNow=()=>{
   if(!run) return DATA;
-  if(run.full) return (DDATA&&fullSlotIsDefensive(nextOpenSlot()))?DDATA:DATA;
+  if(run.full) return (DDATA&&fullPickIsDefensive())?DDATA:DATA;
   return (run.defense&&DDATA)?DDATA:DATA;
 };
 function loadDefensePool(){
@@ -9446,13 +9484,13 @@ function drawField(el,live,view){
     /* Still the LIVE run: `live` and a history view are mutually exclusive, and a draft in
        progress is a fact about the run rather than about the lineup being drawn. */
     const picking=!!(run&&run.full&&run.roster.length<slotsNow().length);
-    /* nextOpenSlot(), NOT roster.length, and they are not the same number.
-       dataNow() picks the pool off nextOpenSlot() because a man goes into whatever open
-       slot fits him rather than into the next one along: sign a linebacker and he can land
-       in the defensive FLEX at index 11, which leaves index 5 open behind him. After that
-       the two readings diverge, and this one was lighting the half the board was NOT
-       drawing from. One source for both, so the picture and the list always agree. */
-    const def=picking&&fullSlotIsDefensive(nextOpenSlot());
+    /* THE SAME CALL dataNow() MAKES, which is the whole of the rule here: the picture and
+       the board must never be able to name different sides. This half of it was wrong once
+       already, reading run.roster.length while the pool read the next open slot, and it lit
+       the defense over a board serving quarterbacks. One source for both.
+       fullPickIsDefensive() is now that source, and its header says why the side is counted
+       rather than read off a slot. */
+    const def=picking&&fullPickIsDefensive();
     el.classList.toggle('pick-def',picking&&def);
     el.classList.toggle('pick-off',picking&&!def);
     /* AND THE SPOTS THAT ARE LIVE THIS SPIN. The lit half says which side the man comes
