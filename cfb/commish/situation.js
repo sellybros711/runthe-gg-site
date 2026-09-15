@@ -197,6 +197,7 @@
     var confs = confsOf(world, L, season);
     var unbeaten = unbeatenOf(season);
     var startYear = nz(world && world.startYear, world && world.year);
+    var termLen = Math.max(1, Number(nz(world && world.termSeasons, 5)) || 5);
     var day = o.date || (CAL && world ? CAL.decisionDay(world.year, beat, o.itemId || 'x') : null);
 
     var sit = {
@@ -204,11 +205,19 @@
       year: world ? world.year : null,
       beat: beat,
       beatName: (L && L.BEATS && L.BEATS[beat]) || '',
-      /* Which season of the term this is, one-indexed, and how many are left after it. */
+      /* Which season of the term this is, one-indexed, and how many are left after it.
+
+         BOTH READ THE CONTRACT, which is not five any more. Renewals sign a term for
+         anything from three seasons to eight, and these two were written when five was the
+         only number there was. An eight year term fired media day's "this is the last July
+         you stand up here" in year five and then never again in the year it was actually
+         true, and a three year term reached its final summer with the item still locked.
+         A save written before renewals carries no termSeasons and is a five season term,
+         which is what it was signed as. Same fallback as termLen() in the page. */
       seasonOfTerm: world ? (world.year - startYear) + 1 : 1,
-      seasonsLeft: world ? Math.max(0, 5 - ((world.year - startYear) + 1)) : 0,
+      seasonsLeft: world ? Math.max(0, termLen - ((world.year - startYear) + 1)) : 0,
       firstYear: world ? world.year === startYear : true,
-      lastYear: world ? (world.year - startYear) >= 4 : false,
+      lastYear: world ? (world.year - startYear) >= termLen - 1 : false,
       date: day,
       dateLabel: day && CAL ? CAL.longLabel(day) : null,
       month: day && CAL ? CAL.MONTHS[day.getMonth()] : null,

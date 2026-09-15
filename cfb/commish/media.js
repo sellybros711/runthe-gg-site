@@ -743,8 +743,9 @@
           aimed: { Presidents: { exposure: 1.2 }, Fans: { tradition: -0.6 } } },
         { id: 'agree', label: 'Say they may be right',
           body: 'Say that this job is held at the pleasure of the room and that you knew that '
-            + 'walking in. Disarming, human, and it reads to the room as a man packing.',
-          wrote: 'The commissioner said he serves at the pleasure of the membership and might not finish.',
+            + 'walking in. Disarming, human, and it reads to the room as somebody packing.',
+          wrote: 'The commissioner said this office serves at the pleasure of the membership '
+            + 'and might not finish the term.',
           effects: { autonomy: -1.8, tradition: 1.2, labour: 0.4 },
           aimed: { SEC: { autonomy: 1.6 }, 'Big Ten': { autonomy: 1.4 },
             Presidents: { autonomy: 1.2 }, Fans: { tradition: 1 } } },
@@ -789,13 +790,18 @@
       who: 'beat',
       when: (w, L, sit) => !!(sit && sit.lastYear),
       desk: () => 'who has been at every one of these you have done',
-      ask: () => 'This is the last July you stand up here with the job. I have covered all of '
-        + 'them. So: what did you not get done, and who stopped you?',
+      /* "THE LAST JULY OF YOUR CONTRACT", not the last July with the job. A pro
+         commissioner who leaves the room happy is offered an extension at the end of this
+         term, so the second one is a thing the reporter cannot know and the mode regularly
+         contradicts a season later. The contract ending is the part that is simply true. */
+      ask: () => 'This is the last July of your contract. I have covered every one of them. '
+        + 'So: what did you not get done, and who stopped you?',
       answers: [
         { id: 'name', label: 'Name who stopped you',
           body: 'Say the league, in the room, in your last summer. It is the most honest thing '
             + 'anybody has said from this lectern and it costs you the vote you need in December.',
-          wrote: 'In his final media days the commissioner named the conference that blocked him.',
+          wrote: 'At a final media days the commissioner named the conference that had '
+            + 'blocked them.',
           effects: { autonomy: 2.2, exposure: 1.4, access: 1 },
           aimed: { SEC: { autonomy: -2.4 }, 'Big Ten': { autonomy: -2 },
             Fans: { tradition: 1.6 }, Players: { labour: 1.2 },
@@ -803,7 +809,7 @@
         { id: 'own', label: 'Say it was you',
           body: 'Nobody stopped you. You did not have the votes and you did not go and get '
             + 'them. It is a graceful answer and it is also, usually, accurate.',
-          wrote: 'The commissioner said he had not built the coalition and blamed nobody else.',
+          wrote: 'The commissioner said the coalition was never built, and blamed nobody else.',
           effects: { tradition: 1.4, autonomy: -1, exposure: -0.6 },
           aimed: { Presidents: { exposure: 1.4 }, SEC: { autonomy: 1 },
             Fans: { tradition: 1.2 } } },
@@ -904,9 +910,10 @@
           aimed: { Networks: { money: 1.4 }, Presidents: { exposure: -1.4 },
             Fans: { tradition: -1.6 }, Players: { labour: -0.8 } } },
         { id: 'ban', label: 'Say you would ban it if you could',
-          body: 'You cannot, it is legal in forty states, and saying it anyway tells everybody '
-            + 'exactly where this office stands. Some of them will be relieved.',
-          wrote: 'The commissioner said he would ban betting on the sport if it were his to ban.',
+          body: 'You cannot. It is legal in most of the country. Saying it anyway tells '
+            + 'everybody exactly where this office stands, and some of them will be relieved.',
+          wrote: 'The commissioner said betting on the sport would be banned if this office '
+            + 'could ban it.',
           effects: { tradition: 1.8, money: -1.2, exposure: -1 },
           aimed: { Fans: { tradition: 2.2 }, Players: { labour: 1 },
             Networks: { money: -1.4 }, Presidents: { exposure: 1.2 } } },

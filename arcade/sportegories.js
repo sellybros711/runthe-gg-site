@@ -384,8 +384,15 @@
     // Letter first: a wrong letter is wrong whoever they are, and settling it
     // here means an unknown name only reaches the live check when it could
     // still have scored.
+    /* SAY WHICH NAME. This read "Needs to start with B.", which is the only
+       place in the game that states the letter rule WITHOUT saying either name
+       will do, and it is the place a player reads it at the exact moment they
+       have got it wrong. Every other surface says first or last: the play
+       screen header, the how-to, the demo caption. A player wrote in asking
+       for it to be made clear, twice. It was clear everywhere except here. */
     if (t[0][0] !== L && t[t.length - 1][0] !== L) {
-      return { ok: false, reason: 'letter', msg: 'Needs to start with ' + puz.letter + '.' };
+      return { ok: false, reason: 'letter',
+               msg: 'First or last name has to start with ' + puz.letter + '.' };
     }
 
     /* Absent from our file. This game is about deep cuts, so our file is never

@@ -66,10 +66,24 @@
       var t = uniq(e.t);
       return 'Taken first overall' + (t.length ? ', by the ' + t[0] : '') + '.';
     } },
+    /* "Six franchises in all." and then the club that was actually his.
+     *
+     * This used to read "from the Orlando Magic to the Boston Celtics", which
+     * is wrong twice over. Two clubs are not the ends of a scale, so "from X
+     * to Y" is a range that does not exist: it is the shape of a sentence
+     * pretending to more shape than the fact has. And the two it named were
+     * e.t[0] and the last entry, which is a career order the team list does
+     * NOT hold. Randy Johnson's list ends with the club he started at. So the
+     * line implied a span, and then got the span backwards, 261 times.
+     *
+     * e.pt is the club with the most seasons in it, counted from real tenure
+     * (primary.js). Where it is known it is the more interesting half anyway:
+     * a journeyman is defined by the one place he stuck. */
     { kind: 'teams', weight: 8, make: function (e) {
       var t = uniq(e.t);
       if (t.length < 5) return null;
-      return cap(num(t.length)) + ' franchises in all, from the ' + t[0] + ' to the ' + t[t.length - 1] + '.';
+      var n = cap(num(t.length)) + ' franchises in all';
+      return e.pt ? (n + '. Longest stay: the ' + e.pt + '.') : (n + '.');
     } },
     { kind: 'teams', weight: 8, make: function (e) {
       var t = uniq(e.t);

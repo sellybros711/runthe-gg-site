@@ -1,13 +1,12 @@
 name: Dash check
 
-# Em dashes and en dashes are banned in every directory on the GUARDED list at
-# the top of scripts/check-dashes.mjs. See CLAUDE.md.
+# Em dashes and en dashes are banned in the directories on the GUARDED list at
+# the top of scripts/check-dashes.mjs. See CLAUDE.md for what to write instead.
 #
-# THE PATHS BELOW HAVE TO MATCH THAT LIST. They are two separate places saying
-# the same thing, and when they drift the check does not fail, it simply stops
-# running: globe had been guarded for a while with nothing here to trigger it,
-# so a dash added to globe would have sailed through. Add a directory to both or
-# to neither.
+# THE PATHS BELOW HAVE TO MATCH THAT LIST. They are two copies of one answer and
+# they had already drifted: globe was guarded and triggered nothing, so a dash
+# added there failed only for whoever next ran the checker by hand. Add a
+# directory in both places or the guard is a guard on paper.
 # Runnable locally with the exact same command:
 #   node scripts/check-dashes.mjs
 #
@@ -21,6 +20,9 @@ on:
       - 'globe/**'
       - 'mythiball/**'
       - 'golf/**'
+      - 'cfb/**'
+      - 'football/**'
+      - 'assets/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   push:
@@ -31,6 +33,9 @@ on:
       - 'globe/**'
       - 'mythiball/**'
       - 'golf/**'
+      - 'cfb/**'
+      - 'football/**'
+      - 'assets/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   workflow_dispatch: {}

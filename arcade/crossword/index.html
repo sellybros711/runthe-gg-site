@@ -39,7 +39,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/arcade/arcade.css?v=3" />
-<script src="/arcade/icons.js?v=2"></script>
+<script src="/arcade/icons.js?v=3"></script>
 <style>
 :root{
   /* dark navy system (matches the Common Ground redesign) */
@@ -455,19 +455,19 @@ window.GA_ID='G-L29P5MRWKE';
   <span class="gj-chev" aria-hidden="true">▾</span>
 </summary>
 <div class="gj-body">
-<p>One sports mini crossword a day. Type straight into the grid, tap a cell to flip between across and down, and work the clues listed underneath. It is small on purpose: a coffee-length solve where the winner is the clock.</p>
+<p>One sports mini crossword a day. Type straight into the grid, tap a cell to flip between across and down, and work the clues listed underneath. It is small on purpose. The winner is the clock.</p>
 <ul>
   <li>Fill every square correctly to finish; the timer runs while you think.</li>
   <li>The fastest clean solve tops the daily board.</li>
-  <li>A Reveal can bail you out of a corner, but a flawless solve is what the clock remembers.</li>
+  <li>A free account gets one Reveal per play. The Card gets unlimited.</li>
 </ul>
 <h3>The clock, the board and the reset</h3>
-<p>A fresh grid drops at midnight local time and everyone races the same clues. It is one of the four games that come free with a RunThe.GG account, alongside Sportegories, Alma Mater and Career Path, with one play in each per day. The Arcade Card opens all twelve Arcade games with unlimited plays, the <a href="/arcade/archive/">Archive</a> of every past day, and NBA, NFL and MLB editions of five of the games.</p>
+<p>A fresh grid drops at midnight local time and everyone races the same clues. It is one of the four games free every day with no account at all, alongside Sportegories, Alma Mater and Career Path. An account saves the result: the board, the streak and the achievements. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
 <h3>Solving faster without guessing</h3>
 <ul>
-  <li>Sweep the gimmes first pass, no lingering. Crossing letters solve the stubborn clues for you.</li>
-  <li>Short answers in sports grids repeat: legendary nicknames, team codes, arena names. They become free squares within a week.</li>
-  <li>If a corner will not break, flip direction. The down clue you skipped is usually the key to the across you are stuck on.</li>
+  <li>Answer what you know on the first pass and skip the rest. The crossing letters solve the hard clues for you.</li>
+  <li>Short answers repeat in sports grids. Team codes and nicknames come round most weeks, and after a fortnight they are free squares.</li>
+  <li>Your Reveal is one per play, not one per day, and the board never sees it. Time is the only score, so a Reveal you saved only cost you seconds.</li>
 </ul>
 <p>Prefer ordering to spelling? Try <a href="/arcade/rankit/">Rank It</a>, or find four hidden groups in <a href="/arcade/match/">Common Ground</a>.</p>
 </div>
@@ -564,7 +564,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/share.js?v=8"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
-<script src="/arcade/challenge.js?v=3"></script>
+<script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=13"></script>
 <script src="/arcade/day.js?v=2"></script>
@@ -577,15 +577,15 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=13"></script>
 <script src="/arcade/topbanner.js?v=9"></script>
-<script src="/arcade/auth-ui.js?v=5"></script>
+<script src="/arcade/auth-ui.js?v=6"></script>
 <script src="/arcade/card.js?v=20"></script>
-<script src="/arcade/referral.js?v=9"></script>
+<script src="/arcade/referral.js?v=10"></script>
 <script src="/arcade/gamemarks.js?v=3"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/demo.js?v=3"></script>
-<script src="/arcade/pregame.js?v=24"></script>
-<script src="/arcade/howto.js?v=21"></script>
+<script src="/arcade/pregame.js?v=25"></script>
+<script src="/arcade/howto.js?v=22"></script>
 <script>
 (function(){
   "use strict";
@@ -1024,7 +1024,7 @@ window.GA_ID='G-L29P5MRWKE';
       if(flawless) s.perfects=(s.perfects||0)+1;
       save(s);
       milestone = streakMilestone(s.streak);
-      if(newBestT && !milestone) milestone = '\ud83c\udfc6 New best time!';
+      if(newBestT && !milestone) milestone = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg> New best time!';
     }
     if(ARCHIVE && window.RTGArchive && RTGArchive.recordBest){
       RTGArchive.recordBest('crossword', Math.round(elapsed), { higherIsBetter:false, label:'sec' });

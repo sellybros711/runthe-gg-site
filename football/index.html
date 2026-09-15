@@ -90,7 +90,7 @@ window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
-<!-- GA4 — same property as the rest of runthe.gg. Consent defaults above gate it. -->
+<!-- GA4: same property as the rest of runthe.gg. Consent defaults above gate it. -->
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
@@ -2709,7 +2709,7 @@ window.GA_ID='G-L29P5MRWKE';
     background:rgba(226,178,90,.16);border:1px solid rgba(226,178,90,.45);color:#e2b25a;
     font-family:var(--fn);font-size:9px;font-weight:800;line-height:14px;text-align:center}
   .modesteps b{color:var(--ink);font-weight:700}
-  /* Sheet heading override — Archivo instead of Anton for a bolder, more legible title. */
+  /* Sheet heading override: Archivo instead of Anton for a bolder, more legible title. */
   .display.mtitle{font-family:var(--fn);font-weight:800;letter-spacing:0}
   .modecards{display:grid;gap:14px;margin-top:6px}
   /* Each mode IS the button: the whole card is tappable, no separate play button. */
@@ -3662,7 +3662,7 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes rvpop{0%{opacity:0;transform:translateY(14px) scale(.9)}
     55%{transform:translateY(-3px) scale(1.03)}100%{opacity:1;transform:none}}
   @keyframes rvfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-  /* The card's color flashes up as it lands, then settles — the little hit per player. */
+  /* The card's color flashes up as it lands, then settles. The little hit per player. */
   @keyframes rvflash{0%{box-shadow:0 0 0 0 var(--rvglow),0 0 22px 2px var(--rvglow)}
     100%{box-shadow:0 0 0 0 transparent,0 0 0 0 transparent}}
   @keyframes rvgradeIn{0%{opacity:0;transform:scale(.4) rotate(-12deg)}
@@ -5577,7 +5577,7 @@ window.GA_ID='G-L29P5MRWKE';
   .verdict.win{background:linear-gradient(160deg,#0c2a4d,#0a1526);border-color:rgba(59,130,246,.42)}
   .verdict.out{background:linear-gradient(160deg,#3a1114,#1a0a0c);border-color:rgba(239,68,68,.34)}
   /* A win screen is a moment, so the champion and perfect cards get lit: a soft glow
-     bloom behind the record, a thin gilded/steel top edge, and — for a perfect run — the
+     bloom behind the record, a thin gilded/steel top edge, and (for a perfect run) the
      card border itself breathes. Kept to the two winning states; everything else is flat. */
   .verdict.gold,.verdict.win{position:relative;overflow:hidden}
   .verdict.gold:before,.verdict.win:before{content:'';position:absolute;left:50%;top:-30%;
@@ -5843,7 +5843,7 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
     border:1px solid var(--line-2);border-radius:99px;padding:4px 11px;margin:0 0 9px}
   .hero-rec .big{font-family:var(--fd);font-size:78px;line-height:.86;letter-spacing:-.02em}
-  /* The record carries a moving sheen on a win — a highlight that sweeps across the gilded
+  /* The record carries a moving sheen on a win: a highlight that sweeps across the gilded
      (or steel) number every few seconds. background-size >100% gives the highlight room to
      travel; the keyframe slides its position. */
   .hero-rec .big.gold{background:linear-gradient(110deg,#fbbf24 0%,#fde68a 30%,#fffbeb 46%,#fde68a 62%,#d97706 100%);
@@ -6642,7 +6642,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <h2>How a run works</h2>
         <ul>
           <li>Six spins, six signings, $140M. Money left unspent is production you never fielded.</li>
-          <li>Do not like the draw? Re-spin the year or the team for $5M, then $10M, then $15M, off the
+          <li>Do not like the draw? Re-spin the year or the team for $5M, then $10M, then $15M. It comes off the
               same budget that signs your players.</li>
           <li>Players who shared a team, a college or a draft class build chemistry, which lifts the whole
               roster. Two linked mid-priced players often beat one isolated superstar at the same price.</li>
@@ -7146,7 +7146,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="cal" id="v-list"></div>
   </div>
 
-  <!-- CAP CRISIS: Salary Cap Survivor mode — pick someone to cut, then spin a replacement -->
+  <!-- CAP CRISIS: Salary Cap Survivor mode. Pick someone to cut, then spin a replacement -->
   <div class="screen" id="s-capcrisis">
     <div class="eyebrow red">Over the cap</div>
     <h2 class="display" style="font-size:22px;margin:4px 0 4px">Cap crisis</h2>
@@ -7580,7 +7580,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
        screen and the offseason: the challenge, the reward, the sting, and the one thing that
        most needs saying, that missing it does not end the run. See mandateBriefing. -->
   <div class="screen bossx" id="s-mbrief">
-    <div class="eyebrow gold">Owner’s mandate &middot; Season <span id="mb-season">5</span></div>
+    <div class="eyebrow gold">Owner's mandate &middot; Season <span id="mb-season">5</span></div>
     <h2 class="display bs-name" id="mb-name">The youth movement</h2>
     <div class="mb-ask" id="mb-ask">Field three players aged 25 or younger.</div>
     <p class="mb-when">You have this whole offseason to build it. Keep who fits, cut who does
@@ -7770,8 +7770,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=87"></script>
-<script src="run.js?v=98"></script>
+<script src="engine.js?v=88"></script>
+<script src="run.js?v=99"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -7799,7 +7799,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=12"></script>
+<script src="/assets/store.js?v=14"></script>
 <!-- THE RUN, KEPT AGAINST THE ACCOUNT. Shared with Commish Simulator, which had the same
      save in localStorage and the same way of losing it. Optional like everything else up
      here: without it the game keeps its runs exactly where it always did, in this browser
@@ -7828,7 +7828,7 @@ function achMarkSeen(userId,ids){
 }
 /* The current run's slot layout. Every mode but the Trade Machine is the engine default
    (QB RB WR WR TE FLEX); the Trade Machine swaps the second receiver for a second flex.
-   Used only for slot LABELS on screen — the count is six either way. */
+   Used only for slot LABELS on screen: the count is six either way. */
 const slotsNow=()=>(run&&run.slots)||(run&&run.tradeMachine
   ?['QB','RB','WR','TE','FLEX','FLEX']
   :(run&&run.defense?E.DEFENSE_SLOTS:E.SLOTS));
@@ -8064,7 +8064,27 @@ function premiumRefresh(force){
     /* AND THE HEADER, which carries the Pro ring. Ownership arrives after the account does,
        so leaving this to the auth change alone left a fresh buyer looking at a free-looking
        header until their next load. */
-    .then((v)=>{ try{ paintHomeStart(); paintAvatar(); }catch(_){} return v; });
+    .then((v)=>{ try{ paintHomeStart(); paintAvatar(); dropPitchCard(); }catch(_){} return v; });
+}
+
+/*
+ * THE OFFER COMES OFF THE SCREEN THE MOMENT THE ACCOUNT OWNS IT.
+ *
+ * paintHomeStart takes the front page's card away on its own, because ensurePremiumCard
+ * removes the node when premiumPitch() turns false. The PROFILE's card had nothing doing
+ * that: it is written into the sheet when the sheet is drawn, and the sheet is not redrawn
+ * when ownership lands. So a buyer whose purchase confirmed while their profile was open sat
+ * looking at Go Pro, on a Pro account, with a gold pill two inches above it saying so.
+ *
+ * THE NODE IS REMOVED RATHER THAN THE SHEET REDRAWN, and that is the whole point of doing it
+ * this way. A redraw would throw somebody back to the top of their profile, or off the badge
+ * page they were reading, to fix something they were not looking at. Taking one card out
+ * disturbs nothing else on the screen.
+ */
+function dropPitchCard(){
+  if(premiumPitch()) return;
+  const el=$('pf-prem');
+  if(el&&el.parentNode) el.parentNode.removeChild(el);
 }
 
 /*
@@ -9947,7 +9967,7 @@ function dailySpentSheet(mode){
     : 'The '+one+' unlocks at midnight Eastern.';
   const head=ended?'That is the day'
     :seasons?'That is your '+allow+' seasons'
-    :'That is today’s run';
+    :'That is today\'s run';
   const body=ended
     ? 'The run is over, and a firing ends the day with it. '+when('next one')+
       ' Every run gets '+allow+' free seasons.'
@@ -11778,7 +11798,7 @@ function hexRGBA(hex,a){
 }
 
 /* Multiply a #rrggbb toward black by factor f (0..1), hue and saturation left where they
-   are — a plain brightness cut, which is all the club-color gradient needs. */
+   are: a plain brightness cut, which is all the club-color gradient needs. */
 function scaleHex(hex,f){
   const h=(hex||'').replace('#',''); if(h.length!==6) return hex;
   const n=parseInt(h,16);
@@ -12024,7 +12044,7 @@ function modeMenu(){
   $('sheet-in').dataset.kind='modes';
   openSheet();
   /* Theme the One Franchise card to the player's own profile club. avatarOf resolves the
-     same key the header disc uses — the club they chose, or the one their name lands on —
+     same key the header disc uses (the club they chose, or the one their name lands on),
      so the card always matches the color they see on their avatar. The icon runs a gradient
      across BOTH of the club's colors, the title takes teamInk (the primary lifted bright
      enough for text on the dark card) and the border takes the secondary as an accent.
@@ -12945,7 +12965,7 @@ function paintMandate(){
     el.hidden=false;
     el.className='mandate'+(met?' met':'');
     el.innerHTML=
-      '<div class="mn-top"><span class="mn-tag">Owner’s mandate</span>'
+      '<div class="mn-top"><span class="mn-tag">Owner\'s mandate</span>'
         +'<span class="mn-count">'+(met?'Met':prog.have+' of '+prog.need)+'</span></div>'
       +'<div class="mn-desc">'+esc(spec.desc)+'</div>'
       +(pips?'<div class="mn-pips">'+pips+'</div>':'')
@@ -15232,7 +15252,7 @@ function boxScore(r){
       esc(when)+' &middot; '+(r.won?'Win':'Loss')+'</div>'+
     '<h2 class="display" style="font-size:21px;margin:4px 0 2px">'+esc(r.opponent)+'</h2>'+
     '<div class="bx-score"><span class="bs '+(r.won?'win':'lose')+'">'+r.shownYou+'</span>'+
-      '<span class="bd">&ndash;</span><span class="bs">'+r.shownThem+'</span></div>'+
+      '<span class="bd">-</span><span class="bs">'+r.shownThem+'</span></div>'+
     '<div class="bx-matchup">'+
       '<div class="bx-cell"><div class="k">Fantasy output</div>'+
         '<div class="v">'+total.toFixed(1)+'</div>'+
@@ -16169,7 +16189,7 @@ function paintGmParts(p,gm){
        ? 'every deal is graded against the best version of itself, then averaged. Your '+
          'costliest was '+(p.worstDeal&&p.worstDeal.week>0?'the week '+p.worstDeal.week+' deal':
          'the preseason deal')+', '+(p.worstDeal?p.worstDeal.miss.toFixed(1):p.leftOnTable.toFixed(1))+
-         ' team rating short of that board’s strongest card and release'
+         ' team rating short of that board\'s strongest card and release'
        : 'you took the strongest version of every deal you accepted, '+
          p.dealsMade+' of '+p.dealsMade},
     {k:'Value',w:legacy?15:20,v:p.value,
@@ -16325,7 +16345,7 @@ let revealTimers=[];
 function clearRevealTimers(){ revealTimers.forEach(clearTimeout); revealTimers=[]; }
 
 /* THE TRADE FINDER opens on the shop: your roster, tap up to two players to put on the
-   block. Nothing is offered until you choose who leaves, which is the whole point — you
+   block. Nothing is offered until you choose who leaves, which is the whole point: you
    run the team, the league reacts to you. */
 function openTradeWindow(step,opts){
   preseasonWindow=!!(opts&&opts.preseason);
@@ -16410,7 +16430,7 @@ function openTradeWindow(step,opts){
     }else if(cashOut<0){
       /* The other direction: selling talent grew the ceiling, and the war chest is the
          point of having sold. Said plainly so the bigger number reads as earned, not odd. */
-      rise.innerHTML='<b>Your cap has grown to $'+CAP().toFixed(1)+'M</b> &mdash; $'+
+      rise.innerHTML='<b>Your cap has grown to $'+CAP().toFixed(1)+'M</b>. $'+
         (-cashOut).toFixed(1)+'M of it is cash from selling talent. Payroll <b>$'+
         payroll.toFixed(1)+'M</b>, <b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
         (deadline?'. Last window to use it.':'.');
@@ -16568,7 +16588,7 @@ function ghostTile(pos){
       '<span class="pr">~'+M(R.FA_TYPICAL_MUSD)+'</span></span>'+
     '<span class="nm">Free agent</span>'+
     '<span class="sn">You sign him after the trade</span>'+
-    '<span class="tf"><span class="pts"><b>&mdash;</b><i>FPPG</i></span></span></div>';
+    '<span class="tf"><span class="pts"><b>-</b><i>FPPG</i></span></span></div>';
 }
 
 /* The LEAST salary a deal's release can free, for the over-the-cap line. The least, not the
@@ -16862,7 +16882,7 @@ function paintTradePreview(offer){
       tradePreviewPlayers.push(null);
       h+='<div class="tt-row open"><span class="tr-pos">'+esc(slots[slot])+'</span>'+
         '<span class="tr-nm">Free agent</span><span></span>'+
-        '<span class="tr-pts">&mdash;</span></div>';
+        '<span class="tr-pts">-</span></div>';
       continue;
     }
     const p=e.p;
@@ -16888,7 +16908,7 @@ function paintTradePreview(offer){
        string ate the tags and printed "Tre Mason</b>, <b>Benny Cunningham" on screen. */
     note.innerHTML=cuts.length
       ? 'Not shown: '+cuts.map(p=>'<b>'+esc(p.name)+'</b>').join(', ')+
-        ' &mdash; released to get back to six. You pick who at the next step.'
+        '. Released to get back to six. You pick who at the next step.'
       : '';
     note.style.display=cuts.length?'':'none';
   }
@@ -17472,7 +17492,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
   const fw=w-pad.l-pad.r,fh=h-pad.t-pad.b;
   const fl=pad.l,ft=pad.t;
 
-  /* end zones sit outside the goal lines; playing field is yards 0–100 mapped
+  /* end zones sit outside the goal lines; playing field is yards 0-100 mapped
      to the inner area between the two end-zone strips */
   const ezW=Math.round(fw*0.06);
   const pfL=fl+ezW,pfW=fw-ezW*2;
@@ -17574,7 +17594,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
     const left=Math.min(x1,x2),right=Math.max(x1,x2);
     const barW=Math.max(right-left,2*dpr);
 
-    /* fade older drives — quadratic ease for smoother falloff */
+    /* fade older drives: quadratic ease for smoother falloff */
     const age=shown.length-1-i;
     const t2=Math.max(0,1-age/(maxRows-1));
     const alpha=isActive?0.92:Math.max(0.22,t2*t2*0.75+0.1);
@@ -17788,7 +17808,7 @@ function playPlayoffGame(r,after){
   if(cDist(dcY,dcT)<110){
     dcT=them.b||'#e87461';
     if(!dcT||dcT===dcY||cDist(dcY,dcT)<80)dcT='#e87461';
-    /* gray/silver secondaries wash out on the dark-green field — use coral */
+    /* gray/silver secondaries wash out on the dark-green field, so use coral */
     const cParts=(c)=>{const v=parseInt(c.slice(1),16);return[(v>>16)&255,(v>>8)&255,v&255];};
     const [cr,cg,cb]=cParts(dcT);
     const sat=Math.max(cr,cg,cb)-Math.min(cr,cg,cb);
@@ -19242,8 +19262,8 @@ const liveChem=()=>{ try{ return R.seasonChem(run); }catch(_){ return (run&&run.
 function fitPct(mult){ const n=Math.round((mult-1)*100); return (n>0?'+':'')+n+'%'; }
 
 /* The fit-bonus percentage in the "…points a game" summary is the WHOLE structure
-   multiplier — team shape and the scheme bonus together — so it must not be labeled as
-   the scheme alone (that read as if a 1–3% scheme were worth the whole +11%). This is the
+   multiplier (team shape and the scheme bonus together), so it must not be labeled as
+   the scheme alone (that read as if a 1-3% scheme were worth the whole +11%). This is the
    plain description of the total; schemeTail() names the scheme's own small share after it. */
 function fitPhrase(){ return 'for how the six fit together'; }
 
@@ -19266,7 +19286,7 @@ function schemeTail(st){
  * This table used to end with "Makes the playoffs" and "Wins the title" as percentages, and
  * both are gone. Every row here is now something that HAPPENED or something you can count:
  * points a game, the record those points typically produce, money spent. A percentage is a
- * different kind of claim — it tells you what the simulation thinks of you rather than what
+ * different kind of claim: it tells you what the simulation thinks of you rather than what
  * you did, and "wins the title 0.3%" is a number nobody is better off having seen. It also
  * put the game's own internals on screen, which is not what this screen is for.
  *
@@ -19928,7 +19948,7 @@ function enterChallengeAccept(t){ challengeTeam=t; pendingChallenge=false; paint
 function paintChallengeIntro(t){
   const rb=rosterFromBlob(t);
   const rating=rb?teamRating(rb.roster,rb.chemistry):null;
-  $('ch-title').textContent = t.n ? (t.n+'’s team') : 'Beat this team';
+  $('ch-title').textContent = t.n ? (t.n+'\'s team') : 'Beat this team';
   $('ch-sub').textContent = (t.n?(t.n+' drafted a team. '):'Someone drafted a team. ')+
     'Build your own six to beat it in the Challenge Bowl, then take your team into a full ranked season.';
   $('ch-mode').textContent = challengeModeLabel(t);
@@ -20130,7 +20150,7 @@ if($('b-bowl-share')) $('b-bowl-share').onclick=()=>{ if(!challengeTeam||!lastBo
   const cr={v:1,a:challengeTeam,b:teamBlob()};
   const link=location.origin+location.pathname+'?cr='+b64urlEnc(JSON.stringify(cr));
   const who=(challengeTeam.n||'your friend');
-  const text=(lastBowl.youWon?('I beat '+who+' '+lastBowl.shownYou+'–'+lastBowl.shownThem+' in the Challenge Bowl. See it: ')
+  const text=(lastBowl.youWon?('I beat '+who+' '+lastBowl.shownYou+'-'+lastBowl.shownThem+' in the Challenge Bowl. See it: ')
     :('The Challenge Bowl vs '+who+', see how it went: '))+link;
   ga('challenge_result_shared',{won:lastBowl.youWon}); shareTextFile(text,null,'bowl.png'); };
 if($('b-challenge')) $('b-challenge').onclick=async()=>{
@@ -21832,8 +21852,8 @@ function pfHub(msg,ok){
         '<span id="pf-sub">Your RunThe.GG account</span></span></div>'+
     (msg?authMsg(msg,ok):'')+
     '<div class="pfstats">'+
-      '<div class="pfstat"><b id="pf-runs">&mdash;</b><span>Runs played</span></div>'+
-      '<div class="pfstat"><b id="pf-best">&mdash;</b><span>Best rating</span></div>'+
+      '<div class="pfstat"><b id="pf-runs">-</b><span>Runs played</span></div>'+
+      '<div class="pfstat"><b id="pf-best">-</b><span>Best rating</span></div>'+
     '</div>'+
     '<div class="pfnav">'+
       /* Reversed, so the two pages that are about YOU sit under your name and the two that
@@ -22083,7 +22103,7 @@ async function pfHubStats(userId){
   if(!runs||!best) return;
   const s=careerStats(c.rows,c.total);
   runs.textContent=(s.runs||0).toLocaleString();
-  best.textContent=s.bestRating!=null?Number(s.bestRating).toFixed(1):'—';
+  best.textContent=s.bestRating!=null?Number(s.bestRating).toFixed(1):'-';
 }
 
 /* ---------- DRAFTS ----------
@@ -22146,7 +22166,7 @@ async function pfDraftsPaint(userId,tab){
            its own colour. Everything after it is still escaped text. */
         '<span>'+[modeTag(r),esc(rosterLine(r.picks)),esc(day(r.created_at))]
           .filter(Boolean).join(' · ')+'</span></span>'+
-      '<span class="rt"><b>'+(r.team_rating!=null?Number(r.team_rating).toFixed(1):'—')+
+      '<span class="rt"><b>'+(r.team_rating!=null?Number(r.team_rating).toFixed(1):'-')+
         '</b><span>rating</span></span>'+
       '<span class="go">&rsaquo;</span></button>').join('')+'</div>'+
     (c.rows.length>list.length?'<p class="caveat" style="margin:8px 0 0">Showing '+
@@ -22872,7 +22892,7 @@ let lastPerfectShare=null;
 let submitted=null;      // the row id, or false once a submit has failed
 let myRanks=null;
 /* The GM-rating placing, which is NOT one of the three in myRanks. Those come from
-   B.ranks(B.scoreOf(...)), a RECORD rank, in every mode including this one — so showing one
+   B.ranks(B.scoreOf(...)), a RECORD rank, in every mode including this one, so showing one
    beside the GM rating would have read as "your GM rating ranks 3rd" while actually saying
    "your record ranks 3rd". Fetched on its own axis instead. Null until it lands, or when the
    run has no GM rating to place. */
@@ -25003,7 +25023,7 @@ $('b-quit').onclick=()=>{
      draft as on this one. The warning would be a threat the game does not carry out. */
   const costs=dailyOn()&&run&&(run.dynasty||run.tradeMachine)&&run.attemptPaid
     &&!dailySeasons(run.dynasty?'dynasty':'trade');
-  b.textContent=costs?'Tap again. This uses today’s run':'Tap again to quit';
+  b.textContent=costs?'Tap again. This uses today\'s run':'Tap again to quit';
   b.classList.add('armed');
 };
 

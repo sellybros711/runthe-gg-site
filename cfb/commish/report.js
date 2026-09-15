@@ -1,5 +1,5 @@
 /*
- * report.js - what the five years were worth, graded.
+ * report.js - what the term was worth, graded.
  *
  * WHY THIS EXISTS. The mode ended on a sentence: so many rulings, so many champions crowned,
  * so many of the four numbers moved. That is a receipt. It tells a player what they pressed
@@ -132,8 +132,10 @@
     var n = Object.keys(distinct).length;
     /* SCHOOLS AND LEAGUES TOGETHER, because five different SEC champions is a less open sport
        than four champions out of four conferences, and counting schools alone cannot tell
-       those apart. Over five seasons the school count is a number from one to five and has no
-       resolution on its own; this gives it some. Old saves carry no conference on a champion,
+       those apart. The school count is one number per season played and has no resolution on
+       its own; this gives it some. Everything here divides by ys.length, so a three year
+       leash and an eight year mandate are both graded against their own length rather than
+       against five. Old saves carry no conference on a champion,
        and then it grades on schools alone rather than marking the term down for it. */
     var span = n + Object.keys(leagues).length;
     var scale = Object.keys(leagues).length ? 2 : 1;
@@ -160,19 +162,32 @@
     var tot = 0;
     ys.forEach(function (y) { tot += r[y].outsiders; });
     var per = tot / ys.length;
+    /* HOW OFTEN, WHICH IS A DIFFERENT QUESTION FROM HOW MANY, and the sentence was being
+       written off the wrong one. `per` is a mean over the term: three outsiders in one
+       season and none in the other four comes to 0.6 and was described as an occasional
+       thing, while four in a single season comes to 0.8 and read the same way, on a term
+       where the door was shut four years running either way. The GRADE still comes off the
+       mean, because how many got in is the thing worth grading. The SENTENCE counts the
+       seasons and prints the count, so the player can check it against their own calendar. */
+    var had = ys.filter(function (y) { return r[y].outsiders > 0; }).length;
     return {
       id: 'access', label: 'Who got in',
       points: bandOf(per, [3, 2, 1, 0.4]),
       mark: per.toFixed(1) + ' a year',
-      line: per >= 1
-        ? 'A school from outside the four made the field most years, so the argument the '
-          + 'Group of Five brings to every meeting had an answer.'
-        : per > 0
-          ? 'Somebody from outside the four got in occasionally, which is better than the '
-            + 'sentence they had before you.'
-          : 'Nobody from outside the power four reached the field in five years. The group '
-            + 'with fourteen percent of the money and half a vote was arguing about a door '
-            + 'that was painted on.',
+      line: had === 0
+        /* NOT "in five years" and not "fourteen percent". A term is three to eight seasons
+           now, and the Group of Five's share opens at fourteen percent and is one of the
+           things a player spends the whole term moving. Both numbers were printed as facts
+           on a screen that grades what the player did to them. */
+        ? 'Nobody from outside the power four reached the field in your whole term. The '
+          + 'group with half a vote was arguing about a door that was painted on.'
+        : had * 2 > ys.length
+          ? 'A school from outside the four made the field in ' + had + ' of ' + ys.length
+            + ' seasons, so the argument the Group of Five brings to every meeting had an '
+            + 'answer.'
+          : 'Outsiders reached the field in ' + had + ' of ' + ys.length + ' seasons. The '
+            + 'rest of the time the door was shut, which is still a better sentence than '
+            + 'the one they had before you.',
     };
   }
 
@@ -212,8 +227,7 @@
     { at: 2.0, title: 'You held the thing together',
       line: 'Nothing collapsed. In this job that is not nothing, and it is also not much.' },
     { at: 1.2, title: 'A caretaker at best',
-      line: 'The sport got through five years with you in the chair and is not obviously '
-        + 'better for any of it.' },
+      line: 'The sport got through your term and is not obviously better for any of it.' },
     { at: -1, title: 'They will use your name as a warning',
       line: 'Somebody is going to spend a decade undoing this.' },
   ];

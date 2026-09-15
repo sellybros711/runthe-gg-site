@@ -287,7 +287,7 @@
       /* Six title games on one Saturday, so the biggest by audience wins the line. */
       if (!prev || (prev.viewers || 0) < t.game.viewers) {
         out[key(date)] = {
-          text: t.conference + ' title: ' + t.team.school + ' win it',
+          text: t.conference + ' title: ' + t.team.school + ' wins it',
           sub: t.game.viewers.toFixed(1) + 'M watched',
           kind: 'game', icon: 'trophy', viewers: t.game.viewers,
         };

@@ -200,6 +200,28 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
      them the football game. */
   ok('the store names Commissioner', /Commissioner/.test(sheet));
   ok('both bundles are offered', (await has(p, '#b-buy-ps')) && (await has(p, '#b-buy-rtb')));
+  /* THE BAND THAT SAYS THIS IS NOT A SUBSCRIPTION, which is the anxiety that actually stops
+     people on a screen like this. Drawn loud on purpose. */
+  const band = await p.evaluate(() => {
+    const el = document.querySelector('#sheet-in .pw-alert');
+    if (!el) return null;
+    const lamp = el.querySelector('i');
+    return { text: (el.innerText || '').replace(/\s+/g, ' '),
+      anim: getComputedStyle(el).animationName,
+      lamp: lamp ? getComputedStyle(lamp).animationName : 'none' };
+  });
+  ok('the one time payment band is on the sheet', !!band && /one time payment/i.test(band.text),
+    band && band.text);
+  ok('and it is doing something to be noticed',
+    !!band && band.anim === 'pwalert' && band.lamp === 'pwlamp',
+    band && (band.anim + ' / ' + band.lamp));
+  /* AND IT NEVER CLAIMS A DEADLINE IT DOES NOT KEEP. Both bundles are permanent products at
+     permanent prices, so an expiring-offer line would be the one claim on a payment screen
+     that could not be defended. If a real window is ever wanted it needs an end date in
+     _bundles.js and a store that stops selling at it; until then this is the guard. */
+  ok('and promises no deadline the checkout does not keep',
+    !/(offer ends|limited time|today only|ends soon|expires|hurry|last chance|act now)/i.test(sheet),
+    sheet.slice(0, 120));
   ok('and both prices are on it', /\$19\.99/.test(sheet) && /\$34\.99/.test(sheet));
   /* ONE STORE, NOT A STORE PER GAME, AND ONE PAYMENT PATH. The buttons post the same two
      bundle keys the football page posts, to the same endpoint, so both land on the same two
@@ -232,31 +254,47 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
   await p.close();
 }
 
-/* ── the door has to look like it costs money ────────────────────────────────────────────
+/* ── the door has to OPEN ─────────────────────────────────────────────────────────────────
  *
- * THIS IS THE BUG THE CARD SHIPPED WITH. A purple Preview tag on a purple card, sitting in
- * a row of free buttons, with nothing on it that said Pro and nothing that said locked. It
- * read as one more free mode, and the first time a reader learned otherwise was at a gate
- * after the tap. A store reached that way is a refusal rather than an offer.
+ * THIS SECTION USED TO ASSERT THE OPPOSITE AND IT SHIPPED A BUG. While Commissioner
+ * Simulator was sold at the entrance, the card wore a gold Pro tag and a padlock and a
+ * non-owner's tap was taken over and turned into the store. All of that was right then. The
+ * free tier (supabase/104_commish_free_clock.sql) made every part of it false on the same
+ * day, and nothing failed, because selling somebody a mode they already have access to
+ * throws no error. What it produced was the report: a signed in free account tapped the
+ * door, got the store, and read the whole mode as locked with no way in.
  *
- * The unknown window is checked too, and it is the one place the lock must NOT appear:
- * premiumSet is null for the length of one round trip, and a padlock drawn through it tells
- * a paying customer their mode was taken away and then hands it back.
+ * So the thing to pin down is that the tap NAVIGATES. Copy can be argued about; a door that
+ * refuses the tier it was opened for is the bug, and it is invisible in the markup.
  */
+/* WAS THE ANCHOR ALLOWED TO DO ITS JOB. The page's own handler runs first, on the element;
+   this listener bubbles to the document afterwards and reads whether that handler called
+   preventDefault. It then stops the navigation itself, because the point is what the page
+   decided rather than what the next page looks like. */
+const TRAP = `
+document.addEventListener('click',function(e){
+  var a=e.target&&e.target.closest?e.target.closest('a'):null;
+  if(!a) return;
+  window.__nav={href:a.getAttribute('href'),prevented:e.defaultPrevented};
+  e.preventDefault();
+});`;
+const tapped = (p) => p.evaluate(() => window.__nav || null);
 {
-  const p = await open(stub(true, [], []), 'the front page door says Pro and carries a lock');
+  const p = await open(stub(true, [], []), 'a free account gets a door that opens');
   const door = await p.$('#b-hp-commish');
   ok('the door is drawn', !!door);
-  ok('the badge reads Pro, not Preview', (await txt(p, '#b-hp-commish .hp-tag')) === 'Pro');
-  ok('the badge is the gold one', await p.$eval('#b-hp-commish .hp-tag', (e) => e.classList.contains('pro')));
-  ok('a padlock sits on the name', await has(p, '#b-hp-commish .hp-namerow .mc-pad'));
-  /* IN WORDS, NOT JUST IN PICTURES. A padlock and a gold tag are a state drawn rather than
-     a state said, and on a card whose only other line is a slogan they read as decoration.
-     The line has to carry the verb. */
-  ok('the line under the name is the call to go Pro',
-    (await txt(p, '#b-hp-commish .hp-sub')) === 'Go Pro and leave your mark on College Football forever',
+  /* NOT A PRICE TAG. Gold on this site means money, and the mode does not cost any to get
+     into. Preview is what it reads before the launch flag turns. */
+  ok('the badge is not the gold Pro one',
+    !(await p.$eval('#b-hp-commish .hp-tag', (e) => e.classList.contains('pro')).catch(() => false)));
+  ok('no padlock on the name', !(await has(p, '#b-hp-commish .hp-namerow .mc-pad')));
+  /* THE SAME SENTENCE A BUYER READS. It used to open "Go Pro and", which was the verb that
+     made a locked card say so in words. With the door open it would be asking for money in
+     front of something already included. */
+  ok('the line under the name is the promise, not a toll',
+    (await txt(p, '#b-hp-commish .hp-sub')) === 'Leave your mark on College Football forever',
     await txt(p, '#b-hp-commish .hp-sub'));
-  ok('and it is marked as the selling one', await has(p, '#b-hp-commish .hp-sub.sell'));
+  ok('and the front page never says Go Pro any more', !/Go Pro/.test(await txt(p, '#b-hp-commish')));
   /* SENTENCE CASE, because spaced caps at this size is the setting a sentence gets skimmed
      in, and this is the one line on the card somebody has to actually read. */
   ok('it is set to be read rather than skimmed',
@@ -282,65 +320,79 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
      the reader has to decide against with nothing on the other side of the scale, and it is
      a second copy of a number that lives in the store. */
   ok('and never quotes a price out here', !/\$/.test(await txt(p, '#b-hp-commish')));
-  /* THE LOCK IS CENTRED ON THE NAME. The shared .mc-pad rule carries margin-left:auto, so
-     without a reset the padlock is pushed to the far edge of the row. */
-  const gap = await p.evaluate(() => {
-    const pad = document.querySelector('#b-hp-commish .hp-namerow .mc-pad');
-    const nm = document.querySelector('#b-hp-commish .hp-name');
-    if (!pad || !nm) return null;
-    return Math.round(nm.getBoundingClientRect().left - pad.getBoundingClientRect().right);
-  });
-  ok('the padlock is beside the name rather than shoved off it', gap !== null && gap < 14, gap + 'px');
-  /* A TAP OPENS THE OFFER, not a gate that refuses you. */
+  /* THE ONE THAT MATTERS. This is the assertion whose absence let the bug ship. */
+  await p.evaluate(TRAP);
   await p.click('#b-hp-commish');
-  await p.waitForTimeout(700);
-  ok('tapping it opens the store', (await p.$eval('#sheet-in', (e) => e.dataset.kind)) === 'premium');
-  ok('and never navigates to the gate', /\/cfb\/index\.html$/.test(p.url()), p.url());
+  await p.waitForTimeout(500);
+  const nav = await tapped(p);
+  ok('the tap is not taken over', !!nav && nav.prevented === false, JSON.stringify(nav));
+  ok('and it is headed for the mode', !!nav && nav.href === '/cfb/commish/', nav && nav.href);
+  ok('the store is never put in the way', (await p.$eval('#sheet-in', (e) => e.dataset.kind)) !== 'premium');
   ok('no page errors', p.errs.length === 0, p.errs[0]);
   await p.close();
 }
 {
-  const p = await open(stub(true, ['cfb_premium'], BOUGHT), 'an owner gets the door back, with no lock on it');
+  const p = await open(stub(true, ['cfb_premium'], BOUGHT), 'an owner reads exactly the same door');
   ok('the badge is not the gold one', !(await p.$eval('#b-hp-commish .hp-tag', (e) => e.classList.contains('pro')).catch(() => false)));
   ok('no padlock', !(await has(p, '#b-hp-commish .hp-namerow .mc-pad')));
-  ok('and nothing selling anything', !(await has(p, '#b-hp-commish .hp-sub.sell')));
-  /* THE SAME SENTENCE, WITHOUT THE PRICE OF ADMISSION IN FRONT OF IT. An owner has the
-     thing, so they read the promise rather than an offer of it. */
-  ok('the line is the promise on its own',
+  /* ONE CARD FOR BOTH TIERS, which is the plainest way to say the door is not the thing
+     being sold. What Pro changes is the pace, and the mode itself is where that is said. */
+  ok('the line is the same promise',
     (await txt(p, '#b-hp-commish .hp-sub')) === 'Leave your mark on College Football forever',
     await txt(p, '#b-hp-commish .hp-sub'));
   ok('and it never says Go Pro to somebody who has', !/Go Pro/.test(await txt(p, '#b-hp-commish')));
-  /* The bought line is the shorter of the two, so it is the one that could go flat on a
-     wide screen if the measure were ever removed. */
   for (const w of [320, 390, 1200]) {
     await p.setViewportSize({ width: w, height: 900 });
     await p.waitForTimeout(250);
     ok('  two lines at ' + w + 'px', (await lineCount(p, '#b-hp-commish .hp-sub')) === 2,
       (await lineCount(p, '#b-hp-commish .hp-sub')) + ' lines');
   }
-  /* A tap goes to the mode, because that is what they bought. */
   ok('the link still points at the mode',
     (await p.$eval('#b-hp-commish', (e) => e.getAttribute('href'))) === '/cfb/commish/');
   ok('no page errors', p.errs.length === 0, p.errs[0]);
   await p.close();
 }
 {
-  /* THE MODES SHEET CARRIES THE SAME CARD and had the same problem: a Testing sticker
-     beside two free modes, with nothing saying it was sold. */
-  const p = await open(stub(true, [], []), 'the modes sheet card is locked too');
+  /* THE MODES SHEET CARRIES THE SAME CARD and carried the same lock, so it gets the same
+     two questions: does it open, and does the line under it describe the mode a free
+     account is actually about to play. */
+  const p = await open(stub(true, [], []), 'the modes sheet card opens too, and states the pace');
   await p.click('#b-modes');
   await p.waitForTimeout(700);
-  ok('the sticker reads Pro', (await txt(p, '#b-mc-commish .mc-sticker')) === 'Pro');
-  ok('the card is marked pro', await p.$eval('#b-mc-commish', (e) => e.classList.contains('pro')));
-  ok('a padlock replaces the arrow', (await has(p, '#b-mc-commish .mc-pad')) && !(await has(p, '#b-mc-commish .mc-arrow')));
+  ok('the sticker does not read Pro', (await txt(p, '#b-mc-commish .mc-sticker')) !== 'Pro',
+    await txt(p, '#b-mc-commish .mc-sticker'));
+  ok('the card is not marked pro', !(await p.$eval('#b-mc-commish', (e) => e.classList.contains('pro'))));
+  ok('an arrow, not a padlock', (await has(p, '#b-mc-commish .mc-arrow')) && !(await has(p, '#b-mc-commish .mc-pad')));
+  /* THE PACE FIRST, because that is what the reader is about to meet, and the offer second.
+     The sheet is the one surface with room to say both, and it is the same sentence the
+     wait wall inside the mode opens with. */
+  ok('it says what free plays at',
+    /^Free plays one season a day\./.test(await txt(p, '#b-mc-commish .mc-pro')),
+    await txt(p, '#b-mc-commish .mc-pro'));
+  ok('and what Pro changes about it', /Go Pro to run the whole term at your own pace/.test(await txt(p, '#b-mc-commish .mc-pro')));
   /* THE THING A READER OF THIS GAME CANNOT KNOW, which is that one payment covers both. */
-  /* THE SAME VERB AS THE FRONT PAGE DOOR, so the two surfaces are one offer. */
-  ok('it opens with the same call the door makes',
-    /^Go Pro and leave your mark on College Football forever\./.test(await txt(p, '#b-mc-commish .mc-pro')));
-  ok('and it says the payment covers the NFL game too', /unlocks the NFL game too/.test(await txt(p, '#b-mc-commish .mc-pro')));
+  ok('and that the payment covers the NFL game too', /unlocks the NFL game too/.test(await txt(p, '#b-mc-commish .mc-pro')));
+  /* DYNASTY'S NUMBER LIVES ON DYNASTY'S OWN SERVER AND ITS OWN SCREEN. A copy of it here is
+     a copy that goes stale the next time somebody tunes it, and the two allowances differ on
+     purpose. */
+  ok('and it never quotes the other game\'s allowance', !/three seasons/i.test(await txt(p, '#b-mc-commish')));
+  await p.evaluate(TRAP);
   await p.click('#b-mc-commish');
+  await p.waitForTimeout(500);
+  const nav = await tapped(p);
+  ok('the tap is not taken over', !!nav && nav.prevented === false, JSON.stringify(nav));
+  ok('and it is headed for the mode', !!nav && nav.href === '/cfb/commish/', nav && nav.href);
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+{
+  /* AN OWNER GETS NO LINE AT ALL. They are not being told about a pace they will never be
+     held to, and they are not being sold what they have. */
+  const p = await open(stub(true, ['cfb_premium'], BOUGHT), 'an owner is not pitched on the modes sheet');
+  await p.click('#b-modes');
   await p.waitForTimeout(700);
-  ok('tapping it opens the store in place', (await p.$eval('#sheet-in', (e) => e.dataset.kind)) === 'premium');
+  ok('the card is there', await has(p, '#b-mc-commish'));
+  ok('and carries no pitch', !(await has(p, '#b-mc-commish .mc-pro')));
   ok('no page errors', p.errs.length === 0, p.errs[0]);
   await p.close();
 }

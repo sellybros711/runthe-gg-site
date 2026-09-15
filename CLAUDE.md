@@ -52,17 +52,28 @@ node scripts/check-dashes.mjs
 ```
 
 Exits non-zero and prints `file:line` for every offender. It runs in CI on any
-push or pull request touching `wrestling/**` (`.github/workflows/dash-check.yml`).
+push or pull request touching a guarded directory
+(`.github/workflows/dash-check.yml`).
 
 The guarded list inside that script is `wrestling`, `hoops`, `globe`,
-`mythiball` and `golf`. The rest of the repo predates the rule and still
-contains hundreds of em dashes; add a directory to `GUARDED` only after cleaning
-it, never before, or the check becomes noise people learn to ignore.
+`mythiball`, `golf`, `cfb`, `football` and `assets`. The rest of the repo
+predates the rule and still contains hundreds of em dashes; add a directory to
+`GUARDED` only after cleaning it, never before, or the check becomes noise
+people learn to ignore.
 
-**The workflow's `paths:` filter has to be widened in the same commit.** It is a
-second copy of the guarded list, and when the two drift the check does not fail,
-it silently stops running: `globe` sat on `GUARDED` for a while with no path
-entry to trigger it, so a dash added there would have gone straight through.
+**`GUARDED` and the workflow's `paths:` are two copies of one answer.** They had
+already drifted: `globe` was on the list and triggered no CI run, so a dash added
+there failed only for whoever next ran the checker by hand. Add a directory in
+both places, in the same commit.
+
+**Cleaning `football` turned up twenty dashes a player could see**, which an
+audit had reported as zero. The audit's extractor dropped any string containing
+`</` as code, and that is most of the strings that build UI. What it missed: the
+Challenge Bowl share text (the one piece of copy here that gets posted in
+public), the same scoreline on screen, two sentences spliced by a dash, six
+empty-value placeholders, and the `<title>`, `og:title` and `twitter:title` of
+both challenge share pages. Scores and empty values take a hyphen; a title takes
+the pipe every other title on the site uses.
 
 **A sweep over a directory has to read its own diff for non-comment lines.**
 `golf` carried 244 dashes, 186 of them em dashes in code comments, and it was
@@ -70,13 +81,146 @@ cleared in one pass to get it on the list. Nine of those were not prose: the em
 dash was doing a second job as the EMPTY VALUE in a career-milestone tile, the
 string a tile shows when the figure is zero, so reading every dash as
 punctuation turned every blank tile into a stray comma. Nothing threw and no
-test caught it. A hyphen is the replacement there, the same as for a range.
+test caught it. A hyphen is the replacement there, the same as for a range. It
+is the same miss as the football placeholders above, found from the other side.
 
 Run the checker against anything ad hoc:
 
 ```
 node scripts/check-dashes.mjs path/to/file-or-dir
 ```
+
+### The rest of the copy rules
+
+```
+node scripts/check-copy.mjs              the guarded pages
+node scripts/check-copy.mjs path/to/file something else
+node scripts/check-copy.mjs --list       every string it reads
+```
+
+The dash rule can be enforced over whole files because a dash is a character. The
+rest of the rules are about ENGLISH, and a code comment here is prose for the next
+person that is allowed to run long and use whatever words it needs. So this one
+reads the strings a PLAYER sees and nothing else: promotional language, AI
+vocabulary, curly quotes, filler, hedging, chat artifacts, emoji.
+
+**Getting the extraction wrong is silent, and it already happened twice.** The
+first walk dropped every string containing `</` as code, which is most of the
+strings that build UI, and reported zero problems in a game that had twenty. The
+second desynced on the regex literal `/[&<>"']/g` in `store.js`, read its double
+quote as a string opener, and fed every comment after it to the rules. The walker
+knows a regex literal from a division now. If this checker ever reports a problem
+inside a code comment, that is the bug, not the comment.
+
+**Two things it deliberately does not fail on.** Sentence length is printed as a
+warning and ignored by the exit code, because "QB, RB, two WR, TE and a flex" is
+four commas and exactly right. And it does not look for the rule of three: three
+is the number of kinds of special college season there are, and whether a group of
+three is information or padding is a person's job.
+
+### A number a player reads has to be the number the game plays
+
+```
+node scripts/check-numbers.mjs            the guarded pages
+node scripts/check-numbers.mjs --list     every claim it found
+node scripts/check-numbers.mjs --update   re-record the coverage counts
+```
+
+The in-game rules sheet in `cfb/index.html` already does this right:
+
+```js
+const cap = M0(E.CONSTANTS.CAP_MUSD);
+const R1  = E.CONSTANTS.RESPIN_LADDER_MUSD.map(M0).join(', then ');
+```
+
+So tuning `CAP_MUSD` rewrites the sheet. **It rewrites nothing else.** `$11M` is
+hardcoded twenty-two times across six files (`cfb/index.html`,
+`cfb/how-to-play.html`, the homepage, `about.html`, `cfb/og-source.html`,
+`football/index.html`), and a static page cannot interpolate. Change the cap and
+the game charges the new one while every page describing it promises the old one.
+Nothing throws. The only symptom is a guide that lies, found by a player.
+
+This is the same class as "five years" surviving on six Commissioner screens after
+a term stopped being five seasons. **When a number is in copy, either interpolate
+it or write the sentence without it.** This is the checker for the half of the site
+that cannot interpolate.
+
+**The JSON-LD is the worst place to keep a stale number.** `cfb/how-to-play.html`
+carries a schema.org `HowTo` block repeating the budget, the re-spin ladder, the
+game count and the top-twelve rule, and that block is what Google renders in a rich
+result. It is covered because `copyOf()` already reads it: the step text comes out
+as string literals like any other copy.
+
+**A claim is accepted if it matches EITHER game, and that is a deliberate
+weakening.** `cfb/index.html` sells the NFL game on its own front page and the
+homepage describes both, so a page cannot be tied to one engine. The cost is that
+two games sharing a value would hide a stale claim about one behind the other. They
+share none today (11 against 140, 12 against 17), and the collision is checked on
+every run, so the day they collide is a failure here rather than a silent hole. The
+season range is the one fact allowed to overlap, because both games are refreshed
+to the same last season by definition; what it still catches is the end that moves.
+
+**Coverage is half the check.** A regex that finds nothing passes. Reword
+`$11M NIL budget` to `eleven million in NIL` and this file goes quiet and green
+while the thing it guards walks away. That is how an extractor in this repo has
+failed twice already, so the counts are RECORDED in `scripts/numbers.json` the way
+`check-cachebust.mjs` records hashes. A dropped claim and a new one both fail, and
+both want thirty seconds and a re-record. It runs in CI on the engines, the pages,
+the player data and its own files (`.github/workflows/numbers-check.yml`).
+
+**It has a sibling, and they do not overlap.** `scripts/check-howto.mjs` holds the
+arcade's twelve "How to play" blocks to `arcade/tokens.js`, after every one of them
+said four already-free games "come free with a RunThe.GG account". Same lesson,
+different surface: `check-howto` covers `arcade/`, `check-numbers` covers the
+football and college games plus the homepage and `about.html`. Neither checks
+English; `check-copy.mjs` does that.
+
+**A build script that writes words onto an image is copy**, so `cfb/build/06-og.mjs`
+is on `check-copy.mjs`'s guarded list. It writes the headline baked into
+`og-challenge.png`, which is the most public text the college game produces, since
+it is what a shared challenge link shows in a feed, and nobody reading the source of
+a build step is reading it as prose.
+
+**Its curly apostrophe stays, and that is the second time this has been settled.**
+An audit flagged `You’ve been Challenged` there because every other instance of
+that phrase on the site writes it straight. It is the same case the curly-quote
+rule was narrowed for: a single-quoted JavaScript string, where a straight
+apostrophe costs a backslash. The rule now catches a LEFT single quote and curly
+DOUBLE quotes, which is what arrives by paste, and leaves `’` alone. Changing it
+back would also be worse typography in a display face.
+
+## A school is singular
+
+`Oregon is 12-0.` `Oregon has not lost a game.` `Georgia wins it.`
+
+A place name standing in for a program takes a SINGULAR verb in this sport. The
+plural is the British habit for club sides, and in an American football game it
+reads as writing by somebody who does not watch it. A player found `Oregon are
+12-0 and nobody is watching` on the office screen, and once it is pointed at you
+cannot unsee it.
+
+Two exceptions, and both are ordinary grammar rather than a carve-out:
+
+- **Two subjects joined by "and" take a plural verb.** `Oregon and Ohio State are
+  both unbeaten`, `Houston and West Virginia want their kickoff back`.
+- **A nickname is plural.** Nothing in this repo uses one (`c.school` is always
+  a school name), but `the Ducks are` would be right if anything did.
+
+Pronouns are looser and deliberately left alone. `Oregon won it. Their roster
+cost more than eleven athletic departments spend on everything` is how a beat
+writer talks, and forcing `its` into a quote makes it sound like a filing.
+
+### The guard
+
+The name is never in the string. Every one of these is `c.school + ' is '` or a
+`{champ}` token, so grepping `docket.js` for "Oregon are" finds nothing and
+always will. So the last section of `cfb/build/test/commish/test_docket.mjs`
+plays real seasons across all nine beats and reads the RENDERED sentence, over
+the docket, the podium and the cutscenes.
+
+It masks every school name to one character before scanning, longest name first.
+Without the sort, `West Virginia want` is read as `Virginia want` and reported as
+a plural, and the fix somebody then makes is to break a correct sentence.
 
 ## Sibling scripts carry a hand-written cache version
 
@@ -411,6 +555,23 @@ extend; what is offered there is somebody else's sport from the top.
 is must call `termLen(w)`, which reads `w.termSeasons`. A save written before renewals has
 none and is a five season term, which is what it was signed as.
 
+**`situation.js` is the second place that number lives, and it is not in the page.**
+`sit.lastYear` and `sit.seasonsLeft` are how an authored item asks whether this is the final
+season, and both were arithmetic on a literal 5. Nothing threw. Media day's "this is the last
+July of your contract" fired in year five of an eight year term, three summers early, and
+then never again in the year it was true, while a three year leash reached its last summer
+with the item still locked. Both read `world.termSeasons` now, with the same five season
+fallback the page uses, and `test_situation.mjs` asserts a three, an eight and a save from
+before renewals, through the media item's own gate rather than through the flag.
+
+**And the copy has to survive a renewal too, which is where most of this hid.** Six
+player-facing strings said "five" on a screen the contract had already made wrong: the
+calendar footer, the situation strip's "Season 3 of 5", the ending's champions heading, the
+tape's lede, the share card's opening sentence and two lines in `report.js`. None of them is
+reachable by a checker, because "five years" is a correct English sentence. **When a number
+is in copy, either interpolate it or write the sentence without it.** The share card now
+names the years rather than counting them, which is true whatever the contract said and true
+when a sacking cut it short.
 **A renewal keeps the world, so four things need a term floor**, and `report.js` is not one
 of them: it already scopes everything through `years(world)`, which is `startYear` to
 `year`. The four that read the world whole are the doctrine (`sinceTerm`), the rulings
@@ -830,6 +991,50 @@ If it ever holds 171 rows again, the game has fallen back to
 must never be shown to a player as a fact about a real season. The dev banner
 said so and has come off, because saying it now would be false in the other
 direction.
+
+## The arcade's "How to play" blocks
+
+```
+node scripts/check-howto.mjs
+```
+
+Each of the twelve game pages carries a `<details class="gj">` block: what the game
+is, the rules, what a day costs, and three tips. The tips and the entitlement
+paragraph are two different kinds of copy and they go wrong in the same way, which
+is why one checker covers both.
+
+**Nothing reads a tip, so a tip goes stale in silence.** It is not a rule, no code
+consults it, and the game keeps working perfectly while the advice stops being true.
+Two of the three Sportegories tips were wrong on inspection: "bank the easy
+categories" asked the player to work out which those were, and the page prints the
+tier on every row. A draft tip naming the hard rows by position would have been true
+and useless for the same reason, and false the day anyone retuned `TIER_PLAN`.
+
+**So write a tip from the code, not from the game's description.** Read what the
+screen actually shows before writing advice about it. The good tips are the ones
+naming a mechanic the rules state but never draw a conclusion from: a player can only
+be used once in Sportegories, a clue costs no guess in Guess the Player, an
+unrecognised spelling costs nothing in Alma Mater, a Reveal never reaches the
+crossword board.
+
+**The entitlement paragraph is the same fact written by hand twelve times**, and it
+was wrong on all twelve. It said the four free games "come free with a RunThe.GG
+account". They do not: `tokens.js` gives them to a signed-out visitor with no
+sign-up, and what an account adds is that the result is SAVED, plus one play of each
+card game, once ever. So twelve pages asked a stranger to sign up for something
+already free, which is the wall the "A VISITOR PLAYS FIRST" note in `tokens.js`
+exists to knock down. Nothing failed, and nothing could.
+
+`check-howto.mjs` holds the names and the numbers to `tokens.js`: the free four by
+name, "all twelve" against `GAMES`, "five of the games" against the pages that
+actually load `mode.js`, and that every card game says its free play is once ever
+rather than daily. It runs in CI on any arcade page or on `tokens.js`
+(`.github/workflows/howto-check.yml`). Section 8 of `check-sportegories.mjs` does the
+narrower job for that game's tips.
+
+**Two surfaces say "how to play" and both need the edit.** The block above is the
+long one; `arcade/howto.js` is the "?" modal that AUTO-OPENS on a first visit, which
+makes it the more read of the two.
 
 ## Segue's data
 
