@@ -475,6 +475,42 @@ window.GA_ID='G-L29P5MRWKE';
      anything in the flow would shift the label off centre. */
   .hp-tag-pro{background:rgba(226,178,90,.16);border-color:rgba(226,178,90,.5);
     color:#F3DDAE}
+  /* ---- FULL TEAM'S OWN FILL, AND WHY IT IS NOT MORE OF THE GREY ABOVE ----
+     .hp-full is the shared card shape and it stays neutral, because the Trade Machine wears
+     it too. This modifier is Full Team's alone (ensureFullButton adds it) so nothing else
+     on the page moves.
+
+     THE CARD READ AS DISABLED, which is a different thing from quiet. Shot on a 390px
+     phone it sat between a saturated red/blue pair and a gold-bordered dynasty card, with
+     no colour in it at all: near-black type on near-black ground, in the same grey the
+     site uses for a control you cannot press. The note above this block is right that two
+     WARM cards in a row read as a menu of side modes, and that is not what this is. Red
+     and blue are not warm and they are not decoration here: they are the two units, which
+     is the whole mode, and no other door on the page could wear them.
+
+     A SEAM RATHER THAN A BLEND. Interpolating red to blue across a button runs it through
+     a purple that exists nowhere else on the site. The pair above solves the same problem
+     with a 2px gap, so this borrows the shape: red side, a dark seam in the page's own
+     background, blue side. It reads as the two halves of that pair joined into one
+     control, which is exactly what the mode is.
+
+     ANCHORED ON THE PAIR'S OWN ENDS so the family holds, and pulled down from them so the
+     pair still wins the page: .hp-off ends at #a01f1f and .hp-def at #153aa4, and these
+     sit just inside both. */
+  .hp-ft{background:linear-gradient(100deg,
+    #a8262f 0%,#8a2329 40%,#14171f 50%,#1e3690 60%,#2445b4 100%);
+    border-color:rgba(255,255,255,.16);
+    box-shadow:0 10px 26px -14px #000,inset 0 1px 0 rgba(255,255,255,.12)}
+  /* The same top wash the two halves above carry, which is where their depth comes from.
+     .hp-full turns :before off for the flat card; this turns it back on for this one. */
+  .hp-ft:before{display:block;content:'';position:absolute;left:0;right:0;top:0;height:46%;
+    pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.14),transparent)}
+  .hp-ft .hp-full-name,.hp-ft .hp-full-sub{position:relative;z-index:1}
+  /* On a coloured ground the dim token is the wrong grey: it is mixed for the page's dark
+     card and goes muddy over the red. Same value the pair's own sub-label uses. */
+  .hp-ft .hp-full-sub{color:rgba(255,255,255,.76)}
+  .hp-ft .hp-full-name{color:#fff}
+  .hp-ft:active{filter:brightness(1.08)}
   @media (max-width:340px){
     .hp-full-name{font-size:17px}
     .hp-full-sub{font-size:9px;letter-spacing:.03em}
@@ -709,6 +745,25 @@ window.GA_ID='G-L29P5MRWKE';
   .field.pick-def .halfglow.up,.field.pick-off .halfglow.down{
     opacity:1;animation:halfpulse 2.4s ease-in-out infinite}
   @keyframes halfpulse{0%,100%{opacity:.7}50%{opacity:1}}
+  /* THE OPEN SPOTS THIS SPIN CANNOT REACH. Full Team alternates sides pick by pick, so at
+     any moment about half the empty slots on the field are not available, and until now
+     they looked exactly like the ones that were: twelve identical dashed discs. The lit
+     half says which side the man comes from; this says which holes he can go in.
+     DIMMED, NOT HIDDEN. They are still spots on your team and the picture is the team.
+     .26 was hidden: shot on a phone the offensive half of a defensive pick had visibly
+     nothing in it and the field read as a six man squad. .5 recedes and stays legible.
+     Only the LIVE field during a pick, which is what data-live carries. */
+  .field[data-live="off"] .chip.empty.sdef .disc,
+  .field[data-live="def"] .chip.empty.soff .disc{opacity:.5}
+  .field[data-live] .chip.empty .disc{transition:opacity .25s ease}
+  /* AND THE LABEL AT THE LINE SAYS WHICH HALF IN WORDS. Both units are named on this field
+     already, at .32 white, which is a caption rather than an answer. The active one comes
+     up to full and takes its half's colour, so the picture states the side without the HUD
+     having to carry a word it cannot fit: "Spin 6 of 12 · Defense" truncated to "DEF..."
+     at 390px, which is worse than silence. */
+  .field[data-live="def"] .unitlab.up{color:rgba(147,180,255,.95)}
+  .field[data-live="off"] .unitlab.down{color:rgba(255,158,158,.95)}
+  .field[data-live] .unitlab{transition:color .25s ease}
   /* A breathing border is decoration, and decoration is the first thing to go. The half
      stays lit, it just stops moving. */
   @media (prefers-reduced-motion:reduce){
@@ -9350,9 +9405,25 @@ function drawField(el,live,view){
     /* Still the LIVE run: `live` and a history view are mutually exclusive, and a draft in
        progress is a fact about the run rather than about the lineup being drawn. */
     const picking=!!(run&&run.full&&run.roster.length<slotsNow().length);
-    const def=picking&&fullSlotIsDefensive(run.roster.length);
+    /* nextOpenSlot(), NOT roster.length, and they are not the same number.
+       dataNow() picks the pool off nextOpenSlot() because a man goes into whatever open
+       slot fits him rather than into the next one along: sign a linebacker and he can land
+       in the defensive FLEX at index 11, which leaves index 5 open behind him. After that
+       the two readings diverge, and this one was lighting the half the board was NOT
+       drawing from. One source for both, so the picture and the list always agree. */
+    const def=picking&&fullSlotIsDefensive(nextOpenSlot());
     el.classList.toggle('pick-def',picking&&def);
     el.classList.toggle('pick-off',picking&&!def);
+    /* AND THE SPOTS THAT ARE LIVE THIS SPIN. The lit half says which side the man comes
+       from; without this the open chips on the other side look exactly as available as the
+       ones he can actually fill, and on a twelve slot board that is most of the picture.
+       Set on the field rather than per chip because the chip loop below rebuilds className
+       from scratch every repaint. */
+    el.dataset.live=picking?(def?'def':'off'):'';
+  }else{
+    /* Cleared rather than left behind: a field element is reused, and a stale side would
+       dim half a finished roster on the squad screen. */
+    el.dataset.live='';
   }
 
   // Contents update immediately; only the movement is animated.
@@ -9363,7 +9434,12 @@ function drawField(el,live,view){
     // class every redraw would otherwise restart the animation on all six.
     const wasFilled=c.classList.contains('filled');
     const justFilled=!!p&&!wasFilled;
-    c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
+    /* WHICH SIDE THE SLOT IS ON, for full runs only, so the rule above can dim the open
+       spots this spin cannot reach. Written here because this loop rebuilds className from
+       nothing on every repaint, so a class set anywhere else would not survive a signing. */
+    const side=(run&&run.full)?(fullSlotIsDefensive(i)?' sdef':' soff'):'';
+    c.className='chip '+(p?'filled':'empty')+side
+      +((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
     const disc=c.querySelector('.disc');
     disc.querySelector('.dl').textContent=p?p.position:slots[i];
     disc.style.cssText=p?posPaint(p.position):posTint(slots[i]);
@@ -10449,7 +10525,9 @@ function ensureFullButton(){
   const box=ensureLongGroup(); if(!box) return;
   if(!el){
     el=document.createElement('button');
-    el.className='btn hp-full';
+    /* hp-ft is Full Team's own fill. On the shared card class alone this door had no
+       colour in it and read as a control you cannot press: see the note on .hp-ft. */
+    el.className='btn hp-full hp-ft';
     el.id='b-start-full';
     el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
       '<span class="hp-full-name">Full Team</span>'+
@@ -13098,6 +13176,12 @@ function paintTop(){
     /* THE RUN'S OWN SLOT COUNT. This said "of 6" twice over, which on a twelve-pick Full
        Team run read "Spin 1 of 6" all the way through and stopped counting at six. */
     const n=slotsNow().length;
+    /* NO SIDE OF THE BALL HERE, AND IT WAS TRIED. Full Team alternates units pick by pick
+       and the count alone never said so, so this read "Spin 6 of 12 · Defense". It does
+       not fit: measured on a 390px phone against the money line beside it, it truncated to
+       "DEF...", which answers the question with the first three letters of the answer. The
+       field says it instead, in the label it already prints at the line of scrimmage: see
+       .unitlab under [data-live]. */
     $('d-count').textContent='Spin '+Math.min(n,run.roster.length+1)+' of '+n+
       (run.franchise?' · '+E.nickname(run.franchise):'');
   }
