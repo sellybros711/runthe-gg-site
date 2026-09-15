@@ -26,6 +26,7 @@ const D = require(ROOT + '/cfb/commish/docket.js');
 const S = require(ROOT + '/cfb/commish/season.js');
 const SIT = require(ROOT + '/cfb/commish/situation.js');
 const CAL = require(ROOT + '/cfb/commish/calendar.js');
+const FR = require(ROOT + '/cfb/commish/frontier.js');
 const F = require(ROOT + '/cfb/commish/fallout.js');
 const E = require(ROOT + '/cfb/engine.js');
 const teams = leagueTeams(ROOT);
@@ -394,7 +395,27 @@ console.log('\n=== both ends of the range reach the whole thing ===');
         D.ITEMS.forEach((it) => {
           [].concat(it.pays || []).forEach((id) => { x.threads.push({ id, ripe: 0 }); });
         });
-      })
+      }),
+      /* A SPORT THAT HAS BECOME SOMETHING ELSE. The ladder at the bottom of docket.js is
+         gated on a frontier being open, and a frontier is open only once the ones it needs
+         are crossed, so six of the ten rungs cannot appear in ANY world built from
+         createWorld: they are written for a sport that ten rulings ago decided to be this.
+         Same reasoning as the ripe-threads world directly above, and the same division of
+         labour: whether the CHAIN can be walked at all is test_docket's job, and this asks
+         only whether each rung is writable once it is.
+         THE STATE IS BUILT ONE RUNG AT A TIME, so each world has exactly the frontiers
+         crossed that the next rung needs and no more. Crossing all ten at once would make
+         every rung already taken and none of them eligible, which is the opposite mistake
+         and would pass this check by making it vacuous. */
+      ...FR.FRONTIERS.map((f) => mk((x) => {
+        x.pressure = { legal: 55, congress: 55, union: 55 };
+        x.meters.revenue = 40;
+        const need = (id) => {
+          FR.BY_ID[id].needs.forEach(need);
+          if (!FR.has(x, id)) Object.assign(x, FR.cross(x, id));
+        };
+        f.needs.forEach(need);
+      }))
     );
   }
   const stillMissingItems = [];
@@ -468,7 +489,20 @@ console.log('\n=== both ends of the range reach the whole thing ===');
     const burning = base(); burning.pressure = { legal: 40, congress: 40, union: 40 };
     const loved = base(); loved.meters.standing = 80;
     const hated = base(); hated.meters.standing = 25;
-    states.push(base(), shut, split, burning, loved, hated);
+    /* A SPORT THAT HAS SOLD ITS NAME, which nothing here had and which two tails need. On a
+       fresh world every field in `brand` is null or empty, so `sit.soldCount` is zero in all
+       six states above and a tail gated on it could only ever pass by being drawn during one
+       of the sixteen played terms.
+       THAT IS A SAMPLE, AND A SAMPLE MOVED. It passed for as long as some term happened to
+       sell a sponsor, and `sponsor-collapse` went red the day ten items were added at the
+       bottom of the docket: a different draw, the same perfectly reachable tail. Its sibling
+       `signage` carries an IDENTICAL when() and passed, which is what says the tail was never
+       the problem. Building the state it is written for is the same fix as the twelve seed
+       fixture in test_docket, for the same reason. */
+    const sold = base();
+    sold.brand = { playoff: 'phone', trophy: 'bank', patch: 'energy',
+      bowls: { rose: 'phone', sugar: '', orange: '', fiesta: '', cotton: '', peach: '' } };
+    states.push(base(), shut, split, burning, loved, hated, sold);
   }
   const sits = states.map((x) => SIT.build(x, L, { calendar: CAL }));
   const edits = [
