@@ -194,6 +194,16 @@ for (const [who, owns, day, want] of [
     T.profileSheet();
     return { door, store, tier: T.acctTier(), pitch: T.premiumPitch(), metered: T.dailyOn(),
       goPro: !!document.getElementById('pf-prem'),
+      /* THE THREE MODES, AS THE MARKS THE STORE DRAWS THEM WITH, in a row under the word
+         UNLIMITED. Counted AND measured, because the way this broke was neither a missing
+         element nor an error: a comment closed one line early in the stylesheet swallowed
+         both rules, the marks rendered as three blocks stacked in a column, and the only
+         symptom was a card a third taller than it should be. */
+      goProMarks: document.querySelectorAll('#pf-prem .pwc-marks svg').length,
+      goProRow: (() => {
+        const m = document.querySelector('#pf-prem .pwc-marks');
+        return m ? getComputedStyle(m).display : 'none';
+      })(),
       proAccess: !!document.getElementById('pf-go-pro') };
   }, [owns, day]);
   console.log('  ' + who + ':');
@@ -205,6 +215,11 @@ for (const [who, owns, day, want] of [
   ok('    the profile shows ' + (owner ? 'Your Pro access' : 'Go Pro'),
     owner ? (r.proAccess && !r.goPro) : (r.goPro && !r.proAccess),
     'goPro=' + r.goPro + ' proAccess=' + r.proAccess);
+  if (!owner) {
+    ok('    and the Go Pro card carries the three modes it sells',
+      r.goProMarks === 3, String(r.goProMarks));
+    ok('    in a row rather than a stack', r.goProRow === 'flex', r.goProRow);
+  }
   if (!owner && want !== 'the mode') {
     /* The spent door was a card linking to the store, which is a second tap between
        somebody who has just decided they want more and the thing that sells it. */

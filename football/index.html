@@ -6167,6 +6167,17 @@ window.GA_ID='G-L29P5MRWKE';
     text-transform:uppercase;color:#fbbf24;font-weight:800}
   .pw-card .pwc-go span{display:block;font-family:var(--fn);font-size:11.5px;font-weight:700;
     color:var(--dim-2);margin-top:3px}
+  /* WHAT UNLIMITED IS UNLIMITED OF, in the three marks the store's own hero row uses for the
+     three modes. A word on its own is a claim; the marks under it are the thing being
+     claimed, and they are the same drawings the reader meets one tap later, so the card and
+     the sheet behind it are recognisably one offer.
+     ITS OWN SIZE RULE rather than the .pwc-ic one above, which is scoped to the icon well and
+     would leave these at whatever the browser defaults an svg to.
+     AND IT OUT-SPECIFIES THE RULE ABOVE IT. `.pw-card .pwc-go span` is two classes and an
+     element and sets display:block, so a rule written as `.pw-card .pwc-marks` would lose to
+     it and the three marks would come out stacked in a column with no error anywhere. */
+  .pw-card .pwc-go .pwc-marks{display:flex;gap:6px;justify-content:flex-end;margin-top:5px}
+  .pw-card .pwc-go .pwc-marks svg{width:15px;height:15px;display:block;flex:0 0 auto}
   /* A COLLAPSIBLE THAT IS NOT A <details>. 0fr to 1fr on a grid row animates from nothing
      to whatever the content turns out to be, with no height to measure and nothing to go
      stale when the content changes underneath it. */
@@ -10088,14 +10099,25 @@ const cfbNameHtml=()=>{
    that keeps two copies of it from sharing a def. This read pwArt('star') after that
    function moved out, which is not a fallback situation: it threw at boot and took the
    game to the loading screen for every account that sees this card. */
-const pwCardInner=(title,sub,value)=>'<span class="pwc-ic">'+
+/* THE THREE MODES THE BUNDLE UNLOCKS, as the marks the store's hero row draws them with.
+   Named here rather than inlined so the card and /assets/store.js cannot end up showing two
+   different sets: if a fourth mode ever joins the bundle, this list and that row are the two
+   places it has to appear, and they are one line apart in the diff. */
+const PW_CARD_MARKS=['trophy','swap','clipboard'];
+const pwCardMarks=()=>(window.RTG_STORE
+  ? '<span class="pwc-marks">'+PW_CARD_MARKS.map((k)=>window.RTG_STORE.art(k)).join('')+'</span>'
+  : '');
+/* `marks` is opt-in rather than always on. Every caller of this that offers the bundle wants
+   them; the ones that do not are not selling three modes, and a row of marks under a value
+   that is not about them would be decoration. */
+const pwCardInner=(title,sub,value,marks)=>'<span class="pwc-ic">'+
   (window.RTG_STORE?window.RTG_STORE.art('star'):'')+'</span>'+
   '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span>'+
-  '<span class="pwc-go"><b>'+esc(value)+'</b></span>';
+  '<span class="pwc-go"><b>'+esc(value)+'</b>'+(marks?pwCardMarks():'')+'</span>';
 /* Two shapes because the front page BUILDS its node (see ensurePremiumCard) and the two
    sheets write theirs into a string of markup. Same insides either way. */
-const pwCard=(id,title,sub,value)=>'<button class="pw-card" id="'+id+'">'+
-  pwCardInner(title,sub,value)+'</button>';
+const pwCard=(id,title,sub,value,marks)=>'<button class="pw-card" id="'+id+'">'+
+  pwCardInner(title,sub,value,marks)+'</button>';
 
 /* WHERE THE SHEET WAS OPENED FROM, for the one question worth asking of this screen: which
    of the ways in actually sells anything. Set by each caller, read once, cleared. */
@@ -21814,8 +21836,19 @@ function pfHub(msg,ok){
     (premiumPitch()
       /* PRO, not Premium. Pro is the account status the pill says and the sheet is headed
          with; this was the last screen still calling it something else. */
+      /* UNLIMITED, OVER THE THREE MODES IT IS UNLIMITED OF. "3 modes" counted the things
+         being sold and said nothing about what buying them changes, which on the one card
+         next to a FREE pill is the wrong half to lead with: what a free account runs into is
+         the counting, so the word that answers it is the value. The marks underneath are
+         what the number used to be, and they say it better, because they are the same three
+         drawings the store shows one tap later. */
+      /* AND THE CAPTION SHEDS THE WORD THE VALUE NOW CARRIES. It opened "Unlimited dynasty
+         runs and every Pro mode", which said Unlimited twice in one card and cost the text
+         column enough width to wrap to a third line, because UNLIMITED is a wider word than
+         the "3 modes" it replaced. What the marks cannot say is the term, so that is what is
+         left: no limit, one payment, and it does not run out. */
       ? pwCard('pf-prem','Go Pro',
-          'Unlimited dynasty runs and every Pro mode. Lifetime access.','3 modes')
+          'No daily limit. One payment, lifetime.','Unlimited',true)
       : '')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet(); pfWireCommon();
