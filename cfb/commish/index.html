@@ -2628,7 +2628,7 @@
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=8"></script>
-<script src="docket.js?v=30"></script>
+<script src="docket.js?v=31"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -2643,14 +2643,14 @@
 <!-- The board. Captures churn.js and season.js at load time, so after both of them. -->
 <script src="recruiting.js?v=1"></script>
 <script src="council.js?v=3"></script>
-<script src="feed.js?v=6"></script>
-<script src="calendar.js?v=5"></script>
+<script src="feed.js?v=7"></script>
+<script src="calendar.js?v=6"></script>
 <script src="situation.js?v=10"></script>
 <script src="fallout.js?v=7"></script>
 <!-- The podium. Reads nothing at load time; see media.js. -->
 <script src="media.js?v=6"></script>
 <!-- The cutscenes. Reads blocs.js at load time, so after it. -->
-<script src="scene.js?v=9"></script>
+<script src="scene.js?v=10"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
 <script src="report.js?v=4"></script>
@@ -5493,7 +5493,7 @@ function paintWeek(el,sim){
   if(!wk||!wk.games.length){ el.innerHTML=''; return; }
   /* A RIVALRY GOES TO THE FRONT OF THE WEEK IT IS PLAYED IN, whatever it drew. Five games are
      shown out of sixty, chosen by audience, and the whole point of The Game is that it is The
-     Game on a Saturday when Ohio State are 6-5. Sorting purely by viewers would hide it in
+     Game on a Saturday when Ohio State is 6-5. Sorting purely by viewers would hide it in
      exactly the year a fan most wants to see it. */
   /* EIGHT RATHER THAN FIVE. A Saturday in this sport is sixty games and the office showed
      five of them, which is a highlights package rather than a scoreboard: a commissioner

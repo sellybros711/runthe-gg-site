@@ -385,8 +385,16 @@ console.log('\n=== the card states a fact and not a score ===');
     card.data.spectra.map((x) => x.id).join(' '));
   ok('  and facts about the sport it left', card.data.evidence.length >= 3,
     card.data.evidence.length + ' facts');
-  ok('the share text leads with a fact',
-    /five years/i.test(card.text) && /runthe\.gg/.test(card.text), card.text.split('\n')[0]);
+  /* THE YEARS, NOT A COUNT OF THEM. This asked for the literal string "five years", which
+     was true of every term when it was written and is true of none of them now: renewals
+     sign a contract for three to eight seasons, and a sacking cuts any of them short. The
+     assertion was holding the bug in place, so it names the SHAPE the sentence has to have
+     and then says out loud that the old wording must not come back. */
+  ok('the share text leads with the years it covered',
+    /I ran college football (from \d{4} to \d{4}|in \d{4})\./.test(card.text)
+      && /runthe\.gg/.test(card.text), card.text.split('\n')[0]);
+  ok('  and never claims a number of seasons it may not have served',
+    !/\b(three|four|five|six|seven|eight)\s+(years|seasons)\b/i.test(card.text));
   ok('no page errors', !run.errs.length, run.errs.join(' | ') || 'none');
   await run.p.close();
 }

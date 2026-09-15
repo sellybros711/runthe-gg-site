@@ -109,6 +109,39 @@ four commas and exactly right. And it does not look for the rule of three: three
 is the number of kinds of special college season there are, and whether a group of
 three is information or padding is a person's job.
 
+## A school is singular
+
+`Oregon is 12-0.` `Oregon has not lost a game.` `Georgia wins it.`
+
+A place name standing in for a program takes a SINGULAR verb in this sport. The
+plural is the British habit for club sides, and in an American football game it
+reads as writing by somebody who does not watch it. A player found `Oregon are
+12-0 and nobody is watching` on the office screen, and once it is pointed at you
+cannot unsee it.
+
+Two exceptions, and both are ordinary grammar rather than a carve-out:
+
+- **Two subjects joined by "and" take a plural verb.** `Oregon and Ohio State are
+  both unbeaten`, `Houston and West Virginia want their kickoff back`.
+- **A nickname is plural.** Nothing in this repo uses one (`c.school` is always
+  a school name), but `the Ducks are` would be right if anything did.
+
+Pronouns are looser and deliberately left alone. `Oregon won it. Their roster
+cost more than eleven athletic departments spend on everything` is how a beat
+writer talks, and forcing `its` into a quote makes it sound like a filing.
+
+### The guard
+
+The name is never in the string. Every one of these is `c.school + ' is '` or a
+`{champ}` token, so grepping `docket.js` for "Oregon are" finds nothing and
+always will. So the last section of `cfb/build/test/commish/test_docket.mjs`
+plays real seasons across all nine beats and reads the RENDERED sentence, over
+the docket, the podium and the cutscenes.
+
+It masks every school name to one character before scanning, longest name first.
+Without the sort, `West Virginia want` is read as `Virginia want` and reported as
+a plural, and the fix somebody then makes is to break a correct sentence.
+
 ## Sibling scripts carry a hand-written cache version
 
 The game pages load their engine and run loop as separate files:

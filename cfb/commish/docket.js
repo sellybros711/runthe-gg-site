@@ -1901,7 +1901,7 @@
       when: (w, L, sit) => !!sit.upset && sit.upset.gap >= 0.9,
       cast: (w, L, rng, sit) => sit.upset,
       eyebrow: 'The schedule',
-      title: (c) => (c ? c.winner + ' were not supposed to win that'
+      title: (c) => (c ? c.winner + ' was not supposed to win that'
         : 'Somebody won a game they were paid to lose'),
       brief: (c) => (c
         ? c.winner + ' beat ' + c.loser + ' ' + c.score[0] + '-' + c.score[1] + ' in week '
@@ -2086,15 +2086,15 @@
       when: (w, L, sit) => !!sit.outsider && sit.outsider.wins >= 6,
       cast: (w, L, rng, sit) => sit.outsider,
       eyebrow: 'The rankings',
-      title: (c) => (c ? c.school + ' are ' + c.wins + '-0 and ranked fourteenth'
+      title: (c) => (c ? c.school + ' is ' + c.wins + '-0 and ranked fourteenth'
         : 'An unbeaten team is ranked below three teams with losses'),
       brief: (c) => (c
-        ? c.school + ' have won ' + c.wins + ' games and lost none, and this week they are '
-          + 'behind three teams with a loss each and one with two. The stated reason is '
-          + 'strength of schedule. The schedule is the one nobody in a bigger conference would '
-          + 'agree to play them.'
+        ? c.school + ' has won ' + c.wins + ' games and lost none. This week it sits behind '
+          + 'three teams with a loss each and one with two. The stated reason is strength of '
+          + 'schedule, and the schedule is the one nobody in a bigger conference would agree '
+          + 'to play.'
         : 'An unbeaten team is behind three teams with losses. The stated reason is strength of '
-          + 'schedule, which is the schedule nobody would agree to play them.'),
+          + 'schedule, which is the schedule nobody would agree to play.'),
       voices: [
         { id: 'Group of Five', say: 'Tell us what a win is worth and we will go and get that many.' },
         { id: 'SEC', say: 'Nine of our teams would beat them by three scores and everybody here knows it.' },
@@ -2282,7 +2282,7 @@
       title: (c) => (c ? c.a.school + ' and ' + c.b.school + ' are both unbeaten'
         : 'Two unbeaten teams, one conference'),
       brief: (c) => (c
-        ? c.a.school + ' are ' + c.a.wins + '-0. ' + c.b.school + ' are ' + c.b.wins + '-0. '
+        ? c.a.school + ' is ' + c.a.wins + '-0. ' + c.b.school + ' is ' + c.b.wins + '-0. '
           + 'They are in the same conference, they do not play each other, and in two weeks '
           + 'one of them is going to lose a championship game and be sitting at home with one '
           + 'defeat. Every television executive in America has called this office to make sure '
@@ -2325,10 +2325,10 @@
       cast: (w, L, rng, sit) => ({ team: sit.unbeaten[0] || null, trend: sit.trend,
         perGame: sit.perGame }),
       eyebrow: 'The audience',
-      title: (c) => (c && c.team ? c.team.school + ' are ' + c.team.wins + '-0 and nobody is watching'
+      title: (c) => (c && c.team ? c.team.school + ' is ' + c.team.wins + '-0 and nobody is watching'
         : 'The best team in the sport is drawing nothing'),
       brief: (c) => (c && c.team
-        ? c.team.school + ' have not lost a game and their last four have averaged less than a '
+        ? c.team.school + ' has not lost a game. Its last four have averaged less than a '
           + 'Tuesday night basketball game. The sport is down '
           + (c.trend != null ? Math.abs(c.trend).toFixed(2) + ' million a game' : 'across the board')
           + ' on the term. Somebody in a meeting used the phrase "compelling matchups" nine times.'
@@ -3342,7 +3342,8 @@
       brief: (c) => 'He was released by a professional team on the twenty-eighth of August, '
         + 'was on a college campus by the second of September, and has been the best player in '
         + 'this sport since the fourth. '
-        + ((c && c.school) || 'His team') + ' are playing for a national title because of it. '
+        + ((c && c.school) || 'The team he signed with') + ' is playing for a national title '
+        + 'because of it. '
         + 'Every argument for the open door is standing on a field in December wearing his '
         + 'number, and so is every argument against it.',
       voices: [

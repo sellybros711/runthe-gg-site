@@ -338,7 +338,7 @@
             + 'have not been to bed.' },
         { who: 'anchor',
           say: function (c) {
-            return c.champ + ' are national champions. A ' + c.teams + ' team field and they '
+            return c.champ + ' is the national champion. A ' + c.teams + ' team field, and they '
               + 'came through all of it.';
           } },
         { who: 'chief', set: 'office',
@@ -439,6 +439,10 @@
       lines: [
         { who: 'wire', set: 'paper',
           say: function (c) {
+            /* PLURAL HERE AND SINGULAR EVERYWHERE ELSE, and both are right. A school on its
+               own is singular in this sport ("Oregon is 12-0"), but the raid always takes
+               two: the cast picks two distinct members and the conference it picks them from
+               can never have fewer than MIN_CONFERENCE. So does the release count below. */
             var who = c && c.schools && c.schools.length
               ? c.schools.join(' and ') : 'Two schools';
             return who + ' are leaving. The releases went out four minutes apart and said the '

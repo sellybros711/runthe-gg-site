@@ -1915,8 +1915,8 @@
       "sha": "e6a6a4d98cd2ff95"
     },
     "docket.js": {
-      "v": "30",
-      "sha": "49dbd3f65af3551b"
+      "v": "31",
+      "sha": "c5430677276300fb"
     },
     "rivals.js": {
       "v": "2",
@@ -1939,12 +1939,12 @@
       "sha": "1ce94b7007d24d0a"
     },
     "feed.js": {
-      "v": "6",
-      "sha": "fef4ec5f8f8dfebd"
+      "v": "7",
+      "sha": "cf882b1b4a6ec638"
     },
     "calendar.js": {
-      "v": "5",
-      "sha": "cb4ebc747e9ec730"
+      "v": "6",
+      "sha": "9d3baace7aae742e"
     },
     "situation.js": {
       "v": "10",
@@ -1959,8 +1959,8 @@
       "sha": "53fd79b21f83518f"
     },
     "scene.js": {
-      "v": "9",
-      "sha": "d48c3fcd8a1a5eee"
+      "v": "10",
+      "sha": "279ac5053e54a97a"
     },
     "report.js": {
       "v": "4",
