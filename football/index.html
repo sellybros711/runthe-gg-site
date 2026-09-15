@@ -1375,7 +1375,34 @@ window.GA_ID='G-L29P5MRWKE';
     0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5),var(--shadow)}
     55%{box-shadow:0 0 0 9px rgba(239,68,68,0),var(--shadow)}
   }
-  @media (prefers-reduced-motion:reduce){ .dock-go{animation:none} }
+  /* WHICH WAY THE RUN GOES, on the button that takes it there.
+     A CHEVRON RATHER THAN THE ARROW CHARACTER. This label is set through textContent and
+     changes four times (Offseason N, Face <boss>, Take on the mandate, Into the offseason),
+     so the mark cannot live in the text: it is drawn here and survives every one of them.
+     A literal arrow would also be at the mercy of whatever glyph the condensed nav face has
+     for it, and two of its three weights in this family have none.
+     ON .dock-go RATHER THAN ON ONE ID. Three buttons wear this class and every one of them
+     is the same gesture, which is the run moving forward a beat.
+     :after AND NOT :before, which .btn already uses for the gloss over its top 40%.
+     THE TRANSLATE IS IN THE ROTATED FRAME. The chevron is a square turned 45 degrees, so a
+     transform after that rotation moves along the turned axes: translate(a,-a) is what comes
+     out as straight right on screen. Written as translate(.12em,0) it drifts diagonally up
+     and out of line with the text, which looks like a bug rather than a nudge. */
+  .dock-go:after{content:'';display:inline-block;width:.46em;height:.46em;
+    margin:0 0 0 .6em;vertical-align:.06em;
+    border:.13em solid currentColor;border-left:0;border-bottom:0;
+    transform:rotate(45deg);animation:dockarrow 1.4s ease-in-out infinite}
+  @keyframes dockarrow{
+    0%,100%{transform:rotate(45deg) translate(0,0)}
+    50%{transform:rotate(45deg) translate(.13em,-.13em)}
+  }
+  /* BOTH ANIMATIONS OFF TOGETHER. The arrow still shows: it is saying which way the button
+     goes, which is information rather than decoration, and only the nudging is the part
+     somebody asked not to see. */
+  @media (prefers-reduced-motion:reduce){
+    .dock-go{animation:none}
+    .dock-go:after{animation:none}
+  }
 
   /* ---- HOW LONG THIS TARGET LASTS ----
      A featureless five-pixel bar under a sentence, which is what this was, tells you a
@@ -1714,7 +1741,18 @@ window.GA_ID='G-L29P5MRWKE';
   /* The season's team overall, the number the recap and the leaderboard both show, banded
      the same green/amber/red. Colour is set inline off the value. */
   .ldg .lo{font-weight:800;font-variant-numeric:tabular-nums;text-align:right;min-width:30px}
-  .ldg .lb{color:var(--dim-2)}
+  /* THE TARGET CELL WAS CALLED .lb AND .lb IS THE LEADERBOARD.
+     `.lb{display:grid;gap:5px;margin-top:11px}` is the board's own row container, four
+     hundred lines up, and it is unscoped. `.ldg .lb` only ever set a colour, so the board's
+     rule kept everything else: the cell became a grid container with an 11px top margin and
+     sat five and a half pixels below the four numbers it is read against. Nothing threw, the
+     column was in the right place horizontally, and the only symptom was one figure in a
+     table of figures sitting low, which reads as a rendering glitch rather than a bug.
+     RENAMED RATHER THAN OVERRIDDEN. Resetting display and margin here would work until the
+     next property somebody adds to the board's container, and this class is not the ledger's
+     to borrow. Every other cell here (.ly .lr .lo .lv .lsc) is a name nothing else in the
+     page uses. */
+  .ldg .ltg{color:var(--dim-2)}
   .ldg .lv{font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
   .ldg.pass .lv{color:var(--good,#4ade80)}
   .ldg.miss .lv{color:#fbbf24}
@@ -18335,7 +18373,7 @@ function paintOwner(){
         :'<span class="lo" style="color:'+ovrBand(h.rating)+'">'+Number(h.rating).toFixed(1)+'</span>';
       return '<div class="ldg '+cls+tap+'" data-i="'+i+'"><span class="ly">'+h.year+'</span>'+
         '<span class="lr">'+h.wins+'-'+h.losses+'</span>'+ov+
-        '<span class="lb">'+h.bar+'</span>'+
+        '<span class="ltg">'+h.bar+'</span>'+
         '<span class="lv">'+(h.title?'TITLE':(h.cleared?(h.made?'PLAYOFFS':'KEPT'):
           (i===run.history.length-1&&v.fired?'FIRED':'MISSED')))+'</span>'+
         '<span class="lsc">'+SCORE(h.score||0)+'</span></div>';
