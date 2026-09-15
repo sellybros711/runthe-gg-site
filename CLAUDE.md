@@ -56,9 +56,19 @@ push or pull request touching a guarded directory
 (`.github/workflows/dash-check.yml`).
 
 The guarded list inside that script is `wrestling`, `hoops`, `globe`,
-`mythiball` and `cfb`. The rest of the repo predates the rule and still contains
-hundreds of em dashes; add a directory to `GUARDED` only after cleaning it, never
-before, or the check becomes noise people learn to ignore.
+`mythiball`, `cfb`, `football` and `assets`. The rest of the repo predates the
+rule and still contains hundreds of em dashes; add a directory to `GUARDED` only
+after cleaning it, never before, or the check becomes noise people learn to
+ignore.
+
+**Cleaning `football` turned up twenty dashes a player could see**, which an
+audit had reported as zero. The audit's extractor dropped any string containing
+`</` as code, and that is most of the strings that build UI. What it missed: the
+Challenge Bowl share text (the one piece of copy here that gets posted in
+public), the same scoreline on screen, two sentences spliced by a dash, six
+empty-value placeholders, and the `<title>`, `og:title` and `twitter:title` of
+both challenge share pages. Scores and empty values take a hyphen; a title takes
+the pipe every other title on the site uses.
 
 **`GUARDED` and the workflow's `paths:` are two copies of one answer.** They had
 already drifted: `globe` was on the list and triggered no CI run, so a dash added

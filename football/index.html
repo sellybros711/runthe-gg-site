@@ -90,7 +90,7 @@ window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
-<!-- GA4 — same property as the rest of runthe.gg. Consent defaults above gate it. -->
+<!-- GA4: same property as the rest of runthe.gg. Consent defaults above gate it. -->
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
@@ -2709,7 +2709,7 @@ window.GA_ID='G-L29P5MRWKE';
     background:rgba(226,178,90,.16);border:1px solid rgba(226,178,90,.45);color:#e2b25a;
     font-family:var(--fn);font-size:9px;font-weight:800;line-height:14px;text-align:center}
   .modesteps b{color:var(--ink);font-weight:700}
-  /* Sheet heading override — Archivo instead of Anton for a bolder, more legible title. */
+  /* Sheet heading override: Archivo instead of Anton for a bolder, more legible title. */
   .display.mtitle{font-family:var(--fn);font-weight:800;letter-spacing:0}
   .modecards{display:grid;gap:14px;margin-top:6px}
   /* Each mode IS the button: the whole card is tappable, no separate play button. */
@@ -3662,7 +3662,7 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes rvpop{0%{opacity:0;transform:translateY(14px) scale(.9)}
     55%{transform:translateY(-3px) scale(1.03)}100%{opacity:1;transform:none}}
   @keyframes rvfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-  /* The card's color flashes up as it lands, then settles — the little hit per player. */
+  /* The card's color flashes up as it lands, then settles. The little hit per player. */
   @keyframes rvflash{0%{box-shadow:0 0 0 0 var(--rvglow),0 0 22px 2px var(--rvglow)}
     100%{box-shadow:0 0 0 0 transparent,0 0 0 0 transparent}}
   @keyframes rvgradeIn{0%{opacity:0;transform:scale(.4) rotate(-12deg)}
@@ -5577,7 +5577,7 @@ window.GA_ID='G-L29P5MRWKE';
   .verdict.win{background:linear-gradient(160deg,#0c2a4d,#0a1526);border-color:rgba(59,130,246,.42)}
   .verdict.out{background:linear-gradient(160deg,#3a1114,#1a0a0c);border-color:rgba(239,68,68,.34)}
   /* A win screen is a moment, so the champion and perfect cards get lit: a soft glow
-     bloom behind the record, a thin gilded/steel top edge, and — for a perfect run — the
+     bloom behind the record, a thin gilded/steel top edge, and (for a perfect run) the
      card border itself breathes. Kept to the two winning states; everything else is flat. */
   .verdict.gold,.verdict.win{position:relative;overflow:hidden}
   .verdict.gold:before,.verdict.win:before{content:'';position:absolute;left:50%;top:-30%;
@@ -5843,7 +5843,7 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
     border:1px solid var(--line-2);border-radius:99px;padding:4px 11px;margin:0 0 9px}
   .hero-rec .big{font-family:var(--fd);font-size:78px;line-height:.86;letter-spacing:-.02em}
-  /* The record carries a moving sheen on a win — a highlight that sweeps across the gilded
+  /* The record carries a moving sheen on a win: a highlight that sweeps across the gilded
      (or steel) number every few seconds. background-size >100% gives the highlight room to
      travel; the keyframe slides its position. */
   .hero-rec .big.gold{background:linear-gradient(110deg,#fbbf24 0%,#fde68a 30%,#fffbeb 46%,#fde68a 62%,#d97706 100%);
@@ -7146,7 +7146,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="cal" id="v-list"></div>
   </div>
 
-  <!-- CAP CRISIS: Salary Cap Survivor mode — pick someone to cut, then spin a replacement -->
+  <!-- CAP CRISIS: Salary Cap Survivor mode. Pick someone to cut, then spin a replacement -->
   <div class="screen" id="s-capcrisis">
     <div class="eyebrow red">Over the cap</div>
     <h2 class="display" style="font-size:22px;margin:4px 0 4px">Cap crisis</h2>
@@ -7770,8 +7770,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=87"></script>
-<script src="run.js?v=98"></script>
+<script src="engine.js?v=88"></script>
+<script src="run.js?v=99"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -7828,7 +7828,7 @@ function achMarkSeen(userId,ids){
 }
 /* The current run's slot layout. Every mode but the Trade Machine is the engine default
    (QB RB WR WR TE FLEX); the Trade Machine swaps the second receiver for a second flex.
-   Used only for slot LABELS on screen — the count is six either way. */
+   Used only for slot LABELS on screen: the count is six either way. */
 const slotsNow=()=>(run&&run.slots)||(run&&run.tradeMachine
   ?['QB','RB','WR','TE','FLEX','FLEX']
   :(run&&run.defense?E.DEFENSE_SLOTS:E.SLOTS));
@@ -11798,7 +11798,7 @@ function hexRGBA(hex,a){
 }
 
 /* Multiply a #rrggbb toward black by factor f (0..1), hue and saturation left where they
-   are — a plain brightness cut, which is all the club-color gradient needs. */
+   are: a plain brightness cut, which is all the club-color gradient needs. */
 function scaleHex(hex,f){
   const h=(hex||'').replace('#',''); if(h.length!==6) return hex;
   const n=parseInt(h,16);
@@ -12044,7 +12044,7 @@ function modeMenu(){
   $('sheet-in').dataset.kind='modes';
   openSheet();
   /* Theme the One Franchise card to the player's own profile club. avatarOf resolves the
-     same key the header disc uses — the club they chose, or the one their name lands on —
+     same key the header disc uses (the club they chose, or the one their name lands on),
      so the card always matches the color they see on their avatar. The icon runs a gradient
      across BOTH of the club's colors, the title takes teamInk (the primary lifted bright
      enough for text on the dark card) and the border takes the secondary as an accent.
@@ -16345,7 +16345,7 @@ let revealTimers=[];
 function clearRevealTimers(){ revealTimers.forEach(clearTimeout); revealTimers=[]; }
 
 /* THE TRADE FINDER opens on the shop: your roster, tap up to two players to put on the
-   block. Nothing is offered until you choose who leaves, which is the whole point — you
+   block. Nothing is offered until you choose who leaves, which is the whole point: you
    run the team, the league reacts to you. */
 function openTradeWindow(step,opts){
   preseasonWindow=!!(opts&&opts.preseason);
@@ -17492,7 +17492,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
   const fw=w-pad.l-pad.r,fh=h-pad.t-pad.b;
   const fl=pad.l,ft=pad.t;
 
-  /* end zones sit outside the goal lines; playing field is yards 0–100 mapped
+  /* end zones sit outside the goal lines; playing field is yards 0-100 mapped
      to the inner area between the two end-zone strips */
   const ezW=Math.round(fw*0.06);
   const pfL=fl+ezW,pfW=fw-ezW*2;
@@ -17594,7 +17594,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
     const left=Math.min(x1,x2),right=Math.max(x1,x2);
     const barW=Math.max(right-left,2*dpr);
 
-    /* fade older drives — quadratic ease for smoother falloff */
+    /* fade older drives: quadratic ease for smoother falloff */
     const age=shown.length-1-i;
     const t2=Math.max(0,1-age/(maxRows-1));
     const alpha=isActive?0.92:Math.max(0.22,t2*t2*0.75+0.1);
@@ -17808,7 +17808,7 @@ function playPlayoffGame(r,after){
   if(cDist(dcY,dcT)<110){
     dcT=them.b||'#e87461';
     if(!dcT||dcT===dcY||cDist(dcY,dcT)<80)dcT='#e87461';
-    /* gray/silver secondaries wash out on the dark-green field — use coral */
+    /* gray/silver secondaries wash out on the dark-green field, so use coral */
     const cParts=(c)=>{const v=parseInt(c.slice(1),16);return[(v>>16)&255,(v>>8)&255,v&255];};
     const [cr,cg,cb]=cParts(dcT);
     const sat=Math.max(cr,cg,cb)-Math.min(cr,cg,cb);
@@ -19262,8 +19262,8 @@ const liveChem=()=>{ try{ return R.seasonChem(run); }catch(_){ return (run&&run.
 function fitPct(mult){ const n=Math.round((mult-1)*100); return (n>0?'+':'')+n+'%'; }
 
 /* The fit-bonus percentage in the "…points a game" summary is the WHOLE structure
-   multiplier — team shape and the scheme bonus together — so it must not be labeled as
-   the scheme alone (that read as if a 1–3% scheme were worth the whole +11%). This is the
+   multiplier (team shape and the scheme bonus together), so it must not be labeled as
+   the scheme alone (that read as if a 1-3% scheme were worth the whole +11%). This is the
    plain description of the total; schemeTail() names the scheme's own small share after it. */
 function fitPhrase(){ return 'for how the six fit together'; }
 
@@ -19286,7 +19286,7 @@ function schemeTail(st){
  * This table used to end with "Makes the playoffs" and "Wins the title" as percentages, and
  * both are gone. Every row here is now something that HAPPENED or something you can count:
  * points a game, the record those points typically produce, money spent. A percentage is a
- * different kind of claim — it tells you what the simulation thinks of you rather than what
+ * different kind of claim: it tells you what the simulation thinks of you rather than what
  * you did, and "wins the title 0.3%" is a number nobody is better off having seen. It also
  * put the game's own internals on screen, which is not what this screen is for.
  *
@@ -22892,7 +22892,7 @@ let lastPerfectShare=null;
 let submitted=null;      // the row id, or false once a submit has failed
 let myRanks=null;
 /* The GM-rating placing, which is NOT one of the three in myRanks. Those come from
-   B.ranks(B.scoreOf(...)), a RECORD rank, in every mode including this one — so showing one
+   B.ranks(B.scoreOf(...)), a RECORD rank, in every mode including this one, so showing one
    beside the GM rating would have read as "your GM rating ranks 3rd" while actually saying
    "your record ranks 3rd". Fetched on its own axis instead. Null until it lands, or when the
    run has no GM rating to place. */

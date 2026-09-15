@@ -19,7 +19,7 @@ const E = (typeof require !== 'undefined')
    flex in place of the second receiver, so two of six spots take any of RB/WR/TE and
    trades can actually change the shape of the offense rather than only swap like for
    like. The COUNT is six either way and SLOT_ELIGIBILITY is keyed by slot NAME (which
-   is unchanged), so this one array is the whole difference — the engine's rating math,
+   is unchanged), so this one array is the whole difference. The engine's rating math,
    which reads player positions, needs nothing. slotsOf() prefers the run's own array
    and falls back by mode so a run restored from storage without it still resolves. */
 const TRADE_SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'FLEX'];
