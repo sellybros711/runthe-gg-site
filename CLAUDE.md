@@ -910,6 +910,52 @@ real team before it asserts anything about it.**
 that an account off the list gets no door, no node, and the words nowhere in the page.
 `check-premium.mjs` asserts the same thing from the other end.
 
+#### A coach who would make the team worse is not offered
+
+The table holds 115 men. An ordinary drafted roster can afford most of them, and **58% of
+those LOWER that roster's rating**. The grid already sorted best-first and marked the top
+cell, so the answer was at the top and the other two thirds of the page was a list whose only
+function was to be scrolled past.
+
+**There is no trade being hidden, which is what makes the cut safe rather than
+paternalistic.** By this screen the roster is drafted and the money left buys nothing else:
+unspent cap is production you never fielded, worth zero. So a coach who costs money and lowers
+the rating is not a cheap option or a risky one, he is strictly worse than the free No coach
+button already under the grid.
+
+**Flat men stay.** The rating is the MEAN of his two sides, so +6% offense and -6% defense
+nets to zero on the headline and still changes what this team scores and what it allows. That
+is a real choice and it is the player's. For the same reason the printed value is rounded to
+the band BEFORE it is printed: `(-0.04).toFixed(1)` is the string `-0.0`, a minus sign on a
+man the filter just certified as costing nothing. Same rule as the commish state card, and as
+the fit and coach percentages one screen along.
+
+**The cut is at DISPLAY, never in `coachMarket()`.** `check-badges.mjs` walks that market by
+index to hire twenty-five different coaches, so shrinking it would quietly shrink what the
+badge sweep can reach.
+
+**Three states on the line under the heading, not two, and the middle one is not rare.**
+Measured over 75 real drafts through `run.js`:
+
+| how you draft | affordable | would help | money left |
+|---|---|---|---|
+| greedy | 22.7 | 1.1 | $3.5M |
+| thrifty | 115.0 | 52.6 | $219.2M |
+| value | 115.0 | 49.1 | $188.6M |
+
+A player who SPENDS THE CAP, which is the good way to draft, arrives with about three million
+and twenty-odd coaches in reach, and on **24 of those 75 drafts not one of them improves the
+team**. Falling back to the full list on exactly that run would put the whole sift in front of
+the player who earned the cleanest answer, so the screen says there is nobody worth hiring
+instead. Nothing affordable at all is a different sentence again: the first is about the
+money, the second is about the roster.
+
+**`#co-grid` joined the `[hidden]` list, which is the fifth time in this file.** `.cogrid`
+sets `display:grid`, so the `hidden` the painter has always written on an empty market never
+took. It cost nothing while the empty case meant a grid with no children anyway. It is now a
+padded, margined box between the rating card and the line explaining why there is nothing in
+it.
+
 ### A badge you add has to be proved reachable
 
 ```
