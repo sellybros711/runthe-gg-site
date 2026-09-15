@@ -2133,13 +2133,31 @@ window.GA_ID='G-L29P5MRWKE';
        with hvViewEx(), which sizes the camera to this exact box. */
     .screen.scr-dailyround > .holeview{margin:0 auto 8px; max-width:none;
       width:min(calc(100vw - 48px), 1600px, calc((100vh - 296px) * 1.7142857))}
-    /* the scorecard has the width to be a real one: front nine and back nine side by side, one row */
-    .screen.scr-dailyround > .dcardwrap{max-width:1100px}
+    /* The scorecard has the width to be a real one: front nine and back nine side by side, one row.
+       A WIDTH and not just a max-width, for the same reason the control bar below needs one. This screen
+       is a flex column, and auto side margins turn off the stretch a flex child would otherwise get, so
+       a max-width alone left the card shrink-wrapped around its own cells: 586px under a 1552px tracer,
+       which is the "skinny scorecard" (owner). The cells are 1fr tracks, so the width lands on them. */
+    .screen.scr-dailyround > .dcardwrap{max-width:1100px; width:min(1100px, 100%)}
     .screen.scr-dailyround .rsc{max-width:none; flex-direction:row; flex-wrap:wrap; gap:6px 16px; align-items:flex-start}
     .screen.scr-dailyround .rsc-leg{flex:1 0 100%}
     .screen.scr-dailyround .rsc-block{flex:1 1 0; min-width:0}
-    /* everything else stays a readable column, centred under the window */
-    .screen.scr-dailyround > *:not(.holeview):not(.bcasthd){max-width:760px; margin-left:auto; margin-right:auto}
+    /* The width is only half of not being skinny. At phone sizing a 1100px card is small type stranded in
+       wide boxes, so the rows and the digits grow with it: this is the card a desk reads at a desk's
+       distance. Cells are 1fr tracks, so only the type and the padding are set here. */
+    .screen.scr-dailyround .rsc-c{font-size:15px; padding:9px 0}
+    .screen.scr-dailyround .rsc-par{font-size:13px}
+    .screen.scr-dailyround .rsc-lab{font-size:11px; padding:9px 9px}
+    .screen.scr-dailyround .rsc-pl.rsc-lab{font-size:13px}
+    .screen.scr-dailyround .rsc-legi{font-size:13px}
+    .screen.scr-dailyround .dcardhd{margin-bottom:10px}
+    .screen.scr-dailyround .dcardhd .t{font-size:12px}
+    .screen.scr-dailyround .dcardhd .h{font-size:12px}
+    /* everything else stays a readable column, centred under the window. The scorecard is excluded by
+       name: this selector outweighs the rule above it (four class-level parts against three), so without
+       the exclusion it quietly clamped the card back to 760 and the 1100 above did nothing. */
+    .screen.scr-dailyround > *:not(.holeview):not(.bcasthd):not(.dcardwrap){max-width:760px; margin-left:auto; margin-right:auto}
+    .screen.scr-dailyround > .dcardwrap{margin-left:auto; margin-right:auto}
     .screen.scr-dailyround > .dcardwrap{margin-top:0}
     /* On desktop the control bar sits IN FLOW directly under the window (order:1) with the scorecard
        below it (order:2), so the fixed bottom bar can never cover the card - which it did, leaving a
@@ -2466,6 +2484,24 @@ window.GA_ID='G-L29P5MRWKE';
   .dctarget.safe .dtp{border-top-color:#22c7a6}
   /* SAFE: small, tight, solid landing spread */
   .dctarget.safe .dtr{width:19px;height:11px;border-color:#22c7a6}
+  /* the numbered pair. Same size for both, so neither can swallow the other. */
+  .dctarget.dcnum .dtr{border-radius:50%;border-width:2.5px;border-style:solid;background:rgba(0,0,0,.4);
+    display:flex;align-items:center;justify-content:center;animation:none}
+  .dctarget.dcnum.agg .dtr{border-color:#ff5a4d;box-shadow:0 0 12px rgba(255,90,77,.5)}
+  .dctarget.dcnum.safe .dtr{border-color:#22c7a6;box-shadow:0 0 12px rgba(34,199,166,.5)}
+  .dctarget.dcnum .dtr i{font:900 12px/1 var(--body);font-style:normal;color:#fff}
+  .dctarget.dcnum .dtl::before{display:none}
+  .dcn{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;
+    background:rgba(255,255,255,.22);font:900 10px/1 var(--body);font-style:normal;margin-right:5px;flex:0 0 auto}
+  /* The leader lines back to the ball. `.holeview svg` styles the COURSE drawing (a border, a radius and
+     a 464/560 aspect ratio), and this is a transparent overlay rather than a second course, so it has to
+     opt out of all three or it paints a full panel over the hole. */
+  /* BELOW the docked panels, above the course. Everything floating on this window (.hvob: the decision
+     cards, the hole chip, the scoreboard) sits at z-index 2, and the lines run the full height of the
+     frame, so at 5 they were drawn straight across the YOUR CALL card at the bottom. The markers stay
+     above at 6: they are the tap targets, and they sit up on the course rather than over a panel. */
+  svg.dclines{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;
+    background:none;pointer-events:none;overflow:visible;z-index:1}
   .dctarget:active .dtw{transform:translateX(calc(-50% + var(--dtx,0px))) translateY(2px)}
   @keyframes dtRing{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.9}
     50%{transform:translate(-50%,-50%) scale(1.28);opacity:.45}}
@@ -29745,6 +29781,7 @@ function hvPlots(g, shots, seedN, opts){
     const own=1-Math.min(1, Math.abs(miss)/12);
     p.curve=miss + work*own + jj(i,4)*7 + bias;
     cur=rest.slice();
+    p.to=cur.slice();          // where this shot finished. The leader lines on a decision start here.
     out.push(p);
   });
   return out;
@@ -32777,7 +32814,13 @@ function dScenario(courseKey,i,total,av){
   // phase: 'tee' = a driving decision (shown before the drive, biases the drive); 'app' (default) = an
   // approach/second-shot decision (par 4/5: the drive is revealed FIRST, then this prompt; biases the
   // approach). par-3 decisions are 'app' and shown up-front (the tee shot IS the approach).
-  const S2=(tag,prompt,aL,aS,sL,sS,sit,phase)=>({tag,prompt,opts:[{l:aL,s:aS,agg:true},{l:sL,s:sS,agg:false}],sit:!!sit,phase:phase||'app'});
+  // `leave` is how far from the green each option puts the ball, in yards, for the scenarios whose own
+  // copy names a number. The on-course markers are placed from it, so the ring sits where the card says
+  // the ball is going. Without it the markers used fixed offsets that had nothing to do with the words
+  // beside them: a card reading "58-yd lob wedge" against "100-yd gap wedge" drew its two options 14 and
+  // 34 yards out. null means both options finish on or around the green, where the yardage is not the
+  // thing being chosen.
+  const S2=(tag,prompt,aL,aS,sL,sS,sit,phase,leave)=>({tag,prompt,opts:[{l:aL,s:aS,agg:true},{l:sL,s:sS,agg:false}],sit:!!sit,phase:phase||'app',leave:leave||null});
   const T=[];
   // ---------- decisions that fit this hole's shot type + hazard ----------
   if(type==='tee3'||type==='app4'){
@@ -32809,44 +32852,44 @@ function dScenario(courseKey,i,total,av){
     T.push(S2(`tee shot · driver or 3-wood`,
       `Off the tee: driver down the ${side} edge leaves about ${aL.yds} yards, a ${aL.club} in, but flirts with ${hazWord}. A 3-wood to the fat of the fairway leaves ${sL.yds}, a ${sL.club}. Which club?`,
       `Driver · ${aL.club} in`, `~${aL.yds} yds left, ${hazWord} in play`,
-      `3-wood · ${sL.club} in`, `~${sL.yds} yds left, safely in play`, false, 'tee'));
+      `3-wood · ${sL.club} in`, `~${sL.yds} yds left, safely in play`, false, 'tee', {agg:aL.yds, safe:sL.yds}));
   if(type==='drive4')
     T.push(S2(`${yards} yds · drivable`,
       `${yards}-yard drivable par-4. Have a go at the green off the tee, or lay back to a full wedge?`,
       'Driver at the green', `All ${yards}: eagle look if it finds the surface, trouble if it misses`,
-      `Lay back to a full ${fullClub}`, `~${DEC_FULLW} yds in, birdie still on`, false, 'tee'));
+      `Lay back to a full ${fullClub}`, `~${DEC_FULLW} yds in, birdie still on`, false, 'tee', {agg:0, safe:DEC_FULLW}));
   if(type==='short4')
     T.push(S2(`short par-4 · ${yards} yds`,
       `Short, strategic par-4. Take on the green-side trouble off the tee, or lay back to a full ${fullClub} from your favorite number?`,
       'Take it on off the tee', 'A close pitch if it works, short-side trouble if not',
-      `Lay back to a full ${fullClub}`, `~${DEC_FULLW} yds, control your number`, false, 'tee'));
+      `Lay back to a full ${fullClub}`, `~${DEC_FULLW} yds, control your number`, false, 'tee', {agg:0, safe:DEC_FULLW}));
   if(type==='go5'){
     const goClub=dClub(wPlayYds(hw,yd));
     T.push(S2(`${yd} out · go for it in two?`,
       `${yd} yards to get home in two, a ${goClub}${wet?`, ${hazWord} guarding the green`:''}. Send it, or lay up to a full ${fullClub}?`,
       `Go for it · ${goClub}`, wet?`${yd} over ${hazWord}, or a blow-up`:`${yd} yds, eagle look, bogey in play`,
-      `Lay up · full ${fullClub}`, `~${DEC_FULLW} yds, a stress-free birdie still on`));
+      `Lay up · full ${fullClub}`, `~${DEC_FULLW} yds, a stress-free birdie still on`, false, null, {agg:0, safe:DEC_FULLW}));
     T.push(S2(`tee shot · reaching in two`,
       `To get home in two you’ve got to rip driver, leaving about ${aL.yds} yards in, and bring ${hazWord} into play off the tee. Or take 3-wood, position it and lay up. How aggressive off the tee?`,
       `Rip driver · ${aL.club} in`, `~${aL.yds} yds left, the drive has to be perfect`,
-      '3-wood · then lay up', 'Takes the big number out of play', false, 'tee'));
+      '3-wood · then lay up', 'Takes the big number out of play', false, 'tee', {agg:aL.yds, safe:sL.yds}));
   }
   if(type==='long5'){
     T.push(S2(`layup · ${yards} yds`,
       `Too long to reach, it’s a layup. Chase it down near ${hazWord} for a ${halfClub}, or lay back to a stock ${DEC_FULLW}-yard ${fullClub}?`,
       `Chase it · ${halfClub}`, `~${DEC_HALFW} yds, but it flirts with ${hazWord}`,
-      `Lay back · full ${fullClub}`, `~${DEC_FULLW} yds, trouble out of play`));
+      `Lay back · full ${fullClub}`, `~${DEC_FULLW} yds, trouble out of play`, false, null, {agg:DEC_HALFW, safe:DEC_FULLW}));
     T.push(S2(`tee shot · driver or 3-wood`,
       `Even on a layup hole the tee shot decides the number: driver leaves about ${aL.yds} to the flag, a 3-wood ${sL.yds} from safer ground. Which club?`,
       `Driver · ${aL.yds} left`, `Shortest layup, but the tighter line`,
-      `3-wood · ${sL.yds} left`, `Longer, but dead safe off the tee`, false, 'tee'));
+      `3-wood · ${sL.yds} left`, `Longer, but dead safe off the tee`, false, 'tee', {agg:aL.yds, safe:sL.yds}));
   }
   // the layup that IS the club choice: a delicate half wedge close in, or your stock full number
   if(type==='go5'||type==='long5')
     T.push(S2(`layup · full wedge or half`,
       `You’re laying up. Chase it down to a ${halfClub} of about ${DEC_HALFW} yards, or hold back to your stock ${fullClub} from ${DEC_FULLW}? The shorter shot sits closer to the flag and is far harder to control.`,
       `Chase it · ${DEC_HALFW}-yd ${halfClub}`, 'Closest in, but a delicate half shot',
-      `Hold back · ${DEC_FULLW}-yd ${fullClub}`, 'A full swing at your favorite number'));
+      `Hold back · ${DEC_FULLW}-yd ${fullClub}`, 'A full swing at your favorite number', false, null, {agg:DEC_HALFW, safe:DEC_FULLW}));
   if(haz==='elevated')
     T.push(S2(`${yd} yds · downhill`,
       `A downhill shot of ${yd} yards, the slope releases anything near the flag. Chase one in, or land it below the hole?`,
@@ -32877,7 +32920,7 @@ function dScenario(courseKey,i,total,av){
     T.push(S2(`${yards} yds · position or power`,
       `Off the tee: rip driver and leave a ${aL.club} from ${aL.yds} but bring ${hazWord} into play, or hit a controlled stinger 3-wood, take the trouble out and accept a ${sL.club} from ${sL.yds}?`,
       `Rip driver · ${aL.club} in`, `~${aL.yds} yds left, but ${hazWord} lurks`,
-      `Stinger 3-wood · ${sL.club}`, `~${sL.yds} yds left, dead safe off the tee`, false, 'tee'));
+      `Stinger 3-wood · ${sL.club}`, `~${sL.yds} yds left, dead safe off the tee`, false, 'tee', {agg:aL.yds, safe:sL.yds}));
   // ---------- situational decisions (late, behind/ahead of the tour average) ----------
   const holesLeft=18-i, pace=av*(i/18), diff=Math.round(total-pace);
   if(holesLeft<=5 && diff>=2)
@@ -32901,6 +32944,7 @@ function dScenario(courseKey,i,total,av){
   const phase=(par===3)?'app':chosen.phase;
   // ITEM 06: the on-course tap-targets name the club too when the card's label is a club
   return {tag:chosen.tag, prompt:chosen.prompt, opts:chosen.opts, sit:chosen.sit?'':dSitLine(total,av,i), phase,
+    leave:chosen.leave||null,
     clubs:{agg:dClubWord(chosen.opts[0].l), safe:dClubWord(chosen.opts[1].l)}};
 }
 // ---- ON-COURSE decision (#6/#7): the shot decision is made ON the tracer window (tap a target), the
@@ -32935,57 +32979,140 @@ function dDecTargets(g, sc){
   // ITEM 06: when the decision IS a club choice, the chip on the course names the club ("Driver",
   // "3-wood", "58-yd sand wedge") instead of a generic line - taken from the card's own label.
   const cl=sc.clubs||{}, CA=lab=>cl.agg||lab, CS=lab=>cl.safe||lab;
+  // How far down the hole each option finishes, taken from the scenario's own copy where it names a
+  // number (sc.leave, in yards from the green). Zero means the green itself. The fallbacks below are the
+  // old fixed offsets, kept only for a scenario that states no yardage.
+  const lv=sc.leave||null;
+  const atLeave=(yds, fb)=>{ const d=(lv&&yds!=null)?yds:fb; return Math.max(6, L-Math.max(0,d)); };
   if(sc.phase==='tee'){
-    if(/drivable|driver at the green|at the green off the tee/.test(txt)){
-      const y=Math.max(8,L*0.6); return {agg:[gcx,L], safe:[g.cx(y),y], al:CA('Green'), sl:CS('Lay back')};
+    if(lv ? !lv.agg : /drivable|driver at the green|at the green off the tee/.test(txt)){
+      const y=atLeave(lv&&lv.safe, L*0.4);
+      return {agg:[gcx,L], safe:[g.cx(y),y], al:CA('Green'), sl:CS('Lay back')};
     }
-    const y=par===5?g.span*0.44:g.span*0.6, cx=g.cx(y), w=Math.max(6,g.fww(y));
-    const hz=g.water?(g.water.x>cx?1:-1):1;
-    return {agg:[cx+hz*w*0.72,y], safe:[cx-hz*w*0.32,y], al:CA('Attack line'), sl:CS('Safe line')};
+    // A driving decision is about the LINE as much as the number, so the two markers keep their sides of
+    // the fairway and take their distance from the clubs the card names.
+    const ya=atLeave(lv&&lv.agg, par===5?L-g.span*0.44:L-g.span*0.6);
+    const ys=atLeave(lv&&lv.safe, par===5?L-g.span*0.44:L-g.span*0.6);
+    const cxa=g.cx(ya), cxs=g.cx(ys), wa=Math.max(6,g.fww(ya)), ws=Math.max(6,g.fww(ys));
+    const hz=g.water?(g.water.x>cxa?1:-1):1;
+    return {agg:[cxa+hz*wa*0.72,ya], safe:[cxs-hz*ws*0.32,ys], al:CA('Attack line'), sl:CS('Safe line')};
   }
   if(par!==3){
-    if(/go for|home in two|reach|rip driver to get home/.test(txt)){        // reach the green vs lay up short
-      const y=Math.max(8,L-24); return {agg:[gcx,L], safe:[g.cx(y),y], al:CA('Go for it'), sl:CS('Lay up')};
+    /* Classified by the scenario's OWN numbers wherever it has them, never by matching words in its prose.
+       The long-hole layup opens "Too long to reach, it's a layup", and the word `reach` in that sentence
+       routed it to the REACH branch, which drew the aggressive marker ON a green the same sentence had
+       just said could not be reached. It was wrong on 74 of the site's decisions and nothing failed,
+       because prose is not a data model. The regexes below are the fallback for a scenario that states
+       no yardage at all. */
+    if(lv){
+      if(!lv.agg){                                                          // reach the green vs lay up short
+        const y=atLeave(lv.safe, 24);
+        return {agg:[gcx,L], safe:[g.cx(y),y], al:CA('Go for it'), sl:CS('Lay up')};
+      }
+      const y1=atLeave(lv.agg, 14), y2=atLeave(lv.safe, 34);                // both layups
+      return {agg:[g.cx(y1),y1], safe:[g.cx(y2),y2], al:CA('Chase it'), sl:CS('Lay back')};
     }
-    if(/lay ?up|lay back|push the layup|chase|hold back/.test(txt)){         // both layups: chase near green vs lay back
+    if(/go for|home in two|reach|rip driver to get home/.test(txt)){
+      const y=Math.max(8,L-24);
+      return {agg:[gcx,L], safe:[g.cx(y),y], al:CA('Go for it'), sl:CS('Lay up')};
+    }
+    if(/lay ?up|lay back|push the layup|chase|hold back/.test(txt)){
       const y1=Math.max(10,L-14), y2=Math.max(6,L-34);
       return {agg:[g.cx(y1),y1], safe:[g.cx(y2),y2], al:CA('Chase it'), sl:CS('Lay back')};
     }
   }
-  const off=Math.max(3,(g.greenR?g.greenR[0]:12)*0.6)*(pin[0]>gcx?-1:1);     // pin-hunt vs middle of the green
-  return {agg:[pin[0],pin[1]], safe:[gcx+off,L], al:'At the pin', sl:'Middle'};
+  // Pin-hunt vs the fat of the green. The safe point is SEARCHED for rather than stepped to, and that is
+  // the fix rather than a refinement: it used to be gcx plus 0.6 of the green's x-radius on the side away
+  // from the pin, which is two separate wrongs. The pin itself only ever sits 0.42 to 0.58 of that radius
+  // out, so "Middle" was aiming FURTHER off centre than the flag. And nothing consulted g.bunkers, which
+  // is right here in the same coordinates, so on a green with sand on the side away from the pin the
+  // option labelled Middle pointed into it while the card beside it warned that the aggressive line was
+  // 33% bunker (owner: "why does middle look like its pointed in the bunker").
+  // A grid of points across the middle of the green, scored on how far each sits from the nearest hazard.
+  // Clearance is capped, so once a point is comfortably clean the tie breaks toward the side away from the
+  // pin and then toward the centre. Clearance outranks the pin side ON PURPOSE, and the card beside this
+  // says why: the option is captioned "Play to the open side", not "play away from the flag". When the
+  // side away from the pin is the side holding the sand, the open side is the other one, and aiming there
+  // is the option doing its job rather than breaking its rule.
+  const R=g.greenR||[12,12], away=(pin[0]>gcx?-1:1);
+  let best=null;
+  for(let ix=-3; ix<=3; ix++) for(let iy=-2; iy<=2; iy++){
+    const x=gcx+ix*R[0]*0.17, y=L+iy*R[1]*0.17;
+    // Sand only, and deliberately. Every candidate here is on the putting surface by construction (the
+    // grid never reaches past 0.51 of the green's radius), and a point on the green is on grass: a pond
+    // is drawn around a green, never under it. Water WAS in this sum, measured as a circle of its longer
+    // radius, and that is wrong in the one place it matters most. An island green's pond wraps the whole
+    // surface, so every candidate read as deep underwater, the deepest right in the middle, and the
+    // scoring turned into noise that pushed the target toward the edge of the green. Caught by a hole
+    // with no hazard within 190 yards whose safe target still crossed to the pin's side.
+    let clear=999;
+    (g.bunkers||[]).forEach(b=>{ clear=Math.min(clear, Math.hypot(x-b.x,y-b.y)-b.r); });
+    // Room is capped at 16, so once a point is comfortably clear more room stops earning anything and the
+    // side preference decides. Banding room into steps instead was tried and is worse at the only job
+    // this has: it put the target within six of sand on 2.2% of holes against 0.8%, and dropped the
+    // worst hole on the site from 3.02 of room to 2.32.
+    const sc2=Math.min(clear,16) + ix*away*1.2 - Math.abs(iy)*0.6 - Math.abs(ix)*0.25;
+    if(!best || sc2>best.s) best={x,y,s:sc2};
+  }
+  return {agg:[pin[0],pin[1]], safe:[best.x,best.y], al:'At the pin', sl:'Middle'};
 }
 // place the two tappable targets on the window shell (called from drawWindow when a decision is pending)
-function dPlaceTargets(shell, g, sc, pick){
+function dPlaceTargets(shell, g, sc, pick, ball){
+  /* TWO MARKERS THE SAME SIZE, NUMBERED, JOINED TO THE BALL BY A LINE.
+     What was here drew each option as an ellipse whose WIDTH was its dispersion: the risky one 35 to 71
+     pixels across, the safe one 14 to 23. Two aim points on one green are inherently close together, so
+     the small ring sat INSIDE the big one and the two labels were shoved apart sideways to stay legible,
+     which cut each label loose from the thing it named. Measured across all 1008 real decisions on the
+     site, the two rings overlapped on 983 of them: median separation 16px against a 63px ring. It was not
+     a collision that sometimes happened, it was the normal state (owner: "most of the time aren't
+     accurate or clash in some way").
+     So size no longer carries risk. The cards below already say 70% BIRDIE / 20% TROUBLE, which is the
+     clearer version of the same fact, and it does not have to fit in the same pixels as the position.
+     What is left is: one marker each, the same size, numbered to match the cards, a guaranteed gap
+     between them, labels that alternate above and below so they can never stack, and a leader line back
+     to the ball so which marker is which is never a guess. */
   const tg=dDecTargets(g,sc);
-  // ring diameter = the ACTUAL landing dispersion for THIS build: the risky ring balloons when the
-  // hazard-miss odds are high (weak skill / water), and tightens as the player's skill rises.
-  const od=dDecOdds(sc, S.dailySkills||{}), sq=dSkQ(od.val);
-  const aggW=Math.round(30+od.aggRisk*1.15), safeW=Math.round(14+(1-sq)*9);   // agg ~35..71px · safe ~14..23px
-  const pos=[];
-  const place=(pt,cls,lab,agg,rw)=>{
-    const p=hvProj(g,pt[0],pt[1]);
-    // The ring goes where the shot is going. The only clamp left is enough to keep it from being drawn
-    // off the edge of the window entirely; it is never moved to make room for anything.
-    const lf=Math.max(4,Math.min(96,(p[0]+HV_EXL)/(HV_W+2*HV_EXL)*100));
-    const tp=Math.max(3,Math.min(97,p[1]/HV_H*100));
-    const rh=Math.round(rw*0.53);
-    // no room above: hang the label under the ring instead of off the top of the frame
-    const lo=(tp<16);
-    // two labels close together get pushed APART sideways. Sideways, because the vertical position is
-    // the one thing on this overlay that carries meaning: how far down the hole the ball is going.
-    let dtx=0;
-    for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<10){ dtx=(lf<=q.lf?-1:1)*58; } }
-    pos.push({lf,tp});
-    const chip=$(`<button class="dctarget ${cls}${lo?' lo':''}" style="left:${lf}%;top:${tp}%;--dtw:${rw}px;--dth:${rh}px;--dtx:${dtx}px" aria-label="${esc(lab)}"><span class="dtw"><span class="dtl">${esc(lab)}</span><span class="dtp"></span></span><span class="dtr" style="width:${rw}px;height:${rh}px"></span></button>`);
-    chip.onclick=(e)=>{ e.stopPropagation(); pick(agg); };
+  const R=22;                                        // one marker size, for both options
+  const proj=(pt)=>{ const p=hvProj(g,pt[0],pt[1]);
+    return {lf:Math.max(4,Math.min(96,(p[0]+HV_EXL)/(HV_W+2*HV_EXL)*100)),
+            tp:Math.max(3,Math.min(97,p[1]/HV_H*100))}; };
+  const a=proj(tg.agg), b=proj(tg.safe);
+  /* The gap is opened along the axis that CARRIES THE MEANING of this particular decision. A layup is a
+     choice of distance, so its two stops separate down the hole; a pin-hunt is a choice of line, so its
+     two stops separate across it. Opening the wrong axis would move a marker in the direction that says
+     something, which is the fault being fixed rather than a smaller version of it. */
+  const alongHole=/lay ?up|lay back|chase|hold back|go for|drivable|green off the tee/.test(
+    ((tg.al||'')+' '+(tg.sl||'')+' '+(sc.tag||'')+' '+(sc.prompt||'')).toLowerCase());
+  const key=alongHole?'tp':'lf', need=alongHole?11:16;
+  if(Math.abs(a[key]-b[key])<need){
+    const mid=(a[key]+b[key])/2, half=need/2, aFirst=(a[key]<=b[key]);
+    a[key]=mid+(aFirst?-half:half); b[key]=mid+(aFirst?half:-half);
+    const lo=alongHole?3:4, hi=alongHole?97:96;
+    [a,b].forEach(q=>{ q[key]=Math.max(lo,Math.min(hi,q[key])); });
+  }
+  // Both labels hang above their marker by default, so two markers a comfortable distance apart can still
+  // stack their labels. When they are close, one goes above and the other below.
+  const clash=(Math.abs(a.lf-b.lf)<34 && Math.abs(a.tp-b.tp)<17);
+  const marks=[{q:a, cls:'agg', lab:tg.al||'Attack', n:1, agg:true},
+               {q:b, cls:'safe', lab:tg.sl||'Safe',  n:2, agg:false}];
+  // The leader lines, drawn first so the markers sit on top of them. The ball is where the shot is
+  // actually being played from, handed in by the caller; with none (a preview) the lines are skipped
+  // rather than drawn from a guess.
+  if(ball){
+    const pb=proj(ball);
+    const seg=(q,col)=>`<path d="M${pb.lf} ${pb.tp} L${q.lf} ${q.tp}" stroke="${col}" stroke-width="2.5" fill="none" stroke-dasharray="6 5" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity=".8"/>`;
+    shell.appendChild($(`<svg class="dclines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${seg(b,'#22c7a6')}${seg(a,'#ff5a4d')}</svg>`));
+  }
+  marks.forEach((m,i)=>{
+    const other=marks[1-i].q;
+    const lo=clash ? (m.q.tp>=other.tp) : (m.q.tp<16);
+    const chip=$(`<button class="dctarget dcnum ${m.cls}${lo?' lo':''}" style="left:${m.q.lf}%;top:${m.q.tp}%;--dtw:${R}px;--dth:${R}px" aria-label="${esc(m.lab)}, option ${m.n}"><span class="dtw"><span class="dtl"><i class="dcn">${m.n}</i>${esc(m.lab)}</span><span class="dtp"></span></span><span class="dtr" style="width:${R}px;height:${R}px"><i>${m.n}</i></span></button>`);
+    chip.onclick=(e)=>{ e.stopPropagation(); pick(m.agg); };
     shell.appendChild(chip);
-  };
-  place(tg.agg,'agg',tg.al||'Attack',true,aggW);
-  place(tg.safe,'safe',tg.sl||'Safe',false,safeW);
-  // The fixed hole-info chip sits top-left, and a target near the top of the frame can put its LABEL
-  // under it. Measured once laid out, and answered by moving the label (sideways, or under its own ring)
-  // - never the ring, which is the one thing on here that has to stay where it is.
+  });
+  // The fixed hole-info chip sits top-left, and a marker near the top of the frame can put its LABEL
+  // under it. Measured once laid out, and answered by moving the label (sideways, or under its own
+  // marker) - never the marker, which is the one thing on here that has to stay where it is.
   requestAnimationFrame(()=>{
     if(!shell.isConnected) return;
     const hole=shell.querySelector('.hvhole'); if(!hole) return;
@@ -32997,8 +33124,25 @@ function dPlaceTargets(shell, g, sc, pick){
       if(c.classList.contains('lo')) c.style.setProperty('--dtx',((parseFloat(c.style.getPropertyValue('--dtx'))||0)+(hr.right-r.left+8))+'px');
       else c.classList.add('lo');
     });
+    /* And the two labels against each other, MEASURED. Alternating them above and below their markers
+       handles almost everything, but a long label on a narrow gap can still reach across, and a threshold
+       in percent cannot know how wide a word is once it has a font. So the last word is the real box:
+       if they still touch, the lower one slides sideways by exactly the overlap. */
+    const ls=shell.querySelectorAll('.dctarget .dtw');
+    if(ls.length===2){
+      const r0=ls[0].getBoundingClientRect(), r1=ls[1].getBoundingClientRect();
+      if(!(r0.right<=r1.left||r1.right<=r0.left||r0.bottom<=r1.top||r1.bottom<=r0.top)){
+        const lower=(r0.top>=r1.top)?0:1, lo=ls[lower], hi=ls[1-lower];
+        const lr=(lower?r1:r0), hr2=(lower?r0:r1);
+        const dir=(lr.left+lr.right)/2 <= (hr2.left+hr2.right)/2 ? -1 : 1;
+        const push=(dir<0 ? (hr2.left-lr.right) : (hr2.right-lr.left)) + dir*10;
+        const host=lo.parentElement;
+        host.style.setProperty('--dtx',((parseFloat(host.style.getPropertyValue('--dtx'))||0)+push)+'px');
+      }
+    }
   });
 }
+
 // ITEM 07: the decision, DOCKED INSIDE the tracer window along its bottom edge, so the hole, the
 // on-course tap-targets and the numbers are all in one frame above the fold. Same content as
 // dDecisionBar (which is kept as the below-window fallback), compacted to leave the upper two thirds
@@ -33025,7 +33169,7 @@ function dDecisionPanel(sc, pick, sub, holeIdx){
   p.appendChild($(`<div class="dkp">${esc(sub || sc.prompt)}</div>`));
   const row=$(`<div class="dkrow"></div>`);
   const card=(cls,label,vA,kA,clsA,vB,kB,clsB,agg)=>{
-    const b=$(`<button class="dkc ${cls}"><span class="l">${esc(label)}</span><span class="o"><span class="${clsA}"><b>${esc(vA)}</b><i>${esc(kA)}</i></span><span class="${clsB}"><b>${esc(vB)}</b><i>${esc(kB)}</i></span></span></button>`);
+    const b=$(`<button class="dkc ${cls}"><span class="l"><i class="dcn">${cls==='agg'?1:2}</i>${esc(label)}</span><span class="o"><span class="${clsA}"><b>${esc(vA)}</b><i>${esc(kA)}</i></span><span class="${clsB}"><b>${esc(vB)}</b><i>${esc(kB)}</i></span></span></button>`);
     b.onclick=()=>pick(agg); return b;
   };
   row.appendChild(card('agg', sc.opts[0].l, od.aggGood+'%', od.goodShort, 'gd', od.aggRisk+'%', od.riskWord, 'rk', true));
@@ -33364,7 +33508,13 @@ function scrDailyRound(){
       // ONE clear shot description that swaps as the shots simulate (replaces the shot-log dump in play).
       if(descShot && descShot.d && !holePauseFlag) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:#3b82f6">${meNm}</b> · ${esc(descShot.d)}</div>`));
     }
-    if(dec && hole._hv && hole._hv.g) dPlaceTargets(shell, hole._hv.g, dec.sc, dec.pick);   // on-course tap-targets
+    // on-course tap-targets, with the leader lines drawn from where the shot is actually played FROM: the
+    // last plotted shot's resting place on an approach decision, the tee on a driving one.
+    if(dec && hole._hv && hole._hv.g){
+      const pl=hole._hv.plots||[], last=pl.length?pl[pl.length-1]:null;
+      const ballPt=(last&&last.to)?last.to:[hole._hv.g.cx(0), 0];
+      dPlaceTargets(shell, hole._hv.g, dec.sc, dec.pick, ballPt);
+    }
     // ITEM 07: the cards dock INSIDE the window, under the targets, instead of below it (off the fold)
     if(dec) shell.appendChild(dDecisionPanel(dec.sc, dec.pick, dec.sub, h.i!=null?h.i:(h.n-1)));
     add(hvn);
@@ -35167,6 +35317,15 @@ function maybeBucketRewards(){ try{
     if(got.length){ try{ toast('<span style="color:var(--gold);font-weight:800">🎁 Bonus packs added!</span><br><span class="small">'+got.join('<br>')+'<br>Open them in the Pro Shop → Packs.</span>', 6200); render(); }catch(e){} }
   }).catch(function(){ _bucketRewardsBusy=false; });
 }catch(e){ _bucketRewardsBusy=false; } }
+// Run The Bundle's Tour Pack, handed over once per ACCOUNT. Union, never un-claimed: the row it is
+// granted from stays readable forever, so without this a second device reads the same row, finds no local
+// flag, and hands over a second pack. The coins cannot double (the server stamps the row inside the
+// transaction that credits them) but the pack could, and did: proved by signing the same account in on a
+// fresh browser and watching tourEarned go to 2.
+function mergeBundle(local, server){
+  var l=(local&&typeof local==='object')?local:{}, s=(server&&typeof server==='object')?server:{};
+  return { claimed: (l.claimed||s.claimed) ? 1 : 0 };
+}
 // union merge of the granted-purchase set (grow-only): once a purchase's packs are granted on ANY device,
 // no other device re-grants them.
 function mergeBucketPacks(local, server){
@@ -37033,6 +37192,7 @@ function cloudBundle(){
     coins: LS.get(acctKey('bag_coins'), null),                   // CS183 currency: {spent,seen,owned} (earned is derived)
     packs: LS.get(acctKey('bag_packs'), null),                   // pack pity counters + first-pack-free flag
     bucketpacks: LS.get(acctKey('bag_bucket_packs'), null),      // coin-bucket bonus packs already granted (stripe_event set)
+    bundle: LS.get(acctKey('bag_bundle'), null),                 // Run The Bundle: the Tour Pack already handed over {claimed:1}
     login: LS.get(acctKey('bag_login'), null),                   // CS461: daily-login bonus loop {day, n}
     primes: LS.get(acctKey('bag_primes'), null),                 // distinct Prime cards rolled on the draft wheel (name→1 map)
     firsts: LS.get(acctKey('bag_firsts'), null),                 // first-time inductions already taught (id→1 map)
@@ -37295,6 +37455,7 @@ async function cloudPull(){
     { const mp=mergePrimes(LS.get(acctKey('bag_primes'),null), server.primes); if(mp&&Object.keys(mp).length) LS.set(acctKey('bag_primes'), mp); }   // distinct Prime pulls cross-device
     { const mf=mergePrimes(LS.get(acctKey('bag_firsts'),null), server.firsts); if(mf&&Object.keys(mf).length) LS.set(acctKey('bag_firsts'), mf); }   // first-time inductions already taught: union only, a teaching flag is never un-taught
     { const mpass=mergePass(LS.get(acctKey('bag_pass'),null), server.pass); if(mpass&&mpass.claimed) LS.set(acctKey('bag_pass'), mpass); }   // Tour Pass per-period pack-claim flag cross-device
+    { const mbd=mergeBundle(LS.get(acctKey('bag_bundle'),null), server.bundle); if(mbd&&mbd.claimed) LS.set(acctKey('bag_bundle'), mbd); }   // Run The Bundle pack-claim flag cross-device
     { const mtp=mergeTourPass(LS.get(acctKey('bag_tourpass'),null), server.tourpass); if(mtp) LS.set(acctKey('bag_tourpass'), mtp); }   // Tour Pass Track progress cross-device
     { const mw=mergeWheel(LS.get(acctKey('bag_wheel'),null), server.wheel); if(mw) LS.set(acctKey('bag_wheel'), mw); }   // Prize Wheel: used free spin / banked spins / boost cross-device
     LS.set(acctKey(SEASON_LOG_KEY), mergeLog(seasonLog(), server.seasonlog, SEASON_LOG_MAX));   // your season history follows the account
