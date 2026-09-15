@@ -1,8 +1,8 @@
 {
   "arcade/almamater/index.html": {
     "/arcade/icons.js": {
-      "v": "2",
-      "sha": "ef50221c0cbd8f8e"
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
     },
     "../match/entities.js": {
       "v": "12",
@@ -125,8 +125,8 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/gamemarks.js": {
       "v": "3",
@@ -145,8 +145,8 @@
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/howto.js": {
       "v": "21",
@@ -167,8 +167,8 @@
   },
   "arcade/archive/index.html": {
     "/arcade/icons.js": {
-      "v": "2",
-      "sha": "ef50221c0cbd8f8e"
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/gamemarks.js": {
       "v": "3",
@@ -215,8 +215,8 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/nav.js": {
       "v": "2",
@@ -229,8 +229,8 @@
   },
   "arcade/career/index.html": {
     "/arcade/icons.js": {
-      "v": "2",
-      "sha": "ef50221c0cbd8f8e"
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
     },
     "../match/entities.js": {
       "v": "12",
@@ -349,8 +349,8 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/gamemarks.js": {
       "v": "3",
@@ -369,8 +369,8 @@
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/howto.js": {
       "v": "21",
@@ -386,6 +386,10 @@
     }
   },
   "arcade/chain/index.html": {
+    "/arcade/icons.js": {
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
+    },
     "/arcade/tokens.js": {
       "v": "13",
       "sha": "c63cf42bc483d8c8"
@@ -435,16 +439,16 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/demo.js": {
       "v": "3",
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/funnel.js": {
       "v": "11",
@@ -493,8 +497,8 @@
   },
   "arcade/crossword/index.html": {
     "/arcade/icons.js": {
-      "v": "2",
-      "sha": "ef50221c0cbd8f8e"
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
     },
     "puzzles.js": {
       "v": "11",
@@ -617,8 +621,8 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/gamemarks.js": {
       "v": "3",
@@ -637,8 +641,8 @@
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/howto.js": {
       "v": "21",
@@ -647,8 +651,8 @@
   },
   "arcade/guess/index.html": {
     "/arcade/icons.js": {
-      "v": "2",
-      "sha": "ef50221c0cbd8f8e"
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
     },
     "../match/entities.js": {
       "v": "12",
@@ -775,8 +779,8 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/gamemarks.js": {
       "v": "3",
@@ -795,8 +799,8 @@
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/howto.js": {
       "v": "21",
@@ -809,8 +813,8 @@
   },
   "arcade/highlow/index.html": {
     "/arcade/icons.js": {
-      "v": "2",
-      "sha": "ef50221c0cbd8f8e"
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
     },
     "../match/entities.js": {
       "v": "12",
@@ -893,8 +897,8 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/sfx.js": {
       "v": "2",
@@ -925,8 +929,8 @@
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/resultstats.js": {
       "v": "2",
@@ -943,8 +947,8 @@
   },
   "arcade/index.html": {
     "/arcade/icons.js": {
-      "v": "2",
-      "sha": "ef50221c0cbd8f8e"
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/gamemarks.js": {
       "v": "3",
@@ -987,8 +991,8 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/nav.js": {
       "v": "2",
@@ -1012,6 +1016,10 @@
       "v": "21",
       "sha": "27a1b436e35138e6"
     },
+    "/arcade/icons.js": {
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
+    },
     "/arcade/tokens.js": {
       "v": "13",
       "sha": "c63cf42bc483d8c8"
@@ -1033,14 +1041,14 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     }
   },
   "arcade/match/index.html": {
     "/arcade/icons.js": {
-      "v": "2",
-      "sha": "ef50221c0cbd8f8e"
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
     },
     "entities.js": {
       "v": "12",
@@ -1159,8 +1167,8 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/gamemarks.js": {
       "v": "3",
@@ -1179,8 +1187,8 @@
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/howto.js": {
       "v": "21",
@@ -1189,8 +1197,8 @@
   },
   "arcade/oddone/index.html": {
     "/arcade/icons.js": {
-      "v": "2",
-      "sha": "ef50221c0cbd8f8e"
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
     },
     "../match/entities.js": {
       "v": "12",
@@ -1301,8 +1309,8 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/gamemarks.js": {
       "v": "3",
@@ -1321,8 +1329,8 @@
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/howto.js": {
       "v": "21",
@@ -1335,8 +1343,8 @@
   },
   "arcade/rankit/index.html": {
     "/arcade/icons.js": {
-      "v": "2",
-      "sha": "ef50221c0cbd8f8e"
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
     },
     "../match/entities.js": {
       "v": "12",
@@ -1459,8 +1467,8 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/gamemarks.js": {
       "v": "3",
@@ -1479,8 +1487,8 @@
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/howto.js": {
       "v": "21",
@@ -1488,6 +1496,10 @@
     }
   },
   "arcade/rollcall/index.html": {
+    "/arcade/icons.js": {
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
+    },
     "/arcade/tokens.js": {
       "v": "13",
       "sha": "c63cf42bc483d8c8"
@@ -1537,16 +1549,16 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/demo.js": {
       "v": "3",
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/funnel.js": {
       "v": "11",
@@ -1594,6 +1606,10 @@
     }
   },
   "arcade/sportegories/index.html": {
+    "/arcade/icons.js": {
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
+    },
     "/arcade/tokens.js": {
       "v": "13",
       "sha": "c63cf42bc483d8c8"
@@ -1639,16 +1655,16 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/demo.js": {
       "v": "3",
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/result.js": {
       "v": "1",
@@ -1697,8 +1713,8 @@
   },
   "arcade/table/index.html": {
     "/arcade/icons.js": {
-      "v": "2",
-      "sha": "ef50221c0cbd8f8e"
+      "v": "3",
+      "sha": "96ddcdb15ea90ca2"
     },
     "../match/entities.js": {
       "v": "12",
@@ -1817,8 +1833,8 @@
       "sha": "365ceddc5ece9060"
     },
     "/arcade/referral.js": {
-      "v": "9",
-      "sha": "f553b8f36ec06614"
+      "v": "10",
+      "sha": "ed1665a1f76245f4"
     },
     "/arcade/gamemarks.js": {
       "v": "3",
@@ -1837,8 +1853,8 @@
       "sha": "5e38214ee2a73abf"
     },
     "/arcade/pregame.js": {
-      "v": "24",
-      "sha": "f77819462f603eb5"
+      "v": "25",
+      "sha": "4f02045dd872516c"
     },
     "/arcade/howto.js": {
       "v": "21",
