@@ -28,8 +28,13 @@ import { join, relative } from 'path';
 
 /* Widened only for directories that are already clean, per CLAUDE.md. hoops was
    written under the rule from its first commit, so it went on the list in the
-   same commit rather than as a promise to clean it later. */
-const GUARDED = ['wrestling', 'hoops', 'globe', 'mythiball'];
+   same commit rather than as a promise to clean it later.
+   cfb joined the same way and for the same reason: an audit of every string a
+   player can read there found zero dashes anywhere in the tree, comments and
+   Commissioner mode included, so the list was the only thing missing. It was
+   also the largest unguarded surface on the site, which is the wrong way round
+   for the newest and least reviewed copy in the repo. */
+const GUARDED = ['wrestling', 'hoops', 'globe', 'mythiball', 'cfb'];
 const EXT = /\.(html|js|mjs|css|json|md|txt|svg)$/i;
 const SKIP = /(^|\/)(node_modules|\.git)(\/|$)/;
 

@@ -52,12 +52,18 @@ node scripts/check-dashes.mjs
 ```
 
 Exits non-zero and prints `file:line` for every offender. It runs in CI on any
-push or pull request touching `wrestling/**` (`.github/workflows/dash-check.yml`).
+push or pull request touching a guarded directory
+(`.github/workflows/dash-check.yml`).
 
-The guarded list inside that script is `wrestling`, `hoops`, `globe` and
-`mythiball`. The rest of the repo predates the rule and still contains hundreds
-of em dashes; add a directory to `GUARDED` only after cleaning it, never
+The guarded list inside that script is `wrestling`, `hoops`, `globe`,
+`mythiball` and `cfb`. The rest of the repo predates the rule and still contains
+hundreds of em dashes; add a directory to `GUARDED` only after cleaning it, never
 before, or the check becomes noise people learn to ignore.
+
+**`GUARDED` and the workflow's `paths:` are two copies of one answer.** They had
+already drifted: `globe` was on the list and triggered no CI run, so a dash added
+there failed only for whoever next ran the checker by hand. Add a directory in
+both places.
 
 Run the checker against anything ad hoc:
 
