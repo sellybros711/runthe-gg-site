@@ -2671,8 +2671,13 @@
 <script src="/assets/store.js?v=14"></script>
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=6"></script>
-<script src="ledger.js?v=10"></script>
-<script src="blocs.js?v=12"></script>
+<!-- The parts of the sport a term can ADD to it, which the two files under this one both
+     ask about. Before them on purpose, though neither reads it at load: both resolve it at
+     the call so that this order is a convenience rather than a rule somebody can break by
+     moving a line. See the header in frontier.js. -->
+<script src="frontier.js?v=1"></script>
+<script src="ledger.js?v=11"></script>
+<script src="blocs.js?v=14"></script>
 <script src="note.js?v=1"></script>
 <!-- The free tier's one season a day. Its clock is the SERVER's
      (supabase/104_commish_free_clock.sql); this is only the transport and the countdown. -->
@@ -2682,7 +2687,7 @@
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=8"></script>
-<script src="docket.js?v=31"></script>
+<script src="docket.js?v=32"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -7233,6 +7238,29 @@ const PATH_NAME={
      against a real cast now, and a second guard walks the rendered rows in a browser. */
   'venues.title':'Where the title game is played',
   'venues.lastTitle':'Where it was played last',
+  /* THE FIELDS THAT DO NOT EXIST UNTIL A TERM MAKES THEM EXIST. Every one is grafted onto the
+     world by a frontier (see frontier.js), so a sport that never crossed one never has them
+     and never shows a row for them. They are named here anyway, unconditionally, for the
+     reason the two notes above both record: pathName falls through to the raw path, so the
+     first sport to recognise a union would have read "labour.bargaining / recognised / was
+     nobody" on a panel headed What This Changes. A name costs nothing on a world that has no
+     such field, because nothing ever asks. */
+  'labour.bargaining':'The players at the table',
+  'labour.cba':'Agreements signed',
+  'money.outside':'Outside ownership',
+  'money.valuation':'What the sport is valued at',
+  'posture.relocation':'Moving a program',
+  'posture.expansion':'Programs founded, not admitted',
+  'pressure.hearings':'Hearings sat through',
+  'posture.federalCharter':'The federal charter',
+  'posture.exemption':'The antitrust exemption',
+  'posture.national':'This office and the White House',
+  'posture.abroad':'Games played abroad',
+  'venues.foreign':'The overseas home',
+  'posture.globalMembers':'Members outside the country',
+  'venues.offworld':'Off the planet',
+  'posture.offworld':'Games played off the planet',
+  'posture.colony':'Programs that cannot come home',
 };
 /* WHAT THE SETTING ACTUALLY IS, for the sheet a row of the year card opens.
    The four headline tiles have had FACT_ABOUT since they were built, so tapping one told you
@@ -7290,6 +7318,23 @@ const PATH_WORD={
     ranking:'a published ranking' },
   'playoff.sites':{ campus:'on campus', mixed:'campus, then neutral', neutral:'neutral sites' },
   'posture.gambling':{ partnered:'partners of the sport', banned:'kept out' },
+  /* THE CODE WORDS ON THE FIELDS A FRONTIER GRAFTS. Same reason as every entry above: these
+     hold a key rather than a sentence, and the desk promises English.
+     `labour.employment` is NOT among them, deliberately. The union item writes `employee`,
+     which this table already has: the first draft of it wrote `employees`, a fourth value
+     meaning what the third one means, and two keys for one fact is how a table like this
+     rots. What recognition adds is `labour.bargaining`, which is a different fact. */
+  /* A WORD THAT IS THE KEY SPELLED OUT IS NOT A TRANSLATION, which the desk's own guard
+     enforces: any string value that comes back unchanged means nothing translated it. The
+     first draft of these read `granted: 'granted'` and `recognised: 'recognised'`, which is
+     the table being filled in rather than the thing it exists for. */
+  'labour.bargaining':{ recognised:'they bargain', none:'nobody to call' },
+  'posture.relocation':{ allowed:'a program can move', barred:'a program stays put' },
+  'posture.federalCharter':{ none:'none', granted:'this office is chartered' },
+  'posture.exemption':{ none:'none', statutory:'written into law' },
+  'posture.national':{ none:'at arm\'s length', aligned:'on speaking terms' },
+  'venues.foreign':{ none:'nowhere yet' },
+  'venues.offworld':{ none:'nowhere yet', sanctioned:'a game off the planet' },
 };
 /* Where a fuse stands, in the words the office uses, rather than as a number out of a
    hundred that has no scale printed anywhere near it. */

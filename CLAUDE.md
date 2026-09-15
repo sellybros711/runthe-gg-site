@@ -594,6 +594,96 @@ shown instead, which is structural; the old string check silently stopped recogn
 ending, clicked through it and started a fresh term, and reported seven terms and seven
 removals rather than one.
 
+### The sport can grow a new part
+
+```
+node cfb/build/test/commish/probe_longrun.mjs             30 runs of 50 seasons
+node cfb/build/test/commish/probe_longrun.mjs --bold      the commissioner who takes every door
+node cfb/build/test/commish/probe_longrun.mjs --years 80 --runs 40
+```
+
+**Measure before writing more content, because the obvious fix is the wrong one.** The probe
+plays long terms and reports what a commissioner actually meets. Before frontiers existed:
+
+| by year | distinct items | ledger fields moved (of 63) |
+|---|---|---|
+| 5 | 34.0 | 28.3 |
+| 25 | 57.7 | 38.0 |
+| 50 | 61.4 | **38.6** |
+
+The right column is the one that matters. **The sport stopped moving at year 25.** Every field
+a ruling could push had been pushed, and the next twenty-five years pushed them back and forth
+inside the same sixty-three. Writing another hundred items would have given a player more to
+read and the same sport underneath.
+
+**A THREAD IS NOT THE ANSWER AND IS NOT MEANT TO BE.** `plant` puts a consequence in the
+future, the payoff item rules on it, `cut` files it, and the world is the same shape
+afterwards. That is right for a lawsuit. A **frontier** (`cfb/commish/frontier.js`) is the
+other kind of change: crossing one **seats a bloc**, **grafts fields onto the ledger**, and
+**opens items that could not have existed before**, and none of it unwinds.
+
+**`opens` rides on exactly one option of one item.** `docket.js` copies it onto the edit,
+`ledger.applyEdit` performs the crossing BEFORE it writes, and the order is load-bearing: the
+same ruling usually sets the fields the crossing just grafted, so run the other way round the
+`set` throws on a path that is one line from existing.
+
+**The era is derived, never stored.** It is the highest era with a frontier crossed in it. A
+stored era is a second copy of an answer and the two drift the first time somebody adds one.
+
+**Three rules hold the ladder together and all three are load-bearing:**
+
+- **Every rung gates on `FR.open()`, never on a year.** A conservative fifty year term sees
+  none of it and is playing correctly. Gate on the year and it is a cutscene.
+- **The strange option is never the only option, and never the safe one.** A ladder whose
+  rungs are all "yes" is a corridor.
+- **Nothing is announced.** No tech tree, no "you have unlocked". The room gets bigger and the
+  arguments get stranger, which is what it would feel like.
+
+**A refused frontier goes quiet for four years** (`FR.quiet`). The ordinary `recency()` penalty
+is right for an argument the sport has every year and far too gentle for these: measured at
+it, every run refused the same door four or five times. Turning down the fund is a decision a
+commissioner defends for years.
+
+**Reachability is measured, not assumed**, because a rung nobody reaches is the unearnable
+badge again. The floor and the ceiling are both failures: nobody crossing anything means the
+gates are too tight, everybody on Mars by year 12 means it is not a chain.
+
+| | year 50 | reaches the colony |
+|---|---|---|
+| ordinary run | era 3.8, ledger 91 fields, 13 in the room | 7% |
+| takes every door | era 4.9, 14.8 in the room | 93% |
+
+**Four guards in `test_docket` exist because four things went wrong writing this**, and each
+one was silent:
+
+- **A frontier nothing opens is dead content.** `antitrust` was declared with no item that
+  crosses it. The chain sweep walks it the way a term does (cross what is open, look again)
+  and reports an unreachable rung like any other unreachable item.
+- **Every bloc a frontier seats must be written in `blocs.js`.** The two lists are in two
+  files, and a name in one and not the other seats somebody with no weights, so `react()` dots
+  an undefined and puts NaN on the desk.
+- **Every bloc in the room needs its OWN voice.** `line()` falls back to `VOICE.Fans` and says
+  nothing about it, so the first term to seat a President had the President of the United
+  States answering with "My grandfather sat in that stadium. He would not recognize the
+  schedule." Right number, right mood, somebody else's sentence, and a wrong line is a valid
+  string. Five bands, `VARIETY` lines in each, and no line shared with another bloc.
+- **A grafted path is not a typo and the guard has to know the difference.** `FR.allPaths()`
+  is what keeps that list finite; a path in neither the opening world nor any frontier is
+  still the error the check exists for.
+
+**The term fixture samples twelve seeds now, and that is a fix rather than a loosening.** It
+pinned one magic seed, had already broken once, and broke again the day the ladder was
+written, for the same reason both times: the pick is deterministic on the pool, so **adding
+any item anywhere reshuffles every seed's term**. A magic number is a test that fails on the
+one action this mode sees most of, which is somebody writing content. What those assertions
+are about is a property of the docket, and a property is checked across a sample. The replay
+assertion still pins one seed, because determinism IS a claim about one term.
+
+**Two field-shape mistakes worth not repeating**, both caught by `test_desk` and both invisible
+in the source: `posture.bowlTieIns` holds a BOOLEAN and an item wrote the string `'open'` into
+it, and an option `set` a METER directly. Meters are derived from effects, which is why there
+is no name for one in `PATH_NAME` and why the desk had nothing to print.
+
 ### A setting has to LOOK like a setting
 
 **The mode is nothing but named rules and what they currently say, so a value printed as
