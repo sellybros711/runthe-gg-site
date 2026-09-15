@@ -173,6 +173,23 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
   ok('the Free pill is beside the name', (await txt(p, '.pfid .pw-pill')) === 'Free');
   ok('the Go Pro card is on the hub', await has(p, '#pf-prem'));
   ok('and no receipt row, because there is nothing to receipt', !(await has(p, '#pf-go-pro')));
+  /* THE SAME CARD THE FOOTBALL GAME DRAWS, out of the same function in /assets/store.js.
+     It was written out a second time on this page and the two drifted: this said "3 modes"
+     while the football front page said "4 modes", about the same purchase, on the same day.
+     Asserted on the VALUE and the MARKS rather than the whole sentence, because those are
+     the two halves that have to agree across three screens. */
+  const card = await p.evaluate(() => {
+    const el = document.getElementById('pf-prem');
+    const m = el && el.querySelector('.pwc-marks');
+    return { value: el ? (el.querySelector('.pwc-go b') || {}).textContent : '',
+      marks: el ? el.querySelectorAll('.pwc-marks svg').length : 0,
+      row: m ? getComputedStyle(m).display : 'none',
+      counts: /\d+\s*modes/i.test((el && el.innerText) || '') };
+  });
+  ok('  it says Unlimited rather than counting', card.value === 'Unlimited' && !card.counts,
+    card.value);
+  ok('  over the three modes the bundle unlocks', card.marks === 3, String(card.marks));
+  ok('  in a row rather than a stack', card.row === 'flex', card.row);
 
   await p.click('#pf-prem');
   await p.waitForTimeout(600);

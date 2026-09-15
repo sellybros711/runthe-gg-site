@@ -138,6 +138,24 @@ allowance and then the store; the row removes the limit rather than unlocking th
 **`arcade_card_year` is the one grant that ends.** Twelve months, and it does not renew. No
 copy anywhere may imply it does, and the receipt has to show the end date.
 
+**The prompt card is the store's too, and for the reason everything else here is.** There are
+three of them (the football front page, the football profile, the college profile) and each
+page used to draw its own, so on one day, about one purchase, they read "4 modes", "3 modes"
+and a sentence. `RTG_STORE.card()` and `.cardInner()` draw all three now, and the `.pwc-marks`
+rule is in the store's injected CSS rather than in either page.
+
+What it says is **Unlimited**, over the three marks the sheet's hero row uses, in the same
+order. A count was the wrong half to lead with: what a free account meets is the counting, so
+the value is the word that answers it. **The three are the three tiles, not the four named
+lines under them.** One Franchise Dynasty is a dynasty with the pool locked to one club, so
+it sits under the trophy in both places. Counting it separately is how a card ends up
+claiming four of something a reader can only find three of. Both suites assert the value, the
+mark count and that no digit followed by "modes" has reappeared.
+
+That CSS rule is written `.pw-card .pwc-go .pwc-marks`, a class deeper than it looks like it
+needs. The football page carries `.pw-card .pwc-go span{display:block}`, so a shorter selector
+loses, the three marks stack into a column, and nothing anywhere reports it.
+
 ### What the free allowance actually counts
 
 **Dynasty counts SEASONS, the Trade Machine counts RUNS, and the server says which.**

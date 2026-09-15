@@ -204,6 +204,15 @@ for (const [who, owns, day, want] of [
         const m = document.querySelector('#pf-prem .pwc-marks');
         return m ? getComputedStyle(m).display : 'none';
       })(),
+      goProValue: ((document.querySelector('#pf-prem .pwc-go b') || {}).textContent) || '',
+      goProCounts: /\d+\s*modes/i.test(
+        (document.getElementById('pf-prem') || {}).innerText || ''),
+      /* The front page's own card, built as a node rather than written into markup, which is
+         the whole reason the two could say different things. */
+      homeValue: ((document.querySelector('#b-premium .pwc-go b') || {}).textContent) || '',
+      homeMarks: document.querySelectorAll('#b-premium .pwc-marks svg').length,
+      homeCounts: /\d+\s*modes/i.test(
+        (document.getElementById('b-premium') || {}).innerText || ''),
       proAccess: !!document.getElementById('pf-go-pro') };
   }, [owns, day]);
   console.log('  ' + who + ':');
@@ -219,6 +228,15 @@ for (const [who, owns, day, want] of [
     ok('    and the Go Pro card carries the three modes it sells',
       r.goProMarks === 3, String(r.goProMarks));
     ok('    in a row rather than a stack', r.goProRow === 'flex', r.goProRow);
+    /* AND NEITHER CARD COUNTS ANY MORE. The front page said "4 modes", this one said
+       "3 modes" and the college profile said "3 modes", about one purchase, on one day.
+       All three are drawn by /assets/store.js now and a digit reappearing in any of them
+       means one of them has been written out by hand again. */
+    ok('    and says Unlimited rather than a number',
+      r.goProValue === 'Unlimited' && !r.goProCounts, r.goProValue);
+    ok('    the front page card says exactly the same',
+      r.homeValue === 'Unlimited' && r.homeMarks === 3 && !r.homeCounts,
+      r.homeValue + ' / ' + r.homeMarks + ' marks');
   }
   if (!owner && want !== 'the mode') {
     /* The spent door was a card linking to the store, which is a second tap between

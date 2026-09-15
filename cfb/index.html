@@ -3896,7 +3896,7 @@ or endorsed by the NCAA, the CFP or any school.
      sold on this site, it unlocks both games, and it is described in exactly one file. Two
      copies of a price or a term is two chances to tell a customer something the other page
      contradicts, and the one that is wrong is whichever was edited second. -->
-<script src="/assets/store.js?v=10"></script>
+<script src="/assets/store.js?v=11"></script>
 <!-- NO ARCADE HOUSE AD ON THIS GAME. /assets/arcade-ad.js still runs on the homepage,
      the NFL game and the golf game; this one asks nobody. Somebody arriving here has come
      to draft a team, and the front page has its own way to the arcade in "More ways to
@@ -4563,8 +4563,11 @@ function pfHub(){
        looked at their seasons and their trophy case is somebody the modes are worth
        mentioning to, and a player who has not is one scroll from Close. */
     (premiumPitch()
-      ? pwCard('pf-prem','Go Pro','Commissioner Mode, plus every Pro mode in the NFL '+
-          'game. One payment.','3 modes')
+      /* THE SAME WORDS THE FOOTBALL GAME'S CARD CARRIES, because it is the same purchase and
+         a customer who has seen one should recognise the other. What is dropped is the list:
+         the three marks under the value name the modes better than a sentence does, and they
+         are the same three drawings the sheet opens with. */
+      ? pwCard('pf-prem','Go Pro','No daily limit. One payment, lifetime.')
       : '')+
     pfClose();
   openSheet(); pfWire(box);
@@ -5615,12 +5618,19 @@ const premiumPitch=()=>{
   if(authState.signedIn&&premiumSet===null) return false;
   return !ownsCfb();
 };
-/* THE PROMPT CARD, the same shape and the same gold mark the football game's profile
-   uses, because one account holds both and a customer should recognise the offer. */
-const pwCard=(id,title,sub,value)=>'<button class="pw-card" id="'+id+'">'+
-  '<span class="pwc-ic">'+(window.RTG_STORE?window.RTG_STORE.art('star'):'')+'</span>'+
-  '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span>'+
-  '<span class="pwc-go"><b>'+esc(value)+'</b></span></button>';
+/* THE PROMPT CARD, and it is DRAWN BY THE STORE now rather than copied from it.
+   One account holds both games and a customer should recognise the offer, which was the
+   intention when this was the same shape written out a second time. It was not enough: the
+   two games drifted to "3 modes" here and "4 modes" on the football front page, about the
+   same purchase, because what a card is worth is part of the offer and the offer lives in
+   /assets/store.js. Now it says the same thing in all three places because it is the same
+   function.
+   THE FALLBACK STAYS. Everything on this page that touches the store is optional, and a
+   blocked CDN must cost the card and nothing else. */
+const pwCard=(id,title,sub)=>(window.RTG_STORE&&window.RTG_STORE.card
+  ? window.RTG_STORE.card(id,title,sub)
+  : '<button class="pw-card" id="'+id+'">'+
+    '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span></button>');
 
 /* WHERE THE SHEET WAS OPENED FROM, for the one question worth asking of this screen:
    which of the ways in actually sells anything. Set by each caller, read once, cleared. */

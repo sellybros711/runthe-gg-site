@@ -162,6 +162,15 @@
     '  .pfpro-h .pw-pill{margin-left:0;vertical-align:0}\n' +
     '  .pfpro-h span{font-size:12.5px;color:var(--dim-2);line-height:1.35}\n' +
     '  .pw-note{font-size:12px;color:var(--dim-2);margin:13px 0 12px;line-height:1.4}\n' +
+    '  /* THE PROMPT CARD\x27S MARKS, in a row under the word it is selling. Both games draw the\n' +
+    '     card and both had their own .pw-card block, so this one rule lives here instead: it\n' +
+    '     is the only part of the card that has to match the hero row it opens, and the hero\n' +
+    '     row is in this file.\n' +
+    '     IT OUT-SPECIFIES ANY .pw-card .pwc-go span RULE A PAGE CARRIES, which the football\n' +
+    '     game does and which sets display:block. Written a class shorter it loses, the three\n' +
+    '     marks come out stacked in a column, and nothing anywhere reports it. */\n' +
+    '  .pw-card .pwc-go .pwc-marks{display:flex;gap:6px;justify-content:flex-end;margin-top:5px}\n' +
+    '  .pw-card .pwc-go .pwc-marks svg{width:15px;height:15px;display:block;flex:0 0 auto}\n' +
     '  /* THE BEST VALUE CARD GETS THE GOLD BUTTON. Both tiers shipped with the same red one,\n' +
     '     which is the house colour for the primary action and cannot be the primary action\n' +
     '     twice: two identical buttons a thumb apart is a choice presented as a coin toss. The\n' +
@@ -426,5 +435,44 @@
   function art(k) { ensureStyle(); return pwArt(k); }
   function game(k) { return PW_GAME[k] || null; }
 
-  root.RTG_STORE = { html: storeHTML, wire: wire, art: art, game: game, CFB_NAME: CFB_NAME };
+  /*
+   * THE PROMPT CARD, WHICH IS NOW PART OF THE OFFER RATHER THAN A THING EACH PAGE DRAWS.
+   *
+   * Three of these exist: the football front page, the football profile and the college
+   * profile. Every one had its own copy of the markup and its own idea of what the card was
+   * worth, so the three of them said "4 modes", "3 modes" and a sentence, on the same day,
+   * about the same purchase. That is the drift this whole file exists to stop, and the card
+   * had simply never been moved in.
+   *
+   * WHAT IT SAYS IS UNLIMITED, OVER THE THREE MODES THE BUNDLE UNLOCKS. A count was the wrong
+   * half to lead with: what a free account actually meets is the counting, so the word that
+   * answers it is the value. The marks under it are the same three drawings the hero row of
+   * the sheet uses, in the same order, so the card and the screen it opens are recognisably
+   * one offer rather than two descriptions of one.
+   *
+   * AND THE THREE ARE THE THREE TILES, not the four named lines below them. One Franchise
+   * Dynasty is a dynasty with the pool locked to one club: it sits under the trophy in the
+   * hero row and it sits under the trophy here. Counting it separately is how a card ends up
+   * claiming four of something a reader can only find three of.
+   */
+  var PW_CARD_MARKS = ['trophy', 'swap', 'clipboard'];
+  var PW_CARD_VALUE = 'Unlimited';
+  function cardMarks() {
+    return '<span class="pwc-marks">' +
+      PW_CARD_MARKS.map(function (k) { return pwArt(k); }).join('') + '</span>';
+  }
+  /* The insides on their own, because the football front page BUILDS its node rather than
+     writing markup into a string. Same card either way. */
+  function cardInner(title, sub) {
+    ensureStyle();
+    return '<span class="pwc-ic">' + pwArt('star') + '</span>' +
+      '<span class="pwc-t"><b>' + esc(title) + '</b><span>' + esc(sub) + '</span></span>' +
+      '<span class="pwc-go"><b>' + esc(PW_CARD_VALUE) + '</b>' + cardMarks() + '</span>';
+  }
+  function cardHTML(id, title, sub) {
+    return '<button class="pw-card" id="' + esc(id) + '">' + cardInner(title, sub) + '</button>';
+  }
+
+  root.RTG_STORE = { html: storeHTML, wire: wire, art: art, game: game, CFB_NAME: CFB_NAME,
+    card: cardHTML, cardInner: cardInner, cardValue: PW_CARD_VALUE };
 })(typeof self !== 'undefined' ? self : this);
