@@ -1,8 +1,13 @@
 name: Dash check
 
-# Em dashes and en dashes are banned in the wrestling game, in hoops, and in
-# MythiBall. See CLAUDE.md, and the GUARDED list at the top of
-# scripts/check-dashes.mjs.
+# Em dashes and en dashes are banned in every directory on the GUARDED list at
+# the top of scripts/check-dashes.mjs. See CLAUDE.md.
+#
+# THE PATHS BELOW HAVE TO MATCH THAT LIST. They are two separate places saying
+# the same thing, and when they drift the check does not fail, it simply stops
+# running: globe had been guarded for a while with nothing here to trigger it,
+# so a dash added to globe would have sailed through. Add a directory to both or
+# to neither.
 # Runnable locally with the exact same command:
 #   node scripts/check-dashes.mjs
 #
@@ -13,7 +18,9 @@ on:
     paths:
       - 'wrestling/**'
       - 'hoops/**'
+      - 'globe/**'
       - 'mythiball/**'
+      - 'golf/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   push:
@@ -21,7 +28,9 @@ on:
     paths:
       - 'wrestling/**'
       - 'hoops/**'
+      - 'globe/**'
       - 'mythiball/**'
+      - 'golf/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   workflow_dispatch: {}

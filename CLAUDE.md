@@ -54,10 +54,23 @@ node scripts/check-dashes.mjs
 Exits non-zero and prints `file:line` for every offender. It runs in CI on any
 push or pull request touching `wrestling/**` (`.github/workflows/dash-check.yml`).
 
-The guarded list inside that script is `wrestling`, `hoops`, `globe` and
-`mythiball`. The rest of the repo predates the rule and still contains hundreds
-of em dashes; add a directory to `GUARDED` only after cleaning it, never
-before, or the check becomes noise people learn to ignore.
+The guarded list inside that script is `wrestling`, `hoops`, `globe`,
+`mythiball` and `golf`. The rest of the repo predates the rule and still
+contains hundreds of em dashes; add a directory to `GUARDED` only after cleaning
+it, never before, or the check becomes noise people learn to ignore.
+
+**The workflow's `paths:` filter has to be widened in the same commit.** It is a
+second copy of the guarded list, and when the two drift the check does not fail,
+it silently stops running: `globe` sat on `GUARDED` for a while with no path
+entry to trigger it, so a dash added there would have gone straight through.
+
+**A sweep over a directory has to read its own diff for non-comment lines.**
+`golf` carried 244 dashes, 186 of them em dashes in code comments, and it was
+cleared in one pass to get it on the list. Nine of those were not prose: the em
+dash was doing a second job as the EMPTY VALUE in a career-milestone tile, the
+string a tile shows when the figure is zero, so reading every dash as
+punctuation turned every blank tile into a stray comma. Nothing threw and no
+test caught it. A hyphen is the replacement there, the same as for a range.
 
 Run the checker against anything ad hoc:
 

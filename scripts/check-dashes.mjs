@@ -28,8 +28,16 @@ import { join, relative } from 'path';
 
 /* Widened only for directories that are already clean, per CLAUDE.md. hoops was
    written under the rule from its first commit, so it went on the list in the
-   same commit rather than as a promise to clean it later. */
-const GUARDED = ['wrestling', 'hoops', 'globe', 'mythiball'];
+   same commit rather than as a promise to clean it later.
+
+   golf joined the other way round: it predates the rule and carried 244 dashes,
+   186 of them em dashes in code comments. They were cleared in the same commit
+   that added it here, which is the only order CLAUDE.md allows. Worth knowing
+   before the next directory goes on: 9 of those 244 were not prose at all. The
+   em dash was doing a second job as the EMPTY VALUE in a career-milestone tile,
+   so a rewrite that read every dash as punctuation turned every blank tile into
+   a stray comma. Read the diff for non-comment lines before trusting a sweep. */
+const GUARDED = ['wrestling', 'hoops', 'globe', 'mythiball', 'golf'];
 const EXT = /\.(html|js|mjs|css|json|md|txt|svg)$/i;
 const SKIP = /(^|\/)(node_modules|\.git)(\/|$)/;
 

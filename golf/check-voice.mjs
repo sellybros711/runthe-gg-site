@@ -71,9 +71,16 @@ const isProse = (s) => {
 
 // ── the rules ──────────────────────────────────────────────────────────────────────────────────
 const W = (...a) => new RegExp('\\b(' + a.join('|') + ')\\b', 'i');
+const DASHCHARS = String.fromCharCode(0x2014, 0x2013, 0x2012, 0x2015);
+/* THE ONE RULE THAT CANNOT WRITE ITSELF DOWN. golf/ is on check-dashes.mjs's GUARDED list now, so
+   this file may not contain an em dash, an en dash, or any entity that resolves to one, which is
+   exactly the set it exists to find. Hence the code points and the split entity names. The
+   alternative was exempting files whose job is finding dashes, and an exemption like that is one
+   somebody else takes later for a worse reason. */
+const DASHRE = new RegExp('[' + DASHCHARS + ']|&' + 'mdash;|&' + 'ndash;|&#821[12];|\\\\u201[34]');
+
 const RULES = [
-  { id: 'dash', what: 'em or en dash, or the entity that makes one',
-    re: /[—–]|&mdash;|&ndash;|&#8212;|&#8211;|\\u201[34]/ },
+  { id: 'dash', what: 'em or en dash, or the entity that makes one', re: DASHRE },
   /* THE APOSTROPHE, NOT THE QUOTE MARK. The brief says to prefer straight quotes because a curly one
      is an AI tell in plain text. That is not the finding here: this game has 4,830 curly double
      quotes and every one of them is quoted speech, in a press conference or a rival talking, which

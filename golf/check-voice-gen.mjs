@@ -90,7 +90,7 @@ const LEADIN = /^(if|when|unless|although|though|while|after|before|since|becaus
 
 const RULE_OF_THREE = /\b[\w-]+, [\w-]+,? and [\w-]+\s*[.!?]/;
 const TELLS = {
-  dash: /[—–]|&mdash;|&ndash;/,
+  dash: new RegExp('[' + String.fromCharCode(0x2014, 0x2013) + ']|&' + 'mdash;|&' + 'ndash;'),
   vocab: /\b(additionally|moreover|furthermore|crucial|pivotal|vital|profound|intricate|seamless|robust|enduring|showcas\w+|underscor\w+|testament|foster\w*|garner\w*)\b/i,
   negparallel: /\b(not (just|merely|only) (a|an|about)?\b[^.!?]{0,60}?\b(it('s| is)|but)\b|more than (just )?(a|an)\b)/i,
   copula: /\b(serves as|stands as|acts as|represents a|marks a)\b/i,

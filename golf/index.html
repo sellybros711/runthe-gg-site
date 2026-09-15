@@ -253,7 +253,7 @@ window.GA_ID='G-L29P5MRWKE';
     background:rgba(9,30,20,.88); -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px);
     border-bottom:1px solid rgba(244,227,201,.10)}
   /* CS471: the wordmark is FLEX-centered in the space BETWEEN the two side groups (not absolutely centered),
-     so it can never overlap the profile/legend/coin pills — each group owns its own flex track. It clips
+     so it can never overlap the profile/legend/coin pills: each group owns its own flex track. It clips
      gracefully if it ever ran out of room. (CS432's absolute centering could bleed over the pills once the
      coin number got wide.) */
   .banner{display:flex; align-items:center; gap:10px; max-width:780px; margin:0 auto; position:relative}
@@ -1489,7 +1489,7 @@ window.GA_ID='G-L29P5MRWKE';
   .oscard.warn .oscard-hd{color:#f0b49f}
   .oscard-sub{font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.32}
   .oscard-lock{font-size:10.5px; color:var(--gold); margin-top:5px}
-  /* SEASON SHEET — three to five contract-style targets, sized to your career stage. Card lives
+  /* SEASON SHEET: three to five contract-style targets, sized to your career stage. Card lives
      in the season screen (compact) and on the season summary Overview tab (with a grade). */
   .sgcard{background:var(--panel); border:1px solid var(--panelb); border-radius:12px; padding:12px 14px 10px;
     margin:8px auto 12px; max-width:520px; font-family:var(--body)}
@@ -1604,9 +1604,9 @@ window.GA_ID='G-L29P5MRWKE';
   .attr .dadd{flex:0 0 auto; margin-left:3px; width:22px; height:22px; border-radius:50%; background:var(--gold);
     display:inline-flex; align-items:center; justify-content:center}
   .attr .dadd svg{display:block; width:14px; height:14px}
-  /* ===== redesigned draft stat slots: one quality dot on a 0–99 track, a calm draft ring instead of the
+  /* ===== redesigned draft stat slots: one quality dot on a 0-99 track, a calm draft ring instead of the
      gold "+", cream numbers, and (on filled slots) a hollow ghost ring showing what THIS golfer offered
-     there — the value the game already tracks in S.current. ===== */
+     there: the value the game already tracks in S.current. ===== */
   .dgrid{grid-template-columns:1fr 1fr!important; gap:9px!important}
   .dtile{position:relative; border-radius:12px; border:1px solid var(--panelb); background:var(--panel);
     padding:10px 12px 12px; display:flex; flex-direction:column; gap:9px; overflow:hidden; text-align:left;
@@ -1635,7 +1635,7 @@ window.GA_ID='G-L29P5MRWKE';
   .dt-val{font:800 23px/.9 var(--body); color:#eef4ee; flex:0 0 auto; font-variant-numeric:tabular-nums}
   .dt-cap{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px; font:700 10px/1.2 var(--body); color:#7f978b}
   .dt-cap>span{display:inline-flex; align-items:center; gap:4px; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .dt-miss{flex:0 0 auto; color:var(--muted)}   /* what THIS golfer offered here — ○ ties it to the ghost ring above */
+  .dt-miss{flex:0 0 auto; color:var(--muted)}   /* what THIS golfer offered here, ○ ties it to the ghost ring above */
   .dt-ringmini{width:8px; height:8px; border-radius:50%; border:1.5px solid rgba(238,245,239,.6); flex:0 0 auto}
   .dt-draft{width:28px; height:28px; border-radius:50%; border:1.5px solid rgba(205,162,74,.5); display:grid;
     place-items:center; color:var(--gold2); flex:0 0 auto; transition:background .12s ease, color .12s ease, border-color .12s ease}
@@ -1670,10 +1670,10 @@ window.GA_ID='G-L29P5MRWKE';
   .buildhero .avatarfig{width:114px; height:114px}
   .avatarfig img, .avatarfig svg, .avatarfig canvas{width:100%; height:100%; display:block}
   .avatarfig canvas{border-radius:50%}
-  /* CS353: retro pixel golfer — crisp scaling, no border-radius crop, contain within the sized box */
+  /* CS353: retro pixel golfer, crisp scaling, no border-radius crop, contain within the sized box */
   .pxfig{filter:none}
   .pxfig .pximg{width:100%; height:100%; object-fit:contain; image-rendering:pixelated; image-rendering:crisp-edges; border-radius:0; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
-  /* CS410: EFFECT LAYER — animated glow auras. The glow is a drop-shadow, so it hugs the golfer's silhouette
+  /* CS410, the EFFECT LAYER: animated glow auras. The glow is a drop-shadow, so it hugs the golfer's silhouette
      and works on any avatar img (the wrapped .pximg and the bare .pxfigsm). --fxc = per-effect glow color. */
   .pxfig .pximg[class*="fx-"], .pxfigsm[class*="fx-"], img.fxa[class*="fx-"]{ animation:fxGlow 2.4s ease-in-out infinite; }
   .fx-gold.fx-gold{ --fxc:#f1d04a; animation-name:fxShim } .fx-frost{ --fxc:#9fdcff; animation-duration:3.2s } .fx-void{ --fxc:#8a54d0; animation-duration:2.8s }
@@ -2750,7 +2750,7 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes authspin{to{transform:rotate(360deg)}}
   .sstat .k{font:800 9.5px/1 var(--body); letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
   .sstat .v{font-family:var(--mono); font-weight:800; font-size:18px; margin-top:5px; color:var(--oncard)}
-  /* THE RECORDS BOOK — the majors chase (top of the game's greats vs YOU), with your career
+  /* THE RECORDS BOOK: the majors chase (top of the game's greats vs YOU), with your career
      milestones as a companion block. Lives in the Profile overlay's Records tab. */
   .rbchase{background:linear-gradient(180deg,rgba(241,208,74,.14),rgba(241,208,74,.04)); border:1px solid rgba(241,208,74,.42);
     border-radius:13px; padding:14px 16px; margin:0 0 14px; font-family:var(--body)}
@@ -2785,7 +2785,7 @@ window.GA_ID='G-L29P5MRWKE';
   .rbmile-v.gold{color:var(--gold)}
   .rbmile-sub{font-size:10.5px; color:var(--muted); margin-top:2px}
   .rb-empty{font-size:13px; color:var(--muted); margin:16px 0; text-align:center; padding:14px 12px; border:1px dashed var(--line); border-radius:10px}
-  /* NAMED OPENING RIVAL — a "Career Nemesis" strip. Sits at the top of the Records tab as the
+  /* NAMED OPENING RIVAL: a "Career Nemesis" strip. Sits at the top of the Records tab as the
      most personal frame on the career, above the broader all-time majors chase. Same visual
      vocabulary as .rbchase (gold border, display type) but split down the middle for the vs. */
   .orival{background:linear-gradient(180deg,rgba(224,122,95,.14),rgba(224,122,95,.04)); border:1px solid rgba(224,122,95,.5);
@@ -2802,7 +2802,7 @@ window.GA_ID='G-L29P5MRWKE';
   .orival-vs{font-family:var(--display); font-weight:400; font-size:14px; color:rgba(224,122,95,.7); letter-spacing:.08em}
   .orival-foot{margin-top:10px; padding-top:8px; border-top:1px dashed rgba(224,122,95,.16); font-size:12px; color:var(--muted); text-align:center; font-variant-numeric:tabular-nums}
   .orival-foot b{color:var(--oncard); font-weight:700}
-  /* SCHEDULE AGENCY — the Rest Week card in the summary + the pill on the control bar. Real pros
+  /* SCHEDULE AGENCY: the Rest Week card in the summary + the pill on the control bar. Real pros
      don't tee it up 40 weeks a year; you shouldn't either if you don't want to. */
   .restcard{background:var(--panel); border:1px solid var(--line); border-left:3px solid #6bb59a;
     border-radius:10px; padding:12px 14px 10px; margin:6px auto 12px; max-width:520px; font-family:var(--body)}
@@ -2811,7 +2811,7 @@ window.GA_ID='G-L29P5MRWKE';
   .restcard-count{font-family:var(--mono); font-weight:800; font-size:11.5px; color:var(--oncard); font-variant-numeric:tabular-nums}
   .restcard-list{font-size:13px; color:var(--muted); line-height:1.45}
   .restcard-list b{color:var(--oncard); font-weight:600}
-  /* CLUB PROGRESSION — each set of clubs you've equipped accumulates reps as you play. Level up
+  /* CLUB PROGRESSION: each set of clubs you've equipped accumulates reps as you play. Level up
      grants a small bonus to that set's primary boost stat. Lives in the Records tab under a
      "Your Clubs" heading, one row per set. Highlighted row = currently equipped. */
   .clubprog{display:flex; flex-direction:column; gap:5px; margin:6px 0 4px}
@@ -3594,7 +3594,7 @@ const ICONS={
   arrowUp:'<path d="M12 20V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   arrowUR:'<path d="M7 17 17 7M8 7h9v9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   arrowLeft:'<path d="M11 6l-6 6 6 6M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
-  // CS428: Legend Token — a distinct violet minted token with a gold star (playable retired-career legends)
+  // CS428, the Legend Token: a distinct violet minted token with a gold star (playable retired-career legends)
   legendtoken:'<circle cx="12" cy="12" r="11" fill="#8b5cf6"/><circle cx="12" cy="12" r="11" fill="none" stroke="#4c1d95" stroke-width="1.3"/><circle cx="12" cy="12" r="9.6" fill="none" stroke="#5b21b6" stroke-width="0.8" stroke-dasharray="0.5 1.05" opacity="0.85"/><circle cx="12" cy="12" r="9.3" fill="none" stroke="#c4b5fd" stroke-width="0.7" opacity="0.6"/><path d="M12 5.8 L13.53 9.90 L17.90 10.08 L14.47 12.80 L15.64 17.02 L12 14.6 L8.36 17.02 L9.53 12.80 L6.10 10.08 L10.47 9.90 Z" fill="#F1D04A" stroke="#9a6b17" stroke-width="0.4"/>',
   // RunTheTour-branded coin: gold, reeded edge, the flag-over-green crest mark embossed (the currency)
   coin:'<circle cx="12" cy="12" r="11" fill="#F1D04A"/><circle cx="12" cy="12" r="11" fill="none" stroke="#9a6b17" stroke-width="1.3"/><circle cx="12" cy="12" r="9.6" fill="none" stroke="#8a6410" stroke-width="0.8" stroke-dasharray="0.5 1.05" opacity="0.85"/><circle cx="12" cy="12" r="9.4" fill="none" stroke="#f7d574" stroke-width="0.7" opacity="0.55"/><path d="M9.7 6.6 v10" stroke="#7a5410" stroke-width="1.3" stroke-linecap="round"/><path d="M9.7 6.7 h4.8 l-1.6 2 1.6 2 h-4.8 z" fill="#7a5410"/><ellipse cx="12" cy="16.6" rx="4.8" ry="1.5" fill="none" stroke="#7a5410" stroke-width="1"/><circle cx="13.7" cy="16.6" r="0.85" fill="#7a5410"/>',
@@ -4340,7 +4340,7 @@ const ACH=[].concat(
    {id:'cm_con39',cat:'Daily Mastery',name:'Conquered the Tour',desc:'Beat the tour average at all 39 daily courses.',goal:39,pts:175,get:m=>m.coursesConquered},
    {id:'cm_a5',   cat:'Daily Mastery',name:'Straight-A Golfer',desc:'Earn an A-grade round at 5 different courses.',  goal:5, pts:50, get:m=>m.coursesMasteredA},
    {id:'cm_a15',  cat:'Daily Mastery',name:'Honor Roll',     desc:'Earn an A-grade round at 15 different courses.', goal:15,pts:120,get:m=>m.coursesMasteredA}],
-  // ================= EXPANSION 5 (CS434): Collector — cosmetics + packs =================
+  // ================= EXPANSION 5 (CS434): Collector, cosmetics and packs =================
   // ---- Collector: collectibles owned (paid Pro Shop / pack items, not free basics) ----
   [{id:'col_1',   cat:'Collector',name:'First Find',        desc:'Own your first Pro Shop collectible.', goal:1,  pts:15, get:m=>m.itemsOwned},
    {id:'col_10',  cat:'Collector',name:'Building a Wardrobe',desc:'Own 10 collectibles.',                goal:10, pts:35, get:m=>m.itemsOwned},
@@ -4814,7 +4814,7 @@ function careerEndPhrase(c){
 }
 // Profile → History: the chronological story of every season and every career, read straight from the
 // two logs. Seasons are grouped by career so it reads as chapters, newest career first (the active one
-// on top), each season inside newest-year first — the same order the logs are stored in.
+// on top), each season inside newest-year first: the same order the logs are stored in.
 function profileHistoryHTML(){
   const sl=seasonLog(), cl=careerLog();
   if(!sl.length && !cl.length)
@@ -4883,7 +4883,7 @@ function dailyToday(){const dd=dailyState();return (dd&&dd.date===todayKey())?dd
 function dailyAttempts(){const dd=dailyToday(); if(!dd)return 0; return dd.attempts!=null?dd.attempts:(dd.done?1:0);}
 function dailyAttemptsLeft(){ if(dailyUncapped()) return 99; return Math.max(0,dailyMaxAttempts()-dailyAttempts());}
 function dailyBest(){const dd=dailyToday(); return dd?(dd.best||dd.result||null):null;}
-// Dev accounts (RunnyJ, CSel8 — see devMode) get UNLIMITED Play 18 attempts so we can check the live game any
+// Dev accounts (RunnyJ, CSel8, see devMode) get UNLIMITED Play 18 attempts so we can check the live game any
 // time; only the FIRST 3 attempts of the day count toward records (course records + the daily board), so our
 // testing never pollutes the leaderboards. Everyone else keeps the normal 3-a-day cap unchanged.
 function dailyUnlimited(){ return devMode(); }
@@ -4970,7 +4970,7 @@ function streakDays(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.
 const STREAK_WEEK_COIN_DAY={1:150, 2:350, 3:350, 4:350, 5:1000, 6:1000, 7:1000};
 function streakDayCoins(day){ return STREAK_WEEK_COIN_DAY[Math.max(1,Math.min(7,day||1))]||150; }
 // Economy rebalance: the day-7 capstone was a CHAMPION pack every single week (45,000 coins ≈ 12 weeks of a
-// player's whole coin income, handed out 52×/yr). The weekly payoff moment stays, one tier down — Champion
+// player's whole coin income, handed out 52×/yr). The weekly payoff moment stays, one tier down. Champion
 // packs are now earned from drops / the Tour Pass / a purchase, so the top tier means something.
 const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};   // daily-CHALLENGE day 7 = a Tour pack
 function sundayWeekKey(){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
@@ -5034,7 +5034,7 @@ function streakAdventNode(){ if(!sbSignedIn()) return null;
       <span style="font:800 11.5px var(--body);color:#ffd45e">🎁 7-Day Rewards</span>
       <span class="small muted" style="letter-spacing:0">Play daily to claim · resets Sunday</span></div>
     <div style="display:flex;gap:4px">${cells}</div></div>`); }
-// CS461: DAILY LOGIN BONUS — a 7-day rotating login calendar, SEPARATE from the daily-CHALLENGE streak week
+// CS461, the DAILY LOGIN BONUS: a 7-day rotating login calendar, SEPARATE from the daily-CHALLENGE streak week
 // above. Just signing in each (ET) day advances the loop and grants that day's reward; DAY 7 = a medium
 // (Tour) pack. (The daily-challenge track gives the BEST (Champion) pack on ITS day 7.) Signed-in only
 // (coins/packs need an account). Forgiving: a missed day doesn't reset - the loop advances on the next login.
@@ -5069,12 +5069,12 @@ function maybeLoginBonus(){ if(!sbSignedIn()) return; const t=todayKey(), s=logi
   S.loginReward=rew;
   try{ track('login_bonus',{day:n,kind:rew.kind}); }catch(e){}
   // Sequencing (owner): the Season 1 launch popup always shows FIRST. If it's still pending, or any
-  // other popup is already up, DEFER this login bonus so the two don't clobber each other — it opens
+  // other popup is already up, DEFER this login bonus so the two don't clobber each other: it opens
   // when the season popup is dismissed (or on the next clean title render) via flushPendingLogin().
   if(S.overlay || s1LaunchPending() || welcomePackPending()){ S._loginPending=true; return; }
   S.overlay='login'; try{ render(); }catch(e){} }
 // Is the one-time Season 1 launch popup still owed to this player? (Same eligibility maybeS1LaunchPopup
-// uses, checked BEFORE it sets the seen flag — so a still-pending season popup can gate the login bonus.)
+// uses, checked BEFORE it sets the seen flag, so a still-pending season popup can gate the login bonus.)
 function s1LaunchPending(){ try{
   if(LS.get('bag_s1_launch_seen',false)) return false;
   if(typeof isNewPlayer==='function' && isNewPlayer()) return false;
@@ -5348,7 +5348,7 @@ function overlayS1Launch(screen){
     <button class="btn ghost play s1btn" style="max-width:360px;margin:0 auto">Let's play</button>
     </div></div>`);
   const close=()=>{
-    // If a daily-login bonus is queued behind this, swap STRAIGHT to it — never pass through the
+    // If a daily-login bonus is queued behind this, swap STRAIGHT to it, never pass through the
     // null-overlay state, which would fire the Back-button history.back() whose popstate then closes
     // the login popup out from under us (overlay stays "open" the whole time, so history is undisturbed).
     if(S._loginPending && typeof s1LaunchPending==='function' && !s1LaunchPending()){
@@ -5412,7 +5412,7 @@ const ARCADE_GAMES=[
   ['Number Game','#F2B632'],['Odd One Out','#B79BF6'],['Career Path','#48D17A'],['Rank It','#F778AE'],
   ['Alma Mater','#96B93C'],['High Low','#FF8A3D']
 ];
-/* Owner: "can we remove the arcade pop up ad from the run the tour home page?" — no, it no longer
+/* Owner: "can we remove the arcade pop up ad from the run the tour home page?" No, it no longer
    opens itself on the title screen. Flip this to true to bring it back: the overlay, its styling and
    the ?arcadead=1 device check are all still here and still work, so this is a one-word restore.
    Scope note: this is the RunTheTour popup only. The site-wide house ad described above (shared keys
@@ -5423,7 +5423,7 @@ function maybeArcadeAd(force){ try{
     if(!ARCADE_AD_ENABLED) return;                        // owner: taken off the home screen
     if(arcadeAdOff() || arcadeAdSeenThisSession()) return;
     if(S.overlay || S.screen!=='title') return;
-    if(typeof tourRunning==='function' && tourRunning()) return;              // a guided tour (e.g. the Roster hint) owns the screen — never stack the ad on it
+    if(typeof tourRunning==='function' && tourRunning()) return;              // a guided tour (e.g. the Roster hint) owns the screen, never stack the ad on it
     if(typeof isNewPlayer==='function' && isNewPlayer()) return;              // they're mid-onboarding
     if(typeof welcomePackPending==='function' && welcomePackPending()) return; // the player's own stuff first
     if(typeof s1LaunchPending==='function' && s1LaunchPending()) return;
@@ -5431,12 +5431,12 @@ function maybeArcadeAd(force){ try{
   }
   S.overlay='arcadead'; render();
   // The title chain fires on a fixed timer, but a signed-in player's popup cascade (welcome pack, login
-  // bonus, coin grant, pass/bucket rewards, purchase check) fires whenever cloudPull() resolves — i.e. at
+  // bonus, coin grant, pass/bucket rewards, purchase check) fires whenever cloudPull() resolves, i.e. at
   // network latency. If that lands a beat AFTER us it replaces the ad on screen, so only burn the
   // once-per-session flag once the ad has actually SURVIVED there. Otherwise a player who never saw it
   // loses it for the whole session; now it just comes back on the next clean title render.
   setTimeout(function(){ try{
-    if(S.overlay!=='arcadead') return;                                       // stomped — keep it owed
+    if(S.overlay!=='arcadead') return;                                       // stomped, keep it owed
     arcadeAdSeenNow();
   }catch(e){} }, 320);
 }catch(e){} }
@@ -5526,7 +5526,7 @@ function overlayArcadeAd(screen){
     else localStorage.removeItem(ARCADE_AD_OFF);
   }catch(e){} };
   box.onchange=()=>{ remember(); if(box.checked){ try{ track('arcade_ad_optout'); }catch(e){} } };
-  // Acting on the ad counts as seeing it, even inside the 320ms "did it survive" window — otherwise
+  // Acting on the ad counts as seeing it, even inside the 320ms "did it survive" window, otherwise
   // closing it immediately would leave the flag unburnt and it would pop straight back up.
   const close=(how)=>{ arcadeAdSeenNow(); remember(); try{ track('arcade_ad_dismiss',{how}); }catch(e){} S.overlay=null; render(); };
   ov.querySelector('.x').onclick=()=>close('x');
@@ -5538,12 +5538,12 @@ function overlayArcadeAd(screen){
 }
 // ════ POST-PURCHASE CELEBRATION (#6) ═══════════════════════════════════════════════════════════
 // Fired from purchaseCheck once the webhook-credited goods actually LAND in the wallet (a delta is
-// proof of delivery — the signed webhook is the only thing that credits). A real "you got it"
-// moment — coin count-up, confetti, the first-time 2× called out — with the follow-through action
+// proof of delivery: the signed webhook is the only thing that credits). A real "you got it"
+// moment: coin count-up, confetti, the first-time 2× called out, with the follow-through action
 // for what was bought: claim the bonus pack, see the pass perks, or go play the daily.
 function overlayPurchased(screen){
   var p=S.purchased||{kind:'coins',coins:0};
-  try{ packStyleOnce(); }catch(e){}   // .packconf confetti CSS lives there — guarantee it's injected
+  try{ packStyleOnce(); }catch(e){}   // .packconf confetti CSS lives there, guarantee it's injected
   var reduce=false; try{ reduce=matchMedia('(prefers-reduced-motion:reduce)').matches; }catch(e){}
   var inner='';
   if(p.kind==='pass'){
@@ -5730,8 +5730,8 @@ const DAILY_QUEST_XP=120;      // Tour Rep awarded once/day for finishing all th
 const WEEKLY_CHAL_XP=250;      // Tour Rep awarded per weekly challenge completed
 const WEEKLY_PACK_N=2;         // how many of the week's challenges pay a free pack (the rest pay coins)
 const WEEKLY_CHAL_COINS=750;   // coins paid by a weekly challenge that doesn't carry a pack (halved from 1500, cf. economy trim)
-// Shard faucets. A shard is worth RARITY_PRICE/SHARD_COST in coins — a RARE shard is 15,000 and an EPIC
-// 27,500 (3.4× a Base pack) — so these two lines were quietly the largest reward faucet in the game
+// Shard faucets. A shard is worth RARITY_PRICE/SHARD_COST in coins: a RARE shard is 15,000 and an EPIC
+// 27,500 (3.4× a Base pack), so these two lines were quietly the largest reward faucet in the game
 // (~215,000 coins/week between them, i.e. ~3 hand-picked items every week). Halved: the daily all-done
 // bonus pays a COMMON shard, and only the first WEEKLY_PACK_N weeklies pay an EPIC (the rest pay RARE).
 const DAILY_QUEST_SHARD='common';   // rarity of the shard for finishing all of the day's quests
@@ -5803,7 +5803,7 @@ function questWeekly(metric,n){ if(!sbSignedIn()||!(n>0)) return; const w=weekCh
   const newly=[]; weeklySet().forEach(c=>{ if(!w.done[c.id] && (w.prog[c.metric]||0)>=c.target){ w.done[c.id]=1; newly.push(c); } });
   LS.set(acctKey('bag_weeklychal'),w); if(typeof cloudPush==='function')cloudPush();
   // Economy rebalance: all 4 weeklies used to pay a free pack (4/wk on top of the two reward tracks). Now the
-  // first WEEKLY_PACK_N pay a pack and the rest pay COINS — deliberately NOT more shards, since one epic shard
+  // first WEEKLY_PACK_N pay a pack and the rest pay COINS, deliberately NOT more shards, since one epic shard
   // is worth ~27,500 coins (3.4× a base pack), so paying in shards would have made the leak bigger, not smaller.
   // Every weekly still pays its Tour Rep + a shard, so the targeted-item path is untouched.
   const wset=weeklySet();
@@ -6633,9 +6633,9 @@ function buildGuestMajorField(){
 // Senior pros stay dangerous: on the (shorter, no-cut) Legend Circuit a retired great recovers a good
 // chunk of the peak form that fully-age-declined ratings strip away, so the circuit field is genuinely
 // competitive instead of a weak lay-up. Re-tuned 0.42 → 0.72 (owner won EVERY event two straight
-// circuit seasons at 0.42 — a boosted ~94 entrant was winning ~46% of events). At 0.72 the field runs
+// circuit seasons at 0.42: a boosted ~94 entrant was winning ~46% of events). At 0.72 the field runs
 // top ~88 / median ~82 and, Monte-Carlo vs the live simRound: an 86 entrant wins ~1/season, 90 ~2-3,
-// a boosted 94 ~4, a maxed 97 ~6 — a Langer-great year is possible, a clean sweep isn't.
+// a boosted 94 ~4, a maxed 97 ~6: a Langer-great year is possible, a clean sweep isn't.
 const CIRCUIT_VET=0.72;
 function legendField(n){
   const w=ensureWorld(); if(!w || !w.alumni.length) return [];
@@ -8806,18 +8806,18 @@ function rivalStatusNode(){
   box.appendChild($(`<div style="letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:11px;margin-bottom:6px">⚔️ Your Rival</div>`));
   const fr=S.freshRivalRetired;
   if(fr){ const tot=fr.meAhead+fr.themAhead, mine=fr.meAhead>fr.themAhead;
-    box.appendChild($(`<div class="small" style="color:#e9a23b;margin-bottom:8px"><b>${esc(fr.name)}</b> has retired, your rivalry is in the books${tot?` at <b style="color:var(--oncard)">${fr.meAhead}–${fr.themAhead}</b> head-to-head${(fr.seasonsWon+fr.seasonsLost)?`, ${fr.seasonsWon}–${fr.seasonsLost} in season series`:''}`:''}. ${tot?(mine?'You came out on top. ':(fr.meAhead<fr.themAhead?'They had your number. ':'Dead even. ')):''}A new rival can emerge as you keep competing.</div>`)); }
+    box.appendChild($(`<div class="small" style="color:#e9a23b;margin-bottom:8px"><b>${esc(fr.name)}</b> has retired, your rivalry is in the books${tot?` at <b style="color:var(--oncard)">${fr.meAhead}-${fr.themAhead}</b> head-to-head${(fr.seasonsWon+fr.seasonsLost)?`, ${fr.seasonsWon}-${fr.seasonsLost} in season series`:''}`:''}. ${tot?(mine?'You came out on top. ':(fr.meAhead<fr.themAhead?'They had your number. ':'Dead even. ')):''}A new rival can emerge as you keep competing.</div>`)); }
   const rv=getRival();
   if(rv){ const h=(S.career&&S.career.h2h&&S.career.h2h[rv.name])||{meAhead:0,themAhead:0,ev:0};
     const tot=h.meAhead+h.themAhead;
     const gw=rv.grudgeWins||0, gl=rv.grudgeLosses||0;
-    box.appendChild($(`<div class="small" style="color:var(--oncard)">Your nemesis is <b style="color:var(--gold)">${esc(rv.name)}</b> · OVR ${rv.ovr}. ${tot?`You're ahead in <b>${h.meAhead}</b> of <b>${tot}</b> career meetings`:'Your battle starts this season'}${(rv.seasonsWon+rv.seasonsLost)?` · season series <b>${rv.seasonsWon}–${rv.seasonsLost}</b>`:''}. Finish the season ahead of them to win the year and earn a <b>Rivalry tee</b>.</div>`));
-    if(gw+gl>0) box.appendChild($(`<div class="small" style="margin-top:6px;color:#ff8f7e;font-weight:700">⚔ Grudge matches (both in Sunday contention): <b style="color:var(--oncard)">${gw}–${gl}</b></div>`));
+    box.appendChild($(`<div class="small" style="color:var(--oncard)">Your nemesis is <b style="color:var(--gold)">${esc(rv.name)}</b> · OVR ${rv.ovr}. ${tot?`You're ahead in <b>${h.meAhead}</b> of <b>${tot}</b> career meetings`:'Your battle starts this season'}${(rv.seasonsWon+rv.seasonsLost)?` · season series <b>${rv.seasonsWon}-${rv.seasonsLost}</b>`:''}. Finish the season ahead of them to win the year and earn a <b>Rivalry tee</b>.</div>`));
+    if(gw+gl>0) box.appendChild($(`<div class="small" style="margin-top:6px;color:#ff8f7e;font-weight:700">⚔ Grudge matches (both in Sunday contention): <b style="color:var(--oncard)">${gw}-${gl}</b></div>`));
   }
   // past rivalries, the nemeses you've outgrown or outlasted, kept for the record
   const past=(S.career&&S.career.pastRivals)||[];
   if(past.length){
-    const rows=past.slice().reverse().map(p=>`<div class="small" style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:var(--muted)"><span>${p.reason==='outgrew'?'✓':'·'} <b style="color:var(--oncard);font-weight:700">${esc(p.name)}</b> <span style="font-size:11px">${calYear(p.fromYear)}–${calYear(p.toYear)}</span></span><span style="white-space:nowrap">${p.meAhead}–${p.themAhead} H2H</span></div>`).join('');
+    const rows=past.slice().reverse().map(p=>`<div class="small" style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:var(--muted)"><span>${p.reason==='outgrew'?'✓':'·'} <b style="color:var(--oncard);font-weight:700">${esc(p.name)}</b> <span style="font-size:11px">${calYear(p.fromYear)}-${calYear(p.toYear)}</span></span><span style="white-space:nowrap">${p.meAhead}-${p.themAhead} H2H</span></div>`).join('');
     box.appendChild($(`<div style="margin-top:9px;border-top:1px solid var(--line);padding-top:8px"><div class="small" style="color:var(--muted);font-weight:700;letter-spacing:.04em;margin-bottom:3px">Past rivalries</div>${rows}</div>`));
   }
   // CS474 declutter: with no active rival, no just-retired-rival note, and no past rivals, this was an empty
@@ -8832,14 +8832,14 @@ function rivalFormedHTML(fr){ if(!fr) return '';
   return `<div class="scout" style="max-width:520px;margin:8px auto 14px;border-color:var(--gold);text-align:center">
     <div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:7px">⚔️ A Rivalry Is Born</div>
     <div style="font-weight:800;color:var(--oncard);font-size:17px">${esc(fr.name)} <span class="small muted">· OVR ${fr.ovr}</span></div>
-    <div class="small" style="margin-top:6px;color:var(--oncard)">After a few seasons trading blows, <b>${esc(fr.name)}</b> has emerged as your nemesis. You've finished right beside each other <b>${fr.near}</b> times${tot?`, and you're <b>${fr.meAhead}–${fr.themAhead}</b> head-to-head so far`:''}. The rivalry starts now.</div></div>`;
+    <div class="small" style="margin-top:6px;color:var(--oncard)">After a few seasons trading blows, <b>${esc(fr.name)}</b> has emerged as your nemesis. You've finished right beside each other <b>${fr.near}</b> times${tot?`, and you're <b>${fr.meAhead}-${fr.themAhead}</b> head-to-head so far`:''}. The rivalry starts now.</div></div>`;
 }
 // season-summary card when you've OUTGROWN a rival, a triumph, with the record they leave behind
 function rivalOutgrownHTML(fr){ if(!fr) return '';
   return `<div class="scout" style="max-width:520px;margin:8px auto 14px;border-color:#35d6a0;text-align:center">
     <div style="letter-spacing:.12em;text-transform:uppercase;color:#35d6a0;font-weight:800;font-size:10px;margin-bottom:7px">✓ Rivalry Outgrown</div>
     <div style="font-weight:800;color:var(--oncard);font-size:16px">You've left ${esc(fr.name)} behind</div>
-    <div class="small" style="margin-top:6px;color:var(--oncard)">${fr.years>1?`${fr.years} years`:'A run'} of beating ${esc(fr.name)} (career H2H <b>${fr.meAhead}–${fr.themAhead}</b>, series <b>${fr.seasonsWon}–${fr.seasonsLost}</b>), and now <b>OVR ${fr.myOvr}</b> to their ${fr.rvOvr}. You've simply moved up a level. A new rival will rise to meet you.</div></div>`;
+    <div class="small" style="margin-top:6px;color:var(--oncard)">${fr.years>1?`${fr.years} years`:'A run'} of beating ${esc(fr.name)} (career H2H <b>${fr.meAhead}-${fr.themAhead}</b>, series <b>${fr.seasonsWon}-${fr.seasonsLost}</b>), and now <b>OVR ${fr.myOvr}</b> to their ${fr.rvOvr}. You've simply moved up a level. A new rival will rise to meet you.</div></div>`;
 }
 // season-summary rivalry card from this season's head-to-head outcome
 function rivalCardHTML(rr){ if(!rr) return '';
@@ -8851,10 +8851,10 @@ function rivalCardHTML(rr){ if(!rr) return '';
     <div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:7px;text-align:center">⚔️ Rivalry${beat?' won':''} · head-to-head</div>
     <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
       <div style="text-align:right"><div style="font-weight:800;color:${beat?'var(--gold)':'var(--oncard)'}">${meName}</div><div class="small muted">#${rr.myRank} · ${fmt(rr.myMoney)}</div></div>
-      <div style="font-weight:900;font-size:20px;color:var(--oncard)">${rr.meAhead}<span style="color:var(--muted);font-size:14px"> – </span>${rr.rvAhead}</div>
+      <div style="font-weight:900;font-size:20px;color:var(--oncard)">${rr.meAhead}<span style="color:var(--muted);font-size:14px"> - </span>${rr.rvAhead}</div>
       <div style="text-align:left"><div style="font-weight:800;color:${lost?'var(--gold)':'var(--oncard)'}">${esc(rr.name)}</div><div class="small muted">#${rr.rvRank} · ${fmt(rr.rvMoney)}</div></div></div>
     <div class="small center" style="margin-top:7px;color:var(--muted)">finished ahead of your rival in ${rr.meAhead} of ${rr.both} shared events</div>
-    <div class="small center" style="margin-top:5px;color:${col};font-weight:700">${beat?'You won the season series. 🏅 Rivalry tee earned.':(tie?`Dead even, you split the series ${rr.meAhead}–${rr.rvAhead}.`:`${esc(rr.name)} took the series. Get them next year.`)}</div></div>`;
+    <div class="small center" style="margin-top:5px;color:${col};font-weight:700">${beat?'You won the season series. 🏅 Rivalry tee earned.':(tie?`Dead even, you split the series ${rr.meAhead}-${rr.rvAhead}.`:`${esc(rr.name)} took the series. Get them next year.`)}</div></div>`;
 }
 /* ---- YOUR golfer's bounded career (30-year shelf life). Decline is AGE- and FORM-based, not a
    flat year cutoff: a rookie starts ~22 and peaks through year 14 (age 35) with NO decline; only
@@ -8990,7 +8990,7 @@ const PANTS=[
   {id:'wine', a:'#7a2440', b:'#611c33'},
   {id:'gold', a:'#d4af37', b:'#b4922c'},
   {id:'royalpurple',a:'#5d2ea6', b:'#4a2487'},
-  {id:'rtgnavy',a:'#173a63', b:'#0d2b4a'},   // Run The Games kit — house navy trousers
+  {id:'rtgnavy',a:'#173a63', b:'#0d2b4a'},   // Run The Games kit, house navy trousers
 ];
 const SHOES=[
   {id:'white',a:'#eef0ee'},
@@ -9359,7 +9359,7 @@ const COIN_EPOCH=2;                          // bump to re-baseline every accoun
 // accBoost shaves the largest boosts first when a cap binds; the closet summary shows "(capped)".)
 const ACC_SKILL_CAP=5, ACC_TOTAL_CAP=20;
 const ACC_BOOST_SCALE=1;                      // full-strength catalog boosts (owner: bring the boosts back)
-// CS408 — ONE coherent direct-buy price ladder by RARITY, applied to every pack-poolable item (cosmetics +
+// CS408: ONE coherent direct-buy price ladder by RARITY, applied to every pack-poolable item (cosmetics +
 // accessories), so a "rare" costs the same whether it's a hat or a driver. CS464: direct-buy is a STEEP
 // premium (these items give real skill boosts, so buying a specific one costs well above the pack that
 // could yield its tier) - PACKS are the main way to earn items. Pack tiers (8k/22k/45k) are unchanged.
@@ -9507,7 +9507,7 @@ function addBonusCoins(n, opts){ opts=opts||{}; n=Math.round(n||0); if(!sbSigned
   if(!opts.silent){ try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(opts.label?' '+opts.label:' earned')+'!'); }catch(e){} }
   return n; }
 // ═══ #8 COIN HISTORY ═══ a lightweight ledger of every earn & spend so the balance is explainable.
-// Account-scoped, DEVICE-local (a display log capped at 150 entries, not an accounting system — the
+// Account-scoped, DEVICE-local (a display log capped at 150 entries, not an accounting system: the
 // server wallet + the derived earned totals stay the source of truth for the balance itself). Written
 // from the chokepoints every coin mutation funnels through: addBonusCoins (all bonus earns, incl. the
 // play faucets via awardPlayCoins), coinCharge (all spends), reconcileCoins (derived progress coins),
@@ -9644,27 +9644,27 @@ function coinShort(n){ n=Math.round(n||0);
    Named accounts get in-progress features LIVE on the public site before launch, so we can test on
    the real runthe.gg/golf without exposing anything to the public. Deploy normally: everyone sees
    the stable game; these accounts also see any feature gated behind devMode(). Username-matched the
-   same way as the coin grants (server-attributed sbUsername, lowercased — no one else can hold these
+   same way as the coin grants (server-attributed sbUsername, lowercased, no one else can hold these
    handles). To LAUNCH a feature to everyone, flip its own _LIVE flag to true. */
 const DEV_USERS=['csel8','runnyj'];
 function devMode(){ return sbSignedIn() && DEV_USERS.indexOf((sbUsername||'').toLowerCase())>=0; }
-const TOURPASS_LIVE=true;                        // LIVE — the Tour Pass is released to everyone
+const TOURPASS_LIVE=true;                        // LIVE: the Tour Pass is released to everyone
 function passEnabled(){ return TOURPASS_LIVE; }
 
-/* ============================ TOUR PASS — 60-day season pass ============================
+/* ============================ TOUR PASS: 60-day season pass ============================
    The battle pass that ties the whole economy together. A 60-day GLOBAL season (ET-aligned, like the
    Daily) with a 60-tier Track. Climb it with Pass XP earned from EVERY mode (folded into the
    awardPlayCoins faucet, so daily / career events, wins, majors, season-end, online H2H, and moments
    all feed it). Two lanes per tier: FREE (everyone) + PRO. OWNER DECISION (2026-08): the ONLY way a
-   regular player unlocks PRO is the real-money 60-day Tour Pass ($14.99 — the TOURPASS package, one
+   regular player unlocks PRO is the real-money 60-day Tour Pass ($14.99, the TOURPASS package, one
    purchase per season, server entitlement via runtour_wallet().pass_active / migration 72). The old
    30,000-coin Pro unlock is REMOVED. The dev accounts (CSel8/RunnyJ) get PRO free via devMode() so
    they can test without purchasing. Rewards are drawn from the EXISTING pools (coins / shards /
    packs / cosmetics), so there's no new currency. Season-scoped state in bag_tourpass resets each
-   season, so the previous season's rewards lock out — a genuine limited-time chase. The server pass
+   season, so the previous season's rewards lock out: a genuine limited-time chase. The server pass
    also grants unlimited daily plays + 1.5× rewards + 30,000 coins + 2 seasonal packs (see TOURPASS). */
 const TOURPASS_LEN=60;                                        // days per season
-const TOURPASS_EPOCH=Math.floor(Date.UTC(2026,7,6)/86400000);// season 1 begins (ET) Aug 6 2026, store launch day — MUST match runtour_pass_season (migration 73)
+const TOURPASS_EPOCH=Math.floor(Date.UTC(2026,7,6)/86400000);// season 1 begins (ET) Aug 6 2026, store launch day, MUST match runtour_pass_season (migration 73)
 const PASS_TIERS=60;
 /* SEASON 1 CLOSING PROMOTION. Season 1 is the store's first, it ends, and its whole track locks when it
    does: passState() throws the season away and starts fresh, so an unclaimed tier is gone rather than
@@ -9689,7 +9689,7 @@ function passCountdown(n, now){
   var ms=Math.max(0, passSeasonEndMs(n) - (now||Date.now())), s=Math.floor(ms/1000);
   return {d:Math.floor(s/86400), h:Math.floor(s/3600)%24, m:Math.floor(s/60)%60, s:s%60, ms:ms};
 }
-const PASS_XP_RATE=0.6;                                      // Pass XP per BASE coin earned — the key climb-speed knob
+const PASS_XP_RATE=0.6;                                      // Pass XP per BASE coin earned: the key climb-speed knob
 const PASS_XP_SEASON=0.4;                                    // a career season feeds the Track at 40% (it's repeatable at will; the daily is capped)
 const PASS_PRO_MULT=1.25;                                    // Pro holders earn 1.25× coins from play (reuses passRewardMult)
 function passDayNum(){ const t=todayKey(), y=Math.floor(t/10000), mo=Math.floor(t/100)%100, d=t%100; return Math.floor(Date.UTC(y,mo-1,d)/86400000); }
@@ -9704,11 +9704,11 @@ function passState(){ let s=LS.get(acctKey('bag_tourpass'),null); const cur=pass
 function passSave(s){ try{ LS.set(acctKey('bag_tourpass'), s); }catch(e){} if(typeof cloudPush==='function') cloudPush(); }
 // PRO = the server 60-day Tour Pass entitlement (runtour_wallet().pass_active, bought for $14.99 once
 // per season) OR a dev account (CSel8/RunnyJ test free, never purchase). The legacy coin-unlocked
-// s.pro flag is no longer read — decision A: the $14.99 pass is the ONLY PRO unlock for players.
+// s.pro flag is no longer read. Decision A: the $14.99 pass is the ONLY PRO unlock for players.
 function passProActive(){ return sbSignedIn() && (dailyPassActive() || devMode()); }
 // XP curve: rising cost per tier (early cheap, later a grind). passXpForTier(t)=cumulative XP to REACH tier t.
 //
-// CALIBRATION (this is the part that matters). Pass XP comes ONLY from awardPlayCoins(base)*PASS_XP_RATE —
+// CALIBRATION (this is the part that matters). Pass XP comes ONLY from awardPlayCoins(base)*PASS_XP_RATE 
 // the daily, a finished season, an online win, a played Moment. Streak/login/quest coins bypass it entirely.
 // After the coin re-anchor (COIN_DAILY=60) a daily player earns just ~168 XP/day, so the previous curve's
 // 48,415 total needed ~289 days of a 60-DAY season: the track was literally impossible to finish. The v2
@@ -9716,17 +9716,17 @@ function passProActive(){ return sbSignedIn() && (dailyPassActive() || devMode()
 //
 // v4 (owner: "I got 950 XP from a single season and the last level only costs 600. These levels need to be
 // much harder and the grind way bigger."). Measured against the live faucets, v3 had TWO problems:
-//   1. the back half was too cheap — a dominant season (1,226 XP) bought 4 tiers at tier 30 and 2 tiers at
+//   1. the back half was too cheap: a dominant season (1,226 XP) bought 4 tiers at tier 30 and 2 tiers at
 //      tier 50, i.e. one season was worth more than the entire final level (556);
 //   2. a career season is REPEATABLE at will while the daily is capped at 3/day, so season-farming was the
-//      whole game — a player simming a season a day maxed all 60 tiers in 12 days, three a day in 5.
+//      whole game: a player simming a season a day maxed all 60 tiers in 12 days, three a day in 5.
 // v4 fixes both: the curve is 2.25× bigger and far steeper (tier 1 = 95, tier 30 = 472, tier 60 = 1,535 =
 // 16.2× tier 1, vs 6.2× before; 35,920 XP total), and seasons feed the Track at PASS_XP_SEASON (40%). Now a
 // dominant season buys ~1/3 of a tier at the top instead of 2, a committed player (daily + a season a day)
 // finishes around day 55 of the 60-day season so the paid track stays completable, a daily-only player lands
 // around tier 35 by day 60, and the 3-seasons-a-day grinder needs 22 days instead of 5.
 const PASS_CURVE_V=4;                                        // bump to re-convert everyone's XP onto a new curve
-const PASS_C0=95, PASS_C1=2, PASS_C2=0.38;                   // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2  — climb-shape knobs
+const PASS_C0=95, PASS_C1=2, PASS_C2=0.38;                   // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2, climb-shape knobs
 function passTierCost(t){ const k=t-1; return PASS_C0 + PASS_C1*k + PASS_C2*k*k; }
 var _passCum=null;                                           // cumulative XP per tier, memoized (the UI walks every tier per render)
 function passXpForTier(t){
@@ -9734,14 +9734,14 @@ function passXpForTier(t){
   return _passCum[Math.max(0,Math.min(PASS_TIERS,t|0))];
 }
 // Every curve the game has ever shipped, so a player on ANY old version converts correctly.
-// Each past curve is frozen with its OWN literal constants — never passTierCost(), which always means the
+// Each past curve is frozen with its OWN literal constants, never passTierCost(), which always means the
 // CURRENT curve, so pointing an old version at it would make that version silently convert to itself.
 const PASS_CURVES={ 1:{cost:t=>140+(t-1)*11,                 tiers:50},
                     2:{cost:t=>150+7*(t-1)+0.8*(t-1)*(t-1),  tiers:50},
                     3:{cost:t=>90+2*(t-1)+0.10*(t-1)*(t-1),  tiers:60},
                     4:{cost:t=>passTierCost(t),              tiers:60} };
 // One-time migration onto the current curve. Preserves the player's exact TIER and their fractional progress
-// into the next one, so nobody loses visible progress or re-locks a reward — only the shape of what's AHEAD
+// into the next one, so nobody loses visible progress or re-locks a reward, only the shape of what's AHEAD
 // changes. Converting from v2 LOWERS the raw XP number (v3 is a much smaller scale); the tier is what matters.
 function passConvertCurve(s){
   const from=PASS_CURVES[s.curveV|0]||PASS_CURVES[1], oldT=from.tiers;
@@ -9814,7 +9814,7 @@ function passClaimAgg(list){ const agg={n:list.length, coins:0, packs:{}, shards
   return agg; }
 function passClaimable(){ if(!sbSignedIn()) return 0; const s=passState(), t=passTierAt(s.xp), pro=passProActive(); let n=0;
   for(let i=1;i<=t;i++){ if(s.claimed.free.indexOf(i)<0) n++; if(pro && s.claimed.prem.indexOf(i)<0) n++; } return n; }
-// passBuyPro (the 30,000-coin Pro unlock) is REMOVED — decision A. PRO comes only from the $14.99
+// passBuyPro (the 30,000-coin Pro unlock) is REMOVED, decision A. PRO comes only from the $14.99
 // 60-day Tour Pass (see beginPassPurchase) or devMode(). Retro-claims are safe: passClaim gates the
 // prem lane on passProActive(), so the moment the wallet shows pass_active every reached tier's Pro
 // reward becomes claimable (dedup via the claimed arrays).
@@ -9839,7 +9839,7 @@ function mergeTourPass(local, server){
 /* ═══════════════ DAILY PRIZE WHEEL ═══════════════════════════════════════════════════════════
    One free spin a day (resets at ET midnight with the daily challenge), plus BANKED spins earned
    from Tour Pass tiers and a player's first purchase. The headline prizes are the two TIMED
-   2× Tour Pass XP boosts (30 min / 1 hour) — they activate THE SECOND they're won and tick down in
+   2× Tour Pass XP boosts (30 min / 1 hour): they activate THE SECOND they're won and tick down in
    real time, so winning one is a nudge to go play right now. Everything else is drawn from the
    EXISTING pools (coins / shards / packs), so the wheel adds no new currency.
 
@@ -9922,7 +9922,7 @@ function wheelNextUpgrade(){
 }
 function wheelEnabled(){ return WHEEL_ENABLED; }
 // spinE/spinS are MONOTONIC counters (earned/spent) so a cross-device merge can take a max of each and
-// can never resurrect a spent spin — the same shape the pack-credit bank uses.
+// can never resurrect a spent spin: the same shape the pack-credit bank uses.
 function wheelState(){ let s=LS.get(acctKey('bag_wheel'),null);
   if(!s||typeof s!=='object') s={day:null, spinE:0, spinS:0, n:0, firstBuy:false, boostUntil:0};
   s.spinE=Math.max(0,+s.spinE||0); s.spinS=Math.max(0,+s.spinS||0); s.n=Math.max(0,+s.n||0);
@@ -10237,7 +10237,7 @@ function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gi
   return out;
 }
 function accBoostTotal(){ const b=accBoost(); return Object.values(b).reduce((a,x)=>a+x,0); }
-// CS410: EFFECT LAYER — animated glow auras (legendary cosmetics) + a matching hole-view tracer skin.
+// CS410, the EFFECT LAYER: animated glow auras (legendary cosmetics) + a matching hole-view tracer skin.
 // An effect is a DISPLAY-layer treatment (animated CSS drop-shadow on the avatar img + the shot tracer color),
 // not baked into the sprite canvas. Owned like other cosmetics (fx:<id> in coinState.owned); look.fx = equipped id.
 const PXFX=[
@@ -10258,7 +10258,7 @@ const PXFX=[
   {id:'ecto',     name:'Ecto Aura',    hist:'Something spooky follows', price:18000, col:'#7dff5a', tracer:{g:'rgba(125,255,90,.55)',  c:'#e8ffd8'}},
   {id:'stadium',  name:'Stadium Lights',hist:'Big-game glow',           price:18000, col:'#e8f2ff', tracer:{g:'rgba(232,242,255,.55)', c:'#ffffff'}},
   {id:'rungames', name:'Run The Games Aura',hist:'The house glow, in signature green', price:30000, col:'#80ff76', tracer:{g:'rgba(128,255,118,.55)', c:'#e6ffe0'}},
-  // Tour Pass Track capstone (level 50) — pass:true keeps it out of the shop + pack pool + shards, so it is
+  // Tour Pass Track capstone (level 50), pass:true keeps it out of the shop + pack pool + shards, so it is
   // ONLY obtainable by maxing that season's Tour Pass. A one-season-only exclusive (genuinely limited).
   {id:'passcrown', name:'Tour Champion Aura', hist:'Only for those who ran the whole Tour Pass', price:0, pass:true, col:'#ffd447', tracer:{g:'rgba(255,212,71,.65)', c:'#fff6cf'}} ];
 const PXFX_BY={}; PXFX.forEach(function(f){ PXFX_BY[f.id]=f; });
@@ -10290,7 +10290,7 @@ function pxFxParts(look,fs){ try{
     s+=`<i class="fxp fxp-${p.t}" style="left:${pos[0]}%;top:${top}%;color:${p.cols[i%p.cols.length]};animation-delay:-${(i*0.43+pos[1]/95).toFixed(2)}s${p.dur?`;animation-duration:${(p.dur+(i%3)*0.25).toFixed(2)}s`:''}">${p.g}</i>`; }
   return `<span class="fxparts" aria-hidden="true" style="font-size:${fs}px">${s}</span>`;
 }catch(e){ return ''; } }
-// CS414 — BALL cosmetics. A ball is a small teed sprite beside the standing golfer (PXG_BALL overlay) plus
+// CS414, BALL cosmetics. A ball is a small teed sprite beside the standing golfer (PXG_BALL overlay) plus
 // an optional hole-view tint on the shot ball/tracer. `tracer` recolors the in-play ball (Comet → fire).
 const PXBALL=[
   {id:'featherie', name:'Featherie',  hist:'Hand-sewn leather & goose feathers, 1600s', price:16000, col:'#e6d3a3', tracer:{g:'rgba(226,206,160,.5)',  c:'#efe4c4'}},
@@ -10733,8 +10733,8 @@ function cardFrameFor(repName){
 function biomeConquered(b){ try{ const m=courseMastery(); return DAILY_KEYS.some(k=>((HV_COURSE_BIOME[k]||'parkland')===b) && m[k] && (m[k].beat|0)>0); }catch(e){ return false; } }
 function _cardLt(){ try{ return badgeMetrics(career()); }catch(e){ return null; } }
 const CARD_EARN={
- // (Run The Games nameplate + Arena backdrop are now the Run The Games Collection completion reward — see
- //  DROP_REWARDS.rungames — so they're reward-only, not listed here.)
+ // (Run The Games nameplate + Arena backdrop are now the Run The Games Collection completion reward, see
+ //  DROP_REWARDS.rungames, so they're reward-only, not listed here.)
  'np:goldengraved':{hint:'Win a tour event', req:()=>{const m=_cardLt(); return !!m&&m.wins>=1;}},
  'np:major':       {hint:'Win a major championship', req:()=>{const m=_cardLt(); return !!m&&m.majors>=1;}},
  'np:slam':        {hint:'Complete the career Grand Slam', req:()=>{const m=_cardLt(); return !!m&&(m.careerSlams>=1||m.distinctMajors>=4);}},
@@ -10814,9 +10814,9 @@ function cosmeticPrice(cat,id){ const base=cosmeticPriceBase(cat,id); if(base<=0
 function cosOwned(cat,id){ const k=cosKey(cat,id); if(FREE_COSMETICS[k] || coinState().owned[k]) return true;
   const e=(typeof CARD_EARN!=='undefined')&&CARD_EARN[k]; return !!(e && e.req());   // earned player-card unlocks (derived, cross-device via synced stats)
 }
-// CS422: "NEW" tracking — an item is NEW if it's been acquired (in coinState.owned, i.e. bought/pulled/earned)
+// CS422, "NEW" tracking: an item is NEW if it's been acquired (in coinState.owned, i.e. bought/pulled/earned)
 // but not yet VIEWED in the customizer. `bag_seenitems` is local (a badge, not critical data); it's seeded on
-// first run with everything currently owned so existing gear never shows as new — only future acquisitions do.
+// first run with everything currently owned so existing gear never shows as new, only future acquisitions do.
 function seenItems(){ let v; try{ v=LS.get(acctKey('bag_seenitems'),null); }catch(e){ v=null; }
   if(!v || typeof v!=='object'){ v={}; const own=coinState().owned||{}; for(const k in own) v[k]=1; try{ LS.set(acctKey('bag_seenitems'),v); }catch(e){} }
   return v; }
@@ -10875,7 +10875,7 @@ const COS_BOOST={
   // lore-unlocked heritage patterns: +1 only
   'sp:pinstripe':{app:1}, 'sp:polka':{clu:1}, 'sp:gingham':{scr:1}, 'sp:argyle':{app:1},
   'sp:tartan':{acc:1}, 'sp:houndstooth':{app:1}, 'sp:chevron':{dist:1}, 'sp:colorblock':{dist:1},
-  // the equipped club gives its own boost — the best clubs have the best boosts, spread across every stat
+  // the equipped club gives its own boost: the best clubs have the best boosts, spread across every stat
   'cl:driver':{dist:1},
   'cl:steeldriver':{dist:3}, 'cl:finderdriver':{acc:3}, 'cl:speeddriver':{dist:4,acc:-1}, 'cl:tourwood':{dist:2,app:1},
   'cl:forgediron':{app:3}, 'cl:bladeirons':{app:4,scr:-1}, 'cl:milledwedge':{sht:2,bnk:1}, 'cl:sandwedge':{bnk:3},
@@ -11160,7 +11160,7 @@ function header(){
   const h=$(`<div class="head head--banner"></div>`);
   const bar=$(`<div class="banner"></div>`);
   const signedIn=sbSignedIn();
-  // CS426: left group — menu button + profile pill (moved from the right)
+  // CS426: left group, menu button + profile pill (moved from the right)
   const left=$(`<div class="bnleft"></div>`);
   const menu=$(`<button class="icobtn" aria-label="Menu" aria-expanded="${S.overlay==='menu'?'true':'false'}">≡</button>`);
   menu.onclick=()=>{ S.overlay='menu'; render(); };
@@ -11182,7 +11182,7 @@ function header(){
   brand.onclick=()=>{ S.screen='title'; S.overlay=null; render(); };
   bar.appendChild(brand);
   // right group: legends-token counter + coin pill. CS433: shown for GUESTS too (as "0"), where a tap leads
-  // to the login-walled screen — a couple more nudges to sign up.
+  // to the login-walled screen: a couple more nudges to sign up.
   const right=$(`<div class="bnright"></div>`);
   const hasLeg = signedIn && (typeof hasFreeLegends==='function') && hasFreeLegends();
   if(!signedIn || hasLeg){   // CS426/CS433: playable-Legend counter (guests see 0 → sign-in nudge)
@@ -11350,7 +11350,7 @@ function render(){
   // to animate even if an async loader (leaderboard, course records) re-fetches and re-renders mid-flight.
   // BUT a same-view rebuild must STRIP vnew first: render() empties #app and rebuilds every node, so a
   // fresh .ov created while #app still carries vnew re-matches `#app.vnew .ov` and REPLAYS its entry
-  // animation from zero. On boot that's the daily-rewards glitch the owner reported — maybeLoginBonus opens
+  // animation from zero. On boot that's the daily-rewards glitch the owner reported, maybeLoginBonus opens
   // the login overlay (newView → fade in), then a concurrent boot render (the cloud-pull reward chain,
   // wallet load, purchaseCheck) rebuilds the SAME view inside the window and the popup flickers/re-fades.
   // Clearing vnew on a same-view rebuild means the recreated DOM shows its final state instead of replaying.
@@ -11365,7 +11365,7 @@ function render(){
   const screen=$(`<div class="screen scr-${S.screen}${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','rules','h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
-  // CS483/483c: the season-summary + off-season are focused, one-screen action pages — skip the footer link
+  // CS483/483c: the season-summary + off-season are focused, one-screen action pages, skip the footer link
   // row there (About/Privacy/Terms/Feedback all stay in the ≡ menu) so they fit without scrolling.
   if(S.screen!=='summary' && S.screen!=='offseason') app.appendChild(footer());
   // returning from a Google redirect, the token exchange + profile fetch take a few network
@@ -11493,7 +11493,7 @@ function render(){
   // overlapping/blocking the Spin button) and was redundant. Hidden here like setup already was; Home and
   // the rest stay reachable from the ≡ menu. This also removes the fixed-nav drift surface on these
   // long, frequently-re-rendering screens.
-  // CS483: 'summary' hidden too — the season-summary screen is a tabbed results modal with its OWN action
+  // CS483, 'summary' hidden too: the season-summary screen is a tabbed results modal with its OWN action
   // buttons (Continue / Leaderboard / Exit / Retire in .sumacts), so the persistent nav was redundant AND
   // ate ~48px of vertical room on every tab, forcing scrolling. Home + the rest stay in the ≡ menu.
   const NAV_HIDE=['dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','setup','draft','build','offseason','summary'];
@@ -11706,7 +11706,7 @@ function scrRules(){
   dSteps.forEach(s=>dList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
   add(dList);
 
-  // CS431: expanded guide — Customization, Coins, Pro Shop, Packs, Online H2H, Progress.
+  // CS431: expanded guide. Customization, Coins, Pro Shop, Packs, Online H2H, Progress.
   const perkSection=(tag,tagCol,h2,lede,steps)=>{
     add($(`<div class="center"><span class="tag" style="color:${tagCol};border-color:${tagCol}">${tag}</span></div>`));
     add($(`<h2 class="center" style="margin:10px 0 4px">${h2}</h2>`));
@@ -11812,15 +11812,15 @@ function overlayRecordGuest(screen){
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   screen.appendChild(ov);
 }
-/* ══════ THE RECORDS BOOK — the majors chase, and your career milestones ═════════════════════════
+/* ══════ THE RECORDS BOOK: the majors chase, and your career milestones ═════════════════════════
    Every golf video game since Tiger Woods PGA Tour 06 has had one form of this: your career sitting
    beside the game's greats so you can see who you're chasing. Ours turns "8 majors" into "6 behind
    Watson, 10 behind Nicklaus." Lives in the Profile overlay's Records tab.
 
-   The data source is honest — legends in GOLFERS carry `majors` but no `wins`/`earnings` (era-mismatched
+   The data source is honest: legends in GOLFERS carry `majors` but no `wins`/`earnings` (era-mismatched
    anyway), so the leaderboard is majors-only for now. Your career milestones sit alongside as a
    companion block, read from career().lt (the lifetime aggregate across every career you have run).
-   All fields degrade to '—' when absent, so a fresh account renders cleanly.
+   All fields degrade to a hyphen when absent, so a fresh account renders cleanly.
 */
 
 // Legends we can rank against (majors >= 5 keeps the list to the ~20 that shaped the record book).
@@ -11873,7 +11873,7 @@ function recordsMajorsHTML(){
     rows.push(`<div class="rb-divider">Your rank</div>`);
     rows.push(recordsRow(rank, S.name||'You', you, topMax, true));
   }
-  // If YOU have zero majors, don't fabricate a row — the chase hero above already carries the story
+  // If YOU have zero majors, don't fabricate a row: the chase hero above already carries the story
   return `<div class="rblist">${rows.join('')}</div>`;
 }
 function recordsRow(pos, name, cnt, maxCnt, isYou){
@@ -11888,7 +11888,7 @@ function recordsRow(pos, name, cnt, maxCnt, isYou){
   </div>`;
 }
 
-// The Chase hero — one glance answer to "who am I chasing." Renders three states:
+// The Chase hero: one glance answer to "who am I chasing." Renders three states:
 //   • no majors yet: "TARGET · your first major"
 //   • chasing someone: "N BEHIND · next name up"
 //   • tied for or ahead of #1: "N AHEAD · closest chaser"
@@ -11925,22 +11925,22 @@ function recordsChaseHTML(){
     </div></div>`;
 }
 
-// Career milestones — read from the lifetime aggregate on career().lt so figures reflect EVERY
+// Career milestones: read from the lifetime aggregate on career().lt so figures reflect EVERY
 // career you have run, not just the active one. Sits below the chase as a companion block.
 function recordsMilestonesHTML(){
   const lt = (typeof career==='function' && career().lt) || {};
   const fmt = (typeof fmtShort==='function') ? fmtShort : (n=>n||0);
-  const tile = (k, v, sub) => `<div class="rbmile"><div class="rbmile-k">${esc(k)}</div><div class="rbmile-v${(v==='—')?'':' gold'}">${v}</div>${sub?`<div class="rbmile-sub">${esc(sub)}</div>`:''}</div>`;
+  const tile = (k, v, sub) => `<div class="rbmile"><div class="rbmile-k">${esc(k)}</div><div class="rbmile-v${(v==='-')?'':' gold'}">${v}</div>${sub?`<div class="rbmile-sub">${esc(sub)}</div>`:''}</div>`;
   return `<h2 style="margin:18px 0 8px">Your career milestones</h2>
     <div class="rbmiles">
-      ${tile('Majors',   (lt.majors||0)===0 ? '—' : String(lt.majors||0),        'career total')}
-      ${tile('Wins',     (lt.wins||0)  ===0 ? '—' : String(lt.wins||0),          'career total')}
-      ${tile('Top 10s',  (lt.top10||0) ===0 ? '—' : String(lt.top10||0),         'career total')}
-      ${tile('Seasons',  (lt.seasons||0)===0 ? '—' : String(lt.seasons||0),      'played')}
-      ${tile('Cuts made',(lt.made||0)  ===0 ? '—' : `${lt.made||0}/${lt.played||0}`, 'career')}
-      ${tile('Careers',  (lt.careers||0)===0 ? '—' : String(lt.careers||0),      'completed')}
-      ${tile('Earnings', (lt.earnings||0)===0 ? '—' : fmt(lt.earnings||0),   'lifetime')}
-      ${tile('Net worth',(lt.net==null||lt.net===0) ? '—' : (lt.net<0?'−'+fmt(Math.abs(lt.net)):fmt(lt.net)), 'lifetime')}
+      ${tile('Majors',   (lt.majors||0)===0 ? '-' : String(lt.majors||0),        'career total')}
+      ${tile('Wins',     (lt.wins||0)  ===0 ? '-' : String(lt.wins||0),          'career total')}
+      ${tile('Top 10s',  (lt.top10||0) ===0 ? '-' : String(lt.top10||0),         'career total')}
+      ${tile('Seasons',  (lt.seasons||0)===0 ? '-' : String(lt.seasons||0),      'played')}
+      ${tile('Cuts made',(lt.made||0)  ===0 ? '-' : `${lt.made||0}/${lt.played||0}`, 'career')}
+      ${tile('Careers',  (lt.careers||0)===0 ? '-' : String(lt.careers||0),      'completed')}
+      ${tile('Earnings', (lt.earnings||0)===0 ? '-' : fmt(lt.earnings||0),   'lifetime')}
+      ${tile('Net worth',(lt.net==null||lt.net===0) ? '-' : (lt.net<0?'−'+fmt(Math.abs(lt.net)):fmt(lt.net)), 'lifetime')}
     </div>`;
 }
 
@@ -11954,15 +11954,15 @@ function recordsTabHTML(){
     <div class="small muted" style="margin-top:12px;line-height:1.55;text-align:center">More categories to come, wins by tour and career longevity. For now the record that decides golf history is majors, so majors leads.</div>`;
 }
 
-/* ══════ THE NAMED OPENING RIVAL — a "Career Nemesis" from move one ══════════════════════════════
+/* ══════ THE NAMED OPENING RIVAL: a "Career Nemesis" from move one ══════════════════════════════
    The audit's #5 gap: emergent rivals form after 3 seasons of H2H data, which is right for the
    real friction-with-a-peer story but leaves the FIRST years of a career without a named foe. Every
-   great career-mode story has one — Nicklaus vs Palmer, Tiger vs the field, your rookie's version
+   great career-mode story has one. Nicklaus vs Palmer, Tiger vs the field, your rookie's version
    of the same. This picks one at turn-pro and freezes them as your ceiling to chase.
 
    Doesn't conflict with the emergent rival system (S.career.rival): openingRival lives on its own
    key, is snapshot-frozen at naming, and shares the same H2H tally table (S.career.h2h) so the
-   record against them accrues automatically — every event you both play is banked, day one.
+   record against them accrues automatically: every event you both play is banked, day one.
 
    Legacy saves are LEFT ALONE. Naming only runs on a genuine fresh career (year 1, no seasons
    completed) so a 15-year veteran doesn't wake up one morning with a brand-new "opening rival."
@@ -11973,7 +11973,7 @@ function pickOpeningRival(){
   if(!w || !w.active || !w.active.length) return null;
   let myOvr = 82;
   try { myOvr = Math.round(buildPlayer().skill); } catch(e){}
-  // Preferred pool: established stars ahead of you by a fair margin but not out of reach — the
+  // Preferred pool: established stars ahead of you by a fair margin but not out of reach: the
   // whole point is a plausible chase. Aged 28-42 so they have career ahead of them too.
   const preferred = w.active.filter(g => {
     if(!g || g.retiredYear) return false;
@@ -12047,7 +12047,7 @@ function openingRivalCardHTML(){
   const natStr = r.nation ? ` · ${esc(r.nation)}` : '';
   const retTag = retired ? ` · <span style="color:var(--muted,#88a397)">retired${retiredYear?` (yr ${retiredYear})`:''}</span>` : '';
   const h2hLine = h && (h.meAhead||h.themAhead)
-    ? `Career H2H · <b>${h.meAhead||0}–${h.themAhead||0}</b> across ${h.ev||0} shared events`
+    ? `Career H2H · <b>${h.meAhead||0}-${h.themAhead||0}</b> across ${h.ev||0} shared events`
     : (h && h.ev ? `${h.ev} shared events, still tied 0-0` : `No shared events yet, the tour is on the stage`);
   const yrLine = yrs>1 ? ` · year ${yrs} of the chase` : ` · rookie year`;
   return `<div class="orival">
@@ -12067,18 +12067,18 @@ function openingRivalCardHTML(){
   </div>`;
 }
 
-/* ══════ SCHEDULE AGENCY — you don't have to tee it up every week ══════════════════════════════
+/* ══════ SCHEDULE AGENCY: you don't have to tee it up every week ══════════════════════════════
    The audit's #3 gap. Real pros play 18-25 events of the ~45 on tour; every canon career mode
    gives you that choice; ours didn't. This adds a REST WEEK: skip a regular-tour week, world plays
    without you, standings advance, budget of 4 rests per season.
 
-   Anchors stay mandatory — you can't rest a major, a signature event, a Cup playoff, the Olympics,
+   Anchors stay mandatory: you can't rest a major, a signature event, a Cup playoff, the Olympics,
    a team-cup week, the Match Play bracket, or a Frontier League stop. Those are what the season
    is FOR. Rest weeks are for the mid-season regular events, and the budget is small on purpose
    (4 of ~15 eligible weeks) so choosing which weeks to sit means something.
 
    Naming note: S.season.skipped is a PRE-EXISTING boolean used by "Skip to End" (which forfeits
-   coins for the rest of the season). Rest weeks live on S.season.restWeeks — different key, no
+   coins for the rest of the season). Rest weeks live on S.season.restWeeks, different key, no
    collision, and rest weeks do NOT trip the skipped-to-end penalty. Regular career only; the
    Legend Circuit (a 12-year set piece) doesn't get rest weeks.
 */
@@ -12104,7 +12104,7 @@ function canRestNow(){
   if(S.daily || S.circuitMode || !S.season) return false;
   const evt = S.schedule && S.schedule[S.evtIndex]; if(!eventSkippable(evt)) return false;
   const ce = S.curEvt;
-  // Only offer BEFORE the field-cut moves — i.e. Thursday's still fresh. After the cut the field
+  // Only offer BEFORE the field-cut moves, i.e. Thursday's still fresh. After the cut the field
   // has committed and "withdrawing" is weird UX; the choice is really "next Monday, tee it or not."
   if(ce && ce.roundsDone > 1) return false;
   return restsLeft() > 0;
@@ -12148,7 +12148,7 @@ function restWeeksCardHTML(){
   </div>`;
 }
 
-// Confirm overlay — mirrors overlayConfirmSkip's shape so the interaction feels native.
+// Confirm overlay: mirrors overlayConfirmSkip's shape so the interaction feels native.
 function overlayConfirmRest(screen){
   const evt = S.schedule && S.schedule[S.evtIndex];
   const evtName = esc((evt && evt.name) || 'this event');
@@ -12165,13 +12165,13 @@ function overlayConfirmRest(screen){
   screen.appendChild(ov);
 }
 
-/* ══════ CLUB PROGRESSION — clubs get sharper with reps ══════════════════════════════════════════
+/* ══════ CLUB PROGRESSION: clubs get sharper with reps ══════════════════════════════════════════
    The audit's #4 gap and last of the top-5. Every canon career mode since PGA 2K25 has "gear that
-   levels up with use" — a second progression axis so the shop isn't the only way to get better.
+   levels up with use": a second progression axis so the shop isn't the only way to get better.
    Ours: your equipped CLUB SET accumulates reps as you play events, level-ups grant a small +N to
    the set's primary boost stat, capped so it stays a chase and not an infinite-power ramp.
 
-   One entry point: reps accrue at finalizeEvent (only if you were actually in the field — rest
+   One entry point: reps accrue at finalizeEvent (only if you were actually in the field, rest
    weeks strip you first, so those correctly grant no reps). One display point: a "Your Clubs" card
    at the bottom of the Records tab. One bonus point: bagBoostRows applies the level bonus, which
    flows through accBoost → buildPlayer → OVR + sim, so the bonus is real, not decorative.
@@ -12180,14 +12180,14 @@ function overlayConfirmRest(screen){
    - 5 reps per level (about 4 seasons to max at 45 reps)
    - Cap at level 9
    - Level 3 → +1, level 6 → +2, level 9 → +3 to the club's PRIMARY boost stat
-   The bonus is small on purpose — it's a compounding reward, not a shortcut past the shop.
+   The bonus is small on purpose: it's a compounding reward, not a shortcut past the shop.
 */
 const CLUB_REPS_PER_LEVEL = 5;
 const CLUB_LEVEL_CAP = 9;
 
 function clubRepsFor(id){ if(!S.career || !id) return 0; const m = S.career.clubReps; return (m && m[id]) || 0; }
 function clubLevel(id){ return Math.min(CLUB_LEVEL_CAP, Math.floor(clubRepsFor(id) / CLUB_REPS_PER_LEVEL)); }
-// {stat, amount} — null until level 3, +1/+2/+3 at 3/6/9. Primary stat = largest absolute boost value.
+// {stat, amount}, null until level 3, +1/+2/+3 at 3/6/9. Primary stat = largest absolute boost value.
 function clubLevelBonus(id){
   const lvl = clubLevel(id); if(lvl < 3) return null;
   const club = (typeof CLUBS_BY === 'object' && CLUBS_BY) ? CLUBS_BY[id] : null;
@@ -12207,7 +12207,7 @@ function accrueClubRep(){
   S.career.clubReps[id] = (S.career.clubReps[id] || 0) + 1;
 }
 
-// Records tab card — one row per club set you've played with, sorted by reps desc. Currently
+// Records tab card: one row per club set you've played with, sorted by reps desc. Currently
 // equipped row is highlighted. Shows level, rep progress within the current level, and the
 // active bonus (or the next milestone if none is active yet).
 function clubProgressCardHTML(){
@@ -12448,7 +12448,7 @@ function lbStatVal(r,tab,sort){   // the right-hand value column for the chosen 
     case 'fans': return `<span style="color:#ff9d3a;font-weight:800">${tab==='season'?'+':''}${fmtFollowers(r.followers||0)} fans</span>`;   // CS281 · season rows = fans GAINED that season (62_), career = total
     case 'rep': { const rp=r.rep_pts!=null?repTierName(r.rep_pts):null; return `<span style="color:var(--gold);font-size:12px">${esc(rp||'-')}</span>`; }
     case 'sg': case 'ttg': case 'hcp': case 'putts': {   // CS214 derived-from-skills stat columns
-      if(!r.skills || !CATS.every(cc=>typeof r.skills[cc.k]==='number')) return `<span class="muted">–</span>`;
+      if(!r.skills || !CATS.every(cc=>typeof r.skills[cc.k]==='number')) return `<span class="muted">-</span>`;
       const g=golferStats(r.skills);
       if(sort==='sg')   return `<span style="font-weight:700">${fmtSG(g.sgTot)} SG</span>`;
       if(sort==='ttg')  return `<span style="font-weight:700">${fmtSG(g.ttg)} T2G</span>`;
@@ -12458,7 +12458,7 @@ function lbStatVal(r,tab,sort){   // the right-hand value column for the chosen 
     default: return `<span style="color:var(--gold)">${fmt(tab==='career'?r.career_earnings:r.season_earnings)}</span>`;
   }
 }
-// CS519b (owner): tournament detail popup — opened by tapping a won-tournament card on the season
+// CS519b (owner): tournament detail popup, opened by tapping a won-tournament card on the season
 // summary. Reuses the recap-event composition (venue, your result + rounds, final leaderboard, playoff).
 function overlayTournament(screen){
   const results=(S.season&&S.season.results)||[];
@@ -12600,12 +12600,12 @@ function pcStyleOnce(){ if(document.getElementById('pcardcss')) return; const st
 '.pcard3d.flipped .pcard-inner{transform:rotateY(180deg)}',
 /* a REAL 3D flip. We deliberately DO NOT use backface-visibility to hide the away side: on iOS/WebKit a
    backface-hidden element that ALSO has overflow:hidden (these faces clip their art to the rounded corner)
-   intermittently culls the FRONT face to blank — even at rest. Instead, only the facing side is
+   intermittently culls the FRONT face to blank, even at rest. Instead, only the facing side is
    `visibility:visible`; the swap is delayed to the 90° midpoint of the rotation (transition-delay = half the
    flip duration) so the two faces are never coplanar (no z-fight / flip-flash) and neither can blank. */
 '.pcard-face{position:absolute;inset:0;border-radius:16px;overflow:hidden;border:3px solid var(--pcf,#8aa0a8);background:#0a1c12;box-shadow:0 14px 40px rgba(0,0,0,.55);transition:visibility 0s linear .3s}',
 /* scoped to .pcard3d: the pack-reveal cards reuse .pcard-front/.pcard-back with the OPPOSITE rotation
-   (front at 180deg) + their own rarity glow — unscoped rules here leaked onto them and flashed the aura. */
+   (front at 180deg) + their own rarity glow, unscoped rules here leaked onto them and flashed the aura. */
 '.pcard3d .pcard-front{transform:rotateY(0deg);-webkit-transform:rotateY(0deg)}',
 '.pcard3d .pcard-back{transform:rotateY(180deg);-webkit-transform:rotateY(180deg)}',
 '.pcard3d:not(.flipped) .pcard-back{visibility:hidden}',
@@ -12802,7 +12802,7 @@ function overlayLeaderboard(screen){
       const you=sbUser&&r.user_id===sbUser.id, v=lbStatVal(r,tab,sort), id=lbCanon(r);
       const fullSk=(r.skills && CATS.every(c=>typeof r.skills[c.k]==='number'));
       const arch=fullSk ? archetype(r.skills) : null;
-      // CS504 (owner): the sub is just the golfer name + archetype — the redundant stat tail (szn/wins/$)
+      // CS504 (owner): the sub is just the golfer name + archetype. The redundant stat tail (szn/wins/$)
       // that used to trail the archetype is removed; the right-hand column already shows the sorted stat.
       // Owner: OVR is no longer a sort category - it shows here, right of the archetype, on every row
       // (season rows carry ovr; career rows derive it from the stored skills; legacy rows just omit it).
@@ -12829,7 +12829,7 @@ function overlayLeaderboard(screen){
         const pc=pcReg(Object.assign({},r,{rep_pts:(id.rep!=null?id.rep:r.rep_pts)}), id.name, tab==='career'?'career':'season');
         return `<div class="lbpod ${cls[di]}" data-pc="${pc}" role="button" tabindex="0" style="cursor:pointer" aria-label="View ${esc(id.name)}\'s player card"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||r.cur_look||DEFLOOK, di===1?74:56)}</div><div class="nm">${proNameHTML(id.name,r.user_id)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
     }
-    // CS505 (owner): the top 3 live ONLY on the podium — the ranked list below starts at #4 whenever a
+    // CS505 (owner): the top 3 live ONLY on the podium, so the ranked list below starts at #4 whenever a
     // podium is shown, so nobody appears twice.
     const listRows = podiumHTML ? rows.slice(3) : rows;
     if(sbSignedIn()){
@@ -12888,7 +12888,7 @@ function overlayLeaderboard(screen){
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 8px">
       <div style="min-width:0"><h2 style="margin:0 0 2px">${tab==='season'?'Single Season':'Career'} · ${esc(lbl)}${win==='today'?' · Today':win==='week'?' · This week':''}</h2>
         <div class="small muted" style="margin:0">${derivedDef?`Posted ${tab==='season'?'seasons':'careers'} ranked by ${esc(lbl.toLowerCase())} (derived from each golfer's ratings)`:`${tab==='season'?'Every posted season':'Every career sim'} ranked by ${tab==='season'&&sort==='fans'?'fans gained that season':esc(lbl.toLowerCase())}${dir==='asc'?' · the lowest in the database':''}`}${win==='today'?' · posted today':win==='week'?' · posted this week':''}</div></div>
-      <button class="btn ghost lbdir" style="width:auto;flex:0 0 auto;padding:7px 10px;font-size:11px;white-space:nowrap" title="${dir==='desc'?'Showing best first, tap to flip':'Showing worst first, tap to flip'}">${dir==='desc'?'▼ High–Low':'▲ Low–High'}</button>
+      <button class="btn ghost lbdir" style="width:auto;flex:0 0 auto;padding:7px 10px;font-size:11px;white-space:nowrap" title="${dir==='desc'?'Showing best first, tap to flip':'Showing worst first, tap to flip'}">${dir==='desc'?'▼ High-Low':'▲ Low-High'}</button>
     </div>
     <div class="board">${board}</div>
     <div style="height:14px"></div>
@@ -12945,7 +12945,7 @@ function overlayLeaderboardDaily(screen, tab){
   }
   const p18val=r=>{ if(p18sort==='score') return scoreDaily(r);
     if(p18sort==='ovr') return 'OVR '+(r.ovr!=null?r.ovr:'-');
-    const n=p18num(r,p18sort); if(n==null) return '–';
+    const n=p18num(r,p18sort); if(n==null) return '-';
     if(p18sort==='sg') return fmtSG(n)+' SG'; if(p18sort==='ttg') return fmtSG(n)+' T2G';
     if(p18sort==='putts') return n.toFixed(1)+' putts'; if(p18sort==='hcp') return fmtHcp(n); return String(n); };
   const val=r=>`<b style="color:var(--gold)">${weekly?scoreWk(r):p18val(r)}</b>`;
@@ -12973,7 +12973,7 @@ function overlayLeaderboardDaily(screen, tab){
   if(loading){
     board=Array.from({length:8},()=>`<div class="lb lbskel" style="grid-template-columns:34px 1fr auto"><span class="pos"><span class="skb" style="width:16px;height:16px;border-radius:50%"></span></span><span class="pl"><span class="skb" style="width:52%;height:12px"></span><span class="skb" style="width:34%;height:9px;margin-top:5px"></span></span><span class="mny"><span class="skb" style="width:56px;height:13px"></span></span></div>`).join('');
   } else if(ok && srows.length){
-    // CS505: top 3 only on the podium — the list starts at #4 when a podium shows
+    // CS505: top 3 only on the podium, so the list starts at #4 when a podium shows
     const lrows = podium ? srows.slice(3) : srows;
     if(sbSignedIn()) board=podium+lrows.map(rowHTML).join('');
     else { const top=lrows.slice(0,5).map(rowHTML).join(''), tail=lrows.slice(5).map(rowHTML).join('');
@@ -13116,7 +13116,7 @@ function overlayLeaderboardLifetime(screen){
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 8px">
       <div style="min-width:0"><h2 style="margin:0 0 2px">Lifetime · ${esc(lbl)}</h2>
         <div class="small muted" style="margin:0">Every season a player has ever posted, added up across all their careers${dir==='asc'?' · the lowest in the database':''}</div></div>
-      <button class="btn ghost lbdir" style="width:auto;flex:0 0 auto;padding:7px 10px;font-size:11px;white-space:nowrap" title="${dir==='desc'?'Showing best first, tap to flip':'Showing worst first, tap to flip'}">${dir==='desc'?'▼ High–Low':'▲ Low–High'}</button>
+      <button class="btn ghost lbdir" style="width:auto;flex:0 0 auto;padding:7px 10px;font-size:11px;white-space:nowrap" title="${dir==='desc'?'Showing best first, tap to flip':'Showing worst first, tap to flip'}">${dir==='desc'?'▼ High-Low':'▲ Low-High'}</button>
     </div>
     <div class="board">${board}</div>
     <div style="height:14px"></div>
@@ -13418,7 +13418,7 @@ function overlayMenu(screen){
   // CS252: Settings - sound + haptics toggles (device-local, default on)
   const settings=$(`<div style="margin-bottom:16px"></div>`);
   settings.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Settings</div>`));
-  // (the retro/illustrated hole-art toggle was removed — the pixel view is the only style now)
+  // (the retro/illustrated hole-art toggle was removed: the pixel view is the only style now)
   // CS444: play major & Summer Games finals hole-by-hole (off = they sim; a contention Moment still fires)
   { const on=marqueeFinalsPref()==='1';
     const row=$(`<button class="btn ghost" role="switch" aria-checked="${on?'true':'false'}" style="display:flex;align-items:center;gap:12px;text-align:left;padding:11px 13px;margin-bottom:7px"><span style="font-size:19px;flex:0 0 auto;width:24px;text-align:center">🏆</span><span style="flex:1;min-width:0"><span style="display:block;font-weight:800;font-size:14px;color:var(--oncard)">Play marquee finals</span><span style="display:block;font-size:11.5px;color:var(--muted);margin-top:1px;font-weight:600">Play major &amp; Summer Games final rounds hole-by-hole</span></span><span class="mtog ${on?'on':''}"><span class="mtog-k"></span></span></button>`);
@@ -13972,7 +13972,7 @@ function scheduleFitHero(){
   try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitHero); }catch(e){}
   if(!_fitHeroBound){ _fitHeroBound=true; window.addEventListener('resize', ()=>{ if(document.getElementById('herohead')) fitHero(); }); }
 }
-// CS473 — first-run onboarding. The #1 piece of feedback is "too many buttons/text, don't know what to do."
+// CS473: first-run onboarding. The #1 piece of feedback is "too many buttons/text, don't know what to do."
 // For a brand-new player the home collapses to ONE focused path (build → play one round), the rest of the
 // menu hidden until they've played once or tapped "explore". Additive: anyone with any history never sees it.
 function autoSignInPending(){
@@ -14274,7 +14274,7 @@ function scrTitle(){
   // (the old first-run panel is retired: a brand-new player now gets the REAL home screen with the
   // guided tour running over it, so the arrows point at the actual tabs and they finish the intro
   // already oriented on the interface instead of being dropped onto it cold.)
-  // Season 1 launch announcement (returning players, once) — fires after this render settles, and only
+  // Season 1 launch announcement (returning players, once), fires after this render settles, and only
   // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
   setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
@@ -14442,7 +14442,7 @@ function setupLookTiles(cat){
     tiles.push(shopTile({thumb:L('L'),name:'Left handed',state:lefty?'eq':'own',noFoot:true,data:`data-appset="hand" data-id="left"`})); }
   return tiles;
 }
-// CS427: skin tone chooser — a continuous light→dark slider (replaces the discrete swatches). Live-updates
+// CS427, the skin tone chooser: a continuous light→dark slider (replaces the discrete swatches). Live-updates
 // the preview avatar as you drag; the tone is stored as look.skinTone (0..100) and clears the old id.
 function skinSliderNode(){
   const grad='linear-gradient(90deg,'+SKINS.map(s=>s.m).join(',')+')';
@@ -14492,7 +14492,7 @@ function pxCleatsThumb(id){ const map=PXG_CLEATS[id], pal=PXG_CLEATS_PAL[id];
   const ox=12,oy=49,W=22,H=8,px=5; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
   for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
   return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
-// CS458: a clean standalone picture of a wearable ITEM by itself (headwear/eyewear/outerwear/legwear) —
+// CS458: a clean standalone picture of a wearable ITEM by itself (headwear/eyewear/outerwear/legwear) 
 // paint just that item's sprite map, auto-crop to its bounding box, and scale it into the tile (no golfer).
 function pxNoneThumb(){ return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#7fae9a;font:800 11px var(--body)">None</span>`; }
 function pxItemThumb(cat,id){
@@ -14516,7 +14516,7 @@ function pxItemThumb(cat,id){
   for(let y=y0;y<=y1;y++){ const row=map[y]||''; for(let x=x0;x<=x1;x++){ const c=col(row[x]); if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-x0)*px,(y-y0)*px,px,px); } }
   return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`;
 }
-// CS458: a clean pattern SWATCH (the pattern itself, not on the golfer) — sample the pattern fn over the
+// CS458: a clean pattern SWATCH (the pattern itself, not on the golfer), sample the pattern fn over the
 // shirt-region coordinates onto a small square so absolute-position patterns (tie-dye, ripple) read right.
 function pxPatThumb(id){
   const base='#54736a';
@@ -14533,7 +14533,7 @@ function pxPatThumb(id){
 }
 // ---- the closet's CLUBS menu = YOUR BAG: 6 club slots; tap a slot to see its active boost upgrade and
 // equip any of the looks you own for that slot (equipping also puts the club in your golfer's hands). ----
-// One club, one list (owner): your golfer carries ONE club. This is the closet's Clubs menu — every club
+// One club, one list (owner): your golfer carries ONE club. This is the closet's Clubs menu: every club
 // you OWN (free stock + any bought/pulled) as one grid; tap to equip. The equipped club is held by your
 // golfer AND gives its boost. Locked clubs live in the Pro Shop.
 function bagMenuNode(){
@@ -14629,10 +14629,10 @@ function scrSetup(){
     add(gbar); return;
   }
 
-  // CS484: CLOSET revamp — one clean two-tier layout (owner: "way too much scrolling ... don't like a bunch
+  // CS484, the CLOSET revamp: one clean two-tier layout (owner: "way too much scrolling ... don't like a bunch
   // of loose tabs ... tie everything together into one clean intuitive layout"). A SECTION segmented control
   // + that section's category chips are PINNED with the golfer (so switching is scroll-free), and only the
-  // ITEM TILES scroll beneath — never the chrome. Buying stays in the Pro Shop; here you equip what you own.
+  // ITEM TILES scroll beneath, never the chrome. Buying stays in the Pro Shop; here you equip what you own.
   const LOOKCATS=[['skin','Skin'],['hair','Hair'],['style','Style'],['hand','Hand']];
   const APPAREL=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['hw','Headwear'],['ew','Eyewear'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];   // headwear + eyewear are apparel (owner)
   const GEAR=[['club','Clubs'],['ball','Balls'],['cleats','Cleats']];
@@ -14703,14 +14703,14 @@ function scrSetup(){
     if(nu) cform.appendChild($(`<div class="small muted" style="margin-top:7px">Climb your Tour Rep to <b style="color:var(--gold)">${esc(nu.rank)}</b> to unlock ${nu.count} more caddie${nu.count>1?'s':''}.</div>`));
     wrap.appendChild(cform);
   } else if(cat==='club' && !guest){
-    // YOUR BAG: 6 club slots — tap one to open its boost status + the looks you can equip in it
+    // YOUR BAG: 6 club slots, tap one to open its boost status + the looks you can equip in it
     wrap.appendChild(bagMenuNode());
     markCatSeen('club');
   } else {
     const grid=$(`<div class="sgrid"></div>`);
     let tiles;
     if(isLook){ tiles=setupLookTiles(cat); }
-    else {   // LOCKER: show only the items you OWN in this category — tap to equip. No buying here.
+    else {   // LOCKER: show only the items you OWN in this category, tap to equip. No buying here.
       tiles=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id) || ((cat==='plate'||cat==='cardbg') && (CARD_EARN[cosKey(cat,o.id)]||cosRewardOnly(cat,o.id)))).map(o=>cosTileHTML(cat,o));   // card cosmetics also show LOCKED earned + collection-reward items with how to earn them
     }
     const catLabel=(cats.find(c=>c[0]===cat)||[,cat])[1];
@@ -14744,7 +14744,7 @@ function scrSetup(){
   sticky.querySelectorAll('[data-scat]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.bagSlot=null; S.setupCat=x.getAttribute('data-scat'); render(); });
 
   // CS484: live equipped-gear boosts + the Pro Shop / Packs button now sit BELOW the tiles (utility, not the
-  // primary action) so the tiles stay right under the pinned nav — much less scrolling to reach them.
+  // primary action) so the tiles stay right under the pinned nav, much less scrolling to reach them.
   if(!guest && SHOP_ENABLED){
     const under=$(`<div class="setup-under" style="margin:14px 0 96px"></div>`);   // bottom margin clears the fixed Back/Done action bar
     try{ under.appendChild(accBoostSummaryNode()); }catch(e){}
@@ -14935,7 +14935,7 @@ const PXG_CAPE=["............................................","................
 const PXG_CLUBS={ scepter:PXG_CLUB_SCEPTER, candycane:PXG_CLUB_CANDY,driver:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","..................................l.........","...................................l........","...................................l........","....................................l.......","....................................l.......",".....................................l......",".....................................l......","......................................l.....",".......................................l....",".......................................l....","........................................l...","....................................HHHHH...","...................................HFFFFSH..","...................................HFFFFFH..","....................................GGGGG...",".....................................GGG...."], wood:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","..................................l.........","...................................l........","...................................l........","....................................l.......","....................................l.......",".....................................l......",".....................................l......","......................................l.....",".......................................l....",".......................................l....","........................................l...","............................................",".....................................HHHS...","....................................HFFFFH..",".....................................GGGG...","............................................"], iron:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","..................................l.........","...................................l........","...................................l........","....................................l.......","....................................l.......",".....................................l......",".....................................l......","......................................l.....",".......................................l....",".......................................l....","........................................l...","........................................l...","....................................HHHHHH..","....................................GFFFFF..",".....................................GGGGG..","............................................"], wedge:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","..................................l.........","...................................l........","...................................l........","....................................l.......","....................................l.......",".....................................l......",".....................................l......","......................................l.....",".......................................l....",".......................................l....","........................................l...","........................................l...","...................................HHHHHHH..","...................................FFGFGFF..","...................................FFGFGFF..","....................................GGGGGG.."], putter:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","..................................l.........","...................................l........","...................................l........","....................................l.......","....................................l.......",".....................................l......",".....................................l......","......................................l.....",".......................................l....",".......................................l....","........................................l...","....................................lllGlll.","....................................SSSSSSS.","....................................FFFFFFF.","....................................GGGGGGG.","............................................"], persimmon:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","..................................H.........","...................................H........","...................................H........","....................................H.......","....................................H.......",".....................................H......",".....................................H......","......................................H.....",".......................................H....",".......................................H....","........................................H...","....................................WWWW....","...................................WWWWWw...","...................................wWWIIw...","...................................wWWWWw...","....................................BBBB...."], blade:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","..................................l.........","...................................l........","...................................l........","....................................l.......","....................................l.......",".....................................l......",".....................................l......","......................................l.....",".......................................l....",".......................................l....","........................................l...","........................................l...","..................................nFFFFFFn..","..................................SSSnSSSS..","..................................GGGGGGGG..","............................................"], excalibur:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","..................................P.........","...................................g........","...................................g........","....................................g.......","....................................g.......",".....................................g..x...",".....................................g.X....","......................................M.....",".....................................SlS....","....................................xSlS....","......................................SlS...","......................................SlS...",".......................................SlS..",".......................................SlS..","........................................sS..",".........................................S.."], wand:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","..................................l.........","...................................l........","...................................l........","....................................b.......","....................................l.......",".....................................l......",".....................................l......","......................................b.....",".......................................l....",".......................................l....",".......................................Tl...","......................................tTt.s.",".....................................tTTTt..","....................................s.TTT...",".....................................t.T.t..",".........................................s.."], hockey:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","..................................hH........","..................................hH........","...................................hH.......","...................................hH.......","....................................hH......","....................................KK......",".....................................KK.....",".....................................hH.....","......................................hH....","......................................hH....",".......................................hH...","............................WW.........WW...",".............................WWWWWWWWWWWW...","............................WWWWWtttttWWW...","............................wwwwwwwwwwwww...","............................................"], glizzy:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","..................................l.........","...................................l........","...................................l........","....................................l.......","....................................l.......",".....................................l......",".....................................l......","......................................l.....",".......................................l....",".......................................l....","........................................l...","..................................DMDDMDDMD.","..................................EDDDDDDDE.",".................................BBBBBBBBBBB","..................................CCCCCCCCC.","............................................"], poolnoodle:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","...................................WNn......","...................................WNn......","....................................WNn.....",".....................................WNn....",".....................................WNn....","....................................WNn.....","....................................WNn.....",".....................................WNn....","......................................WNn...",".......................................WNn..","........................................WNn.",".........................................WNn","......................................WNNNn.","...................................OWNNNNn..","...................................Onnnnn...","............................................"]};
 
 const PXG_CLUB_PAL={ scepter:{'4':'#f2d24a','5':'#c9a52a','6':'#fff7cc','A':'#e34b4b'}, candycane:{'K':'#c23b34','L':'#f2f4f6'}, persimmon:{'H':'#7a5230','W':'#6b3f1c','w':'#4a2a10','I':'#efe4c4','B':'#c9a24a'}, excalibur:{'P':'#f0d066','g':'#3a2b4a','X':'#e6b93c','x':'#b8901f','M':'#4de0ef','S':'#d7dfe9','s':'#9aa6b6','l':'#f8fbff'}, blade:{'l':'#cfd3da','n':'#8a929e','S':'#cfd6df','F':'#f6f8fb','G':'#7f8894'}, wand:{'l':'#2b2438','b':'#e6b93c','T':'#ffe66b','t':'#f2b73a','s':'#bfe9ff'}, hockey:{'H':'#b5854a','h':'#c99a5e','K':'#171717','W':'#9a6327','w':'#5e3a17','t':'#e8e2d2'} };
-// ============ UNIFIED CLUBS — one club, one list (owner) ============
+// ============ UNIFIED CLUBS: one club, one list (owner) ============
 // A club is a single equippable item that (a) your golfer holds and (b) gives a boost. Stock clubs are
 // free, store clubs are coin-buyable, pack clubs come from packs/shards. Recolor variants reuse a base
 // sprite (driver/wood/iron/wedge/putter), tinted by a per-id PXG_CLUB_PAL finish so each reads unique.
@@ -15405,7 +15405,7 @@ const PXG_EW_AVIATORS=[
 "............................................",
 "............................................"
 ];
-// CS: round WIRE glasses (John-Lennon / Payne-Stewart style) — thin gold rims + clear lenses (a single
+// CS: round WIRE glasses (John-Lennon / Payne-Stewart style), thin gold rims + clear lenses (a single
 // glint) + a bridge + temple arms to the ears. The old version was filled gold-rim + white-highlight +
 // dark lens per eye, which read as two eyes rather than glasses.
 const PXG_EW_ROUND=[
@@ -15813,10 +15813,10 @@ const PXG_PLUSFOURS=[
 "............................................"];
 const PXG_TWEED=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","......................3.....................","..................133111111.................",".................11331111111................","................1111111111111...............","...............222222222222222..............","..............33333333333333333.............",".............3332222222222222333............",".............2222222222222222222............","...................2222222..................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................"];
 const PXG_STRAW=["............................................","............................................","............................................","............................................","............................................","......................4.....................","...................1411111..................",".................11141111111................",".................11141111111................","................1114444444111...............","............444433333333333334444...........","..........4444443333333333333444444.........",".........444444444333333333444444444........",".........555555555555555555555555555........",".........555555555555555555555555555........","...........55555555555555555555555..........",".................55555555555................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................"];
-// CS411: HERITAGE APPAREL — outerwear (cardigan/blazer) over the torso, legwear (plus-fours) over the legs.
+// CS411, HERITAGE APPAREL: outerwear (cardigan/blazer) over the torso, legwear (plus-fours) over the legs.
 // Painted as OVERLAYS with their own fixed heritage palettes (paintOverlay in pxGolferCanvas), so they hide the
 // polo/pants beneath (like real outerwear) and use a per-garment palette instead of fighting the global char set.
-// COLLECTION REWARD (Summer Smash): the Rubber Ducky Floatie — a duck inner-tube worn at the waist.
+// COLLECTION REWARD (Summer Smash), the Rubber Ducky Floatie: a duck inner-tube worn at the waist.
 const PXG_FLOATIE=[
  "............................................",
  "............................................",
@@ -16181,7 +16181,7 @@ function pxGolferCanvas(look,opts){
 // CS490: the DIRECTIONAL 3/4 golfer. Renders one facing (N/NE/E/SE/S authored; NW/W/SW mirrored) in a pose.
 // Recolours from the look + takes shirt patterns, same as pxOverheadCanvas. Cap is baked into the body sprite;
 // cap:false remaps the cap chars to hair (looks hatless). Novelty hats fall back to the plain cap for now.
-// COLLECTION REWARD: the floatie on the little swing golfer — find the shirt→pants boundary (the
+// COLLECTION REWARD: the floatie on the little swing golfer, find the shirt→pants boundary (the
 // waist) from the body grid and draw a small duck tube band around it (+ a mini duck head on the right).
 // Generic across every pose/direction/handedness, so both sprite systems get it from one function.
 function paintFloatieBand(ctx, BODY, px){
@@ -16542,7 +16542,7 @@ function pxStrokeURLs(look){
     if(pd.fixed){ const cols=pd.cols||[]; let col=cols[pd.f(x,y)|0]||cols[0]; if(!col) return null; return (ch==='d')?pxShade(col,-18):(ch==='v')?pxShade(col,16):col; }
     const a=pd.f(x,y); if(!a) return null; const col=(a===2)?pa2:pa1; if(!col) return null; return (ch==='d')?pxShade(col,-14):(ch==='v')?pxShade(col,14):col; };
   // CS485: a STYLE hat is STAMPED at each frame's head anchor (the sprite's 'c' cap cluster), nearest-neighbor
-  // scaled to the head — so the standing hat art reuses onto whatever pose the swing golfer is in.
+  // scaled to the head, so the standing hat art reuses onto whatever pose the swing golfer is in.
   const hatMap=hatStyle?PXG_HATS[hatStyle]:null;
   const hatPal=hatStyle?(PXG_HERITAGE_HAT_PAL[hatStyle]||PXG_NOV):null;
   const hbb=hatMap?(()=>{let t=99,b=-1,l=99,r=-1;for(let y=0;y<hatMap.length;y++){const rw=hatMap[y];for(let x=0;x<rw.length;x++){const ch=rw[x];if(ch!=='.'&&ch!==' '){if(y<t)t=y;if(y>b)b=y;if(x<l)l=x;if(x>r)r=x;}}}return{t,b,l,r};})():null;
@@ -17091,7 +17091,7 @@ function scrDraft(){
       b.onclick=()=>takeAttr(cat.k);
       grid.appendChild(b); return;
     }
-    grid.appendChild($(`<div class="dtile empty" aria-label="${cat.short} open"><div class="dt-top"><span class="dt-lab">${cat.short}</span><span class="dt-sp"></span><span class="dt-val" style="color:var(--muted)">–</span></div></div>`));
+    grid.appendChild($(`<div class="dtile empty" aria-label="${cat.short} open"><div class="dt-top"><span class="dt-lab">${cat.short}</span><span class="dt-sp"></span><span class="dt-val" style="color:var(--muted)">-</span></div></div>`));
   });
   add(grid);
 
@@ -17312,12 +17312,12 @@ function fieldSample(n){
   const a=FIELDPOOL.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
   return a.slice(0,n);
 }
-/* ══════ SEASON GOALS — contract-style targets, sized to your career stage ══════════════════════
+/* ══════ SEASON GOALS: contract-style targets, sized to your career stage ══════════════════════
    Every real golf career has a shape to it (make my card, hold my card, break through, contend,
    win the big one, defend, chase the record). We track all the stats but never asked the player to
    commit to any of them, so every season felt shapeless. This adds three to five targets each
-   season — tuned to your CURRENT tier (rookie → GOAT-chase, computed at season start and pinned
-   for the year) — tracked live from S.season.totals + results, and graded A–F at year end.
+   season, tuned to your CURRENT tier (rookie → GOAT-chase, computed at season start and pinned
+   for the year), tracked live from S.season.totals + results, and graded A-F at year end.
 
    Consequences ride existing systems: careerStory().feed picks up a beat, S.career.lastGoalGrade
    is left behind for the next season's sponsors to react to, and the season row on
@@ -17328,7 +17328,7 @@ function fieldSample(n){
 */
 
 // LIVE metrics for goal grading. Optionally pass a finalSeason row (from S.career.seasons[i]) to
-// grade against the exact end-of-season numbers instead of the mid-season totals view — the last
+// grade against the exact end-of-season numbers instead of the mid-season totals view: the last
 // event's row isn't always mirrored back to totals before the summary renders.
 function goalMetrics(finalSeason){
   const meName = (S.season && S.season.me && S.season.me.name) || S.name || '';
@@ -17374,7 +17374,7 @@ function goalMetrics(finalSeason){
 }
 
 // Tier is picked from status coming IN to the season and pinned to that season, so a rookie who
-// wins majors in year one still finishes rookie goals — they signed up for a rookie sheet.
+// wins majors in year one still finishes rookie goals: they signed up for a rookie sheet.
 function seasonGoalTier(){
   const c = S.career || {};
   const yrs = (c.seasons||[]).length;   // PRIOR seasons completed
@@ -17428,7 +17428,7 @@ const GOAL_TIERS = {
   goat:    {label:'Chasing history', pool:['moneyTop5','winThree','winMajor','earn25M','defendNo1','twelveTop10s']},
 };
 
-// Pick five from the six-template pool, seeded by careerSeed + year — a career sees a stable sheet
+// Pick five from the six-template pool, seeded by careerSeed + year: a career sees a stable sheet
 // on resume and different combinations across seasons (5 of 6 → 6 distinct rotations per tier).
 function generateSeasonGoals(){
   if(S.daily || S.circuitMode || !S.career) return null;
@@ -17458,7 +17458,7 @@ function gradeSeasonGoals(sg, m){
 // Runs ONCE per season, inside scrSummary's !S.recorded record block, right after the season row
 // is pushed onto S.career.seasons. Writes the graded sheet onto that row (for a future history
 // view), stamps S.career.lastGoalGrade for next season's sponsors to read, and pushes a story-feed
-// beat on the loud outcomes (A / D / F) — a C season is a quiet one, no news is news.
+// beat on the loud outcomes (A / D / F): a C season is a quiet one, no news is news.
 function applySeasonGoalConsequences(){
   const sg = S.season && S.season.goals; if(!sg) return null;
   // Grade against the FINAL season row we just pushed (authoritative), not the mid-season view
@@ -17922,7 +17922,7 @@ function fmtFollowers(n){ n=Math.round(n||0);
   if(n>=1e4) return Math.round(n/1e3)+'K';
   if(n>=1e3) return (n/1e3).toFixed(1).replace(/\.0$/,'')+'K';
   return ''+n; }
-// CS476: 2-decimal fan count for the live season banner (owner) — 8,234,567 → "8.23M", 12,345 → "12.35K".
+// CS476: 2-decimal fan count for the live season banner (owner), 8,234,567 → "8.23M", 12,345 → "12.35K".
 function fmtFollowers2(n){ n=Math.round(n||0);
   if(n>=1e6) return (n/1e6).toFixed(2)+'M';
   if(n>=1e3) return (n/1e3).toFixed(2)+'K';
@@ -18027,7 +18027,7 @@ function rivalLiveHTML(){
   const col=lead?'#35d6a0':tie?'#e0c060':'#e0a53a';
   return `<div style="margin-top:9px;border-top:1px solid rgba(255,255,255,.08);padding-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
     <span class="small" style="color:var(--oncard);font-weight:700">⚔ vs <b style="color:#ff8f7e">${esc(rv.name)}</b>${rvRankTxt?` <span class="muted">· they're ${rvRankTxt}</span>`:''}</span>
-    <span class="small" style="color:${col};font-weight:800;white-space:nowrap">${met?`${meAhead}–${rvAhead} head-to-head`:'no meetings yet'}</span></div>`;
+    <span class="small" style="color:${col};font-weight:800;white-space:nowrap">${met?`${meAhead}-${rvAhead} head-to-head`:'no meetings yet'}</span></div>`;
 }
 function followersChipHTML(delta){ const s=careerStory();
   // CS279: the season delta can now go NEGATIVE (a press-conference backfire loses followers), so show ▼ in red
@@ -18203,7 +18203,7 @@ const STORYLINES=[
       {t:'Focus on your own game',s:'Blinders on',tr:'clutch',conf:0.3,r:'You refuse to make it about them. Smart.',head:'Kept the focus on his own game'}]},
  // CS279 - you've built a grudge-match record vs your nemesis
  {id:'rival_grudge', tag:'THE RIVALRY', pri:2, when:c=>!!c.rivalName && (c.grudgeW+c.grudgeL)>=2, title:c=>`The ${esc(c.rivalName)} rivalry`,
-  body:c=>`You and ${esc(c.rivalName)} have gone head-to-head down the stretch ${c.grudgeW+c.grudgeL} times now (you\'re ${c.grudgeW}–${c.grudgeL}). Everyone wants your take on the rivalry.`,
+  body:c=>`You and ${esc(c.rivalName)} have gone head-to-head down the stretch ${c.grudgeW+c.grudgeL} times now (you\'re ${c.grudgeW}-${c.grudgeL}). Everyone wants your take on the rivalry.`,
   ch:[{t:c=>c.grudgeW>c.grudgeL?'“I own that matchup”':'“I\'ll get the better of them”',s:'Stake your claim',tr:'brash',conf:0.4,fan:1,risk:0.4,
         r:'Pure theater. The fans eat up the beef and you look every bit the star.',head:c=>`Called out ${c.rivalName} over their rivalry`,
         rBad:'Bold talk that ages badly the moment they beat you again. The room smells insecurity.',headBad:c=>`Overplayed the ${c.rivalName} rivalry`},
@@ -18958,7 +18958,7 @@ function leagueSchedule(year, seed){
   return inflatePurses(list,year).sort((a,b)=>a.wk-b.wk);
 }
 // the Frontier's own field: ONLY the players who defected, topped up with GENERATED pros the league
-// signed to fill out a 48. It must NOT pull in tour players who stayed loyal — you left them behind.
+// signed to fill out a 48. It must NOT pull in tour players who stayed loyal: you left them behind.
 // The marquee defectors lead the list, so the real names are the ones you have to beat.
 function leagueFieldRoster(n){
   const w=ensureWorld(); if(!w) return [];
@@ -19261,9 +19261,9 @@ function scrQSchool(){
   add($(`<div class="scout" style="border-color:${out.col};padding:12px 14px;margin-bottom:12px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div><div style="font:800 11px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Your position</div>
-        <div style="font:900 26px/1.1 var(--body);color:${out.col};margin-top:4px">${q.shown?ord(me.pos):'–'}${q.shown?` <span style="font-size:14px;color:var(--muted)">of ${Q_FIELD}</span>`:''}</div></div>
+        <div style="font:900 26px/1.1 var(--body);color:${out.col};margin-top:4px">${q.shown?ord(me.pos):'-'}${q.shown?` <span style="font-size:14px;color:var(--muted)">of ${Q_FIELD}</span>`:''}</div></div>
       <div style="text-align:right"><div style="font:800 11px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Through ${q.shown}</div>
-        <div class="mono" style="font:900 22px/1.1 var(--body);color:var(--oncard);margin-top:4px">${q.shown?par(Math.round(me.total)):'–'}</div></div>
+        <div class="mono" style="font:900 22px/1.1 var(--body);color:var(--oncard);margin-top:4px">${q.shown?par(Math.round(me.total)):'-'}</div></div>
     </div>
     <div class="small" style="margin-top:8px;color:${out.col};font-weight:800">${q.shown?(done?out.label:`On track for ${out.label.toLowerCase()}`):`Top ${Q_FULL} full card · top ${Q_COND} conditional`}</div>
   </div>`));
@@ -19309,7 +19309,7 @@ function statusStripNode(){
         .sort((a,b)=>(b.money-a.money)||(b.pts-a.pts));
       const mr=byMoney.findIndex(r=>r.n===S.season.me.name)+1;
       const safe=(mr>0&&mr<=PROVING_PROMOTE);
-      body=`<b style="color:${safe?'#35d6a0':m.col}">${mr>0?ord(mr):'–'}</b> on the order of merit · top ${PROVING_PROMOTE} earn a tour card`
+      body=`<b style="color:${safe?'#35d6a0':m.col}">${mr>0?ord(mr):'-'}</b> on the order of merit · top ${PROVING_PROMOTE} earn a tour card`
         +(wins?` · <b style="color:var(--gold)">${wins}/${PROVING_BATTLEFIELD}</b> wins toward a battlefield promotion`:'');
     }
   } else {
@@ -22398,7 +22398,7 @@ function applyStoryChoice(beat, ch, ctx){
 function storyStatsRowHTML(res){
   const tile=(label,dv,now,upCol)=>{
     const dcol = dv>0?upCol : dv<0?'#E14A33':'#67839a';
-    const arrow = dv>0?'▲' : dv<0?'▼' : '–';
+    const arrow = dv>0?'▲' : dv<0?'▼' : '-';
     return `<div style="flex:1 1 86px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px 9px">
       <div style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">${label}</div>
       <div style="display:flex;align-items:baseline;gap:5px;margin-top:4px">
@@ -24168,17 +24168,17 @@ function liveRow(o,pos,you,done,flag,opt){
   const cut=(pos==='CUT'); const sc=cut?'CUT':par(Math.round(o.total));
   // the trophy is only for the WINNER once the tournament is final, mid-round the leader is just 1 / T1
   const isWin=(pos===1&&done&&!o._tied);
-  const lab=cut?'–':(isWin?'🏆':(o._tied?'T'+pos:pos));
+  const lab=cut?'-':(isWin?'🏆':(o._tied?'T'+pos:pos));
   const nat=(flag!==false)?natOfPlayer(o.p):null;
   const fl=nat?`<span class="lbfl">${natFlag(nat)}</span>`:'';
   // TODAY = the round just completed (a cut player has nothing going today)
   const tRaw=(!cut && rd>0)?o.rounds[rd-1]:null;
-  const today=(tRaw==null)?'–':par(Math.round(tRaw));
+  const today=(tRaw==null)?'-':par(Math.round(tRaw));
   const tCol=(tRaw==null)?'var(--muted)':(tRaw<0?'#35d6a0':tRaw>0?'#e8b04b':'var(--oncard)');
   // round columns read TO PAR, like every other score in the game (the sim never carries a stroke total)
   const rcells=[0,1,2,3].map(i=>{ const v=(o.rounds&&i<rd)?o.rounds[i]:null;
     const c=(v==null)?'var(--muted)':(v<0?'#35d6a0':v>0?'#e8b04b':'var(--oncard)');
-    return `<span class="rcell" style="color:${c}">${v==null?'–':par(Math.round(v))}</span>`; }).join('');
+    return `<span class="rcell" style="color:${c}">${v==null?'-':par(Math.round(v))}</span>`; }).join('');
   return $(`<div class="lb lbx ${you?'you':''} ${cut?'cut':''} ${isWin?'winner':''}" data-nm="${esc(o.p.name)}">
     <span class="pos">${lab}</span>
     <span class="pl">${fl}${o.p.name}</span>
@@ -24362,7 +24362,7 @@ function celebrateWin(evt, o, opts){
     const actions=$(`<div class="celeb-actions"></div>`);
     const cont=$(`<button class="btn goldfill">Continue ▸</button>`); cont.onclick=e=>{ e.stopPropagation(); finish(); }; actions.appendChild(cont);
     if(major){ const sh=$(`<button class="btn gold">↗ Share win</button>`); sh.onclick=e=>{ e.stopPropagation(); if(celebTimer){clearTimeout(celebTimer);celebTimer=null;} shareMajorWin(evt,o); }; actions.appendChild(sh); }
-    // ✨ Share Highlights — only if THIS win's final was played hole-by-hole (so it has shot tracers to reel).
+    // ✨ Share Highlights, only if THIS win's final was played hole-by-hole (so it has shot tracers to reel).
     const lm=S.lastMomentReel;
     if(lm && lm.evt===evt.name && lm.year===(S.year||1) && lm.holes && hvReelHoles(lm.holes).length){
       const hh=$(`<button class="btn ghost">✨ Share Highlights</button>`);
@@ -24941,7 +24941,7 @@ function scrTeamCup(){
     const card=$(`<div${(newestHere && !dayBeat)?' id="cup-newest"':''} style="max-width:560px;margin:0 auto 12px;background:#0a2740;border:1px solid var(--line);border-radius:13px;overflow:hidden"></div>`);
     card.appendChild($(`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)">Day ${sess.day} · ${esc(sess.title)}${complete?'':` <span class="muted" style="font-weight:600">${revN}/${sess.matches.length}</span>`}</div>
-      <div class="mono" style="font-weight:800;color:#fff">${ptTxt(sa)} – ${ptTxt(sb)}</div></div>`));
+      <div class="mono" style="font-weight:800;color:#fff">${ptTxt(sa)} - ${ptTxt(sb)}</div></div>`));
     const body=$(`<div></div>`); body.innerHTML=rev.map((m,i)=>cupMatchRow(m, newestHere && i===revN-1 && !reduce)).join(''); card.appendChild(body);
     add(card);
   });
@@ -25668,7 +25668,7 @@ function overlayRosterUpdates(app){
   else if(sort==='rank') sorted.sort((a,b)=>b.t-a.t || lastName(a.n).localeCompare(lastName(b.n)));
   else sorted.sort((a,b)=>Math.abs(b.t-b.f)-Math.abs(a.t-a.f) || (b.t-b.f)-(a.t-a.f) || lastName(a.n).localeCompare(lastName(b.n)));
   ov.appendChild($(`<div class="rulist">${sorted.map(p=>{
-    const up=p.t>p.f, dn=p.t<p.f, col=up?'#35d6a0':dn?'#E14A33':'var(--muted)', arw=up?'\u25B2':dn?'\u25BC':'\u2013';
+    const up=p.t>p.f, dn=p.t<p.f, col=up?'#35d6a0':dn?'#E14A33':'var(--muted)', arw=up?'\u25B2':dn?'\u25BC':'-';
     return `<div class="rurow"><span class="ru-n">${esc(p.n)}</span><span class="ru-ov"><span class="ru-was">${p.f}</span><span class="ru-arw">\u2192</span><span class="ru-now" style="color:${col}">${p.t}</span><span class="ru-d" style="color:${col}">${arw}${Math.abs(p.t-p.f)}</span></span></div>`;
   }).join('')}</div>`));
   const x=$(`<button class="x" aria-label="Close">\u2715</button>`); x.onclick=()=>{ S.overlay=null; render(); };
@@ -26103,7 +26103,7 @@ function bracketFaceoff(me, opp, showOvr){
 function bracketH2H(opp){
   try{
     const h=S.career&&S.career.h2h&&S.career.h2h[opp.p.name];
-    if(h&&h.ev) return `<span class="bchip" style="border-color:rgba(53,214,160,.3);color:#8fe6cd">Head to head ${h.meAhead}–${h.themAhead}</span>`;
+    if(h&&h.ev) return `<span class="bchip" style="border-color:rgba(53,214,160,.3);color:#8fe6cd">Head to head ${h.meAhead}-${h.themAhead}</span>`;
   }catch(e){}
   return '';
 }
@@ -26526,7 +26526,7 @@ function seasonDesktopCols(scr){
 function scrSeason(){
   clearTimeout(seasonTimer);
   if(!S.simPace) S.simPace=LS.get('bag_pace','normal');   // default to the brisk Standard cadence (owner)
-  if(S.simPace==='fast' && !passProActive()) S.simPace='normal';   // Fast is a Tour Pass Pro perk — non-Pro falls back to Standard
+  if(S.simPace==='fast' && !passProActive()) S.simPace='normal';   // Fast is a Tour Pass Pro perk, non-Pro falls back to Standard
   // Ryder/Nations Cup weeks route to their own match-play screen
   const cur=S.schedule[S.evtIndex];
   if(cur && cur.teamcup && !S.daily){ scrTeamCup(); return; }
@@ -26576,7 +26576,7 @@ function scrSeason(){
   const byPts=Object.entries(S.season.totals).map(([n,v])=>({n,points:v.points})).sort((a,b)=>b.points-a.points);
   const tourRank=byPts.findIndex(r=>r.n===S.season.me.name)+1;
   const NP=byPts.length;
-  const rankTxt=t.played?('#'+tourRank):'–';   // no starts yet: a dash, not the stray ', ' this used to print
+  const rankTxt=t.played?('#'+tourRank):'-';   // no starts yet: a dash, not the stray ', ' this used to print
   // World Rank (OWGR), career-long rolling ranking, stable across the season
   const wr=!S.daily?myWorldRank():0, wrN=!S.daily?worldRankSize():0;
   // CS264: franchise-mode career banner (avatar · name · year/age) + the season stat bar as a dashboard header
@@ -26727,7 +26727,7 @@ function scrSeason(){
   const dayCells=DAYS.map((L,i)=>{
     const done=i<ce.roundsDone, isCut=(myCut&&i>=2), v=meLive.rounds[i];
     const live=(i===ce.roundsDone-1 && !ce.done);
-    const txt=isCut?'–':(done?par(Math.round(v)):'·');
+    const txt=isCut?'-':(done?par(Math.round(v)):'·');
     return `<div class="rdcell ${live?'live':''} ${(!done&&!isCut)?'empty':''}"><div class="rdlab">${L}</div><div class="rdval">${txt}</div></div>`;
   }).join('');
   let status, money='';
@@ -26943,7 +26943,7 @@ function roundsRow(o){
   const rd=[o.r1,o.r2,o.r3,o.r4], labs=['Thu','Fri','Sat','Sun'];
   const cells=rd.map((r,i)=>`<div style="text-align:center;flex:1">
     <div class="small muted" style="font-size:9px;letter-spacing:.12em">${labs[i].toUpperCase()}</div>
-    <div class="mono" style="font-weight:800;font-size:15px;color:${r==null?'var(--muted)':'var(--oncard)'}">${r==null?'–':par(Math.round(r))}</div></div>`).join('');
+    <div class="mono" style="font-weight:800;font-size:15px;color:${r==null?'var(--muted)':'var(--oncard)'}">${r==null?'-':par(Math.round(r))}</div></div>`).join('');
   return $(`<div style="display:flex;gap:6px;background:#0a2740;border:1px solid var(--line);border-radius:11px;padding:8px 10px;margin-top:8px">${cells}</div>`);
 }
 function lbRow(o){
@@ -26951,7 +26951,7 @@ function lbRow(o){
   const sc=o.bres?o.bres:(o.pos==='CUT'?'CUT':par(o.score));
   const mny=o.money>0?fmt(o.money):', ';
   const isWin=(o.pos===1&&!o.tied);
-  const lab=o.pos==='CUT'?'–':(isWin?'🏆':(o.tied?'T'+o.pos:o.pos));
+  const lab=o.pos==='CUT'?'-':(isWin?'🏆':(o.tied?'T'+o.pos:o.pos));
   return $(`<div class="lb ${o.p.you?'you':''} ${o.pos==='CUT'?'cut':''} ${isWin?'winner':''}">
     <span class="pos">${lab}</span>
     <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
@@ -27197,8 +27197,8 @@ function seasonHeadlines(x){
   if(playedN>=10 && missed===0) cand.push({s:5,icon:'🛡',text:`Never missed a weekend, ${made} cuts made from ${made} starts.`});
   const rr=S.rivalOutcome;
   if(rr&&rr.status==='h2h') cand.push(rr.beat
-    ?{s:8,icon:'⚔️',text:`Owned the rivalry, took the season series off ${rr.name} ${rr.meAhead}–${rr.rvAhead}.`}
-    :{s:8,icon:'⚔️',text:`${rr.name} took the season series ${rr.rvAhead}–${rr.meAhead}. Unfinished business.`});
+    ?{s:8,icon:'⚔️',text:`Owned the rivalry, took the season series off ${rr.name} ${rr.meAhead}-${rr.rvAhead}.`}
+    :{s:8,icon:'⚔️',text:`${rr.name} took the season series ${rr.rvAhead}-${rr.meAhead}. Unfinished business.`});
   if(S.season&&S.season.cupYouWon) cand.push({s:9,icon:'👑',text:`Capped it all as Tour Cup champion, the season-long race won at the finale.`});
   { const md=S.season&&S.season.olympicMyMedal;
     if(typeof md==='string'&&/gold|silver|bronze/i.test(md)) cand.push({s:8,icon:md.toLowerCase()==='gold'?'🥇':(md.toLowerCase()==='silver'?'🥈':'🥉'),text:`Stood on the podium at the Games, ${md.toLowerCase()} for ${(S.look&&S.look.country)||'your country'}.`}); }
@@ -27559,7 +27559,7 @@ function scrSummary(){
       const cfresh=evaluateAch(); if(cfresh.length) S.freshAch=(S.freshAch||[]).concat(cfresh);
       // CS504 (owner: "The Legend Circuit should be included in career stats"): post circuit seasons to the
       // public board under the SAME career_id as the tour career (String(S.careerSeed)), so they group into
-      // that career — its seasons count (up to 30 tour + 12 circuit = 42), wins, majors and earnings all
+      // that career: its seasons count (up to 30 tour + 12 circuit = 42), wins, majors and earnings all
       // include the circuit. S.year climbs continuously (31-42 in the circuit), so (career_id, year) never
       // collides with a tour year; migration 60's idempotent upsert dedupes re-submits.
       sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:netTotal,wins:t.wins,majors:t.majors,
@@ -27679,7 +27679,7 @@ function scrSummary(){
     </div>
   </div>`);
   add(moneyBar);
-  // CS479/483 (owner): Full Season Recap — a slim full-width button under the money bar (was crammed into the bar).
+  // CS479/483 (owner): the Full Season Recap, a slim full-width button under the money bar (was crammed into the bar).
   const recapBtn=$(`<button class="btn gold" style="width:100%;margin:0 0 8px;padding:8px 14px;font-size:12px;line-height:1.15">Full Season Recap<span class="sub" style="font-size:9px;letter-spacing:.05em;opacity:.85"> · every event, leaderboard by leaderboard</span></button>`);
   recapBtn.onclick=()=>{S.recapEvent=null; S.recapYear=S.year||1; S.screen='recap'; render();};
   add(recapBtn);
@@ -27896,11 +27896,11 @@ function scrSummary(){
     // a legacy unlock LEADS the summary: it is the rarest thing that can happen in a season and the whole
     // point is that the accomplishment visibly changed the career
     const legacyCard=(!S.daily && !S.circuitMode)?legacyFreshNode():null;
-    // Season Sheet grading — the headline of the year for players who signed up to targets: sits
+    // Season Sheet grading, the headline of the year for players who signed up to targets: sits
     // right under a legacy unlock (rarer, gets top billing) and above the stat masthead.
     const finalRow=(S.career&&S.career.seasons&&S.career.seasons.length)?S.career.seasons[S.career.seasons.length-1]:null;
     const goalsCard=(!S.daily && !S.circuitMode && typeof seasonGoalsCard==='function')?seasonGoalsCard({finalSeason:finalRow}):null;
-    // Rest weeks card — only present if any were taken; small acknowledgement that the season had shape
+    // Rest weeks card, only present if any were taken; small acknowledgement that the season had shape
     const restCard=(!S.daily && !S.circuitMode && typeof restWeeksCardHTML==='function')?(function(){ const h=restWeeksCardHTML(); return h?$(h):null; })():null;
     [statusCard, legacyCard, goalsCard, restCard, statHero, tourWon, highlights, raceCupRow].filter(Boolean).forEach(n=>{ if(anchor) ovC.insertBefore(n, anchor); else ovC.appendChild(n); });
   }
@@ -30452,7 +30452,7 @@ function hvBackdrop(g, seedN, B, detailCam){
 const HV_PX_DETAIL=340;   // detail-tile vertical pixel count → tuned so a zoomed course pixel ~= the golfer sprite pixel
 const HV_PX_BASEH=254;    // base tile vertical pixel count (pxTerrainURL default GH), over HV_H course-units
 // On a real zoom-in (putt close-up), return an expanded close-up region so hvBackdrop can render a
-// higher-density detail tile there — the resolution-independent renderer (os factor) keeps every object
+// higher-density detail tile there: the resolution-independent renderer (os factor) keeps every object
 // at its true COURSE scale while the pixels get finer to match the golfer sprite (owner's ask).
 const hvDetailCam=(camTarget,live)=>{
   if(!live || !camTarget || camTarget[2] >= HV_W*0.6) return null;   // only when genuinely zoomed
@@ -30895,7 +30895,7 @@ function hvBallHex(c){ c=String(c||'').trim();
 // pcol tints the tracer glow / roll / ball ring to the player's assigned color (multi-ball H2H).
 function hvLiveShot(g,p,small,pcol,cam){
   const A=hvProj(g,p.from[0],p.from[1]);
-  const fx=pcol?null:fxOf(S.look);   // CS410: tracer skin — the player's equipped effect tints their shot tracer (single-ball only)
+  const fx=pcol?null:fxOf(S.look);   // CS410, the tracer skin: the player's equipped effect tints their shot tracer (single-ball only)
   const ball=(pcol||fx)?null:ballOf(S.look);   // CS414: a Comet/Featherie ball tints the in-play ball + tracer when no aura overrides it
   const tr=fx?fx.tracer:(ball?ball.tracer:null);
   const glow=pcol?`${pcol}88`:(tr?tr.g:'rgba(241,208,74,.45)');
@@ -32070,7 +32070,7 @@ function dailyReviewClose(){
 // static "share this shot" image (the animated GIF version is a fast-follow).
 // Shot-tracer overlay (all flight lines + rest markers) as a self-contained VECTOR SVG, plus the scene inputs
 // (g/seedN/biome) so the caller can rasterize the PIXEL terrain underneath it via hvPixelScene. Terrain is no
-// longer baked into this SVG — a nested raster wouldn't load when the SVG is drawn as an <img>.
+// longer baked into this SVG: a nested raster wouldn't load when the SVG is drawn as an <img>.
 function hvStaticSVG(hole, courseKey, holeIdx){
   const shots=hole.shots||[]; if(!shots.length||!shots[0].k) return null;
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
@@ -32167,7 +32167,7 @@ function hvGifShare(holeIdx){
 }
 // Rasterize the PIXEL course scene (terrain PNG + pin/tee/flag overlay) to a W×imgH canvas. The terrain
 // image spans exactly HV_CAM, so it maps 1:1 to the canvas and stays aligned with hvProj shot lines. We load
-// the pixel PNG DIRECTLY (a same-origin canvas data URL — no taint) rather than wrapping it in an SVG, because
+// the pixel PNG DIRECTLY (a same-origin canvas data URL, no taint) rather than wrapping it in an SVG, because
 // a nested raster inside an SVG loaded as an <img> is blocked in the browser's secure static-image mode.
 // Returns a Promise<canvas>. The pin/tee overlay is pure vector, so it rasterizes cleanly; it's best-effort.
 function hvPixelScene(g, seedN, B, W, imgH){
@@ -33571,7 +33571,7 @@ function scrDailyRound(){
             const me=S.dailyHoles[i], meS=me.par+me.toPar, opS=me.par+mpB.oppHoles[i];
             const w=meS<opS?'W':(meS>opS?'L':'H');
             const wcol=w==='W'?'#4be3a8':w==='L'?'#ff9d8f':'#e8efe9';
-            strip.appendChild($(`<div class="mph"><span class="mphn">${i+1}</span><span class="mphs">${meS}<span class="mphd">–</span>${opS}</span><span class="mphw" style="color:${wcol}">${w}</span></div>`));
+            strip.appendChild($(`<div class="mph"><span class="mphn">${i+1}</span><span class="mphs">${meS}<span class="mphd">-</span>${opS}</span><span class="mphw" style="color:${wcol}">${w}</span></div>`));
           }
           bd.appendChild(strip);
         }
@@ -33968,7 +33968,7 @@ function scrDailyResult(){
     bt.onclick=()=>{ track('daily_result_buytok',{from:'secondary'}); S.overlay='shop'; S.shopSec='tokens'; render(); };
     add(bt);
   }
-  // ✨ Share Highlights — a looping GIF reel of every birdie-or-better hole's tracer from this round.
+  // ✨ Share Highlights: a looping GIF reel of every birdie-or-better hole's tracer from this round.
   // Uses the just-played round's holes (S.dailyHoles carries the shot data); disabled with a hint if none.
   const reelHoles=(S.dailyHoles&&S.dailyHoles.length)?S.dailyHoles:((shareR&&shareR.holes)||[]);
   const reelN=hvReelHoles(reelHoles).length;
@@ -33982,7 +33982,7 @@ function scrDailyResult(){
   }
   // CS483L: Legend Tokens section removed from the result page (owner) - it already lives on the daily
   // preview + the header Legend-token pill routes there, so it's not duplicated here.
-  // Secondary "explore" — Course Records + Passport, compact and side by side (less prominent than the featured share).
+  // Secondary "explore": Course Records + Passport, compact and side by side (less prominent than the featured share).
   const pass=$(`<button class="btn ghost" style="flex:1;margin:0;font-size:15px">🎫 Passport</button>`); pass.onclick=()=>{S.overlay='passport';render();};
   if(cr){
     const recs=$(`<button class="btn ghost" style="flex:1;margin:0;font-size:15px">🏆 Records</button>`); recs.onclick=()=>{S.overlay='courserecords';render();};
@@ -33991,7 +33991,7 @@ function scrDailyResult(){
   } else {
     pass.setAttribute('style','max-width:520px;margin:12px auto 0;font-size:15px'); add(pass);
   }
-  // Exit — the most de-emphasized action (small, muted).
+  // Exit: the most de-emphasized action (small, muted).
   const home=$(`<button class="btn ghost" style="max-width:300px;margin:12px auto 0;opacity:.6;font-size:14px;padding:11px">Return to home</button>`); home.onclick=()=>{S._claimDaily=null;S._dailyClaimFlow=false;S.dailyClaimMsg=null;S.screen='title';S.daily=false;render();}; add(home);
   add($(`<p class="small muted center" style="margin-top:12px">${practice?'Practice mode · unlimited rounds, nothing is recorded · ':unlim?'Unlimited plays today · ':(left>0?`${left} attempt${left>1?'s':''} left today · `:'')}A new course drops at midnight ET${practice?'':' · streak '+streakDisplay()+' 🔥'}</p>`));
 }
@@ -34743,7 +34743,7 @@ const PACK_ODDS=[['common',0.55],['rare',0.30],['epic',0.12],['legendary',0.03]]
 const PACK_DUPE_REFUND={common:2000,rare:5000,epic:12000,legendary:25000};   // CS408: ~28-33% of the item's direct value
 const PACK_PITY_EPIC=10, PACK_PITY_LEG=40;  // guaranteed epic+ every 10 packs, legendary every 40 (BASE tier defaults)
 const PACK_RANK=['common','rare','epic','legendary'];
-// CS406 — three pack TIERS with escalating odds/price (owner: base + 2 better tiers, top = gold, mid = purple).
+// CS406: three pack TIERS with escalating odds/price (owner: base + 2 better tiers, top = gold, mid = purple).
 // Each tier: its own odds table (better epic+/legendary as you climb), price, pity floors (tighter up top),
 // and an accent color. Pity counters are shared in packState (see rollPackWin) - a tier's own thresholds are
 // read per-open, so a better pack hits its guarantee floor sooner. Base tier reuses PACK_ODDS/PITY above.
@@ -34756,7 +34756,7 @@ const PACK_TYPES={
   champ: {id:'champ', name:'Champion Pack',  short:'Champion', price:45000,
           odds:[['common',0.10],['rare',0.35],['epic',0.38],['legendary',0.17]],
           pityEpic:4, pityLeg:12, col:'#F1D04A', accent:'#fff0b4', glow:'rgba(241,208,74,.52)'},
-  // SEASONAL pack — only offered while its drop is live. Tour-like base odds, but a chunk of the rolls are
+  // SEASONAL pack, only offered while its drop is live. Tour-like base odds, but a chunk of the rolls are
   // biased toward that drop's items (dropBias). Coins-only (no free credits), priced below Tour (3rd highest).
   summer:{id:'summer', name:'Summer Smash Pack', short:'Summer', price:30000, seasonal:true,
           dropId:'summer', dropBias:0.40,
@@ -34768,13 +34768,13 @@ const PACK_TYPES={
 // ladder (bigger buckets = more coins per dollar + bonus packs). BUILT BEHIND A FLAG.
 //
 // LIVE: wired to the Stripe backend (create-checkout + stripe-webhook + migration 70's coin_wallet).
-// Purchased coins are credited ONLY by the signed webhook writing coin_wallet server-side — the client
+// Purchased coins are credited ONLY by the signed webhook writing coin_wallet server-side: the client
 // never grants paid coins (a tampered client can't mint them). Terms/How-to copy reflects real-money
 // purchases (free to play, optional upgrades, no cash value, sales final).
 // package id + coins MUST match supabase/functions/_shared/packages.ts (the SERVER is authoritative on
-// coins delivered — a tampered client can't change what it receives). First purchase gets +100% coins,
+// coins delivered: a tampered client can't change what it receives). First purchase gets +100% coins,
 // applied SERVER-SIDE in the webhook. Set BUCKETS_ENABLED=false to instantly pull the store offline.
-const BUCKETS_ENABLED=true;   // LIVE — Stripe checkout + webhook fulfillment are wired
+const BUCKETS_ENABLED=true;   // LIVE: Stripe checkout + webhook fulfillment are wired
 // Coin buckets (owner-approved tiers). `bonus` = % extra coins vs the base $1.99=15,000 rate (display only,
 // derived). packTier/packN = BONUS PACKS granted on purchase (Large/XL/Mega). id + coins MUST match
 // supabase/functions/_shared/packages.ts (the SERVER is authoritative on what's delivered). First purchase
@@ -34802,7 +34802,7 @@ const DAILY_TOKENS=[
   {id:'tok7',  n:7,  usd:4.99},
   {id:'tok15', n:15, usd:9.99, badge:'BEST VALUE'},
 ];
-// ---- Tour Pass: THE one and only pass — a ONE-TIME purchase per 60-DAY SEASON (owner decision: the
+// ---- Tour Pass, THE one and only pass: a ONE-TIME purchase per 60-DAY SEASON (owner decision: the
 // monthly pass is removed; everything is built around the 60-day Tour Pass). Buying grants THIS
 // season only (server entitlement, migration 72; the season matches the in-game Tour Pass track).
 // While active: the PRO lane of the Tour Pass track, unlimited daily plays, a 1.5× reward multiplier,
@@ -34815,7 +34815,7 @@ const PASS_REWARD_MULT=1.5;   // Tour Pass holders earn 1.5× coins from play
 function passThemeName(){ try{ return 'Season '+passSeason().n+' Tour Pass'; }catch(e){ return 'Tour Pass'; } }
 // shared checkout kickoff for any package (coins / tokens / pass). create-checkout authenticates the buyer
 // from their JWT, looks up the package + Stripe Price on the SERVER, and returns a hosted Checkout URL.
-// Coins/tokens/pass are credited ONLY by the signed webhook — the client never grants them.
+// Coins/tokens/pass are credited ONLY by the signed webhook: the client never grants them.
 function beginCheckout(pkgId, ev){
   if(!sbSignedIn()){ toast('Sign in to buy'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); return; }
   if(!sb){ toast('Store unavailable right now, try again shortly.'); return; }
@@ -34955,12 +34955,12 @@ function itemDropLocked(cat,id){ const d=itemDrop(cat,id); return (d&&!dropLive(
 function dropVisible(d){ return !d.window || dropLive(d); }
 const _DROP_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function dropWindowLabel(d){ if(!d.window) return 'Always available';
-  return _DROP_MON[d.window[0][0]-1]+' '+d.window[0][1]+' – '+_DROP_MON[d.window[1][0]-1]+' '+d.window[1][1]; }
+  return _DROP_MON[d.window[0][0]-1]+' '+d.window[0][1]+' - '+_DROP_MON[d.window[1][0]-1]+' '+d.window[1][1]; }
 function dropReturnsLabel(d){ return 'Returns '+_DROP_MON[d.window[0][0]-1]+' '+d.window[0][1]; }
 function dropProgress(d){ let own=0; d.items.forEach(function(ci){ if(cosOwned(ci[0],ci[1])) own++; }); return {own:own,tot:d.items.length}; }
 function liveThemedDrop(){ return DROPS.find(function(d){ return d.window && dropLive(d); })||null; }
 // ===== COLLECTION REWARDS (owner): one exclusive item per themed drop, earned ONLY by owning every
-// item in that collection. Never buyable, never in packs, never shard-redeemable — auto-granted with a
+// item in that collection. Never buyable, never in packs, never shard-redeemable, auto-granted with a
 // celebration the moment the collection completes (cross-device safe: the owned union re-runs the check).
 // owner: a completion reward can now be a BUNDLE - several exclusive items PLUS a coin payout. Summer's
 // endlesssummer backdrop moved OUT of the collectible items INTO the reward (+ 100k coins); Mythic (drop2)
@@ -35057,7 +35057,7 @@ function packCreditFields(tier){ tier=tier||'base';
   if(tier==='tour') return ['tourEarned','tourSpent'];
   if(tier==='champ') return ['champEarned','champSpent'];
   if(tier==='base') return ['packEarned','packSpent'];
-  return [tier+'Earned', tier+'Spent'];   // seasonal tiers (summer, ...) get their own counters — the Tour Pass grants these
+  return [tier+'Earned', tier+'Spent'];   // seasonal tiers (summer, ...) get their own counters: the Tour Pass grants these
 }
 /* ---- DUPE SHARDS (pack endgame): every duplicate pull grants 1 shard of its rarity. A duplicate from a
    PAID pack also refunds coins (see dupeRefund below - free packs pay the shard only). Collect EXCHANGE_COST
@@ -35073,7 +35073,7 @@ function shardSpend(r,n){ if(!SHARD_COST[r]) return false; const p=packState();
 function shardSummaryHTML(){ const parts=PACK_RANK.map(r=>{ const b=shardBal(r); if(!b) return '';
     return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;border:1px solid ${ACC_RARITY[r].c}66;color:${ACC_RARITY[r].c};font-weight:800;font-size:11.5px">◆ ${b}/${EXCHANGE_COST} ${ACC_RARITY[r].label}</span>`; }).filter(Boolean);
   return parts.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0 2px">${parts.join('')}</div>`:''; }
-// ══════ SHARD EXCHANGE — an upgrade LADDER (owner): trade EXCHANGE_COST shards of a rarity for a WHEEL of the NEXT
+// ══════ SHARD EXCHANGE: an upgrade LADDER (owner): trade EXCHANGE_COST shards of a rarity for a WHEEL of the NEXT
 // rarity up. Common → Rare wheel, Rare → Epic wheel, Epic → Legendary wheel. EXCHANGE_COST Legendary shards cash in
 // for the capstone: coins + a themed pack + a choose-1-of-3-legendaries (see all 3, keep one). Replaces
 // the old redeem-a-specific-item path. A won item you already own refunds 1 shard of THAT rarity (a
@@ -35085,7 +35085,7 @@ function poolByRarity(rar){ return packPool().filter(function(e){ return e.rarit
 function pickRarityItem(rar, preferUnowned){ var pool=poolByRarity(rar); if(!pool.length) return null;
   if(preferUnowned){ var un=pool.filter(function(e){ return !packOwns(e); }); if(un.length) return un[Math.floor(Math.random()*un.length)]; }
   return pool[Math.floor(Math.random()*pool.length)]; }
-/* ══════ DUPLICATE PAYOUT — one rule, one place (owner: "you should not get coins for getting a duplicate
+/* ══════ DUPLICATE PAYOUT: one rule, one place (owner: "you should not get coins for getting a duplicate
    from any free pack. Only from ones you purchase").
    A duplicate ALWAYS pays its shard, so the pity ladder is identical no matter where the pack came from.
    COINS are paid only when the player actually spent coins on the pack. Free packs - the one-time
@@ -35239,7 +35239,7 @@ function maybeWelcomePack(){ if(!packsOn()||!sbSignedIn()) return; if(packState(
   S._welcomePop=true; try{ track('welcome_pack'); }catch(e){}
   flushPendingWelcome(); }
 // Show the welcome popup as soon as nothing is in its way (it takes priority over the season-launch
-// and daily-login popups — it's the sign-up reward, so it lands first).
+// and daily-login popups: it's the sign-up reward, so it lands first).
 function flushPendingWelcome(){ if(!S._welcomePop) return; if(S.overlay) return;
   var busy=['dailyround','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','draft','offseason','careerend','circuitend'];
   if(busy.indexOf(S.screen)>=0) return;                     // never interrupt a live round / draft / ceremony
@@ -35379,7 +35379,7 @@ function overlayWelcomePack(screen){
     S.overlay=null; try{ startPackDeal({pack:tier}); }catch(e){ S.overlay='shop'; S.shopSec='packs'; render(); } };
   screen.appendChild(ov);
 }
-// The current Tour Pass period as the server sees it ('S<n>' — the 60-day season key, migration 72);
+// The current Tour Pass period as the server sees it ('S<n>': the 60-day season key, migration 72);
 // gates the once-per-season client grant of the pass's seasonal packs. Fallback only, the wallet's
 // pass_period from runtour_wallet() is authoritative when present.
 function passPeriodNow(){ try{ return 'S'+passSeason().n; }catch(e){ return ''; } }
@@ -35421,7 +35421,7 @@ function maybePassRewards(){ try{
   try{ toast('<span style="color:#a24be0;font-weight:800">🎟️ '+esc(passThemeName())+' active!</span><br><span class="small">PRO lane unlocked, unlimited daily plays &amp; '+PASS_REWARD_MULT+'× rewards'+(n>0?', plus '+n+' FREE '+esc(pkNm||'pack')+(n>1?'s':'')+' (Pro Shop → Packs)':'')+'.</span>', 6000); }catch(e){}
 }catch(e){} }
 // Coin-bucket BONUS PACKS (Large +1 Tour / XL +1 Champion / Mega +3 Champion): advertised on the store
-// card, granted HERE client-side (packs are a client-side store — the webhook only credits coins). Reads
+// card, granted HERE client-side (packs are a client-side store: the webhook only credits coins). Reads
 // the account's own coin_purchase rows (RLS owner-read, migration 70) so the grant is idempotent per
 // purchase (keyed on the Stripe event id), RETROACTIVE for past purchases, and cross-device (the granted
 // set is cloud-synced). A purchase refunded before its packs were granted never grants; granted-then-
@@ -35470,7 +35470,7 @@ function rollPackRarity(odds){ odds=odds||PACK_ODDS; var r=Math.random(),a=0; fo
 function packBiasSet(tier){ var pt=packType(tier); if(!pt.dropId||!pt.dropBias) return null;
   var d=(typeof dropById==='function')&&dropById(pt.dropId); if(!d || (d.window && !dropLive(d))) return null;
   var s={_chance:pt.dropBias}; d.items.forEach(function(ci){ s[ci[0]+'|'+ci[1]]=1; }); return s; }
-// bias: a Set-like {'cat|id':1, _chance} — with prob _chance, pick from the biased items of the rolled rarity.
+// bias: a Set-like {'cat|id':1, _chance}, with prob _chance, pick from the biased items of the rolled rarity.
 function pickPackItem(rar, bias){ var pool=packPool();
   for(var ri=PACK_RANK.indexOf(rar); ri>=0; ri--){ var tier=pool.filter(function(e){return e.rarity===PACK_RANK[ri];});
     if(!tier.length) continue;
@@ -35503,7 +35503,7 @@ function openPack(){
   return {item:item, rarity:item.rarity, dupe:dupe, refund:refund};
 }
 
-// CS404 — WHEEL SPIN: a single pity-aware roll decides the winner (identical odds to the old pick-1-of-3
+// CS404, the WHEEL SPIN: a single pity-aware roll decides the winner (identical odds to the old pick-1-of-3
 // distribution, since a picked card == one roll). The coin charge lives upstream in startPackDeal, so this
 // is a pure roll+grant (a free/prepaid pack just skips the charge). Commits pity + grant immediately.
 // `paid` = the player spent coins on this pack. It gates the DUPLICATE COIN REFUND only (see dupeRefund):
@@ -35762,7 +35762,7 @@ function startPackDeal(opts){ opts=opts||{};
   if(!opts.bundle){                                    // a bundle sub-open is prepaid: never free/credit
     var freeFirst=(tier==='base') && (opts.free||packIsFree());  // the one-time first-pack-free is base only
     // CS407: earned free-pack credits are per-tier. Seasonal tiers honor credits too (they can only come
-    // from an explicit grant, e.g. the Tour Pass's seasonal packs) — coins-only otherwise; the window
+    // from an explicit grant, e.g. the Tour Pass's seasonal packs), coins-only otherwise; the window
     // gate above still blocks out-of-season opens.
     var freeCredit=!freeFirst && packCredits(tier)>0;
     free=freeFirst||freeCredit;
@@ -35777,7 +35777,7 @@ function startPackDeal(opts){ opts=opts||{};
     }
     else { var p=packState(); if(freeFirst){ p.freeUsed=true; } else { var f=packCreditFields(tier); p[f[1]]=(p[f[1]]||0)+1; } packSave(p); }
   }
-  // CS404 — wheel spin: roll the winner up front (tier odds), build the reel, land on it.
+  // CS404, the wheel spin: roll the winner up front (tier odds), build the reel, land on it.
   // A bundle sub-open is prepaid (coins paid at bundle price), so it counts as PAID for the dupe refund;
   // only a first-pack-free or an earned credit is free.
   var win=rollPackWin(tier, !free); if(win.err){ toast(packErr(win.err)); return; }
@@ -35910,7 +35910,7 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.pwcell.pwwin{box-shadow:0 0 0 2px currentColor,0 0 22px currentColor}'
    +'@keyframes pwwinpop{0%{transform:scale(1)}45%{transform:scale(1.09)}100%{transform:scale(1)}}'
    +'.pwcell.pwlit{animation:pwwinpop .55s ease}'
-   // CS-bundle — prominent tier-accented 5-Pack Bundle button
+   // CS-bundle, prominent tier-accented 5-Pack Bundle button
    +'.pkbundle{width:100%;margin:8px 0 0;padding:10px 12px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;position:relative;overflow:hidden;color:#eaf3ec;background:linear-gradient(115deg,rgba(255,255,255,.07),rgba(0,0,0,.24));border:1.6px solid var(--pkc,var(--gold));box-shadow:0 0 16px -5px var(--pkc,var(--gold)),inset 0 1px 0 rgba(255,255,255,.08)}'
    +'.pkbundle:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.11) 50%,transparent 58%);background-size:240% 100%;animation:foilSweep 4.6s ease-in-out 1.2s infinite}'
    +'.pkb-title{display:flex;align-items:center;gap:6px;font:800 13.5px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--pkc,var(--gold))}'
@@ -35923,9 +35923,9 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.preq{font:800 12.5px var(--body);color:#41dea6;margin:2px 0;animation:prpop .45s cubic-bezier(.2,1.5,.4,1)}'
    +'@media(prefers-reduced-motion:reduce){.pkbundle:after{animation:none;background:none}.preq{animation:none}.pcard-inner,.pcard.win,.pwstrip,.pwcell.pwlit{transition:none!important;animation:none!important}}';
   document.head.appendChild(st); }
-// CS404 — the pack-opening WHEEL SPIN (replaces the 3-card pick). One item is already decided (rollPackWin,
+// CS404: the pack-opening WHEEL SPIN (replaces the 3-card pick). One item is already decided (rollPackWin,
 // odds unchanged); the reel scrolls and decelerates onto it under a center pointer, then reveals it.
-// "Receive the rest of your items" — when a bundle (or a stack of free-pack credits) has more packs to
+// "Receive the rest of your items": when a bundle (or a stack of free-pack credits) has more packs to
 // open, bulk-open ALL the remaining ones at once (rolling each, granting the items) and show a single
 // summary instead of spinning the wheel one by one. The CURRENT (already-revealed) pack is included.
 function packOpenRest(){
@@ -35963,7 +35963,7 @@ function packSumGrid(results){
     g.appendChild(card); });
   return g;
 }
-// summary of a bulk "receive the rest" open (or the tail of a bundle) — every item at once, coins refunded.
+// summary of a bulk "receive the rest" open (or the tail of a bundle): every item at once, coins refunded.
 function overlayPackBatch(app){
   var b=S.packBatch; if(!b||!b.results||!b.results.length){ S.overlay='shop'; S.shopSec='packs'; return; }
   packStyleOnce();
@@ -35999,7 +35999,7 @@ function overlayPackWheel(app){
     var pre=(pt.id!=='base'?('<span style="color:'+pt.col+'">'+esc(pt.name)+'</span> · '):''); if(S.packBundle){ pre+='Pack '+(S.packBundle.done||1)+' of '+S.packBundle.total+' · '; } return pre+(w.done?'You got it!':(w.spun?'Landing...':'Spin for your pack')); }
   var title=$('<div class="packtitle">'+titleTxt()+'</div>'); ov.appendChild(title);
   // CS463: an escape hatch so a pack open can never trap the shop. Only shown when nothing prepaid is left
-  // un-opened (a single pack, or the last pack of a bundle) — the shown item is already granted, so closing loses nothing.
+  // un-opened (a single pack, or the last pack of a bundle): the shown item is already granted, so closing loses nothing.
   if(!S.packBundle || (S.packBundle.done||0) >= S.packBundle.total){
     var xb=$('<button class="x" aria-label="Close">✕</button>');
     xb.onclick=function(){ var ex=w.exchange; S.packWheel=null; S.packBundle=null; S.overlay='shop'; S.shopSec=ex?'shards':'packs'; render(); };
@@ -36022,7 +36022,7 @@ function overlayPackWheel(app){
     footer.innerHTML='';
     if(!w.done){
       if(!w.spun){ var sb=$('<button class="btn goldfill">Spin the wheel</button>'); sb.onclick=function(){ spin(); }; footer.appendChild(sb);
-        if(w.exchange){   // a rarity-locked wheel — no odds, just the guarantee
+        if(w.exchange){   // a rarity-locked wheel, no odds, just the guarantee
           footer.appendChild($('<div class="small" style="margin-top:12px">Guaranteed <b style="color:'+pt.col+'">'+ACC_RARITY[w.targetRarity].label+'</b> item</div>'));
         } else {
         // owner: show this pack's drop-rate odds under the spin button - it goes away once you spin
@@ -36206,7 +36206,7 @@ function bucketShopNode(focus){
   var buys=bucketBuys();                  // bucket sizes this account has already bought (paid)
   var anyFirst=BUCKETS.some(function(b){ return !buys.has(b.id); });
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
-  // ---- Tour Pass (60-day season — THE one pass sold) ----
+  // ---- Tour Pass (60-day season: THE one pass sold) ----
   if(TOURPASS_ENABLED && showPass){
     var passCol='#a24be0', active=dailyPassActive(), ssn=passSeason();
     wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:'+passCol+'">Tour Pass</div>'));
@@ -36246,7 +36246,7 @@ function bucketShopNode(focus){
     });
     wrap.appendChild(tg);
   }
-  // ---- Coins (buckets) — at the BOTTOM of the store ----
+  // ---- Coins (buckets), at the BOTTOM of the store ----
   if(showCoins){
   wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:#F1D04A">Coins</div>'));
   wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:2px auto 6px;line-height:1.5">Coins for gear &amp; packs.</div>'));
@@ -36292,7 +36292,7 @@ function packShopNode(){
     wrap.appendChild($('<div style="max-width:380px;margin:8px auto 0;text-align:center;font:800 12.5px var(--body);color:var(--gold)">'
       +(free?'🎁 Your first pack is on us, open the Base pack free!':('🎁 '+credits+' free pack'+(credits>1?'s':'')+' ready, open a Base pack, from your challenges &amp; streak!'))+'</div>'));
   }
-  // CS406 — tier cards (base / tour / champion) + any live seasonal pack, escalating odds + price
+  // CS406: tier cards (base / tour / champion) + any live seasonal pack, escalating odds + price
   var tiers=packTierList();
   tiers.forEach(function(id){
     var pt=packType(id);
@@ -36384,7 +36384,7 @@ function overlayShop(screen){
   const ACCS=[['ball','Balls'],['cleats','Cleats']];   // clubs (looks) live on the Clubs tab with the boost tiers
   const FXCATS=[['fx','Aura']];
   const cats = sec==='apparel'?APP : sec==='accessories'?ACCS : sec==='effects'?FXCATS : null;
-  // CS422: NEW-item badges — a red dot on a section tab / category chip that holds an acquired-but-unviewed item.
+  // CS422, NEW-item badges: a red dot on a section tab / category chip that holds an acquired-but-unviewed item.
   const secNew=(list)=>{ let n=0; (list||[]).forEach(c=>{ n+=cosCatNew(c[0]); }); return n; };
   const NDOT='<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e2554e;margin-left:4px;vertical-align:middle;box-shadow:0 0 4px rgba(226,85,78,.7)"></span>';
   const secDot=(s)=>((s==='apparel'?secNew(APP):s==='accessories'?secNew(ACCS):s==='effects'?secNew(FXCATS):0)>0?NDOT:'');
@@ -36524,7 +36524,7 @@ function overlayShop(screen){
   try{ ov.appendChild(accBoostSummaryNode()); }catch(e){}   // live "equipment boost" summary from your worn gear
   const grid=$(`<div class="sgrid"></div>`); const tiles=[];
   if(sec==='apparel'||sec==='accessories'||sec==='effects'){ cosmeticItems(cat).forEach(o=>tiles.push(cosTileHTML(cat,o))); }
-  else if(sec==='bag'){   // CLUBS: one unified list — starter/owned, buyable store clubs, pack-exclusive clubs
+  else if(sec==='bag'){   // CLUBS: one unified list, starter/owned, buyable store clubs, pack-exclusive clubs
     const cc=cosmeticItems('club')||[];
     const grp=(txt,col)=>`<div style="grid-column:1/-1;margin:8px 0 -2px;font:800 12px/1 var(--body);letter-spacing:.03em;color:${col}">${txt}</div>`;
     const byKind={free:[],store:[],pack:[]};
@@ -37326,7 +37326,7 @@ function cloudBundle(){
     login: LS.get(acctKey('bag_login'), null),                   // CS461: daily-login bonus loop {day, n}
     primes: LS.get(acctKey('bag_primes'), null),                 // distinct Prime cards rolled on the draft wheel (name→1 map)
     firsts: LS.get(acctKey('bag_firsts'), null),                 // first-time inductions already taught (id→1 map)
-    pass: LS.get(acctKey('bag_pass'), null),                     // (dormant paid subscription) {claimed:'YYYY-MM'} — the month whose seasonal packs were granted
+    pass: LS.get(acctKey('bag_pass'), null),                     // (dormant paid subscription) {claimed:'YYYY-MM'}: the month whose seasonal packs were granted
     tourpass: LS.get(acctKey('bag_tourpass'), null),             // Tour Pass Track: {season, xp, pro, claimed:{free[],prem[]}}
     wheel: LS.get(acctKey('bag_wheel'), null),                   // Prize Wheel: free-spin day, banked spins, 2x XP boost expiry
     seasonlog: seasonLog(),                                      // Profile → History: the chronological season archive
@@ -37334,7 +37334,7 @@ function cloudBundle(){
   };
 }
 // Tour Pass claim flag: the LATER claimed period wins (so a device that already granted this season's
-// packs won't re-grant). Periods are season keys 'S<n>' (migration 72) — compare the season NUMBER, not
+// packs won't re-grant). Periods are season keys 'S<n>' (migration 72), compare the season NUMBER, not
 // the string ('S9' > 'S10' lexicographically would regress the flag at season 10 and re-grant packs).
 // A season key always beats a legacy 'YYYY-MM' month key (the season model supersedes the monthly one).
 function mergePass(local, server){
@@ -37619,7 +37619,7 @@ function pushProfileLook(){ try{
     sb.rpc('runtour_set_look',{p_look:lookForBoard()}).then(()=>{}).catch(()=>{});
   }catch(e){} }, 1500);
 }catch(e){} }
-// CS395: one-time retro-fill on first sign-in after the look migration — stamp the player's CURRENT profile
+// CS395: one-time retro-fill on first sign-in after the look migration, stamp the player's CURRENT profile
 // golfer onto all their existing (pre-migration, null-look) season + daily rows, so old scores show their
 // real golfer instead of the generic placeholder. Server-side scoped to auth.uid() + look-is-null only, and
 // gated once per account. Fails open (no migration 54 yet → retries next sign-in).
@@ -37672,7 +37672,7 @@ async function flushPendingSeasons(){
   savePendingSeasons(keep);
   if(posted){ lbCache={}; }                 // something posted → refresh the board next open
 }
-// CS393: Daily leaderboard tab — today's global daily-challenge board (rotates at ET midnight with the daily).
+// CS393, the Daily leaderboard tab: today's global daily-challenge board (rotates at ET midnight with the daily).
 async function lbDailyLoad(day){
   if(lbDailyCache[day] && lbDailyCache[day].loading) return;
   if(!sb){ lbDailyCache[day]={rows:[],ok:false}; render(); return; }
@@ -37684,7 +37684,7 @@ async function lbDailyLoad(day){
   }catch(e){ if(_ep!==boardEpoch){ render(); return; } lbDailyCache[day]={rows:[],ok:false}; }
   render();
 }
-// Weekly leaderboard tab — cumulative daily performance across the current weekKey() 7-day block.
+// Weekly leaderboard tab: cumulative daily performance across the current weekKey() 7-day block.
 async function lbWeekLoad(from,to){
   const k=from+'-'+to;
   if(lbWeekCache[k] && lbWeekCache[k].loading) return;
@@ -38118,7 +38118,7 @@ function h2hInvite(){
   else { try{ navigator.clipboard.writeText(url); toast('Invite link copied'); }catch(e){ toast(url); } }
   track('h2h_invite');
 }
-/* ---- CS403: Referrals — share ?ref=<username>; a NEW friend who signs up with it earns you BOTH a free
+/* ---- CS403: Referrals, share ?ref=<username>; a NEW friend who signs up with it earns you BOTH a free
    pack. The code is your username; the referrer credit is granted server-side (runtour_redeem_referral)
    into a pending-rewards ledger that each client claims on sign-in (runtour_claim_rewards). ---- */
 function referralCode(){ return sbSignedIn() ? (sbUsername||'') : ''; }
@@ -38145,7 +38145,7 @@ function refCheck(){
   try{ setTimeout(()=>{ if(!sbSignedIn()) toast('🎁 A friend invited you! Create a free account and you\'ll BOTH get a free pack.', 6000); }, 1400); }catch(e){}
 }
 // Returned from Stripe Checkout? (?purchase=success|cancelled). Fulfillment happens on the signed webhook,
-// NOT here — the client just refreshes the server wallet (with a couple of retries, since the webhook may
+// NOT here: the client just refreshes the server wallet (with a couple of retries, since the webhook may
 // land a moment after the redirect) and shows a thank-you / cancelled note. Cleans the param either way.
 var _purchaseHandled=false;
 function purchaseCheck(){
@@ -38159,14 +38159,14 @@ function purchaseCheck(){
   try{ track('purchase_return',{status:'success'}); }catch(e){}
   // poll the wallet a few times so the freshly-credited coins/tokens/pass appear even if the webhook lands
   // after we return from Stripe. A coin pack raises paidCoins; a token pack raises tokens; a pass flips
-  // passActive (and its coins raise paidCoins) — any change ends the poll.
+  // passActive (and its coins raise paidCoins), any change ends the poll.
   var tries=0, before=paidCoins(), tokBefore=dailyTokens(), passBefore=dailyPassActive(), doneMsg=false;
   function say(){ if(doneMsg) return; doneMsg=true;
     try{ maybePassRewards(); }catch(e){}   // if the pass just activated, grant its seasonal packs now
-    try{ maybeBucketRewards(); }catch(e){}  // bucket bonus packs (Large/XL/Mega) — granted from the server purchase rows
+    try{ maybeBucketRewards(); }catch(e){}  // bucket bonus packs (Large/XL/Mega), granted from the server purchase rows
     try{ maybeFirstBuySpin(); }catch(e){}   // a player's FIRST purchase (any package) banks one Prize Wheel spin
     try{ _bucketBuysCache=null; loadBucketBuys(true); }catch(e){}  // refresh the per-size first-purchase 2× display
-    // #6 post-purchase celebration: figure out WHAT landed (from the wallet deltas — the webhook is the
+    // #6 post-purchase celebration: figure out WHAT landed (from the wallet deltas: the webhook is the
     // only thing that credits, so a delta means the goods are genuinely in the account) and celebrate it
     // properly instead of a passing toast. No delta after the polls = the webhook is slow: soft toast.
     var cd=paidCoins()-before, td=dailyTokens()-tokBefore, passNew=dailyPassActive()&&!passBefore, p=null;
@@ -38426,7 +38426,7 @@ async function h2hJoin(code){
 }
 // Draft-FIRST Quick Match (owner): you build your golfer immediately, THEN get matched with an opponent,
 // then the course + tale-of-the-tape reveal, then start. Quick Match is bot-backed so it ALWAYS resolves
-// instantly (no server-dependent lobby that can hang / race a "found" popup against the spinner) — real-human
+// instantly (no server-dependent lobby that can hang / race a "found" popup against the spinner), real-human
 // play is the private "Play with friends" code flow. The AI opponent(s) join right after you submit (below).
 function h2hQuick(){
   const mode=S.h2h.mode, cap=h2hCap(mode);
@@ -38436,7 +38436,7 @@ function h2hQuick(){
     status:'drafting', searching:false, matching:false, previewed:false, watching:false, drafting:false,
     submitted:false, _botPool:h2hMakeBots(cap-1)});
   track('h2h_quick',{holes:S.h2h.holes, mode});
-  h2hBeginDraft();   // straight to the draft — your opponent is found while you build
+  h2hBeginDraft();   // straight to the draft: your opponent is found while you build
 }
 function h2hGoLobby(){ S.screen='h2hlobby'; render(); h2hEnsurePoll(); }
 
@@ -38502,7 +38502,7 @@ async function h2hSubmitDraft(){
     const meP=S.h2h.players.find(p=>p.slot===0);
     meP.draft={skills:h2hSkills(), look:h2hMyLook()}; meP.submitted=true; S.h2h.submitted=true;
     // draft-FIRST: bring the AI opponent(s) into the match NOW (they were "found" while you drafted, so a
-    // draft-first Quick Match has no bots in the roster yet — pull them from the pool + assign slots/teams).
+    // draft-first Quick Match has no bots in the roster yet, pull them from the pool + assign slots/teams).
     const cap=h2hCap(S.h2h.mode);
     if(S.h2h._botPool && S.h2h.players.length<cap){
       while(S.h2h.players.length<cap && S.h2h._botPool.length){ const bot=S.h2h._botPool.shift(); bot.slot=S.h2h.players.length; bot.submitted=true; S.h2h.players.push(bot); }
@@ -39260,7 +39260,7 @@ function scrH2HResult(){
     }
   }
   const stack=$(`<div class="stack" style="max-width:360px;margin:22px auto 0"></div>`);
-  // ✨ Share Highlights — reel your birdie-or-better holes from this match. Disabled with a hint if none.
+  // ✨ Share Highlights, reel your birdie-or-better holes from this match. Disabled with a hint if none.
   if(!voided){ const shb=h2hSharableHoles(), rn=shb?hvReelHoles(shb.holes).length:0;
     const hib=$(`<button class="btn ghost"${rn?'':' disabled'}>✨ Share Highlights<span class="sub">${rn?`A GIF reel of your ${rn} birdie${rn>1?'s':''}-or-better`:'No birdies to reel this match'}</span></button>`);
     if(rn) hib.onclick=()=>shareHighlights(shb.key, shb.holes);

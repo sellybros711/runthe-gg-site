@@ -1,4 +1,4 @@
-# RunTheTour golfer avatars — layered canvas recolor
+# RunTheTour golfer avatars: layered canvas recolor
 
 The Create-Your-Golfer avatar is **not** a set of pre-rendered PNGs anymore. Two
 high-quality painted base portraits (male + female) are recolored live on a
@@ -12,7 +12,7 @@ base/female-base.png
 ```
 
 Square PNGs (≈512×512) with the dark-green circular badge and the teal cap baked
-in. To refresh the art, replace these two files — nothing else changes.
+in. To refresh the art, replace these two files. Nothing else changes.
 
 ## How it works
 
@@ -26,8 +26,8 @@ gender·skin·hair·shirt combo, so swatch changes are instant.
 - Skin / Hair / Shirt → live recolor to the exact wheel-swatch colours
 - Cap → recolored to match the shirt colour
 
-Target colours are the picker swatches themselves — the `m` field of
-`SKINS`/`HAIRS`/`POLOS`. No per-combo files, no 420-image checker — the avatar is
+Target colours are the picker swatches themselves, the `m` field of
+`SKINS`/`HAIRS`/`POLOS`. No per-combo files, no 420-image checker. The avatar is
 generated dynamically.
 
 Fallback: if a base image can't load (or the canvas is tainted, e.g. opened via
