@@ -452,6 +452,42 @@ that the dynasty it would have traded away is still there.
 no run to spend them on is a state the season branch cannot describe: what is used up is the
 fresh start rather than the budget, so "Day done" would be wrong about both halves.
 
+#### The meter has four writers and only one of them is a READ
+
+`dailySpend`, `dailyGrace` and `dailyDayEnd` each guarded their write with `if (r && r.used
+!= null)`. `dailyEnsure`, which is the BOOT read and therefore the OLDEST answer of the four,
+wrote whatever came back with no guard at all. One missing clause, two defects, both silent,
+because every allowance here fails open: nothing is ever wrongly refused, so nothing throws.
+
+- **A null erased a real answer.** `attemptsState` answers null on any blip. Stored, it reads
+  everywhere as "no opinion", so the door loses its countdown and `dailySeasons()` falls back
+  to `'run'`, which puts the season copy back on the old run rule mid-session.
+- **A stale answer undid a spend.** Land the boot read after a kickoff and `used` goes back
+  down. Measured through the real page: 2 back to 1, a season already played handed back.
+
+So there is **one writer now**, `dailyPut`, which refuses anything without a `used`, and
+`dailyWrote` counts the writes. `dailyEnsure` captures the count at ASK time and drops its
+answer if anything wrote while it was out, because whatever overtook it is strictly fresher.
+`dailyForget` BUMPS that count rather than zeroing it: a read for the previous account can
+still be in flight, and zeroing would match the 0 the next ask captures. `runDayEnsure` (106)
+had the identical shape and carries the identical three clauses.
+
+**The re-arm is a separate clause from the state guard, and they look like one line.**
+`dailyPut` is what refuses to store a null. `dailyEnsure`'s own null test decides whether to
+ASK AGAIN, which is a question only the boot read has, and it is **bounded at three tries**
+because that function is called from every paint of the front page.
+
+**It was found from the harness side, which is the part worth not misreading.** Adding a
+second background call shifted the timing enough that the null landed between two stubbed
+states in `check-premium.mjs`, and the symptom was a boss-win toast that never appeared. The
+suite was fixed so no section asks the real meter, which is right on its own terms and is
+**not** this fix: the page had the same race with nothing stubbed. Each of the three clauses
+was proved by reintroducing it alone, and each breaks exactly one assertion.
+
+**A LATE METER ANSWER NEVER MOVES THE COUNT BACKWARDS** is that guard, and it drives the order
+by hand rather than racing it: the answer is held open and landed at the moment under test.
+A timing bug cannot be checked by hoping to lose the race.
+
 **A firing ending the day is not spite, it is what stops the budget buying a reroll.** Fired
 in season one with two seasons left, the cheapest use of them is a string of fresh season
 ones until one drafts well. That is both the behaviour the meter exists to discourage and

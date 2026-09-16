@@ -134,15 +134,22 @@ const t = await openPage(browser, 'http://local.test/football/', { tester: true,
 /*
  * EVERY METER IS HAND-SET FROM HERE ON, SO NOTHING MAY GO AND ASK THE REAL ONE.
  *
- * dailyEnsure fires on the first paint after sign-in and writes whatever comes back over
- * dailyState, and what comes back here is null, because this harness routes every request
- * that is not local.test to abort. That is a RACE against the sections below: the answer
- * lands whenever the aborted fetch resolves, and if it lands between two stubbed states it
- * replaces the one under test with null. It did, on the middle of three grace claims, and
- * the symptom was a boss toast that simply never appeared.
+ * dailyEnsure fires on the first paint after sign-in, and what comes back here is null,
+ * because this harness routes every request that is not local.test to abort. That answer
+ * lands whenever the aborted fetch resolves, which is somewhere in the middle of the
+ * sections below.
  *
- * Marked asked rather than stubbed, because no section here wants the real meter: every one
- * of them sets dailyState itself. Ahead of signIn, so there is no paint in between.
+ * THIS IS NOT WHAT FIXES THAT, and reading it as the fix is the trap. The page used to store
+ * the null over whatever state a section had just set, and the symptom was a boss toast that
+ * never appeared on the middle of three grace claims. The PAGE was wrong: a null is no
+ * opinion and dailyEnsure was the one writer of four that did not say so. It is fixed there,
+ * and A LATE METER ANSWER NEVER MOVES THE COUNT BACKWARDS below is the guard that holds it,
+ * driven by hand rather than raced.
+ *
+ * What this line buys is determinism. No section here wants the real meter, every one of
+ * them sets dailyState itself, and a suite whose outcome depends on when an aborted fetch
+ * resolves gives false confidence on the runs it happens to pass. Ahead of signIn, so there
+ * is no paint in between.
  */
 await t.page.evaluate(() => { window.__t.markAsked(); window.__t.signIn(); });
 
@@ -1740,6 +1747,110 @@ ok('the row stops the counting', paid.metered === false);
 ok('  and the pitch goes quiet for an owner', paid.pitch === false);
 ok('  and the door is still there', paid.dynastyDoor);
 await plain.page.close();
+
+/*
+ * A BOOT READ THAT LANDS LATE MUST NOT UNDO WHAT LANDED WHILE IT WAS IN FLIGHT.
+ *
+ * dailySpend, dailyGrace and dailyDayEnd all write the meter behind `if (r && r.used != null)`.
+ * dailyEnsure, which is the BOOT read and so the oldest answer of the four, wrote whatever
+ * came back with no guard at all. Two things follow from that one missing clause and both
+ * are silent, because every allowance here fails open: nothing is ever wrongly refused, so
+ * nothing throws and no screen says anything.
+ *
+ *   A NULL ERASES A REAL ANSWER.  attemptsState answers null on any network blip. Stored, it
+ *   is read everywhere as "no opinion", so the door loses its countdown and dailySeasons()
+ *   falls back to 'run', which quietly puts the season copy back on the old run rule in the
+ *   middle of a session. The grace announcement reads `was` off the same state and goes mute.
+ *
+ *   A STALE ANSWER UNDOES A SPEND.  The boot read is the oldest request in flight. Land it
+ *   after a kickoff and the used count goes back down: the door redraws with a season the
+ *   player has already played still on it.
+ *
+ * FOUND FROM THE HARNESS SIDE, which is worth saying because the harness looked like the
+ * bug. Adding a second background call shifted the timing enough that the null landed
+ * between two stubbed states, and the symptom was a boss-win toast that never appeared. The
+ * suite was fixed so no section asks the real meter. That is right on its own terms and it
+ * is not this: the page had the same race with nothing stubbed at all.
+ *
+ * THE ANSWER IS THE ONE dynCloudPull ALREADY USES one screen over: null is no opinion, so
+ * keep what is held and drop the mark, and the next paint asks again. Bounded, because
+ * dailyEnsure is called from every paint of the front page and an unbounded re-arm against a
+ * dead network is a request per repaint.
+ */
+console.log('\nA LATE METER ANSWER NEVER MOVES THE COUNT BACKWARDS');
+const lm = await openPage(browser, 'http://local.test/football/', { tester: false,
+  inject: 'dailyEnsure,dailySpend,setPremium:(v)=>{premiumSet=v;},'
+    + 'setDaily:(m,v)=>{dailyState[m]=v;},getDaily:(m)=>dailyState[m],'
+    + 'asked:(m)=>dailyAsked[m],reask:(m)=>{dailyAsked[m]=false;},'
+    /* A meter server whose answer is HELD OPEN, so the boot read can be landed by hand at
+       the exact moment each case below needs it. A timing bug cannot be checked by racing
+       it; it has to be driven. */
+    + 'holdState:(v)=>{window.__land=null;'
+    + 'B.attemptsState=async()=>new Promise((r)=>{window.__land=()=>r(v);});},'
+    + 'land:()=>{if(window.__land){window.__land();window.__land=null;}},'
+    + 'stubSpend:(v)=>{B.attemptSpend=async()=>v;},'
+    + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='t';}" });
+const REAL = { used: 1, allowance: 3, unit: 'season',
+  resetsAt: new Date(Date.now() + 9 * 3600e3).toISOString() };
+await lm.page.evaluate(() => { window.__t.signIn(); window.__t.setPremium([]); });
+{
+  const r = await lm.page.evaluate(async ([real]) => {
+    const T = window.__t;
+    T.setDaily('dynasty', Object.assign({}, real));
+    T.holdState(null);                       // the blip
+    T.reask('dynasty'); T.dailyEnsure('dynasty');
+    T.land();
+    await new Promise((go) => setTimeout(go, 50));
+    return { held: T.getDaily('dynasty'), asked: T.asked('dynasty') };
+  }, [REAL]);
+  console.log('  a boot read that comes back null:');
+  ok('    does not erase the answer the page is holding',
+    !!r.held && r.held.used === 1, JSON.stringify(r.held));
+  /* AND THE UNIT IS THE HALF THAT CHANGES THE WORDS. Erased, dailySeasons() falls back to
+     'run' and the copy reverts to a rule this database is not keeping. */
+  ok('    so the page goes on describing the season rule',
+    !!r.held && r.held.unit === 'season', String(r.held && r.held.unit));
+  ok('    and the mode is left free to ask again', r.asked === false, String(r.asked));
+}
+{
+  const r = await lm.page.evaluate(async ([real]) => {
+    const T = window.__t;
+    T.setDaily('dynasty', Object.assign({}, real));
+    T.holdState(Object.assign({}, real));    // the pre-kickoff answer, still in flight
+    T.reask('dynasty'); T.dailyEnsure('dynasty');
+    /* A season is played WHILE that read is out. This is the fresher answer. */
+    T.stubSpend({ ok: true, used: 2, allowance: 3, unit: 'season', resetsAt: real.resetsAt });
+    await T.dailySpend('dynasty');
+    const spent = T.getDaily('dynasty').used;
+    T.land();
+    await new Promise((go) => setTimeout(go, 50));
+    return { spent, after: T.getDaily('dynasty').used };
+  }, [REAL]);
+  console.log('  a boot read that lands after a kickoff:');
+  ok('    the kickoff was counted', r.spent === 2, String(r.spent));
+  ok('    AND THE LATE ANSWER DOES NOT GIVE THE SEASON BACK', r.after === 2, String(r.after));
+}
+/* AND THE SAME RULE FOR THE OTHER THREE WRITERS, which is a separate clause in a separate
+   place. dailyEnsure refuses a null itself, because it has to decide whether to ask again;
+   dailySpend, dailyGrace and dailyDayEnd refuse theirs inside dailyPut. Removing dailyPut's
+   guard left every assertion above green, so without this one the clause those three depend
+   on is carried by nothing. A spend that cannot reach the server already grants the season
+   (it fails open, and returns true); what it must not also do is forget the day. */
+{
+  const r = await lm.page.evaluate(async ([real]) => {
+    const T = window.__t;
+    T.setDaily('dynasty', Object.assign({}, real));
+    T.stubSpend(null);                       // the server could not be asked
+    const allowed = await T.dailySpend('dynasty');
+    return { allowed, held: T.getDaily('dynasty') };
+  }, [REAL]);
+  console.log('  a spend the server never answered:');
+  ok('    lets the season go ahead', r.allowed === true, String(r.allowed));
+  ok('    and leaves the day exactly as it was',
+    !!r.held && r.held.used === 1 && r.held.unit === 'season', JSON.stringify(r.held));
+}
+ok('  and none of it threw', lm.boom.length === 0, lm.boom.join(' | '));
+await lm.page.close();
 
 /*
  * ONE NEW DYNASTY A DAY, AND THE GATE HAS TO SIT ABOVE THE LINES THAT DESTROY A SAVE.

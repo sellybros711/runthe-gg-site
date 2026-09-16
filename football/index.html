@@ -10166,12 +10166,70 @@ const dailyResetsAt=(mode)=>{
   const t=s&&s.resetsAt?Date.parse(s.resetsAt):NaN;
   return Number.isFinite(t)?t:null;
 };
+/*
+ * THE ONE PLACE THE METER IS WRITTEN, and a count of how many times it has been.
+ *
+ * Every answer worth keeping carries a `used`. A null (the network blipped, the rpc errored,
+ * the migration is not there) is NO OPINION, which is the rule the rest of this page keeps
+ * about every allowance, and no opinion must never be stored as if it were an answer: read
+ * back it turns the door's countdown off and drops `unit` with it, which puts the season copy
+ * back on the old run rule in the middle of a session. Nothing throws, because every gate
+ * here already reads a missing answer as permission.
+ *
+ * `dailyWrote` is what tells a LATE answer from a current one. See dailyEnsure.
+ */
+let dailyWrote={dynasty:0,trade:0,full:0};
+function dailyPut(mode,s){
+  if(!s||s.used==null) return false;
+  /* THE WHOLE ROW, NOT THREE FIELDS OFF IT: `unit` and `ended` ride in the same answer, and
+     picking fields out by hand is how the page ends up holding a state that says 'run'
+     because the last write forgot to copy the column across. */
+  dailyState[mode]=s;
+  dailyWrote[mode]++;
+  return true;
+}
 /* Asked once per mode per sign-in rather than on every paint, because the front page
-   repaints on every return to it and this is a round trip. */
+   repaints on every return to it and this is a round trip.
+ *
+ * IT IS THE OLDEST ANSWER IN FLIGHT, which is the whole reason this is not one line.
+ * dailySpend, dailyGrace and dailyDayEnd all write the same state, and every one of them is
+ * asking a question this read cannot have known about. Landed afterwards, the boot answer
+ * describes the day as it was BEFORE the kickoff, so the used count goes back down and the
+ * door redraws offering a season that has already been played. Measured, not reasoned: the
+ * guard in check-premium.mjs drives exactly that order and watched `used` go 2 back to 1.
+ *
+ * So the generation at ASK time is captured, and the answer is dropped if anything has
+ * written since. A dropped answer costs nothing: whatever overtook it is strictly fresher.
+ *
+ * THE NULL TEST HERE IS ABOUT THE RE-ARM, NOT ABOUT THE STATE, and that is worth being exact
+ * about because the two look like one line. dailyPut is what refuses to store a null, for
+ * every caller including this one. What this branch decides is whether to ASK AGAIN, which is
+ * a question only the boot read has.
+ *
+ * RE-ARMED ON A FAILURE, AND BOUNDED. A meter that goes silent for the rest of the session
+ * on one blip is the fail-open case costing a sale rather than a player, which is the cheap
+ * mistake, but it is still a mistake and the answer is one more ask. Bounded because this is
+ * called from every paint of the front page, and an unbounded re-arm against a dead network
+ * is a round trip per repaint. Three tries and then it stands.
+ *
+ * Each of the three clauses was proved by reintroducing it alone, and each breaks exactly one
+ * assertion in check-premium.mjs: the null test breaks the re-arm, dailyPut's null test breaks
+ * a failed spend (which then forgets the day), and the generation test hands back a season.
+ */
+const DAILY_TRIES=3;
+let dailyTried={dynasty:0,trade:0,full:0};
 function dailyEnsure(mode){
   if(!dailyOn()||dailyAsked[mode]) return;
   dailyAsked[mode]=true;
-  B.attemptsState(mode).then((s)=>{ dailyState[mode]=s; paintHomeStart(); }).catch(()=>{});
+  dailyTried[mode]++;
+  const at=dailyWrote[mode];
+  const missed=()=>{ if(dailyTried[mode]<DAILY_TRIES) dailyAsked[mode]=false; };
+  B.attemptsState(mode).then((s)=>{
+    if(!s||s.used==null) return missed();
+    if(dailyWrote[mode]!==at) return;   // something fresher landed while this was out
+    dailyPut(mode,s);
+    paintHomeStart();
+  }).catch(()=>{ missed(); });
 }
 /* ── ONE NEW DYNASTY A DAY, WHICH IS A SECOND METER AND A DIFFERENT QUESTION ───────
  *
@@ -10188,11 +10246,25 @@ function dailyEnsure(mode){
  * this page keeps. A database without 106 answers 404, board.js turns that into null, and
  * the mode plays exactly as it did before the migration existed.
  */
-let runDayState=null, runDayAsked=false;
+let runDayState=null, runDayAsked=false, runDayWrote=0, runDayTried=0;
+function runDayPut(s){ if(!s) return false; runDayState=s; runDayWrote++; return true; }
+/* THE SAME THREE RULES dailyEnsure carries, for the same reasons and with the same bound.
+   A null is no opinion and is never stored as one. A read that went out before dynRunStart
+   took the day is older than the day, so landing it afterwards would put `ok:true` back and
+   offer a second run. And this is called from the door's builder, which runs on every paint
+   of the front page, so the re-arm is capped rather than open. */
 function runDayEnsure(){
   if(!dailyOn()||runDayAsked) return;
   runDayAsked=true;
-  B.dynRunState().then((s)=>{ runDayState=s; paintHomeStart(); }).catch(()=>{});
+  runDayTried++;
+  const at=runDayWrote;
+  const missed=()=>{ if(runDayTried<DAILY_TRIES) runDayAsked=false; };
+  B.dynRunState().then((s)=>{
+    if(!s) return missed();
+    if(runDayWrote!==at) return;   // dynRunStart got there first, and it knows more
+    runDayPut(s);
+    paintHomeStart();
+  }).catch(()=>{ missed(); });
 }
 /* Shut only on a definite refusal. An owner answers pro and is never shut. */
 const runDayShut=()=>!!(dailyOn()&&runDayState&&runDayState.ok===false&&!runDayState.pro);
@@ -10204,9 +10276,14 @@ const runDayNext=()=>{
 function dailyForget(){
   dailyState={dynasty:null,trade:null,full:null};
   dailyAsked={dynasty:false,trade:false,full:false};
+  dailyTried={dynasty:0,trade:0,full:0};
+  /* BUMPED RATHER THAN ZEROED, and that is the point of it. A read for the OLD account can
+     still be in flight, and the generation is the only thing that tells it so: zeroed, it
+     would match the 0 the next ask captures and land one account's day on another's. */
+  dailyWrote={dynasty:dailyWrote.dynasty+1,trade:dailyWrote.trade+1,full:dailyWrote.full+1};
   /* The new-run answer belongs to the account too, and a second account signing in on the
      same tab must not inherit the first one's day. */
-  runDayState=null; runDayAsked=false;
+  runDayState=null; runDayAsked=false; runDayTried=0; runDayWrote++;
 }
 /* "4h 12m", "12m", "40s". Coarse above an hour on purpose: a counter ticking every second
    for four hours is a distraction rather than information. */
@@ -10225,10 +10302,9 @@ async function dailySpend(mode){
   if(!dailyOn()) return true;
   let r=null;
   try{ r=await B.attemptSpend(mode); }catch(_){ r=null; }
-  /* The whole row, not three fields off it: `unit` and `ended` ride in the same answer and
-     picking fields out by hand is how the page ends up holding a state that says 'run'
-     because the last write forgot to copy the column across. */
-  if(r&&r.used!=null) dailyState[mode]=r;
+  /* Through dailyPut, which is what refuses a null and what counts the write. See its note:
+     the boot read is older than this answer and has to know it lost. */
+  dailyPut(mode,r);
   return !r||r.ok!==false;
 }
 /* One more today, and the reason has to travel because the server holds a flag per reason
@@ -10268,7 +10344,7 @@ async function dailyGrace(mode,reason){
   const line=graceSaid(mode,reason);
   let r=null;
   try{ r=await B.attemptGrace(mode,reason); }catch(_){ r=null; }
-  if(r&&r.used!=null) dailyState[mode]=r;
+  dailyPut(mode,r);
   paintHomeStart();
   if(r&&r.allowance!=null&&was&&r.allowance>was&&line) toast(line);
 }
@@ -10295,7 +10371,7 @@ async function dailyDayEnd(mode,fired){
   if(!dailyOn()||!dailySeasons(mode)) return;
   let r=null;
   try{ r=await B.attemptDayEnd(mode,fired); }catch(_){ r=null; }
-  if(r&&r.used!=null) dailyState[mode]=r;
+  dailyPut(mode,r);
   paintHomeStart();
 }
 /* THE GATE, AND THE REPAIR BEHIND IT. Every refusal goes through here rather than straight
@@ -11359,7 +11435,7 @@ function beginDynastyDraft(opts){
      THE ANSWER IS KEPT, which is what makes that true: without storing it the page would ask
      again on the next paint and hand out another. */
   dynastyIntro(()=>{
-    B.dynRunStart().then((r)=>{ if(r) runDayState=r; }).catch(()=>{});
+    B.dynRunStart().then(runDayPut).catch(()=>{});
     beginDraft(Object.assign({dynasty:true},opts||{}));
   });
 }
@@ -11402,7 +11478,7 @@ function dynastyReplaceSheet(opts){
     dynClear(slot);
     closeSheet();
     dynastyIntro(()=>{
-      B.dynRunStart().then((r)=>{ if(r) runDayState=r; }).catch(()=>{});
+      B.dynRunStart().then(runDayPut).catch(()=>{});
       beginDraft(Object.assign({dynasty:true},opts||{}));
     });
   };
