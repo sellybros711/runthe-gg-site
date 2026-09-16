@@ -10042,7 +10042,12 @@ function plateGeom() {
   return { w: 960, h: 660, cx: 480, horizon: 262,
            moundX: 480, moundY: 338, pitSc: 2.9,
            zx: 488, zy: 525, zw: 46, zh: 60,
-           batX: 322, batY: 640, batSc: 4.6,
+           /* The batter is the nearest figure to the camera and the one
+              the reader identifies with, so he gets the Backyard
+              treatment: visibly bigger than everybody else in frame.
+              5.2 keeps his head under the scoreboard line and both
+              boxes clear of the zone, which the camera guards assert. */
+           batX: 322, batY: 640, batSc: 5.2,
            /* The catcher is a SLIVER, low and to the inside corner. At
               512,764 his crown reached y 588 dead-center and covered the
               plate (drawn at 466 to 494) and both batter's boxes: the one
