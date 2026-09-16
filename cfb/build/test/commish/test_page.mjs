@@ -223,7 +223,13 @@ console.log('\n=== the door ===');
 {
   const {p,errs}=await open(stub(false,null));
   ok('signed out, the mode does not open', await on(p,'s-gate'));
-  ok('  and it says why', /in testing/i.test(await txt(p,'#gate-say')), await txt(p,'#gate-say'));
+  /* IT ASKS FOR AN ACCOUNT AND NOT FOR A PLACE ON A LIST. This read /in testing/ while the
+     mode was gated, and the same line saying that to the public after launch would turn
+     away somebody who is already allowed in. The season clock is keyed on an account, so
+     an account is the true reason and the only one worth giving. */
+  ok('  and it says why', /sign in/i.test(await txt(p,'#gate-say')), await txt(p,'#gate-say'));
+  ok('  and does not call a launched mode a test',
+    !/testing|on the list/i.test(await txt(p,'#gate-say')), await txt(p,'#gate-say'));
   ok('  with a way back to the game', !!(await p.$('#gate-act a[href="/cfb/"]')));
   ok('  and nothing to press that starts a term', !(await p.$('#g-start')));
   console.log('  errors:', errs.length?errs:'none');
@@ -231,29 +237,28 @@ console.log('\n=== the door ===');
   await p.close();
 }
 {
+  /* SIGNED IN AND ON NO LIST, WHICH IS NOW THE ORDINARY VISITOR.
+   *
+   * This section asserted the refusal screen: the mode shut, a badge reading In testing, and
+   * the whoami panel naming the account so a tester could send it to be added. All of it was
+   * right while COMMISH_LIVE was false and all of it is unreachable now, because allowed()
+   * reads that flag before it reads a name. The screen itself is still in the page for the
+   * day the mode is closed again; what changed is who meets it, and the answer is nobody.
+   *
+   * SO THIS WALKS THE THING THAT REPLACED IT. An account nobody has ever heard of takes the
+   * job, and the badge says Free rather than In testing, which is the difference between
+   * being let in on a list and being let in because the mode is open. */
   const {p,errs}=await open(stub(true,'somebodyelse'));
-  ok('signed in but not on the list, still nothing', await on(p,'s-gate'));
-  ok('  and it does not make them feel they are missing the game',
-    /nothing is missing/i.test(await txt(p,'#gate-say')), await txt(p,'#gate-say'));
-  ok('  the badge still says testing', (await txt(p,'#tag'))==='In testing');
-  /* AND IT SAYS WHICH ACCOUNT IT IS REFUSING. The list holds usernames, a username is not
-     an email address, and an account signed in with Google may have none. The first list
-     shipped with a username inferred from an email, matched nobody, and the screen said
-     only "not on the list": nothing on it could tell a tester which of those had happened,
-     or what to send to be added. This is that. */
-  ok('  and it names the account it is refusing', !!(await p.$('#whoami')));
-  ok('    with the username the list matches on',
-    /somebodyelse/.test(await txt(p,'#who-name')), await txt(p,'#who-name'));
-  /* The id is the handle that exists even when the username does not, so it is the one
-     that has to be here. */
-  ok('    and the account id, which exists either way',
-    /[0-9a-f-]{36}/.test(await txt(p,'#who-id')), await txt(p,'#who-id'));
-  ok('    and a way to copy it', !!(await p.$('#who-copy')));
-  /* NO EMAIL ON THIS SCREEN. The gate reads a username and an id, so those are what it
-     shows; putting the address here would mean testers pasting it into a chat to be added. */
-  ok('    and it does not print an email address',
-    !/@/.test(await txt(p,'#whoami')), await txt(p,'#whoami'));
+  /* s-gate IS STILL ON, AND THAT IS NOT THE REFUSAL. This screen is the job offer: being
+     named to the post is the first beat of the mode rather than a door in front of it, so
+     the question is never whether the gate is up, it is what the gate is saying. The two
+     are told apart by what is on it, which is a Take office button or a whoami panel. */
+  ok('signed in and on no list, the gate offers the job', !!(await p.$('#g-start')));
+  ok('  and refuses nobody', !(await p.$('#whoami')));
+  ok('  and the badge says Free, not In testing', (await txt(p,'#tag'))==='Free',
+    await txt(p,'#tag'));
   await p.screenshot({path:SS+'commish_notlisted.png'});
+  console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();
 }

@@ -74,11 +74,13 @@ const LAPSED = BOUGHT.concat([
 ]);
 
 /* PUT A NAME ON THE REAL TESTER LIST, by trapping the assignment commish/access.js makes.
-   The offer card is gated on commishOn(), the same call the front page door makes: while
-   the launch flag is false only the list can see Commissioner Simulator, and selling that
-   mode to somebody who would still find nothing after paying is selling a shut door. So a
-   walk that expects to see the offer has to be on the list, and it gets there through the
-   real array rather than by patching the page. Same trap, same reasoning, as test_page. */
+   IT NO LONGER DECIDES ANYTHING, because COMMISH_LIVE is true and commishOn() answers yes
+   before it ever reads a name. It is kept because every walk below still runs it and taking
+   it out would change what those walks are, for no gain: an account on the list and an
+   account on no list are now the same account, which is what launching the mode means, and
+   the one walk that cares proves it by passing `listed` false.
+   The gate itself is unchanged: the offer card is drawn off the same commishOn() the front
+   page door is, so neither can advertise what the other hides. Same trap as test_page. */
 const TESTER = 'storetester';
 const arm = `
 (function(){ var v;
@@ -89,8 +91,9 @@ const arm = `
 
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 
-/* `listed` off is an account with no access to Commissioner Simulator at all: no trap, so
-   nothing is pushed onto the real tester list and commishOn() answers false. */
+/* `listed` off skips the trap, so nothing is pushed onto the real tester list. That used to
+   mean no access to Commissioner Simulator at all; since the launch flag turned it means an
+   account that gets in without being named anywhere, which is every visitor. */
 async function open(init, label, listed) {
   const p = await b.newPage({ viewport: { width: 390, height: 844 } });
   p.errs = [];
@@ -419,17 +422,23 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
   await p.close();
 }
 
-/* ── an account the mode is not open to ─────────────────────────────────────────────── */
+/* ── an account on no list at all ───────────────────────────────────────────────────── */
 {
-  /* THE OFFER IS GATED ON THE DOOR, not just on ownership. While the launch flag is false
-     Commissioner Simulator is visible to the tester list alone, and the one thing this card
-     sells on this game is that mode: showing it to somebody who would still find nothing
-     after paying is selling a shut door. It appears for everybody on the day the flag
-     flips, out of the same commishOn() the front page door reads. */
-  const p = await open(stub(true, [], []), 'off the tester list: no offer, because the mode is not there to sell', false);
+  /* THE OFFER IS GATED ON THE DOOR, not just on ownership, and THE DAY THE FLAG FLIPPED IS
+     THIS ONE. The note here used to say this card appears for everybody on the day
+     COMMISH_LIVE turns, and these two assertions read the other way to prove it had not.
+     It has, so they read this way.
+     THE GATE ITSELF DID NOT CHANGE and is the reason the pair is still worth asserting: the
+     one thing this card sells on this game is Commissioner Simulator, so it is drawn off
+     the same commishOn() the front page door is. The fault it catches is the two coming
+     apart in either direction. A card with no door behind it takes money for a shut door.
+     A door with no card is a mode you can only find by being refused somewhere else.
+     NOT ON THE TESTER LIST, which is the point of the third argument: this account is
+     nobody in particular, and it gets in on the launch flag rather than on a name. */
+  const p = await open(stub(true, [], []), 'on no list: the door and the offer are both there', false);
   await hub(p);
-  ok('the front page door is not drawn', !(await has(p, '#b-hp-commish')));
-  ok('and neither is the offer card', !(await has(p, '#pf-prem')));
+  ok('the front page door is drawn', await has(p, '#b-hp-commish'));
+  ok('and so is the offer card', await has(p, '#pf-prem'));
   /* The pill still tells them what their account is, because that is true either way. */
   ok('the account still knows what tier it is', (await txt(p, '.pfid .pw-pill')) === 'Free');
   ok('no page errors', p.errs.length === 0, p.errs[0]);

@@ -50,8 +50,14 @@ const ok = (label, cond, extra) => {
   console.log('  ' + (cond ? 'ok  ' : 'FAIL') + '  ' + label + (extra ? '   ' + extra : ''));
 };
 
-/* One page, serving the repo off disk. `tester` flips the two access files the way the
-   tester lists do, which is the view the boot crash lived in. */
+/* One page, serving the repo off disk.
+   `tester` USED TO FLIP THE TWO ACCESS FILES from LIVE = false to true, which is the view
+   the boot crash lived in. Both modes are launched and both files ship true, so there is
+   one view now and the rewrite below matches nothing. It is kept, doing nothing, for one
+   reason: every call site still passes the flag, and a file that says `tester: true` while
+   silently serving the same bytes as `tester: false` is less confusing with the mechanism
+   visible than with it deleted. When the next unannounced mode wants a preview view, this
+   is the hook it goes back on. */
 async function openPage(browser, url, opts = {}) {
   const { tester = false, inject = null } = opts;
   const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
@@ -1459,24 +1465,57 @@ const tall = geom.find((g) => g.w === 390);
 ok('  and the whole offer stays under 1000px at 390', tall.total < 1000, tall.total + 'px');
 await ck.page.close();
 
-console.log('\nAN ACCOUNT OFF THE TESTER LISTS SEES NONE OF IT');
+/*
+ * THE LAUNCHED VIEW, WHICH IS EVERYBODY'S VIEW.
+ *
+ * This section read AN ACCOUNT OFF THE TESTER LISTS SEES NONE OF IT and asserted five
+ * absences, which was the right guard for two unannounced modes. Every one of those five
+ * is now inverted on purpose: the doors are built for anybody, the pitch is drawn, and a
+ * free account IS metered. Those are not five regressions, they are what launching meant,
+ * and the file has to say so in the position it is in rather than be quietly deleted.
+ *
+ * WHAT IT GUARDS NOW is the shape of the paid tier, which is the thing that can still break
+ * quietly: a free account gets the mode plus a meter, an owner gets the mode with the meter
+ * off, and NEITHER of them is ever refused the door. The mode being free to enter is the
+ * whole design (see the note in 105_fullteam_daily.sql on why a hard gate would cap every
+ * free cabinet's GOAT forever), so a door that came back as a wall would be a silent
+ * reversal of it, and no error anywhere would report that.
+ */
+console.log('\nAN ACCOUNT THAT IS NOBODY IN PARTICULAR GETS ALL OF IT');
 const plain = await openPage(browser, 'http://local.test/football/', { tester: false,
-  inject: 'acctTier,premiumPitch,dailyOn,'
+  inject: 'acctTier,premiumPitch,dailyOn,canPlayDynasty,canPlayFull,'
     + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='someone';}"
     + ',setPremium:(v)=>{premiumSet=v;}' });
 const off = await plain.page.evaluate(() => {
   const T = window.__t;
   T.signIn(); T.setPremium([]);
   return { pitch: T.premiumPitch(), metered: T.dailyOn(),
+    canDyn: T.canPlayDynasty(), canFull: T.canPlayFull(),
     dynastyDoor: !!document.getElementById('b-start-dyn'),
     fullDoor: !!document.getElementById('b-start-full'),
     pitchCard: !!document.getElementById('b-premium') };
 });
-ok('no dynasty door', !off.dynastyDoor);
-ok('no full team door', !off.fullDoor);
-ok('no pitch card on the front page', !off.pitchCard);
-ok('premiumPitch() stays quiet', off.pitch === false);
-ok('nothing is metered', off.metered === false);
+ok('a dynasty door, for an account on no list', off.dynastyDoor);
+ok('a full team door, the same', off.fullDoor);
+ok('  and both modes answer that they can be played', off.canDyn && off.canFull);
+ok('the pitch card is on the front page', off.pitchCard);
+ok('premiumPitch() offers the bundle', off.pitch === true);
+/* THE METER IS THE PRODUCT, so this is the line that says the free tier is still a free
+   TIER and not a free GAME. It was `=== false` when nobody off the list could reach a mode
+   to be metered on. */
+ok('and a free account is metered', off.metered === true);
+/* AND THE ROW IS WHAT TURNS IT OFF, which is the same assertion from the paying side. The
+   tester lists are feature flags and never permissions, so the thing that has to move the
+   meter is the premium_unlocks row and nothing else. Same page, same account, one row. */
+const paid = await plain.page.evaluate(() => {
+  const T = window.__t;
+  T.setPremium(['ps_premium', 'cfb_premium']);
+  return { metered: T.dailyOn(), pitch: T.premiumPitch(),
+    dynastyDoor: !!document.getElementById('b-start-dyn') };
+});
+ok('the row stops the counting', paid.metered === false);
+ok('  and the pitch goes quiet for an owner', paid.pitch === false);
+ok('  and the door is still there', paid.dynastyDoor);
 await plain.page.close();
 
 await browser.close();

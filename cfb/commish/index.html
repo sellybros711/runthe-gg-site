@@ -2670,7 +2670,7 @@
      who has not bought, so it has to be there before gate() runs. -->
 <script src="/assets/store.js?v=18"></script>
 <script src="/cfb/engine.js?v=34"></script>
-<script src="access.js?v=6"></script>
+<script src="access.js?v=7"></script>
 <!-- The parts of the sport a term can ADD to it, which the two files under this one both
      ask about. Before them on purpose, though neither reads it at load: both resolve it at
      the call so that this order is a convenience rather than a rule somebody can break by
@@ -9244,11 +9244,22 @@ function gate(){
     return;
   }
   if(!authState.signedIn){
-    say.textContent='Commish Simulator is in testing. Sign in on the game and come back, '
-      +'and if you are on the list this opens.';
+    /* IT NO LONGER SAYS TESTING AND IT NO LONGER MENTIONS A LIST. Both were true while the
+       mode was gated on one, and both became false the moment COMMISH_LIVE turned: telling
+       a visitor a launched mode is in testing and might not open for them is turning away
+       somebody who is already through the door. What is actually in the way is an account,
+       because the season clock is keyed on one, so that is what the line says. */
+    say.textContent='Commish Simulator needs an account. Sign in on the game and come back.';
     act.innerHTML='<a class="btn" href="/cfb/" style="text-decoration:none;text-align:center">Sign in on the game</a>';
     return;
   }
+  /* UNREACHABLE WHILE THE MODE IS LAUNCHED, and kept rather than deleted. allowed() reads
+     COMMISH_LIVE first and that is true, so nobody signed in meets this branch. It is the
+     screen the mode closes behind if the flag ever goes back, and rebuilding it from memory
+     in that moment would lose the part that took two goes to get right: printing the
+     username AND the account id, because a username is not an email address and a Google
+     account may have neither. Its copy still says testing, which is correct for the only
+     world it can appear in. */
   if(!allowed()){
     say.textContent='Commish Simulator is in testing and this account is not on the list yet. '
       +'Nothing is missing from the game you were playing.';

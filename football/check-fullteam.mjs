@@ -47,11 +47,15 @@
  * ---------------------------------------------------------------------------
  * AND THE THING THAT MUST NOT CHANGE
  * ---------------------------------------------------------------------------
- * Full Team is unannounced. fullteam-access.js ships FULLTEAM_LIVE = false and the door is
- * BUILT by ensureFullButton() rather than revealed, so an account off the list has no such
- * node in its document (see the long note over the markup in index.html). check-premium
- * asserts the door is absent; this asserts the same thing from the other end, that the page
- * a non-tester is served carries the mode's name nowhere a reader would find it.
+ * Full Team is LAUNCHED. fullteam-access.js ships FULLTEAM_LIVE = true, so the door is
+ * built for everybody and the assertions below say so. They used to say the opposite, and
+ * the inversion is the point: while the mode was unannounced the thing worth guarding was
+ * that a stranger saw no sign of it, and now it is that a stranger gets in.
+ *
+ * WHAT REPLACED IT AS THE INVARIANT. The door is free and the METER is what is sold, so
+ * the fault this section now watches for is the door quietly becoming a wall again: a
+ * signed out visitor who cannot see it, or a free account that finds the mode behind a
+ * purchase instead of behind a day's wait.
  *
  * Needs no network and no server: every request is served from disk by the route handler,
  * the same way check-premium does it.
@@ -93,7 +97,10 @@ const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,fullPickIsDefens
   + 'getRun:()=>run,'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 
-async function open(browser, { tester }) {
+/* NO TESTER VIEW ANY MORE. This used to take { tester } and rewrite LIVE = false to true
+   in the two access files, which is what the tester lists did. Both files ship true now, so
+   the rewrite matched nothing and the parameter described a world that no longer exists. */
+async function open(browser) {
   const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
   const boom = [];
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 180)));
@@ -111,9 +118,6 @@ async function open(browser, { tester }) {
     const f = path.join(ROOT, rel);
     if (!fs.existsSync(f)) return r.abort();
     let body = fs.readFileSync(f);
-    if (tester && /(dynasty|fullteam)-access\.js$/.test(rel)) {
-      body = Buffer.from(body.toString('utf8').replace(/LIVE = false/, 'LIVE = true'), 'utf8');
-    }
     if (rel === '/football/index.html') {
       body = Buffer.from(body.toString('utf8')
         .replace('\nboot();', '\nwindow.__t={' + INJECT + '};\nboot();'), 'utf8');
@@ -137,29 +141,38 @@ async function open(browser, { tester }) {
 const browser = await pw.chromium.launch({ executablePath: CHROME });
 
 /* ================================================================
-   THE MODE IS STILL UNANNOUNCED
+   THE MODE IS LAUNCHED
    ================================================================ */
-console.log('\nAN ACCOUNT OFF THE TESTER LIST IS SERVED NOTHING');
+console.log('\nAN ACCOUNT THAT IS NOBODY IN PARTICULAR IS LET IN');
 {
-  const { page, boom } = await open(browser, { tester: false });
+  const { page, boom } = await open(browser);
   const r = await page.evaluate(() => ({
     door: !!document.getElementById('b-start-full'),
     can: window.__t.canPlayFull(),
     named: /full team/i.test(document.body.innerText),
   }));
-  ok('canPlayFull() is false', r.can === false);
-  ok('  no door is built', !r.door);
-  ok('  and the words are nowhere on the page', !r.named);
+  ok('canPlayFull() is true', r.can === true);
+  ok('  the door is built', r.door);
+  ok('  and the mode is named on the page', r.named);
   ok('  the page still starts clean', !boom.length, boom.join(' | ') || 'no errors');
   await page.close();
 }
-/* Read off disk rather than off the page, because the page under test is served through a
-   handler that rewrites this very line for the tester view. */
+/* Read off disk rather than off the page, because the flag is a property of the file. */
 {
   const src = fs.readFileSync(path.join(ROOT, 'football/fullteam-access.js'), 'utf8');
-  ok('fullteam-access.js still ships FULLTEAM_LIVE = false', /FULLTEAM_LIVE = false/.test(src));
+  /* THE LAUNCH LINE, ASSERTED RATHER THAN ASSUMED, the same way it was asserted while it
+     said false. It is one word and it opens the mode to the whole public, so it is worth a
+     line here in either position. Reverting it should be a decision, not a merge. */
+  ok('fullteam-access.js ships FULLTEAM_LIVE = true', /FULLTEAM_LIVE = true/.test(src));
 
-  /* AND THE TWO PREVIEW LISTS NAME THE SAME PEOPLE.
+  /* AND THE TWO LISTS NAME THE SAME PEOPLE.
+   *
+   * THEY NO LONGER DECIDE WHO SEES EITHER MODE, because both flags are true and allowed()
+   * answers yes to everybody. They are kept because canPlayClubDynasty() still reads the
+   * Dynasty one directly, to comp One Franchise to a tester holding no row, and because a
+   * list rebuilt from memory on the day a mode is closed again would be the wrong list.
+   * The assertion survives on the second reason: two lists that are meant to match and
+   * quietly stop matching is still the fault below, whatever they are being read for.
    *
    * Two unannounced modes ship on one page and each keeps its own tester list. They drifted:
    * csel8 and jordantest were added to dynasty-access.js and not to fullteam-access.js, so a
@@ -183,7 +196,7 @@ console.log('\nAN ACCOUNT OFF THE TESTER LIST IS SERVED NOTHING');
   ok('  both lists were readable', !!ft && !!dy, ft && dy ? ft.length + ' / ' + dy.length : 'parse failed');
   const only = (a, b) => (a || []).filter((x) => (b || []).indexOf(x) < 0);
   const missFt = only(dy, ft), missDy = only(ft, dy);
-  ok('  and the two preview lists name the same testers',
+  ok('  and the two lists name the same testers',
     !!ft && !!dy && !missFt.length && !missDy.length,
     (missFt.length ? 'not on Full Team: ' + missFt.join(', ') + '  ' : '')
     + (missDy.length ? 'not on Dynasty: ' + missDy.join(', ') : '')
@@ -195,8 +208,8 @@ console.log('\nAN ACCOUNT OFF THE TESTER LIST IS SERVED NOTHING');
    ================================================================ */
 console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
 {
-  const { page, boom } = await open(browser, { tester: true });
-  ok('the door is built for a tester', await page.evaluate(() =>
+  const { page, boom } = await open(browser);
+  ok('the door is built', await page.evaluate(() =>
     !!document.getElementById('b-start-full')));
   /* THE FILL IS PART OF THE DOOR, not decoration to be dropped in a refactor. Without
      hp-ft this card is the neutral grey shared with the Trade Machine, which on a phone
@@ -415,7 +428,7 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
   const sub = (p) => p.evaluate(() =>
     ((document.querySelector('#b-start-full .hp-full-sub') || {}).textContent || '').trim());
 
-  const m = await open(browser, { tester: true });
+  const m = await open(browser);
   await m.page.evaluate(() => {
     window.__C = window.__t.meter(0);
     window.__t.setPremium([]);

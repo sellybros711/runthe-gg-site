@@ -7,8 +7,11 @@
  * their name on the other side. So the list is here and both pages load it.
  *
  * The shape is the one supabase/80_football_defense_mode.sql writes down: a list in the
- * page and a LIVE flag. Flipping COMMISH_LIVE opens the mode to everybody AND puts the
- * card on the modes sheet for everybody, in one edit, which is the point of this file.
+ * page and a LIVE flag. COMMISH_LIVE is now TRUE, which opened the mode to everybody, put
+ * the card on the modes sheet for everybody, and turned on the Go Pro card at /cfb/, all
+ * out of this one line. That third one is the easy one to forget: the college game gates
+ * its OFFER on commishOn() too, on the argument that a card taking money for a shut door
+ * is worse than no card, so nothing on that page could be bought while this was false.
  *
  * TWO WAYS TO BE ON THE LIST, and the second one exists because the first one silently
  * failed. A username is what somebody typed on the leaderboard, and it is NOT their email
@@ -45,7 +48,13 @@
      the list. The gate screen at /cfb/commish/ prints the signed-in account's id. */
   var COMMISH_TESTER_IDS = [];
 
-  var COMMISH_LIVE = false;
+  /* TRUE: THE MODE IS LAUNCHED. It is one season every 24 hours for a free account and
+     unlimited for an account holding cfb_premium, and 104_commish_free_clock.sql is what
+     counts that. Unlike the two football flags this one needs no migration to be safe:
+     Commish writes its own tables (95, 96) rather than a ps_runs row, so against a
+     database missing 104 the mode works and the free clock does not, which fails toward
+     giving away seasons rather than toward losing them. */
+  var COMMISH_LIVE = true;
 
   function isTester(name) {
     return COMMISH_TESTERS.indexOf(String(name || '').toLowerCase()) >= 0;

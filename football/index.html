@@ -7919,8 +7919,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
      blocked or stale copy hides an unannounced mode rather than opening it. -->
-<script src="fullteam-access.js?v=2"></script>
-<script src="dynasty-access.js?v=4"></script>
+<script src="fullteam-access.js?v=3"></script>
+<script src="dynasty-access.js?v=5"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -10744,7 +10744,17 @@ function ensureFullButton(){
        colour in it and read as a control you cannot press: see the note on .hp-ft. */
     el.className='btn hp-full hp-ft';
     el.id='b-start-full';
-    el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
+    /* NEW, AND IT SAID PREVIEW UNTIL THE MODE LAUNCHED. Preview was the honest word while
+       this door was built for a tester list and nobody else: it told the handful of people
+       who could see it that the rough edges were expected. The same word in front of the
+       public says the mode is not finished, on a mode that is being sold, which is the one
+       direction a claim about a product must never be wrong in.
+       hp-tag-new RATHER THAN hp-tag-pro, which is the other half of the correction. Pro is
+       the gold mark this page puts on what an account has bought, and Full Team is free to
+       enter: what is bought is the meter coming off. A gold tag over a free door is the
+       store's own colour promising the wrong thing. The dynasty door beside it has read New
+       in this exact class since it launched. */
+    el.innerHTML='<span class="hp-tag hp-tag-new">New</span>'+
       '<span class="hp-full-name">Full Team</span>'+
       '<span class="hp-full-sub">Six on offense &middot; six on defense</span>';
     el.onclick=()=>{ fullDoor(); };
