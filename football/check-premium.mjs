@@ -213,6 +213,25 @@ for (const [who, owns, day, want] of [
       goProValue: ((document.querySelector('#pf-prem .pwc-go b') || {}).textContent) || '',
       goProCounts: /\d+\s*modes/i.test(
         (document.getElementById('pf-prem') || {}).innerText || ''),
+      /* THE SENTENCE, WHICH NOTHING HERE READ, AND THAT IS HOW IT DRIFTED. Everything above
+         is the VALUE and the MARK COUNT, and those two agreed across all three cards the
+         whole time the words did not: the front page said "Unlock every mode" while both
+         profiles said "Unlock everything". The markup had been moved into the store to stop
+         exactly this, and the two strings stayed behind as arguments each caller passed, so
+         a check on the parts the store owned could not see the parts it did not. */
+      goProTitle: ((document.querySelector('#pf-prem .pwc-t b') || {}).textContent) || '',
+      goProSub: ((document.querySelector('#pf-prem .pwc-t span') || {}).textContent) || '',
+      homeTitle: ((document.querySelector('#b-premium .pwc-t b') || {}).textContent) || '',
+      homeSub: ((document.querySelector('#b-premium .pwc-t span') || {}).textContent) || '',
+      /* AND THE SHEET'S OWN HEADING, because the card is a door and the heading is the room.
+         A reader who presses "Unlock every mode" and lands on "Unlock everything" has to
+         stop and work out whether they got the screen they asked for. */
+      sheetH2: (() => {
+        const d = document.createElement('div');
+        d.innerHTML = window.RTG_STORE.html({ signedOut: false });
+        const h = d.querySelector('h2');
+        return h ? h.textContent.trim() : '';
+      })(),
       /* The front page's own card, built as a node rather than written into markup, which is
          the whole reason the two could say different things. */
       homeValue: ((document.querySelector('#b-premium .pwc-go b') || {}).textContent) || '',
@@ -255,6 +274,16 @@ for (const [who, owns, day, want] of [
     ok('    the front page card says exactly the same',
       r.homeValue === 'Unlimited' && r.homeMarks === wantMarks && !r.homeCounts,
       r.homeValue + ' / ' + r.homeMarks + ' marks');
+    /* AND "EXACTLY THE SAME" NOW INCLUDES THE WORDS. See the note in the evaluate above:
+       the line before this one passed for weeks while the two cards read differently,
+       because the value and the marks were the store's and the sentence was not. */
+    ok('    including the sentence, not just the value',
+      r.homeTitle === r.goProTitle && r.homeSub === r.goProSub,
+      JSON.stringify(r.homeTitle + ' / ' + r.homeSub) + '  vs  '
+        + JSON.stringify(r.goProTitle + ' / ' + r.goProSub));
+    ok('    and the card is named for the sheet it opens',
+      r.homeTitle === r.sheetH2,
+      JSON.stringify(r.homeTitle) + ' vs ' + JSON.stringify(r.sheetH2));
   }
   if (!owner && want !== 'the mode') {
     /* The spent door was a card linking to the store, which is a second tap between
@@ -688,7 +717,8 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,prof
   /* The walk back from Stripe runs earlier on this page and leaves justPaid set, which is
      itself a reason premiumPitch() stands down. Cleared rather than worked around, so the
      section below is testing the ownership rule and not that one. */
-  + 'setPaid:(v)=>{justPaid=v;},'
+  + 'setPaid:(v)=>{justPaid=v;},goHome,paintSeed,seasonTag,runPlayoffs,R:R,'
+  + 'dataNow,LEAGUE:()=>LEAGUE,CAL:()=>CAL,D:()=>DATA,'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
   + 'onSuccessUrl:()=>{history.replaceState(null,"","/football/?checkout=success");}';
@@ -1396,6 +1426,19 @@ ok('pressing Trade Machine reaches the game', /s-(draft|game|reveal)/.test(walke
    alive at 320 and 360 when it was not: a media query keys on the VIEWPORT, so a narrowed
    element renders at the wide rules and every width below the real one is measured with the
    wrong stylesheet. The widths matter here precisely because the rules change at them. */
+/* THE CARD HAS TO BE BACK ON THE PAGE, AND THE PAGE HAS TO BE ON SCREEN. Two separate
+   things, and the second one cost a round: the walk above left this account holding both
+   products, which is the reader the card is removed for, AND it left the game on a run
+   screen. Painted but not shown, the card is found by getElementById and measures 0px wide,
+   so the first version of this reported "0 lines in a 0px column" rather than saying the
+   front page was not up. A layout assertion has to be made against a laid out element. */
+await ck.page.evaluate(() => {
+  window.__t.setPaid(false);
+  window.__t.setPremium([]);
+  window.__t.goHome();
+  window.__t.paintHomeStart();
+});
+await new Promise((r) => setTimeout(r, 200));
 const geom = [];
 for (const w of [320, 360, 390, 560]) {
   await ck.page.setViewportSize({ width: w, height: 1400 });
@@ -1439,7 +1482,22 @@ for (const w of [320, 360, 390, 560]) {
     });
     const total = Math.round(box.getBoundingClientRect().height);
     box.remove();
-    return { w: width, tiles, spread: Math.max(...tiles) - Math.min(...tiles),
+    /* AND THE PROMPT CARD THAT OPENS ALL THIS, measured in its REAL place on the page. Its
+       text column is whatever the value and the marks leave, which is 200px at 390 once the
+       fourth mark is there, and the sub has to hold one line in it. "No daily limits. One
+       payment, lifetime." needed 240 and wrapped on every phone anybody holds, leaving the
+       word "lifetime." alone on a second line.
+       MEASURED HERE RATHER THAN COUNTED IN CHARACTERS, because the column depends on the
+       mark count and the mark count depends on the reader. */
+    const card = document.getElementById('b-premium');
+    let sub = null;
+    if (card) {
+      const s = card.querySelector('.pwc-t span');
+      const lh = parseFloat(getComputedStyle(s).lineHeight);
+      sub = { lines: Math.round(s.getBoundingClientRect().height / lh),
+        col: Math.round(card.querySelector('.pwc-t').getBoundingClientRect().width) };
+    }
+    return { w: width, tiles, spread: Math.max(...tiles) - Math.min(...tiles), sub,
       chipSpread: Math.max(0, ...lines.map((l) => l.spread)),
       chipHeights: Math.max(0, ...lines.map((l) => l.heights)),
       overhang: Math.max(0, ...lines.map((l) => l.overhang)), total };
@@ -1456,6 +1514,13 @@ geom.forEach((g) => {
     g.chipHeights.toFixed(1) + 'px of height between them');
   ok('  ' + g.w + 'px: no chip hangs below the price', g.overhang < 1,
     g.overhang.toFixed(1) + 'px');
+  /* 320 IS EXEMPT AND SAYS SO. At 320 the card's title wraps too, so a one line rule there
+     would be asking for copy nobody would write. Every width a phone in use actually
+     reports is 360 and up. */
+  if (g.w >= 360) {
+    ok('  ' + g.w + 'px: the prompt card says it in one line', !!g.sub && g.sub.lines === 1,
+      g.sub ? g.sub.lines + ' lines in a ' + g.sub.col + 'px column' : 'no card');
+  }
 });
 /* A CEILING ON THE WHOLE SHEET, because the complaint that started this pass was scrolling
    and nothing else here would notice it growing back. Measured at 390px it was 1090px and is
@@ -1463,6 +1528,151 @@ geom.forEach((g) => {
    on adding a block. Move it when the sheet is meant to get longer, never to make this pass. */
 const tall = geom.find((g) => g.w === 390);
 ok('  and the whole offer stays under 1000px at 390', tall.total < 1000, tall.total + 'px');
+
+/* ─── A DYNASTY SCREEN SAYS WHICH SEASON IT IS, AND NOTHING ELSE DOES ──────────────────
+ *
+ * The seeding screen is the same screen in season one and season forty: an eyebrow reading
+ * "Regular season complete" over a record. The run is the only thing on the page that knows
+ * the difference, and every other Dynasty screen already names it (the squad screen's step,
+ * the schedule's heading, the boss battle's eyebrow), so this one was the odd one out.
+ *
+ * THE HALF THAT NEEDS A GUARD IS THE RESET, NOT THE LABEL. #sd-eye is static markup drawn
+ * for the Trade Machine and Full Team on the same page, and both of them reach this screen.
+ * Written as "set it when dynasty" and nothing else, a dynasty in the other slot leaves its
+ * season number sitting on a mode that has no seasons, which is a sentence that is wrong
+ * rather than missing, and nothing anywhere throws. v-caleye carries the same note for the
+ * same reason; this is the fourth element on this page with that shape.
+ *
+ * PAINTED DIRECTLY RATHER THAN PLAYED TO. What is under test is one heading, and driving
+ * seventeen weeks of football to reach it would be testing the season loop instead.
+ */
+console.log('\nA DYNASTY SCREEN SAYS WHICH SEASON IT IS');
+const SEED_FIXTURE = { regularRecord: '13-4', bye: false, byeRoute: null,
+  roundNames: ['Wild Card', 'Divisional', 'Conf.', 'Title'] };
+for (const [label, opts] of [
+  ['a dynasty in season 6', { dynasty: true, seasonNo: 6 }],
+  ['a dynasty in season 40', { dynasty: true, seasonNo: 40 }],
+  ['a Trade Machine run', { dynasty: false, tradeMachine: true, seasonNo: 1 }],
+]) {
+  const r = await ck.page.evaluate(({ o, seed }) => {
+    const run = window.__t.R.createRun({ dynasty: !!o.dynasty, seed: 5 });
+    run.dynasty = !!o.dynasty;
+    run.tradeMachine = !!o.tradeMachine;
+    run.seasonNo = o.seasonNo;
+    run.playoffSeed = seed;
+    window.__t.setRun(run);
+    window.__t.paintSeed();
+    const e = document.getElementById('sd-eye');
+    const lh = parseFloat(getComputedStyle(e).lineHeight) || 13;
+    return { txt: (e.textContent || '').trim(),
+      lines: Math.round(e.getBoundingClientRect().height / lh),
+      /* The rest of the screen, so a change to the heading cannot quietly take it with it. */
+      rec: (document.getElementById('sd-rec') || {}).textContent,
+      steps: [...document.querySelectorAll('#sd-tracker .po-step')].length };
+  }, { o: opts, seed: SEED_FIXTURE });
+  console.log('  ' + label + ':');
+  ok('    the eyebrow reads "' + r.txt + '"',
+    opts.dynasty
+      ? r.txt === 'Regular season complete · Season ' + opts.seasonNo
+      : r.txt === 'Regular season complete',
+    r.txt);
+  /* 320 IS NOT ASSERTED. The viewport here is 390 by the line above this block, which is the
+     width this is read at; at 320 a two digit season wraps and breaks cleanly at the middot,
+     which is a second line rather than a widow. */
+  ok('    on one line at 390', r.lines === 1, r.lines + ' lines');
+  ok('    and the screen under it is intact', r.rec === '13-4' && r.steps === 4,
+    r.rec + ' / ' + r.steps + ' rounds');
+}
+
+/* THE WHOLE POSTSEASON, NOT JUST THE SCREEN THAT WAS REPORTED. The seeding screen was the
+   one a player pointed at, and the bracket and the broadcast that follow it had the same
+   hole: three screens in a row, each identical in season one and season forty. The results
+   screen already named it, on the score card, so it is left alone.
+   DRIVEN FOR REAL, because nbrkShow and playPlayoffGame both need a bracket and an opponent
+   and neither can be handed a fixture the way paintSeed can. A greedy draft does not reach
+   the postseason every year, so the seed is SEARCHED for: the first attempt at this read a
+   missed season as a broken harness, because the phase goes straight to 'over' at week 17
+   and startPlayoffs then throws "not at seeding". */
+const po = await ck.page.evaluate(async () => {
+  const T = window.__t, RR = T.R, DATA = T.D();
+  /* One draft and one season, to the point the seeding screen is drawn. */
+  const toSeeding = (seed) => {
+    const run = RR.createRun({ dynasty: true, seed });
+    let g = 0;
+    while (run.roster.length < run.slots.length && g++ < 400) {
+      let d; try { d = RR.spin(run, DATA); } catch (e) { continue; }
+      const men = RR.affordableFrom(run, d.team_season_id, DATA.playersByTeamSeason);
+      if (!men.length) continue;
+      const w = men.slice().sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+      try { RR.sign(run, w, RR.slotChoices(run, w)[0]); } catch (e) {}
+    }
+    if (run.roster.length < run.slots.length) return null;
+    run.seasonNo = 6;
+    T.setRun(run);
+    try { RR.startSeason(run, T.dataNow(), T.LEAGUE(), T.CAL()); } catch (e) { return null; }
+    let n = 0;
+    while (run.phase === RR.PHASES.SEASON && n++ < 40) {
+      try { RR.advanceWeek(run, T.dataNow(), T.LEAGUE(), T.CAL()); } catch (e) { break; }
+    }
+    return run.phase === RR.PHASES.SEEDING ? run : null;
+  };
+  /* THE THREE HEADINGS, reached the way a player reaches them: the seeding screen, then the
+     button, then the bracket, then the broadcast. Calling the painters instead is not an
+     option for the last two, which need a built bracket and a real opponent. */
+  const walk = async () => {
+    T.paintSeed();
+    const seedEye = (document.getElementById('sd-eye').textContent || '').trim();
+    document.getElementById('b-po').click();
+    await new Promise((r) => setTimeout(r, 700));
+    const brkEye = (document.getElementById('nbrk-eyebrow').textContent || '').trim();
+    for (let i = 0; i < 40; i++) {
+      if (document.getElementById('s-po').classList.contains('on')) break;
+      const b = document.getElementById('b-nbrk-fast');
+      if (b && b.offsetParent) b.click();
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    return { seedEye, brkEye,
+      poEye: (document.getElementById('po-round').textContent || '').trim() };
+  };
+  let found = null, run = null;
+  for (let seed = 1; seed <= 40 && !run; seed++) { run = toSeeding(seed); if (run) found = seed; }
+  if (!run) return { found: null };
+  const dyn = await walk();
+
+  /* AND THE SAME WALK AGAIN AS A TRADE MACHINE, which is the half that catches the real bug.
+     WHY THE WHOLE POSTSEASON IS REPLAYED RATHER THAN ONE ELEMENT REPAINTED: the first version
+     of this flipped the flags and called paintSeed alone, so only #sd-eye was drawn a second
+     time. Written the careless way, `if (dynasty) set-with-season; else set-without`, the
+     bracket and the broadcast both PASSED that check while carrying the trap, because nothing
+     ever painted them as a non-dynasty. Proved by doing exactly that.
+     The run is rebuilt on the same seed and the flags flipped before the button is pressed,
+     so the postseason itself is identical and the only thing that differs is the mode. */
+  const run2 = toSeeding(found);
+  if (!run2) return { found, dyn, other: null };
+  run2.dynasty = false; run2.tradeMachine = true;
+  T.setRun(run2);
+  const other = await walk();
+  return { found, dyn, other, tag: T.seasonTag() };
+});
+console.log('  the postseason, played to the wild card:');
+if (!po.found) {
+  ok('    a seed reached the playoffs', false, 'none of 40 did');
+} else {
+  ok('    the seeding screen names the season',
+    po.dyn.seedEye.endsWith('· Season 6'), po.dyn.seedEye);
+  ok('    the bracket names it', po.dyn.brkEye.endsWith('· Season 6'), po.dyn.brkEye);
+  ok('    the broadcast names it', po.dyn.poEye.endsWith('· Season 6'), po.dyn.poEye);
+  if (!po.other) {
+    ok('    the same seed replays for the Trade Machine', false, 'rebuild failed');
+  } else {
+    const none = [po.other.seedEye, po.other.brkEye, po.other.poEye];
+    /* THE TAIL, NOT THE WORD. Written /Season/i this failed on a correct page, because
+       "Regular season complete" contains the word. What must be absent is the tag. */
+    ok('    and none of the three carries the tag for a Trade Machine run',
+      po.tag === '' && none.every((t) => !/·\s*Season\s*\d/.test(t)), none.join(' | '));
+  }
+}
+
 await ck.page.close();
 
 /*

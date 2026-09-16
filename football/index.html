@@ -7397,7 +7397,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
   <div class="screen" id="s-seed">
     <div class="seed-hero">
-      <div class="eyebrow">Regular season complete</div>
+      <div class="eyebrow" id="sd-eye">Regular season complete</div>
       <div class="seed-rec num" id="sd-rec">0-0</div>
     </div>
     <div class="seed-panel" id="sd-card">
@@ -7942,7 +7942,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=19"></script>
+<script src="/assets/store.js?v=21"></script>
 <!-- THE RUN, KEPT AGAINST THE ACCOUNT. Shared with Commish Simulator, which had the same
      save in localStorage and the same way of losing it. Optional like everything else up
      here: without it the game keeps its runs exactly where it always did, in this browser
@@ -8616,6 +8616,27 @@ function runMode(){
   if(run&&run.full) return 'fullteam';
   if(run&&run.defense) return 'defense';
   return (run&&run.era)?'era':(run&&run.franchise)?'club':'free';
+}
+/* WHICH SEASON OF THE DYNASTY THIS IS, AS A TAIL ON WHATEVER THE SCREEN ALREADY SAYS.
+ *
+ * A dynasty is the one mode on this page where the same screen comes round again, so
+ * "Regular season complete" over a 13-4, or a Wild Card bracket, is identical in season one
+ * and season forty and the run is the only thing that knows the difference. The squad screen,
+ * the schedule and the boss battle all named it already and the whole postseason did not.
+ *
+ * A FUNCTION RATHER THAN THE TERNARY WRITTEN OUT AT EACH SCREEN, and the reason is the empty
+ * string. Every one of these elements is static markup that the Trade Machine and Full Team
+ * are drawn into on the same page, so the label has to be REWRITTEN on every paint rather
+ * than only set when there is a season to name: written the other way round, a dynasty in the
+ * other slot leaves its season number on a mode that has no seasons, which is a sentence that
+ * is wrong rather than missing and throws nothing. Returning '' makes the concatenation
+ * unconditional, so the reset cannot be the half somebody forgets. v-caleye carries the same
+ * note; this is the shape that stops it being written a fifth time.
+ *
+ * A MIDDOT, because that is what bg-eye already uses for exactly this.
+ */
+function seasonTag(){
+  return (run&&run.dynasty&&run.seasonNo)?' · Season '+run.seasonNo:'';
 }
 function runModeLabel(){
   if(run&&run.capSurvivor) return 'Salary Cap Survivor';
@@ -10452,17 +10473,23 @@ const cfbNameHtml=()=>{
    "3 modes" and a sentence, on the same day, about the same purchase. What the card is worth
    is part of the offer rather than a decoration on a page, so it moved to the file whose
    whole job is that there is one answer to a question like this.
-   THE FALLBACKS STAY, because everything in this page that touches the store is optional: a
-   blocked CDN or a stale copy must cost the card and nothing else. Same guard the callers of
-   RTG_STORE.art already carried. */
-const pwCardInner=(title,sub)=>(window.RTG_STORE&&window.RTG_STORE.cardInner
-  ? window.RTG_STORE.cardInner(title,sub)
-  : '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span>');
+   AND THE WORDS ARE THE STORE'S NOW TOO, WHICH IS A SECOND ROUND OF THE SAME FIX. The markup
+   moved out and the two strings stayed as arguments each caller passed, so the cards drifted
+   again: this page's front page card said "Unlock every mode" while both profile cards said
+   "Unlock everything", about the same purchase, on the same day. A shared function that takes
+   the sentence as a parameter guarantees the shape and guarantees nothing about the sentence.
+   Neither helper takes words any more.
+   NO FALLBACK WORDS, AND NO FALLBACK CARD. These used to write their own markup when the
+   store was missing, which is a fourth copy of the sentence kept alive for a case where it is
+   useless anyway: the card's only job is to open the sheet, and a missing store has no sheet
+   to open. No store, no card. Everything else on this page that touches the store keeps its
+   guard, and this is that guard rather than an exception to it. */
+const pwCardInner=()=>(window.RTG_STORE&&window.RTG_STORE.cardInner
+  ? window.RTG_STORE.cardInner() : '');
 /* Two shapes because the front page BUILDS its node (see ensurePremiumCard) and the two
    sheets write theirs into a string of markup. Same insides either way. */
-const pwCard=(id,title,sub)=>(window.RTG_STORE&&window.RTG_STORE.card
-  ? window.RTG_STORE.card(id,title,sub)
-  : '<button class="pw-card" id="'+id+'">'+pwCardInner(title,sub)+'</button>');
+const pwCard=(id)=>(window.RTG_STORE&&window.RTG_STORE.card
+  ? window.RTG_STORE.card(id) : '');
 
 /* WHERE THE SHEET WAS OPENED FROM, for the one question worth asking of this screen: which
    of the ways in actually sells anything. Set by each caller, read once, cleared. */
@@ -10639,6 +10666,10 @@ function ensurePremiumCard(){
   }
   const host=$('b-start-dyn')||$('b-start-full')||$('hp-split');
   if(!host||!host.parentNode) return;
+  /* NO STORE, NO CARD. See pwCardInner: the only thing this button does is open the sheet,
+     so a blocked store leaves nothing behind it to open. Checked before the node is built
+     rather than after, or an empty button ships. */
+  if(!window.RTG_STORE) return;
   if(!el){
     el=document.createElement('button');
     el.className='pw-card';
@@ -10654,9 +10685,13 @@ function ensurePremiumCard(){
        AND NO COUNT AT ALL NOW. This card said "4 modes" while the two profile cards said "3
        modes" and a sentence, about the same purchase, on the same day. The count was also the
        wrong half to lead with: what a free account actually runs into is the counting, so the
-       value is the word that answers it. Both are the store's to say now, and it says the
-       same thing on all three. */
-    el.innerHTML=pwCardInner('Unlock every mode','No daily limit. One payment, lifetime.');
+       value is the word that answers it.
+       AND THE SENTENCE IS THE STORE'S, WHICH IS THE SECOND ROUND OF THAT FIX. This comment
+       used to end "Both are the store's to say now, and it says the same thing on all three",
+       and the line under it passed 'Unlock every mode' while both profiles passed 'Unlock
+       everything'. The claim was about the markup and was read as a claim about the words.
+       pwCardInner takes none now, so there is nothing here left to disagree with. */
+    el.innerHTML=pwCardInner();
     el.onclick=()=>openPremium('home_card');
     host.parentNode.insertBefore(el, host.nextSibling);
   }
@@ -12969,7 +13004,11 @@ function nbrkShow(round,done){
      after them cannot be filled in until they are settled. */
   for(let r=0;r<nbrkFirstRound();r++) nbrkRoundGames(r).forEach(g=>B.revealed.add(g.key));
   $('nbrk-round').textContent=NBRK_ROUNDS[round]||'Playoffs';
-  $('nbrk-eyebrow').textContent=round===3?'One game left':'NFL Playoffs';
+  /* THE SEASON RIDES ON THE EYEBROW AND NOT ON THE ROUND, which is the display heading a
+     line below it. "Wild Card" is what this screen IS and it stays the loudest thing on it;
+     which season of the dynasty it belongs to is the quiet half, and the eyebrow is already
+     the quiet half. See seasonTag(). */
+  $('nbrk-eyebrow').textContent=(round===3?'One game left':'NFL Playoffs')+seasonTag();
   $('nbrk-note').textContent='';
   nbrkRender(round);
   show('s-nbrk');
@@ -17910,6 +17949,11 @@ function checkHeadline(results){
 /* ---------- seeding ---------- */
 function paintSeed(){
   const sd=run.playoffSeed;
+  /* WHICH SEASON OF THE DYNASTY THIS IS. A 13-4 under "Regular season complete" is the same
+     screen in season one and season forty. See seasonTag(), which carries the whole argument
+     and the reason the tail is always concatenated rather than conditionally set. */
+  const eye=$('sd-eye');
+  if(eye) eye.textContent='Regular season complete'+seasonTag();
   $('sd-rec').textContent=sd.regularRecord;
   const c=$('sd-card'); c.className='seed-panel '+(sd.bye?'gold':'win');
 
@@ -18472,7 +18516,10 @@ function playPlayoffGame(r,after){
   const youEl=$('po-you'), themEl=$('po-them'), bug=$('po-bug');
   const rcls=ROUND_CLASS[round]||'r-wc';
 
-  $('po-round').textContent=round;
+  /* THE ROUND, AND WHICH SEASON OF THE DYNASTY IT IS. The opponent's name is the headline
+     under this and the score bug is under that, so the eyebrow is the one line with room for
+     it. See seasonTag(). */
+  $('po-round').textContent=round+seasonTag();
   $('po-opp').textContent=r.opponent;
   youEl.style.setProperty('--tcol',me.a);
   youEl.style.setProperty('--tcol2',me.b);
@@ -22768,12 +22815,13 @@ function pfHub(msg,ok){
     (premiumPitch()
       /* PRO, not Premium. Pro is the account status the pill says and the sheet is headed
          with; this was the last screen still calling it something else. */
-      /* THE SAME CARD THE FRONT PAGE DRAWS, out of the same function, saying the same thing.
+      /* THE SAME CARD THE FRONT PAGE DRAWS, out of the same function, saying the same thing,
+         and now it really does: the words come out of the store rather than off this line.
          The caption sheds the word the value carries: this opened "Unlimited dynasty runs and
          every Pro mode", which said Unlimited twice in one card and cost the text column
          enough width to wrap to a third line. What the marks cannot say is the term, so that
          is what is left. */
-      ? pwCard('pf-prem','Unlock everything','No daily limit. One payment, lifetime.')
+      ? pwCard('pf-prem')
       : '')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet(); pfWireCommon();

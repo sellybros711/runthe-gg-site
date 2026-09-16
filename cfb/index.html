@@ -3871,7 +3871,7 @@ or endorsed by the NCAA, the CFP or any school.
      sold on this site, it unlocks both games, and it is described in exactly one file. Two
      copies of a price or a term is two chances to tell a customer something the other page
      contradicts, and the one that is wrong is whichever was edited second. -->
-<script src="/assets/store.js?v=19"></script>
+<script src="/assets/store.js?v=21"></script>
 <!-- NO ARCADE HOUSE AD ON THIS GAME. /assets/arcade-ad.js still runs on the homepage,
      the NFL game and the golf game; this one asks nobody. Somebody arriving here has come
      to draft a team, and the front page has its own way to the arcade in "More ways to
@@ -4539,10 +4539,11 @@ function pfHub(){
        mentioning to, and a player who has not is one scroll from Close. */
     (premiumPitch()
       /* THE SAME WORDS THE FOOTBALL GAME'S CARD CARRIES, because it is the same purchase and
-         a customer who has seen one should recognise the other. What is dropped is the list:
-         the three marks under the value name the modes better than a sentence does, and they
-         are the same three drawings the sheet opens with. */
-      ? pwCard('pf-prem','Unlock everything','No daily limit. One payment, lifetime.')
+         a customer who has seen one should recognise the other, and they are the store's
+         words rather than this line's so that stays true. What is dropped is the list: the
+         marks under the value name the modes better than a sentence does, and they are the
+         same drawings the sheet opens with. */
+      ? pwCard('pf-prem')
       : '')+
     pfClose();
   openSheet(); pfWire(box);
@@ -5306,6 +5307,59 @@ function ensureCommishDoor(){
   }
 }
 
+/* ── THE OFFER ON THE FRONT PAGE, WHICH ONLY THE PROFILE CARRIED ──────────────────────
+ *
+ * The football game puts this card directly under its mode doors and this game put it two
+ * taps away, behind the avatar, on the profile hub. So the one screen every visitor to this
+ * game sees never mentioned that the thing they are playing has a paid tier, and the only
+ * ways to the offer from here were opening your own profile or being turned away somewhere.
+ * That is a quieter version of the wall the profile card was added to knock down: "a store
+ * you can only reach by being refused". A store you can only reach by going looking for it
+ * is the same shape with better manners.
+ *
+ * BUILT, NEVER SHIPPED HIDDEN, and removed when the answer changes, for the same two reasons
+ * ensureCommishDoor above gives: a hidden node still ships to everybody, and signing out of a
+ * tester account on the same tab has to take the card with it.
+ *
+ * GATED ON premiumPitch(), WHICH ASKS commishOn(). The thing this card sells on THIS game is
+ * Commissioner Mode, and while COMMISH_LIVE is false only the tester list can see that mode
+ * at all, so offering it to somebody who would still find nothing after paying is selling a
+ * door that does not open for them. Same call the door above makes, so the two appear
+ * together on the day the flag flips and neither can advertise what the other hides.
+ *
+ * UNDER THE DOORS AND ABOVE THE ROW OF THREE, which is exactly where the football page puts
+ * its own: after the thing people came for, before the things they came back for. A store
+ * between somebody and the play button is the thing everybody hates about stores.
+ */
+let premiumCard=null;
+function ensurePremiumCard(){
+  const ctas=document.querySelector('.ctas');
+  if(!ctas) return;
+  /* No store, no card. All it does is open the store's sheet. See pwCard. */
+  if(!premiumPitch()||!window.RTG_STORE){
+    if(premiumCard&&premiumCard.parentNode) premiumCard.parentNode.removeChild(premiumCard);
+    premiumCard=null;
+    return;
+  }
+  if(!premiumCard){
+    premiumCard=document.createElement('button');
+    premiumCard.className='pw-card';
+    premiumCard.id='b-premium';
+    /* The words and the marks are the store's. See RTG_STORE.cardInner. */
+    premiumCard.innerHTML=window.RTG_STORE.cardInner();
+    premiumCard.onclick=()=>openPremium('home_card');
+  }
+  /* RE-ANCHORED ON EVERY CALL rather than appended once, the same as the Commish door above
+     and for the same reason: a repaint after an account lands must not leave it below the
+     row it is meant to sit over. */
+  const three=ctas.querySelector('.cta3');
+  if(three){
+    if(three.previousSibling!==premiumCard) ctas.insertBefore(premiumCard,three);
+  }else if(premiumCard.parentNode!==ctas){
+    ctas.appendChild(premiumCard);
+  }
+}
+
 /* The padlock on the home screen's button, so the lock is visible before the tap.
    Re-run on every auth change, because the page paints long before auth answers and a
    member should never see a lock on something they own. */
@@ -5551,6 +5605,12 @@ function premiumRefresh(force){
     .catch(()=>{ premiumSet=[]; return premiumSet; })
     .then((v)=>{
       try{ ensureCommishDoor(); }catch(e){}
+      /* AND THE OFFER COMES OFF THE FRONT PAGE THE MOMENT OWNERSHIP LANDS. premiumPitch()
+         answers false while premiumSet is null, so the card is never drawn before the answer
+         is in; without a repaint here that "not yet" is the only answer it ever gets and a
+         signed in non-owner is never offered anything at all. The same call also removes it
+         for a buyer, which is the other half. */
+      try{ ensurePremiumCard(); }catch(e){}
       /* And the modes sheet, if it happens to be the thing on screen when the answer
          arrives. Same card, same lock, same reason. */
       try{
@@ -5613,14 +5673,16 @@ const premiumPitch=()=>{
    intention when this was the same shape written out a second time. It was not enough: the
    two games drifted to "3 modes" here and "4 modes" on the football front page, about the
    same purchase, because what a card is worth is part of the offer and the offer lives in
-   /assets/store.js. Now it says the same thing in all three places because it is the same
-   function.
-   THE FALLBACK STAYS. Everything on this page that touches the store is optional, and a
-   blocked CDN must cost the card and nothing else. */
-const pwCard=(id,title,sub)=>(window.RTG_STORE&&window.RTG_STORE.card
-  ? window.RTG_STORE.card(id,title,sub)
-  : '<button class="pw-card" id="'+id+'">'+
-    '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span></button>');
+   /assets/store.js.
+   AND THEN THEY DRIFTED AGAIN, because the markup moved and the WORDS stayed as arguments.
+   The football front page card read "Unlock every mode" while this one and the football
+   profile read "Unlock everything". A shared function that takes the sentence as a parameter
+   fixes the shape and fixes nothing about the sentence, so it takes no words at all now.
+   NO FALLBACK CARD EITHER. It used to draw its own markup when the store was missing, which
+   kept a copy of the sentence alive for the one case where the card is useless: all it does
+   is open the store's sheet, and a missing store has no sheet. No store, no card. */
+const pwCard=(id)=>(window.RTG_STORE&&window.RTG_STORE.card
+  ? window.RTG_STORE.card(id) : '');
 
 /* WHERE THE SHEET WAS OPENED FROM, for the one question worth asking of this screen:
    which of the ways in actually sells anything. Set by each caller, read once, cleared. */
@@ -6039,7 +6101,8 @@ function bootAuth(){
   const a=A();
   /* auth.js itself did not load, so nothing is coming. Say so now rather than
      leaving every gate spinning forever. */
-  if(!a){ authState={ready:false,waiting:false,signedIn:false}; syncModesLock(); ensureCommishDoor(); return; }
+  if(!a){ authState={ready:false,waiting:false,signedIn:false}; syncModesLock();
+    ensureCommishDoor(); ensurePremiumCard(); return; }
   a.onChange((st)=>{
     const wasId=authState.userId;
     authState=st;
@@ -6050,6 +6113,9 @@ function bootAuth(){
     /* And so does the Commish door, for the same reason: it is drawn only for accounts
        that can open it, and the account arrives after the first paint. */
     ensureCommishDoor();
+    /* And the offer card, which reads the same list. Signing OUT has to take it with it,
+       which is why this runs on every change rather than only when somebody signs in. */
+    ensurePremiumCard();
     /* WHAT THE ACCOUNT OWNS FOLLOWS THE ACCOUNT TOO, and it has to be asked again on a
        CHANGE of account rather than once: signing out and back in as somebody else on the
        same tab would otherwise leave the previous person's purchases on screen. Cleared
