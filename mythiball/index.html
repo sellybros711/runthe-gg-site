@@ -6531,8 +6531,14 @@ function startFieldLoop() {
           const durMs = p.speed * 1000;
           t = clamp((now - p.start) / durMs, 0, 1);
           inWindup = false;
-          /* No swing by pitch end. Trigger the called pitch once. */
-          if (t >= 1 && !p.swung && !p.resolved) {
+          /* No swing by the time the ball lands: the umpire calls it a
+             beat after the mitt pops. It used to wait for the METER to run
+             out, which is up to half the meter after the ball had visibly
+             arrived, so every taken pitch ended with the ball hanging at
+             the plate in silence. A swing after the call does not exist:
+             once it is called, the at bat has moved on. */
+          const callAt = Math.min(0.995, (p.arrive || 1) + 0.22);
+          if (t >= callAt && !p.swung && !p.resolved) {
             p.resolved = true;
             resolveCalledPitch();
           }
@@ -7041,6 +7047,13 @@ function throwPitch(chosenPt, chosenZone, opts) {
   const windup = playerIsBatting() ? BEAT.windup : Math.round(BEAT.windup * 0.45);
   g.pitch = {
     pt, speed: baseSpeed, ideal, isStrike,
+    /* WHEN THE BALL IS AT THE PLATE, as a fraction of the meter. The sweet
+       spot IS the crossing: swing when it gets there. Everything that
+       happens to this pitch keys off this one number, because the drawn
+       ball, the umpire and the CPU's bat each keeping their own clock is
+       how a hit materialised a full second after the ball had visibly
+       stopped at the plate. */
+    arrive: Math.max(0.22, ideal),
     zoneAim, loc, aim, release,
     start: performance.now() + windup,
     windupUntil: performance.now() + windup,
@@ -7063,7 +7076,7 @@ function runPitchAnimation() {
   const durMs = p.speed * 1000;
   if (playerIsBatting()) {
     const onClick = (e) => {
-      if (p.swung) return;
+      if (p.swung || p.resolved) return;
       /* Clicks on the game's own buttons (Replay, Steal, End Game, the
          pitch picker) are commands, not swings. This handler runs in the
          capture phase, so it has to check the target itself. */
@@ -7184,12 +7197,19 @@ function scheduleCpuSwing() {
     * ({ easy: 1.35, medium: 1.0, hard: 0.8 }[State.difficulty] || 1)
     + (p.pt === g.batterCtx.weakPitch ? 0.14 : 0);
   const aim = { x: loc.x + gauss() * locJ * 0.9, y: loc.y + gauss() * locJ };
-  /* Time the swing to match that cursor position (fires after the meter
-     reaches it). Add the windup so it happens in real time. */
-  const fireAt = p.windupUntil + t * durMs;
+  /* THE SWING RESOLVES WHEN THE BALL IS AT THE PLATE, whatever the
+     sampled timing error says about its quality. `t` used to be the real
+     firing time too, so a CPU batter whose error put him 0.3 late came
+     round the best part of a second after the ball had visibly stopped in
+     the mitt, and from the mound that read as no swing at all followed by
+     a base hit. The error still decides the CONTACT (resolveSwing gets the
+     sampled t); only the moment it plays out is pinned to the ball. An
+     early swing fires early, a whiff out in front, which reads fine. */
+  const fireT = Math.min(t, p.arrive + 0.05);
+  const fireAt = p.windupUntil + fireT * durMs;
   const wait = Math.max(0, fireAt - performance.now());
   setTimeout(() => {
-    if (!g.pitch || g.pitch !== p || p.swung) return;
+    if (!g.pitch || g.pitch !== p || p.swung || p.resolved) return;
     p.swung = true;
     resolveSwing(t, aim);
   }, wait);
@@ -8879,7 +8899,7 @@ function scheduleThrowMinigame(kind, batter, info) {
 
 function startThrowWindow(kind, batter) {
   const g = State.game;
-  if (!g.play) return;
+  if (!g || !g.play) return;
   /* Overall fielding rating for the team's infield (average of DEF for
      four infielders): better fielders = wider safe zone. */
   const ft = currentFieldingTeam();
@@ -8899,7 +8919,11 @@ function startThrowWindow(kind, batter) {
   const finish = (t) => {
     if (window.resolved) return;
     window.resolved = true;
-    g.play.throwActive = false;
+    /* The play can be torn down while this window is open: the game ends,
+       an inning is force-closed, a test harness sweeps the at bat. The
+       window still has to close its own listeners, it just has no play
+       left to write to. */
+    if (g.play) g.play.throwActive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('click', onClick, true);
     const d = Math.abs(t - window.ideal);
@@ -9884,7 +9908,7 @@ function plateTint(hex, amt) {
    end of the flight, so a pitch lands exactly where the rules say it
    landed and only the road there differs. */
 function platePitchPos(P, pitch, t) {
-  const arrive = Math.max(0.22, pitch.ideal);
+  const arrive = pitch.arrive || Math.max(0.22, pitch.ideal);
   let e = clamp(t / arrive, 0, 1);
   const loc = pitch.loc || { x: 0, y: 0 };
   const [lx, ly] = plateFromZone(P, loc.x, loc.y);
@@ -9901,7 +9925,7 @@ function platePitchPos(P, pitch, t) {
     case 'heat':      y -= Math.sin(e * Math.PI) * 8; break;
     default:          y -= Math.sin(e * Math.PI) * 4;
   }
-  return { x, y, r: 2.4 + 6.6 * Math.pow(e, 1.5), e, lx, ly, arrive };
+  return { x, y, r: 3.2 + 8.2 * Math.pow(e, 1.4), e, lx, ly, arrive };
 }
 
 function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
@@ -10085,6 +10109,20 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     ctx.fillStyle = '#5a3a1c';
     ctx.beginPath(); ctx.arc(mx + 12, my + 8, 6, 0, Math.PI * 2); ctx.fill();
   };
+  /* THE GLOVE ONLY EXISTS WHERE THE CATCH IS. Before this, the mitt was
+     painted at the aim point for the whole flight while the catcher
+     crouched a hundred pixels below it, and a detached brown glove
+     floating in the zone was the biggest, warmest shape on the screen:
+     testers read it as the ball. In flight the catcher shows a TARGET,
+     the way a real one does, and the mitt itself appears at the moment
+     of the catch. */
+  const drawTarget = (mx, my) => {
+    ctx.strokeStyle = 'rgba(255,252,242,.55)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(mx, my, 11, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,252,242,.5)';
+    ctx.beginPath(); ctx.arc(mx, my, 2, 0, Math.PI * 2); ctx.fill();
+  };
 
   /* ---- the ball ---- */
   let ballDrawn = false;
@@ -10103,26 +10141,32 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
       }
       ballDrawn = true;
     } else {
-      drawMitt(mitt[0], mitt[1]);
+      drawTarget(mitt[0], mitt[1]);
       for (let gi = 3; gi >= 1; gi--) {
         const gp = platePitchPos(P, pitch, t - gi * 0.035);
         if (gp.e <= 0) continue;
-        ctx.fillStyle = `rgba(255,255,255,${0.30 - gi * 0.07})`;
+        ctx.fillStyle = `rgba(255,255,255,${0.34 - gi * 0.08})`;
         ctx.beginPath(); ctx.arc(gp.x, gp.y, gp.r * 0.9, 0, Math.PI * 2); ctx.fill();
       }
       ctx.fillStyle = 'rgba(0,0,0,.25)';
       ctx.beginPath(); ctx.arc(bp.x + 1.5, bp.y + 1.5, bp.r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#f6f6f6';
+      ctx.fillStyle = '#fbfaf4';
       ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.r, 0, Math.PI * 2); ctx.fill();
-      if (bp.r > 5) {
+      /* The dark ring every drawn thing in this game wears, and the pair
+         of seams that make it a baseball rather than a light. */
+      ctx.strokeStyle = '#1b3a5c';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.r, 0, Math.PI * 2); ctx.stroke();
+      if (bp.r > 4.5) {
         ctx.strokeStyle = '#c94040';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(bp.x - bp.r * 0.15, bp.y, bp.r * 0.7, -1.1, 1.1); ctx.stroke();
+        ctx.lineWidth = Math.max(1, bp.r * 0.14);
+        ctx.beginPath(); ctx.arc(bp.x - bp.r * 0.42, bp.y, bp.r * 0.72, -1.05, 1.05); ctx.stroke();
+        ctx.beginPath(); ctx.arc(bp.x + bp.r * 0.42, bp.y, bp.r * 0.72, Math.PI - 1.05, Math.PI + 1.05); ctx.stroke();
       }
       ballDrawn = true;
     }
   }
-  if (!ballDrawn) drawMitt(mitt[0], mitt[1]);
+  if (!ballDrawn) drawTarget(mitt[0], mitt[1]);
 
   /* ---- the batter ---- */
   const batter = currentBatter();
@@ -11711,7 +11755,7 @@ function renderGame() {
     /* While you pitch, the same big button lets the pitch go. */
     if (g2 && g2.releaseNow && !playerIsBatting()) { g2.releaseNow(); return; }
     /* Route through the same swing path a click would use. */
-    if (!g2 || !g2.pitch || g2.pitch.swung || !playerIsBatting()) return;
+    if (!g2 || !g2.pitch || g2.pitch.swung || g2.pitch.resolved || !playerIsBatting()) return;
     const now = performance.now();
     if (now < g2.pitch.windupUntil) return;
     const t = clamp((now - g2.pitch.start) / (g2.pitch.speed * 1000), 0, 1);

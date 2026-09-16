@@ -43,6 +43,7 @@
      the bat has a place  a pitch lands somewhere; the swing has to be there as well as on time
      the arm has a spot   aim plus a release is where a pitch goes; a strike is where it landed
      the frames           the swing is three drawings and the delivery has a leg kick
+     the ball is the clock  swings and calls land when the ball does, and no hit comes from a taken pitch
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -1541,6 +1542,87 @@ async function main() {
       ok(r.bad.length === 0, 'and each decodes to the declared size', r.bad.slice(0, 6).join(', '));
       ok(r.same.length === 0, 'and each is its own drawing', r.same.slice(0, 6).join(', '));
       ok(r.encoded, 'the table is run length encoded', 'encoded=' + r.encoded);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the ball is the clock ---- */
+    {
+      console.log('the ball is the clock');
+      /* A TESTER WATCHED A BATTER TAKE A PITCH AND LINE A SINGLE. What had
+         actually happened: the drawn ball lands at the meter's sweet spot
+         and the CPU's swing used to fire at its sampled timing error, up
+         to 0.4 of a meter later, so the ball sat visibly in the mitt for
+         the best part of a second and then a hit materialised out of
+         nothing. The umpire had the same disease: a taken pitch was not
+         called until the METER ran out, half a meter after the ball had
+         stopped.
+
+         The pitch carries `arrive` now and everything keys off it. What is
+         asserted: every CPU swing RESOLVES by shortly after the ball lands
+         (early is fine: a whiff out front reads as early), every call
+         comes in a fixed beat after it, and across a stack of pitches no
+         hit is ever logged without a swing resolving first, which is the
+         tester's report stated as an invariant. */
+      const { pg, errors } = await fresh(browser);
+      const rows = await pg.evaluate(async () => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });   /* CPU bats */
+        await new Promise(r => setTimeout(r, 500));
+        const out = [];
+        const landMs = (p) => p.windupUntil + p.arrive * p.speed * 1000;
+        const _swing = resolveSwing;
+        window.resolveSwing = (t, aim) => {
+          const p = State.game.pitch;
+          if (p) out.push({ ev: 'swing', late: Math.round(performance.now() - landMs(p)),
+                            dur: Math.round(p.speed * 1000) });
+          return _swing(t, aim);
+        };
+        const _called = resolveCalledPitch;
+        window.resolveCalledPitch = () => {
+          const p = State.game.pitch;
+          if (p) out.push({ ev: 'call', late: Math.round(performance.now() - landMs(p)),
+                            dur: Math.round(p.speed * 1000) });
+          return _called();
+        };
+        const _log = addLog;
+        window.addLog = (m, k) => {
+          const t = String(m);
+          if (/single|double|triple|homer|home run|lines|bloops|drops over/i.test(t)) {
+            out.push({ ev: 'hit', m: t.slice(0, 40) });
+          }
+          return _log(m, k);
+        };
+        for (let i = 0; i < 16 && State.game && !State.game.over; i++) {
+          if (playerIsBatting()) break;
+          try { endAtBatCleanup(); State.game.pitch = null; throwPitch(); } catch (e) {}
+          await new Promise(r => setTimeout(r, 1900));
+        }
+        return out;
+      });
+      const swings = rows.filter(r => r.ev === 'swing');
+      const calls = rows.filter(r => r.ev === 'call');
+      ok(swings.length >= 3 && calls.length >= 2,
+         'enough pitches were seen to say anything',
+         `${swings.length} swings, ${calls.length} calls`);
+      /* A beat of grace for the timer itself; the disease this catches was
+         hundreds of milliseconds wide. */
+      ok(swings.every(r => r.late <= 260),
+         'every swing resolves by the time the ball is barely down',
+         'worst ' + Math.max(...swings.map(r => r.late)) + 'ms after landing');
+      ok(calls.every(r => r.late >= 60 && r.late <= 0.30 * r.dur + 220),
+         'every call comes a beat after the mitt, not at the meter\'s end',
+         JSON.stringify(calls.map(r => r.late)));
+      /* The report itself: a hit with no swing in front of it. */
+      let lastSwingIdx = -99;
+      let orphan = null;
+      rows.forEach((r, i) => {
+        if (r.ev === 'swing') lastSwingIdx = i;
+        if (r.ev === 'hit' && i - lastSwingIdx > 3) orphan = r;
+      });
+      ok(!orphan, 'no hit ever arrives without a swing resolving first',
+         orphan ? JSON.stringify(orphan) : '');
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
