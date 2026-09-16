@@ -7289,7 +7289,13 @@ function scheduleCpuSwing() {
      are wider than they look. Easy opponents miss a lot; hard ones sit
      close enough to the zone to punish a hanging center-cut pitch. */
   const conJitter = (110 - batter.con) / 1400;
-  const diffJitter = { easy: 0.30, medium: 0.185, hard: 0.125 }[State.difficulty];
+  /* Retuned again, measured this time: calibrate.mjs put the CPU at 55
+     whiffs per hundred swings against a random arm, which is a
+     strikeout machine (MLB runs about 25), and every whiffed swing is a
+     play the field never gets. About a fifth off each tier moved the
+     measurement to the mid forties: still arcade-hot, with more balls
+     in play for the half of the game that fields them. */
+  const diffJitter = { easy: 0.24, medium: 0.15, hard: 0.10 }[State.difficulty];
   let jitter = conJitter + diffJitter;
   /* Weak pitch: CPU whiffs badly on their weak pitch. */
   if (p.pt === g.batterCtx.weakPitch) jitter += 0.14;

@@ -18,12 +18,13 @@
    meets. The player's own half is not simulated: their rates are their
    skill, and the meter and reticle already carry the difficulty knobs.
 
-   The whiff band is set where the game measures TODAY (55 per hundred
-   swings on the pinned club, twice, on two full runs), not where MLB
-   sits (about 25). The CPU against a random arm is strikeout-heavy and
-   plays fine; if the design ever wants a contact-happier CPU, that is a
-   retune of the swing jitter in scheduleCpuSwing, measured here before
-   and after, never an edit to the band to make a run pass.
+   The whiff rate has been retuned once through this meter, which is
+   the intended use: it measured 55 per hundred swings (a strikeout
+   machine; MLB runs about 25), the swing jitter tiers in
+   scheduleCpuSwing came down about a fifth, and it measures in the mid
+   forties now with visibly more balls in play. Any further move is the
+   same procedure: measure, touch the jitter, measure again, never an
+   edit to the band to make a run pass.
 
    The bands are ARCADE bands, not MLB's. Real baseball runs about 47%
    swings, 25% whiffs per swing and 18% balls in play per pitch; an
@@ -136,7 +137,11 @@ const outOfZone = cal.pitches - cal.zonePitch;
    samples (balls in play, contact quality, hit mix) are PRINTED below
    as information: read them across runs, never off one. */
 const rows = [
-  ['zone rate, neutral arm', pct(cal.zonePitch, cal.pitches), cal.pitches, 40, 75,
+  /* The zone band runs to 82 because the metric's own noise demands
+     it: at 150 pitches and a true rate near 70, one run in twenty
+     lands past 75 with nothing changed. Measured across five clean
+     runs: 66.7 to 75.3. */
+  ['zone rate, neutral arm', pct(cal.zonePitch, cal.pitches), cal.pitches, 40, 82,
    'an unsteered arm still finds the zone more often than not'],
   ['swing rate', pct(cal.swings, cal.pitches), cal.pitches, 35, 70,
    'the CPU is neither a statue nor a hacker'],

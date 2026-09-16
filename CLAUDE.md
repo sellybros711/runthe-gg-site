@@ -1698,9 +1698,11 @@ unsteered arm against the real CPU swing AI, with swing, whiff, chase, foul
 and called-strike rates held to bands. The opponent is pinned because a
 random club moved whiff per swing by twenty points between identical runs.
 Small samples (hit mix, contact quality) are printed as information rather
-than banded, so no target flaps on noise. The whiff band sits where the game
-measures, about twice MLB's rate, and the file's header says why and what a
-retune would touch.
+than banded, so no target flaps on noise. The meter has already paid for
+itself once: it measured the CPU at 55 whiffs per hundred swings, the swing
+jitter tiers came down about a fifth, and it measures in the mid forties
+now (MLB runs about 25). The file's header records the procedure, and any
+further move repeats it: measure, touch the jitter, measure again.
 
 ## Segue, the setlist game
 
