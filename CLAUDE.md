@@ -278,7 +278,24 @@ shelf appears.
 node football/check-premium.mjs        the page, in a real browser, both views
 node scripts/stripe/verify-bundles.mjs the catalog against the webhook and the constraint
 node cfb/build/test/test_store.mjs     the same offer and receipt on the college page
+node scripts/check-account-states.mjs  both games come up in all eight account states
 ```
+
+That last one asks the dumbest question of every state rather than one rule of one
+state: does the page start, does it throw, is there something to press. A boot crash
+in ONE account state has already shipped here (`pwArt is not defined`, below), and it
+shipped past a green suite because no check opened that state. The three states worth
+knowing about are the ones where there is no answer to work with: accounts offline,
+the premium call erroring, and the premium call never coming back.
+
+**Measure type in a headless browser and you are measuring the FALLBACK face.** The
+Google Fonts request does not resolve in the dev sandbox, so `document.fonts` is empty
+and Anton is silently replaced by a generic sans about 36% wider per character. That is
+enough to make a headline that fits look like it overflows the viewport by 119px, and
+to make a check that asserts on width report a bug that does not exist. `document.fonts
+.check('100px Anton')` answers **true** either way and will not save you. Measure the
+string in the asked face against a known fallback: if the two widths match, the face
+never arrived. `.htitle h1` carries the arithmetic that was verified this way.
 
 One store, not a store per game. `/assets/store.js` is the offer and both The Perfect
 Season and Commish Simulator draw it; its two buttons post `perfect-season` and
