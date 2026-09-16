@@ -158,6 +158,36 @@ console.log('\nAN ACCOUNT OFF THE TESTER LIST IS SERVED NOTHING');
 {
   const src = fs.readFileSync(path.join(ROOT, 'football/fullteam-access.js'), 'utf8');
   ok('fullteam-access.js still ships FULLTEAM_LIVE = false', /FULLTEAM_LIVE = false/.test(src));
+
+  /* AND THE TWO PREVIEW LISTS NAME THE SAME PEOPLE.
+   *
+   * Two unannounced modes ship on one page and each keeps its own tester list. They drifted:
+   * csel8 and jordantest were added to dynasty-access.js and not to fullteam-access.js, so a
+   * tester was served a front page offering Dynasty with no Full Team on it, and reasonably
+   * concluded their Pro account was the problem. It is not: Pro stops the mode COUNTING runs,
+   * these lists decide whether the door is BUILT.
+   *
+   * NOTHING FAILS WHEN THIS DRIFTS. A door that is never built throws nothing, renders
+   * nothing and is reported by nobody, which is the shape of every bug this file exists for.
+   *
+   * A DIFFERENCE IS ALLOWED, AND HAS TO BE ANNOUNCED. If one mode should preview to somebody
+   * the other should not, say so in both files and this assertion is the thing that makes
+   * you. It compares the sets rather than the order, because the order carries nothing. */
+  const dyn = fs.readFileSync(path.join(ROOT, 'football/dynasty-access.js'), 'utf8');
+  const names = (s, k) => {
+    const m = s.match(new RegExp(k + '\\s*=\\s*\\[([^\\]]*)\\]'));
+    if (!m) return null;
+    return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1].toLowerCase()).sort();
+  };
+  const ft = names(src, 'FULLTEAM_TESTERS'), dy = names(dyn, 'DYNASTY_TESTERS');
+  ok('  both lists were readable', !!ft && !!dy, ft && dy ? ft.length + ' / ' + dy.length : 'parse failed');
+  const only = (a, b) => (a || []).filter((x) => (b || []).indexOf(x) < 0);
+  const missFt = only(dy, ft), missDy = only(ft, dy);
+  ok('  and the two preview lists name the same testers',
+    !!ft && !!dy && !missFt.length && !missDy.length,
+    (missFt.length ? 'not on Full Team: ' + missFt.join(', ') + '  ' : '')
+    + (missDy.length ? 'not on Dynasty: ' + missDy.join(', ') : '')
+    || ft.join(', '));
 }
 
 /* ================================================================

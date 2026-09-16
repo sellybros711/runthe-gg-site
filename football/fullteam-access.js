@@ -34,10 +34,24 @@
 
   /* Usernames, as typed on the leaderboard. Lowercased when matched, because set_username
      stores the casing somebody typed and an exact-case match silently misses them. */
+  /* KEEP THIS LIST AND DYNASTY'S IDENTICAL UNLESS THERE IS A REASON NOT TO, and write the
+     reason down when there is. They drifted once and the symptom was a tester signed in on
+     a Pro account asking why Full Team was missing from a front page that was offering them
+     Dynasty two buttons lower. csel8 and jordantest had been added to dynasty-access.js and
+     not here, so the two unannounced modes on one page disagreed about who was previewing
+     them. Nothing failed: a door that is never built throws nothing.
+
+     It also sends the reader to the wrong question. Neither list has anything to do with
+     Pro. What premium buys is that the mode stops COUNTING runs (see dailyOn and
+     fullTeamSold); what these names buy is that the door is BUILT at all. An account can
+     hold every unlock the store sells and still be served a page with no Full Team on it,
+     which is exactly what happened. */
   var FULLTEAM_TESTERS = [
     'malikwillislover',
     'runnyj',
     'slimeyb3',
+    'csel8',      /* the free-view tester: sees the premium doors, holds no premium row */
+    'jordantest', /* second free-view tester: same shape as csel8, no premium row */
   ];
 
   /* Supabase account ids, for an account with no username chosen. */
