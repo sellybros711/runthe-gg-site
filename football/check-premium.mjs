@@ -711,7 +711,8 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,prof
   /* The walk back from Stripe runs earlier on this page and leaves justPaid set, which is
      itself a reason premiumPitch() stands down. Cleared rather than worked around, so the
      section below is testing the ownership rule and not that one. */
-  + 'setPaid:(v)=>{justPaid=v;},goHome,paintSeed,R:R,'
+  + 'setPaid:(v)=>{justPaid=v;},goHome,paintSeed,seasonTag,runPlayoffs,R:R,'
+  + 'dataNow,LEAGUE:()=>LEAGUE,CAL:()=>CAL,D:()=>DATA,'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
   + 'onSuccessUrl:()=>{history.replaceState(null,"","/football/?checkout=success");}';
@@ -1575,6 +1576,95 @@ for (const [label, opts] of [
   ok('    on one line at 390', r.lines === 1, r.lines + ' lines');
   ok('    and the screen under it is intact', r.rec === '13-4' && r.steps === 4,
     r.rec + ' / ' + r.steps + ' rounds');
+}
+
+/* THE WHOLE POSTSEASON, NOT JUST THE SCREEN THAT WAS REPORTED. The seeding screen was the
+   one a player pointed at, and the bracket and the broadcast that follow it had the same
+   hole: three screens in a row, each identical in season one and season forty. The results
+   screen already named it, on the score card, so it is left alone.
+   DRIVEN FOR REAL, because nbrkShow and playPlayoffGame both need a bracket and an opponent
+   and neither can be handed a fixture the way paintSeed can. A greedy draft does not reach
+   the postseason every year, so the seed is SEARCHED for: the first attempt at this read a
+   missed season as a broken harness, because the phase goes straight to 'over' at week 17
+   and startPlayoffs then throws "not at seeding". */
+const po = await ck.page.evaluate(async () => {
+  const T = window.__t, RR = T.R, DATA = T.D();
+  /* One draft and one season, to the point the seeding screen is drawn. */
+  const toSeeding = (seed) => {
+    const run = RR.createRun({ dynasty: true, seed });
+    let g = 0;
+    while (run.roster.length < run.slots.length && g++ < 400) {
+      let d; try { d = RR.spin(run, DATA); } catch (e) { continue; }
+      const men = RR.affordableFrom(run, d.team_season_id, DATA.playersByTeamSeason);
+      if (!men.length) continue;
+      const w = men.slice().sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+      try { RR.sign(run, w, RR.slotChoices(run, w)[0]); } catch (e) {}
+    }
+    if (run.roster.length < run.slots.length) return null;
+    run.seasonNo = 6;
+    T.setRun(run);
+    try { RR.startSeason(run, T.dataNow(), T.LEAGUE(), T.CAL()); } catch (e) { return null; }
+    let n = 0;
+    while (run.phase === RR.PHASES.SEASON && n++ < 40) {
+      try { RR.advanceWeek(run, T.dataNow(), T.LEAGUE(), T.CAL()); } catch (e) { break; }
+    }
+    return run.phase === RR.PHASES.SEEDING ? run : null;
+  };
+  /* THE THREE HEADINGS, reached the way a player reaches them: the seeding screen, then the
+     button, then the bracket, then the broadcast. Calling the painters instead is not an
+     option for the last two, which need a built bracket and a real opponent. */
+  const walk = async () => {
+    T.paintSeed();
+    const seedEye = (document.getElementById('sd-eye').textContent || '').trim();
+    document.getElementById('b-po').click();
+    await new Promise((r) => setTimeout(r, 700));
+    const brkEye = (document.getElementById('nbrk-eyebrow').textContent || '').trim();
+    for (let i = 0; i < 40; i++) {
+      if (document.getElementById('s-po').classList.contains('on')) break;
+      const b = document.getElementById('b-nbrk-fast');
+      if (b && b.offsetParent) b.click();
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    return { seedEye, brkEye,
+      poEye: (document.getElementById('po-round').textContent || '').trim() };
+  };
+  let found = null, run = null;
+  for (let seed = 1; seed <= 40 && !run; seed++) { run = toSeeding(seed); if (run) found = seed; }
+  if (!run) return { found: null };
+  const dyn = await walk();
+
+  /* AND THE SAME WALK AGAIN AS A TRADE MACHINE, which is the half that catches the real bug.
+     WHY THE WHOLE POSTSEASON IS REPLAYED RATHER THAN ONE ELEMENT REPAINTED: the first version
+     of this flipped the flags and called paintSeed alone, so only #sd-eye was drawn a second
+     time. Written the careless way, `if (dynasty) set-with-season; else set-without`, the
+     bracket and the broadcast both PASSED that check while carrying the trap, because nothing
+     ever painted them as a non-dynasty. Proved by doing exactly that.
+     The run is rebuilt on the same seed and the flags flipped before the button is pressed,
+     so the postseason itself is identical and the only thing that differs is the mode. */
+  const run2 = toSeeding(found);
+  if (!run2) return { found, dyn, other: null };
+  run2.dynasty = false; run2.tradeMachine = true;
+  T.setRun(run2);
+  const other = await walk();
+  return { found, dyn, other, tag: T.seasonTag() };
+});
+console.log('  the postseason, played to the wild card:');
+if (!po.found) {
+  ok('    a seed reached the playoffs', false, 'none of 40 did');
+} else {
+  ok('    the seeding screen names the season',
+    po.dyn.seedEye.endsWith('· Season 6'), po.dyn.seedEye);
+  ok('    the bracket names it', po.dyn.brkEye.endsWith('· Season 6'), po.dyn.brkEye);
+  ok('    the broadcast names it', po.dyn.poEye.endsWith('· Season 6'), po.dyn.poEye);
+  if (!po.other) {
+    ok('    the same seed replays for the Trade Machine', false, 'rebuild failed');
+  } else {
+    const none = [po.other.seedEye, po.other.brkEye, po.other.poEye];
+    /* THE TAIL, NOT THE WORD. Written /Season/i this failed on a correct page, because
+       "Regular season complete" contains the word. What must be absent is the tag. */
+    ok('    and none of the three carries the tag for a Trade Machine run',
+      po.tag === '' && none.every((t) => !/·\s*Season\s*\d/.test(t)), none.join(' | '));
+  }
 }
 
 await ck.page.close();

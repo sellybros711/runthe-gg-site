@@ -8617,6 +8617,27 @@ function runMode(){
   if(run&&run.defense) return 'defense';
   return (run&&run.era)?'era':(run&&run.franchise)?'club':'free';
 }
+/* WHICH SEASON OF THE DYNASTY THIS IS, AS A TAIL ON WHATEVER THE SCREEN ALREADY SAYS.
+ *
+ * A dynasty is the one mode on this page where the same screen comes round again, so
+ * "Regular season complete" over a 13-4, or a Wild Card bracket, is identical in season one
+ * and season forty and the run is the only thing that knows the difference. The squad screen,
+ * the schedule and the boss battle all named it already and the whole postseason did not.
+ *
+ * A FUNCTION RATHER THAN THE TERNARY WRITTEN OUT AT EACH SCREEN, and the reason is the empty
+ * string. Every one of these elements is static markup that the Trade Machine and Full Team
+ * are drawn into on the same page, so the label has to be REWRITTEN on every paint rather
+ * than only set when there is a season to name: written the other way round, a dynasty in the
+ * other slot leaves its season number on a mode that has no seasons, which is a sentence that
+ * is wrong rather than missing and throws nothing. Returning '' makes the concatenation
+ * unconditional, so the reset cannot be the half somebody forgets. v-caleye carries the same
+ * note; this is the shape that stops it being written a fifth time.
+ *
+ * A MIDDOT, because that is what bg-eye already uses for exactly this.
+ */
+function seasonTag(){
+  return (run&&run.dynasty&&run.seasonNo)?' · Season '+run.seasonNo:'';
+}
 function runModeLabel(){
   if(run&&run.capSurvivor) return 'Salary Cap Survivor';
   if(run&&run.tradeMachine) return 'The Trade Machine';
@@ -12964,7 +12985,11 @@ function nbrkShow(round,done){
      after them cannot be filled in until they are settled. */
   for(let r=0;r<nbrkFirstRound();r++) nbrkRoundGames(r).forEach(g=>B.revealed.add(g.key));
   $('nbrk-round').textContent=NBRK_ROUNDS[round]||'Playoffs';
-  $('nbrk-eyebrow').textContent=round===3?'One game left':'NFL Playoffs';
+  /* THE SEASON RIDES ON THE EYEBROW AND NOT ON THE ROUND, which is the display heading a
+     line below it. "Wild Card" is what this screen IS and it stays the loudest thing on it;
+     which season of the dynasty it belongs to is the quiet half, and the eyebrow is already
+     the quiet half. See seasonTag(). */
+  $('nbrk-eyebrow').textContent=(round===3?'One game left':'NFL Playoffs')+seasonTag();
   $('nbrk-note').textContent='';
   nbrkRender(round);
   show('s-nbrk');
@@ -17906,18 +17931,10 @@ function checkHeadline(results){
 function paintSeed(){
   const sd=run.playoffSeed;
   /* WHICH SEASON OF THE DYNASTY THIS IS. A 13-4 under "Regular season complete" is the same
-     screen in season one and season forty, and the run is the only thing on this page that
-     knows the difference. Every other Dynasty screen names it: the squad screen's step, the
-     schedule's heading, the boss battle's eyebrow.
-     THE SAME SHAPE bg-eye ALREADY USES, which is what the screen is, a middot, then the
-     season. Not a new pattern for one page.
-     AND RESET FOR EVERY OTHER MODE RATHER THAN ONLY SET FOR THIS ONE. This element is static
-     markup drawn for the Trade Machine and Full Team on the same page, and both of them
-     reach this screen; written one way round, a dynasty in the other slot would leave its
-     season number on a mode that has no seasons. Same trap, same fix, as v-caleye. */
+     screen in season one and season forty. See seasonTag(), which carries the whole argument
+     and the reason the tail is always concatenated rather than conditionally set. */
   const eye=$('sd-eye');
-  if(eye) eye.textContent='Regular season complete'
-    +((run&&run.dynasty)?' · Season '+run.seasonNo:'');
+  if(eye) eye.textContent='Regular season complete'+seasonTag();
   $('sd-rec').textContent=sd.regularRecord;
   const c=$('sd-card'); c.className='seed-panel '+(sd.bye?'gold':'win');
 
@@ -18480,7 +18497,10 @@ function playPlayoffGame(r,after){
   const youEl=$('po-you'), themEl=$('po-them'), bug=$('po-bug');
   const rcls=ROUND_CLASS[round]||'r-wc';
 
-  $('po-round').textContent=round;
+  /* THE ROUND, AND WHICH SEASON OF THE DYNASTY IT IS. The opponent's name is the headline
+     under this and the score bug is under that, so the eyebrow is the one line with room for
+     it. See seasonTag(). */
+  $('po-round').textContent=round+seasonTag();
   $('po-opp').textContent=r.opponent;
   youEl.style.setProperty('--tcol',me.a);
   youEl.style.setProperty('--tcol2',me.b);

@@ -1149,6 +1149,51 @@ took. It cost nothing while the empty case meant a grid with no children anyway.
 padded, margined box between the rating card and the line explaining why there is nothing in
 it.
 
+### A dynasty screen says which season it is, and `seasonTag()` is why
+
+A dynasty is the one mode on this page where the same screen comes round again, so
+"Regular season complete" over a 13-4 is identical in season one and season forty and the
+run is the only thing that knows the difference. The squad screen, the schedule and the boss
+battle named it; the whole postseason did not.
+
+| screen | what carries it |
+|---|---|
+| `s-squad` | `q-step` |
+| `s-season` | `v-caleye` on the calendar |
+| `s-seed` | `sd-eye` |
+| `s-nbrk` | `nbrk-eyebrow`, not the round title under it |
+| `s-po` | `po-round` |
+| `s-over` | `ar-lab`, which already said it |
+
+**The tail goes on the EYEBROW, never on the heading.** "Wild Card" is what the screen is and
+stays the loudest thing on it. Which season it belongs to is the quiet half, and the eyebrow
+is already the quiet half. A middot joins them, because `bg-eye` already did it that way.
+
+**`seasonTag()` exists for the empty string, not for the season.** Every one of these elements
+is static markup that the Trade Machine and Full Team are drawn into on the same page, so the
+label has to be REWRITTEN on every paint rather than only set when there is a season to name.
+Written `if (dynasty) set-with-season`, a dynasty in the other slot leaves its season number on
+a mode that has no seasons: a sentence that is wrong rather than missing, and nothing throws.
+Returning `''` makes the concatenation unconditional, so **the reset cannot be the half
+somebody forgets**.
+
+**The guard walks the postseason TWICE and the second walk is the whole point.** The first
+version flipped the run to a Trade Machine and called `paintSeed` alone, so only one of the
+three elements was drawn a second time, and the careless conditional PASSED on the other two
+because nothing ever painted them as a non-dynasty. It rebuilds the same seed, flips the flags
+before pressing the button, and asserts none of the three carries the tag.
+
+Three things that each cost a round, all of them about the harness rather than the page:
+
+- **A layout assertion needs a laid out element.** Finding the card by id while a run screen
+  was up reported "0 lines in a 0px column" instead of saying the front page was not showing.
+- **`advanceWeek` does not stop at week 17.** Reading the phase in a loop ran the whole
+  postseason, so the run was `over` before anything was looked at, and `startPlayoffs` then
+  threw "not at seeding". A greedy draft also does not reach the playoffs every year, so the
+  seed is searched for rather than assumed.
+- **`/Season/i` matches "Regular season complete".** The absence to assert is the TAG, not the
+  word.
+
 ### A badge you add has to be proved reachable
 
 ```
