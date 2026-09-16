@@ -324,8 +324,9 @@ has a paid tier. That is a quieter version of the wall the college profile card 
 knock down: a store you can only reach by going looking for it. `ensurePremiumCard()` there
 mirrors `ensureCommishDoor()` beside it, built rather than shipped hidden and removed when the
 answer changes, and it is gated on `premiumPitch()`, which asks `commishOn()`. While
-`COMMISH_LIVE` is false the only thing that card sells on that game is a mode the reader cannot
-open, so the door and the card appear together on the day the flag flips.
+`COMMISH_LIVE` was false the only thing that card sold on that game was a mode the reader
+could not open, so the door and the card appear together. **That day has been and gone**: the
+flag is true, and the two are drawn together because they always ask the same question.
 
 **And the WORDS drifted anyway, which is the same fix arriving twice.** Moving the markup in
 stopped the cards having different shapes and left the two strings as arguments each caller
@@ -571,12 +572,74 @@ two rows the football profile carries, and the receipt reads `premium_unlocks` t
 `premiumUnlocks()` in `cfb/auth.js`. The RECEIPT is deliberately ungated: a buyer who paid
 on the football page owns what they own here whether or not this game shows them a mode.
 The OFFER is gated on `commishOn()`, the same call the front page door makes, because while
-`COMMISH_LIVE` is false the only thing it sells is a mode the reader cannot see, and a card
-that takes money for a shut door is worse than no card.
+`COMMISH_LIVE` was false the only thing it sold was a mode the reader could not see, and a
+card that takes money for a shut door is worse than no card. **The flag is true now**, so
+both are drawn, and what the gate still does is keep them from ever coming apart.
 
 **A store you can only reach by being refused is a wall.** Before that card existed the sole
 way to the offer from this game was to open Commissioner Simulator and be turned away at its
 gate, which nobody who cannot see the mode will ever do.
+
+### The three modes are LIVE, and a missing migration is the silent way to break them
+
+```
+psql ... -f supabase/test/launch_preflight.sql     or paste it into the SQL editor
+```
+
+`DYNASTY_LIVE`, `FULLTEAM_LIVE` and `COMMISH_LIVE` are all true. Two of those three fail
+SILENTLY against a database missing a migration: the mode plays perfectly, the player
+finishes a season, and the row is refused on submit with nothing said to them. Nobody
+reports it, because nothing looks broken. **A green checkout of this repo tells you nothing
+about that**, and Cloudflare deploys from main on its own, so the deploy and the schema move
+independently.
+
+`launch_preflight.sql` is the read-only answer: one paste, one row per migration, and the
+`if_missing` column says what each absence actually costs. It **asks the catalog and never
+calls anything**, because Postgres resolves a function call at parse time, so one missing
+function in a query that called them would fail the whole statement with "function does not
+exist" and report nothing about the other eleven. Verified both ways against a real Postgres
+16: every row NO on a bare database, ALL PRESENT once the chain is loaded.
+
+**Commissioner is the forgiving one of the three.** It writes its own tables rather than a
+`ps_runs` row and its clock fails open, so a database missing `104` gives seasons away
+instead of losing them. Dynasty and Full Team lose the season.
+
+### The Commish door is always there, and a shut one offers the bundle
+
+Who SEES the mode and who gets SOLD to are different questions, and `cfb/index.html` keeps
+them apart on purpose:
+
+| | asks | so that |
+|---|---|---|
+| the front page door and the modes sheet card | `commishShow()` | everybody finds the mode |
+| the offer card | `commishOn()`, which still wants a signed in account | nothing is sold to somebody who cannot own it |
+
+A purchase is tied to an account, so a card asking a stranger for money cannot be honoured;
+`test_store` asserts that. The DOOR had no business behind the same test once the mode
+launched, because a signed out visitor then got no sign anywhere on `/cfb/` that
+Commissioner Simulator exists.
+
+**The tap is taken in exactly one case and the history is why.** This page used to take
+EVERY non-owner's click and repaint it as the store. That was removed the day the free tier
+shipped, and the bug report was a signed in free account tapping the door, getting the
+store, and reading the whole mode as locked with no way in. A free account with a season in
+hand still goes straight through, plays it, and is sold nothing on the way.
+
+What is different is the reader that helped nobody: a free account whose season is spent, or
+whose one free term is finished. They tapped, watched the mode load, and landed on the wait
+wall, which carries the offer. The offer was always where that tap ended. It arrives a
+screen sooner now, and the difference from the version that produced the bug report is that
+the tap is only taken when the door is genuinely shut.
+
+**`blocked()` in `clock.js` is that rule, written once, and it is deliberately NOT what
+decides.** The mode decides by SPENDING, because only the server can, and `seasonWall()`
+reads `ok` off that answer. This is a hint for a screen that would rather offer the store
+than send somebody through a door it knows is shut, so being wrong costs a tap rather than a
+season. It fails open like everything else in that file: an unknown answer sends them to the
+mode, which asks properly and draws the right screen either way.
+
+`preventDefault` fires only on that branch, so middle click, open in a new tab and a long
+press keep working the way an anchor should.
 
 ### Commissioner Mode is free at one season a day
 
@@ -1036,11 +1099,18 @@ arrives. Both mistakes put twelve men with no production into the empty branch, 
 identity holds at zero and the whole section passes green. **It asserts the fixture is a
 real team before it asserts anything about it.**
 
-**It is still unannounced and this file is one of the two things checking that.**
-`fullteam-access.js` ships `FULLTEAM_LIVE = false`, the door is BUILT by
-`ensureFullButton()` rather than revealed, and the checker asserts from the reader's end
-that an account off the list gets no door, no node, and the words nowhere in the page.
-`check-premium.mjs` asserts the same thing from the other end.
+**IT IS LAUNCHED NOW, and both checkers assert the opposite of what they used to.**
+`fullteam-access.js` ships `FULLTEAM_LIVE = true`, so the door is built for everybody and
+`check-fullteam.mjs` asserts an account on no list gets one. The door is still BUILT by
+`ensureFullButton()` rather than revealed, and that is not leftover: the flag can go back,
+and a hidden node still ships to everybody.
+
+**What replaced "nobody can see it" as the invariant** is the shape of the paid tier, which
+is the half that can still break quietly: a free account gets the mode plus a meter, an
+owner gets the mode with the meter off, and NEITHER is ever refused the door. The mode being
+free to ENTER is the whole design (see the GOAT denominator argument below), so a door that
+came back as a wall would reverse it silently, and no error anywhere would say so.
+`check-premium.mjs` asserts that from the other end.
 
 #### One run a day, free, and the bundle removes the counting
 
@@ -1062,7 +1132,7 @@ third is the one that settles it:
   something it does not.
 - **THE GOAT DENOMINATOR, which is a ceiling and not a wait.** `CATALOG.length` is what
   `crest.js` divides by and it is deliberately one number for everybody. Full Team's shelf is
-  **24 badges** and the catalog goes **457 to 481** the day the mode launches. Behind a hard
+  **24 badges** and the catalog went **457 to 481** the day the mode launched. Behind a hard
   gate, every free account's GOAT is capped at **95.0% permanently**, by badges no amount of
   play can reach. Every other limit here is a wait.
 
