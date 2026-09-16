@@ -655,7 +655,25 @@ function buildFullToBudget(rng, budget, targetSpendFraction) {
     const pool = (isDef ? fullDefenders : fullPlayers);
     const legal = pool.filter((p) => posOk(i, p)
       && !used.has(`${p.player_id}|${p.season}`));
-    const share = Math.min(remaining / left * 1.5, remaining - (left - 1) * 1.0);
+    /*
+     * THE JITTER, AND IT WAS MISSING FOR THE WHOLE LIFE OF THIS BOT.
+     *
+     * This function took an rng and never called it, so every `mid` Full Team row in this
+     * report was ONE deterministic roster replayed N times: what it measured was schedule
+     * luck, not the range a careful player meets. buildToBudget, the offense bot it is read
+     * against, spreads its per-slot spend with exactly this term, so the two rows were never
+     * the same kind of thing and the comparison between them was measuring the builders.
+     *
+     * What it hid: a mode's TAIL is made almost entirely of which roster you drafted, and a
+     * bot that drafts the same roster every time has no tail at all. The Full Team mid row
+     * reported a best of 15 wins in 400 seasons and 0.0% at 16, which read as a mode nobody
+     * could win big in, and was really one average roster having 400 average years.
+     *
+     * Same term as the offense bot, deliberately: a different spread here would put the
+     * difference between the two rows back into the builders.
+     */
+    const jitter = 1 + 0.9 * (rng() - 0.5) * 2;
+    const share = Math.min(remaining / left * 1.5 * jitter, remaining - (left - 1) * 1.0);
     let cand = legal.filter((p) => p.price_musd <= share)
       .sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
     /* Nothing affordable is a real outcome at a tight cap, not a harness bug. Take the
@@ -845,6 +863,29 @@ function buildFullOptimal(budget, wantSplit) {
   return wantSplit ? best : { roster: best.roster.slice(), coach: best.coach };
 }
 
+/*
+ * THE TOP OF THE DISTRIBUTION, WHICH IS THE HALF A LEADERBOARD SHOWS.
+ *
+ * Everything else in this report is a middle: a win rate, a median record, a mean rating.
+ * Those are the right numbers for asking whether a mode is FAIR, and they are the wrong ones
+ * for asking what it FEELS like to compete in, because nobody competes against the median.
+ * A board is a list of the best seasons anybody played, so what a player actually meets at
+ * the top of it is the tail.
+ *
+ * Two modes can share a median and have nothing in common up there, and a report that prints
+ * only the middle says they are balanced. That is how a mode ships feeling far harder than
+ * the numbers beside it claim.
+ */
+function tail(wins) {
+  const s = wins.slice().sort((a, b) => a - b);
+  const at = (q) => s[Math.min(s.length - 1, Math.floor(q * s.length))];
+  const share = (k) => s.filter((w) => w >= k).length / s.length;
+  return { max: s[s.length - 1], p90: at(0.90), p99: at(0.99),
+    at15: share(15), at16: share(16), at17: share(17) };
+}
+const fmtTail = (t) => String(t.max).padStart(5) + String(t.p90).padStart(6)
+  + fmtPct(t.at15).padStart(8) + fmtPct(t.at16).padStart(8) + fmtPct(t.at17).padStart(8);
+
 function simulateFull(build, n, seed0) {
   let regGames = 0, regWon = 0, perfect = 0, title = 0, madePlayoffs = 0;
   const regWins = [], spends = [], ptsFor = [], ptsAgainst = [], ratings = [];
@@ -887,6 +928,7 @@ function simulateFull(build, n, seed0) {
     perfectRate: perfect / n, titleRate: title / n, playoffRate: madePlayoffs / n,
     meanSpend: mean(spends), meanFor: mean(ptsFor), meanAgainst: mean(ptsAgainst),
     meanRating: mean(ratings),
+    tail: tail(regWins),
   };
 }
 
@@ -926,7 +968,7 @@ function offenseReference(n) {
     }
     out[name] = { perGameWin: regWon / regGames, medianRegWins: median(wins),
       playoffRate: madePlayoffs / n, titleRate: title / n,
-      meanFor: mean(pf), meanAgainst: mean(pa) };
+      meanFor: mean(pf), meanAgainst: mean(pa), tail: tail(wins) };
   }
   return out;
 }
@@ -951,14 +993,16 @@ function fullTeamReport(n) {
   console.log(`N=${n} seasons per cell.\n`);
 
   console.log(`OFFENSE MODE AT $${constants.CAP_MUSD}M, 6 slots, the shipped calibration:`);
-  console.log('  play        win%   med rec    PO%   title%     PF     PA');
+  console.log('  play        win%   med rec    PO%   title%     PF     PA'
+    + '   best   p90     15+     16+    17-0');
   const ref = offenseReference(n);
   for (const name of ['careless', 'mid', 'optimal']) {
     const r = ref[name];
     console.log(`  ${name.padEnd(9)}` + fmtPct(r.perGameWin).padStart(7)
       + `${r.medianRegWins}-${17 - r.medianRegWins}`.padStart(9)
       + fmtPct(r.playoffRate).padStart(8) + fmtPct(r.titleRate).padStart(8)
-      + r.meanFor.toFixed(1).padStart(7) + r.meanAgainst.toFixed(1).padStart(7));
+      + r.meanFor.toFixed(1).padStart(7) + r.meanAgainst.toFixed(1).padStart(7)
+      + fmtTail(r.tail));
   }
   console.log('');
 
@@ -979,7 +1023,8 @@ function fullTeamReport(n) {
     { name: 'optimal',  build: (b) => () => buildFullOptimal(b) },   // roster AND coach
   ];
 
-  console.log('  cap   tal    play        win%   med rec    PO%   title%   20-0     PF     PA   rating   spend');
+  console.log('  cap   tal    play        win%   med rec    PO%   title%   20-0     PF     PA   rating'
+    + '   best   p90     15+     16+    17-0   spend');
   for (const cap of caps) {
    for (const tal of talents) {
     constants.FULL_TALENT = tal;
@@ -996,6 +1041,7 @@ function fullTeamReport(n) {
         + r.meanFor.toFixed(1).padStart(7)
         + r.meanAgainst.toFixed(1).padStart(7)
         + r.meanRating.toFixed(1).padStart(9)
+        + fmtTail(r.tail)
         + ('$' + r.meanSpend.toFixed(0)).padStart(8)
         + (row.name === 'optimal'
           ? `   split ${'$' + buildFullOptimal(cap, true).off.toFixed(1)} off / ${'$' + buildFullOptimal(cap, true).def.toFixed(1)} def`
@@ -1566,9 +1612,17 @@ function dynastyReport(n) {
 
 // ─── main ────────────────────────────────────────────────────────────────────
 
+/* REQUIRED RATHER THAN RUN, for a one-off measurement that needs these exact bots. Comparing
+   two modes with two different builders measures the builders. */
+if (require.main !== module) {
+  module.exports = { E, data, ctx, leagueContext, constants,
+    buildRandom, buildToBudget, buildOptimal,
+    buildFullRandom, buildFullToBudget, buildFullOptimal };
+}
 const arg = process.argv[2];
 const N = Number(process.env.PS_N ?? 2000);
-if (arg === '--sweep') sweep(Math.max(400, Math.floor(N / 2)));
+if (require.main !== module) { /* required for a measurement: run nothing */ }
+else if (arg === '--sweep') sweep(Math.max(400, Math.floor(N / 2)));
 else if (arg === '--chem') chemReport();
 else if (arg === '--schedule') scheduleReport(200);
 else if (arg === '--draft') draftReport(Number(process.env.PS_N ?? 3000));
