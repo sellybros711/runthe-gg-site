@@ -171,40 +171,21 @@
     '  .pfpro-h .pw-pill{margin-left:0;vertical-align:0}\n' +
     '  .pfpro-h span{font-size:12.5px;color:var(--dim-2);line-height:1.35}\n' +
     '  .pw-note{font-size:12px;color:var(--dim-2);margin:13px 0 12px;line-height:1.4}\n' +
-    '  /* THE BAND THAT SAYS THIS IS NOT A SUBSCRIPTION.\n' +
-    '     Hazard stripes and a live lamp, because that is the visual language of "read this\n' +
-    '     one" and a reader scanning a price screen gives the prose about a second and a\n' +
-    '     half. Gold rather than red: red on this site is the primary action and a red band\n' +
-    '     over two buy buttons reads as something having gone wrong with them. */\n' +
-    '  .pw-alert{display:flex;align-items:center;gap:9px;margin:13px 0 2px;\n' +
-    '    padding:9px 11px;border-radius:10px;border:1px solid rgba(251,191,36,.55);\n' +
-    '    background:repeating-linear-gradient(135deg,rgba(251,191,36,.17) 0 9px,\n' +
-    '      rgba(251,191,36,.055) 9px 18px);\n' +
-    '    animation:pwalert 1.7s ease-in-out infinite}\n' +
-    '  @keyframes pwalert{\n' +
-    '    0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.5)}\n' +
-    '    60%{box-shadow:0 0 0 8px rgba(251,191,36,0)}\n' +
-    '  }\n' +
-    '  /* The lamp. Its own faster beat, so the band breathes and the light blinks rather\n' +
-    '     than the two moving as one object. */\n' +
-    '  .pw-alert i{flex:0 0 8px;width:8px;height:8px;border-radius:999px;background:#fbbf24;\n' +
-    '    box-shadow:0 0 7px rgba(251,191,36,.9);animation:pwlamp .9s steps(1,end) infinite}\n' +
-    '  @keyframes pwlamp{0%,55%{opacity:1}56%,100%{opacity:.22}}\n' +
-    '  .pw-alert b{flex:0 0 auto;font-family:var(--fn);font-size:10.5px;letter-spacing:.11em;\n' +
-    '    text-transform:uppercase;font-weight:800;color:#fbbf24}\n' +
-    '  .pw-alert span{font-size:11.5px;line-height:1.3;color:var(--ink)}\n' +
-    '  /* UNDER 380px THE THREE PIECES DO NOT FIT ON ONE LINE and the sentence wraps to two\n' +
-    '     words a row. The lamp and the label keep the top line and the sentence takes the\n' +
-    '     one under it, indented past the lamp so the band still reads as one block. */\n' +
-    '  @media (max-width:379px){\n' +
-    '    .pw-alert{flex-wrap:wrap}\n' +
-    '    .pw-alert span{flex:1 0 100%;margin-left:17px}\n' +
-    '  }\n' +
-    '  /* Asked not to be moved, it keeps the stripes, the border and the lamp, and stops\n' +
-    '     pulsing and blinking. What it is saying is not the movement. */\n' +
-    '  @media (prefers-reduced-motion:reduce){\n' +
-    '    .pw-alert,.pw-alert i{animation:none}\n' +
-    '  }\n' +
+    '  /* ONE PAYMENT, SAID ON EACH PRICE RATHER THAN ONCE OVER BOTH.\n' +
+    '     THIS WAS A HAZARD-STRIPED BAND WITH A BLINKING LAMP, sized to be the loudest thing\n' +
+    '     on the sheet, and the argument for that still stands on its own terms: everything\n' +
+    '     else sold this way is a subscription, and a reader who assumes this one is too is\n' +
+    '     deciding against a monthly charge that does not exist. What it got wrong is where\n' +
+    '     the anxiety is felt. It is felt at the PRICE, and the band answered it a full row\n' +
+    '     above the first one, in the loudest voice on a screen that is already asking for\n' +
+    '     money. The owner called the sheet overwhelming, which is the band and the four\n' +
+    '     tiles above it competing for the same second and a half.\n' +
+    '     So the claim sits beside each figure it is about, twice, quietly. Repeating it is\n' +
+    '     the point rather than the cost: a reader comparing two prices reads one of them. */\n' +
+    '  .pw-once{flex:0 0 auto;font-family:var(--fn);font-size:9px;font-weight:800;\n' +
+    '    letter-spacing:.09em;text-transform:uppercase;color:#fbbf24;\n' +
+    '    padding:3px 7px;border-radius:999px;border:1px solid rgba(251,191,36,.42);\n' +
+    '    background:rgba(251,191,36,.10);white-space:nowrap}\n' +
     '  /* THE PROMPT CARD\x27S MARKS, in a row under the word it is selling. Both games draw the\n' +
     '     card and both had their own .pw-card block, so this one rule lives here instead: it\n' +
     '     is the only part of the card that has to match the hero row it opens, and the hero\n' +
@@ -419,7 +400,16 @@
     var o = opts || {};
     var WORTH = 80, RTB = 34.99;
     return '<div class="eyebrow gold">Pro</div>'+
-    '<h2 class="display" style="font-size:27px;margin:4px 0 0">Go Pro</h2>'+
+    /* NOT "GO PRO", AND THE REASON IS LOCAL TO THIS SITE. Going pro is a thing PLAYERS do
+    here: Commissioner Mode carries a named rule called "Going pro and coming back", and the
+    football game is built out of real careers. A purchase screen that opens with the phrase
+    is using the sport's own words for something that is not the sport, which reads as a pun
+    before it reads as an offer.
+    IT ECHOES THE CARD THAT OPENED IT. The prompt card says "Unlock every mode" over the word
+    Unlimited, and a reader who pressed that should land on the same sentence rather than on a
+    second name for it. The noun Pro stays: it is what the ACCOUNT is, it is on the pill and
+    the receipt, and it is not the phrase that misleads. */
+    '<h2 class="display" style="font-size:27px;margin:4px 0 0">Unlock everything</h2>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:7px 0 0">'+
     /* NO BLANKET TERM UP HERE ANY MORE. "One payment" is true of both bundles and is the
     thing worth leading with. "Lifetime access" was not true of both, and each line
@@ -431,29 +421,6 @@
     /* AND THE TERM COMES OUT OF THIS SENTENCE, because it is now said once and loudly in the
     band below rather than twice and quietly: here and in the foot. */
     'Unlimited dynasty seasons, no daily limit, and every Pro mode.</p>'+
-    /* THE BAND, AND WHAT IT IS ALLOWED TO CLAIM.
-    It is built to be the loudest thing on the sheet, because the anxiety it answers is the
-    one that actually stops people: everything else sold this way is a subscription, and a
-    reader who assumes this is one is deciding against a monthly charge that does not exist.
-    IT SAYS PAYMENT AND NOT OFFER, AND THAT IS DELIBERATE. "One time offer" says the price
-    goes away, and nothing here goes away: both bundles are permanent products at permanent
-    prices. Manufacturing a deadline the checkout does not keep is the one claim on a payment
-    screen that could not be defended, and this file already refuses to stretch "lifetime"
-    over the Arcade year for the same reason. If a real limited window is ever wanted it
-    needs a real end date in _bundles.js and a store that stops selling at it.
-    WHAT IT SAYS IS TRUE OF BOTH BUNDLES. Nothing renews: three of the four grants are
-    permanent and the Arcade year simply ends, which is why the word is "renew" rather than
-    "lifetime". See pwGroupText. */
-    /* WRAPPED, AND THE WRAPPER IS LEAD IN THE PAGE RATHER THAN NOTHING. Both games style the
-    sheet's direct children with `#sheet-in.swap>*{animation:sheetSwap ... both}`, an id
-    selector that outranks anything this file can write with a class, so a band sitting
-    directly in the sheet has its pulse replaced by the entrance animation and, because that
-    one is `both`, sits on its last frame for ever. It would simply never pulse, on either
-    game, with nothing to report. The wrapper takes the entrance and the band inside keeps its
-    own beat, which is how the lamp was accidentally fine already. */
-    '<div class="pw-alertwrap"><div class="pw-alert" role="note"><i></i>'+
-      '<b>One time payment</b>'+
-      '<span>Pay once. No subscription. No second charge.</span></div></div>'+
     '<div class="pw-hero'+(PW_FULL_ON()?' pw-four':'')+'">'+
     /* NO SEASON COUNT ON THE DYNASTY TILE. This read "25 seasons, one job" until recently,
     and there is no ceiling: the 25 was DYNASTY_MAX_SEASONS, a loop guard in the balance
@@ -484,7 +451,7 @@
 
     '<div class="pw-tier">'+
     '<div class="pw-th"><span class="pw-name">Premium Bundle</span></div>'+
-    '<div class="pw-cost"><b>$19.99</b></div>'+
+    '<div class="pw-cost"><b>$19.99</b><span class="pw-once">One payment</span></div>'+
     /* THE TRADE MACHINE IS NAMED HERE BECAUSE IT IS PROMOTED ABOVE. The hero row sells
     unlimited Trade Machine runs and this is the itemised list of what the money buys,
     so leaving it off would advertise a thing and then not sell it. It is a real part of
@@ -514,7 +481,10 @@
       'Lifetime access')+
     pwGroupText('cfb','Commissioner Mode','Lifetime access')+
     '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+
-    (o.signedOut?'Sign in to go Pro':'Go Pro')+'</button>'+
+    /* NAMES ITS OWN TIER, the way the button on the card below names that one. Two buttons
+       reading "Unlock everything" and "Get the bundle" would be one verb and one noun for two
+       things a reader is choosing between. */
+    (o.signedOut?'Sign in to get Premium':'Get Premium')+'</button>'+
     '</div>'+
 
     '<div class="pw-tier best">'+
@@ -522,7 +492,8 @@
     '<span class="pw-tag">Best value</span></div>'+
     '<div class="pw-cost"><b>$'+RTB.toFixed(2)+'</b>'+
     '<span class="pw-was">$'+WORTH+'</span>'+
-    '<span class="pw-save">Save $'+Math.round(WORTH-RTB)+'</span></div>'+
+    '<span class="pw-save">Save $'+Math.round(WORTH-RTB)+'</span>'+
+    '<span class="pw-once">One payment</span></div>'+
     '<p class="pw-note" style="margin:9px 0 2px">Everything above, plus two more games.</p>'+
     /* "Everything above" carries the two Lifetime access lines with it, so the Arcade line
     has to say plainly that it is not one. The term column is for the TERM and nothing else:
@@ -544,7 +515,9 @@
     (o.signedOut?'Sign in to get it':'Get the bundle')+'</button>'+
     '</div>'+
 
-    '<p class="pw-foot">Either one makes your account Pro. '+
+    /* THE SUBSCRIPTION ANSWER KEEPS ITS LAST WORD HERE, now that the band above is gone. The
+       chip beside each price says one payment; this says the thing a chip has no room for. */
+    '<p class="pw-foot">Either one makes your account Pro. No subscription, ever. '+
     'Secure checkout by Stripe.</p>';
   }
 

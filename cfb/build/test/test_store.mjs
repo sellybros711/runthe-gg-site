@@ -13,7 +13,7 @@
  * The four states, which are the whole test:
  *
  *   signed out            no pill, no offer card, nothing sold to a person with no account
- *   signed in, no row     the Free pill, the Go Pro card, and a store that names Commissioner
+ *   signed in, no row     the Free pill, the upgrade card, and a store that names Commissioner
  *   signed in, owns it    the Pro pill, the Your Pro access row, and no offer
  *   owns a lapsed year    the receipt says ENDED and never "ends", in the past tense
  *
@@ -157,7 +157,7 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
 {
   const p = await open(stub(false, [], []), 'signed out: nothing is sold and no status is claimed');
   await hub(p);
-  ok('no Go Pro card', !(await has(p, '#pf-prem')));
+  ok('no upgrade card', !(await has(p, '#pf-prem')));
   ok('no Pro access row', !(await has(p, '#pf-go-pro')));
   /* NOT "FREE". A free account is a thing somebody has, and a visitor with no account has
      nothing to show a status for. */
@@ -171,7 +171,7 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
   const p = await open(stub(true, [], []), 'signed in without the row: the offer is reachable');
   await hub(p);
   ok('the Free pill is beside the name', (await txt(p, '.pfid .pw-pill')) === 'Free');
-  ok('the Go Pro card is on the hub', await has(p, '#pf-prem'));
+  ok('the upgrade card is on the hub', await has(p, '#pf-prem'));
   ok('and no receipt row, because there is nothing to receipt', !(await has(p, '#pf-go-pro')));
   /* THE SAME CARD THE FOOTBALL GAME DRAWS, out of the same function in /assets/store.js.
      It was written out a second time on this page and the two drifted: this said "3 modes"
@@ -208,21 +208,30 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
      them the football game. */
   ok('the store names Commissioner', /Commissioner/.test(sheet));
   ok('both bundles are offered', (await has(p, '#b-buy-ps')) && (await has(p, '#b-buy-rtb')));
-  /* THE BAND THAT SAYS THIS IS NOT A SUBSCRIPTION, which is the anxiety that actually stops
-     people on a screen like this. Drawn loud on purpose. */
-  const band = await p.evaluate(() => {
-    const el = document.querySelector('#sheet-in .pw-alert');
-    if (!el) return null;
-    const lamp = el.querySelector('i');
-    return { text: (el.innerText || '').replace(/\s+/g, ' '),
-      anim: getComputedStyle(el).animationName,
-      lamp: lamp ? getComputedStyle(lamp).animationName : 'none' };
+  /* ONE PAYMENT, ON EACH PRICE, which is where the anxiety it answers is actually felt.
+     THIS WAS A HAZARD-STRIPED BAND WITH A BLINKING LAMP and the reasoning for that is worth
+     keeping even though the band is gone: everything else sold this way is a subscription,
+     and a reader who assumes this one is too is deciding against a monthly charge that does
+     not exist. What it got wrong was the placement and the volume. It answered the question a
+     full row above the first price, as the loudest thing on a screen already asking for
+     money, and with four hero tiles above it the sheet read as a shout.
+     SO THE ASSERTION MOVES RATHER THAN GOING. What has to hold is that BOTH prices carry it,
+     because a reader comparing two numbers reads one of them, and that the sheet still says
+     somewhere that nothing recurs. */
+  const once = await p.evaluate(() => {
+    const tiers = [...document.querySelectorAll('#sheet-in .pw-tier')];
+    return tiers.map((t) => {
+      const c = t.querySelector('.pw-cost .pw-once');
+      return c ? (c.textContent || '').trim() : null;
+    });
   });
-  ok('the one time payment band is on the sheet', !!band && /one time payment/i.test(band.text),
-    band && band.text);
-  ok('and it is doing something to be noticed',
-    !!band && band.anim === 'pwalert' && band.lamp === 'pwlamp',
-    band && (band.anim + ' / ' + band.lamp));
+  ok('every price says it is one payment', once.length === 2 && once.every((x) => /one payment/i.test(x || '')),
+    JSON.stringify(once));
+  ok('and the sheet still rules out a subscription', /no subscription/i.test(sheet),
+    /no subscription/i.test(sheet) ? '' : sheet.slice(0, 120));
+  /* AND THE BAND IS REALLY GONE rather than hidden, so nobody restores half of it later and
+     leaves the sheet saying the same thing twice at two volumes. */
+  ok('and the old band is not still there', !(await has(p, '#sheet-in .pw-alert')));
   /* AND IT NEVER CLAIMS A DEADLINE IT DOES NOT KEEP. Both bundles are permanent products at
      permanent prices, so an expiring-offer line would be the one claim on a payment screen
      that could not be defended. If a real window is ever wanted it needs an end date in
@@ -377,7 +386,12 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
   ok('it says what free plays at',
     /^Free plays one season a day\./.test(await txt(p, '#b-mc-commish .mc-pro')),
     await txt(p, '#b-mc-commish .mc-pro'));
-  ok('and what Pro changes about it', /Go Pro to run the whole term at your own pace/.test(await txt(p, '#b-mc-commish .mc-pro')));
+  /* THE PHRASE MOVED AND THIS IS WHAT CAUGHT IT. "Go pro" is what a PLAYER does in this
+     sport, and this mode has a named doctrine rule called "Going pro and coming back", so
+     the purchase sentence was using the game's own words for something that is not the game.
+     Pinned on the new sentence, and the line below pins that the old verb is gone. */
+  ok('and what Pro changes about it', /Unlock it to run the whole term at your own pace/.test(await txt(p, '#b-mc-commish .mc-pro')));
+  ok('  without telling a player to go pro', !/go pro/i.test(await txt(p, '#b-mc-commish')));
   /* THE THING A READER OF THIS GAME CANNOT KNOW, which is that one payment covers both. */
   ok('and that the payment covers the NFL game too', /unlocks the NFL game too/.test(await txt(p, '#b-mc-commish .mc-pro')));
   /* DYNASTY'S NUMBER LIVES ON DYNASTY'S OWN SERVER AND ITS OWN SCREEN. A copy of it here is

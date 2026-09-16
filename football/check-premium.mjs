@@ -226,7 +226,7 @@ for (const [who, owns, day, want] of [
   ok('    dailyOn() is ' + (owner ? 'off' : 'on'), r.metered === !owner, String(r.metered));
   ok('    acctTier() is ' + (owner ? 'pro' : 'free'), r.tier === (owner ? 'pro' : 'free'), r.tier);
   ok('    premiumPitch() ' + (owner ? 'stands down' : 'offers'), r.pitch === !owner);
-  ok('    the profile shows ' + (owner ? 'Your Pro access' : 'Go Pro'),
+  ok('    the profile shows ' + (owner ? 'Your Pro access' : 'the upgrade card'),
     owner ? (r.proAccess && !r.goPro) : (r.goPro && !r.proAccess),
     'goPro=' + r.goPro + ' proAccess=' + r.proAccess);
   if (!owner) {
@@ -237,7 +237,7 @@ for (const [who, owns, day, want] of [
        be the one nobody ran. What has to hold either way is that the CARD and the SHEET
        claim the same number of things, which is the assertion below it. */
     const wantMarks = r.fullOn ? 4 : 3;
-    ok('    and the Go Pro card carries the ' + wantMarks + ' modes it sells',
+    ok('    and the upgrade card carries the ' + wantMarks + ' modes it sells',
       r.goProMarks === wantMarks, String(r.goProMarks));
     ok('    in a row rather than a stack', r.goProRow === 'flex', r.goProRow);
     /* AND NEITHER CARD COUNTS ANY MORE. The front page said "4 modes", this one said
