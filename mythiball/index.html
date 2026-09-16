@@ -4318,9 +4318,11 @@ function drawLineupBoard(ctx, t) {
   /* The lineup card on the wall: a grid of nine slots and a header. */
   roomRect(ctx, t.x, t.y, t.w, t.h, CLUB.cream);
   roomRect(ctx, t.x + 8, t.y + 8, t.w - 16, 24, CLUB.red);
-  ctx.fillStyle = CLUB.cream;
-  ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('7 GAMES', t.x + t.w / 2, t.y + 21);
+  roomText(ctx, (c) => {
+    c.fillStyle = CLUB.cream;
+    c.font = 'bold 13px monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('7 GAMES', t.x + t.w / 2, t.y + 21);
+  });
   for (let i = 0; i < 7; i++) {
     const ly = t.y + 42 + i * 16;
     roomRect(ctx, t.x + 12, ly, 16, 11, '#e6dcc0', false);
@@ -4386,17 +4388,23 @@ function drawChalkboard(ctx, t) {
   let ny = t.y + 26;
   for (const note of CHALK_NOTES) {
     if (note) {
-      ctx.fillStyle = CLUB.chalk;
-      ctx.fillText(note, nx, ny);
-      /* the squiggle under it: three short strokes at slightly wrong angles */
-      ctx.strokeStyle = 'rgba(232,240,228,.6)'; ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let i = 0; i < 3; i++) {
-        const sx = nx + i * 22;
-        ctx.moveTo(sx, ny + 7 + (i % 2));
-        ctx.lineTo(sx + 18, ny + 6 + ((i + 1) % 2) * 2);
-      }
-      ctx.stroke();
+      const y0 = ny;
+      roomText(ctx, (c) => {
+        c.font = 'bold 10px monospace';
+        c.textAlign = 'left'; c.textBaseline = 'middle';
+        c.fillStyle = CLUB.chalk;
+        c.fillText(note, nx, y0);
+        /* the squiggle under it: three short strokes at slightly wrong
+           angles, kept with the hand it underlines */
+        c.strokeStyle = 'rgba(232,240,228,.6)'; c.lineWidth = 1;
+        c.beginPath();
+        for (let i = 0; i < 3; i++) {
+          const sx = nx + i * 22;
+          c.moveTo(sx, y0 + 7 + (i % 2));
+          c.lineTo(sx + 18, y0 + 6 + ((i + 1) % 2) * 2);
+        }
+        c.stroke();
+      });
     }
     ny += note ? 17 : 9;
   }
@@ -4457,6 +4465,38 @@ function drawBatBag(ctx, x, y) {
    1500 the room takes now: the signs and the chalk are real text, and text
    is the first thing that goes when a canvas is stretched. */
 const ROOM_SCALE = 2;
+/* THE ROOM SPEAKS THE SPRITES' LANGUAGE TOO. The game field went to one
+   low resolution and the clubhouse was left as the last screen mixing
+   vector furniture with pixel people. Same recipe as the field loop:
+   the scene is drawn small (a block close to a sprite pixel), blitted
+   up with smoothing off, and the text a reader has to read (the signs,
+   the chalkboard's notes, a board's header) queues itself through
+   roomText() and replays at full resolution under its own captured
+   transform, so the zoom-in keeps the signs crisp AND in place. */
+const ROOM_PIX = 3;
+let ROOM_Q = [];
+function roomText(ctx, fn) { ROOM_Q.push([ctx.getTransform(), fn]); }
+let roomWorld = null;
+function paintRoom(dctx, draw) {
+  const lw = Math.round(ROOM.w / ROOM_PIX), lh = Math.round(ROOM.h / ROOM_PIX);
+  if (!roomWorld || roomWorld.width !== lw || roomWorld.height !== lh) {
+    roomWorld = document.createElement('canvas');
+    roomWorld.width = lw; roomWorld.height = lh;
+  }
+  const wctx = roomWorld.getContext('2d');
+  wctx.setTransform(1 / ROOM_PIX, 0, 0, 1 / ROOM_PIX, 0, 0);
+  ROOM_Q.length = 0;
+  draw(wctx);
+  dctx.setTransform(1, 0, 0, 1, 0, 0);
+  dctx.imageSmoothingEnabled = false;
+  dctx.drawImage(roomWorld, 0, 0, dctx.canvas.width, dctx.canvas.height);
+  for (const [m, fn] of ROOM_Q) {
+    dctx.setTransform(ROOM_SCALE * ROOM_PIX, 0, 0, ROOM_SCALE * ROOM_PIX, 0, 0);
+    dctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+    fn(dctx);
+  }
+  ROOM_Q.length = 0;
+}
 /* THE SIGN IS SIZED BY THE LAYOUT, not by a constant, because what matters
    is how big it lands on the GLASS. The wide room is drawn at about 1.07
    CSS pixels per room pixel, so a 13px sign arrives at 14. The close room
@@ -4470,10 +4510,12 @@ function drawSign(ctx, t, hot) {
   const w = Math.max(S.min, Math.round(t.sign.length * S.per + S.pad));
   const x = t.x + t.w / 2 - w / 2, y = t.y - S.h - S.lift;
   roomRect(ctx, x, y, w, S.h, hot ? CLUB.red : CLUB.cream);
-  ctx.fillStyle = hot ? CLUB.cream : CLUB.red;
-  ctx.font = `bold ${S.fs}px monospace`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(t.sign, t.x + t.w / 2, y + S.h / 2 + 1);
+  roomText(ctx, (c) => {
+    c.fillStyle = hot ? CLUB.cream : CLUB.red;
+    c.font = `bold ${S.fs}px monospace`;
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(t.sign, t.x + t.w / 2, y + S.h / 2 + 1);
+  });
 }
 /* The box a thing and its sign share: what the pointer outline draws and
    what the hotspot button covers, which must be the same rectangle. In a
@@ -4776,9 +4818,7 @@ function renderMenu() {
   const rail = el('div','clubhouse-rail');
   const idle = '<b>The clubhouse</b><span>Point at something to see what it does.</span>';
   const paint = (id) => {
-    dctx.setTransform(ROOM_SCALE, 0, 0, ROOM_SCALE, 0, 0);
-    dctx.imageSmoothingEnabled = false;
-    drawClubhouse(dctx, things, id);
+    paintRoom(dctx, (c) => drawClubhouse(c, things, id));
     const t = things.find(x => x.id === id);
     rail.innerHTML = t
       ? `<b>${t.label}</b>` + (t.note ? `<span>${t.note}</span>` : '')
@@ -4821,22 +4861,24 @@ function renderMenu() {
     const step = () => {
       const p = Math.min(1, (performance.now() - start) / DUR);
       const e = p * p * (3 - 2 * p);                 /* smoothstep */
-      dctx.setTransform(ROOM_SCALE, 0, 0, ROOM_SCALE, 0, 0);
-      dctx.imageSmoothingEnabled = false;
-      /* Clear in untransformed space, or the scaled rect misses the edges. */
-      dctx.fillStyle = '#6b4a24';
-      dctx.fillRect(0, 0, ROOM.w, ROOM.h);
-      dctx.save();
-      dctx.translate(cx, cy);
-      dctx.scale(1 + e * 2.4, 1 + e * 2.4);
-      dctx.translate(-cx, -cy);
-      drawClubhouse(dctx, things, t.id);
-      dctx.restore();
-      /* and out to the page colour, so the next screen does not snap in */
-      if (e > 0.5) {
-        dctx.fillStyle = `rgba(241,226,187,${(e - 0.5) / 0.5})`;
-        dctx.fillRect(0, 0, ROOM.w, ROOM.h);
-      }
+      paintRoom(dctx, (c) => {
+        c.fillStyle = '#6b4a24';
+        c.fillRect(0, 0, ROOM.w, ROOM.h);
+        c.save();
+        c.translate(cx, cy);
+        c.scale(1 + e * 2.4, 1 + e * 2.4);
+        c.translate(-cx, -cy);
+        drawClubhouse(c, things, t.id);
+        c.restore();
+        /* and out to the page colour, so the next screen does not snap in.
+           The fade covers the crisp signs too, so it rides the queue. */
+        if (e > 0.5) {
+          roomText(c, (cc) => {
+            cc.fillStyle = `rgba(241,226,187,${(e - 0.5) / 0.5})`;
+            cc.fillRect(0, 0, ROOM.w, ROOM.h);
+          });
+        }
+      });
       if (p < 1) requestAnimationFrame(step); else then();
     };
     requestAnimationFrame(step);
