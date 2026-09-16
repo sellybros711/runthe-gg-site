@@ -7610,9 +7610,13 @@ function ballTrajectoryBase(kind, info) {
      you earned them. */
   const off = info && typeof info.off === 'number' ? info.off : null;
   const q = info && typeof info.q === 'number' ? info.q : 0.6;
+  /* Pull is a HAND. Early for a righty is the third-base side; the same
+     swing from the other box goes the other way. The verdict copy still
+     reads the raw off, so EARLY stays EARLY whichever box he hits from. */
+  const hand = info && info.lefty ? -1 : 1;
   const spray = (maxAbs, minAbs) => {
     if (off === null) return rand(minAbs || 0.1, maxAbs) * sign();
-    const dir = clamp(off * 12 + (Math.random() - 0.5) * 0.45, -1, 1);
+    const dir = clamp(off * 12 * hand + (Math.random() - 0.5) * 0.45, -1, 1);
     const mag = Math.max(minAbs || 0, Math.abs(dir)) * maxAbs;
     return Math.max(mag, minAbs || 0) * (dir >= 0 ? 1 : -1);
   };
@@ -8664,6 +8668,8 @@ function drawPlaySim(ctx, sim, t, G, opts) {
 
 function scheduleContactPlay(kind, batter, info) {
   const g = State.game;
+  /* The hand rides the info so the trajectory can mirror the spray. */
+  if (batter) info = Object.assign({}, info, { lefty: batsLeft(batter.k) });
   /* Bat meets ball. The crack fires immediately, before the ball travels,
      and a gold impact burst pops at the contact point so the hit visibly
      comes OFF THE BAT rather than materializing mid-field. */
@@ -9014,6 +9020,7 @@ function applyOutMutation(kind, batter) {
 
 function scheduleThrowMinigame(kind, batter, info) {
   const g = State.game;
+  if (batter) info = Object.assign({}, info, { lefty: batsLeft(batter.k) });
   const traj = ballTrajectory(kind, info);
   const isOut = true;
   const preBases = [...g.bases];
@@ -9157,6 +9164,7 @@ function resolveThrow(outcome, kind, batter) {
 
 function scheduleFlyCatchMinigame(kind, batter, info) {
   const g = State.game;
+  if (batter) info = Object.assign({}, info, { lefty: batsLeft(batter.k) });
   const traj = ballTrajectory(kind, info);
   const preBases = [...g.bases];
   g.play = {
@@ -10394,21 +10402,26 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     } else if (live && !inWindup && pitch.swung) {
       pose = 'follow';
     }
-    drawRunner(ctx, P.batX, P.batY, batter, P.batSc, pose);
+    /* A lefty is the same batter mirrored into the first-base box, and
+       his swing arc sweeps the other way with him. */
+    const lefty = batsLeft(batter.k);
+    const dir = lefty ? -1 : 1;
+    const batBx = lefty ? 2 * P.cx - P.batX : P.batX;
+    drawRunner(ctx, batBx, P.batY, batter, P.batSc, pose, lefty);
     if (arcT != null) {
-      const px = P.batX + 48, py = P.batY - 122;
+      const px = batBx + 48 * dir, py = P.batY - 122;
       const a0 = -2.3, a1 = 0.75;
       for (const [k, al] of [[0.55, 0.18], [0.78, 0.32], [1, 1]]) {
         const a = a0 + (a1 - a0) * clamp(arcT * k + (1 - k) * 0, 0, 1);
         ctx.strokeStyle = `rgba(169,127,70,${al})`;
         ctx.lineWidth = 9;
         ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(a) * 92, py + Math.sin(a) * 92); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(a) * 92 * dir, py + Math.sin(a) * 92); ctx.stroke();
       }
       const a = a0 + (a1 - a0) * arcT;
       ctx.strokeStyle = '#6b4a24';
       ctx.lineWidth = 5;
-      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(a) * 26, py + Math.sin(a) * 26); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(a) * 26 * dir, py + Math.sin(a) * 26); ctx.stroke();
     }
   }
 
@@ -10928,27 +10941,34 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       if (!batter) return;
       const f = FG.at(1);
       const nowB = performance.now();
+      /* The lefty stands the other side of the plate here too, walks in
+         from his own dugout side, and swings mirrored. */
+      const lefty = batsLeft(batter.k);
+      const bxOff = lefty ? 28 : -28;
       if (g._plateWho !== batter) {
         g._plateWho = batter;
         g.batterIn = { t0: nowB, dur: 750 };
       }
       if (g.swingFx && nowB < g.swingFx.until) {
-        drawRunner(ctx, cx - 28 + f.dx, plateY + 6 + f.dy, batter, f.sc, 'swing');
+        drawRunner(ctx, cx + bxOff + f.dx, plateY + 6 + f.dy, batter, f.sc, 'swing', lefty);
         const stw = clamp((nowB - g.swingFx.start) / 300, 0, 1);
-        drawBatSwing(ctx, cx - 28 + f.dx, plateY + 4 + f.dy, stw, f.sc / 3.2);
+        const sx = cx + bxOff + f.dx;
+        if (lefty) { ctx.save(); ctx.translate(2 * sx, 0); ctx.scale(-1, 1); }
+        drawBatSwing(ctx, sx, plateY + 4 + f.dy, stw, f.sc / 3.2);
+        if (lefty) ctx.restore();
         return;
       }
       if (g.batterIn && nowB < g.batterIn.t0 + g.batterIn.dur) {
         const u = (nowB - g.batterIn.t0) / g.batterIn.dur;
         const e = u * (2 - u);
-        const ox = cx - rx * 0.62, oy = plateY + 30;
-        const x = ox + (cx - 28 - ox) * e, y = oy + (plateY + 6 - oy) * e;
+        const ox = cx - (lefty ? -1 : 1) * rx * 0.62, oy = plateY + 30;
+        const x = ox + (cx + bxOff - ox) * e, y = oy + (plateY + 6 - oy) * e;
         const stride = Math.floor(nowB / 130) % 2 === 0;
         drawRunner(ctx, x + f.dx, y + f.dy, batter, f.sc * (0.82 + 0.18 * e),
-                   u < 0.9 ? (stride ? 'run-a' : 'run-b') : 'batting');
+                   u < 0.9 ? (stride ? 'run-a' : 'run-b') : 'batting', lefty);
         return;
       }
-      drawRunner(ctx, cx - 28 + f.dx, plateY + 6 + f.dy, batter, f.sc, 'batting');
+      drawRunner(ctx, cx + bxOff + f.dx, plateY + 6 + f.dy, batter, f.sc, 'batting', lefty);
     };
     /* Catcher behind plate */
     /* (This once gated on catcher.pal, a field the old sprite system
@@ -11646,8 +11666,32 @@ function drawBatSwing(ctx, x, y, t, sc) {
 }
 
 
+/* WHICH BOX A HITTER STANDS IN. Every batter used to stand in the
+   third-base box holding the bat the same way, which is a realism tell
+   no amount of polish covers: real lineups are a third left-handed.
+   The hand is a deterministic hash of the character's key, so it costs
+   no roster data, never flips between visits, and survives every
+   roster edit. Three in ten bat left, which is the real game's share. */
+function batsLeft(k) {
+  let h = 0;
+  for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
+  return h % 10 < 3;
+}
+
 const runnerCache = new Map();
-function drawRunner(ctx, x, y, character, scale, pose) {
+/* `flip` mirrors the whole drawing around x: the sprite, the bat it
+   holds, the catch mitt, the slide dust. A left-handed batter is the
+   right-handed drawing seen in a mirror, which is also true of the
+   real thing. */
+function drawRunner(ctx, x, y, character, scale, pose, flip) {
+  if (!flip) return drawRunnerAt(ctx, x, y, character, scale, pose);
+  ctx.save();
+  ctx.translate(2 * x, 0);
+  ctx.scale(-1, 1);
+  drawRunnerAt(ctx, x, y, character, scale, pose);
+  ctx.restore();
+}
+function drawRunnerAt(ctx, x, y, character, scale, pose) {
   scale = scale || 3;
   const hero = hasHero(character.k);
 

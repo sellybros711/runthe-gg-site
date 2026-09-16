@@ -1213,9 +1213,15 @@ async function main() {
           out.fly = { met: Math.abs(sim.meetAt - sim.landAt) < 0.001,
                       fielderRole: sim.fielders[sim.fielderPost].role };
         }
-        { /* spray: the swing's timing owns the direction */
-          const early = mk('single', false, { off: -0.085, q: 0.6 }).play.ball.dx;
-          const late  = mk('single', false, { off:  0.085, q: 0.6 }).play.ball.dx;
+        { /* spray: the swing's timing owns the direction, read against
+             the HITTER'S OWN HAND. A lefty pulls the other way, which
+             is the point of him, and each mk() advances the lineup, so
+             the hand is captured before every sample. */
+          const handNow = () => batsLeft(currentBatter().k) ? -1 : 1;
+          let h = handNow();
+          const early = mk('single', false, { off: -0.085, q: 0.6 }).play.ball.dx * h;
+          h = handNow();
+          const late  = mk('single', false, { off:  0.085, q: 0.6 }).play.ball.dx * h;
           const crush = mk('single', false, { off: 0, q: 0.95 }).play.ball;
           const bloop = mk('single', false, { off: 0, q: 0.2 }).play.ball;
           out.spray = { early: +early.toFixed(2), late: +late.toFixed(2),
@@ -1425,10 +1431,17 @@ async function main() {
         const plate = { x0: P.cx - 14, x1: P.cx + 14, y0: 604, y1: 617 };
         const zone = { x0: P.zx - P.zw, x1: P.zx + P.zw, y0: P.zy - P.zh, y1: P.zy + P.zh };
         const hits = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+        /* Handedness: a steady share of the roster bats left, decided
+           by a hash so it never flips between visits, and the mirrored
+           box stays clear of the zone the way the home box does. */
+        const L = ROSTER.filter(c => batsLeft(c.k)).length;
+        const L2 = ROSTER.filter(c => batsLeft(c.k)).length;
         return { boxH: P.zh * 2, boxTop: P.zy - P.zh, boxBot: P.zy + P.zh,
                  batH: 40 * P.batSc, batTop: P.batY - 40 * P.batSc,
                  catTop: P.catY - 40 * P.catSc,
-                 catOnPlate: hits(cat, plate), catOnZone: hits(cat, zone) };
+                 catOnPlate: hits(cat, plate), catOnZone: hits(cat, zone),
+                 lefties: L, steady: L === L2, roster: ROSTER.length,
+                 leftBoxGap: (2 * P.cx - P.batX - 16 * P.batSc) - (P.zx + P.zw) };
       });
       ok(z.boxH < z.batH, 'the zone is shorter than the batter',
          `zone ${z.boxH} vs batter ${z.batH}`);
@@ -1438,6 +1451,11 @@ async function main() {
          `zone bottom ${z.boxBot}, catcher top ${z.catTop}`);
       ok(!z.catOnPlate, 'the catcher does not cover home plate', JSON.stringify(z));
       ok(!z.catOnZone, 'or any part of the zone', JSON.stringify(z));
+      ok(z.steady && z.lefties / z.roster >= 0.15 && z.lefties / z.roster <= 0.45,
+         'a steady share of the roster bats left',
+         `${z.lefties} of ${z.roster}`);
+      ok(z.leftBoxGap > 0, 'and the mirrored box stays clear of the zone',
+         `gap ${z.leftBoxGap}`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
