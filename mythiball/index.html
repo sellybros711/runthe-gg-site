@@ -6512,6 +6512,26 @@ let FIELD_VIEW = 1;
 /* The logical field, the size every coordinate in fieldGeom() is in, and the
    factor the on screen bitmap is larger by. */
 const FIELD_W = 960, FIELD_H = 660, FIELD_K = 1.5;
+/* ONE RESOLUTION. The characters are chunky pixel sprites and the field
+   was smooth vector art: anti-aliased ellipses, perfect gradients,
+   hairline chalk. Two art styles in one frame is the loudest "not a real
+   game" tell there is, and every reference is consistent instead
+   (Backyard is painted edge to edge, R.B.I. is low-res edge to edge).
+   So the WORLD is drawn small and scaled up with smoothing off: every
+   curve gets stairsteps, every gradient bands, and the field speaks the
+   sprites' language. PIX is the block size in logical pixels, close to a
+   sprite pixel (4.6) so the two grids read as one.
+
+   Text a player has to READ is the exception: 12px type in 3px blocks is
+   four rows of mush. Those sites queue themselves through hud() during
+   the world draw and are replayed on the display canvas at full
+   resolution, each under its own captured transform, so instructions
+   stay type while the world stays pixels. Diegetic text (wall distance
+   markers, signature-moment shouts) stays in the world on purpose. */
+const PIX = 3;
+let pixWorld = null;
+let HUD_Q = [];
+function hud(ctx, fn) { HUD_Q.push([ctx.getTransform(), fn]); }
 function startFieldLoop() {
   cancelAnimationFrame(fieldRafId);
   const paint = () => {
@@ -6559,12 +6579,32 @@ function startFieldLoop() {
         }
       }
       const ctx = fCv.getContext('2d');
-      /* Logical 960x660 onto the larger bitmap. drawField saves and
-         restores around its own transforms, so this base survives it. */
-      ctx.setTransform(FIELD_K, 0, 0, FIELD_K, 0, 0);
-      ctx.imageSmoothingEnabled = false;
       if (fCv.clientWidth) FIELD_VIEW = fCv.clientWidth / FIELD_W;
-      drawField(ctx, FIELD_W, FIELD_H, t, p || null, inWindup);
+      /* The world at one low resolution (see PIX above), then blitted to
+         the display bitmap with smoothing off. drawField saves and
+         restores around its own transforms, so the base survives it. */
+      if (!pixWorld) {
+        pixWorld = document.createElement('canvas');
+        pixWorld.width = Math.round(FIELD_W / PIX);
+        pixWorld.height = Math.round(FIELD_H / PIX);
+      }
+      const wctx = pixWorld.getContext('2d');
+      wctx.setTransform(1 / PIX, 0, 0, 1 / PIX, 0, 0);
+      HUD_Q.length = 0;
+      drawField(wctx, FIELD_W, FIELD_H, t, p || null, inWindup);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(pixWorld, 0, 0, fCv.width, fCv.height);
+      /* The crisp pass: each queued site replays on the display canvas
+         under the transform it was drawn with. The world context maps
+         logical through 1/PIX, the display maps through FIELD_K, so the
+         bridge between the two is one scale. */
+      for (const [m, fn] of HUD_Q) {
+        ctx.setTransform(FIELD_K * PIX, 0, 0, FIELD_K * PIX, 0, 0);
+        ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+        fn(ctx);
+      }
+      HUD_Q.length = 0;
       refreshStealButton();
     }
     fieldRafId = requestAnimationFrame(paint);
@@ -8423,12 +8463,15 @@ function drawUmpCall(ctx, G, base, verdict, dt) {
   }
   if (called) {
     const pop = Math.min(1, Math.max(0, dt) / 0.18);
-    ctx.font = `bold ${Math.round(10 + 5 * pop)}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(20,40,63,.85)';
-    ctx.fillText(verdict + '!', x + 1, y - 40 + 1);
-    ctx.fillStyle = verdict === 'OUT' ? '#e04a40' : '#4ad07a';
-    ctx.fillText(verdict + '!', x, y - 40);
+    hud(ctx, (c) => {
+      c.font = `bold ${Math.round(10 + 5 * pop)}px monospace`;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillStyle = 'rgba(20,40,63,.85)';
+      c.fillText(verdict + '!', x + 1, y - 40 + 1);
+      c.fillStyle = verdict === 'OUT' ? '#e04a40' : '#4ad07a';
+      c.fillText(verdict + '!', x, y - 40);
+    });
   }
 }
 
@@ -11156,16 +11199,19 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     }
     /* Badge */
     const blink = Math.floor(now / 400) % 2 === 0;
-    ctx.fillStyle = blink ? '#c94b1a' : '#8a2b10';
-    ctx.fillRect(cx - 92, 30, 184, 30);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('REPLAY', cx, 45);
-    ctx.fillStyle = '#f4c25a';
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText(`${R.h.batterName} · ${R.h.kind.toUpperCase()}`, cx, 74);
+    const badgeLine = `${R.h.batterName} · ${R.h.kind.toUpperCase()}`;
+    hud(ctx, (c) => {
+      c.fillStyle = blink ? '#c94b1a' : '#8a2b10';
+      c.fillRect(cx - 92, 30, 184, 30);
+      c.fillStyle = '#ffffff';
+      c.font = 'bold 14px monospace';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('REPLAY', cx, 45);
+      c.fillStyle = '#f4c25a';
+      c.font = 'bold 12px monospace';
+      c.fillText(badgeLine, cx, 74);
+    });
   }
 
   ctx.restore();
@@ -11373,10 +11419,13 @@ function drawScreenPass(ctx, w, h, g, theme, cam, cx, cy, r, chipY) {
       const label = st.label.toUpperCase();
       const color = st.level >= 3 ? '#c94b1a' : st.level === 2 ? '#e3b04c'
         : st.level === 1 ? '#5bb083' : '#8fd0a0';
-      ctx.font = 'bold 10px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = color;
-      ctx.fillText(label, cx, chipY != null ? chipY : cy - 26);
+      hud(ctx, (c) => {
+        c.font = 'bold 10px monospace';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillStyle = color;
+        c.fillText(label, cx, chipY != null ? chipY : cy - 26);
+      });
     }
   }
 
@@ -11417,12 +11466,14 @@ function drawCatchRing(ctx, lx, ly, t) {
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(lx, ly, rSmall, 0, Math.PI * 2); ctx.stroke();
   /* Label */
-  ctx.fillStyle = '#f4c25a';
-  ctx.font = 'bold 12px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('CATCH IT!', lx, ly - rBig - 12);
-  ctx.fillText('SPACE / CLICK', lx, ly + rBig + 12);
+  hud(ctx, (c) => {
+    c.fillStyle = '#f4c25a';
+    c.font = 'bold 12px monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('CATCH IT!', lx, ly - rBig - 12);
+    c.fillText('SPACE / CLICK', lx, ly + rBig + 12);
+  });
 }
 function drawThrowBar(ctx, w, h, cx, win, t) {
   const barW = w * 0.5;
@@ -11444,11 +11495,13 @@ function drawThrowBar(ctx, w, h, cx, win, t) {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(barX + t * barW - 2, barY - 3, 4, barH + 6);
   /* Label */
-  ctx.fillStyle = '#f4c25a';
-  ctx.font = 'bold 12px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + 12);
+  hud(ctx, (c) => {
+    c.fillStyle = '#f4c25a';
+    c.font = 'bold 12px monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + 12);
+  });
 }
 
 /* The smallest ball worth drawing: four CSS pixels of radius on screen,
@@ -11665,18 +11718,20 @@ function drawTimingRing(ctx, G, t, pitch, inWindup) {
     ring(R0, `rgba(27,58,92,${0.35 + pulse * 0.5})`, 3);
     /* On a daylight field white text at 75 percent is a smudge. It goes
        on a plate, like everything else that has to be read over grass. */
-    ctx.font = 'bold 12px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     const gy = cyp - R0 * 0.62 - 12;
-    const gw = ctx.measureText('GET READY').width + 14;
-    ctx.fillStyle = 'rgba(255,252,242,.94)';
-    ctx.fillRect(cxp - gw / 2, gy - 9, gw, 18);
-    ctx.strokeStyle = '#1b3a5c';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(cxp - gw / 2, gy - 9, gw, 18);
-    ctx.fillStyle = '#cf3229';
-    ctx.fillText('GET READY', cxp, gy);
+    hud(ctx, (c) => {
+      c.font = 'bold 12px monospace';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      const gw = c.measureText('GET READY').width + 14;
+      c.fillStyle = 'rgba(255,252,242,.94)';
+      c.fillRect(cxp - gw / 2, gy - 9, gw, 18);
+      c.strokeStyle = '#1b3a5c';
+      c.lineWidth = 2;
+      c.strokeRect(cxp - gw / 2, gy - 9, gw, 18);
+      c.fillStyle = '#cf3229';
+      c.fillText('GET READY', cxp, gy);
+    });
     return;
   }
   const rel = (pitch.ideal - t) / pitch.ideal;
