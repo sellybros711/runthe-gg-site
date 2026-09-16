@@ -1044,7 +1044,34 @@ function fullTeamReport(n) {
         + fmtTail(r.tail)
         + ('$' + r.meanSpend.toFixed(0)).padStart(8)
         + (row.name === 'optimal'
-          ? `   split ${'$' + buildFullOptimal(cap, true).off.toFixed(1)} off / ${'$' + buildFullOptimal(cap, true).def.toFixed(1)} def`
+          ? (() => {
+            /*
+             * THE SPLIT IS A GUARD, NOT A CURIOSITY, and it is here because a tuning pass
+             * that read perfectly in every other column was caught by nothing else.
+             *
+             * Full Team is too hard at the bottom: measured against the quick draft, careless
+             * play wins 8% of games against 25% and careful play makes the playoffs 4.5% of
+             * the time against 42%. The cause is that the mode is TWO-SIDED, so an imperfect
+             * roster is punished on both sides at once: its points allowed swing 2.06x across
+             * the drafting range where the quick draft's swing 1.16x.
+             *
+             * The obvious fix is to compress that swing. Tried, at an exponent that put the
+             * win rates almost exactly on the reference rows, and it GUTTED THE MODE: with
+             * defence worth less, the solver stopped buying any, and the optimal roster went
+             * from $159.5M / $100.4M to $242.0M / $17.9M. Twelve picks across two units is
+             * the whole premise, and every win-rate column said the change was working.
+             *
+             * So the split is printed with a verdict on it. A mode whose best roster spends
+             * nine tenths of the cap on one unit is not balanced however good its win rate
+             * looks.
+             */
+            const sp = buildFullOptimal(cap, true);
+            const share = sp.def / (sp.off + sp.def);
+            const verdict = share < 0.18 ? '  DEFENCE ABANDONED'
+              : share > 0.62 ? '  OFFENCE ABANDONED' : '';
+            return `   split ${'$' + sp.off.toFixed(1)} off / ${'$' + sp.def.toFixed(1)} def`
+              + verdict;
+          })()
             + `   coach ${(buildFullOptimal(cap, true).coach || {}).name || 'none'}`
           : ''));
     }
