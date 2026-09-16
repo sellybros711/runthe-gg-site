@@ -1593,6 +1593,12 @@ window.GA_ID='G-L29P5MRWKE';
      on one of them. */
   .gb-foot b{color:#F3DDAE;font-weight:800;font-variant-numeric:tabular-nums;
     white-space:nowrap}
+  /* THE TOTAL, THE WEEK IT MOVES. The same bump the score bug uses, so a figure changing
+     under a running simulation looks the same wherever it happens on this page.
+     display:inline-block because a transform does nothing at all to an inline box, which is
+     the quiet way an animation like this ends up shipped and never seen. */
+  .gb-foot b.tbump{display:inline-block;animation:bump .34s ease-out both}
+  @media (prefers-reduced-motion:reduce){ .gb-foot b.tbump{animation:none} }
   .gb-foot .gb-next{text-align:right;flex:0 0 auto}
   .gb-foot:empty{display:none}
   /* THE STRIP INSIDE THE WINTER CARD. That card pads its own children by 15px and the strip
@@ -9886,6 +9892,10 @@ function newRun(opts){
      Team path itself: the first mutation after this writes the new run back through the
      autosave wrapper. */
   fullClear();
+  /* The running total's memory of its own last value, which belongs to the run that produced
+     it. Left behind, the first paint of a new dynasty compares 0-0 against the last one's
+     71-43 and flashes a number that has not moved because it has not started. */
+  dynTotalLast='';
   submitted=null;
   myRanks=null;
   myGmRank=null; ranksP=null; gmRankP=null;
@@ -15929,7 +15939,15 @@ function pushGame(r,el,idx){
    it is drawing, and so a skipped season and a played one produce the same grid.
    Twenty-one squares is nothing to repaint. */
 function paintCalendar(justPlayed){
-  const s=run.season, cells=[];
+  const s=run&&run.season, cells=[];
+  /* THE TWIN OF paintNext'S GUARD, and it was found the same way: a checker run threw
+     "Cannot read properties of null (reading 'results')" one line down, on a repaint that
+     landed while run.season was null. Guarding one painter and not the other only moved
+     which line the race lands on, which is worth writing down, because the next repaint
+     added to this page will need the same question asked of it.
+     Same answer, too: this function only draws, and what a throw here costs is the whole
+     screen, since the frame stays up and every button on it stops answering. */
+  if(!s||!Array.isArray(s.results)) return;
   const done=new Map();
   s.results.forEach(r=>done.set(r.playoff?'p|'+r.round:'w|'+r.week,r));
   const square=(key,tag,code,extra)=>{
@@ -16050,20 +16068,57 @@ function dynSeasonChip(){
  * SEASON ONE GETS NO LEFT HALF rather than "0-0". There is nothing behind it, and a zero is a
  * claim about a career that has not started.
  */
-/* WHAT THE CAREER HAS PRODUCED, identical on both screens that show it. run.history holds
-   FINISHED seasons only, which is what makes one function serve both: on the season screen
-   it is every season before the live one, and in the offseason it is every season including
-   the one just played, and in both cases it is exactly "behind you".
-   NO SEASON COUNT. Both screens print the season number in the display face inches away,
-   and "5 seasons behind you" beside a 6 is two numbers for one fact. What is left is the
-   part that number cannot say: what those seasons actually produced. */
+/* WHAT THIS DYNASTY HAS PRODUCED, ALL OF IT, identical on both screens that show it.
+ *
+ * IT SAID "BEHIND YOU" AND COUNTED ONLY FINISHED SEASONS, which were two halves of one
+ * problem. A player asked what the number meant and guessed at a career record, which is the
+ * right guess and was the wrong number: during season seven it was seasons one to six, and
+ * the twelve games already played that year were not in it. The old note argued the live
+ * record was on the score bug and in the calendar heading already, so a third copy was
+ * noise. That is true of the LIVE record and it is not an argument for a running total that
+ * stops four months short, which is a different figure from either.
+ *
+ * So it says Total and it means it: every game this dynasty has played, the one being played
+ * included, moving every week as the season runs.
+ *
+ * NOT "CAREER", AND THAT IS THE ONE WORD THAT WAS AVAILABLE AND WRONG. The profile keeps
+ * career numbers across every run this account has ever played (pfCareerPaint), so the same
+ * word on this bar would name a smaller thing two taps away from naming a bigger one, and
+ * neither screen would be able to say which. Total is about this dynasty and reads as it.
+ *
+ * NO DOUBLE COUNT, AND THE WINDOW IT WOULD HAPPEN IN IS REAL. ownerVerdict pushes the
+ * finished season into history and beginOffseason is what clears run.season, so between them
+ * the results screen holds the same season in BOTH places. The guard is the season NUMBER
+ * rather than a phase: history entries carry seasonNo, so a live season already filed is one
+ * comparison away and the answer cannot drift with the screen it is read from.
+ *
+ * NO SEASON COUNT. Both screens print the season number in the display face inches away, and
+ * "5 seasons" beside a 6 is two numbers for one fact. */
+let dynTotalLast='';
 function dynBehindSpan(){
   const h=Array.isArray(run.history)?run.history:[];
-  if(!h.length) return '';
-  const w=h.reduce((t,x)=>t+(x.wins||0),0);
-  const l=h.reduce((t,x)=>t+(x.losses||0),0);
-  const titles=h.filter((x)=>x.title).length;
-  return '<span>Behind you <b>'+w+'-'+l+'</b>'+
+  let w=h.reduce((t,x)=>t+(x.wins||0),0);
+  let l=h.reduce((t,x)=>t+(x.losses||0),0);
+  let titles=h.filter((x)=>x.title).length;
+  const s=run.season;
+  const last=h.length?h[h.length-1]:null;
+  const filed=!!(last&&last.seasonNo===run.seasonNo);
+  if(s&&Array.isArray(s.results)&&!filed){
+    w+=s.results.filter((r)=>r.won).length;
+    l+=s.results.filter((r)=>!r.won).length;
+  }
+  /* Nothing played at all is still nothing to claim, which is what the season one guard was
+     always for. It is a count of GAMES now rather than of seasons, so kickoff week of a first
+     season is the only moment it is empty. */
+  if(!w&&!l) { dynTotalLast=''; return ''; }
+  const key=w+'-'+l;
+  /* A NUMBER THAT MOVED SHOULD LOOK LIKE IT MOVED. The strip is rebuilt from innerHTML on
+     every repaint, so there is no element to animate between two values; what carries the
+     change is the class on the new one, and the previous value has to be remembered here
+     because the DOM no longer holds it. */
+  const moved=!!dynTotalLast&&dynTotalLast!==key;
+  dynTotalLast=key;
+  return '<span>Total <b'+(moved?' class="tbump"':'')+'>'+key+'</b>'+
     (titles?' &middot; <b>'+titles+'</b> title'+(titles===1?'':'s'):'')+'</span>';
 }
 /*
