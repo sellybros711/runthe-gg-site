@@ -7272,6 +7272,24 @@ function swingGeometry(cursorT, aim, pitch, ctx, mode) {
            lift: clamp(loc.y - cur.y, -0.8, 0.8), off: cursorT - pitch.ideal };
 }
 
+/* WHY THE SWING CAME UP EMPTY, in two words on the callout. The game has
+   always known: the geometry carries the signed timing error, how far the
+   barrel was from the ball, and whether the bat passed over or under it.
+   None of it reached the player, so a whiff taught nothing and the timing
+   game had to be reverse-engineered from outcomes. The verdict names the
+   LARGER of the two mistakes, each measured against its own tolerance, so
+   it is always the thing worth fixing first. Player swings only: the
+   CPU's homework is nobody's business. */
+function swingVerdict(geo) {
+  const timingBad = Math.abs(geo.off) / Math.max(0.02, geo.half);
+  const spotBad = geo.d / Math.max(0.05, geo.reach);
+  if (timingBad < 0.65 && spotBad < 0.65) return 'JUST MISSED IT';
+  if (timingBad >= spotBad) return geo.off < 0 ? 'EARLY' : 'LATE';
+  if (geo.lift > 0.28) return 'UNDER IT';
+  if (geo.lift < -0.28) return 'OVER IT';
+  return 'OFF THE SPOT';
+}
+
 function resolveSwing(cursorT, aim) {
   endAtBatCleanup();
   const g = State.game;
@@ -7363,10 +7381,17 @@ function resolveSwing(cursorT, aim) {
     g.plateHold = performance.now() + BEAT.afterWhiff + 300;
     g.strikes++;
     addLog(`${batter.n} swings and misses.`);
-    showCallout('SWING AND MISS', 'strike');
+    showCallout(playerIsBatting()
+      ? `SWING AND MISS · ${swingVerdict(geo)}` : 'SWING AND MISS', 'strike');
     Sound.play('whiff');
     refreshHud();
-    if (g.strikes >= 3) return recordOut('swinging strikeout', true);
+    /* Strike three: recordOut's banner would paint over the verdict, and
+       the swing that ends the at bat is the one whose lesson matters
+       most. Hand it the suffix. */
+    if (g.strikes >= 3) {
+      g.koVerdict = playerIsBatting() ? swingVerdict(geo) : null;
+      return recordOut('swinging strikeout', true);
+    }
     return setTimeout(nextPitch, BEAT.afterWhiff);
   }
 
@@ -7376,7 +7401,8 @@ function resolveSwing(cursorT, aim) {
     g.plateHold = performance.now() + BEAT.betweenPitches + 300;
     if (g.strikes < 2) g.strikes++;
     addLog(`${batter.n} fouls it off.`);
-    showCallout('FOUL BALL', 'sub');
+    showCallout(playerIsBatting()
+      ? `FOUL BALL · ${swingVerdict(geo)}` : 'FOUL BALL', 'sub');
     Sound.play('foul');
     /* the ball sprays up and back, out of play */
     {
@@ -8523,14 +8549,22 @@ function scheduleContactPlay(kind, batter, info) {
      comes OFF THE BAT rather than materializing mid-field. */
   Sound.play('crack');
   {
+    /* The burst is PROPORTIONAL. A squared-up ball and a jam shot used to
+       throw the same ten sparks, so the eye learned nothing from the
+       crack; now the pop is the readout. q is the swing's contact quality
+       when the swing carried one, and the default keeps old behaviour for
+       the paths that call in without it (bunts, quirks). */
+    const q = info && info.q != null ? clamp(info.q, 0, 1) : 0.5;
     const geo = fieldGeom();
     const hitX = geo.cx - 14, hitY = geo.plateY - 4;
-    for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2;
+    const sparks = 6 + Math.round(q * 12);
+    for (let i = 0; i < sparks; i++) {
+      const a = (i / sparks) * Math.PI * 2;
+      const v = 100 + q * 120;
       spawnFx(g, {
-        x: hitX, y: hitY, size: 3,
-        vx: Math.cos(a) * 140, vy: Math.sin(a) * 140 - 40,
-        grav: 200, color: i % 2 ? '#f4c25a' : '#ffffff', life: 340,
+        x: hitX, y: hitY, size: 2 + Math.round(q * 2),
+        vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40,
+        grav: 200, color: i % 2 ? '#f4c25a' : '#ffffff', life: 300 + q * 160,
       });
     }
   }
@@ -9291,7 +9325,10 @@ function recordOut(reason, isStrikeout) {
         g.crowdUpUntil = performance.now() + 1800;
       }
     } else {
-      showCallout('STRIKEOUT', 'strike');
+      /* The verdict rides the K banner when the whiff branch left one:
+         the swing that ended the at bat is the one to learn from. */
+      showCallout(g.koVerdict ? `STRIKEOUT · ${g.koVerdict}` : 'STRIKEOUT', 'strike');
+      g.koVerdict = null;
     }
   }
   if (g.outs >= 3) return endHalfInning();
