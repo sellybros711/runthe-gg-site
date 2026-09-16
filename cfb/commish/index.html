@@ -2830,9 +2830,23 @@ function seasonCleared(){
   /* A SAVE FROM BEFORE THIS EXISTED has no `cleared` at all, and the honest reading of it
      is the year it is on rather than zero. Anything else would open a wall in front of a
      term somebody was already halfway through, on the day this shipped, for a limit that
-     did not exist when they started it. They get the rest of that term free and the meter
-     starts at their next one. */
-  if(world.cleared==null) return true;
+     did not exist when they started it.
+     THE YEAR IS ADOPTED RATHER THAN WAVED THROUGH, AND THAT IS A FIX. This branch used to
+     `return true` and write nothing, and the comment under it claimed the meter started at
+     the next term. It never started at all. The only two things that write `cleared` are
+     seasonWall, which this branch skips by definition, and takeJob/newTerm, which belong to
+     a different term; so the field stayed null, this branch answered true again the next
+     season, and again, and a free account played an unlimited number of seasons with the
+     clock never asked once. A free account gets one contract, so that was the whole product
+     for nothing. Reported as "on a free account it allowed me to continue to the next
+     season".
+     Writing it here makes the grace what it always said it was: the season already under
+     way is free, and the one after it is charged like any other. A grace has to leave a
+     mark or it is not a grace, it is an exemption.
+     THE ONE SIDE EFFECT IN A FUNCTION THAT IS OTHERWISE A QUESTION, and it is safe because
+     office() is the only caller: this is the same moment seasonWall would have written the
+     same field, reached by the one path that skips it. */
+  if(world.cleared==null){ world.cleared=world.year; save(); return true; }
   return world.year<=world.cleared;
 }
 /* The one place a season is bought with a day. Resolves nothing: it either moves to the
