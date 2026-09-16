@@ -112,6 +112,50 @@ const FREE = (terms) => ({ ok: true, pro: false, locked: true,
   next_at: iso(24 * 3600000), now_at: new Date().toISOString(), seasons: 1,
   terms: terms || 0 });
 
+/* ── a save from before the meter is graced ONCE, not for ever ──────────────────────
+ *
+ * REPORTED BY THE OWNER: "On a free account it allowed me to continue to the next season."
+ *
+ * seasonCleared() reads `world.cleared`, the last year this save paid for, and a save
+ * written before 104 shipped has no such field. The branch for that returns true so the
+ * wall never opens in front of a term somebody was already halfway through, and its comment
+ * says "they get the rest of that term free and the meter starts at their next one".
+ *
+ * IT DID NOT START. Nothing on that path ever WRITES `cleared`: the only two writers are
+ * seasonWall (never reached, the gate passed) and takeJob/newTerm (a different term). So the
+ * field stays null, the branch answers true again next season, and again, and a free account
+ * plays an unlimited number of seasons with the clock never asked once. A free account gets
+ * one contract, so in practice that is the whole product for nothing.
+ *
+ * Asserted over TWO seasons, because one proves the grace and two prove it expired. */
+{
+  const p = await open('a pre-meter save is graced once and then metered',
+    { clock: () => FREE() });
+  await job(p);
+  /* The save as it would arrive from before 104: no `cleared` at all. Deleted AFTER taking
+     the job, because takeJob is what writes it, and the shape being tested is a save that
+     never had it. */
+  await p.evaluate(() => { delete window.PS_CFB_COMMISH_TEST.world().cleared; });
+  const spentBefore = p.calls.spend;
+  await nextYear(p, 2026);
+  await p.waitForTimeout(400);
+  ok('the season it was on plays, which is the grace', await on(p, 's-office'));
+  ok('  and it cost no day, because it was already under way',
+    p.calls.spend === spentBefore, p.calls.spend + ' spends');
+  /* AND THE FIELD IS ADOPTED, which is the whole fix: the grace has to leave a mark or it
+     is not a grace, it is an exemption. */
+  const adopted = await p.evaluate(() => window.PS_CFB_COMMISH_TEST.world().cleared);
+  ok('  and the save now records the year it was graced', adopted === 2026, String(adopted));
+  /* THE NEXT ONE IS METERED. This is the assertion the bug fails: before the fix the gate
+     read null a second time and let this through with no request at all. */
+  await nextYear(p, 2027);
+  await p.waitForTimeout(500);
+  ok('the NEXT season is charged like any other', p.calls.spend === spentBefore + 1,
+    p.calls.spend + ' spends');
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
 /* ── the first season is free ────────────────────────────────────────────────────── */
 {
   const p = await open('a free account plays its first season without being asked',
