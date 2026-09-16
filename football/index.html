@@ -1745,6 +1745,11 @@ window.GA_ID='G-L29P5MRWKE';
   .bg-narr b{color:#f4f7fc;font-weight:700}
   .bg-narr .good{color:#4ade80;font-weight:800}
   .bg-narr .bad{color:#f87171;font-weight:800}
+  .bg-skip{display:flex;justify-content:flex-end;margin:-2px 2px 2px}
+  /* THE SIXTH TIME IN THIS FILE. .bg-skip sets display:flex, so the `hidden` the script
+     writes on it never takes without this line, and the control stays on screen through the
+     verdict offering to hurry a game that has finished. */
+  .bg-skip[hidden]{display:none}
   .bg-calls{margin-top:12px;display:grid;gap:9px}
   .bg-calls[hidden]{display:none}
   .bcall-q{font-family:var(--fn);font-size:13px;font-weight:700;color:#f4f7fc;
@@ -7739,6 +7744,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <canvas id="bg-fcanvas" width="600" height="150"></canvas>
     </div>
     <div class="bg-narr" id="bg-narr">The scout is in. Time to play.</div>
+    <!-- SIM THE REST. The drives animate one at a time and a boss battle is the longest
+         watch in the mode, so there has to be a way to get to the result. It does NOT take
+         the calls: fourth down and the two point try are what a boss battle IS, so it runs
+         the football fast and still stops to ask. See bossFast. -->
+    <div class="bg-skip" id="bg-skip"><button class="btn-text" id="b-boss-fast">Sim the rest</button></div>
     <!-- EVERY DRIVE, NOT JUST THE SCORES, which is the one thing this screen can do that the
          playoff broadcast cannot. That log is built from scoringScript, which works BACKWARDS
          from a final score to a legal way of reaching it, so the only honest thing it can list
@@ -19059,6 +19069,14 @@ $('b-po').onclick=()=>{R.startPlayoffs(run);runPlayoffs();};
 $('b-po-skip').onclick=()=>{R.startPlayoffs(run);show('s-season');fastForward();};
 $('b-po-fast').onclick=()=>{ if(poSkip) poSkip(); };
 $('b-nbrk-fast').onclick=()=>{ if(nbrkSkip) nbrkSkip(); };
+/* ONE WAY, and the control goes with the press. See bossFast. It does not touch bossTimer:
+   a drive already animating finishes its own frames and every drive after it runs fast, which
+   is both simpler than tearing down a running rAF and what a reader sees anyway. */
+$('b-boss-fast').onclick=()=>{
+  bossFast=true;
+  $('bg-skip').hidden=true;
+  ga('boss_sim_rest',{season:(run&&run.seasonNo)||0});
+};
 
 /* ---------- result ----------
    Reads top to bottom as the answer to four questions in order: what was my
@@ -19670,6 +19688,25 @@ function bossOppRow(){ const b=R.bossFor(run); return b?DATA.byTeamSeasonId[b.te
 function bossThreeLetter(o){
   return String(E.nickname(o.franchise)||o.franchise).replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase()||'OPP';
 }
+/*
+ * SIM THE REST, AND WHAT IT DELIBERATELY DOES NOT SKIP.
+ *
+ * A boss battle animates every drive and is the longest watch in the mode, so there has to
+ * be a way to the result. What it hurries is the FOOTBALL: the drive animation, the beat
+ * after a score and the handoff between drives.
+ *
+ * IT STILL STOPS FOR YOUR CALLS. Fourth down and the two point try are not pacing, they are
+ * the mode: the whole screen exists so that a boss is a set of decisions rather than a
+ * number that appears. Auto-picking them to save six seconds would hand the game the one
+ * part the player came for, and a run that was lost by a call the page made for you is the
+ * worst thing this mode could do.
+ *
+ * ONE WAY. Pressing it takes the control away rather than toggling, because a button that
+ * un-hurries a game is answering a question nobody asks, and the flag has to survive the
+ * decisions it pauses at: somebody who asked for the rest of it fast means after the call
+ * too.
+ */
+let bossFast=false;
 function bossStop(){ clearTimeout(bossTimer); cancelAnimationFrame(bossRaf); }
 function bossRenderScore(){
   $('bg-syou').textContent=bossSim.you; $('bg-sthem').textContent=bossSim.them;
@@ -19762,6 +19799,10 @@ function bossPlay(read){
       ? '<b class="bad">They saw it coming.</b> It plays into their hands.'
       : 'The plan is set. Kickoff.';
   $('bg-calls').hidden=true; $('bg-calls').innerHTML=''; $('bg-done').hidden=true;
+  /* PER GAME, NOT PER RUN. A boss can be replayed from the results screen, and a flag left
+     set would start the replay already skipping a game nobody had asked to skip yet. */
+  bossFast=false;
+  if($('bg-skip')) $('bg-skip').hidden=false;
   /* Emptied with the rest of the screen. A boss can be replayed from the results screen, and
      a log that kept the last attempt's drives would open the second one already twelve rows
      deep in a game nobody played. */
@@ -19781,7 +19822,7 @@ function bossLoop(){
   /* 200ms between events was the rest of why the game was over in a blink. The drives
      themselves carry the pace now, so this is the handoff between them rather than the
      pace itself. */
-  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,420); });
+  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420); });
 }
 
 /* Animate every drive the sim has produced but not yet drawn, in order, then continue. */
@@ -19860,6 +19901,22 @@ function bossLogDrive(d){
  * against a floor of 900 and a ceiling of 3000 keeps the RELATIONSHIP the old numbers had,
  * which is the part worth keeping: a long drive visibly takes longer than a short one. */
 function bossAnimateDrive(d,cb){
+  /* THE WHOLE DRIVE AT ONCE. Every line the slow path ends on runs here in the same order,
+     because the log row has to be written after the score lands either way: drawn, scored,
+     logged. What goes is the frames in between and the beat after a touchdown. */
+  if(bossFast){
+    bossDraw(d.tEnd,false); bossSetClock(d.tEnd);
+    $('bg-bug').classList.toggle('urgent',d.tEnd>=3300);
+    bossRenderScore();
+    bossLogDrive(d);
+    /* HANDED BACK THROUGH A TIMER RATHER THAN CALLED. bossFlush calls this for every drive
+       the sim has produced, so a synchronous cb would run the rest of the game inside this
+       one frame: a stack as deep as the game is long, and a screen that never paints between
+       the first drive and the verdict. Zero is instant to a reader and is still a turn of the
+       event loop, so the log fills in and the bug moves. */
+    bossTimer=setTimeout(cb,0);
+    return;
+  }
   const dur=Math.max(900,Math.min(3000,(d.plays||4)*260));
   const t0=(window.performance||Date).now();
   const scored=d.result==='td'||d.result==='fg';
@@ -19915,13 +19972,33 @@ function bossShowDecision(d){
       box.innerHTML=''; box.hidden=true;
       $('bg-narr').innerHTML=bossCallNarr(d.kind,choice,res);
       bossRenderScore();
-      /* THE LOG ROW THE DECISION BELONGS TO IS ALREADY WRITTEN. A touchdown that pauses for
-         a two point call is logged when the drive ends, which is BEFORE the conversion is
-         taken, so that row carried a score one or two points short and never caught up: the
-         column then stepped by three where a reader could only find a touchdown. The bug
-         above was always right, which is what made the log wrong rather than merely stale. */
-      bossRescoreLast();
-      bossFlush(()=>{ bossTimer=setTimeout(bossLoop,560); });
+      /*
+       * ONLY WHEN THE ROW THIS DECISION BELONGS TO IS ALREADY WRITTEN.
+       *
+       * The case it was added for: a touchdown that pauses for a two point call is logged
+       * when the drive ends, which is BEFORE the conversion is taken, so that row carried a
+       * score one or two points short and never caught up. The bug above was always right,
+       * which is what made the log wrong rather than merely stale.
+       *
+       * IT RAN ON EVERY DECISION, AND A FOURTH DOWN IS THE OTHER WAY ROUND. There the drive
+       * has NOT ended when the call is made: bossSimResolve ends it, pushes it, and bossFlush
+       * below is what logs it. So the top row at this moment is the PREVIOUS drive, somebody
+       * else's, and stamping the new score onto it moved your points one drive early. Kick a
+       * 29 yard field goal to go 14-55 up to 17-55 and the three landed on Seattle's field
+       * goal above it, so the row for your kick repeated 17-55 and the kick read as though it
+       * had scored nothing. Reported by a player, from the one screen where every drive is
+       * listed and a reader can check the column against itself.
+       *
+       * ASKED STRUCTURALLY, not by the decision's kind. The question is whether anything new
+       * has been produced that is not on screen yet, and bossShown against drives.length is
+       * exactly that question. A two point try adds no drive, so the counts match and the top
+       * row is the touchdown being converted; a fourth down that ends the drive pushes one, so
+       * they do not and bossFlush logs it with the right score a moment later. A fourth down
+       * conversion pushes nothing and changes no score, so this writes back what is already
+       * there.
+       */
+      if(bossShown>=bossSim.drives.length) bossRescoreLast();
+      bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:560); });
     };
   });
 }
@@ -19945,6 +20022,7 @@ function bossCallNarr(kind,choice,res){
 function bossFinish(ev){
   bossStop();
   const b=bossSpecNow||R.bossFor(run), o=bossOppNow||bossOppRow();
+  if($('bg-skip')) $('bg-skip').hidden=true;
   $('bg-state').textContent='FINAL'; $('bg-q').textContent='FINAL';
   $('bg-ck').textContent=ev.won?'YOU WIN':'YOU LOSE';
   bossRenderScore(); bossDraw(3600,false);

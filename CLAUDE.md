@@ -1422,6 +1422,68 @@ rather than a missing one, and nothing throws.
 existed, and it asserts the run-based route still works: adding a second way in must not cost
 the first.
 
+### The boss battle, and the one screen that checks itself
+
+```
+node football/check-boss.mjs      six seeds, taking the field goal
+node football/check-boss.mjs go   the same, going for it on fourth down
+```
+
+**Its own file because its subject is a page.** `check-dynasty.mjs` drives `run.js` in node and
+never opens a browser, and a boss battle is a sim playing forward down by down while a screen
+animates it, pauses for a call, and writes a drive log beside it. The engine was right the
+whole time the screen was wrong.
+
+**This is the only place on the site that prints a RUNNING SCORE next to a list of drives**, so
+it is the only place a reader can check the game against itself, and the only place where
+getting it wrong is visible without anything throwing.
+
+**`bossRescoreLast()` ran on every decision and belongs to one of them.** It stamps the current
+score onto the TOP row of the log. It exists because a touchdown that pauses for a two point
+try is logged when the drive ends, which is BEFORE the conversion, so that row needed updating
+after. **A fourth down is the other way round**: the drive has not ended when the call is made,
+`bossSimResolve` ends it and pushes it, and `bossFlush` logs it a moment later. So the top row
+at that instant belonged to somebody else. Kick a 29 yarder to go 14-55 up to 17-55 and the
+three landed on Seattle's field goal above it, so the row for your own kick repeated 17-55 and
+the kick read as though it had scored nothing. Reported by a player.
+
+**Asked structurally, not by the decision's kind.** The question is whether anything has been
+produced that is not on screen yet, and `bossShown` against `bossSim.drives.length` is exactly
+that question. A two point try pushes no drive, so they match and the top row is the touchdown
+being converted. A fourth down that ends the drive pushes one, so they do not.
+
+**The assertion is a property of the column, never a number.** Read bottom to top: only the
+team that scored on a drive may move, a drive that scored nothing may move neither, and the
+last row has to be the final on the bug. A pinned final score passes on a log whose middle is
+nonsense, which is exactly the log that was shipping, because the bug above the field was
+right the whole time.
+
+**It samples seeds.** The fault needs a fourth down call to land next to somebody else's
+drive. Measured with the bug reintroduced: three of six seeds show it, so a one-seed check
+would have been a coin flip on whether the file was worth having.
+
+#### Sim the rest, and what it deliberately does not skip
+
+A boss battle animates every drive and is the longest watch in the mode, so `bossFast` hurries
+the FOOTBALL: the drive animation, the beat after a score, the handoff between drives.
+
+**It still stops for your calls.** Fourth down and the two point try are not pacing, they are
+the mode: the screen exists so a boss is a set of decisions rather than a number that appears.
+A run lost to a call the page made for you is the worst thing this mode could do.
+
+**One way, and the flag survives the decisions it pauses at.** Pressing it takes the control
+away rather than toggling, and somebody who asked for the rest of it fast meant after the call
+too. **The fast path hands back through `setTimeout(cb,0)` rather than calling `cb`
+directly**: `bossFlush` calls it per drive, so a synchronous handoff would run the whole game
+inside one frame, with a stack as deep as the game is long and no paint between the first
+drive and the verdict.
+
+`.bg-skip` sets `display:flex`, so it carries its own `[hidden]` rule. That is the sixth time
+in this file.
+
+`check-boss.mjs` drives every one of its runs through that button, so if it stopped working
+the whole file would time out.
+
 ### A badge you add has to be proved reachable
 
 ```
