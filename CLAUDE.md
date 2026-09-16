@@ -417,6 +417,41 @@ The old rule metered a START, and the mode it produced was the entire game with 
 front of it: begin on Monday, still be playing that same run at season 60 without the game
 asking again. The only thing the bundle sold was re-drafting.
 
+#### And a SECOND meter counts how often you start one
+
+`supabase/106_dynasty_one_run_a_day.sql`. Three seasons a day meters how much you PLAY, and
+those two questions come apart the moment somebody does not like their draft: abandon after
+a season and the budget buys three rosters, which is "one team, one life" turned into three
+rolls of the wheel. So a NEW run is its own allowance, one per rolling day. Resuming costs
+nothing here and never did.
+
+**It adds a column and restates nothing, deliberately.** A `runs` counter beside `used` would
+have to be reset where the window rolls forward, which is inside `ps_attempt_spend`, and that
+function has already been restated once by `105_fullteam_daily.sql`: copying 102's body over
+the top would silently undo 105 and take Full Team's meter with it. **A timestamp needs no
+reset.** `run_at` is when the last new run started, so the question is arithmetic on it and
+no existing function is touched at all. Same shape `commish_free_clock` uses, for the same
+reason.
+
+**Read at the door, written at the wheel.** `runDayShut()` answers off a cached read, so the
+front page can draw the door without a round trip and an obvious refusal costs nothing;
+`B.dynRunStart()` is the write and it fires from inside the `dynastyIntro` callback, at the
+last moment before the board opens, so backing out of the rules sheet spends nothing. The
+write is never awaited: every allowance on this page fails open, and hanging the wheel on a
+round trip would be the one gate here that can cost somebody their turn to a tunnel.
+
+**Every gate sits above every line that destroys a save**, which is `dynNewSheet`'s lesson
+arriving at a second door. **Two paths reach `beginDraft`** and both carry the check:
+`beginDynastyDraft`, above `dynRead` and `dynClear`, and the replace sheet's own button,
+which is the one path that does not go back through it. A sheet also sits open for as long
+as somebody leaves it open, so the day can shut underneath it, and `check-premium.mjs` drives
+exactly that: opened on an open day, pressed on a shut one, and the assertion that matters is
+that the dynasty it would have traded away is still there.
+
+**The door says so before the tap**, on its own branch after the season one. Seasons left and
+no run to spend them on is a state the season branch cannot describe: what is used up is the
+fresh start rather than the budget, so "Day done" would be wrong about both halves.
+
 **A firing ending the day is not spite, it is what stops the budget buying a reroll.** Fired
 in season one with two seasons left, the cheapest use of them is a string of fresh season
 ones until one drafts well. That is both the behaviour the meter exists to discourage and
@@ -683,6 +718,7 @@ shorter wait walks the window backwards into the player's evening instead of out
 | | free allowance | clock starts |
 |---|---|---|
 | Dynasty | **3 seasons a day**, plus one for a boss battle won | when the budget is spent, or on a firing |
+| Dynasty, new runs | **1 a day** (106, a second meter) | when the run is started |
 | Commissioner | **1 season a day** | when each season ends |
 | Trade Machine | **1 run a day** | Eastern midnight |
 | Full Team | **1 run a day** | Eastern midnight |

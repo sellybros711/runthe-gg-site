@@ -128,10 +128,23 @@ const INJECT = 'beginDynastyDraft,premiumSheet,profileSheet,pfPro,acctTier,premi
   + 'const s=dailyState[m]||{};return Object.assign({},s,{used:s.allowance,ended:!!f,'
   + 'resetsAt:new Date(Date.now()+864e5).toISOString()});};return n;},'
   + 'setPremium:(v)=>{premiumSet=v;},setDaily:(m,v)=>{dailyState[m]=v;},'
-  + 'getDaily:(m)=>dailyState[m],'
+  + 'getDaily:(m)=>dailyState[m],markAsked:()=>{dailyAsked={dynasty:true,trade:true,full:true};},'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 const t = await openPage(browser, 'http://local.test/football/', { tester: true, inject: INJECT });
-await t.page.evaluate(() => window.__t.signIn());
+/*
+ * EVERY METER IS HAND-SET FROM HERE ON, SO NOTHING MAY GO AND ASK THE REAL ONE.
+ *
+ * dailyEnsure fires on the first paint after sign-in and writes whatever comes back over
+ * dailyState, and what comes back here is null, because this harness routes every request
+ * that is not local.test to abort. That is a RACE against the sections below: the answer
+ * lands whenever the aborted fetch resolves, and if it lands between two stubbed states it
+ * replaces the one under test with null. It did, on the middle of three grace claims, and
+ * the symptom was a boss toast that simply never appeared.
+ *
+ * Marked asked rather than stubbed, because no section here wants the real meter: every one
+ * of them sets dailyState itself. Ahead of signIn, so there is no paint in between.
+ */
+await t.page.evaluate(() => { window.__t.markAsked(); window.__t.signIn(); });
 
 /* THE RULES SHEET STANDS IN FRONT OF EVERY RUN NOW, unless the reader has ticked its own
    "don't show this again", so the two paths through dynastyIntro are opted-in and opted-out
@@ -1727,6 +1740,160 @@ ok('the row stops the counting', paid.metered === false);
 ok('  and the pitch goes quiet for an owner', paid.pitch === false);
 ok('  and the door is still there', paid.dynastyDoor);
 await plain.page.close();
+
+/*
+ * ONE NEW DYNASTY A DAY, AND THE GATE HAS TO SIT ABOVE THE LINES THAT DESTROY A SAVE.
+ *
+ * supabase/106_dynasty_one_run_a_day.sql meters how often somebody STARTS a dynasty, which
+ * is a different question from how many seasons they may play, and its own suite
+ * (supabase/test/dynasty_run_day_test.sql) counts it properly. This asks the half that suite
+ * cannot see: where the refusal lands in the page.
+ *
+ * WHAT CAN GO WRONG HERE IS SILENT AND IT HAS HAPPENED ONCE ALREADY. dynNewSheet cleared the
+ * save and asked the allowance afterwards, so the trade this mode is built on (this run for
+ * a new one) could be taken halfway: the dynasty went, the draft was then refused, and the
+ * player was left holding neither. Nothing throws when a save is removed.
+ *
+ * TWO DOORS REACH beginDraft AND BOTH ARE DRIVEN. beginDynastyDraft is the one every press
+ * goes through; the replace sheet's own button is the one that does NOT go back through it,
+ * so a gate added to the door alone is a gate with a hole beside it. That second one is
+ * driven the way it actually breaks, too: the sheet is opened on an OPEN day and pressed on
+ * a shut one, because a sheet sits open for as long as somebody leaves it open and the other
+ * slot, or another tab, can spend the day underneath it.
+ */
+console.log('\nONE NEW DYNASTY A DAY, AND A REFUSED ONE COSTS NOTHING');
+const rd = await openPage(browser, 'http://local.test/football/', { tester: false,
+  inject: 'beginDynastyDraft,dynRead,dynKeyFor,DYN_SAVE_VERSION,runDayShut,R:R,'
+    + 'setPremium:(v)=>{premiumSet=v;},setAsked:(m)=>{dailyAsked[m]=true;},'
+    + 'setDaily:(m,v)=>{dailyState[m]=v;},'
+    + 'setRunDay:(v)=>{runDayState=v;runDayAsked=true;},ensureDynastyButton,'
+    + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='t';"
+    + "authState.userId='u1';}" });
+await rd.page.evaluate(() => window.__t.signIn());
+/* The rules sheet stands in front of every run and this section is not about it. */
+await rd.page.evaluate(() => { try { localStorage.setItem('ps_dynintro_off', '1'); } catch (e) {} });
+/* A free account WITH SEASONS LEFT, so the only thing on this page that can refuse is the
+   new-run meter and a failure here cannot be the season budget wearing its clothes. */
+const rdSetup = (shut, withSave) => rd.page.evaluate(([shut, withSave]) => {
+  const T = window.__t;
+  try { localStorage.removeItem(T.dynKeyFor('open')); } catch (e) {}
+  T.setPremium([]);
+  T.setAsked('dynasty');
+  T.setDaily('dynasty', { used: 0, allowance: 3,
+    resetsAt: new Date(Date.now() + 9 * 3600e3).toISOString(), unit: 'season' });
+  T.setRunDay(shut
+    ? { ok: false, pro: false, nextAt: new Date(Date.now() + 9 * 3600e3).toISOString() }
+    : { ok: true, pro: false, nextAt: null });
+  /* WRITTEN STRAIGHT TO THE KEY rather than through dynSave, which packs the LIVE run and
+     there is no live run on the front page. What dynRead asks of it is all that matters: the
+     version, a dynasty with a roster in it, the open slot, and this account. */
+  if (withSave) {
+    localStorage.setItem(T.dynKeyFor('open'), JSON.stringify({
+      v: T.DYN_SAVE_VERSION, api: 1, user: 'u1', at: Date.now(), submitted: null,
+      run: { dynasty: true, franchise: null, phase: T.R.PHASES.OFFSEASON, seasonNo: 4,
+        roster: ['1|2020', '2|2020', '3|2020', '4|2020', '5|2020', '6|2020'],
+        coach: null, winter: null, history: [] },
+    }));
+  }
+  document.getElementById('sheet').classList.remove('on');
+  document.getElementById('sheet-in').dataset.kind = '';
+  return !!T.dynRead('open');
+}, [shut, withSave]);
+
+{
+  const had = await rdSetup(true, true);
+  const r = await rd.page.evaluate(() => {
+    window.__t.beginDynastyDraft();
+    return { on: document.getElementById('sheet').classList.contains('on'),
+      head: (document.querySelector('#sheet-in h2') || {}).textContent || '',
+      screen: [...document.querySelectorAll('.screen.on')].map((s) => s.id).join(','),
+      save: !!window.__t.dynRead('open') };
+  });
+  console.log('  a shut day, with a dynasty already saved:');
+  ok('    the save was there to begin with', had === true);
+  ok('    the door draws the wall', r.on && /today.s dynasty/i.test(r.head),
+    JSON.stringify(r.head));
+  ok('    the draft never opened', !/s-draft/.test(r.screen), r.screen);
+  ok('    AND THE SAVED DYNASTY IS UNTOUCHED', r.save === true, String(r.save));
+}
+{
+  await rdSetup(true, false);
+  const r = await rd.page.evaluate(() => {
+    window.__t.beginDynastyDraft();
+    const t = document.getElementById('sheet-in').innerText || '';
+    return { on: document.getElementById('sheet').classList.contains('on'),
+      says: /Nothing was used by asking/i.test(t),
+      offers: /Unlock everything/i.test(t),
+      screen: [...document.querySelectorAll('.screen.on')].map((s) => s.id).join(',') };
+  });
+  console.log('  a shut day with nothing saved:');
+  ok('    still refused', r.on);
+  /* IT SAYS WHAT IT DID NOT COST. A wall that only says no reads as a wall that took
+     something, which is the whole complaint this meter has to avoid producing. */
+  ok('    and says nothing was spent by asking', r.says);
+  ok('    with the bundle under the fact rather than over it', r.offers);
+  ok('    the draft never opened', !/s-draft/.test(r.screen), r.screen);
+}
+{
+  await rdSetup(false, true);
+  const r = await rd.page.evaluate(() => {
+    const T = window.__t;
+    T.beginDynastyDraft();                               // lands on the replace sheet
+    const opened = document.getElementById('sheet-in').dataset.kind;
+    T.setRunDay({ ok: false, pro: false,
+      nextAt: new Date(Date.now() + 9 * 3600e3).toISOString() });
+    document.getElementById('b-dr-new').click();
+    return { opened,
+      head: (document.querySelector('#sheet-in h2') || {}).textContent || '',
+      screen: [...document.querySelectorAll('.screen.on')].map((s) => s.id).join(','),
+      save: !!T.dynRead('open') };
+  });
+  console.log('  the replace sheet, pressed after the day shut under it:');
+  ok('    the sheet reached was the replace sheet', r.opened === 'dynreplace', r.opened);
+  ok('    the wall is drawn', /today.s dynasty/i.test(r.head), JSON.stringify(r.head));
+  ok('    the draft never opened', !/s-draft/.test(r.screen), r.screen);
+  ok('    AND THE DYNASTY IT WOULD HAVE TRADED AWAY IS STILL THERE',
+    r.save === true, String(r.save));
+}
+/* AND THE DOOR SAYS SO BEFORE THE TAP. Seasons left and no run to spend them on is a state
+   the season branch cannot describe: what is used up is the fresh start rather than the
+   budget, so a door reading Day done would be wrong about both halves, and one reading Start
+   a Dynasty sends somebody into a wall the front page already knew about. */
+{
+  await rdSetup(true, false);
+  const r = await rd.page.evaluate(() => {
+    const T = window.__t;
+    T.ensureDynastyButton();
+    const el = document.getElementById('b-start-dyn');
+    return { text: ((el || {}).innerText || '').replace(/\s+/g, ' ').trim(),
+      locked: !!(el && el.querySelector('.hp-tag-spent')),
+      pad: !!(el && el.querySelector('.hp-tag-spent svg')) };
+  });
+  console.log('  the front page door, on a spent new-run day with seasons left:');
+  ok('    carries the spent tag', r.locked, r.text);
+  ok('    with a padlock on it', r.pad);
+  ok('    and says a new dynasty rather than a new season', /New dynasty in/i.test(r.text), r.text);
+  ok('    and never claims the day is done', !/Day done/i.test(r.text), r.text);
+}
+/* THE THREE WAYS THE METER MUST NOT BITE. An open day, a database that has not had 106 yet
+   (the call errors, the state stays null, and no opinion is permission), and an owner. */
+{
+  await rdSetup(false, false);
+  const r = await rd.page.evaluate(() => {
+    const T = window.__t;
+    const open = T.runDayShut();
+    T.setRunDay(null);
+    const quiet = T.runDayShut();
+    T.setRunDay({ ok: true, pro: true, nextAt: null });
+    return { open, quiet, owner: T.runDayShut() };
+  });
+  ok('  an open day is not shut', r.open === false, String(r.open));
+  ok('  a database without 106 answers nothing, and nothing is permission',
+    r.quiet === false, String(r.quiet));
+  ok('  an owner is never shut', r.owner === false, String(r.owner));
+}
+ok('  and none of it threw', rd.boom.length === 0, rd.boom.join(' | '));
+await rd.page.close();
 
 await browser.close();
 console.log('');

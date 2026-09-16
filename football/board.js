@@ -1190,12 +1190,51 @@
   const attemptDayEnd = (mode, fired) =>
     attemptsCall('ps_attempt_day_end', mode, { p_fired: !!fired });
 
+  /* ── ONE NEW DYNASTY A DAY ────────────────────────────────────────────────────────
+     supabase/106_dynasty_one_run_a_day.sql. A SECOND meter beside the season budget,
+     and a different question: the three seasons meter how much you PLAY, this meters
+     how often you START. Without it a free account drafts, plays a season, abandons,
+     and drafts again, three times a day, which turns "one team, one life" into three
+     rolls of the wheel.
+
+     ITS OWN SHAPE, NOT attemptsCall's. These two take no p_mode (dynasty is the only
+     mode with a run worth re-rolling) and answer ok/pro/next_at rather than a used and
+     an allowance, so sharing the caller would mean a body with a dead argument in it
+     and a row normaliser that answers null for half its fields.
+
+     FAILS OPEN like every other allowance here, and for the reason the block above
+     gives: a wrongly granted redraft costs nothing anybody notices, and a wrongly
+     refused one tells somebody who came back to play that they cannot.
+
+     A 404 IS THE ANSWER ON A DATABASE WITHOUT 106, which fail() turns into null, which
+     the page reads as no opinion. So this ships safely before the migration is run. */
+  const runRow = (r) => {
+    const row = Array.isArray(r) ? r[0] : r;
+    if (!row) return null;
+    return { ok: row.ok !== false, pro: row.pro === true,
+      nextAt: row.next_at || null, nowAt: row.now_at || null };
+  };
+  async function runCall(fn) {
+    try {
+      const res = await timed(base() + 'rpc/' + fn, {
+        method: 'POST', headers: headers(), body: '{}' });
+      if (!res.ok) return await fail(fn, res);
+      return runRow(await res.json().catch(() => null));
+    } catch (e) { return failThrown(fn, e); }
+  }
+  /* May a new dynasty be started. A READ, safe on every paint, so the front page door
+     can draw the answer without the drawing ever costing somebody their run. */
+  const dynRunState = () => runCall('ps_dynasty_run_state');
+  /* Take it. Called once, at the moment the draft actually begins. */
+  const dynRunStart = () => runCall('ps_dynasty_run_start');
+
   window.PS_BOARD = {
-    API_VERSION: 16,
+    API_VERSION: 17,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
     dynastyTag, dynastyTop, dynastyMine, dynastyRank, dynastyTotal,
     attemptsState, attemptSpend, attemptGrace, attemptDayEnd,
+    dynRunState, dynRunStart,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsAccountsMigration() { return needsAccountsMigration; },
