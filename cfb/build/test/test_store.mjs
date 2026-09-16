@@ -94,10 +94,22 @@ const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-119
 /* `listed` off skips the trap, so nothing is pushed onto the real tester list. That used to
    mean no access to Commissioner Simulator at all; since the launch flag turned it means an
    account that gets in without being named anywhere, which is every visitor. */
-async function open(init, label, listed) {
+async function open(init, label, listed, clock) {
   const p = await b.newPage({ viewport: { width: 390, height: 844 } });
   p.errs = [];
   p.on('pageerror', (e) => p.errs.push(e.message));
+  /* THE FREE TIER'S CLOCK, WHICH THIS PAGE NOW READS. It is answered here rather than by a
+     database because what is under test is what the page does with an answer, and the two
+     answers worth having are awkward to arrange for real: a season spent an hour ago, and a
+     free term already finished. Pass 'offline' to abort the request instead, which is the
+     case that must not lock anybody out. */
+  if (clock !== undefined) {
+    await p.route('**/rest/v1/rpc/commish_clock_*', async (r) => {
+      if (clock === 'offline') return r.abort();
+      await r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify([clock]) });
+    });
+  }
   if (listed !== false) await p.addInitScript(arm);
   await p.addInitScript(init);
   await p.goto(HOST + '/cfb/index.html', { waitUntil: 'domcontentloaded', timeout: 40000 });
@@ -618,6 +630,65 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
   ok('the parameter is off the URL', !/checkout=/.test(p.url()), p.url());
   ok('no page errors', p.errs.length === 0, p.errs[0]);
   await p.close();
+}
+
+/* ── the door that turns into the offer ─────────────────────────────────────────────── */
+/*
+ * THE CARD IS ALWAYS THERE AND THE TAP IS ONLY TAKEN WHEN THERE IS NOTHING TO OPEN.
+ *
+ * Both halves matter and they pull against each other, which is why they are asserted
+ * together. Taking EVERY non-owner's tap is what this page used to do, and the bug report
+ * was a signed in free account tapping the door, getting the store, and reading the whole
+ * mode as locked with no way in. Taking NONE of them sends a player whose season is spent
+ * through a page load to a wall they could have been shown at once.
+ *
+ * So the rule is the door's own state: shut means today's season is gone or the one free
+ * term is finished, and only then does the tap become the offer. Everything else, including
+ * an answer that never arrives, goes through and lets the mode decide. See blocked() in
+ * cfb/commish/clock.js, which is where that rule is written once.
+ */
+{
+  const iso = (ms) => new Date(Date.now() + ms).toISOString();
+  const now = () => new Date().toISOString();
+  const CAN   = { pro: false, locked: false, next_at: null, now_at: now(), seasons: 0, terms: 0 };
+  const SPENT = { pro: false, locked: true, next_at: iso(5 * 3600000), now_at: now(), seasons: 1, terms: 0 };
+  const DONE  = { pro: false, locked: false, next_at: null, now_at: now(), seasons: 5, terms: 1 };
+  const PRO   = { pro: true, locked: false, next_at: null, now_at: now(), seasons: 0, terms: 0 };
+
+  for (const [label, signedIn, products, clock, offer] of [
+    ['signed out, the card is still there', false, [], CAN, false],
+    ['a free season in hand goes to the mode', true, [], CAN, false],
+    ['a season spent today opens the offer', true, [], SPENT, true],
+    ['a finished free term opens the offer', true, [], DONE, true],
+    ['an owner is never stopped', true, ['cfb_premium', 'ps_premium'], PRO, false],
+    ['an unreachable clock lets them through', true, [], 'offline', false],
+  ]) {
+    const p = await open(stub(signedIn, products, signedIn ? BOUGHT : []), label, false, clock);
+    const door = await p.$('#b-hp-commish');
+    ok('the door is on the front page', !!door);
+    if (door) {
+      await door.click({ timeout: 5000 }).catch(() => {});
+      await p.waitForTimeout(1100);
+      /* NULL SAFE ON PURPOSE. Half these taps navigate, and /cfb/commish/ has no #sheet at
+         all, so reading classList off it throws and takes the whole file down rather than
+         failing one assertion. */
+      const r = await p.evaluate(() => {
+        const sh = document.getElementById('sheet');
+        const inn = document.getElementById('sheet-in');
+        return { path: location.pathname,
+          sheet: !!(sh && sh.classList.contains('on')),
+          kind: (inn && inn.dataset && inn.dataset.kind) || '' };
+      });
+      const sold = r.sheet && r.kind === 'premium';
+      ok(offer ? '  the tap opens the bundle' : '  the tap goes through to the mode',
+        offer ? sold : (!sold && /\/cfb\/commish\//.test(r.path)), r.path + (sold ? ' | store' : ''));
+      /* AND THE PAGE IS STILL THE FRONT PAGE when the offer is drawn, because the whole
+         point of taking the tap is not loading the mode to reach the same offer. */
+      if (offer) ok('    without loading the mode', !/\/cfb\/commish\//.test(r.path), r.path);
+    }
+    ok('  no page errors', p.errs.length === 0, p.errs[0]);
+    await p.close();
+  }
 }
 
 await b.close();

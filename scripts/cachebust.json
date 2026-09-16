@@ -1927,8 +1927,8 @@
       "sha": "3dea49936ace93ea"
     },
     "clock.js": {
-      "v": "3",
-      "sha": "654ede8933981766"
+      "v": "4",
+      "sha": "d19df33aadff5118"
     },
     "venues.js": {
       "v": "8",
@@ -2035,6 +2035,10 @@
     "/assets/store.js": {
       "v": "21",
       "sha": "905aa4f7e9d42645"
+    },
+    "/cfb/commish/clock.js": {
+      "v": "4",
+      "sha": "d19df33aadff5118"
     }
   },
   "football/index.html": {

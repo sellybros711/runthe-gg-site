@@ -186,9 +186,33 @@ for(const [label,signedIn,username] of WHO){
   const d=await doorOpens(signedIn,username);
   /* What the list SHOULD say, computed the same way the pages compute it, with the test's
      own name counted as on the list because that is what `arm` puts there. */
+  /* WHO CAN PLAY, which is every signed in account now that the mode is launched. The
+     list is not consulted: allowed() reads COMMISH_LIVE first and answers yes. */
   const want=!!signedIn&&(username===TESTER||ACCESS.allowed(username));
-  ok(label+': the two agree', c.card===d.open,
-    'card '+(c.card?'drawn':'not drawn')+', door '+(d.open?'open':'shut'));
+  /* THE CARD IS DRAWN FOR EVERYBODY AND THE TWO NO LONGER HAVE TO MATCH, which is the
+     deliberate half of this and reverses what this line asserted for a year.
+     THE OLD RULE was card === door, and it was right while the list decided both: a card
+     with no door behind it meant a tester tapping it and being told they were not on the
+     list, and a door with no card meant a tester who could play and had no way to find it.
+     WHAT CHANGED is that the card is now the one screen where a signed out visitor learns
+     the mode exists at all. Hiding it from them made /cfb/ the wall the offer card was
+     added to knock down: no sign anywhere that Commissioner Simulator is here. So the card
+     is unconditional and the SIGNED OUT row is allowed to be card-drawn, door-shut.
+     THAT IS NOT THE OLD FAILURE WEARING A NEW COAT, and the difference is what the shut
+     door says. It reads "Commish Simulator needs an account. Sign in on the game and come
+     back", which is a thing the reader can do. The old one said they were not on a list
+     they could not join. An invitation and a refusal look the same to a boolean, so the
+     boolean is not what this asserts any more.
+     THE INVARIANT THAT SURVIVES is the one that was always the point: anybody who can open
+     the mode is shown the way in. A door that opens with no card is still the fault. */
+  if(signedIn){
+    ok(label+': the two agree', c.card===d.open,
+      'card '+(c.card?'drawn':'not drawn')+', door '+(d.open?'open':'shut'));
+  } else {
+    ok(label+': the card is there anyway', c.card,
+      'card '+(c.card?'drawn':'not drawn')+', door '+(d.open?'open':'shut'));
+    ok('  and the mode does not open without an account', !d.open);
+  }
   ok('  and they agree with the list', d.open===want, 'the list says '+(want?'yes':'no'));
   /* NO "AND THE GAME SAYS NOTHING ABOUT THE MODE" ANY MORE, and deleting it was the
      deliberate half of this launch rather than a test getting in the way. The only row that
