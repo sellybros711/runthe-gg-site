@@ -1408,6 +1408,24 @@ async function main() {
       ok(r.strikeIsPlace, 'a strike is a fact about where it landed', JSON.stringify(r));
       ok(r.afterCall && r.holdMs > 0, 'a called pitch holds the picture for the beat', JSON.stringify(r));
       ok(!r.onContact && r.pitchClosed && !r.afterPlay, 'contact cuts to the field and the pitch is closed', JSON.stringify(r));
+      /* THE ZONE IS PRICED OFF THE BATTER, because the two share the frame.
+         At 72x98 half-extents the drawn box was taller than the entire
+         batter sprite with its top edge a head above his head, and a
+         tester called it double his size. Properties, not pixels: the box
+         is shorter than the batter, starts below his head, and ends above
+         the catcher's crown. Sprites are 40 rows tall at their scale. */
+      const z = await pg.evaluate(() => {
+        const P = plateGeom();
+        return { boxH: P.zh * 2, boxTop: P.zy - P.zh, boxBot: P.zy + P.zh,
+                 batH: 40 * P.batSc, batTop: P.batY - 40 * P.batSc,
+                 catTop: P.catY - 40 * P.catSc };
+      });
+      ok(z.boxH < z.batH, 'the zone is shorter than the batter',
+         `zone ${z.boxH} vs batter ${z.batH}`);
+      ok(z.boxTop > z.batTop, 'and starts below the top of his head',
+         `zone top ${z.boxTop}, batter top ${z.batTop}`);
+      ok(z.boxBot < z.catTop, 'and ends above the catcher\'s crown',
+         `zone bottom ${z.boxBot}, catcher top ${z.catTop}`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

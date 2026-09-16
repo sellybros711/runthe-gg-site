@@ -7233,7 +7233,12 @@ function scheduleCpuSwing() {
   const fireAt = p.windupUntil + fireT * durMs;
   const wait = Math.max(0, fireAt - performance.now());
   setTimeout(() => {
-    if (!g.pitch || g.pitch !== p || p.swung || p.resolved) return;
+    /* The first check is against the GAME, not just the pitch. `g` is the
+       game this swing was scheduled in; resolveSwing acts on State.game.
+       Exit to the menu mid-pitch, start a new game inside a second, and
+       without it the old timer swings in the new game's first at bat,
+       against a pitch that is null. */
+    if (State.game !== g || !g.pitch || g.pitch !== p || p.swung || p.resolved) return;
     p.swung = true;
     resolveSwing(t, aim);
   }, wait);
@@ -9930,9 +9935,18 @@ function chaseFor(p, G, w, r) {
    in the same logical 960 by 660 the field uses.
    ============================================================================ */
 function plateGeom() {
+  /* The zone is sized against the BATTER, because the two share the frame
+     and a reader prices one off the other. At 72x98 half-extents the box
+     was 144x196: taller than the entire 184px batter sprite, with its top
+     edge a head above his head, and a tester read it as double his size.
+     The batter spans y 456 to 640 and the catcher's crown is at 588, so
+     the box now runs chin to thigh and stops above the glove. Chibi
+     anatomy means a literal knees-to-letters zone would be a slot 35px
+     tall; this is the arcade reading of the same rule. Every mapping goes
+     through plateFromZone, so gameplay in zone units does not move. */
   return { w: 960, h: 660, cx: 480, horizon: 262,
            moundX: 480, moundY: 338, pitSc: 2.9,
-           zx: 488, zy: 452, zw: 72, zh: 98,
+           zx: 488, zy: 525, zw: 46, zh: 60,
            batX: 322, batY: 640, batSc: 4.6,
            catX: 512, catY: 764, catSc: 4.4,
            relX: 496, relY: 246 };
