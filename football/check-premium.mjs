@@ -1359,6 +1359,104 @@ const walked = await ck.page.evaluate(async () => {
 });
 ok('pressing Trade Machine reaches the game', /s-(draft|game|reveal)/.test(walked.got),
   walked.got + (walked.viaRules ? ' (through the rules sheet)' : ''));
+
+/* ─── THE SHEET IS SQUARE, AND IT IS MEASURED RATHER THAN LOOKED AT ────────────────────
+ *
+ * EVERYTHING HERE FAILS SILENTLY, which is why it is worth a section. A ragged hero row
+ * renders, reads and sells perfectly well; the only symptom is that it looks wrong, and
+ * looking wrong is not a thing any other check in this file can see.
+ *
+ * IT HAS ALREADY COME BACK TWICE IN ONE AFTERNOON, by two different doors, which is the
+ * argument for measuring the PROPERTY instead of the cause:
+ *
+ *   - ONE TILE CARRIED A PART THE OTHERS DID NOT. A grid row stretches every cell to its
+ *     tallest, so the .pw-also line under Dynasty put about sixty pixels of nothing under
+ *     the Trade Machine beside it: 167.6px against 128.6px at 390px.
+ *   - THEN THE LONGEST NAME WRAPPED. With .pw-also gone and the step-down written at 359px,
+ *     COMMISSIONER MODE still wrapped at 360, which is what a Galaxy reports, and the rag
+ *     was back at 12px on the one width that had not been looked at.
+ *
+ * So this asks for one height across the whole row, at four widths, and never for a number.
+ * A tile that grows for a good reason is fine as long as they all grow together.
+ *
+ * AND THE CHIPS BESIDE A PRICE SHARE A CENTRE. Save $45 carried align-self:center and One
+ * payment did not, so two pills a few pixels apart on the Run The Bundle card sat 4.7px out
+ * of step, at two type sizes, with one of them drawing its outline as a real border (which
+ * adds two pixels to the box) and the other as an inset shadow (which adds none). Nothing
+ * about that is visible in the source of either rule; it is only visible in the boxes.
+ */
+/* THE VIEWPORT IS RESIZED FOR REAL, one width at a time, and that is not fussiness. The
+   first draft of this measured a div narrowed inside a 390px window and reported the rag
+   alive at 320 and 360 when it was not: a media query keys on the VIEWPORT, so a narrowed
+   element renders at the wide rules and every width below the real one is measured with the
+   wrong stylesheet. The widths matter here precisely because the rules change at them. */
+const geom = [];
+for (const w of [320, 360, 390, 560]) {
+  await ck.page.setViewportSize({ width: w, height: 1400 });
+  await new Promise((r) => setTimeout(r, 120));
+  geom.push(await ck.page.evaluate(async (width) => {
+    const box = document.createElement('div');
+    box.style.cssText = 'position:absolute;left:0;top:0;width:100%;padding:16px;box-sizing:border-box';
+    box.innerHTML = window.RTG_STORE.html({ signedOut: false });
+    document.body.appendChild(box);
+    await new Promise((r) => requestAnimationFrame(r));
+    const tiles = [...box.querySelectorAll('.pw-tile')]
+      .map((t) => Math.round(t.getBoundingClientRect().height));
+    /* A PRICE ROW IS ALLOWED TO WRAP AND A CHIP IS NOT ALLOWED TO DRIFT, so the claim is
+       about chips that share a LINE. At 320px the Run The Bundle row genuinely does not hold
+       a price, a struck price and two pills, and wrapping the pills onto a second line under
+       the price is the right answer rather than a defect. Asserting over the whole row would
+       read that wrap as a 27px misalignment and send somebody to fix a layout that is doing
+       what it should. */
+    const lines = [];
+    [...box.querySelectorAll('.pw-cost')].forEach((row) => {
+      const b = row.querySelector('b');
+      if (!b) return;
+      const br = b.getBoundingClientRect();
+      /* BESIDE THE PRICE MEANS OVERLAPPING IT VERTICALLY, and the obvious alternative is
+         what the first draft of this got wrong: grouping chips by rounded top put two chips
+         five pixels out of step into two different buckets, so the check compared each one
+         with itself, found no spread, and passed on exactly the misalignment it was written
+         for. Two chips that are out of line are still on the same line. */
+      const chips = [...row.querySelectorAll('.pw-once,.pw-save')]
+        .map((c) => c.getBoundingClientRect())
+        .filter((r) => r.top < br.bottom && r.bottom > br.top)
+        .map((r) => ({ mid: r.top + r.height / 2, h: r.height, bottom: r.bottom }));
+      if (!chips.length) return;                 // the row wrapped them all below the price
+      lines.push({
+        spread: chips.length < 2 ? 0
+          : Math.max(...chips.map((c) => c.mid)) - Math.min(...chips.map((c) => c.mid)),
+        heights: chips.length < 2 ? 0
+          : Math.max(...chips.map((c) => c.h)) - Math.min(...chips.map((c) => c.h)),
+        overhang: Math.max(0, Math.max(...chips.map((c) => c.bottom)) - br.bottom),
+      });
+    });
+    const total = Math.round(box.getBoundingClientRect().height);
+    box.remove();
+    return { w: width, tiles, spread: Math.max(...tiles) - Math.min(...tiles),
+      chipSpread: Math.max(0, ...lines.map((l) => l.spread)),
+      chipHeights: Math.max(0, ...lines.map((l) => l.heights)),
+      overhang: Math.max(0, ...lines.map((l) => l.overhang)), total };
+  }, w));
+}
+await ck.page.setViewportSize({ width: 390, height: 1400 });
+console.log('\nTHE OFFER IS SQUARE AT EVERY WIDTH IT IS READ AT');
+geom.forEach((g) => {
+  ok('  ' + g.w + 'px: every hero tile is the same height', g.spread === 0,
+    g.tiles.join(' ') + '  (spread ' + g.spread + 'px)');
+  ok('  ' + g.w + 'px: the chips beside a price share a centre', g.chipSpread < 1,
+    g.chipSpread.toFixed(1) + 'px apart');
+  ok('  ' + g.w + 'px: and are the same pill', g.chipHeights < 1,
+    g.chipHeights.toFixed(1) + 'px of height between them');
+  ok('  ' + g.w + 'px: no chip hangs below the price', g.overhang < 1,
+    g.overhang.toFixed(1) + 'px');
+});
+/* A CEILING ON THE WHOLE SHEET, because the complaint that started this pass was scrolling
+   and nothing else here would notice it growing back. Measured at 390px it was 1090px and is
+   now 918px. 1000 is a real ceiling rather than a pin: it leaves room to add a line and fails
+   on adding a block. Move it when the sheet is meant to get longer, never to make this pass. */
+const tall = geom.find((g) => g.w === 390);
+ok('  and the whole offer stays under 1000px at 390', tall.total < 1000, tall.total + 'px');
 await ck.page.close();
 
 console.log('\nAN ACCOUNT OFF THE TESTER LISTS SEES NONE OF IT');

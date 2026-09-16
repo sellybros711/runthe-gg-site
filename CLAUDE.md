@@ -313,6 +313,45 @@ That CSS rule is written `.pw-card .pwc-go .pwc-marks`, a class deeper than it l
 needs. The football page carries `.pw-card .pwc-go span{display:block}`, so a shorter selector
 loses, the three marks stack into a column, and nothing anywhere reports it.
 
+#### The sheet has to be SQUARE, and nothing but a measurement can tell you it is not
+
+Everything in this section fails silently. A ragged hero row renders, reads and sells
+perfectly well. The only symptom is that it looks wrong, and looking wrong is invisible to
+every other check in the repo, so it is measured: `check-premium.mjs`'s last section boots the
+real store at 320, 360, 390 and 560 and asserts a PROPERTY at each one.
+
+**A grid row stretches every cell to its tallest, so every tile has to be the same four
+things.** The Dynasty tile alone carried a `.pw-also` line naming One Franchise Dynasty, and
+at 390px that made the top row 167.6px against the bottom row's 128.6px, with about sixty
+pixels of nothing under TRADE MACHINE beside it. The mode is named on the card below now,
+in the list a guard already holds to the wording on the receipt, so nothing was lost.
+
+**It came back the same afternoon by a different door**, which is why the guard asks for one
+height across the row and never for a number. With `.pw-also` gone, the step-down for the
+longest name was written at `max-width:359px`, and COMMISSIONER MODE still wrapped at 360,
+which is what a Galaxy reports. **Pick the first width with real room, not the last one that
+fails**: the name needs about 148px of tile, 370px of viewport gives it 151 and 390 gives it
+161, so the breakpoint is 389. Three pixels is a coincidence. This is the 549px note two
+sections up, arriving again.
+
+**The price row holds two kinds of thing and they align two ways.** `$34.99` and a struck
+`$80` are prices and share a BASELINE. A chip is a box, and a box hung off a baseline sits
+low: `One payment` started 10px down a 28px numeral and finished 3px below it. Chips centre.
+**Two pills on one row have to be the same pill**: `Save $45` had `align-self:center` and
+`One payment` did not, one drew its outline with a real border (which adds 2px to the box)
+and the other with an inset shadow (which adds none), and the pair sat 4.7px out of step at
+two type sizes. None of that is visible in the source of either rule.
+
+**A wrapped row is not a misaligned one.** At 320px that row genuinely cannot hold a price, a
+struck price and two pills, and dropping the pills to a second line is right. So the assertion
+is scoped to chips BESIDE the price, meaning overlapping it vertically. The first draft
+grouped them by rounded top instead, which put two chips five pixels apart into two buckets,
+compared each with itself, and passed green on the exact defect it was written for.
+
+**The sheet has a height ceiling because the complaint was scrolling.** 1090px at 390px before
+this pass, 918px after, guarded at under 1000. That is room to add a line and a failure on
+adding a block. Move it when the sheet is meant to grow, never to make a run pass.
+
 ### What the free allowance actually counts
 
 **Dynasty counts SEASONS, the Trade Machine counts RUNS, and the server says which.**
@@ -1006,17 +1045,28 @@ for is never refused.
 day changes only the line under the name. That is the dynasty door's lesson arriving a second
 time.
 
-**Two different questions, and they have different answers for a tester.** Who may PLAY it is
-`canPlayFull()`, which the door and the draft read. Whether it is part of the PRODUCT is
-`fullTeamSold()`, which reads the LIVE flag alone, and the store line, the receipt and the
-unlocked sheet's wording read that: a price is one product for everybody, or two people are
-shown different things for $19.99. Same rule as the badge catalog's denominator, for the same
-reason. `check-premium.mjs` asserts both, and asserts the store and the receipt still sell the
-same list, because they live in two files and nothing else notices when they drift.
+**Whether the offer NAMES Full Team is asked of who can play it, and that is a reversal worth
+reading before undoing it.** `fullTeamSold()` used to read the LIVE flag alone, on the argument
+that a price is one product for everybody and a tester must not be shown a different offer from
+a stranger's. That is the right rule for what the bundle CONTAINS and the wrong one for what a
+card should NAME, and the two were being run together. What it cost: a tester who could play
+Full Team, and whose daily limit on it the bundle removes, opened the store and found the mode
+unmentioned. The offer was silent to exactly the people able to act on it.
 
-**Full Team is a LINE in the bundle and not a fourth tile.** The hero row is three tiles and the
-prompt card's `.pwc-marks` mirrors it at three; a fourth desyncs them, and both suites assert
-that count.
+So `fullTeamSold()` is `canPlayFull()` now, and the store line, the receipt and the unlocked
+sheet's wording read it. The case the gate is actually for still holds, because it is the same
+gate: a reader with no Full Team door is told nothing about it, so nothing ever sells a mode
+they cannot find. `check-premium.mjs` asserts the store and the receipt still sell the same
+list, because they live in two files and nothing else notices when they drift.
+
+**It IS a fourth tile, and the count is derived rather than written.** It was a line and not a
+tile while the hero row was three, on the ground that the prompt card's `.pwc-marks` mirrors
+that row and a fourth would desync them. The answer was to grow both: `cardMarkKeys()` and the
+hero row both add Full Team for a reader who can open it, so the card and the sheet it opens
+claim the same number of things for the same person. Neither suite pins a number. They derive
+the count from `RTG_FULLTEAM` and assert the two agree, because written as 3 or 4 it would be
+right about one reader and a lie about the other, and whichever it was would be the one nobody
+ran.
 
 #### A coach who would make the team worse is not offered
 
