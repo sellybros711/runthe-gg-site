@@ -248,6 +248,40 @@ It runs in CI on any push or pull request touching an `.html` or `.js` file
 (`.github/workflows/cachebust-check.yml`), and it covers every page on the site that
 versions a script beside it, found rather than listed.
 
+### The OTHER pair of hand-written numbers, and it is the silent one
+
+A `?v=` is not the only number a page keeps about a sibling script. Several also pin the API
+they expect and refuse the module when it disagrees:
+
+```js
+const BOARD_VERSION=17;
+const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{...
+```
+
+**A stale `?v=` fails loudly**, as a missing function on somebody's phone. **This one fails
+softly, by design**, and that is what makes it worse. The page falls through to a stub that
+answers every call with null, so a `board.js` that is blocked, or a version behind, degrades
+to "not reachable" instead of taking the game down.
+
+**It shipped.** Adding `dynRunState` and `dynRunStart` moved `board.js` to `API_VERSION: 17`
+and `BOARD_VERSION` in the page stayed at 16, so **every visitor ran on the stub**: the
+leaderboard printed the stub's own `lastError` ("board.js failed: 0 blocked") and the
+profile's runs played and best rating came back as dashes, because `mine()` and `ranks()`
+answer null. Nothing threw, no check went red, and the site looked exactly like a site whose
+network was having a bad day. Reported by a player.
+
+`check-cachebust.mjs` holds the pair now. It reads the comparison out of the page, resolves
+the receiver through any alias to its global, and resolves the global to whichever script on
+that page assigns it. **By who SETS it, never by what it is called**: the first draft asked
+for a `PS_` prefix, which is the football game's convention and nobody else's, and reported
+that it could not tell which module `E` was on a hoops page that is entirely correct
+(`RTF_ENGINE`, `RTF_RUN`). Seven pins across the site today.
+
+**Coverage is half of it, the same as `check-numbers`.** A page that COMPARES an
+`API_VERSION` and yields no pair is a broken reader, not a clean page, so that is a failure.
+The rule keys on the comparison rather than on the word, because the stub below it writes
+`API_VERSION:BOARD_VERSION` into itself and would otherwise count as a pin.
+
 ## The football game's badge cabinet
 
 `football/achievements.js` is the badge catalog for The Perfect Season, and every badge in
