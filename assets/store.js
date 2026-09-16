@@ -42,6 +42,15 @@
   };
 
   var CSS = '  .pw-hero{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:13px 0 4px}\n' +
+    /* FOUR TILES GO TWO BY TWO RATHER THAN THREE AND A STRAY. The hero row is three columns
+       wide here, so a fourth tile lands alone in the first column with two empty cells beside
+       it: a row that reads as a mistake rather than a fourth thing. At four it drops to two
+       columns and squares off.
+       A CLASS AND NOT :has(). The count is decided in JS a few lines below, so the markup can
+       simply say what it is; :has() would push the same answer into a selector some browsers
+       still do not implement, and the failure there is silent and only on somebody else's
+       phone, which is the class of bug this file keeps a list of. */
+    '  .pw-hero.pw-four{grid-template-columns:1fr 1fr}\n' +
     '  .pw-tile{border:1px solid var(--line);border-radius:12px;padding:11px 7px 10px;text-align:center;\n' +
     '    background:linear-gradient(180deg,rgba(251,191,36,.09),rgba(255,255,255,.02))}\n' +
     '  /* BIGGER, BECAUSE THE ART IS NOW WORTH THE ROOM. 28px was sized for line icons and it is\n' +
@@ -230,7 +239,12 @@
     '     three columns failed up to 450px, which was the fallback face talking. */\n' +
     '  @media (max-width:549px){\n' +
     '    .pw-hero{grid-template-columns:1fr 1fr}\n' +
-    '    .pw-tile:last-child{grid-column:1 / -1}\n' +
+    /* THE ODD ONE OUT SPANS, and only when it IS odd. Written as :last-child alone this
+       stretched the fourth tile across both columns, which pushed the third onto a row of its
+       own and turned a clean 2x2 into two, one and one. Three tiles still finish with a wide
+       one; four now square off; five would span again, which is the same rule and not a
+       special case. */
+    '    .pw-tile:last-child:nth-child(odd){grid-column:1 / -1}\n' +
     '  }';
 
   var styled = false;
@@ -289,6 +303,22 @@
       '<rect x="14" y="18" width="20" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>'+
       '<rect x="14" y="25" width="20" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>'+
       '<rect x="14" y="32" width="12" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>',
+    /* FULL TEAM: a crest with a seam down it, because the mode is one team made of two
+       halves you draft separately. Six on offense, six on defense, one cap.
+       THE SILHOUETTE TEST THE CLIPBOARD AND THE SWAP BOTH PAID FOR, applied before drawing
+       rather than after. At 15px on the prompt card these four sit in a row, so the only
+       thing that separates them is outline: a cup, two passing arrows, a tall rectangle,
+       and now a shield. None of those four is another one at a glance, which is the whole
+       requirement. A pair of facing chevrons was the obvious football answer and was
+       rejected for the opposite reason: two arrowheads pointing at each other is the swap
+       mark two tiles along with its shafts removed.
+       The seam is the mode rather than decoration, so it is cut out of the crest instead of
+       laid over it: at this size a thin line ON a shape disappears and a gap THROUGH one
+       survives. */
+    shield:'<path fill="{g}" d="M24 4.5 41 11v14.5c0 9.6-7 16.4-17 19.9C14 41.9 7 35.1 7 25.5V11Z"/>'+
+      '<rect x="22.6" y="7" width="2.8" height="35" fill="#2a1a02" opacity=".42"/>'+
+      '<rect x="12" y="19" width="8" height="3" rx="1.5" fill="#2a1a02" opacity=".3"/>'+
+      '<rect x="28" y="27" width="8" height="3" rx="1.5" fill="#2a1a02" opacity=".3"/>',
     /* The little mark on the three prompt cards. */
     star:'<path fill="{g}" d="M24 6.5l5.3 10.8 11.9 1.7-8.6 8.4 2 11.8L24 33.6l-10.6 5.6 2-11.8-8.6-8.4 11.9-1.7Z"/>'
   };
@@ -342,11 +372,39 @@
    * The fix is not to delete the word. Three of the four things really are permanent and that
    * is worth saying. It is to put the term on the LINE rather than over the sheet, so each row
    * says what it is and how long it lasts, and the two bundles can be compared on it. */
-  /* Whether Full Team has launched, asked of the flag file the football page loads. False
-     everywhere it is not loaded, which includes the college game and every page before
-     launch day, so the offer names it in exactly one place: after the flag flips. */
-  const PW_FULL_LIVE=()=>{
-    try{ return !!(window.PS_FULLTEAM_ACCESS&&window.PS_FULLTEAM_ACCESS.LIVE); }catch(_){ return false; }
+  /* ─── WHETHER THIS READER IS BEING SOLD FULL TEAM ──────────────────────────────────
+   *
+   * ASKED OF WHO CAN PLAY IT, NOT OF WHETHER IT HAS LAUNCHED, and that is a correction.
+   * This read PS_FULLTEAM_ACCESS.LIVE, on the argument that a price is one product for
+   * everybody and a tester must not be shown a different offer from the one a stranger
+   * gets. That is the right rule for what the bundle CONTAINS and the wrong one for what
+   * this card should NAME, and the two were being run together.
+   *
+   * What it cost: a tester who could play Full Team, and whose daily limit on it the bundle
+   * would remove, opened the store and found the mode unmentioned. The offer was silent to
+   * exactly the people able to act on it. The reverse case is the one the gate is actually
+   * for, and it still holds: a reader with no Full Team door is told nothing about it, so
+   * the card never sells a mode they cannot find.
+   *
+   * THE PAGE ANSWERS, BECAUSE ONLY THE PAGE KNOWS. Deciding this needs the tester list AND
+   * who is signed in, and this file is handed neither: it is drawn by the college game too,
+   * where fullteam-access.js is not loaded at all. So the football page publishes its own
+   * canPlayFull as RTG_FULLTEAM and this asks it on every render.
+   *
+   * A FUNCTION RATHER THAN A FLAG, deliberately. Ownership and sign-in both move while the
+   * page is open, and a boolean copied into a global at boot is a second answer that goes
+   * stale the moment somebody signs in. Accepts either, because a caller handing a boolean
+   * is not wrong, only frozen.
+   *
+   * The LIVE flag is still the fallback, which is what makes the college game name Full Team
+   * on the day it launches without the football page having to tell it. */
+  const PW_FULL_ON=()=>{
+    try{
+      const v=window.RTG_FULLTEAM;
+      if(typeof v==='function') return !!v();
+      if(typeof v==='boolean') return v;
+      return !!(window.PS_FULLTEAM_ACCESS&&window.PS_FULLTEAM_ACCESS.LIVE);
+    }catch(_){ return false; }
   };
   const pwGroupText=(key,text,term)=>{
     const g=PW_GAME[key];
@@ -396,7 +454,7 @@
     '<div class="pw-alertwrap"><div class="pw-alert" role="note"><i></i>'+
       '<b>One time payment</b>'+
       '<span>Pay once. No subscription. No second charge.</span></div></div>'+
-    '<div class="pw-hero">'+
+    '<div class="pw-hero'+(PW_FULL_ON()?' pw-four':'')+'">'+
     /* NO SEASON COUNT ON THE DYNASTY TILE. This read "25 seasons, one job" until recently,
     and there is no ceiling: the 25 was DYNASTY_MAX_SEASONS, a loop guard in the balance
     simulator that nothing in the mode ever read. It is gone from the engine, and this
@@ -418,6 +476,10 @@
     /* COMMISSIONER MODE, which is what the game calls it and what the card below this one
        calls it. The tile was the only place saying just "Commissioner". */
     pwTile('clipboard','Commissioner Mode','Can you save College Football?','cfb')+
+    /* THE FOURTH TILE, for a reader who can open the mode. It earns the hero row on the same
+       ground the Trade Machine does: it is metered now, one run a day, and what the bundle
+       takes off it is the counting. A mode nobody is limited on would be a feature list. */
+    (PW_FULL_ON()?pwTile('shield','Full Team','Six on offense, six on defense.','ps'):'')+
     '</div>'+
 
     '<div class="pw-tier">'+
@@ -448,7 +510,7 @@
        card's .pwc-marks mirrors it at three; a fourth would desync the two, and both suites
        assert that count. The tiles are the shape of the offer, this is the itemisation. */
     pwGroupText('ps','Unlimited play: Dynasty, One Franchise Dynasty, Trade Machine'+
-      (PW_FULL_LIVE()?', Full Team':''),
+      (PW_FULL_ON()?', Full Team':''),
       'Lifetime access')+
     pwGroupText('cfb','Commissioner Mode','Lifetime access')+
     '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+
@@ -537,11 +599,20 @@
    * hero row and it sits under the trophy here. Counting it separately is how a card ends up
    * claiming four of something a reader can only find three of.
    */
-  var PW_CARD_MARKS = ['trophy', 'swap', 'clipboard'];
+  /* AND THE MARKS ARE THE TILES, so when the hero row grows a fourth this grows with it or
+     the card starts claiming a different number of things from the sheet it opens. That is
+     the same drift the counted "3 modes" and "4 modes" had, arriving by a different door.
+     Built per render rather than held as an array, because whether the fourth is there is a
+     question about the reader and the reader can sign in while the page is open. */
   var PW_CARD_VALUE = 'Unlimited';
+  function cardMarkKeys() {
+    var k = ['trophy', 'swap', 'clipboard'];
+    if (PW_FULL_ON()) k.push('shield');
+    return k;
+  }
   function cardMarks() {
     return '<span class="pwc-marks">' +
-      PW_CARD_MARKS.map(function (k) { return pwArt(k); }).join('') + '</span>';
+      cardMarkKeys().map(function (k) { return pwArt(k); }).join('') + '</span>';
   }
   /* The insides on their own, because the football front page BUILDS its node rather than
      writing markup into a string. Same card either way. */

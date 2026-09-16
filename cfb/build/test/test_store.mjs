@@ -188,7 +188,15 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
   });
   ok('  it says Unlimited rather than counting', card.value === 'Unlimited' && !card.counts,
     card.value);
+  /* THREE HERE AND NOT FOUR, and that is the gate working rather than a number left behind.
+     Full Team joins the hero row and the marks for a reader who can open it, and this is the
+     COLLEGE page: fullteam-access.js is not loaded, RTG_FULLTEAM is never published, and the
+     store's own fallback finds no LIVE flag to read. So the card sells the three modes a
+     reader here can actually reach. The day Full Team launches this becomes four by way of
+     that fallback, and this line is what will say so. */
   ok('  over the three modes the bundle unlocks', card.marks === 3, String(card.marks));
+  ok('  and Full Team is not named on a page that cannot open it',
+    !/Full Team/i.test((await txt(p, '#pf-prem')) || ''));
   ok('  in a row rather than a stack', card.row === 'flex', card.row);
 
   await p.click('#pf-prem');

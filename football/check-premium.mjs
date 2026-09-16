@@ -213,7 +213,12 @@ for (const [who, owns, day, want] of [
       homeMarks: document.querySelectorAll('#b-premium .pwc-marks svg').length,
       homeCounts: /\d+\s*modes/i.test(
         (document.getElementById('b-premium') || {}).innerText || ''),
-      proAccess: !!document.getElementById('pf-go-pro') };
+      proAccess: !!document.getElementById('pf-go-pro'),
+      /* WHETHER THIS READER IS BEING SOLD FULL TEAM, asked of the page rather than assumed
+         from the view. The store names it, gives it a hero tile and gives the card a fourth
+         mark for anybody who can open the mode, so every count below is a question about
+         this reader and not a constant. */
+      fullOn: !!window.RTG_FULLTEAM && !!window.RTG_FULLTEAM() };
   }, [owns, day]);
   console.log('  ' + who + ':');
   const owner = owns.length > 0;
@@ -225,8 +230,15 @@ for (const [who, owns, day, want] of [
     owner ? (r.proAccess && !r.goPro) : (r.goPro && !r.proAccess),
     'goPro=' + r.goPro + ' proAccess=' + r.proAccess);
   if (!owner) {
-    ok('    and the Go Pro card carries the three modes it sells',
-      r.goProMarks === 3, String(r.goProMarks));
+    /* THE COUNT IS DERIVED NOW, because it depends on the reader. Full Team joins the hero
+       row and the card's marks for anybody who can open the mode, so this view (a tester,
+       with the flag flipped) sees four and a stranger sees three. Written as a number it
+       would be right for one of them and a lie about the other, and whichever it was would
+       be the one nobody ran. What has to hold either way is that the CARD and the SHEET
+       claim the same number of things, which is the assertion below it. */
+    const wantMarks = r.fullOn ? 4 : 3;
+    ok('    and the Go Pro card carries the ' + wantMarks + ' modes it sells',
+      r.goProMarks === wantMarks, String(r.goProMarks));
     ok('    in a row rather than a stack', r.goProRow === 'flex', r.goProRow);
     /* AND NEITHER CARD COUNTS ANY MORE. The front page said "4 modes", this one said
        "3 modes" and the college profile said "3 modes", about one purchase, on one day.
@@ -235,17 +247,26 @@ for (const [who, owns, day, want] of [
     ok('    and says Unlimited rather than a number',
       r.goProValue === 'Unlimited' && !r.goProCounts, r.goProValue);
     ok('    the front page card says exactly the same',
-      r.homeValue === 'Unlimited' && r.homeMarks === 3 && !r.homeCounts,
+      r.homeValue === 'Unlimited' && r.homeMarks === wantMarks && !r.homeCounts,
       r.homeValue + ' / ' + r.homeMarks + ' marks');
   }
   if (!owner && want !== 'the mode') {
     /* The spent door was a card linking to the store, which is a second tap between
        somebody who has just decided they want more and the thing that sells it. */
+    /* THE SHEET'S TILES AND THE CARD'S MARKS ARE ONE ANSWER. The card mirrors the hero row,
+       so a fourth tile that did not bring a fourth mark would put the card and the sheet it
+       opens at different counts, which is the "3 modes" against "4 modes" drift arriving by
+       a door the digits check does not watch. */
     ok('    the spent door draws the bundle itself',
-      r.store.tiles.length === 3 && r.store.buys === 2,
+      r.store.tiles.length === (r.fullOn ? 4 : 3) && r.store.buys === 2,
       r.store.tiles.join(', ') + ' / ' + r.store.buys + ' buy buttons');
+    ok('    and the card claims exactly as many as the sheet',
+      r.goProMarks === r.store.tiles.length,
+      r.goProMarks + ' marks against ' + r.store.tiles.length + ' tiles');
     ok('    and every tile says which game it is in',
-      r.store.from.join(' | ') === 'Perfect Season | Perfect Season | College Football',
+      r.store.from.join(' | ') === (r.fullOn
+        ? 'Perfect Season | Perfect Season | College Football | Perfect Season'
+        : 'Perfect Season | Perfect Season | College Football'),
       r.store.from.join(' | '));
   }
   /* THE CARD PROMISES ONE FRANCHISE DYNASTY, so the row has to open it. This was the gate

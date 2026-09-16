@@ -7942,7 +7942,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=15"></script>
+<script src="/assets/store.js?v=16"></script>
 <!-- THE RUN, KEPT AGAINST THE ACCOUNT. Shared with Commish Simulator, which had the same
      save in localStorage and the same way of losing it. Optional like everything else up
      here: without it the game keeps its runs exactly where it always did, in this browser
@@ -8180,11 +8180,23 @@ const canPlayFull=()=>{
   if(!authState.signedIn) return false;
   return A.allowed({name:authState.name,userId:authState.userId});
 };
-/* WHETHER THE MODE IS PART OF THE PRODUCT, which is a different question from whether the
-   reader may play it and has a different answer for a tester. The store, the receipt and the
-   unlocked sheet's wording all read THIS; the door and the draft read canPlayFull(). One
-   product for everybody who paid, on the same rule the badge catalog's denominator uses. */
-const fullTeamSold=()=>!!(window.PS_FULLTEAM_ACCESS&&window.PS_FULLTEAM_ACCESS.LIVE);
+/* WHETHER THIS READER IS BEING SOLD FULL TEAM, read by the store, the receipt and the
+   unlocked sheet's wording.
+   IT ASKS WHO CAN PLAY IT, AND THAT IS A CORRECTION. It used to read the LIVE flag alone, on
+   the argument that a price is one product for everybody and a tester must not be shown a
+   different offer from a stranger's. Right about what the bundle CONTAINS, wrong about what
+   a card should NAME, and the two were run together: a tester who could play Full Team, and
+   whose daily limit on it the bundle removes, opened the store and found the mode unmentioned.
+   The case the gate is actually for still holds, because it is the same gate: a reader with
+   no Full Team door is told nothing about it, so nothing here ever sells a mode they cannot
+   find. */
+const fullTeamSold=()=>canPlayFull();
+/* AND THE STORE ASKS THE PAGE, because only the page knows. Deciding this needs the tester
+   list and who is signed in; /assets/store.js is handed neither and is drawn by the college
+   game too. Published as the FUNCTION rather than its answer: sign-in and ownership both move
+   while the page is open, and a boolean copied here at boot is a second answer that goes
+   stale the moment somebody signs in. */
+try{ window.RTG_FULLTEAM=canPlayFull; }catch(_){}
 /* DYNASTY, asked the same way and read just as defensively: a blocked, stale or
    failed dynasty-access.js leaves PS_DYNASTY_ACCESS undefined, and the honest answer to
    "can this person see an unannounced mode" when the list cannot be read is no. */
