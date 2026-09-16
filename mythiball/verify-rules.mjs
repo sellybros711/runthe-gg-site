@@ -1416,9 +1416,19 @@ async function main() {
          the catcher's crown. Sprites are 40 rows tall at their scale. */
       const z = await pg.evaluate(() => {
         const P = plateGeom();
+        /* Sprite boxes at their scales (32 wide, 40 tall, feet-anchored),
+           the plate pentagon the ground pass draws at cx, and the rule
+           every reference game keeps: nothing opaque between the player
+           and the plate. The catcher covered it once, dead-center. */
+        const cat = { x0: P.catX - 16 * P.catSc, x1: P.catX + 16 * P.catSc,
+                      y0: P.catY - 40 * P.catSc, y1: P.catY };
+        const plate = { x0: P.cx - 14, x1: P.cx + 14, y0: 604, y1: 617 };
+        const zone = { x0: P.zx - P.zw, x1: P.zx + P.zw, y0: P.zy - P.zh, y1: P.zy + P.zh };
+        const hits = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
         return { boxH: P.zh * 2, boxTop: P.zy - P.zh, boxBot: P.zy + P.zh,
                  batH: 40 * P.batSc, batTop: P.batY - 40 * P.batSc,
-                 catTop: P.catY - 40 * P.catSc };
+                 catTop: P.catY - 40 * P.catSc,
+                 catOnPlate: hits(cat, plate), catOnZone: hits(cat, zone) };
       });
       ok(z.boxH < z.batH, 'the zone is shorter than the batter',
          `zone ${z.boxH} vs batter ${z.batH}`);
@@ -1426,6 +1436,8 @@ async function main() {
          `zone top ${z.boxTop}, batter top ${z.batTop}`);
       ok(z.boxBot < z.catTop, 'and ends above the catcher\'s crown',
          `zone bottom ${z.boxBot}, catcher top ${z.catTop}`);
+      ok(!z.catOnPlate, 'the catcher does not cover home plate', JSON.stringify(z));
+      ok(!z.catOnZone, 'or any part of the zone', JSON.stringify(z));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

@@ -9948,7 +9948,16 @@ function plateGeom() {
            moundX: 480, moundY: 338, pitSc: 2.9,
            zx: 488, zy: 525, zw: 46, zh: 60,
            batX: 322, batY: 640, batSc: 4.6,
-           catX: 512, catY: 764, catSc: 4.4,
+           /* The catcher is a SLIVER, low and to the inside corner. At
+              512,764 his crown reached y 588 dead-center and covered the
+              plate (drawn at 466 to 494) and both batter's boxes: the one
+              opaque thing in the genre no game puts between the player
+              and the plate. Every reference stages this the same way:
+              MLB The Show's catcher cameras never render him, Backyard
+              and the mobile MLB games draw no catcher at all. Ours keeps
+              a helmet and shoulders at the frame's bottom right, clear of
+              the plate, the boxes' chalk and the zone. */
+           catX: 588, catY: 806, catSc: 4.4,
            relX: 496, relY: 246 };
 }
 function plateFromZone(P, x, y) { return [P.zx + x * P.zw, P.zy - y * P.zh]; }
