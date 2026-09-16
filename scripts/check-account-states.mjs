@@ -29,6 +29,15 @@
  * that goes red on its own and gets ignored. The suites named above press those doors from a
  * state they control. This one stays deterministic so that a red run here means something.
  *
+ * THE CONTROL IDS BELOW ARE A LIST AND LISTS GO STALE, which is the one way this file can
+ * lie. It reports "NOTHING" when no id in its list is visible, and a renamed button looks
+ * exactly like a page that came up empty. Writing it caught me twice: the college game's
+ * play button is b-play-intro on the intro screen and not b-play, and the football game's
+ * are b-start-off and b-start-def rather than b-start. So a red run here is worth one look
+ * at the page before it is believed, and the failure prints what it DID find so that look
+ * is short. The alternative, matching any button at all, passes on a page whose only
+ * control is the cookie banner.
+ *
  * NOTHING REACHES THE NETWORK. Supabase is stubbed per state and the pages are served off
  * the local http.server; no Stripe route is touched, because nothing here presses a button.
  */
