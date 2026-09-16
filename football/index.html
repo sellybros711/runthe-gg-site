@@ -10251,14 +10251,23 @@ function dailySpentSheet(mode){
     : seasons
     ? 'The '+one+' unlocks 24 hours after that.'
     : 'The '+one+' unlocks at midnight Eastern.';
+  /* THE SEASON SENTENCES AGREE WITH THE NUMBER, the same way the run sentence below
+     already did. The number comes off ps_day_allowance and this page is not allowed a
+     second copy of it, so every sentence holding it has to work for whatever it answers.
+     These three did not: at an allowance of 1 they read "That is your 1 seasons", "all 1
+     of your free seasons" and "1 free seasons". LATENT RATHER THAN LIVE, because dynasty
+     answers 3 today and 4 after a boss, so nobody has seen it. It is one server constant
+     away from being the copy on a paywall, which is the worst screen to be ungrammatical
+     on, and the fix costs less than the note explaining why it was left. */
   const head=ended?'That is the day'
-    :seasons?'That is your '+allow+' seasons'
+    :seasons?(allow>1?'That is your '+allow+' seasons':'That is your season')
     :'That is today\'s run';
   const body=ended
     ? 'The run is over, and a firing ends the day with it. '+when('next one')+
-      ' Every run gets '+allow+' free seasons.'
+      ' Every run gets '+allow+' free season'+(allow>1?'s':'')+'.'
     :seasons
-    ? 'You have played all '+allow+' of your free seasons. '+when('next season')+
+    ? (allow>1?'You have played all '+allow+' of your free seasons. '
+              :'You have played your free season. ')+when('next season')+
       ' Your dynasty is saved exactly where it stands.'
     /* THE REAL NUMBER, not always one. Under the old rule the base allowance is one a day
        and the game hands out two more: one for being fired in season one, one for beating a

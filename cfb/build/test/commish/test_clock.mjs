@@ -426,7 +426,16 @@ async function endTerm(p) {
   const label = await txt(p, '#b-year-next');
   ok('there is no extension to sign', !/extension/i.test(label), label);
   ok('and no fresh term either', !/take the job|another job/i.test(label), label);
-  ok('the offer is to keep this sport', /Go Pro and keep this sport/.test(label), label);
+  /* THE DURABLE HALF OF THE SENTENCE, not the verb in front of it. This pinned the exact
+     string "Go Pro and keep this sport" and went red when deb96cb renamed the button to
+     "Unlock it and keep this sport", which was a deliberate move away from Go Pro as a
+     brand and broke nothing on the page. A test that fails on rewording is a test somebody
+     eventually stops reading, and this one guards the free tier's last screen.
+     WHAT ACTUALLY MATTERS HERE is that the offer is to CONTINUE rather than to start
+     again: the free tier is one contract, and a button reading "take another job" at the
+     end of it would be the real regression. The two assertions above say it is not an
+     extension and not a fresh term; this one says what it is instead. */
+  ok('the offer is to keep this sport', /keep this sport/i.test(label), label);
   await p.click('#b-year-next');
   await p.waitForTimeout(700);
   ok('it lands on the end of the career', await on(p, 's-wait'));
