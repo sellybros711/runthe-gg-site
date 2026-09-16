@@ -10120,6 +10120,22 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     ctx.lineTo(cx + i * 250, h);
     ctx.closePath(); ctx.fill();
   }
+  /* Depth and grain, the wide camera's own recipe brought to this one:
+     this view's ground was the one flat surface left on the page. Pale
+     at the horizon, settling darker toward the camera, then the same
+     two-tone hash speckle, in blocks so the low-res pass keeps them. */
+  const gg = ctx.createLinearGradient(0, P.horizon, 0, h);
+  gg.addColorStop(0, 'rgba(255,255,255,.10)');
+  gg.addColorStop(0.45, 'rgba(0,0,0,0)');
+  gg.addColorStop(1, 'rgba(0,0,0,.16)');
+  ctx.fillStyle = gg;
+  ctx.fillRect(0, P.horizon - 2, w, h - P.horizon + 2);
+  for (let i = 0; i < 220; i++) {
+    const sx = (i * 227 + 53) % w;
+    const sy = P.horizon + ((i * 157 + 31) % (h - P.horizon));
+    ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.06)';
+    ctx.fillRect(sx, sy, 3, 3);
+  }
   /* ---- the dirt ---- */
   const dirt = theme.track || '#c8a06a';
   ctx.fillStyle = dirt;
@@ -10136,10 +10152,28 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   }
   ctx.fillStyle = dirt;
   ctx.beginPath(); ctx.ellipse(cx, 618, 210, 58, 0, 0, Math.PI * 2); ctx.fill();
+  /* A circle of ground has a lit center and darker rim from this camera,
+     which is what the wide view's dirtOval already knows. */
+  const hg = ctx.createRadialGradient(cx, 606, 10, cx, 618, 210);
+  hg.addColorStop(0, 'rgba(255,255,255,.10)');
+  hg.addColorStop(1, 'rgba(0,0,0,.13)');
+  ctx.fillStyle = hg;
+  ctx.beginPath(); ctx.ellipse(cx, 618, 210, 58, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = dirt;
   /* the mound, its rubber */
   ctx.beginPath(); ctx.ellipse(cx, 338, 60, 15, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#f2ece0';
   ctx.fillRect(cx - 7, 333, 14, 3);
+  /* Dirt grain over both ground ovals, neutral tones so a dot that
+     lands on the inner grass cutout does no harm. */
+  for (let i = 0; i < 150; i++) {
+    const a = i * 2.399963;
+    const rr = Math.sqrt(((i * 73) % 97) / 97);
+    const far = i % 3 === 0;
+    const ey = far ? 336 : 618, exr = far ? 470 : 210, eyr = far ? 54 : 58;
+    ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.07)';
+    ctx.fillRect(cx + Math.cos(a) * exr * rr, ey + Math.sin(a) * eyr * rr, 3, 3);
+  }
   /* foul lines and the bases */
   ctx.strokeStyle = 'rgba(255,255,255,.85)';
   ctx.lineWidth = 2;
@@ -10698,6 +10732,18 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.strokeStyle = 'rgba(0,0,0,.20)';
   ctx.lineWidth = 2;
   ctx.stroke();
+  /* Grain on the dirt, clipped to the shape while its path is still
+     current. The grass interior paints over the middle next, so what
+     survives is grain on the basepaths, which is where dirt shows. */
+  ctx.save();
+  ctx.clip();
+  for (let i = 0; i < 170; i++) {
+    const sx = p3x + ((i * 199 + 41) % (p1x - p3x));
+    const sy = (topY - 44) + ((i * 131 + 17) % (plateY + 20 - (topY - 44)));
+    ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.08)';
+    ctx.fillRect(sx, sy, 3, 3);
+  }
+  ctx.restore();
 
   /* Grass interior: a straight edged diamond inset from the bases, so
      the dirt reads as basepaths with corners rather than a ring. */
