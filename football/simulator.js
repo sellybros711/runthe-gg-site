@@ -817,9 +817,27 @@ E.FULL_SLOT_POS.forEach((pos, i) => {
 });
 
 const FULL_OPTIMAL_CACHE = new Map();
+/*
+ * KEYED ON WHAT THE SOLVE ACTUALLY DEPENDS ON, which is not the budget alone.
+ *
+ * It was, and the solve reads the live constants through fullStrength: FULL_TALENT scales
+ * both sides and the Full Team suppression ceiling decides what a cheap defence costs. So
+ * in any sweep the FIRST cell solved was the only one solved, and every row after it
+ * reported that roster under different physics. It is what made a defmax sweep print nine
+ * identical splits, and it silently pinned the `optimal` row of a talent sweep to whichever
+ * talent ran first.
+ *
+ * The cache is still worth having: one solve is two knapsacks at six coach budgets and it is
+ * asked for once per season otherwise.
+ */
+function fullOptimalKey(budget) {
+  const t = constants.FULL_TALENT === undefined ? E.FULL_TALENT : constants.FULL_TALENT;
+  return budget + '|' + t + '|' + String(constants.FULL_DEF_SUPPRESS_MAX);
+}
 function buildFullOptimal(budget, wantSplit) {
-  if (FULL_OPTIMAL_CACHE.has(budget)) {
-    const hit = FULL_OPTIMAL_CACHE.get(budget);
+  const key = fullOptimalKey(budget);
+  if (FULL_OPTIMAL_CACHE.has(key)) {
+    const hit = FULL_OPTIMAL_CACHE.get(key);
     return wantSplit ? hit : { roster: hit.roster.slice(), coach: hit.coach };
   }
   let best = null;
@@ -859,7 +877,7 @@ function buildFullOptimal(budget, wantSplit) {
     }
    }
   }
-  FULL_OPTIMAL_CACHE.set(budget, best);
+  FULL_OPTIMAL_CACHE.set(key, best);
   return wantSplit ? best : { roster: best.roster.slice(), coach: best.coach };
 }
 
@@ -917,7 +935,10 @@ function simulateFull(build, n, seed0) {
     }
     regWins.push(run.regularWins);
     spends.push(roster.reduce((s, p) => s + p.price_musd, 0));
-    ratings.push(E.overallOf(roster, chem, 'full', coach));
+    /* fullOverall, not overallOf: overallOf takes no constants and so always rates against
+       the engine's built-in FULL_TALENT. This column therefore read the same number at every
+       talent in a sweep, which is a rating for a game the row beside it was not playing. */
+    ratings.push(E.fullOverall(roster, chem, coach, constants));
     if (run.perfect) perfect++;
     if (run.titleWon) title++;
     if (run.seed.made) madePlayoffs++;
@@ -1028,6 +1049,8 @@ function fullTeamReport(n) {
   for (const cap of caps) {
    for (const tal of talents) {
     constants.FULL_TALENT = tal;
+    /* Swept the same way the other two are: PS_DEFMAX=1.6,1.3,1.18 */
+    if (process.env.PS_DEFMAX) constants.FULL_DEF_SUPPRESS_MAX = Number(process.env.PS_DEFMAX);
     for (const row of rows) {
       const r = simulateFull(row.build(cap), n, 424242);
       const rec = `${r.medianRegWins}-${17 - r.medianRegWins}`;

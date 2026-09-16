@@ -235,6 +235,35 @@ const CONSTANTS = {
   DEF_REF: 36.1,
   DEF_POWER: 1.8,
   DEF_SUPPRESS_MAX: 1.6,   // worst defense lets the opponent run up ~1.6x, no more
+  /*
+   * FULL TEAM CAPS THE BAD END TIGHTER, and only the bad end.
+   *
+   * DEF_POWER and DEF_SUPPRESS_MAX are calibrated for the DEFENCE-ONLY draft, where the
+   * defence you picked is the whole of your game and is meant to decide it. In Full Team it
+   * lands on top of an offence that varies just as much and the two compound: measured
+   * across the drafting range, a Full Team's points allowed swing 2.06x where the quick
+   * draft's swing 1.16x, against a points-scored swing of about 2.8x in both. So the same
+   * imperfect drafting is punished twice, and the mode a player met was careless play
+   * winning 8% of games against the quick draft's 25%, careful play at 7-10 and into the
+   * playoffs 4.5% of the time against 11-6 and 42%, and a board nobody pushed past 15 wins.
+   *
+   * ONLY THE BAD END, and that is the whole design of this constant. Compressing the WHOLE
+   * curve was tried first and it gutted the mode: with defence worth less everywhere the
+   * solver stopped buying any and the optimal roster went from $159.5M off / $100.4M def to
+   * $242.0M / $17.9M, while every win-rate column said the change was working. A ceiling on
+   * the PENALTY leaves the reward for a good defence exactly where it was, so the incentive
+   * to spend on one is untouched.
+   *
+   * It binds below a raw defence of about 32. A careless defence sits at ~25 and a careful
+   * one at ~34, so this lifts the floor and leaves the middle and the top alone, which is
+   * what let FULL_TALENT and FULL_CAP_MUSD be solved for those two rows afterwards.
+   */
+  /* 1.45 RATHER THAN 1.40, and 1.40 is where it still works. Measured against the solver's
+     own split, defence is worth 39% of the cap down to 1.40 and 7% at 1.35: the incentive to
+     buy a defence falls off a cliff between them, because a ceiling on the penalty is also a
+     ceiling on the reason to avoid it. Pick the first value with real room, not the last one
+     that passes. */
+  FULL_DEF_SUPPRESS_MAX: 1.45,
   /* The spread on the offense you are given. Real team scoring runs a standard deviation
      around 40% of the mean (league_context's own pts_scored_sd against pts_scored_mean
      sits near this across the era), and your borrowed offense should be as streaky as
@@ -3589,6 +3618,15 @@ const DEF_OVERALL_MAP = [
   [10.0, 11.0], [18.0, 32.0], [34.0, 48.0],
   [48.0, 80.0], [52.0, 89.0], [55.0, 95.0],
 ];
+/* Full Team's own reading of the same curve: the identical shape, with a tighter ceiling on
+   how much a bad defence can cost. Both callers on the full path go through this, so the
+   preview the coach screen draws and the game actually played cannot disagree. */
+function fullSuppression(defenseTotal, constants = CONSTANTS) {
+  const cap = constants.FULL_DEF_SUPPRESS_MAX;
+  const s = defenseSuppression(defenseTotal, constants);
+  return cap === undefined ? s : Math.min(cap, s);
+}
+
 function defenseOverall(defenseTotal) {
   if (!(defenseTotal > 0)) return 0;
   const m = DEF_OVERALL_MAP;
@@ -3648,7 +3686,7 @@ function fullParts(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
   return {
     scored,
     stops,
-    allowed: OPP_PTS_NEUTRAL * constants.SCALE * defenseSuppression(stops, constants),
+    allowed: OPP_PTS_NEUTRAL * constants.SCALE * fullSuppression(stops, constants),
   };
 }
 
@@ -4498,8 +4536,29 @@ function dynastyContinuity(roster, tenure) {
  * defence keep their relative weights, and every structure, scheme and chemistry multiplier
  * still lands on top exactly as it did.
  *
- * Fitted, not chosen. See simulator.js --fullteam. */
-const FULL_TALENT = 0.78;
+ * Fitted, not chosen. See simulator.js --fullteam.
+ *
+ * REFITTED FROM 0.78, AND 0.78 WAS FITTED AGAINST A BROKEN ROW. The harness bot that stands
+ * for careful play, buildFullToBudget, took an rng and never called it, so the row this dial
+ * was solved against was ONE deterministic roster replayed: it measured schedule luck rather
+ * than the range a player meets, and it happened to land close enough to the reference that
+ * the fit looked right.
+ *
+ * What a careful player actually got at 0.78, measured once the bot drafted a range: 7-10,
+ * into the playoffs 4.5% of the time against the quick draft's 42%, and in 400 seasons never
+ * once past 15 wins where the quick draft reaches 17-0. That is the mode a player reported
+ * as way too hard, and they were right.
+ *
+ * At 0.90 the careful row sits on the quick draft's: 11-6 against 11-6, playoffs 45.8%
+ * against 41.8%, and a perfect season in 1.0% of them against 0.8%.
+ *
+ * WHAT IT COSTS, stated rather than buried. The SOLVED row overshoots: 91% against the quick
+ * draft's 81%. The careful and solved rows cannot both be hit with this dial, because twelve
+ * picks across two pools give a solver far more room to be right than six do, and no cap
+ * fixes it either (swept $280M to $400M, the careless row never moved at all). The row that
+ * was chosen is the one a person actually plays: a full knapsack over both pools is not a
+ * thing a human does at twelve slots, while a careful draft is what everybody does. */
+const FULL_TALENT = 0.90;
 
 /*
  * ─── THE COACH ─────────────────────────────────────────────────────────────────────
@@ -4859,7 +4918,9 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
   const yourScore = rawOff * offMul * tempo * (1 + PLAN.FOURTH_MEAN * plan.fourth);
 
   const defenseTotal = rawDef * chemDef(chemistryMultiplier) * defStructure;
-  const suppression = defenseSuppression(defenseTotal, constants);
+  /* fullSuppression, not defenseSuppression: see FULL_DEF_SUPPRESS_MAX. The defence-only
+     mode goes on using the uncapped ceiling, because there it is the whole game. */
+  const suppression = fullSuppression(defenseTotal, constants);
   /* Pressure is the mirror of the fourth down call, pointed at their score instead of
      yours: it holds them to less on average and gives up more when it misses. The swing is
      applied to the opponent's own spread, because a blitz that fails is their big play. */
@@ -5881,6 +5942,7 @@ const publicAPI = {
   DYNASTY_DEAD_SHARE, DYNASTY_DEAD_SEASONS, DYNASTY_DEAD_CEILING, dynastyDead,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
+  fullSuppression,
   fullStrength, fullOverall, fullParts, fullSideRatings,
   coachTable, coachPrice, coachEffect, coachLinks, COACH_MIN_SEASONS,
   PLAN, PLAN_AXES, normalizePlan, planFromCoach,

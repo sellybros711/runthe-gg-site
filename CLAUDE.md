@@ -1296,6 +1296,81 @@ the count from `RTG_FULLTEAM` and assert the two agree, because written as 3 or 
 right about one reader and a lie about the other, and whichever it was would be the one nobody
 ran.
 
+#### Full Team was too hard, and the row it was fitted against was one roster replayed
+
+**`buildFullToBudget` took an rng and never called it.** So the `mid` row of
+`simulator.js --fullteam`, the row that stands for careful play and the row `FULL_TALENT` and
+`FULL_CAP_MUSD` were solved against, was ONE deterministic roster played N times. It measured
+schedule luck, not the range a player meets. `buildToBudget`, the offense bot it is read
+beside, spreads its per-slot spend with a jitter term, so the two rows were never the same
+kind of thing and the comparison between them was measuring the builders.
+
+**And every column in that report was a middle.** A win rate, a median record, a mean rating.
+Those are the right numbers for asking whether a mode is FAIR and the wrong ones for asking
+what it feels like to COMPETE in, because nobody competes against the median: a board is a
+list of the best seasons anybody played. Both tables carry the tail now (best, p90, and the
+share of seasons at 15, 16 and 17-0). Two modes can share a median and have nothing in common
+at the top.
+
+With an honest bot, what careful play actually got at `FULL_TALENT = 0.78`:
+
+| | careless | careful | solved |
+|---|---|---|---|
+| quick draft | 25% wins, 4-13 | **61%, 11-6, 42% playoffs** | 81%, 14-3 |
+| Full Team, before | 8%, 1-16 | **43%, 7-10, 4.5% playoffs** | 81%, 14-3 |
+
+and in 400 seasons Full Team never once passed 15 wins, where the quick draft reaches 17-0.
+Reported by a player as "way too hard", and they were right.
+
+**The cause is that the mode is TWO-SIDED.** An imperfect roster is punished on both sides at
+once, so the penalty compounds: points allowed swing **2.06x** across the drafting range where
+the quick draft's swing **1.16x**, against a points-scored swing of about 2.8x in both.
+
+**IT IS NOT A LEVEL PROBLEM AND NO CAP FIXES IT.** Swept $280M to $400M, the careless row
+never moved at all, because a careless drafter does not spend the cap. And the talent that
+puts the careful row right sends the solved row past 88%.
+
+##### Two fixes that read perfectly and gutted the mode
+
+Both were caught by one thing: **the solver's own split**, now printed with a verdict.
+
+- **Compressing the whole suppression curve** put the win rates almost exactly on the
+  reference rows, and the optimal roster went from **$159.5M off / $100.4M def** to
+  **$242.0M / $17.9M**. With defence worth less, the solver stopped buying any.
+- **Capping only the penalty** broke it the other way, for the mirror reason: a ceiling on the
+  penalty is a ceiling on the reason to avoid it.
+
+Twelve picks across two units is the whole premise, so a mode whose best roster spends nine
+tenths of the cap on one side is not balanced however good its win rate looks. **The cliff is
+sharp**: defence is worth 39% of the cap down to a `FULL_DEF_SUPPRESS_MAX` of 1.40 and 7% at
+1.35. It ships at **1.45**, the first value with real room rather than the last one that
+passes.
+
+##### And a third instrument fault behind those two
+
+**`FULL_OPTIMAL_CACHE` was keyed on the budget alone**, and the solve reads the live constants
+through `fullStrength`. So in any sweep the first cell solved was the only one solved: a
+defmax sweep printed nine identical splits, and the `optimal` row of a talent sweep was pinned
+to whichever talent ran first. Keyed on budget, talent and the suppression ceiling now.
+
+**The rating column did not track the dial either.** It called `overallOf`, which takes no
+constants and so always rates against the engine's built-in `FULL_TALENT`, printing a rating
+for a game the row beside it was not playing. It calls `fullOverall(..., constants)` now.
+
+##### What shipped, and what it costs
+
+`FULL_TALENT` **0.78 to 0.90**, `FULL_DEF_SUPPRESS_MAX` **1.45**, the cap unchanged. The
+careful row now sits on the quick draft's: 11-6 against 11-6, playoffs 45.8% against 41.8%, a
+perfect season in 1.0% against 0.8%.
+
+**The solved row overshoots, at 91% against 81%, and that is a decision rather than an
+oversight.** The careful and solved rows cannot both be hit with these dials, because twelve
+picks across two pools give a solver far more room to be right than six do. The row that was
+chosen is the one a person actually plays: a full knapsack over both pools is not something a
+human does at twelve slots, while a careful draft is what everybody does.
+
+**Existing board rows were set under the old numbers** and will sit low against new ones.
+
 #### A coach who would make the team worse is not offered
 
 The table holds 115 men. An ordinary drafted roster can afford most of them, and **58% of
