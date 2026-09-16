@@ -15023,7 +15023,11 @@ function paintWinter(){
     : 'Every player moves to his next real NFL season. '+
       '<b>You keep paying what you drafted him for.</b> That never changes, and neither does '+
       'your '+M0(R.capOf(run))+' cap.';
-  $('w-list').innerHTML=run.roster.map((p,i)=>{
+  /* QB first and the tight end last, rather than whoever the wheel happened to offer first.
+     The INDEX passed to winterRow is still the roster index, because that is what data-i
+     carries and what releaseMan is handed; only the walk order changes. */
+  $('w-list').innerHTML=byPosition(run.roster).map((i)=>{
+    const p=run.roster[i];
     const a=w.aged.find(x=>x.now===p);
     return a?winterRow(a,i):'';
   }).join('');
@@ -25621,24 +25625,42 @@ function drawPips(bySlot){
  * looking at a player. Ties keep their draft order, which is a stable sort's default and
  * the only remaining thing the original order was carrying.
  */
+/* ONE ORDER, WHEREVER A ROSTER IS LISTED. Offense down the depth chart and then the defense
+   down its own, which is how both are written on every other screen in this game and on a
+   depth chart anywhere else. A player asked for it on the winter screen, where the list had
+   always been in SIGNING order and so opened on whoever the wheel offered first. */
 const OFF_ORDER=['QB','RB','WR','TE'];
 const DEF_ORDER=['DL','LB','DB'];
+/* A man's place in that order. A FLEX is ranked by what he actually plays, because "flex" is
+   a fact about the slot and the reader is looking at a player. */
+function posRank(p){
+  if(!p) return [1,99];
+  const def=E.DEFENSE_POSITIONS.indexOf(p.position)>=0;
+  const within=(def?DEF_ORDER:OFF_ORDER).indexOf(p.position);
+  return [def?1:0,within<0?98:within];
+}
+/* THE INDICES OF A LIST, REORDERED, AND NEVER THE LIST ITSELF. Every screen that draws a
+   roster keys its rows back to the roster by index: the winter's release button reads
+   data-i straight into releaseMan, and a sorted COPY would hand it the wrong man. So this
+   answers with an order to walk in and leaves the array where it is.
+   Ties keep their original order, which is a stable sort's default and the only thing the
+   signing order was ever carrying. */
+function byPosition(list){
+  return list.map((_,i)=>i).sort((a,b)=>{
+    const ra=posRank(list[a]),rb=posRank(list[b]);
+    return ra[0]-rb[0]||ra[1]-rb[1]||a-b;
+  });
+}
 function rosterSortOrder(slots,bySlot){
   const idx=slots.map((_,i)=>i);
   /* Not a full run: the list is already one unit in its own order. */
   if(!(run&&run.full)) return idx;
-  const rank=(i)=>{
-    const p=bySlot[i];
-    /* An empty slot keeps its place rather than sorting to one end, so a part-drafted
-       roster does not reshuffle under the player between two signings. */
-    if(!p) return [1,99,i];
-    const def=E.DEFENSE_POSITIONS.indexOf(p.position)>=0;
-    const within=(def?DEF_ORDER:OFF_ORDER).indexOf(p.position);
-    return [def?1:0,within<0?98:within,i];
-  };
+  /* An empty slot keeps its place rather than sorting to one end, so a part-drafted roster
+     does not reshuffle under the player between two signings. posRank answers [1,99] for a
+     null, which puts it after everybody, and the index tiebreak holds it steady. */
   return idx.slice().sort((a,b)=>{
-    const ra=rank(a),rb=rank(b);
-    return ra[0]-rb[0]||ra[1]-rb[1]||ra[2]-rb[2];
+    const ra=posRank(bySlot[a]),rb=posRank(bySlot[b]);
+    return ra[0]-rb[0]||ra[1]-rb[1]||a-b;
   });
 }
 function rosterRowsHTML(bySlot,slots,dynOver){
