@@ -1689,8 +1689,18 @@ The regression suite, which is the thing to run after editing:
 ```
 node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
 node mythiball/verify-rules.mjs    the rules replayed in a headless browser
+node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop)
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
+
+`calibrate.mjs` is the hoops TARGETS idea at the plate: real pitches from an
+unsteered arm against the real CPU swing AI, with swing, whiff, chase, foul
+and called-strike rates held to bands. The opponent is pinned because a
+random club moved whiff per swing by twenty points between identical runs.
+Small samples (hit mix, contact quality) are printed as information rather
+than banded, so no target flaps on noise. The whiff band sits where the game
+measures, about twice MLB's rate, and the file's header says why and what a
+retune would touch.
 
 ## Segue, the setlist game
 

@@ -9171,7 +9171,9 @@ function startCatchWindow(kind, batter, landingX, landingY) {
   const finish = (t) => {
     if (window.resolved) return;
     window.resolved = true;
-    g.play.catchActive = false;
+    /* The play can be torn down under this timer (a new at bat, the end
+       of the game), the same race the throw window's finish guards. */
+    if (g.play) g.play.catchActive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('click', onClick, true);
     /* t < 0 means the window expired. */
