@@ -1387,6 +1387,41 @@ Three things that each cost a round, all of them about the harness rather than t
 - **`/Season/i` matches "Regular season complete".** The absence to assert is the TAG, not the
   word.
 
+### A leaderboard nobody can open renders perfectly
+
+The Dynasty board had a table, two axes, three queries and no way in. The only thing that
+ever set `lbDynasty` was `boardFromRun()`, which needs a finished dynasty season on screen,
+and `openBoard()` cleared the flag on every other path with a comment explaining that Dynasty
+board is only ever a run's own board. So it was reachable from exactly one place, and a
+player who went looking for it from the front page could not find it. **Nothing was broken
+and nothing could report it.** Found by a player, not by a check.
+
+It is a competition in the `#lb-comp` select now, gated on `canPlayDynasty()` the way Full
+Team and the Trade Machine are gated on theirs.
+
+**The select had to stop hiding itself, and that is the part worth reading before undoing
+it.** `boardChrome` hid `.lbmode` on this board because Dynasty's axis tabs (Longest runs /
+High score) stand in for it. That held while the board was only ever a run's own board. It is
+false the moment the select is the way IN: you would land on Dynasty and have to close the
+whole screen to look at anything else. **The sort bar is what those tabs actually replace**,
+so the sort bar is what hides now and the select stays up on both.
+
+**The rebuild key named two of the four gates.** `paintComp` only rebuilds the select when
+`dataset.tm` changes, and that string was built from `canPlayTrade()` and `canPlayDefense()`
+and neither Full Team nor Dynasty. Auth resolves after the first paint, so an option whose
+gate is not in the key can only ever appear if it was already eligible on the very first
+paint, which for a signed in player it is not. Every gate in the select is in the key now.
+
+**And its blurb was written after the request rather than before it.** Nothing in that
+sentence depends on what comes back, so below the `await` the unreachable branch returned
+early and left the LAST board's sentence sitting under a Dynasty table: switching over with
+the network down read "Free runs only. Each franchise has its own board." A wrong sentence
+rather than a missing one, and nothing throws.
+
+`check-premium.mjs` drives both directions, because the way back is the half that never
+existed, and it asserts the run-based route still works: adding a second way in must not cost
+the first.
+
 ### A badge you add has to be proved reachable
 
 ```

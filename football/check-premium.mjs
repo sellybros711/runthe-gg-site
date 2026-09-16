@@ -1749,6 +1749,92 @@ ok('  and the door is still there', paid.dynastyDoor);
 await plain.page.close();
 
 /*
+ * THE DYNASTY BOARD HAS A WAY IN FROM THE FRONT PAGE.
+ *
+ * It did not. The table, the axes and the queries all existed and the only thing that ever
+ * set lbDynasty was boardFromRun, which needs a finished dynasty season on screen, so the
+ * board was reachable from exactly one place and openBoard cleared the flag on the way in
+ * from anywhere else. Nothing was broken and nothing could report it: a leaderboard nobody
+ * can open renders perfectly. Reported by a player who went looking for it.
+ *
+ * WHAT MADE IT MORE THAN ONE LINE is that boardChrome hid the competition select on this
+ * board, on the argument that Dynasty's own axis tabs stand in for it. True while the board
+ * was only ever a run's own board; false the moment the select is the way IN, because a door
+ * that disappears behind you is a board you can only leave by closing the whole screen. The
+ * select stays up on both now and the SORT BAR is what the axis tabs actually replace.
+ *
+ * So both directions are driven here, and the way back is the half that never existed.
+ */
+console.log('\nTHE DYNASTY BOARD IS REACHABLE, AND LEAVEABLE');
+const lb = await openPage(browser, 'http://local.test/football/', { tester: false,
+  inject: 'canPlayDynasty,openBoard,setRun:(r)=>{run=r;},'
+    + 'lbDyn:()=>lbDynasty,'
+    + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='t';"
+    + "authState.userId='u1';premiumSet=[];}" });
+await lb.page.evaluate(() => window.__t.signIn());
+await lb.page.click('#frg-x', { timeout: 2000 }).catch(() => {});
+{
+  /* The way a player does it: press Leaderboard, then pick it out of the select. */
+  await lb.page.click('#b-board');
+  await lb.page.waitForTimeout(1200);
+  const opts = await lb.page.evaluate(() =>
+    [...document.querySelectorAll('#lb-comp option')].map((o) => o.value));
+  ok('Dynasty is in the competition select', opts.includes('dynasty'),
+    opts.filter((o) => !/^[A-Z]{2,3}$/.test(o)).join(', ') || '(none)');
+  await lb.page.selectOption('#lb-comp', 'dynasty');
+  await lb.page.waitForTimeout(1200);
+  const on = await lb.page.evaluate(() => ({
+    dyn: window.__t.lbDyn(),
+    eye: (document.querySelector('#s-board .lbtop .eyebrow') || {}).textContent,
+    sel: getComputedStyle(document.querySelector('#s-board .lbmode')).display,
+    value: document.getElementById('lb-comp').value,
+    axes: getComputedStyle(document.getElementById('lb-dyntabwrap')).display,
+    sort: getComputedStyle(document.querySelector('#s-board .sortbar')).display,
+    blurb: (document.getElementById('lb-blurb') || {}).textContent || '',
+  }));
+  ok('  picking it opens the Dynasty board', on.dyn === true && on.eye === 'Dynasty', on.eye);
+  ok('  AND THE SELECT STAYS UP, so it is not a one-way door', on.sel !== 'none', on.sel);
+  ok('  showing Dynasty as the one selected', on.value === 'dynasty', on.value);
+  ok('  with the run axes in place of the season sort bar',
+    on.axes !== 'none' && on.sort === 'none', 'axes ' + on.axes + ', sort ' + on.sort);
+  /* THE BLURB IS WRITTEN BEFORE THE REQUEST, so the unreachable branch cannot leave the last
+     board's sentence under a Dynasty table. Nothing reaches a server in this harness, which
+     is exactly the state that used to print "Free runs only. Each franchise has its own
+     board." over the Dynasty error. */
+  ok('  and the board says what a row is, even with nothing reachable',
+    /One row a run/.test(on.blurb), on.blurb.slice(0, 64));
+}
+{
+  await lb.page.selectOption('#lb-comp', '');
+  await lb.page.waitForTimeout(1200);
+  const off = await lb.page.evaluate(() => ({
+    dyn: window.__t.lbDyn(),
+    eye: (document.querySelector('#s-board .lbtop .eyebrow') || {}).textContent,
+    sort: getComputedStyle(document.querySelector('#s-board .sortbar')).display,
+    axes: getComputedStyle(document.getElementById('lb-dyntabwrap')).display,
+  }));
+  ok('  and picking Offense comes back out', off.dyn === false && off.eye === 'Standings', off.eye);
+  ok('    with the classic sort bar back and the run axes gone',
+    off.sort !== 'none' && off.axes === 'none', 'sort ' + off.sort + ', axes ' + off.axes);
+}
+{
+  /* AND THE ROUTE THAT ALREADY WORKED STILL DOES. Coming off a finished dynasty season opens
+     that run's own board without anybody picking anything, and that is the path every
+     existing player knows. Adding a second way in must not cost the first. */
+  const r = await lb.page.evaluate(() => {
+    const T = window.__t;
+    T.setRun({ outcome: 'done', dynasty: true, seasonNo: 3 });
+    T.openBoard();
+    return { dyn: T.lbDyn(), value: document.getElementById('lb-comp').value };
+  });
+  await lb.page.waitForTimeout(1000);
+  ok('  a finished dynasty season still opens its own board', r.dyn === true, String(r.dyn));
+  ok('    and the select says so', r.value === 'dynasty', r.value);
+}
+ok('  and none of it threw', lb.boom.length === 0, lb.boom.join(' | '));
+await lb.page.close();
+
+/*
  * A BOOT READ THAT LANDS LATE MUST NOT UNDO WHAT LANDED WHILE IT WAS IN FLIGHT.
  *
  * dailySpend, dailyGrace and dailyDayEnd all write the meter behind `if (r && r.used != null)`.

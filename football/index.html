@@ -2517,6 +2517,10 @@ window.GA_ID='G-L29P5MRWKE';
   /* The Trade Machine board, marked the same way a club board is but with the mode's own
      color rather than a team's, so it reads as its own competition at a glance. */
   .lbmode.isdef select{border-color:rgba(16,185,129,.45);color:#6ee7b7}
+  /* Dynasty in the gold the mode wears everywhere else on this page, so the board you are
+     looking at is obvious before you read the name of it. */
+  .lbmode.isdyn select{border-color:rgba(245,196,79,.55);
+    box-shadow:inset 3px 0 0 #f5c44f,inset 0 0 0 1px transparent}
   .lbmode.istrade select{border-color:rgba(56,189,248,.55);
     box-shadow:inset 3px 0 0 #38bdf8,inset 0 0 0 1px transparent}
   /* A window tab the current axis cannot answer. Visibly out of play rather than
@@ -24786,7 +24790,13 @@ function paintComp(){
      sign-out) rather than being decided once and frozen. dataset.tm records which of the two
      shapes is currently rendered, so the select is only ever rebuilt when it actually has to
      be: rebuilding a select that is open closes it. */
-  const wantTrade=(canPlayTrade()?'1':'0')+(canPlayDefense()?'d':'');
+  /* EVERY GATE IN THE SELECT, not two of them. Auth resolves after the first paint, so this
+     key is what lets an option appear once eligibility is known. It named the Trade Machine
+     and Defense and neither Full Team nor Dynasty, so those two could only ever be in the
+     select if they were already eligible on the very first paint, which for a signed in
+     player they are not. */
+  const wantTrade=(canPlayTrade()?'1':'0')+(canPlayDefense()?'d':'')
+    +(canPlayFull()?'f':'')+(canPlayDynasty()?'y':'');
   if(!sel.options.length||sel.dataset.tm!==wantTrade){
     sel.dataset.tm=wantTrade;
     /* THE TWO SIDES OF THE BALL, TOGETHER AND FIRST. They are one choice presented as one
@@ -24805,6 +24815,7 @@ function paintComp(){
            was: it would name an unannounced mode to every visitor who opened the board,
            and lead them to a table they cannot add a row to. */
         (canPlayFull()?'<option value="fullteam">Full Team</option>':'')+
+        (canPlayDynasty()?'<option value="dynasty">Dynasty</option>':'')+
       '</optgroup>'+
       (canPlayTrade()?'<option value="trade">The Trade Machine</option>':'')+
       '<optgroup label="Eras Draft">'+
@@ -24815,12 +24826,14 @@ function paintComp(){
         .map(c=>'<option value="'+c+'">'+esc(E.nickname(c))+'</option>').join('')+
       '</optgroup>';
   }
-  sel.value=lbTrade?'trade':lbDefense?'defense':lbFull?'fullteam':lbEra?'era:'+lbEra:(lbClub||'');
+  sel.value=lbDynasty?'dynasty':lbTrade?'trade':lbDefense?'defense':lbFull?'fullteam'
+    :lbEra?'era:'+lbEra:(lbClub||'');
   const wrap=sel.parentElement;
-  wrap.classList.toggle('isclub',!!lbClub&&!lbEra&&!lbTrade&&!lbDefense&&!lbFull);
-  wrap.classList.toggle('isera',!!lbEra&&!lbTrade&&!lbDefense&&!lbFull);
+  wrap.classList.toggle('isclub',!!lbClub&&!lbEra&&!lbTrade&&!lbDefense&&!lbFull&&!lbDynasty);
+  wrap.classList.toggle('isera',!!lbEra&&!lbTrade&&!lbDefense&&!lbFull&&!lbDynasty);
   wrap.classList.toggle('istrade',!!lbTrade);
   wrap.classList.toggle('isdef',!!lbDefense);
+  wrap.classList.toggle('isdyn',!!lbDynasty);
   if(lbClub&&!lbEra&&!lbTrade&&!lbDefense&&!lbFull){
     const tc=E.teamColors(lbClub);
     wrap.style.setProperty('--c1',tc.primary);
@@ -24832,13 +24845,19 @@ function paintComp(){
 }
 $('lb-comp').addEventListener('change',()=>{
   const v=$('lb-comp').value||'';
-  /* Picking any competition from the select leaves Dynasty board, which is not in the
-     select and is reached only from a Dynasty run. Cleared here so it cannot linger under a
-     classic competition. */
+  /* Picking any OTHER competition leaves Dynasty board, so it is cleared here and set again
+     on its own branch below. Left set, it would linger under a classic competition and
+     loadBoard would branch straight back into the Dynasty table. */
   lbDynasty=false;
   /* Checked again rather than trusted: the option is only rendered for an eligible viewer,
      but the value arrives from the DOM and the DOM is not the authority on that. */
-  if(v==='trade'&&canPlayTrade()){
+  if(v==='dynasty'&&canPlayDynasty()){
+    lbDynasty=true; lbTrade=false; lbDefense=false; lbFull=false; lbEra=null; lbClub=null;
+    /* NO lbSort HERE. A Dynasty row is a whole run rather than a season, so it is ranked on
+       its own axis (lbDynSort, the Longest runs / High score tabs) and the classic sort bar
+       is hidden. Writing lbSort on this branch would quietly change which axis the NEXT
+       classic board opens on. */
+  }else if(v==='trade'&&canPlayTrade()){
     lbTrade=true; lbDefense=false; lbFull=false; lbEra=null; lbClub=null;
     /* Land on the axis the mode is about. Record and team rating both mostly describe the
        roster you were handed; the GM rating is the season's work. */
@@ -24933,11 +24952,12 @@ function openBoard(){
     if(lbTrade) lbSort='gm'; else if(lbDefense) lbSort='pa';
     fixSort();
     lbDir=sortBestDir(lbSort);
-  }else{
-    /* Opened from the front page, with no run to read: Dynasty board is only ever a
-       run's own board, so it cannot be the one showing here. */
-    lbDynasty=false;
   }
+  /* NOTHING IS FORCED OFF HERE ANY MORE. Opened from the front page with no run to read,
+     this used to clear lbDynasty, because Dynasty board could only be a run's own board and
+     would otherwise have been showing with no way to have chosen it. It is in the select
+     now, so it is a competition like the rest, and the board reopens on whichever one was
+     last looked at exactly as it already did for a club, an era and the Trade Machine. */
   tradeBoardOff();
   const m=lbTrade?'trade':lbEra?'era':lbClub?'club':'free';
   ga('board_opened',{mode:m,club:lbClub||null,era:lbEra||null});
@@ -25152,8 +25172,15 @@ function boardChrome(on){
   const winTabs=$('lb-tabs')&&$('lb-tabs').closest('.tabwrap');
   const dynTabs=$('lb-dyntabwrap');
   const sort=document.querySelector('#s-board .sortbar');
-  /* The competition select and the classic sort bar belong to the classic boards only. */
-  [mode,sort].forEach((e)=>{ if(e) e.style.display=on?'':'none'; });
+  /* THE SELECT STAYS UP ON BOTH, and that is a change rather than an oversight. It used to
+     be hidden here on the argument that Dynasty's axis tabs stand in for it, which held only
+     while Dynasty board could be reached from nowhere but a finished dynasty season. It is
+     in the select now, so the select is the way IN, and a way in that hides itself on arrival
+     is a one-way door: you would land on Dynasty and have to close the whole board to look at
+     anything else. The SORT BAR still belongs to the classic boards only, because that is
+     what the axis tabs actually replace. */
+  if(mode) mode.style.display='';
+  if(sort) sort.style.display=on?'':'none';
   /* The window tabs are shared: Today / This week / All time apply to Dynasty board too,
      so they stay up on both. The AXIS tabs are Dynasty's own, standing in for the select. */
   if(winTabs) winTabs.style.display='';
@@ -25194,6 +25221,9 @@ async function loadDynastyBoard(){
   if(title) title.textContent=byScore?'High score':'Longest runs';
   /* Light up the axis tab and the window tab that are showing. The classic path does this for
      the window tabs in loadBoard; Dynasty path returns before that, so it does its own. */
+  /* The select is up on this board now, so it has to be told which entry is showing. The
+     classic path does this near the end of loadBoard, which this one returns long before. */
+  paintComp();
   [...document.querySelectorAll('#lb-dyntabs .tab')].forEach(t=>
     t.classList.toggle('on',t.dataset.dyn===lbDynSort));
   [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>{
@@ -25207,6 +25237,16 @@ async function loadDynastyBoard(){
      the board, or the pinned place would not match the list it sits under. */
   const mine=(authState.signedIn&&run&&run.dynasty&&run.dynastyId)
     ?{seasons:R.seasonsSurvived(run),score:run.score||0}:null;
+  /* WRITTEN BEFORE THE REQUEST, not after it. Nothing in this sentence depends on what comes
+     back: it is what the board IS. Set below the await, the unreachable branch returns early
+     and leaves whatever the last board said sitting under the error, so switching to Dynasty
+     with the network down read "Free runs only. Each franchise has its own board." over a
+     Dynasty table. A wrong sentence rather than a missing one, and nothing throws. */
+  const when=lbWin==='day'?' Today resets at midnight Eastern.'
+    :lbWin==='week'?' The week starts Monday.':'';
+  $('lb-blurb').textContent=(byScore
+    ?'Ranked by total points, then seasons survived. One row a run.'
+    :'Ranked by seasons survived, then total points. One row a run.')+when;
   const [rows,total,place]=await Promise.all([
     B.dynastyTop(LB_LIMIT,lbDynSort,lbWin), B.dynastyTotal(lbWin),
     mine?B.dynastyRank(mine.seasons,mine.score,lbDynSort,lbWin):Promise.resolve(null),
@@ -25220,11 +25260,6 @@ async function loadDynastyBoard(){
     return;
   }
   $('lb-count').textContent=total?(total+' run'+(total===1?'':'s')+(lbWin==='day'?' today':lbWin==='week'?' this week':' recorded')):'';
-  const when=lbWin==='day'?' Today resets at midnight Eastern.'
-    :lbWin==='week'?' The week starts Monday.':'';
-  $('lb-blurb').textContent=(byScore
-    ?'Ranked by total points, then seasons survived. One row a run.'
-    :'Ranked by seasons survived, then total points. One row a run.')+when;
   paintDynastyBoard();
 }
 
