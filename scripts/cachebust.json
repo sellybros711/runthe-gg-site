@@ -1899,8 +1899,8 @@
   },
   "cfb/commish/index.html": {
     "/assets/store.js": {
-      "v": "18",
-      "sha": "1fd2e0dbdf0369e1"
+      "v": "20",
+      "sha": "da12ea78e7e90a04"
     },
     "/cfb/engine.js": {
       "v": "34",
@@ -2033,8 +2033,8 @@
       "sha": "4a8981681eb30450"
     },
     "/assets/store.js": {
-      "v": "18",
-      "sha": "1fd2e0dbdf0369e1"
+      "v": "20",
+      "sha": "da12ea78e7e90a04"
     }
   },
   "football/index.html": {
@@ -2067,8 +2067,8 @@
       "sha": "39ae7ad9335c19bc"
     },
     "/assets/store.js": {
-      "v": "18",
-      "sha": "1fd2e0dbdf0369e1"
+      "v": "20",
+      "sha": "da12ea78e7e90a04"
     },
     "/assets/cloudsave.js": {
       "v": "1",

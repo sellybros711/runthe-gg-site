@@ -296,18 +296,53 @@ allowance and then the store; the row removes the limit rather than unlocking th
 copy anywhere may imply it does, and the receipt has to show the end date.
 
 **The prompt card is the store's too, and for the reason everything else here is.** There are
-three of them (the football front page, the football profile, the college profile) and each
-page used to draw its own, so on one day, about one purchase, they read "4 modes", "3 modes"
-and a sentence. `RTG_STORE.card()` and `.cardInner()` draw all three now, and the `.pwc-marks`
-rule is in the store's injected CSS rather than in either page.
+**four** of them (the football front page, the football profile, the college front page, the
+college profile) and each page used to draw its own, so on one day, about one purchase, they
+read "4 modes", "3 modes" and a sentence. `RTG_STORE.card()` and `.cardInner()` draw all four
+now, and the `.pwc-marks` rule is in the store's injected CSS rather than in either page.
 
-What it says is **Unlimited**, over the three marks the sheet's hero row uses, in the same
-order. A count was the wrong half to lead with: what a free account meets is the counting, so
-the value is the word that answers it. **The three are the three tiles, not the four named
-lines under them.** One Franchise Dynasty is a dynasty with the pool locked to one club, so
-it sits under the trophy in both places. Counting it separately is how a card ends up
-claiming four of something a reader can only find three of. Both suites assert the value, the
-mark count and that no digit followed by "modes" has reappeared.
+**The college front page was the one that had no card at all**, so the offer lived two taps
+behind the avatar and the only screen every visitor to that game sees never mentioned that it
+has a paid tier. That is a quieter version of the wall the college profile card was added to
+knock down: a store you can only reach by going looking for it. `ensurePremiumCard()` there
+mirrors `ensureCommishDoor()` beside it, built rather than shipped hidden and removed when the
+answer changes, and it is gated on `premiumPitch()`, which asks `commishOn()`. While
+`COMMISH_LIVE` is false the only thing that card sells on that game is a mode the reader cannot
+open, so the door and the card appear together on the day the flag flips.
+
+**And the WORDS drifted anyway, which is the same fix arriving twice.** Moving the markup in
+stopped the cards having different shapes and left the two strings as arguments each caller
+passed, so the football front page read "Unlock every mode" while both profiles read "Unlock
+everything". The football page even carried a comment claiming "it says the same thing on all
+three" directly above the line that passed something else: the claim was about the markup and
+read as a claim about the sentence. **`cardInner()` and `card()` take no words at all now**,
+not even an overridable default, because a default that can be overridden is the same argument
+with a politer name. It is `PW_CARD_TITLE` and `PW_CARD_SUB`, once.
+
+The title is **the heading of the sheet the card opens**. A reader who presses "Unlock every
+mode" and lands on an `<h2>` reading "Unlock everything" has to stop and work out whether they
+got the screen they asked for. Both suites assert the two cards match each other AND match that
+heading, because value and mark count agreed across all three cards the whole time the words did
+not, and a check on the parts the store owned could not see the parts it did not.
+
+**The sub is measured, not written.** The card's text column is whatever the value and the marks
+leave: 200px at 390px of viewport once the fourth mark is there, 170px at 360. `No daily limits.
+One payment, lifetime.` needs 240 and wrapped on every phone anybody holds, leaving `lifetime.`
+alone on a second line. `No daily limits. Pay once.` holds one line at 360 and up. The sheet
+still says "One payment" on a chip beside each price and that is not drift: the sheet has the
+room, the card has a third of it, and the CLAIM is the same. `check-premium.mjs` asserts the
+line count at each width rather than counting characters, because the column depends on the mark
+count and the mark count depends on the reader.
+
+What it says is **Unlimited**, over the marks the sheet's hero row uses, in the same order. A
+count was the wrong half to lead with: what a free account meets is the counting, so the value
+is the word that answers it. **The marks are the TILES, not the named lines under them**, and
+the number is derived rather than written: three on the college page, four for a football
+reader who can open Full Team. One Franchise Dynasty is a dynasty with the pool locked to one
+club, so it is itemised on the Premium card and has no tile and no mark of its own. Counting it
+separately is how a card ends up claiming more of something than a reader can find. Both suites
+assert the value, that the card and the sheet claim the SAME number, and that no digit followed
+by "modes" has reappeared.
 
 That CSS rule is written `.pw-card .pwc-go .pwc-marks`, a class deeper than it looks like it
 needs. The football page carries `.pw-card .pwc-go span{display:block}`, so a shorter selector

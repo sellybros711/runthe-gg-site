@@ -207,6 +207,25 @@ for (const [who, owns, day, want] of [
       goProValue: ((document.querySelector('#pf-prem .pwc-go b') || {}).textContent) || '',
       goProCounts: /\d+\s*modes/i.test(
         (document.getElementById('pf-prem') || {}).innerText || ''),
+      /* THE SENTENCE, WHICH NOTHING HERE READ, AND THAT IS HOW IT DRIFTED. Everything above
+         is the VALUE and the MARK COUNT, and those two agreed across all three cards the
+         whole time the words did not: the front page said "Unlock every mode" while both
+         profiles said "Unlock everything". The markup had been moved into the store to stop
+         exactly this, and the two strings stayed behind as arguments each caller passed, so
+         a check on the parts the store owned could not see the parts it did not. */
+      goProTitle: ((document.querySelector('#pf-prem .pwc-t b') || {}).textContent) || '',
+      goProSub: ((document.querySelector('#pf-prem .pwc-t span') || {}).textContent) || '',
+      homeTitle: ((document.querySelector('#b-premium .pwc-t b') || {}).textContent) || '',
+      homeSub: ((document.querySelector('#b-premium .pwc-t span') || {}).textContent) || '',
+      /* AND THE SHEET'S OWN HEADING, because the card is a door and the heading is the room.
+         A reader who presses "Unlock every mode" and lands on "Unlock everything" has to
+         stop and work out whether they got the screen they asked for. */
+      sheetH2: (() => {
+        const d = document.createElement('div');
+        d.innerHTML = window.RTG_STORE.html({ signedOut: false });
+        const h = d.querySelector('h2');
+        return h ? h.textContent.trim() : '';
+      })(),
       /* The front page's own card, built as a node rather than written into markup, which is
          the whole reason the two could say different things. */
       homeValue: ((document.querySelector('#b-premium .pwc-go b') || {}).textContent) || '',
@@ -249,6 +268,16 @@ for (const [who, owns, day, want] of [
     ok('    the front page card says exactly the same',
       r.homeValue === 'Unlimited' && r.homeMarks === wantMarks && !r.homeCounts,
       r.homeValue + ' / ' + r.homeMarks + ' marks');
+    /* AND "EXACTLY THE SAME" NOW INCLUDES THE WORDS. See the note in the evaluate above:
+       the line before this one passed for weeks while the two cards read differently,
+       because the value and the marks were the store's and the sentence was not. */
+    ok('    including the sentence, not just the value',
+      r.homeTitle === r.goProTitle && r.homeSub === r.goProSub,
+      JSON.stringify(r.homeTitle + ' / ' + r.homeSub) + '  vs  '
+        + JSON.stringify(r.goProTitle + ' / ' + r.goProSub));
+    ok('    and the card is named for the sheet it opens',
+      r.homeTitle === r.sheetH2,
+      JSON.stringify(r.homeTitle) + ' vs ' + JSON.stringify(r.sheetH2));
   }
   if (!owner && want !== 'the mode') {
     /* The spent door was a card linking to the store, which is a second tap between
@@ -682,7 +711,7 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,prof
   /* The walk back from Stripe runs earlier on this page and leaves justPaid set, which is
      itself a reason premiumPitch() stands down. Cleared rather than worked around, so the
      section below is testing the ownership rule and not that one. */
-  + 'setPaid:(v)=>{justPaid=v;},'
+  + 'setPaid:(v)=>{justPaid=v;},goHome,'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
   + 'onSuccessUrl:()=>{history.replaceState(null,"","/football/?checkout=success");}';
@@ -1390,6 +1419,19 @@ ok('pressing Trade Machine reaches the game', /s-(draft|game|reveal)/.test(walke
    alive at 320 and 360 when it was not: a media query keys on the VIEWPORT, so a narrowed
    element renders at the wide rules and every width below the real one is measured with the
    wrong stylesheet. The widths matter here precisely because the rules change at them. */
+/* THE CARD HAS TO BE BACK ON THE PAGE, AND THE PAGE HAS TO BE ON SCREEN. Two separate
+   things, and the second one cost a round: the walk above left this account holding both
+   products, which is the reader the card is removed for, AND it left the game on a run
+   screen. Painted but not shown, the card is found by getElementById and measures 0px wide,
+   so the first version of this reported "0 lines in a 0px column" rather than saying the
+   front page was not up. A layout assertion has to be made against a laid out element. */
+await ck.page.evaluate(() => {
+  window.__t.setPaid(false);
+  window.__t.setPremium([]);
+  window.__t.goHome();
+  window.__t.paintHomeStart();
+});
+await new Promise((r) => setTimeout(r, 200));
 const geom = [];
 for (const w of [320, 360, 390, 560]) {
   await ck.page.setViewportSize({ width: w, height: 1400 });
@@ -1433,7 +1475,22 @@ for (const w of [320, 360, 390, 560]) {
     });
     const total = Math.round(box.getBoundingClientRect().height);
     box.remove();
-    return { w: width, tiles, spread: Math.max(...tiles) - Math.min(...tiles),
+    /* AND THE PROMPT CARD THAT OPENS ALL THIS, measured in its REAL place on the page. Its
+       text column is whatever the value and the marks leave, which is 200px at 390 once the
+       fourth mark is there, and the sub has to hold one line in it. "No daily limits. One
+       payment, lifetime." needed 240 and wrapped on every phone anybody holds, leaving the
+       word "lifetime." alone on a second line.
+       MEASURED HERE RATHER THAN COUNTED IN CHARACTERS, because the column depends on the
+       mark count and the mark count depends on the reader. */
+    const card = document.getElementById('b-premium');
+    let sub = null;
+    if (card) {
+      const s = card.querySelector('.pwc-t span');
+      const lh = parseFloat(getComputedStyle(s).lineHeight);
+      sub = { lines: Math.round(s.getBoundingClientRect().height / lh),
+        col: Math.round(card.querySelector('.pwc-t').getBoundingClientRect().width) };
+    }
+    return { w: width, tiles, spread: Math.max(...tiles) - Math.min(...tiles), sub,
       chipSpread: Math.max(0, ...lines.map((l) => l.spread)),
       chipHeights: Math.max(0, ...lines.map((l) => l.heights)),
       overhang: Math.max(0, ...lines.map((l) => l.overhang)), total };
@@ -1450,6 +1507,13 @@ geom.forEach((g) => {
     g.chipHeights.toFixed(1) + 'px of height between them');
   ok('  ' + g.w + 'px: no chip hangs below the price', g.overhang < 1,
     g.overhang.toFixed(1) + 'px');
+  /* 320 IS EXEMPT AND SAYS SO. At 320 the card's title wraps too, so a one line rule there
+     would be asking for copy nobody would write. Every width a phone in use actually
+     reports is 360 and up. */
+  if (g.w >= 360) {
+    ok('  ' + g.w + 'px: the prompt card says it in one line', !!g.sub && g.sub.lines === 1,
+      g.sub ? g.sub.lines + ' lines in a ' + g.sub.col + 'px column' : 'no card');
+  }
 });
 /* A CEILING ON THE WHOLE SHEET, because the complaint that started this pass was scrolling
    and nothing else here would notice it growing back. Measured at 390px it was 1090px and is

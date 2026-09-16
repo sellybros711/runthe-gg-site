@@ -634,11 +634,11 @@
   /*
    * THE PROMPT CARD, WHICH IS NOW PART OF THE OFFER RATHER THAN A THING EACH PAGE DRAWS.
    *
-   * Three of these exist: the football front page, the football profile and the college
-   * profile. Every one had its own copy of the markup and its own idea of what the card was
-   * worth, so the three of them said "4 modes", "3 modes" and a sentence, on the same day,
-   * about the same purchase. That is the drift this whole file exists to stop, and the card
-   * had simply never been moved in.
+   * Four of these exist: the football front page, the football profile, the college front
+   * page and the college profile. Every one had its own copy of the markup and its own idea
+   * of what the card was worth, so they said "4 modes", "3 modes" and a sentence, on the same
+   * day, about the same purchase. That is the drift this whole file exists to stop, and the
+   * card had simply never been moved in.
    *
    * WHAT IT SAYS IS UNLIMITED, OVER THE THREE MODES THE BUNDLE UNLOCKS. A count was the wrong
    * half to lead with: what a free account actually meets is the counting, so the word that
@@ -657,6 +657,45 @@
      Built per render rather than held as an array, because whether the fourth is there is a
      question about the reader and the reader can sign in while the page is open. */
   var PW_CARD_VALUE = 'Unlimited';
+  /* AND THE WORDS ARE THE STORE'S TOO, WHICH THEY WERE NOT, AND THE CARDS HAD ALREADY DRIFTED
+     AGAIN. The markup moved in here and the two strings stayed as arguments each page passed,
+     so on one day, about one purchase, the football front page said "Unlock every mode" and
+     both profiles said "Unlock everything". The comment on the football page claimed "it says
+     the same thing on all three" while the line directly under it passed something else, which
+     is what an argument buys you: the shared function guarantees the SHAPE and guarantees
+     nothing about the sentence.
+     SO cardInner AND card TAKE NO WORDS AT ALL. Not a default that a caller may override,
+     because a default that can be overridden is the same argument with a politer name and the
+     next page to want a slightly better line takes it. There is one sentence. If it is wrong
+     it is wrong in one place.
+
+     UNLOCK EVERYTHING, NOT UNLOCK EVERY MODE, and the sheet is why. A reader who presses this
+     lands on an <h2> reading Unlock everything, and a card that hands them a different name
+     for the thing they just pressed makes them wonder whether they got the right screen. It
+     is also the truer half: two of the four things in Run The Bundle are not modes. */
+  var PW_CARD_TITLE = 'Unlock everything';
+  /* WHAT CHANGES, THEN WHAT IT COSTS, in that order and in two short sentences, because this
+     line is 11.5px in the narrow column of a card and it is read in about a second.
+     "No daily limits" is plural to match the sheet, and because it is plural: Dynasty and
+     Commissioner count seasons, the Trade Machine and Full Team count runs, and a free
+     account meets four different counters.
+
+     "PAY ONCE" AND NOT "ONE PAYMENT, LIFETIME", AND IT IS MEASURED RATHER THAN PREFERRED.
+     The card's text column is what is left after the value and the marks, which is 200px at
+     390px of viewport once the fourth mark is there and 170px at 360. Measured in the real
+     card on both pages:
+
+       No daily limits. One payment, lifetime.   two lines at 320, 360 AND 390
+       No daily limits. One payment.             one line at 390, two at 360
+       No daily limits. Pay once.                one line at 360 and 390
+
+     The long one wrapped on every phone anybody actually holds, and it wrapped leaving the
+     word "lifetime." alone on a line, which is the widow the Commish card's own note is
+     about. This is the same claim in the width available.
+     THE SHEET STILL SAYS "One payment", on a chip beside each price, and that is not a drift:
+     the sheet has the room and this has a third of it. What must not differ is the CLAIM, and
+     nothing here promises a different one. */
+  var PW_CARD_SUB = 'No daily limits. Pay once.';
   function cardMarkKeys() {
     var k = ['trophy', 'swap', 'clipboard'];
     if (PW_FULL_ON()) k.push('shield');
@@ -666,18 +705,20 @@
     return '<span class="pwc-marks">' +
       cardMarkKeys().map(function (k) { return pwArt(k); }).join('') + '</span>';
   }
-  /* The insides on their own, because the football front page BUILDS its node rather than
-     writing markup into a string. Same card either way. */
-  function cardInner(title, sub) {
+  /* The insides on their own, because both front pages BUILD their node rather than writing
+     markup into a string. Same card either way. */
+  function cardInner() {
     ensureStyle();
     return '<span class="pwc-ic">' + pwArt('star') + '</span>' +
-      '<span class="pwc-t"><b>' + esc(title) + '</b><span>' + esc(sub) + '</span></span>' +
+      '<span class="pwc-t"><b>' + esc(PW_CARD_TITLE) + '</b>' +
+      '<span>' + esc(PW_CARD_SUB) + '</span></span>' +
       '<span class="pwc-go"><b>' + esc(PW_CARD_VALUE) + '</b>' + cardMarks() + '</span>';
   }
-  function cardHTML(id, title, sub) {
-    return '<button class="pw-card" id="' + esc(id) + '">' + cardInner(title, sub) + '</button>';
+  function cardHTML(id) {
+    return '<button class="pw-card" id="' + esc(id) + '">' + cardInner() + '</button>';
   }
 
   root.RTG_STORE = { html: storeHTML, wire: wire, art: art, game: game, CFB_NAME: CFB_NAME,
-    card: cardHTML, cardInner: cardInner, cardValue: PW_CARD_VALUE };
+    card: cardHTML, cardInner: cardInner, cardValue: PW_CARD_VALUE,
+    cardTitle: PW_CARD_TITLE, cardSub: PW_CARD_SUB };
 })(typeof self !== 'undefined' ? self : this);

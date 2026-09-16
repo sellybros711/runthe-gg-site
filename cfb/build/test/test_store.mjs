@@ -156,6 +156,10 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
 /* ── signed out ─────────────────────────────────────────────────────────────────────── */
 {
   const p = await open(stub(false, [], []), 'signed out: nothing is sold and no status is claimed');
+  /* THE FRONT PAGE CARD IS GATED ON THE SAME ANSWER THE HUB CARD IS, and commishOn() needs
+     an account: while COMMISH_LIVE is false only the tester list sees Commissioner Mode at
+     all, so a signed out visitor would be sold a door that does not open for them. */
+  ok('no offer card on the front page either', !(await has(p, '#b-premium')));
   await hub(p);
   ok('no upgrade card', !(await has(p, '#pf-prem')));
   ok('no Pro access row', !(await has(p, '#pf-go-pro')));
@@ -169,7 +173,70 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
 /* ── signed in, bought nothing ──────────────────────────────────────────────────────── */
 {
   const p = await open(stub(true, [], []), 'signed in without the row: the offer is reachable');
+  /* ── THE FRONT PAGE CARRIES IT TOO, WHICH IT DID NOT ─────────────────────────────────
+     The football game puts this card directly under its mode doors and this game put it
+     two taps away, behind the avatar, on the profile hub. So the one screen every visitor
+     to this game sees never mentioned that it has a paid tier, and the only ways to the
+     offer were opening your own profile or being turned away somewhere. That is a quieter
+     version of the wall the profile card was added to knock down.
+     ASSERTED BEFORE THE HUB IS OPENED, because opening the hub is the thing that used to
+     be required and the point is that it no longer is. */
+  const home = await p.evaluate(() => {
+    const el = document.getElementById('b-premium');
+    if (!el) return { there: false };
+    const ctas = document.querySelector('.ctas');
+    const three = ctas && ctas.querySelector('.cta3');
+    const door = document.getElementById('b-hp-commish');
+    return { there: true,
+      /* UNDER THE DOORS AND ABOVE THE ROW OF THREE, which is where the football page puts
+         its own: after the thing people came for, before the things they came back for. */
+      inCtas: !!(ctas && el.parentNode === ctas),
+      aboveThree: !!(three && el.compareDocumentPosition(three)
+        & Node.DOCUMENT_POSITION_FOLLOWING),
+      belowDoor: !!(door && door.compareDocumentPosition(el)
+        & Node.DOCUMENT_POSITION_FOLLOWING),
+      title: (el.querySelector('.pwc-t b') || {}).textContent || '',
+      sub: (el.querySelector('.pwc-t span') || {}).textContent || '',
+      value: (el.querySelector('.pwc-go b') || {}).textContent || '',
+      marks: el.querySelectorAll('.pwc-marks svg').length };
+  });
+  ok('the front page carries the offer card', home.there);
+  ok('  in the doors, not in the nav or a sheet', home.inCtas === true);
+  ok('  under the Commish door', home.belowDoor === true);
+  ok('  and above the row of three', home.aboveThree === true);
+  ok('  saying Unlimited over the same marks as the hub card',
+    home.value === 'Unlimited' && home.marks === 3, home.value + ' / ' + home.marks);
   await hub(p);
+  /* ── AND BOTH CARDS SAY THE SAME SENTENCE ────────────────────────────────────────────
+     THIS IS THE SECOND ROUND OF ONE FIX AND THAT IS WHY IT IS ASSERTED RATHER THAN READ.
+     The markup moved into /assets/store.js so the cards could not drift, and the two
+     STRINGS stayed as arguments each caller passed, so they drifted anyway: the football
+     front page read "Unlock every mode" while both profile cards read "Unlock everything",
+     about the same purchase, on the same day. The football page even carried a comment
+     claiming "it says the same thing on all three" directly above the line that passed
+     something else.
+     cardInner() takes no words now, so this cannot fail without somebody deliberately
+     re-adding a parameter, which is exactly the change worth failing on. */
+  const hubCard = await p.evaluate(() => {
+    const el = document.getElementById('pf-prem');
+    return { title: (el.querySelector('.pwc-t b') || {}).textContent || '',
+      sub: (el.querySelector('.pwc-t span') || {}).textContent || '' };
+  });
+  ok('  the front page and the hub say the same thing',
+    home.title === hubCard.title && home.sub === hubCard.sub,
+    JSON.stringify(home.title + ' / ' + home.sub) + '  vs  '
+      + JSON.stringify(hubCard.title + ' / ' + hubCard.sub));
+  /* AND IT IS THE SHEET'S OWN HEADING. A reader who presses this card lands on an <h2>,
+     and a card that hands them a different name for the thing they just pressed makes them
+     wonder whether they got the right screen. */
+  const h2 = await p.evaluate(() => {
+    const d = document.createElement('div');
+    d.innerHTML = window.RTG_STORE.html({ signedOut: false });
+    const h = d.querySelector('h2');
+    return h ? h.textContent.trim() : '';
+  });
+  ok('  and it is the heading of the sheet it opens', hubCard.title === h2,
+    JSON.stringify(hubCard.title) + ' vs ' + JSON.stringify(h2));
   ok('the Free pill is beside the name', (await txt(p, '.pfid .pw-pill')) === 'Free');
   ok('the upgrade card is on the hub', await has(p, '#pf-prem'));
   ok('and no receipt row, because there is nothing to receipt', !(await has(p, '#pf-go-pro')));
@@ -440,6 +507,11 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
 {
   const p = await open(stub(true, ['ps_premium', 'cfb_premium', 'arcade_card_year', 'runtour_pack'], FULL),
     'an owner sees what they bought, and is not sold it again');
+  /* AND THE FRONT PAGE IS CLEAN FOR A BUYER, which is the half that is easy to miss: the
+     card is BUILT on an auth change and ownership lands after that, so without the repaint
+     on the premium_products answer a customer would go on being offered what they own on
+     the first screen of the game. */
+  ok('no offer card on the front page for a buyer', !(await has(p, '#b-premium')));
   await hub(p);
   ok('the Pro pill is beside the name', (await txt(p, '.pfid .pw-pill')) === 'Pro');
   ok('the Pro access row is on the hub', await has(p, '#pf-go-pro'));
