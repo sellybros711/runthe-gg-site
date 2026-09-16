@@ -2742,14 +2742,21 @@ const Sound = {
     src.connect(filt); filt.connect(g); g.connect(bus);
     src.start(t0); src.stop(t0 + dur + 0.05);
   },
-  play(name) {
+  play(name, opts = {}) {
     if (this.muted) return;
     try {
       switch (name) {
-        case 'crack':
-          this.noise(0.08, { filter:'highpass', freq: 1800, vol: 0.5 });
-          this.tone(180, 0.06, { type:'triangle', vol: 0.25 });
+        case 'crack': {
+          /* THE CRACK IS THE READOUT, the same rule the contact burst
+             follows: a squared-up ball snaps bright and loud, a jam shot
+             thuds. q is the swing's contact quality when the caller has
+             one; the default keeps the old crack for the paths without
+             (bunts, quirks, the replay). */
+          const q = opts.q != null ? Math.max(0, Math.min(1, opts.q)) : 0.6;
+          this.noise(0.06 + q * 0.04, { filter:'highpass', freq: 1300 + q * 1400, vol: 0.30 + q * 0.32 });
+          this.tone(140 + q * 90, 0.06, { type:'triangle', vol: 0.18 + q * 0.12 });
           break;
+        }
         case 'foul':
           this.noise(0.05, { filter:'highpass', freq: 2400, vol: 0.3 });
           break;
@@ -2775,9 +2782,16 @@ const Sound = {
           this.tone(880, 0.05, { type:'sine', vol: 0.16 });
           this.noise(0.04, { filter:'lowpass', freq: 900, vol: 0.25 });
           break;
-        case 'cheer':
-          this.noise(0.7, { filter:'bandpass', freq: 1000, vol: 0.22, swell: true });
+        case 'cheer': {
+          /* A double is louder than a single and lasts longer, and the
+             big one gets a second swell arriving on top of the first,
+             which is what a crowd actually does when the ball keeps
+             rolling. */
+          const big = !!opts.big;
+          this.noise(big ? 1.1 : 0.7, { filter:'bandpass', freq: 1000, vol: big ? 0.30 : 0.22, swell: true });
+          if (big) this.noise(0.8, { filter:'bandpass', freq: 1400, vol: 0.16, swell: true, delay: 0.35 });
           break;
+        }
         case 'aww':
           this.tone(300, 0.28, { type:'sine', slideTo: 200, vol: 0.10 });
           break;
@@ -8673,7 +8687,7 @@ function scheduleContactPlay(kind, batter, info) {
   /* Bat meets ball. The crack fires immediately, before the ball travels,
      and a gold impact burst pops at the contact point so the hit visibly
      comes OFF THE BAT rather than materializing mid-field. */
-  Sound.play('crack');
+  Sound.play('crack', { q: info && info.q != null ? info.q : undefined });
   {
     /* The burst is PROPORTIONAL. A squared-up ball and a jam shot used to
        throw the same ten sparks, so the eye learned nothing from the
@@ -8823,7 +8837,9 @@ function scheduleContactPlay(kind, batter, info) {
       Sound.play('catch');
     } else {
       dustPuff(g, landingX, landingY);
-      if (g.play.kind === 'single' || g.play.kind === 'double' || g.play.kind === 'triple') Sound.play('cheer');
+      if (g.play.kind === 'single' || g.play.kind === 'double' || g.play.kind === 'triple') {
+        Sound.play('cheer', { big: g.play.kind !== 'single' });
+      }
       else Sound.play('aww');
     }
     if (onError) {
