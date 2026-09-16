@@ -7397,7 +7397,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
   <div class="screen" id="s-seed">
     <div class="seed-hero">
-      <div class="eyebrow">Regular season complete</div>
+      <div class="eyebrow" id="sd-eye">Regular season complete</div>
       <div class="seed-rec num" id="sd-rec">0-0</div>
     </div>
     <div class="seed-panel" id="sd-card">
@@ -17905,6 +17905,19 @@ function checkHeadline(results){
 /* ---------- seeding ---------- */
 function paintSeed(){
   const sd=run.playoffSeed;
+  /* WHICH SEASON OF THE DYNASTY THIS IS. A 13-4 under "Regular season complete" is the same
+     screen in season one and season forty, and the run is the only thing on this page that
+     knows the difference. Every other Dynasty screen names it: the squad screen's step, the
+     schedule's heading, the boss battle's eyebrow.
+     THE SAME SHAPE bg-eye ALREADY USES, which is what the screen is, a middot, then the
+     season. Not a new pattern for one page.
+     AND RESET FOR EVERY OTHER MODE RATHER THAN ONLY SET FOR THIS ONE. This element is static
+     markup drawn for the Trade Machine and Full Team on the same page, and both of them
+     reach this screen; written one way round, a dynasty in the other slot would leave its
+     season number on a mode that has no seasons. Same trap, same fix, as v-caleye. */
+  const eye=$('sd-eye');
+  if(eye) eye.textContent='Regular season complete'
+    +((run&&run.dynasty)?' · Season '+run.seasonNo:'');
   $('sd-rec').textContent=sd.regularRecord;
   const c=$('sd-card'); c.className='seed-panel '+(sd.bye?'gold':'win');
 

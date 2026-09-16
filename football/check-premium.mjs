@@ -711,7 +711,7 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,prof
   /* The walk back from Stripe runs earlier on this page and leaves justPaid set, which is
      itself a reason premiumPitch() stands down. Cleared rather than worked around, so the
      section below is testing the ownership rule and not that one. */
-  + 'setPaid:(v)=>{justPaid=v;},goHome,'
+  + 'setPaid:(v)=>{justPaid=v;},goHome,paintSeed,R:R,'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
   + 'onSuccessUrl:()=>{history.replaceState(null,"","/football/?checkout=success");}';
@@ -1521,6 +1521,62 @@ geom.forEach((g) => {
    on adding a block. Move it when the sheet is meant to get longer, never to make this pass. */
 const tall = geom.find((g) => g.w === 390);
 ok('  and the whole offer stays under 1000px at 390', tall.total < 1000, tall.total + 'px');
+
+/* ─── A DYNASTY SCREEN SAYS WHICH SEASON IT IS, AND NOTHING ELSE DOES ──────────────────
+ *
+ * The seeding screen is the same screen in season one and season forty: an eyebrow reading
+ * "Regular season complete" over a record. The run is the only thing on the page that knows
+ * the difference, and every other Dynasty screen already names it (the squad screen's step,
+ * the schedule's heading, the boss battle's eyebrow), so this one was the odd one out.
+ *
+ * THE HALF THAT NEEDS A GUARD IS THE RESET, NOT THE LABEL. #sd-eye is static markup drawn
+ * for the Trade Machine and Full Team on the same page, and both of them reach this screen.
+ * Written as "set it when dynasty" and nothing else, a dynasty in the other slot leaves its
+ * season number sitting on a mode that has no seasons, which is a sentence that is wrong
+ * rather than missing, and nothing anywhere throws. v-caleye carries the same note for the
+ * same reason; this is the fourth element on this page with that shape.
+ *
+ * PAINTED DIRECTLY RATHER THAN PLAYED TO. What is under test is one heading, and driving
+ * seventeen weeks of football to reach it would be testing the season loop instead.
+ */
+console.log('\nA DYNASTY SCREEN SAYS WHICH SEASON IT IS');
+const SEED_FIXTURE = { regularRecord: '13-4', bye: false, byeRoute: null,
+  roundNames: ['Wild Card', 'Divisional', 'Conf.', 'Title'] };
+for (const [label, opts] of [
+  ['a dynasty in season 6', { dynasty: true, seasonNo: 6 }],
+  ['a dynasty in season 40', { dynasty: true, seasonNo: 40 }],
+  ['a Trade Machine run', { dynasty: false, tradeMachine: true, seasonNo: 1 }],
+]) {
+  const r = await ck.page.evaluate(({ o, seed }) => {
+    const run = window.__t.R.createRun({ dynasty: !!o.dynasty, seed: 5 });
+    run.dynasty = !!o.dynasty;
+    run.tradeMachine = !!o.tradeMachine;
+    run.seasonNo = o.seasonNo;
+    run.playoffSeed = seed;
+    window.__t.setRun(run);
+    window.__t.paintSeed();
+    const e = document.getElementById('sd-eye');
+    const lh = parseFloat(getComputedStyle(e).lineHeight) || 13;
+    return { txt: (e.textContent || '').trim(),
+      lines: Math.round(e.getBoundingClientRect().height / lh),
+      /* The rest of the screen, so a change to the heading cannot quietly take it with it. */
+      rec: (document.getElementById('sd-rec') || {}).textContent,
+      steps: [...document.querySelectorAll('#sd-tracker .po-step')].length };
+  }, { o: opts, seed: SEED_FIXTURE });
+  console.log('  ' + label + ':');
+  ok('    the eyebrow reads "' + r.txt + '"',
+    opts.dynasty
+      ? r.txt === 'Regular season complete · Season ' + opts.seasonNo
+      : r.txt === 'Regular season complete',
+    r.txt);
+  /* 320 IS NOT ASSERTED. The viewport here is 390 by the line above this block, which is the
+     width this is read at; at 320 a two digit season wraps and breaks cleanly at the middot,
+     which is a second line rather than a widow. */
+  ok('    on one line at 390', r.lines === 1, r.lines + ' lines');
+  ok('    and the screen under it is intact', r.rec === '13-4' && r.steps === 4,
+    r.rec + ' / ' + r.steps + ' rounds');
+}
+
 await ck.page.close();
 
 console.log('\nAN ACCOUNT OFF THE TESTER LISTS SEES NONE OF IT');
