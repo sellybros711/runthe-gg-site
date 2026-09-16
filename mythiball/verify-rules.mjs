@@ -44,6 +44,7 @@
      the arm has a spot   aim plus a release is where a pitch goes; a strike is where it landed
      the frames           the swing is three drawings and the delivery has a leg kick
      the ball is the clock  swings and calls land when the ball does, and no hit comes from a taken pitch
+     the late break       a held direction bends the pitch, and the umpire calls it where it lands
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -1623,6 +1624,62 @@ async function main() {
       });
       ok(!orphan, 'no hit ever arrives without a swing resolving first',
          orphan ? JSON.stringify(orphan) : '');
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the late break ---- */
+    {
+      console.log('the late break');
+      /* R.B.I. Baseball's pitching verb, ported: after the release, a held
+         direction leans the pitch, as far as the arm's budget allows. Two
+         claims are load bearing enough to pin. The steer has to actually
+         move the ball, because a budget of zero or a loop that never
+         applies it is the mechanic silently gone, with the buttons still
+         wired and nothing thrown. And the umpire has to call the pitch
+         where it LANDED: isStrike is stamped at release, so a strike
+         steered off the plate that still came up STRIKE would make the
+         verb a lie in the one case a player reaches for it. The CPU swing
+         is stubbed out so every pitch is taken. */
+      const { pg, errors } = await fresh(browser);
+      const out = await pg.evaluate(async () => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });   /* CPU bats, you pitch */
+        await new Promise(r => setTimeout(r, 500));
+        window.scheduleCpuSwing = () => {};                 /* every pitch is taken */
+        const res = {};
+        /* Pitch one: hold right, read what the flight did with it. */
+        endAtBatCleanup(); State.game.pitch = null; throwPitch();
+        State.game.steerHeld = 1;
+        await new Promise(r => setTimeout(r, 2600));
+        {
+          const p = State.game.pitch;
+          res.steer = p ? p.steer : null;
+          res.steerMax = p ? p.steerMax : null;
+          res.moved = p ? p.loc.x - p.baseLocX : null;
+        }
+        /* Pitch two: a release-time strike, steered off the plate. */
+        endAtBatCleanup(); State.game.pitch = null; throwPitch();
+        {
+          const p = State.game.pitch;
+          p.isStrike = true;
+          p.baseLocX = 0.92; p.loc.x = 0.92; p.loc.y = 0;
+          State.game.steerHeld = 1;
+          res.balls0 = State.game.balls; res.strikes0 = State.game.strikes;
+          await new Promise(r => setTimeout(r, 2600));
+          res.finX = p.loc.x;
+          res.balls1 = State.game.balls; res.strikes1 = State.game.strikes;
+        }
+        return res;
+      });
+      ok(out.steerMax > 0.05, 'the arm has a real budget', 'steerMax ' + out.steerMax);
+      ok(out.steer > 0.05, 'holding a direction bends the pitch', 'steer ' + out.steer);
+      ok(out.moved > 0.05, 'and the drawn ball moves with it', 'moved ' + out.moved);
+      ok(out.finX > 1, 'the steered pitch finished off the plate', 'finX ' + out.finX);
+      ok(out.balls1 === out.balls0 + 1 && out.strikes1 === out.strikes0,
+         'a strike at release, steered out, is called a BALL where it landed',
+         `balls ${out.balls0}->${out.balls1}, strikes ${out.strikes0}->${out.strikes1}`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

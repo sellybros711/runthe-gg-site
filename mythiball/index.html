@@ -6531,6 +6531,20 @@ function startFieldLoop() {
           const durMs = p.speed * 1000;
           t = clamp((now - p.start) / durMs, 0, 1);
           inWindup = false;
+          /* The late break rides the frame clock: while the ball is in
+             the air and a direction is held, the pitch's landing slides
+             that way, up to the arm's budget. The CPU batter aimed at the
+             spot it read out of the hand, so a pitch steered off that
+             spot is a pitch it swings under, which is the entire point of
+             the mechanic. */
+          if (!playerIsBatting() && p.steerMax && g.steerHeld
+              && !p.swung && !p.resolved && t > 0.02 && t < p.arrive) {
+            const dt = Math.min(60, now - (p._steerAt == null ? now : p._steerAt));
+            const rate = p.steerMax / (p.arrive * durMs * 0.7);
+            p.steer = clamp(p.steer + g.steerHeld * rate * dt, -p.steerMax, p.steerMax);
+            p.loc.x = clamp(p.baseLocX + p.steer, -1.7, 1.7);
+          }
+          p._steerAt = now;
           /* No swing by the time the ball lands: the umpire calls it a
              beat after the mitt pops. It used to wait for the METER to run
              out, which is up to half the meter after the ball had visibly
@@ -7045,8 +7059,18 @@ function throwPitch(chosenPt, chosenZone, opts) {
      player is the pitcher there is nothing to read: they chose the pitch
      and the spot, and waited a full second for it to leave. Half that. */
   const windup = playerIsBatting() ? BEAT.windup : Math.round(BEAT.windup * 0.45);
+  /* THE LATE BREAK, which is R.B.I. Baseball's whole pitching game and
+     was missing from this one: after the release you could only WATCH.
+     Hold left or right while your pitch flies and it leans that way, as
+     far as the arm's budget allows. PIT buys more bend, a gassed arm
+     loses a third of it. The batting half never steers: the CPU throws
+     honest pitches so the timing game stays readable. */
+  const steerMax = playerIsBatting() ? 0
+    : (0.16 + pitcher.pit / 420) * Math.max(0.45, 1 - fatigue.level * 0.18);
+  g.steerHeld = 0;
   g.pitch = {
     pt, speed: baseSpeed, ideal, isStrike,
+    steer: 0, steerMax, baseLocX: loc.x,
     /* WHEN THE BALL IS AT THE PLATE, as a fraction of the meter. The sweet
        spot IS the crossing: swing when it gets there. Everything that
        happens to this pitch keys off this one number, because the drawn
@@ -7218,8 +7242,14 @@ function scheduleCpuSwing() {
 function resolveCalledPitch() {
   const g = State.game;
   const p = g.pitch;
-  if (p.isStrike) { g.strikes++; addLog('Called strike.'); showCallout('STRIKE', 'strike'); Sound.play('strike'); }
-  else            { g.balls++;   addLog('Ball.'); showCallout('BALL', 'ball'); Sound.play('ball'); }
+  /* Called where it LANDED, not where it left the hand. isStrike was
+     stamped at release, and the late break can bend a strike off the
+     plate or a ball back over it; an umpire reading the release-time flag
+     would call a pitch that no longer exists. */
+  const fin = p.loc || { x: 0, y: 0 };
+  const strike = Math.abs(fin.x) <= 1 && Math.abs(fin.y) <= 1;
+  if (strike) { g.strikes++; addLog('Called strike.'); showCallout('STRIKE', 'strike'); Sound.play('strike'); }
+  else        { g.balls++;   addLog('Ball.'); showCallout('BALL', 'ball'); Sound.play('ball'); }
   refreshHud();
   if (g.strikes >= 3) return recordOut('called strikeout', true);
   if (g.balls >= 4) return recordWalk();
@@ -11690,6 +11720,25 @@ function renderGame() {
     const z = plateToZone(plateGeom(), pt[0], pt[1]);
     g2.aimPt = { x: clamp(z.x, -1.4, 1.4), y: clamp(z.y, -1.4, 1.4) };
   });
+  /* THE LATE BREAK BY HAND. A phone has no arrow keys, so while your pitch
+     is in the air, holding a side of the picture leans the ball that way.
+     Guarded to exactly the flight of your own pitch: batting, aiming and
+     the throw meter all fall through to the handlers they already had. */
+  const steerFrom = (e) => {
+    const g2 = State.game;
+    if (!g2 || playerIsBatting() || g2.aiming) return;
+    const p = g2.pitch;
+    if (!p || !p.steerMax || p.swung || p.resolved) return;
+    if (performance.now() < p.windupUntil) return;
+    const r = cv.getBoundingClientRect();
+    const cx = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
+    g2.steerHeld = cx < r.left + r.width / 2 ? -1 : 1;
+  };
+  const steerOff = () => { const g2 = State.game; if (g2) g2.steerHeld = 0; };
+  cv.addEventListener('pointerdown', steerFrom);
+  cv.addEventListener('pointerup', steerOff);
+  cv.addEventListener('pointercancel', steerOff);
+  cv.addEventListener('pointerleave', steerOff);
 
   /* Score and inning overlaid on the field's corners so nothing steals room
      from the diamond. Names inside color chips read at a glance without
@@ -12195,6 +12244,15 @@ document.addEventListener('keydown', (e) => {
   const g = State.game;
   /* Arrows move the bat, or the reticle, a sixth of the zone at a time. */
   const arrow = { ArrowLeft: [-0.17, 0], ArrowRight: [0.17, 0], ArrowUp: [0, 0.17], ArrowDown: [0, -0.17] }[e.key];
+  /* And once your pitch is away, left and right are the late break: held,
+     not tapped, the way R.B.I. wrote it. */
+  if (arrow && arrow[0] !== 0 && !playerIsBatting() && g.pitch
+      && !g.pitch.swung && !g.pitch.resolved && !g.aiming
+      && performance.now() >= g.pitch.windupUntil) {
+    e.preventDefault();
+    g.steerHeld = arrow[0] < 0 ? -1 : 1;
+    return;
+  }
   if (arrow) {
     const tgt = playerIsBatting() ? (g.pci || (g.pci = { x: 0, y: 0 }))
               : (g.aiming ? (g.aimPt || (g.aimPt = { x: 0, y: -0.15 })) : null);
@@ -12209,6 +12267,11 @@ document.addEventListener('keydown', (e) => {
   if (!map[e.key]) return;
   State.game.swingMode = map[e.key];
   syncSwingModeButtons();
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const g = State.game;
+  if (g) g.steerHeld = 0;
 });
 
 /* The send or hold button shows while you bat with a runner who could be
@@ -12882,7 +12945,13 @@ function renderHowTo() {
     + 'to run: <b>click, tap or Space</b> when the cursor is in the green to let '
     + 'it go. In the green the pitch goes where you aimed. Outside it, the miss '
     + 'opens up, and a miss off a corner is a ball. Every pitcher owns three '
-    + 'pitches, so the buttons change with whoever you put on the mound.</p>');
+    + 'pitches, so the buttons change with whoever you put on the mound.</p>'
+    + '<p><b>The pitch is still yours after you let it go.</b> While it flies, '
+    + 'hold <b>left or right</b> (an arrow key, or a side of the picture) and '
+    + 'it leans that way: a strike bent off the plate, or a ball pulled back '
+    + 'over it. The umpire calls it where it lands. How far it can bend is the '
+    + 'arm talking: PIT buys more break, and a tired arm loses a third of '
+    + 'it.</p>');
   add(pitch,
       '<p>Better control (PIT) means a wider green and a smaller miss. Every '
     + 'batter has one pitch they cannot handle: throw it and their timing falls '
