@@ -213,14 +213,25 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
       title: (el.querySelector('.pwc-t b') || {}).textContent || '',
       sub: (el.querySelector('.pwc-t span') || {}).textContent || '',
       value: (el.querySelector('.pwc-go b') || {}).textContent || '',
-      marks: el.querySelectorAll('.pwc-marks svg').length };
+      marks: el.querySelectorAll('.pwc-marks svg').length,
+      /* ASKED OF THE PAGE, NOT PINNED. This was `=== 3` and that was right for exactly as
+         long as the college page could not see Full Team at all. It loads the mode's own
+         access file now, so the count is a question about the reader and the launch flag. */
+      fullOn: (() => { const d = document.createElement('div');
+        d.innerHTML = window.RTG_STORE.html({ signedOut: false });
+        return d.querySelectorAll('.pw-tile').length; })() };
   });
   ok('the front page carries the offer card', home.there);
   ok('  in the doors, not in the nav or a sheet', home.inCtas === true);
   ok('  under the Commish door', home.belowDoor === true);
   ok('  and above the row of three', home.aboveThree === true);
-  ok('  saying Unlimited over the same marks as the hub card',
-    home.value === 'Unlimited' && home.marks === 3, home.value + ' / ' + home.marks);
+  /* THE CARD CLAIMS WHAT THE SHEET CLAIMS, which is the rule that survives a launch. A
+     pinned 3 said nothing about whether the two agreed; it only said what the answer was on
+     the day it was written, and the day Full Team launched it failed while the page was
+     right. */
+  ok('  saying Unlimited over as many marks as the sheet has tiles',
+    home.value === 'Unlimited' && home.marks === home.fullOn,
+    home.value + ' / ' + home.marks + ' marks against ' + home.fullOn + ' tiles');
   await hub(p);
   /* ── AND BOTH CARDS SAY THE SAME SENTENCE ────────────────────────────────────────────
      THIS IS THE SECOND ROUND OF ONE FIX AND THAT IS WHY IT IS ASSERTED RATHER THAN READ.
@@ -265,20 +276,25 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
     const m = el && el.querySelector('.pwc-marks');
     return { value: el ? (el.querySelector('.pwc-go b') || {}).textContent : '',
       marks: el ? el.querySelectorAll('.pwc-marks svg').length : 0,
+      tiles: (() => { const d = document.createElement('div');
+        d.innerHTML = window.RTG_STORE.html({ signedOut: false });
+        return d.querySelectorAll('.pw-tile').length; })(),
       row: m ? getComputedStyle(m).display : 'none',
       counts: /\d+\s*modes/i.test((el && el.innerText) || '') };
   });
   ok('  it says Unlimited rather than counting', card.value === 'Unlimited' && !card.counts,
     card.value);
   /* THREE HERE AND NOT FOUR, and that is the gate working rather than a number left behind.
-     Full Team joins the hero row and the marks for a reader who can open it, and this is the
-     COLLEGE page: fullteam-access.js is not loaded, RTG_FULLTEAM is never published, and the
-     store's own fallback finds no LIVE flag to read. So the card sells the three modes a
-     reader here can actually reach. The day Full Team launches this becomes four by way of
-     that fallback, and this line is what will say so. */
-  ok('  over the three modes the bundle unlocks', card.marks === 3, String(card.marks));
-  ok('  and Full Team is not named on a page that cannot open it',
-    !/Full Team/i.test((await txt(p, '#pf-prem')) || ''));
+     Full Team joins the hero row and the marks for a reader who can open it.
+     THIS PINNED THREE AND THE PIN WAS THE BUG. It was written when the college page did not
+     load fullteam-access.js and never published RTG_FULLTEAM, so the store's fallback found
+     no flag to read and dropped the mode: three was what this page could say rather than what
+     it should say. The comment even predicted the launch would make it four "by way of that
+     fallback", which was wrong in one word, because there was no flag here to fall back TO.
+     The page loads the mode's own access file now, so the count follows the launch, and what
+     is asserted is that the card and the sheet agree rather than what either of them says. */
+  ok('  over as many modes as the sheet has tiles', card.marks === card.tiles,
+    card.marks + ' marks against ' + card.tiles + ' tiles');
   ok('  in a row rather than a stack', card.row === 'flex', card.row);
 
   await p.click('#pf-prem');

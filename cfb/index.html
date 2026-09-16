@@ -648,6 +648,15 @@ window.GA_ID='G-L29P5MRWKE';
      with no way to play for free". The pitch moved to the screen where it is honest, which
      is the wait wall inside the mode, after a season has been played. */
   .hp-commish .hp-namerow{display:flex;align-items:center;gap:7px}
+  /* THE PACE LINE. Quieter than the sentence above it and set apart by a hairline, because
+     it is a different KIND of thing: the sentence says what the mode is for and this says
+     what it costs you in time. Not a tag and not a lock, for the reason written where it is
+     drawn: this door is open and free, and the only thing this line adds is when the next
+     season lands. */
+  .hp-commish .hp-pace{display:block;margin-top:7px;padding-top:6px;
+    border-top:1px solid rgba(255,255,255,.10);
+    font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.06em;
+    color:rgba(226,214,245,.62);white-space:nowrap}
   @media (max-width:340px){
     .hp-commish .hp-name{font-size:17px}
     .hp-commish .hp-sub{font-size:11px}
@@ -3867,6 +3876,20 @@ or endorsed by the NCAA, the CFP or any school.
      the card on the modes sheet and cfb/commish/ reads to decide whether to open at all.
      One file so the two can never disagree. -->
 <script src="commish/access.js?v=6"></script>
+<!-- THE FULL TEAM TESTER LIST AND ITS LAUNCH FLAG, WHICH THIS PAGE ALSO NEEDS.
+     The store below names the modes the bundle unlocks and three of the four live in the
+     other game: Dynasty, the Trade Machine and Full Team. This page named the first two and
+     not the third, so its sheet sold three modes while the football page sold four, about one
+     purchase, on one day. That is the drift /assets/store.js exists to stop, arriving through
+     a question this page could not answer rather than through a second copy of a sentence.
+     WHY IT COULD NOT ANSWER IT. The store asks PW_FULL_ON, which reads RTG_FULLTEAM if a page
+     publishes one and otherwise falls back to PS_FULLTEAM_ACCESS.LIVE. This page loaded
+     neither, so the fallback found nothing at all and answered no, whatever the flag said.
+     ABSOLUTE, AND THE FOOTBALL PAGE SPELLS IT THE SAME WAY NOW. check-cachebust groups the
+     pages that share a script by the literal src string, so `fullteam-access.js` there and
+     `/football/fullteam-access.js` here would be two names for one file with nothing stopping
+     them drifting a version apart. -->
+<script src="/football/fullteam-access.js?v=3"></script>
 <!-- THE STORE, SHARED WITH THE FOOTBALL GAME AND WITH commish/index.html. One bundle is
      sold on this site, it unlocks both games, and it is described in exactly one file. Two
      copies of a price or a term is two chances to tell a customer something the other page
@@ -5245,6 +5268,13 @@ const commishLive=()=>{
    syncModesLock follows below. It is safe in the other direction: a failed or blocked ask
    settles on the empty array rather than staying null, so it lands on metered, which now
    costs a wrong reader one line of copy rather than the door. */
+/* HOW FAST A FREE ACCOUNT PLAYS IT, IN ONE PLACE. Two screens state this now, the front
+   page door and the modes sheet card, and a pace written twice is a pace that drifts the
+   first time somebody tunes commish_free_wait(). The RULE itself lives on the server and
+   this is only the words for it, which is why it is a phrase rather than a number: there is
+   no client side accessor to interpolate and inventing one would be a second copy of the
+   answer rather than of the sentence. */
+const COMMISH_PACE='one season a day';
 const commishMetered=()=>premiumSet!==null&&!ownsCfb();
 
 /* ── THE COMMISH DOOR ON THE FRONT PAGE ───────────────────────────────────────────
@@ -5353,7 +5383,23 @@ function ensureCommishDoor(){
        last three words unbreakable lets the browser find the only break left, which is the
        space in front of them. */
     +'<span class="hp-sub">Leave your mark on '
-      +'<span class="hp-nb">College Football forever</span></span>';
+      +'<span class="hp-nb">College Football forever</span></span>'
+    /* ---- AND HOW FAST YOU PLAY IT, BEFORE YOU START ----
+       THE OWNER'S REPORT: "I just don't want people to play this mode and then be suddenly
+       prompted with a paywall and be shocked by it." The wait wall inside the mode is an
+       honest place for the PITCH and it is the wrong place for the FACT: by the time a free
+       account reads it they have played a whole season of rulings and are being told the
+       terms afterwards. The terms belong on the door.
+       IT IS NOT A LOCK AND MUST NOT LOOK LIKE ONE. This card carried a padlock and a gold Pro
+       tag once and the complaint that took them off was "just looks like the game is fully
+       locked with no way to play for free". That is still true: the mode IS free, a whole
+       five season term of it, and what a pace line says is when the next season lands rather
+       than that the door is shut. Quiet, lower case, no colour, under the sentence.
+       DRAWN ONLY FOR SOMEBODY THE CLOCK APPLIES TO. An owner has no pace to be told about,
+       and commishMetered() is false until ownership is actually answered, so nobody is told
+       about a limit before the page knows whether they have one. */
+    +(commishMetered()
+      ? '<span class="hp-pace">Free &middot; '+COMMISH_PACE+'</span>' : '');
   /* UNDER THE TWO WAYS IN AND ABOVE THE ROW OF THREE, which is where the football game puts
      its second door: after the thing most people came for, before the things they came back
      for. Re-anchored on every call rather than appended once, so a repaint after an account
@@ -5507,7 +5553,7 @@ function modeMenu(){
              saying what is being offered, which it cannot do without naming the pace, and it
              is the same one sentence the wall opens with. Dynasty's own number is not here
              and must not be: that rule lives on Dynasty's server and its own screen. */
-          (commishMetered()?'<p class="mc-pro">Free plays one season a day. Unlock it to run the '+
+          (commishMetered()?'<p class="mc-pro">Free plays '+COMMISH_PACE+'. Unlock it to run the '+
             'whole term at your own pace, and it unlocks the NFL game too.</p>':'')+
         '</a>':'')+
     '</div>'+

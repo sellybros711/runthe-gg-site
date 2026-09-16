@@ -511,6 +511,42 @@ window.GA_ID='G-L29P5MRWKE';
   .hp-ft .hp-full-sub{color:rgba(255,255,255,.76)}
   .hp-ft .hp-full-name{color:#fff}
   .hp-ft:active{filter:brightness(1.08)}
+  /* ---- A DOOR WHOSE DAY IS SPENT SAYS SO BEFORE IT IS PRESSED ----
+   *
+   * Full Team carried the countdown in its caption and NOTHING ELSE: the card stayed fully
+   * lit, kept its New badge, and read exactly like the one beside it that opens. The only
+   * difference between "press me" and "come back tomorrow" was a line of 9.5px type at the
+   * bottom of a saturated red and blue card, which is the last thing on it anybody reads.
+   * A player pressing it and meeting a wall has been told, technically.
+   *
+   * THE DYNASTY DOOR ALREADY DID THIS RIGHT and this is that treatment applied here: a quiet
+   * unfilled tag in the corner, the headline dimmed, and the colour taken out of the card. It
+   * is a state rather than an invitation, which is why nothing about it is bright.
+   *
+   * THE FILL GOES GREY RATHER THAN DIM. Halving the opacity of a red-to-blue gradient leaves
+   * a muddy purple that reads as a rendering fault; desaturating it leaves the same card with
+   * the life out of it, which is the thing being said. */
+  .hp-ft:has(.hp-tag-spent){background:linear-gradient(100deg,
+    #3a3036 0%,#332c30 40%,#14171f 50%,#2b3040 60%,#333a4e 100%);
+    animation:none;border-color:rgba(255,255,255,.18);
+    box-shadow:0 10px 26px -18px #000,inset 0 1px 0 rgba(255,255,255,.08)}
+  .hp-ft:has(.hp-tag-spent) .hp-full-name{color:rgba(244,247,252,.58)}
+  .hp-ft:has(.hp-tag-spent) .hp-full-sub{color:rgba(226,233,245,.5)}
+  .hp-ft .hp-tag-spent{background:rgba(255,255,255,.06);
+    border-color:rgba(255,255,255,.18);color:rgba(238,242,249,.5)}
+  /* ---- THE PADLOCK ----
+   *
+   * THE WORDS ALONE WERE NOT ENOUGH, which is the whole of the owner's report: "Day done"
+   * and "Next run in 11h" are both read AFTER somebody has decided whether to press, and a
+   * lock is read before. It is the one mark on this page that means shut in any language and
+   * at any glance, and it is what the rest of the site already uses: the college game puts
+   * the same glyph on More ways to play while an account is signing in.
+   *
+   * INSIDE THE TAG rather than beside the headline. The tag is already the element that says
+   * what state the door is in, and a second lock somewhere else would be the same fact in two
+   * places at two sizes. It sits on the cap height of the label beside it. */
+  .hp-full .hp-tag-spent .hp-pad{width:8px;height:8px;display:inline-block;
+    vertical-align:-1px;margin-right:4px;fill:currentColor}
   @media (max-width:340px){
     .hp-full-name{font-size:17px}
     .hp-full-sub{font-size:9px;letter-spacing:.03em}
@@ -7919,7 +7955,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
      blocked or stale copy hides an unannounced mode rather than opening it. -->
-<script src="fullteam-access.js?v=3"></script>
+<!-- SPELLED ABSOLUTE BECAUSE BOTH COLLEGE PAGES LOAD IT TOO, and check-cachebust groups
+     the pages sharing a script by the literal src. The resolved URL is identical either way,
+     so no returning visitor notices. -->
+<script src="/football/fullteam-access.js?v=3"></script>
 <script src="dynasty-access.js?v=5"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
@@ -10770,6 +10809,16 @@ function trimLongGroup(){
   if(box.parentNode) box.parentNode.removeChild(box);
 }
 
+/* THE PADLOCK THE TWO METERED DOORS WEAR WHEN THE DAY IS SPENT.
+   Drawn rather than fetched, for the reason every other mark on this page is: a few hundred
+   bytes of path inherits the card's own colour through fill:currentColor and cannot 404.
+   ONE CONSTANT FOR BOTH DOORS. Dynasty and Full Team are metered by different servers, with
+   different units and different clocks, and neither of those is a reason for the shut sign
+   to be a different shape. Written twice it would drift the first time somebody nudged one. */
+const HP_PAD='<svg class="hp-pad" viewBox="0 0 24 24" aria-hidden="true">'+
+  '<path d="M12 2a5 5 0 0 0-5 5v3H6a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V11a1 1 0 0 0-1-1h-1V7a5 5 0 0 0-5-5Zm0 2a3 3 0 0 1 3 3v3H9V7a3 3 0 0 1 3-3Z"/>'+
+  '</svg>';
+
 function ensureFullButton(){
   let el=$('b-start-full');
   if(!canPlayFull()){
@@ -10819,10 +10868,32 @@ function ensureFullButton(){
    * ever changes this line. */
   const saved=fullRead();
   const sub=el.querySelector('.hp-full-sub');
+  /* ---- AND THE CORNER SAYS WHICH STATE IT IS IN ----
+   *
+   * THE CAPTION WAS DOING THIS ALONE AND IT WAS NOT ENOUGH. A spent Full Team door kept its
+   * full red and blue fill, kept the New badge, and changed one line of 9.5px type at the
+   * bottom of the card to a countdown. Next to a dynasty door that goes grey and grows a
+   * "Day done" tag, this one read as open, so the only way to find out it was not was to
+   * press it and meet a wall. That is the surprise the whole meter is supposed to avoid.
+   *
+   * THE TAG SLOT IS SHARED, so the New badge and the spent tag are the same element rather
+   * than two stacked in one corner. They are mutually exclusive by definition: a mode nobody
+   * has played today cannot be a mode whose day is spent, and a door that announced itself as
+   * new AND shut in the same corner would be arguing with itself.
+   *
+   * A SAVED RUN IS NEVER SHUT, which is the rule both doors keep: the day it cost was charged
+   * at its own kickoff, resuming costs nothing, and a run the game will not let you look at
+   * reads as a run the game has taken. So the save branch clears the tag back to New. */
+  const tag=el.querySelector('.hp-tag');
+  const shut=!saved&&dailyShut('full');
+  if(tag){
+    tag.className='hp-tag '+(shut?'hp-tag-spent':'hp-tag-new');
+    tag.innerHTML=shut?(HP_PAD+'Used today'):'New';
+  }
   if(sub){
     if(saved){
       sub.textContent='Resume your season';
-    }else if(dailyShut('full')){
+    }else if(shut){
       const t=dailyCountdown(dailyResetsAt('full'));
       sub.textContent=t?('Next run in '+t):'Next run tomorrow';
     }else{
@@ -11063,7 +11134,7 @@ function ensureDynastyButton(){
       const at=dailyResetsAt('dynasty'), cd=at?dailyCountdown(at):null;
       dailyClock(true);
       const word=dailySeasons('dynasty')?'New run':'Next run';
-      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">'+
+      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">'+HP_PAD+
           (dailySeasons('dynasty')?'Day done':'Used today')+'</span>'+
         '<span class="hp-full-name">Dynasty</span>'+
         '<span class="hp-full-sub">'+
@@ -11242,6 +11313,57 @@ function dynastyRulesHTML(go,opts){
       '<span class="ul-line"><b>'+base+' wins</b><i>or you are fired</i></span>'+
       '<p>Win '+base+' games and you play another season. Miss once and the run is over.</p>'+
     '</div>'+
+    /* ---- AND WHAT A DAY OF IT COSTS, SECOND ON THE SHEET ----
+       IT WAS FIFTH AND THAT IS WHY IT WAS REPORTED MISSING. The block itself has always been
+       here and has always read the real allowance off the server; what it did not do was get
+       READ, because it sat under the four steps, the money and the ageing rules, which on a
+       phone is a long way past the fold. A player deciding whether to start a dynasty stops
+       long before it.
+       So it is the second thing on the sheet, directly under the rule the mode is about. The
+       order is now what the mode is, what a day of it costs, then how any of it works, which
+       is the order somebody actually needs those three in. Nothing about it is a pitch: it is
+       the budget stated before it is spent, so meeting the wall later is a thing the player
+       was told about rather than a thing that happened to them. */
+    /* WHAT THE FREE DAY IS WORTH, said in the rules rather than discovered at a locked door.
+       The third line is the point of putting it here: a player who reads the budget and then
+       wins a boss has been handed a season and has no reason to go looking for it. Only drawn
+       for somebody the meter applies to, so an owner is not told about a limit they do not
+       have and a visitor before launch is not told about one that is not switched on yet.
+       WRITTEN PER UNIT, off the same dailySeasons() the gates read, so a page talking to a
+       database still on 100_daily_grace_reasons.sql describes the rule that database is
+       actually keeping. Rules that do not match the door are worse than no rules. */
+    (dailyOn()
+      ? (dailySeasons('dynasty')
+        ? '<div class="eyebrow" style="margin:16px 0 8px">Your free seasons</div>'+
+          '<ul class="modenotes">'+
+            /* NO ORDINAL HERE. "Play the 5th" reads fine and "the 3th" does not, and the
+               number comes off the server, so the sentence has to work for whatever it
+               answers. "Spend them all" needs no agreement with anything. */
+            '<li><b>'+dailyAllow('dynasty')+' seasons, then a wait.</b> One run, carried as '+
+              'far as you can take it. Spend them all and your dynasty waits exactly where it '+
+              'is.</li>'+
+            /* THE CLOCK IS THE THING PEOPLE GET WRONG, so it is its own line and it says both
+               halves: how long, and what starts it. A shared midnight punished whoever sat
+               down in the morning; this one is theirs. */
+            '<li><b>The clock is 24 hours.</b> It starts the moment your last season ends, '+
+              'not at some hour of the night.</li>'+
+            '<li><b>Getting fired starts it early.</b> The run is over and a new one waits out '+
+              'the same 24 hours. Every season you banked still counts.</li>'+
+            '<li><b>Win a boss battle, get another season.</b> Reach season '+
+              (E.DYNASTY_MILESTONE_EVERY*2)+' and beat the marquee team, and you get one '+
+              'more.</li>'+
+          '</ul>'
+        : '<div class="eyebrow" style="margin:16px 0 8px">Runs a day</div>'+
+          '<ul class="modenotes">'+
+            '<li><b>One run a day, free.</b> Carrying on a run you have already started never '+
+              'costs one. Play it over as many days as it lasts.</li>'+
+            '<li><b>Fired in season one? Have another.</b> A run that dies in its first '+
+              'season does not count against the day.</li>'+
+            '<li><b>Win a boss battle, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
+              ' and beat the marquee team, and the day gives you one more.</li>'+
+          '</ul>')
+      : '')+
+
     /* A SEASON, AS FOUR STEPS. Numbered because it is a loop you repeat. */
     '<div class="eyebrow" style="margin:15px 0 7px">A season, start to finish</div>'+
     '<ul class="modesteps">'+
@@ -11283,45 +11405,6 @@ function dynastyRulesHTML(go,opts){
       '<li><b>The target creeps up.</b> '+base+' wins, then '+(base+1)+' after season '+step+
         ', then '+(base+2)+' after '+(step*2)+'.</li>'+
     '</ul>'+
-    /* WHAT THE FREE DAY IS WORTH, said in the rules rather than discovered at a locked door.
-       The third line is the point of putting it here: a player who reads the budget and then
-       wins a boss has been handed a season and has no reason to go looking for it. Only drawn
-       for somebody the meter applies to, so an owner is not told about a limit they do not
-       have and a visitor before launch is not told about one that is not switched on yet.
-       WRITTEN PER UNIT, off the same dailySeasons() the gates read, so a page talking to a
-       database still on 100_daily_grace_reasons.sql describes the rule that database is
-       actually keeping. Rules that do not match the door are worse than no rules. */
-    (dailyOn()
-      ? (dailySeasons('dynasty')
-        ? '<div class="eyebrow" style="margin:16px 0 8px">Your free seasons</div>'+
-          '<ul class="modenotes">'+
-            /* NO ORDINAL HERE. "Play the 5th" reads fine and "the 3th" does not, and the
-               number comes off the server, so the sentence has to work for whatever it
-               answers. "Spend them all" needs no agreement with anything. */
-            '<li><b>'+dailyAllow('dynasty')+' seasons, then a wait.</b> One run, carried as '+
-              'far as you can take it. Spend them all and your dynasty waits exactly where it '+
-              'is.</li>'+
-            /* THE CLOCK IS THE THING PEOPLE GET WRONG, so it is its own line and it says both
-               halves: how long, and what starts it. A shared midnight punished whoever sat
-               down in the morning; this one is theirs. */
-            '<li><b>The clock is 24 hours.</b> It starts the moment your last season ends, '+
-              'not at some hour of the night.</li>'+
-            '<li><b>Getting fired starts it early.</b> The run is over and a new one waits out '+
-              'the same 24 hours. Every season you banked still counts.</li>'+
-            '<li><b>Win a boss battle, get another season.</b> Reach season '+
-              (E.DYNASTY_MILESTONE_EVERY*2)+' and beat the marquee team, and you get one '+
-              'more.</li>'+
-          '</ul>'
-        : '<div class="eyebrow" style="margin:16px 0 8px">Runs a day</div>'+
-          '<ul class="modenotes">'+
-            '<li><b>One run a day, free.</b> Carrying on a run you have already started never '+
-              'costs one. Play it over as many days as it lasts.</li>'+
-            '<li><b>Fired in season one? Have another.</b> A run that dies in its first '+
-              'season does not count against the day.</li>'+
-            '<li><b>Win a boss battle, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
-              ' and beat the marquee team, and the day gives you one more.</li>'+
-          '</ul>')
-      : '')+
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:13px 0 0">'+
       'You score points every season, more for the playoffs and a title, and later seasons '+
       'pay multiples. Lasting is the whole game.</p>'+

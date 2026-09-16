@@ -1910,6 +1910,10 @@
       "v": "7",
       "sha": "2f96318b4dd4d436"
     },
+    "/football/fullteam-access.js": {
+      "v": "3",
+      "sha": "02a91d5c4391b42b"
+    },
     "frontier.js": {
       "v": "2",
       "sha": "4a970309474e07f0"
@@ -2032,6 +2036,10 @@
       "v": "6",
       "sha": "2f96318b4dd4d436"
     },
+    "/football/fullteam-access.js": {
+      "v": "3",
+      "sha": "02a91d5c4391b42b"
+    },
     "/assets/store.js": {
       "v": "21",
       "sha": "905aa4f7e9d42645"
@@ -2050,7 +2058,7 @@
       "v": "99",
       "sha": "dbaa61630ed38584"
     },
-    "fullteam-access.js": {
+    "/football/fullteam-access.js": {
       "v": "3",
       "sha": "02a91d5c4391b42b"
     },
