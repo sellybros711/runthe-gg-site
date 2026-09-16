@@ -264,6 +264,36 @@
     '     MEASURE THIS WITH THE REAL FACES LOADED. Anton and Archivo are Google webfonts, and the\n' +
     '     generic sans a headless browser falls back to is far wider: the first sweep of this said\n' +
     '     three columns failed up to 450px, which was the fallback face talking. */\n' +
+    '  /* THE OFFER THAT DOES NOT COME BACK.\n' +
+    '\n' +
+    '     checkout-bundle.js refuses any bundle whose products the buyer already holds, and\n' +
+    '     every product in the Premium card above is also in this one. So buying the cheaper\n' +
+    '     card does not leave this one available at the difference. It closes it, for good.\n' +
+    '     Nothing on this sheet said so, and a reader who works that out after paying has\n' +
+    '     been told something by silence at the one screen that can least afford it.\n' +
+    '\n' +
+    '     ONE TIME AND NOT LIMITED TIME. Nothing expires on a date here. There is no\n' +
+    '     countdown to honour and no day this stops being sold, so a limited time claim\n' +
+    '     would be a deadline we never intend to keep, and the reader who comes back next\n' +
+    '     month and finds it unchanged has learned what the rest of this sheet is worth.\n' +
+    '     One time is the literal truth about what the checkout will and will not sell.\n' +
+    '\n' +
+    '     NOT NAMED pw-once, WHICH IS TAKEN, by the One payment chip in the price row three\n' +
+    '     lines above this. That collision is also why the wording matters: ONE TIME beside\n' +
+    '     a chip reading ONE PAYMENT is two different facts in nearly the same words, so\n' +
+    '     the second sentence here has to carry the difference.\n' +
+    '\n' +
+    '     THE LABEL IS INLINE AND NOT A LINE OF ITS OWN, which is a height decision and not\n' +
+    '     a taste one. check-premium holds this whole sheet under 1000px at 390 wide, because\n' +
+    '     the complaint that produced that ceiling was scrolling. Stacked, this block put the\n' +
+    '     sheet at 998, which is not a margin, it is a coincidence: the next line anybody adds\n' +
+    '     breaks it and the ceiling gets raised to make a test pass, which is how a ceiling\n' +
+    '     stops meaning anything. Inline it costs 15px less and the sheet has room again. */\n' +
+    '  .pw-onetime{display:block;font-size:11.5px;line-height:1.4;color:var(--dim-2);\n' +
+    '    margin:12px 0 0;padding:8px 10px;border-radius:10px;\n' +
+    '    background:rgba(251,191,36,.08);box-shadow:inset 0 0 0 1px rgba(251,191,36,.3)}\n' +
+    '  .pw-onetime b{font-family:var(--fn);font-size:9.5px;font-weight:800;\n' +
+    '    letter-spacing:.11em;text-transform:uppercase;color:#fbbf24;margin-right:7px}\n' +
     '  @media (max-width:549px){\n' +
     '    .pw-hero{grid-template-columns:1fr 1fr}\n' +
     /* THE ODD ONE OUT SPANS, and only when it IS odd. Written as :last-child alone this
@@ -585,6 +615,10 @@
     thing. What the Tour tier is worth belongs in Run The Tour, not on a receipt line. */
     pwGroupText('arcade','1 year of the Arcade Card','No auto-renewal')+
     pwGroupText('tour','100,000 coins and one Tour Pack')+
+    /* LAST THING BEFORE THE BUTTON, because it is the only line on this card that changes
+       the decision rather than describing what is in it. See the note on .pw-onetime. */
+    '<p class="pw-onetime"><b>One time offer</b>Buy the Premium Bundle on its own and '+
+    'this one closes. It is not offered again.</p>'+
     /* THE BUNDLE IS ALREADY NAMED, twice, in the heading of this card and in the tag beside
        it. Spelling it out a third time on the button ran to eighteen characters and set at
        the button's own size it filled the width edge to edge on a phone, which reads as a
