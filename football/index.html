@@ -5565,6 +5565,24 @@ window.GA_ID='G-L29P5MRWKE';
   .polog .pl .n{flex:0 0 auto;font-family:var(--fn);font-size:13px;color:var(--dim)}
   .polog .pl.you .w{color:#86efac} .polog .pl.them .w{color:#fca5a5}
   .polog .pl.tk .w{color:#7dd3fc} .polog .pl.tk .n{color:#7dd3fc;font-size:11px}
+  /* ---- the boss battle's log, which lists every drive rather than every score ----
+     A DRIVE THAT DIED IS QUIETER THAN ONE THAT SCORED. Listing all of them is the point, and
+     listing all of them at one weight turns the scores into a needle in the punts: on a
+     twenty drive game the log is mostly the drives that did not matter. So the row stays and
+     its colour goes, which keeps it readable as context without competing with the six rows
+     a reader is actually scanning for. */
+  .polog .pl.quiet .w{color:var(--dim-2)}
+  .polog .pl.quiet .n{color:var(--line-2)}
+  /* What it took, under what happened. Its own line rather than another comma, because the
+     phrase before it is the thing being scanned and "7 plays, 62 yards" is the detail you
+     drop to only once the verb has landed. */
+  .polog .pl .plsub{display:block;font-style:normal;font-family:var(--fn);font-size:10.5px;
+    letter-spacing:.03em;color:var(--line-2);margin-top:2px}
+  .polog .pl .w{white-space:normal}
+  /* The log is long here and the field above it is the thing to keep on screen, so it takes
+     a ceiling of its own and scrolls inside it. The playoff log lists six rows and needs
+     none of this. */
+  .bg-log{max-height:40vh;overflow-y:auto;scrollbar-width:thin}
 
   /* ---- Drive-chart field ---- */
   .pofield{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
@@ -7675,6 +7693,14 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <canvas id="bg-fcanvas" width="600" height="150"></canvas>
     </div>
     <div class="bg-narr" id="bg-narr">The scout is in. Time to play.</div>
+    <!-- EVERY DRIVE, NOT JUST THE SCORES, which is the one thing this screen can do that the
+         playoff broadcast cannot. That log is built from scoringScript, which works BACKWARDS
+         from a final score to a legal way of reaching it, so the only honest thing it can list
+         is the scores themselves. The boss sim plays forward down by down, so the plays, the
+         yards and the drives that died are real and can be said out loud. Newest first, the
+         same shape and the same classes the playoff log uses, because a player meeting the
+         two on one evening should not have to learn a second layout. -->
+    <div class="polog bg-log" id="bg-log"></div>
     <!-- The two live calls, one at a time. Built by bossAsk, cleared as each resolves. -->
     <div class="bg-calls" id="bg-calls"></div>
     <!-- The result, revealed once the calls are in. -->
@@ -19270,6 +19296,12 @@ function bossScout(){
 function bossPlay(read){
   const b=bossSpecNow||R.bossFor(run), o=bossOppNow||bossOppRow();
   if(!b||!o){ dynToWinter(); return; }
+  /* KEPT, NOT JUST READ. These two are set by bossScout and this function already falls back
+     to recomputing them, but it never wrote the answer back, so everything downstream that
+     reads bossOppNow (bossDraw does, for the three letter code) got a null on any path that
+     reached the game without the scout. No player path does, which is why it has never been
+     seen; the fallback above exists precisely because the author expected one to. */
+  bossSpecNow=b; bossOppNow=o;
   bossStop();
   const chem=(run.season&&run.season.chemistry)
     || E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier;
@@ -19297,6 +19329,10 @@ function bossPlay(read){
       ? '<b class="bad">They saw it coming.</b> It plays into their hands.'
       : 'The plan is set. Kickoff.';
   $('bg-calls').hidden=true; $('bg-calls').innerHTML=''; $('bg-done').hidden=true;
+  /* Emptied with the rest of the screen. A boss can be replayed from the results screen, and
+     a log that kept the last attempt's drives would open the second one already twelve rows
+     deep in a game nobody played. */
+  if($('bg-log')) $('bg-log').innerHTML='';
   show('s-bgame');
   bossField=initFieldCanvas('bg-fcanvas'); bossFcv=$('bg-fcanvas');
   bossDraw(0,false);
@@ -19309,7 +19345,10 @@ function bossLoop(){
   const ev=E.bossSimAdvance(bossSim,bossRng);
   if(ev.type==='over'){ bossFlush(()=>{ bossRenderScore(); bossFinish(ev); }); return; }
   if(ev.type==='decision'){ bossFlush(()=>bossShowDecision(ev.decision)); return; }
-  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,200); });
+  /* 200ms between events was the rest of why the game was over in a blink. The drives
+     themselves carry the pace now, so this is the handoff between them rather than the
+     pace itself. */
+  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,420); });
 }
 
 /* Animate every drive the sim has produced but not yet drawn, in order, then continue. */
@@ -19319,9 +19358,76 @@ function bossFlush(cb){
   bossAnimateDrive(d,()=>bossFlush(cb));
 }
 
-/* One drive growing across the field, the clock running with it, the score landing at the end. */
+/* ─── THE DRIVE LOG ────────────────────────────────────────────────────────────────────
+ *
+ * What the sim actually did, drive by drive, in the playoff log's own shape.
+ *
+ * IT SAYS MORE THAN THE PLAYOFF LOG DOES, and that is a fact about the two simulations
+ * rather than a decision about two screens. The playoff broadcast is built from
+ * scoringScript, which works backwards from a final score to a legal way of reaching it: it
+ * knows the scores because it started from them, and it cannot say how many plays a drive
+ * took or which drives died, because it never played them. The boss sim plays FORWARD, down
+ * by down, so plays, yards and the punt that ended a march are all real here.
+ *
+ * SO EVERY DRIVE IS LISTED, not only the scoring ones. Six plays for 48 yards and a punt is
+ * the story of a boss battle as much as the touchdown three drives later, and on a screen
+ * whose whole job is to feel weightier than an ordinary week it is the part an ordinary week
+ * has never had.
+ *
+ * YARDS ARE SIGNED BY THE TEAM'S OWN DIRECTION. startYard and endYard are absolute in the
+ * engine's frame, where you attack to the right, so the boss's gains run the other way and a
+ * raw subtraction reports their best drive as their worst. */
+function bossDriveYards(d){
+  const gained=d.team==='you'?(d.endYard-d.startYard):(d.startYard-d.endYard);
+  return Math.max(0,Math.round(gained));
+}
+/* The newest row's running score, brought up to whatever the sim now says. Called after a
+   two point try, which resolves after its own touchdown has already been logged. */
+function bossRescoreLast(){
+  const el=$('bg-log'); if(!el) return;
+  const n=el.querySelector('.pl .n');
+  if(n) n.textContent=bossSim.you+'-'+bossSim.them;
+}
+function bossLogDrive(d){
+  const el=$('bg-log'); if(!el) return;
+  const q=Math.min(4,Math.floor(d.tEnd/900)+1);
+  const clock=clockText(Math.max(0,900-(d.tEnd-(q-1)*900)));
+  const yds=bossDriveYards(d), plays=d.plays||0;
+  /* The drive in one phrase, then what it cost to get there. A kick names its distance for
+     the reason the playoff log gives: three points is three points, and the difference
+     between a 21 yarder and a 55 is the whole story of the drive that earned it. */
+  const kick=Math.max(18,Math.min(63,Math.round(d.team==='you'?100-d.endYard:d.endYard)+17));
+  /* EVERY RESULT THE ENGINE CAN RETURN, named. bossAutoDrive answers td, fg, miss, punt,
+     turnover, downs and end, and anything not listed here falls through to Punt: a missed
+     kick reported as a punt is a lie about the drive drawn directly above it, on the one
+     screen where the drive chart shows the ball dying at the 23. */
+  const what=d.result==='td'?'Touchdown'
+    :d.result==='fg'?kick+'-yard field goal'
+    :d.result==='miss'?'Missed the '+kick+'-yarder'
+    :d.result==='turnover'?'Turnover'
+    :d.result==='downs'?'Turnover on downs'
+    :d.result==='end'?'Out of time'
+    :'Punt';
+  const drove=plays?(plays+(plays===1?' play, ':' plays, ')+yds+(yds===1?' yard':' yards')):'';
+  const scored=d.result==='td'||d.result==='fg';
+  el.insertAdjacentHTML('afterbegin',
+    '<div class="pl '+(d.team==='you'?'you':'them')+(scored?'':' quiet')+'">'+
+      '<span class="t">'+QNAME[q-1]+' '+clock+'</span>'+
+      '<span class="w">'+esc(d.team==='you'?'You':bossThreeLetter(bossOppNow))+' &middot; '+
+        esc(what)+(drove?'<i class="plsub">'+esc(drove)+'</i>':'')+'</span>'+
+      '<span class="n">'+bossSim.you+'-'+bossSim.them+'</span></div>');
+}
+
+/* One drive growing across the field, the clock running with it, the score landing at the end.
+ *
+ * SLOWER THAN IT WAS, ON PURPOSE AND BY A LOT. This ran at 95ms a play capped at a second,
+ * which put a fourteen play march and a three and out within half a second of each other and
+ * the whole game inside a few seconds. A boss is one season in six and the thing the mode
+ * builds toward; it should not be over before a reader has found the score bug. 260ms a play
+ * against a floor of 900 and a ceiling of 3000 keeps the RELATIONSHIP the old numbers had,
+ * which is the part worth keeping: a long drive visibly takes longer than a short one. */
 function bossAnimateDrive(d,cb){
-  const dur=Math.max(360,Math.min(1000,(d.plays||4)*95));
+  const dur=Math.max(900,Math.min(3000,(d.plays||4)*260));
   const t0=(window.performance||Date).now();
   const scored=d.result==='td'||d.result==='fg';
   const tick=()=>{
@@ -19331,8 +19437,15 @@ function bossAnimateDrive(d,cb){
     $('bg-bug').classList.toggle('urgent',upTo>=3300);
     if(k<1){ bossRaf=requestAnimationFrame(tick); return; }
     bossRenderScore();
+    /* LOGGED AFTER THE SCORE LANDS, so the running total on the row is the one the bug is
+       showing. Written the other way round it reports every score one drive late. */
+    bossLogDrive(d);
     if(scored){ const cell=d.team==='you'?$('bg-you'):$('bg-them');
       cell.classList.add('scored'); setTimeout(()=>cell.classList.remove('scored'),480); }
+    /* A BEAT ON A SCORE, and only on a score. The drives run back to back otherwise, and a
+       touchdown that is gone before the number under it has finished moving is the thing
+       this screen was asked to stop doing. */
+    if(scored){ bossTimer=setTimeout(cb,700); return; }
     cb();
   };
   bossRaf=requestAnimationFrame(tick);
@@ -19369,7 +19482,13 @@ function bossShowDecision(d){
       box.innerHTML=''; box.hidden=true;
       $('bg-narr').innerHTML=bossCallNarr(d.kind,choice,res);
       bossRenderScore();
-      bossFlush(()=>{ bossTimer=setTimeout(bossLoop,260); });
+      /* THE LOG ROW THE DECISION BELONGS TO IS ALREADY WRITTEN. A touchdown that pauses for
+         a two point call is logged when the drive ends, which is BEFORE the conversion is
+         taken, so that row carried a score one or two points short and never caught up: the
+         column then stepped by three where a reader could only find a touchdown. The bug
+         above was always right, which is what made the log wrong rather than merely stale. */
+      bossRescoreLast();
+      bossFlush(()=>{ bossTimer=setTimeout(bossLoop,560); });
     };
   });
 }
