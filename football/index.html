@@ -6336,6 +6336,16 @@ window.GA_ID='G-L29P5MRWKE';
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .slotopt .go{flex:0 0 auto;color:var(--dim-2);font-size:19px;line-height:1}
   .kv{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
+  /* WHAT A MAN COSTS AGAINST WHAT HE IS WORTH, on the player sheet. Green when the market
+     has run past his frozen deal and red when his deal has run past the market, which is
+     the same pair of colours and the same threshold the winter uses for the same fact. The
+     sentence carries the colour too rather than only the figure, because the figure alone
+     leaves a reader working out which direction is the good one. */
+  .kv b.good{color:var(--good,#4ade80)}
+  .kv b.bad{color:var(--bad,#f87171)}
+  .shmoney{margin:7px 0 10px;font-size:12.5px;line-height:1.4;color:var(--dim)}
+  .shmoney.good{color:#8ee6ab}
+  .shmoney.bad{color:#f3a9a9}
   .hr{height:1px;background:var(--line);margin:14px 0}
 
   /* ---------- THE CAREER PANEL, in the profile sheet ----------
@@ -9717,6 +9727,51 @@ function drawRail(el,bySlot,links,at){
   }
 }
 
+/* ─── WHAT YOU PAY HIM, WHICH IS NOT WHAT HE IS WORTH ──────────────────────────────────
+ *
+ * This sheet printed one row, `Cost`, off p.price_musd, which is the MARKET price of that
+ * player-season. Outside a dynasty those are the same number and the row is right. Inside
+ * one they come apart on the first winter and never come back together:
+ *
+ *   run.salaries[i]    what he signed for, frozen. "Whatever you pay now, you pay every
+ *                      season he stays" is the rule the front page prints over the wheel,
+ *                      and dynastySalary() is the one line that enforces it.
+ *   p.price_musd       what the man on your roster is worth TODAY, which moves every winter
+ *                      because the winter replaces him with an older season of himself.
+ *
+ * So a player opened mid-dynasty was shown a figure that was neither his wage nor, for a
+ * man signed five seasons ago, anything he had ever cost. The gap is the whole economy of
+ * the mode and the winter screen already says so in as many words: "the gap between the two
+ * is the state of your roster in one figure, and it runs BOTH ways".
+ *
+ * SAME WORDS AS THE WINTER, deliberately, down to "of value": the two screens describe one
+ * fact about one player and a reader meeting it twice should not have to work out that it
+ * is the same fact. WIN_OVERPAY is shared for the same reason, so what counts as over or
+ * under cannot differ between them.
+ *
+ * ONE ROW WHEN THERE IS ONE NUMBER. A man signed this draft is worth exactly what he cost,
+ * and two identical rows over a sentence saying nothing moved is noise on the screen where
+ * the player is deciding. Decided on the PRINTED figures rather than the raw ones, which is
+ * the rule this file already carries three other places. */
+function sheetMoney(p){
+  const i=(run&&run.dynasty&&Array.isArray(run.salaries))?run.roster.indexOf(p):-1;
+  const paid=(i>=0&&run.salaries[i]!=null)?run.salaries[i]:null;
+  if(paid==null) return '<div class="kv"><span class="dim">Cost</span><b>'+M(p.price_musd)+'</b></div>';
+  const worth=p.price_musd;
+  const same=M(paid)===M(worth);
+  if(same) return '<div class="kv"><span class="dim">You pay</span><b>'+M(paid)+'</b></div>';
+  const edge=worth-paid;
+  const cls=edge>=WIN_OVERPAY?'good':(edge<=-WIN_OVERPAY?'bad':'');
+  return '<div class="kv"><span class="dim">You pay</span><b>'+M(paid)+'</b></div>'+
+    '<div class="kv"><span class="dim">Worth now</span><b class="'+cls+'">'+M(worth)+'</b></div>'+
+    '<p class="shmoney '+cls+'">'+
+      (edge>=WIN_OVERPAY
+        ? 'You pay '+M(paid)+' for '+M(worth)+' of value. That is cap you did not have to spend.'
+        : edge<=-WIN_OVERPAY
+        ? 'You pay '+M(paid)+' for '+M(worth)+' of value. You pay it every season he stays.'
+        : 'You pay '+M(paid)+' for '+M(worth)+' of value.')+
+    '</p>';
+}
 function sheet(p){
   const links=run.roster.length>1
     ? E.resolveChemistry(run.roster,CTX,chemOpts()).links.filter(l=>l.a===p.name||l.b===p.name) : [];
@@ -9726,7 +9781,7 @@ function sheet(p){
   $('sheet-in').innerHTML='<div class="eyebrow">'+esc(ts?ts.display:p.season+' '+E.nickname(p.franchise))+'</div>'+
     '<h2 class="display" style="font-size:26px;margin:4px 0 10px">'+esc(p.name)+'</h2>'+
     '<div class="kv"><span class="dim">Spot</span><b>'+esc(E.positionLabel(p))+'</b></div>'+
-    '<div class="kv"><span class="dim">Cost</span><b>'+M(p.price_musd)+'</b></div>'+
+    sheetMoney(p)+
     (p.stat_line?'<p style="margin:0 0 10px;font-size:13px;color:var(--dim)">'+esc(p.stat_line)+'</p>':'')+
     ((p.awards||[]).length?'<div class="badges" style="margin-bottom:9px">'+
       p.awards.map(a=>awardChip(a,false)).join('')+'</div>':'')+
@@ -16093,7 +16148,16 @@ function paintUpcomingBug(){
   }
 }
 function paintNext(live){
-  const s=run.season;
+  const s=run&&run.season;
+  /* NOTHING TO PAINT IS NOT AN ERROR, and unguarded this threw "Cannot read properties of
+     null (reading 'wins')" two lines down. It is reachable between a kickoff and the season
+     existing, and from a sim timer that outlives the run it was started for, and what a
+     throw here costs is the whole screen: the last frame stays up and every button on it
+     stops answering, which is the symptom a player reports as the game freezing.
+     Caught once in a checker run and not reproducible in three more, which is what a race
+     looks like from the outside. Returning is right whatever the path: this function only
+     draws, so declining to draw a season that is not there loses nothing. */
+  if(!s) return;
   /* The record's two halves animate independently, so the half that changed is the half that
      moves. Swapping the whole string makes a win and a loss look identical. */
   const rec=$('v-rec');
