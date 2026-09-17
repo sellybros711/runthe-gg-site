@@ -2258,6 +2258,54 @@ just the pitch") arriving at a **third** door, after `catchActive` and
 `throwActive`. Three schedulers carry the identity check now: the throw window,
 the catch window and the robbery.
 
+### Smoothness, measured, and one honest null result
+
+```
+node scratchpad/frames.mjs 70 normal --phone --cpu=4
+```
+
+**A headless desktop is the easiest case there is**, and it says 60fps mean with
+one frame over 33ms in 4203. The run that matters is a phone viewport with the CPU
+throttled to a mid range handset.
+
+| | mean | p95 | over 33ms | over 50ms |
+|---|---|---|---|---|
+| desktop | 16.7ms (60fps) | 18.5 | 0.02% | 0% |
+| phone, 4x throttle | ~20ms (50fps) | ~28 | ~1.3% | ~0.1% |
+
+**At 4x throttle the render simply costs most of the frame.** `drawField` runs at
+2.48ms mean, which is about ten of a sixteen millisecond budget once throttled.
+That is the honest capability, and further gain needs a cheaper `drawField`, not a
+hitch hunt.
+
+**WASTED WORK WAS FOUND AND REMOVED, AND IT DID NOT MAKE THE GAME SMOOTHER.** Both
+halves of that sentence are measured.
+
+- The log rebuilt all fourteen lines and forced a layout with `scrollHeight` on
+  every `refreshHud`, which runs on every ball, strike, out and base change. It
+  appends now, and `refreshHud` went from 7.96ms to 5.36ms on the throttled phone.
+- `runnerCache` was keyed on the raw float SCALE while the canvas it built depends
+  on the rounded pixel size, and the batter's walk up ramps that scale
+  continuously: a fresh 1600 fillRect build every frame of the walk, every at bat,
+  and an unbounded cache as well as a hitch.
+- `spriteCanvas` had no cache at all, so `refreshAtBatCard` rebuilt the batter's
+  48px avatar from scratch on every HUD refresh: the same four sprites came back
+  nine, eight, eight and five times in forty five seconds.
+
+One `spriteStore` now holds one built sprite per character, size and frame.
+Sprite builds fell from **305 a minute to 118, with zero repeats** (all that is
+left is first time warming). `spriteCanvas` hands back a COPY, because callers
+append what they get to the DOM and a node can only live in one place.
+
+**And the A/B says none of it moved the frame times.** Three runs each way:
+frames over 33ms came out 1.25 / 1.71 / 1.01 after against 1.35 / 1.20 / 1.42
+before, with p95 identical. **The 73% correlation between long frames and sprite
+builds was real and I misread it**: a build lands in a long frame because both
+cluster on the same events (a new batter means a new sprite AND a HUD rebuild AND
+a play starting), not because 1.5ms of building makes a 33ms frame. Keep the
+changes because they are strictly less work and they fix an unbounded cache; do
+not keep them because they made it smooth.
+
 ### A comment is a claim, and most of them are checkable
 
 Auditing what the code says about itself has found **three real bugs** in this
