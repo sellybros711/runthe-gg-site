@@ -45,6 +45,7 @@
      the picture agrees   no throw beats a safe runner to the bag, and no run outlasts the sim
      the walk back        a strikeout has a frame, and it belongs to the man it happened to
      speed is never a cost  a faster runner is never waved home on worse odds than a slower one
+     a rating buys more   every curve a rating feeds moves one way, over the whole scale
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -2669,6 +2670,83 @@ async function main() {
       ok(r.oneCurve && !r.twoCurves,
          'and the page really ships one curve with a bonus, not two curves',
          `oneCurve ${r.oneCurve}, twoCurves ${r.twoCurves}`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- a rating buys more ---- */
+    {
+      console.log('a rating buys more');
+      /* THE CLASS, not the instance. sendOdds was two curves joined at a
+         floor and one point of speed cost a runner up to 24 points of
+         scoring chance. Any function that maps a rating to a number is
+         meant to move one way, and a piecewise one can turn round at a
+         seam with every value it returns still perfectly valid.
+
+         So every such curve is walked over the whole scale. It found one
+         more thing when it was written, in the oldest idiom in the file:
+         `c.spd || 50` reads a legitimate ZERO as average, so the slowest
+         man imaginable would run like a median one. Nobody on the roster
+         is 0 (Lady Liberty is 1), which is what makes it a trap rather
+         than a fault: it goes off the year somebody writes a statue.
+         ratingOr is `||` with the hole taken out. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const man = (stat, v) => {
+          const c = Object.assign({}, ROSTER[0]);
+          c.pow = c.con = c.spd = c.def = c.pit = 50;
+          c[stat] = v;
+          return c;
+        };
+        const cases = [
+          ['simRunnerSpeed', 'spd', +1, (v) => simRunnerSpeed(man('spd', v))],
+          ['simFielderSpeed', 'def', +1, (v) => simFielderSpeed(man('def', v))],
+          ['swingReach normal', 'con', +1, (v) => swingReach(v, 'normal')],
+          ['swingReach contact', 'con', +1, (v) => swingReach(v, 'contact')],
+          ['swingReach power', 'con', +1, (v) => swingReach(v, 'power')],
+          ['tagChance third', 'spd', +1, (v) => tagChance(man('spd', v), 2)],
+          ['tagChance second', 'spd', +1, (v) => tagChance(man('spd', v), 1)],
+          ['robGreenHalf', 'def', +1, (v) => robGreenHalf(0, v)],
+          /* control is the one that must go DOWN as the rating goes up */
+          ['pitchScatter', 'pit', -1, (v) => {
+            const sc = pitchScatter(v, 0.5, 0);
+            return typeof sc === 'number' ? sc : (sc && (sc.r != null ? sc.r : sc.x));
+          }],
+        ];
+        const turns = [];
+        let swept = 0;
+        for (const [name, stat, dir, fn] of cases) {
+          let prev = null;
+          for (let v = 0; v <= 100; v++) {
+            const y = fn(v);
+            if (typeof y !== 'number' || !isFinite(y)) { turns.push({ name, v, bad: String(y) }); break; }
+            swept++;
+            if (prev != null && (y - prev) * dir < -1e-9) {
+              turns.push({ name, at: v, from: +prev.toFixed(4), to: +y.toFixed(4) });
+              break;
+            }
+            prev = y;
+          }
+        }
+        /* and the idiom itself: a zero rating is a rating */
+        const zeroRunner = simRunnerSpeed({ spd: 0 });
+        const oneRunner = simRunnerSpeed({ spd: 1 });
+        const missingRunner = simRunnerSpeed({});
+        return { turns, swept, curves: cases.length,
+                 zeroRunner, oneRunner, missingRunner };
+      });
+      ok(r.curves >= 9 && r.swept > 800,
+         'every curve a rating feeds is walked end to end',
+         `${r.curves} curves, ${r.swept} points`);
+      ok(r.turns.length === 0,
+         'A BETTER RATING NEVER BUYS LESS, at any value of any of them',
+         JSON.stringify(r.turns));
+      ok(r.zeroRunner < r.oneRunner,
+         'A RATING OF ZERO IS A RATING: nought is slower than one, not average',
+         `${r.zeroRunner.toFixed(4)} against ${r.oneRunner.toFixed(4)}`);
+      ok(r.missingRunner > r.oneRunner,
+         'and a rating that is genuinely absent still falls back',
+         `${r.missingRunner.toFixed(4)}`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

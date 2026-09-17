@@ -8242,8 +8242,14 @@ const simDist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
    thirty six feet a second: an arcade sprint, a little over real, because
    two and a half seconds to first is a beat you can watch and four is a
    beat you wait through. */
-function simRunnerSpeed(c) { return 0.34 + 0.22 * clamp((c.spd || 50) / 100, 0, 1); }
-function simFielderSpeed(c) { return 0.27 + 0.16 * clamp((c.def || 50) / 100, 0, 1); }
+/* A RATING OF ZERO IS A RATING, not a missing one. `c.spd || 50` reads a
+   legitimate 0 as average, so the slowest man imaginable would run like
+   a median one and the sweep that walks these curves reported them as
+   turning round at 1. Nobody on the roster is 0 today (Lady Liberty is
+   1), so it is a trap rather than a live fault, and it is the kind that
+   goes off years later when somebody writes a statue. */
+function simRunnerSpeed(c) { return 0.34 + 0.22 * clamp(ratingOr(c && c.spd, 50) / 100, 0, 1); }
+function simFielderSpeed(c) { return 0.27 + 0.16 * clamp(ratingOr(c && c.def, 50) / 100, 0, 1); }
 const SIM_RUN_ACCEL = 1.5, SIM_RUN_DECEL = 1.8;
 const SIM_THROW_SPEED = 1.55;          /* about ninety miles an hour */
 const SIM_TRANSFER = 0.30;             /* glove to hand, on a catch */
@@ -9278,7 +9284,7 @@ function scheduleContactPlay(kind, batter, info) {
   let onError = false;
   if (kind === 'ground out' || kind === 'fly out') {
     const fielding = currentFieldingTeam().batters;
-    const avgDef = fielding.reduce((a,c) => a + (c.def || 60), 0) / fielding.length;
+    const avgDef = fielding.reduce((a,c) => a + ratingOr(c && c.def, 60), 0) / fielding.length;
     let errChance = clamp(0.08 - (avgDef - 60) / 400, 0.02, 0.14);
     /* Black Cat's bad luck: fielders bobble the ball far more often when
        she's the batter. Superstition, weaponized. */
@@ -9298,7 +9304,7 @@ function scheduleContactPlay(kind, batter, info) {
   let doublePlay = false;
   if (isOut && effective === 'ground out' && preBases[0] && g.outs < 2) {
     const fielding = currentFieldingTeam().batters;
-    const avgDef = fielding.reduce((a,c) => a + (c.def || 60), 0) / fielding.length;
+    const avgDef = fielding.reduce((a,c) => a + ratingOr(c && c.def, 60), 0) / fielding.length;
     const runnerSpd = preBases[0].spd;
     const dpChance = clamp(0.40 + (avgDef - 60) / 250 - (runnerSpd - 60) / 220, 0.10, 0.75);
     if (Math.random() < dpChance) doublePlay = true;
@@ -14266,6 +14272,11 @@ function renderSeasonEnd() {
    UTIL
    ============================================================================ */
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+/* A rating, or the stand in for one that is genuinely absent. This is
+   `x || d` with the hole taken out of it: zero is a number somebody
+   chose and has to survive, and every rating in this game is read
+   through it. */
+function ratingOr(v, d) { return (v == null || v !== v) ? d : v; }
 
 /* Boot. The saved season is brought up to the current shape here, at the
    bottom, because the migration reads tables declared above this line and

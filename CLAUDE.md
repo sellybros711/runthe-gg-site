@@ -2220,6 +2220,38 @@ thirds of that gap is the `spd >= 75` gate deciding who even tries, which is
 tuning and would move the run environment. Measure the run environment before
 touching it; the samples on hand are bot blowouts.
 
+### A rating must never buy you less, and the sweep that says so
+
+`sendOdds` was an instance of a CLASS. Any function mapping a rating to a number
+is meant to move one way, and a piecewise one can turn round at a seam with every
+value it returns still a perfectly valid number. So the suite walks all nine of
+them end to end, over 0 to 100, including the one that must go DOWN
+(`pitchScatter`: more control, less scatter).
+
+Writing it found one more thing, in the oldest idiom in the file. **`c.spd || 50`
+reads a legitimate ZERO as average**, so the slowest man imaginable would run like
+a median one. Nobody on the roster is 0 (Lady Liberty is 1), which is exactly what
+makes it a trap rather than a fault: it goes off the year somebody writes a
+statue. `ratingOr(v, d)` is `||` with the hole taken out, and every rating is read
+through it.
+
+### The run environment is NOT yet measured, and one attempt looked like it was
+
+Every pacing sample ended 0-18, 2-19, 0-20, which is either a bad bot or a broken
+run environment, and the two have not been told apart.
+
+**An attempt to settle it produced a number that was purely an artefact.**
+Simulating both halves without timers meant substituting a crude
+`Math.random() < 0.68` for the real `scheduleCpuSwing`, which computes its aim off
+CON. That measures two bad hitters: it reported 1.6 runs a team per five innings
+with 48% of half-games shut out, which says nothing about the game.
+
+**The real CPU swing path needs timers**, so a trustworthy figure has to come
+through `scratchpad/pacing.mjs` or `calibrate.mjs`, not a fast loop. What
+`calibrate.mjs` does say is that the contact model is not broken: roughly 9 or 10
+hits per 27 balls in play at both tiers. Do not tune scoring until runs per game
+has been measured through a path that uses the real swing AI.
+
 ## Segue, the setlist game
 
 `setlist/index.html`, same one-file convention. It is NOT in the same state as
