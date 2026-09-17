@@ -306,7 +306,21 @@ const CONSTANTS = {
    * rating 103, 16 and 16 at 110) while titles went 2.8% -> 5.3% and 5.8% -> 10.8%.
    */
   ELITE_FLOOR: 95,
-  ELITE_FULL: 105,
+  /*
+   * 103 RATHER THAN 105, AND THE REASON IS THE SAME ONE THREE CONSTANTS BELOW SHARE.
+   *
+   * ELITE_FULL is where roster strength is worth as much as a 17-0 record, so it is the top
+   * of the band and it has to be a rating the game can actually produce. Measured over 3000
+   * drafted rosters: p90 93.7, p99 99.3, p999 103.0, max 104.9. At 105 the vote was fully
+   * earned by nothing, and the best roster anybody drafts collected about 99% of it while a
+   * 97 collected a fifth. Anchored at the top of the real ladder instead, so a genuinely
+   * elite roster gets the elite treatment rather than most of it.
+   *
+   * THE PERFECT SEASON IS STILL UNTOUCHED BY CONSTRUCTION, for the reason the block above
+   * gives: the home field share takes whichever of record and strength is HIGHER, and at
+   * 17-0 that is always the record. This moves what an elite roster with a LOSS gets.
+   */
+  ELITE_FULL: 103,
   /*
    * ─── THE ORDINARY SUNDAY, READ THE SAME WAY AS THE LAST GAME ────────────────
    *
@@ -332,7 +346,13 @@ const CONSTANTS = {
   CLASS_DROP: 0.06,
   CLASS_BREAK_EDGE: 1.020,
   CLASS_MID: 95,
-  CLASS_TOP: 115,
+  /* 103, NOT 115, and this is the one that was furthest out. The stretch above CLASS_FULL
+     is a SEPARATE segment from the fitted one (see weeklyEdgeBand: 95 to 100 is at(rating)
+     and nothing here touches it), and it was written to keep paying up to 115 on the belief
+     that "rosters run fifteen points past" CLASS_FULL. They do not: the best of 3000 reads
+     104.9 and the 1-in-1000 reads 103.0, so the segment was never more than a fifth earned
+     and a 101 roster collected 0.004 of the 0.06 on offer. */
+  CLASS_TOP: 103,
   CLASS_TOP_EDGE: 0.06,
   ELITE_BYE_RATING: 100,
   ELITE_BYE_WINS: 13,
@@ -356,7 +376,11 @@ const CONSTANTS = {
    * where the title game stops being uphill.
    */
   ELITE_POLISH: 0.02,
-  ELITE_POLISH_FULL: 105,
+  /* Same anchor as the two above, for the same measured reason. Kept tiny on purpose: this
+     one rides on weeklyEdge and inherits its damper, so it pays on ordinary Sundays and
+     almost nothing against the contenders, which is why sweeping it alone moved a 95+ win
+     rate by 0.2 points and it is not the lever anybody should reach for. */
+  ELITE_POLISH_FULL: 103,
 
   /*
    * ─── WHAT THE LAST GAME ASKS OF YOUR ROSTER ─────────────────────────────────

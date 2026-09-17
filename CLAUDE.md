@@ -1682,6 +1682,43 @@ in this file.
 `check-boss.mjs` drives every one of its runs through that button, so if it stopped working
 the whole file would time out.
 
+### The elite band's top was written past what the game can draft
+
+Asked for: make a 95+ quick draft roster win a bit more. What a rating band actually wins,
+measured over 1800 real drafts:
+
+| rating | win% | median | 17-0 |
+|---|---|---|---|
+| 85-90 | 68.2% | 12-5 | 0.0% |
+| 90-95 | 79.7% | 14-3 | 0.9% |
+| **95-100** | **85.7%** | **15-2** | **9.8%** |
+| 100+ | 88.7% | 15-2 | 7.7% |
+
+**Three constants anchored the top of the elite band above anything anybody drafts.** Over
+3000 rosters: p90 93.7, p99 99.3, p999 103.0, max 104.9. Against that, `CLASS_TOP` was 115,
+`ELITE_FULL` 105 and `ELITE_POLISH_FULL` 105. So the stretch above `CLASS_FULL` was never
+more than a fifth earned (a 101 roster collected 0.004 of the 0.06 on offer), and the seed
+vote was fully earned by nothing. All three sit at **103** now, the top of the real ladder.
+
+**None of them touch the fitted stretch, and that is why they were the ones to move.**
+`weeklyEdgeBand` is segmented: 95 to 100 is `at(rating)`, and the header over `CLASS_PIVOT`
+says plainly that 95 through 100 is what `SCALE` was solved against, so moving it means
+re-sweeping `SCALE`. The edge at 95 is byte-identical after this change; 101 goes 1.2083 to
+1.2281.
+
+**What it bought**, on the archetype `SCALE` is anchored to: 90.1% to 91.1% of games, median
+15.3-1.7 to 15.5-1.5, titles 14.2% to 15.5%, and 20-0 from 1.9% to 2.5%. Targets block still
+reads all within tolerance.
+
+**THE 95-100 BAND ITSELF BARELY MOVED, AND THAT IS THE HONEST LIMIT OF THIS.** Both riders
+were swept and both are small: doubling `ELITE_POLISH` moved a 95+ win rate 85.3% to 85.5%,
+because it inherits `weeklyEdgeVs`'s damper and pays almost nothing against contenders. And
+loosening that damper from `CLASS_FOE_LOW` 1.0 to 1.4, which is a large loosening of a
+deliberate rule, bought 85.8% to 86.2% and 17-0 from 8.3% to 8.7%. **The 95-100 band is
+governed by `at()` and `SCALE` and nothing else**, so lifting it is a re-calibration of the
+whole game rather than a constant to nudge. Do not reach for the damper: it was added because
+the undamped edge made 17-0 five times likelier, and it is worth 0.4 points.
+
 ### A badge you add has to be proved reachable
 
 ```
