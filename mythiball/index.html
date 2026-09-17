@@ -9345,8 +9345,9 @@ function scheduleContactPlay(kind, batter, info) {
     const openAt = Math.max(0, (g.play.sim.landAt - 0.55) * 1000) + HITSTOP_MS;
     const closeBy = Math.round(g.play.sim.applyAt * 1000) + HITSTOP_MS - 60;
     if (closeBy - openAt >= 380) {
+      const thisPlay = g.play;
       setTimeout(() => {
-        if (!g.play || g.play.applied) return;
+        if (!g.play || g.play !== thisPlay || g.play.applied) return;
         startRobWindow(effective, batter, Math.min(700, closeBy - openAt));
       }, openAt);
     }
@@ -9729,9 +9730,21 @@ function scheduleThrowMinigame(kind, batter, info) {
   g.play.startedAt += HITSTOP_MS; g.play.swingUntil += HITSTOP_MS;
   g.play.ballUntil += HITSTOP_MS; g.play.sim.t0 += HITSTOP_MS;
 
-  /* When the fielder has it, open the throw window. */
+  /* When the fielder has it, open the throw window.
+
+     THE CHECK IS AGAINST THIS PLAY, not just against there being one,
+     which is the swing timer's lesson arriving at a third door. `g.play`
+     existing says nothing: the ground out can be torn down inside this
+     window and a NEW play started, and if that new play is a HOME RUN
+     its sim has no meetUV at all (nobody meets a ball in the seats). The
+     read below is then null[0], which is exactly the error seen once
+     under a probe forcing pitches on top of live plays and never
+     reproduced in eight hundred tries, because it needs the replacement
+     to be a homer and that is one ball in play in twenty. */
+  const thisPlay = g.play;
   setTimeout(() => {
-    if (!g.play || g.play.applied) return;
+    if (!g.play || g.play !== thisPlay || g.play.applied) return;
+    if (!g.play.sim || !g.play.sim.meetUV) return;
     const geo = fieldGeom();
     const [lx, ly] = simProject(geo, g.play.sim.meetUV[0], g.play.sim.meetUV[1]);
     dustPuff(g, lx, ly, 'rgba(205,170,120,.9)');
@@ -9871,11 +9884,13 @@ function scheduleFlyCatchMinigame(kind, batter, info) {
   g.play.startedAt += HITSTOP_MS; g.play.swingUntil += HITSTOP_MS;
   g.play.ballUntil += HITSTOP_MS; g.play.sim.t0 += HITSTOP_MS;
   const geo = fieldGeom();
+  /* Read here, while this play is certainly the one on the field. */
   const [landingX, landingY] = simProject(geo, g.play.sim.meetUV[0], g.play.sim.meetUV[1]);
   /* When the ball starts descending, the catch window opens. */
   const openAt = traj.duration * 0.6;
+  const thisPlay = g.play;
   setTimeout(() => {
-    if (!g.play || g.play.applied) return;
+    if (!g.play || g.play !== thisPlay || g.play.applied) return;
     startCatchWindow(kind, batter, landingX, landingY);
   }, openAt + HITSTOP_MS);
 }

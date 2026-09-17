@@ -2235,6 +2235,29 @@ makes it a trap rather than a fault: it goes off the year somebody writes a
 statue. `ratingOr(v, d)` is `||` with the hole taken out, and every rating is read
 through it.
 
+### A timer fires into its OWN play or not at all
+
+**Seen once, never reproduced, and real.** `Cannot read properties of null
+(reading '0')` turned up in one probe run and then survived about eight hundred
+forced pitches across three harness shapes without coming back. It was found by
+READING instead.
+
+A ground out schedules its throw window for `meetAt`, and the callback checked
+that `g.play` existed, not that it was the SAME play. A play can be torn down
+inside that window and a new one begun, and **if the new one is a HOME RUN its sim
+has no `meetUV` at all**, because nobody meets a ball in the seats. That is why it
+is so rare: it needs the replacement to be a homer, about one ball in play in
+twenty.
+
+The guard DRIVES the sequence rather than waiting for it, and pins the error text,
+so the fix is tied to the symptom actually observed: reading a homer's `meetUV[0]`
+produces exactly that string.
+
+This is the swing timer's own lesson ("the first check is against the GAME, not
+just the pitch") arriving at a **third** door, after `catchActive` and
+`throwActive`. Three schedulers carry the identity check now: the throw window,
+the catch window and the robbery.
+
 ### The run environment is NOT yet measured, and one attempt looked like it was
 
 Every pacing sample ended 0-18, 2-19, 0-20, which is either a bad bot or a broken

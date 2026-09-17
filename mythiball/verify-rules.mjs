@@ -46,6 +46,7 @@
      the walk back        a strikeout has a frame, and it belongs to the man it happened to
      speed is never a cost  a faster runner is never waved home on worse odds than a slower one
      a rating buys more   every curve a rating feeds moves one way, over the whole scale
+     the stale timer      a play's timer fires into its OWN play or not at all
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -2748,6 +2749,70 @@ async function main() {
          'and a rating that is genuinely absent still falls back',
          `${r.missingRunner.toFixed(4)}`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the stale timer ---- */
+    {
+      console.log('the stale timer');
+      /* SEEN ONCE, NEVER REPRODUCED, AND REAL.
+
+         "Cannot read properties of null (reading '0')" turned up in one
+         probe run and then survived about eight hundred forced pitches
+         across three harness shapes without coming back. It was found by
+         READING instead: the ground out schedules its throw window for
+         meetAt and the callback checked that `g.play` existed, not that
+         it was the SAME play. A play can be torn down inside that window
+         and a new one begun, and if the new one is a HOME RUN its sim
+         has no meetUV at all, because nobody meets a ball in the seats.
+
+         That is why it is so rare: it needs the replacement to be a
+         homer, which is about one ball in play in twenty.
+
+         The check is against THIS play now, which is the swing timer's
+         own lesson ("the first check is against the GAME, not just the
+         pitch") arriving at a third door, after catchActive and
+         throwActive. This scenario DRIVES the sequence rather than
+         waiting for it, and it pins the error text, so the fix is tied
+         to the symptom that was actually observed. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        /* the loaded gun: a homer's sim has no meeting point */
+        endAtBatCleanup(); g.pitch = null; g.bases = [null, null, null];
+        scheduleContactPlay('home run', currentBatter(), { q: 0.9 });
+        const homerSim = g.play.sim;
+        const homerMeetUV = homerSim.meetUV;
+        /* and the read the old code did produces the exact error seen */
+        let oldMsg = null;
+        try { const geo = fieldGeom(); simProject(geo, homerSim.meetUV[0], homerSim.meetUV[1]); }
+        catch (e) { oldMsg = e.message; }
+        await sleep(900);
+
+        /* now drive it: a ground out, replaced by a homer before its
+           throw window opens */
+        endAtBatCleanup(); g.play = null; g.pitch = null; g.bases = [null, null, null];
+        scheduleContactPlay('ground out', currentBatter(), { q: 0.5 });
+        const meetAt = g.play && g.play.sim ? g.play.sim.meetAt : null;
+        await sleep(110);
+        endAtBatCleanup(); g.play = null;
+        scheduleContactPlay('home run', currentBatter(), { q: 0.9 });
+        await sleep(Math.max(1300, (meetAt || 1) * 1000 + 500));
+        return { homerMeetUV, oldMsg, meetAt, alive: !!State.game };
+      });
+      ok(r.homerMeetUV === null,
+         'a home run has no meeting point: nobody meets a ball in the seats',
+         String(r.homerMeetUV));
+      ok(r.oldMsg === "Cannot read properties of null (reading '0')",
+         'and reading one is EXACTLY the error that was seen in the wild',
+         String(r.oldMsg));
+      ok(r.meetAt > 0.2, 'a ground out really does schedule its window into the future',
+         String(r.meetAt));
+      ok(r.alive && errors.length === 0,
+         'A TIMER FIRES INTO ITS OWN PLAY OR NOT AT ALL: the stale one is harmless',
+         errors.join(' | '));
       await pg.close();
     }
 
