@@ -2742,14 +2742,21 @@ const Sound = {
     src.connect(filt); filt.connect(g); g.connect(bus);
     src.start(t0); src.stop(t0 + dur + 0.05);
   },
-  play(name) {
+  play(name, opts = {}) {
     if (this.muted) return;
     try {
       switch (name) {
-        case 'crack':
-          this.noise(0.08, { filter:'highpass', freq: 1800, vol: 0.5 });
-          this.tone(180, 0.06, { type:'triangle', vol: 0.25 });
+        case 'crack': {
+          /* THE CRACK IS THE READOUT, the same rule the contact burst
+             follows: a squared-up ball snaps bright and loud, a jam shot
+             thuds. q is the swing's contact quality when the caller has
+             one; the default keeps the old crack for the paths without
+             (bunts, quirks, the replay). */
+          const q = opts.q != null ? Math.max(0, Math.min(1, opts.q)) : 0.6;
+          this.noise(0.06 + q * 0.04, { filter:'highpass', freq: 1300 + q * 1400, vol: 0.30 + q * 0.32 });
+          this.tone(140 + q * 90, 0.06, { type:'triangle', vol: 0.18 + q * 0.12 });
           break;
+        }
         case 'foul':
           this.noise(0.05, { filter:'highpass', freq: 2400, vol: 0.3 });
           break;
@@ -2775,9 +2782,16 @@ const Sound = {
           this.tone(880, 0.05, { type:'sine', vol: 0.16 });
           this.noise(0.04, { filter:'lowpass', freq: 900, vol: 0.25 });
           break;
-        case 'cheer':
-          this.noise(0.7, { filter:'bandpass', freq: 1000, vol: 0.22, swell: true });
+        case 'cheer': {
+          /* A double is louder than a single and lasts longer, and the
+             big one gets a second swell arriving on top of the first,
+             which is what a crowd actually does when the ball keeps
+             rolling. */
+          const big = !!opts.big;
+          this.noise(big ? 1.1 : 0.7, { filter:'bandpass', freq: 1000, vol: big ? 0.30 : 0.22, swell: true });
+          if (big) this.noise(0.8, { filter:'bandpass', freq: 1400, vol: 0.16, swell: true, delay: 0.35 });
           break;
+        }
         case 'aww':
           this.tone(300, 0.28, { type:'sine', slideTo: 200, vol: 0.10 });
           break;
@@ -4318,9 +4332,11 @@ function drawLineupBoard(ctx, t) {
   /* The lineup card on the wall: a grid of nine slots and a header. */
   roomRect(ctx, t.x, t.y, t.w, t.h, CLUB.cream);
   roomRect(ctx, t.x + 8, t.y + 8, t.w - 16, 24, CLUB.red);
-  ctx.fillStyle = CLUB.cream;
-  ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('7 GAMES', t.x + t.w / 2, t.y + 21);
+  roomText(ctx, (c) => {
+    c.fillStyle = CLUB.cream;
+    c.font = 'bold 13px monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('7 GAMES', t.x + t.w / 2, t.y + 21);
+  });
   for (let i = 0; i < 7; i++) {
     const ly = t.y + 42 + i * 16;
     roomRect(ctx, t.x + 12, ly, 16, 11, '#e6dcc0', false);
@@ -4386,17 +4402,23 @@ function drawChalkboard(ctx, t) {
   let ny = t.y + 26;
   for (const note of CHALK_NOTES) {
     if (note) {
-      ctx.fillStyle = CLUB.chalk;
-      ctx.fillText(note, nx, ny);
-      /* the squiggle under it: three short strokes at slightly wrong angles */
-      ctx.strokeStyle = 'rgba(232,240,228,.6)'; ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let i = 0; i < 3; i++) {
-        const sx = nx + i * 22;
-        ctx.moveTo(sx, ny + 7 + (i % 2));
-        ctx.lineTo(sx + 18, ny + 6 + ((i + 1) % 2) * 2);
-      }
-      ctx.stroke();
+      const y0 = ny;
+      roomText(ctx, (c) => {
+        c.font = 'bold 10px monospace';
+        c.textAlign = 'left'; c.textBaseline = 'middle';
+        c.fillStyle = CLUB.chalk;
+        c.fillText(note, nx, y0);
+        /* the squiggle under it: three short strokes at slightly wrong
+           angles, kept with the hand it underlines */
+        c.strokeStyle = 'rgba(232,240,228,.6)'; c.lineWidth = 1;
+        c.beginPath();
+        for (let i = 0; i < 3; i++) {
+          const sx = nx + i * 22;
+          c.moveTo(sx, y0 + 7 + (i % 2));
+          c.lineTo(sx + 18, y0 + 6 + ((i + 1) % 2) * 2);
+        }
+        c.stroke();
+      });
     }
     ny += note ? 17 : 9;
   }
@@ -4457,6 +4479,38 @@ function drawBatBag(ctx, x, y) {
    1500 the room takes now: the signs and the chalk are real text, and text
    is the first thing that goes when a canvas is stretched. */
 const ROOM_SCALE = 2;
+/* THE ROOM SPEAKS THE SPRITES' LANGUAGE TOO. The game field went to one
+   low resolution and the clubhouse was left as the last screen mixing
+   vector furniture with pixel people. Same recipe as the field loop:
+   the scene is drawn small (a block close to a sprite pixel), blitted
+   up with smoothing off, and the text a reader has to read (the signs,
+   the chalkboard's notes, a board's header) queues itself through
+   roomText() and replays at full resolution under its own captured
+   transform, so the zoom-in keeps the signs crisp AND in place. */
+const ROOM_PIX = 3;
+let ROOM_Q = [];
+function roomText(ctx, fn) { ROOM_Q.push([ctx.getTransform(), fn]); }
+let roomWorld = null;
+function paintRoom(dctx, draw) {
+  const lw = Math.round(ROOM.w / ROOM_PIX), lh = Math.round(ROOM.h / ROOM_PIX);
+  if (!roomWorld || roomWorld.width !== lw || roomWorld.height !== lh) {
+    roomWorld = document.createElement('canvas');
+    roomWorld.width = lw; roomWorld.height = lh;
+  }
+  const wctx = roomWorld.getContext('2d');
+  wctx.setTransform(1 / ROOM_PIX, 0, 0, 1 / ROOM_PIX, 0, 0);
+  ROOM_Q.length = 0;
+  draw(wctx);
+  dctx.setTransform(1, 0, 0, 1, 0, 0);
+  dctx.imageSmoothingEnabled = false;
+  dctx.drawImage(roomWorld, 0, 0, dctx.canvas.width, dctx.canvas.height);
+  for (const [m, fn] of ROOM_Q) {
+    dctx.setTransform(ROOM_SCALE * ROOM_PIX, 0, 0, ROOM_SCALE * ROOM_PIX, 0, 0);
+    dctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+    fn(dctx);
+  }
+  ROOM_Q.length = 0;
+}
 /* THE SIGN IS SIZED BY THE LAYOUT, not by a constant, because what matters
    is how big it lands on the GLASS. The wide room is drawn at about 1.07
    CSS pixels per room pixel, so a 13px sign arrives at 14. The close room
@@ -4470,10 +4524,12 @@ function drawSign(ctx, t, hot) {
   const w = Math.max(S.min, Math.round(t.sign.length * S.per + S.pad));
   const x = t.x + t.w / 2 - w / 2, y = t.y - S.h - S.lift;
   roomRect(ctx, x, y, w, S.h, hot ? CLUB.red : CLUB.cream);
-  ctx.fillStyle = hot ? CLUB.cream : CLUB.red;
-  ctx.font = `bold ${S.fs}px monospace`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(t.sign, t.x + t.w / 2, y + S.h / 2 + 1);
+  roomText(ctx, (c) => {
+    c.fillStyle = hot ? CLUB.cream : CLUB.red;
+    c.font = `bold ${S.fs}px monospace`;
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(t.sign, t.x + t.w / 2, y + S.h / 2 + 1);
+  });
 }
 /* The box a thing and its sign share: what the pointer outline draws and
    what the hotspot button covers, which must be the same rectangle. In a
@@ -4776,9 +4832,7 @@ function renderMenu() {
   const rail = el('div','clubhouse-rail');
   const idle = '<b>The clubhouse</b><span>Point at something to see what it does.</span>';
   const paint = (id) => {
-    dctx.setTransform(ROOM_SCALE, 0, 0, ROOM_SCALE, 0, 0);
-    dctx.imageSmoothingEnabled = false;
-    drawClubhouse(dctx, things, id);
+    paintRoom(dctx, (c) => drawClubhouse(c, things, id));
     const t = things.find(x => x.id === id);
     rail.innerHTML = t
       ? `<b>${t.label}</b>` + (t.note ? `<span>${t.note}</span>` : '')
@@ -4821,22 +4875,24 @@ function renderMenu() {
     const step = () => {
       const p = Math.min(1, (performance.now() - start) / DUR);
       const e = p * p * (3 - 2 * p);                 /* smoothstep */
-      dctx.setTransform(ROOM_SCALE, 0, 0, ROOM_SCALE, 0, 0);
-      dctx.imageSmoothingEnabled = false;
-      /* Clear in untransformed space, or the scaled rect misses the edges. */
-      dctx.fillStyle = '#6b4a24';
-      dctx.fillRect(0, 0, ROOM.w, ROOM.h);
-      dctx.save();
-      dctx.translate(cx, cy);
-      dctx.scale(1 + e * 2.4, 1 + e * 2.4);
-      dctx.translate(-cx, -cy);
-      drawClubhouse(dctx, things, t.id);
-      dctx.restore();
-      /* and out to the page colour, so the next screen does not snap in */
-      if (e > 0.5) {
-        dctx.fillStyle = `rgba(241,226,187,${(e - 0.5) / 0.5})`;
-        dctx.fillRect(0, 0, ROOM.w, ROOM.h);
-      }
+      paintRoom(dctx, (c) => {
+        c.fillStyle = '#6b4a24';
+        c.fillRect(0, 0, ROOM.w, ROOM.h);
+        c.save();
+        c.translate(cx, cy);
+        c.scale(1 + e * 2.4, 1 + e * 2.4);
+        c.translate(-cx, -cy);
+        drawClubhouse(c, things, t.id);
+        c.restore();
+        /* and out to the page colour, so the next screen does not snap in.
+           The fade covers the crisp signs too, so it rides the queue. */
+        if (e > 0.5) {
+          roomText(c, (cc) => {
+            cc.fillStyle = `rgba(241,226,187,${(e - 0.5) / 0.5})`;
+            cc.fillRect(0, 0, ROOM.w, ROOM.h);
+          });
+        }
+      });
       if (p < 1) requestAnimationFrame(step); else then();
     };
     requestAnimationFrame(step);
@@ -5553,7 +5609,7 @@ function startSeason(carry) {
     schedule: buildSchedule(),
     results: [],
     playoffs: null,
-    playerStats: { hr:0, so:0, sb:0, hits:0, ab:0 },
+    playerStats: { hr:0, so:0, sb:0, hits:0, ab:0, d:0, t:0, r:0, rbi:0, bb:0 },
     perPlayer: {},   /* per character running totals across the season */
     league: emptyLeague(),
     leagueSchedule: null,   /* filled below: it needs the schedule */
@@ -6288,7 +6344,18 @@ function startGame(opts) {
        `pitched` is every man who has thrown, in order, for the box score. */
     away: { name: youHome ? State.opponent.name : State.teamName, batters: youHome ? battersHome : battersAway, idx:0, score:0, isYou: !youHome, color: youHome ? State.opponent.color : teamKitColor(), field: [0,1,2,3,4,5,6,7,8], arm: {}, pitched: [] },
     home: { name: youHome ? State.teamName : State.opponent.name, batters: youHome ? battersAway : battersHome, idx:0, score:0, isYou: youHome, color: youHome ? teamKitColor() : State.opponent.color, field: [0,1,2,3,4,5,6,7,8], arm: {}, pitched: [] },
-    stats: { hr:{}, so:{}, sb:{}, hits:{}, ab:{} },
+    /* THE BOX SCORE IS THE GAME'S MEMORY. It held five counters, so the
+       one number every baseball fan asks for (an average) could not be
+       computed, and a player who drove in four runs had nothing to show
+       for it. Every one of these is produced by play the game already
+       simulates; they were being thrown away at the end of the at bat.
+       `d` and `t` are doubles and triples, `r` runs scored, `rbi` runs
+       driven in, `bb` walks drawn. */
+    stats: { hr:{}, so:{}, sb:{}, hits:{}, ab:{}, d:{}, t:{}, r:{}, rbi:{}, bb:{} },
+    /* And the man on the mound owns what he gave up. Outs are what make
+       an innings-pitched column possible, which is what makes an ERA
+       possible; without them a pitching line is a strikeout count. */
+    pit: { outs:{}, runs:{}, bb:{} },
     lineScore: { away:[0], home:[] },   /* runs per inning, per side */
     fx: [],           /* live particles: dust, confetti, glove flashes */
     shakeUntil: 0,    /* camera shake deadline (home runs) */
@@ -6344,9 +6411,44 @@ function currentPitcher() {
 function playerIsBatting() {
   return currentBattingTeam().isYou;
 }
-function statBump(k, key) {
+function statBump(k, key, by) {
   const g = State.game;
-  g.stats[key][k] = (g.stats[key][k] || 0) + 1;
+  if (!g || !g.stats || !k) return;
+  if (!g.stats[key]) g.stats[key] = {};
+  g.stats[key][k] = (g.stats[key][k] || 0) + (by == null ? 1 : by);
+}
+/* EVERY OUT IS SOMEBODY'S OUT. `g.outs++` was written at six sites and
+   none of them told the pitcher, so there was no innings pitched and
+   therefore no ERA. One door, and the arm on the mound at the moment it
+   happens is the arm that gets it. */
+function addOuts(nOuts) {
+  const g = State.game;
+  if (!g) return;
+  g.outs += nOuts;
+  creditArm('outs', nOuts);
+}
+/* BOOKKEEPING MUST NEVER BREAK A GAME. Recording who did it is strictly
+   less important than the out or the run itself, and these run from
+   inside play handlers: a throw here aborts the handler halfway, which
+   is how a game freezes with the button dead. So the credit is wrapped,
+   and a missing arm costs a column rather than the inning. */
+function creditArm(key, nOuts) {
+  try {
+    const g = State.game;
+    if (!g || !g.pit || !g.pit[key]) return;
+    const t = currentFieldingTeam();
+    if (!t || !t.batters) return;
+    const arm = fielderAt(t, 0);
+    if (arm) g.pit[key][arm.k] = (g.pit[key][arm.k] | 0) + nOuts;
+  } catch (e) { /* a column, never the inning */ }
+}
+/* What a pitcher gave up, for the same reason. Runs are charged to
+   whoever is standing there when they cross, which is the simple rule
+   rather than the inherited-runner rule real baseball uses: this game
+   changes pitchers between innings almost always, so the two agree
+   nearly everywhere and the simple one can never be wrong by a lot. */
+function chargeRuns(nRuns) {
+  creditArm('runs', nRuns);
 }
 /* FORM. A hit or an out, per plate appearance, per character, so the at
    bat card can say HOT or COLD from the last ten. The box score already
@@ -6512,6 +6614,26 @@ let FIELD_VIEW = 1;
 /* The logical field, the size every coordinate in fieldGeom() is in, and the
    factor the on screen bitmap is larger by. */
 const FIELD_W = 960, FIELD_H = 660, FIELD_K = 1.5;
+/* ONE RESOLUTION. The characters are chunky pixel sprites and the field
+   was smooth vector art: anti-aliased ellipses, perfect gradients,
+   hairline chalk. Two art styles in one frame is the loudest "not a real
+   game" tell there is, and every reference is consistent instead
+   (Backyard is painted edge to edge, R.B.I. is low-res edge to edge).
+   So the WORLD is drawn small and scaled up with smoothing off: every
+   curve gets stairsteps, every gradient bands, and the field speaks the
+   sprites' language. PIX is the block size in logical pixels, close to a
+   sprite pixel (4.6) so the two grids read as one.
+
+   Text a player has to READ is the exception: 12px type in 3px blocks is
+   four rows of mush. Those sites queue themselves through hud() during
+   the world draw and are replayed on the display canvas at full
+   resolution, each under its own captured transform, so instructions
+   stay type while the world stays pixels. Diegetic text (wall distance
+   markers, signature-moment shouts) stays in the world on purpose. */
+const PIX = 3;
+let pixWorld = null;
+let HUD_Q = [];
+function hud(ctx, fn) { HUD_Q.push([ctx.getTransform(), fn]); }
 function startFieldLoop() {
   cancelAnimationFrame(fieldRafId);
   const paint = () => {
@@ -6531,20 +6653,60 @@ function startFieldLoop() {
           const durMs = p.speed * 1000;
           t = clamp((now - p.start) / durMs, 0, 1);
           inWindup = false;
-          /* No swing by pitch end. Trigger the called pitch once. */
-          if (t >= 1 && !p.swung && !p.resolved) {
+          /* The late break rides the frame clock: while the ball is in
+             the air and a direction is held, the pitch's landing slides
+             that way, up to the arm's budget. The CPU batter aimed at the
+             spot it read out of the hand, so a pitch steered off that
+             spot is a pitch it swings under, which is the entire point of
+             the mechanic. */
+          if (!playerIsBatting() && p.steerMax && g.steerHeld
+              && !p.swung && !p.resolved && t > 0.02 && t < p.arrive) {
+            const dt = Math.min(60, now - (p._steerAt == null ? now : p._steerAt));
+            const rate = p.steerMax / (p.arrive * durMs * 0.7);
+            p.steer = clamp(p.steer + g.steerHeld * rate * dt, -p.steerMax, p.steerMax);
+            p.loc.x = clamp(p.baseLocX + p.steer, -1.7, 1.7);
+          }
+          p._steerAt = now;
+          /* No swing by the time the ball lands: the umpire calls it a
+             beat after the mitt pops. It used to wait for the METER to run
+             out, which is up to half the meter after the ball had visibly
+             arrived, so every taken pitch ended with the ball hanging at
+             the plate in silence. A swing after the call does not exist:
+             once it is called, the at bat has moved on. */
+          const callAt = Math.min(0.995, (p.arrive || 1) + 0.22);
+          if (t >= callAt && !p.swung && !p.resolved) {
             p.resolved = true;
             resolveCalledPitch();
           }
         }
       }
       const ctx = fCv.getContext('2d');
-      /* Logical 960x660 onto the larger bitmap. drawField saves and
-         restores around its own transforms, so this base survives it. */
-      ctx.setTransform(FIELD_K, 0, 0, FIELD_K, 0, 0);
-      ctx.imageSmoothingEnabled = false;
       if (fCv.clientWidth) FIELD_VIEW = fCv.clientWidth / FIELD_W;
-      drawField(ctx, FIELD_W, FIELD_H, t, p || null, inWindup);
+      /* The world at one low resolution (see PIX above), then blitted to
+         the display bitmap with smoothing off. drawField saves and
+         restores around its own transforms, so the base survives it. */
+      if (!pixWorld) {
+        pixWorld = document.createElement('canvas');
+        pixWorld.width = Math.round(FIELD_W / PIX);
+        pixWorld.height = Math.round(FIELD_H / PIX);
+      }
+      const wctx = pixWorld.getContext('2d');
+      wctx.setTransform(1 / PIX, 0, 0, 1 / PIX, 0, 0);
+      HUD_Q.length = 0;
+      drawField(wctx, FIELD_W, FIELD_H, t, p || null, inWindup);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(pixWorld, 0, 0, fCv.width, fCv.height);
+      /* The crisp pass: each queued site replays on the display canvas
+         under the transform it was drawn with. The world context maps
+         logical through 1/PIX, the display maps through FIELD_K, so the
+         bridge between the two is one scale. */
+      for (const [m, fn] of HUD_Q) {
+        ctx.setTransform(FIELD_K * PIX, 0, 0, FIELD_K * PIX, 0, 0);
+        ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+        fn(ctx);
+      }
+      HUD_Q.length = 0;
       refreshStealButton();
     }
     fieldRafId = requestAnimationFrame(paint);
@@ -6589,6 +6751,7 @@ function startAtBat() {
   if (playerIsBatting()) {
     /* CPU calls its own pitch, once the coach (first swing only) is done. */
     coachShow('bat', COACH.bat, () => setTimeout(() => {
+      if (walkWorthIt(State.game, currentBatter())) return issueIntentionalWalk();
       const pick = cpuCallPitch();
       throwPitch(pick.pt, pick.zone);
     }, BEAT.intoAtBat));
@@ -6605,24 +6768,40 @@ function startAtBat() {
    if the player turns them off, and again if they turn them back on. The
    audit's first-timer walked into the first pitch with GET READY as the only
    instruction on screen; this is the fix for that. */
+/* THESE NOTES DESCRIBED A GAME THAT NO LONGER EXISTS, and it shipped.
+   They were written for the old wide camera, where a ring closed on a
+   target and WHERE you clicked meant nothing. The plate camera replaced
+   that with a bat you aim: the oval follows your pointer and the pitch
+   lands somewhere in the zone. So the first note a new player ever reads
+   told them to watch a ring that is not drawn and to "click anywhere",
+   which is the exact opposite of the one thing that decides whether they
+   hit the ball. Measured through the real button: swings timed perfectly
+   with the bat left where it sat made contact 6 times in 10; the same
+   timing with the bat ON the pitch made contact 8 times in 8.
+
+   The long How To Play page was correct the whole time. This is the
+   arcade's lesson arriving in this game: two surfaces say how to play,
+   the auto-opening one is the more read of the two, and both need the
+   edit. */
 const COACH = {
   bat: [
-    '<b>You are batting.</b> The pitcher throws toward the ring at the plate, '
-    + 'and the ring closes as the pitch comes in. Watch the ring, or watch the ball: '
-    + 'they arrive together.',
-    '<b>Swing</b> when the closing ring meets the <b>green circle</b>: click anywhere, '
-    + 'press <b>Space</b>, or tap SWING. Early or late is a foul or a miss.',
+    '<b>You are batting.</b> The green oval is your <b>bat</b>, and it follows '
+    + 'your mouse (or your finger, or the arrow keys). The box over the plate is '
+    + 'the strike zone.',
+    '<b>Put the oval where the pitch is going</b>, then swing as the ball reaches '
+    + 'the plate: <b>click</b>, press <b>Space</b>, or tap SWING. Where you put it '
+    + 'decides whether you hit it. When you swing decides how hard, and where it goes.',
     '<b>Contact, Power, Bunt</b> (keys 1, 2, 3) change your swing before the pitch. '
-    + 'Contact widens the green. Power narrows it and swings for the fence. '
-    + 'Start with Contact.',
+    + 'Contact is the forgiving one. Power swings for the fence. Start with Contact.',
   ],
   pitch: [
     '<b>You are pitching.</b> Your first pick is on the mound for the whole game. '
     + 'Nothing is thrown until you throw it.',
-    'Pick a <b>pitch</b>, then a <b>spot</b> on the grid. The middle is always a '
-    + 'strike and easy to hit. The corners are hard to hit, and a miss there is a ball.',
-    'Press <b>Throw It</b>. If they hit a grounder you time a throw to first; a fly '
-    + 'ball you catch by clicking when the ring is tightest. Every hitter has one '
+    'Pick a <b>pitch</b>, then <b>click in the picture</b> to put your spot where you '
+    + 'want it. The middle is always a strike and easy to hit. The corners are hard '
+    + 'to hit, and a miss out there is a ball.',
+    'Press <b>Throw</b>, then stop the bar in the <b>green</b> to release clean. '
+    + 'While it flies, hold <b>left or right</b> to bend it. Every hitter has one '
     + 'pitch they cannot handle. Find it.',
   ],
 };
@@ -6647,6 +6826,44 @@ function coachShow(kind, steps, then) {
   next.onclick = (e) => { e.stopPropagation(); if (++i >= steps.length) done(); else show(); };
   skip.onclick = (e) => { e.stopPropagation(); PREFS.coach = false; box.remove(); savePrefs(); then(); };
   show();
+}
+
+/* PUTTING HIM ON. The oldest strategic move in the sport and the game
+   had no way to express it: with first base open and the tying run at
+   second, every manager alive walks the slugger to face the next man,
+   and both sides here were forced to pitch to him.
+
+   The rule is the real one. First base has to be open, or it is just a
+   free run. Somebody has to be in scoring position, or there is nothing
+   to protect. It has to be LATE and CLOSE, because nobody hands out a
+   baserunner in the second inning of a blowout. And the man at the
+   plate has to be worth fearing, which here is power: the one thing
+   that turns a runner on second into two runs on one swing. */
+function walkWorthIt(g, batter) {
+  if (!g || !batter) return false;
+  if (g.bases[0]) return false;                     /* first base is taken */
+  if (!g.bases[1] && !g.bases[2]) return false;     /* nobody to protect */
+  if (g.inning < g.innings - 1) return false;       /* late only */
+  /* Close only, read from the FIELDING side: behind by more than one and
+     the run does not matter, ahead by more than two and neither does he. */
+  const lead = currentFieldingTeam().score - currentBattingTeam().score;
+  if (lead < -1 || lead > 2) return false;
+  return batter.pow >= 85;
+}
+/* Four wide ones. It goes through recordWalk, so the books, the jog and
+   the forced run all behave exactly as they do for a walk earned. */
+function issueIntentionalWalk() {
+  const g = State.game;
+  if (!g || g.over) return false;
+  const batter = currentBatter();
+  if (!batter) return false;
+  if (g.pitch) g.pitch.closed = true;
+  g.aiming = false;
+  addLog(`${batter.n} is put on intentionally.`, true);
+  showCallout('PUT HIM ON', 'sub');
+  Sound.play('ball');
+  recordWalk();
+  return true;
 }
 
 /* CPU pitching AI. Decides pitch type and zone against the current
@@ -6721,6 +6938,7 @@ function nextPitch() {
   const g = State.game;
   if (!g || g.over) return;
   if (playerIsBatting()) {
+    if (walkWorthIt(g, currentBatter())) return issueIntentionalWalk();
     const pick = cpuCallPitch();
     throwPitch(pick.pt, pick.zone);
   } else {
@@ -6766,6 +6984,24 @@ function offerPitchSelection() {
     for (const btn of row.querySelectorAll('button')) btn.onclick = null;
     startReleaseMeter(chosenPt);
   };
+  /* PUT HIM ON, from your dugout. The button is only there when the move
+     is a real one, because a Walk him control sitting on screen every
+     pitch teaches nothing about when it is right; appearing exactly on
+     the count that calls for it is the lesson. `walkWorthIt` is the same
+     rule the CPU uses, so both dugouts manage by one book. */
+  const ibbBtn = row.querySelector('#ibb-btn');
+  if (ibbBtn) {
+    const showIbb = walkWorthIt(g, currentBatter());
+    ibbBtn.hidden = !showIbb;
+    ibbBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (done) return;
+      done = true;
+      row.style.display = 'none';
+      for (const btn of row.querySelectorAll('button')) btn.onclick = null;
+      issueIntentionalWalk();
+    };
+  }
   const refresh = () => { if (throwBtn) throwBtn.disabled = !chosenPt; };
   for (const btn of row.querySelectorAll('button[data-pt]')) {
     btn.onclick = (e) => {
@@ -7039,8 +7275,25 @@ function throwPitch(chosenPt, chosenZone, opts) {
      player is the pitcher there is nothing to read: they chose the pitch
      and the spot, and waited a full second for it to leave. Half that. */
   const windup = playerIsBatting() ? BEAT.windup : Math.round(BEAT.windup * 0.45);
+  /* THE LATE BREAK, which is R.B.I. Baseball's whole pitching game and
+     was missing from this one: after the release you could only WATCH.
+     Hold left or right while your pitch flies and it leans that way, as
+     far as the arm's budget allows. PIT buys more bend, a gassed arm
+     loses a third of it. The batting half never steers: the CPU throws
+     honest pitches so the timing game stays readable. */
+  const steerMax = playerIsBatting() ? 0
+    : (0.16 + pitcher.pit / 420) * Math.max(0.45, 1 - fatigue.level * 0.18);
+  g.steerHeld = 0;
   g.pitch = {
     pt, speed: baseSpeed, ideal, isStrike,
+    steer: 0, steerMax, baseLocX: loc.x,
+    /* WHEN THE BALL IS AT THE PLATE, as a fraction of the meter. The sweet
+       spot IS the crossing: swing when it gets there. Everything that
+       happens to this pitch keys off this one number, because the drawn
+       ball, the umpire and the CPU's bat each keeping their own clock is
+       how a hit materialised a full second after the ball had visibly
+       stopped at the plate. */
+    arrive: Math.max(0.22, ideal),
     zoneAim, loc, aim, release,
     start: performance.now() + windup,
     windupUntil: performance.now() + windup,
@@ -7063,7 +7316,7 @@ function runPitchAnimation() {
   const durMs = p.speed * 1000;
   if (playerIsBatting()) {
     const onClick = (e) => {
-      if (p.swung) return;
+      if (p.swung || p.resolved) return;
       /* Clicks on the game's own buttons (Replay, Steal, End Game, the
          pitch picker) are commands, not swings. This handler runs in the
          capture phase, so it has to check the target itself. */
@@ -7156,7 +7409,13 @@ function scheduleCpuSwing() {
      are wider than they look. Easy opponents miss a lot; hard ones sit
      close enough to the zone to punish a hanging center-cut pitch. */
   const conJitter = (110 - batter.con) / 1400;
-  const diffJitter = { easy: 0.30, medium: 0.185, hard: 0.125 }[State.difficulty];
+  /* Retuned again, measured this time: calibrate.mjs put the CPU at 55
+     whiffs per hundred swings against a random arm, which is a
+     strikeout machine (MLB runs about 25), and every whiffed swing is a
+     play the field never gets. About a fifth off each tier moved the
+     measurement to the mid forties: still arcade-hot, with more balls
+     in play for the half of the game that fields them. */
+  const diffJitter = { easy: 0.24, medium: 0.15, hard: 0.10 }[State.difficulty];
   let jitter = conJitter + diffJitter;
   /* Weak pitch: CPU whiffs badly on their weak pitch. */
   if (p.pt === g.batterCtx.weakPitch) jitter += 0.14;
@@ -7184,12 +7443,24 @@ function scheduleCpuSwing() {
     * ({ easy: 1.35, medium: 1.0, hard: 0.8 }[State.difficulty] || 1)
     + (p.pt === g.batterCtx.weakPitch ? 0.14 : 0);
   const aim = { x: loc.x + gauss() * locJ * 0.9, y: loc.y + gauss() * locJ };
-  /* Time the swing to match that cursor position (fires after the meter
-     reaches it). Add the windup so it happens in real time. */
-  const fireAt = p.windupUntil + t * durMs;
+  /* THE SWING RESOLVES WHEN THE BALL IS AT THE PLATE, whatever the
+     sampled timing error says about its quality. `t` used to be the real
+     firing time too, so a CPU batter whose error put him 0.3 late came
+     round the best part of a second after the ball had visibly stopped in
+     the mitt, and from the mound that read as no swing at all followed by
+     a base hit. The error still decides the CONTACT (resolveSwing gets the
+     sampled t); only the moment it plays out is pinned to the ball. An
+     early swing fires early, a whiff out in front, which reads fine. */
+  const fireT = Math.min(t, p.arrive + 0.05);
+  const fireAt = p.windupUntil + fireT * durMs;
   const wait = Math.max(0, fireAt - performance.now());
   setTimeout(() => {
-    if (!g.pitch || g.pitch !== p || p.swung) return;
+    /* The first check is against the GAME, not just the pitch. `g` is the
+       game this swing was scheduled in; resolveSwing acts on State.game.
+       Exit to the menu mid-pitch, start a new game inside a second, and
+       without it the old timer swings in the new game's first at bat,
+       against a pitch that is null. */
+    if (State.game !== g || !g.pitch || g.pitch !== p || p.swung || p.resolved) return;
     p.swung = true;
     resolveSwing(t, aim);
   }, wait);
@@ -7198,8 +7469,14 @@ function scheduleCpuSwing() {
 function resolveCalledPitch() {
   const g = State.game;
   const p = g.pitch;
-  if (p.isStrike) { g.strikes++; addLog('Called strike.'); showCallout('STRIKE', 'strike'); Sound.play('strike'); }
-  else            { g.balls++;   addLog('Ball.'); showCallout('BALL', 'ball'); Sound.play('ball'); }
+  /* Called where it LANDED, not where it left the hand. isStrike was
+     stamped at release, and the late break can bend a strike off the
+     plate or a ball back over it; an umpire reading the release-time flag
+     would call a pitch that no longer exists. */
+  const fin = p.loc || { x: 0, y: 0 };
+  const strike = Math.abs(fin.x) <= 1 && Math.abs(fin.y) <= 1;
+  if (strike) { g.strikes++; addLog('Called strike.'); showCallout('STRIKE', 'strike'); Sound.play('strike'); }
+  else        { g.balls++;   addLog('Ball.'); showCallout('BALL', 'ball'); Sound.play('ball'); }
   refreshHud();
   if (g.strikes >= 3) return recordOut('called strikeout', true);
   if (g.balls >= 4) return recordWalk();
@@ -7250,6 +7527,24 @@ function swingGeometry(cursorT, aim, pitch, ctx, mode) {
   }
   return { half, perfectDist, contact, inZone, through, locQ, d, reach,
            lift: clamp(loc.y - cur.y, -0.8, 0.8), off: cursorT - pitch.ideal };
+}
+
+/* WHY THE SWING CAME UP EMPTY, in two words on the callout. The game has
+   always known: the geometry carries the signed timing error, how far the
+   barrel was from the ball, and whether the bat passed over or under it.
+   None of it reached the player, so a whiff taught nothing and the timing
+   game had to be reverse-engineered from outcomes. The verdict names the
+   LARGER of the two mistakes, each measured against its own tolerance, so
+   it is always the thing worth fixing first. Player swings only: the
+   CPU's homework is nobody's business. */
+function swingVerdict(geo) {
+  const timingBad = Math.abs(geo.off) / Math.max(0.02, geo.half);
+  const spotBad = geo.d / Math.max(0.05, geo.reach);
+  if (timingBad < 0.65 && spotBad < 0.65) return 'JUST MISSED IT';
+  if (timingBad >= spotBad) return geo.off < 0 ? 'EARLY' : 'LATE';
+  if (geo.lift > 0.28) return 'UNDER IT';
+  if (geo.lift < -0.28) return 'OVER IT';
+  return 'OFF THE SPOT';
 }
 
 function resolveSwing(cursorT, aim) {
@@ -7343,10 +7638,17 @@ function resolveSwing(cursorT, aim) {
     g.plateHold = performance.now() + BEAT.afterWhiff + 300;
     g.strikes++;
     addLog(`${batter.n} swings and misses.`);
-    showCallout('SWING AND MISS', 'strike');
+    showCallout(playerIsBatting()
+      ? `SWING AND MISS · ${swingVerdict(geo)}` : 'SWING AND MISS', 'strike');
     Sound.play('whiff');
     refreshHud();
-    if (g.strikes >= 3) return recordOut('swinging strikeout', true);
+    /* Strike three: recordOut's banner would paint over the verdict, and
+       the swing that ends the at bat is the one whose lesson matters
+       most. Hand it the suffix. */
+    if (g.strikes >= 3) {
+      g.koVerdict = playerIsBatting() ? swingVerdict(geo) : null;
+      return recordOut('swinging strikeout', true);
+    }
     return setTimeout(nextPitch, BEAT.afterWhiff);
   }
 
@@ -7356,7 +7658,8 @@ function resolveSwing(cursorT, aim) {
     g.plateHold = performance.now() + BEAT.betweenPitches + 300;
     if (g.strikes < 2) g.strikes++;
     addLog(`${batter.n} fouls it off.`);
-    showCallout('FOUL BALL', 'sub');
+    showCallout(playerIsBatting()
+      ? `FOUL BALL · ${swingVerdict(geo)}` : 'FOUL BALL', 'sub');
     Sound.play('foul');
     /* the ball sprays up and back, out of play */
     {
@@ -7447,9 +7750,13 @@ function ballTrajectoryBase(kind, info) {
      you earned them. */
   const off = info && typeof info.off === 'number' ? info.off : null;
   const q = info && typeof info.q === 'number' ? info.q : 0.6;
+  /* Pull is a HAND. Early for a righty is the third-base side; the same
+     swing from the other box goes the other way. The verdict copy still
+     reads the raw off, so EARLY stays EARLY whichever box he hits from. */
+  const hand = info && info.lefty ? -1 : 1;
   const spray = (maxAbs, minAbs) => {
     if (off === null) return rand(minAbs || 0.1, maxAbs) * sign();
-    const dir = clamp(off * 12 + (Math.random() - 0.5) * 0.45, -1, 1);
+    const dir = clamp(off * 12 * hand + (Math.random() - 0.5) * 0.45, -1, 1);
     const mag = Math.max(minAbs || 0, Math.abs(dir)) * maxAbs;
     return Math.max(mag, minAbs || 0) * (dir >= 0 ? 1 : -1);
   };
@@ -8342,12 +8649,15 @@ function drawUmpCall(ctx, G, base, verdict, dt) {
   }
   if (called) {
     const pop = Math.min(1, Math.max(0, dt) / 0.18);
-    ctx.font = `bold ${Math.round(10 + 5 * pop)}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(20,40,63,.85)';
-    ctx.fillText(verdict + '!', x + 1, y - 40 + 1);
-    ctx.fillStyle = verdict === 'OUT' ? '#e04a40' : '#4ad07a';
-    ctx.fillText(verdict + '!', x, y - 40);
+    hud(ctx, (c) => {
+      c.font = `bold ${Math.round(10 + 5 * pop)}px monospace`;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillStyle = 'rgba(20,40,63,.85)';
+      c.fillText(verdict + '!', x + 1, y - 40 + 1);
+      c.fillStyle = verdict === 'OUT' ? '#e04a40' : '#4ad07a';
+      c.fillText(verdict + '!', x, y - 40);
+    });
   }
 }
 
@@ -8498,19 +8808,29 @@ function drawPlaySim(ctx, sim, t, G, opts) {
 
 function scheduleContactPlay(kind, batter, info) {
   const g = State.game;
+  /* The hand rides the info so the trajectory can mirror the spray. */
+  if (batter) info = Object.assign({}, info, { lefty: batsLeft(batter.k) });
   /* Bat meets ball. The crack fires immediately, before the ball travels,
      and a gold impact burst pops at the contact point so the hit visibly
      comes OFF THE BAT rather than materializing mid-field. */
-  Sound.play('crack');
+  Sound.play('crack', { q: info && info.q != null ? info.q : undefined });
   {
+    /* The burst is PROPORTIONAL. A squared-up ball and a jam shot used to
+       throw the same ten sparks, so the eye learned nothing from the
+       crack; now the pop is the readout. q is the swing's contact quality
+       when the swing carried one, and the default keeps old behaviour for
+       the paths that call in without it (bunts, quirks). */
+    const q = info && info.q != null ? clamp(info.q, 0, 1) : 0.5;
     const geo = fieldGeom();
     const hitX = geo.cx - 14, hitY = geo.plateY - 4;
-    for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2;
+    const sparks = 6 + Math.round(q * 12);
+    for (let i = 0; i < sparks; i++) {
+      const a = (i / sparks) * Math.PI * 2;
+      const v = 100 + q * 120;
       spawnFx(g, {
-        x: hitX, y: hitY, size: 3,
-        vx: Math.cos(a) * 140, vy: Math.sin(a) * 140 - 40,
-        grav: 200, color: i % 2 ? '#f4c25a' : '#ffffff', life: 340,
+        x: hitX, y: hitY, size: 2 + Math.round(q * 2),
+        vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40,
+        grav: 200, color: i % 2 ? '#f4c25a' : '#ffffff', life: 300 + q * 160,
       });
     }
   }
@@ -8643,7 +8963,9 @@ function scheduleContactPlay(kind, batter, info) {
       Sound.play('catch');
     } else {
       dustPuff(g, landingX, landingY);
-      if (g.play.kind === 'single' || g.play.kind === 'double' || g.play.kind === 'triple') Sound.play('cheer');
+      if (g.play.kind === 'single' || g.play.kind === 'double' || g.play.kind === 'triple') {
+        Sound.play('cheer', { big: g.play.kind !== 'single' });
+      }
       else Sound.play('aww');
     }
     if (onError) {
@@ -8708,7 +9030,7 @@ function applyDoublePlayMutation(batter) {
   noteForm(batter.k, false);
   const preRunner = g.bases[0];
   g.bases[0] = null;
-  g.outs += 2;
+  addOuts(2);
   addLog(`Double play. ${batter.n} and ${preRunner.n} both out. ${g.outs} out.`);
   showCallout('DOUBLE PLAY', 'strike');
   /* Kick up dust at both bases for the play. */
@@ -8746,16 +9068,20 @@ function applyHitMutation(kind, batter, opts) {
       if (before + g.stats.hr[batter.k] === 1) toast(`First homer of the season · <b>${batter.n}</b>`);
     }
     let scored = 1;
-    for (let i=0;i<3;i++) if (g.bases[i]) scored++;
+    const crossed = [batter.k];
+    for (let i=0;i<3;i++) if (g.bases[i]) { scored++; crossed.push(g.bases[i].k); }
     g.bases = [null,null,null];
-    scoreRuns(scored);
+    scoreRuns(scored, { rbi: batter.k, scorers: crossed });
     addLog(`${batter.n} crushes it. HOME RUN. ${scored} run${scored>1?'s':''} score.`, true);
     showCallout(`HOME RUN · ${scored} RUN${scored>1?'S':''}`, 'homer');
     return;
   }
   const bases = { 'single':1,'double':2,'triple':3 }[kind];
+  if (!onError && kind === 'double') statBump(batter.k, 'd');
+  if (!onError && kind === 'triple') statBump(batter.k, 't');
   let scored = 0;
   let thrownOut = 0;
+  const crossed = [];
   const newBases = [null,null,null];
   /* SEND OR HOLD. The speed rule below used to decide every runner's
      dash for home by itself. When you bat, the button beside Steal sets
@@ -8776,7 +9102,7 @@ function applyHitMutation(kind, batter, opts) {
     const goes = (fastFloor) => rule !== 'hold' && (rule === 'send' || runner.spd >= fastFloor);
     /* If he is out at the plate, mark it on the play so the draw loop can
        show him arriving late while the catcher stands with the ball. */
-    const killAtHome = () => { thrownOut++; g.outs++; addLog(`${runner.n} thrown out at the plate.`);
+    const killAtHome = () => { thrownOut++; addOuts(1); addLog(`${runner.n} thrown out at the plate.`);
       if (g.play) g.play.plateOut = { runner, at: performance.now() }; };
     if (!onError && kind === 'single' && i === 1 && goes(75)) {
       const scoreChance = sendOdds(runner.spd, 75, 0.35, 100);
@@ -8791,12 +9117,13 @@ function applyHitMutation(kind, batter, opts) {
     } else if (rule === 'hold' && !onError && ((kind === 'single' && i === 1) || (kind === 'double' && i === 0))) {
       addLog(`${runner.n} holds at third.`);
     }
-    if (dest >= 3) scored++;
+    if (dest >= 3) { scored++; crossed.push(runner.k); }
     else newBases[dest] = runner;
   }
   newBases[bases-1] = batter;
   g.bases = newBases;
-  if (scored) scoreRuns(scored);
+  /* An error is not an RBI: the run scored because somebody dropped it. */
+  if (scored) scoreRuns(scored, { rbi: onError ? null : batter.k, scorers: crossed });
   if (onError) {
     addLog(`${batter.n} reaches on an error${scored ? `, ${scored} score` : ''}.`);
     showCallout('REACHED ON ERROR', 'sub');
@@ -8819,15 +9146,81 @@ function applyOutMutation(kind, batter) {
     /* The sacrifice: the batter is out, everybody else moves up. */
     const fromThird = g.bases[2];
     g.bases = [null, g.bases[0], g.bases[1]];
-    g.outs++;
-    if (fromThird) scoreRuns(1);
+    addOuts(1);
+    if (fromThird) scoreRuns(1, { rbi: batter.k, scorers: [fromThird.k] });
     addLog(`${batter.n} lays down a sacrifice bunt${fromThird ? ', a run scores' : ''}. ${g.outs} out.`);
     showCallout(fromThird ? 'SQUEEZE! RUN SCORES' : 'SACRIFICE BUNT', fromThird ? 'homer' : 'sub');
     return;
   }
-  g.outs++;
+  addOuts(1);
   addLog(`${batter.n} out (${kind}) to the ${randPos(kind)}. ${g.outs} out.`);
   showCallout(kind === 'ground out' ? 'GROUND OUT' : 'FLY OUT', 'sub');
+  if (kind === 'fly out') tagUp();
+}
+
+/* THE TAG. The one place in baseball where making an out moves a runner,
+   and the game did not have it: a fly ball caught with a man on third and
+   one out simply ended the at bat, so the sacrifice fly, which is a
+   quarter of how runs actually score, could not happen at all.
+
+   IT REUSES THE SEND AND HOLD TOGGLE rather than adding a control. That
+   button already sits beside Steal and was consulted on exactly one
+   thing, whether to wave a man round on a base hit. A second decision on
+   the same switch makes the switch worth thinking about: HOLD keeps
+   everybody, SEND sends anybody with a prayer, AUTO reads their legs.
+   The other dugout is always on AUTO. */
+function tagChance(runner, from) {
+  /* Third to home is the deep throw and the one everybody tries. Second
+     to third is shorter for the runner and a much shorter throw, so it
+     is close to even for anybody with average wheels. */
+  const base = from === 2 ? 0.46 : 0.58;
+  return clamp(base + (runner.spd - 60) / 200, 0.12, 0.93);
+}
+function tagUp() {
+  const g = State.game;
+  if (!g || g.outs >= 3) return;          /* the inning is already over */
+  const rule = currentBattingTeam().isYou ? (g.sendRule || 'auto') : 'auto';
+  if (rule === 'hold') return;
+  const jogs = [];
+  /* Third base first: his run is the one worth the gamble, and a man on
+     second cannot take third until it is empty. */
+  for (const from of [2, 1]) {
+    if (g.outs >= 3) break;
+    const runner = g.bases[from];
+    if (!runner) continue;
+    if (from === 1 && g.bases[2]) continue;        /* third is occupied */
+    const odds = tagChance(runner, from);
+    /* AUTO only goes when the odds are with him. SEND goes regardless,
+       and wears it. */
+    if (rule === 'auto' && odds < 0.5) continue;
+    g.bases[from] = null;
+    if (Math.random() < odds) {
+      jogs.push([runner, from, from + 1]);
+      if (from === 2) {
+        scoreRuns(1, { rbi: currentBatter() ? currentBatter().k : null, scorers: [runner.k] });
+        addLog(`${runner.n} tags and scores. Sacrifice fly.`, true);
+        showCallout('SACRIFICE FLY', 'homer');
+      } else {
+        g.bases[2] = runner;
+        addLog(`${runner.n} tags up and takes third.`);
+        showCallout('TAGS UP', 'hit');
+      }
+    } else {
+      addOuts(1);
+      addLog(`${runner.n} tags and is thrown out${from === 2 ? ' at the plate' : ' at third'}. ${g.outs} out.`);
+      showCallout('THROWN OUT', 'strike');
+      if (g.play) g.play.plateOut = { runner, at: performance.now() };
+    }
+  }
+  /* Show the legs. The walk's jog already knows how to trot a man from
+     one bag to the next, so a tag reuses it rather than teleporting him. */
+  if (jogs.length) {
+    const ents = jogs.map(([c, from, to]) => ({
+      c, sc: 2.55,
+      run: simRunPath(simRunnerPoints(from, to), simRunnerSpeed(c) * 0.9, 0, { delay: 0.2 }),
+    }));
+    g.jog = { t0: performance.now(), ents, end: Math.max(...ents.map(e => e.run.end)) + 0.2 };
+  }
 }
 
 /* -------- Throw minigame --------
@@ -8840,6 +9233,7 @@ function applyOutMutation(kind, batter) {
 
 function scheduleThrowMinigame(kind, batter, info) {
   const g = State.game;
+  if (batter) info = Object.assign({}, info, { lefty: batsLeft(batter.k) });
   const traj = ballTrajectory(kind, info);
   const isOut = true;
   const preBases = [...g.bases];
@@ -8879,7 +9273,7 @@ function scheduleThrowMinigame(kind, batter, info) {
 
 function startThrowWindow(kind, batter) {
   const g = State.game;
-  if (!g.play) return;
+  if (!g || !g.play) return;
   /* Overall fielding rating for the team's infield (average of DEF for
      four infielders): better fielders = wider safe zone. */
   const ft = currentFieldingTeam();
@@ -8899,7 +9293,11 @@ function startThrowWindow(kind, batter) {
   const finish = (t) => {
     if (window.resolved) return;
     window.resolved = true;
-    g.play.throwActive = false;
+    /* The play can be torn down while this window is open: the game ends,
+       an inning is force-closed, a test harness sweeps the at bat. The
+       window still has to close its own listeners, it just has no play
+       left to write to. */
+    if (g.play) g.play.throwActive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('click', onClick, true);
     const d = Math.abs(t - window.ideal);
@@ -8979,6 +9377,7 @@ function resolveThrow(outcome, kind, batter) {
 
 function scheduleFlyCatchMinigame(kind, batter, info) {
   const g = State.game;
+  if (batter) info = Object.assign({}, info, { lefty: batsLeft(batter.k) });
   const traj = ballTrajectory(kind, info);
   const preBases = [...g.bases];
   g.play = {
@@ -9035,7 +9434,9 @@ function startCatchWindow(kind, batter, landingX, landingY) {
   const finish = (t) => {
     if (window.resolved) return;
     window.resolved = true;
-    g.play.catchActive = false;
+    /* The play can be torn down under this timer (a new at bat, the end
+       of the game), the same race the throw window's finish guards. */
+    if (g.play) g.play.catchActive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('click', onClick, true);
     /* t < 0 means the window expired. */
@@ -9107,17 +9508,20 @@ function applyErrorMutation(batter) {
   noteForm(batter.k, false);
   /* All runners advance two, batter to first. */
   let scored = 0;
+  const crossed = [];
   const newBases = [null, null, null];
   for (let i = 2; i >= 0; i--) {
     const runner = g.bases[i];
     if (!runner) continue;
     const dest = i + 2;
-    if (dest >= 3) scored++;
+    if (dest >= 3) { scored++; crossed.push(runner.k); }
     else newBases[dest] = runner;
   }
   newBases[0] = batter;
   g.bases = newBases;
-  if (scored) scoreRuns(scored);
+  /* Runners who came round on a misplay: nobody is credited a run
+     batted in for it, but the men who scored still scored. */
+  if (scored) scoreRuns(scored, { scorers: crossed });
 }
 
 function afterHitTransition(kind) {
@@ -9148,29 +9552,33 @@ function recordHit(kind, batter) {
   const g = State.game;
   statBump(batter.k,'ab');
   statBump(batter.k,'hits');
+  if (kind === 'double') statBump(batter.k, 'd');
+  if (kind === 'triple') statBump(batter.k, 't');
   const bases = { 'single':1,'double':2,'triple':3,'home run':4,'bunt single':1 }[kind];
   if (kind === 'home run') {
     statBump(batter.k,'hr');
     let scored = 1;   /* the batter */
-    for (let i=0;i<3;i++) if (g.bases[i]) scored++;
+    const crossed = [batter.k];
+    for (let i=0;i<3;i++) if (g.bases[i]) { scored++; crossed.push(g.bases[i].k); }
     g.bases = [null,null,null];
-    scoreRuns(scored);
+    scoreRuns(scored, { rbi: batter.k, scorers: crossed });
     addLog(`${batter.n} crushes it. HOME RUN. ${scored} run${scored>1?'s':''} score.`, true);
     showCallout(`HOME RUN · ${scored} RUN${scored>1?'S':''}`, 'homer');
   } else {
     /* Advance existing runners by `bases`, then place batter */
     let scored = 0;
+    const crossed = [];
     const newBases = [null,null,null];
     for (let i=2;i>=0;i--) {
       const runner = g.bases[i];
       if (!runner) continue;
       const dest = i + bases;   /* 0=first, 1=second, 2=third; dest>=3 scores */
-      if (dest >= 3) scored++;
+      if (dest >= 3) { scored++; crossed.push(runner.k); }
       else newBases[dest] = runner;
     }
     if (bases < 4) newBases[bases-1] = batter;
     g.bases = newBases;
-    if (scored) scoreRuns(scored);
+    if (scored) scoreRuns(scored, { rbi: batter.k, scorers: crossed });
     const verb = kind === 'bunt single' ? 'drops a bunt and beats it out'
                : `lines a ${kind}`;
     addLog(`${batter.n} ${verb}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
@@ -9186,6 +9594,11 @@ function recordWalk() {
   const batter = currentBatter();
   if (g.pitch) g.pitch.closed = true;
   g.plateHold = 0;
+  /* A WALK IS NOT AN AT BAT, which is the whole reason an average and an
+     on base percentage are different numbers. It is charged to the arm
+     that issued it. */
+  statBump(batter.k, 'bb');
+  creditArm('bb', 1);
   addLog(`${batter.n} walks.`);
   showCallout('WALK', 'sub');
   /* EVERYBODY JOGS. The batter used to appear on first and the forced
@@ -9207,11 +9620,12 @@ function recordWalk() {
   }
   const bases = g.bases;
   let scored = 0;
-  if (bases[0] && bases[1] && bases[2]) { scored = 1; g.bases = [batter, bases[0], bases[1]]; }
+  let forcedHome = null;
+  if (bases[0] && bases[1] && bases[2]) { scored = 1; forcedHome = bases[2]; g.bases = [batter, bases[0], bases[1]]; }
   else if (bases[0] && bases[1]) { g.bases = [batter, bases[0], bases[1]]; }
   else if (bases[0]) { g.bases = [batter, bases[0], bases[2]]; }
   else { g.bases = [batter, bases[1], bases[2]]; }
-  if (scored) scoreRuns(scored);
+  if (scored) scoreRuns(scored, { rbi: batter.k, scorers: forcedHome ? [forcedHome.k] : [] });
   refreshHud();
   /* A walk-off WALK. scoreRuns raised the plaque, and this path used to
      walk straight past it: next batter, next pitch, a game the board said
@@ -9245,7 +9659,7 @@ function recordOut(reason, isStrikeout) {
   if (isStrikeout) statBump(batter.k,'so');
   noteForm(batter.k, false);
   noteFragileOut(batter);
-  g.outs++;
+  addOuts(1);
   addLog(`${batter.n} out (${reason}). ${g.outs} out.`);
   if (isStrikeout) {
     /* When YOU are pitching, a strikeout is your play, and the plaque
@@ -9267,7 +9681,10 @@ function recordOut(reason, isStrikeout) {
         g.crowdUpUntil = performance.now() + 1800;
       }
     } else {
-      showCallout('STRIKEOUT', 'strike');
+      /* The verdict rides the K banner when the whiff branch left one:
+         the swing that ended the at bat is the one to learn from. */
+      showCallout(g.koVerdict ? `STRIKEOUT · ${g.koVerdict}` : 'STRIKEOUT', 'strike');
+      g.koVerdict = null;
     }
   }
   if (g.outs >= 3) return endHalfInning();
@@ -9283,10 +9700,18 @@ function nextBatter() {
   g.balls = 0; g.strikes = 0;
 }
 
-function scoreRuns(n) {
+function scoreRuns(n, credit) {
   const g = State.game;
   const t = currentBattingTeam();
   t.score += n;
+  /* WHO GETS THE CREDIT. `credit.rbi` is the batter who drove them in,
+     `credit.scorers` the men who actually crossed. Both are optional, so
+     a caller that cannot say (a quirk, a cutscene) still scores the run
+     and simply credits nobody, which is better than crediting the wrong
+     man. The pitcher is charged either way. */
+  if (credit && credit.rbi) statBump(credit.rbi, 'rbi', n);
+  if (credit && credit.scorers) for (const k of credit.scorers) statBump(k, 'r');
+  chargeRuns(n);
   /* File the runs on the line score under the current inning. */
   const key = g.half === 'top' ? 'away' : 'home';
   while (g.lineScore[key].length < g.inning) g.lineScore[key].push(0);
@@ -9423,22 +9848,29 @@ function finishGame() {
     });
     /* Roll individual stats forward */
     const ps = State.season.playerStats;
-    for (const k of Object.keys(g.stats.hr)) ps.hr += g.stats.hr[k];
-    for (const k of Object.keys(g.stats.so)) ps.so += g.stats.so[k];
-    for (const k of Object.keys(g.stats.sb || {})) ps.sb += g.stats.sb[k];
-    for (const k of Object.keys(g.stats.hits)) ps.hits += g.stats.hits[k];
-    for (const k of Object.keys(g.stats.ab)) ps.ab += g.stats.ab[k];
+    /* One loop over every column the game keeps, so adding a stat to the
+       box score never needs a second edit here. A save written before a
+       column existed simply starts it at zero. */
+    for (const key of Object.keys(g.stats)) {
+      if (ps[key] == null) ps[key] = 0;
+      for (const k of Object.keys(g.stats[key] || {})) ps[key] += g.stats[key][k];
+    }
     /* Per-character season stats for the leaderboard. */
     const per = State.season.perPlayer || (State.season.perPlayer = {});
     const bumpPer = (k, key, n) => {
       if (!per[k]) per[k] = { hr:0, hits:0, ab:0, so:0, sb:0, kp:0 };
       per[k][key] = (per[k][key] || 0) + n;
     };
-    for (const [k, v] of Object.entries(g.stats.hr || {})) bumpPer(k, 'hr', v);
-    for (const [k, v] of Object.entries(g.stats.so || {})) bumpPer(k, 'so', v);
-    for (const [k, v] of Object.entries(g.stats.sb || {})) bumpPer(k, 'sb', v);
-    for (const [k, v] of Object.entries(g.stats.hits || {})) bumpPer(k, 'hits', v);
-    for (const [k, v] of Object.entries(g.stats.ab || {})) bumpPer(k, 'ab', v);
+    /* Same loop, per character, so the leaders board can rank on anything
+       the box score holds. */
+    for (const key of Object.keys(g.stats)) {
+      for (const [k, v] of Object.entries(g.stats[key] || {})) bumpPer(k, key, v);
+    }
+    /* And the arms: outs pitched and runs allowed, which is what makes an
+       innings column and an ERA possible on the season page. */
+    for (const [k, v] of Object.entries((g.pit || {}).outs || {})) bumpPer(k, 'pOuts', v);
+    for (const [k, v] of Object.entries((g.pit || {}).runs || {})) bumpPer(k, 'pRuns', v);
+    for (const [k, v] of Object.entries((g.pit || {}).bb || {})) bumpPer(k, 'pBB', v);
     /* Your pitchers' strikeouts, for the Golden Arm, credited to whoever
        was actually on the mound for each one. */
     for (const [k, v] of Object.entries(g.kBy || {})) bumpPer(k, 'kp', v);
@@ -9839,11 +10271,34 @@ function chaseFor(p, G, w, r) {
    in the same logical 960 by 660 the field uses.
    ============================================================================ */
 function plateGeom() {
+  /* The zone is sized against the BATTER, because the two share the frame
+     and a reader prices one off the other. At 72x98 half-extents the box
+     was 144x196: taller than the entire 184px batter sprite, with its top
+     edge a head above his head, and a tester read it as double his size.
+     The batter spans y 456 to 640 and the catcher's crown is at 588, so
+     the box now runs chin to thigh and stops above the glove. Chibi
+     anatomy means a literal knees-to-letters zone would be a slot 35px
+     tall; this is the arcade reading of the same rule. Every mapping goes
+     through plateFromZone, so gameplay in zone units does not move. */
   return { w: 960, h: 660, cx: 480, horizon: 262,
            moundX: 480, moundY: 338, pitSc: 2.9,
-           zx: 488, zy: 452, zw: 72, zh: 98,
-           batX: 322, batY: 640, batSc: 4.6,
-           catX: 512, catY: 764, catSc: 4.4,
+           zx: 488, zy: 525, zw: 46, zh: 60,
+           /* The batter is the nearest figure to the camera and the one
+              the reader identifies with, so he gets the Backyard
+              treatment: visibly bigger than everybody else in frame.
+              5.2 keeps his head under the scoreboard line and both
+              boxes clear of the zone, which the camera guards assert. */
+           batX: 322, batY: 640, batSc: 5.2,
+           /* The catcher is a SLIVER, low and to the inside corner. At
+              512,764 his crown reached y 588 dead-center and covered the
+              plate (drawn at 466 to 494) and both batter's boxes: the one
+              opaque thing in the genre no game puts between the player
+              and the plate. Every reference stages this the same way:
+              MLB The Show's catcher cameras never render him, Backyard
+              and the mobile MLB games draw no catcher at all. Ours keeps
+              a helmet and shoulders at the frame's bottom right, clear of
+              the plate, the boxes' chalk and the zone. */
+           catX: 588, catY: 806, catSc: 4.4,
            relX: 496, relY: 246 };
 }
 function plateFromZone(P, x, y) { return [P.zx + x * P.zw, P.zy - y * P.zh]; }
@@ -9884,7 +10339,7 @@ function plateTint(hex, amt) {
    end of the flight, so a pitch lands exactly where the rules say it
    landed and only the road there differs. */
 function platePitchPos(P, pitch, t) {
-  const arrive = Math.max(0.22, pitch.ideal);
+  const arrive = pitch.arrive || Math.max(0.22, pitch.ideal);
   let e = clamp(t / arrive, 0, 1);
   const loc = pitch.loc || { x: 0, y: 0 };
   const [lx, ly] = plateFromZone(P, loc.x, loc.y);
@@ -9901,7 +10356,7 @@ function platePitchPos(P, pitch, t) {
     case 'heat':      y -= Math.sin(e * Math.PI) * 8; break;
     default:          y -= Math.sin(e * Math.PI) * 4;
   }
-  return { x, y, r: 2.4 + 6.6 * Math.pow(e, 1.5), e, lx, ly, arrive };
+  return { x, y, r: 3.2 + 8.2 * Math.pow(e, 1.4), e, lx, ly, arrive };
 }
 
 function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
@@ -9963,6 +10418,22 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     ctx.lineTo(cx + i * 250, h);
     ctx.closePath(); ctx.fill();
   }
+  /* Depth and grain, the wide camera's own recipe brought to this one:
+     this view's ground was the one flat surface left on the page. Pale
+     at the horizon, settling darker toward the camera, then the same
+     two-tone hash speckle, in blocks so the low-res pass keeps them. */
+  const gg = ctx.createLinearGradient(0, P.horizon, 0, h);
+  gg.addColorStop(0, 'rgba(255,255,255,.10)');
+  gg.addColorStop(0.45, 'rgba(0,0,0,0)');
+  gg.addColorStop(1, 'rgba(0,0,0,.16)');
+  ctx.fillStyle = gg;
+  ctx.fillRect(0, P.horizon - 2, w, h - P.horizon + 2);
+  for (let i = 0; i < 220; i++) {
+    const sx = (i * 227 + 53) % w;
+    const sy = P.horizon + ((i * 157 + 31) % (h - P.horizon));
+    ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.06)';
+    ctx.fillRect(sx, sy, 3, 3);
+  }
   /* ---- the dirt ---- */
   const dirt = theme.track || '#c8a06a';
   ctx.fillStyle = dirt;
@@ -9979,10 +10450,28 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   }
   ctx.fillStyle = dirt;
   ctx.beginPath(); ctx.ellipse(cx, 618, 210, 58, 0, 0, Math.PI * 2); ctx.fill();
+  /* A circle of ground has a lit center and darker rim from this camera,
+     which is what the wide view's dirtOval already knows. */
+  const hg = ctx.createRadialGradient(cx, 606, 10, cx, 618, 210);
+  hg.addColorStop(0, 'rgba(255,255,255,.10)');
+  hg.addColorStop(1, 'rgba(0,0,0,.13)');
+  ctx.fillStyle = hg;
+  ctx.beginPath(); ctx.ellipse(cx, 618, 210, 58, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = dirt;
   /* the mound, its rubber */
   ctx.beginPath(); ctx.ellipse(cx, 338, 60, 15, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#f2ece0';
   ctx.fillRect(cx - 7, 333, 14, 3);
+  /* Dirt grain over both ground ovals, neutral tones so a dot that
+     lands on the inner grass cutout does no harm. */
+  for (let i = 0; i < 150; i++) {
+    const a = i * 2.399963;
+    const rr = Math.sqrt(((i * 73) % 97) / 97);
+    const far = i % 3 === 0;
+    const ey = far ? 336 : 618, exr = far ? 470 : 210, eyr = far ? 54 : 58;
+    ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.07)';
+    ctx.fillRect(cx + Math.cos(a) * exr * rr, ey + Math.sin(a) * eyr * rr, 3, 3);
+  }
   /* foul lines and the bases */
   ctx.strokeStyle = 'rgba(255,255,255,.85)';
   ctx.lineWidth = 2;
@@ -10085,6 +10574,20 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     ctx.fillStyle = '#5a3a1c';
     ctx.beginPath(); ctx.arc(mx + 12, my + 8, 6, 0, Math.PI * 2); ctx.fill();
   };
+  /* THE GLOVE ONLY EXISTS WHERE THE CATCH IS. Before this, the mitt was
+     painted at the aim point for the whole flight while the catcher
+     crouched a hundred pixels below it, and a detached brown glove
+     floating in the zone was the biggest, warmest shape on the screen:
+     testers read it as the ball. In flight the catcher shows a TARGET,
+     the way a real one does, and the mitt itself appears at the moment
+     of the catch. */
+  const drawTarget = (mx, my) => {
+    ctx.strokeStyle = 'rgba(255,252,242,.55)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(mx, my, 11, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,252,242,.5)';
+    ctx.beginPath(); ctx.arc(mx, my, 2, 0, Math.PI * 2); ctx.fill();
+  };
 
   /* ---- the ball ---- */
   let ballDrawn = false;
@@ -10103,26 +10606,32 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
       }
       ballDrawn = true;
     } else {
-      drawMitt(mitt[0], mitt[1]);
+      drawTarget(mitt[0], mitt[1]);
       for (let gi = 3; gi >= 1; gi--) {
         const gp = platePitchPos(P, pitch, t - gi * 0.035);
         if (gp.e <= 0) continue;
-        ctx.fillStyle = `rgba(255,255,255,${0.30 - gi * 0.07})`;
+        ctx.fillStyle = `rgba(255,255,255,${0.34 - gi * 0.08})`;
         ctx.beginPath(); ctx.arc(gp.x, gp.y, gp.r * 0.9, 0, Math.PI * 2); ctx.fill();
       }
       ctx.fillStyle = 'rgba(0,0,0,.25)';
       ctx.beginPath(); ctx.arc(bp.x + 1.5, bp.y + 1.5, bp.r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#f6f6f6';
+      ctx.fillStyle = '#fbfaf4';
       ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.r, 0, Math.PI * 2); ctx.fill();
-      if (bp.r > 5) {
+      /* The dark ring every drawn thing in this game wears, and the pair
+         of seams that make it a baseball rather than a light. */
+      ctx.strokeStyle = '#1b3a5c';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.r, 0, Math.PI * 2); ctx.stroke();
+      if (bp.r > 4.5) {
         ctx.strokeStyle = '#c94040';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(bp.x - bp.r * 0.15, bp.y, bp.r * 0.7, -1.1, 1.1); ctx.stroke();
+        ctx.lineWidth = Math.max(1, bp.r * 0.14);
+        ctx.beginPath(); ctx.arc(bp.x - bp.r * 0.42, bp.y, bp.r * 0.72, -1.05, 1.05); ctx.stroke();
+        ctx.beginPath(); ctx.arc(bp.x + bp.r * 0.42, bp.y, bp.r * 0.72, Math.PI - 1.05, Math.PI + 1.05); ctx.stroke();
       }
       ballDrawn = true;
     }
   }
-  if (!ballDrawn) drawMitt(mitt[0], mitt[1]);
+  if (!ballDrawn) drawTarget(mitt[0], mitt[1]);
 
   /* ---- the batter ---- */
   const batter = currentBatter();
@@ -10139,21 +10648,26 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     } else if (live && !inWindup && pitch.swung) {
       pose = 'follow';
     }
-    drawRunner(ctx, P.batX, P.batY, batter, P.batSc, pose);
+    /* A lefty is the same batter mirrored into the first-base box, and
+       his swing arc sweeps the other way with him. */
+    const lefty = batsLeft(batter.k);
+    const dir = lefty ? -1 : 1;
+    const batBx = lefty ? 2 * P.cx - P.batX : P.batX;
+    drawRunner(ctx, batBx, P.batY, batter, P.batSc, pose, lefty);
     if (arcT != null) {
-      const px = P.batX + 48, py = P.batY - 122;
+      const px = batBx + 48 * dir, py = P.batY - 122;
       const a0 = -2.3, a1 = 0.75;
       for (const [k, al] of [[0.55, 0.18], [0.78, 0.32], [1, 1]]) {
         const a = a0 + (a1 - a0) * clamp(arcT * k + (1 - k) * 0, 0, 1);
         ctx.strokeStyle = `rgba(169,127,70,${al})`;
         ctx.lineWidth = 9;
         ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(a) * 92, py + Math.sin(a) * 92); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(a) * 92 * dir, py + Math.sin(a) * 92); ctx.stroke();
       }
       const a = a0 + (a1 - a0) * arcT;
       ctx.strokeStyle = '#6b4a24';
       ctx.lineWidth = 5;
-      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(a) * 26, py + Math.sin(a) * 26); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(a) * 26 * dir, py + Math.sin(a) * 26); ctx.stroke();
     }
   }
 
@@ -10521,6 +11035,18 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.strokeStyle = 'rgba(0,0,0,.20)';
   ctx.lineWidth = 2;
   ctx.stroke();
+  /* Grain on the dirt, clipped to the shape while its path is still
+     current. The grass interior paints over the middle next, so what
+     survives is grain on the basepaths, which is where dirt shows. */
+  ctx.save();
+  ctx.clip();
+  for (let i = 0; i < 170; i++) {
+    const sx = p3x + ((i * 199 + 41) % (p1x - p3x));
+    const sy = (topY - 44) + ((i * 131 + 17) % (plateY + 20 - (topY - 44)));
+    ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.08)';
+    ctx.fillRect(sx, sy, 3, 3);
+  }
+  ctx.restore();
 
   /* Grass interior: a straight edged diamond inset from the bases, so
      the dirt reads as basepaths with corners rather than a ring. */
@@ -10661,27 +11187,34 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       if (!batter) return;
       const f = FG.at(1);
       const nowB = performance.now();
+      /* The lefty stands the other side of the plate here too, walks in
+         from his own dugout side, and swings mirrored. */
+      const lefty = batsLeft(batter.k);
+      const bxOff = lefty ? 28 : -28;
       if (g._plateWho !== batter) {
         g._plateWho = batter;
         g.batterIn = { t0: nowB, dur: 750 };
       }
       if (g.swingFx && nowB < g.swingFx.until) {
-        drawRunner(ctx, cx - 28 + f.dx, plateY + 6 + f.dy, batter, f.sc, 'swing');
+        drawRunner(ctx, cx + bxOff + f.dx, plateY + 6 + f.dy, batter, f.sc, 'swing', lefty);
         const stw = clamp((nowB - g.swingFx.start) / 300, 0, 1);
-        drawBatSwing(ctx, cx - 28 + f.dx, plateY + 4 + f.dy, stw, f.sc / 3.2);
+        const sx = cx + bxOff + f.dx;
+        if (lefty) { ctx.save(); ctx.translate(2 * sx, 0); ctx.scale(-1, 1); }
+        drawBatSwing(ctx, sx, plateY + 4 + f.dy, stw, f.sc / 3.2);
+        if (lefty) ctx.restore();
         return;
       }
       if (g.batterIn && nowB < g.batterIn.t0 + g.batterIn.dur) {
         const u = (nowB - g.batterIn.t0) / g.batterIn.dur;
         const e = u * (2 - u);
-        const ox = cx - rx * 0.62, oy = plateY + 30;
-        const x = ox + (cx - 28 - ox) * e, y = oy + (plateY + 6 - oy) * e;
+        const ox = cx - (lefty ? -1 : 1) * rx * 0.62, oy = plateY + 30;
+        const x = ox + (cx + bxOff - ox) * e, y = oy + (plateY + 6 - oy) * e;
         const stride = Math.floor(nowB / 130) % 2 === 0;
         drawRunner(ctx, x + f.dx, y + f.dy, batter, f.sc * (0.82 + 0.18 * e),
-                   u < 0.9 ? (stride ? 'run-a' : 'run-b') : 'batting');
+                   u < 0.9 ? (stride ? 'run-a' : 'run-b') : 'batting', lefty);
         return;
       }
-      drawRunner(ctx, cx - 28 + f.dx, plateY + 6 + f.dy, batter, f.sc, 'batting');
+      drawRunner(ctx, cx + bxOff + f.dx, plateY + 6 + f.dy, batter, f.sc, 'batting', lefty);
     };
     /* Catcher behind plate */
     /* (This once gated on catcher.pal, a field the old sprite system
@@ -11022,16 +11555,19 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     }
     /* Badge */
     const blink = Math.floor(now / 400) % 2 === 0;
-    ctx.fillStyle = blink ? '#c94b1a' : '#8a2b10';
-    ctx.fillRect(cx - 92, 30, 184, 30);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('REPLAY', cx, 45);
-    ctx.fillStyle = '#f4c25a';
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText(`${R.h.batterName} · ${R.h.kind.toUpperCase()}`, cx, 74);
+    const badgeLine = `${R.h.batterName} · ${R.h.kind.toUpperCase()}`;
+    hud(ctx, (c) => {
+      c.fillStyle = blink ? '#c94b1a' : '#8a2b10';
+      c.fillRect(cx - 92, 30, 184, 30);
+      c.fillStyle = '#ffffff';
+      c.font = 'bold 14px monospace';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('REPLAY', cx, 45);
+      c.fillStyle = '#f4c25a';
+      c.font = 'bold 12px monospace';
+      c.fillText(badgeLine, cx, 74);
+    });
   }
 
   ctx.restore();
@@ -11239,10 +11775,13 @@ function drawScreenPass(ctx, w, h, g, theme, cam, cx, cy, r, chipY) {
       const label = st.label.toUpperCase();
       const color = st.level >= 3 ? '#c94b1a' : st.level === 2 ? '#e3b04c'
         : st.level === 1 ? '#5bb083' : '#8fd0a0';
-      ctx.font = 'bold 10px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = color;
-      ctx.fillText(label, cx, chipY != null ? chipY : cy - 26);
+      hud(ctx, (c) => {
+        c.font = 'bold 10px monospace';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillStyle = color;
+        c.fillText(label, cx, chipY != null ? chipY : cy - 26);
+      });
     }
   }
 
@@ -11283,12 +11822,14 @@ function drawCatchRing(ctx, lx, ly, t) {
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(lx, ly, rSmall, 0, Math.PI * 2); ctx.stroke();
   /* Label */
-  ctx.fillStyle = '#f4c25a';
-  ctx.font = 'bold 12px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('CATCH IT!', lx, ly - rBig - 12);
-  ctx.fillText('SPACE / CLICK', lx, ly + rBig + 12);
+  hud(ctx, (c) => {
+    c.fillStyle = '#f4c25a';
+    c.font = 'bold 12px monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('CATCH IT!', lx, ly - rBig - 12);
+    c.fillText('SPACE / CLICK', lx, ly + rBig + 12);
+  });
 }
 function drawThrowBar(ctx, w, h, cx, win, t) {
   const barW = w * 0.5;
@@ -11310,11 +11851,13 @@ function drawThrowBar(ctx, w, h, cx, win, t) {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(barX + t * barW - 2, barY - 3, 4, barH + 6);
   /* Label */
-  ctx.fillStyle = '#f4c25a';
-  ctx.font = 'bold 12px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + 12);
+  hud(ctx, (c) => {
+    c.fillStyle = '#f4c25a';
+    c.font = 'bold 12px monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + 12);
+  });
 }
 
 /* The smallest ball worth drawing: four CSS pixels of radius on screen,
@@ -11369,8 +11912,32 @@ function drawBatSwing(ctx, x, y, t, sc) {
 }
 
 
+/* WHICH BOX A HITTER STANDS IN. Every batter used to stand in the
+   third-base box holding the bat the same way, which is a realism tell
+   no amount of polish covers: real lineups are a third left-handed.
+   The hand is a deterministic hash of the character's key, so it costs
+   no roster data, never flips between visits, and survives every
+   roster edit. Three in ten bat left, which is the real game's share. */
+function batsLeft(k) {
+  let h = 0;
+  for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
+  return h % 10 < 3;
+}
+
 const runnerCache = new Map();
-function drawRunner(ctx, x, y, character, scale, pose) {
+/* `flip` mirrors the whole drawing around x: the sprite, the bat it
+   holds, the catch mitt, the slide dust. A left-handed batter is the
+   right-handed drawing seen in a mirror, which is also true of the
+   real thing. */
+function drawRunner(ctx, x, y, character, scale, pose, flip) {
+  if (!flip) return drawRunnerAt(ctx, x, y, character, scale, pose);
+  ctx.save();
+  ctx.translate(2 * x, 0);
+  ctx.scale(-1, 1);
+  drawRunnerAt(ctx, x, y, character, scale, pose);
+  ctx.restore();
+}
+function drawRunnerAt(ctx, x, y, character, scale, pose) {
   scale = scale || 3;
   const hero = hasHero(character.k);
 
@@ -11531,18 +12098,20 @@ function drawTimingRing(ctx, G, t, pitch, inWindup) {
     ring(R0, `rgba(27,58,92,${0.35 + pulse * 0.5})`, 3);
     /* On a daylight field white text at 75 percent is a smudge. It goes
        on a plate, like everything else that has to be read over grass. */
-    ctx.font = 'bold 12px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     const gy = cyp - R0 * 0.62 - 12;
-    const gw = ctx.measureText('GET READY').width + 14;
-    ctx.fillStyle = 'rgba(255,252,242,.94)';
-    ctx.fillRect(cxp - gw / 2, gy - 9, gw, 18);
-    ctx.strokeStyle = '#1b3a5c';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(cxp - gw / 2, gy - 9, gw, 18);
-    ctx.fillStyle = '#cf3229';
-    ctx.fillText('GET READY', cxp, gy);
+    hud(ctx, (c) => {
+      c.font = 'bold 12px monospace';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      const gw = c.measureText('GET READY').width + 14;
+      c.fillStyle = 'rgba(255,252,242,.94)';
+      c.fillRect(cxp - gw / 2, gy - 9, gw, 18);
+      c.strokeStyle = '#1b3a5c';
+      c.lineWidth = 2;
+      c.strokeRect(cxp - gw / 2, gy - 9, gw, 18);
+      c.fillStyle = '#cf3229';
+      c.fillText('GET READY', cxp, gy);
+    });
     return;
   }
   const rel = (pitch.ideal - t) / pitch.ideal;
@@ -11609,6 +12178,25 @@ function renderGame() {
     const z = plateToZone(plateGeom(), pt[0], pt[1]);
     g2.aimPt = { x: clamp(z.x, -1.4, 1.4), y: clamp(z.y, -1.4, 1.4) };
   });
+  /* THE LATE BREAK BY HAND. A phone has no arrow keys, so while your pitch
+     is in the air, holding a side of the picture leans the ball that way.
+     Guarded to exactly the flight of your own pitch: batting, aiming and
+     the throw meter all fall through to the handlers they already had. */
+  const steerFrom = (e) => {
+    const g2 = State.game;
+    if (!g2 || playerIsBatting() || g2.aiming) return;
+    const p = g2.pitch;
+    if (!p || !p.steerMax || p.swung || p.resolved) return;
+    if (performance.now() < p.windupUntil) return;
+    const r = cv.getBoundingClientRect();
+    const cx = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
+    g2.steerHeld = cx < r.left + r.width / 2 ? -1 : 1;
+  };
+  const steerOff = () => { const g2 = State.game; if (g2) g2.steerHeld = 0; };
+  cv.addEventListener('pointerdown', steerFrom);
+  cv.addEventListener('pointerup', steerOff);
+  cv.addEventListener('pointercancel', steerOff);
+  cv.addEventListener('pointerleave', steerOff);
 
   /* Score and inning overlaid on the field's corners so nothing steals room
      from the diamond. Names inside color chips read at a glance without
@@ -11698,7 +12286,8 @@ function renderGame() {
     + `<button class="btn ghost" data-pt="curveball">Curveball</button>`
     + `<button class="btn ghost" data-pt="changeup">Changeup</button>`
     + `</div></div>`
-    + `<div class="col"><button class="btn" id="throw-btn" disabled>Throw</button></div>`;
+    + `<div class="col"><button class="btn ghost" id="ibb-btn" hidden>Walk him</button>`
+    + `<button class="btn" id="throw-btn" disabled>Throw</button></div>`;
   meter.appendChild(psel);
 
   /* Big touch-friendly SWING button under the meter, for phones and
@@ -11711,7 +12300,7 @@ function renderGame() {
     /* While you pitch, the same big button lets the pitch go. */
     if (g2 && g2.releaseNow && !playerIsBatting()) { g2.releaseNow(); return; }
     /* Route through the same swing path a click would use. */
-    if (!g2 || !g2.pitch || g2.pitch.swung || !playerIsBatting()) return;
+    if (!g2 || !g2.pitch || g2.pitch.swung || g2.pitch.resolved || !playerIsBatting()) return;
     const now = performance.now();
     if (now < g2.pitch.windupUntil) return;
     const t = clamp((now - g2.pitch.start) / (g2.pitch.speed * 1000), 0, 1);
@@ -12114,6 +12703,15 @@ document.addEventListener('keydown', (e) => {
   const g = State.game;
   /* Arrows move the bat, or the reticle, a sixth of the zone at a time. */
   const arrow = { ArrowLeft: [-0.17, 0], ArrowRight: [0.17, 0], ArrowUp: [0, 0.17], ArrowDown: [0, -0.17] }[e.key];
+  /* And once your pitch is away, left and right are the late break: held,
+     not tapped, the way R.B.I. wrote it. */
+  if (arrow && arrow[0] !== 0 && !playerIsBatting() && g.pitch
+      && !g.pitch.swung && !g.pitch.resolved && !g.aiming
+      && performance.now() >= g.pitch.windupUntil) {
+    e.preventDefault();
+    g.steerHeld = arrow[0] < 0 ? -1 : 1;
+    return;
+  }
   if (arrow) {
     const tgt = playerIsBatting() ? (g.pci || (g.pci = { x: 0, y: 0 }))
               : (g.aiming ? (g.aimPt || (g.aimPt = { x: 0, y: -0.15 })) : null);
@@ -12128,6 +12726,11 @@ document.addEventListener('keydown', (e) => {
   if (!map[e.key]) return;
   State.game.swingMode = map[e.key];
   syncSwingModeButtons();
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const g = State.game;
+  if (g) g.steerHeld = 0;
 });
 
 /* The send or hold button shows while you bat with a runner who could be
@@ -12222,7 +12825,7 @@ function attemptSteal() {
       showCallout('STOLEN BASE', 'hit');
     } else {
       g.bases[0] = null;
-      g.outs++;
+      addOuts(1);
       addLog(`CAUGHT STEALING. ${runner.n} tagged out. ${g.outs} out.`);
       showCallout('CAUGHT STEALING', 'strike');
     }
@@ -12362,35 +12965,46 @@ function renderResult() {
   s.appendChild(lsCard);
 
   /* Batting lines for BOTH lineups, so the box score is a real box score. */
+  /* THE COLUMNS A BOX SCORE ACTUALLY HAS. It read AB H HR K SB, which is
+     missing the two every fan looks for first: what he drove in and
+     whether he came round. A walk column is what makes the average mean
+     something, because a walk is the plate appearance that is not an at
+     bat. It scrolls sideways rather than dropping columns on a phone,
+     the way the line score above it already does. */
+  const stat = (key, k) => (g.stats[key] && g.stats[key][k]) || 0;
   const batTable = (team) => {
     const t = el('table','table');
-    t.innerHTML = '<thead><tr><th>Batter</th><th class="n">AB</th><th class="n">H</th>'
-                + '<th class="n">HR</th><th class="n">K</th><th class="n">SB</th><th class="n">AVG</th></tr></thead>';
+    t.innerHTML = '<thead><tr><th>Batter</th><th class="n">AB</th><th class="n">R</th>'
+                + '<th class="n">H</th><th class="n">HR</th><th class="n">RBI</th>'
+                + '<th class="n">BB</th><th class="n">K</th><th class="n">AVG</th></tr></thead>';
     const tb = el('tbody');
     let any = false;
     for (const b of team.batters) {
-      const ab = g.stats.ab[b.k] || 0;
-      const h  = g.stats.hits[b.k] || 0;
-      const hr = g.stats.hr[b.k] || 0;
-      const so = g.stats.so[b.k] || 0;
-      const sb = (g.stats.sb && g.stats.sb[b.k]) || 0;
-      if (!ab && !h && !sb) continue;
+      const ab = stat('ab', b.k), h = stat('hits', b.k);
+      const bb = stat('bb', b.k), sb = stat('sb', b.k);
+      if (!ab && !h && !sb && !bb) continue;
       any = true;
       const avg = ab ? (h/ab).toFixed(3).replace(/^0/,'') : '.000';
       const tr = el('tr');
-      tr.innerHTML = `<td>${b.n}</td><td class="n">${ab}</td><td class="n">${h}</td>`
-                   + `<td class="n">${hr}</td><td class="n">${so}</td><td class="n">${sb}</td>`
-                   + `<td class="n">${avg}</td>`;
+      tr.innerHTML = `<td>${b.n}</td><td class="n">${ab}</td><td class="n">${stat('r', b.k)}</td>`
+                   + `<td class="n">${h}</td><td class="n">${stat('hr', b.k)}</td>`
+                   + `<td class="n">${stat('rbi', b.k)}</td><td class="n">${bb}</td>`
+                   + `<td class="n">${stat('so', b.k)}</td><td class="n">${avg}</td>`;
       tb.appendChild(tr);
     }
     if (!any) {
       const tr = el('tr');
-      tr.innerHTML = '<td colspan="7" style="color:var(--text-dim)">No plate appearances recorded.</td>';
+      tr.innerHTML = '<td colspan="9" style="color:var(--text-dim)">No plate appearances recorded.</td>';
       tb.appendChild(tr);
     }
     t.appendChild(tb);
-    return t;
+    const wrap = el('div','linescore');   /* the sideways scroller */
+    wrap.appendChild(t);
+    return wrap;
   };
+  /* Innings pitched is thirds, and it is written the way baseball writes
+     it: 2.1 is two innings and one out, never two and a third. */
+  const ipOf = (outs) => `${Math.floor(outs / 3)}.${outs % 3}`;
 
   for (const team of [you, foe]) {
     const c = el('div','card');
@@ -12408,14 +13022,33 @@ function renderResult() {
     for (const b of team.batters) byKey[b.k] = b;
     const arms = (team.pitched && team.pitched.length ? team.pitched : [team.batters[0].k])
       .map(k => byKey[k]).filter(Boolean);
-    const oppK = opp.batters.reduce((a,b) => a + (g.stats.so[b.k] || 0), 0);
-    const oppH = opp.batters.reduce((a,b) => a + (g.stats.hits[b.k] || 0), 0);
-    const gold = (x) => `<b style="color:var(--gold)">${x.n}</b>`;
-    const names = arms.length === 1 ? gold(arms[0])
-      : arms.slice(0, -1).map(gold).join(', ') + ' and ' + gold(arms[arms.length - 1]);
-    c.appendChild(el('p', null,
-      `${names} ${arms.length === 1 ? 'pitching' : 'pitched'}: ${opp.score} runs, ${oppH} hits, `
-      + `${oppK} strikeout${oppK === 1 ? '' : 's'}${arms.length === 1 ? '' : ' between them'}.`));
+    /* EVERY ARM OWNS HIS OWN LINE NOW. This was one sentence crediting
+       the whole team's runs and strikeouts to whoever was named, and with
+       two arms it had to say "between them" because it genuinely could
+       not tell. Outs and runs are kept per pitcher, so it can. */
+    const pt = el('table','table');
+    pt.innerHTML = '<thead><tr><th>Pitcher</th><th class="n">IP</th><th class="n">R</th>'
+                 + '<th class="n">BB</th><th class="n">K</th><th class="n">ERA</th></tr></thead>';
+    const ptb = el('tbody');
+    for (const a of arms) {
+      const outs = ((g.pit && g.pit.outs) || {})[a.k] | 0;
+      const runs = ((g.pit && g.pit.runs) || {})[a.k] | 0;
+      const bbs  = ((g.pit && g.pit.bb) || {})[a.k] | 0;
+      const ks   = (g.kBy || {})[a.k] | 0;
+      /* No outs and no runs is a man who never really pitched. An ERA off
+         zero innings is a division by nothing, so it prints as a dash. */
+      const era = outs ? (runs * 27 / outs).toFixed(2) : '-';
+      const tr = el('tr');
+      tr.innerHTML = `<td><b style="color:var(--gold)">${a.n}</b></td><td class="n">${ipOf(outs)}</td>`
+                   + `<td class="n">${runs}</td><td class="n">${bbs}</td>`
+                   + `<td class="n">${ks}</td><td class="n">${era}</td>`;
+      ptb.appendChild(tr);
+    }
+    pt.appendChild(ptb);
+    const pwrap = el('div','linescore');
+    pwrap.appendChild(pt);
+    c.appendChild(el('h3', null, `${team.name} pitching`));
+    c.appendChild(pwrap);
     s.appendChild(c);
   }
 
@@ -12787,8 +13420,8 @@ function renderHowTo() {
     + '<p>Pitches fly differently: a <b>fastball</b> comes in hard and straight, a '
     + '<b>curveball</b> breaks late, a <b>screwball</b> breaks the other way, a '
     + '<b>changeup</b> floats and dies, a <b>slowball</b> drops in on a rainbow, the '
-    + '<b>knuckler</b> flutters so hard even the pitcher cannot say where the ring '
-    + 'will close, and <b>The Heat</b> is simply faster than everything else.</p>');
+    + '<b>knuckler</b> flutters so hard even the pitcher cannot say where it will '
+    + 'land, and <b>The Heat</b> is simply faster than everything else.</p>');
   s.appendChild(bat);
 
   const pitch = el('div','card');
@@ -12801,7 +13434,23 @@ function renderHowTo() {
     + 'to run: <b>click, tap or Space</b> when the cursor is in the green to let '
     + 'it go. In the green the pitch goes where you aimed. Outside it, the miss '
     + 'opens up, and a miss off a corner is a ball. Every pitcher owns three '
-    + 'pitches, so the buttons change with whoever you put on the mound.</p>');
+    + 'pitches, so the buttons change with whoever you put on the mound.</p>'
+    + '<p><b>Runner: auto, send, hold</b> decides two things now, not one. On a '
+    + 'base hit it waves men round or stops them at third. On a <b>caught fly '
+    + 'ball</b> it decides whether they tag: a man on third can trade the out for '
+    + 'a run, and a man on second can take third. AUTO reads their legs, SEND '
+    + 'gambles, HOLD keeps everybody. Nobody tags on the third out.</p>'
+    + '<p><b>Walk him</b> appears beside the pitch buttons when the situation '
+    + 'calls for it: first base open, the tying or winning run in scoring '
+    + 'position, late, and a slugger at the plate. Putting him on trades a free '
+    + 'baserunner for a better matchup. The other dugout plays by the same rule, '
+    + 'so expect to be walked when you earn it.</p>'
+    + '<p><b>The pitch is still yours after you let it go.</b> While it flies, '
+    + 'hold <b>left or right</b> (an arrow key, or a side of the picture) and '
+    + 'it leans that way: a strike bent off the plate, or a ball pulled back '
+    + 'over it. The umpire calls it where it lands. How far it can bend is the '
+    + 'arm talking: PIT buys more break, and a tired arm loses a third of '
+    + 'it.</p>');
   add(pitch,
       '<p>Better control (PIT) means a wider green and a smaller miss. Every '
     + 'batter has one pitch they cannot handle: throw it and their timing falls '
@@ -12858,7 +13507,7 @@ function renderHowTo() {
     + 'A few: <b>Lady Liberty</b> never runs, so every real swing is a home run or a '
     + 'strikeout. <b>Mr. Hyde</b> transforms in about one at bat in six. '
     + '<b>Popeye</b> eats his spinach on his third trip to the plate. '
-    + '<b>Father Time</b> slows the ring down. <b>The Phoenix</b> turns her first '
+    + '<b>Father Time</b> makes every pitch take longer to arrive. <b>The Phoenix</b> turns her first '
     + 'strikeout of the game into a walk. <b>Black Cat</b> makes fielders bobble. '
     + '<b>Dracula</b> and the <b>Werewolf</b> get stronger in late innings. '
     + '<b>Humpty Dumpty</b> cracks a little with every out.</p>');

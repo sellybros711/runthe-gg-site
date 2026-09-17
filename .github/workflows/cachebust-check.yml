@@ -5,6 +5,11 @@ name: Cache-bust check
 # without a bump serves a RETURNING visitor the new page against the script they already
 # have. It fails on their phone and on nobody's development machine.
 #
+# It also checks the OTHER pair of hand-written numbers: a page that pins the API_VERSION it
+# expects from a module has to move that number when the module moves. That one is silent,
+# because the page falls through to an offline stub rather than throwing, and it has already
+# taken the leaderboard and the profile out for every visitor.
+#
 # Runnable locally with the exact same command:
 #   node scripts/check-cachebust.mjs
 # And after a deliberate bump:

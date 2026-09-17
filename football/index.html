@@ -511,6 +511,42 @@ window.GA_ID='G-L29P5MRWKE';
   .hp-ft .hp-full-sub{color:rgba(255,255,255,.76)}
   .hp-ft .hp-full-name{color:#fff}
   .hp-ft:active{filter:brightness(1.08)}
+  /* ---- A DOOR WHOSE DAY IS SPENT SAYS SO BEFORE IT IS PRESSED ----
+   *
+   * Full Team carried the countdown in its caption and NOTHING ELSE: the card stayed fully
+   * lit, kept its New badge, and read exactly like the one beside it that opens. The only
+   * difference between "press me" and "come back tomorrow" was a line of 9.5px type at the
+   * bottom of a saturated red and blue card, which is the last thing on it anybody reads.
+   * A player pressing it and meeting a wall has been told, technically.
+   *
+   * THE DYNASTY DOOR ALREADY DID THIS RIGHT and this is that treatment applied here: a quiet
+   * unfilled tag in the corner, the headline dimmed, and the colour taken out of the card. It
+   * is a state rather than an invitation, which is why nothing about it is bright.
+   *
+   * THE FILL GOES GREY RATHER THAN DIM. Halving the opacity of a red-to-blue gradient leaves
+   * a muddy purple that reads as a rendering fault; desaturating it leaves the same card with
+   * the life out of it, which is the thing being said. */
+  .hp-ft:has(.hp-tag-spent){background:linear-gradient(100deg,
+    #3a3036 0%,#332c30 40%,#14171f 50%,#2b3040 60%,#333a4e 100%);
+    animation:none;border-color:rgba(255,255,255,.18);
+    box-shadow:0 10px 26px -18px #000,inset 0 1px 0 rgba(255,255,255,.08)}
+  .hp-ft:has(.hp-tag-spent) .hp-full-name{color:rgba(244,247,252,.58)}
+  .hp-ft:has(.hp-tag-spent) .hp-full-sub{color:rgba(226,233,245,.5)}
+  .hp-ft .hp-tag-spent{background:rgba(255,255,255,.06);
+    border-color:rgba(255,255,255,.18);color:rgba(238,242,249,.5)}
+  /* ---- THE PADLOCK ----
+   *
+   * THE WORDS ALONE WERE NOT ENOUGH, which is the whole of the owner's report: "Day done"
+   * and "Next run in 11h" are both read AFTER somebody has decided whether to press, and a
+   * lock is read before. It is the one mark on this page that means shut in any language and
+   * at any glance, and it is what the rest of the site already uses: the college game puts
+   * the same glyph on More ways to play while an account is signing in.
+   *
+   * INSIDE THE TAG rather than beside the headline. The tag is already the element that says
+   * what state the door is in, and a second lock somewhere else would be the same fact in two
+   * places at two sizes. It sits on the cap height of the label beside it. */
+  .hp-full .hp-tag-spent .hp-pad{width:8px;height:8px;display:inline-block;
+    vertical-align:-1px;margin-right:4px;fill:currentColor}
   @media (max-width:340px){
     .hp-full-name{font-size:17px}
     .hp-full-sub{font-size:9px;letter-spacing:.03em}
@@ -798,7 +834,10 @@ window.GA_ID='G-L29P5MRWKE';
   .cocell .cnm{font-size:12.5px;font-weight:800;letter-spacing:.01em;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cocell .cdl{font-family:var(--fn);font-size:19px;font-weight:800;line-height:1;color:var(--dim)}
-  .cocell .cdl.pos{color:var(--good,#4ade80)} .cocell .cdl.neg{color:var(--bad,#f87171)}
+  /* THERE IS NO RED HERE ANY MORE, because there is nothing left for it to mark. A coach who
+     lowers the rating is not offered at all, so every cell is a gain or a wash, and the only
+     two states are green and the quiet default. */
+  .cocell .cdl.pos{color:var(--good,#4ade80)}
   .cocell .cdl i{font-style:normal;font-size:9.5px;font-weight:600;color:var(--dim-2);
     letter-spacing:.06em;margin-left:3px}
   .cocell .cft{display:flex;align-items:center;gap:6px;font-family:var(--fn);font-size:10px;
@@ -814,13 +853,56 @@ window.GA_ID='G-L29P5MRWKE';
     font-family:var(--fn);font-size:11.5px;color:var(--dim-2);margin:9px 0 2px}
   .sidesplit b{font-weight:800;font-size:14px;color:var(--dim)}
   .sidesplit .sep{color:var(--line-2);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+  /* ---- HOW A FULL TEAM OVERALL IS MADE ----
+     Four columns, and the third is one character wide on purpose: an equals sign in its own
+     column is what makes four rows read as one sum rather than as four facts. The value
+     column is the only thing right-aligned, so the numbers being added stack. */
+  .fbreak{margin:10px 0 2px;padding:9px 10px 7px;border:1px solid var(--line);
+    border-radius:10px;background:rgba(255,255,255,.02);text-align:left}
+  .fbhead{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--dim-2);margin-bottom:6px}
+  .fbrow{display:grid;grid-template-columns:auto 1fr 12px auto;align-items:baseline;gap:7px;
+    padding:4px 0;font-family:var(--fn);font-size:11.5px;color:var(--dim-2)}
+  .fbrow+.fbrow{border-top:1px solid rgba(255,255,255,.05)}
+  .fbn{font-weight:800;color:var(--dim);white-space:nowrap}
+  .fbrow.off .fbn{color:#f08a8a}
+  .fbrow.def .fbn{color:#8fb3ff}
+  /* The working wraps on a narrow phone and the value stays on the first line with the
+     name, which is the pairing that matters: every row is "this side came out at that". */
+  .fbw{display:flex;flex-wrap:wrap;gap:3px 8px;min-width:0}
+  .fbw i{font-style:normal;white-space:nowrap}
+  .fbw b{font-weight:800;color:var(--dim)}
+  .fbw u{text-decoration:none;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--line-2)}
+  .fbe{text-align:center;color:var(--line-2);font-size:11px}
+  .fbv{font-weight:800;font-size:14px;color:var(--ink);text-align:right;
+    font-variant-numeric:tabular-nums}
+  /* The mean and the coach are the answer rather than an input, so they sit apart from the
+     two unit rows above them. */
+  .fbrow.sum{margin-top:2px;border-top:1px solid rgba(255,255,255,.14)}
+  .fbrow.sum .fbn,.fbrow.coach .fbn{color:var(--dim)}
+  /* WHAT THE ONE ARROW IN THE TABLE MEANS. Under it rather than in the defense row, because
+     on a 390px phone a fourth term there wraps and pushes the value off its own line, which
+     breaks the one pairing every row exists to make. */
+  .fbfoot{font-family:var(--fn);font-size:9.5px;line-height:1.4;color:var(--line-2);
+    margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,.05)}
+  @media (max-width:340px){
+    .fbrow{font-size:11px;gap:5px}
+    .fbv{font-size:13px}
+  }
   /* HIDDEN HAS TO BEAT .btn, which sets its own display. The UA rule for [hidden] is
      display:none at the same specificity as a class, so the later class wins and the
      button stayed on screen with hidden=true set on it: exactly the trap .hp-full[hidden]
      was written for on the home screen. */
   /* #co-knows is in this list for the same reason: .coknows sets display:flex, so without
      it the box stays on screen holding the LAST coach's links. Third time. */
-  #b-coach-go[hidden],#co-planwrap[hidden],#co-knows[hidden]{display:none}
+  /* AND #co-grid IS THE FIFTH. `.cogrid` sets display:grid, so the `hidden` the painter has
+     always written on an empty market never took. It cost nothing while the empty case was
+     "you can afford nobody", which is rare and leaves the grid with no children anyway. Now
+     that the grid is also emptied when nobody affordable would HELP, which is a third of
+     cap-spending drafts, it is a padded and margined box between the rating card and the
+     line explaining why there is nothing in it. */
+  #b-coach-go[hidden],#co-planwrap[hidden],#co-knows[hidden],#co-grid[hidden]{display:none}
   .coknows{margin:8px 0 0;display:flex;flex-direction:column;gap:4px}
   /* The two units' own chemistry, under the average of them. Same [hidden] trap. */
   #q-chemsplit[hidden]{display:none}
@@ -1547,6 +1629,12 @@ window.GA_ID='G-L29P5MRWKE';
      on one of them. */
   .gb-foot b{color:#F3DDAE;font-weight:800;font-variant-numeric:tabular-nums;
     white-space:nowrap}
+  /* THE TOTAL, THE WEEK IT MOVES. The same bump the score bug uses, so a figure changing
+     under a running simulation looks the same wherever it happens on this page.
+     display:inline-block because a transform does nothing at all to an inline box, which is
+     the quiet way an animation like this ends up shipped and never seen. */
+  .gb-foot b.tbump{display:inline-block;animation:bump .34s ease-out both}
+  @media (prefers-reduced-motion:reduce){ .gb-foot b.tbump{animation:none} }
   .gb-foot .gb-next{text-align:right;flex:0 0 auto}
   .gb-foot:empty{display:none}
   /* THE STRIP INSIDE THE WINTER CARD. That card pads its own children by 15px and the strip
@@ -1657,6 +1745,11 @@ window.GA_ID='G-L29P5MRWKE';
   .bg-narr b{color:#f4f7fc;font-weight:700}
   .bg-narr .good{color:#4ade80;font-weight:800}
   .bg-narr .bad{color:#f87171;font-weight:800}
+  .bg-skip{display:flex;justify-content:flex-end;margin:-2px 2px 2px}
+  /* THE SIXTH TIME IN THIS FILE. .bg-skip sets display:flex, so the `hidden` the script
+     writes on it never takes without this line, and the control stays on screen through the
+     verdict offering to hurry a game that has finished. */
+  .bg-skip[hidden]{display:none}
   .bg-calls{margin-top:12px;display:grid;gap:9px}
   .bg-calls[hidden]{display:none}
   .bcall-q{font-family:var(--fn);font-size:13px;font-weight:700;color:#f4f7fc;
@@ -2429,6 +2522,10 @@ window.GA_ID='G-L29P5MRWKE';
   /* The Trade Machine board, marked the same way a club board is but with the mode's own
      color rather than a team's, so it reads as its own competition at a glance. */
   .lbmode.isdef select{border-color:rgba(16,185,129,.45);color:#6ee7b7}
+  /* Dynasty in the gold the mode wears everywhere else on this page, so the board you are
+     looking at is obvious before you read the name of it. */
+  .lbmode.isdyn select{border-color:rgba(245,196,79,.55);
+    box-shadow:inset 3px 0 0 #f5c44f,inset 0 0 0 1px transparent}
   .lbmode.istrade select{border-color:rgba(56,189,248,.55);
     box-shadow:inset 3px 0 0 #38bdf8,inset 0 0 0 1px transparent}
   /* A window tab the current axis cannot answer. Visibly out of play rather than
@@ -5519,6 +5616,24 @@ window.GA_ID='G-L29P5MRWKE';
   .polog .pl .n{flex:0 0 auto;font-family:var(--fn);font-size:13px;color:var(--dim)}
   .polog .pl.you .w{color:#86efac} .polog .pl.them .w{color:#fca5a5}
   .polog .pl.tk .w{color:#7dd3fc} .polog .pl.tk .n{color:#7dd3fc;font-size:11px}
+  /* ---- the boss battle's log, which lists every drive rather than every score ----
+     A DRIVE THAT DIED IS QUIETER THAN ONE THAT SCORED. Listing all of them is the point, and
+     listing all of them at one weight turns the scores into a needle in the punts: on a
+     twenty drive game the log is mostly the drives that did not matter. So the row stays and
+     its colour goes, which keeps it readable as context without competing with the six rows
+     a reader is actually scanning for. */
+  .polog .pl.quiet .w{color:var(--dim-2)}
+  .polog .pl.quiet .n{color:var(--line-2)}
+  /* What it took, under what happened. Its own line rather than another comma, because the
+     phrase before it is the thing being scanned and "7 plays, 62 yards" is the detail you
+     drop to only once the verb has landed. */
+  .polog .pl .plsub{display:block;font-style:normal;font-family:var(--fn);font-size:10.5px;
+    letter-spacing:.03em;color:var(--line-2);margin-top:2px}
+  .polog .pl .w{white-space:normal}
+  /* The log is long here and the field above it is the thing to keep on screen, so it takes
+     a ceiling of its own and scrolls inside it. The playoff log lists six rows and needs
+     none of this. */
+  .bg-log{max-height:40vh;overflow-y:auto;scrollbar-width:thin}
 
   /* ---- Drive-chart field ---- */
   .pofield{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
@@ -6290,6 +6405,16 @@ window.GA_ID='G-L29P5MRWKE';
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .slotopt .go{flex:0 0 auto;color:var(--dim-2);font-size:19px;line-height:1}
   .kv{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
+  /* WHAT A MAN COSTS AGAINST WHAT HE IS WORTH, on the player sheet. Green when the market
+     has run past his frozen deal and red when his deal has run past the market, which is
+     the same pair of colours and the same threshold the winter uses for the same fact. The
+     sentence carries the colour too rather than only the figure, because the figure alone
+     leaves a reader working out which direction is the good one. */
+  .kv b.good{color:var(--good,#4ade80)}
+  .kv b.bad{color:var(--bad,#f87171)}
+  .shmoney{margin:7px 0 10px;font-size:12.5px;line-height:1.4;color:var(--dim)}
+  .shmoney.good{color:#8ee6ab}
+  .shmoney.bad{color:#f3a9a9}
   .hr{height:1px;background:var(--line);margin:14px 0}
 
   /* ---------- THE CAREER PANEL, in the profile sheet ----------
@@ -7317,7 +7442,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
   <div class="screen" id="s-seed">
     <div class="seed-hero">
-      <div class="eyebrow">Regular season complete</div>
+      <div class="eyebrow" id="sd-eye">Regular season complete</div>
       <div class="seed-rec num" id="sd-rec">0-0</div>
     </div>
     <div class="seed-panel" id="sd-card">
@@ -7619,6 +7744,19 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <canvas id="bg-fcanvas" width="600" height="150"></canvas>
     </div>
     <div class="bg-narr" id="bg-narr">The scout is in. Time to play.</div>
+    <!-- SIM THE REST. The drives animate one at a time and a boss battle is the longest
+         watch in the mode, so there has to be a way to get to the result. It does NOT take
+         the calls: fourth down and the two point try are what a boss battle IS, so it runs
+         the football fast and still stops to ask. See bossFast. -->
+    <div class="bg-skip" id="bg-skip"><button class="btn-text" id="b-boss-fast">Sim the rest</button></div>
+    <!-- EVERY DRIVE, NOT JUST THE SCORES, which is the one thing this screen can do that the
+         playoff broadcast cannot. That log is built from scoringScript, which works BACKWARDS
+         from a final score to a legal way of reaching it, so the only honest thing it can list
+         is the scores themselves. The boss sim plays forward down by down, so the plays, the
+         yards and the drives that died are real and can be said out loud. Newest first, the
+         same shape and the same classes the playoff log uses, because a player meeting the
+         two on one evening should not have to learn a second layout. -->
+    <div class="polog bg-log" id="bg-log"></div>
     <!-- The two live calls, one at a time. Built by bossAsk, cleared as each resolves. -->
     <div class="bg-calls" id="bg-calls"></div>
     <!-- The result, revealed once the calls are in. -->
@@ -7825,19 +7963,22 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=88"></script>
+<script src="engine.js?v=92"></script>
 <script src="run.js?v=99"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
      blocked or stale copy hides an unannounced mode rather than opening it. -->
-<script src="fullteam-access.js?v=1"></script>
-<script src="dynasty-access.js?v=4"></script>
+<!-- SPELLED ABSOLUTE BECAUSE BOTH COLLEGE PAGES LOAD IT TOO, and check-cachebust groups
+     the pages sharing a script by the literal src. The resolved URL is identical either way,
+     so no returning visitor notices. -->
+<script src="/football/fullteam-access.js?v=3"></script>
+<script src="dynasty-access.js?v=5"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=35"></script>
-<script src="achievements.js?v=13"></script>
+<script src="board.js?v=36"></script>
+<script src="achievements.js?v=14"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
@@ -7854,7 +7995,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=14"></script>
+<script src="/assets/store.js?v=21"></script>
 <!-- THE RUN, KEPT AGAINST THE ACCOUNT. Shared with Commish Simulator, which had the same
      save in localStorage and the same way of losing it. Optional like everything else up
      here: without it the game keeps its runs exactly where it always did, in this browser
@@ -7926,9 +8067,47 @@ const nextOpenSlot=()=>{
   try{ const open=R.openSlots(run); if(open.length) return open[0]; }catch(_){}
   return run.roster.length;
 };
+/* WHICH SIDE OF THE BALL THIS PICK IS, AND IT IS THE PICK NUMBER RATHER THAN A SLOT.
+ *
+ * The mode is meant to flip sides every other pick, and FULL_SLOTS is written interleaved
+ * (QB, DL, RB, DL, ...) so that reading the side off the next open slot would give that for
+ * free. IT DOES NOT, because the premise is false: a man goes into whatever open slot fits
+ * him rather than into the lowest one, so the lowest open slot only moves when somebody
+ * happens to fit it. Sign a tight end first and he lands in slot 8 while slot 0 stays open,
+ * so the next pick is offensive again, and again, until a quarterback finally turns up.
+ *
+ * MEASURED OVER 360 COMPLETED DRAFTS, three ways of drafting: NOT ONE of them alternated.
+ * Every single one had a run of three or more picks on the same side, the longest was six,
+ * and the common shape was the whole offense and then the whole defense:
+ *
+ *   O:TE O:RB O:WR O:RB O:WR O:QB  D:DL D:LB D:DB D:DL D:LB D:DB
+ *
+ * So the side is counted, which is what the mode says it is. Twelve picks, even ones
+ * offensive and odd ones defensive, matching FULL_SLOTS' own parity. Six a side either way.
+ *
+ * THE SLOT IS STILL FREE. This decides which POOL the wheel spins, not where the man lands:
+ * slotChoices() still puts him in whatever open spot on that side fits him, so the defensive
+ * FLEX and the two DL spots work exactly as before.
+ *
+ * AND IT STRANDS FEWER DRAFTS than the reading it replaces. Under the old one two of those
+ * three bots failed to fill twelve slots on 14 and 15 of 120 attempts, because taking a
+ * whole side before starting the other is how a draft runs out of money for the second half.
+ * At a strict alternation all 120 finished for all three.
+ *
+ * The fallback is for a shape this mode cannot reach today and should not depend on not
+ * reaching: if the side the count asks for has no open slot left, take the other one. A
+ * roster with holes in it (dynasty's winter, which is a different mode) would otherwise
+ * spin a pool it cannot sign anybody from. */
+const fullPickIsDefensive=()=>{
+  if(!run||!run.full) return false;
+  const want=(run.roster.length%2)===1;
+  let open=[]; try{ open=R.openSlots(run)||[]; }catch(_){ open=[]; }
+  if(!open.length) return want;
+  return open.some((i)=>fullSlotIsDefensive(i)===want)?want:!want;
+};
 const dataNow=()=>{
   if(!run) return DATA;
-  if(run.full) return (DDATA&&fullSlotIsDefensive(nextOpenSlot()))?DDATA:DATA;
+  if(run.full) return (DDATA&&fullPickIsDefensive())?DDATA:DATA;
   return (run.defense&&DDATA)?DDATA:DATA;
 };
 function loadDefensePool(){
@@ -7976,7 +8155,7 @@ function loadDefensePool(){
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=16;
+const BOARD_VERSION=17;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
@@ -8006,6 +8185,9 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
      of a mode. */
   attemptsState:async()=>null, attemptSpend:async()=>null, attemptGrace:async()=>null,
   attemptDayEnd:async()=>null,
+  /* One new dynasty a day (106). Same soft answer for the same reason: a board.js a
+     version behind must cost the meter, never the mode. */
+  dynRunState:async()=>null, dynRunStart:async()=>null,
 };
 const $=(id)=>document.getElementById(id);
 function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
@@ -8054,6 +8236,23 @@ const canPlayFull=()=>{
   if(!authState.signedIn) return false;
   return A.allowed({name:authState.name,userId:authState.userId});
 };
+/* WHETHER THIS READER IS BEING SOLD FULL TEAM, read by the store, the receipt and the
+   unlocked sheet's wording.
+   IT ASKS WHO CAN PLAY IT, AND THAT IS A CORRECTION. It used to read the LIVE flag alone, on
+   the argument that a price is one product for everybody and a tester must not be shown a
+   different offer from a stranger's. Right about what the bundle CONTAINS, wrong about what
+   a card should NAME, and the two were run together: a tester who could play Full Team, and
+   whose daily limit on it the bundle removes, opened the store and found the mode unmentioned.
+   The case the gate is actually for still holds, because it is the same gate: a reader with
+   no Full Team door is told nothing about it, so nothing here ever sells a mode they cannot
+   find. */
+const fullTeamSold=()=>canPlayFull();
+/* AND THE STORE ASKS THE PAGE, because only the page knows. Deciding this needs the tester
+   list and who is signed in; /assets/store.js is handed neither and is drawn by the college
+   game too. Published as the FUNCTION rather than its answer: sign-in and ownership both move
+   while the page is open, and a boolean copied here at boot is a second answer that goes
+   stale the moment somebody signs in. */
+try{ window.RTG_FULLTEAM=canPlayFull; }catch(_){}
 /* DYNASTY, asked the same way and read just as defensively: a blocked, stale or
    failed dynasty-access.js leaves PS_DYNASTY_ACCESS undefined, and the honest answer to
    "can this person see an unannounced mode" when the list cannot be read is no. */
@@ -8393,6 +8592,14 @@ const UNLOCK_DOORS=[
   {prod:'ps_premium',game:'ps',name:'Trade Machine',
    line:'No daily limit on it any more. Play it as often as you like.',
    go:()=>{ closeSheet(); setTimeout(()=>beginTradeMachine(),260); }},
+  /* GATED ON canPlayFull() AND NOT ON fullTeamSold(), which is the one row here where the
+     two come apart. This is a DOOR: it closes the sheet and walks the reader into the mode,
+     so what it has to answer is whether they can get in, and a tester can. Offering an owner
+     a door to a mode their own front page does not build is worse than not offering it. */
+  {prod:'ps_premium',game:'ps',name:'Full Team',
+   line:'No daily limit on it any more. Play it as often as you like.',
+   when:()=>canPlayFull(),
+   go:()=>{ closeSheet(); setTimeout(()=>fullDoor(),260); }},
   /* ROOT-RELATIVE, NEVER ABSOLUTE, and for exactly the reason the CFB header carries a note
      about: an absolute https://runthe.gg link takes somebody who arrived on www and drops
      them on the apex, where their session does not exist. A buyer following a link off this
@@ -8409,7 +8616,9 @@ const ULK_CHEV='<svg width="9" height="14" viewBox="0 0 9 14" fill="none" aria-h
   'stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function unlockedSheet(){
   const have=Array.isArray(premiumSet)?premiumSet:[];
-  const rows=UNLOCK_DOORS.filter((d)=>have.indexOf(d.prod)>=0);
+  /* `when` is optional and absent on every row but one: a door the reader cannot walk
+     through has no business being drawn, however much of it they own. */
+  const rows=UNLOCK_DOORS.filter((d)=>have.indexOf(d.prod)>=0&&(!d.when||d.when()));
   const box=$('sheet-in');
   box.dataset.kind='unlocked';
   const cell=(d,i)=>{
@@ -8463,6 +8672,27 @@ function runMode(){
   if(run&&run.full) return 'fullteam';
   if(run&&run.defense) return 'defense';
   return (run&&run.era)?'era':(run&&run.franchise)?'club':'free';
+}
+/* WHICH SEASON OF THE DYNASTY THIS IS, AS A TAIL ON WHATEVER THE SCREEN ALREADY SAYS.
+ *
+ * A dynasty is the one mode on this page where the same screen comes round again, so
+ * "Regular season complete" over a 13-4, or a Wild Card bracket, is identical in season one
+ * and season forty and the run is the only thing that knows the difference. The squad screen,
+ * the schedule and the boss battle all named it already and the whole postseason did not.
+ *
+ * A FUNCTION RATHER THAN THE TERNARY WRITTEN OUT AT EACH SCREEN, and the reason is the empty
+ * string. Every one of these elements is static markup that the Trade Machine and Full Team
+ * are drawn into on the same page, so the label has to be REWRITTEN on every paint rather
+ * than only set when there is a season to name: written the other way round, a dynasty in the
+ * other slot leaves its season number on a mode that has no seasons, which is a sentence that
+ * is wrong rather than missing and throws nothing. Returning '' makes the concatenation
+ * unconditional, so the reset cannot be the half somebody forgets. v-caleye carries the same
+ * note; this is the shape that stops it being written a fifth time.
+ *
+ * A MIDDOT, because that is what bg-eye already uses for exactly this.
+ */
+function seasonTag(){
+  return (run&&run.dynasty&&run.seasonNo)?' · Season '+run.seasonNo:'';
 }
 function runModeLabel(){
   if(run&&run.capSurvivor) return 'Salary Cap Survivor';
@@ -9405,13 +9635,13 @@ function drawField(el,live,view){
     /* Still the LIVE run: `live` and a history view are mutually exclusive, and a draft in
        progress is a fact about the run rather than about the lineup being drawn. */
     const picking=!!(run&&run.full&&run.roster.length<slotsNow().length);
-    /* nextOpenSlot(), NOT roster.length, and they are not the same number.
-       dataNow() picks the pool off nextOpenSlot() because a man goes into whatever open
-       slot fits him rather than into the next one along: sign a linebacker and he can land
-       in the defensive FLEX at index 11, which leaves index 5 open behind him. After that
-       the two readings diverge, and this one was lighting the half the board was NOT
-       drawing from. One source for both, so the picture and the list always agree. */
-    const def=picking&&fullSlotIsDefensive(nextOpenSlot());
+    /* THE SAME CALL dataNow() MAKES, which is the whole of the rule here: the picture and
+       the board must never be able to name different sides. This half of it was wrong once
+       already, reading run.roster.length while the pool read the next open slot, and it lit
+       the defense over a board serving quarterbacks. One source for both.
+       fullPickIsDefensive() is now that source, and its header says why the side is counted
+       rather than read off a slot. */
+    const def=picking&&fullPickIsDefensive();
     el.classList.toggle('pick-def',picking&&def);
     el.classList.toggle('pick-off',picking&&!def);
     /* AND THE SPOTS THAT ARE LIVE THIS SPIN. The lit half says which side the man comes
@@ -9618,6 +9848,51 @@ function drawRail(el,bySlot,links,at){
   }
 }
 
+/* ─── WHAT YOU PAY HIM, WHICH IS NOT WHAT HE IS WORTH ──────────────────────────────────
+ *
+ * This sheet printed one row, `Cost`, off p.price_musd, which is the MARKET price of that
+ * player-season. Outside a dynasty those are the same number and the row is right. Inside
+ * one they come apart on the first winter and never come back together:
+ *
+ *   run.salaries[i]    what he signed for, frozen. "Whatever you pay now, you pay every
+ *                      season he stays" is the rule the front page prints over the wheel,
+ *                      and dynastySalary() is the one line that enforces it.
+ *   p.price_musd       what the man on your roster is worth TODAY, which moves every winter
+ *                      because the winter replaces him with an older season of himself.
+ *
+ * So a player opened mid-dynasty was shown a figure that was neither his wage nor, for a
+ * man signed five seasons ago, anything he had ever cost. The gap is the whole economy of
+ * the mode and the winter screen already says so in as many words: "the gap between the two
+ * is the state of your roster in one figure, and it runs BOTH ways".
+ *
+ * SAME WORDS AS THE WINTER, deliberately, down to "of value": the two screens describe one
+ * fact about one player and a reader meeting it twice should not have to work out that it
+ * is the same fact. WIN_OVERPAY is shared for the same reason, so what counts as over or
+ * under cannot differ between them.
+ *
+ * ONE ROW WHEN THERE IS ONE NUMBER. A man signed this draft is worth exactly what he cost,
+ * and two identical rows over a sentence saying nothing moved is noise on the screen where
+ * the player is deciding. Decided on the PRINTED figures rather than the raw ones, which is
+ * the rule this file already carries three other places. */
+function sheetMoney(p){
+  const i=(run&&run.dynasty&&Array.isArray(run.salaries))?run.roster.indexOf(p):-1;
+  const paid=(i>=0&&run.salaries[i]!=null)?run.salaries[i]:null;
+  if(paid==null) return '<div class="kv"><span class="dim">Cost</span><b>'+M(p.price_musd)+'</b></div>';
+  const worth=p.price_musd;
+  const same=M(paid)===M(worth);
+  if(same) return '<div class="kv"><span class="dim">You pay</span><b>'+M(paid)+'</b></div>';
+  const edge=worth-paid;
+  const cls=edge>=WIN_OVERPAY?'good':(edge<=-WIN_OVERPAY?'bad':'');
+  return '<div class="kv"><span class="dim">You pay</span><b>'+M(paid)+'</b></div>'+
+    '<div class="kv"><span class="dim">Worth now</span><b class="'+cls+'">'+M(worth)+'</b></div>'+
+    '<p class="shmoney '+cls+'">'+
+      (edge>=WIN_OVERPAY
+        ? 'You pay '+M(paid)+' for '+M(worth)+' of value. That is cap you did not have to spend.'
+        : edge<=-WIN_OVERPAY
+        ? 'You pay '+M(paid)+' for '+M(worth)+' of value. You pay it every season he stays.'
+        : 'You pay '+M(paid)+' for '+M(worth)+' of value.')+
+    '</p>';
+}
 function sheet(p){
   const links=run.roster.length>1
     ? E.resolveChemistry(run.roster,CTX,chemOpts()).links.filter(l=>l.a===p.name||l.b===p.name) : [];
@@ -9627,7 +9902,7 @@ function sheet(p){
   $('sheet-in').innerHTML='<div class="eyebrow">'+esc(ts?ts.display:p.season+' '+E.nickname(p.franchise))+'</div>'+
     '<h2 class="display" style="font-size:26px;margin:4px 0 10px">'+esc(p.name)+'</h2>'+
     '<div class="kv"><span class="dim">Spot</span><b>'+esc(E.positionLabel(p))+'</b></div>'+
-    '<div class="kv"><span class="dim">Cost</span><b>'+M(p.price_musd)+'</b></div>'+
+    sheetMoney(p)+
     (p.stat_line?'<p style="margin:0 0 10px;font-size:13px;color:var(--dim)">'+esc(p.stat_line)+'</p>':'')+
     ((p.awards||[]).length?'<div class="badges" style="margin-bottom:9px">'+
       p.awards.map(a=>awardChip(a,false)).join('')+'</div>':'')+
@@ -9702,6 +9977,14 @@ function newRun(opts){
      the mode card that leads somewhere the player already walked away from.
      Safe on the trade path itself: R.startSeason writes the new run back a moment later. */
   tradeClear();
+  /* AND A SAVED FULL TEAM SEASON, on the same rule and for the same reason. Safe on the Full
+     Team path itself: the first mutation after this writes the new run back through the
+     autosave wrapper. */
+  fullClear();
+  /* The running total's memory of its own last value, which belongs to the run that produced
+     it. Left behind, the first paint of a new dynasty compares 0-0 against the last one's
+     71-43 and flashes a number that has not moved because it has not started. */
+  dynTotalLast='';
   submitted=null;
   myRanks=null;
   myGmRank=null; ranksP=null; gmRankP=null;
@@ -9846,8 +10129,8 @@ $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
  * on every visit, so flipping either needs no cache bump and takes effect immediately. */
 const DAILY_LIMIT_ALL=false;
 const dailyLimited=()=>DAILY_LIMIT_ALL||canPlayDynasty();
-let dailyState={dynasty:null,trade:null};
-let dailyAsked={dynasty:false,trade:false};
+let dailyState={dynasty:null,trade:null,full:null};
+let dailyAsked={dynasty:false,trade:false,full:false};
 let dailyTick=0;
 
 /* PREMIUM IS NOT METERED. Without this line the store sells "unlimited runs" and the page
@@ -9897,17 +10180,124 @@ const dailyResetsAt=(mode)=>{
   const t=s&&s.resetsAt?Date.parse(s.resetsAt):NaN;
   return Number.isFinite(t)?t:null;
 };
+/*
+ * THE ONE PLACE THE METER IS WRITTEN, and a count of how many times it has been.
+ *
+ * Every answer worth keeping carries a `used`. A null (the network blipped, the rpc errored,
+ * the migration is not there) is NO OPINION, which is the rule the rest of this page keeps
+ * about every allowance, and no opinion must never be stored as if it were an answer: read
+ * back it turns the door's countdown off and drops `unit` with it, which puts the season copy
+ * back on the old run rule in the middle of a session. Nothing throws, because every gate
+ * here already reads a missing answer as permission.
+ *
+ * `dailyWrote` is what tells a LATE answer from a current one. See dailyEnsure.
+ */
+let dailyWrote={dynasty:0,trade:0,full:0};
+function dailyPut(mode,s){
+  if(!s||s.used==null) return false;
+  /* THE WHOLE ROW, NOT THREE FIELDS OFF IT: `unit` and `ended` ride in the same answer, and
+     picking fields out by hand is how the page ends up holding a state that says 'run'
+     because the last write forgot to copy the column across. */
+  dailyState[mode]=s;
+  dailyWrote[mode]++;
+  return true;
+}
 /* Asked once per mode per sign-in rather than on every paint, because the front page
-   repaints on every return to it and this is a round trip. */
+   repaints on every return to it and this is a round trip.
+ *
+ * IT IS THE OLDEST ANSWER IN FLIGHT, which is the whole reason this is not one line.
+ * dailySpend, dailyGrace and dailyDayEnd all write the same state, and every one of them is
+ * asking a question this read cannot have known about. Landed afterwards, the boot answer
+ * describes the day as it was BEFORE the kickoff, so the used count goes back down and the
+ * door redraws offering a season that has already been played. Measured, not reasoned: the
+ * guard in check-premium.mjs drives exactly that order and watched `used` go 2 back to 1.
+ *
+ * So the generation at ASK time is captured, and the answer is dropped if anything has
+ * written since. A dropped answer costs nothing: whatever overtook it is strictly fresher.
+ *
+ * THE NULL TEST HERE IS ABOUT THE RE-ARM, NOT ABOUT THE STATE, and that is worth being exact
+ * about because the two look like one line. dailyPut is what refuses to store a null, for
+ * every caller including this one. What this branch decides is whether to ASK AGAIN, which is
+ * a question only the boot read has.
+ *
+ * RE-ARMED ON A FAILURE, AND BOUNDED. A meter that goes silent for the rest of the session
+ * on one blip is the fail-open case costing a sale rather than a player, which is the cheap
+ * mistake, but it is still a mistake and the answer is one more ask. Bounded because this is
+ * called from every paint of the front page, and an unbounded re-arm against a dead network
+ * is a round trip per repaint. Three tries and then it stands.
+ *
+ * Each of the three clauses was proved by reintroducing it alone, and each breaks exactly one
+ * assertion in check-premium.mjs: the null test breaks the re-arm, dailyPut's null test breaks
+ * a failed spend (which then forgets the day), and the generation test hands back a season.
+ */
+const DAILY_TRIES=3;
+let dailyTried={dynasty:0,trade:0,full:0};
 function dailyEnsure(mode){
   if(!dailyOn()||dailyAsked[mode]) return;
   dailyAsked[mode]=true;
-  B.attemptsState(mode).then((s)=>{ dailyState[mode]=s; paintHomeStart(); }).catch(()=>{});
+  dailyTried[mode]++;
+  const at=dailyWrote[mode];
+  const missed=()=>{ if(dailyTried[mode]<DAILY_TRIES) dailyAsked[mode]=false; };
+  B.attemptsState(mode).then((s)=>{
+    if(!s||s.used==null) return missed();
+    if(dailyWrote[mode]!==at) return;   // something fresher landed while this was out
+    dailyPut(mode,s);
+    paintHomeStart();
+  }).catch(()=>{ missed(); });
 }
+/* ── ONE NEW DYNASTY A DAY, WHICH IS A SECOND METER AND A DIFFERENT QUESTION ───────
+ *
+ * The season budget meters how much you PLAY. This meters how often you START, and the
+ * two come apart the moment somebody does not like their draft: three seasons a day buys
+ * three drafts if you abandon each one after a season, which turns "one team, one life"
+ * into three rolls of the wheel. supabase/106_dynasty_one_run_a_day.sql is the rule.
+ *
+ * CACHED THE WAY THE SEASON METER IS, and read synchronously off the cache, because the
+ * door is drawn on every return to the front page and a round trip per paint is a round
+ * trip per paint. The ask happens once per sign-in, from the door's own builder.
+ *
+ * NULL IS NO OPINION AND NO OPINION IS PERMISSION, which is the rule every allowance on
+ * this page keeps. A database without 106 answers 404, board.js turns that into null, and
+ * the mode plays exactly as it did before the migration existed.
+ */
+let runDayState=null, runDayAsked=false, runDayWrote=0, runDayTried=0;
+function runDayPut(s){ if(!s) return false; runDayState=s; runDayWrote++; return true; }
+/* THE SAME THREE RULES dailyEnsure carries, for the same reasons and with the same bound.
+   A null is no opinion and is never stored as one. A read that went out before dynRunStart
+   took the day is older than the day, so landing it afterwards would put `ok:true` back and
+   offer a second run. And this is called from the door's builder, which runs on every paint
+   of the front page, so the re-arm is capped rather than open. */
+function runDayEnsure(){
+  if(!dailyOn()||runDayAsked) return;
+  runDayAsked=true;
+  runDayTried++;
+  const at=runDayWrote;
+  const missed=()=>{ if(runDayTried<DAILY_TRIES) runDayAsked=false; };
+  B.dynRunState().then((s)=>{
+    if(!s) return missed();
+    if(runDayWrote!==at) return;   // dynRunStart got there first, and it knows more
+    runDayPut(s);
+    paintHomeStart();
+  }).catch(()=>{ missed(); });
+}
+/* Shut only on a definite refusal. An owner answers pro and is never shut. */
+const runDayShut=()=>!!(dailyOn()&&runDayState&&runDayState.ok===false&&!runDayState.pro);
+const runDayNext=()=>{
+  const t=runDayState&&runDayState.nextAt?Date.parse(runDayState.nextAt):NaN;
+  return isNaN(t)?null:t;
+};
 /* Called from the auth change, because the answer belongs to an account. */
 function dailyForget(){
-  dailyState={dynasty:null,trade:null};
-  dailyAsked={dynasty:false,trade:false};
+  dailyState={dynasty:null,trade:null,full:null};
+  dailyAsked={dynasty:false,trade:false,full:false};
+  dailyTried={dynasty:0,trade:0,full:0};
+  /* BUMPED RATHER THAN ZEROED, and that is the point of it. A read for the OLD account can
+     still be in flight, and the generation is the only thing that tells it so: zeroed, it
+     would match the 0 the next ask captures and land one account's day on another's. */
+  dailyWrote={dynasty:dailyWrote.dynasty+1,trade:dailyWrote.trade+1,full:dailyWrote.full+1};
+  /* The new-run answer belongs to the account too, and a second account signing in on the
+     same tab must not inherit the first one's day. */
+  runDayState=null; runDayAsked=false; runDayTried=0; runDayWrote++;
 }
 /* "4h 12m", "12m", "40s". Coarse above an hour on purpose: a counter ticking every second
    for four hours is a distraction rather than information. */
@@ -9926,10 +10316,9 @@ async function dailySpend(mode){
   if(!dailyOn()) return true;
   let r=null;
   try{ r=await B.attemptSpend(mode); }catch(_){ r=null; }
-  /* The whole row, not three fields off it: `unit` and `ended` ride in the same answer and
-     picking fields out by hand is how the page ends up holding a state that says 'run'
-     because the last write forgot to copy the column across. */
-  if(r&&r.used!=null) dailyState[mode]=r;
+  /* Through dailyPut, which is what refuses a null and what counts the write. See its note:
+     the boot read is older than this answer and has to know it lost. */
+  dailyPut(mode,r);
   return !r||r.ok!==false;
 }
 /* One more today, and the reason has to travel because the server holds a flag per reason
@@ -9969,7 +10358,7 @@ async function dailyGrace(mode,reason){
   const line=graceSaid(mode,reason);
   let r=null;
   try{ r=await B.attemptGrace(mode,reason); }catch(_){ r=null; }
-  if(r&&r.used!=null) dailyState[mode]=r;
+  dailyPut(mode,r);
   paintHomeStart();
   if(r&&r.allowance!=null&&was&&r.allowance>was&&line) toast(line);
 }
@@ -9996,7 +10385,7 @@ async function dailyDayEnd(mode,fired){
   if(!dailyOn()||!dailySeasons(mode)) return;
   let r=null;
   try{ r=await B.attemptDayEnd(mode,fired); }catch(_){ r=null; }
-  if(r&&r.used!=null) dailyState[mode]=r;
+  dailyPut(mode,r);
   paintHomeStart();
 }
 /* THE GATE, AND THE REPAIR BEHIND IT. Every refusal goes through here rather than straight
@@ -10026,9 +10415,60 @@ function dailyClock(on){
    Saying "that is today's run" to somebody mid-dynasty who has just played three seasons is
    wrong twice over: they played three, and the run they are worried about is not going
    anywhere. */
+/* ── NO NEW DYNASTY TODAY ─────────────────────────────────────────────────────────
+ *
+ * The other spent sheet is about SEASONS and this one is about a fresh start, so it is its
+ * own screen rather than a fourth branch of dailySpentSheet: every sentence in there is
+ * "you have played all your seasons", and the player reading this has usually played none.
+ * They tapped Start a Dynasty and the answer is that today's dynasty has already been
+ * started, which is a different fact and a different feeling.
+ *
+ * THE FIRST THING IT SAYS IS THAT NOTHING WAS TAKEN, because the fear this screen creates
+ * is that tapping the button destroyed the run they had. It cannot: the gate that produced
+ * this sits above every line in beginDynastyDraft that clears anything, which is the
+ * trade-taken-halfway rule dynNewSheet learned the hard way.
+ *
+ * THE OFFER IS UNDER THE FACT, never over it, the same order the Commissioner wall uses:
+ * the clock is what makes the offer worth reading, and leading with the offer is a paywall.
+ */
+function dynastyRunWall(){
+  const at=runDayNext(), cd=at?dailyCountdown(at):null;
+  const saved=dynRead('open')||dynRead('club');
+  $('sheet-in').innerHTML='<div class="eyebrow gold">Dynasty</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">That is today\'s dynasty</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+
+      'You start one new dynasty a day. '+
+      (cd?'The next one unlocks in <b>'+esc(cd)+'</b>.'
+         :'The next one unlocks 24 hours after the last one started.')+'</p>'+
+    /* WHICHEVER OF THE TWO IS TRUE, and they are different reassurances. With a run saved
+       the thing worth saying is that it is untouched and still playable today; with none,
+       that nothing was spent by tapping. */
+    '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+
+      (saved
+        ? 'The dynasty you already have is untouched. Carry it on today, as far as your '+
+          'seasons take you.'
+        : 'Nothing was used by asking. A new dynasty is waiting when the clock is up.')+
+      '</p>'+
+    (premiumPitch()&&window.RTG_STORE
+      ? '<div style="margin-top:15px;padding-top:15px;border-top:1px solid var(--line)">'+
+          window.RTG_STORE.html({signedOut:!authState.signedIn})+'</div>'
+      : '')+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>';
+  $('sheet-in').dataset.kind='daily';
+  openSheet();
+  if(premiumPitch()&&window.RTG_STORE){
+    window.RTG_STORE.wire($('sheet-in'),{buy:(kind)=>beginBundleCheckout(kind)});
+    ga('premium_sheet_shown',{from:'dynasty_new_run',tier:acctTier()||'out'});
+  }
+  $('sh-x').onclick=closeSheet;
+}
 function dailySpentSheet(mode){
   const at=dailyResetsAt(mode), cd=at?dailyCountdown(at):null;
-  const name=mode==='trade'?'Trade Machine':'Dynasty';
+  /* NAMED, because this sheet says the name three times and an unnamed mode would read as
+     the Dynasty's sheet on a door that is not the Dynasty. Full Team takes the same one-run
+     wording the Trade Machine does, which is what its `unit` of 'run' already selects
+     everywhere below. */
+  const name=mode==='trade'?'Trade Machine':(mode==='full'?'Full Team':'Dynasty');
   const allow=dailyAllow(mode);
   const seasons=dailySeasons(mode), ended=dailyEnded(mode);
   /* TWO CLOCKS, AND THE UNIT SAYS WHICH. Dynasty's is 24 hours from the moment the day
@@ -10041,14 +10481,23 @@ function dailySpentSheet(mode){
     : seasons
     ? 'The '+one+' unlocks 24 hours after that.'
     : 'The '+one+' unlocks at midnight Eastern.';
+  /* THE SEASON SENTENCES AGREE WITH THE NUMBER, the same way the run sentence below
+     already did. The number comes off ps_day_allowance and this page is not allowed a
+     second copy of it, so every sentence holding it has to work for whatever it answers.
+     These three did not: at an allowance of 1 they read "That is your 1 seasons", "all 1
+     of your free seasons" and "1 free seasons". LATENT RATHER THAN LIVE, because dynasty
+     answers 3 today and 4 after a boss, so nobody has seen it. It is one server constant
+     away from being the copy on a paywall, which is the worst screen to be ungrammatical
+     on, and the fix costs less than the note explaining why it was left. */
   const head=ended?'That is the day'
-    :seasons?'That is your '+allow+' seasons'
+    :seasons?(allow>1?'That is your '+allow+' seasons':'That is your season')
     :'That is today\'s run';
   const body=ended
     ? 'The run is over, and a firing ends the day with it. '+when('next one')+
-      ' Every run gets '+allow+' free seasons.'
+      ' Every run gets '+allow+' free season'+(allow>1?'s':'')+'.'
     :seasons
-    ? 'You have played all '+allow+' of your free seasons. '+when('next season')+
+    ? (allow>1?'You have played all '+allow+' of your free seasons. '
+              :'You have played your free season. ')+when('next season')+
       ' Your dynasty is saved exactly where it stands.'
     /* THE REAL NUMBER, not always one. Under the old rule the base allowance is one a day
        and the game hands out two more: one for being fired in season one, one for beating a
@@ -10233,17 +10682,23 @@ const cfbNameHtml=()=>{
    "3 modes" and a sentence, on the same day, about the same purchase. What the card is worth
    is part of the offer rather than a decoration on a page, so it moved to the file whose
    whole job is that there is one answer to a question like this.
-   THE FALLBACKS STAY, because everything in this page that touches the store is optional: a
-   blocked CDN or a stale copy must cost the card and nothing else. Same guard the callers of
-   RTG_STORE.art already carried. */
-const pwCardInner=(title,sub)=>(window.RTG_STORE&&window.RTG_STORE.cardInner
-  ? window.RTG_STORE.cardInner(title,sub)
-  : '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span>');
+   AND THE WORDS ARE THE STORE'S NOW TOO, WHICH IS A SECOND ROUND OF THE SAME FIX. The markup
+   moved out and the two strings stayed as arguments each caller passed, so the cards drifted
+   again: this page's front page card said "Unlock every mode" while both profile cards said
+   "Unlock everything", about the same purchase, on the same day. A shared function that takes
+   the sentence as a parameter guarantees the shape and guarantees nothing about the sentence.
+   Neither helper takes words any more.
+   NO FALLBACK WORDS, AND NO FALLBACK CARD. These used to write their own markup when the
+   store was missing, which is a fourth copy of the sentence kept alive for a case where it is
+   useless anyway: the card's only job is to open the sheet, and a missing store has no sheet
+   to open. No store, no card. Everything else on this page that touches the store keeps its
+   guard, and this is that guard rather than an exception to it. */
+const pwCardInner=()=>(window.RTG_STORE&&window.RTG_STORE.cardInner
+  ? window.RTG_STORE.cardInner() : '');
 /* Two shapes because the front page BUILDS its node (see ensurePremiumCard) and the two
    sheets write theirs into a string of markup. Same insides either way. */
-const pwCard=(id,title,sub)=>(window.RTG_STORE&&window.RTG_STORE.card
-  ? window.RTG_STORE.card(id,title,sub)
-  : '<button class="pw-card" id="'+id+'">'+pwCardInner(title,sub)+'</button>');
+const pwCard=(id)=>(window.RTG_STORE&&window.RTG_STORE.card
+  ? window.RTG_STORE.card(id) : '');
 
 /* WHERE THE SHEET WAS OPENED FROM, for the one question worth asking of this screen: which
    of the ways in actually sells anything. Set by each caller, read once, cleared. */
@@ -10420,6 +10875,10 @@ function ensurePremiumCard(){
   }
   const host=$('b-start-dyn')||$('b-start-full')||$('hp-split');
   if(!host||!host.parentNode) return;
+  /* NO STORE, NO CARD. See pwCardInner: the only thing this button does is open the sheet,
+     so a blocked store leaves nothing behind it to open. Checked before the node is built
+     rather than after, or an empty button ships. */
+  if(!window.RTG_STORE) return;
   if(!el){
     el=document.createElement('button');
     el.className='pw-card';
@@ -10435,9 +10894,13 @@ function ensurePremiumCard(){
        AND NO COUNT AT ALL NOW. This card said "4 modes" while the two profile cards said "3
        modes" and a sentence, about the same purchase, on the same day. The count was also the
        wrong half to lead with: what a free account actually runs into is the counting, so the
-       value is the word that answers it. Both are the store's to say now, and it says the
-       same thing on all three. */
-    el.innerHTML=pwCardInner('Unlock every mode','No daily limit. One payment, lifetime.');
+       value is the word that answers it.
+       AND THE SENTENCE IS THE STORE'S, WHICH IS THE SECOND ROUND OF THAT FIX. This comment
+       used to end "Both are the store's to say now, and it says the same thing on all three",
+       and the line under it passed 'Unlock every mode' while both profiles passed 'Unlock
+       everything'. The claim was about the markup and was read as a claim about the words.
+       pwCardInner takes none now, so there is nothing here left to disagree with. */
+    el.innerHTML=pwCardInner();
     el.onclick=()=>openPremium('home_card');
     host.parentNode.insertBefore(el, host.nextSibling);
   }
@@ -10516,6 +10979,16 @@ function trimLongGroup(){
   if(box.parentNode) box.parentNode.removeChild(box);
 }
 
+/* THE PADLOCK THE TWO METERED DOORS WEAR WHEN THE DAY IS SPENT.
+   Drawn rather than fetched, for the reason every other mark on this page is: a few hundred
+   bytes of path inherits the card's own colour through fill:currentColor and cannot 404.
+   ONE CONSTANT FOR BOTH DOORS. Dynasty and Full Team are metered by different servers, with
+   different units and different clocks, and neither of those is a reason for the shut sign
+   to be a different shape. Written twice it would drift the first time somebody nudged one. */
+const HP_PAD='<svg class="hp-pad" viewBox="0 0 24 24" aria-hidden="true">'+
+  '<path d="M12 2a5 5 0 0 0-5 5v3H6a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V11a1 1 0 0 0-1-1h-1V7a5 5 0 0 0-5-5Zm0 2a3 3 0 0 1 3 3v3H9V7a3 3 0 0 1 3-3Z"/>'+
+  '</svg>';
+
 function ensureFullButton(){
   let el=$('b-start-full');
   if(!canPlayFull()){
@@ -10523,22 +10996,89 @@ function ensureFullButton(){
     return;
   }
   const box=ensureLongGroup(); if(!box) return;
+  /* ASKED HERE, ONCE PER SIGN-IN, because the line under the name is drawn from the answer.
+     Free, on a free call: dailyEnsure is a no-op for an owner and for anybody it has already
+     asked, and ps_attempts_state is declared stable and writes nothing, so drawing this door
+     can never cost somebody their run. */
+  dailyEnsure('full');
   if(!el){
     el=document.createElement('button');
     /* hp-ft is Full Team's own fill. On the shared card class alone this door had no
        colour in it and read as a control you cannot press: see the note on .hp-ft. */
     el.className='btn hp-full hp-ft';
     el.id='b-start-full';
-    el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
+    /* NEW, AND IT SAID PREVIEW UNTIL THE MODE LAUNCHED. Preview was the honest word while
+       this door was built for a tester list and nobody else: it told the handful of people
+       who could see it that the rough edges were expected. The same word in front of the
+       public says the mode is not finished, on a mode that is being sold, which is the one
+       direction a claim about a product must never be wrong in.
+       hp-tag-new RATHER THAN hp-tag-pro, which is the other half of the correction. Pro is
+       the gold mark this page puts on what an account has bought, and Full Team is free to
+       enter: what is bought is the meter coming off. A gold tag over a free door is the
+       store's own colour promising the wrong thing. The dynasty door beside it has read New
+       in this exact class since it launched. */
+    el.innerHTML='<span class="hp-tag hp-tag-new">New</span>'+
       '<span class="hp-full-name">Full Team</span>'+
       '<span class="hp-full-sub">Six on offense &middot; six on defense</span>';
-    el.onclick=()=>{ beginFullDraft(); };
+    el.onclick=()=>{ fullDoor(); };
   }
   /* FIRST IN THE GROUP, above the dynasty door. */
   if(box.firstChild!==el) box.insertBefore(el,box.firstChild);
   el.hidden=false;
   el.disabled=false;
   el.classList.remove('hp-loading');
+  /* ---- AND WHAT THE LINE UNDER THE NAME SAYS ----
+   *
+   * THE DOOR ITSELF NEVER SHUTS. That is the lesson the dynasty door already carries and it
+   * was learned the hard way there: refusing to open a saved run on a spent day protected
+   * nothing, because the wall that matters is at the kickoff, and a run the game will not let
+   * you look at reads as a run the game has taken.
+   *
+   * So a save in progress always says Resume, whatever the meter says, and a spent day only
+   * ever changes this line. */
+  const saved=fullRead();
+  const sub=el.querySelector('.hp-full-sub');
+  /* ---- AND THE CORNER SAYS WHICH STATE IT IS IN ----
+   *
+   * THE CAPTION WAS DOING THIS ALONE AND IT WAS NOT ENOUGH. A spent Full Team door kept its
+   * full red and blue fill, kept the New badge, and changed one line of 9.5px type at the
+   * bottom of the card to a countdown. Next to a dynasty door that goes grey and grows a
+   * "Day done" tag, this one read as open, so the only way to find out it was not was to
+   * press it and meet a wall. That is the surprise the whole meter is supposed to avoid.
+   *
+   * THE TAG SLOT IS SHARED, so the New badge and the spent tag are the same element rather
+   * than two stacked in one corner. They are mutually exclusive by definition: a mode nobody
+   * has played today cannot be a mode whose day is spent, and a door that announced itself as
+   * new AND shut in the same corner would be arguing with itself.
+   *
+   * A SAVED RUN IS NEVER SHUT, which is the rule both doors keep: the day it cost was charged
+   * at its own kickoff, resuming costs nothing, and a run the game will not let you look at
+   * reads as a run the game has taken. So the save branch clears the tag back to New. */
+  const tag=el.querySelector('.hp-tag');
+  const shut=!saved&&dailyShut('full');
+  if(tag){
+    tag.className='hp-tag '+(shut?'hp-tag-spent':'hp-tag-new');
+    tag.innerHTML=shut?(HP_PAD+'Used today'):'New';
+  }
+  if(sub){
+    if(saved){
+      sub.textContent='Resume your season';
+    }else if(shut){
+      const t=dailyCountdown(dailyResetsAt('full'));
+      sub.textContent=t?('Next run in '+t):'Next run tomorrow';
+    }else{
+      sub.innerHTML='Six on offense &middot; six on defense';
+    }
+  }
+}
+
+/* THE DOOR'S ONE HANDLER, because it has two jobs and the player presses one button.
+   A saved season is resumed and is never metered: the day it cost was charged at its own
+   kickoff, and charging it twice is what the paid flag on the run exists to stop. Anything
+   else is a new run and goes through the allowance. */
+function fullDoor(){
+  if(fullRead()) return fullResume();
+  return beginFullDraft();
 }
 
 /* THE DEFENSE DRAFT HAS TO FETCH ITS PEOPLE FIRST, which is the one thing no other mode
@@ -10647,6 +11187,9 @@ function ensureDynastyButton(){
   /* Asked here rather than at boot, so the two requests only ever go out for somebody who
      can actually see this door. */
   dynHiEnsure();
+  /* And whether a NEW one may be started, which is a different meter (106). Free on a free
+     call, the same as dailyEnsure: a read that writes nothing, asked once per sign-in. */
+  runDayEnsure();
   const box=ensureLongGroup(); if(!box) return;
   if(!el){
     el=document.createElement('button');
@@ -10764,13 +11307,31 @@ function ensureDynastyButton(){
       const at=dailyResetsAt('dynasty'), cd=at?dailyCountdown(at):null;
       dailyClock(true);
       const word=dailySeasons('dynasty')?'New run':'Next run';
-      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">'+
+      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">'+HP_PAD+
           (dailySeasons('dynasty')?'Day done':'Used today')+'</span>'+
         '<span class="hp-full-name">Dynasty</span>'+
         '<span class="hp-full-sub">'+
           (cd?word+' in '+esc(cd)
             :dailySeasons('dynasty')?word+' in 24 hours':word+' at midnight Eastern')+'</span>';
       el.onclick=()=>{ dailyStop('dynasty'); };
+    }else if(runDayShut()){
+      /* SEASONS LEFT AND NOTHING TO SPEND THEM ON, which is the one state the branch above
+         cannot describe. They started a dynasty today and it is gone: what is used up is the
+         fresh start, not the budget, so a tag reading Day done would be wrong about both
+         halves. Only reachable with no save, the same as the branch above, so there is no run
+         waiting on the other side of this clock either.
+         AFTER the season branch on purpose. A spent budget is the bigger fact and its sheet
+         is the one that names the boss battle, so when both are shut that is the one to say.
+         Tapping opens the wall rather than doing nothing: a button that ignores you reads as
+         broken, and the wall is where the reassurance and the offer are. */
+      const at=runDayNext(), cd=at?dailyCountdown(at):null;
+      dailyClock(true);
+      el.innerHTML=mark+dynHiHTML()+'<span class="hp-tag hp-tag-spent">'+HP_PAD+
+          'Started today</span>'+
+        '<span class="hp-full-name">Dynasty</span>'+
+        '<span class="hp-full-sub">'+
+          (cd?'New dynasty in '+esc(cd):'New dynasty in 24 hours')+'</span>';
+      el.onclick=()=>{ dynastyRunWall(); };
     }else{
     dailyClock(false);
     /* THE NEW BADGE, AND IT RETIRES ITSELF. The corner tag is the only thing on the front
@@ -10852,6 +11413,17 @@ function beginDynastyDraft(opts){
      is free, so it can guard the door and save somebody a draft they would not be allowed to
      play, while the write waits until they have actually committed to the season. */
   if(dailyShut('dynasty')) return dailyStop('dynasty');
+  /* AND WHETHER A NEW ONE MAY BE STARTED AT ALL, which is the other meter and a different
+     question from how many seasons are left. See 106_dynasty_one_run_a_day.sql.
+     ABOVE dynRead AND dynClear, DELIBERATELY. This is the trade-taken-halfway rule the
+     dynasty save already learned once: dynNewSheet cleared the save and asked the allowance
+     afterwards, so the dynasty went, the draft was then refused, and the player was left
+     with neither. Every gate that could refuse has to sit above every line that destroys
+     something.
+     THE READ REFUSES, THE WRITE COMMITS. The cached answer stops the obvious case without a
+     round trip; the spend below is what actually takes the day, and it happens at the last
+     moment before the wheel opens. */
+  if(runDayShut()) return dynastyRunWall();
   /* AND A RUN IN PROGRESS IS NOT SOMETHING TO OVERWRITE QUIETLY. Asked of the slot being
      STARTED, not of dynasties in general: an open run and a club run live in their own slots
      now, so starting one has nothing to say about the other. Only a second run of the same
@@ -10866,7 +11438,20 @@ function beginDynastyDraft(opts){
      button for a second first, because the mode drafted six defenders. It drafts an offense
      now, and an offense is in the boot bundle, so the wheel opens on the tap. */
   closeSheet();
-  dynastyIntro(()=>beginDraft(Object.assign({dynasty:true},opts||{})));
+  /* THE DAY IS TAKEN AT THE WHEEL, NOT AT THE TAP. The read above refuses the obvious case
+     off a cached answer; this is the write, and it happens after the rules sheet, at the last
+     moment before the board opens. Somebody who backs out of the intro has spent nothing.
+     IT IS NOT AWAITED AND THE DRAFT DOES NOT WAIT FOR IT. Every allowance on this page fails
+     open, and making the wheel hang on a round trip would be the one gate here that can cost
+     a player their turn to a train tunnel. A refusal that arrives after the board is already
+     up is a day granted that should not have been, which is the cheap mistake; the answer is
+     still cached, so the NEXT tap is refused correctly.
+     THE ANSWER IS KEPT, which is what makes that true: without storing it the page would ask
+     again on the next paint and hand out another. */
+  dynastyIntro(()=>{
+    B.dynRunStart().then(runDayPut).catch(()=>{});
+    beginDraft(Object.assign({dynasty:true},opts||{}));
+  });
 }
 
 /* WHAT STARTING A SECOND DYNASTY COSTS THE FIRST, said before it happens rather than after.
@@ -10899,9 +11484,17 @@ function dynastyReplaceSheet(opts){
        stand in front of it. Both reasons point at the same line, and it has to come before
        dynClear or the run is gone by the time the answer arrives. */
     if(dailyShut('dynasty')){ closeSheet(); dailyStop('dynasty'); return; }
+    /* AND THE NEW-RUN METER TOO, for exactly the reason the line above exists: this is the
+       one path to beginDraft that does not go back through beginDynastyDraft, so a gate added
+       there alone is a gate with this hole beside it. Above dynClear, or the run this sheet is
+       trading away is gone before the answer arrives. See 106_dynasty_one_run_a_day.sql. */
+    if(runDayShut()){ closeSheet(); dynastyRunWall(); return; }
     dynClear(slot);
     closeSheet();
-    dynastyIntro(()=>beginDraft(Object.assign({dynasty:true},opts||{})));
+    dynastyIntro(()=>{
+      B.dynRunStart().then(runDayPut).catch(()=>{});
+      beginDraft(Object.assign({dynasty:true},opts||{}));
+    });
   };
 }
 
@@ -10943,6 +11536,57 @@ function dynastyRulesHTML(go,opts){
       '<span class="ul-line"><b>'+base+' wins</b><i>or you are fired</i></span>'+
       '<p>Win '+base+' games and you play another season. Miss once and the run is over.</p>'+
     '</div>'+
+    /* ---- AND WHAT A DAY OF IT COSTS, SECOND ON THE SHEET ----
+       IT WAS FIFTH AND THAT IS WHY IT WAS REPORTED MISSING. The block itself has always been
+       here and has always read the real allowance off the server; what it did not do was get
+       READ, because it sat under the four steps, the money and the ageing rules, which on a
+       phone is a long way past the fold. A player deciding whether to start a dynasty stops
+       long before it.
+       So it is the second thing on the sheet, directly under the rule the mode is about. The
+       order is now what the mode is, what a day of it costs, then how any of it works, which
+       is the order somebody actually needs those three in. Nothing about it is a pitch: it is
+       the budget stated before it is spent, so meeting the wall later is a thing the player
+       was told about rather than a thing that happened to them. */
+    /* WHAT THE FREE DAY IS WORTH, said in the rules rather than discovered at a locked door.
+       The third line is the point of putting it here: a player who reads the budget and then
+       wins a boss has been handed a season and has no reason to go looking for it. Only drawn
+       for somebody the meter applies to, so an owner is not told about a limit they do not
+       have and a visitor before launch is not told about one that is not switched on yet.
+       WRITTEN PER UNIT, off the same dailySeasons() the gates read, so a page talking to a
+       database still on 100_daily_grace_reasons.sql describes the rule that database is
+       actually keeping. Rules that do not match the door are worse than no rules. */
+    (dailyOn()
+      ? (dailySeasons('dynasty')
+        ? '<div class="eyebrow" style="margin:16px 0 8px">Your free seasons</div>'+
+          '<ul class="modenotes">'+
+            /* NO ORDINAL HERE. "Play the 5th" reads fine and "the 3th" does not, and the
+               number comes off the server, so the sentence has to work for whatever it
+               answers. "Spend them all" needs no agreement with anything. */
+            '<li><b>'+dailyAllow('dynasty')+' seasons, then a wait.</b> One run, carried as '+
+              'far as you can take it. Spend them all and your dynasty waits exactly where it '+
+              'is.</li>'+
+            /* THE CLOCK IS THE THING PEOPLE GET WRONG, so it is its own line and it says both
+               halves: how long, and what starts it. A shared midnight punished whoever sat
+               down in the morning; this one is theirs. */
+            '<li><b>The clock is 24 hours.</b> It starts the moment your last season ends, '+
+              'not at some hour of the night.</li>'+
+            '<li><b>Getting fired starts it early.</b> The run is over and a new one waits out '+
+              'the same 24 hours. Every season you banked still counts.</li>'+
+            '<li><b>Win a boss battle, get another season.</b> Reach season '+
+              (E.DYNASTY_MILESTONE_EVERY*2)+' and beat the marquee team, and you get one '+
+              'more.</li>'+
+          '</ul>'
+        : '<div class="eyebrow" style="margin:16px 0 8px">Runs a day</div>'+
+          '<ul class="modenotes">'+
+            '<li><b>One run a day, free.</b> Carrying on a run you have already started never '+
+              'costs one. Play it over as many days as it lasts.</li>'+
+            '<li><b>Fired in season one? Have another.</b> A run that dies in its first '+
+              'season does not count against the day.</li>'+
+            '<li><b>Win a boss battle, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
+              ' and beat the marquee team, and the day gives you one more.</li>'+
+          '</ul>')
+      : '')+
+
     /* A SEASON, AS FOUR STEPS. Numbered because it is a loop you repeat. */
     '<div class="eyebrow" style="margin:15px 0 7px">A season, start to finish</div>'+
     '<ul class="modesteps">'+
@@ -10984,45 +11628,6 @@ function dynastyRulesHTML(go,opts){
       '<li><b>The target creeps up.</b> '+base+' wins, then '+(base+1)+' after season '+step+
         ', then '+(base+2)+' after '+(step*2)+'.</li>'+
     '</ul>'+
-    /* WHAT THE FREE DAY IS WORTH, said in the rules rather than discovered at a locked door.
-       The third line is the point of putting it here: a player who reads the budget and then
-       wins a boss has been handed a season and has no reason to go looking for it. Only drawn
-       for somebody the meter applies to, so an owner is not told about a limit they do not
-       have and a visitor before launch is not told about one that is not switched on yet.
-       WRITTEN PER UNIT, off the same dailySeasons() the gates read, so a page talking to a
-       database still on 100_daily_grace_reasons.sql describes the rule that database is
-       actually keeping. Rules that do not match the door are worse than no rules. */
-    (dailyOn()
-      ? (dailySeasons('dynasty')
-        ? '<div class="eyebrow" style="margin:16px 0 8px">Your free seasons</div>'+
-          '<ul class="modenotes">'+
-            /* NO ORDINAL HERE. "Play the 5th" reads fine and "the 3th" does not, and the
-               number comes off the server, so the sentence has to work for whatever it
-               answers. "Spend them all" needs no agreement with anything. */
-            '<li><b>'+dailyAllow('dynasty')+' seasons, then a wait.</b> One run, carried as '+
-              'far as you can take it. Spend them all and your dynasty waits exactly where it '+
-              'is.</li>'+
-            /* THE CLOCK IS THE THING PEOPLE GET WRONG, so it is its own line and it says both
-               halves: how long, and what starts it. A shared midnight punished whoever sat
-               down in the morning; this one is theirs. */
-            '<li><b>The clock is 24 hours.</b> It starts the moment your last season ends, '+
-              'not at some hour of the night.</li>'+
-            '<li><b>Getting fired starts it early.</b> The run is over and a new one waits out '+
-              'the same 24 hours. Every season you banked still counts.</li>'+
-            '<li><b>Win a boss battle, get another season.</b> Reach season '+
-              (E.DYNASTY_MILESTONE_EVERY*2)+' and beat the marquee team, and you get one '+
-              'more.</li>'+
-          '</ul>'
-        : '<div class="eyebrow" style="margin:16px 0 8px">Runs a day</div>'+
-          '<ul class="modenotes">'+
-            '<li><b>One run a day, free.</b> Carrying on a run you have already started never '+
-              'costs one. Play it over as many days as it lasts.</li>'+
-            '<li><b>Fired in season one? Have another.</b> A run that dies in its first '+
-              'season does not count against the day.</li>'+
-            '<li><b>Win a boss battle, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
-              ' and beat the marquee team, and the day gives you one more.</li>'+
-          '</ul>')
-      : '')+
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:13px 0 0">'+
       'You score points every season, more for the playoffs and a title, and later seasons '+
       'pay multiples. Lasting is the whole game.</p>'+
@@ -11291,6 +11896,9 @@ const FB_SLOTS={
   open:{ key:()=>dynKeyFor('open'),  read:()=>dynReadRaw('open'),  prog:(s)=>dynProgress(s.run) },
   club:{ key:()=>dynKeyFor('club'),  read:()=>dynReadRaw('club'),  prog:(s)=>dynProgress(s.run) },
   trade:{key:()=>TRADE_SAVE_KEY,     read:()=>tradeReadRaw(),      prog:(s)=>tradeProgress(s.run) },
+  /* THE FOURTH SLOT, and it does not cost a fourth round trip: ps_save_list hands back every
+     slot of one game at once, which is the whole reason this page keeps one game key. */
+  full:{ key:()=>FULL_SAVE_KEY,      read:()=>fullReadRaw(),       prog:(s)=>fullProgress(s.run) },
 };
 /* PACKED AT SEND TIME, NOT AT QUEUE TIME. Half a dozen of these can be queued inside one
    offseason, and what belongs on the server is the run as it is when the request goes out. */
@@ -11362,7 +11970,7 @@ async function dynCloudPull(){
   /* THE DYNASTY DOOR IS THE ONLY THING ON SCREEN THAT READS ONE OF THESE. The Trade Machine's
      card lives inside the modes sheet, which reads tradeRead() every time it is drawn, so a
      season that just came down is already there the moment somebody opens it. */
-  if(painted) ensureDynastyButton();
+  if(painted){ ensureDynastyButton(); ensureFullButton(); }
 }
 
 /* The save as it sits, before the checks dynRead makes. What goes up has to be the bytes that
@@ -11662,6 +12270,146 @@ function tradeResume(){
   return true;
 }
 
+/* ===================== FULL TEAM'S SAVE =====================================
+ *
+ * WRITTEN BEFORE THE METER, AND THAT ORDER IS THE POINT. Full Team was the last run on this
+ * page kept nowhere at all: no localStorage key, no slot in FB_SLOTS, so a closed tab lost
+ * twelve picks and a season. That was survivable while the mode was unmetered, because
+ * starting again cost nothing but the time.
+ *
+ * It stops being survivable the moment a run costs a day. dailySpend fires at KICKOFF, so
+ * without this a dropped connection in week three takes the run AND the allowance, and the
+ * player is left looking at a door that says come back tomorrow for a season they never got
+ * to finish. That is the dynNewSheet mistake exactly: the trade taken halfway.
+ *
+ * It is the Trade Machine's save with the guard changed, for the reason the two modes are
+ * alike: a Full Team run IS one season, so there is one of these per account and progress
+ * rises through the phases of a single year rather than through a count of them.
+ *
+ * WHAT IT IS NOT IS THE TRADE MACHINE'S RESTORE. That one force-starts a self-driving
+ * season, because the Trade Machine drives itself. Full Team is played by hand, so the
+ * restore is dynRestore's: put the run back, then put the player on the screen its phase
+ * names.
+ */
+const FULL_SAVE_KEY='ps_full_save';
+/* Bumped whenever a change would put a saved run under rules it was not started on, which is
+   the rule both older keys follow. It refuses rather than migrates: a wrong resume is worse
+   than a fresh start. */
+const FULL_SAVE_VERSION=1;
+
+function fullPack(){
+  return {
+    v:FULL_SAVE_VERSION,
+    api:NEED_VERSION,
+    user:authState.userId||null,
+    at:Date.now(),
+    /* The row id travels so a resumed results screen cannot file a second board row. */
+    submitted:submitted,
+    /* AND WHETHER THE DAY HAS ALREADY BEEN CHARGED FOR THIS RUN. Without it, coming back to
+       a saved season and reaching any gate would spend a second run for the same kickoff.
+       The dynasty carries paidSeason for the same reason and it is the same bug. */
+    run:Object.assign({},run,{
+      roster:run.roster.map(dynKey),
+      coach:run.coach?run.coach.name:null,
+    }),
+  };
+}
+/* The same ladder the Trade Machine climbs, and shared rather than copied: both are one
+   season, and the playoff weeks do not continue the regular season's numbering, so a
+   week-only measure goes backwards at the seeding screen and the server then refuses every
+   save for the rest of the run with nothing on screen to say so. */
+function fullProgress(r){
+  if(!r) return 0;
+  const wk=Math.max(0,(r.season&&r.season.week)||0);
+  return (TRADE_PHASE_RANK[r.phase]||0)*200+wk+1;
+}
+/* GUARDED ON full AND NOT dynasty. Nothing builds a Full Team dynasty today, and beginDraft
+   already carries the same pair in its own guard, so this stays correct rather than becoming
+   correct-by-accident if one ever exists: a dynasty is dynSave's, whatever shape it is. */
+const fullAtRest=()=>!!(run&&run.full&&!run.dynasty&&run.phase!==R.PHASES.OVER);
+function fullSave(){
+  if(!fullAtRest()) return;
+  try{ localStorage.setItem(FULL_SAVE_KEY,JSON.stringify(fullPack())); }catch(_){}
+  dynCloudPush('full');
+}
+function fullClear(){
+  try{ localStorage.removeItem(FULL_SAVE_KEY); }catch(_){}
+  dynCloudDrop('full');
+}
+/* The bytes as they sit, before the checks fullRead makes, so what goes up is what came
+   down. See the note over tradeReadRaw. */
+function fullReadRaw(){
+  let raw=null;
+  try{ raw=localStorage.getItem(FULL_SAVE_KEY); }catch(_){ return null; }
+  if(!raw) return null;
+  try{
+    const s=JSON.parse(raw);
+    return (s&&s.run&&s.run.full)?s:null;
+  }catch(_){ return null; }
+}
+function fullRead(){
+  let raw=null;
+  try{ raw=localStorage.getItem(FULL_SAVE_KEY); }catch(_){ return null; }
+  if(!raw) return null;
+  let s=null;
+  try{ s=JSON.parse(raw); }catch(_){ return null; }
+  if(!s||s.v!==FULL_SAVE_VERSION||!s.run||!s.run.full||!Array.isArray(s.run.roster)){
+    return null;
+  }
+  /* Whoever saved it and nobody else, both sides normalised so a signed out run finds its own
+     rather than the last account's. */
+  if((s.user||null)!==(authState.userId||null)) return null;
+  return s;
+}
+function fullRestore(s){
+  const r=s.run;
+  let missing=false;
+  /* HALF THIS ROSTER IS DEFENDERS, so BYKEY has to have been fed the second pool before this
+     runs. fullResume awaits loadDefensePool for that reason, the same way dynResume does.
+     Skip it and every defender reads as missing and a perfectly good run is cleared. */
+  r.roster=r.roster.map((k)=>{ const p=k?BYKEY.get(k)||null:null; if(!p) missing=true; return p; });
+  if(missing) return false;
+  if(r.coach){
+    const name=r.coach;
+    r.coach=coachList().find((c)=>c.name===name)||null;
+    if(!r.coach) return false;
+  }
+  endRun();
+  run=r;
+  lastChem=1;
+  submitted=(s.submitted===undefined?null:s.submitted);
+  /* Played by hand, so the manual advance is visible. The Trade Machine hides its own. */
+  $('b-sim').style.display='';
+  closeSheet();
+  dressTeam();
+  const P=R.PHASES;
+  if(run.phase===P.COACH){ paintCoach(); return true; }
+  if(run.phase===P.OVER){ paintOver(); return true; }
+  if(run.phase===P.SEASON){ paintSquad(!!run.season); return true; }
+  show('s-draft');
+  nextSpin(run.currentDraw||null);
+  return true;
+}
+function fullResume(){
+  const s=fullRead();
+  if(!s) return false;
+  /* The pool first, then the run, for the reason fullRestore's own note gives. */
+  loadDefensePool().then(()=>{
+    let ok=false;
+    try{ ok=fullRestore(s); }catch(err){ console.error(err); ok=false; }
+    if(ok) return;
+    /* Unopenable, so it goes, and it is said out loud: a silent clear looks exactly like the
+       bug this block exists to fix. */
+    fullClear();
+    endRun();
+    show('s-intro');
+    toast('That saved run could not be opened. It has been cleared.');
+  },()=>{
+    toast('Could not load the defensive players. Check your connection and try again.');
+  });
+  return true;
+}
+
 /*
  * EVERY MUTATION SAVES, AND NOT ONE CALL SITE SAYS SO.
  *
@@ -11690,7 +12438,7 @@ function tradeResume(){
   .forEach((fn)=>{
     const orig=R[fn];
     if(typeof orig!=='function') return;
-    R[fn]=function(){ const out=orig.apply(this,arguments); dynSave(); tradeSave(); return out; };
+    R[fn]=function(){ const out=orig.apply(this,arguments); dynSave(); tradeSave(); fullSave(); return out; };
   });
 
 function beginFullDraft(){
@@ -11698,6 +12446,13 @@ function beginFullDraft(){
   if(!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','full');
   }
+  /* ONE RUN A DAY, AND THE STORE IS WHAT A SPENT DAY OPENS, never a wall in front of the
+     mode. Checked here and spent at kickoff, the two on purpose at different moments: reading
+     is free, so it can save somebody the twelve picks of a draft they would not be allowed to
+     play, while the write waits until they have actually committed to the season.
+     dailyOn() stops metering the moment ps_premium is owned, so an owner never reaches this.
+     A SAVED RUN NEVER GETS HERE AT ALL: fullDoor() resumes before it calls this. */
+  if(dailyShut('full')) return dailyStop('full');
   const b=$('b-start-full');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
   /* THE CATCH IS ON THE FETCH AND NOTHING ELSE.
@@ -12555,7 +13310,11 @@ function nbrkShow(round,done){
      after them cannot be filled in until they are settled. */
   for(let r=0;r<nbrkFirstRound();r++) nbrkRoundGames(r).forEach(g=>B.revealed.add(g.key));
   $('nbrk-round').textContent=NBRK_ROUNDS[round]||'Playoffs';
-  $('nbrk-eyebrow').textContent=round===3?'One game left':'NFL Playoffs';
+  /* THE SEASON RIDES ON THE EYEBROW AND NOT ON THE ROUND, which is the display heading a
+     line below it. "Wild Card" is what this screen IS and it stays the loudest thing on it;
+     which season of the dynasty it belongs to is the quiet half, and the eyebrow is already
+     the quiet half. See seasonTag(). */
+  $('nbrk-eyebrow').textContent=(round===3?'One game left':'NFL Playoffs')+seasonTag();
   $('nbrk-note').textContent='';
   nbrkRender(round);
   show('s-nbrk');
@@ -13892,9 +14651,9 @@ function paintCoach(){
   const left=R.remaining(run);
   const base=coRating(null);
 
-  $('co-sub').innerHTML=coMarket.length
-    ? '<b>$'+left.toFixed(1)+'M left.</b> A coach comes out of it, and his scheme comes with him.'
-    : '<b>$'+left.toFixed(1)+'M left</b>, which hires nobody. You call the game plan.';
+  /* Filled in after the grid below decides how many are worth offering: this line has three
+     states now, not two, and the third one is the interesting one. */
+  const subEl=$('co-sub');
 
   /* WHAT THE TEAM IS WORTH RIGHT NOW, and the two units it is the average of, because every
      number in the grid below is a change to this one. */
@@ -13904,14 +14663,56 @@ function paintCoach(){
     '<span class="cb-half">offense <b>'+rate1(b0.off)+'</b> &middot; defense <b>'+
       rate1(b0.def)+'</b>, averaged</span>';
 
-  /* EVERY MAN IN THE MARKET, PRICED IN RATING POINTS. Fifty-odd cells, each of which costs
-     one chemistry resolve and one strength evaluation, which is about a millisecond of work
-     in total and buys the whole screen. */
-  const cells=coMarket.map((c)=>({ c, d:coRating(c)-base, knows:coKnows(c).length }))
+  /* EVERY MAN IN THE MARKET, PRICED IN RATING POINTS. A hundred-odd cells, each of which
+     costs one chemistry resolve and one strength evaluation, which is about a millisecond of
+     work in total and buys the whole screen. */
+  const priced=coMarket.map((c)=>({ c, d:coRating(c)-base, knows:coKnows(c).length }))
     .sort((x,y)=>y.d-x.d||x.c.price_musd-y.c.price_musd);
+  /* ---- AND THE ONES WHO WOULD MAKE THE TEAM WORSE ARE NOT OFFERED ----
+   *
+   * MEASURED FIRST, over sixty drafted rosters: the table holds 115 coaches, an average run
+   * can afford 114 of them, and 66 of those, FIFTY-EIGHT PERCENT, lower this roster's
+   * rating. The screen sorted them best-first and marked the top one, so the answer was
+   * always at the top and the other two thirds of the page was a list of men whose only
+   * function was to be scrolled past.
+   *
+   * THERE IS NO TRADE BEING HIDDEN HERE, which is what makes the cut safe rather than
+   * paternalistic. By this screen the roster is drafted and the money that is left buys
+   * nothing else: unspent cap is "production you never fielded", worth zero. So a coach who
+   * costs money and lowers the rating is not a cheap option or a risky one, he is strictly
+   * worse than the No coach button sitting under the grid, which is free and already there.
+   *
+   * FLAT MEN STAY. A coach at zero on the headline is not doing nothing: the rating is the
+   * MEAN of his two sides, so +6% offense and -6% defense nets to zero here and still
+   * changes what this team scores and what it allows. That is a real choice and it is the
+   * player's to make.
+   *
+   * AND WHEN NOBODY HELPS, THE SCREEN SAYS SO RATHER THAN HANDING THE LIST BACK. That is
+   * not the rare case it looks like. Measured over 75 real drafts through run.js, three
+   * ways a person plays:
+   *
+   *              affordable   would help   money left
+   *   greedy         22.7         1.1        $3.5M
+   *   thrifty       115.0        52.6      $219.2M
+   *   value         115.0        49.1      $188.6M
+   *
+   * A player who SPENDS THE CAP, which is the good way to draft, arrives here with about
+   * three million and twenty-odd coaches in reach, and on 24 of those 75 drafts not one of
+   * them improves the team. Showing everybody again on exactly that run would put the whole
+   * sift back in front of the player who earned the cleanest answer. The answer is that
+   * there is nobody worth hiring, the No coach button under the grid is free and already
+   * there, and the screen can simply say it. */
+  const flat=(d)=>d>-0.05&&d<0.05;
+  const cells=priced.filter((r)=>!(r.d<-0.05));
+  const hidden=priced.length-cells.length;
   $('co-grid').innerHTML=cells.map((r,i)=>{
-    const d=r.d, cls=d>0.05?'pos':(d<-0.05?'neg':'');
-    return '<button class="cocell'+(i===0&&d>0.05?' best':'')+'" data-n="'+esc(r.c.name)+'">'+
+    /* PRINTED FLAT IS FLAT. A coach at -0.04 is inside the band this screen calls no change
+       and is offered for that reason, and `(-0.04).toFixed(1)` is the string "-0.0", which is
+       a minus sign on a man the filter above just certified as costing nothing. Round to the
+       band before printing, the same way the results screen decides "moved" on the printed
+       value rather than the raw one. */
+    const d=flat(r.d)?0:r.d, cls=d>0?'pos':'';
+    return '<button class="cocell'+(i===0&&d>0?' best':'')+'" data-n="'+esc(r.c.name)+'">'+
       '<span class="cnm">'+esc(r.c.name)+'</span>'+
       '<span class="cdl '+cls+'">'+(d>0?'+':'')+d.toFixed(1)+'<i>RATING</i></span>'+
       '<span class="cft"><span class="cpr">$'+r.c.price_musd.toFixed(1)+'M</span>'+
@@ -13919,11 +14720,27 @@ function paintCoach(){
         (r.knows?'<span class="cknow">knows '+r.knows+'</span>':'')+'</span>'+
       '</button>';
   }).join('');
-  $('co-grid').hidden=!coMarket.length;
+  $('co-grid').hidden=!cells.length;
+  /* THE THREE STATES, said plainly. Nothing affordable at all is a different sentence from
+     nothing WORTH hiring, and both are different from a real market: the first is about the
+     money, the second is about the roster, and telling them apart is the whole job of this
+     line. The middle one used to be impossible to reach and is now a third of cap-spending
+     drafts. */
+  if(subEl) subEl.innerHTML=!coMarket.length
+    ? '<b>$'+left.toFixed(1)+'M left</b>, which hires nobody. You call the game plan.'
+    : (!cells.length
+      ? '<b>$'+left.toFixed(1)+'M left.</b> Nobody you can afford would improve this roster, '
+        +'so the money stays on the field and the game plan is yours.'
+      : '<b>$'+left.toFixed(1)+'M left.</b> A coach comes out of it, and his scheme comes '
+        +'with him.');
+  /* WHAT THE LIST IS, and why it is shorter than the money says it could be. Saying the
+     number alone would read as the market having shrunk; saying what was left out is what
+     stops somebody hunting for a name they remember and concluding it is a bug. */
   const mk=$('co-market');
-  if(mk) mk.textContent=coMarket.length
-    ? coMarket.length+' coaches you can afford, best for this roster first'
-    : '';
+  if(mk) mk.textContent=!cells.length
+    ? (coMarket.length?coMarket.length+' are affordable and every one of them would make this team worse.':'')
+    : cells.length+' who would help this roster, best first'
+      +(hidden?'. '+hidden+' more are affordable and would make it worse.':'');
   paintPlan();
   show('s-coach');
 }
@@ -14582,7 +15399,11 @@ function paintWinter(){
     : 'Every player moves to his next real NFL season. '+
       '<b>You keep paying what you drafted him for.</b> That never changes, and neither does '+
       'your '+M0(R.capOf(run))+' cap.';
-  $('w-list').innerHTML=run.roster.map((p,i)=>{
+  /* QB first and the tight end last, rather than whoever the wheel happened to offer first.
+     The INDEX passed to winterRow is still the roster index, because that is what data-i
+     carries and what releaseMan is handed; only the walk order changes. */
+  $('w-list').innerHTML=byPosition(run.roster).map((i)=>{
+    const p=run.roster[i];
     const a=w.aged.find(x=>x.now===p);
     return a?winterRow(a,i):'';
   }).join('');
@@ -14972,6 +15793,151 @@ const schemeIconSvg=(key)=>{
 /* THE TEAM OVERALL, SAID AS THE TWO NUMBERS IT IS THE MEAN OF. See fullSideRatings: the
    mean of these two IS the headline, exactly, so this is a decomposition of it and not a
    second opinion about it. Full Team only, because it is the only mode with two units. */
+/* ─── HOW A FULL TEAM OVERALL IS MADE ────────────────────────────────────────────────
+ *
+ * THE ONE LINE THIS REPLACES SAID "Offense 15.7 and Defense 99.4, averaged" AND STOPPED.
+ * Two numbers and a verb. Nothing said where either came from, why a 15.7 and a 99.4 are
+ * comparable enough to average, or what the twelve men on the screen above had to do with
+ * it. On the mode that asks for twelve picks instead of six, the screen that grades them
+ * explained less than the one that grades six.
+ *
+ * Every other mode already does this properly, in one sentence under the lineup: so many
+ * squad FPPG, this much chemistry, this much for how the six fit, which IS the overall.
+ * A player can check it by hand. That is the standard this owes and did not meet, and it
+ * could not meet it in a sentence: a full team has two of every term, and a mean and a
+ * coach on top of them.
+ *
+ * So it is a table, and it is the engine's own working. Every number is read off
+ * fullSideRatings().parts rather than recomputed here, so a breakdown that disagrees with
+ * the rating is not a thing that can happen.
+ *
+ * BOTH UNIT ROWS ARROW RATHER THAN EQUAL, AND THAT IS THE HONEST SIGN. Two things sit
+ * between the inputs and a unit's rating and neither is a lever: FULL_TALENT scales both
+ * sides' production (a fitted balance constant, identical for every player, so printing it
+ * would dress a tuning number up as a decision), and a defence's product is points it GIVES
+ * UP, which defenseOverall() then puts on the offence's ladder. Without that second step the
+ * mean underneath is two different units added together, which is what the old line's bare
+ * "averaged" was quietly doing.
+ *
+ * So the rows say "these inputs produce that rating" rather than claiming an identity that
+ * does not hold. The mean and the coach below them DO equal, and they carry equals signs.
+ * The single-unit summary draws the same distinction in words for the same reason: see the
+ * note on o-squadline about why a defence cannot say "which is".
+ *
+ * WHAT THE SCALE MEANS IS ALREADY WRITTEN, in the How close tab: each unit reads what those
+ * six would rate in their own mode, "at what they produce HERE, which is a shade under what
+ * the same men manage with only one side of the ball to carry". That paragraph is the talent
+ * factor in a sentence a player can use, and it is why this table does not need to print the
+ * constant. The two are halves of one explanation; do not delete that one as a duplicate of
+ * this.
+ */
+function fullBreakdown(){
+  if(!(run&&run.full&&run.roster&&run.roster.length)) return '';
+  let s; try{ s=E.fullSideRatings(run.roster,liveChem(),run.coach||null); }catch(_){ return ''; }
+  const p=s&&s.parts; if(!p) return '';
+  const mean=(s.off+s.def)/2;
+  const boost=s.coachBoost||1;
+  /* OFF THE ENGINE, never off a copy of its arithmetic. The squad and results screens have
+     already under-reported every coach by 40% once, by multiplying the tilt by a 1.2 that was
+     right when COACH_K was 0.012 and silently wrong the day it moved to 0.020. */
+  let coEff=null;
+  try{ coEff=run.coach?E.coachEffect(run.coach):null; }catch(_){ coEff=null; }
+  /* THE COACH ROW APPEARS WHENEVER THERE IS A COACH, not only when his effect is large.
+     A threshold on the boost printed "Gary Kubiak 0%" over a mean of 65.9 and an overall
+     of 66.0: a row saying he did nothing, directly above a number he had moved. And with
+     no coach the mean IS the overall, so the table ends correctly one row earlier.
+     ONE DECIMAL, because that is the resolution the ratings beside it are printed at. A
+     coach whose two sides cancel really is a 0.0% on the headline, and that is worth
+     seeing: it is the thing the coach screen's own rating delta is telling you. */
+  const moved=!!(run.coach);
+  /* A term is only worth a column when it is doing something, and "doing something" is
+     decided on the PRINTED value rather than the raw one. A fit of 1.004 rounds to 0% and
+     a guard on the raw number let it through, so the first draft of this table carried a
+     "0% FIT" column that made the two terms which had actually moved harder to find. Same
+     rule as `moved` on the commish state card, and the same reason. */
+  const term=(v,lbl)=>Math.round((v-1)*100)===0?''
+    :'<i>'+fitPct(v)+' <u>'+lbl+'</u></i>';
+  /* THE FPPG IS THE ROSTER'S OWN, not the scaled one the arithmetic uses. A player can add
+     the six numbers up off the lineup on this same screen, so printing 78% of their sum
+     under the label FPPG would be a figure that matches nothing they can see. */
+  /* ── AND THE STEP BETWEEN THEM IS PRINTED NOW, WHICH IT WAS NOT ──
+   *
+   * The rows used to read `76 FPPG +7% chemistry -1% fit → 46.0` and the arrow was doing the
+   * work: FULL_TALENT scales both sides, and nothing on the screen said so, so a reader who
+   * multiplied the three printed terms got a different number from the one beside them. The
+   * arrow was chosen as an honest signal that something sat in the gap, and a symbol meaning
+   * "trust me" is not the same as showing the step. A player asked for a rating system they
+   * could follow, and this was the half that could not be followed.
+   *
+   * IT IS NOT A LEVER AND THE LABEL HAS TO SAY SO. Every other term on the row is something
+   * the player did: who they signed, how the six fit, who knows whom. This one is the same
+   * constant for everybody, and it is here because twelve men share one cap, so six of them
+   * do not produce what six produce in a mode that spends the whole cap on one unit. */
+  const scale=(t)=>(t===undefined||t===null||Math.abs(t-1)<0.005)?''
+    :'<i>&times;'+t.toFixed(2)+' <u>full team</u></i>';
+  const row=(cls,name,pts,chem,fit,val,eq)=>
+    '<div class="fbrow '+cls+'"><span class="fbn">'+name+'</span>'+
+    '<span class="fbw"><i><b>'+Math.round(pts)+'</b> <u>FPPG</u></i>'+
+      scale(p.talent)+term(chem,'chemistry')+term(fit,'fit')+'</span>'+
+    '<span class="fbe">'+eq+'</span><b class="fbv">'+rate1(val)+'</b></div>';
+  return '<div class="fbreak">'+
+    '<div class="fbhead">How that is made</div>'+
+    /* OFFENSE EQUALS, DEFENSE ARROWS, and the difference is the point rather than a
+       typographic tic: with the scale printed, the offense really is the four terms
+       multiplied and a reader can check it on a calculator. The defense cannot be, because
+       its product is points it GIVES UP and defenseOverall is what puts that on the
+       offense's own ladder so the mean below means anything. One more step, one different
+       sign, and a line under the table saying which. */
+    row('off','Offense',p.offPts,p.offChem,p.offFit,s.off,'=')+
+    row('def','Defense',p.defPts,p.defChem,p.defFit,s.def,'→')+
+    '<div class="fbrow sum"><span class="fbn">The two, averaged</span>'+
+      '<span class="fbw"></span><span class="fbe">=</span>'+
+      '<b class="fbv">'+rate1(mean)+'</b></div>'+
+    (moved
+      /* HIS TWO TILTS, NOT JUST THE NET, and this is the line a player was misread by.
+         Most coaches in this game pull the two ways at once: Kliff Kingsbury is +1.0%
+         offense and -3.0% defense, which is -1.0% to the team. The hire sheet says all
+         three; this row said only the last one, so somebody who had read "+1.0% offense"
+         when they hired him met a bare "-1.0%" here and reasonably concluded the game had
+         changed its mind. Measured: 41 of the 115 coaches in the table pull opposite ways,
+         and 68 of them are net negative, so this is the common case rather than the odd one.
+         His chemistry with your players is NOT in this row, deliberately: that moves the two
+         unit ratings above, because it is a fact about the roster rather than about him. */
+      ? '<div class="fbrow coach"><span class="fbn">'+
+          esc((run.coach&&run.coach.name)||'Your coach')+'</span>'+
+        '<span class="fbw"><i>'+pc(boost-1)+' <u>team</u></i>'+
+          '<i>'+pc((coEff?coEff.off:1)-1)+' <u>off</u></i>'+
+          '<i>'+pc((coEff?coEff.def:1)-1)+' <u>def</u></i></span>'+
+        '<span class="fbe">=</span><b class="fbv">'+rate1(p.mean)+'</b></div>'
+      : '')+
+    /*
+     * AND THE LAST STEP, WHICH USED TO BE MISSING AND WAS PRINTED AS AN EQUALS SIGN.
+     *
+     * The coach row ended `= <overall>`, and after fullTeamScale arrived that was simply
+     * false: what the coach row produces is the MEAN, and the mean is not the team overall.
+     * A twelve man team splits one cap across two units where a quick draft spends a whole
+     * cap on six men, so the raw mean reports every Full Team roster weaker than a six man
+     * squad drafted with the same care, and the game's own thresholds are cut for the six
+     * man ladder. This row is where that is corrected.
+     *
+     * IT ARROWS, for exactly the reason the defense row arrows: it is not a term the player
+     * multiplied, it is a step between what the roster produces and what the number means.
+     * Drawn only when it actually moves the value, so a roster sitting on an anchor does not
+     * get a row saying nothing, which is the Gary Kubiak rule above. */
+    (Math.abs(p.mean-s.overall)>=0.05
+      ? '<div class="fbrow scale"><span class="fbn">On the league scale</span>'+
+        '<span class="fbw"></span><span class="fbe">→</span>'+
+        '<b class="fbv">'+rate1(s.overall)+'</b></div>'
+      : '')+
+    /* WHAT THE ARROW MEANS, said once, under the table. The alternative is a longer defense
+       row on a 390px phone, where it would wrap and push the value off its own line. */
+    '<div class="fbfoot">Defense counts what you stop, so it is placed on the offense\'s '+
+      'scale to be averaged with it. Your twelve share one cap, so the team is then read '+
+      'on the same scale every mode is rated on.</div>'+
+    '</div>';
+}
+/* The old name, kept because two screens call it and only one of them has room for the
+   table: the squad screen draws it under a lineup that is already twelve rows long. */
 function sideLine(){
   if(!(run&&run.full&&run.roster&&run.roster.length)) return '';
   let s; try{ s=E.fullSideRatings(run.roster,liveChem(),run.coach||null); }catch(_){ return ''; }
@@ -15373,7 +16339,15 @@ function pushGame(r,el,idx){
    it is drawing, and so a skipped season and a played one produce the same grid.
    Twenty-one squares is nothing to repaint. */
 function paintCalendar(justPlayed){
-  const s=run.season, cells=[];
+  const s=run&&run.season, cells=[];
+  /* THE TWIN OF paintNext'S GUARD, and it was found the same way: a checker run threw
+     "Cannot read properties of null (reading 'results')" one line down, on a repaint that
+     landed while run.season was null. Guarding one painter and not the other only moved
+     which line the race lands on, which is worth writing down, because the next repaint
+     added to this page will need the same question asked of it.
+     Same answer, too: this function only draws, and what a throw here costs is the whole
+     screen, since the frame stays up and every button on it stops answering. */
+  if(!s||!Array.isArray(s.results)) return;
   const done=new Map();
   s.results.forEach(r=>done.set(r.playoff?'p|'+r.round:'w|'+r.week,r));
   const square=(key,tag,code,extra)=>{
@@ -15494,20 +16468,57 @@ function dynSeasonChip(){
  * SEASON ONE GETS NO LEFT HALF rather than "0-0". There is nothing behind it, and a zero is a
  * claim about a career that has not started.
  */
-/* WHAT THE CAREER HAS PRODUCED, identical on both screens that show it. run.history holds
-   FINISHED seasons only, which is what makes one function serve both: on the season screen
-   it is every season before the live one, and in the offseason it is every season including
-   the one just played, and in both cases it is exactly "behind you".
-   NO SEASON COUNT. Both screens print the season number in the display face inches away,
-   and "5 seasons behind you" beside a 6 is two numbers for one fact. What is left is the
-   part that number cannot say: what those seasons actually produced. */
+/* WHAT THIS DYNASTY HAS PRODUCED, ALL OF IT, identical on both screens that show it.
+ *
+ * IT SAID "BEHIND YOU" AND COUNTED ONLY FINISHED SEASONS, which were two halves of one
+ * problem. A player asked what the number meant and guessed at a career record, which is the
+ * right guess and was the wrong number: during season seven it was seasons one to six, and
+ * the twelve games already played that year were not in it. The old note argued the live
+ * record was on the score bug and in the calendar heading already, so a third copy was
+ * noise. That is true of the LIVE record and it is not an argument for a running total that
+ * stops four months short, which is a different figure from either.
+ *
+ * So it says Total and it means it: every game this dynasty has played, the one being played
+ * included, moving every week as the season runs.
+ *
+ * NOT "CAREER", AND THAT IS THE ONE WORD THAT WAS AVAILABLE AND WRONG. The profile keeps
+ * career numbers across every run this account has ever played (pfCareerPaint), so the same
+ * word on this bar would name a smaller thing two taps away from naming a bigger one, and
+ * neither screen would be able to say which. Total is about this dynasty and reads as it.
+ *
+ * NO DOUBLE COUNT, AND THE WINDOW IT WOULD HAPPEN IN IS REAL. ownerVerdict pushes the
+ * finished season into history and beginOffseason is what clears run.season, so between them
+ * the results screen holds the same season in BOTH places. The guard is the season NUMBER
+ * rather than a phase: history entries carry seasonNo, so a live season already filed is one
+ * comparison away and the answer cannot drift with the screen it is read from.
+ *
+ * NO SEASON COUNT. Both screens print the season number in the display face inches away, and
+ * "5 seasons" beside a 6 is two numbers for one fact. */
+let dynTotalLast='';
 function dynBehindSpan(){
   const h=Array.isArray(run.history)?run.history:[];
-  if(!h.length) return '';
-  const w=h.reduce((t,x)=>t+(x.wins||0),0);
-  const l=h.reduce((t,x)=>t+(x.losses||0),0);
-  const titles=h.filter((x)=>x.title).length;
-  return '<span>Behind you <b>'+w+'-'+l+'</b>'+
+  let w=h.reduce((t,x)=>t+(x.wins||0),0);
+  let l=h.reduce((t,x)=>t+(x.losses||0),0);
+  let titles=h.filter((x)=>x.title).length;
+  const s=run.season;
+  const last=h.length?h[h.length-1]:null;
+  const filed=!!(last&&last.seasonNo===run.seasonNo);
+  if(s&&Array.isArray(s.results)&&!filed){
+    w+=s.results.filter((r)=>r.won).length;
+    l+=s.results.filter((r)=>!r.won).length;
+  }
+  /* Nothing played at all is still nothing to claim, which is what the season one guard was
+     always for. It is a count of GAMES now rather than of seasons, so kickoff week of a first
+     season is the only moment it is empty. */
+  if(!w&&!l) { dynTotalLast=''; return ''; }
+  const key=w+'-'+l;
+  /* A NUMBER THAT MOVED SHOULD LOOK LIKE IT MOVED. The strip is rebuilt from innerHTML on
+     every repaint, so there is no element to animate between two values; what carries the
+     change is the class on the new one, and the previous value has to be remembered here
+     because the DOM no longer holds it. */
+  const moved=!!dynTotalLast&&dynTotalLast!==key;
+  dynTotalLast=key;
+  return '<span>Total <b'+(moved?' class="tbump"':'')+'>'+key+'</b>'+
     (titles?' &middot; <b>'+titles+'</b> title'+(titles===1?'':'s'):'')+'</span>';
 }
 /*
@@ -15618,7 +16629,16 @@ function paintUpcomingBug(){
   }
 }
 function paintNext(live){
-  const s=run.season;
+  const s=run&&run.season;
+  /* NOTHING TO PAINT IS NOT AN ERROR, and unguarded this threw "Cannot read properties of
+     null (reading 'wins')" two lines down. It is reachable between a kickoff and the season
+     existing, and from a sim timer that outlives the run it was started for, and what a
+     throw here costs is the whole screen: the last frame stays up and every button on it
+     stops answering, which is the symptom a player reports as the game freezing.
+     Caught once in a checker run and not reproducible in three more, which is what a race
+     looks like from the outside. Returning is right whatever the path: this function only
+     draws, so declining to draw a season that is not there loses nothing. */
+  if(!s) return;
   /* The record's two halves animate independently, so the half that changed is the half that
      moves. Swapping the whole string makes a win and a loss look identical. */
   const rec=$('v-rec');
@@ -15721,8 +16741,11 @@ function paintCapTracker(inf){
    begins would be paying for that authority twice. */
 function spendTheDay(){
   if(!run) return;
-  if(!(run.dynasty||run.tradeMachine)) return;
-  const mode=run.dynasty?'dynasty':'trade';
+  if(!(run.dynasty||run.tradeMachine||run.full)) return;
+  /* FULL TEAM IS A RUN LIKE THE TRADE MACHINE'S, so it falls through to the branch below:
+     one run a day, charged once, at the kickoff of the one season it has. A Full Team
+     dynasty is a dynasty first, which is why that arm is tested before this one. */
+  const mode=run.dynasty?'dynasty':(run.tradeMachine?'trade':'full');
   if(dailySeasons(mode)){
     const n=run.seasonNo||1;
     if(run.paidSeason===n) return;
@@ -15748,6 +16771,15 @@ function seasonIsPaid(){
 }
 function startSeason(){
   if(!seasonIsPaid()&&dailyShut('dynasty')) return dailyStop('dynasty');
+  /* THE SAME BACKSTOP FOR FULL TEAM, and a backstop is all it is: the wall that matters is at
+     the door, which is where somebody is turned away before they spend twelve picks on a run
+     they cannot play. This catches the ways round it, all of which start with a draft saved
+     on a day that still had a run in it and finished on a day that does not.
+     ON attemptPaid AND NOT ON THE CLOCK, so resuming a season already charged for is never
+     stopped by it. That is the rule the dynasty's seasonIsPaid() keeps and it is the one that
+     matters: a run in progress belongs to the player, and a mode that refuses to let them
+     finish a season they have already paid for reads as a mode that took it. */
+  if(run&&run.full&&!run.dynasty&&!run.attemptPaid&&dailyShut('full')) return dailyStop('full');
   spendTheDay();
   ga('season_started',{mode:runMode(),club:run&&run.franchise||null});
   const sp=$('season-roster'); if(sp) sp.style.display='none';
@@ -15891,6 +16923,7 @@ function after(){
        has been played; what is left is the results screen, and a mode card offering to
        resume something that is over is a door back to a place with nothing behind it. */
     if(run.tradeMachine) tradeClear();
+    if(run.full&&!run.dynasty) fullClear();
     paintOver();
   }
 }
@@ -17242,6 +18275,11 @@ function checkHeadline(results){
 /* ---------- seeding ---------- */
 function paintSeed(){
   const sd=run.playoffSeed;
+  /* WHICH SEASON OF THE DYNASTY THIS IS. A 13-4 under "Regular season complete" is the same
+     screen in season one and season forty. See seasonTag(), which carries the whole argument
+     and the reason the tail is always concatenated rather than conditionally set. */
+  const eye=$('sd-eye');
+  if(eye) eye.textContent='Regular season complete'+seasonTag();
   $('sd-rec').textContent=sd.regularRecord;
   const c=$('sd-card'); c.className='seed-panel '+(sd.bye?'gold':'win');
 
@@ -17804,7 +18842,10 @@ function playPlayoffGame(r,after){
   const youEl=$('po-you'), themEl=$('po-them'), bug=$('po-bug');
   const rcls=ROUND_CLASS[round]||'r-wc';
 
-  $('po-round').textContent=round;
+  /* THE ROUND, AND WHICH SEASON OF THE DYNASTY IT IS. The opponent's name is the headline
+     under this and the score bug is under that, so the eyebrow is the one line with room for
+     it. See seasonTag(). */
+  $('po-round').textContent=round+seasonTag();
   $('po-opp').textContent=r.opponent;
   youEl.style.setProperty('--tcol',me.a);
   youEl.style.setProperty('--tcol2',me.b);
@@ -18048,6 +19089,14 @@ $('b-po').onclick=()=>{R.startPlayoffs(run);runPlayoffs();};
 $('b-po-skip').onclick=()=>{R.startPlayoffs(run);show('s-season');fastForward();};
 $('b-po-fast').onclick=()=>{ if(poSkip) poSkip(); };
 $('b-nbrk-fast').onclick=()=>{ if(nbrkSkip) nbrkSkip(); };
+/* ONE WAY, and the control goes with the press. See bossFast. It does not touch bossTimer:
+   a drive already animating finishes its own frames and every drive after it runs fast, which
+   is both simpler than tearing down a running rAF and what a reader sees anyway. */
+$('b-boss-fast').onclick=()=>{
+  bossFast=true;
+  $('bg-skip').hidden=true;
+  ga('boss_sim_rest',{season:(run&&run.seasonNo)||0});
+};
 
 /* ---------- result ----------
    Reads top to bottom as the answer to four questions in order: what was my
@@ -18659,6 +19708,25 @@ function bossOppRow(){ const b=R.bossFor(run); return b?DATA.byTeamSeasonId[b.te
 function bossThreeLetter(o){
   return String(E.nickname(o.franchise)||o.franchise).replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase()||'OPP';
 }
+/*
+ * SIM THE REST, AND WHAT IT DELIBERATELY DOES NOT SKIP.
+ *
+ * A boss battle animates every drive and is the longest watch in the mode, so there has to
+ * be a way to the result. What it hurries is the FOOTBALL: the drive animation, the beat
+ * after a score and the handoff between drives.
+ *
+ * IT STILL STOPS FOR YOUR CALLS. Fourth down and the two point try are not pacing, they are
+ * the mode: the whole screen exists so that a boss is a set of decisions rather than a
+ * number that appears. Auto-picking them to save six seconds would hand the game the one
+ * part the player came for, and a run that was lost by a call the page made for you is the
+ * worst thing this mode could do.
+ *
+ * ONE WAY. Pressing it takes the control away rather than toggling, because a button that
+ * un-hurries a game is answering a question nobody asks, and the flag has to survive the
+ * decisions it pauses at: somebody who asked for the rest of it fast means after the call
+ * too.
+ */
+let bossFast=false;
 function bossStop(){ clearTimeout(bossTimer); cancelAnimationFrame(bossRaf); }
 function bossRenderScore(){
   $('bg-syou').textContent=bossSim.you; $('bg-sthem').textContent=bossSim.them;
@@ -18718,6 +19786,12 @@ function bossScout(){
 function bossPlay(read){
   const b=bossSpecNow||R.bossFor(run), o=bossOppNow||bossOppRow();
   if(!b||!o){ dynToWinter(); return; }
+  /* KEPT, NOT JUST READ. These two are set by bossScout and this function already falls back
+     to recomputing them, but it never wrote the answer back, so everything downstream that
+     reads bossOppNow (bossDraw does, for the three letter code) got a null on any path that
+     reached the game without the scout. No player path does, which is why it has never been
+     seen; the fallback above exists precisely because the author expected one to. */
+  bossSpecNow=b; bossOppNow=o;
   bossStop();
   const chem=(run.season&&run.season.chemistry)
     || E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier;
@@ -18745,6 +19819,14 @@ function bossPlay(read){
       ? '<b class="bad">They saw it coming.</b> It plays into their hands.'
       : 'The plan is set. Kickoff.';
   $('bg-calls').hidden=true; $('bg-calls').innerHTML=''; $('bg-done').hidden=true;
+  /* PER GAME, NOT PER RUN. A boss can be replayed from the results screen, and a flag left
+     set would start the replay already skipping a game nobody had asked to skip yet. */
+  bossFast=false;
+  if($('bg-skip')) $('bg-skip').hidden=false;
+  /* Emptied with the rest of the screen. A boss can be replayed from the results screen, and
+     a log that kept the last attempt's drives would open the second one already twelve rows
+     deep in a game nobody played. */
+  if($('bg-log')) $('bg-log').innerHTML='';
   show('s-bgame');
   bossField=initFieldCanvas('bg-fcanvas'); bossFcv=$('bg-fcanvas');
   bossDraw(0,false);
@@ -18757,7 +19839,10 @@ function bossLoop(){
   const ev=E.bossSimAdvance(bossSim,bossRng);
   if(ev.type==='over'){ bossFlush(()=>{ bossRenderScore(); bossFinish(ev); }); return; }
   if(ev.type==='decision'){ bossFlush(()=>bossShowDecision(ev.decision)); return; }
-  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,200); });
+  /* 200ms between events was the rest of why the game was over in a blink. The drives
+     themselves carry the pace now, so this is the handoff between them rather than the
+     pace itself. */
+  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420); });
 }
 
 /* Animate every drive the sim has produced but not yet drawn, in order, then continue. */
@@ -18767,9 +19852,92 @@ function bossFlush(cb){
   bossAnimateDrive(d,()=>bossFlush(cb));
 }
 
-/* One drive growing across the field, the clock running with it, the score landing at the end. */
+/* ─── THE DRIVE LOG ────────────────────────────────────────────────────────────────────
+ *
+ * What the sim actually did, drive by drive, in the playoff log's own shape.
+ *
+ * IT SAYS MORE THAN THE PLAYOFF LOG DOES, and that is a fact about the two simulations
+ * rather than a decision about two screens. The playoff broadcast is built from
+ * scoringScript, which works backwards from a final score to a legal way of reaching it: it
+ * knows the scores because it started from them, and it cannot say how many plays a drive
+ * took or which drives died, because it never played them. The boss sim plays FORWARD, down
+ * by down, so plays, yards and the punt that ended a march are all real here.
+ *
+ * SO EVERY DRIVE IS LISTED, not only the scoring ones. Six plays for 48 yards and a punt is
+ * the story of a boss battle as much as the touchdown three drives later, and on a screen
+ * whose whole job is to feel weightier than an ordinary week it is the part an ordinary week
+ * has never had.
+ *
+ * YARDS ARE SIGNED BY THE TEAM'S OWN DIRECTION. startYard and endYard are absolute in the
+ * engine's frame, where you attack to the right, so the boss's gains run the other way and a
+ * raw subtraction reports their best drive as their worst. */
+function bossDriveYards(d){
+  const gained=d.team==='you'?(d.endYard-d.startYard):(d.startYard-d.endYard);
+  return Math.max(0,Math.round(gained));
+}
+/* The newest row's running score, brought up to whatever the sim now says. Called after a
+   two point try, which resolves after its own touchdown has already been logged. */
+function bossRescoreLast(){
+  const el=$('bg-log'); if(!el) return;
+  const n=el.querySelector('.pl .n');
+  if(n) n.textContent=bossSim.you+'-'+bossSim.them;
+}
+function bossLogDrive(d){
+  const el=$('bg-log'); if(!el) return;
+  const q=Math.min(4,Math.floor(d.tEnd/900)+1);
+  const clock=clockText(Math.max(0,900-(d.tEnd-(q-1)*900)));
+  const yds=bossDriveYards(d), plays=d.plays||0;
+  /* The drive in one phrase, then what it cost to get there. A kick names its distance for
+     the reason the playoff log gives: three points is three points, and the difference
+     between a 21 yarder and a 55 is the whole story of the drive that earned it. */
+  const kick=Math.max(18,Math.min(63,Math.round(d.team==='you'?100-d.endYard:d.endYard)+17));
+  /* EVERY RESULT THE ENGINE CAN RETURN, named. bossAutoDrive answers td, fg, miss, punt,
+     turnover, downs and end, and anything not listed here falls through to Punt: a missed
+     kick reported as a punt is a lie about the drive drawn directly above it, on the one
+     screen where the drive chart shows the ball dying at the 23. */
+  const what=d.result==='td'?'Touchdown'
+    :d.result==='fg'?kick+'-yard field goal'
+    :d.result==='miss'?'Missed the '+kick+'-yarder'
+    :d.result==='turnover'?'Turnover'
+    :d.result==='downs'?'Turnover on downs'
+    :d.result==='end'?'Out of time'
+    :'Punt';
+  const drove=plays?(plays+(plays===1?' play, ':' plays, ')+yds+(yds===1?' yard':' yards')):'';
+  const scored=d.result==='td'||d.result==='fg';
+  el.insertAdjacentHTML('afterbegin',
+    '<div class="pl '+(d.team==='you'?'you':'them')+(scored?'':' quiet')+'">'+
+      '<span class="t">'+QNAME[q-1]+' '+clock+'</span>'+
+      '<span class="w">'+esc(d.team==='you'?'You':bossThreeLetter(bossOppNow))+' &middot; '+
+        esc(what)+(drove?'<i class="plsub">'+esc(drove)+'</i>':'')+'</span>'+
+      '<span class="n">'+bossSim.you+'-'+bossSim.them+'</span></div>');
+}
+
+/* One drive growing across the field, the clock running with it, the score landing at the end.
+ *
+ * SLOWER THAN IT WAS, ON PURPOSE AND BY A LOT. This ran at 95ms a play capped at a second,
+ * which put a fourteen play march and a three and out within half a second of each other and
+ * the whole game inside a few seconds. A boss is one season in six and the thing the mode
+ * builds toward; it should not be over before a reader has found the score bug. 260ms a play
+ * against a floor of 900 and a ceiling of 3000 keeps the RELATIONSHIP the old numbers had,
+ * which is the part worth keeping: a long drive visibly takes longer than a short one. */
 function bossAnimateDrive(d,cb){
-  const dur=Math.max(360,Math.min(1000,(d.plays||4)*95));
+  /* THE WHOLE DRIVE AT ONCE. Every line the slow path ends on runs here in the same order,
+     because the log row has to be written after the score lands either way: drawn, scored,
+     logged. What goes is the frames in between and the beat after a touchdown. */
+  if(bossFast){
+    bossDraw(d.tEnd,false); bossSetClock(d.tEnd);
+    $('bg-bug').classList.toggle('urgent',d.tEnd>=3300);
+    bossRenderScore();
+    bossLogDrive(d);
+    /* HANDED BACK THROUGH A TIMER RATHER THAN CALLED. bossFlush calls this for every drive
+       the sim has produced, so a synchronous cb would run the rest of the game inside this
+       one frame: a stack as deep as the game is long, and a screen that never paints between
+       the first drive and the verdict. Zero is instant to a reader and is still a turn of the
+       event loop, so the log fills in and the bug moves. */
+    bossTimer=setTimeout(cb,0);
+    return;
+  }
+  const dur=Math.max(900,Math.min(3000,(d.plays||4)*260));
   const t0=(window.performance||Date).now();
   const scored=d.result==='td'||d.result==='fg';
   const tick=()=>{
@@ -18779,8 +19947,15 @@ function bossAnimateDrive(d,cb){
     $('bg-bug').classList.toggle('urgent',upTo>=3300);
     if(k<1){ bossRaf=requestAnimationFrame(tick); return; }
     bossRenderScore();
+    /* LOGGED AFTER THE SCORE LANDS, so the running total on the row is the one the bug is
+       showing. Written the other way round it reports every score one drive late. */
+    bossLogDrive(d);
     if(scored){ const cell=d.team==='you'?$('bg-you'):$('bg-them');
       cell.classList.add('scored'); setTimeout(()=>cell.classList.remove('scored'),480); }
+    /* A BEAT ON A SCORE, and only on a score. The drives run back to back otherwise, and a
+       touchdown that is gone before the number under it has finished moving is the thing
+       this screen was asked to stop doing. */
+    if(scored){ bossTimer=setTimeout(cb,700); return; }
     cb();
   };
   bossRaf=requestAnimationFrame(tick);
@@ -18817,7 +19992,33 @@ function bossShowDecision(d){
       box.innerHTML=''; box.hidden=true;
       $('bg-narr').innerHTML=bossCallNarr(d.kind,choice,res);
       bossRenderScore();
-      bossFlush(()=>{ bossTimer=setTimeout(bossLoop,260); });
+      /*
+       * ONLY WHEN THE ROW THIS DECISION BELONGS TO IS ALREADY WRITTEN.
+       *
+       * The case it was added for: a touchdown that pauses for a two point call is logged
+       * when the drive ends, which is BEFORE the conversion is taken, so that row carried a
+       * score one or two points short and never caught up. The bug above was always right,
+       * which is what made the log wrong rather than merely stale.
+       *
+       * IT RAN ON EVERY DECISION, AND A FOURTH DOWN IS THE OTHER WAY ROUND. There the drive
+       * has NOT ended when the call is made: bossSimResolve ends it, pushes it, and bossFlush
+       * below is what logs it. So the top row at this moment is the PREVIOUS drive, somebody
+       * else's, and stamping the new score onto it moved your points one drive early. Kick a
+       * 29 yard field goal to go 14-55 up to 17-55 and the three landed on Seattle's field
+       * goal above it, so the row for your kick repeated 17-55 and the kick read as though it
+       * had scored nothing. Reported by a player, from the one screen where every drive is
+       * listed and a reader can check the column against itself.
+       *
+       * ASKED STRUCTURALLY, not by the decision's kind. The question is whether anything new
+       * has been produced that is not on screen yet, and bossShown against drives.length is
+       * exactly that question. A two point try adds no drive, so the counts match and the top
+       * row is the touchdown being converted; a fourth down that ends the drive pushes one, so
+       * they do not and bossFlush logs it with the right score a moment later. A fourth down
+       * conversion pushes nothing and changes no score, so this writes back what is already
+       * there.
+       */
+      if(bossShown>=bossSim.drives.length) bossRescoreLast();
+      bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:560); });
     };
   });
 }
@@ -18841,6 +20042,7 @@ function bossCallNarr(kind,choice,res){
 function bossFinish(ev){
   bossStop();
   const b=bossSpecNow||R.bossFor(run), o=bossOppNow||bossOppRow();
+  if($('bg-skip')) $('bg-skip').hidden=true;
   $('bg-state').textContent='FINAL'; $('bg-q').textContent='FINAL';
   $('bg-ck').textContent=ev.won?'YOU WIN':'YOU LOSE';
   bossRenderScore(); bossDraw(3600,false);
@@ -18981,6 +20183,19 @@ function paintOver(){
      (see the afterPaint block at the end) so the record and every cheap number appear
      at once instead of waiting on them. Its cell shows a brief working state until then. */
   const spendUsed=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
+  /* WHAT THE RUN'S CAP ACTUALLY IS, not the default one. The summary below printed
+     E.CONSTANTS.CAP_MUSD unconditionally, which is $140M, and a Full Team run is given
+     $280M. So the screen that grades the mode ended on "You spent $277.0M of $140.0M":
+     a legal roster reported as $137M over a cap it was never under. Nothing threw, the
+     roster was fine, and the sentence was the one thing a player would have believed.
+     capOf() is what every gate and every affordability check in run.js already asks.
+     AND THE COACH IS SPENT MONEY. He comes out of the same cap (see remaining()), so a
+     hire was money gone that neither the summary nor the Spent cell was counting.
+     DECLARED HERE, beside the figure they are built from, because the Spent cell is
+     painted a hundred lines above the summary and a const read before its own line is a
+     TDZ throw that takes the whole results screen down. It did, once. */
+  const runCap=R.capOf(run);
+  const spentAll=spendUsed+((run.coach&&run.coach.price_musd)||0);
   const squadFppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
   /* A DEFENSE IS READ BY ITS OWN FUNCTION. The two return the same shape of object where
      this panel touches it (multiplier, scheme, schemeBonus, floorShare) and differ where
@@ -19047,7 +20262,9 @@ function paintOver(){
   $('o-ovr').className='ovr solo';
   $('o-ovr').innerHTML=
     bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband);
-  $('o-sides').innerHTML=sideLine();
+  /* THE RESULTS SCREEN GETS THE TABLE, not the one line. This is the screen that grades
+     twelve picks, so it is the one that owes the working. */
+  $('o-sides').innerHTML=fullBreakdown();
   /* THE SAME NUMBER, ON DYNASTY RECAP. The card above is hidden in this mode, so the
      team overall is drawn once more into the lineup panel, which this mode does show. Same
      cell, same band, so a Dynasty season is read the way an offense or defense draft is. */
@@ -19068,10 +20285,27 @@ function paintOver(){
      used to put beside the team overall, which is a roster fact in every mode: the ceiling
      this draft could have hit, the two unit ratings, or how much of the money went to the
      offense. */
+  /* FULL TEAM'S CHEMISTRY IS TWO NUMBERS AND THIS CELL HOLDS ONE. `run.season.chemistry`
+     is the flattened average, which is the value the engine warns against rating a team
+     with, and it sat on the same screen as the breakdown above showing the two the units
+     are actually rated with: one strip said "+2.1%" while the table said "+0.0% offense,
+     +4.3% defense". Both were drawn from the same run. The table is the one that matches
+     the arithmetic, so this cell prints the pair rather than an average of them.
+     AND THE SPEND INCLUDES THE COACH here too, for the reason the sentence below does:
+     he comes out of the same cap, so a hire is money this cell was not counting. */
+  /* Read once, and only trusted when it really is the two sided shape: seasonChem falls
+     back to a plain number whenever the season has no per unit figures on it, and reaching
+     for .offMultiplier on a number prints NaN%. */
+  const lc=liveChem();
+  const twoSided=!!(run.full&&lc&&typeof lc.offMultiplier==='number'
+    &&typeof lc.defMultiplier==='number');
+  const chemCell=twoSided
+    ? split(pc(lc.offMultiplier-1)+' / '+pc(lc.defMultiplier-1),'Chemistry, off / def')
+    : split(pc(run.season.chemistry-1),'Chemistry');
   $('o-squad').innerHTML=
     secondSplit(null)+
-    split(pc(run.season.chemistry-1),'Chemistry')+
-    split(M0(spendUsed),'Spent')+
+    chemCell+
+    split(M0(spentAll),'Spent')+
     split(o.seedLabel.replace(/^Missed.*/,'None'),'Playoff seed');
   /* AND THE THREE BOARD WINDOWS ON THEIR OWN. Painted with the ranks unknown, because the
      board is a network call and the page is on screen before it answers; paintRankStrip
@@ -19112,12 +20346,22 @@ function paintOver(){
      out to the team overall, so the sentence is an equals sign. On a defense the overall is
      that product put on the offense's scale, so saying "which is" would be arithmetic that
      does not check out; and a defense does not play against an average defense. */
-  $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(0)+' squad FPPG, '+
-    pc(run.season.chemistry-1)+' chemistry and '+fitPct(st.multiplier)+
-    ' '+fitPhrase()+', '+(isDefRun()
-      ? 'which grades out as a <b>'+rating.toFixed(1)+'</b> team overall.'
-      : 'which is a <b>'+rating.toFixed(1)+'</b> team overall against an average defense.')+
-    schemeTail(st)+' You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
+  /* A FULL TEAM DOES NOT GET THIS SENTENCE, and could not be made to. It says three terms
+     multiply out to the overall, and a full team has two of every term plus a mean and a
+     coach: run over twelve men these numbers are not merely imprecise, they are a
+     different calculation from the one that produced the rating. It printed "-44% for how
+     the six fit together" on a team whose halves were at -12% and +3%, because
+     rosterStructure over a twelve man roster is the reading overallOf warns about. The
+     table under the record does this properly; here the mode says what it spent. */
+  $('o-squadline').innerHTML='<span>'+(run.full
+    ? 'Twelve men, and the working is under the record above.'
+    : squadFppg.toFixed(0)+' squad FPPG, '+
+      pc(run.season.chemistry-1)+' chemistry and '+fitPct(st.multiplier)+
+      ' '+fitPhrase()+', '+(isDefRun()
+        ? 'which grades out as a <b>'+rating.toFixed(1)+'</b> team overall.'
+        : 'which is a <b>'+rating.toFixed(1)+'</b> team overall against an average defense.')+
+      schemeTail(st))+
+    ' You spent '+M(spentAll)+' of '+M(runCap)+'.</span>';
 
   /* The lineup, which the old results page never showed at all. Drawn through the shared
      painter so the picker below and the first paint cannot disagree about it. */
@@ -21965,12 +23209,13 @@ function pfHub(msg,ok){
     (premiumPitch()
       /* PRO, not Premium. Pro is the account status the pill says and the sheet is headed
          with; this was the last screen still calling it something else. */
-      /* THE SAME CARD THE FRONT PAGE DRAWS, out of the same function, saying the same thing.
+      /* THE SAME CARD THE FRONT PAGE DRAWS, out of the same function, saying the same thing,
+         and now it really does: the words come out of the store rather than off this line.
          The caption sheds the word the value carries: this opened "Unlimited dynasty runs and
          every Pro mode", which said Unlimited twice in one card and cost the text column
          enough width to wrap to a third line. What the marks cannot say is the term, so that
          is what is left. */
-      ? pwCard('pf-prem','Go Pro','No daily limit. One payment, lifetime.')
+      ? pwCard('pf-prem')
       : '')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet(); pfWireCommon();
@@ -22050,7 +23295,14 @@ const PRO_ITEM={
   /* WORDED THE SAME AS THE STORE LINE IT IS THE RECEIPT FOR. A customer reads this after
      paying, so a shorter description here than on the card they bought from reads as
      something having been taken away. See pwGroupText('ps', ...) in the paywall. */
-  ps_premium:{game:'ps',text:'Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine'},
+  /* FULL TEAM ON THE LAUNCH FLAG, in step with the store line this is the receipt for. Read
+     through PS_FULLTEAM_ACCESS.LIVE and never through canPlayFull(), for the reason the store
+     gives: a receipt itemises the PRODUCT, and the product cannot differ between two people
+     who paid the same $19.99 because one of them is on a tester list. */
+  ps_premium:{game:'ps',get text(){
+    return 'Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine'+
+      (fullTeamSold()?', Full Team':'');
+  }},
   cfb_premium:{game:'cfb',text:'Commissioner Mode'},
   arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
   runtour_pack:{game:'tour',text:'100,000 coins and one Tour Pack',wait:true}
@@ -23636,7 +24888,13 @@ function paintComp(){
      sign-out) rather than being decided once and frozen. dataset.tm records which of the two
      shapes is currently rendered, so the select is only ever rebuilt when it actually has to
      be: rebuilding a select that is open closes it. */
-  const wantTrade=(canPlayTrade()?'1':'0')+(canPlayDefense()?'d':'');
+  /* EVERY GATE IN THE SELECT, not two of them. Auth resolves after the first paint, so this
+     key is what lets an option appear once eligibility is known. It named the Trade Machine
+     and Defense and neither Full Team nor Dynasty, so those two could only ever be in the
+     select if they were already eligible on the very first paint, which for a signed in
+     player they are not. */
+  const wantTrade=(canPlayTrade()?'1':'0')+(canPlayDefense()?'d':'')
+    +(canPlayFull()?'f':'')+(canPlayDynasty()?'y':'');
   if(!sel.options.length||sel.dataset.tm!==wantTrade){
     sel.dataset.tm=wantTrade;
     /* THE TWO SIDES OF THE BALL, TOGETHER AND FIRST. They are one choice presented as one
@@ -23655,6 +24913,7 @@ function paintComp(){
            was: it would name an unannounced mode to every visitor who opened the board,
            and lead them to a table they cannot add a row to. */
         (canPlayFull()?'<option value="fullteam">Full Team</option>':'')+
+        (canPlayDynasty()?'<option value="dynasty">Dynasty</option>':'')+
       '</optgroup>'+
       (canPlayTrade()?'<option value="trade">The Trade Machine</option>':'')+
       '<optgroup label="Eras Draft">'+
@@ -23665,12 +24924,14 @@ function paintComp(){
         .map(c=>'<option value="'+c+'">'+esc(E.nickname(c))+'</option>').join('')+
       '</optgroup>';
   }
-  sel.value=lbTrade?'trade':lbDefense?'defense':lbFull?'fullteam':lbEra?'era:'+lbEra:(lbClub||'');
+  sel.value=lbDynasty?'dynasty':lbTrade?'trade':lbDefense?'defense':lbFull?'fullteam'
+    :lbEra?'era:'+lbEra:(lbClub||'');
   const wrap=sel.parentElement;
-  wrap.classList.toggle('isclub',!!lbClub&&!lbEra&&!lbTrade&&!lbDefense&&!lbFull);
-  wrap.classList.toggle('isera',!!lbEra&&!lbTrade&&!lbDefense&&!lbFull);
+  wrap.classList.toggle('isclub',!!lbClub&&!lbEra&&!lbTrade&&!lbDefense&&!lbFull&&!lbDynasty);
+  wrap.classList.toggle('isera',!!lbEra&&!lbTrade&&!lbDefense&&!lbFull&&!lbDynasty);
   wrap.classList.toggle('istrade',!!lbTrade);
   wrap.classList.toggle('isdef',!!lbDefense);
+  wrap.classList.toggle('isdyn',!!lbDynasty);
   if(lbClub&&!lbEra&&!lbTrade&&!lbDefense&&!lbFull){
     const tc=E.teamColors(lbClub);
     wrap.style.setProperty('--c1',tc.primary);
@@ -23682,13 +24943,19 @@ function paintComp(){
 }
 $('lb-comp').addEventListener('change',()=>{
   const v=$('lb-comp').value||'';
-  /* Picking any competition from the select leaves Dynasty board, which is not in the
-     select and is reached only from a Dynasty run. Cleared here so it cannot linger under a
-     classic competition. */
+  /* Picking any OTHER competition leaves Dynasty board, so it is cleared here and set again
+     on its own branch below. Left set, it would linger under a classic competition and
+     loadBoard would branch straight back into the Dynasty table. */
   lbDynasty=false;
   /* Checked again rather than trusted: the option is only rendered for an eligible viewer,
      but the value arrives from the DOM and the DOM is not the authority on that. */
-  if(v==='trade'&&canPlayTrade()){
+  if(v==='dynasty'&&canPlayDynasty()){
+    lbDynasty=true; lbTrade=false; lbDefense=false; lbFull=false; lbEra=null; lbClub=null;
+    /* NO lbSort HERE. A Dynasty row is a whole run rather than a season, so it is ranked on
+       its own axis (lbDynSort, the Longest runs / High score tabs) and the classic sort bar
+       is hidden. Writing lbSort on this branch would quietly change which axis the NEXT
+       classic board opens on. */
+  }else if(v==='trade'&&canPlayTrade()){
     lbTrade=true; lbDefense=false; lbFull=false; lbEra=null; lbClub=null;
     /* Land on the axis the mode is about. Record and team rating both mostly describe the
        roster you were handed; the GM rating is the season's work. */
@@ -23783,11 +25050,12 @@ function openBoard(){
     if(lbTrade) lbSort='gm'; else if(lbDefense) lbSort='pa';
     fixSort();
     lbDir=sortBestDir(lbSort);
-  }else{
-    /* Opened from the front page, with no run to read: Dynasty board is only ever a
-       run's own board, so it cannot be the one showing here. */
-    lbDynasty=false;
   }
+  /* NOTHING IS FORCED OFF HERE ANY MORE. Opened from the front page with no run to read,
+     this used to clear lbDynasty, because Dynasty board could only be a run's own board and
+     would otherwise have been showing with no way to have chosen it. It is in the select
+     now, so it is a competition like the rest, and the board reopens on whichever one was
+     last looked at exactly as it already did for a club, an era and the Trade Machine. */
   tradeBoardOff();
   const m=lbTrade?'trade':lbEra?'era':lbClub?'club':'free';
   ga('board_opened',{mode:m,club:lbClub||null,era:lbEra||null});
@@ -24002,8 +25270,15 @@ function boardChrome(on){
   const winTabs=$('lb-tabs')&&$('lb-tabs').closest('.tabwrap');
   const dynTabs=$('lb-dyntabwrap');
   const sort=document.querySelector('#s-board .sortbar');
-  /* The competition select and the classic sort bar belong to the classic boards only. */
-  [mode,sort].forEach((e)=>{ if(e) e.style.display=on?'':'none'; });
+  /* THE SELECT STAYS UP ON BOTH, and that is a change rather than an oversight. It used to
+     be hidden here on the argument that Dynasty's axis tabs stand in for it, which held only
+     while Dynasty board could be reached from nowhere but a finished dynasty season. It is
+     in the select now, so the select is the way IN, and a way in that hides itself on arrival
+     is a one-way door: you would land on Dynasty and have to close the whole board to look at
+     anything else. The SORT BAR still belongs to the classic boards only, because that is
+     what the axis tabs actually replace. */
+  if(mode) mode.style.display='';
+  if(sort) sort.style.display=on?'':'none';
   /* The window tabs are shared: Today / This week / All time apply to Dynasty board too,
      so they stay up on both. The AXIS tabs are Dynasty's own, standing in for the select. */
   if(winTabs) winTabs.style.display='';
@@ -24044,6 +25319,9 @@ async function loadDynastyBoard(){
   if(title) title.textContent=byScore?'High score':'Longest runs';
   /* Light up the axis tab and the window tab that are showing. The classic path does this for
      the window tabs in loadBoard; Dynasty path returns before that, so it does its own. */
+  /* The select is up on this board now, so it has to be told which entry is showing. The
+     classic path does this near the end of loadBoard, which this one returns long before. */
+  paintComp();
   [...document.querySelectorAll('#lb-dyntabs .tab')].forEach(t=>
     t.classList.toggle('on',t.dataset.dyn===lbDynSort));
   [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>{
@@ -24057,6 +25335,16 @@ async function loadDynastyBoard(){
      the board, or the pinned place would not match the list it sits under. */
   const mine=(authState.signedIn&&run&&run.dynasty&&run.dynastyId)
     ?{seasons:R.seasonsSurvived(run),score:run.score||0}:null;
+  /* WRITTEN BEFORE THE REQUEST, not after it. Nothing in this sentence depends on what comes
+     back: it is what the board IS. Set below the await, the unreachable branch returns early
+     and leaves whatever the last board said sitting under the error, so switching to Dynasty
+     with the network down read "Free runs only. Each franchise has its own board." over a
+     Dynasty table. A wrong sentence rather than a missing one, and nothing throws. */
+  const when=lbWin==='day'?' Today resets at midnight Eastern.'
+    :lbWin==='week'?' The week starts Monday.':'';
+  $('lb-blurb').textContent=(byScore
+    ?'Ranked by total points, then seasons survived. One row a run.'
+    :'Ranked by seasons survived, then total points. One row a run.')+when;
   const [rows,total,place]=await Promise.all([
     B.dynastyTop(LB_LIMIT,lbDynSort,lbWin), B.dynastyTotal(lbWin),
     mine?B.dynastyRank(mine.seasons,mine.score,lbDynSort,lbWin):Promise.resolve(null),
@@ -24070,11 +25358,6 @@ async function loadDynastyBoard(){
     return;
   }
   $('lb-count').textContent=total?(total+' run'+(total===1?'':'s')+(lbWin==='day'?' today':lbWin==='week'?' this week':' recorded')):'';
-  const when=lbWin==='day'?' Today resets at midnight Eastern.'
-    :lbWin==='week'?' The week starts Monday.':'';
-  $('lb-blurb').textContent=(byScore
-    ?'Ranked by total points, then seasons survived. One row a run.'
-    :'Ranked by seasons survived, then total points. One row a run.')+when;
   paintDynastyBoard();
 }
 
@@ -24828,8 +26111,65 @@ function drawPips(bySlot){
  * two call sites building them from two sources. So the rows are a function of a bySlot and
  * a slot list, exactly as the field is, and `view` being null means the live run.
  */
+/* ─── WHAT ORDER TWELVE MEN GO IN ──────────────────────────────────────────────────────
+ *
+ * SLOT ORDER IS THE WRONG ORDER HERE, and only in Full Team. FULL_SLOTS is interleaved
+ * (QB, DL, RB, DL, WR, LB, ...) because that is what makes the DRAFT alternate sides and
+ * makes one shared cap felt on every pick. Printed as a list after the season it is just a
+ * shuffle: a quarterback, then a defensive lineman, then a running back, and a reader
+ * looking for their defense has to pick it out of alternating rows.
+ *
+ * Every other mode is six men on one side of the ball, where slot order IS position order
+ * and there is nothing to group. So this sorts only when there is something to sort.
+ *
+ * WITHIN A SIDE IT IS THE UNIT'S OWN ORDER, not alphabetical and not by rating: the offense
+ * reads QB, RB, WR, TE and the defense reads DL, LB, DB, which is how both are written on
+ * every other screen in the game and on a depth chart. A FLEX is sorted by the position the
+ * man in it actually plays, because "flex" is a fact about the slot and the reader is
+ * looking at a player. Ties keep their draft order, which is a stable sort's default and
+ * the only remaining thing the original order was carrying.
+ */
+/* ONE ORDER, WHEREVER A ROSTER IS LISTED. Offense down the depth chart and then the defense
+   down its own, which is how both are written on every other screen in this game and on a
+   depth chart anywhere else. A player asked for it on the winter screen, where the list had
+   always been in SIGNING order and so opened on whoever the wheel offered first. */
+const OFF_ORDER=['QB','RB','WR','TE'];
+const DEF_ORDER=['DL','LB','DB'];
+/* A man's place in that order. A FLEX is ranked by what he actually plays, because "flex" is
+   a fact about the slot and the reader is looking at a player. */
+function posRank(p){
+  if(!p) return [1,99];
+  const def=E.DEFENSE_POSITIONS.indexOf(p.position)>=0;
+  const within=(def?DEF_ORDER:OFF_ORDER).indexOf(p.position);
+  return [def?1:0,within<0?98:within];
+}
+/* THE INDICES OF A LIST, REORDERED, AND NEVER THE LIST ITSELF. Every screen that draws a
+   roster keys its rows back to the roster by index: the winter's release button reads
+   data-i straight into releaseMan, and a sorted COPY would hand it the wrong man. So this
+   answers with an order to walk in and leaves the array where it is.
+   Ties keep their original order, which is a stable sort's default and the only thing the
+   signing order was ever carrying. */
+function byPosition(list){
+  return list.map((_,i)=>i).sort((a,b)=>{
+    const ra=posRank(list[a]),rb=posRank(list[b]);
+    return ra[0]-rb[0]||ra[1]-rb[1]||a-b;
+  });
+}
+function rosterSortOrder(slots,bySlot){
+  const idx=slots.map((_,i)=>i);
+  /* Not a full run: the list is already one unit in its own order. */
+  if(!(run&&run.full)) return idx;
+  /* An empty slot keeps its place rather than sorting to one end, so a part-drafted roster
+     does not reshuffle under the player between two signings. posRank answers [1,99] for a
+     null, which puts it after everybody, and the index tiebreak holds it steady. */
+  return idx.slice().sort((a,b)=>{
+    const ra=posRank(bySlot[a]),rb=posRank(bySlot[b]);
+    return ra[0]-rb[0]||ra[1]-rb[1]||a-b;
+  });
+}
 function rosterRowsHTML(bySlot,slots,dynOver){
-  return slots.map((slot,i)=>{
+  return rosterSortOrder(slots,bySlot).map((i)=>{
+    const slot=slots[i];
     const p=bySlot[i]; if(!p) return '';
     const a=topAward(p);
     return '<div class="rrow">'+slotTag(slot,p.position)+

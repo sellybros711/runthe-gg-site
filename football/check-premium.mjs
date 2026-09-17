@@ -50,8 +50,14 @@ const ok = (label, cond, extra) => {
   console.log('  ' + (cond ? 'ok  ' : 'FAIL') + '  ' + label + (extra ? '   ' + extra : ''));
 };
 
-/* One page, serving the repo off disk. `tester` flips the two access files the way the
-   tester lists do, which is the view the boot crash lived in. */
+/* One page, serving the repo off disk.
+   `tester` USED TO FLIP THE TWO ACCESS FILES from LIVE = false to true, which is the view
+   the boot crash lived in. Both modes are launched and both files ship true, so there is
+   one view now and the rewrite below matches nothing. It is kept, doing nothing, for one
+   reason: every call site still passes the flag, and a file that says `tester: true` while
+   silently serving the same bytes as `tester: false` is less confusing with the mechanism
+   visible than with it deleted. When the next unannounced mode wants a preview view, this
+   is the hook it goes back on. */
 async function openPage(browser, url, opts = {}) {
   const { tester = false, inject = null } = opts;
   const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
@@ -122,10 +128,30 @@ const INJECT = 'beginDynastyDraft,premiumSheet,profileSheet,pfPro,acctTier,premi
   + 'const s=dailyState[m]||{};return Object.assign({},s,{used:s.allowance,ended:!!f,'
   + 'resetsAt:new Date(Date.now()+864e5).toISOString()});};return n;},'
   + 'setPremium:(v)=>{premiumSet=v;},setDaily:(m,v)=>{dailyState[m]=v;},'
-  + 'getDaily:(m)=>dailyState[m],'
+  + 'getDaily:(m)=>dailyState[m],markAsked:()=>{dailyAsked={dynasty:true,trade:true,full:true};},'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 const t = await openPage(browser, 'http://local.test/football/', { tester: true, inject: INJECT });
-await t.page.evaluate(() => window.__t.signIn());
+/*
+ * EVERY METER IS HAND-SET FROM HERE ON, SO NOTHING MAY GO AND ASK THE REAL ONE.
+ *
+ * dailyEnsure fires on the first paint after sign-in, and what comes back here is null,
+ * because this harness routes every request that is not local.test to abort. That answer
+ * lands whenever the aborted fetch resolves, which is somewhere in the middle of the
+ * sections below.
+ *
+ * THIS IS NOT WHAT FIXES THAT, and reading it as the fix is the trap. The page used to store
+ * the null over whatever state a section had just set, and the symptom was a boss toast that
+ * never appeared on the middle of three grace claims. The PAGE was wrong: a null is no
+ * opinion and dailyEnsure was the one writer of four that did not say so. It is fixed there,
+ * and A LATE METER ANSWER NEVER MOVES THE COUNT BACKWARDS below is the guard that holds it,
+ * driven by hand rather than raced.
+ *
+ * What this line buys is determinism. No section here wants the real meter, every one of
+ * them sets dailyState itself, and a suite whose outcome depends on when an aborted fetch
+ * resolves gives false confidence on the runs it happens to pass. Ahead of signIn, so there
+ * is no paint in between.
+ */
+await t.page.evaluate(() => { window.__t.markAsked(); window.__t.signIn(); });
 
 /* THE RULES SHEET STANDS IN FRONT OF EVERY RUN NOW, unless the reader has ticked its own
    "don't show this again", so the two paths through dynastyIntro are opted-in and opted-out
@@ -207,13 +233,37 @@ for (const [who, owns, day, want] of [
       goProValue: ((document.querySelector('#pf-prem .pwc-go b') || {}).textContent) || '',
       goProCounts: /\d+\s*modes/i.test(
         (document.getElementById('pf-prem') || {}).innerText || ''),
+      /* THE SENTENCE, WHICH NOTHING HERE READ, AND THAT IS HOW IT DRIFTED. Everything above
+         is the VALUE and the MARK COUNT, and those two agreed across all three cards the
+         whole time the words did not: the front page said "Unlock every mode" while both
+         profiles said "Unlock everything". The markup had been moved into the store to stop
+         exactly this, and the two strings stayed behind as arguments each caller passed, so
+         a check on the parts the store owned could not see the parts it did not. */
+      goProTitle: ((document.querySelector('#pf-prem .pwc-t b') || {}).textContent) || '',
+      goProSub: ((document.querySelector('#pf-prem .pwc-t span') || {}).textContent) || '',
+      homeTitle: ((document.querySelector('#b-premium .pwc-t b') || {}).textContent) || '',
+      homeSub: ((document.querySelector('#b-premium .pwc-t span') || {}).textContent) || '',
+      /* AND THE SHEET'S OWN HEADING, because the card is a door and the heading is the room.
+         A reader who presses "Unlock every mode" and lands on "Unlock everything" has to
+         stop and work out whether they got the screen they asked for. */
+      sheetH2: (() => {
+        const d = document.createElement('div');
+        d.innerHTML = window.RTG_STORE.html({ signedOut: false });
+        const h = d.querySelector('h2');
+        return h ? h.textContent.trim() : '';
+      })(),
       /* The front page's own card, built as a node rather than written into markup, which is
          the whole reason the two could say different things. */
       homeValue: ((document.querySelector('#b-premium .pwc-go b') || {}).textContent) || '',
       homeMarks: document.querySelectorAll('#b-premium .pwc-marks svg').length,
       homeCounts: /\d+\s*modes/i.test(
         (document.getElementById('b-premium') || {}).innerText || ''),
-      proAccess: !!document.getElementById('pf-go-pro') };
+      proAccess: !!document.getElementById('pf-go-pro'),
+      /* WHETHER THIS READER IS BEING SOLD FULL TEAM, asked of the page rather than assumed
+         from the view. The store names it, gives it a hero tile and gives the card a fourth
+         mark for anybody who can open the mode, so every count below is a question about
+         this reader and not a constant. */
+      fullOn: !!window.RTG_FULLTEAM && !!window.RTG_FULLTEAM() };
   }, [owns, day]);
   console.log('  ' + who + ':');
   const owner = owns.length > 0;
@@ -221,12 +271,19 @@ for (const [who, owns, day, want] of [
   ok('    dailyOn() is ' + (owner ? 'off' : 'on'), r.metered === !owner, String(r.metered));
   ok('    acctTier() is ' + (owner ? 'pro' : 'free'), r.tier === (owner ? 'pro' : 'free'), r.tier);
   ok('    premiumPitch() ' + (owner ? 'stands down' : 'offers'), r.pitch === !owner);
-  ok('    the profile shows ' + (owner ? 'Your Pro access' : 'Go Pro'),
+  ok('    the profile shows ' + (owner ? 'Your Pro access' : 'the upgrade card'),
     owner ? (r.proAccess && !r.goPro) : (r.goPro && !r.proAccess),
     'goPro=' + r.goPro + ' proAccess=' + r.proAccess);
   if (!owner) {
-    ok('    and the Go Pro card carries the three modes it sells',
-      r.goProMarks === 3, String(r.goProMarks));
+    /* THE COUNT IS DERIVED NOW, because it depends on the reader. Full Team joins the hero
+       row and the card's marks for anybody who can open the mode, so this view (a tester,
+       with the flag flipped) sees four and a stranger sees three. Written as a number it
+       would be right for one of them and a lie about the other, and whichever it was would
+       be the one nobody ran. What has to hold either way is that the CARD and the SHEET
+       claim the same number of things, which is the assertion below it. */
+    const wantMarks = r.fullOn ? 4 : 3;
+    ok('    and the upgrade card carries the ' + wantMarks + ' modes it sells',
+      r.goProMarks === wantMarks, String(r.goProMarks));
     ok('    in a row rather than a stack', r.goProRow === 'flex', r.goProRow);
     /* AND NEITHER CARD COUNTS ANY MORE. The front page said "4 modes", this one said
        "3 modes" and the college profile said "3 modes", about one purchase, on one day.
@@ -235,17 +292,36 @@ for (const [who, owns, day, want] of [
     ok('    and says Unlimited rather than a number',
       r.goProValue === 'Unlimited' && !r.goProCounts, r.goProValue);
     ok('    the front page card says exactly the same',
-      r.homeValue === 'Unlimited' && r.homeMarks === 3 && !r.homeCounts,
+      r.homeValue === 'Unlimited' && r.homeMarks === wantMarks && !r.homeCounts,
       r.homeValue + ' / ' + r.homeMarks + ' marks');
+    /* AND "EXACTLY THE SAME" NOW INCLUDES THE WORDS. See the note in the evaluate above:
+       the line before this one passed for weeks while the two cards read differently,
+       because the value and the marks were the store's and the sentence was not. */
+    ok('    including the sentence, not just the value',
+      r.homeTitle === r.goProTitle && r.homeSub === r.goProSub,
+      JSON.stringify(r.homeTitle + ' / ' + r.homeSub) + '  vs  '
+        + JSON.stringify(r.goProTitle + ' / ' + r.goProSub));
+    ok('    and the card is named for the sheet it opens',
+      r.homeTitle === r.sheetH2,
+      JSON.stringify(r.homeTitle) + ' vs ' + JSON.stringify(r.sheetH2));
   }
   if (!owner && want !== 'the mode') {
     /* The spent door was a card linking to the store, which is a second tap between
        somebody who has just decided they want more and the thing that sells it. */
+    /* THE SHEET'S TILES AND THE CARD'S MARKS ARE ONE ANSWER. The card mirrors the hero row,
+       so a fourth tile that did not bring a fourth mark would put the card and the sheet it
+       opens at different counts, which is the "3 modes" against "4 modes" drift arriving by
+       a door the digits check does not watch. */
     ok('    the spent door draws the bundle itself',
-      r.store.tiles.length === 3 && r.store.buys === 2,
+      r.store.tiles.length === (r.fullOn ? 4 : 3) && r.store.buys === 2,
       r.store.tiles.join(', ') + ' / ' + r.store.buys + ' buy buttons');
+    ok('    and the card claims exactly as many as the sheet',
+      r.goProMarks === r.store.tiles.length,
+      r.goProMarks + ' marks against ' + r.store.tiles.length + ' tiles');
     ok('    and every tile says which game it is in',
-      r.store.from.join(' | ') === 'Perfect Season | Perfect Season | College Football',
+      r.store.from.join(' | ') === (r.fullOn
+        ? 'Perfect Season | Perfect Season | College Football | Perfect Season'
+        : 'Perfect Season | Perfect Season | College Football'),
       r.store.from.join(' | '));
   }
   /* THE CARD PROMISES ONE FRANCHISE DYNASTY, so the row has to open it. This was the gate
@@ -652,12 +728,17 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,prof
   + 'spendTheDay,dynToWinter,countSpends:()=>{const n={c:0};'
   + 'B.attemptSpend=async(m)=>{n.c++;const s=dailyState[m]||{};'
   + 'return Object.assign({},s,{ok:true,used:(s.used||0)+1});};return n;},'
-  + 'reviewDynastyRules,dynIntroOff,dynNewSheet,dailyStop,'
+  + 'reviewDynastyRules,dynIntroOff,dynNewSheet,dailyStop,PRO_ITEM,'
+  /* The two Full Team questions, which have different answers for a tester: who may PLAY it
+     and whether it is part of the PRODUCT. The unlocked sheet reads the first, the receipt
+     and the store read the second. */
+  + 'canPlayFull,fullTeamSold,'
   + 'setPremium:(v)=>{premiumSet=v;},'
   /* The walk back from Stripe runs earlier on this page and leaves justPaid set, which is
      itself a reason premiumPitch() stands down. Cleared rather than worked around, so the
      section below is testing the ownership rule and not that one. */
-  + 'setPaid:(v)=>{justPaid=v;},'
+  + 'setPaid:(v)=>{justPaid=v;},goHome,paintSeed,seasonTag,runPlayoffs,R:R,'
+  + 'dataNow,LEAGUE:()=>LEAGUE,CAL:()=>CAL,D:()=>DATA,'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
   + 'onSuccessUrl:()=>{history.replaceState(null,"","/football/?checkout=success");}';
@@ -1221,9 +1302,17 @@ console.log('\nWHAT YOU UNLOCKED, AND EVERY ROW IS A DOOR');
  * lists something the account does not own is the same lie as a tile promising a mode the
  * purchase does not open, which this file already exists because of.
  */
+/* FULL TEAM IS THE ONE DOOR WHOSE PRESENCE DEPENDS ON THE READER, so the count is derived
+   rather than written down. This view flips FULLTEAM_LIVE to true, which is the launched
+   world; before launch the row is absent and the old 4 and 6 are still the answer. Deriving
+   it is what keeps this assertion meaningful on both sides of the flag instead of being a
+   magic number somebody bumps whenever it goes red. The row's own presence is asserted
+   against the flag straight after the loop, which is the half a count cannot check. */
+const fullDoorShows = await ck.page.evaluate(() => !!window.__t.canPlayFull());
 for (const [label, owns, want] of [
-  ['perfect-season', ['ps_premium', 'cfb_premium'], 4],
-  ['run-the-bundle', ['ps_premium', 'cfb_premium', 'arcade_card_year', 'runtour_pack'], 6],
+  ['perfect-season', ['ps_premium', 'cfb_premium'], 4 + (fullDoorShows ? 1 : 0)],
+  ['run-the-bundle', ['ps_premium', 'cfb_premium', 'arcade_card_year', 'runtour_pack'],
+    6 + (fullDoorShows ? 1 : 0)],
   ['nothing readable', [], 0],
 ]) {
   const r = await ck.page.evaluate((owns) => {
@@ -1259,6 +1348,46 @@ for (const [label, owns, want] of [
   }
 }
 
+/* AND THE FULL TEAM ROW IS THERE EXACTLY WHEN THE READER CAN WALK THROUGH IT. The count above
+   would pass just as green if some other row had appeared and this one had not, which is the
+   badge-that-cannot-be-lit trap in yet another coat. */
+const ftRow = await ck.page.evaluate(() => {
+  const T = window.__t;
+  T.setPremium(['ps_premium']);
+  document.getElementById('sheet').classList.remove('on');
+  T.unlockedSheet();
+  const rows = [...document.getElementById('sheet-in').querySelectorAll('.ulk-row')];
+  const r = rows.find((x) => /Full Team/.test(x.querySelector('b').textContent));
+  return { present: !!r, live: !!window.__t.fullTeamSold(), clickable: !!(r && r.onclick) };
+});
+ok('  the Full Team door matches who can play it', ftRow.present === fullDoorShows,
+  'door ' + ftRow.present + ', canPlayFull ' + fullDoorShows);
+ok('  and it goes somewhere', !ftRow.present || ftRow.clickable);
+/* THE RECEIPT IS THE OTHER RULE AND NOT THIS ONE. A door asks who may play; a receipt
+   itemises what was BOUGHT, and that cannot differ between two people who paid the same
+   $19.99 because one of them is on a tester list. So it reads the LAUNCH flag, the same rule
+   the badge catalog's denominator uses.
+   READ OFF PRO_ITEM RATHER THAN OFF A RENDERED SHEET, deliberately: pfPro paints from a real
+   premiumUnlocks() round trip that this harness has no account for, so driving it would be
+   asserting against the empty state. The line itself is the thing with the rule in it. */
+const receipt = await ck.page.evaluate(() => ({
+  ps: window.__t.PRO_ITEM.ps_premium.text,
+  live: !!window.__t.fullTeamSold(),
+}));
+ok('  the receipt names Full Team only once it has launched',
+  /Full Team/.test(receipt.ps) === receipt.live, receipt.ps);
+/* AND IT IS THE SAME SENTENCE THE STORE SELLS. The comment over PRO_ITEM says a receipt
+   shorter than the card it is the receipt for reads as something having been taken away, and
+   the two are in two different files, so nothing but this notices when they drift. */
+const sold = await ck.page.evaluate(() => {
+  const m = (window.RTG_STORE.html({ signedOut: false }) || '')
+    .match(/Unlimited play:[^<]*/);
+  return m ? m[0] : '';
+});
+ok('  and the store sells the same list', !!sold
+  && sold.replace(/^Unlimited play:\s*/, '') === receipt.ps.replace(/^Unlimited runs:\s*/, ''),
+  sold + '   ||   ' + receipt.ps);
+
 /* AND ONE OF THEM PRESSED FOR REAL. The Trade Machine is the one door an owner can walk
    through with nothing else set up: no saved run to replace, no rules sheet in front of it,
    and dailyOn() is off for somebody holding the row. */
@@ -1286,27 +1415,682 @@ const walked = await ck.page.evaluate(async () => {
 });
 ok('pressing Trade Machine reaches the game', /s-(draft|game|reveal)/.test(walked.got),
   walked.got + (walked.viaRules ? ' (through the rules sheet)' : ''));
+
+/* ─── THE SHEET IS SQUARE, AND IT IS MEASURED RATHER THAN LOOKED AT ────────────────────
+ *
+ * EVERYTHING HERE FAILS SILENTLY, which is why it is worth a section. A ragged hero row
+ * renders, reads and sells perfectly well; the only symptom is that it looks wrong, and
+ * looking wrong is not a thing any other check in this file can see.
+ *
+ * IT HAS ALREADY COME BACK TWICE IN ONE AFTERNOON, by two different doors, which is the
+ * argument for measuring the PROPERTY instead of the cause:
+ *
+ *   - ONE TILE CARRIED A PART THE OTHERS DID NOT. A grid row stretches every cell to its
+ *     tallest, so the .pw-also line under Dynasty put about sixty pixels of nothing under
+ *     the Trade Machine beside it: 167.6px against 128.6px at 390px.
+ *   - THEN THE LONGEST NAME WRAPPED. With .pw-also gone and the step-down written at 359px,
+ *     COMMISSIONER MODE still wrapped at 360, which is what a Galaxy reports, and the rag
+ *     was back at 12px on the one width that had not been looked at.
+ *
+ * So this asks for one height across the whole row, at four widths, and never for a number.
+ * A tile that grows for a good reason is fine as long as they all grow together.
+ *
+ * AND THE CHIPS BESIDE A PRICE SHARE A CENTRE. Save $45 carried align-self:center and One
+ * payment did not, so two pills a few pixels apart on the Run The Bundle card sat 4.7px out
+ * of step, at two type sizes, with one of them drawing its outline as a real border (which
+ * adds two pixels to the box) and the other as an inset shadow (which adds none). Nothing
+ * about that is visible in the source of either rule; it is only visible in the boxes.
+ */
+/* THE VIEWPORT IS RESIZED FOR REAL, one width at a time, and that is not fussiness. The
+   first draft of this measured a div narrowed inside a 390px window and reported the rag
+   alive at 320 and 360 when it was not: a media query keys on the VIEWPORT, so a narrowed
+   element renders at the wide rules and every width below the real one is measured with the
+   wrong stylesheet. The widths matter here precisely because the rules change at them. */
+/* THE CARD HAS TO BE BACK ON THE PAGE, AND THE PAGE HAS TO BE ON SCREEN. Two separate
+   things, and the second one cost a round: the walk above left this account holding both
+   products, which is the reader the card is removed for, AND it left the game on a run
+   screen. Painted but not shown, the card is found by getElementById and measures 0px wide,
+   so the first version of this reported "0 lines in a 0px column" rather than saying the
+   front page was not up. A layout assertion has to be made against a laid out element. */
+await ck.page.evaluate(() => {
+  window.__t.setPaid(false);
+  window.__t.setPremium([]);
+  window.__t.goHome();
+  window.__t.paintHomeStart();
+});
+await new Promise((r) => setTimeout(r, 200));
+const geom = [];
+for (const w of [320, 360, 390, 560]) {
+  await ck.page.setViewportSize({ width: w, height: 1400 });
+  await new Promise((r) => setTimeout(r, 120));
+  geom.push(await ck.page.evaluate(async (width) => {
+    const box = document.createElement('div');
+    box.style.cssText = 'position:absolute;left:0;top:0;width:100%;padding:16px;box-sizing:border-box';
+    box.innerHTML = window.RTG_STORE.html({ signedOut: false });
+    document.body.appendChild(box);
+    await new Promise((r) => requestAnimationFrame(r));
+    const tiles = [...box.querySelectorAll('.pw-tile')]
+      .map((t) => Math.round(t.getBoundingClientRect().height));
+    /* A PRICE ROW IS ALLOWED TO WRAP AND A CHIP IS NOT ALLOWED TO DRIFT, so the claim is
+       about chips that share a LINE. At 320px the Run The Bundle row genuinely does not hold
+       a price, a struck price and two pills, and wrapping the pills onto a second line under
+       the price is the right answer rather than a defect. Asserting over the whole row would
+       read that wrap as a 27px misalignment and send somebody to fix a layout that is doing
+       what it should. */
+    const lines = [];
+    [...box.querySelectorAll('.pw-cost')].forEach((row) => {
+      const b = row.querySelector('b');
+      if (!b) return;
+      const br = b.getBoundingClientRect();
+      /* BESIDE THE PRICE MEANS OVERLAPPING IT VERTICALLY, and the obvious alternative is
+         what the first draft of this got wrong: grouping chips by rounded top put two chips
+         five pixels out of step into two different buckets, so the check compared each one
+         with itself, found no spread, and passed on exactly the misalignment it was written
+         for. Two chips that are out of line are still on the same line. */
+      const chips = [...row.querySelectorAll('.pw-once,.pw-save')]
+        .map((c) => c.getBoundingClientRect())
+        .filter((r) => r.top < br.bottom && r.bottom > br.top)
+        .map((r) => ({ mid: r.top + r.height / 2, h: r.height, bottom: r.bottom }));
+      if (!chips.length) return;                 // the row wrapped them all below the price
+      lines.push({
+        spread: chips.length < 2 ? 0
+          : Math.max(...chips.map((c) => c.mid)) - Math.min(...chips.map((c) => c.mid)),
+        heights: chips.length < 2 ? 0
+          : Math.max(...chips.map((c) => c.h)) - Math.min(...chips.map((c) => c.h)),
+        overhang: Math.max(0, Math.max(...chips.map((c) => c.bottom)) - br.bottom),
+      });
+    });
+    const total = Math.round(box.getBoundingClientRect().height);
+    box.remove();
+    /* AND THE PROMPT CARD THAT OPENS ALL THIS, measured in its REAL place on the page. Its
+       text column is whatever the value and the marks leave, which is 200px at 390 once the
+       fourth mark is there, and the sub has to hold one line in it. "No daily limits. One
+       payment, lifetime." needed 240 and wrapped on every phone anybody holds, leaving the
+       word "lifetime." alone on a second line.
+       MEASURED HERE RATHER THAN COUNTED IN CHARACTERS, because the column depends on the
+       mark count and the mark count depends on the reader. */
+    const card = document.getElementById('b-premium');
+    let sub = null;
+    if (card) {
+      const s = card.querySelector('.pwc-t span');
+      const lh = parseFloat(getComputedStyle(s).lineHeight);
+      sub = { lines: Math.round(s.getBoundingClientRect().height / lh),
+        col: Math.round(card.querySelector('.pwc-t').getBoundingClientRect().width) };
+    }
+    return { w: width, tiles, spread: Math.max(...tiles) - Math.min(...tiles), sub,
+      chipSpread: Math.max(0, ...lines.map((l) => l.spread)),
+      chipHeights: Math.max(0, ...lines.map((l) => l.heights)),
+      overhang: Math.max(0, ...lines.map((l) => l.overhang)), total };
+  }, w));
+}
+await ck.page.setViewportSize({ width: 390, height: 1400 });
+console.log('\nTHE OFFER IS SQUARE AT EVERY WIDTH IT IS READ AT');
+geom.forEach((g) => {
+  ok('  ' + g.w + 'px: every hero tile is the same height', g.spread === 0,
+    g.tiles.join(' ') + '  (spread ' + g.spread + 'px)');
+  ok('  ' + g.w + 'px: the chips beside a price share a centre', g.chipSpread < 1,
+    g.chipSpread.toFixed(1) + 'px apart');
+  ok('  ' + g.w + 'px: and are the same pill', g.chipHeights < 1,
+    g.chipHeights.toFixed(1) + 'px of height between them');
+  ok('  ' + g.w + 'px: no chip hangs below the price', g.overhang < 1,
+    g.overhang.toFixed(1) + 'px');
+  /* 320 IS EXEMPT AND SAYS SO. At 320 the card's title wraps too, so a one line rule there
+     would be asking for copy nobody would write. Every width a phone in use actually
+     reports is 360 and up. */
+  if (g.w >= 360) {
+    ok('  ' + g.w + 'px: the prompt card says it in one line', !!g.sub && g.sub.lines === 1,
+      g.sub ? g.sub.lines + ' lines in a ' + g.sub.col + 'px column' : 'no card');
+  }
+});
+/* A CEILING ON THE WHOLE SHEET, because the complaint that started this pass was scrolling
+   and nothing else here would notice it growing back. Measured at 390px it was 1090px and is
+   now 918px. 1000 is a real ceiling rather than a pin: it leaves room to add a line and fails
+   on adding a block. Move it when the sheet is meant to get longer, never to make this pass. */
+const tall = geom.find((g) => g.w === 390);
+ok('  and the whole offer stays under 1000px at 390', tall.total < 1000, tall.total + 'px');
+
+/* ─── A DYNASTY SCREEN SAYS WHICH SEASON IT IS, AND NOTHING ELSE DOES ──────────────────
+ *
+ * The seeding screen is the same screen in season one and season forty: an eyebrow reading
+ * "Regular season complete" over a record. The run is the only thing on the page that knows
+ * the difference, and every other Dynasty screen already names it (the squad screen's step,
+ * the schedule's heading, the boss battle's eyebrow), so this one was the odd one out.
+ *
+ * THE HALF THAT NEEDS A GUARD IS THE RESET, NOT THE LABEL. #sd-eye is static markup drawn
+ * for the Trade Machine and Full Team on the same page, and both of them reach this screen.
+ * Written as "set it when dynasty" and nothing else, a dynasty in the other slot leaves its
+ * season number sitting on a mode that has no seasons, which is a sentence that is wrong
+ * rather than missing, and nothing anywhere throws. v-caleye carries the same note for the
+ * same reason; this is the fourth element on this page with that shape.
+ *
+ * PAINTED DIRECTLY RATHER THAN PLAYED TO. What is under test is one heading, and driving
+ * seventeen weeks of football to reach it would be testing the season loop instead.
+ */
+console.log('\nA DYNASTY SCREEN SAYS WHICH SEASON IT IS');
+const SEED_FIXTURE = { regularRecord: '13-4', bye: false, byeRoute: null,
+  roundNames: ['Wild Card', 'Divisional', 'Conf.', 'Title'] };
+for (const [label, opts] of [
+  ['a dynasty in season 6', { dynasty: true, seasonNo: 6 }],
+  ['a dynasty in season 40', { dynasty: true, seasonNo: 40 }],
+  ['a Trade Machine run', { dynasty: false, tradeMachine: true, seasonNo: 1 }],
+]) {
+  const r = await ck.page.evaluate(({ o, seed }) => {
+    const run = window.__t.R.createRun({ dynasty: !!o.dynasty, seed: 5 });
+    run.dynasty = !!o.dynasty;
+    run.tradeMachine = !!o.tradeMachine;
+    run.seasonNo = o.seasonNo;
+    run.playoffSeed = seed;
+    window.__t.setRun(run);
+    window.__t.paintSeed();
+    const e = document.getElementById('sd-eye');
+    const lh = parseFloat(getComputedStyle(e).lineHeight) || 13;
+    return { txt: (e.textContent || '').trim(),
+      lines: Math.round(e.getBoundingClientRect().height / lh),
+      /* The rest of the screen, so a change to the heading cannot quietly take it with it. */
+      rec: (document.getElementById('sd-rec') || {}).textContent,
+      steps: [...document.querySelectorAll('#sd-tracker .po-step')].length };
+  }, { o: opts, seed: SEED_FIXTURE });
+  console.log('  ' + label + ':');
+  ok('    the eyebrow reads "' + r.txt + '"',
+    opts.dynasty
+      ? r.txt === 'Regular season complete · Season ' + opts.seasonNo
+      : r.txt === 'Regular season complete',
+    r.txt);
+  /* 320 IS NOT ASSERTED. The viewport here is 390 by the line above this block, which is the
+     width this is read at; at 320 a two digit season wraps and breaks cleanly at the middot,
+     which is a second line rather than a widow. */
+  ok('    on one line at 390', r.lines === 1, r.lines + ' lines');
+  ok('    and the screen under it is intact', r.rec === '13-4' && r.steps === 4,
+    r.rec + ' / ' + r.steps + ' rounds');
+}
+
+/* THE WHOLE POSTSEASON, NOT JUST THE SCREEN THAT WAS REPORTED. The seeding screen was the
+   one a player pointed at, and the bracket and the broadcast that follow it had the same
+   hole: three screens in a row, each identical in season one and season forty. The results
+   screen already named it, on the score card, so it is left alone.
+   DRIVEN FOR REAL, because nbrkShow and playPlayoffGame both need a bracket and an opponent
+   and neither can be handed a fixture the way paintSeed can. A greedy draft does not reach
+   the postseason every year, so the seed is SEARCHED for: the first attempt at this read a
+   missed season as a broken harness, because the phase goes straight to 'over' at week 17
+   and startPlayoffs then throws "not at seeding". */
+const po = await ck.page.evaluate(async () => {
+  const T = window.__t, RR = T.R, DATA = T.D();
+  /* One draft and one season, to the point the seeding screen is drawn. */
+  const toSeeding = (seed) => {
+    const run = RR.createRun({ dynasty: true, seed });
+    let g = 0;
+    while (run.roster.length < run.slots.length && g++ < 400) {
+      let d; try { d = RR.spin(run, DATA); } catch (e) { continue; }
+      const men = RR.affordableFrom(run, d.team_season_id, DATA.playersByTeamSeason);
+      if (!men.length) continue;
+      const w = men.slice().sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+      try { RR.sign(run, w, RR.slotChoices(run, w)[0]); } catch (e) {}
+    }
+    if (run.roster.length < run.slots.length) return null;
+    run.seasonNo = 6;
+    T.setRun(run);
+    try { RR.startSeason(run, T.dataNow(), T.LEAGUE(), T.CAL()); } catch (e) { return null; }
+    let n = 0;
+    while (run.phase === RR.PHASES.SEASON && n++ < 40) {
+      try { RR.advanceWeek(run, T.dataNow(), T.LEAGUE(), T.CAL()); } catch (e) { break; }
+    }
+    return run.phase === RR.PHASES.SEEDING ? run : null;
+  };
+  /* THE THREE HEADINGS, reached the way a player reaches them: the seeding screen, then the
+     button, then the bracket, then the broadcast. Calling the painters instead is not an
+     option for the last two, which need a built bracket and a real opponent. */
+  const walk = async () => {
+    T.paintSeed();
+    const seedEye = (document.getElementById('sd-eye').textContent || '').trim();
+    document.getElementById('b-po').click();
+    await new Promise((r) => setTimeout(r, 700));
+    const brkEye = (document.getElementById('nbrk-eyebrow').textContent || '').trim();
+    for (let i = 0; i < 40; i++) {
+      if (document.getElementById('s-po').classList.contains('on')) break;
+      const b = document.getElementById('b-nbrk-fast');
+      if (b && b.offsetParent) b.click();
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    return { seedEye, brkEye,
+      poEye: (document.getElementById('po-round').textContent || '').trim() };
+  };
+  let found = null, run = null;
+  for (let seed = 1; seed <= 40 && !run; seed++) { run = toSeeding(seed); if (run) found = seed; }
+  if (!run) return { found: null };
+  const dyn = await walk();
+
+  /* AND THE SAME WALK AGAIN AS A TRADE MACHINE, which is the half that catches the real bug.
+     WHY THE WHOLE POSTSEASON IS REPLAYED RATHER THAN ONE ELEMENT REPAINTED: the first version
+     of this flipped the flags and called paintSeed alone, so only #sd-eye was drawn a second
+     time. Written the careless way, `if (dynasty) set-with-season; else set-without`, the
+     bracket and the broadcast both PASSED that check while carrying the trap, because nothing
+     ever painted them as a non-dynasty. Proved by doing exactly that.
+     The run is rebuilt on the same seed and the flags flipped before the button is pressed,
+     so the postseason itself is identical and the only thing that differs is the mode. */
+  const run2 = toSeeding(found);
+  if (!run2) return { found, dyn, other: null };
+  run2.dynasty = false; run2.tradeMachine = true;
+  T.setRun(run2);
+  const other = await walk();
+  return { found, dyn, other, tag: T.seasonTag() };
+});
+console.log('  the postseason, played to the wild card:');
+if (!po.found) {
+  ok('    a seed reached the playoffs', false, 'none of 40 did');
+} else {
+  ok('    the seeding screen names the season',
+    po.dyn.seedEye.endsWith('· Season 6'), po.dyn.seedEye);
+  ok('    the bracket names it', po.dyn.brkEye.endsWith('· Season 6'), po.dyn.brkEye);
+  ok('    the broadcast names it', po.dyn.poEye.endsWith('· Season 6'), po.dyn.poEye);
+  if (!po.other) {
+    ok('    the same seed replays for the Trade Machine', false, 'rebuild failed');
+  } else {
+    const none = [po.other.seedEye, po.other.brkEye, po.other.poEye];
+    /* THE TAIL, NOT THE WORD. Written /Season/i this failed on a correct page, because
+       "Regular season complete" contains the word. What must be absent is the tag. */
+    ok('    and none of the three carries the tag for a Trade Machine run',
+      po.tag === '' && none.every((t) => !/·\s*Season\s*\d/.test(t)), none.join(' | '));
+  }
+}
+
 await ck.page.close();
 
-console.log('\nAN ACCOUNT OFF THE TESTER LISTS SEES NONE OF IT');
+/*
+ * THE LAUNCHED VIEW, WHICH IS EVERYBODY'S VIEW.
+ *
+ * This section read AN ACCOUNT OFF THE TESTER LISTS SEES NONE OF IT and asserted five
+ * absences, which was the right guard for two unannounced modes. Every one of those five
+ * is now inverted on purpose: the doors are built for anybody, the pitch is drawn, and a
+ * free account IS metered. Those are not five regressions, they are what launching meant,
+ * and the file has to say so in the position it is in rather than be quietly deleted.
+ *
+ * WHAT IT GUARDS NOW is the shape of the paid tier, which is the thing that can still break
+ * quietly: a free account gets the mode plus a meter, an owner gets the mode with the meter
+ * off, and NEITHER of them is ever refused the door. The mode being free to enter is the
+ * whole design (see the note in 105_fullteam_daily.sql on why a hard gate would cap every
+ * free cabinet's GOAT forever), so a door that came back as a wall would be a silent
+ * reversal of it, and no error anywhere would report that.
+ */
+console.log('\nAN ACCOUNT THAT IS NOBODY IN PARTICULAR GETS ALL OF IT');
 const plain = await openPage(browser, 'http://local.test/football/', { tester: false,
-  inject: 'acctTier,premiumPitch,dailyOn,'
+  inject: 'acctTier,premiumPitch,dailyOn,canPlayDynasty,canPlayFull,'
     + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='someone';}"
     + ',setPremium:(v)=>{premiumSet=v;}' });
 const off = await plain.page.evaluate(() => {
   const T = window.__t;
   T.signIn(); T.setPremium([]);
   return { pitch: T.premiumPitch(), metered: T.dailyOn(),
+    canDyn: T.canPlayDynasty(), canFull: T.canPlayFull(),
     dynastyDoor: !!document.getElementById('b-start-dyn'),
     fullDoor: !!document.getElementById('b-start-full'),
     pitchCard: !!document.getElementById('b-premium') };
 });
-ok('no dynasty door', !off.dynastyDoor);
-ok('no full team door', !off.fullDoor);
-ok('no pitch card on the front page', !off.pitchCard);
-ok('premiumPitch() stays quiet', off.pitch === false);
-ok('nothing is metered', off.metered === false);
+ok('a dynasty door, for an account on no list', off.dynastyDoor);
+ok('a full team door, the same', off.fullDoor);
+ok('  and both modes answer that they can be played', off.canDyn && off.canFull);
+ok('the pitch card is on the front page', off.pitchCard);
+ok('premiumPitch() offers the bundle', off.pitch === true);
+/* THE METER IS THE PRODUCT, so this is the line that says the free tier is still a free
+   TIER and not a free GAME. It was `=== false` when nobody off the list could reach a mode
+   to be metered on. */
+ok('and a free account is metered', off.metered === true);
+/* AND THE ROW IS WHAT TURNS IT OFF, which is the same assertion from the paying side. The
+   tester lists are feature flags and never permissions, so the thing that has to move the
+   meter is the premium_unlocks row and nothing else. Same page, same account, one row. */
+const paid = await plain.page.evaluate(() => {
+  const T = window.__t;
+  T.setPremium(['ps_premium', 'cfb_premium']);
+  return { metered: T.dailyOn(), pitch: T.premiumPitch(),
+    dynastyDoor: !!document.getElementById('b-start-dyn') };
+});
+ok('the row stops the counting', paid.metered === false);
+ok('  and the pitch goes quiet for an owner', paid.pitch === false);
+ok('  and the door is still there', paid.dynastyDoor);
 await plain.page.close();
+
+/*
+ * THE DYNASTY BOARD HAS A WAY IN FROM THE FRONT PAGE.
+ *
+ * It did not. The table, the axes and the queries all existed and the only thing that ever
+ * set lbDynasty was boardFromRun, which needs a finished dynasty season on screen, so the
+ * board was reachable from exactly one place and openBoard cleared the flag on the way in
+ * from anywhere else. Nothing was broken and nothing could report it: a leaderboard nobody
+ * can open renders perfectly. Reported by a player who went looking for it.
+ *
+ * WHAT MADE IT MORE THAN ONE LINE is that boardChrome hid the competition select on this
+ * board, on the argument that Dynasty's own axis tabs stand in for it. True while the board
+ * was only ever a run's own board; false the moment the select is the way IN, because a door
+ * that disappears behind you is a board you can only leave by closing the whole screen. The
+ * select stays up on both now and the SORT BAR is what the axis tabs actually replace.
+ *
+ * So both directions are driven here, and the way back is the half that never existed.
+ */
+console.log('\nTHE DYNASTY BOARD IS REACHABLE, AND LEAVEABLE');
+const lb = await openPage(browser, 'http://local.test/football/', { tester: false,
+  inject: 'canPlayDynasty,openBoard,setRun:(r)=>{run=r;},'
+    + 'lbDyn:()=>lbDynasty,'
+    + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='t';"
+    + "authState.userId='u1';premiumSet=[];}" });
+await lb.page.evaluate(() => window.__t.signIn());
+await lb.page.click('#frg-x', { timeout: 2000 }).catch(() => {});
+{
+  /* The way a player does it: press Leaderboard, then pick it out of the select. */
+  await lb.page.click('#b-board');
+  await lb.page.waitForTimeout(1200);
+  const opts = await lb.page.evaluate(() =>
+    [...document.querySelectorAll('#lb-comp option')].map((o) => o.value));
+  ok('Dynasty is in the competition select', opts.includes('dynasty'),
+    opts.filter((o) => !/^[A-Z]{2,3}$/.test(o)).join(', ') || '(none)');
+  await lb.page.selectOption('#lb-comp', 'dynasty');
+  await lb.page.waitForTimeout(1200);
+  const on = await lb.page.evaluate(() => ({
+    dyn: window.__t.lbDyn(),
+    eye: (document.querySelector('#s-board .lbtop .eyebrow') || {}).textContent,
+    sel: getComputedStyle(document.querySelector('#s-board .lbmode')).display,
+    value: document.getElementById('lb-comp').value,
+    axes: getComputedStyle(document.getElementById('lb-dyntabwrap')).display,
+    sort: getComputedStyle(document.querySelector('#s-board .sortbar')).display,
+    blurb: (document.getElementById('lb-blurb') || {}).textContent || '',
+  }));
+  ok('  picking it opens the Dynasty board', on.dyn === true && on.eye === 'Dynasty', on.eye);
+  ok('  AND THE SELECT STAYS UP, so it is not a one-way door', on.sel !== 'none', on.sel);
+  ok('  showing Dynasty as the one selected', on.value === 'dynasty', on.value);
+  ok('  with the run axes in place of the season sort bar',
+    on.axes !== 'none' && on.sort === 'none', 'axes ' + on.axes + ', sort ' + on.sort);
+  /* THE BLURB IS WRITTEN BEFORE THE REQUEST, so the unreachable branch cannot leave the last
+     board's sentence under a Dynasty table. Nothing reaches a server in this harness, which
+     is exactly the state that used to print "Free runs only. Each franchise has its own
+     board." over the Dynasty error. */
+  ok('  and the board says what a row is, even with nothing reachable',
+    /One row a run/.test(on.blurb), on.blurb.slice(0, 64));
+}
+{
+  await lb.page.selectOption('#lb-comp', '');
+  await lb.page.waitForTimeout(1200);
+  const off = await lb.page.evaluate(() => ({
+    dyn: window.__t.lbDyn(),
+    eye: (document.querySelector('#s-board .lbtop .eyebrow') || {}).textContent,
+    sort: getComputedStyle(document.querySelector('#s-board .sortbar')).display,
+    axes: getComputedStyle(document.getElementById('lb-dyntabwrap')).display,
+  }));
+  ok('  and picking Offense comes back out', off.dyn === false && off.eye === 'Standings', off.eye);
+  ok('    with the classic sort bar back and the run axes gone',
+    off.sort !== 'none' && off.axes === 'none', 'sort ' + off.sort + ', axes ' + off.axes);
+}
+{
+  /* AND THE ROUTE THAT ALREADY WORKED STILL DOES. Coming off a finished dynasty season opens
+     that run's own board without anybody picking anything, and that is the path every
+     existing player knows. Adding a second way in must not cost the first. */
+  const r = await lb.page.evaluate(() => {
+    const T = window.__t;
+    T.setRun({ outcome: 'done', dynasty: true, seasonNo: 3 });
+    T.openBoard();
+    return { dyn: T.lbDyn(), value: document.getElementById('lb-comp').value };
+  });
+  await lb.page.waitForTimeout(1000);
+  ok('  a finished dynasty season still opens its own board', r.dyn === true, String(r.dyn));
+  ok('    and the select says so', r.value === 'dynasty', r.value);
+}
+ok('  and none of it threw', lb.boom.length === 0, lb.boom.join(' | '));
+await lb.page.close();
+
+/*
+ * A BOOT READ THAT LANDS LATE MUST NOT UNDO WHAT LANDED WHILE IT WAS IN FLIGHT.
+ *
+ * dailySpend, dailyGrace and dailyDayEnd all write the meter behind `if (r && r.used != null)`.
+ * dailyEnsure, which is the BOOT read and so the oldest answer of the four, wrote whatever
+ * came back with no guard at all. Two things follow from that one missing clause and both
+ * are silent, because every allowance here fails open: nothing is ever wrongly refused, so
+ * nothing throws and no screen says anything.
+ *
+ *   A NULL ERASES A REAL ANSWER.  attemptsState answers null on any network blip. Stored, it
+ *   is read everywhere as "no opinion", so the door loses its countdown and dailySeasons()
+ *   falls back to 'run', which quietly puts the season copy back on the old run rule in the
+ *   middle of a session. The grace announcement reads `was` off the same state and goes mute.
+ *
+ *   A STALE ANSWER UNDOES A SPEND.  The boot read is the oldest request in flight. Land it
+ *   after a kickoff and the used count goes back down: the door redraws with a season the
+ *   player has already played still on it.
+ *
+ * FOUND FROM THE HARNESS SIDE, which is worth saying because the harness looked like the
+ * bug. Adding a second background call shifted the timing enough that the null landed
+ * between two stubbed states, and the symptom was a boss-win toast that never appeared. The
+ * suite was fixed so no section asks the real meter. That is right on its own terms and it
+ * is not this: the page had the same race with nothing stubbed at all.
+ *
+ * THE ANSWER IS THE ONE dynCloudPull ALREADY USES one screen over: null is no opinion, so
+ * keep what is held and drop the mark, and the next paint asks again. Bounded, because
+ * dailyEnsure is called from every paint of the front page and an unbounded re-arm against a
+ * dead network is a request per repaint.
+ */
+console.log('\nA LATE METER ANSWER NEVER MOVES THE COUNT BACKWARDS');
+const lm = await openPage(browser, 'http://local.test/football/', { tester: false,
+  inject: 'dailyEnsure,dailySpend,setPremium:(v)=>{premiumSet=v;},'
+    + 'setDaily:(m,v)=>{dailyState[m]=v;},getDaily:(m)=>dailyState[m],'
+    + 'asked:(m)=>dailyAsked[m],reask:(m)=>{dailyAsked[m]=false;},'
+    /* A meter server whose answer is HELD OPEN, so the boot read can be landed by hand at
+       the exact moment each case below needs it. A timing bug cannot be checked by racing
+       it; it has to be driven. */
+    + 'holdState:(v)=>{window.__land=null;'
+    + 'B.attemptsState=async()=>new Promise((r)=>{window.__land=()=>r(v);});},'
+    + 'land:()=>{if(window.__land){window.__land();window.__land=null;}},'
+    + 'stubSpend:(v)=>{B.attemptSpend=async()=>v;},'
+    + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='t';}" });
+const REAL = { used: 1, allowance: 3, unit: 'season',
+  resetsAt: new Date(Date.now() + 9 * 3600e3).toISOString() };
+await lm.page.evaluate(() => { window.__t.signIn(); window.__t.setPremium([]); });
+{
+  const r = await lm.page.evaluate(async ([real]) => {
+    const T = window.__t;
+    T.setDaily('dynasty', Object.assign({}, real));
+    T.holdState(null);                       // the blip
+    T.reask('dynasty'); T.dailyEnsure('dynasty');
+    T.land();
+    await new Promise((go) => setTimeout(go, 50));
+    return { held: T.getDaily('dynasty'), asked: T.asked('dynasty') };
+  }, [REAL]);
+  console.log('  a boot read that comes back null:');
+  ok('    does not erase the answer the page is holding',
+    !!r.held && r.held.used === 1, JSON.stringify(r.held));
+  /* AND THE UNIT IS THE HALF THAT CHANGES THE WORDS. Erased, dailySeasons() falls back to
+     'run' and the copy reverts to a rule this database is not keeping. */
+  ok('    so the page goes on describing the season rule',
+    !!r.held && r.held.unit === 'season', String(r.held && r.held.unit));
+  ok('    and the mode is left free to ask again', r.asked === false, String(r.asked));
+}
+{
+  const r = await lm.page.evaluate(async ([real]) => {
+    const T = window.__t;
+    T.setDaily('dynasty', Object.assign({}, real));
+    T.holdState(Object.assign({}, real));    // the pre-kickoff answer, still in flight
+    T.reask('dynasty'); T.dailyEnsure('dynasty');
+    /* A season is played WHILE that read is out. This is the fresher answer. */
+    T.stubSpend({ ok: true, used: 2, allowance: 3, unit: 'season', resetsAt: real.resetsAt });
+    await T.dailySpend('dynasty');
+    const spent = T.getDaily('dynasty').used;
+    T.land();
+    await new Promise((go) => setTimeout(go, 50));
+    return { spent, after: T.getDaily('dynasty').used };
+  }, [REAL]);
+  console.log('  a boot read that lands after a kickoff:');
+  ok('    the kickoff was counted', r.spent === 2, String(r.spent));
+  ok('    AND THE LATE ANSWER DOES NOT GIVE THE SEASON BACK', r.after === 2, String(r.after));
+}
+/* AND THE SAME RULE FOR THE OTHER THREE WRITERS, which is a separate clause in a separate
+   place. dailyEnsure refuses a null itself, because it has to decide whether to ask again;
+   dailySpend, dailyGrace and dailyDayEnd refuse theirs inside dailyPut. Removing dailyPut's
+   guard left every assertion above green, so without this one the clause those three depend
+   on is carried by nothing. A spend that cannot reach the server already grants the season
+   (it fails open, and returns true); what it must not also do is forget the day. */
+{
+  const r = await lm.page.evaluate(async ([real]) => {
+    const T = window.__t;
+    T.setDaily('dynasty', Object.assign({}, real));
+    T.stubSpend(null);                       // the server could not be asked
+    const allowed = await T.dailySpend('dynasty');
+    return { allowed, held: T.getDaily('dynasty') };
+  }, [REAL]);
+  console.log('  a spend the server never answered:');
+  ok('    lets the season go ahead', r.allowed === true, String(r.allowed));
+  ok('    and leaves the day exactly as it was',
+    !!r.held && r.held.used === 1 && r.held.unit === 'season', JSON.stringify(r.held));
+}
+ok('  and none of it threw', lm.boom.length === 0, lm.boom.join(' | '));
+await lm.page.close();
+
+/*
+ * ONE NEW DYNASTY A DAY, AND THE GATE HAS TO SIT ABOVE THE LINES THAT DESTROY A SAVE.
+ *
+ * supabase/106_dynasty_one_run_a_day.sql meters how often somebody STARTS a dynasty, which
+ * is a different question from how many seasons they may play, and its own suite
+ * (supabase/test/dynasty_run_day_test.sql) counts it properly. This asks the half that suite
+ * cannot see: where the refusal lands in the page.
+ *
+ * WHAT CAN GO WRONG HERE IS SILENT AND IT HAS HAPPENED ONCE ALREADY. dynNewSheet cleared the
+ * save and asked the allowance afterwards, so the trade this mode is built on (this run for
+ * a new one) could be taken halfway: the dynasty went, the draft was then refused, and the
+ * player was left holding neither. Nothing throws when a save is removed.
+ *
+ * TWO DOORS REACH beginDraft AND BOTH ARE DRIVEN. beginDynastyDraft is the one every press
+ * goes through; the replace sheet's own button is the one that does NOT go back through it,
+ * so a gate added to the door alone is a gate with a hole beside it. That second one is
+ * driven the way it actually breaks, too: the sheet is opened on an OPEN day and pressed on
+ * a shut one, because a sheet sits open for as long as somebody leaves it open and the other
+ * slot, or another tab, can spend the day underneath it.
+ */
+console.log('\nONE NEW DYNASTY A DAY, AND A REFUSED ONE COSTS NOTHING');
+const rd = await openPage(browser, 'http://local.test/football/', { tester: false,
+  inject: 'beginDynastyDraft,dynRead,dynKeyFor,DYN_SAVE_VERSION,runDayShut,R:R,'
+    + 'setPremium:(v)=>{premiumSet=v;},setAsked:(m)=>{dailyAsked[m]=true;},'
+    + 'setDaily:(m,v)=>{dailyState[m]=v;},'
+    + 'setRunDay:(v)=>{runDayState=v;runDayAsked=true;},ensureDynastyButton,'
+    + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='t';"
+    + "authState.userId='u1';}" });
+await rd.page.evaluate(() => window.__t.signIn());
+/* The rules sheet stands in front of every run and this section is not about it. */
+await rd.page.evaluate(() => { try { localStorage.setItem('ps_dynintro_off', '1'); } catch (e) {} });
+/* A free account WITH SEASONS LEFT, so the only thing on this page that can refuse is the
+   new-run meter and a failure here cannot be the season budget wearing its clothes. */
+const rdSetup = (shut, withSave) => rd.page.evaluate(([shut, withSave]) => {
+  const T = window.__t;
+  try { localStorage.removeItem(T.dynKeyFor('open')); } catch (e) {}
+  T.setPremium([]);
+  T.setAsked('dynasty');
+  T.setDaily('dynasty', { used: 0, allowance: 3,
+    resetsAt: new Date(Date.now() + 9 * 3600e3).toISOString(), unit: 'season' });
+  T.setRunDay(shut
+    ? { ok: false, pro: false, nextAt: new Date(Date.now() + 9 * 3600e3).toISOString() }
+    : { ok: true, pro: false, nextAt: null });
+  /* WRITTEN STRAIGHT TO THE KEY rather than through dynSave, which packs the LIVE run and
+     there is no live run on the front page. What dynRead asks of it is all that matters: the
+     version, a dynasty with a roster in it, the open slot, and this account. */
+  if (withSave) {
+    localStorage.setItem(T.dynKeyFor('open'), JSON.stringify({
+      v: T.DYN_SAVE_VERSION, api: 1, user: 'u1', at: Date.now(), submitted: null,
+      run: { dynasty: true, franchise: null, phase: T.R.PHASES.OFFSEASON, seasonNo: 4,
+        roster: ['1|2020', '2|2020', '3|2020', '4|2020', '5|2020', '6|2020'],
+        coach: null, winter: null, history: [] },
+    }));
+  }
+  document.getElementById('sheet').classList.remove('on');
+  document.getElementById('sheet-in').dataset.kind = '';
+  return !!T.dynRead('open');
+}, [shut, withSave]);
+
+{
+  const had = await rdSetup(true, true);
+  const r = await rd.page.evaluate(() => {
+    window.__t.beginDynastyDraft();
+    return { on: document.getElementById('sheet').classList.contains('on'),
+      head: (document.querySelector('#sheet-in h2') || {}).textContent || '',
+      screen: [...document.querySelectorAll('.screen.on')].map((s) => s.id).join(','),
+      save: !!window.__t.dynRead('open') };
+  });
+  console.log('  a shut day, with a dynasty already saved:');
+  ok('    the save was there to begin with', had === true);
+  ok('    the door draws the wall', r.on && /today.s dynasty/i.test(r.head),
+    JSON.stringify(r.head));
+  ok('    the draft never opened', !/s-draft/.test(r.screen), r.screen);
+  ok('    AND THE SAVED DYNASTY IS UNTOUCHED', r.save === true, String(r.save));
+}
+{
+  await rdSetup(true, false);
+  const r = await rd.page.evaluate(() => {
+    window.__t.beginDynastyDraft();
+    const t = document.getElementById('sheet-in').innerText || '';
+    return { on: document.getElementById('sheet').classList.contains('on'),
+      says: /Nothing was used by asking/i.test(t),
+      offers: /Unlock everything/i.test(t),
+      screen: [...document.querySelectorAll('.screen.on')].map((s) => s.id).join(',') };
+  });
+  console.log('  a shut day with nothing saved:');
+  ok('    still refused', r.on);
+  /* IT SAYS WHAT IT DID NOT COST. A wall that only says no reads as a wall that took
+     something, which is the whole complaint this meter has to avoid producing. */
+  ok('    and says nothing was spent by asking', r.says);
+  ok('    with the bundle under the fact rather than over it', r.offers);
+  ok('    the draft never opened', !/s-draft/.test(r.screen), r.screen);
+}
+{
+  await rdSetup(false, true);
+  const r = await rd.page.evaluate(() => {
+    const T = window.__t;
+    T.beginDynastyDraft();                               // lands on the replace sheet
+    const opened = document.getElementById('sheet-in').dataset.kind;
+    T.setRunDay({ ok: false, pro: false,
+      nextAt: new Date(Date.now() + 9 * 3600e3).toISOString() });
+    document.getElementById('b-dr-new').click();
+    return { opened,
+      head: (document.querySelector('#sheet-in h2') || {}).textContent || '',
+      screen: [...document.querySelectorAll('.screen.on')].map((s) => s.id).join(','),
+      save: !!T.dynRead('open') };
+  });
+  console.log('  the replace sheet, pressed after the day shut under it:');
+  ok('    the sheet reached was the replace sheet', r.opened === 'dynreplace', r.opened);
+  ok('    the wall is drawn', /today.s dynasty/i.test(r.head), JSON.stringify(r.head));
+  ok('    the draft never opened', !/s-draft/.test(r.screen), r.screen);
+  ok('    AND THE DYNASTY IT WOULD HAVE TRADED AWAY IS STILL THERE',
+    r.save === true, String(r.save));
+}
+/* AND THE DOOR SAYS SO BEFORE THE TAP. Seasons left and no run to spend them on is a state
+   the season branch cannot describe: what is used up is the fresh start rather than the
+   budget, so a door reading Day done would be wrong about both halves, and one reading Start
+   a Dynasty sends somebody into a wall the front page already knew about. */
+{
+  await rdSetup(true, false);
+  const r = await rd.page.evaluate(() => {
+    const T = window.__t;
+    T.ensureDynastyButton();
+    const el = document.getElementById('b-start-dyn');
+    return { text: ((el || {}).innerText || '').replace(/\s+/g, ' ').trim(),
+      locked: !!(el && el.querySelector('.hp-tag-spent')),
+      pad: !!(el && el.querySelector('.hp-tag-spent svg')) };
+  });
+  console.log('  the front page door, on a spent new-run day with seasons left:');
+  ok('    carries the spent tag', r.locked, r.text);
+  ok('    with a padlock on it', r.pad);
+  ok('    and says a new dynasty rather than a new season', /New dynasty in/i.test(r.text), r.text);
+  ok('    and never claims the day is done', !/Day done/i.test(r.text), r.text);
+}
+/* THE THREE WAYS THE METER MUST NOT BITE. An open day, a database that has not had 106 yet
+   (the call errors, the state stays null, and no opinion is permission), and an owner. */
+{
+  await rdSetup(false, false);
+  const r = await rd.page.evaluate(() => {
+    const T = window.__t;
+    const open = T.runDayShut();
+    T.setRunDay(null);
+    const quiet = T.runDayShut();
+    T.setRunDay({ ok: true, pro: true, nextAt: null });
+    return { open, quiet, owner: T.runDayShut() };
+  });
+  ok('  an open day is not shut', r.open === false, String(r.open));
+  ok('  a database without 106 answers nothing, and nothing is permission',
+    r.quiet === false, String(r.quiet));
+  ok('  an owner is never shut', r.owner === false, String(r.owner));
+}
+ok('  and none of it threw', rd.boom.length === 0, rd.boom.join(' | '));
+await rd.page.close();
 
 await browser.close();
 console.log('');

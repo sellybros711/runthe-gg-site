@@ -222,9 +222,17 @@ begin
       return;
     end if;
 
-    update public.ps_dynasty_day set used = used + 1, last_at = now()
-     where user_id = v_user
-     returning * into v_dyn;
+    /* ALIASED, AND THAT IS NOT A STYLE CHOICE. This function RETURNS TABLE (ok, used,
+       allowance, ...), which makes `used` an OUT parameter, so an unqualified `set used =
+       used + 1` is ambiguous between that parameter and the column and Postgres refuses the
+       whole statement. It threw on every dynasty kickoff that got this far, and nothing said
+       so on screen: dailySpend() catches and fails open, by design, so the season went ahead
+       and was never counted. A three-a-day budget that silently never decrements is not a
+       budget. The trade branch below has always had the alias, which is why only one of the
+       two modes was affected. */
+    update public.ps_dynasty_day d set used = d.used + 1, last_at = now()
+     where d.user_id = v_user
+     returning d.* into v_dyn;
     return query select true, v_dyn.used, v_allow, null::timestamptz, 'season'::text, false;
     return;
   end if;

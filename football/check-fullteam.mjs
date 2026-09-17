@@ -29,13 +29,33 @@
  * against a first pick chosen to break them apart.
  *
  * ---------------------------------------------------------------------------
+ * AND THE BUG THAT AGREEMENT HID
+ * ---------------------------------------------------------------------------
+ * Making them agree was right and was not enough: they were made to agree on the LOWEST
+ * OPEN SLOT, and that is not the side the mode is supposed to be picking. The slot list is
+ * interleaved so that reading the side off it would alternate for free, and the premise is
+ * false for exactly the reason above. The lowest open slot only moves when somebody happens
+ * to fit it, so taking a tight end first leaves the QB spot open and the next pick is
+ * offensive again.
+ *
+ * A player reported three defenders in a row. Measured over 360 completed drafts across
+ * three ways of drafting, NOT ONE alternated, every one had a run of three or more, and the
+ * usual shape was the whole offense and then the whole defense. The side is counted now
+ * (`fullPickIsDefensive`), so this file asserts the alternation itself rather than only
+ * asserting that everything on screen agrees about it.
+ *
+ * ---------------------------------------------------------------------------
  * AND THE THING THAT MUST NOT CHANGE
  * ---------------------------------------------------------------------------
- * Full Team is unannounced. fullteam-access.js ships FULLTEAM_LIVE = false and the door is
- * BUILT by ensureFullButton() rather than revealed, so an account off the list has no such
- * node in its document (see the long note over the markup in index.html). check-premium
- * asserts the door is absent; this asserts the same thing from the other end, that the page
- * a non-tester is served carries the mode's name nowhere a reader would find it.
+ * Full Team is LAUNCHED. fullteam-access.js ships FULLTEAM_LIVE = true, so the door is
+ * built for everybody and the assertions below say so. They used to say the opposite, and
+ * the inversion is the point: while the mode was unannounced the thing worth guarding was
+ * that a stranger saw no sign of it, and now it is that a stranger gets in.
+ *
+ * WHAT REPLACED IT AS THE INVARIANT. The door is free and the METER is what is sold, so
+ * the fault this section now watches for is the door quietly becoming a wall again: a
+ * signed out visitor who cannot see it, or a free account that finds the mode behind a
+ * purchase instead of behind a day's wait.
  *
  * Needs no network and no server: every request is served from disk by the route handler,
  * the same way check-premium does it.
@@ -60,11 +80,27 @@ const ok = (n, p, x) => {
 /* The handles the page does not otherwise expose. Same injection point check-premium uses,
    and the same reason: these are internals of one enormous script, and driving them is the
    only way to ask the page a question about a mode three taps in. */
-const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,canPlayFull,'
+const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,fullPickIsDefensive,canPlayFull,'
+  /* The meter section drives the door, the save and the allowance. */
+  + 'fullDoor,fullRead,fullClear,dailyShut,ensureFullButton,setPremium:(v)=>{premiumSet=v;},'
+  /* A ONE-A-DAY SERVER standing in for ps_attempt_spend and ps_attempts_state, with a counter
+     on it, because what matters is how often the PAGE asks rather than what comes back.
+     IT HAS TO BE BUILT IN HERE rather than eval'd from the test: B is a binding inside the
+     page's own script and is not on window, so a stub assembled outside cannot see it. */
+  + 'meter:(used)=>{const n={spend:0};let u=used||0;'
+  + "const row=()=>({used:u,allowance:1,unit:'run',ended:false,"
+  + 'resetsAt:new Date(Date.now()+864e5).toISOString()});'
+  + 'B.attemptsState=async()=>row();'
+  + 'B.attemptSpend=async()=>{n.spend++;const ok=u<1;if(ok)u++;'
+  + 'return Object.assign({ok:ok},row());};'
+  + 'dailyForget();return n;},'
   + 'getRun:()=>run,'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 
-async function open(browser, { tester }) {
+/* NO TESTER VIEW ANY MORE. This used to take { tester } and rewrite LIVE = false to true
+   in the two access files, which is what the tester lists did. Both files ship true now, so
+   the rewrite matched nothing and the parameter described a world that no longer exists. */
+async function open(browser) {
   const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
   const boom = [];
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 180)));
@@ -82,9 +118,6 @@ async function open(browser, { tester }) {
     const f = path.join(ROOT, rel);
     if (!fs.existsSync(f)) return r.abort();
     let body = fs.readFileSync(f);
-    if (tester && /(dynasty|fullteam)-access\.js$/.test(rel)) {
-      body = Buffer.from(body.toString('utf8').replace(/LIVE = false/, 'LIVE = true'), 'utf8');
-    }
     if (rel === '/football/index.html') {
       body = Buffer.from(body.toString('utf8')
         .replace('\nboot();', '\nwindow.__t={' + INJECT + '};\nboot();'), 'utf8');
@@ -108,27 +141,66 @@ async function open(browser, { tester }) {
 const browser = await pw.chromium.launch({ executablePath: CHROME });
 
 /* ================================================================
-   THE MODE IS STILL UNANNOUNCED
+   THE MODE IS LAUNCHED
    ================================================================ */
-console.log('\nAN ACCOUNT OFF THE TESTER LIST IS SERVED NOTHING');
+console.log('\nAN ACCOUNT THAT IS NOBODY IN PARTICULAR IS LET IN');
 {
-  const { page, boom } = await open(browser, { tester: false });
+  const { page, boom } = await open(browser);
   const r = await page.evaluate(() => ({
     door: !!document.getElementById('b-start-full'),
     can: window.__t.canPlayFull(),
     named: /full team/i.test(document.body.innerText),
   }));
-  ok('canPlayFull() is false', r.can === false);
-  ok('  no door is built', !r.door);
-  ok('  and the words are nowhere on the page', !r.named);
+  ok('canPlayFull() is true', r.can === true);
+  ok('  the door is built', r.door);
+  ok('  and the mode is named on the page', r.named);
   ok('  the page still starts clean', !boom.length, boom.join(' | ') || 'no errors');
   await page.close();
 }
-/* Read off disk rather than off the page, because the page under test is served through a
-   handler that rewrites this very line for the tester view. */
+/* Read off disk rather than off the page, because the flag is a property of the file. */
 {
   const src = fs.readFileSync(path.join(ROOT, 'football/fullteam-access.js'), 'utf8');
-  ok('fullteam-access.js still ships FULLTEAM_LIVE = false', /FULLTEAM_LIVE = false/.test(src));
+  /* THE LAUNCH LINE, ASSERTED RATHER THAN ASSUMED, the same way it was asserted while it
+     said false. It is one word and it opens the mode to the whole public, so it is worth a
+     line here in either position. Reverting it should be a decision, not a merge. */
+  ok('fullteam-access.js ships FULLTEAM_LIVE = true', /FULLTEAM_LIVE = true/.test(src));
+
+  /* AND THE TWO LISTS NAME THE SAME PEOPLE.
+   *
+   * THEY NO LONGER DECIDE WHO SEES EITHER MODE, because both flags are true and allowed()
+   * answers yes to everybody. They are kept because canPlayClubDynasty() still reads the
+   * Dynasty one directly, to comp One Franchise to a tester holding no row, and because a
+   * list rebuilt from memory on the day a mode is closed again would be the wrong list.
+   * The assertion survives on the second reason: two lists that are meant to match and
+   * quietly stop matching is still the fault below, whatever they are being read for.
+   *
+   * Two unannounced modes ship on one page and each keeps its own tester list. They drifted:
+   * csel8 and jordantest were added to dynasty-access.js and not to fullteam-access.js, so a
+   * tester was served a front page offering Dynasty with no Full Team on it, and reasonably
+   * concluded their Pro account was the problem. It is not: Pro stops the mode COUNTING runs,
+   * these lists decide whether the door is BUILT.
+   *
+   * NOTHING FAILS WHEN THIS DRIFTS. A door that is never built throws nothing, renders
+   * nothing and is reported by nobody, which is the shape of every bug this file exists for.
+   *
+   * A DIFFERENCE IS ALLOWED, AND HAS TO BE ANNOUNCED. If one mode should preview to somebody
+   * the other should not, say so in both files and this assertion is the thing that makes
+   * you. It compares the sets rather than the order, because the order carries nothing. */
+  const dyn = fs.readFileSync(path.join(ROOT, 'football/dynasty-access.js'), 'utf8');
+  const names = (s, k) => {
+    const m = s.match(new RegExp(k + '\\s*=\\s*\\[([^\\]]*)\\]'));
+    if (!m) return null;
+    return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1].toLowerCase()).sort();
+  };
+  const ft = names(src, 'FULLTEAM_TESTERS'), dy = names(dyn, 'DYNASTY_TESTERS');
+  ok('  both lists were readable', !!ft && !!dy, ft && dy ? ft.length + ' / ' + dy.length : 'parse failed');
+  const only = (a, b) => (a || []).filter((x) => (b || []).indexOf(x) < 0);
+  const missFt = only(dy, ft), missDy = only(ft, dy);
+  ok('  and the two lists name the same testers',
+    !!ft && !!dy && !missFt.length && !missDy.length,
+    (missFt.length ? 'not on Full Team: ' + missFt.join(', ') + '  ' : '')
+    + (missDy.length ? 'not on Dynasty: ' + missDy.join(', ') : '')
+    || ft.join(', '));
 }
 
 /* ================================================================
@@ -136,8 +208,8 @@ console.log('\nAN ACCOUNT OFF THE TESTER LIST IS SERVED NOTHING');
    ================================================================ */
 console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
 {
-  const { page, boom } = await open(browser, { tester: true });
-  ok('the door is built for a tester', await page.evaluate(() =>
+  const { page, boom } = await open(browser);
+  ok('the door is built', await page.evaluate(() =>
     !!document.getElementById('b-start-full')));
   /* THE FILL IS PART OF THE DOOR, not decoration to be dropped in a refactor. Without
      hp-ft this card is the neutral grey shared with the Trade Machine, which on a phone
@@ -170,8 +242,10 @@ console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
       const open = window.__t.nextOpenSlot();
       return {
         n: run.roster.length,
+        /* The page's own answer, which is what the pool and the glow are both drawn from. */
+        side: window.__t.fullPickIsDefensive() ? 'def' : 'off',
+        /* The reading this replaced, kept only to prove the run exercises the difference. */
         byOpen: window.__t.fullSlotIsDefensive(open) ? 'def' : 'off',
-        byCount: window.__t.fullSlotIsDefensive(run.roster.length) ? 'def' : 'off',
         field: document.getElementById('field').dataset.live,
         /* What the board is actually offering, read off the tiles rather than inferred. */
         boardDef: [...document.querySelectorAll('#opts .tile:not(.off)')]
@@ -191,23 +265,35 @@ console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
   }
 
   ok('  six picks were driven', agree.length >= 5, agree.length + ' measured');
-  const wrongHalf = agree.filter((r) => r.field !== r.byOpen);
+  const wrongHalf = agree.filter((r) => r.field !== r.side);
   ok('  the lit half is always the half the pool comes from', !wrongHalf.length,
-    wrongHalf.map((r) => 'pick ' + (r.n + 1) + ' lit ' + r.field + ' pool ' + r.byOpen).join(', ')
+    wrongHalf.map((r) => 'pick ' + (r.n + 1) + ' lit ' + r.field + ' pool ' + r.side).join(', ')
       || agree.map((r) => r.field).join(' '));
   /* The board is read as a third opinion: if the tiles are all defenders the pool is the
      defensive one, whatever either variable says. */
-  const boardWrong = agree.filter((r) => r.tiles > 0 && r.boardDef !== (r.byOpen === 'def'));
+  const boardWrong = agree.filter((r) => r.tiles > 0 && r.boardDef !== (r.side === 'def'));
   ok('  and the tiles on the board are that side', !boardWrong.length,
     boardWrong.map((r) => 'pick ' + (r.n + 1)).join(', ') || agree.length + ' picks');
-  /* THE PROOF THE TEST IS TESTING SOMETHING. If roster.length never disagreed with the
-     open slot on this run, the run did not exercise the bug and a green result means
-     nothing. This is the same trap as a badge nothing can light. */
-  const diverged = agree.filter((r) => r.byCount !== r.byOpen);
-  ok('  and the old reading disagreed at least once, so this run exercises it',
+
+  /* ---- AND IT ACTUALLY ALTERNATES, which is the thing a player can see ----
+     This is the assertion the file was missing. Every pick agreed with every other reading
+     of itself and the mode still served three defenders in a row, because all of them were
+     reading the LOWEST OPEN SLOT and a man goes into whatever slot fits him. Measured over
+     360 completed drafts, not one alternated and the longest run of one side was six. */
+  const flips = agree.slice(1).filter((r, i) => r.side === agree[i].side);
+  ok('  and the side flips on every pick', !flips.length,
+    agree.map((r) => (r.side === 'def' ? 'D' : 'O')).join('')
+      + (flips.length ? '   repeated at pick ' + flips.map((r) => r.n + 1).join(', ') : ''));
+
+  /* THE PROOF THE TEST IS TESTING SOMETHING. If the lowest open slot had named the same
+     side as the pick count on every pick of this run, the run never met the case and a
+     green result means nothing. This is the same trap as a badge nothing can light, and it
+     is why the first pick above is deliberately a running back. */
+  const diverged = agree.filter((r) => r.byOpen !== r.side);
+  ok('  and the reading this replaced disagreed at least once, so this run exercises it',
     diverged.length > 0,
-    diverged.map((r) => 'pick ' + (r.n + 1) + ': count says ' + r.byCount
-      + ', open slot says ' + r.byOpen).join(' | ') || 'never diverged');
+    diverged.map((r) => 'pick ' + (r.n + 1) + ': the count says ' + r.side
+      + ', the lowest open slot says ' + r.byOpen).join(' | ') || 'never diverged');
 
   /* ---- what the screen shows for it ---- */
   const look = await page.evaluate(() => {
@@ -237,6 +323,265 @@ console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
 
   ok('nothing threw', !boom.length, boom.join(' | ') || 'no errors');
   await page.close();
+}
+
+/* ================================================================
+   THE BREAKDOWN IS THE RATING'S OWN WORKING
+
+   This is checked in the ENGINE rather than through a played season, because what can go
+   wrong is arithmetic and a browser adds nothing to it. The screen reads
+   fullSideRatings().parts and multiplies nothing itself, so the only way the table can lie
+   is if the parts stop being the terms the rating was built from.
+
+   THEY DID LIE, WHICH IS WHY THIS EXISTS. The page used to compose its own sentence and it
+   was wrong three ways at once: rosterStructure over all TWELVE men (the reading overallOf
+   warns about, printing "-44% for how the six fit together" on a team whose halves were at
+   -12% and +3%), the flattened chemistry rather than the two the units are rated with, and
+   "which is a 57.5 team overall" on a product that was not the overall. Nothing threw.
+   ================================================================ */
+console.log('\nTHE OVERALL IS THE PARTS, MULTIPLIED OUT');
+{
+  const { createRequire } = await import('module');
+  const req = createRequire(import.meta.url);
+  const E = req(path.join(ROOT, 'football/engine.js'));
+  /* TWO FILES, AND THAT IS THE POINT OF THE MODE. The offensive pool ships in the boot
+     bundle and the defenders are a second download, which is why every path into Full Team
+     calls loadDefensePool first. A fixture built from player_seasons alone finds no
+     defenders at all, falls into fullSideRatings' empty-roster branch, and every assertion
+     below then passes against a row of zeros. It did, on the first run of this section. */
+  const players = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'football/data/player_seasons.json'), 'utf8'));
+  const defenders = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'football/data/defender_seasons.json'), 'utf8'));
+  /* AND A DEFENDER'S POINTS ARE CALLED SOMETHING ELSE ON DISK. The file carries
+     idp_ppg_mean; the engine samples ppr_ppg_mean, and loadDefensePool() in the page copies
+     one onto the other as the pool arrives. A fixture that skips that step hands the engine
+     twelve men with undefined production, which reduces to NaN and then to the empty branch.
+     Normalised here exactly as the page does it, so this is checking the arithmetic the
+     game runs rather than a shape only this file produces. */
+  defenders.forEach((p) => { p.ppr_ppg_mean = p.idp_ppg_mean; p.ppr_ppg_sd = p.idp_ppg_sd; });
+  const isDef = (p) => E.DEFENSE_POSITIONS.indexOf(p.position) >= 0;
+  const off = players.filter((p) => !isDef(p) && p.ppr_ppg_mean > 5).slice(0, 6);
+  const def = defenders.filter(isDef).filter((p) => p.ppr_ppg_mean > 2).slice(0, 6);
+  ok('a twelve man roster can be built to check against', off.length === 6 && def.length === 6,
+    off.length + ' offense, ' + def.length + ' defense');
+  const roster = off.concat(def);
+  const chem = { multiplier: 1.03, offMultiplier: 1.05, defMultiplier: 1.01 };
+  const s = E.fullSideRatings(roster, chem, null);
+  const p = s.parts;
+  ok('the parts come back with the answer', !!p && typeof p.offPts === 'number');
+  /* NOT THE EMPTY BRANCH. Every identity below holds trivially at zero, so the fixture has
+     to be shown to have produced a real team before any of them means anything. */
+  ok('  and the fixture is a real team rather than the zero case',
+    s.off > 1 && s.def > 1 && p.offPts > 1 && p.defPts > 1,
+    'off ' + s.off.toFixed(1) + ', def ' + s.def.toFixed(1));
+  const near = (a, b, eps) => Math.abs(a - b) < (eps || 1e-6);
+  /* EACH SIDE, REBUILT FROM ITS OWN PARTS. If the engine ever changes what a unit is made
+     of and forgets to say so here, this is what goes red. */
+  ok('  offense = points x talent x chemistry x fit',
+    near(p.offPts * p.talent * p.offChem * p.offFit, s.off, 1e-9),
+    s.off.toFixed(4));
+  ok('  the defense raw product is the same shape',
+    near(p.defPts * p.talent * p.defChem * p.defFit, p.defRaw, 1e-9),
+    p.defRaw.toFixed(4));
+  ok('  and the defense rating is that product put on the offense ladder',
+    near(E.defenseOverall(p.defRaw), s.def, 1e-9), s.def.toFixed(4));
+  ok('  the mean is the two averaged, times the coach',
+    near((s.off + s.def) / 2 * s.coachBoost, p.mean, 1e-9), p.mean.toFixed(4));
+  /* AND THE MEAN IS NOT THE OVERALL, which is the step this assertion used to say did not
+     exist. fullTeamScale puts the mean on the ladder the edges are cut for, because a
+     twelve man team splits one cap and a six man offence spends a whole one, so the raw
+     mean reports every Full Team roster weaker than a quick draft of the same care. Before
+     it, a roster that spent the whole cap cleared CLASS_FLOOR 8% of the time against the
+     quick draft's 46%, reached ELITE_FLOOR never, and took the full title game penalty
+     every time: three mechanics switched off in one mode with nothing reporting it. */
+  ok('  and the overall is that mean put on the game\'s own ladder',
+    near(Math.max(0, Math.min(100, E.fullTeamScale(p.mean))), s.overall, 1e-9),
+    s.overall.toFixed(4));
+  /* THE MAP IS MONOTONE AND ANCHORED. A scale that could report a better roster as worse
+     would be worse than no scale, and the anchors are what make 84 and 100 mean the same
+     thing here as everywhere else. */
+  ok('  the ladder never reports a better team as worse', (() => {
+    let last = -1;
+    for (let r = 0; r <= 140; r += 0.5) {
+      const v = E.fullTeamScale(r);
+      if (v < last - 1e-9) return false;
+      last = v;
+    }
+    return true;
+  })());
+  ok('  a cap-spending roster reaches the class edge, and the best one reads 100',
+    E.fullTeamScale(76.3) >= 83.9 && E.fullTeamScale(76.3) <= 84.1
+    && E.fullTeamScale(96.4) >= 99.9,
+    E.fullTeamScale(76.3).toFixed(1) + ' / ' + E.fullTeamScale(96.4).toFixed(1));
+  /* THE TWO CHEMISTRY FIGURES ARE THE ONES THE UNITS WERE RATED WITH, not the flattened
+     one. This is the exact substitution the old sentence made. */
+  ok('  and each side used its OWN chemistry, not the average',
+    near(p.offChem, chem.offMultiplier) && near(p.defChem, chem.defMultiplier),
+    p.offChem + ' / ' + p.defChem + ' against a flattened ' + chem.multiplier);
+  /* AND THE FIT IS PER SIDE. Running the whole twelve through the offensive reading is the
+     bug this replaced, so assert the parts are NOT that number. */
+  const wholeTwelve = E.rosterStructure(roster).multiplier;
+  ok('  and the fit is per side rather than over all twelve',
+    !near(p.offFit, wholeTwelve) || !near(p.defFit, wholeTwelve),
+    'sides ' + p.offFit.toFixed(3) + ' / ' + p.defFit.toFixed(3)
+      + ', all twelve would be ' + wholeTwelve.toFixed(3));
+}
+
+/* ================================================================
+   ONE RUN A DAY, AND THE RUN IN PROGRESS BELONGS TO THE ACCOUNT
+
+   Full Team is metered like the Trade Machine (a run IS one season) and the bundle removes
+   the counting rather than unlocking the door, for the reasons argued at the top of
+   supabase/105_fullteam_daily.sql.
+
+   THE SAVE IS WHY THIS SECTION EXISTS AT ALL. Before the meter, a Full Team run was kept
+   nowhere: no localStorage key and no slot in FB_SLOTS. That was survivable while starting
+   again cost nothing. It stops being survivable the moment a run costs a day, because the
+   charge lands at KICKOFF, so a closed tab in week three would take the run and the
+   allowance together and leave the player looking at a door telling them to come back
+   tomorrow for a season they never finished.
+
+   So the four things asserted here are the four that can go wrong silently:
+     the draft is free      twelve picks is the longest browse on the site
+     the kickoff is charged ONCE, and the run carries the mark that says so
+     a spent day still opens a saved run, and changes only the line under the name
+     an owner is never metered at all
+   ================================================================ */
+console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
+{
+  const sub = (p) => p.evaluate(() =>
+    ((document.querySelector('#b-start-full .hp-full-sub') || {}).textContent || '').trim());
+
+  const m = await open(browser);
+  await m.page.evaluate(() => {
+    window.__C = window.__t.meter(0);
+    window.__t.setPremium([]);
+    window.__t.fullClear();
+    window.__t.ensureFullButton();
+  });
+  await m.page.waitForTimeout(600);
+
+  ok('a free day offers the mode', !/next run|resume/i.test(await sub(m.page)), await sub(m.page));
+
+  await m.page.evaluate(() => window.__t.fullDoor());
+  await m.page.waitForTimeout(6000);
+  for (let i = 0; i < 12; i++) {
+    const n = await m.page.evaluate(() => {
+      const run = window.__t.getRun();
+      if (!run || run.roster.length >= run.slots.length) return 'done';
+      const t = document.querySelector('#opts .tile:not(.off)');
+      if (!t) return 'stuck';
+      t.click();
+      return run.roster.length;
+    });
+    if (n === 'done' || n === 'stuck') break;
+    await m.page.waitForTimeout(2600);
+  }
+  await m.page.waitForTimeout(1500);
+  ok('  twelve picks were made',
+    await m.page.evaluate(() => { const r = window.__t.getRun(); return !!r && r.roster.length === 12; }));
+  ok('  and the draft itself cost nothing',
+    await m.page.evaluate(() => window.__C.spend) === 0);
+  ok('  while already being saved',
+    await m.page.evaluate(() => !!window.__t.fullRead()));
+
+  /* Decline the coach, take the squad screen, then kick off. b-play is the one path through
+     the page's own startSeason(), which is where the day is spent; finishHiring only paints
+     the squad, and a walk that stopped there would assert nothing about the charge. */
+  await m.page.evaluate(() => { const b = document.getElementById('b-coach-none'); if (b) b.click(); });
+  await m.page.waitForTimeout(800);
+  await m.page.evaluate(() => { const b = document.getElementById('b-coach-go'); if (b) b.click(); });
+  await m.page.waitForTimeout(2500);
+  await m.page.evaluate(() => { const b = document.getElementById('b-play'); if (b) b.click(); });
+  await m.page.waitForTimeout(3500);
+  ok('the kickoff charges the day exactly once',
+    await m.page.evaluate(() => window.__C.spend) === 1,
+    'spends: ' + await m.page.evaluate(() => window.__C.spend));
+  ok('  and marks the run paid, so a reload cannot be charged again',
+    await m.page.evaluate(() => !!window.__t.getRun().attemptPaid));
+  ok('  the season is in the save',
+    await m.page.evaluate(() => { const s = window.__t.fullRead(); return !!s && s.run.roster.length === 12; }));
+  ok('  nothing threw', !m.boom.length, m.boom.join(' | ') || 'no errors');
+
+  /* A SPENT DAY, WITH THE RUN STILL ON THE SHELF. The door must open it: the wall that
+     matters is at the kickoff, and a run the game will not let you look at reads as a run
+     the game has taken. Same lesson the dynasty door already carries.
+
+     RELOADED RATHER THAN REOPENED, and that is not a detail. open() calls newPage(), which in
+     Playwright is a fresh CONTEXT with its own empty localStorage, so a second page would
+     find no save and this whole block would assert against a browser that had never played.
+     It has to be the same page coming back, which is also what the thing being tested is. */
+  const s = m;
+  await s.page.goto('http://local.test/football/', { waitUntil: 'domcontentloaded' });
+  await s.page.waitForTimeout(5000);
+  await s.page.evaluate(() => window.__t.signIn());
+  await s.page.evaluate(() => {
+    const b = [...document.querySelectorAll('button')]
+      .find((x) => /NO THANKS|I WILL TRY IT/i.test(x.textContent || ''));
+    if (b) b.click();
+  });
+  await s.page.waitForTimeout(1200);
+  await s.page.evaluate(() => {
+    window.__C = window.__t.meter(1);
+    window.__t.setPremium([]);
+    window.__t.ensureFullButton();
+  });
+  await s.page.waitForTimeout(600);
+  ok('a spent day is shut', await s.page.evaluate(() => window.__t.dailyShut('full')));
+  ok('  but the saved run survived', await s.page.evaluate(() => !!window.__t.fullRead()));
+  ok('  and the door says Resume, not a countdown', /resume/i.test(await sub(s.page)), await sub(s.page));
+  await s.page.evaluate(() => window.__t.fullDoor());
+  await s.page.waitForTimeout(6000);
+  ok('  pressing it puts the run back',
+    await s.page.evaluate(() => { const r = window.__t.getRun(); return !!r && !!r.full && r.roster.length === 12; }),
+    await s.page.evaluate(() => { const r = window.__t.getRun(); return r ? r.phase + ' / ' + r.roster.length : 'none'; }));
+  ok('  and resuming charged nothing',
+    await s.page.evaluate(() => window.__C.spend) === 0);
+
+  /* AND WITH NOTHING ON THE SHELF, the same spent day is the store rather than the mode. */
+  await s.page.evaluate(() => {
+    window.__t.fullClear();
+    window.__C = window.__t.meter(1);
+    window.__t.ensureFullButton();
+  });
+  await s.page.waitForTimeout(400);
+  ok('with no save, the door counts down instead', /next run/i.test(await sub(s.page)), await sub(s.page));
+  await s.page.evaluate(() => window.__t.fullDoor());
+  await s.page.waitForTimeout(1500);
+  const sheet = await s.page.evaluate(() => ({
+    on: document.getElementById('sheet').classList.contains('on'),
+    kind: document.getElementById('sheet-in').dataset.kind,
+    text: (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' '),
+  }));
+  ok('  and opens the spent sheet', sheet.on && sheet.kind === 'daily', sheet.kind);
+  /* NAMED. This sheet says the mode three times, and an unnamed one reads as the Dynasty's
+     sheet on a door that is not the Dynasty. */
+  ok('  which names Full Team', /Full Team/.test(sheet.text), sheet.text.slice(0, 90));
+  /* AND THE DRAFT NEVER OPENED, which is the claim. Not "there is no run": this page has
+     been reloaded rather than reopened, so the run resumed a moment ago is still in memory,
+     and asserting its absence would be asserting something the block never did. What a
+     refusal means on screen is that the draft screen is not the thing now showing. */
+  ok('  and no draft was opened',
+    await s.page.evaluate(() =>
+      [...document.querySelectorAll('.screen.on')].every((x) => x.id !== 's-draft')),
+    await s.page.evaluate(() =>
+      [...document.querySelectorAll('.screen.on')].map((x) => x.id).join(',')));
+  ok('  and it cost nothing', await s.page.evaluate(() => window.__C.spend) === 0);
+
+  /* THE THING THE BUNDLE ACTUALLY BUYS. dailyOn() stops metering the moment ps_premium is
+     owned, so an owner never reaches any of the above. */
+  await s.page.evaluate(() => {
+    window.__t.setPremium(['ps_premium']);
+    window.__t.fullClear();
+    window.__t.ensureFullButton();
+  });
+  await s.page.waitForTimeout(400);
+  ok('an owner is not metered at all',
+    await s.page.evaluate(() => window.__t.dailyShut('full')) === false);
+  ok('  and their door offers the mode', !/next run/i.test(await sub(s.page)), await sub(s.page));
+  ok('  nothing threw', !s.boom.length, s.boom.join(' | ') || 'no errors');
+  await s.page.close();
 }
 
 await browser.close();

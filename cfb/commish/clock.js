@@ -206,10 +206,34 @@
     return s + 's';
   }
 
+  /* CAN THIS ACCOUNT START A SEASON RIGHT NOW, read only.
+   *
+   * IT IS NOT THE THING THAT DECIDES, and the difference matters enough to say twice. The
+   * mode decides by SPENDING, because only the server can, and seasonWall() reads ok off
+   * that answer. This is for a screen that wants to offer the store instead of sending
+   * somebody through a door it already knows is shut: the front page's Commish card.
+   * Being wrong here costs a wasted tap. Being wrong there would cost a season.
+   *
+   * TWO WAYS TO BE STOPPED and the card cannot tell them apart, nor does it need to:
+   *   locked      today's season is spent, next_at is in the future
+   *   terms >= 1  the one free contract is finished, which is the same test the mode
+   *               makes at freeCareerEnd()
+   *
+   * FAILS OPEN like everything else in this file, and here the argument is even easier:
+   * an unknown answer sends somebody to the mode, which asks the server properly and
+   * draws the right screen either way. The worst case is the behaviour that shipped
+   * before this existed. */
+  function blocked(st) {
+    const s = st || cached;
+    if (!s || s.offline) return false;
+    if (s.pro) return false;
+    return !!s.locked || (Number(s.terms) || 0) >= 1;
+  }
+
   const api = {
     API_VERSION: 1,
     state: state, spend: spend, termDone: termDone, forget: forget,
-    remaining: remaining, countdown: countdown,
+    remaining: remaining, countdown: countdown, blocked: blocked,
     get cached() { return cached; },
   };
 

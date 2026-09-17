@@ -35,6 +35,10 @@
      the play moves       the plan's physics agree with the scorer: outs beaten, hits not
      the dive             a liner draws a lunge that lands short and breaks no duty
      the snow             the cold parks play under falling snow
+     the books balance     runs, walks and outs agree across the batting and pitching lines
+     putting him on       the intentional walk fires late and close, and never anywhere else
+     the tag              a caught fly moves a runner, and never on the third out
+     the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
      turning it sideways  which of the two a window gets follows the window
@@ -43,6 +47,8 @@
      the bat has a place  a pitch lands somewhere; the swing has to be there as well as on time
      the arm has a spot   aim plus a release is where a pitch goes; a strike is where it landed
      the frames           the swing is three drawings and the delivery has a leg kick
+     the ball is the clock  swings and calls land when the ball does, and no hit comes from a taken pitch
+     the late break       a held direction bends the pitch, and the umpire calls it where it lands
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -1211,9 +1217,15 @@ async function main() {
           out.fly = { met: Math.abs(sim.meetAt - sim.landAt) < 0.001,
                       fielderRole: sim.fielders[sim.fielderPost].role };
         }
-        { /* spray: the swing's timing owns the direction */
-          const early = mk('single', false, { off: -0.085, q: 0.6 }).play.ball.dx;
-          const late  = mk('single', false, { off:  0.085, q: 0.6 }).play.ball.dx;
+        { /* spray: the swing's timing owns the direction, read against
+             the HITTER'S OWN HAND. A lefty pulls the other way, which
+             is the point of him, and each mk() advances the lineup, so
+             the hand is captured before every sample. */
+          const handNow = () => batsLeft(currentBatter().k) ? -1 : 1;
+          let h = handNow();
+          const early = mk('single', false, { off: -0.085, q: 0.6 }).play.ball.dx * h;
+          h = handNow();
+          const late  = mk('single', false, { off:  0.085, q: 0.6 }).play.ball.dx * h;
           const crush = mk('single', false, { off: 0, q: 0.95 }).play.ball;
           const bloop = mk('single', false, { off: 0, q: 0.2 }).play.ball;
           out.spray = { early: +early.toFixed(2), late: +late.toFixed(2),
@@ -1406,6 +1418,48 @@ async function main() {
       ok(r.strikeIsPlace, 'a strike is a fact about where it landed', JSON.stringify(r));
       ok(r.afterCall && r.holdMs > 0, 'a called pitch holds the picture for the beat', JSON.stringify(r));
       ok(!r.onContact && r.pitchClosed && !r.afterPlay, 'contact cuts to the field and the pitch is closed', JSON.stringify(r));
+      /* THE ZONE IS PRICED OFF THE BATTER, because the two share the frame.
+         At 72x98 half-extents the drawn box was taller than the entire
+         batter sprite with its top edge a head above his head, and a
+         tester called it double his size. Properties, not pixels: the box
+         is shorter than the batter, starts below his head, and ends above
+         the catcher's crown. Sprites are 40 rows tall at their scale. */
+      const z = await pg.evaluate(() => {
+        const P = plateGeom();
+        /* Sprite boxes at their scales (32 wide, 40 tall, feet-anchored),
+           the plate pentagon the ground pass draws at cx, and the rule
+           every reference game keeps: nothing opaque between the player
+           and the plate. The catcher covered it once, dead-center. */
+        const cat = { x0: P.catX - 16 * P.catSc, x1: P.catX + 16 * P.catSc,
+                      y0: P.catY - 40 * P.catSc, y1: P.catY };
+        const plate = { x0: P.cx - 14, x1: P.cx + 14, y0: 604, y1: 617 };
+        const zone = { x0: P.zx - P.zw, x1: P.zx + P.zw, y0: P.zy - P.zh, y1: P.zy + P.zh };
+        const hits = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+        /* Handedness: a steady share of the roster bats left, decided
+           by a hash so it never flips between visits, and the mirrored
+           box stays clear of the zone the way the home box does. */
+        const L = ROSTER.filter(c => batsLeft(c.k)).length;
+        const L2 = ROSTER.filter(c => batsLeft(c.k)).length;
+        return { boxH: P.zh * 2, boxTop: P.zy - P.zh, boxBot: P.zy + P.zh,
+                 batH: 40 * P.batSc, batTop: P.batY - 40 * P.batSc,
+                 catTop: P.catY - 40 * P.catSc,
+                 catOnPlate: hits(cat, plate), catOnZone: hits(cat, zone),
+                 lefties: L, steady: L === L2, roster: ROSTER.length,
+                 leftBoxGap: (2 * P.cx - P.batX - 16 * P.batSc) - (P.zx + P.zw) };
+      });
+      ok(z.boxH < z.batH, 'the zone is shorter than the batter',
+         `zone ${z.boxH} vs batter ${z.batH}`);
+      ok(z.boxTop > z.batTop, 'and starts below the top of his head',
+         `zone top ${z.boxTop}, batter top ${z.batTop}`);
+      ok(z.boxBot < z.catTop, 'and ends above the catcher\'s crown',
+         `zone bottom ${z.boxBot}, catcher top ${z.catTop}`);
+      ok(!z.catOnPlate, 'the catcher does not cover home plate', JSON.stringify(z));
+      ok(!z.catOnZone, 'or any part of the zone', JSON.stringify(z));
+      ok(z.steady && z.lefties / z.roster >= 0.15 && z.lefties / z.roster <= 0.45,
+         'a steady share of the roster bats left',
+         `${z.lefties} of ${z.roster}`);
+      ok(z.leftBoxGap > 0, 'and the mirrored box stays clear of the zone',
+         `gap ${z.leftBoxGap}`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -1541,6 +1595,390 @@ async function main() {
       ok(r.bad.length === 0, 'and each decodes to the declared size', r.bad.slice(0, 6).join(', '));
       ok(r.same.length === 0, 'and each is its own drawing', r.same.slice(0, 6).join(', '));
       ok(r.encoded, 'the table is run length encoded', 'encoded=' + r.encoded);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the ball is the clock ---- */
+    {
+      console.log('the ball is the clock');
+      /* A TESTER WATCHED A BATTER TAKE A PITCH AND LINE A SINGLE. What had
+         actually happened: the drawn ball lands at the meter's sweet spot
+         and the CPU's swing used to fire at its sampled timing error, up
+         to 0.4 of a meter later, so the ball sat visibly in the mitt for
+         the best part of a second and then a hit materialised out of
+         nothing. The umpire had the same disease: a taken pitch was not
+         called until the METER ran out, half a meter after the ball had
+         stopped.
+
+         The pitch carries `arrive` now and everything keys off it. What is
+         asserted: every CPU swing RESOLVES by shortly after the ball lands
+         (early is fine: a whiff out front reads as early), every call
+         comes in a fixed beat after it, and across a stack of pitches no
+         hit is ever logged without a swing resolving first, which is the
+         tester's report stated as an invariant. */
+      const { pg, errors } = await fresh(browser);
+      const rows = await pg.evaluate(async () => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });   /* CPU bats */
+        await new Promise(r => setTimeout(r, 500));
+        const out = [];
+        const landMs = (p) => p.windupUntil + p.arrive * p.speed * 1000;
+        const _swing = resolveSwing;
+        window.resolveSwing = (t, aim) => {
+          const p = State.game.pitch;
+          if (p) out.push({ ev: 'swing', late: Math.round(performance.now() - landMs(p)),
+                            dur: Math.round(p.speed * 1000) });
+          return _swing(t, aim);
+        };
+        const _called = resolveCalledPitch;
+        window.resolveCalledPitch = () => {
+          const p = State.game.pitch;
+          if (p) out.push({ ev: 'call', late: Math.round(performance.now() - landMs(p)),
+                            dur: Math.round(p.speed * 1000) });
+          return _called();
+        };
+        const _log = addLog;
+        window.addLog = (m, k) => {
+          const t = String(m);
+          if (/single|double|triple|homer|home run|lines|bloops|drops over/i.test(t)) {
+            out.push({ ev: 'hit', m: t.slice(0, 40) });
+          }
+          return _log(m, k);
+        };
+        for (let i = 0; i < 16 && State.game && !State.game.over; i++) {
+          if (playerIsBatting()) break;
+          try { endAtBatCleanup(); State.game.pitch = null; throwPitch(); } catch (e) {}
+          await new Promise(r => setTimeout(r, 1900));
+        }
+        return out;
+      });
+      const swings = rows.filter(r => r.ev === 'swing');
+      const calls = rows.filter(r => r.ev === 'call');
+      ok(swings.length >= 3 && calls.length >= 2,
+         'enough pitches were seen to say anything',
+         `${swings.length} swings, ${calls.length} calls`);
+      /* A beat of grace for the timer itself; the disease this catches was
+         hundreds of milliseconds wide. */
+      ok(swings.every(r => r.late <= 260),
+         'every swing resolves by the time the ball is barely down',
+         'worst ' + Math.max(...swings.map(r => r.late)) + 'ms after landing');
+      ok(calls.every(r => r.late >= 60 && r.late <= 0.30 * r.dur + 220),
+         'every call comes a beat after the mitt, not at the meter\'s end',
+         JSON.stringify(calls.map(r => r.late)));
+      /* The report itself: a hit with no swing in front of it. */
+      let lastSwingIdx = -99;
+      let orphan = null;
+      rows.forEach((r, i) => {
+        if (r.ev === 'swing') lastSwingIdx = i;
+        if (r.ev === 'hit' && i - lastSwingIdx > 3) orphan = r;
+      });
+      ok(!orphan, 'no hit ever arrives without a swing resolving first',
+         orphan ? JSON.stringify(orphan) : '');
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the late break ---- */
+    {
+      console.log('the late break');
+      /* R.B.I. Baseball's pitching verb, ported: after the release, a held
+         direction leans the pitch, as far as the arm's budget allows. Two
+         claims are load bearing enough to pin. The steer has to actually
+         move the ball, because a budget of zero or a loop that never
+         applies it is the mechanic silently gone, with the buttons still
+         wired and nothing thrown. And the umpire has to call the pitch
+         where it LANDED: isStrike is stamped at release, so a strike
+         steered off the plate that still came up STRIKE would make the
+         verb a lie in the one case a player reaches for it. The CPU swing
+         is stubbed out so every pitch is taken. */
+      const { pg, errors } = await fresh(browser);
+      const out = await pg.evaluate(async () => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });   /* CPU bats, you pitch */
+        await new Promise(r => setTimeout(r, 500));
+        window.scheduleCpuSwing = () => {};                 /* every pitch is taken */
+        const res = {};
+        /* Pitch one: hold right, read what the flight did with it. */
+        endAtBatCleanup(); State.game.pitch = null; throwPitch();
+        State.game.steerHeld = 1;
+        await new Promise(r => setTimeout(r, 2600));
+        {
+          const p = State.game.pitch;
+          res.steer = p ? p.steer : null;
+          res.steerMax = p ? p.steerMax : null;
+          res.moved = p ? p.loc.x - p.baseLocX : null;
+        }
+        /* Pitch two: a release-time strike, steered off the plate. */
+        endAtBatCleanup(); State.game.pitch = null; throwPitch();
+        {
+          const p = State.game.pitch;
+          p.isStrike = true;
+          p.baseLocX = 0.92; p.loc.x = 0.92; p.loc.y = 0;
+          State.game.steerHeld = 1;
+          res.balls0 = State.game.balls; res.strikes0 = State.game.strikes;
+          await new Promise(r => setTimeout(r, 2600));
+          res.finX = p.loc.x;
+          res.balls1 = State.game.balls; res.strikes1 = State.game.strikes;
+        }
+        return res;
+      });
+      ok(out.steerMax > 0.05, 'the arm has a real budget', 'steerMax ' + out.steerMax);
+      ok(out.steer > 0.05, 'holding a direction bends the pitch', 'steer ' + out.steer);
+      ok(out.moved > 0.05, 'and the drawn ball moves with it', 'moved ' + out.moved);
+      ok(out.finX > 1, 'the steered pitch finished off the plate', 'finX ' + out.finX);
+      ok(out.balls1 === out.balls0 + 1 && out.strikes1 === out.strikes0,
+         'a strike at release, steered out, is called a BALL where it landed',
+         `balls ${out.balls0}->${out.balls1}, strikes ${out.strikes0}->${out.strikes1}`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the books balance ---- */
+    {
+      console.log('the books balance');
+      /* THE BOX SCORE HELD FIVE COUNTERS and so could not answer the
+         first question anybody asks a baseball game, which is what a
+         man is hitting. Every column here is produced by play the game
+         already simulated and was being dropped at the end of the at
+         bat. What makes a box score trustworthy is not any single
+         number, it is that the numbers AGREE: runs credited to batters
+         must equal the scoreboard, runs charged to pitchers must equal
+         it too, and a walk drawn by one side is a walk issued by the
+         other. A column that only ever grows on its own can drift for a
+         season without anybody noticing.
+
+         Driven through the real mutation functions, which is where every
+         play path on the page ends up. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const realTimeout = window.setTimeout;
+        window.setTimeout = () => 0;
+        const bat = () => currentBatter();
+        const put = (i, c) => { g.bases[i] = c; };
+        const before = g.away.score + g.home.score;
+        try {
+          applyHitMutation('home run', bat());
+          applyHitMutation('single', bat());
+          applyHitMutation('double', bat());
+          put(0, ROSTER[20]); put(1, ROSTER[21]); put(2, ROSTER[22]); recordWalk();
+          g.bases = [null, null, null]; recordWalk();
+          recordOut('swinging strikeout', true);
+          applyOutMutation('fly out', bat());
+          applyOutMutation('ground out', bat());
+          g.outs = 0; applyHitMutation('triple', bat());
+          g.bases = [null, null, ROSTER[23]]; applyOutMutation('bunt out', bat());
+        } catch (e) { window.setTimeout = realTimeout; return { threw: String(e) }; }
+        window.setTimeout = realTimeout;
+        const sum = (o) => Object.values(o || {}).reduce((a, c) => a + c, 0);
+        return {
+          delta: (g.away.score + g.home.score) - before,
+          runs: sum(g.stats.r), rbi: sum(g.stats.rbi), ab: sum(g.stats.ab),
+          h: sum(g.stats.hits), bb: sum(g.stats.bb), hr: sum(g.stats.hr),
+          d: sum(g.stats.d), t: sum(g.stats.t),
+          pOuts: sum(g.pit.outs), pRuns: sum(g.pit.runs), pBB: sum(g.pit.bb),
+        };
+      });
+      ok(!r.threw, 'the whole inning plays without throwing', r.threw || '');
+      ok(r.runs === r.delta, 'runs credited to batters equal the scoreboard',
+         `${r.runs} credited, ${r.delta} on the board`);
+      ok(r.pRuns === r.delta, 'runs charged to pitchers equal the scoreboard',
+         `${r.pRuns} charged, ${r.delta} on the board`);
+      ok(r.bb === r.pBB, 'a walk drawn is a walk issued', `${r.bb} drawn, ${r.pBB} issued`);
+      ok(r.rbi > 0 && r.rbi <= r.runs, 'runs batted in are real and never exceed runs',
+         `${r.rbi} rbi against ${r.runs} runs`);
+      ok(r.pOuts >= 4, 'an out reaches the man who recorded it', 'outs ' + r.pOuts);
+      ok(r.h >= r.hr + r.d + r.t, 'extra base hits are a subset of hits',
+         `${r.h} hits against ${r.hr}+${r.d}+${r.t}`);
+      /* The walk is the one plate appearance that must NOT be an at bat,
+         which is the whole reason an average and an on base are two
+         different numbers. Two walks were drawn above. */
+      ok(r.ab === 8, 'a walk is a plate appearance and not an at bat', 'ab ' + r.ab);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- putting him on ---- */
+    {
+      console.log('putting him on');
+      /* The oldest strategic move in the sport, and neither dugout could
+         express it: with first base open and the tying run at second,
+         every manager alive walks the slugger, and both sides here were
+         forced to pitch to him.
+
+         What is asserted is the RULE, across the situations that decide
+         it, because a free baserunner handed out at the wrong moment is
+         worse than never handing one out at all. One book for both
+         dugouts: the CPU and the player's own button ask the same
+         function, so they can never drift into managing differently. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const slug = ROSTER.find(c => c.pow >= 90);
+        const weak = ROSTER.slice().sort((a, b) => a.pow - b.pow)[0];
+        /* bases: which bags are occupied; scores from the FIELDING side */
+        const at = (inn, bases, fieldScore, batScore, batter) => {
+          g.inning = inn; g.innings = 9; g.half = 'top';
+          g.bases = bases.map(x => x ? ROSTER[20] : null);
+          g.home.score = fieldScore; g.away.score = batScore;
+          return walkWorthIt(g, batter);
+        };
+        const out = {
+          classic:    at(9, [0,1,0], 3, 3, slug),
+          firstTaken: at(9, [1,1,0], 3, 3, slug),
+          nobodyOn:   at(9, [0,0,0], 3, 3, slug),
+          early:      at(2, [0,1,0], 3, 3, slug),
+          blowout:    at(9, [0,1,0], 12, 3, slug),
+          wayBehind:  at(9, [0,1,0], 1, 8, slug),
+          weakBat:    at(9, [0,1,0], 3, 3, weak),
+        };
+        /* And the act itself, through the real path: the man reaches
+           first, the walk is on the books, and it is charged to the arm. */
+        const realTimeout = window.setTimeout; window.setTimeout = () => 0;
+        g.inning = 9; g.half = 'top';
+        g.bases = [null, ROSTER[20], null];
+        g.home.score = 3; g.away.score = 3;
+        const who = currentBatter();
+        const bbBefore = (g.stats.bb[who.k] | 0);
+        issueIntentionalWalk();
+        window.setTimeout = realTimeout;
+        out.reached = !!(g.bases[0] && g.bases[0].k === who.k);
+        out.onTheBooks = (g.stats.bb[who.k] | 0) === bbBefore + 1;
+        out.chargedToArm = Object.values(g.pit.bb).reduce((a, c) => a + c, 0) > 0;
+        out.notAnAtBat = !(g.stats.ab[who.k] | 0);
+        return out;
+      });
+      ok(r.classic, 'ninth, tied, tying run on second, slugger up: put him on', String(r.classic));
+      ok(!r.firstTaken, 'never with first base occupied', String(r.firstTaken));
+      ok(!r.nobodyOn, 'never with nobody in scoring position', String(r.nobodyOn));
+      ok(!r.early, 'never in the second inning', String(r.early));
+      ok(!r.blowout, 'never with a big lead', String(r.blowout));
+      ok(!r.wayBehind, 'never when well behind', String(r.wayBehind));
+      ok(!r.weakBat, 'never for a hitter with no power', String(r.weakBat));
+      ok(r.reached, 'the walk puts him on first', String(r.reached));
+      ok(r.onTheBooks && r.chargedToArm, 'and it lands on both sides of the books',
+         `drawn ${r.onTheBooks}, charged ${r.chargedToArm}`);
+      ok(r.notAnAtBat, 'an intentional walk is still not an at bat', String(r.notAnAtBat));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the tag ---- */
+    {
+      console.log('the tag');
+      /* THE SACRIFICE FLY DID NOT EXIST. A fly ball caught with a man on
+         third and one out simply ended the at bat, so the one play in
+         baseball where making an out scores a run, and a real share of
+         how runs actually score, was missing.
+
+         The rule everything here protects is the last one: a tag that
+         becomes the third out scores NOTHING. Get that wrong and the
+         scoreboard gains runs the inning never earned, which no other
+         check would catch because the run is perfectly well formed.
+
+         It reuses the send and hold toggle rather than adding a control,
+         so what is asserted is that all three settings mean something
+         different on the same play. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const realTimeout = window.setTimeout; window.setTimeout = () => 0;
+        const realRandom = Math.random;
+        const fast = ROSTER.slice().sort((a, b) => b.spd - a.spd)[0];
+        const slow = ROSTER.slice().sort((a, b) => a.spd - b.spd)[0];
+        const run = (outsBefore, bases, rule, roll) => {
+          g.outs = outsBefore; g.bases = bases.slice();
+          g.sendRule = rule; g.away.score = 0; g.home.score = 0;
+          Math.random = () => roll;
+          applyOutMutation('fly out', currentBatter());
+          return { outs: g.outs, scored: g.away.score + g.home.score,
+                   onThird: !!g.bases[2] };
+        };
+        const out = {
+          sacFly:      run(1, [null, null, fast], 'auto', 0.01),
+          thrownOut:   run(1, [null, null, fast], 'auto', 0.99),
+          inningOver:  run(2, [null, null, fast], 'auto', 0.01),
+          held:        run(1, [null, null, fast], 'hold', 0.01),
+          slowStays:   run(1, [null, null, slow], 'auto', 0.01),
+          slowSent:    run(1, [null, null, slow], 'send', 0.01),
+          secondUp:    run(1, [null, fast, null], 'auto', 0.01),
+          stacked:     run(0, [null, fast, fast], 'auto', 0.01),
+        };
+        window.setTimeout = realTimeout; Math.random = realRandom;
+        return out;
+      });
+      ok(r.sacFly.scored === 1 && r.sacFly.outs === 2,
+         'a fly with one out and a fast man on third is a sacrifice fly', JSON.stringify(r.sacFly));
+      ok(r.thrownOut.scored === 0 && r.thrownOut.outs === 3,
+         'and a tag beaten by the throw is an out, not a run', JSON.stringify(r.thrownOut));
+      ok(r.inningOver.scored === 0 && r.inningOver.onThird,
+         'NOBODY TAGS ON THE THIRD OUT: the inning is over, the run does not count',
+         JSON.stringify(r.inningOver));
+      ok(r.held.scored === 0 && r.held.onThird, 'HOLD keeps him at third', JSON.stringify(r.held));
+      ok(r.slowStays.scored === 0 && r.slowStays.onThird,
+         'AUTO does not send a man who cannot make it', JSON.stringify(r.slowStays));
+      ok(r.slowSent.scored === 1, 'SEND sends him anyway', JSON.stringify(r.slowSent));
+      ok(r.secondUp.onThird && r.secondUp.scored === 0,
+         'a man on second tags to third rather than home', JSON.stringify(r.secondUp));
+      ok(r.stacked.scored === 1 && r.stacked.onThird,
+         'with two aboard the lead man scores and the other takes third',
+         JSON.stringify(r.stacked));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the coach tells the truth ---- */
+    {
+      console.log('the coach tells the truth');
+      /* THE FIRST THING A NEW PLAYER READS SHIPPED WRONG for as long as
+         the plate camera has existed. The notes were written for the old
+         wide camera, where a ring closed on a fixed target and WHERE you
+         clicked meant nothing, and they still said "swing when the
+         closing ring meets the green circle: click anywhere". There is
+         no closing ring in the batting camera, and where you put the bat
+         is the single thing that decides whether you make contact:
+         measured through the real SWING button, perfect timing with the
+         bat left alone made contact 6 of 10, and the same timing with
+         the bat ON the pitch made contact 8 of 8. So the note taught the
+         opposite of the mechanic, and a player who followed it exactly
+         would whiff and conclude the game was broken.
+
+         No checker could have caught it, because every sentence was
+         valid English about a real feature, just the wrong one. What is
+         assertable is AGREEMENT: the auto-opening notes and the long How
+         To Play page describe one game, and neither teaches a control
+         the batting camera does not draw. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const bat = COACH.bat.join(' ');
+        const pitch = COACH.pitch.join(' ');
+        /* what the batting camera actually draws for the player */
+        const drawsRing = /drawTimingRing/.test(drawPlateView.toString());
+        return {
+          bat, pitch, drawsRing,
+          /* the control that decides contact has to be named */
+          namesTheBat: /oval/i.test(bat) && /(mouse|finger|pointer|arrow)/i.test(bat),
+          /* and the thing that does not exist must not be taught */
+          teachesRing: /\bring\b/i.test(bat),
+          teachesClickAnywhere: /click anywhere/i.test(bat),
+          /* the pitching notes name buttons the strip really has */
+          throwLabel: !!document.querySelector('#throw-btn'),
+          teachesGrid: /on the grid/i.test(pitch),
+        };
+      });
+      ok(!r.drawsRing, 'the batting camera draws no closing ring', String(r.drawsRing));
+      ok(!r.teachesRing, 'so the notes do not tell a player to watch one', r.bat.slice(0, 120));
+      ok(r.namesTheBat, 'they name the oval and what moves it', r.bat.slice(0, 120));
+      ok(!r.teachesClickAnywhere, 'and never say place does not matter',
+         'the notes still say "click anywhere"');
+      ok(!r.teachesGrid, 'the pitching notes do not name a grid that was removed',
+         r.pitch.slice(0, 120));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -1990,19 +2428,32 @@ async function main() {
         swapToMound(g.home, g.home.field[4]);
         finishGame();
         await new Promise(r => setTimeout(r, 400));
-        const lines = [...document.querySelectorAll('#app .card p')].map(p => p.textContent).filter(t => /pitch/.test(t));
-        return { lines, starter: g.home.batters[0].n,
+        /* The shared sentence became a table with a row per arm, because
+           runs and outs are kept per pitcher now and it no longer has to
+           say "between them". Read the rows. */
+        const tables = [...document.querySelectorAll('#app .card table')];
+        const pitchTables = tables.filter(t => /IP/.test(t.querySelector('thead').textContent));
+        const rows = pitchTables.map(t => [...t.querySelectorAll('tbody tr')]
+          .map(tr => [...tr.querySelectorAll('td')].map(td => td.textContent.trim())));
+        return { rows, starter: g.home.batters[0].n,
                  relief: g.home.batters[g.home.field[0]].n, theirs: g.away.batters[0].n,
                  pitched: g.home.pitched };
       });
-      const two = r.lines.find(l => /between them/.test(l)) || '';
-      const one = r.lines.find(l => !/between them/.test(l)) || '';
-      ok(r.lines.length === 2, 'a pitching line per side', JSON.stringify(r.lines));
+      /* Keyed on the TABLE, not on a sentence. The old assertions read
+         the phrase "between them", which existed only because the line
+         could not split runs between two arms; now each arm owns a row,
+         so what is asserted is the row itself. */
+      const flat = r.rows.flat();
+      const names = flat.map(cells => cells[0]);
+      ok(r.rows.length === 2, 'a pitching table per side', JSON.stringify(r.rows));
       ok(r.pitched.length === 2, 'a real in-game change records both arms, starter first', JSON.stringify(r.pitched));
-      ok(two.includes(r.starter) && two.includes(r.relief) && /pitched:/.test(two),
-         'the side that used two arms names both and shares the line', two);
-      ok(one.includes(r.theirs) && /pitching:/.test(one) && !/ and /.test(one),
-         'the side that used one arm names one', one);
+      ok(names.includes(r.starter) && names.includes(r.relief),
+         'the side that used two arms gives each his own row', JSON.stringify(names));
+      ok(names.includes(r.theirs), 'and the side that used one names him', JSON.stringify(names));
+      /* Every row carries an innings figure written in thirds, which is
+         the column that could not exist before outs were credited. */
+      ok(flat.every(c => /^\d+\.[012]$/.test(c[1])),
+         'every arm has an innings pitched in thirds', JSON.stringify(flat.map(c => c[1])));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

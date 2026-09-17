@@ -235,6 +235,35 @@ const CONSTANTS = {
   DEF_REF: 36.1,
   DEF_POWER: 1.8,
   DEF_SUPPRESS_MAX: 1.6,   // worst defense lets the opponent run up ~1.6x, no more
+  /*
+   * FULL TEAM CAPS THE BAD END TIGHTER, and only the bad end.
+   *
+   * DEF_POWER and DEF_SUPPRESS_MAX are calibrated for the DEFENCE-ONLY draft, where the
+   * defence you picked is the whole of your game and is meant to decide it. In Full Team it
+   * lands on top of an offence that varies just as much and the two compound: measured
+   * across the drafting range, a Full Team's points allowed swing 2.06x where the quick
+   * draft's swing 1.16x, against a points-scored swing of about 2.8x in both. So the same
+   * imperfect drafting is punished twice, and the mode a player met was careless play
+   * winning 8% of games against the quick draft's 25%, careful play at 7-10 and into the
+   * playoffs 4.5% of the time against 11-6 and 42%, and a board nobody pushed past 15 wins.
+   *
+   * ONLY THE BAD END, and that is the whole design of this constant. Compressing the WHOLE
+   * curve was tried first and it gutted the mode: with defence worth less everywhere the
+   * solver stopped buying any and the optimal roster went from $159.5M off / $100.4M def to
+   * $242.0M / $17.9M, while every win-rate column said the change was working. A ceiling on
+   * the PENALTY leaves the reward for a good defence exactly where it was, so the incentive
+   * to spend on one is untouched.
+   *
+   * It binds below a raw defence of about 32. A careless defence sits at ~25 and a careful
+   * one at ~34, so this lifts the floor and leaves the middle and the top alone, which is
+   * what let FULL_TALENT and FULL_CAP_MUSD be solved for those two rows afterwards.
+   */
+  /* 1.45 RATHER THAN 1.40, and 1.40 is where it still works. Measured against the solver's
+     own split, defence is worth 39% of the cap down to 1.40 and 7% at 1.35: the incentive to
+     buy a defence falls off a cliff between them, because a ceiling on the penalty is also a
+     ceiling on the reason to avoid it. Pick the first value with real room, not the last one
+     that passes. */
+  FULL_DEF_SUPPRESS_MAX: 1.45,
   /* The spread on the offense you are given. Real team scoring runs a standard deviation
      around 40% of the mean (league_context's own pts_scored_sd against pts_scored_mean
      sits near this across the era), and your borrowed offense should be as streaky as
@@ -3589,6 +3618,15 @@ const DEF_OVERALL_MAP = [
   [10.0, 11.0], [18.0, 32.0], [34.0, 48.0],
   [48.0, 80.0], [52.0, 89.0], [55.0, 95.0],
 ];
+/* Full Team's own reading of the same curve: the identical shape, with a tighter ceiling on
+   how much a bad defence can cost. Both callers on the full path go through this, so the
+   preview the coach screen draws and the game actually played cannot disagree. */
+function fullSuppression(defenseTotal, constants = CONSTANTS) {
+  const cap = constants.FULL_DEF_SUPPRESS_MAX;
+  const s = defenseSuppression(defenseTotal, constants);
+  return cap === undefined ? s : Math.min(cap, s);
+}
+
 function defenseOverall(defenseTotal) {
   if (!(defenseTotal > 0)) return 0;
   const m = DEF_OVERALL_MAP;
@@ -3648,7 +3686,7 @@ function fullParts(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
   return {
     scored,
     stops,
-    allowed: OPP_PTS_NEUTRAL * constants.SCALE * defenseSuppression(stops, constants),
+    allowed: OPP_PTS_NEUTRAL * constants.SCALE * fullSuppression(stops, constants),
   };
 }
 
@@ -3704,20 +3742,99 @@ function fullStrength(roster, chemistryMultiplier, coach, constants = CONSTANTS)
  * gap between the two units is 1.1 points on realistic drafts and 0.6 on careful ones. It is
  * the most legible version and also the most predictive, which does not usually happen.
  */
+/* EVERY PART IS RETURNED, NOT JUST THE ANSWER.
+ *
+ * The results screen has to show a player how a Full Team overall is made, and the only
+ * honest way to do that is to hand it the numbers this function actually multiplied. The
+ * page used to build its own version of the sentence and it was wrong three ways: it ran
+ * rosterStructure over all TWELVE men (the 0.57-for-everybody reading overallOf warns
+ * about, which printed "-44% for how the six fit together" on a team whose halves were at
+ * -12% and +3%), it printed the flattened chemistry rather than the two the units are rated
+ * with, and it claimed the product equalled the overall when the overall is a mean of two
+ * sides with a coach on top.
+ *
+ * So the parts ship with the answer. A breakdown drawn from these cannot disagree with the
+ * rating, because it IS the rating's working. Additive only: `off`, `def`, `coachBoost` and
+ * `overall` are unchanged and every existing caller reads exactly what it read before. */
 function fullSideRatings(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
   const { off, def } = splitSides(roster);
-  if (!off.length || !def.length) return { off: 0, def: 0, coachBoost: 1, overall: 0 };
+  if (!off.length || !def.length) {
+    return { off: 0, def: 0, coachBoost: 1, overall: 0,
+      parts: { offPts: 0, defPts: 0, offChem: 1, defChem: 1, offFit: 1, defFit: 1,
+        offMen: 0, defMen: 0, talent: 1, defRaw: 0 } };
+  }
   const t = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
-  const o = off.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t
-    * chemOff(chemistryMultiplier) * rosterStructure(off).multiplier;
-  const d = defenseOverall(def.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t
-    * chemDef(chemistryMultiplier) * defenseStructure(def).multiplier);
+  const offPts = off.reduce((a, p) => a + p.ppr_ppg_mean, 0);
+  const defPts = def.reduce((a, p) => a + p.ppr_ppg_mean, 0);
+  const offChem = chemOff(chemistryMultiplier), defChem = chemDef(chemistryMultiplier);
+  const offFit = rosterStructure(off).multiplier, defFit = defenseStructure(def).multiplier;
+  const o = offPts * t * offChem * offFit;
+  /* The defense's raw product is points it gives up. defenseOverall is what puts it on the
+     offense's ladder, which is the step that makes the mean below mean anything, and it is
+     the step a reader cannot infer. Kept so the screen can say it happened. */
+  const defRaw = defPts * t * defChem * defFit;
+  const d = defenseOverall(defRaw);
   const eff = coachEffect(coach);
   const coachBoost = (eff.off + eff.def) / 2;
   /* The units are left alone: a great one passes 100 in its own mode too, and saying so is
      the point. The headline is clamped because it is the number runs are compared by. */
+  /* THE MEAN IS NOT THE TEAM OVERALL, and fullTeamScale is the step between them. Kept in
+     parts so the results screen can show it happened, the same way defRaw is kept for
+     defenseOverall: a reader cannot infer either one. */
+  const mean = (o + d) / 2 * coachBoost;
   return { off: o, def: d, coachBoost,
-    overall: Math.max(0, Math.min(100, (o + d) / 2 * coachBoost)) };
+    overall: Math.max(0, Math.min(100, fullTeamScale(mean))),
+    parts: { offPts, defPts, offChem, defChem, offFit, defFit,
+      offMen: off.length, defMen: def.length, talent: t, defRaw, mean } };
+}
+
+/*
+ * A FULL TEAM'S TEAM OVERALL, ON THE LADDER THE REST OF THE GAME IS CUT FOR.
+ *
+ * This is defenseOverall's problem one level up, and it had the same three symptoms.
+ *
+ * THE PROBLEM. The mean of the two units is an honest reading of what twelve men produce,
+ * and it is not a team overall, because a Full Team splits ONE cap across two units and a
+ * quick draft spends a whole cap on six men. So a twelve man team is always reported weaker
+ * than a six man offence drafted with the same care: measured at matched drafting quality,
+ * careful play read a median 68.4 here against 82.0 there, and a player who deliberately
+ * spends the cap read 76.3.
+ *
+ * WHY THAT IS NOT COSMETIC. liveRating() hands this number to weeklyEdgeVs, seedFromRecord,
+ * playoffShare and finalEdge, and those are cut against CLASS_FLOOR 84, ELITE_FLOOR 95 and
+ * FINAL_EDGE_PIVOT 95. Measured before this map: a player who spends the whole cap cleared
+ * CLASS_FLOOR 8% of the time against the quick draft's 46%, reached ELITE_FLOOR 0% of the
+ * time against 10%, and took the full title game penalty on every single roster. The weekly
+ * class edge, the strength vote on the seed and a neutral title game were all switched OFF
+ * in this mode, and nothing anywhere reported it. It is also the standing measurement that
+ * a Full Team squad "never takes the top seed": the seed vote starts at 95 and the mode
+ * could not reach 95.
+ *
+ * Reported by a player from the other end, as a 20-0 team reading 85, which is not what 85
+ * means anywhere else on this site.
+ *
+ * THE MAP is a line through three anchors that matter, by raw mean: a careless twelve
+ * (~40.7) reads where a careless six reads (~42), so the bottom is unchanged; a roster that
+ * deliberately SPENDS THE CAP (~76.3) reaches CLASS_FLOOR, which is where the quick draft's
+ * careful play sits and where the weekly edge starts; and the best roster the mode can
+ * produce (~96.4, the solver) reads 100, so the top of the scale is reachable and means "you
+ * cannot do better". Below the first anchor it runs to the origin, above the last it keeps
+ * going at the same slope and the clamp takes it.
+ *
+ * THE UNITS ARE NOT TOUCHED. `off` and `def` are what each side produces and the screen
+ * prints them as such; this maps only the headline the game reads.
+ */
+const FULL_SCALE = [[0, 0], [40.7, 42], [76.3, 84], [96.4, 100]];
+function fullTeamScale(raw) {
+  const A = FULL_SCALE;
+  if (!(raw > 0)) return 0;
+  for (let i = 1; i < A.length; i++) {
+    if (raw <= A[i][0] || i === A.length - 1) {
+      const [x0, y0] = A[i - 1], [x1, y1] = A[i];
+      return y0 + (raw - x0) * (y1 - y0) / (x1 - x0);
+    }
+  }
+  return raw;
 }
 
 function fullOverall(roster, chemistryMultiplier, coach, constants) {
@@ -4472,8 +4589,29 @@ function dynastyContinuity(roster, tenure) {
  * defence keep their relative weights, and every structure, scheme and chemistry multiplier
  * still lands on top exactly as it did.
  *
- * Fitted, not chosen. See simulator.js --fullteam. */
-const FULL_TALENT = 0.78;
+ * Fitted, not chosen. See simulator.js --fullteam.
+ *
+ * REFITTED FROM 0.78, AND 0.78 WAS FITTED AGAINST A BROKEN ROW. The harness bot that stands
+ * for careful play, buildFullToBudget, took an rng and never called it, so the row this dial
+ * was solved against was ONE deterministic roster replayed: it measured schedule luck rather
+ * than the range a player meets, and it happened to land close enough to the reference that
+ * the fit looked right.
+ *
+ * What a careful player actually got at 0.78, measured once the bot drafted a range: 7-10,
+ * into the playoffs 4.5% of the time against the quick draft's 42%, and in 400 seasons never
+ * once past 15 wins where the quick draft reaches 17-0. That is the mode a player reported
+ * as way too hard, and they were right.
+ *
+ * At 0.90 the careful row sits on the quick draft's: 11-6 against 11-6, playoffs 45.8%
+ * against 41.8%, and a perfect season in 1.0% of them against 0.8%.
+ *
+ * WHAT IT COSTS, stated rather than buried. The SOLVED row overshoots: 91% against the quick
+ * draft's 81%. The careful and solved rows cannot both be hit with this dial, because twelve
+ * picks across two pools give a solver far more room to be right than six do, and no cap
+ * fixes it either (swept $280M to $400M, the careless row never moved at all). The row that
+ * was chosen is the one a person actually plays: a full knapsack over both pools is not a
+ * thing a human does at twelve slots, while a careful draft is what everybody does. */
+const FULL_TALENT = 0.90;
 
 /*
  * ─── THE COACH ─────────────────────────────────────────────────────────────────────
@@ -4833,7 +4971,9 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
   const yourScore = rawOff * offMul * tempo * (1 + PLAN.FOURTH_MEAN * plan.fourth);
 
   const defenseTotal = rawDef * chemDef(chemistryMultiplier) * defStructure;
-  const suppression = defenseSuppression(defenseTotal, constants);
+  /* fullSuppression, not defenseSuppression: see FULL_DEF_SUPPRESS_MAX. The defence-only
+     mode goes on using the uncapped ceiling, because there it is the whole game. */
+  const suppression = fullSuppression(defenseTotal, constants);
   /* Pressure is the mirror of the fourth down call, pointed at their score instead of
      yours: it holds them to less on average and gives up more when it misses. The swing is
      applied to the opponent's own spread, because a blitz that fails is their big play. */
@@ -5803,14 +5943,23 @@ const publicAPI = {
   })),
   resolveGame, resolveGameDefense, defenseSuppression, defenseOverall, overallOf,
   /* FULL TEAM'S TWELVE, INTERLEAVED, and the order is the design rather than a listing.
-     The draft fills slots in this order, so alternating them is what makes the shared cap
-     felt continuously instead of discovered at pick seven: every offensive signing is
-     immediately followed by a defensive one out of the same wallet. Six then six would let
-     somebody spend $140M on an offense before the game ever mentioned a defense.
+     Alternating the sides is what makes the shared cap felt continuously instead of
+     discovered at pick seven: every offensive signing is immediately followed by a defensive
+     one out of the same wallet. Six then six would let somebody spend $140M on an offense
+     before the game ever mentioned a defense.
 
-     It also makes the pool switch fall out for free. The draft screen asks which data set
-     to spin at each pick, and with the sides interleaved that question is answered by the
-     slot rather than by counting picks. */
+     WHAT THIS LIST DOES NOT DO IS DRIVE THAT ALTERNATION, and a sentence here used to say it
+     did: that with the sides interleaved, the draft screen's question of which pool to spin
+     was answered by the slot rather than by counting picks. It is not, because THE DRAFT DOES
+     NOT FILL THESE IN ORDER. A man goes into whatever open slot fits him, so the lowest open
+     slot only moves when somebody happens to fit it: take a tight end first and he lands at
+     index 8 with index 0 still open, and the next pick is offensive again. Measured over 360
+     completed drafts, reading the side off this list alternated on NONE of them and usually
+     produced the whole offense and then the whole defense.
+
+     So the parity of these entries is the ANSWER the page checks its pick count against, and
+     never the thing it reads the current side from. That is fullPickIsDefensive() in the
+     page, whose header carries the measurement. */
   FULL_SLOTS: ['QB', 'DL', 'RB', 'DL', 'WR', 'LB', 'WR', 'DB', 'TE', 'DB', 'FLEX', 'FLEX'],
   resolveGameFull, splitSides,
   /* FLEX IS AMBIGUOUS IN THIS MODE AND IN NEITHER OF THE OTHER TWO, which is why this
@@ -5846,6 +5995,7 @@ const publicAPI = {
   DYNASTY_DEAD_SHARE, DYNASTY_DEAD_SEASONS, DYNASTY_DEAD_CEILING, dynastyDead,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
+  fullSuppression, fullTeamScale,
   fullStrength, fullOverall, fullParts, fullSideRatings,
   coachTable, coachPrice, coachEffect, coachLinks, COACH_MIN_SEASONS,
   PLAN, PLAN_AXES, normalizePlan, planFromCoach,

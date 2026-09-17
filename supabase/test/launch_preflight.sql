@@ -1,0 +1,149 @@
+-- ---------------------------------------------------------------------------
+-- launch_preflight.sql : is this database ready for the modes that are live?
+--
+-- Paste the whole file into the Supabase SQL editor and read the last column.
+-- It READS ONLY: no table is written, no function is called, nothing is
+-- created. Running it twice is the same as running it once.
+--
+-- WHY THIS FILE EXISTS
+-- ---------------------------------------------------------------------------
+-- Dynasty, Full Team and Commissioner Simulator are open to everybody. Two of
+-- those three fail SILENTLY against a database that is missing a migration:
+-- the mode plays perfectly, the player finishes a season, and the row is
+-- refused on submit with nothing said to them. Nobody reports it because
+-- nothing looks broken. The only way to know is to ask the catalog.
+--
+-- WHY IT ASKS THE CATALOG AND NEVER CALLS ANYTHING
+-- ---------------------------------------------------------------------------
+-- Postgres resolves a function call at PARSE time, so one missing function in
+-- a query that calls them would fail the whole statement with "function does
+-- not exist" and report nothing about the other ten. Every check below is a
+-- catalog lookup or a constraint definition, so a database missing everything
+-- still returns a full readable report rather than one error.
+--
+-- HOW TO READ IT
+-- ---------------------------------------------------------------------------
+-- ok = true      that migration is deployed
+-- ok = false     it is not, and the `breaks` column says what that costs
+--
+-- Anything false in the first block is a mode losing player progress right
+-- now. The last row is the summary.
+-- ---------------------------------------------------------------------------
+
+with
+proc as (
+  select p.proname as name,
+         pg_get_function_identity_arguments(p.oid) as args,
+         pg_get_functiondef(p.oid) as body
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+),
+con as (
+  select c.conname as name, pg_get_constraintdef(c.oid) as def
+  from pg_constraint c
+  join pg_namespace n on n.oid = c.connamespace
+  where n.nspname = 'public'
+),
+has_table as (
+  select t as name from unnest(array[
+    'ps_daily_attempts','ps_dynasty_day','premium_unlocks','ps_saves',
+    'commish_free_clock','ps_runs','profiles'
+  ]) as t
+  where to_regclass('public.' || t) is not null
+),
+check_rows(sort, migration, what, breaks, ok) as (
+  values
+  -- ---- the two that lose a finished season -------------------------------
+  (1, '97_football_gauntlet_mode',
+      'ps_football_modes() lists every recordable mode',
+      'Dynasty and Full Team seasons are REJECTED on submit. The mode plays, the season vanishes.',
+      (select count(*) > 0 from proc where name = 'ps_football_modes')
+      and (select count(*) > 0 from con
+           where name = 'ps_runs_run_mode_ck' and def like '%ps_football_modes%')),
+
+  (2, '93_football_fullteam_mode',
+      'ps_runs accepts a fullteam run',
+      'Every Full Team season is refused by the check constraint.',
+      (select count(*) > 0 from con where name = 'ps_runs_run_mode_ck')),
+
+  -- ---- the free allowance, which decides who is metered -------------------
+  (3, '99_daily_attempts',
+      'ps_daily_attempts, the day ledger',
+      'No daily limit exists at all. Every mode is unlimited for everybody, free or paid.',
+      (select count(*) > 0 from has_table where name = 'ps_daily_attempts')),
+
+  (4, '100_daily_grace_reasons',
+      'ps_attempt_grace takes a reason',
+      'A granted extra run cannot be recorded with why it was granted.',
+      (select count(*) > 0 from proc
+       where name = 'ps_attempt_grace' and args like '%,%')),
+
+  (5, '101_dynasty_seasons',
+      'ps_day_unit, so Dynasty is metered in SEASONS',
+      'Dynasty falls back to one RUN a day: a player gets one season, not three, and the page says so.',
+      (select count(*) > 0 from proc where name = 'ps_day_unit')),
+
+  (6, '102_dynasty_rolling_day',
+      'ps_dynasty_day, the per account 24 hour clock',
+      'The dynasty day resets at a shared midnight, so when you sit down decides your budget.',
+      (select count(*) > 0 from has_table where name = 'ps_dynasty_day')),
+
+  (7, '102 ambiguity fix',
+      'ps_attempt_spend increments a QUALIFIED column',
+      'Every dynasty kickoff throws server side. It is caught and fails open, so the budget never counts down and nothing is reported.',
+      (select count(*) > 0 from proc
+       where name = 'ps_attempt_spend' and body like '%d.used + 1%')),
+
+  (8, '105_fullteam_daily',
+      'the ledger accepts mode = full',
+      'Full Team is never metered: a free account plays it without limit and the bundle sells nothing there.',
+      (select count(*) > 0 from con
+       where name = 'ps_daily_attempts_mode_ck' and def like '%full%')),
+
+  (9, '104_commish_free_clock',
+      'commish_free_clock and its functions',
+      'The clock FAILS OPEN, so Commissioner is unlimited for free accounts. Seasons given away, none lost.',
+      (select count(*) > 0 from has_table where name = 'commish_free_clock')
+      and (select count(*) > 0 from proc where name = 'commish_clock_state')
+      and (select count(*) > 0 from proc where name = 'commish_is_pro')),
+
+  -- ---- what the money depends on -----------------------------------------
+  (10, '101_premium_bundles',
+      'premium_unlocks and premium_products()',
+      'NOTHING a buyer pays for is recorded or readable. Every purchase is lost.',
+      (select count(*) > 0 from has_table where name = 'premium_unlocks')
+      and (select count(*) > 0 from proc where name = 'premium_products')),
+
+  (11, '103_runtour_bundle_redeem',
+      'runtour_redeem_bundle()',
+      'A Run The Bundle buyer never receives their coins or pack in Run The Tour.',
+      (select count(*) > 0 from proc where name = 'runtour_redeem_bundle')),
+
+  (12, '103_cloud_saves',
+      'ps_saves, a run kept against the account',
+      'A run in progress lives only in that browser. Clearing site data loses a dynasty.',
+      (select count(*) > 0 from has_table where name = 'ps_saves'))
+)
+-- The summary has to come LAST, and a UNION can only be ordered by an output
+-- column, so the sort key is carried through a subquery rather than sorted on
+-- the migration name. Ordering by the name alone put the summary first, where
+-- it reads as a heading.
+select migration, what, deployed, if_missing from (
+  select 1 as block, sort,
+         migration,
+         what,
+         case when ok then 'yes' else 'NO' end as deployed,
+         case when ok then '' else breaks end as if_missing
+  from check_rows
+  union all
+  select 2, 0,
+         '',
+         '',
+         case when (select bool_and(ok) from check_rows)
+              then 'ALL PRESENT' else 'SOMETHING IS MISSING' end,
+         case when (select bool_and(ok) from check_rows) then 'safe to be live'
+              else (select string_agg(migration, ', ' order by sort)
+                    from check_rows where not ok) || ' need running' end
+) z
+order by block, sort;

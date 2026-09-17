@@ -248,6 +248,40 @@ It runs in CI on any push or pull request touching an `.html` or `.js` file
 (`.github/workflows/cachebust-check.yml`), and it covers every page on the site that
 versions a script beside it, found rather than listed.
 
+### The OTHER pair of hand-written numbers, and it is the silent one
+
+A `?v=` is not the only number a page keeps about a sibling script. Several also pin the API
+they expect and refuse the module when it disagrees:
+
+```js
+const BOARD_VERSION=17;
+const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{...
+```
+
+**A stale `?v=` fails loudly**, as a missing function on somebody's phone. **This one fails
+softly, by design**, and that is what makes it worse. The page falls through to a stub that
+answers every call with null, so a `board.js` that is blocked, or a version behind, degrades
+to "not reachable" instead of taking the game down.
+
+**It shipped.** Adding `dynRunState` and `dynRunStart` moved `board.js` to `API_VERSION: 17`
+and `BOARD_VERSION` in the page stayed at 16, so **every visitor ran on the stub**: the
+leaderboard printed the stub's own `lastError` ("board.js failed: 0 blocked") and the
+profile's runs played and best rating came back as dashes, because `mine()` and `ranks()`
+answer null. Nothing threw, no check went red, and the site looked exactly like a site whose
+network was having a bad day. Reported by a player.
+
+`check-cachebust.mjs` holds the pair now. It reads the comparison out of the page, resolves
+the receiver through any alias to its global, and resolves the global to whichever script on
+that page assigns it. **By who SETS it, never by what it is called**: the first draft asked
+for a `PS_` prefix, which is the football game's convention and nobody else's, and reported
+that it could not tell which module `E` was on a hoops page that is entirely correct
+(`RTF_ENGINE`, `RTF_RUN`). Seven pins across the site today.
+
+**Coverage is half of it, the same as `check-numbers`.** A page that COMPARES an
+`API_VERSION` and yields no pair is a broken reader, not a clean page, so that is a failure.
+The rule keys on the comparison rather than on the word, because the stub below it writes
+`API_VERSION:BOARD_VERSION` into itself and would otherwise count as a pin.
+
 ## The football game's badge cabinet
 
 `football/achievements.js` is the badge catalog for The Perfect Season, and every badge in
@@ -278,7 +312,24 @@ shelf appears.
 node football/check-premium.mjs        the page, in a real browser, both views
 node scripts/stripe/verify-bundles.mjs the catalog against the webhook and the constraint
 node cfb/build/test/test_store.mjs     the same offer and receipt on the college page
+node scripts/check-account-states.mjs  both games come up in all eight account states
 ```
+
+That last one asks the dumbest question of every state rather than one rule of one
+state: does the page start, does it throw, is there something to press. A boot crash
+in ONE account state has already shipped here (`pwArt is not defined`, below), and it
+shipped past a green suite because no check opened that state. The three states worth
+knowing about are the ones where there is no answer to work with: accounts offline,
+the premium call erroring, and the premium call never coming back.
+
+**Measure type in a headless browser and you are measuring the FALLBACK face.** The
+Google Fonts request does not resolve in the dev sandbox, so `document.fonts` is empty
+and Anton is silently replaced by a generic sans about 36% wider per character. That is
+enough to make a headline that fits look like it overflows the viewport by 119px, and
+to make a check that asserts on width report a bug that does not exist. `document.fonts
+.check('100px Anton')` answers **true** either way and will not save you. Measure the
+string in the asked face against a known fallback: if the two widths match, the face
+never arrived. `.htitle h1` carries the arithmetic that was verified this way.
 
 One store, not a store per game. `/assets/store.js` is the offer and both The Perfect
 Season and Commish Simulator draw it; its two buttons post `perfect-season` and
@@ -296,22 +347,97 @@ allowance and then the store; the row removes the limit rather than unlocking th
 copy anywhere may imply it does, and the receipt has to show the end date.
 
 **The prompt card is the store's too, and for the reason everything else here is.** There are
-three of them (the football front page, the football profile, the college profile) and each
-page used to draw its own, so on one day, about one purchase, they read "4 modes", "3 modes"
-and a sentence. `RTG_STORE.card()` and `.cardInner()` draw all three now, and the `.pwc-marks`
-rule is in the store's injected CSS rather than in either page.
+**four** of them (the football front page, the football profile, the college front page, the
+college profile) and each page used to draw its own, so on one day, about one purchase, they
+read "4 modes", "3 modes" and a sentence. `RTG_STORE.card()` and `.cardInner()` draw all four
+now, and the `.pwc-marks` rule is in the store's injected CSS rather than in either page.
 
-What it says is **Unlimited**, over the three marks the sheet's hero row uses, in the same
-order. A count was the wrong half to lead with: what a free account meets is the counting, so
-the value is the word that answers it. **The three are the three tiles, not the four named
-lines under them.** One Franchise Dynasty is a dynasty with the pool locked to one club, so
-it sits under the trophy in both places. Counting it separately is how a card ends up
-claiming four of something a reader can only find three of. Both suites assert the value, the
-mark count and that no digit followed by "modes" has reappeared.
+**The college front page was the one that had no card at all**, so the offer lived two taps
+behind the avatar and the only screen every visitor to that game sees never mentioned that it
+has a paid tier. That is a quieter version of the wall the college profile card was added to
+knock down: a store you can only reach by going looking for it. `ensurePremiumCard()` there
+mirrors `ensureCommishDoor()` beside it, built rather than shipped hidden and removed when the
+answer changes, and it is gated on `premiumPitch()`, which asks `commishOn()`. While
+`COMMISH_LIVE` was false the only thing that card sold on that game was a mode the reader
+could not open, so the door and the card appear together. **That day has been and gone**: the
+flag is true, and the two are drawn together because they always ask the same question.
+
+**And the WORDS drifted anyway, which is the same fix arriving twice.** Moving the markup in
+stopped the cards having different shapes and left the two strings as arguments each caller
+passed, so the football front page read "Unlock every mode" while both profiles read "Unlock
+everything". The football page even carried a comment claiming "it says the same thing on all
+three" directly above the line that passed something else: the claim was about the markup and
+read as a claim about the sentence. **`cardInner()` and `card()` take no words at all now**,
+not even an overridable default, because a default that can be overridden is the same argument
+with a politer name. It is `PW_CARD_TITLE` and `PW_CARD_SUB`, once.
+
+The title is **the heading of the sheet the card opens**. A reader who presses "Unlock every
+mode" and lands on an `<h2>` reading "Unlock everything" has to stop and work out whether they
+got the screen they asked for. Both suites assert the two cards match each other AND match that
+heading, because value and mark count agreed across all three cards the whole time the words did
+not, and a check on the parts the store owned could not see the parts it did not.
+
+**The sub is measured, not written.** The card's text column is whatever the value and the marks
+leave: 200px at 390px of viewport once the fourth mark is there, 170px at 360. `No daily limits.
+One payment, lifetime.` needs 240 and wrapped on every phone anybody holds, leaving `lifetime.`
+alone on a second line. `No daily limits. Pay once.` holds one line at 360 and up. The sheet
+still says "One payment" on a chip beside each price and that is not drift: the sheet has the
+room, the card has a third of it, and the CLAIM is the same. `check-premium.mjs` asserts the
+line count at each width rather than counting characters, because the column depends on the mark
+count and the mark count depends on the reader.
+
+What it says is **Unlimited**, over the marks the sheet's hero row uses, in the same order. A
+count was the wrong half to lead with: what a free account meets is the counting, so the value
+is the word that answers it. **The marks are the TILES, not the named lines under them**, and
+the number is derived rather than written: three on the college page, four for a football
+reader who can open Full Team. One Franchise Dynasty is a dynasty with the pool locked to one
+club, so it is itemised on the Premium card and has no tile and no mark of its own. Counting it
+separately is how a card ends up claiming more of something than a reader can find. Both suites
+assert the value, that the card and the sheet claim the SAME number, and that no digit followed
+by "modes" has reappeared.
 
 That CSS rule is written `.pw-card .pwc-go .pwc-marks`, a class deeper than it looks like it
 needs. The football page carries `.pw-card .pwc-go span{display:block}`, so a shorter selector
 loses, the three marks stack into a column, and nothing anywhere reports it.
+
+#### The sheet has to be SQUARE, and nothing but a measurement can tell you it is not
+
+Everything in this section fails silently. A ragged hero row renders, reads and sells
+perfectly well. The only symptom is that it looks wrong, and looking wrong is invisible to
+every other check in the repo, so it is measured: `check-premium.mjs`'s last section boots the
+real store at 320, 360, 390 and 560 and asserts a PROPERTY at each one.
+
+**A grid row stretches every cell to its tallest, so every tile has to be the same four
+things.** The Dynasty tile alone carried a `.pw-also` line naming One Franchise Dynasty, and
+at 390px that made the top row 167.6px against the bottom row's 128.6px, with about sixty
+pixels of nothing under TRADE MACHINE beside it. The mode is named on the card below now,
+in the list a guard already holds to the wording on the receipt, so nothing was lost.
+
+**It came back the same afternoon by a different door**, which is why the guard asks for one
+height across the row and never for a number. With `.pw-also` gone, the step-down for the
+longest name was written at `max-width:359px`, and COMMISSIONER MODE still wrapped at 360,
+which is what a Galaxy reports. **Pick the first width with real room, not the last one that
+fails**: the name needs about 148px of tile, 370px of viewport gives it 151 and 390 gives it
+161, so the breakpoint is 389. Three pixels is a coincidence. This is the 549px note two
+sections up, arriving again.
+
+**The price row holds two kinds of thing and they align two ways.** `$34.99` and a struck
+`$80` are prices and share a BASELINE. A chip is a box, and a box hung off a baseline sits
+low: `One payment` started 10px down a 28px numeral and finished 3px below it. Chips centre.
+**Two pills on one row have to be the same pill**: `Save $45` had `align-self:center` and
+`One payment` did not, one drew its outline with a real border (which adds 2px to the box)
+and the other with an inset shadow (which adds none), and the pair sat 4.7px out of step at
+two type sizes. None of that is visible in the source of either rule.
+
+**A wrapped row is not a misaligned one.** At 320px that row genuinely cannot hold a price, a
+struck price and two pills, and dropping the pills to a second line is right. So the assertion
+is scoped to chips BESIDE the price, meaning overlapping it vertically. The first draft
+grouped them by rounded top instead, which put two chips five pixels apart into two buckets,
+compared each with itself, and passed green on the exact defect it was written for.
+
+**The sheet has a height ceiling because the complaint was scrolling.** 1090px at 390px before
+this pass, 918px after, guarded at under 1000. That is room to add a line and a failure on
+adding a block. Move it when the sheet is meant to grow, never to make a run pass.
 
 ### What the free allowance actually counts
 
@@ -324,6 +450,77 @@ season.
 The old rule metered a START, and the mode it produced was the entire game with a wait in
 front of it: begin on Monday, still be playing that same run at season 60 without the game
 asking again. The only thing the bundle sold was re-drafting.
+
+#### And a SECOND meter counts how often you start one
+
+`supabase/106_dynasty_one_run_a_day.sql`. Three seasons a day meters how much you PLAY, and
+those two questions come apart the moment somebody does not like their draft: abandon after
+a season and the budget buys three rosters, which is "one team, one life" turned into three
+rolls of the wheel. So a NEW run is its own allowance, one per rolling day. Resuming costs
+nothing here and never did.
+
+**It adds a column and restates nothing, deliberately.** A `runs` counter beside `used` would
+have to be reset where the window rolls forward, which is inside `ps_attempt_spend`, and that
+function has already been restated once by `105_fullteam_daily.sql`: copying 102's body over
+the top would silently undo 105 and take Full Team's meter with it. **A timestamp needs no
+reset.** `run_at` is when the last new run started, so the question is arithmetic on it and
+no existing function is touched at all. Same shape `commish_free_clock` uses, for the same
+reason.
+
+**Read at the door, written at the wheel.** `runDayShut()` answers off a cached read, so the
+front page can draw the door without a round trip and an obvious refusal costs nothing;
+`B.dynRunStart()` is the write and it fires from inside the `dynastyIntro` callback, at the
+last moment before the board opens, so backing out of the rules sheet spends nothing. The
+write is never awaited: every allowance on this page fails open, and hanging the wheel on a
+round trip would be the one gate here that can cost somebody their turn to a tunnel.
+
+**Every gate sits above every line that destroys a save**, which is `dynNewSheet`'s lesson
+arriving at a second door. **Two paths reach `beginDraft`** and both carry the check:
+`beginDynastyDraft`, above `dynRead` and `dynClear`, and the replace sheet's own button,
+which is the one path that does not go back through it. A sheet also sits open for as long
+as somebody leaves it open, so the day can shut underneath it, and `check-premium.mjs` drives
+exactly that: opened on an open day, pressed on a shut one, and the assertion that matters is
+that the dynasty it would have traded away is still there.
+
+**The door says so before the tap**, on its own branch after the season one. Seasons left and
+no run to spend them on is a state the season branch cannot describe: what is used up is the
+fresh start rather than the budget, so "Day done" would be wrong about both halves.
+
+#### The meter has four writers and only one of them is a READ
+
+`dailySpend`, `dailyGrace` and `dailyDayEnd` each guarded their write with `if (r && r.used
+!= null)`. `dailyEnsure`, which is the BOOT read and therefore the OLDEST answer of the four,
+wrote whatever came back with no guard at all. One missing clause, two defects, both silent,
+because every allowance here fails open: nothing is ever wrongly refused, so nothing throws.
+
+- **A null erased a real answer.** `attemptsState` answers null on any blip. Stored, it reads
+  everywhere as "no opinion", so the door loses its countdown and `dailySeasons()` falls back
+  to `'run'`, which puts the season copy back on the old run rule mid-session.
+- **A stale answer undid a spend.** Land the boot read after a kickoff and `used` goes back
+  down. Measured through the real page: 2 back to 1, a season already played handed back.
+
+So there is **one writer now**, `dailyPut`, which refuses anything without a `used`, and
+`dailyWrote` counts the writes. `dailyEnsure` captures the count at ASK time and drops its
+answer if anything wrote while it was out, because whatever overtook it is strictly fresher.
+`dailyForget` BUMPS that count rather than zeroing it: a read for the previous account can
+still be in flight, and zeroing would match the 0 the next ask captures. `runDayEnsure` (106)
+had the identical shape and carries the identical three clauses.
+
+**The re-arm is a separate clause from the state guard, and they look like one line.**
+`dailyPut` is what refuses to store a null. `dailyEnsure`'s own null test decides whether to
+ASK AGAIN, which is a question only the boot read has, and it is **bounded at three tries**
+because that function is called from every paint of the front page.
+
+**It was found from the harness side, which is the part worth not misreading.** Adding a
+second background call shifted the timing enough that the null landed between two stubbed
+states in `check-premium.mjs`, and the symptom was a boss-win toast that never appeared. The
+suite was fixed so no section asks the real meter, which is right on its own terms and is
+**not** this fix: the page had the same race with nothing stubbed. Each of the three clauses
+was proved by reintroducing it alone, and each breaks exactly one assertion.
+
+**A LATE METER ANSWER NEVER MOVES THE COUNT BACKWARDS** is that guard, and it drives the order
+by hand rather than racing it: the answer is held open and landed at the moment under test.
+A timing bug cannot be checked by hoping to lose the race.
 
 **A firing ending the day is not spite, it is what stops the budget buying a reroll.** Fired
 in season one with two seasons left, the cheapest use of them is a string of fresh season
@@ -439,9 +636,9 @@ commish pull only while `#s-gate` is showing, because replacing `world` under so
 mid-beat swaps the sport out from under a decision they are making. The mark is dropped
 rather than kept when it has to skip, so the next visit asks again.
 
-**The football page has ONE game key and three slots**, and `FB_SLOTS` is where the three
-become one thing. `open` and `club` are the two dynasties, `trade` is a Trade Machine season.
-The key is still `ps_dynasty`, which is historical rather than descriptive: it was written
+**The football page has ONE game key and FOUR slots**, and `FB_SLOTS` is where the four
+become one thing. `open` and `club` are the two dynasties, `trade` is a Trade Machine season,
+`full` is a Full Team season. The key is still `ps_dynasty`, which is historical rather than descriptive: it was written
 when a dynasty was the only run being kept. Changing it now would strand every row already on
 the shelf, which is the one thing a save table must never do to itself. One key is also what
 keeps the boot to a single round trip; a second key for the Trade Machine would be a second
@@ -452,6 +649,15 @@ A trade run measures progress by phase and week rather than by seasons finished,
 IS one season. `TRADE_PHASE_RANK` exists because the playoff weeks do not continue the
 regular season's numbering, so a week-only measure goes backwards at the seeding screen and
 the server then refuses every save for the rest of the run, with nothing on screen to say so.
+A Full Team run is one season too and shares that ladder rather than copying it.
+
+**`full` was added because the mode grew a meter, and the order is the lesson.** Full Team was
+the last run on this page kept nowhere at all: no key, no slot, so a closed tab lost twelve
+picks and a season. That was survivable while starting again cost nothing but time. It stops
+being survivable the moment a run costs a day, because the charge lands at KICKOFF: a dropped
+connection in week three would take the run AND the allowance, and leave somebody looking at a
+door telling them to come back tomorrow for a season they never finished. That is `dynNewSheet`
+again, the trade taken halfway. **Save first, then meter.**
 
 **Boot BOTH views before shipping anything that touches this.** A crash that only hit
 testers has already shipped: moving the store out of `football/index.html` left
@@ -471,12 +677,74 @@ two rows the football profile carries, and the receipt reads `premium_unlocks` t
 `premiumUnlocks()` in `cfb/auth.js`. The RECEIPT is deliberately ungated: a buyer who paid
 on the football page owns what they own here whether or not this game shows them a mode.
 The OFFER is gated on `commishOn()`, the same call the front page door makes, because while
-`COMMISH_LIVE` is false the only thing it sells is a mode the reader cannot see, and a card
-that takes money for a shut door is worse than no card.
+`COMMISH_LIVE` was false the only thing it sold was a mode the reader could not see, and a
+card that takes money for a shut door is worse than no card. **The flag is true now**, so
+both are drawn, and what the gate still does is keep them from ever coming apart.
 
 **A store you can only reach by being refused is a wall.** Before that card existed the sole
 way to the offer from this game was to open Commissioner Simulator and be turned away at its
 gate, which nobody who cannot see the mode will ever do.
+
+### The three modes are LIVE, and a missing migration is the silent way to break them
+
+```
+psql ... -f supabase/test/launch_preflight.sql     or paste it into the SQL editor
+```
+
+`DYNASTY_LIVE`, `FULLTEAM_LIVE` and `COMMISH_LIVE` are all true. Two of those three fail
+SILENTLY against a database missing a migration: the mode plays perfectly, the player
+finishes a season, and the row is refused on submit with nothing said to them. Nobody
+reports it, because nothing looks broken. **A green checkout of this repo tells you nothing
+about that**, and Cloudflare deploys from main on its own, so the deploy and the schema move
+independently.
+
+`launch_preflight.sql` is the read-only answer: one paste, one row per migration, and the
+`if_missing` column says what each absence actually costs. It **asks the catalog and never
+calls anything**, because Postgres resolves a function call at parse time, so one missing
+function in a query that called them would fail the whole statement with "function does not
+exist" and report nothing about the other eleven. Verified both ways against a real Postgres
+16: every row NO on a bare database, ALL PRESENT once the chain is loaded.
+
+**Commissioner is the forgiving one of the three.** It writes its own tables rather than a
+`ps_runs` row and its clock fails open, so a database missing `104` gives seasons away
+instead of losing them. Dynasty and Full Team lose the season.
+
+### The Commish door is always there, and a shut one offers the bundle
+
+Who SEES the mode and who gets SOLD to are different questions, and `cfb/index.html` keeps
+them apart on purpose:
+
+| | asks | so that |
+|---|---|---|
+| the front page door and the modes sheet card | `commishShow()` | everybody finds the mode |
+| the offer card | `commishOn()`, which still wants a signed in account | nothing is sold to somebody who cannot own it |
+
+A purchase is tied to an account, so a card asking a stranger for money cannot be honoured;
+`test_store` asserts that. The DOOR had no business behind the same test once the mode
+launched, because a signed out visitor then got no sign anywhere on `/cfb/` that
+Commissioner Simulator exists.
+
+**The tap is taken in exactly one case and the history is why.** This page used to take
+EVERY non-owner's click and repaint it as the store. That was removed the day the free tier
+shipped, and the bug report was a signed in free account tapping the door, getting the
+store, and reading the whole mode as locked with no way in. A free account with a season in
+hand still goes straight through, plays it, and is sold nothing on the way.
+
+What is different is the reader that helped nobody: a free account whose season is spent, or
+whose one free term is finished. They tapped, watched the mode load, and landed on the wait
+wall, which carries the offer. The offer was always where that tap ended. It arrives a
+screen sooner now, and the difference from the version that produced the bug report is that
+the tap is only taken when the door is genuinely shut.
+
+**`blocked()` in `clock.js` is that rule, written once, and it is deliberately NOT what
+decides.** The mode decides by SPENDING, because only the server can, and `seasonWall()`
+reads `ok` off that answer. This is a hint for a screen that would rather offer the store
+than send somebody through a door it knows is shut, so being wrong costs a tap rather than a
+season. It fails open like everything else in that file: an unknown answer sends them to the
+mode, which asks properly and draws the right screen either way.
+
+`preventDefault` fires only on that branch, so middle click, open in a new tab and a long
+press keep working the way an anchor should.
 
 ### Commissioner Mode is free at one season a day
 
@@ -520,7 +788,10 @@ shorter wait walks the window backwards into the player's evening instead of out
 | | free allowance | clock starts |
 |---|---|---|
 | Dynasty | **3 seasons a day**, plus one for a boss battle won | when the budget is spent, or on a firing |
+| Dynasty, new runs | **1 a day** (106, a second meter) | when the run is started |
 | Commissioner | **1 season a day** | when each season ends |
+| Trade Machine | **1 run a day** | Eastern midnight |
+| Full Team | **1 run a day** | Eastern midnight |
 
 **Do not unify these.** They are two different units of play wearing the same word. A
 dynasty season is a draft and a schedule, and three of them is one sitting. A Commissioner
@@ -895,13 +1166,43 @@ reachable inside six men, **1,190 have the two readings naming different sides**
 cheapest is the second pick of the game. Take a running back first and he lands in slot 2,
 so `roster.length` is 1 (slot 1 is a DL) while the first open slot is 0 (the QB). The board
 then served quarterbacks while the field glowed blue over the defense. Driven for real, the
-old reading was wrong on **four of six picks**. Anything asking which side is picking must
-call `nextOpenSlot()`, which is what `dataNow()` uses to choose the pool.
+old reading was wrong on **four of six picks**. One source for both, always.
 
-**The checker proves it is testing something.** A run where the two readings never diverged
-would pass green having exercised nothing, which is the badge-that-cannot-be-lit trap in a
-different coat, so it takes a running back first on purpose and then ASSERTS that the old
-reading disagreed at least once.
+**Then they agreed on the wrong reading, and that shipped too.** They were made to agree on
+`nextOpenSlot()`, and the LOWEST OPEN SLOT is not the side the mode is meant to be picking.
+`FULL_SLOTS` is interleaved (QB, DL, RB, DL, ...) so that reading the side off it would
+alternate for free, and the premise is false for the reason above: the lowest open slot only
+moves when somebody happens to FIT it. Take a tight end first and he lands in slot 8 while
+slot 0 stays open, so the next pick is offensive again, and again, until a quarterback turns
+up.
+
+A player reported three defenders in a row. Measured over **360 completed drafts** across
+three ways of drafting, **not one alternated**, every one had a run of three or more picks on
+the same side, and the longest was six. The usual shape was the whole offense and then the
+whole defense:
+
+```
+O:TE O:RB O:WR O:RB O:WR O:QB  D:DL D:LB D:DB D:DL D:LB D:DB
+```
+
+**So the side is COUNTED, not read off a slot.** `fullPickIsDefensive()` is the one source
+both the pool and the glow draw from: twelve picks, even offensive and odd defensive, which
+is `FULL_SLOTS`' own parity and six a side either way. **The slot is still free**, because
+this decides the POOL and not where the man lands: `slotChoices()` still puts him in whatever
+open spot on that side fits him, so the defensive FLEX and the two DL spots are unchanged.
+
+It also **strands fewer drafts**. Under the old reading two of those three bots failed to
+fill twelve slots on 14 and 15 of 120 attempts, since taking a whole side before starting the
+other is how a draft runs out of money for the second half. Alternating, all 120 finished for
+all three.
+
+**The checker proves it is testing something, and the alternation is its own assertion.** A
+run where the lowest open slot never disagreed with the pick count would pass green having
+exercised nothing, which is the badge-that-cannot-be-lit trap in a different coat, so it takes
+a running back first on purpose and then ASSERTS that the replaced reading disagreed at least
+once. Asserting only that everything on screen AGREES is what let five defenders in a row
+pass: reintroduce the old reading and the glow, the tiles and the pool are still unanimous,
+and the sequence reads `ODDDDD`. The suite now fails on the sequence itself.
 
 **What the screen shows for it.** The lit half says which side the man comes from, the open
 chips on the other side are dimmed to .5 so they recede without leaving, and the unit label
@@ -921,11 +1222,465 @@ then blue, which is the pair above joined into one control, which is what the mo
 warm, so the note on `.hp-full` about two warm cards reading as a menu of side modes still
 holds.
 
-**It is still unannounced and this file is one of the two things checking that.**
-`fullteam-access.js` ships `FULLTEAM_LIVE = false`, the door is BUILT by
-`ensureFullButton()` rather than revealed, and the checker asserts from the reader's end
-that an account off the list gets no door, no node, and the words nowhere in the page.
-`check-premium.mjs` asserts the same thing from the other end.
+#### The results screen had to show its working, and two of its numbers were wrong
+
+The mode that asks for twelve picks explained less than the one that asks for six. Every
+single-unit mode ends on a sentence a player can check by hand: so many squad FPPG, this
+much chemistry, this much for how the six fit, which IS the overall. Full Team got
+`Offense 15.7 and Defense 99.4, averaged` and stopped. Two numbers and a verb.
+
+**Composing that sentence in the page is what made it wrong, three ways at once.** Driven
+to a real results screen it read:
+
+```
+99 squad FPPG, +2.1% chemistry and -44% for how the six fit together,
+which is a 57.5 team overall.  You spent $277.0M of $140.0M.
+```
+
+- **`-44% fit`** was `rosterStructure()` over all TWELVE men, which is the
+  0.57-for-everybody reading `overallOf` warns about. That team's halves were at -12% and
+  +3%.
+- **`+2.1% chemistry`** was the flattened average. The units are rated with their own two,
+  and the same screen was printing those a few hundred pixels lower.
+- **`You spent $277.0M of $140.0M`** printed `CONSTANTS.CAP_MUSD` on a mode given
+  `FULL_CAP_MUSD`. A legal roster reported as $137M over a cap it was never under. Use
+  `R.capOf(run)`, which is what every gate in run.js already asks, **and count the coach**:
+  he comes out of the same cap, so a hire was money neither this line nor the Spent cell
+  saw.
+
+**So the parts ship with the answer.** `fullSideRatings()` returns `parts` (each side's
+points, chemistry, fit, men, the talent scale and the defence's raw product) and the table
+is drawn from them. A breakdown that disagrees with the rating is no longer a thing that
+can happen, because it IS the rating's working.
+
+**Both unit rows arrow rather than equal, and that is the honest sign.** Two things sit
+between the inputs and a unit's rating and neither is a lever: `FULL_TALENT` scales both
+sides (a fitted constant, identical for everybody, so printing it would dress tuning up as
+a decision) and a defence's product is points it GIVES UP, which `defenseOverall()` puts on
+the offence's ladder. The mean and the coach below them do equal, and carry equals signs.
+**The How close tab already explains the scale in a sentence a player can use**, so the two
+are halves of one explanation; do not delete that paragraph as a duplicate of the table.
+
+**Three display bugs found by looking at it rather than by reasoning**, all the same shape:
+a term at 1.004 printed `0% FIT`, a coach at +0.08% printed `0%` above a number he had
+moved from 65.9 to 66.0, and a `const` read a hundred lines before its own line threw TDZ
+and took the whole results screen down. **Decide on the PRINTED value, not the raw one**,
+which is the rule the commish state card already carries.
+
+**The arithmetic is guarded in the ENGINE, not through a played season**, because what can
+go wrong is multiplication. `check-fullteam.mjs` rebuilds each side from its own parts and
+asserts the fit is per side rather than over all twelve. Building that fixture caught the
+same class twice: `player_seasons.json` holds no defenders at all (they are a second
+download, which is why every path into the mode calls `loadDefensePool` first), and a
+defender's production is `idp_ppg_mean` on disk, copied onto `ppr_ppg_mean` as the pool
+arrives. Both mistakes put twelve men with no production into the empty branch, where every
+identity holds at zero and the whole section passes green. **It asserts the fixture is a
+real team before it asserts anything about it.**
+
+**IT IS LAUNCHED NOW, and both checkers assert the opposite of what they used to.**
+`fullteam-access.js` ships `FULLTEAM_LIVE = true`, so the door is built for everybody and
+`check-fullteam.mjs` asserts an account on no list gets one. The door is still BUILT by
+`ensureFullButton()` rather than revealed, and that is not leftover: the flag can go back,
+and a hidden node still ships to everybody.
+
+**What replaced "nobody can see it" as the invariant** is the shape of the paid tier, which
+is the half that can still break quietly: a free account gets the mode plus a meter, an
+owner gets the mode with the meter off, and NEITHER is ever refused the door. The mode being
+free to ENTER is the whole design (see the GOAT denominator argument below), so a door that
+came back as a wall would reverse it silently, and no error anywhere would say so.
+`check-premium.mjs` asserts that from the other end.
+
+#### One run a day, free, and the bundle removes the counting
+
+```
+node football/check-fullteam.mjs                    the door, the save and the allowance
+psql -d fullteam -f supabase/test/daily_base.sql    then 99, 100, 101, 102, 105, then
+psql -d fullteam -f supabase/test/fullteam_daily_test.sql
+```
+
+**It could have been sold outright and is not.** Full Team is the most distinctive mode on the
+page and the obvious thing to put behind the bundle at launch. Three things say no, and the
+third is the one that settles it:
+
+- **The site already ran this experiment and reversed it.** Commissioner Mode's gate used to
+  stop a non-owner dead, which meant the only way to find out whether the mode was worth $19.99
+  was to pay $19.99. And "a store you can only reach by being refused is a wall".
+- **The card's one word.** The bundle leads with **Unlimited** over three tiles, chosen because
+  what a free account meets is the counting. One access-gated mode makes that word cover
+  something it does not.
+- **THE GOAT DENOMINATOR, which is a ceiling and not a wait.** `CATALOG.length` is what
+  `crest.js` divides by and it is deliberately one number for everybody. Full Team's shelf is
+  **24 badges** and the catalog went **457 to 481** the day the mode launched. Behind a hard
+  gate, every free account's GOAT is capped at **95.0% permanently**, by badges no amount of
+  play can reach. Every other limit here is a wait.
+
+**It takes the Trade Machine's rule, not Dynasty's**, because a Full Team run IS one season, so
+there is no finished-the-day moment separate from the run for a personal rolling clock to hang
+on. Eastern calendar day, one run, which is what `ps_day_allowance` already answers for
+anything that is not a dynasty.
+
+**What `105_fullteam_daily.sql` actually changes is small.** `ps_day_allowance` and
+`ps_day_unit` already answered 1 and `'run'` for every non-dynasty mode. What stood in the way
+was the table's CHECK constraint and the `p_mode not in ('dynasty','trade')` guard at the top
+of four functions, under which the branch said `'trade'` eight times where it meant "the mode
+that was asked for". Generalising that branch to `p_mode` is the only reason those bodies are
+restated rather than altered in a line.
+
+**And writing its test found that 102 had none, and was broken.**
+`ps_attempt_spend('dynasty')` incremented with an unqualified `set used = used + 1`, and that
+function `RETURNS TABLE (ok, used, ...)`, so `used` is an OUT parameter and Postgres refused the
+statement as ambiguous. **It threw on every dynasty kickoff.** Nothing said so, because
+`dailySpend()` catches and fails open by design, so the season went ahead and was never counted
+and a three-a-day budget silently never decremented. The trade branch below it always had the
+alias. `supabase/test/fullteam_daily_test.sql` opens with the regression written as what a
+player would notice (spend three, the third is the last) rather than as the error text.
+
+**The gate is at the door, the charge is at the kickoff, and the two are different moments on
+purpose.** Reading is free, so it can save somebody the twelve picks of a draft they would not
+be allowed to play; the write waits until they commit. `startSeason()` carries a backstop on
+`attemptPaid` for the ways round it, and never on the clock, so finishing a season already paid
+for is never refused.
+
+**The door never shuts.** A saved run always says Resume, whatever the meter says, and a spent
+day changes only the line under the name. That is the dynasty door's lesson arriving a second
+time.
+
+**Whether the offer NAMES Full Team is asked of who can play it, and that is a reversal worth
+reading before undoing it.** `fullTeamSold()` used to read the LIVE flag alone, on the argument
+that a price is one product for everybody and a tester must not be shown a different offer from
+a stranger's. That is the right rule for what the bundle CONTAINS and the wrong one for what a
+card should NAME, and the two were being run together. What it cost: a tester who could play
+Full Team, and whose daily limit on it the bundle removes, opened the store and found the mode
+unmentioned. The offer was silent to exactly the people able to act on it.
+
+So `fullTeamSold()` is `canPlayFull()` now, and the store line, the receipt and the unlocked
+sheet's wording read it. The case the gate is actually for still holds, because it is the same
+gate: a reader with no Full Team door is told nothing about it, so nothing ever sells a mode
+they cannot find. `check-premium.mjs` asserts the store and the receipt still sell the same
+list, because they live in two files and nothing else notices when they drift.
+
+**It IS a fourth tile, and the count is derived rather than written.** It was a line and not a
+tile while the hero row was three, on the ground that the prompt card's `.pwc-marks` mirrors
+that row and a fourth would desync them. The answer was to grow both: `cardMarkKeys()` and the
+hero row both add Full Team for a reader who can open it, so the card and the sheet it opens
+claim the same number of things for the same person. Neither suite pins a number. They derive
+the count from `RTG_FULLTEAM` and assert the two agree, because written as 3 or 4 it would be
+right about one reader and a lie about the other, and whichever it was would be the one nobody
+ran.
+
+#### Full Team was too hard, and the row it was fitted against was one roster replayed
+
+**`buildFullToBudget` took an rng and never called it.** So the `mid` row of
+`simulator.js --fullteam`, the row that stands for careful play and the row `FULL_TALENT` and
+`FULL_CAP_MUSD` were solved against, was ONE deterministic roster played N times. It measured
+schedule luck, not the range a player meets. `buildToBudget`, the offense bot it is read
+beside, spreads its per-slot spend with a jitter term, so the two rows were never the same
+kind of thing and the comparison between them was measuring the builders.
+
+**And every column in that report was a middle.** A win rate, a median record, a mean rating.
+Those are the right numbers for asking whether a mode is FAIR and the wrong ones for asking
+what it feels like to COMPETE in, because nobody competes against the median: a board is a
+list of the best seasons anybody played. Both tables carry the tail now (best, p90, and the
+share of seasons at 15, 16 and 17-0). Two modes can share a median and have nothing in common
+at the top.
+
+With an honest bot, what careful play actually got at `FULL_TALENT = 0.78`:
+
+| | careless | careful | solved |
+|---|---|---|---|
+| quick draft | 25% wins, 4-13 | **61%, 11-6, 42% playoffs** | 81%, 14-3 |
+| Full Team, before | 8%, 1-16 | **43%, 7-10, 4.5% playoffs** | 81%, 14-3 |
+
+and in 400 seasons Full Team never once passed 15 wins, where the quick draft reaches 17-0.
+Reported by a player as "way too hard", and they were right.
+
+**The cause is that the mode is TWO-SIDED.** An imperfect roster is punished on both sides at
+once, so the penalty compounds: points allowed swing **2.06x** across the drafting range where
+the quick draft's swing **1.16x**, against a points-scored swing of about 2.8x in both.
+
+**IT IS NOT A LEVEL PROBLEM AND NO CAP FIXES IT.** Swept $280M to $400M, the careless row
+never moved at all, because a careless drafter does not spend the cap. And the talent that
+puts the careful row right sends the solved row past 88%.
+
+##### Two fixes that read perfectly and gutted the mode
+
+Both were caught by one thing: **the solver's own split**, now printed with a verdict.
+
+- **Compressing the whole suppression curve** put the win rates almost exactly on the
+  reference rows, and the optimal roster went from **$159.5M off / $100.4M def** to
+  **$242.0M / $17.9M**. With defence worth less, the solver stopped buying any.
+- **Capping only the penalty** broke it the other way, for the mirror reason: a ceiling on the
+  penalty is a ceiling on the reason to avoid it.
+
+Twelve picks across two units is the whole premise, so a mode whose best roster spends nine
+tenths of the cap on one side is not balanced however good its win rate looks. **The cliff is
+sharp**: defence is worth 39% of the cap down to a `FULL_DEF_SUPPRESS_MAX` of 1.40 and 7% at
+1.35. It ships at **1.45**, the first value with real room rather than the last one that
+passes.
+
+##### And a third instrument fault behind those two
+
+**`FULL_OPTIMAL_CACHE` was keyed on the budget alone**, and the solve reads the live constants
+through `fullStrength`. So in any sweep the first cell solved was the only one solved: a
+defmax sweep printed nine identical splits, and the `optimal` row of a talent sweep was pinned
+to whichever talent ran first. Keyed on budget, talent and the suppression ceiling now.
+
+**The rating column did not track the dial either.** It called `overallOf`, which takes no
+constants and so always rates against the engine's built-in `FULL_TALENT`, printing a rating
+for a game the row beside it was not playing. It calls `fullOverall(..., constants)` now.
+
+##### What shipped, and what it costs
+
+`FULL_TALENT` **0.78 to 0.90**, `FULL_DEF_SUPPRESS_MAX` **1.45**, the cap unchanged. The
+careful row now sits on the quick draft's: 11-6 against 11-6, playoffs 45.8% against 41.8%, a
+perfect season in 1.0% against 0.8%.
+
+**The solved row overshoots, at 91% against 81%, and that is a decision rather than an
+oversight.** The careful and solved rows cannot both be hit with these dials, because twelve
+picks across two pools give a solver far more room to be right than six do. The row that was
+chosen is the one a person actually plays: a full knapsack over both pools is not something a
+human does at twelve slots, while a careful draft is what everybody does.
+
+**Existing board rows were set under the old numbers** and will sit low against new ones.
+
+#### An 85 has to mean what 85 means everywhere else
+
+Reported by a player: a team went **20-0 and read 85**, which is not what 85 means anywhere
+on this site. The instinct was right and the reason is bigger than the number looking small.
+
+**`liveRating()` hands the Full Team overall to `weeklyEdgeVs`, `seedFromRecord`,
+`playoffShare` and `finalEdge`**, and those are cut against `CLASS_FLOOR` 84, `ELITE_FLOOR` 95
+and `FINAL_EDGE_PIVOT` 95. Measured at matched drafting quality, before the fix:
+
+| roster | median | clears 84 | reaches 95 | title-game neutral |
+|---|---|---|---|---|
+| Full Team, spends the cap | 75.5 | **8%** | **0%** | **0%** |
+| quick draft, careful | 82.2 | 46% | 10% | 10% |
+
+So the weekly class edge, the strength vote on the seed and a neutral title game were all
+**switched off in that mode**, and nothing anywhere reported it. It is also the explanation
+for the standing measurement that a Full Team squad "never takes the top seed": the seed vote
+starts at 95 and the mode could not reach 95.
+
+**This is `defenseOverall`'s problem one level up, and it had the same three symptoms.** The
+mean of two units is an honest reading of what twelve men produce and it is NOT a team
+overall, because a Full Team splits ONE cap across two units where a quick draft spends a
+whole cap on six men. So it reported every full roster weaker than a six man squad drafted
+with the same care.
+
+`fullTeamScale()` is the same answer `defenseOverall` already is: a line through three anchors
+measured off the two modes. A careless twelve reads where a careless six reads, so the bottom
+does not move. A roster that **deliberately spends the cap** reaches `CLASS_FLOOR`, which is
+where the quick draft's careful play sits. The best roster the mode can produce reads **100**,
+so the top of the scale is reachable and means "you cannot do better". Clearance after it is
+45% against the quick draft's 46%.
+
+**The units are not touched.** `off` and `def` are still what each side produces.
+
+**The results screen printed the old identity as an equals sign**, so the coach row now ends
+at the MEAN and a new row arrows the mean to the overall. It arrows for the reason the defence
+row arrows: it is a step between what the roster produces and what the number means, not a
+term the player multiplied. `check-fullteam.mjs` asserts the new identity, that the map is
+monotone, and both anchors.
+
+**What it costs.** Turning those mechanics on is a buff, and it lands on GOOD drafts rather
+than careful ones: the careful row is unchanged at 11-6 and 46% playoffs, and a roster that
+spends the whole cap went to 13-4 with 80% playoffs. `FULL_TALENT` was left at 0.90 because
+pulling it back takes the careful row off target and barely moves the strong one.
+
+**`full_elite` is now easy and is deliberately not raised.** Badges are DERIVED from the rows
+the board keeps, so raising the threshold takes a gold off everybody who earned it on the old
+scale. It is worth moving to about 85 **on the day the Full Team board is reset, and not
+before**. `check-badges.mjs` cannot see this: it proves a badge is REACHABLE, and a trivial
+badge is reachable too.
+
+#### A coach who would make the team worse is not offered
+
+The table holds 115 men. An ordinary drafted roster can afford most of them, and **58% of
+those LOWER that roster's rating**. The grid already sorted best-first and marked the top
+cell, so the answer was at the top and the other two thirds of the page was a list whose only
+function was to be scrolled past.
+
+**There is no trade being hidden, which is what makes the cut safe rather than
+paternalistic.** By this screen the roster is drafted and the money left buys nothing else:
+unspent cap is production you never fielded, worth zero. So a coach who costs money and lowers
+the rating is not a cheap option or a risky one, he is strictly worse than the free No coach
+button already under the grid.
+
+**Flat men stay.** The rating is the MEAN of his two sides, so +6% offense and -6% defense
+nets to zero on the headline and still changes what this team scores and what it allows. That
+is a real choice and it is the player's. For the same reason the printed value is rounded to
+the band BEFORE it is printed: `(-0.04).toFixed(1)` is the string `-0.0`, a minus sign on a
+man the filter just certified as costing nothing. Same rule as the commish state card, and as
+the fit and coach percentages one screen along.
+
+**The cut is at DISPLAY, never in `coachMarket()`.** `check-badges.mjs` walks that market by
+index to hire twenty-five different coaches, so shrinking it would quietly shrink what the
+badge sweep can reach.
+
+**Three states on the line under the heading, not two, and the middle one is not rare.**
+Measured over 75 real drafts through `run.js`:
+
+| how you draft | affordable | would help | money left |
+|---|---|---|---|
+| greedy | 22.7 | 1.1 | $3.5M |
+| thrifty | 115.0 | 52.6 | $219.2M |
+| value | 115.0 | 49.1 | $188.6M |
+
+A player who SPENDS THE CAP, which is the good way to draft, arrives with about three million
+and twenty-odd coaches in reach, and on **24 of those 75 drafts not one of them improves the
+team**. Falling back to the full list on exactly that run would put the whole sift in front of
+the player who earned the cleanest answer, so the screen says there is nobody worth hiring
+instead. Nothing affordable at all is a different sentence again: the first is about the
+money, the second is about the roster.
+
+**`#co-grid` joined the `[hidden]` list, which is the fifth time in this file.** `.cogrid`
+sets `display:grid`, so the `hidden` the painter has always written on an empty market never
+took. It cost nothing while the empty case meant a grid with no children anyway. It is now a
+padded, margined box between the rating card and the line explaining why there is nothing in
+it.
+
+### A dynasty screen says which season it is, and `seasonTag()` is why
+
+A dynasty is the one mode on this page where the same screen comes round again, so
+"Regular season complete" over a 13-4 is identical in season one and season forty and the
+run is the only thing that knows the difference. The squad screen, the schedule and the boss
+battle named it; the whole postseason did not.
+
+| screen | what carries it |
+|---|---|
+| `s-squad` | `q-step` |
+| `s-season` | `v-caleye` on the calendar |
+| `s-seed` | `sd-eye` |
+| `s-nbrk` | `nbrk-eyebrow`, not the round title under it |
+| `s-po` | `po-round` |
+| `s-over` | `ar-lab`, which already said it |
+
+**The tail goes on the EYEBROW, never on the heading.** "Wild Card" is what the screen is and
+stays the loudest thing on it. Which season it belongs to is the quiet half, and the eyebrow
+is already the quiet half. A middot joins them, because `bg-eye` already did it that way.
+
+**`seasonTag()` exists for the empty string, not for the season.** Every one of these elements
+is static markup that the Trade Machine and Full Team are drawn into on the same page, so the
+label has to be REWRITTEN on every paint rather than only set when there is a season to name.
+Written `if (dynasty) set-with-season`, a dynasty in the other slot leaves its season number on
+a mode that has no seasons: a sentence that is wrong rather than missing, and nothing throws.
+Returning `''` makes the concatenation unconditional, so **the reset cannot be the half
+somebody forgets**.
+
+**The guard walks the postseason TWICE and the second walk is the whole point.** The first
+version flipped the run to a Trade Machine and called `paintSeed` alone, so only one of the
+three elements was drawn a second time, and the careless conditional PASSED on the other two
+because nothing ever painted them as a non-dynasty. It rebuilds the same seed, flips the flags
+before pressing the button, and asserts none of the three carries the tag.
+
+Three things that each cost a round, all of them about the harness rather than the page:
+
+- **A layout assertion needs a laid out element.** Finding the card by id while a run screen
+  was up reported "0 lines in a 0px column" instead of saying the front page was not showing.
+- **`advanceWeek` does not stop at week 17.** Reading the phase in a loop ran the whole
+  postseason, so the run was `over` before anything was looked at, and `startPlayoffs` then
+  threw "not at seeding". A greedy draft also does not reach the playoffs every year, so the
+  seed is searched for rather than assumed.
+- **`/Season/i` matches "Regular season complete".** The absence to assert is the TAG, not the
+  word.
+
+### A leaderboard nobody can open renders perfectly
+
+The Dynasty board had a table, two axes, three queries and no way in. The only thing that
+ever set `lbDynasty` was `boardFromRun()`, which needs a finished dynasty season on screen,
+and `openBoard()` cleared the flag on every other path with a comment explaining that Dynasty
+board is only ever a run's own board. So it was reachable from exactly one place, and a
+player who went looking for it from the front page could not find it. **Nothing was broken
+and nothing could report it.** Found by a player, not by a check.
+
+It is a competition in the `#lb-comp` select now, gated on `canPlayDynasty()` the way Full
+Team and the Trade Machine are gated on theirs.
+
+**The select had to stop hiding itself, and that is the part worth reading before undoing
+it.** `boardChrome` hid `.lbmode` on this board because Dynasty's axis tabs (Longest runs /
+High score) stand in for it. That held while the board was only ever a run's own board. It is
+false the moment the select is the way IN: you would land on Dynasty and have to close the
+whole screen to look at anything else. **The sort bar is what those tabs actually replace**,
+so the sort bar is what hides now and the select stays up on both.
+
+**The rebuild key named two of the four gates.** `paintComp` only rebuilds the select when
+`dataset.tm` changes, and that string was built from `canPlayTrade()` and `canPlayDefense()`
+and neither Full Team nor Dynasty. Auth resolves after the first paint, so an option whose
+gate is not in the key can only ever appear if it was already eligible on the very first
+paint, which for a signed in player it is not. Every gate in the select is in the key now.
+
+**And its blurb was written after the request rather than before it.** Nothing in that
+sentence depends on what comes back, so below the `await` the unreachable branch returned
+early and left the LAST board's sentence sitting under a Dynasty table: switching over with
+the network down read "Free runs only. Each franchise has its own board." A wrong sentence
+rather than a missing one, and nothing throws.
+
+`check-premium.mjs` drives both directions, because the way back is the half that never
+existed, and it asserts the run-based route still works: adding a second way in must not cost
+the first.
+
+### The boss battle, and the one screen that checks itself
+
+```
+node football/check-boss.mjs      six seeds, taking the field goal
+node football/check-boss.mjs go   the same, going for it on fourth down
+```
+
+**Its own file because its subject is a page.** `check-dynasty.mjs` drives `run.js` in node and
+never opens a browser, and a boss battle is a sim playing forward down by down while a screen
+animates it, pauses for a call, and writes a drive log beside it. The engine was right the
+whole time the screen was wrong.
+
+**This is the only place on the site that prints a RUNNING SCORE next to a list of drives**, so
+it is the only place a reader can check the game against itself, and the only place where
+getting it wrong is visible without anything throwing.
+
+**`bossRescoreLast()` ran on every decision and belongs to one of them.** It stamps the current
+score onto the TOP row of the log. It exists because a touchdown that pauses for a two point
+try is logged when the drive ends, which is BEFORE the conversion, so that row needed updating
+after. **A fourth down is the other way round**: the drive has not ended when the call is made,
+`bossSimResolve` ends it and pushes it, and `bossFlush` logs it a moment later. So the top row
+at that instant belonged to somebody else. Kick a 29 yarder to go 14-55 up to 17-55 and the
+three landed on Seattle's field goal above it, so the row for your own kick repeated 17-55 and
+the kick read as though it had scored nothing. Reported by a player.
+
+**Asked structurally, not by the decision's kind.** The question is whether anything has been
+produced that is not on screen yet, and `bossShown` against `bossSim.drives.length` is exactly
+that question. A two point try pushes no drive, so they match and the top row is the touchdown
+being converted. A fourth down that ends the drive pushes one, so they do not.
+
+**The assertion is a property of the column, never a number.** Read bottom to top: only the
+team that scored on a drive may move, a drive that scored nothing may move neither, and the
+last row has to be the final on the bug. A pinned final score passes on a log whose middle is
+nonsense, which is exactly the log that was shipping, because the bug above the field was
+right the whole time.
+
+**It samples seeds.** The fault needs a fourth down call to land next to somebody else's
+drive. Measured with the bug reintroduced: three of six seeds show it, so a one-seed check
+would have been a coin flip on whether the file was worth having.
+
+#### Sim the rest, and what it deliberately does not skip
+
+A boss battle animates every drive and is the longest watch in the mode, so `bossFast` hurries
+the FOOTBALL: the drive animation, the beat after a score, the handoff between drives.
+
+**It still stops for your calls.** Fourth down and the two point try are not pacing, they are
+the mode: the screen exists so a boss is a set of decisions rather than a number that appears.
+A run lost to a call the page made for you is the worst thing this mode could do.
+
+**One way, and the flag survives the decisions it pauses at.** Pressing it takes the control
+away rather than toggling, and somebody who asked for the rest of it fast meant after the call
+too. **The fast path hands back through `setTimeout(cb,0)` rather than calling `cb`
+directly**: `bossFlush` calls it per drive, so a synchronous handoff would run the whole game
+inside one frame, with a stack as deep as the game is long and no paint between the first
+drive and the verdict.
+
+`.bg-skip` sets `display:flex`, so it carries its own `[hidden]` rule. That is the sixth time
+in this file.
+
+`check-boss.mjs` drives every one of its runs through that button, so if it stopped working
+the whole file would time out.
 
 ### A badge you add has to be proved reachable
 
@@ -1132,8 +1887,20 @@ The regression suite, which is the thing to run after editing:
 ```
 node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
 node mythiball/verify-rules.mjs    the rules replayed in a headless browser
+node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop)
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
+
+`calibrate.mjs` is the hoops TARGETS idea at the plate: real pitches from an
+unsteered arm against the real CPU swing AI, with swing, whiff, chase, foul
+and called-strike rates held to bands. The opponent is pinned because a
+random club moved whiff per swing by twenty points between identical runs.
+Small samples (hit mix, contact quality) are printed as information rather
+than banded, so no target flaps on noise. The meter has already paid for
+itself once: it measured the CPU at 55 whiffs per hundred swings, the swing
+jitter tiers came down about a fifth, and it measures in the mid forties
+now (MLB runs about 25). The file's header records the procedure, and any
+further move repeats it: measure, touch the jitter, measure again.
 
 ## Segue, the setlist game
 

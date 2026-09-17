@@ -13,7 +13,7 @@
  * The four states, which are the whole test:
  *
  *   signed out            no pill, no offer card, nothing sold to a person with no account
- *   signed in, no row     the Free pill, the Go Pro card, and a store that names Commissioner
+ *   signed in, no row     the Free pill, the upgrade card, and a store that names Commissioner
  *   signed in, owns it    the Pro pill, the Your Pro access row, and no offer
  *   owns a lapsed year    the receipt says ENDED and never "ends", in the past tense
  *
@@ -74,11 +74,13 @@ const LAPSED = BOUGHT.concat([
 ]);
 
 /* PUT A NAME ON THE REAL TESTER LIST, by trapping the assignment commish/access.js makes.
-   The offer card is gated on commishOn(), the same call the front page door makes: while
-   the launch flag is false only the list can see Commissioner Simulator, and selling that
-   mode to somebody who would still find nothing after paying is selling a shut door. So a
-   walk that expects to see the offer has to be on the list, and it gets there through the
-   real array rather than by patching the page. Same trap, same reasoning, as test_page. */
+   IT NO LONGER DECIDES ANYTHING, because COMMISH_LIVE is true and commishOn() answers yes
+   before it ever reads a name. It is kept because every walk below still runs it and taking
+   it out would change what those walks are, for no gain: an account on the list and an
+   account on no list are now the same account, which is what launching the mode means, and
+   the one walk that cares proves it by passing `listed` false.
+   The gate itself is unchanged: the offer card is drawn off the same commishOn() the front
+   page door is, so neither can advertise what the other hides. Same trap as test_page. */
 const TESTER = 'storetester';
 const arm = `
 (function(){ var v;
@@ -89,12 +91,25 @@ const arm = `
 
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 
-/* `listed` off is an account with no access to Commissioner Simulator at all: no trap, so
-   nothing is pushed onto the real tester list and commishOn() answers false. */
-async function open(init, label, listed) {
+/* `listed` off skips the trap, so nothing is pushed onto the real tester list. That used to
+   mean no access to Commissioner Simulator at all; since the launch flag turned it means an
+   account that gets in without being named anywhere, which is every visitor. */
+async function open(init, label, listed, clock) {
   const p = await b.newPage({ viewport: { width: 390, height: 844 } });
   p.errs = [];
   p.on('pageerror', (e) => p.errs.push(e.message));
+  /* THE FREE TIER'S CLOCK, WHICH THIS PAGE NOW READS. It is answered here rather than by a
+     database because what is under test is what the page does with an answer, and the two
+     answers worth having are awkward to arrange for real: a season spent an hour ago, and a
+     free term already finished. Pass 'offline' to abort the request instead, which is the
+     case that must not lock anybody out. */
+  if (clock !== undefined) {
+    await p.route('**/rest/v1/rpc/commish_clock_*', async (r) => {
+      if (clock === 'offline') return r.abort();
+      await r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify([clock]) });
+    });
+  }
   if (listed !== false) await p.addInitScript(arm);
   await p.addInitScript(init);
   await p.goto(HOST + '/cfb/index.html', { waitUntil: 'domcontentloaded', timeout: 40000 });
@@ -156,8 +171,12 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
 /* ── signed out ─────────────────────────────────────────────────────────────────────── */
 {
   const p = await open(stub(false, [], []), 'signed out: nothing is sold and no status is claimed');
+  /* THE FRONT PAGE CARD IS GATED ON THE SAME ANSWER THE HUB CARD IS, and commishOn() needs
+     an account: while COMMISH_LIVE is false only the tester list sees Commissioner Mode at
+     all, so a signed out visitor would be sold a door that does not open for them. */
+  ok('no offer card on the front page either', !(await has(p, '#b-premium')));
   await hub(p);
-  ok('no Go Pro card', !(await has(p, '#pf-prem')));
+  ok('no upgrade card', !(await has(p, '#pf-prem')));
   ok('no Pro access row', !(await has(p, '#pf-go-pro')));
   /* NOT "FREE". A free account is a thing somebody has, and a visitor with no account has
      nothing to show a status for. */
@@ -169,9 +188,83 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
 /* ── signed in, bought nothing ──────────────────────────────────────────────────────── */
 {
   const p = await open(stub(true, [], []), 'signed in without the row: the offer is reachable');
+  /* ── THE FRONT PAGE CARRIES IT TOO, WHICH IT DID NOT ─────────────────────────────────
+     The football game puts this card directly under its mode doors and this game put it
+     two taps away, behind the avatar, on the profile hub. So the one screen every visitor
+     to this game sees never mentioned that it has a paid tier, and the only ways to the
+     offer were opening your own profile or being turned away somewhere. That is a quieter
+     version of the wall the profile card was added to knock down.
+     ASSERTED BEFORE THE HUB IS OPENED, because opening the hub is the thing that used to
+     be required and the point is that it no longer is. */
+  const home = await p.evaluate(() => {
+    const el = document.getElementById('b-premium');
+    if (!el) return { there: false };
+    const ctas = document.querySelector('.ctas');
+    const three = ctas && ctas.querySelector('.cta3');
+    const door = document.getElementById('b-hp-commish');
+    return { there: true,
+      /* UNDER THE DOORS AND ABOVE THE ROW OF THREE, which is where the football page puts
+         its own: after the thing people came for, before the things they came back for. */
+      inCtas: !!(ctas && el.parentNode === ctas),
+      aboveThree: !!(three && el.compareDocumentPosition(three)
+        & Node.DOCUMENT_POSITION_FOLLOWING),
+      belowDoor: !!(door && door.compareDocumentPosition(el)
+        & Node.DOCUMENT_POSITION_FOLLOWING),
+      title: (el.querySelector('.pwc-t b') || {}).textContent || '',
+      sub: (el.querySelector('.pwc-t span') || {}).textContent || '',
+      value: (el.querySelector('.pwc-go b') || {}).textContent || '',
+      marks: el.querySelectorAll('.pwc-marks svg').length,
+      /* ASKED OF THE PAGE, NOT PINNED. This was `=== 3` and that was right for exactly as
+         long as the college page could not see Full Team at all. It loads the mode's own
+         access file now, so the count is a question about the reader and the launch flag. */
+      fullOn: (() => { const d = document.createElement('div');
+        d.innerHTML = window.RTG_STORE.html({ signedOut: false });
+        return d.querySelectorAll('.pw-tile').length; })() };
+  });
+  ok('the front page carries the offer card', home.there);
+  ok('  in the doors, not in the nav or a sheet', home.inCtas === true);
+  ok('  under the Commish door', home.belowDoor === true);
+  ok('  and above the row of three', home.aboveThree === true);
+  /* THE CARD CLAIMS WHAT THE SHEET CLAIMS, which is the rule that survives a launch. A
+     pinned 3 said nothing about whether the two agreed; it only said what the answer was on
+     the day it was written, and the day Full Team launched it failed while the page was
+     right. */
+  ok('  saying Unlimited over as many marks as the sheet has tiles',
+    home.value === 'Unlimited' && home.marks === home.fullOn,
+    home.value + ' / ' + home.marks + ' marks against ' + home.fullOn + ' tiles');
   await hub(p);
+  /* ── AND BOTH CARDS SAY THE SAME SENTENCE ────────────────────────────────────────────
+     THIS IS THE SECOND ROUND OF ONE FIX AND THAT IS WHY IT IS ASSERTED RATHER THAN READ.
+     The markup moved into /assets/store.js so the cards could not drift, and the two
+     STRINGS stayed as arguments each caller passed, so they drifted anyway: the football
+     front page read "Unlock every mode" while both profile cards read "Unlock everything",
+     about the same purchase, on the same day. The football page even carried a comment
+     claiming "it says the same thing on all three" directly above the line that passed
+     something else.
+     cardInner() takes no words now, so this cannot fail without somebody deliberately
+     re-adding a parameter, which is exactly the change worth failing on. */
+  const hubCard = await p.evaluate(() => {
+    const el = document.getElementById('pf-prem');
+    return { title: (el.querySelector('.pwc-t b') || {}).textContent || '',
+      sub: (el.querySelector('.pwc-t span') || {}).textContent || '' };
+  });
+  ok('  the front page and the hub say the same thing',
+    home.title === hubCard.title && home.sub === hubCard.sub,
+    JSON.stringify(home.title + ' / ' + home.sub) + '  vs  '
+      + JSON.stringify(hubCard.title + ' / ' + hubCard.sub));
+  /* AND IT IS THE SHEET'S OWN HEADING. A reader who presses this card lands on an <h2>,
+     and a card that hands them a different name for the thing they just pressed makes them
+     wonder whether they got the right screen. */
+  const h2 = await p.evaluate(() => {
+    const d = document.createElement('div');
+    d.innerHTML = window.RTG_STORE.html({ signedOut: false });
+    const h = d.querySelector('h2');
+    return h ? h.textContent.trim() : '';
+  });
+  ok('  and it is the heading of the sheet it opens', hubCard.title === h2,
+    JSON.stringify(hubCard.title) + ' vs ' + JSON.stringify(h2));
   ok('the Free pill is beside the name', (await txt(p, '.pfid .pw-pill')) === 'Free');
-  ok('the Go Pro card is on the hub', await has(p, '#pf-prem'));
+  ok('the upgrade card is on the hub', await has(p, '#pf-prem'));
   ok('and no receipt row, because there is nothing to receipt', !(await has(p, '#pf-go-pro')));
   /* THE SAME CARD THE FOOTBALL GAME DRAWS, out of the same function in /assets/store.js.
      It was written out a second time on this page and the two drifted: this said "3 modes"
@@ -183,12 +276,25 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
     const m = el && el.querySelector('.pwc-marks');
     return { value: el ? (el.querySelector('.pwc-go b') || {}).textContent : '',
       marks: el ? el.querySelectorAll('.pwc-marks svg').length : 0,
+      tiles: (() => { const d = document.createElement('div');
+        d.innerHTML = window.RTG_STORE.html({ signedOut: false });
+        return d.querySelectorAll('.pw-tile').length; })(),
       row: m ? getComputedStyle(m).display : 'none',
       counts: /\d+\s*modes/i.test((el && el.innerText) || '') };
   });
   ok('  it says Unlimited rather than counting', card.value === 'Unlimited' && !card.counts,
     card.value);
-  ok('  over the three modes the bundle unlocks', card.marks === 3, String(card.marks));
+  /* THREE HERE AND NOT FOUR, and that is the gate working rather than a number left behind.
+     Full Team joins the hero row and the marks for a reader who can open it.
+     THIS PINNED THREE AND THE PIN WAS THE BUG. It was written when the college page did not
+     load fullteam-access.js and never published RTG_FULLTEAM, so the store's fallback found
+     no flag to read and dropped the mode: three was what this page could say rather than what
+     it should say. The comment even predicted the launch would make it four "by way of that
+     fallback", which was wrong in one word, because there was no flag here to fall back TO.
+     The page loads the mode's own access file now, so the count follows the launch, and what
+     is asserted is that the card and the sheet agree rather than what either of them says. */
+  ok('  over as many modes as the sheet has tiles', card.marks === card.tiles,
+    card.marks + ' marks against ' + card.tiles + ' tiles');
   ok('  in a row rather than a stack', card.row === 'flex', card.row);
 
   await p.click('#pf-prem');
@@ -200,21 +306,30 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
      them the football game. */
   ok('the store names Commissioner', /Commissioner/.test(sheet));
   ok('both bundles are offered', (await has(p, '#b-buy-ps')) && (await has(p, '#b-buy-rtb')));
-  /* THE BAND THAT SAYS THIS IS NOT A SUBSCRIPTION, which is the anxiety that actually stops
-     people on a screen like this. Drawn loud on purpose. */
-  const band = await p.evaluate(() => {
-    const el = document.querySelector('#sheet-in .pw-alert');
-    if (!el) return null;
-    const lamp = el.querySelector('i');
-    return { text: (el.innerText || '').replace(/\s+/g, ' '),
-      anim: getComputedStyle(el).animationName,
-      lamp: lamp ? getComputedStyle(lamp).animationName : 'none' };
+  /* ONE PAYMENT, ON EACH PRICE, which is where the anxiety it answers is actually felt.
+     THIS WAS A HAZARD-STRIPED BAND WITH A BLINKING LAMP and the reasoning for that is worth
+     keeping even though the band is gone: everything else sold this way is a subscription,
+     and a reader who assumes this one is too is deciding against a monthly charge that does
+     not exist. What it got wrong was the placement and the volume. It answered the question a
+     full row above the first price, as the loudest thing on a screen already asking for
+     money, and with four hero tiles above it the sheet read as a shout.
+     SO THE ASSERTION MOVES RATHER THAN GOING. What has to hold is that BOTH prices carry it,
+     because a reader comparing two numbers reads one of them, and that the sheet still says
+     somewhere that nothing recurs. */
+  const once = await p.evaluate(() => {
+    const tiers = [...document.querySelectorAll('#sheet-in .pw-tier')];
+    return tiers.map((t) => {
+      const c = t.querySelector('.pw-cost .pw-once');
+      return c ? (c.textContent || '').trim() : null;
+    });
   });
-  ok('the one time payment band is on the sheet', !!band && /one time payment/i.test(band.text),
-    band && band.text);
-  ok('and it is doing something to be noticed',
-    !!band && band.anim === 'pwalert' && band.lamp === 'pwlamp',
-    band && (band.anim + ' / ' + band.lamp));
+  ok('every price says it is one payment', once.length === 2 && once.every((x) => /one payment/i.test(x || '')),
+    JSON.stringify(once));
+  ok('and the sheet still rules out a subscription', /no subscription/i.test(sheet),
+    /no subscription/i.test(sheet) ? '' : sheet.slice(0, 120));
+  /* AND THE BAND IS REALLY GONE rather than hidden, so nobody restores half of it later and
+     leaves the sheet saying the same thing twice at two volumes. */
+  ok('and the old band is not still there', !(await has(p, '#sheet-in .pw-alert')));
   /* AND IT NEVER CLAIMS A DEADLINE IT DOES NOT KEEP. Both bundles are permanent products at
      permanent prices, so an expiring-offer line would be the one claim on a payment screen
      that could not be defended. If a real window is ever wanted it needs an end date in
@@ -369,7 +484,12 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
   ok('it says what free plays at',
     /^Free plays one season a day\./.test(await txt(p, '#b-mc-commish .mc-pro')),
     await txt(p, '#b-mc-commish .mc-pro'));
-  ok('and what Pro changes about it', /Go Pro to run the whole term at your own pace/.test(await txt(p, '#b-mc-commish .mc-pro')));
+  /* THE PHRASE MOVED AND THIS IS WHAT CAUGHT IT. "Go pro" is what a PLAYER does in this
+     sport, and this mode has a named doctrine rule called "Going pro and coming back", so
+     the purchase sentence was using the game's own words for something that is not the game.
+     Pinned on the new sentence, and the line below pins that the old verb is gone. */
+  ok('and what Pro changes about it', /Unlock it to run the whole term at your own pace/.test(await txt(p, '#b-mc-commish .mc-pro')));
+  ok('  without telling a player to go pro', !/go pro/i.test(await txt(p, '#b-mc-commish')));
   /* THE THING A READER OF THIS GAME CANNOT KNOW, which is that one payment covers both. */
   ok('and that the payment covers the NFL game too', /unlocks the NFL game too/.test(await txt(p, '#b-mc-commish .mc-pro')));
   /* DYNASTY'S NUMBER LIVES ON DYNASTY'S OWN SERVER AND ITS OWN SCREEN. A copy of it here is
@@ -397,17 +517,23 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
   await p.close();
 }
 
-/* ── an account the mode is not open to ─────────────────────────────────────────────── */
+/* ── an account on no list at all ───────────────────────────────────────────────────── */
 {
-  /* THE OFFER IS GATED ON THE DOOR, not just on ownership. While the launch flag is false
-     Commissioner Simulator is visible to the tester list alone, and the one thing this card
-     sells on this game is that mode: showing it to somebody who would still find nothing
-     after paying is selling a shut door. It appears for everybody on the day the flag
-     flips, out of the same commishOn() the front page door reads. */
-  const p = await open(stub(true, [], []), 'off the tester list: no offer, because the mode is not there to sell', false);
+  /* THE OFFER IS GATED ON THE DOOR, not just on ownership, and THE DAY THE FLAG FLIPPED IS
+     THIS ONE. The note here used to say this card appears for everybody on the day
+     COMMISH_LIVE turns, and these two assertions read the other way to prove it had not.
+     It has, so they read this way.
+     THE GATE ITSELF DID NOT CHANGE and is the reason the pair is still worth asserting: the
+     one thing this card sells on this game is Commissioner Simulator, so it is drawn off
+     the same commishOn() the front page door is. The fault it catches is the two coming
+     apart in either direction. A card with no door behind it takes money for a shut door.
+     A door with no card is a mode you can only find by being refused somewhere else.
+     NOT ON THE TESTER LIST, which is the point of the third argument: this account is
+     nobody in particular, and it gets in on the launch flag rather than on a name. */
+  const p = await open(stub(true, [], []), 'on no list: the door and the offer are both there', false);
   await hub(p);
-  ok('the front page door is not drawn', !(await has(p, '#b-hp-commish')));
-  ok('and neither is the offer card', !(await has(p, '#pf-prem')));
+  ok('the front page door is drawn', await has(p, '#b-hp-commish'));
+  ok('and so is the offer card', await has(p, '#pf-prem'));
   /* The pill still tells them what their account is, because that is true either way. */
   ok('the account still knows what tier it is', (await txt(p, '.pfid .pw-pill')) === 'Free');
   ok('no page errors', p.errs.length === 0, p.errs[0]);
@@ -418,6 +544,11 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
 {
   const p = await open(stub(true, ['ps_premium', 'cfb_premium', 'arcade_card_year', 'runtour_pack'], FULL),
     'an owner sees what they bought, and is not sold it again');
+  /* AND THE FRONT PAGE IS CLEAN FOR A BUYER, which is the half that is easy to miss: the
+     card is BUILT on an auth change and ownership lands after that, so without the repaint
+     on the premium_products answer a customer would go on being offered what they own on
+     the first screen of the game. */
+  ok('no offer card on the front page for a buyer', !(await has(p, '#b-premium')));
   await hub(p);
   ok('the Pro pill is beside the name', (await txt(p, '.pfid .pw-pill')) === 'Pro');
   ok('the Pro access row is on the hub', await has(p, '#pf-go-pro'));
@@ -515,6 +646,65 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
   ok('the parameter is off the URL', !/checkout=/.test(p.url()), p.url());
   ok('no page errors', p.errs.length === 0, p.errs[0]);
   await p.close();
+}
+
+/* ── the door that turns into the offer ─────────────────────────────────────────────── */
+/*
+ * THE CARD IS ALWAYS THERE AND THE TAP IS ONLY TAKEN WHEN THERE IS NOTHING TO OPEN.
+ *
+ * Both halves matter and they pull against each other, which is why they are asserted
+ * together. Taking EVERY non-owner's tap is what this page used to do, and the bug report
+ * was a signed in free account tapping the door, getting the store, and reading the whole
+ * mode as locked with no way in. Taking NONE of them sends a player whose season is spent
+ * through a page load to a wall they could have been shown at once.
+ *
+ * So the rule is the door's own state: shut means today's season is gone or the one free
+ * term is finished, and only then does the tap become the offer. Everything else, including
+ * an answer that never arrives, goes through and lets the mode decide. See blocked() in
+ * cfb/commish/clock.js, which is where that rule is written once.
+ */
+{
+  const iso = (ms) => new Date(Date.now() + ms).toISOString();
+  const now = () => new Date().toISOString();
+  const CAN   = { pro: false, locked: false, next_at: null, now_at: now(), seasons: 0, terms: 0 };
+  const SPENT = { pro: false, locked: true, next_at: iso(5 * 3600000), now_at: now(), seasons: 1, terms: 0 };
+  const DONE  = { pro: false, locked: false, next_at: null, now_at: now(), seasons: 5, terms: 1 };
+  const PRO   = { pro: true, locked: false, next_at: null, now_at: now(), seasons: 0, terms: 0 };
+
+  for (const [label, signedIn, products, clock, offer] of [
+    ['signed out, the card is still there', false, [], CAN, false],
+    ['a free season in hand goes to the mode', true, [], CAN, false],
+    ['a season spent today opens the offer', true, [], SPENT, true],
+    ['a finished free term opens the offer', true, [], DONE, true],
+    ['an owner is never stopped', true, ['cfb_premium', 'ps_premium'], PRO, false],
+    ['an unreachable clock lets them through', true, [], 'offline', false],
+  ]) {
+    const p = await open(stub(signedIn, products, signedIn ? BOUGHT : []), label, false, clock);
+    const door = await p.$('#b-hp-commish');
+    ok('the door is on the front page', !!door);
+    if (door) {
+      await door.click({ timeout: 5000 }).catch(() => {});
+      await p.waitForTimeout(1100);
+      /* NULL SAFE ON PURPOSE. Half these taps navigate, and /cfb/commish/ has no #sheet at
+         all, so reading classList off it throws and takes the whole file down rather than
+         failing one assertion. */
+      const r = await p.evaluate(() => {
+        const sh = document.getElementById('sheet');
+        const inn = document.getElementById('sheet-in');
+        return { path: location.pathname,
+          sheet: !!(sh && sh.classList.contains('on')),
+          kind: (inn && inn.dataset && inn.dataset.kind) || '' };
+      });
+      const sold = r.sheet && r.kind === 'premium';
+      ok(offer ? '  the tap opens the bundle' : '  the tap goes through to the mode',
+        offer ? sold : (!sold && /\/cfb\/commish\//.test(r.path)), r.path + (sold ? ' | store' : ''));
+      /* AND THE PAGE IS STILL THE FRONT PAGE when the offer is drawn, because the whole
+         point of taking the tap is not loading the mode to reach the same offer. */
+      if (offer) ok('    without loading the mode', !/\/cfb\/commish\//.test(r.path), r.path);
+    }
+    ok('  no page errors', p.errs.length === 0, p.errs[0]);
+    await p.close();
+  }
 }
 
 await b.close();

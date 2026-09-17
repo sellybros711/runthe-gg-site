@@ -2778,9 +2778,14 @@
 
 <!-- THE BUNDLE STORE, shared with The Perfect Season. The door below draws it for anybody
      who has not bought, so it has to be there before gate() runs. -->
-<script src="/assets/store.js?v=14"></script>
+<script src="/assets/store.js?v=21"></script>
 <script src="/cfb/engine.js?v=34"></script>
-<script src="access.js?v=6"></script>
+<script src="access.js?v=7"></script>
+<!-- THE FULL TEAM LIST AND FLAG. This page draws the same store the other two do, and
+     the store asks whether the bundle it is selling names Full Team. Without this file that
+     question has no answer here and the mode is dropped, so this door would sell three modes
+     while the football page sold four. Longer note on the same tag in /cfb/index.html. -->
+<script src="/football/fullteam-access.js?v=3"></script>
 <!-- The parts of the sport a term can ADD to it, which the two files under this one both
      ask about. Before them on purpose, though neither reads it at load: both resolve it at
      the call so that this order is a convenience rather than a rule somebody can break by
@@ -2791,7 +2796,7 @@
 <script src="note.js?v=1"></script>
 <!-- The free tier's one season a day. Its clock is the SERVER's
      (supabase/104_commish_free_clock.sql); this is only the transport and the countdown. -->
-<script src="clock.js?v=3"></script>
+<script src="clock.js?v=4"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
@@ -2935,9 +2940,23 @@ function seasonCleared(){
   /* A SAVE FROM BEFORE THIS EXISTED has no `cleared` at all, and the honest reading of it
      is the year it is on rather than zero. Anything else would open a wall in front of a
      term somebody was already halfway through, on the day this shipped, for a limit that
-     did not exist when they started it. They get the rest of that term free and the meter
-     starts at their next one. */
-  if(world.cleared==null) return true;
+     did not exist when they started it.
+     THE YEAR IS ADOPTED RATHER THAN WAVED THROUGH, AND THAT IS A FIX. This branch used to
+     `return true` and write nothing, and the comment under it claimed the meter started at
+     the next term. It never started at all. The only two things that write `cleared` are
+     seasonWall, which this branch skips by definition, and takeJob/newTerm, which belong to
+     a different term; so the field stayed null, this branch answered true again the next
+     season, and again, and a free account played an unlimited number of seasons with the
+     clock never asked once. A free account gets one contract, so that was the whole product
+     for nothing. Reported as "on a free account it allowed me to continue to the next
+     season".
+     Writing it here makes the grace what it always said it was: the season already under
+     way is free, and the one after it is charged like any other. A grace has to leave a
+     mark or it is not a grace, it is an exemption.
+     THE ONE SIDE EFFECT IN A FUNCTION THAT IS OTHERWISE A QUESTION, and it is safe because
+     office() is the only caller: this is the same moment seasonWall would have written the
+     same field, reached by the one path that skips it. */
+  if(world.cleared==null){ world.cleared=world.year; save(); return true; }
   return world.year<=world.cleared;
 }
 /* The one place a season is bought with a day. Resolves nothing: it either moves to the
@@ -9235,7 +9254,9 @@ function paintNext(o){
   }
   /* FREE. The term is the whole of it, and the offer is the continuation rather than a
      repeat: what Pro buys here is that this sport keeps going. */
-  btn.textContent='Go Pro and keep this sport';
+  /* NOT "Go Pro", which on this page of all pages is the sport's own phrase for a player
+     leaving. See the note over the store's heading. */
+  btn.textContent='Unlock it and keep this sport';
   btn.onclick=()=>{ freeCareerEnd(); };
 }
 
@@ -9562,11 +9583,22 @@ function gate(){
     return;
   }
   if(!authState.signedIn){
-    say.textContent='Commish Simulator is in testing. Sign in on the game and come back, '
-      +'and if you are on the list this opens.';
+    /* IT NO LONGER SAYS TESTING AND IT NO LONGER MENTIONS A LIST. Both were true while the
+       mode was gated on one, and both became false the moment COMMISH_LIVE turned: telling
+       a visitor a launched mode is in testing and might not open for them is turning away
+       somebody who is already through the door. What is actually in the way is an account,
+       because the season clock is keyed on one, so that is what the line says. */
+    say.textContent='Commish Simulator needs an account. Sign in on the game and come back.';
     act.innerHTML='<a class="btn" href="/cfb/" style="text-decoration:none;text-align:center">Sign in on the game</a>';
     return;
   }
+  /* UNREACHABLE WHILE THE MODE IS LAUNCHED, and kept rather than deleted. allowed() reads
+     COMMISH_LIVE first and that is true, so nobody signed in meets this branch. It is the
+     screen the mode closes behind if the flag ever goes back, and rebuilding it from memory
+     in that moment would lose the part that took two goes to get right: printing the
+     username AND the account id, because a username is not an email address and a Google
+     account may have neither. Its copy still says testing, which is correct for the only
+     world it can appear in. */
   if(!allowed()){
     say.textContent='Commish Simulator is in testing and this account is not on the list yet. '
       +'Nothing is missing from the game you were playing.';

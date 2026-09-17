@@ -1662,12 +1662,19 @@
     add(A('full_17', 'Twelve men, seventeen wins',
       'Win all 17 with a full squad.', 'legend', 'Full Team',
       (c) => c.fullRuns.some((r) => has(r.wins) && Number(r.wins) >= 17)));
-    /* FIFTY, NOT NINETY, and the number is measured rather than borrowed. A Full Team rating
-       is not on the same scale as every other mode's: fullSideRatings averages the two units
-       and CLAMPS the result to 100, where a six man offense is unclamped and a good one is
-       already past 110. Ninety was written by reading the offense's ladder and assuming it
-       carried over. Three hundred and fifty simulated full squads peaked at 54.9, so ninety
-       was a badge nobody could ever have earned and nothing would have said so. */
+    /* FIFTY WAS MEASURED AGAINST A SCALE THAT HAS SINCE MOVED TWICE, AND IT IS NOW EASY.
+       It was right when it was written: a Full Team rating was the raw mean of two units,
+       three hundred and fifty simulated squads peaked at 54.9, and the ninety it replaced was
+       a badge nobody could ever have earned. Since then FULL_TALENT went 0.78 to 0.90 and
+       fullTeamScale put the headline on the ladder the rest of the game is cut for, so a
+       careful draft now reads about 74 and one that spends the cap about 83. Fifty is
+       cleared by anything that is not a careless roster.
+       LEFT ALONE ON PURPOSE, because badges here are DERIVED from the rows the board keeps:
+       raising it would take this gold off everybody who has already earned it on the old
+       scale. It is worth raising to about 85 on the day the Full Team board is reset, and not
+       before, which is the same decision arriving from a second direction.
+       check-badges.mjs cannot see this: it proves a badge is REACHABLE and a trivial one is
+       reachable too. */
     add(A('full_elite', 'Stacked both ways',
       'Field a full squad rated 50 or better.', 'gold', 'Full Team',
       (c) => c.fullRuns.some((r) => has(r.team_rating) && Number(r.team_rating) >= 50)));
