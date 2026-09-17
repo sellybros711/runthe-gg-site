@@ -2051,8 +2051,8 @@
   },
   "football/index.html": {
     "engine.js": {
-      "v": "91",
-      "sha": "db1f1d76c38e562f"
+      "v": "92",
+      "sha": "ef3a248c32f0eb6b"
     },
     "run.js": {
       "v": "99",
@@ -2071,8 +2071,8 @@
       "sha": "4271a19e527fa1dc"
     },
     "achievements.js": {
-      "v": "13",
-      "sha": "4f2e1635b04dc032"
+      "v": "14",
+      "sha": "1967fb9d4e886258"
     },
     "crest.js": {
       "v": "10",

@@ -386,9 +386,34 @@ console.log('\nTHE OVERALL IS THE PARTS, MULTIPLIED OUT');
     p.defRaw.toFixed(4));
   ok('  and the defense rating is that product put on the offense ladder',
     near(E.defenseOverall(p.defRaw), s.def, 1e-9), s.def.toFixed(4));
-  ok('  the overall is the two averaged, times the coach',
-    near(Math.max(0, Math.min(100, (s.off + s.def) / 2 * s.coachBoost)), s.overall, 1e-9),
+  ok('  the mean is the two averaged, times the coach',
+    near((s.off + s.def) / 2 * s.coachBoost, p.mean, 1e-9), p.mean.toFixed(4));
+  /* AND THE MEAN IS NOT THE OVERALL, which is the step this assertion used to say did not
+     exist. fullTeamScale puts the mean on the ladder the edges are cut for, because a
+     twelve man team splits one cap and a six man offence spends a whole one, so the raw
+     mean reports every Full Team roster weaker than a quick draft of the same care. Before
+     it, a roster that spent the whole cap cleared CLASS_FLOOR 8% of the time against the
+     quick draft's 46%, reached ELITE_FLOOR never, and took the full title game penalty
+     every time: three mechanics switched off in one mode with nothing reporting it. */
+  ok('  and the overall is that mean put on the game\'s own ladder',
+    near(Math.max(0, Math.min(100, E.fullTeamScale(p.mean))), s.overall, 1e-9),
     s.overall.toFixed(4));
+  /* THE MAP IS MONOTONE AND ANCHORED. A scale that could report a better roster as worse
+     would be worse than no scale, and the anchors are what make 84 and 100 mean the same
+     thing here as everywhere else. */
+  ok('  the ladder never reports a better team as worse', (() => {
+    let last = -1;
+    for (let r = 0; r <= 140; r += 0.5) {
+      const v = E.fullTeamScale(r);
+      if (v < last - 1e-9) return false;
+      last = v;
+    }
+    return true;
+  })());
+  ok('  a cap-spending roster reaches the class edge, and the best one reads 100',
+    E.fullTeamScale(76.3) >= 83.9 && E.fullTeamScale(76.3) <= 84.1
+    && E.fullTeamScale(96.4) >= 99.9,
+    E.fullTeamScale(76.3).toFixed(1) + ' / ' + E.fullTeamScale(96.4).toFixed(1));
   /* THE TWO CHEMISTRY FIGURES ARE THE ONES THE UNITS WERE RATED WITH, not the flattened
      one. This is the exact substitution the old sentence made. */
   ok('  and each side used its OWN chemistry, not the average',

@@ -1371,6 +1371,57 @@ human does at twelve slots, while a careful draft is what everybody does.
 
 **Existing board rows were set under the old numbers** and will sit low against new ones.
 
+#### An 85 has to mean what 85 means everywhere else
+
+Reported by a player: a team went **20-0 and read 85**, which is not what 85 means anywhere
+on this site. The instinct was right and the reason is bigger than the number looking small.
+
+**`liveRating()` hands the Full Team overall to `weeklyEdgeVs`, `seedFromRecord`,
+`playoffShare` and `finalEdge`**, and those are cut against `CLASS_FLOOR` 84, `ELITE_FLOOR` 95
+and `FINAL_EDGE_PIVOT` 95. Measured at matched drafting quality, before the fix:
+
+| roster | median | clears 84 | reaches 95 | title-game neutral |
+|---|---|---|---|---|
+| Full Team, spends the cap | 75.5 | **8%** | **0%** | **0%** |
+| quick draft, careful | 82.2 | 46% | 10% | 10% |
+
+So the weekly class edge, the strength vote on the seed and a neutral title game were all
+**switched off in that mode**, and nothing anywhere reported it. It is also the explanation
+for the standing measurement that a Full Team squad "never takes the top seed": the seed vote
+starts at 95 and the mode could not reach 95.
+
+**This is `defenseOverall`'s problem one level up, and it had the same three symptoms.** The
+mean of two units is an honest reading of what twelve men produce and it is NOT a team
+overall, because a Full Team splits ONE cap across two units where a quick draft spends a
+whole cap on six men. So it reported every full roster weaker than a six man squad drafted
+with the same care.
+
+`fullTeamScale()` is the same answer `defenseOverall` already is: a line through three anchors
+measured off the two modes. A careless twelve reads where a careless six reads, so the bottom
+does not move. A roster that **deliberately spends the cap** reaches `CLASS_FLOOR`, which is
+where the quick draft's careful play sits. The best roster the mode can produce reads **100**,
+so the top of the scale is reachable and means "you cannot do better". Clearance after it is
+45% against the quick draft's 46%.
+
+**The units are not touched.** `off` and `def` are still what each side produces.
+
+**The results screen printed the old identity as an equals sign**, so the coach row now ends
+at the MEAN and a new row arrows the mean to the overall. It arrows for the reason the defence
+row arrows: it is a step between what the roster produces and what the number means, not a
+term the player multiplied. `check-fullteam.mjs` asserts the new identity, that the map is
+monotone, and both anchors.
+
+**What it costs.** Turning those mechanics on is a buff, and it lands on GOOD drafts rather
+than careful ones: the careful row is unchanged at 11-6 and 46% playoffs, and a roster that
+spends the whole cap went to 13-4 with 80% playoffs. `FULL_TALENT` was left at 0.90 because
+pulling it back takes the careful row off target and barely moves the strong one.
+
+**`full_elite` is now easy and is deliberately not raised.** Badges are DERIVED from the rows
+the board keeps, so raising the threshold takes a gold off everybody who earned it on the old
+scale. It is worth moving to about 85 **on the day the Full Team board is reset, and not
+before**. `check-badges.mjs` cannot see this: it proves a badge is REACHABLE, and a trivial
+badge is reachable too.
+
 #### A coach who would make the team worse is not offered
 
 The table holds 115 men. An ordinary drafted roster can afford most of them, and **58% of

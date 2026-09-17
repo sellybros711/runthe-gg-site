@@ -3778,10 +3778,63 @@ function fullSideRatings(roster, chemistryMultiplier, coach, constants = CONSTAN
   const coachBoost = (eff.off + eff.def) / 2;
   /* The units are left alone: a great one passes 100 in its own mode too, and saying so is
      the point. The headline is clamped because it is the number runs are compared by. */
+  /* THE MEAN IS NOT THE TEAM OVERALL, and fullTeamScale is the step between them. Kept in
+     parts so the results screen can show it happened, the same way defRaw is kept for
+     defenseOverall: a reader cannot infer either one. */
+  const mean = (o + d) / 2 * coachBoost;
   return { off: o, def: d, coachBoost,
-    overall: Math.max(0, Math.min(100, (o + d) / 2 * coachBoost)),
+    overall: Math.max(0, Math.min(100, fullTeamScale(mean))),
     parts: { offPts, defPts, offChem, defChem, offFit, defFit,
-      offMen: off.length, defMen: def.length, talent: t, defRaw } };
+      offMen: off.length, defMen: def.length, talent: t, defRaw, mean } };
+}
+
+/*
+ * A FULL TEAM'S TEAM OVERALL, ON THE LADDER THE REST OF THE GAME IS CUT FOR.
+ *
+ * This is defenseOverall's problem one level up, and it had the same three symptoms.
+ *
+ * THE PROBLEM. The mean of the two units is an honest reading of what twelve men produce,
+ * and it is not a team overall, because a Full Team splits ONE cap across two units and a
+ * quick draft spends a whole cap on six men. So a twelve man team is always reported weaker
+ * than a six man offence drafted with the same care: measured at matched drafting quality,
+ * careful play read a median 68.4 here against 82.0 there, and a player who deliberately
+ * spends the cap read 76.3.
+ *
+ * WHY THAT IS NOT COSMETIC. liveRating() hands this number to weeklyEdgeVs, seedFromRecord,
+ * playoffShare and finalEdge, and those are cut against CLASS_FLOOR 84, ELITE_FLOOR 95 and
+ * FINAL_EDGE_PIVOT 95. Measured before this map: a player who spends the whole cap cleared
+ * CLASS_FLOOR 8% of the time against the quick draft's 46%, reached ELITE_FLOOR 0% of the
+ * time against 10%, and took the full title game penalty on every single roster. The weekly
+ * class edge, the strength vote on the seed and a neutral title game were all switched OFF
+ * in this mode, and nothing anywhere reported it. It is also the standing measurement that
+ * a Full Team squad "never takes the top seed": the seed vote starts at 95 and the mode
+ * could not reach 95.
+ *
+ * Reported by a player from the other end, as a 20-0 team reading 85, which is not what 85
+ * means anywhere else on this site.
+ *
+ * THE MAP is a line through three anchors that matter, by raw mean: a careless twelve
+ * (~40.7) reads where a careless six reads (~42), so the bottom is unchanged; a roster that
+ * deliberately SPENDS THE CAP (~76.3) reaches CLASS_FLOOR, which is where the quick draft's
+ * careful play sits and where the weekly edge starts; and the best roster the mode can
+ * produce (~96.4, the solver) reads 100, so the top of the scale is reachable and means "you
+ * cannot do better". Below the first anchor it runs to the origin, above the last it keeps
+ * going at the same slope and the clamp takes it.
+ *
+ * THE UNITS ARE NOT TOUCHED. `off` and `def` are what each side produces and the screen
+ * prints them as such; this maps only the headline the game reads.
+ */
+const FULL_SCALE = [[0, 0], [40.7, 42], [76.3, 84], [96.4, 100]];
+function fullTeamScale(raw) {
+  const A = FULL_SCALE;
+  if (!(raw > 0)) return 0;
+  for (let i = 1; i < A.length; i++) {
+    if (raw <= A[i][0] || i === A.length - 1) {
+      const [x0, y0] = A[i - 1], [x1, y1] = A[i];
+      return y0 + (raw - x0) * (y1 - y0) / (x1 - x0);
+    }
+  }
+  return raw;
 }
 
 function fullOverall(roster, chemistryMultiplier, coach, constants) {
@@ -5942,7 +5995,7 @@ const publicAPI = {
   DYNASTY_DEAD_SHARE, DYNASTY_DEAD_SEASONS, DYNASTY_DEAD_CEILING, dynastyDead,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
-  fullSuppression,
+  fullSuppression, fullTeamScale,
   fullStrength, fullOverall, fullParts, fullSideRatings,
   coachTable, coachPrice, coachEffect, coachLinks, COACH_MIN_SEASONS,
   PLAN, PLAN_AXES, normalizePlan, planFromCoach,

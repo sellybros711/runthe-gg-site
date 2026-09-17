@@ -7963,7 +7963,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=91"></script>
+<script src="engine.js?v=92"></script>
 <script src="run.js?v=99"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
@@ -7978,7 +7978,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=36"></script>
-<script src="achievements.js?v=13"></script>
+<script src="achievements.js?v=14"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
@@ -15908,12 +15908,32 @@ function fullBreakdown(){
         '<span class="fbw"><i>'+pc(boost-1)+' <u>team</u></i>'+
           '<i>'+pc((coEff?coEff.off:1)-1)+' <u>off</u></i>'+
           '<i>'+pc((coEff?coEff.def:1)-1)+' <u>def</u></i></span>'+
-        '<span class="fbe">=</span><b class="fbv">'+rate1(s.overall)+'</b></div>'
+        '<span class="fbe">=</span><b class="fbv">'+rate1(p.mean)+'</b></div>'
+      : '')+
+    /*
+     * AND THE LAST STEP, WHICH USED TO BE MISSING AND WAS PRINTED AS AN EQUALS SIGN.
+     *
+     * The coach row ended `= <overall>`, and after fullTeamScale arrived that was simply
+     * false: what the coach row produces is the MEAN, and the mean is not the team overall.
+     * A twelve man team splits one cap across two units where a quick draft spends a whole
+     * cap on six men, so the raw mean reports every Full Team roster weaker than a six man
+     * squad drafted with the same care, and the game's own thresholds are cut for the six
+     * man ladder. This row is where that is corrected.
+     *
+     * IT ARROWS, for exactly the reason the defense row arrows: it is not a term the player
+     * multiplied, it is a step between what the roster produces and what the number means.
+     * Drawn only when it actually moves the value, so a roster sitting on an anchor does not
+     * get a row saying nothing, which is the Gary Kubiak rule above. */
+    (Math.abs(p.mean-s.overall)>=0.05
+      ? '<div class="fbrow scale"><span class="fbn">On the league scale</span>'+
+        '<span class="fbw"></span><span class="fbe">→</span>'+
+        '<b class="fbv">'+rate1(s.overall)+'</b></div>'
       : '')+
     /* WHAT THE ARROW MEANS, said once, under the table. The alternative is a longer defense
        row on a 390px phone, where it would wrap and push the value off its own line. */
     '<div class="fbfoot">Defense counts what you stop, so it is placed on the offense\'s '+
-      'scale to be averaged with it.</div>'+
+      'scale to be averaged with it. Your twelve share one cap, so the team is then read '+
+      'on the same scale every mode is rated on.</div>'+
     '</div>';
 }
 /* The old name, kept because two screens call it and only one of them has room for the
