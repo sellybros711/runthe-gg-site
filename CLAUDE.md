@@ -739,6 +739,78 @@ first autumn and reported a mode that had seized up.
 Measured over forty terms: always-first is fired 36 times of 40 and 12 of those in year one,
 random 30 of 40, middle 11 of 40. Always-first tests the removal screen rather than the mode.
 
+### The standings, and the one board allowed to hold everybody
+
+```
+node cfb/build/test/commish/test_standings.mjs   the screen, in a browser, four states
+createdb tenure_test && psql -d tenure_test -c 'create role authenticated; create role anon;'
+psql -d tenure_test -f supabase/test/terms_base.sql
+psql -d tenure_test -f supabase/96_commish_terms.sql
+psql -d tenure_test -f supabase/105_commish_tenure.sql
+psql -d tenure_test -f supabase/test/tenure_test.sql
+```
+
+**The whole competitive layer was built, deployed and invisible.** `95_commish_choices.sql`
+records what everybody did with one item, `96_commish_terms.sql` records what a whole term
+added up to and ranks it, `splits.js` has carried the client call for both since the day it
+shipped, and `commish_doctrine_board` **was called by nothing**. A player saw their placement
+once, on the ending screen, in the second the term finished, and then it was gone: no way
+back, no way to see who was above them, nothing to send anybody. That is a receipt, not a
+board. `commish_term_standing` was not wired at all.
+
+Nothing failed, because every call in `splits.js` resolves to null rather than rejecting.
+
+**The score board is scoped to a doctrine and that is not negotiable**, for the reason 96's own
+header gives at length: ranking six report cards on one line rewards upsetting nobody, because
+the way to do well on the books AND the audience AND the room at once is to take no side, and
+a board like that quietly tells every commissioner to play the same careful term. The question
+is not who ran college football best, it is who ran it best out of the people who wanted what
+you wanted. Nine boards, no way to be top of all of them.
+
+**Tenure is the one exception and the test it passes is the test any future global board must
+pass.** Years in the chair has no set of values behind it: you can last forty years as a
+Landlord or as a Reformer, and the room removes you for losing it rather than for what you
+believed. If a proposed board would tell somebody how to play, it belongs inside a doctrine.
+
+**`105_commish_tenure.sql` SUMS, and that is a decision about what `years` means.** A row's
+`years` is ONE CONTRACT: `renewTerm()` sets `world.startYear` to the current year, so five
+seasons then a renewal for eight files rows of 5 and 8 rather than one of 13. Ranking on
+`max(years)` would rank the longest CONTRACT and punish the commissioner the mode is most
+pleased with, the one the room kept re-signing. The tiebreak is FEWER TERMS, because twenty
+years over two contracts and twenty over six are not the same person, and `terms` is on the
+row so a reader can see which is which rather than trusting the order.
+
+**A term with no score is on the tenure board and not on the doctrine board.** One is sorted by
+score and cannot rank a null; the other is time somebody spent doing the job.
+
+**`commish_my_tenure` writes the ordering out a second time by hand**, and that is the thing
+most likely to rot here. Your place is counted against EVERYBODY, not against the fifty rows
+the board returned, because a page that worked out "you are 51st" by failing to find itself in
+the top fifty would tell the two hundredth commissioner the same thing as the fifty first. Two
+implementations of one ordering is exactly the shape that drifts, so the last section of
+`tenure_test.sql` walks every account and asserts the two agree.
+
+**A board has four states and three of them ship broken.** Unreachable, nobody has finished a
+term, and you have not finished one: each needs a different sentence, because a blank box is
+how a feature teaches somebody it is broken and a spinner that never resolves is worse. On a
+mode this new "nobody yet" is the COMMON case, so it says being first is the prize.
+
+#### Two things called the standings
+
+`paintStandings(el, sim)` already existed and draws the PLAYOFF table. The board painter was
+called that too for about an hour. **Function declarations hoist and the later one wins**, so
+every call resolved to the playoff painter, which opens `if (!el) return;` and was being handed
+nothing: it returned immediately, every time, and threw NOTHING. The screen opened, stayed
+blank, and the console was clean. It is `paintBoards` now. Same failure as the wrestling game's
+one-file collision in the section below, with a quieter symptom, because the survivor had a
+guard clause instead of a missing function.
+
+**`doctrine.profile()` answers null with no rulings, which is correct and is a trap.** It reads
+the rulings made so far, so it is null at the START of a term, which is the most likely moment
+somebody opens a board. Reading only the live term meant the gold "this is your doctrine" mark
+never appeared for anybody and every board opened on the Caretaker. It falls back to the career
+shelf, which stores the doctrine's NAME rather than its id, so it maps back through `NAMES`.
+
 ### A setting has to LOOK like a setting
 
 **The mode is nothing but named rules and what they currently say, so a value printed as
