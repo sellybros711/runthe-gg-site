@@ -39,6 +39,7 @@
      putting him on       the intentional walk fires late and close, and never anywhere else
      the tag              a caught fly moves a runner, and never on the third out
      the dugout learns    a harder tier chases less and reads a one pitch caller
+     the robbery          a catchable hit can be taken away, and missing it costs nothing
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -2097,6 +2098,156 @@ async function main() {
       await pg.close();
     }
 
+    /* ---- the robbery ---- */
+    {
+      console.log('the robbery');
+      /* THE DEFENCE HAD NO PLAY TO MAKE. Both fielding windows this game
+         had fire only on a ball ALREADY labelled an out, so the only
+         thing either could do was lose it. A hit was automatic and the
+         fielding side watched it land. That is backwards from the sport
+         and from every baseball game there is: the thrill of fielding is
+         taking a hit away from somebody.
+
+         What made it fixable is that the sim already knew. Measured over
+         900 balls in play, 96 of 219 hits land where a fielder could
+         already be standing. The hit rate itself is about right, so that
+         is not the game playing wrong: it is the GEOMETRY and the
+         OUTCOME disagreeing, because the trajectory decides the result
+         at contact and the fielders are animated on afterwards.
+
+         Two properties carry the whole design and they pull opposite
+         ways, so both are asserted here. The gate is PHYSICS, never a
+         roll: you cannot rob what nobody could reach. And a miss costs
+         NOTHING: the hit stands exactly as it was, which is what makes
+         this a chance rather than a tax, and the opposite of what the
+         other two windows do. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);           /* the player is in the field */
+
+      /* One ball, aimed by hand. The trajectory is stubbed so the ball
+         goes where the test wants it rather than where a random spray
+         puts it; everything downstream of it is the real machinery. */
+      const setup = async (opts) => pg.evaluate((o) => {
+        const g = State.game;
+        g.outs = 0; g.bases = [null, null, null];
+        g.away.score = 0; g.home.score = 0;
+        window.__robOpened = 0;
+        const G = fieldGeom();
+        /* aim it at a real fielder's post, converted back through the
+           same projection the sim uses */
+        const post = fielderPosts(G, G.w).find(q => q.i === o.post);
+        const dx = (post.x - (G.cx - 14)) / G.r;
+        const dy = (post.y - G.cy) / G.r;
+        window.__realTraj = window.__realTraj || ballTrajectory;
+        window.ballTrajectory = () => ({ dx, dy, duration: 2200, arcH: o.arcH, rollK: 1 });
+        const _open = window.startRobWindow;
+        window.__realOpen = window.__realOpen || _open;
+        window.startRobWindow = (...a) => { window.__robOpened++; return window.__realOpen(...a); };
+        scheduleContactPlay(o.kind, currentBatter(), { q: 0.7 });
+      }, opts);
+
+      const restore = async () => pg.evaluate(() => {
+        if (window.__realTraj) window.ballTrajectory = window.__realTraj;
+        if (window.__realOpen) window.startRobWindow = window.__realOpen;
+      });
+
+      /* Wait for the window, then press it dead centre. */
+      const pressIt = async () => pg.evaluate(() => new Promise((done) => {
+        const t0 = Date.now();
+        const tick = () => {
+          const g = State.game;
+          if (g && g.play && g.play.catchActive && g.play.catchWindow) {
+            const w = g.play.catchWindow;
+            const at = w.startedAt + w.duration * 0.5;
+            const wait = Math.max(0, at - performance.now());
+            setTimeout(() => { document.body.click(); done(true); }, wait);
+            return;
+          }
+          if (Date.now() - t0 > 4000) return done(false);
+          setTimeout(tick, 20);
+        };
+        tick();
+      }));
+
+      const readOut = async () => pg.evaluate(() => {
+        const g = State.game;
+        return { outs: g.outs, onFirst: !!g.bases[0], onSecond: !!g.bases[1],
+                 onThird: !!g.bases[2], opened: window.__robOpened,
+                 kind: g.play ? g.play.kind : null,
+                 robbed: g.play ? g.play.robbed || null : null };
+      });
+
+      /* 1. a deep fly straight at the centre fielder, pressed */
+      await setup({ kind: 'double', post: 7, arcH: 200 });
+      const pressed = await pressIt();
+      await wait(pg, 900);
+      const robbed = await readOut();
+      /* EACH CASE WAITS OUT THE LAST ONE. A play keeps a finish timer
+         that nulls g.play and moves the batter along, so a second ball
+         hit 700ms later is torn down by the first one's own clock and
+         reports a window that never opened. That cost a round. */
+      await wait(pg, 2600);
+
+      /* 2. the same ball, left alone */
+      await setup({ kind: 'double', post: 7, arcH: 200 });
+      await wait(pg, 3000);
+      const ignored = await readOut();
+      await wait(pg, 1200);
+
+      /* 3. the same spot, no hang time: there is nothing to rob */
+      await setup({ kind: 'single', post: 7, arcH: 20 });
+      await wait(pg, 1400);
+      const grounder = await readOut();
+      await wait(pg, 1800);
+
+      /* 4. a ball hit well over the centre fielder's head. The first
+         draft of this case aimed into the gap with a two second hang
+         time and the gate correctly said YES, because a fielder can jog
+         to a ball that stays up that long. Out of reach is about time,
+         not about distance: same hang time, more than twice as deep. */
+      const nobody = await pg.evaluate(() => {
+        const G = fieldGeom();
+        const post = fielderPosts(G, G.w).find(q => q.i === 7);
+        const traj = { dx: (post.x - (G.cx - 14)) / G.r * 2.4,
+                       dy: (post.y - G.cy) / G.r * 2.4,
+                       duration: 2200, arcH: 200, rollK: 1 };
+        const p = { kind: 'triple', batter: currentBatter(), isOut: false, ball: traj,
+                    startedAt: performance.now(), preBases: [null, null, null],
+                    batterPath: batterPathIndices('triple'), runnerPaths: [null,null,null],
+                    applied: false };
+        const sim = buildPlaySim(p);
+        return { on: robberyOn(sim, traj, 'triple'), slack: sim.robSlack };
+      });
+
+      /* 5. and it never fires on the half the player is batting */
+      await restore();
+      await exhibition(pg, false);
+      await setup({ kind: 'double', post: 7, arcH: 200 });
+      await wait(pg, 3200);
+      const batting = await readOut();
+      await restore();
+
+      ok(pressed, 'the window opened and could be pressed', String(pressed));
+      ok(robbed.opened === 1, 'a catchable hit opens exactly one window', String(robbed.opened));
+      ok(robbed.outs === 1 && !robbed.onFirst && !robbed.onSecond,
+         'pressing it turns the hit into an out, and nobody is on base',
+         JSON.stringify(robbed));
+      ok(ignored.opened === 1 && ignored.outs === 0 && ignored.onSecond,
+         'MISSING IT COSTS NOTHING: the double is still a double',
+         JSON.stringify(ignored));
+      ok(grounder.opened === 0,
+         'a ball with no hang time offers no window: you cannot rob a grounder',
+         JSON.stringify(grounder));
+      ok(nobody.on === false,
+         'THE GATE IS PHYSICS: a ball into the gap nobody could reach offers nothing',
+         JSON.stringify(nobody));
+      ok(batting.opened === 0,
+         'and the side at bat is never offered its own robbery',
+         JSON.stringify(batting));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
     /* ---- the coach tells the truth ---- */
     {
       console.log('the coach tells the truth');
@@ -2134,6 +2285,14 @@ async function main() {
           /* the pitching notes name buttons the strip really has */
           throwLabel: !!document.querySelector('#throw-btn'),
           teachesGrid: /on the grid/i.test(pitch),
+          /* THE FIELDING HALF. Three windows can open once the ball is
+             hit and the notes named none of them for as long as they
+             existed. The ring is a real thing HERE, unlike in the
+             batting camera above, so naming it is the truth rather than
+             the old mistake: drawCatchRing is what draws it. */
+          namesFielding: /\bwindow\b/i.test(pitch) && /\bring\b/i.test(pitch),
+          saysRobIsFree: /nothing is lost|costs nothing/i.test(pitch),
+          drawsCatchRing: typeof drawCatchRing === 'function',
         };
       });
       ok(!r.drawsRing, 'the batting camera draws no closing ring', String(r.drawsRing));
@@ -2143,6 +2302,12 @@ async function main() {
          'the notes still say "click anywhere"');
       ok(!r.teachesGrid, 'the pitching notes do not name a grid that was removed',
          r.pitch.slice(0, 120));
+      ok(r.namesFielding, 'they tell the player the ball is theirs once it is hit',
+         r.pitch.slice(-160));
+      ok(r.drawsCatchRing, 'and the ring they name is one the game really draws',
+         String(r.drawsCatchRing));
+      ok(r.saysRobIsFree, 'and that missing a robbery costs nothing, or nobody presses it',
+         r.pitch.slice(-160));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

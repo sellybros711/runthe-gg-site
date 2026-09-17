@@ -1936,6 +1936,65 @@ pitched around would be a punishment rather than a hitter.
 opponent knows is invisible otherwise: the player just meets hard contact and
 reads it as luck.
 
+### The defence had no play to MAKE, only one to lose
+
+Both fielding windows this game had (the grounder throw, the fly catch) fire only
+on a ball ALREADY labelled an out, so the only thing either can do is downgrade
+it. A hit was automatic and the fielding side watched it land. That is backwards
+from the sport and from every baseball game there is: the thrill of fielding is
+taking a hit AWAY from somebody, and there was no way to.
+
+**What made it fixable is that the sim already knew.** `buildPlaySim` computes,
+per fielder, the earliest moment he can be where the ball is, and then throws
+that away on anything labelled a hit. It is recorded as `sim.robSlack` now: for
+the man best placed, how much time to spare he has getting to where the ball
+comes down. Positive is camped under it, negative is late by that much, and a
+tenth of a second late is a dive.
+
+**Measured over 900 balls in play, 96 of 219 hits (44%) land where a fielder
+could already be standing.** That is NOT the game playing wrong: the hit rate on
+balls in play is about right (roughly real BABIP). It is the GEOMETRY and the
+OUTCOME disagreeing, because the trajectory decides the result at contact and the
+fielders are animated on afterwards. That gap is the only place a robbery can
+live, and it is why this is a fielding fix rather than a batting one.
+
+**A miss costs NOTHING and that asymmetry is the whole design.** The play is
+planned as the hit and stays the hit: no amendment, no apology, the normal apply
+fires on its own clock and nobody watching would know a window had been open.
+Green turns it into an out. The other two windows are the opposite on purpose,
+and nobody presses a button they think can hurt them, which is why the coach
+notes say so in as many words.
+
+**The gate is physics the sim already computes, never a roll.** You cannot rob
+what nobody could reach. `ROB_ARC` (120) is what keeps a bloop single honest:
+measured, a single's arc runs 29 at the tenth percentile to 147 at the ninetieth,
+so a ball that genuinely drops in front of somebody is well under it and a deep
+fly that fell in is well over. **Out of reach is about TIME, not distance**, and
+the first draft of the guard got that wrong: it aimed into the gap with a two
+second hang time and the gate correctly said yes, because a fielder can jog to a
+ball that stays up that long.
+
+**It fires on 21% of hits, which is 1.9 chances a side per game**, across singles,
+doubles and triples. That is an event rather than a coin flip bolted to the
+batting model. Re-measure it with the probe if either constant moves: half of
+every hit becoming a timing bar is not fielding.
+
+**The green scales with how close he was**, from a full 0.177 half-width for a man
+already standing there down to 0.086 for a dive, plus his own glove. Most
+candidates saturate at the top, which is right: the routine-looking ones are the
+ones you should catch.
+
+**Three windows can open once the ball is hit and the notes named none of them**
+for as long as they existed, so a player met a bar on screen with no idea what it
+wanted. The pitching notes carry a fielding step now. The `ring` the batting
+notes must never mention is still forbidden there and is the truth here, because
+`drawCatchRing` is what draws it.
+
+**A play keeps a finish timer that nulls `g.play` and moves the batter along**, so
+a test that hits a second ball 700ms after the first is torn down by the first
+one's clock and reports a window that never opened. Each case in the guard waits
+the previous one out.
+
 ## Segue, the setlist game
 
 `setlist/index.html`, same one-file convention. It is NOT in the same state as

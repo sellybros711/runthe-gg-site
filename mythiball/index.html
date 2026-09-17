@@ -6842,6 +6842,15 @@ const COACH = {
     'Press <b>Throw</b>, then stop the bar in the <b>green</b> to release clean. '
     + 'While it flies, hold <b>left or right</b> to bend it. Every hitter has one '
     + 'pitch they cannot handle. Find it.',
+    /* THE FIELDING HALF WAS NEVER MENTIONED. Three windows can open once
+       the ball is hit and the notes named none of them, so a player met
+       a bar on screen with no idea what it wanted. The robbery is the
+       one worth teaching hardest, because missing it costs nothing and
+       nobody presses a button they think can hurt them. */
+    '<b>Then you field it.</b> A ball in play can open a short window. Press in the '
+    + '<b>green</b> to finish a throw or make a catch. A <b>ring</b> on a deep fly '
+    + 'means you can rob the hitter. Time it and his hit becomes an out. Miss it and '
+    + 'nothing is lost.',
   ],
 };
 function coachDue(kind) { return PREFS.coach !== false && !PREFS['coach_' + kind]; }
@@ -8271,6 +8280,31 @@ function buildPlaySim(p, opts) {
       if (better) { best = ic.at; bestSlack = ic.slack; fp = i; meetAt = ic.at; meetUV = ic.uv; }
     }
   }
+  /* HOW CLOSE THE DEFENCE CAME, recorded on every play whatever the
+     outcome says. This is the question the fly-ball branch above already
+     asks and then throws away on anything labelled a hit: for the man
+     best placed for it, how much time to spare does he have getting to
+     where the ball comes down. Positive is camped under it, negative is
+     late by that much, and a tenth of a second late is a dive.
+
+     Measured over 900 balls in play, 96 of 219 hits (44%) land where a
+     fielder could already be standing. That is not the game playing
+     wrong: the hit rate on balls in play is about right. It is the
+     GEOMETRY and the OUTCOME disagreeing, because the trajectory decides
+     the result at contact and the fielders are animated on afterwards.
+     That gap is the only place a robbery can live. */
+  {
+    let bs = -Infinity, bp = -1;
+    for (const i of [1, 2, 3, 4, 5, 6, 7]) {
+      if (!posts[i]) continue;
+      const man = fielderAt(fteam, i);
+      const sp = man ? simFielderSpeed(man) : 0.35;
+      const reach = SIM_REACT + simDist(posts[i].uv, target) / sp;
+      const slack = flight.landAt - reach;
+      if (slack > bs) { bs = slack; bp = i; }
+    }
+    sim.robSlack = bs; sim.robPost = bp;
+  }
   sim.fielderPost = fp;
   const fman = fielderAt(fteam, fp);
   const fspeed = fman ? simFielderSpeed(fman) : 0.35;
@@ -8624,6 +8658,66 @@ function simAddThrow(sim, base, mode, whenT) {
 }
 
 /* The fly ball was not caught after all: it drops in, or gets past him. */
+/* THE ROBBERY, and why it is the missing half of fielding here.
+
+   Both fielding windows this game had fire only on a ball ALREADY
+   labelled an out, so the only thing a player can do with either is lose
+   it. A hit was automatic and the defence watched. That is backwards
+   from every baseball game there is: the thrill of fielding is taking a
+   hit AWAY from somebody, and there was no way to.
+
+   So a ball with real hang time that lands on a man who could be there
+   opens a window, and green turns the hit into an out. A miss costs
+   NOTHING: the hit stands exactly as it was. That asymmetry is the whole
+   point, and it is the opposite of the other two windows on purpose.
+
+   THE GATE IS PHYSICS THE SIM ALREADY COMPUTES, never a roll. A screamer
+   into the gap has nobody near it and no window appears, because you
+   cannot rob what nobody could reach. ROB_ARC is what keeps a bloop
+   single honest: measured, a single's arc runs 29 at the tenth
+   percentile to 147 at the ninetieth, so a ball that genuinely drops in
+   front of somebody is well under this and a deep fly that fell in is
+   well over it. */
+const ROB_ARC = 120;          /* a real fly ball, not a blooper */
+const ROB_SLACK = -0.15;      /* within a dive of it */
+function robberyOn(sim, traj, kind) {
+  if (!sim || !traj) return false;
+  if (kind !== 'single' && kind !== 'double' && kind !== 'triple') return false;
+  if (!(traj.arcH > ROB_ARC)) return false;
+  return sim.robSlack != null && sim.robSlack > ROB_SLACK && sim.robPost >= 0;
+}
+/* How much of the bar is a catch: the nearer he was, the more of it.
+   A man already standing there gets the full green, a man a dive short
+   gets the floor, and his own glove widens it either way. */
+function robGreenHalf(slack, def) {
+  const ease = clamp(1 - (0 - Math.min(slack, 0)) / -ROB_SLACK, 0, 1);
+  return 0.07 + ease * 0.10 + ((def == null ? 60 : def) - 50) / 1400;
+}
+/* The ball stops at the glove. This is simDropBall's mirror and it is
+   the simpler direction: a caught ball has no bounce, no roll and no
+   chase, so the flight is TRUNCATED at the landing sample rather than
+   extended past it. */
+function simRobCatch(sim) {
+  const k = Math.round((sim.landAt - sim.ballT0) / SIM_DT);
+  const at = Math.min(k, sim.ball.length - 1);
+  const land = sim.ball[at];
+  sim.ball = sim.ball.slice(0, at + 1);
+  sim.restAt = sim.landAt;
+  sim.restUV = [land[0], land[1]];
+  sim.meetAt = sim.landAt;
+  sim.meetUV = [land[0], land[1]];
+  sim.transfer = SIM_TRANSFER;
+  const F = sim.fielders[sim.robPost];
+  if (F) {
+    const man = fielderAt(sim.fteam, sim.robPost);
+    const sp = man ? simFielderSpeed(man) : 0.35;
+    const from = sim.posts[sim.robPost] ? sim.posts[sim.robPost].uv : sim.restUV;
+    F.run = simRunPath([from, sim.restUV], sp, sim.ballT0, {});
+    F.role = 'catch';
+    sim.fielderPost = sim.robPost;
+  }
+}
+
 function simDropBall(sim, mode) {
   const G = sim.G;
   const k = Math.round((sim.landAt - sim.ballT0) / SIM_DT);
@@ -8975,6 +9069,21 @@ function scheduleContactPlay(kind, batter, info) {
     }, Math.round(cp.at * 1000) + HITSTOP_MS);
   }
 
+  /* A BALL SOMEBODY COULD HAVE CAUGHT. The window opens while it is
+     still in the air and has to be finished before the play applies, or
+     the hit is already on the books when the catch lands. A play whose
+     flight leaves no room for it simply does not offer one. */
+  if (!playerIsBatting() && robberyOn(g.play.sim, traj, effective)) {
+    const openAt = Math.max(0, (g.play.sim.landAt - 0.55) * 1000) + HITSTOP_MS;
+    const closeBy = Math.round(g.play.sim.applyAt * 1000) + HITSTOP_MS - 60;
+    if (closeBy - openAt >= 380) {
+      setTimeout(() => {
+        if (!g.play || g.play.applied) return;
+        startRobWindow(effective, batter, Math.min(700, closeBy - openAt));
+      }, openAt);
+    }
+  }
+
   const applyMs = Math.round(g.play.sim.applyAt * 1000) + HITSTOP_MS;
   setTimeout(() => {
     if (!g.play || g.play.applied) return;
@@ -9046,14 +9155,17 @@ function scheduleContactPlay(kind, batter, info) {
       }
       else Sound.play('aww');
     }
-    if (onError) {
+    /* READ OFF THE PLAY, not off the closure. A robbery resolves before
+       this fires and rewrites kind and isOut on g.play; consts captured
+       at contact would apply the hit it just took away. */
+    if (g.play.onError) {
       applyHitMutation('single', batter, { onError: true });
-    } else if (doublePlay) {
+    } else if (g.play.doublePlay) {
       applyDoublePlayMutation(batter);
-    } else if (isOut) {
-      applyOutMutation(effective, batter);
+    } else if (g.play.isOut) {
+      applyOutMutation(g.play.kind, batter);
     } else {
-      applyHitMutation(effective, batter);
+      applyHitMutation(g.play.kind, batter);
     }
     simReconcile(g.play);
     refreshHud();
@@ -9537,6 +9649,72 @@ function startCatchWindow(kind, batter, landingX, landingY) {
   document.addEventListener('keydown', onKey);
   document.addEventListener('click', onClick, true);
   setTimeout(() => finish(-1), window.duration + 20);
+}
+
+/* The window itself. It borrows the catch ring's shape and the catch
+   ring's drawing, because it IS a catch: one press, near the middle,
+   with the green scaled to how close the man actually was. */
+function startRobWindow(hitKind, batter, durMs) {
+  const g = State.game;
+  if (!g || !g.play || g.play.applied || g.play.catchActive) return;
+  const sim = g.play.sim;
+  const man = fielderAt(sim.fteam, sim.robPost);
+  const geo = fieldGeom();
+  const k = Math.round((sim.landAt - sim.ballT0) / SIM_DT);
+  const lp = sim.ball[Math.min(k, sim.ball.length - 1)];
+  const [lx, ly] = simProject(geo, lp[0], lp[1]);
+  const window = {
+    duration: durMs,
+    startedAt: performance.now(),
+    greenHalf: robGreenHalf(sim.robSlack, man ? man.def : 60),
+    yellowHalf: 1,             /* there is no middle outcome: it is the hit */
+    landingX: lx, landingY: ly,
+    resolved: false,
+    robbery: true,
+  };
+  g.play.catchActive = true;
+  g.play.catchWindow = window;
+
+  const finish = (t) => {
+    if (window.resolved) return;
+    window.resolved = true;
+    /* Same teardown race the other two windows guard: the play can go
+       out from under this while the window is open. */
+    if (g.play) g.play.catchActive = false;
+    document.removeEventListener('keydown', onKey);
+    document.removeEventListener('click', onClick, true);
+    const got = t >= 0 && Math.abs(t - 0.5) <= window.greenHalf;
+    resolveRobbery(got, hitKind, batter, lx, ly);
+  };
+  const onClick = () => {
+    if (window.resolved) return;
+    finish(clamp((performance.now() - window.startedAt) / window.duration, 0, 1));
+  };
+  const onKey = (e) => { if (e.code === 'Space') { e.preventDefault(); onClick(); } };
+  document.addEventListener('keydown', onKey);
+  document.addEventListener('click', onClick, true);
+  setTimeout(() => finish(-1), window.duration + 20);
+}
+
+/* MISSING IT COSTS NOTHING, which is the rule that makes this a chance
+   rather than a tax. The play was planned as the hit and stays the hit:
+   no amendment, no apology, the normal apply fires on its own clock and
+   nobody watching would know a window had been open. */
+function resolveRobbery(got, hitKind, batter, lx, ly) {
+  const g = State.game;
+  if (!g || !g.play || g.play.applied) return;
+  if (!got) return;
+  g.play.kind = 'fly out';
+  g.play.isOut = true;
+  g.play.doublePlay = false;
+  g.play.onError = false;
+  g.play.robbed = hitKind;
+  simRobCatch(g.play.sim);
+  gloveFlash(g, lx, ly);
+  Sound.play('catch');
+  g.crowdUpUntil = performance.now() + 1800;
+  addLog(`${batter.n} is robbed. What a catch.`, true);
+  showCallout('ROBBED', 'homer');
 }
 
 function resolveCatch(outcome, kind, batter, landingX, landingY) {
