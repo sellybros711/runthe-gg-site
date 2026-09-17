@@ -1815,7 +1815,7 @@ The regression suite, which is the thing to run after editing:
 ```
 node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
 node mythiball/verify-rules.mjs    the rules replayed in a headless browser
-node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop)
+node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop, --easy/--hard for a tier)
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
 
@@ -1829,6 +1829,40 @@ itself once: it measured the CPU at 55 whiffs per hundred swings, the swing
 jitter tiers came down about a fifth, and it measures in the mid forties
 now (MLB runs about 25). The file's header records the procedure, and any
 further move repeats it: measure, touch the jitter, measure again.
+
+### Difficulty is what the other dugout KNOWS
+
+`DIFF` used to hold three columns and all three were about the player's half of
+the duel: ball speed, sweet spot width, pitcher skill. Played from the MOUND,
+every tier was the same opponent, so choosing hard bought a harder swing and
+changed nothing about the game you pitched.
+
+Two columns answer that, and both are measured through `calibrate.mjs --easy`
+and `--hard` rather than read, because a dugout that stopped chasing altogether
+renders perfectly and breaks nothing.
+
+- **`chase` touches only pitches OUT of the zone.** A harder dugout is not a
+  quieter one, it is a pickier one: measured at 500 pitches, chase runs 30.6 /
+  24.8 / 11.6 across the tiers while the swing rate on a strike down the middle
+  moves 73.8 to 76.0, which is noise. Discipline is not silence, and the guard
+  asserts both halves.
+- **`read` is memory.** `patternRead` keeps a ROLLING window of the last 20
+  pitches the player CALLED and answers how hard the bat is sitting on this
+  one. An arm nobody steers writes nothing, because there is no pattern in a
+  random draw, which is also what keeps `calibrate.mjs`'s neutral arm out of it.
+  The floor is half the window: a repertoire is three or four pitches, so an
+  honest mix sits near .30 and punishing anything lower would punish honesty.
+
+**A full read takes a hard bat's timing error from .082 to .024, and that is
+the point rather than an overshoot.** It takes twenty straight fastballs to get
+there. **Two ways out, and both are the real ones**: mix, which the log line
+tells the caller to do once per hitter, or paint the edge, because the corner
+penalty is +0.12 against a read worth at most 0.11. A read that could not be
+pitched around would be a punishment rather than a hitter.
+
+**It is said out loud, once per batter.** A difficulty that changes what the
+opponent knows is invisible otherwise: the player just meets hard contact and
+reads it as luck.
 
 ## Segue, the setlist game
 

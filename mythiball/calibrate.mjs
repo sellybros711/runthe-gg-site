@@ -3,6 +3,7 @@
 
    node mythiball/calibrate.mjs            150 pitches, about four minutes
    node mythiball/calibrate.mjs --quick    60 pitches, for a fast loop
+   node mythiball/calibrate.mjs --hard     the same, against a hard dugout
 
    Every number that makes an at bat feel like baseball is a RATE, and a
    rate drifts in silence: a CPU that stops swinging, a whiff knob that
@@ -38,6 +39,20 @@ import { pathToFileURL } from 'url';
 
 const QUICK = process.argv.includes('--quick');
 const N = QUICK ? 60 : 150;
+/* The tier is a flag because difficulty now changes what the DUGOUT
+   knows and not only how fast the ball moves, and chase rate is where
+   that shows: an easy bat fishes, a hard one makes you throw strikes.
+   The bands below are medium's, so a tier run is read as a comparison
+   against a medium run rather than against them.
+
+   Measured over real innings at 150 pitches a tier, chase rate came back
+   34.1 on easy against 15.2 on hard, both well inside the band below,
+   which is the shape wanted: the tiers differ by a lot and neither is
+   outside what this game calls baseball. Swing rate went the other way
+   (53.3 against 59.3) and that is not a contradiction: a pickier bat
+   still swings at every strike, and takes it deeper into counts. */
+const DIFFS = ['easy', 'medium', 'hard'];
+const TIER = DIFFS.find(d => process.argv.includes('--' + d)) || 'medium';
 const URL = pathToFileURL('mythiball/index.html').href;
 
 const browser = await chromium.launch();
@@ -47,9 +62,10 @@ pg.on('pageerror', e => errors.push(e.message));
 await pg.goto(URL);
 await pg.evaluate(() => localStorage.clear());
 await pg.goto(URL);
-await pg.evaluate(() => {
+await pg.evaluate((tier) => {
   Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
   window.confirm = () => true;
+  State.difficulty = tier;
   State.gameSpeed = 'fast'; applyGameSpeed();
   State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Calibration';
   /* The opponent is PINNED, because each club carries its own batting
@@ -90,7 +106,7 @@ await pg.evaluate(() => {
     if (info && info.q != null) cal.qs.push(info.q);
     return _sc(kind, batter, info);
   };
-});
+}, TIER);
 await pg.waitForTimeout(600);
 
 /* Pitches go out in chunks so a hung page fails a chunk, not the run. */
@@ -157,7 +173,7 @@ const rows = [
    'taking is a gamble, not a free ball'],
 ];
 
-console.log('TARGETS   (arcade bands: see the header before moving one)');
+console.log(`TARGETS   difficulty ${TIER}   (arcade bands: see the header before moving one)`);
 let bad = 0;
 for (const [name, v, n, lo, hi, why] of rows) {
   const ok = v >= lo && v <= hi;

@@ -6524,11 +6524,50 @@ function pitcherRepertoire(p) {
   return PITCH_BOOK[p.k] || DEFAULT_PITCHES;
 }
 
+/* DIFFICULTY IS WHAT THE OTHER DUGOUT KNOWS, not only how fast the ball
+   moves. The first three columns are the old ones and they are all about
+   the player's half of the duel: a faster pitch, a narrower sweet spot, a
+   sharper arm. Played from the mound, every tier behaved identically, so
+   choosing hard bought a harder swing and the same opponent to pitch to.
+
+   The last two columns are the dugout's eyes.
+
+   `chase` is discipline. An easy bat fishes at balls, a hard one makes
+   the player throw strikes to get outs, which is the pitcher's half of
+   the real game: a hitter who will not chase is the reason walks exist.
+
+   `read` is memory. See the pattern note on patternRead below. */
 const DIFF = {
-  easy:   { speed: 2.7, sweetWidth: 0.26, pitcherSkill: 0.85 },
-  medium: { speed: 2.3, sweetWidth: 0.20, pitcherSkill: 1.00 },
-  hard:   { speed: 1.9, sweetWidth: 0.16, pitcherSkill: 1.12 },
+  easy:   { speed: 2.7, sweetWidth: 0.26, pitcherSkill: 0.85, chase:  0.06, read: 0.02 },
+  medium: { speed: 2.3, sweetWidth: 0.20, pitcherSkill: 1.00, chase:  0.00, read: 0.05 },
+  hard:   { speed: 1.9, sweetWidth: 0.16, pitcherSkill: 1.12, chase: -0.12, read: 0.11 },
 };
+
+/* THE PATTERN. Calling pitches was free of consequence: fastball,
+   fastball, fastball, for nine innings, at exactly the price of mixing,
+   because nothing in the game ever looked at the last pitch. That is the
+   one thing a hitter is actually paid to notice.
+
+   So the dugout keeps a rolling window of what the player CALLS, and a
+   pitch it is sitting on is timed and located closer. A window rather
+   than a season count, because a caller who notices and starts mixing
+   should be forgiven inside an at bat or two rather than wearing one bad
+   stretch all afternoon.
+
+   THE THRESHOLD CLEARS AN HONEST MIX WITH ROOM. A repertoire is three or
+   four pitches, so somebody mixing evenly sits near .30 and a bias worth
+   punishing has to be well past that, or the arithmetic punishes honesty.
+   Half the window is the floor and it takes the whole window at one pitch
+   to reach the full read. */
+const MIX_WINDOW = 20;
+const MIX_MIN = 8;
+function patternRead(g, pt) {
+  const mix = g && g.mix;
+  if (!mix || mix.length < MIX_MIN || !pt) return 0;
+  let same = 0;
+  for (const k of mix) if (k === pt) same++;
+  return clamp((same / mix.length - 0.5) / 0.45, 0, 1);
+}
 
 /* Pitcher fatigue: from his third inning of work on, an arm tires. The
    effect grows the wobble on the ideal spot and drops the strike rate.
@@ -7191,6 +7230,14 @@ function throwPitch(chosenPt, chosenZone, opts) {
      when they're calling, else random from what he actually throws. */
   const rep = pitcherRepertoire(pitcher);
   const pt = chosenPt && rep.includes(chosenPt) ? chosenPt : rep[Math.floor(Math.random()*rep.length)];
+  /* Only a pitch somebody CHOSE goes in the book. An arm nobody is
+     steering draws at random, and there is no pattern to read in a
+     random draw: counting it would have the dugout sitting on a coin. */
+  if (chosenPt && !playerIsBatting()) {
+    if (!g.mix) g.mix = [];
+    g.mix.push(pt);
+    if (g.mix.length > MIX_WINDOW) g.mix.shift();
+  }
   /* Each CPU at bat has a hidden weak pitch. Hitting it costs the batter
      a chunk of contact quality, which the swing AI reads. */
   if (!g.batterCtx.weakPitch) {
@@ -7393,6 +7440,10 @@ function scheduleCpuSwing() {
   const style = currentBattingTeamStyle();
   if (isStrike) swingProb += style.swing;
   else          swingProb -= style.patience;
+  /* Discipline by tier. It only ever touches a pitch OUT of the zone, so
+     a harder dugout is not a quieter one: it swings at strikes just as
+     often and stops giving away the ones off the plate. */
+  if (!isStrike) swingProb += diff.chase;
   /* Rabid Dog is frenzied: he swings at nearly everything. */
   if (g.batterCtx && g.batterCtx.flags && g.batterCtx.flags.frenzy) swingProb = 0.95;
   const willSwing = g.cpuMode === 'bunt' || Math.random() < clamp(swingProb, 0.05, 0.98);
@@ -7431,7 +7482,30 @@ function scheduleCpuSwing() {
   /* Fresh pitcher vs gassed pitcher moves the needle the other way. */
   const fat = pitcherFatigue();
   jitter -= fat.level * 0.02;
+  /* SITTING ON IT. The weight is the difficulty: an easy dugout barely
+     notices a one pitch caller, a hard one makes him pay. Measured over
+     500 pitches at a full read, a hard bat's timing error drops from
+     .082 to .024, which is the floor: twenty straight fastballs and he
+     is not guessing any more.
+
+     THERE ARE TWO WAYS OUT AND BOTH ARE THE REAL ONES. Mix, which is
+     what the line below tells him to do. Or paint the edge, because the
+     corner penalty above is +0.12 against a read worth at most 0.11, so
+     a fastball on the black is still a hard pitch to square up however
+     well he knows it is coming. A read that could not be pitched around
+     would be a punishment rather than a hitter. */
+  const read = patternRead(g, p.pt) * (diff.read || 0);
+  jitter -= read;
   jitter = clamp(jitter, 0.03, 0.40);
+  /* Said out loud, once per batter, because a difficulty that changes
+     what the opponent KNOWS is invisible otherwise: the player would
+     just see hard contact and read it as luck. The line is the nudge to
+     mix, and a new hitter saying it again is the reminder. */
+  if (read > 0.02 && g.batterCtx && !g.batterCtx.readSaid) {
+    g.batterCtx.readSaid = true;
+    const pl = PITCHES[p.pt].label.toLowerCase();
+    addLog(`${batter.n} is sitting on ${pl.startsWith('the ') ? pl : 'the ' + pl}.`, true);
+  }
 
   const dir = Math.random() < 0.5 ? -1 : 1;
   const t = clamp(p.ideal + dir * jitter * Math.random(), 0.02, 0.98);
@@ -7439,9 +7513,13 @@ function scheduleCpuSwing() {
      spread opening with difficulty the way the timing does, and a
      batter's weak pitch fooling his eye as much as his clock. */
   const loc = p.loc || { x: 0, y: 0 };
-  const locJ = (0.10 + (100 - batter.con) / 320)
+  let locJ = (0.10 + (100 - batter.con) / 320)
     * ({ easy: 1.35, medium: 1.0, hard: 0.8 }[State.difficulty] || 1)
     + (p.pt === g.batterCtx.weakPitch ? 0.14 : 0);
+  /* A pitch he is sitting on is one he knows the shape of, so his barrel
+     starts nearer it. Timing alone would make the read a whiff knob;
+     what it should buy is squaring the ball up. */
+  locJ *= clamp(1 - read * 1.6, 0.55, 1);
   const aim = { x: loc.x + gauss() * locJ * 0.9, y: loc.y + gauss() * locJ };
   /* THE SWING RESOLVES WHEN THE BALL IS AT THE PLATE, whatever the
      sampled timing error says about its quality. `t` used to be the real

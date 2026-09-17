@@ -38,6 +38,7 @@
      the books balance     runs, walks and outs agree across the batting and pitching lines
      putting him on       the intentional walk fires late and close, and never anywhere else
      the tag              a caught fly moves a runner, and never on the third out
+     the dugout learns    a harder tier chases less and reads a one pitch caller
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -1929,6 +1930,169 @@ async function main() {
       ok(r.stacked.scored === 1 && r.stacked.onThird,
          'with two aboard the lead man scores and the other takes third',
          JSON.stringify(r.stacked));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the dugout learns ---- */
+    {
+      console.log('the dugout learns');
+      /* DIFFICULTY ONLY EVER CHANGED THE PLAYER'S HALF. Speed, sweet spot
+         width and pitcher skill are all about swinging a bat, so somebody
+         who picked hard and went out to pitch met exactly the same dugout
+         they met on easy. The tier now also decides what that dugout
+         KNOWS: whether it chases, and whether it remembers.
+
+         Both are invisible by construction, which is why they are
+         measured rather than read. A dugout that stopped chasing
+         altogether, or one that read a pattern nobody was throwing,
+         renders perfectly and breaks nothing.
+
+         The two properties that matter are opposites of each other:
+         discipline must touch ONLY pitches out of the zone (a harder
+         dugout is not a quieter one, it is a pickier one), and the
+         pattern read must fire only on pitches somebody CHOSE. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);           /* the CPU bats, the player pitches */
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const realTimeout = window.setTimeout;
+        const realResolve = window.resolveSwing;
+        const realPlan = window.cpuBatPlan;
+        let last = null;
+        window.setTimeout = (fn) => { fn(); return 0; };
+        window.resolveSwing = (t, aim) => { last = { t, aim }; };
+        window.cpuBatPlan = () => 'normal';   /* a bunt is a decision already made */
+
+        const even = ['fastball', 'curveball', 'changeup', 'heat',
+                      'fastball', 'curveball', 'changeup', 'heat',
+                      'fastball', 'curveball', 'changeup', 'heat'];
+        const oneNote = new Array(20).fill('fastball');
+
+        /* One cell: N pitches at one spot, one tier, one book. */
+        const sweep = (tier, x, y, inZone, mix, N) => {
+          State.difficulty = tier;
+          g.mix = mix ? mix.slice() : null;
+          let swings = 0, offBy = 0, wide = 0;
+          for (let i = 0; i < N; i++) {
+            g.outs = 0; g.balls = 0; g.strikes = 0;
+            g.batterCtx.weakPitch = 'nothing';
+            g.batterCtx.readSaid = true;      /* the line is asserted on its own below */
+            const p = { pt: 'fastball', speed: 1.4, ideal: 0.5, arrive: 0.5,
+                        isStrike: inZone, loc: { x, y }, zoneAim: null,
+                        windupUntil: performance.now() - 1400,
+                        swung: false, resolved: false };
+            g.pitch = p; last = null;
+            scheduleCpuSwing();
+            if (last) {
+              swings++;
+              offBy += Math.abs(last.t - p.ideal);
+              wide += Math.hypot(last.aim.x - x, last.aim.y - y);
+            }
+          }
+          return { swing: 100 * swings / N,
+                   offBy: swings ? offBy / swings : 0,
+                   wide: swings ? wide / swings : 0 };
+        };
+
+        const N = 500;
+        const out = {
+          /* discipline: a ball well off the plate */
+          chaseEasy:   sweep('easy',   1.9, 0, false, even, N).swing,
+          chaseMed:    sweep('medium', 1.9, 0, false, even, N).swing,
+          chaseHard:   sweep('hard',   1.9, 0, false, even, N).swing,
+          /* and a strike down the middle, which no tier may duck */
+          zoneEasy:    sweep('easy',   0, 0, true, even, N).swing,
+          zoneHard:    sweep('hard',   0, 0, true, even, N).swing,
+          /* memory: the same pitch, an honest book against a one note one */
+          mixed:       sweep('hard', 0, 0, true, even, N),
+          patterned:   sweep('hard', 0, 0, true, oneNote, N),
+          easyPattern: sweep('easy', 0, 0, true, oneNote, N),
+        };
+
+        window.setTimeout = realTimeout;
+        window.resolveSwing = realResolve;
+        window.cpuBatPlan = realPlan;
+
+        /* The reader itself, on books it can be handed. */
+        out.readEven = patternRead({ mix: even }, 'fastball');
+        out.readShort = patternRead({ mix: ['fastball', 'fastball', 'fastball'] }, 'fastball');
+        out.readAll = patternRead({ mix: oneNote }, 'fastball');
+        out.readOther = patternRead({ mix: oneNote }, 'curveball');
+
+        /* And what goes in the book: an arm nobody steers writes nothing. */
+        g.mix = null;
+        endAtBatCleanup(); g.pitch = null; throwPitch();
+        out.unsteeredWrote = (g.mix || []).length;
+        endAtBatCleanup(); g.pitch = null; throwPitch('curveball');
+        out.chosenWrote = (g.mix || []).length;
+        /* The window is a window, not a season. */
+        for (let i = 0; i < 60; i++) { endAtBatCleanup(); g.pitch = null; throwPitch('heat'); }
+        out.windowCap = (g.mix || []).length;
+
+        /* And the player is told, once for this hitter. THE LINE IS TIED
+           TO A SWING, on purpose: it sits below the take branch, because
+           what the read buys is how he squares the ball up and a hitter
+           who let the pitch go has not shown you anything. So the roll
+           is pinned here rather than left to chance, or this assertion
+           is a coin flip on whether he offered at it. */
+        g.mix = oneNote.slice();
+        State.difficulty = 'hard';
+        g.batterCtx.readSaid = false;
+        const realRandom = Math.random;
+        Math.random = () => 0.01;             /* he swings */
+        const before = g.log.length;
+        window.setTimeout = () => 0;
+        g.pitch = { pt: 'fastball', speed: 1.4, ideal: 0.5, arrive: 0.5, isStrike: true,
+                    loc: { x: 0, y: 0 }, zoneAim: null,
+                    windupUntil: performance.now(), swung: false, resolved: false };
+        scheduleCpuSwing();
+        const lines = (from) => g.log.slice(from).map(e => e.text).join(' ');
+        const said = lines(before);
+        const beforeAgain = g.log.length;
+        g.pitch.swung = false;
+        scheduleCpuSwing();
+        const saidAgain = lines(beforeAgain);
+        Math.random = realRandom;
+        window.setTimeout = realTimeout;
+        out.said = /sitting on/i.test(said);
+        out.saidTwice = /sitting on/i.test(saidAgain);
+        return out;
+      });
+      ok(r.chaseEasy > r.chaseMed && r.chaseMed > r.chaseHard,
+         'a harder dugout chases less',
+         `easy ${r.chaseEasy.toFixed(1)}, medium ${r.chaseMed.toFixed(1)}, hard ${r.chaseHard.toFixed(1)}`);
+      ok(r.chaseEasy - r.chaseHard > 8,
+         'and the gap is one a player would feel, not a rounding error',
+         `${(r.chaseEasy - r.chaseHard).toFixed(1)} points`);
+      ok(r.chaseHard > 3,
+         'a hard dugout is still a dugout: it does not stop swinging at balls entirely',
+         r.chaseHard.toFixed(1));
+      ok(Math.abs(r.zoneEasy - r.zoneHard) < 8,
+         'DISCIPLINE IS NOT SILENCE: a strike draws the same swings on every tier',
+         `easy ${r.zoneEasy.toFixed(1)}, hard ${r.zoneHard.toFixed(1)}`);
+      ok(r.readEven === 0, 'an honest mix reads as no pattern at all', String(r.readEven));
+      ok(r.readShort === 0, 'and three pitches is not yet a pattern', String(r.readShort));
+      ok(r.readAll > 0.9 && r.readOther === 0,
+         'a book of nothing but fastballs reads as a fastball pattern and no other',
+         `${r.readAll} / ${r.readOther}`);
+      ok(r.patterned.offBy < r.mixed.offBy * 0.9,
+         'a pitch the dugout is sitting on is timed closer',
+         `${r.patterned.offBy.toFixed(3)} against ${r.mixed.offBy.toFixed(3)}`);
+      ok(r.patterned.wide < r.mixed.wide * 0.97,
+         'and the barrel starts nearer it, which is what sitting on a pitch buys',
+         `${r.patterned.wide.toFixed(3)} against ${r.mixed.wide.toFixed(3)}`);
+      ok(r.easyPattern.offBy > r.patterned.offBy,
+         'an easy dugout barely notices the same pattern',
+         `${r.easyPattern.offBy.toFixed(3)} against ${r.patterned.offBy.toFixed(3)}`);
+      ok(r.unsteeredWrote === 0,
+         'AN ARM NOBODY STEERS WRITES NOTHING: there is no pattern in a random draw',
+         String(r.unsteeredWrote));
+      ok(r.chosenWrote === 1, 'a pitch somebody called goes in the book', String(r.chosenWrote));
+      ok(r.windowCap === 20, 'and the book is a rolling window, not a season', String(r.windowCap));
+      ok(r.said && !r.saidTwice,
+         'the hitter says he is sitting on it, once, so the caller knows to mix',
+         `${r.said} / ${r.saidTwice}`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
