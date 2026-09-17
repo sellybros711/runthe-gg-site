@@ -42,6 +42,7 @@
      the robbery          a catchable hit can be taken away, and missing it costs nothing
      the club remembers   a franchise carries its players' records, not only its win column
      the friendly button  Randomize hands you a mound, and a hand draft is told who is on it
+     the picture agrees   no throw beats a safe runner to the bag, and no run outlasts the sim
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -2419,6 +2420,112 @@ async function main() {
       ok(new RegExp(hand.best).test(hand.two) && /gold/.test(hand.two),
          'and is shown the better arm it already has, without being overruled',
          hand.two);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the picture agrees with the book ---- */
+    {
+      console.log('the picture agrees');
+      /* buildPlaySim's own comment says a hit's throw "gets there just
+         after he does: that is what a hit looks like, and it is the
+         whole difference between this and an out". Nothing checked it,
+         and it was false on 66 of 420 plays.
+
+         TWO FAULTS, and finding the first made the second worse before
+         it got better, which is why this asserts a property and not a
+         number.
+
+         THE HORIZON. simRunPath reports `reached` as the moment a runner
+         touches his bag, and when the loop runs out first it reports the
+         END OF THE SIM instead. Home to third is 3.33 diamond units and
+         the slowest man runs 0.342 a second, so he needed about 9.9 and
+         a nine second horizon reported 9.12 every time. Everything
+         downstream trusts that number: the throw is timed against it,
+         the close play is read off it, deadAt comes from it.
+
+         THE ONE SIDED GUARD. lateThrow asked only that the fielder not
+         HOLD the ball too long and never that the throw not LAND too
+         early, so when the runner was further off than the hold allowed,
+         the launch clamped and the ball beat him to the bag by whatever
+         was left. There were THREE untimed throws in that branch and
+         each fix uncovered the next; the last one put the ball on third
+         five seconds before the runner, who was called safe standing
+         beside it.
+
+         What a player sees when this is wrong is a fielder holding the
+         ball on the bag while the runner jogs up and is safe. Nothing
+         throws. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const out = { plays: 0, raced: 0, early: [], timedOut: 0, worst: 0 };
+        const realTimeout = window.setTimeout; window.setTimeout = () => 0;
+        const realLog = window.addLog; window.addLog = () => {};
+        const realSchedule = window.scheduleContactPlay;
+        window.scheduleContactPlay = (kind, batter, info) => {
+          try {
+            const inf = Object.assign({}, info, { lefty: batsLeft(batter.k) });
+            const traj = ballTrajectory(kind, inf);
+            const isOut = kind === 'ground out' || kind === 'fly out' || kind === 'bunt out';
+            const p = { kind, batter, isOut, ball: traj, startedAt: performance.now(),
+                        preBases: [null, null, null], batterPath: batterPathIndices(kind),
+                        runnerPaths: [null, null, null], applied: false };
+            const sim = buildPlaySim(p);
+            out.plays++;
+            /* nobody's run may outlast the horizon */
+            for (const rr of sim.runners) {
+              if (rr.run.reached >= 0.12 + SIM_MAX_S - 0.05) out.timedOut++;
+            }
+            const bat = sim.runners.find(rr => rr.isBatter);
+            if (!bat) return;
+            for (const th of (sim.throws || [])) {
+              if (th.base !== bat.toIdx) continue;
+              out.raced++;
+              /* a SAFE runner must not be beaten to his own bag */
+              if (!isOut && th.arrive < bat.run.reached - 0.45) {
+                const by = bat.run.reached - th.arrive;
+                out.worst = Math.max(out.worst, by);
+                if (out.early.length < 5) out.early.push({ kind, by: +by.toFixed(2) });
+              }
+            }
+          } catch (e) { /* a play that cannot build is not a measurement */ }
+        };
+        for (let i = 0; i < 2400 && out.plays < 400; i++) {
+          try {
+            g.balls = 0; g.strikes = 0; g.outs = 0; g.bases = [null, null, null];
+            if (!g.batterCtx) g.batterCtx = { flags: {} };
+            g.batterCtx.weakPitch = 'nothing';
+            const loc = { x: (Math.random()*2-1)*0.9, y: (Math.random()*2-1)*0.9 };
+            g.pitch = { pt: ['fastball','curveball','changeup','heat'][i%4], speed: 1.4,
+                        ideal: 0.5, arrive: 0.5, isStrike: true, loc, zoneAim: null,
+                        windupUntil: performance.now()-1400, swung: false, resolved: false };
+            resolveSwing(0.5 + (Math.random()*2-1)*0.16,
+                         { x: loc.x + (Math.random()*2-1)*0.5, y: loc.y + (Math.random()*2-1)*0.5 });
+            if (i % 9 === 0) nextBatter();
+          } catch (e) { /* not a measurement */ }
+        }
+        window.scheduleContactPlay = realSchedule;
+        window.setTimeout = realTimeout; window.addLog = realLog;
+        /* and the longest leg anybody runs has to fit, stated directly */
+        const slow = ROSTER.slice().sort((a, b) => a.spd - b.spd)[0];
+        const longest = simRunPath(simRunnerPoints(0, 3), simRunnerSpeed(slow), 0.12, { delay: 0.18 });
+        out.longestLeg = +longest.reached.toFixed(2);
+        out.horizon = SIM_MAX_S;
+        return out;
+      });
+      ok(r.plays > 200, 'four hundred plays built', String(r.plays));
+      ok(r.raced > 50, 'and a good share of them put a throw at the batter\'s bag', String(r.raced));
+      ok(r.early.length === 0,
+         'NO THROW BEATS A SAFE RUNNER TO HIS OWN BAG',
+         `${r.early.length} did, worst by ${r.worst.toFixed(2)}s: ${JSON.stringify(r.early)}`);
+      ok(r.timedOut === 0,
+         'AND NO RUN OUTLASTS THE SIM: a reached time is an arrival, never a horizon',
+         `${r.timedOut} runs ran out of clock`);
+      ok(r.longestLeg < r.horizon,
+         'the slowest man on the roster gets from first to home inside it',
+         `${r.longestLeg}s against a ${r.horizon}s horizon`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

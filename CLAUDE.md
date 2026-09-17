@@ -2052,6 +2052,39 @@ place for a rule and the wrong place for a fact about THIS draft, so the footer
 names the starter and his PIT and, in gold, the better arm already picked. It
 never reorders.
 
+### The picture disagreed with the book on one play in six
+
+`buildPlaySim`'s own comment says a hit's throw "gets there just after he does:
+that is what a hit looks like, and it is the whole difference between this and an
+out." Nothing checked it, and it was false on **66 of 420 plays**. What a player
+sees when it is wrong is a fielder standing on the bag holding the ball while the
+runner jogs up and is called safe. Nothing throws.
+
+Two faults, and **finding the first made the measurement worse before it got
+better**, which is why the guard asserts a property and never a number.
+
+**The horizon.** `simRunPath` reports `reached` as the moment a runner touches his
+bag, and when the loop runs out first it reports the END OF THE SIM instead. Home
+to third is 3.33 diamond units and the slowest man runs 0.342 a second, so he
+needed about 9.9 and a nine second horizon reported 9.12 every time. Everything
+downstream trusts that number: the throw is timed against it, the close play is
+read off it, `deadAt` comes from it. `SIM_MAX_S` is 15 now, which covers first to
+home at the slowest speed (13.49s) with room. It costs sample arrays, 900 entries
+per runner instead of 540.
+
+**The one sided guard.** `lateThrow` asked only that the fielder not HOLD the ball
+too long, never that the throw not LAND too early, so when the runner was further
+off than the hold allowed, the launch clamped to `ready` and the ball beat him to
+the bag by whatever was left.
+
+**There were THREE untimed throws in that branch and each fix uncovered the
+next**: the `lateThrow` clamp, the last-resort `throwTo(from, 1, at + 1.0)`, and
+the one inside the cutoff relay, `throwTo(cutoffUV, ..., ready2 + 1.2)`. The last
+one put the ball on third five seconds before the runner. Measured after all
+three: **0 of 357**. When nobody can be thrown out the ball now comes in BEHIND
+the play, to a bag the lead runner has already touched, after he has touched it,
+which is what an infield actually does.
+
 ## Segue, the setlist game
 
 `setlist/index.html`, same one-file convention. It is NOT in the same state as

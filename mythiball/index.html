@@ -8112,7 +8112,25 @@ function playHighlight() {
    and finish timers be set from real events instead of from a duration.
    ============================================================================ */
 const SIM_HZ = 60, SIM_DT = 1 / SIM_HZ;
-const SIM_MAX_S = 9;
+/* HOW LONG THE SIM IS ALLOWED TO RUN, and it was too short for the
+   longest thing anybody does on this field.
+
+   simRunPath reports `reached` as the moment a runner touches his bag,
+   and when the loop runs out first it reports the END OF THE HORIZON
+   instead. That is not a small lie: everything downstream trusts it.
+   lateThrow times the throw against it, simFindClosePlay reads the race
+   off it, and deadAt and sim.end are computed from it.
+
+   Measured: home to third is 3.33 diamond units, and the slowest man on
+   the roster runs 0.342 a second, so he needs about 9.9 and reported
+   9.12 every time. A throw then landed at third four and a half seconds
+   before a runner the picture said was still coming, and he was safe.
+
+   Fifteen covers the longest leg anybody actually runs (first to home,
+   3.33 units, at the slowest speed) with room to spare. It costs sample
+   arrays: 60Hz times 15 seconds is 900 entries per runner per play,
+   against 540, for at most five runners. */
+const SIM_MAX_S = 15;
 
 /* Diamond coordinates. home (0,0), first (1,0), second (1,1), third (0,1). */
 const SIM_BASE_UV = [[1, 0], [1, 1], [0, 1], [0, 0]];   /* 0..2 bases, 3 home */
@@ -8637,16 +8655,27 @@ function buildPlaySim(p, opts) {
                                 .sort((a, b) => b.toIdx - a.toIdx);
       /* a throw from `origin` at or after `ready` to a base where a
          runner is arriving, timed to get there just after him */
+      /* THE GUARD WAS ONE SIDED. It asked only that the fielder not HOLD
+         the ball too long, and never that the throw not LAND too early,
+         so whenever the runner was further away than the hold allowed
+         for, `launch` clamped to `ready` and the ball beat him to the bag
+         by whatever was left. Measured over 700 plays, 66 of 420 throws
+         arrived ahead of a runner the book had safe, the worst by four
+         and a half seconds. The comment above says what it is meant to
+         look like; this is the second half of making it true. */
       const lateThrow = (origin, ready, maxHold) => {
         for (const r of byLead) {
           const base = r.toIdx;
           const trial = simThrow(origin, SIM_BASE_UV[base], ready);
           const launch = Math.max(ready, r.run.reached + 0.22 - trial.T);
-          if (launch - ready <= maxHold) {
-            const th = throwTo(origin, base, launch);
-            if (Math.abs(th.arrive - r.run.reached) < 0.6) r.slideFrom = 0.82;
-            return th;
-          }
+          if (launch - ready > maxHold) continue;      /* he cannot wait that long */
+          const arrive = launch + trial.T;
+          /* A ball that beats a safe runner to the bag is a throw nobody
+             made. Try the next man back rather than telling that lie. */
+          if (arrive < r.run.reached - 0.45) continue;
+          const th = throwTo(origin, base, launch);
+          if (Math.abs(th.arrive - r.run.reached) < 0.6) r.slideFrom = 0.82;
+          return th;
         }
         return null;
       };
@@ -8659,10 +8688,31 @@ function buildPlaySim(p, opts) {
         sim.throws.push(toCut);
         const ready2 = Math.max(toCut.arrive, c.run.reached) + SIM_TRANSFER;
         th = lateThrow(cutoffUV, ready2, 1.5);
-        if (!th) th = throwTo(cutoffUV, byLead.length ? Math.max(1, byLead[byLead.length - 1].toIdx) : 1, ready2 + 1.2);
+        /* THE THIRD UNTIMED THROW, and the one that survived fixing the
+           other two. It fired at a fixed 1.2 seconds after the relay man
+           had it, at whatever bag, so on a triple the ball reached third
+           five seconds before the runner and he was safe standing next
+           to it. Same rule as the others: in behind him, after he is
+           there. */
+        if (!th) {
+          const lead = byLead[0];
+          const bag = lead ? clamp(lead.toIdx - 1, 0, 2) : 1;
+          const when = lead ? Math.max(ready2, lead.run.reached + 0.15) : ready2 + 1.2;
+          th = throwTo(cutoffUV, bag, when);
+        }
         c.relayAt = ready2;
       }
-      if (!th) th = lateThrow(from, at, 1.4) || throwTo(from, 1, at + 1.0);
+      /* NOBODY TO THROW OUT. The ball comes in BEHIND the play, to a bag
+         the lead runner has already touched, after he has touched it.
+         The old last resort threw at second on a fixed clock whatever
+         anyone was doing, which is where an early arrival came back in
+         by the side door. */
+      if (!th) {
+        const lead = byLead[0];
+        const behind = lead ? clamp(lead.toIdx - 1, 0, 2) : 1;
+        const after = lead ? Math.max(at, lead.run.reached + 0.15) : at + 1.0;
+        th = lateThrow(from, at, 1.4) || throwTo(from, behind, after);
+      }
       for (const r of sim.runners) if (r.toIdx === 3 && !r.isBatter) r.slideFrom = 0.84;
       deadAt = Math.max(th.arrive, ...sim.runners.map(r => r.run.reached)) + 0.2;
       sim.applyAt = sim.landAt;
