@@ -6751,6 +6751,7 @@ function startAtBat() {
   if (playerIsBatting()) {
     /* CPU calls its own pitch, once the coach (first swing only) is done. */
     coachShow('bat', COACH.bat, () => setTimeout(() => {
+      if (walkWorthIt(State.game, currentBatter())) return issueIntentionalWalk();
       const pick = cpuCallPitch();
       throwPitch(pick.pt, pick.zone);
     }, BEAT.intoAtBat));
@@ -6827,6 +6828,44 @@ function coachShow(kind, steps, then) {
   show();
 }
 
+/* PUTTING HIM ON. The oldest strategic move in the sport and the game
+   had no way to express it: with first base open and the tying run at
+   second, every manager alive walks the slugger to face the next man,
+   and both sides here were forced to pitch to him.
+
+   The rule is the real one. First base has to be open, or it is just a
+   free run. Somebody has to be in scoring position, or there is nothing
+   to protect. It has to be LATE and CLOSE, because nobody hands out a
+   baserunner in the second inning of a blowout. And the man at the
+   plate has to be worth fearing, which here is power: the one thing
+   that turns a runner on second into two runs on one swing. */
+function walkWorthIt(g, batter) {
+  if (!g || !batter) return false;
+  if (g.bases[0]) return false;                     /* first base is taken */
+  if (!g.bases[1] && !g.bases[2]) return false;     /* nobody to protect */
+  if (g.inning < g.innings - 1) return false;       /* late only */
+  /* Close only, read from the FIELDING side: behind by more than one and
+     the run does not matter, ahead by more than two and neither does he. */
+  const lead = currentFieldingTeam().score - currentBattingTeam().score;
+  if (lead < -1 || lead > 2) return false;
+  return batter.pow >= 85;
+}
+/* Four wide ones. It goes through recordWalk, so the books, the jog and
+   the forced run all behave exactly as they do for a walk earned. */
+function issueIntentionalWalk() {
+  const g = State.game;
+  if (!g || g.over) return false;
+  const batter = currentBatter();
+  if (!batter) return false;
+  if (g.pitch) g.pitch.closed = true;
+  g.aiming = false;
+  addLog(`${batter.n} is put on intentionally.`, true);
+  showCallout('PUT HIM ON', 'sub');
+  Sound.play('ball');
+  recordWalk();
+  return true;
+}
+
 /* CPU pitching AI. Decides pitch type and zone against the current
    batter and count. Reads:
      - batter's CON: attack corners on high-CON hitters (avoid squaring up)
@@ -6899,6 +6938,7 @@ function nextPitch() {
   const g = State.game;
   if (!g || g.over) return;
   if (playerIsBatting()) {
+    if (walkWorthIt(g, currentBatter())) return issueIntentionalWalk();
     const pick = cpuCallPitch();
     throwPitch(pick.pt, pick.zone);
   } else {
@@ -6944,6 +6984,24 @@ function offerPitchSelection() {
     for (const btn of row.querySelectorAll('button')) btn.onclick = null;
     startReleaseMeter(chosenPt);
   };
+  /* PUT HIM ON, from your dugout. The button is only there when the move
+     is a real one, because a Walk him control sitting on screen every
+     pitch teaches nothing about when it is right; appearing exactly on
+     the count that calls for it is the lesson. `walkWorthIt` is the same
+     rule the CPU uses, so both dugouts manage by one book. */
+  const ibbBtn = row.querySelector('#ibb-btn');
+  if (ibbBtn) {
+    const showIbb = walkWorthIt(g, currentBatter());
+    ibbBtn.hidden = !showIbb;
+    ibbBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (done) return;
+      done = true;
+      row.style.display = 'none';
+      for (const btn of row.querySelectorAll('button')) btn.onclick = null;
+      issueIntentionalWalk();
+    };
+  }
   const refresh = () => { if (throwBtn) throwBtn.disabled = !chosenPt; };
   for (const btn of row.querySelectorAll('button[data-pt]')) {
     btn.onclick = (e) => {
@@ -12162,7 +12220,8 @@ function renderGame() {
     + `<button class="btn ghost" data-pt="curveball">Curveball</button>`
     + `<button class="btn ghost" data-pt="changeup">Changeup</button>`
     + `</div></div>`
-    + `<div class="col"><button class="btn" id="throw-btn" disabled>Throw</button></div>`;
+    + `<div class="col"><button class="btn ghost" id="ibb-btn" hidden>Walk him</button>`
+    + `<button class="btn" id="throw-btn" disabled>Throw</button></div>`;
   meter.appendChild(psel);
 
   /* Big touch-friendly SWING button under the meter, for phones and
@@ -13310,6 +13369,11 @@ function renderHowTo() {
     + 'it go. In the green the pitch goes where you aimed. Outside it, the miss '
     + 'opens up, and a miss off a corner is a ball. Every pitcher owns three '
     + 'pitches, so the buttons change with whoever you put on the mound.</p>'
+    + '<p><b>Walk him</b> appears beside the pitch buttons when the situation '
+    + 'calls for it: first base open, the tying or winning run in scoring '
+    + 'position, late, and a slugger at the plate. Putting him on trades a free '
+    + 'baserunner for a better matchup. The other dugout plays by the same rule, '
+    + 'so expect to be walked when you earn it.</p>'
     + '<p><b>The pitch is still yours after you let it go.</b> While it flies, '
     + 'hold <b>left or right</b> (an arrow key, or a side of the picture) and '
     + 'it leans that way: a strike bent off the plate, or a ball pulled back '

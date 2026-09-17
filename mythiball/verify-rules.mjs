@@ -36,6 +36,7 @@
      the dive             a liner draws a lunge that lands short and breaks no duty
      the snow             the cold parks play under falling snow
      the books balance     runs, walks and outs agree across the batting and pitching lines
+     putting him on       the intentional walk fires late and close, and never anywhere else
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -1796,6 +1797,72 @@ async function main() {
          which is the whole reason an average and an on base are two
          different numbers. Two walks were drawn above. */
       ok(r.ab === 8, 'a walk is a plate appearance and not an at bat', 'ab ' + r.ab);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- putting him on ---- */
+    {
+      console.log('putting him on');
+      /* The oldest strategic move in the sport, and neither dugout could
+         express it: with first base open and the tying run at second,
+         every manager alive walks the slugger, and both sides here were
+         forced to pitch to him.
+
+         What is asserted is the RULE, across the situations that decide
+         it, because a free baserunner handed out at the wrong moment is
+         worse than never handing one out at all. One book for both
+         dugouts: the CPU and the player's own button ask the same
+         function, so they can never drift into managing differently. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const slug = ROSTER.find(c => c.pow >= 90);
+        const weak = ROSTER.slice().sort((a, b) => a.pow - b.pow)[0];
+        /* bases: which bags are occupied; scores from the FIELDING side */
+        const at = (inn, bases, fieldScore, batScore, batter) => {
+          g.inning = inn; g.innings = 9; g.half = 'top';
+          g.bases = bases.map(x => x ? ROSTER[20] : null);
+          g.home.score = fieldScore; g.away.score = batScore;
+          return walkWorthIt(g, batter);
+        };
+        const out = {
+          classic:    at(9, [0,1,0], 3, 3, slug),
+          firstTaken: at(9, [1,1,0], 3, 3, slug),
+          nobodyOn:   at(9, [0,0,0], 3, 3, slug),
+          early:      at(2, [0,1,0], 3, 3, slug),
+          blowout:    at(9, [0,1,0], 12, 3, slug),
+          wayBehind:  at(9, [0,1,0], 1, 8, slug),
+          weakBat:    at(9, [0,1,0], 3, 3, weak),
+        };
+        /* And the act itself, through the real path: the man reaches
+           first, the walk is on the books, and it is charged to the arm. */
+        const realTimeout = window.setTimeout; window.setTimeout = () => 0;
+        g.inning = 9; g.half = 'top';
+        g.bases = [null, ROSTER[20], null];
+        g.home.score = 3; g.away.score = 3;
+        const who = currentBatter();
+        const bbBefore = (g.stats.bb[who.k] | 0);
+        issueIntentionalWalk();
+        window.setTimeout = realTimeout;
+        out.reached = !!(g.bases[0] && g.bases[0].k === who.k);
+        out.onTheBooks = (g.stats.bb[who.k] | 0) === bbBefore + 1;
+        out.chargedToArm = Object.values(g.pit.bb).reduce((a, c) => a + c, 0) > 0;
+        out.notAnAtBat = !(g.stats.ab[who.k] | 0);
+        return out;
+      });
+      ok(r.classic, 'ninth, tied, tying run on second, slugger up: put him on', String(r.classic));
+      ok(!r.firstTaken, 'never with first base occupied', String(r.firstTaken));
+      ok(!r.nobodyOn, 'never with nobody in scoring position', String(r.nobodyOn));
+      ok(!r.early, 'never in the second inning', String(r.early));
+      ok(!r.blowout, 'never with a big lead', String(r.blowout));
+      ok(!r.wayBehind, 'never when well behind', String(r.wayBehind));
+      ok(!r.weakBat, 'never for a hitter with no power', String(r.weakBat));
+      ok(r.reached, 'the walk puts him on first', String(r.reached));
+      ok(r.onTheBooks && r.chargedToArm, 'and it lands on both sides of the books',
+         `drawn ${r.onTheBooks}, charged ${r.chargedToArm}`);
+      ok(r.notAnAtBat, 'an intentional walk is still not an at bat', String(r.notAnAtBat));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
