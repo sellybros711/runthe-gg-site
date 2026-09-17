@@ -43,6 +43,7 @@
      the club remembers   a franchise carries its players' records, not only its win column
      the friendly button  Randomize hands you a mound, and a hand draft is told who is on it
      the picture agrees   no throw beats a safe runner to the bag, and no run outlasts the sim
+     the walk back        a strikeout has a frame, and it belongs to the man it happened to
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -2526,6 +2527,82 @@ async function main() {
       ok(r.longestLeg < r.horizon,
          'the slowest man on the roster gets from first to home inside it',
          `${r.longestLeg}s against a ${r.horizon}s horizon`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the walk back ---- */
+    {
+      console.log('the walk back');
+      /* A STRIKEOUT IS THE MOST FREQUENT THING THAT HAPPENS TO A HITTER
+         and the picture never acknowledged it. The batter reverted to
+         his neutral stance and stood in it for the whole afterOut beat,
+         so the screen looked the same whether he had just been rung up
+         or was waiting on the next pitch.
+
+         The generator is parametric, so a pose is one authored offset
+         that all sixty eight inherit rather than sixty eight drawings.
+         It costs about 61KB of sprite table, which is what one pose
+         across this roster weighs.
+
+         TWO THINGS HERE WERE ONLY FINDABLE BY LOOKING, and a count of
+         distinct frames was happy through both. At an eight pixel drop
+         the arms hang PAST the shoes and cover them, so a slumping Zeus
+         reads as a man with no feet. And a one pixel leg sink, tried to
+         give the quadrupeds something, clipped every biped's shoes off
+         the bottom of the 50px box while moving exactly one of the seven.
+         The arms carry it at five, and a dragon taking a called third
+         strike is a dragon standing there. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const ks = Object.keys(V2_SPRITES);
+        const f = (k) => V2_SPRITES[k].f || {};
+        return {
+          chars: ks.length,
+          have: ks.filter(k => f(k).slump).length,
+          /* every batter frame is seen from behind, and this is one */
+          rows: ks.filter(k => f(k).slump &&
+                  f(k).slump.split('/').length === (f(k).back || '').split('/').length).length,
+          /* the ones with arms have to differ from the pose they came from */
+          distinct: ks.filter(k => f(k).slump && f(k).slump !== f(k).back).length,
+        };
+      });
+      const moment = await pg.evaluate(async () => {
+        Sound.muted = true; PREFS.coach = false; PREFS.cutscenes = false;
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'T';
+        State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: false });
+        await new Promise(r => setTimeout(r, 700));
+        endAtBatCleanup(); State.game.pitch = null;
+        const g = State.game;
+        g.strikes = 2; g.balls = 0;
+        recordOut('called strikeout', true);
+        const set = g.slumpUntil > performance.now();
+        endAtBatCleanup();
+        const cleared = !g.slumpUntil;
+        /* a ground out is not a strikeout and gets no slump */
+        g.slumpUntil = 0;
+        recordOut('ground out', false);
+        const onlyK = !g.slumpUntil;
+        /* and the phoenix walks rather than slumping: she was not struck out */
+        g.batterCtx = { flags: { rebirth: true } }; g.phoenixUsed = false;
+        g.strikes = 2; recordOut('swinging strikeout', true);
+        const phoenix = !g.slumpUntil;
+        return { set, cleared, onlyK, phoenix };
+      });
+      ok(r.have === r.chars, 'every character has a walk back frame',
+         `${r.have} of ${r.chars}`);
+      ok(r.rows === r.chars, 'and it is drawn from behind, like every other batter frame',
+         `${r.rows} of ${r.chars}`);
+      ok(r.distinct >= 60,
+         'the ones with arms to drop actually drop them',
+         `${r.distinct} of ${r.chars} differ from their own back frame`);
+      ok(moment.set, 'a strikeout sets the beat it is shown for', String(moment.set));
+      ok(moment.onlyK, 'a ground out does not: he did not strike out', String(moment.onlyK));
+      ok(moment.cleared,
+         'IT BELONGS TO THE MAN IT HAPPENED TO: the next hitter does not inherit his shoulders',
+         String(moment.cleared));
+      ok(moment.phoenix, 'and a rebirth walks to first rather than slumping', String(moment.phoenix));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

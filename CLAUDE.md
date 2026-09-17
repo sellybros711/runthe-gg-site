@@ -2085,6 +2085,62 @@ three: **0 of 357**. When nobody can be thrown out the ball now comes in BEHIND
 the play, to a bag the lead runner has already touched, after he has touched it,
 which is what an infield actually does.
 
+### A strikeout had no frame, and a pose is one offset rather than 68 drawings
+
+The batter reverted to his neutral stance and stood in it for the whole
+`afterOut` beat, so the screen looked the same whether he had just been rung up
+or was waiting on the next pitch. That is the most frequent thing that happens to
+a hitter.
+
+**The generator is parametric**, so `slump` is one entry in `ARM_OFF` plus a line
+in `POSES` that all sixty eight characters inherit. It weighs about **61KB of
+sprite table**, which is what one pose across this roster costs (0.96MB for
+fifteen). Adding a pose is cheap; this section exists because judging it is not.
+
+**The generator reproduces the in-page table byte for byte**, so splicing is safe
+and that is worth checking before you splice. Adding a pose GROWS each
+character's palette, which shifts every letter and changes every string, so a
+string compare says everything changed. **Decode and compare pixels instead**:
+1020 existing frames came back identical.
+
+**Two things here were only findable by LOOKING, and a count of distinct frames
+was happy through both.**
+
+- At an eight pixel drop the arms hang PAST the shoes and cover them, so a
+  slumping Zeus reads as a man with no feet standing on two white posts. Five
+  clears the floor.
+- A one pixel leg sink, tried so the quadrupeds would get something, clipped
+  every biped's shoes off the bottom of the 50px box and moved exactly one of the
+  seven. It is back at zero.
+
+**Seven characters have no arms to drop** (the lion, the dog, the chupacabra, the
+phoenix, the dragon, nessie, the cat), which is the same reason `raised_arms`
+skips them. Their slump is their `back` frame. A dragon taking a called third
+strike is a dragon standing there.
+
+**The head cannot drop.** `cy` is per archetype and set after the body, so a
+slumped skull means threading the pose through every archetype's head draw. The
+arms carry it, and at the plate camera's 5.2x the batter is the biggest thing on
+screen.
+
+### How long a game actually takes
+
+Measured through the real buttons: a five inning game at **FAST** runs about **ten
+minutes**, 110 pitches over six half innings, a **median of 3.31 seconds** from
+one pitch to the next with a p90 of 7.39 that is the beat after an out and the
+break between halves. Normal is about a quarter longer again. **The target the
+speed setting exists to serve is five to ten minutes, so the default overshoots
+it and Fast only just arrives.**
+
+It is RECORDED rather than tuned, because the sample was a blowout and trimming a
+beat is a decision about feel that wants a person watching it.
+
+**The first attempt at this measurement was worse than useless.** The harness
+pressed `#swing-btn`, which is the PHONE control and is not visible at desktop
+width, so it never swung once and timed a game of nothing but called strikeouts,
+reporting a clean 0-20 loss. `scratchpad/pacing.mjs` presses Space now, which the
+coach notes name and which is always there.
+
 ## Segue, the setlist game
 
 `setlist/index.html`, same one-file convention. It is NOT in the same state as
