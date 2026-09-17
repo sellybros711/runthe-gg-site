@@ -35,6 +35,7 @@
      the play moves       the plan's physics agree with the scorer: outs beaten, hits not
      the dive             a liner draws a lunge that lands short and breaks no duty
      the snow             the cold parks play under falling snow
+     the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
      turning it sideways  which of the two a window gets follows the window
@@ -1728,6 +1729,56 @@ async function main() {
       ok(out.balls1 === out.balls0 + 1 && out.strikes1 === out.strikes0,
          'a strike at release, steered out, is called a BALL where it landed',
          `balls ${out.balls0}->${out.balls1}, strikes ${out.strikes0}->${out.strikes1}`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the coach tells the truth ---- */
+    {
+      console.log('the coach tells the truth');
+      /* THE FIRST THING A NEW PLAYER READS SHIPPED WRONG for as long as
+         the plate camera has existed. The notes were written for the old
+         wide camera, where a ring closed on a fixed target and WHERE you
+         clicked meant nothing, and they still said "swing when the
+         closing ring meets the green circle: click anywhere". There is
+         no closing ring in the batting camera, and where you put the bat
+         is the single thing that decides whether you make contact:
+         measured through the real SWING button, perfect timing with the
+         bat left alone made contact 6 of 10, and the same timing with
+         the bat ON the pitch made contact 8 of 8. So the note taught the
+         opposite of the mechanic, and a player who followed it exactly
+         would whiff and conclude the game was broken.
+
+         No checker could have caught it, because every sentence was
+         valid English about a real feature, just the wrong one. What is
+         assertable is AGREEMENT: the auto-opening notes and the long How
+         To Play page describe one game, and neither teaches a control
+         the batting camera does not draw. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const bat = COACH.bat.join(' ');
+        const pitch = COACH.pitch.join(' ');
+        /* what the batting camera actually draws for the player */
+        const drawsRing = /drawTimingRing/.test(drawPlateView.toString());
+        return {
+          bat, pitch, drawsRing,
+          /* the control that decides contact has to be named */
+          namesTheBat: /oval/i.test(bat) && /(mouse|finger|pointer|arrow)/i.test(bat),
+          /* and the thing that does not exist must not be taught */
+          teachesRing: /\bring\b/i.test(bat),
+          teachesClickAnywhere: /click anywhere/i.test(bat),
+          /* the pitching notes name buttons the strip really has */
+          throwLabel: !!document.querySelector('#throw-btn'),
+          teachesGrid: /on the grid/i.test(pitch),
+        };
+      });
+      ok(!r.drawsRing, 'the batting camera draws no closing ring', String(r.drawsRing));
+      ok(!r.teachesRing, 'so the notes do not tell a player to watch one', r.bat.slice(0, 120));
+      ok(r.namesTheBat, 'they name the oval and what moves it', r.bat.slice(0, 120));
+      ok(!r.teachesClickAnywhere, 'and never say place does not matter',
+         'the notes still say "click anywhere"');
+      ok(!r.teachesGrid, 'the pitching notes do not name a grid that was removed',
+         r.pitch.slice(0, 120));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

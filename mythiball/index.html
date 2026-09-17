@@ -6721,24 +6721,40 @@ function startAtBat() {
    if the player turns them off, and again if they turn them back on. The
    audit's first-timer walked into the first pitch with GET READY as the only
    instruction on screen; this is the fix for that. */
+/* THESE NOTES DESCRIBED A GAME THAT NO LONGER EXISTS, and it shipped.
+   They were written for the old wide camera, where a ring closed on a
+   target and WHERE you clicked meant nothing. The plate camera replaced
+   that with a bat you aim: the oval follows your pointer and the pitch
+   lands somewhere in the zone. So the first note a new player ever reads
+   told them to watch a ring that is not drawn and to "click anywhere",
+   which is the exact opposite of the one thing that decides whether they
+   hit the ball. Measured through the real button: swings timed perfectly
+   with the bat left where it sat made contact 6 times in 10; the same
+   timing with the bat ON the pitch made contact 8 times in 8.
+
+   The long How To Play page was correct the whole time. This is the
+   arcade's lesson arriving in this game: two surfaces say how to play,
+   the auto-opening one is the more read of the two, and both need the
+   edit. */
 const COACH = {
   bat: [
-    '<b>You are batting.</b> The pitcher throws toward the ring at the plate, '
-    + 'and the ring closes as the pitch comes in. Watch the ring, or watch the ball: '
-    + 'they arrive together.',
-    '<b>Swing</b> when the closing ring meets the <b>green circle</b>: click anywhere, '
-    + 'press <b>Space</b>, or tap SWING. Early or late is a foul or a miss.',
+    '<b>You are batting.</b> The green oval is your <b>bat</b>, and it follows '
+    + 'your mouse (or your finger, or the arrow keys). The box over the plate is '
+    + 'the strike zone.',
+    '<b>Put the oval where the pitch is going</b>, then swing as the ball reaches '
+    + 'the plate: <b>click</b>, press <b>Space</b>, or tap SWING. Where you put it '
+    + 'decides whether you hit it. When you swing decides how hard, and where it goes.',
     '<b>Contact, Power, Bunt</b> (keys 1, 2, 3) change your swing before the pitch. '
-    + 'Contact widens the green. Power narrows it and swings for the fence. '
-    + 'Start with Contact.',
+    + 'Contact is the forgiving one. Power swings for the fence. Start with Contact.',
   ],
   pitch: [
     '<b>You are pitching.</b> Your first pick is on the mound for the whole game. '
     + 'Nothing is thrown until you throw it.',
-    'Pick a <b>pitch</b>, then a <b>spot</b> on the grid. The middle is always a '
-    + 'strike and easy to hit. The corners are hard to hit, and a miss there is a ball.',
-    'Press <b>Throw It</b>. If they hit a grounder you time a throw to first; a fly '
-    + 'ball you catch by clicking when the ring is tightest. Every hitter has one '
+    'Pick a <b>pitch</b>, then <b>click in the picture</b> to put your spot where you '
+    + 'want it. The middle is always a strike and easy to hit. The corners are hard '
+    + 'to hit, and a miss out there is a ball.',
+    'Press <b>Throw</b>, then stop the bar in the <b>green</b> to release clean. '
+    + 'While it flies, hold <b>left or right</b> to bend it. Every hitter has one '
     + 'pitch they cannot handle. Find it.',
   ],
 };
@@ -13170,8 +13186,8 @@ function renderHowTo() {
     + '<p>Pitches fly differently: a <b>fastball</b> comes in hard and straight, a '
     + '<b>curveball</b> breaks late, a <b>screwball</b> breaks the other way, a '
     + '<b>changeup</b> floats and dies, a <b>slowball</b> drops in on a rainbow, the '
-    + '<b>knuckler</b> flutters so hard even the pitcher cannot say where the ring '
-    + 'will close, and <b>The Heat</b> is simply faster than everything else.</p>');
+    + '<b>knuckler</b> flutters so hard even the pitcher cannot say where it will '
+    + 'land, and <b>The Heat</b> is simply faster than everything else.</p>');
   s.appendChild(bat);
 
   const pitch = el('div','card');
@@ -13247,7 +13263,7 @@ function renderHowTo() {
     + 'A few: <b>Lady Liberty</b> never runs, so every real swing is a home run or a '
     + 'strikeout. <b>Mr. Hyde</b> transforms in about one at bat in six. '
     + '<b>Popeye</b> eats his spinach on his third trip to the plate. '
-    + '<b>Father Time</b> slows the ring down. <b>The Phoenix</b> turns her first '
+    + '<b>Father Time</b> makes every pitch take longer to arrive. <b>The Phoenix</b> turns her first '
     + 'strikeout of the game into a walk. <b>Black Cat</b> makes fielders bobble. '
     + '<b>Dracula</b> and the <b>Werewolf</b> get stronger in late innings. '
     + '<b>Humpty Dumpty</b> cracks a little with every out.</p>');
