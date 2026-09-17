@@ -2123,23 +2123,65 @@ slumped skull means threading the pose through every archetype's head draw. The
 arms carry it, and at the plate camera's 5.2x the batter is the biggest thing on
 screen.
 
-### How long a game actually takes
+### How long a game actually takes, and Fast now reaches its target
 
-Measured through the real buttons: a five inning game at **FAST** runs about **ten
-minutes**, 110 pitches over six half innings, a **median of 3.31 seconds** from
-one pitch to the next with a p90 of 7.39 that is the beat after an out and the
-break between halves. Normal is about a quarter longer again. **The target the
-speed setting exists to serve is five to ten minutes, so the default overshoots
-it and Fast only just arrives.**
+**Normalise PER HALF INNING.** A game that ends early on the mercy rule flatters a
+wall clock, and both samples here did: one stopped in the 4th, one in the 5th.
 
-It is RECORDED rather than tuned, because the sample was a blowout and trimming a
-beat is a decision about feel that wants a person watching it.
+| Fast | per half inning | 5 innings | median pitch to pitch | gaps over 8s |
+|---|---|---|---|---|
+| beat 0.60 | 80.2s | **13.4 min** | 3.31s | 2 |
+| beat 0.45 | 48.7s | **8.1 min** | 2.94s | 0 |
 
-**The first attempt at this measurement was worse than useless.** The harness
-pressed `#swing-btn`, which is the PHONE control and is not visible at desktop
-width, so it never swung once and timed a game of nothing but called strikeouts,
-reporting a clean 0-20 loss. `scratchpad/pacing.mjs` presses Space now, which the
-coach notes name and which is always there.
+Same harness, before and after, and the second run reached the fifth inning where
+the first reached the fourth: more baseball in less time. The target is five to
+ten minutes, so Fast is inside it now and was never close before.
+
+**NORMAL IS DELIBERATELY UNTOUCHED.** Its rhythm is the one a playtest asked for
+in as many words ("slow down a lot", recorded in `BASE_BEAT`), and the setting
+that exists to trade ceremony for pace is the one that should reach the target.
+The default stays the playtested game.
+
+**Two ways this measurement went wrong before it went right**, both worth not
+repeating:
+
+- The harness pressed `#swing-btn`, which is the PHONE control and is not visible
+  at desktop width, so it never swung once and timed a game of nothing but called
+  strikeouts, reporting a clean 0-20 loss. `scratchpad/pacing.mjs` presses Space,
+  which the coach notes name and which is always there.
+- An attribution probe that FORCED each next pitch reported the ordinary ball or
+  strike as 69% of the clock, and it was measuring the pitch FLIGHT: calling
+  `throwPitch` directly skips the very beats it was trying to weigh. **Cutting the
+  beat by a quarter moved its number from 1.41s to 1.39s, which is what gave it
+  away.** Only the COUNT attribution survived (two thirds of transitions are
+  ordinary pitches).
+
+### It was worth being slower
+
+`sendOdds` decides how often a runner waved round actually scores, and it was two
+separate curves rather than one curve with a bonus on the end. Crossing the floor
+RESTARTED the odds from a lower base:
+
+| | slower | faster | cost of speed |
+|---|---|---|---|
+| second to home on a single | 74: **47.7%** | 75: **35.0%** | -12.7 pts |
+| first to home on a double | 84: **54.3%** | 85: **30.0%** | **-24.3 pts** |
+
+**Tom Sawyer is 84 and Huck Finn is 86**, so waving both round sent the faster man
+home less often. Nothing could report it: every number involved is a valid
+probability and the play resolves correctly against whichever one it is handed.
+The only symptom is that the fast man you drafted for his legs keeps getting
+thrown out.
+
+One curve now, with the fast bonus ADDED to it. The guard asserts MONOTONICITY
+over the whole scale rather than the two numbers that were wrong, because a cliff
+can come back at any floor somebody tunes later.
+
+**What it did NOT fix, deliberately.** A runner scores from second on a single
+**24% of the time** (up from 16.6%), against about 60% in real baseball. Two
+thirds of that gap is the `spd >= 75` gate deciding who even tries, which is
+tuning and would move the run environment. Measure the run environment before
+touching it; the samples on hand are bot blowouts.
 
 ## Segue, the setlist game
 

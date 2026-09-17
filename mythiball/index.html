@@ -6802,25 +6802,35 @@ const BASE_BEAT = {
    the pitch sweep, kept mild because it also changes how hard the timing
    is.
 
-   MEASURED, THROUGH THE REAL BUTTONS, and the number to beat is still
-   not being beaten. A five inning game at FAST runs about ten minutes:
-   110 pitches over six half innings, a median of 3.31 seconds from one
-   pitch to the next, with a p90 of 7.39 that is the beat after an out
-   and the break between halves. Normal is about a quarter longer again.
-   The target this setting exists to serve is five to ten minutes, so the
-   DEFAULT overshoots it and the fast setting only just arrives.
+   MEASURED, THROUGH THE REAL BUTTONS, and normalised PER HALF INNING,
+   because a game that ends early on the mercy rule flatters a wall clock
+   and both samples here did.
 
-   It is recorded rather than tuned because the sample that produced it
-   was a blowout, and because trimming a beat is a decision about feel
-   that wants a person watching it rather than an arithmetic fix. The
-   first attempt at this measurement was worse than useless: the harness
-   pressed #swing-btn, which is the PHONE control and is not visible at
-   desktop width, so it never swung once and timed a game of nothing but
-   called strikeouts. */
+   Fast shipped at 0.60 and ran 80.2 seconds a half inning, which is 13.4
+   minutes for a five inning game against a five to ten minute target. At
+   0.45 it runs 48.7, which is 8.1 minutes, and the same harness reached
+   the fifth inning instead of the fourth: more baseball in less time.
+   Median pitch to pitch went 3.31 to 2.94 and the gaps over eight
+   seconds went from two to none.
+
+   NORMAL IS DELIBERATELY UNTOUCHED. Its rhythm is the one a playtest
+   asked for in as many words ("slow down a lot", recorded above), and
+   the setting that exists to trade ceremony for pace is the one that
+   should reach the target. The default is the playtested game.
+
+   Two ways this measurement went wrong first, both worth not repeating.
+   The harness pressed #swing-btn, which is the PHONE control and is not
+   visible at desktop width, so it never swung once and timed a game of
+   nothing but called strikeouts. And an attribution probe that FORCED
+   each next pitch reported the ordinary ball or strike as 69% of the
+   clock: it was measuring the pitch FLIGHT, because calling throwPitch
+   directly skips the very beats it was trying to weigh. Cutting the beat
+   by a quarter moved its number from 1.41s to 1.39s, which is what gave
+   it away. */
 const SPEEDS = {
   relaxed: { beat: 1.30, meter: 1.20, label:'Relaxed' },
   normal:  { beat: 1.00, meter: 1.00, label:'Normal' },
-  fast:    { beat: 0.60, meter: 0.85, label:'Fast' },
+  fast:    { beat: 0.45, meter: 0.85, label:'Fast' },
 };
 const BEAT = Object.assign({}, BASE_BEAT);
 function applyGameSpeed() {
@@ -9530,9 +9540,20 @@ function applyHitMutation(kind, batter, opts) {
      the rule for the at bat: AUTO is the speed rule, SEND waves anyone
      round at odds his legs earn, HOLD stops at third. The CPU keeps AUTO. */
   const rule = currentBattingTeam().isYou ? (g.sendRule || 'auto') : 'auto';
-  const sendOdds = (spd, fastFloor, fastBase, fastSlope) =>
-    spd >= fastFloor ? fastBase + (spd - fastFloor) / fastSlope
-                     : clamp(0.25 + (spd - 40) / 150, 0.15, 0.6);
+  /* HOW OFTEN HE MAKES IT, and it used to be worth being slower.
+     The two branches were two separate curves rather than one curve with
+     a bonus on the end of it, so crossing the floor RESTARTED the odds
+     from a lower base: a runner on 74 scored from second 47.7% of the
+     time and one on 75 scored 35.0%, and on a double the step was worse,
+     54.3% at 84 against 30.0% at 85. Tom Sawyer is 84 and Huck Finn is
+     86, so waving both round sent the faster man home less often. It is
+     a valid number either way and nothing could report it.
+     One curve now, with the fast bonus ADDED to it, so a point of speed
+     is never a cost. */
+  const sendOdds = (spd, fastFloor, fastBase, fastSlope) => {
+    const base = clamp(0.25 + (spd - 40) / 150, 0.15, 0.6);
+    return spd >= fastFloor ? base + (spd - fastFloor) / fastSlope : base;
+  };
   for (let i=2;i>=0;i--) {
     const runner = g.bases[i];
     if (!runner) continue;

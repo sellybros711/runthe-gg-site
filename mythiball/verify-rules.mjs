@@ -44,6 +44,7 @@
      the friendly button  Randomize hands you a mound, and a hand draft is told who is on it
      the picture agrees   no throw beats a safe runner to the bag, and no run outlasts the sim
      the walk back        a strikeout has a frame, and it belongs to the man it happened to
+     speed is never a cost  a faster runner is never waved home on worse odds than a slower one
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -2603,6 +2604,71 @@ async function main() {
          'IT BELONGS TO THE MAN IT HAPPENED TO: the next hitter does not inherit his shoulders',
          String(moment.cleared));
       ok(moment.phoenix, 'and a rebirth walks to first rather than slumping', String(moment.phoenix));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- speed is never a cost ---- */
+    {
+      console.log('speed is never a cost');
+      /* IT WAS WORTH BEING SLOWER, at two exact speeds.
+
+         sendOdds decides how often a runner waved round actually scores,
+         and it was two separate curves rather than one curve with a
+         bonus on the end. Crossing the floor RESTARTED the odds from a
+         lower base, so a runner on 74 scored from second 47.7% of the
+         time and one on 75 scored 35.0%. On a double the step was worse:
+         54.3% at 84 against 30.0% at 85. Tom Sawyer is 84 and Huck Finn
+         is 86, so waving both round sent the faster man home less often.
+
+         Nothing could report it. Every number involved is a valid
+         probability and the play resolves correctly against whichever
+         one it is handed; the only symptom is that the fast man you
+         drafted for his legs keeps getting thrown out.
+
+         The assertion is MONOTONICITY over the whole scale rather than
+         the two numbers that were wrong, because a cliff can come back
+         at any floor somebody tunes later. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        /* the shipped curve, reached the way applyHitMutation reaches it */
+        const sendOdds = (spd, fastFloor, fastBase, fastSlope) => {
+          const base = clamp(0.25 + (spd - 40) / 150, 0.15, 0.6);
+          return spd >= fastFloor ? base + (spd - fastFloor) / fastSlope : base;
+        };
+        const drops = (floor, base, slope) => {
+          const bad = [];
+          for (let s = 1; s <= 100; s++) {
+            if (sendOdds(s, floor, base, slope) < sendOdds(s - 1, floor, base, slope) - 1e-9) bad.push(s);
+          }
+          return bad;
+        };
+        /* and the source the page actually ships, so this cannot pass
+           against a copy while the real one is wrong */
+        const src = applyHitMutation.toString();
+        return {
+          singleDrops: drops(75, 0.35, 100),
+          doubleDrops: drops(85, 0.30, 120),
+          /* the two men who made it findable */
+          tom: sendOdds(84, 85, 0.30, 120),
+          huck: sendOdds(86, 85, 0.30, 120),
+          /* the real function is one curve plus a bonus, not two curves */
+          oneCurve: /const base = clamp/.test(src) && /base \+ \(spd - fastFloor\)/.test(src),
+          twoCurves: /fastBase \+ \(spd - fastFloor\)/.test(src),
+        };
+      });
+      ok(r.singleDrops.length === 0,
+         'SPEED IS NEVER A COST from second on a single, at any rating',
+         `worse at ${JSON.stringify(r.singleDrops)}`);
+      ok(r.doubleDrops.length === 0,
+         'nor from first on a double, which is where the step was 24 points',
+         `worse at ${JSON.stringify(r.doubleDrops)}`);
+      ok(r.huck > r.tom,
+         'Huck Finn is two quicker than Tom Sawyer and scores more often, not less',
+         `${r.huck.toFixed(3)} against ${r.tom.toFixed(3)}`);
+      ok(r.oneCurve && !r.twoCurves,
+         'and the page really ships one curve with a bonus, not two curves',
+         `oneCurve ${r.oneCurve}, twoCurves ${r.twoCurves}`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
