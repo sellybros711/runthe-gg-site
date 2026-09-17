@@ -1925,6 +1925,7 @@ The regression suite, which is the thing to run after editing:
 node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
 node mythiball/verify-rules.mjs    the rules replayed in a headless browser
 node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop, --easy/--hard for a tier)
+node mythiball/check-frames.mjs 70 normal --phone --cpu=4   frame times, on the machine that matters
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
 
@@ -2261,8 +2262,25 @@ the catch window and the robbery.
 ### Smoothness, measured, and one honest null result
 
 ```
-node scratchpad/frames.mjs 70 normal --phone --cpu=4
+node mythiball/check-frames.mjs                              desktop, which proves nothing
+node mythiball/check-frames.mjs 70 normal --phone --cpu=4    the run that matters
 ```
+
+**It is a meter with bands, like `calibrate.mjs`, and the bands are generous on
+purpose.** Frame timing is noisy: the same build measured 1.01%, 1.25% and 1.71%
+of frames over 33ms in three consecutive runs. A band tight enough to catch a 10%
+regression would flap on nothing, and a check people learn to ignore is worse than
+no check. What it catches is the render doubling, a hitch appearing, or a leak.
+
+**Input is not the problem and the header records why nobody should re-measure
+it.** Press to the game ACTING is 0.20ms (p90 2.2ms); press to the next frame is
+21.3ms against a 20ms floor at that throttle. The swing paints on the very next
+frame, which is the best there is.
+
+**The first attempt at that number said 50ms and was measuring the harness.** The
+rAF watcher was armed only after the keypress had gone out through CDP and come
+back, so it reported the round trip. It is armed before the press now and every
+timestamp is taken in the page.
 
 **A headless desktop is the easiest case there is**, and it says 60fps mean with
 one frame over 33ms in 4203. The run that matters is a phone viewport with the CPU
