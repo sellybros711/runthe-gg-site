@@ -40,6 +40,7 @@
      the tag              a caught fly moves a runner, and never on the third out
      the dugout learns    a harder tier chases less and reads a one pitch caller
      the robbery          a catchable hit can be taken away, and missing it costs nothing
+     the club remembers   a franchise carries its players' records, not only its win column
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -2244,6 +2245,104 @@ async function main() {
       ok(batting.opened === 0,
          'and the side at bat is never offered its own robbery',
          JSON.stringify(batting));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the club remembers ---- */
+    {
+      console.log('the club remembers');
+      /* A CLUB HERE REMEMBERED ONLY ITS WIN COLUMN. It has a city, a
+         nickname, a park with an effect, a record book and a Retire the
+         club button, and all of that promises continuity; what actually
+         carried between years was W-L, because perPlayer is per season
+         and seasonLine keeps year, record, rank and the title. So you
+         could draft somebody in year one, watch him hit twelve, re-draft
+         him in year two, and the game had no memory that he had ever
+         played for you. That is what made a redraft read as a reset.
+
+         IDEMPOTENCE IS THE LOAD-BEARING PROPERTY and it is not obvious
+         why. The draft for year N+1 happens BEFORE startSeason folds
+         anything, so the numbers a player reads while picking would
+         otherwise be a year out of date. foldCareers is pure over
+         (careers, perPlayer, team, year) and never touches its argument,
+         so drawing a screen with it and starting a year with it give the
+         same answer. Get that wrong and every re-signed player's record
+         doubles, silently, on a screen nobody would think to check. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const team = ROSTER.slice(0, 9).map(c => c.k);
+        const bench = team[8];          /* on the club, never at the plate */
+        const star = team[0], arm = team[1];
+        const yearOne = {
+          year: 1, team: team.slice(), careers: {},
+          perPlayer: {
+            [star]: { hr: 7, hits: 20, ab: 60, sb: 3, rbi: 14 },
+            [arm]:  { hr: 0, hits: 4, ab: 20, pOuts: 39, pRuns: 8 },
+          },
+        };
+        const c1 = foldCareers(yearOne);
+        const c1again = foldCareers(yearOne);
+        /* year two keeps the star and lets the arm go */
+        const yearTwo = {
+          year: 2, team: [star, ROSTER[9].k].concat(team.slice(2, 9)), careers: c1,
+          perPlayer: { [star]: { hr: 5, hits: 18, ab: 55, sb: 1, rbi: 11 } },
+        };
+        const c2 = foldCareers(yearTwo);
+        return {
+          starY1: c1[star], benchY1: c1[bench],
+          idempotent: JSON.stringify(c1) === JSON.stringify(c1again),
+          untouched: JSON.stringify(yearOne.careers) === '{}',
+          starY2: c2[star], armY2: c2[arm],
+          line: careerLine(c2[star]),
+          armLine: careerLine(c1[arm]),
+          benchLine: careerLine(c1[bench]),
+        };
+      });
+      /* and what a drafter actually sees */
+      const draft = await pg.evaluate(() => {
+        const team = ROSTER.slice(0, 9).map(c => c.k);
+        State.pendingFranchise = {
+          year: 1, team: team.slice(), careers: {},
+          perPlayer: { [team[0]]: { hr: 7, hits: 20, ab: 60, sb: 3, rbi: 14 } },
+        };
+        State.mode = 'season'; State.screen = 'roster'; render();
+        const cards = [...document.querySelectorAll('.charcard')];
+        const first = cards.find(c => (c.querySelector('.name') || {}).textContent
+                                      === (ROSTER_BY_KEY[team[0]] || {}).n);
+        return { cards: cards.length,
+                 yours: cards.filter(c => c.querySelector('.quirk.yours')).length,
+                 firstHasLine: !!(first && first.querySelector('.quirk.yours')) };
+      });
+      const brandNew = await pg.evaluate(() => {
+        State.pendingFranchise = null; State.season = null;
+        State.mode = 'season'; State.screen = 'roster'; render();
+        return document.querySelectorAll('.quirk.yours').length;
+      });
+      ok(r.starY1 && r.starY1.years === 1 && r.starY1.hr === 7,
+         'a finished year folds into the club book', JSON.stringify(r.starY1));
+      ok(r.benchY1 && r.benchY1.years === 1 && !r.benchY1.ab,
+         'A YEAR IS COUNTED OFF THE ROSTER: a man who never batted still spent the season here',
+         JSON.stringify(r.benchY1));
+      ok(r.idempotent, 'FOLDING TWICE GIVES THE SAME ANSWER, which is what lets the draft screen read it',
+         String(r.idempotent));
+      ok(r.untouched, 'and it never mutates what it was handed', String(r.untouched));
+      ok(r.starY2 && r.starY2.years === 2 && r.starY2.hr === 12,
+         'a second year adds to the first', JSON.stringify(r.starY2));
+      ok(r.armY2 && r.armY2.years === 1,
+         'and a man you let go keeps his record and stops adding to it', JSON.stringify(r.armY2));
+      ok(/2 years here/.test(r.line) && /12 HR/.test(r.line),
+         'the line on his card reads as a career', r.line);
+      ok(/IP/.test(r.armLine), 'an arm is described in innings, not in at bats', r.armLine);
+      ok(r.benchLine === '1 year here',
+         'and a man with nothing to show gets no row of zeros pretending to be a record',
+         r.benchLine);
+      ok(draft.yours === 9 && draft.firstHasLine,
+         'the draft screen marks every man who wore the shirt', JSON.stringify(draft));
+      ok(draft.cards > 9 && draft.yours < draft.cards,
+         'and leaves the rest of the board alone', JSON.stringify(draft));
+      ok(brandNew === 0, 'a brand new franchise is unmarked, exactly as it always was',
+         String(brandNew));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

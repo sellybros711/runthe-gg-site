@@ -1995,6 +1995,41 @@ a test that hits a second ball 700ms after the first is torn down by the first
 one's clock and reports a window that never opened. Each case in the guard waits
 the previous one out.
 
+### A franchise remembered only its win column
+
+A club here has a city, a nickname, a park with an effect on it, a record book and
+a Retire the club button, and every one of those promises CONTINUITY. What
+actually carried from one year to the next was W-L and nothing else: `perPlayer`
+is per season and `seasonLine()` keeps the year, the record, the rank and whether
+you won it. So you could draft Dracula in year one, watch him hit twelve,
+re-draft him in year two, and the game had no memory that he had ever played for
+you. That is what made redrafting read as a reset rather than a decision.
+
+**The roster is NOT locked between years and that is right.** "Play Year N+1"
+sends you back to the draft with everything you have unlocked on the board, which
+is what makes the unlock ladder worth climbing. The gap was never the redraft, it
+was that the club could not tell you which of these men were yours.
+
+`S.careers` is that memory, and `foldCareers` builds it.
+
+**Idempotence is the load-bearing property and it is not obvious why.** The draft
+for year N+1 happens BEFORE `startSeason` folds anything, so numbers read while
+picking would otherwise be a year out of date. `foldCareers` is pure over
+(`careers`, `perPlayer`, `team`, `year`) and never touches its argument, so
+drawing a screen with it and starting a year with it give the same answer. Get
+that wrong and every re-signed player's record doubles, silently, on a screen
+nobody would think to check.
+
+**A year is counted off the ROSTER, not off the stat sheet.** A ninth man who
+never got an at bat still spent the season on the club, and counting years from
+`perPlayer` would quietly leave him off his own record. He gets `1 year here` and
+no row of zeros pretending to be a career.
+
+Two surfaces, and the first is the one that changes a decision: a green line on
+the draft card for anybody who has worn the shirt, and a Club careers table on the
+record book screen. **A first year franchise is unmarked and looks exactly as it
+always did**, which the guard asserts from the other end.
+
 ## Segue, the setlist game
 
 `setlist/index.html`, same one-file convention. It is NOT in the same state as

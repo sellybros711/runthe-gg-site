@@ -120,6 +120,10 @@
   .charcard.locked canvas{filter:grayscale(1) brightness(.7);}
   .charcard.locked:hover{transform:none;box-shadow:var(--shadow-sm);}
   .quirk.lockhint{color:var(--gold);}
+  /* A man who has played for this club. Green because it is the only
+     line on the card that is about YOUR history rather than about him,
+     and it has to be findable at a glance while drafting nine of them. */
+  .quirk.yours{color:var(--green);font-weight:700;}
 
   /* THE INFO DOT. A rule a player needs once (how a tie breaks, when IN
      and OUT are certain) was printed under the table every single visit,
@@ -5130,6 +5134,11 @@ function renderRoster() {
       const nt = el('div','quirk', c.note);
       cc.appendChild(nt);
     }
+    /* YOUR MAN. The one line that turns a redraft into a re-signing: it
+       only appears for somebody who has actually played for this club,
+       so a first year draft looks exactly as it always did. */
+    const mine = careerOf(c.k);
+    if (mine) cc.appendChild(el('div', 'quirk yours', careerLine(mine)));
     /* Locked characters can't be drafted; the card says how to earn them,
        and hovering says how far along you are. */
     const locked = !isUnlocked(c.k);
@@ -5588,6 +5597,78 @@ function renderCup() {
    season long, which is not a franchise. */
 /* Set while a franchise is between years: the finished season, waiting for
    the new lineup to be drafted before it rolls forward. */
+/* THE FRANCHISE REMEMBERS ITS PLAYERS, and until now it remembered only
+   its win column.
+
+   A club here has a city, a nickname, a park with an effect on it, a
+   record book and a Retire the club button, and all of that promises
+   CONTINUITY. What actually carried from one year to the next was the
+   W-L line and nothing else: perPlayer is per season and seasonLine()
+   keeps year, record, rank and whether you won it. So you could draft
+   Dracula in year one, watch him hit twelve, re-draft him in year two,
+   and the game had no memory that he had ever played for you.
+
+   That is what made redrafting feel like a reset rather than a decision.
+   The roster screen already offers everything you have unlocked, which
+   is right and stays; what it could not tell you is which of these men
+   are YOURS. Now it can, and re-signing somebody is a choice with a
+   history behind it.
+
+   IT IS FOLDED RATHER THAN STORED RUNNING, and that is what makes it
+   safe to show on the draft screen. The draft for year N+1 happens
+   BEFORE startSeason folds anything, so the numbers a player reads while
+   picking would otherwise be a year out of date. foldCareers is pure
+   over (careers, perPlayer, team, year) and never touches its argument,
+   so calling it to draw a screen and calling it again to start the year
+   give the same answer. */
+const CAREER_KEYS = ['hr','hits','ab','so','sb','kp','r','rbi','bb','d','t',
+                     'pOuts','pRuns','pBB'];
+function foldCareers(carry) {
+  const out = {};
+  for (const [k, v] of Object.entries((carry && carry.careers) || {})) {
+    out[k] = Object.assign({}, v);
+  }
+  if (!carry) return out;
+  const yr = carry.year || 1;
+  const ensure = (k) => out[k] || (out[k] = { years: 0, first: yr, last: yr });
+  /* A YEAR IS COUNTED OFF THE ROSTER, not off the stat sheet. A ninth man
+     who never got an at bat still spent the season on the club, and
+     counting years from perPlayer would quietly leave him off his own
+     record. */
+  for (const k of (carry.team || [])) {
+    const c = ensure(k);
+    c.years = (c.years || 0) + 1;
+    c.first = Math.min(c.first == null ? yr : c.first, yr);
+    c.last = Math.max(c.last == null ? yr : c.last, yr);
+  }
+  for (const [k, v] of Object.entries(carry.perPlayer || {})) {
+    const c = ensure(k);
+    for (const key of CAREER_KEYS) if (v[key]) c[key] = (c[key] || 0) + v[key];
+  }
+  return out;
+}
+/* What the club's book says about one man, or null if he has never worn
+   the shirt. Read off the PENDING franchise while drafting and off the
+   live one otherwise, which are the only two states a roster screen has. */
+function careerOf(k) {
+  const src = State.pendingFranchise || State.season;
+  if (!src) return null;
+  const c = foldCareers(src)[k];
+  return c && c.years ? c : null;
+}
+/* One line a drafter can read at a glance. An arm gets its innings, a bat
+   gets its average, and a man with no plate appearances gets neither
+   rather than a row of zeros pretending to be a record. */
+function careerLine(c) {
+  const bits = [];
+  if (c.ab) bits.push(`${(c.hits / c.ab).toFixed(3).replace(/^0/, '')} avg`);
+  if (c.hr) bits.push(`${c.hr} HR`);
+  if (c.sb) bits.push(`${c.sb} SB`);
+  if (c.pOuts) bits.push(`${Math.floor(c.pOuts / 3)} IP`);
+  const yr = `${c.years} year${c.years === 1 ? '' : 's'}`;
+  return bits.length ? `${yr} here: ${bits.join(' · ')}` : `${yr} here`;
+}
+
 function startSeason(carry) {
   const yr = carry ? (carry.year || 1) + 1 : 1;
   const book = carry ? (carry.history || []).concat([seasonLine(carry)]) : [];
@@ -5611,6 +5692,7 @@ function startSeason(carry) {
     playoffs: null,
     playerStats: { hr:0, so:0, sb:0, hits:0, ab:0, d:0, t:0, r:0, rbi:0, bb:0 },
     perPlayer: {},   /* per character running totals across the season */
+    careers: foldCareers(carry),   /* and what the club remembers, for good */
     league: emptyLeague(),
     leagueSchedule: null,   /* filled below: it needs the schedule */
     leagueDone: 0,
@@ -13879,6 +13961,45 @@ function renderSeasonEnd() {
     hc.appendChild(el('p', null,
       `All time <b>${w}-${l}</b>${titles ? ` · <b>${titles}</b> title${titles === 1 ? '' : 's'}` : ''}`));
     s.appendChild(hc);
+  }
+
+  /* THE MEN WHO PLAYED FOR IT. The table above is the club's record and
+     this is its roster's, which is the half a franchise was missing: a
+     name that keeps turning up across four years is what makes the
+     redraft on the next screen a decision rather than a fresh start.
+
+     It is folded from the season just finished, so it is right on the
+     screen that ends year one rather than appearing a year late. */
+  {
+    const careers = foldCareers(S);
+    const rows = Object.entries(careers)
+      .map(([k, v]) => Object.assign({ k, n: (ROSTER_BY_KEY[k] || {}).n || k }, v))
+      .filter(r => r.ab || r.pOuts);
+    if (rows.length) {
+      const cc = el('div','card');
+      cc.appendChild(el('h3', null, 'Club careers'));
+      const t = el('table','table');
+      t.innerHTML = '<thead><tr><th>Player</th><th class="n">Yrs</th><th class="n">AVG</th>'
+        + '<th class="n">HR</th><th class="n">RBI</th><th class="n">SB</th></tr></thead>';
+      const tb = el('tbody');
+      /* Home runs first, then average: a club career table is read for
+         who hit the most, and a man with four at bats should not head it
+         on a lucky one for three. */
+      rows.sort((a, b) => (b.hr | 0) - (a.hr | 0)
+                       || (b.ab ? b.hits / b.ab : 0) - (a.ab ? a.hits / a.ab : 0));
+      for (const r of rows) {
+        const tr = el('tr', (S.team || []).indexOf(r.k) !== -1 ? 'you' : '');
+        const avg = r.ab ? (r.hits / r.ab).toFixed(3).replace(/^0/, '') : '-';
+        tr.innerHTML = `<td>${r.n}</td><td class="n">${r.years}</td><td class="n">${avg}</td>`
+          + `<td class="n">${r.hr | 0}</td><td class="n">${r.rbi | 0}</td><td class="n">${r.sb | 0}</td>`;
+        tb.appendChild(tr);
+      }
+      t.appendChild(tb);
+      cc.appendChild(t);
+      cc.appendChild(el('p', null,
+        'Anyone you re-sign carries these on. The draft screen says who is yours.'));
+      s.appendChild(cc);
+    }
   }
 
   /* What the next year could earn: the locked characters and how close
