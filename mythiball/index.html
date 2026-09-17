@@ -7372,7 +7372,12 @@ function batterContext(b) {
   if (b.quirk === 'stall') {
     ctx.flags.stall = true;
   }
-  /* Rabid Dog always swings: locked into frenzy for the CPU AI. */
+  /* Rabid Dog swings at nearly everything: locked into frenzy for the
+     CPU AI, which is 0.95 and deliberately not 1. A literal always means
+     he can never take ball four, so the one pitch he must not offer at
+     is the one that would walk him. The comment used to say "always" and
+     the code has said 0.95 the whole time; the code is the one that is
+     right. */
   if (b.quirk === 'frenzy') {
     ctx.flags.frenzy = true;
   }
@@ -7628,8 +7633,15 @@ function cpuBatPlan(g, batter, roll) {
   return 'normal';
 }
 /* A CPU runner on first goes when he is fast and the arm is not: SPD 80
-   and up against a pitcher under CON 70, one pitch in five. Second must be
-   open, as for the player's own steal. */
+   and up against a pitcher under PIT 70, one pitch in five. Second must be
+   open, as for the player's own steal.
+
+   IT SAID CON, AND THE CODE HAS ALWAYS READ PIT. That is the exact
+   confusion the bullpen note further down was written to kill: CON is a
+   BATTING stat, "forgives a late swing", and it stood in for an arm
+   nobody had until every character got a pitching rating. A comment
+   naming the wrong stat is worse than none, because the next person
+   fixes the CODE to match it. */
 function cpuStealWants(g, runner, pitcher, roll) {
   const r = roll == null ? Math.random() : roll;
   if (!runner || g.bases[1]) return false;
@@ -11811,8 +11823,15 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       }
       ctx.restore();
     }
-    /* Pitcher on the mound: windup for the first 65% of the pitch's
-       travel, release for the last 35%, then idle. */
+    /* Pitcher on the mound: he is in the WINDUP until the ball leaves his
+       hand, then in the RELEASE for the first 35% of the ball's travel,
+       then back to idle while it finishes.
+
+       The comment here used to read "windup for the first 65% of the
+       pitch's travel, release for the last 35%", which is backwards on
+       both halves: the windup is not during the travel at all, and the
+       release is the FIRST third of it rather than the last. The code
+       below has always done the right thing. */
     const pit = currentPitcher();
     let pitcherPose = null;
     if (pitch && !inWindup) {

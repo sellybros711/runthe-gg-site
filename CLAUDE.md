@@ -2258,6 +2258,33 @@ just the pitch") arriving at a **third** door, after `catchActive` and
 `throwActive`. Three schedulers carry the identity check now: the throw window,
 the catch window and the robbery.
 
+### A comment is a claim, and most of them are checkable
+
+Auditing what the code says about itself has found **three real bugs** in this
+file: the throw meant to arrive "just after he does" that beat a safe runner by
+five seconds, the coach notes teaching a removed control, and the send odds that
+made speed a cost.
+
+A sweep of the strong claims (`always`, `never`, `the only`, `one source`, and any
+comment carrying a number) found **three more, and all three were the COMMENT
+lying about correct code**, which is the dangerous direction: the next person
+fixes the code to match.
+
+| the comment said | the code does |
+|---|---|
+| `a pitcher under CON 70` | reads `pitcher.pit` |
+| `windup for the first 65% of travel, release for the last 35%` | backwards on both halves: the windup is before the travel, the release is its first third |
+| `Rabid Dog always swings` | 0.95, deliberately, so he can still take ball four |
+
+The CON one matters most, and it is the exact confusion the bullpen note was
+written to kill: **CON is a batting stat** that stood in for an arm nobody had
+until every character got a pitching rating.
+
+**What the guard asserts is the half that can drift silently.** A checker cannot
+read English, but it can read a stat name out of the shipped source, and it can
+test a structural claim: every character has a sprite with every pose (there is no
+fallback path), and the higher seed hosts across thirty seeded brackets.
+
 ### The run environment is NOT yet measured, and one attempt looked like it was
 
 Every pacing sample ended 0-18, 2-19, 0-20, which is either a bad bot or a broken

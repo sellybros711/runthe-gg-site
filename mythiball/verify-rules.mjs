@@ -47,6 +47,7 @@
      speed is never a cost  a faster runner is never waved home on worse odds than a slower one
      a rating buys more   every curve a rating feeds moves one way, over the whole scale
      the stale timer      a play's timer fires into its OWN play or not at all
+     the code's own claims  what the comments assert about the code is true of it
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -2813,6 +2814,88 @@ async function main() {
       ok(r.alive && errors.length === 0,
          'A TIMER FIRES INTO ITS OWN PLAY OR NOT AT ALL: the stale one is harmless',
          errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the code's own claims ---- */
+    {
+      console.log("the code's own claims");
+      /* A COMMENT IS A CLAIM AND MOST OF THEM ARE CHECKABLE. Auditing
+         them has found three real bugs in this file already: the throw
+         that was meant to arrive "just after he does" and beat a safe
+         runner by five seconds, the coach notes teaching a removed
+         control, and the send odds that made speed a cost.
+
+         A sweep of the strong ones found three more, and all three were
+         the COMMENT lying about correct code, which is the dangerous
+         direction: the next person fixes the code to match.
+
+           "against a pitcher under CON 70"  reads pitcher.pit
+           "windup for the first 65% of the pitch's travel, release for
+            the last 35%"                    is backwards on both halves
+           "Rabid Dog always swings"         swings 0.95, deliberately
+
+         What is asserted here is the half that can drift silently: the
+         structural claims. The prose is fixed in place and a checker
+         cannot read English, but it can read a stat name. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const out = {};
+        /* "Every character has a generated sprite, so this is the only
+           path." spriteCanvas calls heroSpriteCanvas with no fallback. */
+        out.missingSprite = ROSTER.filter(c => !hasHero(c.k)).map(c => c.k);
+        const keys = new Set(ROSTER.map(c => c.k));
+        out.orphanSprites = Object.keys(V2_SPRITES).filter(k => !keys.has(k));
+        const POSES = ['idle','run1','run2','back','backrun1','backrun2','windup',
+                       'release','swing','catch','throw','load','follow','kick',
+                       'ready','slump'];
+        out.shortPose = ROSTER.filter(c => {
+          const f = (V2_SPRITES[c.k] || {}).f || {};
+          return POSES.some(p => !f[p]);
+        }).map(c => c.k);
+
+        /* "the higher seed always hosts (the bracket puts home in the
+           higher slot already)" */
+        const bad = [];
+        for (let t = 0; t < 30; t++) {
+          const S = {
+            year: 1, team: ROSTER.slice(0, 9).map(c => c.k), teamName: 'A',
+            innings: 5, difficulty: 'medium', schedule: buildSchedule(),
+            results: [], playoffs: null, league: emptyLeague(), leagueDone: 0,
+            tiebreak: drawTiebreaks(), homeAt: buildHomeDates(),
+            perPlayer: {}, careers: {}, playerStats: {},
+          };
+          S.leagueSchedule = buildLeagueSchedule(S.schedule);
+          for (let i = 0; i < 7; i++) S.results.push({ win: Math.random() < 0.5, rf: 0, ra: 0 });
+          const P = seedPlayoffs(S);
+          for (const m of (P && P.semis) || []) {
+            if (m.home == null || m.away == null) { bad.push('null slot'); continue; }
+            if (m.home > m.away) bad.push(`home ${m.home} worse than away ${m.away}`);
+          }
+        }
+        out.seedTrouble = [...new Set(bad)].slice(0, 4);
+
+        /* THE STAT NAMES, read out of the shipped source. A comment that
+           names the wrong one is what sent a reader to CON for an arm. */
+        out.stealReadsPit = /pitcher\.pit/.test(cpuStealWants.toString());
+        out.stealSaysCon = /under CON/.test(cpuStealWants.toString());
+        return out;
+      });
+      ok(r.missingSprite.length === 0,
+         'CLAIM: every character has a generated sprite, so there is no other path',
+         JSON.stringify(r.missingSprite));
+      ok(r.orphanSprites.length === 0, 'and no sprite belongs to nobody',
+         JSON.stringify(r.orphanSprites));
+      ok(r.shortPose.length === 0,
+         'and every one carries every pose the drawer can ask for',
+         JSON.stringify(r.shortPose));
+      ok(r.seedTrouble.length === 0,
+         'CLAIM: the higher seed always hosts, over thirty seeded brackets',
+         JSON.stringify(r.seedTrouble));
+      ok(r.stealReadsPit && !r.stealSaysCon,
+         'the steal reads an ARM rating and no longer says CON, which is a bat rating',
+         `readsPit ${r.stealReadsPit}, saysCon ${r.stealSaysCon}`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
 
