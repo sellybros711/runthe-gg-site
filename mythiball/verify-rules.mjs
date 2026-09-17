@@ -35,6 +35,7 @@
      the play moves       the plan's physics agree with the scorer: outs beaten, hits not
      the dive             a liner draws a lunge that lands short and breaks no duty
      the snow             the cold parks play under falling snow
+     the books balance     runs, walks and outs agree across the batting and pitching lines
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -1733,6 +1734,72 @@ async function main() {
       await pg.close();
     }
 
+    /* ---- the books balance ---- */
+    {
+      console.log('the books balance');
+      /* THE BOX SCORE HELD FIVE COUNTERS and so could not answer the
+         first question anybody asks a baseball game, which is what a
+         man is hitting. Every column here is produced by play the game
+         already simulated and was being dropped at the end of the at
+         bat. What makes a box score trustworthy is not any single
+         number, it is that the numbers AGREE: runs credited to batters
+         must equal the scoreboard, runs charged to pitchers must equal
+         it too, and a walk drawn by one side is a walk issued by the
+         other. A column that only ever grows on its own can drift for a
+         season without anybody noticing.
+
+         Driven through the real mutation functions, which is where every
+         play path on the page ends up. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const realTimeout = window.setTimeout;
+        window.setTimeout = () => 0;
+        const bat = () => currentBatter();
+        const put = (i, c) => { g.bases[i] = c; };
+        const before = g.away.score + g.home.score;
+        try {
+          applyHitMutation('home run', bat());
+          applyHitMutation('single', bat());
+          applyHitMutation('double', bat());
+          put(0, ROSTER[20]); put(1, ROSTER[21]); put(2, ROSTER[22]); recordWalk();
+          g.bases = [null, null, null]; recordWalk();
+          recordOut('swinging strikeout', true);
+          applyOutMutation('fly out', bat());
+          applyOutMutation('ground out', bat());
+          g.outs = 0; applyHitMutation('triple', bat());
+          g.bases = [null, null, ROSTER[23]]; applyOutMutation('bunt out', bat());
+        } catch (e) { window.setTimeout = realTimeout; return { threw: String(e) }; }
+        window.setTimeout = realTimeout;
+        const sum = (o) => Object.values(o || {}).reduce((a, c) => a + c, 0);
+        return {
+          delta: (g.away.score + g.home.score) - before,
+          runs: sum(g.stats.r), rbi: sum(g.stats.rbi), ab: sum(g.stats.ab),
+          h: sum(g.stats.hits), bb: sum(g.stats.bb), hr: sum(g.stats.hr),
+          d: sum(g.stats.d), t: sum(g.stats.t),
+          pOuts: sum(g.pit.outs), pRuns: sum(g.pit.runs), pBB: sum(g.pit.bb),
+        };
+      });
+      ok(!r.threw, 'the whole inning plays without throwing', r.threw || '');
+      ok(r.runs === r.delta, 'runs credited to batters equal the scoreboard',
+         `${r.runs} credited, ${r.delta} on the board`);
+      ok(r.pRuns === r.delta, 'runs charged to pitchers equal the scoreboard',
+         `${r.pRuns} charged, ${r.delta} on the board`);
+      ok(r.bb === r.pBB, 'a walk drawn is a walk issued', `${r.bb} drawn, ${r.pBB} issued`);
+      ok(r.rbi > 0 && r.rbi <= r.runs, 'runs batted in are real and never exceed runs',
+         `${r.rbi} rbi against ${r.runs} runs`);
+      ok(r.pOuts >= 4, 'an out reaches the man who recorded it', 'outs ' + r.pOuts);
+      ok(r.h >= r.hr + r.d + r.t, 'extra base hits are a subset of hits',
+         `${r.h} hits against ${r.hr}+${r.d}+${r.t}`);
+      /* The walk is the one plate appearance that must NOT be an at bat,
+         which is the whole reason an average and an on base are two
+         different numbers. Two walks were drawn above. */
+      ok(r.ab === 8, 'a walk is a plate appearance and not an at bat', 'ab ' + r.ab);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
     /* ---- the coach tells the truth ---- */
     {
       console.log('the coach tells the truth');
@@ -2228,19 +2295,32 @@ async function main() {
         swapToMound(g.home, g.home.field[4]);
         finishGame();
         await new Promise(r => setTimeout(r, 400));
-        const lines = [...document.querySelectorAll('#app .card p')].map(p => p.textContent).filter(t => /pitch/.test(t));
-        return { lines, starter: g.home.batters[0].n,
+        /* The shared sentence became a table with a row per arm, because
+           runs and outs are kept per pitcher now and it no longer has to
+           say "between them". Read the rows. */
+        const tables = [...document.querySelectorAll('#app .card table')];
+        const pitchTables = tables.filter(t => /IP/.test(t.querySelector('thead').textContent));
+        const rows = pitchTables.map(t => [...t.querySelectorAll('tbody tr')]
+          .map(tr => [...tr.querySelectorAll('td')].map(td => td.textContent.trim())));
+        return { rows, starter: g.home.batters[0].n,
                  relief: g.home.batters[g.home.field[0]].n, theirs: g.away.batters[0].n,
                  pitched: g.home.pitched };
       });
-      const two = r.lines.find(l => /between them/.test(l)) || '';
-      const one = r.lines.find(l => !/between them/.test(l)) || '';
-      ok(r.lines.length === 2, 'a pitching line per side', JSON.stringify(r.lines));
+      /* Keyed on the TABLE, not on a sentence. The old assertions read
+         the phrase "between them", which existed only because the line
+         could not split runs between two arms; now each arm owns a row,
+         so what is asserted is the row itself. */
+      const flat = r.rows.flat();
+      const names = flat.map(cells => cells[0]);
+      ok(r.rows.length === 2, 'a pitching table per side', JSON.stringify(r.rows));
       ok(r.pitched.length === 2, 'a real in-game change records both arms, starter first', JSON.stringify(r.pitched));
-      ok(two.includes(r.starter) && two.includes(r.relief) && /pitched:/.test(two),
-         'the side that used two arms names both and shares the line', two);
-      ok(one.includes(r.theirs) && /pitching:/.test(one) && !/ and /.test(one),
-         'the side that used one arm names one', one);
+      ok(names.includes(r.starter) && names.includes(r.relief),
+         'the side that used two arms gives each his own row', JSON.stringify(names));
+      ok(names.includes(r.theirs), 'and the side that used one names him', JSON.stringify(names));
+      /* Every row carries an innings figure written in thirds, which is
+         the column that could not exist before outs were credited. */
+      ok(flat.every(c => /^\d+\.[012]$/.test(c[1])),
+         'every arm has an innings pitched in thirds', JSON.stringify(flat.map(c => c[1])));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

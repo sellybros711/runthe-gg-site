@@ -5609,7 +5609,7 @@ function startSeason(carry) {
     schedule: buildSchedule(),
     results: [],
     playoffs: null,
-    playerStats: { hr:0, so:0, sb:0, hits:0, ab:0 },
+    playerStats: { hr:0, so:0, sb:0, hits:0, ab:0, d:0, t:0, r:0, rbi:0, bb:0 },
     perPlayer: {},   /* per character running totals across the season */
     league: emptyLeague(),
     leagueSchedule: null,   /* filled below: it needs the schedule */
@@ -6344,7 +6344,18 @@ function startGame(opts) {
        `pitched` is every man who has thrown, in order, for the box score. */
     away: { name: youHome ? State.opponent.name : State.teamName, batters: youHome ? battersHome : battersAway, idx:0, score:0, isYou: !youHome, color: youHome ? State.opponent.color : teamKitColor(), field: [0,1,2,3,4,5,6,7,8], arm: {}, pitched: [] },
     home: { name: youHome ? State.teamName : State.opponent.name, batters: youHome ? battersAway : battersHome, idx:0, score:0, isYou: youHome, color: youHome ? teamKitColor() : State.opponent.color, field: [0,1,2,3,4,5,6,7,8], arm: {}, pitched: [] },
-    stats: { hr:{}, so:{}, sb:{}, hits:{}, ab:{} },
+    /* THE BOX SCORE IS THE GAME'S MEMORY. It held five counters, so the
+       one number every baseball fan asks for (an average) could not be
+       computed, and a player who drove in four runs had nothing to show
+       for it. Every one of these is produced by play the game already
+       simulates; they were being thrown away at the end of the at bat.
+       `d` and `t` are doubles and triples, `r` runs scored, `rbi` runs
+       driven in, `bb` walks drawn. */
+    stats: { hr:{}, so:{}, sb:{}, hits:{}, ab:{}, d:{}, t:{}, r:{}, rbi:{}, bb:{} },
+    /* And the man on the mound owns what he gave up. Outs are what make
+       an innings-pitched column possible, which is what makes an ERA
+       possible; without them a pitching line is a strikeout count. */
+    pit: { outs:{}, runs:{}, bb:{} },
     lineScore: { away:[0], home:[] },   /* runs per inning, per side */
     fx: [],           /* live particles: dust, confetti, glove flashes */
     shakeUntil: 0,    /* camera shake deadline (home runs) */
@@ -6400,9 +6411,44 @@ function currentPitcher() {
 function playerIsBatting() {
   return currentBattingTeam().isYou;
 }
-function statBump(k, key) {
+function statBump(k, key, by) {
   const g = State.game;
-  g.stats[key][k] = (g.stats[key][k] || 0) + 1;
+  if (!g || !g.stats || !k) return;
+  if (!g.stats[key]) g.stats[key] = {};
+  g.stats[key][k] = (g.stats[key][k] || 0) + (by == null ? 1 : by);
+}
+/* EVERY OUT IS SOMEBODY'S OUT. `g.outs++` was written at six sites and
+   none of them told the pitcher, so there was no innings pitched and
+   therefore no ERA. One door, and the arm on the mound at the moment it
+   happens is the arm that gets it. */
+function addOuts(nOuts) {
+  const g = State.game;
+  if (!g) return;
+  g.outs += nOuts;
+  creditArm('outs', nOuts);
+}
+/* BOOKKEEPING MUST NEVER BREAK A GAME. Recording who did it is strictly
+   less important than the out or the run itself, and these run from
+   inside play handlers: a throw here aborts the handler halfway, which
+   is how a game freezes with the button dead. So the credit is wrapped,
+   and a missing arm costs a column rather than the inning. */
+function creditArm(key, nOuts) {
+  try {
+    const g = State.game;
+    if (!g || !g.pit || !g.pit[key]) return;
+    const t = currentFieldingTeam();
+    if (!t || !t.batters) return;
+    const arm = fielderAt(t, 0);
+    if (arm) g.pit[key][arm.k] = (g.pit[key][arm.k] | 0) + nOuts;
+  } catch (e) { /* a column, never the inning */ }
+}
+/* What a pitcher gave up, for the same reason. Runs are charged to
+   whoever is standing there when they cross, which is the simple rule
+   rather than the inherited-runner rule real baseball uses: this game
+   changes pitchers between innings almost always, so the two agree
+   nearly everywhere and the simple one can never be wrong by a lot. */
+function chargeRuns(nRuns) {
+  creditArm('runs', nRuns);
 }
 /* FORM. A hit or an out, per plate appearance, per character, so the at
    bat card can say HOT or COLD from the last ten. The box score already
@@ -8926,7 +8972,7 @@ function applyDoublePlayMutation(batter) {
   noteForm(batter.k, false);
   const preRunner = g.bases[0];
   g.bases[0] = null;
-  g.outs += 2;
+  addOuts(2);
   addLog(`Double play. ${batter.n} and ${preRunner.n} both out. ${g.outs} out.`);
   showCallout('DOUBLE PLAY', 'strike');
   /* Kick up dust at both bases for the play. */
@@ -8964,16 +9010,20 @@ function applyHitMutation(kind, batter, opts) {
       if (before + g.stats.hr[batter.k] === 1) toast(`First homer of the season · <b>${batter.n}</b>`);
     }
     let scored = 1;
-    for (let i=0;i<3;i++) if (g.bases[i]) scored++;
+    const crossed = [batter.k];
+    for (let i=0;i<3;i++) if (g.bases[i]) { scored++; crossed.push(g.bases[i].k); }
     g.bases = [null,null,null];
-    scoreRuns(scored);
+    scoreRuns(scored, { rbi: batter.k, scorers: crossed });
     addLog(`${batter.n} crushes it. HOME RUN. ${scored} run${scored>1?'s':''} score.`, true);
     showCallout(`HOME RUN · ${scored} RUN${scored>1?'S':''}`, 'homer');
     return;
   }
   const bases = { 'single':1,'double':2,'triple':3 }[kind];
+  if (!onError && kind === 'double') statBump(batter.k, 'd');
+  if (!onError && kind === 'triple') statBump(batter.k, 't');
   let scored = 0;
   let thrownOut = 0;
+  const crossed = [];
   const newBases = [null,null,null];
   /* SEND OR HOLD. The speed rule below used to decide every runner's
      dash for home by itself. When you bat, the button beside Steal sets
@@ -8994,7 +9044,7 @@ function applyHitMutation(kind, batter, opts) {
     const goes = (fastFloor) => rule !== 'hold' && (rule === 'send' || runner.spd >= fastFloor);
     /* If he is out at the plate, mark it on the play so the draw loop can
        show him arriving late while the catcher stands with the ball. */
-    const killAtHome = () => { thrownOut++; g.outs++; addLog(`${runner.n} thrown out at the plate.`);
+    const killAtHome = () => { thrownOut++; addOuts(1); addLog(`${runner.n} thrown out at the plate.`);
       if (g.play) g.play.plateOut = { runner, at: performance.now() }; };
     if (!onError && kind === 'single' && i === 1 && goes(75)) {
       const scoreChance = sendOdds(runner.spd, 75, 0.35, 100);
@@ -9009,12 +9059,13 @@ function applyHitMutation(kind, batter, opts) {
     } else if (rule === 'hold' && !onError && ((kind === 'single' && i === 1) || (kind === 'double' && i === 0))) {
       addLog(`${runner.n} holds at third.`);
     }
-    if (dest >= 3) scored++;
+    if (dest >= 3) { scored++; crossed.push(runner.k); }
     else newBases[dest] = runner;
   }
   newBases[bases-1] = batter;
   g.bases = newBases;
-  if (scored) scoreRuns(scored);
+  /* An error is not an RBI: the run scored because somebody dropped it. */
+  if (scored) scoreRuns(scored, { rbi: onError ? null : batter.k, scorers: crossed });
   if (onError) {
     addLog(`${batter.n} reaches on an error${scored ? `, ${scored} score` : ''}.`);
     showCallout('REACHED ON ERROR', 'sub');
@@ -9037,13 +9088,13 @@ function applyOutMutation(kind, batter) {
     /* The sacrifice: the batter is out, everybody else moves up. */
     const fromThird = g.bases[2];
     g.bases = [null, g.bases[0], g.bases[1]];
-    g.outs++;
-    if (fromThird) scoreRuns(1);
+    addOuts(1);
+    if (fromThird) scoreRuns(1, { rbi: batter.k, scorers: [fromThird.k] });
     addLog(`${batter.n} lays down a sacrifice bunt${fromThird ? ', a run scores' : ''}. ${g.outs} out.`);
     showCallout(fromThird ? 'SQUEEZE! RUN SCORES' : 'SACRIFICE BUNT', fromThird ? 'homer' : 'sub');
     return;
   }
-  g.outs++;
+  addOuts(1);
   addLog(`${batter.n} out (${kind}) to the ${randPos(kind)}. ${g.outs} out.`);
   showCallout(kind === 'ground out' ? 'GROUND OUT' : 'FLY OUT', 'sub');
 }
@@ -9333,17 +9384,20 @@ function applyErrorMutation(batter) {
   noteForm(batter.k, false);
   /* All runners advance two, batter to first. */
   let scored = 0;
+  const crossed = [];
   const newBases = [null, null, null];
   for (let i = 2; i >= 0; i--) {
     const runner = g.bases[i];
     if (!runner) continue;
     const dest = i + 2;
-    if (dest >= 3) scored++;
+    if (dest >= 3) { scored++; crossed.push(runner.k); }
     else newBases[dest] = runner;
   }
   newBases[0] = batter;
   g.bases = newBases;
-  if (scored) scoreRuns(scored);
+  /* Runners who came round on a misplay: nobody is credited a run
+     batted in for it, but the men who scored still scored. */
+  if (scored) scoreRuns(scored, { scorers: crossed });
 }
 
 function afterHitTransition(kind) {
@@ -9374,29 +9428,33 @@ function recordHit(kind, batter) {
   const g = State.game;
   statBump(batter.k,'ab');
   statBump(batter.k,'hits');
+  if (kind === 'double') statBump(batter.k, 'd');
+  if (kind === 'triple') statBump(batter.k, 't');
   const bases = { 'single':1,'double':2,'triple':3,'home run':4,'bunt single':1 }[kind];
   if (kind === 'home run') {
     statBump(batter.k,'hr');
     let scored = 1;   /* the batter */
-    for (let i=0;i<3;i++) if (g.bases[i]) scored++;
+    const crossed = [batter.k];
+    for (let i=0;i<3;i++) if (g.bases[i]) { scored++; crossed.push(g.bases[i].k); }
     g.bases = [null,null,null];
-    scoreRuns(scored);
+    scoreRuns(scored, { rbi: batter.k, scorers: crossed });
     addLog(`${batter.n} crushes it. HOME RUN. ${scored} run${scored>1?'s':''} score.`, true);
     showCallout(`HOME RUN · ${scored} RUN${scored>1?'S':''}`, 'homer');
   } else {
     /* Advance existing runners by `bases`, then place batter */
     let scored = 0;
+    const crossed = [];
     const newBases = [null,null,null];
     for (let i=2;i>=0;i--) {
       const runner = g.bases[i];
       if (!runner) continue;
       const dest = i + bases;   /* 0=first, 1=second, 2=third; dest>=3 scores */
-      if (dest >= 3) scored++;
+      if (dest >= 3) { scored++; crossed.push(runner.k); }
       else newBases[dest] = runner;
     }
     if (bases < 4) newBases[bases-1] = batter;
     g.bases = newBases;
-    if (scored) scoreRuns(scored);
+    if (scored) scoreRuns(scored, { rbi: batter.k, scorers: crossed });
     const verb = kind === 'bunt single' ? 'drops a bunt and beats it out'
                : `lines a ${kind}`;
     addLog(`${batter.n} ${verb}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
@@ -9412,6 +9470,11 @@ function recordWalk() {
   const batter = currentBatter();
   if (g.pitch) g.pitch.closed = true;
   g.plateHold = 0;
+  /* A WALK IS NOT AN AT BAT, which is the whole reason an average and an
+     on base percentage are different numbers. It is charged to the arm
+     that issued it. */
+  statBump(batter.k, 'bb');
+  creditArm('bb', 1);
   addLog(`${batter.n} walks.`);
   showCallout('WALK', 'sub');
   /* EVERYBODY JOGS. The batter used to appear on first and the forced
@@ -9433,11 +9496,12 @@ function recordWalk() {
   }
   const bases = g.bases;
   let scored = 0;
-  if (bases[0] && bases[1] && bases[2]) { scored = 1; g.bases = [batter, bases[0], bases[1]]; }
+  let forcedHome = null;
+  if (bases[0] && bases[1] && bases[2]) { scored = 1; forcedHome = bases[2]; g.bases = [batter, bases[0], bases[1]]; }
   else if (bases[0] && bases[1]) { g.bases = [batter, bases[0], bases[1]]; }
   else if (bases[0]) { g.bases = [batter, bases[0], bases[2]]; }
   else { g.bases = [batter, bases[1], bases[2]]; }
-  if (scored) scoreRuns(scored);
+  if (scored) scoreRuns(scored, { rbi: batter.k, scorers: forcedHome ? [forcedHome.k] : [] });
   refreshHud();
   /* A walk-off WALK. scoreRuns raised the plaque, and this path used to
      walk straight past it: next batter, next pitch, a game the board said
@@ -9471,7 +9535,7 @@ function recordOut(reason, isStrikeout) {
   if (isStrikeout) statBump(batter.k,'so');
   noteForm(batter.k, false);
   noteFragileOut(batter);
-  g.outs++;
+  addOuts(1);
   addLog(`${batter.n} out (${reason}). ${g.outs} out.`);
   if (isStrikeout) {
     /* When YOU are pitching, a strikeout is your play, and the plaque
@@ -9512,10 +9576,18 @@ function nextBatter() {
   g.balls = 0; g.strikes = 0;
 }
 
-function scoreRuns(n) {
+function scoreRuns(n, credit) {
   const g = State.game;
   const t = currentBattingTeam();
   t.score += n;
+  /* WHO GETS THE CREDIT. `credit.rbi` is the batter who drove them in,
+     `credit.scorers` the men who actually crossed. Both are optional, so
+     a caller that cannot say (a quirk, a cutscene) still scores the run
+     and simply credits nobody, which is better than crediting the wrong
+     man. The pitcher is charged either way. */
+  if (credit && credit.rbi) statBump(credit.rbi, 'rbi', n);
+  if (credit && credit.scorers) for (const k of credit.scorers) statBump(k, 'r');
+  chargeRuns(n);
   /* File the runs on the line score under the current inning. */
   const key = g.half === 'top' ? 'away' : 'home';
   while (g.lineScore[key].length < g.inning) g.lineScore[key].push(0);
@@ -9652,22 +9724,29 @@ function finishGame() {
     });
     /* Roll individual stats forward */
     const ps = State.season.playerStats;
-    for (const k of Object.keys(g.stats.hr)) ps.hr += g.stats.hr[k];
-    for (const k of Object.keys(g.stats.so)) ps.so += g.stats.so[k];
-    for (const k of Object.keys(g.stats.sb || {})) ps.sb += g.stats.sb[k];
-    for (const k of Object.keys(g.stats.hits)) ps.hits += g.stats.hits[k];
-    for (const k of Object.keys(g.stats.ab)) ps.ab += g.stats.ab[k];
+    /* One loop over every column the game keeps, so adding a stat to the
+       box score never needs a second edit here. A save written before a
+       column existed simply starts it at zero. */
+    for (const key of Object.keys(g.stats)) {
+      if (ps[key] == null) ps[key] = 0;
+      for (const k of Object.keys(g.stats[key] || {})) ps[key] += g.stats[key][k];
+    }
     /* Per-character season stats for the leaderboard. */
     const per = State.season.perPlayer || (State.season.perPlayer = {});
     const bumpPer = (k, key, n) => {
       if (!per[k]) per[k] = { hr:0, hits:0, ab:0, so:0, sb:0, kp:0 };
       per[k][key] = (per[k][key] || 0) + n;
     };
-    for (const [k, v] of Object.entries(g.stats.hr || {})) bumpPer(k, 'hr', v);
-    for (const [k, v] of Object.entries(g.stats.so || {})) bumpPer(k, 'so', v);
-    for (const [k, v] of Object.entries(g.stats.sb || {})) bumpPer(k, 'sb', v);
-    for (const [k, v] of Object.entries(g.stats.hits || {})) bumpPer(k, 'hits', v);
-    for (const [k, v] of Object.entries(g.stats.ab || {})) bumpPer(k, 'ab', v);
+    /* Same loop, per character, so the leaders board can rank on anything
+       the box score holds. */
+    for (const key of Object.keys(g.stats)) {
+      for (const [k, v] of Object.entries(g.stats[key] || {})) bumpPer(k, key, v);
+    }
+    /* And the arms: outs pitched and runs allowed, which is what makes an
+       innings column and an ERA possible on the season page. */
+    for (const [k, v] of Object.entries((g.pit || {}).outs || {})) bumpPer(k, 'pOuts', v);
+    for (const [k, v] of Object.entries((g.pit || {}).runs || {})) bumpPer(k, 'pRuns', v);
+    for (const [k, v] of Object.entries((g.pit || {}).bb || {})) bumpPer(k, 'pBB', v);
     /* Your pitchers' strikeouts, for the Golden Arm, credited to whoever
        was actually on the mound for each one. */
     for (const [k, v] of Object.entries(g.kBy || {})) bumpPer(k, 'kp', v);
@@ -12621,7 +12700,7 @@ function attemptSteal() {
       showCallout('STOLEN BASE', 'hit');
     } else {
       g.bases[0] = null;
-      g.outs++;
+      addOuts(1);
       addLog(`CAUGHT STEALING. ${runner.n} tagged out. ${g.outs} out.`);
       showCallout('CAUGHT STEALING', 'strike');
     }
@@ -12761,35 +12840,46 @@ function renderResult() {
   s.appendChild(lsCard);
 
   /* Batting lines for BOTH lineups, so the box score is a real box score. */
+  /* THE COLUMNS A BOX SCORE ACTUALLY HAS. It read AB H HR K SB, which is
+     missing the two every fan looks for first: what he drove in and
+     whether he came round. A walk column is what makes the average mean
+     something, because a walk is the plate appearance that is not an at
+     bat. It scrolls sideways rather than dropping columns on a phone,
+     the way the line score above it already does. */
+  const stat = (key, k) => (g.stats[key] && g.stats[key][k]) || 0;
   const batTable = (team) => {
     const t = el('table','table');
-    t.innerHTML = '<thead><tr><th>Batter</th><th class="n">AB</th><th class="n">H</th>'
-                + '<th class="n">HR</th><th class="n">K</th><th class="n">SB</th><th class="n">AVG</th></tr></thead>';
+    t.innerHTML = '<thead><tr><th>Batter</th><th class="n">AB</th><th class="n">R</th>'
+                + '<th class="n">H</th><th class="n">HR</th><th class="n">RBI</th>'
+                + '<th class="n">BB</th><th class="n">K</th><th class="n">AVG</th></tr></thead>';
     const tb = el('tbody');
     let any = false;
     for (const b of team.batters) {
-      const ab = g.stats.ab[b.k] || 0;
-      const h  = g.stats.hits[b.k] || 0;
-      const hr = g.stats.hr[b.k] || 0;
-      const so = g.stats.so[b.k] || 0;
-      const sb = (g.stats.sb && g.stats.sb[b.k]) || 0;
-      if (!ab && !h && !sb) continue;
+      const ab = stat('ab', b.k), h = stat('hits', b.k);
+      const bb = stat('bb', b.k), sb = stat('sb', b.k);
+      if (!ab && !h && !sb && !bb) continue;
       any = true;
       const avg = ab ? (h/ab).toFixed(3).replace(/^0/,'') : '.000';
       const tr = el('tr');
-      tr.innerHTML = `<td>${b.n}</td><td class="n">${ab}</td><td class="n">${h}</td>`
-                   + `<td class="n">${hr}</td><td class="n">${so}</td><td class="n">${sb}</td>`
-                   + `<td class="n">${avg}</td>`;
+      tr.innerHTML = `<td>${b.n}</td><td class="n">${ab}</td><td class="n">${stat('r', b.k)}</td>`
+                   + `<td class="n">${h}</td><td class="n">${stat('hr', b.k)}</td>`
+                   + `<td class="n">${stat('rbi', b.k)}</td><td class="n">${bb}</td>`
+                   + `<td class="n">${stat('so', b.k)}</td><td class="n">${avg}</td>`;
       tb.appendChild(tr);
     }
     if (!any) {
       const tr = el('tr');
-      tr.innerHTML = '<td colspan="7" style="color:var(--text-dim)">No plate appearances recorded.</td>';
+      tr.innerHTML = '<td colspan="9" style="color:var(--text-dim)">No plate appearances recorded.</td>';
       tb.appendChild(tr);
     }
     t.appendChild(tb);
-    return t;
+    const wrap = el('div','linescore');   /* the sideways scroller */
+    wrap.appendChild(t);
+    return wrap;
   };
+  /* Innings pitched is thirds, and it is written the way baseball writes
+     it: 2.1 is two innings and one out, never two and a third. */
+  const ipOf = (outs) => `${Math.floor(outs / 3)}.${outs % 3}`;
 
   for (const team of [you, foe]) {
     const c = el('div','card');
@@ -12807,14 +12897,33 @@ function renderResult() {
     for (const b of team.batters) byKey[b.k] = b;
     const arms = (team.pitched && team.pitched.length ? team.pitched : [team.batters[0].k])
       .map(k => byKey[k]).filter(Boolean);
-    const oppK = opp.batters.reduce((a,b) => a + (g.stats.so[b.k] || 0), 0);
-    const oppH = opp.batters.reduce((a,b) => a + (g.stats.hits[b.k] || 0), 0);
-    const gold = (x) => `<b style="color:var(--gold)">${x.n}</b>`;
-    const names = arms.length === 1 ? gold(arms[0])
-      : arms.slice(0, -1).map(gold).join(', ') + ' and ' + gold(arms[arms.length - 1]);
-    c.appendChild(el('p', null,
-      `${names} ${arms.length === 1 ? 'pitching' : 'pitched'}: ${opp.score} runs, ${oppH} hits, `
-      + `${oppK} strikeout${oppK === 1 ? '' : 's'}${arms.length === 1 ? '' : ' between them'}.`));
+    /* EVERY ARM OWNS HIS OWN LINE NOW. This was one sentence crediting
+       the whole team's runs and strikeouts to whoever was named, and with
+       two arms it had to say "between them" because it genuinely could
+       not tell. Outs and runs are kept per pitcher, so it can. */
+    const pt = el('table','table');
+    pt.innerHTML = '<thead><tr><th>Pitcher</th><th class="n">IP</th><th class="n">R</th>'
+                 + '<th class="n">BB</th><th class="n">K</th><th class="n">ERA</th></tr></thead>';
+    const ptb = el('tbody');
+    for (const a of arms) {
+      const outs = ((g.pit && g.pit.outs) || {})[a.k] | 0;
+      const runs = ((g.pit && g.pit.runs) || {})[a.k] | 0;
+      const bbs  = ((g.pit && g.pit.bb) || {})[a.k] | 0;
+      const ks   = (g.kBy || {})[a.k] | 0;
+      /* No outs and no runs is a man who never really pitched. An ERA off
+         zero innings is a division by nothing, so it prints as a dash. */
+      const era = outs ? (runs * 27 / outs).toFixed(2) : '-';
+      const tr = el('tr');
+      tr.innerHTML = `<td><b style="color:var(--gold)">${a.n}</b></td><td class="n">${ipOf(outs)}</td>`
+                   + `<td class="n">${runs}</td><td class="n">${bbs}</td>`
+                   + `<td class="n">${ks}</td><td class="n">${era}</td>`;
+      ptb.appendChild(tr);
+    }
+    pt.appendChild(ptb);
+    const pwrap = el('div','linescore');
+    pwrap.appendChild(pt);
+    c.appendChild(el('h3', null, `${team.name} pitching`));
+    c.appendChild(pwrap);
     s.appendChild(c);
   }
 
