@@ -37,6 +37,7 @@
      the snow             the cold parks play under falling snow
      the books balance     runs, walks and outs agree across the batting and pitching lines
      putting him on       the intentional walk fires late and close, and never anywhere else
+     the tag              a caught fly moves a runner, and never on the third out
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -1863,6 +1864,71 @@ async function main() {
       ok(r.onTheBooks && r.chargedToArm, 'and it lands on both sides of the books',
          `drawn ${r.onTheBooks}, charged ${r.chargedToArm}`);
       ok(r.notAnAtBat, 'an intentional walk is still not an at bat', String(r.notAnAtBat));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the tag ---- */
+    {
+      console.log('the tag');
+      /* THE SACRIFICE FLY DID NOT EXIST. A fly ball caught with a man on
+         third and one out simply ended the at bat, so the one play in
+         baseball where making an out scores a run, and a real share of
+         how runs actually score, was missing.
+
+         The rule everything here protects is the last one: a tag that
+         becomes the third out scores NOTHING. Get that wrong and the
+         scoreboard gains runs the inning never earned, which no other
+         check would catch because the run is perfectly well formed.
+
+         It reuses the send and hold toggle rather than adding a control,
+         so what is asserted is that all three settings mean something
+         different on the same play. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const realTimeout = window.setTimeout; window.setTimeout = () => 0;
+        const realRandom = Math.random;
+        const fast = ROSTER.slice().sort((a, b) => b.spd - a.spd)[0];
+        const slow = ROSTER.slice().sort((a, b) => a.spd - b.spd)[0];
+        const run = (outsBefore, bases, rule, roll) => {
+          g.outs = outsBefore; g.bases = bases.slice();
+          g.sendRule = rule; g.away.score = 0; g.home.score = 0;
+          Math.random = () => roll;
+          applyOutMutation('fly out', currentBatter());
+          return { outs: g.outs, scored: g.away.score + g.home.score,
+                   onThird: !!g.bases[2] };
+        };
+        const out = {
+          sacFly:      run(1, [null, null, fast], 'auto', 0.01),
+          thrownOut:   run(1, [null, null, fast], 'auto', 0.99),
+          inningOver:  run(2, [null, null, fast], 'auto', 0.01),
+          held:        run(1, [null, null, fast], 'hold', 0.01),
+          slowStays:   run(1, [null, null, slow], 'auto', 0.01),
+          slowSent:    run(1, [null, null, slow], 'send', 0.01),
+          secondUp:    run(1, [null, fast, null], 'auto', 0.01),
+          stacked:     run(0, [null, fast, fast], 'auto', 0.01),
+        };
+        window.setTimeout = realTimeout; Math.random = realRandom;
+        return out;
+      });
+      ok(r.sacFly.scored === 1 && r.sacFly.outs === 2,
+         'a fly with one out and a fast man on third is a sacrifice fly', JSON.stringify(r.sacFly));
+      ok(r.thrownOut.scored === 0 && r.thrownOut.outs === 3,
+         'and a tag beaten by the throw is an out, not a run', JSON.stringify(r.thrownOut));
+      ok(r.inningOver.scored === 0 && r.inningOver.onThird,
+         'NOBODY TAGS ON THE THIRD OUT: the inning is over, the run does not count',
+         JSON.stringify(r.inningOver));
+      ok(r.held.scored === 0 && r.held.onThird, 'HOLD keeps him at third', JSON.stringify(r.held));
+      ok(r.slowStays.scored === 0 && r.slowStays.onThird,
+         'AUTO does not send a man who cannot make it', JSON.stringify(r.slowStays));
+      ok(r.slowSent.scored === 1, 'SEND sends him anyway', JSON.stringify(r.slowSent));
+      ok(r.secondUp.onThird && r.secondUp.scored === 0,
+         'a man on second tags to third rather than home', JSON.stringify(r.secondUp));
+      ok(r.stacked.scored === 1 && r.stacked.onThird,
+         'with two aboard the lead man scores and the other takes third',
+         JSON.stringify(r.stacked));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

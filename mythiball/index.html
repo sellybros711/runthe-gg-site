@@ -9155,6 +9155,72 @@ function applyOutMutation(kind, batter) {
   addOuts(1);
   addLog(`${batter.n} out (${kind}) to the ${randPos(kind)}. ${g.outs} out.`);
   showCallout(kind === 'ground out' ? 'GROUND OUT' : 'FLY OUT', 'sub');
+  if (kind === 'fly out') tagUp();
+}
+
+/* THE TAG. The one place in baseball where making an out moves a runner,
+   and the game did not have it: a fly ball caught with a man on third and
+   one out simply ended the at bat, so the sacrifice fly, which is a
+   quarter of how runs actually score, could not happen at all.
+
+   IT REUSES THE SEND AND HOLD TOGGLE rather than adding a control. That
+   button already sits beside Steal and was consulted on exactly one
+   thing, whether to wave a man round on a base hit. A second decision on
+   the same switch makes the switch worth thinking about: HOLD keeps
+   everybody, SEND sends anybody with a prayer, AUTO reads their legs.
+   The other dugout is always on AUTO. */
+function tagChance(runner, from) {
+  /* Third to home is the deep throw and the one everybody tries. Second
+     to third is shorter for the runner and a much shorter throw, so it
+     is close to even for anybody with average wheels. */
+  const base = from === 2 ? 0.46 : 0.58;
+  return clamp(base + (runner.spd - 60) / 200, 0.12, 0.93);
+}
+function tagUp() {
+  const g = State.game;
+  if (!g || g.outs >= 3) return;          /* the inning is already over */
+  const rule = currentBattingTeam().isYou ? (g.sendRule || 'auto') : 'auto';
+  if (rule === 'hold') return;
+  const jogs = [];
+  /* Third base first: his run is the one worth the gamble, and a man on
+     second cannot take third until it is empty. */
+  for (const from of [2, 1]) {
+    if (g.outs >= 3) break;
+    const runner = g.bases[from];
+    if (!runner) continue;
+    if (from === 1 && g.bases[2]) continue;        /* third is occupied */
+    const odds = tagChance(runner, from);
+    /* AUTO only goes when the odds are with him. SEND goes regardless,
+       and wears it. */
+    if (rule === 'auto' && odds < 0.5) continue;
+    g.bases[from] = null;
+    if (Math.random() < odds) {
+      jogs.push([runner, from, from + 1]);
+      if (from === 2) {
+        scoreRuns(1, { rbi: currentBatter() ? currentBatter().k : null, scorers: [runner.k] });
+        addLog(`${runner.n} tags and scores. Sacrifice fly.`, true);
+        showCallout('SACRIFICE FLY', 'homer');
+      } else {
+        g.bases[2] = runner;
+        addLog(`${runner.n} tags up and takes third.`);
+        showCallout('TAGS UP', 'hit');
+      }
+    } else {
+      addOuts(1);
+      addLog(`${runner.n} tags and is thrown out${from === 2 ? ' at the plate' : ' at third'}. ${g.outs} out.`);
+      showCallout('THROWN OUT', 'strike');
+      if (g.play) g.play.plateOut = { runner, at: performance.now() };
+    }
+  }
+  /* Show the legs. The walk's jog already knows how to trot a man from
+     one bag to the next, so a tag reuses it rather than teleporting him. */
+  if (jogs.length) {
+    const ents = jogs.map(([c, from, to]) => ({
+      c, sc: 2.55,
+      run: simRunPath(simRunnerPoints(from, to), simRunnerSpeed(c) * 0.9, 0, { delay: 0.2 }),
+    }));
+    g.jog = { t0: performance.now(), ents, end: Math.max(...ents.map(e => e.run.end)) + 0.2 };
+  }
 }
 
 /* -------- Throw minigame --------
@@ -13369,6 +13435,11 @@ function renderHowTo() {
     + 'it go. In the green the pitch goes where you aimed. Outside it, the miss '
     + 'opens up, and a miss off a corner is a ball. Every pitcher owns three '
     + 'pitches, so the buttons change with whoever you put on the mound.</p>'
+    + '<p><b>Runner: auto, send, hold</b> decides two things now, not one. On a '
+    + 'base hit it waves men round or stops them at third. On a <b>caught fly '
+    + 'ball</b> it decides whether they tag: a man on third can trade the out for '
+    + 'a run, and a man on second can take third. AUTO reads their legs, SEND '
+    + 'gambles, HOLD keeps everybody. Nobody tags on the third out.</p>'
     + '<p><b>Walk him</b> appears beside the pitch buttons when the situation '
     + 'calls for it: first base open, the tying or winning run in scoring '
     + 'position, late, and a slugger at the plate. Putting him on trades a free '
