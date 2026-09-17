@@ -83,23 +83,30 @@ async function open(answers, label) {
 const txt = (p, sel) => p.$eval(sel, (e) => (e.innerText || '').replace(/\s+/g, ' ').trim()).catch(() => '');
 const on = (p, id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
 
+/* `champions` IS EQUAL TO `years` ON EVERY ROW, AND THAT IS THE FIXTURE BEING HONEST.
+   The world takes a champion every season, so the stored count is a count of seasons and
+   can never be anything else. This fixture used to invent 3 champions against 8 years, which
+   described a row the database cannot produce, and that is exactly why the suite watched the
+   board print "3 titles" without a word. Read from production before it was corrected: seven
+   accounts, champions equal to years on all seven, 11/11, 5/5, 5/5, 2/2 and 1/1.
+   A fixture that cannot occur is not a harder test than the truth. It is a different game. */
 const ROWS = [
-  { place: 1, score: 91, grade: 'A', removed: false, years: 8, rulings: 40, champions: 3,
+  { place: 1, score: 91, grade: 'A', removed: false, years: 8, rulings: 40, champions: 8,
     purse: 0, gate: 0, stage: 0, throne: 0, created_at: '2026-01-01',
     author_name: 'ada', author_color: '#f00', author_initials: 'AD' },
-  { place: 2, score: 77, grade: 'B', removed: true, years: 4, rulings: 20, champions: 0,
+  { place: 2, score: 77, grade: 'B', removed: true, years: 4, rulings: 20, champions: 4,
     purse: 0, gate: 0, stage: 0, throne: 0, created_at: '2026-01-02',
     author_name: TESTER, author_color: '#0f0', author_initials: 'ST' },
   /* A TERM BY SOMEBODY WITH NO PROFILE ROW. The SQL left joins on purpose so the account is
      still counted; a board that dropped it would lie about how many people have played. */
-  { place: 3, score: 40, grade: 'D', removed: false, years: 2, rulings: 9, champions: 0,
+  { place: 3, score: 40, grade: 'D', removed: false, years: 2, rulings: 9, champions: 2,
     purse: 0, gate: 0, stage: 0, throne: 0, created_at: '2026-01-03',
     author_name: null, author_color: null, author_initials: null },
 ];
 const TEN = [
-  { place: 1, years: 21, terms: 2, longest: 13, removed: 0, champions: 5,
+  { place: 1, years: 21, terms: 2, longest: 13, removed: 0, champions: 21,
     first_at: '2026-01-01', author_name: 'ada', author_color: '#f00', author_initials: 'AD' },
-  { place: 2, years: 12, terms: 4, longest: 5, removed: 3, champions: 1,
+  { place: 2, years: 12, terms: 4, longest: 5, removed: 3, champions: 12,
     first_at: '2026-01-02', author_name: TESTER, author_color: '#0f0', author_initials: 'ST' },
 ];
 
@@ -129,6 +136,17 @@ const TEN = [
   /* AN ACCOUNT WITH NO USERNAME IS STILL A PERSON. */
   ok('  and a term with no profile is still drawn',
     /A commissioner/.test(await txt(p, '#st-board')));
+
+  /* A COMMISSIONER WINS NO TITLES, AND THE BOARD SHIPPED SAYING THEY DO.
+     `champions` counts seasons, so the row read "Grade A · 8 years · 8 titles" and credited
+     the reader with eight national championships that belong to eight different schools. It
+     is a valid sentence, it rendered perfectly, and nothing on the site could report it.
+     Asserted as the WORD and not as the number, because the number is the defect: any count
+     of titles on this board is wrong however it is phrased, and a check written against "8
+     titles" would pass the moment somebody rounded it or changed the separator. */
+  const boardTxt = await txt(p, '#st-board');
+  ok('  and credits nobody with titles they did not win',
+    !/\btitles?\b/i.test(boardTxt), boardTxt.slice(0, 120));
 
   ok('the tenure board is there too', (await p.$$eval('#st-tenure .strow', (e) => e.length)) === 2);
   ok('  ranked on years in the chair',

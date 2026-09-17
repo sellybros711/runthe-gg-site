@@ -4942,7 +4942,17 @@ P.finishTerm({
   removed:!!(world.outcome&&world.outcome.removed),
   years:Math.max(0,world.year-world.startYear),
   rulings:p.rulings,
-  champions:Object.keys(world.champions||{}).length,
+  /* SCOPED TO THIS CONTRACT, the same as the career shelf row that is written beside it.
+     sinceTerm()'s header names the four things that read the whole world and therefore have
+     to be scoped: the doctrine, the rulings count, the titles count and the shelf row. Three
+     of the four were. This one, the only one of them that leaves the browser, was counting
+     every season the CAREER had played, so a renewal would file term one's seasons again on
+     term two's row and the board's totals would drift up by the length of every term before
+     the last.
+     Not visible in today's data, which is exactly why it is worth fixing now: every account
+     on the board got there by taking the job again rather than by being renewed, so the two
+     readings agree and go on agreeing until the first extension is signed. */
+  champions:termTitles(world),
 }).then((res)=>{
   if(seq!==docSeq||!res||!box) return;
   const counts=res.counts||{};
@@ -5070,8 +5080,17 @@ function paintBoards(){
       const bits=[];
       if(r.grade) bits.push('Grade '+esc(r.grade));
       bits.push(esc(String(r.years))+(Number(r.years)===1?' year':' years'));
-      if(r.champions>0) bits.push(esc(String(r.champions))
-        +(Number(r.champions)===1?' title':' titles'));
+      /* `champions` IS NOT A COUNT OF ANYTHING THE COMMISSIONER WON, and printing it as
+         "5 titles" beside "5 years" was a false sentence on a live board. The world takes a
+         champion every season (see the postseason write: world.champions[year] is set once
+         per year, unconditionally), so the count of its keys is the count of SEASONS. That
+         is the number already printed immediately to its left, wearing a word that credits
+         the reader with five national championships they did not win. Confirmed against
+         production rather than reasoned about: every row on the board came back with
+         champions exactly equal to years, 11/11, 5/5, 5/5, 2/2 and 1/1.
+         The stored column is left alone. It is honest as a season count and the career
+         shelf prints it that way ("champions crowned"), which claims nothing. What was
+         wrong was only ever this word. */
       if(r.removed) bits.push('<u>voted out</u>');
       return stRow(r.place,stWho(r),r.score==null?'-':r.score,bits.join(' &middot; '),
         stMineRow(r));
