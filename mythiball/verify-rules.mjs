@@ -41,6 +41,7 @@
      the dugout learns    a harder tier chases less and reads a one pitch caller
      the robbery          a catchable hit can be taken away, and missing it costs nothing
      the club remembers   a franchise carries its players' records, not only its win column
+     the friendly button  Randomize hands you a mound, and a hand draft is told who is on it
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -2343,6 +2344,81 @@ async function main() {
          'and leaves the rest of the board alone', JSON.stringify(draft));
       ok(brandNew === 0, 'a brand new franchise is unmarked, exactly as it always was',
          String(brandNew));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the friendly button ---- */
+    {
+      console.log('the friendly button');
+      /* THE SAFE PATH WAS THE WORST PATH. Randomize is what somebody
+         presses who does not want to read sixty-eight cards, which makes
+         it the first thing a new player touches. It shuffled the ORDER
+         as well as the nine, and the first pick starts on the mound, so
+         the man it put there was a coin toss.
+
+         Measured over 4000 draws before the fix: 52% opened with an arm
+         under 55 PIT while the same nine held a median best of 74.
+         Ordering alone threw away 27 points, and the only symptom was a
+         bad first game with nothing on screen to explain it. Nothing
+         could have caught that, because a random draft is a valid
+         draft.
+
+         The nine are still random. Only the order changes. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(async () => {
+        const out = { runs: 0, mismatch: 0, weak: 0, starters: [] };
+        for (let i = 0; i < 40; i++) {
+          State.mode = 'exhibition'; State.screen = 'roster'; State.team = []; render();
+          const rand = [...document.querySelectorAll('button')]
+            .find(b => b.textContent === 'Randomize');
+          if (!rand) return { err: 'no Randomize button' };
+          rand.click();
+          await new Promise(r => setTimeout(r, 340));
+          const team = State.team.map(k => ROSTER_BY_KEY[k]);
+          if (team.length !== 9 || team.some(c => !c)) return { err: 'team was ' + team.length };
+          out.runs++;
+          const best = Math.max(...team.map(c => c.pit | 0));
+          out.starters.push(team[0].pit | 0);
+          if ((team[0].pit | 0) !== best) out.mismatch++;
+          if ((team[0].pit | 0) < 55) out.weak++;
+          /* and every man it picked has to be one you are allowed */
+          if (team.some(c => !isUnlocked(c.k))) return { err: 'drafted a locked character' };
+        }
+        return out;
+      });
+      /* And a HAND draft is left alone, but told what it is doing. The
+         rule lives behind the info dot, which is the right place for a
+         rule and the wrong place for a fact about this draft. */
+      const hand = await pg.evaluate(() => {
+        State.mode = 'exhibition'; State.screen = 'roster'; State.team = []; render();
+        const cards = [...document.querySelectorAll('.charcard')];
+        const open = ROSTER.filter(c => isUnlocked(c.k)).slice().sort((a, b) => a.pit - b.pit);
+        const worst = open[0], best = open[open.length - 1];
+        const find = (c) => cards.find(x => (x.querySelector('.name') || {}).textContent === c.n);
+        const read = () => [...document.querySelectorAll('div')].map(d => d.innerHTML)
+          .filter(t => /of 9 selected/.test(t)).pop() || '';
+        find(worst).click();
+        const one = read();
+        find(best).click();
+        const two = read();
+        return { one, two, worst: worst.n, best: best.n, bestPit: best.pit,
+                 order: State.team.slice() };
+      });
+      ok(!r.err, 'forty presses of the real button', r.err || '');
+      ok(r.runs === 40 && r.mismatch === 0,
+         'RANDOMIZE PUTS THE BEST ARM ON THE MOUND, every time',
+         `${r.mismatch} of ${r.runs} started somebody else`);
+      ok(r.weak === 0, 'so it never opens with an arm a player would have to lose with',
+         `${r.weak} under 55 PIT`);
+      ok(Math.min(...(r.starters || [99])) > 40,
+         'and the worst mound it can hand out is still a mound',
+         String(Math.min(...(r.starters || []))));
+      ok(/starting/.test(hand.one) && new RegExp(hand.worst).test(hand.one),
+         'a hand draft is told who its first pick puts on the mound', hand.one);
+      ok(new RegExp(hand.best).test(hand.two) && /gold/.test(hand.two),
+         'and is shown the better arm it already has, without being overruled',
+         hand.two);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

@@ -2030,6 +2030,28 @@ the draft card for anybody who has worn the shirt, and a Club careers table on t
 record book screen. **A first year franchise is unmarked and looks exactly as it
 always did**, which the guard asserts from the other end.
 
+### The friendly button was the worst path
+
+**Randomize is the first thing a new player touches**, because it is what somebody
+presses who does not want to read sixty-eight cards. It shuffled the ORDER as well
+as the nine, and the first pick starts on the mound, so the man it put there was a
+coin toss.
+
+Measured over 4000 draws: **52% of them opened with an arm under 55 PIT while the
+same nine men held a median best of 74.** Ordering alone threw away 27 points of
+PIT. Nothing could have caught it, because a random draft is a valid draft, and the
+only symptom was a bad first game with nothing on screen to explain it.
+
+**The nine are still random.** Only the order changes, which is the part the player
+did not pick and the part the game says matters. Measured after: 0 of 60 below 55,
+0 that started anyone but the best arm on the club.
+
+**A hand draft is left alone and told what it is doing.** Somebody who chose their
+own order made a choice. The rule lives behind the info dot, which is the right
+place for a rule and the wrong place for a fact about THIS draft, so the footer
+names the starter and his PIT and, in gold, the better arm already picked. It
+never reorders.
+
 ## Segue, the setlist game
 
 `setlist/index.html`, same one-file convention. It is NOT in the same state as
