@@ -106,6 +106,9 @@ const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,fullPickIsDefens
   + 'bossPending:()=>!!(bossSim&&bossSim.pending),'
   /* The share card, and the geometry it lays its roster out on. */
   + 'drawShareCard,CARD:()=>CARD,cardRosterLayout,'
+  /* The two pace tables, so the ladder can be read as data rather than inferred from four
+     timed games. See the section on how long a playoff game takes. */
+  + 'LIVE_PACE:()=>LIVE_PACE,PACE:()=>PACE,bossPace:()=>bossPace,'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 
 /* NO TESTER VIEW ANY MORE. This used to take { tester } and rewrite LIVE = false to true
@@ -1121,6 +1124,10 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
      button is pressed at the end instead, to bring the game home without watching all of it.
      ================================================================ */
   console.log('\nA CALL COMES AT THE END OF A DRIVE');
+  /* DECLARED OUT HERE because the pacing section below runs on the same page, and for the
+     same reason: it plays a real playoff game and must not inherit a board somebody else
+     left running. Opening a second one would be another boot to prove the same thing. */
+  let s2 = null;
   {
     /*
      * ITS OWN PAGE, AND THAT IS THE ONLY WAY THIS CAN BE HONEST.
@@ -1137,7 +1144,7 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
      * defense pool download, and it buys a section whose subject is the page rather than the
      * order the file happens to run in.
      */
-    const s2 = await open(browser);
+    s2 = await open(browser);
     await s2.page.evaluate(() => window.__t.beginFullDraft());
     await s2.page.waitForTimeout(6000);
     await s2.page.evaluate(installDrafters);
@@ -1225,7 +1232,6 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
     }, live.found || 1);
     ok('  and nothing threw on its own page', !s2.boom.length,
       s2.boom.join(' | ') || 'no errors');
-    await s2.page.close();
 
     if (!tape || !tape.seeded || !tape.board) {
       ok('a seed reached a live playoff game', false,
@@ -1276,6 +1282,189 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
         ok('  and the drive ran up to each call', runUps.every((n) => n >= 2),
           runUps.join(', ') + ' clock writes between the last drive and the call');
       }
+    }
+  }
+
+  /* ================================================================
+     A PLAYOFF GAME IS PACED AGAINST THE BROADCAST, NOT AGAINST A BOSS
+
+     THE BUG, reported by a player asking for the Full Team playoff games to go faster. The
+     live board is the boss battle's board and it arrived with the boss battle's pace, which
+     is deliberately slow: a boss is one season in six and the thing a dynasty builds toward.
+     A postseason is that same board FOUR TIMES IN A ROW. Measured over 60 games a round, it
+     ran 58 seconds a round, FLAT, against the resolved broadcast's 13.4 rising to 25.7, so a
+     whole postseason took 3.9 minutes against the quick draft's 1.3 and the Super Bowl was
+     paced exactly like the Wild Card.
+
+     TIMED FOR REAL, NEVER RE-DERIVED. Every duration on that board is a setTimeout or an rAF
+     ramp, so a checker could sum them and would then be a second copy of the answer, which is
+     the shape this repo watches drift. A wall clock cannot drift.
+
+     COACHED, BECAUSE THAT GAME PLAYS ITSELF. An uncoached one waits on a human, so its length
+     would be the harness's poll cadence as much as the page's pace.
+
+     THE BAND IS WIDE AND STILL CATCHES IT. What it is written against is a THREE AND A HALF
+     TIMES difference, so a band of 8 to 34 seconds has room for CI load and none for the
+     regression: the boss battle's pace puts this game near 58.
+
+     AND THE LADDER IS READ AS DATA. Four timed games would be a minute and a half of runtime
+     to assert a property of a hand-written table, so the table is read instead. The timed
+     game above is what proves the table is actually APPLIED, which is the half reading it
+     cannot show.
+     ================================================================ */
+  console.log('\nA PLAYOFF GAME IS PACED AGAINST THE BROADCAST');
+  {
+    const paced = await s2.page.evaluate(async () => {
+      const T = window.__t, RR = T.R;
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      let run = null, coach = null;
+      for (let sd = 1; sd <= 20 && !run; sd++) {
+        const probe = window.__draft(sd);
+        if (!probe) continue;
+        const market = RR.coachMarket(probe, T.coachList()) || [];
+        const man = market.slice().sort((a, b) => a.price_musd - b.price_musd)[0] || null;
+        if (!man) continue;
+        run = window.__toSeeding(sd, man);
+        if (run && run.coach) { coach = run.coach; break; }
+        run = null;
+      }
+      if (!run) return { seeded: false };
+      const fresh = () => document.getElementById('s-bgame').classList.contains('on')
+        && !document.getElementById('bg-log').children.length
+        && document.getElementById('bg-syou').textContent === '0'
+        && document.getElementById('bg-sthem').textContent === '0';
+      /*
+       * HOW LONG THE COACH'S DECISION IS READABLE, watched rather than assumed. The narration
+       * cell says what he decided, then the same cell says how it turned out, and hurrying
+       * the football must never hurry that: it is the whole of what the calls were added for.
+       * Timed between the two writes to the cell, which is exactly what a reader gets.
+       */
+      window.__calls = [];
+      const narr = document.getElementById('bg-narr');
+      let announced = 0;
+      /*
+       * KEYED ON `.cw`, WHICH IS THE CALLER'S NAME, and the first draft keyed on the state
+       * cell instead and measured nothing. bossShowDecision sets that cell to THE CALL and
+       * NOTHING EVER SETS IT BACK, so after the first call of the game every reading said
+       * THE CALL and the timer was re-armed on writes that were not calls: the numbers it
+       * produced were the gap between two ordinary drives, about 1460ms, and they did not
+       * move when the call beat was deliberately broken. The bold caller name is written by
+       * bossShowDecision and by nothing else, so its presence IS the decision being
+       * announced and its absence is the line that paints over it.
+       */
+      new MutationObserver(() => {
+        const now = performance.now();
+        if (narr.querySelector('.cw')) { announced = now; return; }
+        if (announced) { window.__calls.push(now - announced); announced = 0; }
+      }).observe(narr, { subtree: true, characterData: true, childList: true });
+
+      T.paintSeed();
+      document.getElementById('b-po').click();
+      for (let i = 0; i < 60; i++) {
+        if (fresh()) break;
+        const b = document.getElementById('b-nbrk-fast');
+        if (b && b.offsetParent) b.click();
+        await wait(200);
+      }
+      if (!fresh()) return { seeded: true, board: false };
+      /*
+       * EVERY ROUND, NOT THE FIRST ONE, and that is two things rather than thoroughness. The
+       * ladder is only worth having if it is APPLIED, and one game cannot show a ladder. And
+       * a genuine fourth down is rare enough in a single game that timing one would leave the
+       * call assertion unfired most runs, which is the badge nothing can light.
+       */
+      const rounds = [];
+      for (let r = 0; r < 4; r++) {
+        const round = (document.getElementById('bg-eye').textContent || '')
+          .split('\u00b7')[0].trim();
+        const pace = T.bossPace();
+        /* NOT Sim the rest, obviously: the pace is the subject. */
+        const t0 = performance.now();
+        let done = false;
+        for (let i = 0; i < 3000; i++) {
+          if (!document.getElementById('bg-done').hidden) { done = true; break; }
+          await wait(20);
+        }
+        rounds.push({ round, pace, secs: (performance.now() - t0) / 1000, done,
+          drives: document.querySelectorAll('#bg-log .pl').length });
+        if (!done) break;
+        const cont = document.getElementById('b-boss-continue');
+        if (!cont || !cont.offsetParent) break;
+        cont.click();
+        /* On to the next board, past its bracket. A run that lost is finished and simply
+           never gets there, which is the ordinary way a postseason ends. */
+        let next = false;
+        for (let i = 0; i < 60; i++) {
+          if (fresh()) { next = true; break; }
+          const b = document.getElementById('b-nbrk-fast');
+          if (b && b.offsetParent) b.click();
+          await wait(200);
+        }
+        if (!next) break;
+      }
+      return { seeded: true, board: true, rounds,
+        calls: window.__calls.slice(), name: coach.name,
+        live: T.LIVE_PACE(), resolved: Object.keys(T.PACE()) };
+    });
+    ok('  and nothing threw on its own page', !s2.boom.length,
+      s2.boom.join(' | ') || 'no errors');
+    await s2.page.close();
+
+    const played = (paced && paced.rounds ? paced.rounds : []).filter((r) => r.done);
+    if (!paced || !paced.seeded || !paced.board || !played.length) {
+      ok('a coached playoff game played to the whistle', false,
+        paced ? 'seeded ' + paced.seeded + ', board ' + paced.board
+          + ', rounds ' + JSON.stringify(paced.rounds || []) : 'no seed');
+    } else {
+      ok('a coached postseason played to the whistle', played.every((r) => r.drives > 4),
+        played.map((r) => r.round + ' ' + r.drives + 'd').join(', ') + ', ' + paced.name);
+      ok('  each at its round\'s pace rather than the boss battle\'s',
+        played.every((r) => r.pace > 0 && r.pace < 1),
+        played.map((r) => r.round + ' x' + r.pace).join(', '));
+      /* THE BAND, against a defect worth 3.5x. See the header. */
+      ok('  and every one inside the broadcast\'s band',
+        played.every((r) => r.secs >= 8 && r.secs <= 34),
+        played.map((r) => r.secs.toFixed(1) + 's').join(', ') + ', 8 to 34 allowed');
+      /* THE LADDER, APPLIED. Reading the table says the numbers escalate; this says the board
+         took them. It needs two rounds, and a run that loses its first game gives one, which
+         is ordinary rather than a failure. */
+      if (played.length > 1) {
+        ok('    and a later round really did run slower',
+          played.every((r, i) => i === 0 || r.pace > played[i - 1].pace),
+          played.map((r) => r.pace).join(' < '));
+      } else {
+        ok('    and the run ended in one round, so there is no pair to compare', true,
+          played[0].round + ' only');
+      }
+      /* THE CALLS ARE NOT FOOTBALL AND ARE NOT HURRIED. A postseason meets about 2.4 genuine
+         calls a game, so walking every round is what makes this fire; a single game would
+         leave it dark most runs. */
+      if (paced.calls.length) {
+        ok('  with the coach\'s decision left up long enough to read',
+          paced.calls.every((ms) => ms >= 900),
+          paced.calls.map((m) => Math.round(m)).join(', ') + 'ms');
+      } else {
+        ok('  and met no call to time', true,
+          'no fourth down or two point try in ' + played.length + ' round(s)');
+      }
+    }
+    /*
+     * THE LADDER, read off the table. Before this table the four rounds were one number, so
+     * the claim that is easy to lose is that they are still four, in order, and that no round
+     * the resolved broadcast knows about is missing one and quietly falling back.
+     */
+    const live = paced && paced.live, order = paced && paced.resolved;
+    if (live && order) {
+      ok('  and every round the broadcast paces has a live pace too',
+        order.every((r) => typeof live[r] === 'number'),
+        order.filter((r) => typeof live[r] !== 'number').join(', ') || 'all ' + order.length);
+      const vals = order.map((r) => live[r]);
+      ok('    escalating the way the broadcast does',
+        vals.every((v, i) => i === 0 || v > vals[i - 1]), vals.join(' < '));
+      /* AND ALL OF THEM UNDER THE BOSS BATTLE'S OWN PACE, which is the 1 this scales. A
+         table that crept back to 1 would be the reported bug with a table in front of it. */
+      ok('    and none of them back at the boss battle\'s', vals.every((v) => v < 0.6),
+        Math.max(...vals) + ' is the slowest');
     }
   }
 

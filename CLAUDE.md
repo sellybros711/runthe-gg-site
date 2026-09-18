@@ -1775,6 +1775,64 @@ run.** A wrong anchor costs a jump in the BAR and nothing the clock can see, so 
 assertions above pass with it removed. Checking it means looking at the field while a fourth
 down is converted, or writing a pixel read the section does not have.
 
+#### A playoff game is paced against the broadcast, and it arrived paced like a boss battle
+
+```
+node football/check-fullteam.mjs   the section that times a coached postseason
+node football/_pace-probe.mjs      deleted; the numbers below are what it measured
+```
+
+The live board IS the boss battle's board, so it arrived with the boss battle's pace, and that
+pace is deliberately slow for a reason that does not transfer: a boss is one season in six and
+the thing a dynasty builds toward. **A postseason is that same board four times in a row.**
+Measured over 60 games a round:
+
+| | resolved broadcast | live board, before | after |
+|---|---|---|---|
+| Wild Card | 13.4s | 57.9s | **13.2s** |
+| Divisional | 17.5s | 57.8s | **19.0s** |
+| Conference Championship | 21.1s | 58.1s | 22.4s |
+| Super Bowl | 25.7s | 57.9s | 26.0s |
+| the whole postseason | 77.6s | **231.7s** | **83.5s** |
+
+**Two faults, not one.** It was four times too slow, and it was FLAT: the Super Bowl was paced
+exactly like the Wild Card, where the resolved broadcast's own `PACE` table escalates and the
+comment over it says that escalation is the whole point. Reported by a player asking for the
+Full Team playoff games to go faster.
+
+**`bossPace` scales the FOOTBALL and never the calls**, which is `bossFast`'s own rule arriving
+at a dial instead of a button. The beat that shows what a coach decided, and the one that shows
+how it turned out, are the mode rather than pacing: hurried, they take back the thing the calls
+were added for. The boss battle passes no pace, so every number is byte-identical at 1.
+
+**Three floors are absolute and they are what stops the Wild Card going lower.** A drive has to
+read as a bar sweeping across the field rather than a bar appearing, the run-up to a fourth down
+is the drive the call is about, and a touchdown gone before the number under it has finished
+moving is what this screen was asked to stop doing. Those are a number of FRAMES, and no round's
+pace gets a vote on that. They are why the Wild Card lands 2.6s over its resolved counterpart
+rather than on it, and taking `LIVE_PACE` lower buys nothing because the floors are already what
+that round is made of.
+
+**Timed for real, never re-derived.** Every duration on that board is a `setTimeout` or an rAF
+ramp, so a checker could sum them, and would then be a second copy of the answer. A wall clock
+cannot drift. The band is 8 to 34 seconds against a defect worth 3.5x, so it has room for CI
+load and none for the regression.
+
+**It walks the whole postseason, and that is two things rather than thoroughness.** A ladder
+cannot be shown by one game, and a genuine fourth down is rare enough in a single game that
+timing one leaves the call assertion dark most runs, which is the badge nothing can light. Over
+two rounds it meets about four calls. **Reading the table is the other half and cannot replace
+it**: with the pace removed from the caller, the table still escalates perfectly and three timed
+assertions fail.
+
+**The call timer measured nothing at all on its first draft, and it passed.** It keyed on the
+state cell reading `THE CALL`, and **nothing ever sets that cell back**, so after the first call
+of the game every reading said `THE CALL` and the timer re-armed on writes that were not calls.
+It reported ~1460ms, which is the gap between two ordinary drives, and **it did not move when the
+call beat was deliberately broken**. It keys on `.cw`, the bold caller name, which
+`bossShowDecision` writes and nothing else does: its presence IS the decision being announced and
+its absence is the line painting over it. Correct, it reads 1201ms, and 301ms with the defect in.
+
 #### A control the game is waiting on goes above the record of it
 
 The call box and the verdict sat UNDER the drive log, which is capped at 40vh and fills up

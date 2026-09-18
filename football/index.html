@@ -18393,6 +18393,18 @@ const PACE={
   'Conference Championship':  {quarterMs:2500, hold:900,  qbreak:380, half:700},
   'Super Bowl':              {quarterMs:3100, hold:1080, qbreak:460, half:900},
 };
+/*
+ * AND THE SAME LADDER FOR THE BOARD THAT PLAYS FORWARD, as a multiplier on its own pace.
+ *
+ * Solved against the table above rather than chosen: the resolved broadcast runs 13.4, 17.5,
+ * 21.1 and 25.7 seconds over the four rounds, and these land the live board on 16.0, 19.1,
+ * 22.4 and 26.0. A whole postseason goes from 231.7 seconds to 83.5 against the resolved
+ * 77.6. The Wild Card is the one that misses, by 2.6 seconds, and it misses because of the
+ * absolute floors bossPace carries rather than because of this number: taking it lower buys
+ * nothing, because the floors are already what that round is made of.
+ */
+const LIVE_PACE={'Wild Card':0.18,'Divisional':0.25,
+  'Conference Championship':0.31,'Super Bowl':0.40};
 const QNAME=['1ST','2ND','3RD','4TH'];
 const clockText=(sec)=>Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
 
@@ -19182,6 +19194,10 @@ function playLivePlayoffGame(idx,done){
     narr:coach?(esc(coach.name)+' has the headset. Kickoff.')
       :'Nobody is calling this but you. Kickoff.',
     caller:coach?coach.name:'You',
+    /* The round's own pace, and the fallback is the first rung rather than 1: an unknown
+       round here is a naming slip, and the boss battle's pace on a playoff game is the
+       defect this table exists to fix. */
+    pace:LIVE_PACE[round]||LIVE_PACE['Wild Card'],
     autoCall:coach?((d)=>E.fullCoachCall(d,run.plan)):null,
     onOver:(ev)=>livePlayoffOver(ev,idx,done),
   });
@@ -19904,6 +19920,29 @@ function bossThreeLetter(o){
  * too.
  */
 let bossFast=false;
+/*
+ * HOW FAST THE FOOTBALL RUNS, and it is a property of the BOARD rather than of the sim.
+ *
+ * A boss battle is one season in six and the thing a dynasty builds toward, so it is paced to
+ * be watched: that is bossPace 1, and every number below is written at it. A Full Team
+ * postseason is the same board four times in a row and is measured against the quick draft's
+ * broadcast, which the PACE table above runs in 13 seconds for a Wild Card and 26 for a Super
+ * Bowl. Played at the boss battle's pace it took 58 seconds A ROUND, flat, so a whole
+ * postseason ran 3.9 minutes against the quick draft's 1.3, and the Super Bowl was paced
+ * exactly like the Wild Card. Reported by a player asking for it to go faster.
+ *
+ * IT SCALES THE FOOTBALL AND NEVER THE CALLS, which is bossFast's own rule. The beat that
+ * shows what a coach decided, and the one that shows how it turned out, are the mode rather
+ * than pacing: hurried, they would take back the thing the calls were added for.
+ *
+ * AND THREE FLOORS ARE ABSOLUTE, because what they protect is a number of FRAMES and no
+ * round's pace gets a vote on that. A drive has to read as a bar sweeping across the field
+ * rather than a bar appearing, the run-up to a fourth down is the drive the call is about,
+ * and a touchdown that is gone before the number under it has finished moving is what this
+ * screen was asked to stop doing. They are what stop the Wild Card going below about 16
+ * seconds, which is 2.6 over its resolved counterpart and the honest limit of this.
+ */
+let bossPace=1;
 function bossStop(){ clearTimeout(bossTimer); cancelAnimationFrame(bossRaf); }
 function bossRenderScore(){
   $('bg-syou').textContent=bossSim.you; $('bg-sthem').textContent=bossSim.them;
@@ -20019,6 +20058,7 @@ function liveBoard(o,sim,rng,opts){
      is four of these in a row, so a flag left set would open the next one already skipping a
      game nobody had asked to skip yet. */
   bossFast=false;
+  bossPace=opts.pace||1;
   if($('bg-skip')) $('bg-skip').hidden=false;
   /* Emptied with the rest of the screen, for the same reason: a log that kept the last
      game's drives would open the next one already twelve rows deep in a game nobody played. */
@@ -20026,7 +20066,7 @@ function liveBoard(o,sim,rng,opts){
   show('s-bgame');
   bossField=initFieldCanvas('bg-fcanvas'); bossFcv=$('bg-fcanvas');
   bossDraw(0,false);
-  bossTimer=setTimeout(bossLoop,600);
+  bossTimer=setTimeout(bossLoop,Math.max(300,600*bossPace));
 }
 
 /* THE GAME. Build the sim with the chosen read, set up the field, then run it forward. */
@@ -20071,7 +20111,7 @@ function bossLoop(){
   /* 200ms between events was the rest of why the game was over in a blink. The drives
      themselves carry the pace now, so this is the handoff between them rather than the
      pace itself. */
-  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420); });
+  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420*bossPace); });
 }
 
 /* Animate every drive the sim has produced but not yet drawn, in order, then continue. */
@@ -20114,7 +20154,7 @@ function bossLiveTo(d,cb){
   if(!c||bossFast||at<=from+1){
     bossShownTo=Math.max(from,at); bossLiveY=ball; cb(); return;
   }
-  const dur=Math.max(240,Math.min(2400,(at-from)*10));
+  const dur=Math.max(220,bossPace*Math.max(240,Math.min(2400,(at-from)*10)));
   const t0=(window.performance||Date).now();
   const tick=()=>{
     const k=Math.min(1,((window.performance||Date).now()-t0)/dur);
@@ -20228,8 +20268,9 @@ function bossAnimateDrive(d,cb){
    */
   const from=Math.max(d.tStart,bossShownTo);
   const span=Math.max(0,d.tEnd-from), full=Math.max(1,d.tEnd-d.tStart);
-  const whole=Math.max(900,Math.min(3000,(d.plays||4)*260));
-  const dur=span<=0?0:Math.max(from>d.tStart?240:900,whole*(span/full));
+  const whole=bossPace*Math.max(900,Math.min(3000,(d.plays||4)*260));
+  const floor=from>d.tStart?Math.max(120,240*bossPace):Math.max(220,900*bossPace);
+  const dur=span<=0?0:Math.max(floor,whole*(span/full));
   const anchor=(from>d.tStart&&bossLiveY!=null)?{t:from,y:bossLiveY}:null;
   const t0=(window.performance||Date).now();
   const scored=d.result==='td'||d.result==='fg';
@@ -20249,7 +20290,7 @@ function bossAnimateDrive(d,cb){
     /* A BEAT ON A SCORE, and only on a score. The drives run back to back otherwise, and a
        touchdown that is gone before the number under it has finished moving is the thing
        this screen was asked to stop doing. */
-    if(scored){ bossTimer=setTimeout(cb,700); return; }
+    if(scored){ bossTimer=setTimeout(cb,Math.max(300,700*bossPace)); return; }
     cb();
   };
   bossRaf=requestAnimationFrame(tick);
