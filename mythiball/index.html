@@ -8030,8 +8030,33 @@ function scheduleCpuSwing() {
      well he knows it is coming. A read that could not be pitched around
      would be a punishment rather than a hitter. */
   const read = patternRead(g, p.pt) * (diff.read || 0);
-  jitter -= read;
+  /* THE FLOOR AND THE READ ARE TWO JOBS AND ONE CONSTANT DID BOTH, which
+     went wrong the moment the contact retune above pushed hard's base
+     jitter down near the floor. Written `jitter -= read` and then clamped
+     once at 0.03, the read had nothing left to remove: on hard a dugout
+     sitting on twenty straight fastballs timed the ball 0.015 off against
+     0.014 for a dugout guessing, which is no difference at all. The whole
+     mechanic was dead and the only symptom was that it stopped mattering.
+
+     It cannot be fixed by backing the dial off, and that was measured
+     rather than assumed: whiff here is essentially ALL timing. Widening
+     the aim spread instead does nothing, 0.8 to 0.40 on hard's locJ moves
+     whiff 36.3 to 36.4, which is `check-bat`'s binary window arriving from
+     the other side. The barrel is rarely what misses.
+
+     So the two jobs are separated. The FLOOR is about the dugout's own
+     limit: nobody times a pitch perfectly just by being good, and that
+     stays at 0.03. The READ is the one term allowed to beat it, because
+     knowing what is coming is exactly what it is for, and it gets its own
+     floor. Everything else (sharpness, fatigue, the corner penalty) is an
+     ordinary modifier and still lands above the clamp.
+
+     THE COUNTERPLAY IS UNCHANGED AND IS WHAT MAKES THIS SAFE TO DO. Mix,
+     and the read decays to nothing. Or paint the edge, because the corner
+     penalty is added after this and a fastball on the black is still hard
+     to square up however well you know it is coming. */
   jitter = clamp(jitter, 0.03, 0.40);
+  jitter = Math.max(jitter - read, 0.012);
   /* Said out loud, once per batter, because a difficulty that changes
      what the opponent KNOWS is invisible otherwise: the player would
      just see hard contact and read it as luck. The line is the nudge to

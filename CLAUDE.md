@@ -2294,6 +2294,50 @@ leave nobody knowing which did it.
 puts an ordinary swing at 94% contact and a sharp one at 100: the player was
 never the one missing. This dial is the CPU's half.
 
+##### And cutting it killed the read, because one constant was doing two jobs
+
+The retune above pushed hard's base jitter down to .030, near the `clamp(jitter,
+0.03, 0.40)` floor, and the read is subtracted BEFORE that clamp. So there was
+nothing left for it to remove: a hard dugout sitting on twenty straight
+fastballs timed the ball **0.015 off against 0.014** for a dugout guessing.
+**The whole mechanic was dead and the only symptom was that it stopped
+mattering.** Caught by `verify-rules.mjs`, which is the reason that assertion
+exists.
+
+**IT CANNOT BE FIXED BY BACKING THE DIAL OFF, and that was measured rather than
+assumed.** The obvious move is to take hard's whiff down through the aim spread
+instead and leave the timing headroom alone. It does nothing: `locJ` from .8 to
+.40 on hard moves whiff **36.3 to 36.4**. Whiff here is essentially ALL timing,
+which is `check-bat`'s binary window arriving from the other side. The barrel is
+rarely what misses, so there is no second lever to trade against.
+
+**The other tempting fix is worse and is the one to refuse.** Leaving hard's
+jitter high enough for the read puts hard's whiff at 36 against easy's 28, which
+is the tier INVERSION rejected one section up, arriving by a different door.
+
+So the two jobs are separated and the clamp is written twice on purpose:
+
+```js
+jitter = clamp(jitter, 0.03, 0.40);      /* the dugout's own limit */
+jitter = Math.max(jitter - read, 0.012); /* what knowing the pitch buys */
+```
+
+The FLOOR is about the dugout on its own merits: nobody times a pitch perfectly
+just by being good. The READ is the one term allowed to beat it, because knowing
+what is coming is exactly what it is for, and it gets its own floor. Sharpness,
+fatigue and the corner penalty are ordinary modifiers and still land above the
+clamp.
+
+**The counterplay is unchanged and is what makes this safe.** Mix, and the read
+decays to nothing. Or paint the edge, because the corner penalty is added after
+this. And the whiff target is untouched, because an unsteered arm writes no
+pattern: re-measured after the fix at 27.2 / 28.1 / 27.8.
+
+**A TUNING PASS CAN KILL A MECHANIC IN A FILE IT NEVER EDITED.** Nothing about
+the read changed. Its own assertions on `patternRead` all still passed, because
+the function was right the whole time; what broke was the headroom underneath it
+somewhere else. That is worth assuming about the next dial that moves.
+
 ### The defence had no play to MAKE, only one to lose
 
 Both fielding windows this game had (the grounder throw, the fly catch) fire only

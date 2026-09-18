@@ -558,7 +558,15 @@ async function main() {
         g.bases = [null, Object.assign({}, g.home.batters[3], { n: 'The Runner', spd: 90 }), null];
         g.sendRule = 'send';
         const realRandom = Math.random;
-        Math.random = () => 0.9;
+        /* ABOVE SEND.single.cap, NOT A NUMBER THAT HAPPENED TO FAIL. This
+           was 0.9, which beat the old curve's odds for a 90 speed runner
+           and no longer does: the arcade retune put him at .94, so he was
+           safe, no marker was written and three assertions failed on a
+           draw path that is perfectly fine. The subject here is the
+           MARKER, not the odds, so the roll has to be one no runner can
+           ever survive. sendOdds is clamped at .94, so anything above it
+           is thrown out whatever the curve is tuned to next. */
+        Math.random = () => 0.99;
         g.play = { kind: 'single', preBases: g.bases.slice(), runnerPaths: [null, [1, 2, 3], null], applied: false };
         applyHitMutation('single', currentBatter());
         Math.random = realRandom;
@@ -1660,10 +1668,25 @@ async function main() {
           }
           return _log(m, k);
         };
-        for (let i = 0; i < 16 && State.game && !State.game.over; i++) {
+        /* IT PITCHES UNTIL IT HAS A SAMPLE, rather than a fixed sixteen.
+           Whether a pitch is swung at or taken is a draw, and the dugout
+           takes about a quarter of them, so sixteen pitches carry roughly
+           a ONE IN ELEVEN chance of yielding fewer than two takes. It duly
+           came back 13 swings and 1 call on a build that had not touched
+           swing rate, having passed on the same code an hour earlier.
+
+           The threshold is not the thing to loosen: two calls really is
+           the least this section can say anything about, since what it
+           checks is WHEN a call lands. So the sample grows instead, and it
+           stops as soon as it has enough rather than always paying for the
+           worst case. */
+        const want = () => out.filter(r => r.ev === 'swing').length >= 5
+                        && out.filter(r => r.ev === 'call').length >= 3;
+        for (let i = 0; i < 40 && State.game && !State.game.over; i++) {
           if (playerIsBatting()) break;
           try { endAtBatCleanup(); State.game.pitch = null; throwPitch(); } catch (e) {}
           await new Promise(r => setTimeout(r, 1900));
+          if (i >= 11 && want()) break;
         }
         return out;
       });
