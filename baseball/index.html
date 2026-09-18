@@ -111,6 +111,10 @@ h1,h2,h3{margin:0}
 .hero-field.clearing .chip{transition:opacity .32s ease;opacity:0}
 .htitle{text-align:center;margin-bottom:16px}
 .htitle h1{font-family:'Righteous',var(--fd);font-size:clamp(34px,10vw,52px);text-transform:uppercase;letter-spacing:.03em;line-height:1.05}
+/* The sibling games all carry one word of the name in the game's own color. Flat
+   black on cream read as a document heading rather than a wordmark. */
+.htitle h1 em{font-style:normal;color:var(--leather);
+  text-shadow:0 2px 0 rgba(255,255,255,.4),0 3px 6px rgba(107,82,58,.22)}
 .htitle p{color:var(--dim);font-size:14px;margin:8px 0 0}
 .htitle .kicker{font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.24em;
   text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:center;gap:8px}
@@ -601,6 +605,120 @@ h1,h2,h3{margin:0}
   .fran-card:hover,.fran-card:focus-visible{transform:none}
 }
 
+/* ─── app header ───
+   The game had no header at all, so the page began with a spinning reel and there
+   was nothing on screen saying what this is or how to get back to it. Same shape as
+   the football and college games: mark, wordmark, the site pill, one round button. */
+header{position:sticky;top:0;z-index:60;display:flex;align-items:center;
+  padding:7px 0;margin:-4px 0 10px}
+header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-index:-1;
+  box-shadow:0 1px 0 var(--line)}
+.lockup{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit;
+  flex:0 1 auto;min-width:0;border-radius:10px}
+.lockup .mark{flex:0 0 auto;width:28px;height:28px;border-radius:7px;display:block}
+.brand{flex:0 1 auto;min-width:0;font-family:var(--fd);font-size:clamp(13px,4vw,18px);
+  letter-spacing:.03em;text-transform:uppercase;line-height:1.02;color:var(--ink)}
+.brand em{font-style:normal;color:var(--leather)}
+.hdr-r{margin-left:auto;display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.pill.site{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.04em;
+  text-transform:uppercase;text-decoration:none;color:var(--dim);padding:6px 11px;
+  border:1px solid var(--line-2);border-radius:99px;white-space:nowrap}
+.pill.site i{font-style:normal;color:var(--gold)}
+.pill.site:hover{border-color:var(--gold);color:var(--ink)}
+.hdr-btn{width:34px;height:34px;flex:0 0 auto;display:grid;place-items:center;
+  border:1px solid var(--line-2);border-radius:50%;background:transparent;cursor:pointer;
+  color:var(--dim);padding:0}
+.hdr-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.hdr-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ─── mode cards ───
+   One sheet instead of a column of look-alike buttons on the home screen. Same
+   anatomy the sibling games use: icon tile, title, chevron, a sentence saying what
+   the mode actually asks of you. */
+.modecards{display:grid;gap:12px;margin-top:6px}
+.modecard{display:block;width:100%;text-align:left;font-family:inherit;
+  padding:15px 16px;border-radius:14px;border:1.5px solid var(--line-2);
+  background:var(--grad-panel);cursor:pointer;-webkit-appearance:none;appearance:none;
+  -webkit-tap-highlight-color:transparent;text-decoration:none;
+  transition:transform .1s ease,box-shadow .15s ease,border-color .15s ease}
+.modecard:not(:disabled):hover{box-shadow:0 10px 24px -14px rgba(60,40,15,.5)}
+.modecard:not(:disabled):active{transform:scale(.985)}
+.modecard:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.modecard p{font-size:12.5px;line-height:1.45;color:var(--dim);margin:0}
+.modecard .mc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.modecard .mc-icon{width:32px;height:32px;border-radius:8px;display:flex;flex:0 0 auto;
+  align-items:center;justify-content:center;background:var(--grad-gold)}
+.modecard .mc-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.modecard .mc-icon-img{background:none;overflow:hidden}
+.modecard .mc-icon-img img{width:100%;height:100%;display:block;border-radius:8px}
+.modecard .mc-title{font-family:var(--fn);font-size:16px;font-weight:800;letter-spacing:.01em;
+  text-transform:uppercase;color:var(--ink);line-height:1.15}
+.modecard .mc-arrow{margin-left:auto;width:19px;height:19px;flex:0 0 auto;fill:none;
+  stroke:var(--dim-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.modecard:not(:disabled):hover .mc-arrow{stroke:var(--ink)}
+.modecard .mc-sticker{float:right;margin:-2px 0 0 8px;font-family:var(--fn);font-size:9px;
+  font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#fff;
+  background:var(--grad-gold);padding:3px 8px;border-radius:99px}
+/* each mode wears its own color, so the sheet reads as a set rather than a list */
+.modecard.mc-era{border-color:rgba(26,82,118,.34)}
+.modecard.mc-era .mc-icon{background:var(--grad-blue)} .modecard.mc-era .mc-title{color:var(--blue)}
+.modecard.mc-club{border-color:rgba(46,125,50,.34)}
+.modecard.mc-club .mc-icon{background:var(--grad-green)} .modecard.mc-club .mc-title{color:var(--green)}
+.modecard.mc-div{border-color:rgba(184,134,11,.36)}
+.modecard.mc-div .mc-icon{background:var(--grad-gold)} .modecard.mc-div .mc-title{color:var(--gold)}
+.modecard.mc-cap{border-color:rgba(192,57,43,.34)}
+.modecard.mc-cap .mc-icon{background:var(--grad-red)} .modecard.mc-cap .mc-title{color:var(--red)}
+.modecard.mc-staff{border-color:rgba(106,76,147,.34)}
+.modecard.mc-staff .mc-icon{background:linear-gradient(135deg,#6a4c93,#432d63)}
+.modecard.mc-staff .mc-title{color:var(--purple)}
+.modecard.mc-trade{border-color:rgba(212,119,44,.36)}
+.modecard.mc-trade .mc-icon{background:linear-gradient(135deg,#d4772c,#9c5214)}
+.modecard.mc-trade .mc-title{color:var(--orange)}
+/* A mode that exists on the sheet but is not open yet. Dimmed, not tappable, and the
+   description stays fully legible: the card is the advertisement for coming back. */
+.modecard.mc-soon{cursor:default;border-style:dashed;background:rgba(0,0,0,.015)}
+.modecard.mc-soon .mc-icon{filter:grayscale(1);opacity:.55}
+.modecard.mc-soon .mc-title{color:var(--dim-2)}
+.mc-sticker.soon{background:none;color:var(--dim-2);border:1px solid var(--line-2)}
+.div-clubs{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.div-clubs .dc{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.03em;
+  color:var(--dci,#fff);background:var(--dc);padding:2px 7px;border-radius:99px;
+  box-shadow:0 1px 3px -1px rgba(0,0,0,.4)}
+.xpromo{margin-top:18px;padding-top:14px;border-top:1px solid var(--line-2)}
+.xpromo .xp-h{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim-2);margin:0 0 10px}
+
+/* ─── first run ───
+   Numbered steps and the goal, once, before the first draft. The game used to open
+   straight onto a spinning reel with no statement of what you were trying to do. */
+.fr-steps{display:grid;gap:12px;margin:12px 0 14px}
+.fr-step{display:flex;gap:11px;align-items:flex-start}
+.fr-step .n{flex:0 0 auto;width:23px;height:23px;border-radius:50%;display:grid;
+  place-items:center;font-family:var(--fn);font-size:12px;font-weight:800;color:var(--gold);
+  border:1.5px solid rgba(184,134,11,.5)}
+.fr-step p{margin:1px 0 0;font-size:13.5px;line-height:1.45;color:var(--dim)}
+.fr-goal{border-left:3px solid var(--gold);background:rgba(184,134,11,.08);
+  border-radius:0 10px 10px 0;padding:12px 14px;margin:0 0 14px}
+.fr-goal p{margin:0;font-size:13.5px;line-height:1.5;color:var(--ink)}
+.fr-goal b{color:var(--gold)}
+
+/* ─── about, folded away ─── */
+.about{margin-top:22px;border-top:1px solid var(--line);padding-top:4px}
+.about summary{list-style:none;cursor:pointer;display:flex;align-items:center;
+  padding:12px 2px;font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--dim-2)}
+.about summary::-webkit-details-marker{display:none}
+.about summary::after{content:'';margin-left:auto;width:8px;height:8px;
+  border-right:2px solid var(--dim-2);border-bottom:2px solid var(--dim-2);
+  transform:rotate(45deg) translateY(-2px);transition:transform .18s ease}
+.about[open] summary::after{transform:rotate(-135deg) translateY(-2px)}
+.about-body{font-size:13px;line-height:1.6;color:var(--dim);padding:0 2px 8px}
+.about-body h3{font-family:var(--fn);font-size:13px;font-weight:800;color:var(--ink);
+  margin:14px 0 4px;text-transform:none;letter-spacing:0}
+.about-body p{margin:0 0 8px}
+
 /* ─── footer ─── */
 .legal{margin-top:32px;padding:16px 0;border-top:1px solid rgba(0,0,0,.08);font-size:12px;color:var(--dim);text-align:center}
 .legal a{color:var(--dim-2)} .legal p{margin:6px 0} .legal span{margin:0 6px}
@@ -630,6 +748,21 @@ h1,h2,h3{margin:0}
 <body>
 <div class="wrap">
 
+<header>
+  <a class="lockup" href="." aria-label="Run The Diamond, back to the start">
+    <img class="mark" src="icon-192.png?v=1" alt="" width="28" height="28" decoding="async">
+    <span class="brand">Run The <em>Diamond</em></span>
+  </a>
+  <div class="hdr-r">
+    <a class="pill site" href="/">RunThe<i>.GG</i></a>
+    <button class="hdr-btn" id="b-trophy-hd" aria-label="Trophy case" title="Trophy case">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/>
+        <path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/>
+        <path d="M12 14v3"/><path d="M8.5 20h7"/><path d="M10 17h4l.6 3h-5.2z"/></svg>
+    </button>
+  </div>
+</header>
+
 <div class="screen on" id="s-load">
   <div class="load"><div class="dots"><i></i><i></i><i></i></div>
     <div class="dim">Loading every season since 1901</div></div>
@@ -649,19 +782,39 @@ h1,h2,h3{margin:0}
 
   <div class="htitle">
     <div class="kicker">1901 to 2025</div>
-    <h1>Run The Diamond</h1>
+    <h1>Run The <em>Diamond</em></h1>
     <p>Draft twelve MLB legends. Build your lineup. Win the World Series.</p>
   </div>
 
-  <button class="btn hp-start" id="b-start">&#9918; Start a run &#9918;</button>
-  <div class="mode-row">
-    <button class="btn ghost mode-btn" id="b-era"><b>Eras Mode</b><span>One decade only</span></button>
-    <button class="btn ghost mode-btn" id="b-fran"><b>Franchise Mode</b><span>One club, max chemistry</span></button>
-  </div>
+  <button class="btn hp-start" id="b-start">&#9918; Draft your team &#9918;</button>
+  <button class="btn ghost hp-secondary" id="b-modes">More ways to play</button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">How to play</button>
     <button class="btn ghost hp-util-btn" id="b-trophy">Trophy case</button>
   </div>
+
+  <details class="about">
+    <summary>About Run The Diamond</summary>
+    <div class="about-body">
+      <p>Run The Diamond is a free daily-style draft game built on every MLB season from
+        1901 to 2025. Each spin lands on a real team-season and you take one player off
+        that roster, twelve times, filling a full lineup and pitching staff under a
+        $170M budget.</p>
+      <h3>Where the numbers come from</h3>
+      <p>Player value is Wins Above Replacement from Baseball-Reference. A player's price
+        is set by their WAR that season, so the great years cost what they were worth and
+        you cannot afford a star at every spot.</p>
+      <h3>How a season is decided</h3>
+      <p>Your roster's bats and arms set the runs you score and allow, chemistry between
+        real teammates lifts both, and 162 games are played against actual all-time clubs.
+        Win enough and you reach October, where the deepest rounds stiffen against weaker
+        teams.</p>
+      <h3>Is it the same game every day?</h3>
+      <p>No. Every run draws its own team-seasons, so the board in front of you is new
+        each time. The modes change the rules rather than the data.</p>
+    </div>
+  </details>
+
   <footer class="legal">
     <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
       href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
@@ -684,9 +837,19 @@ h1,h2,h3{margin:0}
 <div class="screen" id="s-fran">
   <div class="eyebrow">Franchise Mode</div>
   <h2 class="display" style="font-size:27px;margin:5px 0 8px">Build a dynasty</h2>
-  <p class="dim" style="font-size:13px;margin:0 0 12px">Draft one franchise's all-time roster. Every teammate shares the uniform, so your chemistry runs sky-high. But you're on your own for talent.</p>
+  <p class="dim" style="font-size:13px;margin:0 0 12px">Draft one club's all-time roster. The Yankees give you a century of stars, the Marlins give you thirty years, and you live with whichever you picked. Sharing a uniform is the price of entry here, so it earns you nothing: the chemistry you get is the chemistry you build.</p>
   <div id="fran-sections"></div>
   <div style="margin-top:16px"><button class="btn ghost sm" id="b-fran-back">Back</button></div>
+</div>
+
+<div class="screen" id="s-div">
+  <div class="eyebrow">Division Draft</div>
+  <h2 class="display" style="font-size:27px;margin:5px 0 8px">Win your division</h2>
+  <p class="dim" style="font-size:13px;margin:0 0 12px">Draft only from the clubs that were
+    really in one division, from 1994 on. The map moves with history, so Houston is in the
+    NL Central until 2013 and the AL West after it.</p>
+  <div id="div-cards"></div>
+  <div style="margin-top:16px"><button class="btn ghost sm" id="b-div-back">Back</button></div>
 </div>
 
 <div class="screen" id="s-how">
@@ -834,6 +997,41 @@ h1,h2,h3{margin:0}
   </div>
 </div>
 
+<div class="sheet" id="sheet-modes" aria-hidden="true">
+  <div class="sheet-scrim" data-close-modes></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title">More ways to play</h3>
+      <button class="sheet-x" data-close-modes aria-label="Close">&times;</button>
+    </div>
+    <div id="modes-in"></div>
+    <div style="margin-top:14px"><button class="btn ghost sm" data-close-modes>Close</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-first" aria-hidden="true">
+  <div class="sheet-scrim" data-close-first></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="eyebrow" style="color:var(--gold)">First time here</div>
+    <h3 class="display" style="font-size:23px;margin:5px 0 2px">Draft twelve, then play a season</h3>
+    <div class="fr-steps">
+      <div class="fr-step"><span class="n">1</span><p>Every spin lands on a real team-season.
+        Take one player off that roster. Twelve times, filling a lineup and a staff.</p></div>
+      <div class="fr-step"><span class="n">2</span><p>All twelve share a <b>$170M</b> budget.
+        That is the puzzle: prices come from how good the season actually was, so the last
+        few spots are always the hard ones.</p></div>
+      <div class="fr-step"><span class="n">3</span><p>Then 162 games play out against real
+        all-time clubs, and October if you earn it.</p></div>
+    </div>
+    <div class="fr-goal"><p>Your goal: <b>116 wins and the World Series.</b> That ties the
+      all-time record. It is meant to be very hard, and almost nobody gets there first try.</p></div>
+    <button class="btn" id="b-first-go">&#9918; Draft your team &#9918;</button>
+    <div style="margin-top:8px"><button class="btn ghost sm" data-close-first>I have played before</button></div>
+  </div>
+</div>
+
 <div class="sheet" id="sheet-chem" aria-hidden="true">
   <div class="sheet-scrim" data-close-chem></div>
   <div class="sheet-inner">
@@ -863,8 +1061,8 @@ h1,h2,h3{margin:0}
   </div>
 </div>
 
-<script src="engine.js?v=12"></script>
-<script src="run.js?v=9"></script>
+<script src="engine.js?v=13"></script>
+<script src="run.js?v=10"></script>
 <script src="achievements.js?v=2"></script>
 <script>
 (function(){
@@ -897,7 +1095,7 @@ function rowFromRun(o){
     chemPct:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:null,
     spend:RUN.roster.reduce((s,p)=>s+p.p,0),respins:RUN.respinsUsed||0,
     efficiency:bps?bps.efficiency:null,archetype:o.structure&&o.structure.archetype?o.structure.archetype.key:null,
-    chemLinks:[...new Set(links)],era:RUN.era||null,franchise:RUN.franchise||null,
+    chemLinks:[...new Set(links)],era:RUN.era||null,franchise:RUN.franchise||null,division:RUN.division||null,
     eliminatedWS:!!(last&&last.round==='World Series'&&!o.titleWon),
     picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:E.SLOTS[RUN.slotIndex[i]],w:p.w})),
   };
@@ -979,6 +1177,18 @@ const CHEM_TYPES=[
   {type:'era',      label:'Same era',      color:'#8a7e6e', note:'Contemporaries, a faint bond'},
 ];
 const CHEM_BY_TYPE={};for(const c of CHEM_TYPES)CHEM_BY_TYPE[c.type]=c;
+/* Ink that survives the club's own color. Milwaukee's primary is #FFC52F and
+   Oakland's secondary is #EFB21E: white on either is unreadable, and a club chip
+   nobody can read is not a club chip. Relative luminance per WCAG, then the ink
+   that wins on contrast. */
+function readableInk(hex){
+  const h=String(hex||'').replace('#','');
+  if(h.length!==6) return '#fff';
+  const ch=i=>{const v=parseInt(h.slice(i,i+2),16)/255;
+    return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
+  const L=0.2126*ch(0)+0.7152*ch(2)+0.0722*ch(4);
+  return L>0.42?'#17130c':'#fff';
+}
 const chemColor=t=>(CHEM_BY_TYPE[t]||{}).color||'#8a7e6e';
 const chemLabel=t=>(CHEM_BY_TYPE[t]||{}).label||t;
 /* Trailing .0 reads as false precision on a badge, so 4.0 prints as 4. */
@@ -1196,7 +1406,7 @@ function drawField(el,live){
   // the entire roster again inside the chip loop, twelve times a redraw.
   const chemBySlot=new Array(E.SLOTS.length).fill(null);
   if(RUN&&RUN.roster.length>1){
-    const per=E.chemistryByPlayer(RUN.roster);
+    const per=R.chemByPlayer(RUN);
     RUN.roster.forEach((p,i)=>{chemBySlot[RUN.slotIndex[i]]=per[i];});
   }
   if(el.id==='field') drawPips(bySlot);
@@ -1415,6 +1625,7 @@ async function boot(){
     if(hasPositions) E.setPositionsAvailable(true);
     show('s-intro');
     heroSync();
+    maybeFirstRun();
   }catch(e){
     $('s-load').querySelector('.dim').textContent='Failed to load data. Please refresh.';
     console.error(e);
@@ -1423,15 +1634,92 @@ async function boot(){
 
 /* ─── navigation ─── */
 $('b-start').addEventListener('click',()=>startRun());
-$('b-era').addEventListener('click',()=>{buildEraGrid();show('s-era');});
 $('b-era-back').addEventListener('click',()=>{show('s-intro');heroSync();});
-$('b-fran').addEventListener('click',()=>{buildFranGrid();show('s-fran');});
 $('b-fran-back').addEventListener('click',()=>{show('s-intro');heroSync();});
+$('b-div-back').addEventListener('click',()=>{show('s-intro');heroSync();});
 $('b-how-play').addEventListener('click',()=>{
   $('how-chem-key').innerHTML=chemKeyRows();
   $('how-chem-cap').innerHTML=chemCapNote();
   show('s-how');
 });
+$('b-trophy-hd').addEventListener('click',openTrophy);
+$('b-modes').addEventListener('click',openModes);
+document.querySelectorAll('[data-close-modes]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-modes')));
+document.querySelectorAll('[data-close-first]').forEach(el=>el.addEventListener('click',()=>{closeSheet('sheet-first');markSeen();}));
+$('b-first-go').addEventListener('click',()=>{closeSheet('sheet-first');markSeen();startRun();});
+
+/* ─── more ways to play ───
+   One sheet, the way the football and college games do it. Six modes as buttons on the
+   home screen was six things competing with the one button that matters. */
+const ARROW='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
+const MODE_CARDS=[
+  {id:'era',cls:'mc-era',title:'Eras Draft',
+   icon:'<path d="M12 2.4a9.6 9.6 0 1 0 0 19.2 9.6 9.6 0 0 0 0-19.2Z"/><path d="M12 6.7V12l3.5 2.1"/>',
+   text:'Pick a decade and draft only from it. Every era plays differently: the dead-ball years are all arms, the nineties are all bats.'},
+  {id:'fran',cls:'mc-club',title:'One Franchise',
+   icon:'<path d="M12 2.2 3.4 6.6v6c0 5.2 3.7 9.9 8.6 11.1 4.9-1.2 8.6-5.9 8.6-11.1v-6z"/>',
+   text:'Draft one club\'s all-time roster, from 44 franchises. A century of Yankees or thirty years of Marlins, and you live with the one you picked.'},
+  {id:'div',cls:'mc-div',title:'Division Draft',
+   icon:'<path d="M4 4h16"/><path d="M4 4v16"/><path d="M8 8h8v4H8z"/><path d="M8 16h8"/>',
+   text:'Pick a division and draft only from the clubs that were really in it, 1994 to today. The map moves with history: Houston is NL Central until 2013 and AL West after.',
+   sticker:'New'},
+  {id:'cap',soon:true,cls:'mc-cap',title:'Salary Cap Survivor',
+   icon:'<path d="M12 2.6v18.8"/><path d="M16.6 6.4H9.8a2.9 2.9 0 0 0 0 5.8h4.4a2.9 2.9 0 0 1 0 5.8H6.8"/>',
+   text:'Contracts inflate as the season runs. Stay under the cap or cut somebody, every time the market moves against you.',
+   sticker:'New'},
+  {id:'staff',soon:true,cls:'mc-staff',title:'All-Time Staff',
+   icon:'<path d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4Z"/><path d="M6.2 5.6c3.4 3 3.4 9.8 0 12.8"/><path d="M17.8 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
+   text:'Forget the bats. Draft a five-man rotation and a bullpen, and win on run prevention alone with a league-average lineup behind you.',
+   sticker:'New'},
+  {id:'trade',soon:true,cls:'mc-trade',title:'The Trade Machine',
+   icon:'<path d="M4.4 9.4V8.2a3.2 3.2 0 0 1 3.2-3.2h9.6V2.2l4.4 3.9-4.4 3.9V7.4H7.6a.8.8 0 0 0-.8.8v1.2z"/><path opacity=".55" d="M19.6 14.6v1.2a3.2 3.2 0 0 1-3.2 3.2H6.8v2.8l-4.4-3.9 4.4-3.9v2.6h9.6a.8.8 0 0 0 .8-.8v-1.2z"/>',
+   text:'You are handed a roster you did not pick and a deadline. Trade your way to a contender, or find out you were never close.',
+   sticker:'New'},
+];
+function openModes(){
+  $('modes-in').innerHTML=
+    '<div class="modecards">'+
+    MODE_CARDS.map(m=>
+      '<button class="modecard '+m.cls+(m.soon?' mc-soon':'')+'" data-mode="'+m.id+'"'+
+        (m.soon?' disabled':'')+'>'+
+        (m.soon?'<span class="mc-sticker soon">Soon</span>'
+              :(m.sticker?'<span class="mc-sticker">'+esc(m.sticker)+'</span>':''))+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+m.icon+
+        '</svg></div><div class="mc-title">'+esc(m.title)+'</div>'+(m.soon?'':ARROW)+'</div>'+
+        '<p>'+esc(m.text)+'</p></button>').join('')+
+    '</div>'+
+    '<div class="xpromo"><p class="xp-h">More games like this one</p>'+
+      '<a class="modecard" href="/football/">'+
+        '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
+        '<img src="/football/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
+        '</div><div class="mc-title">The Perfect Season</div>'+ARROW+'</div>'+
+        '<p>The same idea in the NFL. Six legends under a $140M cap, then all 17 games.</p></a>'+
+      '<a class="modecard" style="margin-top:12px" href="/cfb/">'+
+        '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
+        '<img src="/cfb/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
+        '</div><div class="mc-title">Perfect College Season</div>'+ARROW+'</div>'+
+        '<p>College football, 2005 to 2025. Six players under an NIL budget, twelve games.</p></a>'+
+    '</div>';
+  $('modes-in').querySelectorAll('[data-mode]').forEach(btn=>{
+    btn.addEventListener('click',()=>{closeSheet('sheet-modes');pickMode(btn.dataset.mode);});
+  });
+  openSheet('sheet-modes');ga('modes_opened');
+}
+function pickMode(id){
+  if(id==='era'){buildEraGrid();show('s-era');return;}
+  if(id==='fran'){buildFranGrid();show('s-fran');return;}
+  if(id==='div'){buildDivGrid();show('s-div');return;}
+  if(id==='cap'){startRun({capSurvivor:true});return;}
+  if(id==='staff'){startRun({staff:true});return;}
+  if(id==='trade'){startTrade();return;}
+}
+
+/* First run only. The key is versioned so a later change to what the sheet says can
+   show it again without clobbering anything else the game keeps. */
+const SEEN_KEY='rtd_seen_intro_v1';
+function hasSeen(){try{return !!localStorage.getItem(SEEN_KEY);}catch(e){return true;}}
+function markSeen(){try{localStorage.setItem(SEEN_KEY,'1');}catch(e){}}
+function maybeFirstRun(){if(!hasSeen())openSheet('sheet-first');}
 $('b-how-back').addEventListener('click',()=>{show('s-intro');heroSync();});
 $('b-quit').addEventListener('click',()=>{
   if(RUN&&RUN.phase===R.PHASES.DRAFT&&RUN.roster.length>0){
@@ -1464,7 +1752,11 @@ function chemKeyRows(){
 function chemCapNote(){
   return 'Bonuses stack with diminishing returns and the team total tops out at <b>+'+
     chemNum(E.chemPoints(E.CHEMISTRY.MAX))+'</b>. Chemistry lifts the runs you score, '+
-    'so it shows up in your record rather than in your team rating.';
+    'so it shows up in your record rather than in your team rating.<br><br>'+
+    'A mode never pays for the bond its own rule guarantees. Eras Draft keeps you inside '+
+    'one decade, so <b>Same era</b> stops counting there. One Franchise and Division Draft '+
+    'put everyone in a handful of uniforms, so <b>Franchise</b> stops counting in those. '+
+    'What is left is what you actually chose.';
 }
 function openChemKey(){
   $('chem-key').innerHTML=chemKeyRows();
@@ -1534,6 +1826,42 @@ function buildFranGrid(){
   }
 }
 
+/* ─── division draft ───
+   The cards carry the clubs, because "AL Central" means nothing until you see that it
+   is the Guardians, the Twins and the White Sox, and the crest colors are already in
+   the engine. Every club the division has ever held is listed, since a run spans the
+   whole 1994-2025 window and the 1996 membership is as draftable as today's. */
+/* One accent per division rather than the first club's colors, which handed the
+   AL Central a black tile because Chicago happens to sort first. */
+const DIV_ACCENT={
+  'AL East':['#c0392b','#8b1a1a'], 'AL Central':['#1a5276','#123a54'],
+  'AL West':['#2e7d32','#1b5e20'], 'NL East':['#6a4c93','#432d63'],
+  'NL Central':['#d4772c','#9c5214'], 'NL West':['#b8860b','#8b6914'],
+};
+function buildDivCards(){
+  const host=$('div-cards');host.innerHTML='';
+  const grid=document.createElement('div');grid.className='modecards';
+  for(const name of Object.keys(E.DIVISIONS)){
+    const clubs=E.divisionClubs(name);
+    const btn=document.createElement('button');
+    btn.className='modecard';
+    const acc=DIV_ACCENT[name]||['#b8860b','#8b6914'];
+    btn.style.borderColor='rgba(0,0,0,.16)';
+    btn.innerHTML='<div class="mc-head"><div class="mc-icon" style="background:linear-gradient(135deg,'+
+      acc[0]+','+acc[1]+')"><svg viewBox="0 0 24 24">'+
+      '<path d="M4 20V5.5L12 3l8 2.5V20"/><path d="M4 20h16"/><path d="M12 3v17"/>'+
+      '</svg></div><div class="mc-title">'+esc(name)+'</div>'+ARROW+'</div>'+
+      '<div class="div-clubs">'+clubs.map(c=>{
+        const cc=E.teamColors(c)[0];
+        return '<span class="dc" style="--dc:'+cc+';--dci:'+readableInk(cc)+'">'+esc(c)+'</span>';
+      }).join('')+'</div>';
+    btn.addEventListener('click',()=>startRun({division:name}));
+    grid.appendChild(btn);
+  }
+  host.appendChild(grid);
+}
+function buildDivGrid(){buildDivCards();}
+
 /* ─── start run ─── */
 function startRun(opts={}){
   RUN=R.createRun(opts);
@@ -1555,7 +1883,7 @@ function paintTop(){
   per.classList.toggle('low',left>0&&rem/Math.max(1,left)<E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD*2);
   const b=$('c-bar');b.style.width=Math.max(0,Math.min(100,rem/R.capOf(RUN)*100))+'%';
   b.classList.toggle('low',low);
-  const chem=RUN.roster.length>1?E.resolveChemistry(RUN.roster).multiplier:1;
+  const chem=RUN.roster.length>1?R.chemOf(RUN).multiplier:1;
   const el=$('c-chem');
   const zero=Math.abs(chem-1)<0.0005;
   const pct=((chem-1)*100).toFixed(1);
@@ -1783,7 +2111,7 @@ function showSquad(){
   show('s-squad');
   drawField($('sq-field'),false);
   const tagged=RUN.roster.map((p,i)=>({...p,_slot:E.SLOTS[RUN.slotIndex[i]]}));
-  const chem=E.resolveChemistry(tagged);
+  const chem=R.chemOf(RUN,tagged);
   const structure=E.rosterStructure(tagged);
   const rating=E.overallRating(E.teamWinPct(
     E.rosterOffense(tagged,chem.multiplier,structure.multiplier),
@@ -1928,6 +2256,7 @@ function showResult(){
   else{hero.className='ro-hero lose';vd.textContent='Missed the playoffs';vd.className='ro-verdict';}
   let modeLabel='';
   if(RUN.franchise)modeLabel='The all-time '+teamFullName(RUN.franchise);
+  else if(RUN.division)modeLabel=RUN.division;
   else if(RUN.era)modeLabel=RUN.era+' era';
   const seedTxt=o.seedLabel&&o.madePlayoffs?o.seedLabel:'';
   $('ro-sub').textContent=[modeLabel,seedTxt].filter(Boolean).join(' · ');
@@ -1973,7 +2302,7 @@ function showResult(){
   // What the chemistry actually bought, in the game's own currency. The team
   // rating leaves chemistry out by design, so this is the only place it is
   // stated plainly rather than buried in the record.
-  const worth=E.chemistryWorth(RUN.roster,RUN.slotIndex.map(i=>E.SLOTS[i]));
+  const worth=R.chemWorth(RUN);
   const cw=$('ro-chemworth');
   if(worth.wins>=0.1){
     cw.style.display='';
@@ -1990,7 +2319,7 @@ function showResult(){
   const rosterDiv=$('r-roster');
   rosterDiv.innerHTML='<div class="eyebrow" style="margin-bottom:8px">Your roster</div>';
   const roster=document.createElement('div');roster.className='roster-final';
-  const perChem=E.chemistryByPlayer(RUN.roster,o.chemistry);
+  const perChem=R.chemByPlayer(RUN,null,o.chemistry);
   RUN.roster.forEach((p,i)=>{
     const slot=E.SLOTS[RUN.slotIndex[i]];
     const div=document.createElement('div');div.className='rslot';
@@ -2054,7 +2383,7 @@ function shareVerdict(o){
   return 'Missed the playoffs';
 }
 function shareLines(o){
-  const tag=RUN.franchise?' ('+teamFullName(RUN.franchise)+')':(RUN.era?' ('+RUN.era+')':'');
+  const tag=RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
   let t='Run The Diamond'+tag+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
   if(o.rating!=null) t+=' Team rating '+Math.round(o.rating)+'.';
   t+='\nCan you draft a better team?\nrunthe.gg/baseball';

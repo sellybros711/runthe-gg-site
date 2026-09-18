@@ -85,6 +85,50 @@ const ERAS = {
   '2020s': [2020, 2025],
 };
 
+/* Divisions, as they actually were.
+ *
+ * Scoped to 1994 onward, the three-division era, because that is the only period
+ * where "AL East" names one stable thing a fan can picture. Divisions began in 1969
+ * with two per league, and anything before that is just the two leagues.
+ *
+ * Each entry is [club, firstSeason, lastSeason], so a club sits in the division it
+ * was really in that year: Detroit is AL East through 1997 and AL Central after,
+ * Milwaukee is AL Central for four years before moving to the NL, Houston is NL
+ * Central until 2013 and AL West after, and Montreal becomes Washington in 2005.
+ * Drafting the 1996 AL West and getting Houston would be the whole point missed. */
+const DIVISIONS = {
+  'AL East': [['BAL', 1994, 2025], ['BOS', 1994, 2025], ['NYY', 1994, 2025],
+    ['TOR', 1994, 2025], ['DET', 1994, 1997], ['TBD', 1998, 2007], ['TBR', 2008, 2025]],
+  'AL Central': [['CHW', 1994, 2025], ['CLE', 1994, 2025], ['KCR', 1994, 2025],
+    ['MIN', 1994, 2025], ['MIL', 1994, 1997], ['DET', 1998, 2025]],
+  'AL West': [['OAK', 1994, 2024], ['SEA', 1994, 2025], ['TEX', 1994, 2025],
+    ['ATH', 2025, 2025], ['CAL', 1994, 1996], ['ANA', 1997, 2004],
+    ['LAA', 2005, 2025], ['HOU', 2013, 2025]],
+  'NL East': [['ATL', 1994, 2025], ['NYM', 1994, 2025], ['PHI', 1994, 2025],
+    ['FLA', 1994, 2011], ['MIA', 2012, 2025], ['MON', 1994, 2004], ['WSN', 2005, 2025]],
+  'NL Central': [['CHC', 1994, 2025], ['CIN', 1994, 2025], ['PIT', 1994, 2025],
+    ['STL', 1994, 2025], ['HOU', 1994, 2012], ['MIL', 1998, 2025]],
+  'NL West': [['COL', 1994, 2025], ['LAD', 1994, 2025], ['SDP', 1994, 2025],
+    ['SFG', 1994, 2025], ['ARI', 1998, 2025]],
+};
+const DIVISION_FIRST_SEASON = 1994;
+
+/* Was this club in this division that season? */
+function inDivision(division, team, season) {
+  const rows = DIVISIONS[division];
+  if (!rows) return false;
+  for (const [code, from, to] of rows) {
+    if (code === team && season >= from && season <= to) return true;
+  }
+  return false;
+}
+
+/* The clubs a division has ever held, newest membership first, for the picker. */
+function divisionClubs(division) {
+  const rows = DIVISIONS[division] || [];
+  return rows.slice().sort((a, b) => b[2] - a[2]).map(r => r[0]);
+}
+
 /* 12 roster slots per GDD §3. */
 const SLOTS = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'SP1', 'SP2', 'CL'];
 
@@ -443,7 +487,25 @@ function familyLink(a, b) {
  * - Battery: C + pitcher from same team-season
  * - Era: within 3 seasons of each other
  */
-function pairLinks(a, b) {
+/* A bond a mode hands you for free is not a bond.
+ *
+ * In Eras Mode every pair is inside one decade, so the "same era" link fires on
+ * nearly all 66 pairs whatever you draft. In One Franchise every pair shares the
+ * club by construction. Left in, those links push a constrained run straight to the
+ * chemistry cap, which is worth about 21 wins: measured, Eras and Division runs came
+ * out at 100-104 mean wins against the core game's 89 while carrying LESS talent and
+ * a LOWER rating. The constraint was paying better than it cost.
+ *
+ * So a mode suppresses the link its own rule guarantees. The Perfect Season does the
+ * same thing for the same reason. What remains is what you actually chose: the
+ * batteries, the double-play combos, the families, and the clubs you chose to stack
+ * inside a pool that did not force you to. */
+function suppressedIn(opts) {
+  return (opts && opts.suppress) || [];
+}
+
+function pairLinks(a, b, opts) {
+  const off = suppressedIn(opts);
   const links = [];
   const sameTeam = a.t === b.t;
   const sameSeason = a.s === b.s;
@@ -496,14 +558,16 @@ function pairLinks(a, b) {
       label: 'Same era' });
   }
 
+  if (off.length) return links.filter(l => off.indexOf(l.type) === -1);
+
   return links;
 }
 
-function resolveChemistry(roster) {
+function resolveChemistry(roster, opts) {
   const links = [];
   for (let i = 0; i < roster.length; i++) {
     for (let j = i + 1; j < roster.length; j++) {
-      const plinks = pairLinks(roster[i], roster[j]);
+      const plinks = pairLinks(roster[i], roster[j], opts);
       for (const l of plinks) {
         // ai/bi are roster positions. Names alone cannot attribute a link when
         // a roster holds two players of the same name, which real data does.
@@ -552,8 +616,8 @@ function chemPoints(value) {
  * which drops the ambient era link. Era is +0.5 against a cap of +15 and it
  * attaches to nearly everybody, so badging it would put a meaningless mark on
  * ten of twelve players and drown the bonds that were actually chosen. */
-function chemistryByPlayer(roster, resolved) {
-  const res = resolved || resolveChemistry(roster);
+function chemistryByPlayer(roster, resolved, opts) {
+  const res = resolved || resolveChemistry(roster, opts);
   const out = roster.map(() => ({ points: 0, keyPoints: 0, links: [], top: null }));
   for (const l of res.links) {
     if (l.value <= 0) continue;
@@ -580,11 +644,11 @@ function chemistryByPlayer(roster, resolved) {
  * never shows up in the headline number, only in the record, where the player
  * cannot see how much of the record it bought. This states it outright: play
  * the same roster with the bonus and without it, and take the difference. */
-function chemistryWorth(roster, slotNames) {
+function chemistryWorth(roster, slotNames, opts) {
   const tagged = roster.map((p, i) => ({
     ...p, _slot: (slotNames && slotNames[i]) || p._slot || SLOTS[i],
   }));
-  const chem = resolveChemistry(tagged);
+  const chem = resolveChemistry(tagged, opts);
   const structure = rosterStructure(tagged);
   const winsAt = (mult) => teamWinPct(
     rosterOffense(tagged, mult, structure.multiplier),
@@ -1076,13 +1140,13 @@ function lastNameOf(n) {
 
 // ─── full season play ────────────────────────────────────────────────────────
 
-function playRun(roster, rng, slotNames, pool) {
+function playRun(roster, rng, slotNames, pool, opts) {
   // Tag each player with their actual slot. slotNames maps roster order to
   // slot names (players draft in random order); without it, fall back to
   // assuming the roster is already in SLOTS order.
   const tagged = roster.map((p, i) => ({ ...p, _slot: (slotNames && slotNames[i]) || SLOTS[i] }));
 
-  const chem = resolveChemistry(tagged);
+  const chem = resolveChemistry(tagged, opts);
   const structure = rosterStructure(tagged);
   const offense = rosterOffense(tagged, chem.multiplier, structure.multiplier);
   const defense = rosterRunPrevention(tagged, chem.multiplier);
@@ -1172,6 +1236,7 @@ function teamColors(code) {
 
 const publicAPI = {
   CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
+  DIVISIONS, DIVISION_FIRST_SEASON, inDivision, divisionClubs,
   POSITIONS_AVAILABLE: () => POSITIONS_AVAILABLE,
   setPositionsAvailable,
   hashSeed, createSeededRNG, sampleGamma,

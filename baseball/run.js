@@ -185,11 +185,14 @@ function createRun(opts) {
   const era = opts.era ?? null;
   if (era !== null && !E.ERAS[era]) throw new Error(`unknown era ${era}`);
   const franchise = opts.franchise ?? null;
+  const division = opts.division ?? null;
+  if (division !== null && !E.DIVISIONS[division]) throw new Error(`unknown division ${division}`);
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
     version: 1,
     era,
     franchise,
+    division,
     seed,
     rngCalls: 0,
     capMusd: E.CONSTANTS.CAP_MUSD,
@@ -232,6 +235,7 @@ function drawable(run, data, focus) {
         if (!(t.season >= r[0] && t.season <= r[1])) return false;
       }
       if (run.franchise && t.team !== run.franchise) return false;   // Franchise mode
+      if (run.division && !E.inDivision(run.division, t.team, t.season)) return false;
       if (focus && focus.franchise && t.team !== focus.franchise) return false;
       if (focus && focus.era) {
         const r = E.ERAS[focus.era];
@@ -393,10 +397,41 @@ function sign(run, player, slotIdx) {
   }
 }
 
+/* What a mode suppresses, in one place.
+ *
+ * A link the mode's own rule guarantees is not a decision, so it does not pay. Eras
+ * Mode bounds every pick to one decade, which fires the "same era" link on nearly
+ * every pair; One Franchise puts all twelve in the same uniform. Everything that
+ * touches chemistry goes through the helpers below rather than calling the engine
+ * directly, because the draft board, the diamond and the season all have to agree:
+ * a rail that draws links the season does not pay for is worse than no rail. */
+function chemOpts(run) {
+  const suppress = [];
+  if (!run) return { suppress };
+  if (run.era) suppress.push('era');
+  // One club, or a division's four to six of them: with twelve picks out of that
+  // few, the pigeonhole alone guarantees repeats, so a franchise link is the mode
+  // talking rather than a choice you made.
+  if (run.franchise || run.division) suppress.push('franchise');
+  return { suppress };
+}
+/* The chemistry of a run's roster (or any roster, under that run's rules). */
+function chemOf(run, roster) {
+  return E.resolveChemistry(roster || run.roster, chemOpts(run));
+}
+function chemByPlayer(run, roster, resolved) {
+  const r = roster || run.roster;
+  return E.chemistryByPlayer(r, resolved, chemOpts(run));
+}
+function chemWorth(run) {
+  return E.chemistryWorth(run.roster, run.slotIndex.map(i => E.SLOTS[i]), chemOpts(run));
+}
+
 /* Preview chemistry if you were to sign this player. */
 function previewSigning(run, player) {
-  const before = E.resolveChemistry(run.roster);
-  const after = E.resolveChemistry(run.roster.concat([player]));
+  const o = chemOpts(run);
+  const before = E.resolveChemistry(run.roster, o);
+  const after = E.resolveChemistry(run.roster.concat([player]), o);
   const seen = new Set(before.links.map(l => l.a + '|' + l.b + '|' + l.type));
   return {
     multiplier: after.multiplier,
@@ -411,7 +446,7 @@ function playSeason(run) {
   const rng = rngFor(run);
   const slotNames = run.slotIndex.map(i => E.SLOTS[i]);
   const pool = poolFor(run);
-  const result = E.playRun(run.roster, rng, slotNames, pool);
+  const result = E.playRun(run.roster, rng, slotNames, pool, chemOpts(run));
   result.allTimeRank = _data ? E.nationalRank(result.rating, _data.ratingTable) : null;
 
   run.season = result.season;
@@ -450,7 +485,7 @@ function advanceGame(run, gameIndex) {
     // from these tags.
     const rng = rngFor(run);
     const tagged = run.roster.map((p, k) => ({ ...p, _slot: E.SLOTS[run.slotIndex[k]] }));
-    const chem = E.resolveChemistry(tagged);
+    const chem = E.resolveChemistry(tagged, chemOpts(run));
     const structure = E.rosterStructure(tagged);
     const offense = E.rosterOffense(tagged, chem.multiplier, structure.multiplier);
     const defense = E.rosterRunPrevention(tagged, chem.multiplier);
@@ -597,7 +632,7 @@ function projectSeason(run, trials) {
   let po = 0, title = 0, rec = 0;
   for (let i = 0; i < n; i++) {
     const rng = E.createSeededRNG((run.seed ^ (i * 2654435761)) >>> 0);
-    const out = E.playRun(run.roster, rng, slotNames, pool);
+    const out = E.playRun(run.roster, rng, slotNames, pool, chemOpts(run));
     wins.push(out.record.wins);
     if (out.seed.made) po++;
     if (out.titleWon) title++;
@@ -628,6 +663,7 @@ const publicAPI = {
   PHASES,
   createRun,
   spin, respin, sign, focusTargets, eligibleFranchises,
+  chemOpts, chemOf, chemByPlayer, chemWorth,
   playSeason, advanceGame, finalizeSeason,
   previewSigning, bestPossibleSquad, projectSeason,
   indexData,
