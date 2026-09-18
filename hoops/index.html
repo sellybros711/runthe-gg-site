@@ -259,6 +259,11 @@
   .capbar.broke i{background:linear-gradient(90deg,#b91c1c,var(--red));}
   #c-per{font-size:11px;color:var(--dim);}
   #c-note{font-size:11.5px;color:#fca5a5;margin-top:4px;min-height:0;}
+  /* AN EMPTY PARAGRAPH IS STILL A PARAGRAPH. Both of these are silent most of
+     the draft and both carry margins, which left about 45px of nothing between
+     the reels and the tabs on every pick. The tenth time a rule in this repo
+     has been written because a node with no content still had a box. */
+  #c-note:empty,#d-note:empty,#d-note2:empty{display:none;}
 
   /* The lineup as six dots, so the HUD can say what you have without the
      roster card being on screen. Filled dots carry the slot's first letter. */
@@ -667,7 +672,15 @@
   .ptile > *{min-width:0;}
   .ptile .top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0;}
   .ptile .nm{font-size:16.5px;font-weight:800;line-height:1.15;letter-spacing:.005em;}
-  .ptile .from{grid-column:1/-1;font-size:11.5px;color:var(--dim);margin-top:-4px;}
+  /* The chemistry line, green because a link is the one thing on a tile that is
+     unambiguously good news. It reads as a value and a reason, never as a
+     sentence: the tile is a button and a button that argues with you is slow. */
+  .ptile .chemline{grid-column:1/-1;display:flex;align-items:baseline;gap:6px;
+    margin-top:-3px;min-width:0;}
+  .ptile .chemline b{font-family:var(--mono);font-size:12px;font-weight:700;color:#4ade80;
+    flex:0 0 auto;}
+  .ptile .chemline i{font-style:normal;font-size:11.5px;color:#86efac;opacity:.85;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   /* The price block, and the thing that was missing: what that price BUYS. */
   .ptile .money{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
@@ -704,6 +717,44 @@
     min-height:32px;}
   .sortbar button.on{color:#fff;border-color:transparent;
     background:linear-gradient(135deg,#3f4c60,rgba(0,0,0,.5));}
+
+  /* ══ THE BOARD WHILE THE REELS ARE STILL MOVING ════════════════════════
+     MEASURED: the draft page used to lose 1,289px of height on every spin and
+     the court under the board jumped 1,554px up the screen, six times a run
+     plus every re-spin. The cause was two lines in drawInto that emptied #tabs
+     and #opts, so the page collapsed to the height of a reel and then grew
+     back a beat later. Nothing threw, no check could see it, and it is most of
+     what "the draft does not feel clean" was.
+
+     THE HEIGHT IS A PROPERTY OF THE BOARD AND THE BOARD IS ALREADY DECIDED.
+     run.js resolves the draw before a single frame of the reel animates, so
+     the real tiles can be built at once and the page settles on its final
+     height before anything moves. What is held back is the READING of them,
+     which is what the reel is for.
+
+     visibility:hidden and not opacity, because it is the one that keeps the
+     layout box exactly. A skeleton of fixed-height placeholders was the first
+     attempt and it cannot be exact: a tile with an award row is 26px taller
+     than one without, so a board of thirteen still breathed by about a
+     hundred pixels. */
+  .opts.pending .ptile,.opts.pending .optgroup,.opts.pending .sortbar{pointer-events:none;}
+  .opts.pending .ptile > *,.opts.pending .optgroup > *,
+  .opts.pending .sortbar > *{visibility:hidden;}
+  /* QUIET, NOT BROKEN. The first version kept each tile's border and card
+     gradient, and twelve of those with nothing written in them do not read as
+     a board arriving, they read as twelve cards that failed to load. Held
+     height is the whole job; the tile is not meant to be seen. */
+  .opts.pending .ptile{position:relative;overflow:hidden;animation:none;
+    border-color:transparent;background:rgba(255,255,255,.022);}
+  .opts.pending .ptile:after{content:'';position:absolute;inset:0;
+    background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.05) 50%,transparent 80%);
+    background-size:240% 100%;animation:shimmer 1.15s linear infinite;}
+  .tabs.pending{pointer-events:none;}
+  .tabs.pending .tab{color:transparent;border-color:transparent;
+    background:rgba(255,255,255,.022);}
+  .tabs.pending .tab .n{visibility:hidden;}
+  @keyframes shimmer{0%{background-position:140% 0}100%{background-position:-140% 0}}
+  @media (prefers-reduced-motion:reduce){ .opts.pending .ptile:after{animation:none;} }
 
   /* ══ THE BUDGET, SAID AS A BUDGET ══════════════════════════════════════
      The hero number used to be "Cap space", which frames not spending as
@@ -1591,9 +1642,10 @@ function drawInto(fn){
   /* Out of the last club's colours before the reels start moving, so the page
      and the wheel are never claiming different clubs mid-spin. */
   undressPage();
+  /* The board is BUILT here and read a beat later. renderDraft puts the real
+     tiles up at their real height and marks them pending, which is what stops
+     the page collapsing under the reels. See the .opts.pending rules. */
   renderDraft();
-  $('tabs').textContent = '';
-  $('opts').textContent = '';
 
   var pools = reelPools(), pending = 2;
   var settled = function(){
@@ -1641,7 +1693,9 @@ function showDraw(draw){
 }
 
 function spin(){ drawInto(function(){ R.spin(run, DATA); }); }
-function respin(){ drawInto(function(){ R.respin(run, DATA); }); }
+/* The re-spin button lives in the dock, so it is pressed from anywhere on the
+   board. Same reason as the one in sign(): the thing it starts is at the top. */
+function respin(){ backToWheel(); drawInto(function(){ R.respin(run, DATA); }); }
 
 // ── the loading bar ────────────────────────────────────────────────────────
 
@@ -2389,10 +2443,15 @@ function renderHud(justSlot){
        The ceiling comes second because it is a rule rather than a guide: it is
        what the cap will actually let through on this pick once the cheapest
        legal player for every other slot is set aside. */
+    /* ONE LINE, MEASURED. "a man across 6 slots · up to $116.0M on this one"
+       wrapped to two lines at 390px and at 360px, and this strip is pinned
+       under the app bar on every pick, so those eighteen pixels are paid for
+       on every screen of the draft. The slot count came out because "Slot 1
+       of 6" is printed two inches above it. */
     per.appendChild(bold(money(remaining / left)));
-    per.appendChild(document.createTextNode(' a man across ' + left + ' slots · up to '));
+    per.appendChild(document.createTextNode(' a man · up to '));
     per.appendChild(bold(money(Math.max(0, spendable))));
-    per.appendChild(document.createTextNode(' on this one'));
+    per.appendChild(document.createTextNode(' here'));
   }
 
   var note = $('c-note');
@@ -2452,6 +2511,8 @@ function renderDraft(justSlot){
     $('d-note2').textContent = 'Spin for a season and a club.';
     $('tabs').textContent = '';
     $('opts').textContent = '';
+    $('tabs').className = 'tabs';
+    $('opts').className = 'opts';
   } else if (!reelBusy && !$('reel-c').firstChild) {
     /* A draw with nothing on the reels is a restored run: the spin that would
        have filled them happened in a tab that is gone. Put the answer up
@@ -2460,11 +2521,17 @@ function renderDraft(justSlot){
     showDraw(draw);
   }
   if (draw) {
-    var note = E.teamNote(draw.team, draw.season);
+    /* THE NOTE NAMES THE CLUB, so it waits for the reel like everything else.
+       "founded 1976 · 1 championship" under a strip that has not stopped
+       moving is the club's identity card, handed over a beat before the wheel
+       gets to say it. Same reason dressReel holds the colours back. */
+    var note = reelBusy ? null : E.teamNote(draw.team, draw.season);
     $('d-note2').textContent = 'Filling ' + draw.openSlots.join(' / ')
       + (note ? ' · ' + note : '');
     renderTabs(draw);
     renderOptions(draw);
+    $('tabs').className = 'tabs' + (reelBusy ? ' pending' : '');
+    $('opts').className = 'opts' + (reelBusy ? ' pending' : '');
   }
 
   /* A DISABLED BUTTON READING "Pick a player" IS NOT A BUTTON, it is a caption
@@ -2577,12 +2644,23 @@ function renderOptions(draw){
 
   renderSortBar(draw);
 
+  /* A HEADING OVER THE WHOLE LIST IS NOT A HEADING. On an opening board every
+     man is affordable, so "SIGNABLE" sat alone above ten signable players and
+     told nobody anything, for 26px off the top of the one screen that matters.
+     It is a divider, so it only earns its line when there is something on the
+     other side of it. */
+  var groupOf = function(row){
+    return row.block ? 'Cannot sign' : (row.p.p > afford ? 'Out of budget' : 'Signable');
+  };
+  var grouped = rows.length > 0 && rows.some(function(row){
+    return groupOf(row) !== groupOf(rows[0]); });
+
   var lastGroup = null;
   for (var r = 0; r < rows.length; r++) {
     var p = rows[r].p, block = rows[r].block;
     var tooDear = !block && p.p > afford;
-    var group = block ? 'Cannot sign' : tooDear ? 'Out of budget' : 'Signable';
-    if (group !== lastGroup) {
+    var group = groupOf(rows[r]);
+    if (grouped && group !== lastGroup) {
       lastGroup = group;
       var g = document.createElement('div');
       g.className = 'optgroup';
@@ -2699,6 +2777,29 @@ function statBit(value, label, key, warn){
   return st;
 }
 
+/* The links signing this man would ADD, as one line, or nothing at all.
+   Blocked men get none: there is no decision to inform.
+   Named rather than counted. "+2 links" is a number with no basketball in it,
+   and "Duke men · 1997 draft class" is the reason somebody takes the cheaper
+   guard. Two at most, because three is a paragraph inside a button. */
+function chemHint(p, block){
+  if (block || !run || !run.roster.length) return null;
+  var pv;
+  try { pv = R.previewSigning(run, p); } catch (e) { return null; }
+  if (!pv || !pv.newLinks.length) return null;
+  var el = document.createElement('span');
+  el.className = 'chemline';
+  var plus = document.createElement('b');
+  plus.textContent = '+' + pv.delta.toFixed(2);
+  el.appendChild(plus);
+  var names = pv.newLinks.slice(0, 2).map(function(l){ return l.label; }).join(' · ');
+  var more = pv.newLinks.length - 2;
+  var t = document.createElement('i');
+  t.textContent = names + (more > 0 ? ' +' + more + ' more' : '');
+  el.appendChild(t);
+  return el;
+}
+
 function playerTile(p, block, tooDear, idx){
   var off = !!block || tooDear;
   var b = document.createElement('button');
@@ -2730,10 +2831,19 @@ function playerTile(p, block, tooDear, idx){
   }
   b.appendChild(money);
 
-  var from = document.createElement('span');
-  from.className = 'from';
-  from.textContent = p.s + ' ' + E.teamName(p.t);
-  b.appendChild(from);
+  /* WHAT USED TO BE HERE WAS "2011 Spurs", ON EVERY TILE. A board is one
+     team-season, so that line said the same words as the two reels directly
+     above it, once per player, and on a ten man board it was a column of the
+     answer the wheel had just given. Measured, it cost about 18px a tile.
+
+     What goes in its place is the one thing the board could not say and the
+     player cannot work out: what this man does to the chemistry, BEFORE the
+     signing. previewSigning reports only the NEW links, which is exactly the
+     question ("what am I buying"), and most men on most boards make none, so
+     the line is absent far more often than it is present and the tile is
+     shorter on average than it was. */
+  var chem = chemHint(p, block);
+  if (chem) b.appendChild(chem);
 
   var stats = document.createElement('span');
   stats.className = 'stats';
@@ -2786,8 +2896,20 @@ function sign(p){
   activeTab = 'ALL';
   if (run.phase === R.PHASES.SEASON) { renderDraft(justSlot); toSeason(); return; }
   renderDraft(justSlot);
+  /* BACK TO THE WHEEL. A signing happens from wherever on the board the man
+     was, which on a phone is most of a screen down, and the next thing the
+     game does is spin two reels that are up at the top. Left alone the player
+     signs somebody and then watches an unexplained shimmer in the middle of a
+     list. Smooth rather than instant, so it reads as the page following the
+     decision rather than as a reload. */
+  backToWheel();
   /* A beat to watch the chip land before the reels start again. */
   setTimeout(spin, 240);
+}
+
+function backToWheel(){
+  try { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  catch (e) { window.scrollTo(0, 0); }
 }
 
 
