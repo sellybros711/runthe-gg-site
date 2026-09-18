@@ -3045,6 +3045,12 @@ It needs more games than you think to see any of this: the per game spread is 1.
 9.0 a nine, so a tuning move worth half a run is invisible under about twenty, which
 is what `--jobs` is for.
 
+**Re-measured after the gate came down and the contact retune landed: 6.2 a nine**,
+game by game 1.5 to 12.0 over eight games. Both changes push scoring up and both
+were meant to, so up is the result rather than a surprise; what it confirms is that
+neither ran away with it. Eight games cannot call a tenth of a run, so read that as
+"a little over where it was" and nothing finer.
+
 What `calibrate.mjs` independently says, and it agrees: the contact model is not
 broken either, at roughly 9 or 10 hits per 27 balls in play at both tiers.
 
@@ -3075,6 +3081,26 @@ run**, so a starved run is visible in the report itself.
 `mythiball/index.html` off disk at `goto` time, so an edit landing between the two
 arms compares two different games and reports it as a harness difference. An
 in-flight comparison was thrown away for exactly this reason.
+
+**Measured on four pages at once: 101 fielding windows played across 8 games**, so
+the watcher is not being starved. That is the number to read before trusting any
+run this file prints.
+
+**A RESTART HAS TO WAIT ON THE GAME, NOT ON A CLOCK.** Every SECOND game on each
+page came back `0 in 1` in the nobody-fields arm: a fresh game already over, at
+inning one, with nobody having scored. It waited a fixed 900ms after restarting
+and then read `over`, which in the window before the restart settles is still the
+FINISHED game's flag. The loop broke instantly and the box was then read off the
+new game, so a one inning nothing was filed as a real row, four times, inflating
+that arm.
+
+**It is the harness and not the game, and that was driven rather than assumed.**
+The obvious reading is the bug class this file already carries (a timer firing
+into a game that is not its own), and it is the wrong one: a probe that ends a
+game by mercy, by an ordinary finish and not at all, then restarts, gets a live
+game every time. Only the arm that MERCY-ends ever showed it, which is what made
+the game look guilty. Worth remembering before the next "0 in 1" is read as a
+mode that broke.
 
 ### The swing's own curves, and what skill actually buys
 

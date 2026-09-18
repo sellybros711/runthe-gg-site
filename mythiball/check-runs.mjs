@@ -143,7 +143,31 @@ const playGames = async (field, count) => {
 
   const rows = [];
   for (let gi = 0; gi < count; gi++) {
-    if (gi) { await pg.evaluate(() => { window.__threw = 0; window.__fielded = 0; window.__fresh(); }); await pg.waitForTimeout(900); }
+    /* WAIT FOR THE NEW GAME TO BE LIVE, not for a fixed 900ms. The
+       nobody-fields arm reported every second game on a page as "0 in
+       1": a fresh game already over, at inning one, nobody having
+       scored. Those all follow a MERCY finish, which is what that arm
+       produces and the other one does not.
+
+       It is the harness and not the game, and that was driven rather
+       than assumed: a probe that ends a game by mercy, by an ordinary
+       finish and not at all, then restarts, gets a live game every
+       time. What breaks is reading `over` here in the window before
+       the restart has settled, which breaks the loop instantly and
+       then reads the box off the new game: inning 1, nobody out, zero
+       runs. It inflated that arm by counting four one inning games.
+
+       So it waits on the CONDITION rather than on a clock. */
+    if (gi) {
+      await pg.evaluate(() => { window.__threw = 0; window.__fielded = 0; window.__fresh(); });
+      for (let t = 0; t < 40; t++) {
+        const live = await pg.evaluate(() => !!(State.game && !State.game.over))
+          .catch(() => false);
+        if (live) break;
+        await pg.waitForTimeout(150);
+      }
+      await pg.waitForTimeout(900);
+    }
     let guard = 0;
     while (guard++ < 6000) {
       const st = await pg.evaluate(() => {
