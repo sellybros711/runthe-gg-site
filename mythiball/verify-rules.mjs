@@ -2870,33 +2870,46 @@ async function main() {
 
          The assertion is MONOTONICITY over the whole scale rather than
          the two numbers that were wrong, because a cliff can come back
-         at any floor somebody tunes later. */
+         at any floor somebody tunes later.
+
+         IT CALLS THE REAL FUNCTION NOW. This section used to carry a
+         hand-copied duplicate of the arithmetic, because sendOdds was a
+         local const inside applyHitMutation and there was no other way
+         to reach it. That is two copies of one answer, which is the
+         shape this repo keeps finding drifted: the copy would have gone
+         on passing its sweep on a curve the game had stopped playing.
+         It is at module scope in the page now and this reads it. */
       const { pg, errors } = await fresh(browser);
       const r = await pg.evaluate(() => {
-        /* the shipped curve, reached the way applyHitMutation reaches it */
-        const sendOdds = (spd, fastFloor, fastBase, fastSlope) => {
-          const base = clamp(0.25 + (spd - 40) / 150, 0.15, 0.6);
-          return spd >= fastFloor ? base + (spd - fastFloor) / fastSlope : base;
-        };
-        const drops = (floor, base, slope) => {
+        const drops = (leg) => {
           const bad = [];
           for (let s = 1; s <= 100; s++) {
-            if (sendOdds(s, floor, base, slope) < sendOdds(s - 1, floor, base, slope) - 1e-9) bad.push(s);
+            if (sendOdds(s, leg) < sendOdds(s - 1, leg) - 1e-9) bad.push(s);
           }
           return bad;
         };
-        /* and the source the page actually ships, so this cannot pass
-           against a copy while the real one is wrong */
-        const src = applyHitMutation.toString();
+        /* WHAT THE WHOLE ROSTER ACTUALLY DOES, which is the half a
+           monotonicity sweep cannot see: a perfectly monotone curve
+           behind a floor nobody clears is a rule that never fires. */
+        const rate = (leg) => {
+          let score = 0, out = 0, held = 0;
+          for (const c of ROSTER) {
+            if (!sendClears(c.spd, leg)) { held++; continue; }
+            const p = sendOdds(c.spd, leg);
+            score += p; out += 1 - p;
+          }
+          return { score: score / ROSTER.length, out: out / ROSTER.length,
+                   held: held / ROSTER.length };
+        };
         return {
-          singleDrops: drops(75, 0.35, 100),
-          doubleDrops: drops(85, 0.30, 120),
+          singleDrops: drops('single'),
+          doubleDrops: drops('double'),
           /* the two men who made it findable */
-          tom: sendOdds(84, 85, 0.30, 120),
-          huck: sendOdds(86, 85, 0.30, 120),
-          /* the real function is one curve plus a bonus, not two curves */
-          oneCurve: /const base = clamp/.test(src) && /base \+ \(spd - fastFloor\)/.test(src),
-          twoCurves: /fastBase \+ \(spd - fastFloor\)/.test(src),
+          tom: sendOdds(84, 'single'), huck: sendOdds(86, 'single'),
+          tomD: sendOdds(84, 'double'), huckD: sendOdds(86, 'double'),
+          single: rate('single'), double: rate('double'),
+          /* a legitimate zero is a rating, not a missing one */
+          zero: sendOdds(0, 'single'), fifty: sendOdds(50, 'single'),
         };
       });
       ok(r.singleDrops.length === 0,
@@ -2905,12 +2918,32 @@ async function main() {
       ok(r.doubleDrops.length === 0,
          'nor from first on a double, which is where the step was 24 points',
          `worse at ${JSON.stringify(r.doubleDrops)}`);
-      ok(r.huck > r.tom,
+      ok(r.huck > r.tom && r.huckD > r.tomD,
          'Huck Finn is two quicker than Tom Sawyer and scores more often, not less',
          `${r.huck.toFixed(3)} against ${r.tom.toFixed(3)}`);
-      ok(r.oneCurve && !r.twoCurves,
-         'and the page really ships one curve with a bonus, not two curves',
-         `oneCurve ${r.oneCurve}, twoCurves ${r.twoCurves}`);
+      ok(r.zero < r.fifty,
+         'and a legitimate zero is the slowest man alive, not an average one',
+         `${r.zero.toFixed(3)} against ${r.fifty.toFixed(3)}`);
+      /* THE ARCADE RATE, over the real roster. It ran at 24% against
+         real baseball's 60% and this is a backyard game, so the target
+         is at or above the real figure rather than under half of it.
+         The band is wide because it is a property of the ROSTER as much
+         as of the curve: a pass that added six sprinters would move it
+         and should not fail. */
+      ok(r.single.score > 0.50 && r.single.score < 0.75,
+         'a runner scores from second on a single about as often as in the real game',
+         `${(100 * r.single.score).toFixed(0)}%, ${(100 * r.single.held).toFixed(0)}% held at third`);
+      /* AND IT IS NOT PAID FOR IN OUTS, which is the reason the floor
+         could come down this far. The runners who now score are the
+         ones who used to HOLD: thrown out at the plate moved 11% to
+         12% of chances. A version of this that bought the scoring with
+         outs would gut the mode and pass the line above. */
+      ok(r.single.out < 0.20,
+         'and it is not bought with runners gunned down at the plate',
+         `${(100 * r.single.out).toFixed(0)}% of chances end at the plate`);
+      ok(r.double.score > 0.30,
+         'first to home on a double is a real play rather than a rounding error',
+         `${(100 * r.double.score).toFixed(0)}%`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -2947,6 +2980,14 @@ async function main() {
           ['swingReach power', 'con', +1, (v) => swingReach(v, 'power')],
           ['tagChance third', 'spd', +1, (v) => tagChance(man('spd', v), 2)],
           ['tagChance second', 'spd', +1, (v) => tagChance(man('spd', v), 1)],
+          /* THE ONE THIS SWEEP WAS WRITTEN FOR, and it could not be in
+             it until now: sendOdds was a local const inside
+             applyHitMutation, so the section above had to copy the
+             arithmetic out by hand and this one could not reach it at
+             all. It is at module scope in the page now, so the curve
+             whose seam started all of this is walked with the rest. */
+          ['sendOdds single', 'spd', +1, (v) => sendOdds(v, 'single')],
+          ['sendOdds double', 'spd', +1, (v) => sendOdds(v, 'double')],
           ['robGreenHalf', 'def', +1, (v) => robGreenHalf(0, v)],
           /* control is the one that must go DOWN as the rating goes up */
           ['pitchScatter', 'pit', -1, (v) => {
@@ -2976,7 +3017,7 @@ async function main() {
         return { turns, swept, curves: cases.length,
                  zeroRunner, oneRunner, missingRunner };
       });
-      ok(r.curves >= 9 && r.swept > 800,
+      ok(r.curves >= 11 && r.swept > 1000,
          'every curve a rating feeds is walked end to end',
          `${r.curves} curves, ${r.swept} points`);
       ok(r.turns.length === 0,

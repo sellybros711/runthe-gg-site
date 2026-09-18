@@ -2156,7 +2156,8 @@ node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
 node mythiball/verify-rules.mjs    the rules replayed in a headless browser
 node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop, --easy/--hard for a tier)
 node mythiball/check-frames.mjs 70 normal --phone --cpu=4   frame times, on the machine that matters
-node mythiball/check-runs.mjs      runs per game, with a defence that turns up
+node mythiball/check-runs.mjs      runs per game, with a defence that turns up (--jobs=N to run several at once)
+node mythiball/check-bat.mjs       the swing's own curves, and that skill pays
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
 
@@ -2237,6 +2238,61 @@ pitched around would be a punishment rather than a hitter.
 **It is said out loud, once per batter.** A difficulty that changes what the
 opponent knows is invisible otherwise: the player just meets hard contact and
 reads it as luck.
+
+#### A swing that misses half the time is not a backyard game
+
+```
+node scratchpad/whiff.mjs 3000 medium     the tuning instrument
+node mythiball/calibrate.mjs              the tripwire
+```
+
+The CPU whiffed on **about 47 swings in every hundred**, against MLB's 25, and
+the note in `calibrate.mjs` called that "still arcade-hot". It is the wrong way
+round: a backyard game is a CONTACT game. The ball is in play constantly and a
+strikeout is a thing that occasionally happens, not the most common outcome of a
+swing. It sits at **28** now, and balls in play per swing went from 27.9 to 40.8
+at medium, which is nearly half again as many plays for the half of the game that
+fields them.
+
+**THE FIRST ATTEMPT MOVED THREE POINTS AND READ AS A SUCCESS.** `calibrate.mjs`
+gets about 80 swings out of a 150 pitch run, so at a true rate near 40 one
+standard error is **5.4 points**. Two runs came back 36.4 and 43.9 on builds one
+dial apart: they are the same measurement. The dial was cut from .15 to .125 on
+the strength of the difference between them. **A file that cannot resolve the
+move is not the file to tune in**, and that is now written in its own header:
+`calibrate.mjs` plays real innings through the real buttons, which is what makes
+it a good tripwire and a bad micrometer.
+
+The instrument that can answer stubs `setTimeout` into a queue, calls the game's
+own `throwPitch` and `scheduleCpuSwing`, then drains the queue once. **Nothing
+about the jitter model is copied**, which is the whole point: a second copy of
+that arithmetic would measure itself. 3000 swings an arm, in seconds.
+
+**WHIFF WAS ALREADY FLAT ACROSS THE TIERS AND THAT IS THE DESIGN, NOT AN
+ACCIDENT.** 47.4 / 47.8 / 46.2 on easy, medium and hard. Those numbers were
+cancelling `DIFF.sweetWidth` (.26 / .20 / .16), so a harder dugout was never one
+that missed less. What a tier buys is CONTACT: balls in play ran 24.0 / 27.9 /
+31.5.
+
+**So the three are solved separately, and scaling them together inverts them.** A
+uniform cut was tried first and gave easy 27.6 against hard 34.3, which is a hard
+dugout making worse contact than an easy one. Nothing would have reported it.
+Solved per tier, whiff is flat at about 28.3 and the tier spread in balls in play
+nearly doubles:
+
+| | jitter | whiff | in play |
+|---|---|---|---|
+| easy | .115 | 28.0 | 34.1 |
+| medium | .068 | 28.4 | 40.8 |
+| hard | .030 | 28.6 | 47.9 |
+
+**Only the timing jitter moved.** The aim spread (`locJ`) also makes whiffs, by
+putting the barrel out of reach, and cutting both at once would overshoot and
+leave nobody knowing which did it.
+
+**The player's own bat was not touched and did not need to be.** `check-bat.mjs`
+puts an ordinary swing at 94% contact and a sharp one at 100: the player was
+never the one missing. This dial is the CPU's half.
 
 ### The defence had no play to MAKE, only one to lose
 
@@ -2604,11 +2660,51 @@ One curve now, with the fast bonus ADDED to it. The guard asserts MONOTONICITY
 over the whole scale rather than the two numbers that were wrong, because a cliff
 can come back at any floor somebody tunes later.
 
-**What it did NOT fix, deliberately.** A runner scores from second on a single
-**24% of the time** (up from 16.6%), against about 60% in real baseball. Two
-thirds of that gap is the `spd >= 75` gate deciding who even tries, which is
-tuning and would move the run environment. Measure the run environment before
-touching it; the samples on hand are bot blowouts.
+#### And then the gate came down, because this is a backyard game
+
+That fix left the ODDS honest and the PERMISSION untouched, and the permission
+was the whole gap. A runner scored from second on a single **24% of the time**
+against about 60% in the real game, and the note here said to measure the run
+environment before touching it. Measured (`check-runs.mjs`, about 5.5 a nine):
+scoring is not broken, so there is room.
+
+**Only 35% of the roster cleared the old floor of 75.** Two thirds of the league
+stopped at third on a base hit, so the play at the plate, which is the best thing
+that happens in a game of backyard baseball, mostly did not happen. **Speed now
+decides the ODDS rather than the PERMISSION**, which is the arcade shape:
+everybody runs, the fast ones make it.
+
+| | tries | scores | thrown out at the plate |
+|---|---|---|---|
+| second to home, was | 35% | 24% | 11% |
+| second to home, now | 71% | **59%** | **12%** |
+| first to home on a double, was | 22% | 14% | 8% |
+| first to home on a double, now | 53% | **45%** | 8% |
+
+**THE THIRD COLUMN IS WHY THE FLOOR COULD COME DOWN THIS FAR**, and it is the
+thing to check before reading this as a difficulty cut. The runners who now score
+are the ones who used to HOLD, not runners who used to be safe: outs at the plate
+move 11% to 12%. A version of this that bought the scoring with outs would gut
+the mode and would pass a check that only read the scoring rate, so the guard
+asserts both.
+
+**Two outs drops the floor another ten points**, and that is arithmetic rather
+than feel. Holding at third is worth something only if somebody is coming up
+behind him, and with two out there is one batter left. Ten points is where the
+floor's own odds fall from about .61 to about .50, which is where the trade turns
+over. It reads 63% scoring and 16% thrown out, and an out at the plate with two
+away ends an inning that was ending anyway.
+
+**The floor is still there.** A statue rounding third is a joke rather than a
+decision, and `sendClears` is what the SEND and HOLD button overrides.
+
+**IT MOVED TO MODULE SCOPE, AND THAT IS HALF THE FIX.** `sendOdds` was a local
+const inside `applyHitMutation`, so `verify-rules.mjs` carried a hand-copied
+duplicate of the arithmetic in order to sweep it, and the nine-curve sweep in the
+section below could not reach it **at all**: the curve the whole sweep was
+written for was the one curve not in it. The copy would have gone on passing on a
+curve the game had stopped playing. One definition now, read by both, and the
+sweep walks eleven curves.
 
 ### A rating must never buy you less, and the sweep that says so
 
@@ -2888,15 +2984,83 @@ design and playing it would flatter the defence instead.
 the time here against about 60% in the real game, and two thirds of that gap is the
 `spd >= 75` gate deciding who even tries. That read like a number waiting to be
 loosened, and the old note here said to measure the run environment before touching
-it. Measured: scoring is **already at or a little above** the real game's figure, so
-sending more runners pushes it further up rather than correcting anything. Whatever
-is done there has to be paid for somewhere else, and `check-runs.mjs` is how you
-would find out. It needs more games than you think to see a change: the per game
-spread is 1.5 to 9.0 a nine, so a tuning move worth half a run is invisible under
-about twenty.
+it. Measured: scoring is **already at or a little above** the real game's figure.
+
+**THAT GATE HAS SINCE BEEN LOOSENED ANYWAY, AND THE ARGUMENT IT OVERTURNS IS WORTH
+KEEPING.** The note used to finish "sending more runners pushes it further up rather
+than correcting anything", which is correct arithmetic and the wrong target: it is
+measuring an arcade game against MLB and calling the distance an error. A backyard
+game is a HIGH SCORING game, so a run environment a little over the real one is
+where this wants to sit, and the send gate was the one place it was quietly under.
+See the gate's own section above for what moved and what it cost. **The lesson is
+not "ignore the real figure"**: it is that the real figure is a landmark and not the
+target, and which side of it to sit on is a design call that has to be written down
+rather than inferred from how close a number is to 4.5.
+
+It needs more games than you think to see any of this: the per game spread is 1.5 to
+9.0 a nine, so a tuning move worth half a run is invisible under about twenty, which
+is what `--jobs` is for.
 
 What `calibrate.mjs` independently says, and it agrees: the contact model is not
 broken either, at roughly 9 or 10 hits per 27 balls in play at both tiers.
+
+### Twenty games is the sample, so the harness runs them at once
+
+```
+node mythiball/check-runs.mjs 20 fast --jobs=4
+```
+
+A five inning game at Fast is about eight minutes of WALL CLOCK and **almost none of
+it is work**: the cost is the game's own beats, which are `setTimeout` waits. So
+twenty games serially is hours of a machine waiting, and the honest way to get the
+sample is to run several pages at once rather than to hurry any one of them.
+
+**A harness-only speed below Fast was the other option and is refused.** It would
+change the very timings the measurement runs through, which is how four of the five
+earlier attempts at this number went wrong. Four pages waiting on their own timers
+are four identical games; one page waiting on a shorter timer is a different game.
+
+**What has to be watched is the rAF watcher that plays the fielding windows.** It
+fires on a `setTimeout` at an exact millisecond, so a starved page could miss windows
+and quietly take the defence's hands away again, which is the exact defect this file
+exists to prevent and which reads as a broken run environment rather than as a broken
+harness. It is measured rather than assumed: **`windows played` is printed on every
+run**, so a starved run is visible in the report itself.
+
+**A serial and a parallel run must load the same build.** The pages read
+`mythiball/index.html` off disk at `goto` time, so an edit landing between the two
+arms compares two different games and reports it as a harness difference. An
+in-flight comparison was thrown away for exactly this reason.
+
+### The swing's own curves, and what skill actually buys
+
+```
+node mythiball/check-bat.mjs
+```
+
+`calibrate.mjs` measures the pitch duel as RATES: how often a swing whiffs, fouls or
+puts the ball in play. What it cannot see is the SHAPE of the function underneath,
+and `swingGeometry` is pure, so it can be swept directly the way `sendOdds` is.
+
+It walks timing and aim across all three swing modes, asserts worse never helps,
+asserts the mode ordering (contact widens the window, power narrows it) and that a
+better CON both reaches further and makes better contact on the same imperfect
+swing. Then it drives 400 real swings a row through `resolveSwing` and reports
+against bands, with the error expressed **in units of the window** rather than in
+meter units, which is the fix for its own first draft: measured against the meter,
+three of four rows came back at 100% and the check certified nothing.
+
+**What it found is a property worth knowing before tuning any of this.** The timing
+window is close to BINARY: inside it you connect essentially always, outside it you
+mostly do not. So skill does not live in whether you connect, it lives in contact
+QUALITY, which falls 0.99 / 0.74 / 0.45 / 0.08 across perfect, sharp, ordinary and
+blind swings. That is the backyard shape rather than a fault, and it is why the
+whiff dial below moves contact quality very little.
+
+**Its monotonicity check passed on everything until it was proved to have teeth.**
+The first draft multiplied by a direction term in the wrong place and flagged every
+healthy curve, which is the safe failure; the version that ships was checked by
+reintroducing a seam.
 
 ## Segue, the setlist game
 

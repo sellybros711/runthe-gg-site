@@ -7959,8 +7959,49 @@ function scheduleCpuSwing() {
      strikeout machine (MLB runs about 25), and every whiffed swing is a
      play the field never gets. About a fifth off each tier moved the
      measurement to the mid forties: still arcade-hot, with more balls
-     in play for the half of the game that fields them. */
-  const diffJitter = { easy: 0.24, medium: 0.15, hard: 0.10 }[State.difficulty];
+     in play for the half of the game that fields them.
+
+     AND A THIRD TIME, TO AN ARCADE TARGET RATHER THAN A REAL ONE. The
+     mid forties was read against MLB's 25 and called close enough. It
+     is not what this game is: a backyard game is a CONTACT game, the
+     ball is in play constantly, and a strikeout is a thing that
+     occasionally happens rather than the most common outcome of a
+     swing. So the target is real baseball's rate rather than twice it.
+
+     THE FIRST ATTEMPT AT IT MOVED NOTHING AND READ AS A SUCCESS, which
+     is the part worth reading. calibrate.mjs gets about 80 swings out
+     of a 150 pitch run, and at a true rate near 40 the standard error
+     on 80 swings is 5.4 POINTS. So a run that came back 36.4 and a run
+     that came back 43.9 are the SAME MEASUREMENT, this dial was cut
+     from .15 to .125 on the strength of the difference between them,
+     and the cut was worth about three points. Measured properly, at
+     3000 swings an arm, whiff per swing against this dial runs:
+
+       .150  46.9      .100  35.3      .060  25.9
+       .125  43.6      .080  31.5
+
+     WHIFF WAS ALREADY FLAT ACROSS THE TIERS AND THAT IS THE DESIGN.
+     47.4 / 47.8 / 46.2 on easy, medium and hard: these numbers were
+     cancelling DIFF.sweetWidth, which runs .26 / .20 / .16, so a
+     harder dugout was not a dugout that missed less. What the tier
+     actually bought was CONTACT: balls in play per swing ran 24.0 /
+     27.9 / 31.5.
+
+     So the three are solved separately rather than scaled together. A
+     uniform cut was tried first and inverted the tiers (easy 27.6,
+     hard 34.3), which would have shipped a hard dugout that made worse
+     contact than an easy one, in a game where nothing would have said
+     so. Solved, whiff is flat at about 28.3 and the tier spread in
+     balls in play nearly doubles:
+
+       easy    .115   whiff 28.0   in play 34.1
+       medium  .068   whiff 28.4   in play 40.8
+       hard    .030   whiff 28.6   in play 47.9
+
+     ONLY THE TIMING JITTER MOVES. The aim spread (locJ below) also
+     makes whiffs, by putting the barrel out of reach, and cutting both
+     at once would overshoot and leave nobody knowing which did it. */
+  const diffJitter = { easy: 0.115, medium: 0.068, hard: 0.030 }[State.difficulty];
   let jitter = conJitter + diffJitter;
   /* Weak pitch: CPU whiffs badly on their weak pitch. */
   if (p.pt === g.batterCtx.weakPitch) jitter += 0.14;
@@ -9783,6 +9824,64 @@ function checkWalkOff() {
   return false;
 }
 
+/* WAVING HIM ROUND. This is an arcade game and it was running a rule
+   more conservative than real baseball.
+
+   Measured over the roster: a runner scored from second on a single 24%
+   of the time, against about 60% in the real game, and the gap was
+   almost entirely the PERMISSION rather than the odds. Only 35% of the
+   roster cleared the old floor of 75, so two thirds of the league
+   stopped at third on a base hit and the play at the plate, which is
+   the best thing that happens in a game of backyard baseball, mostly
+   did not happen at all.
+
+   SPEED NOW DECIDES THE ODDS RATHER THAN THE PERMISSION, which is the
+   arcade shape: everybody runs, the fast ones make it. The floor is
+   still there, because a statue rounding third is a joke rather than a
+   decision, and it is low enough that clearing it is the ordinary case.
+
+   IT COSTS ALMOST NOTHING IN OUTS, which is the part worth knowing
+   before this is read as a difficulty cut. Over the real roster the
+   share of chances that end with a runner gunned down at the plate
+   moves 11% to 12%: the runners who now score are the ones who used to
+   HOLD, not runners who used to be safe. The double is the same shape,
+   14% to 45% scoring against 8% to 8% thrown out.
+
+   ONE CLAMPED LINE, so a point of speed can never be a cost. The old
+   version was two curves joined at the floor and it really did make 75
+   worse than 74 and 85 worse than 84, with Tom Sawyer on 84 and Huck
+   Finn on 86 sitting either side of it. That cannot come back in this
+   shape, and verify-rules sweeps it end to end anyway.
+
+   IT LIVES HERE, AT MODULE SCOPE, SO THE SUITE CAN READ THE REAL ONE.
+   It used to be a local const inside applyHitMutation, and verify-rules
+   carried a hand-copied duplicate of the arithmetic to sweep. Two
+   copies of one answer is the shape that drifts, and the copy would
+   have gone on passing its monotonicity sweep on a curve the game no
+   longer played. */
+const SEND = {
+  /* second to home on a single */
+  single: { floor: 50, base: 0.50, slope: 90, cap: 0.94 },
+  /* first to home on a double: further to run, so a tighter floor */
+  double: { floor: 60, base: 0.46, slope: 95, cap: 0.92 },
+};
+/* TWO OUTS CHANGES THE ARITHMETIC AND IS NOT A DIFFICULTY SETTING.
+   Holding at third is only worth anything if somebody is coming up
+   behind him, and with two out there is one batter left: a man stranded
+   on third scored nothing at all. So the break-even drops, a third base
+   coach windmills men he would have stopped an out earlier, and the
+   floor follows him down. Ten points of speed is where the floor's own
+   odds fall from about .61 to about .50, which is where the trade turns
+   over, so it is the arithmetic rather than a number picked for feel. */
+const SEND_TWO_OUT_FLOOR = 10;
+function sendOdds(spd, leg) {
+  const r = SEND[leg];
+  return clamp(r.base + (ratingOr(spd, 50) - 40) / r.slope, 0.30, r.cap);
+}
+function sendClears(spd, leg, outs) {
+  return ratingOr(spd, 50) >= SEND[leg].floor - (outs >= 2 ? SEND_TWO_OUT_FLOOR : 0);
+}
+
 function applyHitMutation(kind, batter, opts) {
   const g = State.game;
   const onError = opts && opts.onError;
@@ -9820,20 +9919,6 @@ function applyHitMutation(kind, batter, opts) {
      the rule for the at bat: AUTO is the speed rule, SEND waves anyone
      round at odds his legs earn, HOLD stops at third. The CPU keeps AUTO. */
   const rule = currentBattingTeam().isYou ? (g.sendRule || 'auto') : 'auto';
-  /* HOW OFTEN HE MAKES IT, and it used to be worth being slower.
-     The two branches were two separate curves rather than one curve with
-     a bonus on the end of it, so crossing the floor RESTARTED the odds
-     from a lower base: a runner on 74 scored from second 47.7% of the
-     time and one on 75 scored 35.0%, and on a double the step was worse,
-     54.3% at 84 against 30.0% at 85. Tom Sawyer is 84 and Huck Finn is
-     86, so waving both round sent the faster man home less often. It is
-     a valid number either way and nothing could report it.
-     One curve now, with the fast bonus ADDED to it, so a point of speed
-     is never a cost. */
-  const sendOdds = (spd, fastFloor, fastBase, fastSlope) => {
-    const base = clamp(0.25 + (spd - 40) / 150, 0.15, 0.6);
-    return spd >= fastFloor ? base + (spd - fastFloor) / fastSlope : base;
-  };
   for (let i=2;i>=0;i--) {
     const runner = g.bases[i];
     if (!runner) continue;
@@ -9842,18 +9927,18 @@ function applyHitMutation(kind, batter, opts) {
        and heads for home. Speed-based chance to score; otherwise thrown
        out at the plate. On doubles a very fast runner from 1st tries
        the same. Only kicks in for real hits, not errors. */
-    const goes = (fastFloor) => rule !== 'hold' && (rule === 'send' || runner.spd >= fastFloor);
+    const goes = (leg) => rule !== 'hold' && (rule === 'send' || sendClears(runner.spd, leg, g.outs));
     /* If he is out at the plate, mark it on the play so the draw loop can
        show him arriving late while the catcher stands with the ball. */
     const killAtHome = () => { thrownOut++; addOuts(1); addLog(`${runner.n} thrown out at the plate.`);
       if (g.play) g.play.plateOut = { runner, at: performance.now() }; };
-    if (!onError && kind === 'single' && i === 1 && goes(75)) {
-      const scoreChance = sendOdds(runner.spd, 75, 0.35, 100);
+    if (!onError && kind === 'single' && i === 1 && goes('single')) {
+      const scoreChance = sendOdds(runner.spd, 'single');
       if (rule === 'send') addLog(`${runner.n} is waved round.`);
       if (Math.random() < scoreChance) dest = 3;
       else { killAtHome(); continue; }
-    } else if (!onError && kind === 'double' && i === 0 && goes(85)) {
-      const scoreChance = sendOdds(runner.spd, 85, 0.30, 120);
+    } else if (!onError && kind === 'double' && i === 0 && goes('double')) {
+      const scoreChance = sendOdds(runner.spd, 'double');
       if (rule === 'send') addLog(`${runner.n} is waved round.`);
       if (Math.random() < scoreChance) dest = 3;
       else { killAtHome(); continue; }
@@ -9917,7 +10002,7 @@ function tagChance(runner, from) {
      to third is shorter for the runner and a much shorter throw, so it
      is close to even for anybody with average wheels. */
   const base = from === 2 ? 0.46 : 0.58;
-  return clamp(base + (runner.spd - 60) / 200, 0.12, 0.93);
+  return clamp(base + (ratingOr(runner.spd, 50) - 60) / 200, 0.12, 0.93);
 }
 function tagUp() {
   const g = State.game;

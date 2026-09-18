@@ -1,7 +1,8 @@
 /* HOW MANY RUNS A GAME, AND THE DEFENCE HAS TO TURN UP.
 
-   node mythiball/check-runs.mjs            4 games an arm, about half an hour
-   node mythiball/check-runs.mjs 2 fast     a quicker read
+   node mythiball/check-runs.mjs                  4 games an arm
+   node mythiball/check-runs.mjs 20 fast --jobs=4 twenty, which is what a
+                                                 tuning move needs
 
    THE ANSWER IS ABOUT 5.5 RUNS A TEAM OVER NINE against the real game's
    4.5, so the run environment is NOT broken and never was. Six games, all
@@ -71,11 +72,29 @@ import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { pathToFileURL } from 'url';
 const GAMES = Number(process.argv[2] || 2);
 const SPEED = process.argv[3] || 'fast';
+/* HOW MANY GAMES RUN AT ONCE. A five inning game at Fast takes about
+   eight minutes of WALL CLOCK, and almost none of it is work: the cost is
+   the game's own beats, which are setTimeout waits. So the honest way to
+   get more games is to run more of them at the same time rather than to
+   hurry any one of them.
+
+   A HARNESS ONLY SPEED BELOW FAST WAS THE OTHER OPTION AND IS REFUSED.
+   It would change the very timings the measurement runs through, which is
+   how four of the five earlier attempts at this number went wrong. Four
+   pages waiting on their own timers are four identical games.
+
+   The thing to watch is the rAF watcher that plays the fielding windows:
+   it fires on a setTimeout at an exact millisecond, so a starved page
+   could miss windows and quietly take the defence's hands away again.
+   That is measured rather than assumed, and `windows played` is printed
+   on every run so a starved run is visible in the report itself. */
+const JOBS = Math.max(1, Number((process.argv.find(a => a.startsWith('--jobs=')) || '--jobs=4').slice(7)));
 const URL = pathToFileURL('mythiball/index.html').href;
 
 const browser = await chromium.launch();
 
-const arm = async (label, field) => {
+/* one page, playing `count` games one after another */
+const playGames = async (field, count) => {
   const pg = await browser.newPage();
   const errs = []; pg.on('pageerror', e => errs.push(e.message));
   await pg.goto(URL);
@@ -123,7 +142,7 @@ const arm = async (label, field) => {
   await pg.waitForTimeout(900);
 
   const rows = [];
-  for (let gi = 0; gi < GAMES; gi++) {
+  for (let gi = 0; gi < count; gi++) {
     if (gi) { await pg.evaluate(() => { window.__threw = 0; window.__fielded = 0; window.__fresh(); }); await pg.waitForTimeout(900); }
     let guard = 0;
     while (guard++ < 6000) {
@@ -150,7 +169,18 @@ const arm = async (label, field) => {
     if (box) rows.push(box);
   }
   await pg.close();
-  return { label, rows, errs };
+  return { rows, errs };
+};
+
+/* GAMES split across JOBS pages, all in flight together. The remainder is
+   spread one game at a time rather than piled on the last worker, so no
+   single page decides how long the whole arm takes. */
+const arm = async (label, field) => {
+  const per = Array.from({ length: Math.min(JOBS, GAMES) },
+    (_, i) => Math.floor(GAMES / Math.min(JOBS, GAMES))
+            + (i < GAMES % Math.min(JOBS, GAMES) ? 1 : 0));
+  const done = await Promise.all(per.map(n => playGames(field, n)));
+  return { label, rows: done.flatMap(d => d.rows), errs: done.flatMap(d => d.errs) };
 };
 
 const out = [];
