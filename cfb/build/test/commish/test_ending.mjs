@@ -23,7 +23,7 @@ const URL = 'http://localhost:8080/cfb/commish/index.html';
 const UID = '11111111-1111-1111-1111-111111111111';
 const TESTER = 'commish-test-account';
 
-const stub = `
+const stubAs = (products) => `
 window.supabase={createClient(){
   const session={access_token:'x',user:{id:'${UID}',email:'c@e.com'}};
   return {auth:{onAuthStateChange(){return{data:{}}},
@@ -31,7 +31,14 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:{username:'${TESTER}'}})}}}}}},
-    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?${JSON.stringify(products)}:true,error:null})}}};`;
+const stub = stubAs(['cfb_premium', 'ps_premium']);
+/* THE SAME ACCOUNT WITH NOTHING BOUGHT. It is the only way to be free now that `?tier=free`
+   has been removed, and it is also how an actual free player arrives, so the one section
+   that needs the free tier walks a real path rather than a switch only this suite could
+   reach. The switch drew a link on the mode's front screen, that link outlived the door
+   that hid it, and a player read "See what a free player sees" while being one. */
+const freeStub = stubAs([]);
 const arm = `
 (function(){ var v;
   Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,
@@ -293,11 +300,13 @@ console.log('\n=== and the free tier writes the record without being shown it ==
      pay. What free does not get is the shelf: absent, not locked, the same silent gate the
      ruling note uses. */
   const p = await b.newPage({ viewport: { width: 390, height: 900 } });
-  await p.addInitScript(arm + stub);
+  /* FREE IS THE ACCOUNT STATE, NEVER A FLAG. freeStub is this same account holding no
+     cfb_premium row, which is what a free player actually is. */
+  await p.addInitScript(arm + freeStub);
   await p.addInitScript(`try{ localStorage.setItem('cfb_commish_career', JSON.stringify(
     { v:1, rulings:12, terms:[{ from:2025, to:2029, removed:false, reason:'served',
       doctrine:'The Reformer', grade:'B', score:70, rulings:40, champions:5 }] })); }catch(e){}`);
-  await p.goto(URL + '?tier=free', { waitUntil: 'domcontentloaded', timeout: 40000 });
+  await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
   await p.waitForTimeout(2400);
   const free = await p.evaluate(() => {
     const el = document.getElementById('y-career');

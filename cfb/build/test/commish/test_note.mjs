@@ -124,7 +124,7 @@ console.log('\n=== deterministic, so the forecast is the ruling ===');
 console.log('\n=== the page: one path, and the tier gate ===');
 const UID = '11111111-1111-1111-1111-111111111111';
 const TESTER = 'commish-test-account';
-const stub = `
+const stubAs = (products) => `
 window.supabase={createClient(){
   const session={access_token:'x',user:{id:'${UID}',email:'c@e.com'}};
   return {auth:{onAuthStateChange(){return{data:{}}},
@@ -132,7 +132,12 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:{username:'${TESTER}'}})}}}}}},
-    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?${JSON.stringify(products)}:true,error:null})}}};`;
+const stub = stubAs(['cfb_premium', 'ps_premium']);
+/* THE SAME ACCOUNT HOLDING NOTHING, which is what a free player is and, since `?tier=free`
+   was removed, the only way to be one. The switch drew a link on the mode's front screen
+   and that link outlived the door that hid it. */
+const freeStub = stubAs([]);
 const arm = `
 (function(){ var v;
   Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,
@@ -210,8 +215,8 @@ const URL = 'http://localhost:8080/cfb/commish/index.html';
   /* THE TIER GATE. The free desk has no box, and even a note smuggled in through the hook
      is not read: the gate is in the path, not in the textarea. */
   const p = await bro.newPage({ viewport: { width: 390, height: 900 } });
-  await p.addInitScript(arm + stub);
-  await p.goto(URL + '?tier=free', { waitUntil: 'domcontentloaded', timeout: 40000 });
+  await p.addInitScript(arm + freeStub);
+  await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
   await p.waitForTimeout(2600);
   await p.click('#g-start'); await p.waitForTimeout(700);
   await pastScene(p);
