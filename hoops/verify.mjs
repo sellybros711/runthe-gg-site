@@ -1000,6 +1000,66 @@ ok(bestWins > worstWins + 20,
   ok(threw, 'an era nobody declared is refused');
 }
 
+/* ── A FIELD THE PAGE READS OFF AN OUTCOME HAS TO BE A FIELD OUTCOMES HAVE ──
+ *
+ * `out.spendLeft` was read on the results screen and `outcomeOf` has never set
+ * it. `undefined > 15` is false, so on every run this game has ever played the
+ * branch behind it was dead and the cap advice, which is the central lesson of
+ * the whole thing, never once appeared: a draft that finished $88M under the
+ * cap was told its roster had no shape. Nothing threw, nothing rendered wrong,
+ * and no check could see it.
+ *
+ * So the whole class is checked rather than the one name. A real outcome is
+ * built here and every `out.<field>` in the page has to be one of its keys.
+ *
+ * TWO NAMES ARE WHITELISTED and both are array methods on a DIFFERENT local
+ * called `out`. That is the cost of matching on a variable name, and it is
+ * worth paying: the alternative is parsing the page, and a phantom field is
+ * exactly what this is for. Rename either local and this list needs a look.
+ */
+{
+  const ARRAY_USES = new Set(['length', 'push']);
+  const run = R.createRun({ seed: 31337 });
+  let guard = 0;
+  while (run.phase === R.PHASES.DRAFT && guard++ < 40) {
+    const draw = R.spin(run, data);
+    const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
+    R.sign(run, opts.slice().sort((a, b) => b.w - a.w)[0]);
+  }
+  const outcome = R.playSeason(run);
+  const keys = new Set(Object.keys(outcome));
+  ok(keys.size > 10, `an outcome has fields to check against (${keys.size})`);
+
+  /* COMMENTS COME OUT FIRST, and the first version of this did not do that,
+     so it failed on the comment ABOVE the fix explaining what the phantom
+     field had been. "If this checker reports a problem inside a comment, that
+     is the bug, not the comment", which check-copy.mjs learned twice.
+     Block comments only: a line comment strip would eat the rest of any line
+     holding a `https://` and could swallow a real read with it. My mention
+     was a block comment and so is every long one in this repo. */
+  const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const read = new Set();
+  for (const m of src.matchAll(/\bout\.([A-Za-z_$][\w$]*)/g)) read.add(m[1]);
+  const phantom = [...read].filter(f => !keys.has(f) && !ARRAY_USES.has(f)).sort();
+  is(phantom, [], 'the results screen reads no field an outcome does not carry');
+  /* The scan has to be finding something, or a broken regex passes green.
+     Same reason check-numbers records its coverage counts. */
+  ok(read.size >= 10, `the outcome scan found real reads (${read.size})`);
+}
+
+/* THE ALL TIME RANK INSERTS YOUR TEAM, SO THE DENOMINATOR HAS TO COUNT IT.
+   A roster below every real team-season ranks length + 1, and the page was
+   printing "1404th of 1403 all time". Both ends asserted, because the top end
+   is wrong by the same one and looks like nothing. */
+{
+  const table = data.ratingTable;
+  ok(table && table.length > 1000, `a rating table to rank against (${table.length})`);
+  is(E.nationalRank(table[table.length - 1] + 50, table), 1, 'better than everything ranks first');
+  is(E.nationalRank(table[0] - 50, table), table.length + 1,
+    'worse than everything ranks one past the table, which is what the page must divide by');
+}
+
 /* Every roster plays a real number of games and ends up somewhere real. */
 const sample = E.playRun(best, E.createSeededRNG(99), E.SLOTS, data.oppPool);
 is(sample.record.wins + sample.record.losses, E.CONSTANTS.REGULAR_SEASON_GAMES,

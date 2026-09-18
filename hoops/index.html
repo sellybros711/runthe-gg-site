@@ -940,6 +940,10 @@
      same on a scoreboard. This says which it was, because "you were three wins
      off" is the sentence that makes somebody press the button again. */
   .pgauge{display:flex;align-items:center;gap:14px;margin:4px 0 14px;}
+  .pgauge .pvw{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .pgauge .pu{font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;
+    color:var(--dim);text-align:center;line-height:1.2;}
+  .pgauge .pu:empty{display:none;}
   .pgauge .pv{font-family:var(--display);font-size:46px;line-height:.85;flex:0 0 auto;
     font-weight:400;}
   .pgauge .pr{flex:1;min-width:0;}
@@ -1397,7 +1401,11 @@
 <div class="screen" id="s-over">
   <div class="card">
     <div class="pgauge" id="o-gauge" hidden>
-    <span class="pv" id="o-gv"></span>
+    <!-- A BARE NUMERAL IS NOT A MEASUREMENT. "3" at 46px beside a progress
+         bar reads as a rank, a seed or a rating, and this screen carries all
+         three. RING and a series score say what they are; a count of wins
+         needs the word under it. -->
+    <span class="pvw"><span class="pv" id="o-gv"></span><span class="pu" id="o-gu"></span></span>
     <span class="pr"><span class="ptrack"><i id="o-gbar"></i></span>
       <span class="pl" id="o-gl"></span></span>
   </div>
@@ -3921,9 +3929,16 @@ function renderOver(out){
     + out.seedLabel
     + ' · rating ' + out.rating.toFixed(0)
     + ' · offense ' + out.ortg.toFixed(1) + ', defense ' + out.drtg.toFixed(1)
+    /* THE DENOMINATOR COUNTS YOUR TEAM, because the rank does. nationalRank
+       inserts this roster into the table of real team-seasons and reports
+       where it landed, so a roster worse than all 1,403 of them is 1,404th,
+       and the page was printing "1404th of 1403 all time". Seen on a
+       deliberately terrible 2-80 draft, which is the only place it shows: the
+       top end reads "1st of 1403" and is wrong by the same one without
+       looking like anything. */
     + (out.allTimeRank
       ? ' · ' + out.allTimeRank + getOrdinal(out.allTimeRank) + ' of '
-        + DATA.ratingTable.length + ' all time'
+        + (DATA.ratingTable.length + 1) + ' all time'
       : '');
 
   var tags = $('o-tags');
@@ -4025,7 +4040,7 @@ function renderGauge(out){
   box.hidden = false;
   var wins = out.wins;
   var playIn = E.CONSTANTS.PLAY_IN_WINS, seed = E.CONSTANTS.TOP_SIX_WINS;
-  var big, cls, pct, line;
+  var big, cls, pct, line, unit = '';
 
   if (out.titleWon) {
     big = 'RING'; cls = 'pgood'; pct = 100;
@@ -4033,26 +4048,41 @@ function renderGauge(out){
   } else if (run.playoffs && run.playoffs.rounds.length) {
     var last = run.playoffs.rounds[run.playoffs.rounds.length - 1];
     big = String(last.yourWins) + '-' + last.oppWins; cls = 'pmid';
+    unit = 'last series';
     pct = Math.round(100 * last.yourWins / Math.max(1, last.yourWins + last.oppWins));
     line = 'Out in the ' + last.round + '. ' + (last.yourWins >= 3
       ? 'One game the other way and you are still playing.'
       : 'The bracket got stiffer than the roster.');
-  } else if (wins >= playIn - 6) {
-    var short = playIn - wins;
-    big = short <= 0 ? '0' : String(short); cls = 'pmid';
-    pct = Math.round(100 * wins / playIn);
-    line = short <= 0 ? 'Enough wins, wrong side of the tiebreak.'
-      : short + ' win' + (short === 1 ? '' : 's') + ' short of the play-in. '
-        + 'One better signing anywhere in the six is worth about that.';
   } else {
-    big = String(playIn - wins); cls = 'pbad';
+    var short = playIn - wins;
+    big = short <= 0 ? '0' : String(short);
+    cls = wins >= playIn - 6 ? 'pmid' : 'pbad';
+    unit = short === 1 ? 'win short' : 'wins short';
     pct = Math.round(100 * wins / playIn);
-    line = (playIn - wins) + ' wins short of the play-in. '
-      + (out.spendLeft > 15 ? 'You finished with cap left over, which is worth nothing.'
-        : 'The roster never had a shape. Read the fit rows next time.');
+    /* `out.spendLeft` IS NOT A FIELD AND NEVER WAS. outcomeOf does not set it,
+       so `undefined > 15` was false on every run this game has ever played and
+       the cap advice, which is the central lesson of the whole thing, has
+       never once appeared: a draft that finished $88M under was told its
+       roster had no shape. Nothing threw. R.remaining(run) is the real number
+       and the run is still in scope here.
+       $15M is measured rather than chosen, and the separation is total.
+       Over 120 drafts a side: a bot that spends the cap leaves a median
+       $0.8M and a p90 of $5.1M, and a bot drafting on value alone leaves a
+       median $88.9M. 0% of the first group clears $15M and 100% of the
+       second does. It also names the size of the mistake, because "cap left
+       over" and "$88.5M left over" are different sentences. */
+    var spare = R.remaining(run);
+    line = short <= 0 ? 'Enough wins, wrong side of the tiebreak.'
+      : spare > 15
+        ? 'You finished ' + money(spare) + ' under the cap. Unspent cap is '
+          + 'production you never fielded.'
+        : wins >= playIn - 6
+          ? 'The wins were there. A hole in the fit rows costs more than a name does.'
+          : 'The roster never had a shape. Read the fit rows next time.';
   }
   $('o-gv').textContent = big;
   $('o-gv').className = 'pv ' + cls;
+  $('o-gu').textContent = unit;
   $('o-gl').textContent = line + (wins >= seed ? '' : '');
   var bar = $('o-gbar');
   bar.style.width = '0%';
@@ -4189,21 +4219,20 @@ function seasonStory(out){
     else if (rate <= 0.20) bits.push('Never solved the good teams: ' + marqW + '-' + marqL + ' on marquee nights.');
   }
 
-  /* How it ended, which is the part worth saying last. */
-  if (out.titleWon) {
-    bits.push(out.isGOAT ? 'Then won ' + out.wins + ' games and the ring.' : 'Then won the ring.');
-  } else if (run.playoffs && run.playoffs.rounds.length) {
-    var last = run.playoffs.rounds[run.playoffs.rounds.length - 1];
-    if (!last.won) {
-      var close = last.yourWins + '-' + last.oppWins;
-      bits.push(last.round === 'NBA Finals'
-        ? 'Lost the Finals ' + close + '.'
-        : 'Out in the ' + last.round.toLowerCase() + ', ' + close + '.');
-    }
-  } else if (out.wins >= E.CONSTANTS.PLAY_IN_WINS - 3) {
-    bits.push('Missed the play-in by ' + (E.CONSTANTS.PLAY_IN_WINS - out.wins)
-      + ' game' + (E.CONSTANTS.PLAY_IN_WINS - out.wins === 1 ? '' : 's') + '.');
-  }
+  /* HOW IT ENDED USED TO BE SAID HERE TOO, AND THE GAUGE OWNS IT NOW.
+   *
+   * Driven to a real results screen, "3 wins short of the play-in" appeared
+   * three times in the top four inches: as the gauge's big number, as the
+   * gauge's own sentence, and again here as "Missed the play-in by 3 games".
+   * Every playoff exit read the same way, and so did a ring. Two functions
+   * written at different times, both reaching for the sentence somebody came
+   * to this screen for, with nothing to stop them both getting it.
+   *
+   * So the split is by SUBJECT rather than by which one ran first. The gauge
+   * is how it ENDED, in a number and a line. This is the season's SHAPE: the
+   * streaks, the marquee nights, the best run of form. The two never collide
+   * because they are never about the same thing.
+   */
 
   /* SOMETHING TRUE IS ALWAYS AVAILABLE. Two runs in twelve came back with an
      empty line: a 36-46 season with no long streak, no marquee extreme and not
@@ -4217,10 +4246,8 @@ function seasonStory(out){
     }
   }
 
-  /* At most two, because three is a paragraph and this is a caption. The
-     ending is kept when there is one, since it is the sentence somebody came
-     to this screen for. */
-  if (bits.length > 2) bits = [bits[0], bits[bits.length - 1]];
+  /* At most two, because three is a paragraph and this is a caption. */
+  if (bits.length > 2) bits = bits.slice(0, 2);
   return bits.join(' ');
 }
 
