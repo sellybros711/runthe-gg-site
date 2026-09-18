@@ -145,6 +145,31 @@ for (const slot of E.SLOTS) {
      is not a crash and is not the club either. */
   const uncolored = inPlay.filter((c) => !E.TEAM_COLORS[c]);
   ok(uncolored.length === 0, `every club in the data has its own colors${uncolored.length ? ` (missing ${uncolored.join(', ')})` : ''}`);
+
+  /* AND ON THE DOOR, WHICH IS A DIFFERENT FILL. The One Franchise door on the
+     front page sets the club's accent as the name's colour over the card
+     fill, not over the club's own. wheelColors lifts the accent until it
+     clears the PAGE at #0d1117, and the door is a shade lighter, so a club
+     that just scraped past there could fail here and nowhere else would say
+     so. 3:1 is the bar for the size it is set at (15px bold). Measured worst
+     case is the Clippers at 4.15:1.
+
+     THE FILL IS READ OUT OF THE STYLESHEET, never typed here. A number in
+     both places is two answers to one question, and this one drifts in the
+     direction nobody checks: somebody lightens the door, the contrast gets
+     easier, and the guard goes on asserting against a colour that is not on
+     the page any more. */
+  const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const doorRule = /\.modedoor button\{background:(#[0-9a-f]{3,6});/i.exec(pageSrc);
+  ok(!!doorRule, 'the One Franchise door declares a flat fill this can be measured against');
+  const DOOR_FILL = doorRule ? doorRule[1] : '#141a26';
+  const flat = [];
+  for (const f of E.franchises()) {
+    const c = E.contrast(E.clubSkin(f.code).accent, DOOR_FILL);
+    if (c < 3) flat.push(`${f.code} ${c.toFixed(2)}:1`);
+  }
+  ok(flat.length === 0,
+    `every club's name reads on the One Franchise door${flat.length ? `\n      ${flat.join('\n      ')}` : ''}`);
 }
 
 /* ── THE SHARE CARD'S PALETTE IS A SECOND COPY OF THE POSITION COLOURS ─────
@@ -775,6 +800,117 @@ const meanWins = (roster) => {
 const bestWins = meanWins(best), worstWins = meanWins(worst);
 ok(bestWins > worstWins + 20,
   `the best six average far more wins than the worst six (${bestWins.toFixed(1)} vs ${worstWins.toFixed(1)})`);
+
+/* ── ONE FRANCHISE ──────────────────────────────────────────────────────────
+ *
+ * The club lock. Three things can go wrong here and two of them are silent.
+ *
+ * THE LINEAGE. A franchise is every code it has ever worn, which is the whole
+ * appeal: an Oklahoma City run reaches Gary Payton. Get the walk wrong and a
+ * Thunder fan gets eighteen seasons instead of fifty-two and nothing anywhere
+ * says so.
+ *
+ * THE RESERVE FLOOR. cheapestForSlot reads the 200 cheapest men per position
+ * ACROSS ALL 16,057 rows, and under a lock not one of them may be drawable. A
+ * floor built from the league promises a $2.2M centre off a club this run can
+ * never spin, so the budget reads bigger than it is and the draft strands
+ * itself at the last slot with no legal player at any price. Nothing throws:
+ * sign() refuses and the player is left on a board with six greyed names.
+ *
+ * SO THE SWEEP ASSERTS THE FLOOR IS ACTUALLY DIFFERENT, and that is not belt
+ * and braces. A sweep that only asserts thirty drafts finish would pass on the
+ * unlocked floor too, for most clubs, most of the time, and report green on
+ * exactly the defect it was written for. Same lesson as check-fullteam's
+ * "assert the replaced reading disagreed at least once".
+ */
+{
+  const fr = E.franchises();
+  is(fr.length, 30, 'thirty current franchises are offered');
+  ok(E.franchiseCodes('OKC').includes('SEA'), 'Oklahoma City reaches Seattle');
+  ok(E.franchiseCodes('MEM').includes('VAN'), 'Memphis reaches Vancouver');
+  ok(E.franchiseCodes('NOP').includes('CHH'), 'New Orleans reaches the Charlotte Hornets');
+  /* The two Charlotte clubs are different franchises and this is the one pair
+     in the table that a lineage walk can plausibly merge. The Hornets left for
+     New Orleans and the Bobcats took the name later. */
+  ok(!E.franchiseCodes('CHO').includes('CHH'), 'the Hornets who left are not the Hornets who stayed');
+  ok(E.franchiseCodes('CHO').includes('CHA'), 'Charlotte reaches the Bobcats');
+  ok(E.franchiseCodes('ZZZ').length === 1, 'a code with no row is a franchise of one, not a crash');
+
+  let thin = [], stranded = [], floorSame = 0, floorDiff = 0;
+  for (const f of fr) {
+    const seasons = R.clubSeasons(f.code);
+    if (seasons.length < 3) thin.push(f.code + ' ' + seasons.length);
+
+    /* Best available spends the most and is therefore the strategy most likely
+       to strand; cheapest exercises the other end of the floor. */
+    for (const [label, pick] of [
+      ['best', (o) => o.slice().sort((a, b) => b.w - a.w)[0]],
+      ['cheap', (o) => o.slice().sort((a, b) => a.p - b.p)[0]],
+    ]) {
+      const run = R.createRun({ club: f.code, seed: 4242 });
+      let guard = 0, broke = null;
+      while (run.phase === R.PHASES.DRAFT && guard++ < 40) {
+        /* THE SAME RUN, BOTH FLOORS, AFTER EVERY SIGNING. Measured at the
+           start they are usually the SAME number, and that is not the lock
+           failing: the league's cheapest men sit at the price floor and most
+           clubs have somebody there too, so both sums are six times the base.
+           11 of 30 differ before a single pick. The pools come apart as a
+           draft eats the cheap end of a club that only has fifty seasons in
+           it, which is exactly when a floor built from the whole league
+           starts promising money that is not there. */
+        if (label === 'best') {
+          const locked = R.fullFloor(run);
+          const open = R.fullFloor({ ...run, club: null });
+          /* A smaller pool can never be CHEAPER, so this direction is an
+             invariant rather than a sample. It catches the lock being applied
+             to the wheel and not to the floor. */
+          if (locked < open - 1e-9) {
+            stranded.push(`${f.code}: the locked floor came in under the league floor`);
+          }
+          if (Math.abs(locked - open) < 1e-9) floorSame++; else floorDiff++;
+        }
+        let draw;
+        try { draw = R.spin(run, data); } catch (e) { broke = 'spin: ' + e.message; break; }
+        const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
+        if (!opts.length) { broke = 'empty board'; break; }
+        try { R.sign(run, pick(opts)); } catch (e) { broke = 'sign: ' + e.message; break; }
+      }
+      if (broke || run.roster.length !== E.SLOTS.length) {
+        stranded.push(`${f.code}/${label}: ${broke || 'stalled at ' + run.roster.length}`);
+        continue;
+      }
+      /* Every man really did wear the shirt, which is the mode's one promise. */
+      const codes = new Set(E.franchiseCodes(f.code));
+      if (!run.roster.every(p => codes.has(p.t))) {
+        stranded.push(`${f.code}/${label}: signed somebody off another club`);
+      }
+    }
+  }
+  is(thin, [], 'every franchise on offer has at least three drawable seasons');
+  is(stranded, [], 'every franchise finishes a draft on both strategies, off its own men');
+  /* Measured at 36 of 180 readings. The threshold is 20 rather than 35
+     because the number is a property of where the price floor happens to sit
+     in each club's cheap end, which a data refresh legitimately moves; what
+     would be a bug is it going to zero, which is the lock not being applied
+     to the floor at all. */
+  ok(floorDiff >= 20,
+    `the club lock actually reaches the reserve floor `
+    + `(${floorDiff} of ${floorDiff + floorSame} floor readings differ from the league's)`);
+
+  /* The wheel cannot leave the franchise. Asserted on the drawable list rather
+     than on a played draft, because a draft only proves the clubs it happened
+     to land on. */
+  const lk = R.createRun({ club: 'BOS', seed: 7 });
+  const codes = new Set(E.franchiseCodes('BOS'));
+  ok(R.drawable(lk, data).every(t => codes.has(t.team)), 'a locked wheel never leaves the franchise');
+  ok(R.drawable(lk, data).length > 20, 'a locked wheel still has plenty to land on');
+  ok(R.drawable(R.createRun({}), data).length > R.drawable(lk, data).length * 5,
+    'an unlocked wheel is the whole league');
+
+  let threw = false;
+  try { R.createRun({ club: 'NOPE' }); } catch (e) { threw = true; }
+  ok(threw, 'a club the table does not know is refused rather than silently emptying the wheel');
+}
 
 /* Every roster plays a real number of games and ends up somewhere real. */
 const sample = E.playRun(best, E.createSeededRNG(99), E.SLOTS, data.oppPool);

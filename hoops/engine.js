@@ -39,7 +39,7 @@
    it at boot and reloads once, because a returning visitor CAN hold a cached
    copy of this file against a current page. 2: playerTags() removed, wheel
    colors and title resolution added. */
-const ENGINE_API_VERSION = 2;
+const ENGINE_API_VERSION = 3;
 
 // ─── constants ──────────────────────────────────────────────────────────────
 
@@ -1894,12 +1894,17 @@ let TEAMS = null;
 let TITLE_AT = null;
 /* Every title the whole franchise has won, reachable from any of its codes. */
 let LINEAGE_TITLES = null;
+/* Every code one franchise has ever worn, reachable from any of them. Built at
+   setTeams off the same `became` chain the titles use, because a franchise is
+   one thing and two walks of the same table would be two answers to it. */
+let LINEAGE_CODES = null;
 
 function setTeams(json) {
   TEAMS = (json && json.teams) || null;
   const built = titlesByCode(TEAMS);
   TITLE_AT = built.at;
   LINEAGE_TITLES = built.lineage;
+  LINEAGE_CODES = built.codes;
 }
 
 /* ── A TITLE BELONGS TO THE CLUB THAT WORE THE NAME ────────────────────────
@@ -1922,7 +1927,8 @@ function setTeams(json) {
  */
 function titlesByCode(teams) {
   const at = Object.create(null), lineage = Object.create(null);
-  if (!teams) return { at, lineage };
+  const codes = Object.create(null);
+  if (!teams) return { at, lineage, codes };
 
   /* Follow `became` to the row the franchise is today.
    *
@@ -1952,7 +1958,11 @@ function titlesByCode(teams) {
 
   for (const root of Object.keys(family)) {
     const titles = (teams[root] && teams[root].titles) || [];
-    for (const code of family[root]) lineage[code] = titles;
+    /* Sorted so the list is stable whatever order Object.keys came back in:
+       this is read by the club lock, and a set that reshuffles between boots
+       would reshuffle a seeded run. */
+    const all = family[root].slice().sort();
+    for (const code of family[root]) { lineage[code] = titles; codes[code] = all; }
     for (const year of titles) {
       let best = root, bestWidth = Infinity;
       for (const code of family[root]) {
@@ -1967,7 +1977,40 @@ function titlesByCode(teams) {
       at[`${best}|${year}`] = true;
     }
   }
-  return { at, lineage };
+  return { at, lineage, codes };
+}
+
+/* EVERY CODE THIS FRANCHISE HAS EVER WORN, including the one asked for.
+ *
+ * The club lock reads this, and it is the whole reason a Thunder fan gets
+ * Gary Payton and a Grizzlies fan gets Vancouver. Written as a lookup rather
+ * than a walk because the walk is already done once at setTeams, and two
+ * walks of one hand-maintained table is two answers to "what is a franchise".
+ *
+ * Falls back to the code alone, which is what an engine with no teams.json
+ * loaded has to say: one code is a franchise of one, which is wrong about
+ * history and right about the data it can see.
+ */
+function franchiseCodes(code) {
+  return (LINEAGE_CODES && LINEAGE_CODES[code]) || [code];
+}
+
+/* The thirty clubs that exist today, each with its whole lineage behind it,
+   sorted by the name a fan would look for. This is the club picker's list. */
+function franchises() {
+  if (!TEAMS) return [];
+  return Object.keys(TEAMS)
+    .filter(c => TEAMS[c].current !== false)
+    .map(c => ({
+      code: c,
+      name: TEAMS[c].name || c,
+      full: TEAMS[c].full || TEAMS[c].name || c,
+      city: TEAMS[c].city || '',
+      founded: TEAMS[c].founded || null,
+      titles: (LINEAGE_TITLES && LINEAGE_TITLES[c]) || TEAMS[c].titles || [],
+      codes: franchiseCodes(c),
+    }))
+    .sort((a, b) => a.full.localeCompare(b.full));
 }
 
 /** Did this club, under this code, win the championship in this season? */
@@ -1981,6 +2024,18 @@ function team(code) {
   if (t) return t;
   const name = TEAM_NAMES[code];
   return name ? { code, name, full: name, titles: [] } : { code, name: code, full: code, titles: [] };
+}
+
+/* DOES ANY TABLE ACTUALLY KNOW THIS CODE.
+ *
+ * team() cannot answer it: its last fallback returns { name: code }, so
+ * `team('NOPE').name` is the truthy string 'NOPE' and every existence check
+ * written against it passes for every string there is. That is by design
+ * there, because a name is always wanted and a code is a better name than
+ * nothing. It is the wrong shape for a gate, and the club lock is a gate: an
+ * unknown code silently empties the wheel rather than being refused. */
+function hasTeam(code) {
+  return !!((TEAMS && TEAMS[code]) || TEAM_NAMES[code]);
 }
 
 function teamName(code) {
@@ -2047,7 +2102,8 @@ const publicAPI = {
   coachReport, lastNameOf,
   TEAM_NAMES, TEAM_COLORS, teamColors, teamName,
   wheelColors, clubSkin, contrast, chromaOf, hexToHsl, hslToHex,
-  setTeams, team, teamDisplay, teamNote, wonTitle, titlesByCode,
+  setTeams, team, hasTeam, teamDisplay, teamNote, wonTitle, titlesByCode,
+  franchiseCodes, franchises,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

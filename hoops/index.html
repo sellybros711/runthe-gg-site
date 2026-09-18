@@ -567,6 +567,63 @@
   @media(min-width:640px){.sheet .panel{max-width:520px;margin:0 auto;border-radius:16px;
     bottom:auto;top:50%;transform:translateY(-50%);}}
   .sheet h2{margin-bottom:4px;}
+
+  /* ══ THE SECOND DOOR AND THE CLUB PICKER ═══════════════════════════════
+     The door is quieter than Start a run on purpose: the page has one main
+     game and a second way into it, and two equally loud buttons would make it
+     a menu. Full width so the column still has an edge, which is the note
+     the football page's .hp-more carries. */
+  .modedoor{display:flex;align-items:stretch;gap:1px;width:100%;margin:9px 0 0;
+    border-radius:12px;border:1px solid var(--cardb);overflow:hidden;
+    background:var(--cardb);}
+  /* OPAQUE, AND THAT IS NOT A DETAIL. The club's accent is painted on the
+     WRAPPER and shows through as the border and as the hairline between the
+     two halves, which is the whole trick. The first version left these
+     translucent, so a Bulls door came back as a solid red tile with red text
+     on it and the name was unreadable. A colour used as an edge has to stay
+     an edge. */
+  .modedoor button{background:#141a26;border:0;color:var(--ink);font-family:var(--body);
+    text-align:left;cursor:pointer;padding:13px 14px;transition:background .12s ease;}
+  .modedoor button:hover{background:#1a2333;}
+  .modedoor button:active{background:#0f141d;}
+  .modedoor .md-main{flex:1;min-width:0;}
+  .modedoor .md-pick{flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    width:46px;padding:0;}
+  .modedoor .md-pick[hidden]{display:none;}
+  .modedoor .md-name{display:block;font-size:15px;font-weight:800;letter-spacing:.005em;}
+  .modedoor .md-sub{display:block;font-size:12px;color:var(--dim);margin-top:3px;
+    line-height:1.4;}
+  .modedoor .md-chev{width:8px;height:8px;margin-left:-3px;
+    border-right:2px solid var(--dim);border-bottom:2px solid var(--dim);
+    transform:rotate(-45deg);}
+  /* Dressed once a club has been played, so the door itself is the receipt.
+     The colours come from clubSkin, the same call the reels and the court use,
+     which is why a club can never wear one colourway here and another there. */
+  .modedoor.clubbed{border-color:var(--md-accent,var(--cardb));
+    background:var(--md-accent,var(--cardb));}
+
+  /* TWO COLUMNS AT 390px, which is what thirty clubs and a nickname need.
+     One column is a list to scroll and three puts "Timberwolves" on two
+     lines at 108px of tile. */
+  .clubgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  .clubchip{display:block;width:100%;text-align:left;padding:10px 11px;border-radius:10px;
+    border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--ink);
+    font-family:var(--body);cursor:pointer;position:relative;overflow:hidden;
+    transition:transform .08s ease,border-color .12s ease;}
+  .clubchip:active{transform:scale(.98);}
+  /* The colour is a bar down the leading edge rather than a fill. A filled
+     tile in a club's own primary puts thirty saturated blocks on one screen
+     and the eye cannot find anything in it. */
+  .clubchip:before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+    background:var(--cc-accent,var(--line));}
+  .clubchip .cc-name{display:block;font-size:13.5px;font-weight:800;line-height:1.2;
+    padding-left:6px;}
+  .clubchip .cc-city{display:block;font-size:10.5px;color:var(--dim);margin-top:2px;
+    padding-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .clubchip .cc-meta{display:block;font-size:10px;color:var(--mut);margin-top:5px;
+    padding-left:6px;font-family:var(--mono);}
+  .clubchip .cc-rings{color:var(--gold);}
+  .clubchip:hover{border-color:var(--cc-accent,#3d4a60);}
   .pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0;}
   .pstat{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:9px;
     padding:9px 10px;text-align:center;}
@@ -577,6 +634,8 @@
   .plist li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;
     border-top:1px solid var(--line);color:var(--mut);}
   .plist li b{color:var(--ink);font-weight:700;}
+  .plist li.plisthead{display:block;border:0;padding:14px 0 2px;font-size:10px;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--dim);font-weight:800;}
   .profbtn{position:absolute;right:0;top:2px;background:transparent;border:1px solid var(--cardb);
     color:var(--mut);padding:7px 12px;font-size:12px;min-height:34px;}
 
@@ -895,6 +954,10 @@
      is a UA rule and loses every specificity contest. Without this pair, setting
      .hidden = true on the chip leaves an empty pill sitting in the bar. */
   .appbar .state[hidden],.appbar button.link[hidden]{display:none;}
+  /* The mode chip is a name, not a score, so it takes the body face and loses
+     the tabular figures the record needs. */
+  .appbar .state.lock{font-family:var(--body);font-size:11.5px;letter-spacing:.02em;
+    color:var(--mut);}
   /* The mark is the way home from every screen, so it has to read as a control
      rather than as a logo printed on the page. */
   .appbar .mark:active{opacity:.6;}
@@ -1022,6 +1085,34 @@
        card below and from the footer, and Career from the bar, so what was left
        here was three ways to leave a screen nobody had started yet. -->
   <button class="big" id="b-start">Start a run</button>
+
+  <!-- THE SECOND DOOR, and the reason it is a door rather than a setting.
+       One Franchise is the same game with the club reel held still, so it
+       could have been a checkbox on the start button. It is not, because
+       choosing WHICH club is the whole of it: a Knicks fan is not turning an
+       option on, they are picking the thing they came for. The football game
+       makes the same call with "More ways to play", and this is that row.
+
+       Quieter than Start a run and full width under it. It is a second way in,
+       not a competing call to action, and a compact pill beside the primary
+       would have made the page a menu of two equal things when it has one main
+       game. Its label carries the last club played, so a returning fan taps
+       once rather than going back through the picker. -->
+  <div class="modedoor" id="b-franchise">
+    <button class="md-main" id="b-franchise-go">
+      <span class="md-name" id="md-name">One Franchise</span>
+      <span class="md-sub" id="md-sub">Lock the wheel to one club. Only the year moves.</span>
+    </button>
+    <!-- TWO TARGETS, AND ONLY ONCE THERE IS SOMETHING TO SWITCH FROM. Before a
+         club has been played the whole door opens the picker, because there is
+         no club to start. Afterwards the wide half starts the remembered club
+         in one tap and this one goes back to the thirty, which is the split a
+         fan of one team wants: they are not choosing every time, they are
+         playing their club. Hidden rather than disabled, since a control that
+         cannot do anything is a tap target that teaches nothing. -->
+    <button class="md-pick" id="b-franchise-pick" hidden
+      aria-label="Switch club"><span class="md-chev" aria-hidden="true"></span></button>
+  </div>
 
   <!-- WHAT YOU ARE DRAFTING FROM. Filled from the data once it loads, so the
        numbers are the file's rather than a claim typed into the markup. -->
@@ -1284,6 +1375,31 @@
      Every run that reaches a result adds a line to this. It never leaves the
      browser it was played in: there is no account and nothing is sent
      anywhere, which is also why it can vanish, and the sheet says so. -->
+<!-- ── the club picker ───────────────────────────────────────────────────
+     Thirty clubs, each in its own colours, because a fan finds their club by
+     its colour before they read its name. The grid is built at boot from
+     E.franchises() rather than typed here: the lineage, the season count and
+     the title count all come off teams.json and the player data, so a picker
+     row can never promise a franchise the wheel cannot actually draw. -->
+<div class="sheet" id="clubsheet" role="dialog" aria-modal="true" aria-labelledby="club-h">
+  <div class="panel">
+    <h2 id="club-h">One Franchise <span class="sub">pick your club</span></h2>
+    <!-- TWO LINES. Five pushed the first club off the top of a 390px screen,
+         and a picker whose first screen is prose is a picker. The lineage note
+         moved into the row it is about: the season count on a Thunder chip
+         already says 52, which is the whole claim. -->
+    <p class="dim" style="font-size:13px;margin:0 0 12px;line-height:1.5">
+      The club reel stops. Only the year spins, and every man you sign really
+      did wear the shirt. The whole history counts, so Oklahoma City reaches
+      Seattle.
+    </p>
+    <div class="clubgrid" id="clubgrid"></div>
+    <div class="btnrow" style="margin-top:14px">
+      <button id="b-club-x" style="flex:1">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="prof-h">
   <div class="panel">
     <h2 id="prof-h">Career <span class="sub" id="prof-sub"></span></h2>
@@ -1340,8 +1456,8 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=11"></script>
-<script src="run.js?v=2"></script>
+<script src="engine.js?v=12"></script>
+<script src="run.js?v=3"></script>
 <script src="badges.js?v=1"></script>
 <script>
 (function(){
@@ -1374,7 +1490,7 @@ var bold = function(text){
  * comes back still disagrees, say so in words instead of dying quietly. One
  * retry, so this can never become a reload loop.
  */
-var NEED_VERSION = 2;
+var NEED_VERSION = 3;
 (function bootCheck(){
   if (E && R && E.API_VERSION === NEED_VERSION && R.API_VERSION === NEED_VERSION) return;
   if (!/[?&]fresh=/.test(location.search)) {
@@ -1539,6 +1655,18 @@ function renderAppBar(screen){
      that pushes the wordmark into an ellipsis. */
   state.hidden = true;
   if (!run || screen === 's-home') return;
+  /* THE MODE, ON THE DRAFT SCREEN AND NOWHERE ELSE IT WOULD BE A DUPLICATE.
+     A locked run looks exactly like an ordinary one apart from a reel that
+     does not move, and "the reel is not moving" is a weak way to learn which
+     game you are playing. The nickname alone: the chip has room for one word
+     beside the wordmark at 360px, and the club is the half that answers it. */
+  if (screen === 's-draft' && run.club) {
+    state.hidden = false;
+    state.textContent = E.teamName(run.club);
+    state.className = 'state lock';
+    return;
+  }
+  state.className = 'state';
   if (screen === 's-season' || screen === 's-over') {
     /* Mid-sim this is the live record, which is the one number worth carrying
        above a screen you are watching rather than reading. */
@@ -1612,13 +1740,115 @@ function boot(){
 
 // ── the draft ──────────────────────────────────────────────────────────────
 
-function startRun(){
-  run = R.createRun({});
+function startRun(club){
+  /* An onclick handler is called with an Event, so a bare `$('b-again').onclick
+     = startRun` would pass a MouseEvent where the club goes and lock the wheel
+     to a franchise called [object MouseEvent]. createRun would throw and the
+     button would do nothing, which is the quietest possible failure. Every
+     call site passes a string or nothing, and this is the guard that makes
+     that true whatever anybody wires up next. */
+  var lock = typeof club === 'string' ? club : null;
+  run = R.createRun(lock ? { club: lock } : {});
+  if (lock) rememberClub(lock);
   activeTab = 'ALL';
   save();
   show('s-draft');
   renderDraft();
   spin();
+}
+
+/* ── ONE FRANCHISE ─────────────────────────────────────────────────────────
+ *
+ * The last club played, so the door on the front page offers it by name and a
+ * fan taps once instead of going back through thirty tiles. It is a
+ * preference and not a save: losing it costs one tap, so it never throws and
+ * never blocks anything.
+ */
+var CLUBKEY = 'rtf.club.v1';
+
+function lastClub(){
+  try {
+    var c = localStorage.getItem(CLUBKEY);
+    /* hasTeam, not team().name: team() answers with the code itself when it
+       knows nothing, so a junk value in storage would come back as a club. */
+    return (c && E.hasTeam(c)) ? c : null;
+  } catch (e) { return null; }
+}
+function rememberClub(code){
+  try { localStorage.setItem(CLUBKEY, code); } catch (e) {}
+}
+
+function openClubs(){
+  renderClubs();
+  sheetReturn = document.activeElement;
+  $('clubsheet').classList.add('open');
+  var first = $('clubgrid').querySelector('.clubchip');
+  (first || $('b-club-x')).focus();
+}
+
+function closeClubs(){
+  if (!$('clubsheet').classList.contains('open')) return;
+  $('clubsheet').classList.remove('open');
+  if (sheetReturn && sheetReturn.focus) { try { sheetReturn.focus(); } catch (e) {} }
+  sheetReturn = null;
+}
+
+/* THE SEASON COUNT COMES OFF THE WHEEL'S OWN ANSWER, never off the franchise
+   table. A club row says founded 1946 and the player data starts at 1974, so
+   a chip printing the club's age would promise twenty-eight seasons that
+   cannot be drawn. R.clubSeasons reads the same list drawable() filters. */
+function renderClubs(){
+  var grid = $('clubgrid');
+  grid.textContent = '';
+  var list = E.franchises();
+  for (var i = 0; i < list.length; i++) {
+    (function(f){
+      var seasons = R.clubSeasons(f.code);
+      /* A franchise with nothing in the data cannot be offered. None are today
+         and none should ever be, but a chip that starts a run the wheel cannot
+         spin is a dead end with no message on it. */
+      if (seasons.length < 3) return;
+      var skin = E.clubSkin(f.code);
+      var b = document.createElement('button');
+      b.className = 'clubchip';
+      b.style.setProperty('--cc-accent', skin.accent);
+      var nm = document.createElement('span');
+      nm.className = 'cc-name';
+      nm.textContent = f.name;
+      var city = document.createElement('span');
+      city.className = 'cc-city';
+      /* THE NAME THE CLUB IS CALLED, not the city it plays in, and they are
+         not the same for four of the thirty. teams.json has Golden State
+         filed under San Francisco, which is where Chase Center is and is not
+         what anybody calls them; Utah and Indiana are states and Minnesota is
+         too. Taking the nickname off the front of the full name answers all
+         four at once and needs no second table to go stale. */
+      city.textContent = (f.full || '').replace(
+        new RegExp('\\s*' + f.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'), '')
+        || f.city || '';
+      var meta = document.createElement('span');
+      meta.className = 'cc-meta';
+      meta.appendChild(document.createTextNode(seasons.length + ' seasons'));
+      if (f.titles.length) {
+        meta.appendChild(document.createTextNode(' · '));
+        var t = document.createElement('span');
+        t.className = 'cc-rings';
+        t.textContent = f.titles.length + (f.titles.length === 1 ? ' ring' : ' rings');
+        meta.appendChild(t);
+      }
+      b.appendChild(nm); b.appendChild(city); b.appendChild(meta);
+      b.onclick = function(){ closeClubs(); startRun(f.code); };
+      grid.appendChild(b);
+    })(list[i]);
+  }
+}
+
+/* The name a run wears everywhere: the app bar, the results, the career row.
+   Returns null for an ordinary run, because "The League" is not a mode, it is
+   the game, and labelling it would put a badge on every screen. */
+function modeLabel(r){
+  if (!r || !r.club) return null;
+  return 'One Franchise · ' + E.teamName(r.club);
 }
 
 /* THE DRAW HAPPENS FIRST AND THE REELS CATCH UP. run.js picks the club, then
@@ -1640,19 +1870,40 @@ function drawInto(fn){
 
   reelBusy = true;
   /* Out of the last club's colours before the reels start moving, so the page
-     and the wheel are never claiming different clubs mid-spin. */
-  undressPage();
+     and the wheel are never claiming different clubs mid-spin. UNDER A LOCK
+     there is no last club: it is the same club, so stripping the colours and
+     putting them straight back is a flash of grey on every pick with nothing
+     being said by it. */
+  if (!run.club) undressPage();
   /* The board is BUILT here and read a beat later. renderDraft puts the real
      tiles up at their real height and marks them pending, which is what stops
      the page collapsing under the reels. See the .opts.pending rules. */
   renderDraft();
 
-  var pools = reelPools(), pending = 2;
+  /* A LOCKED CLUB DOES NOT SPIN, and that is the mode on screen rather than
+     in a label. Nothing is being drawn there: the reel would ripple through
+     twenty nicknames and land on the only one it was ever going to land on,
+     which reads as a wheel that is lying to you. It is set once and dressed,
+     and only the year moves. The club CODE can still change under a lock
+     (Seattle to Oklahoma City), so the box is written on every draw rather
+     than only on the first. */
+  var locked = !!run.club;
+  var pools = reelPools(), pending = locked ? 1 : 2;
   var settled = function(){
     if (--pending > 0) return;
     reelBusy = false;
     renderDraft();
   };
+  if (locked) {
+    lockClubReel(draw);
+    spinReel($('box-s'), $('reel-s'), pools.seasons, String(draw.season), function(){
+      dressReel($('box-s'), draw.team);
+      dressPage(draw.team);
+      say('You drew ' + draw.season + '. Filling ' + draw.openSlots.join(', ') + '.');
+      settled();
+    });
+    return;
+  }
   spinReel($('box-s'), $('reel-s'), pools.seasons, String(draw.season), settled);
   /* The club lands a beat after the season, which is the order the question is
      asked in: which year, and then whose team. */
@@ -1669,6 +1920,20 @@ function drawInto(fn){
       settled();
     });
   }, 130);
+}
+
+/* The club box under a lock: written, centred, dressed, and never animated.
+   It shares showDraw's arithmetic for where a settled strip sits, because two
+   ways of writing "the middle of the box" is two answers the first time
+   somebody changes ROW_H. */
+function lockClubReel(draw){
+  var box = $('box-c'), strip = $('reel-c');
+  reelFill(strip, [E.teamName(draw.team)], 0);
+  strip.style.transition = 'none';
+  strip.style.transform = 'translateY(' + ((box.clientHeight - ROW_H) / 2) + 'px)';
+  box.classList.remove('waiting', 'spin', 'hit');
+  box.classList.add('done', 'locked');
+  dressReel(box, draw.team);
 }
 
 /* WHAT YOU DREW, WITHOUT THE ANIMATION. A run restored mid-draft has a club and
@@ -2521,13 +2786,7 @@ function renderDraft(justSlot){
     showDraw(draw);
   }
   if (draw) {
-    /* THE NOTE NAMES THE CLUB, so it waits for the reel like everything else.
-       "founded 1976 · 1 championship" under a strip that has not stopped
-       moving is the club's identity card, handed over a beat before the wheel
-       gets to say it. Same reason dressReel holds the colours back. */
-    var note = reelBusy ? null : E.teamNote(draw.team, draw.season);
-    $('d-note2').textContent = 'Filling ' + draw.openSlots.join(' / ')
-      + (note ? ' · ' + note : '');
+    $('d-note2').textContent = drawNote(draw);
     renderTabs(draw);
     renderOptions(draw);
     $('tabs').className = 'tabs' + (reelBusy ? ' pending' : '');
@@ -2553,6 +2812,31 @@ function renderDraft(justSlot){
      change. */
   renderDock('s-draft');
   renderAppBar('s-draft');
+}
+
+/* THE LINE UNDER THE REELS: what this draw is for, and one thing about it.
+ *
+ * THE NOTE NAMES THE CLUB, so it waits for the reel like everything else.
+ * "founded 1976 · 1 championship" under a strip that has not stopped moving
+ * is the club's identity card, handed over a beat before the wheel gets to
+ * say it. Same reason dressReel holds the colours back.
+ *
+ * AND UNDER A LOCK IT IS THE SAME CLUB EVERY TIME, so teamNote's founding
+ * year and title list is the identical sentence six picks running, wrapped
+ * over two lines. That is "2011 Spurs on every tile" one level up. What
+ * changes in a locked run is the SEASON, so what gets said is the one thing
+ * about the season a fan would want to know first.
+ */
+function drawNote(draw){
+  var slots = draw.openSlots.length === E.SLOTS.length
+    ? 'Filling all six'
+    : 'Filling ' + draw.openSlots.join(' / ');
+  if (reelBusy) return slots;
+  if (run.club) {
+    return slots + (E.wonTitle(draw.team, draw.season) ? ' · champions that year' : '');
+  }
+  var note = E.teamNote(draw.team, draw.season);
+  return slots + (note ? ' · ' + note : '');
 }
 
 /* THE TABS ARE THE OPEN SLOTS, not every position. A board is six players and
@@ -3289,7 +3573,14 @@ function renderOver(out){
      and the seed label is a read on the season, and side by side they collided
      into "Play-in · Play-in team". The rating says the same thing in a number,
      and the coach earns his place in the tags underneath. */
-  $('o-seed').textContent = out.seedLabel
+  /* WHICH GAME THIS RECORD WAS SET IN, first, because it is the thing that
+     makes the rest of the line comparable to anything. A 52-30 off the whole
+     league and a 52-30 off one franchise are two different achievements, and
+     a results screen that does not say which is a receipt with the shop name
+     torn off. An ordinary run says nothing, for the reason modeLabel does. */
+  var mode = modeLabel(run);
+  $('o-seed').textContent = (mode ? mode + ' · ' : '')
+    + out.seedLabel
     + ' · rating ' + out.rating.toFixed(0)
     + ' · offense ' + out.ortg.toFixed(1) + ', defense ' + out.drtg.toFixed(1)
     + (out.allTimeRank
@@ -3976,8 +4267,30 @@ function recordRun(out){
   c.last = {
     wins: out.wins, losses: out.losses, label: out.wins + '-' + out.losses,
     headline: headline(out),
-    shape: out.structure && out.structure.archetype ? out.structure.archetype.name : ''
+    shape: out.structure && out.structure.archetype ? out.structure.archetype.name : '',
+    club: run.club || null
   };
+
+  /* A LOCKED RUN IS ITS OWN LADDER. A One Franchise roster shares the club
+     link with everybody on it, so measured over 360 runs across all thirty
+     clubs its chemistry sits at +2.30 against a maximum of 2.50 whatever gets
+     drafted, and best-available finishes 46.8 wins where the same bot playing
+     the whole league finishes 42.0. Mixing the two into one bestWins would
+     quietly retire the league record to whoever picked the deepest franchise.
+     So the club's own best is kept beside it and the two are never compared.
+     bestWins above stays what it has always been: every run, all modes, which
+     is the number the front page has always shown. */
+  if (run.club) {
+    c.byClub = c.byClub || {};
+    var cb = c.byClub[run.club] || { runs: 0, rings: 0, bestWins: -1, bestLabel: '' };
+    cb.runs++;
+    if (out.titleWon) cb.rings++;
+    if (out.wins > cb.bestWins) {
+      cb.bestWins = out.wins;
+      cb.bestLabel = out.wins + '-' + out.losses;
+    }
+    c.byClub[run.club] = cb;
+  }
 
   var shape = out.structure && out.structure.archetype ? out.structure.archetype.name : null;
   if (shape) c.shapes[shape] = (c.shapes[shape] || 0) + 1;
@@ -4041,6 +4354,10 @@ function recordRun(out){
     pairs: pairs,
     aw: Object.keys(awards),
     decorated: decorated,
+    /* Which mode filed the row, so a badge written next month can ask. Absent
+       on every row already on a device, which badges.js reads as "not known"
+       the same way it reads every other field added since it shipped. */
+    club: run.club || null,
     swept: !!(lastRd && !lastRd.won && lastRd.oppWins === 4 && lastRd.yourWins === 0),
     lostFinals: !!(lastRd && !lastRd.won && lastRd.round === 'NBA Finals')
   });
@@ -4104,6 +4421,26 @@ function renderCareer(){
   if (shape) row('Most drafted shape', shape.name + ' (' + shape.n + ')');
   var club = topOf(c.clubs);
   if (club) row('Most drafted club', club.name + ' (' + club.n + ')');
+
+  /* THE ONE FRANCHISE SHELF, and it is a separate block for the reason
+     recordRun keeps a separate number: these are not runs against the league,
+     they are runs against one club's own history, and a fan's answer to "how
+     good was my Knicks team" is meaningless next to somebody else's Lakers.
+     Best first, because the best is the one being defended. */
+  if (!c.byClub) return;
+  var codes = Object.keys(c.byClub).filter(function(k){ return c.byClub[k].runs > 0; });
+  if (!codes.length) return;
+  codes.sort(function(a, b){ return c.byClub[b].bestWins - c.byClub[a].bestWins; });
+  var head = document.createElement('li');
+  head.className = 'plisthead';
+  head.textContent = 'One Franchise';
+  list.appendChild(head);
+  for (var i = 0; i < codes.length; i++) {
+    var cb = c.byClub[codes[i]];
+    row(E.teamName(codes[i]) + ' · ' + cb.runs + (cb.runs === 1 ? ' run' : ' runs')
+      + (cb.rings ? ' · ' + cb.rings + (cb.rings === 1 ? ' ring' : ' rings') : ''),
+      cb.bestLabel || '-');
+  }
 }
 
 /* FOCUS GOES INTO THE SHEET AND COMES BACK OUT AGAIN.
@@ -4129,6 +4466,10 @@ function openProfile(){
 }
 
 function closeProfile(){
+  /* THE TWO SHEETS SHARE ONE sheetReturn AND ESCAPE CLOSES BOTH. Without this
+     guard, closing a sheet that was never open nulls the OTHER sheet's saved
+     focus on the way past, and the close after it puts focus nowhere. */
+  if (!$('sheet').classList.contains('open')) return;
   $('sheet').classList.remove('open');
   if (sheetReturn && sheetReturn.focus) {
     try { sheetReturn.focus(); } catch (e) { /* it may have been re-rendered away */ }
@@ -4246,6 +4587,38 @@ function showProfileTab(which){
  * both are allowed to be absent, because a first visit has neither and an empty
  * stat block is worse than no stat block.
  */
+/* The One Franchise door, wearing the last club played. A door that offers the
+   club by name is one tap; a door that always says "pick a club" is two, every
+   time, for somebody who only ever plays one. The colours are clubSkin's, the
+   same call the reels make. */
+function renderModeDoor(){
+  var door = $('b-franchise'), main = $('b-franchise-go');
+  var name = $('md-name'), sub = $('md-sub'), pick = $('b-franchise-pick');
+  if (!door || !main || !sub) return;
+  /* DATA is what makes clubSeasons answerable, so the door stays in its plain
+     state through the boot rather than printing a club with no season count
+     beside it. */
+  var last = DATA ? lastClub() : null;
+  if (!last) {
+    door.className = 'modedoor';
+    door.style.removeProperty('--md-accent');
+    name.textContent = 'One Franchise';
+    name.style.removeProperty('color');
+    sub.textContent = 'Lock the wheel to one club. Only the year moves.';
+    pick.hidden = true;
+    main.onclick = openClubs;
+    return;
+  }
+  var skin = E.clubSkin(last), seasons = R.clubSeasons(last).length;
+  door.className = 'modedoor clubbed';
+  door.style.setProperty('--md-accent', skin.accent);
+  name.textContent = 'One Franchise · ' + E.teamName(last);
+  name.style.color = skin.accent;
+  sub.textContent = E.team(last).full + ', ' + seasons + ' seasons on the wheel.';
+  pick.hidden = false;
+  main.onclick = function(){ startRun(last); };
+}
+
 function renderHome(){
   var rz = $('home-resume'), hero = $('herocard');
 
@@ -4253,7 +4626,9 @@ function renderHome(){
     rz.style.display = '';
     if (hero) hero.style.display = '';
     var drafting = run.phase === R.PHASES.DRAFT;
-    $('rz-title').textContent = drafting ? 'Draft in progress' : 'Season not played';
+    var mode = modeLabel(run);
+    $('rz-title').textContent = (drafting ? 'Draft in progress' : 'Season not played')
+      + (mode ? ' · ' + E.teamName(run.club) : '');
     $('rz-where').textContent = drafting
       ? run.roster.length + ' of 6 signed'
       : 'six signed, 82 to play';
@@ -4281,6 +4656,8 @@ function renderHome(){
     if (hero) hero.style.display = 'none';
     $('b-start').textContent = run ? 'Run it back' : 'Start a run';
   }
+
+  renderModeDoor();
 
   var c = loadCareer();
   var box = $('home-career');
@@ -4369,15 +4746,29 @@ $('b-share').onclick = shareRun;
 $('b-spin').onclick = spin;
 $('b-respin').onclick = respin;
 $('b-play').onclick = playSeason;
-$('b-again').onclick = startRun;
+/* RUN IT BACK MEANS THE SAME GAME. Pressed on the results of a Bulls run it
+   has to start another Bulls run: a button that silently drops you back into
+   the whole league is the same defect as a Back that goes somewhere else. */
+$('b-again').onclick = function(){ startRun(run && run.club ? run.club : null); };
 $('b-prof-x').onclick = closeProfile;
 $('pt-record').onclick = function(){ showProfileTab('record'); };
 $('pt-badges').onclick = function(){ showProfileTab('badges'); };
 $('b-prof-clear').onclick = clearCareer;
+$('b-franchise-pick').onclick = openClubs;
+$('b-club-x').onclick = closeClubs;
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a
    tap INSIDE the panel must not, or every button press dismisses the thing. */
 $('sheet').addEventListener('click', function(ev){ if (ev.target === $('sheet')) closeProfile(); });
-document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeProfile(); });
+$('clubsheet').addEventListener('click', function(ev){
+  if (ev.target === $('clubsheet')) closeClubs(); });
+/* ONE KEY, TWO SHEETS, and the club picker is the one that can be open over
+   the profile is not: they are opened from different screens and never both.
+   Escape closes whichever is up, and closing a shut sheet is a no-op, so the
+   order does not matter. */
+document.addEventListener('keydown', function(ev){
+  if (ev.key !== 'Escape') return;
+  closeProfile(); closeClubs();
+});
 
 rememberHomes();
 renderDock('s-home');

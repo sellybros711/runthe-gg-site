@@ -53,6 +53,47 @@ function remaining(run) {
 
 const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
 
+/* ── THE CLUB LOCK ──────────────────────────────────────────────────────────
+ *
+ * One Franchise: the club reel stops moving and only the season spins, so
+ * every man signed really did wear that jersey. `run.club` is a MODERN
+ * franchise code and the lock covers its whole lineage, which is the point of
+ * it: an Oklahoma City run reaches Gary Payton, a Memphis run reaches
+ * Vancouver, and a New Orleans run reaches the Charlotte Hornets who left.
+ *
+ * THE RESERVE FLOOR HAS TO BE LOCKED TOO, and that is the part that is easy to
+ * miss. cheapestForSlot reads the league-wide cheapBy, which is the 200
+ * cheapest men per position ACROSS ALL 16,057 rows, and in a locked run not
+ * one of them may be drawable. Left alone the floor promises a $2.2M centre
+ * off a club this run can never spin, the budget reads as bigger than it is,
+ * and the draft strands itself at the last slot with no legal player at any
+ * price. That is the same failure assignedFloors' own header describes, from a
+ * door it did not have when it was written.
+ *
+ * So a locked run gets its own cheapBy, built once off that franchise's rows
+ * and cached by code. It is a few hundred rows rather than sixteen thousand,
+ * so it is cheap to build and there is no reason to keep more than one.
+ */
+let _clubCheap = null;
+
+function clubPool(club, data) {
+  const codes = new Set(E.franchiseCodes(club));
+  const out = [];
+  for (const t of data.teamSeasons) {
+    if (!codes.has(t.team)) continue;
+    for (const p of (data.byTeamSeason[t.team_season_id] || [])) out.push(p);
+  }
+  return out;
+}
+
+function cheapByFor(run) {
+  if (!_data) return null;
+  if (!run || !run.club) return _data.cheapBy;
+  if (_clubCheap && _clubCheap.club === run.club) return _clubCheap.cheapBy;
+  _clubCheap = { club: run.club, cheapBy: E.buildCheapBy(clubPool(run.club, _data)) };
+  return _clubCheap.cheapBy;
+}
+
 /* The cheapest player who could still fill this slot right now: not already
    signed, not already earmarked by this same calculation, from a team-season
    that is not out of draws, and at a position the roster is not already full
@@ -66,8 +107,8 @@ const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
  * center it was not allowed to sign. A floor that counts players the roster
  * cannot take is not a floor.
  */
-function cheapestForSlot(slotName, usedIds, drawn, taken, posCount) {
-  const pool = _data && _data.cheapBy && _data.cheapBy['*'];
+function cheapestForSlot(slotName, usedIds, drawn, taken, posCount, cheapBy) {
+  const pool = cheapBy && cheapBy['*'];
   const FLOOR = E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
   if (!pool) return { price: FLOOR, key: null, pp: null, ts: null };
 
@@ -129,9 +170,10 @@ function assignedFloors(run, slotNames, pending) {
   const order = [...slotNames].sort(
     (a, b) => (E.SLOT_ELIGIBILITY[a] || []).length - (E.SLOT_ELIGIBILITY[b] || []).length);
 
+  const cheapBy = cheapByFor(run);
   let total = 0, maxOne = 0;
   for (const slot of order) {
-    const c = cheapestForSlot(slot, usedIds, drawn, taken, posCount);
+    const c = cheapestForSlot(slot, usedIds, drawn, taken, posCount, cheapBy);
     total += c.price;
     /* Everything this loop earmarks is spent: the player, his position and his
        club's draw. Two slots can never be filled by the same man, and one
@@ -247,9 +289,18 @@ function createRun(opts) {
   const o = opts || {};
   const era = o.era ?? null;
   if (era !== null && !E.ERAS[era]) throw new Error(`unknown era ${era}`);
+  const club = o.club ?? null;
+  /* A club the table does not know would silently make every season
+     undrawable, which reads as "this franchise has nobody" rather than as a
+     typo. franchiseCodes falls back to the code alone, so the check is that
+     the code is a row rather than that the lookup answered. */
+  if (club !== null && !E.hasTeam(club)) throw new Error(`unknown club ${club}`);
   return {
     version: 1,
     era,
+    /* null is the ordinary run and the whole league. A code locks the wheel to
+       that franchise and everything it used to be called. */
+    club,
     seed: o.seed ?? E.hashSeed(String(Math.random())),
     rngCalls: 0,
     capMusd: E.CONSTANTS.CAP_MUSD,
@@ -286,7 +337,10 @@ function drawable(run, data) {
   const drawn = {};
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
 
+  const codes = run.club ? new Set(E.franchiseCodes(run.club)) : null;
+
   return data.teamSeasons.filter(t => {
+    if (codes && !codes.has(t.team)) return false;
     if (run.era) {
       const r = E.ERAS[run.era];
       if (t.season < r[0] || t.season > r[1]) return false;
@@ -718,7 +772,20 @@ function projectSeason(run, trials) {
 
 function indexData(players) {
   _data = E.indexData(players);
+  /* The club floor is a cache over the OLD rows. Keeping it across a reindex
+     would answer a new league with a dead one. */
+  _clubCheap = null;
   return _data;
+}
+
+/* Every season of this franchise the wheel could ever land on, newest first.
+   The picker prints the span and the count, and the club lock is only honest
+   if the two come from the same place the wheel reads. */
+function clubSeasons(club) {
+  if (!_data) return [];
+  const codes = new Set(E.franchiseCodes(club));
+  return _data.teamSeasons.filter(t => codes.has(t.team))
+    .map(t => t.season).sort((a, b) => b - a);
 }
 
 // ─── exports ────────────────────────────────────────────────────────────────
@@ -727,12 +794,12 @@ const publicAPI = {
   /* Moves with engine.js, not independently: index.html asks both files for the
      SAME number, so one version means one answer to "is this page and its
      scripts the same age". */
-  API_VERSION: 2,
+  API_VERSION: 3,
   PHASES, TUNING, BLOCK,
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,
   previewSigning, previewFit, fitNow, bestPossibleSquad, projectSeason,
-  indexData, drawable,
+  indexData, drawable, clubSeasons,
   remaining, reserveFloor, fullFloor, spendable, capOf, money,
   canRespin, canFinishAfter, blockFor, positionFull,
   openSlots, openSlotNames, slotForPlayer, eligibleOpenSlots, slotsLeft,
