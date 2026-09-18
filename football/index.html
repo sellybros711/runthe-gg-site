@@ -2895,6 +2895,17 @@ window.GA_ID='G-L29P5MRWKE';
   .mc-go:not(:disabled):active{transform:scale(.97)}
   .mc-go:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
   .mc-go:disabled{cursor:default;opacity:.55}
+  /* A DOOR THAT IS SHUT, and it wears the gold every paid thing on this site wears rather
+     than the grey of something broken. .mc-soon is the wrong treatment here and deliberately
+     not reused: it sets pointer-events:none, and a lock a thumb falls straight through is a
+     lock with no way to the thing that opens it. This one is fully pressable and the tap
+     opens the store. */
+  .mc-go-lock{border-color:rgba(226,178,90,.42);background:rgba(38,30,16,.5)}
+  .mc-go-lock b{color:#F3DDAE}
+  .mc-go-lock span{color:rgba(243,221,174,.66)}
+  .mc-go-lock:not(:disabled):hover{background:rgba(52,41,22,.62)}
+  /* Sized off the label it sits in rather than in pixels, so it tracks the 13px name. */
+  .mc-lk{width:1em;height:1em;fill:currentColor;vertical-align:-0.11em;margin-right:5px}
   /* The quiet way past a Resume door, sized like a footnote because it is one. */
   .mc-alt{display:block;margin:9px auto 0;padding:6px 10px;border:0;background:none;
     font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.02em;
@@ -8349,6 +8360,23 @@ const canPlayClubDynasty=()=>{
   if(!A||typeof A.isTester!=='function') return false;
   return !!(A.isTester(authState.name)||A.isTesterId(authState.userId));
 };
+/*
+ * WHO SEES ONE FRANCHISE DYNASTY, WHICH IS NOT WHO CAN OPEN IT.
+ *
+ * The Commish door's rule, arriving at the one paid mode on this page. The two were one
+ * function, so a free account and a guest got no Dynasty half of the One Franchise card at
+ * all: no door, no lock, no mention. The only way to find out the mode exists was to buy the
+ * bundle and read the receipt, or to be on the tester list. That is the wall the college
+ * front page's card was added to knock down, standing on this page instead.
+ *
+ * SO IT IS DRAWN FOR EVERYBODY AND IT OPENS FOR OWNERS. A non-owner gets the same door
+ * wearing a lock, and pressing it opens the sheet that sells it, which is where that tap was
+ * always going to end. Nothing is HIDDEN that cannot be pressed: the lock is the point.
+ *
+ * canPlayDynasty() rather than true, because a mode nobody can see at all should not sprout
+ * a locked door for its own variant. That flag is LIVE today, so this is everybody.
+ */
+const clubDynastyShow=()=>canPlayDynasty();
 /* WHAT THE ACCOUNT OWNS, from the database rather than any list in a page, which is the
    rule dynasty-access.js sets for itself: a shipped list is a feature flag and never a
    permission. premium_products() (supabase/101_premium_bundles.sql) answers as the
@@ -12817,15 +12845,33 @@ function modeMenu(){
   /* A shield with the star cut out of it rather than drawn inside it, so the mark is one
      shape and the detail is the gradient showing through. Named because the One Franchise
      card is now drawn two ways and the icon is the half they share. */
+  /* A PADLOCK, drawn rather than fetched for the reason the store's artwork is: a few hundred
+     bytes of path data inherits the page's colour and cannot 404. Solid body with the shackle
+     as a stroked arc, because at 11px an outlined body is two thin rectangles and no shape. */
+  const MC_LOCK='<svg class="mc-lk" viewBox="0 0 24 24" aria-hidden="true">'+
+    '<path fill="none" stroke="currentColor" stroke-width="2.4" '+
+      'd="M7.6 10.4V7a4.4 4.4 0 0 1 8.8 0v3.4"/>'+
+    '<rect x="4.2" y="10.2" width="15.6" height="11.6" rx="2.4"/></svg>';
   const MC_SHIELD='<svg viewBox="0 0 24 24">'+
     '<path fill-rule="evenodd" d="M12 1.6 2.4 6.6v6.6c0 5.7 4.1 11 9.6 12.3 5.5-1.3 '+
       '9.6-6.6 9.6-12.3V6.6L12 1.6Zm0 5.2 1.6 3.5 3.8.4-2.8 2.6.8 3.8L12 15.2l-3.4 '+
       '1.9.8-3.8-2.8-2.6 3.8-.4L12 6.8Z"/></svg>';
   const ct=canPlayTrade();
-  const cd=canPlayClubDynasty();
+  /* TWO ANSWERS, NOT ONE. cd is whether the split card is DRAWN, cdOn is whether its Dynasty
+     door OPENS. See clubDynastyShow: they were the same function, and a free account got no
+     sign the mode existed. */
+  const cd=clubDynastyShow();
+  const cdOn=canPlayClubDynasty();
   /* Read once, because the card's copy and its handler both need the same answer and a
-     second read between them could disagree. */
+     second read between them could disagree.
+     READ WITHOUT ASKING WHO OWNS WHAT, which is dynResume's own rule: a run in progress is
+     never gated. Anybody holding a saved One Franchise dynasty gets it back, whatever the
+     row says today, because a tester list that shortens or a lapse of any kind must never be
+     the thing that takes a career somebody played. What ownership decides is STARTING one. */
   const clubSave=cd?dynRead('club'):null;
+  /* The Dynasty door is a lock when the mode is visible, not owned, and there is no run of it
+     to get back into. */
+  const cdLock=cd&&!cdOn&&!clubSave;
   const tradeLocked=locked||!ct;
   /* THE DAY, ASKED THE MOMENT THIS SHEET OPENS rather than when the card is pressed. The
      answer is a round trip, and a card that has to make one before it can say "used today"
@@ -12866,11 +12912,17 @@ function modeMenu(){
                  reason to offer it back rather than a reason to be warned. It names the club
                  and the season, because the whole point of the second slot is that this run
                  and the open one are two different things. */
-              '<button class="mc-go mc-go-dyn" id="b-mc-clubdyn"'+(locked?' disabled':'')+'>'+
+              '<button class="mc-go mc-go-dyn'+(cdLock?' mc-go-lock':'')+'" id="b-mc-clubdyn"'+
+                (locked?' disabled':'')+'>'+
                 (clubSave
                   ? '<b>Resume</b><span>'+esc(E.nickname(clubSave.run.franchise)||clubSave.run.franchise)+
                     ' &middot; Season '+clubSave.run.seasonNo+'</span>'
-                  : '<b>Dynasty</b><span>Season after season</span>')+
+                  /* THE LOCK SAYS WHAT IT IS AND WHAT OPENS IT, in the two lines the door
+                     already has. A padlock on its own is a closed sign; "Pro" is the word the
+                     store uses for the thing that opens it, so it is the word here. */
+                  : (cdLock
+                    ? '<b>'+MC_LOCK+'Dynasty</b><span>Pro</span>'
+                    : '<b>Dynasty</b><span>Season after season</span>'))+
               '</button>'+
             '</div>'+
             /* THE WAY TO A DIFFERENT CLUB, and it only exists while there is a run in the
@@ -12998,15 +13050,28 @@ function modeMenu(){
   if(club&&!locked) club.onclick=()=>{ closeSheet(); clubPicker(false); };
   const clubDyn=$('b-mc-clubdyn');
   if(clubDyn&&!locked&&cd) clubDyn.onclick=()=>{
+    /* RESUME FIRST AND WITHOUT A GATE, for the reason written out in dynResume: the day's
+       allowance and now the row both decide whether a run may START, and neither decides
+       whether one already played may be opened. Read first so it wins over the lock: a
+       button saying Resume that does not resume is a lie on the screen, and it was one once
+       already when ownership sat in front of it. */
+    if(clubSave){ closeSheet(); dynResume('club'); return; }
+    /* AND A SHUT DOOR OFFERS THE BUNDLE rather than doing nothing. This is the one tap on
+       this page that is taken and repainted, and the rule the college front page settled is
+       that it is only right when the door is GENUINELY shut. It is: a new One Franchise
+       Dynasty is what ps_premium buys, and the sheet this opens itemises it by name.
+       No closeSheet, because premiumSheet writes into the pane that is already open. */
+    if(cdLock){ ga('club_dynasty_locked',{signed:!!authState.signedIn}); premiumSheet(); return; }
     closeSheet();
-    /* NO OWNERSHIP GATE, for the reason written out in beginDynastyDraft: the day's
-       allowance decides, and it is checked there, once, for every way into the mode.
-       This one was worse than the open door's, because it sat in front of RESUME as well:
-       a saved One Franchise run could not be opened by the player who made it. */
-    if(clubSave) dynResume('club'); else clubPicker(true);
+    clubPicker(true);
   };
   const clubNew=$('b-mc-clubnew');
   if(clubNew&&!locked&&cd) clubNew.onclick=()=>{
+    /* A DIFFERENT CLUB IS A NEW RUN, so it is the paid action and not the resumed one. This
+       button only exists under a save, and a save is what keeps the door above it open for a
+       non-owner: without this the one route a lapsed or comped account has back into
+       STARTING one would be the footnote under their own Resume. */
+    if(!cdOn){ ga('club_dynasty_locked',{signed:!!authState.signedIn}); premiumSheet(); return; }
     closeSheet();
     clubPicker(true);
   };

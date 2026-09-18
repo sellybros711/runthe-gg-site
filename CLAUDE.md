@@ -685,6 +685,48 @@ both are drawn, and what the gate still does is keep them from ever coming apart
 way to the offer from this game was to open Commissioner Simulator and be turned away at its
 gate, which nobody who cannot see the mode will ever do.
 
+#### One Franchise Dynasty is the paid mode, and a shut door has to say so
+
+Reported as a free account being able to play it. They could: they are on
+`dynasty-access.js`'s list, which comps that one mode so a tester holding no row can go on
+testing it. That is written up in the file and is working as designed, and **the gate itself
+was always right**: `beginDynastyDraft` refuses a franchise to anybody `canPlayClubDynasty()`
+turns down, at the top of the function, above every line that touches a save.
+
+**What was actually wrong is that nobody else could see the mode at all.** One function decided
+both who may OPEN it and whether the door is DRAWN, so a free account and a guest got the One
+Franchise card with no Dynasty half on it: no door, no lock, no mention. The only ways to learn
+the mode exists were to buy the bundle and read the receipt, or to be on the list. **That is the
+wall the college front page's card was added to knock down**, standing on this page instead, and
+the fix is the Commish door's rule arriving here:
+
+| | asks | so that |
+|---|---|---|
+| whether the Dynasty door is drawn | `clubDynastyShow()` | everybody finds the mode |
+| whether it opens | `canPlayClubDynasty()` | only an owner starts one |
+
+A non-owner gets the same door wearing a padlock, and pressing it opens the sheet that sells it,
+which is where that tap was always going to end.
+
+**`.mc-soon` is the wrong treatment and is deliberately not reused.** It sets
+`pointer-events:none`, and a lock a thumb falls straight through is a lock with no way to the
+thing that opens it. The locked door is fully pressable and wears the gold every paid thing on
+this site wears, rather than the grey of something broken.
+
+**RESUMING IS NEVER GATED, and that is the half most easily lost when a mode goes behind a
+payment.** It is already written three times on this page, and putting a row in front of it
+would break it in the worst place: a saved One Franchise dynasty belongs to whoever played it,
+the tester list can shorten, and neither may be the thing that takes a career away. So the save
+is read without asking who owns what, and a door that says Resume resumes. **The footnote under
+it is the paid action**, because "Start a different club" is a new run and is the one route left
+to one; without that clause a lapsed account's only way to start one would be the small print
+under their own Resume.
+
+**The guard presses the lock rather than looking at it.** A lock on a door that opens anyway is
+decoration and a door that refuses with nothing behind it is the wall this replaced, so the walk
+clicks it and reads which sheet comes up. Reintroduced, a lockless shut door lands on the club
+picker and is then refused in silence, which is exactly the bad state.
+
 ### The three modes are LIVE, and a missing migration is the silent way to break them
 
 ```
