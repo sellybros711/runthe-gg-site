@@ -1,0 +1,168 @@
+/* HOW MANY RUNS A GAME, AND THE DEFENCE HAS TO TURN UP.
+
+   node mythiball/check-runs.mjs            4 games an arm, about half an hour
+   node mythiball/check-runs.mjs 2 fast     a quicker read
+
+   THE ANSWER IS 4.5 RUNS A TEAM OVER NINE, which is real baseball's own
+   figure, so the run environment is NOT broken and never was. Four games,
+   all going the distance: 3, 3, 5 and 1.
+
+   It took five attempts to get that number and the first four were all
+   instrument faults, so this file exists to stop anybody spending a sixth.
+
+   THE FAULT THAT HID IT: a fielding window nobody answers does not
+   resolve as a neutral out. The grounder window's timeout is
+   `setTimeout(() => finish(-1), duration + 20)`, and t = -1 is further
+   from ideal than yellowHalf, so it lands in the ERROR branch: the batter
+   reaches and every runner moves up. The fly window expires as a MISS the
+   same way. A harness that presses nothing therefore boots every routine
+   ground ball and drops every catchable fly, all game, every game.
+
+   Measured here, that single omission is worth 31.8 runs a nine against
+   4.5. It is the whole of the difference: the samples that read 0-18,
+   2-19 and 0-20 were not a bad bat or a broken run environment, which are
+   the two answers this was stuck between. They were a defence with its
+   hands tied, which is a third thing neither of those names.
+
+   TWO HARNESSES AGREEING IS NOT EVIDENCE. A tracker of its own counting
+   and the game's own line score both said the same wrong thing, because
+   they shared this defect rather than because it was true.
+
+   So this plays the two windows that can only DOWNGRADE an out, at their
+   own ideal moment, which is what a person paying attention does. It
+   leaves the robbery alone on purpose: a miss there costs nothing by
+   design, so answering it would flatter the defence instead.
+
+   ONLY THE CPU'S RUNS COUNT. The player's side never swings in this
+   harness, so it scores zero by construction, and averaging a real team
+   with a non-participant halves the answer. The first draft of the report
+   did exactly that and printed 1.5 for a defence that had conceded 3.6.
+   The CPU is the AWAY side, because startGame runs with youHome true.
+
+   Both arms are reported, because the size of the confound is the point
+   and asserting it is not the same as showing it.
+
+   WHAT IT MEANS FOR THE SEND GATE. A runner scores from second on a
+   single 24% of the time here against about 60% in the real game, and two
+   thirds of that gap is the `spd >= 75` gate deciding who even tries.
+   That looked like a number waiting to be loosened. It is not: scoring is
+   already ON the real game's figure, so sending more runners moves a
+   correct run environment off it. Anything done there has to be paid for
+   somewhere else, and this file is how you would find out.
+*/
+import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { pathToFileURL } from 'url';
+const GAMES = Number(process.argv[2] || 2);
+const SPEED = process.argv[3] || 'fast';
+const URL = pathToFileURL('mythiball/index.html').href;
+
+const browser = await chromium.launch();
+
+const arm = async (label, field) => {
+  const pg = await browser.newPage();
+  const errs = []; pg.on('pageerror', e => errs.push(e.message));
+  await pg.goto(URL);
+  await pg.evaluate(() => localStorage.clear());
+  await pg.goto(URL);
+  await pg.evaluate(({ sp, field }) => {
+    Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+    window.confirm = () => true;
+    State.gameSpeed = sp; applyGameSpeed();
+    State.innings = 5; State.mode = 'exhibition';
+    window.__threw = 0; window.__fielded = 0;
+    window.__fresh = () => {
+      State.team = ROSTER.slice().sort(() => Math.random() - 0.5).slice(0, 9).map(c => c.k);
+      State.teamName = 'Books';
+      State.opponent = OPPONENTS[Math.floor(Math.random() * OPPONENTS.length)];
+      startGame({ mode: 'exhibition', youHome: true });
+    };
+    window.__fresh();
+    if (!field) return;
+    /* ARM EACH WINDOW ONCE, at its own ideal moment. A rAF watcher rather
+       than the harness's 220ms poll, because a window can be shorter than
+       one poll and a missed one is exactly the fault being removed. */
+    const tick = () => {
+      const g = State.game;
+      const p = g && g.play;
+      if (p) {
+        const w = p.throwActive ? p.throwWindow : p.catchActive ? p.catchWindow : null;
+        if (w && !w.resolved && !w.__armed && w.duration) {
+          w.__armed = true;
+          /* the throw window carries its own ideal; the fly window's is
+             the middle of the bar */
+          const ideal = p.throwActive && w.ideal != null ? w.ideal : 0.5;
+          const at = w.startedAt + ideal * w.duration;
+          setTimeout(() => {
+            if (w.resolved) return;
+            window.__fielded++;
+            document.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+          }, Math.max(0, at - performance.now()));
+        }
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, { sp: SPEED, field });
+  await pg.waitForTimeout(900);
+
+  const rows = [];
+  for (let gi = 0; gi < GAMES; gi++) {
+    if (gi) { await pg.evaluate(() => { window.__threw = 0; window.__fielded = 0; window.__fresh(); }); await pg.waitForTimeout(900); }
+    let guard = 0;
+    while (guard++ < 6000) {
+      const st = await pg.evaluate(() => {
+        const g = State.game;
+        if (!g) return { gone: true };
+        if (g.over) return { over: true };
+        if (g.aiming && !g.play && !g.tail) {
+          try { const p = cpuCallPitch(); throwPitch(p.pt, p.zone); window.__threw++; } catch (e) {}
+        }
+        return { ok: true };
+      }).catch(() => ({ gone: true }));
+      if (st.gone || st.over) break;
+      await pg.waitForTimeout(200);
+    }
+    const box = await pg.evaluate(() => {
+      const g = State.game;
+      if (!g) return null;
+      return { away: g.away.score, home: g.home.score, inning: g.inning,
+               over: !!g.over, threw: window.__threw, fielded: window.__fielded };
+      /* away is the CPU: startGame runs with youHome true, so the CPU bats
+         first and the player's side is home. */
+    });
+    if (box) rows.push(box);
+  }
+  await pg.close();
+  return { label, rows, errs };
+};
+
+const out = [];
+out.push(await arm('nobody fields (as measured before)', false));
+out.push(await arm('the defence turns up', true));
+await browser.close();
+
+console.log(`  ${GAMES} games an arm, ${SPEED} speed, five inning games\n`);
+/* ONLY THE CPU'S RUNS COUNT, and the first draft of this report did not
+   do that. It divided both teams' runs by two, and the player's side
+   never swings a bat in this harness, so it scores zero by construction.
+   Averaging a real team with a non-participant halves the answer: it
+   printed 1.5 for a defence that had actually conceded about 3.6. The
+   CPU is the AWAY side here, because startGame runs with youHome true. */
+const cpu9 = (rows) => {
+  const inn = rows.reduce((x, r) => x + r.inning, 0) || 1;
+  return rows.reduce((x, r) => x + r.away, 0) / inn * 9;
+};
+console.log('  arm                                 CPU line            CPU runs/9   pitches/inn  windows played');
+for (const a of out) {
+  const inn = a.rows.reduce((x, r) => x + r.inning, 0) || 1;
+  const pi = a.rows.reduce((x, r) => x + r.threw, 0) / inn;
+  const fw = a.rows.reduce((x, r) => x + (r.fielded || 0), 0);
+  console.log(`  ${a.label.padEnd(34)} ${a.rows.map(r => `${r.away} in ${r.inning}`).join(', ').padEnd(19)}`
+    + ` ${cpu9(a.rows).toFixed(1).padStart(10)}   ${pi.toFixed(1).padStart(10)}   ${String(fw).padStart(12)}`);
+}
+console.log(`\n  real baseball is about 4.5 runs a team over nine.`);
+const per9 = cpu9(out[1].rows);
+console.log(`\n  with a defence the CPU scores ${per9.toFixed(1)} a nine. `
+  + (per9 > 9 ? 'STILL HIGH: the run environment, not the harness.'
+    : per9 < 2.5 ? 'LOW against the real game.' : 'IN RANGE. The earlier readings were the harness not fielding.'));
+for (const a of out) if (a.errs.length) console.log(`\n  PAGE ERRORS in ${a.label}: ` + [...new Set(a.errs)].slice(0, 3).join(' | '));

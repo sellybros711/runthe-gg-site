@@ -1926,6 +1926,7 @@ node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
 node mythiball/verify-rules.mjs    the rules replayed in a headless browser
 node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop, --easy/--hard for a tier)
 node mythiball/check-frames.mjs 70 normal --phone --cpu=4   frame times, on the machine that matters
+node mythiball/check-runs.mjs      runs per game, with a defence that turns up
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
 
@@ -2461,22 +2462,58 @@ read English, but it can read a stat name out of the shipped source, and it can
 test a structural claim: every character has a sprite with every pose (there is no
 fallback path), and the higher seed hosts across thirty seeded brackets.
 
-### The run environment is NOT yet measured, and one attempt looked like it was
+### The run environment is 4.5 runs a nine, and four harnesses said otherwise
 
-Every pacing sample ended 0-18, 2-19, 0-20, which is either a bad bot or a broken
-run environment, and the two have not been told apart.
+```
+node mythiball/check-runs.mjs         4 games an arm, about half an hour
+node mythiball/check-runs.mjs 2 fast  a quicker read
+```
 
-**An attempt to settle it produced a number that was purely an artefact.**
-Simulating both halves without timers meant substituting a crude
-`Math.random() < 0.68` for the real `scheduleCpuSwing`, which computes its aim off
-CON. That measures two bad hitters: it reported 1.6 runs a team per five innings
-with 48% of half-games shut out, which says nothing about the game.
+**It is not broken and never was.** Measured through the real swing AI, with the
+game's own line score: **4.5 runs a team over nine innings**, which is real
+baseball's own figure. Four games, all going the distance, 3, 3, 5 and 1.
 
-**The real CPU swing path needs timers**, so a trustworthy figure has to come
-through `scratchpad/pacing.mjs` or `calibrate.mjs`, not a fast loop. What
-`calibrate.mjs` does say is that the contact model is not broken: roughly 9 or 10
-hits per 27 balls in play at both tiers. Do not tune scoring until runs per game
-has been measured through a path that uses the real swing AI.
+It took five attempts and the first four were instrument faults, so the checker
+exists to stop anybody spending a sixth.
+
+**THE FAULT THAT HID IT IS WORTH READING BEFORE WRITING ANY HARNESS HERE.** A
+fielding window nobody answers does NOT resolve as a neutral out. The grounder
+window's timeout is `setTimeout(() => finish(-1), duration + 20)`, and `t = -1` is
+further from ideal than `yellowHalf`, so it lands in the **error** branch: the
+batter reaches and every runner moves up. The fly window expires as a **miss** the
+same way. So a harness that presses nothing boots every routine ground ball and
+drops every catchable fly, all game, every game.
+
+Measured, that one omission is worth **31.8 runs a nine against 4.5**. It is the
+whole of the difference. The samples that ended 0-18, 2-19 and 0-20 were not a bad
+bat and not a broken run environment, which are the two answers this was stuck
+between for months. They were **a defence with its hands tied**, which is a third
+thing neither of those names.
+
+**TWO HARNESSES AGREEING IS NOT EVIDENCE.** A tracker doing its own counting and
+the game's own line score both reported the same wrong answer, because they shared
+this defect rather than because it was true. What broke the tie was changing the
+harness rather than adding another one.
+
+**Only the CPU's runs count**, and the first draft of the report did not do that.
+The player's side never swings in these harnesses, so it scores zero by
+construction, and averaging a real team with a non-participant halves the answer:
+it printed 1.5 for a defence that had conceded 3.6. The CPU is the AWAY side,
+because `startGame` runs with `youHome` true.
+
+The robbery is deliberately left unanswered, because a miss there costs nothing by
+design and playing it would flatter the defence instead.
+
+**What this does to the send gate.** A runner scores from second on a single 24% of
+the time here against about 60% in the real game, and two thirds of that gap is the
+`spd >= 75` gate deciding who even tries. That read like a number waiting to be
+loosened, and the old note here said to measure the run environment before touching
+it. Measured: scoring is **already on** the real game's figure, so sending more
+runners moves a correct run environment off it. Anything done there has to be paid
+for somewhere else, and `check-runs.mjs` is how you would find out.
+
+What `calibrate.mjs` independently says, and it agrees: the contact model is not
+broken either, at roughly 9 or 10 hits per 27 balls in play at both tiers.
 
 ## Segue, the setlist game
 
