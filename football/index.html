@@ -18651,7 +18651,16 @@ function generateDrives(script,rng,opts){
    treatment came from. */
 const fieldLogo=new Image(); fieldLogo.src='field-r.png?v=1';
 
-function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName){
+/*
+ * `anchor` IS OPTIONAL AND ONLY THE BOSS BOARD PASSES IT: {t, y}, the moment and the absolute
+ * yard the drive in progress was last drawn at. A drive's bar is a straight sweep from the
+ * line of scrimmage to wherever the drive ends up, which is honest for a drive drawn in one
+ * go and wrong for one that stops half way for a fourth down call: the sweep does not pass
+ * through the spot the ball was actually stopped at, so resuming without an anchor jumped the
+ * bar seventeen yards down the field at the moment the call was taken. Given one, the tail
+ * sweeps from where the reader was left instead.
+ */
+function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,anchor){
   if(!ctx)return;
   const dpr=window.devicePixelRatio||1;
   ctx.save();ctx.clearRect(0,0,w,h);
@@ -18752,8 +18761,9 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
        stop at the front of the end zone, not inside it */
     let drawEnd=Math.max(0,Math.min(100,d.endYard));
     if(isActive){
-      const p=Math.min(1,(upTo-d.tStart)/Math.max(1,d.tEnd-d.tStart));
-      drawEnd=d.startYard+(d.endYard-d.startYard)*p;
+      const t0=anchor?anchor.t:d.tStart, y0=anchor?anchor.y:d.startYard;
+      const p=Math.max(0,Math.min(1,(upTo-t0)/Math.max(1,d.tEnd-t0)));
+      drawEnd=y0+(d.endYard-y0)*p;
     }
     const clampStart=Math.max(0,Math.min(100,d.startYard));
     drawEnd=Math.max(0,Math.min(100,drawEnd));
@@ -19855,7 +19865,21 @@ function mandateBriefing(){
  */
 let bossSim=null, bossRng=null, bossSpecNow=null, bossOppNow=null;
 let bossField=null, bossFcv=null, bossYouCol='#3a7bd5', bossThemCol='#e87461';
-let bossShown=0, bossTimer=null, bossRaf=0;
+/*
+ * TWO COUNTERS, AND THEY ANSWER DIFFERENT QUESTIONS.
+ *
+ * bossShown is how many COMPLETED drives have been animated, so it indexes sim.drives.
+ * bossShownTo is the game clock the FIELD has been drawn up to, which is a finer thing: a
+ * drive stops mid-way for a fourth down call, so the picture can be part way through a drive
+ * that bossShown has not counted yet.
+ *
+ * Without the second one the screen had no memory of that, and it showed. A fourth down
+ * arrived with the drive it belongs to never drawn at all, so a march the reader had watched
+ * nothing of stopped for a decision about it, and then, once the drive finally ended,
+ * bossAnimateDrive replayed it from its own tStart and ran the clock BACKWARDS to do it.
+ * Reported by a player as the calls not lining up with the picture.
+ */
+let bossShown=0, bossShownTo=0, bossLiveY=null, bossTimer=null, bossRaf=0;
 
 function bossOppRow(){ const b=R.bossFor(run); return b?DATA.byTeamSeasonId[b.team_season_id]:null; }
 function bossThreeLetter(o){
@@ -19892,17 +19916,24 @@ function bossSetClock(elapsed){
   $('bg-ck').textContent=clockText(Math.max(0,900-(elapsed-(q-1)*900)));
 }
 /* Draw the completed drives up to a time, optionally with the drive in progress laid on top
-   so a fourth-down decision shows the ball where it actually is. */
-function bossDraw(upTo,live){
+   so a fourth-down decision shows the ball where it actually is.
+ *
+ * THE LIVE DRIVE ENDS AT THE SIM'S CLOCK, NEVER AT upTo, and that one word is what lets the
+ * bar GROW. drawDriveChart calls a drive active while its tEnd is still ahead of upTo and
+ * interpolates the bar across that span; handed tEnd:upTo it was never active, so it snapped
+ * to wherever the ball is now on every frame and the drive in progress could only ever appear
+ * all at once. sim.clock is where the ball has actually got to, so asking for an earlier upTo
+ * now draws the march part way. */
+function bossDraw(upTo,live,anchor){
   if(!bossField) return;
   let ds=bossSim.drives;
   if(live){
     const c=bossSim.cur;
     if(c) ds=ds.concat([{team:c.team,startYard:c.startAbs,
-      endYard:E_absYard(c.team,c.y),result:'live',tStart:c.tStart,tEnd:upTo}]);
+      endYard:E_absYard(c.team,c.y),result:'live',tStart:c.tStart,tEnd:bossSim.clock}]);
   }
   drawDriveChart(bossField,bossFcv.width,bossFcv.height,ds,upTo,bossYouCol,bossThemCol,
-    'YOU',bossThreeLetter(bossOppNow));
+    'YOU',bossThreeLetter(bossOppNow),anchor||null);
 }
 /* Absolute yard, mirrored for the boss, matching the engine's own frame. */
 function E_absYard(team,y){ const v=team==='you'?y:100-y; return Math.max(0,Math.min(100,v)); }
@@ -19959,7 +19990,7 @@ function bossScout(){
 let bossOnOver=null, bossAutoCall=null, bossCallerName='You';
 function liveBoard(o,sim,rng,opts){
   bossStop();
-  bossSim=sim; bossRng=rng; bossOppNow=o; bossShown=0;
+  bossSim=sim; bossRng=rng; bossOppNow=o; bossShown=0; bossShownTo=0; bossLiveY=null;
   bossOnOver=opts.onOver||null;
   bossAutoCall=opts.autoCall||null;
   bossCallerName=opts.caller||'You';
@@ -20031,7 +20062,12 @@ function bossLoop(){
   const ev=E.bossSimAdvance(bossSim,bossRng);
   if(ev.type==='over'){ const end=bossOnOver||bossFinish;
     bossFlush(()=>{ bossRenderScore(); end(ev); }); return; }
-  if(ev.type==='decision'){ bossFlush(()=>bossShowDecision(ev.decision)); return; }
+  /* THE DRIVE IS PLAYED UP TO THE CALL BEFORE THE CALL IS ASKED. bossFlush only knows about
+     drives the sim has FINISHED, and a fourth down stops one half way, so on its own it left
+     the reader deciding about a march the field had shown nothing of. bossLiveTo runs the
+     picture out to the moment of the decision first. */
+  if(ev.type==='decision'){
+    bossFlush(()=>bossLiveTo(ev.decision,()=>bossShowDecision(ev.decision))); return; }
   /* 200ms between events was the rest of why the game was over in a blink. The drives
      themselves carry the pace now, so this is the handoff between them rather than the
      pace itself. */
@@ -20043,6 +20079,52 @@ function bossFlush(cb){
   if(bossShown>=bossSim.drives.length){ cb(); return; }
   const d=bossSim.drives[bossShown++];
   bossAnimateDrive(d,()=>bossFlush(cb));
+}
+
+/* The game clock a decision is asked at, which is bossClock's own arithmetic run backwards.
+   It is the sim's clock to the second, and it is written here once because the field, the
+   bug and the resume point all have to agree on it. */
+function bossDecisionAt(d){ return (d.quarter-1)*900+(900-d.secs); }
+
+/*
+ * RUN THE DRIVE IN PROGRESS OUT TO THE CALL.
+ *
+ * The one thing on this screen that is not a completed drive. A fourth down stops the sim
+ * mid-march, so what the reader has to be shown before being asked anything is the march:
+ * the bar growing from wherever the field was left to where the ball is now, with the clock
+ * running forward with it.
+ *
+ * ABOUT TEN MILLISECONDS A GAME SECOND, which puts a play at 260ms and matches the pace
+ * bossAnimateDrive runs a completed drive at. Floored and capped for the same reason that one
+ * is: a long march visibly takes longer than a short one, and neither extreme is worth
+ * watching.
+ *
+ * TWO WAYS THROUGH WITHOUT ANIMATING, and both are ordinary rather than edge cases. A two
+ * point try has no drive in progress at all, because the touchdown that earned it is already
+ * pushed and bossFlush has drawn it. And a fourth down on the first play after a kick that is
+ * already on screen has nothing left to cover. Either way the clock is adopted and the call
+ * is asked immediately, so this can never be the thing that swallows a decision.
+ */
+function bossLiveTo(d,cb){
+  const at=bossDecisionAt(d), from=bossShownTo, c=bossSim.cur;
+  /* Where this drive was left, for the next leg of it and for the drive record that finishes
+     it. Null between drives, so a fresh drive always sweeps from its own line of scrimmage. */
+  const ball=c?E_absYard(c.team,c.y):null;
+  const anchor=(c&&bossLiveY!=null)?{t:from,y:bossLiveY}:null;
+  if(!c||bossFast||at<=from+1){
+    bossShownTo=Math.max(from,at); bossLiveY=ball; cb(); return;
+  }
+  const dur=Math.max(240,Math.min(2400,(at-from)*10));
+  const t0=(window.performance||Date).now();
+  const tick=()=>{
+    const k=Math.min(1,((window.performance||Date).now()-t0)/dur);
+    const upTo=from+(at-from)*k;
+    bossDraw(upTo,true,anchor); bossSetClock(upTo);
+    $('bg-bug').classList.toggle('urgent',upTo>=3300);
+    if(k<1){ bossRaf=requestAnimationFrame(tick); return; }
+    bossShownTo=at; bossLiveY=ball; cb();
+  };
+  bossRaf=requestAnimationFrame(tick);
 }
 
 /* ─── THE DRIVE LOG ────────────────────────────────────────────────────────────────────
@@ -20118,7 +20200,7 @@ function bossAnimateDrive(d,cb){
      because the log row has to be written after the score lands either way: drawn, scored,
      logged. What goes is the frames in between and the beat after a touchdown. */
   if(bossFast){
-    bossDraw(d.tEnd,false); bossSetClock(d.tEnd);
+    bossDraw(d.tEnd,false); bossSetClock(d.tEnd); bossShownTo=d.tEnd; bossLiveY=null;
     $('bg-bug').classList.toggle('urgent',d.tEnd>=3300);
     bossRenderScore();
     bossLogDrive(d);
@@ -20130,15 +20212,34 @@ function bossAnimateDrive(d,cb){
     bossTimer=setTimeout(cb,0);
     return;
   }
-  const dur=Math.max(900,Math.min(3000,(d.plays||4)*260));
+  /*
+   * IT RESUMES. A drive that stopped for a fourth down has already been watched up to the
+   * call, so starting again at d.tStart replayed the part the reader had just seen and, worse,
+   * ran the clock backwards to do it: the bug went from 4th and 1 at 2:40 to first and ten at
+   * 6:12 the moment the call was taken. bossShownTo is how far the picture got, so the tail is
+   * what is left to play.
+   *
+   * THE DURATION IS SCALED TO THE TAIL, not recomputed from the drive. A twelve play march
+   * stopped on the eleventh has one play left in it and should take one play's worth of time;
+   * spending the whole drive's budget on it is the same replay in a different coat. The floor
+   * is dropped to 240 for a resumed drive for that reason, and a tail of nothing (a punt or a
+   * kick, which end the drive at the clock the call was asked at) lands instantly, which is
+   * right: that ball is not going anywhere the reader has not already been shown.
+   */
+  const from=Math.max(d.tStart,bossShownTo);
+  const span=Math.max(0,d.tEnd-from), full=Math.max(1,d.tEnd-d.tStart);
+  const whole=Math.max(900,Math.min(3000,(d.plays||4)*260));
+  const dur=span<=0?0:Math.max(from>d.tStart?240:900,whole*(span/full));
+  const anchor=(from>d.tStart&&bossLiveY!=null)?{t:from,y:bossLiveY}:null;
   const t0=(window.performance||Date).now();
   const scored=d.result==='td'||d.result==='fg';
   const tick=()=>{
-    const k=Math.min(1,((window.performance||Date).now()-t0)/dur);
-    const upTo=d.tStart+(d.tEnd-d.tStart)*k;
-    bossDraw(upTo,false); bossSetClock(upTo);
+    const k=dur<=0?1:Math.min(1,((window.performance||Date).now()-t0)/dur);
+    const upTo=from+span*k;
+    bossDraw(upTo,false,anchor); bossSetClock(upTo);
     $('bg-bug').classList.toggle('urgent',upTo>=3300);
     if(k<1){ bossRaf=requestAnimationFrame(tick); return; }
+    bossShownTo=d.tEnd; bossLiveY=null;
     bossRenderScore();
     /* LOGGED AFTER THE SCORE LANDS, so the running total on the row is the one the bug is
        showing. Written the other way round it reports every score one drive late. */
@@ -20165,8 +20266,8 @@ function bossSpot(d){ return d.ball.side==='own'?('your '+d.ball.yard):('their '
 /* THE CALL. The real situation, and the two or three things that can be done about it.
    Asked of the reader, or handed to the coach they hired. */
 function bossShowDecision(d){
-  bossRenderScore(); bossSetClock((d.quarter-1)*900+(900-d.secs));
-  bossDraw((d.quarter-1)*900+(900-d.secs),true);
+  bossRenderScore(); bossSetClock(bossDecisionAt(d));
+  bossDraw(bossDecisionAt(d),true);
   const situation=d.kind==='two'
     ? '<b>Touchdown.</b> The point, or two.'
     : '<b>4th and '+d.toGo+'</b> at '+bossSpot(d)+'.'
@@ -20274,7 +20375,12 @@ function bossTakeCall(d,choice){
    */
   const next=(res&&res.end&&res.end.type==='decision')?res.end.decision:null;
   bossFlush(()=>{
-    if(next){ bossTimer=setTimeout(()=>bossShowDecision(next),bossFast?0:520); return; }
+    /* Through bossLiveTo like every other call, so there is one door into a decision. This
+       one is always a two point try, whose touchdown bossFlush has just drawn, so it passes
+       straight through with nothing to animate. Routed anyway rather than left as the one
+       exception somebody has to remember. */
+    if(next){ bossTimer=setTimeout(()=>bossLiveTo(next,()=>bossShowDecision(next)),
+      bossFast?0:520); return; }
     bossTimer=setTimeout(bossLoop,bossFast?0:560);
   });
 }

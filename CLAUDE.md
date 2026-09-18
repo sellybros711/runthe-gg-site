@@ -1697,6 +1697,84 @@ through that. A touchdown is worth six plus whatever is decided after it, so the
 that the dropped ones finish at exactly six. Read at the event, deterministic, and nothing
 downstream can touch it.
 
+#### A fourth down is asked in the middle of a drive, and the field only knew about finished ones
+
+```
+node football/check-fullteam.mjs   the section that plays one game at the real pace
+```
+
+`bossFlush` animates drives out of `sim.drives`, and a drive is only pushed there when it
+ENDS. A genuine fourth down stops the sim half way through one, so the board asked for a
+decision about a march it had drawn nothing of: the drive arrived as a static bar under the
+question, at full length, in one frame. Then the call was taken, the drive eventually ended,
+and `bossAnimateDrive` replayed it **from its own `tStart`**, which ran the game clock
+backwards by the length of the drive. Reported by a player as the go-for-it decisions not
+lining up with the picture.
+
+**The engine was right the whole time.** `bossSimResolve` on a conversion returns
+`{converted:true}` with no `end`, leaves `sim.cur` alone and the next `bossSimAdvance` carries
+the same drive on. Nothing about the football needed changing; what was missing was that the
+screen had no memory of how far into a drive it had drawn.
+
+**So there are two counters and they answer different questions.** `bossShown` is how many
+COMPLETED drives have been animated, which indexes `sim.drives`. `bossShownTo` is the game
+clock the field has been drawn up to, which is finer, because the picture can be part way
+through a drive that `bossShown` has not counted yet. `bossLiveTo` runs the drive out to the
+call before the call is asked, and `bossAnimateDrive` starts at `Math.max(d.tStart,
+bossShownTo)` and scales its duration to the tail rather than to the whole drive.
+
+**The bar could not grow, and the reason was one word.** `bossDraw`'s live overlay was built
+with `tEnd: upTo`. `drawDriveChart` calls a drive active while its `tEnd` is still AHEAD of
+`upTo` and interpolates across that span, so a drive whose end was always `upTo` was never
+active and snapped to the current ball spot on every frame. It is `sim.clock` now, which is
+where the ball has actually got to, so an earlier `upTo` draws the march part way.
+
+**A resumed drive needs an ANCHOR, and without one the fix has a visible jump in it.** A
+drive's bar is a straight sweep from the line of scrimmage to wherever the drive ends up, and
+that line does not pass through the spot the ball was stopped at: a fourth down at the 55 on a
+drive that goes on to score interpolates to about the 72 at the same instant, so the bar
+leapt seventeen yards the moment the call was taken. `drawDriveChart` takes an optional
+`{t, y}` and sweeps the tail from there. Only the boss board passes it.
+
+**The clock is the instrument, because it is the one thing on that screen that has to move one
+way.** The field is a canvas and the score is allowed to sit still. A game clock that goes
+back is wrong on its face, and it went back by a hundred game-seconds or more rather than by
+a rounding error.
+
+**Sampled through a MutationObserver, never polled.** The replay lasts as long as the drive
+takes to animate, so a poll would PROBABLY catch it, and "probably" is how two thin samples in
+this file already passed on the defects they were written for.
+
+**Two claims, and the second is the half about the run-up.** Monotonicity catches the replay.
+What catches the missing run-up is counting the clock writes between the drive row logged last
+and the call being offered: `bossLiveTo` animates that stretch so there are frames of it, and
+without it there is exactly ONE write, the jump inside `bossShowDecision`. **The threshold is
+2 rather than a frame count**, because rAF under load is not a number a checker gets to assume
+and the defect gives exactly one either way. For the same reason the guard does not assert a
+maximum forward step: a slow frame is indistinguishable from a jump, and monotonicity is not.
+
+**It is the one walk here that does not press Sim the rest.** `bossFast` skips the animation
+by design, so the fast path cannot see any of this; the button goes in at the end to bring the
+game home. A two point try is excluded from the run-up count on purpose: its touchdown is
+already pushed and drawn, so one write is the right number there.
+
+**And it needs a page of its own, which is the harness lesson here.** The coached walk above
+breaks out of its loop the moment the bracket takes the screen after a Continue, and that
+leaves a `nbrkShow` callback pending which opens another game seconds later. The board is
+module state, so it replaces whatever is there. On the shared page the tape read a clean climb
+to 192 seconds and then a reset to 1ST 15:00, and the first reading of that failure was spent
+deciding whether the page or the harness had done it. Waiting for an empty log and a 0-0 bug
+is NOT enough: the game the section starts is itself fresh at that moment and the leftover
+lands after it. **A page with no leftovers by construction is the only version of this that is
+about the page.** The failure message carries the series around the step for the same reason:
+a clock that goes back by a drive and a clock that has been reset are two different faults
+reported by one number.
+
+**THE ANCHOR IS THE PART NOTHING GUARDS, and that is worth knowing before trusting a green
+run.** A wrong anchor costs a jump in the BAR and nothing the clock can see, so both
+assertions above pass with it removed. Checking it means looking at the field while a fourth
+down is converted, or writing a pixel read the section does not have.
+
 #### A control the game is waiting on goes above the record of it
 
 The call box and the verdict sat UNDER the drive log, which is capped at 40vh and fills up

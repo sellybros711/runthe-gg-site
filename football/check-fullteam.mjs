@@ -249,6 +249,48 @@ async function open(browser) {
     before.stranded + ' games before, ' + after.stranded + ' after');
 }
 
+/*
+ * THE TWO DRAFTERS EVERY POSTSEASON WALK BELOW USES, installed on a page rather than written
+ * into one, because more than one page needs them: a walk that must start on a board nobody
+ * else has left running gets a page of its own.
+ *
+ * __draft SETS THE RUN FIRST. dataNow() reads the module's own `run` to decide which pool a
+ * pick draws from, so built the other way round every pick comes off the offensive pool and
+ * the roster stalls at six with six empty slots.
+ *
+ * __toSeeding is one whole season on top of that, up to the seeding screen, which is where
+ * every walk that presses the playoff button has to begin.
+ */
+function installDrafters() {
+  window.__draft = (seed) => {
+    const T = window.__t, RR = T.R;
+    const run = RR.createRun({ full: true, seed });
+    T.setRun(run);
+    let g = 0;
+    while (run.roster.length < run.slots.length && g++ < 600) {
+      const D = T.dataNow();
+      let d; try { d = RR.spin(run, D); } catch (e) { continue; }
+      const men = RR.affordableFrom(run, d.team_season_id, D.playersByTeamSeason);
+      if (!men.length) continue;
+      const w = men.slice().sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+      try { RR.sign(run, w, RR.slotChoices(run, w)[0]); } catch (e) {}
+    }
+    return run.roster.length === run.slots.length ? run : null;
+  };
+  window.__toSeeding = (seed, coach) => {
+    const T = window.__t, RR = T.R;
+    const run = window.__draft(seed);
+    if (!run) return null;
+    try { RR.hireCoach(run, coach); RR.finishHiring(run); } catch (e) { return null; }
+    try { RR.startSeason(run, T.dataNow(), T.CTX()); } catch (e) { return null; }
+    let n = 0;
+    while (run.phase === RR.PHASES.SEASON && n++ < 40) {
+      try { RR.advanceWeek(run, T.dataNow(), T.LEAGUE(), T.CAL()); } catch (e) { break; }
+    }
+    return run.phase === RR.PHASES.SEEDING ? run : null;
+  };
+}
+
 const browser = await pw.chromium.launch({ executablePath: CHROME });
 
 /* ================================================================
@@ -768,27 +810,7 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
   await s.page.evaluate(() => window.__t.beginFullDraft());
   await s.page.waitForTimeout(6000);
 
-  /* ONE DRAFTER FOR ALL THREE WALKS BELOW, on the page so it can reach dataNow(). It sets the
-     run FIRST, because dataNow() reads the module's own `run` to decide which pool this pick
-     draws from: built the other way round every pick comes off the offensive pool and the
-     roster stalls at six with six empty slots. */
-  await s.page.evaluate(() => {
-    window.__draft = (seed) => {
-      const T = window.__t, RR = T.R;
-      const run = RR.createRun({ full: true, seed });
-      T.setRun(run);
-      let g = 0;
-      while (run.roster.length < run.slots.length && g++ < 600) {
-        const D = T.dataNow();
-        let d; try { d = RR.spin(run, D); } catch (e) { continue; }
-        const men = RR.affordableFrom(run, d.team_season_id, D.playersByTeamSeason);
-        if (!men.length) continue;
-        const w = men.slice().sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
-        try { RR.sign(run, w, RR.slotChoices(run, w)[0]); } catch (e) {}
-      }
-      return run.roster.length === run.slots.length ? run : null;
-    };
-  });
+  await s.page.evaluate(installDrafters);
 
   /* THE SCREEN FIRST. The dials are gone and the promise is in their place. */
   const plan = await s.page.evaluate(() => {
@@ -823,18 +845,7 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
      played forward through the real buttons. */
   const live = await s.page.evaluate(async () => {
     const T = window.__t, RR = T.R;
-    const toSeeding = (seed, coach) => {
-      const run = window.__draft(seed);
-      if (!run) return null;
-      try { RR.hireCoach(run, coach); RR.finishHiring(run); } catch (e) { return null; }
-      try { RR.startSeason(run, T.dataNow(), T.CTX()); } catch (e) { return null; }
-      let n = 0;
-      while (run.phase === RR.PHASES.SEASON && n++ < 40) {
-        try { RR.advanceWeek(run, T.dataNow(), T.LEAGUE(), T.CAL()); } catch (e) { break; }
-      }
-      return run.phase === RR.PHASES.SEEDING ? run : null;
-    };
-    window.__toSeeding = toSeeding;
+    const toSeeding = window.__toSeeding;
     /* TWENTY SEEDS, NOT FORTY. A greedy twelve man draft reaches January about 45% of the
        time, so twenty is a one in a hundred thousand miss and each miss costs a whole
        simulated season. The seed it found is reported, because a failure here is far easier
@@ -1077,6 +1088,197 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
     ok('a coached team plays forward too', false,
       coached ? 'hired ' + coached.hired + ', seeded ' + coached.seeded : 'no seed to replay');
   }
+  /* ================================================================
+     A CALL COMES AT THE END OF A DRIVE, AND THE CLOCK NEVER GOES BACK
+
+     THE BUG, reported by a player as the go-for-it decisions not lining up with the picture.
+     bossFlush only animates drives the sim has FINISHED, and a genuine fourth down stops one
+     half way, so the board asked for a decision about a march it had drawn nothing of: the
+     drive appeared all at once as a static bar under the question. Then, once the call was
+     taken and the drive eventually ended, bossAnimateDrive replayed it FROM ITS OWN tStart,
+     which ran the game clock backwards by the length of the drive. Both halves render
+     perfectly and nothing throws.
+
+     THE CLOCK IS THE INSTRUMENT because it is the only thing on that screen that has to move
+     one way. The field is a canvas and the score is allowed to sit still, but a game clock
+     that goes back is wrong on its face, and it goes back by a hundred game-seconds or more
+     here rather than by a rounding error.
+
+     SAMPLED THROUGH A MutationObserver, NOT POLLED. A replay lasts as long as the drive takes
+     to animate, so a poll would probably catch it, and "probably" is how the two thin samples
+     recorded elsewhere in this file passed on the defects they were written for. The observer
+     sees every write the page makes.
+
+     TWO CLAIMS, AND THE SECOND ONE IS THE HALF ABOUT THE RUN-UP. Monotonicity catches the
+     replay. What catches the missing run-up is counting the clock samples between the drive
+     row that was logged last and the call being offered: bossLiveTo animates that stretch, so
+     there are frames of it, and without it there is exactly ONE write, the jump inside
+     bossShowDecision. The threshold is 2 rather than a frame count, because rAF under load is
+     not a number this file gets to assume and the defect gives exactly one either way.
+
+     IT RUNS WITHOUT Sim the rest, which every other walk here presses on the first frame.
+     bossFast skips the animation by design, so the fast path cannot see any of this. The
+     button is pressed at the end instead, to bring the game home without watching all of it.
+     ================================================================ */
+  console.log('\nA CALL COMES AT THE END OF A DRIVE');
+  {
+    /*
+     * ITS OWN PAGE, AND THAT IS THE ONLY WAY THIS CAN BE HONEST.
+     *
+     * The coached walk above breaks out of its loop the moment the bracket takes the screen
+     * after a Continue, which leaves a `nbrkShow` callback pending: seconds later it opens
+     * another game on the same board, and the board is module state, so it replaces whatever
+     * is there. Measured on that page, the tape read a clean climb to 192 seconds and then a
+     * reset to 1ST 15:00, which is that leftover game arriving. Waiting for an EMPTY LOG and
+     * a 0-0 bug was not enough either, because the game this section starts is itself fresh
+     * at that moment and the leftover lands after it.
+     *
+     * A page of its own has no leftovers by construction. It costs one more boot and one more
+     * defense pool download, and it buys a section whose subject is the page rather than the
+     * order the file happens to run in.
+     */
+    const s2 = await open(browser);
+    await s2.page.evaluate(() => window.__t.beginFullDraft());
+    await s2.page.waitForTimeout(6000);
+    await s2.page.evaluate(installDrafters);
+    const tape = await s2.page.evaluate(async (seed) => {
+      const T = window.__t;
+      const seeds = [seed]; for (let i = 1; i <= 20; i++) if (i !== seed) seeds.push(i);
+      let run = null;
+      for (const sd of seeds) { run = window.__toSeeding(sd, null); if (run) break; }
+      if (!run) return { seeded: false };
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      /* THE OBSERVER GOES ON .bbot, WHICH HOLDS THE QUARTER AND THE CLOCK AND NOTHING ELSE.
+         Over the whole bug it would also fire on every score change, and those extra samples
+         would land in the count below and let a board with no run-up pass. */
+      const bbot = document.getElementById('bg-q').parentNode;
+      window.__tape = [];
+      const read = () => {
+        const q = (document.getElementById('bg-q').textContent || '').trim();
+        const t = (document.getElementById('bg-ck').textContent || '').trim();
+        const qi = ['1ST', '2ND', '3RD', '4TH'].indexOf(q);
+        const m = /^(\d+):(\d\d)$/.exec(t);
+        if (qi < 0 || !m) return null;
+        return qi * 900 + (900 - (+m[1] * 60 + +m[2]));
+      };
+      const obs = new MutationObserver(() => {
+        const e = read(); if (e != null) window.__tape.push({ k: 'clock', e });
+      });
+      obs.observe(bbot, { subtree: true, characterData: true, childList: true });
+      /* A DRIVE ROW LANDS IN THE SAME TAPE, through its own observer rather than through the
+         poll below, so its place in the series is where the page actually put it. Registered
+         second, so the final frame of a drive is recorded before the row it produced. */
+      const rows = new MutationObserver((recs) => {
+        for (const r of recs) if (r.addedNodes.length) window.__tape.push({ k: 'row' });
+      });
+      rows.observe(document.getElementById('bg-log'), { childList: true });
+
+      T.paintSeed();
+      document.getElementById('b-po').click();
+      /* A BOARD THAT IS FRESH, not merely a board that is up. An empty log and a 0-0 bug are
+         what liveBoard writes, so this cannot fall through onto a game already in progress.
+         See the note on why this page is its own. */
+      const fresh = () => document.getElementById('s-bgame').classList.contains('on')
+        && !document.getElementById('bg-log').children.length
+        && document.getElementById('bg-syou').textContent === '0'
+        && document.getElementById('bg-sthem').textContent === '0';
+      for (let i = 0; i < 60; i++) {
+        if (fresh()) break;
+        const b = document.getElementById('b-nbrk-fast');
+        if (b && b.offsetParent) b.click();
+        await wait(200);
+      }
+      if (!fresh()) { obs.disconnect(); rows.disconnect(); return { seeded: true, board: false }; }
+      /* liveBoard has run, which reset the bug to 1ST 15:00 AND called bossStop, so the
+         previous game is gone rather than merely hidden. Anything on the tape before this
+         belongs to it. */
+      window.__tape.length = 0;
+      /* PLAYED AT THE REAL PACE until two fourth downs have been answered, or until the game
+         ends without producing that many, which is an ordinary outcome rather than a failure:
+         bossGenuineFourth is deliberately rare. */
+      let fourths = 0, twos = 0;
+      for (let i = 0; i < 4000 && fourths < 2; i++) {
+        if (!document.getElementById('bg-done').hidden) break;
+        const bs = [...document.querySelectorAll('#bg-calls .bcall')];
+        if (bs.length) {
+          const txt = (document.getElementById('bg-calls').innerText || '');
+          const fourth = /go for it/i.test(txt);
+          if (fourth) fourths++; else twos++;
+          window.__tape.push({ k: fourth ? 'fourth' : 'two' });
+          /* GO, ALWAYS, because a conversion is the case the player named: the drive has to
+             carry on from where it was rather than start again. */
+          bs[0].click();
+        }
+        await wait(25);
+      }
+      /* Home the rest of the way, so the next section opens on a quiet page. */
+      const fast = document.getElementById('b-boss-fast');
+      if (fast && fast.offsetParent) fast.click();
+      for (let i = 0; i < 400; i++) {
+        if (!document.getElementById('bg-done').hidden) break;
+        const bs = [...document.querySelectorAll('#bg-calls .bcall')];
+        if (bs.length) bs[0].click();
+        await wait(25);
+      }
+      obs.disconnect(); rows.disconnect();
+      return { seeded: true, board: true, fourths, twos, tape: window.__tape.slice() };
+    }, live.found || 1);
+    ok('  and nothing threw on its own page', !s2.boom.length,
+      s2.boom.join(' | ') || 'no errors');
+    await s2.page.close();
+
+    if (!tape || !tape.seeded || !tape.board) {
+      ok('a seed reached a live playoff game', false,
+        tape ? 'seeded ' + tape.seeded + ', board ' + (tape && tape.board) : 'no seed');
+    } else {
+      const clocks = tape.tape.filter((t) => t.k === 'clock');
+      ok('the clock was read all game', clocks.length > 40, clocks.length + ' writes');
+      /* THE REPLAY. Reported as the largest step backwards, because a failure of one second
+         would be a rounding question and a failure of three hundred is a drive being played
+         twice. */
+      /*
+       * THE SERIES AROUND IT, NEVER JUST THE SIZE OF THE STEP. A clock that goes back by a
+       * drive and a clock that has been RESET to 1ST 15:00 are two different faults reported
+       * by the same number, and the first reading of this failure was spent working out which
+       * of them it was. The window is taken over the whole tape so the drive rows and the
+       * calls are in it, which is what says where in the game it happened.
+       */
+      let back = 0, atIdx = -1, last = null;
+      for (let i = 0; i < tape.tape.length; i++) {
+        const t = tape.tape[i];
+        if (t.k !== 'clock') continue;
+        if (last != null && last - t.e > back) { back = last - t.e; atIdx = i; }
+        last = t.e;
+      }
+      const near = atIdx < 0 ? '' : tape.tape.slice(Math.max(0, atIdx - 5), atIdx + 3)
+        .map((t) => (t.k === 'clock' ? String(t.e) : '<' + t.k + '>')).join(' ');
+      ok('  and never went backwards', back === 0,
+        back ? back + 's back, around ' + near : 'monotone over ' + clocks.length);
+      /* THE RUN-UP. Only the fourth downs: a two point try is asked after its touchdown has
+         been drawn and pushed, so there is nothing left of that drive to animate and one
+         write is the right number. */
+      const runUps = [];
+      let since = 0;
+      for (const t of tape.tape) {
+        if (t.k === 'clock') since++;
+        else if (t.k === 'row') since = 0;
+        else if (t.k === 'fourth') { runUps.push(since); since = 0; }
+        else if (t.k === 'two') since = 0;
+      }
+      if (!runUps.length) {
+        /* NOT A PASS AND NOT A FAILURE OF THE PAGE. One playoff game need not meet a genuine
+           fourth down, and the run above stops at two of them rather than playing the whole
+           postseason for a third. Said out loud, because a silent skip is how a section that
+           has stopped exercising anything goes unnoticed. */
+        ok('  and no fourth down came up to measure', true,
+          'a game with ' + tape.twos + ' two point calls and no genuine fourth down');
+      } else {
+        ok('  and the drive ran up to each call', runUps.every((n) => n >= 2),
+          runUps.join(', ') + ' clock writes between the last drive and the call');
+      }
+    }
+  }
+
   /* ================================================================
      THE SHARE CARD HOLDS TWELVE MEN
 
