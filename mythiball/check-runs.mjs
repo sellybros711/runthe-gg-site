@@ -3,9 +3,18 @@
    node mythiball/check-runs.mjs            4 games an arm, about half an hour
    node mythiball/check-runs.mjs 2 fast     a quicker read
 
-   THE ANSWER IS 4.5 RUNS A TEAM OVER NINE, which is real baseball's own
-   figure, so the run environment is NOT broken and never was. Four games,
-   all going the distance: 3, 3, 5 and 1.
+   THE ANSWER IS ABOUT 5.5 RUNS A TEAM OVER NINE against the real game's
+   4.5, so the run environment is NOT broken and never was. Six games, all
+   going the distance: 3, 3, 5, 1, 6 and 4 in six innings each.
+
+   QUOTE THE POOL, NOT A RUN. The first four games came out at exactly 4.5
+   and that got written down as the answer, because a sample landing on the
+   real world's own number reads as confirmation rather than as a
+   coincidence. The next two came out at 7.5 on identical code. Per game the
+   spread is 1.5 to 9.0 a nine, so four games cannot call a tenth of a run
+   and a tuning move worth half a run is invisible under about twenty. What
+   this sample IS enough for is the only question being asked: whether
+   scoring is broken. It is not.
 
    It took five attempts to get that number and the first four were all
    instrument faults, so this file exists to stop anybody spending a sixth.
@@ -18,11 +27,11 @@
    same way. A harness that presses nothing therefore boots every routine
    ground ball and drops every catchable fly, all game, every game.
 
-   Measured here, that single omission is worth 31.8 runs a nine against
-   4.5. It is the whole of the difference: the samples that read 0-18,
-   2-19 and 0-20 were not a bad bat or a broken run environment, which are
-   the two answers this was stuck between. They were a defence with its
-   hands tied, which is a third thing neither of those names.
+   Measured here, that single omission is worth 27 to 32 runs a nine
+   against 5.5. It is the whole of the difference: the samples that read
+   0-18, 2-19 and 0-20 were not a bad bat or a broken run environment,
+   which are the two answers this was stuck between. They were a defence
+   with its hands tied, which is a third thing neither of those names.
 
    TWO HARNESSES AGREEING IS NOT EVIDENCE. A tracker of its own counting
    and the game's own line score both said the same wrong thing, because
@@ -162,7 +171,18 @@ for (const a of out) {
 }
 console.log(`\n  real baseball is about 4.5 runs a team over nine.`);
 const per9 = cpu9(out[1].rows);
-console.log(`\n  with a defence the CPU scores ${per9.toFixed(1)} a nine. `
-  + (per9 > 9 ? 'STILL HIGH: the run environment, not the harness.'
-    : per9 < 2.5 ? 'LOW against the real game.' : 'IN RANGE. The earlier readings were the harness not fielding.'));
+/* THE SPREAD IS PRINTED BESIDE THE MEAN, and that is not decoration. Four
+   games once read 4.5 and the next two read 7.5 on identical code, and the
+   4.5 got written into the docs as the answer because it happened to land
+   on the real world's own number. A reader who sees only a mean will quote
+   it. */
+const each = out[1].rows.map(r => r.away / Math.max(1, r.inning) * 9);
+console.log(`  across ${each.length} games: ${each.map(x => x.toFixed(1)).join(', ')}`);
+console.log(`\n  with a defence the CPU scores ${per9.toFixed(1)} a nine`
+  + `, game by game ${Math.min(...each).toFixed(1)} to ${Math.max(...each).toFixed(1)}.`);
+console.log(`  ${per9 > 12 ? 'HIGH: the run environment, not the harness.'
+  : per9 < 2 ? 'LOW against the real game.'
+  : 'NOT BROKEN. The readings that said otherwise were the harness not fielding.'}`);
+if (each.length < 20) console.log(`  ${each.length} games is enough to say that and not enough`
+  + ` to call a tenth of a run: a half run move needs about twenty.`);
 for (const a of out) if (a.errs.length) console.log(`\n  PAGE ERRORS in ${a.label}: ` + [...new Set(a.errs)].slice(0, 3).join(' | '));

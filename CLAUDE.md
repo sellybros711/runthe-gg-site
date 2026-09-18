@@ -2470,8 +2470,17 @@ node mythiball/check-runs.mjs 2 fast  a quicker read
 ```
 
 **It is not broken and never was.** Measured through the real swing AI, with the
-game's own line score: **4.5 runs a team over nine innings**, which is real
-baseball's own figure. Four games, all going the distance, 3, 3, 5 and 1.
+game's own line score: **about 5.5 runs a team over nine innings** against the real
+game's 4.5. Six games, all going the distance: 3, 3, 5, 1, 6 and 4 in six innings
+each, 22 runs in 36 innings.
+
+**QUOTE THE POOL, NOT A RUN.** The first four games came out at exactly 4.5 and
+that was written down as the answer, because a sample landing on the real world's
+own number reads as confirmation. The next two came out at 7.5 on identical code.
+Per game the spread is 1.5 to 9.0 a nine, so four games is not enough to call a
+tenth of a run and this file should never carry one. What the sample IS good enough
+for is the only question that was being asked: whether scoring is broken. It is
+not.
 
 It took five attempts and the first four were instrument faults, so the checker
 exists to stop anybody spending a sixth.
@@ -2484,8 +2493,8 @@ batter reaches and every runner moves up. The fly window expires as a **miss** t
 same way. So a harness that presses nothing boots every routine ground ball and
 drops every catchable fly, all game, every game.
 
-Measured, that one omission is worth **31.8 runs a nine against 4.5**. It is the
-whole of the difference. The samples that ended 0-18, 2-19 and 0-20 were not a bad
+Measured, that one omission is worth **27 to 32 runs a nine against 5.5**. It is
+the whole of the difference. The samples that ended 0-18, 2-19 and 0-20 were not a bad
 bat and not a broken run environment, which are the two answers this was stuck
 between for months. They were **a defence with its hands tied**, which is a third
 thing neither of those names.
@@ -2508,9 +2517,12 @@ design and playing it would flatter the defence instead.
 the time here against about 60% in the real game, and two thirds of that gap is the
 `spd >= 75` gate deciding who even tries. That read like a number waiting to be
 loosened, and the old note here said to measure the run environment before touching
-it. Measured: scoring is **already on** the real game's figure, so sending more
-runners moves a correct run environment off it. Anything done there has to be paid
-for somewhere else, and `check-runs.mjs` is how you would find out.
+it. Measured: scoring is **already at or a little above** the real game's figure, so
+sending more runners pushes it further up rather than correcting anything. Whatever
+is done there has to be paid for somewhere else, and `check-runs.mjs` is how you
+would find out. It needs more games than you think to see a change: the per game
+spread is 1.5 to 9.0 a nine, so a tuning move worth half a run is invisible under
+about twenty.
 
 What `calibrate.mjs` independently says, and it agrees: the contact model is not
 broken either, at roughly 9 or 10 hits per 27 balls in play at both tiers.
