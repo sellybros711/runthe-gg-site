@@ -625,6 +625,74 @@
   .clubchip .cc-rings{color:var(--gold);}
   .clubchip:hover{border-color:var(--cc-accent,#3d4a60);}
 
+  /* ══ ONE GAME ══════════════════════════════════════════════════════════
+     A box score is a TABLE and wants to read as one: figures in a mono face,
+     right aligned, on a tight rhythm, with the name the only thing in the
+     body face. Anything prettier stops being scannable, which is the whole
+     job of a box score. */
+  .gs-head{margin:0 0 12px;}
+  .gs-eyebrow{font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--dim);font-weight:800;margin-bottom:4px;}
+  .sheet .panel h2#gs-h{display:flex;align-items:baseline;gap:10px;margin:0;}
+  .gs-res{font-family:var(--display);font-size:15px;letter-spacing:.06em;
+    text-transform:uppercase;}
+  .gs-res.w{color:var(--green);} .gs-res.l{color:var(--red);}
+  .gs-score{font-family:var(--mono);font-size:27px;font-weight:700;
+    font-variant-numeric:tabular-nums;color:var(--ink);}
+  .gs-opp{font-size:12.5px;color:var(--mut);margin:5px 0 0;}
+
+  .qtr{width:100%;border-collapse:collapse;margin:0 0 14px;
+    font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;}
+  .qtr th{font-family:var(--body);font-size:9.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim);font-weight:800;text-align:right;
+    padding:0 0 5px;}
+  .qtr th:first-child{text-align:left;}
+  .qtr td{padding:5px 0;text-align:right;border-top:1px solid var(--line);}
+  .qtr td:first-child{text-align:left;font-family:var(--body);font-size:12.5px;
+    font-weight:700;color:var(--mut);}
+  .qtr td.tot{color:var(--ink);font-weight:700;}
+  .qtr tr.you td{color:var(--ink);}
+
+  .boxs{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;
+    font-variant-numeric:tabular-nums;}
+  .boxs th{font-family:var(--body);font-size:9px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--dim);font-weight:800;text-align:right;
+    padding:0 0 5px;}
+  .boxs th:first-child{text-align:left;}
+  .boxs td{padding:6px 0;text-align:right;border-top:1px solid var(--line);
+    color:var(--mut);}
+  .boxs td:first-child{text-align:left;padding-right:6px;}
+  .boxs td.pts{color:var(--ink);font-weight:700;}
+  /* The name is the one thing not in figures, and at 390px it is what has to
+     give when the row is full. Truncated rather than wrapped: a two line name
+     breaks the rhythm the table is for. */
+  .boxs .bn{display:block;font-family:var(--body);font-size:12.5px;font-weight:700;
+    color:var(--ink);max-width:104px;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;}
+  .boxs .bs{display:block;font-family:var(--body);font-size:9px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--dim);font-weight:800;margin-top:1px;}
+  .boxs tr.top td{background:rgba(240,120,45,.07);}
+  .boxs tr.top .bn{color:var(--orange);}
+  @media(max-width:360px){ .boxs{font-size:11px;} .boxs .bn{max-width:84px;} }
+
+  /* A game a reader can open, wherever a score is printed. */
+  tr.gamerow{cursor:pointer;}
+  tr.gamerow:hover td{background:rgba(255,255,255,.04);}
+  tr.gamerow td.sc:after{content:'\203A';margin-left:7px;color:var(--dim);font-weight:700;}
+  .poseries{border-top:1px solid var(--line);}
+  .pogame{display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+    background:transparent;border:0;border-top:1px solid var(--line);
+    padding:8px 0;color:var(--mut);font-family:var(--body);font-size:12px;
+    cursor:pointer;}
+  .pogame:hover{color:var(--ink);}
+  .pogame .pg-n{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+    font-weight:800;color:var(--dim);min-width:46px;}
+  .pogame .pg-r{font-weight:800;min-width:14px;}
+  .pogame .pg-r.w{color:var(--green);} .pogame .pg-r.l{color:var(--red);}
+  .pogame .pg-s{font-family:var(--mono);font-variant-numeric:tabular-nums;
+    margin-left:auto;color:var(--ink);}
+  .pogame .pg-s:after{content:'\203A';margin-left:7px;color:var(--dim);}
+
   /* ══ THE FIRST RUN GUIDE ═══════════════════════════════════════════════
      The scrim stops at the top of the dock, so the button the guide is
      pointing at is the one thing on the page it never covers. */
@@ -1486,6 +1554,34 @@
   </div>
 </div>
 
+<!-- ── one game, in full ─────────────────────────────────────────────────
+     The scoreline was always there and the game was never shown. You draft
+     Jordan's 1996 and until now nothing anywhere told you what he did in any
+     of the 82.
+
+     NO BOX SCORE FOR THE OTHER SIDE. The schedule knows which real club you
+     played and the sim never used their players: an opponent here is a net
+     rating. Five invented lines for five real men, printed as this game's
+     own record, is the one thing on this screen that would not be true. The
+     quarters carry both sides, because those come off the scoreline. -->
+<div class="sheet" id="gamesheet" role="dialog" aria-modal="true" aria-labelledby="gs-h">
+  <div class="panel">
+    <div class="gs-head">
+      <div class="gs-eyebrow" id="gs-eyebrow"></div>
+      <h2 id="gs-h"><span class="gs-res" id="gs-res"></span><span class="gs-score" id="gs-score"></span></h2>
+      <p class="gs-opp" id="gs-opp"></p>
+    </div>
+    <table class="qtr" id="gs-qtr"></table>
+    <table class="boxs" id="gs-box"></table>
+    <p class="dim" id="gs-note" style="font-size:11px;margin:10px 0 0;line-height:1.45"></p>
+    <div class="btnrow" style="margin-top:14px">
+      <button class="ghost" id="b-gs-prev">Previous</button>
+      <button id="b-gs-x" style="flex:1">Close</button>
+      <button class="ghost" id="b-gs-next">Next</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── the decade picker ─────────────────────────────────────────────────
      Six tiles, and the span on each is read out of the DATA rather than out
      of ERAS. The constant for the seventies is [1970, 1979] and the file
@@ -1600,8 +1696,8 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=13"></script>
-<script src="run.js?v=4"></script>
+<script src="engine.js?v=14"></script>
+<script src="run.js?v=5"></script>
 <script src="badges.js?v=1"></script>
 <script>
 (function(){
@@ -1634,7 +1730,7 @@ var bold = function(text){
  * comes back still disagrees, say so in words instead of dying quietly. One
  * retry, so this can never become a reload loop.
  */
-var NEED_VERSION = 3;
+var NEED_VERSION = 4;
 (function bootCheck(){
   if (E && R && E.API_VERSION === NEED_VERSION && R.API_VERSION === NEED_VERSION) return;
   if (!/[?&]fresh=/.test(location.search)) {
@@ -1997,6 +2093,178 @@ function renderClubs(){
       grid.appendChild(b);
     })(list[i]);
   }
+}
+
+/* ── ONE GAME, IN FULL ─────────────────────────────────────────────────────
+ *
+ * The scoreline was always on the results screen and the game behind it never
+ * was. R.gameDetail builds the box score off the run's seed and the game's own
+ * address, so opening game 41 twice shows the same 41 points and a reload does
+ * not rewrite history.
+ *
+ * WHICH GAMES ARE WALKABLE is what `gsList` holds: the playoff rounds and the
+ * marquee nights, newest first, which is what "the big games" means here. The
+ * Previous and Next buttons walk that list, so somebody who opens a Finals
+ * game can read the whole series without going back to the table each time.
+ * A game opened from the months fold is not on the list, and the buttons hide
+ * rather than jumping somewhere unrelated.
+ */
+var gsList = [], gsAt = -1;
+
+function sameRef(a, b){
+  if (!a || !b || a.kind !== b.kind) return false;
+  return a.kind === 'playoff'
+    ? (a.round === b.round && a.game === b.game)
+    : a.index === b.index;
+}
+
+function openGame(ref){
+  var d = R.gameDetail(run, ref);
+  if (!d) return;
+  gsList = R.bigGames(run);
+  gsAt = -1;
+  for (var i = 0; i < gsList.length; i++) if (sameRef(gsList[i], ref)) { gsAt = i; break; }
+  renderGame(d);
+  sheetReturn = document.activeElement;
+  $('gamesheet').classList.add('open');
+  $('b-gs-x').focus();
+}
+
+function closeGame(){
+  if (!$('gamesheet').classList.contains('open')) return;
+  $('gamesheet').classList.remove('open');
+  if (sheetReturn && sheetReturn.focus) { try { sheetReturn.focus(); } catch (e) {} }
+  sheetReturn = null;
+}
+
+function stepGame(by){
+  if (gsAt < 0) return;
+  var at = gsAt + by;
+  if (at < 0 || at >= gsList.length) return;
+  gsAt = at;
+  var d = R.gameDetail(run, gsList[at]);
+  if (d) renderGame(d);
+  /* The panel scrolls, and a walk that leaves you halfway down the previous
+     game's box score is a walk that looks like nothing happened. */
+  var panel = $('gamesheet').querySelector('.panel');
+  if (panel) panel.scrollTop = 0;
+}
+
+/* "A. Mourning". Falls back to whatever it was given rather than to an empty
+   cell: a one word name (there are a few) has no initial to take. */
+function boxName(n){
+  var parts = String(n || '').trim().split(/\s+/);
+  if (parts.length < 2) return parts[0] || '';
+  return parts[0].charAt(0) + '. ' + E.lastNameOf(n);
+}
+
+function renderGame(d){
+  $('gs-eyebrow').textContent = d.label + (d.marquee && !d.round ? ' · Marquee night' : '');
+  var res = $('gs-res');
+  res.textContent = d.won ? 'Won' : 'Lost';
+  res.className = 'gs-res ' + (d.won ? 'w' : 'l');
+  $('gs-score').textContent = d.yourPoints + '-' + d.oppPoints
+    + (d.ot ? (d.ot > 1 ? ' ' + d.ot + 'OT' : ' OT') : '');
+
+  /* WHO IT WAS AGAINST, and the two kinds of answer are different. A regular
+     season opponent is a real club out of the same data. A playoff opponent
+     is a strength the bracket drew, so it is described rather than named:
+     naming one would invent a club that never played. */
+  $('gs-opp').textContent = d.oppName
+    ? (d.home ? 'vs ' : 'at ') + d.oppName
+    : (d.home ? 'Home' : 'Away') + ' · played like a ' + oppWins(d.oppNet) + ' win team';
+
+  /* The quarters. */
+  var q = $('gs-qtr');
+  q.textContent = '';
+  var hr = document.createElement('tr');
+  hr.appendChild(document.createElement('th'));
+  for (var n = 0; n < d.quarters.names.length; n++) {
+    var th = document.createElement('th');
+    th.textContent = d.quarters.names[n];
+    hr.appendChild(th);
+  }
+  var tt = document.createElement('th');
+  tt.textContent = 'T';
+  hr.appendChild(tt);
+  q.appendChild(hr);
+
+  var line = function(name, nums, total, mine){
+    var tr = document.createElement('tr');
+    if (mine) tr.className = 'you';
+    var c0 = document.createElement('td');
+    c0.textContent = name;
+    tr.appendChild(c0);
+    for (var k = 0; k < nums.length; k++) {
+      var td = document.createElement('td');
+      td.textContent = String(nums[k]);
+      tr.appendChild(td);
+    }
+    var tdT = document.createElement('td');
+    tdT.className = 'tot';
+    tdT.textContent = String(total);
+    tr.appendChild(tdT);
+    q.appendChild(tr);
+  };
+  line('Them', d.quarters.theirs, d.oppPoints, false);
+  line('You', d.quarters.yours, d.yourPoints, true);
+
+  /* The box score, best night first. A box score in slot order is a roster;
+     in scoring order it is a report on the game. */
+  var bx = $('gs-box');
+  bx.textContent = '';
+  var head = document.createElement('tr');
+  ['', 'Min', 'Pts', 'Reb', 'Ast', 'FG', '3P'].forEach(function(h){
+    var th = document.createElement('th');
+    th.textContent = h;
+    head.appendChild(th);
+  });
+  bx.appendChild(head);
+
+  var rows = d.box.slice().sort(function(a, b){ return b.pts - a.pts; });
+  for (var r = 0; r < rows.length; r++) {
+    var l = rows[r];
+    var tr = document.createElement('tr');
+    if (r === 0) tr.className = 'top';
+    var c = document.createElement('td');
+    var nm = document.createElement('span');
+    nm.className = 'bn';
+    /* THE WAY A BOX SCORE WRITES A NAME, which is also the way it fits. The
+       figures take about 246px of a 358px row, so the name column is 104 and
+       "Alonzo Mourning" came out as "Alonzo Mour...". An initial and a
+       surname is both what every real box score prints and short enough that
+       nobody is truncated. The full name is on the title, for anybody who
+       wants it and for a screen reader. */
+    nm.textContent = boxName(l.n);
+    nm.title = l.n;
+    var sl = document.createElement('span');
+    sl.className = 'bs';
+    sl.textContent = l.slot || '';
+    c.appendChild(nm); c.appendChild(sl);
+    tr.appendChild(c);
+    var cells = [String(l.min), String(l.pts), String(l.reb), String(l.ast),
+      l.fgm + '-' + l.fga, l.tpm + '-' + l.tpa];
+    for (var z = 0; z < cells.length; z++) {
+      var td = document.createElement('td');
+      if (z === 1) td.className = 'pts';
+      td.textContent = cells[z];
+      tr.appendChild(td);
+    }
+    bx.appendChild(tr);
+  }
+
+  /* Two short sentences. The first answers "why is everyone playing 48
+     minutes", which is the thing a reader notices first and would otherwise
+     read as a bug. The second answers "where is their box score". */
+  $('gs-note').textContent = 'Six men, ' + (240 + d.ot * 25)
+    + ' minutes, every point. The other side is a strength here rather than a '
+    + 'roster, so it has no box score.';
+
+  var prev = $('b-gs-prev'), next = $('b-gs-next');
+  var walk = gsAt >= 0;
+  prev.hidden = !walk; next.hidden = !walk;
+  prev.disabled = !walk || gsAt <= 0;
+  next.disabled = !walk || gsAt >= gsList.length - 1;
 }
 
 /* ── THE FIRST RUN GUIDE ───────────────────────────────────────────────────
@@ -4002,6 +4270,47 @@ function renderOver(out){
     }
     tbl.appendChild(tb);
     po.appendChild(tbl);
+
+    /* EVERY GAME OF EVERY SERIES, and they were in the run object the whole
+       time. playoffSeries has always returned its games and nothing has ever
+       drawn one, so a run that ended 3-4 in the Finals told you the series
+       score and not one thing that happened in it. These are the big games
+       in the most literal sense available. */
+    for (var s = 0; s < run.playoffs.rounds.length; s++) {
+      (function(rd, ri){
+        if (!rd.games || !rd.games.length) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'poseries';
+        var lab = document.createElement('div');
+        lab.className = 'optgroup';
+        var lb = document.createElement('span');
+        lb.className = 'lbl';
+        lb.textContent = rd.round;
+        var rule = document.createElement('span');
+        rule.className = 'rule';
+        lab.appendChild(lb); lab.appendChild(rule);
+        wrap.appendChild(lab);
+        rd.games.forEach(function(g, gi){
+          var b = document.createElement('button');
+          b.className = 'pogame';
+          var n = document.createElement('span');
+          n.className = 'pg-n';
+          n.textContent = rd.games.length > 1 ? 'Game ' + (gi + 1) : 'One game';
+          var w = document.createElement('span');
+          w.className = 'pg-r ' + (g.won ? 'w' : 'l');
+          w.textContent = g.won ? 'W' : 'L';
+          var h = document.createElement('span');
+          h.textContent = g.home ? 'home' : 'away';
+          var sc = document.createElement('span');
+          sc.className = 'pg-s';
+          sc.textContent = g.yourPoints + '-' + g.oppPoints + (g.ot ? ' OT' : '');
+          b.appendChild(n); b.appendChild(w); b.appendChild(h); b.appendChild(sc);
+          b.onclick = function(){ openGame({ kind: 'playoff', round: ri, game: gi }); };
+          wrap.appendChild(b);
+        });
+        po.appendChild(wrap);
+      })(run.playoffs.rounds[s], s);
+    }
   }
 
   renderRoster($('o-slots'));
@@ -4149,6 +4458,11 @@ function renderMonths(){
       c4.className = 'sc';
       c4.textContent = gm.yourPoints + '-' + gm.oppPoints + (gm.ot ? ' OT' : '');
       tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3); tr.appendChild(c4);
+      /* EVERY ROW OPENS ITS GAME. The fold already lists all 82 with a score
+         on each, so the box score is one tap from where a reader already is
+         rather than behind a second screen listing the same games again. */
+      tr.className = 'gamerow';
+      (function(idx){ tr.onclick = function(){ openGame({ kind: 'season', index: idx }); }; })(k);
       tb.appendChild(tr);
     }
     tbl.appendChild(tb);
@@ -5139,6 +5453,9 @@ $('b-club-x').onclick = closeClubs;
 $('b-decade-pick').onclick = openEras;
 $('frg-x').onclick = frgClose;
 $('b-era-x').onclick = closeEras;
+$('b-gs-x').onclick = closeGame;
+$('b-gs-prev').onclick = function(){ stepGame(-1); };
+$('b-gs-next').onclick = function(){ stepGame(1); };
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a
    tap INSIDE the panel must not, or every button press dismisses the thing. */
 $('sheet').addEventListener('click', function(ev){ if (ev.target === $('sheet')) closeProfile(); });
@@ -5146,13 +5463,15 @@ $('clubsheet').addEventListener('click', function(ev){
   if (ev.target === $('clubsheet')) closeClubs(); });
 $('erasheet').addEventListener('click', function(ev){
   if (ev.target === $('erasheet')) closeEras(); });
+$('gamesheet').addEventListener('click', function(ev){
+  if (ev.target === $('gamesheet')) closeGame(); });
 /* ONE KEY, TWO SHEETS, and the club picker is the one that can be open over
    the profile is not: they are opened from different screens and never both.
    Escape closes whichever is up, and closing a shut sheet is a no-op, so the
    order does not matter. */
 document.addEventListener('keydown', function(ev){
   if (ev.key !== 'Escape') return;
-  closeProfile(); closeClubs(); closeEras();
+  closeProfile(); closeClubs(); closeEras(); closeGame();
   if (!$('frg').hidden) frgClose();
 });
 

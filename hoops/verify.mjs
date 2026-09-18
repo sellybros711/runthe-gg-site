@@ -1048,6 +1048,148 @@ ok(bestWins > worstWins + 20,
   ok(read.size >= 10, `the outcome scan found real reads (${read.size})`);
 }
 
+/* ── THE BOX SCORE ADDS UP, OR IT IS NOT A BOX SCORE ────────────────────────
+ *
+ * Six identities, and all six are the kind a reader checks by eye in two
+ * seconds. A box score whose field goals do not produce its points, or whose
+ * minutes do not fill the game, is the most obvious wrong thing this site
+ * could print, so every one of them is asserted over a real season rather
+ * than on a fixture.
+ *
+ * IT IS A DECOMPOSITION AND THE FIRST ASSERTION IS THE ONE THAT SAYS SO. The
+ * points column has to equal the scoreline resolveGame already settled. That
+ * is what stops this becoming a second model of the same game, which is the
+ * fault verify caught once already when the animated season and the instant
+ * season disagreed off one seed.
+ */
+{
+  const run = R.createRun({ seed: 8191 });
+  let guard = 0;
+  while (run.phase === R.PHASES.DRAFT && guard++ < 40) {
+    const draw = R.spin(run, data);
+    const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
+    R.sign(run, opts.slice().sort((a, b) => b.w - a.w)[0]);
+  }
+  const tagged = run.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[run.slotIndex[i]] }));
+  R.playSeason(run);
+
+  const rng = E.createSeededRNG(4242);
+  const bad = { sum: [], identity: [], attempts: [], minutes: [], quarters: [], level: [] };
+  let otSeen = 0, lines = 0;
+
+  for (const gm of run.season) {
+    const ot = gm.ot || 0;
+    const box = E.gameBox(tagged, gm.yourPoints, rng, ot);
+
+    const pts = box.reduce((s, l) => s + l.pts, 0);
+    if (pts !== gm.yourPoints) bad.sum.push(`${pts} against a ${gm.yourPoints} point game`);
+
+    const mins = box.reduce((s, l) => s + l.min, 0);
+    if (mins !== 240 + ot * 25) bad.minutes.push(`${mins} for ${4 + ot} periods`);
+    for (const l of box) {
+      lines++;
+      /* Two pointers, threes and free throws are his points. Nothing else. */
+      if (2 * (l.fgm - l.tpm) + 3 * l.tpm + l.ftm !== l.pts) {
+        bad.identity.push(`${l.n}: ${l.fgm}fg ${l.tpm}3p ${l.ftm}ft is not ${l.pts}`);
+      }
+      if (l.fgm > l.fga || l.tpm > l.tpa || l.tpm > l.fgm || l.ftm > l.fta) {
+        bad.attempts.push(`${l.n} made more than he took`);
+      }
+      if (l.min > 48 + ot * 5 || l.min < 1) bad.minutes.push(`${l.n} played ${l.min}`);
+      if (l.pts < 0 || l.reb < 0 || l.ast < 0) bad.attempts.push(`${l.n} went negative`);
+    }
+
+    const q = E.quarterLines(gm.yourPoints, gm.oppPoints, ot, rng);
+    const sum = (a) => a.reduce((x, y) => x + y, 0);
+    if (sum(q.yours) !== gm.yourPoints || sum(q.theirs) !== gm.oppPoints) {
+      bad.quarters.push(`${sum(q.yours)}-${sum(q.theirs)} against ${gm.yourPoints}-${gm.oppPoints}`);
+    }
+    if (q.yours.length !== 4 + ot || q.names.length !== 4 + ot) {
+      bad.quarters.push(`${q.yours.length} periods for ${ot} overtimes`);
+    }
+    if (ot) {
+      otSeen++;
+      /* THE ONE THAT IS NOT OBVIOUS. resolveGame breaks a tie by adding points
+         to one side, so a game that went to overtime WAS level at the buzzer.
+         Quarters that do not add up to a tie there are describing a different
+         game from the one on the scoreboard. */
+      if (sum(q.yours.slice(0, 4)) !== sum(q.theirs.slice(0, 4))) {
+        bad.level.push(`${sum(q.yours.slice(0, 4))}-${sum(q.theirs.slice(0, 4))} at the end of regulation`);
+      }
+      if (q.yours.slice(4).some(v => v <= 0) || q.theirs.slice(4).some(v => v <= 0)) {
+        bad.level.push('somebody was shut out of an overtime');
+      }
+    }
+  }
+
+  ok(lines > 400, `enough box score lines to be worth checking (${lines})`);
+  is(bad.sum.slice(0, 2), [], 'the points column is the scoreline');
+  is(bad.identity.slice(0, 2), [], "a man's shooting line produces his points");
+  is(bad.attempts.slice(0, 2), [], 'nobody makes more than he takes');
+  is(bad.minutes.slice(0, 2), [], 'the minutes column fills the game and nobody plays past the clock');
+  is(bad.quarters.slice(0, 2), [], 'the quarters are the scoreline');
+  ok(otSeen > 0, `overtime games in the sample to check (${otSeen})`);
+  is(bad.level.slice(0, 2), [], 'an overtime game was level at the end of regulation');
+
+  /* apportionCapped is the piece with real arithmetic in it and it was wrong
+     on 73% of inputs when it pinned both bounds in one pass. Swept rather
+     than sampled through a season, because the failure needs a particular
+     shape of weights: three men who want almost nothing beside three who want
+     everything. */
+  {
+     const swept = E.createSeededRNG(7);
+     let broke = 0;
+     for (let t = 0; t < 20000; t++) {
+       const w = Array.from({ length: 6 }, () => Math.max(1, 10 + E.normal(swept) * 14));
+       const ot = t % 7 === 0 ? 1 : 0;
+       const total = 240 + ot * 25, hi = 48 + ot * 5, lo = E.BOX.MIN_FLOOR;
+       const outp = E.apportionCapped(total, w, lo, hi);
+       if (outp.reduce((s, v) => s + v, 0) !== total) broke++;
+       else if (outp.some(v => v > hi || v < lo)) broke++;
+     }
+     is(broke, 0, 'a capped split hits its total inside its bounds, over 20,000 draws');
+     /* Asked for something the bounds cannot hold, it has to stop rather than
+        spin. Both directions, because the repair loop runs both ways. */
+     is(E.apportionCapped(50, [1, 1, 1, 1, 1, 1], 18, 48), [18, 18, 18, 18, 18, 18],
+       'a total below the floors settles on the floors');
+     is(E.apportionCapped(400, [1, 1, 1, 1, 1, 1], 18, 48), [48, 48, 48, 48, 48, 48],
+       'a total above the ceilings settles on the ceilings');
+  }
+
+  /* THE SAME GAME, OPENED TWICE, IS THE SAME GAME. gameDetail draws off the
+     run's seed and the game's own address rather than a shared stream, which
+     is what makes that true across a reload. A box score that rewrote itself
+     every time the sheet opened would be a game that cannot remember what
+     happened in it. */
+  const ref = { kind: 'season', index: 12 };
+  const a = R.gameDetail(run, ref), b = R.gameDetail(run, ref);
+  ok(a && JSON.stringify(a.box) === JSON.stringify(b.box),
+    'opening one game twice shows the same box score');
+  const other = R.gameDetail(run, { kind: 'season', index: 13 });
+  ok(other && JSON.stringify(a.box) !== JSON.stringify(other.box),
+    'two different games are two different box scores');
+  is(R.gameDetail(run, { kind: 'season', index: 9999 }), null, 'a game that is not there is null');
+  is(R.gameDetail(run, { kind: 'playoff', round: 99, game: 0 }), null, 'so is a round that is not there');
+  is(R.gameDetail(run, null), null, 'and so is nothing at all');
+
+  /* THE WALK IS CHRONOLOGICAL, and the first version was not: it listed the
+     playoffs first because that is the order the results screen draws them,
+     so Next on a play-in game went back to game 3 of the regular season. */
+  let outOfOrder = 0, lastIdx = -1, seenPlayoff = false, walked = 0;
+  for (const g of R.bigGames(run)) {
+    walked++;
+    if (g.kind === 'season') {
+      if (seenPlayoff || g.index <= lastIdx) outOfOrder++;
+      lastIdx = g.index;
+    } else seenPlayoff = true;
+  }
+  ok(walked > 10, `the big games list has something in it (${walked})`);
+  is(outOfOrder, 0, 'the big games walk forwards through the season and into the playoffs');
+  /* Every one of them has to open, or a Next lands on a blank sheet. */
+  const dead = R.bigGames(run).filter(g => !R.gameDetail(run, g)).length;
+  is(dead, 0, 'every game the walk offers actually opens');
+}
+
 /* THE ALL TIME RANK INSERTS YOUR TEAM, SO THE DENOMINATOR HAS TO COUNT IT.
    A roster below every real team-season ranks length + 1, and the page was
    printing "1404th of 1403 all time". Both ends asserted, because the top end

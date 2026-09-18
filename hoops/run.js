@@ -614,6 +614,113 @@ function finalizeSeason(run) {
   return run.outcome;
 }
 
+// ─── one game, in full ──────────────────────────────────────────────────────
+
+/* THE BOX SCORE FOR A GAME THAT HAS ALREADY BEEN PLAYED.
+ *
+ * ITS OWN RNG, DERIVED FROM THE RUN'S SEED AND THE GAME'S OWN ADDRESS. Three
+ * things make that necessary and none of them is an optimisation:
+ *
+ *   - Opening game 41 twice has to show the same 41 points. A shared stream
+ *     would give a different box score every time the sheet was opened, which
+ *     is a game that cannot remember what happened in it.
+ *   - It must not consume the run's stream. rngCalls is what makes a reloaded
+ *     run replay identically, and drawing from it to draw a SCREEN would move
+ *     the season somebody comes back to.
+ *   - It has to survive a reload, which a stream position in memory does not.
+ *
+ * NO BOX SCORE FOR THE OPPONENT, DELIBERATELY. The schedule knows which real
+ * club you played, and the sim never used their players: an opponent in this
+ * model is a net rating. Printing a line for five real men who were never
+ * simulated would be the game inventing statistics about real people and
+ * presenting them as the game's own record. The quarters carry both sides,
+ * because those come off the scoreline, which is real.
+ */
+const GAME_SALT = 0x9e3779b1;
+
+function gameSeed(run, kind, a, b) {
+  let h = (run.seed >>> 0) ^ 0x5bf03635;
+  h = Math.imul(h ^ (kind + 1), GAME_SALT) >>> 0;
+  h = Math.imul(h ^ (a + 1), GAME_SALT) >>> 0;
+  h = Math.imul(h ^ (b + 1), GAME_SALT) >>> 0;
+  return h >>> 0;
+}
+
+function taggedRoster(run) {
+  return run.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[run.slotIndex[i]] }));
+}
+
+/* ref is { kind: 'season', index } or { kind: 'playoff', round, game }. */
+function gameDetail(run, ref) {
+  if (!run || !ref) return null;
+  const playoff = ref.kind === 'playoff';
+
+  let gm = null, head = null;
+  if (playoff) {
+    const rd = run.playoffs && run.playoffs.rounds && run.playoffs.rounds[ref.round];
+    if (!rd || !rd.games || !rd.games[ref.game]) return null;
+    gm = rd.games[ref.game];
+    head = {
+      round: rd.round,
+      label: rd.round + (rd.games.length > 1 ? ' · Game ' + (ref.game + 1) : ''),
+      oppName: null, oppNet: rd.oppNet, home: !!gm.home, marquee: true,
+    };
+  } else {
+    if (!run.season || !run.season[ref.index]) return null;
+    gm = run.season[ref.index];
+    const sc = (run.schedule && run.schedule[ref.index]) || {};
+    head = {
+      round: null,
+      label: 'Game ' + (ref.index + 1) + ' of ' + E.CONSTANTS.REGULAR_SEASON_GAMES,
+      oppName: sc.oppName || null, oppRating: sc.oppRating || null,
+      home: !!sc.home, marquee: !!sc.marquee,
+    };
+  }
+
+  const ot = gm.ot || 0;
+  const rng = E.createSeededRNG(gameSeed(run, playoff ? 1 : 0,
+    playoff ? ref.round : ref.index, playoff ? ref.game : 0));
+
+  return {
+    ...head,
+    won: !!gm.won, yourPoints: gm.yourPoints, oppPoints: gm.oppPoints, ot,
+    quarters: E.quarterLines(gm.yourPoints, gm.oppPoints, ot, rng),
+    box: E.gameBox(taggedRoster(run), gm.yourPoints, rng, ot),
+  };
+}
+
+/* Every game of the run worth opening on its own, IN THE ORDER THEY WERE
+ * PLAYED. A "big game" is a marquee night or a playoff game: the slate is
+ * built so the marquee ones are against the best team-seasons in the data,
+ * which is the only thing in a regular season that is not interchangeable.
+ *
+ * CHRONOLOGICAL, and the first version was not. It listed the playoffs first
+ * because that is the order the results screen draws them in, so pressing
+ * Next on a play-in game went to game 3 of the regular season. A walk through
+ * a season that runs backwards at the one join everybody reaches is a walk
+ * nobody trusts a second time.
+ */
+function bigGames(run) {
+  const out = [];
+  (run.season || []).forEach((g, i) => {
+    const sc = (run.schedule && run.schedule[i]) || {};
+    if (!sc.marquee) return;
+    out.push({ kind: 'season', index: i, won: !!g.won,
+      label: (sc.home ? 'vs ' : 'at ') + (sc.oppName || 'opponent'),
+      score: g.yourPoints + '-' + g.oppPoints });
+  });
+  if (run.playoffs && run.playoffs.rounds) {
+    run.playoffs.rounds.forEach((rd, r) => {
+      (rd.games || []).forEach((g, i) => {
+        out.push({ kind: 'playoff', round: r, game: i, won: !!g.won,
+          label: rd.round + ((rd.games.length > 1) ? ' · G' + (i + 1) : ''),
+          score: g.yourPoints + '-' + g.oppPoints });
+      });
+    });
+  }
+  return out;
+}
+
 // ─── measuring the draft ────────────────────────────────────────────────────
 
 /* THE BEST SIX YOU COULD HAVE HAD, out of every team-season this run actually
@@ -826,12 +933,13 @@ const publicAPI = {
   /* Moves with engine.js, not independently: index.html asks both files for the
      SAME number, so one version means one answer to "is this page and its
      scripts the same age". */
-  API_VERSION: 3,
+  API_VERSION: 4,
   PHASES, TUNING, BLOCK,
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,
   previewSigning, previewFit, fitNow, bestPossibleSquad, projectSeason,
   indexData, drawable, clubSeasons, eraSeasons,
+  gameDetail, bigGames, taggedRoster,
   remaining, reserveFloor, fullFloor, spendable, capOf, money,
   canRespin, canFinishAfter, blockFor, positionFull,
   openSlots, openSlotNames, slotForPlayer, eligibleOpenSlots, slotsLeft,

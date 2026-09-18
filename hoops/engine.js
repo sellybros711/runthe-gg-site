@@ -39,7 +39,7 @@
    it at boot and reloads once, because a returning visitor CAN hold a cached
    copy of this file against a current page. 2: playerTags() removed, wheel
    colors and title resolution added. */
-const ENGINE_API_VERSION = 3;
+const ENGINE_API_VERSION = 4;
 
 // ─── constants ──────────────────────────────────────────────────────────────
 
@@ -1236,6 +1236,340 @@ function resolveGame(pointsFor, pointsAgainst, rng, advantage) {
   return { won: y > t, yourPoints: y, oppPoints: t, ot };
 }
 
+// ─── the box score ──────────────────────────────────────────────────────────
+
+/* WHAT HAPPENED IN ONE GAME, FOR SIX REAL PLAYERS.
+ *
+ * You draft Jordan's 1996 and the game has never once told you what he did in
+ * any of the 82. A scoreline is the result; a box score is the GAME, and it is
+ * the whole reason to draft real people out of real seasons rather than six
+ * ratings.
+ *
+ * IT IS A DECOMPOSITION OF A SCORE THAT IS ALREADY DECIDED, AND NEVER A SECOND
+ * MODEL. This is the load-bearing decision in this section and it is worth the
+ * paragraph. resolveGame settles the scoreline off the run's seed before any
+ * of this runs, and these six lines are apportioned to hit that total exactly.
+ * Two reasons, both of them things that have already gone wrong on this site:
+ *
+ *   - A possession sim that DECIDED the score would replace the win-share
+ *     model fitted to twenty-two real NBA records at 3.5 wins rms, which is
+ *     the only reason a roster in this game is worth what it was worth in
+ *     life. Every TARGETS band would need re-solving and the answer would be
+ *     worse.
+ *   - Two models of one game disagree. verify.mjs already caught the animated
+ *     season and the instant season producing different records off one seed
+ *     when a home-court expression was written out twice. A box score that did
+ *     not sum to the scoreline printed beside it is the same fault, visible to
+ *     anybody who can add.
+ *
+ * So nothing downstream reads any of this. It is what the game SHOWS, and the
+ * one property it must have is that it adds up.
+ */
+
+const BOX = {
+  /* A scorer's night-to-night spread, as a multiple of the square root of his
+   * average. Real NBA scoring is roughly sqrt-variance.
+   *
+   * IT ONLY GOVERNS THE TAIL, AND THAT IS THE MEASUREMENT WORTH NOT REPEATING.
+   * Swept from 1.45 down to 0.55 over 2,460 team-games a row, the leading
+   * scorer's share of his team moved 34.9% to 32.2% and the median game high
+   * moved 41 to 38. It is not the reason a box score here is concentrated:
+   *
+   *   K      leader   40+     50+    60+   high med/p90/max
+   *   1.45   34.9%    55.3%   17.6%  3.5%  41 / 53 / 83
+   *   0.85   32.7%    44.9%    8.5%  0.7%  39 / 49 / 65
+   *   0.55   32.2%    41.6%    6.5%  0.1%  38 / 48 / 69
+   *
+   * THE CONCENTRATION IS THE PREMISE AND NO CONSTANT FIXES IT. Six men cover
+   * 240 minutes and score every point, where a real club spreads both over
+   * ten, so the best man takes about a third of his team against a real 26%
+   * and no amount of damping moves it. Anybody who comes here to make the box
+   * scores look more like a real NBA game log is turning the wrong dial: the
+   * dial is the roster size, and that is the game.
+   *
+   * So this is set for the TAIL alone. 3.5% of games with a 60 point scorer
+   * is three a season and silly; 0.7% is one every other year and is the kind
+   * of night somebody screenshots. 0.85 is the first value with real room
+   * rather than the last one that passes, since 0.70 and 0.55 buy almost
+   * nothing after it. */
+  PTS_SD_K: 0.85,
+  REB_SD_K: 1.00,
+  AST_SD_K: 0.90,
+  /* HOW FAR ATTEMPTS FOLLOW POINTS. A man who doubles his scoring did not
+     double his shots: most of a big night is efficiency. At 0.30 a 40 point
+     game off a 25 point average takes about 18% more shots than usual. */
+  VOLUME_FOLLOW: 0.30,
+  /* The share of a man's points that came from the line, and the league rate
+     he shot there. Both are league constants standing in for per-player rates
+     the data does not carry (there is no FTA column), and they are the only
+     invented numbers in a line. The alternative is a box score claiming every
+     30 point night came entirely from the field, which is worse. */
+  FT_SHARE: 0.17,
+  FT_PCT: 0.77,
+  /* Minutes. The engine already weights a sixth man at MINUTES_SHARE.sixth,
+     and `mp` in the data is what he really played, so this only varies it. */
+  MIN_SD: 3.4,
+  /* Nobody in a six man rotation sits for three quarters. The floor is what
+     stops the split handing somebody four minutes and the man beside him the
+     whole game, and six times it has to stay under 240. */
+  MIN_FLOOR: 18,
+};
+
+/* Split a total into integer parts in the given proportions, hitting the total
+   EXACTLY. Largest remainder, which is the method that never leaves a stray
+   point over and never needs a fudge row to absorb one. */
+function apportion(total, weights) {
+  const n = weights.length;
+  const out = new Array(n).fill(0);
+  if (!n) return out;
+  const T = Math.max(0, Math.round(total));
+  const sum = weights.reduce((s, w) => s + Math.max(0, w), 0);
+  if (!(sum > 0)) { out[0] = T; return out; }
+
+  const exact = weights.map(w => Math.max(0, w) / sum * T);
+  for (let i = 0; i < n; i++) out[i] = Math.floor(exact[i]);
+  let left = T - out.reduce((s, v) => s + v, 0);
+  const order = exact
+    .map((v, i) => ({ i, frac: v - Math.floor(v) }))
+    .sort((a, b) => b.frac - a.frac);
+  for (let k = 0; left > 0; k++) { out[order[k % n].i]++; left--; }
+  return out;
+}
+
+/* apportion, with a floor and a ceiling on every part.
+ *
+ * The minutes column needs it and nothing else does: six men share 240 player
+ * minutes, so the average is 40, and a plain proportional split handed the
+ * heaviest man 67 of a 48 minute game. A cap cannot be applied afterwards
+ * without breaking the total, so whatever a capped man gives up is
+ * redistributed among the men still free to take it, and the pass repeats
+ * because the redistribution can push somebody else over.
+ *
+ * It terminates: every pass pins at least one man or changes nothing, so the
+ * bound is one pass per part.
+ */
+function apportionCapped(total, weights, lo, hi) {
+  const n = weights.length;
+  if (!n) return [];
+  const out = new Array(n).fill(null);
+
+  for (let pass = 0; pass <= n + 1; pass++) {
+    const free = [];
+    let spoken = 0;
+    for (let i = 0; i < n; i++) {
+      if (out[i] === null) free.push(i); else spoken += out[i];
+    }
+    if (!free.length) break;
+    const share = apportion(total - spoken, free.map(i => weights[i]));
+
+    /* ONE SIDE PER PASS, and getting this wrong is what made the first
+       version wrong on 73% of inputs. Pinning the over-cap men AND the
+       under-floor men together throws away the redistribution between them:
+       weights [1,1,1,31.6,26.8,25.8] over 240 pinned three at the floor and
+       three at the ceiling in a single pass, arrived at 198, and had nothing
+       left unpinned to give the other 42 to. Clamp the ceiling, re-apportion
+       what is left among everybody else, and the three cheap men land on 32
+       apiece. */
+    const over = [];
+    for (let k = 0; k < free.length; k++) if (share[k] > hi) over.push(free[k]);
+    if (over.length) { for (const i of over) out[i] = hi; continue; }
+
+    const under = [];
+    for (let k = 0; k < free.length; k++) if (share[k] < lo) under.push(free[k]);
+    if (under.length) { for (const i of under) out[i] = lo; continue; }
+
+    for (let k = 0; k < free.length; k++) out[free[k]] = share[k];
+    break;
+  }
+  for (let i = 0; i < n; i++) if (out[i] === null) out[i] = lo;
+
+  /* Only reachable when the caller asked for something the bounds cannot
+     hold (n*lo above the total, or n*hi below it). Push what is left as far
+     as the bounds allow rather than dropping it, and stop when a full sweep
+     moves nothing, which is the honest "this total does not fit" answer. */
+  let drift = Math.round(total) - out.reduce((s, v) => s + v, 0);
+  while (drift !== 0) {
+    let moved = 0;
+    for (let i = 0; i < n && drift !== 0; i++) {
+      if (drift > 0 && out[i] < hi) { out[i]++; drift--; moved++; }
+      else if (drift < 0 && out[i] > lo) { out[i]--; drift++; moved++; }
+    }
+    if (!moved) break;
+  }
+  return out;
+}
+
+/* A man's shooting line, solved BACKWARDS from the points he scored so the
+ * arithmetic always closes: 2 * twos + 3 * threes + free throws is his points,
+ * every time. A box score whose field goals do not produce its points is the
+ * most obvious tell there is.
+ *
+ * The free throws are the free variable, which is what absorbs the parity
+ * problem: points left after the threes have to be even to come out of two
+ * pointers, and moving a free throw by one is how that is fixed without
+ * touching the total.
+ */
+function shootingLine(p, pts, rng, load) {
+  const avg = Math.max(1, p.pts || 1);
+
+  /* TWO THINGS SCALE A MAN'S SCORING AND THEY MUST NOT BE CONFUSED, which the
+   * first version did, and it put the league at 59% from the field.
+   *
+   * The STRUCTURAL one is `load`: six men play all 240 minutes here and absorb
+   * a whole bench's shots, so the six season averages sum to about 78 against
+   * a team total near 112. That is a real 1.4x of extra WORK, and the shots
+   * come with it, so it passes into attempts in full.
+   *
+   * The NIGHT one is `heat`: how this game went against what he was already
+   * due. Most of a big night is efficiency rather than volume, so only
+   * VOLUME_FOLLOW of it reaches the attempts.
+   *
+   * Folded together, a man scoring 41 off a 30 average was credited with 20
+   * shots instead of 27 and shot 60%. Separated, the league shoots what the
+   * league shoots.
+   */
+  const scale = load > 0 ? load : 1;
+  const heat = clamp(pts / (avg * scale), 0.15, 2.6);
+  const follow = scale * (1 - BOX.VOLUME_FOLLOW + BOX.VOLUME_FOLLOW * heat);
+
+  let fga = Math.max(pts > 0 ? 1 : 0, Math.round((p.fga || avg * 0.85) * follow));
+  let tpa = Math.round((p.tpa || 0) * follow);
+  if (tpa > fga) tpa = fga;
+
+  /* Free throws first, then made from the line, then parity. */
+  let ftm = Math.round(pts * BOX.FT_SHARE * (0.4 + rng() * 1.2));
+  if (ftm > pts) ftm = pts;
+
+  /* Of what is left, the threes, capped by what he actually attempts. A man
+     who took none all season takes none tonight. */
+  const threeRate = fga > 0 ? tpa / fga : 0;
+  let tpm = Math.min(tpa, Math.max(0, Math.round((pts - ftm) * threeRate / 3)));
+
+  /* The rest has to divide into two pointers, so nudge the line rather than
+     leave a point unaccounted for. */
+  let field = pts - ftm - 3 * tpm;
+  if (field < 0) { tpm = Math.max(0, Math.floor((pts - ftm) / 3)); field = pts - ftm - 3 * tpm; }
+  if (field % 2 !== 0) {
+    /* EITHER WAY, CHOSEN ON THE DICE. The first version always went up, and
+       always adding one free throw to half of all lines put the league's
+       share of points from the line at 22% against a real 17%. A tie-break
+       that only breaks one way is a bias with a rounding error's name on it. */
+    const down = ftm > 0 && rng() < 0.5;
+    if (down) { ftm--; field++; }
+    else if (ftm + 1 <= pts) { ftm++; field--; }
+    else if (tpm > 0) { tpm--; field += 3; ftm = pts - 3 * tpm - field; }
+  }
+  if (field < 0) field = 0;
+
+  const twos = field / 2;
+  const fgm = twos + tpm;
+  if (fgm > fga) fga = fgm;
+  let fta = Math.max(ftm, Math.round(ftm / BOX.FT_PCT));
+
+  return { pts, fgm, fga, tpm, tpa, ftm, fta };
+}
+
+/* The six lines for one side of one game. `teamPoints` is what the scoreline
+   already says, and the points column sums to it exactly. */
+function gameBox(roster, teamPoints, rng, ot) {
+  const men = roster.map(p => ({ p, share: minutesShare(p) }));
+
+  /* Scoring weight is his real per-game average, scaled by the minutes his
+     slot actually gets, jittered by his own spread. Negative draws are floored
+     rather than reflected: a man can have a quiet night and cannot score less
+     than nothing. */
+  const weights = men.map(({ p, share }) => {
+    const base = Math.max(0.5, (p.pts || 1) * share);
+    return Math.max(0, base + normal(rng) * BOX.PTS_SD_K * Math.sqrt(base));
+  });
+  const pts = apportion(teamPoints, weights);
+
+  /* What the six are carrying against what they averaged. See shootingLine:
+     this is the structural half of the scale-up and it reaches the attempts
+     in full. Guarded against a roster of men with no scoring at all, which
+     the fixtures can build. */
+  const expected = men.reduce((s, { p, share }) => s + Math.max(0, p.pts || 0) * share, 0);
+  const load = expected > 1 ? teamPoints / expected : 1;
+
+  /* FIVE MEN ARE ON THE FLOOR FOR EVERY MINUTE OF IT, so the column has to add
+   * to 240 and not to whatever six men happened to play for real clubs with
+   * benches behind them.
+   *
+   * Printed off `mp` alone it added to 153, and a box score saying six men
+   * played two thirds of the game and scored all of the points is a box score
+   * arguing with itself. `mp` is his minutes in a ten man rotation, which is
+   * the wrong denominator for a mode whose whole premise is that these six ARE
+   * the team. So it is his SHARE of the minutes, and a 44 minute starter is
+   * the honest price of a six man roster rather than a number to shrink.
+   *
+   * An overtime is five more minutes with five men on the floor. */
+  const extra = Math.max(0, ot | 0);
+  const floorMinutes = 240 + extra * 25;
+  const minutes = apportionCapped(floorMinutes,
+    men.map(({ p, share }) => Math.max(1, (p.mp || 30) * share + normal(rng) * BOX.MIN_SD)),
+    BOX.MIN_FLOOR, 48 + extra * 5);
+
+  return men.map(({ p, share }, i) => {
+    const reb = Math.max(0, Math.round((p.reb || 0) * share
+      + normal(rng) * BOX.REB_SD_K * Math.sqrt(Math.max(1, (p.reb || 0) * share))));
+    const ast = Math.max(0, Math.round((p.ast || 0) * share
+      + normal(rng) * BOX.AST_SD_K * Math.sqrt(Math.max(1, (p.ast || 0) * share))));
+    /* Blocks and steals are small counts, so a normal draw around a mean under
+       one produces a lot of negatives. Floored, which is what a real box score
+       looks like: most nights most men have none. */
+    const blk = Math.max(0, Math.round((p.blk || 0) * share + normal(rng) * 0.8));
+    const stl = Math.max(0, Math.round((p.stl || 0) * share + normal(rng) * 0.8));
+    return {
+      i: p.i, n: p.n, slot: p._slot || null, min: minutes[i], reb, ast, blk, stl,
+      ...shootingLine(p, pts[i], rng, load),
+    };
+  });
+}
+
+/* HOW THE GAME GOT THERE: four quarters, plus whatever overtime the scoreline
+ * already says it went to.
+ *
+ * THE OVERTIME CONSTRAINT IS THE WHOLE REASON THIS IS NOT FOUR RANDOM SPLITS.
+ * resolveGame breaks a tie by adding points to ONE side, so a game that went
+ * to overtime is a game that was level at the end of regulation, and quarters
+ * that do not add up to a tie there are quarters describing a different game
+ * from the one on the scoreboard. So regulation is apportioned to a level
+ * score and each extra period is scored on top of it.
+ *
+ * The loser of an overtime still scores in it, which resolveGame does not
+ * model and every real overtime does. That is invented, and it is invented in
+ * the direction of the sport rather than away from it.
+ */
+function quarterLines(yourPoints, oppPoints, ot, rng) {
+  const periods = 4 + Math.max(0, ot | 0);
+  /* Level at the buzzer, and low enough that both sides have a real overtime
+     to play: about eleven points each per extra period. */
+  const otFloor = 9 + Math.round(rng() * 5);
+  const level = ot > 0
+    ? Math.max(20, Math.min(yourPoints, oppPoints) - ot * otFloor)
+    : null;
+
+  const yourReg = ot > 0 ? level : yourPoints;
+  const oppReg = ot > 0 ? level : oppPoints;
+
+  /* Quarters are close to even with real spread. Weighted rather than drawn
+     directly so apportion can hit the total exactly. */
+  const spread = () => Array.from({ length: 4 }, () => Math.max(0.35, 1 + normal(rng) * 0.17));
+  const yours = apportion(yourReg, spread());
+  const theirs = apportion(oppReg, spread());
+
+  if (ot > 0) {
+    const yourOT = apportion(yourPoints - level, spread().slice(0, ot).map(() => 1));
+    const oppOT = apportion(oppPoints - level, spread().slice(0, ot).map(() => 1));
+    for (let k = 0; k < ot; k++) { yours.push(yourOT[k]); theirs.push(oppOT[k]); }
+  }
+
+  const names = ['1st', '2nd', '3rd', '4th'];
+  for (let k = 4; k < periods; k++) names.push(periods === 5 ? 'OT' : 'OT' + (k - 3));
+
+  return { names, yours, theirs, periods };
+}
+
 // ─── the schedule ───────────────────────────────────────────────────────────
 
 /* YOUR SLATE IS REAL TEAMS. Every opponent is a team-season out of the same
@@ -2096,6 +2430,7 @@ const publicAPI = {
   teamWinPct, overallRating, nationalRank, pythagorean,
   buildOpponentPool, generateSchedule, gameMeans,
   resolveGame, playoffSeries, generatePlayoffs, playRun, homeAdvantage,
+  BOX, gameBox, quarterLines, apportion, apportionCapped, shootingLine,
   ROUND_NET,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
   respinCost, respinFees,
