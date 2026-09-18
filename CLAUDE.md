@@ -2139,6 +2139,47 @@ wanted. The pitching notes carry a fielding step now. The `ring` the batting
 notes must never mention is still forbidden there and is the truth here, because
 `drawCatchRing` is what draws it.
 
+**And the LONG page still said "Two plays need you"**, so the robbery went
+undocumented on the more thorough of the two how to play surfaces for as long as
+it has existed. Same lesson as the arcade's twelve blocks: two surfaces say how to
+play and both need the edit, every time.
+
+#### DOING NOTHING WAS THE WORST OUTCOME BOTH WINDOWS HAD
+
+Neither window distinguished a player who pressed at the wrong moment from one who
+never pressed at all, and the second is most of the people who have never played
+this before.
+
+- **The grounder's timeout called `finish(-1)` and fell through the distance
+  maths.** `ideal` sits near 0.55 and `yellowHalf` is 0.14, so `d` came out about
+  1.55, past every band: an ignored ground ball was a **throwing error**, batter
+  safe and every runner up an extra base. The comment on that very line said
+  "fielder holds it: batter safe", which is the single below it. **The comment was
+  right and the code was not**, which is the dangerous direction, because the next
+  person fixes the code to match.
+- **The fly window said `if (t < 0) outcome = 'miss'` outright**, and a miss there
+  is the ball over his head for a **TRIPLE**.
+
+So a player who did not yet know these controls existed conceded an error on most
+ground balls and a triple on most fly balls, all game. That is not a guess about
+how it felt: measured from the other side, a defence that pressed nothing gave up
+**27 to 32 runs a nine against 5.5**, which is the whole of that gap.
+
+**THE RULE IS THAT NOT REACTING IS NEVER WORSE THAN REACTING BADLY.** Pressing at
+the wrong moment stays the worst outcome, because you committed and got it wrong,
+and that is what keeps the windows worth playing. Letting the bar run out is
+passive: the fielder holds the ball, or never leaves his feet, so the batter
+reaches and nobody else moves up. Both expiries are a **single** now.
+
+**The guard DRIVES it rather than computing it**, because the arithmetic is what
+was wrong in the first place. It opens each window for real, presses nothing, and
+reads back what the game scored.
+
+**And the notes can now tell the truth about all three**, which is what they are
+for: let the bar run out and the batter reaches, nothing worse; miss the robbery
+and nothing is lost at all. Nobody presses a button they think can hurt them, and
+before this the fear was correct.
+
 **A play keeps a finish timer that nulls `g.play` and moves the batter along**, so
 a test that hits a second ball 700ms after the first is torn down by the first
 one's clock and reports a window that never opened. Each case in the guard waits

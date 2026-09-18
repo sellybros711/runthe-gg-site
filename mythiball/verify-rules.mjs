@@ -40,6 +40,7 @@
      the tag              a caught fly moves a runner, and never on the third out
      the dugout learns    a harder tier chases less and reads a one pitch caller
      the robbery          a catchable hit can be taken away, and missing it costs nothing
+     doing nothing is never the worst  an ignored window costs the out, never more
      the club remembers   a franchise carries its players' records, not only its win column
      and the club changes them  a man develops at what he did here, and the league rises with you
      the friendly button  Randomize hands you a mound, and a hand draft is told who is on it
@@ -2315,6 +2316,64 @@ async function main() {
       ok(batting.opened === 0,
          'and the side at bat is never offered its own robbery',
          JSON.stringify(batting));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- doing nothing is never the worst ---- */
+    {
+      console.log('doing nothing is never the worst');
+      /* BOTH FIELDING WINDOWS SCORED AN EXPIRY AS THEIR WORST RESULT.
+         The grounder's timeout called finish(-1) and fell through the
+         distance maths: ideal sits near 0.55 and yellowHalf is 0.14, so d
+         came out about 1.55 and an ignored ground ball was a THROWING
+         ERROR, batter safe and every runner up an extra base. The comment
+         on that very line said "fielder holds it: batter safe", which is
+         the single. The comment was right and the code was not. The fly
+         window said `if (t < 0) outcome = 'miss'` outright, which is the
+         ball over his head, scored a TRIPLE.
+
+         So a player who did not yet know these controls existed gave up
+         an error on most ground balls and a triple on most fly balls, for
+         a whole game. Measured from the other side, a defence that never
+         pressed anything conceded 27 to 32 runs a nine against 5.5.
+
+         THE RULE IS THAT NOT REACTING IS NEVER WORSE THAN REACTING BADLY.
+         Pressing at the wrong moment is a mistake and keeps the worst
+         outcome, because you committed and got it wrong. Letting the bar
+         run out is passive: the fielder holds the ball, or never leaves
+         his feet, and the batter reaches without anybody else moving up.
+
+         It is DRIVEN rather than reasoned. The arithmetic above is what
+         was wrong in the first place, so this opens each window for real,
+         presses nothing, and reads what the game scores. */
+      const { pg, errors } = await fresh(browser);
+      const drive = async (which) => pg.evaluate(async (which) => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: false });   /* the CPU bats, you field */
+        await new Promise(r => setTimeout(r, 700));
+        const g = State.game;
+        let got = null;
+        const realThrow = window.resolveThrow, realCatch = window.resolveCatch;
+        window.resolveThrow = (o) => { got = o; };
+        window.resolveCatch = (o) => { got = o; };
+        endAtBatCleanup(); g.pitch = null;
+        if (which === 'throw') scheduleThrowMinigame('ground out', currentBatter());
+        else scheduleFlyCatchMinigame('fly out', currentBatter());
+        /* wait well past the window's own duration, touching nothing */
+        await new Promise(r => setTimeout(r, 4200));
+        window.resolveThrow = realThrow; window.resolveCatch = realCatch;
+        return got;
+      }, which);
+      const t = await drive('throw');
+      const c = await drive('catch');
+      ok(t === 'single', 'a grounder nobody throws: the fielder holds it, batter safe',
+         `scored "${t}"`);
+      ok(t !== 'error', 'and NOT a throwing error that moves every runner up');
+      ok(c === 'single', 'a fly nobody catches falls in front of him',
+         `scored "${c}"`);
+      ok(c !== 'miss', 'and NOT a triple over his head');
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

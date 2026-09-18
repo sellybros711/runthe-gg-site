@@ -7321,9 +7321,9 @@ const COACH = {
        one worth teaching hardest, because missing it costs nothing and
        nobody presses a button they think can hurt them. */
     '<b>Then you field it.</b> A ball in play can open a short window. Press in the '
-    + '<b>green</b> to finish a throw or make a catch. A <b>ring</b> on a deep fly '
-    + 'means you can rob the hitter. Time it and his hit becomes an out. Miss it and '
-    + 'nothing is lost.',
+    + '<b>green</b> to finish a throw or make a catch. Let it run out and the batter '
+    + 'reaches, nothing worse. A <b>ring</b> on a deep fly is a robbery. Time it and '
+    + 'his hit becomes an out. Miss that one and nothing is lost at all.',
   ],
 };
 function coachDue(kind) { return PREFS.coach !== false && !PREFS['coach_' + kind]; }
@@ -10055,11 +10055,32 @@ function startThrowWindow(kind, batter) {
     if (g.play) g.play.throwActive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('click', onClick, true);
-    const d = Math.abs(t - window.ideal);
+    /* DOING NOTHING IS NOT THE SAME AS THROWING IT AWAY, and for as long
+       as this window existed it was scored worse. The expiry called
+       finish(-1) and fell through the distance maths below: ideal sits
+       near 0.55 and yellowHalf is 0.14, so d came out about 1.55 and
+       every ignored grounder was an ERROR, with the batter safe AND every
+       runner taking an extra base. The comment on the timeout said
+       "fielder holds it: batter safe", which is the single below. The
+       comment was right and the code was not.
+
+       It is a fairness rule as much as a fiction one: pressing at the
+       wrong moment is a mistake and keeps the worst outcome, because you
+       threw it away. Not pressing is passive, and a fielder who holds the
+       ball has made the routine play slowly rather than catastrophically.
+       NOT REACTING IS NEVER WORSE THAN REACTING BADLY.
+
+       It is also the first ten minutes of the game. A player who does not
+       yet know this window exists gave up an error on every routine
+       ground ball, which is most of them. */
     let outcome;
-    if (d <= window.greenHalf) outcome = 'out';
-    else if (d <= window.yellowHalf) outcome = 'single';
-    else outcome = 'error';
+    if (t < 0) outcome = 'single';
+    else {
+      const d = Math.abs(t - window.ideal);
+      if (d <= window.greenHalf) outcome = 'out';
+      else if (d <= window.yellowHalf) outcome = 'single';
+      else outcome = 'error';
+    }
     resolveThrow(outcome, kind, batter);
   };
   const onClick = (e) => {
@@ -10196,9 +10217,20 @@ function startCatchWindow(kind, batter, landingX, landingY) {
     if (g.play) g.play.catchActive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('click', onClick, true);
-    /* t < 0 means the window expired. */
+    /* t < 0 means the window expired, and it used to mean a MISS: the
+       ball over his head, scored a TRIPLE. That is the worst outcome this
+       window has, handed to somebody for doing nothing, and a player who
+       does not yet know the control exists gave up a triple on every
+       catchable fly ball in the game.
+
+       It drops in FRONT of him now. The same rule the throw window
+       carries: pressing at the wrong moment is a mistake and keeps the
+       worst outcome, because you committed and got it wrong. Not pressing
+       is a fielder who never left his feet, and a ball that falls in is a
+       single rather than one that clears his head. NOT REACTING IS NEVER
+       WORSE THAN REACTING BADLY. */
     let outcome;
-    if (t < 0) outcome = 'miss';
+    if (t < 0) outcome = 'single';
     else {
       const d = Math.abs(t - 0.5);
       if (d <= window.greenHalf) outcome = 'catch';
@@ -14366,20 +14398,34 @@ function renderHowTo() {
   const field = el('div','card');
   add(field,
       '<h3>Fielding</h3>'
-    + '<p>Your fielders run to the ball on their own. Two plays need you.</p>'
+    + '<p>Your fielders run to the ball on their own. Three moments need you.</p>'
     + '<p><b>Ground balls:</b> a bar appears at the bottom of the field. Click or '
     + 'press Space in the green for the out. Yellow lets the batter beat the throw '
-    + 'for an infield single. A miss is a throwing error and every runner takes an '
-    + 'extra base.</p>');
+    + 'for an infield single. Press badly out of time and it is a throwing error, '
+    + 'and every runner takes an extra base. Let the bar run out and the fielder '
+    + 'simply holds the ball. The batter reaches and nobody else moves up.</p>');
   field.appendChild(howtoThrow());
   add(field,
       '<p><b>Fly balls:</b> a ring shrinks over the landing spot. Click or press '
     + 'Space when it is tightest to make the catch. Slightly off and the ball drops '
-    + 'in for a single; badly off and it sails over the fielder for a triple.</p>');
+    + 'in for a single. Badly off and it sails over the fielder for a triple. Let '
+    + 'the ring run out and he never leaves his feet, so the ball falls in front of '
+    + 'him for a single.</p>');
   field.appendChild(howtoCatch());
   add(field,
-      '<p>Your fielders\' DEF widens both safe windows, so a strong defensive '
-    + 'lineup is easier to play.</p>');
+      /* THE THIRD WINDOW WAS NEVER ON THIS PAGE. The robbery shipped and
+         this section still opened "Two plays need you", so the one window
+         that can take a hit AWAY from somebody went undocumented on the
+         longer of the two how to play surfaces. Same lesson as the arcade:
+         two surfaces say how to play and both need the edit. */
+      '<p><b>Robbing a hit:</b> a ring on a ball already headed for green means '
+    + 'somebody can get there. Time it and a hit becomes an out. This is the one '
+    + 'window that cannot hurt you. Miss it and the hit lands exactly as it would '
+    + 'have, with nothing said about it.</p>');
+  add(field,
+      '<p>Your fielders\' DEF widens every safe window, so a strong defensive '
+    + 'lineup is easier to play. Doing nothing is never the worst outcome. The '
+    + 'worst outcome is committing at the wrong moment.</p>');
   s.appendChild(field);
 
   const run = el('div','card');
