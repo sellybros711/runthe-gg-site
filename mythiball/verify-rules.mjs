@@ -2933,6 +2933,9 @@ async function main() {
           single: rate('single'), double: rate('double'),
           /* a legitimate zero is a rating, not a missing one */
           zero: sendOdds(0, 'single'), fifty: sendOdds(50, 'single'),
+          /* three points well under the ceiling, so a flat curve cannot
+             hide behind the cap the pair above now tolerates */
+          slowish: sendOdds(45, 'single'), quick: sendOdds(70, 'single'),
         };
       });
       ok(r.singleDrops.length === 0,
@@ -2941,9 +2944,28 @@ async function main() {
       ok(r.doubleDrops.length === 0,
          'nor from first on a double, which is where the step was 24 points',
          `worse at ${JSON.stringify(r.doubleDrops)}`);
-      ok(r.huck > r.tom && r.huckD > r.tomD,
-         'Huck Finn is two quicker than Tom Sawyer and scores more often, not less',
+      /* NEVER LESS, WHICH IS THE BUG THAT HAPPENED, and not "strictly
+         more", which a ceiling makes impossible. The original defect was
+         a DECREASE: 86 scored 30.0% where 84 scored 54.3%, because the
+         two branches restarted the odds. Both men now sit on the .94 cap
+         and read the same, and that was briefly reported as a failure.
+
+         The cap is right and extending the curve to dodge it was measured
+         rather than argued: stretching the slope until nobody reaches the
+         ceiling takes scoring from second from 59% to 53% and pushes outs
+         at the plate from 12% to 18%. It makes the FAST runners worse,
+         which is the opposite of the point. A ceiling on how safe anybody
+         can be is what that is, and 19 of 68 sitting on it is fine.
+
+         So the pair asserts what it was written to catch, and the line
+         below it is what stops a flat curve passing on the technicality:
+         speed still has to buy something where there is room for it. */
+      ok(r.huck >= r.tom && r.huckD >= r.tomD,
+         'Huck Finn is two quicker than Tom Sawyer and never scores less',
          `${r.huck.toFixed(3)} against ${r.tom.toFixed(3)}`);
+      ok(r.fifty > r.slowish && r.quick > r.fifty,
+         'and below the ceiling a faster runner really does score more often',
+         `spd 45 ${r.slowish.toFixed(3)}, spd 50 ${r.fifty.toFixed(3)}, spd 70 ${r.quick.toFixed(3)}`);
       ok(r.zero < r.fifty,
          'and a legitimate zero is the slowest man alive, not an average one',
          `${r.zero.toFixed(3)} against ${r.fifty.toFixed(3)}`);
