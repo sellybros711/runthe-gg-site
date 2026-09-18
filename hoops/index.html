@@ -624,6 +624,69 @@
     padding-left:6px;font-family:var(--mono);}
   .clubchip .cc-rings{color:var(--gold);}
   .clubchip:hover{border-color:var(--cc-accent,#3d4a60);}
+
+  /* ══ THE FIRST RUN GUIDE ═══════════════════════════════════════════════
+     The scrim stops at the top of the dock, so the button the guide is
+     pointing at is the one thing on the page it never covers. */
+  /* POINTER-EVENTS OFF ON THE WRAPPER AND BACK ON FOR THE PARTS THAT WANT
+     THEM. inset:0 means this element covers the dock whatever its scrim does,
+     so with events on it the Start button was not the element at its own
+     centre: the guide pointed an arrow at a button it had itself made
+     untappable. Caught by asking elementFromPoint rather than by looking,
+     which would have shown an arrow over a button and nothing wrong. */
+  .frg{position:fixed;inset:0;z-index:70;pointer-events:none;}
+  .frg[hidden]{display:none;}
+  .frg-scrim{position:absolute;left:0;right:0;top:0;pointer-events:auto;
+    bottom:calc(var(--dock) + env(safe-area-inset-bottom,0px));
+    background:rgba(4,7,12,.86);backdrop-filter:blur(2px);animation:fadein .2s ease-out;}
+  /* ANCHORED ABOVE THE POINTER AND GROWN UPWARD, rather than centred with a
+     max-height. Centred at 62vh its own text scrolled inside itself at both
+     390x844 and 360x640, and a guide whose explanation is below its own fold
+     is worse than a terser one. This way it takes every pixel between the top
+     of the window and the arrow, and only a genuinely short screen scrolls. */
+  .frg-panel{position:absolute;left:14px;right:14px;pointer-events:auto;
+    bottom:calc(var(--dock) + 64px + env(safe-area-inset-bottom,0px));
+    max-height:calc(100vh - var(--dock) - 88px);
+    max-width:430px;margin:0 auto;overflow:auto;
+    background:linear-gradient(180deg,#151c29,#0d1219);border:1px solid var(--cardb);
+    border-radius:15px;padding:17px 16px;animation:sheetup .3s cubic-bezier(.2,.9,.3,1);
+    box-shadow:0 20px 50px rgba(0,0,0,.6);}
+  .frg-eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--orange);font-weight:800;margin-bottom:5px;}
+  .frg-panel h2{font-family:var(--display);font-size:22px;line-height:1.1;margin:0 0 12px;}
+  .frg-steps{list-style:none;counter-reset:frg;margin:0 0 13px;padding:0;}
+  .frg-steps li{counter-increment:frg;position:relative;padding-left:32px;margin:0 0 11px;
+    font-size:13.5px;line-height:1.5;color:var(--mut);}
+  .frg-steps li:before{content:counter(frg);position:absolute;left:0;top:0;
+    width:22px;height:22px;border-radius:50%;border:1.5px solid var(--orange);
+    color:var(--orange);font-size:11.5px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;}
+  .frg-steps li b{color:var(--ink);font-weight:700;}
+  .frg-goal{font-size:13.5px;line-height:1.5;margin:0 0 11px;padding:10px 12px;
+    border-left:3px solid var(--orange);background:rgba(240,120,45,.09);
+    border-radius:0 8px 8px 0;color:var(--ink);}
+  .frg-goal b{color:var(--orange);}
+  .frg-later{font-size:12px;color:var(--dim);margin:0 0 13px;line-height:1.45;}
+  .frg-panel .ghost{width:100%;}
+  /* The pointer sits in the gap between the panel and the dock. It is absent
+     rather than shrunk on a short screen: an arrow with no room to point is
+     an arrow lying across the text it belongs to. */
+  .frg-point{position:absolute;left:0;right:0;
+    bottom:calc(var(--dock) + 8px + env(safe-area-inset-bottom,0px));
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    color:var(--orange);pointer-events:none;animation:frgbob 1.5s ease-in-out infinite;}
+  .frg-hint{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;}
+  .frg-arrow{width:26px;height:30px;}
+  @keyframes frgbob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+  /* No room to point, so no pointer, and the panel takes the space back. */
+  @media(max-height:640px){
+    .frg-point{display:none;}
+    .frg-panel{bottom:calc(var(--dock) + 12px + env(safe-area-inset-bottom,0px));
+      max-height:calc(100vh - var(--dock) - 30px);}
+    .frg-panel h2{font-size:19px;margin-bottom:9px;}
+    .frg-steps li{margin-bottom:8px;}
+  }
+  @media (prefers-reduced-motion:reduce){ .frg-point{animation:none;} }
   .pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0;}
   .pstat{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:9px;
     padding:9px 10px;text-align:center;}
@@ -1462,6 +1525,46 @@
   </div>
 </div>
 
+<!-- ── THE FIRST RUN GUIDE ───────────────────────────────────────────────
+     Once per browser, to somebody who has never started a run. It is the only
+     thing here that interrupts before the player has done anything, so it
+     earns that by being the only thing that explains the game at all.
+
+     IT POINTS AT THE BUTTON AND LEAVES IT LIVE, which is the football game's
+     rule and the reason its guide works: the way out is the thing the guide
+     is telling you to do. The scrim stops at the top of the dock rather than
+     covering it, so Start a run is never behind glass.
+
+     ANCHORED TO THE DOCK, NOT MEASURED AGAINST THE PAGE. The football version
+     lays itself out against the real position of a button that moves a long
+     way between a 320 phone and a desktop. Here the target is pinned to the
+     bottom of the window and --dock is already measured on every render, so
+     the arrow needs no arithmetic and cannot end up pointing at nothing.
+
+     EVERY NUMBER IN IT IS INTERPOLATED. A cap or a win total typed into this
+     markup is a guide that lies the first time somebody sweeps a constant,
+     which is the "$11M hardcoded twenty-two times" trap in CLAUDE.md. See
+     frgFill. -->
+<div class="frg" id="frg" hidden>
+  <div class="frg-scrim"></div>
+  <div class="frg-panel" id="frg-panel">
+    <div class="frg-eyebrow">First time here</div>
+    <h2>Draft six, then play 82</h2>
+    <ol class="frg-steps" id="frg-steps"></ol>
+    <p class="frg-goal" id="frg-goal"></p>
+    <p class="frg-later">The other modes, your career and the badges can all wait
+      until you have played one.</p>
+    <button class="ghost sm" id="frg-x" type="button">Got it</button>
+  </div>
+  <div class="frg-point" id="frg-point">
+    <span class="frg-hint">Start here</span>
+    <svg class="frg-arrow" viewBox="0 0 44 52" fill="none" stroke="currentColor"
+      stroke-width="5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M22 4 V40"/><path d="M8 27 L22 42 L36 27"/>
+    </svg>
+  </div>
+</div>
+
 <!-- THE BOTTOM DOCK holds the ONE action the current screen is for, at the
      bottom of the phone where a thumb already is. The buttons are not copies:
      renderDock MOVES the real element in and out, so there is one button with
@@ -1767,6 +1870,9 @@ function boot(){
        somewhere down a draft board. Landing on the home page already scrolled
        past its own masthead reads as a broken page rather than a restored one. */
     window.scrollTo(0, 0);
+    /* LAST, and after restore(), because it asks whether there is a run and a
+       career before deciding to interrupt anybody. */
+    frgMaybe();
   }).catch(function(err){
     bootFailed('The league did not load: ' + err.message);
   });
@@ -1786,6 +1892,9 @@ function startRun(club, era){
   var opts = {};
   if (lock) opts.club = lock;
   if (span) opts.era = span;
+  /* STARTING A RUN IS THE WAY OUT OF THE GUIDE, which is why the scrim never
+     covered the button. Marked seen whichever door was used. */
+  if (!$('frg').hidden) frgClose();
   run = R.createRun(opts);
   if (lock) rememberClub(lock);
   if (span) rememberEra(span);
@@ -1880,6 +1989,84 @@ function renderClubs(){
       grid.appendChild(b);
     })(list[i]);
   }
+}
+
+/* ── THE FIRST RUN GUIDE ───────────────────────────────────────────────────
+ *
+ * Once per browser. The only thing in this game that interrupts somebody
+ * before they have done anything, and it earns that by being the only thing
+ * that explains the game at all.
+ *
+ * EVERY NUMBER IS READ OUT OF THE CONSTANTS. A guide is copy, and copy with a
+ * typed number in it is a guide that lies the first time somebody sweeps the
+ * cap. The cap has already been swept twice in this game's short life ($134M
+ * to $126M), and a first-time player told the wrong one has no way to know.
+ *
+ * WHAT IT DOES NOT DO is walk anybody through a practice draft. The football
+ * game has one and it is worth having; it is also a second copy of the draft
+ * loop, and the thing missing here was not a tutorial, it was any statement
+ * at all of what the game is.
+ */
+var FRG_KEY = 'rtf.guide.v1';
+
+function frgSeen(){
+  try { return localStorage.getItem(FRG_KEY) === '1'; } catch (e) { return true; }
+}
+function frgMark(){ try { localStorage.setItem(FRG_KEY, '1'); } catch (e) {} }
+
+function frgFill(){
+  var C = E.CONSTANTS;
+  /* THE DEAREST MAN IN THE GAME, read out of the data. "A star costs half the
+     cap" was the first draft of that sentence and it is not true: the top
+     price in 16,057 rows is Bob McAdoo's 1975 at $60.0M against a $126M cap,
+     which is 48%, and nobody is over half. A guide is the worst place to be
+     nearly right, so it prints the real number. */
+  var dearest = 0;
+  if (DATA && DATA.allPlayers) {
+    for (var k in DATA.allPlayers) {
+      var pr = DATA.allPlayers[k].p;
+      if (pr > dearest) dearest = pr;
+    }
+  }
+  var steps = [
+    'Spin for a season and a club, then sign one player off that roster. '
+      + '<b>Six times</b>, filling the five positions and a sixth man.',
+    'All six fit under a <b>' + money(C.CAP_MUSD) + '</b> cap'
+      + (dearest ? ', and the dearest man in the game is <b>' + money(dearest) + '</b>' : '')
+      + '. Six stars is not a roster you can afford.',
+    'Then the season plays itself. <b>' + C.REGULAR_SEASON_GAMES + ' games</b>, '
+      + 'and the playoffs if you get there.'
+  ];
+  var ol = $('frg-steps');
+  ol.textContent = '';
+  for (var i = 0; i < steps.length; i++) {
+    var li = document.createElement('li');
+    li.innerHTML = steps[i];
+    ol.appendChild(li);
+  }
+  $('frg-goal').innerHTML = 'Your goal: <b>win the ring.</b> '
+    + C.TOP_SIX_WINS + ' wins is a top six seed, ' + C.PLAY_IN_WINS
+    + ' is the play-in, and ' + C.RECORD_WINS + ' is the 1996 Bulls.';
+}
+
+/* Shown on the FRONT PAGE only, and only once the data has landed, because
+   the button it points at is disabled until then and an arrow at a dead
+   control is worse than no arrow. */
+function frgMaybe(){
+  if (frgSeen() || !DATA) return;
+  var c = loadCareer();
+  /* Somebody with a career has played this before on this device and had the
+     guide cleared with their site data. Explaining the game to them is the
+     tour that will not stop. */
+  if (c && c.runs) { frgMark(); return; }
+  if (run) { frgMark(); return; }
+  frgFill();
+  $('frg').hidden = false;
+}
+
+function frgClose(){
+  frgMark();
+  $('frg').hidden = true;
 }
 
 /* ── DECADES ───────────────────────────────────────────────────────────────
@@ -3501,8 +3688,13 @@ function toSeason(){
   $('p-ortg').textContent = ortg.toFixed(1);
   $('p-drtg').textContent = drtg.toFixed(1);
   $('p-rating').textContent = E.overallRating(E.teamWinPct(ortg, drtg)).toFixed(0);
-  $('p-proj').textContent = st.archetype.name + ' · projected '
-    + proj.typical + '-' + (82 - proj.typical) + ', title ' + proj.titlePct + '%';
+  /* "PROJECTED 41-41" OVER A LIVE 45-29 READS AS A BROKEN NUMBER, and this
+     card stays on screen through the whole season. It is a projection made
+     BEFORE tip-off, which is honest and useful, and the only thing wrong was
+     the tense: the reader was being handed two records with nothing saying
+     one of them had already been overtaken. */
+  $('p-proj').textContent = st.archetype.name + ' · before tip-off, '
+    + proj.typical + '-' + (82 - proj.typical) + ' and a ' + proj.titlePct + '% title';
 }
 
 /* THE SEASON IS ALREADY PLAYED BEFORE THE FIRST CELL LIGHTS.
@@ -4918,6 +5110,7 @@ $('b-prof-clear').onclick = clearCareer;
 $('b-franchise-pick').onclick = openClubs;
 $('b-club-x').onclick = closeClubs;
 $('b-decade-pick').onclick = openEras;
+$('frg-x').onclick = frgClose;
 $('b-era-x').onclick = closeEras;
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a
    tap INSIDE the panel must not, or every button press dismisses the thing. */
@@ -4933,6 +5126,7 @@ $('erasheet').addEventListener('click', function(ev){
 document.addEventListener('keydown', function(ev){
   if (ev.key !== 'Escape') return;
   closeProfile(); closeClubs(); closeEras();
+  if (!$('frg').hidden) frgClose();
 });
 
 rememberHomes();
