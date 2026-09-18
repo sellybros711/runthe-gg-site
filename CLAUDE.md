@@ -2669,6 +2669,35 @@ swept twice in this game's short life. The first draft of step two said a star c
 half the cap, which is false: the top price in 16,057 rows is Bob McAdoo's 1975 at
 **$60.0M against $126M**, and nobody is over half. It prints the real dearest man.
 
+### A field the page reads off an outcome has to be a field outcomes have
+
+`out.spendLeft` was read on the results screen and `outcomeOf` has never set it.
+`undefined > 15` is false, so on **every run this game has ever played** the branch
+behind it was dead and the cap advice, which is the central lesson of the whole
+game, never once appeared: a draft that finished $88M under was told its roster had
+no shape instead. Nothing threw, nothing rendered wrong, and no check could see it.
+
+So `verify.mjs` builds a real outcome and asserts **every `out.<field>` in the page
+is one of its keys**. The whole class, not the one name, and proved by mutation.
+Two things about writing it:
+
+- **Its first draft failed on the COMMENT explaining the fix.** Block comments come
+  out before the scan now. Third time an extractor in this repo has read a comment
+  as code.
+- **The scan asserts it found something.** A regex that matches nothing passes,
+  which is `check-numbers`' coverage argument in one line.
+
+Two more on that screen, both found only by looking at it:
+
+- **One fact, three times.** "3 wins short of the play-in" was the gauge's big
+  number, the gauge's sentence, and the story line under the record. The gauge is
+  how it ENDED; `seasonStory` is the season's SHAPE. They cannot collide now
+  because they are never about the same thing.
+- **"1404th of 1403 all time".** `nationalRank` INSERTS your roster into the table
+  of real team-seasons, so the denominator has to count it. Visible only on a
+  deliberately terrible draft; the top end read "1st of 1403" and was wrong by the
+  same one without looking like anything.
+
 **Two targets are out of band today and no constant will fix them.** The four
 numbers that turn win shares into a record are now FITTED to twenty-two real NBA
 records (rms 3.5 wins), so a roster is worth what it was worth in life: rating
