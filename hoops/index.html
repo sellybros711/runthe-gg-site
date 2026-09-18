@@ -1114,6 +1114,21 @@
       aria-label="Switch club"><span class="md-chev" aria-hidden="true"></span></button>
   </div>
 
+  <!-- THE THIRD DOOR, AND IT WAS ALREADY BUILT. ERAS has been in engine.js
+       and the era filter has been in drawable() since the day run.js was
+       written, and nothing on this page could ever set one. A whole mode,
+       shipped, tested by the fixtures, and unreachable: the same shape as the
+       Dynasty leaderboard in the football game that rendered perfectly and
+       had no way in. What it needed was a door. -->
+  <div class="modedoor" id="b-decade">
+    <button class="md-main" id="b-decade-go">
+      <span class="md-name" id="dc-name">Decades</span>
+      <span class="md-sub" id="dc-sub">One decade, the whole league. Six men out of one era.</span>
+    </button>
+    <button class="md-pick" id="b-decade-pick" hidden
+      aria-label="Switch decade"><span class="md-chev" aria-hidden="true"></span></button>
+  </div>
+
   <!-- WHAT YOU ARE DRAFTING FROM. Filled from the data once it loads, so the
        numbers are the file's rather than a claim typed into the markup. -->
   <div class="card">
@@ -1400,6 +1415,24 @@
   </div>
 </div>
 
+<!-- ── the decade picker ─────────────────────────────────────────────────
+     Six tiles, and the span on each is read out of the DATA rather than out
+     of ERAS. The constant for the seventies is [1970, 1979] and the file
+     starts in 1974, so printing the constant would offer four seasons that
+     do not exist. -->
+<div class="sheet" id="erasheet" role="dialog" aria-modal="true" aria-labelledby="era-h">
+  <div class="panel">
+    <h2 id="era-h">Decades <span class="sub">pick an era</span></h2>
+    <p class="dim" style="font-size:13px;margin:0 0 12px;line-height:1.5">
+      Every club, one decade. Six men who could have met on the floor.
+    </p>
+    <div class="clubgrid" id="eragrid"></div>
+    <div class="btnrow" style="margin-top:14px">
+      <button id="b-era-x" style="flex:1">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="prof-h">
   <div class="panel">
     <h2 id="prof-h">Career <span class="sub" id="prof-sub"></span></h2>
@@ -1456,8 +1489,8 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=12"></script>
-<script src="run.js?v=3"></script>
+<script src="engine.js?v=13"></script>
+<script src="run.js?v=4"></script>
 <script src="badges.js?v=1"></script>
 <script>
 (function(){
@@ -1660,9 +1693,10 @@ function renderAppBar(screen){
      does not move, and "the reel is not moving" is a weak way to learn which
      game you are playing. The nickname alone: the chip has room for one word
      beside the wordmark at 360px, and the club is the half that answers it. */
-  if (screen === 's-draft' && run.club) {
+  var chip = screen === 's-draft' ? modeChip(run) : null;
+  if (chip) {
     state.hidden = false;
-    state.textContent = E.teamName(run.club);
+    state.textContent = chip;
     state.className = 'state lock';
     return;
   }
@@ -1740,7 +1774,7 @@ function boot(){
 
 // ── the draft ──────────────────────────────────────────────────────────────
 
-function startRun(club){
+function startRun(club, era){
   /* An onclick handler is called with an Event, so a bare `$('b-again').onclick
      = startRun` would pass a MouseEvent where the club goes and lock the wheel
      to a franchise called [object MouseEvent]. createRun would throw and the
@@ -1748,8 +1782,13 @@ function startRun(club){
      call site passes a string or nothing, and this is the guard that makes
      that true whatever anybody wires up next. */
   var lock = typeof club === 'string' ? club : null;
-  run = R.createRun(lock ? { club: lock } : {});
+  var span = (typeof era === 'string' && E.ERAS[era]) ? era : null;
+  var opts = {};
+  if (lock) opts.club = lock;
+  if (span) opts.era = span;
+  run = R.createRun(opts);
   if (lock) rememberClub(lock);
+  if (span) rememberEra(span);
   activeTab = 'ALL';
   save();
   show('s-draft');
@@ -1843,12 +1882,119 @@ function renderClubs(){
   }
 }
 
+/* ── DECADES ───────────────────────────────────────────────────────────────
+ *
+ * Names for the six eras, because "aughts" is a key and not a thing anybody
+ * says. The SPANS are not here: they come off the data through R.eraSeasons,
+ * so a picker can never promise a season the file does not hold.
+ */
+var ERA_NAMES = {
+  seventies: 'The Seventies', eighties: 'The Eighties', nineties: 'The Nineties',
+  aughts: 'The 2000s', tens: 'The 2010s', twenties: 'The 2020s'
+};
+var ERAKEY = 'rtf.era.v1';
+
+function lastEra(){
+  try {
+    var e = localStorage.getItem(ERAKEY);
+    return (e && E.ERAS[e]) ? e : null;
+  } catch (e) { return null; }
+}
+function rememberEra(key){ try { localStorage.setItem(ERAKEY, key); } catch (e) {} }
+
+function openEras(){
+  renderEras();
+  sheetReturn = document.activeElement;
+  $('erasheet').classList.add('open');
+  var first = $('eragrid').querySelector('.clubchip');
+  (first || $('b-era-x')).focus();
+}
+
+function closeEras(){
+  if (!$('erasheet').classList.contains('open')) return;
+  $('erasheet').classList.remove('open');
+  if (sheetReturn && sheetReturn.focus) { try { sheetReturn.focus(); } catch (e) {} }
+  sheetReturn = null;
+}
+
+function renderEras(){
+  var grid = $('eragrid');
+  grid.textContent = '';
+  var keys = Object.keys(E.ERAS);
+  for (var i = 0; i < keys.length; i++) {
+    (function(key){
+      var yrs = R.eraSeasons(key);
+      /* A decade the data barely reaches is not a mode. Six seasons is the
+         seventies today and is plenty; below that a run would spend most of
+         its draws on the same three clubs. */
+      if (yrs.length < 4) return;
+      var b = document.createElement('button');
+      b.className = 'clubchip';
+      /* No club colour to take, so the accent is the page's own. A decade is
+         not a club and dressing it in one would be a lie about whose it is. */
+      b.style.setProperty('--cc-accent', 'var(--orange)');
+      var nm = document.createElement('span');
+      nm.className = 'cc-name';
+      nm.textContent = ERA_NAMES[key] || key;
+      var span = document.createElement('span');
+      span.className = 'cc-city';
+      span.textContent = yrs[0] + ' to ' + yrs[yrs.length - 1];
+      var meta = document.createElement('span');
+      meta.className = 'cc-meta';
+      meta.textContent = yrs.length + (yrs.length === 1 ? ' season' : ' seasons');
+      b.appendChild(nm); b.appendChild(span); b.appendChild(meta);
+      b.onclick = function(){ closeEras(); startRun(null, key); };
+      grid.appendChild(b);
+    })(keys[i]);
+  }
+}
+
+function renderEraDoor(){
+  var door = $('b-decade'), main = $('b-decade-go');
+  var name = $('dc-name'), sub = $('dc-sub'), pick = $('b-decade-pick');
+  if (!door || !main || !sub) return;
+  var last = DATA ? lastEra() : null;
+  if (!last) {
+    door.className = 'modedoor';
+    name.textContent = 'Decades';
+    name.style.removeProperty('color');
+    sub.textContent = 'One decade, the whole league. Six men out of one era.';
+    pick.hidden = true;
+    main.onclick = openEras;
+    return;
+  }
+  /* The same "this one is remembered" treatment the club door gets, in the
+     page's own accent. A decade has no colours of its own and borrowing a
+     club's would say something false about whose era it was. */
+  var yrs = R.eraSeasons(last);
+  door.className = 'modedoor clubbed';
+  door.style.setProperty('--md-accent', 'rgba(240,120,45,.55)');
+  name.textContent = ERA_NAMES[last] || last;
+  name.style.color = 'var(--orange)';
+  sub.textContent = yrs.length
+    ? yrs[0] + ' to ' + yrs[yrs.length - 1] + ', every club.'
+    : 'One decade, the whole league.';
+  pick.hidden = false;
+  main.onclick = function(){ startRun(null, last); };
+}
+
 /* The name a run wears everywhere: the app bar, the results, the career row.
    Returns null for an ordinary run, because "The League" is not a mode, it is
    the game, and labelling it would put a badge on every screen. */
 function modeLabel(r){
-  if (!r || !r.club) return null;
-  return 'One Franchise · ' + E.teamName(r.club);
+  if (!r) return null;
+  if (r.club) return 'One Franchise · ' + E.teamName(r.club);
+  if (r.era) return ERA_NAMES[r.era] || r.era;
+  return null;
+}
+
+/* The short form, for the app bar chip, which has room for one word beside
+   the wordmark at 360px. */
+function modeChip(r){
+  if (!r) return null;
+  if (r.club) return E.teamName(r.club);
+  if (r.era) return (ERA_NAMES[r.era] || r.era).replace(/^The /, '');
+  return null;
 }
 
 /* THE DRAW HAPPENS FIRST AND THE REELS CATCH UP. run.js picks the club, then
@@ -4280,17 +4426,25 @@ function recordRun(out){
      So the club's own best is kept beside it and the two are never compared.
      bestWins above stays what it has always been: every run, all modes, which
      is the number the front page has always shown. */
-  if (run.club) {
-    c.byClub = c.byClub || {};
-    var cb = c.byClub[run.club] || { runs: 0, rings: 0, bestWins: -1, bestLabel: '' };
-    cb.runs++;
-    if (out.titleWon) cb.rings++;
-    if (out.wins > cb.bestWins) {
-      cb.bestWins = out.wins;
-      cb.bestLabel = out.wins + '-' + out.losses;
+  var shelf = function(mapKey, key){
+    c[mapKey] = c[mapKey] || {};
+    var s = c[mapKey][key] || { runs: 0, rings: 0, bestWins: -1, bestLabel: '' };
+    s.runs++;
+    if (out.titleWon) s.rings++;
+    if (out.wins > s.bestWins) {
+      s.bestWins = out.wins;
+      s.bestLabel = out.wins + '-' + out.losses;
     }
-    c.byClub[run.club] = cb;
-  }
+    c[mapKey][key] = s;
+  };
+  if (run.club) shelf('byClub', run.club);
+  /* AND THE DECADES GET ONE TOO, for the same reason and a bigger spread.
+     Measured over ten best-available runs an era, the seventies came back at
+     49.6 wins and the aughts at 40.7, which is nine wins of difference
+     between two modes wearing the same word. What that would do to one
+     bestWins is retire the league record to whichever decade had the
+     shallowest priced talent. */
+  if (run.era) shelf('byEra', run.era);
 
   var shape = out.structure && out.structure.archetype ? out.structure.archetype.name : null;
   if (shape) c.shapes[shape] = (c.shapes[shape] || 0) + 1;
@@ -4358,6 +4512,7 @@ function recordRun(out){
        on every row already on a device, which badges.js reads as "not known"
        the same way it reads every other field added since it shipped. */
     club: run.club || null,
+    era: run.era || null,
     swept: !!(lastRd && !lastRd.won && lastRd.oppWins === 4 && lastRd.yourWins === 0),
     lostFinals: !!(lastRd && !lastRd.won && lastRd.round === 'NBA Finals')
   });
@@ -4427,20 +4582,24 @@ function renderCareer(){
      they are runs against one club's own history, and a fan's answer to "how
      good was my Knicks team" is meaningless next to somebody else's Lakers.
      Best first, because the best is the one being defended. */
-  if (!c.byClub) return;
-  var codes = Object.keys(c.byClub).filter(function(k){ return c.byClub[k].runs > 0; });
-  if (!codes.length) return;
-  codes.sort(function(a, b){ return c.byClub[b].bestWins - c.byClub[a].bestWins; });
-  var head = document.createElement('li');
-  head.className = 'plisthead';
-  head.textContent = 'One Franchise';
-  list.appendChild(head);
-  for (var i = 0; i < codes.length; i++) {
-    var cb = c.byClub[codes[i]];
-    row(E.teamName(codes[i]) + ' · ' + cb.runs + (cb.runs === 1 ? ' run' : ' runs')
-      + (cb.rings ? ' · ' + cb.rings + (cb.rings === 1 ? ' ring' : ' rings') : ''),
-      cb.bestLabel || '-');
-  }
+  var shelf = function(map, title, nameOf){
+    if (!map) return;
+    var keys = Object.keys(map).filter(function(k){ return map[k].runs > 0; });
+    if (!keys.length) return;
+    keys.sort(function(a, b){ return map[b].bestWins - map[a].bestWins; });
+    var head = document.createElement('li');
+    head.className = 'plisthead';
+    head.textContent = title;
+    list.appendChild(head);
+    for (var i = 0; i < keys.length; i++) {
+      var s = map[keys[i]];
+      row(nameOf(keys[i]) + ' · ' + s.runs + (s.runs === 1 ? ' run' : ' runs')
+        + (s.rings ? ' · ' + s.rings + (s.rings === 1 ? ' ring' : ' rings') : ''),
+        s.bestLabel || '-');
+    }
+  };
+  shelf(c.byClub, 'One Franchise', function(k){ return E.teamName(k); });
+  shelf(c.byEra, 'Decades', function(k){ return ERA_NAMES[k] || k; });
 }
 
 /* FOCUS GOES INTO THE SHEET AND COMES BACK OUT AGAIN.
@@ -4626,9 +4785,9 @@ function renderHome(){
     rz.style.display = '';
     if (hero) hero.style.display = '';
     var drafting = run.phase === R.PHASES.DRAFT;
-    var mode = modeLabel(run);
+    var chip = modeChip(run);
     $('rz-title').textContent = (drafting ? 'Draft in progress' : 'Season not played')
-      + (mode ? ' · ' + E.teamName(run.club) : '');
+      + (chip ? ' · ' + chip : '');
     $('rz-where').textContent = drafting
       ? run.roster.length + ' of 6 signed'
       : 'six signed, 82 to play';
@@ -4658,6 +4817,7 @@ function renderHome(){
   }
 
   renderModeDoor();
+  renderEraDoor();
 
   var c = loadCareer();
   var box = $('home-career');
@@ -4749,25 +4909,30 @@ $('b-play').onclick = playSeason;
 /* RUN IT BACK MEANS THE SAME GAME. Pressed on the results of a Bulls run it
    has to start another Bulls run: a button that silently drops you back into
    the whole league is the same defect as a Back that goes somewhere else. */
-$('b-again').onclick = function(){ startRun(run && run.club ? run.club : null); };
+$('b-again').onclick = function(){
+  startRun(run && run.club ? run.club : null, run && run.era ? run.era : null); };
 $('b-prof-x').onclick = closeProfile;
 $('pt-record').onclick = function(){ showProfileTab('record'); };
 $('pt-badges').onclick = function(){ showProfileTab('badges'); };
 $('b-prof-clear').onclick = clearCareer;
 $('b-franchise-pick').onclick = openClubs;
 $('b-club-x').onclick = closeClubs;
+$('b-decade-pick').onclick = openEras;
+$('b-era-x').onclick = closeEras;
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a
    tap INSIDE the panel must not, or every button press dismisses the thing. */
 $('sheet').addEventListener('click', function(ev){ if (ev.target === $('sheet')) closeProfile(); });
 $('clubsheet').addEventListener('click', function(ev){
   if (ev.target === $('clubsheet')) closeClubs(); });
+$('erasheet').addEventListener('click', function(ev){
+  if (ev.target === $('erasheet')) closeEras(); });
 /* ONE KEY, TWO SHEETS, and the club picker is the one that can be open over
    the profile is not: they are opened from different screens and never both.
    Escape closes whichever is up, and closing a shut sheet is a no-op, so the
    order does not matter. */
 document.addEventListener('keydown', function(ev){
   if (ev.key !== 'Escape') return;
-  closeProfile(); closeClubs();
+  closeProfile(); closeClubs(); closeEras();
 });
 
 rememberHomes();

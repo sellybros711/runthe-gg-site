@@ -73,14 +73,30 @@ const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
  * So a locked run gets its own cheapBy, built once off that franchise's rows
  * and cached by code. It is a few hundred rows rather than sixteen thousand,
  * so it is cheap to build and there is no reason to keep more than one.
+ *
+ * THE ERA LOCK IS THE SAME PROBLEM AND SHIPPED WITHOUT NOTICING IT. ERAS and
+ * the `era` filter in drawable() have been in this file since it was written
+ * and nothing in the page could ever set one, so the floor was never asked
+ * about a restricted pool. The moment a Decades door exists, an eighties run
+ * with a league floor is promising a 2019 minimum-salary centre. One filter
+ * answers both locks, so neither can be the one somebody forgets.
  */
-let _clubCheap = null;
+let _lockCheap = null;
 
-function clubPool(club, data) {
-  const codes = new Set(E.franchiseCodes(club));
+/* What a restricted run may actually draw from. Null lock is the whole
+   league, and then there is nothing to build. */
+function lockKey(run) {
+  if (!run) return '';
+  return (run.club || '') + '|' + (run.era || '');
+}
+
+function lockedPool(run, data) {
+  const codes = run.club ? new Set(E.franchiseCodes(run.club)) : null;
+  const span = run.era ? E.ERAS[run.era] : null;
   const out = [];
   for (const t of data.teamSeasons) {
-    if (!codes.has(t.team)) continue;
+    if (codes && !codes.has(t.team)) continue;
+    if (span && (t.season < span[0] || t.season > span[1])) continue;
     for (const p of (data.byTeamSeason[t.team_season_id] || [])) out.push(p);
   }
   return out;
@@ -88,10 +104,11 @@ function clubPool(club, data) {
 
 function cheapByFor(run) {
   if (!_data) return null;
-  if (!run || !run.club) return _data.cheapBy;
-  if (_clubCheap && _clubCheap.club === run.club) return _clubCheap.cheapBy;
-  _clubCheap = { club: run.club, cheapBy: E.buildCheapBy(clubPool(run.club, _data)) };
-  return _clubCheap.cheapBy;
+  const key = lockKey(run);
+  if (key === '|') return _data.cheapBy;
+  if (_lockCheap && _lockCheap.key === key) return _lockCheap.cheapBy;
+  _lockCheap = { key, cheapBy: E.buildCheapBy(lockedPool(run, _data)) };
+  return _lockCheap.cheapBy;
 }
 
 /* The cheapest player who could still fill this slot right now: not already
@@ -772,10 +789,25 @@ function projectSeason(run, trials) {
 
 function indexData(players) {
   _data = E.indexData(players);
-  /* The club floor is a cache over the OLD rows. Keeping it across a reindex
+  /* The lock floor is a cache over the OLD rows. Keeping it across a reindex
      would answer a new league with a dead one. */
-  _clubCheap = null;
+  _lockCheap = null;
   return _data;
+}
+
+/* Every season of this era the wheel could land on. The era CONSTANT is a
+   decade and the data is not: E.ERAS.seventies is [1970, 1979] and the file
+   starts at 1974, so a picker printing the constant would offer four seasons
+   that do not exist. Asking the same list drawable() filters is the only
+   honest span. */
+function eraSeasons(era) {
+  const r = E.ERAS[era];
+  if (!_data || !r) return [];
+  const seen = {};
+  for (const t of _data.teamSeasons) {
+    if (t.season >= r[0] && t.season <= r[1]) seen[t.season] = 1;
+  }
+  return Object.keys(seen).map(Number).sort((a, b) => a - b);
 }
 
 /* Every season of this franchise the wheel could ever land on, newest first.
@@ -799,7 +831,7 @@ const publicAPI = {
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,
   previewSigning, previewFit, fitNow, bestPossibleSquad, projectSeason,
-  indexData, drawable, clubSeasons,
+  indexData, drawable, clubSeasons, eraSeasons,
   remaining, reserveFloor, fullFloor, spendable, capOf, money,
   canRespin, canFinishAfter, blockFor, positionFull,
   openSlots, openSlotNames, slotForPlayer, eligibleOpenSlots, slotsLeft,

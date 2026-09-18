@@ -912,6 +912,94 @@ ok(bestWins > worstWins + 20,
   ok(threw, 'a club the table does not know is refused rather than silently emptying the wheel');
 }
 
+/* ── DECADES ────────────────────────────────────────────────────────────────
+ *
+ * ERAS and the era filter in drawable() were written with run.js and nothing
+ * on the page could ever set one, so this whole mode shipped unreachable and
+ * untested against real data. Two things it inherits from that:
+ *
+ * THE SPAN IN THE CONSTANT IS NOT THE SPAN IN THE FILE. ERAS.seventies is
+ * [1970, 1979] and the data starts in 1974, so a picker printing the constant
+ * offers four seasons the wheel can never land on.
+ *
+ * AND THE RESERVE FLOOR WAS NEVER SCOPED TO IT, for the same reason the club
+ * lock's was not: nothing ever ran a restricted draft. An eighties run with a
+ * league floor is being promised a 2019 minimum-salary centre.
+ */
+{
+  const eras = Object.keys(E.ERAS);
+  is(eras.length, 6, 'six decades');
+  const stranded = [], thin = [];
+  let floorDiff = 0, floorSame = 0;
+
+  for (const era of eras) {
+    const yrs = R.eraSeasons(era);
+    if (yrs.length < 4) thin.push(`${era} ${yrs.length}`);
+    const span = E.ERAS[era];
+    if (yrs.some(y => y < span[0] || y > span[1])) thin.push(`${era} span leaks`);
+
+    for (const [label, pick] of [
+      ['best', (o) => o.slice().sort((a, b) => b.w - a.w)[0]],
+      ['cheap', (o) => o.slice().sort((a, b) => a.p - b.p)[0]],
+    ]) {
+      const run = R.createRun({ era, seed: 5150 });
+      let guard = 0, broke = null;
+      while (run.phase === R.PHASES.DRAFT && guard++ < 40) {
+        if (label === 'best') {
+          const locked = R.fullFloor(run);
+          const open = R.fullFloor({ ...run, era: null });
+          if (locked < open - 1e-9) stranded.push(`${era}: the era floor came in under the league floor`);
+          if (Math.abs(locked - open) < 1e-9) floorSame++; else floorDiff++;
+        }
+        let draw;
+        try { draw = R.spin(run, data); } catch (e) { broke = 'spin: ' + e.message; break; }
+        const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
+        if (!opts.length) { broke = 'empty board'; break; }
+        try { R.sign(run, pick(opts)); } catch (e) { broke = 'sign: ' + e.message; break; }
+      }
+      if (broke || run.roster.length !== E.SLOTS.length) {
+        stranded.push(`${era}/${label}: ${broke || 'stalled at ' + run.roster.length}`);
+        continue;
+      }
+      if (!run.roster.every(p => p.s >= span[0] && p.s <= span[1])) {
+        stranded.push(`${era}/${label}: signed somebody from another decade`);
+      }
+    }
+  }
+  is(thin, [], 'every decade on offer has at least four seasons in the data');
+  is(stranded, [], 'every decade finishes a draft on both strategies, off its own seasons');
+  /* AND THE ERA FLOOR IS THE LEAGUE FLOOR, EVERY TIME, which is the opposite
+     of what the club sweep found and is worth writing down rather than
+     asserting a difference that does not exist.
+     Measured: a decade holds between 1,252 and 3,696 rows and between 34 and
+     121 men priced at the minimum, at every position, so the six cheapest
+     legal bodies cost the same 6 x $2.0M whether the pool is one decade or
+     all of them. 0 of 36 readings differ. So scoping the floor to an era is
+     defensive on its own.
+     It is NOT defensive when the two locks COMPOSE, and that is the case
+     worth keeping it for: the Lakers in the eighties floor at $19.9M against
+     the league's $12.0M, so a floor that honoured the club and ignored the
+     decade would be quoting $7.9M that this run cannot spend. */
+  is(floorDiff, 0, 'an era alone never moves the reserve floor, because every '
+    + 'decade holds minimum-priced men at every position');
+  ok(floorSame === 36, `all 36 era floor readings were taken (${floorSame})`);
+
+  const both = R.createRun({ club: 'LAL', era: 'eighties' });
+  const codes = new Set(E.franchiseCodes('LAL'));
+  const dr = R.drawable(both, data);
+  ok(dr.length > 4 && dr.every(t => codes.has(t.team) && t.season >= 1980 && t.season <= 1989),
+    `a club and a decade together are both honoured (${dr.length} Showtime seasons)`);
+  const composed = R.fullFloor(both);
+  const clubOnly = R.fullFloor({ ...both, era: null });
+  ok(composed > clubOnly + 1,
+    `composing the two locks moves the floor that neither moves alone `
+    + `($${composed.toFixed(1)}M against $${clubOnly.toFixed(1)}M)`);
+
+  let threw = false;
+  try { R.createRun({ era: 'the nineteen fifties' }); } catch (e) { threw = true; }
+  ok(threw, 'an era nobody declared is refused');
+}
+
 /* Every roster plays a real number of games and ends up somewhere real. */
 const sample = E.playRun(best, E.createSeededRNG(99), E.SLOTS, data.oppPool);
 is(sample.record.wins + sample.record.losses, E.CONSTANTS.REGULAR_SEASON_GAMES,
