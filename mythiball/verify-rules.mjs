@@ -47,6 +47,7 @@
      speed is never a cost  a faster runner is never waved home on worse odds than a slower one
      a rating buys more   every curve a rating feeds moves one way, over the whole scale
      the stale timer      a play's timer fires into its OWN play or not at all
+     one grid             the world is blown up by a whole number, so it has one block size
      the code's own claims  what the comments assert about the code is true of it
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
@@ -2815,6 +2816,110 @@ async function main() {
          'A TIMER FIRES INTO ITS OWN PLAY OR NOT AT ALL: the stale one is harmless',
          errors.join(' | '));
       await pg.close();
+    }
+
+    /* ---- one grid ---- */
+    {
+      console.log('one grid');
+      /* THE WORLD IS BLOWN UP BY A WHOLE NUMBER. The bitmap used to be a
+         fixed 1440 wide on every screen, which blew the 320 pixel world
+         up by 4.5x: blocks four device pixels wide and blocks five device
+         pixels wide, in equal measure. The one-resolution pass exists so
+         the field's grid and the sprites' grid read as ONE grid, and it
+         never had a single block size to read.
+
+         Nothing failed and nothing could. A ragged grid renders fine.
+
+         SO THE ASSERTION IS THE PROPERTY, never a width. What each screen
+         should get depends on its own pixels, and pinning the numbers
+         would make this a test of the four devices somebody happened to
+         think of. Read the blit's own output back and ask whether it
+         produced ONE block width, whether the scale is a whole number,
+         and whether it is ever more work than the 1440 this replaced.
+
+         It is measured in the STANDS, up where the field is flat colour:
+         a row through the sprites or the chalk has real edges in it and
+         the run lengths would be the art rather than the grid.
+
+         A ROW IS NEVER PURE BLOCKS AND ASKING FOR THAT IS THE BUG. The
+         crisp pass replays queued type on the DISPLAY canvas at full
+         resolution after the blit, by design, so any row crossing it
+         carries single pixels that owe nothing to the grid. The first
+         draft demanded one run length and failed on five viewports out of
+         six, reporting 182 blocks of four and 24 of one as a ragged grid.
+         It was reading the type. A standalone version of the same scan
+         passed, which is worse than failing: its row happened to miss the
+         type, so the check was a coin toss on where the words landed.
+
+         So the claim is about the BLIT: the most common run is the scale
+         itself, and whatever is not a whole multiple of the scale is a
+         sliver. What that still catches is the thing only pixels can say,
+         which is imageSmoothingEnabled coming back on. Blur the blit and
+         the runs collapse to one, the modal run stops being the scale,
+         and the stray share goes to most of the row. */
+      const FIELD_W_CEIL = 1440;   /* the fixed bitmap this replaced, 960 x 1.5 */
+      for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
+                                        ['phone, denser', 360, 780, 2],
+                                        ['small phone', 320, 568, 2],
+                                        ['phone sideways', 844, 390, 3],
+                                        ['desktop', 1280, 900, 1],
+                                        ['desktop, retina', 1920, 1080, 2]]) {
+        const ctx = await browser.newContext({ viewport: { width: w, height: h },
+          deviceScaleFactor: dpr, isMobile: w < 900, hasTouch: w < 900 });
+        const pg = await ctx.newPage();
+        const errors = [];
+        pg.on('pageerror', e => errors.push(e.message));
+        await pg.goto(URL);
+        await pg.evaluate(() => localStorage.clear());
+        await pg.goto(URL);
+        await wait(pg, 400);
+        await pg.evaluate(() => {
+          Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+          State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+          State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
+          startGame({ mode: 'exhibition', youHome: true });
+        });
+        await wait(pg, 1200);
+        /* the WIDE field: an at bat draws the plate camera instead */
+        await pg.evaluate(() => { const g = State.game; if (g) { g.aiming = false; g.pitch = null; } });
+        await wait(pg, 400);
+        const r = await pg.evaluate(() => {
+          const cv = document.getElementById('field');
+          const c = cv.getContext('2d');
+          const d = c.getImageData(0, Math.round(cv.height * 0.30), cv.width, 1).data;
+          const lens = {}; let run = 1;
+          for (let i = 4; i < d.length; i += 4) {
+            const same = d[i] === d[i - 4] && d[i + 1] === d[i - 3] && d[i + 2] === d[i - 2];
+            if (same) run++; else { lens[run] = (lens[run] || 0) + 1; run = 1; }
+          }
+          lens[run] = (lens[run] || 0) + 1;
+          const all = Object.entries(lens).map(([k, v]) => [Number(k), v]);
+          const scale = cv.width / (FIELD_W / PIX);
+          /* pixels, not runs: one stray pixel must not weigh the same as
+             a forty pixel stretch of flat sky */
+          const px = all.reduce((a, [k, v]) => a + k * v, 0);
+          const stray = all.filter(([k]) => k % scale !== 0)
+                           .reduce((a, [k, v]) => a + k * v, 0);
+          return { w: cv.width, h: cv.height, world: FIELD_W / PIX,
+                   modal: all.slice().sort((a, b) => b[1] - a[1])[0][0],
+                   strayShare: stray / px,
+                   smoothing: cv.getContext('2d').imageSmoothingEnabled };
+        });
+        const scale = r.w / r.world;
+        ok(scale === Math.round(scale) && scale >= 2,
+          `${label}: the world is blown up by a whole number (${scale}x)`,
+          JSON.stringify({ bitmap: r.w, world: r.world, scale }));
+        ok(r.modal === scale && r.strayShare < 0.08,
+          `${label}: the blit lands on the grid, ${scale}px to a block`,
+          JSON.stringify({ modalRun: r.modal, scale,
+                           offGrid: (100 * r.strayShare).toFixed(1) + '% of the row',
+                           smoothing: r.smoothing }));
+        ok(r.w <= FIELD_W_CEIL && r.h <= Math.round(FIELD_W_CEIL * 660 / 960),
+          `${label}: never more pixels than the fixed bitmap it replaced`,
+          JSON.stringify({ w: r.w, h: r.h, ceiling: FIELD_W_CEIL }));
+        ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+        await pg.close(); await ctx.close();
+      }
     }
 
     /* ---- the code's own claims ---- */

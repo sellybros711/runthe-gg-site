@@ -44,7 +44,28 @@
    - Sprite builds were cut from 305 a minute to 118 with zero repeats,
      and an A/B over three runs each way showed it moved the frame times
      NOT AT ALL. Correlation is not cost: a build lands in a long frame
-     because both cluster on the same event. */
+     because both cluster on the same event.
+   - The BACKING STORE size is not worth chasing either, and this is the
+     same null result a second time. The bitmap was a fixed 1440 wide on
+     every screen, where a 390px phone at a device ratio of 3 can show
+     1074, so the game wrote 81% more pixels than the screen had. Sizing
+     it down is worth 0.3ms a frame against 3.4ms of spread inside one
+     arm. It was changed anyway, for the GRID rather than the frame rate
+     (see fieldBitmapWidth), and it is never more pixels than before.
+
+   HOW THAT ONE WENT WRONG, because the trap is in this file's own
+   instrument. An A B A pass read the same change as 9.5ms a frame. The
+   three runs were 35.6, 6.2 and 16.3 percent over 33ms, which is a page
+   still warming up, so the middle arm was flattered by its POSITION.
+   Interleave the arms and repeat them, which is what --reps does in
+   scratchpad/dprprobe.mjs, and the gap disappears.
+
+   AND THE THROTTLE ONLY SLOWS THE MAIN THREAD. Emulation.setCPUThrottling
+   Rate throttles script, not rasterizing and not compositing. So a change
+   that moves pixel COUNT rather than javascript is close to invisible
+   here however many times it is run, and a null result from this file is
+   only ever a null result about the main thread. Do not read one as
+   proof that a real phone would not care. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { pathToFileURL } from 'url';
 const SECS = Number(process.argv[2] || 70);

@@ -6891,6 +6891,53 @@ let FIELD_VIEW = 1;
 /* The logical field, the size every coordinate in fieldGeom() is in, and the
    factor the on screen bitmap is larger by. */
 const FIELD_W = 960, FIELD_H = 660, FIELD_K = 1.5;
+/* THE WORLD IS BLOWN UP BY A WHOLE NUMBER, and FIELD_K is only a ceiling
+   now. The bitmap was a fixed 1440 wide whatever it was shown on, which
+   made the blit 320 world pixels to 1440 at 4.5x: blocks four device
+   pixels wide and blocks five device pixels wide, in equal measure,
+   counted along one row of the stands. The one-resolution pass below
+   exists so the field's grid and the sprites' grid read as ONE grid, and
+   it has never actually had one block size to read.
+
+   Nothing failed and nothing could. A ragged grid renders perfectly.
+
+   So the scale is an integer: the smallest whole multiple of the world
+   that covers what the screen can show, between two and four. A 390px
+   phone at a device ratio of 3 shows the canvas 358 CSS pixels wide,
+   which is 1074 device pixels, so it takes 4x and gets 1280. Every block
+   is four pixels. Every screen measured comes out at or under the old
+   1440, so this is never more work than before: 1280 on that phone, 960
+   on a 360 at ratio 2 and on an ordinary desktop.
+
+   IT IS NOT A SPEED FIX AND THE MEASUREMENT SAYS SO. An interleaved A/B
+   at 6x CPU throttle, three runs an arm, put 1074 against 1440 at 0.3ms
+   a frame with 3.4ms of spread inside a single arm. An earlier A B A
+   pass had read 9.5ms, which was the page still warming up: the three
+   runs trended 35.6, 6.2, 16.3 and the middle one was flattered by its
+   position. That is the sprite cache's null result arriving a second
+   time. Keep this for the grid, not for the frame rate.
+
+   PIX is read INSIDE the function and not into a const beside this one.
+   It is declared below, so a const here would be read before its own
+   line and throw on load. That is the football results screen's TDZ, and
+   it takes the whole page rather than one number. */
+function fieldBitmapWidth(cv) {
+  const world = FIELD_W / PIX;
+  const css = cv && cv.clientWidth;
+  if (!css) return world * 4;                  /* before layout, and the loop corrects it */
+  const want = css * (window.devicePixelRatio || 1);
+  return world * clamp(Math.ceil(want / world), 2, Math.floor(FIELD_K * PIX));
+}
+/* Resizing a canvas CLEARS it and resets its context, which is free here
+   because the loop redraws every pixel every frame, and ruinous if it
+   ran every frame. So it only writes when the answer has changed, which
+   is a rotation, a window resize, or a browser moving between screens. */
+function sizeFieldCanvas(cv) {
+  const w = fieldBitmapWidth(cv);
+  if (cv.width === w) return false;
+  cv.width = w; cv.height = Math.round(w * FIELD_H / FIELD_W);
+  return true;
+}
 /* ONE RESOLUTION. The characters are chunky pixel sprites and the field
    was smooth vector art: anti-aliased ellipses, perfect gradients,
    hairline chalk. Two art styles in one frame is the loudest "not a real
@@ -6959,6 +7006,13 @@ function startFieldLoop() {
       }
       const ctx = fCv.getContext('2d');
       if (fCv.clientWidth) FIELD_VIEW = fCv.clientWidth / FIELD_W;
+      /* Asked every frame and answering false on almost all of them. It has
+         to be here rather than on a resize listener: the canvas also changes
+         size when the arena is laid out for the first time, when a rotation
+         changes the column, and when a browser moves to another screen, and
+         only the first of those three fires a resize. */
+      sizeFieldCanvas(fCv);
+      const fieldK = fCv.width / FIELD_W;
       /* The world at one low resolution (see PIX above), then blitted to
          the display bitmap with smoothing off. drawField saves and
          restores around its own transforms, so the base survives it. */
@@ -6976,10 +7030,13 @@ function startFieldLoop() {
       ctx.drawImage(pixWorld, 0, 0, fCv.width, fCv.height);
       /* The crisp pass: each queued site replays on the display canvas
          under the transform it was drawn with. The world context maps
-         logical through 1/PIX, the display maps through FIELD_K, so the
-         bridge between the two is one scale. */
+         logical through 1/PIX, the display maps through fieldK, so the
+         bridge between the two is one scale. It is the LIVE scale read off
+         the bitmap, never the FIELD_K ceiling: the two are the same number
+         only on a screen big enough to want every pixel, and everywhere
+         else a constant here would put the type in the wrong place. */
       for (const [m, fn] of HUD_Q) {
-        ctx.setTransform(FIELD_K * PIX, 0, 0, FIELD_K * PIX, 0, 0);
+        ctx.setTransform(fieldK * PIX, 0, 0, fieldK * PIX, 0, 0);
         ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
         fn(ctx);
       }
@@ -12783,10 +12840,11 @@ function renderGame() {
 
   const arena = el('div','arena');
   const cv = document.createElement('canvas');
-  /* The bitmap is one and a half times the logical field, so a wide desktop
-     gets a large field that is scaled DOWN to it rather than a 960 wide one
-     scaled up and blurred. Everything else still thinks in 960x660: the
-     paint loop applies the scale once, before drawField. */
+  /* The bitmap is sized to the screen by sizeFieldCanvas, capped at one and
+     a half times the logical field. Everything else still thinks in 960x660:
+     the paint loop applies the scale once, before drawField. Nothing is laid
+     out yet at this point, so this is the ceiling and the loop corrects it on
+     the first frame that has a width to read. */
   cv.id = 'field'; cv.width = FIELD_W * FIELD_K; cv.height = FIELD_H * FIELD_K;
   arena.appendChild(cv);
   /* THE BAT FOLLOWS THE MOUSE. Batting, the cursor over the zone is where

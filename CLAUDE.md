@@ -2324,6 +2324,96 @@ a play starting), not because 1.5ms of building makes a 33ms frame. Keep the
 changes because they are strictly less work and they fix an unbounded cache; do
 not keep them because they made it smooth.
 
+#### The same null result, and the instrument fault that hid it twice
+
+The display bitmap was a fixed **1440x990 on every screen**, 1.43M pixels a frame.
+A 390px phone shows that canvas 358 CSS pixels wide, which at a device ratio of 3
+is **1074 device pixels, 0.79M**. So the game wrote 81% more pixels than the screen
+could show and the browser resampled the surplus away. That reads like an obvious
+win and it is worth **0.3ms a frame**.
+
+**The first A/B said 9.5ms and was measuring the warm up.** Three runs, A B A, came
+out 35.6 / 6.2 / 16.3 percent of frames over 33ms, and the whole gap was read as the
+fix when the series is simply a page getting faster as it runs. Interleaved and
+repeated, three runs an arm, the arms are 23.3 and 23.0 with **3.4ms of spread
+inside a single arm**. This is the sprite cache's lesson arriving a second time, from
+the other side: there the correlation was real and the cause was not, here the
+difference was real and the cause was the running order.
+
+**AND `setCPUThrottlingRate` ONLY SLOWS THE MAIN THREAD.** It throttles script, not
+rasterizing and not compositing, so a change that moves pixel COUNT rather than
+javascript is close to invisible to `check-frames.mjs` however many times it is run.
+A null result from that file is a null result **about the main thread** and never
+proof that a real phone would not care. That is recorded in its header so the next
+person does not re-run it expecting an answer it cannot give.
+
+#### It has never had one block size, and that is the reason it changed anyway
+
+Measured by reading a row of the stands back out of the bitmap and counting run
+lengths: at 1440 the 320 pixel world is blown up **4.5x**, which is 160 blocks four
+device pixels wide and 160 blocks five device pixels wide. The whole one-resolution
+pass exists so the field's grid and the sprites' grid read as ONE grid, and it never
+had a single block size to read. **Nothing failed and nothing could.** A ragged grid
+renders, reads and sells perfectly well.
+
+So `fieldBitmapWidth()` picks the smallest WHOLE multiple of the world that covers
+what the screen can show, between two and four:
+
+| screen | can show | bitmap | scale |
+|---|---|---|---|
+| 390 at ratio 3 | 1074 | 1280 | 4x |
+| 360 at ratio 2 | 658 | 960 | 3x |
+| 320 at ratio 2 | 640 | 640 | 2x |
+| desktop 1280 | 924 | 960 | 3x |
+| 1920 at ratio 2 | 2210 | 1280 | 4x (the ceiling) |
+
+Every screen is at or under the 1440 it replaced, so it is **never more work than
+before**, and every one now has one block width. The ceiling is the old `FIELD_K`
+floored to a whole number, which is what makes 4x the most anything gets.
+
+**The floor is 2x and it is not decoration.** Below it the blit is DOWNscaling the
+art, and the grid stops landing on whole pixels in the other direction.
+
+**`FIELD_K` is a ceiling now and nothing may read it as the live scale.** The crisp
+HUD pass replays queued type at `fieldK * PIX`, and `fieldK` is read off the bitmap
+every frame: the two are the same number only on a screen big enough to want every
+pixel, and a constant there would put the type in the wrong place everywhere else.
+
+**The sizer is asked every frame and writes almost never.** Resizing a canvas clears
+it, which is free in a loop that redraws every pixel every frame and ruinous if it
+ran every frame. It has to be in the loop rather than on a resize listener, because
+the canvas also changes size when the arena is first laid out and when a browser
+moves between screens, and only one of those three fires a resize.
+
+**`PIX` is read inside the function and not into a const beside it.** It is declared
+below `FIELD_W`, so a const there is read before its own line and throws on load,
+which takes the page rather than one number. Same TDZ as the football results screen.
+
+**The guard asserts the PROPERTY, never a width**, over six viewports: the scale is a
+whole number, the blit lands on the grid, and the bitmap is never over 1440. Pinning
+the numbers would make it a test of whichever devices somebody thought of. It reads
+the row **up in the stands**, where the field is flat colour, because a row through
+the sprites or the chalk has real edges in it and the run lengths would be the art
+rather than the grid.
+
+**A ROW IS NEVER PURE BLOCKS, AND ASKING FOR THAT WAS THE BUG.** The crisp pass
+replays queued type on the DISPLAY canvas at full resolution AFTER the blit, on
+purpose, so any row crossing it carries single pixels that owe nothing to the grid.
+The first draft demanded one run length and failed on five viewports of six,
+reporting 182 blocks of four and 24 of one as a ragged grid. It was reading the type.
+**A standalone version of the same scan passed, which is worse than failing**: its row
+happened to miss the words, so the check was a coin toss on where they landed. That is
+the third time an extractor in this repo has been wrong in silence.
+
+So the claim is about the BLIT: the most common run is the scale, and what is not a
+whole multiple of the scale is a sliver. Measured, off-grid pixels run **0% to 4.4%**
+of the row across the six, against a threshold of 8%.
+
+**What that still catches is the one thing only pixels can say**, which is
+`imageSmoothingEnabled` coming back on. Proved rather than assumed, by forcing it back
+on and re-reading: the modal run goes from 4 to **1** and the off-grid share to
+**57.2%**. A check that can only pass is worth nothing.
+
 ### A comment is a claim, and most of them are checkable
 
 Auditing what the code says about itself has found **three real bugs** in this
