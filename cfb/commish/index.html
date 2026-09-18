@@ -2901,12 +2901,33 @@ const allowed=()=>ACCESS.allowed(authState);
 /* AND A TESTER HAS TO BE ABLE TO SEE THE OTHER TIER. Testers are treated as paying, which
    means the half of the design most likely to be got wrong is the half nobody on the list
    can look at: what a free player is shown, what is drawn and dead, and whether the offer
-   reads as an offer or as a scolding. `?tier=free` is that, and it is a tester-only switch
-   because nobody else can reach this page at all. */
-let forceFree=false;
-try{ forceFree=new URLSearchParams(location.search).get('tier')==='free'; }catch(e){}
+   reads as an offer or as a scolding. `?tier=free` is that.
+ *
+ * IT WAS GUARDED BY A PREMISE THAT HAS SINCE EXPIRED, which is the whole lesson here. The
+ * line that used to sit under this read "it is a tester-only switch because nobody else can
+ * reach this page at all", and that was true while the mode was behind the tester list. The
+ * day COMMISH_LIVE went true, allowed() started returning true for everybody, the sentence
+ * stopped being true, and nothing anywhere was watching it: the switch had no gate of its
+ * own, because its gate was the door. Reported by a player who was looking at a link on
+ * their own screen inviting them to see what a free player sees, while being one.
+ *
+ * SO IT ASKS THE TESTER LIST DIRECTLY NOW, not the door. `allowed()` answers who may PLAY,
+ * which is everybody, and that is a different question from who may drive the dev switches.
+ * The two were the same function for as long as the mode was shut, and a guard that reads
+ * the right answer for the wrong reason breaks silently the moment the reason changes. */
+const isTesterNow=()=>{
+  try{ return !!(ACCESS&&(ACCESS.isTester(authState.name)||ACCESS.isTesterId(authState.userId))); }
+  catch(e){ return false; }
+};
+/* ASKED IN THE URL, GRANTED BY THE LIST, and they are two different facts kept apart on
+   purpose. The URL is read once at load, before auth has answered; whether it counts is a
+   question only the tester list can settle and only after the account arrives. Written as
+   one variable, a stranger's `?tier=free` would stick from boot and never be revisited. */
+let freeAsked=false;
+try{ freeAsked=new URLSearchParams(location.search).get('tier')==='free'; }catch(e){}
+const forceFree=()=>freeAsked&&isTesterNow();
 const ownsCfb=()=>!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
-const isPro=()=>allowed()&&!forceFree&&ownsCfb();
+const isPro=()=>allowed()&&!forceFree()&&ownsCfb();
 
 /* ── ONE SEASON A DAY, FOR AN ACCOUNT THAT HAS NOT BOUGHT ─────────────────────────
  *
@@ -3075,14 +3096,23 @@ function waitClock(on){
    accumulates the knowledge: a beat with nothing on the desk teaches you nothing, and there
    is no way to farm it, since a year holds nine beats whatever you do with them.
 
-   `?rulings=N` is the tester switch, alongside `?tier=free`. Nobody else can reach this page
-   and there is no way to judge a ladder you would have to play four terms to see. */
+   `?rulings=N` is the tester switch, alongside `?tier=free`, and there is no way to judge a
+   ladder you would have to play four terms to see.
+
+   IT CARRIED THE SAME EXPIRED SENTENCE the tier switch did: "nobody else can reach this
+   page". True while the mode was shut, false since COMMISH_LIVE went true, and unlike the
+   tier switch this one draws no link, so nothing on screen would ever have shown it. What it
+   was handing a stranger is every rung of the council ladder for the price of typing a number
+   into the address bar, which is the one thing in the mode that is meant to be earned across
+   terms. ASKED HERE, GRANTED AT THE READ, for the reason the tier switch is split the same
+   way: this runs at load and the tester list cannot answer until the account has arrived. */
 const CAREER_KEY='cfb_commish_career';
-let careerOverride=null;
+let rulingsAsked=null;
 try{
   const q=new URLSearchParams(location.search).get('rulings');
-  if(q!==null&&q!=='') careerOverride=Math.max(0,Math.floor(Number(q))||0);
+  if(q!==null&&q!=='') rulingsAsked=Math.max(0,Math.floor(Number(q))||0);
 }catch(e){}
+const careerOverrideOf=()=>(rulingsAsked!=null&&isTesterNow())?rulingsAsked:null;
 /* ONE RECORD, TWO THINGS IN IT. `rulings` is the council ladder's count, above. `terms` is
    the career: one row per finished term, appended at the end and never edited, because the
    ending screen's whole claim is that a term you played in March is still on the books in
@@ -3108,12 +3138,13 @@ function careerPut(c){
   cloudPush('career',()=>{ const now=careerData(); return {payload:now,progress:careerProgress(now)}; });
 }
 function careerRulings(){
-  if(careerOverride!=null) return careerOverride;
+  const ov=careerOverrideOf();
+  if(ov!=null) return ov;
   return careerData().rulings;
 }
 function careerTerms(){ return careerData().terms; }
 function bumpCareer(){
-  if(careerOverride!=null) return;
+  if(careerOverrideOf()!=null) return;
   const c=careerData(); c.rulings++; careerPut(c);
 }
 /* A TERM ALREADY IN PROGRESS IS NOT WASTED. The career count is new, so somebody mid-term
@@ -3121,7 +3152,7 @@ function bumpCareer(){
    Seeded once, from the ledger's own history, and never again: `>` rather than `=` so it can
    only ever raise the number. */
 function seedCareer(w){
-  if(careerOverride!=null||!w||!w.history) return;
+  if(careerOverrideOf()!=null||!w||!w.history) return;
   const ruled=w.history.filter((h)=>L.isRuling(h)).length;
   const c=careerData();
   if(ruled>c.rulings){ c.rulings=ruled; careerPut(c); }
@@ -8290,6 +8321,10 @@ window.PS_CFB_COMMISH_TEST={
   /* The career shelf, from storage and back, so a guard can put three terms on the books
      and read what the ending would say about the fourth. */
   career:()=>careerData(),
+  /* THE EFFECTIVE COUNT, which is not the stored one whenever `?rulings=N` is in play. The
+     switch is gated on the tester list now, so a guard has to be able to read what the
+     ladder actually sees rather than what is on the shelf. */
+  rulings:()=>careerRulings(),
   logTerm:(w,p,rep)=>logTerm(w,p,rep),
   paintCareer:(el)=>paintCareer(el),
   /* The inheritances, and a way to take one, so a guard can open on a broken sport without
@@ -9582,9 +9617,15 @@ function paintTag(){
      people who got past the door were the ones who had paid, so the word described the
      screen. A free account plays now, and a badge reading Premium over a player who is
      about to be asked to wait a day is the exact opposite of true. */
+  /* AND IT CALLED A PAYING CUSTOMER A TESTER, the same expired premise as the `?tier=free`
+     switch above and on the same screen. The owner branch was written when owning the mode
+     and being on the list were the same population, because the list was the only way in.
+     They came apart the day the mode launched, and what an owner saw was the badge for
+     somebody else's account. What a buyer is, is Pro. Only the list says Tester. */
   t.textContent=!allowed()?'In testing'
     :!ownsCfb()?'Free'
-    :forceFree?'Tester, free view':'Tester';
+    :!isTesterNow()?'Pro'
+    :forceFree()?'Tester, free view':'Tester';
 }
 function gate(){
   const say=$('gate-say'), act=$('gate-act');
@@ -9712,11 +9753,21 @@ function gate(){
       +SCENARIOS.map((s)=>'<button type="button" class="inh" data-sc="'+esc(s.id)+'">'
         +'<b>'+esc(s.name)+'</b><span>'+esc(s.line)+'</span></button>').join('')
       +'</div>':'')
+    /* THE DEV SWITCH IS FOR THE LIST AND NOBODY ELSE. A player reported reading "See what a
+       free player sees" on their own screen while being a free player, which is the switch
+       and the badge above both outliving the door that used to hide them. A line offering a
+       stranger a tour of the tier they are already in is not a small blemish: it is the page
+       talking to its authors in front of a customer.
+       The sentence a reader gets is the one that was always meant for them, and the tester
+       half is appended rather than substituted, so the save promise cannot go missing from
+       the branch somebody edits next. */
     +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:11px;text-align:center">'
-      +'Your term is saved to your account. Sign in anywhere and it is there.<br>'
-      +(forceFree
-        ?'You are looking at the free version. <a href="?">Switch back</a>.'
-        :'<a href="?tier=free">See what a free player sees</a>.')+'</p>';
+      +'Your term is saved to your account. Sign in anywhere and it is there.'
+      +(forceFree()
+        ?'<br>You are looking at the free version. <a href="?">Switch back</a>.'
+        :isTesterNow()
+          ?'<br><a href="?tier=free">See what a free player sees</a>.'
+          :'')+'</p>';
   const r=$('g-resume'); if(r) r.onclick=()=>office();
   act.querySelectorAll('[data-sc]').forEach((btn)=>{
     btn.onclick=()=>{
