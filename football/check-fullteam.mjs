@@ -101,6 +101,11 @@ const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,fullPickIsDefens
      dataNow() is what picks, off the module's own `run`, so a harness that reaches for DATA
      directly signs six offensive men and stalls with six empty slots. */
   + 'dataNow,LEAGUE:()=>LEAGUE,CAL:()=>CAL,CTX:()=>CTX,D:()=>DATA,'
+  /* THE ONE THING A FINISHED GAME MUST NOT BE, which is mid-decision. See the section on a
+     call that hands back another call. */
+  + 'bossPending:()=>!!(bossSim&&bossSim.pending),'
+  /* The share card, and the geometry it lays its roster out on. */
+  + 'drawShareCard,CARD:()=>CARD,cardRosterLayout,'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 
 /* NO TESTER VIEW ANY MORE. This used to take { tester } and rewrite LIVE = false to true
@@ -142,6 +147,106 @@ async function open(browser) {
   });
   await page.waitForTimeout(1500);
   return { page, boom };
+}
+
+/* ================================================================
+   A CALL CAN HAND BACK ANOTHER CALL
+
+   The only section here that needs no browser, because its subject is the shape of what
+   bossSimResolve returns rather than anything on a screen.
+
+   THE BUG IT WAS WRITTEN FOR. A fourth down conversion that reaches the end zone finishes
+   the drive through bossEndDrive, which is the same function that pauses a touchdown for
+   the two point try. So in the second half of a close game it hands back a DECISION instead
+   of a finished drive, and returns before the automatic extra point is added. The page's
+   loop ignored that, went back to bossSimAdvance, started the next drive and never came
+   back: six points, no kick, no two point question, and nothing anywhere to say so.
+
+   WHY check-boss.mjs CANNOT SEE IT. That file asks whether the drive log agrees with the
+   score bug, and both of them read sim.you, so a score that is uniformly one point short
+   agrees with itself perfectly.
+
+   SO THE ASSERTION IS THE SHAPE, and the cost is measured beside it by running the same
+   games through both loops. A driver that ignores a returned decision and one that honours
+   it are the page before and after.
+   ================================================================ */
+{
+  console.log('\nA CALL CAN HAND BACK ANOTHER CALL');
+  const E = (await import('./engine.js')).default || (await import('./engine.js'));
+  const sim = (await import('./simulator.js')).default || (await import('./simulator.js'));
+  const GAMES = 300;
+  /* THE FIXTURE IS BUILT ONCE AND BOTH LOOPS PLAY IT. Drafting is the expensive half of this
+     section by a long way, and two arms that drafted their own rosters would also be two
+     different samples, which is the one thing a before and after must not be. */
+  const fixture = (() => {
+    const rng = E.createSeededRNG(E.hashSeed('handback|rosters'));
+    const out = [];
+    for (let g = 0; g < GAMES; g++) {
+      const roster = sim.buildFullToBudget(rng, E.FULL_CAP_MUSD, 0.90);
+      const opp = sim.ctx.teamSeasons[Math.floor(rng() * sim.ctx.teamSeasons.length)];
+      out.push({ roster, opp,
+        la: sim.leagueContext[opp.season] ?? 21.5,
+        chem: E.resolveChemistry(roster, sim.ctx, { full: true }) });
+    }
+    return out;
+  })();
+  /* Bold on purpose: the case needs a fourth down that is GONE FOR and scores, so a driver
+     that punts never reaches it and would pass having exercised nothing. */
+  const play = (honour) => {
+    const rng = E.createSeededRNG(E.hashSeed('handback'));
+    let hits = 0, stranded = 0, sixOnly = 0, settled = 0;
+    for (const f of fixture) {
+      const s = E.fullSimCreate(f.roster, f.chem, f.opp, f.la, 1, E.CONSTANTS, null, null);
+      let ev = E.bossSimAdvance(s, rng);
+      for (let i = 0; i < 4000 && ev.type !== 'over'; i++) {
+        if (ev.type === 'decision') {
+          const was = s.you;
+          const res = E.bossSimResolve(s, ev.decision.kind === 'two' ? 'two' : 'go', rng);
+          if (res && res.end && res.end.type === 'decision') {
+            hits++;
+            if (honour) {
+              /* The handback IS the two point question. Answering it is what banks the point
+                 or the two, so the touchdown finishes worth seven or eight. */
+              ev = res.end;
+              E.bossSimResolve(s, 'kick', rng);
+              if (s.you - was === 7) settled++;
+              ev = E.bossSimAdvance(s, rng);
+              continue;
+            }
+            /* THE DEFECT, STATED AS ARITHMETIC. Dropped, the touchdown is worth exactly six:
+               the automatic extra point is on the far side of the return that was ignored. */
+            if (s.you - was === 6) sixOnly++;
+          }
+        }
+        ev = E.bossSimAdvance(s, rng);
+      }
+      if (s.pending) stranded++;
+    }
+    return { hits, stranded, sixOnly, settled };
+  };
+  const before = play(false), after = play(true);
+  ok('a fourth down that scores hands back a decision', before.hits > 0,
+    before.hits + ' of ' + GAMES + ' games');
+  /*
+   * AND THE COST IS ARITHMETIC RATHER THAN A WIN RATE.
+   *
+   * The first draft of this compared points a game between the two loops and FAILED, showing
+   * the broken arm scoring MORE. It was measuring nothing: honouring the handback takes an
+   * extra draw from the stream, so the two games diverge at the first hit and everything
+   * after it is a different game. A per-game aggregate cannot see a one point defect through
+   * that, and the 0.4 it reported was noise pointing the wrong way.
+   *
+   * A touchdown is worth six plus whatever is decided after it, so the defect is that the
+   * dropped ones finish at exactly six. That is deterministic, it is read at the event, and
+   * no divergence downstream can touch it.
+   */
+  ok('  and dropping it leaves the touchdown worth six', before.sixOnly === before.hits,
+    before.sixOnly + ' of ' + before.hits + ' finished at six');
+  ok('  where answering it kicks the point', after.settled > 0,
+    after.settled + ' of ' + after.hits + ' finished at seven');
+  /* AND IT LEAVES THE SIM MID-DECISION, which is the state the page must never end in. */
+  ok('  and strands the sim on a pending call', before.stranded > 0 && after.stranded === 0,
+    before.stranded + ' games before, ' + after.stranded + ' after');
 }
 
 const browser = await pw.chromium.launch({ executablePath: CHROME });
@@ -752,20 +857,47 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
     /* Sim the rest, which hurries the football and must NOT take the calls. */
     const fast = document.getElementById('b-boss-fast');
     if (fast) fast.click();
-    let calls = 0;
+    /* WHERE THE CONTROLS LAND, measured at the moment they are offered rather than on a
+       screen posed for the purpose. See the assertions below: this is a phone viewport and
+       the drive log grows under them all game. */
+    const vh = window.innerHeight;
+    let calls = 0, callTop = 0, callBottom = 0, doneTop = 0, doneBottom = 0;
     for (let i = 0; i < 600; i++) {
       const box = document.getElementById('bg-calls');
       if (box && !box.hidden) {
-        const b = box.querySelector('.bcall');
-        if (b) { calls++; b.click(); }
+        const bs = [...box.querySelectorAll('.bcall')];
+        if (bs.length) {
+          calls++;
+          /* THE DEEPEST BUTTON OF THE WORST CALL, so a late one with a full log behind it
+             is what the assertion sees rather than the first one of the game. */
+          for (const b of bs) {
+            const r = b.getBoundingClientRect();
+            if (Math.round(r.bottom) > callBottom) {
+              callBottom = Math.round(r.bottom); callTop = Math.round(r.top);
+            }
+          }
+          bs[0].click();
+        }
       }
-      if (!document.getElementById('bg-done').hidden) break;
+      if (!document.getElementById('bg-done').hidden) {
+        const c = document.getElementById('b-boss-continue');
+        if (c) {
+          const r = c.getBoundingClientRect();
+          doneTop = Math.round(r.top); doneBottom = Math.round(r.bottom);
+        }
+        break;
+      }
       await wait(40);
     }
     const you = +document.getElementById('bg-syou').textContent;
     const them = +document.getElementById('bg-sthem').textContent;
     const filed = run.season.results.filter((r) => r.playoff).slice(-1)[0] || null;
-    return { found, board, eye, calls, you, them, filed,
+    /* THE TEXT COLUMN, not the row. A row opens with its clock, so a name test against the
+       whole thing asks whether "4TH 3:12 You" starts with "You". */
+    const callRows = [...document.querySelectorAll('#bg-log .pl.call .w')]
+      .map((r) => (r.innerText || '').replace(/\s+/g, ' ').trim());
+    return { found, board, eye, calls, you, them, filed, callRows,
+      pending: T.bossPending(), vh, callTop, callBottom, doneTop, doneBottom,
       done: !document.getElementById('bg-done').hidden,
       state: (document.getElementById('bg-state').textContent || '').trim(),
       drives: document.querySelectorAll('#bg-log .pl').length };
@@ -780,7 +912,51 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
        stop after it is a stop the page refused to hurry past. Zero calls means the game
        played itself. */
     ok('  and it stopped for the calls', live.calls > 0, live.calls + ' calls');
+    /* EVERY CALL LEAVES A ROW, on this side too. The narration over the field is painted over
+       by the next drive, so the log is the only record either reader keeps, and a log whose
+       shape depended on who was looking would be the one screen on this page that did. */
+    ok('    each of which is in the log', live.callRows.length === live.calls,
+      live.callRows.length + ' rows against ' + live.calls + ' calls');
+    ok('    in the second person', live.callRows.length > 0
+      && live.callRows.every((r) => /^You /.test(r) && !/ goes | takes | kicks | punts /.test(r)),
+      live.callRows[0] || 'no rows');
+    /*
+     * AND THE CONTROLS ARE ON SCREEN WHEN THEY ARE OFFERED.
+     *
+     * The call box and the verdict used to sit UNDER the drive log, which is capped at 40vh
+     * and fills all game. Measured on a phone with a fourteen drive log: the call box started
+     * 775px down an 844px viewport, so a player got the question and none of the buttons, and
+     * the Continue button after the final whistle was fully off screen. Reported by a player
+     * with a screenshot of a two point call they had to go looking for.
+     *
+     * MEASURED AT THE MOMENT OF THE OFFER, on the deepest button of the worst call, because
+     * the fault grows with the log: a check on the first call of the game would pass on a
+     * screen that breaks by the fourth quarter.
+     *
+     * AGAINST A PHONE, NEVER AGAINST THIS WINDOW. The harness opens 390x900 and a phone is
+     * 844 or 740. Reintroduced, the deepest button measures 853 to 934 and the Continue
+     * button 931 to 988, so this particular run would have failed against `vh` as well: the
+     * margin is 34px, and it is 34px only because the game happened to run 28 drives. The
+     * defect IS the log's height, so a shorter game shrinks that margin to nothing while
+     * the screen is just as broken on the phone it was reported from. PHONE is the shortest
+     * viewport worth supporting and it does not move when the sample does.
+     */
+    const PHONE = 740;
+    ok('  with the buttons on screen when it asks',
+      live.callBottom > 0 && live.callTop >= 0 && live.callBottom <= PHONE,
+      live.callTop + ' to ' + live.callBottom + ', against a ' + PHONE + 'px phone');
+    ok('  and the way out on screen at the whistle',
+      live.doneBottom > 0 && live.doneTop >= 0 && live.doneBottom <= PHONE,
+      live.doneTop + ' to ' + live.doneBottom + ', against a ' + PHONE + 'px phone');
     ok('  having actually played a game', live.drives > 4, live.drives + ' drives logged');
+    /* AND IT DID NOT FINISH MID-DECISION. A call that hands back another call and is dropped
+       leaves the sim pending, which is the page half of the node section above. */
+    /* A NET RATHER THAN A PROOF, and worth saying so. The case fires on about 4% of games,
+       so one wild card will usually not meet it and this will usually pass either way. The
+       section above is where that defect is actually held; this is the end to end reading
+       that would catch it if the page ever stopped honouring the handback for a whole run. */
+    ok('  and finished with nothing left to answer', live.pending === false,
+      'pending ' + live.pending);
     /* THE SCORE ON SCREEN IS THE SCORE THAT IS FILED. This is what the `pre` path of
        advanceWeek exists for, and getting it wrong is silent: a resolved result under a live
        scoreboard reads as a scoreboard that lied. */
@@ -796,10 +972,24 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
     ok('    with no invented box score', !!live.filed && live.filed.lines === null);
   }
 
-  /* AND A COACHED RUN IS UNTOUCHED, which is the half a one line branch gets wrong. He was
-     hired to call it, so a coached team still gets the resolved broadcast. Asserted by
-     replaying the SAME seed with a man in charge, so the only thing that differs between the
-     two walks is the hire. */
+  /*
+   * AND THE COACH MAKES THE CALLS, WHICH THIS USED TO ASSERT THE OPPOSITE OF.
+   *
+   * It said "a coached team still gets the broadcast", because when the live board arrived
+   * only an uncoached team played forward. That was the wrong half of the idea to keep. A
+   * coach who cost real money and whose philosophy the hire sheet describes at length never
+   * appeared to DO anything: he moved two multipliers and no screen ever showed him deciding
+   * a game. Reported as wanting to be told when he goes for two and fails, which can only be
+   * true if he is really deciding it.
+   *
+   * So every Full Team playoff game plays forward now and the hire decides WHO ANSWERS. The
+   * three claims below are what replaced the reversed one, and they are separate because the
+   * first two were right and the third wrong in the first draft of this:
+   *
+   *   the board comes up for a coached run too
+   *   it never asks the reader anything
+   *   and what he decided is in the log, by name, with how it turned out
+   */
   const coached = live.found == null ? null : await s.page.evaluate(async (seed) => {
     const T = window.__t, RR = T.R;
     /* THE SEED IS SEARCHED AGAIN RATHER THAN REUSED, and that is not laziness. A coach moves
@@ -823,6 +1013,7 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
       run = null;
     }
     if (!run) return { hired, seeded: false };
+    const name = run.coach.name;
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     T.paintSeed();
     document.getElementById('b-po').click();
@@ -833,18 +1024,154 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
       if (b && b.offsetParent) b.click();
       await wait(200);
     }
-    return { hired: true, seeded: true,
-      broadcast: document.getElementById('s-po').classList.contains('on'),
-      liveBoard: document.getElementById('s-bgame').classList.contains('on') };
+    const board = document.getElementById('s-bgame').classList.contains('on');
+    const broadcast = document.getElementById('s-po').classList.contains('on');
+    const fast = document.getElementById('b-boss-fast');
+    if (fast) fast.click();
+    /* THE READER IS NEVER ASKED, watched rather than checked once at the end. A call button
+       that appeared and was answered by a stray click would leave nothing behind, so the poll
+       counts every frame one is on screen. */
+    let asked = 0, rounds = 0, calls = 0;
+    for (let i = 0; i < 1500; i++) {
+      if (document.querySelectorAll('#bg-calls .bcall').length) asked++;
+      calls = Math.max(calls, document.querySelectorAll('#bg-log .pl.call').length);
+      if (!document.getElementById('bg-done').hidden) {
+        rounds++;
+        /* On through the postseason, because one wild card need not produce a call and the
+           claim is about the mode rather than about one game. */
+        if (rounds >= 4 || !document.getElementById('b-boss-continue')) break;
+        document.getElementById('b-boss-continue').click();
+        await wait(400);
+        if (!document.getElementById('s-bgame').classList.contains('on')) break;
+        const f2 = document.getElementById('b-boss-fast');
+        if (f2 && f2.offsetParent) f2.click();
+      }
+      await wait(40);
+    }
+    const rows = [...document.querySelectorAll('#bg-log .pl.call .w')]
+      .map((r) => (r.innerText || '').replace(/\s+/g, ' ').trim());
+    return { hired: true, seeded: true, board, broadcast, asked, calls, rows, name,
+      pending: T.bossPending() };
   }, live.found);
   if (coached && coached.hired && coached.seeded) {
-    ok('a coached team still gets the broadcast',
-      coached.broadcast && !coached.liveBoard,
-      'broadcast ' + coached.broadcast + ', live board ' + coached.liveBoard);
+    ok('a coached team plays forward too', coached.board && !coached.broadcast,
+      'board ' + coached.board + ', broadcast ' + coached.broadcast);
+    ok('  and is never asked to call it', coached.asked === 0,
+      coached.asked + ' frames with a call button up');
+    /* A GAME NEED NOT PRODUCE A CALL, so this walks the postseason and only then insists. A
+       run that reached January and never met a genuine fourth down or a live two point try
+       across every round it played would mean the sim stopped asking. */
+    ok('  and he actually made calls', coached.calls > 0, coached.calls + ' logged');
+    ok('    which the log names him for', coached.rows.length > 0
+      && coached.rows.every((r) => r.indexOf(coached.name) === 0),
+      coached.rows[0] || 'no rows');
+    /* THE WHOLE POINT OF THE REQUEST. A row naming the man and the decision and stopping
+       there is the half that was already true; how it turned out is the half that was asked
+       for. */
+    ok('    and says how it turned out', coached.rows.length > 0
+      && coached.rows.every((r) => /Good|No good|Converted|Stuffed|Touchdown|Gave it back/.test(r)),
+      coached.rows.slice(0, 2).join(' | '));
+    ok('  and finished with nothing left to answer', coached.pending === false,
+      'pending ' + coached.pending);
   } else {
-    ok('a coached team still gets the broadcast', false,
+    ok('a coached team plays forward too', false,
       coached ? 'hired ' + coached.hired + ', seeded ' + coached.seeded : 'no seed to replay');
   }
+  /* ================================================================
+     THE SHARE CARD HOLDS TWELVE MEN
+
+     THE BUG IT WAS WRITTEN FOR, reported by a player with a screenshot. Every y on the card
+     between the two rules was a constant written for a SIX man roster, and Full Team drafts
+     twelve. So the seventh row ran through the closing rule and the next five printed on top
+     of the team rating, the chemistry, the spend, the dare and the link, all at once. The
+     card still rendered, still saved and still shared: nothing threw, and nothing could.
+
+     ASSERTED IN PIXELS, not in the arithmetic. Checking that the layout function's own
+     numbers add up would only ask whether the code I just wrote agrees with itself. What a
+     reader sees is ink where there should be none, so the check reads the canvas: the band
+     immediately above the closing rule has to be empty on a card that fits, and a name at
+     40px lands hundreds of bright pixels in it on a card that does not.
+
+     THE FALLBACK FACE MAKES THIS THE SAFE DIRECTION. Google Fonts does not resolve here, so
+     the names are set in a generic sans about a third wider than the condensed display face
+     a real visitor gets. A card that fits in this harness fits on a phone with room spare.
+     ================================================================ */
+  console.log('\nTHE SHARE CARD HOLDS TWELVE MEN');
+  {
+    const c = await s.page.evaluate(() => {
+      const T = window.__t, CARD = T.CARD();
+      const run = window.__draft(4);
+      if (!run) return { err: 'no roster' };
+      /* The card reads run.outcome and the season, so the run has to be finished. Its record
+         does not matter; what is on trial is where twelve rows land. */
+      try { T.R.hireCoach(run, null); T.R.finishHiring(run); } catch (e) {}
+      try { T.R.startSeason(run, T.dataNow(), T.CTX()); } catch (e) { return { err: 'start' }; }
+      for (let i = 0; i < 40 && run.phase !== 'over'; i++) {
+        try {
+          if (run.phase === 'seeding') { T.R.startPlayoffs(run); continue; }
+          T.R.advanceWeek(run, T.dataNow(), T.LEAGUE(), T.CAL());
+        } catch (e) { break; }
+      }
+      if (run.phase !== 'over') return { err: 'phase ' + run.phase };
+      const cv = T.drawShareCard();
+      const g = cv.getContext('2d');
+      /*
+       * THE BAND BETWEEN THE CLOSING RULE AND THE FOOTER'S FIRST LINE, which is the only
+       * strip of this card that is empty by construction: the last roster line ends above
+       * the rule and the team rating's ascenders start below it.
+       *
+       * THE FIRST DRAFT SAMPLED TWENTY PIXELS ABOVE THE RULE AND PASSED ON THE DEFECT IT
+       * WAS WRITTEN FOR. Rows are 94 apart and a name's caps are about 36 tall, so most of
+       * the pitch is gap; that stripe fell between the sixth row and the seventh and read
+       * zero on a card whose seventh row was printed straight through the footer. A thin
+       * sample of a sparse column is a coin toss on where the sample lands.
+       *
+       * So the band is the WHOLE clearance, and it is the strip a seventh row lands in.
+       * The rule itself is drawn in the club ink at .34 over near-black, which is nowhere
+       * near white, so it does not count itself.
+       */
+      const top = CARD.RULE2 + 4, h = (CARD.STAT - 52) - top;
+      const d = g.getImageData(CARD.PAD, top, CARD.W - CARD.PAD * 2, h).data;
+      let bright = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 200 && d[i + 1] > 200 && d[i + 2] > 200) bright++;
+      }
+      /* AND THE CARD IS NOT BLANK, which is the other half: a draw that threw early would
+         leave an empty canvas that passes the test above for the wrong reason. */
+      const mid = g.getImageData(CARD.PAD, CARD.ROWS2 - 20, CARD.W - CARD.PAD * 2, 40).data;
+      let rows = 0;
+      for (let i = 0; i < mid.length; i += 4) {
+        if (mid[i] > 200 && mid[i + 1] > 200 && mid[i + 2] > 200) rows++;
+      }
+      return { bright, rows, men: run.roster.length, rule2: CARD.RULE2,
+        lay: T.cardRosterLayout(run.roster.length), six: T.cardRosterLayout(6) };
+    });
+    if (c.err) {
+      ok('a twelve man card was drawn', false, c.err);
+    } else {
+      ok('a twelve man card was drawn', c.men === 12 && c.rows > 0,
+        c.men + ' men, ' + c.rows + ' lit pixels on the first row');
+      /* THE CLAIM, IN INK. Nothing of the roster is printed past the rule the footer sits
+         under. This and the arithmetic assertion below are two halves: the arithmetic
+         catches an overflow of any size, and this proves the arithmetic is describing what
+         is actually painted. */
+      ok('  and nothing of it is printed past the closing rule', c.bright === 0,
+        c.bright + ' lit pixels in the clearance under it');
+      /* TWO COLUMNS RATHER THAN ONE, which is the shape the arithmetic forced: twelve rows
+         in this band would be 44px each against a 52px chip. */
+      ok('  laid out in two columns of six', c.lay.cols === 2 && c.lay.per === 6,
+        c.lay.cols + ' x ' + c.lay.per);
+      /* AND THE DEEPEST INK CLEARS THE RULE BY ITSELF, stated as the layout's own promise so
+         a future roster size is refused here rather than on somebody's phone. */
+      ok('  whose deepest row clears it', c.lay.deep < c.rule2,
+        c.lay.deep + ' against a rule at ' + c.rule2);
+      /* SIX IS UNTOUCHED. A rewrite that fixed twelve by moving six would have moved a card
+         that has been shared for a year. */
+      ok('  while six is still one column where it was', c.six.cols === 1
+        && c.six.top === 528 && c.six.row === 94, JSON.stringify(c.six));
+    }
+  }
+
   ok('  nothing threw', !s.boom.length, s.boom.join(' | ') || 'no errors');
   await s.page.close();
 }
