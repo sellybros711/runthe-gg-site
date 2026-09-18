@@ -1551,11 +1551,16 @@ took. It cost nothing while the empty case meant a grid with no children anyway.
 padded, margined box between the rating card and the line explaining why there is nothing in
 it.
 
-#### No coach means you call the playoffs
+#### The playoffs are played forward, and the hire decides who calls them
 
 ```
-node football/check-fullteam.mjs   the last section drives a real wild card
+node football/check-fullteam.mjs   the last section drives a real wild card, both ways
 ```
+
+**EVERY Full Team playoff game plays forward now**, drive by drive on the boss battle's
+board, and stops at the two real calls: fourth down, and the two point try. What hiring a
+coach decides is WHO ANSWERS. No coach and the reader is asked. A coach and he answers, and
+the screen says what he decided before it plays it.
 
 Declining a coach used to buy a PLAN EDITOR: three dials (tempo, fourth down, pressure) set
 once before kickoff. That is neither what a coach does nor what calling it yourself means,
@@ -1613,9 +1618,84 @@ Added to losing the dials, an uncoached team is down roughly two points of regul
 rate and about one of playoff win rate. Recorded rather than compensated. What it buys is
 four games a player actually decides.
 
-**A coached team is untouched**, and the guard asserts that as its own section rather than as
-the absence of the first one. He was hired to call it, so he calls it, and a one line branch
-is exactly the shape that gets the other side wrong.
+##### And a coach who only moved a multiplier was the same problem wearing a name
+
+He cost real money, the hire sheet described his philosophy at length, and then nothing on
+any screen ever showed him doing anything. Reported as wanting to be told when he goes for
+two and fails. **The only way that sentence can be true is if he is really making the call**,
+so the coached playoff game plays forward too and `fullCoachCall` answers it.
+
+**IT DRAWS NO RANDOM NUMBER, which is the property that makes the screen honest.** The page
+prints what he decided BEFORE `bossSimResolve` plays it, so a call that read the dice first
+would be a coach who already knew. It is also what lets a reader check him: the situation is
+on screen and the rule is the same every time.
+
+**The fourth down axis is a REACH IN YARDS**, which is the plainest shape it could have and
+the only one that makes the three settings visibly different: go for it goes on 4th and 3 or
+less, standard on 4th and 2 or less, punt it never goes at all. Above all three, every coach
+keeps the ball when the clock is against him and three points cannot save the game. The two
+point chart is late and short: six margins, gated on the fourth quarter, because before that
+a point is a point.
+
+**`fullSimCreate` takes the coach and HALF the plan, and which half is the interesting part.**
+Tempo and pressure are carried, because nothing in a forward sim models playing fast or
+blitzing, so the multiplier is the whole of them. **`FOURTH_MEAN` is NOT carried.** In the
+resolver it IS going for it, because there are no fourth downs to play; here there are, so
+adding it on top would pay a team twice for the same aggression. The two SWING terms go for
+the mirror reason: they widen the resolver's sampling, and this sim's spread comes from
+drives, turnovers and kicks.
+
+**Measured over 1500 games an arm**, forward against the resolver on the same rosters:
+
+| who calls it | forward | the resolver |
+|---|---|---|
+| always safe | 70.1 | |
+| coach, punt it | 71.1 | 74.5 |
+| coach, standard | **72.9** | **73.1** |
+| coach, go for it | 73.8 | 72.1 |
+| always bold | 74.3 | |
+
+**A standard coach is where he was**, 72.9 against 73.1, so the mode's balance survives the
+move. Two things did change and both are worth knowing. **The fourth down axis flips sign**:
+conservative was better under the resolver and is worse here, because a fourth down that is
+actually played is usually worth playing. And **a player calling it themselves has a ceiling
+above any coach**, 74.3 against 73.8, which is the right shape for the trade: the money and
+the calls against his two multipliers.
+
+**What it costs a reader, said plainly.** Both paths lose the playoff broadcast and with it
+the playoff box score, because a forward sim scores on drives rather than by sampling each
+man and a per-player column here would be invented. The regular season keeps both.
+
+**The calls go in the LOG, and that is the half a reader keeps.** The narration over the
+field is one line the next drive paints over, and under Sim the rest it is gone in a frame,
+so a coached game would have made four decisions and left no sign of any of them. Both
+readers get the rows, because two logs that listed different things would be the only screen
+on this page whose shape depended on who was looking.
+
+##### A call can hand back another call, and the second one was being dropped
+
+**`bossSimResolve` can return a DECISION where the caller expects a finished drive.** A
+fourth down conversion that reaches the end zone finishes the drive through `bossEndDrive`,
+which is the same function that pauses a touchdown for the two point try, so in the second
+half of a close game it hands one back and returns before the automatic extra point is added.
+
+The page's loop ignored that and went back to `bossSimAdvance`, which asks nothing about
+`pending`: it started the next drive and never came back. **The touchdown scored six, the
+point was never kicked and the two point try was never offered.** It fires on about one game
+in fifteen played bold (20 of the checker's 300), and **it has been shipping in the BOSS
+BATTLE since the two point try was added there**.
+
+**`check-boss.mjs` cannot see it and that is not a gap in it.** Its subject is whether the
+drive log agrees with the score bug, and both of them read `sim.you`, so a score that is
+uniformly one point short agrees with itself perfectly.
+
+**The guard measures the cost as ARITHMETIC, not as a win rate, and the first draft of it
+failed for the right reason.** Comparing points a game between the two loops showed the
+BROKEN arm scoring more: honouring the handback takes an extra draw from the stream, so the
+two games diverge at the first hit and a per-game aggregate cannot see a one point defect
+through that. A touchdown is worth six plus whatever is decided after it, so the claim is
+that the dropped ones finish at exactly six. Read at the event, deterministic, and nothing
+downstream can touch it.
 
 ### A dynasty screen says which season it is, and `seasonTag()` is why
 
