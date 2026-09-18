@@ -27,11 +27,19 @@
    same way. A harness that presses nothing therefore boots every routine
    ground ball and drops every catchable fly, all game, every game.
 
-   Measured here, that single omission is worth 27 to 32 runs a nine
+   Measured here, that single omission was worth 27 to 32 runs a nine
    against 5.5. It is the whole of the difference: the samples that read
    0-18, 2-19 and 0-20 were not a bad bat or a broken run environment,
    which are the two answers this was stuck between. They were a defence
    with its hands tied, which is a third thing neither of those names.
+
+   THOSE TWO FIGURES ARE THE OLD GAME AND ARE KEPT AS HISTORY. Once an
+   ignored window stopped being scored as the WORST outcome it had (an
+   error on a grounder, a triple on a fly) and became a single, the
+   nobody-fields arm fell to 15.8 a nine. So ignoring the defence still
+   costs about three times what playing it costs, which is the shape it
+   should have: a real price, not a catastrophe. Re-measure this arm after
+   anything that touches an expiry, because it is measuring that.
 
    TWO HARNESSES AGREEING IS NOT EVIDENCE. A tracker of its own counting
    and the game's own line score both said the same wrong thing, because

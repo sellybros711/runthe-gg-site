@@ -2336,7 +2336,9 @@ async function main() {
          So a player who did not yet know these controls existed gave up
          an error on most ground balls and a triple on most fly balls, for
          a whole game. Measured from the other side, a defence that never
-         pressed anything conceded 27 to 32 runs a nine against 5.5.
+         pressed anything conceded 27 to 32 runs a nine against 5.5. After
+         this fix that same arm measures 15.8, so ignoring the defence
+         still costs about three times what playing it costs.
 
          THE RULE IS THAT NOT REACTING IS NEVER WORSE THAN REACTING BADLY.
          Pressing at the wrong moment is a mistake and keeps the worst

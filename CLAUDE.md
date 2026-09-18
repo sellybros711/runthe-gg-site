@@ -2318,6 +2318,11 @@ ground balls and a triple on most fly balls, all game. That is not a guess about
 how it felt: measured from the other side, a defence that pressed nothing gave up
 **27 to 32 runs a nine against 5.5**, which is the whole of that gap.
 
+**After the fix that same arm measures 15.8**, so ignoring the defence still costs
+about three times what playing it costs. That is the shape it should have: a real
+price rather than a catastrophe. The window is still worth playing, and a player
+who has not found it yet is not being handed a different sport.
+
 **THE RULE IS THAT NOT REACTING IS NEVER WORSE THAN REACTING BADLY.** Pressing at
 the wrong moment stays the worst outcome, because you committed and got it wrong,
 and that is what keeps the windows worth playing. Letting the bar run out is
@@ -2856,8 +2861,11 @@ batter reaches and every runner moves up. The fly window expires as a **miss** t
 same way. So a harness that presses nothing boots every routine ground ball and
 drops every catchable fly, all game, every game.
 
-Measured, that one omission is worth **27 to 32 runs a nine against 5.5**. It is
-the whole of the difference. The samples that ended 0-18, 2-19 and 0-20 were not a bad
+Measured, that one omission WAS worth **27 to 32 runs a nine against 5.5**. It is
+the whole of the difference. (Those two figures are the old game, kept as history:
+once an ignored window became a single rather than the worst outcome it had, that
+arm fell to **15.8**. Re-measure it after anything that touches an expiry, because
+that is what it measures.) The samples that ended 0-18, 2-19 and 0-20 were not a bad
 bat and not a broken run environment, which are the two answers this was stuck
 between for months. They were **a defence with its hands tied**, which is a third
 thing neither of those names.
