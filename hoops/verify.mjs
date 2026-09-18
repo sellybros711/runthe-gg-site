@@ -1188,6 +1188,35 @@ ok(bestWins > worstWins + 20,
   /* Every one of them has to open, or a Next lands on a blank sheet. */
   const dead = R.bigGames(run).filter(g => !R.gameDetail(run, g)).length;
   is(dead, 0, 'every game the walk offers actually opens');
+
+  /* THE BEST NIGHT IS THE BEST NIGHT, checked against a brute force sweep of
+     every game rather than against itself. It is the one number on the
+     results screen derived by scanning the whole run, so an off-by-one in the
+     scan would name the second best game and nothing would look wrong. */
+  const night = R.bestNight(run);
+  ok(!!night, 'a finished run has a best night');
+  let top = -1;
+  for (let i = 0; i < run.season.length; i++) {
+    for (const l of R.gameDetail(run, { kind: 'season', index: i }).box) {
+      if (l.pts > top) top = l.pts;
+    }
+  }
+  if (run.playoffs && run.playoffs.rounds) {
+    run.playoffs.rounds.forEach((rd, r) => (rd.games || []).forEach((g, gi) => {
+      for (const l of R.gameDetail(run, { kind: 'playoff', round: r, game: gi }).box) {
+        if (l.pts > top) top = l.pts;
+      }
+    }));
+  }
+  is(night.pts, top, 'the best night named is the best night there was');
+  /* And it has to open on the game it claims, showing that man with that
+     line. A link to the wrong game is the quietest way for this to be wrong. */
+  const there = R.gameDetail(run, night.ref);
+  ok(!!there, 'the best night links to a game that opens');
+  ok(there && there.box.some(l => l.n === night.n && l.pts === night.pts),
+    'the game it links to is the one he had that night in');
+  is(R.bestNight(R.createRun({ seed: 1 })), null, 'a run with no season has no best night');
+  is(R.bestNight(null), null, 'and neither does nothing at all');
 }
 
 /* THE ALL TIME RANK INSERTS YOUR TEAM, SO THE DENOMINATOR HAS TO COUNT IT.

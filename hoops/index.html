@@ -676,10 +676,35 @@
   @media(max-width:360px){ .boxs{font-size:11px;} .boxs .bn{max-width:84px;} }
 
   /* A game a reader can open, wherever a score is printed. */
+  .bestnight{display:flex;align-items:center;gap:10px;width:100%;margin:12px 0 0;
+    padding:11px 13px;border-radius:11px;text-align:left;cursor:pointer;
+    border:1px solid rgba(240,120,45,.35);background:rgba(240,120,45,.08);
+    color:var(--ink);font-family:var(--body);}
+  .bestnight[hidden]{display:none;}
+  .bestnight:hover{border-color:rgba(240,120,45,.7);}
+  .bestnight .bn-p{font-family:var(--mono);font-size:25px;font-weight:700;
+    line-height:1;color:var(--orange);flex:0 0 auto;font-variant-numeric:tabular-nums;}
+  .bestnight .bn-t{flex:1;min-width:0;}
+  .bestnight .bn-w{display:block;font-size:9.5px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--dim);font-weight:800;}
+  .bestnight .bn-m{display:block;font-size:13px;font-weight:700;margin-top:2px;}
+  .bestnight .bn-s{display:block;font-size:11.5px;color:var(--mut);margin-top:1px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bestnight .bn-go{flex:0 0 auto;width:7px;height:7px;margin-right:2px;
+    border-right:2px solid var(--orange);border-bottom:2px solid var(--orange);
+    transform:rotate(-45deg);}
+
   tr.gamerow{cursor:pointer;}
   tr.gamerow:hover td{background:rgba(255,255,255,.04);}
   tr.gamerow td.sc:after{content:'\203A';margin-left:7px;color:var(--dim);font-weight:700;}
-  .poseries{border-top:1px solid var(--line);}
+  .poseries{margin:0 0 4px;}
+  .poseries + .poseries{margin-top:14px;}
+  .pohead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+  .pohead .ph-n{font-family:var(--display);font-size:16px;letter-spacing:.01em;}
+  .pohead .ph-r{font-size:12px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;flex:0 0 auto;}
+  .pohead .ph-r.w{color:var(--green);} .pohead .ph-r.l{color:var(--red);}
+  .ph-opp{font-size:11.5px;color:var(--dim);margin:1px 0 5px;}
   .pogame{display:flex;align-items:center;gap:8px;width:100%;text-align:left;
     background:transparent;border:0;border-top:1px solid var(--line);
     padding:8px 0;color:var(--mut);font-family:var(--body);font-size:12px;
@@ -1482,6 +1507,11 @@
     <p class="story" id="o-story"></p>
     <p class="dim" style="margin:0;font-size:13.5px" id="o-seed"></p>
     <div class="tags" id="o-tags"></div>
+    <!-- THE WAY IN. Every game of the run opens into a box score and the tap
+         is only made by somebody who already suspects it is there, so the run
+         names its own best night and links to it. It is also the line a fan
+         screenshots. -->
+    <button class="bestnight" id="o-night" hidden></button>
   </div>
 
   <div class="card">
@@ -1697,7 +1727,7 @@
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
 <script src="engine.js?v=14"></script>
-<script src="run.js?v=5"></script>
+<script src="run.js?v=6"></script>
 <script src="badges.js?v=1"></script>
 <script>
 (function(){
@@ -4241,56 +4271,45 @@ function renderOver(out){
     po.appendChild(none);
   } else {
     $('o-porounds').textContent = run.playoffs.rounds.length + ' rounds';
-    var tbl = document.createElement('table');
-    tbl.className = 'season';
-    var tb = document.createElement('tbody');
-    for (var r = 0; r < run.playoffs.rounds.length; r++) {
-      var rd = run.playoffs.rounds[r];
-      var tr = document.createElement('tr');
-      var a = document.createElement('td');
-      a.textContent = rd.round;
-      /* THE SAME LINE THE SIM CARD SHOWS, on the screen people actually read.
-         The reveal during the season says who you played; this table is the one
-         that is still on screen a minute later, and it said only the round and
-         the score. A run that ends in the conference finals should say what
-         ended it. */
-      var lvl = document.createElement('span');
-      lvl.className = 'opp';
-      lvl.textContent = 'played like a ' + oppWins(rd.oppNet) + ' win team';
-      a.appendChild(document.createElement('br'));
-      a.appendChild(lvl);
-      var b = document.createElement('td');
-      b.className = rd.won ? 'w' : 'l';
-      b.textContent = rd.won ? 'WON' : 'LOST';
-      var c = document.createElement('td');
-      c.className = 'sc';
-      c.textContent = rd.yourWins + '-' + rd.oppWins;
-      tr.appendChild(a); tr.appendChild(b); tr.appendChild(c);
-      tb.appendChild(tr);
-    }
-    tbl.appendChild(tb);
-    po.appendChild(tbl);
 
-    /* EVERY GAME OF EVERY SERIES, and they were in the run object the whole
-       time. playoffSeries has always returned its games and nothing has ever
-       drawn one, so a run that ended 3-4 in the Finals told you the series
-       score and not one thing that happened in it. These are the big games
-       in the most literal sense available. */
+    /* ONE BLOCK PER SERIES, AND IT USED TO BE TWO.
+     *
+     * A summary table sat above these lists carrying the round, WON or LOST
+     * and the series score, and then every game of the series was listed
+     * underneath with its own result. "LOST 2-4" over a list of two wins and
+     * four losses is the same fact told twice, four inches apart, which is
+     * the defect the results gauge and the story line were just untangled
+     * for. The strength line was the only thing the table said that the list
+     * does not, so it moved onto the header and the table went.
+     *
+     * EVERY GAME OF EVERY SERIES, and they were in the run object the whole
+     * time. playoffSeries has always returned its games and nothing has ever
+     * drawn one, so a run that ended 3-4 in the Finals told you the series
+     * score and not one thing that happened in it. These are the big games
+     * in the most literal sense available.
+     */
     for (var s = 0; s < run.playoffs.rounds.length; s++) {
       (function(rd, ri){
-        if (!rd.games || !rd.games.length) return;
         var wrap = document.createElement('div');
         wrap.className = 'poseries';
-        var lab = document.createElement('div');
-        lab.className = 'optgroup';
-        var lb = document.createElement('span');
-        lb.className = 'lbl';
-        lb.textContent = rd.round;
-        var rule = document.createElement('span');
-        rule.className = 'rule';
-        lab.appendChild(lb); lab.appendChild(rule);
-        wrap.appendChild(lab);
-        rd.games.forEach(function(g, gi){
+
+        var head = document.createElement('div');
+        head.className = 'pohead';
+        var nm = document.createElement('span');
+        nm.className = 'ph-n';
+        nm.textContent = rd.round;
+        var res = document.createElement('span');
+        res.className = 'ph-r ' + (rd.won ? 'w' : 'l');
+        res.textContent = (rd.won ? 'Won ' : 'Lost ') + rd.yourWins + '-' + rd.oppWins;
+        head.appendChild(nm); head.appendChild(res);
+        wrap.appendChild(head);
+
+        var lvl = document.createElement('div');
+        lvl.className = 'ph-opp';
+        lvl.textContent = 'played like a ' + oppWins(rd.oppNet) + ' win team';
+        wrap.appendChild(lvl);
+
+        (rd.games || []).forEach(function(g, gi){
           var b = document.createElement('button');
           b.className = 'pogame';
           var n = document.createElement('span');
@@ -4313,6 +4332,7 @@ function renderOver(out){
     }
   }
 
+  renderBestNight();
   renderRoster($('o-slots'));
   renderCourt(null, $('o-court'));
 
@@ -4334,6 +4354,43 @@ function renderOver(out){
      the fold ever fails to build, and it costs nothing. */
   var games = $('o-games');
   games.textContent = '';
+}
+
+/* The run's best individual night, and the way into every box score behind
+   it. Hidden rather than empty when there is nothing to name, which for a
+   finished run there always is: it is the one card on this screen that could
+   legitimately have no content, and an empty bordered box reads as something
+   that failed to load. */
+function renderBestNight(){
+  var el = $('o-night');
+  if (!el) return;
+  var b = null;
+  try { b = R.bestNight(run); } catch (e) { b = null; }
+  if (!b) { el.hidden = true; return; }
+
+  el.textContent = '';
+  var p = document.createElement('span');
+  p.className = 'bn-p';
+  p.textContent = String(b.pts);
+  var t = document.createElement('span');
+  t.className = 'bn-t';
+  var w = document.createElement('span');
+  w.className = 'bn-w';
+  w.textContent = 'Best night';
+  var m = document.createElement('span');
+  m.className = 'bn-m';
+  /* The full name here, not the box score's initial: this is a sentence
+     rather than a row of figures, and it has the room. */
+  m.textContent = b.n + ', ' + b.pts + ' points';
+  var sub = document.createElement('span');
+  sub.className = 'bn-s';
+  sub.textContent = b.reb + ' reb · ' + b.ast + ' ast · ' + b.where;
+  t.appendChild(w); t.appendChild(m); t.appendChild(sub);
+  var go = document.createElement('span');
+  go.className = 'bn-go';
+  el.appendChild(p); el.appendChild(t); el.appendChild(go);
+  el.hidden = false;
+  el.onclick = function(){ openGame(b.ref); };
 }
 
 /* ── HOW CLOSE IT WAS ──────────────────────────────────────────────────────
