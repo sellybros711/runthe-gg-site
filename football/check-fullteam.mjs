@@ -94,7 +94,13 @@ const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,fullPickIsDefens
   + 'B.attemptSpend=async()=>{n.spend++;const ok=u<1;if(ok)u++;'
   + 'return Object.assign({ok:ok},row());};'
   + 'dailyForget();return n;},'
-  + 'getRun:()=>run,R:R,paintCoach,coachList,'
+  + 'getRun:()=>run,setRun:(v)=>{run=v;},R:R,E:E,paintCoach,coachList,paintPlan,paintSeed,'
+  /* THE POSTSEASON SECTION drives a real season to the seeding screen and then presses the
+     buttons a player presses. Same four handles check-premium takes for the same walk. */
+  /* dataNow() IS THE ONE THAT MATTERS. A Full Team draft alternates between two pools and
+     dataNow() is what picks, off the module's own `run`, so a harness that reaches for DATA
+     directly signs six offensive men and stalls with six empty slots. */
+  + 'dataNow,LEAGUE:()=>LEAGUE,CAL:()=>CAL,CTX:()=>CTX,D:()=>DATA,'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 
 /* NO TESTER VIEW ANY MORE. This used to take { tester } and rewrite LIVE = false to true
@@ -625,6 +631,220 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
   ok('an owner is not metered at all',
     await s.page.evaluate(() => window.__t.dailyShut('full')) === false);
   ok('  and their door offers the mode', !/next run/i.test(await sub(s.page)), await sub(s.page));
+  ok('  nothing threw', !s.boom.length, s.boom.join(' | ') || 'no errors');
+  await s.page.close();
+}
+
+/* ================================================================
+   NO COACH MEANS YOU CALL THE PLAYOFFS
+
+   The trade this mode ends its draft on. Declining a coach used to buy three dials set
+   before kickoff, one of which (tempo) was measured doing nothing at all; it buys the real
+   fourth downs and the real two point tries now, played forward on the boss battle's board.
+
+   DRIVEN, NOT INSPECTED, for the reason check-premium's postseason section gives: nbrkShow
+   and the live board both need a built bracket and a real opponent, and neither can be
+   handed a fixture. A greedy draft does not reach January every year, so the seed is
+   SEARCHED for rather than assumed.
+
+   WHAT WOULD PASS WITHOUT BEING WORTH HAVING: asserting only that the board comes up. The
+   claims that matter are that it STOPS and asks, that the score it produced is the score
+   that gets filed, and that a coached run still takes the resolved broadcast. All three are
+   separate assertions, because the first two were right and the third wrong in the first
+   draft of the branch.
+   ================================================================ */
+{
+  console.log('\nNO COACH MEANS YOU CALL THE PLAYOFFS');
+  const s = await open(browser);
+  /* THE DEFENDERS ARE A SECOND DOWNLOAD and every path into this mode calls loadDefensePool
+     first. Without it every roster built below would be six offensive men and six empty
+     slots, which is the zero case this file already learned to refuse: the draft loop would
+     never fill and the whole section would report a broken harness as a broken page. */
+  await s.page.evaluate(() => window.__t.beginFullDraft());
+  await s.page.waitForTimeout(6000);
+
+  /* ONE DRAFTER FOR ALL THREE WALKS BELOW, on the page so it can reach dataNow(). It sets the
+     run FIRST, because dataNow() reads the module's own `run` to decide which pool this pick
+     draws from: built the other way round every pick comes off the offensive pool and the
+     roster stalls at six with six empty slots. */
+  await s.page.evaluate(() => {
+    window.__draft = (seed) => {
+      const T = window.__t, RR = T.R;
+      const run = RR.createRun({ full: true, seed });
+      T.setRun(run);
+      let g = 0;
+      while (run.roster.length < run.slots.length && g++ < 600) {
+        const D = T.dataNow();
+        let d; try { d = RR.spin(run, D); } catch (e) { continue; }
+        const men = RR.affordableFrom(run, d.team_season_id, D.playersByTeamSeason);
+        if (!men.length) continue;
+        const w = men.slice().sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+        try { RR.sign(run, w, RR.slotChoices(run, w)[0]); } catch (e) {}
+      }
+      return run.roster.length === run.slots.length ? run : null;
+    };
+  });
+
+  /* THE SCREEN FIRST. The dials are gone and the promise is in their place. */
+  const plan = await s.page.evaluate(() => {
+    const T = window.__t, RR = T.R;
+    const run = window.__draft(7);
+    if (!run) return { men: 0, slots: 12 };
+    T.paintCoach();
+    document.getElementById('b-coach-none').click();
+    const wrap = document.getElementById('co-planwrap');
+    return {
+      men: run.roster.length, slots: RR.PHASES && run.slots ? run.slots.length : -1,
+      decided: !!run.coachDecided,
+      shown: !!wrap && !wrap.hidden,
+      dials: document.querySelectorAll('#co-plan .pl-b').length,
+      text: (document.getElementById('co-planwrap').innerText || '').replace(/\s+/g, ' '),
+      plan: run.plan,
+    };
+  });
+  ok('a twelve man roster declines the coach', plan.men === plan.slots && plan.decided,
+    plan.men + ' of ' + plan.slots + ', decided ' + plan.decided);
+  ok('  and the screen offers no dials', plan.shown && plan.dials === 0, plan.dials + ' dials');
+  ok('  and says when the calls come', /playoff game stops for you/i.test(plan.text),
+    plan.text.slice(0, 100));
+  /* THE PLAN IS NEUTRAL AND NOTHING CAN MOVE IT. hireCoach writes planFromCoach(null), which
+     is every axis at zero, and there is no longer a control that could write anything else.
+     Asserted as the VALUES rather than as null, because null is not what the run carries. */
+  ok('  on a plan nothing can move', !!plan.plan
+    && plan.plan.tempo === 0 && plan.plan.fourth === 0 && plan.plan.pressure === 0,
+    JSON.stringify(plan.plan));
+
+  /* THE GAME. One full season on whichever seed reaches the postseason, then the wild card
+     played forward through the real buttons. */
+  const live = await s.page.evaluate(async () => {
+    const T = window.__t, RR = T.R;
+    const toSeeding = (seed, coach) => {
+      const run = window.__draft(seed);
+      if (!run) return null;
+      try { RR.hireCoach(run, coach); RR.finishHiring(run); } catch (e) { return null; }
+      try { RR.startSeason(run, T.dataNow(), T.CTX()); } catch (e) { return null; }
+      let n = 0;
+      while (run.phase === RR.PHASES.SEASON && n++ < 40) {
+        try { RR.advanceWeek(run, T.dataNow(), T.LEAGUE(), T.CAL()); } catch (e) { break; }
+      }
+      return run.phase === RR.PHASES.SEEDING ? run : null;
+    };
+    window.__toSeeding = toSeeding;
+    /* TWENTY SEEDS, NOT FORTY. A greedy twelve man draft reaches January about 45% of the
+       time, so twenty is a one in a hundred thousand miss and each miss costs a whole
+       simulated season. The seed it found is reported, because a failure here is far easier
+       to read as "none of twenty" than as a blank. */
+    let run = null, found = null;
+    for (let seed = 1; seed <= 20 && !run; seed++) { run = toSeeding(seed, null); if (run) found = seed; }
+    if (!run) return { found: null };
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    T.paintSeed();
+    document.getElementById('b-po').click();
+    /* Past the bracket animation. */
+    for (let i = 0; i < 40; i++) {
+      if (document.getElementById('s-bgame').classList.contains('on')) break;
+      const b = document.getElementById('b-nbrk-fast');
+      if (b && b.offsetParent) b.click();
+      await wait(200);
+    }
+    const board = document.getElementById('s-bgame').classList.contains('on');
+    const eye = (document.getElementById('bg-eye').textContent || '').trim();
+    /* Sim the rest, which hurries the football and must NOT take the calls. */
+    const fast = document.getElementById('b-boss-fast');
+    if (fast) fast.click();
+    let calls = 0;
+    for (let i = 0; i < 600; i++) {
+      const box = document.getElementById('bg-calls');
+      if (box && !box.hidden) {
+        const b = box.querySelector('.bcall');
+        if (b) { calls++; b.click(); }
+      }
+      if (!document.getElementById('bg-done').hidden) break;
+      await wait(40);
+    }
+    const you = +document.getElementById('bg-syou').textContent;
+    const them = +document.getElementById('bg-sthem').textContent;
+    const filed = run.season.results.filter((r) => r.playoff).slice(-1)[0] || null;
+    return { found, board, eye, calls, you, them, filed,
+      done: !document.getElementById('bg-done').hidden,
+      state: (document.getElementById('bg-state').textContent || '').trim(),
+      drives: document.querySelectorAll('#bg-log .pl').length };
+  });
+  if (!live.found) {
+    ok('a seed reached the playoffs', false, 'none of 20 did');
+  } else {
+    ok('the wild card is played forward, not resolved', live.board && live.done,
+      'seed ' + live.found + ', board ' + live.board + ', final ' + live.done);
+    ok('  on the round, not on a boss', /wild card|divisional/i.test(live.eye), live.eye);
+    /* THE POINT OF THE WHOLE FEATURE. Sim the rest was pressed on the first frame, so every
+       stop after it is a stop the page refused to hurry past. Zero calls means the game
+       played itself. */
+    ok('  and it stopped for the calls', live.calls > 0, live.calls + ' calls');
+    ok('  having actually played a game', live.drives > 4, live.drives + ' drives logged');
+    /* THE SCORE ON SCREEN IS THE SCORE THAT IS FILED. This is what the `pre` path of
+       advanceWeek exists for, and getting it wrong is silent: a resolved result under a live
+       scoreboard reads as a scoreboard that lied. */
+    ok('  and the filed result is the one on the bug', !!live.filed
+      && live.filed.shownYou === live.you && live.filed.shownThem === live.them,
+      live.filed ? live.filed.shownYou + '-' + live.filed.shownThem
+        + ' against ' + live.you + '-' + live.them : 'nothing filed');
+    ok('    which won when the screen said it won', !!live.filed
+      && live.filed.won === (live.you > live.them), String(live.filed && live.filed.won));
+    ok('    and is marked as played forward', !!live.filed && live.filed.live === true);
+    /* NO BOX SCORE, DELIBERATELY. A forward sim scores on drives rather than by sampling each
+       man, so a per-player column here would be invented. Every reader guards on it. */
+    ok('    with no invented box score', !!live.filed && live.filed.lines === null);
+  }
+
+  /* AND A COACHED RUN IS UNTOUCHED, which is the half a one line branch gets wrong. He was
+     hired to call it, so a coached team still gets the resolved broadcast. Asserted by
+     replaying the SAME seed with a man in charge, so the only thing that differs between the
+     two walks is the hire. */
+  const coached = live.found == null ? null : await s.page.evaluate(async (seed) => {
+    const T = window.__t, RR = T.R;
+    /* THE SEED IS SEARCHED AGAIN RATHER THAN REUSED, and that is not laziness. A coach moves
+       the rating, which moves seventeen games, so the seed that reached January uncoached is
+       not guaranteed to reach it with a man in charge. The claim being tested is about the
+       branch, and any seed that reaches a playoff round proves it. The one it found without a
+       coach is tried first. */
+    const seeds = [seed]; for (let i = 1; i <= 20; i++) if (i !== seed) seeds.push(i);
+    let run = null, hired = false;
+    for (const sd of seeds) {
+      /* The cheapest man in the market, because who he is does not matter here. What matters
+         is that run.coach is not null when runPlayoffs asks. */
+      const probe = window.__draft(sd);
+      if (!probe) continue;
+      const market = RR.coachMarket(probe, T.coachList()) || [];
+      const man = market.slice().sort((a, b) => a.price_musd - b.price_musd)[0] || null;
+      if (!man) continue;
+      hired = true;
+      run = window.__toSeeding(sd, man);
+      if (run && run.coach) break;
+      run = null;
+    }
+    if (!run) return { hired, seeded: false };
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    T.paintSeed();
+    document.getElementById('b-po').click();
+    for (let i = 0; i < 40; i++) {
+      if (document.getElementById('s-po').classList.contains('on')
+        || document.getElementById('s-bgame').classList.contains('on')) break;
+      const b = document.getElementById('b-nbrk-fast');
+      if (b && b.offsetParent) b.click();
+      await wait(200);
+    }
+    return { hired: true, seeded: true,
+      broadcast: document.getElementById('s-po').classList.contains('on'),
+      liveBoard: document.getElementById('s-bgame').classList.contains('on') };
+  }, live.found);
+  if (coached && coached.hired && coached.seeded) {
+    ok('a coached team still gets the broadcast',
+      coached.broadcast && !coached.liveBoard,
+      'broadcast ' + coached.broadcast + ', live board ' + coached.liveBoard);
+  } else {
+    ok('a coached team still gets the broadcast', false,
+      coached ? 'hired ' + coached.hired + ', seeded ' + coached.seeded : 'no seed to replay');
+  }
   ok('  nothing threw', !s.boom.length, s.boom.join(' | ') || 'no errors');
   await s.page.close();
 }

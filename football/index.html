@@ -1928,18 +1928,8 @@ window.GA_ID='G-L29P5MRWKE';
   .co-t.neg{color:var(--bad,#f87171)}
   .co-pr{font-family:var(--fn);font-weight:800;font-size:14px;white-space:nowrap}
   .co-row[disabled]{opacity:.4;cursor:default}
-  /* Each axis is one row of three, and the row is the choice: no labels above, because the
-     axis name sits on the left where a form label belongs. */
-  .pl-ax{display:grid;grid-template-columns:78px minmax(0,1fr);gap:9px;align-items:center;
-    margin-bottom:8px}
-  .pl-nm{font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--dim)}
-  .pl-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-  .pl-b{padding:8px 4px;border:1.5px solid var(--line);border-radius:9px;
-    background:transparent;color:var(--dim);font-family:var(--fn);font-size:11px;
-    font-weight:700;letter-spacing:.03em;cursor:pointer}
-  .pl-b.on{border-color:rgba(226,178,90,.6);background:rgba(38,30,16,.8);color:#F3DDAE}
-  @media (max-width:360px){ .pl-ax{grid-template-columns:64px minmax(0,1fr)} .pl-b{font-size:10px} }
+  /* The three plan dials were styled here. They are gone: declining a coach buys the playoff
+     calls now rather than a form. See paintPlan. */
   .hp-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;
     margin-top:8px;padding:14px 18px;font-size:14.5px;background:rgba(19,26,43,.85);
     border:1.5px solid var(--line-2);box-shadow:none;border-radius:10px;white-space:nowrap}
@@ -7143,8 +7133,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <p class="comkt" id="co-market"></p>
     <!-- THE OTHER DOOR, and it is the one that hands the scheme back to you. -->
     <button class="btn ghost sm" id="b-coach-none" style="width:100%;margin-top:10px">No coach, I will call it myself</button>
+    <!-- WHAT DECLINING A COACH BUYS. It used to be three dials set before kickoff, which is
+         neither what a coach does nor what calling it yourself means, and measured over 264
+         seasons one of the three did nothing at all. It is the playoff calls now. -->
     <div id="co-planwrap" hidden>
-      <h3 class="display" style="font-size:20px;margin:20px 0 4px">Your game plan</h3>
+      <h3 class="display" style="font-size:20px;margin:20px 0 4px">You are calling it</h3>
       <p class="dim" id="co-planwho" style="font-size:12.5px;margin:0 0 10px"></p>
       <div id="co-plan"></div>
     </div>
@@ -7967,8 +7960,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=94"></script>
-<script src="run.js?v=99"></script>
+<script src="engine.js?v=95"></script>
+<script src="run.js?v=100"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -8795,7 +8788,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=48;
+const NEED_VERSION=49;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -14749,16 +14742,27 @@ function paintCoach(){
   show('s-coach');
 }
 
-/* THE PLAN EDITOR IS ONLY YOURS WHEN NOBODY IS COACHING, which is the whole trade on this
-   screen: pay for a man who knows what he is doing and play his way, or keep the money and
-   call it yourself. */
+/*
+ * WHAT DECLINING A COACH ACTUALLY BUYS, on the screen where the trade is made.
+ *
+ * IT USED TO BE A PLAN EDITOR: three dials, tempo and fourth down and pressure, set once
+ * before the season. That is not what calling it yourself means, and it was barely a decision
+ * either. Measured over 264 seasons an axis at a time, tempo is exactly inert (78.3% of games
+ * at all three settings, because it multiplies both scores) and the other two have one right
+ * answer each. So the screen was asking three questions, one of which did nothing and two of
+ * which had a dominant answer.
+ *
+ * IT IS THE PLAYOFF CALLS NOW. See liveCalls() and playLivePlayoffGame: an uncoached Full
+ * Team roster plays its January games forward and is asked the real fourth downs and the real
+ * two point tries, on the boss battle's board. Pay for a man who knows what he is doing and
+ * play his way, or keep the money and make the calls in the game.
+ */
 function paintPlan(){
   const wrap=$('co-planwrap');
   const hired=!!(run&&run.coach);
-  /* SHOWN ONLY AFTER DECLINING. Editable before a decision it would invite somebody to set
-     a plan and then hire a coach who overwrites it, which is the same "hire him and overrule
-     him" muddle from the other direction. Browse, decide, and then the plan is either his or
-     yours. */
+  /* SHOWN ONLY AFTER DECLINING, which is unchanged and is still right: before a decision it
+     would be describing something that may not happen, and the grid above is what the reader
+     is working through. Browse, decide, and then the calls are either his or yours. */
   if(wrap) wrap.hidden=hired||!run.coachDecided;
   /*
    * AND THE WAY OUT SHUTS ONCE SOMEBODY IS HIRED.
@@ -14780,25 +14784,16 @@ function paintPlan(){
   const go=$('b-coach-go');
   if(go) go.hidden=!(run.coachDecided||!coMarket.length);
   const who=$('co-planwho');
-  if(who) who.textContent=run.coachDecided
-    ? 'Nobody is calling this but you. Each choice costs what it gives.'
-    : 'Three choices, and each one costs what it gives.';
+  if(who) who.textContent='Nobody is calling this but you.';
   if(hired) return;
-  let h='';
-  PLAN_UI.forEach((ax)=>{
-    h+='<div class="pl-ax"><span class="pl-nm">'+ax.nm+'</span><span class="pl-opts">'+
-      ax.opts.map(([v,lbl])=>'<button class="pl-b'+((run.plan&&run.plan[ax.k])===v?' on':'')+
-        '" data-k="'+ax.k+'" data-v="'+v+'">'+esc(lbl)+'</button>').join('')+
-      '</span></div>';
-  });
-  $('co-plan').innerHTML=h;
-  $('co-plan').onclick=(e)=>{
-    const b=e.target.closest('.pl-b'); if(!b) return;
-    const next={...(run.plan||{})}; next[b.dataset.k]=+b.dataset.v;
-    try{ R.setPlan(run,next); }catch(err){ toast(err.message); return; }
-    ga('plan_set',{axis:b.dataset.k,value:+b.dataset.v});
-    paintPlan();
-  };
+  /* THE PROMISE, AND WHEN IT COMES DUE. Seventeen Sundays play themselves whoever is in
+     charge, so saying so is what stops the first uncoached week reading as a broken promise.
+     The two calls are named because they are the two the game actually stops for. */
+  $('co-plan').innerHTML='<ul class="modenotes">'+
+    '<li><b>The regular season plays itself.</b> Seventeen games, your roster, no plan set in advance.</li>'+
+    '<li><b>Every playoff game stops for you.</b> Fourth down, and the two point try, in the situation the game is really in.</li>'+
+    '<li>Hire a coach instead and he makes those calls.</li>'+
+    '</ul>';
 }
 
 /* ONE TAP OPENS THE MAN, and the confirmation sheet IS his detail view: it already carries
@@ -14997,8 +14992,13 @@ function paintCoachLine(id){
         (knows.length>3?'<div class="cok"><b>+'+(knows.length-3)+'</b><span>more on this roster</span></div>':'')+
         '</div>'
       : '')+
-    '<div class="rp-head"><span>Game plan</span></div>'+
-    '<p class="dim" style="font-size:12.5px;margin:0 0 10px">'+planWords(run.plan)+'</p>';
+    /* TWO DIFFERENT FACTS, so two different headings. A coached team has a plan, set by him
+       before kickoff, and this line is what it says. An uncoached team has no plan at all any
+       more: what it has is four games that stop and ask. See liveCalls(). */
+    '<div class="rp-head"><span>'+(c?'Game plan':'The calls')+'</span></div>'+
+    '<p class="dim" style="font-size:12.5px;margin:0 0 10px">'+
+      (c?planWords(run.plan)
+        :'Every playoff game stops for you. Fourth down, and the two point try.')+'</p>';
 }
 
 /* NOTHING LEFT TO SIGN, which in Dynasty means the money ran out rather than the
@@ -19084,21 +19084,111 @@ function playPlayoffGame(r,after){
   next();
 }
 
+/*
+ * ─── THE PLAYOFFS YOU CALL YOURSELF ──────────────────────────────────────────────────
+ *
+ * A Full Team roster that hired nobody plays its January games FORWARD, on the boss battle's
+ * board, and is asked the two calls a coach would otherwise have made in advance: fourth
+ * down, and the two point try.
+ *
+ * WHY THIS MODE AND NOT THE OTHERS. Hiring a coach is the one decision Full Team ends its
+ * draft on, and "no coach" used to buy a game plan editor: three dials set once, before the
+ * season, which is neither what a coach does nor what calling it yourself means. Measured
+ * over 264 seasons an axis at a time, it was not much of a decision either: tempo is exactly
+ * inert (78.3% of games at all three settings, because it multiplies both scores), and the
+ * other two have one right answer each. Three dials, one dead and two with a dominant
+ * setting, standing in for the thing the player asked for.
+ *
+ * WHAT IT COSTS, said plainly: the dials are gone for an uncoached team, so the regular
+ * season now runs on a neutral plan. All conservative was worth about 1.9 points of win rate
+ * over seventeen games. What replaces it is four games a player actually decides.
+ *
+ * A COACHED TEAM IS UNTOUCHED. He was hired to call it, so he calls it, and the plan the
+ * hire sheet described is the plan the playoffs are played on.
+ */
+function liveCalls(){ return !!(run&&run.full&&!run.coach); }
+
+/* THE GAME, BUILT FROM THE SAME ANSWER advanceWeek WOULD HAVE USED. R.nextGame names the
+   opponent and the home field and changes nothing, so the game played here is the game the
+   mode is balanced for rather than a second reading of it. */
+function playLivePlayoffGame(idx,done){
+  const g=R.nextGame(run,dataNow(),LEAGUE);
+  const o=g.opp;
+  /* NO OPPONENT, NO LIVE GAME. Falling through to the resolver is the right failure here: a
+     round that cannot be drawn must never be a round that cannot be played. */
+  if(!o){ playResolvedPlayoffGame(idx,done); return; }
+  const round=g.roundName||'Playoffs';
+  /* SEEDED ON THE ROUND rather than on a live closure, so the run resumes the same way it
+     does everywhere else. The calls still branch it: bossSimResolve draws from this stream
+     too, so a different call is a different game from that play on. */
+  const rng=E.createSeededRNG(E.hashSeed('fullpo|'+run.seed+'|'+round));
+  const sim=E.fullSimCreate(run.roster,g.chem,o,g.leagueAvgAllowed,g.advantage,E.CONSTANTS,CAL);
+  liveBoard(o,sim,rng,{
+    eyebrow:round+seasonTag(),
+    state:ROUND_SHORT[round]||'LIVE',
+    rec:(run.season.wins||0)+'-'+(run.season.losses||0),
+    oppRec:'<i class="yr">'+o.season+'</i>'+esc(o.record||''),
+    narr:'Nobody is calling this but you. Kickoff.',
+    onOver:(ev)=>livePlayoffOver(ev,idx,done),
+  });
+}
+
+/* THE FINAL WHISTLE. The game above IS the result, so this records it and opens the door to
+   whatever comes next: the round after it, or the season's own results screen. */
+function livePlayoffOver(ev,idx,done){
+  bossStop();
+  const o=bossOppNow;
+  if($('bg-skip')) $('bg-skip').hidden=true;
+  $('bg-state').textContent='FINAL'; $('bg-q').textContent='FINAL';
+  $('bg-ck').textContent=ev.won?'YOU WIN':'YOU LOSE';
+  bossRenderScore(); bossDraw(3600,false);
+  $('bg-calls').hidden=true;
+  /* RECORDED, NOT DECIDED. advanceWeek takes the score this screen produced, files it as the
+     round's result, advances the bracket and ends the run on a loss. See its `pre` note. */
+  const r=R.advanceWeek(run,dataNow(),LEAGUE,CAL,
+    {you:bossSim.you,them:bossSim.them,won:!!ev.won});
+  paintCalendar(r);
+  nbrkSettleMine(idx,!!ev.won);
+  const more=run.phase===R.PHASES.PLAYOFFS;
+  const next=more?(run.playoffSeed.roundNames[run.season.playoffRound]||'The next round'):'';
+  const vd=$('bg-verdict'); vd.className='bg-verdict '+(ev.won?'won':'lost');
+  $('bg-outcome').textContent=ev.won?'You win':'You lose';
+  $('bg-note').textContent=ev.won
+    ? (more?'You beat '+o.display+'. '+next+' next.':'You beat '+o.display+'. The ring is yours.')
+    : o.display+' ended your season.';
+  const cont=$('b-boss-continue');
+  cont.textContent=more?'Play '+next:'See the season';
+  cont.onclick=()=>done();
+  /* The club's own colours, never the gold. Gold belongs to the results screen on the far
+     side of a title, and firing it here would spend it a screen early and then again. */
+  if(ev.won) afterPaint(()=>fireConfetti(confettiTheme(false)));
+  ga('full_live_playoff',{round:r.round||'',won:!!ev.won,
+    you:bossSim.you,them:bossSim.them,drives:bossSim.drives.length});
+  $('bg-done').hidden=false;
+}
+
+/* The ordinary route: the engine settles the game and the broadcast animates it. */
+function playResolvedPlayoffGame(idx,done){
+  const r=R.advanceWeek(run,dataNow(),LEAGUE,CAL);
+  paintCalendar(r);
+  nbrkSettleMine(idx,!!r.won);
+  playPlayoffGame(r,done);
+}
+
 /* Play the rounds one at a time, each waiting for the last to finish. */
 function runPlayoffs(){
   const step=()=>{
     if(run.phase!==R.PHASES.PLAYOFFS){ after(); return; }
-    const round=run.season.playoffRound;
-    const r=R.advanceWeek(run,dataNow(),LEAGUE,CAL);
-    paintCalendar(r);
-    /* THE BRACKET FIRST, THEN THE GAME. advanceWeek has already settled the result, so
-       what the bracket animates is the rest of the field catching up to where the player
-       is; their own game is left standing and handed to the broadcast to decide on
-       screen. Settled straight afterwards so the next round draws it correctly. */
-    const idx=nbrkFirstRound()+round;
+    const idx=nbrkFirstRound()+run.season.playoffRound;
+    /* THE BRACKET FIRST, THEN THE GAME, on both routes and for two different reasons. On the
+       resolved one the result already exists, so what the bracket animates is the rest of the
+       field catching up to where the player is; their own game is left standing and handed to
+       the broadcast to decide on screen. On the live one the result does not exist yet, which
+       is the same thing from the other side. Neither the pairings nor the opponent read the
+       run's results, so the bracket draws identically either way. */
     nbrkShow(idx,()=>{
-      nbrkSettleMine(idx,!!r.won);
-      playPlayoffGame(r,step);
+      if(liveCalls()) playLivePlayoffGame(idx,step);
+      else playResolvedPlayoffGame(idx,step);
     });
   };
   step();
@@ -19801,6 +19891,57 @@ function bossScout(){
   show('s-bscout');
 }
 
+/*
+ * THE BOARD BOTH FORWARD-PLAYED GAMES SHARE.
+ *
+ * bossPlay built this screen inline, and a Full Team playoff game played forward wants every
+ * line of it: the same drive chart, the same score bug and clock, the same log, the same Sim
+ * the rest, the same two calls. What differs is the sim handed in, the eyebrow, the word in
+ * the state cell, the sentence over the field and what happens at the final whistle.
+ *
+ * Written once rather than copied, because a screen that exists twice is a screen that says
+ * two different things about the same game within a year. See the four premium cards.
+ */
+let bossOnOver=null;
+function liveBoard(o,sim,rng,opts){
+  bossStop();
+  bossSim=sim; bossRng=rng; bossOppNow=o; bossShown=0;
+  bossOnOver=opts.onOver||null;
+  /* The bug and field colors, the same way the playoffs pick them: your side the game's blue
+     (or your club), the opponent their real color, nudged apart if they collide on the field. */
+  const them=E.washColors(o.franchise), me=youColors(them);
+  const youEl=$('bg-you'), themEl=$('bg-them');
+  youEl.style.setProperty('--tcol',me.a); youEl.style.setProperty('--tcol2',me.b);
+  themEl.style.setProperty('--tcol',them.a); themEl.style.setProperty('--tcol2',them.b||'rgba(255,255,255,.3)');
+  themEl.querySelector('.cd').textContent=bossThreeLetter(o);
+  bossYouCol=me.a;
+  bossThemCol=(them.a&&them.a.toLowerCase()!=='#000000'&&them.a!==me.a)?them.a:'#e87461';
+  $('bg-eye').textContent=opts.eyebrow;
+  $('bg-opp').textContent=o.display;
+  /* Records, where there are two worth carrying. A boss battle leaves both blank because the
+     scout screen one tap back already gave them; a playoff game is arrived at cold. */
+  youEl.querySelector('.rc').textContent=opts.rec||'';
+  themEl.querySelector('.rc').innerHTML=opts.oppRec||'';
+  $('bg-syou').textContent='0'; $('bg-sthem').textContent='0';
+  youEl.classList.add('lead'); themEl.classList.remove('lead');
+  $('bg-q').textContent='1ST'; $('bg-ck').textContent='15:00';
+  $('bg-state').textContent=opts.state;
+  $('bg-narr').innerHTML=opts.narr;
+  $('bg-calls').hidden=true; $('bg-calls').innerHTML=''; $('bg-done').hidden=true;
+  /* PER GAME, NOT PER RUN. A boss can be replayed from the results screen and a playoff run
+     is four of these in a row, so a flag left set would open the next one already skipping a
+     game nobody had asked to skip yet. */
+  bossFast=false;
+  if($('bg-skip')) $('bg-skip').hidden=false;
+  /* Emptied with the rest of the screen, for the same reason: a log that kept the last
+     game's drives would open the next one already twelve rows deep in a game nobody played. */
+  if($('bg-log')) $('bg-log').innerHTML='';
+  show('s-bgame');
+  bossField=initFieldCanvas('bg-fcanvas'); bossFcv=$('bg-fcanvas');
+  bossDraw(0,false);
+  bossTimer=setTimeout(bossLoop,600);
+}
+
 /* THE GAME. Build the sim with the chosen read, set up the field, then run it forward. */
 function bossPlay(read){
   const b=bossSpecNow||R.bossFor(run), o=bossOppNow||bossOppRow();
@@ -19811,52 +19952,29 @@ function bossPlay(read){
      reached the game without the scout. No player path does, which is why it has never been
      seen; the fallback above exists precisely because the author expected one to. */
   bossSpecNow=b; bossOppNow=o;
-  bossStop();
   const chem=(run.season&&run.season.chemistry)
     || E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier;
   const leagueAvg=(LEAGUE&&LEAGUE[o.season])||21.5;
-  bossRng=E.createSeededRNG(E.hashSeed('boss|'+run.seed+'|'+run.seasonNo+'|'+read));
-  bossSim=E.bossSimCreate(run.roster,chem,b,o,leagueAvg,read,E.CONSTANTS,CAL);
-  bossShown=0;
-  /* The bug and field colors, the same way the playoffs pick them: your side the game's blue
-     (or your club), the boss their real color, nudged apart if they collide on the field. */
-  const them=E.washColors(o.franchise), me=youColors(them);
-  const youEl=$('bg-you'), themEl=$('bg-them');
-  youEl.style.setProperty('--tcol',me.a); youEl.style.setProperty('--tcol2',me.b);
-  themEl.style.setProperty('--tcol',them.a); themEl.style.setProperty('--tcol2',them.b||'rgba(255,255,255,.3)');
-  themEl.querySelector('.cd').textContent=bossThreeLetter(o);
-  bossYouCol=me.a;
-  bossThemCol=(them.a&&them.a.toLowerCase()!=='#000000'&&them.a!==me.a)?them.a:'#e87461';
-  $('bg-eye').textContent='Boss battle · Season '+run.seasonNo;
-  $('bg-opp').textContent=o.display;
-  $('bg-syou').textContent='0'; $('bg-sthem').textContent='0';
-  youEl.classList.add('lead'); themEl.classList.remove('lead');
-  $('bg-q').textContent='1ST'; $('bg-ck').textContent='15:00'; $('bg-state').textContent='BOSS';
-  $('bg-narr').innerHTML=bossSim.readRight
-    ? '<b class="good">Good read.</b> Your plan has them on their heels.'
-    : bossSim.readTrap
-      ? '<b class="bad">They saw it coming.</b> It plays into their hands.'
-      : 'The plan is set. Kickoff.';
-  $('bg-calls').hidden=true; $('bg-calls').innerHTML=''; $('bg-done').hidden=true;
-  /* PER GAME, NOT PER RUN. A boss can be replayed from the results screen, and a flag left
-     set would start the replay already skipping a game nobody had asked to skip yet. */
-  bossFast=false;
-  if($('bg-skip')) $('bg-skip').hidden=false;
-  /* Emptied with the rest of the screen. A boss can be replayed from the results screen, and
-     a log that kept the last attempt's drives would open the second one already twelve rows
-     deep in a game nobody played. */
-  if($('bg-log')) $('bg-log').innerHTML='';
-  show('s-bgame');
-  bossField=initFieldCanvas('bg-fcanvas'); bossFcv=$('bg-fcanvas');
-  bossDraw(0,false);
-  bossTimer=setTimeout(bossLoop,600);
+  const rng=E.createSeededRNG(E.hashSeed('boss|'+run.seed+'|'+run.seasonNo+'|'+read));
+  const sim=E.bossSimCreate(run.roster,chem,b,o,leagueAvg,read,E.CONSTANTS,CAL);
+  liveBoard(o,sim,rng,{
+    eyebrow:'Boss battle · Season '+run.seasonNo,
+    state:'BOSS',
+    narr:sim.readRight
+      ? '<b class="good">Good read.</b> Your plan has them on their heels.'
+      : sim.readTrap
+        ? '<b class="bad">They saw it coming.</b> It plays into their hands.'
+        : 'The plan is set. Kickoff.',
+    onOver:bossFinish,
+  });
 }
 
 /* Play one event, drawing any drives it produced, then either pause for a decision, show the
    verdict, or keep going. */
 function bossLoop(){
   const ev=E.bossSimAdvance(bossSim,bossRng);
-  if(ev.type==='over'){ bossFlush(()=>{ bossRenderScore(); bossFinish(ev); }); return; }
+  if(ev.type==='over'){ const end=bossOnOver||bossFinish;
+    bossFlush(()=>{ bossRenderScore(); end(ev); }); return; }
   if(ev.type==='decision'){ bossFlush(()=>bossShowDecision(ev.decision)); return; }
   /* 200ms between events was the rest of why the game was over in a blink. The drives
      themselves carry the pace now, so this is the handoff between them rather than the

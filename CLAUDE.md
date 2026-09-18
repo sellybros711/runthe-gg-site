@@ -1551,6 +1551,72 @@ took. It cost nothing while the empty case meant a grid with no children anyway.
 padded, margined box between the rating card and the line explaining why there is nothing in
 it.
 
+#### No coach means you call the playoffs
+
+```
+node football/check-fullteam.mjs   the last section drives a real wild card
+```
+
+Declining a coach used to buy a PLAN EDITOR: three dials (tempo, fourth down, pressure) set
+once before kickoff. That is neither what a coach does nor what calling it yourself means,
+and measured over 264 seasons an axis at a time it was barely a decision either:
+
+| plan | win% | median |
+|---|---|---|
+| neutral | 78.3 | 14-3 |
+| ball control, balanced or up tempo | 78.3 each | 14-3 |
+| punt it | 79.2 | 14-3 |
+| go for it | 77.3 | 13-4 |
+| contain | 78.6 | 14-3 |
+| blitz | 77.0 | 13-4 |
+| all conservative | 80.2 | 14-3 |
+
+**Tempo is exactly inert**, because it multiplies both scores, and the other two have one
+right answer each. Three questions, one dead and two with a dominant answer, standing in for
+the thing the player was asking for.
+
+**It is the playoff calls now.** `fullSimCreate` is `resolveGameFull`'s arithmetic played
+FORWARD, drive by drive, driven by `bossSimAdvance` and `bossSimResolve` unchanged, so an
+uncoached roster meets the real fourth downs and the real two point tries on the boss
+battle's own board. `liveCalls()` is the one place that asks, and the answer is Full Team
+with no coach.
+
+**What it cannot borrow is the boss sim's SCORING, which is why it is its own function
+rather than a flag.** A boss sim models your offence against their scoring rate and nothing
+you drafted touches what they score. That is right for six men on one side of the ball and
+it throws away half of Full Team, where what the other team scores is what your six
+defenders allow. Run as-is it would have played the twelve man mode as a six man one and
+nothing on screen would have looked wrong.
+
+**`advanceWeek` RECORDS rather than decides when a game arrives pre-played.** That is its
+`pre` argument, and `nextGame()` was lifted out of it so the live game and the resolved one
+ask one source who the opponent is and how hard. Three things follow and none is obvious:
+
+- **The resolver is not called at all.** Calling it and overriding the winner would put a box
+  score on the results screen that disagrees with the scoreline above it.
+- **So there are no `lines`.** A forward sim scores on drives rather than by sampling each
+  man, so there is no honest per-player column. Every reader already guards on it, including
+  the playoff broadcast, which is right: the live game WAS the broadcast.
+- **And no fantasy-space numbers either.** `yourScore` and `oppScore` carry the football
+  score, because for a game played forward that IS the score. `live: true` says why, rather
+  than leaving a reader to infer it from two fields agreeing.
+
+**The board is shared, not copied.** `liveBoard()` sets up the screen both forward-played
+games use, because a screen that exists twice is a screen that says two different things
+about the same game inside a year. See the four premium cards.
+
+**What it costs, measured over 800 games rather than argued.** The forward path is a little
+harder than the resolver: 79.5% of games for the resolver, 78.3% taking every fourth down
+and every two, 75.9% punting and kicking everything. So the calls are worth about 2.4 points
+and a good caller still lands about a point under what the resolver would have handed them.
+Added to losing the dials, an uncoached team is down roughly two points of regular season win
+rate and about one of playoff win rate. Recorded rather than compensated. What it buys is
+four games a player actually decides.
+
+**A coached team is untouched**, and the guard asserts that as its own section rather than as
+the absence of the first one. He was hired to call it, so he calls it, and a one line branch
+is exactly the shape that gets the other side wrong.
+
 ### A dynasty screen says which season it is, and `seasonTag()` is why
 
 A dynasty is the one mode on this page where the same screen comes round again, so
