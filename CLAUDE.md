@@ -1534,11 +1534,88 @@ the player who earned the cleanest answer, so the screen says there is nobody wo
 instead. Nothing affordable at all is a different sentence again: the first is about the
 money, the second is about the roster.
 
+**`#b-coach-none` joined it too, which is the SEVENTH time**, on the same screen as three of
+the others. Nothing hid that button at all, so after a hire the coach screen carried "No
+coach, I will call it myself" directly under the man just paid for: an offer to undo the
+decision the confirmation sheet had asked for. It works, because `hireCoach` refunds a
+previous hire through `remaining()`, and that is exactly why it read as a leftover rather
+than a control. **Hiding it is two edits and the first alone does nothing**: `.btn` sets
+`display:block`, so the painter's `hidden` never took. The guard reads `getComputedStyle`
+rather than the attribute for that reason, and each half was proved by removing it alone.
+The grid stays live, so changing your mind BETWEEN coaches is untouched; what is gone is
+going back to nobody after hiring.
+
 **`#co-grid` joined the `[hidden]` list, which is the fifth time in this file.** `.cogrid`
 sets `display:grid`, so the `hidden` the painter has always written on an empty market never
 took. It cost nothing while the empty case meant a grid with no children anyway. It is now a
 padded, margined box between the rating card and the line explaining why there is nothing in
 it.
+
+#### No coach means you call the playoffs
+
+```
+node football/check-fullteam.mjs   the last section drives a real wild card
+```
+
+Declining a coach used to buy a PLAN EDITOR: three dials (tempo, fourth down, pressure) set
+once before kickoff. That is neither what a coach does nor what calling it yourself means,
+and measured over 264 seasons an axis at a time it was barely a decision either:
+
+| plan | win% | median |
+|---|---|---|
+| neutral | 78.3 | 14-3 |
+| ball control, balanced or up tempo | 78.3 each | 14-3 |
+| punt it | 79.2 | 14-3 |
+| go for it | 77.3 | 13-4 |
+| contain | 78.6 | 14-3 |
+| blitz | 77.0 | 13-4 |
+| all conservative | 80.2 | 14-3 |
+
+**Tempo is exactly inert**, because it multiplies both scores, and the other two have one
+right answer each. Three questions, one dead and two with a dominant answer, standing in for
+the thing the player was asking for.
+
+**It is the playoff calls now.** `fullSimCreate` is `resolveGameFull`'s arithmetic played
+FORWARD, drive by drive, driven by `bossSimAdvance` and `bossSimResolve` unchanged, so an
+uncoached roster meets the real fourth downs and the real two point tries on the boss
+battle's own board. `liveCalls()` is the one place that asks, and the answer is Full Team
+with no coach.
+
+**What it cannot borrow is the boss sim's SCORING, which is why it is its own function
+rather than a flag.** A boss sim models your offence against their scoring rate and nothing
+you drafted touches what they score. That is right for six men on one side of the ball and
+it throws away half of Full Team, where what the other team scores is what your six
+defenders allow. Run as-is it would have played the twelve man mode as a six man one and
+nothing on screen would have looked wrong.
+
+**`advanceWeek` RECORDS rather than decides when a game arrives pre-played.** That is its
+`pre` argument, and `nextGame()` was lifted out of it so the live game and the resolved one
+ask one source who the opponent is and how hard. Three things follow and none is obvious:
+
+- **The resolver is not called at all.** Calling it and overriding the winner would put a box
+  score on the results screen that disagrees with the scoreline above it.
+- **So there are no `lines`.** A forward sim scores on drives rather than by sampling each
+  man, so there is no honest per-player column. Every reader already guards on it, including
+  the playoff broadcast, which is right: the live game WAS the broadcast.
+- **And no fantasy-space numbers either.** `yourScore` and `oppScore` carry the football
+  score, because for a game played forward that IS the score. `live: true` says why, rather
+  than leaving a reader to infer it from two fields agreeing.
+
+**The board is shared, not copied.** `liveBoard()` sets up the screen both forward-played
+games use, because a screen that exists twice is a screen that says two different things
+about the same game inside a year. See the four premium cards.
+
+**What it costs, measured over 800 games rather than argued.** The forward path is a little
+harder than the resolver: 79.5% of games for the resolver, 78.3% taking every fourth down
+and every two, 75.9% punting and kicking everything. So the calls are worth about 2.4 points
+and a good caller still lands about a point under what the resolver would have handed them.
+Added to losing the dials, an uncoached team is down roughly two points of regular season win
+rate and about one of playoff win rate. Recorded rather than compensated. What it buys is
+four games a player actually decides.
+
+**A coached team is untouched**, and the guard asserts that as its own section rather than as
+the absence of the first one. He was hired to call it, so he calls it, and a one line branch
+is exactly the shape that gets the other side wrong.
 
 ### A dynasty screen says which season it is, and `seasonTag()` is why
 
@@ -2791,6 +2868,84 @@ If it ever holds 171 rows again, the game has fallen back to
 must never be shown to a player as a fact about a real season. The dev banner
 said so and has come off, because saying it now would be false in the other
 direction.
+
+## Two people can share a name, and `name|sport` is not a person
+
+```
+node scripts/check-namesakes.mjs
+```
+
+`arcade/data.js` folds `former.js` and `supplement.js` onto the curated corpus,
+keyed on name plus sport. That key is not a person. The Browns' Hall of Fame
+tackle and a linebacker who played for four clubs in the 2010s were one record,
+so the tackle was handed the linebacker's college. Alma Mater asked where Joe
+Thomas went and marked Wisconsin wrong. **A player sent a screenshot.**
+
+**Nothing failed and nothing could.** The fold backfills empty fields, so it
+throws nothing, breaks no test, and leaves the pool exactly as healthy as before.
+The only symptom was the game stating a false thing about a real person, in the
+one place a quiz has to be trusted. Five famous players were affected: Joe
+Thomas, Josh Allen, Lamar Jackson, Michael Thomas and Chris Jones all wore
+somebody else's school.
+
+**A shared club proves sameness; a missing one proves nothing.** Sixteen pairs
+share a name and a sport with no club in common, and only nine are two people.
+The other seven are one person whose clubs are written two ways: Cleveland
+Indians against Cleveland Guardians, Brooklyn against Los Angeles Dodgers, the
+Washington Senators against the Minnesota Twins, plus Negro Leaguers carrying no
+club at all. So this is not a rename list, which would be three sports of
+franchise history to maintain before it could answer anything.
+
+**What separates the nine is POSITION**, every one: tackle against linebacker,
+quarterback against cornerback, first baseman against outfielder. So
+`samePerson()` calls it the same person unless the clubs, the numbers AND the
+position all disagree. Deliberately permissive, because the costs are not
+symmetric: a wrongly blocked backfill loses one player a college, a wrongly
+allowed one marks somebody's right answer wrong. **Do not normalize the position
+strings.** "Guard" against "Point Guard" is what keeps the two Dee Browns apart,
+and folding them together would re-merge them.
+
+It costs one known false negative. Ronnie Lott really did finish at Kansas City
+and really did play both corner and safety, so his former row is refused; he is
+carried by `stars.js`, so nothing about him moves.
+
+**Refusing is not the whole fix.** It left those five with no college and dropped
+them out of Alma Mater, which is honest and not finished. `supplement.js` carries
+the real ones, in rows that match their entity on club and position so the
+backfill is allowed through.
+
+**The same key contaminates two more front-facing things, and both are fixed at the
+point of use rather than upstream.**
+
+**The club printed under a player's name.** `primary.js` answers "which club is he
+of", and it is addressed by name, so it inherits every namesake; it counts off
+jersey stints that begin in 1990, so an older career comes back truncated. Randy
+Johnson's Seattle decade is not truncated in that file, it is ABSENT, so he looked
+like a man who debuted in Arizona in 1999 and came back a Diamondback. The header
+of `build-primary.mjs` used him as the example of what its floor cut prevents, and
+the floor never saw him. Rickey Henderson came back a Met and Roger Clemens a
+Yankee. Two fixes: the build now refuses a career whose stints start more than a
+decade after the decade list says it began, and `data.js` drops any `pt` that is
+not one of the clubs the record already has. The documented fallback is the first
+club, which is always a true thing to say.
+
+**The Number Game's questions.** A round there is one jersey stint joined to a
+curated player BY NAME, so a father's stint arrives under his son's card: what
+number did Patrick Ewing wear for the 2011 Hornets (Ewing Jr.), Tim Hardaway for
+the 2019 Mavericks, Antonio Brown for the 2003 Bills, seven years before he was
+drafted. 87 of 3124 rounds. Nobody plays outside their own career, so the decades
+the record already gives the player settle it without knowing who the other man
+is, and `_ownStint()` in `arcade/table/index.html` drops them before a round is
+built.
+
+`check-namesakes.mjs` builds the corpus twice, once as the site does and once
+with every namesake row deleted before the fold, and requires the two to be
+identical. **Two weaker versions came first and both were wrong.** Asking whether
+an entity HOLDS the namesake's value reported nine problems that were not:
+contemporaries share a decade, and `hp=0` only means neither was a high pick.
+Asking whether the fold MOVED a field then reported eighteen, because the
+supplement legitimately fills Joe Thomas in with Wisconsin. Attribution by value
+cannot settle it when two sources are allowed to agree.
 
 ## The arcade's "How to play" blocks
 

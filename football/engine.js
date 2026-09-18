@@ -5424,7 +5424,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 48;
+const ENGINE_API_VERSION = 49;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -5664,6 +5664,62 @@ function bossSimCreate(roster, chemistryMultiplier, boss, oppRow, leagueAvgAllow
     muYou: bossFitMu(Math.max(0.3, youExp / per)),
     muThem: bossFitMu(Math.max(0.3, themExp / per)),
     read: read || null, readRight, readTrap,
+    clock: 0, drives: [],
+    pos: null, cur: null, pending: null, over: false, won: null,
+    firstReceiver: null,
+  };
+}
+
+/*
+ * ─── A FULL TEAM PLAYOFF GAME, PLAYED FORWARD ────────────────────────────────────────
+ *
+ * The same machine as the boss game: bossSimAdvance and bossSimResolve are pure over the sim
+ * object, so a sim built here is driven by them unchanged and stops at the same two real
+ * calls, fourth down and the two point try.
+ *
+ * WHAT IT CANNOT BORROW IS THE SCORING, and that is the whole reason this function exists
+ * rather than a flag on bossSimCreate. A boss sim models YOUR OFFENCE against THEIR scoring
+ * rate: `themInternal` is the opponent's own points and nothing the player drafted touches
+ * it. That is right for a boss, where the roster is six men on one side of the ball, and it
+ * throws away half of Full Team, where what the other team scores is what your six defenders
+ * allow. Run as-is it would have played the twelve man mode as a six man one and nothing
+ * would have looked wrong on screen.
+ *
+ * SO THE TWO EXPECTATIONS ARE resolveGameFull's OWN, term for term: the offence is its raw
+ * production times talent, chemistry, its own structure and the opponent's defensive
+ * modifier; the opponent's is their scoring rate suppressed by your defence through
+ * fullSuppression, and divided by the home field advantage exactly as the resolver divides
+ * it. A game played here and a game resolved there are the same team against the same
+ * opponent, so the playoff a player watches is the playoff the mode is balanced for.
+ *
+ * NO PLAN AND NO COACH, deliberately. This is the path for a team that hired nobody, and the
+ * point of it is that the calls a plan would have made in advance are made live instead.
+ */
+function fullSimCreate(roster, chemistryMultiplier, oppRow, leagueAvgAllowed,
+  advantage = 1, constants = CONSTANTS, cal = null) {
+  const { off, def } = splitSides(roster);
+  const t = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
+  const rawOff = off.reduce((s, p) => s + (p.ppr_ppg_mean || 0), 0) * t;
+  const rawDef = def.reduce((s, p) => s + (p.ppr_ppg_mean || 0), 0) * t;
+  const defMod = oppRow.pts_allowed_mean / leagueAvgAllowed;
+  const yourInternal = rawOff * chemOff(chemistryMultiplier)
+    * rosterStructure(off).multiplier * defMod;
+  const defenseTotal = rawDef * chemDef(chemistryMultiplier)
+    * defenseStructure(def).multiplier;
+  const themInternal = oppRow.pts_scored_mean * constants.SCALE
+    * fullSuppression(defenseTotal, constants) / (advantage || 1);
+  const youExp = bossExpectedPoints(yourInternal, cal);
+  const themExp = bossExpectedPoints(themInternal, cal);
+  const per = BOSS_SIM.DRIVES_PER_TEAM;
+  return {
+    you: 0, them: 0,
+    youExp, themExp,
+    muYou: bossFitMu(Math.max(0.3, youExp / per)),
+    muThem: bossFitMu(Math.max(0.3, themExp / per)),
+    /* The read belongs to the boss screen's scout and there is none here. Kept on the object
+       because bossSimCreate's shape is what bossSimAdvance reads, and a missing field is how
+       two sims that are meant to be one thing quietly stop being it. */
+    read: null, readRight: false, readTrap: false,
     clock: 0, drives: [],
     pos: null, cur: null, pending: null, over: false, won: null,
     firstReceiver: null,
@@ -6014,6 +6070,7 @@ const publicAPI = {
   dynastyMilestoneKind, dynastyBossFor, dynastyBossReward,
   dynastyChallengeFor, dynastyChallengeProgress,
   bossExpectedPoints, bossSimCreate, bossSimAdvance, bossSimResolve, bossClock,
+  fullSimCreate,
   DYNASTY_POINTS, dynastySeasonScore, dynastyRunScore,
   dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
   DYNASTY_DEAD_SHARE, DYNASTY_DEAD_SEASONS, DYNASTY_DEAD_CEILING, dynastyDead,

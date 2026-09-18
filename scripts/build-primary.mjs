@@ -51,6 +51,38 @@ if (!STINTS.length) { console.error('arcade/jerseys.js has no stints'); process.
 const nk = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
   .toLowerCase().replace(/[^a-z0-9]/g, '');
 
+/* WHEN THE CAREER REALLY BEGAN, which the stints cannot be asked.
+ *
+ * The floor cut below catches a career that reaches back to the earliest
+ * season the file holds. It cannot catch one whose early clubs are simply
+ * ABSENT: Randy Johnson's first stint here is Arizona in 1999, so he looks
+ * like a man who debuted in 1999, and the ten Seattle years that make him a
+ * Mariner are not truncated, they are missing. The file's own header used him
+ * as the example of what the floor prevents, and the floor never saw him.
+ *
+ * Rickey Henderson came back a Met, Roger Clemens a Yankee, Warren Moon a
+ * Viking and Morten Andersen a Falcon, all of them printed under the player's
+ * name on the Alma Mater card as the club he is of.
+ *
+ * So the debut is read from the OTHER sources, which carry a decade per
+ * player: if the stints start more than a decade after the career did, a whole
+ * club-holding decade is missing and no count over what is left can answer.
+ */
+const DEBUT = {};
+for (const f of ['arcade/match/entities.js', 'arcade/former.js', 'arcade/supplement.js']) {
+  const b = {};
+  // eslint-disable-next-line no-new-func
+  new Function('window', 'self', readFileSync(root + f, 'utf8'))(b, b);
+  const rows = b.GRID_ENTITIES || (b.RTG_FORMER && b.RTG_FORMER.players) ||
+               (b.RTG_SUPPLEMENT && b.RTG_SUPPLEMENT.players) || [];
+  for (const e of rows) {
+    if (!e || !e.name || !e.sport || !Array.isArray(e.decade) || !e.decade.length) continue;
+    const k = e.sport + '|' + nk(e.name);
+    const d = Math.min.apply(null, e.decade);
+    if (!(k in DEBUT) || d < DEBUT[k]) DEBUT[k] = d;
+  }
+}
+
 const by = new Map();
 for (const s of STINTS) {
   if (!s || !s.name || !s.sport || !s.team) continue;
@@ -102,7 +134,7 @@ try {
 /* Two careers with an 11 year hole between them are two men. Same threshold
    build-teammates.mjs splits on, for the same reason and off the same data. */
 const SPLIT_GAP = 11;
-function isTwoPeople(st) {
+function gapApart(st) {
   const s = st.slice().sort((a, b) => a.y0 - b.y0);
   let reach = 0;
   for (const x of s) {
@@ -111,6 +143,33 @@ function isTwoPeople(st) {
   }
   return false;
 }
+/* A GAP ONLY FINDS THE NAMESAKES WHO TOOK TURNS, and most of them did not.
+ *
+ * Joe Thomas anchored Cleveland's line 2007-2017 while a linebacker of the
+ * same name was at Green Bay 2015-2017. No hole anywhere, so the gap test saw
+ * one man with eleven Cleveland seasons and three in Green Bay, and answered
+ * Cleveland: right, by a margin, and only by a margin. Chris Jones came out
+ * Kansas City 11 against Dallas 10 off the same merge, which is a coin toss
+ * between two different men's clubs, and that answer is PRINTED under a
+ * player's name on the Alma Mater card.
+ *
+ * Nobody is on two clubs for two whole seasons at once. One shared season is
+ * an ordinary midseason trade, which is why the threshold is two rather than
+ * one. Thirty-three of the 2323 names here fail it, and the list reads exactly
+ * as it should: two Adrian Petersons, two Alex Smiths, two Steve Smiths, two
+ * Josh Allens.
+ */
+function overlaps(st) {
+  for (let i = 0; i < st.length; i++) {
+    for (let j = i + 1; j < st.length; j++) {
+      const a = st[i], b = st[j];
+      if (a.team === b.team) continue;
+      if (Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0) + 1 >= 2) return true;
+    }
+  }
+  return false;
+}
+function isTwoPeople(st) { return gapApart(st) || overlaps(st); }
 
 /* THE STINTS START IN 1990, AND A TRUNCATED CAREER GIVES A CONFIDENT WRONG
  * ANSWER, which is worse than no answer at all because the fallback is decent.
@@ -135,14 +194,18 @@ for (const [k, st] of by) {
   const sp = k.slice(0, k.indexOf('|'));
   for (const x of st) if (!(sp in FLOOR) || x.y0 < FLOOR[sp]) FLOOR[sp] = x.y0;
 }
-let two = 0, single = 0, cut = 0;
+let two = 0, single = 0, cut = 0, late = 0;
 const out = [];
 for (const [k, st] of by) {
   if (isTwoPeople(st)) { two++; continue; }
   /* At the floor, or one season above it: a career that was already running
      when the record begins is a career this file cannot measure. */
   const sp = k.slice(0, k.indexOf('|'));
-  if (Math.min.apply(null, st.map((x) => x.y0)) <= FLOOR[sp] + 1) { cut++; continue; }
+  const begins = Math.min.apply(null, st.map((x) => x.y0));
+  if (begins <= FLOOR[sp] + 1) { cut++; continue; }
+  /* And the same refusal for a career the file simply does not reach back to,
+     which the floor cannot see. See DEBUT above. */
+  if (k in DEBUT && begins > DEBUT[k] + 10) { late++; continue; }
   const seasons = {};
   const lastYear = {};
   for (const x of st) {
@@ -191,6 +254,7 @@ writeFileSync(root + 'arcade/primary.js', body);
 console.log('players         ' + rows.length + ' given a club');
 console.log('  one club only ' + single);
 console.log('  left out      ' + two + ' names holding two careers, which no single club answers');
+console.log('                ' + late + ' careers the stints do not reach back to, missing a decade of clubs');
 console.log('                ' + cut + ' careers already running at the earliest season held, too truncated to count');
 console.log('sources         basketball ' + nbaSeasons + ' seasons from ' + NBA_SRC + '; football and baseball from the jersey stints');
 console.log('  earliest held ' + Object.keys(FLOOR).sort().map(function(s){return s+' '+FLOOR[s];}).join(', '));
