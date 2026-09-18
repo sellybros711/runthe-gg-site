@@ -2669,6 +2669,41 @@ in as many words ("slow down a lot", recorded in `BASE_BEAT`), and the setting
 that exists to trade ceremony for pace is the one that should reach the target.
 The default stays the playtested game.
 
+#### More contact does NOT make the game faster, which was predicted and is wrong
+
+The contact retune cuts whiffs from 47 per hundred swings to 28, so at bats end
+sooner, so the game should be quicker. That was written down as an expected
+free win before it was measured. It is not one. Driven through the real buttons
+at Normal, the shipped build against the build one commit before it:
+
+| | before | after |
+|---|---|---|
+| wall clock | 698.0s | 686.9s |
+| pitches | 131 | 122 |
+| balls in play | 47 | 49 |
+| seconds per pitch | 5.33 | **5.63** |
+| median pitch to pitch | 4.23s | **4.23s** |
+
+**The per event rhythm does not move at all**, to two decimal places, and the
+seconds per PITCH go UP. That is the mechanism: fewer pitches, but a larger
+share of the ones left are balls in play, and a ball in play costs a play
+animation plus `afterHit` where a whiff cost `afterWhiff`. It trades cheap
+events for expensive ones at close to par.
+
+**AND THE PER HALF INNING FIGURE SAYS THE OPPOSITE OF THE WALL CLOCK, because
+neither sample is a controlled one.** 77.6s before against 114.5s after, which
+would be a large regression, except the after game was a **0-28 mercy blowout
+in 6 half innings** and the before game a 4-16 over 9. Scoring is what fills an
+inning with play animations, and this pass RAISED scoring, so the two are not
+separable at one game an arm. What is safe to say is the negative: the retune
+buys no pace, and the direction of any residual effect is toward slower innings
+in a high scoring game rather than faster ones.
+
+**Do not tune a beat off this.** It is n=1 an arm on a measurement whose own
+header says to normalise per half inning, and the two arms disagree about which
+way to normalise. Settling it needs several games an arm, and nothing currently
+depends on the answer.
+
 **Two ways this measurement went wrong before it went right**, both worth not
 repeating:
 
