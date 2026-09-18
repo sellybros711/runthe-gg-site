@@ -1697,6 +1697,36 @@ through that. A touchdown is worth six plus whatever is decided after it, so the
 that the dropped ones finish at exactly six. Read at the event, deterministic, and nothing
 downstream can touch it.
 
+#### A control the game is waiting on goes above the record of it
+
+The call box and the verdict sat UNDER the drive log, which is capped at 40vh and fills up
+all game. Measured on a phone with a fourteen drive log:
+
+| | 390x844 | 360x740 |
+|---|---|---|
+| the call box starts at | 775, so 69px of viewport left | 726, so 14px left |
+| the Continue button starts at | 888, **off screen** | 839, **off screen** |
+
+So a player got the question and none of the buttons, and the way out at the final whistle
+was not on the screen at all. Reported by a player with a screenshot of a two point call they
+had to go looking for. **The Continue button has been off the bottom of the boss battle since
+that screen shipped**, which nobody reported because a game that has ended will wait.
+
+**The order is the field, what just happened, what to do about it, and only then the record
+of everything before it.** The log is the thing you scroll to. A control the game is waiting
+on is not. After the move the calls start at 393 and the verdict at 506 on both.
+
+**The guard measures a REAL call, at the moment it is offered, on the deepest button of the
+worst one**, because the fault grows with the log: a check on the first call of the game
+would pass on a screen that breaks by the fourth quarter.
+
+**And it asserts against a PHONE rather than against its own window**, which is the same
+trap as the share card's sampling stripe one section down. The harness opens 390x900 and a
+phone is 844 or 740. Reintroduced, the deepest button measures 853 to 934, so that run would
+have failed on `vh` too, by 34px, and it is 34px only because the game happened to run 28
+drives. The defect IS the log's height, so a shorter game shrinks that margin to nothing
+while the screen is just as broken on the phone it was reported from.
+
 #### The share card was built for six and Full Team drafts twelve
 
 Every y on `drawShareCard`'s canvas between the two rules was a constant written for a six

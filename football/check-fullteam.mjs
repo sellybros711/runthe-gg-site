@@ -857,14 +857,36 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
     /* Sim the rest, which hurries the football and must NOT take the calls. */
     const fast = document.getElementById('b-boss-fast');
     if (fast) fast.click();
-    let calls = 0;
+    /* WHERE THE CONTROLS LAND, measured at the moment they are offered rather than on a
+       screen posed for the purpose. See the assertions below: this is a phone viewport and
+       the drive log grows under them all game. */
+    const vh = window.innerHeight;
+    let calls = 0, callTop = 0, callBottom = 0, doneTop = 0, doneBottom = 0;
     for (let i = 0; i < 600; i++) {
       const box = document.getElementById('bg-calls');
       if (box && !box.hidden) {
-        const b = box.querySelector('.bcall');
-        if (b) { calls++; b.click(); }
+        const bs = [...box.querySelectorAll('.bcall')];
+        if (bs.length) {
+          calls++;
+          /* THE DEEPEST BUTTON OF THE WORST CALL, so a late one with a full log behind it
+             is what the assertion sees rather than the first one of the game. */
+          for (const b of bs) {
+            const r = b.getBoundingClientRect();
+            if (Math.round(r.bottom) > callBottom) {
+              callBottom = Math.round(r.bottom); callTop = Math.round(r.top);
+            }
+          }
+          bs[0].click();
+        }
       }
-      if (!document.getElementById('bg-done').hidden) break;
+      if (!document.getElementById('bg-done').hidden) {
+        const c = document.getElementById('b-boss-continue');
+        if (c) {
+          const r = c.getBoundingClientRect();
+          doneTop = Math.round(r.top); doneBottom = Math.round(r.bottom);
+        }
+        break;
+      }
       await wait(40);
     }
     const you = +document.getElementById('bg-syou').textContent;
@@ -875,7 +897,7 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
     const callRows = [...document.querySelectorAll('#bg-log .pl.call .w')]
       .map((r) => (r.innerText || '').replace(/\s+/g, ' ').trim());
     return { found, board, eye, calls, you, them, filed, callRows,
-      pending: T.bossPending(),
+      pending: T.bossPending(), vh, callTop, callBottom, doneTop, doneBottom,
       done: !document.getElementById('bg-done').hidden,
       state: (document.getElementById('bg-state').textContent || '').trim(),
       drives: document.querySelectorAll('#bg-log .pl').length };
@@ -898,6 +920,34 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
     ok('    in the second person', live.callRows.length > 0
       && live.callRows.every((r) => /^You /.test(r) && !/ goes | takes | kicks | punts /.test(r)),
       live.callRows[0] || 'no rows');
+    /*
+     * AND THE CONTROLS ARE ON SCREEN WHEN THEY ARE OFFERED.
+     *
+     * The call box and the verdict used to sit UNDER the drive log, which is capped at 40vh
+     * and fills all game. Measured on a phone with a fourteen drive log: the call box started
+     * 775px down an 844px viewport, so a player got the question and none of the buttons, and
+     * the Continue button after the final whistle was fully off screen. Reported by a player
+     * with a screenshot of a two point call they had to go looking for.
+     *
+     * MEASURED AT THE MOMENT OF THE OFFER, on the deepest button of the worst call, because
+     * the fault grows with the log: a check on the first call of the game would pass on a
+     * screen that breaks by the fourth quarter.
+     *
+     * AGAINST A PHONE, NEVER AGAINST THIS WINDOW. The harness opens 390x900 and a phone is
+     * 844 or 740. Reintroduced, the deepest button measures 853 to 934 and the Continue
+     * button 931 to 988, so this particular run would have failed against `vh` as well: the
+     * margin is 34px, and it is 34px only because the game happened to run 28 drives. The
+     * defect IS the log's height, so a shorter game shrinks that margin to nothing while
+     * the screen is just as broken on the phone it was reported from. PHONE is the shortest
+     * viewport worth supporting and it does not move when the sample does.
+     */
+    const PHONE = 740;
+    ok('  with the buttons on screen when it asks',
+      live.callBottom > 0 && live.callTop >= 0 && live.callBottom <= PHONE,
+      live.callTop + ' to ' + live.callBottom + ', against a ' + PHONE + 'px phone');
+    ok('  and the way out on screen at the whistle',
+      live.doneBottom > 0 && live.doneTop >= 0 && live.doneBottom <= PHONE,
+      live.doneTop + ' to ' + live.doneBottom + ', against a ' + PHONE + 'px phone');
     ok('  having actually played a game', live.drives > 4, live.drives + ' drives logged');
     /* AND IT DID NOT FINISH MID-DECISION. A call that hands back another call and is dropped
        leaves the sim pending, which is the page half of the node section above. */

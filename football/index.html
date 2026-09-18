@@ -7755,6 +7755,29 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <canvas id="bg-fcanvas" width="600" height="150"></canvas>
     </div>
     <div class="bg-narr" id="bg-narr">The scout is in. Time to play.</div>
+    <!-- ===== WHAT THIS SCREEN WANTS FROM YOU GOES ABOVE THE RECORD OF IT =====
+         The calls and the verdict used to sit UNDER the log, which is capped at 40vh and
+         fills up as the game goes. Measured on a phone with a fourteen drive log: the call
+         box started 775px down an 844px viewport, so a player saw the question and none of
+         the buttons, and at 360x740 it started 14px from the bottom. The Continue button
+         after the final whistle was worse, fully off screen at both widths, which has been
+         true of the boss battle since it shipped. Reported by a player, with a screenshot of
+         a two point call they had to go looking for.
+
+         So the order is the field, what just happened, what to do about it, and only then
+         the record of everything before it. The log is the thing you scroll to; a control
+         the game is waiting on is not. -->
+    <!-- The two live calls, one at a time. Built by bossShowDecision, cleared as each
+         resolves, and answered by the coach instead when one was hired. -->
+    <div class="bg-calls" id="bg-calls"></div>
+    <!-- The result, revealed once the calls are in. -->
+    <div class="bg-done" id="bg-done" hidden>
+      <div class="bg-verdict" id="bg-verdict">
+        <div class="bg-outcome" id="bg-outcome">You win</div>
+        <p class="bg-note" id="bg-note"></p>
+      </div>
+      <button class="btn dock-go" id="b-boss-continue">Continue</button>
+    </div>
     <!-- SIM THE REST. The drives animate one at a time and a boss battle is the longest
          watch in the mode, so there has to be a way to get to the result. It does NOT take
          the calls: fourth down and the two point try are what a boss battle IS, so it runs
@@ -7768,16 +7791,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          same shape and the same classes the playoff log uses, because a player meeting the
          two on one evening should not have to learn a second layout. -->
     <div class="polog bg-log" id="bg-log"></div>
-    <!-- The two live calls, one at a time. Built by bossAsk, cleared as each resolves. -->
-    <div class="bg-calls" id="bg-calls"></div>
-    <!-- The result, revealed once the calls are in. -->
-    <div class="bg-done" id="bg-done" hidden>
-      <div class="bg-verdict" id="bg-verdict">
-        <div class="bg-outcome" id="bg-outcome">You win</div>
-        <p class="bg-note" id="bg-note"></p>
-      </div>
-      <button class="btn dock-go" id="b-boss-continue">Continue</button>
-    </div>
   </div>
 
   <!-- THE MANDATE BRIEFING (the odd milestones: 3, 9, 15). Its own beat between the results
