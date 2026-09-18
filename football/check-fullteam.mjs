@@ -109,6 +109,9 @@ const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,fullPickIsDefens
   /* The two pace tables, so the ladder can be read as data rather than inferred from four
      timed games. See the section on how long a playoff game takes. */
   + 'LIVE_PACE:()=>LIVE_PACE,PACE:()=>PACE,bossPace:()=>bossPace,'
+  /* The run detail sheet, and the key a row's picks are written in, so a twelve man roster
+     can be opened the way the leaderboard opens somebody else's. */
+  + 'runDetail,pickKey,slotsNow,'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 
 /* NO TESTER VIEW ANY MORE. This used to take { tester } and rewrite LIVE = false to true
@@ -1560,6 +1563,149 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
          that has been shared for a year. */
       ok('  while six is still one column where it was', c.six.cols === 1
         && c.six.top === 528 && c.six.row === 94, JSON.stringify(c.six));
+    }
+  }
+
+  /* ================================================================
+     THE RUN DETAIL SHEET HOLDS TWELVE MEN TOO
+
+     THE BUG, reported by a player with a screenshot of their own 20-0 Full Team run opened
+     from the leaderboard. Three faults in one sheet, and only the first is about size.
+
+     THE ROWS WERE WRITTEN FOR SIX. A roomy row is 55px with its gap, so twelve are 726px
+     under a 127px header: seven men on a phone and you scrolled for the rest of your own
+     team. This is the share card's lesson at a second surface.
+
+     THE SIDES WERE BACKWARDS. byPositionOrder picked ONE position list, the defensive one if
+     any defender was present, so on a roster that has both every offensive player fell to
+     the not-in-the-list rank and the whole offense was filed behind the whole defense.
+
+     AND THE FLEX MAN CAME FIRST. The tie-break read E.SLOTS, the six man OFFENSIVE list, in
+     which DB does not appear and FLEX does, so a defensive back in the flex spot ranked 5
+     and the two real backs ranked not-found: the reserve printed above the starters.
+
+     MEASURED AGAINST A PHONE, NEVER AGAINST THE HARNESS WINDOW, which is this file's own
+     rule from the call box two sections up. The suite opens 390x900 and a phone is 844 or
+     740, so the viewport is set to the shortest one worth supporting before anything is
+     read. At 900 a layout that does not fit a phone still looks like it fits.
+
+     THE ORDER IS ASSERTED AS A PROPERTY, never by rebuilding the old rule in here to compare
+     against: offense before defense, each group in its own list's order, and no man in a
+     flex slot ahead of a man in his own named slot at the same position. All three of those
+     are false on the code this replaces.
+     ================================================================ */
+  console.log('\nTHE RUN DETAIL SHEET HOLDS TWELVE MEN TOO');
+  {
+    /* THE SHORTEST PHONE WORTH SUPPORTING. Put back below, because nothing after this asked
+       for a short window. */
+    await s.page.setViewportSize({ width: 390, height: 740 });
+    const rd = await s.page.evaluate(() => {
+      const T = window.__t, RR = T.R;
+      const shot = (run) => {
+        /* slotsNow() reads the MODULE's run, so it has to be this one when the row is built.
+           Left as the other roster it reads the wrong slot list and every man is filed under
+           somebody else's slot, which is a harness bug that reads exactly like the page one
+           this section is about. */
+        T.setRun(run);
+        T.runDetail({
+          picks: run.roster.map(T.pickKey),
+          slots: run.roster.map((p, i) => T.slotsNow()[run.slotIndex[i]]),
+          wins: 20, losses: 0, team_rating: 88.1, squad_fppg: 210, structure_mult: 1.02,
+          chemistry_pct: 3, spend_musd: 139, perfect_pct: 91, perfect: true, title_won: true,
+          made_playoffs: true, playoff_wins: 4, seed_label: '1 seed', franchise: null,
+          run_mode: run.full ? 'full' : 'free', display_name: 'tester',
+          display_color: null, display_initials: 'T', display_mark: null,
+        });
+        const pane = document.getElementById('sheet-in');
+        pane.scrollTop = 0;
+        const top = pane.getBoundingClientRect().top;
+        const rows = [...document.querySelectorAll('#sheet-in .rrow')];
+        const subOf = (r) => ((r.querySelector('.nm>span') || {}).textContent || '');
+        return {
+          n: rows.length,
+          groups: [...document.querySelectorAll('#sheet-in .rgrp')]
+            .map((g) => (g.textContent || '').trim()),
+          /* The roster's own extent inside the scrolling pane, against what the pane shows. */
+          bottom: Math.round(rows[rows.length - 1].getBoundingClientRect().bottom - top),
+          paneH: Math.round(pane.clientHeight),
+          heights: [...new Set(rows.map((r) =>
+            Math.round(r.getBoundingClientRect().height)))].sort((a, b) => a - b),
+          /* The name must never be the half that gets cut. */
+          cutNames: rows.map((r) => r.querySelector('.nm b'))
+            .filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.textContent),
+          /* A stat line is the tail after the club with a figure in it. */
+          statLines: rows.filter((r) => /\d/.test(subOf(r).split('\u00b7')[1] || '')).length,
+          order: rows.map((r) => ({
+            pos: (r.querySelector('.tag') || {}).textContent, sub: subOf(r) })),
+        };
+      };
+      const sixRun = (() => {
+        const run = RR.createRun({ seed: 7 });
+        T.setRun(run);
+        let g = 0;
+        while (run.roster.length < run.slots.length && g++ < 400) {
+          const D = T.dataNow();
+          let d; try { d = RR.spin(run, D); } catch (e) { continue; }
+          const men = RR.affordableFrom(run, d.team_season_id, D.playersByTeamSeason);
+          if (!men.length) continue;
+          const w = men.slice().sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+          try { RR.sign(run, w, RR.slotChoices(run, w)[0]); } catch (e) {}
+        }
+        return run.roster.length === run.slots.length ? run : null;
+      })();
+      const fullRun = window.__draft(4);
+      return { full: fullRun ? shot(fullRun) : null, six: sixRun ? shot(sixRun) : null,
+        OFF: ['QB', 'RB', 'WR', 'TE'], DEF: T.E.DEFENSE_POSITIONS || ['DL', 'LB', 'DB'] };
+    });
+    await s.page.setViewportSize({ width: 390, height: 900 });
+
+    if (!rd.full) {
+      ok('a twelve man run detail sheet was opened', false, 'no roster');
+    } else {
+      const f = rd.full;
+      ok('a twelve man run detail sheet was opened', f.n === 12, f.n + ' rows');
+      /* THE WHOLE POINT OF THE REPORT. */
+      ok('  with the whole team on the screen', f.bottom <= f.paneH,
+        f.bottom + ' deep in a ' + f.paneH + 'px pane on a 740px phone');
+      /* ONE HEIGHT ACROSS THE LIST, which is the premium sheet's hero row rule arriving here:
+         the flex men carry a slot note, and in the chip's own column that note is a second
+         line and would make two of twelve rows taller than the other ten. */
+      ok('  every row the same height', f.heights.length === 1, f.heights.join(', ') + 'px');
+      ok('  split into offense and defense',
+        f.groups.length === 2 && f.groups[0] === 'Offense' && f.groups[1] === 'Defense',
+        f.groups.join(' then ') || 'no headings');
+      const rank = (p) => {
+        const d = rd.DEF.indexOf(p); if (d >= 0) return 100 + d;
+        const o = rd.OFF.indexOf(p); return o >= 0 ? o : 99;
+      };
+      const ranks = f.order.map((r) => rank(r.pos));
+      ok('    in position order, offense before defense',
+        ranks.every((v, i) => i === 0 || v >= ranks[i - 1]),
+        f.order.map((r) => r.pos).join(' '));
+      /* AND THE RESERVE BELOW THE STARTER. A flex man carries his slot on the sub line, so
+         within one position no flex row may come before a row that is not one. */
+      const flexEarly = f.order.filter((r, i) => /FLEX/.test(r.sub)
+        && f.order.slice(i + 1).some((x) => x.pos === r.pos && !/FLEX/.test(x.sub)));
+      ok('    with no flex man above the starter at his position', !flexEarly.length,
+        flexEarly.map((r) => r.pos).join(', ') || 'none');
+      ok('  and no name cut to make it fit', !f.cutNames.length,
+        f.cutNames.join(', ') || 'none');
+    }
+    /* SIX IS UNTOUCHED, asserted from the other end, because a rewrite that fixed twelve by
+       changing the row every other mode on this page uses would have moved a sheet that has
+       read the same way for a year. */
+    if (!rd.six) {
+      ok('  and a six man sheet still has its roomy row', false, 'no roster');
+    } else {
+      ok('  and a six man sheet is unchanged', rd.six.n === 6 && !rd.six.groups.length
+        && rd.six.heights.length === 1 && rd.six.heights[0] === 55,
+        rd.six.n + ' rows, ' + rd.six.heights.join(',') + 'px, '
+        + (rd.six.groups.length ? rd.six.groups.join(' ') : 'no headings'));
+      /* AND IT KEEPS THE STAT LINE, which is the one thing the tight row gives up. */
+      ok('    keeping the stat line the tight row drops',
+        rd.six.statLines > 0 && !!rd.full && rd.full.statLines === 0,
+        rd.six.statLines + ' of six against ' + (rd.full ? rd.full.statLines : '?')
+        + ' of twelve');
     }
   }
 

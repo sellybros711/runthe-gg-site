@@ -1906,6 +1906,67 @@ up arriving again, and here it is the safe direction: Google Fonts does not reso
 sandbox, so names are set about a third wider than the condensed display face a real visitor
 gets. A card that fits here fits on a phone with room spare.
 
+#### The run detail sheet was built for six too, and its sort had two bugs under the size one
+
+```
+node football/check-fullteam.mjs   the last section, at a 740px phone
+```
+
+Reported by a player with a screenshot of their own 20-0 Full Team run opened from the
+leaderboard. Three faults in one sheet, and only the first is about size.
+
+**The rows were written for six.** A roomy row is 55px with its gap, so twelve are 726px under
+a 127px header: seven men on a phone and you scrolled for the rest of your own team. A roster
+over six gets **one line a man** now, 31px, and the twelve come to 450px, which fits on the
+shortest phone worth supporting. Measured through the real sheet: 878px deep in a 634px pane
+before, 577 after. **Six is untouched**, because six fits and has read the same way for a year.
+
+**What the tight row gives up is the stat line and nothing else.** The name, the year, the
+club, the fantasy points, the price and the award chip all stay. The slot note MOVES onto the
+name line rather than being dropped: in the chip's own column it is a second line, which would
+make the two flex rows of a Full Team roster taller than the other ten. That is the premium
+sheet's hero row rule arriving at a list, and the guard asks for one height across all twelve
+rather than for a number.
+
+**The price went beside the score rather than under it**, and that is not tidying. Stacked,
+that column is 28px and is the TALLEST thing in the row, so it and not the name was setting the
+row height. On one baseline the row goes 40px to 31, which is 108px over twelve men and the
+whole difference between fitting a 740px phone and not.
+
+**`flex:0 0 34px` on the chip set its HEIGHT, not its width.** `.tagwrap` is a flex COLUMN, so
+a basis on a child is vertical: the chip became 34px tall and dragged every row to 46. The base
+rule has the same shorthand and is saved by `.rrow .tagwrap .tag{flex:0 0 auto}` sitting above
+it, which the new rule tied with on specificity and beat on order. **The width goes on the
+wrap**, which stretches the chip to it anyway.
+
+**And the club absorbs the overflow, not the name.** Given both the same shrink they lose width
+in proportion to how much they have, so a row 14px too wide cut `Adrian Peterson` as well as the
+year beside it. The name is what the row is for.
+
+##### Two sorting bugs that the size fix would have left in place
+
+**`byPositionOrder` picked ONE position list** and Full Team has both sides: the rule was "any
+defender present, use the defensive list", so every offensive player fell to the not-in-the-list
+rank and the whole offense was filed behind the whole defense.
+
+**And the tie-break read the wrong slot list.** It was always `E.SLOTS`, the six man OFFENSIVE
+list, in which DB does not appear and FLEX does. So a defensive back in the flex spot ranked 5
+and the two real backs ranked not-found, and **the reserve printed above the starters**. Against
+`FULL_SLOTS` the real backs are at 7 and the flex at 10, which is the order the draft filled
+them. `slotListFor()` answers which of the three lists a roster was built on, read off the men
+and never off the run, because a row opened from the leaderboard is somebody else's and carries
+no mode. FLEX is in all three lists, so it cannot be what decides.
+
+**A defense run had the second bug too**, quietly, for the same reason: its six were sorted with
+the offense's slot list, so its flex man also sorted above the position he is the reserve for.
+
+**The grouping and the ordering are two different fixes and need two different assertions.**
+`rdRoster` splits the men by position, so the Offense and Defense headings are correct even with
+the old sorter behind them: reintroduced, the headings assertion passes green and the two order
+assertions fail. Neither rebuilds the old rule to compare against. The claims are that offense
+comes before defense, that each group runs in its own list's order, and that no man in a flex
+slot appears above a man in his own named slot at the same position.
+
 ### A dynasty screen says which season it is, and `seasonTag()` is why
 
 A dynasty is the one mode on this page where the same screen comes round again, so

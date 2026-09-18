@@ -6215,6 +6215,43 @@ window.GA_ID='G-L29P5MRWKE';
   .rrow .num b{display:block;font-family:var(--fn);font-size:15px;line-height:1.1}
   .rrow .num span{display:block;font-size:10.5px;color:var(--dim-2)}
 
+  /* THE SIDE OF THE BALL, over a roster that has both. Quiet: it is a divider rather than a
+     heading, and the twelve names under it are the thing being read. */
+  .rgrp{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--dim-2);margin:12px 0 5px}
+  .rgrp:first-child{margin-top:0}
+  /*
+   * ONE LINE A MAN, for a roster over six. See rdRoster: twelve roomy rows are 648px and the
+   * team stops fitting on a phone. Everything here is the same row with the second line
+   * folded into the first, so nothing moves sideways and the chip colours are untouched.
+   */
+  .rost.tight{gap:4px}
+  .rost.tight .rrow{padding:5px 9px;gap:8px}
+  /* THE WIDTH GOES ON THE WRAP AND NEVER ON THE CHIP. .tagwrap is a flex COLUMN, so a
+     flex-basis on the chip is its HEIGHT: written `flex:0 0 34px` the chip became 34px tall
+     and dragged every row to 46. The base rule has the same shorthand and is saved by
+     `.rrow .tagwrap .tag{flex:0 0 auto}` above it, which this would have tied with on
+     specificity and beaten on order. The wrap stretches the chip to its own width anyway. */
+  .rost.tight .tagwrap{flex:0 0 34px}
+  .rost.tight .tag{font-size:9px;padding:3px 0}
+  /* The name and the club on one baseline. Both shrink, so a long name and a long club share
+     the overflow instead of one of them pushing the price off the row. */
+  .rost.tight .nm{display:flex;align-items:baseline;gap:6px}
+  /* THE CLUB ABSORBS THE OVERFLOW, NOT THE NAME. Given both the same shrink they lose width
+     in proportion to how much they have, so a row 14px too wide cut the name as well as the
+     club and "Adrian Peterson" came out clipped with the year beside it untouched. The name
+     is what the row is for. A very long one still shrinks, after the club has nothing left. */
+  .rost.tight .nm b{font-size:12.5px;flex:0 1 auto;min-width:0}
+  .rost.tight .nm>span{font-size:10.5px;margin-top:0;flex:0 999 auto;min-width:0}
+  /* THE PRICE BESIDE THE SCORE RATHER THAN UNDER IT. Stacked, this column is 28px and is the
+     TALLEST thing in the row, so it and not the name is what sets the row height: on one
+     baseline the row comes down from 40px to 31, which is 108px over twelve men and the
+     difference between fitting on a 740px phone and not. It costs about 12px of width, taken
+     from a name column that was not using it. */
+  .rost.tight .num{display:flex;align-items:baseline;gap:5px}
+  .rost.tight .num b{font-size:13px}
+  .rost.tight .num span{font-size:9.5px}
+
   /* how close to perfect */
   .pgauge{display:flex;align-items:center;gap:14px;margin:4px 0 13px}
   .pgauge .pv{font-family:var(--fd);font-size:50px;line-height:.85;flex:0 0 auto}
@@ -8948,11 +8985,14 @@ const topAward=(p)=>(p&&p.awards&&p.awards.length)?p.awards[0]:null;
 
    It says RB now, and the slot goes underneath in small type where it is a note rather than
    a heading. Both facts are still on screen and the loud one is the one you sort by. */
-function slotTag(slot,pos){
+/* `noSub` drops the slot note, for a caller that has somewhere better to put it. The note is
+   a second line inside the chip's column, and on a list whose rows are one line tall it is
+   the only thing that makes two of twelve rows taller than the other ten. */
+function slotTag(slot,pos,noSub){
   const p=pos||slot;
   const flex=slot&&pos&&slot!==pos;
   return '<span class="tagwrap"><span class="tag" style="'+posPaint(p)+'">'+esc(p)+'</span>'+
-    (flex?'<span class="tagsub">'+esc(slot)+'</span>':'')+'</span>';
+    (flex&&!noSub?'<span class="tagsub">'+esc(slot)+'</span>':'')+'</span>';
 }
 /* THE ROSTER READ AS POSITIONS, which is not the same as read as slots.
 
@@ -8966,16 +9006,48 @@ function slotTag(slot,pos){
    true running back ahead of the flex running back and leaves the two receivers in their own
    order. Whatever side of the ball it is: the order is taken from the positions present
    rather than from a list, so a defense reads DL LB DB without this function knowing that. */
+/*
+ * WHICH SLOT LIST A ROSTER WAS BUILT ON, read off the men and never off the run, because a
+ * row opened from the leaderboard is somebody else's and carries no mode. Six offensive
+ * slots, six defensive ones, or Full Team's interleaved twelve.
+ *
+ * FLEX IS IN ALL THREE, so it cannot be what decides. The question is asked of the slots
+ * that belong to one side only.
+ */
+const OFF_ONLY_SLOTS=['QB','RB','WR','TE'], DEF_ONLY_SLOTS=['DL','LB','DB'];
+function slotListFor(men){
+  const slots=men.map(m=>m.slot).filter(Boolean);
+  const d=slots.some(s=>DEF_ONLY_SLOTS.includes(s));
+  const o=slots.some(s=>OFF_ONLY_SLOTS.includes(s));
+  if(d&&o) return E.FULL_SLOTS;
+  if(d) return E.DEFENSE_SLOTS;
+  return E.SLOTS;
+}
+/*
+ * ORDERED BY POSITION, OFFENSE FIRST AND THEN DEFENSE.
+ *
+ * IT PICKED ONE SIDE'S LIST AND FULL TEAM HAS BOTH, which is the bug this shape replaces.
+ * The old rule was "any defender present, use the defensive list", so on a twelve man roster
+ * every offensive player fell to the not-in-the-list rank and the whole offense was filed
+ * behind the defense in whatever order the tie-break left. Reported by a player looking at a
+ * 20-0 Full Team run on the leaderboard.
+ *
+ * THE TIE-BREAK WAS READING THE WRONG SLOT LIST TOO, and that one is subtler. It was always
+ * E.SLOTS, the six man offensive list, in which DB does not appear and FLEX does: so a DB in
+ * the flex spot ranked 5 and the two real defensive backs ranked not-found, and the flex man
+ * was printed ahead of the starters he is the reserve for. Against FULL_SLOTS the real backs
+ * are at 7 and the flex is at 10, which is the order the draft actually filled them in.
+ */
 function byPositionOrder(men){
-  const order=(men.some(m=>m.p&&['DL','LB','DB'].includes(m.p.position))
-    ? (E.DEFENSE_POSITIONS||['DL','LB','DB'])
-    : OFFENSE_POSITIONS);
-  const slotOrder=E.SLOTS.slice();
+  const D=E.DEFENSE_POSITIONS||['DL','LB','DB'];
+  const slotOrder=slotListFor(men);
   const rank=(m)=>{
-    const i=order.indexOf(m.p&&m.p.position);
-    /* A man whose position is not in the list sorts last rather than first, which is what
-       an unknown would do with indexOf's -1. */
-    return i<0?99:i;
+    /* A man this browser could not look up has no side and no position, so he sorts last
+       rather than first, which is what an unknown would do with indexOf's -1. */
+    if(!m.p) return 999;
+    const d=D.includes(m.p.position);
+    const i=(d?D:OFFENSE_POSITIONS).indexOf(m.p.position);
+    return (d?100:0)+(i<0?99:i);
   };
   const slotRank=(m)=>{
     const i=slotOrder.indexOf(m.slot);
@@ -8984,10 +9056,12 @@ function byPositionOrder(men){
   return men.slice().sort((a,b)=>rank(a)-rank(b)||slotRank(a)-slotRank(b));
 }
 
-/* Roster order, always QB RB WR WR TE FLEX, whatever order the picks were made in.
-   Duplicated slots are consumed left to right, so the two receivers keep their own places. */
+/* Roster order, always the slot list this roster was built on, whatever order the picks were
+   made in. Duplicated slots are consumed left to right, so the two receivers keep their own
+   places. It read E.SLOTS outright, which is the six man offensive list: handed Full Team's
+   twelve it recognised five of them and concatenated the other seven in pick order. */
 function bySlotOrder(men){
-  const order=E.SLOTS.slice();
+  const order=slotListFor(men);
   const out=[];
   const rest=men.slice();
   for(const slot of order){
@@ -26039,6 +26113,58 @@ function shareSeason(h){
   ga('dynasty_season_shared',{season:h.year});
   shareTextFile(text,null,'season.png');
 }
+/*
+ * THE ROSTER BLOCK OF THE RUN DETAIL SHEET, and the whole of why it is its own function is
+ * that Full Team drafts twelve where every other mode on this page drafts six.
+ *
+ * THE ROOMY ROW WAS DESIGNED FOR SIX and is about 54px with its gap, so twelve of them are
+ * 648px of roster under a 220px header. On the phone it was reported from, a 20-0 Full Team
+ * run showed seven men and you scrolled for the rest of your own team. This is the share
+ * card's lesson at a different surface: a layout written for six is not a layout for twelve
+ * with more of it.
+ *
+ * SO A ROSTER OVER SIX GETS ONE LINE A MAN. The name and the club share it, the long stat
+ * line goes, and the row comes down to about 31px with its gap: twelve of them are 372px and
+ * the team is on the screen. Six is untouched, because six fits and has been read this way
+ * for a year.
+ *
+ * WHAT THE TIGHT ROW GIVES UP IS THE STAT LINE AND NOTHING ELSE. The name, the year, the
+ * club, the fantasy points, the price and the award chip are all still there, and the slot
+ * note moves onto the name line rather than being dropped: in the chip's column it is a
+ * second line, which would make the two flex rows of a Full Team roster taller than the
+ * other ten and leave the list visibly ragged.
+ *
+ * AND IT SPLITS INTO OFFENSE AND DEFENSE when the roster has both, which is the same split
+ * and the same order the share card gives the same twelve men. Neither heading is drawn for
+ * a roster that is all one side: "Offense" over six offensive players is a label on the only
+ * thing there is.
+ */
+function rdRoster(known){
+  const tight=known.length>6;
+  const D=E.DEFENSE_POSITIONS||['DL','LB','DB'];
+  const row=(m)=>{
+    const a=topAward(m.p);
+    const flex=m.slot&&m.p.position&&m.slot!==m.p.position;
+    const sub=m.p.season+' '+esc(E.nickname(m.p.franchise))
+      +(tight
+        ? (flex?' &middot; '+esc(m.slot):'')
+        : (m.p.stat_line?' &middot; '+esc(m.p.stat_line):''));
+    return '<div class="rrow">'+slotTag(m.slot,m.p.position,tight)+
+      '<span class="nm"><b>'+esc(m.p.name)+'</b><span>'+sub+'</span></span>'+
+      (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
+      '<span class="num"><b>'+m.p.fppg.toFixed(1)+'</b><span>'+M(m.p.price_musd)+
+      '</span></span></div>';
+  };
+  const cls='rost'+(tight?' tight':'');
+  const off=known.filter(m=>!D.includes(m.p.position));
+  const def=known.filter(m=>D.includes(m.p.position));
+  if(!off.length||!def.length)
+    return '<div class="'+cls+'" style="margin-top:12px">'+known.map(row).join('')+'</div>';
+  const group=(name,list)=>'<div class="rgrp">'+name+'</div>'+
+    '<div class="'+cls+'">'+list.map(row).join('')+'</div>';
+  return '<div style="margin-top:12px">'+group('Offense',off)+group('Defense',def)+'</div>';
+}
+
 /* Bumped on every open, so a late arriving defensive pool only redraws the sheet it was
    fetched for. */
 let rdToken=0;
@@ -26143,16 +26269,7 @@ function runDetail(row,back,onShare){
       (rdWho.anon?'':'<div class="rdwho">'+avatarHTML(rdWho,'huge')+
         (rdName?'<span class="rdnm">'+esc(rdName)+'</span>':'')+'</div>')+
     '</div>'+
-    (known.length?'<div class="rost" style="margin-top:12px">'+known.map(m=>{
-      const a=topAward(m.p);
-      return '<div class="rrow">'+slotTag(m.slot,m.p.position)+
-        '<span class="nm"><b>'+esc(m.p.name)+'</b><span>'+m.p.season+' '+
-          esc(E.nickname(m.p.franchise))+(m.p.stat_line?' &middot; '+esc(m.p.stat_line):'')+
-        '</span></span>'+
-        (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
-        '<span class="num"><b>'+m.p.fppg.toFixed(1)+'</b><span>'+M(m.p.price_musd)+
-        '</span></span></div>';
-    }).join('')+'</div>'
+    (known.length?rdRoster(known)
       :'<p class="dim" style="font-size:12.5px;margin:12px 0 0">This run\'s players are not '+
        'in the player data this browser has.</p>')+
     (missing&&known.length?'<p class="dim" style="font-size:11.5px;margin:7px 0 0">'+missing+
