@@ -2007,10 +2007,6 @@ async function main() {
 
         const N = 500;
         const out = {
-          /* discipline: a ball well off the plate */
-          chaseEasy:   sweep('easy',   1.9, 0, false, even, N).swing,
-          chaseMed:    sweep('medium', 1.9, 0, false, even, N).swing,
-          chaseHard:   sweep('hard',   1.9, 0, false, even, N).swing,
           /* and a strike down the middle, which no tier may duck */
           zoneEasy:    sweep('easy',   0, 0, true, even, N).swing,
           zoneHard:    sweep('hard',   0, 0, true, even, N).swing,
@@ -2019,6 +2015,37 @@ async function main() {
           patterned:   sweep('hard', 0, 0, true, oneNote, N),
           easyPattern: sweep('easy', 0, 0, true, oneNote, N),
         };
+
+        /* DISCIPLINE IS A PROPERTY OF THE GAME, NOT OF THE DRAW. This
+           section takes whatever opponent randomOpponent handed it, and
+           the chase gap is not the same on all of them: swingProb is
+           clamped to a 0.05 floor, and diff.chase is an offset on top of
+           the batter's CON and the batting TEAM's own patience. A patient
+           team pushes the base against that floor, the hard tier clamps,
+           and the gap compresses.
+
+           Measured over all seventeen, the gap runs 8.4 to 23.0 with a
+           mean of 16.8, and the smallest belongs to the most patient team
+           in the game. At 500 pitches the standard error on that gap is
+           about 1.8 points, so a threshold of 8 against that one team is a
+           COIN TOSS. It came up 6.8 and failed, on a build that had not
+           touched the dugout at all.
+
+           So the sweep walks every team style instead. currentBattingTeam
+           Style reads State.opponent live, so swapping it needs no restart
+           and the batter is held fixed, which isolates the term that
+           actually moves: patience spans 0.22 across the league where the
+           CON term spans about 0.05. */
+        const savedOpp = State.opponent;
+        out.byTeam = OPPONENTS.map((o) => {
+          State.opponent = o;
+          const M = 200;
+          return { name: o.name,
+                   easy: sweep('easy',   1.9, 0, false, even, M).swing,
+                   med:  sweep('medium', 1.9, 0, false, even, M).swing,
+                   hard: sweep('hard',   1.9, 0, false, even, M).swing };
+        });
+        State.opponent = savedOpp;
 
         window.setTimeout = realTimeout;
         window.resolveSwing = realResolve;
@@ -2069,15 +2096,29 @@ async function main() {
         out.saidTwice = /sitting on/i.test(saidAgain);
         return out;
       });
-      ok(r.chaseEasy > r.chaseMed && r.chaseMed > r.chaseHard,
-         'a harder dugout chases less',
-         `easy ${r.chaseEasy.toFixed(1)}, medium ${r.chaseMed.toFixed(1)}, hard ${r.chaseHard.toFixed(1)}`);
-      ok(r.chaseEasy - r.chaseHard > 8,
-         'and the gap is one a player would feel, not a rounding error',
-         `${(r.chaseEasy - r.chaseHard).toFixed(1)} points`);
-      ok(r.chaseHard > 3,
-         'a hard dugout is still a dugout: it does not stop swinging at balls entirely',
-         r.chaseHard.toFixed(1));
+      {
+        const teams = r.byTeam;
+        const gaps = teams.map(t => t.easy - t.hard);
+        const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+        const wrongWay = teams.filter(t => !(t.easy > t.med && t.med > t.hard));
+        /* ORDERING is asserted on every team, because it is meant to hold
+           on every team and it does. The SIZE of the gap is asserted on
+           the mean, because the clamp legitimately compresses it against
+           the most patient dugout in the league and demanding eight points
+           there is a coin toss rather than a rule. */
+        ok(wrongWay.length === 0,
+           'a harder dugout chases less, on every opponent',
+           wrongWay.map(t => `${t.name}: ${t.easy.toFixed(1)}/${t.med.toFixed(1)}/${t.hard.toFixed(1)}`)
+             .join(', ') || `${teams.length} teams`);
+        ok(avg(gaps) > 8,
+           'and the gap is one a player would feel, not a rounding error',
+           `mean ${avg(gaps).toFixed(1)} points over ${teams.length} teams,`
+           + ` low ${Math.min(...gaps).toFixed(1)}, high ${Math.max(...gaps).toFixed(1)}`);
+        ok(avg(teams.map(t => t.hard)) > 3 && teams.every(t => t.hard > 0),
+           'a hard dugout is still a dugout: it does not stop swinging at balls entirely',
+           `mean ${avg(teams.map(t => t.hard)).toFixed(1)},`
+           + ` quietest ${Math.min(...teams.map(t => t.hard)).toFixed(1)}`);
+      }
       ok(Math.abs(r.zoneEasy - r.zoneHard) < 8,
          'DISCIPLINE IS NOT SILENCE: a strike draws the same swings on every tier',
          `easy ${r.zoneEasy.toFixed(1)}, hard ${r.zoneHard.toFixed(1)}`);

@@ -1956,6 +1956,26 @@ renders perfectly and breaks nothing.
   24.8 / 11.6 across the tiers while the swing rate on a strike down the middle
   moves 73.8 to 76.0, which is noise. Discipline is not silence, and the guard
   asserts both halves.
+
+  **THE GAP IS NOT THE SAME ON EVERY OPPONENT, and the guard used to measure
+  whichever one it drew.** `swingProb` is clamped to a 0.05 floor, and `chase` is
+  an offset on top of the batter's CON and the batting TEAM's patience, so a
+  patient dugout pushes the base against that floor, the hard tier clamps, and
+  the gap compresses. Measured over all seventeen it runs **8.4 to 23.0, mean
+  16.8**, and the smallest belongs to the most patient team in the game (The Kids
+  Table, patience 0.14). At 500 pitches the standard error on that gap is about
+  1.8 points, so a threshold of 8 against that one team is a **coin toss**: it
+  came up 6.8 and failed the suite on a build that had not touched the dugout at
+  all. That is the magic seed lesson from the commish term fixture, in a
+  different coat.
+
+  So the sweep walks **every team style** now. `currentBattingTeamStyle()` reads
+  `State.opponent` live, so swapping it needs no restart, and the batter is held
+  fixed to isolate the term that actually moves: patience spans 0.22 across the
+  league where the CON term spans about 0.05. **Ordering is asserted on every
+  team** (it holds 17 of 17) and the **SIZE of the gap on the mean**, because the
+  clamp legitimately compresses it against the most patient dugout and demanding
+  eight points there is a coin toss rather than a rule.
 - **`read` is memory.** `patternRead` keeps a ROLLING window of the last 20
   pitches the player CALLED and answers how hard the bat is sitting on this
   one. An arm nobody steers writes nothing, because there is no pattern in a
