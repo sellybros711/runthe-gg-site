@@ -21043,12 +21043,54 @@ const CARD={
   REC:360, VERDICT:422,       // the record, and how the season ended
   RULE1:466,
   ROWS:528, ROW:94,           // six players, last baseline 998
+  /* TWELVE PLAYERS IN THE SAME BAND, in two columns of six rather than one of twelve.
+     See cardRosterLayout for why, and for the arithmetic that says one column cannot. */
+  COL_GUT:40, COLHEAD:502,
+  ROWS2:548, ROW2:88,         // twelve players, two columns, last baseline 988
+  META2:30,                   // and its year and city one line under the name
   RULE2:1054,
   STAT:1142, STAT_LABEL:1184, // team rating, chemistry, spend
   DARE:1250,                  // the invitation
   LINK_T:1274, LINK_H:60,     // and where to accept it, as a pill
   KEEL:10,
 };
+
+/*
+ * ─── HOW MANY MEN FIT, AND IN HOW MANY COLUMNS ───────────────────────────────────────
+ *
+ * THE CARD WAS BUILT FOR SIX AND FULL TEAM DRAFTS TWELVE. Every number above between RULE1
+ * and RULE2 was written as a constant for a six man roster, so a Full Team card ran its
+ * seventh row through the closing rule and the next five through the team rating, the
+ * chemistry, the spend, the dare and the link. Reported by a player, with a screenshot of a
+ * card whose roster and whose footer were printed on top of each other.
+ *
+ * ONE COLUMN OF TWELVE IS NOT THE ANSWER, and the arithmetic is the reason rather than
+ * taste. The band from the first baseline to RULE2 is 526px. Twelve rows in it is 44px a
+ * row, against a 52px position chip and a 50px name, so everything in the block has to come
+ * down by more than half and the card's biggest text after the record ends up smaller than
+ * its own footnotes.
+ *
+ * SO IT IS TWO COLUMNS OF SIX, which keeps the row height and the type where they were and
+ * costs width instead, and width is what this roster has spare: a name column of 444 still
+ * holds "Muhammad Wilkerson" at 40px. The year and the city move UNDER the name, because
+ * half a card cannot hold both on one line and the name is the half worth the room.
+ *
+ * AND THE SPLIT IS BY SIDE OF THE BALL, never by halving the list. FULL_SLOTS interleaves
+ * (QB, DL, RB, DL, ...) so the first six slots are three offensive men and three defensive
+ * ones, and a straight halving would print two columns that each look like a mistake.
+ * fullSlotIsDefensive is the same reader the draft screen's own glow uses.
+ *
+ * SIX IS UNTOUCHED. Every other mode on this page drafts six, this returns exactly what it
+ * always did for them, and a card that has been shared for a year does not move by a pixel.
+ */
+function cardRosterLayout(n){
+  if(n<=6) return {cols:1,per:n,top:CARD.ROWS,row:CARD.ROW,deep:CARD.ROWS+(n-1)*CARD.ROW};
+  const per=Math.ceil(n/2);
+  return {cols:2,per,top:CARD.ROWS2,row:CARD.ROW2,
+    /* The deepest ink the block puts on the card, which is the stacked meta line under the
+       last name rather than the last name itself. That is the number RULE2 has to clear. */
+    deep:CARD.ROWS2+(per-1)*CARD.ROW2+CARD.META2};
+}
 
 function drawShareCard(){
   const c=document.createElement('canvas');
@@ -21137,8 +21179,14 @@ function drawShareCard(){
   /* THE MODE HAS TO NAME ITSELF HERE, because this card is read by people who have not
      played and a defensive roster under "Classic Mode" is a card that explains nothing. The
      Trade Machine was in the same position: it fell through to the classic line, which
-     describes six spins it never took. */
-  centered(run.defense
+     describes six spins it never took.
+     AND THEN FULL TEAM DID IT A THIRD TIME. A twelve man roster went out under a sentence
+     promising six spins and one roster, next to a card that printed twelve names. Every
+     mode added since this line was written has had to be added to it, which is the whole
+     reason the comment above says so. */
+  centered(run.full
+    ? 'Full Team. Twelve spins, six on offense and six on defense.'
+    : run.defense
     ? 'Defense. Six spins, six defenders, one shot at 20-0.'
     : run.tradeMachine
     ? 'The Trade Machine. A roster you inherited and a season to fix it.'
@@ -21217,8 +21265,8 @@ function drawShareCard(){
 
   x.fillStyle=at(tc.ink,.34); x.fillRect(PAD,CARD.RULE1,CARD.W-PAD*2,2);
 
-  /* The six players. Position chip, name, then the year and city on the right, so
-     the eye can run down either column on its own. */
+  /* The roster. Position chip, name, then the year and city: to the right of the name on a
+     six man card, under it on a twelve man one. See cardRosterLayout. */
   /* THE SLOTS OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a defensive
      card printed six defenders under QB RB WR WR TE FLEX, and a Trade Machine card printed
      its two flexes as a second receiver. This is the one artefact that leaves the site, so
@@ -21231,47 +21279,87 @@ function drawShareCard(){
      drawing last month's colors. Since the palette gained DL, LB and DB the chips on a
      defensive card take those without this needing to know the mode. */
   const COLS=posColors();
-  let y=CARD.ROWS;
-  const ROW=CARD.ROW;
-  cardSlots.forEach((slot,i)=>{
-    const p=bySlot[i]; if(!p) return;
-    // chip
+  /* THE MEN, WITH THE SLOT THEY FILLED AND THE INDEX THEY FILLED IT AT. The index is what
+     tells the two sides apart on a Full Team card, so it has to survive the filter. */
+  const men=cardSlots.map((slot,i)=>({slot,p:bySlot[i],i})).filter((e)=>e.p);
+  const LAY=cardRosterLayout(men.length);
+
+  /* ONE ROW, drawn wide or stacked. One function because the two shapes differ in the size
+     of three things and in where the year and city go, and everything else about a row is
+     the same in both: two copies of it is two places for the palette, the slot tag or the
+     club ink to drift. */
+  const cardRow=(e,cx,colw,y,stacked)=>{
+    const p=e.p;
     /* Same rule as every roster in the game: the chip says which SLOT it is, so the sixth row
        reads FLEX, and it is colored by the PLAYER'S position, so a flex filled by a back is
        green. The card used to print the player's position on both counts, which made the flex
        spot invisible on the one artefact that gets shared. */
-    const cw=88,ch=52;
-    const tag=slot||p.position;
+    const cw=stacked?72:88, ch=stacked?46:52;
+    const tag=e.slot||p.position;
     x.fillStyle=COLS[p.position]||'#64748b';
-    roundRect(x,PAD,y-38,cw,ch,12); x.fill();
-    N('700',26); x.fillStyle='#ffffff';
-    x.fillText(tag,PAD+cw/2-x.measureText(tag).width/2,y-2);
-    // name, shrunk only if it would collide with the right column
-    const right=CARD.W-PAD;
-    N('500',24);
+    roundRect(x,cx,y-(stacked?34:38),cw,ch,stacked?10:12); x.fill();
+    N('700',stacked?22:26); x.fillStyle='#ffffff';
+    x.fillText(tag,cx+cw/2-x.measureText(tag).width/2,y-(stacked?4:2));
+    const textL=cx+cw+(stacked?18:22);
     /* THE YEAR AND CITY IN THAT PLAYER'S OWN CLUB COLOR, which is the whole reason
        teamInk exists: it takes the club's primary and lifts its lightness until it clears
        4.5:1 on a near-black ground, so the fourteen clubs whose primary is itself nearly
        black get a legible lifted variant rather than an invisible one. Checked against the
        worst case on this card -- a row sitting under the club's own wash at full strength --
        and all thirty-two clear 3.8:1 or better, so no row needs a hand-picked exception. */
-    x.fillStyle=E.teamInk(p.franchise);
-    /* The city and not the nickname, on every row, in both modes. This is a graphic that
+    /* The city and not the nickname, on every row, in every mode. This is a graphic that
        gets posted somewhere we do not control, so no mascot name appears on it at all. */
     const meta=p.season+' '+E.city(p.franchise);
-    const mw=x.measureText(meta).width;
-    x.fillText(meta,right-mw,y-4);
     /* The name face, at 700, which is a real cut of Big Shoulders Display rather than a
        faked one. It is narrower than Anton at the same size, so it starts a little larger
        and still fits more names without shrinking. */
-    let size=50;
-    P('700',size);
-    const room=right-mw-28-(PAD+cw+22);
+    if(stacked){
+      let size=40; P('700',size);
+      const room=colw-(textL-cx);
+      while(x.measureText(p.name).width>room&&size>24){ size-=2; P('700',size); }
+      x.fillStyle='#ffffff';
+      x.fillText(p.name,textL,y+2);
+      N('500',20); x.fillStyle=E.teamInk(p.franchise);
+      x.fillText(meta,textL,y+CARD.META2);
+      return;
+    }
+    const right=cx+colw;
+    N('500',24); x.fillStyle=E.teamInk(p.franchise);
+    const mw=x.measureText(meta).width;
+    x.fillText(meta,right-mw,y-4);
+    let size=50; P('700',size);
+    const room=right-mw-28-textL;
     while(x.measureText(p.name).width>room&&size>28){ size-=2; P('700',size); }
     x.fillStyle='#ffffff';
-    x.fillText(p.name,PAD+cw+22,y+2);
-    y+=ROW;
-  });
+    x.fillText(p.name,textL,y+2);
+  };
+
+  if(LAY.cols===1){
+    let y=LAY.top;
+    men.forEach((e)=>{ cardRow(e,PAD,CARD.W-PAD*2,y,false); y+=LAY.row; });
+  }else{
+    const colw=(CARD.W-PAD*2-CARD.COL_GUT)/2;
+    /* SPLIT BY SIDE OF THE BALL, never by halving the list: FULL_SLOTS interleaves, so the
+       first six entries are three offensive men and three defensive ones. A run that is not
+       Full Team cannot get here today, and if one ever does the halves are at least even. */
+    const sides=run.full
+      ? [men.filter((e)=>!fullSlotIsDefensive(e.i)),men.filter((e)=>fullSlotIsDefensive(e.i))]
+      : [men.slice(0,LAY.per),men.slice(LAY.per)];
+    /* NAMED, because two columns of six with no heading is a card that has simply been cut
+       in half. The whole claim of this mode is that you drafted both sides. */
+    if(run.full){
+      N('600',22); x.letterSpacing='4px'; x.fillStyle='rgba(255,255,255,.45)';
+      ['OFFENSE','DEFENSE'].forEach((h,ci)=>{
+        x.fillText(h,PAD+ci*(colw+CARD.COL_GUT),CARD.COLHEAD);
+      });
+      x.letterSpacing='0px';
+    }
+    sides.forEach((col,ci)=>{
+      const cx=PAD+ci*(colw+CARD.COL_GUT);
+      let y=LAY.top;
+      col.forEach((e)=>{ cardRow(e,cx,colw,y,true); y+=LAY.row; });
+    });
+  }
 
   x.fillStyle=at(tc.ink,.34); x.fillRect(PAD,CARD.RULE2,CARD.W-PAD*2,2);
 

@@ -1697,6 +1697,49 @@ through that. A touchdown is worth six plus whatever is decided after it, so the
 that the dropped ones finish at exactly six. Read at the event, deterministic, and nothing
 downstream can touch it.
 
+#### The share card was built for six and Full Team drafts twelve
+
+Every y on `drawShareCard`'s canvas between the two rules was a constant written for a six
+man roster. So a Full Team card printed its seventh row THROUGH the closing rule and the next
+five on top of the team rating, the chemistry, the spend, the dare and the link, all at once.
+The card still rendered, still saved and still shared. Reported by a player with a screenshot.
+
+**One column of twelve is not the answer, and the arithmetic is the reason rather than
+taste.** The band from the first baseline to the closing rule is 526px. Twelve rows in it is
+44px a row against a 52px position chip and a 50px name, so everything in the block has to
+come down by more than half and the card's biggest text after the record ends up smaller than
+its own footnotes.
+
+**So it is two columns of six**, which keeps the row height and the type where they were and
+spends width instead, and width is what this roster has spare. The year and the city move
+UNDER the name, because half a card cannot hold both on one line and the name is the half
+worth the room. **The split is by side of the ball**, never by halving the list: `FULL_SLOTS`
+interleaves, so the first six slots are three offensive men and three defensive ones and a
+straight halving gives two columns that each look like a mistake.
+
+**Six is untouched, and that is asserted from the other end**: the six man card was rendered
+before and after and came back BYTE IDENTICAL. `cardRosterLayout` returns exactly what the
+old constants did for anything up to six.
+
+**And the tagline fell through to "Classic Mode. Six spins, one roster" for the third time.**
+The comment above that line already records the defense card and the Trade Machine card doing
+the same thing. Every mode added since it was written has had to be added to it.
+
+**THE GUARD READS THE CANVAS, and its first draft passed on the exact defect it was written
+for.** Checking that the layout function's numbers add up only asks whether the code agrees
+with itself, so the check samples pixels: the clearance between the closing rule and the
+footer's first line has to be empty. The first version sampled a 20px stripe ABOVE the rule,
+and rows are 94 apart with caps about 36 tall, so most of the pitch is gap: the stripe landed
+between the sixth row and the seventh and read zero on a card whose seventh row was printed
+straight through the footer. **A thin sample of a sparse column is a coin toss on where the
+sample lands.** The band is the whole clearance now, and reintroducing the one column layout
+puts 4,754 lit pixels in it.
+
+**Measuring type in this harness measures the FALLBACK face**, which is the note two sections
+up arriving again, and here it is the safe direction: Google Fonts does not resolve in the
+sandbox, so names are set about a third wider than the condensed display face a real visitor
+gets. A card that fits here fits on a phone with room spare.
+
 ### A dynasty screen says which season it is, and `seasonTag()` is why
 
 A dynasty is the one mode on this page where the same screen comes round again, so

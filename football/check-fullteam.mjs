@@ -104,6 +104,8 @@ const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,fullPickIsDefens
   /* THE ONE THING A FINISHED GAME MUST NOT BE, which is mid-decision. See the section on a
      call that hands back another call. */
   + 'bossPending:()=>!!(bossSim&&bossSim.pending),'
+  /* The share card, and the geometry it lays its roster out on. */
+  + 'drawShareCard,CARD:()=>CARD,cardRosterLayout,'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 
 /* NO TESTER VIEW ANY MORE. This used to take { tester } and rewrite LIVE = false to true
@@ -1025,6 +1027,101 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
     ok('a coached team plays forward too', false,
       coached ? 'hired ' + coached.hired + ', seeded ' + coached.seeded : 'no seed to replay');
   }
+  /* ================================================================
+     THE SHARE CARD HOLDS TWELVE MEN
+
+     THE BUG IT WAS WRITTEN FOR, reported by a player with a screenshot. Every y on the card
+     between the two rules was a constant written for a SIX man roster, and Full Team drafts
+     twelve. So the seventh row ran through the closing rule and the next five printed on top
+     of the team rating, the chemistry, the spend, the dare and the link, all at once. The
+     card still rendered, still saved and still shared: nothing threw, and nothing could.
+
+     ASSERTED IN PIXELS, not in the arithmetic. Checking that the layout function's own
+     numbers add up would only ask whether the code I just wrote agrees with itself. What a
+     reader sees is ink where there should be none, so the check reads the canvas: the band
+     immediately above the closing rule has to be empty on a card that fits, and a name at
+     40px lands hundreds of bright pixels in it on a card that does not.
+
+     THE FALLBACK FACE MAKES THIS THE SAFE DIRECTION. Google Fonts does not resolve here, so
+     the names are set in a generic sans about a third wider than the condensed display face
+     a real visitor gets. A card that fits in this harness fits on a phone with room spare.
+     ================================================================ */
+  console.log('\nTHE SHARE CARD HOLDS TWELVE MEN');
+  {
+    const c = await s.page.evaluate(() => {
+      const T = window.__t, CARD = T.CARD();
+      const run = window.__draft(4);
+      if (!run) return { err: 'no roster' };
+      /* The card reads run.outcome and the season, so the run has to be finished. Its record
+         does not matter; what is on trial is where twelve rows land. */
+      try { T.R.hireCoach(run, null); T.R.finishHiring(run); } catch (e) {}
+      try { T.R.startSeason(run, T.dataNow(), T.CTX()); } catch (e) { return { err: 'start' }; }
+      for (let i = 0; i < 40 && run.phase !== 'over'; i++) {
+        try {
+          if (run.phase === 'seeding') { T.R.startPlayoffs(run); continue; }
+          T.R.advanceWeek(run, T.dataNow(), T.LEAGUE(), T.CAL());
+        } catch (e) { break; }
+      }
+      if (run.phase !== 'over') return { err: 'phase ' + run.phase };
+      const cv = T.drawShareCard();
+      const g = cv.getContext('2d');
+      /*
+       * THE BAND BETWEEN THE CLOSING RULE AND THE FOOTER'S FIRST LINE, which is the only
+       * strip of this card that is empty by construction: the last roster line ends above
+       * the rule and the team rating's ascenders start below it.
+       *
+       * THE FIRST DRAFT SAMPLED TWENTY PIXELS ABOVE THE RULE AND PASSED ON THE DEFECT IT
+       * WAS WRITTEN FOR. Rows are 94 apart and a name's caps are about 36 tall, so most of
+       * the pitch is gap; that stripe fell between the sixth row and the seventh and read
+       * zero on a card whose seventh row was printed straight through the footer. A thin
+       * sample of a sparse column is a coin toss on where the sample lands.
+       *
+       * So the band is the WHOLE clearance, and it is the strip a seventh row lands in.
+       * The rule itself is drawn in the club ink at .34 over near-black, which is nowhere
+       * near white, so it does not count itself.
+       */
+      const top = CARD.RULE2 + 4, h = (CARD.STAT - 52) - top;
+      const d = g.getImageData(CARD.PAD, top, CARD.W - CARD.PAD * 2, h).data;
+      let bright = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 200 && d[i + 1] > 200 && d[i + 2] > 200) bright++;
+      }
+      /* AND THE CARD IS NOT BLANK, which is the other half: a draw that threw early would
+         leave an empty canvas that passes the test above for the wrong reason. */
+      const mid = g.getImageData(CARD.PAD, CARD.ROWS2 - 20, CARD.W - CARD.PAD * 2, 40).data;
+      let rows = 0;
+      for (let i = 0; i < mid.length; i += 4) {
+        if (mid[i] > 200 && mid[i + 1] > 200 && mid[i + 2] > 200) rows++;
+      }
+      return { bright, rows, men: run.roster.length, rule2: CARD.RULE2,
+        lay: T.cardRosterLayout(run.roster.length), six: T.cardRosterLayout(6) };
+    });
+    if (c.err) {
+      ok('a twelve man card was drawn', false, c.err);
+    } else {
+      ok('a twelve man card was drawn', c.men === 12 && c.rows > 0,
+        c.men + ' men, ' + c.rows + ' lit pixels on the first row');
+      /* THE CLAIM, IN INK. Nothing of the roster is printed past the rule the footer sits
+         under. This and the arithmetic assertion below are two halves: the arithmetic
+         catches an overflow of any size, and this proves the arithmetic is describing what
+         is actually painted. */
+      ok('  and nothing of it is printed past the closing rule', c.bright === 0,
+        c.bright + ' lit pixels in the clearance under it');
+      /* TWO COLUMNS RATHER THAN ONE, which is the shape the arithmetic forced: twelve rows
+         in this band would be 44px each against a 52px chip. */
+      ok('  laid out in two columns of six', c.lay.cols === 2 && c.lay.per === 6,
+        c.lay.cols + ' x ' + c.lay.per);
+      /* AND THE DEEPEST INK CLEARS THE RULE BY ITSELF, stated as the layout's own promise so
+         a future roster size is refused here rather than on somebody's phone. */
+      ok('  whose deepest row clears it', c.lay.deep < c.rule2,
+        c.lay.deep + ' against a rule at ' + c.rule2);
+      /* SIX IS UNTOUCHED. A rewrite that fixed twelve by moving six would have moved a card
+         that has been shared for a year. */
+      ok('  while six is still one column where it was', c.six.cols === 1
+        && c.six.top === 528 && c.six.row === 94, JSON.stringify(c.six));
+    }
+  }
+
   ok('  nothing threw', !s.boom.length, s.boom.join(' | ') || 'no errors');
   await s.page.close();
 }
