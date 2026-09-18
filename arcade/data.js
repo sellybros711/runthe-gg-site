@@ -14,6 +14,54 @@
   'use strict';
   var ENT = root.GRID_ENTITIES;
   if (!ENT || typeof ENT.push !== 'function') return;
+
+  /* TWO PEOPLE CAN SHARE A NAME, AND name|sport IS NOT A PERSON.
+   *
+   * Both folds below key on name + sport, so the Browns' Hall of Fame tackle
+   * and a linebacker who played for four clubs in the 2010s were one record,
+   * and the tackle was handed the linebacker's college. Alma Mater then asked
+   * where Joe Thomas went to college and marked Wisconsin wrong. A player
+   * wrote in about it.
+   *
+   * Sixteen pairs in the corpus share a name and a sport with no club in
+   * common. Nine are genuinely two people. The other seven are ONE person
+   * whose clubs are written two ways: Cleveland Indians against Cleveland
+   * Guardians, Brooklyn against Los Angeles Dodgers, the Washington Senators
+   * against the Minnesota Twins, plus the Negro Leaguers whose curated entry
+   * carries no club at all. So a shared club proves sameness and a missing one
+   * proves nothing, which is why this is not a rename list: that would be three
+   * sports of franchise history to maintain before it could answer.
+   *
+   * What separates the nine is that every one plays a DIFFERENT POSITION.
+   * Tackle against linebacker, quarterback against cornerback, first baseman
+   * against outfielder. The seven renames all match on position, and usually on
+   * the number too.
+   *
+   * Hence: the same person unless the clubs, the numbers AND the position all
+   * disagree. Deliberately permissive, because the costs are not symmetric. A
+   * wrongly blocked backfill loses one player a college and drops them from a
+   * pool. A wrongly allowed one tells somebody a false thing about a real
+   * person, and marks their right answer wrong.
+   *
+   * It costs one known false negative. Ronnie Lott really did finish at Kansas
+   * City and really did play both corner and safety, so his former row is
+   * refused. He is carried by stars.js, so nothing about him moves.
+   */
+  function shares(a, b) {
+    a = a || []; b = b || [];
+    for (var i = 0; i < a.length; i++) if (b.indexOf(a[i]) !== -1) return true;
+    return false;
+  }
+  function posOf(x) { return String((x && x.pos) || '').trim().toLowerCase(); }
+  function samePerson(a, b) {
+    if (!a || !b) return false;
+    if (shares(a.t, b.t)) return true;
+    if (shares(a.j, b.j)) return true;
+    var ap = posOf(a), bp = posOf(b);
+    if (!ap || !bp) return true;   // nothing recorded to disagree with
+    return ap === bp;
+  }
+
   var F = root.RTG_FORMER;
   if (F && F.players && F.players.length){
     // Fields where former.js's auto-scrape is authoritative when the curated
@@ -27,12 +75,18 @@
     ENT.forEach(function (e) {
       if (e && e.name && e.sport) byKey[e.name + '|' + e.sport] = e;
     });
-    var added = 0, enriched = 0;
+    var added = 0, enriched = 0, clashes = 0;
     F.players.forEach(function (p) {
       if (!p || !p.name || !p.sport) return;
       var k = p.name + '|' + p.sport;
       var cur = byKey[k];
       if (cur){
+        /* A namesake is skipped rather than added. Two entities sharing a
+           name and a sport would break every byKey lookup downstream, and the
+           curated entry is the one every game already points at. So the
+           second person stays out, exactly as before, and the only change is
+           that he no longer lends his college to the first. */
+        if (!samePerson(cur, p)) { clashes++; return; }
         // Curated entry wins on identity, but backfill the enrichment fields
         // it lacks so gates that key on col / ns / hp all light up.
         var touched = false;
@@ -51,6 +105,7 @@
     });
     F.merged = added;
     F.enriched = enriched;
+    F.clashes = clashes;   // namesakes refused, see samePerson above
   }
 
   /* ------------------------------------------------------------------
@@ -64,12 +119,16 @@
     var ENRICH2 = ['col','hs','hp','ns','dp','pos','decade'];
     var byKey2 = {};
     ENT.forEach(function(e){ if (e && e.name && e.sport) byKey2[e.name + '|' + e.sport] = e; });
-    var supAdded = 0, supEnriched = 0;
+    var supAdded = 0, supEnriched = 0, supClashes = 0;
     SUP.players.forEach(function (p) {
       if (!p || !p.name || !p.sport) return;
       var k = p.name + '|' + p.sport;
       var cur = byKey2[k];
       if (cur){
+        /* Same guard as the fold above, and it matters more here: this one
+           UNIONS the team list, so a namesake would not just lend a college,
+           he would add his clubs to somebody else's career. */
+        if (!samePerson(cur, p)) { supClashes++; return; }
         var touched2 = false;
         ENRICH2.forEach(function(f){
           if ((cur[f] === undefined || cur[f] === null || cur[f] === '') && p[f] !== undefined && p[f] !== null && p[f] !== ''){
@@ -91,6 +150,7 @@
     });
     SUP.added = supAdded;
     SUP.enriched = supEnriched;
+    SUP.clashes = supClashes;
   }
 
   /* ------------------------------------------------------------------
