@@ -2551,6 +2551,124 @@ the strategies a player would use, never loosening a threshold to suit a bot.
 the constants: it states what the balance is supposed to look like and flags what
 is outside its band.
 
+### Three doors, and one of them was already built
+
+| | the wheel | what it is |
+|---|---|---|
+| the league | season and club both spin | the game |
+| One Franchise | the club is held, the year spins | a history exam about one club |
+| Decades | both spin inside one era | six men who could have met on the floor |
+
+**Decades needed no engine work at all, and that is the lesson.** `ERAS` has been
+in `engine.js` and the era filter has been in `drawable()` since the day `run.js`
+was written, and nothing on the page could ever set one. A whole mode, shipped,
+exercised by the fixtures, unreachable. Same shape as the football game's Dynasty
+leaderboard that rendered perfectly and had no way in: **look for the door before
+building the room.**
+
+**A LOCK OF ANY KIND HAS TO REACH THE RESERVE FLOOR.** `cheapestForSlot` reads the
+200 cheapest men per position across all 16,057 rows, and in a restricted run not
+one of them may be drawable. Left alone the floor promises a $2.2M centre off a
+club this run can never spin, the budget reads bigger than it is, and the draft
+strands itself at the last slot with no legal player at any price. **Nothing
+throws**: `sign()` refuses and the player is left on a board of greyed names. One
+filter answers both locks (`lockedPool`), so neither can be the one somebody
+forgets.
+
+What that turned up is worth not re-deriving:
+
+- **The club lock moves the floor and the era lock does not.** 36 of 180 club
+  readings differ from the league's; **0 of 36 era readings do**, because a decade
+  holds 1,252 to 3,696 rows and 34 to 121 men priced at the minimum, at every
+  position, so the six cheapest legal bodies cost the same 6 x $2.0M either way.
+  `verify.mjs` asserts the zero rather than a difference that is not there.
+- **It stops being defensive the moment the two COMPOSE.** The Lakers in the
+  eighties floor at $19.9M against the league's $12.0M.
+- The club sweep also asserts the locked floor is never UNDER the league's, and
+  that the two pools actually come apart. A sweep that only asserted thirty drafts
+  finish would pass on the unlocked floor and report green on the exact defect it
+  was written for. Same lesson as `check-fullteam`'s replaced reading.
+
+**One Franchise kills chemistry as a decision and that is accepted, not missed.**
+Everybody on a locked roster shares the club, so the franchise link fires on every
+pair and the bonus sits at **+2.30 of a possible +2.50** whatever gets drafted,
+measured over 360 runs across all thirty clubs. Best-available finishes **46.8
+wins against 42.0** off the whole league. Decades does not have this: chemistry
+there runs +0.67 to +1.13 and still has to be gone looking for. The how-to says so
+on the page rather than leaving somebody to wonder why their Celtics team rates
+high.
+
+**So every mode keeps its own best.** `c.byClub` and `c.byEra`, never mixed into
+`bestWins`. The spread between decades is bigger than the One Franchise gap:
+best-available takes the seventies to 49.6 wins and the aughts to 40.7, which is
+nine wins between two modes wearing the same word, and one shared record would
+retire the league best to whoever picked the shallowest priced era.
+
+**The span in the constant is not the span in the file.** `ERAS.seventies` is
+`[1970, 1979]` and the data starts in 1974. `R.eraSeasons` reads the same list
+`drawable()` filters, which is the only honest span; the same rule put
+`R.clubSeasons` behind the club picker rather than the founding year, which would
+have promised twenty-eight seasons of Celtics that do not exist.
+
+**`E.team()` cannot be an existence check and one was written against it.** Its
+last fallback returns `{ name: code }`, so `team('NOPE').name` is the truthy
+string `'NOPE'` and the guard passed for every string there is. An unknown club
+would have silently emptied the wheel. `hasTeam()` is the gate.
+
+### The draft board lost 1,289px on every spin
+
+Measured at 390x844 and 360x740. `drawInto` emptied `#tabs` and `#opts` before the
+reels started, so the page collapsed to the height of a reel and grew back a beat
+later: **the court under the board jumped 1,554px up the screen and back down, six
+times a run** plus every re-spin. Nothing threw and no check in the repo could see
+it. It was most of what "the draft does not feel clean" was.
+
+**The height is a property of the board and the board is already decided.**
+`run.js` resolves the draw before a single frame animates, so the real tiles go up
+at once and the page settles before anything moves. What is held back is the
+READING of them, which is what the reel is for: `visibility:hidden` over a shimmer,
+because it is the one that keeps the layout box exactly. A skeleton of fixed-height
+placeholders was tried first and **cannot** be exact, since a tile with an award row
+is 26px taller than one without. Court movement is 84px now, and what is left is
+the honest difference between two boards.
+
+Three things that were repeating the answer rather than adding to it, all found by
+reading one screen at 390px:
+
+- **"2011 Spurs" on every tile.** A board is one team-season, so that line said the
+  same words as the two reels directly above it, once per player. What is there
+  instead is the chemistry a signing would ADD, named rather than counted.
+- **The club note under the reels, under a lock.** `teamNote` is the same founding
+  year and title list six picks running. In a locked run what changes is the
+  SEASON, so what is said is whether they won it.
+- **"SIGNABLE" alone over ten signable players.** A divider only earns its line when
+  there is something on the other side of it.
+
+### It did not say what it was
+
+Driven beside The Perfect Season at 390px, the difference on a first visit is not a
+feature: the NFL game opens with a card headed FIRST TIME HERE, three numbered
+steps, a stated goal and an arrow reading START HERE. This one opened with a wheel.
+It has the same guide now, once per browser, on the front page only.
+
+**It points at the button and leaves it live.** The scrim stops at the top of the
+dock, so the way out of the guide is the thing the guide is telling you to do.
+Anchored to the dock rather than measured against the page, because `--dock` is
+already measured on every render and the target is pinned.
+
+Two defects the harness caught that looking would not have:
+
+- `inset:0` covers the dock whatever the scrim does, so with pointer events on the
+  wrapper **the Start button was not the element at its own centre**. A screenshot
+  shows an arrow over a button and nothing wrong; `elementFromPoint` says otherwise.
+- Centred at `62vh`, the panel's own text scrolled inside itself at both widths. **A
+  guide whose explanation is below its own fold is worse than a terser one.**
+
+**Every number in it is read out of the constants and the data.** The cap has been
+swept twice in this game's short life. The first draft of step two said a star costs
+half the cap, which is false: the top price in 16,057 rows is Bob McAdoo's 1975 at
+**$60.0M against $126M**, and nobody is over half. It prints the real dearest man.
+
 **Two targets are out of band today and no constant will fix them.** The four
 numbers that turn win shares into a record are now FITTED to twenty-two real NBA
 records (rms 3.5 wins), so a roster is worth what it was worth in life: rating
