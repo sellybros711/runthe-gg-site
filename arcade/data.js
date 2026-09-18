@@ -274,15 +274,35 @@
    * so the contract is: READ e.pt, FALL BACK TO e.t[0]. Never e.t last.
    * The fallback is right 62% where it is used, against 15%.
    * ---------------------------------------------------------------- */
+  /* AND IT HAS TO BE A CLUB THIS RECORD ALREADY HAS.
+   *
+   * primary.js is addressed by name, so it inherits every way a name can be
+   * two people, and it is built off jersey stints that begin in 1990, so a
+   * career older than the record comes back truncated. Both fail the same way:
+   * a club the player never had, printed under his name as though counted.
+   * Jimmy Smith the Jaguars receiver was captioned Baltimore Ravens, which is
+   * the Ravens cornerback of the same name; Bobby Bonilla came back St. Louis
+   * Cardinals, where he spent one season, because the six Pittsburgh years
+   * that make him a Pirate are mostly older than the file.
+   *
+   * Neither is detectable inside primary.js, and neither has to be. The entity
+   * already carries the clubs it played for, so a `pt` that is not one of them
+   * is not an answer about this person, whatever went wrong upstream. Dropping
+   * it costs nothing: the documented contract above is read e.pt, fall back to
+   * e.t[0], and the first club is always a true thing to say.
+   */
   var PR = root.RTG_PRIMARY;
   if (PR && PR.of) {
-    var ptHit = 0;
+    var ptHit = 0, ptOdd = 0;
     ENT.forEach(function (e) {
       if (!e || !e.name || !e.sport || e.pt) return;
       var t = PR.of(e.sport, e.name);
-      if (t) { e.pt = t; ptHit++; }
+      if (!t) return;
+      if (Array.isArray(e.t) && e.t.length && e.t.indexOf(t) === -1) { ptOdd++; return; }
+      e.pt = t; ptHit++;
     });
     PR.matched = ptHit;
+    PR.refused = ptOdd;
   }
 
   /* ------------------------------------------------------------------

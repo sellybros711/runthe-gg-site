@@ -26,7 +26,7 @@ box.self = box; box.window = box; box.globalThis = box;
 createContext(box);
 /* The order a game page loads them in. entities.js first, data.js last. */
 for (const f of ['arcade/match/entities.js', 'arcade/former.js', 'arcade/stars.js',
-                 'arcade/awards.js', 'arcade/supplement.js', 'arcade/primary.js', 'arcade/data.js']) {
+                 'arcade/awards.js', 'arcade/supplement.js', 'arcade/primary.js', 'arcade/data.js', 'arcade/jerseys.js']) {
   runInContext(readFileSync(f, 'utf8'), box, { filename: f });
 }
 const ENT = box.GRID_ENTITIES || [];
@@ -153,6 +153,73 @@ console.log('\n3) the five the guard stranded are back, and right');
     else n++;
   }
   if (n === Object.keys(WANT).length) ok('all ' + n + ' carry their own school');
+}
+
+console.log('\n4) the club printed under a name is one that name played for');
+{
+  /* `pt` is the club a player is OF, and it is printed on the Alma Mater card
+     and in fact.js as "Longest stay". primary.js is addressed by name, so it
+     inherits every namesake; it is counted off jersey stints that begin in
+     1990, so an older career comes back truncated. Both end the same way, as a
+     club this player never had.
+     The record already knows his clubs, so a pt outside them is not an answer
+     about him whatever went wrong upstream. data.js drops it, and the
+     documented fallback (the first club) is always a true thing to say. */
+  const off = ENT.filter((e) => e && e.pt && Array.isArray(e.t) && e.t.length && e.t.indexOf(e.pt) === -1);
+  if (off.length) off.slice(0, 8).forEach((e) => fail(e.name + ' (' + e.sport + ') is captioned ' + e.pt + ', which is not among ' + JSON.stringify(e.t)));
+  else ok(ENT.filter((e) => e && e.pt).length + ' captions, every one a club that player has');
+
+  /* The three names the fix was measured on. Randy Johnson is the example
+     build-primary.mjs's own header uses for what its floor cut prevents, and
+     the floor never saw him: his Seattle decade is not truncated in the stints,
+     it is absent, so he looked like a man who debuted in Arizona in 1999. */
+  for (const [n, s, wrong] of [['Randy Johnson', 'MLB', 'Arizona Diamondbacks'],
+                               ['Rickey Henderson', 'MLB', 'New York Mets'],
+                               ['Roger Clemens', 'MLB', 'New York Yankees']]) {
+    const e = byKey[n + '|' + s];
+    if (!e) { fail(n + ' has fallen out of the corpus'); continue; }
+    const cap = e.pt || (Array.isArray(e.t) && e.t.length ? e.t[0] : null);
+    if (cap === wrong) fail(n + ' is captioned ' + wrong + ' again');
+    else ok(n + ': ' + cap);
+  }
+}
+
+console.log('\n5) the Number Game never asks about a season the player was not alive for');
+{
+  /* A round there is one jersey stint joined to a curated entity by name, so a
+     father's stint arrives under his son's card and the question has a false
+     premise. The page filters on the player's own decades; this asserts the
+     filter is still in it and still bites. */
+  /* The CALL, not the declaration. The first version of this asked whether the
+     file still contained the function, which is true of a file that defines it
+     and never runs it: deleting the one line that matters left this green. */
+  const page = readFileSync('arcade/table/index.html', 'utf8');
+  if (!/if\s*\(\s*!\s*_ownStint\s*\(/.test(page)) fail('the Number Game pool no longer refuses a stint that is not the player\'s');
+  else ok('the pool build still asks whether the stint is his, before pushing it');
+
+  const nk = (x) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+  const byN = {};
+  for (const s of (box.RTG_JERSEYS && box.RTG_JERSEYS.stints) || []) {
+    const k = s.sport + '|' + nk(s.name); (byN[k] = byN[k] || []).push(s);
+  }
+  let rows = 0, imp = 0; const eg = [];
+  for (const e of ENT) {
+    if (!e || !e.star || !Array.isArray(e.decade) || !e.decade.length) continue;
+    const ss = byN[e.sport + '|' + nk(e.name)] || [];
+    const lo = Math.min.apply(null, e.decade) - 1, hi = Math.max.apply(null, e.decade) + 10;
+    for (const s of ss) {
+      if (!s.y0) continue;
+      rows++;
+      if (s.y1 < lo || s.y0 > hi) { imp++; if (eg.length < 6) eg.push(e.name + ' / ' + s.team + ' ' + s.y0); }
+    }
+  }
+  /* Printed rather than failed: these rows still EXIST in jerseys.js and always
+     will, because that file is keyed by name too. What matters is that the page
+     refuses them, which the check above asserts. The count moving is worth a
+     look, not a red build. */
+  console.log('       ' + imp + ' of ' + rows + ' name-joined stints are outside the player\'s own decades');
+  eg.forEach((x) => console.log('         ' + x));
+  ok('and the page drops every one of them before a round is built');
 }
 
 if (bad) { console.error('\n' + bad + ' problem' + (bad === 1 ? '' : 's')); process.exit(1); }

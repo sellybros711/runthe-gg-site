@@ -2745,6 +2745,30 @@ them out of Alma Mater, which is honest and not finished. `supplement.js` carrie
 the real ones, in rows that match their entity on club and position so the
 backfill is allowed through.
 
+**The same key contaminates two more front-facing things, and both are fixed at the
+point of use rather than upstream.**
+
+**The club printed under a player's name.** `primary.js` answers "which club is he
+of", and it is addressed by name, so it inherits every namesake; it counts off
+jersey stints that begin in 1990, so an older career comes back truncated. Randy
+Johnson's Seattle decade is not truncated in that file, it is ABSENT, so he looked
+like a man who debuted in Arizona in 1999 and came back a Diamondback. The header
+of `build-primary.mjs` used him as the example of what its floor cut prevents, and
+the floor never saw him. Rickey Henderson came back a Met and Roger Clemens a
+Yankee. Two fixes: the build now refuses a career whose stints start more than a
+decade after the decade list says it began, and `data.js` drops any `pt` that is
+not one of the clubs the record already has. The documented fallback is the first
+club, which is always a true thing to say.
+
+**The Number Game's questions.** A round there is one jersey stint joined to a
+curated player BY NAME, so a father's stint arrives under his son's card: what
+number did Patrick Ewing wear for the 2011 Hornets (Ewing Jr.), Tim Hardaway for
+the 2019 Mavericks, Antonio Brown for the 2003 Bills, seven years before he was
+drafted. 87 of 3124 rounds. Nobody plays outside their own career, so the decades
+the record already gives the player settle it without knowing who the other man
+is, and `_ownStint()` in `arcade/table/index.html` drops them before a round is
+built.
+
 `check-namesakes.mjs` builds the corpus twice, once as the site does and once
 with every namesake row deleted before the fold, and requires the two to be
 identical. **Two weaker versions came first and both were wrong.** Asking whether
