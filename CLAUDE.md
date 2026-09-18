@@ -1973,10 +1973,23 @@ renders perfectly and breaks nothing.
   So the sweep walks **every team style** now. `currentBattingTeamStyle()` reads
   `State.opponent` live, so swapping it needs no restart, and the batter is held
   fixed to isolate the term that actually moves: patience spans 0.22 across the
-  league where the CON term spans about 0.05. **Ordering is asserted on every
-  team** (it holds 17 of 17) and the **SIZE of the gap on the mean**, because the
-  clamp legitimately compresses it against the most patient dugout and demanding
-  eight points there is a coin toss rather than a rule.
+  league where the CON term spans about 0.05.
+
+  **AND THAT FIX TRADED ONE FLAP FOR ANOTHER, which is worth reading before
+  writing the next one.** Sweeping all seventeen teams meant dropping the per cell
+  sample from 500 to 200 to keep the suite's runtime sane, and at 200 pitches a
+  rate near 5 to 20 percent carries a standard error of 2 to 3 points. So easy
+  against MEDIUM went inside the noise: The Marauders came back 19.0/20.5/8.0 and
+  The Kids Table 14.0/4.5/5.5 on a build that had not touched the dugout. A strict
+  three way order per team at that sample is measuring the sample.
+
+  So ordering is asserted **on the pool** (the dial is `diff.chase`, global, and a
+  team's patience is a constant offset on top of it) and per team only on **easy
+  against HARD**, which is the full width of the dial and the one comparison that
+  survives at this sample, so a team that genuinely inverted it is still caught.
+  The **SIZE of the gap is on the mean**, because the clamp legitimately compresses
+  it against the most patient dugout and demanding eight points there is a coin
+  toss rather than a rule.
 - **`read` is memory.** `patternRead` keeps a ROLLING window of the last 20
   pitches the player CALLED and answers how hard the bat is sitting on this
   one. An arm nobody steers writes nothing, because there is no pattern in a
@@ -2088,6 +2101,85 @@ Two surfaces, and the first is the one that changes a decision: a green line on
 the draft card for anybody who has worn the shirt, and a Club careers table on the
 record book screen. **A first year franchise is unmarked and looks exactly as it
 always did**, which the guard asserts from the other end.
+
+### A franchise had memory and no arc
+
+**Nothing in the game read `S.year`. Only the labels did.** A club had a record
+book, a ladder of unlocks and (since the careers pass above) a memory of every man
+who wore the shirt, and year ten still played exactly like year one: the same
+board, the same league, the same numbers. `opponentSharpness()` ramps game one to
+game seven and reads `results.length`, which resets every April, so even the one
+existing arc was annual.
+
+**Two halves fix that and NEITHER WORKS ALONE.** A man who has worn your shirt is
+better at what he did in it, and the league sharpens with your tenure. Development
+on its own is a club that wins by turning up. A rising league on its own is a
+punishment for playing a fourth season. Together the redraft becomes the decision
+the mode was missing: your veterans are now better than the board, and the new
+unlock is not.
+
+**The roster stays unlocked, which is the rule this must not break.** "Play Year
+N+1" still opens the whole board, because that is what makes the ladder worth
+climbing. What changed is that walking away from a four year man now costs
+something a drafter can read on his card.
+
+**It is DERIVED from the career record, never stored.** `devOf(k)` is a pure
+function of what `careerOf(k)` already holds, which buys three things at once: it
+cannot drift from a second copy (the commish era's rule), it is idempotent for
+free so drawing the draft screen twice cannot double it (the trap `foldCareers` is
+written around), and **every save that already exists gets its veterans developed
+the day it ships** rather than starting everybody from scratch.
+
+**It pays for what he DID, not for turning up.** A bat only develops off at bats
+and an arm only off outs, so the ninth man who never played keeps his year on the
+record and earns no rating for it.
+
+**ONE SEAM, because a rating is read 139 times.** Those reads sit on a dozen
+receivers (`ctx`, `batter`, `pitcher`, `runner`, `c`, `b`), so hooking them would
+be the Full Team glow bug waiting to happen. The lineup is built in exactly one
+place, `startGame`, so `developed()` is applied there and everything downstream
+follows. **Only your side**: the opponent draws the roster's own numbers even when
+their lineup names the same character, which the guard asserts against a mirror
+lineup.
+
+**The card shows what you would actually field.** A draft card printing the
+roster's own figures would understate every man this club has kept, and the drafter
+would be choosing on numbers the game does not use. The raised rating is marked in
+the grid and the gain is named under it (`+4 CON`, not `+7`), because the named
+stat says what kind of player he has become.
+
+#### Three things it got wrong, and two needed a screenshot
+
+- **A RATING MUST NEVER BUY YOU LESS, and this one did.** The 99 clamp is the
+  whole of the diminishing return (a 96 has three points of room, a 60 has thirty
+  nine) and part of this roster is written AT or ABOVE it. A flat
+  `clamp(base + v, 1, 99)` handed the game's 100 power man **a point off** for his
+  years of service. The probe reported him gaining -1. That is `sendOdds`' rule at
+  a third door, after the send curve and the monotonicity sweep.
+- **The card promised gains that never landed.** It printed the bump a man was
+  OWED, so somebody at the ceiling was told "+4 POW" and gained nothing.
+  `developed()` records what was actually APPLIED now, which is the commish state
+  card's rule (decide on the printed value, not the raw one) arriving at a draft
+  screen.
+- **A raised PIT drew RED.** `.statgrid b.up` (0,2,1) loses to `.statgrid span.arm
+  b` (0,2,2) two rules above it, and `--gold` in this palette is red, so the one
+  number on the card meaning HE GOT BETTER was the only one printed in the colour
+  that means trouble. Nothing threw and no assertion could see it. **Found by
+  looking at the card**, which is the same shape as the football prompt card's
+  `.pwc-marks` selector.
+
+**And `developed()` guards its own output.** Nothing hands it an already developed
+man today, because the lineup comes from `ROSTER_BY_KEY` and the card from
+`ROSTER`, both raw. It returns early on `c.dev` anyway: it derives off the KEY, so
+feeding it its own output would add the bump to a base that already carries it and
+silently double every veteran on whichever screen somebody wired up second.
+
+**The tenure ramp is deliberately smaller than the in season one.** Game one to
+game seven is worth 0.75 of that dial; a whole career is worth **0.30**, plateauing
+after six years. The shape of a season stays the loudest thing in it and tenure is
+the bass note underneath. **Exhibition does not get it at all**: a one off is not a
+franchise year and has to stay the fixed, knowable thing somebody reaches for when
+they want a game rather than a career.
 
 ### The friendly button was the worst path
 

@@ -41,6 +41,7 @@
      the dugout learns    a harder tier chases less and reads a one pitch caller
      the robbery          a catchable hit can be taken away, and missing it costs nothing
      the club remembers   a franchise carries its players' records, not only its win column
+     and the club changes them  a man develops at what he did here, and the league rises with you
      the friendly button  Randomize hands you a mound, and a hand draft is told who is on it
      the picture agrees   no throw beats a safe runner to the bag, and no run outlasts the sim
      the walk back        a strikeout has a frame, and it belongs to the man it happened to
@@ -2100,15 +2101,35 @@ async function main() {
         const teams = r.byTeam;
         const gaps = teams.map(t => t.easy - t.hard);
         const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
-        const wrongWay = teams.filter(t => !(t.easy > t.med && t.med > t.hard));
-        /* ORDERING is asserted on every team, because it is meant to hold
-           on every team and it does. The SIZE of the gap is asserted on
-           the mean, because the clamp legitimately compresses it against
-           the most patient dugout in the league and demanding eight points
-           there is a coin toss rather than a rule. */
-        ok(wrongWay.length === 0,
-           'a harder dugout chases less, on every opponent',
-           wrongWay.map(t => `${t.name}: ${t.easy.toFixed(1)}/${t.med.toFixed(1)}/${t.hard.toFixed(1)}`)
+        /* ORDERING IS ASSERTED ON THE POOL AND ON THE EXTREMES, and the
+           first draft of this sweep got it wrong in a way worth recording,
+           because it was a fix that traded one flap for another.
+
+           Sweeping all seventeen teams meant dropping the per cell sample
+           from 500 to 200 to keep the suite's runtime sane. At 200 pitches
+           a rate near 5 to 20 percent carries a standard error of 2 to 3
+           points, so easy against MEDIUM is inside the noise: measured, The
+           Marauders came back 19.0/20.5/8.0 and The Kids Table 14.0/4.5/5.5
+           on a build that had not touched the dugout. Asserting a strict
+           three way order per team at that sample is measuring the sample.
+
+           The dial is global (diff.chase) and a team's patience is a
+           constant offset on top of it, so the claim belongs to the POOL.
+           What is still asserted per team is easy against HARD, which is
+           the full width of the dial and the one comparison that survives
+           at this sample, so a team whose style genuinely inverted it would
+           still be caught. */
+        const pooled = { easy: avg(teams.map(t => t.easy)),
+                         med:  avg(teams.map(t => t.med)),
+                         hard: avg(teams.map(t => t.hard)) };
+        const inverted = teams.filter(t => !(t.easy > t.hard));
+        ok(pooled.easy > pooled.med && pooled.med > pooled.hard,
+           'a harder dugout chases less',
+           `easy ${pooled.easy.toFixed(1)}, medium ${pooled.med.toFixed(1)}, hard ${pooled.hard.toFixed(1)}`
+           + ` over ${teams.length} teams`);
+        ok(inverted.length === 0,
+           'and no opponent turns the dial the other way',
+           inverted.map(t => `${t.name}: ${t.easy.toFixed(1)} easy vs ${t.hard.toFixed(1)} hard`)
              .join(', ') || `${teams.length} teams`);
         ok(avg(gaps) > 8,
            'and the gap is one a player would feel, not a rounding error',
@@ -2392,6 +2413,121 @@ async function main() {
          'and leaves the rest of the board alone', JSON.stringify(draft));
       ok(brandNew === 0, 'a brand new franchise is unmarked, exactly as it always was',
          String(brandNew));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- and the club changes them ---- */
+    {
+      console.log('and the club changes them');
+      /* THE FRANCHISE REMEMBERED ITS PLAYERS AND THEY NEVER CHANGED.
+         Nothing in the game read S.year at all, only the labels did, so
+         year ten was year one with a different number on the heading: a
+         club had memory, a ladder of unlocks and a record book, and no
+         arc.
+
+         Two halves fix it and neither works alone. A man who wore the
+         shirt is better at what he did in it, and the league sharpens with
+         your tenure. Development on its own is power creep; a rising
+         league on its own is a punishment for playing.
+
+         IT IS DERIVED FROM THE CAREER RECORD, NEVER STORED, so what is
+         asserted here is what a stored bump would get wrong: idempotence,
+         a first year club seeing nothing, a bound, and whose man it is. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const out = {};
+        const nine = ROSTER.slice(0, 9).map(c => c.k);
+        const bat = nine[0], arm = nine[1];
+        State.season = null; State.pendingFranchise = null;
+        /* the roster's OWN object comes back, not a copy: an exhibition
+           and a first year draft are byte for byte what they always were */
+        out.freshIdentity = developed(ROSTER_BY_KEY[bat]) === ROSTER_BY_KEY[bat];
+        const mk = (years) => ({
+          year: years, team: nine, perPlayer: {},
+          careers: (() => {
+            const c = {};
+            for (const k of nine) c[k] = { years, first: 1, last: years };
+            c[bat] = Object.assign({}, c[bat], { ab: 100 * years, hits: 31 * years, hr: 6 * years });
+            c[arm] = Object.assign({}, c[arm], { pOuts: 30 * years });
+            return c;
+          })(),
+        });
+        State.season = mk(3);
+        const raw = ROSTER_BY_KEY[bat];
+        const d1 = developed(raw);
+        out.batDev = devOf(bat); out.armDev = devOf(arm);
+        out.benchDev = devOf(nine[4]);          /* on the roster, never played */
+        out.sameTwice = JSON.stringify(devOf(bat)) === JSON.stringify(devOf(bat));
+        const d3 = developed(d1);
+        out.noStack = d3.pow === d1.pow && d3.con === d1.con;
+        out.rawUntouched = raw.pow === ROSTER.find(c => c.k === bat).pow;
+        /* bounded, and nobody pushed past the ceiling */
+        State.season = mk(40);
+        let maxGain = 0, over99 = 0, wentDown = 0;
+        for (const c of ROSTER) {
+          const dd = devOf(c.k); if (!dd) continue;
+          const dev = developed(c);
+          for (const s of ['pow', 'spd', 'con', 'def', 'pit']) {
+            if (dd[s]) maxGain = Math.max(maxGain, dd[s]);
+            if (dev[s] > 99) over99++;
+            if (dev[s] < c[s]) wentDown++;
+          }
+        }
+        out.maxGain = maxGain; out.over99 = over99; out.wentDown = wentDown;
+        /* the ceiling IS the diminishing return */
+        const top = ROSTER.slice().sort((x, y) => y.pow - x.pow)[0];
+        const mid = ROSTER.slice().sort((x, y) => Math.abs(x.pow - 60) - Math.abs(y.pow - 60))[0];
+        const hist = () => ({ years: 5, first: 1, last: 5, ab: 500, hits: 175, hr: 40 });
+        State.season = { year: 5, team: [top.k, mid.k], perPlayer: {},
+                         careers: { [top.k]: hist(), [mid.k]: hist() } };
+        out.topRoom = developed(top).pow - top.pow;
+        out.midRoom = developed(mid).pow - mid.pow;
+        out.topBase = top.pow; out.midBase = mid.pow;
+        /* the league rises and then stops rising */
+        out.edge = [1, 2, 4, 6, 10, 40].map(y => {
+          State.season = { year: y, team: nine, perPlayer: {}, careers: {} };
+          return +leagueEdge().toFixed(3);
+        });
+        /* and it belongs to YOUR side, against a lineup naming the same men */
+        State.season = mk(4);
+        State.team = nine.slice(); State.teamName = 'Testers';
+        State.opponent = { name: 'Mirror', color: '#888', roster: nine.slice() };
+        State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });
+        const g = State.game;
+        const mineSide = g.away.isYou ? g.away : g.home;
+        const theirs = g.away.isYou ? g.home : g.away;
+        const mineBat = mineSide.batters.find(c => c.k === bat);
+        const theirBat = theirs.batters.find(c => c.k === bat);
+        out.sidesDiffer = mineBat.con !== theirBat.con || mineBat.pow !== theirBat.pow;
+        out.theirsIsRaw = theirBat.con === ROSTER_BY_KEY[bat].con
+                       && theirBat.pow === ROSTER_BY_KEY[bat].pow;
+        return out;
+      });
+      ok(r.freshIdentity, 'no franchise: the roster object itself comes back untouched');
+      ok(r.batDev && r.batDev.con && r.batDev.pow, 'a bat who played develops', JSON.stringify(r.batDev));
+      ok(r.armDev && r.armDev.pit, 'an arm who pitched develops', JSON.stringify(r.armDev));
+      ok(!r.benchDev, 'a man who never played keeps his years and earns no rating');
+      ok(r.sameTwice, 'deriving it twice gives the same answer');
+      ok(r.noStack, 'and developing an already developed man does not stack');
+      ok(r.rawUntouched, 'the ROSTER entry itself is never mutated');
+      ok(r.maxGain <= 8, 'no rating gains more than the cap', `max ${r.maxGain}`);
+      ok(r.over99 === 0, 'nobody is pushed past 99', `${r.over99} over`);
+      /* A RATING MUST NEVER BUY YOU LESS, and this one did. A flat clamp
+         to 99 took a point OFF the roster's 100 power man for his years of
+         service. sendOdds' rule at a third door. */
+      ok(r.wentDown === 0, 'and nobody is made WORSE by his own career',
+         `${r.wentDown} ratings fell`);
+      ok(r.topRoom < r.midRoom, 'a man at the ceiling has less room than a middling one',
+         `${r.topBase} gained ${r.topRoom}, ${r.midBase} gained ${r.midRoom}`);
+      ok(r.edge[0] === 0, 'year one plays the league it always did');
+      ok(r.edge[1] > r.edge[0] && r.edge[3] > r.edge[1],
+         'the league sharpens with tenure', r.edge.join(', '));
+      ok(r.edge[5] === r.edge[4] && r.edge[5] <= 0.30,
+         'and plateaus rather than running away', `caps at ${r.edge[5]}`);
+      ok(r.sidesDiffer, 'your man and their man are not the same man');
+      ok(r.theirsIsRaw, 'the opponent draws the roster, never your development');
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

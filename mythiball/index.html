@@ -124,6 +124,20 @@
      line on the card that is about YOUR history rather than about him,
      and it has to be findable at a glance while drafting nine of them. */
   .quirk.yours{color:var(--green);font-weight:700;}
+  /* WHAT THE YEARS BOUGHT. The same green as the record above it, because
+     they are one idea read top to bottom: this man played for you, and
+     this is what it did to him. A second colour here would read as a
+     warning rather than as the reward it is. The raised rating itself is
+     marked in the grid, so the eye finds the number before the sentence. */
+  .quirk.grew{color:var(--green);font-weight:700;opacity:.85;}
+  /* A RAISED RATING IS GREEN, INCLUDING THE ARM'S. Written `.statgrid
+     b.up` it lost to `.statgrid span.arm b` two rules above, which is more
+     specific, so a developed pitcher's PIT drew in --gold. That token is
+     RED here, so the one number on the card that means HE GOT BETTER was
+     the only one printed in the colour that means trouble. Nothing threw
+     and no check could see it: it was found by looking at the card.
+     Same shape as the football prompt card's .pwc-marks selector. */
+  .statgrid span b.up, .statgrid span.arm b.up{color:var(--green);}
 
   /* THE INFO DOT. A rule a player needs once (how a tie breaks, when IN
      and OUT are certain) was printed under the table every single visit,
@@ -1394,16 +1408,40 @@ const DEFAULT_STYLE = { swing:0, patience:0, jitter:0, label:'Balanced' };
 function opponentSharpness() {
   if (State.mode === 'season' && State.season) {
     const played = State.season.results.length;   /* 0..6 going in */
-    return clamp(played / 8, 0, 1);
+    return clamp(played / 8 + leagueEdge(), 0, 1);
   }
   if (State.mode === 'playoff') {
-    return State.game && State.game.round === 'final' ? 1.0 : 0.85;
+    return clamp((State.game && State.game.round === 'final' ? 1.0 : 0.85) + leagueEdge(), 0, 1);
   }
   if (State.mode === 'cup' && State.game) {
     /* Round 0 quarters, 1 semis, 2 final. */
-    return clamp(0.55 + (State.game.cupR || 0) * 0.225, 0, 1);
+    return clamp(0.55 + (State.game.cupR || 0) * 0.225 + leagueEdge(), 0, 1);
   }
   return 0.45;
+}
+/* -------- AND THE LEAGUE RISES WITH YOUR TENURE --------
+   The ramp above was the whole arc and it resets every April: it reads
+   results.length, so a tenth year opening day is a first year opening
+   day. That is what made a franchise year a number on a heading.
+
+   This is the other half of the development block up in the careers
+   section, and neither works alone. Veterans who improve against a league
+   that does not are a club that wins by turning up; a league that sharpens
+   against a roster that cannot answer is a punishment for playing on.
+
+   IT IS DELIBERATELY SMALLER THAN THE IN SEASON RAMP. Game one to game
+   seven is worth 0.75 of this dial. A whole career is worth 0.30, and it
+   plateaus after six years rather than running away, so the shape of a
+   season is still the loudest thing in it and tenure is the slow bass
+   note underneath.
+
+   EXHIBITION DOES NOT GET IT, which is why the branch above is untouched.
+   A one off is not a franchise year and has to stay the fixed, knowable
+   thing a player reaches for when they want a game rather than a career. */
+const LEAGUE_EDGE_PER_YEAR = 0.06;
+const LEAGUE_EDGE_MAX = 0.30;
+function leagueEdge() {
+  return clamp(leagueYears() * LEAGUE_EDGE_PER_YEAR, 0, LEAGUE_EDGE_MAX);
 }
 /* A short label so the player can see what they are walking into. */
 function sharpnessLabel(v) {
@@ -5219,10 +5257,20 @@ function renderRoster() {
     cc.appendChild(cv);
     cc.appendChild(el('div','name', c.n));
     cc.appendChild(el('div','role', `${c.role}`));
+    /* THE CARD HAS TO SHOW WHAT YOU WOULD ACTUALLY FIELD. A veteran is
+       developed the moment he takes the field, so a card printing the
+       roster's own numbers would understate every man this club has kept
+       and the drafter would be choosing on figures the game does not use.
+       That is the football card's drift, arriving at a draft screen. */
+    const d = developed(c);
     const st = el('div','statgrid');
-    st.innerHTML = `<span>POW <b>${c.pow}</b></span><span>SPD <b>${c.spd}</b></span>`
-                 + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`
-                 + `<span class="arm">PIT <b>${c.pit}</b></span>`;
+    const cell = (lab, key, cls) => {
+      const up = d.dev && d.dev[key];
+      return `<span${cls ? ` class="${cls}"` : ''}>${lab} <b${up ? ' class="up"' : ''}>${d[key]}</b></span>`;
+    };
+    st.innerHTML = cell('POW','pow') + cell('SPD','spd')
+                 + cell('CON','con') + cell('DEF','def')
+                 + cell('PIT','pit','arm');
     cc.appendChild(st);
     if (c.note) {
       const nt = el('div','quirk', c.note);
@@ -5233,6 +5281,11 @@ function renderRoster() {
        so a first year draft looks exactly as it always did. */
     const mine = careerOf(c.k);
     if (mine) cc.appendChild(el('div', 'quirk yours', careerLine(mine)));
+    /* And what the years bought, named rather than totalled, because
+       "+4 CON" says what kind of player he has become and "+7" does not.
+       A man who spent his years on the bench has a record here and no
+       line under it, which is the honest difference between the two. */
+    if (d.dev) cc.appendChild(el('div', 'quirk grew', devLine(d.dev) + ' with this club'));
     /* Locked characters can't be drafted; the card says how to earn them,
        and hovering says how far along you are. */
     const locked = !isUnlocked(c.k);
@@ -5796,6 +5849,121 @@ function careerLine(c) {
   if (c.pOuts) bits.push(`${Math.floor(c.pOuts / 3)} IP`);
   const yr = `${c.years} year${c.years === 1 ? '' : 's'}`;
   return bits.length ? `${yr} here: ${bits.join(' · ')}` : `${yr} here`;
+}
+
+/* -------- A MAN GETS BETTER AT WHAT HE DID HERE --------
+
+   The franchise REMEMBERED its players and they never CHANGED. Year ten
+   was year one with a different number on the heading: nothing in the
+   game read S.year at all, only the labels did. A club had memory, a
+   ladder of unlocks and a record book, and no arc.
+
+   Two halves fix that and they have to ship together. This is the first:
+   a man who has worn your shirt is better at what he did in it. The
+   second is leagueYears() below, which makes the league rise with your
+   tenure. Development alone is power creep. A rising league alone is
+   punishment. Together the redraft becomes a real decision, because your
+   veterans are now better than the board and the new unlock is not.
+
+   THE ROSTER STAYS UNLOCKED, which is the rule this must not break.
+   "Play Year N+1" still opens the whole board, because that is what makes
+   the unlock ladder worth climbing. What changes is that walking away
+   from a four year man now costs something you can read on his card.
+
+   IT IS DERIVED FROM THE CAREER RECORD, NEVER STORED. A stored bump is a
+   second copy of an answer that the two drift apart, which is the rule
+   the commish era already follows. Deriving buys three things: it cannot
+   drift, it is idempotent for free (so drawing the draft screen twice
+   cannot double it, the same trap foldCareers is written around), and
+   every save that already exists gets its veterans developed the moment
+   this ships, rather than starting everybody from scratch.
+
+   IT PAYS FOR WHAT HE DID, not just for turning up. A bat only develops
+   if he took at bats and an arm only if he got outs, so the ninth man who
+   never played gets his year on the record and no rating for it. */
+const DEV_PER_YEAR = 1.6;     /* just for wearing the shirt */
+const DEV_YEAR_CAP = 5;       /* years past this stop paying */
+const DEV_WORK_MAX = 3;       /* the most his production alone can add */
+const DEV_CAP = 8;            /* the most any one rating can move */
+function devOf(k) {
+  const c = careerOf(k);
+  if (!c || !c.years) return null;
+  const loyalty = Math.min(c.years, DEV_YEAR_CAP) * DEV_PER_YEAR;
+  const out = {};
+  const give = (stat, v) => {
+    const n = Math.round(Math.min(v, DEV_CAP));
+    if (n >= 1) out[stat] = n;
+  };
+  if (c.ab) {
+    /* .240 is a man who played, .380 is a man who mattered */
+    const work = clamp(((c.hits / c.ab) - 0.240) / 0.140, 0, 1);
+    give('con', loyalty * 0.6 + work * DEV_WORK_MAX);
+    give('pow', loyalty * 0.4 + work * DEV_WORK_MAX * 0.8);
+  }
+  if (c.pOuts) {
+    /* nine innings a year is a man who took the ball */
+    const work = clamp((c.pOuts / 3) / Math.max(1, c.years * 9), 0, 1);
+    give('pit', loyalty * 0.7 + work * DEV_WORK_MAX);
+  }
+  return Object.keys(out).length ? out : null;
+}
+/* The character as YOUR club has him. Returns the roster's own object
+   untouched when there is nothing to add, so a first year franchise and
+   an exhibition are byte for byte the game they always were.
+
+   THE CLAMP AT 99 IS THE DIMINISHING RETURN, and it is the whole of it.
+   A 96 power hitter has three points of room and a 60 has thirty nine, so
+   development quietly does more for the rest of the roster than for the
+   man who was already the best on it. Nothing else is needed for that. */
+function developed(c) {
+  if (!c) return c;
+  /* ALREADY DEVELOPED COMES BACK AS IT IS. Nothing calls it that way
+     today, because the lineup is built from ROSTER_BY_KEY and the card
+     from ROSTER, both raw. It is guarded anyway: this derives off the KEY,
+     so handing it its own output would add the bump to a base that already
+     carries it and double every veteran, in silence, on whichever screen
+     somebody wired up second. */
+  if (c.dev) return c;
+  const d = devOf(c.k);
+  if (!d) return c;
+  const out = Object.assign({}, c);
+  /* WHAT HE ACTUALLY GAINED, not what he was owed. A man at the ceiling
+     is owed points there is no room for, and a card printing the owed
+     figure would promise "+4 POW" to somebody who gains nothing: the
+     commish state card's rule, that what is decided on is the PRINTED
+     value rather than the raw one, arriving at a draft screen. */
+  const applied = {};
+  for (const [stat, v] of Object.entries(d)) {
+    const base = ratingOr(out[stat], 50);
+    /* NEVER LESS THAN HE WAS. The 99 ceiling is the diminishing return,
+       and a handful of this roster is written AT or ABOVE it: the Great
+       Ape is 99 power and one man is 100, so a flat clamp to 99 handed a
+       career veteran a POINT OFF for his trouble. Measured, not reasoned:
+       the probe reported the best power hitter in the game gaining -1.
+       That is sendOdds' rule at a third door, and a rating must never buy
+       you less. */
+    const got = Math.max(base, clamp(base + v, 1, 99));
+    out[stat] = got;
+    if (got > base) applied[stat] = got - base;
+  }
+  if (!Object.keys(applied).length) return c;
+  out.dev = applied;
+  return out;
+}
+/* What the card says he gained, in the order the card prints ratings.
+   Named stats rather than a total, because "+4 CON" tells a drafter what
+   kind of player he has become and "+7" does not. */
+function devLine(d) {
+  if (!d) return '';
+  const order = ['pow', 'spd', 'con', 'def', 'pit'];
+  return order.filter(s => d[s]).map(s => `+${d[s]} ${s.toUpperCase()}`).join(' ');
+}
+/* How long this club has been going, for the league ramp below. Reads the
+   pending franchise while drafting and the live one otherwise, the same
+   two states careerOf knows about. */
+function leagueYears() {
+  const src = State.pendingFranchise || State.season;
+  return Math.max(0, ((src && src.year) || 1) - 1);
 }
 
 function startSeason(carry) {
@@ -6532,7 +6700,17 @@ function repairLineup(keys) {
 function startGame(opts) {
   resetCamera();
   State.team = repairLineup(State.team);
-  const battersAway = State.team.map(k => ROSTER_BY_KEY[k]);
+  /* ONE SEAM FOR THE WHOLE GAME. A rating is read 139 times across this
+     file, off a dozen different receivers (ctx, batter, pitcher, runner,
+     c, b), so hooking the reads would be the Full Team glow bug waiting
+     to happen: two readings of one thing that come apart the first time
+     somebody adds a third. The lineup is built here and nowhere else, so
+     developing it here is the one source everything downstream sees.
+
+     ONLY YOUR SIDE. Development belongs to the club that earned it, so
+     the opponent draws the roster's own numbers even when their lineup
+     names the same character. */
+  const battersAway = State.team.map(k => developed(ROSTER_BY_KEY[k]));
   const battersHome = repairLineup(State.opponent.roster).map(k => ROSTER_BY_KEY[k]);
   /* User bats AWAY (visitor), opponent home. In playoffs the flag flips. */
   const youHome = !!opts.youHome;
