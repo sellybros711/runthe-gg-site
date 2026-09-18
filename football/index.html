@@ -902,7 +902,11 @@ window.GA_ID='G-L29P5MRWKE';
      that the grid is also emptied when nobody affordable would HELP, which is a third of
      cap-spending drafts, it is a padded and margined box between the rating card and the
      line explaining why there is nothing in it. */
-  #b-coach-go[hidden],#co-planwrap[hidden],#co-knows[hidden],#co-grid[hidden]{display:none}
+  /* AND #b-coach-none IS THE SEVENTH, on the same screen as three of the others. It is a
+     .btn, so display:block beat the attribute exactly as it did for #b-coach-go two ids to
+     the left, and the painter's `hidden` did nothing at all. */
+  #b-coach-go[hidden],#co-planwrap[hidden],#co-knows[hidden],#co-grid[hidden],
+  #b-coach-none[hidden]{display:none}
   .coknows{margin:8px 0 0;display:flex;flex-direction:column;gap:4px}
   /* The two units' own chemistry, under the average of them. Same [hidden] trap. */
   #q-chemsplit[hidden]{display:none}
@@ -14756,6 +14760,21 @@ function paintPlan(){
      him" muddle from the other direction. Browse, decide, and then the plan is either his or
      yours. */
   if(wrap) wrap.hidden=hired||!run.coachDecided;
+  /*
+   * AND THE WAY OUT SHUTS ONCE SOMEBODY IS HIRED.
+   *
+   * Nothing hid this button, so after a hire the screen carried "No coach, I will call it
+   * myself" directly under the man you had just paid for. It works (hireCoach refunds the
+   * previous hire through remaining(), so pressing it gives the money back), and that is
+   * exactly why it read as a leftover rather than a control: the screen was offering to
+   * undo a decision it had just asked you to confirm.
+   *
+   * The grid stays live, so changing your mind BETWEEN coaches is unaffected. What is gone
+   * is going back to nobody after hiring, which is the one direction that contradicts the
+   * confirmation sheet.
+   */
+  const none=$('b-coach-none');
+  if(none) none.hidden=hired;
   /* THE WAY OUT OPENS ONCE A DECISION HAS BEEN MADE, and declining is a decision. It also
      opens when nobody is affordable, because then there was nothing to decide. */
   const go=$('b-coach-go');

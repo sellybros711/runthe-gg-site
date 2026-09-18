@@ -94,7 +94,7 @@ const INJECT = 'beginFullDraft,fullSlotIsDefensive,nextOpenSlot,fullPickIsDefens
   + 'B.attemptSpend=async()=>{n.spend++;const ok=u<1;if(ok)u++;'
   + 'return Object.assign({ok:ok},row());};'
   + 'dailyForget();return n;},'
-  + 'getRun:()=>run,'
+  + 'getRun:()=>run,R:R,paintCoach,coachList,'
   + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='tester';}";
 
 /* NO TESTER VIEW ANY MORE. This used to take { tester } and rewrite LIVE = false to true
@@ -485,6 +485,51 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
     await m.page.evaluate(() => window.__C.spend) === 0);
   ok('  while already being saved',
     await m.page.evaluate(() => !!window.__t.fullRead()));
+
+  /*
+   * THE WAY OUT SHUTS ONCE SOMEBODY IS HIRED, and it is asserted on the COMPUTED style.
+   *
+   * Nothing hid it, so after a hire the screen carried "No coach, I will call it myself"
+   * under the man just paid for: an offer to undo the decision the confirmation sheet had
+   * asked for. Hiding it is two edits, and the first one alone does nothing, which is why
+   * this reads getComputedStyle rather than the attribute. `.btn` sets display:block and
+   * the UA rule for [hidden] is display:none at class specificity, so the later class wins
+   * and `hidden = true` leaves the button on screen. That trap is now on its seventh
+   * element in this file's CSS, three of them on this very screen.
+   */
+  /* HIRED THROUGH run.js AND THEN REPAINTED, which is exactly what the confirmation sheet's
+     own handler does. Clicking a grid cell would have been more end to end and is not
+     available: this walk spends the cap, and on about a third of cap-spending drafts not one
+     affordable coach improves the roster, so the grid is legitimately empty. The painter is
+     the shared path and the painter is where the bug was. */
+  {
+    const st = await m.page.evaluate(() => {
+      const T = window.__t, r = T.getRun();
+      const mkt = T.R.coachMarket(r, T.coachList());
+      const c = mkt && mkt.find((x) => x.price_musd <= T.R.remaining(r));
+      if (!c) return { none: true };
+      T.R.hireCoach(r, c);
+      T.paintCoach();
+      const b = document.getElementById('b-coach-none');
+      return { hired: !!r.coach, name: c.name, attr: !!(b && b.hidden),
+        shown: b ? getComputedStyle(b).display : 'gone' };
+    });
+    if (st.none) {
+      ok('  a coach was affordable', false, 'nothing in the market fit the money left');
+    } else {
+      ok('  a coach was hired', st.hired, st.name);
+      ok('  the no-coach button carries the attribute', st.attr);
+      ok('  AND IS ACTUALLY OFF THE SCREEN', st.shown === 'none', st.shown);
+      /* Put it back, because the rest of this walk is the uncoached path. */
+      const back = await m.page.evaluate(() => {
+        const T = window.__t;
+        T.R.hireCoach(T.getRun(), null);
+        T.paintCoach();
+        return getComputedStyle(document.getElementById('b-coach-none')).display;
+      });
+      ok('  and it comes back when nobody is hired', back !== 'none', back);
+    }
+  }
 
   /* Decline the coach, take the squad screen, then kick off. b-play is the one path through
      the page's own startSeason(), which is where the day is spent; finishHiring only paints

@@ -1534,6 +1534,17 @@ the player who earned the cleanest answer, so the screen says there is nobody wo
 instead. Nothing affordable at all is a different sentence again: the first is about the
 money, the second is about the roster.
 
+**`#b-coach-none` joined it too, which is the SEVENTH time**, on the same screen as three of
+the others. Nothing hid that button at all, so after a hire the coach screen carried "No
+coach, I will call it myself" directly under the man just paid for: an offer to undo the
+decision the confirmation sheet had asked for. It works, because `hireCoach` refunds a
+previous hire through `remaining()`, and that is exactly why it read as a leftover rather
+than a control. **Hiding it is two edits and the first alone does nothing**: `.btn` sets
+`display:block`, so the painter's `hidden` never took. The guard reads `getComputedStyle`
+rather than the attribute for that reason, and each half was proved by removing it alone.
+The grid stays live, so changing your mind BETWEEN coaches is untouched; what is gone is
+going back to nobody after hiring.
+
 **`#co-grid` joined the `[hidden]` list, which is the fifth time in this file.** `.cogrid`
 sets `display:grid`, so the `hidden` the painter has always written on an empty market never
 took. It cost nothing while the empty case meant a grid with no children anyway. It is now a
