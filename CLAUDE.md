@@ -2669,6 +2669,63 @@ swept twice in this game's short life. The first draft of step two said a star c
 half the cap, which is false: the top price in 16,057 rows is Bob McAdoo's 1975 at
 **$60.0M against $126M**, and nobody is over half. It prints the real dearest man.
 
+### A box score is a DECOMPOSITION of the scoreline, never a second model
+
+You draft Jordan's 1996 and until this shipped nothing anywhere told you what
+he did in any of the 82. The playoff games were the worst of it: `playoffSeries`
+has always returned its individual games and nothing ever drew one, so a run
+that ended 3-4 in the Finals gave you the series score and not one thing that
+happened in it.
+
+Every game opens now: quarters for both sides, and a box score for your six.
+
+**The load-bearing decision is that `resolveGame` still settles the score and
+these lines are apportioned to hit it exactly.** A possession sim that DECIDED
+the score would replace the win-share model fitted to twenty-two real NBA
+records, and every TARGETS band would need re-solving. And two models of one
+game disagree: verify already caught the animated season and the instant season
+producing different records off one seed. So nothing downstream reads any of
+this, and **the one property it must have is that it adds up**. Six identities
+are asserted over a real season: the points column IS the scoreline, a man's
+field goals and free throws produce his points, nobody makes more than he takes,
+the minutes fill the game, the quarters are the scoreline, and a game that went
+to overtime was level at the end of regulation.
+
+Three things the measurement found that reasoning did not:
+
+- **The league shot 59%.** Two scale-ups were folded into one term. Six men
+  covering 240 minutes absorb a whole bench's shots, which is real extra WORK
+  and passes into attempts in full; a hot night is mostly efficiency and only
+  partly volume. Separated, the league shoots 46.3% against a real 46%.
+- **The minutes column added to 153 of 240**, because it printed `mp`, which is
+  his minutes in a ten man rotation. A box score saying six men played two
+  thirds of the game and scored all of the points is arguing with itself.
+- **`PTS_SD_K` is not what makes this concentrated.** Swept 1.45 to 0.55, the
+  leading scorer's share moved 34.9% to 32.2% and the median game high moved 41
+  to 38. **The concentration is the premise and no constant fixes it**: the dial
+  is the roster size, and that is the game. It is set for the TAIL alone.
+
+**`apportionCapped` was wrong on 73% of inputs** and the minutes needed it. It
+pinned the over-cap men and the under-floor men in the same pass, which throws
+away the redistribution between them: weights `[1,1,1,32,27,26]` over 240 pinned
+three at the floor and three at the ceiling, arrived at 198, and had nothing
+unpinned left to give the other 42 to. **One side per pass.**
+
+**No box score for the opponent, deliberately.** The schedule knows which real
+club you played and the sim never used their players: an opponent here is a net
+rating. Five invented lines for five real men, printed as this game's own
+record, is the one thing on that screen that would not be true.
+
+**Each game draws off the run's seed and its own address**, never a shared
+stream, so opening game 41 twice shows the same 41 points, a reload does not
+rewrite history, and drawing a SCREEN never moves the season somebody comes back
+to.
+
+**A box score nobody opens is a box score nobody has**, so the run names its own
+best night on the results screen and links to it. Asserted against a brute force
+sweep rather than against itself, because an off-by-one would name the second
+best game and nothing would look wrong.
+
 ### A field the page reads off an outcome has to be a field outcomes have
 
 `out.spendLeft` was read on the results screen and `outcomeOf` has never set it.
