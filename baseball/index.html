@@ -310,6 +310,21 @@ h1,h2,h3{margin:0}
 .tile .pts{display:flex;align-items:baseline;gap:4px}
 .tile .pts b{font-family:var(--fn);font-size:19px;font-weight:600;line-height:1}
 .tile .pts i{font-style:normal;font-family:var(--fn);font-size:9.5px;letter-spacing:.1em;color:var(--dim-2)}
+/* ─── WAR reads as a temperature ───
+   Every tile printed WAR in the same ink, so telling a 9.0 season from a 2.0 one
+   meant reading the digits on all six tiles. The bands are wide on purpose: a
+   drafted season is elite, very good, good, useful or filler, and a scale with
+   more steps than that is a gradient nobody can name. Gold is the top and the
+   only one that glows, because on this board there should be one obvious answer
+   to "is anybody here special". */
+.warv{font-weight:800}
+.warv.w5{color:#b8860b;text-shadow:0 0 12px rgba(184,134,11,.5)}
+.warv.w4{color:#d4772c}
+.warv.w3{color:#2e7d32}
+.warv.w2{color:#1a5276}
+.warv.w1{color:#6b6252}
+.warv.w0{color:var(--dim-2)}
+.tile.off .warv{color:var(--dim-2)!important;text-shadow:none}
 .tile.off{background:rgba(0,0,0,.02);border-style:dashed;border-color:rgba(0,0,0,.08);cursor:default;box-shadow:none}
 .tile.off:active{transform:none}
 .tile.off .pos{filter:grayscale(1);opacity:.45}
@@ -593,6 +608,29 @@ h1,h2,h3{margin:0}
 .rslot .rprice{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--green)}
 .rslot .rwar{font-family:var(--fn);font-size:12px;font-weight:800;color:var(--ink);width:38px;text-align:right}
 .rslot .rlink{font-size:9px;color:var(--gold);font-weight:700}
+
+/* ─── the staff strip ───
+   Three arms share one mound on the diamond, so before this only one of them
+   was ever on screen and signing a starter looked like it had done nothing.
+   They get their own row: they are not fielders, and a bullpen is how a real
+   broadcast shows them anyway. */
+.staffline{display:flex;gap:7px;margin:8px 0 2px}
+.sl-arm{flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:7px 9px;
+  border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.sl-arm.filled{border-color:rgba(0,0,0,.16)}
+.sl-pos{flex:0 0 auto;font-family:var(--fn);font-size:9.5px;font-weight:800;
+  letter-spacing:.04em;padding:3px 5px;border-radius:5px;color:#fff;
+  text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.sl-nm{font-family:var(--fp);font-size:13px;font-weight:700;flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sl-nm.open{color:var(--dim-2);font-weight:600;font-style:italic}
+.sl-yr{font-family:var(--fn);font-size:9.5px;color:var(--dim);font-weight:700;flex:0 0 auto}
+@media (max-width:400px){
+  .staffline{gap:5px}
+  .sl-arm{padding:6px 7px;gap:5px}
+  .sl-nm{font-size:12px}
+  .sl-yr{display:none}
+}
 
 /* ─── results v2 ─── */
 .ro-hero{position:relative;text-align:center;margin:14px 0 12px;padding:22px 18px 20px;
@@ -1216,6 +1254,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 
   <div class="field" id="field"></div>
+  <div class="staffline" id="field-staff"></div>
 
   <div class="reels" id="reels">
     <div class="reelcol"><span class="rlabel">&starf; Year &starf;</span>
@@ -1238,7 +1277,9 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <h2 class="display" style="font-size:30px;margin:4px 0">The squad</h2>
   </div>
   <div class="field" id="sq-field"></div>
+  <div class="staffline" id="sq-staff"></div>
   <div class="sq-verdict" id="sq-verdict"></div>
+  <div id="sq-roster"></div>
   <div class="ro-coach" style="margin-top:12px">
     <div class="ch"><span class="ceyebrow">Coach's take</span><span class="ro-arch" id="sq-arch"></span></div>
     <div class="ro-takes" id="sq-takes"></div>
@@ -1598,6 +1639,9 @@ const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.inn
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
 const M=v=>'$'+v.toFixed(1)+'M';
 const lastName=n=>{const p=n.trim().split(/\s+/);return p[p.length-1];};
+/* WAR as a temperature band. See .warv in the stylesheet for why five. */
+const warBand=w=>'w'+(w>=8?5:w>=6?4:w>=4.5?3:w>=3?2:w>=1.5?1:0);
+const warHtml=(w,extra)=>'<span class="warv '+warBand(w)+(extra?' '+extra:'')+'">'+w.toFixed(1)+'</span>';
 
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):null;
 const reduceMotion=()=>!!(RM&&RM.matches);
@@ -1836,6 +1880,54 @@ const MOVE_MS=520;
 const easeOut=t=>1-Math.pow(1-t,3);
 
 const PITCHER_SLOTS=[9,10,11];
+/* The three arms, in a row of their own.
+   They share one spot on the diamond because there is one mound, which meant
+   only the most recent of them was ever drawn: sign a starter and nothing on
+   screen changed, so it read as a signing that had not happened. All-Time Staff
+   has its own board and does not need this. */
+function drawStaffLine(el){
+  if(!el)return;
+  if(!RUN||RUN.staff){el.innerHTML='';el.style.display='none';return;}
+  el.style.display='';
+  const slots=SLOTS_NOW();
+  const bySlot=new Array(slots.length).fill(null);
+  RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
+  el.innerHTML=PITCHER_SLOTS.map(i=>{
+    const p=bySlot[i];
+    return '<div class="sl-arm'+(p?' filled':'')+'">'+
+      '<span class="sl-pos" style="'+posPaint(slots[i])+'">'+esc(slots[i])+'</span>'+
+      (p?'<span class="sl-nm">'+esc(lastName(p.n))+'</span>'+
+          '<span class="sl-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'
+        :'<span class="sl-nm open">Open</span>')+
+      '</div>';
+  }).join('');
+}
+
+/* The twelve, as a list, in lineup-card order rather than the order the wheel
+   happened to stop in. The diamond says where everybody plays; this says who
+   they are, which is the one thing the diamond cannot do for a pitching staff. */
+function rosterList(host,opts){
+  const o=opts||{};
+  if(!host||!RUN)return;
+  host.innerHTML=o.title?'<div class="eyebrow" style="margin:14px 0 8px">'+esc(o.title)+'</div>':'';
+  const wrap=document.createElement('div');wrap.className='roster-final';
+  const slots=SLOTS_NOW();
+  const perChem=R.chemByPlayer(RUN,null,o.chem||null);
+  const rows=RUN.roster.map((p,i)=>({p,i,si:RUN.slotIndex[i]})).sort((a,b)=>a.si-b.si);
+  for(const r of rows){
+    const slot=slots[r.si];
+    const div=document.createElement('div');div.className='rslot';
+    div.innerHTML='<span class="rpos" style="'+posPaint(slot)+'">'+esc(slot)+'</span>'+
+      '<span class="rname">'+esc(r.p.n)+'</span>'+
+      chemBadge(perChem[r.i],'sm')+
+      '<span class="rteam">'+r.p.s+' '+esc(r.p.t)+'</span>'+
+      (o.price?'<span class="rprice">'+M(r.p.p)+'</span>':'')+
+      '<span class="rwar">'+warHtml(r.p.w)+'</span>';
+    wrap.appendChild(div);
+  }
+  host.appendChild(wrap);
+}
+
 function drawField(el,live){
   if(RUN&&RUN.staff){drawStaffBoard(el,live);return;}
   el.classList.remove('staffboard');
@@ -2622,7 +2714,7 @@ function paintTop(){
 }
 
 function nextSpin(){
-  paintTop();drawField($('field'),true);watchFold();
+  paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));watchFold();
   $('opts').innerHTML='';$('tabs').innerHTML='';$('d-respin').innerHTML='';
   activeTab='ALL';
   try{
@@ -2759,7 +2851,7 @@ function optTile(r,i){
     '<span class="pr">'+(block?esc(reason):M(p.p))+'</span></div>'+
     '<div class="nm">'+esc(p.n)+'</div>'+
     '<div class="sn">'+p.s+' '+esc(p.t)+(destSlot?' &rarr; '+destSlot:'')+'</div>'+
-    '<div class="tf"><div class="pts"><b>'+p.w.toFixed(1)+'</b><i>WAR</i></div>'+chemHtml+'</div>'+
+    '<div class="tf"><div class="pts"><b>'+warHtml(p.w)+'</b><i>WAR</i></div>'+chemHtml+'</div>'+
     '</button>';
 }
 
@@ -2772,7 +2864,7 @@ function paintRespins(){
       R.respin(RUN,DATA);
       const draw=RUN.currentDraw;
       buildDrawExtras(draw);
-      paintTop();drawField($('field'),true);
+      paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));
       spinBoth(draw,()=>paintOpts(draw));
     });
   }else{
@@ -2865,9 +2957,10 @@ function staffReport(tagged,chem,rating){
 
 function showSquad(){
   show('s-squad');
-  drawField($('sq-field'),false);
+  drawField($('sq-field'),false);drawStaffLine($('sq-staff'));
   const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
   const chem=R.chemOf(RUN,tagged);
+  rosterList($('sq-roster'),{title:'All twelve',price:true,chem});
   /* All-Time Staff has no lineup to shape and no batting order to balance, so it
      gets neither an archetype nor a coach's report about its hitting. Left alone it
      told a twelve-arm roster it had a light-hitting lineup. */
@@ -3806,22 +3899,7 @@ function showResult(){
     {label:'R/G',value:(o.totalRS/162).toFixed(1)},{label:'RA/G',value:(o.totalRA/162).toFixed(1)},
   ].map(s=>'<div class="stat-box"><div class="sv">'+s.value+'</div><div class="sl">'+s.label+'</div></div>').join('');
 
-  // Roster with WAR
-  const rosterDiv=$('r-roster');
-  rosterDiv.innerHTML='<div class="eyebrow" style="margin-bottom:8px">Your roster</div>';
-  const roster=document.createElement('div');roster.className='roster-final';
-  const perChem=R.chemByPlayer(RUN,null,o.chemistry);
-  RUN.roster.forEach((p,i)=>{
-    const slot=SLOTS_NOW()[RUN.slotIndex[i]];
-    const div=document.createElement('div');div.className='rslot';
-    div.innerHTML='<span class="rpos" style="'+posPaint(slot)+'">'+slot+'</span>'+
-      '<span class="rname">'+esc(p.n)+'</span>'+
-      chemBadge(perChem[i],'sm')+
-      '<span class="rteam">'+p.s+' '+esc(p.t)+'</span>'+
-      '<span class="rwar">'+p.w.toFixed(1)+'</span>';
-    roster.appendChild(div);
-  });
-  rosterDiv.appendChild(roster);
+  rosterList($('r-roster'),{title:'Your roster',chem:o.chemistry});
 
   if(o.titleWon||o.beatRecord) setTimeout(()=>fireConfetti(o.isGOAT||o.titleWon),300);
   /* Last, and never awaited: the screen is already up and a board that is down
