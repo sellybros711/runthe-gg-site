@@ -2362,11 +2362,81 @@ private.
 the way `Wrestling/` and `Tour/` answer theirs, because the capitalised URL is
 the one that gets typed and pasted. It carries its own robots tag.
 
-The sprites are generated, never hand-edited in the page:
+The sprites came from a generator and now come from a HANDOFF PACK, and the
+generator is kept because the pack cannot answer everything:
 
 ```
-python3 mythiball/gen_sprites_v2.py > sprites.js    # then splice V2_SPRITES in
+python3 mythiball/sprites/tools/audit.py        what is in the pack
+python3 mythiball/sprites/tools/build_table.py  build V2_SPRITES from it
+python3 mythiball/sprites/tools/install.py      swap it into the page
+python3 mythiball/sprites/tools/install.py --revert   put the generator back
+python3 mythiball/gen_sprites_v2.py > sprites.js      the old parametric one
 ```
+
+**THE STILLS ARE WHAT MADE THE SWAP POSSIBLE, NOT THE ANIMATION STRIPS.**
+`mythiball/sprites/source_reference/sprites_64/` carries all 68 characters in
+right and left with no gaps at all, including the 13 the handoff lists as
+omitted. The animation strips cover 55 characters and **141 of their 330 are
+unusable**, so building off strips alone would have restyled part of a roster
+and left the rest generated, which reads worse than either style on its own.
+The same is true INSIDE a character: a pack idle over a generated swing makes
+a man change species when he swings. So a character is built entirely from the
+pack, the stills are the floor, and a working strip upgrades a pose from a
+still to a drawn frame on top. 751 of the 1,088 poses are drawn frames.
+
+**A FRAME IS GOOD OR BAD ON ITS OWN, AND READING THE STRIP'S VERDICT THREW ART
+AWAY.** The audit classifies a STRIP, because a strip is what an artist
+redraws, and the first build read that verdict straight: one clipped frame in
+a four frame swing condemned the other three, so acrobat's follow through fell
+back to a still while the drawn follow through sat in the file untouched.
+Asking about the FRAME recovered **86 poses, 665 to 751**. It is the clipping
+rule's own mistake one level up: do not condemn good art because of its
+neighbour.
+
+**FIVE POSES THE PACK CANNOT DRAW STAND ON ITS STILLS.** There is no rear view
+in the pack and no fielding art anywhere. `back` and the two backruns are the
+LEFT still, so the game reads a profile where it used to read a pair of
+shoulders: a camera change rather than a hole, and what most baseball games
+show. `catch` takes the FRONT still, which exists for 59 of the 68 and falls
+back to left for the other nine, because it has to differ from the right
+facing idle or it is a pose nobody can tell happened. `throw` stands on the
+right still and really is the same drawing as idle for a character whose pitch
+strip was never drawn. Nothing here is generated, which is the handoff's own
+rule for fielding art.
+
+**`left` IS EXACTLY `mirror(right)` FOR EVERY CHARACTER**, measured, so the
+pack ships a flip rather than a second drawing and the table stores both.
+Flipping at draw time instead would take about 40% off it. Worth doing the day
+the table's size starts to matter; it is 1.5MB today against the generator's
+1.0MB.
+
+**TWO GUARDS WERE ASKING FOR ART NOBODY DREW**, and they were changed rather
+than deleted. Both asserted sixteen DISTINCT drawings a character, which the
+generator could promise because a pose there was an arm offset on a parametric
+figure. Hand authored art has three views and partial animation, so a
+character whose strips were never drawn cannot have sixteen distinct
+drawings. What they assert now is the half that still means something: every
+pose present, every one decoding to the declared size, catch differing from
+idle (the pack CAN answer that one), and a FLOOR under how many action poses
+are their own drawing, so a build that quietly went back to stills for
+everybody still fails. Filling `docs/ART_ORDER.md` can only make that floor
+greener.
+
+**THE INSTALLER MATCHES BRACES AND WILL NOT SEARCH FOR `\n};`.** That works
+exactly once. The generated table was pretty printed and ended on its own
+line; the built one is minified onto one, so a second run searched past the
+table and deleted every line between there and the next block that happened to
+close that way. **The page still parsed**, `V2_SPRITES` was still an object,
+and the symptom was `Sound is not defined` a thousand lines below the damage.
+It refuses to write now unless six sentinel declarations survive the swap, and
+running it twice is a no-op.
+
+**SIZE IS HEIGHT, NEVER FRAME WIDTH.** `drawCharacter` asked for
+`HERO_W * scale`, which on 32x50 art gave a person 1.56 times that tall. The
+pack's frames are SQUARE, so the identical line drew everyone twice as wide
+and the batter covered the strike zone he is meant to be swinging at.
+`HERO_DRAW_H` pins the on screen height and the width follows from whatever
+shape the frame is, so the next change of frame shape costs nothing.
 
 Every character is drawn from a PUBLIC DOMAIN source and `mythiball/PD_SOURCES.md`
 is the register: source, what the sprite shows, what it avoids. The avoid column
