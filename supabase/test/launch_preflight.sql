@@ -17,7 +17,7 @@
 -- ---------------------------------------------------------------------------
 -- Postgres resolves a function call at PARSE time, so one missing function in
 -- a query that calls them would fail the whole statement with "function does
--- not exist" and report nothing about the other ten. Every check below is a
+-- not exist" and report nothing about any of the others. Every check below is a
 -- catalog lookup or a constraint definition, so a database missing everything
 -- still returns a full readable report rather than one error.
 --
@@ -28,6 +28,12 @@
 --
 -- Anything false in the first block is a mode losing player progress right
 -- now. The last row is the summary.
+--
+-- NOT EVERY ROW COSTS A SEASON, and the `if_missing` column is what says which
+-- do. The last block is decoration: its absence takes a mark off a leaderboard
+-- and nothing else. It is still on the list, because a migration nobody can see
+-- the absence of is a migration that never gets run, and reading one column is
+-- cheaper than remembering which files matter.
 -- ---------------------------------------------------------------------------
 
 with
@@ -123,7 +129,14 @@ check_rows(sort, migration, what, breaks, ok) as (
   (12, '103_cloud_saves',
       'ps_saves, a run kept against the account',
       'A run in progress lives only in that browser. Clearing site data loses a dynasty.',
-      (select count(*) > 0 from has_table where name = 'ps_saves'))
+      (select count(*) > 0 from has_table where name = 'ps_saves')),
+
+  -- ---- decoration, and it is on the list so its absence is a row rather than a report ----
+  (13, '107_board_pro_and_live',
+      'display_pro, dynasty_over and ps_dynasty_end',
+      'The leaderboard loses two marks and NOTHING ELSE: no gold on a paid name, no LIVE on a running dynasty. The board is the board it was.',
+      (select count(*) > 0 from proc where name = 'ps_dynasty_end')
+      and (select count(*) > 0 from proc where name = 'ps_is_pro'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

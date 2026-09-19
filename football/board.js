@@ -100,6 +100,10 @@
      migration's columns get their own flag or running N and not N+1 costs the board
      everything the earlier files added. */
   let ringColumn = true;
+  /* 107's column, tracked separately for the fourth time and for the fourth identical
+     reason. Without it every name draws plain, which is what the board drew before the
+     bundle existed. */
+  let proColumn = true;
   /* 98's three and 94's pair. Optional in the same way as the sets above, and unlike ALL of
      them these are asked for by mine() ALONE and are deliberately not in rowCols() below.
      Only the badge cabinet reads them: 98's three say which seasons belong to the same
@@ -120,7 +124,11 @@
     (defColumns ? ',def_takeaways,def_tds,points_allowed' : '') +
     (crestColumns ? ',display_mark,display_rung' : '') +
     (crestColumns && tierColumn ? ',display_tier' : '') +
-    (crestColumns && ringColumn ? ',display_ring' : '');
+    (crestColumns && ringColumn ? ',display_ring' : '') +
+    /* NOT nested under crestColumns, unlike the tier and the ring. Those two are layers OF
+       a crest and are meaningless without one; this is a mark on the NAME and has nothing
+       to do with the disc beside it. */
+    (proColumn ? ',display_pro' : '');
   const missingCol = (body, re) => {
     const m = (body && body.message) || '';
     return re.test(m) && /does not exist/i.test(m);
@@ -134,6 +142,7 @@
   const missingCrestColumn = (body) => missingCol(body, /display_mark|display_rung/);
   const missingTierColumn = (body) => missingCol(body, /display_tier/);
   const missingRingColumn = (body) => missingCol(body, /display_ring/);
+  const missingProColumn = (body) => missingCol(body, /display_pro/);
   /* Not retried, only remembered, for the reason above BASE_COLS. Set so the connection
      check can say which file to run instead of "the board cannot be read".
 
@@ -715,9 +724,14 @@
          than being mistaken for a schema one file behind. The loop cannot run away: each
          branch permanently clears the flag that let it in. */
       /* ONE PASS PER OPTIONAL SET, narrowest first. */
-      for (let pass = 0; pass < 7 && !res.ok && res.status === 400; pass++) {
+      /* THE BOUND IS ONE PER OPTIONAL SET AND IT MOVES WITH THEM. Left at 7 when 107's
+         column was added, a database missing every one of them would run out of passes on
+         the last and report the whole board offline. */
+      for (let pass = 0; pass < 8 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
-        if (ringColumn && missingRingColumn(body)) {
+        if (proColumn && missingProColumn(body)) {
+          proColumn = false;
+        } else if (ringColumn && missingRingColumn(body)) {
           ringColumn = false;
         } else if (tierColumn && missingTierColumn(body)) {
           tierColumn = false;
@@ -1082,7 +1096,35 @@
     return cut ? '&created_at=gte.' + encodeURIComponent(cut) : '';
   };
 
-  /* The board, best runs first on the chosen axis, inside the chosen window. */
+  /*
+   * THE RUN IS OVER, said once, after the last season.
+   *
+   * Its own call rather than a fifth argument on the tag, because the two happen at
+   * different moments: a tag lands with every season and this lands when the fate is
+   * known. Fails soft like everything else here and is never awaited by a caller: a
+   * dynasty that ends with the network down keeps its LIVE badge, which is a wrong badge
+   * on a board and not a lost run, and the next thing that account plays is not affected.
+   *
+   * NOT RETRIED, unlike the tag. A missed tag leaves a season off a run's board and the
+   * next season carries the whole run forward anyway; this has no next season to carry it,
+   * so a retry loop would be the only thing standing between a finished run and the page
+   * moving on. One attempt, and a stale badge is the cost.
+   */
+  async function dynastyEnd(dynastyId) {
+    if (!dynastyId) return false;
+    try {
+      const res = await timed(base() + 'rpc/ps_dynasty_end',
+        { method: 'POST', headers: headers(), body: JSON.stringify({ p_dynasty_id: dynastyId }) });
+      if (res.ok) { lastError = null; return true; }
+      await fail('dynastyEnd', res);
+    } catch (e) { failThrown('dynastyEnd', e); }
+    return false;
+  }
+
+  /* The board, best runs first on the chosen axis, inside the chosen window.
+     `select=*` rather than a column list, so 107's dynasty_over and display_pro arrive
+     with no probe on this path: a view without them simply answers without them, and the
+     page reads a missing column as no opinion. */
   async function dynastyTop(limit, sort, win) {
     try {
       const q = base() + 'ps_dynasty_board?select=*&order=' + dynOrder(sort) +
@@ -1229,10 +1271,11 @@
   const dynRunStart = () => runCall('ps_dynasty_run_start');
 
   window.PS_BOARD = {
-    API_VERSION: 17,
+    /* 18: 107's display_pro on the classic rows, and dynastyEnd. */
+    API_VERSION: 18,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
-    dynastyTag, dynastyTop, dynastyMine, dynastyRank, dynastyTotal,
+    dynastyTag, dynastyEnd, dynastyTop, dynastyMine, dynastyRank, dynastyTotal,
     attemptsState, attemptSpend, attemptGrace, attemptDayEnd,
     dynRunState, dynRunStart,
     get offline() { return offline; },

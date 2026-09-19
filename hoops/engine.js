@@ -39,7 +39,7 @@
    it at boot and reloads once, because a returning visitor CAN hold a cached
    copy of this file against a current page. 2: playerTags() removed, wheel
    colors and title resolution added. */
-const ENGINE_API_VERSION = 2;
+const ENGINE_API_VERSION = 5;
 
 // ─── constants ──────────────────────────────────────────────────────────────
 
@@ -1236,6 +1236,340 @@ function resolveGame(pointsFor, pointsAgainst, rng, advantage) {
   return { won: y > t, yourPoints: y, oppPoints: t, ot };
 }
 
+// ─── the box score ──────────────────────────────────────────────────────────
+
+/* WHAT HAPPENED IN ONE GAME, FOR SIX REAL PLAYERS.
+ *
+ * You draft Jordan's 1996 and the game has never once told you what he did in
+ * any of the 82. A scoreline is the result; a box score is the GAME, and it is
+ * the whole reason to draft real people out of real seasons rather than six
+ * ratings.
+ *
+ * IT IS A DECOMPOSITION OF A SCORE THAT IS ALREADY DECIDED, AND NEVER A SECOND
+ * MODEL. This is the load-bearing decision in this section and it is worth the
+ * paragraph. resolveGame settles the scoreline off the run's seed before any
+ * of this runs, and these six lines are apportioned to hit that total exactly.
+ * Two reasons, both of them things that have already gone wrong on this site:
+ *
+ *   - A possession sim that DECIDED the score would replace the win-share
+ *     model fitted to twenty-two real NBA records at 3.5 wins rms, which is
+ *     the only reason a roster in this game is worth what it was worth in
+ *     life. Every TARGETS band would need re-solving and the answer would be
+ *     worse.
+ *   - Two models of one game disagree. verify.mjs already caught the animated
+ *     season and the instant season producing different records off one seed
+ *     when a home-court expression was written out twice. A box score that did
+ *     not sum to the scoreline printed beside it is the same fault, visible to
+ *     anybody who can add.
+ *
+ * So nothing downstream reads any of this. It is what the game SHOWS, and the
+ * one property it must have is that it adds up.
+ */
+
+const BOX = {
+  /* A scorer's night-to-night spread, as a multiple of the square root of his
+   * average. Real NBA scoring is roughly sqrt-variance.
+   *
+   * IT ONLY GOVERNS THE TAIL, AND THAT IS THE MEASUREMENT WORTH NOT REPEATING.
+   * Swept from 1.45 down to 0.55 over 2,460 team-games a row, the leading
+   * scorer's share of his team moved 34.9% to 32.2% and the median game high
+   * moved 41 to 38. It is not the reason a box score here is concentrated:
+   *
+   *   K      leader   40+     50+    60+   high med/p90/max
+   *   1.45   34.9%    55.3%   17.6%  3.5%  41 / 53 / 83
+   *   0.85   32.7%    44.9%    8.5%  0.7%  39 / 49 / 65
+   *   0.55   32.2%    41.6%    6.5%  0.1%  38 / 48 / 69
+   *
+   * THE CONCENTRATION IS THE PREMISE AND NO CONSTANT FIXES IT. Six men cover
+   * 240 minutes and score every point, where a real club spreads both over
+   * ten, so the best man takes about a third of his team against a real 26%
+   * and no amount of damping moves it. Anybody who comes here to make the box
+   * scores look more like a real NBA game log is turning the wrong dial: the
+   * dial is the roster size, and that is the game.
+   *
+   * So this is set for the TAIL alone. 3.5% of games with a 60 point scorer
+   * is three a season and silly; 0.7% is one every other year and is the kind
+   * of night somebody screenshots. 0.85 is the first value with real room
+   * rather than the last one that passes, since 0.70 and 0.55 buy almost
+   * nothing after it. */
+  PTS_SD_K: 0.85,
+  REB_SD_K: 1.00,
+  AST_SD_K: 0.90,
+  /* HOW FAR ATTEMPTS FOLLOW POINTS. A man who doubles his scoring did not
+     double his shots: most of a big night is efficiency. At 0.30 a 40 point
+     game off a 25 point average takes about 18% more shots than usual. */
+  VOLUME_FOLLOW: 0.30,
+  /* The share of a man's points that came from the line, and the league rate
+     he shot there. Both are league constants standing in for per-player rates
+     the data does not carry (there is no FTA column), and they are the only
+     invented numbers in a line. The alternative is a box score claiming every
+     30 point night came entirely from the field, which is worse. */
+  FT_SHARE: 0.17,
+  FT_PCT: 0.77,
+  /* Minutes. The engine already weights a sixth man at MINUTES_SHARE.sixth,
+     and `mp` in the data is what he really played, so this only varies it. */
+  MIN_SD: 3.4,
+  /* Nobody in a six man rotation sits for three quarters. The floor is what
+     stops the split handing somebody four minutes and the man beside him the
+     whole game, and six times it has to stay under 240. */
+  MIN_FLOOR: 18,
+};
+
+/* Split a total into integer parts in the given proportions, hitting the total
+   EXACTLY. Largest remainder, which is the method that never leaves a stray
+   point over and never needs a fudge row to absorb one. */
+function apportion(total, weights) {
+  const n = weights.length;
+  const out = new Array(n).fill(0);
+  if (!n) return out;
+  const T = Math.max(0, Math.round(total));
+  const sum = weights.reduce((s, w) => s + Math.max(0, w), 0);
+  if (!(sum > 0)) { out[0] = T; return out; }
+
+  const exact = weights.map(w => Math.max(0, w) / sum * T);
+  for (let i = 0; i < n; i++) out[i] = Math.floor(exact[i]);
+  let left = T - out.reduce((s, v) => s + v, 0);
+  const order = exact
+    .map((v, i) => ({ i, frac: v - Math.floor(v) }))
+    .sort((a, b) => b.frac - a.frac);
+  for (let k = 0; left > 0; k++) { out[order[k % n].i]++; left--; }
+  return out;
+}
+
+/* apportion, with a floor and a ceiling on every part.
+ *
+ * The minutes column needs it and nothing else does: six men share 240 player
+ * minutes, so the average is 40, and a plain proportional split handed the
+ * heaviest man 67 of a 48 minute game. A cap cannot be applied afterwards
+ * without breaking the total, so whatever a capped man gives up is
+ * redistributed among the men still free to take it, and the pass repeats
+ * because the redistribution can push somebody else over.
+ *
+ * It terminates: every pass pins at least one man or changes nothing, so the
+ * bound is one pass per part.
+ */
+function apportionCapped(total, weights, lo, hi) {
+  const n = weights.length;
+  if (!n) return [];
+  const out = new Array(n).fill(null);
+
+  for (let pass = 0; pass <= n + 1; pass++) {
+    const free = [];
+    let spoken = 0;
+    for (let i = 0; i < n; i++) {
+      if (out[i] === null) free.push(i); else spoken += out[i];
+    }
+    if (!free.length) break;
+    const share = apportion(total - spoken, free.map(i => weights[i]));
+
+    /* ONE SIDE PER PASS, and getting this wrong is what made the first
+       version wrong on 73% of inputs. Pinning the over-cap men AND the
+       under-floor men together throws away the redistribution between them:
+       weights [1,1,1,31.6,26.8,25.8] over 240 pinned three at the floor and
+       three at the ceiling in a single pass, arrived at 198, and had nothing
+       left unpinned to give the other 42 to. Clamp the ceiling, re-apportion
+       what is left among everybody else, and the three cheap men land on 32
+       apiece. */
+    const over = [];
+    for (let k = 0; k < free.length; k++) if (share[k] > hi) over.push(free[k]);
+    if (over.length) { for (const i of over) out[i] = hi; continue; }
+
+    const under = [];
+    for (let k = 0; k < free.length; k++) if (share[k] < lo) under.push(free[k]);
+    if (under.length) { for (const i of under) out[i] = lo; continue; }
+
+    for (let k = 0; k < free.length; k++) out[free[k]] = share[k];
+    break;
+  }
+  for (let i = 0; i < n; i++) if (out[i] === null) out[i] = lo;
+
+  /* Only reachable when the caller asked for something the bounds cannot
+     hold (n*lo above the total, or n*hi below it). Push what is left as far
+     as the bounds allow rather than dropping it, and stop when a full sweep
+     moves nothing, which is the honest "this total does not fit" answer. */
+  let drift = Math.round(total) - out.reduce((s, v) => s + v, 0);
+  while (drift !== 0) {
+    let moved = 0;
+    for (let i = 0; i < n && drift !== 0; i++) {
+      if (drift > 0 && out[i] < hi) { out[i]++; drift--; moved++; }
+      else if (drift < 0 && out[i] > lo) { out[i]--; drift++; moved++; }
+    }
+    if (!moved) break;
+  }
+  return out;
+}
+
+/* A man's shooting line, solved BACKWARDS from the points he scored so the
+ * arithmetic always closes: 2 * twos + 3 * threes + free throws is his points,
+ * every time. A box score whose field goals do not produce its points is the
+ * most obvious tell there is.
+ *
+ * The free throws are the free variable, which is what absorbs the parity
+ * problem: points left after the threes have to be even to come out of two
+ * pointers, and moving a free throw by one is how that is fixed without
+ * touching the total.
+ */
+function shootingLine(p, pts, rng, load) {
+  const avg = Math.max(1, p.pts || 1);
+
+  /* TWO THINGS SCALE A MAN'S SCORING AND THEY MUST NOT BE CONFUSED, which the
+   * first version did, and it put the league at 59% from the field.
+   *
+   * The STRUCTURAL one is `load`: six men play all 240 minutes here and absorb
+   * a whole bench's shots, so the six season averages sum to about 78 against
+   * a team total near 112. That is a real 1.4x of extra WORK, and the shots
+   * come with it, so it passes into attempts in full.
+   *
+   * The NIGHT one is `heat`: how this game went against what he was already
+   * due. Most of a big night is efficiency rather than volume, so only
+   * VOLUME_FOLLOW of it reaches the attempts.
+   *
+   * Folded together, a man scoring 41 off a 30 average was credited with 20
+   * shots instead of 27 and shot 60%. Separated, the league shoots what the
+   * league shoots.
+   */
+  const scale = load > 0 ? load : 1;
+  const heat = clamp(pts / (avg * scale), 0.15, 2.6);
+  const follow = scale * (1 - BOX.VOLUME_FOLLOW + BOX.VOLUME_FOLLOW * heat);
+
+  let fga = Math.max(pts > 0 ? 1 : 0, Math.round((p.fga || avg * 0.85) * follow));
+  let tpa = Math.round((p.tpa || 0) * follow);
+  if (tpa > fga) tpa = fga;
+
+  /* Free throws first, then made from the line, then parity. */
+  let ftm = Math.round(pts * BOX.FT_SHARE * (0.4 + rng() * 1.2));
+  if (ftm > pts) ftm = pts;
+
+  /* Of what is left, the threes, capped by what he actually attempts. A man
+     who took none all season takes none tonight. */
+  const threeRate = fga > 0 ? tpa / fga : 0;
+  let tpm = Math.min(tpa, Math.max(0, Math.round((pts - ftm) * threeRate / 3)));
+
+  /* The rest has to divide into two pointers, so nudge the line rather than
+     leave a point unaccounted for. */
+  let field = pts - ftm - 3 * tpm;
+  if (field < 0) { tpm = Math.max(0, Math.floor((pts - ftm) / 3)); field = pts - ftm - 3 * tpm; }
+  if (field % 2 !== 0) {
+    /* EITHER WAY, CHOSEN ON THE DICE. The first version always went up, and
+       always adding one free throw to half of all lines put the league's
+       share of points from the line at 22% against a real 17%. A tie-break
+       that only breaks one way is a bias with a rounding error's name on it. */
+    const down = ftm > 0 && rng() < 0.5;
+    if (down) { ftm--; field++; }
+    else if (ftm + 1 <= pts) { ftm++; field--; }
+    else if (tpm > 0) { tpm--; field += 3; ftm = pts - 3 * tpm - field; }
+  }
+  if (field < 0) field = 0;
+
+  const twos = field / 2;
+  const fgm = twos + tpm;
+  if (fgm > fga) fga = fgm;
+  let fta = Math.max(ftm, Math.round(ftm / BOX.FT_PCT));
+
+  return { pts, fgm, fga, tpm, tpa, ftm, fta };
+}
+
+/* The six lines for one side of one game. `teamPoints` is what the scoreline
+   already says, and the points column sums to it exactly. */
+function gameBox(roster, teamPoints, rng, ot) {
+  const men = roster.map(p => ({ p, share: minutesShare(p) }));
+
+  /* Scoring weight is his real per-game average, scaled by the minutes his
+     slot actually gets, jittered by his own spread. Negative draws are floored
+     rather than reflected: a man can have a quiet night and cannot score less
+     than nothing. */
+  const weights = men.map(({ p, share }) => {
+    const base = Math.max(0.5, (p.pts || 1) * share);
+    return Math.max(0, base + normal(rng) * BOX.PTS_SD_K * Math.sqrt(base));
+  });
+  const pts = apportion(teamPoints, weights);
+
+  /* What the six are carrying against what they averaged. See shootingLine:
+     this is the structural half of the scale-up and it reaches the attempts
+     in full. Guarded against a roster of men with no scoring at all, which
+     the fixtures can build. */
+  const expected = men.reduce((s, { p, share }) => s + Math.max(0, p.pts || 0) * share, 0);
+  const load = expected > 1 ? teamPoints / expected : 1;
+
+  /* FIVE MEN ARE ON THE FLOOR FOR EVERY MINUTE OF IT, so the column has to add
+   * to 240 and not to whatever six men happened to play for real clubs with
+   * benches behind them.
+   *
+   * Printed off `mp` alone it added to 153, and a box score saying six men
+   * played two thirds of the game and scored all of the points is a box score
+   * arguing with itself. `mp` is his minutes in a ten man rotation, which is
+   * the wrong denominator for a mode whose whole premise is that these six ARE
+   * the team. So it is his SHARE of the minutes, and a 44 minute starter is
+   * the honest price of a six man roster rather than a number to shrink.
+   *
+   * An overtime is five more minutes with five men on the floor. */
+  const extra = Math.max(0, ot | 0);
+  const floorMinutes = 240 + extra * 25;
+  const minutes = apportionCapped(floorMinutes,
+    men.map(({ p, share }) => Math.max(1, (p.mp || 30) * share + normal(rng) * BOX.MIN_SD)),
+    BOX.MIN_FLOOR, 48 + extra * 5);
+
+  return men.map(({ p, share }, i) => {
+    const reb = Math.max(0, Math.round((p.reb || 0) * share
+      + normal(rng) * BOX.REB_SD_K * Math.sqrt(Math.max(1, (p.reb || 0) * share))));
+    const ast = Math.max(0, Math.round((p.ast || 0) * share
+      + normal(rng) * BOX.AST_SD_K * Math.sqrt(Math.max(1, (p.ast || 0) * share))));
+    /* Blocks and steals are small counts, so a normal draw around a mean under
+       one produces a lot of negatives. Floored, which is what a real box score
+       looks like: most nights most men have none. */
+    const blk = Math.max(0, Math.round((p.blk || 0) * share + normal(rng) * 0.8));
+    const stl = Math.max(0, Math.round((p.stl || 0) * share + normal(rng) * 0.8));
+    return {
+      i: p.i, n: p.n, slot: p._slot || null, min: minutes[i], reb, ast, blk, stl,
+      ...shootingLine(p, pts[i], rng, load),
+    };
+  });
+}
+
+/* HOW THE GAME GOT THERE: four quarters, plus whatever overtime the scoreline
+ * already says it went to.
+ *
+ * THE OVERTIME CONSTRAINT IS THE WHOLE REASON THIS IS NOT FOUR RANDOM SPLITS.
+ * resolveGame breaks a tie by adding points to ONE side, so a game that went
+ * to overtime is a game that was level at the end of regulation, and quarters
+ * that do not add up to a tie there are quarters describing a different game
+ * from the one on the scoreboard. So regulation is apportioned to a level
+ * score and each extra period is scored on top of it.
+ *
+ * The loser of an overtime still scores in it, which resolveGame does not
+ * model and every real overtime does. That is invented, and it is invented in
+ * the direction of the sport rather than away from it.
+ */
+function quarterLines(yourPoints, oppPoints, ot, rng) {
+  const periods = 4 + Math.max(0, ot | 0);
+  /* Level at the buzzer, and low enough that both sides have a real overtime
+     to play: about eleven points each per extra period. */
+  const otFloor = 9 + Math.round(rng() * 5);
+  const level = ot > 0
+    ? Math.max(20, Math.min(yourPoints, oppPoints) - ot * otFloor)
+    : null;
+
+  const yourReg = ot > 0 ? level : yourPoints;
+  const oppReg = ot > 0 ? level : oppPoints;
+
+  /* Quarters are close to even with real spread. Weighted rather than drawn
+     directly so apportion can hit the total exactly. */
+  const spread = () => Array.from({ length: 4 }, () => Math.max(0.35, 1 + normal(rng) * 0.17));
+  const yours = apportion(yourReg, spread());
+  const theirs = apportion(oppReg, spread());
+
+  if (ot > 0) {
+    const yourOT = apportion(yourPoints - level, spread().slice(0, ot).map(() => 1));
+    const oppOT = apportion(oppPoints - level, spread().slice(0, ot).map(() => 1));
+    for (let k = 0; k < ot; k++) { yours.push(yourOT[k]); theirs.push(oppOT[k]); }
+  }
+
+  const names = ['1st', '2nd', '3rd', '4th'];
+  for (let k = 4; k < periods; k++) names.push(periods === 5 ? 'OT' : 'OT' + (k - 3));
+
+  return { names, yours, theirs, periods };
+}
+
 // ─── the schedule ───────────────────────────────────────────────────────────
 
 /* YOUR SLATE IS REAL TEAMS. Every opponent is a team-season out of the same
@@ -1515,72 +1849,806 @@ function playoffSeries(pointsFor, pointsAgainst, rng, bestOf, advantage) {
   return { won: yourWins >= need, gamesPlayed: games.length, yourWins, oppWins, games };
 }
 
-function generatePlayoffs(seed, ortg, drtg, rng, regularWins, rating) {
-  if (!seed.made) return null;
-  const edge = titleEdge(rating);
-  const rounds = playoffRoundNames(seed.rounds);
-  const results = [];
-  let alive = true;
-
+/* ── THE BRACKET, AS SOMETHING YOU CAN STOP IN THE MIDDLE OF ────────────────
+ *
+ * It used to be one function that played every round and handed back a
+ * finished bracket. That is still what generatePlayoffs does, and it is still
+ * what every simmed run uses. But a game the player is going to PLAY cannot be
+ * settled before they see it, and the rest of the bracket after it depends on
+ * how it went, so the loop has to be turnable one game at a time.
+ *
+ * IT IS THE SAME LOOP, NOT A SECOND ONE. generatePlayoffs is now four lines
+ * over this runner, so there is no version of the bracket that only the
+ * animated path takes. Two of them would drift the first time a round was
+ * added, and the symptom would be a simmed season and a played one giving one
+ * seed two different brackets.
+ *
+ * THE RNG IS DRAWN IN EXACTLY THE OLD ORDER, which is what lets verify.mjs go
+ * on pinning a seed: the round's opponent first, then its games one at a time.
+ */
+function poCreate(seed, ortg, drtg, regularWins, rating) {
+  if (!seed || !seed.made) return null;
   /* Home court through the bracket scales with the regular season. Win 60 and
      you have it all the way; scrape the play-in and you do not have it once. */
   const span = CONSTANTS.REGULAR_SEASON_GAMES - CONSTANTS.PLAY_IN_WINS;
-  const baseAdv = 1 + CONSTANTS.PLAYOFF_HOME_COURT *
-    clamp((regularWins - CONSTANTS.PLAY_IN_WINS) / span, 0, 1);
+  return {
+    ortg, drtg, rating,
+    edge: titleEdge(rating),
+    names: playoffRoundNames(seed.rounds),
+    bye: !!seed.bye,
+    baseAdv: 1 + CONSTANTS.PLAYOFF_HOME_COURT *
+      clamp((regularWins - CONSTANTS.PLAY_IN_WINS) / span, 0, 1),
+    results: [], r: 0, cur: null, done: false, won: false,
+  };
+}
 
-  const pace = CONSTANTS.LEAGUE_PACE / 100;
+/* 2-2-1-1-1, which is the real format and the reason home court is worth
+   having: games 1, 2, 5 and 7 are yours. */
+const PO_HOME = { 7: [1, 1, 0, 0, 1, 0, 1], 5: [1, 1, 0, 0, 1], 1: [1] };
+
+function poBeginRound(po, rng) {
+  const roundName = po.names[po.r];
+
+  /* The opponent for this round, built as a net rating and converted to
+     points once. A weaker roster meets a stiffer version of the last two
+     opponents; a great one meets them as they are. */
+  let oppNet = ROUND_NET[roundName] ?? 2.0;
+  if (roundName === 'NBA Finals') oppNet += po.edge;
+  else if (roundName === 'Conference Finals') oppNet += po.edge * TITLE.SEMI_SHARE;
+
+  /* AND THE SERIES IS NOT THE RATINGS. This is the term that makes the
+     playoffs the playoffs, and without it the model was badly wrong in a way
+     measurable against history: teams it rates at 55 to 60 wins took the
+     title 0.8% of the time against a real 8.6%, and the only way to hold the
+     top of the curve down was to put a mythical seventy win team in the
+     Finals.
+   *
+   * A seven game series turns on things a season rating cannot carry: who is
+   * healthy in May, whether the matchup takes your centre off the floor, and
+   * whether a shooter is hot for two weeks. So the club you actually meet is
+   * drawn AROUND its seed's strength rather than being it exactly.
+   *
+   * It cuts both ways and that is the point. It is the reason a 73 win team
+   * can lose a Finals and a 47 win team can reach one, both of which happened
+   * and neither of which a deterministic bracket will ever produce. */
+  /* BOUNDED ONLY WHERE BASKETBALL IS. The first attempt clamped this to a
+     respectable playoff side at both ends and fitted measurably WORSE, which
+     is the data pointing out that the weak tail is not noise: the 1999 Knicks
+     reached a Finals as an eight seed and the 2020 Heat did it at 44 wins.
+     Cutting that off is cutting off the thing being modelled.
+     The upper bound stays, because no club has ever been +20. */
+  oppNet = clamp(oppNet + normal(rng) * TITLE.SERIES_SD, -8.0, 16.0);
+
   const L = CONSTANTS.LEAGUE_RTG;
+  const pace = CONSTANTS.LEAGUE_PACE / 100;
+  const oppOrtg = L + oppNet / 2;
+  const oppDrtg = L - oppNet / 2;
+  // The play-in is one game. Everything after it is a seven game series.
+  const bestOf = roundName === 'Play-In' ? 1 : 7;
 
-  for (let i = 0; i < rounds.length && alive; i++) {
-    const roundName = rounds[i];
+  po.cur = {
+    round: roundName, roundIndex: po.r, oppNet: round2(oppNet),
+    pointsFor: po.ortg * (oppDrtg / L) * pace,
+    pointsAgainst: po.drtg * (oppOrtg / L) * pace,
+    adv: po.bye ? po.baseAdv : Math.max(1, po.baseAdv * 0.85),
+    bestOf, need: Math.ceil(bestOf / 2),
+    yourWins: 0, oppWins: 0, games: [],
+  };
+}
 
-    /* The opponent for this round, built as a net rating and converted to
-       points once. A weaker roster meets a stiffer version of the last two
-       opponents; a great one meets them as they are. */
-    let oppNet = ROUND_NET[roundName] ?? 2.0;
-    if (roundName === 'NBA Finals') oppNet += edge;
-    else if (roundName === 'Conference Finals') oppNet += edge * TITLE.SEMI_SHARE;
+/* The game about to be played, or null once the bracket is finished. Begins
+   the round if one is not in progress, which is the only reason it takes an
+   rng: the opponent is drawn once per round and never once per read. */
+function poNext(po, rng) {
+  if (!po || po.done) return null;
+  if (!po.cur) poBeginRound(po, rng);
+  const c = po.cur;
+  const home = (PO_HOME[c.bestOf] || [1])[c.games.length] === 1;
+  const facing = c.oppWins === c.need - 1;
+  const closing = c.yourWins === c.need - 1;
+  return {
+    round: c.round, roundIndex: c.roundIndex, game: c.games.length,
+    bestOf: c.bestOf, need: c.need,
+    yourWins: c.yourWins, oppWins: c.oppWins,
+    home, adv: home ? c.adv : 1 / c.adv,
+    pointsFor: c.pointsFor, pointsAgainst: c.pointsAgainst,
+    /* Lose this and the run is over. */
+    elimination: facing,
+    /* Win this and the round is. */
+    closeout: closing,
+    /* WHICH GAMES ARE WORTH PLAYING, and it is one rule rather than a list.
+       A game the series can END in, either way, plus every Finals game.
+       Measured over 170 playoff runs: mean 2.6 of them, median 2, p90 5. A
+       year that reaches a game seven Finals can offer thirteen, which is the
+       run that deserves them. */
+    big: facing || closing || c.round === 'NBA Finals',
+    /* A game seven, which is the only one both sides face elimination in.
+       BEST OF SEVEN IS PART OF THE CLAIM. In a one game round the need is 1,
+       so both sides are at need minus one before a ball is thrown and the
+       two flags are true by arithmetic: the play-in door read PLAY-IN over
+       GAME 7, which is a sentence about a series that does not exist. */
+    decider: c.bestOf > 1 && facing && closing,
+  };
+}
 
-    /* AND THE SERIES IS NOT THE RATINGS. This is the term that makes the
-       playoffs the playoffs, and without it the model was badly wrong in a way
-       measurable against history: teams it rates at 55 to 60 wins took the
-       title 0.8% of the time against a real 8.6%, and the only way to hold the
-       top of the curve down was to put a mythical seventy win team in the
-       Finals.
-     *
-     * A seven game series turns on things a season rating cannot carry: who is
-     * healthy in May, whether the matchup takes your centre off the floor, and
-     * whether a shooter is hot for two weeks. So the club you actually meet is
-     * drawn AROUND its seed's strength rather than being it exactly.
-     *
-     * It cuts both ways and that is the point. It is the reason a 73 win team
-     * can lose a Finals and a 47 win team can reach one, both of which happened
-     * and neither of which a deterministic bracket will ever produce. */
-    /* BOUNDED ONLY WHERE BASKETBALL IS. The first attempt clamped this to a
-       respectable playoff side at both ends and fitted measurably WORSE, which
-       is the data pointing out that the weak tail is not noise: the 1999 Knicks
-       reached a Finals as an eight seed and the 2020 Heat did it at 44 wins.
-       Cutting that off is cutting off the thing being modelled.
-       The upper bound stays, because no club has ever been +20. */
-    oppNet = clamp(oppNet + normal(rng) * TITLE.SERIES_SD, -8.0, 16.0);
+/* Fold a result into the bracket, however it was arrived at. resolveGame and
+   liveResult answer in the same shape, which is the whole reason the live sim
+   was written to. */
+function poRecord(po, next, result) {
+  const c = po.cur;
+  if (!c || !next) return null;
+  const row = {
+    won: !!result.won, yourPoints: result.yourPoints,
+    oppPoints: result.oppPoints, ot: result.ot || 0,
+    home: next.home,
+  };
+  /* WRITTEN ONLY WHEN IT IS TRUE, so a simmed bracket is byte for byte the
+     bracket this refactor replaced. Proved that way rather than assumed: the
+     two generatePlayoffs were run over 4,000 seeds and `live: false` on every
+     row was the entire difference. It also means a run saved before any of
+     this reads correctly, since absent and false are the same answer here. */
+  if (result.live) {
+    row.live = true;
+    /* AND WHAT ACTUALLY HAPPENED IN IT, kept rather than reconstructed. A
+       resolved game's box score is a decomposition drawn off the game's own
+       address, so opening it twice shows the same 41 points; a played game
+       already HAS a box score, and re-deriving one would show somebody a
+       different third quarter from the one they sat through. Two to four
+       games a run carry this, which is a couple of kilobytes on the save. */
+    row.lines = result.lines;
+    row.quarters = result.quarters;
+  }
+  c.games.push(row);
+  if (result.won) c.yourWins++; else c.oppWins++;
 
-    const oppOrtg = L + oppNet / 2;
-    const oppDrtg = L - oppNet / 2;
-    const pointsFor = ortg * (oppDrtg / L) * pace;
-    const pointsAgainst = drtg * (oppOrtg / L) * pace;
+  if (c.yourWins >= c.need || c.oppWins >= c.need) {
+    po.results.push({
+      round: c.round, oppNet: c.oppNet, won: c.yourWins >= c.need,
+      gamesPlayed: c.games.length, yourWins: c.yourWins, oppWins: c.oppWins,
+      games: c.games,
+    });
+    if (c.yourWins >= c.need) { po.r++; if (po.r >= po.names.length) po.done = true; }
+    else po.done = true;
+    po.cur = null;
+  }
+  if (po.done) {
+    const last = po.results[po.results.length - 1];
+    po.won = !!(last && last.won && last.round === 'NBA Finals');
+  }
+  return next;
+}
 
-    // The play-in is one game. Everything after it is a seven game series.
-    const bestOf = roundName === 'Play-In' ? 1 : 7;
-    const adv = seed.bye ? baseAdv : Math.max(1, baseAdv * 0.85);
+/* Play the pending game the way every other game in the run is played. */
+function poAdvance(po, rng) {
+  const next = poNext(po, rng);
+  if (!next) return null;
+  const result = resolveGame(next.pointsFor, next.pointsAgainst, rng, next.adv);
+  poRecord(po, next, result);
+  return { ...next, result };
+}
 
-    const series = playoffSeries(pointsFor, pointsAgainst, rng, bestOf, adv);
-    results.push({ round: roundName, oppNet: round2(oppNet), ...series });
-    if (!series.won) alive = false;
+function poFinal(po) {
+  return po ? { rounds: po.results, won: po.won } : null;
+}
+
+function generatePlayoffs(seed, ortg, drtg, rng, regularWins, rating) {
+  const po = poCreate(seed, ortg, drtg, regularWins, rating);
+  if (!po) return null;
+  let guard = 0;
+  while (!po.done && guard++ < 200) poAdvance(po, rng);
+  return poFinal(po);
+}
+
+// ─── one game, played forward ───────────────────────────────────────────────
+
+/* A GAME SEVEN IS NOT A SCORELINE, AND THIS IS THE ONE PLACE THAT IS TRUE.
+ *
+ * resolveGame samples two totals and gameBox decomposes one of them into six
+ * lines. That is the right shape for 82 games and it is the wrong shape for
+ * the game a whole run comes down to, because there is nothing in it to
+ * decide: the score exists before the first possession and every screen after
+ * it is a reading of a number that was already there.
+ *
+ * So an elimination game or a Finals game can be PLAYED. Possession by
+ * possession, a real clock, a real running score, and it stops at the two
+ * calls a coach actually makes.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * IT IS NOT A SECOND MODEL, AND THAT IS THE WHOLE ENGINEERING PROBLEM.
+ *
+ * gameBox's header argues at length that a possession sim which DECIDED the
+ * score would replace the win-share model fitted to twenty-two real NBA
+ * records, and that two models of one game disagree. Both are still true. What
+ * has changed is that this sim does not get to be a different model: it is
+ * FITTED TO resolveGame and measured against it, so a neutral caller playing a
+ * game forward and the resolver settling the same game are two samplers of one
+ * distribution rather than two opinions about basketball.
+ *
+ * Matching the MEAN is arithmetic: the per-possession scoring rate is solved
+ * from the same `pointsFor` and `pointsAgainst` the resolver is handed.
+ *
+ * MATCHING THE SPREAD IS NOT, and it is the reason LIVE.PULL exists. A real
+ * possession is worth 0, 2 or 3 points with a standard deviation near 1.16, so
+ * ninety-nine independent ones give a game total SD near 11.5. resolveGame's
+ * effective SD is GAME_SD * (1 - CONSISTENCY), which is 9.02. Left alone, every
+ * series played live would be wider than every series simmed, a seven game
+ * bracket would swing more, and the title rate would move: the one number this
+ * game's whole calibration is anchored to.
+ *
+ * So possessions are not independent. Each one's scoring rate is pulled back
+ * toward the pro-rata expectation by how far the running total has drifted from
+ * it, which is CONSISTENCY's own idea applied inside the game rather than to
+ * its total. It is also the truest thing here: a team that falls behind presses
+ * and a team well ahead stops trying, and neither keeps scoring at the rate
+ * that got them there.
+ *
+ * PULL IS FITTED, NOT CHOSEN. hoops/check-live.mjs sweeps it and asserts the
+ * match.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * WHAT THE RESIDUAL IS, MEASURED AND NOT ARGUED.
+ *
+ * Fitted, over 10,000 games of each of four matchups, against the same
+ * matchup settled by resolveGame:
+ *
+ *   mean            +0.2 points, both sides, every matchup
+ *   spread          within 0.15 of the resolver's 8.9 to 9.1
+ *   win rate        within 0.6 points with the calls suppressed
+ *   win rate        within 1.3 points with the auto caller answering them
+ *
+ * So PLAYING A GAME IS WORTH ABOUT SEVEN TENTHS OF A POINT OF WIN RATE over
+ * having it resolved, before the player makes a single call of their own, and
+ * that is the auto caller: two late decisions the resolver never asks. It is
+ * recorded rather than compensated, which is the football game's own note on
+ * its forward sim, and it is the right sign. A mode that asked somebody to
+ * play four games and then handed them a worse result than skipping would be
+ * a mode nobody should play.
+ */
+/* THE NUMBER THE WHOLE FIT IS AGAINST, derived and never typed.
+   resolveGame draws N(0, GAME_SD) and then pulls the result CONSISTENCY of the
+   way back to the mean, so what a season actually sees is this. Written out as
+   a literal it would go stale the first time either constant is swept, and the
+   symptom would be a live game quietly wider or tighter than the simmed one it
+   is meant to match. */
+const LIVE_SD = GAME_SD * (1 - CONSTANTS.CONSISTENCY);
+
+const LIVE = {
+  /* Possessions a side in a regulation game, from the league pace the rest of
+     the engine already uses. A real NBA game is about 99 each. */
+  POSS: Math.round(CONSTANTS.LEAGUE_PACE),
+  /* Seconds of regulation, and of one overtime. */
+  REG_SECONDS: 48 * 60,
+  OT_SECONDS: 5 * 60,
+
+  /* The possession mix, which is what makes the texture real. Measured against
+     the modern NBA rather than fitted to anything here: the mean is solved
+     separately, so these only decide what a possession LOOKS like. */
+  TURNOVER: 0.125,      // no shot at all
+  THREE_RATE: 0.39,     // of the possessions that do produce a shot
+  /* A three goes in about seven tenths as often as a two. The scalar that
+     makes the MEAN come out right multiplies both, so this ratio is the only
+     shape decision in here. */
+  THREE_OVER_TWO: 0.70,
+  /* Of the two point attempts, how many draw a shooting foul. Free throws are
+     what keep a live box score's split honest against shootingLine's. */
+  FOUL_RATE: 0.16,
+  FT_MAKE: 0.775,
+
+  /* THE FITTED ONE. How hard each possession's rate is pulled back toward the
+     pro-rata expectation, per standard deviation of drift.
+
+     MEASURED AGAINST THE SPREAD AND NOT AGAINST THE TOTAL, which is the first
+     version of this and it did almost nothing: a ten point drift is 9% of a
+     113 point total, so at any sane coefficient the correction was under one
+     per cent of the make probability and the sweep came back flat. Swept from
+     0 to 0.22 against the total it moved the SD from 12.6 to 11.5 and never
+     reached the 9.0 it was written for. Against the SD the same drift is one
+     whole unit, which is the scale the correction actually has to work on.
+
+     SWEPT OVER FOUR MATCHUPS AND NOT ONE, because the two things that go
+     wrong here are both invisible in an even game: a level-dependent
+     correction (see livePossession) shows up as a favourite and an underdog
+     landing on different spreads, and a one-matchup fit cannot see it. Even,
+     a favourite at 118 against 101, the same game from the other side, and a
+     grind at 98 apiece, 10,000 games each:
+
+       PULL   spread, yours/theirs      win rate against resolveGame
+       0      12.4 / 12.2               up to 7.7 points out
+       0.04    9.9 / 10.2               up to 3.0 out
+       0.065   9.0 /  9.1               within 0.7
+       0.10    7.9 /  8.0               up to 3.1 out
+
+     The win error tracks the spread exactly, in both directions: a live game
+     wider than the resolver pushes every matchup toward a coin flip and a
+     tighter one pushes it away. So one dial lands both, and a fit that got
+     the spread right and the win rate wrong would mean something else was
+     broken. */
+  PULL: 0.065,
+
+  /* A CALL ONLY COMES UP WHEN IT IS REALLY A CALL. Both windows are late and
+     close, because a decision offered in a fifteen point game is a button, not
+     a decision, and a screen full of those teaches somebody to stop reading. */
+  LAST_SHOT_SECONDS: 25,
+  LAST_SHOT_MARGIN: 3,
+  FOUL_SECONDS: 12,
+};
+
+/* The per-possession scoring rate that produces `total` points over `poss`
+   possessions, given the mix above. Returned as the scalar the make
+   probabilities are multiplied by, so the mix keeps its shape at every level
+   of offence. */
+/* Expected points on one possession at a given make scale, written ONCE and
+   read by both the solve below and nothing else. It has to be the arithmetic
+   livePossession actually plays, which is the thing the first version got
+   wrong: it assumed a shooting foul was always two free throws, where the code
+   shoots one on an and-one and two on a miss. Expected shots are therefore
+   (2 - k) rather than 2, the solve came out 0.038 points a possession short,
+   and every live game finished about FOUR POINTS under what the resolver would
+   have given the same matchup. Nothing threw; the sim just quietly played a
+   worse team than the one that was drafted. */
+function livePerPossession(k) {
+  const shot = 1 - LIVE.TURNOVER;
+  const three = LIVE.THREE_RATE, two = 1 - LIVE.THREE_RATE;
+  const q2 = Math.min(1, k), q3 = Math.min(1, k * LIVE.THREE_OVER_TWO);
+  const field = shot * (three * 3 * q3 + two * 2 * q2);
+  /* A foul happens on a two. One shot when it went in, two when it did not. */
+  const ftShots = q2 * 1 + (1 - q2) * 2;
+  const line = shot * two * LIVE.FOUL_RATE * ftShots * LIVE.FT_MAKE;
+  return field + line;
+}
+
+/* The make scale that produces `total` points over `poss` possessions.
+   SOLVED NUMERICALLY rather than rearranged, because the expression above is
+   not linear in k (the free throw count depends on it) and because the mix is
+   a set of constants somebody will change: a bisection keeps working when the
+   algebra behind a closed form would have to be re-derived and would fail
+   silently if it were not. Twenty-eight steps is exact to about 1e-8. */
+/* The make scale of a LEAGUE AVERAGE team, which is what the pull is measured
+   against so that every team is corrected by the same number of points rather
+   than by the same fraction of its own. Derived from the two constants the
+   rest of the engine already keeps, never typed. */
+let LIVE_KREF = 0;
+
+function liveMakeScale(total, poss) {
+  const want = total / Math.max(1, poss);
+  let lo = 0.02, hi = 1.0;
+  if (livePerPossession(hi) < want) return hi;
+  for (let i = 0; i < 28; i++) {
+    const mid = (lo + hi) / 2;
+    if (livePerPossession(mid) < want) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+/* Assigned here rather than at the declaration above, because a const read
+   before its own line throws TDZ and takes the whole file with it. The
+   football results screen has already shipped that once. */
+LIVE_KREF = liveMakeScale(CONSTANTS.LEAGUE_RTG * LIVE.POSS / 100, LIVE.POSS);
+
+/* Who takes the shot. The same weights gameBox scores a resolved game with, so
+   the man who leads a live box score is the man who would have led the sampled
+   one. Built once per game rather than per possession. */
+function liveShooters(roster) {
+  const men = roster.map((p, i) => {
+    const share = minutesShare(p);
+    return {
+      i, p, share,
+      /* His share of this team's shots: his own scoring, scaled by the minutes
+         his slot plays. A man who averaged 30 takes the ball more often than a
+         man who averaged 6, which is the entire reason to draft him. */
+      weight: Math.max(0.4, (p.pts || 1) * share),
+      /* How often HE shoots a three, which is what keeps a live box score's
+         split as honest as shootingLine's. */
+      threeRate: clamp((p.tpa || 0) / Math.max(1, p.fga || 1), 0, 0.85),
+      pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
+    };
+  });
+  const total = men.reduce((s, m) => s + m.weight, 0) || 1;
+  men.forEach((m) => { m.share_shots = m.weight / total; });
+  return men;
+}
+
+function livePick(men, rng, bias) {
+  /* `bias` names one man to feed. Weighted rather than forced, because a star
+     isolating still passes out of a double team, and a call that made him take
+     it every single time would be a different sport. */
+  let pool = men, total = 0;
+  const w = pool.map((m) => {
+    const x = m.share_shots * (bias != null && m.i === bias ? 3.2 : 1);
+    total += x;
+    return x;
+  });
+  let r = rng() * total;
+  for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; }
+  return pool[pool.length - 1];
+}
+
+/* A new live game. `pointsFor` and `pointsAgainst` are exactly what
+   resolveGame would have been handed, so the two are always talking about the
+   same matchup. */
+function liveCreate(roster, pointsFor, pointsAgainst, rng, advantage, meta) {
+  const adv = advantage || 1;
+  /* THE ADVANTAGE IS APPLIED THE WAY THE RESOLVER APPLIES IT, which is to the
+     other team's points and not to yours. Written the other way round the two
+     would disagree by the square of it on every home game. */
+  const pf = pointsFor;
+  const pa = pointsAgainst / adv;
+  return {
+    pf, pa, adv,
+    poss: LIVE.POSS,
+    kYou: liveMakeScale(pf, LIVE.POSS),
+    kThem: liveMakeScale(pa, LIVE.POSS),
+    men: liveShooters(roster),
+    n: 0,                    // possessions each side has had
+    you: 0, them: 0,
+    clock: LIVE.REG_SECONDS,
+    quarter: 1,
+    ot: 0,
+    plays: [],
+    pending: null,
+    over: false,
+    meta: meta || null,
+  };
+}
+
+/* What one possession is worth, and what it looked like. Pure except for the
+   rng and the tallies it writes. */
+function livePossession(sim, mine, rng, opts) {
+  const o = opts || {};
+  const total = mine ? sim.pf : sim.pa;
+  const scored = mine ? sim.you : sim.them;
+  const k0 = mine ? sim.kYou : sim.kThem;
+
+  /* THE PULL. How far this side has drifted from where it was due, in units of
+     the spread resolveGame allows, turned into a nudge on the make
+     probability. Behind the pace lifts it, ahead of it lowers it. */
+  /* HOW MANY POSSESSIONS THIS SIDE HAS ALREADY HAD, which is not `sim.n`.
+     `n` counts both teams, so dividing it by one team's possession count made
+     every side permanently two whole games behind its own pace: the pull then
+     cranked the make probability as far as the clamp allowed, all game, and a
+     sweep that should have tightened the spread produced 200 point finals
+     instead. The two sides alternate from n = 0, so mine has had ceil(n/2) and
+     theirs has had floor(n/2). */
+  const had = mine ? Math.ceil(sim.n / 2) : Math.floor(sim.n / 2);
+  const due = total * (had / Math.max(1, sim.poss));
+  const drift = scored - due;
+  /* AGAINST A FIXED REFERENCE AND NOT AGAINST THIS TEAM'S OWN RATE, which is
+     the difference between the two sides of a mismatch getting the same
+     spread and getting two different ones. Written `k0 * (1 - pull)` the
+     correction is worth a fixed FRACTION of a make, so it moves more points
+     for a team scoring 118 than for one scoring 101. Measured over four
+     matchups, that put a favourite's spread at 8.57 against an underdog's
+     9.02 on the same dial, mirrored on the other side, where resolveGame
+     allows every team the same 9.02 whatever it scores. */
+  let k = k0 - LIVE.PULL * LIVE_KREF * drift / LIVE_SD;
+  /* A call can lift or lower the odds on this one possession. */
+  if (o.edge) k *= o.edge;
+  k = clamp(k, 0.05, 1.6);
+
+  if (!o.mustShoot && rng() < LIVE.TURNOVER) {
+    return { pts: 0, kind: 'to', mine };
   }
 
-  const last = results[results.length - 1];
-  const won = !!(last && last.won && last.round === 'NBA Finals');
-  return { rounds: results, won };
+  /* Which shot. `force` lets a call say two or three rather than leaving it to
+     the mix, which is the whole of the down-two decision. */
+  const wantThree = o.force === 3 ? true
+    : o.force === 2 ? false
+    : rng() < LIVE.THREE_RATE;
+
+  const shooter = mine ? livePick(sim.men, rng, o.bias) : null;
+  const q = wantThree ? k * LIVE.THREE_OVER_TWO : k;
+  const made = rng() < q;
+
+  if (shooter) {
+    shooter.fga++;
+    if (wantThree) shooter.tpa++;
+    if (made) { shooter.fgm++; if (wantThree) shooter.tpm++; }
+  }
+
+  let pts = made ? (wantThree ? 3 : 2) : 0;
+  let kind = made ? (wantThree ? 'three' : 'two') : 'miss';
+
+  /* The foul line. Only on twos, which is the common case and keeps the
+     arithmetic in liveMakeScale's solve honest. */
+  if (!wantThree && rng() < LIVE.FOUL_RATE) {
+    let ft = 0;
+    const shots = made ? 1 : 2;
+    for (let s = 0; s < shots; s++) if (rng() < LIVE.FT_MAKE) ft++;
+    if (shooter) { shooter.fta += shots; shooter.ftm += ft; }
+    pts += ft;
+    if (ft > 0) kind = made ? 'and1' : 'ft';
+  }
+
+  if (shooter) shooter.pts += pts;
+  return { pts, kind, mine, who: shooter ? shooter.i : null,
+    name: shooter ? shooter.p.n : null };
+}
+
+/* How much clock one possession eats. Real enough to read, and it is what the
+   two call windows are measured against.
+
+   THE POSSESSION COUNT IS THE AUTHORITY AND THE CLOCK FOLLOWS IT, which is a
+   fix rather than a preference. Written the other way round, as a fixed tick
+   against a clock that decided when the game was over, the two desynced two
+   different ways at once and both were silent:
+
+   - A fast game ran 199 possessions EVERY TIME. Regulation divides into 198
+     exactly, so after 198 ticks the clock is a hair above zero rather than on
+     it, and the 199th possession belongs to whoever went first. That is a
+     whole extra possession for YOUR side in every simmed game: measured at
+     +1.3 points and +4.1 points of win rate against resolveGame, with the
+     other side landing exact, which is what an asymmetry that size looks like.
+   - A jittered game ran 198 usually and up to 206 sometimes. So a game a
+     player WATCHED and the same game simmed were not the same game.
+
+   Dividing what is left by what is left to play cannot drift: the pace
+   self-corrects after a long possession and both sides always get `poss` of
+   them.
+
+   THERE IS NO FAST CLOCK, AND THERE WAS. An earlier draft took a `fast` flag
+   that dropped the jitter, used by liveFinish so a simmed game did not bother
+   rolling for it. That is a SECOND GAME: both call windows are measured
+   against this clock, so an evenly ticking one asks a different set of
+   questions at a different set of scores. "Sim the rest" is allowed to hurry
+   the screen and never the basketball, which is the football boss battle's
+   own rule, and the cheapest way to keep it is to have one clock. */
+function liveTick(sim, rng) {
+  const left = sim.poss * 2 - sim.n;
+  /* The last one eats the rest, so the horn and the clock agree. */
+  if (left <= 1) return sim.clock;
+  const base = sim.clock / left;
+  return Math.min(sim.clock, Math.max(2, base * (0.45 + rng() * 1.15)));
+}
+
+/* THE TWO CALLS, ASKED OF THE SITUATION AND NEVER OF A COUNTER.
+ *
+ * Both are late and close, because a decision offered in a fifteen point game
+ * is a button rather than a decision. Answered here so the sim, the auto
+ * caller and the screen all agree about when one exists. */
+function liveDecision(sim) {
+  const margin = sim.you - sim.them;
+  const mine = sim.n % 2 === 0;        // whose possession is next
+
+  if (mine && sim.clock <= LIVE.LAST_SHOT_SECONDS
+      && Math.abs(margin) <= LIVE.LAST_SHOT_MARGIN) {
+    /* THE LAST SHOT. Down three it is a three or nothing, down two it is the
+       real question, and level or up it is who you trust. The options are
+       built from the situation so the screen never offers a tie to somebody
+       who is already ahead. */
+    const best = sim.men.slice().sort((a, b) => b.weight - a.weight)[0];
+    const opts = [];
+    if (margin <= -3) {
+      opts.push({ id: 'three', label: 'Three for the tie',
+        why: best.p.n + ' from deep. Nothing else keeps you alive.' });
+      opts.push({ id: 'quick2', label: 'Quick two, then foul',
+        why: 'Score, stop the clock, and hope for one more.' });
+    } else if (margin === -2 || margin === -1) {
+      opts.push({ id: 'two', label: margin === -2 ? 'Two for the tie' : 'Two to win',
+        why: 'The best look you can get. Overtime if it drops.' });
+      opts.push({ id: 'three', label: 'Three to win',
+        why: 'No overtime. Win it here or lose it here.' });
+    } else {
+      opts.push({ id: 'iso', label: 'Give it to ' + lastNameOf(best.p.n),
+        why: 'Your best scorer, one on one, clock running out.' });
+      opts.push({ id: 'best', label: 'Run the offense',
+        why: 'Whoever the defense leaves. Better shot, smaller name.' });
+    }
+    return { kind: 'shot', margin, clock: Math.round(sim.clock), options: opts };
+  }
+
+  if (!mine && sim.clock <= LIVE.FOUL_SECONDS && margin === 3) {
+    /* UP THREE, THE CALL EVERY COACH ARGUES ABOUT. Fouling gives away two and
+       the ball; defending gives away a look at a three. Neither is wrong, and
+       which is better here depends on the roster. */
+    return { kind: 'foul', margin, clock: Math.round(sim.clock), options: [
+      { id: 'foul', label: 'Foul them', why: 'Two free throws. They cannot tie it.' },
+      { id: 'defend', label: 'Play defense', why: 'Make them beat you from three.' },
+    ] };
+  }
+  return null;
+}
+
+/* What the auto caller picks. This is what "simulate it" answers with, and it
+   is also the backstop for a live game somebody walks away from.
+
+   THE STANDARD ANSWER, never the optimal one, and the difference matters: a
+   perfect caller would make simming strictly better than playing, which is the
+   opposite of the point. Down two it takes the tie, up three it fouls, and
+   level it feeds the star. Every one of those is what most coaches do. */
+function liveAutoCall(sim, decision) {
+  if (!decision) return null;
+  if (decision.kind === 'foul') return 'foul';
+  const ids = decision.options.map((o) => o.id);
+  if (ids.indexOf('two') >= 0) return 'two';
+  if (ids.indexOf('three') >= 0 && ids.indexOf('quick2') >= 0) return 'three';
+  return ids[0];
+}
+
+/* Play one possession, or ask for a call first. Returns what happened, or
+   `{ pending }` when the screen has to stop and ask. */
+function liveAdvance(sim, rng, opts) {
+  const o = opts || {};
+  if (sim.over) return null;
+  if (sim.pending) return { pending: sim.pending };
+
+  if (!o.skipDecision) {
+    const d = liveDecision(sim);
+    if (d) { sim.pending = d; return { pending: d }; }
+  }
+  return liveStep(sim, rng, null, o);
+}
+
+/* The possession itself, with whatever the call decided folded in. Split from
+   liveAdvance so answering a call and playing an ordinary possession go
+   through one body: two of them would drift the moment a third call is
+   added. */
+function liveStep(sim, rng, choice, opts) {
+  const o = opts || {};
+  const mine = sim.n % 2 === 0;
+  const pOpts = {};
+  let note = null;
+
+  if (choice === 'iso') { pOpts.bias = topManIndex(sim); pOpts.edge = 1.06; note = 'Iso'; }
+  else if (choice === 'best') { pOpts.edge = 1.12; pOpts.mustShoot = true; note = 'Open look'; }
+  else if (choice === 'two') { pOpts.force = 2; pOpts.mustShoot = true; note = 'Two for it'; }
+  else if (choice === 'three') { pOpts.force = 3; pOpts.mustShoot = true; note = 'From deep'; }
+  else if (choice === 'quick2') { pOpts.force = 2; pOpts.edge = 1.2; pOpts.mustShoot = true; note = 'Quick two'; }
+
+  let play;
+  if (choice === 'foul') {
+    /* A deliberate foul is two free throws and the ball back, which is why it
+       is not a possession in the ordinary sense: nobody shoots from the floor
+       and the clock barely moves. */
+    let ft = 0;
+    for (let s = 0; s < 2; s++) if (rng() < LIVE.FT_MAKE) ft++;
+    play = { pts: ft, kind: 'ft', mine: false, name: null };
+    sim.them += ft;
+    sim.clock = Math.max(0, sim.clock - 3);
+    sim.plays.push(livePlay(sim, play, 'Fouled'));
+    sim.pending = null;
+    /* The ball comes back to you, so the next possession is yours whatever the
+       parity says. Recorded rather than inferred, because `n` is what decides
+       whose ball it is everywhere else. */
+    sim.n += 1;
+    /* AND THE SAME END CHECK, because this branch returns early. Without it a
+       foul on the last possession of the game leaves the game running, and the
+       next possession is a free one for you after the horn. */
+    liveMaybeEnd(sim, rng);
+    return play;
+  }
+  if (choice === 'defend') { pOpts.force = 3; pOpts.edge = 0.92; note = 'They shoot it'; }
+
+  play = livePossession(sim, mine, rng, pOpts);
+  if (mine) sim.you += play.pts; else sim.them += play.pts;
+  sim.n += 1;
+  sim.clock = Math.max(0, sim.clock - liveTick(sim, rng));
+  sim.pending = null;
+
+  /* The quarter, derived from the clock rather than counted, so a possession
+     that eats an unusual amount of it cannot desync the two. */
+  if (!sim.ot) {
+    sim.quarter = clamp(5 - Math.ceil(sim.clock / (LIVE.REG_SECONDS / 4)), 1, 4);
+  }
+  sim.plays.push(livePlay(sim, play, note));
+
+  liveMaybeEnd(sim, rng);
+  return play;
+}
+
+function topManIndex(sim) {
+  let best = sim.men[0];
+  for (const m of sim.men) if (m.weight > best.weight) best = m;
+  return best.i;
+}
+
+function livePlay(sim, play, note) {
+  return {
+    q: sim.ot ? 'OT' + sim.ot : 'Q' + sim.quarter,
+    clock: Math.max(0, Math.round(sim.clock)),
+    mine: play.mine, pts: play.pts, kind: play.kind,
+    /* WHO IT WAS, BY INDEX AND NOT ONLY BY NAME. The name is what the line
+       over the board reads; the index is what a caller keeping a running
+       total per man looks him up by. It was missing, so the six live point
+       totals on the board sat at zero for a whole game while the play by
+       play beside them named the scorer every time. Nothing threw: the page
+       guards on `who != null` and undefined is not null. */
+    who: play.who == null ? null : play.who,
+    name: play.name || null, note: note || null,
+    you: sim.you, them: sim.them,
+  };
+}
+
+/* Is the period over. ASKED OF THE POSSESSIONS AND NEVER OF THE CLOCK, per
+   liveTick's note: the clock is drawn from what is left to play, so it reaches
+   zero when this does, and reading it instead is what let a rounding error
+   hand one side an extra possession every game. */
+function liveMaybeEnd(sim, rng) {
+  if (sim.n < sim.poss * 2) return;
+  sim.clock = 0;
+  liveEndPeriod(sim, rng);
+}
+
+/* Regulation is over. Level means five more minutes, which is a real overtime
+   rather than resolveGame's bump: the whole reason to play it forward is that
+   the last two minutes are the game. */
+function liveEndPeriod(sim, rng) {
+  if (sim.you !== sim.them) { sim.over = true; return; }
+  sim.ot++;
+  /* A safety valve, because a tie that will not break is a page that never
+     finishes. Four overtimes has happened twice in NBA history. */
+  if (sim.ot > 4) { sim.you += 1; sim.over = true; return; }
+  sim.clock = LIVE.OT_SECONDS;
+  const extra = Math.round(LIVE.POSS * (LIVE.OT_SECONDS / LIVE.REG_SECONDS));
+  sim.poss += extra;
+  sim.pf += sim.pf * (extra / (sim.poss - extra));
+  sim.pa += sim.pa * (extra / (sim.poss - extra));
+}
+
+/* Play the rest of it with nobody watching, which is what "simulate it" does
+   and what the backstop does when a live game is abandoned. The auto caller
+   still answers every call, so a simmed game and a played one differ by the
+   calls rather than by whether the calls happened. */
+function liveFinish(sim, rng, cap) {
+  let guard = 0;
+  const limit = cap || 4000;
+  while (!sim.over && guard++ < limit) {
+    if (sim.pending) {
+      liveStep(sim, rng, liveAutoCall(sim, sim.pending));
+      continue;
+    }
+    const d = liveDecision(sim);
+    if (d) { liveStep(sim, rng, liveAutoCall(sim, d)); continue; }
+    liveStep(sim, rng, null);
+  }
+  if (!sim.over) sim.over = true;
+  return liveResult(sim);
+}
+
+/* The result, in exactly the shape resolveGame answers in, so a caller can
+   hand either to the same code. `live` says which it was rather than leaving a
+   reader to infer it, which is the football game's own note. */
+function liveResult(sim) {
+  return {
+    won: sim.you > sim.them,
+    yourPoints: sim.you,
+    oppPoints: sim.them,
+    ot: sim.ot,
+    live: true,
+    /* The box score is what actually happened rather than a decomposition of
+       a total, which is the one thing a live game can say that a resolved one
+       cannot. Rebounds and assists are absent on purpose: nothing here models
+       them, and inventing a column to match the other sheet's shape would be
+       the invented-opponent mistake in miniature. */
+    lines: sim.men.map((m) => ({
+      i: m.p.i, n: m.p.n, slot: m.p._slot || null,
+      pts: m.pts, fgm: m.fgm, fga: m.fga, tpm: m.tpm, tpa: m.tpa,
+      ftm: m.ftm, fta: m.fta,
+    })),
+    /* AND THE QUARTERS ARE COUNTED, not apportioned. quarterLines splits a
+       finished total into four plausible periods, which is the right answer
+       for a game that was never played and the wrong one for a game somebody
+       WATCHED: they would open their own Game 7 from the results table and
+       find a third quarter that did not happen. In the same shape, so a
+       reader can hand either to the same code. */
+    quarters: liveQuarters(sim),
+  };
+}
+
+function liveQuarters(sim) {
+  const periods = 4 + Math.max(0, sim.ot | 0);
+  const names = ['1st', '2nd', '3rd', '4th'];
+  for (let k = 4; k < periods; k++) names.push(periods === 5 ? 'OT' : 'OT' + (k - 3));
+  const yours = new Array(periods).fill(0);
+  const theirs = new Array(periods).fill(0);
+  for (const p of sim.plays) {
+    if (!p.pts) continue;
+    const at = p.q.charAt(0) === 'O'
+      ? 3 + (parseInt(p.q.slice(2), 10) || 1)
+      : (parseInt(p.q.slice(1), 10) || 1) - 1;
+    const k = clamp(at, 0, periods - 1);
+    if (p.mine) yours[k] += p.pts; else theirs[k] += p.pts;
+  }
+  return { names, yours, theirs, periods };
 }
 
 // ─── the coach report ───────────────────────────────────────────────────────
@@ -1894,12 +2962,17 @@ let TEAMS = null;
 let TITLE_AT = null;
 /* Every title the whole franchise has won, reachable from any of its codes. */
 let LINEAGE_TITLES = null;
+/* Every code one franchise has ever worn, reachable from any of them. Built at
+   setTeams off the same `became` chain the titles use, because a franchise is
+   one thing and two walks of the same table would be two answers to it. */
+let LINEAGE_CODES = null;
 
 function setTeams(json) {
   TEAMS = (json && json.teams) || null;
   const built = titlesByCode(TEAMS);
   TITLE_AT = built.at;
   LINEAGE_TITLES = built.lineage;
+  LINEAGE_CODES = built.codes;
 }
 
 /* ── A TITLE BELONGS TO THE CLUB THAT WORE THE NAME ────────────────────────
@@ -1922,7 +2995,8 @@ function setTeams(json) {
  */
 function titlesByCode(teams) {
   const at = Object.create(null), lineage = Object.create(null);
-  if (!teams) return { at, lineage };
+  const codes = Object.create(null);
+  if (!teams) return { at, lineage, codes };
 
   /* Follow `became` to the row the franchise is today.
    *
@@ -1952,7 +3026,11 @@ function titlesByCode(teams) {
 
   for (const root of Object.keys(family)) {
     const titles = (teams[root] && teams[root].titles) || [];
-    for (const code of family[root]) lineage[code] = titles;
+    /* Sorted so the list is stable whatever order Object.keys came back in:
+       this is read by the club lock, and a set that reshuffles between boots
+       would reshuffle a seeded run. */
+    const all = family[root].slice().sort();
+    for (const code of family[root]) { lineage[code] = titles; codes[code] = all; }
     for (const year of titles) {
       let best = root, bestWidth = Infinity;
       for (const code of family[root]) {
@@ -1967,7 +3045,40 @@ function titlesByCode(teams) {
       at[`${best}|${year}`] = true;
     }
   }
-  return { at, lineage };
+  return { at, lineage, codes };
+}
+
+/* EVERY CODE THIS FRANCHISE HAS EVER WORN, including the one asked for.
+ *
+ * The club lock reads this, and it is the whole reason a Thunder fan gets
+ * Gary Payton and a Grizzlies fan gets Vancouver. Written as a lookup rather
+ * than a walk because the walk is already done once at setTeams, and two
+ * walks of one hand-maintained table is two answers to "what is a franchise".
+ *
+ * Falls back to the code alone, which is what an engine with no teams.json
+ * loaded has to say: one code is a franchise of one, which is wrong about
+ * history and right about the data it can see.
+ */
+function franchiseCodes(code) {
+  return (LINEAGE_CODES && LINEAGE_CODES[code]) || [code];
+}
+
+/* The thirty clubs that exist today, each with its whole lineage behind it,
+   sorted by the name a fan would look for. This is the club picker's list. */
+function franchises() {
+  if (!TEAMS) return [];
+  return Object.keys(TEAMS)
+    .filter(c => TEAMS[c].current !== false)
+    .map(c => ({
+      code: c,
+      name: TEAMS[c].name || c,
+      full: TEAMS[c].full || TEAMS[c].name || c,
+      city: TEAMS[c].city || '',
+      founded: TEAMS[c].founded || null,
+      titles: (LINEAGE_TITLES && LINEAGE_TITLES[c]) || TEAMS[c].titles || [],
+      codes: franchiseCodes(c),
+    }))
+    .sort((a, b) => a.full.localeCompare(b.full));
 }
 
 /** Did this club, under this code, win the championship in this season? */
@@ -1981,6 +3092,18 @@ function team(code) {
   if (t) return t;
   const name = TEAM_NAMES[code];
   return name ? { code, name, full: name, titles: [] } : { code, name: code, full: code, titles: [] };
+}
+
+/* DOES ANY TABLE ACTUALLY KNOW THIS CODE.
+ *
+ * team() cannot answer it: its last fallback returns { name: code }, so
+ * `team('NOPE').name` is the truthy string 'NOPE' and every existence check
+ * written against it passes for every string there is. That is by design
+ * there, because a name is always wanted and a code is a better name than
+ * nothing. It is the wrong shape for a gate, and the club lock is a gate: an
+ * unknown code silently empties the wheel rather than being refused. */
+function hasTeam(code) {
+  return !!((TEAMS && TEAMS[code]) || TEAM_NAMES[code]);
 }
 
 function teamName(code) {
@@ -2041,13 +3164,18 @@ const publicAPI = {
   teamWinPct, overallRating, nationalRank, pythagorean,
   buildOpponentPool, generateSchedule, gameMeans,
   resolveGame, playoffSeries, generatePlayoffs, playRun, homeAdvantage,
+  poCreate, poNext, poRecord, poAdvance, poFinal,
+  LIVE, liveCreate, liveAdvance, liveStep, liveDecision, liveAutoCall,
+  liveFinish, liveResult, liveMakeScale,
+  BOX, gameBox, quarterLines, apportion, apportionCapped, shootingLine,
   ROUND_NET,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
   respinCost, respinFees,
   coachReport, lastNameOf,
   TEAM_NAMES, TEAM_COLORS, teamColors, teamName,
   wheelColors, clubSkin, contrast, chromaOf, hexToHsl, hslToHex,
-  setTeams, team, teamDisplay, teamNote, wonTitle, titlesByCode,
+  setTeams, team, hasTeam, teamDisplay, teamNote, wonTitle, titlesByCode,
+  franchiseCodes, franchises,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

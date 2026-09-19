@@ -1908,7 +1908,8 @@ await plain.page.close();
 console.log('\nTHE DYNASTY BOARD IS REACHABLE, AND LEAVEABLE');
 const lb = await openPage(browser, 'http://local.test/football/', { tester: false,
   inject: 'canPlayDynasty,openBoard,setRun:(r)=>{run=r;},'
-    + 'lbDyn:()=>lbDynasty,'
+    + 'lbDyn:()=>lbDynasty,paintDyn:paintDynastyBoard,paintCls:paintBoard,'
+    + 'setRows:(rs)=>{lbRows=rs;},setSort:(s)=>{lbSort=s;lbDir=sortBestDir(s);},'
     + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='t';"
     + "authState.userId='u1';premiumSet=[];}" });
 await lb.page.evaluate(() => window.__t.signIn());
@@ -1970,6 +1971,185 @@ await lb.page.click('#frg-x', { timeout: 2000 }).catch(() => {});
   await lb.page.waitForTimeout(1000);
   ok('  a finished dynasty season still opens its own board', r.dyn === true, String(r.dyn));
   ok('    and the select says so', r.value === 'dynasty', r.value);
+}
+/*
+ * TWO MARKS A ROW CANNOT WORK OUT FOR ITSELF, AND BOTH FAIL SILENTLY.
+ *
+ * `display_pro` says the account holds the bundle and `dynasty_over` says the run has
+ * finished. Neither is knowable in the browser: premium_unlocks is read-own, so nobody can
+ * see who else paid, and nothing about somebody else's save reaches this page at all. Both
+ * arrive as columns written by 107_board_pro_and_live.sql.
+ *
+ * EVERY WAY THIS BREAKS RENDERS PERFECTLY. A gold name that never appears is a board that
+ * looks exactly like the board did last week. A LIVE badge on a run somebody abandoned in
+ * March is a valid pill on a valid row. A pill that computes to display:block pushes the
+ * name onto a second line, which is the champion mark's own bug and cost this file nothing
+ * to catch only because somebody had already paid for it once.
+ *
+ * SO THE ROWS ARE FABRICATED AND THE SCREEN IS MEASURED. Nothing reaches a server in this
+ * harness, so the painters are handed the five rows that cover the states: live, live and
+ * paid, finished and paid, neither, and the one the page has to refuse on its own judgement,
+ * which is a run whose last season is three days old and which no column will ever mark as
+ * over.
+ */
+console.log('\nA PAID NAME AND A LIVE RUN');
+{
+  const seen = await lb.page.evaluate(() => {
+    const T = window.__t, now = Date.now();
+    const ago = (h) => new Date(now - h * 3600 * 1000).toISOString();
+    T.setRows([
+      { dynasty_id: 'a', seasons: 40, score: 900000, display_name: 'Pod Paid',
+        created_at: ago(1), dynasty_over: false, display_pro: true },
+      { dynasty_id: 'b', seasons: 30, score: 800000, display_name: 'Pod Done',
+        created_at: ago(1), dynasty_over: true },
+      { dynasty_id: 'c', seasons: 20, score: 700000, display_name: 'Pod Plain',
+        created_at: ago(1) },
+      { dynasty_id: 'd', seasons: 10, score: 600000, display_name: 'Live Free',
+        created_at: ago(2), dynasty_over: false },
+      { dynasty_id: 'e', seasons: 9, score: 500000, display_name: 'Live Paid',
+        created_at: ago(2), dynasty_over: false, display_pro: true },
+      { dynasty_id: 'f', seasons: 8, score: 400000, display_name: 'Done Paid',
+        created_at: ago(2), dynasty_over: true, display_pro: true },
+      { dynasty_id: 'g', seasons: 7, score: 300000, display_name: 'Plain Row',
+        created_at: ago(2) },
+      { dynasty_id: 'h', seasons: 6, score: 200000, display_name: 'Walked Off',
+        created_at: ago(72), dynasty_over: false },
+    ]);
+    T.paintDyn();
+    const rows = [...document.querySelectorAll('#lb-rows .lbr')];
+    const read = (r) => {
+      const b = r.querySelector('.who b'), pill = r.querySelector('.livepill');
+      const cs = getComputedStyle(b);
+      return {
+        name: b.textContent.trim(),
+        pro: b.classList.contains('pro-name'),
+        pill: !!pill,
+        pillDisplay: pill ? getComputedStyle(pill).display : null,
+        pillColor: pill ? getComputedStyle(pill).color : null,
+        /* `.who > span`, and the child combinator is the whole of it. The sub line is a
+           direct child of .who and the pill is a span too, nested inside the name, so a
+           descendant selector matches the PILL first: the comparison below was the pill
+           against itself, which can never differ, and the assertion failed on a correct
+           page. That is this file's own extractor lesson, arriving at a one line read. */
+        subColor: getComputedStyle(r.querySelector('.who > span')).color,
+        rowClass: r.className,
+        /* THE NAME'S OWN HEIGHT, NOT THE ROW'S. A board row has a 75px floor set by the
+           avatar beside it, so a name pushed onto a second line fits inside it and the
+           row measures the same: the first draft of this compared rows and reported 75
+           against 75 with the pill computing to display:block. The element that actually
+           grows is the one the pill is inside. */
+        h: Math.round(b.getBoundingClientRect().height),
+        fill: cs.webkitTextFillColor || cs.color,
+        bg: cs.backgroundImage,
+      };
+    };
+    const pods = [...document.querySelectorAll('#lb-podium .pod')].map((p) => {
+      const n = p.querySelector('.pn'), pill = p.querySelector('.livepill');
+      return { name: n.textContent.trim(), pro: n.classList.contains('pro-name'),
+        pill: !!pill, word: pill ? getComputedStyle(pill).fontSize : null };
+    });
+    return { rows: rows.map(read), pods };
+  });
+  const by = {};
+  seen.rows.forEach((r) => { by[r.name.replace(/^LIVE/, '')] = r; });
+  ok('the five list rows drew', seen.rows.length === 5,
+    seen.rows.map((r) => r.name).join(', '));
+  /* THE PILL, on the one thing a column can answer and the one thing it cannot. */
+  ok('  a run still going wears LIVE', by['Live Free'] && by['Live Free'].pill === true);
+  ok('    and a finished one does not', by['Done Paid'] && by['Done Paid'].pill === false);
+  ok('    and a row from before the column says nothing',
+    by['Plain Row'] && by['Plain Row'].pill === false);
+  /* The cutoff is the page's own judgement and it is the half no migration can make. This
+     run is marked unfinished and always will be: nothing reaches the server when somebody
+     closes the tab for the last time. */
+  ok('    and a run nobody has touched for three days is not live',
+    by['Walked Off'] && by['Walked Off'].pill === false);
+  /* THE CHAMPION MARK'S OWN BUG, asked of the new element. `.lbr .who span` claims every
+     span inside .who as a block, so a pill that lost that cascade would take the row's
+     whole width and drop the name onto a second line. Measured as a height rather than as
+     a display, because the height is what a reader would actually see. */
+  ok('  the pill sits on the name line', by['Live Free'].pillDisplay === 'inline-flex',
+    String(by['Live Free'].pillDisplay));
+  ok('    and costs the name no height',
+    by['Live Free'].h === by['Plain Row'].h,
+    by['Live Free'].h + ' against ' + by['Plain Row'].h);
+  /* THE SAME RULE SETS A COLOUR, and the first draft of this section did not ask. It came
+     off the champion mark's bug, and the champion mark is an SVG with its own fill, so the
+     colour half of that cascade had never cost anything. Here it did: a red box with a red
+     dot and the word in the sub line's grey. Reported by nothing, because it renders. */
+  {
+    const c = (by['Live Free'].pillColor || '').match(/\d+/g) || [];
+    ok('    and the word is red rather than the sub line grey',
+      by['Live Free'].pillColor !== by['Live Free'].subColor &&
+      +c[0] > +c[1] && +c[0] > +c[2],
+      by['Live Free'].pillColor + ' against ' + by['Live Free'].subColor);
+  }
+  /* THE NAME AND NOT THE ROW. Gold on this board is an achievement and blue is whose row it
+     is; a paid account is neither, so it may not touch anything the row itself wears. */
+  ok('  a paid account is gilded', by['Live Paid'].pro === true);
+  ok('    with a gradient under the glyphs',
+    /gradient/.test(by['Live Paid'].bg) && by['Live Paid'].fill === 'rgba(0, 0, 0, 0)',
+    by['Live Paid'].fill);
+  ok('    and a free one is not',
+    by['Live Free'].pro === false && by['Live Free'].bg === 'none', by['Live Free'].bg);
+  ok('    and the ROW is untouched either way',
+    by['Live Paid'].rowClass === by['Live Free'].rowClass,
+    '"' + by['Live Paid'].rowClass + '" against "' + by['Live Free'].rowClass + '"');
+  /* The podium draws in the order 2, 1, 3, so the paid live run is the middle step. */
+  const pod = {}; seen.pods.forEach((p) => { pod[p.name.replace(/^LIVE/, '')] = p; });
+  ok('  the podium carries both marks too',
+    pod['Pod Paid'] && pod['Pod Paid'].pro === true && pod['Pod Paid'].pill === true);
+  ok('    with the word collapsed to its dot, because a step is 93px wide',
+    pod['Pod Paid'].word === '0px', String(pod['Pod Paid'].word));
+  ok('    and a finished run on the steps wears nothing',
+    pod['Pod Done'] && pod['Pod Done'].pill === false && pod['Pod Done'].pro === false);
+}
+
+/*
+ * AND THE CLASSIC BOARD GILDS THE SAME HALF OF THE SAME ROW.
+ *
+ * The LIVE pill is Dynasty's alone: a dynasty is the one run here that spans days, and every
+ * other board ranks finished seasons. The paid name is on every board, and on this one it
+ * has to share the front of the name with the champion mark, which is the element whose own
+ * cascade bug this markup is written around.
+ */
+console.log('\nTHE PAID NAME IS ON THE CLASSIC BOARD TOO');
+{
+  const seen = await lb.page.evaluate(() => {
+    const T = window.__t;
+    T.setSort('rating');
+    T.setRows([
+      { id: 1, display_name: 'Paid Champ', team_rating: 101.4, wins: 17, losses: 0,
+        perfect: true, perfect_pct: 30, picks: [], display_pro: true },
+      { id: 2, display_name: 'Paid Plain', team_rating: 96.2, wins: 14, losses: 3,
+        perfect_pct: 12, picks: [], display_pro: true },
+      { id: 3, display_name: 'Free Plain', team_rating: 92.0, wins: 12, losses: 5,
+        perfect_pct: 8, picks: [] },
+      { id: 4, display_name: 'Free Other', team_rating: 88.1, wins: 10, losses: 7,
+        perfect_pct: 4, picks: [] },
+    ]);
+    T.paintCls();
+    return [...document.querySelectorAll('#s-board .lbr, #s-board .pod')].map((r) => {
+      const n = r.querySelector('.who b') || r.querySelector('.pn');
+      return { name: n.textContent.trim(), pro: n.classList.contains('pro-name'),
+        badge: !!n.querySelector('.champbadge'),
+        badgeDisplay: n.querySelector('.champbadge')
+          ? getComputedStyle(n.querySelector('.champbadge')).display : null };
+    });
+  });
+  const paid = seen.filter((r) => /Paid/.test(r.name));
+  const free = seen.filter((r) => /Free/.test(r.name));
+  ok('every row drew', seen.length >= 4, seen.map((r) => r.name).join(', '));
+  ok('  every paid name is gilded', paid.length >= 2 && paid.every((r) => r.pro),
+    paid.map((r) => r.name + ':' + r.pro).join(', '));
+  ok('  and no free one is', free.length >= 2 && free.every((r) => !r.pro),
+    free.map((r) => r.name + ':' + r.pro).join(', '));
+  /* The mark is drawn with its own fill rather than currentColor, so a name set to
+     transparent cannot take the trophy with it. */
+  const champ = seen.find((r) => r.badge);
+  ok('  and the champion mark survives a transparent name',
+    !!champ && champ.badgeDisplay === 'inline-flex',
+    champ ? champ.name + ' ' + champ.badgeDisplay : '(no badge drew)');
 }
 ok('  and none of it threw', lb.boom.length === 0, lb.boom.join(' | '));
 await lb.page.close();

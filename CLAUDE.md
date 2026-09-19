@@ -2126,6 +2126,134 @@ rather than a missing one, and nothing throws.
 existed, and it asserts the run-based route still works: adding a second way in must not cost
 the first.
 
+### A board row cannot answer a question about the account that wrote it
+
+```
+node football/check-premium.mjs        the two marks, on both boards
+createdb pro_live
+psql -d pro_live -f supabase/test/dynboard_base.sql
+psql -d pro_live -f supabase/98_football_gauntlet_board.sql
+psql -d pro_live -c 'create table public.subscriptions(user_id uuid, status text, current_period_end timestamptz);'
+psql -d pro_live -f supabase/101_premium_bundles.sql
+psql -d pro_live -f supabase/107_board_pro_and_live.sql
+psql -d pro_live -f supabase/test/board_pro_live_test.sql
+```
+
+A gold name for a Pro account and a LIVE badge on a dynasty still being played. Both are
+decoration, neither moves a rank, and **neither is knowable in the browser**. `premium_unlocks`
+is RLS'd to its owner, so nobody can see who else paid; nothing about somebody else's save
+reaches this page at all. So they are columns: `display_pro` and `dynasty_over`, written by
+`supabase/107_board_pro_and_live.sql`.
+
+**Without that migration both go quiet and nothing else changes.** An absent column reads as
+undefined, which is falsy for one and is not the `false` that means live for the other, so the
+board is exactly the board it was. Same shape as every other optional column on these rows, and
+`board.js` probes for `display_pro` on the classic path the way it already probes for the crest.
+
+**`display_pro` publishes who has paid**, for anybody with a row on a public board. That is a
+disclosure and it is written up in 107's header: one boolean, naming no product, no price and
+no date. **It is DERIVED and never typed.** Two triggers read `premium_unlocks` directly and
+they are the only writers, so it cannot be forged into a gold name the way a crest ring can be
+forged into a gold circle. It honours `expires_at`, and it is scoped to `ps_premium` and
+`cfb_premium`: an Arcade Card buyer has no Pro tier in this game and marking them would be
+saying something false.
+
+**GOLD ON THE NAME, NEVER ON THE ROW.** Gold on this board is an ACHIEVEMENT (a perfect season,
+the top step) and the blue rail is WHOSE row it is. Both have to keep meaning that, and a paid
+account is neither. The name text had never carried a colour, so it was the one surface free to
+say something new. Nothing else on the row moves: no pill, no badge, nothing competing with the
+champion mark already in front of the name. A reader who does not know what it means reads a
+slightly nicer name, which is the right amount to be told.
+
+**The solid gold is the base and the gradient is the upgrade, and writing it the other way round
+loses every Pro player.** `background-clip:text` needs `color:transparent` to show at all, so a
+browser without the clip would render an invisible name. The plain rule paints a warm gold and
+an `@supports` block replaces it. The sheen is seven seconds a pass over a gradient whose
+darkest stop is still gold, so no point in the cycle is dimmer than the base: a board is
+twenty-five names and anything quicker is twenty-five things flashing at somebody hunting for
+one row.
+
+#### The LIVE badge is Dynasty's alone, and the cutoff is the page's own judgement
+
+Every other board here ranks finished seasons. A dynasty is the one run that spans days, so it
+is the only one where "are they still playing it" is a question.
+
+`dynasty_over` is **three-valued** and only the `false` lights up. `null` is every row written
+before this existed, and a board of LIVE badges on runs from six months ago is worse than no
+badge at all. That is the "absent is not zero" rule the daily meter already runs on; a column
+defaulted to `false` would have lit the entire history on deploy.
+
+**What no column can ever know is a run somebody walked away from.** Nothing reaches the server
+when a player closes the tab for the last time, so an abandoned run stays `false` for ever. The
+page refuses to call anything live whose furthest season is older than `DYN_LIVE_HOURS`, which
+is **48**: two days of a free account's three-a-day budget, long enough that somebody who plays
+each evening is still live in the morning. **The cutoff is in the page and not in SQL on
+purpose**, because it is a judgement about what "still going" means to a reader rather than a
+fact about the run, so it moves in a deploy instead of a migration.
+
+**`dynClear` is where the end is posted, because that function IS what ending a dynasty means
+here.** Four paths finish one (the firing at the results screen, the drop button, and the two
+places a new draft clears the slot it is taking) and hanging the call on any one of them would
+leave the other three broadcasting LIVE for ever. The id comes off the save about to be deleted
+rather than off `run`, because `beginDynastyDraft` clears the slot it is TAKING, which may be
+the other one. Never awaited, fails soft, and not retried: a dynasty that ends with the network
+down keeps a stale badge, which is the cheapest thing on this screen to be wrong about.
+
+**The pin needs no column for either mark**, and that is not a shortcut. It is not a board row:
+it is the run in this browser's hands, so it is live by the fact that it is being drawn, and the
+viewer's own unlocks are the one account this page can read.
+
+#### Every way this breaks renders perfectly, so the guard measures the screen
+
+The rows are fabricated and handed straight to the painters, covering live, live and paid,
+finished and paid, neither, and the run three days old that no column will ever mark as over.
+
+- **The pill is asserted as a HEIGHT, not only as a display.** `.lbr .who span` claims every
+  span inside `.who` as a block at (0,2,1), which is the exact cascade the champion mark lost:
+  a pill that loses it takes the row's whole width and drops the name onto a second line. So
+  `.lbr .who b .livepill` is written a class deeper than it looks like it needs, and the guard
+  compares a row wearing one against a row that is not. **It measures the NAME and not the
+  ROW, because the row has a 75px floor set by the avatar beside it**: a name pushed onto a
+  second line fits inside that, so the first draft compared rows, read 75 against 75 with the
+  pill computing to `display:block`, and certified the defect. The name goes 20px to 39.
+- **AND THAT RULE SETS A COLOUR TOO, which the first version of both the CSS and the guard
+  missed.** The fix was written from the champion mark's bug and the champion mark is an SVG
+  with its own fill, so the colour half of that cascade had never cost anything. Here it did:
+  `.lbr .who span` also sets `color:var(--dim-2)` for the sub line, so the pill shipped as a
+  red box with a red dot and the word in the grey of the row behind it. **Found by taking a
+  screenshot and looking at it**, and the section had just passed green on it. The guard asks
+  that the word is not the sub line's colour and that it is reddish, which is the property
+  rather than the hex. **It reads the sub line as `.who > span` and the child combinator is
+  load-bearing**: the pill is a span too, nested inside the name, so a descendant selector
+  matches the PILL, and the comparison was the pill against itself. It can never differ, so
+  the assertion failed on a correct page. Same class as this repo's three wrong extractors,
+  arriving at a one line read.
+- **The podium's dot has no box, and that was the second thing only looking could say.** With
+  the word collapsed, the pill's 1px border drew a ring 4px across a 5px dot, which reads as a
+  bullseye rather than as a light that is on. A chip is a container for a label; with no label
+  there is nothing to contain, so the border and the fill go and the glow carries it.
+
+**The SQL half has its own file**, because the page's guard fabricates the columns and
+therefore says nothing about what writes them. `supabase/test/board_pro_live_test.sql` drives
+the real triggers and the real functions: a free account, a buyer, an Arcade Card holder (who
+is NOT Pro here), an expired unlock, a guest run, and the backfill that gilds rows already on
+the board. Four of its claims were proved by reintroducing a defect alone.
+
+**Its exception test asserted nothing on the first draft, and the shape is worth recognising.**
+Written as `claim(false)` inside the `begin` arm, the failure it raises is caught by that
+block's own `when others` and reported as a pass, so the check certified 98's not-found guard
+while the guard was deleted. **An exception test cannot assert inside the block it is
+watching**: the flag is set in the handler and read after the block.
+- **The gilding is asserted on the NAME and the ROW is asserted UNCHANGED**, because the whole
+  argument above is about which of the two may carry it.
+- **The champion mark survives a transparent name** because its SVG carries an explicit fill
+  rather than `currentColor`. Asserted, since `-webkit-text-fill-color:transparent` on the
+  parent is exactly the kind of thing that takes a sibling with it.
+- **On the podium the word is collapsed to its dot in CSS**, not dropped from the markup. A step
+  is about 93px of text at 390px and a 36px pill in front of an 11.5px name truncates most names
+  to two syllables. `font-size:0` leaves LIVE in the accessibility tree, so the pill stays ONE
+  element with one spelling rather than a second element that can drift.
+
 ### The boss battle, and the one screen that checks itself
 
 ```
@@ -3570,6 +3698,9 @@ node hoops/check-posture.mjs      discoverability, per the table above
 node hoops/build/check-fetch.mjs  the scraper's parsers, against saved markup
 node hoops/verify.mjs             draft legality, seed replay, and calibration
 node hoops/check-badges.mjs       every badge is reachable, against real runs
+node hoops/check-board.mjs        the leaderboard, in a browser, in every state
+node hoops/check-live.mjs         the game you play yourself, and its fit
+node hoops/check-bracket.mjs      the playoff bracket, and the field it draws
 ```
 
 `check-badges.mjs` takes about two minutes, because proving a badge is reachable
@@ -3585,6 +3716,210 @@ the strategies a player would use, never loosening a threshold to suit a bot.
 `verify.mjs` prints a **TARGETS** block. Read it after any change to the data or
 the constants: it states what the balance is supposed to look like and flags what
 is outside its band.
+
+### Three doors, and one of them was already built
+
+| | the wheel | what it is |
+|---|---|---|
+| the league | season and club both spin | the game |
+| One Franchise | the club is held, the year spins | a history exam about one club |
+| Decades | both spin inside one era | six men who could have met on the floor |
+
+**Decades needed no engine work at all, and that is the lesson.** `ERAS` has been
+in `engine.js` and the era filter has been in `drawable()` since the day `run.js`
+was written, and nothing on the page could ever set one. A whole mode, shipped,
+exercised by the fixtures, unreachable. Same shape as the football game's Dynasty
+leaderboard that rendered perfectly and had no way in: **look for the door before
+building the room.**
+
+**A LOCK OF ANY KIND HAS TO REACH THE RESERVE FLOOR.** `cheapestForSlot` reads the
+200 cheapest men per position across all 16,057 rows, and in a restricted run not
+one of them may be drawable. Left alone the floor promises a $2.2M centre off a
+club this run can never spin, the budget reads bigger than it is, and the draft
+strands itself at the last slot with no legal player at any price. **Nothing
+throws**: `sign()` refuses and the player is left on a board of greyed names. One
+filter answers both locks (`lockedPool`), so neither can be the one somebody
+forgets.
+
+What that turned up is worth not re-deriving:
+
+- **The club lock moves the floor and the era lock does not.** 36 of 180 club
+  readings differ from the league's; **0 of 36 era readings do**, because a decade
+  holds 1,252 to 3,696 rows and 34 to 121 men priced at the minimum, at every
+  position, so the six cheapest legal bodies cost the same 6 x $2.0M either way.
+  `verify.mjs` asserts the zero rather than a difference that is not there.
+- **It stops being defensive the moment the two COMPOSE.** The Lakers in the
+  eighties floor at $19.9M against the league's $12.0M.
+- The club sweep also asserts the locked floor is never UNDER the league's, and
+  that the two pools actually come apart. A sweep that only asserted thirty drafts
+  finish would pass on the unlocked floor and report green on the exact defect it
+  was written for. Same lesson as `check-fullteam`'s replaced reading.
+
+**One Franchise kills chemistry as a decision and that is accepted, not missed.**
+Everybody on a locked roster shares the club, so the franchise link fires on every
+pair and the bonus sits at **+2.30 of a possible +2.50** whatever gets drafted,
+measured over 360 runs across all thirty clubs. Best-available finishes **46.8
+wins against 42.0** off the whole league. Decades does not have this: chemistry
+there runs +0.67 to +1.13 and still has to be gone looking for. The how-to says so
+on the page rather than leaving somebody to wonder why their Celtics team rates
+high.
+
+**So every mode keeps its own best.** `c.byClub` and `c.byEra`, never mixed into
+`bestWins`. The spread between decades is bigger than the One Franchise gap:
+best-available takes the seventies to 49.6 wins and the aughts to 40.7, which is
+nine wins between two modes wearing the same word, and one shared record would
+retire the league best to whoever picked the shallowest priced era.
+
+**The span in the constant is not the span in the file.** `ERAS.seventies` is
+`[1970, 1979]` and the data starts in 1974. `R.eraSeasons` reads the same list
+`drawable()` filters, which is the only honest span; the same rule put
+`R.clubSeasons` behind the club picker rather than the founding year, which would
+have promised twenty-eight seasons of Celtics that do not exist.
+
+**`E.team()` cannot be an existence check and one was written against it.** Its
+last fallback returns `{ name: code }`, so `team('NOPE').name` is the truthy
+string `'NOPE'` and the guard passed for every string there is. An unknown club
+would have silently emptied the wheel. `hasTeam()` is the gate.
+
+### The draft board lost 1,289px on every spin
+
+Measured at 390x844 and 360x740. `drawInto` emptied `#tabs` and `#opts` before the
+reels started, so the page collapsed to the height of a reel and grew back a beat
+later: **the court under the board jumped 1,554px up the screen and back down, six
+times a run** plus every re-spin. Nothing threw and no check in the repo could see
+it. It was most of what "the draft does not feel clean" was.
+
+**The height is a property of the board and the board is already decided.**
+`run.js` resolves the draw before a single frame animates, so the real tiles go up
+at once and the page settles before anything moves. What is held back is the
+READING of them, which is what the reel is for: `visibility:hidden` over a shimmer,
+because it is the one that keeps the layout box exactly. A skeleton of fixed-height
+placeholders was tried first and **cannot** be exact, since a tile with an award row
+is 26px taller than one without. Court movement is 84px now, and what is left is
+the honest difference between two boards.
+
+Three things that were repeating the answer rather than adding to it, all found by
+reading one screen at 390px:
+
+- **"2011 Spurs" on every tile.** A board is one team-season, so that line said the
+  same words as the two reels directly above it, once per player. What is there
+  instead is the chemistry a signing would ADD, named rather than counted.
+- **The club note under the reels, under a lock.** `teamNote` is the same founding
+  year and title list six picks running. In a locked run what changes is the
+  SEASON, so what is said is whether they won it.
+- **"SIGNABLE" alone over ten signable players.** A divider only earns its line when
+  there is something on the other side of it.
+
+### It did not say what it was
+
+Driven beside The Perfect Season at 390px, the difference on a first visit is not a
+feature: the NFL game opens with a card headed FIRST TIME HERE, three numbered
+steps, a stated goal and an arrow reading START HERE. This one opened with a wheel.
+It has the same guide now, once per browser, on the front page only.
+
+**It points at the button and leaves it live.** The scrim stops at the top of the
+dock, so the way out of the guide is the thing the guide is telling you to do.
+Anchored to the dock rather than measured against the page, because `--dock` is
+already measured on every render and the target is pinned.
+
+Two defects the harness caught that looking would not have:
+
+- `inset:0` covers the dock whatever the scrim does, so with pointer events on the
+  wrapper **the Start button was not the element at its own centre**. A screenshot
+  shows an arrow over a button and nothing wrong; `elementFromPoint` says otherwise.
+- Centred at `62vh`, the panel's own text scrolled inside itself at both widths. **A
+  guide whose explanation is below its own fold is worse than a terser one.**
+
+**Every number in it is read out of the constants and the data.** The cap has been
+swept twice in this game's short life. The first draft of step two said a star costs
+half the cap, which is false: the top price in 16,057 rows is Bob McAdoo's 1975 at
+**$60.0M against $126M**, and nobody is over half. It prints the real dearest man.
+
+### A box score is a DECOMPOSITION of the scoreline, never a second model
+
+You draft Jordan's 1996 and until this shipped nothing anywhere told you what
+he did in any of the 82. The playoff games were the worst of it: `playoffSeries`
+has always returned its individual games and nothing ever drew one, so a run
+that ended 3-4 in the Finals gave you the series score and not one thing that
+happened in it.
+
+Every game opens now: quarters for both sides, and a box score for your six.
+
+**The load-bearing decision is that `resolveGame` still settles the score and
+these lines are apportioned to hit it exactly.** A possession sim that DECIDED
+the score would replace the win-share model fitted to twenty-two real NBA
+records, and every TARGETS band would need re-solving. And two models of one
+game disagree: verify already caught the animated season and the instant season
+producing different records off one seed. So nothing downstream reads any of
+this, and **the one property it must have is that it adds up**. Six identities
+are asserted over a real season: the points column IS the scoreline, a man's
+field goals and free throws produce his points, nobody makes more than he takes,
+the minutes fill the game, the quarters are the scoreline, and a game that went
+to overtime was level at the end of regulation.
+
+Three things the measurement found that reasoning did not:
+
+- **The league shot 59%.** Two scale-ups were folded into one term. Six men
+  covering 240 minutes absorb a whole bench's shots, which is real extra WORK
+  and passes into attempts in full; a hot night is mostly efficiency and only
+  partly volume. Separated, the league shoots 46.3% against a real 46%.
+- **The minutes column added to 153 of 240**, because it printed `mp`, which is
+  his minutes in a ten man rotation. A box score saying six men played two
+  thirds of the game and scored all of the points is arguing with itself.
+- **`PTS_SD_K` is not what makes this concentrated.** Swept 1.45 to 0.55, the
+  leading scorer's share moved 34.9% to 32.2% and the median game high moved 41
+  to 38. **The concentration is the premise and no constant fixes it**: the dial
+  is the roster size, and that is the game. It is set for the TAIL alone.
+
+**`apportionCapped` was wrong on 73% of inputs** and the minutes needed it. It
+pinned the over-cap men and the under-floor men in the same pass, which throws
+away the redistribution between them: weights `[1,1,1,32,27,26]` over 240 pinned
+three at the floor and three at the ceiling, arrived at 198, and had nothing
+unpinned left to give the other 42 to. **One side per pass.**
+
+**No box score for the opponent, deliberately.** The schedule knows which real
+club you played and the sim never used their players: an opponent here is a net
+rating. Five invented lines for five real men, printed as this game's own
+record, is the one thing on that screen that would not be true.
+
+**Each game draws off the run's seed and its own address**, never a shared
+stream, so opening game 41 twice shows the same 41 points, a reload does not
+rewrite history, and drawing a SCREEN never moves the season somebody comes back
+to.
+
+**A box score nobody opens is a box score nobody has**, so the run names its own
+best night on the results screen and links to it. Asserted against a brute force
+sweep rather than against itself, because an off-by-one would name the second
+best game and nothing would look wrong.
+
+### A field the page reads off an outcome has to be a field outcomes have
+
+`out.spendLeft` was read on the results screen and `outcomeOf` has never set it.
+`undefined > 15` is false, so on **every run this game has ever played** the branch
+behind it was dead and the cap advice, which is the central lesson of the whole
+game, never once appeared: a draft that finished $88M under was told its roster had
+no shape instead. Nothing threw, nothing rendered wrong, and no check could see it.
+
+So `verify.mjs` builds a real outcome and asserts **every `out.<field>` in the page
+is one of its keys**. The whole class, not the one name, and proved by mutation.
+Two things about writing it:
+
+- **Its first draft failed on the COMMENT explaining the fix.** Block comments come
+  out before the scan now. Third time an extractor in this repo has read a comment
+  as code.
+- **The scan asserts it found something.** A regex that matches nothing passes,
+  which is `check-numbers`' coverage argument in one line.
+
+Two more on that screen, both found only by looking at it:
+
+- **One fact, three times.** "3 wins short of the play-in" was the gauge's big
+  number, the gauge's sentence, and the story line under the record. The gauge is
+  how it ENDED; `seasonStory` is the season's SHAPE. They cannot collide now
+  because they are never about the same thing.
+- **"1404th of 1403 all time".** `nationalRank` INSERTS your roster into the table
+  of real team-seasons, so the denominator has to count it. Visible only on a
+  deliberately terrible draft; the top end read "1st of 1403" and was wrong by the
+  same one without looking like anything.
 
 **Two targets are out of band today and no constant will fix them.** The four
 numbers that turn win shares into a record are now FITTED to twenty-two real NBA
@@ -3602,6 +3937,779 @@ paragraph to stay current.
 **Refit, do not nudge.** If the data changes shape, re-run the solve rather than
 moving one constant: they trade off against each other, and the reason the
 previous set was uniformly 15 wins low is that no single number showed it.
+
+### Today's run, and the one mode that gives two people the same question
+
+The other three doors are the same game with the wheel constrained. This one is
+the same game with its SEED pinned to the date, so everybody who plays on a
+given day gets the same six spins and two records are comparable for the first
+time in this game. `run.daily` is the day number and it rides in the run, not in
+a page variable beside it: a draft resumed tomorrow and filed against today
+would overwrite a result somebody set for a different puzzle.
+
+**The day rolls at Eastern midnight**, which is what every other calendar-day
+clock on this site already uses. UTC rolls at 7 or 8pm Eastern, which takes the
+puzzle away in the middle of the evening somebody is playing it, and the
+visitor's own midnight gives two people in one group chat different puzzles on
+the same night, which is the whole thing this mode is for. `easternISO()` asks
+`Intl` and **falls back to the local date rather than throwing**: a browser with
+no time zone database answers the wrong puzzle, and a browser with no game
+answers nothing.
+
+**`dayNumberOf` does its arithmetic in UTC on purpose.** Two local midnights are
+23 or 25 hours apart across a clock change, which floors to the wrong day twice
+a year and hands two players different puzzles with nothing anywhere throwing.
+
+**The epoch was written as the UTC date and was a day out.** Day 1 read as day 0
+for most of its own evening, and only `Math.max(1, ...)` made it look right. A
+clamp is a guard against a wrong clock, not a place to keep an off-by-one.
+
+**One a day, and the guard is on the DAY rather than on the count.** Replaying
+today is refused by `dailyRecord`, because a second attempt at the same puzzle
+is a different game from the one everybody else played. **There is no anti-cheat
+beyond that and there should not be**: abandoning a draft mid-run leaves the day
+open, so somebody who wants to see the board twice can, and with no server and
+no leaderboard the only person they are beating is themselves.
+
+**One day is not a streak.** Every first-time player finished the daily and was
+handed a gold "1 DAY" for having played once, which says nothing and devalues
+the number on the day it starts meaning something. The door shows it from two,
+and only while it is still alive: a count that ended last March is a fact about
+March, and printing it beside today's door reads as a claim about right now. It
+survives today being UNPLAYED, because a streak breaks on a day missed rather
+than on a day not yet played, so yesterday's run is what it stands on.
+
+**The streak mark on the results screen is read off YESTERDAY.** `bestsSet` runs
+before `dailyRecord` files today, deliberately and as three separate statements
+rather than as fields of one object literal, because otherwise the whole thing
+depends on property evaluation order, which is a rule nobody should have to
+know. Read after, every mark in that function is a tie rather than a beat.
+
+#### A shared result has to say which game it was
+
+`drawShareCard`'s tagline was the literal `Six NBA seasons, one cap, 82 games.`,
+which is false for One Franchise, false for Decades and false for the daily.
+**That is the football card's fallthrough arriving a fourth time**: its own
+section above records "Classic Mode. Six spins, one roster" surviving three
+modes, because a literal has no branch to forget.
+
+`cardTag(r)` derives it, `shareText` puts the mode in the FIRST line (which is
+the line a chat app shows as a preview), and `shareDare` gives the daily its own
+question, because every other dare asks somebody to go and play a game and this
+one asks them to play the SAME six spins, which is the only dare here with one
+answer.
+
+**The defence is not a fourth branch, it is that no two modes may share a
+tagline.** `verify.mjs` asserts all four are different and that no locked mode
+falls through to the league's, so a fifth door cannot inherit the fourth's
+words either.
+
+#### A badge earned in silence is a badge nobody has
+
+`badges.js` computes forty-odd badges off the whole career and the only surface
+it had was a tab inside a sheet, so a badge was earned invisibly and found weeks
+later by somebody who happened to look. `recordRun` answers with what the run
+CHANGED now, and the results screen draws it second, above the playoffs.
+
+**Nothing stores "earned", by design.** Every badge is derived, which is what
+makes the cabinet retroactive and impossible to lose, so the only way to know
+what a run earned is to ask the same question either side of the write. `before`
+is a second `loadCareer()` rather than a copy, because that function JSON-parses
+on every call and the two objects are therefore independent.
+
+**It is kept on the run rather than shown once.** It is a receipt and not a
+notification: somebody reopening a finished season should still see which badges
+that season lit, the same way they still see its record. Recomputed on the
+results screen it would answer "nothing new" every time, correctly, because the
+career already holds all of them.
+
+**A first run sets no record**, and neither does a first run on a club or in a
+decade. It is trivially the best of one, and a screen congratulating somebody
+for beating nobody is the unearnable badge in reverse.
+
+#### Run it back means the same game, and two buttons could not keep that promise
+
+The results screen's Run it back really does replay the mode. **The daily is the
+one game that cannot be run back**, so after one it says what it actually does.
+And the front page's Start button is wired to `startRun` with no arguments, so
+it has always been the whole league whatever was played last: it said "Run it
+back" after any finished run, which was true while the league was the only mode
+and became a promise it cannot keep the day the doors went in.
+
+**The other doors are on the results screen now**, which is the screen a player
+is on at the moment they will take another one, and was the one screen with none
+on it. Whichever mode the run WAS is left out, because Run it back is already
+that button directly above and offering it twice makes two controls out of one
+decision.
+
+#### The guards lift the real functions out of the page
+
+`verify.mjs` brace-matches `cardTag`, `dayNumberOf`, `dailySeed`, `dailyRecord`,
+`freshBadges`, `bestsSet` and `shareDare` out of `index.html` and drives them.
+**Never a copy of the arithmetic**: a second implementation agrees with itself,
+which is exactly what mythiball's send curve did for as long as its sweep
+carried a hand-written duplicate of the curve it was sweeping. The list of names
+is itself asserted, because a reader that finds nothing lets every assertion
+below it pass green, which is how an extractor in this repo has been silently
+wrong three times.
+
+**The day walk runs in a child process under `TZ=America/New_York`.** It has to:
+the claim is that the arithmetic is immune to a clock change, and on a CI
+machine running UTC the broken version passes. Proved by reintroducing it.
+
+### The leaderboard, and why there are four of them
+
+```
+node hoops/check-board.mjs                        the page, in a browser, in every state
+createdb hoops_board && psql -d hoops_board -c 'create role authenticated; create role anon;'
+psql -d hoops_board -f supabase/test/hoops_board_base.sql
+psql -d hoops_board -f supabase/108_hoops_leaderboard.sql
+psql -d hoops_board -f supabase/test/hoops_board_test.sql
+```
+
+`supabase/108_hoops_leaderboard.sql` is 50_football_perfect_season.sql's SHAPE
+and not its copy. The two games agree on what a leaderboard is (a table only a
+security-definer function may write, every derived field owned by the server,
+RLS read for everybody, one index per query the client actually makes) and
+disagree on every number in it, because one plays 17 games and the other plays
+82. Read that file's header for the argument this one inherits.
+
+**FOUR COMPETITIONS, NOT ONE BOARD WITH A FILTER, and the two locked ones are
+scoped again by key.** That is measured rather than tidy, and the measurements
+are already in this file: One Franchise pins chemistry at +2.30 of a possible
++2.50 whatever gets drafted, so best-available finishes 46.8 wins there against
+the league's 42.0, and the decades are nine wins apart for the same drafting.
+One board would retire the record to whoever picked the deepest franchise or
+the shallowest era, and every number on it would still look reasonable.
+
+**`lock_key` is one column and not two.** A club and a decade are mutually
+exclusive: every door sets one or neither, and a run carrying both is refused
+rather than stored. Two nullable columns would need two more indexes to answer
+the same two questions, and would allow a row whose mode says club while its
+era column is populated, which is a state no reader would know what to do with.
+
+**The losses are the regular season's alone, which is where this differs from
+the football table.** A round here is a SERIES, so a bracket loss is four wins
+and three losses for somebody and the games it took are in nothing the client
+sends. 58-24 is the record a basketball fan means, and putting playoff series
+into the win column would make every number on the board unreadable against a
+real team's.
+
+**A pick is the engine's own `pkey`, `<id>|<season>|<CLUB>`, and the club has
+to be in it.** The football table stores `<id>:<season>` because a player has
+one row a year there. Here **755 of 16,057 rows are a player traded
+mid-season**, who has a row per club, so id and season together name two
+different half-seasons at two different prices. Dropping the club would have
+made those rosters unrenderable and the two halves indistinguishable, on 5% of
+players, with nothing on screen to say which one it picked. It is `E.pkey()`'s
+format exactly and not a wire format translated at each end, because the client
+looks a row up in the map it already keys by that string.
+
+#### The migration hardcodes the engine, and the drift is silent
+
+Eight constants are literals in the SQL, on purpose, so the file can be read on
+its own and pasted into an editor with no dependency. The comment over them
+said "MUST MATCH hoops/engine.js CONSTANTS" and nothing made that true.
+
+**It fails in the worst direction.** Move `TOP_SIX_WINS` in the engine and the
+game starts producing seasons the server labels with the other seed, or refuses
+outright for a bracket that is now the wrong length. The page fails soft, so a
+refused run resolves to null and the screen says the board is not reachable: a
+live, correct game whose leaderboard quietly stopped accepting anything,
+reported by nobody, because that is exactly what a board looks like before the
+migration has been run. `verify.mjs` holds all eight, the slot list, the four
+modes, and the daily epoch, which lives in two files because one is deployed by
+hand and the other by a push.
+
+**The score is computed twice and has to agree twice.** `board.js` recomputes
+the stored generated column locally, because the results screen counts the runs
+ahead of you before the insert has come back: a client that shifts a
+differential differently from the column counts against a number that is in
+nobody's row. Swept over every (wins, differential) pair rather than spot
+checked, along with the property the shift and the clamp exist for, which is
+that one more win always outranks any differential.
+
+**Postgres rounds a half AWAY FROM ZERO and `Math.round` rounds it toward
+positive infinity**, so `round(-7.55, 1)` is -7.6 and `Math.round(-75.5)/10` is
+-7.5: one whole step of the score column, on any season with a negative
+differential landing on a half. `roundTo` is lifted from `cfb/board.js`, where
+it was found.
+
+#### A board has four states and three of them ship broken
+
+Unreachable, nobody has finished a run, and you have not finished one. Each
+needs its own sentence, because a blank box is how a feature teaches somebody
+it is broken and a spinner that never resolves is worse. On a game this new
+"nobody yet" is the COMMON case, so it says being first is the prize rather
+than apologising. That is the commissioner standings' lesson arriving here, and
+`check-board.mjs` asserts the four sentences are four different sentences.
+
+**A missing migration is told apart from a bad network**, because the remedy is
+different and only one of them is worth waiting out.
+
+**THE GAME OUTLIVES THE BOARD**, which is the point of every soft failure in
+`board.js`. A run finished against a database that has never seen the migration
+still plays, still records in the career and still lights its badges, and the
+only thing missing is a row on a list. The last section of `check-board.mjs` is
+that assertion, and it is the one that would catch somebody making the board a
+dependency.
+
+#### The version pair, again, and this is the silent one
+
+`NEED_BOARD` in the page against `BOARD_API_VERSION` in `board.js`. A stale
+`?v=` fails loudly. This one falls through to a stub that answers null to
+everything, so a `board.js` a version behind degrades to "not reachable" and
+looks exactly like a bad network day. **The football game shipped exactly that
+for a release**, and the section above on `BOARD_VERSION` tells the whole
+story. `check-cachebust.mjs` found this pin on its own, by who SETS the global,
+and there are eight pins across the site now.
+
+#### Accounts are the site's, and nothing here is a gate
+
+`hoops/auth.js` adds NO new account system: `profiles` from
+`supabase/10_accounts.sql`, the same providers, the same default supabase-js
+storage key, so signing in here signs you in on the football and college games.
+It deliberately has no premium anything, because this game has no paid tier,
+and the four purchase functions in `cfb/auth.js` are not stubbed here either: a
+function answering "you own nothing" is a door one line from being opened.
+
+**The display name is never sent.** `rtf_submit_run()` reads it out of
+`profiles` for `auth.uid()`, and the test asserts structurally that the
+function has no argument that could carry one.
+
+**A run finished signed out is claimed on the way in**, from two places: the
+submit itself, for somebody already signed in, and the auth callback, for
+somebody who signs in afterwards. The id rides in the saved run, so it survives
+the reload a Google redirect puts in the middle of it, which is the case that
+would otherwise lose every name.
+
+#### Three things about the harness, and two of them cost an hour
+
+**`content-range` is not a CORS-safelisted response header.** PostgREST returns
+the exact count there, and a cross-origin stand-in that does not name it in
+`Access-Control-Expose-Headers` hands the page a response whose header
+JavaScript cannot read. `countOf()` then answers null, every count comes back
+as "no opinion", and the standing reports the board unreachable while the LIST
+beside it renders perfectly: a harness fault that looks exactly like the defect
+the file is written to catch.
+
+**Waiting on the roster to grow is a race, and waiting a fixed 700ms is the
+same race.** The roster grows INSIDE `sign()`, which spins the next board a
+beat later (`setTimeout(spin, 240)`), so a wait that fires on the roster
+returns while the board on screen is still the one just signed from. The next
+pass clicks a tile off a board about to be replaced, two signings land against
+one draw, and the draft stalls with an empty board and no way on but the Spin
+button. The wait is for the next board to be up and readable: the roster has
+grown, there is a fresh draw, and the tiles are out of `pending`. A slower loop
+never hits it, which is why it took three drafts of the file.
+
+**An assertion that could only pass.** "The sheet opens on the run's own board"
+was checked against a LEAGUE run, and `lbMode` defaults to the league, so
+deleting the line that reads the run passed green. It plays a Decades run now.
+The same trap caught the second path a second time: opened once from the
+standing, `lbMode` is already the run's board, so the front page would land
+there whether or not it looks at the run at all. That check reloads first.
+
+### The bracket, and the field it draws around you
+
+```
+node hoops/check-bracket.mjs            the arithmetic and the screen
+node hoops/check-bracket.mjs --quick    the arithmetic only, no browser
+```
+
+The postseason used to be a list of rows: one line a round, the round's name,
+what the opponent played like, and WON or LOST. Correct, and it is a receipt
+rather than a bracket. `s-brk` is the football game's `s-nbrk` in this sport:
+sixteen seats in the NBA's shape, a **fixed** tree (1/8 meets 4/5, 2/7 meets
+3/6, no reseeding, which is the real rule and is simpler than the NFL's),
+walked forward a round at a time with the other games flipping to their
+winners one after another and the player's held back.
+
+**IT DECIDES NOTHING.** The opponent each round is a net rating drawn by
+`poBeginRound`, and the whole postseason is fitted against the title rate of
+every team-season in the data. A bracket that picked the opponent instead
+would quietly rebuild the difficulty curve. What is drawn here is the field
+AROUND that path, and the fourteen games the player is not in are simulated
+for the reveal alone.
+
+#### It names nobody, and that is this game's rule rather than a shortcut
+
+The football bracket prints real clubs because there the opponents ARE real
+team-seasons off the difficulty ladder. Here they are not. The results screen
+has said "played like a 58 win team" since the day it shipped, for the reason
+written over it: printing "the 1996 Bulls" over a number the model rolled
+tells somebody they beat a team that was never in the room. **A bracket of
+real names would be that mistake fifteen times on one screen.**
+
+So every seat is a **seed and a record**, which is how an NBA bracket reads
+anyway, and no seat is a claim about anybody who ever played. `check-bracket`
+reads the seat painter's own source for a reach at `nickname`, `franchise` or
+`teamName`, and reads every seat off the rendered page for anything that is
+not a record, the player, or TBD.
+
+**THE TWO NUMBERS ARE KEPT APART, DELIBERATELY.** A seat's record is the
+FIELD's shape: what a 3 seed won. The strength the engine actually drew is
+what you are playing, and the draw is deliberately wide (`TITLE.SERIES_SD`),
+so the two disagree and should. The seat carries the seed and the note under
+the rail carries the form: **"The 3 seed, playing like a 58 win team."** One
+sentence, two facts, neither pretending to be the other. Read as one claim
+they would make the bracket look like it was lying about its own seeding.
+
+That note is read off `run.po.cur.oppNet` and never off the pending game,
+which answers with the points and the home court, meaning the rating already
+converted for this matchup.
+
+#### A column is empty until the round that feeds it has been played
+
+**This shipped in the first draft and it is the whole reason the file has a
+spoiler section.** Every decoration game is decided the first time its pairing
+is asked for, and a first round's pairings are SEEDS, so they exist before a
+ball is thrown: the conference final column named the 5 seed while the first
+round was still being revealed, which tells a reader who wins their own
+semifinal before their first round is over. A perfectly rendered bracket,
+reading ahead.
+
+The seats know their teams either way. `brkKnown()` only governs whether they
+are DRAWN, and TBD is what an unfed seat says.
+
+**THE FIRST ROUND IS ALWAYS KNOWN, and gating it behind the play-in was the
+second version of the same mistake.** A play-in run arrived at a bracket of
+sixteen TBDs with one game in front of it. The play-in feeds exactly one SEAT,
+so that is handled a seat at a time (`brkSeatIn`) rather than by hiding seven
+games whose pairings are seeds.
+
+#### The column is built around the player's own record
+
+A worse seed showing more wins than a better one is a bracket arguing with its
+own seeding. Per-seed bands cannot promise that, because the player's record
+is the one number in the column that is not ours to choose: the engine lets a
+43 win run into the play-in, which sits under any band written for an 8 seed.
+
+So `brkColumnWins` **anchors on the player's seat** and spreads everybody else
+away from it, upward for the better seeds and downward for the worse.
+Monotone by construction, swept over every anchor a run can arrive with, and
+asserted again off the rendered page because the two halves of that claim (the
+arithmetic and what is printed) are different questions.
+
+**A play-in run is the 7 seed**, and both halves of that come from one place:
+`seedFromRecord` is what decided there would be a play-in round at all, so
+reading `bye` rather than the win total again means the seed and the schedule
+cannot come apart.
+
+**THE SEAT THE PLAY-IN FEEDS HAS THREE ANSWERS AND ALL THREE ARE NEEDED.**
+`brkEntrant` is asked once, in the field, and everything above the first
+round is fed from it: a substitution made in the painter instead would seat
+the right club in the first round and carry the wrong one into the semis.
+
+| the play-in is | the seat holds |
+|---|---|
+| not decided | nobody, because the first round drew the player into a seat while the game deciding whether they are in it was still on the screen above |
+| won | the player |
+| LOST | whoever beat them |
+
+That last row is what lets the field finish. Without it a play-in loss left
+the seat empty, so every round after it stayed permanently TBD and **the
+postseason the player had just been knocked out of never happened at all**.
+It is also what the real bracket does.
+
+**The play-in is ONE box, because the engine's play-in is one game.** The real
+thing is four games over two nights and drawing that would be a picture of a
+tournament the run never plays. Its opponent carries a record and **no seed**:
+the winner is the 7 seed, so neither side is one yet, and a chip reading 8
+beside a first round column that also has an 8 would be two different clubs
+wearing one number.
+
+#### What moves, and what it costs
+
+The whole field is redrawn on every step, which is what the football bracket
+does and is fine here for the same reason: it is sixteen seats of text. **So
+the animation cannot live on the seats.** A keyframe on `.brk-t.won` would
+replay for every settled seat on every step, because innerHTML builds a new
+node and a new node starts its animations over. Exactly one key is marked
+`just` at a time and only `.just` carries the flip, so the game that has this
+moment is the only thing moving.
+
+The live ring is a pseudo-element on transform and opacity rather than an
+animated `box-shadow`, so the one thing looping on this screen costs the
+compositor and not a repaint.
+
+**The reveal is the same length whatever the round is.** A first round is
+eight games and a conference final is two, so a fixed step makes the first
+round four times the wait for the same beat: the step is `2400 / games`.
+
+**Nil apiece prints nothing.** A series that has not tipped off showed a 0 on
+both seats, which is two numbers saying the same nothing on the one box the
+reader is watching. A 0 beside a 4 is a sweep and stays.
+
+**The bracket finishes without you**, and that is worth the beat. A run that
+goes out in the first round has watched a field it is now not in, and walking
+the rest of it out says what the postseason did rather than stopping the
+screen the moment the reader stops mattering to it. `check-bracket` drives
+that over 320 runs, out at every round including the play-in, and asserts
+somebody is holding the trophy and that it is never the player who went out.
+
+#### Two things about its guard, and both were the check rather than the page
+
+Both showed up only on a PLAY-IN run, which is the shape the first browser
+pass happened not to draw, so both passed green once before failing.
+
+**A pairing with an empty chip is the rule working.** One first round seat is
+correctly TBD while the play-in that feeds it is still on the screen above,
+and the first draft read `''` as 0 and reported a 7 seed paired with nobody
+as a bracket that does not add up.
+
+**"Nothing past the round being played" is the wrong line.** The first round
+is always drawn, so on a play-in run the correct first round read as fifteen
+seats reading ahead. What must be hidden is everything past the LATER of the
+round being played and the first round, which on a bye run is the same column
+and on a play-in run is one along.
+
+#### The door moved onto it
+
+A game the series can end in is offered here now, **above the rail**. The rail
+is the tallest thing on this screen and it scrolls, so a control the game is
+waiting on underneath it is one the player has to go looking for. That is the
+live board's own call-box rule, and the guard measures it against a phone
+rather than against its own window.
+
+`show()` stops the bracket walk when the screen is left, the same way it stops
+the live game and the season reveal, and for the same reason: a bracket
+deciding rounds behind another screen is a series that moved without anybody
+watching it.
+
+**A reload lands on the bracket**, not on the season screen. `run.po` carries
+the whole thing and holds no rng and no player objects, so it survives JSON;
+the 82 game strip behind it is a season already played and rebuilding it is a
+reveal of something the reader has seen. Rounds already played are drawn
+settled, because a bracket that came back as a page of TBD reads as a run that
+had not started.
+
+### The court is a hardwood floor, and the club goes ON it
+
+The court on all three screens (the home hero, the draft, the results) was a
+flat brown radial gradient with four white outlines over it, which reads as a
+DIAGRAM of a court. A floor is what the sport is played on and it is the one
+surface in this game a fan already has a picture of.
+
+**Seven background layers, and the top one is a custom property.** The tint is
+`--floor-tint` and the six under it are the wood: a varnish sheen, light across
+the boards, board to board tone, the seams, the grain, and the maple. The club
+rule swaps the TINT and nothing else.
+
+**That is the whole point of the restructure, because the flat version was one
+`background` and `body.clubbed .court` replaced it outright.** Do that now and
+every plank goes the moment a club reel lands, which is a court that looks
+perfect in the state a developer opens the page in and flat for the whole
+draft. Nothing throws. `verify.mjs` asserts the club rule sets `--floor-tint`
+and never `background`, and both defects were proved by reintroducing them.
+
+**FOUR PERIODS THAT DO NOT DIVIDE INTO EACH OTHER, or it is a barcode.** One
+repeating gradient at one period is found by the eye in about a second. The
+planks are 6.1%, the board tone is 21.7% and the grain is 1.63%, so no two ever
+line up and nothing has to be random.
+
+**The seams were at .30 and the floor was corduroy.** Two sets of vertical
+stripes at high contrast stop reading as boards and start reading as cloth.
+They are a hairline at .17 now, and the TONE is what separates one board from
+the next. The grain is .022 for the same reason: it is a third set of vertical
+stripes and is the layer most able to ruin this.
+
+**The boards run away from the reader**, because this camera looks at a half
+court from centre with the basket at the top, and a real floor is laid baseline
+to baseline. Laid the other way they read as decking.
+
+**Three parts were added as markup and every court needs all of them**: the
+apron (`.oob`, the same boards under a darker stain rather than a different
+surface), the backboard (`.bb`, three pixels that turn a hoop floating on a
+floor into a basket) and the two corner threes (`.c3`, which the arc alone
+cannot draw). The guard counts them against the number of courts rather than
+naming them, so the next part is covered without anybody remembering.
+
+**The club wash is .42 and was .62, and the difference is measured by looking.**
+At .62 a club painted the top third of the floor a solid colour and the planks
+disappeared into it, which is the flat court arriving by a different door. At
+.42 it is a floor lit in the club's colours. **The layer count and the layer
+types are identical in both states**, so the .35s fade between clubs still
+interpolates.
+
+### A game seven is not a scoreline
+
+```
+node hoops/check-live.mjs            the engine and the page
+node hoops/check-live.mjs --quick    the engine half, no browser
+```
+
+`resolveGame` samples two totals and `gameBox` decomposes one of them into six
+lines. That is the right shape for 82 games and the wrong shape for the game a
+whole run comes down to, because there is nothing in it to decide: the score
+exists before the first possession and every screen after it reads a number
+that was already there.
+
+So an elimination game or a Finals game can be **played**. Possession by
+possession, a real clock, a running score, a live box score, and it stops at
+the two calls a coach actually makes. **Playing decides it**, which is the
+whole point and is also the thing that makes the rest of this section
+necessary.
+
+#### It is not a second model, and that is the whole engineering problem
+
+`gameBox`'s header argues at length that a possession sim which DECIDED the
+score would replace the win-share model fitted to twenty-two real NBA records,
+and that two models of one game disagree. Both are still true. What changed is
+that this sim does not get to be a different model: it is **fitted to
+`resolveGame`**, so a neutral caller playing a game forward and the resolver
+settling the same game are two samplers of one distribution rather than two
+opinions about basketball.
+
+The mean is arithmetic: the per-possession scoring rate is solved from the same
+`pointsFor` and `pointsAgainst` the resolver is handed. **Matching the spread
+is not**, and it is the reason `LIVE.PULL` exists. A possession is worth 0, 2
+or 3 points, so ninety-nine independent ones give a game total SD near 11.5
+against the resolver's effective 9.02. Left alone, every series played live
+would be wider than every series simmed, a seven game bracket would swing more,
+and the title rate would move: the one number this game's calibration is
+anchored to. So each possession's rate is pulled back toward the pro-rata
+expectation by how far the running total has drifted from it, which is
+`CONSISTENCY`'s own idea applied inside a game rather than to its total.
+
+**Fitted over four matchups and 10,000 games each**, not one:
+
+| | residual against `resolveGame` |
+|---|---|
+| mean | +0.2 points, both sides, every matchup |
+| spread | within 0.15 of the resolver's 8.9 to 9.1 |
+| win rate, calls suppressed | within 0.6 points |
+| win rate, the auto caller answering | within 1.3 points |
+
+So **playing is worth about seven tenths of a point of win rate** before the
+player makes a single call of their own, and that is the auto caller: two late
+decisions the resolver never asks. Recorded rather than compensated, which is
+the football forward sim's own note, and it is the right sign. A mode that
+asked somebody to play four games and then handed them a worse result than
+skipping is a mode nobody should play.
+
+**The win error tracks the spread exactly, in both directions.** A live game
+wider than the resolver pushes every matchup toward a coin flip and a tighter
+one pushes it away, so one dial lands both, and a fit that got the spread right
+and the win rate wrong would mean something else was broken.
+
+#### Two ways it was silently wrong, and neither is visible in an even game
+
+**THE CLOCK MUST NOT DECIDE WHEN THE GAME IS OVER.** The first version ticked a
+fixed number of seconds off a clock and ended the game when the clock ran out.
+Regulation divides into 198 possessions exactly, so after 198 ticks the clock
+sits a hair above zero rather than on it, and the 199th possession belongs to
+whoever went first. **That is a whole extra possession for your side in every
+simmed game**: +1.3 points and +4.1 of win rate against the resolver, with the
+other side landing exact, which is what an asymmetry that size looks like. It
+also ran 198 usually and up to 206 sometimes once the clock jittered, so a game
+a player WATCHED and the same game simmed were not the same game. `liveTick`
+divides what is left by what is left to play, which cannot drift, and the
+period ends on the possession count.
+
+**AND THERE IS NO FAST CLOCK.** An earlier draft took a `fast` flag that
+dropped the jitter, used by `liveFinish` so a simmed game did not bother
+rolling for it. That is a second game: both call windows are measured against
+this clock, so an evenly ticking one asks a different set of questions at a
+different set of scores. Sim the rest hurries the screen and never the
+basketball, which is the football boss battle's rule, and one clock is the
+cheapest way to keep it.
+
+**THE PULL IS MEASURED AGAINST A FIXED REFERENCE, NOT AGAINST THE TEAM'S OWN
+RATE.** Written `k0 * (1 - pull)` the correction is worth a fixed FRACTION of a
+make, so it moves more points for a team scoring 118 than for one scoring 101.
+Over four matchups that put a favourite's spread at 8.57 against an underdog's
+9.02 on the same dial, mirrored on the other side, where `resolveGame` allows
+every team the same 9.02 whatever it scores. **A one matchup fit cannot see
+it**, which is why the sweep and the guard both walk four.
+
+#### Which games are offered
+
+A game the series can END in, either way, plus every Finals game. One rule
+rather than a list, and the two halves of it are the elimination game and the
+closeout. Measured over 170 playoff runs: **mean 2.6 a run, median 2, p90 5**,
+and a year that reaches a game seven Finals can offer thirteen, which is the
+run that deserves them. The play-in is one game, so it is always one.
+
+#### The bracket is one loop, and it is the loop that already existed
+
+`generatePlayoffs` used to play every round and hand back a finished bracket.
+A game the player is going to play cannot be settled before they see it, and
+the rest of the bracket after it depends on how it went, so the loop had to
+become turnable one game at a time: `poCreate`, `poNext`, `poRecord`,
+`poAdvance`, `poFinal`. **`generatePlayoffs` is now four lines over that
+runner**, so there is no bracket that only one path can produce. Two of them
+would drift the first time a round was added, and the symptom would be a simmed
+season and a played one giving one seed two different brackets.
+
+**Proved byte for byte rather than argued.** The rng is drawn in the old order
+(the round's opponent, then its games one at a time), and the two
+implementations were run over 4,000 seeds: a `live: false` on every row was the
+entire difference, so the flag is written only when it is true. `check-live`
+asserts the same thing from the page's side, by simming every game through the
+new walk and comparing against `playSeason`.
+
+**`run.po` has no underscore**, which is the opposite of everything else
+mid-run on this page. A bracket is the one thing a player can be halfway
+through for as long as they leave the tab open, because the door waits for
+them. Under an underscore, a reload in the middle of a Finals comes back to a
+run with a season, no bracket and no way to finish it. So the runner holds
+plain data only: no rng, no player objects. **What `outcomeOf` needs is
+recomputed and never stored**, because chemistry, fit and the two ratings are
+pure functions of the roster and the totals are a walk over a season already on
+the run. A second copy of an answer is how a reload comes back disagreeing with
+itself.
+
+**A LIVE GAME DRAWS FROM ITS OWN STREAM**, off the run's seed and the game's
+address, exactly as `gameDetail` does and for one of the same reasons: the
+run's stream is what every game AFTER this one is drawn from, and playing a
+Game 7 for four minutes and then finding the Finals drew a different opponent
+would look like nothing at all. So simming every game and playing every game
+give the same bracket around them, and only the games actually played differ.
+A live game in progress is deliberately NOT resumed after a reload: its sim is
+a board mid-possession, and rebuilding one from storage would be a second way
+to build a game. The bracket comes back to the door and offers the same game
+again.
+
+#### The board, and what makes it smooth
+
+Everything that moves is a transform or an opacity. The score is a scale pop,
+the lead bar is one `scaleX` on a full width block, the play rows and the
+verdict are keyframes, and the only thing javascript touches every frame is the
+text of two numbers and a clock. No width animation, nothing that asks for a
+layout on a frame the page is also simulating a possession in. The one layout
+read in the loop is the `offsetWidth` that restarts a transition already on an
+element.
+
+**The pace is per quarter and the last two minutes are their own thing.** A
+game is 198 possessions, so one flat pace is either a twenty second blur or a
+four minute sit, and what anybody came for is the fourth quarter. That is the
+resolved broadcast's escalation arriving at a live board.
+
+**A CONTROL THE GAME IS WAITING ON GOES ABOVE THE RECORD OF IT.** The call box
+and the verdict sit above the play by play, which is capped at 40vh and fills
+up all game. That is the football boss battle's own lesson, and the guard
+measures the deepest option and the Continue button against a **740px phone**
+rather than against its own window.
+
+**The six men's live points are the half a resolved game cannot show at all**:
+whose night it is, while it is his. They are asserted to add to the team score
+ON THE SCREEN and not only in the engine, and that assertion caught the bug it
+was written for on its first run: `livePlay` built the record the page reads
+and **dropped `who`**, so the page's `p.who != null` guard was never true, the
+six chips sat at zero for a whole game, and the play by play beside them named
+the scorer every time. Nothing threw, because undefined is not null.
+
+**A GAME THAT WAS PLAYED KEEPS ITS OWN SHEET.** `gameDetail`'s default is a
+decomposition drawn off the game's address, which is the honest answer for 82
+games and the wrong one for the two or three somebody sat through: they would
+open their own Game 7 from the results table and find a third quarter that did
+not happen. So a live row carries its real lines and its real quarters, and
+the sheet prints DIFFERENT COLUMNS for it. No minutes, no rebounds, no
+assists: nothing in a forward sim counts them, and a column added to match the
+other sheet's shape would be the invented-opponent mistake in miniature.
+
+**Three things on this screen were only findable by looking at it**, which is
+this repo's oldest lesson arriving at a new page. All three render, read and
+sell perfectly well:
+
+- **A one game round is not a series.** The play-in door read `PLAY-IN` over
+  `GAME 7`. `need` is 1 there, so both sides are at need minus one before a
+  ball is thrown and `elimination` and `closeout` are true by arithmetic. It
+  is `Win or go home`, asked FIRST, because either of the other two labels is
+  a sentence about a series that does not exist.
+- **A double full stop**, because the series line ended in one and the caller
+  joined it to the reason with another: "the run is over.. Nothing left".
+  `seriesLine` returns null rather than a sentence when there is no series,
+  and never ends in punctuation.
+- **The play by play read as though it ran backwards.** It is newest first, so
+  a row at 0:12 of the first quarter sits directly under one at 11:53 of the
+  second, and there was nothing on either to say they were different quarters.
+  The quarter is part of the time now.
+
+**`show()` stops the live loop and the bracket walk**, the same way it already
+stops the season reveal and for a worse failure. Left running, a live game
+plays itself to the horn and RECORDS the result: somebody who pressed the
+wordmark in the middle of a Game 7 would come back to a series that had moved
+without them. Stopped rather than ended, so the bracket is still at that game
+and coming back offers the same door.
+
+**Sim the rest still stops for your calls.** A run lost to a decision the page
+made for you is the worst thing this screen could do.
+
+**`window.RTF_LIVE` is published and nothing on the page reads it.** A call
+happens in about one game in five and a played game is most of a minute, so a
+guard that waited for one would be dark on most runs, which is the unearnable
+badge in a different coat. The handle lets `check-live.mjs` put the board into
+a genuine last shot and then press the page's own loop: the real sim, the real
+tick, nothing about the decision faked. It carries a `resume` rather than
+exporting the tick because a caller that has just rewritten the state has a
+timer pending on the old one, and every version of this that forgot to clear it
+ran two loops at once.
+
+#### Four things about the harness, and each cost a round
+
+**`.opts:not(.pending)` is load-bearing in every walk that drafts.**
+`.opts.pending` hides the tile's CHILDREN and sets `pointer-events:none` on the
+tile, so the tile itself is a visible box with a size and `waitForSelector`'s
+own visibility test passes on a board still mid-spin. A scripted `.click()`
+ignores pointer events, so the walk signed off a board nobody could have read,
+and `reelBusy` was still true when `sign()`'s own `setTimeout(spin, 240)` fired:
+`drawInto` returns at its first line while a reel is moving, so no draw was ever
+made and the draft sat on an empty board for ever. `check-board.mjs` had the
+same latent race and carries the same fix.
+
+**Wait on the attribute, not on Playwright's idea of visible.** While Sim the
+rest is running the page turns a hundred and forty possessions over on
+zero-delay timers, and the visibility poller can sit behind that for a whole
+thirty second timeout on an element whose `hidden` came off seconds earlier.
+Instrumenting it with a polling loop made it pass, which is the tell.
+
+**A driven fixture has to be internally consistent.** Setting twenty seconds on
+the clock with a hundred and fifty possessions still to play makes EVERY
+remaining possession a last shot, so the board correctly stopped and asked
+about all of them and the next section waited for a verdict that could never
+arrive. The clock and the possession count are locked together in a real game,
+so the fixture locks them too.
+
+**Driving a call consumes the endgame**, so the call cannot be tested in the
+same game a pacing section already simmed to the horn. The browser half opens
+two runs, and the second one earns its cost twice: it is also the reload test.
+For the same reason ONE driven call answers both call questions rather than
+two answering one each: Sim the rest is pressed in the same evaluate that sets
+the fixture, so the question coming up with the flag already on IS the claim
+that a pacing control never takes a decision away. Written as a second
+fixture after an earlier call, the game was already over by the time it ran
+and the board had nothing left to stop for.
+
+**A walk that waits on the verdict is measuring whether the game happened to
+have a decision in it.** Sim the rest stops for a call, which is the design,
+so the pacing section timed out on about one run in five and finished in a
+second on the rest. It answers them now. The first reading of that failure was
+spent on Playwright's visibility heuristic, which was not the fault.
+
+**Starting the next run is a click, not a context.** The first draft of
+`findRunWithDoor` opened a fresh browser context per attempt, which reloads and
+re-indexes sixteen thousand rows every go, so six attempts was all the file
+could afford and six was not enough: the page's own walk takes the first
+affordable tile rather than best-available, which misses the bracket often.
+Going home and pressing Start again is the same fresh run at a fraction of the
+cost, so it can afford to try until it gets one.
+
+#### What the guard asserts, and what was proved by breaking it
+
+The bands in section 2 are **derived from the sample and not typed**: one
+standard error on a spread near 9 is `9/sqrt(2N)`, and on the difference of two
+independent arms it is `sqrt(2)` of that. `--quick` deliberately does NOT cut
+that section, because forty thousand forward games take under two seconds and
+cutting the sample bought a second and cost the band its teeth. The seeds are
+fixed, so it is deterministic rather than flaky.
+
+Three defects were reintroduced one at a time to prove the file has teeth:
+removing the pull blows the spread past the band, the old fixed tick fails the
+fit, and **the possession parity assertion has to say EXACTLY equal**. Written
+as "within one" it passes on the defect it exists for, because one is not a
+rounding allowance there, it is the whole bug.
 
 ### The data pipeline
 

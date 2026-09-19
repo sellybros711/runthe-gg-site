@@ -4015,6 +4015,89 @@ window.GA_ID='G-L29P5MRWKE';
   .lbr .who{flex:1;min-width:0}
   .lbr .who b{display:block;font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis}
+
+  /* ── A NAME THAT HAS PAID ───────────────────────────────────────
+     GOLD ON THE NAME, NEVER ON THE ROW, and that is the whole of how this avoids
+     colliding with what gold already means here. The row's border and tint are an
+     ACHIEVEMENT (a perfect season, first on the podium) and the rail down the left is
+     WHOSE row it is. Neither may change meaning. The name text itself has never carried
+     a colour on this board, so it was the one surface free to say something new, and
+     what it says is a fact about the account rather than about the run.
+
+     NOTHING ELSE ON THE ROW MOVES. No pill, no badge, no second element competing with
+     the champion mark that already sits in front of the name. A reader who does not know
+     what it means reads a slightly nicer name, which is the correct amount to be told.
+
+     THE SOLID GOLD IS THE BASE AND THE GRADIENT IS THE UPGRADE. background-clip:text
+     needs color:transparent to show, so writing it the other way round means a browser
+     that does not support the clip renders an invisible name: the leaderboard would
+     simply lose every Pro player. So the plain rule paints a warm gold and the @supports
+     block replaces it, which cannot fail in that direction. */
+  .pro-name{color:#f0c96b;text-shadow:0 0 12px rgba(245,196,81,.20)}
+  @supports ((-webkit-background-clip:text) or (background-clip:text)){
+    .pro-name{
+      background-image:linear-gradient(100deg,
+        #e9b949 0%,#fbe3a3 22%,#fff8e2 38%,#f3c85d 52%,#dba62c 74%,#f7dc95 100%);
+      background-size:260% 100%;background-position:12% 50%;
+      -webkit-background-clip:text;background-clip:text;
+      color:transparent;-webkit-text-fill-color:transparent}
+  }
+  /* The sheen is SLOW and it never fully leaves. Seven seconds for one pass, over a
+     gradient whose darkest stop is still gold, so at no point in the cycle is the name
+     dimmer than the plain rule above: what moves is where the light is, not whether it
+     is lit. A board is a list of twenty-five names and anything quicker would be
+     twenty-five things flashing at a reader trying to find one row. */
+  @media (prefers-reduced-motion:no-preference){
+    @supports ((-webkit-background-clip:text) or (background-clip:text)){
+      .pro-name{animation:prosheen 7s ease-in-out infinite}
+    }
+  }
+  @keyframes prosheen{
+    0%{background-position:6% 50%}
+    50%{background-position:94% 50%}
+    100%{background-position:6% 50%}}
+
+  /* ── A RUN THAT IS STILL GOING ──────────────────────────────────
+     Dynasty board only, because a dynasty is the one run on this page that spans days and
+     is therefore the one where "is this person still playing it" is a real question. Every
+     other board here ranks finished seasons.
+
+     RED, WHICH IS THE ONE COLOUR THIS BOARD HAD NOT SPENT. Gold is an achievement, blue is
+     yours, and an on-air red says what this says everywhere else a screen has ever said it.
+     It marks the RUN and not the player, so it can sit on a stranger's row and on your own. */
+  .livepill{display:inline-flex;align-items:center;gap:4px;margin-right:6px;
+    padding:1px 5px 1px 4px;border-radius:5px;vertical-align:1px;flex:0 0 auto;
+    font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.09em;
+    color:#fca5a5;background:rgba(239,68,68,.13);border:1px solid rgba(239,68,68,.34)}
+  /* THE SAME CASCADE THE CHAMPION MARK LOST, so the same fix. `.lbr .who span` is (0,2,1)
+     and claims every span inside .who as a block; `.livepill` is (0,1,0) and would compute
+     to display:block, take the row's whole width and push the name onto a second line.
+     AND IT TAKES THE COLOUR WITH IT, which the first version of this rule missed because it
+     was written from the champion mark's bug, and the champion mark is an SVG with its own
+     fill. That same rule sets `color:var(--dim-2)` for the sub line under the name, so a
+     LIVE pill in a red box came out with its word in the grey of the row it sits on. The
+     box was red, the dot was red and the word was not, which is a valid-looking pill and
+     nothing anywhere reports it. Found by looking at a screenshot. */
+  .lbr .who b .livepill{display:inline-flex;width:auto;color:#fca5a5}
+  .livepill i{width:5px;height:5px;border-radius:50%;background:#f87171;flex:0 0 auto;
+    box-shadow:0 0 5px rgba(248,113,113,.85)}
+  @media (prefers-reduced-motion:no-preference){
+    .livepill i{animation:liveblink 1.9s ease-in-out infinite}
+  }
+  @keyframes liveblink{0%,100%{opacity:1}50%{opacity:.22}}
+  /* ON THE PODIUM IT IS THE DOT ALONE, and the word is hidden rather than dropped from the
+     markup. A podium step is about 93px of text at 390px, and a 36px pill in front of an
+     11.5px name leaves 57px, which truncates most names to two syllables and an ellipsis.
+     font-size:0 collapses the word and leaves it in the accessibility tree, so the pill is
+     ONE element with one spelling everywhere and the narrow place gets the narrow version
+     of it rather than a second element that can drift.
+     THE BOX GOES WITH THE WORD. Kept, it drew a 1px ring 4px across a 5px dot, which reads
+     as a bullseye rather than as a light that is on: a chip is a container for a label and
+     with no label there is nothing to contain. The glow is what says live at this size. */
+  .pod .pn .livepill{font-size:0;gap:0;margin-right:5px;padding:0;vertical-align:1px;
+    border:none;background:none}
+  .pod .pn .livepill i{width:6px;height:6px;box-shadow:0 0 6px rgba(248,113,113,1)}
+
   /* The champion mark: a small gilded crown or trophy on a title/perfect run's row.
      Sits before the name so a long name can never truncate it away. */
   .champbadge{display:inline-flex;align-items:center;vertical-align:-2px;margin-right:5px;flex:0 0 auto}
@@ -8049,7 +8132,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=36"></script>
+<script src="board.js?v=37"></script>
 <script src="achievements.js?v=14"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
@@ -8227,7 +8310,7 @@ function loadDefensePool(){
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=17;
+const BOARD_VERSION=18;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
@@ -8250,7 +8333,8 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
   /* Dynasty board's calls, answered the same soft way as the rest of the stub: a
      version-mismatched board.js must degrade to "not reachable" here, not throw a missing
      method somewhere inside loadDynastyBoard. */
-  dynastyTag:async()=>false, dynastyTop:async()=>null, dynastyMine:async()=>null,
+  dynastyTag:async()=>false, dynastyEnd:async()=>false,
+  dynastyTop:async()=>null, dynastyMine:async()=>null,
   dynastyRank:async()=>null, dynastyTotal:async()=>null,
   /* The allowance calls fail OPEN, here as in the real module: null means no opinion, and
      the page reads no opinion as permission. A blocked board.js must not lock anybody out
@@ -12048,6 +12132,24 @@ function dynCloudDrop(slot){
    zeroed one would be a save the next device is told it is ahead of. */
 function dynClear(slot){
   const want=slot||dynSlotOf(run);
+  /* AND THE BOARD IS TOLD THE RUN IS OVER, FROM HERE, because this function IS what ending
+     a dynasty means on this page. Every path that finishes one comes through it: the firing
+     at the results screen, the drop button, and the two places a new draft clears the slot
+     it is about to take. Hanging the call on any one of those would leave the other three
+     posting a LIVE badge for ever.
+     THE ID COMES OFF THE SAVE ABOUT TO BE DELETED rather than off `run`, because the run
+     being cleared is not always the one on screen: beginDynastyDraft clears the slot it is
+     taking, which may be the other one. The live run is the fallback for the case where
+     the save has already gone.
+     Never awaited, and fails soft twice over. A guest has nothing to post and the server
+     refuses an unsigned call anyway; a network that is down costs a stale badge on a board,
+     which is the cheapest thing on this screen to be wrong about, and the save is removed
+     either way. Idempotent, so the firing that clears the slot and the Draft again that
+     clears it a second time cost one extra request and change nothing. */
+  const saved=dynReadRaw(want);
+  const id=(saved&&saved.run&&saved.run.dynastyId)||
+    ((run&&run.dynasty&&dynSlotOf(run)===want&&run.dynastyId)||null);
+  if(id&&authState.signedIn) B.dynastyEnd(id);
   try{ localStorage.removeItem(dynKeyFor(want)); }catch(_){}
   dynCloudDrop(want);
 }
@@ -25856,6 +25958,46 @@ async function loadBoard(){
   paintBoard();
 }
 
+/* ── TWO MARKS THAT COME OFF THE ROW AND NOT OFF THIS BROWSER ────────────────────────
+ *
+ * A board row belongs to somebody else, so neither of these can be worked out here: this
+ * browser cannot see another account's unlocks (premium_unlocks is read-own) and it cannot
+ * know whether a stranger's dynasty is still being played. Both arrive as columns on the
+ * row, written by 107_board_pro_and_live.sql.
+ *
+ * WITHOUT THAT MIGRATION BOTH GO QUIET AND NOTHING ELSE CHANGES. An absent column reads as
+ * undefined, `display_pro` is then falsy and `dynasty_over` is not the false that means
+ * live, so the board is exactly the board it is today. That is the same shape every other
+ * optional column on these rows already has.
+ */
+
+/* Gold on the NAME says the account holds the bundle. Never on the row: see the .pro-name
+   rule for why those two must not become one colour. */
+const proClass=(row)=>(row&&row.display_pro)?' pro-name':'';
+
+/* HOW STALE A RUN CAN BE AND STILL CALL ITSELF LIVE.
+ *
+ * `dynasty_over` is three-valued and the page only ever lights the false: null is a row
+ * written before any of this existed and true is a run that ended. What neither can say is
+ * that somebody simply closed the tab and never came back, because nothing reaches the
+ * server when they do. So the run's furthest season has to be RECENT as well as unfinished.
+ *
+ * THE CUTOFF IS HERE RATHER THAN IN SQL ON PURPOSE. It is a judgement about what "still
+ * going" means to a reader, not a fact about the run, and this way it moves in a deploy
+ * instead of a migration. Forty-eight hours is two days of a free account's three-a-day
+ * budget: long enough that somebody who plays every evening is still live in the morning,
+ * short enough that an all-time board is not a wall of red.
+ */
+const DYN_LIVE_HOURS=48;
+function dynRunLive(r){
+  if(!r||r.dynasty_over!==false) return false;
+  const t=Date.parse(r.created_at||'');
+  if(!isFinite(t)) return false;
+  return (Date.now()-t)<DYN_LIVE_HOURS*3600*1000;
+}
+/* One spelling, both sizes. The podium narrows it to its dot in CSS rather than here. */
+const livePill=()=>'<span class="livepill" title="This run is still going"><i></i>LIVE</span>';
+
 /* THE TOP THREE, as a podium.
    Hidden when the board is reversed, because the first three rows of a reversed board are
    the three worst runs in the window and putting them on a podium would be congratulating
@@ -25905,7 +26047,8 @@ function paintPodium(rows){
       (row.perfect?' perfect':'')+'" data-i="'+i+'">'+
       '<span class="pl">'+place+'</span>'+
       avatarHTML(pf,'big')+
-      '<span class="pn">'+champBadge(fateOfRow(row).badge)+esc(playerName(row,mine))+'</span>'+
+      '<span class="pn'+proClass(row)+'">'+champBadge(fateOfRow(row).badge)+
+        esc(playerName(row,mine))+'</span>'+
       '<span class="pr">'+esc(fig)+'</span>'+
       '<span class="ps">'+esc(sub)+'</span></div>';
   }).join('')+'</div><div class="podbase"></div>';
@@ -26084,7 +26227,8 @@ function paintDynastyPodium(rows){
       {mark:r.display_mark,rung:r.display_rung,tier:r.display_tier,ring:r.display_ring});
     return '<div class="pod p'+place+(mine?' mine':'')+'">'+
       '<span class="pl">'+place+'</span>'+avatarHTML(pf,'big')+
-      '<span class="pn">'+esc(mine?'You':(r.display_name||'Anonymous'))+'</span>'+
+      '<span class="pn'+proClass(r)+'">'+(dynRunLive(r)?livePill():'')+
+        esc(mine?'You':(r.display_name||'Anonymous'))+'</span>'+
       '<span class="pr">'+c.big+'</span>'+
       '<span class="ps">'+c.unit+'</span></div>';
   }).join('')+'</div><div class="podbase"></div>';
@@ -26097,7 +26241,11 @@ function dynastyRow(r,i){
     {mark:r.display_mark,rung:r.display_rung,tier:r.display_tier,ring:r.display_ring});
   return '<div class="lbr'+(mine?' mine':'')+'">'+
     '<span class="rk">'+(i+1)+'</span>'+avatarHTML(pf)+
-    '<span class="who"><b>'+esc(mine?'You':(r.display_name||'Anonymous'))+'</b>'+
+    '<span class="who"><b class="'+proClass(r).trim()+'">'+
+      /* The pill goes in FRONT of the name, where the champion mark sits on the classic
+         board, because .who b truncates with an ellipsis and anything behind the name is
+         the first thing a long name eats. */
+      (dynRunLive(r)?livePill():'')+esc(mine?'You':(r.display_name||'Anonymous'))+'</b>'+
       '<span>'+c.sub+'</span></span>'+
     '<span class="rec"><b class="big">'+c.big+'</b>'+
       '<span>'+c.unit+'</span></span></div>';
@@ -26111,9 +26259,14 @@ function paintDynastyMine(rows){
   if(meOnScreen||!(run&&run.dynasty&&run.dynastyId)||lbMyPlace==null){ hideMyPin(); return; }
   const seasons=R.seasonsSurvived(run), c=dynAxisCells(seasons,run.score||0);
   el.hidden=false;
+  /* THE PIN NEEDS NO COLUMN FOR EITHER MARK, and that is not a shortcut. This row is not a
+     board row: it is the run in this browser's hands, so it is live by the fact that it is
+     being drawn, and the viewer's own unlocks are the one account this page CAN read. Both
+     are asked of what is true here rather than of a row that was never fetched. */
   el.innerHTML='<div class="lbr mine"><span class="rk">'+lbMyPlace+'</span>'+
     avatarHTML(avatarOf(authState.name||'You',null,null,null))+
-    '<span class="who"><b>You</b><span>'+c.sub+'</span></span>'+
+    '<span class="who"><b class="'+(dynastyOwned()?'pro-name':'')+'">'+
+      livePill()+'You</b><span>'+c.sub+'</span></span>'+
     '<span class="rec"><b class="big">'+c.big+'</b>'+
       '<span>'+c.unit+'</span></span></div>';
 }
@@ -26454,7 +26607,8 @@ function boardRow(row,i){
     '" data-i="'+i+'">'+
     '<span class="rk">'+rank+'</span>'+
     avatarHTML(pf)+
-    '<span class="who"><b>'+champBadge(fateOfRow(row).badge)+esc(playerName(row,mine))+'</b>'+
+    '<span class="who"><b class="'+proClass(row).trim()+'">'+
+      champBadge(fateOfRow(row).badge)+esc(playerName(row,mine))+'</b>'+
       '<span>'+esc(rowSub(row))+'</span></span>'+
     '<span class="rec">'+SORT_META[lbSort].of(row)+'</span>'+
     '<span class="go">&rsaquo;</span></div>';

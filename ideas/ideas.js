@@ -33,6 +33,18 @@
      alphabetical: it is roughly how many people play each one, so the busiest board is
      the shortest reach. `slug` matches ideas_game_ok() in 92_ideas_board.sql; a name here
      that is not in that function is a chip that can be picked and never posted to.
+
+     `listed: false` IS A GAME THE SITE HAS NOT LAUNCHED. The test is the one the games
+     themselves run on: nothing on runthe.gg points at it, so a visitor browsing the site
+     cannot find it. The homepage links five games (NFL, CFB, Arcade, Golf, Soccer) and
+     the four below are not among them. Three of the four are noindexed as well; Segue is
+     indexable and in the sitemap, and is still unlisted, because linking it from the
+     homepage is the step that launches it and that step has not been taken.
+
+     It is the SAME gate rather than a second one, which is why it is a flag here and not
+     a shorter list. A board advertising four games a reader cannot open is the wall the
+     store's own notes argue against, in reverse: it names things and then offers no way
+     to them.
      --------------------------------------------------------------------------- */
   var GAMES = [
     { slug: 'nfl',       name: 'The Perfect Season',      short: 'NFL',       color: '#ff0a3b' },
@@ -40,14 +52,32 @@
     { slug: 'arcade',    name: 'Run The Arcade',          short: 'Arcade',    color: '#f0913c' },
     { slug: 'golf',      name: 'RunTheTour',              short: 'Golf',      color: '#38bdf8' },
     { slug: 'soccer',    name: 'RunThePitch',             short: 'Soccer',    color: '#22c55e' },
-    { slug: 'hoops',     name: 'Run The Floor',           short: 'Hoops',     color: '#f97316' },
-    { slug: 'baseball',  name: 'Baseball',                short: 'Baseball',  color: '#f59e0b' },
-    { slug: 'wrestling', name: 'Wrestling',               short: 'Wrestling', color: '#e11d48' },
-    { slug: 'setlist',   name: 'Segue',                   short: 'Setlist',   color: '#8b5cf6' },
+    { slug: 'hoops',     name: 'Run The Floor',           short: 'Hoops',     color: '#f97316', listed: false },
+    { slug: 'baseball',  name: 'Baseball',                short: 'Baseball',  color: '#f59e0b', listed: false },
+    { slug: 'wrestling', name: 'Wrestling',               short: 'Wrestling', color: '#e11d48', listed: false },
+    { slug: 'setlist',   name: 'Segue',                   short: 'Setlist',   color: '#8b5cf6', listed: false },
     { slug: 'site',      name: 'Site-wide',               short: 'Site',      color: '#9bb0c6' }
   ];
   var BY_SLUG = {};
   GAMES.forEach(function (g) { BY_SLUG[g.slug] = g; });
+
+  /* AN UNLAUNCHED GAME IS OFF THE BOARD, NOT OUT OF IT. Every one of those four pages
+     carries an Ideas link in its own footer, and a tester who follows it must land on
+     that game's board rather than on All and a hunt, so `gameFromHash` still resolves
+     every slug and nothing about posting or voting changes. What goes quiet is the
+     advertising: the chip, the form's picker and the game tag in All ideas.
+
+     ONE PREDICATE, READ BY ALL THREE. A chip removed while the tag stayed would print
+     the name of an unlaunched game to the public anyway, off the first idea somebody
+     files, which is the leak this is closing rather than a tidier chip row.
+
+     An unknown slug is visible, deliberately. It is not an unlaunched game, it is a
+     row the list has never heard of, and hiding it would make an idea disappear with
+     nothing anywhere to say why. The check constraint means there are none today. */
+  function shown(slug) {
+    var g = BY_SLUG[slug];
+    return !g || g.listed !== false || state.game === slug;
+  }
 
   var SORTS = {
     top: { label: 'Top',     order: 'score.desc,created_at.desc' },
@@ -245,6 +275,9 @@
     var out = '<button class="ic-chip' + (state.game === 'all' ? ' on' : '') +
               '" data-game="all">All ideas</button>';
     GAMES.forEach(function (g) {
+      /* The board you are ON always has its chip, which is the only way off an unlisted
+         one: pick another and it goes, the way it was never there. */
+      if (!shown(g.slug)) return;
       out += '<button class="ic-chip' + (state.game === g.slug ? ' on' : '') +
              '" data-game="' + g.slug + '"><span class="sw" style="background:' + g.color +
              '"></span>' + esc(g.name) + '</button>';
@@ -327,13 +360,17 @@
       host.innerHTML = '<p class="ic-empty">Loading ideas...</p>';
       return;
     }
-    if (!state.rows || !state.rows.length) {
+    /* The read asks the server for a game only when a game is picked, so All ideas comes
+       back with every board in it, unlaunched ones included. Dropping them here is what
+       keeps the tag from naming a game the chip row deliberately does not. */
+    var rows = (state.rows || []).filter(function (r) { return shown(r.game); });
+    if (!rows.length) {
       host.innerHTML = '<p class="ic-empty">' + (state.sort === 'mine'
         ? 'You have not posted an idea yet.'
         : 'Nothing here yet. Be the first to suggest something.') + '</p>';
       return;
     }
-    host.innerHTML = state.rows.map(card).join('');
+    host.innerHTML = rows.map(card).join('');
   }
 
   /* ---------------------------------------------------------------------------
@@ -344,9 +381,10 @@
     if (!(st && st.signedIn)) { openSignIn(); return; }
     var sheet = document.getElementById('ic-sheet');
     var sel = document.getElementById('ic-f-game');
-    sel.innerHTML = GAMES.map(function (g) {
-      return '<option value="' + g.slug + '">' + esc(g.name) + '</option>';
-    }).join('');
+    sel.innerHTML = GAMES.filter(function (g) { return shown(g.slug); })
+      .map(function (g) {
+        return '<option value="' + g.slug + '">' + esc(g.name) + '</option>';
+      }).join('');
     /* Pre-picked to the board you are looking at, which is nearly always the one you
        mean. On All it stays on the first entry rather than guessing. */
     if (state.game !== 'all') sel.value = state.game;
