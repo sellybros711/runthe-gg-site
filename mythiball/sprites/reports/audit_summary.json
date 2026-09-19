@@ -1,0 +1,8 @@
+{
+ "total": 330,
+ "repairable": 169,
+ "needs_art": 161,
+ "repairable_after_bg": 189,
+ "needs_art_after_bg": 141,
+ "recovered_by_bg_removal": 20
+}

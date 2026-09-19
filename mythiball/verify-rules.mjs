@@ -536,13 +536,25 @@ async function main() {
            arms to raise, so they are excluded. */
         const bipeds = ['kong','franky','popeye','peter','tom','huck','sherlock','lupin','alice','dorothy','robin','sammy','wonderland'].filter(k => V2_SPRITES[k]);
         const stagnant = bipeds.filter(k =>
-          JSON.stringify(V2_SPRITES[k].f.catch) === JSON.stringify(V2_SPRITES[k].f.idle)
-          || JSON.stringify(V2_SPRITES[k].f.throw) === JSON.stringify(V2_SPRITES[k].f.idle));
+          JSON.stringify(V2_SPRITES[k].f.catch) === JSON.stringify(V2_SPRITES[k].f.idle));
         const missing = Object.keys(V2_SPRITES).filter(k => !V2_SPRITES[k].f.catch || !V2_SPRITES[k].f.throw);
         return { missing, stagnant };
       });
       ok(r.missing.length === 0, 'every character carries catch and throw frames', r.missing.join(','));
-      ok(r.stagnant.length === 0, 'the catch and throw frames differ from idle on every biped', r.stagnant.join(','));
+      /* THROW IS NO LONGER ASKED TO DIFFER, AND THAT IS THE ART RATHER THAN
+         THE CODE. The sprites come from the handoff pack now, and the pack
+         contains NO FIELDING ART of any kind: docs/ART_ORDER.md orders it
+         and the handoff's own brief says fielding falls back to a still
+         until the art exists and must never be generated. So `throw` stands
+         on the right facing still, which is the same drawing as idle for a
+         character whose pitch strip was not drawn either.
+
+         CATCH IS STILL HELD TO IT, because there the pack CAN answer: the
+         front facing still exists for 59 of the 68 and the other nine take
+         the left, so a catch is always a different drawing from the idle.
+         Dropping both would have been the easy edit and would have left
+         nothing watching this at all. */
+      ok(r.stagnant.length === 0, 'the catch frame differs from idle on every biped', r.stagnant.join(','));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -1610,11 +1622,29 @@ async function main() {
             if (V2_SPRITES[k].f[fr] === V2_SPRITES[k].f.idle || V2_SPRITES[k].f[fr] === V2_SPRITES[k].f.back) same.push(k + '/' + fr);
           }
         }
-        return { n: keys.length, missing, same, bad, encoded: typeof V2_SPRITES[keys[0]].f.idle === 'string' };
+        const distinct = keys.length * 4 - same.length;
+        return { n: keys.length, missing, same, bad, distinct, encoded: typeof V2_SPRITES[keys[0]].f.idle === 'string' };
       });
       ok(r.missing.length === 0, 'every character carries load, follow, kick and ready', r.missing.slice(0, 6).join(', '));
       ok(r.bad.length === 0, 'and each decodes to the declared size', r.bad.slice(0, 6).join(', '));
-      ok(r.same.length === 0, 'and each is its own drawing', r.same.slice(0, 6).join(', '));
+      /* IT COUNTS THE ART DEBT NOW INSTEAD OF DEMANDING ART THAT WAS NEVER
+         DRAWN. This used to ask that all four poses be a different drawing
+         from idle for all 68, which the generator could promise because it
+         posed a parametric figure: a pose was an arm offset. The sprites are
+         hand authored now, and a character whose swing and pitch strips were
+         never drawn has only the pack's stills to stand on, so four distinct
+         drawings do not exist for him. That is the 141 strips in
+         docs/ART_ORDER.md, not a defect in the page.
+
+         SO THE FLOOR IS WHAT IT GUARDS. Most of the roster does have drawn
+         action frames, and the number must not quietly fall: a build that
+         went back to stills for everybody would sail through a check that
+         only asked whether the poses were present. The floor is set below
+         today's figure with room for the art order to be filled in, never
+         above it, so filling the order can only make this greener. */
+      ok(r.distinct >= 200,
+         'and the roster keeps its drawn action poses rather than standing on stills',
+         `${r.distinct} of ${r.n * 4} are their own drawing, ${r.same.length} repeat a still`);
       ok(r.encoded, 'the table is run length encoded', 'encoded=' + r.encoded);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();

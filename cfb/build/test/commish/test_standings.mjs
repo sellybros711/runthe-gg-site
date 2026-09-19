@@ -276,6 +276,73 @@ const TEN = [
   await p.close();
 }
 
+/* ── THE WAY IN FROM THE SCREEN EVERY VISITOR ACTUALLY LANDS ON ──────────────────────
+ *
+ * Every section above reaches the board by taking the job first, because both doors that
+ * existed were INSIDE a term: `#b-stand` on the office screen and `#y-stand` on the year
+ * card. So the suite could be entirely green while a player who had not started, or who
+ * was sitting on the front screen deciding whether to come back, had no route to the
+ * standings at all. Reported as not being able to find the leaderboard.
+ *
+ * THIS IS THE DYNASTY BOARD'S BUG ONE GAME OVER: a table, two axes, three queries and one
+ * entry point nobody could reach. A board renders perfectly with no way in, so the only
+ * thing that can report it is a person. The guard is therefore about the ROUTE and never
+ * about the board, and it presses the door rather than looking for the element, because a
+ * door that is drawn and does not open is the same to a reader as no door.
+ *
+ * It asserts the way BACK too. The front screen is the one whose buttons depend on an
+ * answer that can land while the board is open, so it is repainted on return; landing on
+ * a blank or stale gate would strand somebody on the screen they started from. */
+{
+  /* NOT open(), because open() presses `#g-start`. The whole point here is the reader who
+     has not done that. */
+  const p = await b.newPage({ viewport: { width: 390, height: 900 } });
+  p.errs = [];
+  p.on('pageerror', (e) => p.errs.push(e.message));
+  await p.route('**/rest/v1/rpc/**', async (route) => {
+    const fn = route.request().url().split('/rpc/')[1].split('?')[0];
+    const answers = {
+      commish_doctrine_board: ROWS,
+      commish_tenure_board: TEN,
+      commish_my_tenure: { served: true, years: 12, terms: 4, longest: 5, place: 2, total: 37 },
+    };
+    if (!Object.prototype.hasOwnProperty.call(answers, fn)) {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify(answers[fn]) });
+  });
+  /* A FREE ACCOUNT, which is the reader who reported it. */
+  await p.addInitScript(arm + auth([]));
+  await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
+  await p.waitForTimeout(2600);
+  console.log('\n=== the way in, without taking the job first ===');
+
+  ok('the front screen is what a visitor lands on', await on(p, 's-gate'));
+  const door = await p.$('#g-stand');
+  ok('  and it offers a way to the standings', !!door);
+  /* ON SCREEN, not merely in the markup. A hidden node ships to everybody and reaches
+     nobody, which is the shape of the bug this section exists for. */
+  const box = door ? await door.boundingBox() : null;
+  ok('  the door has a real box to press', !!box && box.width > 40,
+    box ? Math.round(box.width) + 'x' + Math.round(box.height) : 'none');
+  if (door) {
+    await door.click();
+    await p.waitForTimeout(1100);
+    ok('  pressing it opens the board', await on(p, 's-stand'));
+    ok('  with the tenure board actually drawn',
+      (await p.$$eval('#st-tenure .strow', (e) => e.length).catch(() => 0)) === 2);
+    await p.click('#b-stback');
+    await p.waitForTimeout(900);
+    ok('  and the way back lands on the front screen', await on(p, 's-gate'));
+    /* REPAINTED, NOT JUST REVEALED. The door is drawn by gate(), so finding it again is
+       what proves the screen was rebuilt rather than left as stale markup. */
+    ok('    with its buttons redrawn', !!(await p.$('#g-stand')));
+  }
+  ok('nothing threw', p.errs.length === 0, p.errs.slice(0, 2).join(' | '));
+  await p.close();
+}
+
 await b.close();
 console.log(bad ? '\n' + bad + ' FAILURES' : '\nall clear');
 process.exit(bad ? 1 : 0);
