@@ -671,6 +671,27 @@ h1,h2,h3{margin:0}
   font-variant-numeric:tabular-nums}
 .cutrow.enough .cprice{color:var(--red)}
 
+/* ─── the trade machine ─── */
+.offer{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;
+  padding:10px 12px;border-radius:11px;border:1px solid var(--line-2);
+  background:var(--panel);transition:border-color .12s ease,transform .1s ease}
+.offer:hover{border-color:var(--orange);transform:translateX(2px)}
+.offer:disabled{opacity:.45;cursor:default;transform:none}
+.of-hd{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.of-slot{flex:0 0 auto;min-width:32px;padding:3px 5px;border-radius:6px;text-align:center;
+  font-family:var(--fn);font-size:9px;font-weight:800;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.of-cost{margin-left:auto;font-family:var(--fn);font-size:12px;font-weight:800;color:var(--red)}
+.of-cost.free{color:var(--green)}
+.of-swap{display:flex;align-items:center;gap:8px}
+.of-side{flex:1;min-width:0}
+.of-side .nm{display:block;font-family:var(--fp);font-size:13px;font-weight:700;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.of-side .mt{display:block;font-family:var(--fn);font-size:10px;font-weight:700;color:var(--dim-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.of-side.out .nm{color:var(--dim)}
+.of-arrow{flex:0 0 auto;font-family:var(--fn);font-size:15px;font-weight:800;color:var(--orange)}
+.of-gain{font-family:var(--fn);font-size:11px;font-weight:800;color:var(--green)}
+
 /* ─── app header ───
    The game had no header at all, so the page began with a spinning reel and there
    was nothing on screen saying what this is or how to get back to it. Same shape as
@@ -1083,6 +1104,18 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
+<div class="sheet" id="sheet-trade" aria-hidden="true">
+  <div class="sheet-scrim"></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="eyebrow" style="color:var(--orange)" id="trade-eyebrow">The phone rings</div>
+    <h3 class="display" style="font-size:21px;margin:4px 0 2px">Deadline deals</h3>
+    <p class="pos-sub" id="trade-sub"></p>
+    <div class="cutlist" id="trade-list"></div>
+    <div style="margin-top:10px"><button class="btn ghost sm" id="b-trade-pass">Stand pat</button></div>
+  </div>
+</div>
+
 <div class="sheet" id="sheet-modes" aria-hidden="true">
   <div class="sheet-scrim" data-close-modes></div>
   <div class="sheet-inner">
@@ -1148,7 +1181,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 </div>
 
 <script src="engine.js?v=15"></script>
-<script src="run.js?v=12"></script>
+<script src="run.js?v=13"></script>
 <script src="achievements.js?v=2"></script>
 <script>
 (function(){
@@ -1183,6 +1216,7 @@ function rowFromRun(o){
     efficiency:bps?bps.efficiency:null,archetype:o.structure&&o.structure.archetype?o.structure.archetype.key:null,
     chemLinks:[...new Set(links)],era:RUN.era||null,franchise:RUN.franchise||null,division:RUN.division||null,
     capSurvivor:!!RUN.capSurvivor,cuts:(RUN.cuts||[]).length,staff:!!RUN.staff,
+    tradeMachine:!!RUN.tradeMachine,trades:(RUN.trades||[]).filter(t=>t.accepted).length,
     eliminatedWS:!!(last&&last.round==='World Series'&&!o.titleWon),
     picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:SLOTS_NOW()[RUN.slotIndex[i]],w:p.w})),
   };
@@ -1817,7 +1851,7 @@ const MODE_CARDS=[
    icon:'<path d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4Z"/><path d="M6.2 5.6c3.4 3 3.4 9.8 0 12.8"/><path d="M17.8 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
    text:'Forget the bats. Draft a five-man rotation and a bullpen, and win on run prevention alone with a league-average lineup behind you.',
    sticker:'New'},
-  {id:'trade',soon:true,cls:'mc-trade',title:'The Trade Machine',
+  {id:'trade',cls:'mc-trade',title:'The Trade Machine',
    icon:'<path d="M4.4 9.4V8.2a3.2 3.2 0 0 1 3.2-3.2h9.6V2.2l4.4 3.9-4.4 3.9V7.4H7.6a.8.8 0 0 0-.8.8v1.2z"/><path opacity=".55" d="M19.6 14.6v1.2a3.2 3.2 0 0 1-3.2 3.2H6.8v2.8l-4.4-3.9 4.4-3.9v2.6h9.6a.8.8 0 0 0 .8-.8v-1.2z"/>',
    text:'You are handed a roster you did not pick and a deadline. Trade your way to a contender, or find out you were never close.',
    sticker:'New'},
@@ -2385,6 +2419,58 @@ function askCut(ev,onDone){
   openSheet('sheet-cut');
 }
 
+/* ─── the trade machine, in play ───
+   You did not draft this roster and you cannot re-draft it. Three times the phone
+   rings, and the season waits for your answer. */
+function startTrade(){
+  RUN=R.createRun({tradeMachine:true});
+  heroStop();heroRunning=false;
+  if(!R.dealRoster(RUN,DATA)){
+    alert('Could not assemble a roster. Please try again.');
+    RUN=null;show('s-intro');heroSync();return;
+  }
+  ga('game_started',{mode:'trade'});
+  showSquad();
+}
+
+function askTrade(offers,onDone){
+  const w=offers[0].window;
+  $('trade-eyebrow').textContent='Deadline '+w+' of '+E_TRADE_WINDOWS();
+  $('trade-sub').innerHTML='You have <b>'+M(R.capOf(RUN)-R.payroll(RUN))+
+    '</b> of room under the cap. Take one, or stand pat.';
+  const list=$('trade-list');list.innerHTML='';
+  const room=R.capOf(RUN)-R.payroll(RUN);
+  for(const o of offers){
+    const btn=document.createElement('button');
+    btn.className='offer';
+    btn.disabled=o.cost>room+1e-9;
+    const gain=(o.in.w-o.out.w);
+    btn.innerHTML='<div class="of-hd"><span class="of-slot" style="'+posPaint(o.slot)+'">'+
+      esc(o.slot)+'</span><span class="of-gain">+'+gain.toFixed(1)+' WAR</span>'+
+      '<span class="of-cost'+(o.cost<=0?' free':'')+'">'+(o.cost>0?'costs '+M(o.cost):'frees '+M(-o.cost))+'</span></div>'+
+      '<div class="of-swap">'+
+        '<span class="of-side out"><span class="nm">'+esc(o.out.n)+'</span>'+
+          '<span class="mt">'+o.out.s+' '+esc(o.out.t)+' &middot; '+o.out.w.toFixed(1)+' WAR</span></span>'+
+        '<span class="of-arrow">&rarr;</span>'+
+        '<span class="of-side"><span class="nm">'+esc(o.in.n)+'</span>'+
+          '<span class="mt">'+o.in.s+' '+esc(o.in.t)+' &middot; '+o.in.w.toFixed(1)+' WAR</span></span>'+
+      '</div>';
+    btn.addEventListener('click',()=>{
+      try{R.acceptTrade(RUN,DATA,o);}catch(e){console.error(e);return;}
+      ga('trade_accepted',{slot:o.slot,gain:Math.round(gain*10)/10,window:w});
+      closeSheet('sheet-trade');onDone();
+    });
+    list.appendChild(btn);
+  }
+  $('b-trade-pass').onclick=()=>{
+    R.declineTrades(RUN,offers[0].gameIndex,w);
+    ga('trade_passed',{window:w});
+    closeSheet('sheet-trade');onDone();
+  };
+  openSheet('sheet-trade');
+}
+const E_TRADE_WINDOWS=()=>R.TRADE.WINDOWS.length;
+
 let simTimer=null;
 function simGame(idx){
   if(idx>=E.CONSTANTS.REGULAR_SEASON_GAMES){finishSeason();return;}
@@ -2394,6 +2480,10 @@ function simGame(idx){
       paintCapTrack();
       if(ev.over>0){askCut(ev,()=>simGame(idx));return;}
     }
+  }
+  if(RUN.tradeMachine){
+    const offers=R.tradeOffers(RUN,DATA,idx);
+    if(offers){askTrade(offers,()=>simGame(idx));return;}
   }
   const result=R.advanceGame(RUN,idx);
   if(!result){finishSeason();return;}
@@ -2415,6 +2505,16 @@ function simGame(idx){
   simTimer=setTimeout(()=>simGame(idx+1),speed);
 }
 
+/* Fast-forward stops for a decision, so the screen behind the sheet has to agree
+   with where the season actually is. It was showing the record from the pause and
+   the game number from wherever the animated sim had got to. */
+function paintPause(st,i){
+  $('s-record').innerHTML='<span class="w">'+st.wins+'</span><span class="sep">-</span><span class="l">'+st.losses+'</span>';
+  const gp=st.results.length;
+  if(gp>0)$('s-pace').innerHTML='Game '+gp+' of 162 &middot; On pace for <b>'+
+    Math.round(st.wins/gp*162)+' wins</b>';
+}
+
 function simRemaining(){
   if(simTimer){clearTimeout(simTimer);simTimer=null;}
   const st=RUN._simState;if(!st) return;
@@ -2426,10 +2526,18 @@ function simRemaining(){
       if(ev){
         paintCapTrack();
         if(ev.over>0){
-          $('s-record').innerHTML='<span class="w">'+st.wins+'</span><span class="sep">-</span><span class="l">'+st.losses+'</span>';
+          paintPause(st,i);
           askCut(ev,()=>simRemaining());
           return;
         }
+      }
+    }
+    if(RUN.tradeMachine){
+      const offers=R.tradeOffers(RUN,DATA,i);
+      if(offers){
+        paintPause(st,i);
+        askTrade(offers,()=>simRemaining());
+        return;
       }
     }
     const result=R.advanceGame(RUN,i);
@@ -2508,7 +2616,9 @@ function showResult(){
     hero.className='ro-hero lose';vd.textContent='Out in the '+last.round;vd.className='ro-verdict';}
   else{hero.className='ro-hero lose';vd.textContent='Missed the playoffs';vd.className='ro-verdict';}
   let modeLabel='';
-  if(RUN.staff)modeLabel='All-Time Staff';
+  if(RUN.tradeMachine){const n=(RUN.trades||[]).filter(t=>t.accepted).length;
+    modeLabel='Trade Machine \u00b7 '+n+' deal'+(n===1?'':'s');}
+  else if(RUN.staff)modeLabel='All-Time Staff';
   else if(RUN.capSurvivor)modeLabel='Cap Survivor \u00b7 '+(RUN.cuts||[]).length+' cut';
   else if(RUN.franchise)modeLabel='The all-time '+teamFullName(RUN.franchise);
   else if(RUN.division)modeLabel=RUN.division;
@@ -2650,7 +2760,7 @@ function shareVerdict(o){
   return 'Missed the playoffs';
 }
 function shareLines(o){
-  const tag=RUN.staff?' (All-Time Staff)':RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
+  const tag=RUN.tradeMachine?' (Trade Machine)':RUN.staff?' (All-Time Staff)':RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
   let t='Run The Diamond'+tag+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
   if(o.rating!=null) t+=' Team rating '+Math.round(o.rating)+'.';
   t+='\nCan you draft a better team?\nrunthe.gg/baseball';

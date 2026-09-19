@@ -197,6 +197,7 @@ function createRun(opts) {
   const division = opts.division ?? null;
   const capSurvivor = !!opts.capSurvivor;
   const staff = !!opts.staff;
+  const tradeMachine = !!opts.tradeMachine;
   if (division !== null && !E.DIVISIONS[division]) throw new Error(`unknown division ${division}`);
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
@@ -206,6 +207,8 @@ function createRun(opts) {
     division,
     capSurvivor,
     staff,
+    tradeMachine,
+    trades: [],
     market: [],
     cuts: [],
     seed,
@@ -641,6 +644,141 @@ function rebuildSimState(run) {
   };
 }
 
+/* ─── The Trade Machine ──────────────────────────────────────────────────
+ *
+ * You are handed a roster instead of drafting one. It is assembled at random
+ * under the cap, so it is nobody's idea of a contender, and then three times
+ * across the season the phone rings: somebody will give you a better player for
+ * one of yours, and the difference comes out of your payroll.
+ *
+ * That is the whole mode. You cannot draft your way out of it, only deal. */
+const TRADE = {
+  WINDOWS: [38, 82, 120],   // three deadlines
+  OFFERS: 3,
+  /* An offer has to be an upgrade or there is no decision, and it has to cost
+   * something or there is no decision either. */
+  MIN_GAIN_WAR: 0.8,
+};
+
+/* Assemble a roster the player did not choose. Uses the ordinary draft machinery,
+ * signing a random affordable option each spin, so whatever comes out is legal by
+ * construction: every slot filled, every price gate respected. */
+function dealRoster(run, data) {
+  let guard = 0;
+  while (run.phase === PHASES.DRAFT && guard++ < 600) {
+    let draw;
+    try { draw = spin(run, data); } catch (e) { return false; }
+    const keys = (draw.options || []);
+    if (!keys.length) {
+      const rs = canRespin(run);
+      if (rs.ok) { respin(run, data); continue; }
+      return false;
+    }
+    const rng = rngFor(run);
+    const players = keys.map(k => data.allPlayers[k]).filter(Boolean);
+    if (!players.length) return false;
+    /* Random, not best: the point is that you did not pick this team. But random
+     * across the whole board buys scrubs, because most of any board is scrubs, and
+     * a roster dealt that way spent $59M of $170M and won 56 games. So it spends
+     * to its means: aim at the per-slot share of what is left and take one of the
+     * three nearest to it. What comes out is a mid-tier club with no holes it
+     * chose and no stars it earned, which is the team this mode is about. */
+    const left = Math.max(1, slotsOf(run).length - run.roster.length);
+    const target = remaining(run) / left;
+    const near = players.slice()
+      .sort((a, b) => Math.abs(a.p - target) - Math.abs(b.p - target))
+      .slice(0, 3);
+    const pick = near[Math.floor(rng() * near.length)];
+    try { sign(run, pick); } catch (e) {
+      let ok = false;
+      for (const p of players) { try { sign(run, p); ok = true; break; } catch (_) {} }
+      if (!ok) return false;
+    }
+  }
+  return run.roster.length >= slotsOf(run).length;
+}
+
+/* Players who can fill a slot, built once per slot and kept on the data object.
+ * Forty-four thousand player-seasons scanned per offer, three offers a window and
+ * three windows, is a scan the phone can feel. */
+function slotPool(run, data, slot) {
+  data._slotPool = data._slotPool || {};
+  const key = (run.staff ? 'staff:' : 'lineup:') + slot;
+  if (!data._slotPool[key]) {
+    const out = [];
+    for (const k in data.allPlayers) {
+      const p = data.allPlayers[k];
+      if (p.t === 'TOT') continue;
+      if (fills(run, p, slot)) out.push(p);
+    }
+    data._slotPool[key] = out;
+  }
+  return data._slotPool[key];
+}
+
+/* Is a trade window open on this game? Returns its 1-based number, or 0. */
+function tradeAt(run, gameIndex) {
+  if (!run.tradeMachine) return 0;
+  const i = TRADE.WINDOWS.indexOf(gameIndex);
+  return i < 0 ? 0 : i + 1;
+}
+
+/* Three offers: a better player for one of yours, at a price. Each one names the
+ * slot it touches, so the swap is always legal, and each is affordable under the
+ * cap as things stand or it is not offered at all. */
+function tradeOffers(run, data, gameIndex) {
+  const n = tradeAt(run, gameIndex);
+  if (!n) return null;
+  if ((run.trades || []).some(t => t.gameIndex === gameIndex)) return null;
+  const rng = rngFor(run);
+  const slots = slotsOf(run);
+  const used = new Set(run.usedPlayers);
+  const headroom = money(capOf(run) - payroll(run));
+  const offers = [];
+  // Weakest first: those are the holes a real GM would be shopping.
+  const mine = run.roster.map((p, i) => ({ p, i, slot: slots[run.slotIndex[i]] }))
+    .sort((a, b) => a.p.w - b.p.w);
+
+  for (const own of mine) {
+    if (offers.length >= TRADE.OFFERS) break;
+    if (offers.some(o => o.slot === own.slot)) continue;
+    const pool = slotPool(run, data, own.slot);
+    const budget = own.p.p + headroom;
+    const cands = pool.filter(c =>
+      c.w >= own.p.w + TRADE.MIN_GAIN_WAR && c.p <= budget && !used.has(c.i));
+    if (!cands.length) continue;
+    const got = cands[Math.floor(rng() * cands.length)];
+    offers.push({
+      window: n, gameIndex, slot: own.slot, rosterIdx: own.i,
+      out: { n: own.p.n, w: own.p.w, p: own.p.p, s: own.p.s, t: own.p.t },
+      in: { n: got.n, w: got.w, p: got.p, s: got.s, t: got.t },
+      cost: money(got.p - own.p.p),
+      key: pkey(got),
+    });
+  }
+  return offers.length ? offers : null;
+}
+
+/* Take the deal. */
+function acceptTrade(run, data, offer) {
+  const got = data.allPlayers[offer.key];
+  if (!got) throw new Error('player gone');
+  const outP = run.roster[offer.rosterIdx];
+  run.roster[offer.rosterIdx] = got;
+  const gi = run.usedPlayers.indexOf(outP.i);
+  if (gi >= 0) run.usedPlayers.splice(gi, 1);
+  run.usedPlayers.push(got.i);
+  run.trades = run.trades || [];
+  run.trades.push({ ...offer, accepted: true });
+  if (run._simState) run._simState = rebuildSimState(run);
+  return { out: offer.out, in: offer.in };
+}
+/* Pass, and record that the window is spent so it does not reopen. */
+function declineTrades(run, gameIndex, windowNo) {
+  run.trades = run.trades || [];
+  run.trades.push({ gameIndex, window: windowNo, accepted: false });
+}
+
 function finalizeSeason(run) {
   const st = run._simState;
   if (!st) throw new Error('no sim state');
@@ -782,6 +920,7 @@ const publicAPI = {
   chemOpts, chemOf, chemByPlayer, chemWorth,
   slotsOf, eligOf,
   payroll, overCap, marketAt, applyMarket, cutPlayer,
+  TRADE, dealRoster, tradeAt, tradeOffers, acceptTrade, declineTrades,
   playSeason, advanceGame, finalizeSeason,
   previewSigning, bestPossibleSquad, projectSeason,
   indexData,
