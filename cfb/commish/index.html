@@ -5243,6 +5243,11 @@ function stMyDoctrine(){
 }
 $('b-stback').onclick=()=>{
   if(stBackTo==='s-office'){ sceneOff=true; office(); sceneOff=false; }
+  /* THE GATE IS REPAINTED ON THE WAY BACK, the same as the office is, because it is the one
+     screen whose buttons depend on an answer that can land while the board is open: the
+     premium read settles, or the account changes in another tab. Showing the stale markup
+     would put a reader back on a door drawn for somebody else. gate() is idempotent. */
+  if(stBackTo==='s-gate') gate();
   show(stBackTo);
 };
 $('dc-range').onclick=(e)=>{
@@ -9660,7 +9665,16 @@ function gate(){
        somebody who is already through the door. What is actually in the way is an account,
        because the season clock is keyed on one, so that is what the line says. */
     say.textContent='Commish Simulator needs an account. Sign in on the game and come back.';
-    act.innerHTML='<a class="btn" href="/cfb/" style="text-decoration:none;text-align:center">Sign in on the game</a>';
+    /* AND THE BOARD IS OPEN TO THEM, which is the one thing on this screen that does not
+       need an account. Both board functions are granted to anon and read finished terms
+       anybody may already select, and commish_my_tenure answers a signed out reader with
+       a total and `served: false` rather than an error, which is the branch it was written
+       for. Showing somebody what the job is worth is a better argument for making an
+       account than a sentence telling them to go and make one. */
+    act.innerHTML='<a class="btn" href="/cfb/" style="text-decoration:none;text-align:center">Sign in on the game</a>'
+      +'<div style="margin-top:14px"><button class="btn ghost sm" id="g-stand">'
+      +'See the standings</button></div>';
+    const gso=$('g-stand'); if(gso) gso.onclick=()=>openStandings('s-gate');
     return;
   }
   /* UNREACHABLE WHILE THE MODE IS LAUNCHED, and kept rather than deleted. allowed() reads
@@ -9764,6 +9778,28 @@ function gate(){
       +SCENARIOS.map((s)=>'<button type="button" class="inh" data-sc="'+esc(s.id)+'">'
         +'<b>'+esc(s.name)+'</b><span>'+esc(s.line)+'</span></button>').join('')
       +'</div>':'')
+    /* THE BOARD'S ONLY DOOR THAT IS NOT INSIDE A TERM.
+     *
+     * `#b-stand` is on the office screen and `#y-stand` is on the year card, so BOTH ways in
+     * were behind taking the job. A visitor who has never played, and a player sitting on
+     * this screen deciding whether to come back, could not reach the standings at all: the
+     * route was resume the term, wait for the office, then find a ghost button beside the
+     * tape. Reported as not being able to find the leaderboard, which is exactly what it
+     * looked like.
+     *
+     * THIS IS THE DYNASTY BOARD'S BUG, ONE GAME OVER, AND IT IS WORTH SAYING SO. That board
+     * had a table, two axes, three queries and one entry point that needed a finished season
+     * on screen, and it was found by a player rather than by a check. A leaderboard renders
+     * perfectly with no way in, so nothing anywhere can report it. The lesson did not
+     * transfer when this screen was built, so it is written on the door this time.
+     *
+     * IT IS UNGATED, and that is the same argument the receipt on the college profile makes.
+     * `commish_tenure_board` and `commish_doctrine_board` are both granted to anon and both
+     * read finished terms anybody may already select, so there is nothing here to protect. A
+     * board is also the best reason a stranger has to take the job, and putting it behind
+     * taking the job first is the wall this file keeps knocking down. */
+    +'<div style="margin-top:14px"><button class="btn ghost sm" id="g-stand">'
+      +'See the standings</button></div>'
     /* ONE SENTENCE, THE SAME ONE FOR EVERYBODY, AND NO SECOND LINE UNDER IT.
        This used to carry the `?tier=free` switch on a second line. It was written for the
        author and it went out to every player, which is how somebody came to read "See what a
@@ -9774,6 +9810,7 @@ function gate(){
     +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:11px;text-align:center">'
       +'Your term is saved to your account. Sign in anywhere and it is there.</p>';
   const r=$('g-resume'); if(r) r.onclick=()=>office();
+  const gs=$('g-stand'); if(gs) gs.onclick=()=>openStandings('s-gate');
   act.querySelectorAll('[data-sc]').forEach((btn)=>{
     btn.onclick=()=>{
       const scen=SCENARIOS.find((s)=>s.id===btn.dataset.sc);
