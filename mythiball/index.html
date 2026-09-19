@@ -124,6 +124,20 @@
      line on the card that is about YOUR history rather than about him,
      and it has to be findable at a glance while drafting nine of them. */
   .quirk.yours{color:var(--green);font-weight:700;}
+  /* WHAT THE YEARS BOUGHT. The same green as the record above it, because
+     they are one idea read top to bottom: this man played for you, and
+     this is what it did to him. A second colour here would read as a
+     warning rather than as the reward it is. The raised rating itself is
+     marked in the grid, so the eye finds the number before the sentence. */
+  .quirk.grew{color:var(--green);font-weight:700;opacity:.85;}
+  /* A RAISED RATING IS GREEN, INCLUDING THE ARM'S. Written `.statgrid
+     b.up` it lost to `.statgrid span.arm b` two rules above, which is more
+     specific, so a developed pitcher's PIT drew in --gold. That token is
+     RED here, so the one number on the card that means HE GOT BETTER was
+     the only one printed in the colour that means trouble. Nothing threw
+     and no check could see it: it was found by looking at the card.
+     Same shape as the football prompt card's .pwc-marks selector. */
+  .statgrid span b.up, .statgrid span.arm b.up{color:var(--green);}
 
   /* THE INFO DOT. A rule a player needs once (how a tie breaks, when IN
      and OUT are certain) was printed under the table every single visit,
@@ -1394,16 +1408,40 @@ const DEFAULT_STYLE = { swing:0, patience:0, jitter:0, label:'Balanced' };
 function opponentSharpness() {
   if (State.mode === 'season' && State.season) {
     const played = State.season.results.length;   /* 0..6 going in */
-    return clamp(played / 8, 0, 1);
+    return clamp(played / 8 + leagueEdge(), 0, 1);
   }
   if (State.mode === 'playoff') {
-    return State.game && State.game.round === 'final' ? 1.0 : 0.85;
+    return clamp((State.game && State.game.round === 'final' ? 1.0 : 0.85) + leagueEdge(), 0, 1);
   }
   if (State.mode === 'cup' && State.game) {
     /* Round 0 quarters, 1 semis, 2 final. */
-    return clamp(0.55 + (State.game.cupR || 0) * 0.225, 0, 1);
+    return clamp(0.55 + (State.game.cupR || 0) * 0.225 + leagueEdge(), 0, 1);
   }
   return 0.45;
+}
+/* -------- AND THE LEAGUE RISES WITH YOUR TENURE --------
+   The ramp above was the whole arc and it resets every April: it reads
+   results.length, so a tenth year opening day is a first year opening
+   day. That is what made a franchise year a number on a heading.
+
+   This is the other half of the development block up in the careers
+   section, and neither works alone. Veterans who improve against a league
+   that does not are a club that wins by turning up; a league that sharpens
+   against a roster that cannot answer is a punishment for playing on.
+
+   IT IS DELIBERATELY SMALLER THAN THE IN SEASON RAMP. Game one to game
+   seven is worth 0.75 of this dial. A whole career is worth 0.30, and it
+   plateaus after six years rather than running away, so the shape of a
+   season is still the loudest thing in it and tenure is the slow bass
+   note underneath.
+
+   EXHIBITION DOES NOT GET IT, which is why the branch above is untouched.
+   A one off is not a franchise year and has to stay the fixed, knowable
+   thing a player reaches for when they want a game rather than a career. */
+const LEAGUE_EDGE_PER_YEAR = 0.06;
+const LEAGUE_EDGE_MAX = 0.30;
+function leagueEdge() {
+  return clamp(leagueYears() * LEAGUE_EDGE_PER_YEAR, 0, LEAGUE_EDGE_MAX);
 }
 /* A short label so the player can see what they are walking into. */
 function sharpnessLabel(v) {
@@ -5219,10 +5257,20 @@ function renderRoster() {
     cc.appendChild(cv);
     cc.appendChild(el('div','name', c.n));
     cc.appendChild(el('div','role', `${c.role}`));
+    /* THE CARD HAS TO SHOW WHAT YOU WOULD ACTUALLY FIELD. A veteran is
+       developed the moment he takes the field, so a card printing the
+       roster's own numbers would understate every man this club has kept
+       and the drafter would be choosing on figures the game does not use.
+       That is the football card's drift, arriving at a draft screen. */
+    const d = developed(c);
     const st = el('div','statgrid');
-    st.innerHTML = `<span>POW <b>${c.pow}</b></span><span>SPD <b>${c.spd}</b></span>`
-                 + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`
-                 + `<span class="arm">PIT <b>${c.pit}</b></span>`;
+    const cell = (lab, key, cls) => {
+      const up = d.dev && d.dev[key];
+      return `<span${cls ? ` class="${cls}"` : ''}>${lab} <b${up ? ' class="up"' : ''}>${d[key]}</b></span>`;
+    };
+    st.innerHTML = cell('POW','pow') + cell('SPD','spd')
+                 + cell('CON','con') + cell('DEF','def')
+                 + cell('PIT','pit','arm');
     cc.appendChild(st);
     if (c.note) {
       const nt = el('div','quirk', c.note);
@@ -5233,6 +5281,11 @@ function renderRoster() {
        so a first year draft looks exactly as it always did. */
     const mine = careerOf(c.k);
     if (mine) cc.appendChild(el('div', 'quirk yours', careerLine(mine)));
+    /* And what the years bought, named rather than totalled, because
+       "+4 CON" says what kind of player he has become and "+7" does not.
+       A man who spent his years on the bench has a record here and no
+       line under it, which is the honest difference between the two. */
+    if (d.dev) cc.appendChild(el('div', 'quirk grew', devLine(d.dev) + ' with this club'));
     /* Locked characters can't be drafted; the card says how to earn them,
        and hovering says how far along you are. */
     const locked = !isUnlocked(c.k);
@@ -5796,6 +5849,121 @@ function careerLine(c) {
   if (c.pOuts) bits.push(`${Math.floor(c.pOuts / 3)} IP`);
   const yr = `${c.years} year${c.years === 1 ? '' : 's'}`;
   return bits.length ? `${yr} here: ${bits.join(' · ')}` : `${yr} here`;
+}
+
+/* -------- A MAN GETS BETTER AT WHAT HE DID HERE --------
+
+   The franchise REMEMBERED its players and they never CHANGED. Year ten
+   was year one with a different number on the heading: nothing in the
+   game read S.year at all, only the labels did. A club had memory, a
+   ladder of unlocks and a record book, and no arc.
+
+   Two halves fix that and they have to ship together. This is the first:
+   a man who has worn your shirt is better at what he did in it. The
+   second is leagueYears() below, which makes the league rise with your
+   tenure. Development alone is power creep. A rising league alone is
+   punishment. Together the redraft becomes a real decision, because your
+   veterans are now better than the board and the new unlock is not.
+
+   THE ROSTER STAYS UNLOCKED, which is the rule this must not break.
+   "Play Year N+1" still opens the whole board, because that is what makes
+   the unlock ladder worth climbing. What changes is that walking away
+   from a four year man now costs something you can read on his card.
+
+   IT IS DERIVED FROM THE CAREER RECORD, NEVER STORED. A stored bump is a
+   second copy of an answer that the two drift apart, which is the rule
+   the commish era already follows. Deriving buys three things: it cannot
+   drift, it is idempotent for free (so drawing the draft screen twice
+   cannot double it, the same trap foldCareers is written around), and
+   every save that already exists gets its veterans developed the moment
+   this ships, rather than starting everybody from scratch.
+
+   IT PAYS FOR WHAT HE DID, not just for turning up. A bat only develops
+   if he took at bats and an arm only if he got outs, so the ninth man who
+   never played gets his year on the record and no rating for it. */
+const DEV_PER_YEAR = 1.6;     /* just for wearing the shirt */
+const DEV_YEAR_CAP = 5;       /* years past this stop paying */
+const DEV_WORK_MAX = 3;       /* the most his production alone can add */
+const DEV_CAP = 8;            /* the most any one rating can move */
+function devOf(k) {
+  const c = careerOf(k);
+  if (!c || !c.years) return null;
+  const loyalty = Math.min(c.years, DEV_YEAR_CAP) * DEV_PER_YEAR;
+  const out = {};
+  const give = (stat, v) => {
+    const n = Math.round(Math.min(v, DEV_CAP));
+    if (n >= 1) out[stat] = n;
+  };
+  if (c.ab) {
+    /* .240 is a man who played, .380 is a man who mattered */
+    const work = clamp(((c.hits / c.ab) - 0.240) / 0.140, 0, 1);
+    give('con', loyalty * 0.6 + work * DEV_WORK_MAX);
+    give('pow', loyalty * 0.4 + work * DEV_WORK_MAX * 0.8);
+  }
+  if (c.pOuts) {
+    /* nine innings a year is a man who took the ball */
+    const work = clamp((c.pOuts / 3) / Math.max(1, c.years * 9), 0, 1);
+    give('pit', loyalty * 0.7 + work * DEV_WORK_MAX);
+  }
+  return Object.keys(out).length ? out : null;
+}
+/* The character as YOUR club has him. Returns the roster's own object
+   untouched when there is nothing to add, so a first year franchise and
+   an exhibition are byte for byte the game they always were.
+
+   THE CLAMP AT 99 IS THE DIMINISHING RETURN, and it is the whole of it.
+   A 96 power hitter has three points of room and a 60 has thirty nine, so
+   development quietly does more for the rest of the roster than for the
+   man who was already the best on it. Nothing else is needed for that. */
+function developed(c) {
+  if (!c) return c;
+  /* ALREADY DEVELOPED COMES BACK AS IT IS. Nothing calls it that way
+     today, because the lineup is built from ROSTER_BY_KEY and the card
+     from ROSTER, both raw. It is guarded anyway: this derives off the KEY,
+     so handing it its own output would add the bump to a base that already
+     carries it and double every veteran, in silence, on whichever screen
+     somebody wired up second. */
+  if (c.dev) return c;
+  const d = devOf(c.k);
+  if (!d) return c;
+  const out = Object.assign({}, c);
+  /* WHAT HE ACTUALLY GAINED, not what he was owed. A man at the ceiling
+     is owed points there is no room for, and a card printing the owed
+     figure would promise "+4 POW" to somebody who gains nothing: the
+     commish state card's rule, that what is decided on is the PRINTED
+     value rather than the raw one, arriving at a draft screen. */
+  const applied = {};
+  for (const [stat, v] of Object.entries(d)) {
+    const base = ratingOr(out[stat], 50);
+    /* NEVER LESS THAN HE WAS. The 99 ceiling is the diminishing return,
+       and a handful of this roster is written AT or ABOVE it: the Great
+       Ape is 99 power and one man is 100, so a flat clamp to 99 handed a
+       career veteran a POINT OFF for his trouble. Measured, not reasoned:
+       the probe reported the best power hitter in the game gaining -1.
+       That is sendOdds' rule at a third door, and a rating must never buy
+       you less. */
+    const got = Math.max(base, clamp(base + v, 1, 99));
+    out[stat] = got;
+    if (got > base) applied[stat] = got - base;
+  }
+  if (!Object.keys(applied).length) return c;
+  out.dev = applied;
+  return out;
+}
+/* What the card says he gained, in the order the card prints ratings.
+   Named stats rather than a total, because "+4 CON" tells a drafter what
+   kind of player he has become and "+7" does not. */
+function devLine(d) {
+  if (!d) return '';
+  const order = ['pow', 'spd', 'con', 'def', 'pit'];
+  return order.filter(s => d[s]).map(s => `+${d[s]} ${s.toUpperCase()}`).join(' ');
+}
+/* How long this club has been going, for the league ramp below. Reads the
+   pending franchise while drafting and the live one otherwise, the same
+   two states careerOf knows about. */
+function leagueYears() {
+  const src = State.pendingFranchise || State.season;
+  return Math.max(0, ((src && src.year) || 1) - 1);
 }
 
 function startSeason(carry) {
@@ -6532,7 +6700,17 @@ function repairLineup(keys) {
 function startGame(opts) {
   resetCamera();
   State.team = repairLineup(State.team);
-  const battersAway = State.team.map(k => ROSTER_BY_KEY[k]);
+  /* ONE SEAM FOR THE WHOLE GAME. A rating is read 139 times across this
+     file, off a dozen different receivers (ctx, batter, pitcher, runner,
+     c, b), so hooking the reads would be the Full Team glow bug waiting
+     to happen: two readings of one thing that come apart the first time
+     somebody adds a third. The lineup is built here and nowhere else, so
+     developing it here is the one source everything downstream sees.
+
+     ONLY YOUR SIDE. Development belongs to the club that earned it, so
+     the opponent draws the roster's own numbers even when their lineup
+     names the same character. */
+  const battersAway = State.team.map(k => developed(ROSTER_BY_KEY[k]));
   const battersHome = repairLineup(State.opponent.roster).map(k => ROSTER_BY_KEY[k]);
   /* User bats AWAY (visitor), opponent home. In playoffs the flag flips. */
   const youHome = !!opts.youHome;
@@ -7143,9 +7321,9 @@ const COACH = {
        one worth teaching hardest, because missing it costs nothing and
        nobody presses a button they think can hurt them. */
     '<b>Then you field it.</b> A ball in play can open a short window. Press in the '
-    + '<b>green</b> to finish a throw or make a catch. A <b>ring</b> on a deep fly '
-    + 'means you can rob the hitter. Time it and his hit becomes an out. Miss it and '
-    + 'nothing is lost.',
+    + '<b>green</b> to finish a throw or make a catch. Let it run out and the batter '
+    + 'reaches, nothing worse. A <b>ring</b> on a deep fly is a robbery. Time it and '
+    + 'his hit becomes an out. Miss that one and nothing is lost at all.',
   ],
 };
 function coachDue(kind) { return PREFS.coach !== false && !PREFS['coach_' + kind]; }
@@ -7781,8 +7959,49 @@ function scheduleCpuSwing() {
      strikeout machine (MLB runs about 25), and every whiffed swing is a
      play the field never gets. About a fifth off each tier moved the
      measurement to the mid forties: still arcade-hot, with more balls
-     in play for the half of the game that fields them. */
-  const diffJitter = { easy: 0.24, medium: 0.15, hard: 0.10 }[State.difficulty];
+     in play for the half of the game that fields them.
+
+     AND A THIRD TIME, TO AN ARCADE TARGET RATHER THAN A REAL ONE. The
+     mid forties was read against MLB's 25 and called close enough. It
+     is not what this game is: a backyard game is a CONTACT game, the
+     ball is in play constantly, and a strikeout is a thing that
+     occasionally happens rather than the most common outcome of a
+     swing. So the target is real baseball's rate rather than twice it.
+
+     THE FIRST ATTEMPT AT IT MOVED NOTHING AND READ AS A SUCCESS, which
+     is the part worth reading. calibrate.mjs gets about 80 swings out
+     of a 150 pitch run, and at a true rate near 40 the standard error
+     on 80 swings is 5.4 POINTS. So a run that came back 36.4 and a run
+     that came back 43.9 are the SAME MEASUREMENT, this dial was cut
+     from .15 to .125 on the strength of the difference between them,
+     and the cut was worth about three points. Measured properly, at
+     3000 swings an arm, whiff per swing against this dial runs:
+
+       .150  46.9      .100  35.3      .060  25.9
+       .125  43.6      .080  31.5
+
+     WHIFF WAS ALREADY FLAT ACROSS THE TIERS AND THAT IS THE DESIGN.
+     47.4 / 47.8 / 46.2 on easy, medium and hard: these numbers were
+     cancelling DIFF.sweetWidth, which runs .26 / .20 / .16, so a
+     harder dugout was not a dugout that missed less. What the tier
+     actually bought was CONTACT: balls in play per swing ran 24.0 /
+     27.9 / 31.5.
+
+     So the three are solved separately rather than scaled together. A
+     uniform cut was tried first and inverted the tiers (easy 27.6,
+     hard 34.3), which would have shipped a hard dugout that made worse
+     contact than an easy one, in a game where nothing would have said
+     so. Solved, whiff is flat at about 28.3 and the tier spread in
+     balls in play nearly doubles:
+
+       easy    .115   whiff 28.0   in play 34.1
+       medium  .068   whiff 28.4   in play 40.8
+       hard    .030   whiff 28.6   in play 47.9
+
+     ONLY THE TIMING JITTER MOVES. The aim spread (locJ below) also
+     makes whiffs, by putting the barrel out of reach, and cutting both
+     at once would overshoot and leave nobody knowing which did it. */
+  const diffJitter = { easy: 0.115, medium: 0.068, hard: 0.030 }[State.difficulty];
   let jitter = conJitter + diffJitter;
   /* Weak pitch: CPU whiffs badly on their weak pitch. */
   if (p.pt === g.batterCtx.weakPitch) jitter += 0.14;
@@ -7811,8 +8030,33 @@ function scheduleCpuSwing() {
      well he knows it is coming. A read that could not be pitched around
      would be a punishment rather than a hitter. */
   const read = patternRead(g, p.pt) * (diff.read || 0);
-  jitter -= read;
+  /* THE FLOOR AND THE READ ARE TWO JOBS AND ONE CONSTANT DID BOTH, which
+     went wrong the moment the contact retune above pushed hard's base
+     jitter down near the floor. Written `jitter -= read` and then clamped
+     once at 0.03, the read had nothing left to remove: on hard a dugout
+     sitting on twenty straight fastballs timed the ball 0.015 off against
+     0.014 for a dugout guessing, which is no difference at all. The whole
+     mechanic was dead and the only symptom was that it stopped mattering.
+
+     It cannot be fixed by backing the dial off, and that was measured
+     rather than assumed: whiff here is essentially ALL timing. Widening
+     the aim spread instead does nothing, 0.8 to 0.40 on hard's locJ moves
+     whiff 36.3 to 36.4, which is `check-bat`'s binary window arriving from
+     the other side. The barrel is rarely what misses.
+
+     So the two jobs are separated. The FLOOR is about the dugout's own
+     limit: nobody times a pitch perfectly just by being good, and that
+     stays at 0.03. The READ is the one term allowed to beat it, because
+     knowing what is coming is exactly what it is for, and it gets its own
+     floor. Everything else (sharpness, fatigue, the corner penalty) is an
+     ordinary modifier and still lands above the clamp.
+
+     THE COUNTERPLAY IS UNCHANGED AND IS WHAT MAKES THIS SAFE TO DO. Mix,
+     and the read decays to nothing. Or paint the edge, because the corner
+     penalty is added after this and a fastball on the black is still hard
+     to square up however well you know it is coming. */
   jitter = clamp(jitter, 0.03, 0.40);
+  jitter = Math.max(jitter - read, 0.012);
   /* Said out loud, once per batter, because a difficulty that changes
      what the opponent KNOWS is invisible otherwise: the player would
      just see hard contact and read it as luck. The line is the nudge to
@@ -9605,6 +9849,64 @@ function checkWalkOff() {
   return false;
 }
 
+/* WAVING HIM ROUND. This is an arcade game and it was running a rule
+   more conservative than real baseball.
+
+   Measured over the roster: a runner scored from second on a single 24%
+   of the time, against about 60% in the real game, and the gap was
+   almost entirely the PERMISSION rather than the odds. Only 35% of the
+   roster cleared the old floor of 75, so two thirds of the league
+   stopped at third on a base hit and the play at the plate, which is
+   the best thing that happens in a game of backyard baseball, mostly
+   did not happen at all.
+
+   SPEED NOW DECIDES THE ODDS RATHER THAN THE PERMISSION, which is the
+   arcade shape: everybody runs, the fast ones make it. The floor is
+   still there, because a statue rounding third is a joke rather than a
+   decision, and it is low enough that clearing it is the ordinary case.
+
+   IT COSTS ALMOST NOTHING IN OUTS, which is the part worth knowing
+   before this is read as a difficulty cut. Over the real roster the
+   share of chances that end with a runner gunned down at the plate
+   moves 11% to 12%: the runners who now score are the ones who used to
+   HOLD, not runners who used to be safe. The double is the same shape,
+   14% to 45% scoring against 8% to 8% thrown out.
+
+   ONE CLAMPED LINE, so a point of speed can never be a cost. The old
+   version was two curves joined at the floor and it really did make 75
+   worse than 74 and 85 worse than 84, with Tom Sawyer on 84 and Huck
+   Finn on 86 sitting either side of it. That cannot come back in this
+   shape, and verify-rules sweeps it end to end anyway.
+
+   IT LIVES HERE, AT MODULE SCOPE, SO THE SUITE CAN READ THE REAL ONE.
+   It used to be a local const inside applyHitMutation, and verify-rules
+   carried a hand-copied duplicate of the arithmetic to sweep. Two
+   copies of one answer is the shape that drifts, and the copy would
+   have gone on passing its monotonicity sweep on a curve the game no
+   longer played. */
+const SEND = {
+  /* second to home on a single */
+  single: { floor: 50, base: 0.50, slope: 90, cap: 0.94 },
+  /* first to home on a double: further to run, so a tighter floor */
+  double: { floor: 60, base: 0.46, slope: 95, cap: 0.92 },
+};
+/* TWO OUTS CHANGES THE ARITHMETIC AND IS NOT A DIFFICULTY SETTING.
+   Holding at third is only worth anything if somebody is coming up
+   behind him, and with two out there is one batter left: a man stranded
+   on third scored nothing at all. So the break-even drops, a third base
+   coach windmills men he would have stopped an out earlier, and the
+   floor follows him down. Ten points of speed is where the floor's own
+   odds fall from about .61 to about .50, which is where the trade turns
+   over, so it is the arithmetic rather than a number picked for feel. */
+const SEND_TWO_OUT_FLOOR = 10;
+function sendOdds(spd, leg) {
+  const r = SEND[leg];
+  return clamp(r.base + (ratingOr(spd, 50) - 40) / r.slope, 0.30, r.cap);
+}
+function sendClears(spd, leg, outs) {
+  return ratingOr(spd, 50) >= SEND[leg].floor - (outs >= 2 ? SEND_TWO_OUT_FLOOR : 0);
+}
+
 function applyHitMutation(kind, batter, opts) {
   const g = State.game;
   const onError = opts && opts.onError;
@@ -9642,20 +9944,6 @@ function applyHitMutation(kind, batter, opts) {
      the rule for the at bat: AUTO is the speed rule, SEND waves anyone
      round at odds his legs earn, HOLD stops at third. The CPU keeps AUTO. */
   const rule = currentBattingTeam().isYou ? (g.sendRule || 'auto') : 'auto';
-  /* HOW OFTEN HE MAKES IT, and it used to be worth being slower.
-     The two branches were two separate curves rather than one curve with
-     a bonus on the end of it, so crossing the floor RESTARTED the odds
-     from a lower base: a runner on 74 scored from second 47.7% of the
-     time and one on 75 scored 35.0%, and on a double the step was worse,
-     54.3% at 84 against 30.0% at 85. Tom Sawyer is 84 and Huck Finn is
-     86, so waving both round sent the faster man home less often. It is
-     a valid number either way and nothing could report it.
-     One curve now, with the fast bonus ADDED to it, so a point of speed
-     is never a cost. */
-  const sendOdds = (spd, fastFloor, fastBase, fastSlope) => {
-    const base = clamp(0.25 + (spd - 40) / 150, 0.15, 0.6);
-    return spd >= fastFloor ? base + (spd - fastFloor) / fastSlope : base;
-  };
   for (let i=2;i>=0;i--) {
     const runner = g.bases[i];
     if (!runner) continue;
@@ -9664,18 +9952,18 @@ function applyHitMutation(kind, batter, opts) {
        and heads for home. Speed-based chance to score; otherwise thrown
        out at the plate. On doubles a very fast runner from 1st tries
        the same. Only kicks in for real hits, not errors. */
-    const goes = (fastFloor) => rule !== 'hold' && (rule === 'send' || runner.spd >= fastFloor);
+    const goes = (leg) => rule !== 'hold' && (rule === 'send' || sendClears(runner.spd, leg, g.outs));
     /* If he is out at the plate, mark it on the play so the draw loop can
        show him arriving late while the catcher stands with the ball. */
     const killAtHome = () => { thrownOut++; addOuts(1); addLog(`${runner.n} thrown out at the plate.`);
       if (g.play) g.play.plateOut = { runner, at: performance.now() }; };
-    if (!onError && kind === 'single' && i === 1 && goes(75)) {
-      const scoreChance = sendOdds(runner.spd, 75, 0.35, 100);
+    if (!onError && kind === 'single' && i === 1 && goes('single')) {
+      const scoreChance = sendOdds(runner.spd, 'single');
       if (rule === 'send') addLog(`${runner.n} is waved round.`);
       if (Math.random() < scoreChance) dest = 3;
       else { killAtHome(); continue; }
-    } else if (!onError && kind === 'double' && i === 0 && goes(85)) {
-      const scoreChance = sendOdds(runner.spd, 85, 0.30, 120);
+    } else if (!onError && kind === 'double' && i === 0 && goes('double')) {
+      const scoreChance = sendOdds(runner.spd, 'double');
       if (rule === 'send') addLog(`${runner.n} is waved round.`);
       if (Math.random() < scoreChance) dest = 3;
       else { killAtHome(); continue; }
@@ -9739,7 +10027,7 @@ function tagChance(runner, from) {
      to third is shorter for the runner and a much shorter throw, so it
      is close to even for anybody with average wheels. */
   const base = from === 2 ? 0.46 : 0.58;
-  return clamp(base + (runner.spd - 60) / 200, 0.12, 0.93);
+  return clamp(base + (ratingOr(runner.spd, 50) - 60) / 200, 0.12, 0.93);
 }
 function tagUp() {
   const g = State.game;
@@ -9877,11 +10165,32 @@ function startThrowWindow(kind, batter) {
     if (g.play) g.play.throwActive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('click', onClick, true);
-    const d = Math.abs(t - window.ideal);
+    /* DOING NOTHING IS NOT THE SAME AS THROWING IT AWAY, and for as long
+       as this window existed it was scored worse. The expiry called
+       finish(-1) and fell through the distance maths below: ideal sits
+       near 0.55 and yellowHalf is 0.14, so d came out about 1.55 and
+       every ignored grounder was an ERROR, with the batter safe AND every
+       runner taking an extra base. The comment on the timeout said
+       "fielder holds it: batter safe", which is the single below. The
+       comment was right and the code was not.
+
+       It is a fairness rule as much as a fiction one: pressing at the
+       wrong moment is a mistake and keeps the worst outcome, because you
+       threw it away. Not pressing is passive, and a fielder who holds the
+       ball has made the routine play slowly rather than catastrophically.
+       NOT REACTING IS NEVER WORSE THAN REACTING BADLY.
+
+       It is also the first ten minutes of the game. A player who does not
+       yet know this window exists gave up an error on every routine
+       ground ball, which is most of them. */
     let outcome;
-    if (d <= window.greenHalf) outcome = 'out';
-    else if (d <= window.yellowHalf) outcome = 'single';
-    else outcome = 'error';
+    if (t < 0) outcome = 'single';
+    else {
+      const d = Math.abs(t - window.ideal);
+      if (d <= window.greenHalf) outcome = 'out';
+      else if (d <= window.yellowHalf) outcome = 'single';
+      else outcome = 'error';
+    }
     resolveThrow(outcome, kind, batter);
   };
   const onClick = (e) => {
@@ -10018,9 +10327,20 @@ function startCatchWindow(kind, batter, landingX, landingY) {
     if (g.play) g.play.catchActive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('click', onClick, true);
-    /* t < 0 means the window expired. */
+    /* t < 0 means the window expired, and it used to mean a MISS: the
+       ball over his head, scored a TRIPLE. That is the worst outcome this
+       window has, handed to somebody for doing nothing, and a player who
+       does not yet know the control exists gave up a triple on every
+       catchable fly ball in the game.
+
+       It drops in FRONT of him now. The same rule the throw window
+       carries: pressing at the wrong moment is a mistake and keeps the
+       worst outcome, because you committed and got it wrong. Not pressing
+       is a fielder who never left his feet, and a ball that falls in is a
+       single rather than one that clears his head. NOT REACTING IS NEVER
+       WORSE THAN REACTING BADLY. */
     let outcome;
-    if (t < 0) outcome = 'miss';
+    if (t < 0) outcome = 'single';
     else {
       const d = Math.abs(t - 0.5);
       if (d <= window.greenHalf) outcome = 'catch';
@@ -14188,20 +14508,34 @@ function renderHowTo() {
   const field = el('div','card');
   add(field,
       '<h3>Fielding</h3>'
-    + '<p>Your fielders run to the ball on their own. Two plays need you.</p>'
+    + '<p>Your fielders run to the ball on their own. Three moments need you.</p>'
     + '<p><b>Ground balls:</b> a bar appears at the bottom of the field. Click or '
     + 'press Space in the green for the out. Yellow lets the batter beat the throw '
-    + 'for an infield single. A miss is a throwing error and every runner takes an '
-    + 'extra base.</p>');
+    + 'for an infield single. Press badly out of time and it is a throwing error, '
+    + 'and every runner takes an extra base. Let the bar run out and the fielder '
+    + 'simply holds the ball. The batter reaches and nobody else moves up.</p>');
   field.appendChild(howtoThrow());
   add(field,
       '<p><b>Fly balls:</b> a ring shrinks over the landing spot. Click or press '
     + 'Space when it is tightest to make the catch. Slightly off and the ball drops '
-    + 'in for a single; badly off and it sails over the fielder for a triple.</p>');
+    + 'in for a single. Badly off and it sails over the fielder for a triple. Let '
+    + 'the ring run out and he never leaves his feet, so the ball falls in front of '
+    + 'him for a single.</p>');
   field.appendChild(howtoCatch());
   add(field,
-      '<p>Your fielders\' DEF widens both safe windows, so a strong defensive '
-    + 'lineup is easier to play.</p>');
+      /* THE THIRD WINDOW WAS NEVER ON THIS PAGE. The robbery shipped and
+         this section still opened "Two plays need you", so the one window
+         that can take a hit AWAY from somebody went undocumented on the
+         longer of the two how to play surfaces. Same lesson as the arcade:
+         two surfaces say how to play and both need the edit. */
+      '<p><b>Robbing a hit:</b> a ring on a ball already headed for green means '
+    + 'somebody can get there. Time it and a hit becomes an out. This is the one '
+    + 'window that cannot hurt you. Miss it and the hit lands exactly as it would '
+    + 'have, with nothing said about it.</p>');
+  add(field,
+      '<p>Your fielders\' DEF widens every safe window, so a strong defensive '
+    + 'lineup is easier to play. Doing nothing is never the worst outcome. The '
+    + 'worst outcome is committing at the wrong moment.</p>');
   s.appendChild(field);
 
   const run = el('div','card');

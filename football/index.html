@@ -902,7 +902,11 @@ window.GA_ID='G-L29P5MRWKE';
      that the grid is also emptied when nobody affordable would HELP, which is a third of
      cap-spending drafts, it is a padded and margined box between the rating card and the
      line explaining why there is nothing in it. */
-  #b-coach-go[hidden],#co-planwrap[hidden],#co-knows[hidden],#co-grid[hidden]{display:none}
+  /* AND #b-coach-none IS THE SEVENTH, on the same screen as three of the others. It is a
+     .btn, so display:block beat the attribute exactly as it did for #b-coach-go two ids to
+     the left, and the painter's `hidden` did nothing at all. */
+  #b-coach-go[hidden],#co-planwrap[hidden],#co-knows[hidden],#co-grid[hidden],
+  #b-coach-none[hidden]{display:none}
   .coknows{margin:8px 0 0;display:flex;flex-direction:column;gap:4px}
   /* The two units' own chemistry, under the average of them. Same [hidden] trap. */
   #q-chemsplit[hidden]{display:none}
@@ -1924,18 +1928,8 @@ window.GA_ID='G-L29P5MRWKE';
   .co-t.neg{color:var(--bad,#f87171)}
   .co-pr{font-family:var(--fn);font-weight:800;font-size:14px;white-space:nowrap}
   .co-row[disabled]{opacity:.4;cursor:default}
-  /* Each axis is one row of three, and the row is the choice: no labels above, because the
-     axis name sits on the left where a form label belongs. */
-  .pl-ax{display:grid;grid-template-columns:78px minmax(0,1fr);gap:9px;align-items:center;
-    margin-bottom:8px}
-  .pl-nm{font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--dim)}
-  .pl-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-  .pl-b{padding:8px 4px;border:1.5px solid var(--line);border-radius:9px;
-    background:transparent;color:var(--dim);font-family:var(--fn);font-size:11px;
-    font-weight:700;letter-spacing:.03em;cursor:pointer}
-  .pl-b.on{border-color:rgba(226,178,90,.6);background:rgba(38,30,16,.8);color:#F3DDAE}
-  @media (max-width:360px){ .pl-ax{grid-template-columns:64px minmax(0,1fr)} .pl-b{font-size:10px} }
+  /* The three plan dials were styled here. They are gone: declining a coach buys the playoff
+     calls now rather than a form. See paintPlan. */
   .hp-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;
     margin-top:8px;padding:14px 18px;font-size:14.5px;background:rgba(19,26,43,.85);
     border:1.5px solid var(--line-2);box-shadow:none;border-radius:10px;white-space:nowrap}
@@ -2901,6 +2895,17 @@ window.GA_ID='G-L29P5MRWKE';
   .mc-go:not(:disabled):active{transform:scale(.97)}
   .mc-go:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
   .mc-go:disabled{cursor:default;opacity:.55}
+  /* A DOOR THAT IS SHUT, and it wears the gold every paid thing on this site wears rather
+     than the grey of something broken. .mc-soon is the wrong treatment here and deliberately
+     not reused: it sets pointer-events:none, and a lock a thumb falls straight through is a
+     lock with no way to the thing that opens it. This one is fully pressable and the tap
+     opens the store. */
+  .mc-go-lock{border-color:rgba(226,178,90,.42);background:rgba(38,30,16,.5)}
+  .mc-go-lock b{color:#F3DDAE}
+  .mc-go-lock span{color:rgba(243,221,174,.66)}
+  .mc-go-lock:not(:disabled):hover{background:rgba(52,41,22,.62)}
+  /* Sized off the label it sits in rather than in pixels, so it tracks the 13px name. */
+  .mc-lk{width:1em;height:1em;fill:currentColor;vertical-align:-0.11em;margin-right:5px}
   /* The quiet way past a Resume door, sized like a footnote because it is one. */
   .mc-alt{display:block;margin:9px auto 0;padding:6px 10px;border:0;background:none;
     font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.02em;
@@ -5630,6 +5635,20 @@ window.GA_ID='G-L29P5MRWKE';
   .polog .pl .plsub{display:block;font-style:normal;font-family:var(--fn);font-size:10.5px;
     letter-spacing:.03em;color:var(--line-2);margin-top:2px}
   .polog .pl .w{white-space:normal}
+  /* ---- A CALL IS NOT A DRIVE, and the row has to say so without shouting ----
+     The log is a list of drives and these sit between them: the fourth down somebody decided
+     to keep, the two point try somebody took. Gold, because that is the colour this page
+     already uses for a thing the player did rather than a thing that happened to them, and a
+     left edge because the row is an interruption in a column of drives rather than another
+     one of them. Same weight otherwise: a call that turned a game is worth no more ink than
+     the drive it ended. */
+  .polog .pl.call{border-color:rgba(226,178,90,.42);background:rgba(38,30,16,.5);
+    border-left-width:3px}
+  .polog .pl.call .w{color:#F3DDAE}
+  .polog .pl.call .plsub{color:rgba(243,221,174,.62)}
+  /* The caller's name over the field, in the same gold, so "Adam Gase goes for it" reads as
+     one sentence with the man's name lifted out of it rather than as two. */
+  .bg-narr .cw{color:#F3DDAE;font-weight:800}
   /* The log is long here and the field above it is the thing to keep on screen, so it takes
      a ceiling of its own and scrolls inside it. The playoff log lists six rows and needs
      none of this. */
@@ -6206,6 +6225,43 @@ window.GA_ID='G-L29P5MRWKE';
   .rrow .num{flex:0 0 auto;text-align:right}
   .rrow .num b{display:block;font-family:var(--fn);font-size:15px;line-height:1.1}
   .rrow .num span{display:block;font-size:10.5px;color:var(--dim-2)}
+
+  /* THE SIDE OF THE BALL, over a roster that has both. Quiet: it is a divider rather than a
+     heading, and the twelve names under it are the thing being read. */
+  .rgrp{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--dim-2);margin:12px 0 5px}
+  .rgrp:first-child{margin-top:0}
+  /*
+   * ONE LINE A MAN, for a roster over six. See rdRoster: twelve roomy rows are 648px and the
+   * team stops fitting on a phone. Everything here is the same row with the second line
+   * folded into the first, so nothing moves sideways and the chip colours are untouched.
+   */
+  .rost.tight{gap:4px}
+  .rost.tight .rrow{padding:5px 9px;gap:8px}
+  /* THE WIDTH GOES ON THE WRAP AND NEVER ON THE CHIP. .tagwrap is a flex COLUMN, so a
+     flex-basis on the chip is its HEIGHT: written `flex:0 0 34px` the chip became 34px tall
+     and dragged every row to 46. The base rule has the same shorthand and is saved by
+     `.rrow .tagwrap .tag{flex:0 0 auto}` above it, which this would have tied with on
+     specificity and beaten on order. The wrap stretches the chip to its own width anyway. */
+  .rost.tight .tagwrap{flex:0 0 34px}
+  .rost.tight .tag{font-size:9px;padding:3px 0}
+  /* The name and the club on one baseline. Both shrink, so a long name and a long club share
+     the overflow instead of one of them pushing the price off the row. */
+  .rost.tight .nm{display:flex;align-items:baseline;gap:6px}
+  /* THE CLUB ABSORBS THE OVERFLOW, NOT THE NAME. Given both the same shrink they lose width
+     in proportion to how much they have, so a row 14px too wide cut the name as well as the
+     club and "Adrian Peterson" came out clipped with the year beside it untouched. The name
+     is what the row is for. A very long one still shrinks, after the club has nothing left. */
+  .rost.tight .nm b{font-size:12.5px;flex:0 1 auto;min-width:0}
+  .rost.tight .nm>span{font-size:10.5px;margin-top:0;flex:0 999 auto;min-width:0}
+  /* THE PRICE BESIDE THE SCORE RATHER THAN UNDER IT. Stacked, this column is 28px and is the
+     TALLEST thing in the row, so it and not the name is what sets the row height: on one
+     baseline the row comes down from 40px to 31, which is 108px over twelve men and the
+     difference between fitting on a 740px phone and not. It costs about 12px of width, taken
+     from a name column that was not using it. */
+  .rost.tight .num{display:flex;align-items:baseline;gap:5px}
+  .rost.tight .num b{font-size:13px}
+  .rost.tight .num span{font-size:9.5px}
 
   /* how close to perfect */
   .pgauge{display:flex;align-items:center;gap:14px;margin:4px 0 13px}
@@ -7139,8 +7195,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <p class="comkt" id="co-market"></p>
     <!-- THE OTHER DOOR, and it is the one that hands the scheme back to you. -->
     <button class="btn ghost sm" id="b-coach-none" style="width:100%;margin-top:10px">No coach, I will call it myself</button>
+    <!-- WHAT DECLINING A COACH BUYS. It used to be three dials set before kickoff, which is
+         neither what a coach does nor what calling it yourself means, and measured over 264
+         seasons one of the three did nothing at all. It is the playoff calls now. -->
     <div id="co-planwrap" hidden>
-      <h3 class="display" style="font-size:20px;margin:20px 0 4px">Your game plan</h3>
+      <h3 class="display" style="font-size:20px;margin:20px 0 4px">You are calling it</h3>
       <p class="dim" id="co-planwho" style="font-size:12.5px;margin:0 0 10px"></p>
       <div id="co-plan"></div>
     </div>
@@ -7744,6 +7803,29 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <canvas id="bg-fcanvas" width="600" height="150"></canvas>
     </div>
     <div class="bg-narr" id="bg-narr">The scout is in. Time to play.</div>
+    <!-- ===== WHAT THIS SCREEN WANTS FROM YOU GOES ABOVE THE RECORD OF IT =====
+         The calls and the verdict used to sit UNDER the log, which is capped at 40vh and
+         fills up as the game goes. Measured on a phone with a fourteen drive log: the call
+         box started 775px down an 844px viewport, so a player saw the question and none of
+         the buttons, and at 360x740 it started 14px from the bottom. The Continue button
+         after the final whistle was worse, fully off screen at both widths, which has been
+         true of the boss battle since it shipped. Reported by a player, with a screenshot of
+         a two point call they had to go looking for.
+
+         So the order is the field, what just happened, what to do about it, and only then
+         the record of everything before it. The log is the thing you scroll to; a control
+         the game is waiting on is not. -->
+    <!-- The two live calls, one at a time. Built by bossShowDecision, cleared as each
+         resolves, and answered by the coach instead when one was hired. -->
+    <div class="bg-calls" id="bg-calls"></div>
+    <!-- The result, revealed once the calls are in. -->
+    <div class="bg-done" id="bg-done" hidden>
+      <div class="bg-verdict" id="bg-verdict">
+        <div class="bg-outcome" id="bg-outcome">You win</div>
+        <p class="bg-note" id="bg-note"></p>
+      </div>
+      <button class="btn dock-go" id="b-boss-continue">Continue</button>
+    </div>
     <!-- SIM THE REST. The drives animate one at a time and a boss battle is the longest
          watch in the mode, so there has to be a way to get to the result. It does NOT take
          the calls: fourth down and the two point try are what a boss battle IS, so it runs
@@ -7757,16 +7839,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          same shape and the same classes the playoff log uses, because a player meeting the
          two on one evening should not have to learn a second layout. -->
     <div class="polog bg-log" id="bg-log"></div>
-    <!-- The two live calls, one at a time. Built by bossAsk, cleared as each resolves. -->
-    <div class="bg-calls" id="bg-calls"></div>
-    <!-- The result, revealed once the calls are in. -->
-    <div class="bg-done" id="bg-done" hidden>
-      <div class="bg-verdict" id="bg-verdict">
-        <div class="bg-outcome" id="bg-outcome">You win</div>
-        <p class="bg-note" id="bg-note"></p>
-      </div>
-      <button class="btn dock-go" id="b-boss-continue">Continue</button>
-    </div>
   </div>
 
   <!-- THE MANDATE BRIEFING (the odd milestones: 3, 9, 15). Its own beat between the results
@@ -7963,8 +8035,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=93"></script>
-<script src="run.js?v=99"></script>
+<script src="engine.js?v=97"></script>
+<script src="run.js?v=102"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -8288,6 +8360,23 @@ const canPlayClubDynasty=()=>{
   if(!A||typeof A.isTester!=='function') return false;
   return !!(A.isTester(authState.name)||A.isTesterId(authState.userId));
 };
+/*
+ * WHO SEES ONE FRANCHISE DYNASTY, WHICH IS NOT WHO CAN OPEN IT.
+ *
+ * The Commish door's rule, arriving at the one paid mode on this page. The two were one
+ * function, so a free account and a guest got no Dynasty half of the One Franchise card at
+ * all: no door, no lock, no mention. The only way to find out the mode exists was to buy the
+ * bundle and read the receipt, or to be on the tester list. That is the wall the college
+ * front page's card was added to knock down, standing on this page instead.
+ *
+ * SO IT IS DRAWN FOR EVERYBODY AND IT OPENS FOR OWNERS. A non-owner gets the same door
+ * wearing a lock, and pressing it opens the sheet that sells it, which is where that tap was
+ * always going to end. Nothing is HIDDEN that cannot be pressed: the lock is the point.
+ *
+ * canPlayDynasty() rather than true, because a mode nobody can see at all should not sprout
+ * a locked door for its own variant. That flag is LIVE today, so this is everybody.
+ */
+const clubDynastyShow=()=>canPlayDynasty();
 /* WHAT THE ACCOUNT OWNS, from the database rather than any list in a page, which is the
    rule dynasty-access.js sets for itself: a shipped list is a feature flag and never a
    permission. premium_products() (supabase/101_premium_bundles.sql) answers as the
@@ -8791,7 +8880,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=48;
+const NEED_VERSION=51;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -8924,11 +9013,14 @@ const topAward=(p)=>(p&&p.awards&&p.awards.length)?p.awards[0]:null;
 
    It says RB now, and the slot goes underneath in small type where it is a note rather than
    a heading. Both facts are still on screen and the loud one is the one you sort by. */
-function slotTag(slot,pos){
+/* `noSub` drops the slot note, for a caller that has somewhere better to put it. The note is
+   a second line inside the chip's column, and on a list whose rows are one line tall it is
+   the only thing that makes two of twelve rows taller than the other ten. */
+function slotTag(slot,pos,noSub){
   const p=pos||slot;
   const flex=slot&&pos&&slot!==pos;
   return '<span class="tagwrap"><span class="tag" style="'+posPaint(p)+'">'+esc(p)+'</span>'+
-    (flex?'<span class="tagsub">'+esc(slot)+'</span>':'')+'</span>';
+    (flex&&!noSub?'<span class="tagsub">'+esc(slot)+'</span>':'')+'</span>';
 }
 /* THE ROSTER READ AS POSITIONS, which is not the same as read as slots.
 
@@ -8942,16 +9034,48 @@ function slotTag(slot,pos){
    true running back ahead of the flex running back and leaves the two receivers in their own
    order. Whatever side of the ball it is: the order is taken from the positions present
    rather than from a list, so a defense reads DL LB DB without this function knowing that. */
+/*
+ * WHICH SLOT LIST A ROSTER WAS BUILT ON, read off the men and never off the run, because a
+ * row opened from the leaderboard is somebody else's and carries no mode. Six offensive
+ * slots, six defensive ones, or Full Team's interleaved twelve.
+ *
+ * FLEX IS IN ALL THREE, so it cannot be what decides. The question is asked of the slots
+ * that belong to one side only.
+ */
+const OFF_ONLY_SLOTS=['QB','RB','WR','TE'], DEF_ONLY_SLOTS=['DL','LB','DB'];
+function slotListFor(men){
+  const slots=men.map(m=>m.slot).filter(Boolean);
+  const d=slots.some(s=>DEF_ONLY_SLOTS.includes(s));
+  const o=slots.some(s=>OFF_ONLY_SLOTS.includes(s));
+  if(d&&o) return E.FULL_SLOTS;
+  if(d) return E.DEFENSE_SLOTS;
+  return E.SLOTS;
+}
+/*
+ * ORDERED BY POSITION, OFFENSE FIRST AND THEN DEFENSE.
+ *
+ * IT PICKED ONE SIDE'S LIST AND FULL TEAM HAS BOTH, which is the bug this shape replaces.
+ * The old rule was "any defender present, use the defensive list", so on a twelve man roster
+ * every offensive player fell to the not-in-the-list rank and the whole offense was filed
+ * behind the defense in whatever order the tie-break left. Reported by a player looking at a
+ * 20-0 Full Team run on the leaderboard.
+ *
+ * THE TIE-BREAK WAS READING THE WRONG SLOT LIST TOO, and that one is subtler. It was always
+ * E.SLOTS, the six man offensive list, in which DB does not appear and FLEX does: so a DB in
+ * the flex spot ranked 5 and the two real defensive backs ranked not-found, and the flex man
+ * was printed ahead of the starters he is the reserve for. Against FULL_SLOTS the real backs
+ * are at 7 and the flex is at 10, which is the order the draft actually filled them in.
+ */
 function byPositionOrder(men){
-  const order=(men.some(m=>m.p&&['DL','LB','DB'].includes(m.p.position))
-    ? (E.DEFENSE_POSITIONS||['DL','LB','DB'])
-    : OFFENSE_POSITIONS);
-  const slotOrder=E.SLOTS.slice();
+  const D=E.DEFENSE_POSITIONS||['DL','LB','DB'];
+  const slotOrder=slotListFor(men);
   const rank=(m)=>{
-    const i=order.indexOf(m.p&&m.p.position);
-    /* A man whose position is not in the list sorts last rather than first, which is what
-       an unknown would do with indexOf's -1. */
-    return i<0?99:i;
+    /* A man this browser could not look up has no side and no position, so he sorts last
+       rather than first, which is what an unknown would do with indexOf's -1. */
+    if(!m.p) return 999;
+    const d=D.includes(m.p.position);
+    const i=(d?D:OFFENSE_POSITIONS).indexOf(m.p.position);
+    return (d?100:0)+(i<0?99:i);
   };
   const slotRank=(m)=>{
     const i=slotOrder.indexOf(m.slot);
@@ -8960,10 +9084,12 @@ function byPositionOrder(men){
   return men.slice().sort((a,b)=>rank(a)-rank(b)||slotRank(a)-slotRank(b));
 }
 
-/* Roster order, always QB RB WR WR TE FLEX, whatever order the picks were made in.
-   Duplicated slots are consumed left to right, so the two receivers keep their own places. */
+/* Roster order, always the slot list this roster was built on, whatever order the picks were
+   made in. Duplicated slots are consumed left to right, so the two receivers keep their own
+   places. It read E.SLOTS outright, which is the six man offensive list: handed Full Team's
+   twelve it recognised five of them and concatenated the other seven in pick order. */
 function bySlotOrder(men){
-  const order=E.SLOTS.slice();
+  const order=slotListFor(men);
   const out=[];
   const rest=men.slice();
   for(const slot of order){
@@ -12719,15 +12845,33 @@ function modeMenu(){
   /* A shield with the star cut out of it rather than drawn inside it, so the mark is one
      shape and the detail is the gradient showing through. Named because the One Franchise
      card is now drawn two ways and the icon is the half they share. */
+  /* A PADLOCK, drawn rather than fetched for the reason the store's artwork is: a few hundred
+     bytes of path data inherits the page's colour and cannot 404. Solid body with the shackle
+     as a stroked arc, because at 11px an outlined body is two thin rectangles and no shape. */
+  const MC_LOCK='<svg class="mc-lk" viewBox="0 0 24 24" aria-hidden="true">'+
+    '<path fill="none" stroke="currentColor" stroke-width="2.4" '+
+      'd="M7.6 10.4V7a4.4 4.4 0 0 1 8.8 0v3.4"/>'+
+    '<rect x="4.2" y="10.2" width="15.6" height="11.6" rx="2.4"/></svg>';
   const MC_SHIELD='<svg viewBox="0 0 24 24">'+
     '<path fill-rule="evenodd" d="M12 1.6 2.4 6.6v6.6c0 5.7 4.1 11 9.6 12.3 5.5-1.3 '+
       '9.6-6.6 9.6-12.3V6.6L12 1.6Zm0 5.2 1.6 3.5 3.8.4-2.8 2.6.8 3.8L12 15.2l-3.4 '+
       '1.9.8-3.8-2.8-2.6 3.8-.4L12 6.8Z"/></svg>';
   const ct=canPlayTrade();
-  const cd=canPlayClubDynasty();
+  /* TWO ANSWERS, NOT ONE. cd is whether the split card is DRAWN, cdOn is whether its Dynasty
+     door OPENS. See clubDynastyShow: they were the same function, and a free account got no
+     sign the mode existed. */
+  const cd=clubDynastyShow();
+  const cdOn=canPlayClubDynasty();
   /* Read once, because the card's copy and its handler both need the same answer and a
-     second read between them could disagree. */
+     second read between them could disagree.
+     READ WITHOUT ASKING WHO OWNS WHAT, which is dynResume's own rule: a run in progress is
+     never gated. Anybody holding a saved One Franchise dynasty gets it back, whatever the
+     row says today, because a tester list that shortens or a lapse of any kind must never be
+     the thing that takes a career somebody played. What ownership decides is STARTING one. */
   const clubSave=cd?dynRead('club'):null;
+  /* The Dynasty door is a lock when the mode is visible, not owned, and there is no run of it
+     to get back into. */
+  const cdLock=cd&&!cdOn&&!clubSave;
   const tradeLocked=locked||!ct;
   /* THE DAY, ASKED THE MOMENT THIS SHEET OPENS rather than when the card is pressed. The
      answer is a round trip, and a card that has to make one before it can say "used today"
@@ -12768,11 +12912,17 @@ function modeMenu(){
                  reason to offer it back rather than a reason to be warned. It names the club
                  and the season, because the whole point of the second slot is that this run
                  and the open one are two different things. */
-              '<button class="mc-go mc-go-dyn" id="b-mc-clubdyn"'+(locked?' disabled':'')+'>'+
+              '<button class="mc-go mc-go-dyn'+(cdLock?' mc-go-lock':'')+'" id="b-mc-clubdyn"'+
+                (locked?' disabled':'')+'>'+
                 (clubSave
                   ? '<b>Resume</b><span>'+esc(E.nickname(clubSave.run.franchise)||clubSave.run.franchise)+
                     ' &middot; Season '+clubSave.run.seasonNo+'</span>'
-                  : '<b>Dynasty</b><span>Season after season</span>')+
+                  /* THE LOCK SAYS WHAT IT IS AND WHAT OPENS IT, in the two lines the door
+                     already has. A padlock on its own is a closed sign; "Pro" is the word the
+                     store uses for the thing that opens it, so it is the word here. */
+                  : (cdLock
+                    ? '<b>'+MC_LOCK+'Dynasty</b><span>Pro</span>'
+                    : '<b>Dynasty</b><span>Season after season</span>'))+
               '</button>'+
             '</div>'+
             /* THE WAY TO A DIFFERENT CLUB, and it only exists while there is a run in the
@@ -12900,15 +13050,28 @@ function modeMenu(){
   if(club&&!locked) club.onclick=()=>{ closeSheet(); clubPicker(false); };
   const clubDyn=$('b-mc-clubdyn');
   if(clubDyn&&!locked&&cd) clubDyn.onclick=()=>{
+    /* RESUME FIRST AND WITHOUT A GATE, for the reason written out in dynResume: the day's
+       allowance and now the row both decide whether a run may START, and neither decides
+       whether one already played may be opened. Read first so it wins over the lock: a
+       button saying Resume that does not resume is a lie on the screen, and it was one once
+       already when ownership sat in front of it. */
+    if(clubSave){ closeSheet(); dynResume('club'); return; }
+    /* AND A SHUT DOOR OFFERS THE BUNDLE rather than doing nothing. This is the one tap on
+       this page that is taken and repainted, and the rule the college front page settled is
+       that it is only right when the door is GENUINELY shut. It is: a new One Franchise
+       Dynasty is what ps_premium buys, and the sheet this opens itemises it by name.
+       No closeSheet, because premiumSheet writes into the pane that is already open. */
+    if(cdLock){ ga('club_dynasty_locked',{signed:!!authState.signedIn}); premiumSheet(); return; }
     closeSheet();
-    /* NO OWNERSHIP GATE, for the reason written out in beginDynastyDraft: the day's
-       allowance decides, and it is checked there, once, for every way into the mode.
-       This one was worse than the open door's, because it sat in front of RESUME as well:
-       a saved One Franchise run could not be opened by the player who made it. */
-    if(clubSave) dynResume('club'); else clubPicker(true);
+    clubPicker(true);
   };
   const clubNew=$('b-mc-clubnew');
   if(clubNew&&!locked&&cd) clubNew.onclick=()=>{
+    /* A DIFFERENT CLUB IS A NEW RUN, so it is the paid action and not the resumed one. This
+       button only exists under a save, and a save is what keeps the door above it open for a
+       non-owner: without this the one route a lapsed or comped account has back into
+       STARTING one would be the footnote under their own Resume. */
+    if(!cdOn){ ga('club_dynasty_locked',{signed:!!authState.signedIn}); premiumSheet(); return; }
     closeSheet();
     clubPicker(true);
   };
@@ -14745,41 +14908,58 @@ function paintCoach(){
   show('s-coach');
 }
 
-/* THE PLAN EDITOR IS ONLY YOURS WHEN NOBODY IS COACHING, which is the whole trade on this
-   screen: pay for a man who knows what he is doing and play his way, or keep the money and
-   call it yourself. */
+/*
+ * WHAT DECLINING A COACH ACTUALLY BUYS, on the screen where the trade is made.
+ *
+ * IT USED TO BE A PLAN EDITOR: three dials, tempo and fourth down and pressure, set once
+ * before the season. That is not what calling it yourself means, and it was barely a decision
+ * either. Measured over 264 seasons an axis at a time, tempo is exactly inert (78.3% of games
+ * at all three settings, because it multiplies both scores) and the other two have one right
+ * answer each. So the screen was asking three questions, one of which did nothing and two of
+ * which had a dominant answer.
+ *
+ * IT IS THE PLAYOFF CALLS NOW. See liveCalls() and playLivePlayoffGame: an uncoached Full
+ * Team roster plays its January games forward and is asked the real fourth downs and the real
+ * two point tries, on the boss battle's board. Pay for a man who knows what he is doing and
+ * play his way, or keep the money and make the calls in the game.
+ */
 function paintPlan(){
   const wrap=$('co-planwrap');
   const hired=!!(run&&run.coach);
-  /* SHOWN ONLY AFTER DECLINING. Editable before a decision it would invite somebody to set
-     a plan and then hire a coach who overwrites it, which is the same "hire him and overrule
-     him" muddle from the other direction. Browse, decide, and then the plan is either his or
-     yours. */
+  /* SHOWN ONLY AFTER DECLINING, which is unchanged and is still right: before a decision it
+     would be describing something that may not happen, and the grid above is what the reader
+     is working through. Browse, decide, and then the calls are either his or yours. */
   if(wrap) wrap.hidden=hired||!run.coachDecided;
+  /*
+   * AND THE WAY OUT SHUTS ONCE SOMEBODY IS HIRED.
+   *
+   * Nothing hid this button, so after a hire the screen carried "No coach, I will call it
+   * myself" directly under the man you had just paid for. It works (hireCoach refunds the
+   * previous hire through remaining(), so pressing it gives the money back), and that is
+   * exactly why it read as a leftover rather than a control: the screen was offering to
+   * undo a decision it had just asked you to confirm.
+   *
+   * The grid stays live, so changing your mind BETWEEN coaches is unaffected. What is gone
+   * is going back to nobody after hiring, which is the one direction that contradicts the
+   * confirmation sheet.
+   */
+  const none=$('b-coach-none');
+  if(none) none.hidden=hired;
   /* THE WAY OUT OPENS ONCE A DECISION HAS BEEN MADE, and declining is a decision. It also
      opens when nobody is affordable, because then there was nothing to decide. */
   const go=$('b-coach-go');
   if(go) go.hidden=!(run.coachDecided||!coMarket.length);
   const who=$('co-planwho');
-  if(who) who.textContent=run.coachDecided
-    ? 'Nobody is calling this but you. Each choice costs what it gives.'
-    : 'Three choices, and each one costs what it gives.';
+  if(who) who.textContent='Nobody is calling this but you.';
   if(hired) return;
-  let h='';
-  PLAN_UI.forEach((ax)=>{
-    h+='<div class="pl-ax"><span class="pl-nm">'+ax.nm+'</span><span class="pl-opts">'+
-      ax.opts.map(([v,lbl])=>'<button class="pl-b'+((run.plan&&run.plan[ax.k])===v?' on':'')+
-        '" data-k="'+ax.k+'" data-v="'+v+'">'+esc(lbl)+'</button>').join('')+
-      '</span></div>';
-  });
-  $('co-plan').innerHTML=h;
-  $('co-plan').onclick=(e)=>{
-    const b=e.target.closest('.pl-b'); if(!b) return;
-    const next={...(run.plan||{})}; next[b.dataset.k]=+b.dataset.v;
-    try{ R.setPlan(run,next); }catch(err){ toast(err.message); return; }
-    ga('plan_set',{axis:b.dataset.k,value:+b.dataset.v});
-    paintPlan();
-  };
+  /* THE PROMISE, AND WHEN IT COMES DUE. Seventeen Sundays play themselves whoever is in
+     charge, so saying so is what stops the first uncoached week reading as a broken promise.
+     The two calls are named because they are the two the game actually stops for. */
+  $('co-plan').innerHTML='<ul class="modenotes">'+
+    '<li><b>The regular season plays itself.</b> Seventeen games, your roster, no plan set in advance.</li>'+
+    '<li><b>Every playoff game stops for you.</b> Fourth down, and the two point try, in the situation the game is really in.</li>'+
+    '<li>Hire a coach instead and he makes those calls.</li>'+
+    '</ul>';
 }
 
 /* ONE TAP OPENS THE MAN, and the confirmation sheet IS his detail view: it already carries
@@ -14978,8 +15158,13 @@ function paintCoachLine(id){
         (knows.length>3?'<div class="cok"><b>+'+(knows.length-3)+'</b><span>more on this roster</span></div>':'')+
         '</div>'
       : '')+
-    '<div class="rp-head"><span>Game plan</span></div>'+
-    '<p class="dim" style="font-size:12.5px;margin:0 0 10px">'+planWords(run.plan)+'</p>';
+    /* TWO DIFFERENT FACTS, so two different headings. A coached team has a plan, set by him
+       before kickoff, and this line is what it says. An uncoached team has no plan at all any
+       more: what it has is four games that stop and ask. See liveCalls(). */
+    '<div class="rp-head"><span>'+(c?'Game plan':'The calls')+'</span></div>'+
+    '<p class="dim" style="font-size:12.5px;margin:0 0 10px">'+
+      (c?planWords(run.plan)
+        :'Every playoff game stops for you. Fourth down, and the two point try.')+'</p>';
 }
 
 /* NOTHING LEFT TO SIGN, which in Dynasty means the money ran out rather than the
@@ -18347,6 +18532,18 @@ const PACE={
   'Conference Championship':  {quarterMs:2500, hold:900,  qbreak:380, half:700},
   'Super Bowl':              {quarterMs:3100, hold:1080, qbreak:460, half:900},
 };
+/*
+ * AND THE SAME LADDER FOR THE BOARD THAT PLAYS FORWARD, as a multiplier on its own pace.
+ *
+ * Solved against the table above rather than chosen: the resolved broadcast runs 13.4, 17.5,
+ * 21.1 and 25.7 seconds over the four rounds, and these land the live board on 16.0, 19.1,
+ * 22.4 and 26.0. A whole postseason goes from 231.7 seconds to 83.5 against the resolved
+ * 77.6. The Wild Card is the one that misses, by 2.6 seconds, and it misses because of the
+ * absolute floors bossPace carries rather than because of this number: taking it lower buys
+ * nothing, because the floors are already what that round is made of.
+ */
+const LIVE_PACE={'Wild Card':0.18,'Divisional':0.25,
+  'Conference Championship':0.31,'Super Bowl':0.40};
 const QNAME=['1ST','2ND','3RD','4TH'];
 const clockText=(sec)=>Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
 
@@ -18605,7 +18802,16 @@ function generateDrives(script,rng,opts){
    treatment came from. */
 const fieldLogo=new Image(); fieldLogo.src='field-r.png?v=1';
 
-function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName){
+/*
+ * `anchor` IS OPTIONAL AND ONLY THE BOSS BOARD PASSES IT: {t, y}, the moment and the absolute
+ * yard the drive in progress was last drawn at. A drive's bar is a straight sweep from the
+ * line of scrimmage to wherever the drive ends up, which is honest for a drive drawn in one
+ * go and wrong for one that stops half way for a fourth down call: the sweep does not pass
+ * through the spot the ball was actually stopped at, so resuming without an anchor jumped the
+ * bar seventeen yards down the field at the moment the call was taken. Given one, the tail
+ * sweeps from where the reader was left instead.
+ */
+function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,anchor){
   if(!ctx)return;
   const dpr=window.devicePixelRatio||1;
   ctx.save();ctx.clearRect(0,0,w,h);
@@ -18706,8 +18912,9 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
        stop at the front of the end zone, not inside it */
     let drawEnd=Math.max(0,Math.min(100,d.endYard));
     if(isActive){
-      const p=Math.min(1,(upTo-d.tStart)/Math.max(1,d.tEnd-d.tStart));
-      drawEnd=d.startYard+(d.endYard-d.startYard)*p;
+      const t0=anchor?anchor.t:d.tStart, y0=anchor?anchor.y:d.startYard;
+      const p=Math.max(0,Math.min(1,(upTo-t0)/Math.max(1,d.tEnd-t0)));
+      drawEnd=y0+(d.endYard-y0)*p;
     }
     const clampStart=Math.max(0,Math.min(100,d.startYard));
     drawEnd=Math.max(0,Math.min(100,drawEnd));
@@ -19065,21 +19272,132 @@ function playPlayoffGame(r,after){
   next();
 }
 
+/*
+ * ─── THE PLAYOFFS, PLAYED FORWARD, AND SOMEBODY CALLS THEM ───────────────────────────
+ *
+ * EVERY Full Team playoff game plays FORWARD on the boss battle's board, drive by drive, and
+ * stops at the two real calls: fourth down, and the two point try. What the hire decides is
+ * WHO ANSWERS. No coach and the reader is asked. A coach and he answers, and the screen says
+ * what he decided before it plays it.
+ *
+ * WHY THIS MODE AND NOT THE OTHERS. Hiring a coach is the one decision Full Team ends its
+ * draft on, and "no coach" used to buy a game plan editor: three dials set once, before the
+ * season, which is neither what a coach does nor what calling it yourself means. Measured
+ * over 264 seasons an axis at a time, it was not much of a decision either: tempo is exactly
+ * inert (78.3% of games at all three settings, because it multiplies both scores), and the
+ * other two have one right answer each. Three dials, one dead and two with a dominant
+ * setting, standing in for the thing the player asked for.
+ *
+ * AND A COACH WHO ONLY EVER MOVED A MULTIPLIER WAS THE SAME PROBLEM WEARING A NAME. He cost
+ * real money, the hire sheet described his philosophy in as many words, and then nothing on
+ * any screen ever showed him doing anything. Reported as wanting to be told when he goes for
+ * two and fails. The only way that sentence can be true is if he is really making the call,
+ * so he is: fullCoachCall answers off his plan, deterministically, and the log keeps every
+ * one of them.
+ *
+ * WHAT IT COSTS, said plainly. The dials are gone for an uncoached team, so its regular
+ * season runs on a neutral plan: all conservative was worth about 1.9 points of win rate over
+ * seventeen games. And BOTH readers now lose the playoff broadcast and, with it, the playoff
+ * box score, because a forward sim scores on drives rather than by sampling each man and a
+ * per-player column here would be invented. The regular season keeps both.
+ */
+function livePlayoffs(){ return !!(run&&run.full); }
+function coachCalls(){ return !!(run&&run.full&&run.coach); }
+
+/* THE GAME, BUILT FROM THE SAME ANSWER advanceWeek WOULD HAVE USED. R.nextGame names the
+   opponent and the home field and changes nothing, so the game played here is the game the
+   mode is balanced for rather than a second reading of it. */
+function playLivePlayoffGame(idx,done){
+  const g=R.nextGame(run,dataNow(),LEAGUE);
+  const o=g.opp;
+  /* NO OPPONENT, NO LIVE GAME. Falling through to the resolver is the right failure here: a
+     round that cannot be drawn must never be a round that cannot be played. */
+  if(!o){ playResolvedPlayoffGame(idx,done); return; }
+  const round=g.roundName||'Playoffs';
+  /* SEEDED ON THE ROUND rather than on a live closure, so the run resumes the same way it
+     does everywhere else. The calls still branch it: bossSimResolve draws from this stream
+     too, so a different call is a different game from that play on. */
+  const rng=E.createSeededRNG(E.hashSeed('fullpo|'+run.seed+'|'+round));
+  /* THE COACH AND HIS PLAN GO INTO THE SIM, exactly as advanceWeek hands them to the
+     resolver. A roster worth more with him has to be worth more here too, or the hire would
+     pay for seventeen weeks and nothing in January. */
+  const extra={coach:run.coach||null,plan:run.plan||null};
+  const sim=E.fullSimCreate(run.roster,g.chem,o,g.leagueAvgAllowed,g.advantage,
+    E.CONSTANTS,CAL,extra);
+  const coach=coachCalls()?run.coach:null;
+  liveBoard(o,sim,rng,{
+    eyebrow:round+seasonTag(),
+    state:ROUND_SHORT[round]||'LIVE',
+    rec:(run.season.wins||0)+'-'+(run.season.losses||0),
+    oppRec:'<i class="yr">'+o.season+'</i>'+esc(o.record||''),
+    narr:coach?(esc(coach.name)+' has the headset. Kickoff.')
+      :'Nobody is calling this but you. Kickoff.',
+    caller:coach?coach.name:'You',
+    /* The round's own pace, and the fallback is the first rung rather than 1: an unknown
+       round here is a naming slip, and the boss battle's pace on a playoff game is the
+       defect this table exists to fix. */
+    pace:LIVE_PACE[round]||LIVE_PACE['Wild Card'],
+    autoCall:coach?((d)=>E.fullCoachCall(d,run.plan)):null,
+    onOver:(ev)=>livePlayoffOver(ev,idx,done),
+  });
+}
+
+/* THE FINAL WHISTLE. The game above IS the result, so this records it and opens the door to
+   whatever comes next: the round after it, or the season's own results screen. */
+function livePlayoffOver(ev,idx,done){
+  bossStop();
+  const o=bossOppNow;
+  if($('bg-skip')) $('bg-skip').hidden=true;
+  $('bg-state').textContent='FINAL'; $('bg-q').textContent='FINAL';
+  $('bg-ck').textContent=ev.won?'YOU WIN':'YOU LOSE';
+  bossRenderScore(); bossDraw(3600,false);
+  $('bg-calls').hidden=true;
+  /* RECORDED, NOT DECIDED. advanceWeek takes the score this screen produced, files it as the
+     round's result, advances the bracket and ends the run on a loss. See its `pre` note. */
+  const r=R.advanceWeek(run,dataNow(),LEAGUE,CAL,
+    {you:bossSim.you,them:bossSim.them,won:!!ev.won});
+  paintCalendar(r);
+  nbrkSettleMine(idx,!!ev.won);
+  const more=run.phase===R.PHASES.PLAYOFFS;
+  const next=more?(run.playoffSeed.roundNames[run.season.playoffRound]||'The next round'):'';
+  const vd=$('bg-verdict'); vd.className='bg-verdict '+(ev.won?'won':'lost');
+  $('bg-outcome').textContent=ev.won?'You win':'You lose';
+  $('bg-note').textContent=ev.won
+    ? (more?'You beat '+o.display+'. '+next+' next.':'You beat '+o.display+'. The ring is yours.')
+    : o.display+' ended your season.';
+  const cont=$('b-boss-continue');
+  cont.textContent=more?'Play '+next:'See the season';
+  cont.onclick=()=>done();
+  /* The club's own colours, never the gold. Gold belongs to the results screen on the far
+     side of a title, and firing it here would spend it a screen early and then again. */
+  if(ev.won) afterPaint(()=>fireConfetti(confettiTheme(false)));
+  ga('full_live_playoff',{round:r.round||'',won:!!ev.won,
+    you:bossSim.you,them:bossSim.them,drives:bossSim.drives.length});
+  $('bg-done').hidden=false;
+}
+
+/* The ordinary route: the engine settles the game and the broadcast animates it. */
+function playResolvedPlayoffGame(idx,done){
+  const r=R.advanceWeek(run,dataNow(),LEAGUE,CAL);
+  paintCalendar(r);
+  nbrkSettleMine(idx,!!r.won);
+  playPlayoffGame(r,done);
+}
+
 /* Play the rounds one at a time, each waiting for the last to finish. */
 function runPlayoffs(){
   const step=()=>{
     if(run.phase!==R.PHASES.PLAYOFFS){ after(); return; }
-    const round=run.season.playoffRound;
-    const r=R.advanceWeek(run,dataNow(),LEAGUE,CAL);
-    paintCalendar(r);
-    /* THE BRACKET FIRST, THEN THE GAME. advanceWeek has already settled the result, so
-       what the bracket animates is the rest of the field catching up to where the player
-       is; their own game is left standing and handed to the broadcast to decide on
-       screen. Settled straight afterwards so the next round draws it correctly. */
-    const idx=nbrkFirstRound()+round;
+    const idx=nbrkFirstRound()+run.season.playoffRound;
+    /* THE BRACKET FIRST, THEN THE GAME, on both routes and for two different reasons. On the
+       resolved one the result already exists, so what the bracket animates is the rest of the
+       field catching up to where the player is; their own game is left standing and handed to
+       the broadcast to decide on screen. On the live one the result does not exist yet, which
+       is the same thing from the other side. Neither the pairings nor the opponent read the
+       run's results, so the bracket draws identically either way. */
     nbrkShow(idx,()=>{
-      nbrkSettleMine(idx,!!r.won);
-      playPlayoffGame(r,step);
+      if(livePlayoffs()) playLivePlayoffGame(idx,step);
+      else playResolvedPlayoffGame(idx,step);
     });
   };
   step();
@@ -19702,7 +20020,21 @@ function mandateBriefing(){
  */
 let bossSim=null, bossRng=null, bossSpecNow=null, bossOppNow=null;
 let bossField=null, bossFcv=null, bossYouCol='#3a7bd5', bossThemCol='#e87461';
-let bossShown=0, bossTimer=null, bossRaf=0;
+/*
+ * TWO COUNTERS, AND THEY ANSWER DIFFERENT QUESTIONS.
+ *
+ * bossShown is how many COMPLETED drives have been animated, so it indexes sim.drives.
+ * bossShownTo is the game clock the FIELD has been drawn up to, which is a finer thing: a
+ * drive stops mid-way for a fourth down call, so the picture can be part way through a drive
+ * that bossShown has not counted yet.
+ *
+ * Without the second one the screen had no memory of that, and it showed. A fourth down
+ * arrived with the drive it belongs to never drawn at all, so a march the reader had watched
+ * nothing of stopped for a decision about it, and then, once the drive finally ended,
+ * bossAnimateDrive replayed it from its own tStart and ran the clock BACKWARDS to do it.
+ * Reported by a player as the calls not lining up with the picture.
+ */
+let bossShown=0, bossShownTo=0, bossLiveY=null, bossTimer=null, bossRaf=0;
 
 function bossOppRow(){ const b=R.bossFor(run); return b?DATA.byTeamSeasonId[b.team_season_id]:null; }
 function bossThreeLetter(o){
@@ -19727,6 +20059,29 @@ function bossThreeLetter(o){
  * too.
  */
 let bossFast=false;
+/*
+ * HOW FAST THE FOOTBALL RUNS, and it is a property of the BOARD rather than of the sim.
+ *
+ * A boss battle is one season in six and the thing a dynasty builds toward, so it is paced to
+ * be watched: that is bossPace 1, and every number below is written at it. A Full Team
+ * postseason is the same board four times in a row and is measured against the quick draft's
+ * broadcast, which the PACE table above runs in 13 seconds for a Wild Card and 26 for a Super
+ * Bowl. Played at the boss battle's pace it took 58 seconds A ROUND, flat, so a whole
+ * postseason ran 3.9 minutes against the quick draft's 1.3, and the Super Bowl was paced
+ * exactly like the Wild Card. Reported by a player asking for it to go faster.
+ *
+ * IT SCALES THE FOOTBALL AND NEVER THE CALLS, which is bossFast's own rule. The beat that
+ * shows what a coach decided, and the one that shows how it turned out, are the mode rather
+ * than pacing: hurried, they would take back the thing the calls were added for.
+ *
+ * AND THREE FLOORS ARE ABSOLUTE, because what they protect is a number of FRAMES and no
+ * round's pace gets a vote on that. A drive has to read as a bar sweeping across the field
+ * rather than a bar appearing, the run-up to a fourth down is the drive the call is about,
+ * and a touchdown that is gone before the number under it has finished moving is what this
+ * screen was asked to stop doing. They are what stop the Wild Card going below about 16
+ * seconds, which is 2.6 over its resolved counterpart and the honest limit of this.
+ */
+let bossPace=1;
 function bossStop(){ clearTimeout(bossTimer); cancelAnimationFrame(bossRaf); }
 function bossRenderScore(){
   $('bg-syou').textContent=bossSim.you; $('bg-sthem').textContent=bossSim.them;
@@ -19739,17 +20094,24 @@ function bossSetClock(elapsed){
   $('bg-ck').textContent=clockText(Math.max(0,900-(elapsed-(q-1)*900)));
 }
 /* Draw the completed drives up to a time, optionally with the drive in progress laid on top
-   so a fourth-down decision shows the ball where it actually is. */
-function bossDraw(upTo,live){
+   so a fourth-down decision shows the ball where it actually is.
+ *
+ * THE LIVE DRIVE ENDS AT THE SIM'S CLOCK, NEVER AT upTo, and that one word is what lets the
+ * bar GROW. drawDriveChart calls a drive active while its tEnd is still ahead of upTo and
+ * interpolates the bar across that span; handed tEnd:upTo it was never active, so it snapped
+ * to wherever the ball is now on every frame and the drive in progress could only ever appear
+ * all at once. sim.clock is where the ball has actually got to, so asking for an earlier upTo
+ * now draws the march part way. */
+function bossDraw(upTo,live,anchor){
   if(!bossField) return;
   let ds=bossSim.drives;
   if(live){
     const c=bossSim.cur;
     if(c) ds=ds.concat([{team:c.team,startYard:c.startAbs,
-      endYard:E_absYard(c.team,c.y),result:'live',tStart:c.tStart,tEnd:upTo}]);
+      endYard:E_absYard(c.team,c.y),result:'live',tStart:c.tStart,tEnd:bossSim.clock}]);
   }
   drawDriveChart(bossField,bossFcv.width,bossFcv.height,ds,upTo,bossYouCol,bossThemCol,
-    'YOU',bossThreeLetter(bossOppNow));
+    'YOU',bossThreeLetter(bossOppNow),anchor||null);
 }
 /* Absolute yard, mirrored for the boss, matching the engine's own frame. */
 function E_absYard(team,y){ const v=team==='you'?y:100-y; return Math.max(0,Math.min(100,v)); }
@@ -19782,6 +20144,70 @@ function bossScout(){
   show('s-bscout');
 }
 
+/*
+ * THE BOARD BOTH FORWARD-PLAYED GAMES SHARE.
+ *
+ * bossPlay built this screen inline, and a Full Team playoff game played forward wants every
+ * line of it: the same drive chart, the same score bug and clock, the same log, the same Sim
+ * the rest, the same two calls. What differs is the sim handed in, the eyebrow, the word in
+ * the state cell, the sentence over the field and what happens at the final whistle.
+ *
+ * Written once rather than copied, because a screen that exists twice is a screen that says
+ * two different things about the same game within a year. See the four premium cards.
+ */
+/*
+ * WHO ANSWERS THE TWO CALLS, and it is a handle rather than a question asked at the desk.
+ *
+ * `bossAutoCall` null means the reader is asked: buttons, and the game waits. Set, it is a
+ * function from the sim's own decision to one of its choices, and the screen prints what
+ * was decided and plays it. Passed IN by whoever built the board rather than read off the
+ * run, so the boss battle cannot start answering for somebody by accident: a dynasty is not
+ * a full team and never sets it, and that is true by construction here instead of by a
+ * condition somebody has to keep correct in two places.
+ */
+let bossOnOver=null, bossAutoCall=null, bossCallerName='You';
+function liveBoard(o,sim,rng,opts){
+  bossStop();
+  bossSim=sim; bossRng=rng; bossOppNow=o; bossShown=0; bossShownTo=0; bossLiveY=null;
+  bossOnOver=opts.onOver||null;
+  bossAutoCall=opts.autoCall||null;
+  bossCallerName=opts.caller||'You';
+  /* The bug and field colors, the same way the playoffs pick them: your side the game's blue
+     (or your club), the opponent their real color, nudged apart if they collide on the field. */
+  const them=E.washColors(o.franchise), me=youColors(them);
+  const youEl=$('bg-you'), themEl=$('bg-them');
+  youEl.style.setProperty('--tcol',me.a); youEl.style.setProperty('--tcol2',me.b);
+  themEl.style.setProperty('--tcol',them.a); themEl.style.setProperty('--tcol2',them.b||'rgba(255,255,255,.3)');
+  themEl.querySelector('.cd').textContent=bossThreeLetter(o);
+  bossYouCol=me.a;
+  bossThemCol=(them.a&&them.a.toLowerCase()!=='#000000'&&them.a!==me.a)?them.a:'#e87461';
+  $('bg-eye').textContent=opts.eyebrow;
+  $('bg-opp').textContent=o.display;
+  /* Records, where there are two worth carrying. A boss battle leaves both blank because the
+     scout screen one tap back already gave them; a playoff game is arrived at cold. */
+  youEl.querySelector('.rc').textContent=opts.rec||'';
+  themEl.querySelector('.rc').innerHTML=opts.oppRec||'';
+  $('bg-syou').textContent='0'; $('bg-sthem').textContent='0';
+  youEl.classList.add('lead'); themEl.classList.remove('lead');
+  $('bg-q').textContent='1ST'; $('bg-ck').textContent='15:00';
+  $('bg-state').textContent=opts.state;
+  $('bg-narr').innerHTML=opts.narr;
+  $('bg-calls').hidden=true; $('bg-calls').innerHTML=''; $('bg-done').hidden=true;
+  /* PER GAME, NOT PER RUN. A boss can be replayed from the results screen and a playoff run
+     is four of these in a row, so a flag left set would open the next one already skipping a
+     game nobody had asked to skip yet. */
+  bossFast=false;
+  bossPace=opts.pace||1;
+  if($('bg-skip')) $('bg-skip').hidden=false;
+  /* Emptied with the rest of the screen, for the same reason: a log that kept the last
+     game's drives would open the next one already twelve rows deep in a game nobody played. */
+  if($('bg-log')) $('bg-log').innerHTML='';
+  show('s-bgame');
+  bossField=initFieldCanvas('bg-fcanvas'); bossFcv=$('bg-fcanvas');
+  bossDraw(0,false);
+  bossTimer=setTimeout(bossLoop,Math.max(300,600*bossPace));
+}
+
 /* THE GAME. Build the sim with the chosen read, set up the field, then run it forward. */
 function bossPlay(read){
   const b=bossSpecNow||R.bossFor(run), o=bossOppNow||bossOppRow();
@@ -19792,57 +20218,39 @@ function bossPlay(read){
      reached the game without the scout. No player path does, which is why it has never been
      seen; the fallback above exists precisely because the author expected one to. */
   bossSpecNow=b; bossOppNow=o;
-  bossStop();
   const chem=(run.season&&run.season.chemistry)
     || E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier;
   const leagueAvg=(LEAGUE&&LEAGUE[o.season])||21.5;
-  bossRng=E.createSeededRNG(E.hashSeed('boss|'+run.seed+'|'+run.seasonNo+'|'+read));
-  bossSim=E.bossSimCreate(run.roster,chem,b,o,leagueAvg,read,E.CONSTANTS,CAL);
-  bossShown=0;
-  /* The bug and field colors, the same way the playoffs pick them: your side the game's blue
-     (or your club), the boss their real color, nudged apart if they collide on the field. */
-  const them=E.washColors(o.franchise), me=youColors(them);
-  const youEl=$('bg-you'), themEl=$('bg-them');
-  youEl.style.setProperty('--tcol',me.a); youEl.style.setProperty('--tcol2',me.b);
-  themEl.style.setProperty('--tcol',them.a); themEl.style.setProperty('--tcol2',them.b||'rgba(255,255,255,.3)');
-  themEl.querySelector('.cd').textContent=bossThreeLetter(o);
-  bossYouCol=me.a;
-  bossThemCol=(them.a&&them.a.toLowerCase()!=='#000000'&&them.a!==me.a)?them.a:'#e87461';
-  $('bg-eye').textContent='Boss battle · Season '+run.seasonNo;
-  $('bg-opp').textContent=o.display;
-  $('bg-syou').textContent='0'; $('bg-sthem').textContent='0';
-  youEl.classList.add('lead'); themEl.classList.remove('lead');
-  $('bg-q').textContent='1ST'; $('bg-ck').textContent='15:00'; $('bg-state').textContent='BOSS';
-  $('bg-narr').innerHTML=bossSim.readRight
-    ? '<b class="good">Good read.</b> Your plan has them on their heels.'
-    : bossSim.readTrap
-      ? '<b class="bad">They saw it coming.</b> It plays into their hands.'
-      : 'The plan is set. Kickoff.';
-  $('bg-calls').hidden=true; $('bg-calls').innerHTML=''; $('bg-done').hidden=true;
-  /* PER GAME, NOT PER RUN. A boss can be replayed from the results screen, and a flag left
-     set would start the replay already skipping a game nobody had asked to skip yet. */
-  bossFast=false;
-  if($('bg-skip')) $('bg-skip').hidden=false;
-  /* Emptied with the rest of the screen. A boss can be replayed from the results screen, and
-     a log that kept the last attempt's drives would open the second one already twelve rows
-     deep in a game nobody played. */
-  if($('bg-log')) $('bg-log').innerHTML='';
-  show('s-bgame');
-  bossField=initFieldCanvas('bg-fcanvas'); bossFcv=$('bg-fcanvas');
-  bossDraw(0,false);
-  bossTimer=setTimeout(bossLoop,600);
+  const rng=E.createSeededRNG(E.hashSeed('boss|'+run.seed+'|'+run.seasonNo+'|'+read));
+  const sim=E.bossSimCreate(run.roster,chem,b,o,leagueAvg,read,E.CONSTANTS,CAL);
+  liveBoard(o,sim,rng,{
+    eyebrow:'Boss battle · Season '+run.seasonNo,
+    state:'BOSS',
+    narr:sim.readRight
+      ? '<b class="good">Good read.</b> Your plan has them on their heels.'
+      : sim.readTrap
+        ? '<b class="bad">They saw it coming.</b> It plays into their hands.'
+        : 'The plan is set. Kickoff.',
+    onOver:bossFinish,
+  });
 }
 
 /* Play one event, drawing any drives it produced, then either pause for a decision, show the
    verdict, or keep going. */
 function bossLoop(){
   const ev=E.bossSimAdvance(bossSim,bossRng);
-  if(ev.type==='over'){ bossFlush(()=>{ bossRenderScore(); bossFinish(ev); }); return; }
-  if(ev.type==='decision'){ bossFlush(()=>bossShowDecision(ev.decision)); return; }
+  if(ev.type==='over'){ const end=bossOnOver||bossFinish;
+    bossFlush(()=>{ bossRenderScore(); end(ev); }); return; }
+  /* THE DRIVE IS PLAYED UP TO THE CALL BEFORE THE CALL IS ASKED. bossFlush only knows about
+     drives the sim has FINISHED, and a fourth down stops one half way, so on its own it left
+     the reader deciding about a march the field had shown nothing of. bossLiveTo runs the
+     picture out to the moment of the decision first. */
+  if(ev.type==='decision'){
+    bossFlush(()=>bossLiveTo(ev.decision,()=>bossShowDecision(ev.decision))); return; }
   /* 200ms between events was the rest of why the game was over in a blink. The drives
      themselves carry the pace now, so this is the handoff between them rather than the
      pace itself. */
-  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420); });
+  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420*bossPace); });
 }
 
 /* Animate every drive the sim has produced but not yet drawn, in order, then continue. */
@@ -19850,6 +20258,52 @@ function bossFlush(cb){
   if(bossShown>=bossSim.drives.length){ cb(); return; }
   const d=bossSim.drives[bossShown++];
   bossAnimateDrive(d,()=>bossFlush(cb));
+}
+
+/* The game clock a decision is asked at, which is bossClock's own arithmetic run backwards.
+   It is the sim's clock to the second, and it is written here once because the field, the
+   bug and the resume point all have to agree on it. */
+function bossDecisionAt(d){ return (d.quarter-1)*900+(900-d.secs); }
+
+/*
+ * RUN THE DRIVE IN PROGRESS OUT TO THE CALL.
+ *
+ * The one thing on this screen that is not a completed drive. A fourth down stops the sim
+ * mid-march, so what the reader has to be shown before being asked anything is the march:
+ * the bar growing from wherever the field was left to where the ball is now, with the clock
+ * running forward with it.
+ *
+ * ABOUT TEN MILLISECONDS A GAME SECOND, which puts a play at 260ms and matches the pace
+ * bossAnimateDrive runs a completed drive at. Floored and capped for the same reason that one
+ * is: a long march visibly takes longer than a short one, and neither extreme is worth
+ * watching.
+ *
+ * TWO WAYS THROUGH WITHOUT ANIMATING, and both are ordinary rather than edge cases. A two
+ * point try has no drive in progress at all, because the touchdown that earned it is already
+ * pushed and bossFlush has drawn it. And a fourth down on the first play after a kick that is
+ * already on screen has nothing left to cover. Either way the clock is adopted and the call
+ * is asked immediately, so this can never be the thing that swallows a decision.
+ */
+function bossLiveTo(d,cb){
+  const at=bossDecisionAt(d), from=bossShownTo, c=bossSim.cur;
+  /* Where this drive was left, for the next leg of it and for the drive record that finishes
+     it. Null between drives, so a fresh drive always sweeps from its own line of scrimmage. */
+  const ball=c?E_absYard(c.team,c.y):null;
+  const anchor=(c&&bossLiveY!=null)?{t:from,y:bossLiveY}:null;
+  if(!c||bossFast||at<=from+1){
+    bossShownTo=Math.max(from,at); bossLiveY=ball; cb(); return;
+  }
+  const dur=Math.max(220,bossPace*Math.max(240,Math.min(2400,(at-from)*10)));
+  const t0=(window.performance||Date).now();
+  const tick=()=>{
+    const k=Math.min(1,((window.performance||Date).now()-t0)/dur);
+    const upTo=from+(at-from)*k;
+    bossDraw(upTo,true,anchor); bossSetClock(upTo);
+    $('bg-bug').classList.toggle('urgent',upTo>=3300);
+    if(k<1){ bossRaf=requestAnimationFrame(tick); return; }
+    bossShownTo=at; bossLiveY=ball; cb();
+  };
+  bossRaf=requestAnimationFrame(tick);
 }
 
 /* ─── THE DRIVE LOG ────────────────────────────────────────────────────────────────────
@@ -19925,7 +20379,7 @@ function bossAnimateDrive(d,cb){
      because the log row has to be written after the score lands either way: drawn, scored,
      logged. What goes is the frames in between and the beat after a touchdown. */
   if(bossFast){
-    bossDraw(d.tEnd,false); bossSetClock(d.tEnd);
+    bossDraw(d.tEnd,false); bossSetClock(d.tEnd); bossShownTo=d.tEnd; bossLiveY=null;
     $('bg-bug').classList.toggle('urgent',d.tEnd>=3300);
     bossRenderScore();
     bossLogDrive(d);
@@ -19937,15 +20391,35 @@ function bossAnimateDrive(d,cb){
     bossTimer=setTimeout(cb,0);
     return;
   }
-  const dur=Math.max(900,Math.min(3000,(d.plays||4)*260));
+  /*
+   * IT RESUMES. A drive that stopped for a fourth down has already been watched up to the
+   * call, so starting again at d.tStart replayed the part the reader had just seen and, worse,
+   * ran the clock backwards to do it: the bug went from 4th and 1 at 2:40 to first and ten at
+   * 6:12 the moment the call was taken. bossShownTo is how far the picture got, so the tail is
+   * what is left to play.
+   *
+   * THE DURATION IS SCALED TO THE TAIL, not recomputed from the drive. A twelve play march
+   * stopped on the eleventh has one play left in it and should take one play's worth of time;
+   * spending the whole drive's budget on it is the same replay in a different coat. The floor
+   * is dropped to 240 for a resumed drive for that reason, and a tail of nothing (a punt or a
+   * kick, which end the drive at the clock the call was asked at) lands instantly, which is
+   * right: that ball is not going anywhere the reader has not already been shown.
+   */
+  const from=Math.max(d.tStart,bossShownTo);
+  const span=Math.max(0,d.tEnd-from), full=Math.max(1,d.tEnd-d.tStart);
+  const whole=bossPace*Math.max(900,Math.min(3000,(d.plays||4)*260));
+  const floor=from>d.tStart?Math.max(120,240*bossPace):Math.max(220,900*bossPace);
+  const dur=span<=0?0:Math.max(floor,whole*(span/full));
+  const anchor=(from>d.tStart&&bossLiveY!=null)?{t:from,y:bossLiveY}:null;
   const t0=(window.performance||Date).now();
   const scored=d.result==='td'||d.result==='fg';
   const tick=()=>{
-    const k=Math.min(1,((window.performance||Date).now()-t0)/dur);
-    const upTo=d.tStart+(d.tEnd-d.tStart)*k;
-    bossDraw(upTo,false); bossSetClock(upTo);
+    const k=dur<=0?1:Math.min(1,((window.performance||Date).now()-t0)/dur);
+    const upTo=from+span*k;
+    bossDraw(upTo,false,anchor); bossSetClock(upTo);
     $('bg-bug').classList.toggle('urgent',upTo>=3300);
     if(k<1){ bossRaf=requestAnimationFrame(tick); return; }
+    bossShownTo=d.tEnd; bossLiveY=null;
     bossRenderScore();
     /* LOGGED AFTER THE SCORE LANDS, so the running total on the row is the one the bug is
        showing. Written the other way round it reports every score one drive late. */
@@ -19955,74 +20429,195 @@ function bossAnimateDrive(d,cb){
     /* A BEAT ON A SCORE, and only on a score. The drives run back to back otherwise, and a
        touchdown that is gone before the number under it has finished moving is the thing
        this screen was asked to stop doing. */
-    if(scored){ bossTimer=setTimeout(cb,700); return; }
+    if(scored){ bossTimer=setTimeout(cb,Math.max(300,700*bossPace)); return; }
     cb();
   };
   bossRaf=requestAnimationFrame(tick);
 }
 
-/* THE CALL. The real situation, and the two or three things you can do about it. */
+/* The situation in one line, which both readers need: the one being asked, and the one being
+   told what their coach did about it. */
+function bossSituation(d){
+  if(d.kind==='two') return 'After the score: '+d.you+'-'+d.them+', '+ordinalQ(d.quarter);
+  return '4th & '+d.toGo+' · '+bossSpot(d)+' · '+ordinalQ(d.quarter)+' · '+clockText(d.secs);
+}
+function bossSpot(d){ return d.ball.side==='own'?('your '+d.ball.yard):('their '+d.ball.yard); }
+
+/* THE CALL. The real situation, and the two or three things that can be done about it.
+   Asked of the reader, or handed to the coach they hired. */
 function bossShowDecision(d){
-  bossRenderScore(); bossSetClock((d.quarter-1)*900+(900-d.secs));
-  bossDraw((d.quarter-1)*900+(900-d.secs),true);
+  bossRenderScore(); bossSetClock(bossDecisionAt(d));
+  bossDraw(bossDecisionAt(d),true);
+  const situation=d.kind==='two'
+    ? '<b>Touchdown.</b> The point, or two.'
+    : '<b>4th and '+d.toGo+'</b> at '+bossSpot(d)+'.'
+      +(d.you<d.them?' You are chasing.':'');
+  /*
+   * A HIRED COACH ANSWERS IT, AND THE SCREEN SAYS SO BEFORE IT IS PLAYED.
+   *
+   * That order is the whole of what makes this honest rather than a cutscene. fullCoachCall
+   * draws no random number, so the decision is settled by the situation on screen and the
+   * plan on the hire sheet; printing it first and resolving it after is what lets a reader
+   * see the call and the outcome as two separate things. Written the other way round, a
+   * coach who kicked and missed would be indistinguishable from one who never kicked.
+   */
+  if(bossAutoCall){
+    $('bg-state').textContent='THE CALL';
+    const choice=bossAutoCall(d);
+    $('bg-calls').hidden=true; $('bg-calls').innerHTML='';
+    $('bg-narr').innerHTML=situation+' <b class="cw">'+esc(bossCallerName)+'</b> '
+      +bossCallWords(d,choice,false)+'.';
+    bossTimer=setTimeout(()=>bossTakeCall(d,choice),bossFast?0:1200);
+    return;
+  }
   $('bg-state').textContent='YOUR CALL';
+  $('bg-narr').innerHTML=situation+' Your call.';
   const box=$('bg-calls'); box.hidden=false;
-  let q, opts;
+  let opts;
   if(d.kind==='two'){
-    $('bg-narr').innerHTML='<b>Touchdown.</b> Kick the point, or go for two.';
-    q='After the score: '+d.you+'-'+d.them+', '+ordinalQ(d.quarter);
     opts=[['two','Go for two','About even, and it swings the margin'],
           ['kick','Kick the point','Take the sure one']];
   }else{
-    const spot=d.ball.side==='own'?('your '+d.ball.yard):('their '+d.ball.yard);
-    $('bg-narr').innerHTML='<b>4th and '+d.toGo+'</b> at '+spot+'. '
-      +(d.you<d.them?'You are chasing.':'')+' Your call.';
-    q='4th & '+d.toGo+' · '+spot+' · '+ordinalQ(d.quarter)+' · '+clockText(d.secs);
     opts=[['go','Go for it','Convert and the drive lives on']];
+    /* The safe option is whichever one the spot actually offers, so the row is always two
+       buttons and never a kick from sixty yards. */
     if(d.inFgRange) opts.push(['fg','Kick the field goal','About '+(d.toGoal+17)+' yards, for three']);
     else opts.push(['punt','Punt','Give it back, pin them deep']);
   }
-  box.innerHTML='<div class="bcall-q">'+esc(q)+'</div><div class="bcall-row">'+
+  box.innerHTML='<div class="bcall-q">'+esc(bossSituation(d))+'</div><div class="bcall-row">'+
     opts.map(o=>'<button class="bcall '+(o[0]==='go'||o[0]==='two'?'go':'safe')+'" data-c="'+o[0]+
       '"><b>'+esc(o[1])+'</b><span>'+esc(o[2])+'</span></button>').join('')+'</div>';
   box.querySelectorAll('.bcall').forEach((btn)=>{
-    btn.onclick=()=>{
-      const choice=btn.dataset.c;
-      const res=E.bossSimResolve(bossSim,choice,bossRng);
-      box.innerHTML=''; box.hidden=true;
-      $('bg-narr').innerHTML=bossCallNarr(d.kind,choice,res);
-      bossRenderScore();
-      /*
-       * ONLY WHEN THE ROW THIS DECISION BELONGS TO IS ALREADY WRITTEN.
-       *
-       * The case it was added for: a touchdown that pauses for a two point call is logged
-       * when the drive ends, which is BEFORE the conversion is taken, so that row carried a
-       * score one or two points short and never caught up. The bug above was always right,
-       * which is what made the log wrong rather than merely stale.
-       *
-       * IT RAN ON EVERY DECISION, AND A FOURTH DOWN IS THE OTHER WAY ROUND. There the drive
-       * has NOT ended when the call is made: bossSimResolve ends it, pushes it, and bossFlush
-       * below is what logs it. So the top row at this moment is the PREVIOUS drive, somebody
-       * else's, and stamping the new score onto it moved your points one drive early. Kick a
-       * 29 yard field goal to go 14-55 up to 17-55 and the three landed on Seattle's field
-       * goal above it, so the row for your kick repeated 17-55 and the kick read as though it
-       * had scored nothing. Reported by a player, from the one screen where every drive is
-       * listed and a reader can check the column against itself.
-       *
-       * ASKED STRUCTURALLY, not by the decision's kind. The question is whether anything new
-       * has been produced that is not on screen yet, and bossShown against drives.length is
-       * exactly that question. A two point try adds no drive, so the counts match and the top
-       * row is the touchdown being converted; a fourth down that ends the drive pushes one, so
-       * they do not and bossFlush logs it with the right score a moment later. A fourth down
-       * conversion pushes nothing and changes no score, so this writes back what is already
-       * there.
-       */
-      if(bossShown>=bossSim.drives.length) bossRescoreLast();
-      bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:560); });
-    };
+    btn.onclick=()=>bossTakeCall(d,btn.dataset.c);
+  });
+}
+
+/* PLAY THE CALL, whoever made it, and put it in the log. One function because the two
+   readers differ only in where the choice came from, and everything after it is the same
+   game: the drive it ends, the score it moves and the row it leaves behind. */
+function bossTakeCall(d,choice){
+  const res=E.bossSimResolve(bossSim,choice,bossRng);
+  const box=$('bg-calls'); box.innerHTML=''; box.hidden=true;
+  $('bg-narr').innerHTML=bossCallNarr(d.kind,choice,res);
+  bossRenderScore();
+  /*
+   * ONLY WHEN THE ROW THIS DECISION BELONGS TO IS ALREADY WRITTEN.
+   *
+   * The case it was added for: a touchdown that pauses for a two point call is logged
+   * when the drive ends, which is BEFORE the conversion is taken, so that row carried a
+   * score one or two points short and never caught up. The bug above was always right,
+   * which is what made the log wrong rather than merely stale.
+   *
+   * IT RAN ON EVERY DECISION, AND A FOURTH DOWN IS THE OTHER WAY ROUND. There the drive
+   * has NOT ended when the call is made: bossSimResolve ends it, pushes it, and bossFlush
+   * below is what logs it. So the top row at this moment is the PREVIOUS drive, somebody
+   * else's, and stamping the new score onto it moved your points one drive early. Kick a
+   * 29 yard field goal to go 14-55 up to 17-55 and the three landed on Seattle's field
+   * goal above it, so the row for your kick repeated 17-55 and the kick read as though it
+   * had scored nothing. Reported by a player, from the one screen where every drive is
+   * listed and a reader can check the column against itself.
+   *
+   * ASKED STRUCTURALLY, not by the decision's kind. The question is whether anything new
+   * has been produced that is not on screen yet, and bossShown against drives.length is
+   * exactly that question. A two point try adds no drive, so the counts match and the top
+   * row is the touchdown being converted; a fourth down that ends the drive pushes one, so
+   * they do not and bossFlush logs it with the right score a moment later. A fourth down
+   * conversion pushes nothing and changes no score, so this writes back what is already
+   * there.
+   *
+   * AND THE CALL ROW GOES IN AFTER THAT, NEVER BEFORE IT. bossRescoreLast reaches for the
+   * FIRST `.pl` in the log, so a call row written first would take the stamp meant for the
+   * touchdown under it and the two point try would be recorded on itself. The log is newest
+   * first, so this also puts the call above the drive it belongs to, which is the order the
+   * two happened in.
+   */
+  if(bossShown>=bossSim.drives.length) bossRescoreLast();
+  bossLogCall(d,choice,res);
+  /*
+   * A FOURTH DOWN THAT GOES TO THE HOUSE IS TWO DECISIONS, AND THE SECOND ONE WAS BEING
+   * DROPPED.
+   *
+   * bossSimResolve plays the go, and if it reaches the end zone it finishes the drive
+   * through bossEndDrive, which is the same function that pauses a touchdown for the two
+   * point try. So on a fourth down conversion in the second half of a close game it hands
+   * back a DECISION rather than a finished drive, sets sim.pending, and returns before the
+   * automatic extra point is added.
+   *
+   * This loop ignored that and went back to bossSimAdvance, which asks nothing about
+   * pending, starts the next drive and never comes back. The touchdown scored SIX, the
+   * point was never kicked and the two point try was never offered. Nothing threw, the log
+   * and the bug agreed with each other the whole time (both read sim.you), and
+   * check-boss.mjs cannot see it for exactly that reason: its subject is whether the column
+   * agrees with itself, and a score that is uniformly one short does.
+   *
+   * MEASURED, over 400 games played bold: it fires on 16 of them, 4%. It has been shipping
+   * in the boss battle since the two point try was added there.
+   */
+  const next=(res&&res.end&&res.end.type==='decision')?res.end.decision:null;
+  bossFlush(()=>{
+    /* Through bossLiveTo like every other call, so there is one door into a decision. This
+       one is always a two point try, whose touchdown bossFlush has just drawn, so it passes
+       straight through with nothing to animate. Routed anyway rather than left as the one
+       exception somebody has to remember. */
+    if(next){ bossTimer=setTimeout(()=>bossLiveTo(next,()=>bossShowDecision(next)),
+      bossFast?0:520); return; }
+    bossTimer=setTimeout(bossLoop,bossFast?0:560);
   });
 }
 function ordinalQ(q){ return QNAME[q-1]+' quarter'; }
+/*
+ * WHAT WAS DECIDED, as a verb phrase to sit after the caller's name. Present tense, because
+ * on the coach's path it is printed in the second BEFORE the play is run.
+ *
+ * IT HAS TO AGREE WITH WHOEVER CALLED IT. "You go for it" and "Adam Gase goes for it" are
+ * the same sentence and the third person s is the whole difference, so one string with a
+ * name glued to the front of it reads as broken English for exactly one of the two readers.
+ * `detail` is the log's longer form, which has room for the down and distance the narration
+ * line has already printed above it.
+ */
+function bossCallWords(d,choice,detail){
+  const s=bossCallerName==='You'?'':'s';
+  if(d.kind==='two') return choice==='two'?('go'+s+' for two'):('take'+s+' the point');
+  if(choice==='go') return 'go'+s+' for it'+(detail?' on 4th & '+d.toGo:'');
+  if(choice==='fg') return detail?('kick'+s+' from about '+(d.toGoal+17)):('send'+s+' on the kicker');
+  return 'punt'+s+' it away'+(detail?', 4th & '+d.toGo:'');
+}
+/*
+ * THE CALL, IN THE LOG, AND THIS IS THE HALF THE READER ACTUALLY KEEPS.
+ *
+ * The narration above the field is one line that the next drive paints over, and under Sim
+ * the rest it is gone in a frame. So a coached game would have made four decisions and left
+ * no sign of any of them, which is the whole thing this was asked for. The log is the
+ * permanent record of the game and the calls belong in it.
+ *
+ * BOTH READERS GET THE ROW. A player who called it themselves already knows what they
+ * pressed at the time and does not a quarter later, and two logs that listed different
+ * things would be the only screen on this page whose shape depended on who was looking.
+ */
+function bossLogCall(d,choice,res){
+  const el=$('bg-log'); if(!el) return;
+  const what=bossCallWords(d,choice,true);
+  const how=bossCallOutcome(d,choice,res);
+  el.insertAdjacentHTML('afterbegin',
+    '<div class="pl call">'+
+      '<span class="t">'+QNAME[Math.min(3,d.quarter-1)]+' '+clockText(d.secs)+'</span>'+
+      '<span class="w">'+esc(bossCallerName)+' &middot; '+esc(what)+
+        '<i class="plsub">'+esc(how)+'</i></span>'+
+      '<span class="n">'+bossSim.you+'-'+bossSim.them+'</span></div>');
+}
+/* How it turned out, in three words, for the row above. */
+function bossCallOutcome(d,choice,res){
+  if(d.kind==='two') return choice==='two'?(res.converted?'Good for two':'No good'):'Point is good';
+  if(choice==='punt') return 'Gave it back';
+  if(choice==='fg') return (res.end&&res.end.drive&&res.end.drive.result==='fg')?'Good':'No good';
+  if(res.td) return 'Touchdown';
+  return res.converted?'Converted':'Stuffed on downs';
+}
+/*
+ * THE OUTCOME, OVER THE FIELD. It never names who called it, because the line above it just
+ * did and the page has one narration box: "Adam Gase goes for it" followed a beat later by
+ * "Adam Gase got it" is the same sentence twice.
+ */
 function bossCallNarr(kind,choice,res){
   if(kind==='two'){
     if(choice==='kick') return 'The extra point is good.';
@@ -20031,8 +20626,8 @@ function bossCallNarr(kind,choice,res){
   }
   if(choice==='fg') return (res.end&&res.end.drive&&res.end.drive.result==='fg')
     ? '<span class="good">The kick is good.</span>' : '<span class="bad">The kick is no good.</span>';
-  if(choice==='punt') return 'You punt it away.';
-  if(res.td) return '<span class="good">Fourth down, and you take it to the house.</span>';
+  if(choice==='punt') return 'The punt goes away.';
+  if(res.td) return '<span class="good">Fourth down, and it goes to the house.</span>';
   return res.converted?'<span class="good">Got it. Fresh set of downs.</span>'
     :'<span class="bad">Stuffed. Turnover on downs.</span>';
 }
@@ -20594,6 +21189,10 @@ function fitPct(mult){ const n=Math.round((mult-1)*100); return (n>0?'+':'')+n+'
    the scheme alone (that read as if a 1-3% scheme were worth the whole +11%). This is the
    plain description of the total; schemeTail() names the scheme's own small share after it. */
 function fitPhrase(){ return 'for how the six fit together'; }
+/* A ROSTER SIZE IN WORDS, for the sentences that said "six" because six was the only number
+   a roster could be when they were written. Six and twelve are the only two the game drafts;
+   anything else prints as a digit rather than inventing a word for it. */
+const countWord=(n)=>(n===6?'six':n===12?'twelve':String(n));
 
 /* The scheme's actual contribution, called out as a share of the total fit so nobody reads
    the total as the scheme. Empty when the roster fits no scheme, or when st is unavailable
@@ -20747,12 +21346,54 @@ const CARD={
   REC:360, VERDICT:422,       // the record, and how the season ended
   RULE1:466,
   ROWS:528, ROW:94,           // six players, last baseline 998
+  /* TWELVE PLAYERS IN THE SAME BAND, in two columns of six rather than one of twelve.
+     See cardRosterLayout for why, and for the arithmetic that says one column cannot. */
+  COL_GUT:40, COLHEAD:502,
+  ROWS2:548, ROW2:88,         // twelve players, two columns, last baseline 988
+  META2:30,                   // and its year and city one line under the name
   RULE2:1054,
   STAT:1142, STAT_LABEL:1184, // team rating, chemistry, spend
   DARE:1250,                  // the invitation
   LINK_T:1274, LINK_H:60,     // and where to accept it, as a pill
   KEEL:10,
 };
+
+/*
+ * ─── HOW MANY MEN FIT, AND IN HOW MANY COLUMNS ───────────────────────────────────────
+ *
+ * THE CARD WAS BUILT FOR SIX AND FULL TEAM DRAFTS TWELVE. Every number above between RULE1
+ * and RULE2 was written as a constant for a six man roster, so a Full Team card ran its
+ * seventh row through the closing rule and the next five through the team rating, the
+ * chemistry, the spend, the dare and the link. Reported by a player, with a screenshot of a
+ * card whose roster and whose footer were printed on top of each other.
+ *
+ * ONE COLUMN OF TWELVE IS NOT THE ANSWER, and the arithmetic is the reason rather than
+ * taste. The band from the first baseline to RULE2 is 526px. Twelve rows in it is 44px a
+ * row, against a 52px position chip and a 50px name, so everything in the block has to come
+ * down by more than half and the card's biggest text after the record ends up smaller than
+ * its own footnotes.
+ *
+ * SO IT IS TWO COLUMNS OF SIX, which keeps the row height and the type where they were and
+ * costs width instead, and width is what this roster has spare: a name column of 444 still
+ * holds "Muhammad Wilkerson" at 40px. The year and the city move UNDER the name, because
+ * half a card cannot hold both on one line and the name is the half worth the room.
+ *
+ * AND THE SPLIT IS BY SIDE OF THE BALL, never by halving the list. FULL_SLOTS interleaves
+ * (QB, DL, RB, DL, ...) so the first six slots are three offensive men and three defensive
+ * ones, and a straight halving would print two columns that each look like a mistake.
+ * fullSlotIsDefensive is the same reader the draft screen's own glow uses.
+ *
+ * SIX IS UNTOUCHED. Every other mode on this page drafts six, this returns exactly what it
+ * always did for them, and a card that has been shared for a year does not move by a pixel.
+ */
+function cardRosterLayout(n){
+  if(n<=6) return {cols:1,per:n,top:CARD.ROWS,row:CARD.ROW,deep:CARD.ROWS+(n-1)*CARD.ROW};
+  const per=Math.ceil(n/2);
+  return {cols:2,per,top:CARD.ROWS2,row:CARD.ROW2,
+    /* The deepest ink the block puts on the card, which is the stacked meta line under the
+       last name rather than the last name itself. That is the number RULE2 has to clear. */
+    deep:CARD.ROWS2+(per-1)*CARD.ROW2+CARD.META2};
+}
 
 function drawShareCard(){
   const c=document.createElement('canvas');
@@ -20841,8 +21482,14 @@ function drawShareCard(){
   /* THE MODE HAS TO NAME ITSELF HERE, because this card is read by people who have not
      played and a defensive roster under "Classic Mode" is a card that explains nothing. The
      Trade Machine was in the same position: it fell through to the classic line, which
-     describes six spins it never took. */
-  centered(run.defense
+     describes six spins it never took.
+     AND THEN FULL TEAM DID IT A THIRD TIME. A twelve man roster went out under a sentence
+     promising six spins and one roster, next to a card that printed twelve names. Every
+     mode added since this line was written has had to be added to it, which is the whole
+     reason the comment above says so. */
+  centered(run.full
+    ? 'Full Team. Twelve spins, six on offense and six on defense.'
+    : run.defense
     ? 'Defense. Six spins, six defenders, one shot at 20-0.'
     : run.tradeMachine
     ? 'The Trade Machine. A roster you inherited and a season to fix it.'
@@ -20921,8 +21568,8 @@ function drawShareCard(){
 
   x.fillStyle=at(tc.ink,.34); x.fillRect(PAD,CARD.RULE1,CARD.W-PAD*2,2);
 
-  /* The six players. Position chip, name, then the year and city on the right, so
-     the eye can run down either column on its own. */
+  /* The roster. Position chip, name, then the year and city: to the right of the name on a
+     six man card, under it on a twelve man one. See cardRosterLayout. */
   /* THE SLOTS OF THE SIDE THAT WAS DRAFTED. E.SLOTS is the offense's six, so a defensive
      card printed six defenders under QB RB WR WR TE FLEX, and a Trade Machine card printed
      its two flexes as a second receiver. This is the one artefact that leaves the site, so
@@ -20935,47 +21582,87 @@ function drawShareCard(){
      drawing last month's colors. Since the palette gained DL, LB and DB the chips on a
      defensive card take those without this needing to know the mode. */
   const COLS=posColors();
-  let y=CARD.ROWS;
-  const ROW=CARD.ROW;
-  cardSlots.forEach((slot,i)=>{
-    const p=bySlot[i]; if(!p) return;
-    // chip
+  /* THE MEN, WITH THE SLOT THEY FILLED AND THE INDEX THEY FILLED IT AT. The index is what
+     tells the two sides apart on a Full Team card, so it has to survive the filter. */
+  const men=cardSlots.map((slot,i)=>({slot,p:bySlot[i],i})).filter((e)=>e.p);
+  const LAY=cardRosterLayout(men.length);
+
+  /* ONE ROW, drawn wide or stacked. One function because the two shapes differ in the size
+     of three things and in where the year and city go, and everything else about a row is
+     the same in both: two copies of it is two places for the palette, the slot tag or the
+     club ink to drift. */
+  const cardRow=(e,cx,colw,y,stacked)=>{
+    const p=e.p;
     /* Same rule as every roster in the game: the chip says which SLOT it is, so the sixth row
        reads FLEX, and it is colored by the PLAYER'S position, so a flex filled by a back is
        green. The card used to print the player's position on both counts, which made the flex
        spot invisible on the one artefact that gets shared. */
-    const cw=88,ch=52;
-    const tag=slot||p.position;
+    const cw=stacked?72:88, ch=stacked?46:52;
+    const tag=e.slot||p.position;
     x.fillStyle=COLS[p.position]||'#64748b';
-    roundRect(x,PAD,y-38,cw,ch,12); x.fill();
-    N('700',26); x.fillStyle='#ffffff';
-    x.fillText(tag,PAD+cw/2-x.measureText(tag).width/2,y-2);
-    // name, shrunk only if it would collide with the right column
-    const right=CARD.W-PAD;
-    N('500',24);
+    roundRect(x,cx,y-(stacked?34:38),cw,ch,stacked?10:12); x.fill();
+    N('700',stacked?22:26); x.fillStyle='#ffffff';
+    x.fillText(tag,cx+cw/2-x.measureText(tag).width/2,y-(stacked?4:2));
+    const textL=cx+cw+(stacked?18:22);
     /* THE YEAR AND CITY IN THAT PLAYER'S OWN CLUB COLOR, which is the whole reason
        teamInk exists: it takes the club's primary and lifts its lightness until it clears
        4.5:1 on a near-black ground, so the fourteen clubs whose primary is itself nearly
        black get a legible lifted variant rather than an invisible one. Checked against the
        worst case on this card -- a row sitting under the club's own wash at full strength --
        and all thirty-two clear 3.8:1 or better, so no row needs a hand-picked exception. */
-    x.fillStyle=E.teamInk(p.franchise);
-    /* The city and not the nickname, on every row, in both modes. This is a graphic that
+    /* The city and not the nickname, on every row, in every mode. This is a graphic that
        gets posted somewhere we do not control, so no mascot name appears on it at all. */
     const meta=p.season+' '+E.city(p.franchise);
-    const mw=x.measureText(meta).width;
-    x.fillText(meta,right-mw,y-4);
     /* The name face, at 700, which is a real cut of Big Shoulders Display rather than a
        faked one. It is narrower than Anton at the same size, so it starts a little larger
        and still fits more names without shrinking. */
-    let size=50;
-    P('700',size);
-    const room=right-mw-28-(PAD+cw+22);
+    if(stacked){
+      let size=40; P('700',size);
+      const room=colw-(textL-cx);
+      while(x.measureText(p.name).width>room&&size>24){ size-=2; P('700',size); }
+      x.fillStyle='#ffffff';
+      x.fillText(p.name,textL,y+2);
+      N('500',20); x.fillStyle=E.teamInk(p.franchise);
+      x.fillText(meta,textL,y+CARD.META2);
+      return;
+    }
+    const right=cx+colw;
+    N('500',24); x.fillStyle=E.teamInk(p.franchise);
+    const mw=x.measureText(meta).width;
+    x.fillText(meta,right-mw,y-4);
+    let size=50; P('700',size);
+    const room=right-mw-28-textL;
     while(x.measureText(p.name).width>room&&size>28){ size-=2; P('700',size); }
     x.fillStyle='#ffffff';
-    x.fillText(p.name,PAD+cw+22,y+2);
-    y+=ROW;
-  });
+    x.fillText(p.name,textL,y+2);
+  };
+
+  if(LAY.cols===1){
+    let y=LAY.top;
+    men.forEach((e)=>{ cardRow(e,PAD,CARD.W-PAD*2,y,false); y+=LAY.row; });
+  }else{
+    const colw=(CARD.W-PAD*2-CARD.COL_GUT)/2;
+    /* SPLIT BY SIDE OF THE BALL, never by halving the list: FULL_SLOTS interleaves, so the
+       first six entries are three offensive men and three defensive ones. A run that is not
+       Full Team cannot get here today, and if one ever does the halves are at least even. */
+    const sides=run.full
+      ? [men.filter((e)=>!fullSlotIsDefensive(e.i)),men.filter((e)=>fullSlotIsDefensive(e.i))]
+      : [men.slice(0,LAY.per),men.slice(LAY.per)];
+    /* NAMED, because two columns of six with no heading is a card that has simply been cut
+       in half. The whole claim of this mode is that you drafted both sides. */
+    if(run.full){
+      N('600',22); x.letterSpacing='4px'; x.fillStyle='rgba(255,255,255,.45)';
+      ['OFFENSE','DEFENSE'].forEach((h,ci)=>{
+        x.fillText(h,PAD+ci*(colw+CARD.COL_GUT),CARD.COLHEAD);
+      });
+      x.letterSpacing='0px';
+    }
+    sides.forEach((col,ci)=>{
+      const cx=PAD+ci*(colw+CARD.COL_GUT);
+      let y=LAY.top;
+      col.forEach((e)=>{ cardRow(e,cx,colw,y,true); y+=LAY.row; });
+    });
+  }
 
   x.fillStyle=at(tc.ink,.34); x.fillRect(PAD,CARD.RULE2,CARD.W-PAD*2,2);
 
@@ -25495,6 +26182,58 @@ function shareSeason(h){
   ga('dynasty_season_shared',{season:h.year});
   shareTextFile(text,null,'season.png');
 }
+/*
+ * THE ROSTER BLOCK OF THE RUN DETAIL SHEET, and the whole of why it is its own function is
+ * that Full Team drafts twelve where every other mode on this page drafts six.
+ *
+ * THE ROOMY ROW WAS DESIGNED FOR SIX and is about 54px with its gap, so twelve of them are
+ * 648px of roster under a 220px header. On the phone it was reported from, a 20-0 Full Team
+ * run showed seven men and you scrolled for the rest of your own team. This is the share
+ * card's lesson at a different surface: a layout written for six is not a layout for twelve
+ * with more of it.
+ *
+ * SO A ROSTER OVER SIX GETS ONE LINE A MAN. The name and the club share it, the long stat
+ * line goes, and the row comes down to about 31px with its gap: twelve of them are 372px and
+ * the team is on the screen. Six is untouched, because six fits and has been read this way
+ * for a year.
+ *
+ * WHAT THE TIGHT ROW GIVES UP IS THE STAT LINE AND NOTHING ELSE. The name, the year, the
+ * club, the fantasy points, the price and the award chip are all still there, and the slot
+ * note moves onto the name line rather than being dropped: in the chip's column it is a
+ * second line, which would make the two flex rows of a Full Team roster taller than the
+ * other ten and leave the list visibly ragged.
+ *
+ * AND IT SPLITS INTO OFFENSE AND DEFENSE when the roster has both, which is the same split
+ * and the same order the share card gives the same twelve men. Neither heading is drawn for
+ * a roster that is all one side: "Offense" over six offensive players is a label on the only
+ * thing there is.
+ */
+function rdRoster(known){
+  const tight=known.length>6;
+  const D=E.DEFENSE_POSITIONS||['DL','LB','DB'];
+  const row=(m)=>{
+    const a=topAward(m.p);
+    const flex=m.slot&&m.p.position&&m.slot!==m.p.position;
+    const sub=m.p.season+' '+esc(E.nickname(m.p.franchise))
+      +(tight
+        ? (flex?' &middot; '+esc(m.slot):'')
+        : (m.p.stat_line?' &middot; '+esc(m.p.stat_line):''));
+    return '<div class="rrow">'+slotTag(m.slot,m.p.position,tight)+
+      '<span class="nm"><b>'+esc(m.p.name)+'</b><span>'+sub+'</span></span>'+
+      (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
+      '<span class="num"><b>'+m.p.fppg.toFixed(1)+'</b><span>'+M(m.p.price_musd)+
+      '</span></span></div>';
+  };
+  const cls='rost'+(tight?' tight':'');
+  const off=known.filter(m=>!D.includes(m.p.position));
+  const def=known.filter(m=>D.includes(m.p.position));
+  if(!off.length||!def.length)
+    return '<div class="'+cls+'" style="margin-top:12px">'+known.map(row).join('')+'</div>';
+  const group=(name,list)=>'<div class="rgrp">'+name+'</div>'+
+    '<div class="'+cls+'">'+list.map(row).join('')+'</div>';
+  return '<div style="margin-top:12px">'+group('Offense',off)+group('Defense',def)+'</div>';
+}
+
 /* Bumped on every open, so a late arriving defensive pool only redraws the sheet it was
    fetched for. */
 let rdToken=0;
@@ -25599,20 +26338,13 @@ function runDetail(row,back,onShare){
       (rdWho.anon?'':'<div class="rdwho">'+avatarHTML(rdWho,'huge')+
         (rdName?'<span class="rdnm">'+esc(rdName)+'</span>':'')+'</div>')+
     '</div>'+
-    (known.length?'<div class="rost" style="margin-top:12px">'+known.map(m=>{
-      const a=topAward(m.p);
-      return '<div class="rrow">'+slotTag(m.slot,m.p.position)+
-        '<span class="nm"><b>'+esc(m.p.name)+'</b><span>'+m.p.season+' '+
-          esc(E.nickname(m.p.franchise))+(m.p.stat_line?' &middot; '+esc(m.p.stat_line):'')+
-        '</span></span>'+
-        (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
-        '<span class="num"><b>'+m.p.fppg.toFixed(1)+'</b><span>'+M(m.p.price_musd)+
-        '</span></span></div>';
-    }).join('')+'</div>'
+    (known.length?rdRoster(known)
       :'<p class="dim" style="font-size:12.5px;margin:12px 0 0">This run\'s players are not '+
        'in the player data this browser has.</p>')+
+    /* THE SIZE OF THE ROSTER, not the word six. A Full Team run showed "6 of the six could
+       not be looked up here", which is a sentence that cannot be true. */
     (missing&&known.length?'<p class="dim" style="font-size:11.5px;margin:7px 0 0">'+missing+
-      ' of the six could not be looked up here.</p>':'')+
+      ' of the '+countWord(men.length)+' could not be looked up here.</p>':'')+
     '<div class="rdstat">'+
       tile(rating===null?'--':rating.toFixed(1),'Team rating')+
       tile(perf===null?'--':perf+'%','Of the best possible')+
@@ -25629,14 +26361,33 @@ function runDetail(row,back,onShare){
       tile(defStat.tk===null?'--':defStat.tk,'Forced turnovers')+
       tile(defStat.td===null?'--':defStat.td,'Defensive TDs')+
     '</div>':'')+
-    (fppg!==null&&mult!==null&&rating!==null
-      ? '<p class="caveat" style="margin:9px 0 0">'+fppg.toFixed(0)+' squad FPPG, '+
-        pc(chem/100)+' chemistry and '+fitPct(mult)+' '+fitPhrase()+', which is '+
-        rating.toFixed(1)+' points a game against an average defense.'+schemeTail(detailSt)+'</p>'
-      : '<p class="caveat" style="margin:9px 0 0">This run was recorded before the game '+
-        'stored a team rating.</p>')+
+    /*
+     * THE IDENTITY IS NOT PRINTED FOR TWELVE MEN, and the results screen already refuses it
+     * for the same reason. Three of its four terms are wrong on a Full Team row:
+     *
+     *   the fit    runPayload files rosterStructure over ALL TWELVE, which is the
+     *              0.57-for-everybody reading overallOf warns about. On the team this was
+     *              reported from it printed -10% for halves that are rated separately.
+     *   the unit   a Full Team rating is fullTeamScale's 0 to 100 team overall, so
+     *              "points a game against an average defense" is a different quantity.
+     *   the word   "the six", on twelve men.
+     *
+     * The row carries one structure_mult and one squad total, so there is no honest working
+     * to draw here the way the results screen draws it from parts. What is left that IS true
+     * is the shape of the roster and what the rating means, so that is what it says.
+     */
+    (rating!==null&&men.length>E.SLOTS.length
+      ? '<p class="caveat" style="margin:9px 0 0">'+countWord(men.length)+
+        ' men, six a side. '+rating.toFixed(1)+' is the team overall.</p>'
+      : (fppg!==null&&mult!==null&&rating!==null
+        ? '<p class="caveat" style="margin:9px 0 0">'+fppg.toFixed(0)+' squad FPPG, '+
+          pc(chem/100)+' chemistry and '+fitPct(mult)+' '+fitPhrase()+', which is '+
+          rating.toFixed(1)+' points a game against an average defense.'+schemeTail(detailSt)+'</p>'
+        : '<p class="caveat" style="margin:9px 0 0">This run was recorded before the game '+
+          'stored a team rating.</p>'))+
     (perf!==null?'<p class="caveat" style="margin:6px 0 0">The perfect figure is this roster '+
-      'against the strongest one those same six draws allowed under the same cap.</p>':'')+
+      'against the strongest one those same '+countWord(men.length)+
+      ' draws allowed under the same cap.</p>':'')+
     /* SHARE THIS SEASON, when the caller passed a way to. Only Dynasty's ledger does, so
        a leaderboard or career sheet is unchanged; there the run's own share button lives on
        the results screen. */
@@ -25660,7 +26411,20 @@ function runDetail(row,back,onShare){
      and a sheet that fills in a second later is better than one that opens a second late.
      The token is what stops a redraw landing on top of a different run the reader has since
      opened. */
-  if(!mine&&missing&&row.run_mode==='defense'&&!DDATA){
+  /*
+   * ASKED OF THE ROSTER'S OWN SLOTS, NEVER OF THE MODE, and that is the fix rather than a
+   * tidy-up. This read `row.run_mode==='defense'`, which was every mode with defenders in it
+   * on the day it was written. Full Team arrived with twelve men and the mode string `full`,
+   * so the pool was never fetched for one: the six offensive players resolved out of the data
+   * every browser already has, the six defenders resolved to nothing, and the sheet drew half
+   * a team under a line saying the rest could not be looked up. Reported by a player asking
+   * where the defense went.
+   *
+   * A slot list carries DL, LB and DB whatever the mode is called, so this is right for both
+   * modes today and for the next one without anybody remembering to come back. It also cannot
+   * be wrong about an old offensive row: no defensive slot, no download.
+   */
+  if(!mine&&missing&&!DDATA&&slots.some(s=>DEF_ONLY_SLOTS.includes(s))){
     loadDefensePool().then(()=>{ if(rdToken===rdMine) runDetail(row,back); }).catch(()=>{});
   }
 }

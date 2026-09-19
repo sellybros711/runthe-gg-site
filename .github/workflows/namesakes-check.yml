@@ -1,0 +1,50 @@
+name: Namesakes check
+
+# The arcade corpus keys on name + sport, and that key is not a person.
+# data.js folds former.js and supplement.js onto the curated entities with it,
+# so the Browns' Hall of Fame tackle and a linebacker who played for four clubs
+# in the 2010s were one record. The tackle was handed the linebacker's college,
+# Alma Mater asked where Joe Thomas went, and marked Wisconsin wrong.
+#
+# Nothing failed and nothing could: the fold only backfills empty fields, so it
+# throws no error and leaves the pool as healthy as before. The only symptom was
+# the game telling somebody a false thing about a real person.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-namesakes.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/data.js'
+      - 'arcade/former.js'
+      - 'arcade/supplement.js'
+      - 'arcade/match/entities.js'
+      - 'scripts/check-namesakes.mjs'
+      - '.github/workflows/namesakes-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/data.js'
+      - 'arcade/former.js'
+      - 'arcade/supplement.js'
+      - 'arcade/match/entities.js'
+      - 'scripts/check-namesakes.mjs'
+      - '.github/workflows/namesakes-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: namesakes-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-namesakes.mjs

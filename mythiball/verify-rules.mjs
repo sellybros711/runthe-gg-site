@@ -40,7 +40,9 @@
      the tag              a caught fly moves a runner, and never on the third out
      the dugout learns    a harder tier chases less and reads a one pitch caller
      the robbery          a catchable hit can be taken away, and missing it costs nothing
+     doing nothing is never the worst  an ignored window costs the out, never more
      the club remembers   a franchise carries its players' records, not only its win column
+     and the club changes them  a man develops at what he did here, and the league rises with you
      the friendly button  Randomize hands you a mound, and a hand draft is told who is on it
      the picture agrees   no throw beats a safe runner to the bag, and no run outlasts the sim
      the walk back        a strikeout has a frame, and it belongs to the man it happened to
@@ -556,7 +558,15 @@ async function main() {
         g.bases = [null, Object.assign({}, g.home.batters[3], { n: 'The Runner', spd: 90 }), null];
         g.sendRule = 'send';
         const realRandom = Math.random;
-        Math.random = () => 0.9;
+        /* ABOVE SEND.single.cap, NOT A NUMBER THAT HAPPENED TO FAIL. This
+           was 0.9, which beat the old curve's odds for a 90 speed runner
+           and no longer does: the arcade retune put him at .94, so he was
+           safe, no marker was written and three assertions failed on a
+           draw path that is perfectly fine. The subject here is the
+           MARKER, not the odds, so the roll has to be one no runner can
+           ever survive. sendOdds is clamped at .94, so anything above it
+           is thrown out whatever the curve is tuned to next. */
+        Math.random = () => 0.99;
         g.play = { kind: 'single', preBases: g.bases.slice(), runnerPaths: [null, [1, 2, 3], null], applied: false };
         applyHitMutation('single', currentBatter());
         Math.random = realRandom;
@@ -1658,10 +1668,25 @@ async function main() {
           }
           return _log(m, k);
         };
-        for (let i = 0; i < 16 && State.game && !State.game.over; i++) {
+        /* IT PITCHES UNTIL IT HAS A SAMPLE, rather than a fixed sixteen.
+           Whether a pitch is swung at or taken is a draw, and the dugout
+           takes about a quarter of them, so sixteen pitches carry roughly
+           a ONE IN ELEVEN chance of yielding fewer than two takes. It duly
+           came back 13 swings and 1 call on a build that had not touched
+           swing rate, having passed on the same code an hour earlier.
+
+           The threshold is not the thing to loosen: two calls really is
+           the least this section can say anything about, since what it
+           checks is WHEN a call lands. So the sample grows instead, and it
+           stops as soon as it has enough rather than always paying for the
+           worst case. */
+        const want = () => out.filter(r => r.ev === 'swing').length >= 5
+                        && out.filter(r => r.ev === 'call').length >= 3;
+        for (let i = 0; i < 40 && State.game && !State.game.over; i++) {
           if (playerIsBatting()) break;
           try { endAtBatCleanup(); State.game.pitch = null; throwPitch(); } catch (e) {}
           await new Promise(r => setTimeout(r, 1900));
+          if (i >= 11 && want()) break;
         }
         return out;
       });
@@ -2100,15 +2125,35 @@ async function main() {
         const teams = r.byTeam;
         const gaps = teams.map(t => t.easy - t.hard);
         const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
-        const wrongWay = teams.filter(t => !(t.easy > t.med && t.med > t.hard));
-        /* ORDERING is asserted on every team, because it is meant to hold
-           on every team and it does. The SIZE of the gap is asserted on
-           the mean, because the clamp legitimately compresses it against
-           the most patient dugout in the league and demanding eight points
-           there is a coin toss rather than a rule. */
-        ok(wrongWay.length === 0,
-           'a harder dugout chases less, on every opponent',
-           wrongWay.map(t => `${t.name}: ${t.easy.toFixed(1)}/${t.med.toFixed(1)}/${t.hard.toFixed(1)}`)
+        /* ORDERING IS ASSERTED ON THE POOL AND ON THE EXTREMES, and the
+           first draft of this sweep got it wrong in a way worth recording,
+           because it was a fix that traded one flap for another.
+
+           Sweeping all seventeen teams meant dropping the per cell sample
+           from 500 to 200 to keep the suite's runtime sane. At 200 pitches
+           a rate near 5 to 20 percent carries a standard error of 2 to 3
+           points, so easy against MEDIUM is inside the noise: measured, The
+           Marauders came back 19.0/20.5/8.0 and The Kids Table 14.0/4.5/5.5
+           on a build that had not touched the dugout. Asserting a strict
+           three way order per team at that sample is measuring the sample.
+
+           The dial is global (diff.chase) and a team's patience is a
+           constant offset on top of it, so the claim belongs to the POOL.
+           What is still asserted per team is easy against HARD, which is
+           the full width of the dial and the one comparison that survives
+           at this sample, so a team whose style genuinely inverted it would
+           still be caught. */
+        const pooled = { easy: avg(teams.map(t => t.easy)),
+                         med:  avg(teams.map(t => t.med)),
+                         hard: avg(teams.map(t => t.hard)) };
+        const inverted = teams.filter(t => !(t.easy > t.hard));
+        ok(pooled.easy > pooled.med && pooled.med > pooled.hard,
+           'a harder dugout chases less',
+           `easy ${pooled.easy.toFixed(1)}, medium ${pooled.med.toFixed(1)}, hard ${pooled.hard.toFixed(1)}`
+           + ` over ${teams.length} teams`);
+        ok(inverted.length === 0,
+           'and no opponent turns the dial the other way',
+           inverted.map(t => `${t.name}: ${t.easy.toFixed(1)} easy vs ${t.hard.toFixed(1)} hard`)
              .join(', ') || `${teams.length} teams`);
         ok(avg(gaps) > 8,
            'and the gap is one a player would feel, not a rounding error',
@@ -2298,6 +2343,66 @@ async function main() {
       await pg.close();
     }
 
+    /* ---- doing nothing is never the worst ---- */
+    {
+      console.log('doing nothing is never the worst');
+      /* BOTH FIELDING WINDOWS SCORED AN EXPIRY AS THEIR WORST RESULT.
+         The grounder's timeout called finish(-1) and fell through the
+         distance maths: ideal sits near 0.55 and yellowHalf is 0.14, so d
+         came out about 1.55 and an ignored ground ball was a THROWING
+         ERROR, batter safe and every runner up an extra base. The comment
+         on that very line said "fielder holds it: batter safe", which is
+         the single. The comment was right and the code was not. The fly
+         window said `if (t < 0) outcome = 'miss'` outright, which is the
+         ball over his head, scored a TRIPLE.
+
+         So a player who did not yet know these controls existed gave up
+         an error on most ground balls and a triple on most fly balls, for
+         a whole game. Measured from the other side, a defence that never
+         pressed anything conceded 27 to 32 runs a nine against 5.5. After
+         this fix that same arm measures 15.8, so ignoring the defence
+         still costs about three times what playing it costs.
+
+         THE RULE IS THAT NOT REACTING IS NEVER WORSE THAN REACTING BADLY.
+         Pressing at the wrong moment is a mistake and keeps the worst
+         outcome, because you committed and got it wrong. Letting the bar
+         run out is passive: the fielder holds the ball, or never leaves
+         his feet, and the batter reaches without anybody else moving up.
+
+         It is DRIVEN rather than reasoned. The arithmetic above is what
+         was wrong in the first place, so this opens each window for real,
+         presses nothing, and reads what the game scores. */
+      const { pg, errors } = await fresh(browser);
+      const drive = async (which) => pg.evaluate(async (which) => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: false });   /* the CPU bats, you field */
+        await new Promise(r => setTimeout(r, 700));
+        const g = State.game;
+        let got = null;
+        const realThrow = window.resolveThrow, realCatch = window.resolveCatch;
+        window.resolveThrow = (o) => { got = o; };
+        window.resolveCatch = (o) => { got = o; };
+        endAtBatCleanup(); g.pitch = null;
+        if (which === 'throw') scheduleThrowMinigame('ground out', currentBatter());
+        else scheduleFlyCatchMinigame('fly out', currentBatter());
+        /* wait well past the window's own duration, touching nothing */
+        await new Promise(r => setTimeout(r, 4200));
+        window.resolveThrow = realThrow; window.resolveCatch = realCatch;
+        return got;
+      }, which);
+      const t = await drive('throw');
+      const c = await drive('catch');
+      ok(t === 'single', 'a grounder nobody throws: the fielder holds it, batter safe',
+         `scored "${t}"`);
+      ok(t !== 'error', 'and NOT a throwing error that moves every runner up');
+      ok(c === 'single', 'a fly nobody catches falls in front of him',
+         `scored "${c}"`);
+      ok(c !== 'miss', 'and NOT a triple over his head');
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
     /* ---- the club remembers ---- */
     {
       console.log('the club remembers');
@@ -2392,6 +2497,121 @@ async function main() {
          'and leaves the rest of the board alone', JSON.stringify(draft));
       ok(brandNew === 0, 'a brand new franchise is unmarked, exactly as it always was',
          String(brandNew));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- and the club changes them ---- */
+    {
+      console.log('and the club changes them');
+      /* THE FRANCHISE REMEMBERED ITS PLAYERS AND THEY NEVER CHANGED.
+         Nothing in the game read S.year at all, only the labels did, so
+         year ten was year one with a different number on the heading: a
+         club had memory, a ladder of unlocks and a record book, and no
+         arc.
+
+         Two halves fix it and neither works alone. A man who wore the
+         shirt is better at what he did in it, and the league sharpens with
+         your tenure. Development on its own is power creep; a rising
+         league on its own is a punishment for playing.
+
+         IT IS DERIVED FROM THE CAREER RECORD, NEVER STORED, so what is
+         asserted here is what a stored bump would get wrong: idempotence,
+         a first year club seeing nothing, a bound, and whose man it is. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const out = {};
+        const nine = ROSTER.slice(0, 9).map(c => c.k);
+        const bat = nine[0], arm = nine[1];
+        State.season = null; State.pendingFranchise = null;
+        /* the roster's OWN object comes back, not a copy: an exhibition
+           and a first year draft are byte for byte what they always were */
+        out.freshIdentity = developed(ROSTER_BY_KEY[bat]) === ROSTER_BY_KEY[bat];
+        const mk = (years) => ({
+          year: years, team: nine, perPlayer: {},
+          careers: (() => {
+            const c = {};
+            for (const k of nine) c[k] = { years, first: 1, last: years };
+            c[bat] = Object.assign({}, c[bat], { ab: 100 * years, hits: 31 * years, hr: 6 * years });
+            c[arm] = Object.assign({}, c[arm], { pOuts: 30 * years });
+            return c;
+          })(),
+        });
+        State.season = mk(3);
+        const raw = ROSTER_BY_KEY[bat];
+        const d1 = developed(raw);
+        out.batDev = devOf(bat); out.armDev = devOf(arm);
+        out.benchDev = devOf(nine[4]);          /* on the roster, never played */
+        out.sameTwice = JSON.stringify(devOf(bat)) === JSON.stringify(devOf(bat));
+        const d3 = developed(d1);
+        out.noStack = d3.pow === d1.pow && d3.con === d1.con;
+        out.rawUntouched = raw.pow === ROSTER.find(c => c.k === bat).pow;
+        /* bounded, and nobody pushed past the ceiling */
+        State.season = mk(40);
+        let maxGain = 0, over99 = 0, wentDown = 0;
+        for (const c of ROSTER) {
+          const dd = devOf(c.k); if (!dd) continue;
+          const dev = developed(c);
+          for (const s of ['pow', 'spd', 'con', 'def', 'pit']) {
+            if (dd[s]) maxGain = Math.max(maxGain, dd[s]);
+            if (dev[s] > 99) over99++;
+            if (dev[s] < c[s]) wentDown++;
+          }
+        }
+        out.maxGain = maxGain; out.over99 = over99; out.wentDown = wentDown;
+        /* the ceiling IS the diminishing return */
+        const top = ROSTER.slice().sort((x, y) => y.pow - x.pow)[0];
+        const mid = ROSTER.slice().sort((x, y) => Math.abs(x.pow - 60) - Math.abs(y.pow - 60))[0];
+        const hist = () => ({ years: 5, first: 1, last: 5, ab: 500, hits: 175, hr: 40 });
+        State.season = { year: 5, team: [top.k, mid.k], perPlayer: {},
+                         careers: { [top.k]: hist(), [mid.k]: hist() } };
+        out.topRoom = developed(top).pow - top.pow;
+        out.midRoom = developed(mid).pow - mid.pow;
+        out.topBase = top.pow; out.midBase = mid.pow;
+        /* the league rises and then stops rising */
+        out.edge = [1, 2, 4, 6, 10, 40].map(y => {
+          State.season = { year: y, team: nine, perPlayer: {}, careers: {} };
+          return +leagueEdge().toFixed(3);
+        });
+        /* and it belongs to YOUR side, against a lineup naming the same men */
+        State.season = mk(4);
+        State.team = nine.slice(); State.teamName = 'Testers';
+        State.opponent = { name: 'Mirror', color: '#888', roster: nine.slice() };
+        State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });
+        const g = State.game;
+        const mineSide = g.away.isYou ? g.away : g.home;
+        const theirs = g.away.isYou ? g.home : g.away;
+        const mineBat = mineSide.batters.find(c => c.k === bat);
+        const theirBat = theirs.batters.find(c => c.k === bat);
+        out.sidesDiffer = mineBat.con !== theirBat.con || mineBat.pow !== theirBat.pow;
+        out.theirsIsRaw = theirBat.con === ROSTER_BY_KEY[bat].con
+                       && theirBat.pow === ROSTER_BY_KEY[bat].pow;
+        return out;
+      });
+      ok(r.freshIdentity, 'no franchise: the roster object itself comes back untouched');
+      ok(r.batDev && r.batDev.con && r.batDev.pow, 'a bat who played develops', JSON.stringify(r.batDev));
+      ok(r.armDev && r.armDev.pit, 'an arm who pitched develops', JSON.stringify(r.armDev));
+      ok(!r.benchDev, 'a man who never played keeps his years and earns no rating');
+      ok(r.sameTwice, 'deriving it twice gives the same answer');
+      ok(r.noStack, 'and developing an already developed man does not stack');
+      ok(r.rawUntouched, 'the ROSTER entry itself is never mutated');
+      ok(r.maxGain <= 8, 'no rating gains more than the cap', `max ${r.maxGain}`);
+      ok(r.over99 === 0, 'nobody is pushed past 99', `${r.over99} over`);
+      /* A RATING MUST NEVER BUY YOU LESS, and this one did. A flat clamp
+         to 99 took a point OFF the roster's 100 power man for his years of
+         service. sendOdds' rule at a third door. */
+      ok(r.wentDown === 0, 'and nobody is made WORSE by his own career',
+         `${r.wentDown} ratings fell`);
+      ok(r.topRoom < r.midRoom, 'a man at the ceiling has less room than a middling one',
+         `${r.topBase} gained ${r.topRoom}, ${r.midBase} gained ${r.midRoom}`);
+      ok(r.edge[0] === 0, 'year one plays the league it always did');
+      ok(r.edge[1] > r.edge[0] && r.edge[3] > r.edge[1],
+         'the league sharpens with tenure', r.edge.join(', '));
+      ok(r.edge[5] === r.edge[4] && r.edge[5] <= 0.30,
+         'and plateaus rather than running away', `caps at ${r.edge[5]}`);
+      ok(r.sidesDiffer, 'your man and their man are not the same man');
+      ok(r.theirsIsRaw, 'the opponent draws the roster, never your development');
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -2673,33 +2893,49 @@ async function main() {
 
          The assertion is MONOTONICITY over the whole scale rather than
          the two numbers that were wrong, because a cliff can come back
-         at any floor somebody tunes later. */
+         at any floor somebody tunes later.
+
+         IT CALLS THE REAL FUNCTION NOW. This section used to carry a
+         hand-copied duplicate of the arithmetic, because sendOdds was a
+         local const inside applyHitMutation and there was no other way
+         to reach it. That is two copies of one answer, which is the
+         shape this repo keeps finding drifted: the copy would have gone
+         on passing its sweep on a curve the game had stopped playing.
+         It is at module scope in the page now and this reads it. */
       const { pg, errors } = await fresh(browser);
       const r = await pg.evaluate(() => {
-        /* the shipped curve, reached the way applyHitMutation reaches it */
-        const sendOdds = (spd, fastFloor, fastBase, fastSlope) => {
-          const base = clamp(0.25 + (spd - 40) / 150, 0.15, 0.6);
-          return spd >= fastFloor ? base + (spd - fastFloor) / fastSlope : base;
-        };
-        const drops = (floor, base, slope) => {
+        const drops = (leg) => {
           const bad = [];
           for (let s = 1; s <= 100; s++) {
-            if (sendOdds(s, floor, base, slope) < sendOdds(s - 1, floor, base, slope) - 1e-9) bad.push(s);
+            if (sendOdds(s, leg) < sendOdds(s - 1, leg) - 1e-9) bad.push(s);
           }
           return bad;
         };
-        /* and the source the page actually ships, so this cannot pass
-           against a copy while the real one is wrong */
-        const src = applyHitMutation.toString();
+        /* WHAT THE WHOLE ROSTER ACTUALLY DOES, which is the half a
+           monotonicity sweep cannot see: a perfectly monotone curve
+           behind a floor nobody clears is a rule that never fires. */
+        const rate = (leg) => {
+          let score = 0, out = 0, held = 0;
+          for (const c of ROSTER) {
+            if (!sendClears(c.spd, leg)) { held++; continue; }
+            const p = sendOdds(c.spd, leg);
+            score += p; out += 1 - p;
+          }
+          return { score: score / ROSTER.length, out: out / ROSTER.length,
+                   held: held / ROSTER.length };
+        };
         return {
-          singleDrops: drops(75, 0.35, 100),
-          doubleDrops: drops(85, 0.30, 120),
+          singleDrops: drops('single'),
+          doubleDrops: drops('double'),
           /* the two men who made it findable */
-          tom: sendOdds(84, 85, 0.30, 120),
-          huck: sendOdds(86, 85, 0.30, 120),
-          /* the real function is one curve plus a bonus, not two curves */
-          oneCurve: /const base = clamp/.test(src) && /base \+ \(spd - fastFloor\)/.test(src),
-          twoCurves: /fastBase \+ \(spd - fastFloor\)/.test(src),
+          tom: sendOdds(84, 'single'), huck: sendOdds(86, 'single'),
+          tomD: sendOdds(84, 'double'), huckD: sendOdds(86, 'double'),
+          single: rate('single'), double: rate('double'),
+          /* a legitimate zero is a rating, not a missing one */
+          zero: sendOdds(0, 'single'), fifty: sendOdds(50, 'single'),
+          /* three points well under the ceiling, so a flat curve cannot
+             hide behind the cap the pair above now tolerates */
+          slowish: sendOdds(45, 'single'), quick: sendOdds(70, 'single'),
         };
       });
       ok(r.singleDrops.length === 0,
@@ -2708,12 +2944,51 @@ async function main() {
       ok(r.doubleDrops.length === 0,
          'nor from first on a double, which is where the step was 24 points',
          `worse at ${JSON.stringify(r.doubleDrops)}`);
-      ok(r.huck > r.tom,
-         'Huck Finn is two quicker than Tom Sawyer and scores more often, not less',
+      /* NEVER LESS, WHICH IS THE BUG THAT HAPPENED, and not "strictly
+         more", which a ceiling makes impossible. The original defect was
+         a DECREASE: 86 scored 30.0% where 84 scored 54.3%, because the
+         two branches restarted the odds. Both men now sit on the .94 cap
+         and read the same, and that was briefly reported as a failure.
+
+         The cap is right and extending the curve to dodge it was measured
+         rather than argued: stretching the slope until nobody reaches the
+         ceiling takes scoring from second from 59% to 53% and pushes outs
+         at the plate from 12% to 18%. It makes the FAST runners worse,
+         which is the opposite of the point. A ceiling on how safe anybody
+         can be is what that is, and 19 of 68 sitting on it is fine.
+
+         So the pair asserts what it was written to catch, and the line
+         below it is what stops a flat curve passing on the technicality:
+         speed still has to buy something where there is room for it. */
+      ok(r.huck >= r.tom && r.huckD >= r.tomD,
+         'Huck Finn is two quicker than Tom Sawyer and never scores less',
          `${r.huck.toFixed(3)} against ${r.tom.toFixed(3)}`);
-      ok(r.oneCurve && !r.twoCurves,
-         'and the page really ships one curve with a bonus, not two curves',
-         `oneCurve ${r.oneCurve}, twoCurves ${r.twoCurves}`);
+      ok(r.fifty > r.slowish && r.quick > r.fifty,
+         'and below the ceiling a faster runner really does score more often',
+         `spd 45 ${r.slowish.toFixed(3)}, spd 50 ${r.fifty.toFixed(3)}, spd 70 ${r.quick.toFixed(3)}`);
+      ok(r.zero < r.fifty,
+         'and a legitimate zero is the slowest man alive, not an average one',
+         `${r.zero.toFixed(3)} against ${r.fifty.toFixed(3)}`);
+      /* THE ARCADE RATE, over the real roster. It ran at 24% against
+         real baseball's 60% and this is a backyard game, so the target
+         is at or above the real figure rather than under half of it.
+         The band is wide because it is a property of the ROSTER as much
+         as of the curve: a pass that added six sprinters would move it
+         and should not fail. */
+      ok(r.single.score > 0.50 && r.single.score < 0.75,
+         'a runner scores from second on a single about as often as in the real game',
+         `${(100 * r.single.score).toFixed(0)}%, ${(100 * r.single.held).toFixed(0)}% held at third`);
+      /* AND IT IS NOT PAID FOR IN OUTS, which is the reason the floor
+         could come down this far. The runners who now score are the
+         ones who used to HOLD: thrown out at the plate moved 11% to
+         12% of chances. A version of this that bought the scoring with
+         outs would gut the mode and pass the line above. */
+      ok(r.single.out < 0.20,
+         'and it is not bought with runners gunned down at the plate',
+         `${(100 * r.single.out).toFixed(0)}% of chances end at the plate`);
+      ok(r.double.score > 0.30,
+         'first to home on a double is a real play rather than a rounding error',
+         `${(100 * r.double.score).toFixed(0)}%`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -2750,6 +3025,14 @@ async function main() {
           ['swingReach power', 'con', +1, (v) => swingReach(v, 'power')],
           ['tagChance third', 'spd', +1, (v) => tagChance(man('spd', v), 2)],
           ['tagChance second', 'spd', +1, (v) => tagChance(man('spd', v), 1)],
+          /* THE ONE THIS SWEEP WAS WRITTEN FOR, and it could not be in
+             it until now: sendOdds was a local const inside
+             applyHitMutation, so the section above had to copy the
+             arithmetic out by hand and this one could not reach it at
+             all. It is at module scope in the page now, so the curve
+             whose seam started all of this is walked with the rest. */
+          ['sendOdds single', 'spd', +1, (v) => sendOdds(v, 'single')],
+          ['sendOdds double', 'spd', +1, (v) => sendOdds(v, 'double')],
           ['robGreenHalf', 'def', +1, (v) => robGreenHalf(0, v)],
           /* control is the one that must go DOWN as the rating goes up */
           ['pitchScatter', 'pit', -1, (v) => {
@@ -2779,7 +3062,7 @@ async function main() {
         return { turns, swept, curves: cases.length,
                  zeroRunner, oneRunner, missingRunner };
       });
-      ok(r.curves >= 9 && r.swept > 800,
+      ok(r.curves >= 11 && r.swept > 1000,
          'every curve a rating feeds is walked end to end',
          `${r.curves} curves, ${r.swept} points`);
       ok(r.turns.length === 0,
