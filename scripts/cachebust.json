@@ -45,6 +45,10 @@
     "achievements.js": {
       "v": "3",
       "sha": "3d4ebb2142c0e272"
+    },
+    "board.js": {
+      "v": "1",
+      "sha": "ca72c43361b377d7"
     }
   },
   "cfb/commish/index.html": {

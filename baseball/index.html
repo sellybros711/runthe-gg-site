@@ -696,6 +696,33 @@ h1,h2,h3{margin:0}
   text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin-top:5px}
 .dd-grid{text-align:center;font-size:22px;letter-spacing:3px;margin-top:12px}
 
+/* ─── the board ─── */
+.ro-place{margin-top:7px;font-family:var(--fn);font-size:12.5px;font-weight:700;
+  color:var(--ink)}
+.ro-place b{font-family:'Righteous',var(--fd);font-size:17px;color:var(--gold)}
+.ro-place.dim{color:var(--dim-2);font-weight:600}
+.bd-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;
+  -webkit-overflow-scrolling:touch}
+.bd-tab{flex:0 0 auto;font-family:var(--fn);font-size:11.5px;font-weight:800;
+  letter-spacing:.03em;padding:7px 12px;border-radius:99px;cursor:pointer;
+  border:1px solid var(--line-2);background:transparent;color:var(--dim);white-space:nowrap}
+.bd-tab.on{background:var(--grad-gold);color:#fff;border-color:transparent}
+.bd-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;
+  background:var(--panel);border:1px solid var(--line);margin-bottom:6px}
+.bd-row.me{border-color:var(--gold);background:rgba(184,134,11,.07)}
+.bd-pos{flex:0 0 auto;min-width:26px;font-family:'Righteous',var(--fd);font-size:15px;
+  color:var(--dim-2);text-align:right}
+.bd-row:nth-child(1) .bd-pos,.bd-row:nth-child(2) .bd-pos,.bd-row:nth-child(3) .bd-pos{color:var(--gold)}
+.bd-who{flex:1;min-width:0}
+.bd-name{font-family:var(--fn);font-size:13.5px;font-weight:800;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bd-meta{font-family:var(--fn);font-size:10.5px;font-weight:700;color:var(--dim-2);margin-top:1px}
+.bd-rec{flex:0 0 auto;text-align:right}
+.bd-rec b{font-family:'Righteous',var(--fd);font-size:17px;color:var(--ink)}
+.bd-rec span{display:block;font-family:var(--fn);font-size:9.5px;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2)}
+.bd-empty{text-align:center;padding:30px 14px;color:var(--dim);font-size:13.5px;line-height:1.55}
+
 /* ─── the trade machine ─── */
 .offer{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;
   padding:10px 12px;border-radius:11px;border:1px solid var(--line-2);
@@ -903,6 +930,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <button class="btn ghost hp-secondary" id="b-modes">More ways to play</button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">How to play</button>
+    <button class="btn ghost hp-util-btn" id="b-board">Leaderboard</button>
     <button class="btn ghost hp-util-btn" id="b-trophy">Trophy case</button>
   </div>
 
@@ -963,6 +991,14 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     NL Central until 2013 and the AL West after it.</p>
   <div id="div-cards"></div>
   <div style="margin-top:16px"><button class="btn ghost sm" id="b-div-back">Back</button></div>
+</div>
+
+<div class="screen" id="s-board">
+  <div class="eyebrow">Leaderboard</div>
+  <h2 class="display" style="font-size:27px;margin:5px 0 10px">Who is on top</h2>
+  <div class="bd-tabs" id="bd-tabs"></div>
+  <div id="bd-list"></div>
+  <div style="margin-top:16px"><button class="btn ghost sm" id="b-board-back">Back</button></div>
 </div>
 
 <div class="screen" id="s-how">
@@ -1066,6 +1102,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div class="ro-record" id="ro-record"></div>
     <div class="ro-verdict" id="ro-verdict"></div>
     <div class="ro-sub" id="ro-sub"></div>
+    <div class="ro-place" id="ro-place" hidden></div>
   </div>
   <div id="r-goat" style="display:none"></div>
 
@@ -1223,6 +1260,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="engine.js?v=16"></script>
 <script src="run.js?v=15"></script>
 <script src="achievements.js?v=3"></script>
+<script src="board.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -1866,6 +1904,8 @@ $('b-how-play').addEventListener('click',()=>{
 });
 $('b-trophy-hd').addEventListener('click',openTrophy);
 $('b-modes').addEventListener('click',openModes);
+$('b-board').addEventListener('click',openBoard);
+$('b-board-back').addEventListener('click',()=>{show('s-intro');heroSync();});
 $('daily-card').addEventListener('click',startDaily);
 document.querySelectorAll('[data-close-daily]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-daily')));
 $('b-daily-share').addEventListener('click',shareDaily);
@@ -1937,6 +1977,138 @@ function pickMode(id){
   if(id==='cap'){startRun({capSurvivor:true});return;}
   if(id==='staff'){startRun({staff:true});return;}
   if(id==='trade'){startTrade();return;}
+}
+
+/* ─── the board ───────────────────────────────────────────────────────────
+ * The results screen paints first and asks the board afterwards, always. A board
+ * that is down, or a migration that has not been run, must never cost somebody
+ * the season they just played. */
+const BOARD=()=>window.RTD_BOARD||null;
+function runModeOf(r){
+  if(!r)return 'free';
+  if(r.tradeMachine)return 'trade';
+  if(r.capSurvivor)return 'capsurvivor';
+  if(r.staff)return 'staff';
+  if(r.division)return 'division';
+  if(r.franchise)return 'franchise';
+  if(r.era)return 'era';
+  return 'free';
+}
+function runModeLabel(m){
+  return {free:'Classic',era:'Eras Draft',franchise:'One Franchise',
+    division:'Division Draft',capsurvivor:'Cap Survivor',staff:'All-Time Staff',
+    trade:'Trade Machine'}[m]||'Classic';
+}
+/* A per-browser id, so the daily board can keep one result per device without
+   asking anybody to make an account first. */
+const CLIENT_KEY='rtd_client';
+function clientId(){
+  try{
+    let v=localStorage.getItem(CLIENT_KEY);
+    if(!v){v=(Math.random().toString(36).slice(2)+Date.now().toString(36));
+      localStorage.setItem(CLIENT_KEY,v);}
+    return v;
+  }catch(e){return null;}
+}
+function boardPayload(o){
+  const slots=SLOTS_NOW();
+  const mode=runModeOf(RUN);
+  const po=RUN.playoffs&&RUN.playoffs.rounds
+    ? RUN.playoffs.rounds.filter(r=>r.won).length : 0;
+  const tg=RUN.staff?RUN.roster.map((p,i)=>({...p,_slot:slots[RUN.slotIndex[i]]})):null;
+  return {
+    wins:o.wins, playoffWins:po, mode,
+    franchise:mode==='franchise'?RUN.franchise:null,
+    era:mode==='era'?RUN.era:null,
+    division:mode==='division'?RUN.division:null,
+    dailyKey:RUN.daily?utcKey():null,
+    dailyClient:RUN.daily?clientId():null,
+    rating:o.rating==null?null:Math.round(o.rating*10)/10,
+    allTimeRank:RUN.staff?null:(o.allTimeRank==null?null:o.allTimeRank),
+    staffEra:RUN.staff&&tg?Math.round(E.staffEra(tg)*100)/100:null,
+    chemistryPct:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:0,
+    spendMusd:Math.round(RUN.roster.reduce((t,p)=>t+p.p,0)*100)/100,
+    respins:RUN.respinsUsed||0,
+    runsFor:o.totalRS, runsAgainst:o.totalRA,
+    cuts:(RUN.cuts||[]).length,
+    trades:(RUN.trades||[]).filter(t=>t.accepted).length,
+    picks:RUN.roster.map(p=>p.i+'|'+p.s+'|'+p.r),
+    slots:RUN.roster.map((p,i)=>slots[RUN.slotIndex[i]]),
+    rngSeed:RUN.seed, rngCalls:RUN.rngCalls,
+  };
+}
+/* Fire and forget, after the screen is up. Sets the place line if it can. */
+async function postToBoard(o){
+  const B=BOARD();if(!B)return;
+  const el=$('ro-place');if(!el)return;
+  el.hidden=false;el.textContent='Recording your season...';
+  let payload;
+  try{payload=boardPayload(o);}catch(e){console.error(e);el.hidden=true;return;}
+  const sent=await B.submit(payload);
+  if(!sent){
+    el.textContent=B.needsMigration?'Leaderboard not set up yet.':'Leaderboard unreachable.';
+    el.classList.add('dim');return;
+  }
+  const where=payload.dailyKey?{dailyKey:payload.dailyKey}:{mode:payload.mode};
+  const score=B.scoreOf(payload.wins,payload.playoffWins,payload.rating||0);
+  const [place,tot]=await Promise.all([
+    B.placeIn({...where,score}),B.total(where)]);
+  if(place==null||tot==null){el.textContent='On the board.';return;}
+  const board=payload.dailyKey?('Daily #'+dailyNo()):runModeLabel(payload.mode);
+  el.classList.remove('dim');
+  el.innerHTML='<b>#'+place+'</b> of '+tot.toLocaleString()+' on '+esc(board)+
+    (sent.duplicate?' <span class="dim">(already recorded today)</span>':'');
+}
+
+/* ─── the leaderboard screen ───
+   Tabs across the boards, because a Cap Survivor season and a Franchise season
+   are not the same competition and should not share a list. */
+let boardTab='daily';
+const BOARD_TABS=[{k:'daily',label:'Today'}].concat(
+  ['free','era','franchise','division','capsurvivor','staff','trade']
+    .map(m=>({k:m,label:runModeLabel(m)})));
+function openBoard(){show('s-board');paintBoard();}
+function paintBoard(){
+  $('bd-tabs').innerHTML=BOARD_TABS.map(t=>
+    '<button class="bd-tab'+(t.k===boardTab?' on':'')+'" data-k="'+t.k+'">'+
+    esc(t.label)+'</button>').join('');
+  $('bd-tabs').querySelectorAll('.bd-tab').forEach(b=>
+    b.addEventListener('click',()=>{boardTab=b.dataset.k;paintBoard();}));
+  const list=$('bd-list');
+  list.innerHTML='<div class="bd-empty">Loading...</div>';
+  const B=BOARD();
+  if(!B){list.innerHTML='<div class="bd-empty">The leaderboard is not available.</div>';return;}
+  const where=boardTab==='daily'?{dailyKey:utcKey()}:{mode:boardTab};
+  B.top({...where,limit:50}).then(rows=>{
+    if(rows==null){
+      list.innerHTML='<div class="bd-empty">'+(B.needsMigration
+        ? 'The leaderboard has not been set up on the server yet.'
+        : 'Could not reach the leaderboard. It will be here when the connection is.')+
+        '</div>';return;
+    }
+    if(!rows.length){
+      list.innerHTML='<div class="bd-empty">'+(boardTab==='daily'
+        ? 'Nobody has finished today\'s board yet. Be first.'
+        : 'No seasons here yet. Play one.')+'</div>';return;
+    }
+    list.innerHTML=rows.map((r,i)=>{
+      const detail=[];
+      if(r.title_won)detail.push('Champions');
+      else if(r.made_playoffs)detail.push(r.seed_label);
+      if(r.run_mode==='staff'&&r.staff_era!=null)detail.push(r.staff_era+' ERA');
+      else if(r.rating!=null)detail.push('Rating '+Math.round(r.rating));
+      if(r.franchise)detail.push(esc(teamFullName(r.franchise)));
+      if(r.division)detail.push(esc(r.division));
+      if(r.era)detail.push(esc(r.era));
+      if(r.cuts)detail.push(r.cuts+' cut');
+      if(r.trades)detail.push(r.trades+' dealt');
+      return '<div class="bd-row"><div class="bd-pos">'+(i+1)+'</div>'+
+        '<div class="bd-who"><div class="bd-name">'+
+          esc(r.display_name||'Anonymous')+'</div>'+
+        '<div class="bd-meta">'+detail.join(' \u00b7 ')+'</div></div>'+
+        '<div class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></div></div>';
+    }).join('');
+  });
 }
 
 /* ─── the daily ───────────────────────────────────────────────────────────
@@ -2846,6 +3018,9 @@ function showResult(){
   rosterDiv.appendChild(roster);
 
   if(o.titleWon||o.beatRecord) setTimeout(()=>fireConfetti(o.isGOAT||o.titleWon),300);
+  /* Last, and never awaited: the screen is already up and a board that is down
+     must not cost anybody the season they just played. */
+  setTimeout(()=>{postToBoard(o).catch(e=>console.error('board',e));},60);
 }
 function gradeFor(pct){
   if(pct>=97)return'A+';if(pct>=93)return'A';if(pct>=89)return'A-';
