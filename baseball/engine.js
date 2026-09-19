@@ -459,6 +459,54 @@ function squadRating(roster) {
   return overallRating(teamWinPct(st.offense, st.defense));
 }
 
+/*
+ * THE NUMBER THE PLAYER IS SHOWN, and it is a different job from squadRating().
+ *
+ * squadRating() exists to put a drafted squad on the same yardstick as the 2,594
+ * real team-seasons it is ranked against, so it reads what a real club has: nine
+ * bats and two starters. That means it is blind to chemistry, to roster shape and
+ * to the closer, which is most of what decides the season. Measured over ninety
+ * drafts, three rosters inside 0.4 rating points of each other projected to 68,
+ * 81 and 96 wins. A player was shown 94 above a 79-83 record and was right to
+ * call it nonsense.
+ *
+ * So the shown rating is built from the offense and defense the season actually
+ * runs on, which correlates .997 with the wins it produces, and then says what it
+ * means in wins.
+ *
+ * TWO NUMBERS, TWO JOBS, and neither is allowed to do the other's:
+ *   squadRating  the all-time rank, and the title difficulty in generatePlayoffs
+ *   teamRating   the rating on the results and squad screens, and the badges
+ * Do not merge them. The rank needs the same yardstick as the field, the shown
+ * rating needs to predict the season, and no one number does both.
+ */
+const PROJ = {
+  /* Pythagorean expectation understates the spread this game's schedule
+   * produces: fitted over 220 drafted rosters against the season simulator,
+   * rms 1.5 wins. Refit rather than nudged if the run model changes. */
+  SLOPE: 1.5047,
+  INTERCEPT: -50.51,
+  /* The two anchors the scale hangs on, both of them things a player already
+   * knows: 88 wins is the wild card line and a coin flip for October, 116 wins
+   * ties the all-time record. A roster that cannot reach October now rates in
+   * the teens instead of the high seventies. */
+  PIVOT_WINS: 88, PIVOT_RATING: 50,
+  TOP_WINS: 116, TOP_RATING: 100,
+};
+
+/* What a roster projects to win over 162, on this game's schedule. */
+function projectedWins(offense, defense) {
+  return PROJ.SLOPE * (teamWinPct(offense, defense) * CONSTANTS.REGULAR_SEASON_GAMES)
+    + PROJ.INTERCEPT;
+}
+
+function teamRating(offense, defense) {
+  const w = projectedWins(offense, defense);
+  const k = (PROJ.TOP_RATING - PROJ.PIVOT_RATING) / (PROJ.TOP_WINS - PROJ.PIVOT_WINS);
+  const r = (w - PROJ.PIVOT_WINS) * k + PROJ.PIVOT_RATING;
+  return Math.max(1, Math.min(100, Math.round(r * 10) / 10));
+}
+
 /* National rank: where a finished season's rating places among all
  * spinnable team-seasons (1 = best ever). */
 function nationalRank(rating, ratingTable) {
@@ -1981,10 +2029,15 @@ function coachReport(roster, chem, structure, rating, unspentMusd) {
     strengths.push(structure.archetype.name);
 
   let verdict;
-  if (rating >= 93) verdict = 'All-time great';
-  else if (rating >= 84) verdict = 'World Series contender';
-  else if (rating >= 72) verdict = 'Playoff team';
-  else if (rating >= 55) verdict = 'Fringe contender';
+  /* Pinned to what the rating now MEANS, measured over 260 drafts: 70+ takes the
+   * title two times in five, 50-60 makes October nine times in ten, 40-50 forty
+   * per cent of the time, and under 40 essentially never. A verdict that promises
+   * more than the band delivers is how a 79-83 season ends up under the words
+   * "all-time great". */
+  if (rating >= 70) verdict = 'All-time great';
+  else if (rating >= 55) verdict = 'World Series contender';
+  else if (rating >= 45) verdict = 'Playoff team';
+  else if (rating >= 35) verdict = 'Fringe contender';
   else verdict = 'Rebuilding';
 
   return { strengths, weaknesses, verdict, archetype: structure && structure.archetype };
@@ -2031,7 +2084,12 @@ function playRun(roster, rng, slotNames, pool, opts) {
 
   const record = { wins, losses };
   const seed = seedFromRecord(wins);
+  /* `rating` is the yardstick: it ranks against real clubs and it sets the title
+   * difficulty, and it stays exactly what it was so the balance does not move.
+   * `shownRating` is the one the player reads. See teamRating() for why they are
+   * two numbers and must not be merged. */
   const rating = staffMode ? staffRating(tagged) : squadRating(roster);
+  const shownRating = staffMode ? staffRating(tagged) : teamRating(offense, defense);
   const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating, pool);
 
   const titleWon = playoffs && playoffs.won;
@@ -2043,6 +2101,7 @@ function playRun(roster, rng, slotNames, pool, opts) {
     chemistry: chem,
     structure,
     rating,
+    shownRating,
     offense: Math.round(offense * 100) / 100,
     defense: Math.round(defense * 100) / 100,
     savePct: Math.round(savePct * 1000) / 1000,
@@ -2106,6 +2165,7 @@ const publicAPI = {
   pairLinks, resolveChemistry, setCuratedChemistry,
   chemPoints, chemistryByPlayer, chemistryWorth,
   teamStrength, teamWinPct, overallRating, squadRating, nationalRank,
+  PROJ, projectedWins, teamRating,
   generateSchedule, buildOpponentPool, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,
   BRACKET, bracketSeed, createBracket,

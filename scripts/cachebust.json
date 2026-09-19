@@ -35,16 +35,16 @@
   },
   "baseball/index.html": {
     "engine.js": {
-      "v": "18",
-      "sha": "08ebd399b170ce90"
+      "v": "19",
+      "sha": "6ab0f66a32570fc9"
     },
     "run.js": {
-      "v": "15",
-      "sha": "ed4465df5bf5f9db"
+      "v": "16",
+      "sha": "06488261bd590cfa"
     },
     "achievements.js": {
-      "v": "3",
-      "sha": "3d4ebb2142c0e272"
+      "v": "4",
+      "sha": "66c86a76b9d61c34"
     },
     "board.js": {
       "v": "1",

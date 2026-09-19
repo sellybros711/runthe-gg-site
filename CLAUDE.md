@@ -279,6 +279,49 @@ node baseball/check-atbats.mjs    the at-bat simulator, against real brackets
 node baseball/check-bracket.mjs   the playoff field, against real runs
 ```
 
+### Two ratings, two jobs, and they must not be merged
+
+`squadRating()` reads nine bats and two starters, the same shape a real club
+offers, so a drafted squad can be ranked against the 2,594 real team-seasons in
+`ratingTable`. It is therefore blind to chemistry, to roster shape and to the
+closer, which is most of what the season actually runs on. Measured over ninety
+drafts, **three rosters inside 0.4 rating points of each other projected to 68,
+81 and 96 wins**, and a player was shown 94 above a 79-83 record.
+
+So there are two numbers:
+
+| | what it reads | what it is for |
+|---|---|---|
+| `squadRating()` | nine bats, two arms, nothing else | the all-time rank, and `titleEdge` inside `generatePlayoffs` |
+| `teamRating()` | the offense and defense the sim runs on | the number on the squad and results screens, and the badges |
+
+`playRun()` returns both, as `rating` and `shownRating`. **Leave `rating` feeding
+`generatePlayoffs`**: the balance is measured on it, and swapping it moves the
+title rate. The UI reads `shownRating` through one accessor in `index.html` so
+nothing picks up the yardstick by accident.
+
+`teamRating()` says what it means in wins. Pythagorean expectation understates
+the spread this schedule produces, so `PROJ.SLOPE` and `PROJ.INTERCEPT` are
+**fitted** over 220 drafted rosters against the season simulator (rms 1.5 wins).
+Refit rather than nudge. The scale then hangs on two things a player already
+knows: **88 wins is the wild card line and rates 50, and the 116-win record
+rates 100**.
+
+What the bands are worth, over 260 drafts, which is what the verdicts and the
+badge thresholds are pinned to:
+
+| rating | mean wins | Octobers | titles |
+|---|---|---|---|
+| 70-80 | 99.4 | 100% | 40% |
+| 60-70 | 98.1 | 100% | 25% |
+| 50-60 | 92.7 | 90% | 3% |
+| 40-50 | 86.0 | 40% | 0% |
+| under 40 | 73.5 | 2% | 0% |
+
+The draft grade is a separate scale and is **not** inflated: it is the share of
+the WAR on your own board that you walked away with, and best-available medians
+B+ while a careless draft gets an F. It only ever needed to say what it graded.
+
 ### Neither the bracket nor the at-bat simulator decides anything
 
 That is the one thing to hold on to before touching either. `generatePlayoffs()`

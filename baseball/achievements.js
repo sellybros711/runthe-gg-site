@@ -70,16 +70,16 @@ const CATALOGUE = [
     (c) => c.bestRank != null && c.bestRank <= 10),
   A('rank_one', 'Greatest ever assembled', 'Build the #1 team of all time.', 'legend', 'The all-time list',
     (c) => c.bestRank != null && c.bestRank <= 1),
-  // Thresholds follow the rating scale a squad is actually measured on: a
-  // skilled draft medians near 78 and tops out around 92, so 86 is roughly as
-  // rare as a top-10 finish and 90 is legend-rare but real. They read 90 and
-  // 100 while a squad was scored on an inflated scale that pinned most runs at
-  // 100, which made one of these free and, once the scale was corrected,
-  // made the other impossible.
-  A('rating_loaded', 'Loaded', 'Field a team rated 86 or better.', 'silver', 'The all-time list',
-    (c) => c.best.rating >= 86),
-  A('rating_paper', 'Best on paper', 'Field a team rated 90 or better.', 'legend', 'The all-time list',
-    (c) => c.best.rating >= 90),
+  // Thresholds follow what the rating now MEANS, measured over 260 drafts on the
+  // scale teamRating() puts a squad on: 55 is a roster that reaches October nine
+  // times in ten and turns up in 11% of drafts, 70 is one that wins the thing two
+  // times in five and turns up in 2%. They read 86 and 90 on the old scale, where
+  // the number ignored chemistry, roster shape and the closer and sat thirty
+  // points high; left alone they would both have become unreachable.
+  A('rating_loaded', 'Loaded', 'Field a team rated 55 or better.', 'silver', 'The all-time list',
+    (c) => c.best.rating >= 55),
+  A('rating_paper', 'Best on paper', 'Field a team rated 70 or better.', 'legend', 'The all-time list',
+    (c) => c.best.rating >= 70),
 
   // ── Roster craft ──
   A('efficient', 'Sharp scout', 'Draft at 90%+ efficiency.', 'silver', 'Roster craft',

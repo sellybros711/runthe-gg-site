@@ -490,6 +490,7 @@ function playSeason(run) {
     chemistry: result.chemistry,
     structure: result.structure,
     rating: result.rating,
+    shownRating: result.shownRating,
     allTimeRank: result.allTimeRank,
     offense: result.offense,
     defense: result.defense,
@@ -516,11 +517,14 @@ function advanceGame(run, gameIndex) {
     const savePct = E.closerSavePct(tagged);
     const pool = poolFor(run);
     const schedule = E.generateSchedule(rng, E.CONSTANTS.REGULAR_SEASON_GAMES, pool);
-    // Same basis as every real club in ratingTable. See squadRating().
+    /* Two numbers doing two jobs. `rating` is the yardstick against real clubs
+       and the title difficulty; `shownRating` is what the player reads. See
+       teamRating() in engine.js. */
     const rating = run.staff ? E.staffRating(tagged) : E.squadRating(run.roster);
+    const shownRating = run.staff ? E.staffRating(tagged) : E.teamRating(offense, defense);
 
     run._simState = {
-      rng, tagged, chem, structure, offense, defense, savePct, schedule, rating,
+      rng, tagged, chem, structure, offense, defense, savePct, schedule, rating, shownRating,
       results: [],
       wins: 0, losses: 0,
       totalRS: 0, totalRA: 0,
@@ -642,7 +646,15 @@ function rebuildSimState(run) {
     ...st,
     tagged, chem, structure, offense, defense,
     savePct: E.closerSavePct(tagged),
+    /* LEFT AS IT WAS, deliberately. advanceGame() seeds `rating` with squadRating()
+     * and this rebuild has always replaced it with the full-pipeline number, so a
+     * Cap Survivor run that cuts somebody has its playoff difficulty measured on a
+     * different scale than one that does not. That is a real inconsistency, and
+     * correcting it here would move those two modes' title rates, which is a
+     * balance change and not part of making the SHOWN rating honest. Fix it on
+     * purpose, with a measurement, not as a rider. */
     rating: run.staff ? E.staffRating(tagged) : E.overallRating(E.teamWinPct(offense, defense)),
+    shownRating: run.staff ? E.staffRating(tagged) : E.teamRating(offense, defense),
   };
 }
 
@@ -810,6 +822,7 @@ function finalizeSeason(run) {
     chemistry: st.chem,
     structure: st.structure,
     rating: st.rating,
+    shownRating: st.shownRating,
     allTimeRank: (_data && !run.staff) ? E.nationalRank(st.rating, _data.ratingTable) : null,
     offense: Math.round(st.offense * 100) / 100,
     defense: Math.round(st.defense * 100) / 100,

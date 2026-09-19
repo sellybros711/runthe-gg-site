@@ -1387,7 +1387,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div class="ro-cell"><div class="cv" id="ro-rating"></div><div class="cl" id="ro-rating-l">Team rating</div>
       <div class="ro-meter"><i id="ro-rating-bar"></i></div></div>
     <div class="ro-cell"><div class="cv gold" id="ro-rank"></div><div class="cl" id="ro-rank-l">All-time rank</div></div>
-    <div class="ro-cell"><div class="cv green" id="ro-eff"></div><div class="cl">Draft grade</div></div>
+    <div class="ro-cell"><div class="cv green" id="ro-eff"></div><div class="cl" id="ro-eff-l">Draft grade</div></div>
   </div>
 
   <div class="ro-coach">
@@ -1535,9 +1535,9 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=18"></script>
-<script src="run.js?v=15"></script>
-<script src="achievements.js?v=3"></script>
+<script src="engine.js?v=19"></script>
+<script src="run.js?v=16"></script>
+<script src="achievements.js?v=4"></script>
 <script src="board.js?v=1"></script>
 <script>
 (function(){
@@ -1566,7 +1566,7 @@ function rowFromRun(o){
   return {
     ts:Date.now(),wins:o.wins,losses:o.losses,titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
     seedLabel:o.seedLabel||null,isGOAT:!!o.isGOAT,beatRecord:!!o.beatRecord,
-    rating:o.rating!=null?Math.round(o.rating):null,allTimeRank:o.allTimeRank!=null?o.allTimeRank:null,
+    rating:shownRating(o)!=null?Math.round(shownRating(o)):null,allTimeRank:o.allTimeRank!=null?o.allTimeRank:null,
     chemPct:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:null,
     spend:RUN.roster.reduce((s,p)=>s+p.p,0),respins:RUN.respinsUsed||0,
     efficiency:bps?bps.efficiency:null,archetype:o.structure&&o.structure.archetype?o.structure.archetype.key:null,
@@ -1641,6 +1641,10 @@ const M=v=>'$'+v.toFixed(1)+'M';
 const lastName=n=>{const p=n.trim().split(/\s+/);return p[p.length-1];};
 /* WAR as a temperature band. See .warv in the stylesheet for why five. */
 const warBand=w=>'w'+(w>=8?5:w>=6?4:w>=4.5?3:w>=3?2:w>=1.5?1:0);
+/* The rating the player is shown is NOT the one that ranks against real clubs or
+   sets the title difficulty. See teamRating() in engine.js. Older saved runs only
+   carry the yardstick, so fall back to it rather than printing nothing. */
+const shownRating=o=>(o&&o.shownRating!=null)?o.shownRating:(o?o.rating:null);
 const warHtml=(w,extra)=>'<span class="warv '+warBand(w)+(extra?' '+extra:'')+'">'+w.toFixed(1)+'</span>';
 
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):null;
@@ -2352,7 +2356,7 @@ function boardPayload(o){
     division:mode==='division'?RUN.division:null,
     dailyKey:RUN.daily?utcKey():null,
     dailyClient:RUN.daily?clientId():null,
-    rating:o.rating==null?null:Math.round(o.rating*10)/10,
+    rating:shownRating(o)==null?null:Math.round(shownRating(o)*10)/10,
     allTimeRank:RUN.staff?null:(o.allTimeRank==null?null:o.allTimeRank),
     staffEra:RUN.staff&&tg?Math.round(E.staffEra(tg)*100)/100:null,
     chemistryPct:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:0,
@@ -2475,7 +2479,7 @@ function recordDaily(o){
   const streak=(prev.date===utcKey(y)?(prev.streak||0):0)+1;
   saveDaily({date:utcKey(),n:dailyNo(),wins:o.wins,losses:o.losses,
     titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
-    rating:o.rating!=null?Math.round(o.rating):null,
+    rating:shownRating(o)!=null?Math.round(shownRating(o)):null,
     rank:o.allTimeRank!=null?o.allTimeRank:null,
     chem:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:0,
     grid:seasonGrid(),streak});
@@ -2965,14 +2969,16 @@ function showSquad(){
      gets neither an archetype nor a coach's report about its hitting. Left alone it
      told a twelve-arm roster it had a light-hitting lineup. */
   const structure=RUN.staff?{multiplier:1,archetype:null}:E.rosterStructure(tagged);
-  const rating=RUN.staff?E.staffRating(tagged):E.overallRating(E.teamWinPct(
+  /* The same number the results screen will show, from the same function, so the
+     squad screen cannot promise one thing and the season report another. */
+  const rating=RUN.staff?E.staffRating(tagged):E.teamRating(
     E.rosterOffense(tagged,chem.multiplier,structure.multiplier),
-    E.rosterRunPrevention(tagged,chem.multiplier)));
+    E.rosterRunPrevention(tagged,chem.multiplier));
   const cr=RUN.staff?staffReport(tagged,chem,rating)
     :E.coachReport(tagged,chem,structure,rating,R.remaining(RUN));
   const vd=$('sq-verdict');
   vd.textContent=cr.verdict;
-  vd.className='sq-verdict'+(rating>=84?' great':'');
+  vd.className='sq-verdict'+(rating>=70?' great':'');
   $('sq-arch').textContent=(structure.archetype&&structure.archetype.name)||'';
   const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
   $('sq-takes').innerHTML=takes.length?takes.map(t=>
@@ -3839,7 +3845,7 @@ function showResult(){
   else if(o.beatRecord){goatDiv.style.display='';goatDiv.innerHTML='<div class="record-banner">Tied the all-time record: 116 wins</div>';}
 
   // Big cells: rating / rank / draft grade
-  const rating=o.rating!=null?Math.round(o.rating):null;
+  const rating=shownRating(o)!=null?Math.round(shownRating(o)):null;
   $('ro-rating').innerHTML=rating!=null?rating+'<span class="u"></span>':'n/a';
   $('ro-rating-bar').style.width=(rating!=null?Math.max(3,rating):0)+'%';
   /* A staff has no all-time rank: the table it would be ranked against is full
@@ -3854,13 +3860,19 @@ function showResult(){
     $('ro-rank').textContent=rank?('#'+rank):'n/a';
     $('ro-rank-l').textContent='All-time rank';
   }
+  /* The grade is measurably well spread (best-available medians B+, a careless
+     draft gets an F), but the word "grade" next to a losing record reads as a
+     grade on the SEASON. The label says what was actually graded: how much of
+     the value on your own board you walked away with. */
   const bps=RUN&&R.bestPossibleSquad?R.bestPossibleSquad(RUN,DATA):null;
   $('ro-eff').textContent=bps?gradeFor(bps.efficiency):'n/a';
+  $('ro-eff-l').textContent=bps?('Draft grade \u00b7 '+Math.round(bps.efficiency)+'% of your board')
+    :'Draft grade';
 
   // Coach's take
   const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
-  const cr=RUN.staff?staffReport(tagged,o.chemistry,o.rating)
-    :E.coachReport(tagged,o.chemistry,o.structure,o.rating,R.remaining(RUN));
+  const cr=RUN.staff?staffReport(tagged,o.chemistry,shownRating(o))
+    :E.coachReport(tagged,o.chemistry,o.structure,shownRating(o),R.remaining(RUN));
   $('ro-arch').textContent=(o.structure&&o.structure.archetype&&o.structure.archetype.name)||'';
   const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
   $('ro-takes').innerHTML=takes.length?takes.map(t=>
@@ -3987,7 +3999,7 @@ function shareLines(o){
   let t='Run The Diamond'+tag+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
   const grid=seasonGrid();
   if(grid)t+='\n'+grid;
-  if(o.rating!=null) t+=' Team rating '+Math.round(o.rating)+'.';
+  if(shownRating(o)!=null) t+=' Team rating '+Math.round(shownRating(o))+'.';
   t+='\nCan you draft a better team?\nrunthe.gg/baseball';
   return t;
 }
@@ -4023,7 +4035,7 @@ function drawShareCard(o){
   c.fillStyle=win?'#b8860b':'#1a1a1a';c.font='400 62px "Righteous", Impact, sans-serif';
   c.fillText(shareVerdict(o).toUpperCase(),W/2,452);
   // three cells
-  const cells=[['TEAM RATING',o.rating!=null?Math.round(o.rating):'n/a','#1a1a1a'],
+  const cells=[['TEAM RATING',shownRating(o)!=null?Math.round(shownRating(o)):'n/a','#1a1a1a'],
     ['ALL-TIME RANK',o.allTimeRank?('#'+o.allTimeRank):'n/a','#b8860b'],
     ['CHEMISTRY',(o.chemistry.multiplier>=1?'+':'')+((o.chemistry.multiplier-1)*100).toFixed(0)+'%','#2e7d32']];
   const cw=300,ch=150,gap=30,startx=W/2-(cw*3+gap*2)/2,cy=510;
