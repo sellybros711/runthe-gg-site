@@ -1,12 +1,12 @@
 name: Baseball checks
 
-# Run The Diamond's October is played out plate by plate, and the one thing that
-# must never slip is that the at-bat simulator is a dramatization: resolveGame()
-# decides the score, and the nine innings on screen have to add up to it. A game
-# whose line score disagrees with the bracket beside it is the failure this
-# catches, and it is invisible from a screenshot.
+# Run The Diamond's October decides nothing on screen: generatePlayoffs() settles
+# the player's path, and both the bracket and the at-bat simulator are built around
+# it. The failures that follow from that are all invisible in a screenshot, which
+# is what these two check.
 #
-#   node baseball/check-atbats.mjs    faithfulness, shape, and real brackets
+#   node baseball/check-atbats.mjs    the line score adds up to the score it was handed
+#   node baseball/check-bracket.mjs   the field agrees with the run it was built from
 #
 # No secrets, no network, no deploy.
 
@@ -41,5 +41,14 @@ jobs:
       # Asserts the line score is always the score it was handed, that no inning
       # runs past three outs, that a walk-off is a home win on the last play, and
       # that the shape (plate appearances, hits, scoreless innings) is baseball.
-      - name: The October simulator
+      - name: The at-bat simulator
         run: node baseball/check-atbats.mjs 25000
+
+      # 150 brackets, each off a run drafted and played from scratch. Asserts the
+      # seat across from the player is the club the run really scheduled, twelve
+      # clubs from twelve franchises with no season drawn twice, that nobody is
+      # paired with themselves, and that a column stays unknown until the one
+      # feeding it has been played. A bracket that puts the 1951 Giants on both
+      # sides of the World Series renders perfectly, which is why this exists.
+      - name: The playoff bracket
+        run: node baseball/check-bracket.mjs 150

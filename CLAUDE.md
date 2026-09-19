@@ -275,13 +275,54 @@ direction.
 so **read the cache-busting section above before editing any of them**.
 
 ```
-node baseball/check-atbats.mjs    the October simulator, against real brackets
+node baseball/check-atbats.mjs    the at-bat simulator, against real brackets
+node baseball/check-bracket.mjs   the playoff field, against real runs
 ```
 
-### The at-bat simulator decides nothing, and that is the point
+### Neither the bracket nor the at-bat simulator decides anything
+
+That is the one thing to hold on to before touching either. `generatePlayoffs()`
+picks the player's opponents and stiffens them by round and by rating, and the
+balance is measured on that. Everything October draws on screen is built around
+that path and settles nothing: the bracket simulates the eleven series the player
+is not in, and the at-bat engine plays out scores that already exist. Both run on
+their own seeded RNG so the season's stream is untouched.
+
+### The bracket
+
+Twelve clubs, four columns, reseeded every round the way MLB's is: the top two
+seeds sit out the wild card, then the best seed alive always draws the worst seed
+alive. `createBracket()` in `engine.js` holds all of it, which is why
+`check-bracket.mjs` can check it; `index.html` only draws.
+
+Three things it gets wrong if you are not careful, all of which render perfectly:
+
+- **`run.playoffs.rounds` stops at the round the run went out in**, so the last
+  rung is only the World Series opponent when the run reached the World Series.
+  Pinning it as one anyway seated the club that knocked the player out in the
+  Division Series as the far side's top seed, and that club then came through as
+  the near champion too: a World Series between the 1951 Giants and the 1951
+  Giants. Rungs are pinned BY COLUMN (`ladder[3 - firstCol]`), and the array is
+  never compacted.
+- **The ladder can draw the same club in two rounds**, because the opponent for
+  each round is picked at random out of the elite pool. Only the first pinning
+  stands.
+- **The seat across from the player is the run's own opponent**, written over
+  whatever the reseed produced. Without it you watch a series against a club the
+  bracket never put there.
+
+**The two sides are not the American and National Leagues and must never be
+labelled as such.** A roster is drafted across every era from 71 clubs, half of
+which no longer exist and some of which were never in either league, so filing the
+1931 Homestead Grays under the AL would be a tidy-looking lie. They are the
+player's side and the other one.
+
+### The at-bat simulator
 
 October is played out plate by plate in every mode except Classic and the daily,
-which keep the quick bracket. The thing to understand before touching it:
+which watch the bracket fill in and never sit through a game. (A finished run can
+always go back and watch October from the results screen, whatever mode it was.)
+The thing to understand before touching it:
 
 **`resolveGame()` still decides every game.** The season, the bracket and the
 balance measured across thousands of runs (89.2 mean wins, 59.8% Octobers, 6.5%

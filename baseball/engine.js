@@ -1221,6 +1221,247 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
   return { rounds: results, won };
 }
 
+// ─── the bracket ─────────────────────────────────────────────────────────────
+
+/*
+ * Twelve clubs, four rounds, the field AROUND the player's path through October.
+ *
+ * IT DECIDES NOTHING, for the same reason the at-bat simulator below decides
+ * nothing. Your opponents are generatePlayoffs()'s ladder and stay exactly that:
+ * it picked them, stiffened them by round and by your rating, and the balance is
+ * measured on that. What this builds is the eleven OTHER series, simulated for the
+ * reveal alone off their own seeded RNG, so the screen can show a bracket filling
+ * in rather than six numbers appearing on a stagger.
+ *
+ * ONE THING IS AUTHORED RATHER THAN DERIVED, and it follows from that: the seat
+ * across from you carries the club the run really scheduled. The reseed decides who
+ * everybody else plays, but if it disagreed with the ladder you would watch a series
+ * against a club the bracket never put there.
+ *
+ * THE TWO SIDES ARE NOT THE AMERICAN AND NATIONAL LEAGUES and must not be labelled
+ * as such. A roster is drafted across every era from 71 clubs, half of which no
+ * longer exist and some of which were never in either league, so filing the 1931
+ * Homestead Grays under the AL would be a tidy-looking lie. They are the player's
+ * side and the other one.
+ */
+const BRACKET = {
+  ROUNDS: PLAYOFF_ROUND_NAMES,
+  SHORT: ['Wild Card', 'Division', 'Championship', 'World Series'],
+  /* MLB's wild card round: the top two seeds sit it out, 3 hosts 6 and 4 hosts 5. */
+  WC: [[3, 6], [4, 5]],
+  BYES: [1, 2],
+  BEST_OF: [3, 5, 7, 7],
+  SIDES: ['near', 'far'],
+};
+
+/* Seeded on the record, the way the real thing is. A bye is a division winner by
+ * definition (95+ wins), and the very best of those take the one seed. */
+function bracketSeed(wins, bye) {
+  const w = wins | 0;
+  if (bye) return w >= 100 ? 1 : 2;
+  if (w >= 93) return 3;
+  if (w >= 91) return 4;
+  if (w >= 89) return 5;
+  return 6;
+}
+
+/*
+ * opts: { seed, bye, rounds, wins, ladder, teamSeasons }
+ *   ladder      the run's own opponents, in the order they are met
+ *   teamSeasons the pool everybody else is drawn from
+ *
+ * Returns the field plus the four pairing helpers the screen walks. State
+ * (`results`, `scores`, `revealed`) lives on the object so a bracket redrawn
+ * mid-animation cannot change an answer it has already given.
+ */
+function createBracket(opts) {
+  const rng = createSeededRNG(hashSeed(String(opts.seed) + '|bracket'));
+  const bye = !!opts.bye;
+  const mySeed = bracketSeed(opts.wins, bye);
+  const firstCol = BRACKET.ROUNDS.length - (opts.rounds || 3);
+  /* INDEX-ALIGNED WITH THE ROUNDS PLAYED, never compacted: ladder[i] is the opponent
+   * in the run's round i, which sits in column firstCol + i. A hole stays a hole. */
+  const ladder = (opts.ladder || []).slice();
+
+  /* Every real opponent is reserved, not just the pinned ones: the seat across from
+   * the player is overwritten with the run's own club each round, so a filler that
+   * happened to be the same club would put that team on screen twice. */
+  const used = {}, clubs = {};
+  for (const t of ladder) if (t) { used[t.id] = 1; clubs[t.code] = 1; }
+
+  /* Fillers are real all-time clubs, strongest first, ONE SEASON PER FRANCHISE.
+   * Every year of every club is its own row, so drawing on rating alone seats the
+   * 1927, 1939 and 1998 Yankees in the same bracket. A bracket with three of
+   * anybody in it is not a bracket. */
+  const pool = (opts.teamSeasons || [])
+    .filter(t => t.rating != null && !used[t.team_season_id])
+    .sort((a, b) => b.rating - a.rating).slice(0, 220);
+  const take = (n) => {
+    const out = [];
+    while (out.length < n && pool.length) {
+      const t = pool.splice(Math.floor(rng() * Math.min(pool.length, 26)), 1)[0];
+      if (clubs[t.team]) continue;
+      used[t.team_season_id] = 1; clubs[t.team] = 1;
+      out.push({ code: t.team, season: t.season, rating: t.rating, id: t.team_season_id });
+    }
+    return out;
+  };
+
+  const near = new Array(7).fill(null), far = new Array(7).fill(null);
+  near[mySeed] = { you: true, seed: mySeed };
+  /* The World Series opponent is the far side's top seed, because the last rung of
+   * the ladder has to be on the other half of the bracket to be met there at all.
+   * The one before it takes the best seat left on the player's side. */
+  /* PINNED BY COLUMN, NOT BY POSITION IN THE LADDER. run.playoffs.rounds stops at the
+   * round the run went out in, so the last rung is only the World Series opponent when
+   * the run got there. Taking it as one anyway seated the club that knocked the player
+   * out in the Division Series as the other side's top seed, and that club then turned
+   * up as the near champion too: a World Series between the 1951 Giants and the 1951
+   * Giants. A run that never reached a round pins nobody for it, and the seats fill
+   * with the rest of the field. */
+  const ws = ladder[3 - firstCol] || null;
+  let lcs = ladder[2 - firstCol] || null;
+  /* THE LADDER CAN ALSO DRAW THE SAME CLUB TWICE, because generatePlayoffs() picks each
+   * round's opponent at random out of the elite pool and nothing stops it landing on
+   * the same one in consecutive rounds. Only the first pinning stands; the other round's
+   * seat is filled by the override in colGames(), which shows the club the run really
+   * scheduled. */
+  if (ws) far[1] = { team: ws, seed: 1 };
+  if (lcs && ws && lcs.id === ws.id) lcs = null;
+  if (lcs) { const s = mySeed === 1 ? 2 : 1; if (!near[s]) near[s] = { team: lcs, seed: s }; }
+  const fillNear = take(6 - near.filter(Boolean).length);
+  for (let s = 1, i = 0; s <= 6; s++) if (!near[s]) near[s] = { team: fillNear[i++] || null, seed: s };
+  const fillFar = take(6 - far.filter(Boolean).length);
+  for (let s = 1, i = 0; s <= 6; s++) if (!far[s]) far[s] = { team: fillFar[i++] || null, seed: s };
+
+  const B = {
+    mySeed, bye, firstCol, near, far, ladder,
+    results: {}, scores: {}, revealed: {},
+    colOf: (i) => firstCol + i,
+  };
+
+  /* One simulated series. Rating decides it, with enough noise that a six seed can
+   * turn one over: these are the series the player is not in, so they only have to
+   * be plausible. */
+  function play(key, a, b, r, bestOf) {
+    if (B.results[key] !== undefined) return B.results[key];
+    /* THE PLAYER'S LINE IS DRAWN FORWARD, never simulated. A bracket is drawn ahead
+     * of the games, so their own path has to run to the World Series until the run
+     * says otherwise, which it does through settleMine(). Left uncached so that
+     * write wins: simulating it instead put the player out in the Division Series
+     * on screen while they were still alive in the game. */
+    if ((a && a.you) || (b && b.you)) return (a && a.you) ? a : b;
+    let w;
+    if (!a || !b) w = a || b || null;
+    else {
+      const ra = (a.team && a.team.rating) || 70, rb = (b.team && b.team.rating) || 70;
+      const edge = (ra - rb) * 0.085 + ((b.seed || 6) - (a.seed || 6)) * 0.15;
+      w = (r() < 1 / (1 + Math.exp(-edge))) ? a : b;
+      const need = Math.ceil((bestOf || 7) / 2);
+      B.scores[key] = need + '-' + Math.floor(r() * need);
+    }
+    B.results[key] = w;
+    return w;
+  }
+
+  /* The four that survive a side, in seed order, once the wild card has been played. */
+  function survivors(side, r) {
+    const field = B[side];
+    const out = BRACKET.BYES.map(s => field[s]);
+    BRACKET.WC.forEach(([hi, lo], i) => { out.push(play(side + ':0:' + i, field[hi], field[lo], r, 3)); });
+    return out.filter(Boolean).sort((x, y) => x.seed - y.seed);
+  }
+
+  /* RESEEDED EVERY ROUND, which is the thing that makes this a bracket and not a
+   * fixed ladder: the best seed still alive always draws the worst seed still alive. */
+  function pairs(side, col, r) {
+    const field = B[side];
+    if (col === 0) return BRACKET.WC.map(([hi, lo]) => [field[hi], field[lo]]);
+    if (col === 1) { const v = survivors(side, r); return [[v[0], v[3]], [v[1], v[2]]]; }
+    if (col === 2) {
+      const d = pairs(side, 1, r).map(([a, b], i) => play(side + ':1:' + i, a, b, r, 5));
+      return [[d[0], d[1]]];
+    }
+    return [];
+  }
+
+  /* Every series in a column, both sides, plus the World Series across the middle. */
+  B.colGames = function (col) {
+    const r = createSeededRNG(hashSeed(String(opts.seed) + '|brk|' + col));
+    const mine = (g) => !!(g && ((g[0] && g[0].you) || (g[1] && g[1].you)));
+    let out;
+    if (col === 3) {
+      const champ = (side) => {
+        const p = pairs(side, 2, r);
+        return p.length ? play(side + ':2:0', p[0][0], p[0][1], r, 7) : null;
+      };
+      const g = [champ('near'), champ('far')];
+      out = [{ side: 'ws', i: 0, pair: g, me: mine(g), key: 'ws:3:0' }];
+    } else {
+      out = [];
+      for (const side of BRACKET.SIDES) {
+        pairs(side, col, r).forEach((pair, i) => {
+          out.push({ side, i, pair, me: mine(pair), key: side + ':' + col + ':' + i });
+        });
+      }
+    }
+    /* THE PLAYER'S OPPONENT IS THE RUN'S, not the bracket's. Every other seat is
+     * filled by the reseed above; the seat across from them carries whatever seed
+     * the pairing gave it and the club the run really scheduled. */
+    const opp = ladder[col - firstCol] || null;
+    if (opp) for (const g of out) if (g.me) {
+      const seat = g.pair[0] && g.pair[0].you ? 1 : 0;
+      const cur = g.pair[seat];
+      g.pair[seat] = { team: opp, seed: (cur && cur.seed) || 1 };
+    }
+    return out;
+  };
+
+  /*
+   * Once the player's series has been played, its winner is the run's own result.
+   *
+   * EVERYTHING DOWNSTREAM IS THROWN AWAY, and it has to be. The player's line is
+   * drawn forward, so every later round was worked out with them still in it: the
+   * Championship Series was paired off a set of survivors that included them, and
+   * that answer was cached under its slot. The moment they go out, the club that
+   * beat them takes their place in the reseed and those pairings change, but the
+   * cached winners do not. Left alone it showed a Championship Series between the
+   * 1930 Athletics and the 1930 Athletics, and a club advancing out of a series it
+   * was not in. Nothing past this column has been revealed yet (a column cannot be
+   * shown before the one feeding it), so nothing on screen moves.
+   */
+  B.settleMine = function (i, won, score) {
+    const col = firstCol + i;
+    const g = B.colGames(col).find(x => x.me);
+    if (!g) return;
+    const me = g.pair[0] && g.pair[0].you ? g.pair[0] : g.pair[1];
+    const them = g.pair[0] && g.pair[0].you ? g.pair[1] : g.pair[0];
+    for (const key of Object.keys(B.results)) {
+      if (parseInt(key.split(':')[1], 10) > col) {
+        delete B.results[key]; delete B.scores[key]; delete B.revealed[key];
+      }
+    }
+    B.results[g.key] = won ? me : them;
+    if (score) B.scores[g.key] = score;
+    B.revealed[g.key] = 1;
+  };
+
+  B.revealAll = function () {
+    for (let c = 0; c < 4; c++) B.colGames(c).forEach(g => { B.revealed[g.key] = 1; });
+  };
+
+  /* A column is empty until the round that feeds it has been played. Every series is
+   * decided the first time its pairing is asked for, so without this the bracket
+   * prints the whole thing on the first screen and the World Series can be read
+   * before the first pitch. */
+  B.knownAt = function (col) {
+    if (col === 0) return true;
+    return B.colGames(col - 1).every(g => !!B.revealed[g.key]);
+  };
+
+  return B;
+}
+
 // ─── at-bat simulation ───────────────────────────────────────────────────────
 
 /*
@@ -1867,6 +2108,7 @@ const publicAPI = {
   teamStrength, teamWinPct, overallRating, squadRating, nationalRank,
   generateSchedule, buildOpponentPool, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,
+  BRACKET, bracketSeed, createBracket,
   PA_RATES, simGameScript, simHalfInning, spreadRuns, battingOrder, homeGames,
   lineupFromRoster, staffFromRoster, lineupFromTeamSeason, staffFromTeamSeason,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,

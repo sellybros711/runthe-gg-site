@@ -349,32 +349,75 @@ h1,h2,h3{margin:0}
 .sim-pip{width:auto;height:14px;border-radius:2px;background:rgba(0,0,0,.08)}
 .sim-pip.w{background:var(--green)} .sim-pip.l{background:var(--red)}
 
-/* ─── playoffs ─── */
-.po-round{position:relative;margin:12px 0;padding:14px 16px 14px 21px;border-radius:14px;
-  background:var(--panel);overflow:hidden;
-  border:1px solid rgba(0,0,0,.10);box-shadow:0 2px 8px -3px rgba(0,0,0,.12);
-  animation:optin .3s ease both}
-/* the club you are actually playing, in its own colors */
-.po-round::before{content:'';position:absolute;left:0;top:0;bottom:0;width:7px;
-  background:linear-gradient(160deg,var(--c1,#8a7e6e) 0%,var(--c1,#8a7e6e) 52%,
-    var(--c2,#6b6252) 52%,var(--c2,#6b6252) 100%)}
-.po-round.won{border-color:rgba(46,125,50,.4)}
-.po-round.lost{border-color:rgba(192,57,43,.4)}
-.po-round.champ{border-color:rgba(184,134,11,.55);background:linear-gradient(180deg,#f7efd8,#efe3c6)}
-.po-round .round-name{font-family:var(--fn);font-size:11px;font-weight:800;text-transform:uppercase;
-  letter-spacing:.1em;color:var(--gold);margin-bottom:3px}
-.po-round .po-opp{font-family:var(--fp);font-size:13px;font-weight:700;color:var(--dim);margin-bottom:8px}
-.po-round .po-opp b{color:var(--ink)}
-.po-round .po-rate{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:99px;
-  background:rgba(0,0,0,.07);font-family:var(--fn);font-size:10px;font-weight:800;
-  color:var(--dim-2);vertical-align:1px}
-.po-series{font-family:'Righteous',var(--fd);font-size:20px;text-transform:uppercase;letter-spacing:.02em;margin:2px 0 10px}
-.po-series.won{color:var(--green)} .po-series.lost{color:var(--red)} .po-series.champ{color:var(--gold)}
-.po-games{display:flex;gap:6px;flex-wrap:wrap}
-.po-g{padding:5px 9px;border-radius:7px;display:flex;align-items:center;justify-content:center;
-  font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.02em}
-.po-g.w{background:rgba(46,125,50,.15);color:var(--green);border:1px solid rgba(46,125,50,.3)}
-.po-g.l{background:rgba(192,57,43,.12);color:var(--red);border:1px solid rgba(192,57,43,.25)}
+/* ─── the bracket ───
+   Four columns, one per round, on a rail that scrolls sideways when the screen is
+   not wide enough for all of them. A bracket read left to right is the shape
+   everybody already knows, and squashing it into something else to fit a phone
+   costs the one thing it is for. Same treatment the football game's uses.
+
+   width:fit-content plus margin:0 auto rather than justify-content:center, which
+   is the obvious way to write it and is broken on a scroll container: when the
+   content overflows, a centred flex row puts the first column at a NEGATIVE offset
+   no scroll position can reach, so a phone loses the Wild Card column entirely. */
+.brk-title{margin:3px 0 0;text-align:center;font-size:clamp(23px,7vw,34px);line-height:1.05}
+.brk-wrap{position:relative;margin-top:10px}
+.brk{position:relative;display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;
+  padding:4px 2px 12px;width:fit-content;max-width:100%;margin:0 auto;
+  scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.brk::-webkit-scrollbar{height:6px}
+.brk::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
+.brk-col{flex:0 0 150px;scroll-snap-align:start;display:flex;flex-direction:column;gap:7px}
+.brk-h{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gold);text-align:center;padding-bottom:2px}
+.brk-side{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--dim-2);margin-top:3px}
+.brk-g{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel)}
+.brk-g.live{border-color:rgba(184,134,11,.6);box-shadow:0 0 0 2px rgba(184,134,11,.2)}
+.brk-t{position:relative;display:flex;align-items:center;gap:6px;padding:6px 7px 6px 10px;
+  font-family:var(--fn);font-size:11.5px;color:var(--dim);min-height:28px}
+.brk-t+.brk-t{border-top:1px solid var(--line)}
+/* The club in its own colors, the way the reels and the old round cards wore them. */
+.brk-t::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--c1,transparent)}
+.brk-t .sd{flex:0 0 13px;text-align:center;font-size:9.5px;font-weight:800;color:var(--dim-2)}
+.brk-t .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-weight:800;letter-spacing:.02em}
+.brk-t .yr{font-size:9.5px;color:var(--dim-2);flex:0 0 auto}
+.brk-t .sc{font-size:10px;font-weight:800;color:var(--green);flex:0 0 auto}
+.brk-t.me .nm{color:var(--gold)}
+/* WINNERS ARE TINTED, NOT JUST BOLDED: weight alone is a poor signal at 11.5px in a
+   column you scan rather than read. Losers are dimmed rather than reddened, because
+   red is already doing a job on this screen. */
+.brk-t.won{color:var(--ink);background:rgba(46,125,50,.09)}
+.brk-t.won .nm{color:var(--green)}
+.brk-t.won.me .nm{color:var(--gold)}
+.brk-t.out{opacity:.4}
+.brk-t.tbd .nm{color:var(--dim-2);font-weight:600;font-style:italic}
+.brk-t.champ{background:linear-gradient(180deg,#f7efd8,#efe3c6)}
+.brk-t.champ .nm{color:var(--gold)}
+.brk-note{text-align:center;font-family:var(--fp);font-size:13px;color:var(--dim);
+  margin:6px 0 0;min-height:18px}
+@media (max-width:400px){.brk-col{flex:0 0 138px}}
+/* On a wide screen the whole bracket is on at once and there is nothing to scroll,
+   so the phone's 150px columns were just small. Same breakpoint the rest of the
+   game changes shape at. */
+/* THE PAGE IS A 600px COLUMN and four columns want more than that, so on a wide
+   screen this one block steps outside it. Without the breakout the rail is capped at
+   the column width and scrolls on a 1440px display with 800px going spare, which is
+   the one thing a bracket should never make you do. Everything else on the page stays
+   in the column: only the bracket is wider than the game. */
+@media (min-width:820px){
+  .brk-wrap{width:100vw;margin-left:calc(50% - 50vw)}
+  .brk{gap:14px;padding:6px 4px 16px;max-width:min(100%,calc(100vw - 28px))}
+  .brk-col{flex:0 0 clamp(150px,calc((100vw - 90px) / 4),210px);gap:9px}
+  .brk-h{font-size:11.5px;letter-spacing:.12em;padding-bottom:4px}
+  .brk-side{font-size:10px;margin-top:5px}
+  .brk-g{border-radius:11px}
+  .brk-t{gap:8px;padding:9px 11px 9px 13px;font-size:13.5px;min-height:36px}
+  .brk-t .sd{flex:0 0 16px;font-size:10.5px}
+  .brk-t .yr,.brk-t .sc{font-size:11px}
+  .brk-note{font-size:14px;margin-top:10px}
+}
 
 /* ─── the series card ─── */
 .sr-card{position:relative;margin:14px 0;padding:20px 18px 18px;border-radius:16px;overflow:hidden;
@@ -1222,12 +1265,19 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
+<!-- The bracket, between rounds. The field is drawn once and walked forward a round
+     at a time: the games you are not in resolve on screen one after another, and when
+     yours is the last one left it hands off to the series card. -->
 <div class="screen" id="s-playoffs">
   <div class="sim-header">
     <div class="eyebrow" id="po-seed-label"></div>
-    <h2 class="display" style="font-size:28px;margin:4px 0">October baseball</h2>
+    <h2 class="display brk-title" id="brk-round">October baseball</h2>
   </div>
-  <div id="po-rounds"></div>
+  <div class="brk-wrap">
+    <div class="brk" id="brk-rail" role="group" aria-label="Playoff bracket"></div>
+  </div>
+  <p class="brk-note" id="brk-note"></p>
+  <button class="sr-all" id="b-brk-skip">Skip ahead</button>
 </div>
 
 <!-- The series card: the matchup, and the choice between watching it and
@@ -1441,7 +1491,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=17"></script>
+<script src="engine.js?v=18"></script>
 <script src="run.js?v=15"></script>
 <script src="achievements.js?v=3"></script>
 <script src="board.js?v=1"></script>
@@ -3050,55 +3100,156 @@ function finishSeason(){
   else setTimeout(()=>showResult(),1500);
 }
 
-/* ─── playoffs ─── */
+/* ─── the bracket ───────────────────────────────────────────────────────────
+   The field and the pairings are E.createBracket()'s, which is where they can be
+   tested; everything from here down is drawing. Read the block above it in
+   engine.js before changing either: the bracket decides nothing, and the seat
+   across from you is the run's own opponent rather than the reseed's. */
+let BRK=null;
+function brkBuild(){
+  if(BRK&&BRK.forSeed===RUN.seed)return BRK;
+  BRK=E.createBracket({
+    seed:RUN.seed,
+    bye:!!RUN.playoffSeed.bye,
+    rounds:RUN.playoffSeed.rounds,
+    wins:RUN.outcome.wins,
+    ladder:(RUN.playoffs&&RUN.playoffs.rounds||[]).map(r=>r.oppTeam?{
+      code:r.oppTeam,season:r.oppSeason,rating:r.oppRating,
+      id:r.oppSeason?E.teamSeasonId(r.oppTeam,r.oppSeason):r.oppTeam}:null),
+    teamSeasons:(DATA&&DATA.teamSeasons)||[],
+  });
+  BRK.forSeed=RUN.seed;
+  return BRK;
+}
+const BRK_ROUNDS=E.BRACKET.ROUNDS, BRK_SHORT=E.BRACKET.SHORT, BRK_BYES=E.BRACKET.BYES;
+const brkColOf=(i)=>brkBuild().colOf(i);
+const brkFirstCol=()=>brkBuild().firstCol;
+const brkColGames=(col)=>brkBuild().colGames(col);
+function brkSettleMine(i,won){
+  const r=RUN.playoffs.rounds[i];
+  brkBuild().settleMine(i,won,r?(won?r.yourWins+'-'+r.oppWins:r.oppWins+'-'+r.yourWins):null);
+}
+const brkRevealAll=()=>brkBuild().revealAll();
 
-/* One round of the bracket, drawn the same way whether it arrived on a stagger
-   or was just played out plate appearance by plate appearance. */
-function roundCard(round){
-  const champ=round.won&&round.round==='World Series';
-  const div=document.createElement('div');
-  div.className='po-round '+(champ?'champ':round.won?'won':'lost');
-  if(round.oppTeam){
-    const tc=E.teamColors(round.oppTeam);
-    div.style.setProperty('--c1',tc[0]);
-    div.style.setProperty('--c2',tc[1]||tc[0]);
-  }
-  div.innerHTML='<div class="round-name">'+esc(round.round)+'</div>'+
-    (round.oppName?'<div class="po-opp">vs <b>'+esc(round.oppName)+'</b>'+
-      (round.oppRating!=null?'<span class="po-rate" title="Their team rating">'+
-        Math.round(round.oppRating)+'</span>':'')+'</div>':'')+
-    '<div class="po-series '+(champ?'champ':round.won?'won':'lost')+'">'+
-    (champ?'&#127942; Champions '+round.yourWins+'-'+round.oppWins:
-      round.won?'Won '+round.yourWins+'-'+round.oppWins:'Lost '+round.oppWins+'-'+round.yourWins)+'</div>'+
-    '<div class="po-games">'+round.games.map((g,gi)=>
-      '<div class="po-g '+(g.won?'w':'l')+'">G'+(gi+1)+' '+g.yourRuns+'-'+g.oppRuns+'</div>'
-    ).join('')+'</div>';
-  return div;
+/* One seat. A seat with nobody in it yet is the winner of a series that has not been
+   played, and says so rather than sitting blank. */
+function brkSeat(e,won,settled,score,champ){
+  if(!e)return '<div class="brk-t tbd"><span class="sd"></span><span class="nm">TBD</span></div>';
+  const cls=(settled?(won?' won':' out'):'')+(champ&&won?' champ':'');
+  const sc=(settled&&won&&score)?'<span class="sc">'+esc(score)+'</span>':'';
+  if(e.you)return '<div class="brk-t me'+cls+'"><span class="sd">'+e.seed+'</span>'+
+    '<span class="nm">'+esc(myClubShort())+'</span>'+sc+'</div>';
+  const t=e.team;
+  if(!t)return '<div class="brk-t tbd"><span class="sd">'+e.seed+'</span>'+
+    '<span class="nm">TBD</span></div>';
+  const c=E.teamColors(t.code);
+  /* The year carries an apostrophe. Two bare digits hard right, in a row that already
+     has a number hard left, read as a score. */
+  return '<div class="brk-t'+cls+'" style="--c1:'+c[0]+'"><span class="sd">'+e.seed+'</span>'+
+    '<span class="nm">'+esc(t.code)+'</span>'+
+    '<span class="yr">'+(t.season?'&rsquo;'+esc(String(t.season).slice(2)):'')+'</span>'+sc+'</div>';
 }
 
-/* The quick draft stays quick: Classic and the daily get the bracket on a
-   stagger, the way they always have. Every mode you actually sit with plays
-   October out. */
+function brkRender(upTo){
+  const B=brkBuild(),rail=$('brk-rail');if(!rail)return;
+  /* A column is empty until the round that feeds it has been played, or the World
+     Series can be read before the first pitch. TBD is what an unfed seat says. */
+  const known=[0,1,2,3].map(c=>B.knownAt(c));
+  let h='';
+  for(let c=0;c<4;c++){
+    h+='<div class="brk-col"><div class="brk-h">'+esc(BRK_SHORT[c])+'</div>';
+    const games=brkColGames(c);
+    let side=null;
+    for(const g of games){
+      if(c<3&&g.side!==side){
+        side=g.side;
+        h+='<div class="brk-side">'+(side==='near'?'Your side':'The other side')+'</div>';
+      }
+      const settled=!!B.revealed[g.key];
+      const w=settled?B.results[g.key]:null;
+      const p0=known[c]?g.pair[0]:null,p1=known[c]?g.pair[1]:null;
+      /* The ring means "this one is on now", so it comes off the moment the series
+         has a result: a settled game wearing it reads as still to be played. */
+      h+='<div class="brk-g'+(g.me&&c===upTo&&!settled?' live':'')+'">'+
+        brkSeat(p0,!!(w&&p0&&w===p0),settled,B.scores[g.key],c===3)+
+        brkSeat(p1,!!(w&&p1&&w===p1),settled,B.scores[g.key],c===3)+'</div>';
+    }
+    /* The two seats per side that sat the wild card out. They played nothing, but
+       they are in the field and a bracket that leaves them off is missing four clubs. */
+    if(c===0)for(const s of ['near','far']){
+      h+='<div class="brk-side">'+(s==='near'?'Your side':'The other side')+' byes</div>'+
+        '<div class="brk-g">'+BRK_BYES.map(n=>brkSeat(B[s][n],false,false)).join('')+'</div>';
+    }
+    h+='</div>';
+  }
+  rail.innerHTML=h;
+}
+
+/* Where the player is in October: the round out of their own bracket, not out of
+   the four columns, because a division winner never plays the first one. */
+function brkWhere(col){
+  const n=E.playoffRoundNames(RUN.playoffSeed.rounds).length;
+  const i=col-brkFirstCol();
+  return i<0?'October baseball':('Round '+(i+1)+' of '+n);
+}
+
+/* The round being played, in view. Four columns at 150 wide is 627 and a phone shows
+   two of them, so by the World Series the one series that matters starts off the
+   right-hand edge and you have to go looking for it. */
+function brkFocus(col){
+  const rail=$('brk-rail');if(!rail)return;
+  const el=rail.children[col];if(!el)return;
+  rail.scrollTo({left:Math.max(0,el.offsetLeft-10),behavior:reduceMotion()?'auto':'smooth'});
+}
+
+/* The reveal. Every series in this column that you are not in flips to its winner one
+   after another; yours is left standing and the screen hands off. Nothing here decides
+   anything: the others were settled the moment the pairings were asked for, and yours
+   was settled by the engine before this screen was ever shown. */
+const BRK_STEP=520,BRK_LEAD=650,BRK_TAIL=620;
+let brkSkip=null;
+function brkShow(col,note,done){
+  const B=brkBuild();
+  /* The columns a bye walked past. Nobody animated them, but they happened, and the
+     column after them cannot be filled in until they are settled. */
+  for(let c=0;c<brkFirstCol();c++)brkColGames(c).forEach(g=>{B.revealed[g.key]=1;});
+  /* The eyebrow says where you are in October and the title says which round.
+     Both reading "Wild Card" told the player nothing twice. */
+  $('po-seed-label').textContent=brkWhere(col);
+  $('brk-round').textContent=BRK_ROUNDS[col]||'October baseball';
+  $('brk-note').textContent='';
+  brkRender(col);
+  show('s-playoffs');
+  brkFocus(col);
+  const games=brkColGames(col).filter(g=>!g.me&&!B.revealed[g.key]);
+  let i=0;
+  const finish=()=>{
+    poClear();brkSkip=null;
+    games.forEach(g=>{B.revealed[g.key]=1;});
+    brkRender(col);
+    $('brk-note').textContent=note||'';
+    done();
+  };
+  brkSkip=finish;
+  const tick=()=>{
+    if(i>=games.length){PO.timer=setTimeout(finish,BRK_TAIL/(PO.speed||1));return;}
+    B.revealed[games[i].key]=1;
+    i++;
+    brkRender(col);
+    PO.timer=setTimeout(tick,BRK_STEP/(PO.speed||1));
+  };
+  PO.timer=setTimeout(tick,BRK_LEAD/(PO.speed||1));
+}
+
+/* The quick draft stays quick: Classic and the daily watch the bracket fill in and
+   never sit through a game. Every mode you actually sit with plays October out. */
 function liveOctober(){
   if(!RUN||RUN.daily)return false;
   return !!(RUN.era||RUN.franchise||RUN.division||RUN.capSurvivor||RUN.staff||RUN.tradeMachine);
 }
 
 function startPlayoffs(){
-  show('s-playoffs');
-  $('po-seed-label').textContent=RUN.playoffSeed.label;
-  $('po-rounds').innerHTML='';
-  if(liveOctober()){liveOctoberStart(null);return;}
-
-  const rounds=RUN.playoffs.rounds;
-  const container=$('po-rounds');
-  let delay=0;
-  for(const round of rounds){
-    delay+=1200;
-    setTimeout(()=>container.appendChild(roundCard(round)),delay);
-  }
-  delay+=1500;
-  setTimeout(()=>showResult(),delay);
+  octoberStart(!liveOctober(),null);
 }
 
 /* ─── October, plate appearance by plate appearance ───
@@ -3138,22 +3289,46 @@ function gameScript(ri,gi){
   });
 }
 
-function liveOctoberStart(returnTo){
+function octoberStart(quick,returnTo){
   const saved=parseInt(localStorage.getItem('rtd_po_speed')||'',10);
   PO={round:0,game:0,speed:saved===2||saved===4?saved:(reduceMotion()?4:1),
-      paused:false,timer:null,returnTo:returnTo||null,events:null,idx:-1,script:null};
-  $('po-rounds').innerHTML='';
+      paused:false,timer:null,returnTo:returnTo||null,quick:!!quick,
+      events:null,idx:-1,script:null};
+  BRK=null;
   paintSpeed();
-  setTimeout(()=>openSeries(0),returnTo?0:700);
+  setTimeout(()=>openRound(0),returnTo?0:600);
 }
 
 function poClear(){if(PO&&PO.timer){clearTimeout(PO.timer);PO.timer=null;}}
+
+/* One round: the bracket fills in around you, then either the series card or, on
+   the quick path, your own result lands on the bracket with everybody else's. */
+function openRound(i){
+  poClear();
+  const rounds=RUN.playoffs.rounds;
+  if(i>=rounds.length){octoberDone();return;}
+  PO.round=i;PO.game=0;
+  const col=brkColOf(i);
+  brkShow(col,PO.quick?'':'Your series is next.',()=>{
+    if(!PO)return;
+    if(!PO.quick){PO.timer=setTimeout(()=>openSeries(i),620/(PO.speed||1));return;}
+    const r=rounds[i];
+    brkSettleMine(i,r.won);
+    brkRender(col);
+    $('brk-note').textContent=r.won
+      ?'You take it '+r.yourWins+'-'+r.oppWins+'.'
+      :'Out of it '+r.oppWins+'-'+r.yourWins+'.';
+    PO.timer=setTimeout(()=>{
+      if(r.won&&i+1<rounds.length)openRound(i+1);else octoberDone();
+    },1500/(PO.speed||1));
+  });
+}
 
 /* ─── the series card ─── */
 function openSeries(i){
   poClear();
   const rounds=RUN.playoffs.rounds;
-  if(i>=rounds.length){octoberOver();return;}
+  if(i>=rounds.length){octoberDone();return;}
   PO.round=i;PO.game=0;
   const r=rounds[i];
   show('s-series');
@@ -3205,7 +3380,7 @@ function flattenScript(s){
 }
 
 function playGame(){
-  poClear();
+  poClear();brkSkip=null;
   const r=RUN.playoffs.rounds[PO.round];
   if(PO.game>=r.games.length){endSeries();return;}
   PO.script=gameScript(PO.round,PO.game);
@@ -3408,29 +3583,60 @@ function finishGame(){
 }
 
 /* ─── between series ─── */
+
+/* Your result lands on the bracket, which is where it belongs: the seat you have
+   been sitting in all round finally settles, and the column ahead unlocks. */
 function endSeries(){
   poClear();
-  const r=RUN.playoffs.rounds[PO.round];
+  const i=PO.round,r=RUN.playoffs.rounds[i],col=brkColOf(i);
+  brkSettleMine(i,r.won);
+  $('po-seed-label').textContent=brkWhere(col);
+  $('brk-round').textContent=BRK_ROUNDS[col]||r.round;
+  brkRender(col);
+  $('brk-note').textContent=r.won
+    ?(r.round==='World Series'?'Champions.':'You take it '+r.yourWins+'-'+r.oppWins+'. On you go.')
+    :'Out of it '+r.oppWins+'-'+r.yourWins+'. That is the season.';
   show('s-playoffs');
-  $('po-rounds').appendChild(roundCard(r));
+  brkFocus(col);
   PO.timer=setTimeout(()=>{
-    if(r.won&&PO.round+1<RUN.playoffs.rounds.length)openSeries(PO.round+1);
-    else octoberOver();
-  },1600);
+    if(r.won&&i+1<RUN.playoffs.rounds.length)openRound(i+1);
+    else octoberDone();
+  },1700/(PO.speed||1));
 }
 
+/* Every round left, settled at once. Pressing it again on the finished bracket
+   goes to the results rather than re-arming the hold, which on a fast tapper
+   meant the screen never moved on. */
 function simRestOfOctober(){
   poClear();
-  show('s-playoffs');
+  if(PO.done){octoberOver();return;}
   const rounds=RUN.playoffs.rounds;
-  for(let i=PO.round;i<rounds.length;i++)$('po-rounds').appendChild(roundCard(rounds[i]));
-  PO.timer=setTimeout(octoberOver,1400);
+  for(let i=PO.round;i<rounds.length;i++)brkSettleMine(i,rounds[i].won);
+  octoberDone();
+}
+
+/* The finished field, champion and all, before the results screen takes over. */
+function octoberDone(){
+  poClear();
+  PO.done=true;brkSkip=null;
+  brkRevealAll();
+  brkRender(3);
+  const o=RUN.outcome;
+  $('po-seed-label').textContent=RUN.outcome.wins+'-'+RUN.outcome.losses+
+    ' \u00b7 '+RUN.playoffSeed.label;
+  $('brk-round').textContent=o.titleWon?'World Series Champions':'October is over';
+  const last=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];
+  $('brk-note').textContent=o.titleWon?'The whole field, and you on the end of it.'
+    :('Out in the '+(last?last.round:'playoffs')+'.');
+  show('s-playoffs');
+  brkFocus(3);
+  PO.timer=setTimeout(octoberOver,1900);
 }
 
 function octoberOver(){
   poClear();
   const back=PO&&PO.returnTo;
-  PO=null;
+  PO=null;brkSkip=null;
   if(back==='result')show('s-over');
   else showResult();
 }
@@ -3459,13 +3665,14 @@ function paintSpeed(){
     try{localStorage.setItem('rtd_po_speed',String(PO.speed));}catch(_){}
     paintSpeed();
   };
-  /* Classic and the daily keep their fast bracket, but the games are there to be
-     watched if you want them: the run is finished and replaying it changes nothing. */
+  /* The bracket that skips ahead is the one being revealed, and the button only
+     means anything while a reveal is running. */
+  $('b-brk-skip').onclick=()=>{if(brkSkip)brkSkip();else if(PO)simRestOfOctober();};
+  /* Classic and the daily watch the bracket rather than the games, but the games are
+     there if you want them: the run is finished and replaying it changes nothing. */
   $('b-watch-oct').onclick=()=>{
     ga('october_replay',{});
-    show('s-playoffs');
-    $('po-seed-label').textContent=RUN.playoffSeed.label;
-    liveOctoberStart('result');
+    octoberStart(false,'result');
   };
 })();
 
