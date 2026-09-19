@@ -387,6 +387,85 @@
   .ern.streak{border-color:#d19410;background:linear-gradient(180deg,rgba(209,148,16,.22),#10151f);}
   .ern.streak .em{background:#d19410;}
 
+  /* ── THE LEADERBOARD ───────────────────────────────────────────────────
+     Two selects side by side, because the door and the lock are two
+     questions. The second is hidden for the two modes that have no lock,
+     which is why the first is allowed to take the whole row when it is
+     alone: a control that shrinks to make room for nothing reads as a
+     control with something missing beside it. */
+  .lbpick{display:flex;gap:8px;margin:0 0 10px;}
+  .lbmode{flex:1;min-width:0;display:block;}
+  .lbmode select{width:100%;background:#141a26;color:var(--ink);font-family:var(--body);
+    font-size:13.5px;font-weight:700;border:1px solid var(--cardb);border-radius:9px;
+    padding:9px 10px;-webkit-appearance:none;appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),
+      linear-gradient(135deg,var(--dim) 50%,transparent 50%);
+    background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px;}
+
+  /* THE SENTENCE THAT SAYS WHICH OF THE FOUR STATES THIS IS. It is always
+     present rather than hidden when there is nothing to say, because the
+     three empty states are the ones that need words and they are the states
+     where every other element on this screen has nothing in it. */
+  .lbnote{font-size:12.5px;line-height:1.5;color:var(--dim);margin:0 0 10px;}
+  .lbnote.bad{color:#f87171;}
+  .lbnote.first{color:#f2c14e;}
+
+  .lbrows{list-style:none;margin:0;padding:0;max-height:46vh;overflow-y:auto;}
+  .lbrow{display:flex;align-items:center;gap:10px;padding:9px 2px;
+    border-bottom:1px solid var(--cardb);min-width:0;}
+  .lbrow:last-child{border-bottom:0;}
+  .lbrow .pl{flex:0 0 30px;font-family:var(--mono);font-size:13px;color:var(--dim);
+    text-align:right;}
+  .lbrow .who{flex:1;min-width:0;}
+  .lbrow .who b{display:block;font-size:13.5px;font-weight:800;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lbrow .who span{display:block;font-size:11px;color:var(--dim);margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lbrow .val{flex:0 0 auto;font-family:var(--mono);font-size:15px;font-weight:700;
+    text-align:right;}
+  .lbrow .val em{display:block;font-family:var(--body);font-style:normal;
+    font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);
+    margin-top:2px;}
+  /* YOUR OWN ROW IS MARKED, which is most of what somebody opens a board for.
+     A border rather than a fill, so it reads as a mark on a row rather than
+     as a row of a different kind. */
+  .lbrow.you{border-left:3px solid var(--gold);padding-left:7px;margin-left:-10px;}
+  .lbrow.you .who b{color:var(--gold);}
+  .lbrow .ring{color:#f2c14e;}
+
+  /* WHERE THIS RUN LANDED, on the results screen. Pressable, because a
+     placing nobody can open is a receipt and not a board. */
+  .lbstand{display:flex;align-items:center;gap:10px;width:100%;margin:10px 0 0;
+    background:#141a26;border:1px solid var(--cardb);border-radius:11px;
+    color:var(--ink);font-family:var(--body);text-align:left;cursor:pointer;
+    padding:11px 13px;transition:background .12s ease;}
+  .lbstand[hidden]{display:none;}
+  .lbstand:hover{background:#1a2333;}
+  .lbstand .lp{flex:0 0 auto;font-family:var(--mono);font-size:20px;font-weight:700;
+    color:var(--gold);}
+  .lbstand .lt{flex:1;min-width:0;}
+  .lbstand .lt b{display:block;font-size:12.5px;font-weight:800;}
+  .lbstand .lt span{display:block;font-size:11px;color:var(--dim);margin-top:2px;
+    line-height:1.4;}
+  .lbstand .od-chev{flex:0 0 auto;width:8px;height:8px;margin-right:2px;
+    border-right:2px solid var(--dim);border-bottom:2px solid var(--dim);
+    transform:rotate(-45deg);}
+
+  /* ── THE ACCOUNT ROW, in the career sheet ─────────────────────────────── */
+  .acct{border:1px solid var(--cardb);border-radius:11px;background:#10151f;
+    padding:11px 12px;margin:0 0 12px;}
+  .acct p{margin:0;font-size:12.5px;line-height:1.5;color:var(--dim);}
+  .acct p b{color:var(--ink);}
+  .acct .arow{display:flex;gap:7px;margin-top:9px;}
+  .acct .arow:first-child{margin-top:0;}
+  .acct input{flex:1;min-width:0;background:#0d1117;color:var(--ink);
+    font-family:var(--body);font-size:13px;border:1px solid var(--cardb);
+    border-radius:8px;padding:8px 10px;}
+  .acct button{flex:0 0 auto;min-height:36px;font-size:12.5px;padding:0 12px;}
+  .acct .err{color:#f87171;margin-top:8px;font-size:12px;}
+  .acct .ok{color:#4ade80;}
+
   /* The doors under the results. Rows rather than the front page's .modedoor,
      because there is no last-club shortcut to hang a second target off here:
      each one is one tap to one thing. */
@@ -1405,6 +1484,9 @@
       <span><span class="big-n" id="hc-best">-</span> <span class="lab">best</span></span>
     </div>
     <p class="lastrun" id="hc-last"></p>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="ghost sm" id="b-home-board" style="flex:1">Leaderboard</button>
+    </div>
   </div>
 
   <div class="card">
@@ -1603,6 +1685,13 @@
          names its own best night and links to it. It is also the line a fan
          screenshots. -->
     <button class="bestnight" id="o-night" hidden></button>
+    <!-- WHERE THIS RUN LANDED, and it is a BUTTON because a placing nobody
+         can open is a receipt rather than a board: that is what the
+         commissioner standings were for a year, a number shown in the second
+         a term finished and then gone. It carries its own four states, so an
+         unreachable board says so here rather than leaving a blank strip
+         under the tags. -->
+    <button class="lbstand" id="o-stand" hidden></button>
   </div>
 
   <!-- WHAT THIS RUN EARNED, and it is the second card rather than the tenth.
@@ -1746,6 +1835,17 @@
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="prof-h">
   <div class="panel">
     <h2 id="prof-h">Career <span class="sub" id="prof-sub"></span></h2>
+
+    <!-- THE ACCOUNT, AND IT SITS ABOVE THE CAREER RATHER THAN BEHIND A TAB.
+         The career below is this browser's and says so; the account is what
+         puts a name on the board and carries between devices, and a player
+         who cannot see the difference will read the first as the second.
+         Built by renderAccount rather than written here, because it is five
+         states (checking, unavailable, signed out, signed in with no name,
+         signed in) and markup for five states is markup for whichever one
+         somebody last looked at. -->
+    <div class="acct" id="pf-acct"></div>
+
     <div class="pstats">
       <div class="pstat"><span class="lbl">Runs</span><b id="pf-runs">0</b></div>
       <div class="pstat"><span class="lbl">Rings</span><b id="pf-rings">0</b></div>
@@ -1764,11 +1864,73 @@
     <p class="dim" id="pf-badgenote" hidden style="font-size:11.5px;margin:10px 0 0"></p>
 
     <div class="btnrow" style="margin-top:14px">
-      <button class="ghost" id="b-prof-clear">Clear career</button>
+      <button class="ghost" id="b-prof-board">Leaderboard</button>
       <button id="b-prof-x" style="flex:1">Close</button>
+    </div>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="ghost" id="b-prof-clear" style="flex:1">Clear career</button>
     </div>
     <p class="dim" style="font-size:11.5px;margin:10px 0 0">Stored in this browser only.
       Clearing site data or a private window loses it, and nothing here is sent anywhere.</p>
+  </div>
+</div>
+
+<!-- ── the leaderboard ───────────────────────────────────────────────────
+     FOUR COMPETITIONS, NOT ONE BOARD WITH A FILTER ON IT, and the two locked
+     ones are scoped again by which club or which decade. Measured rather than
+     assumed: One Franchise pins chemistry near its ceiling whatever gets
+     drafted, so best-available finishes 46.8 wins there against the league's
+     42.0, and the decades are nine wins apart for the same drafting. One
+     board would quietly retire the record to whoever picked the deepest
+     franchise or the shallowest era, and every number on it would still look
+     perfectly reasonable.
+
+     A BOARD HAS FOUR STATES AND THREE OF THEM SHIP BROKEN: unreachable,
+     nobody has finished a run, and you have not finished one. Each needs its
+     own sentence, because a blank box is how a feature teaches somebody it is
+     broken and a spinner that never resolves is worse. On a game this new
+     "nobody yet" is the COMMON case, so it says being first is the prize.
+     That is the commish standings' lesson arriving here. -->
+<div class="sheet" id="boardsheet" role="dialog" aria-modal="true" aria-labelledby="lb-h">
+  <div class="panel">
+    <h2 id="lb-h">Leaderboard <span class="sub" id="lb-sub"></span></h2>
+
+    <!-- THE DOOR AND THE LOCK ARE TWO CONTROLS, because they are two
+         questions and one select holding thirty clubs, six decades, the
+         league and today is a list nobody can find anything in. The second
+         only appears for the two modes that have one. -->
+    <div class="lbpick">
+      <label class="lbmode">
+        <span class="sr-only">Which board</span>
+        <select id="lb-door">
+          <option value="league">The league</option>
+          <option value="club">One Franchise</option>
+          <option value="era">Decades</option>
+          <option value="daily">Today's run</option>
+        </select>
+      </label>
+      <label class="lbmode" id="lb-keywrap" hidden>
+        <span class="sr-only">Which club or decade</span>
+        <select id="lb-key"></select>
+      </label>
+    </div>
+
+    <!-- TWO AXES AND NOT THREE. The record is the headline and the rating is
+         the roster, which are the two questions this game asks. A third on
+         point differential would order almost the same rows, because the
+         score already breaks a tie on wins with exactly that. -->
+    <div class="ptabs" role="tablist">
+      <button class="ptab on" id="lb-ax-record" role="tab" aria-selected="true">Record</button>
+      <button class="ptab" id="lb-ax-rating" role="tab" aria-selected="false">Team rating</button>
+    </div>
+
+    <p class="lbnote" id="lb-note"></p>
+    <ol class="lbrows" id="lb-rows"></ol>
+    <p class="dim" id="lb-foot" style="font-size:11.5px;margin:10px 0 0;line-height:1.45"></p>
+
+    <div class="btnrow" style="margin-top:14px">
+      <button id="b-lb-x" style="flex:1">Close</button>
+    </div>
   </div>
 </div>
 
@@ -1842,6 +2004,16 @@
 <script src="engine.js?v=15"></script>
 <script src="run.js?v=7"></script>
 <script src="badges.js?v=1"></script>
+<!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
+     or either file fails to load, the game runs exactly as it did, with runs
+     kept in this browser and the board reporting itself unreachable. An account
+     is a way to put your name on a run, never a gate in front of playing one.
+     Deferred so the library never delays first paint, which is why auth.js polls
+     for it rather than reading window.supabase once: on a repeat visit the data
+     comes out of cache in milliseconds while this is still in flight. -->
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="board.js?v=1"></script>
+<script src="auth.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -1887,6 +2059,60 @@ var NEED_VERSION = 5;
   throw new Error('version mismatch: page needs ' + NEED_VERSION
     + ', engine ' + (E && E.API_VERSION) + ', run ' + (R && R.API_VERSION));
 })();
+
+/* ── THE OTHER PAIR OF HAND-WRITTEN NUMBERS, AND IT IS THE SILENT ONE ──────
+ *
+ * The check above fails LOUDLY, as a missing function on somebody's phone, and
+ * it is allowed to take the page down because a game whose engine disagrees
+ * with its page is not a game. The board is the opposite: it is optional by
+ * design, so a board.js that is blocked, or a version behind, has to degrade to
+ * "not reachable" rather than taking the game with it.
+ *
+ * WHICH IS WHAT MAKES IT THE DANGEROUS ONE. The football game shipped this
+ * exact mismatch for a release: adding two functions moved board.js to
+ * API_VERSION 17 while the page still asked for 16, so EVERY visitor ran on the
+ * stub, the leaderboard printed the stub's own error and the profile's numbers
+ * came back as dashes. Nothing threw, no check went red, and the site looked
+ * exactly like a site whose network was having a bad day. Reported by a player.
+ *
+ * check-cachebust.mjs holds the pair now, by reading this comparison out of the
+ * page and resolving RTF_BOARD to whichever script here assigns it. Bump both
+ * in one commit.
+ *
+ * THE STUB ANSWERS null TO EVERYTHING, which is the same thing every real call
+ * in board.js answers when it fails, so no caller needs a second shape to
+ * handle. It is also what carries the diagnosis: `lastError` says which of the
+ * two halves is missing, in words, on the screen that would otherwise just be
+ * empty. */
+var NEED_BOARD = 1;
+var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
+  ? window.RTF_BOARD
+  : {
+      API_VERSION: NEED_BOARD,
+      submit: function(){ return Promise.resolve(null); },
+      claim: function(){ return Promise.resolve(false); },
+      ranks: function(){ return Promise.resolve({ place: null, total: null, played: null }); },
+      top: function(){ return Promise.resolve(null); },
+      mine: function(){ return Promise.resolve(null); },
+      boards: function(){ return Promise.resolve(null); },
+      scoreOf: function(){ return null; },
+      offline: true,
+      lastError: { where: 'boot', status: 0, code: 'version',
+        message: window.RTF_BOARD
+          ? ('board.js is API ' + window.RTF_BOARD.API_VERSION + ', this page needs ' + NEED_BOARD)
+          : 'board.js did not load' },
+      needsMigration: false,
+    };
+/* Same shape for accounts, and for the same reason: a blocked CDN must cost a
+   name on a row rather than the sheet it sits in. `waiting` false and `ready`
+   false is the honest answer when the file itself is not here. */
+var A = window.RTF_AUTH || {
+  boot: function(){ return false; },
+  state: function(){ return { ready: false, waiting: false, signedIn: false }; },
+  onChange: function(){ return function(){}; },
+  token: function(){ return null; },
+  claim: function(){ return Promise.resolve(false); },
+};
 
 /* AN UNHANDLED ERROR IN OUR CODE SAYS SO ON SCREEN. A silent throw mid-draft
  * looks exactly like the game being broken with no explanation, which is how
@@ -2117,6 +2343,21 @@ function boot(){
        somewhere down a draft board. Landing on the home page already scrolled
        past its own masthead reads as a broken page rather than a restored one. */
     window.scrollTo(0, 0);
+    /* ACCOUNTS, BOOTED HERE AND NOT AT PARSE TIME. supabase-js is deferred, so
+       at parse time it may not exist yet; boot() polls for it and gives up
+       after fifteen seconds rather than waiting for ever. Nothing on this page
+       waits for the answer: the callback repaints whichever of the two
+       surfaces is open when it lands. */
+    A.boot();
+    A.onChange(function(){
+      if ($('sheet').classList.contains('open')) renderAccount();
+      /* A RUN FINISHED BEFORE SIGNING IN IS CLAIMED ON THE WAY IN. The id is
+         on the saved run, so this survives the reload that a Google sign-in
+         redirect puts in the middle of it, which is the case that would
+         otherwise lose every name. */
+      var st = A.state();
+      if (st.signedIn && run && run.boardId) A.claim(run.boardId);
+    });
     /* LAST, and after restore(), because it asks whether there is a run and a
        career before deciding to interrupt anybody. */
     frgMaybe();
@@ -4595,6 +4836,13 @@ function renderOver(out){
   renderBestNight();
   renderEarned();
   renderOverDoors();
+  /* THE BOARD IS ASKED HERE AND NEVER AWAITED. renderOver is also what a
+     restored finished run calls, so this runs again on a reopened season,
+     which is right: the placing is a live number and a receipt of it would go
+     stale the moment somebody else played. submitRun is the half that must not
+     repeat, and its own flag rides in the saved run. */
+  submitRun(out);
+  renderStanding(out);
   renderRoster($('o-slots'));
   renderCourt(null, $('o-court'));
 
@@ -4616,6 +4864,319 @@ function renderOver(out){
      the fold ever fails to build, and it costs nothing. */
   var games = $('o-games');
   games.textContent = '';
+}
+
+/* ── THE BOARD ─────────────────────────────────────────────────────────────
+ *
+ * Which competition the sheet is showing. Held here rather than read off the
+ * two selects, because the sheet is opened FROM a finished run and has to land
+ * on that run's own board: opening on the league after a Bulls season would
+ * show somebody a list their run is not in, and the first thing they would do
+ * is decide the board is broken.
+ */
+var lbMode = { door: 'league', key: null, day: null };
+var lbAxis = 'record';
+/* The row this browser just put on the board, so it can be marked in the list.
+   The id and not the whole run: a row comes back from the server and the local
+   run is not it. */
+var lbMine = null;
+/* Guards a paint against a slower one that started earlier. Two selects a
+   half second apart is two requests in flight, and without this the first to
+   be asked for can be the last to land and paint over the answer somebody is
+   actually looking at. */
+var lbSeq = 0;
+
+/* WHICH BOARD A RUN BELONGS ON, read off the run and never off the page's
+   current selection. One function, because the submit and the standing and the
+   sheet all have to agree about it, and three copies of a four-branch answer
+   is three chances to file a run on one board and look for it on another. */
+function modeOfRun(r){
+  if (!r) return { door: 'league', key: null, day: null };
+  if (r.daily) return { door: 'daily', key: null, day: r.daily };
+  if (r.club) return { door: 'club', key: r.club, day: null };
+  if (r.era) return { door: 'era', key: r.era, day: null };
+  return { door: 'league', key: null, day: null };
+}
+
+function modeName(m){
+  if (!m) return 'The league';
+  if (m.door === 'daily') return "Today's run · day " + m.day;
+  if (m.door === 'club') return 'One Franchise · ' + E.teamName(m.key);
+  if (m.door === 'era') return ERA_NAMES[m.key] || m.key;
+  return 'The league';
+}
+
+/* THE RUN, SENT ONCE, AND NEVER AWAITED BY ANYTHING THE PLAYER IS WAITING ON.
+   The results screen is painted before this is called and stays painted
+   whatever comes back. A null is the ordinary answer on a project that has not
+   run supabase/108_hoops_leaderboard.sql, and it must cost a line on one card
+   rather than a screen.
+
+   ONCE PER RUN, and the flag rides in the saved run for the same reason
+   `recorded` does: renderOver is also what a restored finished run calls, so
+   submitting there would put the same season on the board every time somebody
+   reopened the tab. rtf_submit_run() swallows a same-minute duplicate as well,
+   which covers a retry rather than this. */
+function submitRun(out){
+  if (!run || run.submitted) return Promise.resolve(null);
+  run.submitted = true;
+  var m = modeOfRun(run);
+  var tagged = R.taggedRoster(run);
+  var payload = {
+    wins: out.wins,
+    /* HOW MANY SERIES WERE WON, counted off the bracket rather than stored,
+       because run.playoffs is the record of what happened and a second count
+       beside it would be the thing that drifts. */
+    playoffWins: run.playoffs
+      ? run.playoffs.rounds.filter(function(r){ return r.won; }).length : 0,
+    /* PER GAME, which is what a basketball differential means everywhere else
+       and what the column holds. The season total is 82 times bigger and would
+       be refused by the range check, loudly, which is the right direction for
+       this to be wrong in. */
+    pointDiff: (out.totalPF - out.totalPA) / E.CONSTANTS.REGULAR_SEASON_GAMES,
+    club: m.door === 'club' ? m.key : null,
+    era: m.door === 'era' ? m.key : null,
+    dailyDay: m.door === 'daily' ? m.day : null,
+    rating: out.rating,
+    ortg: out.ortg,
+    drtg: out.drtg,
+    chemistry: out.chemistry ? out.chemistry.bonus : null,
+    structureMult: out.structure ? out.structure.multiplier : null,
+    archetype: out.structure && out.structure.archetype
+      ? out.structure.archetype.name : null,
+    spendMusd: E.CONSTANTS.CAP_MUSD - R.remaining(run),
+    respins: run.respinsUsed || 0,
+    allTimeRank: out.allTimeRank,
+    /* E.pkey's own format, which is what DATA.allPlayers is keyed by, so a row
+       coming back off the board is looked up with no translation at either
+       end. The club is in it because 755 of 16,057 rows are a player traded
+       mid-season: id and season alone name two different half-seasons. */
+    picks: tagged.map(function(p){ return E.pkey(p); }),
+    slots: tagged.map(function(p){ return p._slot; }),
+    seed: String(run.seed),
+    rngCalls: run.rngCalls,
+  };
+  return B.submit(payload).then(function(id){
+    if (id) {
+      lbMine = id;
+      run.boardId = id;
+      save();
+      /* THE RUN YOU FINISHED BEFORE YOU SIGNED IN. Fired here as well as on
+         sign-in, because somebody already signed in when the run ended has
+         nothing to claim and somebody who signs in afterwards does. Never
+         awaited and never reported: a claim that fails costs a name on a row. */
+      var st = A.state();
+      if (st && st.signedIn) A.claim(id);
+    }
+    return id;
+  });
+}
+
+/* WHERE THIS RUN LANDED. Four states and three of them are empty ones, which
+   is the whole reason this is a function rather than a line of markup:
+   unreachable, nobody on the board yet, and a place. The fourth is a run that
+   was never submitted at all, which is what a restored season from before this
+   shipped looks like, and it says nothing rather than apologising. */
+function renderStanding(out){
+  var el = $('o-stand');
+  if (!el) return;
+  var m = modeOfRun(run);
+  var score = B.scoreOf(out.wins, (out.totalPF - out.totalPA)
+    / E.CONSTANTS.REGULAR_SEASON_GAMES);
+
+  var draw = function(big, head, sub, open){
+    el.textContent = '';
+    var p = document.createElement('span');
+    p.className = 'lp';
+    p.textContent = big;
+    var t = document.createElement('span');
+    t.className = 'lt';
+    var b = document.createElement('b');
+    b.textContent = head;
+    var s = document.createElement('span');
+    s.textContent = sub;
+    t.appendChild(b); t.appendChild(s);
+    el.appendChild(p); el.appendChild(t);
+    if (open) {
+      var ch = document.createElement('span');
+      ch.className = 'od-chev';
+      ch.setAttribute('aria-hidden', 'true');
+      el.appendChild(ch);
+    }
+    el.hidden = false;
+    el.onclick = open ? function(){ openBoard(m); } : null;
+    el.disabled = !open;
+  };
+
+  el.hidden = true;
+  B.ranks(m, score).then(function(r){
+    if (!run || run.phase !== R.PHASES.OVER) return;   // they moved on
+    if (r.place === null || r.total === null) {
+      /* NOT REACHABLE IS NOT NOBODY. A board that cannot be asked and a board
+         with nothing on it are two different sentences, and printing the
+         second for the first is how a feature teaches somebody it is broken. */
+      draw('-', 'The leaderboard is not reachable',
+        B.needsMigration
+          ? 'The board is not set up on this site yet.'
+          : 'Your run is safe. It is the board that is offline.', false);
+      return;
+    }
+    if (r.total === 0) {
+      draw('1st', 'First on the ' + modeName(m).toLowerCase() + ' board',
+        'Nobody has finished one here yet. Sign in and it has your name on it.', true);
+      return;
+    }
+    draw(r.place + ordinalOf(r.place), r.place + ordinalOf(r.place) + ' of '
+      + r.total + ' on ' + modeName(m),
+      (r.played && r.played > r.total)
+        ? r.played + ' runs played here, ' + r.total + ' of them signed'
+        : 'Tap to see the board', true);
+  });
+}
+
+function ordinalOf(n){ return getOrdinal(n); }
+
+/* ── THE SHEET ─────────────────────────────────────────────────────────── */
+function openBoard(mode){
+  if (mode) lbMode = B.modeOf ? B.modeOf(mode) : mode;
+  else if (run && run.phase === R.PHASES.OVER) lbMode = modeOfRun(run);
+  sheetReturn = document.activeElement;
+  $('boardsheet').classList.add('open');
+  renderBoardPickers();
+  paintBoard();
+  $('b-lb-x').focus();
+}
+function closeBoard(){
+  $('boardsheet').classList.remove('open');
+  if (sheetReturn && sheetReturn.focus) sheetReturn.focus();
+  sheetReturn = null;
+}
+
+/* The two selects, rebuilt from the DATA rather than written into the markup,
+   for the reason the club picker already is: the lineage, the seasons and the
+   span all come off teams.json and players.json, so a row here can never offer
+   a franchise or a decade the wheel cannot actually draw. */
+function renderBoardPickers(){
+  var door = $('lb-door'), wrap = $('lb-keywrap'), key = $('lb-key');
+  if (!door) return;
+  door.value = lbMode.door;
+  var locked = lbMode.door === 'club' || lbMode.door === 'era';
+  wrap.hidden = !locked;
+  if (!locked) return;
+
+  key.textContent = '';
+  var add = function(v, label){
+    var o = document.createElement('option');
+    o.value = v; o.textContent = label;
+    key.appendChild(o);
+  };
+  if (lbMode.door === 'club') {
+    /* E.franchises() answers ROWS and not codes, and it has already sorted
+       them by full name. Sorting the rows as if they were strings put an
+       object through teamName(), which falls back to returning what it was
+       given, and the whole picker threw on `.localeCompare is not a
+       function`: the sheet then opened with an empty select and no rows,
+       which reads exactly like a board with nobody on it. */
+    var rows = DATA ? E.franchises() : [];
+    rows.forEach(function(f){ add(f.code, f.full); });
+    if (!lbMode.key) lbMode.key = lastClub() || (rows[0] && rows[0].code) || null;
+  } else {
+    Object.keys(E.ERAS).forEach(function(k){
+      var sp = R.eraSeasons(k);
+      add(k, (ERA_NAMES[k] || k)
+        + (sp.length ? ' (' + sp[sp.length - 1] + '-' + sp[0] + ')' : ''));
+    });
+    if (!lbMode.key) lbMode.key = lastEra() || Object.keys(E.ERAS)[0];
+  }
+  key.value = lbMode.key;
+}
+
+/* THE FOUR STATES, and each gets its own sentence. A blank box is how a
+   feature teaches somebody it is broken, and a spinner that never resolves is
+   worse. On a game this new "nobody yet" is the COMMON case, so it says being
+   first is the prize rather than apologising for an empty list. */
+function paintBoard(){
+  var rows = $('lb-rows'), note = $('lb-note'), foot = $('lb-foot'), sub = $('lb-sub');
+  if (!rows) return;
+  var seq = ++lbSeq;
+  sub.textContent = modeName(lbMode);
+  rows.textContent = '';
+  note.className = 'lbnote';
+  note.textContent = 'Loading.';
+  foot.textContent = '';
+
+  $('lb-ax-record').className = 'ptab' + (lbAxis === 'record' ? ' on' : '');
+  $('lb-ax-rating').className = 'ptab' + (lbAxis === 'rating' ? ' on' : '');
+  $('lb-ax-record').setAttribute('aria-selected', lbAxis === 'record' ? 'true' : 'false');
+  $('lb-ax-rating').setAttribute('aria-selected', lbAxis === 'rating' ? 'true' : 'false');
+
+  B.top(lbMode, 50, lbAxis).then(function(list){
+    /* A SLOWER REQUEST MUST NOT PAINT OVER A FASTER ONE. Two selects a half
+       second apart is two lists in flight, and the first asked for can be the
+       last to land. */
+    if (seq !== lbSeq) return;
+    if (list === null) {
+      note.className = 'lbnote bad';
+      note.textContent = B.needsMigration
+        ? 'The leaderboard is not set up on this site yet.'
+        : 'The leaderboard is not reachable right now. Nothing is lost: your runs are recorded here either way.';
+      foot.textContent = B.lastError
+        ? B.lastError.where + ': ' + B.lastError.message : '';
+      return;
+    }
+    if (!list.length) {
+      note.className = 'lbnote first';
+      note.textContent = 'Nobody has put a name to a run on this board yet. '
+        + 'Finish one signed in and you are first.';
+      return;
+    }
+    note.textContent = list.length === 1 ? 'One run on the board.'
+      : list.length + ' runs on the board, best first.';
+    list.forEach(function(row, i){ rows.appendChild(lbRow(row, i + 1)); });
+    foot.textContent = 'A run only appears here with a name on it. '
+      + 'Runs played signed out still count, and still record in your career.';
+  });
+}
+
+function lbRow(row, place){
+  var li = document.createElement('li');
+  li.className = 'lbrow' + (lbMine && row.id === lbMine ? ' you' : '');
+
+  var p = document.createElement('span');
+  p.className = 'pl';
+  p.textContent = place;
+
+  var who = document.createElement('span');
+  who.className = 'who';
+  var name = document.createElement('b');
+  name.textContent = row.display_name || 'Anonymous';
+  who.appendChild(name);
+  var line = document.createElement('span');
+  /* WHAT THE ROSTER WAS, in the words the results screen already uses, and
+     never a number this board invented. A ring is the thing worth marking. */
+  var bits = [];
+  if (row.title_won) bits.push('Champion');
+  else if (row.seed_label) bits.push(row.seed_label);
+  if (row.archetype) bits.push(row.archetype);
+  if (row.all_time_rank) bits.push(row.all_time_rank + getOrdinal(row.all_time_rank) + ' all time');
+  line.textContent = bits.join(' · ');
+  if (row.title_won) line.className = 'ring';
+  who.appendChild(line);
+
+  var val = document.createElement('span');
+  val.className = 'val';
+  var em = document.createElement('em');
+  if (lbAxis === 'rating') {
+    val.textContent = row.rating == null ? '-' : Number(row.rating).toFixed(0);
+    em.textContent = 'rating';
+  } else {
+    val.textContent = row.wins + '-' + row.losses;
+    em.textContent = 'record';
+  }
+  val.appendChild(em);
+
+  li.appendChild(p); li.appendChild(who); li.appendChild(val);
+  return li;
 }
 
 /* WHAT THIS RUN EARNED, off run.earned, which recordRun worked out at the
@@ -5729,6 +6290,7 @@ var sheetReturn = null;
 
 function openProfile(){
   renderCareer();
+  renderAccount();
   renderBadges();
   showProfileTab(badgeTab);
   sheetReturn = document.activeElement;
@@ -5752,6 +6314,149 @@ function closeProfile(){
 function clearCareer(){
   try { localStorage.removeItem(PKEY); } catch (e) {}
   renderCareer();
+}
+
+/* ── THE ACCOUNT ROW ───────────────────────────────────────────────────────
+ *
+ * FIVE STATES, and the middle one is the one that is easy to miss. Built
+ * rather than written into the markup, because markup for five states is
+ * markup for whichever one somebody last looked at.
+ *
+ *   checking       the library is deferred and may still arrive
+ *   unavailable    it is not coming: a blocked CDN, or an extension
+ *   signed out     the offer
+ *   no name yet    signed in through Google, which makes no username
+ *   signed in      the name, and the way out
+ *
+ * "Checking" and "unavailable" are two states and not one, which is the whole
+ * reason auth.js reports `waiting` separately from `ready`: a spinner that
+ * never stops and a sentence saying accounts are off are the right answers to
+ * two different situations, and showing either one for the other is wrong in
+ * a way nothing throws about.
+ *
+ * NOTHING HERE IS A GATE. Every line of it is about putting a name on a run.
+ * A signed out player has a complete game and a complete career; what they do
+ * not have is a row anybody else can see.
+ */
+function renderAccount(){
+  var el = $('pf-acct');
+  if (!el) return;
+  var st = A.state();
+  el.textContent = '';
+
+  var say = function(html){
+    var p = document.createElement('p');
+    p.innerHTML = html;
+    el.appendChild(p);
+    return p;
+  };
+  var row = function(){
+    var d = document.createElement('div');
+    d.className = 'arow';
+    el.appendChild(d);
+    return d;
+  };
+  var btn = function(into, label, cls, fn){
+    var b = document.createElement('button');
+    b.className = cls || '';
+    b.textContent = label;
+    b.onclick = fn;
+    into.appendChild(b);
+    return b;
+  };
+  var err = function(msg, good){
+    var p = document.createElement('p');
+    p.className = 'err' + (good ? ' ok' : '');
+    p.textContent = msg;
+    el.appendChild(p);
+  };
+
+  if (!st.ready && st.waiting) { say('Checking for your account.'); return; }
+  if (!st.ready) {
+    say('Accounts are not available right now, so runs record without a name. '
+      + 'Everything else works.');
+    return;
+  }
+
+  if (!st.signedIn) {
+    say('Sign in to put your name on the leaderboard. Your runs record either '
+      + 'way, and the career below is this browser’s whatever you do.');
+    var r1 = row();
+    var email = document.createElement('input');
+    email.type = 'email'; email.placeholder = 'Email'; email.autocomplete = 'email';
+    r1.appendChild(email);
+    var r2 = row();
+    var pass = document.createElement('input');
+    pass.type = 'password'; pass.placeholder = 'Password';
+    pass.autocomplete = 'current-password';
+    r2.appendChild(pass);
+    var r3 = row();
+    var busy = false;
+    var go = function(fn){
+      return function(){
+        if (busy) return;
+        busy = true;
+        fn().then(function(res){
+          busy = false;
+          if (res && res.error) err(res.error);
+          else renderAccount();
+        });
+      };
+    };
+    btn(r3, 'Sign in', '', go(function(){ return A.signIn(email.value, pass.value); }));
+    btn(r3, 'Create one', 'ghost', function(){
+      /* THE NAME IS ASKED FOR AT SIGN-UP AND NOT AFTER, because the profile
+         row is made by a trigger reading the sign-up metadata: asked
+         afterwards it is a second round trip and a state where somebody is
+         signed in with no name, which is the state Google sign-in already
+         produces and the one below exists to answer. */
+      var name = prompt('Pick a name for the board. Letters, numbers and '
+        + 'underscores.');
+      if (!name) return;
+      if (busy) return;
+      busy = true;
+      A.signUp(email.value, pass.value, name.trim()).then(function(res){
+        busy = false;
+        if (res && res.error) err(res.error);
+        else { err('Check your email to confirm the account.', true); }
+      });
+    });
+    var r4 = row();
+    btn(r4, 'Sign in with Google', 'ghost', function(){ A.signInGoogle(); });
+    return;
+  }
+
+  if (!st.name) {
+    say('You are signed in as <b>' + esc(st.email || 'your account')
+      + '</b>. Pick a name and it goes on every run you have already played.');
+    var rn = row();
+    var nm = document.createElement('input');
+    nm.placeholder = 'Name on the board';
+    rn.appendChild(nm);
+    btn(rn, 'Save', '', function(){
+      A.setName(nm.value.trim()).then(function(res){
+        if (res && res.error) err(res.error); else renderAccount();
+      });
+    });
+    var ro = row();
+    btn(ro, 'Sign out', 'ghost', function(){ A.signOut().then(renderAccount); });
+    return;
+  }
+
+  say('On the board as <b>' + esc(st.name) + '</b>.');
+  var rs = row();
+  btn(rs, 'Leaderboard', '', function(){ closeProfile(); openBoard(); });
+  btn(rs, 'Sign out', 'ghost', function(){ A.signOut().then(renderAccount); });
+}
+
+/* The account row is the one thing on this page that prints text somebody
+   else chose, so it is the one place that needs this. A username is validated
+   server side and an email is the player's own, and neither is a reason to
+   put an unescaped string into innerHTML. */
+function esc(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
 }
 
 /* ── THE CABINET ───────────────────────────────────────────────────────────
@@ -6125,6 +6830,27 @@ $('b-era-x').onclick = closeEras;
 $('b-gs-x').onclick = closeGame;
 $('b-gs-prev').onclick = function(){ stepGame(-1); };
 $('b-gs-next').onclick = function(){ stepGame(1); };
+$('b-lb-x').onclick = closeBoard;
+$('b-prof-board').onclick = function(){ closeProfile(); openBoard(); };
+$('b-home-board').onclick = function(){ openBoard(); };
+$('o-stand').onclick = function(){ openBoard(modeOfRun(run)); };
+/* THE DOOR RESETS THE LOCK, deliberately. Switching from the Bulls board to
+   Decades and getting whichever era the previous session happened to leave
+   behind is a screen answering a question nobody asked; renderBoardPickers
+   fills the empty key with the last one PLAYED, which is the club or the
+   decade this player actually cares about. */
+$('lb-door').onchange = function(){
+  lbMode = { door: this.value, key: null, day: null };
+  if (lbMode.door === 'daily') lbMode.day = todayNumber();
+  renderBoardPickers();
+  paintBoard();
+};
+$('lb-key').onchange = function(){
+  lbMode = { door: lbMode.door, key: this.value, day: null };
+  paintBoard();
+};
+$('lb-ax-record').onclick = function(){ lbAxis = 'record'; paintBoard(); };
+$('lb-ax-rating').onclick = function(){ lbAxis = 'rating'; paintBoard(); };
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a
    tap INSIDE the panel must not, or every button press dismisses the thing. */
 $('sheet').addEventListener('click', function(ev){ if (ev.target === $('sheet')) closeProfile(); });
@@ -6134,13 +6860,15 @@ $('erasheet').addEventListener('click', function(ev){
   if (ev.target === $('erasheet')) closeEras(); });
 $('gamesheet').addEventListener('click', function(ev){
   if (ev.target === $('gamesheet')) closeGame(); });
+$('boardsheet').addEventListener('click', function(ev){
+  if (ev.target === $('boardsheet')) closeBoard(); });
 /* ONE KEY, TWO SHEETS, and the club picker is the one that can be open over
    the profile is not: they are opened from different screens and never both.
    Escape closes whichever is up, and closing a shut sheet is a no-op, so the
    order does not matter. */
 document.addEventListener('keydown', function(ev){
   if (ev.key !== 'Escape') return;
-  closeProfile(); closeClubs(); closeEras(); closeGame();
+  closeProfile(); closeClubs(); closeEras(); closeGame(); closeBoard();
   if (!$('frg').hidden) frgClose();
 });
 

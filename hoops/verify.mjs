@@ -1324,6 +1324,149 @@ ok(bestWins > worstWins + 20,
   }
 }
 
+/* ── THE MIGRATION HARDCODES THE ENGINE, AND NOTHING WAS CHECKING IT ───────
+ *
+ * supabase/108_hoops_leaderboard.sql owns every derived field on a board row,
+ * which means it has to know the rules: how long a season is, how many wins
+ * reach the play-in and the top six, how many series each bracket is, what 72
+ * and 74 mean, and what the cap is. Those are LITERALS in that file, on
+ * purpose, so it can be read on its own and pasted into a SQL editor with no
+ * dependency. The comment above them says "MUST MATCH hoops/engine.js
+ * CONSTANTS" and until this section nothing made that true.
+ *
+ * IT FAILS IN THE WORST DIRECTION. Move TOP_SIX_WINS in the engine and the
+ * game starts producing seasons the server labels with the other seed, or
+ * refuses outright for a bracket that is now the wrong length. The page fails
+ * soft, so a refused run resolves to null and the screen says the board is not
+ * reachable: a live, correct game whose leaderboard quietly stopped accepting
+ * anything, reported by nobody, because that is exactly what a board looks
+ * like before the migration has been run.
+ *
+ * The score is the other half. board.js recomputes the stored generated column
+ * locally, because the results screen counts the runs ahead of you before the
+ * insert has come back, so a client that shifts a differential differently
+ * from the column counts against a number that is not in anybody's row.
+ */
+{
+  const sql = fs.readFileSync(path.join(HERE, '..', 'supabase', '108_hoops_leaderboard.sql'), 'utf8');
+  const boardSrc = fs.readFileSync(path.join(HERE, 'board.js'), 'utf8');
+  const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+
+  /* Read as `NAME constant int := 82;`, which is the one form that file uses.
+     A miss answers undefined and fails the comparison below rather than
+     passing quietly, which is the right way round for a reader that could be
+     looking at a renamed constant. */
+  const sqlConst = (name) => {
+    const m = new RegExp(name + '\\s+constant\\s+\\w+\\s*:=\\s*([0-9.]+)').exec(sql);
+    return m ? Number(m[1]) : undefined;
+  };
+  const PAIRS = [
+    ['RTF_REG_GAMES', E.CONSTANTS.REGULAR_SEASON_GAMES, 'the season length'],
+    ['RTF_PLAY_IN_WINS', E.CONSTANTS.PLAY_IN_WINS, 'the play-in line'],
+    ['RTF_TOP_SIX_WINS', E.CONSTANTS.TOP_SIX_WINS, 'the top six line'],
+    ['RTF_ROUNDS_SEEDED', E.CONSTANTS.PLAYOFF_ROUNDS_SEEDED, 'a seeded bracket'],
+    ['RTF_ROUNDS_PLAYIN', E.CONSTANTS.PLAYOFF_ROUNDS_PLAY_IN, 'a play-in bracket'],
+    ['RTF_RECORD_WINS', E.CONSTANTS.RECORD_WINS, 'the record'],
+    ['RTF_GOAT_WINS', E.CONSTANTS.GOAT_WINS, 'the one nobody has done'],
+    ['RTF_CAP_MUSD', E.CONSTANTS.CAP_MUSD, 'the cap'],
+  ];
+  /* COVERAGE FIRST. A reader that finds nothing lets all eight comparisons
+     pass against undefined === undefined, which is how an extractor in this
+     repo has been silently wrong three times. */
+  ok(PAIRS.every(([n]) => sqlConst(n) !== undefined),
+    'the migration still declares every constant this checks'
+    + ' (' + PAIRS.filter(([n]) => sqlConst(n) === undefined).map(([n]) => n).join(', ') + ')');
+  for (const [name, engineValue, what] of PAIRS) {
+    is(sqlConst(name), engineValue, `the migration and the engine agree on ${what}`);
+  }
+
+  /* THE DAILY EPOCH LIVES IN TWO FILES and has to, because one is deployed by
+     hand and the other by a push. Day 1 meaning two different days is a board
+     whose rows are filed under a day nobody else is playing. */
+  const pageEpoch = /var DAILY_EPOCH = '(\d{4}-\d{2}-\d{2})'/.exec(pageSrc);
+  const sqlEpoch = /RTF_DAILY_EPOCH\s+constant\s+date\s*:=\s*date\s*'(\d{4}-\d{2}-\d{2})'/.exec(sql);
+  ok(!!pageEpoch && !!sqlEpoch, 'the page and the migration each declare a daily epoch');
+  if (pageEpoch && sqlEpoch) {
+    is(sqlEpoch[1], pageEpoch[1], 'and they are the same day');
+  }
+
+  /* The slot names the server will accept have to be the slots the game
+     drafts, or a legal roster is refused by a regex. */
+  const slotList = /where s not in \(([^)]*)\)/.exec(sql);
+  ok(!!slotList, 'the migration lists the slots it accepts');
+  if (slotList) {
+    const named = slotList[1].match(/'([^']+)'/g).map((s) => s.slice(1, -1)).sort();
+    is(named, E.SLOTS.slice().sort(), 'and they are the slots the game drafts');
+  }
+
+  /* ---- the score, in two places ---- */
+  const nums = /wins::int \* (\d+)\s*\+ least\((\d+), greatest\((\d+), round\(\(point_diff \+ (\d+)\) \* (\d+)\)/
+    .exec(sql);
+  ok(!!nums, 'the score column is still written the way this reads it');
+  if (nums) {
+    const [, mul, cap, floor, shift, scale] = nums.map(Number);
+    const fromSql = (wins, diff) =>
+      wins * mul + Math.min(cap, Math.max(floor, Math.round((diff + shift) * scale)));
+    /* board.js's own copy, lifted out of the shipped file rather than
+       rewritten here, for the reason the whole repo distrusts a second
+       implementation: a copy of the arithmetic agrees with itself. */
+    const head = boardSrc.indexOf('function scoreOf(');
+    let depth = 0, end = -1;
+    for (let j = boardSrc.indexOf('{', head); j < boardSrc.length; j++) {
+      if (boardSrc[j] === '{') depth++;
+      else if (boardSrc[j] === '}' && --depth === 0) { end = j + 1; break; }
+    }
+    ok(head >= 0 && end > head, 'board.js still has a scoreOf to compare against');
+    const roundTo = (n, places) => {
+      const f = Math.pow(10, places);
+      const v = Number(n) * f;
+      return (v < 0 ? -Math.round(-v) : Math.round(v)) / f;
+    };
+    const scoreOf = new Function('round1',
+      boardSrc.slice(head, end) + '\nreturn scoreOf;')((n) => roundTo(n, 1));
+
+    let worst = null;
+    for (let w = 0; w <= 82; w++) {
+      for (let d = -20; d <= 20; d += 0.1) {
+        const diff = roundTo(d, 1);
+        if (scoreOf(w, diff) !== fromSql(w, diff) && !worst) worst = [w, diff];
+      }
+    }
+    is(worst, null, 'the client and the column compute the same score everywhere');
+
+    /* AND THE PROPERTY THE SHIFT AND THE CLAMP EXIST FOR. A differential can
+       never carry into the wins digit, so a 49 win blowout never outranks a
+       50 win grind. Swept rather than spot-checked, because the failure is a
+       differential wide enough to reach the next multiple and that is a
+       question about the whole range. */
+    let carried = null;
+    for (let w = 0; w < 82; w++) {
+      const best = scoreOf(w, 60), worstNext = scoreOf(w + 1, -60);
+      if (best >= worstNext && !carried) carried = [w, best, worstNext];
+    }
+    is(carried, null, 'one more win always outranks any differential');
+  }
+
+  /* THE MODES THE SERVER ACCEPTS ARE THE DOORS THE GAME HAS, and the table's
+     own check constraint is the list. A door added to the page and not here
+     is a run refused on submit with nothing said to the player. */
+  const modeChk = /run_mode in \(([^)]*)\)\)/.exec(sql);
+  ok(!!modeChk, 'the table constrains run_mode to a list');
+  if (modeChk) {
+    const modes = modeChk[1].match(/'([^']+)'/g).map((s) => s.slice(1, -1)).sort();
+    is(modes, ['club', 'daily', 'era', 'league'],
+      'and it is the four doors the page draws');
+    /* The client's own allowlist, which is what stops a caller putting text
+       into a query, has to be the same four. */
+    const doors = /const DOORS = \[([^\]]*)\]/.exec(boardSrc);
+    ok(!!doors, 'board.js has its own list of doors');
+    if (doors) {
+      is(doors[1].match(/'([^']+)'/g).map((s) => s.slice(1, -1)).sort(), modes,
+        'and board.js allows exactly those');
+    }
+  }
+}
+
 /* ── THE BOX SCORE ADDS UP, OR IT IS NOT A BOX SCORE ────────────────────────
  *
  * Six identities, and all six are the kind a reader checks by eye in two

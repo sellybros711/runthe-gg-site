@@ -3698,6 +3698,7 @@ node hoops/check-posture.mjs      discoverability, per the table above
 node hoops/build/check-fetch.mjs  the scraper's parsers, against saved markup
 node hoops/verify.mjs             draft legality, seed replay, and calibration
 node hoops/check-badges.mjs       every badge is reachable, against real runs
+node hoops/check-board.mjs        the leaderboard, in a browser, in every state
 ```
 
 `check-badges.mjs` takes about two minutes, because proving a badge is reachable
@@ -4053,6 +4054,159 @@ wrong three times.
 **The day walk runs in a child process under `TZ=America/New_York`.** It has to:
 the claim is that the arithmetic is immune to a clock change, and on a CI
 machine running UTC the broken version passes. Proved by reintroducing it.
+
+### The leaderboard, and why there are four of them
+
+```
+node hoops/check-board.mjs                        the page, in a browser, in every state
+createdb hoops_board && psql -d hoops_board -c 'create role authenticated; create role anon;'
+psql -d hoops_board -f supabase/test/hoops_board_base.sql
+psql -d hoops_board -f supabase/108_hoops_leaderboard.sql
+psql -d hoops_board -f supabase/test/hoops_board_test.sql
+```
+
+`supabase/108_hoops_leaderboard.sql` is 50_football_perfect_season.sql's SHAPE
+and not its copy. The two games agree on what a leaderboard is (a table only a
+security-definer function may write, every derived field owned by the server,
+RLS read for everybody, one index per query the client actually makes) and
+disagree on every number in it, because one plays 17 games and the other plays
+82. Read that file's header for the argument this one inherits.
+
+**FOUR COMPETITIONS, NOT ONE BOARD WITH A FILTER, and the two locked ones are
+scoped again by key.** That is measured rather than tidy, and the measurements
+are already in this file: One Franchise pins chemistry at +2.30 of a possible
++2.50 whatever gets drafted, so best-available finishes 46.8 wins there against
+the league's 42.0, and the decades are nine wins apart for the same drafting.
+One board would retire the record to whoever picked the deepest franchise or
+the shallowest era, and every number on it would still look reasonable.
+
+**`lock_key` is one column and not two.** A club and a decade are mutually
+exclusive: every door sets one or neither, and a run carrying both is refused
+rather than stored. Two nullable columns would need two more indexes to answer
+the same two questions, and would allow a row whose mode says club while its
+era column is populated, which is a state no reader would know what to do with.
+
+**The losses are the regular season's alone, which is where this differs from
+the football table.** A round here is a SERIES, so a bracket loss is four wins
+and three losses for somebody and the games it took are in nothing the client
+sends. 58-24 is the record a basketball fan means, and putting playoff series
+into the win column would make every number on the board unreadable against a
+real team's.
+
+**A pick is the engine's own `pkey`, `<id>|<season>|<CLUB>`, and the club has
+to be in it.** The football table stores `<id>:<season>` because a player has
+one row a year there. Here **755 of 16,057 rows are a player traded
+mid-season**, who has a row per club, so id and season together name two
+different half-seasons at two different prices. Dropping the club would have
+made those rosters unrenderable and the two halves indistinguishable, on 5% of
+players, with nothing on screen to say which one it picked. It is `E.pkey()`'s
+format exactly and not a wire format translated at each end, because the client
+looks a row up in the map it already keys by that string.
+
+#### The migration hardcodes the engine, and the drift is silent
+
+Eight constants are literals in the SQL, on purpose, so the file can be read on
+its own and pasted into an editor with no dependency. The comment over them
+said "MUST MATCH hoops/engine.js CONSTANTS" and nothing made that true.
+
+**It fails in the worst direction.** Move `TOP_SIX_WINS` in the engine and the
+game starts producing seasons the server labels with the other seed, or refuses
+outright for a bracket that is now the wrong length. The page fails soft, so a
+refused run resolves to null and the screen says the board is not reachable: a
+live, correct game whose leaderboard quietly stopped accepting anything,
+reported by nobody, because that is exactly what a board looks like before the
+migration has been run. `verify.mjs` holds all eight, the slot list, the four
+modes, and the daily epoch, which lives in two files because one is deployed by
+hand and the other by a push.
+
+**The score is computed twice and has to agree twice.** `board.js` recomputes
+the stored generated column locally, because the results screen counts the runs
+ahead of you before the insert has come back: a client that shifts a
+differential differently from the column counts against a number that is in
+nobody's row. Swept over every (wins, differential) pair rather than spot
+checked, along with the property the shift and the clamp exist for, which is
+that one more win always outranks any differential.
+
+**Postgres rounds a half AWAY FROM ZERO and `Math.round` rounds it toward
+positive infinity**, so `round(-7.55, 1)` is -7.6 and `Math.round(-75.5)/10` is
+-7.5: one whole step of the score column, on any season with a negative
+differential landing on a half. `roundTo` is lifted from `cfb/board.js`, where
+it was found.
+
+#### A board has four states and three of them ship broken
+
+Unreachable, nobody has finished a run, and you have not finished one. Each
+needs its own sentence, because a blank box is how a feature teaches somebody
+it is broken and a spinner that never resolves is worse. On a game this new
+"nobody yet" is the COMMON case, so it says being first is the prize rather
+than apologising. That is the commissioner standings' lesson arriving here, and
+`check-board.mjs` asserts the four sentences are four different sentences.
+
+**A missing migration is told apart from a bad network**, because the remedy is
+different and only one of them is worth waiting out.
+
+**THE GAME OUTLIVES THE BOARD**, which is the point of every soft failure in
+`board.js`. A run finished against a database that has never seen the migration
+still plays, still records in the career and still lights its badges, and the
+only thing missing is a row on a list. The last section of `check-board.mjs` is
+that assertion, and it is the one that would catch somebody making the board a
+dependency.
+
+#### The version pair, again, and this is the silent one
+
+`NEED_BOARD` in the page against `BOARD_API_VERSION` in `board.js`. A stale
+`?v=` fails loudly. This one falls through to a stub that answers null to
+everything, so a `board.js` a version behind degrades to "not reachable" and
+looks exactly like a bad network day. **The football game shipped exactly that
+for a release**, and the section above on `BOARD_VERSION` tells the whole
+story. `check-cachebust.mjs` found this pin on its own, by who SETS the global,
+and there are eight pins across the site now.
+
+#### Accounts are the site's, and nothing here is a gate
+
+`hoops/auth.js` adds NO new account system: `profiles` from
+`supabase/10_accounts.sql`, the same providers, the same default supabase-js
+storage key, so signing in here signs you in on the football and college games.
+It deliberately has no premium anything, because this game has no paid tier,
+and the four purchase functions in `cfb/auth.js` are not stubbed here either: a
+function answering "you own nothing" is a door one line from being opened.
+
+**The display name is never sent.** `rtf_submit_run()` reads it out of
+`profiles` for `auth.uid()`, and the test asserts structurally that the
+function has no argument that could carry one.
+
+**A run finished signed out is claimed on the way in**, from two places: the
+submit itself, for somebody already signed in, and the auth callback, for
+somebody who signs in afterwards. The id rides in the saved run, so it survives
+the reload a Google redirect puts in the middle of it, which is the case that
+would otherwise lose every name.
+
+#### Three things about the harness, and two of them cost an hour
+
+**`content-range` is not a CORS-safelisted response header.** PostgREST returns
+the exact count there, and a cross-origin stand-in that does not name it in
+`Access-Control-Expose-Headers` hands the page a response whose header
+JavaScript cannot read. `countOf()` then answers null, every count comes back
+as "no opinion", and the standing reports the board unreachable while the LIST
+beside it renders perfectly: a harness fault that looks exactly like the defect
+the file is written to catch.
+
+**Waiting on the roster to grow is a race, and waiting a fixed 700ms is the
+same race.** The roster grows INSIDE `sign()`, which spins the next board a
+beat later (`setTimeout(spin, 240)`), so a wait that fires on the roster
+returns while the board on screen is still the one just signed from. The next
+pass clicks a tile off a board about to be replaced, two signings land against
+one draw, and the draft stalls with an empty board and no way on but the Spin
+button. The wait is for the next board to be up and readable: the roster has
+grown, there is a fresh draw, and the tiles are out of `pending`. A slower loop
+never hits it, which is why it took three drafts of the file.
+
+**An assertion that could only pass.** "The sheet opens on the run's own board"
+was checked against a LEAGUE run, and `lbMode` defaults to the league, so
+deleting the line that reads the run passed green. It plays a Decades run now.
+The same trap caught the second path a second time: opened once from the
+standing, `lbMode` is already the run's board, so the front page would land
+there whether or not it looks at the run at all. That check reloads first.
 
 ### The data pipeline
 
