@@ -11353,14 +11353,34 @@ function dynHiEnsure(){
  * ROUNDING IS ALLOWED HERE AND WOULD NOT BE ON A RESULT SCREEN. This is the bar to clear,
  * read at a glance on a door; the exact figure is on the leaderboard, which is where somebody
  * checking whether they beat it by four hundred points is going to look anyway.
+ *
+ * AND IT RAN OUT OF BANDS, WHICH IS WHAT AN UNBOUNDED NUMBER DOES TO A LADDER WITH ONE RUNG.
+ * The record reached 1,524,900,000 and the corner printed `1524.9M`, which is a correct
+ * abbreviation of a number nobody writes that way and is longer than the thing it replaced.
+ * Reported by a player. THE CAUSE IS NOT THE SIZE OF TODAY'S RECORD: a season's score is
+ * multiplied by its own season number, so a run's total grows with the SQUARE of its length
+ * and the top of this board will pass a trillion without anybody doing anything new. So the
+ * ladder goes to T, and the loop below means the next rung is one entry rather than a branch.
  */
+const DYN_BIG=[[1e12,'T'],[1e9,'B'],[1e6,'M']];
+/* Two decimals under ten and one above, so the abbreviation keeps three significant figures
+   either way. The trailing zeros come off, or 1,000,000 reads "1.00M". */
+const dynBand=(n,i)=>{
+  const m=n/DYN_BIG[i][0];
+  return (m<10?m.toFixed(2):m.toFixed(1)).replace(/\.?0+$/,'')+DYN_BIG[i][1];
+};
 const dynHiNum=(n)=>{
   n=Math.round(n||0);
   if(n<1e6) return SCORE(n);
-  const m=n/1e6;
-  /* Two decimals under ten and one above, so the abbreviation keeps three significant
-     figures either way. The trailing zeros come off, or 1,000,000 reads "1.00M". */
-  return (m<10?m.toFixed(2):m.toFixed(1)).replace(/\.?0+$/,'')+'M';
+  const i=DYN_BIG.findIndex((b)=>n>=b[0]);
+  const out=dynBand(n,i);
+  /* THE BAND IS PICKED ON THE RAW VALUE AND THE STRING CAN ROUND PAST IT. 999,999,999 is
+     under a billion, so it takes the M band, and 999.999999 printed to one decimal is
+     "1000.0", which strips to `1000M`: a correct number written the one way nobody writes
+     it, which is the whole fault this function was just fixed for. Decide on the PRINTED
+     value, not the raw one, the same as the commish state card and the Full Team coach row.
+     The top band has nothing above it, so there it stands. */
+  return (parseFloat(out)>=1000&&i>0)?dynBand(n,i-1):out;
 };
 /* The corner block, or nothing at all. Never a dash and never a zero: a board that has not
    answered and a board with nothing on it are both "no number to show", and printing a
@@ -26229,7 +26249,13 @@ function paintDynastyPodium(rows){
       '<span class="pl">'+place+'</span>'+avatarHTML(pf,'big')+
       '<span class="pn'+proClass(r)+'">'+(dynRunLive(r)?livePill():'')+
         esc(mine?'You':(r.display_name||'Anonymous'))+'</span>'+
-      '<span class="pr">'+c.big+'</span>'+
+      /* ABBREVIATED ON THE STEP AND EXACT IN THE LIST, and the line between them is whether
+         the slot can give. A podium step is a fixed 110px at 390px and `.pod .pr` has no
+         ellipsis on it, so a billion point score runs out of the box with nothing to stop
+         it; a list row can shrink the name instead, and the row under this one carries the
+         figure in full. That is the door's own rule (see dynHiNum) arriving at the second
+         fixed box on this board rather than a new one. */
+      '<span class="pr">'+(lbDynSort==='score'?dynHiNum(r.score):c.big)+'</span>'+
       '<span class="ps">'+c.unit+'</span></div>';
   }).join('')+'</div><div class="podbase"></div>';
   return true;

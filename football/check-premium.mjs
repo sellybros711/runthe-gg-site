@@ -1910,6 +1910,7 @@ const lb = await openPage(browser, 'http://local.test/football/', { tester: fals
   inject: 'canPlayDynasty,openBoard,setRun:(r)=>{run=r;},'
     + 'lbDyn:()=>lbDynasty,paintDyn:paintDynastyBoard,paintCls:paintBoard,'
     + 'setRows:(rs)=>{lbRows=rs;},setSort:(s)=>{lbSort=s;lbDir=sortBestDir(s);},'
+    + 'hiNum:dynHiNum,byScore:(on)=>{lbDynSort=on?"score":"seasons";},'
     + "signIn:()=>{authState.signedIn=true;authState.ready=true;authState.name='t';"
     + "authState.userId='u1';premiumSet=[];}" });
 await lb.page.evaluate(() => window.__t.signIn());
@@ -2103,6 +2104,70 @@ console.log('\nA PAID NAME AND A LIVE RUN');
     pod['Pod Paid'].word === '0px', String(pod['Pod Paid'].word));
   ok('    and a finished run on the steps wears nothing',
     pod['Pod Done'] && pod['Pod Done'].pill === false && pod['Pod Done'].pro === false);
+}
+
+/*
+ * A DYNASTY SCORE GROWS WITH THE SQUARE OF THE RUN, SO THE LADDER HAS TO GO ON GOING UP.
+ *
+ * dynastySeasonScore multiplies a season by its own season number, so a run's total is
+ * quadratic in its length and there is no ceiling on it. The corner had one rung, M, and
+ * the record reached 1,524,900,000 and printed `1524.9M`: a correct abbreviation of a
+ * number nobody writes that way, and longer than the exact figure it replaced. Reported by
+ * a player. B and T will both be reached by somebody simply continuing to play.
+ *
+ * TWO FIXED SLOTS AND ONE THAT CAN GIVE. The door and a podium step are boxes the number
+ * cannot argue with; a list row shrinks the name instead and keeps the figure exact, which
+ * is where somebody checking whether they beat it by four hundred points looks.
+ */
+console.log('\nA SCORE THAT OUTGREW ITS LADDER');
+{
+  const seen = await lb.page.evaluate(() => {
+    const T = window.__t;
+    const ladder = [0, 578000, 999999, 1e6, 1524900, 999999999, 1524900000, 1e12, 4.56e13]
+      .map((n) => [n, T.hiNum(n)]);
+    const now = Date.now();
+    const ago = (h) => new Date(now - h * 3600 * 1000).toISOString();
+    T.byScore(true);
+    T.setRows([
+      { dynasty_id: 'a', seasons: 294, score: 1524900000, display_name: 'Record', created_at: ago(1) },
+      { dynasty_id: 'b', seasons: 210, score: 988400000, display_name: 'Second', created_at: ago(1) },
+      { dynasty_id: 'c', seasons: 180, score: 640200000, display_name: 'Third', created_at: ago(1) },
+      { dynasty_id: 'd', seasons: 90, score: 99500000, display_name: 'In The List', created_at: ago(1) },
+    ]);
+    T.paintDyn();
+    const pods = [...document.querySelectorAll('#lb-podium .pod')].map((p) => {
+      const pr = p.querySelector('.pr');
+      return { text: pr.textContent, over: pr.scrollWidth > pr.clientWidth + 1 };
+    });
+    const rows = [...document.querySelectorAll('#lb-rows .lbr')]
+      .map((r) => r.querySelector('.rec b.big').textContent);
+    T.byScore(false);
+    return { ladder, pods, rows };
+  });
+  const want = { 0: '0', 578000: '578,000', 999999: '999,999', 1000000: '1M',
+    1524900: '1.52M', 999999999: '1B', 1524900000: '1.52B', 1000000000000: '1T',
+    45600000000000: '45.6T' };
+  const wrong = seen.ladder.filter(([n, s]) => want[n] !== s);
+  ok('the ladder runs to a trillion', wrong.length === 0,
+    wrong.map(([n, s]) => n + ' reads ' + s + ' not ' + want[n]).join(', ')
+      || seen.ladder.map((p) => p[1]).join(' '));
+  /* THE BAND IS PICKED ON THE RAW VALUE AND THE STRING CAN ROUND PAST IT, which is how
+     999,999,999 came out as `1000M` on the first draft of the fix. Its own line above,
+     because it is the one case a reader of the source would not predict. */
+  ok('  and a value that rounds up moves band with it',
+    (want[999999999] === '1B') && seen.ladder.find((p) => p[0] === 999999999)[1] === '1B');
+  /* Abbreviated where the slot is fixed. The harness measures the FALLBACK face, which is
+     about a third wider than the condensed one a real visitor gets, so an overflow here is
+     not proof of one on a phone; what this asserts is the shape, that a step never carries
+     a raw comma number, which is true in any face. */
+  ok('  the podium steps abbreviate', seen.pods.length === 3
+    && seen.pods.every((p) => /[MBT]$/.test(p.text) && p.text.indexOf(',') < 0),
+    seen.pods.map((p) => p.text).join(' '));
+  ok('    and none of them overflows its step',
+    seen.pods.every((p) => !p.over), seen.pods.map((p) => p.text + (p.over ? ' OVER' : '')).join(' '));
+  /* And the list under it keeps the figure, because a row can shrink the name instead. */
+  ok('  and the list below keeps the exact figure',
+    seen.rows.length === 1 && seen.rows[0] === '99,500,000', seen.rows.join(' '));
 }
 
 /*

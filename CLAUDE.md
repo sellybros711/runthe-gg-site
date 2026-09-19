@@ -2254,6 +2254,31 @@ watching**: the flag is set in the handler and read after the block.
   to two syllables. `font-size:0` leaves LIVE in the accessibility tree, so the pill stays ONE
   element with one spelling rather than a second element that can drift.
 
+### A dynasty score is quadratic, so its abbreviation needs more than one rung
+
+`dynastySeasonScore` multiplies a season by its own season number, so a run's total grows
+with the SQUARE of its length and has no ceiling. The corner on the front page had one rung,
+`M`, and the record reached 1,524,900,000 and printed **`1524.9M`**: a correct abbreviation
+of a number nobody writes that way, and longer than the exact figure it replaced. Reported by
+a player. `B` and `T` both arrive on their own, from nobody doing anything new.
+
+**The band is picked on the raw value and the string can round past it.** 999,999,999 is
+under a billion, takes the `M` band, and 999.999999 to one decimal is `1000.0`, which strips
+to `1000M`. That is the same fault again, from the inside. `dynHiNum` re-bands on the printed
+value, which is the commish state card's rule at a fourth door.
+
+**Abbreviated where the slot is fixed, exact where the row can give.** The door and a podium
+step are boxes the number cannot argue with, and `.pod .pr` carries no ellipsis, so a billion
+runs out of a 110px step with nothing to stop it. A list row shrinks the NAME instead and
+keeps the figure, which is where somebody checking whether they beat it by four hundred
+points is going to look. Measured at 390px: the score column goes 73px to 101px at eight
+figures and takes 61px off the name.
+
+**The guard measures the shape, not the width.** This harness renders the FALLBACK face,
+about a third wider than the condensed one a real visitor gets, so an overflow measured here
+is not proof of one on a phone. What it asserts is that a podium step never carries a raw
+comma number, which is true in any face, plus the whole ladder including the rounding seam.
+
 ### The boss battle, and the one screen that checks itself
 
 ```
