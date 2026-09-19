@@ -682,6 +682,67 @@
   .brow .sc{font-family:var(--mono);font-size:13px;font-weight:700;}
   .brow.title{border-color:var(--gold);background:rgba(242,193,78,.08);}
 
+  /* ══ THE PLAYOFF BRACKET ═══════════════════════════════════════════════
+   * A rail of columns, one per round, scrolled horizontally. The football
+   * game's `.nbrk` in this palette, and the two tricks it carries are worth
+   * keeping: a column centres its games against the tallest one
+   * (`nth-child(2)` and `:last-child` on auto margins, which is what makes a
+   * one game Finals sit level with an eight game first round), and the rail
+   * rather than the page is what scrolls sideways.
+   */
+  .brk-hero{text-align:center;margin:0 0 10px;}
+  .brk-eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    font-weight:800;color:var(--orange);}
+  .brk-title{font-family:var(--display);font-weight:400;text-transform:uppercase;
+    font-size:clamp(24px,7vw,36px);line-height:1.05;margin:4px 0 0;letter-spacing:.02em;}
+  .brk-wrap{position:relative;}
+  .brk{display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 12px;
+    scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
+  .brk::-webkit-scrollbar{height:6px;}
+  .brk::-webkit-scrollbar-thumb{background:var(--cardb);border-radius:3px;}
+  .brk-col{flex:0 0 150px;scroll-snap-align:start;display:flex;flex-direction:column;gap:7px;}
+  .brk-col > :nth-child(2){margin-top:auto;}
+  .brk-col > :last-child{margin-bottom:auto;}
+  .brk-h{font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--dim);text-align:center;padding-bottom:3px;border-bottom:1px solid var(--line);}
+  .brk-col.now .brk-h{color:var(--orange);border-bottom-color:rgba(240,120,45,.45);}
+  .brk-conf{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--dim);margin-top:4px;}
+  .brk-g{position:relative;border:1px solid var(--line);border-radius:9px;
+    background:rgba(255,255,255,.03);}
+  .brk-g.live{border-color:rgba(240,120,45,.6);}
+  /* The ring is a pseudo-element on transform and opacity rather than an
+     animated box-shadow, so the one thing looping on this screen costs the
+     compositor and not a repaint. */
+  .brk-g.live:after{content:'';position:absolute;inset:-2px;border-radius:11px;
+    border:1px solid rgba(240,120,45,.55);pointer-events:none;
+    animation:brkpulse 2s ease-in-out infinite;}
+  @keyframes brkpulse{0%,100%{opacity:.18;transform:scale(1)}
+    50%{opacity:.8;transform:scale(1.02)}}
+  .brk-g.just{animation:brkflip .4s cubic-bezier(.2,.8,.3,1) both;}
+  @keyframes brkflip{0%{transform:scale(.96);opacity:.5}
+    55%{transform:scale(1.035)}100%{transform:none;opacity:1}}
+  .brk-t{display:flex;align-items:center;gap:6px;padding:6px 7px;font-size:11.5px;
+    color:var(--mut);min-height:30px;}
+  .brk-t + .brk-t{border-top:1px solid var(--line);}
+  .brk-t .sd{flex:0 0 14px;text-align:center;font-size:9.5px;font-weight:800;color:var(--dim);}
+  .brk-t .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-variant-numeric:tabular-nums;}
+  .brk-t .sc{flex:0 0 auto;font-family:var(--mono);font-size:11px;font-weight:700;
+    color:var(--dim);}
+  .brk-t.me .nm{color:var(--gold);font-weight:800;}
+  .brk-t.won{color:var(--ink);background:rgba(34,197,94,.07);}
+  .brk-t.won .nm{font-weight:800;color:#86efac;}
+  .brk-t.won .sc{color:#86efac;}
+  .brk-t.won.me .nm{color:var(--gold);}
+  .brk-t.out{opacity:.42;}
+  .brk-t.tbd .nm{color:var(--dim);font-weight:600;font-style:italic;}
+  .brk-note{text-align:center;font-size:13px;color:var(--mut);margin:8px 0 0;min-height:18px;}
+  @media (max-width:400px){ .brk-col{flex:0 0 138px;} }
+  @media (prefers-reduced-motion: reduce){
+    .brk-g.just,.brk-g.live:after{animation:none;}
+  }
+
   /* ══ ONE GAME, PLAYED FORWARD ══════════════════════════════════════════
    *
    * EVERYTHING THAT MOVES HERE MOVES ON THE COMPOSITOR, which is the whole of
@@ -1788,15 +1849,35 @@
     </div>
   </div>
 
-  <!-- THE DOOR. Shown when the bracket reaches a game the series can end in,
-       or any Finals game. Hidden the rest of the time, so a quiet second round
-       plays through without asking anybody anything. -->
+</div>
+
+<!-- ── the playoff bracket ──────────────────────────────────────────────── -->
+<div class="screen" id="s-brk">
+  <div class="brk-hero">
+    <div class="brk-eyebrow" id="brk-eyebrow"></div>
+    <h2 class="brk-title" id="brk-round">Playoffs</h2>
+  </div>
+
+  <!-- THE DOOR SITS ABOVE THE RAIL, which is the same rule the live board's
+       call box follows. The rail is the tallest thing on this screen and it
+       scrolls; a control the game is waiting on underneath it is a control
+       the player has to go looking for. Shown when the bracket reaches a game
+       the series can end in, or any Finals game, and hidden the rest of the
+       time so a quiet second round plays through without asking anything. -->
   <div class="card lvdoor" id="lvdoor" hidden>
     <div class="lvd-eye" id="lvd-eye"></div>
     <h3 class="lvd-title" id="lvd-title"></h3>
     <p class="lvd-why" id="lvd-why"></p>
     <button class="big gold" id="b-lv-play">Play it</button>
     <button class="ghost" id="b-lv-sim">Sim it</button>
+  </div>
+
+  <div class="brk-wrap">
+    <div class="brk" id="brk-rail" role="group" aria-label="Playoff bracket"></div>
+  </div>
+  <p class="brk-note" id="brk-note"></p>
+  <div class="btnrow" style="justify-content:center;margin-top:4px">
+    <button class="ghost" id="b-brk-fast">Skip ahead</button>
   </div>
 </div>
 
@@ -2360,7 +2441,7 @@ function show(id){
      series that had moved without them. Stopped rather than ended: the
      bracket is still at that game, so coming back offers the same door. */
   if (id !== 's-live' && LV && LV.timer) { clearTimeout(LV.timer); LV.timer = null; }
-  if (id !== 's-season') stopBracket();
+  if (id !== 's-brk') stopBracket();
   if (id === 's-home') heroStart(); else heroStop();
   /* The club belongs to the draft. The season, the results and the home screen
      have no club, and a results screen still wearing the last team you spun is
@@ -2399,13 +2480,16 @@ var DOCK_FOR = {
     /* Before tip-off the action is Play. Once the season is running Play is
        spent, and the only thing left to do is stop watching, so Skip takes the
        bar on its own. */
-    /* AND NOTHING AT ALL WHILE THE DOOR IS UP. The door is a card with two
-       buttons that are one decision, and docking half of a pair is how a
-       reader ends up answering a question with the other half off screen.
-       Skip is also meaningless there: the bracket is already stopped. */
-    if (!$('lvdoor').hidden) return [];
     var play = $('b-play');
     return play && !play.disabled ? [play] : [$('b-skip')];
+  },
+  's-brk':    function(){
+    /* NOTHING WHILE THE DOOR IS UP. The door is a card with two buttons that
+       are one decision, and docking half of a pair is how a reader ends up
+       answering a question with the other half off screen. Skip is also
+       meaningless there: the walk is already stopped and waiting on them. */
+    if (!$('lvdoor').hidden) return [];
+    return [$('b-brk-fast')];
   },
   's-live':   function(){
     /* Once the game is over the only thing left is to carry on, and Sim the
@@ -2421,7 +2505,7 @@ var HOME_OF = {};
 
 function rememberHomes(){
   var ids = ['b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
-    'b-lv-fast', 'b-lv-next'];
+    'b-lv-fast', 'b-lv-next', 'b-brk-fast'];
   for (var i = 0; i < ids.length; i++) {
     var el = $(ids[i]);
     if (el && el.parentNode) HOME_OF[ids[i]] = el.parentNode;
@@ -2492,7 +2576,7 @@ function renderAppBar(screen){
     return;
   }
   state.className = 'state';
-  if (screen === 's-season' || screen === 's-over') {
+  if (screen === 's-season' || screen === 's-brk' || screen === 's-over') {
     /* Mid-sim this is the live record, which is the one number worth carrying
        above a screen you are watching rather than reading. */
     var w = simWins, l = simLosses;
@@ -4818,15 +4902,406 @@ function playSeason(){
   $('b-skip').onclick = finish;
 }
 
-/* ── THE BRACKET, ONE GAME AT A TIME ───────────────────────────────────────
+/* ══ THE PLAYOFF BRACKET ══════════════════════════════════════════════════════
  *
- * The round rows land as they did before, one per round. What is new is that
- * the walk stops at a big game and offers the door, and that a game the player
- * takes is settled by the live board rather than by the resolver.
+ * Sixteen seats in the NBA's shape: eight seeds a conference, a FIXED tree
+ * (1/8 meets 4/5, 2/7 meets 3/6, no reseeding, which is the real rule and is
+ * simpler than the football game's), three rounds to a conference final and
+ * then the Finals across the middle. Walked forward a round at a time, the
+ * other games flipping to their winners one after another and the player's
+ * held back, which is `s-nbrk`'s shape in The Perfect Season.
+ *
+ * IT DECIDES NOTHING. The opponent each round is a net rating drawn by
+ * `poBeginRound`, and the whole postseason model is fitted against the title
+ * rate of every team-season in the data. A bracket that picked the opponent
+ * instead would quietly rebuild the difficulty curve. What is drawn here is
+ * the field AROUND that path, and the fourteen games the player is not in are
+ * simulated for the reveal alone.
+ *
+ * ── IT NAMES NOBODY, AND THAT IS THIS GAME'S RULE RATHER THAN A SHORTCUT ────
+ *
+ * The football bracket prints real clubs because there the opponents ARE real
+ * team-seasons off the difficulty ladder. Here they are not: the results
+ * screen has said "played like a 58 win team" since the day it shipped, for
+ * the reason written over it, which is that printing "the 1996 Bulls" over a
+ * number the model rolled tells somebody they beat a team that was never in
+ * the room. A bracket of real names would be that mistake fifteen times on
+ * one screen.
+ *
+ * So every seat is a SEED and a RECORD, which is how an NBA bracket reads
+ * anyway, and no seat is a claim about anybody who ever played.
+ *
+ * ── THE TWO NUMBERS ARE KEPT APART, DELIBERATELY ────────────────────────────
+ *
+ * A seat's record is the FIELD's shape: what a 3 seed won. The strength the
+ * engine actually drew is what you are playing against, and the draw is
+ * deliberately wide (see TITLE.SERIES_SD), so the two disagree and should.
+ * The seat carries the seed and the note under the bracket carries the form:
+ * "The 3 seed, playing like a 58 win team." One sentence, two facts, neither
+ * pretending to be the other.
  */
-var brTimer = null;
+var BRK_CONFS = ['East', 'West'];
+/* The tree, in the order the boxes are drawn down a column, so a reader can
+   follow a line rather than hunt for it: the top half of the conference is
+   1/8 with 4/5 and the bottom half is 3/6 with 2/7. Seed numbers, not
+   indexes, because that is what the screen prints. */
+var BRK_TREE = [[1, 8], [4, 5], [3, 6], [2, 7]];
 
-function stopBracket(){ if (brTimer) { clearTimeout(brTimer); brTimer = null; } }
+/* How far above the top six line a record has to be for each seed. Written as
+   offsets rather than as win totals, so tuning TOP_SIX_WINS moves the whole
+   ladder with it instead of leaving six numbers behind that describe the old
+   game. Only used for the far conference, which has no player to anchor on. */
+var BRK_OVER = [12, 8, 5, 3, 1, 0];
+
+function brkWins(){
+  var w = 0;
+  for (var i = 0; i < (run.season || []).length; i++) if (run.season[i].won) w++;
+  return w;
+}
+
+/* THE PLAYER'S SEED, off the record, the way the real thing is seeded. A run
+   that came through the play-in is the 7 seed whatever it won, because that
+   is what the play-in is: the engine's own `seedFromRecord` splits at exactly
+   the same line, so this cannot disagree with which rounds the run plays. */
+function brkSeedOf(wins){
+  var base = E.CONSTANTS.TOP_SIX_WINS;
+  for (var s = 0; s < BRK_OVER.length; s++) if (wins >= base + BRK_OVER[s]) return s + 1;
+  return BRK_OVER.length;
+}
+
+/* A CONFERENCE BUILT AROUND ONE FIXED RECORD. The player's own seat carries
+   their real win total and everybody else is spread away from it, upward for
+   the better seeds and downward for the worse, so the column can never print
+   a 7 seed above an 8 seed with more wins. Built this way rather than from
+   per-seed bands because the player's record is the one number here that is
+   not ours to choose: a 43 win play-in run sits below a band that starts at
+   45, and a field drawn independently of it reads as a mistake on the one row
+   the reader is looking at. */
+function brkColumnWins(anchorSeed, anchorWins, rng){
+  var out = new Array(8), cur = anchorWins;
+  out[anchorSeed - 1] = anchorWins;
+  for (var s = anchorSeed - 1; s >= 1; s--) {
+    cur += 1 + Math.floor(rng() * 3);
+    out[s - 1] = Math.min(E.CONSTANTS.REGULAR_SEASON_GAMES, cur);
+  }
+  cur = anchorWins;
+  for (var t = anchorSeed + 1; t <= 8; t++) {
+    cur -= 1 + Math.floor(rng() * 3);
+    out[t - 1] = Math.max(20, cur);
+  }
+  return out;
+}
+
+/* How often the better seed takes the series, and how long it goes. Nothing
+   downstream reads either: this is the reveal and only the reveal. */
+function brkOdds(hi, lo){
+  return Math.max(0.5, Math.min(0.93, 0.5 + 0.055 * (lo - hi)));
+}
+function brkResolve(hi, lo, rng){
+  var p = brkOdds(hi.seed, lo.seed);
+  var better = rng() < p;
+  var edge = (p - 0.5) * 2;
+  var r = rng();
+  /* A lopsided pairing sweeps more often. Four to three is the tail. */
+  var lost = r < 0.16 + 0.30 * edge ? 0 : r < 0.46 + 0.26 * edge ? 1 : r < 0.80 ? 2 : 3;
+  return { win: better ? hi : lo, lose: better ? lo : hi, w: 4, l: lost };
+}
+
+var brk = null;
+
+function brkBuild(){
+  var rounds = (run.playoffSeed && run.playoffSeed.rounds) || 0;
+  if (brk && brk.forSeed === run.seed && brk.rounds === rounds) return brk;
+  var rng = E.createSeededRNG(E.hashSeed(String(run.seed) + '|nbabracket'));
+  var wins = brkWins();
+  /* A PLAY-IN RUN IS THE 7 SEED, and the two halves of that sentence come
+     from one place: `seedFromRecord` is what decided there would be a
+     play-in round at all, so reading `bye` here rather than the win total
+     again means the seed and the schedule cannot come apart. */
+  var mySeed = run.playoffSeed && run.playoffSeed.bye ? brkSeedOf(wins) : 7;
+  var nearIdx = Math.floor(rng() * 2);
+
+  var nearWins = brkColumnWins(mySeed, wins, rng);
+  /* The far conference has no player, so it is anchored on its own top seed
+     rather than on anybody: the same ladder the seeds are named off, plus a
+     little room. */
+  var farTop = E.CONSTANTS.TOP_SIX_WINS + BRK_OVER[0] + Math.floor(rng() * 7);
+  var farWins = brkColumnWins(1, farTop, rng);
+
+  var seat = function(s, w, you){ return { seed: s, wins: w, you: !!you }; };
+  var near = [], far = [];
+  for (var s = 1; s <= 8; s++) {
+    near.push(seat(s, nearWins[s - 1], s === mySeed));
+    far.push(seat(s, farWins[s - 1], false));
+  }
+
+  brk = {
+    forSeed: run.seed, rounds: rounds,
+    near: near, far: far, mySeed: mySeed,
+    myConf: BRK_CONFS[nearIdx], farConf: BRK_CONFS[1 - nearIdx],
+    /* Which column is the first round. A play-in run has the play-in in
+       front of it, so every stage below is offset by one. */
+    off: rounds === E.CONSTANTS.PLAYOFF_ROUNDS_PLAY_IN ? 1 : 0,
+    names: E.playoffRoundNames(rounds),
+    /* The other side of the play-in, a record and nothing else. */
+    playIn: { seed: null, wins: Math.max(20, wins - 1 - Math.floor(rng() * 3)), you: false },
+    cache: {}, revealed: {}, rng: rng,
+  };
+  return brk;
+}
+
+/* WHO ACTUALLY TOOK THE SEAT THE PLAY-IN FEEDS, which is one seat and is the
+   only place the first round is not just a seeding.
+ *
+ * Three answers and all three are needed. Undecided, and nobody is in it: the
+ * first round drew the player into a seat while the game deciding whether
+ * they are in it was still on the screen above. Won, and it is theirs. LOST,
+ * and it belongs to whoever beat them, which is what the real bracket does
+ * and is what lets the field finish: without it a play-in loss left every
+ * round after it permanently TBD, so the postseason the player had just been
+ * knocked out of never happened at all.
+ *
+ * It lives in the field rather than at draw time because everything above
+ * stage zero is fed from here: a substitution made in the painter would seat
+ * the right club in the first round and carry the wrong one into the semis. */
+function brkEntrant(e){
+  var B = brkBuild();
+  if (!e || !e.you || !B.off) return e;
+  var pi = brkMine(-1);
+  if (!pi || !pi.over) return null;
+  if (pi.won) return e;
+  return { seed: e.seed, wins: B.playIn.wins, you: false };
+}
+
+/* Who is in a game, and who won it. Resolved once and cached, because a
+   reveal draws the whole field on every frame of it and a second roll would
+   redraw a different bracket each time. */
+function brkGame(stage, side, idx){
+  var B = brkBuild();
+  var key = stage + ':' + side + ':' + idx;
+  if (B.cache[key]) return B.cache[key];
+
+  var mine = false, a = null, b = null;
+  if (stage === 3) {
+    a = brkGame(2, 'near', 0).won;
+    b = brkGame(2, 'far', 0).won;
+    mine = !!(a && a.you);
+  } else if (stage === 0) {
+    var col = side === 'near' ? B.near : B.far;
+    a = brkEntrant(col[BRK_TREE[idx][0] - 1]);
+    b = brkEntrant(col[BRK_TREE[idx][1] - 1]);
+    mine = !!((a && a.you) || (b && b.you));
+  } else {
+    a = brkGame(stage - 1, side, idx * 2).won;
+    b = brkGame(stage - 1, side, idx * 2 + 1).won;
+    mine = !!((a && a.you) || (b && b.you));
+  }
+
+  var g = { key: key, stage: stage, side: side, idx: idx, mine: mine,
+    pair: [a, b], won: null, lost: null, w: 0, l: 0 };
+
+  if (mine) {
+    /* THE PLAYER'S OWN GAME IS THE RUN'S, never a roll, AND IT IS NEVER
+       CACHED. A series score moves while the screen is up, so an answer
+       stored the first time the field was drawn would freeze the one box
+       the reader is watching at 0-0. */
+    var m = brkMine(stage);
+    if (m && m.over) {
+      var me = (a && a.you) ? a : b, them = (a && a.you) ? b : a;
+      g.won = m.won ? me : them;
+      g.lost = m.won ? them : me;
+      g.w = Math.max(m.w, m.l);
+      g.l = Math.min(m.w, m.l);
+    }
+    return g;
+  }
+  /* Both feeders have to have produced somebody. A game whose pair is not
+     known yet is drawn as two empty seats and asked again later, and it must
+     NOT be cached in that state or the empty answer outlives the reason. */
+  if (!a || !b) return g;
+  var r = brkResolve(a.seed <= b.seed ? a : b, a.seed <= b.seed ? b : a, B.rng);
+  g.won = r.win; g.lost = r.lose; g.w = r.w; g.l = r.l;
+  B.cache[key] = g;
+  return g;
+}
+
+/* The run's own row for a stage, if it has one yet. `cur` is the series being
+   played and `results` is every round already finished, so between them they
+   answer both halves: how it stands, and how it ended. */
+function brkMine(stage){
+  if (!run.po) return null;
+  var B = brkBuild(), at = stage + B.off;
+  var done = run.po.results[at];
+  if (done) return { over: true, won: done.won, w: done.yourWins, l: done.oppWins,
+    oppNet: done.oppNet };
+  var cur = run.po.cur;
+  if (cur && cur.roundIndex === at) return { over: false, won: false,
+    w: cur.yourWins, l: cur.oppWins, oppNet: cur.oppNet };
+  return null;
+}
+
+/* Every box in one column, in the order they are drawn.
+
+   THE PLAY-IN IS ONE BOX, because the engine's play-in is one game. The real
+   thing is four games over two nights and modelling that here would be a
+   picture of a tournament the run never plays. Its opponent carries a record
+   and NO SEED, which is the honest label: the winner is the 7 seed, so
+   neither side is one yet, and a chip reading 8 beside a first round column
+   that also has an 8 would be two different clubs wearing one number. */
+function brkColumn(col){
+  var B = brkBuild();
+  if (B.off && col === 0) {
+    return [{ key: 'pi', stage: -1, side: 'near', idx: 0, mine: true,
+      pair: [B.near[B.mySeed - 1], B.playIn], won: null, lost: null, w: 0, l: 0 }];
+  }
+  var stage = col - B.off, out = [];
+  if (stage === 3) { out.push(brkGame(3, 'near', 0)); return out; }
+  var per = [4, 2, 1][stage];
+  for (var i = 0; i < per; i++) out.push(brkGame(stage, 'near', i));
+  for (var j = 0; j < per; j++) out.push(brkGame(stage, 'far', j));
+  return out;
+}
+
+/* ── DRAWING IT ────────────────────────────────────────────────────────────
+ *
+ * The whole field, every round, from what has been revealed so far. Redrawn
+ * in full on every step, which is what the football bracket does and is fine
+ * here for the same reason: it is sixteen seats of text.
+ *
+ * SO THE ANIMATION CANNOT LIVE ON THE SEATS. A keyframe on `.brk-t.won` would
+ * replay for every seat already settled on every step of the reveal, because
+ * innerHTML builds a new node each time and a new node starts its animations
+ * over. Exactly one key is marked `just` at a time, and only `.just` carries
+ * the flip, so the game that has this moment is the only thing moving.
+ */
+function brkSeat(e, state, score){
+  if (!e) return '<div class="brk-t tbd"><span class="sd"></span>'
+    + '<span class="nm">TBD</span><span class="sc"></span></div>';
+  var cls = state ? ' ' + state : '';
+  return '<div class="brk-t' + (e.you ? ' me' : '') + cls + '">'
+    + '<span class="sd">' + (e.seed == null ? '' : e.seed) + '</span>'
+    + '<span class="nm">' + (e.you ? 'Your six' : esc(e.wins + '-'
+      + (E.CONSTANTS.REGULAR_SEASON_GAMES - e.wins))) + '</span>'
+    + '<span class="sc">' + (score == null ? '' : score) + '</span></div>';
+}
+
+/* One box. Four states a seat can be in and they are not the same question:
+   nothing has happened, this pair is playing now, this one went through, this
+   one is out. */
+function brkBox(g, live, just, known){
+  var B = brkBuild();
+  if (!known) return '<div class="brk-g">' + brkSeat(null) + brkSeat(null) + '</div>';
+  var a = g.pair[0], b = g.pair[1];
+  var sa = null, sb = null, wa = null, wb = null;
+  if (g.mine) {
+    var m = brkMine(g.stage);
+    if (m) {
+      var me = a && a.you ? a : b, them = a && a.you ? b : a;
+      /* NOTHING TO SHOW AT NIL APIECE. A series that has not tipped off
+         printed a 0 on both seats, which is two numbers saying the same
+         nothing on the one box the reader is watching. A 0 beside a 4 is a
+         sweep and stays. */
+      if (m.w || m.l) {
+        if (me === a) { wa = m.w; wb = m.l; } else { wa = m.l; wb = m.w; }
+      }
+      if (m.over) {
+        sa = (me === a) === m.won ? 'won' : 'out';
+        sb = sa === 'won' ? 'out' : 'won';
+      }
+    }
+  } else if (B.revealed[g.key] && g.won) {
+    sa = a === g.won ? 'won' : 'out';
+    sb = a === g.won ? 'out' : 'won';
+    wa = a === g.won ? g.w : g.l;
+    wb = a === g.won ? g.l : g.w;
+  }
+  return '<div class="brk-g' + (live ? ' live' : '') + (just ? ' just' : '') + '">'
+    + brkSeat(a, sa, wa) + brkSeat(b, sb, wb) + '</div>';
+}
+
+/* HAS THE ROUND THAT FEEDS THIS COLUMN FINISHED. Every decoration game in
+   the field is decided the first time its pairing is asked for, and the
+   first round's pairings are known from the tip, so without this the whole
+   bracket resolves on the first screen: the conference final column named
+   the 5 seed while the first round was still being revealed, which tells a
+   reader who wins their own semifinal before their first round is over.
+   The seats know their teams either way. This only governs whether they are
+   DRAWN, and TBD is what an unfed seat says.
+
+   THE FIRST ROUND IS ALWAYS KNOWN, and gating it behind the play-in was the
+   first version of this. Its pairings are SEEDS, so they exist before a ball
+   is thrown, and a play-in run came to a bracket of sixteen TBDs with one
+   game in front of it. The play-in feeds exactly one SEAT, which brkEntrant
+   answers, rather than seven games whose pairings are known. */
+function brkKnown(){
+  var B = brkBuild(), out = [];
+  for (var c = 0; c <= B.off; c++) out[c] = true;
+  for (var c = B.off + 1; c < B.names.length; c++) {
+    var prev = brkColumn(c - 1), all = out[c - 1];
+    for (var i = 0; all && i < prev.length; i++) {
+      var g = prev[i];
+      if (g.mine) { var m = brkMine(g.stage); all = !!(m && m.over); }
+      else all = !!B.revealed[g.key];
+    }
+    out[c] = all;
+  }
+  return out;
+}
+
+function brkRender(){
+  var B = brkBuild(), rail = $('brk-rail');
+  if (!rail) return;
+  var known = brkKnown();
+  var h = '';
+  for (var c = 0; c < B.names.length; c++) {
+    h += '<div class="brk-col' + (c === brkCol ? ' now' : '') + '">'
+      + '<div class="brk-h">' + esc(BRK_SHORT[B.names[c]] || B.names[c]) + '</div>';
+    var games = brkColumn(c);
+    var side = null;
+    for (var i = 0; i < games.length; i++) {
+      var g = games[i];
+      if (g.stage != null && g.stage < 3 && g.side !== side) {
+        side = g.side;
+        h += '<div class="brk-conf">'
+          + esc(side === 'near' ? B.myConf : B.farConf) + '</div>';
+      }
+      h += brkBox(g, g.mine && c === brkCol, B.justKey === g.key, known[c]);
+    }
+    h += '</div>';
+  }
+  rail.innerHTML = h;
+}
+
+/* THE ROUND BEING PLAYED, IN VIEW. Five columns do not fit on a phone, so by
+   the Finals the one game that matters started off the right hand edge and
+   the player had to go looking for it. Same fix as the football rail. */
+function brkFocus(col){
+  var rail = $('brk-rail');
+  if (!rail) return;
+  var el = rail.children[col];
+  if (!el) return;
+  try { rail.scrollTo({ left: Math.max(0, el.offsetLeft - 10), behavior: 'smooth' }); }
+  catch (e) { rail.scrollLeft = Math.max(0, el.offsetLeft - 10); }
+}
+
+var BRK_SHORT = {
+  'Play-In': 'Play-In', 'First Round': 'First Round',
+  'Conference Semifinals': 'Semifinals', 'Conference Finals': 'Conf Finals',
+  'NBA Finals': 'Finals',
+};
+
+function brkNote(s){ var el = $('brk-note'); if (el) el.textContent = s || ''; }
+
+/* ── THE WALK ──────────────────────────────────────────────────────────────
+ *
+ * A round is three beats: the field around you settles, your series plays,
+ * and your seat settles. The door for a game worth playing opens in the
+ * middle beat, ABOVE the rail, because the rail is tall and a control the
+ * game is waiting on must never be the thing you scroll to find.
+ */
+var brkTimer = null, brkCol = -1;
+
+function stopBracket(){ if (brkTimer) { clearTimeout(brkTimer); brkTimer = null; } }
 
 function toBracket(){
   if (!run.po) {
@@ -4837,76 +5312,193 @@ function toBracket(){
     none.style.cssText = 'margin:6px 0 0;font-size:13px';
     none.textContent = 'No playoffs. ' + E.CONSTANTS.PLAY_IN_WINS + ' wins reaches the play-in.';
     el.appendChild(none);
-    brTimer = setTimeout(endRun, 900);
+    brTimerEnd();
     return;
   }
-  brTimer = setTimeout(runBracket, 340);
+  brkEnter();
+}
+function brTimerEnd(){ brkTimer = setTimeout(endRun, 900); }
+
+/* Everything before this column has already happened, so it is drawn settled.
+   Used on a reload, where nothing was animated and the field still has to
+   read as a bracket rather than as a page of TBD. */
+function brkRevealThrough(col){
+  var B = brkBuild();
+  for (var c = 0; c < col; c++) {
+    var games = brkColumn(c);
+    for (var i = 0; i < games.length; i++) if (games[i].key) B.revealed[games[i].key] = true;
+  }
 }
 
-/* One step of the walk. Simmed games cost nothing and only the round's own row
-   is drawn, so the pacing here is per ROUND and not per game, which is exactly
-   what this screen did before any of this existed. */
-function runBracket(){
+function brkHead(){
+  var B = brkBuild();
+  var name = B.names[brkCol] || 'Playoffs';
+  $('brk-round').textContent = BRK_SHORT[name] === 'Finals' ? 'The Finals' : name;
+  $('brk-eyebrow').textContent = B.myConf + ' · ' + B.mySeed + ' seed · '
+    + simWins + '-' + simLosses;
+}
+
+/* A round begins. pendingGame is what DRAWS the opponent, so the bracket
+   cannot be painted before it: the note under the rail says what that
+   opponent is playing like, and asking earlier would print the last round's
+   answer under this round's heading. */
+function brkEnter(){
   stopBracket();
-  $('lvdoor').hidden = true;
-  renderDock('s-season');
   var next = R.pendingGame(run);
-  if (!next) { endRun(); return; }
+  if (!next) { brkFinale(); return; }
+  save();
+  var B = brkBuild();
+  brkCol = next.roundIndex;
+  brkRevealThrough(brkCol);
+  B.justKey = null;
+  brkHead();
+  brkNote('');
+  $('lvdoor').hidden = true;
+  brkRender();
+  show('s-brk');
+  brkFocus(brkCol);
+
+  var games = [];
+  var col = brkColumn(brkCol);
+  for (var i = 0; i < col.length; i++) {
+    if (!col[i].mine && col[i].key && !B.revealed[col[i].key] && col[i].won) games.push(col[i]);
+  }
+  /* THE WHOLE REVEAL IS ABOUT THE SAME LENGTH WHATEVER THE ROUND IS. A first
+     round is eight games and a conference final is two, so a fixed step makes
+     the first round four times the wait for the same beat. */
+  var step = games.length ? Math.max(170, Math.round(2400 / games.length)) : 0;
+  var k = 0;
+  var go = function(){
+    if (k >= games.length) {
+      B.justKey = null;
+      brkRender();
+      brkTimer = setTimeout(brkSeries, 460);
+      return;
+    }
+    B.revealed[games[k].key] = true;
+    B.justKey = games[k].key;
+    k++;
+    brkRender();
+    brkTimer = setTimeout(go, step);
+  };
+  brkFastArm(function(){
+    stopBracket();
+    for (var z = 0; z < games.length; z++) B.revealed[games[z].key] = true;
+    B.justKey = null;
+    brkRender();
+    brkTimer = setTimeout(brkSeries, 200);
+  });
+  brkTimer = setTimeout(go, games.length ? 560 : 240);
+}
+
+/* WHAT SKIP DOES RIGHT NOW, and null when there is nothing to hurry. Held
+   rather than derived, because the games it would finish are the ones the
+   reveal's own closure is walking.
+
+   ARMING IT IS WHAT SETS THE BUTTON, in one place, because the two came
+   apart the moment there were three callers: a live Skip over a reveal that
+   had already finished is a control that does nothing, which is the same
+   defect as a docked button on a screen that cannot use it. */
+var brkFast = null;
+function brkFastArm(fn){
+  brkFast = fn || null;
+  var b = $('b-brk-fast');
+  if (b) b.disabled = !brkFast;
+}
+
+/* Your series, a game at a time. A game the series can end in stops here and
+   offers the door; everything else lands on the seat and carries on. */
+function brkSeries(){
+  stopBracket();
+  brkFastArm(null);
+  $('lvdoor').hidden = true;
+  renderDock('s-brk');
+  var next = R.pendingGame(run);
+  if (!next) { brkFinale(); return; }
+  if (next.roundIndex !== brkCol) { brkEnter(); return; }
+  brkSeriesNote();
   if (next.big) { showDoor(next); return; }
   var before = run.po.results.length;
   R.simGame(run);
   save();
-  if (run.po.results.length > before) {
-    paintRound(run.po.results[run.po.results.length - 1]);
-    brTimer = setTimeout(runBracket, 480);
-  } else {
-    runBracket();
-  }
+  brkRender();
+  if (run.po.results.length > before) { brkTimer = setTimeout(brkRoundDone, 760); return; }
+  brkTimer = setTimeout(brkSeries, 560);
 }
 
-function paintRound(rd){
-  var el = $('sim-bracket');
-  var row = document.createElement('div');
-  row.className = 'brow' + (rd.won && rd.round === 'NBA Finals' ? ' title' : '');
-  var left = document.createElement('span');
-  var nm = document.createElement('span');
-  nm.className = 'rd';
-  nm.textContent = rd.round;
-  left.appendChild(nm);
-  var opp = document.createElement('span');
-  opp.className = 'opp';
-  /* WHAT THE OPPONENT WAS, IN WINS. "Opponent rated +3.4 net" is the model
-     talking to itself: net rating per hundred possessions is the currency
-     the engine runs on and it is not a thing a fan carries around. The same
-     number through the same Pythagorean the season uses says "a 55 win
-     team", which is the sentence somebody would actually say about the
-     club that just knocked them out.
-     The opponent is deliberately NOT named as a real club. The bracket
-     draws a strength, not a team, and printing "the 1996 Bulls" over a
-     number the model rolled would be telling somebody they beat a team that
-     was never in the room.
-     PLAYED LIKE, NOT WAS, and that word is doing real work. The bracket
-     draws the opponent AROUND the round's strength rather than at it,
-     because a seven game series turns on who is healthy in May and whether
-     a shooter is hot for a fortnight, and the whole model was refitted for
-     that reason. So the draw occasionally hands the play-in a club
-     performing at 72 wins, which cannot be a play-in team's SEASON and can
-     absolutely be two weeks of one. Printing "a 72 win team" there was the
-     only line on this screen that read as a mistake.
-     Home court is not mentioned either: in this model you always have it,
-     because the 2-2-1-1-1 pattern is fixed and what varies with your record
-     is how MUCH it is worth. Saying you had it would be true of every round
-     of every run, which makes it noise. */
-  opp.textContent = 'played like a ' + oppWins(rd.oppNet) + ' win team';
-  left.appendChild(opp);
-  var res = document.createElement('span');
-  res.className = 'res ' + (rd.won ? 'w' : 'l');
-  res.textContent = rd.won ? 'WON' : 'LOST';
-  var sc = document.createElement('span');
-  sc.className = 'sc';
-  sc.textContent = rd.yourWins + '-' + rd.oppWins;
-  row.appendChild(left); row.appendChild(res); row.appendChild(sc);
-  el.appendChild(row);
+/* THE SEED AND THE FORM ARE TWO FACTS AND THE SENTENCE KEEPS THEM APART. The
+   seat says which seed, which is the FIELD's shape. This says what they are
+   playing like, which is the net rating the engine drew and the only number
+   here that decides anything. The draw is deliberately wide, so the two
+   disagree and should: read as one claim they would make the bracket look
+   like it was lying about its own seeding.
+
+   OFF `run.po.cur`, NEVER OFF THE PENDING GAME. `pendingGame` answers with
+   the points and the home court, which are the rating already converted for
+   this matchup; the rating itself lives on the round. */
+function brkSeriesNote(){
+  var cur = run.po && run.po.cur;
+  if (!cur) { brkNote(''); return; }
+  var g = brkColumn(brkCol).filter(function(x){ return x.mine; })[0];
+  var them = null;
+  if (g && g.pair) them = g.pair[0] && g.pair[0].you ? g.pair[1] : g.pair[0];
+  var form = 'playing like a ' + oppWins(cur.oppNet) + ' win team.';
+  brkNote(them && them.seed != null
+    ? 'The ' + them.seed + ' seed, ' + form
+    : 'One game to get in. They are ' + form);
+}
+
+function brkRoundDone(){
+  stopBracket();
+  var B = brkBuild();
+  var done = run.po.results[brkCol];
+  brkRender();
+  if (done && done.won) {
+    var nx = B.names[brkCol + 1];
+    brkNote(brkCol + 1 < B.names.length
+      ? 'Through to the ' + (BRK_SHORT[nx] === 'Finals' ? 'Finals' : nx) + '.'
+      : 'Champions.');
+  } else {
+    brkNote('Out in the ' + (BRK_SHORT[B.names[brkCol]] || B.names[brkCol]) + '.');
+  }
+  brkTimer = setTimeout(run.po.done ? brkFinale : brkEnter, 1000);
+}
+
+/* THE BRACKET FINISHES WITHOUT YOU, and that is worth the beat. A run that
+   goes out in the first round has watched a field it is now not in, and
+   walking the rest of it out says what the postseason did rather than
+   stopping the screen the moment the reader stops mattering to it. */
+function brkFinale(){
+  stopBracket();
+  brkFastArm(null);
+  var B = brkBuild();
+  brkRevealThrough(B.names.length);
+  brkCol = B.names.length - 1;
+  brkRender();
+  var last = brkColumn(B.names.length - 1)[0];
+  var champ = last && last.won;
+  if (champ && champ.you) brkNote('Champions.');
+  else if (champ) brkNote('The ' + champ.seed + ' seed takes it.');
+  brkFocus(brkCol);
+  brkTimer = setTimeout(endRun, 1400);
+}
+
+/* A reload lands here rather than on the season screen: the bracket is where
+   the run actually is, and the strip behind it is a season already played. */
+function brkResume(){
+  var B = brkBuild();
+  brkFastArm(null);
+  var at = run.po.cur ? run.po.cur.roundIndex : run.po.results.length;
+  brkCol = Math.min(at, B.names.length - 1);
+  brkRevealThrough(brkCol + 1);
+  B.justKey = null;
+  brkHead();
+  brkNote('');
+  $('lvdoor').hidden = true;
+  brkRender();
+  show('s-brk');
+  brkFocus(brkCol);
+  brkTimer = setTimeout(brkSeries, 420);
 }
 
 /* What the game is, in the words that make somebody want to play it. */
@@ -4951,19 +5543,22 @@ function showDoor(next){
   $('lvd-why').textContent = [seriesLine(next), doorWhy(next)]
     .filter(Boolean).join('. ');
   $('lvdoor').hidden = false;
-  renderDock('s-season');
-  /* The door is the bottom of the screen and the bracket above it has just
-     grown, so on a phone it can arrive below the fold. */
+  renderDock('s-brk');
+  brkFastArm(null);
+  /* It sits above the rail, so on a tall bracket it can be above the fold
+     rather than below it, and scrolling to it is what makes that true on a
+     screen the reader may have scrolled down. */
   try { $('lvdoor').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
 }
 
+/* Sim it: the one game, and back to the series. */
 function doorSim(){
   $('lvdoor').hidden = true;
   var before = run.po.results.length;
   R.simGame(run);
   save();
-  if (run.po.results.length > before) paintRound(run.po.results[run.po.results.length - 1]);
-  brTimer = setTimeout(runBracket, 480);
+  brkRender();
+  brkTimer = setTimeout(run.po.results.length > before ? brkRoundDone : brkSeries, 620);
 }
 
 /* The bracket is finished, so the run is. */
@@ -5077,7 +5672,7 @@ function lvWords(p){
 
 function startLive(){
   var g = R.liveGame(run);
-  if (!g) { runBracket(); return; }
+  if (!g) { brkSeries(); return; }
   stopBracket();
   LV = { next: g.next, sim: g.sim, rng: g.rng, timer: null, fast: false,
     shown: 0, men: [], over: false };
@@ -5356,54 +5951,30 @@ function lvFinish(){
   try { v.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
 }
 
-/* A RELOAD IN THE MIDDLE OF A BRACKET comes back to the season screen with
-   everything that has already happened on it and the walk carrying on from
-   where it stopped. The strip is rebuilt from `run.season` rather than
-   animated, because the 82 are already played and watching them again would
-   be a replay of something the player has seen. */
+/* A RELOAD IN THE MIDDLE OF A BRACKET comes back to the BRACKET, which is
+   where the run actually is. The season strip behind it is 82 games already
+   played, and replaying them is a reveal of something the player has seen. */
 function resumeBracket(){
-  $('b-play').disabled = true;
-  $('b-play').style.display = 'none';
-  $('simcard').style.display = '';
-  $('lvdoor').hidden = true;
-
-  var strip = $('sim-strip');
-  strip.textContent = '';
-  var w = 0, l = 0, homeW = 0, homeL = 0, marqW = 0, marqL = 0;
-  for (var i = 0; i < run.season.length; i++) {
-    var gm = run.season[i], sc = run.schedule[i] || {};
-    var c = document.createElement('span');
-    c.className = 'gcell' + (sc.marquee ? ' marq' : '') + (gm.won ? ' w' : ' l');
-    strip.appendChild(c);
-    if (gm.won) { w++; if (sc.home) homeW++; if (sc.marquee) marqW++; }
-    else { l++; if (sc.home) homeL++; if (sc.marquee) marqL++; }
+  var w = 0, l = 0;
+  for (var i = 0; i < (run.season || []).length; i++) {
+    if (run.season[i].won) w++; else l++;
   }
   simWins = w; simLosses = l;
-  $('sim-rec').textContent = w + '-' + l;
-  $('sim-streak').textContent = '';
-  $('sim-last').textContent = '';
-  $('sim-home').textContent = homeW + '-' + homeL;
-  $('sim-marq').textContent = marqW + '-' + marqL;
-
-  $('sim-bracket').textContent = '';
-  var done = (run.po && run.po.results) || [];
-  for (var r = 0; r < done.length; r++) paintRound(done[r]);
-
-  show('s-season');
-  renderAppBar('s-season');
-  if (!run.po && !done.length) { toBracket(); return; }
-  brTimer = setTimeout(runBracket, 340);
+  $('b-play').disabled = true;
+  $('b-play').style.display = 'none';
+  /* A run that missed the play-in is in the playoffs phase with no bracket:
+     there is nothing to draw and nothing to resume, so it finishes. */
+  if (!run.po) { endRun(); return; }
+  brkResume();
 }
 
 function lvContinue(){
   LV = null;
-  show('s-season');
-  /* The round row lands now rather than while the verdict was up, so a player
-     reads the game and then the series, in that order. */
-  var res = run.po && run.po.results;
-  var shown = $('sim-bracket').querySelectorAll('.brow').length;
-  if (res && res.length > shown) paintRound(res[res.length - 1]);
-  brTimer = setTimeout(runBracket, res && res.length > shown ? 620 : 240);
+  show('s-brk');
+  brkRender();
+  /* The round's own row lands on the way out rather than while the verdict
+     was up, so a player reads the game and then the series, in that order. */
+  brkTimer = setTimeout(brkSeries, 420);
 }
 
 // ── results ────────────────────────────────────────────────────────────────
@@ -7590,6 +8161,7 @@ $('b-lv-play').onclick = startLive;
 $('b-lv-sim').onclick = doorSim;
 $('b-lv-fast').onclick = lvFast;
 $('b-lv-next').onclick = lvContinue;
+$('b-brk-fast').onclick = function(){ if (brkFast) brkFast(); };
 /* RUN IT BACK MEANS THE SAME GAME. Pressed on the results of a Bulls run it
    has to start another Bulls run: a button that silently drops you back into
    the whole league is the same defect as a Back that goes somewhere else. */

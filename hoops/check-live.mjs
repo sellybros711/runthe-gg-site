@@ -795,7 +795,7 @@ const main = async () => {
       screen: (document.querySelector('.screen.active') || {}).id,
       live: window.RTF_LIVE.state,
     }));
-    ok(back.screen === 's-season' || back.screen === 's-over',
+    ok(back.screen === 's-brk' || back.screen === 's-over',
       `Continue goes back to the bracket (${back.screen})`);
     ok(back.live === null, 'and lets the live game go');
 
@@ -858,16 +858,19 @@ const main = async () => {
         `and where it got to (${JSON.stringify(home.where)})`);
 
       await p2.evaluate(() => document.querySelector('#b-resume').click());
-      await p2.waitForTimeout(600);
+      await p2.waitForTimeout(700);
       const res = await p2.evaluate(() => ({
         screen: (document.querySelector('.screen.active') || {}).id,
-        cells: document.querySelectorAll('#sim-strip .gcell').length,
-        rows: document.querySelectorAll('#sim-bracket .brow').length,
+        cols: document.querySelectorAll('#brk-rail .brk-col').length,
+        settled: document.querySelectorAll('#brk-rail .brk-t.won').length,
       }));
-      ok(res.screen === 's-season', `resuming lands on the bracket (${res.screen})`);
-      ok(res.cells === 82, `with the season already on it (${res.cells} games)`);
-      ok(res.rows === saved.rounds,
-        `and the rounds already decided (${res.rows} of ${saved.rounds})`);
+      /* THE BRACKET IS WHERE THE RUN IS, so that is where a reload lands. It
+         used to come back to the season screen and rebuild the 82 game strip,
+         which is a reveal of something the player has already watched. */
+      ok(res.screen === 's-brk', `resuming lands on the bracket (${res.screen})`);
+      ok(res.cols >= 4, `with the whole field on it (${res.cols} rounds)`);
+      ok(saved.rounds === 0 || res.settled > 0,
+        `and the rounds already played still settled (${res.settled})`);
     }
   }
 

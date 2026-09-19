@@ -3700,6 +3700,7 @@ node hoops/verify.mjs             draft legality, seed replay, and calibration
 node hoops/check-badges.mjs       every badge is reachable, against real runs
 node hoops/check-board.mjs        the leaderboard, in a browser, in every state
 node hoops/check-live.mjs         the game you play yourself, and its fit
+node hoops/check-bracket.mjs      the playoff bracket, and the field it draws
 ```
 
 `check-badges.mjs` takes about two minutes, because proving a badge is reachable
@@ -4208,6 +4209,180 @@ deleting the line that reads the run passed green. It plays a Decades run now.
 The same trap caught the second path a second time: opened once from the
 standing, `lbMode` is already the run's board, so the front page would land
 there whether or not it looks at the run at all. That check reloads first.
+
+### The bracket, and the field it draws around you
+
+```
+node hoops/check-bracket.mjs            the arithmetic and the screen
+node hoops/check-bracket.mjs --quick    the arithmetic only, no browser
+```
+
+The postseason used to be a list of rows: one line a round, the round's name,
+what the opponent played like, and WON or LOST. Correct, and it is a receipt
+rather than a bracket. `s-brk` is the football game's `s-nbrk` in this sport:
+sixteen seats in the NBA's shape, a **fixed** tree (1/8 meets 4/5, 2/7 meets
+3/6, no reseeding, which is the real rule and is simpler than the NFL's),
+walked forward a round at a time with the other games flipping to their
+winners one after another and the player's held back.
+
+**IT DECIDES NOTHING.** The opponent each round is a net rating drawn by
+`poBeginRound`, and the whole postseason is fitted against the title rate of
+every team-season in the data. A bracket that picked the opponent instead
+would quietly rebuild the difficulty curve. What is drawn here is the field
+AROUND that path, and the fourteen games the player is not in are simulated
+for the reveal alone.
+
+#### It names nobody, and that is this game's rule rather than a shortcut
+
+The football bracket prints real clubs because there the opponents ARE real
+team-seasons off the difficulty ladder. Here they are not. The results screen
+has said "played like a 58 win team" since the day it shipped, for the reason
+written over it: printing "the 1996 Bulls" over a number the model rolled
+tells somebody they beat a team that was never in the room. **A bracket of
+real names would be that mistake fifteen times on one screen.**
+
+So every seat is a **seed and a record**, which is how an NBA bracket reads
+anyway, and no seat is a claim about anybody who ever played. `check-bracket`
+reads the seat painter's own source for a reach at `nickname`, `franchise` or
+`teamName`, and reads every seat off the rendered page for anything that is
+not a record, the player, or TBD.
+
+**THE TWO NUMBERS ARE KEPT APART, DELIBERATELY.** A seat's record is the
+FIELD's shape: what a 3 seed won. The strength the engine actually drew is
+what you are playing, and the draw is deliberately wide (`TITLE.SERIES_SD`),
+so the two disagree and should. The seat carries the seed and the note under
+the rail carries the form: **"The 3 seed, playing like a 58 win team."** One
+sentence, two facts, neither pretending to be the other. Read as one claim
+they would make the bracket look like it was lying about its own seeding.
+
+That note is read off `run.po.cur.oppNet` and never off the pending game,
+which answers with the points and the home court, meaning the rating already
+converted for this matchup.
+
+#### A column is empty until the round that feeds it has been played
+
+**This shipped in the first draft and it is the whole reason the file has a
+spoiler section.** Every decoration game is decided the first time its pairing
+is asked for, and a first round's pairings are SEEDS, so they exist before a
+ball is thrown: the conference final column named the 5 seed while the first
+round was still being revealed, which tells a reader who wins their own
+semifinal before their first round is over. A perfectly rendered bracket,
+reading ahead.
+
+The seats know their teams either way. `brkKnown()` only governs whether they
+are DRAWN, and TBD is what an unfed seat says.
+
+**THE FIRST ROUND IS ALWAYS KNOWN, and gating it behind the play-in was the
+second version of the same mistake.** A play-in run arrived at a bracket of
+sixteen TBDs with one game in front of it. The play-in feeds exactly one SEAT,
+so that is handled a seat at a time (`brkSeatIn`) rather than by hiding seven
+games whose pairings are seeds.
+
+#### The column is built around the player's own record
+
+A worse seed showing more wins than a better one is a bracket arguing with its
+own seeding. Per-seed bands cannot promise that, because the player's record
+is the one number in the column that is not ours to choose: the engine lets a
+43 win run into the play-in, which sits under any band written for an 8 seed.
+
+So `brkColumnWins` **anchors on the player's seat** and spreads everybody else
+away from it, upward for the better seeds and downward for the worse.
+Monotone by construction, swept over every anchor a run can arrive with, and
+asserted again off the rendered page because the two halves of that claim (the
+arithmetic and what is printed) are different questions.
+
+**A play-in run is the 7 seed**, and both halves of that come from one place:
+`seedFromRecord` is what decided there would be a play-in round at all, so
+reading `bye` rather than the win total again means the seed and the schedule
+cannot come apart.
+
+**THE SEAT THE PLAY-IN FEEDS HAS THREE ANSWERS AND ALL THREE ARE NEEDED.**
+`brkEntrant` is asked once, in the field, and everything above the first
+round is fed from it: a substitution made in the painter instead would seat
+the right club in the first round and carry the wrong one into the semis.
+
+| the play-in is | the seat holds |
+|---|---|
+| not decided | nobody, because the first round drew the player into a seat while the game deciding whether they are in it was still on the screen above |
+| won | the player |
+| LOST | whoever beat them |
+
+That last row is what lets the field finish. Without it a play-in loss left
+the seat empty, so every round after it stayed permanently TBD and **the
+postseason the player had just been knocked out of never happened at all**.
+It is also what the real bracket does.
+
+**The play-in is ONE box, because the engine's play-in is one game.** The real
+thing is four games over two nights and drawing that would be a picture of a
+tournament the run never plays. Its opponent carries a record and **no seed**:
+the winner is the 7 seed, so neither side is one yet, and a chip reading 8
+beside a first round column that also has an 8 would be two different clubs
+wearing one number.
+
+#### What moves, and what it costs
+
+The whole field is redrawn on every step, which is what the football bracket
+does and is fine here for the same reason: it is sixteen seats of text. **So
+the animation cannot live on the seats.** A keyframe on `.brk-t.won` would
+replay for every settled seat on every step, because innerHTML builds a new
+node and a new node starts its animations over. Exactly one key is marked
+`just` at a time and only `.just` carries the flip, so the game that has this
+moment is the only thing moving.
+
+The live ring is a pseudo-element on transform and opacity rather than an
+animated `box-shadow`, so the one thing looping on this screen costs the
+compositor and not a repaint.
+
+**The reveal is the same length whatever the round is.** A first round is
+eight games and a conference final is two, so a fixed step makes the first
+round four times the wait for the same beat: the step is `2400 / games`.
+
+**Nil apiece prints nothing.** A series that has not tipped off showed a 0 on
+both seats, which is two numbers saying the same nothing on the one box the
+reader is watching. A 0 beside a 4 is a sweep and stays.
+
+**The bracket finishes without you**, and that is worth the beat. A run that
+goes out in the first round has watched a field it is now not in, and walking
+the rest of it out says what the postseason did rather than stopping the
+screen the moment the reader stops mattering to it. `check-bracket` drives
+that over 320 runs, out at every round including the play-in, and asserts
+somebody is holding the trophy and that it is never the player who went out.
+
+#### Two things about its guard, and both were the check rather than the page
+
+Both showed up only on a PLAY-IN run, which is the shape the first browser
+pass happened not to draw, so both passed green once before failing.
+
+**A pairing with an empty chip is the rule working.** One first round seat is
+correctly TBD while the play-in that feeds it is still on the screen above,
+and the first draft read `''` as 0 and reported a 7 seed paired with nobody
+as a bracket that does not add up.
+
+**"Nothing past the round being played" is the wrong line.** The first round
+is always drawn, so on a play-in run the correct first round read as fifteen
+seats reading ahead. What must be hidden is everything past the LATER of the
+round being played and the first round, which on a bye run is the same column
+and on a play-in run is one along.
+
+#### The door moved onto it
+
+A game the series can end in is offered here now, **above the rail**. The rail
+is the tallest thing on this screen and it scrolls, so a control the game is
+waiting on underneath it is one the player has to go looking for. That is the
+live board's own call-box rule, and the guard measures it against a phone
+rather than against its own window.
+
+`show()` stops the bracket walk when the screen is left, the same way it stops
+the live game and the season reveal, and for the same reason: a bracket
+deciding rounds behind another screen is a series that moved without anybody
+watching it.
+
+**A reload lands on the bracket**, not on the season screen. `run.po` carries
+the whole thing and holds no rng and no player objects, so it survives JSON;
+the 82 game strip behind it is a season already played and rebuilding it is a
+reveal of something the reader has seen. Rounds already played are drawn
+settled, because a bracket that came back as a page of TBD reads as a run that
+had not started.
 
 ### A game seven is not a scoreline
 
