@@ -1,0 +1,2092 @@
+{
+  "dracula": {
+    "idle": {
+      "file": "dracula_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "dracula_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "dracula_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "dracula_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "dracula_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "dracula_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "paul_bunyan": {
+    "idle": {
+      "file": "paul_bunyan_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "paul_bunyan_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "paul_bunyan_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "paul_bunyan_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "paul_bunyan_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "paul_bunyan_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "dorothy": {
+    "idle": {
+      "file": "dorothy_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "dorothy_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "dorothy_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "dorothy_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "dorothy_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "dorothy_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "frankenstein": {
+    "idle": {
+      "file": "frankenstein_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "frankenstein_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "frankenstein_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "frankenstein_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "frankenstein_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "frankenstein_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "popeye": {
+    "idle": {
+      "file": "popeye_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "popeye_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "popeye_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "popeye_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "popeye_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "popeye_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "lady_liberty": {
+    "idle": {
+      "file": "lady_liberty_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "lady_liberty_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "lady_liberty_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "lady_liberty_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "lady_liberty_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "lady_liberty_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "peter_pan": {
+    "idle": {
+      "file": "peter_pan_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "peter_pan_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "peter_pan_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "peter_pan_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "peter_pan_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "peter_pan_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "ichabod_crane": {
+    "idle": {
+      "file": "ichabod_crane_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "ichabod_crane_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "ichabod_crane_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "ichabod_crane_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "ichabod_crane_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "ichabod_crane_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "jack": {
+    "idle": {
+      "file": "jack_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "jack_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "jack_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "jack_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "jack_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "jack_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "tom_sawyer": {
+    "idle": {
+      "file": "tom_sawyer_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "tom_sawyer_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "tom_sawyer_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "tom_sawyer_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "tom_sawyer_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "tom_sawyer_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "huck_finn": {
+    "idle": {
+      "file": "huck_finn_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "huck_finn_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "huck_finn_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "huck_finn_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "huck_finn_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "huck_finn_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "invisible_man": {
+    "idle": {
+      "file": "invisible_man_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "invisible_man_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "invisible_man_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "invisible_man_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "invisible_man_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "invisible_man_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "alice": {
+    "idle": {
+      "file": "alice_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "alice_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "alice_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "alice_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "alice_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "alice_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "black_cat": {
+    "idle": {
+      "file": "black_cat_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "black_cat_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "black_cat_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "black_cat_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "black_cat_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "black_cat_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "cowardly_lion": {
+    "idle": {
+      "file": "cowardly_lion_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "cowardly_lion_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "cowardly_lion_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "cowardly_lion_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "cowardly_lion_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "cowardly_lion_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "arsene_lupin": {
+    "idle": {
+      "file": "arsene_lupin_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "arsene_lupin_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "arsene_lupin_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "arsene_lupin_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "arsene_lupin_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "arsene_lupin_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "ares": {
+    "idle": {
+      "file": "ares_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "ares_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "ares_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "ares_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "ares_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "ares_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "chupacabra": {
+    "idle": {
+      "file": "chupacabra_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "chupacabra_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "chupacabra_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "chupacabra_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "chupacabra_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "chupacabra_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "acrobat": {
+    "idle": {
+      "file": "acrobat_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "acrobat_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "acrobat_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "acrobat_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "acrobat_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "acrobat_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "centaur": {
+    "idle": {
+      "file": "centaur_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "centaur_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "centaur_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "centaur_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "centaur_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "centaur_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "apollo": {
+    "idle": {
+      "file": "apollo_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "apollo_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "apollo_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "apollo_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "apollo_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "apollo_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "bearded_lady": {
+    "idle": {
+      "file": "bearded_lady_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "bearded_lady_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "bearded_lady_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "bearded_lady_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "bearded_lady_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "bearded_lady_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "athena": {
+    "idle": {
+      "file": "athena_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "athena_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "athena_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "athena_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "athena_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "athena_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "cupid": {
+    "idle": {
+      "file": "cupid_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "cupid_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "cupid_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "cupid_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "cupid_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "cupid_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "cyclops": {
+    "idle": {
+      "file": "cyclops_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "cyclops_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "cyclops_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "cyclops_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "cyclops_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "cyclops_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "dionysus": {
+    "idle": {
+      "file": "dionysus_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "dionysus_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "dionysus_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "dionysus_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "dionysus_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "dionysus_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "dragon": {
+    "idle": {
+      "file": "dragon_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "dragon_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "dragon_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "dragon_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "dragon_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "dragon_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "easter_bunny": {
+    "idle": {
+      "file": "easter_bunny_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "easter_bunny_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "easter_bunny_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "easter_bunny_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "easter_bunny_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "easter_bunny_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "esmeralda": {
+    "idle": {
+      "file": "esmeralda_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "esmeralda_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "esmeralda_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "esmeralda_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "esmeralda_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "esmeralda_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "father_time": {
+    "idle": {
+      "file": "father_time_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "father_time_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "father_time_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "father_time_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "father_time_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "father_time_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "fire_breather": {
+    "idle": {
+      "file": "fire_breather_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "fire_breather_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "fire_breather_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "fire_breather_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "fire_breather_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "fire_breather_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "great_ape": {
+    "idle": {
+      "file": "great_ape_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "great_ape_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "great_ape_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "great_ape_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "great_ape_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "great_ape_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "hades": {
+    "idle": {
+      "file": "hades_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "hades_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "hades_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "hades_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "hades_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "hades_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "long_john_silver": {
+    "idle": {
+      "file": "long_john_silver_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "long_john_silver_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "long_john_silver_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "long_john_silver_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "long_john_silver_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "long_john_silver_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "medusa": {
+    "idle": {
+      "file": "medusa_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "medusa_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "medusa_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "medusa_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "medusa_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "medusa_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "mrs_claus": {
+    "idle": {
+      "file": "mrs_claus_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "mrs_claus_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "mrs_claus_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "mrs_claus_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "mrs_claus_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "mrs_claus_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "krampus": {
+    "idle": {
+      "file": "krampus_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "krampus_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "krampus_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "krampus_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "krampus_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "krampus_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "mother_nature": {
+    "idle": {
+      "file": "mother_nature_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "mother_nature_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "mother_nature_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "mother_nature_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "mother_nature_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "mother_nature_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "headless_horseman": {
+    "idle": {
+      "file": "headless_horseman_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "headless_horseman_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "headless_horseman_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "headless_horseman_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "headless_horseman_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "headless_horseman_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "humpty_dumpty": {
+    "idle": {
+      "file": "humpty_dumpty_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "humpty_dumpty_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "humpty_dumpty_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "humpty_dumpty_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "humpty_dumpty_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "humpty_dumpty_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "hera": {
+    "idle": {
+      "file": "hera_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "hera_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "hera_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "hera_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "hera_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "hera_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "mr_hyde": {
+    "idle": {
+      "file": "mr_hyde_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "mr_hyde_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "mr_hyde_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "mr_hyde_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "mr_hyde_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "mr_hyde_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "hermes": {
+    "idle": {
+      "file": "hermes_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "hermes_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "hermes_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "hermes_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "hermes_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "hermes_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "pan": {
+    "idle": {
+      "file": "pan_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "pan_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "pan_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "pan_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "pan_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "pan_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "pirate": {
+    "idle": {
+      "file": "pirate_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "pirate_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "pirate_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "pirate_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "pirate_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "pirate_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "poseidon": {
+    "idle": {
+      "file": "poseidon_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "poseidon_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "poseidon_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "poseidon_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "poseidon_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "poseidon_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "quasimodo": {
+    "idle": {
+      "file": "quasimodo_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "quasimodo_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "quasimodo_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "quasimodo_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "quasimodo_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "quasimodo_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "rabid_dog": {
+    "idle": {
+      "file": "rabid_dog_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "rabid_dog_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "rabid_dog_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "rabid_dog_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "rabid_dog_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "rabid_dog_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "phoenix": {
+    "idle": {
+      "file": "phoenix_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "phoenix_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "phoenix_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "phoenix_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "phoenix_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "phoenix_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "ringmaster": {
+    "idle": {
+      "file": "ringmaster_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "ringmaster_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "ringmaster_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "ringmaster_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "ringmaster_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "ringmaster_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "santa": {
+    "idle": {
+      "file": "santa_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "santa_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "santa_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "santa_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "santa_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "santa_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "sasquatch": {
+    "idle": {
+      "file": "sasquatch_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "sasquatch_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "sasquatch_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "sasquatch_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "sasquatch_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "sasquatch_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "scarecrow": {
+    "idle": {
+      "file": "scarecrow_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "scarecrow_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "scarecrow_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "scarecrow_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "scarecrow_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "scarecrow_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "vampire": {
+    "idle": {
+      "file": "vampire_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "vampire_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "vampire_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "vampire_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "vampire_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "vampire_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "zombie": {
+    "idle": {
+      "file": "zombie_idle.png",
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "batting_stance": {
+      "file": "zombie_batting_stance.png",
+      "frames": 1,
+      "fps": 1,
+      "loop": false
+    },
+    "swing": {
+      "file": "zombie_swing.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "pitch": {
+      "file": "zombie_pitch.png",
+      "frames": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "run": {
+      "file": "zombie_run.png",
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "celebrate": {
+      "file": "zombie_celebrate.png",
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    }
+  }
+}
