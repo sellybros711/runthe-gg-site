@@ -2126,6 +2126,134 @@ rather than a missing one, and nothing throws.
 existed, and it asserts the run-based route still works: adding a second way in must not cost
 the first.
 
+### A board row cannot answer a question about the account that wrote it
+
+```
+node football/check-premium.mjs        the two marks, on both boards
+createdb pro_live
+psql -d pro_live -f supabase/test/dynboard_base.sql
+psql -d pro_live -f supabase/98_football_gauntlet_board.sql
+psql -d pro_live -c 'create table public.subscriptions(user_id uuid, status text, current_period_end timestamptz);'
+psql -d pro_live -f supabase/101_premium_bundles.sql
+psql -d pro_live -f supabase/107_board_pro_and_live.sql
+psql -d pro_live -f supabase/test/board_pro_live_test.sql
+```
+
+A gold name for a Pro account and a LIVE badge on a dynasty still being played. Both are
+decoration, neither moves a rank, and **neither is knowable in the browser**. `premium_unlocks`
+is RLS'd to its owner, so nobody can see who else paid; nothing about somebody else's save
+reaches this page at all. So they are columns: `display_pro` and `dynasty_over`, written by
+`supabase/107_board_pro_and_live.sql`.
+
+**Without that migration both go quiet and nothing else changes.** An absent column reads as
+undefined, which is falsy for one and is not the `false` that means live for the other, so the
+board is exactly the board it was. Same shape as every other optional column on these rows, and
+`board.js` probes for `display_pro` on the classic path the way it already probes for the crest.
+
+**`display_pro` publishes who has paid**, for anybody with a row on a public board. That is a
+disclosure and it is written up in 107's header: one boolean, naming no product, no price and
+no date. **It is DERIVED and never typed.** Two triggers read `premium_unlocks` directly and
+they are the only writers, so it cannot be forged into a gold name the way a crest ring can be
+forged into a gold circle. It honours `expires_at`, and it is scoped to `ps_premium` and
+`cfb_premium`: an Arcade Card buyer has no Pro tier in this game and marking them would be
+saying something false.
+
+**GOLD ON THE NAME, NEVER ON THE ROW.** Gold on this board is an ACHIEVEMENT (a perfect season,
+the top step) and the blue rail is WHOSE row it is. Both have to keep meaning that, and a paid
+account is neither. The name text had never carried a colour, so it was the one surface free to
+say something new. Nothing else on the row moves: no pill, no badge, nothing competing with the
+champion mark already in front of the name. A reader who does not know what it means reads a
+slightly nicer name, which is the right amount to be told.
+
+**The solid gold is the base and the gradient is the upgrade, and writing it the other way round
+loses every Pro player.** `background-clip:text` needs `color:transparent` to show at all, so a
+browser without the clip would render an invisible name. The plain rule paints a warm gold and
+an `@supports` block replaces it. The sheen is seven seconds a pass over a gradient whose
+darkest stop is still gold, so no point in the cycle is dimmer than the base: a board is
+twenty-five names and anything quicker is twenty-five things flashing at somebody hunting for
+one row.
+
+#### The LIVE badge is Dynasty's alone, and the cutoff is the page's own judgement
+
+Every other board here ranks finished seasons. A dynasty is the one run that spans days, so it
+is the only one where "are they still playing it" is a question.
+
+`dynasty_over` is **three-valued** and only the `false` lights up. `null` is every row written
+before this existed, and a board of LIVE badges on runs from six months ago is worse than no
+badge at all. That is the "absent is not zero" rule the daily meter already runs on; a column
+defaulted to `false` would have lit the entire history on deploy.
+
+**What no column can ever know is a run somebody walked away from.** Nothing reaches the server
+when a player closes the tab for the last time, so an abandoned run stays `false` for ever. The
+page refuses to call anything live whose furthest season is older than `DYN_LIVE_HOURS`, which
+is **48**: two days of a free account's three-a-day budget, long enough that somebody who plays
+each evening is still live in the morning. **The cutoff is in the page and not in SQL on
+purpose**, because it is a judgement about what "still going" means to a reader rather than a
+fact about the run, so it moves in a deploy instead of a migration.
+
+**`dynClear` is where the end is posted, because that function IS what ending a dynasty means
+here.** Four paths finish one (the firing at the results screen, the drop button, and the two
+places a new draft clears the slot it is taking) and hanging the call on any one of them would
+leave the other three broadcasting LIVE for ever. The id comes off the save about to be deleted
+rather than off `run`, because `beginDynastyDraft` clears the slot it is TAKING, which may be
+the other one. Never awaited, fails soft, and not retried: a dynasty that ends with the network
+down keeps a stale badge, which is the cheapest thing on this screen to be wrong about.
+
+**The pin needs no column for either mark**, and that is not a shortcut. It is not a board row:
+it is the run in this browser's hands, so it is live by the fact that it is being drawn, and the
+viewer's own unlocks are the one account this page can read.
+
+#### Every way this breaks renders perfectly, so the guard measures the screen
+
+The rows are fabricated and handed straight to the painters, covering live, live and paid,
+finished and paid, neither, and the run three days old that no column will ever mark as over.
+
+- **The pill is asserted as a HEIGHT, not only as a display.** `.lbr .who span` claims every
+  span inside `.who` as a block at (0,2,1), which is the exact cascade the champion mark lost:
+  a pill that loses it takes the row's whole width and drops the name onto a second line. So
+  `.lbr .who b .livepill` is written a class deeper than it looks like it needs, and the guard
+  compares a row wearing one against a row that is not. **It measures the NAME and not the
+  ROW, because the row has a 75px floor set by the avatar beside it**: a name pushed onto a
+  second line fits inside that, so the first draft compared rows, read 75 against 75 with the
+  pill computing to `display:block`, and certified the defect. The name goes 20px to 39.
+- **AND THAT RULE SETS A COLOUR TOO, which the first version of both the CSS and the guard
+  missed.** The fix was written from the champion mark's bug and the champion mark is an SVG
+  with its own fill, so the colour half of that cascade had never cost anything. Here it did:
+  `.lbr .who span` also sets `color:var(--dim-2)` for the sub line, so the pill shipped as a
+  red box with a red dot and the word in the grey of the row behind it. **Found by taking a
+  screenshot and looking at it**, and the section had just passed green on it. The guard asks
+  that the word is not the sub line's colour and that it is reddish, which is the property
+  rather than the hex. **It reads the sub line as `.who > span` and the child combinator is
+  load-bearing**: the pill is a span too, nested inside the name, so a descendant selector
+  matches the PILL, and the comparison was the pill against itself. It can never differ, so
+  the assertion failed on a correct page. Same class as this repo's three wrong extractors,
+  arriving at a one line read.
+- **The podium's dot has no box, and that was the second thing only looking could say.** With
+  the word collapsed, the pill's 1px border drew a ring 4px across a 5px dot, which reads as a
+  bullseye rather than as a light that is on. A chip is a container for a label; with no label
+  there is nothing to contain, so the border and the fill go and the glow carries it.
+
+**The SQL half has its own file**, because the page's guard fabricates the columns and
+therefore says nothing about what writes them. `supabase/test/board_pro_live_test.sql` drives
+the real triggers and the real functions: a free account, a buyer, an Arcade Card holder (who
+is NOT Pro here), an expired unlock, a guest run, and the backfill that gilds rows already on
+the board. Four of its claims were proved by reintroducing a defect alone.
+
+**Its exception test asserted nothing on the first draft, and the shape is worth recognising.**
+Written as `claim(false)` inside the `begin` arm, the failure it raises is caught by that
+block's own `when others` and reported as a pass, so the check certified 98's not-found guard
+while the guard was deleted. **An exception test cannot assert inside the block it is
+watching**: the flag is set in the handler and read after the block.
+- **The gilding is asserted on the NAME and the ROW is asserted UNCHANGED**, because the whole
+  argument above is about which of the two may carry it.
+- **The champion mark survives a transparent name** because its SVG carries an explicit fill
+  rather than `currentColor`. Asserted, since `-webkit-text-fill-color:transparent` on the
+  parent is exactly the kind of thing that takes a sibling with it.
+- **On the podium the word is collapsed to its dot in CSS**, not dropped from the markup. A step
+  is about 93px of text at 390px and a 36px pill in front of an 11.5px name truncates most names
+  to two syllables. `font-size:0` leaves LIVE in the accessibility tree, so the pill stays ONE
+  element with one spelling rather than a second element that can drift.
+
 ### The boss battle, and the one screen that checks itself
 
 ```
