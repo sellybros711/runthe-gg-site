@@ -2002,6 +2002,43 @@ no mode. FLEX is in all three lists, so it cannot be what decides.
 **A defense run had the second bug too**, quietly, for the same reason: its six were sorted with
 the offense's slot list, so its flex man also sorted above the position he is the reserve for.
 
+##### And the defenders were not there at all, because the fetch asked the MODE
+
+Reported next, from the same sheet: a Full Team run opened from the leaderboard showed its six
+offensive players, no defense, and a line reading **"6 of the six could not be looked up
+here"**, which is a sentence that cannot be true.
+
+**The defenders are a second download.** Every browser has the offensive pool and only a
+browser that has opened a mode needing defenders has theirs, so a leaderboard row is resolved
+against half the data it needs. `runDetail` already knew that and went and got them, gated on
+`row.run_mode === 'defense'`, which was every mode with defenders in it on the day that line
+was written. **Full Team's rows say `full`.** It asks the roster's own SLOTS now: a slot list
+carries DL, LB and DB whatever the mode is called, so it is right for both modes today and for
+the next one without anybody remembering, and an old offensive row still triggers no download.
+
+**The fixture has to be a page that never drafted**, which is the part worth copying. Every
+other assertion in that section runs on the page the roster was built on, where the pool is
+loaded and this defect cannot appear at all. The row is built there, carried out as plain data
+the way the server hands it over, and opened on a page that has only ever seen the front page.
+That is exactly what happens to a reader tapping somebody else's run, and it is the only
+arrangement in which the bug exists.
+
+**Two phases, and the first is deterministic.** `runDetail` draws synchronously and then starts
+the download, so the frame right after the call IS the half-resolved sheet: six rows and the
+count line. The wording is read there. The second phase waits for the redraw and asks for
+twelve. That first phase is also what proves the fixture is real: a page that already held the
+defenders would resolve twelve immediately and assert nothing.
+
+**And the sentence under it was the six man identity, which is wrong three ways on twelve
+men.** The results screen already refuses to print it and says the working is in the table
+instead; this sheet had no such branch. `runPayload` files `rosterStructure` over ALL TWELVE,
+which is the 0.57-for-everybody reading `overallOf` warns about, so the FIT is the wrong
+number; a Full Team rating is `fullTeamScale`'s 0 to 100 team overall, so "points a game
+against an average defense" is the wrong QUANTITY; and "the six" is the wrong WORD. A row
+carries one `structure_mult` and one squad total, so there is no honest working to draw here
+the way the results screen draws it from parts. It says what is still true instead: how the
+roster is shaped, and what the rating is.
+
 **The grouping and the ordering are two different fixes and need two different assertions.**
 `rdRoster` splits the men by position, so the Offense and Defense headings are correct even with
 the old sorter behind them: reintroduced, the headings assertion passes green and the two order

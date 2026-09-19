@@ -1707,6 +1707,100 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
         rd.six.statLines + ' of six against ' + (rd.full ? rd.full.statLines : '?')
         + ' of twelve');
     }
+
+    /* ================================================================
+       AND THE DEFENDERS HAVE TO BE FETCHED, WHICH IS WHERE THEY WENT
+
+       Reported by a player: a Full Team run opened from the leaderboard showed its six
+       offensive players, no defense at all, and a line reading "6 of the six could not be
+       looked up here".
+
+       THE DEFENDERS ARE A SECOND DOWNLOAD. Every browser has the offensive pool and only a
+       browser that has opened a mode needing defenders has theirs, so a leaderboard row is
+       resolved against half the data it needs. runDetail already knew that and went and got
+       them, gated on `row.run_mode === 'defense'`, which was every mode with defenders in it
+       on the day that line was written. Full Team's rows say `full`.
+
+       SO THE FIXTURE HAS TO BE A PAGE THAT NEVER DRAFTED. Every other assertion in this
+       section runs on the page the roster was built on, where the pool is loaded and this
+       defect cannot appear at all. The row is built there, carried out as plain data the way
+       the server would hand it over, and opened on a page that has only ever seen the front
+       page. That is exactly what happens to a reader tapping somebody else's run.
+
+       TWO PHASES, AND THE FIRST ONE IS DETERMINISTIC. runDetail draws synchronously and then
+       starts the download, so the frame right after the call is the half-resolved sheet: six
+       rows and the count line. That is where the wording is read. The second phase waits for
+       the redraw and asks for all twelve.
+       ================================================================ */
+    const cold = await (async () => {
+      /* The row as the server would hand it over, off the page that has the pool. */
+      const row = await s.page.evaluate(() => {
+        const T = window.__t;
+        const run = window.__draft(4);
+        if (!run) return null;
+        T.setRun(run);
+        return {
+          picks: run.roster.map(T.pickKey),
+          slots: run.roster.map((p, i) => T.slotsNow()[run.slotIndex[i]]),
+          wins: 20, losses: 0, team_rating: 84.8, squad_fppg: 133, structure_mult: 0.9,
+          chemistry_pct: 2.5, spend_musd: 280, perfect_pct: null, perfect: true,
+          title_won: true, made_playoffs: true, playoff_wins: 4, seed_label: '1 seed',
+          franchise: null, run_mode: 'full', display_name: 'tester',
+          display_color: null, display_initials: 'T', display_mark: null,
+        };
+      });
+      if (!row) return { built: false };
+      /* A PAGE THAT HAS NEVER OPENED THE MODE. No beginFullDraft, so no defensive pool. */
+      const s3 = await open(browser);
+      const shot = await s3.page.evaluate(async (r) => {
+        const T = window.__t;
+        const read = () => {
+          const rows = [...document.querySelectorAll('#sheet-in .rrow')];
+          const txt = (document.getElementById('sheet-in').innerText || '')
+            .replace(/\s+/g, ' ');
+          return { n: rows.length, txt,
+            note: (txt.match(/\d+ of the \w+ could not be looked up here/) || [''])[0] };
+        };
+        T.runDetail(r);
+        /* Synchronous, so this is the sheet before the download can possibly have landed. */
+        const before = read();
+        for (let i = 0; i < 80; i++) {
+          if (document.querySelectorAll('#sheet-in .rrow').length >= 12) break;
+          await new Promise((x) => setTimeout(x, 250));
+        }
+        return { before, after: read() };
+      }, row);
+      const boom = s3.boom.slice();
+      await s3.page.close();
+      return Object.assign({ built: true, boom }, shot);
+    })();
+
+    if (!cold.built) {
+      ok('a cold browser resolves a Full Team row', false, 'no roster to build one from');
+    } else {
+      /* THE FIXTURE IS REAL, which is the half that stops this passing on nothing. A page
+         that already had the defenders would resolve twelve immediately and assert nothing. */
+      ok('a browser that never drafted starts with only the offense',
+        cold.before.n === 6, cold.before.n + ' of twelve resolved before the download');
+      ok('  and says so with the right count', /6 of the twelve/.test(cold.before.note),
+        cold.before.note || 'no line at all');
+      /* THE REPORT. */
+      ok('  then fetches the defenders and shows all twelve', cold.after.n === 12,
+        cold.after.n + ' rows after the download');
+      ok('    with nothing left unlooked up', !cold.after.note, cold.after.note || 'no line');
+      ok('    and nothing threw on the cold page', !cold.boom.length,
+        cold.boom.join(' | ') || 'no errors');
+      /* AND THE SENTENCE UNDER IT IS NOT THE SIX MAN IDENTITY. The row files
+         rosterStructure over all twelve, so the fit it carries is the reading overallOf
+         warns about, and a Full Team rating is not points a game. */
+      ok('  and the working is not the six man identity',
+        !/fit together/.test(cold.after.txt)
+        && !/points a game against an average defense/.test(cold.after.txt),
+        (cold.after.txt.match(/[^.]*(fit together|points a game)[^.]*/) || ['clean'])[0]);
+      ok('    saying what the rating is instead', /twelve men, six a side/i.test(cold.after.txt)
+        && /is the team overall/i.test(cold.after.txt),
+        (cold.after.txt.match(/twelve men[^.]*\.[^.]*\./i) || ['missing'])[0]);
+    }
   }
 
   ok('  nothing threw', !s.boom.length, s.boom.join(' | ') || 'no errors');

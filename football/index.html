@@ -21189,6 +21189,10 @@ function fitPct(mult){ const n=Math.round((mult-1)*100); return (n>0?'+':'')+n+'
    the scheme alone (that read as if a 1-3% scheme were worth the whole +11%). This is the
    plain description of the total; schemeTail() names the scheme's own small share after it. */
 function fitPhrase(){ return 'for how the six fit together'; }
+/* A ROSTER SIZE IN WORDS, for the sentences that said "six" because six was the only number
+   a roster could be when they were written. Six and twelve are the only two the game drafts;
+   anything else prints as a digit rather than inventing a word for it. */
+const countWord=(n)=>(n===6?'six':n===12?'twelve':String(n));
 
 /* The scheme's actual contribution, called out as a share of the total fit so nobody reads
    the total as the scheme. Empty when the roster fits no scheme, or when st is unavailable
@@ -26337,8 +26341,10 @@ function runDetail(row,back,onShare){
     (known.length?rdRoster(known)
       :'<p class="dim" style="font-size:12.5px;margin:12px 0 0">This run\'s players are not '+
        'in the player data this browser has.</p>')+
+    /* THE SIZE OF THE ROSTER, not the word six. A Full Team run showed "6 of the six could
+       not be looked up here", which is a sentence that cannot be true. */
     (missing&&known.length?'<p class="dim" style="font-size:11.5px;margin:7px 0 0">'+missing+
-      ' of the six could not be looked up here.</p>':'')+
+      ' of the '+countWord(men.length)+' could not be looked up here.</p>':'')+
     '<div class="rdstat">'+
       tile(rating===null?'--':rating.toFixed(1),'Team rating')+
       tile(perf===null?'--':perf+'%','Of the best possible')+
@@ -26355,14 +26361,33 @@ function runDetail(row,back,onShare){
       tile(defStat.tk===null?'--':defStat.tk,'Forced turnovers')+
       tile(defStat.td===null?'--':defStat.td,'Defensive TDs')+
     '</div>':'')+
-    (fppg!==null&&mult!==null&&rating!==null
-      ? '<p class="caveat" style="margin:9px 0 0">'+fppg.toFixed(0)+' squad FPPG, '+
-        pc(chem/100)+' chemistry and '+fitPct(mult)+' '+fitPhrase()+', which is '+
-        rating.toFixed(1)+' points a game against an average defense.'+schemeTail(detailSt)+'</p>'
-      : '<p class="caveat" style="margin:9px 0 0">This run was recorded before the game '+
-        'stored a team rating.</p>')+
+    /*
+     * THE IDENTITY IS NOT PRINTED FOR TWELVE MEN, and the results screen already refuses it
+     * for the same reason. Three of its four terms are wrong on a Full Team row:
+     *
+     *   the fit    runPayload files rosterStructure over ALL TWELVE, which is the
+     *              0.57-for-everybody reading overallOf warns about. On the team this was
+     *              reported from it printed -10% for halves that are rated separately.
+     *   the unit   a Full Team rating is fullTeamScale's 0 to 100 team overall, so
+     *              "points a game against an average defense" is a different quantity.
+     *   the word   "the six", on twelve men.
+     *
+     * The row carries one structure_mult and one squad total, so there is no honest working
+     * to draw here the way the results screen draws it from parts. What is left that IS true
+     * is the shape of the roster and what the rating means, so that is what it says.
+     */
+    (rating!==null&&men.length>E.SLOTS.length
+      ? '<p class="caveat" style="margin:9px 0 0">'+countWord(men.length)+
+        ' men, six a side. '+rating.toFixed(1)+' is the team overall.</p>'
+      : (fppg!==null&&mult!==null&&rating!==null
+        ? '<p class="caveat" style="margin:9px 0 0">'+fppg.toFixed(0)+' squad FPPG, '+
+          pc(chem/100)+' chemistry and '+fitPct(mult)+' '+fitPhrase()+', which is '+
+          rating.toFixed(1)+' points a game against an average defense.'+schemeTail(detailSt)+'</p>'
+        : '<p class="caveat" style="margin:9px 0 0">This run was recorded before the game '+
+          'stored a team rating.</p>'))+
     (perf!==null?'<p class="caveat" style="margin:6px 0 0">The perfect figure is this roster '+
-      'against the strongest one those same six draws allowed under the same cap.</p>':'')+
+      'against the strongest one those same '+countWord(men.length)+
+      ' draws allowed under the same cap.</p>':'')+
     /* SHARE THIS SEASON, when the caller passed a way to. Only Dynasty's ledger does, so
        a leaderboard or career sheet is unchanged; there the run's own share button lives on
        the results screen. */
@@ -26386,7 +26411,20 @@ function runDetail(row,back,onShare){
      and a sheet that fills in a second later is better than one that opens a second late.
      The token is what stops a redraw landing on top of a different run the reader has since
      opened. */
-  if(!mine&&missing&&row.run_mode==='defense'&&!DDATA){
+  /*
+   * ASKED OF THE ROSTER'S OWN SLOTS, NEVER OF THE MODE, and that is the fix rather than a
+   * tidy-up. This read `row.run_mode==='defense'`, which was every mode with defenders in it
+   * on the day it was written. Full Team arrived with twelve men and the mode string `full`,
+   * so the pool was never fetched for one: the six offensive players resolved out of the data
+   * every browser already has, the six defenders resolved to nothing, and the sheet drew half
+   * a team under a line saying the rest could not be looked up. Reported by a player asking
+   * where the defense went.
+   *
+   * A slot list carries DL, LB and DB whatever the mode is called, so this is right for both
+   * modes today and for the next one without anybody remembering to come back. It also cannot
+   * be wrong about an old offensive row: no defensive slot, no download.
+   */
+  if(!mine&&missing&&!DDATA&&slots.some(s=>DEF_ONLY_SLOTS.includes(s))){
     loadDefensePool().then(()=>{ if(rdToken===rdMine) runDetail(row,back); }).catch(()=>{});
   }
 }
