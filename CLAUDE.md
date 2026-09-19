@@ -685,6 +685,48 @@ both are drawn, and what the gate still does is keep them from ever coming apart
 way to the offer from this game was to open Commissioner Simulator and be turned away at its
 gate, which nobody who cannot see the mode will ever do.
 
+#### One Franchise Dynasty is the paid mode, and a shut door has to say so
+
+Reported as a free account being able to play it. They could: they are on
+`dynasty-access.js`'s list, which comps that one mode so a tester holding no row can go on
+testing it. That is written up in the file and is working as designed, and **the gate itself
+was always right**: `beginDynastyDraft` refuses a franchise to anybody `canPlayClubDynasty()`
+turns down, at the top of the function, above every line that touches a save.
+
+**What was actually wrong is that nobody else could see the mode at all.** One function decided
+both who may OPEN it and whether the door is DRAWN, so a free account and a guest got the One
+Franchise card with no Dynasty half on it: no door, no lock, no mention. The only ways to learn
+the mode exists were to buy the bundle and read the receipt, or to be on the list. **That is the
+wall the college front page's card was added to knock down**, standing on this page instead, and
+the fix is the Commish door's rule arriving here:
+
+| | asks | so that |
+|---|---|---|
+| whether the Dynasty door is drawn | `clubDynastyShow()` | everybody finds the mode |
+| whether it opens | `canPlayClubDynasty()` | only an owner starts one |
+
+A non-owner gets the same door wearing a padlock, and pressing it opens the sheet that sells it,
+which is where that tap was always going to end.
+
+**`.mc-soon` is the wrong treatment and is deliberately not reused.** It sets
+`pointer-events:none`, and a lock a thumb falls straight through is a lock with no way to the
+thing that opens it. The locked door is fully pressable and wears the gold every paid thing on
+this site wears, rather than the grey of something broken.
+
+**RESUMING IS NEVER GATED, and that is the half most easily lost when a mode goes behind a
+payment.** It is already written three times on this page, and putting a row in front of it
+would break it in the worst place: a saved One Franchise dynasty belongs to whoever played it,
+the tester list can shorten, and neither may be the thing that takes a career away. So the save
+is read without asking who owns what, and a door that says Resume resumes. **The footnote under
+it is the paid action**, because "Start a different club" is a new run and is the one route left
+to one; without that clause a lapsed account's only way to start one would be the small print
+under their own Resume.
+
+**The guard presses the lock rather than looking at it.** A lock on a door that opens anyway is
+decoration and a door that refuses with nothing behind it is the wall this replaced, so the walk
+clicks it and reads which sheet comes up. Reintroduced, a lockless shut door lands on the club
+picker and is then refused in silence, which is exactly the bad state.
+
 ### The three modes are LIVE, and a missing migration is the silent way to break them
 
 ```
@@ -1534,11 +1576,475 @@ the player who earned the cleanest answer, so the screen says there is nobody wo
 instead. Nothing affordable at all is a different sentence again: the first is about the
 money, the second is about the roster.
 
+**`#b-coach-none` joined it too, which is the SEVENTH time**, on the same screen as three of
+the others. Nothing hid that button at all, so after a hire the coach screen carried "No
+coach, I will call it myself" directly under the man just paid for: an offer to undo the
+decision the confirmation sheet had asked for. It works, because `hireCoach` refunds a
+previous hire through `remaining()`, and that is exactly why it read as a leftover rather
+than a control. **Hiding it is two edits and the first alone does nothing**: `.btn` sets
+`display:block`, so the painter's `hidden` never took. The guard reads `getComputedStyle`
+rather than the attribute for that reason, and each half was proved by removing it alone.
+The grid stays live, so changing your mind BETWEEN coaches is untouched; what is gone is
+going back to nobody after hiring.
+
 **`#co-grid` joined the `[hidden]` list, which is the fifth time in this file.** `.cogrid`
 sets `display:grid`, so the `hidden` the painter has always written on an empty market never
 took. It cost nothing while the empty case meant a grid with no children anyway. It is now a
 padded, margined box between the rating card and the line explaining why there is nothing in
 it.
+
+#### The playoffs are played forward, and the hire decides who calls them
+
+```
+node football/check-fullteam.mjs   the last section drives a real wild card, both ways
+```
+
+**EVERY Full Team playoff game plays forward now**, drive by drive on the boss battle's
+board, and stops at the two real calls: fourth down, and the two point try. What hiring a
+coach decides is WHO ANSWERS. No coach and the reader is asked. A coach and he answers, and
+the screen says what he decided before it plays it.
+
+Declining a coach used to buy a PLAN EDITOR: three dials (tempo, fourth down, pressure) set
+once before kickoff. That is neither what a coach does nor what calling it yourself means,
+and measured over 264 seasons an axis at a time it was barely a decision either:
+
+| plan | win% | median |
+|---|---|---|
+| neutral | 78.3 | 14-3 |
+| ball control, balanced or up tempo | 78.3 each | 14-3 |
+| punt it | 79.2 | 14-3 |
+| go for it | 77.3 | 13-4 |
+| contain | 78.6 | 14-3 |
+| blitz | 77.0 | 13-4 |
+| all conservative | 80.2 | 14-3 |
+
+**Tempo is exactly inert**, because it multiplies both scores, and the other two have one
+right answer each. Three questions, one dead and two with a dominant answer, standing in for
+the thing the player was asking for.
+
+**It is the playoff calls now.** `fullSimCreate` is `resolveGameFull`'s arithmetic played
+FORWARD, drive by drive, driven by `bossSimAdvance` and `bossSimResolve` unchanged, so an
+uncoached roster meets the real fourth downs and the real two point tries on the boss
+battle's own board. `liveCalls()` is the one place that asks, and the answer is Full Team
+with no coach.
+
+**What it cannot borrow is the boss sim's SCORING, which is why it is its own function
+rather than a flag.** A boss sim models your offence against their scoring rate and nothing
+you drafted touches what they score. That is right for six men on one side of the ball and
+it throws away half of Full Team, where what the other team scores is what your six
+defenders allow. Run as-is it would have played the twelve man mode as a six man one and
+nothing on screen would have looked wrong.
+
+**`advanceWeek` RECORDS rather than decides when a game arrives pre-played.** That is its
+`pre` argument, and `nextGame()` was lifted out of it so the live game and the resolved one
+ask one source who the opponent is and how hard. Three things follow and none is obvious:
+
+- **The resolver is not called at all.** Calling it and overriding the winner would put a box
+  score on the results screen that disagrees with the scoreline above it.
+- **So there are no `lines`.** A forward sim scores on drives rather than by sampling each
+  man, so there is no honest per-player column. Every reader already guards on it, including
+  the playoff broadcast, which is right: the live game WAS the broadcast.
+- **And no fantasy-space numbers either.** `yourScore` and `oppScore` carry the football
+  score, because for a game played forward that IS the score. `live: true` says why, rather
+  than leaving a reader to infer it from two fields agreeing.
+
+**The board is shared, not copied.** `liveBoard()` sets up the screen both forward-played
+games use, because a screen that exists twice is a screen that says two different things
+about the same game inside a year. See the four premium cards.
+
+**What it costs, measured over 800 games rather than argued.** The forward path is a little
+harder than the resolver: 79.5% of games for the resolver, 78.3% taking every fourth down
+and every two, 75.9% punting and kicking everything. So the calls are worth about 2.4 points
+and a good caller still lands about a point under what the resolver would have handed them.
+Added to losing the dials, an uncoached team is down roughly two points of regular season win
+rate and about one of playoff win rate. Recorded rather than compensated. What it buys is
+four games a player actually decides.
+
+##### And a coach who only moved a multiplier was the same problem wearing a name
+
+He cost real money, the hire sheet described his philosophy at length, and then nothing on
+any screen ever showed him doing anything. Reported as wanting to be told when he goes for
+two and fails. **The only way that sentence can be true is if he is really making the call**,
+so the coached playoff game plays forward too and `fullCoachCall` answers it.
+
+**IT DRAWS NO RANDOM NUMBER, which is the property that makes the screen honest.** The page
+prints what he decided BEFORE `bossSimResolve` plays it, so a call that read the dice first
+would be a coach who already knew. It is also what lets a reader check him: the situation is
+on screen and the rule is the same every time.
+
+**The fourth down axis is a REACH IN YARDS**, which is the plainest shape it could have and
+the only one that makes the three settings visibly different: go for it goes on 4th and 3 or
+less, standard on 4th and 2 or less, punt it never goes at all. Above all three, every coach
+keeps the ball when the clock is against him and three points cannot save the game. The two
+point chart is late and short: six margins, gated on the fourth quarter, because before that
+a point is a point.
+
+**`fullSimCreate` takes the coach and HALF the plan, and which half is the interesting part.**
+Tempo and pressure are carried, because nothing in a forward sim models playing fast or
+blitzing, so the multiplier is the whole of them. **`FOURTH_MEAN` is NOT carried.** In the
+resolver it IS going for it, because there are no fourth downs to play; here there are, so
+adding it on top would pay a team twice for the same aggression. The two SWING terms go for
+the mirror reason: they widen the resolver's sampling, and this sim's spread comes from
+drives, turnovers and kicks.
+
+**Measured over 1500 games an arm**, forward against the resolver on the same rosters:
+
+| who calls it | forward | the resolver |
+|---|---|---|
+| always safe | 70.1 | |
+| coach, punt it | 71.1 | 74.5 |
+| coach, standard | **72.9** | **73.1** |
+| coach, go for it | 73.8 | 72.1 |
+| always bold | 74.3 | |
+
+**A standard coach is where he was**, 72.9 against 73.1, so the mode's balance survives the
+move. Two things did change and both are worth knowing. **The fourth down axis flips sign**:
+conservative was better under the resolver and is worse here, because a fourth down that is
+actually played is usually worth playing. And **a player calling it themselves has a ceiling
+above any coach**, 74.3 against 73.8, which is the right shape for the trade: the money and
+the calls against his two multipliers.
+
+**What it costs a reader, said plainly.** Both paths lose the playoff broadcast and with it
+the playoff box score, because a forward sim scores on drives rather than by sampling each
+man and a per-player column here would be invented. The regular season keeps both.
+
+**The calls go in the LOG, and that is the half a reader keeps.** The narration over the
+field is one line the next drive paints over, and under Sim the rest it is gone in a frame,
+so a coached game would have made four decisions and left no sign of any of them. Both
+readers get the rows, because two logs that listed different things would be the only screen
+on this page whose shape depended on who was looking.
+
+##### A call can hand back another call, and the second one was being dropped
+
+**`bossSimResolve` can return a DECISION where the caller expects a finished drive.** A
+fourth down conversion that reaches the end zone finishes the drive through `bossEndDrive`,
+which is the same function that pauses a touchdown for the two point try, so in the second
+half of a close game it hands one back and returns before the automatic extra point is added.
+
+The page's loop ignored that and went back to `bossSimAdvance`, which asks nothing about
+`pending`: it started the next drive and never came back. **The touchdown scored six, the
+point was never kicked and the two point try was never offered.** It fires on about one game
+in fifteen played bold (20 of the checker's 300), and **it has been shipping in the BOSS
+BATTLE since the two point try was added there**.
+
+**`check-boss.mjs` cannot see it and that is not a gap in it.** Its subject is whether the
+drive log agrees with the score bug, and both of them read `sim.you`, so a score that is
+uniformly one point short agrees with itself perfectly.
+
+**The guard measures the cost as ARITHMETIC, not as a win rate, and the first draft of it
+failed for the right reason.** Comparing points a game between the two loops showed the
+BROKEN arm scoring more: honouring the handback takes an extra draw from the stream, so the
+two games diverge at the first hit and a per-game aggregate cannot see a one point defect
+through that. A touchdown is worth six plus whatever is decided after it, so the claim is
+that the dropped ones finish at exactly six. Read at the event, deterministic, and nothing
+downstream can touch it.
+
+#### A fourth down is asked in the middle of a drive, and the field only knew about finished ones
+
+```
+node football/check-fullteam.mjs   the section that plays one game at the real pace
+```
+
+`bossFlush` animates drives out of `sim.drives`, and a drive is only pushed there when it
+ENDS. A genuine fourth down stops the sim half way through one, so the board asked for a
+decision about a march it had drawn nothing of: the drive arrived as a static bar under the
+question, at full length, in one frame. Then the call was taken, the drive eventually ended,
+and `bossAnimateDrive` replayed it **from its own `tStart`**, which ran the game clock
+backwards by the length of the drive. Reported by a player as the go-for-it decisions not
+lining up with the picture.
+
+**The engine was right the whole time.** `bossSimResolve` on a conversion returns
+`{converted:true}` with no `end`, leaves `sim.cur` alone and the next `bossSimAdvance` carries
+the same drive on. Nothing about the football needed changing; what was missing was that the
+screen had no memory of how far into a drive it had drawn.
+
+**So there are two counters and they answer different questions.** `bossShown` is how many
+COMPLETED drives have been animated, which indexes `sim.drives`. `bossShownTo` is the game
+clock the field has been drawn up to, which is finer, because the picture can be part way
+through a drive that `bossShown` has not counted yet. `bossLiveTo` runs the drive out to the
+call before the call is asked, and `bossAnimateDrive` starts at `Math.max(d.tStart,
+bossShownTo)` and scales its duration to the tail rather than to the whole drive.
+
+**The bar could not grow, and the reason was one word.** `bossDraw`'s live overlay was built
+with `tEnd: upTo`. `drawDriveChart` calls a drive active while its `tEnd` is still AHEAD of
+`upTo` and interpolates across that span, so a drive whose end was always `upTo` was never
+active and snapped to the current ball spot on every frame. It is `sim.clock` now, which is
+where the ball has actually got to, so an earlier `upTo` draws the march part way.
+
+**A resumed drive needs an ANCHOR, and without one the fix has a visible jump in it.** A
+drive's bar is a straight sweep from the line of scrimmage to wherever the drive ends up, and
+that line does not pass through the spot the ball was stopped at: a fourth down at the 55 on a
+drive that goes on to score interpolates to about the 72 at the same instant, so the bar
+leapt seventeen yards the moment the call was taken. `drawDriveChart` takes an optional
+`{t, y}` and sweeps the tail from there. Only the boss board passes it.
+
+**The clock is the instrument, because it is the one thing on that screen that has to move one
+way.** The field is a canvas and the score is allowed to sit still. A game clock that goes
+back is wrong on its face, and it went back by a hundred game-seconds or more rather than by
+a rounding error.
+
+**Sampled through a MutationObserver, never polled.** The replay lasts as long as the drive
+takes to animate, so a poll would PROBABLY catch it, and "probably" is how two thin samples in
+this file already passed on the defects they were written for.
+
+**Two claims, and the second is the half about the run-up.** Monotonicity catches the replay.
+What catches the missing run-up is counting the clock writes between the drive row logged last
+and the call being offered: `bossLiveTo` animates that stretch so there are frames of it, and
+without it there is exactly ONE write, the jump inside `bossShowDecision`. **The threshold is
+2 rather than a frame count**, because rAF under load is not a number a checker gets to assume
+and the defect gives exactly one either way. For the same reason the guard does not assert a
+maximum forward step: a slow frame is indistinguishable from a jump, and monotonicity is not.
+
+**It is the one walk here that does not press Sim the rest.** `bossFast` skips the animation
+by design, so the fast path cannot see any of this; the button goes in at the end to bring the
+game home. A two point try is excluded from the run-up count on purpose: its touchdown is
+already pushed and drawn, so one write is the right number there.
+
+**And it needs a page of its own, which is the harness lesson here.** The coached walk above
+breaks out of its loop the moment the bracket takes the screen after a Continue, and that
+leaves a `nbrkShow` callback pending which opens another game seconds later. The board is
+module state, so it replaces whatever is there. On the shared page the tape read a clean climb
+to 192 seconds and then a reset to 1ST 15:00, and the first reading of that failure was spent
+deciding whether the page or the harness had done it. Waiting for an empty log and a 0-0 bug
+is NOT enough: the game the section starts is itself fresh at that moment and the leftover
+lands after it. **A page with no leftovers by construction is the only version of this that is
+about the page.** The failure message carries the series around the step for the same reason:
+a clock that goes back by a drive and a clock that has been reset are two different faults
+reported by one number.
+
+**THE ANCHOR IS THE PART NOTHING GUARDS, and that is worth knowing before trusting a green
+run.** A wrong anchor costs a jump in the BAR and nothing the clock can see, so both
+assertions above pass with it removed. Checking it means looking at the field while a fourth
+down is converted, or writing a pixel read the section does not have.
+
+#### A playoff game is paced against the broadcast, and it arrived paced like a boss battle
+
+```
+node football/check-fullteam.mjs   the section that times a coached postseason
+node football/_pace-probe.mjs      deleted; the numbers below are what it measured
+```
+
+The live board IS the boss battle's board, so it arrived with the boss battle's pace, and that
+pace is deliberately slow for a reason that does not transfer: a boss is one season in six and
+the thing a dynasty builds toward. **A postseason is that same board four times in a row.**
+Measured over 60 games a round:
+
+| | resolved broadcast | live board, before | after |
+|---|---|---|---|
+| Wild Card | 13.4s | 57.9s | **13.2s** |
+| Divisional | 17.5s | 57.8s | **19.0s** |
+| Conference Championship | 21.1s | 58.1s | 22.4s |
+| Super Bowl | 25.7s | 57.9s | 26.0s |
+| the whole postseason | 77.6s | **231.7s** | **83.5s** |
+
+**Two faults, not one.** It was four times too slow, and it was FLAT: the Super Bowl was paced
+exactly like the Wild Card, where the resolved broadcast's own `PACE` table escalates and the
+comment over it says that escalation is the whole point. Reported by a player asking for the
+Full Team playoff games to go faster.
+
+**`bossPace` scales the FOOTBALL and never the calls**, which is `bossFast`'s own rule arriving
+at a dial instead of a button. The beat that shows what a coach decided, and the one that shows
+how it turned out, are the mode rather than pacing: hurried, they take back the thing the calls
+were added for. The boss battle passes no pace, so every number is byte-identical at 1.
+
+**Three floors are absolute and they are what stops the Wild Card going lower.** A drive has to
+read as a bar sweeping across the field rather than a bar appearing, the run-up to a fourth down
+is the drive the call is about, and a touchdown gone before the number under it has finished
+moving is what this screen was asked to stop doing. Those are a number of FRAMES, and no round's
+pace gets a vote on that. They are why the Wild Card lands 2.6s over its resolved counterpart
+rather than on it, and taking `LIVE_PACE` lower buys nothing because the floors are already what
+that round is made of.
+
+**Timed for real, never re-derived.** Every duration on that board is a `setTimeout` or an rAF
+ramp, so a checker could sum them, and would then be a second copy of the answer. A wall clock
+cannot drift. The band is 8 to 34 seconds against a defect worth 3.5x, so it has room for CI
+load and none for the regression.
+
+**It walks the whole postseason, and that is two things rather than thoroughness.** A ladder
+cannot be shown by one game, and a genuine fourth down is rare enough in a single game that
+timing one leaves the call assertion dark most runs, which is the badge nothing can light. Over
+two rounds it meets about four calls. **Reading the table is the other half and cannot replace
+it**: with the pace removed from the caller, the table still escalates perfectly and three timed
+assertions fail.
+
+**The call timer measured nothing at all on its first draft, and it passed.** It keyed on the
+state cell reading `THE CALL`, and **nothing ever sets that cell back**, so after the first call
+of the game every reading said `THE CALL` and the timer re-armed on writes that were not calls.
+It reported ~1460ms, which is the gap between two ordinary drives, and **it did not move when the
+call beat was deliberately broken**. It keys on `.cw`, the bold caller name, which
+`bossShowDecision` writes and nothing else does: its presence IS the decision being announced and
+its absence is the line painting over it. Correct, it reads 1201ms, and 301ms with the defect in.
+
+#### A control the game is waiting on goes above the record of it
+
+The call box and the verdict sat UNDER the drive log, which is capped at 40vh and fills up
+all game. Measured on a phone with a fourteen drive log:
+
+| | 390x844 | 360x740 |
+|---|---|---|
+| the call box starts at | 775, so 69px of viewport left | 726, so 14px left |
+| the Continue button starts at | 888, **off screen** | 839, **off screen** |
+
+So a player got the question and none of the buttons, and the way out at the final whistle
+was not on the screen at all. Reported by a player with a screenshot of a two point call they
+had to go looking for. **The Continue button has been off the bottom of the boss battle since
+that screen shipped**, which nobody reported because a game that has ended will wait.
+
+**The order is the field, what just happened, what to do about it, and only then the record
+of everything before it.** The log is the thing you scroll to. A control the game is waiting
+on is not. After the move the calls start at 393 and the verdict at 506 on both.
+
+**The guard measures a REAL call, at the moment it is offered, on the deepest button of the
+worst one**, because the fault grows with the log: a check on the first call of the game
+would pass on a screen that breaks by the fourth quarter.
+
+**And it asserts against a PHONE rather than against its own window**, which is the same
+trap as the share card's sampling stripe one section down. The harness opens 390x900 and a
+phone is 844 or 740. Reintroduced, the deepest button measures 853 to 934, so that run would
+have failed on `vh` too, by 34px, and it is 34px only because the game happened to run 28
+drives. The defect IS the log's height, so a shorter game shrinks that margin to nothing
+while the screen is just as broken on the phone it was reported from.
+
+#### The share card was built for six and Full Team drafts twelve
+
+Every y on `drawShareCard`'s canvas between the two rules was a constant written for a six
+man roster. So a Full Team card printed its seventh row THROUGH the closing rule and the next
+five on top of the team rating, the chemistry, the spend, the dare and the link, all at once.
+The card still rendered, still saved and still shared. Reported by a player with a screenshot.
+
+**One column of twelve is not the answer, and the arithmetic is the reason rather than
+taste.** The band from the first baseline to the closing rule is 526px. Twelve rows in it is
+44px a row against a 52px position chip and a 50px name, so everything in the block has to
+come down by more than half and the card's biggest text after the record ends up smaller than
+its own footnotes.
+
+**So it is two columns of six**, which keeps the row height and the type where they were and
+spends width instead, and width is what this roster has spare. The year and the city move
+UNDER the name, because half a card cannot hold both on one line and the name is the half
+worth the room. **The split is by side of the ball**, never by halving the list: `FULL_SLOTS`
+interleaves, so the first six slots are three offensive men and three defensive ones and a
+straight halving gives two columns that each look like a mistake.
+
+**Six is untouched, and that is asserted from the other end**: the six man card was rendered
+before and after and came back BYTE IDENTICAL. `cardRosterLayout` returns exactly what the
+old constants did for anything up to six.
+
+**And the tagline fell through to "Classic Mode. Six spins, one roster" for the third time.**
+The comment above that line already records the defense card and the Trade Machine card doing
+the same thing. Every mode added since it was written has had to be added to it.
+
+**THE GUARD READS THE CANVAS, and its first draft passed on the exact defect it was written
+for.** Checking that the layout function's numbers add up only asks whether the code agrees
+with itself, so the check samples pixels: the clearance between the closing rule and the
+footer's first line has to be empty. The first version sampled a 20px stripe ABOVE the rule,
+and rows are 94 apart with caps about 36 tall, so most of the pitch is gap: the stripe landed
+between the sixth row and the seventh and read zero on a card whose seventh row was printed
+straight through the footer. **A thin sample of a sparse column is a coin toss on where the
+sample lands.** The band is the whole clearance now, and reintroducing the one column layout
+puts 4,754 lit pixels in it.
+
+**Measuring type in this harness measures the FALLBACK face**, which is the note two sections
+up arriving again, and here it is the safe direction: Google Fonts does not resolve in the
+sandbox, so names are set about a third wider than the condensed display face a real visitor
+gets. A card that fits here fits on a phone with room spare.
+
+#### The run detail sheet was built for six too, and its sort had two bugs under the size one
+
+```
+node football/check-fullteam.mjs   the last section, at a 740px phone
+```
+
+Reported by a player with a screenshot of their own 20-0 Full Team run opened from the
+leaderboard. Three faults in one sheet, and only the first is about size.
+
+**The rows were written for six.** A roomy row is 55px with its gap, so twelve are 726px under
+a 127px header: seven men on a phone and you scrolled for the rest of your own team. A roster
+over six gets **one line a man** now, 31px, and the twelve come to 450px, which fits on the
+shortest phone worth supporting. Measured through the real sheet: 878px deep in a 634px pane
+before, 577 after. **Six is untouched**, because six fits and has read the same way for a year.
+
+**What the tight row gives up is the stat line and nothing else.** The name, the year, the
+club, the fantasy points, the price and the award chip all stay. The slot note MOVES onto the
+name line rather than being dropped: in the chip's own column it is a second line, which would
+make the two flex rows of a Full Team roster taller than the other ten. That is the premium
+sheet's hero row rule arriving at a list, and the guard asks for one height across all twelve
+rather than for a number.
+
+**The price went beside the score rather than under it**, and that is not tidying. Stacked,
+that column is 28px and is the TALLEST thing in the row, so it and not the name was setting the
+row height. On one baseline the row goes 40px to 31, which is 108px over twelve men and the
+whole difference between fitting a 740px phone and not.
+
+**`flex:0 0 34px` on the chip set its HEIGHT, not its width.** `.tagwrap` is a flex COLUMN, so
+a basis on a child is vertical: the chip became 34px tall and dragged every row to 46. The base
+rule has the same shorthand and is saved by `.rrow .tagwrap .tag{flex:0 0 auto}` sitting above
+it, which the new rule tied with on specificity and beat on order. **The width goes on the
+wrap**, which stretches the chip to it anyway.
+
+**And the club absorbs the overflow, not the name.** Given both the same shrink they lose width
+in proportion to how much they have, so a row 14px too wide cut `Adrian Peterson` as well as the
+year beside it. The name is what the row is for.
+
+##### Two sorting bugs that the size fix would have left in place
+
+**`byPositionOrder` picked ONE position list** and Full Team has both sides: the rule was "any
+defender present, use the defensive list", so every offensive player fell to the not-in-the-list
+rank and the whole offense was filed behind the whole defense.
+
+**And the tie-break read the wrong slot list.** It was always `E.SLOTS`, the six man OFFENSIVE
+list, in which DB does not appear and FLEX does. So a defensive back in the flex spot ranked 5
+and the two real backs ranked not-found, and **the reserve printed above the starters**. Against
+`FULL_SLOTS` the real backs are at 7 and the flex at 10, which is the order the draft filled
+them. `slotListFor()` answers which of the three lists a roster was built on, read off the men
+and never off the run, because a row opened from the leaderboard is somebody else's and carries
+no mode. FLEX is in all three lists, so it cannot be what decides.
+
+**A defense run had the second bug too**, quietly, for the same reason: its six were sorted with
+the offense's slot list, so its flex man also sorted above the position he is the reserve for.
+
+##### And the defenders were not there at all, because the fetch asked the MODE
+
+Reported next, from the same sheet: a Full Team run opened from the leaderboard showed its six
+offensive players, no defense, and a line reading **"6 of the six could not be looked up
+here"**, which is a sentence that cannot be true.
+
+**The defenders are a second download.** Every browser has the offensive pool and only a
+browser that has opened a mode needing defenders has theirs, so a leaderboard row is resolved
+against half the data it needs. `runDetail` already knew that and went and got them, gated on
+`row.run_mode === 'defense'`, which was every mode with defenders in it on the day that line
+was written. **Full Team's rows say `full`.** It asks the roster's own SLOTS now: a slot list
+carries DL, LB and DB whatever the mode is called, so it is right for both modes today and for
+the next one without anybody remembering, and an old offensive row still triggers no download.
+
+**The fixture has to be a page that never drafted**, which is the part worth copying. Every
+other assertion in that section runs on the page the roster was built on, where the pool is
+loaded and this defect cannot appear at all. The row is built there, carried out as plain data
+the way the server hands it over, and opened on a page that has only ever seen the front page.
+That is exactly what happens to a reader tapping somebody else's run, and it is the only
+arrangement in which the bug exists.
+
+**Two phases, and the first is deterministic.** `runDetail` draws synchronously and then starts
+the download, so the frame right after the call IS the half-resolved sheet: six rows and the
+count line. The wording is read there. The second phase waits for the redraw and asks for
+twelve. That first phase is also what proves the fixture is real: a page that already held the
+defenders would resolve twelve immediately and assert nothing.
+
+**And the sentence under it was the six man identity, which is wrong three ways on twelve
+men.** The results screen already refuses to print it and says the working is in the table
+instead; this sheet had no such branch. `runPayload` files `rosterStructure` over ALL TWELVE,
+which is the 0.57-for-everybody reading `overallOf` warns about, so the FIT is the wrong
+number; a Full Team rating is `fullTeamScale`'s 0 to 100 team overall, so "points a game
+against an average defense" is the wrong QUANTITY; and "the six" is the wrong WORD. A row
+carries one `structure_mult` and one squad total, so there is no honest working to draw here
+the way the results screen draws it from parts. It says what is still true instead: how the
+roster is shaped, and what the rating is.
+
+**The grouping and the ordering are two different fixes and need two different assertions.**
+`rdRoster` splits the men by position, so the Offense and Defense headings are correct even with
+the old sorter behind them: reintroduced, the headings assertion passes green and the two order
+assertions fail. Neither rebuilds the old rule to compare against. The claims are that offense
+comes before defense, that each group runs in its own list's order, and that no man in a flex
+slot appears above a man in his own named slot at the same position.
 
 ### A dynasty screen says which season it is, and `seasonTag()` is why
 
@@ -1681,6 +2187,43 @@ in this file.
 
 `check-boss.mjs` drives every one of its runs through that button, so if it stopped working
 the whole file would time out.
+
+### The elite band's top was written past what the game can draft
+
+Asked for: make a 95+ quick draft roster win a bit more. What a rating band actually wins,
+measured over 1800 real drafts:
+
+| rating | win% | median | 17-0 |
+|---|---|---|---|
+| 85-90 | 68.2% | 12-5 | 0.0% |
+| 90-95 | 79.7% | 14-3 | 0.9% |
+| **95-100** | **85.7%** | **15-2** | **9.8%** |
+| 100+ | 88.7% | 15-2 | 7.7% |
+
+**Three constants anchored the top of the elite band above anything anybody drafts.** Over
+3000 rosters: p90 93.7, p99 99.3, p999 103.0, max 104.9. Against that, `CLASS_TOP` was 115,
+`ELITE_FULL` 105 and `ELITE_POLISH_FULL` 105. So the stretch above `CLASS_FULL` was never
+more than a fifth earned (a 101 roster collected 0.004 of the 0.06 on offer), and the seed
+vote was fully earned by nothing. All three sit at **103** now, the top of the real ladder.
+
+**None of them touch the fitted stretch, and that is why they were the ones to move.**
+`weeklyEdgeBand` is segmented: 95 to 100 is `at(rating)`, and the header over `CLASS_PIVOT`
+says plainly that 95 through 100 is what `SCALE` was solved against, so moving it means
+re-sweeping `SCALE`. The edge at 95 is byte-identical after this change; 101 goes 1.2083 to
+1.2281.
+
+**What it bought**, on the archetype `SCALE` is anchored to: 90.1% to 91.1% of games, median
+15.3-1.7 to 15.5-1.5, titles 14.2% to 15.5%, and 20-0 from 1.9% to 2.5%. Targets block still
+reads all within tolerance.
+
+**THE 95-100 BAND ITSELF BARELY MOVED, AND THAT IS THE HONEST LIMIT OF THIS.** Both riders
+were swept and both are small: doubling `ELITE_POLISH` moved a 95+ win rate 85.3% to 85.5%,
+because it inherits `weeklyEdgeVs`'s damper and pays almost nothing against contenders. And
+loosening that damper from `CLASS_FOE_LOW` 1.0 to 1.4, which is a large loosening of a
+deliberate rule, bought 85.8% to 86.2% and 17-0 from 8.3% to 8.7%. **The 95-100 band is
+governed by `at()` and `SCALE` and nothing else**, so lifting it is a re-calibration of the
+whole game rather than a constant to nudge. Do not reach for the damper: it was added because
+the undamped edge made 17-0 five times likelier, and it is worth 0.4 points.
 
 ### A badge you add has to be proved reachable
 
@@ -1887,7 +2430,10 @@ The regression suite, which is the thing to run after editing:
 ```
 node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
 node mythiball/verify-rules.mjs    the rules replayed in a headless browser
-node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop)
+node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop, --easy/--hard for a tier)
+node mythiball/check-frames.mjs 70 normal --phone --cpu=4   frame times, on the machine that matters
+node mythiball/check-runs.mjs      runs per game, with a defence that turns up (--jobs=N to run several at once)
+node mythiball/check-bat.mjs       the swing's own curves, and that skill pays
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
 
@@ -1901,6 +2447,1001 @@ itself once: it measured the CPU at 55 whiffs per hundred swings, the swing
 jitter tiers came down about a fifth, and it measures in the mid forties
 now (MLB runs about 25). The file's header records the procedure, and any
 further move repeats it: measure, touch the jitter, measure again.
+
+### Difficulty is what the other dugout KNOWS
+
+`DIFF` used to hold three columns and all three were about the player's half of
+the duel: ball speed, sweet spot width, pitcher skill. Played from the MOUND,
+every tier was the same opponent, so choosing hard bought a harder swing and
+changed nothing about the game you pitched.
+
+Two columns answer that, and both are measured through `calibrate.mjs --easy`
+and `--hard` rather than read, because a dugout that stopped chasing altogether
+renders perfectly and breaks nothing.
+
+- **`chase` touches only pitches OUT of the zone.** A harder dugout is not a
+  quieter one, it is a pickier one: measured at 500 pitches, chase runs 30.6 /
+  24.8 / 11.6 across the tiers while the swing rate on a strike down the middle
+  moves 73.8 to 76.0, which is noise. Discipline is not silence, and the guard
+  asserts both halves.
+
+  **THE GAP IS NOT THE SAME ON EVERY OPPONENT, and the guard used to measure
+  whichever one it drew.** `swingProb` is clamped to a 0.05 floor, and `chase` is
+  an offset on top of the batter's CON and the batting TEAM's patience, so a
+  patient dugout pushes the base against that floor, the hard tier clamps, and
+  the gap compresses. Measured over all seventeen it runs **8.4 to 23.0, mean
+  16.8**, and the smallest belongs to the most patient team in the game (The Kids
+  Table, patience 0.14). At 500 pitches the standard error on that gap is about
+  1.8 points, so a threshold of 8 against that one team is a **coin toss**: it
+  came up 6.8 and failed the suite on a build that had not touched the dugout at
+  all. That is the magic seed lesson from the commish term fixture, in a
+  different coat.
+
+  So the sweep walks **every team style** now. `currentBattingTeamStyle()` reads
+  `State.opponent` live, so swapping it needs no restart, and the batter is held
+  fixed to isolate the term that actually moves: patience spans 0.22 across the
+  league where the CON term spans about 0.05.
+
+  **AND THAT FIX TRADED ONE FLAP FOR ANOTHER, which is worth reading before
+  writing the next one.** Sweeping all seventeen teams meant dropping the per cell
+  sample from 500 to 200 to keep the suite's runtime sane, and at 200 pitches a
+  rate near 5 to 20 percent carries a standard error of 2 to 3 points. So easy
+  against MEDIUM went inside the noise: The Marauders came back 19.0/20.5/8.0 and
+  The Kids Table 14.0/4.5/5.5 on a build that had not touched the dugout. A strict
+  three way order per team at that sample is measuring the sample.
+
+  So ordering is asserted **on the pool** (the dial is `diff.chase`, global, and a
+  team's patience is a constant offset on top of it) and per team only on **easy
+  against HARD**, which is the full width of the dial and the one comparison that
+  survives at this sample, so a team that genuinely inverted it is still caught.
+  The **SIZE of the gap is on the mean**, because the clamp legitimately compresses
+  it against the most patient dugout and demanding eight points there is a coin
+  toss rather than a rule.
+- **`read` is memory.** `patternRead` keeps a ROLLING window of the last 20
+  pitches the player CALLED and answers how hard the bat is sitting on this
+  one. An arm nobody steers writes nothing, because there is no pattern in a
+  random draw, which is also what keeps `calibrate.mjs`'s neutral arm out of it.
+  The floor is half the window: a repertoire is three or four pitches, so an
+  honest mix sits near .30 and punishing anything lower would punish honesty.
+
+**A full read takes a hard bat's timing error from .082 to .024, and that is
+the point rather than an overshoot.** It takes twenty straight fastballs to get
+there. **Two ways out, and both are the real ones**: mix, which the log line
+tells the caller to do once per hitter, or paint the edge, because the corner
+penalty is +0.12 against a read worth at most 0.11. A read that could not be
+pitched around would be a punishment rather than a hitter.
+
+**It is said out loud, once per batter.** A difficulty that changes what the
+opponent knows is invisible otherwise: the player just meets hard contact and
+reads it as luck.
+
+#### A swing that misses half the time is not a backyard game
+
+```
+node scratchpad/whiff.mjs 3000 medium     the tuning instrument
+node mythiball/calibrate.mjs              the tripwire
+```
+
+The CPU whiffed on **about 47 swings in every hundred**, against MLB's 25, and
+the note in `calibrate.mjs` called that "still arcade-hot". It is the wrong way
+round: a backyard game is a CONTACT game. The ball is in play constantly and a
+strikeout is a thing that occasionally happens, not the most common outcome of a
+swing. It sits at **28** now, and balls in play per swing went from 27.9 to 40.8
+at medium, which is nearly half again as many plays for the half of the game that
+fields them.
+
+**THE FIRST ATTEMPT MOVED THREE POINTS AND READ AS A SUCCESS.** `calibrate.mjs`
+gets about 80 swings out of a 150 pitch run, so at a true rate near 40 one
+standard error is **5.4 points**. Two runs came back 36.4 and 43.9 on builds one
+dial apart: they are the same measurement. The dial was cut from .15 to .125 on
+the strength of the difference between them. **A file that cannot resolve the
+move is not the file to tune in**, and that is now written in its own header:
+`calibrate.mjs` plays real innings through the real buttons, which is what makes
+it a good tripwire and a bad micrometer.
+
+The instrument that can answer stubs `setTimeout` into a queue, calls the game's
+own `throwPitch` and `scheduleCpuSwing`, then drains the queue once. **Nothing
+about the jitter model is copied**, which is the whole point: a second copy of
+that arithmetic would measure itself. 3000 swings an arm, in seconds.
+
+**WHIFF WAS ALREADY FLAT ACROSS THE TIERS AND THAT IS THE DESIGN, NOT AN
+ACCIDENT.** 47.4 / 47.8 / 46.2 on easy, medium and hard. Those numbers were
+cancelling `DIFF.sweetWidth` (.26 / .20 / .16), so a harder dugout was never one
+that missed less. What a tier buys is CONTACT: balls in play ran 24.0 / 27.9 /
+31.5.
+
+**So the three are solved separately, and scaling them together inverts them.** A
+uniform cut was tried first and gave easy 27.6 against hard 34.3, which is a hard
+dugout making worse contact than an easy one. Nothing would have reported it.
+Solved per tier, whiff is flat at about 28.3 and the tier spread in balls in play
+nearly doubles:
+
+| | jitter | whiff | in play |
+|---|---|---|---|
+| easy | .115 | 28.0 | 34.1 |
+| medium | .068 | 28.4 | 40.8 |
+| hard | .030 | 28.6 | 47.9 |
+
+**Only the timing jitter moved.** The aim spread (`locJ`) also makes whiffs, by
+putting the barrel out of reach, and cutting both at once would overshoot and
+leave nobody knowing which did it.
+
+**The player's own bat was not touched and did not need to be.** `check-bat.mjs`
+puts an ordinary swing at 94% contact and a sharp one at 100: the player was
+never the one missing. This dial is the CPU's half.
+
+##### And cutting it killed the read, because one constant was doing two jobs
+
+The retune above pushed hard's base jitter down to .030, near the `clamp(jitter,
+0.03, 0.40)` floor, and the read is subtracted BEFORE that clamp. So there was
+nothing left for it to remove: a hard dugout sitting on twenty straight
+fastballs timed the ball **0.015 off against 0.014** for a dugout guessing.
+**The whole mechanic was dead and the only symptom was that it stopped
+mattering.** Caught by `verify-rules.mjs`, which is the reason that assertion
+exists.
+
+**IT CANNOT BE FIXED BY BACKING THE DIAL OFF, and that was measured rather than
+assumed.** The obvious move is to take hard's whiff down through the aim spread
+instead and leave the timing headroom alone. It does nothing: `locJ` from .8 to
+.40 on hard moves whiff **36.3 to 36.4**. Whiff here is essentially ALL timing,
+which is `check-bat`'s binary window arriving from the other side. The barrel is
+rarely what misses, so there is no second lever to trade against.
+
+**The other tempting fix is worse and is the one to refuse.** Leaving hard's
+jitter high enough for the read puts hard's whiff at 36 against easy's 28, which
+is the tier INVERSION rejected one section up, arriving by a different door.
+
+So the two jobs are separated and the clamp is written twice on purpose:
+
+```js
+jitter = clamp(jitter, 0.03, 0.40);      /* the dugout's own limit */
+jitter = Math.max(jitter - read, 0.012); /* what knowing the pitch buys */
+```
+
+The FLOOR is about the dugout on its own merits: nobody times a pitch perfectly
+just by being good. The READ is the one term allowed to beat it, because knowing
+what is coming is exactly what it is for, and it gets its own floor. Sharpness,
+fatigue and the corner penalty are ordinary modifiers and still land above the
+clamp.
+
+**The counterplay is unchanged and is what makes this safe.** Mix, and the read
+decays to nothing. Or paint the edge, because the corner penalty is added after
+this. And the whiff target is untouched, because an unsteered arm writes no
+pattern: re-measured after the fix at 27.2 / 28.1 / 27.8.
+
+**A TUNING PASS CAN KILL A MECHANIC IN A FILE IT NEVER EDITED.** Nothing about
+the read changed. Its own assertions on `patternRead` all still passed, because
+the function was right the whole time; what broke was the headroom underneath it
+somewhere else. That is worth assuming about the next dial that moves.
+
+### The defence had no play to MAKE, only one to lose
+
+Both fielding windows this game had (the grounder throw, the fly catch) fire only
+on a ball ALREADY labelled an out, so the only thing either can do is downgrade
+it. A hit was automatic and the fielding side watched it land. That is backwards
+from the sport and from every baseball game there is: the thrill of fielding is
+taking a hit AWAY from somebody, and there was no way to.
+
+**What made it fixable is that the sim already knew.** `buildPlaySim` computes,
+per fielder, the earliest moment he can be where the ball is, and then throws
+that away on anything labelled a hit. It is recorded as `sim.robSlack` now: for
+the man best placed, how much time to spare he has getting to where the ball
+comes down. Positive is camped under it, negative is late by that much, and a
+tenth of a second late is a dive.
+
+**Measured over 900 balls in play, 96 of 219 hits (44%) land where a fielder
+could already be standing.** That is NOT the game playing wrong: the hit rate on
+balls in play is about right (roughly real BABIP). It is the GEOMETRY and the
+OUTCOME disagreeing, because the trajectory decides the result at contact and the
+fielders are animated on afterwards. That gap is the only place a robbery can
+live, and it is why this is a fielding fix rather than a batting one.
+
+**A miss costs NOTHING and that asymmetry is the whole design.** The play is
+planned as the hit and stays the hit: no amendment, no apology, the normal apply
+fires on its own clock and nobody watching would know a window had been open.
+Green turns it into an out. The other two windows are the opposite on purpose,
+and nobody presses a button they think can hurt them, which is why the coach
+notes say so in as many words.
+
+**The gate is physics the sim already computes, never a roll.** You cannot rob
+what nobody could reach. `ROB_ARC` (120) is what keeps a bloop single honest:
+measured, a single's arc runs 29 at the tenth percentile to 147 at the ninetieth,
+so a ball that genuinely drops in front of somebody is well under it and a deep
+fly that fell in is well over. **Out of reach is about TIME, not distance**, and
+the first draft of the guard got that wrong: it aimed into the gap with a two
+second hang time and the gate correctly said yes, because a fielder can jog to a
+ball that stays up that long.
+
+**It fires on 21% of hits, which is 1.9 chances a side per game**, across singles,
+doubles and triples. That is an event rather than a coin flip bolted to the
+batting model. Re-measure it with the probe if either constant moves: half of
+every hit becoming a timing bar is not fielding.
+
+**The green scales with how close he was**, from a full 0.177 half-width for a man
+already standing there down to 0.086 for a dive, plus his own glove. Most
+candidates saturate at the top, which is right: the routine-looking ones are the
+ones you should catch.
+
+**Three windows can open once the ball is hit and the notes named none of them**
+for as long as they existed, so a player met a bar on screen with no idea what it
+wanted. The pitching notes carry a fielding step now. The `ring` the batting
+notes must never mention is still forbidden there and is the truth here, because
+`drawCatchRing` is what draws it.
+
+**And the LONG page still said "Two plays need you"**, so the robbery went
+undocumented on the more thorough of the two how to play surfaces for as long as
+it has existed. Same lesson as the arcade's twelve blocks: two surfaces say how to
+play and both need the edit, every time.
+
+#### DOING NOTHING WAS THE WORST OUTCOME BOTH WINDOWS HAD
+
+Neither window distinguished a player who pressed at the wrong moment from one who
+never pressed at all, and the second is most of the people who have never played
+this before.
+
+- **The grounder's timeout called `finish(-1)` and fell through the distance
+  maths.** `ideal` sits near 0.55 and `yellowHalf` is 0.14, so `d` came out about
+  1.55, past every band: an ignored ground ball was a **throwing error**, batter
+  safe and every runner up an extra base. The comment on that very line said
+  "fielder holds it: batter safe", which is the single below it. **The comment was
+  right and the code was not**, which is the dangerous direction, because the next
+  person fixes the code to match.
+- **The fly window said `if (t < 0) outcome = 'miss'` outright**, and a miss there
+  is the ball over his head for a **TRIPLE**.
+
+So a player who did not yet know these controls existed conceded an error on most
+ground balls and a triple on most fly balls, all game. That is not a guess about
+how it felt: measured from the other side, a defence that pressed nothing gave up
+**27 to 32 runs a nine against 5.5**, which is the whole of that gap.
+
+**After the fix that same arm measures 15.8**, so ignoring the defence still costs
+about three times what playing it costs. That is the shape it should have: a real
+price rather than a catastrophe. The window is still worth playing, and a player
+who has not found it yet is not being handed a different sport.
+
+**THE RULE IS THAT NOT REACTING IS NEVER WORSE THAN REACTING BADLY.** Pressing at
+the wrong moment stays the worst outcome, because you committed and got it wrong,
+and that is what keeps the windows worth playing. Letting the bar run out is
+passive: the fielder holds the ball, or never leaves his feet, so the batter
+reaches and nobody else moves up. Both expiries are a **single** now.
+
+**The guard DRIVES it rather than computing it**, because the arithmetic is what
+was wrong in the first place. It opens each window for real, presses nothing, and
+reads back what the game scored.
+
+**And the notes can now tell the truth about all three**, which is what they are
+for: let the bar run out and the batter reaches, nothing worse; miss the robbery
+and nothing is lost at all. Nobody presses a button they think can hurt them, and
+before this the fear was correct.
+
+**A play keeps a finish timer that nulls `g.play` and moves the batter along**, so
+a test that hits a second ball 700ms after the first is torn down by the first
+one's clock and reports a window that never opened. Each case in the guard waits
+the previous one out.
+
+### A franchise remembered only its win column
+
+A club here has a city, a nickname, a park with an effect on it, a record book and
+a Retire the club button, and every one of those promises CONTINUITY. What
+actually carried from one year to the next was W-L and nothing else: `perPlayer`
+is per season and `seasonLine()` keeps the year, the record, the rank and whether
+you won it. So you could draft Dracula in year one, watch him hit twelve,
+re-draft him in year two, and the game had no memory that he had ever played for
+you. That is what made redrafting read as a reset rather than a decision.
+
+**The roster is NOT locked between years and that is right.** "Play Year N+1"
+sends you back to the draft with everything you have unlocked on the board, which
+is what makes the unlock ladder worth climbing. The gap was never the redraft, it
+was that the club could not tell you which of these men were yours.
+
+`S.careers` is that memory, and `foldCareers` builds it.
+
+**Idempotence is the load-bearing property and it is not obvious why.** The draft
+for year N+1 happens BEFORE `startSeason` folds anything, so numbers read while
+picking would otherwise be a year out of date. `foldCareers` is pure over
+(`careers`, `perPlayer`, `team`, `year`) and never touches its argument, so
+drawing a screen with it and starting a year with it give the same answer. Get
+that wrong and every re-signed player's record doubles, silently, on a screen
+nobody would think to check.
+
+**A year is counted off the ROSTER, not off the stat sheet.** A ninth man who
+never got an at bat still spent the season on the club, and counting years from
+`perPlayer` would quietly leave him off his own record. He gets `1 year here` and
+no row of zeros pretending to be a career.
+
+Two surfaces, and the first is the one that changes a decision: a green line on
+the draft card for anybody who has worn the shirt, and a Club careers table on the
+record book screen. **A first year franchise is unmarked and looks exactly as it
+always did**, which the guard asserts from the other end.
+
+### A franchise had memory and no arc
+
+**Nothing in the game read `S.year`. Only the labels did.** A club had a record
+book, a ladder of unlocks and (since the careers pass above) a memory of every man
+who wore the shirt, and year ten still played exactly like year one: the same
+board, the same league, the same numbers. `opponentSharpness()` ramps game one to
+game seven and reads `results.length`, which resets every April, so even the one
+existing arc was annual.
+
+**Two halves fix that and NEITHER WORKS ALONE.** A man who has worn your shirt is
+better at what he did in it, and the league sharpens with your tenure. Development
+on its own is a club that wins by turning up. A rising league on its own is a
+punishment for playing a fourth season. Together the redraft becomes the decision
+the mode was missing: your veterans are now better than the board, and the new
+unlock is not.
+
+**The roster stays unlocked, which is the rule this must not break.** "Play Year
+N+1" still opens the whole board, because that is what makes the ladder worth
+climbing. What changed is that walking away from a four year man now costs
+something a drafter can read on his card.
+
+**It is DERIVED from the career record, never stored.** `devOf(k)` is a pure
+function of what `careerOf(k)` already holds, which buys three things at once: it
+cannot drift from a second copy (the commish era's rule), it is idempotent for
+free so drawing the draft screen twice cannot double it (the trap `foldCareers` is
+written around), and **every save that already exists gets its veterans developed
+the day it ships** rather than starting everybody from scratch.
+
+**It pays for what he DID, not for turning up.** A bat only develops off at bats
+and an arm only off outs, so the ninth man who never played keeps his year on the
+record and earns no rating for it.
+
+**ONE SEAM, because a rating is read 139 times.** Those reads sit on a dozen
+receivers (`ctx`, `batter`, `pitcher`, `runner`, `c`, `b`), so hooking them would
+be the Full Team glow bug waiting to happen. The lineup is built in exactly one
+place, `startGame`, so `developed()` is applied there and everything downstream
+follows. **Only your side**: the opponent draws the roster's own numbers even when
+their lineup names the same character, which the guard asserts against a mirror
+lineup.
+
+**The card shows what you would actually field.** A draft card printing the
+roster's own figures would understate every man this club has kept, and the drafter
+would be choosing on numbers the game does not use. The raised rating is marked in
+the grid and the gain is named under it (`+4 CON`, not `+7`), because the named
+stat says what kind of player he has become.
+
+#### Three things it got wrong, and two needed a screenshot
+
+- **A RATING MUST NEVER BUY YOU LESS, and this one did.** The 99 clamp is the
+  whole of the diminishing return (a 96 has three points of room, a 60 has thirty
+  nine) and part of this roster is written AT or ABOVE it. A flat
+  `clamp(base + v, 1, 99)` handed the game's 100 power man **a point off** for his
+  years of service. The probe reported him gaining -1. That is `sendOdds`' rule at
+  a third door, after the send curve and the monotonicity sweep.
+- **The card promised gains that never landed.** It printed the bump a man was
+  OWED, so somebody at the ceiling was told "+4 POW" and gained nothing.
+  `developed()` records what was actually APPLIED now, which is the commish state
+  card's rule (decide on the printed value, not the raw one) arriving at a draft
+  screen.
+- **A raised PIT drew RED.** `.statgrid b.up` (0,2,1) loses to `.statgrid span.arm
+  b` (0,2,2) two rules above it, and `--gold` in this palette is red, so the one
+  number on the card meaning HE GOT BETTER was the only one printed in the colour
+  that means trouble. Nothing threw and no assertion could see it. **Found by
+  looking at the card**, which is the same shape as the football prompt card's
+  `.pwc-marks` selector.
+
+**And `developed()` guards its own output.** Nothing hands it an already developed
+man today, because the lineup comes from `ROSTER_BY_KEY` and the card from
+`ROSTER`, both raw. It returns early on `c.dev` anyway: it derives off the KEY, so
+feeding it its own output would add the bump to a base that already carries it and
+silently double every veteran on whichever screen somebody wired up second.
+
+**The tenure ramp is deliberately smaller than the in season one.** Game one to
+game seven is worth 0.75 of that dial; a whole career is worth **0.30**, plateauing
+after six years. The shape of a season stays the loudest thing in it and tenure is
+the bass note underneath. **Exhibition does not get it at all**: a one off is not a
+franchise year and has to stay the fixed, knowable thing somebody reaches for when
+they want a game rather than a career.
+
+### The friendly button was the worst path
+
+**Randomize is the first thing a new player touches**, because it is what somebody
+presses who does not want to read sixty-eight cards. It shuffled the ORDER as well
+as the nine, and the first pick starts on the mound, so the man it put there was a
+coin toss.
+
+Measured over 4000 draws: **52% of them opened with an arm under 55 PIT while the
+same nine men held a median best of 74.** Ordering alone threw away 27 points of
+PIT. Nothing could have caught it, because a random draft is a valid draft, and the
+only symptom was a bad first game with nothing on screen to explain it.
+
+**The nine are still random.** Only the order changes, which is the part the player
+did not pick and the part the game says matters. Measured after: 0 of 60 below 55,
+0 that started anyone but the best arm on the club.
+
+**A hand draft is left alone and told what it is doing.** Somebody who chose their
+own order made a choice. The rule lives behind the info dot, which is the right
+place for a rule and the wrong place for a fact about THIS draft, so the footer
+names the starter and his PIT and, in gold, the better arm already picked. It
+never reorders.
+
+### The picture disagreed with the book on one play in six
+
+`buildPlaySim`'s own comment says a hit's throw "gets there just after he does:
+that is what a hit looks like, and it is the whole difference between this and an
+out." Nothing checked it, and it was false on **66 of 420 plays**. What a player
+sees when it is wrong is a fielder standing on the bag holding the ball while the
+runner jogs up and is called safe. Nothing throws.
+
+Two faults, and **finding the first made the measurement worse before it got
+better**, which is why the guard asserts a property and never a number.
+
+**The horizon.** `simRunPath` reports `reached` as the moment a runner touches his
+bag, and when the loop runs out first it reports the END OF THE SIM instead. Home
+to third is 3.33 diamond units and the slowest man runs 0.342 a second, so he
+needed about 9.9 and a nine second horizon reported 9.12 every time. Everything
+downstream trusts that number: the throw is timed against it, the close play is
+read off it, `deadAt` comes from it. `SIM_MAX_S` is 15 now, which covers first to
+home at the slowest speed (13.49s) with room. It costs sample arrays, 900 entries
+per runner instead of 540.
+
+**The one sided guard.** `lateThrow` asked only that the fielder not HOLD the ball
+too long, never that the throw not LAND too early, so when the runner was further
+off than the hold allowed, the launch clamped to `ready` and the ball beat him to
+the bag by whatever was left.
+
+**There were THREE untimed throws in that branch and each fix uncovered the
+next**: the `lateThrow` clamp, the last-resort `throwTo(from, 1, at + 1.0)`, and
+the one inside the cutoff relay, `throwTo(cutoffUV, ..., ready2 + 1.2)`. The last
+one put the ball on third five seconds before the runner. Measured after all
+three: **0 of 357**. When nobody can be thrown out the ball now comes in BEHIND
+the play, to a bag the lead runner has already touched, after he has touched it,
+which is what an infield actually does.
+
+### A strikeout had no frame, and a pose is one offset rather than 68 drawings
+
+The batter reverted to his neutral stance and stood in it for the whole
+`afterOut` beat, so the screen looked the same whether he had just been rung up
+or was waiting on the next pitch. That is the most frequent thing that happens to
+a hitter.
+
+**The generator is parametric**, so `slump` is one entry in `ARM_OFF` plus a line
+in `POSES` that all sixty eight characters inherit. It weighs about **61KB of
+sprite table**, which is what one pose across this roster costs (0.96MB for
+fifteen). Adding a pose is cheap; this section exists because judging it is not.
+
+**The generator reproduces the in-page table byte for byte**, so splicing is safe
+and that is worth checking before you splice. Adding a pose GROWS each
+character's palette, which shifts every letter and changes every string, so a
+string compare says everything changed. **Decode and compare pixels instead**:
+1020 existing frames came back identical.
+
+**Two things here were only findable by LOOKING, and a count of distinct frames
+was happy through both.**
+
+- At an eight pixel drop the arms hang PAST the shoes and cover them, so a
+  slumping Zeus reads as a man with no feet standing on two white posts. Five
+  clears the floor.
+- A one pixel leg sink, tried so the quadrupeds would get something, clipped
+  every biped's shoes off the bottom of the 50px box and moved exactly one of the
+  seven. It is back at zero.
+
+**Seven characters have no arms to drop** (the lion, the dog, the chupacabra, the
+phoenix, the dragon, nessie, the cat), which is the same reason `raised_arms`
+skips them. Their slump is their `back` frame. A dragon taking a called third
+strike is a dragon standing there.
+
+**The head cannot drop.** `cy` is per archetype and set after the body, so a
+slumped skull means threading the pose through every archetype's head draw. The
+arms carry it, and at the plate camera's 5.2x the batter is the biggest thing on
+screen.
+
+### How long a game actually takes, and Fast now reaches its target
+
+**Normalise PER HALF INNING.** A game that ends early on the mercy rule flatters a
+wall clock, and both samples here did: one stopped in the 4th, one in the 5th.
+
+| Fast | per half inning | 5 innings | median pitch to pitch | gaps over 8s |
+|---|---|---|---|---|
+| beat 0.60 | 80.2s | **13.4 min** | 3.31s | 2 |
+| beat 0.45 | 48.7s | **8.1 min** | 2.94s | 0 |
+
+Same harness, before and after, and the second run reached the fifth inning where
+the first reached the fourth: more baseball in less time. The target is five to
+ten minutes, so Fast is inside it now and was never close before.
+
+**NORMAL IS DELIBERATELY UNTOUCHED.** Its rhythm is the one a playtest asked for
+in as many words ("slow down a lot", recorded in `BASE_BEAT`), and the setting
+that exists to trade ceremony for pace is the one that should reach the target.
+The default stays the playtested game.
+
+#### More contact does NOT make the game faster, which was predicted and is wrong
+
+The contact retune cuts whiffs from 47 per hundred swings to 28, so at bats end
+sooner, so the game should be quicker. That was written down as an expected
+free win before it was measured. It is not one. Driven through the real buttons
+at Normal, the shipped build against the build one commit before it:
+
+| | before | after |
+|---|---|---|
+| wall clock | 698.0s | 686.9s |
+| pitches | 131 | 122 |
+| balls in play | 47 | 49 |
+| seconds per pitch | 5.33 | **5.63** |
+| median pitch to pitch | 4.23s | **4.23s** |
+
+**The per event rhythm does not move at all**, to two decimal places, and the
+seconds per PITCH go UP. That is the mechanism: fewer pitches, but a larger
+share of the ones left are balls in play, and a ball in play costs a play
+animation plus `afterHit` where a whiff cost `afterWhiff`. It trades cheap
+events for expensive ones at close to par.
+
+**AND THE PER HALF INNING FIGURE SAYS THE OPPOSITE OF THE WALL CLOCK, because
+neither sample is a controlled one.** 77.6s before against 114.5s after, which
+would be a large regression, except the after game was a **0-28 mercy blowout
+in 6 half innings** and the before game a 4-16 over 9. Scoring is what fills an
+inning with play animations, and this pass RAISED scoring, so the two are not
+separable at one game an arm. What is safe to say is the negative: the retune
+buys no pace, and the direction of any residual effect is toward slower innings
+in a high scoring game rather than faster ones.
+
+**Do not tune a beat off this.** It is n=1 an arm on a measurement whose own
+header says to normalise per half inning, and the two arms disagree about which
+way to normalise. Settling it needs several games an arm, and nothing currently
+depends on the answer.
+
+**Two ways this measurement went wrong before it went right**, both worth not
+repeating:
+
+- The harness pressed `#swing-btn`, which is the PHONE control and is not visible
+  at desktop width, so it never swung once and timed a game of nothing but called
+  strikeouts, reporting a clean 0-20 loss. `scratchpad/pacing.mjs` presses Space,
+  which the coach notes name and which is always there.
+- An attribution probe that FORCED each next pitch reported the ordinary ball or
+  strike as 69% of the clock, and it was measuring the pitch FLIGHT: calling
+  `throwPitch` directly skips the very beats it was trying to weigh. **Cutting the
+  beat by a quarter moved its number from 1.41s to 1.39s, which is what gave it
+  away.** Only the COUNT attribution survived (two thirds of transitions are
+  ordinary pitches).
+
+### It was worth being slower
+
+`sendOdds` decides how often a runner waved round actually scores, and it was two
+separate curves rather than one curve with a bonus on the end. Crossing the floor
+RESTARTED the odds from a lower base:
+
+| | slower | faster | cost of speed |
+|---|---|---|---|
+| second to home on a single | 74: **47.7%** | 75: **35.0%** | -12.7 pts |
+| first to home on a double | 84: **54.3%** | 85: **30.0%** | **-24.3 pts** |
+
+**Tom Sawyer is 84 and Huck Finn is 86**, so waving both round sent the faster man
+home less often. Nothing could report it: every number involved is a valid
+probability and the play resolves correctly against whichever one it is handed.
+The only symptom is that the fast man you drafted for his legs keeps getting
+thrown out.
+
+One curve now, with the fast bonus ADDED to it. The guard asserts MONOTONICITY
+over the whole scale rather than the two numbers that were wrong, because a cliff
+can come back at any floor somebody tunes later.
+
+#### And then the gate came down, because this is a backyard game
+
+That fix left the ODDS honest and the PERMISSION untouched, and the permission
+was the whole gap. A runner scored from second on a single **24% of the time**
+against about 60% in the real game, and the note here said to measure the run
+environment before touching it. Measured (`check-runs.mjs`, about 5.5 a nine):
+scoring is not broken, so there is room.
+
+**Only 35% of the roster cleared the old floor of 75.** Two thirds of the league
+stopped at third on a base hit, so the play at the plate, which is the best thing
+that happens in a game of backyard baseball, mostly did not happen. **Speed now
+decides the ODDS rather than the PERMISSION**, which is the arcade shape:
+everybody runs, the fast ones make it.
+
+| | tries | scores | thrown out at the plate |
+|---|---|---|---|
+| second to home, was | 35% | 24% | 11% |
+| second to home, now | 71% | **59%** | **12%** |
+| first to home on a double, was | 22% | 14% | 8% |
+| first to home on a double, now | 53% | **45%** | 8% |
+
+**THE THIRD COLUMN IS WHY THE FLOOR COULD COME DOWN THIS FAR**, and it is the
+thing to check before reading this as a difficulty cut. The runners who now score
+are the ones who used to HOLD, not runners who used to be safe: outs at the plate
+move 11% to 12%. A version of this that bought the scoring with outs would gut
+the mode and would pass a check that only read the scoring rate, so the guard
+asserts both.
+
+**Two outs drops the floor another ten points**, and that is arithmetic rather
+than feel. Holding at third is worth something only if somebody is coming up
+behind him, and with two out there is one batter left. Ten points is where the
+floor's own odds fall from about .61 to about .50, which is where the trade turns
+over. It reads 63% scoring and 16% thrown out, and an out at the plate with two
+away ends an inning that was ending anyway.
+
+**The floor is still there.** A statue rounding third is a joke rather than a
+decision, and `sendClears` is what the SEND and HOLD button overrides.
+
+**IT MOVED TO MODULE SCOPE, AND THAT IS HALF THE FIX.** `sendOdds` was a local
+const inside `applyHitMutation`, so `verify-rules.mjs` carried a hand-copied
+duplicate of the arithmetic in order to sweep it, and the nine-curve sweep in the
+section below could not reach it **at all**: the curve the whole sweep was
+written for was the one curve not in it. The copy would have gone on passing on a
+curve the game had stopped playing. One definition now, read by both, and the
+sweep walks eleven curves.
+
+### A rating must never buy you less, and the sweep that says so
+
+`sendOdds` was an instance of a CLASS. Any function mapping a rating to a number
+is meant to move one way, and a piecewise one can turn round at a seam with every
+value it returns still a perfectly valid number. So the suite walks all nine of
+them end to end, over 0 to 100, including the one that must go DOWN
+(`pitchScatter`: more control, less scatter).
+
+Writing it found one more thing, in the oldest idiom in the file. **`c.spd || 50`
+reads a legitimate ZERO as average**, so the slowest man imaginable would run like
+a median one. Nobody on the roster is 0 (Lady Liberty is 1), which is exactly what
+makes it a trap rather than a fault: it goes off the year somebody writes a
+statue. `ratingOr(v, d)` is `||` with the hole taken out, and every rating is read
+through it.
+
+### A timer fires into its OWN play or not at all
+
+**Seen once, never reproduced, and real.** `Cannot read properties of null
+(reading '0')` turned up in one probe run and then survived about eight hundred
+forced pitches across three harness shapes without coming back. It was found by
+READING instead.
+
+A ground out schedules its throw window for `meetAt`, and the callback checked
+that `g.play` existed, not that it was the SAME play. A play can be torn down
+inside that window and a new one begun, and **if the new one is a HOME RUN its sim
+has no `meetUV` at all**, because nobody meets a ball in the seats. That is why it
+is so rare: it needs the replacement to be a homer, about one ball in play in
+twenty.
+
+The guard DRIVES the sequence rather than waiting for it, and pins the error text,
+so the fix is tied to the symptom actually observed: reading a homer's `meetUV[0]`
+produces exactly that string.
+
+This is the swing timer's own lesson ("the first check is against the GAME, not
+just the pitch") arriving at a **third** door, after `catchActive` and
+`throwActive`. Three schedulers carry the identity check now: the throw window,
+the catch window and the robbery.
+
+### Smoothness, measured, and one honest null result
+
+```
+node mythiball/check-frames.mjs                              desktop, which proves nothing
+node mythiball/check-frames.mjs 70 normal --phone --cpu=4    the run that matters
+```
+
+**It is a meter with bands, like `calibrate.mjs`, and the bands are generous on
+purpose.** Frame timing is noisy: the same build measured 1.01%, 1.25% and 1.71%
+of frames over 33ms in three consecutive runs. A band tight enough to catch a 10%
+regression would flap on nothing, and a check people learn to ignore is worse than
+no check. What it catches is the render doubling, a hitch appearing, or a leak.
+
+**Input is not the problem and the header records why nobody should re-measure
+it.** Press to the game ACTING is 0.20ms (p90 2.2ms); press to the next frame is
+21.3ms against a 20ms floor at that throttle. The swing paints on the very next
+frame, which is the best there is.
+
+**The first attempt at that number said 50ms and was measuring the harness.** The
+rAF watcher was armed only after the keypress had gone out through CDP and come
+back, so it reported the round trip. It is armed before the press now and every
+timestamp is taken in the page.
+
+**A headless desktop is the easiest case there is**, and it says 60fps mean with
+one frame over 33ms in 4203. The run that matters is a phone viewport with the CPU
+throttled to a mid range handset.
+
+| | mean | p95 | over 33ms | over 50ms |
+|---|---|---|---|---|
+| desktop | 16.7ms (60fps) | 18.5 | 0.02% | 0% |
+| phone, 4x throttle | ~20ms (50fps) | ~28 | ~1.3% | ~0.1% |
+
+**At 4x throttle the render simply costs most of the frame.** `drawField` runs at
+2.48ms mean, which is about ten of a sixteen millisecond budget once throttled.
+That is the honest capability, and further gain needs a cheaper `drawField`, not a
+hitch hunt.
+
+**WASTED WORK WAS FOUND AND REMOVED, AND IT DID NOT MAKE THE GAME SMOOTHER.** Both
+halves of that sentence are measured.
+
+- The log rebuilt all fourteen lines and forced a layout with `scrollHeight` on
+  every `refreshHud`, which runs on every ball, strike, out and base change. It
+  appends now, and `refreshHud` went from 7.96ms to 5.36ms on the throttled phone.
+- `runnerCache` was keyed on the raw float SCALE while the canvas it built depends
+  on the rounded pixel size, and the batter's walk up ramps that scale
+  continuously: a fresh 1600 fillRect build every frame of the walk, every at bat,
+  and an unbounded cache as well as a hitch.
+- `spriteCanvas` had no cache at all, so `refreshAtBatCard` rebuilt the batter's
+  48px avatar from scratch on every HUD refresh: the same four sprites came back
+  nine, eight, eight and five times in forty five seconds.
+
+One `spriteStore` now holds one built sprite per character, size and frame.
+Sprite builds fell from **305 a minute to 118, with zero repeats** (all that is
+left is first time warming). `spriteCanvas` hands back a COPY, because callers
+append what they get to the DOM and a node can only live in one place.
+
+**And the A/B says none of it moved the frame times.** Three runs each way:
+frames over 33ms came out 1.25 / 1.71 / 1.01 after against 1.35 / 1.20 / 1.42
+before, with p95 identical. **The 73% correlation between long frames and sprite
+builds was real and I misread it**: a build lands in a long frame because both
+cluster on the same events (a new batter means a new sprite AND a HUD rebuild AND
+a play starting), not because 1.5ms of building makes a 33ms frame. Keep the
+changes because they are strictly less work and they fix an unbounded cache; do
+not keep them because they made it smooth.
+
+#### The same null result, and the instrument fault that hid it twice
+
+The display bitmap was a fixed **1440x990 on every screen**, 1.43M pixels a frame.
+A 390px phone shows that canvas 358 CSS pixels wide, which at a device ratio of 3
+is **1074 device pixels, 0.79M**. So the game wrote 81% more pixels than the screen
+could show and the browser resampled the surplus away. That reads like an obvious
+win and it is worth **0.3ms a frame**.
+
+**The first A/B said 9.5ms and was measuring the warm up.** Three runs, A B A, came
+out 35.6 / 6.2 / 16.3 percent of frames over 33ms, and the whole gap was read as the
+fix when the series is simply a page getting faster as it runs. Interleaved and
+repeated, three runs an arm, the arms are 23.3 and 23.0 with **3.4ms of spread
+inside a single arm**. This is the sprite cache's lesson arriving a second time, from
+the other side: there the correlation was real and the cause was not, here the
+difference was real and the cause was the running order.
+
+**AND `setCPUThrottlingRate` ONLY SLOWS THE MAIN THREAD.** It throttles script, not
+rasterizing and not compositing, so a change that moves pixel COUNT rather than
+javascript is close to invisible to `check-frames.mjs` however many times it is run.
+A null result from that file is a null result **about the main thread** and never
+proof that a real phone would not care. That is recorded in its header so the next
+person does not re-run it expecting an answer it cannot give.
+
+#### It has never had one block size, and that is the reason it changed anyway
+
+Measured by reading a row of the stands back out of the bitmap and counting run
+lengths: at 1440 the 320 pixel world is blown up **4.5x**, which is 160 blocks four
+device pixels wide and 160 blocks five device pixels wide. The whole one-resolution
+pass exists so the field's grid and the sprites' grid read as ONE grid, and it never
+had a single block size to read. **Nothing failed and nothing could.** A ragged grid
+renders, reads and sells perfectly well.
+
+So `fieldBitmapWidth()` picks the smallest WHOLE multiple of the world that covers
+what the screen can show, between two and four:
+
+| screen | can show | bitmap | scale |
+|---|---|---|---|
+| 390 at ratio 3 | 1074 | 1280 | 4x |
+| 360 at ratio 2 | 658 | 960 | 3x |
+| 320 at ratio 2 | 640 | 640 | 2x |
+| desktop 1280 | 924 | 960 | 3x |
+| 1920 at ratio 2 | 2210 | 1280 | 4x (the ceiling) |
+
+Every screen is at or under the 1440 it replaced, so it is **never more work than
+before**, and every one now has one block width. The ceiling is the old `FIELD_K`
+floored to a whole number, which is what makes 4x the most anything gets.
+
+**The floor is 2x and it is not decoration.** Below it the blit is DOWNscaling the
+art, and the grid stops landing on whole pixels in the other direction.
+
+**`FIELD_K` is a ceiling now and nothing may read it as the live scale.** The crisp
+HUD pass replays queued type at `fieldK * PIX`, and `fieldK` is read off the bitmap
+every frame: the two are the same number only on a screen big enough to want every
+pixel, and a constant there would put the type in the wrong place everywhere else.
+
+**The sizer is asked every frame and writes almost never.** Resizing a canvas clears
+it, which is free in a loop that redraws every pixel every frame and ruinous if it
+ran every frame. It has to be in the loop rather than on a resize listener, because
+the canvas also changes size when the arena is first laid out and when a browser
+moves between screens, and only one of those three fires a resize.
+
+**`PIX` is read inside the function and not into a const beside it.** It is declared
+below `FIELD_W`, so a const there is read before its own line and throws on load,
+which takes the page rather than one number. Same TDZ as the football results screen.
+
+**The guard asserts the PROPERTY, never a width**, over six viewports: the scale is a
+whole number, the blit lands on the grid, and the bitmap is never over 1440. Pinning
+the numbers would make it a test of whichever devices somebody thought of. It reads
+the row **up in the stands**, where the field is flat colour, because a row through
+the sprites or the chalk has real edges in it and the run lengths would be the art
+rather than the grid.
+
+**A ROW IS NEVER PURE BLOCKS, AND ASKING FOR THAT WAS THE BUG.** The crisp pass
+replays queued type on the DISPLAY canvas at full resolution AFTER the blit, on
+purpose, so any row crossing it carries single pixels that owe nothing to the grid.
+The first draft demanded one run length and failed on five viewports of six,
+reporting 182 blocks of four and 24 of one as a ragged grid. It was reading the type.
+**A standalone version of the same scan passed, which is worse than failing**: its row
+happened to miss the words, so the check was a coin toss on where they landed. That is
+the third time an extractor in this repo has been wrong in silence.
+
+So the claim is about the BLIT: the most common run is the scale, and what is not a
+whole multiple of the scale is a sliver. Measured, off-grid pixels run **0% to 4.4%**
+of the row across the six, against a threshold of 8%.
+
+**What that still catches is the one thing only pixels can say**, which is
+`imageSmoothingEnabled` coming back on. Proved rather than assumed, by forcing it back
+on and re-reading: the modal run goes from 4 to **1** and the off-grid share to
+**57.2%**. A check that can only pass is worth nothing.
+
+### A comment is a claim, and most of them are checkable
+
+Auditing what the code says about itself has found **three real bugs** in this
+file: the throw meant to arrive "just after he does" that beat a safe runner by
+five seconds, the coach notes teaching a removed control, and the send odds that
+made speed a cost.
+
+A sweep of the strong claims (`always`, `never`, `the only`, `one source`, and any
+comment carrying a number) found **three more, and all three were the COMMENT
+lying about correct code**, which is the dangerous direction: the next person
+fixes the code to match.
+
+| the comment said | the code does |
+|---|---|
+| `a pitcher under CON 70` | reads `pitcher.pit` |
+| `windup for the first 65% of travel, release for the last 35%` | backwards on both halves: the windup is before the travel, the release is its first third |
+| `Rabid Dog always swings` | 0.95, deliberately, so he can still take ball four |
+
+The CON one matters most, and it is the exact confusion the bullpen note was
+written to kill: **CON is a batting stat** that stood in for an arm nobody had
+until every character got a pitching rating.
+
+**What the guard asserts is the half that can drift silently.** A checker cannot
+read English, but it can read a stat name out of the shipped source, and it can
+test a structural claim: every character has a sprite with every pose (there is no
+fallback path), and the higher seed hosts across thirty seeded brackets.
+
+### The run environment is 4.5 runs a nine, and four harnesses said otherwise
+
+```
+node mythiball/check-runs.mjs         4 games an arm, about half an hour
+node mythiball/check-runs.mjs 2 fast  a quicker read
+```
+
+**It is not broken and never was.** Measured through the real swing AI, with the
+game's own line score: **about 5.5 runs a team over nine innings** against the real
+game's 4.5. Six games, all going the distance: 3, 3, 5, 1, 6 and 4 in six innings
+each, 22 runs in 36 innings.
+
+**QUOTE THE POOL, NOT A RUN.** The first four games came out at exactly 4.5 and
+that was written down as the answer, because a sample landing on the real world's
+own number reads as confirmation. The next two came out at 7.5 on identical code.
+Per game the spread is 1.5 to 9.0 a nine, so four games is not enough to call a
+tenth of a run and this file should never carry one. What the sample IS good enough
+for is the only question that was being asked: whether scoring is broken. It is
+not.
+
+It took five attempts and the first four were instrument faults, so the checker
+exists to stop anybody spending a sixth.
+
+**THE FAULT THAT HID IT IS WORTH READING BEFORE WRITING ANY HARNESS HERE.** A
+fielding window nobody answers does NOT resolve as a neutral out. The grounder
+window's timeout is `setTimeout(() => finish(-1), duration + 20)`, and `t = -1` is
+further from ideal than `yellowHalf`, so it lands in the **error** branch: the
+batter reaches and every runner moves up. The fly window expires as a **miss** the
+same way. So a harness that presses nothing boots every routine ground ball and
+drops every catchable fly, all game, every game.
+
+Measured, that one omission WAS worth **27 to 32 runs a nine against 5.5**. It is
+the whole of the difference. (Those two figures are the old game, kept as history:
+once an ignored window became a single rather than the worst outcome it had, that
+arm fell to **15.8**. Re-measure it after anything that touches an expiry, because
+that is what it measures.) The samples that ended 0-18, 2-19 and 0-20 were not a bad
+bat and not a broken run environment, which are the two answers this was stuck
+between for months. They were **a defence with its hands tied**, which is a third
+thing neither of those names.
+
+**TWO HARNESSES AGREEING IS NOT EVIDENCE.** A tracker doing its own counting and
+the game's own line score both reported the same wrong answer, because they shared
+this defect rather than because it was true. What broke the tie was changing the
+harness rather than adding another one.
+
+**Only the CPU's runs count**, and the first draft of the report did not do that.
+The player's side never swings in these harnesses, so it scores zero by
+construction, and averaging a real team with a non-participant halves the answer:
+it printed 1.5 for a defence that had conceded 3.6. The CPU is the AWAY side,
+because `startGame` runs with `youHome` true.
+
+The robbery is deliberately left unanswered, because a miss there costs nothing by
+design and playing it would flatter the defence instead.
+
+**What this does to the send gate.** A runner scores from second on a single 24% of
+the time here against about 60% in the real game, and two thirds of that gap is the
+`spd >= 75` gate deciding who even tries. That read like a number waiting to be
+loosened, and the old note here said to measure the run environment before touching
+it. Measured: scoring is **already at or a little above** the real game's figure.
+
+**THAT GATE HAS SINCE BEEN LOOSENED ANYWAY, AND THE ARGUMENT IT OVERTURNS IS WORTH
+KEEPING.** The note used to finish "sending more runners pushes it further up rather
+than correcting anything", which is correct arithmetic and the wrong target: it is
+measuring an arcade game against MLB and calling the distance an error. A backyard
+game is a HIGH SCORING game, so a run environment a little over the real one is
+where this wants to sit, and the send gate was the one place it was quietly under.
+See the gate's own section above for what moved and what it cost. **The lesson is
+not "ignore the real figure"**: it is that the real figure is a landmark and not the
+target, and which side of it to sit on is a design call that has to be written down
+rather than inferred from how close a number is to 4.5.
+
+It needs more games than you think to see any of this: the per game spread is 1.5 to
+9.0 a nine, so a tuning move worth half a run is invisible under about twenty, which
+is what `--jobs` is for.
+
+**Re-measured after the gate came down and the contact retune landed: 6.2 a nine**,
+game by game 1.5 to 12.0 over eight games. Both changes push scoring up and both
+were meant to, so up is the result rather than a surprise; what it confirms is that
+neither ran away with it. Eight games cannot call a tenth of a run, so read that as
+"a little over where it was" and nothing finer.
+
+What `calibrate.mjs` independently says, and it agrees: the contact model is not
+broken either, at roughly 9 or 10 hits per 27 balls in play at both tiers.
+
+### Twenty games is the sample, so the harness runs them at once
+
+```
+node mythiball/check-runs.mjs 20 fast --jobs=4
+```
+
+A five inning game at Fast is about eight minutes of WALL CLOCK and **almost none of
+it is work**: the cost is the game's own beats, which are `setTimeout` waits. So
+twenty games serially is hours of a machine waiting, and the honest way to get the
+sample is to run several pages at once rather than to hurry any one of them.
+
+**A harness-only speed below Fast was the other option and is refused.** It would
+change the very timings the measurement runs through, which is how four of the five
+earlier attempts at this number went wrong. Four pages waiting on their own timers
+are four identical games; one page waiting on a shorter timer is a different game.
+
+**What has to be watched is the rAF watcher that plays the fielding windows.** It
+fires on a `setTimeout` at an exact millisecond, so a starved page could miss windows
+and quietly take the defence's hands away again, which is the exact defect this file
+exists to prevent and which reads as a broken run environment rather than as a broken
+harness. It is measured rather than assumed: **`windows played` is printed on every
+run**, so a starved run is visible in the report itself.
+
+**A serial and a parallel run must load the same build.** The pages read
+`mythiball/index.html` off disk at `goto` time, so an edit landing between the two
+arms compares two different games and reports it as a harness difference. An
+in-flight comparison was thrown away for exactly this reason.
+
+**Measured on four pages at once: 101 fielding windows played across 8 games**, so
+the watcher is not being starved. That is the number to read before trusting any
+run this file prints.
+
+**A RESTART HAS TO WAIT ON THE GAME, NOT ON A CLOCK.** Every SECOND game on each
+page came back `0 in 1` in the nobody-fields arm: a fresh game already over, at
+inning one, with nobody having scored. It waited a fixed 900ms after restarting
+and then read `over`, which in the window before the restart settles is still the
+FINISHED game's flag. The loop broke instantly and the box was then read off the
+new game, so a one inning nothing was filed as a real row, four times, inflating
+that arm.
+
+**It is the harness and not the game, and that was driven rather than assumed.**
+The obvious reading is the bug class this file already carries (a timer firing
+into a game that is not its own), and it is the wrong one: a probe that ends a
+game by mercy, by an ordinary finish and not at all, then restarts, gets a live
+game every time. Only the arm that MERCY-ends ever showed it, which is what made
+the game look guilty. Worth remembering before the next "0 in 1" is read as a
+mode that broke.
+
+### The swing's own curves, and what skill actually buys
+
+```
+node mythiball/check-bat.mjs
+```
+
+`calibrate.mjs` measures the pitch duel as RATES: how often a swing whiffs, fouls or
+puts the ball in play. What it cannot see is the SHAPE of the function underneath,
+and `swingGeometry` is pure, so it can be swept directly the way `sendOdds` is.
+
+It walks timing and aim across all three swing modes, asserts worse never helps,
+asserts the mode ordering (contact widens the window, power narrows it) and that a
+better CON both reaches further and makes better contact on the same imperfect
+swing. Then it drives 400 real swings a row through `resolveSwing` and reports
+against bands, with the error expressed **in units of the window** rather than in
+meter units, which is the fix for its own first draft: measured against the meter,
+three of four rows came back at 100% and the check certified nothing.
+
+**What it found is a property worth knowing before tuning any of this.** The timing
+window is close to BINARY: inside it you connect essentially always, outside it you
+mostly do not. So skill does not live in whether you connect, it lives in contact
+QUALITY, which falls 0.99 / 0.74 / 0.45 / 0.08 across perfect, sharp, ordinary and
+blind swings. That is the backyard shape rather than a fault, and it is why the
+whiff dial below moves contact quality very little.
+
+**Its monotonicity check passed on everything until it was proved to have teeth.**
+The first draft multiplied by a direction term in the wrong place and flagged every
+healthy curve, which is the safe failure; the version that ships was checked by
+reintroducing a seam.
 
 ## Segue, the setlist game
 
@@ -2074,6 +3615,84 @@ If it ever holds 171 rows again, the game has fallen back to
 must never be shown to a player as a fact about a real season. The dev banner
 said so and has come off, because saying it now would be false in the other
 direction.
+
+## Two people can share a name, and `name|sport` is not a person
+
+```
+node scripts/check-namesakes.mjs
+```
+
+`arcade/data.js` folds `former.js` and `supplement.js` onto the curated corpus,
+keyed on name plus sport. That key is not a person. The Browns' Hall of Fame
+tackle and a linebacker who played for four clubs in the 2010s were one record,
+so the tackle was handed the linebacker's college. Alma Mater asked where Joe
+Thomas went and marked Wisconsin wrong. **A player sent a screenshot.**
+
+**Nothing failed and nothing could.** The fold backfills empty fields, so it
+throws nothing, breaks no test, and leaves the pool exactly as healthy as before.
+The only symptom was the game stating a false thing about a real person, in the
+one place a quiz has to be trusted. Five famous players were affected: Joe
+Thomas, Josh Allen, Lamar Jackson, Michael Thomas and Chris Jones all wore
+somebody else's school.
+
+**A shared club proves sameness; a missing one proves nothing.** Sixteen pairs
+share a name and a sport with no club in common, and only nine are two people.
+The other seven are one person whose clubs are written two ways: Cleveland
+Indians against Cleveland Guardians, Brooklyn against Los Angeles Dodgers, the
+Washington Senators against the Minnesota Twins, plus Negro Leaguers carrying no
+club at all. So this is not a rename list, which would be three sports of
+franchise history to maintain before it could answer anything.
+
+**What separates the nine is POSITION**, every one: tackle against linebacker,
+quarterback against cornerback, first baseman against outfielder. So
+`samePerson()` calls it the same person unless the clubs, the numbers AND the
+position all disagree. Deliberately permissive, because the costs are not
+symmetric: a wrongly blocked backfill loses one player a college, a wrongly
+allowed one marks somebody's right answer wrong. **Do not normalize the position
+strings.** "Guard" against "Point Guard" is what keeps the two Dee Browns apart,
+and folding them together would re-merge them.
+
+It costs one known false negative. Ronnie Lott really did finish at Kansas City
+and really did play both corner and safety, so his former row is refused; he is
+carried by `stars.js`, so nothing about him moves.
+
+**Refusing is not the whole fix.** It left those five with no college and dropped
+them out of Alma Mater, which is honest and not finished. `supplement.js` carries
+the real ones, in rows that match their entity on club and position so the
+backfill is allowed through.
+
+**The same key contaminates two more front-facing things, and both are fixed at the
+point of use rather than upstream.**
+
+**The club printed under a player's name.** `primary.js` answers "which club is he
+of", and it is addressed by name, so it inherits every namesake; it counts off
+jersey stints that begin in 1990, so an older career comes back truncated. Randy
+Johnson's Seattle decade is not truncated in that file, it is ABSENT, so he looked
+like a man who debuted in Arizona in 1999 and came back a Diamondback. The header
+of `build-primary.mjs` used him as the example of what its floor cut prevents, and
+the floor never saw him. Rickey Henderson came back a Met and Roger Clemens a
+Yankee. Two fixes: the build now refuses a career whose stints start more than a
+decade after the decade list says it began, and `data.js` drops any `pt` that is
+not one of the clubs the record already has. The documented fallback is the first
+club, which is always a true thing to say.
+
+**The Number Game's questions.** A round there is one jersey stint joined to a
+curated player BY NAME, so a father's stint arrives under his son's card: what
+number did Patrick Ewing wear for the 2011 Hornets (Ewing Jr.), Tim Hardaway for
+the 2019 Mavericks, Antonio Brown for the 2003 Bills, seven years before he was
+drafted. 87 of 3124 rounds. Nobody plays outside their own career, so the decades
+the record already gives the player settle it without knowing who the other man
+is, and `_ownStint()` in `arcade/table/index.html` drops them before a round is
+built.
+
+`check-namesakes.mjs` builds the corpus twice, once as the site does and once
+with every namesake row deleted before the fold, and requires the two to be
+identical. **Two weaker versions came first and both were wrong.** Asking whether
+an entity HOLDS the namesake's value reported nine problems that were not:
+contemporaries share a decade, and `hp=0` only means neither was a high pick.
+Asking whether the fold MOVED a field then reported eighteen, because the
+supplement legitimately fills Joe Thomas in with Wisconsin. Attribution by value
+cannot settle it when two sources are allowed to agree.
 
 ## The arcade's "How to play" blocks
 

@@ -38,6 +38,19 @@
      the books balance     runs, walks and outs agree across the batting and pitching lines
      putting him on       the intentional walk fires late and close, and never anywhere else
      the tag              a caught fly moves a runner, and never on the third out
+     the dugout learns    a harder tier chases less and reads a one pitch caller
+     the robbery          a catchable hit can be taken away, and missing it costs nothing
+     doing nothing is never the worst  an ignored window costs the out, never more
+     the club remembers   a franchise carries its players' records, not only its win column
+     and the club changes them  a man develops at what he did here, and the league rises with you
+     the friendly button  Randomize hands you a mound, and a hand draft is told who is on it
+     the picture agrees   no throw beats a safe runner to the bag, and no run outlasts the sim
+     the walk back        a strikeout has a frame, and it belongs to the man it happened to
+     speed is never a cost  a faster runner is never waved home on worse odds than a slower one
+     a rating buys more   every curve a rating feeds moves one way, over the whole scale
+     the stale timer      a play's timer fires into its OWN play or not at all
+     one grid             the world is blown up by a whole number, so it has one block size
+     the code's own claims  what the comments assert about the code is true of it
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
      the doors open       and pressing one arrives where it says
@@ -545,7 +558,15 @@ async function main() {
         g.bases = [null, Object.assign({}, g.home.batters[3], { n: 'The Runner', spd: 90 }), null];
         g.sendRule = 'send';
         const realRandom = Math.random;
-        Math.random = () => 0.9;
+        /* ABOVE SEND.single.cap, NOT A NUMBER THAT HAPPENED TO FAIL. This
+           was 0.9, which beat the old curve's odds for a 90 speed runner
+           and no longer does: the arcade retune put him at .94, so he was
+           safe, no marker was written and three assertions failed on a
+           draw path that is perfectly fine. The subject here is the
+           MARKER, not the odds, so the roll has to be one no runner can
+           ever survive. sendOdds is clamped at .94, so anything above it
+           is thrown out whatever the curve is tuned to next. */
+        Math.random = () => 0.99;
         g.play = { kind: 'single', preBases: g.bases.slice(), runnerPaths: [null, [1, 2, 3], null], applied: false };
         applyHitMutation('single', currentBatter());
         Math.random = realRandom;
@@ -1647,10 +1668,25 @@ async function main() {
           }
           return _log(m, k);
         };
-        for (let i = 0; i < 16 && State.game && !State.game.over; i++) {
+        /* IT PITCHES UNTIL IT HAS A SAMPLE, rather than a fixed sixteen.
+           Whether a pitch is swung at or taken is a draw, and the dugout
+           takes about a quarter of them, so sixteen pitches carry roughly
+           a ONE IN ELEVEN chance of yielding fewer than two takes. It duly
+           came back 13 swings and 1 call on a build that had not touched
+           swing rate, having passed on the same code an hour earlier.
+
+           The threshold is not the thing to loosen: two calls really is
+           the least this section can say anything about, since what it
+           checks is WHEN a call lands. So the sample grows instead, and it
+           stops as soon as it has enough rather than always paying for the
+           worst case. */
+        const want = () => out.filter(r => r.ev === 'swing').length >= 5
+                        && out.filter(r => r.ev === 'call').length >= 3;
+        for (let i = 0; i < 40 && State.game && !State.game.over; i++) {
           if (playerIsBatting()) break;
           try { endAtBatCleanup(); State.game.pitch = null; throwPitch(); } catch (e) {}
           await new Promise(r => setTimeout(r, 1900));
+          if (i >= 11 && want()) break;
         }
         return out;
       });
@@ -1933,6 +1969,1365 @@ async function main() {
       await pg.close();
     }
 
+    /* ---- the dugout learns ---- */
+    {
+      console.log('the dugout learns');
+      /* DIFFICULTY ONLY EVER CHANGED THE PLAYER'S HALF. Speed, sweet spot
+         width and pitcher skill are all about swinging a bat, so somebody
+         who picked hard and went out to pitch met exactly the same dugout
+         they met on easy. The tier now also decides what that dugout
+         KNOWS: whether it chases, and whether it remembers.
+
+         Both are invisible by construction, which is why they are
+         measured rather than read. A dugout that stopped chasing
+         altogether, or one that read a pattern nobody was throwing,
+         renders perfectly and breaks nothing.
+
+         The two properties that matter are opposites of each other:
+         discipline must touch ONLY pitches out of the zone (a harder
+         dugout is not a quieter one, it is a pickier one), and the
+         pattern read must fire only on pitches somebody CHOSE. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);           /* the CPU bats, the player pitches */
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const realTimeout = window.setTimeout;
+        const realResolve = window.resolveSwing;
+        const realPlan = window.cpuBatPlan;
+        let last = null;
+        window.setTimeout = (fn) => { fn(); return 0; };
+        window.resolveSwing = (t, aim) => { last = { t, aim }; };
+        window.cpuBatPlan = () => 'normal';   /* a bunt is a decision already made */
+
+        const even = ['fastball', 'curveball', 'changeup', 'heat',
+                      'fastball', 'curveball', 'changeup', 'heat',
+                      'fastball', 'curveball', 'changeup', 'heat'];
+        const oneNote = new Array(20).fill('fastball');
+
+        /* One cell: N pitches at one spot, one tier, one book. */
+        const sweep = (tier, x, y, inZone, mix, N) => {
+          State.difficulty = tier;
+          g.mix = mix ? mix.slice() : null;
+          let swings = 0, offBy = 0, wide = 0;
+          for (let i = 0; i < N; i++) {
+            g.outs = 0; g.balls = 0; g.strikes = 0;
+            g.batterCtx.weakPitch = 'nothing';
+            g.batterCtx.readSaid = true;      /* the line is asserted on its own below */
+            const p = { pt: 'fastball', speed: 1.4, ideal: 0.5, arrive: 0.5,
+                        isStrike: inZone, loc: { x, y }, zoneAim: null,
+                        windupUntil: performance.now() - 1400,
+                        swung: false, resolved: false };
+            g.pitch = p; last = null;
+            scheduleCpuSwing();
+            if (last) {
+              swings++;
+              offBy += Math.abs(last.t - p.ideal);
+              wide += Math.hypot(last.aim.x - x, last.aim.y - y);
+            }
+          }
+          return { swing: 100 * swings / N,
+                   offBy: swings ? offBy / swings : 0,
+                   wide: swings ? wide / swings : 0 };
+        };
+
+        const N = 500;
+        const out = {
+          /* and a strike down the middle, which no tier may duck */
+          zoneEasy:    sweep('easy',   0, 0, true, even, N).swing,
+          zoneHard:    sweep('hard',   0, 0, true, even, N).swing,
+          /* memory: the same pitch, an honest book against a one note one */
+          mixed:       sweep('hard', 0, 0, true, even, N),
+          patterned:   sweep('hard', 0, 0, true, oneNote, N),
+          easyPattern: sweep('easy', 0, 0, true, oneNote, N),
+        };
+
+        /* DISCIPLINE IS A PROPERTY OF THE GAME, NOT OF THE DRAW. This
+           section takes whatever opponent randomOpponent handed it, and
+           the chase gap is not the same on all of them: swingProb is
+           clamped to a 0.05 floor, and diff.chase is an offset on top of
+           the batter's CON and the batting TEAM's own patience. A patient
+           team pushes the base against that floor, the hard tier clamps,
+           and the gap compresses.
+
+           Measured over all seventeen, the gap runs 8.4 to 23.0 with a
+           mean of 16.8, and the smallest belongs to the most patient team
+           in the game. At 500 pitches the standard error on that gap is
+           about 1.8 points, so a threshold of 8 against that one team is a
+           COIN TOSS. It came up 6.8 and failed, on a build that had not
+           touched the dugout at all.
+
+           So the sweep walks every team style instead. currentBattingTeam
+           Style reads State.opponent live, so swapping it needs no restart
+           and the batter is held fixed, which isolates the term that
+           actually moves: patience spans 0.22 across the league where the
+           CON term spans about 0.05. */
+        const savedOpp = State.opponent;
+        out.byTeam = OPPONENTS.map((o) => {
+          State.opponent = o;
+          const M = 200;
+          return { name: o.name,
+                   easy: sweep('easy',   1.9, 0, false, even, M).swing,
+                   med:  sweep('medium', 1.9, 0, false, even, M).swing,
+                   hard: sweep('hard',   1.9, 0, false, even, M).swing };
+        });
+        State.opponent = savedOpp;
+
+        window.setTimeout = realTimeout;
+        window.resolveSwing = realResolve;
+        window.cpuBatPlan = realPlan;
+
+        /* The reader itself, on books it can be handed. */
+        out.readEven = patternRead({ mix: even }, 'fastball');
+        out.readShort = patternRead({ mix: ['fastball', 'fastball', 'fastball'] }, 'fastball');
+        out.readAll = patternRead({ mix: oneNote }, 'fastball');
+        out.readOther = patternRead({ mix: oneNote }, 'curveball');
+
+        /* And what goes in the book: an arm nobody steers writes nothing. */
+        g.mix = null;
+        endAtBatCleanup(); g.pitch = null; throwPitch();
+        out.unsteeredWrote = (g.mix || []).length;
+        endAtBatCleanup(); g.pitch = null; throwPitch('curveball');
+        out.chosenWrote = (g.mix || []).length;
+        /* The window is a window, not a season. */
+        for (let i = 0; i < 60; i++) { endAtBatCleanup(); g.pitch = null; throwPitch('heat'); }
+        out.windowCap = (g.mix || []).length;
+
+        /* And the player is told, once for this hitter. THE LINE IS TIED
+           TO A SWING, on purpose: it sits below the take branch, because
+           what the read buys is how he squares the ball up and a hitter
+           who let the pitch go has not shown you anything. So the roll
+           is pinned here rather than left to chance, or this assertion
+           is a coin flip on whether he offered at it. */
+        g.mix = oneNote.slice();
+        State.difficulty = 'hard';
+        g.batterCtx.readSaid = false;
+        const realRandom = Math.random;
+        Math.random = () => 0.01;             /* he swings */
+        const before = g.log.length;
+        window.setTimeout = () => 0;
+        g.pitch = { pt: 'fastball', speed: 1.4, ideal: 0.5, arrive: 0.5, isStrike: true,
+                    loc: { x: 0, y: 0 }, zoneAim: null,
+                    windupUntil: performance.now(), swung: false, resolved: false };
+        scheduleCpuSwing();
+        const lines = (from) => g.log.slice(from).map(e => e.text).join(' ');
+        const said = lines(before);
+        const beforeAgain = g.log.length;
+        g.pitch.swung = false;
+        scheduleCpuSwing();
+        const saidAgain = lines(beforeAgain);
+        Math.random = realRandom;
+        window.setTimeout = realTimeout;
+        out.said = /sitting on/i.test(said);
+        out.saidTwice = /sitting on/i.test(saidAgain);
+        return out;
+      });
+      {
+        const teams = r.byTeam;
+        const gaps = teams.map(t => t.easy - t.hard);
+        const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+        /* ORDERING IS ASSERTED ON THE POOL AND ON THE EXTREMES, and the
+           first draft of this sweep got it wrong in a way worth recording,
+           because it was a fix that traded one flap for another.
+
+           Sweeping all seventeen teams meant dropping the per cell sample
+           from 500 to 200 to keep the suite's runtime sane. At 200 pitches
+           a rate near 5 to 20 percent carries a standard error of 2 to 3
+           points, so easy against MEDIUM is inside the noise: measured, The
+           Marauders came back 19.0/20.5/8.0 and The Kids Table 14.0/4.5/5.5
+           on a build that had not touched the dugout. Asserting a strict
+           three way order per team at that sample is measuring the sample.
+
+           The dial is global (diff.chase) and a team's patience is a
+           constant offset on top of it, so the claim belongs to the POOL.
+           What is still asserted per team is easy against HARD, which is
+           the full width of the dial and the one comparison that survives
+           at this sample, so a team whose style genuinely inverted it would
+           still be caught. */
+        const pooled = { easy: avg(teams.map(t => t.easy)),
+                         med:  avg(teams.map(t => t.med)),
+                         hard: avg(teams.map(t => t.hard)) };
+        const inverted = teams.filter(t => !(t.easy > t.hard));
+        ok(pooled.easy > pooled.med && pooled.med > pooled.hard,
+           'a harder dugout chases less',
+           `easy ${pooled.easy.toFixed(1)}, medium ${pooled.med.toFixed(1)}, hard ${pooled.hard.toFixed(1)}`
+           + ` over ${teams.length} teams`);
+        ok(inverted.length === 0,
+           'and no opponent turns the dial the other way',
+           inverted.map(t => `${t.name}: ${t.easy.toFixed(1)} easy vs ${t.hard.toFixed(1)} hard`)
+             .join(', ') || `${teams.length} teams`);
+        ok(avg(gaps) > 8,
+           'and the gap is one a player would feel, not a rounding error',
+           `mean ${avg(gaps).toFixed(1)} points over ${teams.length} teams,`
+           + ` low ${Math.min(...gaps).toFixed(1)}, high ${Math.max(...gaps).toFixed(1)}`);
+        ok(avg(teams.map(t => t.hard)) > 3 && teams.every(t => t.hard > 0),
+           'a hard dugout is still a dugout: it does not stop swinging at balls entirely',
+           `mean ${avg(teams.map(t => t.hard)).toFixed(1)},`
+           + ` quietest ${Math.min(...teams.map(t => t.hard)).toFixed(1)}`);
+      }
+      ok(Math.abs(r.zoneEasy - r.zoneHard) < 8,
+         'DISCIPLINE IS NOT SILENCE: a strike draws the same swings on every tier',
+         `easy ${r.zoneEasy.toFixed(1)}, hard ${r.zoneHard.toFixed(1)}`);
+      ok(r.readEven === 0, 'an honest mix reads as no pattern at all', String(r.readEven));
+      ok(r.readShort === 0, 'and three pitches is not yet a pattern', String(r.readShort));
+      ok(r.readAll > 0.9 && r.readOther === 0,
+         'a book of nothing but fastballs reads as a fastball pattern and no other',
+         `${r.readAll} / ${r.readOther}`);
+      ok(r.patterned.offBy < r.mixed.offBy * 0.9,
+         'a pitch the dugout is sitting on is timed closer',
+         `${r.patterned.offBy.toFixed(3)} against ${r.mixed.offBy.toFixed(3)}`);
+      ok(r.patterned.wide < r.mixed.wide * 0.97,
+         'and the barrel starts nearer it, which is what sitting on a pitch buys',
+         `${r.patterned.wide.toFixed(3)} against ${r.mixed.wide.toFixed(3)}`);
+      ok(r.easyPattern.offBy > r.patterned.offBy,
+         'an easy dugout barely notices the same pattern',
+         `${r.easyPattern.offBy.toFixed(3)} against ${r.patterned.offBy.toFixed(3)}`);
+      ok(r.unsteeredWrote === 0,
+         'AN ARM NOBODY STEERS WRITES NOTHING: there is no pattern in a random draw',
+         String(r.unsteeredWrote));
+      ok(r.chosenWrote === 1, 'a pitch somebody called goes in the book', String(r.chosenWrote));
+      ok(r.windowCap === 20, 'and the book is a rolling window, not a season', String(r.windowCap));
+      ok(r.said && !r.saidTwice,
+         'the hitter says he is sitting on it, once, so the caller knows to mix',
+         `${r.said} / ${r.saidTwice}`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the robbery ---- */
+    {
+      console.log('the robbery');
+      /* THE DEFENCE HAD NO PLAY TO MAKE. Both fielding windows this game
+         had fire only on a ball ALREADY labelled an out, so the only
+         thing either could do was lose it. A hit was automatic and the
+         fielding side watched it land. That is backwards from the sport
+         and from every baseball game there is: the thrill of fielding is
+         taking a hit away from somebody.
+
+         What made it fixable is that the sim already knew. Measured over
+         900 balls in play, 96 of 219 hits land where a fielder could
+         already be standing. The hit rate itself is about right, so that
+         is not the game playing wrong: it is the GEOMETRY and the
+         OUTCOME disagreeing, because the trajectory decides the result
+         at contact and the fielders are animated on afterwards.
+
+         Two properties carry the whole design and they pull opposite
+         ways, so both are asserted here. The gate is PHYSICS, never a
+         roll: you cannot rob what nobody could reach. And a miss costs
+         NOTHING: the hit stands exactly as it was, which is what makes
+         this a chance rather than a tax, and the opposite of what the
+         other two windows do. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);           /* the player is in the field */
+
+      /* One ball, aimed by hand. The trajectory is stubbed so the ball
+         goes where the test wants it rather than where a random spray
+         puts it; everything downstream of it is the real machinery. */
+      const setup = async (opts) => pg.evaluate((o) => {
+        const g = State.game;
+        g.outs = 0; g.bases = [null, null, null];
+        g.away.score = 0; g.home.score = 0;
+        window.__robOpened = 0;
+        const G = fieldGeom();
+        /* aim it at a real fielder's post, converted back through the
+           same projection the sim uses */
+        const post = fielderPosts(G, G.w).find(q => q.i === o.post);
+        const dx = (post.x - (G.cx - 14)) / G.r;
+        const dy = (post.y - G.cy) / G.r;
+        window.__realTraj = window.__realTraj || ballTrajectory;
+        window.ballTrajectory = () => ({ dx, dy, duration: 2200, arcH: o.arcH, rollK: 1 });
+        const _open = window.startRobWindow;
+        window.__realOpen = window.__realOpen || _open;
+        window.startRobWindow = (...a) => { window.__robOpened++; return window.__realOpen(...a); };
+        scheduleContactPlay(o.kind, currentBatter(), { q: 0.7 });
+      }, opts);
+
+      const restore = async () => pg.evaluate(() => {
+        if (window.__realTraj) window.ballTrajectory = window.__realTraj;
+        if (window.__realOpen) window.startRobWindow = window.__realOpen;
+      });
+
+      /* Wait for the window, then press it dead centre. */
+      const pressIt = async () => pg.evaluate(() => new Promise((done) => {
+        const t0 = Date.now();
+        const tick = () => {
+          const g = State.game;
+          if (g && g.play && g.play.catchActive && g.play.catchWindow) {
+            const w = g.play.catchWindow;
+            const at = w.startedAt + w.duration * 0.5;
+            const wait = Math.max(0, at - performance.now());
+            setTimeout(() => { document.body.click(); done(true); }, wait);
+            return;
+          }
+          if (Date.now() - t0 > 4000) return done(false);
+          setTimeout(tick, 20);
+        };
+        tick();
+      }));
+
+      const readOut = async () => pg.evaluate(() => {
+        const g = State.game;
+        return { outs: g.outs, onFirst: !!g.bases[0], onSecond: !!g.bases[1],
+                 onThird: !!g.bases[2], opened: window.__robOpened,
+                 kind: g.play ? g.play.kind : null,
+                 robbed: g.play ? g.play.robbed || null : null };
+      });
+
+      /* 1. a deep fly straight at the centre fielder, pressed */
+      await setup({ kind: 'double', post: 7, arcH: 200 });
+      const pressed = await pressIt();
+      await wait(pg, 900);
+      const robbed = await readOut();
+      /* EACH CASE WAITS OUT THE LAST ONE. A play keeps a finish timer
+         that nulls g.play and moves the batter along, so a second ball
+         hit 700ms later is torn down by the first one's own clock and
+         reports a window that never opened. That cost a round. */
+      await wait(pg, 2600);
+
+      /* 2. the same ball, left alone */
+      await setup({ kind: 'double', post: 7, arcH: 200 });
+      await wait(pg, 3000);
+      const ignored = await readOut();
+      await wait(pg, 1200);
+
+      /* 3. the same spot, no hang time: there is nothing to rob */
+      await setup({ kind: 'single', post: 7, arcH: 20 });
+      await wait(pg, 1400);
+      const grounder = await readOut();
+      await wait(pg, 1800);
+
+      /* 4. a ball hit well over the centre fielder's head. The first
+         draft of this case aimed into the gap with a two second hang
+         time and the gate correctly said YES, because a fielder can jog
+         to a ball that stays up that long. Out of reach is about time,
+         not about distance: same hang time, more than twice as deep. */
+      const nobody = await pg.evaluate(() => {
+        const G = fieldGeom();
+        const post = fielderPosts(G, G.w).find(q => q.i === 7);
+        const traj = { dx: (post.x - (G.cx - 14)) / G.r * 2.4,
+                       dy: (post.y - G.cy) / G.r * 2.4,
+                       duration: 2200, arcH: 200, rollK: 1 };
+        const p = { kind: 'triple', batter: currentBatter(), isOut: false, ball: traj,
+                    startedAt: performance.now(), preBases: [null, null, null],
+                    batterPath: batterPathIndices('triple'), runnerPaths: [null,null,null],
+                    applied: false };
+        const sim = buildPlaySim(p);
+        return { on: robberyOn(sim, traj, 'triple'), slack: sim.robSlack };
+      });
+
+      /* 5. and it never fires on the half the player is batting */
+      await restore();
+      await exhibition(pg, false);
+      await setup({ kind: 'double', post: 7, arcH: 200 });
+      await wait(pg, 3200);
+      const batting = await readOut();
+      await restore();
+
+      ok(pressed, 'the window opened and could be pressed', String(pressed));
+      ok(robbed.opened === 1, 'a catchable hit opens exactly one window', String(robbed.opened));
+      ok(robbed.outs === 1 && !robbed.onFirst && !robbed.onSecond,
+         'pressing it turns the hit into an out, and nobody is on base',
+         JSON.stringify(robbed));
+      ok(ignored.opened === 1 && ignored.outs === 0 && ignored.onSecond,
+         'MISSING IT COSTS NOTHING: the double is still a double',
+         JSON.stringify(ignored));
+      ok(grounder.opened === 0,
+         'a ball with no hang time offers no window: you cannot rob a grounder',
+         JSON.stringify(grounder));
+      ok(nobody.on === false,
+         'THE GATE IS PHYSICS: a ball into the gap nobody could reach offers nothing',
+         JSON.stringify(nobody));
+      ok(batting.opened === 0,
+         'and the side at bat is never offered its own robbery',
+         JSON.stringify(batting));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- doing nothing is never the worst ---- */
+    {
+      console.log('doing nothing is never the worst');
+      /* BOTH FIELDING WINDOWS SCORED AN EXPIRY AS THEIR WORST RESULT.
+         The grounder's timeout called finish(-1) and fell through the
+         distance maths: ideal sits near 0.55 and yellowHalf is 0.14, so d
+         came out about 1.55 and an ignored ground ball was a THROWING
+         ERROR, batter safe and every runner up an extra base. The comment
+         on that very line said "fielder holds it: batter safe", which is
+         the single. The comment was right and the code was not. The fly
+         window said `if (t < 0) outcome = 'miss'` outright, which is the
+         ball over his head, scored a TRIPLE.
+
+         So a player who did not yet know these controls existed gave up
+         an error on most ground balls and a triple on most fly balls, for
+         a whole game. Measured from the other side, a defence that never
+         pressed anything conceded 27 to 32 runs a nine against 5.5. After
+         this fix that same arm measures 15.8, so ignoring the defence
+         still costs about three times what playing it costs.
+
+         THE RULE IS THAT NOT REACTING IS NEVER WORSE THAN REACTING BADLY.
+         Pressing at the wrong moment is a mistake and keeps the worst
+         outcome, because you committed and got it wrong. Letting the bar
+         run out is passive: the fielder holds the ball, or never leaves
+         his feet, and the batter reaches without anybody else moving up.
+
+         It is DRIVEN rather than reasoned. The arithmetic above is what
+         was wrong in the first place, so this opens each window for real,
+         presses nothing, and reads what the game scores. */
+      const { pg, errors } = await fresh(browser);
+      const drive = async (which) => pg.evaluate(async (which) => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: false });   /* the CPU bats, you field */
+        await new Promise(r => setTimeout(r, 700));
+        const g = State.game;
+        let got = null;
+        const realThrow = window.resolveThrow, realCatch = window.resolveCatch;
+        window.resolveThrow = (o) => { got = o; };
+        window.resolveCatch = (o) => { got = o; };
+        endAtBatCleanup(); g.pitch = null;
+        if (which === 'throw') scheduleThrowMinigame('ground out', currentBatter());
+        else scheduleFlyCatchMinigame('fly out', currentBatter());
+        /* wait well past the window's own duration, touching nothing */
+        await new Promise(r => setTimeout(r, 4200));
+        window.resolveThrow = realThrow; window.resolveCatch = realCatch;
+        return got;
+      }, which);
+      const t = await drive('throw');
+      const c = await drive('catch');
+      ok(t === 'single', 'a grounder nobody throws: the fielder holds it, batter safe',
+         `scored "${t}"`);
+      ok(t !== 'error', 'and NOT a throwing error that moves every runner up');
+      ok(c === 'single', 'a fly nobody catches falls in front of him',
+         `scored "${c}"`);
+      ok(c !== 'miss', 'and NOT a triple over his head');
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the club remembers ---- */
+    {
+      console.log('the club remembers');
+      /* A CLUB HERE REMEMBERED ONLY ITS WIN COLUMN. It has a city, a
+         nickname, a park with an effect, a record book and a Retire the
+         club button, and all of that promises continuity; what actually
+         carried between years was W-L, because perPlayer is per season
+         and seasonLine keeps year, record, rank and the title. So you
+         could draft somebody in year one, watch him hit twelve, re-draft
+         him in year two, and the game had no memory that he had ever
+         played for you. That is what made a redraft read as a reset.
+
+         IDEMPOTENCE IS THE LOAD-BEARING PROPERTY and it is not obvious
+         why. The draft for year N+1 happens BEFORE startSeason folds
+         anything, so the numbers a player reads while picking would
+         otherwise be a year out of date. foldCareers is pure over
+         (careers, perPlayer, team, year) and never touches its argument,
+         so drawing a screen with it and starting a year with it give the
+         same answer. Get that wrong and every re-signed player's record
+         doubles, silently, on a screen nobody would think to check. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const team = ROSTER.slice(0, 9).map(c => c.k);
+        const bench = team[8];          /* on the club, never at the plate */
+        const star = team[0], arm = team[1];
+        const yearOne = {
+          year: 1, team: team.slice(), careers: {},
+          perPlayer: {
+            [star]: { hr: 7, hits: 20, ab: 60, sb: 3, rbi: 14 },
+            [arm]:  { hr: 0, hits: 4, ab: 20, pOuts: 39, pRuns: 8 },
+          },
+        };
+        const c1 = foldCareers(yearOne);
+        const c1again = foldCareers(yearOne);
+        /* year two keeps the star and lets the arm go */
+        const yearTwo = {
+          year: 2, team: [star, ROSTER[9].k].concat(team.slice(2, 9)), careers: c1,
+          perPlayer: { [star]: { hr: 5, hits: 18, ab: 55, sb: 1, rbi: 11 } },
+        };
+        const c2 = foldCareers(yearTwo);
+        return {
+          starY1: c1[star], benchY1: c1[bench],
+          idempotent: JSON.stringify(c1) === JSON.stringify(c1again),
+          untouched: JSON.stringify(yearOne.careers) === '{}',
+          starY2: c2[star], armY2: c2[arm],
+          line: careerLine(c2[star]),
+          armLine: careerLine(c1[arm]),
+          benchLine: careerLine(c1[bench]),
+        };
+      });
+      /* and what a drafter actually sees */
+      const draft = await pg.evaluate(() => {
+        const team = ROSTER.slice(0, 9).map(c => c.k);
+        State.pendingFranchise = {
+          year: 1, team: team.slice(), careers: {},
+          perPlayer: { [team[0]]: { hr: 7, hits: 20, ab: 60, sb: 3, rbi: 14 } },
+        };
+        State.mode = 'season'; State.screen = 'roster'; render();
+        const cards = [...document.querySelectorAll('.charcard')];
+        const first = cards.find(c => (c.querySelector('.name') || {}).textContent
+                                      === (ROSTER_BY_KEY[team[0]] || {}).n);
+        return { cards: cards.length,
+                 yours: cards.filter(c => c.querySelector('.quirk.yours')).length,
+                 firstHasLine: !!(first && first.querySelector('.quirk.yours')) };
+      });
+      const brandNew = await pg.evaluate(() => {
+        State.pendingFranchise = null; State.season = null;
+        State.mode = 'season'; State.screen = 'roster'; render();
+        return document.querySelectorAll('.quirk.yours').length;
+      });
+      ok(r.starY1 && r.starY1.years === 1 && r.starY1.hr === 7,
+         'a finished year folds into the club book', JSON.stringify(r.starY1));
+      ok(r.benchY1 && r.benchY1.years === 1 && !r.benchY1.ab,
+         'A YEAR IS COUNTED OFF THE ROSTER: a man who never batted still spent the season here',
+         JSON.stringify(r.benchY1));
+      ok(r.idempotent, 'FOLDING TWICE GIVES THE SAME ANSWER, which is what lets the draft screen read it',
+         String(r.idempotent));
+      ok(r.untouched, 'and it never mutates what it was handed', String(r.untouched));
+      ok(r.starY2 && r.starY2.years === 2 && r.starY2.hr === 12,
+         'a second year adds to the first', JSON.stringify(r.starY2));
+      ok(r.armY2 && r.armY2.years === 1,
+         'and a man you let go keeps his record and stops adding to it', JSON.stringify(r.armY2));
+      ok(/2 years here/.test(r.line) && /12 HR/.test(r.line),
+         'the line on his card reads as a career', r.line);
+      ok(/IP/.test(r.armLine), 'an arm is described in innings, not in at bats', r.armLine);
+      ok(r.benchLine === '1 year here',
+         'and a man with nothing to show gets no row of zeros pretending to be a record',
+         r.benchLine);
+      ok(draft.yours === 9 && draft.firstHasLine,
+         'the draft screen marks every man who wore the shirt', JSON.stringify(draft));
+      ok(draft.cards > 9 && draft.yours < draft.cards,
+         'and leaves the rest of the board alone', JSON.stringify(draft));
+      ok(brandNew === 0, 'a brand new franchise is unmarked, exactly as it always was',
+         String(brandNew));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- and the club changes them ---- */
+    {
+      console.log('and the club changes them');
+      /* THE FRANCHISE REMEMBERED ITS PLAYERS AND THEY NEVER CHANGED.
+         Nothing in the game read S.year at all, only the labels did, so
+         year ten was year one with a different number on the heading: a
+         club had memory, a ladder of unlocks and a record book, and no
+         arc.
+
+         Two halves fix it and neither works alone. A man who wore the
+         shirt is better at what he did in it, and the league sharpens with
+         your tenure. Development on its own is power creep; a rising
+         league on its own is a punishment for playing.
+
+         IT IS DERIVED FROM THE CAREER RECORD, NEVER STORED, so what is
+         asserted here is what a stored bump would get wrong: idempotence,
+         a first year club seeing nothing, a bound, and whose man it is. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const out = {};
+        const nine = ROSTER.slice(0, 9).map(c => c.k);
+        const bat = nine[0], arm = nine[1];
+        State.season = null; State.pendingFranchise = null;
+        /* the roster's OWN object comes back, not a copy: an exhibition
+           and a first year draft are byte for byte what they always were */
+        out.freshIdentity = developed(ROSTER_BY_KEY[bat]) === ROSTER_BY_KEY[bat];
+        const mk = (years) => ({
+          year: years, team: nine, perPlayer: {},
+          careers: (() => {
+            const c = {};
+            for (const k of nine) c[k] = { years, first: 1, last: years };
+            c[bat] = Object.assign({}, c[bat], { ab: 100 * years, hits: 31 * years, hr: 6 * years });
+            c[arm] = Object.assign({}, c[arm], { pOuts: 30 * years });
+            return c;
+          })(),
+        });
+        State.season = mk(3);
+        const raw = ROSTER_BY_KEY[bat];
+        const d1 = developed(raw);
+        out.batDev = devOf(bat); out.armDev = devOf(arm);
+        out.benchDev = devOf(nine[4]);          /* on the roster, never played */
+        out.sameTwice = JSON.stringify(devOf(bat)) === JSON.stringify(devOf(bat));
+        const d3 = developed(d1);
+        out.noStack = d3.pow === d1.pow && d3.con === d1.con;
+        out.rawUntouched = raw.pow === ROSTER.find(c => c.k === bat).pow;
+        /* bounded, and nobody pushed past the ceiling */
+        State.season = mk(40);
+        let maxGain = 0, over99 = 0, wentDown = 0;
+        for (const c of ROSTER) {
+          const dd = devOf(c.k); if (!dd) continue;
+          const dev = developed(c);
+          for (const s of ['pow', 'spd', 'con', 'def', 'pit']) {
+            if (dd[s]) maxGain = Math.max(maxGain, dd[s]);
+            if (dev[s] > 99) over99++;
+            if (dev[s] < c[s]) wentDown++;
+          }
+        }
+        out.maxGain = maxGain; out.over99 = over99; out.wentDown = wentDown;
+        /* the ceiling IS the diminishing return */
+        const top = ROSTER.slice().sort((x, y) => y.pow - x.pow)[0];
+        const mid = ROSTER.slice().sort((x, y) => Math.abs(x.pow - 60) - Math.abs(y.pow - 60))[0];
+        const hist = () => ({ years: 5, first: 1, last: 5, ab: 500, hits: 175, hr: 40 });
+        State.season = { year: 5, team: [top.k, mid.k], perPlayer: {},
+                         careers: { [top.k]: hist(), [mid.k]: hist() } };
+        out.topRoom = developed(top).pow - top.pow;
+        out.midRoom = developed(mid).pow - mid.pow;
+        out.topBase = top.pow; out.midBase = mid.pow;
+        /* the league rises and then stops rising */
+        out.edge = [1, 2, 4, 6, 10, 40].map(y => {
+          State.season = { year: y, team: nine, perPlayer: {}, careers: {} };
+          return +leagueEdge().toFixed(3);
+        });
+        /* and it belongs to YOUR side, against a lineup naming the same men */
+        State.season = mk(4);
+        State.team = nine.slice(); State.teamName = 'Testers';
+        State.opponent = { name: 'Mirror', color: '#888', roster: nine.slice() };
+        State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });
+        const g = State.game;
+        const mineSide = g.away.isYou ? g.away : g.home;
+        const theirs = g.away.isYou ? g.home : g.away;
+        const mineBat = mineSide.batters.find(c => c.k === bat);
+        const theirBat = theirs.batters.find(c => c.k === bat);
+        out.sidesDiffer = mineBat.con !== theirBat.con || mineBat.pow !== theirBat.pow;
+        out.theirsIsRaw = theirBat.con === ROSTER_BY_KEY[bat].con
+                       && theirBat.pow === ROSTER_BY_KEY[bat].pow;
+        return out;
+      });
+      ok(r.freshIdentity, 'no franchise: the roster object itself comes back untouched');
+      ok(r.batDev && r.batDev.con && r.batDev.pow, 'a bat who played develops', JSON.stringify(r.batDev));
+      ok(r.armDev && r.armDev.pit, 'an arm who pitched develops', JSON.stringify(r.armDev));
+      ok(!r.benchDev, 'a man who never played keeps his years and earns no rating');
+      ok(r.sameTwice, 'deriving it twice gives the same answer');
+      ok(r.noStack, 'and developing an already developed man does not stack');
+      ok(r.rawUntouched, 'the ROSTER entry itself is never mutated');
+      ok(r.maxGain <= 8, 'no rating gains more than the cap', `max ${r.maxGain}`);
+      ok(r.over99 === 0, 'nobody is pushed past 99', `${r.over99} over`);
+      /* A RATING MUST NEVER BUY YOU LESS, and this one did. A flat clamp
+         to 99 took a point OFF the roster's 100 power man for his years of
+         service. sendOdds' rule at a third door. */
+      ok(r.wentDown === 0, 'and nobody is made WORSE by his own career',
+         `${r.wentDown} ratings fell`);
+      ok(r.topRoom < r.midRoom, 'a man at the ceiling has less room than a middling one',
+         `${r.topBase} gained ${r.topRoom}, ${r.midBase} gained ${r.midRoom}`);
+      ok(r.edge[0] === 0, 'year one plays the league it always did');
+      ok(r.edge[1] > r.edge[0] && r.edge[3] > r.edge[1],
+         'the league sharpens with tenure', r.edge.join(', '));
+      ok(r.edge[5] === r.edge[4] && r.edge[5] <= 0.30,
+         'and plateaus rather than running away', `caps at ${r.edge[5]}`);
+      ok(r.sidesDiffer, 'your man and their man are not the same man');
+      ok(r.theirsIsRaw, 'the opponent draws the roster, never your development');
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the friendly button ---- */
+    {
+      console.log('the friendly button');
+      /* THE SAFE PATH WAS THE WORST PATH. Randomize is what somebody
+         presses who does not want to read sixty-eight cards, which makes
+         it the first thing a new player touches. It shuffled the ORDER
+         as well as the nine, and the first pick starts on the mound, so
+         the man it put there was a coin toss.
+
+         Measured over 4000 draws before the fix: 52% opened with an arm
+         under 55 PIT while the same nine held a median best of 74.
+         Ordering alone threw away 27 points, and the only symptom was a
+         bad first game with nothing on screen to explain it. Nothing
+         could have caught that, because a random draft is a valid
+         draft.
+
+         The nine are still random. Only the order changes. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(async () => {
+        const out = { runs: 0, mismatch: 0, weak: 0, starters: [] };
+        for (let i = 0; i < 40; i++) {
+          State.mode = 'exhibition'; State.screen = 'roster'; State.team = []; render();
+          const rand = [...document.querySelectorAll('button')]
+            .find(b => b.textContent === 'Randomize');
+          if (!rand) return { err: 'no Randomize button' };
+          rand.click();
+          await new Promise(r => setTimeout(r, 340));
+          const team = State.team.map(k => ROSTER_BY_KEY[k]);
+          if (team.length !== 9 || team.some(c => !c)) return { err: 'team was ' + team.length };
+          out.runs++;
+          const best = Math.max(...team.map(c => c.pit | 0));
+          out.starters.push(team[0].pit | 0);
+          if ((team[0].pit | 0) !== best) out.mismatch++;
+          if ((team[0].pit | 0) < 55) out.weak++;
+          /* and every man it picked has to be one you are allowed */
+          if (team.some(c => !isUnlocked(c.k))) return { err: 'drafted a locked character' };
+        }
+        return out;
+      });
+      /* And a HAND draft is left alone, but told what it is doing. The
+         rule lives behind the info dot, which is the right place for a
+         rule and the wrong place for a fact about this draft. */
+      const hand = await pg.evaluate(() => {
+        State.mode = 'exhibition'; State.screen = 'roster'; State.team = []; render();
+        const cards = [...document.querySelectorAll('.charcard')];
+        const open = ROSTER.filter(c => isUnlocked(c.k)).slice().sort((a, b) => a.pit - b.pit);
+        const worst = open[0], best = open[open.length - 1];
+        const find = (c) => cards.find(x => (x.querySelector('.name') || {}).textContent === c.n);
+        const read = () => [...document.querySelectorAll('div')].map(d => d.innerHTML)
+          .filter(t => /of 9 selected/.test(t)).pop() || '';
+        find(worst).click();
+        const one = read();
+        find(best).click();
+        const two = read();
+        return { one, two, worst: worst.n, best: best.n, bestPit: best.pit,
+                 order: State.team.slice() };
+      });
+      ok(!r.err, 'forty presses of the real button', r.err || '');
+      ok(r.runs === 40 && r.mismatch === 0,
+         'RANDOMIZE PUTS THE BEST ARM ON THE MOUND, every time',
+         `${r.mismatch} of ${r.runs} started somebody else`);
+      ok(r.weak === 0, 'so it never opens with an arm a player would have to lose with',
+         `${r.weak} under 55 PIT`);
+      ok(Math.min(...(r.starters || [99])) > 40,
+         'and the worst mound it can hand out is still a mound',
+         String(Math.min(...(r.starters || []))));
+      ok(/starting/.test(hand.one) && new RegExp(hand.worst).test(hand.one),
+         'a hand draft is told who its first pick puts on the mound', hand.one);
+      ok(new RegExp(hand.best).test(hand.two) && /gold/.test(hand.two),
+         'and is shown the better arm it already has, without being overruled',
+         hand.two);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the picture agrees with the book ---- */
+    {
+      console.log('the picture agrees');
+      /* buildPlaySim's own comment says a hit's throw "gets there just
+         after he does: that is what a hit looks like, and it is the
+         whole difference between this and an out". Nothing checked it,
+         and it was false on 66 of 420 plays.
+
+         TWO FAULTS, and finding the first made the second worse before
+         it got better, which is why this asserts a property and not a
+         number.
+
+         THE HORIZON. simRunPath reports `reached` as the moment a runner
+         touches his bag, and when the loop runs out first it reports the
+         END OF THE SIM instead. Home to third is 3.33 diamond units and
+         the slowest man runs 0.342 a second, so he needed about 9.9 and
+         a nine second horizon reported 9.12 every time. Everything
+         downstream trusts that number: the throw is timed against it,
+         the close play is read off it, deadAt comes from it.
+
+         THE ONE SIDED GUARD. lateThrow asked only that the fielder not
+         HOLD the ball too long and never that the throw not LAND too
+         early, so when the runner was further off than the hold allowed,
+         the launch clamped and the ball beat him to the bag by whatever
+         was left. There were THREE untimed throws in that branch and
+         each fix uncovered the next; the last one put the ball on third
+         five seconds before the runner, who was called safe standing
+         beside it.
+
+         What a player sees when this is wrong is a fielder holding the
+         ball on the bag while the runner jogs up and is safe. Nothing
+         throws. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const out = { plays: 0, raced: 0, early: [], timedOut: 0, worst: 0 };
+        const realTimeout = window.setTimeout; window.setTimeout = () => 0;
+        const realLog = window.addLog; window.addLog = () => {};
+        const realSchedule = window.scheduleContactPlay;
+        window.scheduleContactPlay = (kind, batter, info) => {
+          try {
+            const inf = Object.assign({}, info, { lefty: batsLeft(batter.k) });
+            const traj = ballTrajectory(kind, inf);
+            const isOut = kind === 'ground out' || kind === 'fly out' || kind === 'bunt out';
+            const p = { kind, batter, isOut, ball: traj, startedAt: performance.now(),
+                        preBases: [null, null, null], batterPath: batterPathIndices(kind),
+                        runnerPaths: [null, null, null], applied: false };
+            const sim = buildPlaySim(p);
+            out.plays++;
+            /* nobody's run may outlast the horizon */
+            for (const rr of sim.runners) {
+              if (rr.run.reached >= 0.12 + SIM_MAX_S - 0.05) out.timedOut++;
+            }
+            const bat = sim.runners.find(rr => rr.isBatter);
+            if (!bat) return;
+            for (const th of (sim.throws || [])) {
+              if (th.base !== bat.toIdx) continue;
+              out.raced++;
+              /* a SAFE runner must not be beaten to his own bag */
+              if (!isOut && th.arrive < bat.run.reached - 0.45) {
+                const by = bat.run.reached - th.arrive;
+                out.worst = Math.max(out.worst, by);
+                if (out.early.length < 5) out.early.push({ kind, by: +by.toFixed(2) });
+              }
+            }
+          } catch (e) { /* a play that cannot build is not a measurement */ }
+        };
+        for (let i = 0; i < 2400 && out.plays < 400; i++) {
+          try {
+            g.balls = 0; g.strikes = 0; g.outs = 0; g.bases = [null, null, null];
+            if (!g.batterCtx) g.batterCtx = { flags: {} };
+            g.batterCtx.weakPitch = 'nothing';
+            const loc = { x: (Math.random()*2-1)*0.9, y: (Math.random()*2-1)*0.9 };
+            g.pitch = { pt: ['fastball','curveball','changeup','heat'][i%4], speed: 1.4,
+                        ideal: 0.5, arrive: 0.5, isStrike: true, loc, zoneAim: null,
+                        windupUntil: performance.now()-1400, swung: false, resolved: false };
+            resolveSwing(0.5 + (Math.random()*2-1)*0.16,
+                         { x: loc.x + (Math.random()*2-1)*0.5, y: loc.y + (Math.random()*2-1)*0.5 });
+            if (i % 9 === 0) nextBatter();
+          } catch (e) { /* not a measurement */ }
+        }
+        window.scheduleContactPlay = realSchedule;
+        window.setTimeout = realTimeout; window.addLog = realLog;
+        /* and the longest leg anybody runs has to fit, stated directly */
+        const slow = ROSTER.slice().sort((a, b) => a.spd - b.spd)[0];
+        const longest = simRunPath(simRunnerPoints(0, 3), simRunnerSpeed(slow), 0.12, { delay: 0.18 });
+        out.longestLeg = +longest.reached.toFixed(2);
+        out.horizon = SIM_MAX_S;
+        return out;
+      });
+      ok(r.plays > 200, 'four hundred plays built', String(r.plays));
+      ok(r.raced > 50, 'and a good share of them put a throw at the batter\'s bag', String(r.raced));
+      ok(r.early.length === 0,
+         'NO THROW BEATS A SAFE RUNNER TO HIS OWN BAG',
+         `${r.early.length} did, worst by ${r.worst.toFixed(2)}s: ${JSON.stringify(r.early)}`);
+      ok(r.timedOut === 0,
+         'AND NO RUN OUTLASTS THE SIM: a reached time is an arrival, never a horizon',
+         `${r.timedOut} runs ran out of clock`);
+      ok(r.longestLeg < r.horizon,
+         'the slowest man on the roster gets from first to home inside it',
+         `${r.longestLeg}s against a ${r.horizon}s horizon`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the walk back ---- */
+    {
+      console.log('the walk back');
+      /* A STRIKEOUT IS THE MOST FREQUENT THING THAT HAPPENS TO A HITTER
+         and the picture never acknowledged it. The batter reverted to
+         his neutral stance and stood in it for the whole afterOut beat,
+         so the screen looked the same whether he had just been rung up
+         or was waiting on the next pitch.
+
+         The generator is parametric, so a pose is one authored offset
+         that all sixty eight inherit rather than sixty eight drawings.
+         It costs about 61KB of sprite table, which is what one pose
+         across this roster weighs.
+
+         TWO THINGS HERE WERE ONLY FINDABLE BY LOOKING, and a count of
+         distinct frames was happy through both. At an eight pixel drop
+         the arms hang PAST the shoes and cover them, so a slumping Zeus
+         reads as a man with no feet. And a one pixel leg sink, tried to
+         give the quadrupeds something, clipped every biped's shoes off
+         the bottom of the 50px box while moving exactly one of the seven.
+         The arms carry it at five, and a dragon taking a called third
+         strike is a dragon standing there. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const ks = Object.keys(V2_SPRITES);
+        const f = (k) => V2_SPRITES[k].f || {};
+        return {
+          chars: ks.length,
+          have: ks.filter(k => f(k).slump).length,
+          /* every batter frame is seen from behind, and this is one */
+          rows: ks.filter(k => f(k).slump &&
+                  f(k).slump.split('/').length === (f(k).back || '').split('/').length).length,
+          /* the ones with arms have to differ from the pose they came from */
+          distinct: ks.filter(k => f(k).slump && f(k).slump !== f(k).back).length,
+        };
+      });
+      const moment = await pg.evaluate(async () => {
+        Sound.muted = true; PREFS.coach = false; PREFS.cutscenes = false;
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'T';
+        State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: false });
+        await new Promise(r => setTimeout(r, 700));
+        endAtBatCleanup(); State.game.pitch = null;
+        const g = State.game;
+        g.strikes = 2; g.balls = 0;
+        recordOut('called strikeout', true);
+        const set = g.slumpUntil > performance.now();
+        endAtBatCleanup();
+        const cleared = !g.slumpUntil;
+        /* a ground out is not a strikeout and gets no slump */
+        g.slumpUntil = 0;
+        recordOut('ground out', false);
+        const onlyK = !g.slumpUntil;
+        /* and the phoenix walks rather than slumping: she was not struck out */
+        g.batterCtx = { flags: { rebirth: true } }; g.phoenixUsed = false;
+        g.strikes = 2; recordOut('swinging strikeout', true);
+        const phoenix = !g.slumpUntil;
+        return { set, cleared, onlyK, phoenix };
+      });
+      ok(r.have === r.chars, 'every character has a walk back frame',
+         `${r.have} of ${r.chars}`);
+      ok(r.rows === r.chars, 'and it is drawn from behind, like every other batter frame',
+         `${r.rows} of ${r.chars}`);
+      ok(r.distinct >= 60,
+         'the ones with arms to drop actually drop them',
+         `${r.distinct} of ${r.chars} differ from their own back frame`);
+      ok(moment.set, 'a strikeout sets the beat it is shown for', String(moment.set));
+      ok(moment.onlyK, 'a ground out does not: he did not strike out', String(moment.onlyK));
+      ok(moment.cleared,
+         'IT BELONGS TO THE MAN IT HAPPENED TO: the next hitter does not inherit his shoulders',
+         String(moment.cleared));
+      ok(moment.phoenix, 'and a rebirth walks to first rather than slumping', String(moment.phoenix));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- speed is never a cost ---- */
+    {
+      console.log('speed is never a cost');
+      /* IT WAS WORTH BEING SLOWER, at two exact speeds.
+
+         sendOdds decides how often a runner waved round actually scores,
+         and it was two separate curves rather than one curve with a
+         bonus on the end. Crossing the floor RESTARTED the odds from a
+         lower base, so a runner on 74 scored from second 47.7% of the
+         time and one on 75 scored 35.0%. On a double the step was worse:
+         54.3% at 84 against 30.0% at 85. Tom Sawyer is 84 and Huck Finn
+         is 86, so waving both round sent the faster man home less often.
+
+         Nothing could report it. Every number involved is a valid
+         probability and the play resolves correctly against whichever
+         one it is handed; the only symptom is that the fast man you
+         drafted for his legs keeps getting thrown out.
+
+         The assertion is MONOTONICITY over the whole scale rather than
+         the two numbers that were wrong, because a cliff can come back
+         at any floor somebody tunes later.
+
+         IT CALLS THE REAL FUNCTION NOW. This section used to carry a
+         hand-copied duplicate of the arithmetic, because sendOdds was a
+         local const inside applyHitMutation and there was no other way
+         to reach it. That is two copies of one answer, which is the
+         shape this repo keeps finding drifted: the copy would have gone
+         on passing its sweep on a curve the game had stopped playing.
+         It is at module scope in the page now and this reads it. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const drops = (leg) => {
+          const bad = [];
+          for (let s = 1; s <= 100; s++) {
+            if (sendOdds(s, leg) < sendOdds(s - 1, leg) - 1e-9) bad.push(s);
+          }
+          return bad;
+        };
+        /* WHAT THE WHOLE ROSTER ACTUALLY DOES, which is the half a
+           monotonicity sweep cannot see: a perfectly monotone curve
+           behind a floor nobody clears is a rule that never fires. */
+        const rate = (leg) => {
+          let score = 0, out = 0, held = 0;
+          for (const c of ROSTER) {
+            if (!sendClears(c.spd, leg)) { held++; continue; }
+            const p = sendOdds(c.spd, leg);
+            score += p; out += 1 - p;
+          }
+          return { score: score / ROSTER.length, out: out / ROSTER.length,
+                   held: held / ROSTER.length };
+        };
+        return {
+          singleDrops: drops('single'),
+          doubleDrops: drops('double'),
+          /* the two men who made it findable */
+          tom: sendOdds(84, 'single'), huck: sendOdds(86, 'single'),
+          tomD: sendOdds(84, 'double'), huckD: sendOdds(86, 'double'),
+          single: rate('single'), double: rate('double'),
+          /* a legitimate zero is a rating, not a missing one */
+          zero: sendOdds(0, 'single'), fifty: sendOdds(50, 'single'),
+          /* three points well under the ceiling, so a flat curve cannot
+             hide behind the cap the pair above now tolerates */
+          slowish: sendOdds(45, 'single'), quick: sendOdds(70, 'single'),
+        };
+      });
+      ok(r.singleDrops.length === 0,
+         'SPEED IS NEVER A COST from second on a single, at any rating',
+         `worse at ${JSON.stringify(r.singleDrops)}`);
+      ok(r.doubleDrops.length === 0,
+         'nor from first on a double, which is where the step was 24 points',
+         `worse at ${JSON.stringify(r.doubleDrops)}`);
+      /* NEVER LESS, WHICH IS THE BUG THAT HAPPENED, and not "strictly
+         more", which a ceiling makes impossible. The original defect was
+         a DECREASE: 86 scored 30.0% where 84 scored 54.3%, because the
+         two branches restarted the odds. Both men now sit on the .94 cap
+         and read the same, and that was briefly reported as a failure.
+
+         The cap is right and extending the curve to dodge it was measured
+         rather than argued: stretching the slope until nobody reaches the
+         ceiling takes scoring from second from 59% to 53% and pushes outs
+         at the plate from 12% to 18%. It makes the FAST runners worse,
+         which is the opposite of the point. A ceiling on how safe anybody
+         can be is what that is, and 19 of 68 sitting on it is fine.
+
+         So the pair asserts what it was written to catch, and the line
+         below it is what stops a flat curve passing on the technicality:
+         speed still has to buy something where there is room for it. */
+      ok(r.huck >= r.tom && r.huckD >= r.tomD,
+         'Huck Finn is two quicker than Tom Sawyer and never scores less',
+         `${r.huck.toFixed(3)} against ${r.tom.toFixed(3)}`);
+      ok(r.fifty > r.slowish && r.quick > r.fifty,
+         'and below the ceiling a faster runner really does score more often',
+         `spd 45 ${r.slowish.toFixed(3)}, spd 50 ${r.fifty.toFixed(3)}, spd 70 ${r.quick.toFixed(3)}`);
+      ok(r.zero < r.fifty,
+         'and a legitimate zero is the slowest man alive, not an average one',
+         `${r.zero.toFixed(3)} against ${r.fifty.toFixed(3)}`);
+      /* THE ARCADE RATE, over the real roster. It ran at 24% against
+         real baseball's 60% and this is a backyard game, so the target
+         is at or above the real figure rather than under half of it.
+         The band is wide because it is a property of the ROSTER as much
+         as of the curve: a pass that added six sprinters would move it
+         and should not fail. */
+      ok(r.single.score > 0.50 && r.single.score < 0.75,
+         'a runner scores from second on a single about as often as in the real game',
+         `${(100 * r.single.score).toFixed(0)}%, ${(100 * r.single.held).toFixed(0)}% held at third`);
+      /* AND IT IS NOT PAID FOR IN OUTS, which is the reason the floor
+         could come down this far. The runners who now score are the
+         ones who used to HOLD: thrown out at the plate moved 11% to
+         12% of chances. A version of this that bought the scoring with
+         outs would gut the mode and pass the line above. */
+      ok(r.single.out < 0.20,
+         'and it is not bought with runners gunned down at the plate',
+         `${(100 * r.single.out).toFixed(0)}% of chances end at the plate`);
+      ok(r.double.score > 0.30,
+         'first to home on a double is a real play rather than a rounding error',
+         `${(100 * r.double.score).toFixed(0)}%`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- a rating buys more ---- */
+    {
+      console.log('a rating buys more');
+      /* THE CLASS, not the instance. sendOdds was two curves joined at a
+         floor and one point of speed cost a runner up to 24 points of
+         scoring chance. Any function that maps a rating to a number is
+         meant to move one way, and a piecewise one can turn round at a
+         seam with every value it returns still perfectly valid.
+
+         So every such curve is walked over the whole scale. It found one
+         more thing when it was written, in the oldest idiom in the file:
+         `c.spd || 50` reads a legitimate ZERO as average, so the slowest
+         man imaginable would run like a median one. Nobody on the roster
+         is 0 (Lady Liberty is 1), which is what makes it a trap rather
+         than a fault: it goes off the year somebody writes a statue.
+         ratingOr is `||` with the hole taken out. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const man = (stat, v) => {
+          const c = Object.assign({}, ROSTER[0]);
+          c.pow = c.con = c.spd = c.def = c.pit = 50;
+          c[stat] = v;
+          return c;
+        };
+        const cases = [
+          ['simRunnerSpeed', 'spd', +1, (v) => simRunnerSpeed(man('spd', v))],
+          ['simFielderSpeed', 'def', +1, (v) => simFielderSpeed(man('def', v))],
+          ['swingReach normal', 'con', +1, (v) => swingReach(v, 'normal')],
+          ['swingReach contact', 'con', +1, (v) => swingReach(v, 'contact')],
+          ['swingReach power', 'con', +1, (v) => swingReach(v, 'power')],
+          ['tagChance third', 'spd', +1, (v) => tagChance(man('spd', v), 2)],
+          ['tagChance second', 'spd', +1, (v) => tagChance(man('spd', v), 1)],
+          /* THE ONE THIS SWEEP WAS WRITTEN FOR, and it could not be in
+             it until now: sendOdds was a local const inside
+             applyHitMutation, so the section above had to copy the
+             arithmetic out by hand and this one could not reach it at
+             all. It is at module scope in the page now, so the curve
+             whose seam started all of this is walked with the rest. */
+          ['sendOdds single', 'spd', +1, (v) => sendOdds(v, 'single')],
+          ['sendOdds double', 'spd', +1, (v) => sendOdds(v, 'double')],
+          ['robGreenHalf', 'def', +1, (v) => robGreenHalf(0, v)],
+          /* control is the one that must go DOWN as the rating goes up */
+          ['pitchScatter', 'pit', -1, (v) => {
+            const sc = pitchScatter(v, 0.5, 0);
+            return typeof sc === 'number' ? sc : (sc && (sc.r != null ? sc.r : sc.x));
+          }],
+        ];
+        const turns = [];
+        let swept = 0;
+        for (const [name, stat, dir, fn] of cases) {
+          let prev = null;
+          for (let v = 0; v <= 100; v++) {
+            const y = fn(v);
+            if (typeof y !== 'number' || !isFinite(y)) { turns.push({ name, v, bad: String(y) }); break; }
+            swept++;
+            if (prev != null && (y - prev) * dir < -1e-9) {
+              turns.push({ name, at: v, from: +prev.toFixed(4), to: +y.toFixed(4) });
+              break;
+            }
+            prev = y;
+          }
+        }
+        /* and the idiom itself: a zero rating is a rating */
+        const zeroRunner = simRunnerSpeed({ spd: 0 });
+        const oneRunner = simRunnerSpeed({ spd: 1 });
+        const missingRunner = simRunnerSpeed({});
+        return { turns, swept, curves: cases.length,
+                 zeroRunner, oneRunner, missingRunner };
+      });
+      ok(r.curves >= 11 && r.swept > 1000,
+         'every curve a rating feeds is walked end to end',
+         `${r.curves} curves, ${r.swept} points`);
+      ok(r.turns.length === 0,
+         'A BETTER RATING NEVER BUYS LESS, at any value of any of them',
+         JSON.stringify(r.turns));
+      ok(r.zeroRunner < r.oneRunner,
+         'A RATING OF ZERO IS A RATING: nought is slower than one, not average',
+         `${r.zeroRunner.toFixed(4)} against ${r.oneRunner.toFixed(4)}`);
+      ok(r.missingRunner > r.oneRunner,
+         'and a rating that is genuinely absent still falls back',
+         `${r.missingRunner.toFixed(4)}`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the stale timer ---- */
+    {
+      console.log('the stale timer');
+      /* SEEN ONCE, NEVER REPRODUCED, AND REAL.
+
+         "Cannot read properties of null (reading '0')" turned up in one
+         probe run and then survived about eight hundred forced pitches
+         across three harness shapes without coming back. It was found by
+         READING instead: the ground out schedules its throw window for
+         meetAt and the callback checked that `g.play` existed, not that
+         it was the SAME play. A play can be torn down inside that window
+         and a new one begun, and if the new one is a HOME RUN its sim
+         has no meetUV at all, because nobody meets a ball in the seats.
+
+         That is why it is so rare: it needs the replacement to be a
+         homer, which is about one ball in play in twenty.
+
+         The check is against THIS play now, which is the swing timer's
+         own lesson ("the first check is against the GAME, not just the
+         pitch") arriving at a third door, after catchActive and
+         throwActive. This scenario DRIVES the sequence rather than
+         waiting for it, and it pins the error text, so the fix is tied
+         to the symptom that was actually observed. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        /* the loaded gun: a homer's sim has no meeting point */
+        endAtBatCleanup(); g.pitch = null; g.bases = [null, null, null];
+        scheduleContactPlay('home run', currentBatter(), { q: 0.9 });
+        const homerSim = g.play.sim;
+        const homerMeetUV = homerSim.meetUV;
+        /* and the read the old code did produces the exact error seen */
+        let oldMsg = null;
+        try { const geo = fieldGeom(); simProject(geo, homerSim.meetUV[0], homerSim.meetUV[1]); }
+        catch (e) { oldMsg = e.message; }
+        await sleep(900);
+
+        /* now drive it: a ground out, replaced by a homer before its
+           throw window opens */
+        endAtBatCleanup(); g.play = null; g.pitch = null; g.bases = [null, null, null];
+        scheduleContactPlay('ground out', currentBatter(), { q: 0.5 });
+        const meetAt = g.play && g.play.sim ? g.play.sim.meetAt : null;
+        await sleep(110);
+        endAtBatCleanup(); g.play = null;
+        scheduleContactPlay('home run', currentBatter(), { q: 0.9 });
+        await sleep(Math.max(1300, (meetAt || 1) * 1000 + 500));
+        return { homerMeetUV, oldMsg, meetAt, alive: !!State.game };
+      });
+      ok(r.homerMeetUV === null,
+         'a home run has no meeting point: nobody meets a ball in the seats',
+         String(r.homerMeetUV));
+      ok(r.oldMsg === "Cannot read properties of null (reading '0')",
+         'and reading one is EXACTLY the error that was seen in the wild',
+         String(r.oldMsg));
+      ok(r.meetAt > 0.2, 'a ground out really does schedule its window into the future',
+         String(r.meetAt));
+      ok(r.alive && errors.length === 0,
+         'A TIMER FIRES INTO ITS OWN PLAY OR NOT AT ALL: the stale one is harmless',
+         errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- one grid ---- */
+    {
+      console.log('one grid');
+      /* THE WORLD IS BLOWN UP BY A WHOLE NUMBER. The bitmap used to be a
+         fixed 1440 wide on every screen, which blew the 320 pixel world
+         up by 4.5x: blocks four device pixels wide and blocks five device
+         pixels wide, in equal measure. The one-resolution pass exists so
+         the field's grid and the sprites' grid read as ONE grid, and it
+         never had a single block size to read.
+
+         Nothing failed and nothing could. A ragged grid renders fine.
+
+         SO THE ASSERTION IS THE PROPERTY, never a width. What each screen
+         should get depends on its own pixels, and pinning the numbers
+         would make this a test of the four devices somebody happened to
+         think of. Read the blit's own output back and ask whether it
+         produced ONE block width, whether the scale is a whole number,
+         and whether it is ever more work than the 1440 this replaced.
+
+         It is measured in the STANDS, up where the field is flat colour:
+         a row through the sprites or the chalk has real edges in it and
+         the run lengths would be the art rather than the grid.
+
+         A ROW IS NEVER PURE BLOCKS AND ASKING FOR THAT IS THE BUG. The
+         crisp pass replays queued type on the DISPLAY canvas at full
+         resolution after the blit, by design, so any row crossing it
+         carries single pixels that owe nothing to the grid. The first
+         draft demanded one run length and failed on five viewports out of
+         six, reporting 182 blocks of four and 24 of one as a ragged grid.
+         It was reading the type. A standalone version of the same scan
+         passed, which is worse than failing: its row happened to miss the
+         type, so the check was a coin toss on where the words landed.
+
+         So the claim is about the BLIT: the most common run is the scale
+         itself, and whatever is not a whole multiple of the scale is a
+         sliver. What that still catches is the thing only pixels can say,
+         which is imageSmoothingEnabled coming back on. Blur the blit and
+         the runs collapse to one, the modal run stops being the scale,
+         and the stray share goes to most of the row. */
+      const FIELD_W_CEIL = 1440;   /* the fixed bitmap this replaced, 960 x 1.5 */
+      for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
+                                        ['phone, denser', 360, 780, 2],
+                                        ['small phone', 320, 568, 2],
+                                        ['phone sideways', 844, 390, 3],
+                                        ['desktop', 1280, 900, 1],
+                                        ['desktop, retina', 1920, 1080, 2]]) {
+        const ctx = await browser.newContext({ viewport: { width: w, height: h },
+          deviceScaleFactor: dpr, isMobile: w < 900, hasTouch: w < 900 });
+        const pg = await ctx.newPage();
+        const errors = [];
+        pg.on('pageerror', e => errors.push(e.message));
+        await pg.goto(URL);
+        await pg.evaluate(() => localStorage.clear());
+        await pg.goto(URL);
+        await wait(pg, 400);
+        await pg.evaluate(() => {
+          Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+          State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+          State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
+          startGame({ mode: 'exhibition', youHome: true });
+        });
+        await wait(pg, 1200);
+        /* the WIDE field: an at bat draws the plate camera instead */
+        await pg.evaluate(() => { const g = State.game; if (g) { g.aiming = false; g.pitch = null; } });
+        await wait(pg, 400);
+        const r = await pg.evaluate(() => {
+          const cv = document.getElementById('field');
+          const c = cv.getContext('2d');
+          const d = c.getImageData(0, Math.round(cv.height * 0.30), cv.width, 1).data;
+          const lens = {}; let run = 1;
+          for (let i = 4; i < d.length; i += 4) {
+            const same = d[i] === d[i - 4] && d[i + 1] === d[i - 3] && d[i + 2] === d[i - 2];
+            if (same) run++; else { lens[run] = (lens[run] || 0) + 1; run = 1; }
+          }
+          lens[run] = (lens[run] || 0) + 1;
+          const all = Object.entries(lens).map(([k, v]) => [Number(k), v]);
+          const scale = cv.width / (FIELD_W / PIX);
+          /* pixels, not runs: one stray pixel must not weigh the same as
+             a forty pixel stretch of flat sky */
+          const px = all.reduce((a, [k, v]) => a + k * v, 0);
+          const stray = all.filter(([k]) => k % scale !== 0)
+                           .reduce((a, [k, v]) => a + k * v, 0);
+          return { w: cv.width, h: cv.height, world: FIELD_W / PIX,
+                   modal: all.slice().sort((a, b) => b[1] - a[1])[0][0],
+                   strayShare: stray / px,
+                   smoothing: cv.getContext('2d').imageSmoothingEnabled };
+        });
+        const scale = r.w / r.world;
+        ok(scale === Math.round(scale) && scale >= 2,
+          `${label}: the world is blown up by a whole number (${scale}x)`,
+          JSON.stringify({ bitmap: r.w, world: r.world, scale }));
+        ok(r.modal === scale && r.strayShare < 0.08,
+          `${label}: the blit lands on the grid, ${scale}px to a block`,
+          JSON.stringify({ modalRun: r.modal, scale,
+                           offGrid: (100 * r.strayShare).toFixed(1) + '% of the row',
+                           smoothing: r.smoothing }));
+        ok(r.w <= FIELD_W_CEIL && r.h <= Math.round(FIELD_W_CEIL * 660 / 960),
+          `${label}: never more pixels than the fixed bitmap it replaced`,
+          JSON.stringify({ w: r.w, h: r.h, ceiling: FIELD_W_CEIL }));
+        ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+        await pg.close(); await ctx.close();
+      }
+    }
+
+    /* ---- the code's own claims ---- */
+    {
+      console.log("the code's own claims");
+      /* A COMMENT IS A CLAIM AND MOST OF THEM ARE CHECKABLE. Auditing
+         them has found three real bugs in this file already: the throw
+         that was meant to arrive "just after he does" and beat a safe
+         runner by five seconds, the coach notes teaching a removed
+         control, and the send odds that made speed a cost.
+
+         A sweep of the strong ones found three more, and all three were
+         the COMMENT lying about correct code, which is the dangerous
+         direction: the next person fixes the code to match.
+
+           "against a pitcher under CON 70"  reads pitcher.pit
+           "windup for the first 65% of the pitch's travel, release for
+            the last 35%"                    is backwards on both halves
+           "Rabid Dog always swings"         swings 0.95, deliberately
+
+         What is asserted here is the half that can drift silently: the
+         structural claims. The prose is fixed in place and a checker
+         cannot read English, but it can read a stat name. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const out = {};
+        /* "Every character has a generated sprite, so this is the only
+           path." spriteCanvas calls heroSpriteCanvas with no fallback. */
+        out.missingSprite = ROSTER.filter(c => !hasHero(c.k)).map(c => c.k);
+        const keys = new Set(ROSTER.map(c => c.k));
+        out.orphanSprites = Object.keys(V2_SPRITES).filter(k => !keys.has(k));
+        const POSES = ['idle','run1','run2','back','backrun1','backrun2','windup',
+                       'release','swing','catch','throw','load','follow','kick',
+                       'ready','slump'];
+        out.shortPose = ROSTER.filter(c => {
+          const f = (V2_SPRITES[c.k] || {}).f || {};
+          return POSES.some(p => !f[p]);
+        }).map(c => c.k);
+
+        /* "the higher seed always hosts (the bracket puts home in the
+           higher slot already)" */
+        const bad = [];
+        for (let t = 0; t < 30; t++) {
+          const S = {
+            year: 1, team: ROSTER.slice(0, 9).map(c => c.k), teamName: 'A',
+            innings: 5, difficulty: 'medium', schedule: buildSchedule(),
+            results: [], playoffs: null, league: emptyLeague(), leagueDone: 0,
+            tiebreak: drawTiebreaks(), homeAt: buildHomeDates(),
+            perPlayer: {}, careers: {}, playerStats: {},
+          };
+          S.leagueSchedule = buildLeagueSchedule(S.schedule);
+          for (let i = 0; i < 7; i++) S.results.push({ win: Math.random() < 0.5, rf: 0, ra: 0 });
+          const P = seedPlayoffs(S);
+          for (const m of (P && P.semis) || []) {
+            if (m.home == null || m.away == null) { bad.push('null slot'); continue; }
+            if (m.home > m.away) bad.push(`home ${m.home} worse than away ${m.away}`);
+          }
+        }
+        out.seedTrouble = [...new Set(bad)].slice(0, 4);
+
+        /* THE STAT NAMES, read out of the shipped source. A comment that
+           names the wrong one is what sent a reader to CON for an arm. */
+        out.stealReadsPit = /pitcher\.pit/.test(cpuStealWants.toString());
+        out.stealSaysCon = /under CON/.test(cpuStealWants.toString());
+        return out;
+      });
+      ok(r.missingSprite.length === 0,
+         'CLAIM: every character has a generated sprite, so there is no other path',
+         JSON.stringify(r.missingSprite));
+      ok(r.orphanSprites.length === 0, 'and no sprite belongs to nobody',
+         JSON.stringify(r.orphanSprites));
+      ok(r.shortPose.length === 0,
+         'and every one carries every pose the drawer can ask for',
+         JSON.stringify(r.shortPose));
+      ok(r.seedTrouble.length === 0,
+         'CLAIM: the higher seed always hosts, over thirty seeded brackets',
+         JSON.stringify(r.seedTrouble));
+      ok(r.stealReadsPit && !r.stealSaysCon,
+         'the steal reads an ARM rating and no longer says CON, which is a bat rating',
+         `readsPit ${r.stealReadsPit}, saysCon ${r.stealSaysCon}`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
     /* ---- the coach tells the truth ---- */
     {
       console.log('the coach tells the truth');
@@ -1970,6 +3365,14 @@ async function main() {
           /* the pitching notes name buttons the strip really has */
           throwLabel: !!document.querySelector('#throw-btn'),
           teachesGrid: /on the grid/i.test(pitch),
+          /* THE FIELDING HALF. Three windows can open once the ball is
+             hit and the notes named none of them for as long as they
+             existed. The ring is a real thing HERE, unlike in the
+             batting camera above, so naming it is the truth rather than
+             the old mistake: drawCatchRing is what draws it. */
+          namesFielding: /\bwindow\b/i.test(pitch) && /\bring\b/i.test(pitch),
+          saysRobIsFree: /nothing is lost|costs nothing/i.test(pitch),
+          drawsCatchRing: typeof drawCatchRing === 'function',
         };
       });
       ok(!r.drawsRing, 'the batting camera draws no closing ring', String(r.drawsRing));
@@ -1979,6 +3382,12 @@ async function main() {
          'the notes still say "click anywhere"');
       ok(!r.teachesGrid, 'the pitching notes do not name a grid that was removed',
          r.pitch.slice(0, 120));
+      ok(r.namesFielding, 'they tell the player the ball is theirs once it is hit',
+         r.pitch.slice(-160));
+      ok(r.drawsCatchRing, 'and the ring they name is one the game really draws',
+         String(r.drawsCatchRing));
+      ok(r.saysRobIsFree, 'and that missing a robbery costs nothing, or nobody presses it',
+         r.pitch.slice(-160));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

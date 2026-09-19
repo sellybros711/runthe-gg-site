@@ -1022,6 +1022,23 @@ ARM_OFF = {
     'ready':   (4, 4),
     # the kick for a body that does not draw raised arms: hands up together
     'kick':    (-4, -4),
+    # THE WALK BACK. A batter who strikes out had no frame: he reverted to
+    # the neutral stance and stood in it for the whole afterOut beat, so
+    # the most frequent thing that happens to a hitter was the one thing
+    # the picture never acknowledged. Both arms hang dead and low, which
+    # is the deepest drop in this table and reads against `ready` (4, 4),
+    # the only other pose with the hands down. The head cannot drop: `cy`
+    # is per archetype and set after the body, so a slumped skull would
+    # mean threading the pose through every archetype's head. The arms
+    # carry it, and at the plate camera's 5.2x the batter is the biggest
+    # thing on screen, so they carry it well enough.
+    #
+    # FIVE, NOT EIGHT, and the difference was only visible by looking. At
+    # eight the arms hang PAST the shoes and cover them, so a slumping
+    # Zeus reads as a man with no feet standing on two white posts. The
+    # count of distinct frames was happy either way. Five is below
+    # `ready`'s (4, 4) and still clear of the floor.
+    'slump':   (5, 5),
 }
 LEG_OFF = {
     'run1':    (-1, 1),
@@ -1040,6 +1057,17 @@ LEG_OFF = {
     # the one that makes the delivery a motion rather than two poses.
     'kick':    (-7, 0),
     'ready':   (-1, -1),
+    # NO LEG MOVEMENT, and that is a decision made by LOOKING at it. A one
+    # pixel sink was tried, to give the quadrupeds something (an arm
+    # offset leaves them byte for byte identical to `back`, the same
+    # reason raised_arms skips them). It moved exactly one of the seven
+    # and it CLIPPED THE FEET on everybody else: the legs run to the
+    # bottom of the 50px box already, so a push down takes the shoes off
+    # the canvas and a slumping Zeus stands on two bare posts. Nothing
+    # threw and no count noticed, because the frame was still distinct.
+    # The arms carry the pose for the 61 that have them, and a dragon
+    # taking a called third strike is a dragon standing there.
+    'slump':   (0, 0),
 }
 
 
@@ -3617,9 +3645,14 @@ SIGNATURES = {
 def build(spec, pose='idle', key=None):
     cv = Canvas()
     # The swing is seen from behind, like everything a batter does.
-    back = pose.startswith('back') or pose in ('swing', 'load', 'follow')
+    # The slump is a BATTER's frame and every batter frame here is seen
+    # from behind, so it belongs with the swing and not with the fielding
+    # poses. Drawn from the front it would be a man facing the camera with
+    # his arms down, which is the idle.
+    back = pose.startswith('back') or pose in ('swing', 'load', 'follow', 'slump')
     body_pose = {'back': 'idle', 'backrun1': 'run1', 'backrun2': 'run2',
-                 'swing': 'swing', 'load': 'load', 'follow': 'follow'}[pose] if back else pose
+                 'swing': 'swing', 'load': 'load', 'follow': 'follow',
+                 'slump': 'slump'}[pose] if back else pose
     sig = SIGNATURES.get(key, {})
     if back:
         # The archetype is drawn with its FRONT features stripped: the
@@ -3991,7 +4024,7 @@ SPECS = {
 # routine answered with idle because no such frame existed.
 POSES = ('idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2',
          'windup', 'release', 'swing', 'catch', 'throw',
-         'load', 'follow', 'kick', 'ready')
+         'load', 'follow', 'kick', 'ready', 'slump')
 
 
 # ------------------------------------------------------------------ faces

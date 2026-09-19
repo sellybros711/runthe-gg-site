@@ -306,7 +306,21 @@ const CONSTANTS = {
    * rating 103, 16 and 16 at 110) while titles went 2.8% -> 5.3% and 5.8% -> 10.8%.
    */
   ELITE_FLOOR: 95,
-  ELITE_FULL: 105,
+  /*
+   * 103 RATHER THAN 105, AND THE REASON IS THE SAME ONE THREE CONSTANTS BELOW SHARE.
+   *
+   * ELITE_FULL is where roster strength is worth as much as a 17-0 record, so it is the top
+   * of the band and it has to be a rating the game can actually produce. Measured over 3000
+   * drafted rosters: p90 93.7, p99 99.3, p999 103.0, max 104.9. At 105 the vote was fully
+   * earned by nothing, and the best roster anybody drafts collected about 99% of it while a
+   * 97 collected a fifth. Anchored at the top of the real ladder instead, so a genuinely
+   * elite roster gets the elite treatment rather than most of it.
+   *
+   * THE PERFECT SEASON IS STILL UNTOUCHED BY CONSTRUCTION, for the reason the block above
+   * gives: the home field share takes whichever of record and strength is HIGHER, and at
+   * 17-0 that is always the record. This moves what an elite roster with a LOSS gets.
+   */
+  ELITE_FULL: 103,
   /*
    * ─── THE ORDINARY SUNDAY, READ THE SAME WAY AS THE LAST GAME ────────────────
    *
@@ -332,7 +346,13 @@ const CONSTANTS = {
   CLASS_DROP: 0.06,
   CLASS_BREAK_EDGE: 1.020,
   CLASS_MID: 95,
-  CLASS_TOP: 115,
+  /* 103, NOT 115, and this is the one that was furthest out. The stretch above CLASS_FULL
+     is a SEPARATE segment from the fitted one (see weeklyEdgeBand: 95 to 100 is at(rating)
+     and nothing here touches it), and it was written to keep paying up to 115 on the belief
+     that "rosters run fifteen points past" CLASS_FULL. They do not: the best of 3000 reads
+     104.9 and the 1-in-1000 reads 103.0, so the segment was never more than a fifth earned
+     and a 101 roster collected 0.004 of the 0.06 on offer. */
+  CLASS_TOP: 103,
   CLASS_TOP_EDGE: 0.06,
   ELITE_BYE_RATING: 100,
   ELITE_BYE_WINS: 13,
@@ -356,7 +376,11 @@ const CONSTANTS = {
    * where the title game stops being uphill.
    */
   ELITE_POLISH: 0.02,
-  ELITE_POLISH_FULL: 105,
+  /* Same anchor as the two above, for the same measured reason. Kept tiny on purpose: this
+     one rides on weeklyEdge and inherits its damper, so it pays on ordinary Sundays and
+     almost nothing against the contenders, which is why sweeping it alone moved a 95+ win
+     rate by 0.2 points and it is not the lever anybody should reach for. */
+  ELITE_POLISH_FULL: 103,
 
   /*
    * ─── WHAT THE LAST GAME ASKS OF YOUR ROSTER ─────────────────────────────────
@@ -5400,7 +5424,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 48;
+const ENGINE_API_VERSION = 51;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -5644,6 +5668,142 @@ function bossSimCreate(roster, chemistryMultiplier, boss, oppRow, leagueAvgAllow
     pos: null, cur: null, pending: null, over: false, won: null,
     firstReceiver: null,
   };
+}
+
+/*
+ * ─── A FULL TEAM PLAYOFF GAME, PLAYED FORWARD ────────────────────────────────────────
+ *
+ * The same machine as the boss game: bossSimAdvance and bossSimResolve are pure over the sim
+ * object, so a sim built here is driven by them unchanged and stops at the same two real
+ * calls, fourth down and the two point try.
+ *
+ * WHAT IT CANNOT BORROW IS THE SCORING, and that is the whole reason this function exists
+ * rather than a flag on bossSimCreate. A boss sim models YOUR OFFENCE against THEIR scoring
+ * rate: `themInternal` is the opponent's own points and nothing the player drafted touches
+ * it. That is right for a boss, where the roster is six men on one side of the ball, and it
+ * throws away half of Full Team, where what the other team scores is what your six defenders
+ * allow. Run as-is it would have played the twelve man mode as a six man one and nothing
+ * would have looked wrong on screen.
+ *
+ * SO THE TWO EXPECTATIONS ARE resolveGameFull's OWN, term for term: the offence is its raw
+ * production times talent, chemistry, its own structure and the opponent's defensive
+ * modifier; the opponent's is their scoring rate suppressed by your defence through
+ * fullSuppression, and divided by the home field advantage exactly as the resolver divides
+ * it. A game played here and a game resolved there are the same team against the same
+ * opponent, so the playoff a player watches is the playoff the mode is balanced for.
+ *
+ * THE COACH COMES WITH IT AND THE PLAN COMES IN HALF.
+ *
+ * `extra` is resolveGameFull's own `{ coach, plan }`, because a hired coach plays the
+ * playoffs too and a roster that is worth more with him has to be worth more here. His two
+ * tilts land on the two raw sums, exactly where the resolver puts them.
+ *
+ * THE PLAN IS THE INTERESTING HALF, and only two of its three axes belong in these
+ * expectations:
+ *
+ *   TEMPO      carried. Nothing here models playing fast, so the multiplier is the whole of
+ *              it, the same as in the resolver.
+ *   PRESSURE   carried, on their score. Nothing here models a blitz either.
+ *   FOURTH     NOT carried, and that is the whole point of this file. In the resolver
+ *              FOURTH_MEAN IS going for it, because there are no fourth downs to play. Here
+ *              there are: the sim stops at the real ones and somebody answers. Adding the
+ *              multiplier on top would pay a team twice for the same aggression, once as a
+ *              flat bonus and once in the plays it actually ran.
+ *
+ * The two SWING terms are left out for the same reason read the other way. They widen the
+ * resolver's sampling, and this sim's spread comes from drives, turnovers and kicks rather
+ * than from one draw.
+ */
+function fullSimCreate(roster, chemistryMultiplier, oppRow, leagueAvgAllowed,
+  advantage = 1, constants = CONSTANTS, cal = null, extra = null) {
+  const { off, def } = splitSides(roster);
+  const t = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
+  const coach = coachEffect(extra && extra.coach);
+  const plan = normalizePlan(extra && extra.plan);
+  const tempo = 1 + PLAN.TEMPO * plan.tempo;
+  const rawOff = off.reduce((s, p) => s + (p.ppr_ppg_mean || 0), 0) * t * coach.off;
+  const rawDef = def.reduce((s, p) => s + (p.ppr_ppg_mean || 0), 0) * t * coach.def;
+  const defMod = oppRow.pts_allowed_mean / leagueAvgAllowed;
+  const yourInternal = rawOff * chemOff(chemistryMultiplier)
+    * rosterStructure(off).multiplier * defMod * tempo;
+  const defenseTotal = rawDef * chemDef(chemistryMultiplier)
+    * defenseStructure(def).multiplier;
+  const themInternal = oppRow.pts_scored_mean * constants.SCALE
+    * fullSuppression(defenseTotal, constants) * tempo
+    * (1 - PLAN.PRESSURE_MEAN * plan.pressure) / (advantage || 1);
+  const youExp = bossExpectedPoints(yourInternal, cal);
+  const themExp = bossExpectedPoints(themInternal, cal);
+  const per = BOSS_SIM.DRIVES_PER_TEAM;
+  return {
+    you: 0, them: 0,
+    youExp, themExp,
+    muYou: bossFitMu(Math.max(0.3, youExp / per)),
+    muThem: bossFitMu(Math.max(0.3, themExp / per)),
+    /* The read belongs to the boss screen's scout and there is none here. Kept on the object
+       because bossSimCreate's shape is what bossSimAdvance reads, and a missing field is how
+       two sims that are meant to be one thing quietly stop being it. */
+    read: null, readRight: false, readTrap: false,
+    clock: 0, drives: [],
+    pos: null, cur: null, pending: null, over: false, won: null,
+    firstReceiver: null,
+  };
+}
+
+/*
+ * ─── WHAT THE COACH DOES WHEN THE SIM STOPS ──────────────────────────────────────────
+ *
+ * A hired coach was paid to call the game, so he answers the same two questions the player
+ * is asked: the fourth down and the two point try. This is that answer, and it takes the
+ * decision the sim handed out plus the plan the hire wrote, and NOTHING ELSE. Not the sim:
+ * everything a call needs is already on the decision, and a policy that could reach into the
+ * sim could reach the numbers the outcome is about to be drawn from.
+ *
+ * IT DRAWS NO RANDOM NUMBER, and that is the property that makes the screen honest. The
+ * page prints what he decided BEFORE bossSimResolve plays it, so a call that read the dice
+ * first would be a coach who already knew. It is also what lets a reader check him: the
+ * situation is on screen and the rule is the same every time.
+ *
+ * WHICH FOURTH DOWNS EVEN REACH HERE is bossGenuineFourth's rule, not this one: short
+ * yardage in plus territory, or any fourth down late and behind. Everything else the sim
+ * settles itself with a kick or a punt, so this is only ever asked the interesting ones and
+ * a conservative coach answering "kick" to all of them is still playing the mode.
+ *
+ * THE FOURTH DOWN AXIS IS A REACH IN YARDS, which is the plainest thing it could be and the
+ * only shape that makes the three settings visibly different on screen:
+ *
+ *   go for it   goes on 4th and 3 or less
+ *   standard    goes on 4th and 2 or less
+ *   punt it     never goes here at all
+ *
+ * The one thing every coach does is keep the ball when the clock is against him and three
+ * points cannot save the game. A man who kicks a field goal to go from seven down to four
+ * down with two minutes left has taken the loss, whatever his philosophy is.
+ *
+ * THE TWO POINT CHART IS LATE AND SHORT. `m` is the margin with the touchdown already
+ * banked and the try not yet taken, so kicking makes it m+1 and the two makes it m+2. The
+ * six numbers below are the ones where that difference changes how many scores the game is,
+ * and all six are only true once there is no time to fix it, which is why the chart is
+ * gated on the fourth quarter. Before that a point is a point. An aggressive coach also
+ * takes the two to TIE, at any point in the game, because that is the one the chart is
+ * least controversial about and it is the difference a player should be able to see.
+ */
+const TWO_POINT_CHART = [-10, -5, -2, 1, 4, 5];
+function fullCoachCall(d, plan) {
+  const p = normalizePlan(plan);
+  if (d.kind === 'two') {
+    const m = d.you - d.them;
+    if (d.quarter >= 4 && TWO_POINT_CHART.indexOf(m) >= 0) return 'two';
+    if (p.fourth === 1 && m === -2) return 'two';
+    return 'kick';
+  }
+  const behind = d.them - d.you;
+  /* Three points do not cover it and there is no time to get the ball back, so the drive is
+     the game. Above every philosophy, including a coach who never otherwise goes. */
+  if (d.quarter >= 4 && behind > 3) return 'go';
+  const reach = p.fourth === 1 ? 3 : p.fourth === 0 ? 2 : 0;
+  if (d.toGo <= reach) return 'go';
+  if (d.inFgRange) return 'fg';
+  return 'punt';
 }
 
 /*
@@ -5990,6 +6150,7 @@ const publicAPI = {
   dynastyMilestoneKind, dynastyBossFor, dynastyBossReward,
   dynastyChallengeFor, dynastyChallengeProgress,
   bossExpectedPoints, bossSimCreate, bossSimAdvance, bossSimResolve, bossClock,
+  fullSimCreate, fullCoachCall,
   DYNASTY_POINTS, dynastySeasonScore, dynastyRunScore,
   dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
   DYNASTY_DEAD_SHARE, DYNASTY_DEAD_SEASONS, DYNASTY_DEAD_CEILING, dynastyDead,

@@ -733,6 +733,9 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,prof
      and whether it is part of the PRODUCT. The unlocked sheet reads the first, the receipt
      and the store read the second. */
   + 'canPlayFull,fullTeamSold,'
+  /* The modes sheet, and the two questions One Franchise Dynasty asks of it: who SEES the
+     door and who may open it. See the section on the lock. */
+  + 'modeMenu,clubDynastyShow,canPlayClubDynasty,'
   + 'setPremium:(v)=>{premiumSet=v;},'
   /* The walk back from Stripe runs earlier on this page and leaves justPaid set, which is
      itself a reason premiumPitch() stands down. Cleared rather than worked around, so the
@@ -1692,6 +1695,143 @@ if (!po.found) {
       po.tag === '' && none.every((t) => !/·\s*Season\s*\d/.test(t)), none.join(' | '));
   }
 }
+
+console.log('\nONE FRANCHISE DYNASTY IS SOLD, AND A SHUT DOOR SAYS SO');
+/*
+ * Reported by a player who could play One Franchise Dynasty without owning the bundle. They
+ * could: they are on dynasty-access.js's list, which comps that one mode so a tester holding
+ * no row can go on testing it. The gate itself was right and beginDynastyDraft has always
+ * carried it.
+ *
+ * WHAT WAS ACTUALLY WRONG IS THAT NOBODY ELSE COULD SEE THE MODE AT ALL. canPlayClubDynasty()
+ * decided both who may OPEN it and whether the door is DRAWN, so a free account and a guest
+ * got the One Franchise card with no Dynasty half on it: no door, no lock, no mention. The
+ * only ways to learn the mode exists were to buy the bundle and read the receipt, or to be on
+ * the list. That is the wall the college front page's card was added to knock down, standing
+ * on this page instead, and it is the Commish door's rule arriving here: who SEES a mode and
+ * who is SOLD it are different questions.
+ *
+ * SO THE DOOR IS DRAWN FOR EVERYBODY AND OPENS FOR OWNERS. clubDynastyShow() answers the
+ * first, canPlayClubDynasty() the second, and a non-owner gets the same door wearing a
+ * padlock whose tap opens the sheet that sells it.
+ *
+ * THE ASSERTIONS THAT MATTER ARE THE TWO HALVES TOGETHER. A lock on a door that opens anyway
+ * is decoration, and a door that refuses with no way to the thing that opens it is the wall
+ * this replaces, so the walk presses it and reads what comes up.
+ *
+ * AND RESUMING IS NEVER GATED, which is written three times elsewhere in this page and is the
+ * half most easily lost when a mode is put behind a payment. A saved One Franchise dynasty
+ * belongs to whoever played it: the tester list can shorten and a card can expire, and
+ * neither may be the thing that takes a career away. Ownership decides STARTING one.
+ */
+{
+  const CLUB_KEY = 'ps_dynasty_save_club';
+  const setup = async (owns, save) => ck.page.evaluate(async (o) => {
+    const T = window.__t;
+    document.getElementById('sheet').classList.remove('on');
+    T.setPaid(false);
+    if (o.signedIn === false) T.clearAuth();
+    else {
+      T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+      T.setPremium(o.owns ? ['ps_premium', 'cfb_premium'] : []);
+    }
+    try {
+      if (o.save) {
+        localStorage.setItem(o.key, JSON.stringify({
+          v: T.DYN_SAVE_VERSION, user: 'u1', at: Date.now(), submitted: null,
+          run: { dynasty: true, franchise: 'KC', phase: 'squad', roster: ['x|2019'],
+            seasonNo: 4, score: 1000 },
+        }));
+      } else localStorage.removeItem(o.key);
+    } catch (e) {}
+    T.modeMenu();
+    const dyn = document.getElementById('b-mc-clubdyn');
+    return {
+      show: T.clubDynastyShow(), on: T.canPlayClubDynasty(),
+      /* The door exists at all, which is the half a free account did not get. */
+      drawn: !!dyn,
+      locked: !!(dyn && dyn.classList.contains('mc-go-lock')),
+      pad: !!(dyn && dyn.querySelector('svg.mc-lk')),
+      label: ((dyn && dyn.innerText) || '').replace(/\s+/g, ' ').trim(),
+      disabled: !!(dyn && dyn.disabled),
+      alt: !!document.getElementById('b-mc-clubnew'),
+    };
+  }, { owns, save, key: CLUB_KEY, signedIn: owns === null ? false : true });
+
+  /* A FREE ACCOUNT. The door is there, it is locked, and it says what opens it. */
+  const free = await setup(false, false);
+  ok('a free account is shown the One Franchise Dynasty door', free.drawn === true,
+    'show ' + free.show + ', drawn ' + free.drawn);
+  ok('  with a lock on it', free.locked && free.pad, free.label || 'no label');
+  ok('  naming what opens it', /pro/i.test(free.label), free.label);
+  ok('  and the mode itself still refused', free.on === false, String(free.on));
+  /* PRESSED, because a lock with nothing behind it is the wall this replaced. */
+  const pressed = await ck.page.evaluate(async () => {
+    /* GUARDED, because a door that is not drawn is exactly what the assertion above is for
+       and a null here would abort the suite rather than report it. */
+    const b = document.getElementById('b-mc-clubdyn');
+    if (!b) return { missing: true };
+    b.click();
+    await new Promise((r) => setTimeout(r, 120));
+    return { kind: document.getElementById('sheet-in').dataset.kind,
+      on: document.getElementById('sheet').classList.contains('on') };
+  });
+  ok('  and pressing it opens the offer',
+    !pressed.missing && pressed.on && pressed.kind === 'premium',
+    pressed.missing ? 'no door to press' : 'sheet kind ' + pressed.kind);
+
+  /* A GUEST. The account wall already disables every card in this sheet, so what is being
+     asked here is only that the mode is NAMED rather than hidden from somebody with no
+     account at all. */
+  const guest = await setup(null, false);
+  ok('a guest is shown it too', guest.drawn === true && guest.locked === true,
+    'drawn ' + guest.drawn + ', locked ' + guest.locked);
+  ok('  behind the account wall the whole sheet carries', guest.disabled === true,
+    String(guest.disabled));
+
+  /* AN OWNER. No lock, and the door is the mode. */
+  const owner = await setup(true, false);
+  ok('an owner gets the door open', owner.on === true && owner.drawn === true
+    && owner.locked === false && owner.pad === false,
+    'on ' + owner.on + ', locked ' + owner.locked);
+  ok('  and it offers the mode rather than the price', /season after season/i.test(owner.label),
+    owner.label);
+
+  /* A NON-OWNER HOLDING A SAVED RUN. This is the carve-out, and it is the one that costs
+     somebody a career if it is got wrong. */
+  const saved = await setup(false, true);
+  ok('a saved run is never locked away from the player who made it',
+    saved.drawn === true && saved.locked === false, 'locked ' + saved.locked);
+  ok('  the door resumes it by name', /resume/i.test(saved.label) && /season 4/i.test(saved.label),
+    saved.label);
+  /* AND STARTING A DIFFERENT ONE IS STILL THE PAID ACTION. The footnote under a Resume door
+     is the one route left to a new run, so it is the one that has to stay shut. */
+  const alt = await ck.page.evaluate(async () => {
+    const b = document.getElementById('b-mc-clubnew');
+    if (!b) return { there: false };
+    b.click();
+    await new Promise((r) => setTimeout(r, 120));
+    return { there: true, kind: document.getElementById('sheet-in').dataset.kind };
+  });
+  ok('  while starting a different club still asks for the bundle',
+    alt.there === true && alt.kind === 'premium', JSON.stringify(alt));
+
+  /* AND THE ENGINE REFUSES IT WHATEVER THE SCREEN DID. The door is the only thing that
+     passes a franchise, and a caller is not the authority on who may use it. */
+  const forced = await ck.page.evaluate(async () => {
+    const T = window.__t;
+    T.setAuthState({ ready: true, signedIn: true, userId: 'u1', name: 'tester' });
+    T.setPremium([]);
+    T.setRun(null);
+    T.beginDynastyDraft({ franchise: 'KC' });
+    await new Promise((r) => setTimeout(r, 200));
+    const r = T.getRun();
+    return { started: !!(r && r.franchise) };
+  });
+  ok('  and calling the draft directly starts nothing', forced.started === false,
+    String(forced.started));
+}
+ok('  and none of it threw', ck.boom.length === 0, ck.boom.join(' | '));
 
 await ck.page.close();
 

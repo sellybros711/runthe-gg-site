@@ -3,6 +3,7 @@
 
    node mythiball/calibrate.mjs            150 pitches, about four minutes
    node mythiball/calibrate.mjs --quick    60 pitches, for a fast loop
+   node mythiball/calibrate.mjs --hard     the same, against a hard dugout
 
    Every number that makes an at bat feel like baseball is a RATE, and a
    rate drifts in silence: a CPU that stops swinging, a whiff knob that
@@ -18,13 +19,27 @@
    meets. The player's own half is not simulated: their rates are their
    skill, and the meter and reticle already carry the difficulty knobs.
 
-   The whiff rate has been retuned once through this meter, which is
+   The whiff rate has been retuned twice through this meter, which is
    the intended use: it measured 55 per hundred swings (a strikeout
    machine; MLB runs about 25), the swing jitter tiers in
-   scheduleCpuSwing came down about a fifth, and it measures in the mid
-   forties now with visibly more balls in play. Any further move is the
-   same procedure: measure, touch the jitter, measure again, never an
-   edit to the band to make a run pass.
+   scheduleCpuSwing came down about a fifth, and it measured in the mid
+   forties after. It now sits near 28, which is a contact game, and the
+   procedure is the same every time: measure, touch the jitter, measure
+   again, never an edit to the band to make a run pass.
+
+   THIS FILE CANNOT RESOLVE A TEN POINT MOVE IN WHIFF AND THAT IS NOT A
+   FAULT, IT IS THE SAMPLE. A 150 pitch run yields about 80 swings, so
+   at a true rate near 40 one standard error is 5.4 POINTS: two runs
+   came back 36.4 and 43.9 on builds one dial apart, and those are the
+   same measurement. The dial really was cut once on the strength of
+   the difference between them, and the cut was worth three points.
+
+   So a TUNING pass does not belong here. It belongs in a probe that
+   drives scheduleCpuSwing thousands of times with the beats stubbed
+   out (scratchpad/whiff.mjs is the one that solved the tiers), and
+   this file's job is the one it is good at: catching a rate that has
+   walked off, over a game played through the real buttons. Read a band
+   here as a tripwire, never as a target to hit.
 
    The bands are ARCADE bands, not MLB's. Real baseball runs about 47%
    swings, 25% whiffs per swing and 18% balls in play per pitch; an
@@ -38,6 +53,20 @@ import { pathToFileURL } from 'url';
 
 const QUICK = process.argv.includes('--quick');
 const N = QUICK ? 60 : 150;
+/* The tier is a flag because difficulty now changes what the DUGOUT
+   knows and not only how fast the ball moves, and chase rate is where
+   that shows: an easy bat fishes, a hard one makes you throw strikes.
+   The bands below are medium's, so a tier run is read as a comparison
+   against a medium run rather than against them.
+
+   Measured over real innings at 150 pitches a tier, chase rate came back
+   34.1 on easy against 15.2 on hard, both well inside the band below,
+   which is the shape wanted: the tiers differ by a lot and neither is
+   outside what this game calls baseball. Swing rate went the other way
+   (53.3 against 59.3) and that is not a contradiction: a pickier bat
+   still swings at every strike, and takes it deeper into counts. */
+const DIFFS = ['easy', 'medium', 'hard'];
+const TIER = DIFFS.find(d => process.argv.includes('--' + d)) || 'medium';
 const URL = pathToFileURL('mythiball/index.html').href;
 
 const browser = await chromium.launch();
@@ -47,9 +76,10 @@ pg.on('pageerror', e => errors.push(e.message));
 await pg.goto(URL);
 await pg.evaluate(() => localStorage.clear());
 await pg.goto(URL);
-await pg.evaluate(() => {
+await pg.evaluate((tier) => {
   Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
   window.confirm = () => true;
+  State.difficulty = tier;
   State.gameSpeed = 'fast'; applyGameSpeed();
   State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Calibration';
   /* The opponent is PINNED, because each club carries its own batting
@@ -90,7 +120,7 @@ await pg.evaluate(() => {
     if (info && info.q != null) cal.qs.push(info.q);
     return _sc(kind, batter, info);
   };
-});
+}, TIER);
 await pg.waitForTimeout(600);
 
 /* Pitches go out in chunks so a hung page fails a chunk, not the run. */
@@ -147,17 +177,22 @@ const rows = [
    'the CPU is neither a statue nor a hacker'],
   ['chase rate', pct(cal.chase, outOfZone), outOfZone, 5, 50,
    'balls out of the zone draw some swings, not all of them'],
-  ['whiff per swing', pct(cal.miss, cal.swings), cal.swings, 35, 65,
-   'swinging carries real risk and real reward'],
+  /* The band is WIDE because this run cannot measure it tightly: about
+     80 swings, so one standard error is 5 points and two of them is
+     ten. It is centred on the solved rate (28, flat across tiers) with
+     room for the noise on both sides. A run landing at 45 means the
+     dial has walked back to where it was, which is what this is for. */
+  ['whiff per swing', pct(cal.miss, cal.swings), cal.swings, 15, 42,
+   'a swing usually hits the ball: this is a contact game'],
   ['foul per swing', pct(cal.foul, cal.swings), cal.swings, 10, 55,
    'fouls extend at bats without owning them'],
-  ['ball in play per swing', pct(cal.hit, cal.swings), cal.swings, 15, 65,
+  ['ball in play per swing', pct(cal.hit, cal.swings), cal.swings, 22, 70,
    'most swings are not empty'],
   ['called strike per take', pct(cal.calledK, cal.take), cal.take, 10, 60,
    'taking is a gamble, not a free ball'],
 ];
 
-console.log('TARGETS   (arcade bands: see the header before moving one)');
+console.log(`TARGETS   difficulty ${TIER}   (arcade bands: see the header before moving one)`);
 let bad = 0;
 for (const [name, v, n, lo, hi, why] of rows) {
   const ok = v >= lo && v <= hi;

@@ -389,10 +389,10 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/former.js?v=3"></script>
 <script src="/arcade/stars.js?v=4"></script>
 <script src="/arcade/awards.js?v=3"></script>
-<script src="/arcade/supplement.js?v=5"></script>
-<script src="/arcade/primary.js?v=17"></script>
-<script src="/arcade/data.js?v=3"></script>
-<script src="/arcade/jerseys.js?v=18"></script>
+<script src="/arcade/supplement.js?v=6"></script>
+<script src="/arcade/primary.js?v=19"></script>
+<script src="/arcade/data.js?v=5"></script>
+<script src="/arcade/jerseys.js?v=19"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=11"></script>
@@ -476,13 +476,31 @@ window.GA_ID='G-L29P5MRWKE';
   ((window.RTG_JERSEYS && RTG_JERSEYS.stints) || []).forEach(function(s){
     var k = s.sport+'|'+_nkey(s.name); (_stintsByName[k] || (_stintsByName[k] = [])).push(s);
   });
-  var POOL = [];
+  /* A NAME JOIN REACHES EVERYONE, AND IT REACHES THE OTHER MAN TOO.
+     A round is a stint, so a father's stint under a son's card is a question
+     with a false premise: this asked what number Patrick Ewing wore for the
+     2011 Hornets (Patrick Ewing Jr.), Tim Hardaway for the 2019 Mavericks
+     (his son), Glen Rice for the 2014 Wizards, and Antonio Brown for the 2003
+     Bills, seven years before he was drafted.
+     Nobody plays outside their own career, so the decades the record already
+     gives the player settle it without needing to know who the other man is.
+     A year of slack at each end, because a decade list is a rounding of a
+     debut and the cases this catches are out by seven to twenty. */
+  function _ownStint(e, s){
+    var d = e && e.decade;
+    if (!d || !d.length || !s.y0) return true;      // nothing to disagree with
+    var lo = Math.min.apply(null, d) - 1, hi = Math.max.apply(null, d) + 10;
+    return !(s.y1 < lo || s.y0 > hi);
+  }
+  var POOL = [], _skipped = 0;
   ENT.filter(hiqStar).forEach(function(e){
     var ss = _stintsByName[e.sport+'|'+_nkey(e.name)]; if(!ss) return;
     ss.forEach(function(s){
+      if(!_ownStint(e, s)){ _skipped++; return; }
       POOL.push({ id:e.id, name:e.name, sport:e.sport, team:s.team, y0:s.y0, y1:s.y1, num:s.num, f:(e.f||0), star:!!e.star });
     });
   });
+  window.RTG_TABLE_SKIPPED = _skipped;   // read by scripts/check-namesakes.mjs
   function jn(e){ return e.num; }
   // pool rows are stints, not records; the fact line needs the record back
   var FACT_BY_ID={}; ENT.forEach(function(e){ if(e && e.id) FACT_BY_ID[e.id]=e; });
