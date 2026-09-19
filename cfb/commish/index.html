@@ -2891,22 +2891,51 @@ const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }}
    PS_CFB_AUTH.premiumProducts, granted by supabase/102_premium_comp.sql) decides
    whether the gate opens or pitches.
 
-   The free/pro dial split in docket.js stays in the data, unused by the public model:
-   ?tier=free remains a switch for a PREMIUM tester to inspect the reduced dials, and
-   the data costs nothing to keep against a future free tier. null premiumSet means not
-   answered yet, and the gate waits for the answer rather than guessing. */
+   The free/pro dial split in docket.js stays in the data and is read straight off the
+   cfb_premium row. There is no switch for inspecting it any more: `?tier=free` was removed
+   (the note beside isPro says why), so the only way to look at the reduced dials is to be
+   an account that has not bought, which is also the only way a player meets them. null
+   premiumSet means not answered yet, and the gate waits for the answer rather than
+   guessing. */
 let authState={ready:false,waiting:true,signedIn:false};
 let premiumSet=null;
 const allowed=()=>ACCESS.allowed(authState);
-/* AND A TESTER HAS TO BE ABLE TO SEE THE OTHER TIER. Testers are treated as paying, which
-   means the half of the design most likely to be got wrong is the half nobody on the list
-   can look at: what a free player is shown, what is drawn and dead, and whether the offer
-   reads as an offer or as a scolding. `?tier=free` is that, and it is a tester-only switch
-   because nobody else can reach this page at all. */
-let forceFree=false;
-try{ forceFree=new URLSearchParams(location.search).get('tier')==='free'; }catch(e){}
+/* WHO MAY DRIVE THE AUTHOR SWITCHES, which is NOT the same question as who may play.
+ *
+ * `allowed()` above answers the second one and, since COMMISH_LIVE went true, answers it
+ * `true` for everybody. Every dev affordance on this page used to lean on that function,
+ * on the strength of a sentence written beside each one reading "nobody else can reach this
+ * page at all". That was true while the mode sat behind the tester list. It stopped being
+ * true the day the mode launched, and nothing anywhere was watching, because no code
+ * referenced the claim: it was a comment. A guard that reads the right answer for the wrong
+ * reason breaks silently the moment the reason changes.
+ *
+ * So anything meant for authors asks the LIST, here, and never the door. */
+const isTesterNow=()=>{
+  try{ return !!(ACCESS&&(ACCESS.isTester(authState.name)||ACCESS.isTesterId(authState.userId))); }
+  catch(e){ return false; }
+};
+/* THERE IS NO `?tier=free` ANY MORE, AND IT IS NOT COMING BACK.
+ *
+ * It flipped a tester into the free view so the half of the design nobody on the list can
+ * meet (what a free player is shown, what is drawn and dead, whether the offer reads as an
+ * offer or as a scolding) could be looked at. The argument for it was real. What it cost was
+ * bigger: it put a link on the front screen of the mode, under the button, and when its gate
+ * expired that link went out to every player. Somebody read "See what a free player sees"
+ * while being a free player, which is the page talking to its authors in front of a customer.
+ *
+ * GATING IT WAS NOT ENOUGH OF AN ANSWER, and the second screenshot is why. A switch whose
+ * only failure mode is "renders to the wrong person" is carrying risk on the most public
+ * screen the mode has, permanently, in exchange for saving an author one sign out. The free
+ * view is reachable without it by signing in as an account that has not bought, which is what
+ * the paying tier is checked against anyway, and `check-premium.mjs` and `test_store.mjs`
+ * both already drive both tiers with no page affordance at all.
+ *
+ * So the tier a reader is in is now decided by exactly one thing, the `cfb_premium` row, and
+ * there is no second input that can disagree with it. `test_devswitch.mjs` asserts the
+ * absence, for a tester too, so putting it back means deleting a guard on purpose. */
 const ownsCfb=()=>!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
-const isPro=()=>allowed()&&!forceFree&&ownsCfb();
+const isPro=()=>allowed()&&ownsCfb();
 
 /* ── ONE SEASON A DAY, FOR AN ACCOUNT THAT HAS NOT BOUGHT ─────────────────────────
  *
@@ -3075,14 +3104,26 @@ function waitClock(on){
    accumulates the knowledge: a beat with nothing on the desk teaches you nothing, and there
    is no way to farm it, since a year holds nine beats whatever you do with them.
 
-   `?rulings=N` is the tester switch, alongside `?tier=free`. Nobody else can reach this page
-   and there is no way to judge a ladder you would have to play four terms to see. */
+   `?rulings=N` is the one author switch left on this page, and there is no way to judge a
+   ladder you would have to play four terms to see. It survives where `?tier=free` did not
+   because it DRAWS NOTHING: no link, no line, no badge, so there is no screen on which it
+   can address the wrong reader. That is the difference between the two, and it is the test
+   to apply to the next one somebody wants to add.
+
+   IT CARRIED THE SAME EXPIRED SENTENCE the tier switch did: "nobody else can reach this
+   page". True while the mode was shut, false since COMMISH_LIVE went true, and unlike the
+   tier switch this one draws no link, so nothing on screen would ever have shown it. What it
+   was handing a stranger is every rung of the council ladder for the price of typing a number
+   into the address bar, which is the one thing in the mode that is meant to be earned across
+   terms. ASKED HERE, GRANTED AT THE READ, for the reason the tier switch is split the same
+   way: this runs at load and the tester list cannot answer until the account has arrived. */
 const CAREER_KEY='cfb_commish_career';
-let careerOverride=null;
+let rulingsAsked=null;
 try{
   const q=new URLSearchParams(location.search).get('rulings');
-  if(q!==null&&q!=='') careerOverride=Math.max(0,Math.floor(Number(q))||0);
+  if(q!==null&&q!=='') rulingsAsked=Math.max(0,Math.floor(Number(q))||0);
 }catch(e){}
+const careerOverrideOf=()=>(rulingsAsked!=null&&isTesterNow())?rulingsAsked:null;
 /* ONE RECORD, TWO THINGS IN IT. `rulings` is the council ladder's count, above. `terms` is
    the career: one row per finished term, appended at the end and never edited, because the
    ending screen's whole claim is that a term you played in March is still on the books in
@@ -3108,12 +3149,13 @@ function careerPut(c){
   cloudPush('career',()=>{ const now=careerData(); return {payload:now,progress:careerProgress(now)}; });
 }
 function careerRulings(){
-  if(careerOverride!=null) return careerOverride;
+  const ov=careerOverrideOf();
+  if(ov!=null) return ov;
   return careerData().rulings;
 }
 function careerTerms(){ return careerData().terms; }
 function bumpCareer(){
-  if(careerOverride!=null) return;
+  if(careerOverrideOf()!=null) return;
   const c=careerData(); c.rulings++; careerPut(c);
 }
 /* A TERM ALREADY IN PROGRESS IS NOT WASTED. The career count is new, so somebody mid-term
@@ -3121,7 +3163,7 @@ function bumpCareer(){
    Seeded once, from the ledger's own history, and never again: `>` rather than `=` so it can
    only ever raise the number. */
 function seedCareer(w){
-  if(careerOverride!=null||!w||!w.history) return;
+  if(careerOverrideOf()!=null||!w||!w.history) return;
   const ruled=w.history.filter((h)=>L.isRuling(h)).length;
   const c=careerData();
   if(ruled>c.rulings){ c.rulings=ruled; careerPut(c); }
@@ -4942,7 +4984,17 @@ P.finishTerm({
   removed:!!(world.outcome&&world.outcome.removed),
   years:Math.max(0,world.year-world.startYear),
   rulings:p.rulings,
-  champions:Object.keys(world.champions||{}).length,
+  /* SCOPED TO THIS CONTRACT, the same as the career shelf row that is written beside it.
+     sinceTerm()'s header names the four things that read the whole world and therefore have
+     to be scoped: the doctrine, the rulings count, the titles count and the shelf row. Three
+     of the four were. This one, the only one of them that leaves the browser, was counting
+     every season the CAREER had played, so a renewal would file term one's seasons again on
+     term two's row and the board's totals would drift up by the length of every term before
+     the last.
+     Not visible in today's data, which is exactly why it is worth fixing now: every account
+     on the board got there by taking the job again rather than by being renewed, so the two
+     readings agree and go on agreeing until the first extension is signed. */
+  champions:termTitles(world),
 }).then((res)=>{
   if(seq!==docSeq||!res||!box) return;
   const counts=res.counts||{};
@@ -5070,8 +5122,17 @@ function paintBoards(){
       const bits=[];
       if(r.grade) bits.push('Grade '+esc(r.grade));
       bits.push(esc(String(r.years))+(Number(r.years)===1?' year':' years'));
-      if(r.champions>0) bits.push(esc(String(r.champions))
-        +(Number(r.champions)===1?' title':' titles'));
+      /* `champions` IS NOT A COUNT OF ANYTHING THE COMMISSIONER WON, and printing it as
+         "5 titles" beside "5 years" was a false sentence on a live board. The world takes a
+         champion every season (see the postseason write: world.champions[year] is set once
+         per year, unconditionally), so the count of its keys is the count of SEASONS. That
+         is the number already printed immediately to its left, wearing a word that credits
+         the reader with five national championships they did not win. Confirmed against
+         production rather than reasoned about: every row on the board came back with
+         champions exactly equal to years, 11/11, 5/5, 5/5, 2/2 and 1/1.
+         The stored column is left alone. It is honest as a season count and the career
+         shelf prints it that way ("champions crowned"), which claims nothing. What was
+         wrong was only ever this word. */
       if(r.removed) bits.push('<u>voted out</u>');
       return stRow(r.place,stWho(r),r.score==null?'-':r.score,bits.join(' &middot; '),
         stMineRow(r));
@@ -5182,6 +5243,11 @@ function stMyDoctrine(){
 }
 $('b-stback').onclick=()=>{
   if(stBackTo==='s-office'){ sceneOff=true; office(); sceneOff=false; }
+  /* THE GATE IS REPAINTED ON THE WAY BACK, the same as the office is, because it is the one
+     screen whose buttons depend on an answer that can land while the board is open: the
+     premium read settles, or the account changes in another tab. Showing the stale markup
+     would put a reader back on a door drawn for somebody else. gate() is idempotent. */
+  if(stBackTo==='s-gate') gate();
   show(stBackTo);
 };
 $('dc-range').onclick=(e)=>{
@@ -8271,6 +8337,10 @@ window.PS_CFB_COMMISH_TEST={
   /* The career shelf, from storage and back, so a guard can put three terms on the books
      and read what the ending would say about the fourth. */
   career:()=>careerData(),
+  /* THE EFFECTIVE COUNT, which is not the stored one whenever `?rulings=N` is in play. The
+     switch is gated on the tester list now, so a guard has to be able to read what the
+     ladder actually sees rather than what is on the shelf. */
+  rulings:()=>careerRulings(),
   logTerm:(w,p,rep)=>logTerm(w,p,rep),
   paintCareer:(el)=>paintCareer(el),
   /* The inheritances, and a way to take one, so a guard can open on a broken sport without
@@ -9563,9 +9633,15 @@ function paintTag(){
      people who got past the door were the ones who had paid, so the word described the
      screen. A free account plays now, and a badge reading Premium over a player who is
      about to be asked to wait a day is the exact opposite of true. */
+  /* AND IT CALLED A PAYING CUSTOMER A TESTER, the same expired premise as the `?tier=free`
+     switch above and on the same screen. The owner branch was written when owning the mode
+     and being on the list were the same population, because the list was the only way in.
+     They came apart the day the mode launched, and what an owner saw was the badge for
+     somebody else's account. What a buyer is, is Pro. Only the list says Tester. */
   t.textContent=!allowed()?'In testing'
     :!ownsCfb()?'Free'
-    :forceFree?'Tester, free view':'Tester';
+    :!isTesterNow()?'Pro'
+    :'Tester';
 }
 function gate(){
   const say=$('gate-say'), act=$('gate-act');
@@ -9589,7 +9665,16 @@ function gate(){
        somebody who is already through the door. What is actually in the way is an account,
        because the season clock is keyed on one, so that is what the line says. */
     say.textContent='Commish Simulator needs an account. Sign in on the game and come back.';
-    act.innerHTML='<a class="btn" href="/cfb/" style="text-decoration:none;text-align:center">Sign in on the game</a>';
+    /* AND THE BOARD IS OPEN TO THEM, which is the one thing on this screen that does not
+       need an account. Both board functions are granted to anon and read finished terms
+       anybody may already select, and commish_my_tenure answers a signed out reader with
+       a total and `served: false` rather than an error, which is the branch it was written
+       for. Showing somebody what the job is worth is a better argument for making an
+       account than a sentence telling them to go and make one. */
+    act.innerHTML='<a class="btn" href="/cfb/" style="text-decoration:none;text-align:center">Sign in on the game</a>'
+      +'<div style="margin-top:14px"><button class="btn ghost sm" id="g-stand">'
+      +'See the standings</button></div>';
+    const gso=$('g-stand'); if(gso) gso.onclick=()=>openStandings('s-gate');
     return;
   }
   /* UNREACHABLE WHILE THE MODE IS LAUNCHED, and kept rather than deleted. allowed() reads
@@ -9693,12 +9778,39 @@ function gate(){
       +SCENARIOS.map((s)=>'<button type="button" class="inh" data-sc="'+esc(s.id)+'">'
         +'<b>'+esc(s.name)+'</b><span>'+esc(s.line)+'</span></button>').join('')
       +'</div>':'')
+    /* THE BOARD'S ONLY DOOR THAT IS NOT INSIDE A TERM.
+     *
+     * `#b-stand` is on the office screen and `#y-stand` is on the year card, so BOTH ways in
+     * were behind taking the job. A visitor who has never played, and a player sitting on
+     * this screen deciding whether to come back, could not reach the standings at all: the
+     * route was resume the term, wait for the office, then find a ghost button beside the
+     * tape. Reported as not being able to find the leaderboard, which is exactly what it
+     * looked like.
+     *
+     * THIS IS THE DYNASTY BOARD'S BUG, ONE GAME OVER, AND IT IS WORTH SAYING SO. That board
+     * had a table, two axes, three queries and one entry point that needed a finished season
+     * on screen, and it was found by a player rather than by a check. A leaderboard renders
+     * perfectly with no way in, so nothing anywhere can report it. The lesson did not
+     * transfer when this screen was built, so it is written on the door this time.
+     *
+     * IT IS UNGATED, and that is the same argument the receipt on the college profile makes.
+     * `commish_tenure_board` and `commish_doctrine_board` are both granted to anon and both
+     * read finished terms anybody may already select, so there is nothing here to protect. A
+     * board is also the best reason a stranger has to take the job, and putting it behind
+     * taking the job first is the wall this file keeps knocking down. */
+    +'<div style="margin-top:14px"><button class="btn ghost sm" id="g-stand">'
+      +'See the standings</button></div>'
+    /* ONE SENTENCE, THE SAME ONE FOR EVERYBODY, AND NO SECOND LINE UNDER IT.
+       This used to carry the `?tier=free` switch on a second line. It was written for the
+       author and it went out to every player, which is how somebody came to read "See what a
+       free player sees" while being one. The switch is gone entirely (see the note beside
+       isPro), so what is left here is the only thing this paragraph was ever for: telling a
+       player their term is not trapped in this browser. No branches, nothing to gate, and
+       nothing that can address the wrong reader. */
     +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:11px;text-align:center">'
-      +'Your term is saved to your account. Sign in anywhere and it is there.<br>'
-      +(forceFree
-        ?'You are looking at the free version. <a href="?">Switch back</a>.'
-        :'<a href="?tier=free">See what a free player sees</a>.')+'</p>';
+      +'Your term is saved to your account. Sign in anywhere and it is there.</p>';
   const r=$('g-resume'); if(r) r.onclick=()=>office();
+  const gs=$('g-stand'); if(gs) gs.onclick=()=>openStandings('s-gate');
   act.querySelectorAll('[data-sc]').forEach((btn)=>{
     btn.onclick=()=>{
       const scen=SCENARIOS.find((s)=>s.id===btn.dataset.sc);

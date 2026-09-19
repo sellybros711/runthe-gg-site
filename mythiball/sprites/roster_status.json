@@ -1,0 +1,279 @@
+{
+  "roster_count": 68,
+  "enhanced_animation_ready_count": 55,
+  "omitted_count": 13,
+  "characters": {
+    "acrobat": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/acrobat.png"
+    },
+    "alice": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/alice.png"
+    },
+    "apollo": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/apollo.png"
+    },
+    "ares": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/ares.png"
+    },
+    "arsene_lupin": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/arsene_lupin.png"
+    },
+    "athena": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/athena.png"
+    },
+    "bearded_lady": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/bearded_lady.png"
+    },
+    "black_cat": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/black_cat.png"
+    },
+    "centaur": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/centaur.png"
+    },
+    "chupacabra": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/chupacabra.png"
+    },
+    "cowardly_lion": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/cowardly_lion.png"
+    },
+    "cupid": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/cupid.png"
+    },
+    "cyclops": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/cyclops.png"
+    },
+    "dionysus": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/dionysus.png"
+    },
+    "dorothy": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/dorothy.png"
+    },
+    "dracula": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/dracula.png"
+    },
+    "dragon": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/dragon.png"
+    },
+    "easter_bunny": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/easter_bunny.png"
+    },
+    "esmeralda": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/esmeralda.png"
+    },
+    "father_time": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/father_time.png"
+    },
+    "fire_breather": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/fire_breather.png"
+    },
+    "frankenstein": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/frankenstein.png"
+    },
+    "great_ape": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/great_ape.png"
+    },
+    "hades": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/hades.png"
+    },
+    "headless_horseman": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/headless_horseman.png"
+    },
+    "hera": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/hera.png"
+    },
+    "hermes": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/hermes.png"
+    },
+    "huck_finn": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/huck_finn.png"
+    },
+    "humpty_dumpty": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/humpty_dumpty.png"
+    },
+    "ichabod_crane": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/ichabod_crane.png"
+    },
+    "invisible_man": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/invisible_man.png"
+    },
+    "jack": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/jack.png"
+    },
+    "krampus": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/krampus.png"
+    },
+    "lady_liberty": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/lady_liberty.png"
+    },
+    "long_john_silver": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/long_john_silver.png"
+    },
+    "medusa": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/medusa.png"
+    },
+    "mother_nature": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/mother_nature.png"
+    },
+    "mr_hyde": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/mr_hyde.png"
+    },
+    "mrs_claus": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/mrs_claus.png"
+    },
+    "nessie": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/nessie.png"
+    },
+    "nike": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/nike.png"
+    },
+    "pan": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/pan.png"
+    },
+    "paul_bunyan": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/paul_bunyan.png"
+    },
+    "peter_pan": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/peter_pan.png"
+    },
+    "phoenix": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/phoenix.png"
+    },
+    "pinocchio": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/pinocchio.png"
+    },
+    "pirate": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/pirate.png"
+    },
+    "pooh": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/pooh.png"
+    },
+    "popeye": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/popeye.png"
+    },
+    "poseidon": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/poseidon.png"
+    },
+    "quasimodo": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/quasimodo.png"
+    },
+    "rabid_dog": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/rabid_dog.png"
+    },
+    "ringmaster": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/ringmaster.png"
+    },
+    "robin_hood": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/robin_hood.png"
+    },
+    "santa": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/santa.png"
+    },
+    "sasquatch": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/sasquatch.png"
+    },
+    "scarecrow": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/scarecrow.png"
+    },
+    "sherlock": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/sherlock.png"
+    },
+    "strongman": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/strongman.png"
+    },
+    "the_golem": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/the_golem.png"
+    },
+    "tom_sawyer": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/tom_sawyer.png"
+    },
+    "tooth_fairy": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/tooth_fairy.png"
+    },
+    "vampire": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/vampire.png"
+    },
+    "werewolf": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/werewolf.png"
+    },
+    "witch": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/witch.png"
+    },
+    "yeti": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/yeti.png"
+    },
+    "zeus": {
+      "status": "omitted_not_generated",
+      "canonical_reference": "source_reference/sprites_64/right/zeus.png"
+    },
+    "zombie": {
+      "status": "enhanced_animation_ready",
+      "canonical_reference": "source_reference/sprites_64/right/zombie.png"
+    }
+  }
+}

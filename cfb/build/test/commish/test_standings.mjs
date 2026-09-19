@@ -83,23 +83,30 @@ async function open(answers, label) {
 const txt = (p, sel) => p.$eval(sel, (e) => (e.innerText || '').replace(/\s+/g, ' ').trim()).catch(() => '');
 const on = (p, id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
 
+/* `champions` IS EQUAL TO `years` ON EVERY ROW, AND THAT IS THE FIXTURE BEING HONEST.
+   The world takes a champion every season, so the stored count is a count of seasons and
+   can never be anything else. This fixture used to invent 3 champions against 8 years, which
+   described a row the database cannot produce, and that is exactly why the suite watched the
+   board print "3 titles" without a word. Read from production before it was corrected: seven
+   accounts, champions equal to years on all seven, 11/11, 5/5, 5/5, 2/2 and 1/1.
+   A fixture that cannot occur is not a harder test than the truth. It is a different game. */
 const ROWS = [
-  { place: 1, score: 91, grade: 'A', removed: false, years: 8, rulings: 40, champions: 3,
+  { place: 1, score: 91, grade: 'A', removed: false, years: 8, rulings: 40, champions: 8,
     purse: 0, gate: 0, stage: 0, throne: 0, created_at: '2026-01-01',
     author_name: 'ada', author_color: '#f00', author_initials: 'AD' },
-  { place: 2, score: 77, grade: 'B', removed: true, years: 4, rulings: 20, champions: 0,
+  { place: 2, score: 77, grade: 'B', removed: true, years: 4, rulings: 20, champions: 4,
     purse: 0, gate: 0, stage: 0, throne: 0, created_at: '2026-01-02',
     author_name: TESTER, author_color: '#0f0', author_initials: 'ST' },
   /* A TERM BY SOMEBODY WITH NO PROFILE ROW. The SQL left joins on purpose so the account is
      still counted; a board that dropped it would lie about how many people have played. */
-  { place: 3, score: 40, grade: 'D', removed: false, years: 2, rulings: 9, champions: 0,
+  { place: 3, score: 40, grade: 'D', removed: false, years: 2, rulings: 9, champions: 2,
     purse: 0, gate: 0, stage: 0, throne: 0, created_at: '2026-01-03',
     author_name: null, author_color: null, author_initials: null },
 ];
 const TEN = [
-  { place: 1, years: 21, terms: 2, longest: 13, removed: 0, champions: 5,
+  { place: 1, years: 21, terms: 2, longest: 13, removed: 0, champions: 21,
     first_at: '2026-01-01', author_name: 'ada', author_color: '#f00', author_initials: 'AD' },
-  { place: 2, years: 12, terms: 4, longest: 5, removed: 3, champions: 1,
+  { place: 2, years: 12, terms: 4, longest: 5, removed: 3, champions: 12,
     first_at: '2026-01-02', author_name: TESTER, author_color: '#0f0', author_initials: 'ST' },
 ];
 
@@ -129,6 +136,17 @@ const TEN = [
   /* AN ACCOUNT WITH NO USERNAME IS STILL A PERSON. */
   ok('  and a term with no profile is still drawn',
     /A commissioner/.test(await txt(p, '#st-board')));
+
+  /* A COMMISSIONER WINS NO TITLES, AND THE BOARD SHIPPED SAYING THEY DO.
+     `champions` counts seasons, so the row read "Grade A · 8 years · 8 titles" and credited
+     the reader with eight national championships that belong to eight different schools. It
+     is a valid sentence, it rendered perfectly, and nothing on the site could report it.
+     Asserted as the WORD and not as the number, because the number is the defect: any count
+     of titles on this board is wrong however it is phrased, and a check written against "8
+     titles" would pass the moment somebody rounded it or changed the separator. */
+  const boardTxt = await txt(p, '#st-board');
+  ok('  and credits nobody with titles they did not win',
+    !/\btitles?\b/i.test(boardTxt), boardTxt.slice(0, 120));
 
   ok('the tenure board is there too', (await p.$$eval('#st-tenure .strow', (e) => e.length)) === 2);
   ok('  ranked on years in the chair',
@@ -254,6 +272,73 @@ const TEN = [
   await p.click('#b-stback');
   await p.waitForTimeout(800);
   ok('and it can still be left', await on(p, 's-office'));
+  ok('nothing threw', p.errs.length === 0, p.errs.slice(0, 2).join(' | '));
+  await p.close();
+}
+
+/* ── THE WAY IN FROM THE SCREEN EVERY VISITOR ACTUALLY LANDS ON ──────────────────────
+ *
+ * Every section above reaches the board by taking the job first, because both doors that
+ * existed were INSIDE a term: `#b-stand` on the office screen and `#y-stand` on the year
+ * card. So the suite could be entirely green while a player who had not started, or who
+ * was sitting on the front screen deciding whether to come back, had no route to the
+ * standings at all. Reported as not being able to find the leaderboard.
+ *
+ * THIS IS THE DYNASTY BOARD'S BUG ONE GAME OVER: a table, two axes, three queries and one
+ * entry point nobody could reach. A board renders perfectly with no way in, so the only
+ * thing that can report it is a person. The guard is therefore about the ROUTE and never
+ * about the board, and it presses the door rather than looking for the element, because a
+ * door that is drawn and does not open is the same to a reader as no door.
+ *
+ * It asserts the way BACK too. The front screen is the one whose buttons depend on an
+ * answer that can land while the board is open, so it is repainted on return; landing on
+ * a blank or stale gate would strand somebody on the screen they started from. */
+{
+  /* NOT open(), because open() presses `#g-start`. The whole point here is the reader who
+     has not done that. */
+  const p = await b.newPage({ viewport: { width: 390, height: 900 } });
+  p.errs = [];
+  p.on('pageerror', (e) => p.errs.push(e.message));
+  await p.route('**/rest/v1/rpc/**', async (route) => {
+    const fn = route.request().url().split('/rpc/')[1].split('?')[0];
+    const answers = {
+      commish_doctrine_board: ROWS,
+      commish_tenure_board: TEN,
+      commish_my_tenure: { served: true, years: 12, terms: 4, longest: 5, place: 2, total: 37 },
+    };
+    if (!Object.prototype.hasOwnProperty.call(answers, fn)) {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify(answers[fn]) });
+  });
+  /* A FREE ACCOUNT, which is the reader who reported it. */
+  await p.addInitScript(arm + auth([]));
+  await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
+  await p.waitForTimeout(2600);
+  console.log('\n=== the way in, without taking the job first ===');
+
+  ok('the front screen is what a visitor lands on', await on(p, 's-gate'));
+  const door = await p.$('#g-stand');
+  ok('  and it offers a way to the standings', !!door);
+  /* ON SCREEN, not merely in the markup. A hidden node ships to everybody and reaches
+     nobody, which is the shape of the bug this section exists for. */
+  const box = door ? await door.boundingBox() : null;
+  ok('  the door has a real box to press', !!box && box.width > 40,
+    box ? Math.round(box.width) + 'x' + Math.round(box.height) : 'none');
+  if (door) {
+    await door.click();
+    await p.waitForTimeout(1100);
+    ok('  pressing it opens the board', await on(p, 's-stand'));
+    ok('  with the tenure board actually drawn',
+      (await p.$$eval('#st-tenure .strow', (e) => e.length).catch(() => 0)) === 2);
+    await p.click('#b-stback');
+    await p.waitForTimeout(900);
+    ok('  and the way back lands on the front screen', await on(p, 's-gate'));
+    /* REPAINTED, NOT JUST REVEALED. The door is drawn by gate(), so finding it again is
+       what proves the screen was rebuilt rather than left as stale markup. */
+    ok('    with its buttons redrawn', !!(await p.$('#g-stand')));
+  }
   ok('nothing threw', p.errs.length === 0, p.errs.slice(0, 2).join(' | '));
   await p.close();
 }

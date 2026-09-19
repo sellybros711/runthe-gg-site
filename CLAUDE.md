@@ -2126,6 +2126,134 @@ rather than a missing one, and nothing throws.
 existed, and it asserts the run-based route still works: adding a second way in must not cost
 the first.
 
+### A board row cannot answer a question about the account that wrote it
+
+```
+node football/check-premium.mjs        the two marks, on both boards
+createdb pro_live
+psql -d pro_live -f supabase/test/dynboard_base.sql
+psql -d pro_live -f supabase/98_football_gauntlet_board.sql
+psql -d pro_live -c 'create table public.subscriptions(user_id uuid, status text, current_period_end timestamptz);'
+psql -d pro_live -f supabase/101_premium_bundles.sql
+psql -d pro_live -f supabase/107_board_pro_and_live.sql
+psql -d pro_live -f supabase/test/board_pro_live_test.sql
+```
+
+A gold name for a Pro account and a LIVE badge on a dynasty still being played. Both are
+decoration, neither moves a rank, and **neither is knowable in the browser**. `premium_unlocks`
+is RLS'd to its owner, so nobody can see who else paid; nothing about somebody else's save
+reaches this page at all. So they are columns: `display_pro` and `dynasty_over`, written by
+`supabase/107_board_pro_and_live.sql`.
+
+**Without that migration both go quiet and nothing else changes.** An absent column reads as
+undefined, which is falsy for one and is not the `false` that means live for the other, so the
+board is exactly the board it was. Same shape as every other optional column on these rows, and
+`board.js` probes for `display_pro` on the classic path the way it already probes for the crest.
+
+**`display_pro` publishes who has paid**, for anybody with a row on a public board. That is a
+disclosure and it is written up in 107's header: one boolean, naming no product, no price and
+no date. **It is DERIVED and never typed.** Two triggers read `premium_unlocks` directly and
+they are the only writers, so it cannot be forged into a gold name the way a crest ring can be
+forged into a gold circle. It honours `expires_at`, and it is scoped to `ps_premium` and
+`cfb_premium`: an Arcade Card buyer has no Pro tier in this game and marking them would be
+saying something false.
+
+**GOLD ON THE NAME, NEVER ON THE ROW.** Gold on this board is an ACHIEVEMENT (a perfect season,
+the top step) and the blue rail is WHOSE row it is. Both have to keep meaning that, and a paid
+account is neither. The name text had never carried a colour, so it was the one surface free to
+say something new. Nothing else on the row moves: no pill, no badge, nothing competing with the
+champion mark already in front of the name. A reader who does not know what it means reads a
+slightly nicer name, which is the right amount to be told.
+
+**The solid gold is the base and the gradient is the upgrade, and writing it the other way round
+loses every Pro player.** `background-clip:text` needs `color:transparent` to show at all, so a
+browser without the clip would render an invisible name. The plain rule paints a warm gold and
+an `@supports` block replaces it. The sheen is seven seconds a pass over a gradient whose
+darkest stop is still gold, so no point in the cycle is dimmer than the base: a board is
+twenty-five names and anything quicker is twenty-five things flashing at somebody hunting for
+one row.
+
+#### The LIVE badge is Dynasty's alone, and the cutoff is the page's own judgement
+
+Every other board here ranks finished seasons. A dynasty is the one run that spans days, so it
+is the only one where "are they still playing it" is a question.
+
+`dynasty_over` is **three-valued** and only the `false` lights up. `null` is every row written
+before this existed, and a board of LIVE badges on runs from six months ago is worse than no
+badge at all. That is the "absent is not zero" rule the daily meter already runs on; a column
+defaulted to `false` would have lit the entire history on deploy.
+
+**What no column can ever know is a run somebody walked away from.** Nothing reaches the server
+when a player closes the tab for the last time, so an abandoned run stays `false` for ever. The
+page refuses to call anything live whose furthest season is older than `DYN_LIVE_HOURS`, which
+is **48**: two days of a free account's three-a-day budget, long enough that somebody who plays
+each evening is still live in the morning. **The cutoff is in the page and not in SQL on
+purpose**, because it is a judgement about what "still going" means to a reader rather than a
+fact about the run, so it moves in a deploy instead of a migration.
+
+**`dynClear` is where the end is posted, because that function IS what ending a dynasty means
+here.** Four paths finish one (the firing at the results screen, the drop button, and the two
+places a new draft clears the slot it is taking) and hanging the call on any one of them would
+leave the other three broadcasting LIVE for ever. The id comes off the save about to be deleted
+rather than off `run`, because `beginDynastyDraft` clears the slot it is TAKING, which may be
+the other one. Never awaited, fails soft, and not retried: a dynasty that ends with the network
+down keeps a stale badge, which is the cheapest thing on this screen to be wrong about.
+
+**The pin needs no column for either mark**, and that is not a shortcut. It is not a board row:
+it is the run in this browser's hands, so it is live by the fact that it is being drawn, and the
+viewer's own unlocks are the one account this page can read.
+
+#### Every way this breaks renders perfectly, so the guard measures the screen
+
+The rows are fabricated and handed straight to the painters, covering live, live and paid,
+finished and paid, neither, and the run three days old that no column will ever mark as over.
+
+- **The pill is asserted as a HEIGHT, not only as a display.** `.lbr .who span` claims every
+  span inside `.who` as a block at (0,2,1), which is the exact cascade the champion mark lost:
+  a pill that loses it takes the row's whole width and drops the name onto a second line. So
+  `.lbr .who b .livepill` is written a class deeper than it looks like it needs, and the guard
+  compares a row wearing one against a row that is not. **It measures the NAME and not the
+  ROW, because the row has a 75px floor set by the avatar beside it**: a name pushed onto a
+  second line fits inside that, so the first draft compared rows, read 75 against 75 with the
+  pill computing to `display:block`, and certified the defect. The name goes 20px to 39.
+- **AND THAT RULE SETS A COLOUR TOO, which the first version of both the CSS and the guard
+  missed.** The fix was written from the champion mark's bug and the champion mark is an SVG
+  with its own fill, so the colour half of that cascade had never cost anything. Here it did:
+  `.lbr .who span` also sets `color:var(--dim-2)` for the sub line, so the pill shipped as a
+  red box with a red dot and the word in the grey of the row behind it. **Found by taking a
+  screenshot and looking at it**, and the section had just passed green on it. The guard asks
+  that the word is not the sub line's colour and that it is reddish, which is the property
+  rather than the hex. **It reads the sub line as `.who > span` and the child combinator is
+  load-bearing**: the pill is a span too, nested inside the name, so a descendant selector
+  matches the PILL, and the comparison was the pill against itself. It can never differ, so
+  the assertion failed on a correct page. Same class as this repo's three wrong extractors,
+  arriving at a one line read.
+- **The podium's dot has no box, and that was the second thing only looking could say.** With
+  the word collapsed, the pill's 1px border drew a ring 4px across a 5px dot, which reads as a
+  bullseye rather than as a light that is on. A chip is a container for a label; with no label
+  there is nothing to contain, so the border and the fill go and the glow carries it.
+
+**The SQL half has its own file**, because the page's guard fabricates the columns and
+therefore says nothing about what writes them. `supabase/test/board_pro_live_test.sql` drives
+the real triggers and the real functions: a free account, a buyer, an Arcade Card holder (who
+is NOT Pro here), an expired unlock, a guest run, and the backfill that gilds rows already on
+the board. Four of its claims were proved by reintroducing a defect alone.
+
+**Its exception test asserted nothing on the first draft, and the shape is worth recognising.**
+Written as `claim(false)` inside the `begin` arm, the failure it raises is caught by that
+block's own `when others` and reported as a pass, so the check certified 98's not-found guard
+while the guard was deleted. **An exception test cannot assert inside the block it is
+watching**: the flag is set in the handler and read after the block.
+- **The gilding is asserted on the NAME and the ROW is asserted UNCHANGED**, because the whole
+  argument above is about which of the two may carry it.
+- **The champion mark survives a transparent name** because its SVG carries an explicit fill
+  rather than `currentColor`. Asserted, since `-webkit-text-fill-color:transparent` on the
+  parent is exactly the kind of thing that takes a sibling with it.
+- **On the podium the word is collapsed to its dot in CSS**, not dropped from the markup. A step
+  is about 93px of text at 390px and a 36px pill in front of an 11.5px name truncates most names
+  to two syllables. `font-size:0` leaves LIVE in the accessibility tree, so the pill stays ONE
+  element with one spelling rather than a second element that can drift.
+
 ### The boss battle, and the one screen that checks itself
 
 ```
@@ -2362,11 +2490,81 @@ private.
 the way `Wrestling/` and `Tour/` answer theirs, because the capitalised URL is
 the one that gets typed and pasted. It carries its own robots tag.
 
-The sprites are generated, never hand-edited in the page:
+The sprites came from a generator and now come from a HANDOFF PACK, and the
+generator is kept because the pack cannot answer everything:
 
 ```
-python3 mythiball/gen_sprites_v2.py > sprites.js    # then splice V2_SPRITES in
+python3 mythiball/sprites/tools/audit.py        what is in the pack
+python3 mythiball/sprites/tools/build_table.py  build V2_SPRITES from it
+python3 mythiball/sprites/tools/install.py      swap it into the page
+python3 mythiball/sprites/tools/install.py --revert   put the generator back
+python3 mythiball/gen_sprites_v2.py > sprites.js      the old parametric one
 ```
+
+**THE STILLS ARE WHAT MADE THE SWAP POSSIBLE, NOT THE ANIMATION STRIPS.**
+`mythiball/sprites/source_reference/sprites_64/` carries all 68 characters in
+right and left with no gaps at all, including the 13 the handoff lists as
+omitted. The animation strips cover 55 characters and **141 of their 330 are
+unusable**, so building off strips alone would have restyled part of a roster
+and left the rest generated, which reads worse than either style on its own.
+The same is true INSIDE a character: a pack idle over a generated swing makes
+a man change species when he swings. So a character is built entirely from the
+pack, the stills are the floor, and a working strip upgrades a pose from a
+still to a drawn frame on top. 751 of the 1,088 poses are drawn frames.
+
+**A FRAME IS GOOD OR BAD ON ITS OWN, AND READING THE STRIP'S VERDICT THREW ART
+AWAY.** The audit classifies a STRIP, because a strip is what an artist
+redraws, and the first build read that verdict straight: one clipped frame in
+a four frame swing condemned the other three, so acrobat's follow through fell
+back to a still while the drawn follow through sat in the file untouched.
+Asking about the FRAME recovered **86 poses, 665 to 751**. It is the clipping
+rule's own mistake one level up: do not condemn good art because of its
+neighbour.
+
+**FIVE POSES THE PACK CANNOT DRAW STAND ON ITS STILLS.** There is no rear view
+in the pack and no fielding art anywhere. `back` and the two backruns are the
+LEFT still, so the game reads a profile where it used to read a pair of
+shoulders: a camera change rather than a hole, and what most baseball games
+show. `catch` takes the FRONT still, which exists for 59 of the 68 and falls
+back to left for the other nine, because it has to differ from the right
+facing idle or it is a pose nobody can tell happened. `throw` stands on the
+right still and really is the same drawing as idle for a character whose pitch
+strip was never drawn. Nothing here is generated, which is the handoff's own
+rule for fielding art.
+
+**`left` IS EXACTLY `mirror(right)` FOR EVERY CHARACTER**, measured, so the
+pack ships a flip rather than a second drawing and the table stores both.
+Flipping at draw time instead would take about 40% off it. Worth doing the day
+the table's size starts to matter; it is 1.5MB today against the generator's
+1.0MB.
+
+**TWO GUARDS WERE ASKING FOR ART NOBODY DREW**, and they were changed rather
+than deleted. Both asserted sixteen DISTINCT drawings a character, which the
+generator could promise because a pose there was an arm offset on a parametric
+figure. Hand authored art has three views and partial animation, so a
+character whose strips were never drawn cannot have sixteen distinct
+drawings. What they assert now is the half that still means something: every
+pose present, every one decoding to the declared size, catch differing from
+idle (the pack CAN answer that one), and a FLOOR under how many action poses
+are their own drawing, so a build that quietly went back to stills for
+everybody still fails. Filling `docs/ART_ORDER.md` can only make that floor
+greener.
+
+**THE INSTALLER MATCHES BRACES AND WILL NOT SEARCH FOR `\n};`.** That works
+exactly once. The generated table was pretty printed and ended on its own
+line; the built one is minified onto one, so a second run searched past the
+table and deleted every line between there and the next block that happened to
+close that way. **The page still parsed**, `V2_SPRITES` was still an object,
+and the symptom was `Sound is not defined` a thousand lines below the damage.
+It refuses to write now unless six sentinel declarations survive the swap, and
+running it twice is a no-op.
+
+**SIZE IS HEIGHT, NEVER FRAME WIDTH.** `drawCharacter` asked for
+`HERO_W * scale`, which on 32x50 art gave a person 1.56 times that tall. The
+pack's frames are SQUARE, so the identical line drew everyone twice as wide
+and the batter covered the strike zone he is meant to be swinging at.
+`HERO_DRAW_H` pins the on screen height and the width follows from whatever
+shape the frame is, so the next change of frame shape costs nothing.
 
 Every character is drawn from a PUBLIC DOMAIN source and `mythiball/PD_SOURCES.md`
 is the register: source, what the sprite shows, what it avoids. The avoid column

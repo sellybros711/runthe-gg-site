@@ -409,14 +409,20 @@ console.log('\n=== a tester takes the job ===');
 
 console.log('\n=== what a free player is shown ===');
 {
-  /* THE HALF OF THE DESIGN NOBODY ON THE TESTER LIST CAN SEE, because testers are treated
-     as paying. `?tier=free` is the switch, and this is the check that it shows the offer
+  /* THE HALF OF THE DESIGN A TESTER IS NOT SHOWN BY DEFAULT, because a tester on the list
+     with the row is treated as paying. This is the check that the free tier shows the offer
      rather than hiding it: a setting drawn and dead is the clearest a paywall ever gets,
-     and a setting simply missing teaches nothing. */
-  const {p,errs}=await open(tester(),390);
-  await p.goto(URL+'?tier=free',{waitUntil:'domcontentloaded'});
-  await p.waitForTimeout(2600);
-  ok('a tester can look at the free version', !!(await p.$('#g-start')));
+     and a setting simply missing teaches nothing.
+
+     IT IS REACHED BY OWNING NOTHING, not by a switch. `?tier=free` used to do this and has
+     been removed outright: it drew a link on the mode's front screen, that link outlived
+     the door that hid it, and a player read "See what a free player sees" while being one.
+     `tester([])` is the same account with no cfb_premium row, which is how an actual free
+     player arrives, so this section now walks the path a player walks rather than a path
+     only the suite could take. That is strictly the better fixture, and it is the reason
+     removing the switch cost this file nothing. */
+  const {p,errs}=await open(tester([]),390);
+  ok('a free account reaches the gate', !!(await p.$('#g-start')));
   ok('  and the badge says which view this is', /free/i.test(await txt(p,'#tag')), await txt(p,'#tag'));
   await p.click('#g-start'); await p.waitForTimeout(600);
   await pastScene(p);
@@ -661,8 +667,10 @@ console.log('\n=== the agenda is tiered: free picks one case a year ===');
      is no way off the desk without ruling: a charge is always a ruling. */
   const p=await b.newPage({viewport:{width:390,height:900}});
   const errs=[]; p.on('pageerror',(e)=>errs.push(e.message));
-  await p.addInitScript(tester());
-  await p.goto(URL+'?tier=free',{waitUntil:'domcontentloaded',timeout:40000});
+  /* Free is an account with no cfb_premium row, which is the only way to be free now that
+     `?tier=free` is gone. See the note in the free player section above. */
+  await p.addInitScript(tester([]));
+  await p.goto(URL,{waitUntil:'domcontentloaded',timeout:40000});
   await p.waitForTimeout(2600);
   await p.click('#g-start'); await p.waitForTimeout(700);
   await pastScene(p);
@@ -735,8 +743,8 @@ console.log('\n=== the inheritances: premium can start in the middle of a mess =
 
   /* And the free gate simply does not have them, on the same silent gate as the note. */
   const f=await b.newPage({viewport:{width:390,height:900}});
-  await f.addInitScript(tester());
-  await f.goto(URL+'?tier=free',{waitUntil:'domcontentloaded',timeout:40000});
+  await f.addInitScript(tester([]));
+  await f.goto(URL,{waitUntil:'domcontentloaded',timeout:40000});
   await f.waitForTimeout(2600);
   ok('the free gate has no inherited jobs on it',
     (await f.$$eval('.inh',(e)=>e.length))===0);
