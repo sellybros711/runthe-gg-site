@@ -1,0 +1,45 @@
+name: Baseball checks
+
+# Run The Diamond's October is played out plate by plate, and the one thing that
+# must never slip is that the at-bat simulator is a dramatization: resolveGame()
+# decides the score, and the nine innings on screen have to add up to it. A game
+# whose line score disagrees with the bracket beside it is the failure this
+# catches, and it is invisible from a screenshot.
+#
+#   node baseball/check-atbats.mjs    faithfulness, shape, and real brackets
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'baseball/**'
+      - '.github/workflows/baseball-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'baseball/**'
+      - '.github/workflows/baseball-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: baseball-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 25,000 games off the run distribution resolveGame() actually produces,
+      # then every game of 25 real brackets drafted and played from scratch.
+      # Asserts the line score is always the score it was handed, that no inning
+      # runs past three outs, that a walk-off is a home win on the last play, and
+      # that the shape (plate appearances, hits, scoreless innings) is baseball.
+      - name: The October simulator
+        run: node baseball/check-atbats.mjs 25000

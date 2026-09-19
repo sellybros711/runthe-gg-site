@@ -1018,7 +1018,7 @@ function buildOpponentPool(teamSeasons) {
   for (const t of teamSeasons) {
     if (typeof t.rating !== 'number') continue;
     const o = {
-      name: t.display, team: t.team, rating: t.rating,
+      name: t.display, team: t.team, season: t.season, rating: t.rating,
       off: t.offMean * SCHEDULE.OPP_OFF_SCALE,
       def: t.defMean * SCHEDULE.OPP_DEF_SCALE,
     };
@@ -1205,7 +1205,10 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
       round: roundName,
       oppName: opp ? opp.name : null,
       oppTeam: opp ? opp.team : null,   // club code, so the bracket can wear its colors
+      oppSeason: opp ? opp.season : null, // and so the at-bat sim can bat their real nine
       oppRating: opp ? opp.rating : null,
+      bestOf,
+      homeField: !!seed.bye,
       ...series,
     });
 
@@ -1216,6 +1219,491 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
     results[results.length - 1].round === 'World Series';
 
   return { rounds: results, won };
+}
+
+// ─── at-bat simulation ───────────────────────────────────────────────────────
+
+/*
+ * WHO WINS AND WHAT IT LOOKS LIKE ARE TWO DIFFERENT JOBS, and keeping them apart
+ * is the whole design of this section.
+ *
+ * Everything above decides the season: resolveGame() samples runs, playoffSeries()
+ * stacks those games into a bracket, and the balance of this game (88.9 mean wins,
+ * 58% Octobers, 6.3% titles) was measured against exactly that model over thousands
+ * of seasons. A second, independent simulator down here would quietly become a
+ * second balance, and every one of those numbers would have to be re-tuned.
+ *
+ * So this does not decide anything. It is handed a final score that resolveGame()
+ * already produced, spreads those runs across innings the way real innings bunch
+ * up, and plays each half inning out batter by batter with real base and out state
+ * until exactly that many runs are in. A 5-3 game is always the same 5-3 game; what
+ * the at-bat engine supplies is the ninety plate appearances that got there.
+ *
+ * Nothing it draws touches the season's RNG either: the caller seeds it separately
+ * (round and game index off the run seed), so watching a game and skipping it
+ * produce the same bracket, and the same seed always replays the same game.
+ *
+ * The one rule imposed from outside is that the third out cannot be made until the
+ * inning's runs are in. That is also the only rule real baseball enforces about
+ * when an inning ends, so it never shows.
+ */
+
+/* Per plate appearance, roughly the modern league line: a .320 on-base rate split
+ * into its parts. `heat` scales every way of reaching base at once and the leftover
+ * is an out, which is how an inning that has runs to deliver gets them. */
+const PA_RATES = { BB: 0.081, HBP: 0.009, '1B': 0.150, '2B': 0.045, '3B': 0.004, HR: 0.031 };
+const PA_ON_BASE = 0.320;
+const ON_BASE_CODES = ['BB', 'HBP', '1B', '2B', '3B', 'HR'];
+const OUT_MIX = [['K', 0.36], ['GO', 0.28], ['FO', 0.22], ['LO', 0.09], ['PO', 0.05]];
+
+const FIELD = {
+  pull: ['left', 'left field', 'the left-field corner'],
+  gap: ['left-center', 'right-center', 'the gap'],
+  oppo: ['right', 'right field', 'the right-field corner'],
+  inf: ['short', 'second', 'third', 'first'],
+  air: ['left', 'center', 'right', 'left-center', 'right-center'],
+};
+
+function pickOne(list, rng) { return list[Math.floor(rng() * list.length)] || list[0]; }
+
+function occupied(bases) { return (bases[0] ? 1 : 0) + (bases[1] ? 1 : 0) + (bases[2] ? 1 : 0); }
+
+/*
+ * How many runs a given outcome can drive in from this base state, as a range.
+ * The floor is what the outcome forces (a runner on third scores on any hit); the
+ * ceiling is what it allows (a runner on first may or may not score from first on
+ * a double). The inning's run budget is spent by choosing a number inside this
+ * range, which is why the simulation never has to be rejected and retried.
+ */
+function runRange(code, bases, outs) {
+  const f = bases[0] ? 1 : 0, s = bases[1] ? 1 : 0, t = bases[2] ? 1 : 0;
+  switch (code) {
+    case 'HR': return [occupied(bases) + 1, occupied(bases) + 1];
+    case '3B': return [occupied(bases), occupied(bases)];
+    case '2B': return [t + s, t + s + f];
+    case '1B': return [t, t + s];
+    case 'BB': case 'HBP': return [(f && s && t) ? 1 : 0, (f && s && t) ? 1 : 0];
+    case 'OUT': return [0, (t && outs < 2) ? 1 : 0];
+    default: return [0, 0];
+  }
+}
+
+/* Move the runners for `code`, driving in exactly `k` runs. Everything the range
+ * above called optional is resolved here to hit that number. */
+function advanceBases(st, code, batter, k, rng) {
+  const f = st.bases[0], s = st.bases[1], t = st.bases[2];
+  const scored = [];
+  let nf = null, ns = null, nt = null;
+
+  if (code === 'HR') {
+    if (t) scored.push(t); if (s) scored.push(s); if (f) scored.push(f);
+    scored.push(batter);
+  } else if (code === '3B') {
+    if (t) scored.push(t); if (s) scored.push(s); if (f) scored.push(f);
+    nt = batter;
+  } else if (code === '2B') {
+    if (t) scored.push(t); if (s) scored.push(s);
+    if (f) { if (k > scored.length) scored.push(f); else nt = f; }
+    ns = batter;
+  } else if (code === '1B') {
+    if (t) scored.push(t);
+    if (s) { if (k > scored.length) scored.push(s); else nt = s; }
+    if (f) { if (!nt && rng() < 0.24) nt = f; else ns = f; }
+    nf = batter;
+  } else if (code === 'BB' || code === 'HBP') {
+    ns = s; nt = t; nf = batter;
+    if (f) {
+      if (s) { if (t) scored.push(t); nt = s; ns = f; }
+      else ns = f;
+    }
+  }
+  st.bases = [nf, ns, nt];
+  return scored;
+}
+
+/* An out, with the base running that comes with one. Returns the out type so the
+ * play-by-play can say what it was. */
+function makeOut(st, batter, k, rng, allowDouble) {
+  const f = st.bases[0], s = st.bases[1], t = st.bases[2];
+  const scored = [];
+  let kind = null;
+  let outs = 1;
+
+  /* A run scoring on an out is a groundout to the right side or a sacrifice fly,
+   * and both need a runner on third and fewer than two down. */
+  if (k > 0) {
+    kind = rng() < 0.55 ? 'SF' : 'GO';
+    scored.push(t);
+    st.bases = [f, s, null];
+    if (kind === 'GO' && f && !s) st.bases = [null, f, null];
+    return { kind, outs: 1, scored };
+  }
+
+  /* Two on the ground with a man on first is the double play a rally dies on, and
+   * it is the one out that can end an inning from one out down. The caller refuses
+   * it while the inning still owes runs, for the same reason it refuses the third
+   * out: the inning has a total to deliver and cannot be cut short. */
+  if (allowDouble && f && st.outs < 2 && rng() < 0.33) {
+    kind = 'DP';
+    outs = 2;
+    st.bases = [null, s, t];
+    if (s && !t && rng() < 0.3) st.bases = [null, null, s];
+    return { kind, outs, scored };
+  }
+
+  let r = rng(), acc = 0;
+  for (const [c, w] of OUT_MIX) { acc += w; if (r <= acc) { kind = c; break; } }
+  if (!kind) kind = 'K';
+
+  /* Runners move up on a ball in play often enough to matter to the picture. */
+  if (kind === 'GO' && st.outs < 2) {
+    if (s && !t && rng() < 0.35) st.bases = [f, null, s];
+  }
+  return { kind, outs, scored };
+}
+
+function describePlay(code, kind, batter, scored, rng, bases) {
+  const n = batter.name;
+  const on = occupied(bases);
+  switch (code) {
+    case 'BB': return n + ' draws a walk.';
+    case 'HBP': return n + ' is hit by the pitch.';
+    case '1B': return n + ' singles to ' + pickOne(FIELD.air, rng) + '.';
+    case '2B': return n + ' doubles to ' + pickOne(FIELD.gap.concat(FIELD.pull, FIELD.oppo), rng) + '.';
+    case '3B': return n + ' triples into ' + pickOne(FIELD.gap, rng) + '.';
+    case 'HR':
+      if (scored.length === 4) return n + ' hits a GRAND SLAM to ' + pickOne(FIELD.air, rng) + '.';
+      if (scored.length === 3) return n + ' hits a three-run shot to ' + pickOne(FIELD.air, rng) + '.';
+      if (scored.length === 2) return n + ' hits a two-run homer to ' + pickOne(FIELD.air, rng) + '.';
+      return n + ' goes deep to ' + pickOne(FIELD.air, rng) + '.';
+    default: break;
+  }
+  switch (kind) {
+    case 'K': return n + (rng() < 0.6 ? ' strikes out swinging.' : ' is called out on strikes.');
+    case 'DP': return n + ' grounds into a double play.';
+    case 'SF': return n + ' lifts a sacrifice fly to ' + pickOne(FIELD.air, rng) + '.';
+    case 'GO': return n + ' grounds out to ' + pickOne(FIELD.inf, rng) + '.';
+    case 'FO': return n + ' flies out to ' + pickOne(FIELD.air, rng) + '.';
+    case 'LO': return n + ' lines out to ' + pickOne(FIELD.inf, rng) + '.';
+    case 'PO': return n + ' pops out to ' + pickOne(FIELD.inf, rng) + '.';
+    default: return n + ' is retired.' + (on ? '' : '');
+  }
+}
+
+/*
+ * One half inning, worth exactly `target` runs.
+ *
+ * `need`, when given, is how many runs would put the batting side in front, and it
+ * is only ever passed for a home team's last at-bat in a game it wins. It keeps the
+ * lead from being taken twice: every play either leaves them behind or ends the
+ * game, which is what a walk-off is.
+ */
+function simHalfInning(target, rng, ctx) {
+  const lineup = ctx.lineup;
+  const st = { outs: 0, bases: [null, null, null] };
+  const plays = [];
+  let runs = 0, hits = 0, order = ctx.order || 0;
+  let guard = 0;
+
+  while (st.outs < 3 && guard++ < 60) {
+    const remaining = target - runs;
+    const batter = lineup[order % lineup.length];
+    const heat = remaining > 0 ? Math.min(2.4, 0.95 + 0.5 * remaining) : 0.60;
+
+    /* Which outcomes this base-out state can afford, and how many runs each may
+     * drive in without overshooting the inning or tripping the walk-off rule. */
+    const choices = [];
+    const codes = ON_BASE_CODES.slice();
+    if (!(st.outs === 2 && remaining > 0)) codes.push('OUT');
+    for (const c of codes) {
+      const [lo, hi] = runRange(c, st.bases, st.outs);
+      const ks = [];
+      for (let k = lo; k <= hi && k <= remaining; k++) {
+        if (ctx.need == null || runs + k < ctx.need || runs + k === target) ks.push(k);
+      }
+      if (!ks.length) continue;
+      const w = c === 'OUT' ? Math.max(0.04, 1 - PA_ON_BASE * heat) : PA_RATES[c] * heat;
+      choices.push([c, w, ks]);
+    }
+    /* Cannot happen with the rules above (a walk or a single with the bases not
+     * loaded is always legal), but an inning that cannot be continued is worse
+     * than one that ends early, so say so rather than spin. */
+    if (!choices.length) break;
+
+    let total = 0;
+    for (const ch of choices) total += ch[1];
+    let r = rng() * total, chosen = choices[choices.length - 1];
+    for (const ch of choices) { r -= ch[1]; if (r <= 0) { chosen = ch; break; } }
+
+    const code = chosen[0];
+    const ks = chosen[2];
+    /* Prefer the play that finishes the inning's business when one is on offer,
+     * so a rally resolves rather than trickling. */
+    let k = ks[Math.floor(rng() * ks.length)];
+    if (ks.indexOf(remaining) !== -1 && remaining > 0 && rng() < 0.6) k = remaining;
+
+    const before = st.bases.slice();
+    const outsBefore = st.outs;
+    let kind = code, scored;
+
+    if (code === 'OUT') {
+      const o = makeOut(st, batter, k, rng, remaining - k <= 0);
+      kind = o.kind; scored = o.scored;
+      st.outs = Math.min(3, st.outs + o.outs);
+    } else {
+      scored = advanceBases(st, code, batter, k, rng);
+      if (code !== 'BB' && code !== 'HBP') hits++;
+    }
+
+    runs += scored.length;
+    plays.push({
+      code, kind, batter,
+      pitcher: ctx.pitcherAt ? ctx.pitcherAt(order) : null,
+      text: describePlay(code, kind, batter, scored, rng, before),
+      scored: scored.map(p => p.name),
+      rbi: scored.length,
+      outsBefore, outs: st.outs,
+      basesBefore: before.map(p => (p ? p.name : null)),
+      bases: st.bases.map(p => (p ? p.name : null)),
+      runs,
+      hit: code !== 'BB' && code !== 'HBP' && code !== 'OUT',
+      walkoff: ctx.need != null && runs >= ctx.need,
+    });
+    order++;
+
+    if (ctx.need != null && runs >= ctx.need) break;
+  }
+
+  return { plays, runs, hits, order, lob: occupied(st.bases) };
+}
+
+/*
+ * Spread a game's runs across its innings. Real runs arrive in bunches: most
+ * innings are scoreless and the ones that are not tend to be worth more than one,
+ * so this hands out chunks rather than single runs.
+ */
+const RUN_CHUNKS = [[1, 0.50], [2, 0.24], [3, 0.14], [4, 0.08], [5, 0.04]];
+function spreadRuns(total, innings, rng) {
+  const out = new Array(innings).fill(0);
+  let left = total, guard = 0;
+  while (left > 0 && guard++ < 80) {
+    let r = rng(), acc = 0, chunk = 1;
+    for (const [c, w] of RUN_CHUNKS) { acc += w; if (r <= acc) { chunk = c; break; } }
+    chunk = Math.min(chunk, left);
+    /* A fresh inning is three times likelier than one that has already scored,
+     * which is about how often real clubs put up two crooked numbers. */
+    const weights = out.map(v => (v === 0 ? 3 : 1));
+    let tw = 0; for (const w of weights) tw += w;
+    let pick = rng() * tw, idx = 0;
+    for (let i = 0; i < innings; i++) { pick -= weights[i]; if (pick <= 0) { idx = i; break; } }
+    out[idx] += chunk;
+    left -= chunk;
+  }
+  if (left > 0) out[innings - 1] += left;
+  return out;
+}
+
+/* A batting order off a slot-tagged roster: the best bat hits third, the next two
+ * set the table, the rest fall in behind. */
+function battingOrder(batters) {
+  const s = batters.slice().sort((a, b) => (b.w || 0) - (a.w || 0));
+  if (s.length < 3) return s;
+  const head = [s[2], s[1], s[0]];
+  return head.concat(s.slice(3));
+}
+
+const GENERIC_SPOTS = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'];
+
+/*
+ * The nine who bat, off whatever the run handed us. A lineup roster supplies real
+ * names; All-Time Staff has no hitters at all, so it bats a nameless league-average
+ * nine and the drama sits with the arms, which is where that mode puts it anyway.
+ */
+function lineupFromRoster(roster) {
+  const batters = (roster || []).filter(p => p.r === 'b');
+  if (batters.length >= 9) {
+    return battingOrder(batters).slice(0, 9).map(p => ({
+      name: p.n, slot: p._slot || (p.ep || '').split(';')[0] || '', team: p.t, season: p.s, w: p.w,
+    }));
+  }
+  /* All-Time Staff drafts twelve arms and bats a league-average nine, so there
+   * are no names to print. "Your 2B grounds out to third" says what happened
+   * without inventing a person to have done it. */
+  return GENERIC_SPOTS.map(spot => ({ name: 'Your ' + spot, slot: spot, generic: true }));
+}
+
+/* The arms, in the order they will be used. */
+function staffFromRoster(roster, gameIndex) {
+  const arms = (roster || []).filter(p => p.r === 'p');
+  const by = (slot) => arms.find(p => p._slot === slot);
+  const rot = ['SP1', 'SP2', 'SP3', 'SP4', 'SP5'].map(by).filter(Boolean);
+  const pen = ['RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'SU'].map(by).filter(Boolean);
+  const cl = by('CL');
+  const start = rot.length ? rot[(gameIndex || 0) % rot.length] : arms[0];
+  const mid = pen.length ? pen[(gameIndex || 0) % pen.length] : null;
+  const wrap = (p) => (p ? { name: p.n, slot: p._slot, team: p.t, season: p.s, w: p.w } : null);
+  return { starter: wrap(start), reliever: wrap(mid) || wrap(start), closer: wrap(cl) || wrap(mid) };
+}
+
+/*
+ * The same two things for a real club, off its own season's roster.
+ *
+ * A third of the great clubs in the data carry seven or eight qualifying bats,
+ * because build time applies a playing-time floor and the bottom of a real
+ * lineup does not always clear it. Refusing those clubs would send the 1927
+ * Yankees out with nine nameless hitters, so the names that exist bat and the
+ * rest of the order is filled by position: a spot with no name is a spot whose
+ * man did not play enough to be in this data, which is the truth about it.
+ */
+function lineupFromTeamSeason(roster) {
+  if (!roster || !roster.length) return null;
+  const batters = roster.filter(p => p.r === 'b');
+  if (batters.length < 4) return null;
+  const out = battingOrder(batters).slice(0, 9).map(p => ({
+    name: p.n, slot: (p.pp || (p.ep || '').split(';')[0] || ''), team: p.t, season: p.s, w: p.w,
+  }));
+  const taken = {};
+  for (const p of out) taken[p.slot] = true;
+  for (const spot of GENERIC_SPOTS) {
+    if (out.length >= 9) break;
+    if (taken[spot]) continue;
+    out.push({ name: spot, slot: spot, generic: true });
+    taken[spot] = true;
+  }
+  while (out.length < 9) out.push({ name: 'DH', slot: 'DH', generic: true });
+  return out;
+}
+
+function staffFromTeamSeason(roster, gameIndex) {
+  if (!roster || !roster.length) return { starter: null, reliever: null, closer: null };
+  const arms = roster.filter(p => p.r === 'p').slice().sort((a, b) => (b.w || 0) - (a.w || 0));
+  const sp = arms.filter(p => p.ep === 'SP' || (p.pp === 'SP'));
+  const rp = arms.filter(p => p.ep !== 'SP' && p.pp !== 'SP');
+  const wrap = (p) => (p ? { name: p.n, slot: p.pp || p.ep || '', team: p.t, season: p.s, w: p.w } : null);
+  const rot = sp.length ? sp : arms;
+  return {
+    starter: wrap(rot[(gameIndex || 0) % Math.min(4, rot.length || 1)]),
+    reliever: wrap(rp[0] || rot[rot.length - 1]),
+    closer: wrap(rp.find(p => p.cl) || rp[1] || rp[0] || rot[0]),
+  };
+}
+
+/*
+ * The whole game, ready to animate.
+ *
+ * opts: { yourRuns, oppRuns, won, youHome, yourName, oppName, yourLineup, oppLineup,
+ *         yourStaff, oppStaff, rng }
+ *
+ * Returns the line score, every half inning, and every plate appearance inside it.
+ * The final line always equals the score it was handed.
+ */
+const INNINGS = 9;
+function simGameScript(opts) {
+  const rng = opts.rng;
+  const youHome = !!opts.youHome;
+  const awayRuns = youHome ? opts.oppRuns : opts.yourRuns;
+  const homeRuns = youHome ? opts.yourRuns : opts.oppRuns;
+  const homeWins = homeRuns > awayRuns;
+
+  let away = spreadRuns(awayRuns, INNINGS, rng);
+  let home = spreadRuns(homeRuns, INNINGS, rng);
+
+  /*
+   * Two rules about the last inning, both of them real. A home club that is ahead
+   * after the top of the ninth does not bat, and a home club that wins while batting
+   * does it by taking the lead on the last play of the game. Anything the spread
+   * produced that breaks either one gets its ninth-inning runs moved earlier.
+   */
+  let need = null;
+  if (homeWins && home[INNINGS - 1] > 0) {
+    const through = homeRuns - home[INNINGS - 1];
+    if (through > awayRuns || home[INNINGS - 1] > 4) {
+      /* Deal the whole total again across the first eight, which keeps it exact. */
+      home = spreadRuns(homeRuns, INNINGS - 1, rng).concat([0]);
+    } else {
+      need = awayRuns - through + 1;
+    }
+  }
+  const homeBatsNinth = !(homeWins && home[INNINGS - 1] === 0);
+
+  const awayName = youHome ? opts.oppName : opts.yourName;
+  const homeName = youHome ? opts.yourName : opts.oppName;
+  const awayLineup = youHome ? opts.oppLineup : opts.yourLineup;
+  const homeLineup = youHome ? opts.yourLineup : opts.oppLineup;
+  const awayStaff = youHome ? opts.oppStaff : opts.yourStaff;
+  const homeStaff = youHome ? opts.yourStaff : opts.oppStaff;
+
+  /* Who is on the mound: the starter into the seventh, a reliever after that, and
+   * the closer for the ninth when the game is still a save. Decoration, but it is
+   * the player's own bullpen doing the deciding, which is the point of drafting one. */
+  const armFor = (staff, inning, lead) => {
+    if (!staff) return null;
+    if (inning >= 9 && lead > 0 && lead <= 3 && staff.closer) return staff.closer;
+    if (inning >= 7 && staff.reliever) return staff.reliever;
+    return staff.starter || staff.reliever;
+  };
+
+  const halves = [];
+  const line = [];
+  let aScore = 0, hScore = 0, aHits = 0, hHits = 0;
+  let aOrder = 0, hOrder = 0;
+
+  for (let i = 0; i < INNINGS; i++) {
+    const top = simHalfInning(away[i], rng, {
+      lineup: awayLineup, order: aOrder,
+      pitcherAt: () => armFor(homeStaff, i + 1, hScore - aScore),
+    });
+    aOrder = top.order; aScore += top.runs; aHits += top.hits;
+    halves.push({
+      inning: i + 1, half: 'top', batting: youHome ? 'opp' : 'you',
+      team: awayName, runs: top.runs, hits: top.hits, plays: top.plays,
+      away: aScore, home: hScore,
+    });
+    const row = { top: top.runs, bot: null };
+
+    const lastInning = i === INNINGS - 1;
+    const skipBottom = lastInning && !homeBatsNinth;
+    if (!skipBottom) {
+      const bot = simHalfInning(home[i], rng, {
+        lineup: homeLineup, order: hOrder,
+        need: (lastInning && need != null) ? need : null,
+        pitcherAt: () => armFor(awayStaff, i + 1, aScore - hScore),
+      });
+      hOrder = bot.order; hScore += bot.runs; hHits += bot.hits;
+      halves.push({
+        inning: i + 1, half: 'bot', batting: youHome ? 'you' : 'opp',
+        team: homeName, runs: bot.runs, hits: bot.hits, plays: bot.plays,
+        away: aScore, home: hScore,
+        walkoff: lastInning && need != null,
+      });
+      row.bot = bot.runs;
+    }
+    line.push(row);
+  }
+
+  return {
+    youHome,
+    away: { name: awayName, lineup: awayLineup, staff: awayStaff, runs: aScore, hits: aHits },
+    home: { name: homeName, lineup: homeLineup, staff: homeStaff, runs: hScore, hits: hHits },
+    line, halves,
+    walkoff: need != null,
+    final: {
+      away: aScore, home: hScore,
+      yourRuns: youHome ? hScore : aScore,
+      oppRuns: youHome ? aScore : hScore,
+      won: !!opts.won,
+    },
+  };
+}
+
+/*
+ * Home field across a best-of-seven is 2-2-1-1-1, and across a best-of-five 2-2-1.
+ * Which end of it you are on is the one thing the bracket already knows, so the
+ * caller passes it and the animation just has to agree with the line score.
+ */
+function homeGames(bestOf, hasHomeField) {
+  const pattern = bestOf === 7 ? [1, 1, 0, 0, 0, 1, 1] : [1, 1, 0, 0, 1];
+  return pattern.map(v => (hasHomeField ? !!v : !v));
 }
 
 // ─── coach report (narrative end screen) ─────────────────────────────────────
@@ -1379,6 +1867,8 @@ const publicAPI = {
   teamStrength, teamWinPct, overallRating, squadRating, nationalRank,
   generateSchedule, buildOpponentPool, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,
+  PA_RATES, simGameScript, simHalfInning, spreadRuns, battingOrder, homeGames,
+  lineupFromRoster, staffFromRoster, lineupFromTeamSeason, staffFromTeamSeason,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
   respinCost, respinFees,
   pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,

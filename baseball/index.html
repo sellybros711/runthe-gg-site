@@ -376,6 +376,139 @@ h1,h2,h3{margin:0}
 .po-g.w{background:rgba(46,125,50,.15);color:var(--green);border:1px solid rgba(46,125,50,.3)}
 .po-g.l{background:rgba(192,57,43,.12);color:var(--red);border:1px solid rgba(192,57,43,.25)}
 
+/* ─── the series card ─── */
+.sr-card{position:relative;margin:14px 0;padding:20px 18px 18px;border-radius:16px;overflow:hidden;
+  background:var(--grad-panel);border:1px solid var(--line);box-shadow:var(--shadow)}
+.sr-card::before{content:'';position:absolute;left:0;right:0;top:0;height:6px;
+  background:linear-gradient(90deg,var(--c1,#8a7e6e),var(--c2,#6b6252))}
+/* Stacked, not columned: two clubs sharing a row at phone width means both names
+   wrap and neither reads. */
+.sr-side{margin-top:2px}
+.sr-side .nm{font-family:var(--fd);font-size:29px;line-height:1.04;letter-spacing:.01em}
+.sr-side .sub{font-family:var(--fn);font-size:11px;font-weight:800;color:var(--dim-2);
+  text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
+/* A rule with VS sitting in the break, rather than a column that makes both
+   clubs fight for half the width and lose. */
+.sr-mid{display:flex;align-items:center;gap:10px;margin:9px 0 5px;
+  font-family:var(--fd);font-size:14px;color:var(--dim-2)}
+.sr-mid::before,.sr-mid::after{content:'';flex:1;height:1px;background:var(--line-2)}
+.sr-meta{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.sr-chip{font-family:var(--fn);font-size:11px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.06em;padding:5px 9px;border-radius:99px;background:rgba(0,0,0,.06);color:var(--dim)}
+.sr-chip.home{background:rgba(46,125,50,.14);color:var(--green)}
+/* The road ahead, so a series card says where it sits in October rather than
+   leaving the player to count. */
+.sr-path{display:flex;align-items:center;gap:6px;margin:16px 0 2px;flex-wrap:wrap}
+.sr-step{font-family:var(--fn);font-size:10px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--dim-2);padding:5px 9px;border-radius:99px;
+  border:1px solid var(--line)}
+.sr-step.done{color:var(--green);border-color:rgba(46,125,50,.35);background:rgba(46,125,50,.1)}
+.sr-step.now{color:var(--cream);background:var(--ink);border-color:var(--ink)}
+.sr-arrow{color:var(--dim-2);font-size:11px}
+.sr-actions{display:flex;gap:8px;margin:4px 0 10px}
+.sr-actions .btn{flex:1}
+.sr-all{display:block;width:100%;background:none;border:0;cursor:pointer;padding:8px;
+  font-family:var(--fn);font-size:12px;font-weight:700;color:var(--dim-2);
+  text-transform:uppercase;letter-spacing:.08em;text-decoration:underline;text-underline-offset:3px}
+.sr-all:hover{color:var(--ink)}
+
+/* ─── one game, at bat by at bat ─── */
+.gm-top{display:flex;align-items:center;gap:10px;margin:10px 0 8px}
+.gm-where{flex:1;min-width:0;font-family:var(--fn);font-size:10.5px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--gold)}
+.gm-where b{display:block;font-family:var(--fp);font-size:13px;color:var(--dim);
+  text-transform:none;letter-spacing:0;font-weight:700;margin-top:2px}
+.gm-speeds{display:flex;gap:6px;flex:0 0 auto}
+.gm-sp{min-width:36px;height:30px;padding:0 8px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--line-2);background:var(--panel);color:var(--dim);
+  font-family:var(--fn);font-size:12px;font-weight:800}
+.gm-sp:hover{color:var(--ink);border-color:var(--dim-2)}
+.gm-sp.on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.gm-wide{min-width:auto}
+
+.gm-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}
+.gm-line{border-collapse:collapse;width:100%;font-family:var(--fn);font-size:12px;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.gm-line th,.gm-line td{padding:5px 0;text-align:center;min-width:19px}
+.gm-line th{font-size:9px;font-weight:800;color:var(--dim-2);letter-spacing:.04em;
+  border-bottom:1px solid var(--line)}
+.gm-line td{font-weight:700;color:var(--dim)}
+.gm-line .tm{text-align:left;padding-left:10px;min-width:74px;max-width:110px;
+  font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-line .rhe{font-weight:800;color:var(--ink);background:rgba(0,0,0,.05)}
+.gm-line .now{background:rgba(184,134,11,.18);color:var(--ink);font-weight:800}
+.gm-line tr.you .tm{color:var(--green)}
+.gm-line td.fresh{animation:gmpop .45s ease both}
+@keyframes gmpop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.25)}100%{transform:scale(1);opacity:1}}
+
+.gm-field{display:flex;align-items:center;gap:14px;margin:12px 0 10px;padding:12px 14px;
+  border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.gm-diamond{position:relative;flex:0 0 auto;width:104px;height:104px}
+/* Inset so the frame's corners land ON the bases rather than outside them. */
+.gm-frame{position:absolute;inset:21px;border:1px dashed rgba(0,0,0,.16);
+  transform:rotate(45deg);border-radius:3px}
+.gm-base{position:absolute;width:19px;height:19px;transform:rotate(45deg);border-radius:3px;
+  background:rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.14);transition:background .25s,transform .25s}
+.gm-base.on{background:var(--gold);border-color:#8b6914;box-shadow:0 0 0 4px rgba(184,134,11,.18)}
+.gm-base.b1{right:4px;top:42px} .gm-base.b2{left:42px;top:4px} .gm-base.b3{left:4px;top:42px}
+.gm-home{position:absolute;left:44px;bottom:2px;width:15px;height:15px;transform:rotate(45deg);
+  background:var(--cream);border:1px solid rgba(0,0,0,.28);border-radius:2px}
+/* A run crossing the plate is the only thing on this screen worth a flourish. */
+.gm-diamond.scored .gm-home{animation:gmplate .7s ease both}
+@keyframes gmplate{
+  0%{background:var(--cream);box-shadow:none}
+  30%{background:var(--gold);box-shadow:0 0 0 5px rgba(184,134,11,.25);transform:rotate(45deg) scale(1.15)}
+  100%{background:var(--cream);box-shadow:none;transform:rotate(45deg) scale(1)}}
+.gm-state{flex:1;min-width:0}
+.gm-outs{display:flex;align-items:center;gap:5px;font-family:var(--fn);font-size:10px;
+  font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--dim-2)}
+.gm-dot{width:9px;height:9px;border-radius:50%;background:rgba(0,0,0,.12)}
+.gm-dot.on{background:var(--red)}
+.gm-inn{margin-left:6px;color:var(--gold)}
+.gm-up{font-family:var(--fd);font-size:24px;line-height:1.1;margin-top:7px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-up .spot{font-family:var(--fn);font-size:10px;font-weight:800;color:var(--dim-2);
+  letter-spacing:.08em;display:block;text-transform:uppercase}
+.gm-arm{font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim);margin-top:4px}
+
+/* Fixed height so the page never jumps as plays arrive, and faded at the foot so
+   the half-drawn card at the bottom reads as older news rather than a clipping bug. */
+.gm-feed{min-height:214px;max-height:214px;overflow:hidden;margin-bottom:10px;
+  -webkit-mask-image:linear-gradient(180deg,#000 76%,rgba(0,0,0,.12) 100%);
+  mask-image:linear-gradient(180deg,#000 76%,rgba(0,0,0,.12) 100%)}
+.gm-play{display:flex;gap:9px;align-items:baseline;padding:6px 10px;margin-bottom:5px;
+  border-radius:9px;background:var(--panel);border:1px solid var(--line);
+  font-family:var(--fp);font-size:13px;animation:gmin .3s ease both}
+@keyframes gmin{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
+.gm-play .tag{flex:0 0 auto;font-family:var(--fn);font-size:9px;font-weight:800;
+  letter-spacing:.06em;padding:2px 5px;border-radius:5px;background:rgba(0,0,0,.07);
+  color:var(--dim-2);text-transform:uppercase}
+.gm-play.hit{border-color:rgba(46,125,50,.3)}
+.gm-play.hit .tag{background:rgba(46,125,50,.16);color:var(--green)}
+.gm-play.run{background:linear-gradient(180deg,#f7efd8,#efe3c6);border-color:rgba(184,134,11,.45)}
+.gm-play.run .tag{background:var(--grad-gold);color:#fff}
+.gm-play .rbi{color:var(--gold);font-weight:700}
+.gm-play.beat{justify-content:center;background:none;border:0;color:var(--dim-2);
+  font-family:var(--fn);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
+
+.gm-final{margin:6px 0 10px;padding:16px;border-radius:14px;text-align:center;
+  background:var(--grad-panel);border:1px solid var(--line-2);box-shadow:var(--shadow);
+  animation:optin .3s ease both}
+.gm-final .fl{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim-2)}
+.gm-final .fs{font-family:var(--fd);font-size:44px;line-height:1.05;margin:2px 0}
+.gm-final.w .fs{color:var(--green)} .gm-final.l .fs{color:var(--red)}
+.gm-final .fn{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--dim)}
+
+@media (max-width:380px){
+  .gm-line th,.gm-line td{min-width:16px;font-size:11px}
+  .gm-line .tm{min-width:62px;font-size:11px}
+  .gm-diamond{width:88px;height:88px}
+  .gm-base{width:16px;height:16px} .gm-base.b1{top:36px} .gm-base.b2{left:36px} .gm-base.b3{top:36px}
+  .gm-home{left:37px}
+  .gm-up{font-size:21px}
+}
+
 /* ─── result screen ─── */
 .result-card{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:14px;
   padding:24px 20px;text-align:center;margin:16px 0;position:relative;overflow:hidden;
@@ -1013,6 +1146,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <p><b style="color:var(--ink)">Roster shape.</b> A balanced roster with no weak links plays better than a pile of stars, and your build earns an archetype.</p>
     <p><b style="color:var(--ink)">Season.</b> You play 162 games against real all-time opponents (the '27 Yankees, the '19 Astros) with a marquee gauntlet mixed in.</p>
     <p><b style="color:var(--ink)">Playoffs &amp; ranking.</b> Reach October and chase the World Series; the deepest rounds stiffen against weaker teams. Every season earns a 0-100 team rating and a rank among all 2,594 teams in history.</p>
+    <p><b style="color:var(--ink)">October, batter by batter.</b> In every mode but the quick draft and the daily, the playoffs are played out a plate appearance at a time: nine innings, real base runners, your rotation against the club's own lineup. Watch a series or sim it, and after any season you can go back and watch October from the results screen.</p>
     <p><b style="color:var(--ink)">The record.</b> 116 wins ties the all-time mark; 117+ makes you the Greatest of All Time, a rare feat that takes a near-perfect draft.</p>
   </div>
   <div style="margin-top:16px"><button class="btn ghost sm" id="b-how-back">Back</button></div>
@@ -1096,6 +1230,55 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div id="po-rounds"></div>
 </div>
 
+<!-- The series card: the matchup, and the choice between watching it and
+     letting it happen. Shown once per round in the modes that play October out. -->
+<div class="screen" id="s-series">
+  <div class="sim-header">
+    <div class="eyebrow" id="sr-round"></div>
+    <h2 class="display" style="font-size:28px;margin:4px 0" id="sr-title"></h2>
+  </div>
+  <div class="sr-card" id="sr-card"></div>
+  <div class="sr-actions">
+    <button class="btn" id="sr-play">Play ball</button>
+    <button class="btn ghost" id="sr-sim">Sim the series</button>
+  </div>
+  <button class="sr-all" id="sr-simall">Sim the rest of October</button>
+</div>
+
+<!-- One playoff game, plate appearance by plate appearance. -->
+<div class="screen" id="s-game">
+  <div class="gm-top">
+    <div class="gm-where" id="gm-where"></div>
+    <div class="gm-speeds">
+      <button class="gm-sp gm-wide" id="gm-pause" title="Pause">Pause</button>
+      <button class="gm-sp" id="gm-speed" title="Speed">1&times;</button>
+      <button class="gm-sp gm-wide" id="gm-skipgame">Skip</button>
+    </div>
+  </div>
+
+  <div class="gm-scroll" id="gm-scroll"><table class="gm-line" id="gm-line"></table></div>
+
+  <div class="gm-field">
+    <div class="gm-diamond" id="gm-diamond">
+      <div class="gm-base b2" id="gm-b2"></div>
+      <div class="gm-base b1" id="gm-b1"></div>
+      <div class="gm-base b3" id="gm-b3"></div>
+      <div class="gm-home"></div>
+      <div class="gm-frame" id="gm-frame"></div>
+    </div>
+    <div class="gm-state">
+      <div class="gm-outs" id="gm-outs"></div>
+      <div class="gm-up" id="gm-up"></div>
+      <div class="gm-arm" id="gm-arm"></div>
+    </div>
+  </div>
+
+  <div class="gm-feed" id="gm-feed"></div>
+
+  <div class="gm-final" id="gm-final" hidden></div>
+  <button class="sr-all" id="gm-simall">Sim the rest of October</button>
+</div>
+
 <div class="screen" id="s-over">
   <div class="ro-hero" id="ro-hero">
     <div class="ro-ribbon" id="ro-ribbon"></div>
@@ -1127,6 +1310,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div class="share-row">
     <button class="btn" id="b-share">&#9918; Share result</button>
   </div>
+  <button class="btn ghost" id="b-watch-oct" hidden style="margin-top:8px">&#9918; Watch October</button>
   <button class="btn ghost" id="b-again" style="margin-top:8px">Draft again</button>
   <button class="btn ghost trophy-cta" id="b-trophy-2">Trophy case</button>
   <footer class="legal">
@@ -1257,7 +1441,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=16"></script>
+<script src="engine.js?v=17"></script>
 <script src="run.js?v=15"></script>
 <script src="achievements.js?v=3"></script>
 <script src="board.js?v=1"></script>
@@ -2867,39 +3051,423 @@ function finishSeason(){
 }
 
 /* ─── playoffs ─── */
+
+/* One round of the bracket, drawn the same way whether it arrived on a stagger
+   or was just played out plate appearance by plate appearance. */
+function roundCard(round){
+  const champ=round.won&&round.round==='World Series';
+  const div=document.createElement('div');
+  div.className='po-round '+(champ?'champ':round.won?'won':'lost');
+  if(round.oppTeam){
+    const tc=E.teamColors(round.oppTeam);
+    div.style.setProperty('--c1',tc[0]);
+    div.style.setProperty('--c2',tc[1]||tc[0]);
+  }
+  div.innerHTML='<div class="round-name">'+esc(round.round)+'</div>'+
+    (round.oppName?'<div class="po-opp">vs <b>'+esc(round.oppName)+'</b>'+
+      (round.oppRating!=null?'<span class="po-rate" title="Their team rating">'+
+        Math.round(round.oppRating)+'</span>':'')+'</div>':'')+
+    '<div class="po-series '+(champ?'champ':round.won?'won':'lost')+'">'+
+    (champ?'&#127942; Champions '+round.yourWins+'-'+round.oppWins:
+      round.won?'Won '+round.yourWins+'-'+round.oppWins:'Lost '+round.oppWins+'-'+round.yourWins)+'</div>'+
+    '<div class="po-games">'+round.games.map((g,gi)=>
+      '<div class="po-g '+(g.won?'w':'l')+'">G'+(gi+1)+' '+g.yourRuns+'-'+g.oppRuns+'</div>'
+    ).join('')+'</div>';
+  return div;
+}
+
+/* The quick draft stays quick: Classic and the daily get the bracket on a
+   stagger, the way they always have. Every mode you actually sit with plays
+   October out. */
+function liveOctober(){
+  if(!RUN||RUN.daily)return false;
+  return !!(RUN.era||RUN.franchise||RUN.division||RUN.capSurvivor||RUN.staff||RUN.tradeMachine);
+}
+
 function startPlayoffs(){
   show('s-playoffs');
   $('po-seed-label').textContent=RUN.playoffSeed.label;
+  $('po-rounds').innerHTML='';
+  if(liveOctober()){liveOctoberStart(null);return;}
+
   const rounds=RUN.playoffs.rounds;
-  const container=$('po-rounds');container.innerHTML='';
+  const container=$('po-rounds');
   let delay=0;
   for(const round of rounds){
     delay+=1200;
-    setTimeout(()=>{
-      const champ=round.won&&round.round==='World Series';
-      const div=document.createElement('div');
-      div.className='po-round '+(champ?'champ':round.won?'won':'lost');
-      if(round.oppTeam){
-        const tc=E.teamColors(round.oppTeam);
-        div.style.setProperty('--c1',tc[0]);
-        div.style.setProperty('--c2',tc[1]||tc[0]);
-      }
-      div.innerHTML='<div class="round-name">'+esc(round.round)+'</div>'+
-        (round.oppName?'<div class="po-opp">vs <b>'+esc(round.oppName)+'</b>'+
-          (round.oppRating!=null?'<span class="po-rate" title="Their team rating">'+
-            Math.round(round.oppRating)+'</span>':'')+'</div>':'')+
-        '<div class="po-series '+(champ?'champ':round.won?'won':'lost')+'">'+
-        (champ?'&#127942; Champions '+round.yourWins+'-'+round.oppWins:
-          round.won?'Won '+round.yourWins+'-'+round.oppWins:'Lost '+round.oppWins+'-'+round.yourWins)+'</div>'+
-        '<div class="po-games">'+round.games.map((g,gi)=>
-          '<div class="po-g '+(g.won?'w':'l')+'">G'+(gi+1)+' '+g.yourRuns+'-'+g.oppRuns+'</div>'
-        ).join('')+'</div>';
-      container.appendChild(div);
-    },delay);
+    setTimeout(()=>container.appendChild(roundCard(round)),delay);
   }
   delay+=1500;
   setTimeout(()=>showResult(),delay);
 }
+
+/* ─── October, plate appearance by plate appearance ───
+
+   The bracket above is already decided: R.finalizeSeason() ran the whole of
+   October through the same model that ran the 162, and this screen does not get
+   a vote. What it does is play the games that produced those scores, so a 4-2
+   in the Division Series stops being a number on a chip and becomes nine
+   innings with your catcher batting sixth.
+
+   Every game is seeded off the run seed plus its own round and game index, so
+   it draws nothing from the season's RNG. Watching a game and skipping it leave
+   the bracket identical, and the same game always plays the same way twice. */
+
+let PO=null;
+
+const myTagged=()=>RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
+const myClub=()=>RUN.franchise?teamFullName(RUN.franchise):'Your All-Stars';
+const myClubShort=()=>RUN.franchise||'YOU';
+
+function gameScript(ri,gi){
+  const round=RUN.playoffs.rounds[ri],g=round.games[gi];
+  const rng=E.createSeededRNG(E.hashSeed(String(RUN.seed)+'|po|'+ri+'|'+gi));
+  const homes=E.homeGames(round.bestOf||7,!!round.homeField);
+  const tagged=myTagged();
+  const oppRoster=(round.oppTeam&&round.oppSeason&&DATA&&DATA.byTeamSeason)
+    ?DATA.byTeamSeason[E.teamSeasonId(round.oppTeam,round.oppSeason)]:null;
+  return E.simGameScript({
+    yourRuns:g.yourRuns,oppRuns:g.oppRuns,won:g.won,
+    youHome:!!homes[gi],
+    yourName:myClubShort(),oppName:round.oppName||'The field',
+    yourLineup:E.lineupFromRoster(tagged),
+    oppLineup:E.lineupFromTeamSeason(oppRoster)||E.lineupFromRoster([]),
+    yourStaff:E.staffFromRoster(tagged,gi),
+    oppStaff:E.staffFromTeamSeason(oppRoster,gi),
+    rng,
+  });
+}
+
+function liveOctoberStart(returnTo){
+  const saved=parseInt(localStorage.getItem('rtd_po_speed')||'',10);
+  PO={round:0,game:0,speed:saved===2||saved===4?saved:(reduceMotion()?4:1),
+      paused:false,timer:null,returnTo:returnTo||null,events:null,idx:-1,script:null};
+  $('po-rounds').innerHTML='';
+  paintSpeed();
+  setTimeout(()=>openSeries(0),returnTo?0:700);
+}
+
+function poClear(){if(PO&&PO.timer){clearTimeout(PO.timer);PO.timer=null;}}
+
+/* ─── the series card ─── */
+function openSeries(i){
+  poClear();
+  const rounds=RUN.playoffs.rounds;
+  if(i>=rounds.length){octoberOver();return;}
+  PO.round=i;PO.game=0;
+  const r=rounds[i];
+  show('s-series');
+  /* The BRACKET, not the rounds that were played. RUN.playoffs.rounds stops at
+     the round you went out in, so counting it would tell a player on the series
+     card that this is the last one they will see. */
+  const path=E.playoffRoundNames(RUN.playoffSeed.rounds);
+  $('sr-round').textContent='Round '+(i+1)+' of '+path.length;
+  $('sr-title').textContent=r.round;
+  const card=$('sr-card');
+  const tc=r.oppTeam?E.teamColors(r.oppTeam):['#8a7e6e','#6b6252'];
+  card.style.setProperty('--c1',tc[0]);card.style.setProperty('--c2',tc[1]||tc[0]);
+  const need=Math.ceil((r.bestOf||7)/2);
+  const SHORT={'Wild Card':'WC','Division Series':'LDS','Championship Series':'LCS',
+    'World Series':'WS'};
+  card.innerHTML=
+    '<div class="sr-side"><div class="nm">'+esc(myClub())+'</div>'+
+      '<div class="sub">'+RUN.outcome.wins+'-'+RUN.outcome.losses+' &middot; '+
+      esc(RUN.playoffSeed.label)+'</div></div>'+
+    '<div class="sr-mid">VS</div>'+
+    '<div class="sr-side"><div class="nm">'+esc(r.oppName||'The field')+'</div>'+
+      '<div class="sub">'+(r.oppRating!=null?'Rated '+Math.round(r.oppRating):'All-time club')+
+      '</div></div>'+
+    '<div class="sr-meta">'+
+      '<span class="sr-chip">Best of '+(r.bestOf||7)+'</span>'+
+      '<span class="sr-chip '+(r.homeField?'home':'')+'">'+
+        (r.homeField?'Home field':'Open on the road')+'</span>'+
+      '<span class="sr-chip">'+need+' to advance</span>'+
+    '</div>'+
+    '<div class="sr-path">'+path.map((n,k)=>
+      (k?'<span class="sr-arrow">&rsaquo;</span>':'')+
+      '<span class="sr-step '+(k<i?'done':k===i?'now':'')+'">'+esc(SHORT[n]||n)+'</span>'
+    ).join('')+'</div>';
+}
+
+/* ─── one game ─── */
+function flattenScript(s){
+  const ev=[];let a=0,h=0;
+  for(const hf of s.halves){
+    ev.push({type:'half',hf,a,h});
+    for(const p of hf.plays){
+      ev.push({type:'pa',hf,p,
+        a:hf.half==='top'?a+p.runs:a,
+        h:hf.half==='bot'?h+p.runs:h});
+    }
+    a=hf.away;h=hf.home;
+  }
+  return ev;
+}
+
+function playGame(){
+  poClear();
+  const r=RUN.playoffs.rounds[PO.round];
+  if(PO.game>=r.games.length){endSeries();return;}
+  PO.script=gameScript(PO.round,PO.game);
+  PO.events=flattenScript(PO.script);
+  PO.idx=-1;
+  /* A pause belongs to the game it was called in. Carrying it into the next one
+     leaves the screen frozen with no obvious reason why. */
+  PO.paused=false;paintSpeed();
+  show('s-game');
+  $('gm-final').hidden=true;
+  $('gm-feed').innerHTML='';
+  paintGameChrome();
+  nextPlay();
+}
+
+function paintGameChrome(){
+  const r=RUN.playoffs.rounds[PO.round],s=PO.script;
+  let w=0,l=0;
+  for(let i=0;i<PO.game;i++){if(r.games[i].won)w++;else l++;}
+  /* Round on its own line: "Championship Series - Game 6" wraps at phone width
+     and the wrap lands between the two halves of one label. */
+  $('gm-where').innerHTML=esc(r.round)+
+    '<b>Game '+(PO.game+1)+' &middot; '+(w||l?'series '+w+'-'+l:'series level')+
+    ' &middot; '+(s.youHome?'at home':'on the road')+'</b>';
+
+  const rows=[['aw',s.away.name,!s.youHome],['hm',s.home.name,s.youHome]];
+  let html='<tr><th class="tm"></th>';
+  for(let i=1;i<=9;i++)html+='<th id="lh-'+i+'">'+i+'</th>';
+  html+='<th class="rhe">R</th><th class="rhe">H</th></tr>';
+  for(const [k,name,mine] of rows){
+    html+='<tr class="'+(mine?'you':'')+'"><td class="tm">'+esc(name)+'</td>';
+    for(let i=0;i<9;i++)html+='<td id="ln-'+k+'-'+i+'"></td>';
+    html+='<td class="rhe" id="ln-'+k+'-R">0</td><td class="rhe" id="ln-'+k+'-H">0</td></tr>';
+  }
+  $('gm-line').innerHTML=html;
+  setBases([null,null,null]);setOuts(0);
+  $('gm-up').innerHTML='';$('gm-arm').textContent='';
+}
+
+function setBases(b){
+  $('gm-b1').classList.toggle('on',!!b[0]);
+  $('gm-b2').classList.toggle('on',!!b[1]);
+  $('gm-b3').classList.toggle('on',!!b[2]);
+}
+function setOuts(n,label){
+  $('gm-outs').innerHTML='Out'+
+    '<span class="gm-dot'+(n>0?' on':'')+'"></span>'+
+    '<span class="gm-dot'+(n>1?' on':'')+'"></span>'+
+    '<span class="gm-dot'+(n>2?' on':'')+'"></span>'+
+    (label?'<span class="gm-inn">'+esc(label)+'</span>':'');
+}
+
+const HALF_LABEL=n=>(n===1?'1st':n===2?'2nd':n===3?'3rd':n+'th');
+const PLAY_TAG={BB:'BB',HBP:'HBP','1B':'1B','2B':'2B','3B':'3B',HR:'HR',
+  K:'K',GO:'GO',FO:'FO',LO:'LO',PO:'PO',DP:'DP',SF:'SF'};
+
+function feedLine(html,cls){
+  const feed=$('gm-feed');
+  const d=document.createElement('div');
+  d.className='gm-play '+(cls||'');
+  d.innerHTML=html;
+  feed.insertBefore(d,feed.firstChild);
+  while(feed.children.length>6)feed.removeChild(feed.lastChild);
+}
+
+function renderEvent(ev){
+  const s=PO.script;
+  if(ev.type==='half'){
+    setBases([null,null,null]);
+    setOuts(0,(ev.hf.half==='top'?'Top ':'Bot ')+HALF_LABEL(ev.hf.inning));
+    feedLine((ev.hf.half==='top'?'Top of the ':'Bottom of the ')+HALF_LABEL(ev.hf.inning)+
+      ' &middot; '+esc(ev.hf.team)+' batting','beat');
+    for(let i=1;i<=9;i++)$('lh-'+i).classList.toggle('now',i===ev.hf.inning);
+    const first=ev.hf.plays[0];
+    if(first)paintUp(first,ev.hf);
+    return;
+  }
+  const p=ev.p,hf=ev.hf;
+  setBases(p.bases);
+  const dia=$('gm-diamond');
+  dia.classList.remove('scored');
+  if(p.rbi>0&&!reduceMotion()){void dia.offsetWidth;dia.classList.add('scored');}
+  setOuts(p.outs,(hf.half==='top'?'Top ':'Bot ')+HALF_LABEL(hf.inning));
+
+  const key=hf.half==='top'?'aw':'hm';
+  const cell=$('ln-'+key+'-'+(hf.inning-1));
+  if(cell){cell.textContent=p.runs;cell.classList.remove('fresh');
+    if(p.rbi>0){void cell.offsetWidth;cell.classList.add('fresh');}}
+  $('ln-aw-R').textContent=ev.a;$('ln-hm-R').textContent=ev.h;
+  $('ln-'+key+'-H').textContent=liveHits(hf,p);
+
+  const tag=PLAY_TAG[p.code==='OUT'?p.kind:p.code]||'';
+  let cls=p.rbi>0?'run':(p.hit?'hit':'');
+  let text=esc(p.text);
+  if(p.code!=='HR'&&p.scored.length){
+    const who=p.scored.map(esc);
+    const last=who.pop();
+    text+=' '+(who.length?who.join(', ')+' and '+last:last)+
+      (p.scored.length>1?' score.':' scores.');
+  }
+  if(p.walkoff)text+=' Ballgame.';
+  feedLine('<span class="tag">'+esc(tag)+'</span><span>'+text+'</span>',cls);
+
+  const nx=PO.events[PO.idx+1];
+  if(nx&&nx.type==='pa')paintUp(nx.p,nx.hf);
+}
+
+/* Hits are cumulative across the game, and the script only carries them per half,
+   so add up the finished halves for this side and the one in progress. */
+function liveHits(hf,p){
+  let n=0;
+  for(const h of PO.script.halves){
+    if(h.half!==hf.half)continue;
+    if(h.inning<hf.inning)n+=h.hits;
+  }
+  for(const q of hf.plays){n+=q.hit?1:0;if(q===p)break;}
+  return n;
+}
+
+function paintUp(p,hf){
+  const b=p.batter||{};
+  $('gm-up').innerHTML='<span class="spot">'+esc(hf.team)+' batting</span>'+esc(b.name||'');
+  const arm=p.pitcher;
+  $('gm-arm').textContent=arm?('Pitching: '+arm.name+(arm.slot?' ('+arm.slot+')':'')):'';
+}
+
+function delayFor(ev){
+  const sp=PO.speed||1;
+  if(ev.type==='half')return 320/sp;
+  const p=ev.p;
+  let d=270;
+  if(p.basesBefore.some(Boolean))d=380;
+  if(p.hit)d=540;
+  if(p.rbi>0)d=820;
+  if(p.code==='HR')d=1000;
+  if(p.walkoff)d=1500;
+  return d/sp;
+}
+
+function nextPlay(){
+  poClear();
+  if(!PO||PO.paused)return;
+  PO.idx++;
+  const ev=PO.events[PO.idx];
+  if(!ev){finishGame();return;}
+  renderEvent(ev);
+  PO.timer=setTimeout(nextPlay,delayFor(ev));
+}
+
+/* Skip: the score was never in doubt, so jumping to the end just means painting
+   the line score the script already holds. */
+function jumpToEnd(){
+  poClear();
+  const s=PO.script;
+  for(let i=0;i<9;i++){
+    const t=s.line[i];
+    $('ln-aw-'+i).textContent=t.top;
+    $('ln-hm-'+i).textContent=t.bot==null?'X':t.bot;
+  }
+  $('ln-aw-R').textContent=s.final.away;$('ln-hm-R').textContent=s.final.home;
+  $('ln-aw-H').textContent=s.away.hits;$('ln-hm-H').textContent=s.home.hits;
+  for(let i=1;i<=9;i++)$('lh-'+i).classList.remove('now');
+  setBases([null,null,null]);setOuts(3);
+  PO.idx=PO.events.length;
+  finishGame();
+}
+
+function finishGame(){
+  poClear();
+  const s=PO.script,r=RUN.playoffs.rounds[PO.round],g=r.games[PO.game];
+  for(let i=0;i<9;i++){
+    const t=s.line[i];
+    $('ln-aw-'+i).textContent=t.top;
+    $('ln-hm-'+i).textContent=t.bot==null?'X':t.bot;
+  }
+  $('ln-aw-H').textContent=s.away.hits;$('ln-hm-H').textContent=s.home.hits;
+  for(let i=1;i<=9;i++)$('lh-'+i).classList.remove('now');
+  /* Leaving the last hitter under "batting", with an inning still lit beside
+     him, reads as though the game is going on. */
+  $('gm-up').innerHTML='<span class="spot">Final</span>'+
+    esc(s.away.name)+' '+s.final.away+', '+esc(s.home.name)+' '+s.final.home;
+  $('gm-arm').textContent='';
+  setBases([null,null,null]);setOuts(3);
+
+  let w=0,l=0;
+  for(let i=0;i<=PO.game;i++){if(r.games[i].won)w++;else l++;}
+  const need=Math.ceil((r.bestOf||7)/2);
+  const over=w>=need||l>=need;
+  const fin=$('gm-final');
+  fin.className='gm-final '+(g.won?'w':'l');
+  fin.innerHTML='<div class="fl">'+(s.walkoff&&g.won?'Walk-off':'Final')+'</div>'+
+    '<div class="fs">'+(g.won?'W':'L')+' '+g.yourRuns+'-'+g.oppRuns+'</div>'+
+    '<div class="fn">'+(over?(w>=need?'Series won '+w+'-'+l:'Series lost '+l+'-'+w)
+      :'Series '+w+'-'+l)+'</div>';
+  fin.hidden=false;
+  PO.timer=setTimeout(()=>{
+    PO.game++;
+    if(PO.game>=r.games.length)endSeries();else playGame();
+  },1700/(PO.speed||1));
+}
+
+/* ─── between series ─── */
+function endSeries(){
+  poClear();
+  const r=RUN.playoffs.rounds[PO.round];
+  show('s-playoffs');
+  $('po-rounds').appendChild(roundCard(r));
+  PO.timer=setTimeout(()=>{
+    if(r.won&&PO.round+1<RUN.playoffs.rounds.length)openSeries(PO.round+1);
+    else octoberOver();
+  },1600);
+}
+
+function simRestOfOctober(){
+  poClear();
+  show('s-playoffs');
+  const rounds=RUN.playoffs.rounds;
+  for(let i=PO.round;i<rounds.length;i++)$('po-rounds').appendChild(roundCard(rounds[i]));
+  PO.timer=setTimeout(octoberOver,1400);
+}
+
+function octoberOver(){
+  poClear();
+  const back=PO&&PO.returnTo;
+  PO=null;
+  if(back==='result')show('s-over');
+  else showResult();
+}
+
+function paintSpeed(){
+  const b=$('gm-speed');if(!b||!PO)return;
+  b.innerHTML=PO.speed+'&times;';
+  $('gm-pause').classList.toggle('on',!!PO.paused);
+  $('gm-pause').textContent=PO.paused?'Play':'Pause';
+}
+
+(function wireOctober(){
+  $('sr-play').onclick=()=>{ga('october_watch',{round:PO?PO.round:0});playGame();};
+  $('sr-sim').onclick=()=>endSeries();
+  $('sr-simall').onclick=()=>simRestOfOctober();
+  $('gm-simall').onclick=()=>simRestOfOctober();
+  $('gm-skipgame').onclick=()=>{if(PO&&PO.script)jumpToEnd();};
+  $('gm-pause').onclick=()=>{
+    if(!PO)return;
+    PO.paused=!PO.paused;paintSpeed();
+    if(!PO.paused)nextPlay();else poClear();
+  };
+  $('gm-speed').onclick=()=>{
+    if(!PO)return;
+    PO.speed=PO.speed===1?2:PO.speed===2?4:1;
+    try{localStorage.setItem('rtd_po_speed',String(PO.speed));}catch(_){}
+    paintSpeed();
+  };
+  /* Classic and the daily keep their fast bracket, but the games are there to be
+     watched if you want them: the run is finished and replaying it changes nothing. */
+  $('b-watch-oct').onclick=()=>{
+    ga('october_replay',{});
+    show('s-playoffs');
+    $('po-seed-label').textContent=RUN.playoffSeed.label;
+    liveOctoberStart('result');
+  };
+})();
 
 /* ─── result ─── */
 function ordinal(n){
@@ -2933,6 +3501,7 @@ function showResult(){
   else if(RUN.era)modeLabel=RUN.era+' era';
   const seedTxt=o.seedLabel&&o.madePlayoffs?o.seedLabel:'';
   $('ro-sub').textContent=[modeLabel,seedTxt].filter(Boolean).join(' · ');
+  $('b-watch-oct').hidden=!o.madePlayoffs;
 
   // GOAT / record banner
   const goatDiv=$('r-goat');goatDiv.innerHTML='';goatDiv.style.display='none';

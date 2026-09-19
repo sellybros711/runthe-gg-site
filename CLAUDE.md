@@ -268,6 +268,49 @@ must never be shown to a player as a fact about a real season. The dev banner
 said so and has come off, because saying it now would be false in the other
 direction.
 
+## Run The Diamond, the baseball game
+
+`baseball/`, at `/baseball/`. Same split as hoops: `engine.js`, `run.js`,
+`achievements.js` and `board.js` load beside the page and carry cache versions,
+so **read the cache-busting section above before editing any of them**.
+
+```
+node baseball/check-atbats.mjs    the October simulator, against real brackets
+```
+
+### The at-bat simulator decides nothing, and that is the point
+
+October is played out plate by plate in every mode except Classic and the daily,
+which keep the quick bracket. The thing to understand before touching it:
+
+**`resolveGame()` still decides every game.** The season, the bracket and the
+balance measured across thousands of runs (89.2 mean wins, 59.8% Octobers, 6.5%
+titles) all come from the model that was there before. `simGameScript()` is
+handed a final score that already exists and works out the nine innings that
+produced it: it spreads the runs across innings the way real innings bunch up,
+then plays each half out with real base and out state until exactly that many
+runs are in. A second simulator that decided its own games would be a second
+balance, and every one of those numbers would need re-tuning.
+
+Two consequences worth keeping:
+
+- **It draws from its own RNG**, seeded off the run seed plus the round and game
+  index. Watching a game and skipping it leave the bracket bit-identical, and a
+  seed always replays the same game. Do not let it touch the season's stream.
+- **The only rule imposed from outside is that the third out cannot land until
+  the inning's runs are in.** That is also the only rule real baseball enforces
+  about when an inning ends, so it never shows. Everything else (a double play
+  wiping out a rally, a runner held at third, a walk-off) falls out of the base
+  state. `check-atbats.mjs` asserts the line score always adds up to the score it
+  was handed, over 25,000 games plus every game of 25 real brackets, and checks
+  the shape against real baseball: plate appearances per game, hits, how often a
+  half inning is scoreless.
+
+The opponent bats its own roster: a marquee club carries its season, so the 1927
+Yankees send up Combs, Gehrig and Ruth. **A third of those clubs have seven or
+eight qualifying bats**, because the build applies a playing-time floor, and the
+rest of the order fills in by position rather than by inventing anybody.
+
 ## Segue's data
 
 Its data refreshes itself daily at 6am Eastern
