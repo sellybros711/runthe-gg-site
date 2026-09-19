@@ -4384,6 +4384,54 @@ reveal of something the reader has seen. Rounds already played are drawn
 settled, because a bracket that came back as a page of TBD reads as a run that
 had not started.
 
+### The court is a hardwood floor, and the club goes ON it
+
+The court on all three screens (the home hero, the draft, the results) was a
+flat brown radial gradient with four white outlines over it, which reads as a
+DIAGRAM of a court. A floor is what the sport is played on and it is the one
+surface in this game a fan already has a picture of.
+
+**Seven background layers, and the top one is a custom property.** The tint is
+`--floor-tint` and the six under it are the wood: a varnish sheen, light across
+the boards, board to board tone, the seams, the grain, and the maple. The club
+rule swaps the TINT and nothing else.
+
+**That is the whole point of the restructure, because the flat version was one
+`background` and `body.clubbed .court` replaced it outright.** Do that now and
+every plank goes the moment a club reel lands, which is a court that looks
+perfect in the state a developer opens the page in and flat for the whole
+draft. Nothing throws. `verify.mjs` asserts the club rule sets `--floor-tint`
+and never `background`, and both defects were proved by reintroducing them.
+
+**FOUR PERIODS THAT DO NOT DIVIDE INTO EACH OTHER, or it is a barcode.** One
+repeating gradient at one period is found by the eye in about a second. The
+planks are 6.1%, the board tone is 21.7% and the grain is 1.63%, so no two ever
+line up and nothing has to be random.
+
+**The seams were at .30 and the floor was corduroy.** Two sets of vertical
+stripes at high contrast stop reading as boards and start reading as cloth.
+They are a hairline at .17 now, and the TONE is what separates one board from
+the next. The grain is .022 for the same reason: it is a third set of vertical
+stripes and is the layer most able to ruin this.
+
+**The boards run away from the reader**, because this camera looks at a half
+court from centre with the basket at the top, and a real floor is laid baseline
+to baseline. Laid the other way they read as decking.
+
+**Three parts were added as markup and every court needs all of them**: the
+apron (`.oob`, the same boards under a darker stain rather than a different
+surface), the backboard (`.bb`, three pixels that turn a hoop floating on a
+floor into a basket) and the two corner threes (`.c3`, which the arc alone
+cannot draw). The guard counts them against the number of courts rather than
+naming them, so the next part is covered without anybody remembering.
+
+**The club wash is .42 and was .62, and the difference is measured by looking.**
+At .62 a club painted the top third of the floor a solid colour and the planks
+disappeared into it, which is the flat court arriving by a different door. At
+.42 it is a floor lit in the club's colours. **The layer count and the layer
+types are identical in both states**, so the .35s fade between clubs still
+interpolates.
+
 ### A game seven is not a scoreline
 
 ```

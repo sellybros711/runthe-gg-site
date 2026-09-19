@@ -537,11 +537,22 @@
     background:linear-gradient(180deg,rgba(var(--club1rgb),.5),#10151f 62%);}
   body.clubbed .capbar:not(.tight):not(.broke) i{
     background:linear-gradient(90deg,var(--club1),var(--club2));}
-  body.clubbed .court{background:radial-gradient(120% 80% at 50% 0%,
-    rgba(var(--club1rgb),.62) 0%,#1a1109 58%,#120c07 100%);border-color:var(--club2);}
+  /* ONLY THE TINT LAYER, never the whole background. Replacing it outright is
+     what painted a club over the boards and left a flat colour. */
+  /* THE WASH HAS TO LEAVE THE BOARDS VISIBLE, which is the whole reason the
+     wood is under it. At the .62 the flat court carried, a club painted the
+     top third of the floor a solid colour and the planks disappeared into
+     it. Measured by looking: .42 is a court lit in the club's colours and
+     .62 is a court made of them. */
+  body.clubbed .court{--floor-tint:radial-gradient(125% 85% at 50% -5%,
+    rgba(var(--club1rgb),.42) 0%,rgba(var(--club1rgb),.11) 48%,rgba(0,0,0,0) 74%);
+    border-color:var(--club2);}
   body.clubbed .court .rim{border-color:var(--club2);}
+  /* The lane takes the club, which is what a home floor does. */
+  body.clubbed .court .key{background:linear-gradient(180deg,
+    rgba(var(--club1rgb),.52),rgba(var(--club1rgb),.30));}
   body.clubbed .court .arc3,body.clubbed .court .key,body.clubbed .court .circ{
-    border-color:rgba(255,255,255,.2);}
+    border-color:rgba(255,255,255,.55);}
   /* The transitions are on the properties that move, not on "all", so a spin
      does not animate the layout of everything inside these panels. */
   .capwrap,.court{transition:border-color .35s ease,background .35s ease;}
@@ -582,18 +593,101 @@
      the same idea in the sport it belongs to: five spots where those players
      actually stand, plus the sixth man on the bench outside the sideline,
      because he is not on the floor and the picture should not pretend he is. */
-  .court{position:relative;width:100%;aspect-ratio:1/0.94;border-radius:13px;overflow:hidden;
-    background:radial-gradient(120% 80% at 50% 0%,#2a1c10 0%,#1a1109 55%,#120c07 100%);
+  /* ── IT IS A HARDWOOD FLOOR, AND EVERY LAYER IS DOING A JOB ─────────────
+   *
+   * It was a flat brown radial gradient with four white outlines on it, which
+   * reads as a diagram of a court. A floor is what the sport is played on and
+   * it is the one surface here a fan already has a picture of, so it is worth
+   * the layers.
+   *
+   * THE BOARDS RUN THE LONG AXIS, which is how a real floor is laid: baseline
+   * to baseline. This camera looks at a half court from centre with the
+   * basket at the top, so the long axis runs AWAY from the reader and the
+   * planks are vertical. Laid the other way they read as decking.
+   *
+   * FOUR GRADIENTS RATHER THAN ONE, and the reason is the repeat. A single
+   * repeating gradient at one period is a barcode: the eye finds the loop in
+   * about a second. A second one at a period that does not divide into the
+   * first (5.1% against 17.3%) shifts the tone of individual boards, and a
+   * third at 1.7% is the grain inside them. Nothing here is random, and it
+   * does not need to be: two periods that never line up are enough.
+   *
+   * THE TINT IS ITS OWN LAYER, on a custom property, so the club wash can be
+   * swapped without taking the wood with it. Written as one `background` that
+   * body.clubbed replaced outright, drawing a club painted over the floor and
+   * left a flat colour, which is what shipped before this. The layer count
+   * and the layer types are identical in both states, so the .35s fade
+   * between them still interpolates.
+   */
+  .court{
+    --floor-tint:radial-gradient(125% 85% at 50% -5%,
+      rgba(255,190,120,.20) 0%,rgba(255,170,90,.06) 45%,rgba(0,0,0,0) 72%);
+    position:relative;width:100%;aspect-ratio:1/0.94;border-radius:13px;overflow:hidden;
+    background:
+      /* the arena light, or the club's colours washed over the boards */
+      var(--floor-tint),
+      /* the varnish: one soft sheen down the left of the key, which is what a
+         gloss coat under a light rig actually looks like from this angle */
+      linear-gradient(104deg,rgba(255,255,255,0) 26%,rgba(255,240,215,.055) 38%,
+        rgba(255,255,255,0) 52%),
+      /* light across the boards, which is what stops the whole thing reading
+         as one flat panel with lines on it */
+      linear-gradient(183deg,rgba(255,255,255,.035) 0%,rgba(0,0,0,0) 28%,
+        rgba(0,0,0,.05) 62%,rgba(0,0,0,0) 100%),
+      /* board to board tone, at a period that does not divide into the planks */
+      repeating-linear-gradient(90deg,
+        rgba(255,235,205,.035) 0 6.1%,rgba(0,0,0,.045) 6.1% 13.8%,
+        rgba(255,235,205,.015) 13.8% 21.7%),
+      /* the seam between two boards. A hairline, because the boards are what
+         should read and the gaps are what should not: at .30 this alone was
+         corduroy, and the tone above is what is meant to separate them. */
+      repeating-linear-gradient(90deg,
+        rgba(0,0,0,0) 0 5.75%,rgba(0,0,0,.17) 5.75% 6.1%),
+      /* the grain. A THIRD SET OF VERTICAL STRIPES IS THE RISK HERE, so it is
+         barely there: any darker and the eye reads three periods at once and
+         the floor turns to cloth. */
+      repeating-linear-gradient(90deg,
+        rgba(0,0,0,0) 0 1.15%,rgba(0,0,0,.022) 1.15% 1.63%),
+      /* and the maple underneath, darker as it runs away from the light */
+      linear-gradient(176deg,#8a5c2c 0%,#744d23 44%,#553519 78%,#402714 100%);
     border:1px solid var(--cardb);contain:layout;}
-  .court .ln{position:absolute;border:1.5px solid rgba(255,255,255,.16);}
+  /* Out of bounds. A real apron is the same boards under a darker stain, so
+     it is a wash over the floor rather than a different surface. */
+  .court .oob{position:absolute;left:0;right:0;bottom:0;height:20%;
+    background:linear-gradient(180deg,rgba(0,0,0,.30),rgba(0,0,0,.52));}
+  /* BRIGHTER THAN THEY WERE, because they used to sit on near black and now
+     they sit on wood. Court lines are painted white and on a real floor they
+     are the most visible thing on it. */
+  .court .ln{position:absolute;border:2px solid rgba(255,255,255,.62);}
+  /* THE THREE POINT LINE IS NOT ONE CURVE, and the corner three is the half
+     everybody recognises. The ellipse's widest point sits at 11% down, so it
+     meets the sideline there and the two straight segments run from the
+     baseline to that seam. Drawn as one arc it swept off both edges of the
+     floor and through the bench, which is a shape no court has. */
   .court .arc3{left:6%;right:6%;top:-64%;height:150%;border-radius:50%;border-top:0;}
-  .court .key{left:34%;right:34%;top:0;height:38%;border-top:0;}
+  .court .c3{position:absolute;top:0;height:11.4%;width:2px;
+    background:rgba(255,255,255,.62);}
+  .court .c3.l{left:6%;}
+  .court .c3.r{right:6%;}
+  /* The backboard, from above: a plate behind the rim. Two pixels of white
+     and it is the difference between a hoop floating on a floor and a
+     basket. */
+  .court .bb{position:absolute;left:50%;top:3.4%;width:13%;height:3px;
+    margin-left:-6.5%;border-radius:1px;background:rgba(255,255,255,.8);}
+  /* THE PAINT IS PAINTED. An old school lane is a solid block of colour and
+     it is the second thing anybody recognises about a court after the wood.
+     Neutral until a club is drawn, because the six position colours on the
+     discs are the only palette this screen owns by default. */
+  .court .key{left:34%;right:34%;top:0;height:38%;border-top:0;
+    background:linear-gradient(180deg,rgba(138,52,20,.62),rgba(112,42,16,.5));}
   .court .circ{left:41%;right:41%;top:30%;height:16%;border-radius:50%;}
   .court .rim{position:absolute;left:50%;top:7%;width:15px;height:15px;margin-left:-7.5px;
-    border:2px solid rgba(240,120,45,.75);border-radius:50%;}
-  .court .base{position:absolute;left:0;right:0;top:0;height:2px;background:rgba(255,255,255,.28);}
-  .court .side{position:absolute;left:0;right:0;bottom:20%;height:1px;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);}
+    border:2px solid rgba(240,120,45,.9);border-radius:50%;
+    box-shadow:0 0 0 1px rgba(0,0,0,.35);}
+  .court .base{position:absolute;left:0;right:0;top:0;height:3px;background:rgba(255,255,255,.7);}
+  .court .side{position:absolute;left:0;right:0;bottom:20%;height:2px;
+    background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,.62) 18%,
+      rgba(255,255,255,.62) 82%,rgba(255,255,255,.18));}
   .court .benchlbl{position:absolute;left:8px;bottom:5px;font-size:8.5px;letter-spacing:.16em;
     text-transform:uppercase;color:var(--dim);font-weight:800;}
   .spot{position:absolute;transform:translate(-50%,-50%);width:74px;text-align:center;
@@ -1547,10 +1641,14 @@
     </div>
     <div class="court herocourt" id="h-court" role="img"
          aria-label="A roster being built, one signing at a time">
+      <div class="oob"></div>
       <div class="base"></div>
       <div class="ln arc3"></div>
+      <div class="c3 l"></div>
+      <div class="c3 r"></div>
       <div class="ln key"></div>
       <div class="ln circ"></div>
+      <div class="bb"></div>
       <div class="rim"></div>
       <div class="side"></div>
       <div class="benchlbl">Bench</div>
@@ -1798,11 +1896,15 @@
 
     <aside class="dside">
       <div class="court" id="court" role="img" aria-label="Your rotation on the floor">
+        <div class="oob"></div>
         <div class="base"></div>
         <div class="ln arc3"></div>
+      <div class="c3 l"></div>
+      <div class="c3 r"></div>
         <div class="ln key"></div>
         <div class="ln circ"></div>
-        <div class="rim"></div>
+        <div class="bb"></div>
+      <div class="rim"></div>
         <div class="side"></div>
         <div class="benchlbl">Bench</div>
       </div>
@@ -1990,10 +2092,14 @@
     <!-- The same court as the draft screen, so the six men you finished with are
          seen where they played rather than only listed. -->
     <div class="court" id="o-court" role="img" aria-label="Your rotation on the floor">
+      <div class="oob"></div>
       <div class="base"></div>
       <div class="ln arc3"></div>
+      <div class="c3 l"></div>
+      <div class="c3 r"></div>
       <div class="ln key"></div>
       <div class="ln circ"></div>
+      <div class="bb"></div>
       <div class="rim"></div>
       <div class="side"></div>
       <div class="benchlbl">Bench</div>

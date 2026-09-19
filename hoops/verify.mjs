@@ -1049,6 +1049,58 @@ ok(bestWins > worstWins + 20,
   ok(read.size >= 10, `the outcome scan found real reads (${read.size})`);
 }
 
+/* ── THE FLOOR IS UNDER THE CLUB, NOT REPLACED BY IT ────────────────────────
+ *
+ * The court is a hardwood floor now: seven background layers, of which the
+ * top one is a tint on a custom property and the six under it are the wood.
+ * Before that it was one flat gradient, and `body.clubbed .court` said
+ * `background:` and replaced the lot.
+ *
+ * SO THE ONE REGRESSION WORTH GUARDING IS A SECOND `background` ON THE CLUB
+ * RULE. Write one and every plank goes when a club lands, which is a court
+ * that looks perfectly fine in the state a developer opens it in (nothing is
+ * drawn until a club reel lands) and flat in the state a player is in for the
+ * whole draft. Nothing throws and no other check here opens the page.
+ *
+ * The other half is the three courts. The home screen, the draft and the
+ * results each carry one, and every part of the floor is markup: an apron, a
+ * backboard and two corner threes added to one of them and not the others is
+ * two courts in one game. Counted rather than named, so the next part added
+ * is covered without anybody remembering this section exists.
+ */
+{
+  const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+
+  const club = /body\.clubbed \.court\{([^}]*)\}/.exec(src);
+  ok(!!club, 'a club still repaints the court');
+  if (club) {
+    ok(/--floor-tint\s*:/.test(club[1]), 'and it does it through the tint layer');
+    ok(!/(^|;)\s*background\s*:/.test(club[1]),
+      'and never by replacing the background, which takes the boards with it');
+  }
+
+  /* ANCHORED ON THE TINT, because `.court` has three other rules and the
+     first of them is an aspect ratio inside a media query. A regex for the
+     selector alone reads that one and reports a floor with no boards in it,
+     which is what the first draft of this did. */
+  const floor = /\n\s*\.court\{([^}]*var\(--floor-tint\)[^}]*)\}/.exec(src);
+  ok(!!floor, 'the court draws its own floor');
+  if (floor) {
+    /* The wood is the planks, the seams and the grain, which is three
+       repeating gradients. Counted rather than matched, because their
+       periods are tuning and the count is the claim. */
+    const repeats = (floor[1].match(/repeating-linear-gradient/g) || []).length;
+    ok(repeats >= 3, `and under it a floor made of boards (${repeats} repeats)`);
+  }
+
+  const courts = (src.match(/<div class="court[ "]/g) || []).length;
+  ok(courts === 3, `three courts on this page (${courts})`);
+  for (const part of ['oob', 'bb', 'c3 l', 'c3 r', 'base', 'side']) {
+    const n = (src.match(new RegExp('class="' + part + '"', 'g')) || []).length;
+    is(n, courts, `every court has its ${part}`);
+  }
+}
+
 /* ── A SHARED RESULT HAS TO SAY WHICH GAME IT WAS, AND THE DAY HAS TO COUNT ─
  *
  * Four things live in this section and every one of them fails in silence.
