@@ -50,25 +50,33 @@ function capOf(run) {
     ? run.capMusd : E.CONSTANTS.CAP_MUSD;
 }
 
+/* The slot list and eligibility this run plays under. All-Time Staff fields twelve
+ * arms instead of a lineup, so nothing may read E.SLOTS directly once a run exists:
+ * a draft that checks one slot set and a season that tags with another produces a
+ * roster where every pick sits in the wrong place and nothing throws. */
+function slotsOf(run) { return E.slotsForMode(run && run.staff); }
+function eligOf(run) { return E.eligibilityForMode(run && run.staff); }
+function fills(run, player, slotName) { return E.canFillSlot(player, slotName, eligOf(run)); }
+
 function remaining(run) {
   const spent = run.roster.reduce((s, p) => s + p.p, 0);
   const fees = E.respinFees(run.respinsUsed);
   return money(capOf(run) - spent - fees);
 }
 
-const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
+const slotsLeft = (run) => slotsOf(run).length - run.roster.length;
 
 /* Cheapest player that could still fill `slotName` right now: not already
  * used (by id or already earmarked), from a team-season not maxed on draws.
  * cheapBy[pos] is price-sorted, so the first valid candidate is the cheapest.
  * Returns the price and the earmarked key so the caller avoids double-count. */
-function cheapestForSlot(slotName, usedIds, drawn, taken) {
+function cheapestForSlot(slotName, usedIds, drawn, taken, elig) {
   const pool = _data && _data.cheapBy && _data.cheapBy['*'];
   const FLOOR = E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
   if (!pool) return { price: FLOOR, key: null };
-  const elig = E.SLOT_ELIGIBILITY[slotName] || [];
+  const positions = (elig || E.SLOT_ELIGIBILITY)[slotName] || [];
   let best = { price: Infinity, key: null };
-  for (const pos of elig) {
+  for (const pos of positions) {
     const list = pool[pos];
     if (!list) continue;
     for (const c of list) {
@@ -93,11 +101,12 @@ function assignedFloors(run, slotNames, excludeId) {
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
   const taken = new Set();
   if (excludeId) taken.add(excludeId);
+  const elig = eligOf(run);
   const order = [...slotNames].sort(
-    (a, b) => (E.SLOT_ELIGIBILITY[a] || []).length - (E.SLOT_ELIGIBILITY[b] || []).length);
+    (a, b) => (elig[a] || []).length - (elig[b] || []).length);
   let total = 0, maxOne = 0;
   for (const slot of order) {
-    const c = cheapestForSlot(slot, usedIds, drawn, taken);
+    const c = cheapestForSlot(slot, usedIds, drawn, taken, elig);
     total += c.price;
     if (c.key) taken.add(c.key);
     if (c.price > maxOne) maxOne = c.price;
@@ -127,7 +136,7 @@ function spendable(run) {
 function canFinishAfter(run, player) {
   const slot = slotForPlayer(run, player);
   if (slot === null) return false;
-  const rest = openSlotNames(run).filter(s => s !== E.SLOTS[slot]);
+  const rest = openSlotNames(run).filter(s => s !== slotsOf(run)[slot]);
   const need = assignedFloors(run, rest, pkey(player)).total;
   return money(remaining(run) - player.p) >= need - 1e-9;
 }
@@ -160,16 +169,16 @@ function blockFor(run, player) {
 
 function openSlots(run) {
   const taken = new Set(run.slotIndex);
-  return E.SLOTS.map((_, i) => i).filter(i => !taken.has(i));
+  return slotsOf(run).map((_, i) => i).filter(i => !taken.has(i));
 }
 
 function slotForPlayer(run, player) {
   const open = openSlots(run);
   // Prefer a dedicated slot first
-  const dedicated = open.find(i => E.canFillSlot(player, E.SLOTS[i]) && !isDhOrFlex(E.SLOTS[i]));
+  const dedicated = open.find(i => fills(run, player, slotsOf(run)[i]) && !isDhOrFlex(slotsOf(run)[i]));
   if (dedicated !== undefined) return dedicated;
   // Then try DH and any remaining slots
-  const any = open.find(i => E.canFillSlot(player, E.SLOTS[i]));
+  const any = open.find(i => fills(run, player, slotsOf(run)[i]));
   return any === undefined ? null : any;
 }
 
@@ -178,7 +187,7 @@ function isDhOrFlex(slot) {
 }
 
 function openSlotNames(run) {
-  return openSlots(run).map(i => E.SLOTS[i]);
+  return openSlots(run).map(i => slotsOf(run)[i]);
 }
 
 function createRun(opts) {
@@ -187,6 +196,7 @@ function createRun(opts) {
   const franchise = opts.franchise ?? null;
   const division = opts.division ?? null;
   const capSurvivor = !!opts.capSurvivor;
+  const staff = !!opts.staff;
   if (division !== null && !E.DIVISIONS[division]) throw new Error(`unknown division ${division}`);
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
@@ -195,6 +205,7 @@ function createRun(opts) {
     franchise,
     division,
     capSurvivor,
+    staff,
     market: [],
     cuts: [],
     seed,
@@ -230,7 +241,7 @@ function drawable(run, data, focus) {
   const drawn = {};
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
 
-  const open = openSlots(run).map(i => E.SLOTS[i]);
+  const open = openSlots(run).map(i => slotsOf(run)[i]);
 
   return data.teamSeasons
     .filter(t => {
@@ -270,7 +281,7 @@ function spin(run, data, focus) {
   if (!available.length) throw new Error('nothing left you can afford');
 
   const t = available[Math.floor(rng() * available.length)];
-  const open = openSlots(run).map(i => E.SLOTS[i]);
+  const open = openSlots(run).map(i => slotsOf(run)[i]);
 
   // Build the board: all players from this team-season who can fill ANY open slot
   const allPlayers = data.byTeamSeason[t.team_season_id] || [];
@@ -278,7 +289,7 @@ function spin(run, data, focus) {
     .map(p => ({
       player: p,
       block: blockFor(run, p),
-      canFill: open.some(slot => E.canFillSlot(p, slot)),
+      canFill: open.some(slot => fills(run, p, slot)),
     }))
     .filter(r => r.canFill)
     .sort((a, b) => b.player.w - a.player.w);
@@ -363,7 +374,7 @@ function focusTargets(run, data) {
 
 /* Open slot indices this player is eligible to fill (for the position chooser). */
 function eligibleOpenSlots(run, player) {
-  return openSlots(run).filter(i => E.canFillSlot(player, E.SLOTS[i]));
+  return openSlots(run).filter(i => fills(run, player, slotsOf(run)[i]));
 }
 
 /* Sign a player from the current draw. Pass slotIdx to place them at a chosen
@@ -376,7 +387,7 @@ function sign(run, player, slotIdx) {
 
   let slot;
   if (typeof slotIdx === 'number') {
-    if (run.slotIndex.includes(slotIdx) || !E.canFillSlot(player, E.SLOTS[slotIdx]))
+    if (run.slotIndex.includes(slotIdx) || !fills(run, player, slotsOf(run)[slotIdx]))
       throw new Error('invalid slot');
     slot = slotIdx;
   } else {
@@ -391,12 +402,12 @@ function sign(run, player, slotIdx) {
   run.draws.push({
     team_season_id: run.currentDraw.team_season_id,
     player: key,
-    slot: E.SLOTS[slot],
+    slot: slotsOf(run)[slot],
   });
   run.currentDraw = null;
 
   // Draft complete?
-  if (run.roster.length >= E.SLOTS.length) {
+  if (run.roster.length >= slotsOf(run).length) {
     run.phase = PHASES.SEASON;
   }
 }
@@ -412,12 +423,14 @@ function sign(run, player, slotIdx) {
 function chemOpts(run) {
   const suppress = [];
   if (!run) return { suppress };
+  // playRun reads staff off the same object, so the two travel together and a
+  // season can never be simulated under one mode's rules and scored under another's.
   if (run.era) suppress.push('era');
   // One club, or a division's four to six of them: with twelve picks out of that
   // few, the pigeonhole alone guarantees repeats, so a franchise link is the mode
   // talking rather than a choice you made.
   if (run.franchise || run.division) suppress.push('franchise');
-  return { suppress };
+  return { suppress, staff: !!run.staff };
 }
 /* The chemistry of a run's roster (or any roster, under that run's rules). */
 function chemOf(run, roster) {
@@ -428,7 +441,7 @@ function chemByPlayer(run, roster, resolved) {
   return E.chemistryByPlayer(r, resolved, chemOpts(run));
 }
 function chemWorth(run) {
-  return E.chemistryWorth(run.roster, run.slotIndex.map(i => E.SLOTS[i]), chemOpts(run));
+  return E.chemistryWorth(run.roster, run.slotIndex.map(i => slotsOf(run)[i]), chemOpts(run));
 }
 
 /* Preview chemistry if you were to sign this player. */
@@ -448,10 +461,10 @@ function previewSigning(run, player) {
 function playSeason(run) {
   if (run.phase !== PHASES.SEASON) throw new Error('not in season phase');
   const rng = rngFor(run);
-  const slotNames = run.slotIndex.map(i => E.SLOTS[i]);
+  const slotNames = run.slotIndex.map(i => slotsOf(run)[i]);
   const pool = poolFor(run);
   const result = E.playRun(run.roster, rng, slotNames, pool, chemOpts(run));
-  result.allTimeRank = _data ? E.nationalRank(result.rating, _data.ratingTable) : null;
+  result.allTimeRank = (_data && !run.staff) ? E.nationalRank(result.rating, _data.ratingTable) : null;
 
   run.season = result.season;
   run.schedule = result.schedule;
@@ -488,16 +501,18 @@ function advanceGame(run, gameIndex) {
     // each with their ACTUAL slot from slotIndex — the sim reads SP1/SP2/CL
     // from these tags.
     const rng = rngFor(run);
-    const tagged = run.roster.map((p, k) => ({ ...p, _slot: E.SLOTS[run.slotIndex[k]] }));
+    const tagged = run.roster.map((p, k) => ({ ...p, _slot: slotsOf(run)[run.slotIndex[k]] }));
     const chem = E.resolveChemistry(tagged, chemOpts(run));
-    const structure = E.rosterStructure(tagged);
-    const offense = E.rosterOffense(tagged, chem.multiplier, structure.multiplier);
-    const defense = E.rosterRunPrevention(tagged, chem.multiplier);
+    const structure = run.staff ? { multiplier: 1, archetype: null } : E.rosterStructure(tagged);
+    const offense = run.staff ? E.staffOffense()
+      : E.rosterOffense(tagged, chem.multiplier, structure.multiplier);
+    const defense = run.staff ? E.staffRunPrevention(tagged, chem.multiplier)
+      : E.rosterRunPrevention(tagged, chem.multiplier);
     const savePct = E.closerSavePct(tagged);
     const pool = poolFor(run);
     const schedule = E.generateSchedule(rng, E.CONSTANTS.REGULAR_SEASON_GAMES, pool);
     // Same basis as every real club in ratingTable. See squadRating().
-    const rating = E.squadRating(run.roster);
+    const rating = run.staff ? E.staffRating(tagged) : E.squadRating(run.roster);
 
     run._simState = {
       rng, tagged, chem, structure, offense, defense, savePct, schedule, rating,
@@ -597,7 +612,7 @@ function cutPlayer(run, rosterIdx) {
   const p = run.roster[rosterIdx];
   if (!p) throw new Error('no such player');
   if (p._repl) throw new Error('already a replacement');
-  const slot = E.SLOTS[run.slotIndex[rosterIdx]];
+  const slot = slotsOf(run)[run.slotIndex[rosterIdx]];
   run.roster[rosterIdx] = E.replacementFor(slot, p.s);
   run.cuts = run.cuts || [];
   run.cuts.push({ name: p.n, slot, price: p.p });
@@ -611,18 +626,18 @@ function cutPlayer(run, rosterIdx) {
  * reading the roster it tagged before the market moved. */
 function rebuildSimState(run) {
   const st = run._simState;
-  const tagged = run.roster.map((p, k) => ({ ...p, _slot: E.SLOTS[run.slotIndex[k]] }));
+  const tagged = run.roster.map((p, k) => ({ ...p, _slot: slotsOf(run)[run.slotIndex[k]] }));
   const chem = E.resolveChemistry(tagged, chemOpts(run));
-  const structure = E.rosterStructure(tagged);
+  const structure = run.staff ? { multiplier: 1, archetype: null } : E.rosterStructure(tagged);
+  const offense = run.staff ? E.staffOffense()
+    : E.rosterOffense(tagged, chem.multiplier, structure.multiplier);
+  const defense = run.staff ? E.staffRunPrevention(tagged, chem.multiplier)
+    : E.rosterRunPrevention(tagged, chem.multiplier);
   return {
     ...st,
-    tagged, chem, structure,
-    offense: E.rosterOffense(tagged, chem.multiplier, structure.multiplier),
-    defense: E.rosterRunPrevention(tagged, chem.multiplier),
+    tagged, chem, structure, offense, defense,
     savePct: E.closerSavePct(tagged),
-    rating: E.overallRating(E.teamWinPct(
-      E.rosterOffense(tagged, chem.multiplier, structure.multiplier),
-      E.rosterRunPrevention(tagged, chem.multiplier))),
+    rating: run.staff ? E.staffRating(tagged) : E.overallRating(E.teamWinPct(offense, defense)),
   };
 }
 
@@ -655,7 +670,7 @@ function finalizeSeason(run) {
     chemistry: st.chem,
     structure: st.structure,
     rating: st.rating,
-    allTimeRank: _data ? E.nationalRank(st.rating, _data.ratingTable) : null,
+    allTimeRank: (_data && !run.staff) ? E.nationalRank(st.rating, _data.ratingTable) : null,
     offense: Math.round(st.offense * 100) / 100,
     defense: Math.round(st.defense * 100) / 100,
     savePct: Math.round(st.savePct * 1000) / 1000,
@@ -684,7 +699,7 @@ function bestPossibleSquad(run, data) {
   const CAP = Math.floor(capOf(run));
 
   const frontier = (slot) => {
-    const elig = pool.filter(p => E.canFillSlot(p, slot)).sort((a, b) => a.p - b.p);
+    const elig = pool.filter(p => fills(run, p, slot)).sort((a, b) => a.p - b.p);
     const fr = []; let best = -1;
     for (const p of elig) { if (p.w > best) { fr.push(p); best = p.w; } }
     return fr;
@@ -692,7 +707,7 @@ function bestPossibleSquad(run, data) {
 
   let dp = new Array(CAP + 1).fill(-1); dp[0] = 0;
   let picks = new Array(CAP + 1).fill(null);
-  for (const slot of E.SLOTS) {
+  for (const slot of slotsOf(run)) {
     const fr = frontier(slot);
     const ndp = new Array(CAP + 1).fill(-1);
     const npk = new Array(CAP + 1).fill(null);
@@ -727,7 +742,7 @@ function bestPossibleSquad(run, data) {
  * / floor / ceiling wins and the odds of playoffs, the record, and a title. */
 function projectSeason(run, trials) {
   const n = trials || 200;
-  const slotNames = run.slotIndex.map(i => E.SLOTS[i]);
+  const slotNames = run.slotIndex.map(i => slotsOf(run)[i]);
   const pool = poolFor(run);
   const wins = [];
   let po = 0, title = 0, rec = 0;
@@ -765,6 +780,7 @@ const publicAPI = {
   createRun,
   spin, respin, sign, focusTargets, eligibleFranchises,
   chemOpts, chemOf, chemByPlayer, chemWorth,
+  slotsOf, eligOf,
   payroll, overCap, marketAt, applyMarket, cutPlayer,
   playSeason, advanceGame, finalizeSeason,
   previewSigning, bestPossibleSquad, projectSeason,

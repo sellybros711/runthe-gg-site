@@ -605,6 +605,37 @@ h1,h2,h3{margin:0}
   .fran-card:hover,.fran-card:focus-visible{transform:none}
 }
 
+/* ─── the staff board ───
+   Replaces the diamond in All-Time Staff. Same element, so it inherits the field's
+   size and rounding, but none of its grass. */
+.field.staffboard{background:var(--panel);border-color:var(--line-2);aspect-ratio:auto;
+  padding:10px 11px;display:flex;flex-direction:column;gap:8px;box-shadow:none}
+.sb-group{display:flex;flex-direction:column;gap:5px}
+.sb-lab{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim-2)}
+.sb-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(60px,1fr));gap:6px}
+.sb-card{position:relative;border-radius:9px;padding:6px 6px 7px;min-height:58px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  text-align:center;overflow:hidden}
+.sb-card.empty{border:1.5px dashed rgba(0,0,0,.20);background:rgba(0,0,0,.02)}
+.sb-card.empty .sb-slot{color:var(--dim-2)}
+.sb-card.now{border-color:var(--gold);border-style:solid;
+  box-shadow:0 0 0 3px rgba(184,134,11,.16)}
+.sb-card.filled{color:#fff;box-shadow:0 2px 6px -2px rgba(0,0,0,.4)}
+.sb-slot{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.06em;
+  opacity:.85}
+.sb-name{font-family:var(--fp);font-size:11.5px;font-weight:700;line-height:1.15;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  text-shadow:0 1px 3px rgba(0,0,0,.45)}
+.sb-meta{font-family:var(--fn);font-size:8.5px;font-weight:700;opacity:.85}
+.sb-war{font-family:var(--fn);font-size:12px;font-weight:800;line-height:1}
+.sb-chem{position:absolute;top:2px;right:2px;padding:1px 4px;border-radius:99px;
+  font-family:var(--fn);font-size:8px;font-weight:800;color:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.sb-foot{margin-top:2px;text-align:center;font-family:var(--fn);font-size:11px;
+  font-weight:700;color:var(--dim)}
+.sb-foot b{color:var(--ink);font-size:13px}
+
 /* ─── salary cap survivor ─── */
 .captrack{margin:10px 0 2px;padding:10px 12px;border-radius:12px;background:var(--panel);
   border:1px solid var(--line-2)}
@@ -992,9 +1023,9 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div id="r-goat" style="display:none"></div>
 
   <div class="ro-cells">
-    <div class="ro-cell"><div class="cv" id="ro-rating"></div><div class="cl">Team rating</div>
+    <div class="ro-cell"><div class="cv" id="ro-rating"></div><div class="cl" id="ro-rating-l">Team rating</div>
       <div class="ro-meter"><i id="ro-rating-bar"></i></div></div>
-    <div class="ro-cell"><div class="cv gold" id="ro-rank"></div><div class="cl">All-time rank</div></div>
+    <div class="ro-cell"><div class="cv gold" id="ro-rank"></div><div class="cl" id="ro-rank-l">All-time rank</div></div>
     <div class="ro-cell"><div class="cv green" id="ro-eff"></div><div class="cl">Draft grade</div></div>
   </div>
 
@@ -1116,8 +1147,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=14"></script>
-<script src="run.js?v=11"></script>
+<script src="engine.js?v=15"></script>
+<script src="run.js?v=12"></script>
 <script src="achievements.js?v=2"></script>
 <script>
 (function(){
@@ -1151,9 +1182,9 @@ function rowFromRun(o){
     spend:RUN.roster.reduce((s,p)=>s+p.p,0),respins:RUN.respinsUsed||0,
     efficiency:bps?bps.efficiency:null,archetype:o.structure&&o.structure.archetype?o.structure.archetype.key:null,
     chemLinks:[...new Set(links)],era:RUN.era||null,franchise:RUN.franchise||null,division:RUN.division||null,
-    capSurvivor:!!RUN.capSurvivor,cuts:(RUN.cuts||[]).length,
+    capSurvivor:!!RUN.capSurvivor,cuts:(RUN.cuts||[]).length,staff:!!RUN.staff,
     eliminatedWS:!!(last&&last.round==='World Series'&&!o.titleWon),
-    picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:E.SLOTS[RUN.slotIndex[i]],w:p.w})),
+    picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:SLOTS_NOW()[RUN.slotIndex[i]],w:p.w})),
   };
 }
 let lastNewBadges=[];
@@ -1211,6 +1242,9 @@ function renderTrophy(){
 function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
 
 const $=id=>document.getElementById(id);
+/* The slot list the screen is currently drawing. All-Time Staff fields twelve arms,
+   so nothing in the UI may read E.SLOTS directly once a run is live. */
+const SLOTS_NOW=()=>R.slotsOf(typeof RUN!=='undefined'?RUN:null);
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
 const M=v=>'$'+v.toFixed(1)+'M';
@@ -1454,6 +1488,8 @@ const easeOut=t=>1-Math.pow(1-t,3);
 
 const PITCHER_SLOTS=[9,10,11];
 function drawField(el,live){
+  if(RUN&&RUN.staff){drawStaffBoard(el,live);return;}
+  el.classList.remove('staffboard');
   const st=fieldState(el);
   const bySlot=new Array(E.SLOTS.length).fill(null);
   if(RUN) RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
@@ -1499,11 +1535,65 @@ function drawField(el,live){
   });
 }
 
+/* ─── the staff board ───
+   A pitching staff has no shape on a diamond, so All-Time Staff gets its own
+   picture: the rotation in order, then the pen, then the closer, each card either
+   an empty slot waiting or the arm that filled it. Drawn into the same element the
+   field uses so every caller of drawField keeps working. */
+const STAFF_GROUPS=[
+  {label:'Rotation',slots:['SP1','SP2','SP3','SP4','SP5']},
+  {label:'Bullpen',slots:['RP1','RP2','RP3','RP4','RP5','SU']},
+  {label:'Closer',slots:['CL']},
+];
+function drawStaffBoard(el,live){
+  el.classList.add('staffboard');
+  const slots=SLOTS_NOW();
+  const bySlot=new Array(slots.length).fill(null);
+  if(RUN) RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
+  if(el.id==='field') drawPips(bySlot);
+  const openCount=slots.length-(RUN?RUN.roster.length:0);
+  const chemBySlot=new Array(slots.length).fill(null);
+  if(RUN&&RUN.roster.length>1){
+    const per=R.chemByPlayer(RUN);
+    RUN.roster.forEach((p,i)=>{chemBySlot[RUN.slotIndex[i]]=per[i];});
+  }
+  const nextOpen=slots.findIndex((_,i)=>!bySlot[i]);
+  el.innerHTML=STAFF_GROUPS.map(g=>
+    '<div class="sb-group"><div class="sb-lab">'+esc(g.label)+'</div><div class="sb-row">'+
+    g.slots.map(sl=>{
+      const i=slots.indexOf(sl);
+      const p=bySlot[i];
+      const ce=chemBySlot[i];
+      const now=live&&!p&&i===nextOpen;
+      if(!p) return '<div class="sb-card empty'+(now?' now':'')+'"><span class="sb-slot">'+
+        esc(sl)+'</span></div>';
+      return '<div class="sb-card filled" style="'+posPaint(sl.replace(/[0-9]/g,'')==='SU'?'RP':sl)+'">'+
+        '<span class="sb-slot">'+esc(sl)+'</span>'+
+        '<span class="sb-name">'+esc(lastName(p.n))+'</span>'+
+        '<span class="sb-meta">'+p.s+' '+esc(p.t)+'</span>'+
+        '<span class="sb-war">'+p.w.toFixed(1)+'</span>'+
+        (ce&&ce.keyPoints>0?'<span class="sb-chem" style="background:'+
+          chemColor(ce.top&&ce.top.type)+'">&#9889;'+chemNum(ce.keyPoints)+'</span>':'')+
+        '</div>';
+    }).join('')+'</div></div>').join('')+
+    '<div class="sb-foot"></div>';
+  /* Scoped to this element: the draft screen and the squad screen each own a board,
+     so an id here would be in the document twice and the squad one would never be
+     the one found. */
+  const foot=el.querySelector('.sb-foot');
+  if(foot){
+    if(RUN&&RUN.roster.length>=slots.length){
+      const tagged=RUN.roster.map((p,i)=>({...p,_slot:slots[RUN.slotIndex[i]]}));
+      foot.innerHTML='Staff ERA <b>'+E.staffEra(tagged).toFixed(2)+'</b>';
+    } else foot.textContent=openCount+' arm'+(openCount===1?'':'s')+' to go';
+  }
+}
+
 /* ─── pips in cap bar ─── */
 const PIP_LABELS={SP1:'SP',SP2:'SP',CL:'CP'};
 function drawPips(bySlot){
   const el=$('d-pips');if(!el) return;
-  el.innerHTML=E.SLOTS.map((slot,i)=>{
+  el.innerHTML=SLOTS_NOW().map((slot,i)=>{
     const p=bySlot[i];
     const label=PIP_LABELS[slot]||slot;
     if(!p) return '<i>'+esc(label)+'</i>';
@@ -1618,7 +1708,7 @@ function heroChips(){
     el.style.left=sp.x+'%';el.style.top=sp.y+'%';
     const style=on?' style="'+posPaint(on.pos)+'"':'';
     const label=isPitcher&&!on?(i===11?'CP':'SP'):
-      (on?on.pos:E.SLOTS[i]);
+      (on?on.pos:SLOTS_NOW()[i]);
     el.innerHTML='<div class="disc"'+style+'><span class="dl">'+label+'</span></div>'+
       (on?'<div class="lab"><div class="who">'+esc(lastName(on.name))+'</div><div class="yr">'+
       tcPlate(on.team,on.season)+' '+on.season+'</div></div>':'');
@@ -1723,7 +1813,7 @@ const MODE_CARDS=[
    icon:'<path d="M12 2.6v18.8"/><path d="M16.6 6.4H9.8a2.9 2.9 0 0 0 0 5.8h4.4a2.9 2.9 0 0 1 0 5.8H6.8"/>',
    text:'Contracts inflate as the season runs. Stay under the cap or cut somebody, every time the market moves against you.',
    sticker:'New'},
-  {id:'staff',soon:true,cls:'mc-staff',title:'All-Time Staff',
+  {id:'staff',cls:'mc-staff',title:'All-Time Staff',
    icon:'<path d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4Z"/><path d="M6.2 5.6c3.4 3 3.4 9.8 0 12.8"/><path d="M17.8 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
    text:'Forget the bats. Draft a five-man rotation and a bullpen, and win on run prevention alone with a league-average lineup behind you.',
    sticker:'New'},
@@ -2060,8 +2150,9 @@ function optTile(r,i){
   if(!block){
     const bases=[];const seen=new Set();
     for(const idx of R.eligibleOpenSlots(RUN,p)){
-      const bs=E.SLOTS[idx].replace(/[12]$/,'');
-      if(DATA.scarcity&&DATA.scarcity[E.SLOTS[idx]]&&DATA.scarcity[E.SLOTS[idx]].premium&&p.w>=3.5) premium=true;
+      const bs=SLOTS_NOW()[idx].replace(/[12]$/,'');
+      const sN=SLOTS_NOW()[idx];
+      if(DATA.scarcity&&DATA.scarcity[sN]&&DATA.scarcity[sN].premium&&p.w>=3.5) premium=true;
       if(!seen.has(bs)){seen.add(bs);bases.push(bs);}
     }
     if(bases.length) destSlot=bases.length<=3?bases.join(' &middot; '):bases.slice(0,3).join(' &middot; ')+'&hellip;';
@@ -2119,7 +2210,7 @@ function signChoices(p){
   const idxs=R.eligibleOpenSlots(RUN,p);
   const out=[];const seenSP=new Set();
   for(const i of idxs){
-    const name=E.SLOTS[i];const base=slotBase(name);
+    const name=SLOTS_NOW()[i];const base=slotBase(name);
     if(base==='SP'){if(seenSP.has('SP'))continue;seenSP.add('SP');}
     const natural=(p.pp===name)||(p.pp&&base===p.pp)||
       (name==='SP1'&&p.r==='p')||(name==='CL'&&p.r==='p');
@@ -2163,16 +2254,51 @@ function posLabel(name){
 }
 
 /* ─── squad review (no pre-play odds) ─── */
+/* The coach's take for a staff. The main one reads a lineup, a batting order and a
+   bench, none of which exist here. */
+function staffReport(tagged,chem,rating){
+  const era=E.staffEra(tagged);
+  const at=sl=>tagged.find(p=>p._slot===sl);
+  const rot=['SP1','SP2','SP3','SP4','SP5'].map(at).filter(Boolean);
+  const pen=['RP1','RP2','RP3','RP4','RP5','SU'].map(at).filter(Boolean);
+  const cl=at('CL');
+  const strengths=[],weaknesses=[];
+  const ace=rot.reduce((b,p)=>(!b||p.w>b.w)?p:b,null);
+  if(ace&&ace.w>=7) strengths.push(lastName(ace.n)+' is a true ace');
+  const rotAvg=rot.length?rot.reduce((s,p)=>s+p.w,0)/rot.length:0;
+  if(rotAvg>=4.5) strengths.push('Five deep in the rotation');
+  else if(rotAvg<2.5) weaknesses.push('The back of the rotation is thin');
+  const penAvg=pen.length?pen.reduce((s,p)=>s+p.w,0)/pen.length:0;
+  if(penAvg>=3.5) strengths.push('Lights-out bullpen');
+  else if(penAvg<1.8) weaknesses.push('The pen will give games back');
+  if(cl&&cl.w>=4) strengths.push('A closer who shuts the door');
+  else if(cl&&cl.w<1.5) weaknesses.push('Shaky closer');
+  if(era<=2.95) strengths.push('A staff ERA under three');
+  if(Math.abs(chem.multiplier-1)>0.02) strengths.push('Arms who have thrown together');
+  const rem=R.remaining(RUN);
+  if(rem>=15) weaknesses.push('$'+rem.toFixed(0)+'M left unspent');
+  let verdict;
+  if(rating>=90) verdict='An all-time staff';
+  else if(rating>=75) verdict='A rotation that wins in October';
+  else if(rating>=58) verdict='Solid arms';
+  else verdict='Somebody has to pitch';
+  return {strengths,weaknesses,verdict,archetype:null};
+}
+
 function showSquad(){
   show('s-squad');
   drawField($('sq-field'),false);
-  const tagged=RUN.roster.map((p,i)=>({...p,_slot:E.SLOTS[RUN.slotIndex[i]]}));
+  const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
   const chem=R.chemOf(RUN,tagged);
-  const structure=E.rosterStructure(tagged);
-  const rating=E.overallRating(E.teamWinPct(
+  /* All-Time Staff has no lineup to shape and no batting order to balance, so it
+     gets neither an archetype nor a coach's report about its hitting. Left alone it
+     told a twelve-arm roster it had a light-hitting lineup. */
+  const structure=RUN.staff?{multiplier:1,archetype:null}:E.rosterStructure(tagged);
+  const rating=RUN.staff?E.staffRating(tagged):E.overallRating(E.teamWinPct(
     E.rosterOffense(tagged,chem.multiplier,structure.multiplier),
     E.rosterRunPrevention(tagged,chem.multiplier)));
-  const cr=E.coachReport(tagged,chem,structure,rating,R.remaining(RUN));
+  const cr=RUN.staff?staffReport(tagged,chem,rating)
+    :E.coachReport(tagged,chem,structure,rating,R.remaining(RUN));
   const vd=$('sq-verdict');
   vd.textContent=cr.verdict;
   vd.className='sq-verdict'+(rating>=84?' great':'');
@@ -2238,7 +2364,7 @@ function askCut(ev,onDone){
     ' cap. Cut somebody.';
   const list=$('cut-list');list.innerHTML='';
   RUN.roster.forEach((p,i)=>{
-    const slot=E.SLOTS[RUN.slotIndex[i]];
+    const slot=SLOTS_NOW()[RUN.slotIndex[i]];
     const btn=document.createElement('button');
     btn.className='cutrow'+(!p._repl&&p.p>=over?' enough':'');
     btn.disabled=!!p._repl;
@@ -2382,7 +2508,8 @@ function showResult(){
     hero.className='ro-hero lose';vd.textContent='Out in the '+last.round;vd.className='ro-verdict';}
   else{hero.className='ro-hero lose';vd.textContent='Missed the playoffs';vd.className='ro-verdict';}
   let modeLabel='';
-  if(RUN.capSurvivor)modeLabel='Cap Survivor \u00b7 '+(RUN.cuts||[]).length+' cut';
+  if(RUN.staff)modeLabel='All-Time Staff';
+  else if(RUN.capSurvivor)modeLabel='Cap Survivor \u00b7 '+(RUN.cuts||[]).length+' cut';
   else if(RUN.franchise)modeLabel='The all-time '+teamFullName(RUN.franchise);
   else if(RUN.division)modeLabel=RUN.division;
   else if(RUN.era)modeLabel=RUN.era+' era';
@@ -2396,15 +2523,27 @@ function showResult(){
 
   // Big cells: rating / rank / draft grade
   const rating=o.rating!=null?Math.round(o.rating):null;
-  $('ro-rating').innerHTML=rating!=null?rating+'<span class="u"></span>':'&mdash;';
+  $('ro-rating').innerHTML=rating!=null?rating+'<span class="u"></span>':'n/a';
   $('ro-rating-bar').style.width=(rating!=null?Math.max(3,rating):0)+'%';
-  $('ro-rank').textContent=rank?('#'+rank):'&mdash;';
+  /* A staff has no all-time rank: the table it would be ranked against is full
+     team-seasons, and a roster with no hitters is not one of those. The cell shows
+     the number the mode actually turns on instead of standing empty. */
+  $('ro-rating-l').textContent=RUN.staff?'Staff rating':'Team rating';
+  if(RUN.staff){
+    const tg=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
+    $('ro-rank').textContent=E.staffEra(tg).toFixed(2);
+    $('ro-rank-l').textContent='Staff ERA';
+  }else{
+    $('ro-rank').textContent=rank?('#'+rank):'n/a';
+    $('ro-rank-l').textContent='All-time rank';
+  }
   const bps=RUN&&R.bestPossibleSquad?R.bestPossibleSquad(RUN,DATA):null;
-  $('ro-eff').textContent=bps?gradeFor(bps.efficiency):'&mdash;';
+  $('ro-eff').textContent=bps?gradeFor(bps.efficiency):'n/a';
 
   // Coach's take
-  const tagged=RUN.roster.map((p,i)=>({...p,_slot:E.SLOTS[RUN.slotIndex[i]]}));
-  const cr=E.coachReport(tagged,o.chemistry,o.structure,o.rating,R.remaining(RUN));
+  const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
+  const cr=RUN.staff?staffReport(tagged,o.chemistry,o.rating)
+    :E.coachReport(tagged,o.chemistry,o.structure,o.rating,R.remaining(RUN));
   $('ro-arch').textContent=(o.structure&&o.structure.archetype&&o.structure.archetype.name)||'';
   const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
   $('ro-takes').innerHTML=takes.length?takes.map(t=>
@@ -2449,7 +2588,7 @@ function showResult(){
   const roster=document.createElement('div');roster.className='roster-final';
   const perChem=R.chemByPlayer(RUN,null,o.chemistry);
   RUN.roster.forEach((p,i)=>{
-    const slot=E.SLOTS[RUN.slotIndex[i]];
+    const slot=SLOTS_NOW()[RUN.slotIndex[i]];
     const div=document.createElement('div');div.className='rslot';
     div.innerHTML='<span class="rpos" style="'+posPaint(slot)+'">'+slot+'</span>'+
       '<span class="rname">'+esc(p.n)+'</span>'+
@@ -2511,7 +2650,7 @@ function shareVerdict(o){
   return 'Missed the playoffs';
 }
 function shareLines(o){
-  const tag=RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
+  const tag=RUN.staff?' (All-Time Staff)':RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
   let t='Run The Diamond'+tag+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
   if(o.rating!=null) t+=' Team rating '+Math.round(o.rating)+'.';
   t+='\nCan you draft a better team?\nrunthe.gg/baseball';
@@ -2560,7 +2699,7 @@ function drawShareCard(o){
     c.fillStyle='#8a7e6e';c.font='800 22px Archivo, sans-serif';c.fillText(cell[0],x+cw/2,cy+124);
   });
   // roster (two columns)
-  const roster=RUN.roster.map((p,i)=>({p,slot:E.SLOTS[RUN.slotIndex[i]]}));
+  const roster=RUN.roster.map((p,i)=>({p,slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
   const order=['C','1B','2B','3B','SS','LF','CF','RF','DH','SP1','SP2','CL'];
   roster.sort((a,b)=>order.indexOf(a.slot)-order.indexOf(b.slot));
   const ry=730,rh=88,colw=500,colgap=40,cx0=W/2-(colw*2+colgap)/2;

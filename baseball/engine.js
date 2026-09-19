@@ -169,6 +169,24 @@ function divisionClubs(division) {
 /* 12 roster slots per GDD §3. */
 const SLOTS = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'SP1', 'SP2', 'CL'];
 
+/* All-Time Staff draws twelve arms instead: a five-man rotation, a six-man pen and
+ * a closer. The lineup behind them is league average, so the whole season turns on
+ * run prevention. Slot names stay unique because the draft keys a pick to its slot. */
+const STAFF_SLOTS = ['SP1', 'SP2', 'SP3', 'SP4', 'SP5',
+  'RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'SU', 'CL'];
+const STAFF_ELIGIBILITY = {
+  SP1: ['SP'], SP2: ['SP'], SP3: ['SP'], SP4: ['SP'], SP5: ['SP'],
+  /* A starter can work out of the pen, which is what the bullpen of an all-time
+   * staff would actually look like, and without it the pen has far too thin a pool. */
+  RP1: ['RP', 'CL', 'SP'], RP2: ['RP', 'CL', 'SP'], RP3: ['RP', 'CL', 'SP'],
+  RP4: ['RP', 'CL', 'SP'], RP5: ['RP', 'CL', 'SP'],
+  SU: ['RP', 'CL', 'SP'],
+  CL: ['CL', 'RP'],
+};
+/* The slot list and eligibility a run plays under. */
+function slotsForMode(staff) { return staff ? STAFF_SLOTS : SLOTS; }
+function eligibilityForMode(staff) { return staff ? STAFF_ELIGIBILITY : SLOT_ELIGIBILITY; }
+
 /* What positions can fill each slot.
  * Hitter positions are currently blank in the data (pending Lahman),
  * so until POSITIONS_AVAILABLE is true, all batters can fill any fielding slot.
@@ -272,8 +290,8 @@ function playerPositions(player) {
 }
 
 /* Can this player fill this slot? */
-function canFillSlot(player, slotName) {
-  const eligible = SLOT_ELIGIBILITY[slotName];
+function canFillSlot(player, slotName, elig) {
+  const eligible = (elig || SLOT_ELIGIBILITY)[slotName];
   if (!eligible) return false;
   const positions = playerPositions(player);
   return positions.some(pos => eligible.includes(pos));
@@ -765,6 +783,79 @@ function rosterRunPrevention(roster, chemMultiplier) {
   return baseRA * defMod * (2 - chemMultiplier);
 }
 
+/* ─── All-Time Staff ───────────────────────────────────────────────────────
+ * You drafted twelve arms and no bats, so the lineup behind them is league
+ * average and the season is decided entirely on run prevention. */
+const STAFF = {
+  /* The lineup behind the staff: as good as the average opponent's, not as good
+   * as real baseball's average. Everything you face in this game is an all-time
+   * club, so OPP_RUNS_MEAN (4.5, the real league) is a league you never play in,
+   * and pinning the bats there costs about thirteen wins before a pitch is thrown.
+   * Measured at 4.5 the mode ran a mean of 74.5 against the core game's 88.9, and
+   * at the opponent mean of 5.34 it overshot to 94. At 5.0 it sits with the rest. */
+  LINEUP_RPG: 5.0,
+  /* Five starters carry about seventy percent of the innings, the pen the rest.
+   * Relief WAR is compressed against starter WAR (fewer innings for the same
+   * quality), so a reliever's ERA falls faster per win above replacement. */
+  ROTATION_IP_SHARE: 0.70,
+  SP_ERA_BASE: 5.0, SP_ERA_PER_WAR: 0.32, SP_ERA_FLOOR: 1.60,
+  RP_ERA_BASE: 4.60, RP_ERA_PER_WAR: 0.55, RP_ERA_FLOOR: 1.35,
+};
+function staffOffense() { return STAFF.LINEUP_RPG; }
+
+/* Runs allowed by a twelve-arm staff. Every slot pitches, so unlike the main
+ * game there is no league-average filler soaking up half the innings: what you
+ * drafted is what takes the ball. */
+/* The staff's blended ERA: the number the whole mode turns on. */
+function staffEra(roster) {
+  const era = (p, base, per, floor) =>
+    p ? Math.max(floor, base - Math.max(0, p.w) * per) : base;
+  const at = (slot) => roster.find(p => p._slot === slot);
+  const rot = ['SP1', 'SP2', 'SP3', 'SP4', 'SP5'].map(at);
+  const penArms = ['RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'SU', 'CL'].map(at);
+  const rotEra = rot.reduce((s, p) =>
+    s + era(p, STAFF.SP_ERA_BASE, STAFF.SP_ERA_PER_WAR, STAFF.SP_ERA_FLOOR), 0) / rot.length;
+  const penEra = penArms.reduce((s, p) =>
+    s + era(p, STAFF.RP_ERA_BASE, STAFF.RP_ERA_PER_WAR, STAFF.RP_ERA_FLOOR), 0) / penArms.length;
+  return rotEra * STAFF.ROTATION_IP_SHARE + penEra * (1 - STAFF.ROTATION_IP_SHARE);
+}
+
+/* A staff's 0-100 rating, on its own scale.
+ *
+ * It cannot borrow the team rating: that one is anchored to real team-seasons
+ * scored by teamStrength, and a roster with no hitters is not one of those. Nor can
+ * it be overallRating(winPct), which saturates at 100 for anything projecting 93+
+ * wins and pinned twelve of thirty test staffs at exactly 100.
+ *
+ * So it is anchored to what this mode actually produces. Measured over 60 drafts at
+ * three spending strategies, blended ERA runs 2.82 at the very best to 3.61 at the
+ * worst, median 3.22. The line below puts that median near 60 and leaves a perfect
+ * draft room to reach 100 without the ceiling doing the work. */
+function staffRating(roster) {
+  const era = staffEra(roster);
+  return Math.max(1, Math.min(100, Math.round((50 + (3.40 - era) * 55) * 10) / 10));
+}
+
+function staffRunPrevention(roster, chemMultiplier) {
+  const era = (p, base, per, floor) =>
+    p ? Math.max(floor, base - Math.max(0, p.w) * per) : base;
+  const at = (slot) => roster.find(p => p._slot === slot);
+  const rot = ['SP1', 'SP2', 'SP3', 'SP4', 'SP5'].map(at);
+  const pen = ['RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'SU'].map(at);
+  const closer = at('CL');
+
+  const rotEra = rot.reduce((s, p) =>
+    s + era(p, STAFF.SP_ERA_BASE, STAFF.SP_ERA_PER_WAR, STAFF.SP_ERA_FLOOR), 0) / rot.length;
+  /* The pen plus the closer, who also throws relief innings. */
+  const penArms = pen.concat([closer]);
+  const penEra = penArms.reduce((s, p) =>
+    s + era(p, STAFF.RP_ERA_BASE, STAFF.RP_ERA_PER_WAR, STAFF.RP_ERA_FLOOR), 0) / penArms.length;
+
+  const blended = rotEra * STAFF.ROTATION_IP_SHARE + penEra * (1 - STAFF.ROTATION_IP_SHARE);
+  const baseRA = blended * 1.08;   // unearned runs, same factor as the main game
+  return baseRA * (2 - chemMultiplier);
+}
+
 /*
  * ROSTER STRUCTURE (shape multiplier).
  *
@@ -1178,15 +1269,17 @@ function lastNameOf(n) {
 // ─── full season play ────────────────────────────────────────────────────────
 
 function playRun(roster, rng, slotNames, pool, opts) {
+  const staffMode = !!(opts && opts.staff);
   // Tag each player with their actual slot. slotNames maps roster order to
   // slot names (players draft in random order); without it, fall back to
   // assuming the roster is already in SLOTS order.
   const tagged = roster.map((p, i) => ({ ...p, _slot: (slotNames && slotNames[i]) || SLOTS[i] }));
 
   const chem = resolveChemistry(tagged, opts);
-  const structure = rosterStructure(tagged);
-  const offense = rosterOffense(tagged, chem.multiplier, structure.multiplier);
-  const defense = rosterRunPrevention(tagged, chem.multiplier);
+  const structure = staffMode ? { multiplier: 1, archetype: null } : rosterStructure(tagged);
+  const offense = staffMode ? staffOffense() : rosterOffense(tagged, chem.multiplier, structure.multiplier);
+  const defense = staffMode ? staffRunPrevention(tagged, chem.multiplier)
+                            : rosterRunPrevention(tagged, chem.multiplier);
   const savePct = closerSavePct(tagged);
 
   // 162-game season vs real all-time opponents (pool) or abstract fallback.
@@ -1209,7 +1302,7 @@ function playRun(roster, rng, slotNames, pool, opts) {
 
   const record = { wins, losses };
   const seed = seedFromRecord(wins);
-  const rating = squadRating(roster);
+  const rating = staffMode ? staffRating(tagged) : squadRating(roster);
   const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating, pool);
 
   const titleWon = playoffs && playoffs.won;
@@ -1273,6 +1366,7 @@ function teamColors(code) {
 
 const publicAPI = {
   CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
+  STAFF_SLOTS, STAFF_ELIGIBILITY, slotsForMode, eligibilityForMode,
   DIVISIONS, DIVISION_FIRST_SEASON, inDivision, divisionClubs,
   MARKET, replacementFor,
   POSITIONS_AVAILABLE: () => POSITIONS_AVAILABLE,
@@ -1288,6 +1382,7 @@ const publicAPI = {
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
   respinCost, respinFees,
   pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,
+  STAFF, staffOffense, staffRunPrevention, staffEra, staffRating,
   coachReport,
   TEAM_COLORS, teamColors,
 };
