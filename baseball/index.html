@@ -21,7 +21,7 @@
 <meta property="og:image" content="https://runthe.gg/baseball/og.png?v=1">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Run The Diamond — draft an all-time MLB roster and chase the perfect season.">
+<meta property="og:image:alt" content="Run The Diamond: draft an all-time MLB roster and chase the perfect season.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Diamond: MLB Draft Game">
 <meta name="twitter:description" content="Draft an all-time MLB roster under a $170M cap. Simulate 162 games. Win the World Series.">
@@ -1220,9 +1220,9 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=15"></script>
-<script src="run.js?v=14"></script>
-<script src="achievements.js?v=2"></script>
+<script src="engine.js?v=16"></script>
+<script src="run.js?v=15"></script>
+<script src="achievements.js?v=3"></script>
 <script>
 (function(){
 'use strict';
@@ -1296,7 +1296,7 @@ function renderTrophy(){
   const st=ev.stats;
   $('trophy-career').innerHTML=[
     ['Seasons',st.runs],['Titles',st.titles],
-    ['Best rank',st.bestRank?('#'+st.bestRank):'—'],['Day streak',ev.play.best],
+    ['Best rank',st.bestRank?('#'+st.bestRank):'n/a'],['Day streak',ev.play.best],
   ].map(s=>'<div class="stk"><div class="sv">'+s[1]+'</div><div class="sl">'+s[0]+'</div></div>').join('');
   const byGroup={};ACH.GROUPS.forEach(g=>byGroup[g]={earned:[],locked:[]});
   ev.earned.forEach(a=>byGroup[a.group]&&byGroup[a.group].earned.push(a));
@@ -1506,7 +1506,7 @@ function diamondMarkings(sfx){
      hidden hero copy and Chrome refuses to paint them). */
   sfx=sfx||'f';
   /* viewBox height 68 matches the field's 1/0.68 aspect ratio, so one x unit
-     renders the same length as one y unit — strokes, circles, and rotated
+     renders the same length as one y unit, so strokes, circles and rotated
      squares keep their true shapes instead of being stretched. */
   const wh='rgba(255,255,255,';
   const wallH=13.6,fpL=3,fpR=97;
@@ -1836,7 +1836,7 @@ async function boot(){
     const res=await fetch('data/players.json?v=2');
     if(!res.ok) throw new Error('Failed to load player data');
     const players=await res.json();
-    // Curated real relationships (families) — non-fatal if it fails to load.
+    // Curated real relationships (families). Non-fatal if it fails to load.
     try{
       const cres=await fetch('data/chemistry.json?v=1');
       if(cres.ok) E.setCuratedChemistry(await cres.json());
@@ -2110,7 +2110,7 @@ function franCard(f,maxDepth){
   const tier=Math.max(1,Math.min(5,Math.round(Math.sqrt(f.depth/maxDepth)*5)));
   let pips='';
   for(let i=0;i<5;i++) pips+='<i class="'+(i<tier?'on':'')+'"></i>';
-  const yrs=f.lo===f.hi?String(f.lo):f.lo+'&ndash;'+f.hi;
+  const yrs=f.lo===f.hi?String(f.lo):f.lo+'-'+f.hi;
   const best=f.best?esc(f.best.n):'';
   btn.innerHTML='<div class="fran-name">'+esc(teamFullName(f.team))+'</div>'+
     '<div class="fran-yrs">'+yrs+' &middot; '+f.seasons+' seasons</div>'+
@@ -2631,7 +2631,7 @@ function simGame(idx){
   const row=document.createElement('div');row.className='sim-game'+(result.marquee?' marquee':'');
   const opp=result.oppName?'<span class="gopp">'+(result.marquee?'&starf; ':'')+'vs '+esc(result.oppName)+'</span>':'';
   row.innerHTML='<span class="gnum">G'+result.game+'</span>'+opp+
-    '<span class="gruns">'+result.yourRuns+'&ndash;'+result.oppRuns+'</span>'+
+    '<span class="gruns">'+result.yourRuns+'-'+result.oppRuns+'</span>'+
     '<span class="gscore '+(result.won?'gw':'gl')+'">'+(result.won?'W':'L')+'</span>';
   feed.insertBefore(row,feed.firstChild);
   if(feed.children.length>18) feed.removeChild(feed.lastChild);
@@ -2720,7 +2720,7 @@ function startPlayoffs(){
         (champ?'&#127942; Champions '+round.yourWins+'-'+round.oppWins:
           round.won?'Won '+round.yourWins+'-'+round.oppWins:'Lost '+round.oppWins+'-'+round.yourWins)+'</div>'+
         '<div class="po-games">'+round.games.map((g,gi)=>
-          '<div class="po-g '+(g.won?'w':'l')+'">G'+(gi+1)+' '+g.yourRuns+'&ndash;'+g.oppRuns+'</div>'
+          '<div class="po-g '+(g.won?'w':'l')+'">G'+(gi+1)+' '+g.yourRuns+'-'+g.oppRuns+'</div>'
         ).join('')+'</div>';
       container.appendChild(div);
     },delay);
@@ -2743,7 +2743,7 @@ function showResult(){
   const hero=$('ro-hero');
 
   // Hero: ribbon (all-time standing), record, verdict
-  $('ro-record').innerHTML='<span class="w">'+o.wins+'</span><span class="d">&ndash;</span><span class="l">'+o.losses+'</span>';
+  $('ro-record').innerHTML='<span class="w">'+o.wins+'</span><span class="d">-</span><span class="l">'+o.losses+'</span>';
   const rank=o.allTimeRank;
   $('ro-ribbon').textContent=rank?(ordinal(rank)+'-greatest team of all time'):'Season complete';
   const vd=$('ro-verdict');
@@ -2764,8 +2764,8 @@ function showResult(){
 
   // GOAT / record banner
   const goatDiv=$('r-goat');goatDiv.innerHTML='';goatDiv.style.display='none';
-  if(o.isGOAT){goatDiv.style.display='';goatDiv.innerHTML='<div class="goat-banner">Greatest of all time &mdash; '+o.wins+' wins</div>';}
-  else if(o.beatRecord){goatDiv.style.display='';goatDiv.innerHTML='<div class="record-banner">Tied the all-time record &mdash; 116 wins</div>';}
+  if(o.isGOAT){goatDiv.style.display='';goatDiv.innerHTML='<div class="goat-banner">Greatest of all time: '+o.wins+' wins</div>';}
+  else if(o.beatRecord){goatDiv.style.display='';goatDiv.innerHTML='<div class="record-banner">Tied the all-time record: 116 wins</div>';}
 
   // Big cells: rating / rank / draft grade
   const rating=o.rating!=null?Math.round(o.rating):null;
@@ -2799,7 +2799,7 @@ function showResult(){
   // Projection line
   if(RUN&&R.projectSeason){
     const proj=R.projectSeason(RUN,160);
-    $('ro-proj').innerHTML='This roster projects to <b>'+proj.lo+'&ndash;'+proj.hi+' wins</b> &middot; '+
+    $('ro-proj').innerHTML='This roster projects to <b>'+proj.lo+'-'+proj.hi+' wins</b> &middot; '+
       '<b>'+proj.playoffPct+'%</b> playoffs &middot; <b>'+proj.titlePct+'%</b> to win it all';
   }
 
@@ -2952,20 +2952,20 @@ function drawShareCard(o){
     c.fillText(ordinal(o.allTimeRank).toUpperCase()+'-GREATEST TEAM OF ALL TIME',W/2,168);}
   // record
   c.font='400 210px "Righteous", Impact, sans-serif';
-  const rec=o.wins+'–'+o.losses;
-  c.fillStyle='#2e7d32';const wt=c.measureText(o.wins+'').width, dt=c.measureText('–').width, lt=c.measureText(o.losses+'').width;
+  const rec=o.wins+'-'+o.losses;
+  c.fillStyle='#2e7d32';const wt=c.measureText(o.wins+'').width, dt=c.measureText('-').width, lt=c.measureText(o.losses+'').width;
   const tot=wt+dt+lt, sx=W/2-tot/2;
   c.textAlign='left';
   c.fillStyle='#2e7d32';c.fillText(o.wins+'',sx,368);
-  c.fillStyle='#8a7e6e';c.fillText('–',sx+wt,368);
+  c.fillStyle='#8a7e6e';c.fillText('-',sx+wt,368);
   c.fillStyle='#c0392b';c.fillText(o.losses+'',sx+wt+dt,368);
   c.textAlign='center';
   // verdict
   c.fillStyle=win?'#b8860b':'#1a1a1a';c.font='400 62px "Righteous", Impact, sans-serif';
   c.fillText(shareVerdict(o).toUpperCase(),W/2,452);
   // three cells
-  const cells=[['TEAM RATING',o.rating!=null?Math.round(o.rating):'—','#1a1a1a'],
-    ['ALL-TIME RANK',o.allTimeRank?('#'+o.allTimeRank):'—','#b8860b'],
+  const cells=[['TEAM RATING',o.rating!=null?Math.round(o.rating):'n/a','#1a1a1a'],
+    ['ALL-TIME RANK',o.allTimeRank?('#'+o.allTimeRank):'n/a','#b8860b'],
     ['CHEMISTRY',(o.chemistry.multiplier>=1?'+':'')+((o.chemistry.multiplier-1)*100).toFixed(0)+'%','#2e7d32']];
   const cw=300,ch=150,gap=30,startx=W/2-(cw*3+gap*2)/2,cy=510;
   cells.forEach((cell,i)=>{const x=startx+i*(cw+gap);

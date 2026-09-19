@@ -1,4 +1,4 @@
-/* Run The Diamond — game engine.
+/* Run The Diamond: game engine.
  *
  * Headless and dependency-free. Browser: window.RTD_ENGINE. Node:
  * require('./engine.js'). Mirror of The Perfect Season's engine.js,
@@ -12,7 +12,7 @@
 const CONSTANTS = {
   /* The budget has to say no, or there's no decision in the draft. At $245M
    * best-available was priced out on ~1.7 of 12 spins (it barely bit); $170M
-   * makes the budget bite hard — you can't afford a star most spins, and a
+   * makes the budget bite hard. You can't afford a star most spins, and a
    * strong roster takes real draft skill, not just best-available. */
   CAP_MUSD: 170,
   REGULAR_SEASON_GAMES: 162,
@@ -21,7 +21,7 @@ const CONSTANTS = {
   MAX_RESPINS: 3,
   MIN_RESERVE_PER_SLOT_MUSD: 1,
 
-  /* Playoff thresholds — calibrated to the 162-game sim.
+  /* Playoff thresholds, calibrated to the 162-game sim.
    * 95+ wins earns the division (top seed, LCS bye in a simplified bracket).
    * 88+ wins makes the wild card. Below 88 the season is over. */
   DIVISION_WINS: 95,
@@ -57,7 +57,7 @@ const CONSTANTS = {
   RECORD_WINS: 116,
   GOAT_WINS: 117,
 
-  /* Closer save conversion rate — base rate for an average closer. */
+  /* Closer save conversion rate: the base rate for an average closer. */
   CLOSER_BASE_SAVE_PCT: 0.80,
   CLOSER_WAR_SCALE: 0.02,
 
@@ -65,7 +65,7 @@ const CONSTANTS = {
   FILLER_ERA: 4.50,
   FILLER_IP_SHARE: 0.55,
 
-  /* SP anchor innings — the abstraction from GDD §8. */
+  /* SP anchor innings: the abstraction from GDD §8. */
   ANCHOR_IP: 210,
 };
 
@@ -348,7 +348,7 @@ function indexData(players) {
 
   // Strength model: every spinnable team-season gets an offense/defense
   // estimate and a 0-100 rating from its own best lineup. These drive real
-  // opponents (schedule) and national ranking (résumé) — the "how good was
+  // opponents (schedule) and national ranking (résumé): the "how good was
   // this really" layer that replaces flat win thresholds.
   const teamStats = {};
   const ratingTable = [];
@@ -498,14 +498,14 @@ function buildCheapBy(players) {
 
 const CHEMISTRY = {
   VALUES: {
-    /* Family is a real, rare, cross-era bond the formula can't infer — the
+    /* Family is a real, rare, cross-era bond the formula can't infer. The
      * strongest link, because drafting two brothers is a genuine story. */
     family:    0.09,
     reunion:   0.08,
     battery:   0.07,
     dp_combo:  0.06,
     franchise: 0.04,
-    /* Era is a weak ambient link — kept small so the deliberate links
+    /* Era is a weak ambient link, kept small so the deliberate links
      * (family/reunion/battery/DP) are what actually move the needle. */
     era:       0.005,
   },
@@ -748,7 +748,7 @@ function rosterOffense(roster, chemMultiplier, battingOrderBonus) {
  * SP1 and SP2 are rotation anchors (GDD §8). They cover ~45% of innings
  * between them; the rest is league-average filler.
  *
- * The closer converts save situations — a bad closer literally blows wins.
+ * The closer converts save situations, and a bad closer literally blows wins.
  *
  * Team defense from fielders' WAR provides a modifier.
  */
@@ -860,7 +860,7 @@ function staffRunPrevention(roster, chemMultiplier) {
  * ROSTER STRUCTURE (shape multiplier).
  *
  * WAR sum measures raw talent; structure measures how well that talent is
- * arranged. A great roster isn't just a pile of WAR — it balances bats and
+ * arranged. A great roster isn't just a pile of WAR: it balances bats and
  * arms, has no dead slots, and isn't one injury from collapse. This is the
  * "shape matters as much as talent" layer, applied to offense.
  *
@@ -882,7 +882,7 @@ const STRUCTURE = {
   ARCHETYPE_BONUS: 0.025,
 };
 
-/* Name the roster's identity — flavor for the coach report, plus a small
+/* Name the roster's identity: flavor for the coach report, plus a small
  * cohesion bonus when the shape reads as a deliberate build. */
 function detectArchetype(m) {
   if (m.topShare >= 0.24)
@@ -968,7 +968,7 @@ function resolveGame(runsFor, runsAgainst, savePct, rng, advantage) {
   if (margin > 0 && margin <= 3) {
     // Save situation: closer might blow it
     if (rng() > savePct) {
-      oppRuns += margin + 0.5; // blown save — opponent scores to win
+      oppRuns += margin + 0.5; // blown save, so the opponent scores to win
     }
   }
 
@@ -997,11 +997,11 @@ function resolveGame(runsFor, runsAgainst, savePct, rng, advantage) {
 
 // ─── schedule ────────────────────────────────────────────────────────────────
 
-/* Opponent scheduling constants — your slate is real all-time teams. */
+/* Opponent scheduling constants: your slate is real all-time teams. */
 const SCHEDULE = {
   CONTENDER_MIN_RATING: 66,   // the pool a title team faces all year
   MARQUEE_MIN_RATING: 82,     // elite opponents injected as marquee games
-  MARQUEE_GAMES: 14,          // the gauntlet — why an unbeaten season is rare
+  MARQUEE_GAMES: 14,          // the gauntlet, why an unbeaten season is rare
   OPP_GAME_SD: 0.55,          // per-game noise around an opponent's true means
   // Real teams' run-prevention model floors around ~4.1; scale the pool so
   // these opponents play at the postseason intensity a title team faces all
@@ -1073,7 +1073,7 @@ function generateSchedule(rng, games, pool) {
 
 /* Per-game expected runs for both sides.
  * Your scoring scales with the opponent's pitching (oppRunsAllowed);
- * their scoring scales YOUR run prevention by their offense quality —
+ * their scoring scales YOUR run prevention by their offense quality,
  * this is where SP1/SP2/defense enter every regular-season game. */
 function gameMeans(offense, defense, game) {
   const N = CONSTANTS.OPP_RUNS_MEAN;
@@ -1111,7 +1111,7 @@ function playoffRoundNames(rounds) {
 
 /*
  * TITLE DIFFICULTY: the deepest rounds are scaled to your team rating, so a
- * title means you built a great team — not that you got hot in a short
+ * title means you built a great team, not that you got hot in a short
  * series. A weak team that sneaks into October faces a stiffened opponent in
  * the LCS and World Series; an all-time roster gets a fair fight. Returns a
  * multiplier applied to the opponent's scoring (>1 = tougher).

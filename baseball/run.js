@@ -1,4 +1,4 @@
-/* Run The Diamond — draft loop and run state.
+/* Run The Diamond: draft loop and run state.
  *
  * Headless and dependency-free. Browser: window.RTD_RUN. Node: require.
  *
@@ -18,7 +18,7 @@ const E = (typeof require !== 'undefined')
  * season functions don't need `data` threaded through every call. */
 let _data = null;
 
-/* Opponent pool for a run. Always the global all-time pool — even in Eras
+/* Opponent pool for a run. Always the global all-time pool. Even in Eras
  * mode you're measured against the best teams ever, which keeps every era a
  * real challenge. (Era-appropriate opponents were tested and made every era
  * trivial, since an all-decade dream team crushes individual decade clubs.) */
@@ -503,7 +503,7 @@ function playSeason(run) {
 function advanceGame(run, gameIndex) {
   if (!run._simState) {
     // Initialize simulation state. Players draft in random order, so tag
-    // each with their ACTUAL slot from slotIndex — the sim reads SP1/SP2/CL
+    // each with their ACTUAL slot from slotIndex, because the sim reads SP1/SP2/CL
     // from these tags.
     const rng = rngFor(run);
     const tagged = run.roster.map((p, k) => ({ ...p, _slot: slotsOf(run)[run.slotIndex[k]] }));

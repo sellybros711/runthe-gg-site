@@ -1,4 +1,4 @@
-/* Run The Diamond — achievements & streaks.
+/* Run The Diamond: achievements and streaks.
  *
  * Derive-everything design: the game persists only compact per-season rows;
  * every badge, streak, and career stat is recomputed from those rows on
@@ -10,7 +10,7 @@
  *   { ts, wins, losses, titleWon, madePlayoffs, seedLabel, isGOAT, beatRecord,
  *     rating, allTimeRank, chemPct, spend, respins, efficiency, archetype,
  *     era, picks:[{ i, s, t, slot, w }] }
- * Rows have holes — fields added over time — so tests treat missing as
+ * Rows have holes (fields added over time), so tests treat missing as
  * "unknown", never as a hard zero.
  */
 'use strict';
@@ -54,7 +54,7 @@ const CATALOGUE = [
     (c) => c.best.wins >= 110),
   A('tie_record', 'Immortal', 'Match the all-time record (116 wins).', 'legend', 'Winning',
     (c) => c.rows.some((r) => r.beatRecord)),
-  A('goat', 'Greatest of all time', 'Win 117+ games — the best ever.', 'legend', 'Winning',
+  A('goat', 'Greatest of all time', 'Win 117+ games, the best ever.', 'legend', 'Winning',
     (c) => c.rows.some((r) => r.isGOAT)),
   A('wildcard_title', 'Cinderella', 'Win it all as a wild card.', 'gold', 'Winning',
     (c) => c.rows.some((r) => r.titleWon && r.seedLabel === 'Wild card')),

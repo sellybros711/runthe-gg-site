@@ -32,12 +32,17 @@ node scripts/check-dashes.mjs
 ```
 
 Exits non-zero and prints `file:line` for every offender. It runs in CI on any
-push or pull request touching `wrestling/**` (`.github/workflows/dash-check.yml`).
+push or pull request touching a guarded directory
+(`.github/workflows/dash-check.yml`).
 
-The guarded list inside that script is currently just `wrestling/`. The rest of
-the repo predates the rule and still contains hundreds of em dashes; add a
-directory to `GUARDED` only after cleaning it, never before, or the check
-becomes noise people learn to ignore.
+The guarded list inside that script is `wrestling/`, `hoops/` and `baseball/`.
+The rest of the repo predates the rule and still contains hundreds of em dashes;
+add a directory to `GUARDED` only after cleaning it, never before, or the check
+becomes noise people learn to ignore. Cleaning one is a contained job: baseball
+was 57 offenders across six files, and almost all of them wanted a colon, a full
+stop or a pair of parentheses. Add the directory to `GUARDED` and to the two
+path lists in the workflow in the same commit as the cleanup, or the next one
+lands unguarded.
 
 Run the checker against anything ad hoc:
 
