@@ -104,6 +104,22 @@ for (let g = 0; g < N; g++) {
     if (h.runs === 0) scoreless++;
     runDist[h.runs] = (runDist[h.runs] || 0) + 1;
 
+    /* EVERY BATTER IN A HALF COMES FROM THAT HALF'S LINEUP, and every runner who
+     * scores was a batter in it. The way this breaks is that one club bats for
+     * both, which on screen reads as your own left fielder scoring for the 1998
+     * Braves, and nothing else about the game looks wrong. */
+    const own = {};
+    const lineup = (h.half === 'top') ? s.away.lineup : s.home.lineup;
+    for (const b of lineup) own[b.name] = 1;
+    for (const p of h.plays) {
+      if (!own[p.batter.name])
+        check('the batter is in the batting side\'s order (game ' + g + ' ' +
+          h.half + h.inning + ')', false, p.batter.name + ' for ' + h.team);
+      for (const n of p.scored)
+        if (!own[n]) check('a runner who scores batted in this half (game ' + g + ')',
+          false, n + ' for ' + h.team);
+    }
+
     let outs = 0, runs = 0, hs = 0;
     for (const p of h.plays) {
       check('outs never run backwards (game ' + g + ')', p.outs >= p.outsBefore);
@@ -234,6 +250,19 @@ for (let a = 0; a < 400 && brackets < 25; a++) {
       }
       const nine = s.away.lineup.concat(s.home.lineup);
       if (nine.length !== 18) { gameFails++; console.log('  FAIL  eighteen batters expected'); }
+      /* The same check the synthetic games get, but against a REAL opponent roster,
+       * which is the only place the two orders could ever be handed the same club. */
+      for (const h of s.halves) {
+        const own = {};
+        for (const b of (h.half === 'top' ? s.away.lineup : s.home.lineup)) own[b.name] = 1;
+        for (const p of h.plays) {
+          if (!own[p.batter.name]) {
+            gameFails++;
+            console.log('  FAIL  ' + p.batter.name + ' bats for ' + h.team +
+              ' (bracket game ' + ri + '/' + gi + ')');
+          }
+        }
+      }
     });
   });
 }

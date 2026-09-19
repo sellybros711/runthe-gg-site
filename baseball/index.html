@@ -521,7 +521,10 @@ h1,h2,h3{margin:0}
   mask-image:linear-gradient(180deg,#000 76%,rgba(0,0,0,.12) 100%)}
 .gm-play{display:flex;gap:9px;align-items:baseline;padding:6px 10px;margin-bottom:5px;
   border-radius:9px;background:var(--panel);border:1px solid var(--line);
-  font-family:var(--fp);font-size:13px;animation:gmin .3s ease both}
+  font-family:var(--fp);font-size:13px}
+/* The feed is redrawn whole on every play, so only the newest card animates in.
+   On the whole list it would flash all six every time. */
+.gm-feed>.gm-play:first-child{animation:gmin .3s ease both}
 @keyframes gmin{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
 .gm-play .tag{flex:0 0 auto;font-family:var(--fn);font-size:9px;font-weight:800;
   letter-spacing:.06em;padding:2px 5px;border-radius:5px;background:rgba(0,0,0,.07);
@@ -3437,13 +3440,47 @@ const HALF_LABEL=n=>(n===1?'1st':n===2?'2nd':n===3?'3rd':n+'th');
 const PLAY_TAG={BB:'BB',HBP:'HBP','1B':'1B','2B':'2B','3B':'3B',HR:'HR',
   K:'K',GO:'GO',FO:'FO',LO:'LO',PO:'PO',DP:'DP',SF:'SF'};
 
-function feedLine(html,cls){
-  const feed=$('gm-feed');
-  const d=document.createElement('div');
-  d.className='gm-play '+(cls||'');
-  d.innerHTML=html;
-  feed.insertBefore(d,feed.firstChild);
-  while(feed.children.length>6)feed.removeChild(feed.lastChild);
+/* One line of the feed, as markup, from the event alone. Pure: the same event
+   always produces the same card, which is what lets the feed be rebuilt rather
+   than appended to. */
+function feedCard(ev){
+  if(ev.type==='half')
+    return '<div class="gm-play beat">'+(ev.hf.half==='top'?'Top of the ':'Bottom of the ')+
+      HALF_LABEL(ev.hf.inning)+' &middot; '+esc(ev.hf.team)+' batting</div>';
+  const p=ev.p;
+  const tag=PLAY_TAG[p.code==='OUT'?p.kind:p.code]||'';
+  const cls=p.rbi>0?'run':(p.hit?'hit':'');
+  let text=esc(p.text);
+  if(p.code!=='HR'&&p.scored.length){
+    const who=p.scored.map(esc);
+    const last=who.pop();
+    text+=' '+(who.length?who.join(', ')+' and '+last:last)+
+      (p.scored.length>1?' score.':' scores.');
+  }
+  if(p.walkoff)text+=' Ballgame.';
+  return '<div class="gm-play '+cls+'"><span class="tag">'+esc(tag)+
+    '</span><span>'+text+'</span></div>';
+}
+
+/*
+ * THE FEED IS REBUILT FROM THE EVENT LIST, never appended to.
+ *
+ * It used to prepend each play as it was rendered, which is cheaper and is fine
+ * right up until two paints race: skipping a game hands off to the next one on a
+ * timer, and a player (or a test bot) tapping Skip through a series can land a
+ * paint from one game against a feed still holding another. What that looks like
+ * is your own left fielder batting under a line that says the 1998 Braves are up,
+ * with a correct line score beside it, which is the kind of thing nobody can
+ * debug from a screenshot. Drawn this way the feed is always exactly the last six
+ * events of the game being shown, so it cannot disagree with anything.
+ */
+function paintFeed(){
+  const out=[];
+  for(let i=PO.idx;i>=0&&out.length<6;i--){
+    const ev=PO.events[i];
+    if(ev)out.push(feedCard(ev));
+  }
+  $('gm-feed').innerHTML=out.join('');
 }
 
 function renderEvent(ev){
@@ -3451,8 +3488,7 @@ function renderEvent(ev){
   if(ev.type==='half'){
     setBases([null,null,null]);
     setOuts(0,(ev.hf.half==='top'?'Top ':'Bot ')+HALF_LABEL(ev.hf.inning));
-    feedLine((ev.hf.half==='top'?'Top of the ':'Bottom of the ')+HALF_LABEL(ev.hf.inning)+
-      ' &middot; '+esc(ev.hf.team)+' batting','beat');
+    paintFeed();
     for(let i=1;i<=9;i++)$('lh-'+i).classList.toggle('now',i===ev.hf.inning);
     const first=ev.hf.plays[0];
     if(first)paintUp(first,ev.hf);
@@ -3472,17 +3508,7 @@ function renderEvent(ev){
   $('ln-aw-R').textContent=ev.a;$('ln-hm-R').textContent=ev.h;
   $('ln-'+key+'-H').textContent=liveHits(hf,p);
 
-  const tag=PLAY_TAG[p.code==='OUT'?p.kind:p.code]||'';
-  let cls=p.rbi>0?'run':(p.hit?'hit':'');
-  let text=esc(p.text);
-  if(p.code!=='HR'&&p.scored.length){
-    const who=p.scored.map(esc);
-    const last=who.pop();
-    text+=' '+(who.length?who.join(', ')+' and '+last:last)+
-      (p.scored.length>1?' score.':' scores.');
-  }
-  if(p.walkoff)text+=' Ballgame.';
-  feedLine('<span class="tag">'+esc(tag)+'</span><span>'+text+'</span>',cls);
+  paintFeed();
 
   const nx=PO.events[PO.idx+1];
   if(nx&&nx.type==='pa')paintUp(nx.p,nx.hf);
@@ -3533,6 +3559,10 @@ function nextPlay(){
 /* Skip: the score was never in doubt, so jumping to the end just means painting
    the line score the script already holds. */
 function jumpToEnd(){
+  /* Already at the end, with the hold to the next game running: do nothing rather
+     than clear that timer and set it again, or a player tapping Skip through a
+     series keeps pushing the next game back and the screen never moves. */
+  if(!PO||!PO.events||PO.idx>=PO.events.length)return;
   poClear();
   const s=PO.script;
   for(let i=0;i<9;i++){
