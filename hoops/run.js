@@ -623,6 +623,157 @@ function finalizeSeason(run) {
   return run.outcome;
 }
 
+// ─── the bracket, one game at a time ────────────────────────────────────────
+
+/* THE PLAYOFFS STOP FOR THE GAMES WORTH STOPPING FOR.
+ *
+ * playSeason above settles the whole run in one call and is still the right
+ * answer for a projection or a check. This path plays the 82 the same way and
+ * then hands the bracket back a game at a time, so an elimination game or a
+ * Finals game can be PLAYED rather than read.
+ *
+ * ── THREE THINGS ABOUT THE STATE, AND EACH ONE IS A BUG THAT DID NOT HAPPEN ─
+ *
+ * `run.po` HAS NO UNDERSCORE. Everything else mid-run lives on `_simState`,
+ * which is the marker for "do not serialize", and a bracket is the one thing
+ * here that a player can be halfway through for as long as they leave the tab
+ * open. Stored under an underscore, a reload in the middle of a Finals would
+ * come back to a run with a season, no bracket and no way to finish it. So the
+ * runner holds plain data only: no rng, no player objects.
+ *
+ * WHAT outcomeOf NEEDS IS RECOMPUTED AND NEVER STORED. Chemistry, fit, the two
+ * ratings and the overall are pure functions of the roster, and the totals are
+ * a walk over a season that is already on the run. Storing them would be a
+ * second copy of an answer, which is the era's rule in this engine and the
+ * reason a reload here cannot come back disagreeing with itself.
+ *
+ * A LIVE GAME DRAWS FROM ITS OWN STREAM, off the run's seed and the game's
+ * address, exactly as gameDetail does and for one of the same reasons: the
+ * run's stream is what makes the rest of the bracket what it is, and a game
+ * the player watched for four minutes must not change which opponent the
+ * Finals draws. So simming every game and playing every game give the same
+ * bracket around them, and only the results of the games actually played
+ * differ. verify.mjs asserts the simmed path against playSeason for that.
+ */
+
+/* The pure part of a roster's season: everything outcomeOf wants that no dice
+   decide. */
+function seasonBits(run) {
+  const tagged = taggedRoster(run);
+  const chem = E.resolveChemistry(tagged);
+  const structure = E.rosterFit(tagged);
+  const ortg = E.rosterOffense(tagged, chem.bonus, structure.bonus);
+  const drtg = E.rosterDefense(tagged, chem.bonus);
+  return { tagged, chem, structure, ortg, drtg,
+    rating: E.overallRating(E.teamWinPct(ortg, drtg)) };
+}
+
+function seasonTotals(run) {
+  let wins = 0, losses = 0, totalPF = 0, totalPA = 0;
+  for (const g of (run.season || [])) {
+    if (g.won) wins++; else losses++;
+    totalPF += g.yourPoints; totalPA += g.oppPoints;
+  }
+  return { wins, losses, totalPF, totalPA };
+}
+
+/* The 82, and then stop. */
+function playToPlayoffs(run) {
+  if (run.phase !== PHASES.SEASON) throw new Error('not in season phase');
+  const rng = rngFor(run);
+  const b = seasonBits(run);
+  const schedule = E.generateSchedule(
+    rng, E.CONSTANTS.REGULAR_SEASON_GAMES, _data && _data.oppPool);
+
+  const season = [];
+  for (const game of schedule) {
+    const means = E.gameMeans(b.ortg, b.drtg, game);
+    season.push({ game: game.game,
+      ...E.resolveGame(means.pointsFor, means.pointsAgainst, rng, E.homeAdvantage(game)) });
+  }
+
+  run.schedule = schedule;
+  run.season = season;
+  const { wins } = seasonTotals(run);
+  run.playoffSeed = E.seedFromRecord(wins);
+  /* NULL IS A REAL ANSWER HERE and not a failure: a roster that missed the
+     play-in has no bracket to play. The phase still moves, because the screen
+     after the season is the same screen either way and it is the one that
+     says so. */
+  run.po = E.poCreate(run.playoffSeed, b.ortg, b.drtg, wins, b.rating);
+  run.phase = PHASES.PLAYOFFS;
+  return { record: { wins, losses: season.length - wins }, seed: run.playoffSeed,
+    made: !!run.po };
+}
+
+/* The game the bracket is waiting on, or null when there is none left.
+   IDEMPOTENT, which it has to be because the page asks on every paint: the
+   only draw it can make is the round's opponent, and that is made once when
+   the round begins and then read off `po.cur` for ever after. */
+function pendingGame(run) {
+  if (!run || !run.po || run.po.done) return null;
+  return E.poNext(run.po, rngFor(run));
+}
+
+/* Settle it the way the rest of the season is settled. */
+function simGame(run) {
+  const next = pendingGame(run);
+  if (!next) return null;
+  const result = E.resolveGame(next.pointsFor, next.pointsAgainst, rngFor(run), next.adv);
+  E.poRecord(run.po, next, result);
+  return { ...next, result };
+}
+
+/* Everything left, at once. What "sim the rest" answers with. */
+function simRest(run) {
+  let guard = 0;
+  while (run.po && !run.po.done && guard++ < 200) simGame(run);
+  return run.po ? run.po.done : true;
+}
+
+/* A live game for the pending one. The sim and its stream are handed back
+   together rather than kept here, because the page drives the possessions. */
+function liveGame(run) {
+  const next = pendingGame(run);
+  if (!next) return null;
+  const rng = E.createSeededRNG(gameSeed(run, 2, next.roundIndex, next.game));
+  const sim = E.liveCreate(taggedRoster(run), next.pointsFor, next.pointsAgainst,
+    rng, next.adv, { round: next.round, game: next.game, home: next.home,
+      elimination: next.elimination, decider: next.decider });
+  return { next, sim, rng };
+}
+
+/* Fold a played game in. Takes the result rather than the sim, so the caller
+   cannot hand this one thing and the bracket another. */
+function recordGame(run, next, result) {
+  if (!run || !run.po || !next || !result) return null;
+  return E.poRecord(run.po, next, result);
+}
+
+/* The bracket is finished, so the run is. */
+function finishRun(run) {
+  if (run.phase !== PHASES.PLAYOFFS) throw new Error('not in the playoffs');
+  const b = seasonBits(run);
+  const t = seasonTotals(run);
+  const playoffs = E.poFinal(run.po);
+  run.playoffs = playoffs;
+  run.outcome = outcomeOf(run, {
+    record: { wins: t.wins, losses: t.losses },
+    seed: run.playoffSeed, playoffs,
+    titleWon: !!(playoffs && playoffs.won),
+    isGOAT: t.wins >= E.CONSTANTS.GOAT_WINS,
+    beatRecord: t.wins >= E.CONSTANTS.RECORD_WINS,
+    totalPF: t.totalPF, totalPA: t.totalPA,
+    chemistry: b.chem, structure: b.structure, rating: b.rating,
+    allTimeRank: _data ? E.nationalRank(b.rating, _data.ratingTable) : null,
+    ortg: Math.round(b.ortg * 100) / 100,
+    drtg: Math.round(b.drtg * 100) / 100,
+    roster: b.tagged,
+  });
+  run.phase = PHASES.OVER;
+  return run.outcome;
+}
+
 // ─── one game, in full ──────────────────────────────────────────────────────
 
 /* THE BOX SCORE FOR A GAME THAT HAS ALREADY BEEN PLAYED.
@@ -689,6 +840,21 @@ function gameDetail(run, ref) {
   const ot = gm.ot || 0;
   const rng = E.createSeededRNG(gameSeed(run, playoff ? 1 : 0,
     playoff ? ref.round : ref.index, playoff ? ref.game : 0));
+
+  /* A GAME THAT WAS PLAYED KEEPS ITS OWN SHEET. Everything above this line
+     is a decomposition of a score that was decided in one draw, which is the
+     honest answer for 82 games and the wrong one for the two or three a
+     player sat through: the quarters and the six lines already exist for
+     those, so re-deriving them would show somebody a different game from the
+     one they watched. `live` says which sheet this is rather than leaving a
+     reader to infer it from a missing column. */
+  if (gm.live && gm.lines && gm.quarters) {
+    return {
+      ...head,
+      won: !!gm.won, yourPoints: gm.yourPoints, oppPoints: gm.oppPoints, ot,
+      live: true, quarters: gm.quarters, box: gm.lines,
+    };
+  }
 
   return {
     ...head,
@@ -994,6 +1160,7 @@ const publicAPI = {
   PHASES, TUNING, BLOCK,
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,
+  playToPlayoffs, pendingGame, simGame, simRest, liveGame, recordGame, finishRun,
   previewSigning, previewFit, fitNow, bestPossibleSquad, projectSeason,
   indexData, drawable, clubSeasons, eraSeasons,
   gameDetail, bigGames, bestNight, taggedRoster,

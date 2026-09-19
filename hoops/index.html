@@ -682,6 +682,132 @@
   .brow .sc{font-family:var(--mono);font-size:13px;font-weight:700;}
   .brow.title{border-color:var(--gold);background:rgba(242,193,78,.08);}
 
+  /* ══ ONE GAME, PLAYED FORWARD ══════════════════════════════════════════
+   *
+   * EVERYTHING THAT MOVES HERE MOVES ON THE COMPOSITOR, which is the whole of
+   * "smooth" on a phone. The bar is a transform, the pulses are transforms and
+   * opacity, and the only thing javascript touches every frame is the text of
+   * two numbers and a clock. No width animation, no top or left, nothing that
+   * asks for a layout on a frame the game is also simulating a possession in.
+   */
+  .lvdoor{border-color:rgba(242,193,78,.45);
+    background:linear-gradient(180deg,rgba(242,193,78,.12),#10151f);
+    animation:optin .3s ease-out both;}
+  .lvd-eye{font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    font-weight:800;color:var(--gold);}
+  .lvd-title{font-family:var(--display);font-weight:400;text-transform:uppercase;
+    font-size:24px;margin:4px 0 6px;letter-spacing:.02em;}
+  .lvd-why{margin:0 0 12px;font-size:13px;color:var(--mut);}
+  .lvdoor button{margin:0 0 8px;}
+  .lvdoor button:last-child{margin:0;}
+  button.gold{background:linear-gradient(180deg,#f2c14e,#d19410);border-color:#d19410;
+    color:#20160a;}
+
+  .lvhead{display:flex;align-items:baseline;gap:8px;margin:0 0 10px;flex-wrap:wrap;}
+  .lv-eye{font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    font-weight:800;color:var(--orange);}
+  .lv-tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;
+    padding:3px 7px;border-radius:5px;color:var(--gold);background:rgba(242,193,78,.14);
+    border:1px solid rgba(242,193,78,.4);}
+
+  .lvboard{padding:14px 14px 12px;}
+  .lvscore{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;}
+  .lvside{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  #lv-sthem{align-items:flex-end;text-align:right;}
+  .lvsname{font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--dim);font-weight:800;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;max-width:100%;}
+  .lvpts{font-family:var(--display);font-weight:400;font-size:clamp(38px,11vw,52px);
+    line-height:.92;letter-spacing:.01em;
+    /* The scale is what a bucket looks like. Transform only, so a score
+       landing never reflows the clock beside it. */
+    transform-origin:left bottom;transition:transform .18s cubic-bezier(.2,.9,.3,1.4);}
+  #lv-them.lvpts{transform-origin:right bottom;}
+  .lvpts.pop{transform:scale(1.14);}
+  .lvside.lead .lvpts{color:var(--gold);}
+  .lvmid{display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 2px;}
+  .lvq{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;
+    color:var(--orange);}
+  .lvclock{font-size:15px;font-weight:700;color:var(--ink);}
+  .lvmid.clutch .lvq{color:var(--red);}
+  .lvmid.clutch .lvclock{color:var(--red);}
+
+  /* The lead, as one bar with the middle as level. A transform on a full width
+     block, so it costs nothing to animate and reads at a glance. */
+  .lvbar{position:relative;height:6px;border-radius:3px;margin:12px 0 0;
+    background:rgba(255,255,255,.07);overflow:hidden;}
+  .lvbar i{position:absolute;top:0;bottom:0;left:50%;width:50%;border-radius:3px;
+    background:linear-gradient(90deg,var(--orange),var(--gold));
+    transform-origin:left center;transform:scaleX(0);
+    transition:transform .34s cubic-bezier(.22,.7,.3,1);}
+  .lvbar i.neg{left:0;transform-origin:right center;
+    background:linear-gradient(90deg,#7c2d2d,var(--red));}
+
+  .lvlast{min-height:38px;margin:10px 0 0;display:flex;align-items:center;gap:8px;}
+  .lvl-pts{font-family:var(--display);font-weight:400;font-size:22px;line-height:1;
+    padding:4px 8px;border-radius:7px;background:rgba(255,255,255,.06);}
+  .lvlast.mine .lvl-pts{color:var(--gold);background:rgba(242,193,78,.14);}
+  .lvl-txt{font-size:13px;color:var(--mut);min-width:0;}
+  .lvl-txt b{color:var(--ink);font-weight:700;}
+  .lvlast.in{animation:lvrise .26s ease-out both;}
+  @keyframes lvrise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .lvcall{border-color:var(--orange);
+    background:linear-gradient(180deg,rgba(240,120,45,.14),#10151f);
+    animation:optin .22s ease-out both;}
+  .lvc-eye{font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    font-weight:800;color:var(--orange);}
+  .lvc-q{font-family:var(--display);font-weight:400;text-transform:uppercase;
+    font-size:21px;margin:4px 0 10px;letter-spacing:.02em;}
+  .lvc-opts{display:grid;gap:8px;}
+  .lvc-opt{text-align:left;width:100%;padding:11px 12px;border-radius:9px;
+    border:1px solid var(--cardb);background:rgba(255,255,255,.04);color:var(--ink);
+    font-family:var(--body);cursor:pointer;}
+  .lvc-opt:hover{border-color:var(--orange);}
+  .lvc-opt b{display:block;font-size:14px;font-weight:800;}
+  .lvc-opt span{display:block;font-size:12px;color:var(--mut);margin-top:2px;}
+
+  .lvverdict{text-align:center;animation:optin .3s ease-out both;}
+  .lvv-res{font-family:var(--display);font-weight:400;text-transform:uppercase;
+    font-size:30px;line-height:1;letter-spacing:.02em;}
+  .lvverdict.w .lvv-res{color:var(--green);}
+  .lvverdict.l .lvv-res{color:var(--red);}
+  .lvv-score{font-size:26px;font-weight:700;margin:4px 0 2px;}
+  .lvv-line{font-size:13px;color:var(--mut);margin:0 0 12px;}
+
+  /* The six, with their points climbing. This is the half of a live game a
+     resolved one cannot show at all: whose night it is, while it is his. */
+  .lvmen{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .lvman{padding:8px 6px;border-radius:8px;border:1px solid var(--line);
+    background:rgba(255,255,255,.03);text-align:center;min-width:0;
+    transition:border-color .2s ease, background .2s ease;}
+  .lvman .mn{display:block;font-size:11px;color:var(--mut);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;}
+  .lvman .mp{display:block;font-family:var(--display);font-weight:400;font-size:22px;
+    line-height:1.1;transform-origin:center;
+    transition:transform .18s cubic-bezier(.2,.9,.3,1.4);}
+  .lvman.hot{border-color:rgba(242,193,78,.5);background:rgba(242,193,78,.08);}
+  .lvman.hot .mp{color:var(--gold);}
+  .lvman.pop .mp{transform:scale(1.2);}
+
+  .lvlog{display:grid;gap:4px;max-height:40vh;overflow:auto;}
+  .lvrow{display:grid;grid-template-columns:54px 1fr auto;gap:8px;align-items:baseline;
+    padding:5px 7px;border-radius:6px;font-size:12px;background:rgba(255,255,255,.02);}
+  .lvrow .lvt{font-family:var(--mono);font-size:10px;color:var(--dim);}
+  .lvrow .lvw{color:var(--mut);min-width:0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;}
+  .lvrow .lvw b{color:var(--ink);font-weight:700;}
+  .lvrow .lvs{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--dim);}
+  .lvrow.mine{background:rgba(242,193,78,.07);}
+  .lvrow.call{background:rgba(240,120,45,.12);}
+  .lvrow.call .lvw b{color:var(--orange);}
+  .lvrow.new{animation:lvrise .22s ease-out both;}
+
+  @media (prefers-reduced-motion: reduce){
+    .lvpts,.lvman .mp,.lvbar i{transition:none;}
+    .lvlast.in,.lvrow.new,.lvdoor,.lvcall,.lvverdict{animation:none;}
+  }
+
   /* ══ THE PROFILE SHEET ═════════════════════════════════════════════════ */
   .sheet{position:fixed;inset:0;z-index:60;display:none;background:rgba(5,8,14,.72);
     backdrop-filter:blur(3px);}
@@ -1661,6 +1787,75 @@
       <button class="ghost" id="b-skip">Skip to the result</button>
     </div>
   </div>
+
+  <!-- THE DOOR. Shown when the bracket reaches a game the series can end in,
+       or any Finals game. Hidden the rest of the time, so a quiet second round
+       plays through without asking anybody anything. -->
+  <div class="card lvdoor" id="lvdoor" hidden>
+    <div class="lvd-eye" id="lvd-eye"></div>
+    <h3 class="lvd-title" id="lvd-title"></h3>
+    <p class="lvd-why" id="lvd-why"></p>
+    <button class="big gold" id="b-lv-play">Play it</button>
+    <button class="ghost" id="b-lv-sim">Sim it</button>
+  </div>
+</div>
+
+<!-- ── one game, played forward ─────────────────────────────────────────── -->
+<div class="screen" id="s-live">
+  <div class="lvhead">
+    <span class="lv-eye" id="lv-eye"></span>
+    <span class="lv-tag" id="lv-tag" hidden></span>
+  </div>
+
+  <div class="card lvboard">
+    <div class="lvscore">
+      <div class="lvside" id="lv-syou">
+        <span class="lvsname">Your six</span>
+        <span class="lvpts mono" id="lv-you">0</span>
+      </div>
+      <div class="lvmid">
+        <span class="lvq" id="lv-q">Q1</span>
+        <span class="lvclock mono" id="lv-clock">12:00</span>
+      </div>
+      <div class="lvside" id="lv-sthem">
+        <span class="lvsname">The field</span>
+        <span class="lvpts mono" id="lv-them">0</span>
+      </div>
+    </div>
+    <div class="lvbar"><i id="lv-fill"></i></div>
+    <div class="lvlast" id="lv-last"></div>
+  </div>
+
+  <!-- A CONTROL THE GAME IS WAITING ON GOES ABOVE THE RECORD OF IT, which is
+       the football boss battle's own lesson: the log fills up all game, so
+       anything under it walks off the bottom of a phone by the fourth
+       quarter. -->
+  <div class="card lvcall" id="lv-call" hidden>
+    <div class="lvc-eye">The call</div>
+    <div class="lvc-q" id="lvc-q"></div>
+    <div class="lvc-opts" id="lvc-opts"></div>
+  </div>
+
+  <div class="card lvverdict" id="lv-verdict" hidden>
+    <div class="lvv-res" id="lvv-res"></div>
+    <div class="lvv-score mono" id="lvv-score"></div>
+    <div class="lvv-line" id="lvv-line"></div>
+    <button class="big" id="b-lv-next">Continue</button>
+  </div>
+
+  <div class="card">
+    <h2>On the floor</h2>
+    <div class="lvmen" id="lv-men"></div>
+  </div>
+
+  <div class="card">
+    <h2>Play by play</h2>
+    <div class="lvlog" id="lv-log"></div>
+  </div>
+
+  <div class="btnrow" style="margin-top:2px">
+    <button class="ghost" id="b-lv-fast">Sim the rest</button>
+  </div>
 </div>
 
 <!-- ── results ──────────────────────────────────────────────────────────── -->
@@ -2001,8 +2196,8 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=15"></script>
-<script src="run.js?v=7"></script>
+<script src="engine.js?v=16"></script>
+<script src="run.js?v=8"></script>
 <script src="badges.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
@@ -2157,6 +2352,15 @@ function show(id){
      same problem in the other direction: it spins reels behind the draft,
      forever, on a phone. */
   stopSim();
+  /* A LIVE GAME AND A BRACKET WALK BELONG TO THEIR OWN SCREENS, for the same
+     reason the season reveal above does and with a worse failure. Left
+     running, the bracket goes on deciding rounds nobody is watching, and a
+     live game plays itself to the horn and RECORDS the result: somebody who
+     pressed the wordmark in the middle of a Game 7 would come back to a
+     series that had moved without them. Stopped rather than ended: the
+     bracket is still at that game, so coming back offers the same door. */
+  if (id !== 's-live' && LV && LV.timer) { clearTimeout(LV.timer); LV.timer = null; }
+  if (id !== 's-season') stopBracket();
   if (id === 's-home') heroStart(); else heroStop();
   /* The club belongs to the draft. The season, the results and the home screen
      have no club, and a results screen still wearing the last team you spun is
@@ -2195,8 +2399,18 @@ var DOCK_FOR = {
     /* Before tip-off the action is Play. Once the season is running Play is
        spent, and the only thing left to do is stop watching, so Skip takes the
        bar on its own. */
+    /* AND NOTHING AT ALL WHILE THE DOOR IS UP. The door is a card with two
+       buttons that are one decision, and docking half of a pair is how a
+       reader ends up answering a question with the other half off screen.
+       Skip is also meaningless there: the bracket is already stopped. */
+    if (!$('lvdoor').hidden) return [];
     var play = $('b-play');
     return play && !play.disabled ? [play] : [$('b-skip')];
+  },
+  's-live':   function(){
+    /* Once the game is over the only thing left is to carry on, and Sim the
+       rest is spent. */
+    return $('lv-verdict').hidden ? [$('b-lv-fast')] : [$('b-lv-next')];
   },
   's-over':   function(){ return [$('b-again')]; }
 };
@@ -2206,7 +2420,8 @@ var DOCK_FOR = {
 var HOME_OF = {};
 
 function rememberHomes(){
-  var ids = ['b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again'];
+  var ids = ['b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
+    'b-lv-fast', 'b-lv-next'];
   for (var i = 0; i < ids.length; i++) {
     var el = $(ids[i]);
     if (el && el.parentNode) HOME_OF[ids[i]] = el.parentNode;
@@ -2557,7 +2772,9 @@ function boxName(n){
 }
 
 function renderGame(d){
-  $('gs-eyebrow').textContent = d.label + (d.marquee && !d.round ? ' · Marquee night' : '');
+  $('gs-eyebrow').textContent = d.label
+    + (d.live ? ' · You played it' : '')
+    + (d.marquee && !d.round ? ' · Marquee night' : '');
   var res = $('gs-res');
   res.textContent = d.won ? 'Won' : 'Lost';
   res.className = 'gs-res ' + (d.won ? 'w' : 'l');
@@ -2611,12 +2828,20 @@ function renderGame(d){
      in scoring order it is a report on the game. */
   var bx = $('gs-box');
   bx.textContent = '';
+  /* A GAME THAT WAS PLAYED HAS DIFFERENT COLUMNS, and that is honesty rather
+     than an omission. A resolved game's sheet is a decomposition, so it can
+     carry minutes, rebounds and assists because the decomposition invents
+     them from the same total. A live game counted what happened, and nothing
+     in the forward sim models a rebound or an assist: printing a column to
+     match the other sheet's shape would be the invented-opponent mistake in
+     miniature. What it can say instead is the line from the floor. */
   var head = document.createElement('tr');
-  ['', 'Min', 'Pts', 'Reb', 'Ast', 'FG', '3P'].forEach(function(h){
-    var th = document.createElement('th');
-    th.textContent = h;
-    head.appendChild(th);
-  });
+  (d.live ? ['', 'Pts', 'FG', '3P', 'FT'] : ['', 'Min', 'Pts', 'Reb', 'Ast', 'FG', '3P'])
+    .forEach(function(h){
+      var th = document.createElement('th');
+      th.textContent = h;
+      head.appendChild(th);
+    });
   bx.appendChild(head);
 
   var rows = d.box.slice().sort(function(a, b){ return b.pts - a.pts; });
@@ -2640,11 +2865,14 @@ function renderGame(d){
     sl.textContent = l.slot || '';
     c.appendChild(nm); c.appendChild(sl);
     tr.appendChild(c);
-    var cells = [String(l.min), String(l.pts), String(l.reb), String(l.ast),
-      l.fgm + '-' + l.fga, l.tpm + '-' + l.tpa];
+    var cells = d.live
+      ? [String(l.pts), l.fgm + '-' + l.fga, l.tpm + '-' + l.tpa, l.ftm + '-' + l.fta]
+      : [String(l.min), String(l.pts), String(l.reb), String(l.ast),
+        l.fgm + '-' + l.fga, l.tpm + '-' + l.tpa];
+    var ptsAt = d.live ? 0 : 1;
     for (var z = 0; z < cells.length; z++) {
       var td = document.createElement('td');
-      if (z === 1) td.className = 'pts';
+      if (z === ptsAt) td.className = 'pts';
       td.textContent = cells[z];
       tr.appendChild(td);
     }
@@ -2654,9 +2882,14 @@ function renderGame(d){
   /* Two short sentences. The first answers "why is everyone playing 48
      minutes", which is the thing a reader notices first and would otherwise
      read as a bug. The second answers "where is their box score". */
-  $('gs-note').textContent = 'Six men, ' + (240 + d.ot * 25)
-    + ' minutes, every point. The other side is a strength here rather than a '
-    + 'roster, so it has no box score.';
+  $('gs-note').textContent = d.live
+    ? 'You played this one. Every number here is what happened, not a '
+      + 'reconstruction. No rebounds or assists: nothing in a live game counts '
+      + 'them. The other side is a strength here rather than a roster, so it '
+      + 'has no box score.'
+    : 'Six men, ' + (240 + d.ot * 25)
+      + ' minutes, every point. The other side is a strength here rather than a '
+      + 'roster, so it has no box score.';
 
   var prev = $('b-gs-prev'), next = $('b-gs-next');
   var walk = gsAt >= 0;
@@ -4505,22 +4738,13 @@ function stopSim(){
 }
 
 function playSeason(){
-  var out = R.playSeason(run);
-  /* ONCE PER RUN, AND THE FLAG RIDES IN THE SAVED RUN. renderOver is also what
-     a restored finished run calls, so recording there would add a ring every
-     time somebody reopened the tab on a season they had already won. */
-  /* WHAT THE RUN EARNED RIDES IN THE SAVED RUN, because it is a difference
-     and the difference only exists at this moment: asked again on a reload,
-     every badge is already held and every best is already tied. Kept rather
-     than shown once, because it is a receipt and not a notification. Somebody
-     reopening a finished season should still see which badges that season
-     lit, the same way they still see its record. */
-  if (!run.recorded) {
-    run.recorded = true;
-    var got = recordRun(out);
-    run.earned = { fresh: got.fresh.map(function(b){
-      return { id: b.id, name: b.name, why: b.why, tier: b.tier }; }), bests: got.bests };
-  }
+  /* THE 82, AND THEN STOP. It used to be one call that settled the whole run
+     including the bracket, and then the screen read the answer back a round at
+     a time. That cannot stand once a playoff game can be PLAYED: the rest of
+     the bracket depends on how it went, so the games after it cannot already
+     exist. R.playToPlayoffs plays the regular season exactly as before and
+     hands the bracket back a game at a time. */
+  var reg = R.playToPlayoffs(run);
   save();
   /* HIDDEN, NOT JUST DISABLED. Disabling it is what tells the dock to swap it
      for Skip, so that stays. But the dock hands it back to its card on the way
@@ -4531,6 +4755,7 @@ function playSeason(){
   $('b-play').textContent = 'Season in progress';
   $('simcard').style.display = '';
   $('sim-bracket').textContent = '';
+  $('lvdoor').hidden = true;
   /* Play has just been spent and the sim card that holds Skip has just
      appeared, so the dock's answer for this screen has changed. */
   renderDock('s-season');
@@ -4552,7 +4777,11 @@ function playSeason(){
     stopSim();
     for (var k = g; k < run.season.length; k++) paint(k, true);
     g = run.season.length;
-    revealBracket(out);
+    $('sim-rec').textContent = reg.record.wins + '-' + reg.record.losses;
+    $('sim-home').textContent = homeW + '-' + homeL;
+    $('sim-marq').textContent = marqW + '-' + marqL;
+    for (var c2 = 0; c2 < cells.length; c2++) cells[c2].classList.remove('now');
+    toBracket();
   };
 
   function paint(idx, quiet){
@@ -4587,81 +4816,594 @@ function playSeason(){
   }, 34);
 
   $('b-skip').onclick = finish;
+}
 
-  function revealBracket(o){
+/* ── THE BRACKET, ONE GAME AT A TIME ───────────────────────────────────────
+ *
+ * The round rows land as they did before, one per round. What is new is that
+ * the walk stops at a big game and offers the door, and that a game the player
+ * takes is settled by the live board rather than by the resolver.
+ */
+var brTimer = null;
+
+function stopBracket(){ if (brTimer) { clearTimeout(brTimer); brTimer = null; } }
+
+function toBracket(){
+  if (!run.po) {
     var el = $('sim-bracket');
     el.textContent = '';
-    $('sim-rec').textContent = o.wins + '-' + o.losses;
-    $('sim-home').textContent = homeW + '-' + homeL;
-    $('sim-marq').textContent = marqW + '-' + marqL;
-    for (var c = 0; c < cells.length; c++) cells[c].classList.remove('now');
-
-    var rounds = run.playoffs ? run.playoffs.rounds : [];
-    var i = 0;
-    var step = function(){
-      if (i >= rounds.length) {
-        setTimeout(function(){
-          renderOver(o);
-          show('s-over');
-          if (o.titleWon) fireConfetti();
-        }, 620);
-        return;
-      }
-      var rd = rounds[i++];
-      var row = document.createElement('div');
-      row.className = 'brow' + (rd.won && rd.round === 'NBA Finals' ? ' title' : '');
-      var left = document.createElement('span');
-      var nm = document.createElement('span');
-      nm.className = 'rd';
-      nm.textContent = rd.round;
-      left.appendChild(nm);
-      var opp = document.createElement('span');
-      opp.className = 'opp';
-      /* WHAT THE OPPONENT WAS, IN WINS. "Opponent rated +3.4 net" is the model
-         talking to itself: net rating per hundred possessions is the currency
-         the engine runs on and it is not a thing a fan carries around. The same
-         number through the same Pythagorean the season uses says "a 55 win
-         team", which is the sentence somebody would actually say about the
-         club that just knocked them out.
-         The opponent is deliberately NOT named as a real club. The bracket
-         draws a strength, not a team, and printing "the 1996 Bulls" over a
-         number the model rolled would be telling somebody they beat a team that
-         was never in the room.
-         PLAYED LIKE, NOT WAS, and that word is doing real work. The bracket
-         draws the opponent AROUND the round's strength rather than at it,
-         because a seven game series turns on who is healthy in May and whether
-         a shooter is hot for a fortnight, and the whole model was refitted for
-         that reason. So the draw occasionally hands the play-in a club
-         performing at 72 wins, which cannot be a play-in team's SEASON and can
-         absolutely be two weeks of one. Printing "a 72 win team" there was the
-         only line on this screen that read as a mistake.
-         Home court is not mentioned either: in this model you always have it,
-         because the 2-2-1-1-1 pattern is fixed and what varies with your record
-         is how MUCH it is worth. Saying you had it would be true of every round
-         of every run, which makes it noise. */
-      opp.textContent = 'played like a ' + oppWins(rd.oppNet) + ' win team';
-      left.appendChild(opp);
-      var res = document.createElement('span');
-      res.className = 'res ' + (rd.won ? 'w' : 'l');
-      res.textContent = rd.won ? 'WON' : 'LOST';
-      var sc = document.createElement('span');
-      sc.className = 'sc';
-      sc.textContent = rd.yourWins + '-' + rd.oppWins;
-      row.appendChild(left); row.appendChild(res); row.appendChild(sc);
-      el.appendChild(row);
-      setTimeout(step, 480);
-    };
-    if (!rounds.length) {
-      var none = document.createElement('p');
-      none.className = 'dim';
-      none.style.cssText = 'margin:6px 0 0;font-size:13px';
-      none.textContent = 'No playoffs. ' + E.CONSTANTS.PLAY_IN_WINS + ' wins reaches the play-in.';
-      el.appendChild(none);
-      setTimeout(function(){ renderOver(o); show('s-over'); }, 900);
-      return;
-    }
-    setTimeout(step, 340);
+    var none = document.createElement('p');
+    none.className = 'dim';
+    none.style.cssText = 'margin:6px 0 0;font-size:13px';
+    none.textContent = 'No playoffs. ' + E.CONSTANTS.PLAY_IN_WINS + ' wins reaches the play-in.';
+    el.appendChild(none);
+    brTimer = setTimeout(endRun, 900);
+    return;
   }
+  brTimer = setTimeout(runBracket, 340);
+}
+
+/* One step of the walk. Simmed games cost nothing and only the round's own row
+   is drawn, so the pacing here is per ROUND and not per game, which is exactly
+   what this screen did before any of this existed. */
+function runBracket(){
+  stopBracket();
+  $('lvdoor').hidden = true;
+  renderDock('s-season');
+  var next = R.pendingGame(run);
+  if (!next) { endRun(); return; }
+  if (next.big) { showDoor(next); return; }
+  var before = run.po.results.length;
+  R.simGame(run);
+  save();
+  if (run.po.results.length > before) {
+    paintRound(run.po.results[run.po.results.length - 1]);
+    brTimer = setTimeout(runBracket, 480);
+  } else {
+    runBracket();
+  }
+}
+
+function paintRound(rd){
+  var el = $('sim-bracket');
+  var row = document.createElement('div');
+  row.className = 'brow' + (rd.won && rd.round === 'NBA Finals' ? ' title' : '');
+  var left = document.createElement('span');
+  var nm = document.createElement('span');
+  nm.className = 'rd';
+  nm.textContent = rd.round;
+  left.appendChild(nm);
+  var opp = document.createElement('span');
+  opp.className = 'opp';
+  /* WHAT THE OPPONENT WAS, IN WINS. "Opponent rated +3.4 net" is the model
+     talking to itself: net rating per hundred possessions is the currency
+     the engine runs on and it is not a thing a fan carries around. The same
+     number through the same Pythagorean the season uses says "a 55 win
+     team", which is the sentence somebody would actually say about the
+     club that just knocked them out.
+     The opponent is deliberately NOT named as a real club. The bracket
+     draws a strength, not a team, and printing "the 1996 Bulls" over a
+     number the model rolled would be telling somebody they beat a team that
+     was never in the room.
+     PLAYED LIKE, NOT WAS, and that word is doing real work. The bracket
+     draws the opponent AROUND the round's strength rather than at it,
+     because a seven game series turns on who is healthy in May and whether
+     a shooter is hot for a fortnight, and the whole model was refitted for
+     that reason. So the draw occasionally hands the play-in a club
+     performing at 72 wins, which cannot be a play-in team's SEASON and can
+     absolutely be two weeks of one. Printing "a 72 win team" there was the
+     only line on this screen that read as a mistake.
+     Home court is not mentioned either: in this model you always have it,
+     because the 2-2-1-1-1 pattern is fixed and what varies with your record
+     is how MUCH it is worth. Saying you had it would be true of every round
+     of every run, which makes it noise. */
+  opp.textContent = 'played like a ' + oppWins(rd.oppNet) + ' win team';
+  left.appendChild(opp);
+  var res = document.createElement('span');
+  res.className = 'res ' + (rd.won ? 'w' : 'l');
+  res.textContent = rd.won ? 'WON' : 'LOST';
+  var sc = document.createElement('span');
+  sc.className = 'sc';
+  sc.textContent = rd.yourWins + '-' + rd.oppWins;
+  row.appendChild(left); row.appendChild(res); row.appendChild(sc);
+  el.appendChild(row);
+}
+
+/* What the game is, in the words that make somebody want to play it. */
+function gameTitle(next){
+  if (next.bestOf === 1) return next.round;
+  return next.round + ' · Game ' + (next.game + 1);
+}
+
+function gameTag(next){
+  /* A ONE GAME ROUND IS NOT A SERIES, and the play-in is the only one there
+     is. Asked first, because elimination and closeout are BOTH true there by
+     arithmetic and either label would be a sentence about a series that does
+     not exist. */
+  if (next.bestOf === 1) return 'Win or go home';
+  if (next.decider) return 'Game 7';
+  if (next.elimination) return 'Elimination';
+  if (next.closeout) return 'Close it out';
+  return next.round === 'NBA Finals' ? 'The Finals' : '';
+}
+
+/* Where the series stands, or nothing when there is no series. NEVER ENDS IN
+   A STOP: the caller joins it to the line below, and a trailing one there is
+   what put "the run is over.. Nothing left" on the door. */
+function seriesLine(next){
+  if (next.bestOf === 1) return null;
+  return 'Series ' + next.yourWins + '-' + next.oppWins + ' · '
+    + (next.home ? 'your floor' : 'their floor');
+}
+
+function doorWhy(next){
+  if (next.bestOf === 1) return 'One game for the whole bracket. Lose it and the run is over.';
+  if (next.decider) return 'Nothing left after this one. Forty eight minutes for the round.';
+  if (next.elimination && next.closeout) return 'Whoever wins it goes through.';
+  if (next.elimination) return 'Lose and the run ends here.';
+  if (next.closeout) return 'Win and the round is yours.';
+  return 'Every game of the Finals is worth watching.';
+}
+
+function showDoor(next){
+  $('lvd-eye').textContent = gameTitle(next);
+  $('lvd-title').textContent = gameTag(next) || 'The Finals';
+  $('lvd-why').textContent = [seriesLine(next), doorWhy(next)]
+    .filter(Boolean).join('. ');
+  $('lvdoor').hidden = false;
+  renderDock('s-season');
+  /* The door is the bottom of the screen and the bracket above it has just
+     grown, so on a phone it can arrive below the fold. */
+  try { $('lvdoor').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
+}
+
+function doorSim(){
+  $('lvdoor').hidden = true;
+  var before = run.po.results.length;
+  R.simGame(run);
+  save();
+  if (run.po.results.length > before) paintRound(run.po.results[run.po.results.length - 1]);
+  brTimer = setTimeout(runBracket, 480);
+}
+
+/* The bracket is finished, so the run is. */
+function endRun(){
+  stopBracket();
+  var out = R.finishRun(run);
+  /* ONCE PER RUN, AND THE FLAG RIDES IN THE SAVED RUN. renderOver is also what
+     a restored finished run calls, so recording there would add a ring every
+     time somebody reopened the tab on a season they had already won. */
+  /* WHAT THE RUN EARNED RIDES IN THE SAVED RUN, because it is a difference
+     and the difference only exists at this moment: asked again on a reload,
+     every badge is already held and every best is already tied. Kept rather
+     than shown once, because it is a receipt and not a notification. Somebody
+     reopening a finished season should still see which badges that season
+     lit, the same way they still see its record. */
+  if (!run.recorded) {
+    run.recorded = true;
+    var got = recordRun(out);
+    run.earned = { fresh: got.fresh.map(function(b){
+      return { id: b.id, name: b.name, why: b.why, tier: b.tier }; }), bests: got.bests };
+  }
+  save();
+  renderOver(out);
+  show('s-over');
+  if (out.titleWon) fireConfetti();
+}
+
+/* ── ONE GAME, PLAYED FORWARD ──────────────────────────────────────────────
+ *
+ * PACE IS PER QUARTER AND THE LAST TWO MINUTES ARE THEIR OWN THING. A game is
+ * 198 possessions, so one flat pace is either a twenty second blur or a four
+ * minute sit, and what anybody actually came for is the fourth quarter. This
+ * is the resolved broadcast's escalation arriving at a live board.
+ *
+ * SIM THE REST HURRIES THE BASKETBALL AND NEVER A CALL, which is the football
+ * boss battle's rule verbatim. A run lost to a decision the page made for you
+ * is the worst thing this screen could do, so it still stops and asks.
+ */
+var LV_PACE = { 1: 78, 2: 78, 3: 92, 4: 135 };
+var LV_CLUTCH_MS = 300;      // inside the last two minutes of a close game
+var LV_CLUTCH_S = 120;
+var LV_CLUTCH_M = 6;
+var LV_SCORE_MS = 70;        // a bucket is worth a beat on top of the pace
+var LV_CALL_HOLD = 950;      // after a call is answered, before the next play
+var LV_QUARTER = 0;          // seconds in a quarter, filled at wiring time
+var LV = null;
+
+/* THE LIVE BOARD'S STATE, PUBLISHED, AND NOTHING ON THIS PAGE READS IT.
+ *
+ * It is here so hoops/check-live.mjs can put the board into a genuine last
+ * shot and then press the page's own loop, rather than playing games until
+ * one turns up. A call happens in about one game in five and a played game
+ * is most of a minute, so a guard that waited for one would be dark on most
+ * runs, which is the unearnable badge in a different coat. What it drives is
+ * the real sim through the real tick: nothing about the decision is faked.
+ *
+ * `resume` exists rather than exporting lvTick because a caller that has just
+ * rewritten the state has a timer pending on the old one, and every version
+ * of this that forgot to clear it ran two loops at once. */
+window.RTF_LIVE = {
+  get sim(){ return LV ? LV.sim : null; },
+  get state(){ return LV; },
+  resume: function(){ if (!LV) return; clearTimeout(LV.timer); LV.timer = null; lvTick(); }
+};
+
+function lvFmt(s){
+  var t = Math.max(0, Math.ceil(s));
+  var m = Math.floor(t / 60), ss = t % 60;
+  return m + ':' + (ss < 10 ? '0' : '') + ss;
+}
+
+/* The clock on the wall, which is not the clock the sim keeps. The sim counts
+   regulation down as one number, because that is what the two call windows are
+   measured against; a scoreboard counts a quarter. */
+function lvQuarterClock(sim){
+  if (sim.ot) return sim.clock;
+  return sim.clock - (4 - sim.quarter) * LV_QUARTER;
+}
+
+/* THE QUARTER IS PART OF THE TIME, and leaving it off made the log read as
+   though it ran backwards. Newest first, so a row at 0:12 of the first
+   quarter sits directly under a row at 11:53 of the second, and there was
+   nothing on either to say they were different quarters. */
+function lvRowTime(p){
+  if (p.q.charAt(0) === 'O') return p.q + ' ' + lvFmt(p.clock);
+  var qn = parseInt(p.q.slice(1), 10) || 1;
+  return p.q + ' ' + lvFmt(p.clock - (4 - qn) * LV_QUARTER);
+}
+
+/* What just happened, in a sentence. The opponent has no names, because the
+   bracket draws a strength rather than a roster, so their half is the plainest
+   thing that is true. */
+function lvWords(p){
+  if (!p.mine) {
+    if (p.kind === 'to') return ['They turn it over', ''];
+    if (p.kind === 'miss') return ['They miss', ''];
+    if (p.kind === 'three') return ['A three for them', ''];
+    if (p.kind === 'ft') return [p.pts ? 'They score at the line' : 'They miss at the line', ''];
+    if (p.kind === 'and1') return ['They score, and one', ''];
+    return ['They score', ''];
+  }
+  var who = p.name ? boxName(p.name) : 'Your six';
+  if (p.kind === 'to') return ['', 'Turnover'];
+  if (p.kind === 'miss') return [who, ' misses'];
+  if (p.kind === 'three') return [who, ' from three'];
+  if (p.kind === 'two') return [who, ' scores'];
+  if (p.kind === 'and1') return [who, ' scores, and one'];
+  if (p.kind === 'ft') return [who, p.pts ? ' from the line' : ' misses at the line'];
+  return [who, ''];
+}
+
+function startLive(){
+  var g = R.liveGame(run);
+  if (!g) { runBracket(); return; }
+  stopBracket();
+  LV = { next: g.next, sim: g.sim, rng: g.rng, timer: null, fast: false,
+    shown: 0, men: [], over: false };
+
+  $('lv-eye').textContent = gameTitle(g.next);
+  var tag = gameTag(g.next);
+  $('lv-tag').hidden = !tag;
+  $('lv-tag').textContent = tag;
+  $('lv-you').textContent = '0';
+  $('lv-them').textContent = '0';
+  $('lv-q').textContent = 'Q1';
+  $('lv-clock').textContent = lvFmt(LV_QUARTER);
+  $('lv-last').textContent = '';
+  $('lv-last').className = 'lvlast';
+  $('lv-log').textContent = '';
+  $('lv-call').hidden = true;
+  $('lv-verdict').hidden = true;
+  $('lv-fill').className = '';
+  $('lv-fill').style.transform = 'scaleX(0)';
+  $('b-lv-fast').disabled = false;
+  $('b-lv-fast').style.display = '';
+  $('b-lv-fast').textContent = 'Sim the rest';
+  $('lv-syou').classList.remove('lead');
+  $('lv-sthem').classList.remove('lead');
+  lvBuildMen();
+  show('s-live');
+  LV.timer = setTimeout(lvTick, 620);
+}
+
+function lvBuildMen(){
+  var wrap = $('lv-men');
+  wrap.textContent = '';
+  LV.men = [];
+  for (var i = 0; i < LV.sim.men.length; i++) {
+    var m = LV.sim.men[i];
+    var d = document.createElement('div');
+    d.className = 'lvman';
+    var n = document.createElement('span');
+    n.className = 'mn';
+    n.textContent = E.lastNameOf(m.p.n);
+    n.title = m.p.n;
+    var v = document.createElement('span');
+    v.className = 'mp';
+    v.textContent = '0';
+    d.appendChild(n); d.appendChild(v);
+    wrap.appendChild(d);
+    LV.men.push({ box: d, val: v, pts: 0 });
+  }
+}
+
+function lvDelay(sim, scored){
+  if (LV.fast) return 0;
+  var left = lvQuarterClock(sim);
+  var m = Math.abs(sim.you - sim.them);
+  var base = (sim.ot || sim.quarter === 4) && left <= LV_CLUTCH_S && m <= LV_CLUTCH_M
+    ? LV_CLUTCH_MS
+    : (sim.ot ? LV_PACE[4] : (LV_PACE[sim.quarter] || 90));
+  return base + (scored ? LV_SCORE_MS : 0);
+}
+
+function lvTick(){
+  if (!LV || LV.over) return;
+  var sim = LV.sim;
+  if (sim.over) { lvFinish(); return; }
+  var step = E.liveAdvance(sim, LV.rng, {});
+  if (step && step.pending) { lvAsk(step.pending); return; }
+  lvPaint();
+  if (sim.over) { LV.timer = setTimeout(lvFinish, LV.fast ? 260 : 700); return; }
+  LV.timer = setTimeout(lvTick, lvDelay(sim, step && step.pts > 0));
+}
+
+/* Everything the board says, read off the sim rather than accumulated here.
+   Two copies of a score is how a scoreboard ends up disagreeing with its own
+   play by play, which is the boss battle's own bug. */
+function lvPaint(){
+  var sim = LV.sim;
+  var you = $('lv-you'), them = $('lv-them');
+  var p = sim.plays[sim.plays.length - 1];
+
+  if (you.textContent !== String(sim.you)) { you.textContent = sim.you; lvPop(you); }
+  if (them.textContent !== String(sim.them)) { them.textContent = sim.them; lvPop(them); }
+
+  $('lv-q').textContent = sim.ot ? (sim.ot > 1 ? sim.ot + 'OT' : 'OT') : 'Q' + sim.quarter;
+  $('lv-clock').textContent = lvFmt(lvQuarterClock(sim));
+  var mid = $('lv-clock').parentNode;
+  var close = (sim.ot || sim.quarter === 4)
+    && lvQuarterClock(sim) <= LV_CLUTCH_S && Math.abs(sim.you - sim.them) <= LV_CLUTCH_M;
+  mid.classList.toggle('clutch', close);
+
+  /* The lead, as a transform on one bar. Twenty points fills it, which is
+     where a basketball game stops being in the balance. */
+  var lead = sim.you - sim.them;
+  var fill = $('lv-fill');
+  fill.className = lead < 0 ? 'neg' : '';
+  fill.style.transform = 'scaleX(' + Math.min(1, Math.abs(lead) / 20).toFixed(3) + ')';
+  $('lv-syou').classList.toggle('lead', lead > 0);
+  $('lv-sthem').classList.toggle('lead', lead < 0);
+
+  if (!p) return;
+  lvLast(p);
+  lvLog(p);
+  if (p.mine && p.who != null && p.pts > 0) lvMan(p.who);
+}
+
+function lvPop(el){
+  el.classList.remove('pop');
+  /* Reading offsetWidth is what restarts a transition that is already on the
+     element, and it is the one layout read in this loop. */
+  void el.offsetWidth;
+  el.classList.add('pop');
+  setTimeout(function(){ el.classList.remove('pop'); }, 190);
+}
+
+function lvLast(p){
+  var el = $('lv-last');
+  el.textContent = '';
+  el.className = 'lvlast in' + (p.mine ? ' mine' : '');
+  void el.offsetWidth;
+  el.className = 'lvlast in' + (p.mine ? ' mine' : '');
+  if (p.pts > 0) {
+    var b = document.createElement('span');
+    b.className = 'lvl-pts';
+    b.textContent = '+' + p.pts;
+    el.appendChild(b);
+  }
+  var t = document.createElement('span');
+  t.className = 'lvl-txt';
+  var w = lvWords(p);
+  if (w[0]) { var strong = document.createElement('b'); strong.textContent = w[0]; t.appendChild(strong); }
+  if (w[1]) t.appendChild(document.createTextNode(w[1]));
+  if (p.note) {
+    t.appendChild(document.createTextNode(' · '));
+    var n = document.createElement('b');
+    n.textContent = p.note;
+    t.appendChild(n);
+  }
+  el.appendChild(t);
+}
+
+/* NEWEST FIRST, because the thing worth reading is what just happened and a
+   log that grows downward on a phone is a log nobody scrolls back up. Capped,
+   because two hundred rows of DOM under an animating board is the one way this
+   screen could get slow. */
+function lvLog(p){
+  var log = $('lv-log');
+  var row = document.createElement('div');
+  row.className = 'lvrow new' + (p.mine ? ' mine' : '') + (p.note ? ' call' : '');
+  var t = document.createElement('span');
+  t.className = 'lvt';
+  t.textContent = lvRowTime(p);
+  var w = document.createElement('span');
+  w.className = 'lvw';
+  var words = lvWords(p);
+  if (words[0]) { var b = document.createElement('b'); b.textContent = words[0]; w.appendChild(b); }
+  if (words[1]) w.appendChild(document.createTextNode(words[1]));
+  if (p.note) {
+    w.appendChild(document.createTextNode(' · '));
+    var n = document.createElement('b');
+    n.textContent = p.note;
+    w.appendChild(n);
+  }
+  var s = document.createElement('span');
+  s.className = 'lvs';
+  s.textContent = p.you + '-' + p.them;
+  row.appendChild(t); row.appendChild(w); row.appendChild(s);
+  log.insertBefore(row, log.firstChild);
+  while (log.childNodes.length > 60) log.removeChild(log.lastChild);
+}
+
+function lvMan(i){
+  for (var k = 0; k < LV.men.length; k++) {
+    if (LV.sim.men[k].i !== i) continue;
+    var m = LV.men[k];
+    m.val.textContent = LV.sim.men[k].pts;
+    m.box.classList.remove('pop');
+    void m.box.offsetWidth;
+    m.box.classList.add('pop');
+    setTimeout((function(box){ return function(){ box.classList.remove('pop'); }; })(m.box), 190);
+  }
+  /* Whose night it is, recomputed rather than tracked, because a leader that
+     is tracked is a second copy of the answer. */
+  var best = -1, at = -1;
+  for (var z = 0; z < LV.sim.men.length; z++) {
+    if (LV.sim.men[z].pts > best) { best = LV.sim.men[z].pts; at = z; }
+  }
+  for (var y = 0; y < LV.men.length; y++) {
+    LV.men[y].box.classList.toggle('hot', y === at && best > 0);
+  }
+}
+
+/* THE CALL. The board stops, the question goes above the log, and nothing
+   about the game moves until it is answered. */
+function lvAsk(d){
+  lvPaint();
+  var box = $('lv-call');
+  $('lvc-q').textContent = d.kind === 'foul'
+    ? 'Up three, ' + lvFmt(lvQuarterClock(LV.sim)) + ' left. They have the ball.'
+    : (d.margin > 0 ? 'Up ' + d.margin : d.margin < 0 ? 'Down ' + (-d.margin) : 'Level')
+      + ', ' + lvFmt(lvQuarterClock(LV.sim)) + ' left. Last shot.';
+  var wrap = $('lvc-opts');
+  wrap.textContent = '';
+  for (var i = 0; i < d.options.length; i++) {
+    (function(o){
+      var b = document.createElement('button');
+      b.className = 'lvc-opt';
+      var t = document.createElement('b');
+      t.textContent = o.label;
+      var s = document.createElement('span');
+      s.textContent = o.why;
+      b.appendChild(t); b.appendChild(s);
+      b.onclick = function(){ lvAnswer(o.id); };
+      wrap.appendChild(b);
+    })(d.options[i]);
+  }
+  box.hidden = false;
+  try { box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
+}
+
+function lvAnswer(id){
+  if (!LV || LV.over) return;
+  $('lv-call').hidden = true;
+  E.liveStep(LV.sim, LV.rng, id);
+  lvPaint();
+  if (LV.sim.over) { LV.timer = setTimeout(lvFinish, 700); return; }
+  LV.timer = setTimeout(lvTick, LV.fast ? 0 : LV_CALL_HOLD);
+}
+
+function lvFast(){
+  if (!LV || LV.over) return;
+  LV.fast = true;
+  $('b-lv-fast').disabled = true;
+  $('b-lv-fast').textContent = 'Simming';
+  /* ONE WAY, and the flag survives the decisions it pauses at. Somebody who
+     asked for the rest of it fast meant after the call too. */
+  if (LV.timer) { clearTimeout(LV.timer); LV.timer = null; }
+  if (!$('lv-call').hidden) return;      // still waiting on a real decision
+  lvTick();
+}
+
+function lvFinish(){
+  if (!LV || LV.over) return;
+  LV.over = true;
+  if (LV.timer) { clearTimeout(LV.timer); LV.timer = null; }
+  var res = E.liveResult(LV.sim);
+  /* READ BEFORE THE WRITE, because whether the round is over is the whole
+     difference between "Series 3-2" and "Series won 4-2", and after the record
+     lands there is no way left to ask. */
+  var roundsBefore = run.po.results.length;
+  R.recordGame(run, LV.next, res);
+  save();
+  var closed = run.po.results.length > roundsBefore;
+
+  var v = $('lv-verdict');
+  v.className = 'card lvverdict ' + (res.won ? 'w' : 'l');
+  $('lvv-res').textContent = res.won ? 'You take it' : 'They take it';
+  $('lvv-score').textContent = res.yourPoints + '-' + res.oppPoints
+    + (res.ot ? (res.ot > 1 ? ' ' + res.ot + 'OT' : ' OT') : '');
+  var top = res.lines.slice().sort(function(a, b){ return b.pts - a.pts; })[0];
+  var series = LV.next.yourWins + (res.won ? 1 : 0);
+  var theirs = LV.next.oppWins + (res.won ? 0 : 1);
+  var line = top ? top.n + ' had ' + top.pts + '.' : '';
+  if (LV.next.bestOf > 1) {
+    line += (line ? ' ' : '') + (closed
+      ? (res.won ? 'Series won ' : 'Series lost ') + series + '-' + theirs
+      : 'Series ' + series + '-' + theirs);
+  }
+  $('lvv-line').textContent = line;
+  v.hidden = false;
+  /* HIDDEN, NOT JUST DISABLED, which is the same note the Play button on the
+     season screen carries. A spent control reading "Simming" under a verdict
+     is a caption rather than a button, and the dock reads offsetParent, so
+     hiding it here is also what keeps it out of the bar. */
+  $('b-lv-fast').disabled = true;
+  $('b-lv-fast').style.display = 'none';
+  renderDock('s-live');
+  try { v.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
+}
+
+/* A RELOAD IN THE MIDDLE OF A BRACKET comes back to the season screen with
+   everything that has already happened on it and the walk carrying on from
+   where it stopped. The strip is rebuilt from `run.season` rather than
+   animated, because the 82 are already played and watching them again would
+   be a replay of something the player has seen. */
+function resumeBracket(){
+  $('b-play').disabled = true;
+  $('b-play').style.display = 'none';
+  $('simcard').style.display = '';
+  $('lvdoor').hidden = true;
+
+  var strip = $('sim-strip');
+  strip.textContent = '';
+  var w = 0, l = 0, homeW = 0, homeL = 0, marqW = 0, marqL = 0;
+  for (var i = 0; i < run.season.length; i++) {
+    var gm = run.season[i], sc = run.schedule[i] || {};
+    var c = document.createElement('span');
+    c.className = 'gcell' + (sc.marquee ? ' marq' : '') + (gm.won ? ' w' : ' l');
+    strip.appendChild(c);
+    if (gm.won) { w++; if (sc.home) homeW++; if (sc.marquee) marqW++; }
+    else { l++; if (sc.home) homeL++; if (sc.marquee) marqL++; }
+  }
+  simWins = w; simLosses = l;
+  $('sim-rec').textContent = w + '-' + l;
+  $('sim-streak').textContent = '';
+  $('sim-last').textContent = '';
+  $('sim-home').textContent = homeW + '-' + homeL;
+  $('sim-marq').textContent = marqW + '-' + marqL;
+
+  $('sim-bracket').textContent = '';
+  var done = (run.po && run.po.results) || [];
+  for (var r = 0; r < done.length; r++) paintRound(done[r]);
+
+  show('s-season');
+  renderAppBar('s-season');
+  if (!run.po && !done.length) { toBracket(); return; }
+  brTimer = setTimeout(runBracket, 340);
+}
+
+function lvContinue(){
+  LV = null;
+  show('s-season');
+  /* The round row lands now rather than while the verdict was up, so a player
+     reads the game and then the series, in that order. */
+  var res = run.po && run.po.results;
+  var shown = $('sim-bracket').querySelectorAll('.brow').length;
+  if (res && res.length > shown) paintRound(res[res.length - 1]);
+  brTimer = setTimeout(runBracket, res && res.length > shown ? 620 : 240);
 }
 
 // ── results ────────────────────────────────────────────────────────────────
@@ -6676,6 +7418,18 @@ function shareDaily(){
   copyAndDownload(text, null);
 }
 
+/* Where a run in the bracket actually is, in the words the round is called
+   by. Reads the runner rather than a count, so a play-in and a Finals do not
+   both come back as "the playoffs". */
+function bracketWhere(){
+  if (!run.po) return 'season played, no playoffs';
+  var done = run.po.results.length;
+  var cur = run.po.cur;
+  if (cur) return cur.round + ', series ' + cur.yourWins + '-' + cur.oppWins;
+  if (done) return 'through the ' + run.po.results[done - 1].round;
+  return 'the bracket is waiting';
+}
+
 function renderHome(){
   var rz = $('home-resume'), hero = $('herocard');
 
@@ -6683,11 +7437,18 @@ function renderHome(){
     rz.style.display = '';
     if (hero) hero.style.display = '';
     var drafting = run.phase === R.PHASES.DRAFT;
+    /* THREE STATES, NOT TWO. "Season not played" was every phase that was not
+       the draft, so a run sitting at a Game 7 door read as a roster that had
+       never tipped off. The offer is the reason somebody comes back, so it has
+       to say what they are coming back to. */
+    var inBracket = run.phase === R.PHASES.PLAYOFFS;
     var chip = modeChip(run);
-    $('rz-title').textContent = (drafting ? 'Draft in progress' : 'Season not played')
+    $('rz-title').textContent = (drafting ? 'Draft in progress'
+      : inBracket ? 'In the playoffs' : 'Season not played')
       + (chip ? ' · ' + chip : '');
     $('rz-where').textContent = drafting
       ? run.roster.length + ' of 6 signed'
+      : inBracket ? bracketWhere()
       : 'six signed, 82 to play';
 
     /* Who is actually on it, because "3 of 6" is a progress bar and the names
@@ -6778,6 +7539,17 @@ function restore(){
 
   run = saved;
   if (run.phase === R.PHASES.DRAFT || run.phase === R.PHASES.SEASON) return true;
+  /* A RUN STOPPED IN THE MIDDLE OF ITS OWN BRACKET, which is the one state a
+     player can sit in for as long as they leave the tab open, because the door
+     waits for them. `po` carries the whole thing and holds no rng and no player
+     objects, so it survives JSON; everything the results screen wants is
+     recomputed from the roster when the bracket ends.
+     A LIVE GAME IN PROGRESS IS NOT RESUMED, deliberately. Its sim is a board
+     mid-possession, and reconstructing one from storage would be a second way
+     to build a game. The bracket comes back to the door instead and offers the
+     same game again, which costs the four minutes already watched and cannot
+     get the state wrong. */
+  if (run.phase === R.PHASES.PLAYOFFS && run.season) return true;
   /* A finished run replays from its own outcome rather than being re-simulated:
      the season is already in the run object, and re-running it would consume the
      RNG stream again and print a DIFFERENT season under the same record. */
@@ -6791,6 +7563,7 @@ function resumeRun(){
   if (!run) return;
   if (run.phase === R.PHASES.DRAFT) { show('s-draft'); renderDraft(); return; }
   if (run.phase === R.PHASES.SEASON) { toSeason(); return; }
+  if (run.phase === R.PHASES.PLAYOFFS) { resumeBracket(); return; }
   if (run.phase === R.PHASES.OVER) { renderOver(run.outcome); show('s-over'); }
 }
 
@@ -6813,6 +7586,10 @@ $('b-share').onclick = shareRun;
 $('b-spin').onclick = spin;
 $('b-respin').onclick = respin;
 $('b-play').onclick = playSeason;
+$('b-lv-play').onclick = startLive;
+$('b-lv-sim').onclick = doorSim;
+$('b-lv-fast').onclick = lvFast;
+$('b-lv-next').onclick = lvContinue;
 /* RUN IT BACK MEANS THE SAME GAME. Pressed on the results of a Bulls run it
    has to start another Bulls run: a button that silently drops you back into
    the whole league is the same defect as a Back that goes somewhere else. */
@@ -6873,6 +7650,10 @@ document.addEventListener('keydown', function(ev){
 });
 
 rememberHomes();
+/* READ OFF THE ENGINE, NEVER TYPED. Regulation over four quarters is the
+   engine's own constant, and a 720 written here would be a second copy of it
+   that goes stale the day anybody models a different league. */
+LV_QUARTER = E.LIVE.REG_SECONDS / 4;
 renderDock('s-home');
 renderAppBar('s-home');
 boot();

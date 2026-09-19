@@ -183,8 +183,18 @@ async function playRun(page, opener) {
        grown, there is a fresh draw, and the tiles are out of `pending`. On
        the sixth pick there is no next board, because the draft is over. */
     try {
-      await page.waitForSelector('.opts .ptile:not(.off)', { timeout: 25000 });
-      await page.evaluate(() => document.querySelector('.opts .ptile:not(.off)').click());
+      /* :not(.pending) IS LOAD-BEARING AND IT IS NOT BELT AND BRACES.
+         `.opts.pending` hides the tile's CHILDREN and sets pointer-events
+         none on the tile, so the tile itself is a visible box with a size and
+         waitForSelector's own visibility test passes on a board that is still
+         mid-spin. A scripted .click() ignores pointer-events, so the walk
+         signed off a board nobody could have read, and `reelBusy` was still
+         true when sign()'s own setTimeout(spin, 240) fired: drawInto returns
+         at its first line while a reel is moving, so no draw was ever made
+         and the draft sat on an empty board for ever. */
+      await page.waitForSelector('.opts:not(.pending) .ptile:not(.off)', { timeout: 25000 });
+      await page.evaluate(() =>
+        document.querySelector('.opts:not(.pending) .ptile:not(.off)').click());
       await page.waitForFunction((want) => {
         try {
           const r = JSON.parse(localStorage.getItem('runthefloor_run_v1') || 'null');
@@ -213,6 +223,23 @@ async function playRun(page, opener) {
   await page.evaluate(() => { const b = document.querySelector('#b-play'); if (b) b.click(); });
   await page.waitForTimeout(900);
   await page.evaluate(() => { const b = document.querySelector('#b-skip'); if (b) b.click(); });
+  /* THE BRACKET NOW STOPS AND ASKS. Every game the series can end in, and
+     every Finals game, offers Play it or Sim it, and this file's subject is
+     the leaderboard rather than the live board: it takes Sim every time. A
+     walk that just waited for the results screen would hang at the first
+     door, which is what the first version of this did. hoops/check-live.mjs
+     is the one that presses Play. */
+  const t0 = Date.now();
+  while (Date.now() - t0 < 60000) {
+    if (await page.evaluate(() => !!document.querySelector('#s-over.active'))) break;
+    const open = await page.evaluate(() => {
+      const d = document.querySelector('#lvdoor');
+      if (!d || d.hidden) return false;
+      document.querySelector('#b-lv-sim').click();
+      return true;
+    });
+    await page.waitForTimeout(open ? 120 : 200);
+  }
   await page.waitForSelector('#s-over.active', { timeout: 30000 });
   await page.waitForTimeout(2500);
 }

@@ -3699,6 +3699,7 @@ node hoops/build/check-fetch.mjs  the scraper's parsers, against saved markup
 node hoops/verify.mjs             draft legality, seed replay, and calibration
 node hoops/check-badges.mjs       every badge is reachable, against real runs
 node hoops/check-board.mjs        the leaderboard, in a browser, in every state
+node hoops/check-live.mjs         the game you play yourself, and its fit
 ```
 
 `check-badges.mjs` takes about two minutes, because proving a badge is reachable
@@ -4207,6 +4208,285 @@ deleting the line that reads the run passed green. It plays a Decades run now.
 The same trap caught the second path a second time: opened once from the
 standing, `lbMode` is already the run's board, so the front page would land
 there whether or not it looks at the run at all. That check reloads first.
+
+### A game seven is not a scoreline
+
+```
+node hoops/check-live.mjs            the engine and the page
+node hoops/check-live.mjs --quick    the engine half, no browser
+```
+
+`resolveGame` samples two totals and `gameBox` decomposes one of them into six
+lines. That is the right shape for 82 games and the wrong shape for the game a
+whole run comes down to, because there is nothing in it to decide: the score
+exists before the first possession and every screen after it reads a number
+that was already there.
+
+So an elimination game or a Finals game can be **played**. Possession by
+possession, a real clock, a running score, a live box score, and it stops at
+the two calls a coach actually makes. **Playing decides it**, which is the
+whole point and is also the thing that makes the rest of this section
+necessary.
+
+#### It is not a second model, and that is the whole engineering problem
+
+`gameBox`'s header argues at length that a possession sim which DECIDED the
+score would replace the win-share model fitted to twenty-two real NBA records,
+and that two models of one game disagree. Both are still true. What changed is
+that this sim does not get to be a different model: it is **fitted to
+`resolveGame`**, so a neutral caller playing a game forward and the resolver
+settling the same game are two samplers of one distribution rather than two
+opinions about basketball.
+
+The mean is arithmetic: the per-possession scoring rate is solved from the same
+`pointsFor` and `pointsAgainst` the resolver is handed. **Matching the spread
+is not**, and it is the reason `LIVE.PULL` exists. A possession is worth 0, 2
+or 3 points, so ninety-nine independent ones give a game total SD near 11.5
+against the resolver's effective 9.02. Left alone, every series played live
+would be wider than every series simmed, a seven game bracket would swing more,
+and the title rate would move: the one number this game's calibration is
+anchored to. So each possession's rate is pulled back toward the pro-rata
+expectation by how far the running total has drifted from it, which is
+`CONSISTENCY`'s own idea applied inside a game rather than to its total.
+
+**Fitted over four matchups and 10,000 games each**, not one:
+
+| | residual against `resolveGame` |
+|---|---|
+| mean | +0.2 points, both sides, every matchup |
+| spread | within 0.15 of the resolver's 8.9 to 9.1 |
+| win rate, calls suppressed | within 0.6 points |
+| win rate, the auto caller answering | within 1.3 points |
+
+So **playing is worth about seven tenths of a point of win rate** before the
+player makes a single call of their own, and that is the auto caller: two late
+decisions the resolver never asks. Recorded rather than compensated, which is
+the football forward sim's own note, and it is the right sign. A mode that
+asked somebody to play four games and then handed them a worse result than
+skipping is a mode nobody should play.
+
+**The win error tracks the spread exactly, in both directions.** A live game
+wider than the resolver pushes every matchup toward a coin flip and a tighter
+one pushes it away, so one dial lands both, and a fit that got the spread right
+and the win rate wrong would mean something else was broken.
+
+#### Two ways it was silently wrong, and neither is visible in an even game
+
+**THE CLOCK MUST NOT DECIDE WHEN THE GAME IS OVER.** The first version ticked a
+fixed number of seconds off a clock and ended the game when the clock ran out.
+Regulation divides into 198 possessions exactly, so after 198 ticks the clock
+sits a hair above zero rather than on it, and the 199th possession belongs to
+whoever went first. **That is a whole extra possession for your side in every
+simmed game**: +1.3 points and +4.1 of win rate against the resolver, with the
+other side landing exact, which is what an asymmetry that size looks like. It
+also ran 198 usually and up to 206 sometimes once the clock jittered, so a game
+a player WATCHED and the same game simmed were not the same game. `liveTick`
+divides what is left by what is left to play, which cannot drift, and the
+period ends on the possession count.
+
+**AND THERE IS NO FAST CLOCK.** An earlier draft took a `fast` flag that
+dropped the jitter, used by `liveFinish` so a simmed game did not bother
+rolling for it. That is a second game: both call windows are measured against
+this clock, so an evenly ticking one asks a different set of questions at a
+different set of scores. Sim the rest hurries the screen and never the
+basketball, which is the football boss battle's rule, and one clock is the
+cheapest way to keep it.
+
+**THE PULL IS MEASURED AGAINST A FIXED REFERENCE, NOT AGAINST THE TEAM'S OWN
+RATE.** Written `k0 * (1 - pull)` the correction is worth a fixed FRACTION of a
+make, so it moves more points for a team scoring 118 than for one scoring 101.
+Over four matchups that put a favourite's spread at 8.57 against an underdog's
+9.02 on the same dial, mirrored on the other side, where `resolveGame` allows
+every team the same 9.02 whatever it scores. **A one matchup fit cannot see
+it**, which is why the sweep and the guard both walk four.
+
+#### Which games are offered
+
+A game the series can END in, either way, plus every Finals game. One rule
+rather than a list, and the two halves of it are the elimination game and the
+closeout. Measured over 170 playoff runs: **mean 2.6 a run, median 2, p90 5**,
+and a year that reaches a game seven Finals can offer thirteen, which is the
+run that deserves them. The play-in is one game, so it is always one.
+
+#### The bracket is one loop, and it is the loop that already existed
+
+`generatePlayoffs` used to play every round and hand back a finished bracket.
+A game the player is going to play cannot be settled before they see it, and
+the rest of the bracket after it depends on how it went, so the loop had to
+become turnable one game at a time: `poCreate`, `poNext`, `poRecord`,
+`poAdvance`, `poFinal`. **`generatePlayoffs` is now four lines over that
+runner**, so there is no bracket that only one path can produce. Two of them
+would drift the first time a round was added, and the symptom would be a simmed
+season and a played one giving one seed two different brackets.
+
+**Proved byte for byte rather than argued.** The rng is drawn in the old order
+(the round's opponent, then its games one at a time), and the two
+implementations were run over 4,000 seeds: a `live: false` on every row was the
+entire difference, so the flag is written only when it is true. `check-live`
+asserts the same thing from the page's side, by simming every game through the
+new walk and comparing against `playSeason`.
+
+**`run.po` has no underscore**, which is the opposite of everything else
+mid-run on this page. A bracket is the one thing a player can be halfway
+through for as long as they leave the tab open, because the door waits for
+them. Under an underscore, a reload in the middle of a Finals comes back to a
+run with a season, no bracket and no way to finish it. So the runner holds
+plain data only: no rng, no player objects. **What `outcomeOf` needs is
+recomputed and never stored**, because chemistry, fit and the two ratings are
+pure functions of the roster and the totals are a walk over a season already on
+the run. A second copy of an answer is how a reload comes back disagreeing with
+itself.
+
+**A LIVE GAME DRAWS FROM ITS OWN STREAM**, off the run's seed and the game's
+address, exactly as `gameDetail` does and for one of the same reasons: the
+run's stream is what every game AFTER this one is drawn from, and playing a
+Game 7 for four minutes and then finding the Finals drew a different opponent
+would look like nothing at all. So simming every game and playing every game
+give the same bracket around them, and only the games actually played differ.
+A live game in progress is deliberately NOT resumed after a reload: its sim is
+a board mid-possession, and rebuilding one from storage would be a second way
+to build a game. The bracket comes back to the door and offers the same game
+again.
+
+#### The board, and what makes it smooth
+
+Everything that moves is a transform or an opacity. The score is a scale pop,
+the lead bar is one `scaleX` on a full width block, the play rows and the
+verdict are keyframes, and the only thing javascript touches every frame is the
+text of two numbers and a clock. No width animation, nothing that asks for a
+layout on a frame the page is also simulating a possession in. The one layout
+read in the loop is the `offsetWidth` that restarts a transition already on an
+element.
+
+**The pace is per quarter and the last two minutes are their own thing.** A
+game is 198 possessions, so one flat pace is either a twenty second blur or a
+four minute sit, and what anybody came for is the fourth quarter. That is the
+resolved broadcast's escalation arriving at a live board.
+
+**A CONTROL THE GAME IS WAITING ON GOES ABOVE THE RECORD OF IT.** The call box
+and the verdict sit above the play by play, which is capped at 40vh and fills
+up all game. That is the football boss battle's own lesson, and the guard
+measures the deepest option and the Continue button against a **740px phone**
+rather than against its own window.
+
+**The six men's live points are the half a resolved game cannot show at all**:
+whose night it is, while it is his. They are asserted to add to the team score
+ON THE SCREEN and not only in the engine, and that assertion caught the bug it
+was written for on its first run: `livePlay` built the record the page reads
+and **dropped `who`**, so the page's `p.who != null` guard was never true, the
+six chips sat at zero for a whole game, and the play by play beside them named
+the scorer every time. Nothing threw, because undefined is not null.
+
+**A GAME THAT WAS PLAYED KEEPS ITS OWN SHEET.** `gameDetail`'s default is a
+decomposition drawn off the game's address, which is the honest answer for 82
+games and the wrong one for the two or three somebody sat through: they would
+open their own Game 7 from the results table and find a third quarter that did
+not happen. So a live row carries its real lines and its real quarters, and
+the sheet prints DIFFERENT COLUMNS for it. No minutes, no rebounds, no
+assists: nothing in a forward sim counts them, and a column added to match the
+other sheet's shape would be the invented-opponent mistake in miniature.
+
+**Three things on this screen were only findable by looking at it**, which is
+this repo's oldest lesson arriving at a new page. All three render, read and
+sell perfectly well:
+
+- **A one game round is not a series.** The play-in door read `PLAY-IN` over
+  `GAME 7`. `need` is 1 there, so both sides are at need minus one before a
+  ball is thrown and `elimination` and `closeout` are true by arithmetic. It
+  is `Win or go home`, asked FIRST, because either of the other two labels is
+  a sentence about a series that does not exist.
+- **A double full stop**, because the series line ended in one and the caller
+  joined it to the reason with another: "the run is over.. Nothing left".
+  `seriesLine` returns null rather than a sentence when there is no series,
+  and never ends in punctuation.
+- **The play by play read as though it ran backwards.** It is newest first, so
+  a row at 0:12 of the first quarter sits directly under one at 11:53 of the
+  second, and there was nothing on either to say they were different quarters.
+  The quarter is part of the time now.
+
+**`show()` stops the live loop and the bracket walk**, the same way it already
+stops the season reveal and for a worse failure. Left running, a live game
+plays itself to the horn and RECORDS the result: somebody who pressed the
+wordmark in the middle of a Game 7 would come back to a series that had moved
+without them. Stopped rather than ended, so the bracket is still at that game
+and coming back offers the same door.
+
+**Sim the rest still stops for your calls.** A run lost to a decision the page
+made for you is the worst thing this screen could do.
+
+**`window.RTF_LIVE` is published and nothing on the page reads it.** A call
+happens in about one game in five and a played game is most of a minute, so a
+guard that waited for one would be dark on most runs, which is the unearnable
+badge in a different coat. The handle lets `check-live.mjs` put the board into
+a genuine last shot and then press the page's own loop: the real sim, the real
+tick, nothing about the decision faked. It carries a `resume` rather than
+exporting the tick because a caller that has just rewritten the state has a
+timer pending on the old one, and every version of this that forgot to clear it
+ran two loops at once.
+
+#### Four things about the harness, and each cost a round
+
+**`.opts:not(.pending)` is load-bearing in every walk that drafts.**
+`.opts.pending` hides the tile's CHILDREN and sets `pointer-events:none` on the
+tile, so the tile itself is a visible box with a size and `waitForSelector`'s
+own visibility test passes on a board still mid-spin. A scripted `.click()`
+ignores pointer events, so the walk signed off a board nobody could have read,
+and `reelBusy` was still true when `sign()`'s own `setTimeout(spin, 240)` fired:
+`drawInto` returns at its first line while a reel is moving, so no draw was ever
+made and the draft sat on an empty board for ever. `check-board.mjs` had the
+same latent race and carries the same fix.
+
+**Wait on the attribute, not on Playwright's idea of visible.** While Sim the
+rest is running the page turns a hundred and forty possessions over on
+zero-delay timers, and the visibility poller can sit behind that for a whole
+thirty second timeout on an element whose `hidden` came off seconds earlier.
+Instrumenting it with a polling loop made it pass, which is the tell.
+
+**A driven fixture has to be internally consistent.** Setting twenty seconds on
+the clock with a hundred and fifty possessions still to play makes EVERY
+remaining possession a last shot, so the board correctly stopped and asked
+about all of them and the next section waited for a verdict that could never
+arrive. The clock and the possession count are locked together in a real game,
+so the fixture locks them too.
+
+**Driving a call consumes the endgame**, so the call cannot be tested in the
+same game a pacing section already simmed to the horn. The browser half opens
+two runs, and the second one earns its cost twice: it is also the reload test.
+For the same reason ONE driven call answers both call questions rather than
+two answering one each: Sim the rest is pressed in the same evaluate that sets
+the fixture, so the question coming up with the flag already on IS the claim
+that a pacing control never takes a decision away. Written as a second
+fixture after an earlier call, the game was already over by the time it ran
+and the board had nothing left to stop for.
+
+**A walk that waits on the verdict is measuring whether the game happened to
+have a decision in it.** Sim the rest stops for a call, which is the design,
+so the pacing section timed out on about one run in five and finished in a
+second on the rest. It answers them now. The first reading of that failure was
+spent on Playwright's visibility heuristic, which was not the fault.
+
+**Starting the next run is a click, not a context.** The first draft of
+`findRunWithDoor` opened a fresh browser context per attempt, which reloads and
+re-indexes sixteen thousand rows every go, so six attempts was all the file
+could afford and six was not enough: the page's own walk takes the first
+affordable tile rather than best-available, which misses the bracket often.
+Going home and pressing Start again is the same fresh run at a fraction of the
+cost, so it can afford to try until it gets one.
+
+#### What the guard asserts, and what was proved by breaking it
+
+The bands in section 2 are **derived from the sample and not typed**: one
+standard error on a spread near 9 is `9/sqrt(2N)`, and on the difference of two
+independent arms it is `sqrt(2)` of that. `--quick` deliberately does NOT cut
+that section, because forty thousand forward games take under two seconds and
+cutting the sample bought a second and cost the band its teeth. The seeds are
+fixed, so it is deterministic rather than flaky.
+
+Three defects were reintroduced one at a time to prove the file has teeth:
+removing the pull blows the spread past the band, the old fixed tick fails the
+fit, and **the possession parity assertion has to say EXACTLY equal**. Written
+as "within one" it passes on the defect it exists for, because one is not a
+rounding allowance there, it is the whole bug.
 
 ### The data pipeline
 
