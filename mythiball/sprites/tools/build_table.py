@@ -104,14 +104,16 @@ POSE_SOURCE = {
 # That is not decoration: a fielder taking a catch turns toward the ball, and
 # it is the one still that differs from the right facing idle, so the pose
 # reads as its own drawing instead of the batter standing there again.
+# catch takes the RIGHT still now that idle is the front one, so the two are
+# still different drawings and a catch still turns the fielder.
 STILL_POSE = {
     'back': 'left', 'backrun1': 'left', 'backrun2': 'left',
-    'catch': 'front', 'throw': 'right',
+    'catch': 'right', 'throw': 'right',
 }
 # front exists for 59 of the 68, so the nine without one fall back to LEFT
 # rather than to right: catch has to differ from the right facing idle or it
 # is a pose the player cannot tell happened.
-STILL_FALLBACK = {'catch': 'left'}
+STILL_FALLBACK = {}
 
 
 def usable_frame(f):
@@ -163,6 +165,43 @@ def cleaned(frame):
             g[:SIZE + shift, :, :] = f[-shift:, :, :]
         f = g
     return f
+
+
+def deepen_rim(f, k=0.62):
+    """Darken the outermost ring of opaque pixels, keeping hue.
+
+    The pack tints its outlines from the adjacent fill, which is right for a
+    character looked at on its own and too soft on a green field with a brown
+    infield behind it. Only the ring that touches transparency moves, so the
+    silhouette closes and nothing inside the figure changes: no identity
+    shifts and no detail is lost.
+
+    A RAMP RESPREAD WAS TRIED FIRST AND WAS MUCH WORSE. Opening up each
+    character's compressed shading looked like the obvious fix for the blobs
+    (great_ape carries 31 colours against paul_bunyan's 89, with 71% of its
+    pixels inside two luminance bins). Previewed, it brightened everything it
+    touched and took identity with it: the black cat came out PURPLE and the
+    sasquatch went pale tan. Anything that rewrites fill colours will do that.
+    Touch the rim, never the fill.
+    """
+    out = np.array(f, copy=True)
+    op = out[:, :, 3] > 0
+    edge = np.zeros_like(op)
+    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        sh = np.roll(op, dy, axis=0) if dx == 0 else np.roll(op, dx, axis=1)
+        if dy == 1:
+            sh[0, :] = False
+        if dy == -1:
+            sh[-1, :] = False
+        if dx == 1:
+            sh[:, 0] = False
+        if dx == -1:
+            sh[:, -1] = False
+        edge |= op & ~sh
+    rgb = out[:, :, :3].astype(float)
+    rgb[edge] = np.clip(rgb[edge] * k, 0, 255)
+    out[:, :, :3] = rgb.astype(np.uint8)
+    return out
 
 
 def static_for(name, facing='right'):
@@ -217,9 +256,27 @@ def build_character(game_key, pack_name, audit, note):
     base = static_for(pack_name)
     if base is None:
         return None
-    if 'idle' not in poses:
-        poses['idle'] = base
-        note.append((game_key, 'idle', 'source_reference/right'))
+
+    # IDLE FACES THE CAMERA, AND THAT IS THE GAME'S OWN CONVENTION RATHER
+    # THAN a preference. The generated sprites this replaced were drawn front
+    # on, so every camera here was framed against a character looking at you;
+    # pointing idle at the pack's right profile is what made the roster read
+    # as a row of people ignoring the player.
+    #
+    # It also carries far more of the character. The front still is the only
+    # view where the cyclops' single eye is in the middle of his face instead
+    # of on the edge of a blob, where hermes has both wings, and where anyone
+    # has two eyes at all. Measured, it is a bigger drawing too: cyclops 2606
+    # opaque pixels against 1982, athena 2149 against 1796.
+    #
+    # The ACTION poses stay in profile, because the strips are drawn facing
+    # right and because a swing reads better side on. Face the camera while
+    # standing, turn to play: that is what the old sprites did.
+    front = static_for(pack_name, 'front') if os.path.exists(
+        os.path.join(REF, 'sprites_64', 'front', pack_name + '.png')) else None
+    poses['idle'] = front if front is not None else base
+    note.append((game_key, 'idle',
+                 'source_reference/front' if front is not None else 'source_reference/right'))
 
     # the five the pack cannot draw, filled from a still rather than left to
     # fall through to idle facing the wrong way
@@ -237,7 +294,6 @@ def build_character(game_key, pack_name, audit, note):
     # pose this character does not carry. The FRONT still is preferred where
     # it exists and differs, because a pose that is pixel identical to idle
     # is a pose the player cannot tell happened.
-    front = static_for(pack_name, 'front')
     same_as_idle = front is None or np.array_equal(front, poses['idle'])
     for pose in POSE_SOURCE:
         if pose not in poses:
@@ -247,6 +303,11 @@ def build_character(game_key, pack_name, audit, note):
             else:
                 poses[pose] = poses['idle']
                 note.append((game_key, pose, 'repeat of idle'))
+
+    # THE SILHOUETTE IS CLOSED LAST, after every pose is chosen, so the rim
+    # is deepened exactly once on each frame and the palette below counts the
+    # colours that actually ship.
+    poses = {k: deepen_rim(v) for k, v in poses.items()}
 
     # one palette a character, over every pose it actually carries
     cols = Counter()
