@@ -198,6 +198,7 @@ function createRun(opts) {
   const capSurvivor = !!opts.capSurvivor;
   const staff = !!opts.staff;
   const tradeMachine = !!opts.tradeMachine;
+  const daily = !!opts.daily;
   if (division !== null && !E.DIVISIONS[division]) throw new Error(`unknown division ${division}`);
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
@@ -208,6 +209,7 @@ function createRun(opts) {
     capSurvivor,
     staff,
     tradeMachine,
+    daily,
     trades: [],
     market: [],
     cuts: [],
@@ -814,6 +816,10 @@ function finalizeSeason(run) {
     savePct: Math.round(st.savePct * 1000) / 1000,
   };
   run.phase = PHASES.OVER;
+  /* Keep the game-by-game line before the sim state goes. The results screen and
+   * the shareable grid are both drawn after this point, and one bit per game is
+   * the whole of what they need. */
+  run.gameLine = st.results.map(r => (r.won ? 1 : 0));
   delete run._simState;
   return run.outcome;
 }

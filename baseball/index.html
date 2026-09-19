@@ -671,6 +671,31 @@ h1,h2,h3{margin:0}
   font-variant-numeric:tabular-nums}
 .cutrow.enough .cprice{color:var(--red)}
 
+/* ─── the daily ─── */
+.dailycard{display:block;width:100%;text-align:left;font-family:inherit;cursor:pointer;
+  margin:0 0 10px;padding:12px 14px;border-radius:14px;border:1.5px solid rgba(184,134,11,.45);
+  background:linear-gradient(135deg,rgba(184,134,11,.10),rgba(184,134,11,.02));
+  -webkit-tap-highlight-color:transparent;transition:transform .1s ease,box-shadow .15s ease}
+.dailycard:hover{box-shadow:0 8px 20px -12px rgba(140,100,10,.6)}
+.dailycard:active{transform:scale(.99)}
+.dailycard.played{border-color:var(--line-2);background:var(--panel)}
+.dc-hd{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.dc-eye{font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--gold)}
+.dailycard.played .dc-eye{color:var(--dim-2)}
+.dc-no{font-family:var(--fn);font-size:10.5px;font-weight:800;color:var(--dim-2)}
+.dc-streak{margin-left:auto;font-family:var(--fn);font-size:11px;font-weight:800;
+  color:var(--orange);background:rgba(212,119,44,.12);padding:2px 8px;border-radius:99px}
+.dc-sub{font-size:12.5px;line-height:1.35;color:var(--dim)}
+.dc-done{display:flex;align-items:baseline;gap:9px}
+.dc-done b{font-family:'Righteous',var(--fd);font-size:20px;color:var(--ink)}
+.dc-grid{font-size:12px;letter-spacing:1px}
+.dd-rec{font-family:'Righteous',var(--fd);font-size:46px;text-align:center;color:var(--ink);line-height:1}
+.dd-rec span{color:var(--dim-2);margin:0 4px}
+.dd-verdict{text-align:center;font-family:var(--fn);font-size:13px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin-top:5px}
+.dd-grid{text-align:center;font-size:22px;letter-spacing:3px;margin-top:12px}
+
 /* ─── the trade machine ─── */
 .offer{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;
   padding:10px 12px;border-radius:11px;border:1px solid var(--line-2);
@@ -873,6 +898,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <p>Draft twelve MLB legends. Build your lineup. Win the World Series.</p>
   </div>
 
+  <button class="dailycard" id="daily-card"></button>
   <button class="btn hp-start" id="b-start">&#9918; Draft your team &#9918;</button>
   <button class="btn ghost hp-secondary" id="b-modes">More ways to play</button>
   <div class="hrow">
@@ -1104,6 +1130,20 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
+<div class="sheet" id="sheet-daily" aria-hidden="true">
+  <div class="sheet-scrim" data-close-daily></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title">Today's board</h3>
+      <button class="sheet-x" data-close-daily aria-label="Close">&times;</button>
+    </div>
+    <div id="daily-done-in"></div>
+    <button class="btn" id="b-daily-share" style="margin-top:14px">&#9918; Share today's result</button>
+    <div style="margin-top:8px"><button class="btn ghost sm" data-close-daily>Close</button></div>
+  </div>
+</div>
+
 <div class="sheet" id="sheet-trade" aria-hidden="true">
   <div class="sheet-scrim"></div>
   <div class="sheet-inner">
@@ -1181,7 +1221,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 </div>
 
 <script src="engine.js?v=15"></script>
-<script src="run.js?v=13"></script>
+<script src="run.js?v=14"></script>
 <script src="achievements.js?v=2"></script>
 <script>
 (function(){
@@ -1784,6 +1824,7 @@ async function heroLoop(seq){
 function heroStart(){heroRun++;heroLoop(heroRun);}
 function heroStop(){heroRun++;}
 function heroSync(){
+  try{paintDailyCard();}catch(_){}
   const on=$('s-intro').classList.contains('on')&&!document.hidden;
   if(on&&!heroRunning){heroRunning=true;heroStart();}
   else if(!on&&heroRunning){heroRunning=false;heroStop();}
@@ -1805,6 +1846,7 @@ async function boot(){
     if(hasPositions) E.setPositionsAvailable(true);
     show('s-intro');
     heroSync();
+    paintDailyCard();
     maybeFirstRun();
   }catch(e){
     $('s-load').querySelector('.dim').textContent='Failed to load data. Please refresh.';
@@ -1824,6 +1866,9 @@ $('b-how-play').addEventListener('click',()=>{
 });
 $('b-trophy-hd').addEventListener('click',openTrophy);
 $('b-modes').addEventListener('click',openModes);
+$('daily-card').addEventListener('click',startDaily);
+document.querySelectorAll('[data-close-daily]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-daily')));
+$('b-daily-share').addEventListener('click',shareDaily);
 document.querySelectorAll('[data-close-modes]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-modes')));
 document.querySelectorAll('[data-close-first]').forEach(el=>el.addEventListener('click',()=>{closeSheet('sheet-first');markSeen();}));
 $('b-first-go').addEventListener('click',()=>{closeSheet('sheet-first');markSeen();startRun();});
@@ -1892,6 +1937,96 @@ function pickMode(id){
   if(id==='cap'){startRun({capSurvivor:true});return;}
   if(id==='staff'){startRun({staff:true});return;}
   if(id==='trade'){startTrade();return;}
+}
+
+/* ─── the daily ───────────────────────────────────────────────────────────
+ * One board a day, the same board for everybody, and a grid you can paste.
+ *
+ * The seed is the UTC date, so "today" starts at the same instant for every
+ * player and two people comparing results are comparing the same draft. One run
+ * per day is the whole point: it is what makes a result worth posting and what
+ * brings anybody back tomorrow. */
+const DAILY_EPOCH=Date.UTC(2026,0,1);
+function utcKey(d){
+  const t=d||new Date();
+  return t.getUTCFullYear()+'-'+String(t.getUTCMonth()+1).padStart(2,'0')+'-'+
+    String(t.getUTCDate()).padStart(2,'0');
+}
+function dailyNo(){
+  return Math.floor((Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),
+    new Date().getUTCDate())-DAILY_EPOCH)/86400000)+1;
+}
+const DAILY_KEY='rtd_daily';
+function loadDaily(){try{return JSON.parse(localStorage.getItem(DAILY_KEY)||'{}');}catch(e){return {};}}
+function saveDaily(o){try{localStorage.setItem(DAILY_KEY,JSON.stringify(o));}catch(e){}}
+function todaysDaily(){const d=loadDaily();return d.date===utcKey()?d:null;}
+/* The streak only survives if yesterday was played too. */
+function dailyStreak(){
+  const d=loadDaily();
+  if(!d.date)return 0;
+  const y=new Date();y.setUTCDate(y.getUTCDate()-1);
+  if(d.date===utcKey()||d.date===utcKey(y))return d.streak||0;
+  return 0;
+}
+function recordDaily(o){
+  const prev=loadDaily();
+  const y=new Date();y.setUTCDate(y.getUTCDate()-1);
+  const streak=(prev.date===utcKey(y)?(prev.streak||0):0)+1;
+  saveDaily({date:utcKey(),n:dailyNo(),wins:o.wins,losses:o.losses,
+    titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
+    rating:o.rating!=null?Math.round(o.rating):null,
+    rank:o.allTimeRank!=null?o.allTimeRank:null,
+    chem:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:0,
+    grid:seasonGrid(),streak});
+}
+
+/* The shape of a season in nine blocks, eighteen games each. Green for a winning
+   stretch, yellow for .500, red for a losing one. It is the season at a glance and
+   it pastes anywhere, which is the only reason it is emoji and not a chart. */
+function seasonGrid(){
+  /* finalizeSeason drops the sim state, so this reads the line it leaves behind. */
+  const res=(RUN&&RUN.gameLine)||((RUN&&RUN._simState&&RUN._simState.results)||[]).map(r=>r.won?1:0);
+  if(!res.length)return '';
+  const per=Math.ceil(res.length/9);
+  let out='';
+  for(let i=0;i<res.length;i+=per){
+    const chunk=res.slice(i,i+per);
+    const w=chunk.reduce((a,b)=>a+b,0);
+    const pct=w/chunk.length;
+    out+=pct>=0.60?'\uD83D\uDFE9':pct>=0.45?'\uD83D\uDFE8':'\uD83D\uDFE5';
+  }
+  return out;
+}
+
+function startDaily(){
+  const done=todaysDaily();
+  if(done){showDailyDone(done);return;}
+  startRun({seed:E.hashSeed('rtd-daily-'+utcKey()),daily:true});
+}
+function showDailyDone(d){
+  $('modes-in')&&0;
+  $('daily-done-in').innerHTML=
+    '<div class="dd-rec">'+d.wins+'<span>-</span>'+d.losses+'</div>'+
+    '<div class="dd-verdict">'+(d.titleWon?'World Series Champions':
+      d.madePlayoffs?'Reached October':'Missed the playoffs')+'</div>'+
+    (d.grid?'<div class="dd-grid">'+d.grid+'</div>':'')+
+    '<p class="dim" style="font-size:12.5px;margin:10px 0 0">A new board every day at '+
+    'midnight UTC. Come back tomorrow to keep the streak.</p>';
+  openSheet('sheet-daily');
+}
+function paintDailyCard(){
+  const el=$('daily-card');if(!el)return;
+  const d=todaysDaily();
+  const streak=dailyStreak();
+  el.innerHTML=
+    '<div class="dc-hd"><span class="dc-eye">Daily challenge</span>'+
+      '<span class="dc-no">#'+dailyNo()+'</span>'+
+      (streak>0?'<span class="dc-streak">&#128293; '+streak+'</span>':'')+'</div>'+
+    (d?'<div class="dc-done"><b>'+d.wins+'-'+d.losses+'</b>'+
+        (d.grid?'<span class="dc-grid">'+d.grid+'</span>':'')+'</div>'+
+        '<div class="dc-sub">Played. New board at midnight UTC.</div>'
+      :'<div class="dc-sub">Everybody gets the same twelve spins today. One try.</div>');
+  el.classList.toggle('played',!!d);
 }
 
 /* First run only. The key is versioned so a later change to what the sheet says can
@@ -2603,6 +2738,7 @@ function showResult(){
   show('s-over');
   const o=RUN.outcome;
   recordRun(o);
+  if(RUN.daily){try{recordDaily(o);}catch(_){}}
   paintNewBadges();
   const hero=$('ro-hero');
 
@@ -2759,9 +2895,39 @@ function shareVerdict(o){
   if(o.madePlayoffs){const l=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];return 'Out in the '+l.round;}
   return 'Missed the playoffs';
 }
+/* What a daily result looks like pasted into a group chat. The grid first, because
+   that is the part people recognise, then the record, then one line of detail. */
+function dailyShareText(d){
+  const verdict=d.titleWon?'World Series Champions':
+    d.madePlayoffs?'Reached October':'Missed the playoffs';
+  let t='Run The Diamond \u00b7 Daily #'+d.n+'\n'+d.wins+'-'+d.losses+' \u00b7 '+verdict;
+  if(d.grid)t+='\n'+d.grid;
+  const bits=[];
+  if(d.rating!=null)bits.push('Rating '+d.rating);
+  if(d.rank)bits.push('#'+d.rank+' all time');
+  if(d.chem)bits.push('Chemistry +'+d.chem);
+  if(bits.length)t+='\n'+bits.join(' \u00b7 ');
+  if(d.streak>1)t+='\n\uD83D\uDD25 '+d.streak+' day streak';
+  t+='\nrunthe.gg/baseball';
+  return t;
+}
+async function shareDaily(){
+  const d=todaysDaily();if(!d)return;
+  const text=dailyShareText(d);
+  const btn=$('b-daily-share');const orig=btn.innerHTML;
+  try{
+    if(navigator.share){await navigator.share({text});ga('daily_shared');return;}
+  }catch(e){if(e&&e.name==='AbortError')return;}
+  try{if(navigator.clipboard)await navigator.clipboard.writeText(text);}catch(_){}
+  btn.innerHTML='Copied';ga('daily_shared');
+  setTimeout(()=>{btn.innerHTML=orig;},1400);
+}
+
 function shareLines(o){
   const tag=RUN.tradeMachine?' (Trade Machine)':RUN.staff?' (All-Time Staff)':RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
   let t='Run The Diamond'+tag+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
+  const grid=seasonGrid();
+  if(grid)t+='\n'+grid;
   if(o.rating!=null) t+=' Team rating '+Math.round(o.rating)+'.';
   t+='\nCan you draft a better team?\nrunthe.gg/baseball';
   return t;
