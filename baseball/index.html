@@ -605,6 +605,41 @@ h1,h2,h3{margin:0}
   .fran-card:hover,.fran-card:focus-visible{transform:none}
 }
 
+/* ─── salary cap survivor ─── */
+.captrack{margin:10px 0 2px;padding:10px 12px;border-radius:12px;background:var(--panel);
+  border:1px solid var(--line-2)}
+.captrack.danger{border-color:rgba(192,57,43,.5);background:rgba(192,57,43,.06)}
+.ct-hd{display:flex;align-items:baseline;gap:8px}
+.ct-l{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim-2)}
+.ct-v{font-family:var(--fn);font-size:15px;font-weight:800;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.captrack.danger .ct-v{color:var(--red)}
+.ct-shocks{margin-left:auto;display:flex;gap:4px}
+.ct-shocks i{width:7px;height:7px;border-radius:50%;background:rgba(0,0,0,.14)}
+.ct-shocks i.hit{background:var(--red)}
+.ct-bar{height:6px;border-radius:99px;background:rgba(0,0,0,.09);overflow:hidden;margin-top:7px}
+.ct-bar i{display:block;height:100%;border-radius:99px;background:var(--grad-green);
+  transition:width .5s cubic-bezier(.33,1,.68,1)}
+.captrack.danger .ct-bar i{background:var(--grad-red)}
+/* the cut sheet */
+.shock-hd{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.shock-hd .amt{font-family:'Righteous',var(--fd);font-size:30px;color:var(--red);line-height:1}
+.cutlist{display:grid;gap:7px;margin:12px 0 4px;max-height:46vh;overflow-y:auto}
+.cutrow{display:flex;align-items:center;gap:9px;width:100%;text-align:left;cursor:pointer;
+  padding:9px 11px;border-radius:10px;border:1px solid var(--line-2);background:var(--panel);
+  font-family:inherit;transition:border-color .12s ease,transform .1s ease}
+.cutrow:hover{border-color:var(--red);transform:translateX(2px)}
+.cutrow:disabled{opacity:.42;cursor:default;transform:none}
+.cutrow .cpos{flex:0 0 auto;min-width:32px;padding:3px 5px;border-radius:6px;text-align:center;
+  font-family:var(--fn);font-size:9px;font-weight:800;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.cutrow .cname{flex:1;min-width:0;font-family:var(--fp);font-size:14px;font-weight:700;
+  color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cutrow .cwar{font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim-2)}
+.cutrow .cprice{font-family:var(--fn);font-size:13px;font-weight:800;color:var(--green);
+  font-variant-numeric:tabular-nums}
+.cutrow.enough .cprice{color:var(--red)}
+
 /* ─── app header ───
    The game had no header at all, so the page began with a spinning reel and there
    was nothing on screen saying what this is or how to get back to it. Same shape as
@@ -925,6 +960,12 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <h2 class="display" style="font-size:32px;margin:4px 0">Play ball</h2>
   </div>
   <div class="record-big" id="s-record"><span class="w">0</span><span class="sep">-</span><span class="l">0</span></div>
+  <div class="captrack" id="cap-track" hidden>
+    <div class="ct-hd"><span class="ct-l">Payroll</span>
+      <span class="ct-v" id="ct-total">$0.0M</span>
+      <span class="ct-shocks" id="ct-shocks"></span></div>
+    <div class="ct-bar"><i id="ct-fill"></i></div>
+  </div>
   <div class="sim-progress" id="s-pips"></div>
   <div class="record-line" id="s-pace"></div>
   <div class="sim-feed" id="s-feed"></div>
@@ -997,6 +1038,20 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
+<div class="sheet" id="sheet-cut" aria-hidden="true">
+  <div class="sheet-scrim"></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="eyebrow" style="color:var(--red)" id="cut-eyebrow">The market moves</div>
+    <div class="shock-hd"><span class="amt" id="cut-amt"></span>
+      <h3 class="display" style="font-size:19px;margin:0">over the cap</h3></div>
+    <p class="pos-sub" id="cut-sub"></p>
+    <div class="cutlist" id="cut-list"></div>
+    <p class="dim" style="font-size:11.5px;margin:8px 0 0">Whoever you cut is replaced by a
+      league-minimum body at the same spot. The roster stays legal. It just gets worse.</p>
+  </div>
+</div>
+
 <div class="sheet" id="sheet-modes" aria-hidden="true">
   <div class="sheet-scrim" data-close-modes></div>
   <div class="sheet-inner">
@@ -1061,8 +1116,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=13"></script>
-<script src="run.js?v=10"></script>
+<script src="engine.js?v=14"></script>
+<script src="run.js?v=11"></script>
 <script src="achievements.js?v=2"></script>
 <script>
 (function(){
@@ -1096,6 +1151,7 @@ function rowFromRun(o){
     spend:RUN.roster.reduce((s,p)=>s+p.p,0),respins:RUN.respinsUsed||0,
     efficiency:bps?bps.efficiency:null,archetype:o.structure&&o.structure.archetype?o.structure.archetype.key:null,
     chemLinks:[...new Set(links)],era:RUN.era||null,franchise:RUN.franchise||null,division:RUN.division||null,
+    capSurvivor:!!RUN.capSurvivor,cuts:(RUN.cuts||[]).length,
     eliminatedWS:!!(last&&last.round==='World Series'&&!o.titleWon),
     picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:E.SLOTS[RUN.slotIndex[i]],w:p.w})),
   };
@@ -1663,7 +1719,7 @@ const MODE_CARDS=[
    icon:'<path d="M4 4h16"/><path d="M4 4v16"/><path d="M8 8h8v4H8z"/><path d="M8 16h8"/>',
    text:'Pick a division and draft only from the clubs that were really in it, 1994 to today. The map moves with history: Houston is NL Central until 2013 and AL West after.',
    sticker:'New'},
-  {id:'cap',soon:true,cls:'mc-cap',title:'Salary Cap Survivor',
+  {id:'cap',cls:'mc-cap',title:'Salary Cap Survivor',
    icon:'<path d="M12 2.6v18.8"/><path d="M16.6 6.4H9.8a2.9 2.9 0 0 0 0 5.8h4.4a2.9 2.9 0 0 1 0 5.8H6.8"/>',
    text:'Contracts inflate as the season runs. Stay under the cap or cut somebody, every time the market moves against you.',
    sticker:'New'},
@@ -2151,12 +2207,68 @@ function startSeason(){
   }
   $('s-actions').style.display='';
   $('b-sim-fast').onclick=()=>{$('s-actions').style.display='none';simRemaining();};
+  paintCapTrack();
   simGame(0);
+}
+
+/* ─── salary cap survivor, in play ───
+   The season pauses on a shock rather than resolving it behind the scenes, because
+   the cut is the whole mode. Nothing advances until the roster is legal again. */
+function paintCapTrack(){
+  const el=$('cap-track');
+  if(!RUN||!RUN.capSurvivor){el.hidden=true;return;}
+  el.hidden=false;
+  const pay=R.payroll(RUN),cap=R.capOf(RUN),over=R.overCap(RUN);
+  el.classList.toggle('danger',over>0);
+  $('ct-total').textContent=M(pay)+(over>0?' over by '+M(over):'');
+  $('ct-fill').style.width=Math.max(2,Math.min(100,pay/cap*100))+'%';
+  const done=(RUN.market||[]).length;
+  $('ct-shocks').innerHTML=E.MARKET.GAMES.map((_,i)=>
+    '<i class="'+(i<done?'hit':'')+'"></i>').join('');
+}
+/* The cut. Every real player is offered; the ones that would clear the overage on
+   their own are flagged, because the alternative is doing the subtraction yourself
+   twelve times while a sheet is open. */
+function askCut(ev,onDone){
+  const over=R.overCap(RUN);
+  $('cut-amt').textContent=M(over);
+  $('cut-eyebrow').textContent='Shock '+ev.shock+' of '+E.MARKET.GAMES.length;
+  $('cut-sub').innerHTML='<b>'+esc(ev.name)+'</b> just went from '+M(ev.before)+' to '+
+    M(ev.after)+'. Your payroll is '+M(R.payroll(RUN))+' against a '+M(R.capOf(RUN))+
+    ' cap. Cut somebody.';
+  const list=$('cut-list');list.innerHTML='';
+  RUN.roster.forEach((p,i)=>{
+    const slot=E.SLOTS[RUN.slotIndex[i]];
+    const btn=document.createElement('button');
+    btn.className='cutrow'+(!p._repl&&p.p>=over?' enough':'');
+    btn.disabled=!!p._repl;
+    btn.innerHTML='<span class="cpos" style="'+posPaint(slot)+'">'+slot+'</span>'+
+      '<span class="cname">'+esc(p.n)+'</span>'+
+      '<span class="cwar">'+p.w.toFixed(1)+' WAR</span>'+
+      '<span class="cprice">'+M(p.p)+'</span>';
+    btn.addEventListener('click',()=>{
+      const r=R.cutPlayer(RUN,i);
+      ga('cap_cut',{name:r.name,slot:r.slot,shock:ev.shock});
+      paintCapTrack();
+      if(R.overCap(RUN)>0){askCut(ev,onDone);return;}   // still over: keep cutting
+      closeSheet('sheet-cut');
+      onDone();
+    });
+    list.appendChild(btn);
+  });
+  openSheet('sheet-cut');
 }
 
 let simTimer=null;
 function simGame(idx){
   if(idx>=E.CONSTANTS.REGULAR_SEASON_GAMES){finishSeason();return;}
+  if(RUN.capSurvivor){
+    const ev=R.applyMarket(RUN,idx);
+    if(ev){
+      paintCapTrack();
+      if(ev.over>0){askCut(ev,()=>simGame(idx));return;}
+    }
+  }
   const result=R.advanceGame(RUN,idx);
   if(!result){finishSeason();return;}
   const pip=$('pip-'+idx);
@@ -2172,6 +2284,7 @@ function simGame(idx){
     '<span class="gscore '+(result.won?'gw':'gl')+'">'+(result.won?'W':'L')+'</span>';
   feed.insertBefore(row,feed.firstChild);
   if(feed.children.length>18) feed.removeChild(feed.lastChild);
+  if(RUN.capSurvivor&&idx%9===0) paintCapTrack();
   const speed=idx<10?120:idx<40?60:idx<100?30:15;
   simTimer=setTimeout(()=>simGame(idx+1),speed);
 }
@@ -2180,11 +2293,25 @@ function simRemaining(){
   if(simTimer){clearTimeout(simTimer);simTimer=null;}
   const st=RUN._simState;if(!st) return;
   for(let i=st.results.length;i<E.CONSTANTS.REGULAR_SEASON_GAMES;i++){
+    // Fast-forward still stops for a shock. Skipping it would let the player
+    // outrun the one decision the mode is made of.
+    if(RUN.capSurvivor){
+      const ev=R.applyMarket(RUN,i);
+      if(ev){
+        paintCapTrack();
+        if(ev.over>0){
+          $('s-record').innerHTML='<span class="w">'+st.wins+'</span><span class="sep">-</span><span class="l">'+st.losses+'</span>';
+          askCut(ev,()=>simRemaining());
+          return;
+        }
+      }
+    }
     const result=R.advanceGame(RUN,i);
     if(!result) break;
     const pip=$('pip-'+i);
     if(pip) pip.className='sim-pip '+(result.won?'w':'l');
   }
+  paintCapTrack();
   $('s-record').innerHTML='<span class="w">'+st.wins+'</span><span class="sep">-</span><span class="l">'+st.losses+'</span>';
   $('s-pace').textContent='162 games complete';
   finishSeason();
@@ -2255,7 +2382,8 @@ function showResult(){
     hero.className='ro-hero lose';vd.textContent='Out in the '+last.round;vd.className='ro-verdict';}
   else{hero.className='ro-hero lose';vd.textContent='Missed the playoffs';vd.className='ro-verdict';}
   let modeLabel='';
-  if(RUN.franchise)modeLabel='The all-time '+teamFullName(RUN.franchise);
+  if(RUN.capSurvivor)modeLabel='Cap Survivor \u00b7 '+(RUN.cuts||[]).length+' cut';
+  else if(RUN.franchise)modeLabel='The all-time '+teamFullName(RUN.franchise);
   else if(RUN.division)modeLabel=RUN.division;
   else if(RUN.era)modeLabel=RUN.era+' era';
   const seedTxt=o.seedLabel&&o.madePlayoffs?o.seedLabel:'';
@@ -2383,7 +2511,7 @@ function shareVerdict(o){
   return 'Missed the playoffs';
 }
 function shareLines(o){
-  const tag=RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
+  const tag=RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
   let t='Run The Diamond'+tag+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
   if(o.rating!=null) t+=' Team rating '+Math.round(o.rating)+'.';
   t+='\nCan you draft a better team?\nrunthe.gg/baseball';

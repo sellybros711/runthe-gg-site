@@ -186,6 +186,7 @@ function createRun(opts) {
   if (era !== null && !E.ERAS[era]) throw new Error(`unknown era ${era}`);
   const franchise = opts.franchise ?? null;
   const division = opts.division ?? null;
+  const capSurvivor = !!opts.capSurvivor;
   if (division !== null && !E.DIVISIONS[division]) throw new Error(`unknown division ${division}`);
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
@@ -193,6 +194,9 @@ function createRun(opts) {
     era,
     franchise,
     division,
+    capSurvivor,
+    market: [],
+    cuts: [],
     seed,
     rngCalls: 0,
     capMusd: E.CONSTANTS.CAP_MUSD,
@@ -525,6 +529,103 @@ function advanceGame(run, gameIndex) {
 }
 
 /* Finalize the season after all 162 games have been advanced. */
+/* ─── Salary Cap Survivor ───────────────────────────────────────────────── */
+
+/* What the roster costs right now, after any raises the market has handed out. */
+function payroll(run) {
+  return money(run.roster.reduce((s, p) => s + p.p, 0) + E.respinFees(run.respinsUsed));
+}
+/* Over the cap by how much. Zero or less means you are fine. */
+function overCap(run) {
+  return money(payroll(run) - capOf(run));
+}
+
+/* Does a shock land on this game? Returns its 1-based number, or 0. */
+function marketAt(run, gameIndex) {
+  if (!run.capSurvivor) return 0;
+  const i = E.MARKET.GAMES.indexOf(gameIndex);
+  return i < 0 ? 0 : i + 1;
+}
+
+/* The market moves. One player's number goes up, weighted toward the good ones,
+ * because it is the stars who get paid and taking the cheapest man on the roster
+ * to arbitration is not a decision anybody has to think about.
+ *
+ * Returns what happened, including whether it put you over. Never raises a
+ * replacement-level body: those are already at the minimum and raising them would
+ * spend a shock on nothing. */
+function applyMarket(run, gameIndex) {
+  const n = marketAt(run, gameIndex);
+  if (!n) return null;
+  // Once per game, ever. The screen re-enters the same game index after a cut, and
+  // without this the shock fires again on the way back in and the raise compounds.
+  if ((run.market || []).some(m => m.gameIndex === gameIndex)) return null;
+  const rng = rngFor(run);
+  const already = new Set((run.market || []).map(m => m.rosterIdx));
+  const live = run.roster.map((p, i) => ({ p, i })).filter(x => !x.p._repl);
+  // Somebody new if there is anybody new. Weighting on WAR alone kept handing the
+  // same star three of the five raises, which reads as the game picking on one man
+  // rather than as a market.
+  const fresh = live.filter(x => !already.has(x.i));
+  const candidates = fresh.length ? fresh : live;
+  if (!candidates.length) return null;
+  // weight by WAR so the raise lands on somebody worth keeping
+  const total = candidates.reduce((s, x) => s + Math.max(0.2, x.p.w), 0);
+  let roll = rng() * total, pick = candidates[candidates.length - 1];
+  for (const x of candidates) {
+    roll -= Math.max(0.2, x.p.w);
+    if (roll <= 0) { pick = x; break; }
+  }
+  const pct = E.MARKET.RAISE_MIN + rng() * (E.MARKET.RAISE_MAX - E.MARKET.RAISE_MIN);
+  const before = pick.p.p;
+  const raise = Math.max(E.MARKET.MIN_RAISE_MUSD, money(before * pct));
+  // The roster array holds the player objects the sim reads, so raise in place.
+  run.roster[pick.i] = { ...pick.p, p: money(before + raise) };
+  run.market = run.market || [];
+  const event = {
+    shock: n, gameIndex, rosterIdx: pick.i,
+    name: pick.p.n, before, after: money(before + raise), raise: money(raise),
+  };
+  run.market.push(event);
+  event.over = overCap(run);
+  return event;
+}
+
+/* Cut a player. A league-minimum body takes the slot, so the roster stays legal
+ * and the loss shows up where it should: in the runs. */
+function cutPlayer(run, rosterIdx) {
+  const p = run.roster[rosterIdx];
+  if (!p) throw new Error('no such player');
+  if (p._repl) throw new Error('already a replacement');
+  const slot = E.SLOTS[run.slotIndex[rosterIdx]];
+  run.roster[rosterIdx] = E.replacementFor(slot, p.s);
+  run.cuts = run.cuts || [];
+  run.cuts.push({ name: p.n, slot, price: p.p });
+  // The sim caches a tagged roster; drop it so the next game reads the new one.
+  if (run._simState) run._simState = rebuildSimState(run);
+  return { name: p.n, slot, stillOver: overCap(run) };
+}
+
+/* Re-derive the cached season state after the roster changes mid-run, keeping the
+ * games already played. Without this a cut costs you nothing: the sim would go on
+ * reading the roster it tagged before the market moved. */
+function rebuildSimState(run) {
+  const st = run._simState;
+  const tagged = run.roster.map((p, k) => ({ ...p, _slot: E.SLOTS[run.slotIndex[k]] }));
+  const chem = E.resolveChemistry(tagged, chemOpts(run));
+  const structure = E.rosterStructure(tagged);
+  return {
+    ...st,
+    tagged, chem, structure,
+    offense: E.rosterOffense(tagged, chem.multiplier, structure.multiplier),
+    defense: E.rosterRunPrevention(tagged, chem.multiplier),
+    savePct: E.closerSavePct(tagged),
+    rating: E.overallRating(E.teamWinPct(
+      E.rosterOffense(tagged, chem.multiplier, structure.multiplier),
+      E.rosterRunPrevention(tagged, chem.multiplier))),
+  };
+}
+
 function finalizeSeason(run) {
   const st = run._simState;
   if (!st) throw new Error('no sim state');
@@ -664,6 +765,7 @@ const publicAPI = {
   createRun,
   spin, respin, sign, focusTargets, eligibleFranchises,
   chemOpts, chemOf, chemByPlayer, chemWorth,
+  payroll, overCap, marketAt, applyMarket, cutPlayer,
   playSeason, advanceGame, finalizeSeason,
   previewSigning, bestPossibleSquad, projectSeason,
   indexData,

@@ -113,6 +113,43 @@ const DIVISIONS = {
 };
 const DIVISION_FIRST_SEASON = 1994;
 
+/* Salary Cap Survivor.
+ *
+ * The draft is the same. What changes is that the roster does not stay bought:
+ * five times across the season the market moves, somebody's number goes up, and if
+ * that puts you over the cap you give a player away. The one you cut is replaced by
+ * a league-minimum body, so the roster stays legal and the cost is felt in the runs
+ * rather than in an error message.
+ *
+ * Shocks land on a fixed schedule so every run of this mode has the same shape, and
+ * the raise is drawn from the run's own seeded rng so a replay is a replay. */
+const MARKET = {
+  GAMES: [18, 47, 76, 105, 134],   // five shocks, roughly a month apart
+  RAISE_MIN: 0.18,
+  RAISE_MAX: 0.62,
+  MIN_RAISE_MUSD: 1.5,
+};
+
+/* A league-minimum body. Zero WAR, a million dollars, eligible where it has to be.
+ * Not a real person: the name says so, because putting a real player's name on a
+ * scrub would be a lie about that player. */
+function replacementFor(slotName, season) {
+  const pitcher = slotName === 'SP1' || slotName === 'SP2' || slotName === 'CL';
+  const base = slotName.replace(/[12]$/, '');
+  return {
+    i: 'repl_' + base.toLowerCase(),
+    n: 'Replacement ' + base,
+    s: season || 2025,
+    t: 'FA',
+    r: pitcher ? 'p' : 'b',
+    p: 1.0,
+    w: 0.0,
+    pp: base,
+    ep: pitcher ? (base === 'CL' ? 'CL;RP' : 'SP') : base,
+    _repl: true,
+  };
+}
+
 /* Was this club in this division that season? */
 function inDivision(division, team, season) {
   const rows = DIVISIONS[division];
@@ -1237,6 +1274,7 @@ function teamColors(code) {
 const publicAPI = {
   CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
   DIVISIONS, DIVISION_FIRST_SEASON, inDivision, divisionClubs,
+  MARKET, replacementFor,
   POSITIONS_AVAILABLE: () => POSITIONS_AVAILABLE,
   setPositionsAvailable,
   hashSeed, createSeededRNG, sampleGamma,
