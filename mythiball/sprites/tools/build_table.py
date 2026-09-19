@@ -280,12 +280,27 @@ def build_character(game_key, pack_name, audit, note):
 
     # the five the pack cannot draw, filled from a still rather than left to
     # fall through to idle facing the wrong way
+    # A STILL POSE HAS TO DIFFER FROM WHATEVER IDLE TURNED OUT TO BE, which
+    # is not the same as naming a facing. catch is the right still because
+    # idle is normally the front one, and for the nine characters with no
+    # front view idle IS the right still, so catch came back pixel identical
+    # to it and kong had a catch nobody could tell had happened. Ask for the
+    # facing wanted, then walk the other stills until one is a different
+    # drawing.
     for pose, facing in STILL_POSE.items():
         want = facing
-        if facing == 'front' and not os.path.exists(
-                os.path.join(REF, 'sprites_64', 'front', pack_name + '.png')):
-            want = STILL_FALLBACK.get(pose, 'right')
-        st = static_for(pack_name, want)
+        st = None
+        for cand in [facing] + [f for f in ('right', 'left', 'front') if f != facing]:
+            if not os.path.exists(os.path.join(REF, 'sprites_64', cand, pack_name + '.png')):
+                continue
+            trial = static_for(pack_name, cand)
+            if trial is None:
+                continue
+            if st is None:
+                st, want = trial, cand      # the first that exists, as a floor
+            if not np.array_equal(trial, poses['idle']):
+                st, want = trial, cand      # better: one that actually differs
+                break
         if st is not None:
             poses[pose] = st
             note.append((game_key, pose, 'source_reference/' + want))
