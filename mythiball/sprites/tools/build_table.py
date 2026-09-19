@@ -82,8 +82,23 @@ POSE_SOURCE = {
     'kick':    ('pitch', 1),
     'release': ('pitch', 2),
     'throw':   ('pitch', 3),
-    'slump':   ('celebrate', 0),
+    'cheer':   ('celebrate', 0),
 }
+
+# THE CELEBRATION BELONGS TO WHOEVER THREW THE PITCH, NOT TO WHOEVER MISSED
+# IT. `slump` was sourced from the celebrate strip, so for 51 characters the
+# beat after a called third strike was the batter throwing both arms in the
+# air. The art is right and drawn; it was pointed at the wrong man. It is
+# `cheer` now and the pitcher wears it on a strikeout, and `slump` is the walk
+# back, below.
+#
+# NOTHING MAY SOURCE `slump` FROM A STRIP. The pack has no dejection art of
+# any kind, and the nearest looking frame is the one that means the opposite,
+# so the way this comes back is somebody reaching for the closest frame again.
+NO_STRIP = {'slump'}
+if NO_STRIP & set(POSE_SOURCE):
+    sys.exit('%s may not come from an animation strip: see NO_STRIP'
+             % ', '.join(sorted(NO_STRIP & set(POSE_SOURCE))))
 
 # THE POSES THE PACK CANNOT DRAW, AND WHAT STANDS IN. There is no rear view
 # in source_reference and no fielding art anywhere, so `back` is not a back:
@@ -106,9 +121,17 @@ POSE_SOURCE = {
 # reads as its own drawing instead of the batter standing there again.
 # catch takes the RIGHT still now that idle is the front one, so the two are
 # still different drawings and a catch still turns the fielder.
+#
+# `slump` IS THE WALK BACK AND NOTHING MORE, which is a loss stated plainly
+# rather than papered over. The generator made one by dropping a parametric
+# figure's arms five pixels; hand drawn art has no arms to find, so there is
+# no dejection here to reach for and the honest pose is the man turning away
+# from the plate. It is the same left facing still `back` is, so it costs
+# nothing in the table, and the day somebody draws a real slump it plugs
+# straight in. docs/ART_ORDER.md orders it.
 STILL_POSE = {
     'back': 'left', 'backrun1': 'left', 'backrun2': 'left',
-    'catch': 'right', 'throw': 'right',
+    'catch': 'right', 'throw': 'right', 'slump': 'left',
 }
 # front exists for 59 of the 68, so the nine without one fall back to LEFT
 # rather than to right: catch has to differ from the right facing idle or it
@@ -122,8 +145,8 @@ STILL_FALLBACK = {}
 # happened to iterate. Every pose appears exactly once, which the build
 # asserts: a name missing here would be dropped from the table outright.
 ALIAS_ORDER = ['idle', 'ready', 'load', 'swing', 'follow', 'run1', 'run2',
-               'back', 'backrun1', 'backrun2', 'windup', 'kick', 'release',
-               'throw', 'catch', 'slump']
+               'back', 'backrun1', 'backrun2', 'slump', 'windup', 'kick',
+               'release', 'throw', 'catch', 'cheer']
 
 
 def usable_frame(f):

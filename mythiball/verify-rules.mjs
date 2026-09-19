@@ -1637,7 +1637,12 @@ async function main() {
            on this page asks. So every one of the sixteen has to decode to
            the declared size, every target has to exist, and a target may not
            itself be a reference, which is what keeps the resolution one step
-           rather than a walk that can loop. */
+           rather than a walk that can loop.
+
+           A COUNT OF POSES IS DELIBERATELY NOT WRITTEN HERE. It was sixteen
+           until `cheer` was added, and a number in an assertion is a line
+           somebody has to edit to add a pose, which is how a check turns
+           into the thing standing in the way of the work. */
         const refs = [], dangling = [], chained = [], wrong = [];
         for (const k of keys) {
           for (const p of Object.keys(V2_SPRITES[k].f)) {
@@ -1678,7 +1683,7 @@ async function main() {
          `${r.distinct} of ${r.n * 4} are their own drawing, ${r.same.length} repeat a still`);
       ok(r.encoded, 'the table is run length encoded', 'encoded=' + r.encoded);
       ok(r.wrong.length === 0,
-         'all sixteen poses of all sixty eight decode to the declared size',
+         'every pose of all sixty eight decodes to the declared size',
          r.wrong.slice(0, 6).join(', '));
       ok(r.refs > 0 && r.dangling.length === 0 && r.chained.length === 0,
          'and a repeated pose points at a real drawing rather than storing it twice',
@@ -2873,19 +2878,38 @@ async function main() {
          so the screen looked the same whether he had just been rung up
          or was waiting on the next pitch.
 
-         The generator is parametric, so a pose is one authored offset
-         that all sixty eight inherit rather than sixty eight drawings.
-         It costs about 61KB of sprite table, which is what one pose
-         across this roster weighs.
+         The generator was parametric, so a pose was one authored offset
+         that all sixty eight inherited: the arms came down five pixels and
+         every character slumped. Two things there were only findable by
+         LOOKING, and a count of distinct frames was happy through both. At
+         eight pixels the arms hang PAST the shoes and cover them, so a
+         slumping Zeus read as a man with no feet. A one pixel leg sink,
+         tried to give the quadrupeds something, clipped every biped's shoes
+         off the bottom of the box while moving exactly one of the seven.
 
-         TWO THINGS HERE WERE ONLY FINDABLE BY LOOKING, and a count of
-         distinct frames was happy through both. At an eight pixel drop
-         the arms hang PAST the shoes and cover them, so a slumping Zeus
-         reads as a man with no feet. And a one pixel leg sink, tried to
-         give the quadrupeds something, clipped every biped's shoes off
-         the bottom of the 50px box while moving exactly one of the seven.
-         The arms carry it at five, and a dragon taking a called third
-         strike is a dragon standing there. */
+         THE ARMS ARE GONE NOW, AND THE ART IS WHY. The sprites are hand
+         drawn and there is nothing in a 64x64 bitmap that says which pixels
+         are an arm, so the offset has nothing to move. The pack drew no
+         dejection either. `slump` is the walk back and only that: the man
+         turns away from the plate, which is the same left facing still
+         `back` is, so it is stored as a reference to it and costs nothing.
+
+         AND THE FRAME IT USED TO HOLD MEANT THE OPPOSITE. It was sourced
+         from the pack's CELEBRATE strip, so for 51 of the 68 a called third
+         strike put both the batter's arms in the air. Nothing could report
+         it: the pose was present, it was its own drawing, and it differed
+         from the walk back, which is every property this section used to
+         ask for. FOUND BY RENDERING THE SLUMP OF EVERY CHARACTER ONTO ONE
+         SHEET AND LOOKING AT IT.
+
+         So the art moved to the man it belongs to rather than being thrown
+         away. `cheer` is the celebration and the PITCHER wears it over the
+         same beat, which is what the picture should have been saying all
+         along. The assertions below are about the batter, and the one that
+         asked for dropped arms is replaced by the two claims that are still
+         true and still load bearing: he is turned away, and he is not
+         celebrating. The second is the regression, written as the batter
+         never wearing the pitcher's pose. */
       const { pg, errors } = await fresh(browser);
       const r = await pg.evaluate(() => {
         const ks = Object.keys(V2_SPRITES);
@@ -2903,8 +2927,14 @@ async function main() {
           /* every batter frame is seen from behind, and this is one */
           rows: ks.filter(k => f(k).slump &&
                   drawing(k, 'slump').split('/').length === drawing(k, 'back').split('/').length).length,
-          /* the ones with arms have to differ from the pose they came from */
-          distinct: ks.filter(k => f(k).slump && drawing(k, 'slump') !== drawing(k, 'back')).length,
+          /* he turns away from the plate rather than standing in */
+          away: ks.filter(k => drawing(k, 'slump') === drawing(k, 'back')).length,
+          /* AND HE IS NOT CELEBRATING. The celebration exists and belongs
+             to the pitcher, so this is a real comparison rather than a
+             claim about something absent: reintroduced, all 51 fail. */
+          cheering: ks.filter(k => drawing(k, 'slump') === drawing(k, 'cheer')).length,
+          /* the pitcher's half of the same swap: he has one to wear */
+          cheers: ks.filter(k => drawing(k, 'cheer') !== drawing(k, 'idle')).length,
         };
       });
       const moment = await pg.evaluate(async () => {
@@ -2928,21 +2958,71 @@ async function main() {
         g.batterCtx = { flags: { rebirth: true } }; g.phoenixUsed = false;
         g.strikes = 2; recordOut('swinging strikeout', true);
         const phoenix = !g.slumpUntil;
-        return { set, cleared, onlyK, phoenix };
+
+        /* WHO WEARS WHAT, ASKED OF THE PICTURE. Everything above is about
+           the table and the beat, and the defect this replaced lived in
+           neither: the art was right, the beat was right, and the pose was
+           handed to the wrong man. So this spies on drawRunner over one
+           real frame of the plate camera and reads back which pose each of
+           the two was drawn with.
+
+           It DRAWS rather than reading a flag, because the pitcher's branch
+           is one `else if` in a chain and the way it breaks is another
+           branch above it winning. */
+        g.play = null; g.pitch = null;
+        g.strikes = 2; g.balls = 0;
+        recordOut('called strikeout', true);
+        g.plateHold = performance.now() + 9000;
+        const pit = currentPitcher().k, bat = currentBatter().k;
+        const real = window.drawRunner;
+        const seen = [];
+        window.drawRunner = (ctx, x, y, c, sc, pose, flip) => {
+          seen.push([c && c.k, pose]);
+          return real(ctx, x, y, c, sc, pose, flip);
+        };
+        const frame = () => {
+          seen.length = 0;
+          const cv = document.createElement('canvas');
+          cv.width = FIELD_W; cv.height = FIELD_H;
+          drawField(cv.getContext('2d'), FIELD_W, FIELD_H, 0, null, false);
+          const m = {};
+          for (const [k, p] of seen) (m[k] = m[k] || []).push(p);
+          return m;
+        };
+        const onBeat = frame();
+        g.slumpUntil = 0;
+        const off = frame();
+        window.drawRunner = real;
+        const has = (m, k, p) => !!(m[k] && m[k].indexOf(p) >= 0);
+        return { set, cleared, onlyK, phoenix,
+                 plate: plateViewActive(g),
+                 pitCheers: has(onBeat, pit, 'cheer'),
+                 batSlumps: has(onBeat, bat, 'slump'),
+                 pitStops: !has(off, pit, 'cheer'),
+                 batStops: !has(off, bat, 'slump') };
       });
       ok(r.have === r.chars, 'every character has a walk back frame',
          `${r.have} of ${r.chars}`);
       ok(r.rows === r.chars, 'and it is drawn from behind, like every other batter frame',
          `${r.rows} of ${r.chars}`);
-      ok(r.distinct >= 60,
-         'the ones with arms to drop actually drop them',
-         `${r.distinct} of ${r.chars} differ from their own back frame`);
+      ok(r.away === r.chars, 'and he is turned away from the plate, not standing in',
+         `${r.away} of ${r.chars}`);
+      ok(r.cheering === 0,
+         'A MAN WHO JUST STRUCK OUT IS NOT CELEBRATING',
+         `${r.cheering} of ${r.chars} wear the pitcher's pose`);
+      ok(r.cheers >= 40, 'and the pitcher who rang him up has one to wear',
+         `${r.cheers} of ${r.chars} carry their own cheer`);
       ok(moment.set, 'a strikeout sets the beat it is shown for', String(moment.set));
       ok(moment.onlyK, 'a ground out does not: he did not strike out', String(moment.onlyK));
       ok(moment.cleared,
          'IT BELONGS TO THE MAN IT HAPPENED TO: the next hitter does not inherit his shoulders',
          String(moment.cleared));
       ok(moment.phoenix, 'and a rebirth walks to first rather than slumping', String(moment.phoenix));
+      ok(moment.plate && moment.batSlumps && moment.pitCheers,
+         'ON THE SCREEN: the batter walks back and the PITCHER is the one celebrating',
+         JSON.stringify({ plate: moment.plate, bat: moment.batSlumps, pit: moment.pitCheers }));
+      ok(moment.batStops && moment.pitStops, 'and the beat ends for both of them',
+         JSON.stringify({ bat: moment.batStops, pit: moment.pitStops }));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

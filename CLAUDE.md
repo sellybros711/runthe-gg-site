@@ -2586,6 +2586,37 @@ Between them, poses the reader cannot tell from idle went **151 to 18**. The
 18 are the nine characters with no front view and no strips, where there is no
 second drawing to reach for. That is the art order, not a defect.
 
+#### The batter celebrated his own strikeout
+
+`slump` is the beat after a called third strike, and it was sourced from the
+pack's **celebrate** strip, so for **51 of the 68** the picture was the batter
+throwing both arms in the air over being rung up. **Nothing could report it.**
+The pose was present, it was its own drawing, and it differed from the walk
+back, which is every property the guard on it asked for. Found by rendering
+every character's slump onto one sheet and looking at it.
+
+**The art is right and was pointed at the wrong man.** It is `cheer` now and
+the PITCHER wears it over the same beat, which is what that screen should
+always have been saying. Nothing was thrown away and nothing was drawn.
+
+**`slump` IS THE WALK BACK AND ONLY THAT, which is a loss stated plainly.**
+The generator made a slump by dropping a parametric figure's arms five pixels
+and all sixty eight inherited it. Hand drawn art has nothing in a 64x64 bitmap
+that says which pixels are an arm, so the offset has nothing to move, and the
+pack drew no dejection. He turns away from the plate, which is the same left
+facing still `back` is, so it is a reference and costs nothing. The day
+somebody draws a real slump it plugs straight in. `NO_STRIP` in the builder
+refuses to source it from a strip again, because the way this comes back is
+somebody reaching for the nearest looking frame, and the nearest looking frame
+means the opposite.
+
+**The guard that replaced it asks the PICTURE.** The old one asked the table,
+and the table was fine: the art was right, the beat was right, the pose went
+to the wrong man. So it spies on `drawRunner` over one real frame of the plate
+camera and reads back who was drawn with what. It draws rather than reading a
+flag, because the pitcher's branch is one `else if` in a chain and the way it
+breaks is a branch above it winning.
+
 **FIVE POSES THE PACK CANNOT DRAW STAND ON ITS STILLS.** There is no rear view
 in the pack and no fielding art anywhere. `back` and the two backruns are the
 LEFT still, so the game reads a profile where it used to read a pair of
