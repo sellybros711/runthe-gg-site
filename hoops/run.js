@@ -312,12 +312,21 @@ function createRun(opts) {
      typo. franchiseCodes falls back to the code alone, so the check is that
      the code is a row rather than that the lookup answered. */
   if (club !== null && !E.hasTeam(club)) throw new Error(`unknown club ${club}`);
+  /* THE DAY NUMBER RIDES IN THE RUN, not in a page variable beside it. A daily
+     is an ordinary league run with its seed pinned, so nothing downstream can
+     tell the two apart from the fields that decide play, and the one thing
+     that has to survive a reload is WHICH day this was: a resumed draft filed
+     against the wrong day would overwrite somebody's result for today with a
+     record they set for yesterday. */
+  const daily = (typeof o.daily === 'number' && isFinite(o.daily) && o.daily > 0)
+    ? Math.floor(o.daily) : null;
   return {
     version: 1,
     era,
     /* null is the ordinary run and the whole league. A code locks the wheel to
        that franchise and everything it used to be called. */
     club,
+    daily,
     seed: o.seed ?? E.hashSeed(String(Math.random())),
     rngCalls: 0,
     capMusd: E.CONSTANTS.CAP_MUSD,
@@ -981,7 +990,7 @@ const publicAPI = {
   /* Moves with engine.js, not independently: index.html asks both files for the
      SAME number, so one version means one answer to "is this page and its
      scripts the same age". */
-  API_VERSION: 4,
+  API_VERSION: 5,
   PHASES, TUNING, BLOCK,
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,

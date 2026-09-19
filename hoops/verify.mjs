@@ -18,6 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -1046,6 +1047,281 @@ ok(bestWins > worstWins + 20,
   /* The scan has to be finding something, or a broken regex passes green.
      Same reason check-numbers records its coverage counts. */
   ok(read.size >= 10, `the outcome scan found real reads (${read.size})`);
+}
+
+/* ── A SHARED RESULT HAS TO SAY WHICH GAME IT WAS, AND THE DAY HAS TO COUNT ─
+ *
+ * Four things live in this section and every one of them fails in silence.
+ *
+ * THE TAGLINE. The football game's share card fell through to "Classic Mode.
+ * Six spins, one roster" THREE separate times, once per mode added after it
+ * was written, and its own CLAUDE.md section records each one. The card
+ * rendered perfectly every time; it simply described a game the player had
+ * not played. The defence is not a fourth branch, it is a check that every
+ * mode's answer is different from every other mode's, so the fifth door
+ * cannot inherit the fourth's words either.
+ *
+ * THE DAY NUMBER. Today's run is one seed for everybody, so the whole mode
+ * rests on two people in one group chat computing the same number from the
+ * same date. An off-by-one across a daylight saving change gives them
+ * different puzzles and neither of them anything to compare, and nothing
+ * anywhere throws: both pages play a perfectly good game.
+ *
+ * THE STREAK. A day counted twice, or a gap that does not reset, is a number
+ * that is simply wrong and looks exactly like a number that is right.
+ *
+ * THE BADGE DIFF. It is the only place in this game that answers "what just
+ * happened" rather than "what is true", and asked one line later it answers
+ * nothing at all, correctly and uselessly.
+ *
+ * THE FUNCTIONS ARE LIFTED OUT OF THE SHIPPED PAGE, never copied here. A copy
+ * of the arithmetic is a second implementation that agrees with itself, which
+ * is the exact failure mythiball's send curve had for as long as its sweep
+ * carried a hand-written duplicate of the curve it was sweeping.
+ */
+{
+  const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+
+  /* Brace-matched rather than regexed to a closing line, because two of these
+     hold an object literal and a `}` at the start of a line inside one would
+     cut the function in half and then fail to parse, which reads as a broken
+     page rather than a broken reader. */
+  const fnSource = (name) => {
+    const head = pageSrc.indexOf('function ' + name + '(');
+    if (head < 0) return null;
+    let i = pageSrc.indexOf('{', head), depth = 0;
+    for (let j = i; j < pageSrc.length; j++) {
+      if (pageSrc[j] === '{') depth++;
+      else if (pageSrc[j] === '}' && --depth === 0) return pageSrc.slice(head, j + 1);
+    }
+    return null;
+  };
+  /* COVERAGE IS HALF THE CHECK. A reader that finds nothing would let every
+     assertion below pass vacuously, which is how an extractor in this repo
+     has been silently wrong three times. */
+  const WANT = ['cardTag', 'dayNumberOf', 'dailySeed', 'dailyRecord',
+    'freshBadges', 'bestsSet', 'shareDare'];
+  const missing = WANT.filter(n => !fnSource(n));
+  is(missing, [], 'every function this section reads is still in the page');
+
+  const lift = (name, names, vals) =>
+    new Function(...names, fnSource(name) + '\nreturn ' + name + ';')(...vals);
+
+  /* ---- the tagline names the mode ---- */
+  if (fnSource('cardTag')) {
+    const ERA_NAMES = { eighties: 'The Eighties', nineties: 'The Nineties' };
+    const cardTag = lift('cardTag', ['E', 'ERA_NAMES'], [E, ERA_NAMES]);
+    const league = cardTag({});
+    const club = cardTag({ club: 'CHI' });
+    const era = cardTag({ era: 'eighties' });
+    const daily = cardTag({ daily: 12 });
+    const all = [league, club, era, daily];
+    ok(all.every(s => typeof s === 'string' && s.length > 10),
+      'every mode gets a tagline');
+    is(new Set(all).size, 4, 'no two modes share a tagline');
+    ok(club.includes(E.team('CHI').full), 'the One Franchise tagline names the club');
+    ok(era.includes('Eighties'), 'the Decades tagline names the decade');
+    ok(daily.includes('12'), "the daily tagline names the day");
+    /* THE LEAGUE SENTENCE IS THE ONE THAT FELL THROUGH IN THE OTHER GAME, so
+       it is the one asserted to appear nowhere else: a locked run wearing it
+       is the whole defect, written as a property rather than as a string. */
+    ok(![club, era, daily].some(s => s === league),
+      'no locked mode falls through to the league tagline');
+  }
+
+  /* ---- the dare ---- */
+  if (fnSource('shareDare')) {
+    const mk = (r) => lift('shareDare', ['run'], [r]);
+    const plain = mk(null)({ isGOAT: false, titleWon: false });
+    const day = mk({ daily: 3 })({ isGOAT: false, titleWon: false });
+    ok(plain !== day, 'the daily dares differently from an ordinary run');
+    ok(mk(null)({ isGOAT: true, titleWon: true }) !== plain,
+      'a 74 win run is dared differently from an ordinary one');
+  }
+
+  /* ---- the day number ---- */
+  if (fnSource('dayNumberOf')) {
+    const epoch = /var DAILY_EPOCH = '(\d{4}-\d{2}-\d{2})'/.exec(pageSrc);
+    ok(!!epoch, 'the page declares a daily epoch');
+    const dayNumberOf = lift('dayNumberOf', ['DAILY_EPOCH'], [epoch[1]]);
+    is(dayNumberOf(epoch[1]), 1, 'the epoch is day 1');
+
+    /* A WHOLE YEAR, ONE DAY AT A TIME, which is the only way to see a
+       daylight saving change. The US moves its clocks in March and November,
+       and the difference between two LOCAL midnights across those nights is
+       23 or 25 hours, which floors to the wrong day and hands two players in
+       one group chat different puzzles, with nothing anywhere throwing.
+     *
+     * IT HAS TO RUN IN A ZONE THAT HAS A CLOCK CHANGE, and that is why this
+     * is a child process rather than a loop here. Node reads TZ once, this
+     * container runs in UTC, and under UTC the broken version of the
+     * function is correct: swapping Date.UTC for a local Date passed the
+     * whole suite green. A check that can only pass is worth nothing. */
+    /* IT IS SWEPT OVER BOTH KINDS OF EPOCH, and the first draft was not, and
+       passed on the broken version. With the epoch in summer the hour a local
+       clock loses in March never pushes the division past a day boundary, so
+       every answer happens to come out right. With the epoch in WINTER it is
+       wrong by a whole day for every summer date. The epoch ships as one
+       literal that somebody will move, so the claim has to be that the
+       arithmetic is immune to a clock change for ANY epoch, not just for the
+       one currently written down. */
+    const probe = `
+      const out = {};
+      out.zone = new Date(2026, 6, 1).getTimezoneOffset()
+        !== new Date(2026, 0, 1).getTimezoneOffset();
+      for (const EP of ${JSON.stringify([epoch[1], '2026-01-15', '2026-07-15'])}) {
+        /* DAILY_EPOCH is a free identifier inside the lifted function, so it
+           is rebound per epoch by re-lifting rather than by assignment. */
+        const f = new Function('DAILY_EPOCH',
+          ${JSON.stringify(fnSource('dayNumberOf'))} + '; return dayNumberOf;')(EP);
+        const steps = new Set();
+        let prev = null;
+        for (let i = 0; i < 400; i++) {
+          const d = new Date(Date.UTC(2026, 0, 1) + i * 86400000);
+          const n = f(d.toISOString().slice(0, 10));
+          if (prev !== null) steps.add(n - prev);
+          prev = n;
+        }
+        out[EP] = { steps: [...steps], epochIsDayOne: f(EP) === 1,
+          spring: f('2026-03-09') - f('2026-03-07'),
+          autumn: f('2026-11-02') - f('2026-10-31') };
+      }
+      console.log(JSON.stringify(out));`;
+    const walk = JSON.parse(execFileSync(process.execPath, ['-e', probe],
+      { env: { ...process.env, TZ: 'America/New_York' }, encoding: 'utf8' }));
+    /* The probe reports whether it actually got a zone with a clock change in
+       it, because a container with no time zone database silently gives UTC
+       and this whole check would then be measuring nothing. */
+    ok(walk.zone, 'the day walk really ran in a zone that changes its clocks');
+    for (const ep of [epoch[1], '2026-01-15', '2026-07-15']) {
+      is(walk[ep].steps, [1],
+        `consecutive dates are consecutive days off a ${ep} epoch, across both clock changes`);
+      ok(walk[ep].epochIsDayOne, `the ${ep} epoch is its own day 1`);
+      is(walk[ep].spring, 2, `the spring change is two days wide off a ${ep} epoch`);
+      is(walk[ep].autumn, 2, `the autumn change is two days wide off a ${ep} epoch`);
+    }
+  }
+
+  /* ---- the seed ---- */
+  if (fnSource('dailySeed')) {
+    const dailySeed = lift('dailySeed', ['E'], [E]);
+    is(dailySeed(7), dailySeed(7), 'one day is one seed');
+    const seen = new Set();
+    for (let d = 1; d <= 400; d++) seen.add(dailySeed(d));
+    /* Not all-distinct, which a 32 bit hash cannot promise and which nothing
+       depends on. What matters is that the day is really an input: a seed
+       that ignored it would give one value for the whole set. */
+    ok(seen.size > 390, `four hundred days give four hundred puzzles (${seen.size})`);
+    ok([...seen].every(s => Number.isInteger(s) && s >= 0),
+      'every daily seed is a whole non-negative number');
+  }
+
+  /* ---- the streak ---- */
+  if (fnSource('dailyRecord')) {
+    let stored = null, today = 1;
+    const dailyRecord = lift('dailyRecord',
+      ['todayNumber', 'dailyState', 'dailyPut', 'easternISO', 'headline'],
+      [() => today, () => stored, (s) => { stored = s; },
+        () => '2026-01-01', () => 'Lost the play-in']);
+    const play = (day, wins) => {
+      today = day;
+      return dailyRecord({ wins, losses: 82 - wins, rating: 50, titleWon: false });
+    };
+    is(play(1, 40).streak, 1, 'a first daily is a streak of one');
+    is(play(2, 44).streak, 2, 'the next day continues it');
+    is(play(3, 41).streak, 3, 'and the next');
+    /* THE DAY IS THE GUARD, NOT THE COUNT. Playing today twice must not be a
+       second day, and the whole mode rests on it: a door that could be
+       pressed again would hand out a second attempt at the same puzzle and
+       take the comparison with it. */
+    is(play(3, 60).streak, 3, 'the same day played twice is still one day');
+    is(stored.wins, 41, 'and the second attempt is not filed over the first');
+    is(play(5, 50).streak, 1, 'a missed day starts again at one');
+    is(stored.bestStreak, 3, 'the best streak survives the reset');
+    is(stored.best, 50, 'the best daily record is kept across days');
+    is(stored.played, 4, 'and a replayed day is not counted as a run');
+  }
+
+  /* ---- what just lit ---- */
+  if (fnSource('freshBadges')) {
+    const fake = { earned: (c) => (c.runs >= 2 ? [{ id: 'a' }, { id: 'b' }] : [{ id: 'a' }]) };
+    const fresh = lift('freshBadges', ['window'], [{ RTF_BADGES: fake }]);
+    is(fresh({ runs: 1 }, { runs: 2 }).map(b => b.id), ['b'],
+      'only the badge that just lit is reported');
+    is(fresh({ runs: 2 }, { runs: 2 }), [], 'a badge already held is not reported again');
+    /* A BLOCKED SCRIPT COSTS A ROW, NEVER THE SCREEN. badges.js loads beside
+       the page, so it can be absent the same way board.js can in the football
+       game, and there it took the whole leaderboard down. */
+    is(lift('freshBadges', ['window'], [{}])({}, {}), [],
+      'a missing badges.js costs the row and nothing else');
+    is(lift('freshBadges', ['window'], [{ RTF_BADGES: { earned(){ throw new Error('x'); } } }])({}, {}),
+      [], 'and a throwing one costs the same');
+
+    /* Against the REAL catalog, because the fake above only proves the diff
+       and not that the diff is asked of something with badges in it. */
+    const B = require(path.join(HERE, 'badges.js'));
+    const real = lift('freshBadges', ['window'], [{ RTF_BADGES: B }]);
+    const lit = real({}, { runs: 1, rows: [{ w: 40, l: 42 }] });
+    ok(lit.length >= 1 && lit.some(b => b.id === 'first-run'),
+      'a first finished run lights at least the first badge');
+    is(real({ runs: 1, rows: [{ w: 40, l: 42 }] }, { runs: 1, rows: [{ w: 40, l: 42 }] }), [],
+      'and the same career against itself lights nothing');
+  }
+
+  /* ---- the marks a run sets ---- */
+  if (fnSource('bestsSet')) {
+    const ERA_NAMES = { eighties: 'The Eighties' };
+    const mk = (r, day) => lift('bestsSet',
+      ['run', 'E', 'ERA_NAMES', 'dailyState', 'todayNumber', 'dailyIsToday'],
+      [r, E, ERA_NAMES, () => day || null, () => 10,
+        () => !!(r && r.daily && r.daily === 10)]);
+    const outc = (wins, ring) => ({ wins, losses: 82 - wins, titleWon: !!ring });
+
+    /* A FIRST RUN SETS NO RECORD. It is trivially the best of one, and a
+       screen congratulating somebody for beating nobody is the unearnable
+       badge in reverse. */
+    is(mk({})({ runs: 0, bestWins: 0, rings: 0 }, outc(60)).length, 0,
+      'a first run claims no career best');
+    const beat = mk({})({ runs: 3, bestWins: 50, bestLabel: '50-32', rings: 1 }, outc(60));
+    ok(beat.some(m => /Career best/.test(m.text)), 'beating the career best is marked');
+    ok(beat.some(m => /50-32/.test(m.text)), 'and it names what was beaten');
+    is(mk({})({ runs: 3, bestWins: 60, bestLabel: '60-22', rings: 1 }, outc(60)).length, 0,
+      'tying the career best is not beating it');
+    ok(mk({})({ runs: 3, bestWins: 70, rings: 0 }, outc(45, true))
+      .some(m => m.kind === 'ring'), 'a first ring is marked');
+    is(mk({})({ runs: 3, bestWins: 70, rings: 2 }, outc(45, true))
+      .filter(m => m.kind === 'ring').length, 0, 'a second ring is not a first one');
+
+    /* A SHELF HAS TO HAVE BEEN STOOD ON. The first Bulls run is the best
+       Bulls run by default and saying so is noise. */
+    is(mk({ club: 'CHI' })({ runs: 3, bestWins: 70, rings: 1, byClub: {} }, outc(60))
+      .filter(m => /Bulls/.test(m.text)).length, 0, 'a first club run claims no club best');
+    ok(mk({ club: 'CHI' })({ runs: 3, bestWins: 70, rings: 1,
+      byClub: { CHI: { runs: 2, bestWins: 50, bestLabel: '50-32' } } }, outc(60))
+      .some(m => /Bulls/.test(m.text)), 'beating a club best is marked');
+    ok(mk({ era: 'eighties' })({ runs: 3, bestWins: 70, rings: 1,
+      byEra: { eighties: { runs: 2, bestWins: 50, bestLabel: '50-32' } } }, outc(60))
+      .some(m => /Eighties/.test(m.text)), 'beating a decade best is marked');
+
+    /* THE STREAK MARK IS READ OFF YESTERDAY, because the run being marked has
+       not been filed yet. Read off today it would always be one. */
+    const cont = mk({ daily: 10 }, { played: 4, streak: 3, lastDone: 9, best: 70 })
+      ({ runs: 3, bestWins: 70, rings: 1 }, outc(60));
+    ok(cont.some(m => m.kind === 'streak' && /4 days/.test(m.text)),
+      'a continued streak is marked with the day it is about to become');
+    is(mk({ daily: 10 }, { played: 4, streak: 3, lastDone: 4, best: 70 })
+      ({ runs: 3, bestWins: 70, rings: 1 }, outc(60)).filter(m => m.kind === 'streak').length,
+      0, 'a broken streak is not marked at all');
+
+    /* A DRAFT LEFT OVERNIGHT IS NOT TODAY'S RUN. Started on day 9, finished
+       on day 10, it carries daily: 9. Marked as today it would claim a
+       streak day for a board nobody else was playing; marked as day 9 it
+       would walk the streak backwards. It claims neither. */
+    is(mk({ daily: 9 }, { played: 4, streak: 3, lastDone: 9, best: 40 })
+      ({ runs: 3, bestWins: 70, rings: 1 }, outc(60))
+      .filter(m => m.kind === 'streak' || /daily/.test(m.text)).length, 0,
+      'a stale daily finished the next day claims no day and no streak');
+  }
 }
 
 /* ── THE BOX SCORE ADDS UP, OR IT IS NOT A BOX SCORE ────────────────────────

@@ -358,6 +358,55 @@
     box-shadow:0 0 0 1px rgba(242,193,78,.25);}
   .bdg.on .bp i{background:var(--gold);}
 
+  /* ── WHAT A RUN EARNED ─────────────────────────────────────────────────
+     A LIST AND NOT THE CABINET'S GRID, deliberately. The grid is for
+     browsing forty squares and its tiles are 108px wide, which holds a name
+     and about four words. This is two or three things that just happened and
+     each one has a reason worth reading, so it gets the width of the card. */
+  .earned{display:flex;flex-direction:column;gap:7px;}
+  .ern{display:flex;align-items:center;gap:10px;border:1px solid var(--cardb);
+    border-radius:10px;padding:9px 11px;background:#10151f;min-width:0;}
+  .ern .em{flex:0 0 auto;width:26px;height:26px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:12px;font-weight:700;color:#0d1117;}
+  .ern .et{min-width:0;}
+  .ern .et b{display:block;font-size:13.5px;font-weight:800;line-height:1.3;color:var(--ink);}
+  .ern .et span{display:block;font-size:11.5px;line-height:1.35;color:var(--dim);margin-top:2px;}
+  /* The same four metals the cabinet wears, so a gold here and a gold there
+     are the same thing. A fifth colour would say the two screens rank
+     differently. */
+  .ern.bronze{border-color:#a1662f;background:linear-gradient(180deg,rgba(161,102,47,.2),#10151f);}
+  .ern.bronze .em{background:#a1662f;}
+  .ern.silver{border-color:#9aa6b8;background:linear-gradient(180deg,rgba(154,166,184,.2),#10151f);}
+  .ern.silver .em{background:#9aa6b8;}
+  .ern.gold{border-color:#d19410;background:linear-gradient(180deg,rgba(209,148,16,.22),#10151f);}
+  .ern.gold .em{background:#d19410;}
+  .ern.ring{border-color:#f2c14e;background:linear-gradient(180deg,rgba(242,193,78,.28),#10151f);
+    box-shadow:0 0 0 1px rgba(242,193,78,.25);}
+  .ern.ring .em{background:#f2c14e;}
+  .ern.streak{border-color:#d19410;background:linear-gradient(180deg,rgba(209,148,16,.22),#10151f);}
+  .ern.streak .em{background:#d19410;}
+
+  /* The doors under the results. Rows rather than the front page's .modedoor,
+     because there is no last-club shortcut to hang a second target off here:
+     each one is one tap to one thing. */
+  .odoor{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 7px;
+    background:#141a26;border:1px solid var(--cardb);border-radius:11px;
+    color:var(--ink);font-family:var(--body);text-align:left;cursor:pointer;
+    padding:12px 13px;transition:background .12s ease;}
+  .odoor:last-child{margin-bottom:0;}
+  .odoor:hover{background:#1a2333;}
+  .odoor:active{background:#0f141d;}
+  .odoor .od-t{flex:1;min-width:0;}
+  .odoor .od-t b{display:block;font-size:14px;font-weight:800;}
+  .odoor .od-t span{display:block;font-size:11.5px;color:var(--dim);margin-top:2px;
+    line-height:1.4;}
+  .odoor .od-chev{flex:0 0 auto;width:8px;height:8px;margin-right:2px;
+    border-right:2px solid var(--dim);border-bottom:2px solid var(--dim);
+    transform:rotate(-45deg);}
+  .odoor.gold{border-color:rgba(242,193,78,.5);}
+  .odoor.gold .od-t b{color:#f2c14e;}
+
   /* Off screen but still in the accessibility tree. display:none and
      visibility:hidden both remove it from that tree, which is the opposite of
      what a live region is for. */
@@ -601,6 +650,33 @@
      which is why a club can never wear one colourway here and another there. */
   .modedoor.clubbed{border-color:var(--md-accent,var(--cardb));
     background:var(--md-accent,var(--cardb));}
+
+  /* TODAY'S RUN. Gold, which is what everything on this site that is worth
+     something wears, and the only door on the page with a colour of its own
+     while it is unplayed. Once it is in the book it goes plain, because a
+     door that keeps shouting after it has been used is a notification badge
+     that never clears. */
+  .modedoor.daily{border-color:rgba(242,193,78,.55);background:rgba(242,193,78,.55);
+    position:relative;}
+  .modedoor.daily .md-name{color:#f2c14e;}
+  .modedoor.daily.done{border-color:var(--cardb);background:var(--cardb);}
+  .modedoor.daily.done .md-name{color:var(--ink);}
+  /* THE STREAK IS NOT A BUTTON, so it is not inside one. Sitting in the
+     .md-main button it would be part of the tap target that starts a run,
+     and a number that looks pressable and is not is worse than no number.
+     Absolutely positioned so it cannot push the two lines of copy narrower
+     at 360px, which is where the sub already wraps to two lines. */
+  .modedoor .md-streak{position:absolute;top:0;right:0;bottom:0;width:58px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:1px;background:#141a26;pointer-events:none;}
+  .modedoor .md-streak[hidden]{display:none;}
+  .modedoor .md-streak b{font-family:var(--mono);font-size:19px;color:#f2c14e;
+    line-height:1;}
+  .modedoor .md-streak span{font-size:9px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--dim);}
+  /* The copy has to stop before the streak does, or a long sub runs under it
+     and the last word is a column of half letters. */
+  .modedoor.daily.streaked .md-main{padding-right:66px;}
 
   /* TWO COLUMNS AT 390px, which is what thirty clubs and a nickname need.
      One column is a list to scroll and three puts "Timberwolves" on two
@@ -1246,6 +1322,21 @@
        here was three ways to leave a screen nobody had started yet. -->
   <button class="big" id="b-start">Start a run</button>
 
+  <!-- TODAY'S RUN, AND IT SITS ABOVE THE OTHER TWO BECAUSE IT EXPIRES.
+       One Franchise and Decades are there every day and are chosen by mood.
+       This one is the same six spins for everybody and it is gone at
+       midnight, so it is the only door on this page with a reason to be
+       taken NOW, and the only one that gives two people something to compare.
+       Its own class rather than .modedoor: it carries a result once it has
+       been played, which the other two never do. -->
+  <div class="modedoor daily" id="b-daily">
+    <button class="md-main" id="b-daily-go">
+      <span class="md-name" id="dl-name">Today's run</span>
+      <span class="md-sub" id="dl-sub">The same six spins for everybody today.</span>
+    </button>
+    <span class="md-streak" id="dl-streak" hidden></span>
+  </div>
+
   <!-- THE SECOND DOOR, and the reason it is a door rather than a setting.
        One Franchise is the same game with the club reel held still, so it
        could have been a checkbox on the start button. It is not, because
@@ -1514,6 +1605,16 @@
     <button class="bestnight" id="o-night" hidden></button>
   </div>
 
+  <!-- WHAT THIS RUN EARNED, and it is the second card rather than the tenth.
+       A badge that lights on the screen after the one somebody is reading has
+       been earned in silence, which is what a cabinet behind a profile tab
+       amounts to. Hidden outright when a run earned nothing, because most
+       runs do and an empty box headed "What you earned" is a reproach. -->
+  <div class="card" id="o-earnedcard" hidden>
+    <h2>What this run earned <span class="sub" id="o-earnedsub"></span></h2>
+    <div class="earned" id="o-earned"></div>
+  </div>
+
   <div class="card">
     <h2>The playoffs <span class="sub" id="o-porounds"></span></h2>
     <div id="o-playoffs"></div>
@@ -1552,6 +1653,18 @@
   <div class="btnrow" style="margin-top:8px">
     <button class="ghost" id="b-share" style="flex:1">Share this run</button>
     <button class="ghost" id="b-home" style="flex:1">Home</button>
+  </div>
+
+  <!-- THE OTHER DOORS, HERE AND NOT ONLY ON THE FRONT PAGE. Run it back means
+       the same game, which is right, so the only route from a finished Bulls
+       run to a Decades run was Home and then down the front page. The moment
+       somebody has just finished something is the moment they will take
+       another door, and it was the one screen with none on it. Whichever mode
+       this run WAS is left out: Run it back is already that button, directly
+       above, and offering it twice makes two controls out of one decision. -->
+  <div class="card" id="o-doorscard" style="margin-top:10px">
+    <h2>Another way to play</h2>
+    <div id="o-doors"></div>
   </div>
 </div>
 
@@ -1726,8 +1839,8 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=14"></script>
-<script src="run.js?v=6"></script>
+<script src="engine.js?v=15"></script>
+<script src="run.js?v=7"></script>
 <script src="badges.js?v=1"></script>
 <script>
 (function(){
@@ -1760,7 +1873,7 @@ var bold = function(text){
  * comes back still disagrees, say so in words instead of dying quietly. One
  * retry, so this can never become a reload loop.
  */
-var NEED_VERSION = 4;
+var NEED_VERSION = 5;
 (function bootCheck(){
   if (E && R && E.API_VERSION === NEED_VERSION && R.API_VERSION === NEED_VERSION) return;
   if (!/[?&]fresh=/.test(location.search)) {
@@ -2014,7 +2127,7 @@ function boot(){
 
 // ── the draft ──────────────────────────────────────────────────────────────
 
-function startRun(club, era){
+function startRun(club, era, daily){
   /* An onclick handler is called with an Event, so a bare `$('b-again').onclick
      = startRun` would pass a MouseEvent where the club goes and lock the wheel
      to a franchise called [object MouseEvent]. createRun would throw and the
@@ -2026,12 +2139,26 @@ function startRun(club, era){
   var opts = {};
   if (lock) opts.club = lock;
   if (span) opts.era = span;
+  /* The daily is the whole league with its seed pinned, so it is the one door
+     that sets no lock. It is refused rather than reseeded once the day is in
+     the book: a second attempt at the same puzzle is a different game from the
+     one everybody else played, and the record would not be comparable. */
+  if (daily && !dailyDone()) {
+    var n = todayNumber();
+    opts.daily = n;
+    opts.seed = dailySeed(n);
+    opts.club = null;
+    opts.era = null;
+  }
   /* STARTING A RUN IS THE WAY OUT OF THE GUIDE, which is why the scrim never
      covered the button. Marked seen whichever door was used. */
   if (!$('frg').hidden) frgClose();
   run = R.createRun(opts);
-  if (lock) rememberClub(lock);
-  if (span) rememberEra(span);
+  /* Read off opts and not off the arguments, because the daily branch above
+     clears both locks and a remember taken from the argument would file a
+     club the run is not actually playing. */
+  if (opts.club) rememberClub(opts.club);
+  if (opts.era) rememberEra(opts.era);
   activeTab = 'ALL';
   save();
   show('s-draft');
@@ -2476,6 +2603,7 @@ function renderEraDoor(){
    the game, and labelling it would put a badge on every screen. */
 function modeLabel(r){
   if (!r) return null;
+  if (r.daily) return "Today's run · day " + r.daily;
   if (r.club) return 'One Franchise · ' + E.teamName(r.club);
   if (r.era) return ERA_NAMES[r.era] || r.era;
   return null;
@@ -2485,9 +2613,123 @@ function modeLabel(r){
    the wordmark at 360px. */
 function modeChip(r){
   if (!r) return null;
+  if (r.daily) return 'Day ' + r.daily;
   if (r.club) return E.teamName(r.club);
   if (r.era) return (ERA_NAMES[r.era] || r.era).replace(/^The /, '');
   return null;
+}
+
+/* ── TODAY'S RUN ───────────────────────────────────────────────────────────
+ *
+ * The seed is the date, so every player gets the same six spins and two
+ * records are comparable for the first time in this game. Everything else
+ * here is an ordinary league run.
+ *
+ * THE DAY ROLLS AT EASTERN MIDNIGHT, not UTC and not the visitor's own
+ * midnight. UTC rolls at 7 or 8pm Eastern, which takes the puzzle away in the
+ * middle of the evening somebody is playing it. The visitor's own midnight
+ * would give two people in one group chat different puzzles on the same
+ * night, which is the whole thing this mode is for. Eastern is what every
+ * other calendar-day clock on this site already uses.
+ *
+ * IT FALLS BACK TO THE LOCAL DATE AND NEVER THROWS. A browser with no time
+ * zone database answers the wrong puzzle, which costs comparability for that
+ * one visitor; a browser with no game at all costs everything.
+ */
+/* Day 1 is the day this shipped, read in Eastern like every day after it. It
+   was written as the UTC date first, which is a day ahead of Eastern for most
+   of the evening, so the first player's "day 1" was day 0 and only the clamp
+   below made it read right. A clamp is a guard against a wrong clock, not a
+   place to keep an off-by-one. */
+var DAILY_EPOCH = '2026-09-18';          // day 1
+var DAILYKEY = 'rtf.daily.v1';
+
+function easternISO(now){
+  var d = now || new Date();
+  try {
+    /* en-CA formats as YYYY-MM-DD, which is the one locale that gives the
+       shape wanted without reassembling parts. Tested rather than trusted:
+       anything else falls through to the local date below. */
+    var s = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
+      year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  } catch (e) {}
+  var p = function(n){ return (n < 10 ? '0' : '') + n; };
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+/* Whole days between two calendar dates, counted in UTC so no daylight saving
+   change can make a day 23 or 25 hours long and round the difference wrong. */
+function dayNumberOf(iso){
+  var a = String(iso).split('-'), b = DAILY_EPOCH.split('-');
+  var ms = Date.UTC(+a[0], +a[1] - 1, +a[2]) - Date.UTC(+b[0], +b[1] - 1, +b[2]);
+  return Math.floor(ms / 86400000) + 1;
+}
+
+function todayNumber(){ return Math.max(1, dayNumberOf(easternISO())); }
+
+/* The seed. A plain hash of the day number, so it is reproducible from the
+   date alone and nothing has to be shipped alongside it. */
+function dailySeed(n){ return E.hashSeed('run-the-floor-daily-' + n); }
+
+function dailyState(){
+  try {
+    var raw = localStorage.getItem(DAILYKEY);
+    if (!raw) return null;
+    var s = JSON.parse(raw);
+    return (s && s.v === 1) ? s : null;
+  } catch (e) { return null; }
+}
+function dailyPut(s){
+  try { localStorage.setItem(DAILYKEY, JSON.stringify(s)); } catch (e) {}
+}
+
+/* Whether today's is already in the book. A day that has not been played
+   answers false, and so does a stored day from any other date, which is what
+   makes the door open again at midnight with nothing to reset. */
+function dailyDone(){
+  var s = dailyState();
+  return !!(s && s.done && s.day === todayNumber());
+}
+
+/* WHETHER THE RUN ON SCREEN IS ACTUALLY TODAY'S, which is not the same
+   question as whether it is a daily. A draft can sit saved overnight: started
+   on day 4, finished on day 5, and filed against day 5 it would put
+   yesterday's puzzle into today's slot, shut today's door, and hand somebody a
+   streak day for a board nobody else was playing. Filed against day 4 instead
+   it would walk lastDone backwards and break a streak that was still alive.
+   Neither is worth a branch. A stale daily finished later is an ordinary run:
+   it still counts in the career and it still earns badges, it just does not
+   fill a day, and today's door is still there. This is the one thing the day
+   number riding in the run exists to answer. */
+function dailyIsToday(){
+  return !!(run && run.daily && run.daily === todayNumber());
+}
+
+/* CONSECUTIVE DAYS, and a gap resets it rather than pausing it. Counted off
+   the day number alone, so it cannot drift with a clock: yesterday's day plus
+   one continues, anything else starts again at one. A day replayed is not a
+   second day, which is why the guard is on the day and not on the count. */
+function dailyRecord(out){
+  var n = todayNumber();
+  var s = dailyState() || { v: 1, played: 0, streak: 0, bestStreak: 0, lastDone: 0, best: -1 };
+  if (s.done && s.day === n) return s;       // already filed, never twice
+  s.v = 1;
+  s.day = n;
+  s.iso = easternISO();
+  s.done = true;
+  s.played = (s.played || 0) + 1;
+  s.streak = (s.lastDone === n - 1) ? (s.streak || 0) + 1 : 1;
+  s.bestStreak = Math.max(s.bestStreak || 0, s.streak);
+  s.lastDone = n;
+  s.wins = out.wins; s.losses = out.losses;
+  s.label = out.wins + '-' + out.losses;
+  s.headline = headline(out);
+  s.rating = Math.round(out.rating);
+  s.ring = !!out.titleWon;
+  if (out.wins > (s.best == null ? -1 : s.best)) s.best = out.wins;
+  dailyPut(s);
+  return s;
 }
 
 /* THE DRAW HAPPENS FIRST AND THE REELS CATCH UP. run.js picks the club, then
@@ -4026,7 +4268,18 @@ function playSeason(){
   /* ONCE PER RUN, AND THE FLAG RIDES IN THE SAVED RUN. renderOver is also what
      a restored finished run calls, so recording there would add a ring every
      time somebody reopened the tab on a season they had already won. */
-  if (!run.recorded) { run.recorded = true; recordRun(out); }
+  /* WHAT THE RUN EARNED RIDES IN THE SAVED RUN, because it is a difference
+     and the difference only exists at this moment: asked again on a reload,
+     every badge is already held and every best is already tied. Kept rather
+     than shown once, because it is a receipt and not a notification. Somebody
+     reopening a finished season should still see which badges that season
+     lit, the same way they still see its record. */
+  if (!run.recorded) {
+    run.recorded = true;
+    var got = recordRun(out);
+    run.earned = { fresh: got.fresh.map(function(b){
+      return { id: b.id, name: b.name, why: b.why, tier: b.tier }; }), bests: got.bests };
+  }
   save();
   /* HIDDEN, NOT JUST DISABLED. Disabling it is what tells the dock to swap it
      for Skip, so that stays. But the dock hands it back to its card on the way
@@ -4332,7 +4585,16 @@ function renderOver(out){
     }
   }
 
+  /* RUN IT BACK MEANS THE SAME GAME, and today's run is the one game that
+     cannot be run back: once a day is what makes two records comparable. The
+     handler already falls through to a league run, because a daily carries
+     neither lock, so what was left was a button whose words promised the one
+     thing it does not do. */
+  $('b-again').textContent = run.daily ? 'Play a league run' : 'Run it back';
+
   renderBestNight();
+  renderEarned();
+  renderOverDoors();
   renderRoster($('o-slots'));
   renderCourt(null, $('o-court'));
 
@@ -4354,6 +4616,136 @@ function renderOver(out){
      the fold ever fails to build, and it costs nothing. */
   var games = $('o-games');
   games.textContent = '';
+}
+
+/* WHAT THIS RUN EARNED, off run.earned, which recordRun worked out at the
+   moment the run was filed. Nothing is recomputed here on purpose: asked now
+   the answer is always "nothing new", because the career already holds every
+   one of them. See the note over recordRun.
+ *
+ * A run that earned nothing hides the card outright. Most runs earn nothing
+ * once a career is a few weeks old, and a heading over an empty box is worse
+ * than no heading. */
+function renderEarned(){
+  var card = $('o-earnedcard'), list = $('o-earned'), sub = $('o-earnedsub');
+  if (!card || !list) return;
+  var got = (run && run.earned) || { fresh: [], bests: [] };
+  var fresh = got.fresh || [], bests = got.bests || [];
+  list.textContent = '';
+  if (!fresh.length && !bests.length) { card.hidden = true; return; }
+  card.hidden = false;
+  sub.textContent = fresh.length
+    ? fresh.length + (fresh.length === 1 ? ' new badge' : ' new badges')
+    : '';
+
+  var row = function(metal, mark, title, why){
+    var el = document.createElement('div');
+    el.className = 'ern ' + metal;
+    var m = document.createElement('span');
+    m.className = 'em';
+    m.textContent = mark;
+    /* The mark is decoration on top of the words beside it, so it is taken
+       out of the accessibility tree rather than read out as a stray letter
+       before every row. */
+    m.setAttribute('aria-hidden', 'true');
+    var t = document.createElement('span');
+    t.className = 'et';
+    var b = document.createElement('b');
+    b.textContent = title;
+    t.appendChild(b);
+    if (why) {
+      var s = document.createElement('span');
+      s.textContent = why;
+      t.appendChild(s);
+    }
+    el.appendChild(m);
+    el.appendChild(t);
+    list.appendChild(el);
+  };
+
+  /* THE MARKS COME FIRST. A career best is about the run on the screen; a
+     badge is about the career the run went into, and the run is what somebody
+     is reading. */
+  for (var i = 0; i < bests.length; i++) {
+    var mk = bests[i];
+    row(mk.kind === 'ring' ? 'ring' : (mk.kind === 'streak' ? 'streak' : 'gold'),
+      mk.kind === 'ring' ? '●' : (mk.kind === 'streak' ? '▲' : '★'),
+      mk.text, '');
+  }
+  for (var j = 0; j < fresh.length; j++) {
+    row(fresh[j].tier || 'bronze', '★', fresh[j].name, fresh[j].why);
+  }
+
+  /* SAID OUT LOUD, ONCE, and only for the badges. The record and the verdict
+     are already announced by renderOver, and a live region that reads four
+     things in a row is one somebody turns off. */
+  if (fresh.length) {
+    say(fresh.length === 1
+      ? 'New badge: ' + fresh[0].name
+      : fresh.length + ' new badges, including ' + fresh[0].name);
+  }
+}
+
+/* THE OTHER DOORS, under the results. Whichever mode this run was is left
+   out, because Run it back is already that button. A door is built rather
+   than shown-and-hidden for the same reason the rest of this page does it:
+   the list depends on what was just played, so there is no fixed markup that
+   would be right for every run. */
+function renderOverDoors(){
+  var card = $('o-doorscard'), list = $('o-doors');
+  if (!card || !list) return;
+  list.textContent = '';
+
+  var door = function(title, why, gold, go){
+    var b = document.createElement('button');
+    b.className = 'odoor' + (gold ? ' gold' : '');
+    var t = document.createElement('span');
+    t.className = 'od-t';
+    var n = document.createElement('b');
+    n.textContent = title;
+    var s = document.createElement('span');
+    s.textContent = why;
+    t.appendChild(n); t.appendChild(s);
+    var ch = document.createElement('span');
+    ch.className = 'od-chev';
+    ch.setAttribute('aria-hidden', 'true');
+    b.appendChild(t); b.appendChild(ch);
+    b.onclick = go;
+    list.appendChild(b);
+  };
+
+  /* TODAY'S RUN IS OFFERED ONLY WHILE IT IS STILL THERE. A door that starts
+     a run and is then refused by startRun's own guard is the wall the rest of
+     this file keeps taking down. Once it is played, the row says so and
+     shares it, which is where that tap was going anyway. */
+  if (dailyDone()) {
+    var d = dailyState();
+    if (!run.daily) {
+      door('Day ' + d.day + ' is done · ' + d.label, 'Send it to somebody.', true, shareDaily);
+    }
+  } else {
+    door("Today's run", 'The same six spins for everybody today.', true,
+      function(){ startRun(null, null, true); });
+  }
+
+  if (run.club || run.era || run.daily) {
+    door('The league', 'Every season, every club, six spins.', false,
+      function(){ startRun(); });
+  }
+  if (!run.club) {
+    var last = lastClub();
+    door(last ? 'One Franchise · ' + E.teamName(last) : 'One Franchise',
+      last ? E.team(last).full + ', only the year moves.'
+           : 'Lock the wheel to one club. Only the year moves.',
+      false, last ? function(){ startRun(last); } : openClubs);
+  }
+  if (!run.era) {
+    var le = lastEra();
+    door(le ? (ERA_NAMES[le] || le) : 'Decades',
+      le ? 'Six men out of one decade.'
+         : 'One decade, the whole league. Six men out of one era.',
+      false, le ? function(){ startRun(null, le); } : openEras);
+  }
 }
 
 /* The run's best individual night, and the way into every box score behind
@@ -4653,17 +5045,56 @@ var SHARE_URL = 'https://runthe.gg/hoops/';
    depends on what happened: telling somebody who won 74 games to draft better
    is nonsense. */
 function shareDare(out){
+  /* THE DAILY'S DARE IS A DIFFERENT KIND OF QUESTION and it belongs on the
+     card as well as in the text. Every other dare asks somebody to go and
+     play a game, which they can answer with any roster at all. This one asks
+     them to play the SAME six spins, which is the only dare here with one
+     answer, and it is the whole reason the mode exists. */
+  if (run && run.daily) return 'Same six spins. Can you beat it?';
   if (out.isGOAT) return 'Can you win 74?';
   if (out.titleWon) return 'Can you win a ring?';
   return 'Can you build a better six?';
 }
 
+/* WHICH GAME THIS WAS, IN ONE LINE, and it is derived rather than written.
+ * The football game's share card fell through to "Classic Mode. Six spins,
+ * one roster" three separate times, once per mode added after it, because the
+ * tagline was a literal with no branch to forget. Every mode here gets its
+ * answer from the run, so a fourth one cannot inherit the third one's words.
+ *
+ * It is one sentence at 25px across 928px of card, so it has to stay short:
+ * the club's own name is already the longest thing that goes in it.
+ */
+function cardTag(r){
+  if (r && r.daily) return 'Day ' + r.daily + '. The same six spins for everybody.';
+  if (r && r.club) return 'One franchise: ' + E.team(r.club).full + ', six seasons of it.';
+  if (r && r.era) return (ERA_NAMES[r.era] || r.era) + '. Six men out of one decade.';
+  return 'Six NBA seasons, one cap, 82 games.';
+}
+
 function shareText(out){
-  var head = 'Run The Floor: ' + out.wins + '-' + out.losses + '. ' + headline(out) + '.';
+  var head = 'Run The Floor';
+  /* The mode goes in the FIRST line, beside the name, because that is the
+     line a chat app shows as the preview and the one somebody reads before
+     deciding whether to open anything. A 58-24 off one franchise and a 58-24
+     off the whole league are two different results. */
+  var mode = modeLabel(run);
+  if (run && run.daily) head += ', day ' + run.daily;
+  else if (mode) head += ', ' + mode;
   var shape = out.structure && out.structure.archetype ? out.structure.archetype.name : null;
-  var mode = shape && shape !== 'No Identity' ? ' ' + shape + '.' : '';
-  return head + mode + ' Rating ' + out.rating.toFixed(0) + '.\n'
-    + shareDare(out) + '\n' + SHARE_URL;
+  var sys = shape && shape !== 'No Identity' ? ' ' + shape + '.' : '';
+  var line = out.wins + '-' + out.losses + '. ' + headline(out) + '.'
+    + sys + ' Rating ' + out.rating.toFixed(0) + '.';
+  /* A DAILY DARES DIFFERENTLY, and that is the whole of why it exists. The
+     ordinary dare asks somebody to go and play a game; this one asks them to
+     play the SAME game, which is a question with an answer. The streak is
+     read off the stored day rather than off the run, because the run does
+     not know how many days came before it. */
+  var d = (run && run.daily) ? dailyState() : null;
+  var dare = d ? 'Everybody got the same six spins.'
+    + (d.streak > 1 ? '\n' + d.streak + ' days in a row.' : '')
+    : shareDare(out);
+  return head + '\n' + line + '\n' + dare + '\n' + SHARE_URL;
 }
 
 /* THE CARD, DRAWN TO A CANVAS AT 1080x1350.
@@ -4747,7 +5178,11 @@ function drawShareCard(){
   x.fillText('RUN THE FLOOR', PAD, CARD.TITLE);
   x.fillStyle = hexAt('#94a3b8', 0.95);
   x.font = '600 25px Archivo, system-ui, sans-serif';
-  x.fillText('Six NBA seasons, one cap, 82 games.', PAD, CARD.TAG);
+  /* Clipped rather than trusted to fit. The longest franchise name in the
+     table is what decides this line's width and nothing in the source says
+     so, which is exactly how a name runs off the edge of a card nobody
+     rendered before shipping. */
+  x.fillText(clip(x, cardTag(run), CARD.W - PAD * 2), PAD, CARD.TAG);
 
   // The record, which is the whole point of the card.
   x.textAlign = 'center';
@@ -4986,8 +5421,23 @@ function blankCareer(){
 }
 
 /* Called once, when a run reaches a result. Recording it anywhere earlier would
-   count an abandoned draft as a season. */
+   count an abandoned draft as a season.
+ *
+ * IT ANSWERS WITH WHAT THIS RUN CHANGED, which is the half that was missing.
+ * badges.js computes a forty-odd badge cabinet off the whole career and the
+ * only surface it had was a tab inside a sheet, so a badge was earned in
+ * silence and found weeks later by somebody who happened to look. The same is
+ * true of a career best: the number quietly moved and the screen said nothing.
+ * Both are answered here rather than on the results screen, because both are a
+ * DIFFERENCE and the before only exists at this moment.
+ *
+ * `before` is a second parse rather than a copy of `c`. loadCareer JSON-parses
+ * on every call, so the two are independent objects and the mutation below
+ * cannot reach into the one being compared against. A structuredClone would
+ * do the same job and is not available everywhere this has to run.
+ */
 function recordRun(out){
+  var before = loadCareer() || blankCareer();
   var c = loadCareer() || blankCareer();
   c.runs++;
   c.totalWins += out.wins;
@@ -5115,7 +5565,80 @@ function recordRun(out){
   if (c.rows.length > 250) c.rows = c.rows.slice(-250);
 
   try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
-  return c;
+
+  /* THE ORDER OF THESE THREE LINES IS LOAD-BEARING and they are statements
+     rather than fields of one literal for that reason. bestsSet compares
+     today against every previous day, so it has to be asked before
+     dailyRecord files today and turns the comparison into a tie with itself.
+     Written as one object literal it would still work, off property
+     evaluation order, which is a rule nobody should have to know. */
+  var fresh = freshBadges(before, c);
+  var bests = bestsSet(before, out);
+  var day = dailyIsToday() ? dailyRecord(out) : null;
+  return { career: c, fresh: fresh, bests: bests, daily: day };
+}
+
+/* WHAT JUST LIT. Nothing stores "earned", by design: every badge is derived
+   from the career, which is what makes the cabinet retroactive and impossible
+   to lose. So the only way to know what this run earned is to ask the same
+   question twice, either side of the write.
+ *
+ * It is allowed to answer nothing at all. badges.js is a separate script and a
+ * blocked one must cost a row on a screen rather than the screen. */
+function freshBadges(before, after){
+  var B = window.RTF_BADGES;
+  if (!B || typeof B.earned !== 'function') return [];
+  try {
+    var had = {};
+    B.earned(before).forEach(function(b){ had[b.id] = 1; });
+    return B.earned(after).filter(function(b){ return !had[b.id]; });
+  } catch (e) { return []; }
+}
+
+/* THE MARKS A RUN SETS, read off the career as it stood BEFORE the run was
+   filed. Read after, every one of them is a tie rather than a beat and the
+   screen says nothing on the run that earned it.
+ *
+ * A FIRST RUN SETS NO RECORD. It is trivially the best of one, and a screen
+ * congratulating somebody on beating nobody is the unearnable badge in
+ * reverse: a mark that means nothing because it cannot be missed. Same rule
+ * for a franchise or a decade: the shelf has to have been stood on. */
+function bestsSet(before, out){
+  var marks = [];
+  var had = function(map, key){
+    var s = map && map[key];
+    return (s && s.runs > 0) ? s : null;
+  };
+  if (out.titleWon && !before.rings) marks.push({ kind: 'ring', text: 'Your first ring' });
+  if (before.runs > 0 && out.wins > before.bestWins) {
+    marks.push({ kind: 'gold', text: 'Career best, past ' + before.bestLabel });
+  }
+  if (run.club) {
+    var cs = had(before.byClub, run.club);
+    if (cs && out.wins > cs.bestWins) {
+      marks.push({ kind: 'gold',
+        text: 'Best ' + E.teamName(run.club) + ' run, past ' + cs.bestLabel });
+    }
+  }
+  if (run.era) {
+    var es = had(before.byEra, run.era);
+    if (es && out.wins > es.bestWins) {
+      marks.push({ kind: 'gold',
+        text: 'Best ' + (ERA_NAMES[run.era] || run.era) + ' run, past ' + es.bestLabel });
+    }
+  }
+  if (dailyIsToday()) {
+    var d = dailyState();
+    /* Read before dailyRecord files today, so the comparison is against every
+       PREVIOUS day rather than against the one being set. */
+    if (d && d.played > 0 && out.wins > d.best) {
+      marks.push({ kind: 'gold', text: 'Best daily yet, past ' + d.best + ' wins' });
+    }
+    var alive = d && d.streak > 0 && d.lastDone === todayNumber() - 1;
+    var n = alive ? d.streak + 1 : 1;
+    if (n > 1) marks.push({ kind: 'streak', text: n + ' days in a row' });
+  }
+  return marks;
 }
 
 function topOf(map){
@@ -5368,6 +5891,86 @@ function renderModeDoor(){
   main.onclick = function(){ startRun(last); };
 }
 
+/* TODAY'S RUN, in three states, and the middle one is the one worth getting
+   right. Unplayed, it is the day number and the offer. Played, it is the
+   record and a way to send it to somebody, because a result nobody can show
+   anybody is a result that happened to one person. In progress, it says so
+   and resumes, which is the same rule the other two doors follow: a door that
+   says Resume resumes. */
+function renderDailyDoor(){
+  var door = $('b-daily'), main = $('b-daily-go');
+  var name = $('dl-name'), sub = $('dl-sub'), streak = $('dl-streak');
+  if (!door || !main) return;
+  var n = todayNumber(), s = dailyState();
+  var live = run && run.daily === n && run.phase !== R.PHASES.OVER;
+  var done = dailyDone();
+
+  door.className = 'modedoor daily' + (done && !live ? ' done' : '');
+  if (live) {
+    name.textContent = "Today's run · day " + n;
+    sub.textContent = run.phase === R.PHASES.DRAFT
+      ? run.roster.length + ' of 6 signed. Pick up where you left off.'
+      : 'Six signed, 82 still to play.';
+    main.onclick = function(){ show('s-draft'); renderDraft(); };
+  } else if (done) {
+    name.textContent = 'Day ' + n + ' · ' + s.label;
+    sub.textContent = s.headline + '. Send it to somebody, then back tomorrow.';
+    main.onclick = shareDaily;
+  } else {
+    name.textContent = "Today's run · day " + n;
+    sub.textContent = 'The same six spins for everybody today.';
+    main.onclick = function(){ startRun(null, null, true); };
+  }
+
+  /* THE STREAK IS SHOWN ONLY WHILE IT IS STILL ALIVE. A count of days that
+     ended last March is not a streak, it is a fact about March, and printing
+     it beside today's door reads as a claim about right now. It survives
+     today being unplayed, because a streak is not broken until a day is
+     MISSED: yesterday's run is what it stands on.
+
+     AND ONE DAY IS NOT A STREAK. Every first-time player finishes the daily
+     and is handed a gold "1 DAY" for having played once, which says nothing
+     and devalues the number on the day it starts meaning something. Two is
+     where a run of days begins. */
+  var alive = s && s.streak > 1 && (s.lastDone === n || s.lastDone === n - 1);
+  streak.hidden = !alive;
+  if (alive) {
+    door.className += ' streaked';
+    streak.textContent = '';
+    var b = document.createElement('b');
+    b.textContent = s.streak;
+    var lab = document.createElement('span');
+    lab.textContent = 'days';
+    streak.appendChild(b);
+    streak.appendChild(lab);
+    /* The label replaces the two nodes inside for a screen reader, which
+       would otherwise read "3" and "days" as two separate things a row
+       apart from the door they belong to. */
+    streak.setAttribute('aria-label', s.streak + ' days in a row');
+  }
+}
+
+/* The daily's own share, which is the point of the mode. It is built from
+   STORED FIELDS rather than from the run, because the run it describes is
+   usually gone by the time somebody presses this: they finished the daily,
+   started something else, and came back to the front page. */
+function shareDaily(){
+  var s = dailyState();
+  if (!s || !s.done) return;
+  var text = 'Run The Floor, day ' + s.day + '\n'
+    + s.label + '. ' + s.headline + '. Rating ' + s.rating + '.\n'
+    + 'Everybody got the same six spins.\n'
+    + (s.streak > 1 ? s.streak + ' days in a row.\n' : '')
+    + SHARE_URL;
+  if (navigator.share) {
+    return navigator.share({ text: text }).catch(function(err){
+      if (err && err.name === 'AbortError') return;
+      copyAndDownload(text, null);
+    });
+  }
+  copyAndDownload(text, null);
+}
+
 function renderHome(){
   var rz = $('home-resume'), hero = $('herocard');
 
@@ -5403,9 +6006,18 @@ function renderHome(){
   } else {
     rz.style.display = 'none';
     if (hero) hero.style.display = 'none';
-    $('b-start').textContent = run ? 'Run it back' : 'Start a run';
+    /* RUN IT BACK MEANS THE SAME GAME, and this button does not have one to
+       offer: it is wired to startRun with no arguments, so it is the whole
+       league whatever was played last. It said "Run it back" after any
+       finished run, which was true while the league was the only mode and
+       became a promise it cannot keep the day the doors went in. The other
+       modes have their own door directly under it, and the results screen's
+       own Run it back is the one that really does replay the mode. */
+    var league = run && !run.club && !run.era && !run.daily;
+    $('b-start').textContent = (run && league) ? 'Run it back' : 'Start a run';
   }
 
+  renderDailyDoor();
   renderModeDoor();
   renderEraDoor();
 

@@ -3737,6 +3737,125 @@ paragraph to stay current.
 moving one constant: they trade off against each other, and the reason the
 previous set was uniformly 15 wins low is that no single number showed it.
 
+### Today's run, and the one mode that gives two people the same question
+
+The other three doors are the same game with the wheel constrained. This one is
+the same game with its SEED pinned to the date, so everybody who plays on a
+given day gets the same six spins and two records are comparable for the first
+time in this game. `run.daily` is the day number and it rides in the run, not in
+a page variable beside it: a draft resumed tomorrow and filed against today
+would overwrite a result somebody set for a different puzzle.
+
+**The day rolls at Eastern midnight**, which is what every other calendar-day
+clock on this site already uses. UTC rolls at 7 or 8pm Eastern, which takes the
+puzzle away in the middle of the evening somebody is playing it, and the
+visitor's own midnight gives two people in one group chat different puzzles on
+the same night, which is the whole thing this mode is for. `easternISO()` asks
+`Intl` and **falls back to the local date rather than throwing**: a browser with
+no time zone database answers the wrong puzzle, and a browser with no game
+answers nothing.
+
+**`dayNumberOf` does its arithmetic in UTC on purpose.** Two local midnights are
+23 or 25 hours apart across a clock change, which floors to the wrong day twice
+a year and hands two players different puzzles with nothing anywhere throwing.
+
+**The epoch was written as the UTC date and was a day out.** Day 1 read as day 0
+for most of its own evening, and only `Math.max(1, ...)` made it look right. A
+clamp is a guard against a wrong clock, not a place to keep an off-by-one.
+
+**One a day, and the guard is on the DAY rather than on the count.** Replaying
+today is refused by `dailyRecord`, because a second attempt at the same puzzle
+is a different game from the one everybody else played. **There is no anti-cheat
+beyond that and there should not be**: abandoning a draft mid-run leaves the day
+open, so somebody who wants to see the board twice can, and with no server and
+no leaderboard the only person they are beating is themselves.
+
+**One day is not a streak.** Every first-time player finished the daily and was
+handed a gold "1 DAY" for having played once, which says nothing and devalues
+the number on the day it starts meaning something. The door shows it from two,
+and only while it is still alive: a count that ended last March is a fact about
+March, and printing it beside today's door reads as a claim about right now. It
+survives today being UNPLAYED, because a streak breaks on a day missed rather
+than on a day not yet played, so yesterday's run is what it stands on.
+
+**The streak mark on the results screen is read off YESTERDAY.** `bestsSet` runs
+before `dailyRecord` files today, deliberately and as three separate statements
+rather than as fields of one object literal, because otherwise the whole thing
+depends on property evaluation order, which is a rule nobody should have to
+know. Read after, every mark in that function is a tie rather than a beat.
+
+#### A shared result has to say which game it was
+
+`drawShareCard`'s tagline was the literal `Six NBA seasons, one cap, 82 games.`,
+which is false for One Franchise, false for Decades and false for the daily.
+**That is the football card's fallthrough arriving a fourth time**: its own
+section above records "Classic Mode. Six spins, one roster" surviving three
+modes, because a literal has no branch to forget.
+
+`cardTag(r)` derives it, `shareText` puts the mode in the FIRST line (which is
+the line a chat app shows as a preview), and `shareDare` gives the daily its own
+question, because every other dare asks somebody to go and play a game and this
+one asks them to play the SAME six spins, which is the only dare here with one
+answer.
+
+**The defence is not a fourth branch, it is that no two modes may share a
+tagline.** `verify.mjs` asserts all four are different and that no locked mode
+falls through to the league's, so a fifth door cannot inherit the fourth's
+words either.
+
+#### A badge earned in silence is a badge nobody has
+
+`badges.js` computes forty-odd badges off the whole career and the only surface
+it had was a tab inside a sheet, so a badge was earned invisibly and found weeks
+later by somebody who happened to look. `recordRun` answers with what the run
+CHANGED now, and the results screen draws it second, above the playoffs.
+
+**Nothing stores "earned", by design.** Every badge is derived, which is what
+makes the cabinet retroactive and impossible to lose, so the only way to know
+what a run earned is to ask the same question either side of the write. `before`
+is a second `loadCareer()` rather than a copy, because that function JSON-parses
+on every call and the two objects are therefore independent.
+
+**It is kept on the run rather than shown once.** It is a receipt and not a
+notification: somebody reopening a finished season should still see which badges
+that season lit, the same way they still see its record. Recomputed on the
+results screen it would answer "nothing new" every time, correctly, because the
+career already holds all of them.
+
+**A first run sets no record**, and neither does a first run on a club or in a
+decade. It is trivially the best of one, and a screen congratulating somebody
+for beating nobody is the unearnable badge in reverse.
+
+#### Run it back means the same game, and two buttons could not keep that promise
+
+The results screen's Run it back really does replay the mode. **The daily is the
+one game that cannot be run back**, so after one it says what it actually does.
+And the front page's Start button is wired to `startRun` with no arguments, so
+it has always been the whole league whatever was played last: it said "Run it
+back" after any finished run, which was true while the league was the only mode
+and became a promise it cannot keep the day the doors went in.
+
+**The other doors are on the results screen now**, which is the screen a player
+is on at the moment they will take another one, and was the one screen with none
+on it. Whichever mode the run WAS is left out, because Run it back is already
+that button directly above and offering it twice makes two controls out of one
+decision.
+
+#### The guards lift the real functions out of the page
+
+`verify.mjs` brace-matches `cardTag`, `dayNumberOf`, `dailySeed`, `dailyRecord`,
+`freshBadges`, `bestsSet` and `shareDare` out of `index.html` and drives them.
+**Never a copy of the arithmetic**: a second implementation agrees with itself,
+which is exactly what mythiball's send curve did for as long as its sweep
+carried a hand-written duplicate of the curve it was sweeping. The list of names
+is itself asserted, because a reader that finds nothing lets every assertion
+below it pass green, which is how an extractor in this repo has been silently
+wrong three times.
+
+**The day walk runs in a child process under `TZ=America/New_York`.** It has to:
+the claim is that the arithmetic is immune to a clock change, and on a CI
+machine running UTC the broken version passes. Proved by reintroducing it.
+
 ### The data pipeline
 
 Basketball-Reference is **blocked from the dev sandbox and open from GitHub's

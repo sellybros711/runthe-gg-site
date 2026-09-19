@@ -2093,12 +2093,12 @@
   },
   "hoops/index.html": {
     "engine.js": {
-      "v": "14",
-      "sha": "5b8447d3109cd762"
+      "v": "15",
+      "sha": "b3b6fed1a09ed1a3"
     },
     "run.js": {
-      "v": "6",
-      "sha": "b8cab7b3e0af197f"
+      "v": "7",
+      "sha": "575f1202d1837a56"
     },
     "badges.js": {
       "v": "1",
