@@ -27,7 +27,7 @@ THE PALETTE KEYS MAY NOT BE DIGITS OR A FULL STOP. The row format counts runs
 in decimal and reserves '.' for transparent, so a digit key would be read as a
 repeat and a '.' key would be read as a hole. Letters only, which caps a
 character at 52 colours; the pack shares a 24 colour palette, so nothing is
-близко to the ceiling and anything over it is quantised down with a warning.
+close to the ceiling and anything over it is quantised down with a warning.
 """
 import argparse
 import json
@@ -114,6 +114,16 @@ STILL_POSE = {
 # rather than to right: catch has to differ from the right facing idle or it
 # is a pose the player cannot tell happened.
 STILL_FALLBACK = {}
+
+# WHICH POSE OWNS A DRAWING WHEN SEVERAL SHARE ONE, used only to decide which
+# of them is written out in full and which are written as '@' references to
+# it. It is idle first and then the order the game plays them in, so the one
+# holding the pixels is the earliest use rather than whichever way a dict
+# happened to iterate. Every pose appears exactly once, which the build
+# asserts: a name missing here would be dropped from the table outright.
+ALIAS_ORDER = ['idle', 'ready', 'load', 'swing', 'follow', 'run1', 'run2',
+               'back', 'backrun1', 'backrun2', 'windup', 'kick', 'release',
+               'throw', 'catch', 'slump']
 
 
 def usable_frame(f):
@@ -235,21 +245,40 @@ def encode(frame, palette):
 
 def build_character(game_key, pack_name, audit, note):
     poses = {}
+    # WHICH FRAME OF A STRIP IS ALREADY SPOKEN FOR, so two poses off one
+    # animation cannot end up being the same drawing. See the walk below.
+    claimed = {}
     for pose, (anim, idx) in POSE_SOURCE.items():
         strip = '%s_%s' % (pack_name, anim)
         path = os.path.join(STRIPS, strip + '.png')
         if not os.path.exists(path):
             continue
         fr = frames_of(path)
-        # the asked for frame first, then its neighbours in the same
-        # animation, because a nearby frame of the right ACTION beats a still
-        order = [idx] + [i for i in range(len(fr)) if i != idx]
+        # THE WALK GOES OUTWARD FROM THE FRAME ASKED FOR, AND PREFERS ONE
+        # NOBODY ELSE HAS TAKEN. Both halves of that were wrong and the two
+        # faults compounded into a swing that does not swing.
+        #
+        # It used to be [idx] + [0, 1, 2, ...], so every pose that could not
+        # have the frame it wanted landed on frame ZERO of the strip. Three
+        # poses come off the swing strip (load #0, swing #2, follow #3) and
+        # four off the pitch strip, so one broken frame in the middle sent
+        # the rest to the same drawing: measured, `swing` was pixel identical
+        # to `load` on 31 characters and `release` to `windup` on 32. The bat
+        # came round by not moving, and nothing anywhere said so, because a
+        # repeated frame is a perfectly valid frame.
+        #
+        # So the order is by DISTANCE from what was asked for, which keeps a
+        # substitute inside the same beat of the action, and an unclaimed
+        # frame is taken over a claimed one. A claimed one is still allowed
+        # last, because the right action drawn twice beats a still.
+        near = sorted(range(len(fr)), key=lambda i: (abs(i - idx), i))
+        order = [i for i in near if (strip, i) not in claimed] + \
+                [i for i in near if (strip, i) in claimed]
         for i in order:
-            if i >= len(fr):
-                continue
             c = cleaned(fr[i])
             if usable_frame(c):
                 poses[pose] = c
+                claimed[(strip, i)] = pose
                 note.append((game_key, pose, strip + '#%d' % i))
                 break
 
@@ -305,16 +334,31 @@ def build_character(game_key, pack_name, audit, note):
             poses[pose] = st
             note.append((game_key, pose, 'source_reference/' + want))
 
-    # Anything still absent repeats a still, so the drawer never asks for a
-    # pose this character does not carry. The FRONT still is preferred where
-    # it exists and differs, because a pose that is pixel identical to idle
-    # is a pose the player cannot tell happened.
-    same_as_idle = front is None or np.array_equal(front, poses['idle'])
+    # ANYTHING STILL ABSENT STANDS ON THE PROFILE, NOT ON IDLE. A pose that is
+    # pixel identical to idle is a pose the player cannot tell happened, and
+    # 151 of the 1088 were exactly that.
+    #
+    # The profile is the right stand-in rather than a second-best one, because
+    # every one of these poses is a thing done side on. A right handed batter
+    # is drawn unflipped and a lefty is mirrored (`drawRunner`'s flip), the
+    # pitcher works the same way, so the pack's RIGHT facing still already
+    # points where the action goes. Idle faces the camera, so a character with
+    # no strips used to stand square to the reader through a whole at bat.
+    #
+    # THE BRANCH THIS REPLACES COULD NEVER FIRE. It preferred the front still
+    # for `ready` and `load` and guarded on `front is not None and front !=
+    # poses['idle']`, written before idle BECAME the front still. After that
+    # change the two are the same object, so the test was false every time and
+    # 28 batting stances quietly fell through to a repeat of idle.
+    #
+    # It refuses to invent: where the profile IS idle (the nine characters
+    # with no front view) there is no second drawing to reach for, so the
+    # repeat stands and the art order is what fixes it.
     for pose in POSE_SOURCE:
         if pose not in poses:
-            if pose in ('ready', 'load') and not same_as_idle:
-                poses[pose] = front
-                note.append((game_key, pose, 'source_reference/front'))
+            if not np.array_equal(base, poses['idle']):
+                poses[pose] = base
+                note.append((game_key, pose, 'source_reference/right'))
             else:
                 poses[pose] = poses['idle']
                 note.append((game_key, pose, 'repeat of idle'))
@@ -340,9 +384,32 @@ def build_character(game_key, pack_name, audit, note):
             f[:, :, :3][op] = arr[near].astype(np.uint8)
         cols = Counter(keep)
     palette = {c: KEYS[i] for i, c in enumerate(sorted(cols))}
+
+    # NEVER DUPLICATE ART. A pose that came out pixel identical to one already
+    # in this character is stored as '@thatpose' and the page resolves it
+    # before decoding. It is lossless: the same drawing either way, and the
+    # two poses now share one decoded rows array instead of building two.
+    #
+    # It is not a rounding saving. Three poses are the same left facing still
+    # by construction (back and the two backruns), catch and throw are the
+    # same right facing one, and everything the pack cannot draw stands on a
+    # still as well, so 37.7% of the table was one string written again.
+    #
+    # '@' is safe as the mark because the row format uses letters for palette
+    # keys, digits for run counts and '.' for transparent, so it can never be
+    # the first character of a real row.
+    enc = {k: encode(v, palette) for k, v in poses.items()}
+    if set(ALIAS_ORDER) != set(enc):
+        sys.exit('ALIAS_ORDER and the poses built disagree: %s'
+                 % sorted(set(ALIAS_ORDER) ^ set(enc)))
+    seen, out = {}, {}
+    for pose in ALIAS_ORDER:
+        rle = enc[pose]
+        out[pose] = '@' + seen[rle] if rle in seen else rle
+        seen.setdefault(rle, pose)
     return {
         'p': {palette[c]: '#%02x%02x%02x' % c for c in sorted(cols)},
-        'f': {k: encode(v, palette) for k, v in poses.items()},
+        'f': out,
     }
 
 
@@ -378,9 +445,21 @@ def main():
         fh.write(';\n')
 
     kb = os.path.getsize(out) / 1024.0
-    drawn = sum(1 for _, _, s in note if not s.startswith('source_reference'))
+    # COUNT WHAT THE SOURCE ACTUALLY SAYS, never "not a still". Written as
+    # `not s.startswith('source_reference')` this counted every `repeat of
+    # idle` as a real drawn frame, so it reported 788 when 637 poses came off
+    # a strip and 151 were the character standing still.
+    drawn = sum(1 for _, _, s in note if '#' in s)
+    repeats = sum(1 for _, _, s in note if s == 'repeat of idle')
     print('%d characters, %d KB' % (len(table), kb))
     print('  poses from a real drawn frame : %d' % drawn)
+    print('  poses standing on a still     : %d' % (len(note) - drawn - repeats))
+    print('  poses the reader cannot tell from idle : %d' % repeats)
+    # a '@' value is a reference to another pose, so it is not a drawing
+    distinct = [sum(1 for r in v['f'].values() if not r.startswith('@'))
+                for v in table.values()]
+    print('  distinct drawings a character : min %d, mean %.1f'
+          % (min(distinct), sum(distinct) / float(len(distinct))))
     print('  characters falling back to the still for every pose : %d'
           % sum(1 for k in table if len(table[k]['f']) == 1))
     per = Counter(len(v['f']) for v in table.values())

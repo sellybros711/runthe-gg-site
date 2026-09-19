@@ -32,3 +32,8 @@ __shots/
 # Python bytecode from the sprite generators
 __pycache__/
 *.pyc
+
+# The copy tools/install.py keeps of the page it is about to rewrite. It is a
+# safety net for one run of one script, not source, and it is a 2MB file that
+# would land in every commit that touched the sprite table.
+mythiball/index.html.prev

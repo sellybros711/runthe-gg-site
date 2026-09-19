@@ -2510,16 +2510,56 @@ and left the rest generated, which reads worse than either style on its own.
 The same is true INSIDE a character: a pack idle over a generated swing makes
 a man change species when he swings. So a character is built entirely from the
 pack, the stills are the floor, and a working strip upgrades a pose from a
-still to a drawn frame on top. 751 of the 1,088 poses are drawn frames.
+still to a drawn frame on top. Of the 1,088 poses, **637 are drawn frames**,
+541 stand on a still, and 18 are a character the pack drew exactly once.
+
+**AND 751 WAS A MISCOUNT THAT READ LIKE PROGRESS.** The builder counted a pose
+as drawn when its source did NOT begin `source_reference`, which is true of a
+strip frame and equally true of the string `repeat of idle`. So 151 characters
+standing perfectly still were filed as drawn art and the number went up every
+time the fallback was used more. It counts what the source actually says now.
+A tally written as "not the bad case" will count the next case nobody thought
+of, and it will count it on the good side.
 
 **A FRAME IS GOOD OR BAD ON ITS OWN, AND READING THE STRIP'S VERDICT THREW ART
 AWAY.** The audit classifies a STRIP, because a strip is what an artist
 redraws, and the first build read that verdict straight: one clipped frame in
 a four frame swing condemned the other three, so acrobat's follow through fell
 back to a still while the drawn follow through sat in the file untouched.
-Asking about the FRAME recovered **86 poses, 665 to 751**. It is the clipping
-rule's own mistake one level up: do not condemn good art because of its
-neighbour.
+Asking about the FRAME recovered **86 poses**. It is the clipping rule's own
+mistake one level up: do not condemn good art because of its neighbour.
+
+#### The swing did not swing, and two faults compounded into it
+
+Every pose falling back inside a strip landed on **frame zero**, because the
+walk was written `[the frame asked for] + [0, 1, 2, ...]`. Three poses come
+off the swing strip (load #0, swing #2, follow #3) and four off the pitch
+strip, and the middle frame of each is the one the artist drew widest, so it
+is the one that touches the canvas edge and gets refused. Measured on the
+built table: **`swing` was pixel identical to `load` on 31 characters** and
+**`release` to `windup` on 32**. The bat came round by not moving. Nothing
+threw and nothing could, because a repeated frame is a perfectly valid frame.
+
+So the walk goes **outward from the frame asked for**, which keeps a
+substitute inside the same beat of the action, and **prefers a frame no other
+pose has claimed**. A claimed one is still allowed last: the right action
+drawn twice beats a still. The same 637 strip frames come through either way,
+so this bought nothing in art and redistributed all of it.
+
+**AND `ready` HAD A BRANCH THAT COULD NEVER FIRE.** It preferred the front
+still for `ready` and `load`, guarded on the front existing and differing from
+idle, and it was written before idle BECAME the front still. After that change
+the two are the same object, the test was false every time, and **28 batting
+stances quietly fell through to a repeat of idle**. Anything with no drawn
+frame stands on the PROFILE now rather than on idle, which is not a
+second best: a right handed batter is drawn unflipped and a lefty is mirrored,
+the pitcher the same way, so the pack's right facing still already points
+where the action goes. Idle faces the reader, and a character with no strips
+used to stand square to the camera through a whole at bat.
+
+Between them, poses the reader cannot tell from idle went **151 to 18**. The
+18 are the nine characters with no front view and no strips, where there is no
+second drawing to reach for. That is the art order, not a defect.
 
 **FIVE POSES THE PACK CANNOT DRAW STAND ON ITS STILLS.** There is no rear view
 in the pack and no fielding art anywhere. `back` and the two backruns are the
@@ -2533,10 +2573,43 @@ strip was never drawn. Nothing here is generated, which is the handoff's own
 rule for fielding art.
 
 **`left` IS EXACTLY `mirror(right)` FOR EVERY CHARACTER**, measured, so the
-pack ships a flip rather than a second drawing and the table stores both.
-Flipping at draw time instead would take about 40% off it. Worth doing the day
-the table's size starts to matter; it is 1.5MB today against the generator's
-1.0MB.
+pack ships a flip rather than a second drawing. The game already mirrors at
+draw time (`drawRunner`'s flip, and the lefty batter), so nothing needs a
+second copy.
+
+#### A repeated pose is a reference, and it was 37.7% of the table
+
+**Never duplicate art.** A pose that comes out pixel identical to one already
+built is stored as `'@thatpose'` and `v2Frame` resolves it before decoding.
+Lossless: the same drawing either way, and the two poses share one decoded
+rows array instead of building the same one twice.
+
+It is not a rounding saving, because the repeats are structural rather than
+accidental. `back` and the two backruns are one left facing still, `catch` and
+`throw` are one right facing still, and everything the pack cannot draw stands
+on a still as well. Measured over the built table, **37.7%** of it was one
+string written again: **1,500KB to 960KB**, and the page **2.21MB to 1.62MB**.
+
+`'@'` is safe as the mark because a row is palette LETTERS, digit run counts
+and `.` for transparent, so it can never begin a real row. The resolution is
+one step and the builder only ever points at a pose holding pixels, but the
+walk is bounded anyway: a hand edited table that pointed two poses at each
+other would otherwise lock the page up.
+
+**IT SILENTLY DEFEATED THREE GUARDS, WHICH IS THE PART TO REMEMBER.** All
+three compared the STORED STRING (`f.catch === f.idle`, `f.slump !== f.back`),
+and against a reference that comparison answers the storage question rather
+than the drawing question. `'@idle'` is not `f.idle`, so **the catch, slump
+and distinct-pose checks would all have passed on exactly the defect they
+exist for**, and the walk back check would have failed on a correct table
+because `'@back'` has no rows to count. They ask `v2Frame(k, p).join('/')`
+now. Same class as this repo's three wrong extractors, arriving at the data
+this time rather than at the parser.
+
+The new guard on it walks all sixteen poses of all sixty eight: every one
+decodes to the declared size, every target exists, and **a target may not
+itself be a reference**. Proved by pointing one pose at a name that does not
+exist and another at a reference, and watching both come back named.
 
 **TWO GUARDS WERE ASKING FOR ART NOBODY DREW**, and they were changed rather
 than deleted. Both asserted sixteen DISTINCT drawings a character, which the

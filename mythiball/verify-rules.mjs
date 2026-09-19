@@ -535,8 +535,12 @@ async function main() {
         /* Every biped carries a distinct catch frame. Quadrupeds have no
            arms to raise, so they are excluded. */
         const bipeds = ['kong','franky','popeye','peter','tom','huck','sherlock','lupin','alice','dorothy','robin','sammy','wonderland'].filter(k => V2_SPRITES[k]);
-        const stagnant = bipeds.filter(k =>
-          JSON.stringify(V2_SPRITES[k].f.catch) === JSON.stringify(V2_SPRITES[k].f.idle));
+        /* ASK THE DECODED DRAWING, NEVER THE STORED STRING. A pose that
+           repeats another is stored as '@thatpose', so comparing what is in
+           the table would read a reference and a drawing as two different
+           things and pass on exactly the defect this line exists for. */
+        const drawing = (k, p) => v2Frame(k, p).join('/');
+        const stagnant = bipeds.filter(k => drawing(k, 'catch') === drawing(k, 'idle'));
         const missing = Object.keys(V2_SPRITES).filter(k => !V2_SPRITES[k].f.catch || !V2_SPRITES[k].f.throw);
         return { missing, stagnant };
       });
@@ -1614,16 +1618,43 @@ async function main() {
       const r = await pg.evaluate(() => {
         const keys = Object.keys(V2_SPRITES);
         const missing = [], same = [], bad = [];
+        /* the decoded drawing, never the stored string: see the field frames
+           section for what a '@' reference does to a raw comparison */
+        const drawing = (k, p) => v2Frame(k, p).join('/');
         for (const k of keys) {
           for (const fr of ['load', 'follow', 'kick', 'ready']) {
             if (!V2_SPRITES[k].f[fr]) { missing.push(k + '/' + fr); continue; }
             const rows = v2Frame(k, fr);
             if (rows.length !== V2_H || rows.some(r => r.length !== V2_W)) bad.push(k + '/' + fr);
-            if (V2_SPRITES[k].f[fr] === V2_SPRITES[k].f.idle || V2_SPRITES[k].f[fr] === V2_SPRITES[k].f.back) same.push(k + '/' + fr);
+            if (drawing(k, fr) === drawing(k, 'idle') || drawing(k, fr) === drawing(k, 'back')) same.push(k + '/' + fr);
           }
         }
         const distinct = keys.length * 4 - same.length;
-        return { n: keys.length, missing, same, bad, distinct, encoded: typeof V2_SPRITES[keys[0]].f.idle === 'string' };
+        /* EVERY POSE, NOT THE FOUR ABOVE, because a reference is the one
+           thing in this table that can point at nothing. A pose stored as
+           '@thatpose' whose target was renamed falls through to idle: the
+           character goes on drawing, in the wrong pose, and no other check
+           on this page asks. So every one of the sixteen has to decode to
+           the declared size, every target has to exist, and a target may not
+           itself be a reference, which is what keeps the resolution one step
+           rather than a walk that can loop. */
+        const refs = [], dangling = [], chained = [], wrong = [];
+        for (const k of keys) {
+          for (const p of Object.keys(V2_SPRITES[k].f)) {
+            const raw = V2_SPRITES[k].f[p];
+            if (typeof raw === 'string' && raw[0] === '@') {
+              refs.push(k + '/' + p);
+              const t = V2_SPRITES[k].f[raw.slice(1)];
+              if (t === undefined) dangling.push(k + '/' + p + ' -> ' + raw.slice(1));
+              else if (typeof t === 'string' && t[0] === '@') chained.push(k + '/' + p);
+            }
+            const rows = v2Frame(k, p);
+            if (rows.length !== V2_H || rows.some(r => r.length !== V2_W)) wrong.push(k + '/' + p);
+          }
+        }
+        return { n: keys.length, missing, same, bad, distinct, refs: refs.length,
+                 dangling, chained, wrong,
+                 encoded: typeof V2_SPRITES[keys[0]].f.idle === 'string' };
       });
       ok(r.missing.length === 0, 'every character carries load, follow, kick and ready', r.missing.slice(0, 6).join(', '));
       ok(r.bad.length === 0, 'and each decodes to the declared size', r.bad.slice(0, 6).join(', '));
@@ -1646,6 +1677,12 @@ async function main() {
          'and the roster keeps its drawn action poses rather than standing on stills',
          `${r.distinct} of ${r.n * 4} are their own drawing, ${r.same.length} repeat a still`);
       ok(r.encoded, 'the table is run length encoded', 'encoded=' + r.encoded);
+      ok(r.wrong.length === 0,
+         'all sixteen poses of all sixty eight decode to the declared size',
+         r.wrong.slice(0, 6).join(', '));
+      ok(r.refs > 0 && r.dangling.length === 0 && r.chained.length === 0,
+         'and a repeated pose points at a real drawing rather than storing it twice',
+         `${r.refs} references, ${r.dangling.length} dangling, ${r.chained.length} chained`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -2853,14 +2890,21 @@ async function main() {
       const r = await pg.evaluate(() => {
         const ks = Object.keys(V2_SPRITES);
         const f = (k) => V2_SPRITES[k].f || {};
+        /* THE DECODED DRAWING, NEVER THE STORED STRING, for the reason the
+           field frames section gives: a repeated pose is stored as a '@'
+           reference to the one holding the pixels. Read raw, '@back' has no
+           rows to count and is not equal to back either, so one assertion
+           here would fail on a correct table and the other would pass on a
+           slump nobody can tell from the walk back. */
+        const drawing = (k, p) => v2Frame(k, p).join('/');
         return {
           chars: ks.length,
           have: ks.filter(k => f(k).slump).length,
           /* every batter frame is seen from behind, and this is one */
           rows: ks.filter(k => f(k).slump &&
-                  f(k).slump.split('/').length === (f(k).back || '').split('/').length).length,
+                  drawing(k, 'slump').split('/').length === drawing(k, 'back').split('/').length).length,
           /* the ones with arms have to differ from the pose they came from */
-          distinct: ks.filter(k => f(k).slump && f(k).slump !== f(k).back).length,
+          distinct: ks.filter(k => f(k).slump && drawing(k, 'slump') !== drawing(k, 'back')).length,
         };
       });
       const moment = await pg.evaluate(async () => {
