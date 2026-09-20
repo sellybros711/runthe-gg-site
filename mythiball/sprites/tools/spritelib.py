@@ -29,8 +29,13 @@ def frames_of(path_or_img):
     return [a[:, i * FRAME:(i + 1) * FRAME, :] for i in range(a.shape[1] // FRAME)]
 
 
-def components(mask):
-    """Runs of True in `mask`, 8 connected, as (size, (x0,y0,x1,y1))."""
+def component_masks(mask):
+    """Every 8 connected blob in `mask`, as its own boolean mask.
+
+    ONE WALKER, because `components` used to do this walk itself and anything
+    else needing the blobs would have walked a second time, which is how two
+    answers to one question start disagreeing.
+    """
     h, w = mask.shape
     seen = np.zeros((h, w), dtype=bool)
     out = []
@@ -40,22 +45,79 @@ def components(mask):
                 continue
             q = deque([(sy, sx)])
             seen[sy, sx] = True
-            size = 0
-            y0 = y1 = sy
-            x0 = x1 = sx
+            m = np.zeros((h, w), dtype=bool)
             while q:
                 y, x = q.popleft()
-                size += 1
-                y0, y1 = min(y0, y), max(y1, y)
-                x0, x1 = min(x0, x), max(x1, x)
+                m[y, x] = True
                 for dy in (-1, 0, 1):
                     for dx in (-1, 0, 1):
                         ny, nx = y + dy, x + dx
                         if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not seen[ny, nx]:
                             seen[ny, nx] = True
                             q.append((ny, nx))
-            out.append((size, (x0, y0, x1, y1)))
+            out.append(m)
     return out
+
+
+def components(mask):
+    """Runs of True in `mask`, 8 connected, as (size, (x0,y0,x1,y1))."""
+    out = []
+    for m in component_masks(mask):
+        ys, xs = np.where(m)
+        out.append((int(m.sum()), (int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max()))))
+    return out
+
+
+def drop_edge_bleed(frame):
+    """Remove detached blobs touching a side edge: the NEIGHBOURING frame.
+
+    A strip is one image cut into 64px cells, and several characters are drawn
+    a little wider than their cell, so a wing, a bat or a foot from the frame
+    next door lands inside this one. On screen that is a blob floating beside
+    the character with nothing holding it up.
+
+    IT IS WHAT THE EDGE RULE WAS REALLY CATCHING. Refusing any frame with a
+    pixel in column 0 or 63 threw away 124 frames, and 101 of them were the
+    swing and pitch strips, whose middle frame is CONTACT and RELEASE: the two
+    most important drawings in the game, rejected because a bat reaches the
+    side of its own cell. Measured, 36 of those frames have nothing but bleed
+    on the edge, and every one of the rest is a whole figure that simply fills
+    its canvas.
+
+    THE CHARACTER IS THE LARGEST BLOB, always, so it is never what goes. A
+    ball drawn hard against the edge would be dropped with the bleed, which is
+    a few pixels against a frame of art.
+    """
+    op = frame[:, :, 3] > 0
+    if not op.any():
+        return frame
+    blobs = component_masks(op)
+    if len(blobs) < 2:
+        return frame
+    main = max(blobs, key=lambda m: m.sum())
+    out = np.array(frame, copy=True)
+    for m in blobs:
+        if m is main:
+            continue
+        if m[:, 0].any() or m[:, -1].any():
+            out[m] = 0
+    return out
+
+
+def edge_run(frame):
+    """The longest unbroken run of drawing down either side edge.
+
+    This is what tells a figure CUT OFF by the canvas from one that reaches
+    it. Call it after drop_edge_bleed, or it measures the neighbour.
+    """
+    op = frame[:, :, 3] > 0
+    best = 0
+    for col in (op[:, 0], op[:, -1]):
+        run = 0
+        for v in col:
+            run = run + 1 if v else 0
+            best = max(best, run)
+    return best
 
 
 def _border_seeds(h, w):

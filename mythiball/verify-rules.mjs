@@ -1688,6 +1688,83 @@ async function main() {
       ok(r.refs > 0 && r.dangling.length === 0 && r.chained.length === 0,
          'and a repeated pose points at a real drawing rather than storing it twice',
          `${r.refs} references, ${r.dangling.length} dangling, ${r.chained.length} chained`);
+
+      /* ---- the bat, and who is holding one ---- */
+      /* THE PROP BAT AND THE DRAWN BAT MUST NOT BOTH BE THERE. The page
+         draws a bat out of three fillRects over the sprite, written when
+         every figure was parametric and held nothing. The pack draws real
+         bats in its swing and batting stance strips, so 55 of the 68 carry
+         one in the art and were getting a second one on top, on the frame a
+         player looks at longest.
+
+         COUNTED THROUGH fillRect, NOT READ OUT OF THE SOURCE. The prop is a
+         canvas primitive with no handle to ask about, and a source match
+         would pass the day somebody moves the same three rectangles
+         somewhere else. The sprite arrives by drawImage and the shadow is an
+         ellipse, so during one drawRunner call a fillRect IS the prop. */
+      const bats = await pg.evaluate(() => {
+        const ks = Object.keys(V2_SPRITES);
+        const withArt = ks.filter(k => (V2_SPRITES[k].b || []).indexOf('ready') >= 0);
+        const without = ks.filter(k => (V2_SPRITES[k].b || []).indexOf('ready') < 0);
+        const cv = document.createElement('canvas');
+        cv.width = 200; cv.height = 200;
+        const ctx = cv.getContext('2d');
+        const props = (k) => {
+          let n = 0;
+          const real = ctx.fillRect.bind(ctx);
+          ctx.fillRect = (...a) => { n++; return real(...a); };
+          drawRunner(ctx, 100, 150, { k }, 2, 'batting');
+          delete ctx.fillRect;
+          return n;
+        };
+        return {
+          withArt: withArt.length, without: without.length,
+          drawnGotProp: withArt.filter(k => props(k) > 0).length,
+          plainGotNone: without.filter(k => props(k) === 0).length,
+        };
+      });
+      ok(bats.withArt > 30 && bats.without > 0,
+         'the pack draws a bat for most of the roster and a still for the rest',
+         `${bats.withArt} with drawn bats, ${bats.without} without`);
+      ok(bats.drawnGotProp === 0,
+         'A MAN HOLDING A DRAWN BAT IS NOT HANDED A SECOND ONE',
+         `${bats.drawnGotProp} of ${bats.withArt} got the prop as well`);
+      ok(bats.plainGotNone === 0,
+         'and a man whose art has no bat still gets one to hold',
+         `${bats.plainGotNone} of ${bats.without} were left empty handed`);
+
+      /* ---- nothing is sliced by the side of its own cell ---- */
+      /* A strip is one image cut into 64px cells and several characters are
+         drawn wider than their cell, so the frame next door bleeds in: a
+         wing or a foot floating beside the character with nothing holding it
+         up. The builder drops a DETACHED blob touching a side edge and keeps
+         the figure, which is what lets the contact and release frames
+         through at all: refusing any frame with a pixel in column 0 or 63
+         threw away 124 of them.
+
+         What is left to guard is the other end. A drawing that runs most of
+         the frame height flat down an edge has been CUT by the canvas, and
+         the measured spread is 0 to 30 with one at 51. */
+      const sliced = await pg.evaluate(() => {
+        const bad = [];
+        for (const k of Object.keys(V2_SPRITES)) {
+          for (const p of Object.keys(V2_SPRITES[k].f)) {
+            const rows = v2Frame(k, p);
+            for (const c of [0, V2_W - 1]) {
+              let run = 0, best = 0;
+              for (let y = 0; y < V2_H; y++) {
+                run = rows[y][c] !== '.' ? run + 1 : 0;
+                if (run > best) best = run;
+              }
+              if (best > 40) bad.push(k + '/' + p + ' run ' + best);
+            }
+          }
+        }
+        return bad;
+      });
+      ok(sliced.length === 0,
+         'and no frame is a figure cut in half by the side of its own cell',
+         sliced.slice(0, 5).join(', '));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -2749,11 +2826,34 @@ async function main() {
       ok(r.runs === 40 && r.mismatch === 0,
          'RANDOMIZE PUTS THE BEST ARM ON THE MOUND, every time',
          `${r.mismatch} of ${r.runs} started somebody else`);
-      ok(r.weak === 0, 'so it never opens with an arm a player would have to lose with',
-         `${r.weak} under 55 PIT`);
-      ok(Math.min(...(r.starters || [99])) > 40,
+      /* THE 55 FLOOR IS A FACT ABOUT THE ROSTER, NOT ABOUT RANDOMIZE, and
+         asserting it over forty random presses was a coin toss dressed as a
+         rule. Measured over 200,000 draws, the best arm of nine lands under
+         55 on 0.04% of them, which is 1.6% over forty presses: this section
+         went red about once in sixty runs on a build nobody had touched.
+         That is the commish magic seed and the chase gap arriving a third
+         time. What Randomize actually promises is the ORDERING, which the
+         assertion above holds deterministically.
+         So the depth is asked of the POOL, in closed form. The chance that
+         nine men drawn from the unlocked roster contain no arm at all is
+         hypergeometric and exact, so there is nothing here to flake. */
+      const depth = await pg.evaluate(() => {
+        const open = ROSTER.filter(c => isUnlocked(c.k));
+        const n = open.length;
+        const miss = (bar) => {
+          const w = open.filter(c => (c.pit | 0) < bar).length;   // no arm at all
+          let p = 1;
+          for (let i = 0; i < 9; i++) p *= (w - i) / (n - i);
+          return Math.max(p, 0);
+        };
+        return { n, at55: miss(55), at41: miss(41) };
+      });
+      ok(depth.at55 < 0.002,
+         'so the roster is deep enough in arms that a random nine has one',
+         `${depth.n} available, a nine misses 55 PIT entirely ${(depth.at55 * 100).toFixed(3)}% of the time`);
+      ok(depth.at41 < 1e-4,
          'and the worst mound it can hand out is still a mound',
-         String(Math.min(...(r.starters || []))));
+         `a nine with nothing over 40 PIT: ${(depth.at41 * 100).toFixed(4)}%`);
       ok(/starting/.test(hand.one) && new RegExp(hand.worst).test(hand.one),
          'a hand draft is told who its first pick puts on the mound', hand.one);
       ok(new RegExp(hand.best).test(hand.two) && /gold/.test(hand.two),
@@ -2945,6 +3045,61 @@ async function main() {
         await new Promise(r => setTimeout(r, 700));
         endAtBatCleanup(); State.game.pitch = null;
         const g = State.game;
+
+        /* A POSE NAME MEANT SOMETHING ELSE UNDER THE GENERATED ART, and two
+           call sites kept using it. `back` was a REAR view, so the batter
+           standing in was drawn with it; the pack has no rear view, so it
+           became the left facing still and he waited at the plate facing
+           AWAY from the pitcher holding whatever he idles with (an axe, a
+           fishing rod, a pipe), then turned round with a bat the instant he
+           swung. `ready` was the FIELDER'S SET, so the four infielders spent
+           every pitch holding the pack's drawn batting stance.
+
+           Both render perfectly, so it asks the PICTURE: drawRunner for the
+           pose each man was given, and spriteFor for the frame that pose
+           became, which is the step both defects live in.
+
+           IT RUNS BEFORE ANY OUT IS RECORDED, on an ordinary at bat. Put
+           after the strikeout fixtures below it measured a batter who had
+           already been replaced, and reported the man at the plate as
+           somebody who was no longer there. */
+        const stance = (() => {
+          g.plateHold = performance.now() + 9000;
+          const who = currentBatter().k;
+          const inf = (fielderAt(currentFieldingTeam(), 4) || {}).k;
+          const realDraw = window.drawRunner, realSprite = window.spriteFor;
+          const poses = [], asked = [];
+          /* THE POSE AND THE FRAME ARE PAIRED, never looked up by key alone.
+             One character is drawn several times in one frame (the batter is
+             also on the fielding side in this fixture), so the first
+             spriteFor call carrying his key belongs to whichever copy was
+             painted first, which is a fielder. Tie the two together instead:
+             drawRunner names the pose, and every spriteFor inside that call
+             is the frame it became. */
+          let cur = null;
+          window.drawRunner = (ctx, x, y, c, sc, pose, flip) => {
+            cur = [c && c.k, pose];
+            poses.push(cur);
+            const out = realDraw(ctx, x, y, c, sc, pose, flip);
+            cur = null;
+            return out;
+          };
+          window.spriteFor = (key, px, fr) => {
+            if (cur && cur[0] === key) asked.push([key, cur[1], fr]);
+            return realSprite(key, px, fr);
+          };
+          const cv = document.createElement('canvas');
+          cv.width = FIELD_W; cv.height = FIELD_H;
+          drawField(cv.getContext('2d'), FIELD_W, FIELD_H, 0, null, false);
+          window.drawRunner = realDraw; window.spriteFor = realSprite;
+          const frameFor = (k, pose) => (asked.find(a => a[0] === k && a[1] === pose) || [])[2];
+          return {
+            standsIn: poses.some(p => p[0] === who && p[1] === 'batting'),
+            battingFrame: frameFor(who, 'batting'),
+            infieldFrame: inf ? frameFor(inf, null) : null,
+          };
+        })();
+
         g.strikes = 2; g.balls = 0;
         recordOut('called strikeout', true);
         const set = g.slumpUntil > performance.now();
@@ -2994,12 +3149,27 @@ async function main() {
         const off = frame();
         window.drawRunner = real;
         const has = (m, k, p) => !!(m[k] && m[k].indexOf(p) >= 0);
+
+        /* A POSE NAME MEANT SOMETHING ELSE UNDER THE GENERATED ART, and the
+           call sites kept using it. `back` was a REAR view, so a batter
+           standing in was drawn with it; the pack has no rear view, so it
+           became the left facing still and the batter waited at the plate
+           facing away from the pitcher holding his idle prop (an axe, a
+           fishing rod, a pipe), then turned round with a bat the instant he
+           swung. `ready` was the FIELDER'S SET, so the four infielders spent
+           every pitch holding the pack's drawn batting stance.
+
+           Both render perfectly. What catches them is asking the picture who
+           was drawn with what, so the same frame is read twice. */
         return { set, cleared, onlyK, phoenix,
                  plate: plateViewActive(g),
                  pitCheers: has(onBeat, pit, 'cheer'),
                  batSlumps: has(onBeat, bat, 'slump'),
                  pitStops: !has(off, pit, 'cheer'),
-                 batStops: !has(off, bat, 'slump') };
+                 batStops: !has(off, bat, 'slump'),
+                 standsIn: stance.standsIn,
+                 battingFrame: stance.battingFrame,
+                 infieldFrame: stance.infieldFrame };
       });
       ok(r.have === r.chars, 'every character has a walk back frame',
          `${r.have} of ${r.chars}`);
@@ -3023,6 +3193,12 @@ async function main() {
          JSON.stringify({ plate: moment.plate, bat: moment.batSlumps, pit: moment.pitCheers }));
       ok(moment.batStops && moment.pitStops, 'and the beat ends for both of them',
          JSON.stringify({ bat: moment.batStops, pit: moment.pitStops }));
+      ok(moment.standsIn && moment.battingFrame === 'ready',
+         'A BATTER STANDING IN IS DRAWN IN THE BATTING STANCE, not the walk back',
+         `stood in: ${moment.standsIn}, drawn with: ${moment.battingFrame}`);
+      ok(moment.infieldFrame !== 'ready',
+         'and an infielder is not standing in the dirt holding a bat',
+         `the second baseman is drawn with: ${moment.infieldFrame}`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

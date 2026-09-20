@@ -38,7 +38,7 @@ from collections import Counter
 import numpy as np
 from PIL import Image
 
-from spritelib import border_background, frames_of
+from spritelib import border_background, drop_edge_bleed, edge_run, frames_of
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -149,7 +149,36 @@ ALIAS_ORDER = ['idle', 'ready', 'load', 'swing', 'follow', 'run1', 'run2',
                'release', 'throw', 'catch', 'cheer']
 
 
-def usable_frame(f):
+# A FRAME HAS TO HOLD MOST OF ITS OWN CHARACTER, and 200 pixels cannot say
+# that. The absolute floor was written to catch a blank, and a character here
+# is 1,300 to 2,800 opaque pixels, so it let through four frames where the
+# PERSON had walked out of the canvas and left his kit behind: a bat and a hat
+# lying on the grass (long_john_silver), a bat and one shoe (mother_nature),
+# popeye's bat with a sliver of leg, and a fire_breather cut off at the waist.
+# Every one passed, because a bat really is more than 200 pixels.
+#
+# THE FLOOR IS RELATIVE AND THE GAP IS MEASURED. Sorted by share of that
+# character's own still, the four sit at 0.13, 0.15, 0.25 and 0.29, and the
+# next frame up is 0.38. Nothing lives in between. 0.33 is the middle of that
+# gap rather than the last value that passes, which is the same rule the
+# premium sheet's breakpoint was picked by.
+#
+# IT CANNOT BE ABSOLUTE AND IT CANNOT BE TIGHTER. humpty_dumpty's whole strip
+# set runs 0.38 to 0.42 of his still, because he is drawn as a big egg
+# standing still and a smaller figure moving. That is an artist's choice about
+# one character, not a fragment, so a floor at 0.45 would delete his entire
+# animation set and report it as a cleanup.
+MASS_FLOOR = 0.33
+
+# HOW FAR A FIGURE MAY RUN DOWN A SIDE EDGE BEFORE IT HAS BEEN CUT OFF.
+# Measured after the bleed is removed, the runs are 0 to 30 and then one at
+# 51, which is fire_breather's idle: over three quarters of the frame height
+# flat against the wall, which is what a figure sliced in half looks like.
+# Nothing else is above 30, so 40 sits in the gap.
+EDGE_RUN_MAX = 40
+
+
+def usable_frame(f, ref_mass=None):
     """Is THIS frame usable, whatever the rest of its strip is like?
 
     THE STRIP IS THE WRONG UNIT AND USING IT THREW ART AWAY. The audit
@@ -161,11 +190,18 @@ def usable_frame(f):
 
     It is the same mistake the audit's own clipping rule makes one level up,
     arriving again: do not condemn good art because of its neighbour.
+
+    `ref_mass` is the character's own still, against which MASS_FLOOR above
+    decides whether there is a character in here at all.
     """
     if f is None:
         return False
-    op = (f[:, :, 3] > 0)
-    return bool(op.sum() >= 200 and not op[:, 0].any() and not op[:, SIZE - 1].any())
+    if edge_run(f) > EDGE_RUN_MAX:
+        return False
+    n = int((f[:, :, 3] > 0).sum())
+    if n < 200:
+        return False
+    return ref_mass is None or n >= MASS_FLOOR * ref_mass
 
 
 def cleaned(frame):
@@ -180,6 +216,11 @@ def cleaned(frame):
     """
     f = frame.copy()
     f[border_background(f)] = 0
+    # BEFORE THE BASELINE IS MEASURED, NOT AFTER. The shift seats the feet on
+    # y=62, and a blob bleeding in from the frame next door is usually lower
+    # than the character is, so left in place it is what gets seated and the
+    # character floats above the dirt by however tall the blob was.
+    f = drop_edge_bleed(f)
     op = f[:, :, 3] > 0
     if not op.any():
         return None
@@ -268,6 +309,19 @@ def encode(frame, palette):
 
 def build_character(game_key, pack_name, audit, note):
     poses = {}
+    base = static_for(pack_name)
+    if base is None:
+        return None
+    ref_mass = int((base[:, :, 3] > 0).sum())
+    # WHICH POSES CARRY A BAT IN THE ART, which only the builder can know: it
+    # is the one that picked the frame. The page draws a prop bat over the
+    # sprite, written when the generator's figures held nothing, and the pack
+    # draws real bats in the swing and batting stance strips. Left alone that
+    # is TWO bats on the most looked at frame in the game, the batter waiting
+    # on the pitch. Only the swing and batting stance strips hold one; the
+    # pitch, run, idle and celebrate strips do not, and neither does a still.
+    BAT_ANIMS = ('swing', 'batting_stance')
+    bat = []
     # WHICH FRAME OF A STRIP IS ALREADY SPOKEN FOR, so two poses off one
     # animation cannot end up being the same drawing. See the walk below.
     claimed = {}
@@ -299,15 +353,13 @@ def build_character(game_key, pack_name, audit, note):
                 [i for i in near if (strip, i) in claimed]
         for i in order:
             c = cleaned(fr[i])
-            if usable_frame(c):
+            if usable_frame(c, ref_mass):
                 poses[pose] = c
                 claimed[(strip, i)] = pose
                 note.append((game_key, pose, strip + '#%d' % i))
+                if anim in BAT_ANIMS:
+                    bat.append(pose)
                 break
-
-    base = static_for(pack_name)
-    if base is None:
-        return None
 
     # IDLE FACES THE CAMERA, AND THAT IS THE GAME'S OWN CONVENTION RATHER
     # THAN a preference. The generated sprites this replaced were drawn front
@@ -430,10 +482,13 @@ def build_character(game_key, pack_name, audit, note):
         rle = enc[pose]
         out[pose] = '@' + seen[rle] if rle in seen else rle
         seen.setdefault(rle, pose)
-    return {
+    rec = {
         'p': {palette[c]: '#%02x%02x%02x' % c for c in sorted(cols)},
         'f': out,
     }
+    if bat:
+        rec['b'] = sorted(bat)
+    return rec
 
 
 def main():

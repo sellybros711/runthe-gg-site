@@ -2535,8 +2535,8 @@ and left the rest generated, which reads worse than either style on its own.
 The same is true INSIDE a character: a pack idle over a generated swing makes
 a man change species when he swings. So a character is built entirely from the
 pack, the stills are the floor, and a working strip upgrades a pose from a
-still to a drawn frame on top. Of the 1,088 poses, **637 are drawn frames**,
-541 stand on a still, and 18 are a character the pack drew exactly once.
+still to a drawn frame on top. Of the 1,156 poses, **642 are drawn frames**,
+611 stand on a still, and 13 are a character the pack drew exactly once.
 
 **AND 751 WAS A MISCOUNT THAT READ LIKE PROGRESS.** The builder counted a pose
 as drawn when its source did NOT begin `source_reference`, which is true of a
@@ -2585,6 +2585,104 @@ used to stand square to the camera through a whole at bat.
 Between them, poses the reader cannot tell from idle went **151 to 18**. The
 18 are the nine characters with no front view and no strips, where there is no
 second drawing to reach for. That is the art order, not a defect.
+
+#### The batter stood at the plate holding an axe
+
+`pose === 'batting'` drew the `back` frame, which was right when the sprites
+were generated: `back` was a REAR view and a batter is seen from behind the
+catcher. The pack has no rear view, so `back` is the LEFT facing still. What
+that produced, on the screen a player looks at longest: **the batter waiting on
+the pitch faced away from the pitcher, holding whatever he idles with** (Paul
+Bunyan his axe, Tom Sawyer a fishing rod, Popeye a pipe), and then a bat and a
+right facing body appeared in the frame he swung in.
+
+It is `ready` now, the pack's drawn batting stance: **37 characters had one the
+game never showed**, and it faces the way every swing frame faces.
+
+**`ready` WAS DOING TWO JOBS AND THE OTHER ONE BROKE THE SAME WAY.** It was the
+fielder's set as well, so the four infielders spent every pitch holding a
+batting stance in the dirt. The pack contains no fielding art, which is what
+`catch` and `throw` already stand on a still for, so the crouch is gone rather
+than wrong.
+
+**AND THE PROP BAT BECAME A SECOND BAT.** The page draws a bat out of three
+`fillRect`s over the sprite, written when every figure was parametric and held
+nothing. The pack draws real bats in its swing and batting stance strips, so
+**55 of the 68 were handed two**. `spr.b` is the builder's answer to which
+poses already carry one, because the builder is what chose the frame and
+nothing in a 64x64 bitmap says whether there is a bat in it.
+
+**The guard counts `fillRect` calls rather than reading the source.** The prop
+is a canvas primitive with no handle to ask about, and a source match would
+pass the day somebody moves the same three rectangles. The sprite arrives by
+`drawImage` and the shadow is an ellipse, so inside one `drawRunner` call a
+`fillRect` IS the prop. Reintroduced, it reports 37 of 37.
+
+#### A bat reaching the side of its cell is not a clipped frame
+
+The build refused any frame with a pixel in column 0 or 63, on the audit's own
+clipping rule. That threw away **124 frames, and 101 of them were the swing and
+pitch strips**, whose middle frame is CONTACT and RELEASE: the two most
+important drawings in the game, rejected because a bat reaches the side of its
+own 64px cell.
+
+**What the rule was really catching is BLEED.** A strip is one image cut into
+cells and several characters are drawn wider than their cell, so a wing, a foot
+or a bat from the frame next door lands inside this one: a blob floating beside
+the character with nothing holding it up. That is a DETACHED component touching
+a side edge, and the character is always the largest one, so it is never what
+goes. Measured, 36 of the 124 have nothing but bleed on the edge and every one
+of the rest is a whole figure filling its canvas.
+
+**The bleed comes off BEFORE the baseline is measured**, or the blob is what
+gets seated on y=62 and the character floats above the dirt by however tall it
+was.
+
+**What is left to refuse is a figure the canvas really did cut**, and that is
+`edge_run`: the longest unbroken run of drawing down a side column, measured
+after the bleed. Across the pack it runs 0 to 30 and then one at 51, which is
+fire_breather's idle at over three quarters of the frame height flat against
+the wall. `EDGE_RUN_MAX` is 40, in the gap.
+
+**IT BOUGHT ALMOST NO NEW POSES AND THAT IS NOT THE POINT.** Drawn frames went
+634 to 642, because the walk was already substituting a neighbour. What moved
+is WHICH frame each pose gets: **poses that had to substitute went 138 to 49**,
+so 89 of them now show the drawing the animation actually intended.
+
+#### A frame has to hold most of its own character
+
+`usable_frame`'s floor was a flat 200 pixels, written to catch a blank, and a
+character here is 1,300 to 2,800. So it let through four frames where the
+PERSON had walked out of the canvas and left his kit behind: **a bat and a hat
+lying on the grass** (long_john_silver), a bat and one shoe (mother_nature),
+popeye's bat with a sliver of leg, and a fire_breather cut off at the waist.
+Every one passed, because a bat really is more than 200 pixels.
+
+The floor is a share of that character's own still. Sorted, the four sit at
+0.13, 0.15, 0.25 and 0.29 and the next frame up is 0.38, so `MASS_FLOOR` is
+0.33, the middle of the gap rather than the last value that passes.
+
+**IT CANNOT BE TIGHTER, and humpty_dumpty is why.** His whole strip set runs
+0.38 to 0.42 of his still, because he is drawn as a big egg standing still and
+a smaller figure moving. That is an artist's choice about one character, so a
+floor at 0.45 would delete his entire animation set and report it as a cleanup.
+
+It also RECOVERED one: fire_breather's `cheer` took celebrate#0, which is the
+half figure, and now takes celebrate#1, which is whole.
+
+#### A random draw asserted as an absolute flaked about once in sixty runs
+
+`RANDOMIZE PUTS THE BEST ARM ON THE MOUND` is a rule and is deterministic. The
+two assertions under it were not: they pressed the real button forty times and
+demanded no starter under 55 PIT and none at or under 40. Measured over 200,000
+draws, the best arm of nine lands under 55 on **0.04%** of them, which is
+**1.6% over forty presses**, so that section went red on a build nobody had
+touched. That is the commish magic seed and the chase gap arriving a third
+time.
+
+**The depth is a fact about the ROSTER, so it is asked of the pool in closed
+form.** The chance that nine men drawn from the unlocked roster contain no arm
+at all is hypergeometric and exact, so there is nothing left to flake.
 
 #### The batter celebrated his own strikeout
 
