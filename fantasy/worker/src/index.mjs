@@ -52,13 +52,25 @@ export default {
     }
 
     const { season, week } = seasonAndWeek(new Date(event.scheduledTime || Date.now()));
-    log({ at: 'tick.start', cron: event.cron, season, week });
+
+    /* OBSERVE OR LIVE, and observe is the default in wrangler.toml.
+     *
+     * A poller that starts spending the moment it is deployed gives nobody a
+     * chance to look at what it decided first, and on a 500 credit allowance
+     * the first evening can be a third of the month. So the deploy that turns
+     * it on is a deliberate one: `--var FANTASY_MODE:live`.
+     *
+     * ANYTHING THAT IS NOT EXACTLY 'live' IS OBSERVE. A typo, an unset var, a
+     * value of 'true', all of them cost nothing. The failure that matters here
+     * is spending by accident, so the safe reading is the default one. */
+    const observeOnly = String(env.FANTASY_MODE || 'observe').toLowerCase() !== 'live';
+    log({ at: 'tick.start', cron: event.cron, season, week, mode: observeOnly ? 'observe' : 'live' });
 
     try {
       const summary = await sweepOnce({
         odds: makeOddsClient({ apiKey: env.ODDS_API_KEY, log }),
         store: makeStore({ url: env.SUPABASE_URL, serviceKey: env.SUPABASE_SERVICE_ROLE, log }),
-        season, week, log,
+        season, week, log, observeOnly,
       });
       log({ at: 'tick.done', ...summary });
     } catch (e) {

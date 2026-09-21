@@ -56,12 +56,14 @@ export async function sweepOnce({
   season, week,
   markets = MARKETS, regions = REGIONS,
   ladder = LADDER, maxEvents = MAX_EVENTS_PER_TICK,
+  observeOnly = false,
 }) {
   const t0 = now();
   const summary = {
     startedAt: new Date(t0).toISOString(),
+    mode: observeOnly ? 'observe' : 'live',
     due: 0, polled: 0, rows: 0, skipped: 0, closed: 0,
-    creditsCharged: 0, stoppedBecause: null, errors: [],
+    creditsCharged: 0, wouldHaveCharged: 0, stoppedBecause: null, errors: [],
   };
 
   /* 1. The event list. Free, so it runs on every tick regardless of what is
@@ -107,13 +109,44 @@ export async function sweepOnce({
     return summary;
   }
 
+  /* OBSERVE MODE STOPS HERE, and stopping HERE rather than earlier is the
+     whole point of it.
+     
+     Everything above this line is free: the event list costs no credits and
+     the ladder is arithmetic. So an observe tick does the entire decision, on
+     real events with real kickoff times, and reports exactly what it would
+     have spent and on what. What it skips is only the part that costs money.
+     
+     A mode that stopped at the top would tell you the Worker is alive and
+     nothing else. This one tells you the schedule is right BEFORE the first
+     credit is spent, which on a 500 credit allowance is the difference between
+     finding out now and finding out on a Sunday morning. */
+  const cost = sweepCost(markets, regions);
+  if (observeOnly) {
+    summary.wouldHaveCharged = due.length * cost;
+    log({
+      at: 'sweep.observe',
+      wouldPoll: due.map(({ event, decision }) => ({
+        event: event.event_id,
+        matchup: `${event.away_team} at ${event.home_team}`,
+        kickoff: event.commence_time,
+        hoursOut: Number(decision.hoursOut.toFixed(2)),
+        everyMin: decision.everyMin,
+        why: decision.reason,
+      })),
+      wouldHaveCharged: summary.wouldHaveCharged,
+      creditsPerSweep: cost,
+      eventsLive: live.length,
+    });
+    summary.ms = now() - t0;
+    return summary;
+  }
+
   /* The crosswalk, once for the tick rather than per event. */
   let aliases = new Map();
   try { aliases = await store.aliases(); } catch (e) {
     log({ at: 'sweep.aliases.failed', error: String(e.message || e) });
   }
-
-  const cost = sweepCost(markets, regions);
 
   /* 4. The expensive part. */
   for (const { event, decision } of due) {

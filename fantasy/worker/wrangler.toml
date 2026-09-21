@@ -32,6 +32,19 @@ crons = ["* * * * *"]
 [observability]
 enabled = true
 
+# OBSERVE BY DEFAULT. A deploy with no override does the whole decision every
+# minute (which events are due, what it would cost) and never makes the call
+# that spends a credit. Turning it live is a deliberate act:
+#
+#   npx wrangler deploy --config fantasy/worker/wrangler.toml --var FANTASY_MODE:live
+#
+# The workflow has a dropdown for it. Anything that is not exactly "live" is
+# read as observe, because the failure worth defaulting away from is spending
+# by accident.
+[vars]
+FANTASY_MODE = "observe"
+
+
 # Secrets this needs, set by hand, never here:
 #   ODDS_API_KEY           the provider key
 #   SUPABASE_URL           https://<project>.supabase.co

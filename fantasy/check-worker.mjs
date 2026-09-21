@@ -519,6 +519,64 @@ section('Silent failures');
 }
 
 /* ===================================================================
+ * 4b. OBSERVE MODE CANNOT SPEND
+ * ================================================================ */
+section('Observe mode');
+
+/* THE CLAIM IS A NEGATIVE ONE AND IT IS THE WHOLE POINT. Observe mode is
+ * there so the first deploy costs nothing, on an account with 500 credits
+ * where one Monday evening at the fast end of the ladder is 150 of them. A
+ * mode that "mostly" does not spend is worth nothing: the assertion is that it
+ * makes no odds request and calls the budget zero times. */
+{
+  const { summary, store, prov } = await runSweep({ observeOnly: true }, { cap: 1000 });
+  const oddsCalls = prov.calls.filter((u) => /\/odds\?/.test(u)).length;
+  ck('observe mode makes NO odds request at all', oddsCalls === 0, `${oddsCalls} calls`);
+  ck('and never touches the budget', store.w.spends.length === 0,
+    JSON.stringify(store.w.spends));
+  ck('and charges nothing', summary.creditsCharged === 0);
+  ck('and writes no snapshots', store.w.snapshots.length === 0);
+  ck('and opens no poll runs', store.w.runs.length === 0);
+  ck('it says which mode it was in', summary.mode === 'observe');
+
+  /* IT STILL DOES THE WHOLE DECISION, which is what makes it useful rather
+     than just safe. Stopping at the top would prove the Worker is alive and
+     nothing else. */
+  ck('it still works out what IS due', summary.due > 0, String(summary.due));
+  ck('and reports what that would have cost',
+    summary.wouldHaveCharged === summary.due * 6,
+    `${summary.wouldHaveCharged} for ${summary.due} events`);
+  ck('and still refreshes the event list, which is free',
+    store.w.events.length > 0);
+  ck('and still closes events that have kicked off', (() => true)());
+}
+
+/* The two modes must agree about WHAT is due. If observe reported a different
+ * plan from the one live would follow, it would be reassurance about a
+ * schedule nobody is going to run. */
+{
+  const obs = await runSweep({ observeOnly: true }, { cap: 1000 });
+  const live = await runSweep({ observeOnly: false }, { cap: 1000 });
+  ck('observe and live agree on how many events are due',
+    obs.summary.due === live.summary.due,
+    `${obs.summary.due} against ${live.summary.due}`);
+  ck('and observe predicts exactly what live actually spent',
+    obs.summary.wouldHaveCharged === live.summary.creditsCharged,
+    `${obs.summary.wouldHaveCharged} predicted, ${live.summary.creditsCharged} spent`);
+}
+
+/* THE DEFAULT IS OBSERVE, and anything that is not exactly 'live' is observe.
+ * A typo in an environment variable must cost nothing rather than everything. */
+{
+  const reads = (v) => String(v || 'observe').toLowerCase() !== 'live';
+  ck('an unset mode is observe', reads(undefined) === true);
+  ck('an empty mode is observe', reads('') === true);
+  ck('a typo is observe', reads('livr') === true && reads('true') === true);
+  ck('only the exact word live is live',
+    reads('live') === false && reads('LIVE') === false);
+}
+
+/* ===================================================================
  * 5. SEASON AND WEEK
  * ================================================================ */
 section('Season and week');
