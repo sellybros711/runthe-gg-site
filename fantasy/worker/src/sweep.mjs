@@ -124,6 +124,47 @@ export async function sweepOnce({
   const cost = sweepCost(markets, regions);
   if (observeOnly) {
     summary.wouldHaveCharged = due.length * cost;
+
+    /* A DURABLE RECORD, not just a log line, and only when there is something
+       to record.
+
+       The first version of observe mode wrote nothing and said so: "the log is
+       the whole record until it goes live." That is true and it is useless to
+       anybody who cannot reach the Worker's log, which includes every tool
+       that can read the database. An observation nobody can retrieve is not an
+       observation.
+
+       Written ONLY when the plan is non-empty, because a row a minute for a
+       week is 10,000 rows saying nothing happened. The interesting tick is the
+       one that would have spent something, and that is the one kept.
+
+       event_id is null, which keeps it out of lastPollByEvent()'s answer: that
+       function reads runs per event to decide what is due, and an observe row
+       must never make the ladder think an event was polled. */
+    if (due.length) {
+      const runId = await store.openRun({
+        eventId: null, markets: [], credits: 0,
+      }).catch(() => null);
+      await store.closeRun(runId, {
+        ok: true,
+        rows_written: 0,
+        error: null,
+        raw: {
+          mode: 'observe',
+          wouldHaveCharged: summary.wouldHaveCharged,
+          creditsPerSweep: cost,
+          eventsLive: live.length,
+          plan: due.map(({ event, decision }) => ({
+            event: event.event_id,
+            matchup: `${event.away_team} at ${event.home_team}`,
+            kickoff: event.commence_time,
+            hoursOut: Number(decision.hoursOut.toFixed(2)),
+            everyMin: decision.everyMin,
+          })),
+        },
+      });
+    }
+
     log({
       at: 'sweep.observe',
       wouldPoll: due.map(({ event, decision }) => ({

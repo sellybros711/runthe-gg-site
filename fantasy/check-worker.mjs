@@ -536,8 +536,36 @@ section('Observe mode');
     JSON.stringify(store.w.spends));
   ck('and charges nothing', summary.creditsCharged === 0);
   ck('and writes no snapshots', store.w.snapshots.length === 0);
-  ck('and opens no poll runs', store.w.runs.length === 0);
   ck('it says which mode it was in', summary.mode === 'observe');
+
+  /* IT DOES LEAVE A RECORD, and that is a deliberate change from the first
+     version, which wrote nothing on the grounds that the Worker log was the
+     record. That is true and useless to anything that can read the database
+     but not Cloudflare's log, which is most tools and every person without
+     the dashboard open. An observation nobody can retrieve is not one.
+
+     The row is bookkeeping, not a poll: no event, no credits, no markets. */
+  ck('it leaves exactly one bookkeeping row', store.w.runs.length === 1,
+    `${store.w.runs.length} rows`);
+  ck('and that row is charged nothing and names no event',
+    store.w.runs[0].credits === 0 && store.w.runs[0].eventId === null,
+    JSON.stringify(store.w.runs[0]));
+
+  /* THE ROW MUST NOT POISON THE LADDER. lastPollByEvent reads successful runs
+     per event to decide what is due next. An observe row that carried an
+     event id would make the ladder believe that event had been polled, so the
+     first live tick would skip exactly the games observe had been watching. */
+  ck('so it cannot make the ladder think anything was polled',
+    store.w.runs[0].eventId === null);
+
+  /* And the plan is IN the row, which is the whole reason for writing it. */
+  const rec = store.w.closes.find((c) => c.raw && c.raw.mode === 'observe');
+  ck('the row carries the plan it would have followed',
+    !!rec && Array.isArray(rec.raw.plan) && rec.raw.plan.length === summary.due,
+    JSON.stringify(rec && rec.raw && rec.raw.plan));
+  ck('including the matchup, the kickoff and how far out it is',
+    !!rec && rec.raw.plan.every((p) => p.matchup && p.kickoff
+      && typeof p.hoursOut === 'number' && typeof p.everyMin === 'number'));
 
   /* IT STILL DOES THE WHOLE DECISION, which is what makes it useful rather
      than just safe. Stopping at the top would prove the Worker is alive and
