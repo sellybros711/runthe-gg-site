@@ -122,28 +122,42 @@ if (!rosterMatch) {
   }
 }
 
-/* 5b. EVERY CHARACTER HAS A GENERATED SPRITE, AND IT IS THE DECLARED SIZE.
-      Sprites come from mythiball/gen_sprites_v2.py as a V2_SPRITES table.
+/* 5b. EVERY CHARACTER HAS A SPRITE, AND IT IS THE DECLARED SIZE.
       The renderer walks a fixed V2_W by V2_H box and reads row[x] per cell,
       so a short row renders transparent at the end and a long one silently
       loses its tail: both look like a slightly wrong drawing rather than a
       bug. An earlier hand written sprite set shipped with twenty of those
       and nothing failed, which is why this check exists. It also catches a
-      roster entry with no sprite at all, which would throw on first draw. */
+      roster entry with no sprite at all, which would throw on first draw.
+
+      THE TABLE IS JSON ON ONE LINE, AND READING IT AS PRETTY PRINTED LINES
+      WENT SILENT. It used to come out of gen_sprites_v2.py one frame per
+      line, so this parsed it line by line; the handoff pack builder
+      minifies it, so every one of those patterns stopped matching, the
+      key set came back EMPTY, and the whole section reported one problem
+      (all 68 roster characters have no sprite) while the three checks it
+      is actually for, the row size, the palette keys and the missing
+      poses, ran over nothing at all. Fourth time an extractor in this repo
+      has been wrong in silence. It is parsed rather than pattern matched
+      now, so the next change of layout cannot repeat it.
+
+      A POSE MAY BE A REFERENCE. Repeated art is stored as '@otherpose'
+      and v2Frame resolves it before decoding, so this resolves it too: a
+      reference has no rows of its own and measuring its string would
+      report every shared drawing as the wrong size. */
 {
   const wM = page.match(/V2_W = (\d+)/);
   const hM = page.match(/V2_H = (\d+)/);
-  const tableM = page.match(/const V2_SPRITES = \{([\s\S]*?)\n\};/);
-  if (!wM || !hM || !tableM) {
+  const tableM = page.match(/const V2_SPRITES = (\{.*?\});\n/s);
+  let table = null;
+  if (wM && hM && tableM) {
+    try { table = JSON.parse(tableM[1]); } catch (e) { table = null; }
+  }
+  if (!table) {
     problems.push('could not read V2_W / V2_H / V2_SPRITES from mythiball/index.html. '
-      + 'Has the generated sprite block been replaced by hand?');
+      + 'Has the sprite table been replaced by hand, or is it no longer JSON?');
   } else {
     const W = +wM[1], H = +hM[1];
-    const spriteKeys = new Set();
-    /* The table is one character per block: a palette line, then one
-       line per frame holding the run length encoded rows (see v2Frame in
-       the page). Parsed line by line, decoded the same way the page does,
-       and every decoded row has to be exactly the declared size. */
     const decode = (raw) => raw.split('/').map(r => {
       let out = '', num = '';
       for (const ch of r) {
@@ -153,51 +167,59 @@ if (!rosterMatch) {
       }
       return out;
     });
-    let key = null, palKeys = null, seen = null;
-    const finish = () => {
-      if (!key) return;
-      for (const need of ['idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2',
-                          'windup', 'release', 'swing', 'catch', 'throw',
-                          'load', 'follow', 'kick', 'ready']) {
-        if (!seen.has(need)) problems.push(`sprite "${key}" is missing the "${need}" frame.`);
+    /* The poses the page asks for by name. A missing one is not a blank
+       frame: spriteFor falls back to idle, so the character silently
+       plays the wrong drawing for that beat. */
+    const NEED = ['idle', 'ready', 'load', 'swing1', 'swing', 'follow',
+                  'run1', 'run2', 'run3', 'run4',
+                  'back', 'backrun1', 'backrun2', 'slump',
+                  'windup', 'kick', 'release', 'throw', 'catch', 'cheer'];
+    const spriteKeys = new Set(Object.keys(table));
+    for (const [key, rec] of spriteKeys.size ? Object.entries(table) : []) {
+      const f = rec && rec.f;
+      if (!f) { problems.push(`sprite "${key}" has no frames at all.`); continue; }
+      const palKeys = new Set(Object.keys(rec.p || {}));
+      for (const need of NEED) {
+        if (!(need in f)) problems.push(`sprite "${key}" is missing the "${need}" frame.`);
       }
-    };
-    for (const line of tableM[1].split('\n')) {
-      const head = line.match(/^  (\w+):\{p:\{(.*)\},f:\{$/);
-      if (head) {
-        finish();
-        key = head[1]; spriteKeys.add(key);
-        palKeys = new Set([...head[2].matchAll(/'(.)':'#/g)].map(m => m[1]));
-        seen = new Set();
-        continue;
-      }
-      const fr = line.match(/^    (\w+):'(.*)',$/);
-      if (!fr || !key) continue;
-      const pose = fr[1];
-      seen.add(pose);
-      const rows = decode(fr[2]);
-      if (rows.length !== H) {
-        problems.push(`sprite "${key}" pose "${pose}" has ${rows.length} rows, expected ${H}.`);
-      }
-      const bad = rows.map((r, i) => [i, r.length]).filter(([, l]) => l !== W);
-      if (bad.length) {
-        problems.push(`sprite "${key}" pose "${pose}" has ${bad.length} row(s) not ${W} wide `
-          + `(first: row ${bad[0][0]} is ${bad[0][1]}).`);
-      }
-      const used = new Set();
-      for (const r of rows) for (const ch of r) if (ch !== '.') used.add(ch);
-      const missing = [...used].filter(c => !palKeys.has(c));
-      if (missing.length) {
-        problems.push(`sprite "${key}" pose "${pose}" uses palette keys with no color: ${missing.join(', ')}.`);
+      for (const pose of Object.keys(f)) {
+        let raw = f[pose], hops = 0;
+        while (typeof raw === 'string' && raw.charCodeAt(0) === 64 && hops++ < 4) {
+          const target = raw.slice(1);
+          if (!(target in f)) {
+            problems.push(`sprite "${key}" pose "${pose}" points at "${target}", which it does not have.`);
+            raw = null; break;
+          }
+          raw = f[target];
+        }
+        if (raw == null) continue;
+        if (typeof raw !== 'string' || raw.charCodeAt(0) === 64) {
+          problems.push(`sprite "${key}" pose "${pose}" never resolves to a drawing.`);
+          continue;
+        }
+        const rows = decode(raw);
+        if (rows.length !== H) {
+          problems.push(`sprite "${key}" pose "${pose}" has ${rows.length} rows, expected ${H}.`);
+        }
+        const bad = rows.map((r, i) => [i, r.length]).filter(([, l]) => l !== W);
+        if (bad.length) {
+          problems.push(`sprite "${key}" pose "${pose}" has ${bad.length} row(s) not ${W} wide `
+            + `(first: row ${bad[0][0]} is ${bad[0][1]}).`);
+        }
+        const used = new Set();
+        for (const r of rows) for (const ch of r) if (ch !== '.') used.add(ch);
+        const missing = [...used].filter(c => !palKeys.has(c));
+        if (missing.length) {
+          problems.push(`sprite "${key}" pose "${pose}" uses palette keys with no color: ${missing.join(', ')}.`);
+        }
       }
     }
-    finish();
     if (rosterMatch) {
       const rosterCharKeys = [...rosterMatch[1].matchAll(/\{ k:'([^']+)'/g)].map(m => m[1]);
       const noSprite = rosterCharKeys.filter(k => !spriteKeys.has(k));
       if (noSprite.length) {
-        problems.push(`roster characters with no generated sprite: ${noSprite.join(', ')}. `
-          + 'Add a SPEC in mythiball/gen_sprites_v2.py and regenerate.');
+        problems.push(`roster characters with no sprite: ${noSprite.join(', ')}. `
+          + 'Build one into the handoff pack and re-run mythiball/sprites/tools/install.py.');
       }
     }
   }

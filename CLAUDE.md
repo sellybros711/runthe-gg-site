@@ -2833,6 +2833,20 @@ and the symptom was `Sound is not defined` a thousand lines below the damage.
 It refuses to write now unless six sentinel declarations survive the swap, and
 running it twice is a no-op.
 
+**AND MINIFYING IT SILENTLY EMPTIED `check-posture.mjs`.** Its sprite section
+parsed the table LINE BY LINE, because the generator wrote one frame per line.
+Built, it is JSON on one line, so every pattern in there stopped matching and
+the key set came back empty: the section reported one problem, that all 68
+roster characters have no sprite, while the three checks it actually exists for
+(row width, palette keys, missing poses) ran over nothing at all. **A check
+reporting the whole roster is not reporting a problem, it is reporting that it
+cannot read the file**, and this is the fourth time an extractor here has been
+wrong in silence. It `JSON.parse`s the table now, resolves `'@pose'` before
+measuring a drawing (a reference has no rows of its own), and asks for all
+twenty poses rather than the fifteen that existed when it was written. Proved by
+mutation: a dangling reference, a two row short frame and a dropped `cheer` are
+each named.
+
 **SIZE IS HEIGHT, NEVER FRAME WIDTH.** `drawCharacter` asked for
 `HERO_W * scale`, which on 32x50 art gave a person 1.56 times that tall. The
 pack's frames are SQUARE, so the identical line drew everyone twice as wide
@@ -2855,9 +2869,10 @@ the one beside the field during a game and are left alone.
 **These are two designs, not two sizes of one, and that is the whole lesson of
 this screen.** `landscapeRoom()` draws a room: four objects hung on a wall, a
 small sign over each, and a rail underneath that names whatever the pointer is
-on. `renderPhoneMenu()` draws four buttons: real text, real type sizes, the
-mode's own drawing as an icon, one line of caption, and the clubhouse present as
-a strip of floor with the team standing on it. `renderMenu` picks by `ROOMFILL`.
+on. `renderPhoneMenu()` draws a strip of floor with the team standing on it.
+`renderMenu` picks by `ROOMFILL`. **The HERO is what differs now, and nothing
+under it does**: both then get the franchise panel, the four mode tiles and the
+wire, from the same three functions.
 
 **The room cannot carry this screen at phone width, and five attempts is enough
 evidence.** The rail is what tells you what the objects do, and a phone has no
@@ -2896,6 +2911,85 @@ from a height budget that assumed 265px of furniture above and below, which in a
 390 tall window left 125, so an 844 wide phone drew a 182 wide field. Sideways is
 not short of width, it is short of height, so under `max-height: 560px` the
 furniture goes in a column beside the field instead of above and below it.
+
+#### The room was the whole menu, and a room is not a menu
+
+**The desktop used to be the room and nothing else.** Four objects on a wall,
+and the way to find out what any of them did was to point at one and read a
+rail. That works exactly as well as the phone version did before it was rebuilt,
+which is to say it is a picture with four labels on it, and the argument two
+paragraphs up applies to both. **The room is the HERO now and the tiles are the
+menu under it**, on every width. `check-premium.mjs`'s own rule about a door
+that is drawn versus a door that opens is the same idea: a reader has to be able
+to find the mode.
+
+**The franchise is the button, and what it says is read off the save.** It was
+the second of four identical rows, no louder than How To Play, and it is the
+thing a returning player came back for. `franchisePanel()` reuses the `season`
+thing's own `go`, so there is exactly one place that knows what starting or
+resuming a franchise means, and the line above it (`Year 3`, `2-1`, `Game 4 of
+7`) is read off `State.season` rather than written. **The status used to be
+printed twice**, once there and once in a sentence further down the card, and
+the second copy is gone rather than kept in step.
+
+**Nothing in the copy carries a number that is not counted.** The roster line is
+`ROSTER.length`, the wire's unlock count is counted off `isUnlocked`, and no
+line anywhere invents a batting average. This repo's oldest rule about numbers
+in sentences, on a screen that had no interpolation in it at all.
+
+**The cast is four of them, drawn at random, and each on its own clock.** The
+room stood the FIRST TWO draftable characters on the floor, so every visit was
+the same two people and the clubhouse read as a set. `clubhouseCast()` shuffles
+once per visit and keeps the answer as module state, because **the room repaints
+on every hover**: picked inside the painter, the people would reshuffle each
+time the pointer crossed the bat rack. Each one gets its own period and offset,
+so nothing ever lines up into a machine.
+
+**A pose that decodes to the same drawing is not a frame.** Thirteen of the
+sixty eight characters have no animation strips, so `ready` and `cheer` ARE
+`idle` for them. `castPoses()` asks `v2Frame` for the decoded drawing, which is
+the same lesson the sprite guards learnt when aliasing arrived: a loop swapping
+one frame for an identical one is not animation and nothing would report it.
+
+**They are their own canvas, over the room's.** The room is a detailed drawing
+that changes only when the pointer moves; the people change several times a
+second. In one canvas every breath would repaint the whole clubhouse.
+
+**THE FIRST TICK IS DEFERRED, and that is not tidiness.** `renderMenu` builds
+the whole tree before handing it to the page, so a canvas asked to paint during
+the build is not in the document yet: `runCast`'s `isConnected` guard fired on
+frame one, stopped the loop, and **the clubhouse came up with nobody in it**.
+Nothing threw. `requestAnimationFrame` for the first tick as well as the rest.
+
+**The loop stops the moment the menu is left**, the way the live game and the
+bracket already do, and `REDUCED` (one `matchMedia` beside `ROOMFILL`) holds
+everybody on one frame.
+
+**A phone tile stands up rather than lying down, and that is what buys the type
+its size.** Beside a 46px icon, a half width tile has about 110px of text
+column, which forces the name to 11px. That is the six-pixel signs arriving
+again, so the tiles go to a column and the name holds 16px. **Keyed on
+`body.roomfill`, never on a width**, which is the rule two bullets up: a
+768x1024 tablet is past no width breakpoint and IS the phone menu, so a width
+query gave it the desktop row and a 13px name on a touch screen.
+
+**An existing rule won on order and nothing said so.** The first grid was
+`.modes`, which this page already carries as
+`repeat(auto-fit,minmax(200px,1fr))` about two hundred lines earlier, so a
+two-column grid rendered three across. Everything the redesign added is
+prefixed `hmode`.
+
+**The Meet the players tile is the one whose picture IS what it opens**, two of
+the cast on a pair of card edges. The overlap was .70 of the card, which puts
+the front card's edge at .30 and the back character's centre at .35: a sliver of
+shoulder and a lot of white. **It looked fine in the first screenshot because
+the character drawn there happened to be left biased**, which is luck rather
+than a layout. It is .60 now, edge at .40 against a centre at .30.
+
+**The desktop guards changed on purpose and both say the same thing.** Two
+assertions read "a desktop gets the room and no doors", which was true while the
+room WAS the menu. They ask for `room && doors === 4` now. A guard that still
+demanded zero would be holding the page to a design it no longer has.
 
 The regression suite, which is the thing to run after editing:
 

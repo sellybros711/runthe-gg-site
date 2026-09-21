@@ -70,6 +70,13 @@
   .brand h1{margin:0;font-size:24px;letter-spacing:.16em;text-transform:uppercase;
     color:var(--gold);font-weight:900;text-shadow:2px 2px 0 var(--navy);}
   .brand .tag{color:var(--text-dim);font-size:11px;letter-spacing:.14em;text-transform:uppercase;}
+  /* THE MOTTO IS THE QUIETEST THING ON THE LINE, and it is aria-hidden
+     because it is a mood rather than information: a screen reader already
+     has the name and what the game is from the two above it. It is the
+     first thing to go when the row runs out of room, because the logo and
+     the two controls are the parts that do a job. */
+  .brand .motto{color:#9a7c4e;border-left:2px solid #d9c49a;padding-left:10px;}
+  @media (max-width: 860px){ .brand .motto{display:none;} }
   .brand .spacer{flex:1;}
   .brand button{background:var(--panel);color:var(--text);border:2px solid var(--line);
     padding:5px 10px;font-family:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
@@ -595,7 +602,14 @@
      the three pieces cannot disagree about how wide the room is. */
   .roomwrap{width:100%;max-width:900px;margin:0 auto;}
   body.inroom .wrap{max-width:min(1640px,98vw);}
-  body.inroom .roomwrap{max-width:min(96vw, calc(min(100vh - 250px, 760px) * 2.24));}
+  /* THE ROOM SHARES THE SCREEN NOW, so the budget under it grew. 250px was
+     the header, the rail and a tab; below the room there is also the
+     franchise scoreboard and the button that continues it, and what a
+     returning player must never have to scroll for is that button. At 350
+     it clears the fold at every desktop size with real room to spare; at
+     250 a 1280x800 window landed the button on 799 of 800, which is not
+     margin, it is luck. */
+  body.inroom .roomwrap{max-width:min(96vw, calc(min(100vh - 350px, 760px) * 2.24));}
   body.inroom .screen{padding:10px 0 0;}
   body.inroom h2{margin-bottom:8px;}
   body.inroom .card{padding:10px;}
@@ -604,6 +618,121 @@
     border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);background:#6b4a24;}
   .clubhouse .hot{position:absolute;background:none;border:0;padding:0;margin:0;
     cursor:pointer;font:inherit;color:transparent;}
+  /* THE CAST LAYER. Same box as the room, no border of its own (the rule
+     above would give it a second one), and no pointer events so every
+     hotspot underneath still takes the click. */
+  .clubhouse .roomcast{position:absolute;left:0;top:0;width:100%;height:100%;
+    border:0;box-shadow:none;background:none;pointer-events:none;}
+  .ph-hero{position:relative;}
+  .ph-hero .ph-cast{position:absolute;left:0;top:0;width:100%;height:100%;
+    border:0;box-shadow:none;background:none;pointer-events:none;
+    image-rendering:pixelated;image-rendering:crisp-edges;}
+
+  /* ---------------------------------------------------------- the franchise
+     THE ONE OBVIOUS THING TO PRESS. It is a scoreboard with a button under
+     it rather than a card: the status is set in the display face at the
+     size a scoreboard uses, and the button is the widest control on the
+     page. Nothing else here is allowed to be this loud. */
+  .fr-panel{margin:12px auto 0;max-width:880px;text-align:center;}
+  .fr-stat{display:flex;align-items:baseline;justify-content:center;gap:14px;
+    flex-wrap:wrap;background:var(--line);color:#f6e7c2;border:3px solid var(--line);
+    box-shadow:var(--shadow);padding:8px 16px;}
+  .fr-stat b{font-size:15px;letter-spacing:.16em;text-transform:uppercase;}
+  .fr-stat i{font-style:normal;font-size:26px;font-weight:900;color:#ffd98a;
+    letter-spacing:.04em;}
+  .fr-stat span{font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:#c8d6e6;}
+  .fr-stat.empty{display:block;font-size:12px;letter-spacing:.06em;
+    text-transform:none;color:#d9e3ef;line-height:1.5;}
+  .bigplay{display:flex;align-items:center;justify-content:center;gap:12px;
+    width:100%;margin-top:10px;background:var(--gold);color:#fff6ea;
+    border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);
+    font-family:inherit;font-size:17px;font-weight:900;letter-spacing:.14em;
+    text-transform:uppercase;padding:15px 18px;cursor:pointer;}
+  .bigplay:hover{background:#e0453a;}
+  /* A cabinet button travels onto its own shadow. 3px, and no easing on the
+     way down: a retro control answers on the frame you press it. */
+  .bigplay:active{transform:translate(5px,5px);box-shadow:none;}
+  .bigplay:focus-visible{outline:3px solid var(--line);outline-offset:4px;}
+  /* The play mark is drawn, not a glyph: a triangle out of borders sits on
+     the baseline the same way in every font this page might fall back to. */
+  .bp-mark{width:0;height:0;border-style:solid;border-width:9px 0 9px 15px;
+    border-color:transparent transparent transparent #fff6ea;flex:0 0 auto;}
+
+  /* -------------------------------------------------------------- the modes
+     TWO COLUMNS, AND EACH TILE IS THE OBJECT IT OPENS. The art is the
+     room's own furniture at another size, so nothing here was drawn twice. */
+  .hmodes{display:grid;grid-template-columns:1fr 1fr;gap:12px;
+    margin:14px auto 0;max-width:880px;}
+  /* `min-width:0` because a GRID ITEM defaults to min-content, so the icon
+     plus the longest word in the blurb set a floor the column refuses to go
+     under: at 320px the right hand column ran 8px off the screen. */
+  .hmode{display:flex;align-items:center;gap:12px;text-align:left;min-width:0;
+    background:var(--panel);border:3px solid var(--line);
+    box-shadow:var(--shadow);padding:11px 12px;cursor:pointer;
+    font-family:inherit;color:var(--text);
+    transition:background 120ms steps(2), transform 100ms steps(1);}
+  .hmode:hover{background:var(--panel-2);}
+  .hmode:active{transform:translate(3px,3px);box-shadow:none;}
+  .hmode:focus-visible{outline:3px solid var(--gold);outline-offset:3px;}
+  .hmode-art{flex:0 0 auto;width:56px;height:56px;display:grid;place-items:center;
+    background:#f7ecd0;border:2px solid var(--line);}
+  .hmode-art canvas{display:block;width:100%;height:100%;
+    image-rendering:pixelated;image-rendering:crisp-edges;}
+  .hmode-txt{min-width:0;}
+  .hmode-txt b{display:block;font-size:13px;font-weight:900;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--gold);}
+  .hmode-txt span{display:block;margin-top:3px;font-size:11px;line-height:1.35;
+    color:var(--text-dim);}
+  /* A LITTLE ASYMMETRY ON PURPOSE. The playoff trophy lifts on hover and the
+     roster fan slides, because a grid of four identical boxes that all do
+     the same thing on hover is the component library look this is avoiding.
+     Both are 2px and both stop dead: no easing tail. */
+  .hmode-cup:hover .hmode-art canvas{transform:translateY(-2px);}
+  .hmode-meet:hover .hmode-art canvas{transform:translateX(2px);}
+  .hmode-art canvas{transition:transform 110ms steps(2);}
+  .hmode-meet .hmode-art{background:#efe0be;}
+
+  /* --------------------------------------------------------------- the wire
+     Small, secondary, one line. Every sentence it can print is true: the
+     counts are counted and the rest claims no statistic. */
+  .wire{display:flex;align-items:baseline;gap:10px;margin:14px auto 0;
+    max-width:880px;border-top:3px solid var(--line);padding-top:9px;}
+  .wire b{flex:0 0 auto;font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--gold);}
+  .wire span{font-size:11px;color:var(--text-dim);line-height:1.4;}
+
+  /* ONE COLUMN ON THE NARROWEST PHONES. Two tiles across 320px leaves each
+     about 140px for an icon and two lines of text, which is a tile that
+     fits and cannot be read. */
+  @media (max-width: 359px){
+    .hmodes{grid-template-columns:1fr;}
+  }
+  /* A PHONE TILE STANDS UP RATHER THAN LYING DOWN, and that is what buys
+     the type its size. Beside a 46px icon a half width tile has about 110px
+     of text column, which forces the name down to 11px: the room's signs
+     came out at six CSS pixels once and this screen was rebuilt around real
+     text at a real size, so shrinking a name to make a layout fit is the
+     one trade not available here. Stacked, the name gets the tile's whole
+     width and holds 16px. */
+  /* KEYED ON `roomfill`, NOT ON A WIDTH, and that is this file's own rule.
+     `body.roomfill` is the single matchMedia in the script that decides a
+     phone gets the menu and a desktop gets the room; written out a second
+     time in CSS the two drift, and they drift silently. A 768x1024 tablet
+     is past no width breakpoint and IS the phone menu, so a width query
+     here gave it the desktop row and a 13px name on a touch screen. */
+  body.roomfill .hmodes{gap:9px;}
+  body.roomfill .hmode{flex-direction:column;align-items:center;
+    text-align:center;gap:7px;padding:10px 7px;}
+  body.roomfill .hmode-art{width:52px;height:52px;}
+  body.roomfill .hmode-txt b{font-size:16px;letter-spacing:.04em;line-height:1.1;}
+  body.roomfill .hmode-txt span{font-size:11px;margin-top:4px;}
+  body.roomfill .bigplay{font-size:16px;padding:14px 12px;}
+  body.roomfill .fr-stat i{font-size:22px;}
+  @media (prefers-reduced-motion: reduce){
+    .hmode, .hmode-art canvas{transition:none;}
+  }
+
   .clubhouse .hot:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
   /* The rail: one line about whatever is under the pointer. */
   .clubhouse-rail{margin:8px auto 0;background:var(--panel);
@@ -616,17 +745,6 @@
     .clubhouse-rail{font-size:11px;padding:7px 10px;min-height:36px;}
     .clubhouse-rail b{font-size:10px;}
   }
-
-  /* The tab strip under the clubhouse. The room is the home page now, so the
-     one thing that is not a mode hangs off the bottom of it like a tab on
-     a folder rather than sitting in the room pretending to be one. */
-  .clubtabs{margin:-3px auto 0;display:flex;gap:8px;}
-  .clubtabs .tab{font:inherit;font-size:12px;font-weight:900;letter-spacing:.14em;
-    text-transform:uppercase;background:var(--panel-2);color:var(--text);
-    border:3px solid var(--line);border-top:0;padding:8px 18px;cursor:pointer;
-    box-shadow:3px 3px 0 var(--navy);}
-  .clubtabs .tab:hover{background:var(--gold);color:#fff6ea;}
-  .clubtabs .tab:active{transform:translate(2px,2px);box-shadow:none;}
 
   /* THE PHONE MENU.
      A DEPICTED ROOM CANNOT CARRY THIS SCREEN ON A PHONE, and five goes at
@@ -680,8 +798,6 @@
      are. Written out in both places they drift. There is one matchMedia in
      the script and this keys off what it sets. */
   body.roomfill .clubhouse-rail{display:none;}
-  body.roomfill .clubtabs{margin:6px auto 0;width:100%;}
-  body.roomfill .clubtabs .tab{flex:1;text-align:center;border-top:3px solid var(--line);}
 
   /* A PHONE HELD SIDEWAYS HAS NO HEIGHT TO SPARE. 390 tall, and the
      browser's own chrome has taken a third of it before the page draws
@@ -802,6 +918,7 @@
   <div class="brand">
     <h1>MythiBall</h1>
     <span class="tag">Public domain baseball</span>
+    <span class="tag motto" aria-hidden="true">Legends. Monsters. One diamond.</span>
     <span class="spacer"></span>
     <button id="btn-mute" title="Toggle sound"></button>
     <button id="btn-home">Main Menu</button>
@@ -3134,8 +3251,16 @@ function landscapeRoom() {
     helmets: { x: 906, y: 420 },
     batbag: { x: 336, y: 434 },
     jerseys: { x: 1042, y: 104 },
-    castW: 74,
-    cast: [{ x: 534, foot: 486 }, { x: 726, foot: 472 }],
+    castW: 70,
+    /* FOUR OF THEM, ALONG THE FRONT OF THE BENCH. The bench runs x460 to
+       x800, so four at 70 wide fit across it with a little air between.
+       The feet alternate between two depths: a row of people standing on
+       one line reads as a police lineup rather than as a room.
+       They stay clear of the kit on the floor either side, the bat bag at
+       336 and the glove at 824, because a character standing on a glove is
+       the one thing in here nobody would draw on purpose. */
+    cast: [{ x: 466, foot: 492 }, { x: 554, foot: 476 },
+           { x: 642, foot: 492 }, { x: 728, foot: 478 }],
     cups: [[520, 338], [548, 340], [742, 337]],
     slots: {
       exhibition: { x: 40 + DX, y: 150 + DY, w: 150, h: 200 },
@@ -3174,6 +3299,11 @@ function landscapeRoom() {
    composed to the window rather than fitted into it afterwards. */
 const ROOMFILL = window.matchMedia(
   '(max-width: 600px), (max-aspect-ratio: 1/1), (max-height: 560px)');
+
+/* ASKED ONCE, READ EVERYWHERE. The clubhouse cast, the bob and the zoom all
+   have to honour a reader who has asked for less motion, and three inline
+   copies of the same query is three places for one of them to be forgotten. */
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 /* Which shape the window wants. Narrow OR upright gets the upright room: a
    tablet held that way is past any phone breakpoint and has a worse version
@@ -3620,23 +3750,13 @@ function drawClubhouse(ctx, things, hotId) {
   if (R.helmets) drawHelmets(ctx, R.helmets.x, R.helmets.y);
   if (R.batbag) drawBatBag(ctx, R.batbag.x, R.batbag.y);
   if (R.jerseys) drawJerseys(ctx, R.jerseys.x, R.jerseys.y);
-  /* TWO OF THE CAST, STANDING ABOUT. The room was furniture: a place the
-     game happens near rather than a place anyone in the game lives. The
-     first two on the roster you can actually draft stand here, which also
-     means the pair changes the first time an unlock lands and the room
-     quietly acknowledges it. Feet on the floor, well below the wall line,
-     so they can never cover a board or a sign. */
-  const here = ROSTER.filter(c => isUnlocked(c.k)).slice(0, 2);
-  here.forEach((c, i) => {
-    const spot = R.cast[i];
-    if (!spot) return;
-    const w = R.castW, h = Math.round(w * V2_H / V2_W);
-    ctx.fillStyle = 'rgba(20,40,63,.24)';
-    ctx.beginPath();
-    ctx.ellipse(spot.x + w / 2, spot.foot - 3, w * 0.34, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.drawImage(photoMug(c.k, w, false), spot.x, spot.foot - h, w, h);
-  });
+  /* THE CAST IS NOT DRAWN HERE ANY MORE. Four of them stand along the
+     bench, and they breathe: that is `paintCast`, on its own canvas over
+     this one, because this drawing is expensive and changes only when the
+     pointer moves while the people change several times a second. They are
+     the frontmost thing in the room, so an overlay is exact.
+     Feet on the floor, well below the wall line, so they can never cover a
+     board or a sign. */
   /* seed cups on the bench, because somebody sits here */
   for (const [cx2, cy2] of R.cups) roomRect(ctx, cx2, cy2, 12, 14, '#e8f0e4');
 
@@ -3703,66 +3823,297 @@ function teamStrip(w) {
   for (let d = 16; d < h - F - 6; d += 26) {
     for (let x = (d / 26) % 2 ? 12 : 0; x < w; x += 28) c.fillRect(x, F + d, 16, 3);
   }
-  /* a bench behind them, and the two of them in front of it */
-  const cast = ROSTER.filter(ch => isUnlocked(ch.k)).slice(0, 2);
-  const cw = Math.round(clamp(h * 0.62, 40, 92));
-  const chh = Math.round(cw * V2_H / V2_W);
+  /* A bench behind them. THREE stand in front of it rather than two, and
+     they are drawn on their own canvas over this one for the reason the
+     room's are: this is a still and they are not. The spots come back with
+     the strip so the overlay knows where to stand them. */
+  const cw = Math.round(clamp(h * 0.58, 40, 84));
   const mid = Math.round(w / 2);
-  roomRect(c, mid - 110, F + 8, 220, 9, '#8a5f2a');
-  roomRect(c, mid - 92, F + 17, 9, 22, '#7d5628');
-  roomRect(c, mid + 83, F + 17, 9, 22, '#7d5628');
-  cast.forEach((ch, i) => {
-    const x = i ? mid + 12 : mid - cw - 12, foot = h - 4;
-    c.fillStyle = 'rgba(20,40,63,.24)';
-    c.beginPath(); c.ellipse(x + cw / 2, foot - 3, cw * 0.34, 4, 0, 0, Math.PI * 2); c.fill();
-    c.drawImage(photoMug(ch.k, cw, false), x, foot - chh, cw, chh);
+  roomRect(c, mid - 118, F + 8, 236, 9, '#8a5f2a');
+  roomRect(c, mid - 100, F + 17, 9, 22, '#7d5628');
+  roomRect(c, mid + 91, F + 17, 9, 22, '#7d5628');
+  const gap = Math.round(cw * 0.16);
+  const span = cw * 3 + gap * 2;
+  const x0 = Math.round(mid - span / 2);
+  const spots = [0, 1, 2].map(i => ({
+    x: x0 + i * (cw + gap),
+    foot: h - 4 - (i === 1 ? 5 : 0),     /* the middle one stands a little back */
+  }));
+  return { cv, w, h, spots, castW: cw };
+}
+
+/* ============================================================ the clubhouse
+   WHO IS HANGING ABOUT, AND WHY IT IS DECIDED ONCE A VISIT.
+   The room used to stand the FIRST TWO draftable characters on the floor,
+   so every visit was the same two people and the clubhouse read as a set
+   rather than a room. It is four of them now, drawn at random.
+
+   CHOSEN ONCE AND KEPT. The room repaints on every hover, so a cast picked
+   inside the painter would reshuffle the people every time the pointer
+   crossed a bat rack. It is module state for exactly that reason, which
+   also means the four are the same four on the phone and the desktop if a
+   window is resized across the breakpoint. */
+let CAST = null;
+function clubhouseCast(n) {
+  if (!CAST) {
+    const bag = ROSTER.filter(c => isUnlocked(c.k));
+    for (let i = bag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = bag[i]; bag[i] = bag[j]; bag[j] = t;
+    }
+    /* EVERY ONE ON HIS OWN CLOCK. A cast that shares a period is four
+       people doing the same thing on the same beat, which reads as a
+       machine rather than as a room. The period and the offset are both
+       per character, so nothing ever lines up. */
+    CAST = bag.slice(0, 6).map((c, i) => ({
+      k: c.k,
+      poses: castPoses(c.k),
+      period: 1600 + i * 290 + Math.floor(Math.random() * 500),
+      phase: Math.random() * 5000,
+    }));
+  }
+  return CAST.slice(0, n);
+}
+
+/* THE POSES THIS CHARACTER ACTUALLY OWNS AS DIFFERENT DRAWINGS. Thirteen
+   of the sixty eight have no animation strips at all, so `ready` and
+   `cheer` are the same still as `idle` for them and they simply stand
+   there. That is the art order rather than a bug, and asking the decoded
+   drawing is what stops a loop that swaps one frame for an identical one
+   and calls it animation. */
+function castPoses(k) {
+  const seen = new Set(), out = [];
+  for (const p of ['idle', 'ready', 'cheer']) {
+    if (!V2_SPRITES[k] || !V2_SPRITES[k].f[p]) continue;
+    const d = v2Frame(k, p).join('/');
+    if (seen.has(d)) continue;
+    seen.add(d);
+    out.push(p);
+  }
+  return out.length ? out : ['idle'];
+}
+
+function castFrame(m, now) {
+  if (m.poses.length < 2 || REDUCED.matches) return m.poses[0];
+  return m.poses[Math.floor((now + m.phase) / m.period) % m.poses.length];
+}
+
+/* THE CAST IS ITS OWN CANVAS, OVER THE ROOM'S. The room is a detailed
+   drawing that costs real time to paint, and it changes only when the
+   pointer moves; the people change several times a second. Painted into
+   the same canvas, every breath would repaint the whole clubhouse. They
+   are the frontmost thing in the scene, so an overlay is exact rather
+   than an approximation. */
+function paintCast(ctx, spots, w, now) {
+  const cast = clubhouseCast(spots.length);
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.imageSmoothingEnabled = false;
+  cast.forEach((m, i) => {
+    const spot = spots[i];
+    if (!spot) return;
+    const bob = REDUCED.matches ? 0
+      : (Math.floor((now + m.phase) / 430) % 2 ? 1 : 0);
+    ctx.fillStyle = 'rgba(20,40,63,.24)';
+    ctx.beginPath();
+    ctx.ellipse(spot.x + w / 2, spot.foot - 3, w * 0.34, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.drawImage(spriteFor(m.k, w, castFrame(m, now)), spot.x, spot.foot - w - bob, w, w);
   });
-  return { cv, w, h };
+}
+
+/* One loop for whichever clubhouse is on screen, stopped the moment the
+   menu is left. A canvas animating behind another screen is work nobody
+   can see, and this page already stops its live game and its bracket for
+   the same reason. */
+let castTimer = 0;
+function runCast(ctx, spots, w) {
+  stopCast();
+  const tick = () => {
+    if (State.screen !== 'menu' || !ctx.canvas.isConnected) { stopCast(); return; }
+    paintCast(ctx, spots, w, performance.now());
+    castTimer = requestAnimationFrame(tick);
+  };
+  /* THE FIRST TICK IS DEFERRED, and that is not tidiness. The menu builds
+     its whole tree before handing it to the page, so a canvas asked to
+     paint during the build is not in the document yet: the `isConnected`
+     guard above fired on the very first frame, stopped the loop, and the
+     clubhouse came up with nobody in it. A frame later it is connected. */
+  castTimer = requestAnimationFrame(tick);
+}
+function stopCast() {
+  if (castTimer) cancelAnimationFrame(castTimer);
+  castTimer = 0;
+}
+
+/* THE FRANCHISE IS THE PRIMARY ACTION, and the status above it is read off
+   the save rather than written. It reuses the `season` thing's own `go`,
+   so there is exactly one place that knows what starting or resuming a
+   franchise means. A second copy is how the door and the card come apart. */
+function franchisePanel(things) {
+  const t = things.find(x => x.id === 'season');
+  const wrap = el('div', 'fr-panel');
+  const on = !!State.season;
+  if (on) {
+    const rec = seasonRecord(State.season);
+    const gp = State.season.results.length;
+    const line = el('div', 'fr-stat');
+    line.appendChild(el('b', null, 'Year ' + (State.season.year || 1)));
+    line.appendChild(el('i', null, rec.w + '-' + rec.l));
+    line.appendChild(el('span', null, State.season.playoffs
+      ? 'Playoffs' : 'Game ' + (gp + 1) + ' of 7'));
+    wrap.appendChild(line);
+  } else {
+    wrap.appendChild(el('div', 'fr-stat empty',
+      'No franchise running. Pick a club and take it through seven.'));
+  }
+  const b = el('button', 'bigplay');
+  b.type = 'button';
+  b.innerHTML = '<span class="bp-mark" aria-hidden="true"></span>'
+    + '<span class="bp-txt">' + (on ? 'Continue franchise' : 'Start a franchise') + '</span>';
+  b.onclick = t.go;
+  wrap.appendChild(b);
+  return wrap;
+}
+
+/* THE MODE TILES, built from the same `clubhouseThings()` the room hangs on
+   its wall, so a tile and the object above it can never offer different
+   things. The art IS the room's furniture at another size: the bat rack,
+   the trophy case, the chalkboard. Nothing new was drawn for this. */
+function modeGrid(things) {
+  const g = el('div', 'hmodes');
+  const tile = (key, sign, blurb, art, go) => {
+    const b = el('button', 'hmode hmode-' + key);
+    b.type = 'button';
+    const pic = el('div', 'hmode-art');
+    pic.appendChild(art());
+    b.appendChild(pic);
+    const tx = el('div', 'hmode-txt');
+    tx.appendChild(el('b', null, sign));
+    tx.appendChild(el('span', null, blurb));
+    b.appendChild(tx);
+    b.onclick = go;
+    g.appendChild(b);
+    return b;
+  };
+  for (const id of ['exhibition', 'cup']) {
+    const t = things.find(x => x.id === id);
+    tile(id, t.sign, t.blurb, () => modeIcon(t, 72), t.go);
+  }
+  /* MEET THE PLAYERS IS A MODE, NOT A FOOTNOTE. It was a small tab under
+     everything else, and the roster is the most distinctive thing this
+     game has. Its art is three of the cast overlapping, like cards fanned
+     in a hand, which is the one tile whose picture is the thing it opens. */
+  tile('meet', 'Meet the players', rosterLine(), () => rosterFan(72),
+       () => { State.screen = 'meet'; render(); });
+  const h = things.find(x => x.id === 'howto');
+  tile('howto', h.sign, h.blurb, () => modeIcon(h, 72), h.go);
+  return g;
+}
+
+/* COUNTED, NEVER TYPED. A roster size in copy is a number that goes stale
+   the day somebody adds a character, which is this repo's oldest rule
+   about numbers in sentences. */
+function rosterLine() {
+  return ROSTER.length + ' legends, monsters and weirdos';
+}
+
+function rosterFan(px) {
+  const cv = document.createElement('canvas');
+  cv.width = px * 2; cv.height = px * 2;
+  const c = cv.getContext('2d');
+  c.setTransform(2, 0, 0, 2, 0, 0);
+  c.imageSmoothingEnabled = false;
+  /* TWO, NOT THREE, and that is a legibility call rather than a taste one.
+     The art box is 56 square on a phone: three heads in it at any size that
+     overlaps read as one smudge. Two, offset, on a pair of card edges,
+     reads as what it is from across the room.
+
+     THE SECOND CARD MUST NOT COVER THE FIRST FIGURE'S CENTRE, which is
+     where a character is drawn. At .70 the cards overlap by 57% of their
+     own width, so the front card's left edge landed at .30 and the back
+     one's centre at .35: the back character was a sliver of shoulder and
+     a lot of white. It read fine on a desktop shot and only because the
+     character drawn there happened to be left biased, which is luck rather
+     than a layout. At .60 the edge is at .40 against a centre at .30. */
+  const two = clubhouseCast(2);
+  const w = Math.round(px * 0.60);
+  two.forEach((m, i) => {
+    const x = Math.round(i * (px - w));
+    const y = Math.round(px - w - (i ? 0 : 4));
+    c.fillStyle = '#1b3a5c';
+    c.fillRect(x - 2, y - 2, w + 4, w + 4);
+    c.fillStyle = '#fffcf2';
+    c.fillRect(x - 1, y - 1, w + 2, w + 2);
+    c.drawImage(spriteFor(m.k, w, 'idle'), x, y, w, w);
+  });
+  return cv;
+}
+
+/* THE CLUBHOUSE WIRE. Small, secondary, and every line is TRUE: the roster
+   size and the unlock count are counted off the real thing, and the rest
+   are flavour that claims no statistic. Nothing here invents a batting
+   average, because a made up number on a screen that also shows real ones
+   makes the real ones unreadable. */
+function clubhouseWire() {
+  const open = ROSTER.filter(c => isUnlocked(c.k)).length;
+  const lines = [
+    ROSTER.length + ' on the roster. ' + open + ' in the clubhouse so far.',
+    'Everybody here is out of copyright and into the lineup.',
+    'The bat rack is open. Help yourself.',
+    'Somebody left the cooler lid off again.',
+    'Nobody here has aged a day since the public domain took them.',
+  ];
+  /* The motto is in the header. A wire that can print it back at the reader
+     is the same sentence twice on one screen, which is the thing the old
+     status line down here was removed for. */
+  if (State.season) {
+    const rec = seasonRecord(State.season);
+    lines.unshift(rec.w === rec.l
+      ? 'Level at ' + rec.w + '-' + rec.l + '. Anybody\'s year.'
+      : (rec.w > rec.l ? 'Winning season so far, ' : 'Under .500 so far, ')
+        + rec.w + '-' + rec.l + '.');
+  }
+  const wrap = el('div', 'wire');
+  wrap.appendChild(el('b', null, 'Clubhouse wire'));
+  wrap.appendChild(el('span', null, lines[Math.floor(Math.random() * lines.length)]));
+  return wrap;
 }
 
 /* THE PHONE MENU. Four buttons, and that is the whole of it. */
 function renderPhoneMenu() {
   const s = el('div', 'screen');
   const card = el('div', 'card');
+  const things = clubhouseThings();
+
+  /* THE CLUBHOUSE IS THE HERO HERE TOO, at the one depth a phone can carry
+     honestly: a run of floorboard with people standing on it. Three of
+     them rather than two, and they breathe, on an overlay for the same
+     reason the room's do. */
   const wide = Math.max(240, (window.innerWidth || 360) - 44);
   const strip = teamStrip(Math.min(wide, 640));
   strip.cv.className = 'ph-strip';
   strip.cv.setAttribute('aria-hidden', 'true');
-  card.appendChild(strip.cv);
+  const hero = el('div', 'ph-hero');
+  hero.appendChild(strip.cv);
+  const castcv = document.createElement('canvas');
+  castcv.className = 'ph-cast';
+  castcv.width = strip.w * 2; castcv.height = strip.h * 2;
+  castcv.setAttribute('aria-hidden', 'true');
+  const cctx = castcv.getContext('2d');
+  cctx.setTransform(2, 0, 0, 2, 0, 0);
+  hero.appendChild(castcv);
+  card.appendChild(hero);
+  runCast(cctx, strip.spots, strip.castW);
 
-  const menu = el('div', 'ph-menu');
-  for (const t of clubhouseThings()) {
-    const b = el('button', 'ph-door');
-    b.type = 'button';
-    b.appendChild(modeIcon(t, 58));
-    const txt = el('div', 'ph-txt');
-    txt.appendChild(el('b', null, t.sign));
-    /* The BLURB, not the note. The note was written for a rail with a
-       whole line to itself; the franchise one ran to four lines here and
-       made one button twice the height of its neighbours. */
-    txt.appendChild(el('span', null, t.blurb || ''));
-    b.appendChild(txt);
-    b.setAttribute('aria-label', t.note ? t.label + '. ' + t.note : t.label);
-    b.onclick = t.go;
-    menu.appendChild(b);
-  }
-  card.appendChild(menu);
+  /* FOUR NEARLY IDENTICAL FULL WIDTH ROWS WERE THE WHOLE MENU, and the
+     franchise was the second of them, no louder than How To Play. It is
+     the thing a returning player came back for, so it is the button. */
+  card.appendChild(franchisePanel(things));
+  card.appendChild(modeGrid(things));
+  card.appendChild(clubhouseWire());
+  /* The status sentence that used to sit down here said exactly what the
+     panel above now says, so it is gone rather than printed twice. */
   s.appendChild(card);
-
-  const tabs = el('div', 'clubtabs');
-  const meet = el('button', 'tab', 'Meet the players');
-  meet.type = 'button';
-  meet.onclick = () => { State.screen = 'meet'; render(); };
-  tabs.appendChild(meet);
-  card.appendChild(tabs);
-
-  if (State.season) {
-    const rec = seasonRecord(State.season);
-    const gp = State.season.results.length;
-    card.appendChild(el('p', null,
-      `Season in progress: ${rec.w}-${rec.l}, game ${gp + 1} of 7.`
-      + (State.season.playoffs ? ' (Playoffs)' : '')));
-  }
   app.appendChild(s);
 }
 
@@ -3858,34 +4209,39 @@ function renderMenu() {
 
   paint(null);
   room.appendChild(club);
+  /* THE PEOPLE, ON THEIR OWN CANVAS OVER THE ROOM. Same box, no pointer
+     events, so every hotspot underneath still takes the click. */
+  /* AT THE ROOM'S OWN RESOLUTION, NOT THE SCREEN'S. The clubhouse is drawn
+     into a canvas a THIRD of its nominal size and blitted up with smoothing
+     off, so one block of the room is three units across. An overlay at the
+     display resolution would put people with a finer grain than the room
+     they are standing in, which is the one thing that would give the whole
+     scene away. Same low canvas, same blit, stretched by CSS. */
+  const castcv = document.createElement('canvas');
+  castcv.className = 'roomcast';
+  castcv.width = Math.round(ROOM.w / ROOM_PIX);
+  castcv.height = Math.round(ROOM.h / ROOM_PIX);
+  castcv.setAttribute('aria-hidden', 'true');
+  const cctx = castcv.getContext('2d');
+  cctx.setTransform(1 / ROOM_PIX, 0, 0, 1 / ROOM_PIX, 0, 0);
+  club.insertBefore(castcv, club.firstChild.nextSibling);
+  runCast(cctx, ROOM.cast, ROOM.castW);
   room.appendChild(rail);
-  /* The one thing in here that is not a mode. It used to be the whole
-     roster printed down the page under the room, which made the home page
-     a wall of stat blocks with a picture on top of it. */
-  const tabs = el('div','clubtabs');
-  const meet = el('button','tab','Meet the players');
-  meet.type = 'button';
-  meet.onclick = () => { State.screen = 'meet'; render(); };
-  tabs.appendChild(meet);
-  room.appendChild(tabs);
   card.appendChild(room);
 
-  if (State.season) {
-    const rec = seasonRecord(State.season);
-    const gp = State.season.results.length;
-    const info = el('p', null,
-      `Season in progress: ${rec.w}-${rec.l}, game ${gp+1} of 7.`
-      + (State.season.playoffs ? ' (Playoffs)' : '')
-    );
-    card.appendChild(info);
-    const wipe = el('button','btn ghost','Delete Save');
-    wipe.onclick = () => {
-      if (confirm('Delete the current season save? This cannot be undone.')) {
-        clearSeason(); State.season = null; render();
-      }
-    };
-    card.appendChild(wipe);
-  }
+  /* THE FRANCHISE IS THE THING TO PRESS. It used to be one of four signs on
+     the wall with no more weight than the chalkboard, and the save's state
+     was a sentence at the very bottom of the page under a Delete button. */
+  card.appendChild(franchisePanel(things));
+  card.appendChild(modeGrid(things));
+  card.appendChild(clubhouseWire());
+
+  /* THE SAME STATUS IS NOT PRINTED TWICE. `Season in progress: 0-0, game 1
+     of 7` used to sit at the bottom of this page saying exactly what the
+     panel above now says louder, and directly above a Delete Save button,
+     which put the most destructive control on the home page next to the
+     most ordinary sentence on it. Deleting a save lives on the franchise
+     hub, behind the franchise. */
 
   s.appendChild(card);
 

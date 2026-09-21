@@ -820,8 +820,16 @@ async function main() {
         /* The home page is the room. The roster used to print underneath
            it, which made the first thing anybody saw a wall of numbers. */
         out.menuCards = document.querySelectorAll('#app .charcard').length;
-        out.tab = (document.querySelector('.clubtabs .tab') || {}).textContent;
-        document.querySelector('.clubtabs .tab').click();
+        /* MEET THE PLAYERS IS A MODE TILE NOW, not a tab under everything
+           else. The claim is unchanged and is the one that matters: there
+           is a way from the home page to the squad, and it is not hidden.
+           What moved is which element carries it, so the selector moved
+           with it rather than the assertion. */
+        const meet = document.querySelector('.hmode-meet');
+        out.tab = meet && meet.querySelector('b').textContent;
+        out.tabArea = meet ? Math.round(meet.getBoundingClientRect().width
+                                      * meet.getBoundingClientRect().height) : 0;
+        meet.click();
         out.screen = State.screen;
 
         const hots = [...document.querySelectorAll('.photo .hot')];
@@ -872,8 +880,14 @@ async function main() {
       });
       ok(r.menuCards === 0, 'the clubhouse is the home page, with no roster printed under it',
          'cards=' + r.menuCards);
-      ok(/Meet the players/i.test(r.tab || ''), 'and a tab that opens the squad', r.tab);
-      ok(r.screen === 'meet', 'the tab goes to the photo', r.screen);
+      ok(/Meet the players/i.test(r.tab || ''), 'and a mode tile that opens the squad', r.tab);
+      /* IT IS NOT A FOOTNOTE. The roster is the most distinctive thing this
+         game has and it used to be a small tab under four bigger buttons,
+         so the tile has to be a real one: same order of size as the modes
+         it sits beside. */
+      ok(r.tabArea > 12000, 'and it is a proper tile rather than a small tab',
+         r.tabArea + ' square pixels');
+      ok(r.screen === 'meet', 'the tile goes to the photo', r.screen);
       ok(r.faces === r.roster && r.named === r.roster,
          `all ${r.roster} are in the frame, once each`,
          `faces=${r.faces} named=${r.named} roster=${r.roster}`);
@@ -921,7 +935,12 @@ async function main() {
         const r = await pg.evaluate(() => {
           const el = document.querySelector('.clubhouse canvas');
           const cv = el.getBoundingClientRect();
-          const tabs = document.querySelector('.clubtabs').getBoundingClientRect();
+          /* THE ROOM AND THE THING TO PRESS. It used to be the room and
+             the Meet tab, because the tab was the last thing on the page.
+             The page is longer now on purpose, and what a returning player
+             must not have to scroll for is the button that continues their
+             franchise. */
+          const tabs = document.querySelector('.bigplay').getBoundingClientRect();
           const hots = [...document.querySelectorAll('.clubhouse .hot')]
             .map(b => b.getBoundingClientRect());
           /* No two things in the room may claim the same pixel. */
@@ -953,16 +972,26 @@ async function main() {
         ok(Math.abs(r.cw / r.ch - r.ratio) < 0.02,
            `${tag}: the room keeps its shape rather than stretching`,
            `drawn ${Math.round(r.cw)}x${Math.round(r.ch)} ratio ${(r.cw / r.ch).toFixed(2)} want ${r.ratio.toFixed(2)}`);
-        ok(r.bottom <= r.vh, `${tag}: the whole room and its tab are above the fold`,
+        ok(r.bottom <= r.vh, `${tag}: the room and the button to press are above the fold`,
            `bottom=${Math.round(r.bottom)} vh=${r.vh}`);
         ok(r.docW <= r.winW + 1, `${tag}: and the page does not scroll sideways`,
            `doc=${r.docW} win=${r.winW}`);
         ok(r.hots === 4 && !r.overlap && r.inFrame,
            `${tag}: four things, none overlapping, all inside the frame`,
            JSON.stringify({ n: r.hots, overlap: r.overlap, inFrame: r.inFrame }));
+        /* THE ROOM IS NEVER SMALLER THAN IT IS ALLOWED TO BE, which is a
+           property rather than a percentage. It used to be the whole menu,
+           so "fills the window" meant the width and nothing else. There is
+           a franchise scoreboard and a button under it now, and on a SHORT
+           window the height budget is what binds: at 1280x800 the room is
+           78% of the width because going wider would push the button that
+           continues a save below the fold, which is the worse trade.
+           So it has to be limited by ONE of the two, never by neither. */
         if (w >= 1280) {
-          ok(r.cw >= w * 0.82, `${tag}: it actually fills the window`,
-             `drawn ${Math.round(r.cw)} of ${w}`);
+          const cap = Math.min(r.vh - 350, 760);
+          ok(r.cw >= w * 0.82 || r.ch >= cap - 4,
+             `${tag}: the room takes everything the layout allows it`,
+             `drawn ${Math.round(r.cw)} of ${w} wide, ${Math.round(r.ch)} tall against a ${Math.round(cap)} budget`);
         }
         ok(errors.length === 0, `${tag}: no page errors`, errors.join(' | '));
         await pg.close();
@@ -3799,12 +3828,23 @@ async function main() {
         await pg.goto(URL);
         await wait(pg, 700);
         const r = await pg.evaluate(() => {
-          const doors = [...document.querySelectorAll('.ph-door')];
+          /* THE FOUR ROWS ARE FOUR TILES NOW, and the franchise is the big
+             button above them rather than the second row down. Every claim
+             below is the one it always was: one target a mode, real text at
+             a real size, even weight, no drawn room. What moved is the
+             element carrying them. */
+          const doors = [...document.querySelectorAll('.hmode')];
           const rect = doors.map(d => d.getBoundingClientRect());
           const nameFs = doors.map(d =>
             parseFloat(getComputedStyle(d.querySelector('b')).fontSize));
+          const cta = document.querySelector('.bigplay');
+          const cr = cta && cta.getBoundingClientRect();
           return {
             doors: doors.length,
+            ctaText: cta ? cta.textContent.trim() : '',
+            ctaWidth: cr ? cr.width / innerWidth : 0,
+            ctaFs: cta ? parseFloat(getComputedStyle(cta).fontSize) : 0,
+            ctaTouch: cr ? Math.min(cr.width, cr.height) : 0,
             room: !!document.querySelector('.clubhouse canvas'),
             strip: !!document.querySelector('.ph-strip'),
             names: doors.map(d => (d.querySelector('b').textContent || '').trim()),
@@ -3831,8 +3871,8 @@ async function main() {
       for (const sz of sizes) {
         const r = await look(sz.w, sz.h, true);
         ok(r.doors === 4 && !r.room,
-           `${sz.what}: the menu is four buttons, not a drawn room`,
-           `${r.doors} buttons, room canvas ${r.room}`);
+           `${sz.what}: the menu is four mode tiles, not a drawn room`,
+           `${r.doors} tiles, room canvas ${r.room}`);
         ok(r.names.every(v => v.length > 0) && r.icons === 4,
            `${sz.what}: each is named and carries its own art`,
            JSON.stringify(r.names));
@@ -3847,9 +3887,19 @@ async function main() {
         ok(r.minTouch >= 44,
            `${sz.what}: every one is a real touch target`,
            'smallest side ' + Math.round(r.minTouch) + 'px');
-        ok(r.width >= 0.8,
-           `${sz.what}: and runs the width of the screen`,
+        /* THE TILES ARE TWO UP, SO THE FULL WIDTH CLAIM MOVED TO THE ONE
+           CONTROL THAT STILL DESERVES IT. Four identical rows down the
+           screen was the layout this replaced; what must still run the
+           width is the thing a returning player came back to press. */
+        ok(r.width >= 0.4,
+           `${sz.what}: the tiles are a real share of the screen`,
            Math.round(r.width * 100) + '% of ' + r.vw);
+        ok(r.ctaWidth >= 0.8 && r.ctaTouch >= 44,
+           `${sz.what}: and the franchise button runs the width of it`,
+           Math.round(r.ctaWidth * 100) + '%, smallest side ' + Math.round(r.ctaTouch));
+        ok(r.ctaFs >= 16 && /franchise/i.test(r.ctaText),
+           `${sz.what}: the primary action is named in the largest type on the screen`,
+           r.ctaFs + 'px "' + r.ctaText + '"');
         /* Real text at a real size, which a canvas could never promise:
            the room's signs came out at six CSS pixels once and nothing in
            the code said so. */
@@ -3862,9 +3912,15 @@ async function main() {
       }
       /* The desktop keeps the room, which is the screen the rail and the
          wall of objects were designed for. */
+      /* THE DESKTOP KEEPS THE ROOM AND GAINS THE TILES. It used to be one
+         or the other: the room WAS the menu, so a desktop had no tiles at
+         all. The room is the hero now and the tiles are the menu under it,
+         so what this asserts is that the room is still there rather than
+         that nothing else is. */
       const desk = await look(1280, 860, false);
-      ok(desk.doors === 0 && desk.room,
-         'a desktop: still gets the clubhouse room', JSON.stringify(desk));
+      ok(desk.doors === 4 && desk.room,
+         'a desktop: still gets the clubhouse room, with the tiles under it',
+         JSON.stringify({ tiles: desk.doors, room: desk.room }));
       ok(desk.errors.length === 0, 'a desktop: no page errors', desk.errors.join(' | '));
     }
 
@@ -3883,7 +3939,7 @@ async function main() {
       /* HOW TO PLAY is the one door that goes somewhere without asking for
          a roster first, so it is the one to press. */
       const went = await pg.evaluate(async () => {
-        const doors = [...document.querySelectorAll('.ph-door')];
+        const doors = [...document.querySelectorAll('.hmode')];
         const howto = doors.find(d => /HOW TO PLAY/i.test(d.textContent));
         if (!howto) return { found: false };
         howto.click();
@@ -3913,7 +3969,7 @@ async function main() {
       await pg.goto(URL);
       await wait(pg, 700);
       const look = () => pg.evaluate(() => ({
-        doors: document.querySelectorAll('.ph-door').length,
+        doors: document.querySelectorAll('.hmode').length,
         room: !!document.querySelector('.clubhouse canvas'),
         over: document.documentElement.scrollWidth - innerWidth,
       }));
@@ -3921,7 +3977,7 @@ async function main() {
       await pg.setViewportSize({ width: 844, height: 390 });
       await wait(pg, 700);
       const flat = await look();
-      /* and out to a desktop, where the room takes over */
+      /* and out to a desktop, where the room comes back above the tiles */
       await pg.setViewportSize({ width: 1280, height: 860 });
       await wait(pg, 700);
       const desk = await look();
@@ -3934,8 +3990,15 @@ async function main() {
       ok(flat.doors === 4 && flat.over <= 1,
          'turned sideways it is still the menu, and still fits',
          JSON.stringify(flat));
-      ok(desk.room && desk.doors === 0,
-         'stretched to a desktop, the room takes over', JSON.stringify(desk));
+      /* THE DESKTOP KEEPS THE ROOM AND GAINS THE TILES. It used to be one or
+         the other: the room WAS the menu, so a desktop had no tiles at all.
+         The room is the hero now and the tiles are the menu under it, so what
+         this asserts is that the room came back rather than that nothing else
+         did. The phone assertion below is still one or the other, because a
+         phone gets no room. */
+      ok(desk.room && desk.doors === 4,
+         'stretched to a desktop, the room comes back with the tiles under it',
+         JSON.stringify(desk));
       ok(again.doors === 4 && !again.room,
          'and back to a phone gets the menu again', JSON.stringify(again));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
