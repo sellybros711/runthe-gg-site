@@ -2633,6 +2633,68 @@ the contact frame overlap at 0.35, so a warp between them is a deformation
 large enough to destroy 64x64 art. Transferring motion from a character who
 has it to one who does not is not available.
 
+#### Nineteen characters played the game as somebody else
+
+**Medusa stood at the plate as a gorgon and took the swing as a brown haired
+woman in a blue dress.** Apollo stood holding a lyre and played as a CENTAUR.
+Krampus batted as Humpty Dumpty, Humpty Dumpty batted as Medusa, Ares played as
+a gentleman in a top hat. Nineteen of the sixty eight, on every screen, since
+the pack was installed.
+
+**The stills and the strips came out of the pack under one name and only the
+stills are that character.** So a character is correct exactly where it stands
+still (`idle`, `catch`, `throw`, `back`, `slump`, all off `source_reference`)
+and is somebody else the moment it does anything. That is a man changing
+species when he swings, which is the reason this file already gives for
+building a character entirely from the pack, arriving from INSIDE the pack.
+
+**Nothing could report it and nothing did.** Every frame is a valid frame, every
+pose is present, every pose is its own drawing, and each one differs from idle,
+which is every property the guards here ask for. Found by rendering all 55 and
+looking.
+
+**NO AUTOMATIC MATCHER IS AVAILABLE, and two were written before that was
+believed.** The pack redrew every character for the strips: measured, a
+character's strips and its own stills share **zero exact colours**, and
+quantising both (3, 4 and 5 bits, three mass floors) never separates a known
+good pairing from a known bad one at any setting. The first matcher weighted
+colours by mass and confidently filed every dark figure under `black_cat`; the
+second weighted by inverse frequency and filed Alice under `werewolf`. **Both
+contradicted the eye on characters already confirmed**, which is the only reason
+they were not believed. That is the fourth and fifth wrong extractor here.
+
+**So `FILE_DRAWS` in `build_table.py` is an OBSERVATION, written the direction
+it was observed**: the file on the left draws the character on the right. The
+builder wants the inverse and computes it, because a hand written inverse is a
+second copy of an answer.
+
+**What corroborates it is the SHAPE, not any one row.** The nineteen sit in two
+CONTIGUOUS runs of `manifest.json`'s own key order, 13-22 and 33-42, and each
+run is a **closed permutation of itself**: every file in it draws another
+character from the same run, exactly once. Nothing outside those two runs is
+touched, and all 36 other files are their own character. A closed permutation
+inside a contiguous block is what a packaging bug looks like. A string of
+eyesight mistakes would not close.
+
+`check_file_draws()` asserts exactly that on every build: a name the pack does
+not have, two files claiming one character, and a chain that leaves its block
+are each named. Proved by introducing all three.
+
+**It costs nothing in coverage**, which is the sign it was purely a naming
+fault: 807 poses from a drawn frame before and after, 647 on a still before and
+after. The same frames, under the right characters.
+
+**A SECOND, SMALLER FAULT IS STILL OPEN AND IS DELIBERATELY NOT IN THIS FIX.**
+Twelve characters ship their strips fully opaque, with the background baked in,
+and their outline is the same near black as that background, so
+`border_background`'s flood walks along the outline and into the figure. 204
+frames arrive that way and **35 of them clean down to under 900 pixels**, which
+`usable_frame` then refuses, so those poses fall back to a still. It is the
+failure the `border_background` docstring predicts at `tol=12`, happening at
+`tol=0` because the two colours are identical. Worth about 35 drawn frames
+across pan, phoenix, pirate, poseidon, quasimodo, rabid_dog, ringmaster, santa,
+sasquatch, scarecrow, vampire and zombie.
+
 #### The batter stood at the plate holding an axe
 
 `pose === 'batting'` drew the `back` frame, which was right when the sprites

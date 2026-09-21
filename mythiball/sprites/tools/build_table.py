@@ -66,6 +66,67 @@ NAME_MAP = {
     'robin': 'robin_hood', 'tom': 'tom_sawyer',
 }
 
+# NINETEEN STRIP FILES ARE NAMED AFTER THE WRONG CHARACTER, AND THE GAME HAS
+# BEEN SHIPPING IT. A character's STILLS and its STRIPS came out of the pack
+# under the same name and only the stills are that character: medusa stood at
+# the plate as a gorgon and swung as a brown haired woman in a blue dress,
+# apollo stood holding a lyre and played as a centaur, krampus batted as
+# Humpty Dumpty. Every screen rendered perfectly. A player watched somebody
+# change species between the pitch and the swing, which is the exact failure
+# the one-source-per-character rule in this file was written to prevent,
+# arriving from inside the pack instead of from the builder.
+#
+# THIS MAP IS AN OBSERVATION, WRITTEN THE DIRECTION IT WAS OBSERVED: the file
+# on the left draws the character on the right. The builder wants the inverse
+# and computes it, because a hand written inverse is a second copy of an
+# answer and the two drift.
+#
+# NO AUTOMATIC MATCHER IS AVAILABLE, which is worth knowing before anybody
+# tries to regenerate this. The pack redrew every character for the strips
+# with a different palette: measured, a character's strips and its own stills
+# share ZERO exact colours, and quantising both (3, 4 and 5 bits, three mass
+# floors) never separates a known good pairing from a known bad one at any
+# setting. Two colour matchers were written and both confidently named the
+# wrong character. It was read by eye off contact sheets.
+#
+# WHAT CORROBORATES IT is the shape rather than any one row. The nineteen sit
+# in two CONTIGUOUS blocks of manifest.json's own key order, 13 to 22 and 33
+# to 42, and each block is a CLOSED permutation of itself: every file in the
+# block draws another character from the same block, exactly once. Nothing
+# outside those two blocks is touched and all 36 other files are their own
+# character. That is what a packaging bug looks like and it is not what a
+# string of eyesight mistakes looks like. `build_table.py` asserts both
+# properties on every run, so a typo here fails rather than ships.
+FILE_DRAWS = {
+    # manifest block 13-22
+    'acrobat':           'cowardly_lion',
+    'apollo':            'centaur',
+    'ares':              'arsene_lupin',
+    'arsene_lupin':      'ares',
+    'athena':            'bearded_lady',
+    'bearded_lady':      'chupacabra',
+    'black_cat':         'acrobat',
+    'centaur':           'black_cat',
+    'chupacabra':        'athena',
+    'cowardly_lion':     'apollo',
+    # manifest block 33-42 (mr_hyde is the one file in it that is itself)
+    'headless_horseman': 'long_john_silver',
+    'hera':              'mother_nature',
+    'hermes':            'mrs_claus',
+    'humpty_dumpty':     'medusa',
+    'krampus':           'humpty_dumpty',
+    'long_john_silver':  'headless_horseman',
+    'medusa':            'hera',
+    'mother_nature':     'krampus',
+    'mrs_claus':         'hermes',
+}
+# The builder asks the other way round: whose art am I, and which file holds
+# it. Anything not named here is its own file, which is the other 36.
+STRIP_FILE = {v: k for k, v in FILE_DRAWS.items()}
+if len(STRIP_FILE) != len(FILE_DRAWS):
+    sys.exit('FILE_DRAWS is not a bijection: two files claim one character')
+
+
 # WHICH PACK FRAME STANDS FOR WHICH GAME POSE. The game asks for sixteen and
 # the pack draws six, so the rest are filled from the stills rather than left
 # out. A missing pose falls through to idle, and idle faces the wrong way for
@@ -320,6 +381,11 @@ def encode(frame, palette):
 def build_character(game_key, pack_name, audit, note):
     poses = {}
     base = static_for(pack_name)
+    # THE STILLS AND THE STRIPS ARE LOOKED UP UNDER DIFFERENT NAMES, and that
+    # is the whole of the mislabelling fix. `pack_name` is right for the
+    # stills, which really are this character; the strips for nineteen of
+    # them live in a file named after somebody else. See FILE_DRAWS.
+    strip_name = STRIP_FILE.get(pack_name, pack_name)
     if base is None:
         return None
     ref_mass = int((base[:, :, 3] > 0).sum())
@@ -336,7 +402,7 @@ def build_character(game_key, pack_name, audit, note):
     # animation cannot end up being the same drawing. See the walk below.
     claimed = {}
     for pose, (anim, idx) in POSE_SOURCE.items():
-        strip = '%s_%s' % (pack_name, anim)
+        strip = '%s_%s' % (strip_name, anim)
         path = os.path.join(STRIPS, strip + '.png')
         if not os.path.exists(path):
             continue
@@ -501,6 +567,54 @@ def build_character(game_key, pack_name, audit, note):
     return rec
 
 
+def check_file_draws():
+    """FILE_DRAWS still has the shape that corroborates it, or the build stops.
+
+    The map was read by eye and no automatic matcher can re-derive it (see the
+    note over it), so what holds it up is not any one row: it is that the
+    nineteen form CLOSED permutations of two contiguous runs of the pack's own
+    key order, touching nothing else. A typo turns one of those into an open
+    chain, which is a claim about the pack that is not true, and it would
+    otherwise ship as one more character wearing somebody else's face.
+
+    It also refuses a name the pack does not have, which is the ordinary way
+    this breaks: a file that does not exist falls through to the stills in
+    silence and the character simply stops moving.
+    """
+    mpath = os.path.join(ROOT, 'manifest.json')
+    if not os.path.exists(mpath):
+        return
+    order = list(json.load(open(mpath)).keys())
+    seen = set(order)
+    for k, v in FILE_DRAWS.items():
+        for n in (k, v):
+            if n not in seen:
+                sys.exit('FILE_DRAWS names %r, which the pack does not have' % n)
+    pos = {n: i for i, n in enumerate(order)}
+    todo, blocks = set(FILE_DRAWS), []
+    while todo:
+        lo = hi = pos[min(todo, key=lambda n: pos[n])]
+        grew = True
+        while grew:                       # widen to the closure of the cycle
+            grew = False
+            for k in FILE_DRAWS:
+                if lo <= pos[k] <= hi or lo <= pos[FILE_DRAWS[k]] <= hi:
+                    a, b = sorted((pos[k], pos[FILE_DRAWS[k]]))
+                    if a < lo or b > hi:
+                        lo, hi, grew = min(lo, a), max(hi, b), True
+        span = order[lo:hi + 1]
+        files = {n for n in span if n in FILE_DRAWS}
+        arts = {FILE_DRAWS[n] for n in files}
+        if files != arts:
+            sys.exit('FILE_DRAWS is not a closed permutation over manifest '
+                     '%d-%d: %s' % (lo, hi, sorted(files ^ arts)))
+        blocks.append((lo, hi, len(files)))
+        todo -= files
+    print('FILE_DRAWS: %d files remapped in %d closed block(s) %s'
+          % (len(FILE_DRAWS), len(blocks),
+             ', '.join('%d-%d' % (a, b) for a, b, _ in blocks)))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--report', action='store_true')
@@ -513,6 +627,7 @@ def main():
         for r in csv.DictReader(open(ap_path)):
             audit[r['strip']] = r
 
+    check_file_draws()
     game_keys = json.load(open(os.path.join(HERE, 'game_keys.json')))
     table, note, missing = {}, [], []
     for gk in game_keys:
