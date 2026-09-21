@@ -457,6 +457,162 @@ const main = async () => {
     }
   }
 
+  /* ------------------------------------------------------------------
+     THE MAN AT THE PLATE IS IN THE PICTURE
+
+     There are two batter's boxes. `drawPlateView` puts a lefty at 638 and a
+     righty at 322, mirrored about the scene's cx of 480, and the plate
+     camera's focus was one number: 596, which is the lefty's framing. On a
+     390 phone the crop is 117 of the world's 320 blocks, so a righty's box
+     at 68 to 146 was 8.1% in frame. 52 of the 68 characters bat right.
+
+     NOTHING COULD REPORT IT. The scene renders, the swing plays, the aim
+     maps correctly, and the zone was never clipped because the keep box
+     holds it. It is the fourth thing on this page found by taking a
+     screenshot, and it survived that too: the man in the shot was one of
+     the sixteen lefties.
+
+     SO IT WALKS ALL SIXTY EIGHT, and it does it by putting each of them in
+     the box and RE-FITTING, because one camera read against 68 hypothetical
+     batters cannot see a camera that follows the hitter. The first draft of
+     this did exactly that and reported the fixed page as still broken.
+
+     IT MEASURES THE LIT FIGURE, NEVER THE CELL. A sprite cell is 64 wide and
+     a character's drawing is 40 to 64 of it, so a claim about the cell counts
+     transparent margin as a man and overstates every crop: the same 412 phone
+     reads 82.5% of the cell and 81% of the figure for one character and 100%
+     of both for another.
+
+     WHAT IS ASKED OF HIM IS STRUCTURAL, because on the narrowest screens the
+     three things that must be here do not all fit and the batter is what
+     gives. The claim is that his PLATE-FACING edge is in frame, so his swing
+     and the bat's whole arc are; the share is a backstop against gross loss
+     and sits at 70 against a measured worst of 81 and a defect of 8.1.
+
+     Coverage is half of it, the same as everywhere else here: a run where
+     both hands happened to frame identically would pass having exercised
+     nothing, so the crop is asserted to MOVE between the two boxes on a
+     phone. A desktop holds the whole world and correctly never moves, which
+     is why that claim is asked only where the crop is narrower than the
+     scene.
+     ------------------------------------------------------------------ */
+  {
+    console.log('the man at the plate is in the picture');
+    /* 412 is the narrowest crop of any phone in use, because its device
+       ratio is low against its height, so it is the one that binds. */
+    for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
+                                      ['tall phone', 412, 915, 2.625],
+                                      ['small phone', 320, 568, 2],
+                                      ['sideways', 844, 390, 3]]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h },
+        deviceScaleFactor: dpr, isMobile: true, hasTouch: true });
+      const pg = await ctx.newPage();
+      const errors = [];
+      pg.on('pageerror', e => errors.push(e.message));
+      await pg.goto(URL);
+      await pg.evaluate(() => localStorage.clear());
+      await pg.goto(URL);
+      await pg.waitForTimeout(350);
+      await pg.evaluate(() => {
+        Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: false });
+      });
+      await pg.waitForFunction(() => State.game && plateViewActive(State.game),
+        null, { timeout: 20000 });
+      const r = await pg.evaluate(() => {
+        const P = plateGeom();
+        const cv = document.getElementById('field');
+        const t = currentBattingTeam();
+        const keep = t.batters[t.idx % 9];
+        /* The cell's half width in world blocks, off the same three numbers
+           `drawRunnerAt` sizes him with. */
+        const half = (HERO_DRAW_H * P.batSc * V2_W / V2_H) / 2 / PIX;
+        const zone = [(P.zx - P.zw) / PIX, (P.zx + P.zw) / PIX];
+        const ball = [(P.zx - PITCH_LOC_MAX * P.zw) / PIX,
+                      (P.zx + PITCH_LOC_MAX * P.zw) / PIX];
+        /* His lit columns across every pose the plate scene can show him in,
+           so the transparent margin in the cell is not counted as a man. */
+        const litOf = (c) => {
+          let lo = 64, hi = -1;
+          for (const p of ['batting', 'load', 'swing', 'follow', 'ready']) {
+            const rows = v2Frame(c.k, p);
+            if (!rows) continue;
+            for (const row of rows) for (let x = 0; x < row.length; x++) {
+              if (row[x] !== '.') { if (x < lo) lo = x; if (x > hi) hi = x; }
+            }
+          }
+          return hi < 0 ? [0, 63] : [lo, hi];
+        };
+        const out = { thin: [], turned: [], lost: [], hands: { L: 0, R: 0 },
+                      crops: [], worst: { v: 101, k: null } };
+        const crops = new Set();
+        for (const c of ROSTER) {
+          t.batters[t.idx % 9] = c;
+          fitFieldCanvas(cv);
+          const C = FIELD_CAM, L = C.sx, R = C.sx + C.sw;
+          const lefty = batsLeft(c.k);
+          out.hands[lefty ? 'L' : 'R']++;
+          crops.add(L + '..' + R);
+          const seen = (a, b) =>
+            Math.max(0, Math.min(b, R) - Math.max(a, L)) / (b - a);
+          const bx = (lefty ? 2 * P.cx - P.batX : P.batX) / PIX;
+          const [lo, hi] = litOf(c);
+          /* drawRunner mirrors a lefty, so his lit columns mirror with him */
+          const a = lefty ? 64 - (hi + 1) : lo, z = lefty ? 64 - lo : hi + 1;
+          const fl = bx - half + (a / 64) * half * 2;
+          const fr = bx - half + (z / 64) * half * 2;
+          const v = +(seen(fl, fr) * 100).toFixed(1);
+          if (v < out.worst.v) out.worst = { v, k: c.k, lefty };
+          if (v < 70) out.thin.push({ k: c.k, lefty, v });
+          /* The edge FACING the plate carries the swing, so it is the one
+             that may never go: right for a righty, left for a lefty. */
+          const leadIn = lefty ? fl >= L - 1e-6 : fr <= R + 1e-6;
+          if (!leadIn) out.turned.push({ k: c.k, lefty, v });
+          const zq = seen(zone[0], zone[1]);
+          const bq = seen(ball[0], ball[1]);
+          if (zq < 0.999 || bq < 0.999) {
+            out.lost.push({ k: c.k, zone: +(zq * 100).toFixed(1),
+                            ball: +(bq * 100).toFixed(1) });
+          }
+        }
+        t.batters[t.idx % 9] = keep;
+        fitFieldCanvas(cv);
+        out.crops = [...crops];
+        /* A screen wide enough to hold the whole scene has no framing left
+           to choose, so it is exempt from the claim that the crop moves. */
+        out.whole = FIELD_CAM.sw >= FIELD_W / PIX;
+        return out;
+      });
+      ok(r.hands.L > 0 && r.hands.R > 0,
+        `${label}: the roster really does bat both ways`,
+        `${r.hands.L} left, ${r.hands.R} right`);
+      if (!r.whole) {
+        ok(r.crops.length === 2,
+          `${label}: and the camera moves between the two boxes`,
+          `the crop took ${r.crops.length} value(s): ${r.crops.join(' / ')}`);
+      }
+      ok(r.turned.length === 0,
+        `${label}: every one of the ${r.hands.L + r.hands.R} faces the plate `
+        + 'with his swing in frame',
+        r.turned.slice(0, 4)
+          .map(x => `${x.k} (${x.lefty ? 'L' : 'R'}) ${x.v}%`).join(', ')
+          + (r.turned.length > 4 ? ` and ${r.turned.length - 4} more` : ''));
+      ok(r.thin.length === 0,
+        `${label}: and none is under 70% drawn (worst ${r.worst.v}%, ${r.worst.k})`,
+        r.thin.slice(0, 4)
+          .map(x => `${x.k} (${x.lefty ? 'L' : 'R'}) ${x.v}% in frame`).join(', ')
+          + (r.thin.length > 4 ? ` and ${r.thin.length - 4} more` : ''));
+      ok(r.lost.length === 0,
+        `${label}: the zone and everything the arm can throw stay in frame`,
+        r.lost.slice(0, 3)
+          .map(x => `${x.k}: zone ${x.zone}%, ball range ${x.ball}%`).join('; '));
+      ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+      await pg.close(); await ctx.close();
+    }
+  }
+
   await browser.close();
   console.log('');
   if (failures) { console.log(`${failures} check(s) failed.`); process.exit(1); }

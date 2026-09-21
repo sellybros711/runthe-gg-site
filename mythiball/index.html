@@ -6675,12 +6675,56 @@ const FIELD_W = 960, FIELD_H = 660;
 const FIELD_CAM = { scale: 4, draw: 4, sx: 0, sy: 0, sw: 320, sh: 220, w: 0, h: 0 };
 
 /* WHAT THE PLATE VIEW IS ABOUT IS NOT THE MIDDLE OF THE PICTURE. The zone
-   sits at world x 442 to 534 and the batter is drawn to the RIGHT of it,
-   about 553 to 750, so a crop centred on the canvas cut his bat off at the
-   frame's edge on a phone. 596 is the middle of the two together. The wide
-   camera's focus is the centre, because a picture that fits has no offset
-   left to choose. */
+   sits at world x 442 to 534 and the batter is drawn beside it, so a crop
+   centred on the canvas cut his bat off at the frame's edge on a phone. 596
+   is the middle of the zone and the batter together. The wide camera's focus
+   is the centre, because a picture that fits has no offset left to choose.
+
+   THERE ARE TWO BATTER'S BOXES AND THIS ONLY EVER FRAMED ONE OF THEM. The
+   old wording above said the batter is drawn "about 553 to 750", which is
+   the first-base box and only the first-base box: `drawPlateView` puts a lefty
+   at 638 and a righty at 322, mirrored about the scene's own cx of 480. So
+   a single focus of 596 was right for the lefty and 274 logical pixels away
+   from the righty.
+
+   WHAT THAT COST, measured on a 390 phone. The crop is 117 of the world's
+   320 blocks and it held blocks 140 to 257. The righty's box is 68 to 146,
+   so 8.1% of him was in frame: a sliver of shoulder at the left edge, with
+   the strike zone stranded in the left third of the screen and nothing
+   beside it. 52 of the 68 characters bat right. Held sideways or on a
+   desktop the crop is wide enough to hold both boxes and nothing is wrong
+   at all, which is most of why this survived.
+
+   IT RENDERS PERFECTLY, so no guard here could see it, and the screenshot
+   that started this pass happened to look composed because the man at the
+   plate was one of the sixteen lefties.
+
+   So the focus mirrors with the hitter. THE KEEP BOX DOES NOT, and that is
+   the half to not tidy up afterwards: the zone is drawn at 442 to 534
+   whatever hand the batter swings with, so a keep box mirrored about cx
+   would stop holding the one thing it exists to hold. At 390 the mirrored
+   focus and the keep box disagree by a single block and the keep box wins,
+   which is the arrangement it was written for. */
 const FIELD_FOCUS = { wide: [480, 330], plate: [596, 452] };
+/* plateGeom's own cx. The scene mirrors about it, so the camera does too. */
+const PLATE_CX = 480;
+/* HOW FAR OFF THE MIDDLE A PITCH CAN LAND, in zone units, wild ones and all.
+   `throwPitch` clamps to it and `plateKeepX` frames it, so the camera holds
+   everything the arm can throw by construction rather than by a number
+   somebody remembered to keep in step. */
+const PITCH_LOC_MAX = 1.7;
+/* WHICH BOX THE HITTER IS STANDING IN, asked of the same `currentBatter()`
+   the plate painter draws, so the camera and the scene cannot disagree about
+   which side of the plate to look at. `batsLeft` is a pure hash of the key,
+   so this costs nothing and can never flip inside an at bat. Not knowing
+   answers the first-base box, which is what this did for everybody before. */
+function plateFocus() {
+  const [fx, fy] = FIELD_FOCUS.plate;
+  const g = State.game;
+  if (!g || !g.away || !g.home) return [fx, fy];
+  const b = currentBatter();
+  return [!b || batsLeft(b.k) ? fx : 2 * PLATE_CX - fx, fy];
+}
 
 /* HOW MANY OF THE SCREEN'S OWN PIXELS THE BITMAP IS DRAWN AT, and it is the
    whole of the frame budget on a phone.
@@ -6783,15 +6827,55 @@ function deckCoverBlocks(box, scale) {
   return (css * (window.devicePixelRatio || 1)) / scale;
 }
 
-/* WHAT THE PLATE VIEW IS NOT ALLOWED TO CUT, in world blocks. The zone runs
-   147 to 178 and it is the one thing on this screen a player has to find, so
-   a crop narrow enough to clip it is a crop that has taken the game away.
-   The batter is context and is what a narrow phone loses instead.
+/* WHAT THE PLATE VIEW IS NOT ALLOWED TO CUT, in world blocks. The zone is
+   the one thing on this screen a player has to find, so a crop narrow
+   enough to clip it is a crop that has taken the game away.
+
+   IT HOLDS THE BALL AND NOT ONLY THE ZONE, which is a fault this used to
+   have for everybody and not a cost of the mirrored focus above. A pitch
+   lands anywhere inside PITCH_LOC_MAX zone units, so the ball reaches
+   blocks 136.6 and 188.7 and the box was 144 to 181. Measured over 4,000
+   real pitches, the ball was drawn off the frame on 2.27% of them in the
+   first-base framing this page has always shipped, and the mirrored
+   framing would have made it 5.63%, because the zone sits 8 logical pixels
+   off the scene's own cx and so the two hands do not get the same room.
+   What that looks like is the ball vanishing at the instant it arrives,
+   which is the instant somebody is deciding whether to swing.
+
+   IT IS DERIVED FROM THE CLAMP, never written as two numbers. A frame that
+   holds what the pitcher COULD throw cannot go stale when somebody tunes
+   what he DOES throw, and a hand-written 189 beside a 1.7 is two copies of
+   one answer.
+
+   IT IS NOT MIRRORED WITH THE FOCUS ABOVE, deliberately. Everything in it
+   is drawn at the same place whichever box the hitter stands in, so it is
+   a fact about the scene rather than about the at bat, and a box mirrored
+   about cx would land at 139 to 176 and stop holding the zone's own right
+   edge.
+
+   WHAT GIVES, on the one screen where the three cannot all fit. The batter
+   is 78 blocks, the ball's range is 52 and their union is 120 against the
+   117 a 390 phone can show, so about three blocks of the batter's TRAILING
+   edge go: his back, the side away from the plate, with his whole swing and
+   the bat's whole arc still in frame. Every wider screen holds all of him.
+   A batter's back is cheaper than a ball that disappears, and a ball that
+   disappears reads as a fault while a figure cropped at the frame's edge
+   reads as a camera.
 
    It is a CLAMP on the crop rather than a floor on the scale, because a
    floor on the scale makes the bitmap shorter than the arena and the deck
    then sits on a black band. */
-const PLATE_KEEP_X = [144, 181];
+let PLATE_KEEP_X_CACHE = null;
+function plateKeepX() {
+  if (!PLATE_KEEP_X_CACHE) {
+    /* Lazily, because `PIX` is declared below this line and reading it here
+       would be the TDZ this file's camera header already warns about. */
+    const P = plateGeom();
+    PLATE_KEEP_X_CACHE = [Math.floor((P.zx - PITCH_LOC_MAX * P.zw) / PIX),
+                          Math.ceil((P.zx + PITCH_LOC_MAX * P.zw) / PIX)];
+  }
+  return PLATE_KEEP_X_CACHE;
+}
 const PLATE_KEEP_Y = [152, 198];
 
 function fitFieldCanvas(cv) {
@@ -6829,7 +6913,7 @@ function fitFieldCanvas(cv) {
      letterbox colour the arena is painted in anyway. */
   const sw = Math.max(1, Math.min(wBlocks, Math.floor((bw * dpr) / scale)));
   const sh = Math.max(1, Math.min(hBlocks, Math.floor((bh * dpr) / scale)));
-  const [fx, fy] = FIELD_FOCUS[plate ? 'plate' : 'wide'];
+  const [fx, fy] = plate ? plateFocus() : FIELD_FOCUS.wide;
   /* Put the focus in the middle of what is shown, then refuse to read past
      the edge of the world: a clamp rather than a centre, because a centred
      crop of the plate view puts the batter half out of frame. */
@@ -6850,7 +6934,8 @@ function fitFieldCanvas(cv) {
   /* Then refuse to cut the zone. Pulled toward it from either side, and the
      pull is harmless on a wide screen because the crop already holds it. */
   if (plate) {
-    sx = Math.max(Math.min(sx, PLATE_KEEP_X[0]), PLATE_KEEP_X[1] - sw);
+    const kx = plateKeepX();
+    sx = Math.max(Math.min(sx, kx[0]), kx[1] - sw);
     sy = Math.max(Math.min(sy, PLATE_KEEP_Y[0]),
                   PLATE_KEEP_Y[1] - Math.max(1, sh - deck));
   }
@@ -7015,7 +7100,7 @@ function startFieldLoop() {
             const dt = Math.min(60, now - (p._steerAt == null ? now : p._steerAt));
             const rate = p.steerMax / (p.arrive * durMs * 0.7);
             p.steer = clamp(p.steer + g.steerHeld * rate * dt, -p.steerMax, p.steerMax);
-            p.loc.x = clamp(p.baseLocX + p.steer, -1.7, 1.7);
+            p.loc.x = clamp(p.baseLocX + p.steer, -PITCH_LOC_MAX, PITCH_LOC_MAX);
           }
           p._steerAt = now;
           /* No swing by the time the ball lands: the umpire calls it a
@@ -7703,8 +7788,8 @@ function throwPitch(chosenPt, chosenZone, opts) {
     : clamp(0.55 + pitSkill / 200 + (Math.random() - 0.5) * 0.3, 0.1, 1);
   const sigma = pitchScatter(pitSkill, release, fatigue.level)
     * (playerIsBatting() ? 1 / diff.pitcherSkill : 1);
-  const loc = { x: clamp(aim.x + gauss() * sigma, -1.7, 1.7),
-                y: clamp(aim.y + gauss() * sigma, -1.7, 1.7) };
+  const loc = { x: clamp(aim.x + gauss() * sigma, -PITCH_LOC_MAX, PITCH_LOC_MAX),
+                y: clamp(aim.y + gauss() * sigma, -PITCH_LOC_MAX, PITCH_LOC_MAX) };
   const isStrike = Math.abs(loc.x) <= 1 && Math.abs(loc.y) <= 1;
   /* An inside pitch has to be hit out front and a high one a touch
      early: the timing sweet spot rides the location. */
@@ -13350,7 +13435,10 @@ function renderGame() {
     const pt = fieldPointFromEvent(e);
     if (!pt) return;
     const z = plateToZone(plateGeom(), pt[0], pt[1]);
-    g2.pci = { x: clamp(z.x, -1.7, 1.7), y: clamp(z.y, -1.7, 1.7) };
+    /* The bat may be put anywhere a pitch can land and nowhere else, which
+       is the same bound the camera frames, so the cursor is always drawn. */
+    g2.pci = { x: clamp(z.x, -PITCH_LOC_MAX, PITCH_LOC_MAX),
+               y: clamp(z.y, -PITCH_LOC_MAX, PITCH_LOC_MAX) };
   };
   cv.addEventListener('mousemove', moveCursor);
   cv.addEventListener('touchstart', moveCursor, { passive: true });

@@ -4200,6 +4200,133 @@ mound in both cameras: every call in the game was announced across his face.
 Half way down is the band of outfield grass with nothing in it, and it is
 still above the zone.
 
+#### There are two batter's boxes and the camera only ever framed one
+
+Reported as nothing, because a screenshot of it looks fine about a quarter of the
+time. `drawPlateView` mirrors the hitter about the scene's own `cx` of 480: a lefty
+stands at 638 and a righty at 322. The plate camera's focus was the single number
+**596**, and the comment over it said the batter is drawn "about 553 to 750",
+which is the first-base box and only the first-base box. **That comment is the
+whole bug**, written as a fact about the scene by somebody who had looked at one
+half of it.
+
+**What it cost, on a 390 phone.** The crop is 117 of the world's 320 blocks and it
+held blocks 140 to 257. A righty's box is 68 to 146, so **8.1% of him was in
+frame**: a sliver of shoulder at the left edge, with the strike zone stranded in
+the left third of the screen and nothing beside it. **52 of the 68 characters bat
+right.** At 360 it is 9.4% and at 320 it is 35%.
+
+| | in frame |
+|---|---|
+| a lefty, any screen | 100% |
+| a righty, 390 phone | **8.1%** |
+| a righty, 320 phone | 35% |
+| either, sideways or desktop | 100% |
+
+Sideways and on a desktop the crop is wide enough to hold both boxes, so **there
+is nothing wrong at all on the two screens a developer works on**, which is most
+of why it survived. Everything else about it is correct: the scene renders, the
+swing plays, the aim maps, and the zone is never clipped, because the keep box
+holds the zone and the keep box is the only thing that was ever asked about.
+
+**Found by taking a screenshot and looking at it, which is the fourth time on this
+page**, and it nearly survived that too: the man at the plate in the shot was one
+of the sixteen lefties, so the picture looked composed.
+
+**So the focus mirrors with the hitter.** `plateFocus()` asks `currentBatter()`,
+which is the same call the plate painter makes, so the camera and the scene cannot
+disagree about which side of the plate to look at. `batsLeft` is a pure hash of the
+key, so it costs nothing and can never flip inside an at bat.
+
+**THE KEEP BOX DOES NOT MIRROR, and that is the half most likely to be tidied up
+afterwards.** The zone is drawn at 442 to 534 whichever box the hitter stands in,
+so it is a fact about the scene rather than about the at bat, and a keep box
+mirrored about `cx` would land at blocks 139 to 176 and stop holding the very thing
+it exists for. At 390 the mirrored focus asks for `sx` 63 and the keep box refuses
+below 64, so the two disagree by one block and the keep box wins. That is the
+arrangement it was written for, working.
+
+**What a narrow phone loses instead is the CATCHER**, who is a sliver at the far
+corner and is the one figure here that most reference games do not draw at all.
+The note on `PLATE_KEEP_X` used to say the BATTER was the thing a narrow phone
+gives up. He is not context: his swing is the entire feedback loop.
+
+**The guard puts each of the sixty eight in the box and RE-FITS**, and the first
+draft of it read one camera against 68 hypothetical batters, which cannot see a
+camera that follows the hitter: it reported the fixed page as still broken. It
+also asserts the crop MOVES between the two boxes, because a run where both hands
+framed identically would pass having exercised nothing, and it exempts a screen
+holding the whole scene, which correctly never moves. Reintroduced, five
+assertions fail and name `popeye (R) 8.1% in frame`.
+
+**The sky above the park is NOT this and is not a defect.** The plate scene is 220
+blocks tall and a 390 phone shows 208 of them, because `cover` binds on the height
+and there are only 12 blocks of vertical freedom. Framing a shorter band would
+make the scale larger and the crop NARROWER: at 140 blocks the phone would show 78
+across, which is the width of the batter alone. The sky is what buys the
+horizontal room.
+
+##### And measuring that turned up the ball leaving the frame, which was everybody's
+
+`PLATE_KEEP_X` was `[144, 181]`, a box around the zone and nothing else. A pitch
+lands anywhere inside **1.7 zone units**, so the ball reaches blocks **136.6 and
+188.7**. Driven through the real pitcher, 4,000 pitches:
+
+| framing | pitches drawn off the frame |
+|---|---|
+| the first-base box, which this page has always shipped | **2.27%** |
+| the mirrored box, with the keep box left alone | **5.63%** |
+
+So **one pitch in forty four already vanished** before any of this, and the fix
+above would have made it one in eighteen. The two hands do not get the same room
+because the zone sits at 488 against the scene's cx of 480, so mirroring the focus
+does not mirror the zone.
+
+**What it looks like is the ball disappearing at the instant it arrives**, which is
+the instant somebody is deciding whether to swing. Nothing throws: a ball drawn
+outside the source rectangle is simply not blitted.
+
+**So the keep box holds what the ARM CAN THROW, derived from the clamp.**
+`PITCH_LOC_MAX` is the one place 1.7 lives now; it was written out **four** times,
+in `throwPitch`, again in the late break's re-clamp (which moves the ball after
+release), and twice in the batter's own aim cursor. A hand-written 189 beside a 1.7
+is two copies of one answer, and `check-numbers`' lesson applies to a camera as
+much as to a sentence. The cursor reading the same bound is a free consequence
+worth knowing: the bat can now never be put somewhere the frame does not show.
+
+**WHAT GIVES IS THE BATTER, and that is the honest trade rather than a miss.** The
+batter is 78 blocks, the ball's range is 52, and their union is 120 against the 117
+a 390 phone can show. So about three blocks of his TRAILING edge go: his back, the
+side away from the plate. Measured across every phone width in use, on the LIT
+figure rather than the 64px cell:
+
+| | worst figure in frame | ball | zone |
+|---|---|---|---|
+| 320, 360, sideways, desktop | 100% | 100% | 100% |
+| 390 | 94.9% | 100% | 100% |
+| 412 (the narrowest crop of any phone) | **81%** | 100% | 100% |
+
+**412 binds and 320 does not**, which is not the order anybody guesses: its device
+ratio is low against its height, so it gets fewer device pixels across to spend.
+Any new screen worth checking is found by measuring, never by taking the smallest.
+
+**A batter's back is cheaper than a ball that disappears**, and the two read
+differently as well as costing differently: a ball that vanishes reads as a fault,
+where a figure cropped at the frame's edge reads as a camera. It was looked at
+rather than reasoned about, on the 412 phone that loses the most.
+
+**THE GUARD MEASURES THE LIT FIGURE, NEVER THE CELL.** A cell is 64 wide and a
+character's drawing is 40 to 64 of it, so counting the cell counts transparent
+margin as a man: the same phone reads 82.5% of the cell and 81% of the figure.
+
+**And what it asks of him is STRUCTURAL, because on the narrowest screen the three
+things cannot all fit.** The claim is that his PLATE-FACING edge is in frame, so
+his swing and the bat's whole arc are, whichever box he is in. The 70% share beside
+it is a backstop against gross loss and sits against a measured worst of 81 and a
+defect of 8.1. The two catch different directions and both are needed: with the
+keep box widened and the focus NOT mirrored, one character comes back at **0%**,
+entirely off the frame, while his plate-facing edge is still technically inside it.
+
 #### And the wide camera left a black hole, which the full bleed layout made bigger
 
 Found by walking the first two pitches again after the pass above. Before the
