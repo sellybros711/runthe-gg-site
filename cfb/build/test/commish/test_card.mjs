@@ -15,9 +15,15 @@
  * both read it: the same three accounts are put in front of the sheet and in front of the
  * mode, and the two answers have to match every time.
  *
- * It also checks the thing a live page cannot get wrong: nobody outside the list sees any
- * sign of the mode. /cfb/ is indexed and carries ads, and a "coming soon" on it would be a
- * launch rather than a test.
+ * THE MODE IS LAUNCHED NOW, so the list decides nothing about who gets in: COMMISH_LIVE is
+ * true and allowed() answers yes to everybody. What is left of the original question is the
+ * half that still has two answers, which is SIGNED IN or not, and the two pages still have
+ * to agree about that. The matrix below is unchanged in shape and the expectation moved.
+ *
+ * WHAT WENT WITH THE LAUNCH. This used to assert that a visitor off the list found no
+ * mention of the mode anywhere on /cfb/. That assertion is now false on purpose: the Go Pro
+ * card on that page is gated on commishOn(), so flipping the flag is exactly what put the
+ * mode's name in front of everybody, which is what launching it means.
  */
 import { chromium } from 'playwright';
 import { createRequire } from 'module';
@@ -41,7 +47,7 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:${username?"{username:'"+username+"'}":'null'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
 
 /* PUT A NAME ON THE REAL LIST, by trapping the assignment access.js makes, so a green run
    never depends on a real person's leaderboard name. The shipped list is empty and only
@@ -57,6 +63,20 @@ const arm=(name)=>`
 })();`;
 
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
+
+/* A CUTSCENE CAN TAKE THE SCREEN THE MOMENT A TERM STARTS, and one that a walker does not
+   know about is a walker that stalls on the one screen with no dock. Skip it: the scenes have
+   their own suite in test_scene, and every other file here is testing something behind them.
+   Called after anything that could arrive at the office. */
+async function pastScene(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-scene', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#b-scene-skip').catch(() => {});
+    await pg.waitForTimeout(320);
+  }
+}
+
 let bad=0;
 const ok=(n,p,x)=>{if(!p)bad++;console.log((p?'  ok   ':' FAIL  ')+n+(x!==undefined?'   '+x:''));};
 
@@ -121,10 +141,11 @@ console.log('\n=== the list is one list ===');
 {
   ok('the shared file is what both pages would load', typeof ACCESS.allowed==='function',
     ACCESS.TESTERS.length+' names, '+ACCESS.TESTER_IDS.length+' account ids, live '+ACCESS.LIVE);
-  /* NOT LIVE. Every other assertion here is about who gets in while the mode is closed, and
-     all of them pass trivially the moment this flips. It is the one line that turns the
-     mode on for the whole public, so it is asserted rather than assumed. */
-  ok('  and the mode is still closed', ACCESS.LIVE===false);
+  /* LIVE. It is the one line that turns the mode on for the whole public, so it is asserted
+     in whichever position it is in rather than assumed. It read `=== false` for as long as
+     the mode was closed, and closing it again should be a decision somebody makes here
+     rather than something a merge does quietly. */
+  ok('  and the mode is open to everybody', ACCESS.LIVE===true);
   /* THE CASING TRAP, asserted on the file rather than through a browser because it is a
      property of the list and not of either page. set_username keeps the casing somebody
      typed, so a list matched exactly misses them. */
@@ -132,14 +153,20 @@ console.log('\n=== the list is one list ===');
     ACCESS.isTester(TESTER)===ACCESS.isTester(TESTER.toUpperCase()));
   /* TWO WAYS ONTO THE LIST, because the first version had only usernames and a username
      is not something you can work out from an email address. An account that signed in
-     with Google may have no username at all, and its id is the only handle it has. */
+     with Google may have no username at all, and its id is the only handle it has.
+     ASKED OF isTester AND isTesterId RATHER THAN OF allowed(), which is the change the
+     launch forced. allowed() returns true for everybody now, one line in, so putting these
+     through it does not test the matching at all: both assertions passed on the flag and
+     would have gone on passing with the matchers deleted. The matchers are still real code
+     and still read directly, by canPlayClubDynasty on the football side, so they are worth
+     a check that actually reaches them. */
   ok('  an account id counts as well as a name',
-    ACCESS.allowed({name:null,userId:'x'})===false
+    ACCESS.isTesterId('x')===false
     && (function(){ ACCESS.TESTER_IDS.push('x');
-         const r=ACCESS.allowed({name:null,userId:'x'}); ACCESS.TESTER_IDS.pop(); return r; })());
+         const r=ACCESS.isTesterId('x'); ACCESS.TESTER_IDS.pop(); return r; })());
   ok('  while nobody else is',
-    !ACCESS.allowed('somebodyelse')&&!ACCESS.allowed(null)&&!ACCESS.allowed('')
-    &&!ACCESS.allowed({name:'somebodyelse',userId:'nope'}));
+    !ACCESS.isTester('somebodyelse')&&!ACCESS.isTester(null)&&!ACCESS.isTester('')
+    &&!ACCESS.isTesterId('nope')&&!ACCESS.isTesterId(null));
   /* NOBODY IS ON THE SHIPPED LIST BY ACCIDENT. The names in this file are real people's
      accounts, so a stray entry is a real person being let in. Printed, not just counted,
      because the point is to be able to read it. */
@@ -159,14 +186,42 @@ for(const [label,signedIn,username] of WHO){
   const d=await doorOpens(signedIn,username);
   /* What the list SHOULD say, computed the same way the pages compute it, with the test's
      own name counted as on the list because that is what `arm` puts there. */
+  /* WHO CAN PLAY, which is every signed in account now that the mode is launched. The
+     list is not consulted: allowed() reads COMMISH_LIVE first and answers yes. */
   const want=!!signedIn&&(username===TESTER||ACCESS.allowed(username));
-  ok(label+': the two agree', c.card===d.open,
-    'card '+(c.card?'drawn':'not drawn')+', door '+(d.open?'open':'shut'));
-  ok('  and they agree with the list', d.open===want, 'the list says '+(want?'yes':'no'));
-  if(!want){
-    ok('  and the game says nothing about the mode at all', !c.anywhere,
-      c.anywhere?'the words appear on the page':'no mention');
+  /* THE CARD IS DRAWN FOR EVERYBODY AND THE TWO NO LONGER HAVE TO MATCH, which is the
+     deliberate half of this and reverses what this line asserted for a year.
+     THE OLD RULE was card === door, and it was right while the list decided both: a card
+     with no door behind it meant a tester tapping it and being told they were not on the
+     list, and a door with no card meant a tester who could play and had no way to find it.
+     WHAT CHANGED is that the card is now the one screen where a signed out visitor learns
+     the mode exists at all. Hiding it from them made /cfb/ the wall the offer card was
+     added to knock down: no sign anywhere that Commissioner Simulator is here. So the card
+     is unconditional and the SIGNED OUT row is allowed to be card-drawn, door-shut.
+     THAT IS NOT THE OLD FAILURE WEARING A NEW COAT, and the difference is what the shut
+     door says. It reads "Commish Simulator needs an account. Sign in on the game and come
+     back", which is a thing the reader can do. The old one said they were not on a list
+     they could not join. An invitation and a refusal look the same to a boolean, so the
+     boolean is not what this asserts any more.
+     THE INVARIANT THAT SURVIVES is the one that was always the point: anybody who can open
+     the mode is shown the way in. A door that opens with no card is still the fault. */
+  if(signedIn){
+    ok(label+': the two agree', c.card===d.open,
+      'card '+(c.card?'drawn':'not drawn')+', door '+(d.open?'open':'shut'));
+  } else {
+    ok(label+': the card is there anyway', c.card,
+      'card '+(c.card?'drawn':'not drawn')+', door '+(d.open?'open':'shut'));
+    ok('  and the mode does not open without an account', !d.open);
   }
+  ok('  and they agree with the list', d.open===want, 'the list says '+(want?'yes':'no'));
+  /* NO "AND THE GAME SAYS NOTHING ABOUT THE MODE" ANY MORE, and deleting it was the
+     deliberate half of this launch rather than a test getting in the way. The only row that
+     still lands here is `signed out`, and a signed out visitor is now SUPPOSED to find the
+     mode named: the Go Pro card on this page is gated on commishOn() and that is true. What
+     is still worth asserting for that row is above, in the two lines both other rows get:
+     no card, and a shut door. Being sold something you have to sign in for is an invitation.
+     Being shown a card that opens nothing would be the fault, and `the two agree` is what
+     catches it. */
   const errs=c.errs.concat(d.errs);
   console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
@@ -186,10 +241,15 @@ console.log('\n=== the card goes where it says ===');
   const tag=await p.$eval('#b-mc-commish',(e)=>e.tagName).catch(()=>'');
   ok('  and a real link, not a button', tag==='A', tag);
   ok('  it says what the mode is', (await p.$eval('#b-mc-commish p',(e)=>e.textContent).catch(()=>'')).length>60);
-  /* IT SAYS TESTING. Somebody on the list should know the mode is unfinished before they
-     open it, or the first rough edge is reported as a broken game. */
+  /* IT SAYS NEW, AND IT SAID TESTING UNTIL THE MODE LAUNCHED. The page already knew how to
+     do both: the word is picked off commishOn(), because telling somebody on a preview list
+     that a rough mode is finished gets the first rough edge reported as a broken game, and
+     telling the public a launched mode is in testing is the same lie the other way round.
+     Asserted rather than dropped, because this card is now on the sheet for everybody and
+     the word on it is the one thing here that a visitor reads before deciding to trust it. */
   const sticker=await p.$eval('#b-mc-commish .mc-sticker',(e)=>e.textContent.trim()).catch(()=>'');
-  ok('  and that it is not finished', /testing/i.test(sticker), sticker||'no sticker');
+  ok('  and that it is new rather than in testing', /new/i.test(sticker)&&!/testing/i.test(sticker),
+    sticker||'no sticker');
   await p.close();
 }
 

@@ -108,7 +108,7 @@
      seventy schools of which sixty-seven WERE the four powers, so the Group of Five was a bloc
      and a line in the money table rather than teams. Lifting sixty-seven of seventy is a level
      shift by another name, and it showed: an open door drew 2.50 a game at year five against
-     1.29 for a shut one, a ninety per cent swing off one setting, which would have swamped the
+     1.29 for a shut one, a ninety percent swing off one setting, which would have swamped the
      pool settlement the audience is priced through, while the number it was supposed to move,
      who reached the bracket, did not move at all.
 
@@ -189,7 +189,7 @@
     }
 
     /* AND THEN RECENTERED, BECAUSE A Z IS A Z. This is not a tidying step, it is the
-       definition of the quantity: strength_z is standardised within its season, so the mean
+       definition of the quantity: strength_z is standardized within its season, so the mean
        of a real season is zero by construction and an invented one has to be as well.
 
        Without it the whole sport quietly got better every year. The carousel only fires on
@@ -763,6 +763,22 @@
 
   /* ---------------- the bracket ---------------- */
 
+  /* WHO PLAYS WHOM, WITHOUT PLAYING IT.
+     The office draws the field on the beat it is about to be played on, so it needs the first
+     round as a fixture list rather than as a result. A second copy of the pairing rule in the
+     page would be a second chance to disagree with the bracket it is previewing, so the rule
+     lives here once and bracket() opens with the same call. test_season asserts the two agree
+     on the field of every size this mode can produce. */
+  function firstRound(seats, world) {
+    var byes = Math.max(0, Math.min(seats.length - 1, (world.playoff || {}).byes || 0));
+    var waiting = seats.slice(0, byes);
+    var playing = seats.slice(byes);
+    var ties = [];
+    var lo = 0, hi = playing.length - 1;
+    while (lo < hi) { ties.push([playing[lo], playing[hi]]); lo++; hi--; }
+    return { byes: waiting, games: ties, odd: lo === hi ? playing[lo] : null };
+  }
+
   function bracket(seats, world, rng) {
     var byes = Math.max(0, Math.min(seats.length - 1, world.playoff.byes || 0));
     var alive = seats.slice();
@@ -805,6 +821,88 @@
     return { rounds: rounds, champion: playing[0] || alive[0] || null };
   }
 
+  /* ---------------- the trophy ----------------
+     THE ONE INDIVIDUAL AWARD EVERY FAN IN THIS SPORT FOLLOWS, and a mode about running the
+     sport had no idea it existed. A commissioner is not voting, which is exactly why it
+     belongs on their screen: it is the clearest single measure of what the season is ABOUT,
+     it moves every week, and it is the thing a stadium chants.
+
+     NOBODY IN IT IS NAMED, and that is not a limitation, it is the same rule the docket, the
+     cutscenes and the recruiting board hold. Every player in this sport is real and about
+     twenty years old. A race between "the quarterback at Oregon" and "the running back at
+     Georgia" names nobody, invents nobody, and is exactly how the argument sounds in October
+     anyway: the position and the program are what anybody actually says out loud.
+
+     WHAT PUTS SOMEBODY IN IT is what puts somebody in it in life: play for a team that is
+     winning, on an offense that scores, and be lucky. The first two are read off the season
+     the player is watching, so the race moves when the football does. */
+  var HEISMAN_POS = [
+    { id: 'qb', name: 'The quarterback', w: 0.56 },
+    { id: 'rb', name: 'The running back', w: 0.17 },
+    { id: 'wr', name: 'The receiver', w: 0.13 },
+    { id: 'edge', name: 'The edge rusher', w: 0.08 },
+    { id: 'db', name: 'The cornerback', w: 0.06 },
+  ];
+  /* Deterministic per school per year, so a term replays the same race. */
+  function shash(str) {
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return (h >>> 0) / 4294967295;
+  }
+  function positionFor(seed, school, year) {
+    var r = shash(seed + '|' + school + '|' + year + '|pos');
+    for (var i = 0; i < HEISMAN_POS.length; i++) {
+      r -= HEISMAN_POS[i].w;
+      if (r <= 0) return HEISMAN_POS[i];
+    }
+    return HEISMAN_POS[0];
+  }
+
+  /* The race as it stands, longest odds first out of the list. `n` is how many to return. */
+  function heisman(teams, world, n) {
+    if (!teams || teams.length < 4) return [];
+    var seed = String((world && world.seed) || 0);
+    var year = (world && world.year) || 0;
+    /* HOW MUCH THIS TEAM IS SCORING, standardized across the sport, because forty a game in a
+       league where everybody scores forty is not a campaign. */
+    var rates = teams.map(function (t) {
+      var g = Math.max(1, t.wins + t.losses);
+      return t.pf ? t.pf / g : (t.off || 24);
+    });
+    var mu = rates.reduce(function (a, b) { return a + b; }, 0) / rates.length;
+    var sd = Math.sqrt(rates.reduce(function (a, b) {
+      return a + (b - mu) * (b - mu); }, 0) / rates.length) || 1;
+
+    var pool = teams.map(function (t, i) {
+      var g = Math.max(1, t.wins + t.losses);
+      var winPct = t.wins / g;
+      return {
+        school: t.school, conference: t.conference, color: t.color,
+        wins: t.wins, losses: t.losses,
+        pos: positionFor(seed, t.school, year),
+        /* WINNING IS MOST OF IT, which is the complaint everybody has about this award and
+           is also true of it. Scoring is the rest, and the noise is the campaign. */
+        /* MEASURED: at a win weight of 1.6 the noise term was worth more than a whole extra
+           win in November, and the race led with a two loss team over an unbeaten one, which
+           is the one thing this award never does. */
+        score: 1.00 * (t.z || 0) + 2.40 * (winPct - 0.5)
+          + 0.60 * ((rates[i] - mu) / sd)
+          + 0.35 * (shash(seed + '|' + t.school + '|' + year + '|heis') - 0.5) * 2,
+      };
+    }).sort(function (a, b) { return b.score - a.score; }).slice(0, Math.max(3, n || 5));
+
+    /* A STRAW POLL RATHER THAN A SCORE. Nobody has ever read a Heisman number; everybody has
+       read "he is at forty-one percent and pulling away", and a share is also the only form
+       that says how CLOSE it is, which is the whole content of a race. */
+    var ex = pool.map(function (r) { return Math.exp(r.score * 2.2); });
+    var tot = ex.reduce(function (a, b) { return a + b; }, 0) || 1;
+    pool.forEach(function (r, i) {
+      r.rank = i + 1;
+      r.share = Math.round((ex[i] / tot) * 1000) / 10;
+    });
+    return pool;
+  }
+
   /* ---------------- the poll ----------------
      COLLEGE FOOTBALL ARGUES ABOUT A LIST OF TWENTY-FIVE NAMES FOR FOUR MONTHS and the mode
      did not have one. Every other sport's regular season is a table; this one's is a weekly
@@ -827,7 +925,7 @@
 
   /* AND A PRESEASON POLL IS A GUESS, WHICH IS THE POINT OF IT. Ranking August by each team's
      strength makes the poll an oracle: it is sorted by the exact number that then decides
-     every game, so seventy-two per cent of the preseason top ten was still in the top ten in
+     every game, so seventy-two percent of the preseason top ten was still in the top ten in
      December against a real rate near a half. Nobody would ever be wrong about August, and
      being wrong about August is most of why anybody argues about this list at all.
 
@@ -838,7 +936,7 @@
      reshuffle the bracket.
 
      FITTED AGAINST HOW WRONG AUGUST REALLY IS: about half a real preseason top ten is still in
-     the top ten in December. At 0.6 this gives fifty per cent. At 0.85 it gives forty, which
+     the top ten in December. At 0.6 this gives fifty percent. At 0.85 it gives forty, which
      is a sport where the preseason poll tells you nothing, and at zero it gives seventy-two,
      which is a sport where it tells you everything. */
   var PRESEASON_ERROR = 0.6;
@@ -1356,6 +1454,13 @@
     sim.titles = titleGames(teams, world, rng);
     sim.viewers = Math.round((sim.viewers
       + sim.titles.reduce(function (t, x) { return t + (x.game ? x.game.viewers : 0); }, 0)) * 10) / 10;
+    /* THE FIELD IS SET BEFORE THE BRACKET IS PLAYED, and that gap is a whole beat of the
+       calendar. Standing in the office on the playoff, championship weekend has happened and
+       the twelve are known; the games have not been played. So the field is computed with the
+       titles rather than with the bracket, and the office can draw who is in, who is seeded
+       where, who has a bye and who is the first team out, on the beat where all of that is
+       the only thing anybody in the sport is talking about. */
+    sim.field = field(teams, o.fieldWorld || world, sim.titles);
     if (!wantBracket) return sim;
 
     /* THE SCHEDULE WAS SET IN AUGUST AND THE FIELD IS PICKED IN DECEMBER, so they read two
@@ -1368,7 +1473,7 @@
        already watched. With it, a ruling in November changes the bracket and not the
        football, which is what happens in life. */
     var fw = o.fieldWorld || world;
-    var f = field(teams, fw, sim.titles);
+    var f = sim.field;
     var br = bracket(f.seats, fw, rng);
     br.rounds.forEach(function (round, ri) {
       round.forEach(function (g) {
@@ -1377,7 +1482,6 @@
           round: ri, finalRound: ri === br.rounds.length - 1 }, world);
       });
     });
-    sim.field = f;
     sim.bracket = br;
     /* THE REST OF DECEMBER. Named first so the bracket's own games claim the bowls that host
        them, then everybody else who won six. */
@@ -1395,7 +1499,8 @@
 
   var api = {
     play: play, league: league, schedule: schedule, field: field,
-    bracket: bracket, champions: champions, resume: resume, titleGames: titleGames,
+    bracket: bracket, firstRound: firstRound, champions: champions, resume: resume,
+    titleGames: titleGames, heisman: heisman, HEISMAN_POS: HEISMAN_POS,
     bowlSeason: bowlSeason, nameBracketBowls: nameBracketBowls, BOWL_MIN_WINS: BOWL_MIN_WINS,
     pollSeason: pollSeason, POLL_INERTIA: POLL_INERTIA, POLL_SIZE: POLL_SIZE,
     playGame: playGame, plausible: plausible, moneyDrift: moneyDrift,

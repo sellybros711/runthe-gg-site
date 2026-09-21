@@ -34,13 +34,27 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:{username:'${TESTER}'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
 const arm = `
 (function(){ var v;
   Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,
     get:function(){ return v; },
     set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(TESTER)}); }catch(e){} }});
 })();`;
+
+
+/* A CUTSCENE CAN TAKE THE SCREEN THE MOMENT A TERM STARTS, and one that a walker does not
+   know about is a walker that stalls on the one screen with no dock. Skip it: the scenes have
+   their own suite in test_scene, and every other file here is testing something behind them.
+   Called after anything that could arrive at the office. */
+async function pastScene(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-scene', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#b-scene-skip').catch(() => {});
+    await pg.waitForTimeout(320);
+  }
+}
 
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
@@ -55,6 +69,7 @@ await p.goto(PAGE, { waitUntil: 'domcontentloaded', timeout: 40000 });
 await p.waitForTimeout(2400);
 await p.click('#g-start').catch(() => {});
 await p.waitForTimeout(900);
+await pastScene(p);
 
 const on = (id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
 
@@ -164,6 +179,7 @@ console.log('\n=== and afterwards you find out what was in the rest of it ===');
     await p.$eval('#b-rule', (e) => e.disabled) === false);
   await p.click('#b-rule');
   await p.waitForTimeout(1400);
+  await pastScene(p);
   ok('the room answered', await on('s-room'));
   ok('the file came back open', await p.$eval('#r-unaskedcard', (e) => e.hidden) === false);
   const rest = await p.$$eval('#r-unasked p', (e) => e.map((x) => x.textContent.trim()));
@@ -180,6 +196,7 @@ console.log('\n=== an item with no file has no panel ===');
   ok('found one', !!plain, plain && plain.id);
   await p.click('#b-next');
   await p.waitForTimeout(700);
+  await pastScene(p);
   ok('put it on the desk', await deskWith(plain.id));
   ok('the panel stays down', await p.$eval('#d-askcard', (e) => e.hidden) === true);
   ok('  and the ruling still commits',

@@ -53,6 +53,64 @@ function remaining(run) {
 
 const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
 
+/* ── THE CLUB LOCK ──────────────────────────────────────────────────────────
+ *
+ * One Franchise: the club reel stops moving and only the season spins, so
+ * every man signed really did wear that jersey. `run.club` is a MODERN
+ * franchise code and the lock covers its whole lineage, which is the point of
+ * it: an Oklahoma City run reaches Gary Payton, a Memphis run reaches
+ * Vancouver, and a New Orleans run reaches the Charlotte Hornets who left.
+ *
+ * THE RESERVE FLOOR HAS TO BE LOCKED TOO, and that is the part that is easy to
+ * miss. cheapestForSlot reads the league-wide cheapBy, which is the 200
+ * cheapest men per position ACROSS ALL 16,057 rows, and in a locked run not
+ * one of them may be drawable. Left alone the floor promises a $2.2M centre
+ * off a club this run can never spin, the budget reads as bigger than it is,
+ * and the draft strands itself at the last slot with no legal player at any
+ * price. That is the same failure assignedFloors' own header describes, from a
+ * door it did not have when it was written.
+ *
+ * So a locked run gets its own cheapBy, built once off that franchise's rows
+ * and cached by code. It is a few hundred rows rather than sixteen thousand,
+ * so it is cheap to build and there is no reason to keep more than one.
+ *
+ * THE ERA LOCK IS THE SAME PROBLEM AND SHIPPED WITHOUT NOTICING IT. ERAS and
+ * the `era` filter in drawable() have been in this file since it was written
+ * and nothing in the page could ever set one, so the floor was never asked
+ * about a restricted pool. The moment a Decades door exists, an eighties run
+ * with a league floor is promising a 2019 minimum-salary centre. One filter
+ * answers both locks, so neither can be the one somebody forgets.
+ */
+let _lockCheap = null;
+
+/* What a restricted run may actually draw from. Null lock is the whole
+   league, and then there is nothing to build. */
+function lockKey(run) {
+  if (!run) return '';
+  return (run.club || '') + '|' + (run.era || '');
+}
+
+function lockedPool(run, data) {
+  const codes = run.club ? new Set(E.franchiseCodes(run.club)) : null;
+  const span = run.era ? E.ERAS[run.era] : null;
+  const out = [];
+  for (const t of data.teamSeasons) {
+    if (codes && !codes.has(t.team)) continue;
+    if (span && (t.season < span[0] || t.season > span[1])) continue;
+    for (const p of (data.byTeamSeason[t.team_season_id] || [])) out.push(p);
+  }
+  return out;
+}
+
+function cheapByFor(run) {
+  if (!_data) return null;
+  const key = lockKey(run);
+  if (key === '|') return _data.cheapBy;
+  if (_lockCheap && _lockCheap.key === key) return _lockCheap.cheapBy;
+  _lockCheap = { key, cheapBy: E.buildCheapBy(lockedPool(run, _data)) };
+  return _lockCheap.cheapBy;
+}
+
 /* The cheapest player who could still fill this slot right now: not already
    signed, not already earmarked by this same calculation, from a team-season
    that is not out of draws, and at a position the roster is not already full
@@ -66,8 +124,8 @@ const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
  * center it was not allowed to sign. A floor that counts players the roster
  * cannot take is not a floor.
  */
-function cheapestForSlot(slotName, usedIds, drawn, taken, posCount) {
-  const pool = _data && _data.cheapBy && _data.cheapBy['*'];
+function cheapestForSlot(slotName, usedIds, drawn, taken, posCount, cheapBy) {
+  const pool = cheapBy && cheapBy['*'];
   const FLOOR = E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
   if (!pool) return { price: FLOOR, key: null, pp: null, ts: null };
 
@@ -129,9 +187,10 @@ function assignedFloors(run, slotNames, pending) {
   const order = [...slotNames].sort(
     (a, b) => (E.SLOT_ELIGIBILITY[a] || []).length - (E.SLOT_ELIGIBILITY[b] || []).length);
 
+  const cheapBy = cheapByFor(run);
   let total = 0, maxOne = 0;
   for (const slot of order) {
-    const c = cheapestForSlot(slot, usedIds, drawn, taken, posCount);
+    const c = cheapestForSlot(slot, usedIds, drawn, taken, posCount, cheapBy);
     total += c.price;
     /* Everything this loop earmarks is spent: the player, his position and his
        club's draw. Two slots can never be filled by the same man, and one
@@ -247,9 +306,27 @@ function createRun(opts) {
   const o = opts || {};
   const era = o.era ?? null;
   if (era !== null && !E.ERAS[era]) throw new Error(`unknown era ${era}`);
+  const club = o.club ?? null;
+  /* A club the table does not know would silently make every season
+     undrawable, which reads as "this franchise has nobody" rather than as a
+     typo. franchiseCodes falls back to the code alone, so the check is that
+     the code is a row rather than that the lookup answered. */
+  if (club !== null && !E.hasTeam(club)) throw new Error(`unknown club ${club}`);
+  /* THE DAY NUMBER RIDES IN THE RUN, not in a page variable beside it. A daily
+     is an ordinary league run with its seed pinned, so nothing downstream can
+     tell the two apart from the fields that decide play, and the one thing
+     that has to survive a reload is WHICH day this was: a resumed draft filed
+     against the wrong day would overwrite somebody's result for today with a
+     record they set for yesterday. */
+  const daily = (typeof o.daily === 'number' && isFinite(o.daily) && o.daily > 0)
+    ? Math.floor(o.daily) : null;
   return {
     version: 1,
     era,
+    /* null is the ordinary run and the whole league. A code locks the wheel to
+       that franchise and everything it used to be called. */
+    club,
+    daily,
     seed: o.seed ?? E.hashSeed(String(Math.random())),
     rngCalls: 0,
     capMusd: E.CONSTANTS.CAP_MUSD,
@@ -286,7 +363,10 @@ function drawable(run, data) {
   const drawn = {};
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
 
+  const codes = run.club ? new Set(E.franchiseCodes(run.club)) : null;
+
   return data.teamSeasons.filter(t => {
+    if (codes && !codes.has(t.team)) return false;
     if (run.era) {
       const r = E.ERAS[run.era];
       if (t.season < r[0] || t.season > r[1]) return false;
@@ -543,6 +623,327 @@ function finalizeSeason(run) {
   return run.outcome;
 }
 
+// ─── the bracket, one game at a time ────────────────────────────────────────
+
+/* THE PLAYOFFS STOP FOR THE GAMES WORTH STOPPING FOR.
+ *
+ * playSeason above settles the whole run in one call and is still the right
+ * answer for a projection or a check. This path plays the 82 the same way and
+ * then hands the bracket back a game at a time, so an elimination game or a
+ * Finals game can be PLAYED rather than read.
+ *
+ * ── THREE THINGS ABOUT THE STATE, AND EACH ONE IS A BUG THAT DID NOT HAPPEN ─
+ *
+ * `run.po` HAS NO UNDERSCORE. Everything else mid-run lives on `_simState`,
+ * which is the marker for "do not serialize", and a bracket is the one thing
+ * here that a player can be halfway through for as long as they leave the tab
+ * open. Stored under an underscore, a reload in the middle of a Finals would
+ * come back to a run with a season, no bracket and no way to finish it. So the
+ * runner holds plain data only: no rng, no player objects.
+ *
+ * WHAT outcomeOf NEEDS IS RECOMPUTED AND NEVER STORED. Chemistry, fit, the two
+ * ratings and the overall are pure functions of the roster, and the totals are
+ * a walk over a season that is already on the run. Storing them would be a
+ * second copy of an answer, which is the era's rule in this engine and the
+ * reason a reload here cannot come back disagreeing with itself.
+ *
+ * A LIVE GAME DRAWS FROM ITS OWN STREAM, off the run's seed and the game's
+ * address, exactly as gameDetail does and for one of the same reasons: the
+ * run's stream is what makes the rest of the bracket what it is, and a game
+ * the player watched for four minutes must not change which opponent the
+ * Finals draws. So simming every game and playing every game give the same
+ * bracket around them, and only the results of the games actually played
+ * differ. verify.mjs asserts the simmed path against playSeason for that.
+ */
+
+/* The pure part of a roster's season: everything outcomeOf wants that no dice
+   decide. */
+function seasonBits(run) {
+  const tagged = taggedRoster(run);
+  const chem = E.resolveChemistry(tagged);
+  const structure = E.rosterFit(tagged);
+  const ortg = E.rosterOffense(tagged, chem.bonus, structure.bonus);
+  const drtg = E.rosterDefense(tagged, chem.bonus);
+  return { tagged, chem, structure, ortg, drtg,
+    rating: E.overallRating(E.teamWinPct(ortg, drtg)) };
+}
+
+function seasonTotals(run) {
+  let wins = 0, losses = 0, totalPF = 0, totalPA = 0;
+  for (const g of (run.season || [])) {
+    if (g.won) wins++; else losses++;
+    totalPF += g.yourPoints; totalPA += g.oppPoints;
+  }
+  return { wins, losses, totalPF, totalPA };
+}
+
+/* The 82, and then stop. */
+function playToPlayoffs(run) {
+  if (run.phase !== PHASES.SEASON) throw new Error('not in season phase');
+  const rng = rngFor(run);
+  const b = seasonBits(run);
+  const schedule = E.generateSchedule(
+    rng, E.CONSTANTS.REGULAR_SEASON_GAMES, _data && _data.oppPool);
+
+  const season = [];
+  for (const game of schedule) {
+    const means = E.gameMeans(b.ortg, b.drtg, game);
+    season.push({ game: game.game,
+      ...E.resolveGame(means.pointsFor, means.pointsAgainst, rng, E.homeAdvantage(game)) });
+  }
+
+  run.schedule = schedule;
+  run.season = season;
+  const { wins } = seasonTotals(run);
+  run.playoffSeed = E.seedFromRecord(wins);
+  /* NULL IS A REAL ANSWER HERE and not a failure: a roster that missed the
+     play-in has no bracket to play. The phase still moves, because the screen
+     after the season is the same screen either way and it is the one that
+     says so. */
+  run.po = E.poCreate(run.playoffSeed, b.ortg, b.drtg, wins, b.rating);
+  run.phase = PHASES.PLAYOFFS;
+  return { record: { wins, losses: season.length - wins }, seed: run.playoffSeed,
+    made: !!run.po };
+}
+
+/* The game the bracket is waiting on, or null when there is none left.
+   IDEMPOTENT, which it has to be because the page asks on every paint: the
+   only draw it can make is the round's opponent, and that is made once when
+   the round begins and then read off `po.cur` for ever after. */
+function pendingGame(run) {
+  if (!run || !run.po || run.po.done) return null;
+  return E.poNext(run.po, rngFor(run));
+}
+
+/* Settle it the way the rest of the season is settled. */
+function simGame(run) {
+  const next = pendingGame(run);
+  if (!next) return null;
+  const result = E.resolveGame(next.pointsFor, next.pointsAgainst, rngFor(run), next.adv);
+  E.poRecord(run.po, next, result);
+  return { ...next, result };
+}
+
+/* Everything left, at once. What "sim the rest" answers with. */
+function simRest(run) {
+  let guard = 0;
+  while (run.po && !run.po.done && guard++ < 200) simGame(run);
+  return run.po ? run.po.done : true;
+}
+
+/* A live game for the pending one. The sim and its stream are handed back
+   together rather than kept here, because the page drives the possessions. */
+function liveGame(run) {
+  const next = pendingGame(run);
+  if (!next) return null;
+  const rng = E.createSeededRNG(gameSeed(run, 2, next.roundIndex, next.game));
+  const sim = E.liveCreate(taggedRoster(run), next.pointsFor, next.pointsAgainst,
+    rng, next.adv, { round: next.round, game: next.game, home: next.home,
+      elimination: next.elimination, decider: next.decider });
+  return { next, sim, rng };
+}
+
+/* Fold a played game in. Takes the result rather than the sim, so the caller
+   cannot hand this one thing and the bracket another. */
+function recordGame(run, next, result) {
+  if (!run || !run.po || !next || !result) return null;
+  return E.poRecord(run.po, next, result);
+}
+
+/* The bracket is finished, so the run is. */
+function finishRun(run) {
+  if (run.phase !== PHASES.PLAYOFFS) throw new Error('not in the playoffs');
+  const b = seasonBits(run);
+  const t = seasonTotals(run);
+  const playoffs = E.poFinal(run.po);
+  run.playoffs = playoffs;
+  run.outcome = outcomeOf(run, {
+    record: { wins: t.wins, losses: t.losses },
+    seed: run.playoffSeed, playoffs,
+    titleWon: !!(playoffs && playoffs.won),
+    isGOAT: t.wins >= E.CONSTANTS.GOAT_WINS,
+    beatRecord: t.wins >= E.CONSTANTS.RECORD_WINS,
+    totalPF: t.totalPF, totalPA: t.totalPA,
+    chemistry: b.chem, structure: b.structure, rating: b.rating,
+    allTimeRank: _data ? E.nationalRank(b.rating, _data.ratingTable) : null,
+    ortg: Math.round(b.ortg * 100) / 100,
+    drtg: Math.round(b.drtg * 100) / 100,
+    roster: b.tagged,
+  });
+  run.phase = PHASES.OVER;
+  return run.outcome;
+}
+
+// ─── one game, in full ──────────────────────────────────────────────────────
+
+/* THE BOX SCORE FOR A GAME THAT HAS ALREADY BEEN PLAYED.
+ *
+ * ITS OWN RNG, DERIVED FROM THE RUN'S SEED AND THE GAME'S OWN ADDRESS. Three
+ * things make that necessary and none of them is an optimisation:
+ *
+ *   - Opening game 41 twice has to show the same 41 points. A shared stream
+ *     would give a different box score every time the sheet was opened, which
+ *     is a game that cannot remember what happened in it.
+ *   - It must not consume the run's stream. rngCalls is what makes a reloaded
+ *     run replay identically, and drawing from it to draw a SCREEN would move
+ *     the season somebody comes back to.
+ *   - It has to survive a reload, which a stream position in memory does not.
+ *
+ * NO BOX SCORE FOR THE OPPONENT, DELIBERATELY. The schedule knows which real
+ * club you played, and the sim never used their players: an opponent in this
+ * model is a net rating. Printing a line for five real men who were never
+ * simulated would be the game inventing statistics about real people and
+ * presenting them as the game's own record. The quarters carry both sides,
+ * because those come off the scoreline, which is real.
+ */
+const GAME_SALT = 0x9e3779b1;
+
+function gameSeed(run, kind, a, b) {
+  let h = (run.seed >>> 0) ^ 0x5bf03635;
+  h = Math.imul(h ^ (kind + 1), GAME_SALT) >>> 0;
+  h = Math.imul(h ^ (a + 1), GAME_SALT) >>> 0;
+  h = Math.imul(h ^ (b + 1), GAME_SALT) >>> 0;
+  return h >>> 0;
+}
+
+function taggedRoster(run) {
+  return run.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[run.slotIndex[i]] }));
+}
+
+/* ref is { kind: 'season', index } or { kind: 'playoff', round, game }. */
+function gameDetail(run, ref) {
+  if (!run || !ref) return null;
+  const playoff = ref.kind === 'playoff';
+
+  let gm = null, head = null;
+  if (playoff) {
+    const rd = run.playoffs && run.playoffs.rounds && run.playoffs.rounds[ref.round];
+    if (!rd || !rd.games || !rd.games[ref.game]) return null;
+    gm = rd.games[ref.game];
+    head = {
+      round: rd.round,
+      label: rd.round + (rd.games.length > 1 ? ' · Game ' + (ref.game + 1) : ''),
+      oppName: null, oppNet: rd.oppNet, home: !!gm.home, marquee: true,
+    };
+  } else {
+    if (!run.season || !run.season[ref.index]) return null;
+    gm = run.season[ref.index];
+    const sc = (run.schedule && run.schedule[ref.index]) || {};
+    head = {
+      round: null,
+      label: 'Game ' + (ref.index + 1) + ' of ' + E.CONSTANTS.REGULAR_SEASON_GAMES,
+      oppName: sc.oppName || null, oppRating: sc.oppRating || null,
+      home: !!sc.home, marquee: !!sc.marquee,
+    };
+  }
+
+  const ot = gm.ot || 0;
+  const rng = E.createSeededRNG(gameSeed(run, playoff ? 1 : 0,
+    playoff ? ref.round : ref.index, playoff ? ref.game : 0));
+
+  /* A GAME THAT WAS PLAYED KEEPS ITS OWN SHEET. Everything above this line
+     is a decomposition of a score that was decided in one draw, which is the
+     honest answer for 82 games and the wrong one for the two or three a
+     player sat through: the quarters and the six lines already exist for
+     those, so re-deriving them would show somebody a different game from the
+     one they watched. `live` says which sheet this is rather than leaving a
+     reader to infer it from a missing column. */
+  if (gm.live && gm.lines && gm.quarters) {
+    return {
+      ...head,
+      won: !!gm.won, yourPoints: gm.yourPoints, oppPoints: gm.oppPoints, ot,
+      live: true, quarters: gm.quarters, box: gm.lines,
+    };
+  }
+
+  return {
+    ...head,
+    won: !!gm.won, yourPoints: gm.yourPoints, oppPoints: gm.oppPoints, ot,
+    quarters: E.quarterLines(gm.yourPoints, gm.oppPoints, ot, rng),
+    box: E.gameBox(taggedRoster(run), gm.yourPoints, rng, ot),
+  };
+}
+
+/* Every game of the run worth opening on its own, IN THE ORDER THEY WERE
+ * PLAYED. A "big game" is a marquee night or a playoff game: the slate is
+ * built so the marquee ones are against the best team-seasons in the data,
+ * which is the only thing in a regular season that is not interchangeable.
+ *
+ * CHRONOLOGICAL, and the first version was not. It listed the playoffs first
+ * because that is the order the results screen draws them in, so pressing
+ * Next on a play-in game went to game 3 of the regular season. A walk through
+ * a season that runs backwards at the one join everybody reaches is a walk
+ * nobody trusts a second time.
+ */
+function bigGames(run) {
+  const out = [];
+  (run.season || []).forEach((g, i) => {
+    const sc = (run.schedule && run.schedule[i]) || {};
+    if (!sc.marquee) return;
+    out.push({ kind: 'season', index: i, won: !!g.won,
+      label: (sc.home ? 'vs ' : 'at ') + (sc.oppName || 'opponent'),
+      score: g.yourPoints + '-' + g.oppPoints });
+  });
+  if (run.playoffs && run.playoffs.rounds) {
+    run.playoffs.rounds.forEach((rd, r) => {
+      (rd.games || []).forEach((g, i) => {
+        out.push({ kind: 'playoff', round: r, game: i, won: !!g.won,
+          label: rd.round + ((rd.games.length > 1) ? ' · G' + (i + 1) : ''),
+          score: g.yourPoints + '-' + g.oppPoints });
+      });
+    });
+  }
+  return out;
+}
+
+/* THE ONE NIGHT WORTH TELLING SOMEBODY ABOUT.
+ *
+ * A box score nobody opens is a box score nobody has. Everything above is one
+ * tap from the results screen and the tap is only made by a reader who
+ * already suspects it is there, so the run names its own best game and links
+ * to it. It is also the line a fan screenshots, which is the other half of
+ * why it exists.
+ *
+ * MEASURED BEFORE IT WAS WIRED, twice. It scans every game of the run, which
+ * is 93 gameDetail calls and 5.4ms, so it can run on every paint of the
+ * results screen. And the number it surfaces is the extreme tail by
+ * construction, so the tail is what was checked: over 60 runs the best night
+ * of a season runs p10 47, median 55, p90 65, max 74, and clears 70 in 5% of
+ * them. Kobe's 81 and Wilt's 100 are above all of it, which is where the
+ * ceiling belongs.
+ *
+ * Ties go to the EARLIER game, so the answer does not wander between paints.
+ */
+function bestNight(run) {
+  if (!run || !run.season || !run.season.length) return null;
+  let best = null;
+
+  const look = (ref, where) => {
+    const d = gameDetail(run, ref);
+    if (!d) return;
+    for (const l of d.box) {
+      if (best && l.pts <= best.pts) continue;
+      best = { ...l, ref, where, won: d.won,
+        score: d.yourPoints + '-' + d.oppPoints };
+    }
+  };
+
+  for (let i = 0; i < run.season.length; i++) {
+    const sc = (run.schedule && run.schedule[i]) || {};
+    look({ kind: 'season', index: i },
+      sc.oppName ? ((sc.home ? 'vs ' : 'at ') + sc.oppName) : ('game ' + (i + 1)));
+  }
+  if (run.playoffs && run.playoffs.rounds) {
+    run.playoffs.rounds.forEach((rd, r) => {
+      (rd.games || []).forEach((g, i) => {
+        look({ kind: 'playoff', round: r, game: i },
+          rd.round + (rd.games.length > 1 ? ', game ' + (i + 1) : ''));
+      });
+    });
+  }
+  return best;
+}
+
 // ─── measuring the draft ────────────────────────────────────────────────────
 
 /* THE BEST SIX YOU COULD HAVE HAD, out of every team-season this run actually
@@ -718,7 +1119,35 @@ function projectSeason(run, trials) {
 
 function indexData(players) {
   _data = E.indexData(players);
+  /* The lock floor is a cache over the OLD rows. Keeping it across a reindex
+     would answer a new league with a dead one. */
+  _lockCheap = null;
   return _data;
+}
+
+/* Every season of this era the wheel could land on. The era CONSTANT is a
+   decade and the data is not: E.ERAS.seventies is [1970, 1979] and the file
+   starts at 1974, so a picker printing the constant would offer four seasons
+   that do not exist. Asking the same list drawable() filters is the only
+   honest span. */
+function eraSeasons(era) {
+  const r = E.ERAS[era];
+  if (!_data || !r) return [];
+  const seen = {};
+  for (const t of _data.teamSeasons) {
+    if (t.season >= r[0] && t.season <= r[1]) seen[t.season] = 1;
+  }
+  return Object.keys(seen).map(Number).sort((a, b) => a - b);
+}
+
+/* Every season of this franchise the wheel could ever land on, newest first.
+   The picker prints the span and the count, and the club lock is only honest
+   if the two come from the same place the wheel reads. */
+function clubSeasons(club) {
+  if (!_data) return [];
+  const codes = new Set(E.franchiseCodes(club));
+  return _data.teamSeasons.filter(t => codes.has(t.team))
+    .map(t => t.season).sort((a, b) => b - a);
 }
 
 // ─── exports ────────────────────────────────────────────────────────────────
@@ -727,12 +1156,14 @@ const publicAPI = {
   /* Moves with engine.js, not independently: index.html asks both files for the
      SAME number, so one version means one answer to "is this page and its
      scripts the same age". */
-  API_VERSION: 2,
+  API_VERSION: 5,
   PHASES, TUNING, BLOCK,
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,
+  playToPlayoffs, pendingGame, simGame, simRest, liveGame, recordGame, finishRun,
   previewSigning, previewFit, fitNow, bestPossibleSquad, projectSeason,
-  indexData, drawable,
+  indexData, drawable, clubSeasons, eraSeasons,
+  gameDetail, bigGames, bestNight, taggedRoster,
   remaining, reserveFloor, fullFloor, spendable, capOf, money,
   canRespin, canFinishAfter, blockFor, positionFull,
   openSlots, openSlotNames, slotForPlayer, eligibleOpenSlots, slotsLeft,

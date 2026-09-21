@@ -35,12 +35,18 @@ jobs:
       - name: Commit if requested
         if: ${{ github.event_name == 'schedule' || github.event.inputs.commit == 'true' }}
         run: |
-          # Cache-bust the High Low page so refreshed data actually reaches browsers.
-          V="${GITHUB_RUN_NUMBER}"
-          sed -i "s|rosterstats.js?v=[0-9]*|rosterstats.js?v=$V|" arcade/highlow/index.html
+          # Cache-bust the High Low page so refreshed data actually reaches
+          # browsers. This used to write GITHUB_RUN_NUMBER in unconditionally,
+          # which moved the version on every scheduled run whether the data had
+          # changed or not: a re-download for everybody who already had the
+          # file, and a commit on a morning with nothing in it. The helper bumps
+          # every page that asks for the file and records the manifest, and it
+          # only runs when the file actually moved.
+          git diff --quiet -- arcade/rosterstats.js || node scripts/bump-cachebust.mjs arcade/rosterstats.js
           git config user.name "roster-bot"
           git config user.email "noreply@anthropic.com"
-          git add arcade/rosterstats.js arcade/highlow/index.html
+          # -u picks up the pages the bump rewrote and scripts/cachebust.json.
+          git add arcade/rosterstats.js && git add -u
           git diff --cached --quiet && echo "no changes" || {
             git commit -m "Refresh High Low roster stats (arcade/rosterstats.js)"
             for i in 1 2 3 4 5; do

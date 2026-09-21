@@ -45,7 +45,7 @@
 import {
   SEASONS, POSITIONS, MIN_GAMES, nflverseCSV, parseCSVObjects,
   mean, stdev, quantileSorted, round, writePair,
-  franchiseId, franchiseName,
+  franchiseId, franchiseName, seasonAge,
 } from './lib.mjs';
 
 // ─── pricing constants ───────────────────────────────────────────────────────
@@ -239,6 +239,12 @@ async function loadBio() {
     if (!r.gsis_id) continue;
     bio.set(r.gsis_id, {
       college: r.college_name || null,
+      /* For seasonAge(). Kept raw so the one place that turns a date into a number is
+         lib.mjs and every row in both pools is aged the same way. */
+      birth_date: r.birth_date || null,
+      /* The last season he appeared in an NFL game at all, which is what lets The Gauntlet
+         say RETIRED and mean it rather than guess it. */
+      last_season: r.last_season ? Number(r.last_season) : null,
       draft_year: r.draft_year ? Number(r.draft_year) : null,
       draft_round: r.draft_round ? Number(r.draft_round) : null,
     });
@@ -392,6 +398,11 @@ async function main() {
       badges: p._badges.map((x) => x.text),
       college: bio.get(p.player_id)?.college ?? null,
       draft_year: bio.get(p.player_id)?.draft_year ?? null,
+      /* HOW OLD HE WAS THAT AUTUMN, which The Gauntlet needs on the draft board: the mode
+         hands you the same man a year older every winter, so the question at the wheel is
+         how many of those he has left. See seasonAge in lib.mjs for the convention. */
+      age: seasonAge(bio.get(p.player_id)?.birth_date, p.season),
+      last_season: bio.get(p.player_id)?.last_season ?? null,
     }));
 
   // The CSV is for reading by hand, so it keeps the working columns.
@@ -468,4 +479,13 @@ async function main() {
               `(attributed to the team with most games).`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+/* RUN ONLY WHEN RUN, because this module is now IMPORTED as well as executed.
+   weekly-pool.mjs reads the four pricing constants out of it, so that the live week and the
+   historical pool are priced by one curve rather than by two copies of it. Called
+   unconditionally, that import rebuilt every player-season from 1999 to 2025 and printed
+   the whole report before the caller got its first line: a build that works perfectly and
+   takes a minute to hand back a number it already had. Nothing else in the repo imported
+   this file, so the trap was latent rather than broken. */
+if (process.argv[1] && process.argv[1].endsWith('01-players.mjs')) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}

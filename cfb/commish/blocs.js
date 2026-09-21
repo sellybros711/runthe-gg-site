@@ -85,8 +85,75 @@
     },
   ];
 
+  /* ---------------- the room can get bigger ----------------
+     THE NINE ABOVE ARE WHO IS IN THE ROOM ON DAY ONE. These are who can JOIN it, and none of
+     them is present until a frontier seats them: see frontier.js, which owns what each one
+     costs to reach and holds the chain that decides what order they can arrive in.
+
+     A LATE ARRIVAL HAS NO VOTE, and that is a deliberate limit rather than an oversight.
+     `VOTE_WEIGHT` in the ledger is what decides whether a commissioner is removed, and it is
+     tuned against the founding nine. Handing a vote to somebody who turns up in year 30 would
+     silently retune the removal threshold for every item already written, and the symptom
+     would be a mode that fires people for reasons no author chose. What a seated bloc has
+     instead is everything else: it answers every ruling in character, its mood is on the
+     desk, and items gate on what it thinks. The President cannot sack you. The President can
+     make the next ten years very difficult.
+
+     THE WEIGHTS ARE WRITTEN AGAINST THE SAME EIGHT AXES as everybody else, which is the whole
+     reason a new member needs no new plumbing: `react` dots the weights with the ruling and
+     the answer is in character for free. */
+  const SEATED = [
+    {
+      id: 'Union', name: 'The players union', vote: 0, seated: true,
+      about: 'Bargains for the people who play. Reads every efficiency as something taken.',
+      w: { money: 0.4, access: 0.8, autonomy: -1.2, cost: 0.4, tradition: -0.6, inventory: -1.8, labour: 3.4, exposure: 0.4 },
+    },
+    {
+      id: 'Capital', name: 'The owners', vote: 0, seated: true,
+      about: 'Bought in for a return. Patient about tradition, not about margin.',
+      w: { money: 3.2, access: -0.4, autonomy: 1.0, cost: -2.6, tradition: -1.4, inventory: 2.6, labour: -1.6, exposure: -0.6 },
+    },
+    {
+      id: 'Congress', name: 'The committee', vote: 0, seated: true,
+      about: 'Holds hearings. Cares what this looks like in a district, not what it earns.',
+      w: { money: -1.0, access: 1.6, autonomy: -2.4, cost: 0.2, tradition: 1.2, inventory: -0.8, labour: 2.2, exposure: -2.8 },
+    },
+    {
+      id: 'White House', name: 'The White House', vote: 0, seated: true,
+      about: 'Turns up when it polls. Wants the sport to look like the country likes it.',
+      w: { money: -0.4, access: 2.4, autonomy: -1.0, cost: 0.0, tradition: 2.0, inventory: -0.4, labour: 1.4, exposure: -2.2 },
+    },
+    {
+      id: 'Host Nations', name: 'The host nations', vote: 0, seated: true,
+      about: 'Paid to be here and expects the sport to show up. Owes American habit nothing.',
+      w: { money: 2.0, access: 1.2, autonomy: 0.6, cost: -0.8, tradition: -2.4, inventory: 2.8, labour: 0.4, exposure: 0.6 },
+    },
+    {
+      id: 'The Programme', name: 'The programme', vote: 0, seated: true,
+      about: 'Flies the hardware. Every argument here is a mass budget and a launch window.',
+      w: { money: 1.4, access: 0.2, autonomy: 1.2, cost: -3.0, tradition: -1.8, inventory: 2.2, labour: -0.4, exposure: 1.2 },
+    },
+  ];
+
   const BY_ID = {};
-  BLOCS.forEach((b) => { BY_ID[b.id] = b; });
+  BLOCS.concat(SEATED).forEach((b) => { BY_ID[b.id] = b; });
+
+  /* WHO IS ACTUALLY AT THE TABLE FOR THIS WORLD. The founding nine, plus anybody a frontier
+     has seated. Resolved at the call rather than at load for the reason ledger.js gives: the
+     order of two script tags must not be able to decide this silently.
+
+     A WORLD THAT HAS CROSSED NOTHING GETS EXACTLY THE NINE, which is every save written
+     before any of this existed and every term that governs conservatively for fifty years. */
+  function roomOf(world) {
+    var F = (typeof window !== 'undefined' && window.PS_CFB_COMMISH_FRONTIER) || null;
+    if (!F && typeof module !== 'undefined' && module.exports) {
+      try { F = require('./frontier.js'); } catch (e) { F = null; }
+    }
+    if (!F || !world || !world.frontier) return BLOCS;
+    const ids = F.seats(world);
+    if (!ids.length) return BLOCS;
+    return BLOCS.concat(SEATED.filter((b) => ids.indexOf(b.id) >= 0));
+  }
 
   /* Scale, so a normal ruling moves a bloc a handful of points rather than half the bar.
      Set against the docket: an ordinary item pushes one or two axes by 1 or 2, and a
@@ -125,17 +192,31 @@
      `edit.aimed` is the part that only one bloc feels. Money moving is not money moving in
      general, it is money moving TO somebody, and a rule that guarantees the Group of Five a
      bid is not the same push for the SEC. Without it every ruling reads as weather. */
-  function react(world, edit) {
+  /* `soften` is the note being read: a map of bloc id to a positive amount, built by
+     note.js from the words a paid ruling rode in with. Applied after memory and before the
+     quote is chosen, so the mood, the number and the line all describe the softened
+     reaction rather than the one the note talked them down from. One-directional by
+     construction here as well as there: it can only shrink a negative delta toward zero,
+     never past it, so a memo cannot turn a loss into applause. */
+  function react(world, edit, soften) {
     const fx = (edit && edit.effects) || {};
     const aimed = (edit && edit.aimed) || {};
-    return BLOCS.map((b) => {
+    /* THE ROOM FOR THIS WORLD, not the constant. A term that recognised a union in 2031 has
+       ten people answering every ruling from then on, and the one who arrived last answers in
+       character off the same eight axes as the nine who were always here. */
+    return roomOf(world).map((b) => {
       const own = Object.assign({}, fx);
       for (const axis in aimed[b.id] || {}) own[axis] = (own[axis] || 0) + aimed[b.id][axis];
       const raw = dot(b.w, own);
       /* Memory amplifies rather than shifts: it never turns a win into a loss, it only
          changes how much the bloc cares that it happened. */
       const g = grudge(world, b.id);
-      const delta = raw * GAIN * (1 + Math.abs(g) * MEMORY * (g > 0 === raw < 0 ? 1 : 0.5));
+      let delta = raw * GAIN * (1 + Math.abs(g) * MEMORY * (g > 0 === raw < 0 ? 1 : 0.5));
+      let read = false;
+      if (soften && soften[b.id] > 0 && delta < 0) {
+        delta = Math.min(0, delta + soften[b.id]);
+        read = true;
+      }
       const was = world.blocs[b.id] == null ? 50 : world.blocs[b.id];
       const now = clamp(was + delta, 0, 100);
       return {
@@ -143,6 +224,7 @@
         delta: Math.round(delta * 10) / 10,
         was: Math.round(was), now: Math.round(now),
         mood: moodOf(now),
+        read: read,
         /* `own` is this bloc's own push, aimed effects included, which is what lets the line
            be about the thing that moved rather than only about how much. The seed is the
            world's clock plus the bloc, so a beat replays word for word and two blocs never
@@ -384,7 +466,7 @@
           good: ['More primetime. Our partners will be delighted.',
             'That is a noon window, a late window and a night game. Good work.'],
           bad: ['You just deleted a television window we already sold.',
-            'Fewer games is fewer rights fees. That maths does not move.'],
+            'Fewer games is fewer rights fees. That math does not move.'],
         },
         exposure: {
           good: ['Cleaner than what we had. Our counsel is nodding.',
@@ -472,7 +554,7 @@
           good: ['Our members can afford that, which is not nothing these days.',
             'A rule that does not cost us anything is a rule we can pass.'],
           bad: ['Half our athletic departments are already running a deficit.',
-            'That bill closes an olympic sport somewhere. It always does.'],
+            'That bill closes an Olympic sport somewhere. It always does.'],
         },
         tradition: {
           good: ['Those games are what our brand is. Keep them.',
@@ -708,7 +790,7 @@
       relief: [
         'That helps the number. It does not fix the number.',
         'Sellable. We will still be having a difficult conversation at renewal.',
-        'Good for one Saturday. We buy the whole autumn.',
+        'Good for one Saturday. We buy the whole fall.',
         'That is one Saturday improved. There are thirteen of them.',
       ],
       grudge: [
@@ -769,7 +851,7 @@
           'Everybody in that room gets paid to decide what happens to our knees.',
           'They keep saying student athlete and never once ask a student athlete.'],
         ['We are organizing.',
-          'There are guys on this call who have already spoken to a labour lawyer.',
+          'There are guys on this call who have already spoken to a labor lawyer.',
           'Every one of these decisions makes the case for us better.',
           'There are guys on this team who have already signed something.',
           'We are the only ones in this sport who cannot say no to anything.',
@@ -813,7 +895,7 @@
           good: ['That is money and time that actually reaches a locker room.',
             'A real share, in writing. That is what we came for.',
             'Guys who were going to leave in December are staying now.'],
-          bad: ['You want the revenue of a professional league and the labour costs of a club team.',
+          bad: ['You want the revenue of a professional league and the labor costs of a club team.',
             'We are the only people in that room who are not paid to be in it.',
             'Another year of being told we are students on a Tuesday and inventory on a Saturday.'],
         },
@@ -1011,14 +1093,418 @@
         labour: {
           good: ['Pay them. They are why we are there.',
             'Good. Anybody who watched a kid play through a torn labrum knew this was coming.'],
-          bad: ['These are twenty year olds and the adults in the room are the problem.',
+          bad: ['These are twenty-year-olds and the adults in the room are the problem.',
             'Nobody is buying a jersey to support a conference office.'],
         },
         inventory: {
           good: ['More football is more football. We are simple people.',
             'Give us the noon game and the night game and we will be there for both.'],
           bad: ['They cut a Saturday and will still ask us to renew the season tickets.',
-            'Fewer games, same price. Somebody do the maths for me.'],
+            'Fewer games, same price. Somebody do the math for me.'],
+        },
+      },
+    },
+
+    /* ════════════════════════════════════════════════════════════════════════════════
+       THE SIX WHO ARRIVE LATER, and they need writing for the same reason the nine above do.
+       `line()` falls back to VOICE.Fans for any bloc with no entry, and it does it silently:
+       the first run that seated a President had the President of the United States answering
+       a ruling with "My grandfather sat in that stadium. He would not recognize the
+       schedule." The numbers were right, the mood was right, and the sentence was a fan's.
+       Nothing threw and no test failed, because a wrong line is a valid string.
+
+       So the guard in test_docket now asserts that every bloc in BLOCS AND SEATED has its own
+       entry here, and these are those entries. Same five bands as everybody else, read off
+       where the bloc has ended up: delighted, along for now, annoyed, hostile, done.
+       ════════════════════════════════════════════════════════════════════════════════ */
+    Union: {
+      bands: [
+        ['Our members will hear about this from us, and it will be good news.',
+          'That is what bargaining is for. Nobody had to be sued.',
+          'We will take the win and we will not pretend it was your idea.',
+          'Write it into the agreement and it is done.',
+          'Somebody in there has actually read the last four grievances.',
+          'That is the first time this office has moved before a filing date.'],
+        ['We can work with it. We are not signing anything today.',
+          'Acceptable. It is not the thing we asked for.',
+          'Our lawyers say take it. Our members are going to ask why it took four years.',
+          'Fine. The next one is the one that matters.',
+          'We will put it to a vote and we will not campaign against it.',
+          'It is progress and it is the smallest amount of progress available.'],
+        ['You did that without calling us, which is the part we will remember.',
+          'Every one of these lands on a twenty year old who cannot vote on it.',
+          'We are a party to this. You keep treating us as an audience.',
+          'That is a decision about our members, made in a room they are not in.',
+          'File it. We will be reading it very carefully.',
+          'You have made the next negotiation harder and you did it for nothing.'],
+        ['We have a strike fund and this is the sort of thing it is for.',
+          'Our members are asking what the union is for. You are helping us answer.',
+          'There is a version of September where nobody takes the field.',
+          'We will see you in front of the board.',
+          'You are bargaining in bad faith and we have started writing that down.',
+          'Every player in this sport now knows your name. That is not a compliment.'],
+        ['We are done talking. Talk to the lawyers.',
+          'The next thing you hear from us will be filed, not said.',
+          'There is no version of this where we come back to that table.',
+          'We have advised our members accordingly. All of them.',
+          'You had a bargaining partner. You have an opponent.',
+          'Whatever you do next, do it knowing nobody will play it.'],
+      ],
+      streak: ['Three of these in a row. Our members are counting too.',
+        'That is the third. There is a pattern and we have named it in writing.',
+        'Three straight. Nobody in our membership believes this office negotiates.'],
+      relief: ['That helps. It does not undo the last one.',
+        'We will take that as a gesture and treat it as one.',
+        'Better. Our members will still ask what changed.',
+        'That softens it. It does not settle it.'],
+      grudge: ['We had that settled. You have reopened it.',
+        'One clause in that walks back four years of work.',
+        'That was agreed. Agreed used to mean something.',
+        'We closed that file. You have handed us a reason to reopen it.'],
+      on: {
+        labour: {
+          good: ['That is money in the pocket of somebody who earns it on a Saturday.',
+            'Our members will feel that one in a way they can describe.'],
+          bad: ['You have taken something off people who cannot vote on it.',
+            'That is a pay cut written in a language designed to hide it.',
+            'Every dollar of that came out of a nineteen year old.'],
+        },
+        inventory: {
+          good: ['Fewer games is fewer bodies. We have been asking for four years.',
+            'That is a workload decision and it is the right one.'],
+          bad: ['More games, same people. You are spending them.',
+            'Somebody has to play all of that, and it is not anybody in that room.'],
+        },
+        autonomy: {
+          good: ['A rule we get a say in is a rule that holds.',
+            'You shared the pen. That is worth more than the clause.'],
+          bad: ['That is you deciding alone about people who are not you.',
+            'Every time this office takes the pen, we end up in front of a judge.'],
+        },
+      },
+    },
+    Capital: {
+      bands: [
+        ['That is a return. Everything else in this sport is sentiment.',
+          'Our committee will approve more on the strength of that alone.',
+          'You have just made this asset worth materially more. Do it again.',
+          'That is the first decision here that would survive a board meeting.',
+          'Good. Now protect it from the people who want it undone.',
+          'We are revising the model upward. That is the highest thing we say.'],
+        ['Workable. The margin is thinner than we modelled.',
+          'We can live with it. We would not have chosen it.',
+          'That is neutral, and neutral is a cost at our cost of capital.',
+          'Acceptable. Our patience is priced and it is not free.',
+          'Nobody on our side is upset. Nobody is impressed.',
+          'It holds. We will want the next one to do more than hold.'],
+        ['That is value destroyed for a reason nobody wrote down.',
+          'We were not consulted on a decision that moves our position.',
+          'You have made this harder to sell, which was not yours to do.',
+          'Every quarter like that one is a conversation we have to have upstairs.',
+          'That is sentiment with a price tag, and we are paying it.',
+          'We are not a fan of the sport. We are an owner of it. Act accordingly.'],
+        ['Our committee has begun asking what the exit looks like.',
+          'There is a number at which we stop being patient and we are near it.',
+          'We have been in worse assets. We left those too.',
+          'The next call you take about this will not be from us.',
+          'You are governing this like it is still a non-profit. It has not been for years.',
+          'We are writing this position down and the pen is moving the wrong way.'],
+        ['We are out, and we will be loud about why.',
+          'Our stake goes to somebody who will be far less reasonable than us.',
+          'This is the last meeting. Read the filing on Monday.',
+          'You had capital. You have a creditor.',
+          'We will recover this in a courtroom and it will be public.',
+          'Whatever this sport is next, we will not be funding it.'],
+      ],
+      streak: ['Three in a row against the position. That is a trend, not a run of luck.',
+        'Third one. Our committee has stopped asking whether and started asking when.',
+        'Three straight. We have begun modelling this office as a risk factor.'],
+      relief: ['That recovers some of it. Some.',
+        'Our model moves back toward where it was. Not all the way.',
+        'Helpful. The position is still worse than it was in March.',
+        'That stops the bleeding. It does not repair the quarter.'],
+      grudge: ['We had marked that as settled. It is not.',
+        'One line in that reopens an exposure we had priced out.',
+        'That undoes a thing we paid for.',
+        'We closed that risk. You have reopened it and made it bigger.'],
+      on: {
+        money: {
+          good: ['That is revenue that compounds. Everything else is a press release.',
+            'The number moves. That is the only sentence we came here to say.'],
+          bad: ['You have given away margin to buy affection.',
+            'That is money out of the stadium and into a feeling.'],
+        },
+        tradition: {
+          good: ['A rivalry is the one brand in this sport nobody can build from scratch. You kept one.',
+            'The old thing is the valuable thing. Occasionally you remember it.'],
+          bad: ['Nostalgia is not a business model and you keep running one.',
+            'You are paying a premium for a marching band nobody under thirty watches.'],
+        },
+        cost: {
+          good: ['Costs down is the whole job. Thank you for doing the whole job.',
+            'That line comes straight off the operating number.'],
+          bad: ['Every dollar of that is ours and none of it comes back.',
+            'You have added a permanent cost to solve a temporary complaint.'],
+        },
+      },
+    },
+    Congress: {
+      bands: [
+        ['That is what we asked for, and we will say so on the record.',
+          'The committee is satisfied. For now, and in public.',
+          'You moved before we made you. Members notice that.',
+          'Good. We will find something else to hold a hearing about.',
+          'That will play well in a district, which is the only review we can give.',
+          'Nobody up here wants to fight this office. You have made that easier.'],
+        ['Noted. The committee has no further questions today.',
+          'That is adequate and adequate keeps you off the calendar.',
+          'We will take it back to the members. Nobody will be excited.',
+          'It does not fix the thing, and it is not nothing.',
+          'Fine. The bill stays in the drawer.',
+          'We are not satisfied. We are also not scheduling anything.'],
+        ['You did that without telling anybody up here.',
+          'That is going to be read out in a hearing room and you will be in it.',
+          'A private association making public policy. That is our whole concern, restated.',
+          'Three members already want a letter. There will be a letter.',
+          'This is the part where you find out what oversight means.',
+          'There is a campus in somebody\'s district that cares, so now somebody up here does.'],
+        ['We have the votes to compel you and we have begun counting them.',
+          'You will answer for that under oath.',
+          'There is a bill with your office named in it. It has co-sponsors now.',
+          'You are a hearing away from not making these decisions any more.',
+          'Every member on this committee has now been contacted about you.',
+          'We can legislate. We have been polite about not doing it.'],
+        ['The bill is filed. You will be reading about your office in it.',
+          'This committee no longer accepts that you should exist in this form.',
+          'We are done asking. The next document you get is not a letter.',
+          'You have made the case for us better than we could.',
+          'Whatever this sport is governed by next, it will not be you.',
+          'We will see you in that room, and this time you will not be a guest.'],
+      ],
+      streak: ['Three in a row. That is not an oversight, that is a posture.',
+        'Third one. The committee has started keeping its own file.',
+        'Three straight. Members have stopped asking us to be reasonable about this.'],
+      relief: ['That takes some of the heat out of it. Some.',
+        'A member or two will stand down. Not the ones that matter.',
+        'Helpful. The hearing stays on the calendar.',
+        'That narrows it. It does not close it.'],
+      grudge: ['We had let that go. You have reminded us.',
+        'That reopens a question this committee had stopped asking.',
+        'One line in that is going straight into somebody\'s opening statement.',
+        'We closed that inquiry. It is open again and it is broader.'],
+      on: {
+        exposure: {
+          good: ['That is one less thing we have to explain to a constituent.',
+            'You closed a door before somebody up here kicked it in. Noted.'],
+          bad: ['That is a hearing. Not a risk of one, a hearing.',
+            'You have handed four members a press release each.'],
+        },
+        autonomy: {
+          good: ['A decision with somebody else in the room is a decision we can defend.',
+            'You brought people in. That is the entire ask.'],
+          bad: ['An unelected office deciding that alone is the problem in one sentence.',
+            'Nobody voted for you, and you keep making that everybody\'s business.'],
+        },
+        labour: {
+          good: ['That is a kid on a scholarship better off. It is an easy thing to support.',
+            'We can read that out at home and people will nod.'],
+          bad: ['We will be asked why we let that happen to somebody\'s kid.',
+            'That lands on a nineteen year old who was a high school senior last November.'],
+        },
+      },
+    },
+    'White House': {
+      bands: [
+        ['The President is pleased, and the President will say so somewhere visible.',
+          'That polls. We do not say that about many decisions.',
+          'We would like to be standing near that when it happens.',
+          'Good instinct. It reads the way the country already feels.',
+          'That is the sort of thing that gets mentioned from a podium.',
+          'The building likes it. The building does not like much.'],
+        ['Fine. Nobody here will be commenting either way.',
+          'We can live with it. It does not help us and it does not hurt.',
+          'Understood. It will not come up.',
+          'That is a sport decision and we will treat it as one.',
+          'No objection. No enthusiasm either.',
+          'We have looked at it and we have nothing to add.'],
+        ['That is going to be raised at a briefing and we would rather it were not.',
+          'You have made a domestic story out of a football decision.',
+          'The President will be asked about that and will not enjoy it.',
+          'It plays badly in about nine states, which is nine too many.',
+          'We would have liked a call before rather than a statement after.',
+          'That is the kind of thing that ends up in a speech somebody else writes.'],
+        ['The President has views about this office now, and they are not warm.',
+          'We can make this a priority. You would not enjoy being a priority.',
+          'There are people in this building who would like to legislate you.',
+          'You are one bad Saturday from being an agenda item.',
+          'We have been supportive. That was a choice and it is being reviewed.',
+          'The next time we call, it will not be to ask.'],
+        ['The President will be saying something about you, and not from a stadium.',
+          'This building is done defending your independence.',
+          'We have stopped arguing with the people who want you regulated.',
+          'You will hear the position in the State of the Union.',
+          'There is no longer anybody here who takes your call.',
+          'Whatever happens to this office next, we will not be preventing it.'],
+      ],
+      streak: ['Three in a row. Somebody in here has started a file with your name on it.',
+        'That is the third. The President has begun mentioning it unprompted.',
+        'Three straight. We have stopped explaining you to people who ask.'],
+      relief: ['That helps the story. It does not change the story.',
+        'We can work with that at a briefing. Barely.',
+        'Better. It was going to be a question either way.',
+        'That takes the edge off. The President will still be asked.'],
+      grudge: ['We had moved on from that. Now we have not.',
+        'That drags back a thing this building had stopped discussing.',
+        'One line in there is going to be quoted at us.',
+        'We had put that down. You have handed it back.'],
+      on: {
+        access: {
+          good: ['More of the country gets to be in it. That is the whole argument, made for us.',
+            'People who never had a team in this now do. That matters here.'],
+          bad: ['You have shut the door on most of the map and everybody can see which half.',
+            'That is a decision the people who lost it will remember at a rally.'],
+        },
+        tradition: {
+          good: ['That is the version of this country people like to be reminded of.',
+            'You kept something. There is real value in that up here.'],
+          bad: ['You are taking apart a thing families organise a weekend around.',
+            'That reads as an institution deciding it knows better. It always plays badly.'],
+        },
+        exposure: {
+          good: ['One fewer scandal is one fewer question. We are simple about this.',
+            'That is a risk closed and we notice when you close one.'],
+          bad: ['That will be a segment, and then it will be a question to the President.',
+            'You have created a story with a second day in it.'],
+        },
+      },
+    },
+    'Host Nations': {
+      bands: [
+        ['We built for this. It is good to be treated as though we did.',
+          'That is the first decision that assumed we were staying.',
+          'Our ministers will be very pleased, and they will say so with money.',
+          'Good. Now do it again without being asked.',
+          'That reads as a partnership rather than a fixture. Thank you.',
+          'We have waited a long time for a ruling that started with us.'],
+        ['Acceptable. We were expecting less.',
+          'We will take it. It is not equality and nobody said it was.',
+          'That works. It is still a decision made without us in the room.',
+          'Fine. We will spend the money and say nothing.',
+          'It is a step and we can count how many are left.',
+          'We understand. We have understood for some years now.'],
+        ['You keep treating us as a venue rather than as a member.',
+          'We paid for the stadium and we are asked about the catering.',
+          'That decision was about us and nobody called.',
+          'There is a limit to how long a partner stays a guest.',
+          'We funded three seasons of this. We would like a sentence in return.',
+          'You would not have done that to a conference.'],
+        ['Our government is reviewing whether this relationship returns anything.',
+          'There are other sports and all of them have asked.',
+          'We can stop writing the cheque. It is the one thing we control.',
+          'You have made the case internally for walking away, and we did not have to.',
+          'The next agreement will be negotiated by people less fond of you.',
+          'We are not a market. We keep having to say it.'],
+        ['We are finished. The stadium will be used for something else.',
+          'The funding stops and the announcement is already drafted.',
+          'You will find out what this sport is worth without us in it.',
+          'We were the growth. You have declined to have any.',
+          'There will be a league here. It will not be yours.',
+          'Do not call. There is nobody here who will take it.'],
+      ],
+      streak: ['Three in a row. Our ministers have noticed and they count too.',
+        'That is the third. There is a word for a pattern and we have used it.',
+        'Three straight. We have begun asking what exactly we are paying for.'],
+      relief: ['That is better. It does not make the last one acceptable.',
+        'We will report that home as progress. Modest progress.',
+        'Helpful. We are still the ones who had to ask.',
+        'That narrows it. We remain a long way from the room.'],
+      grudge: ['We thought that was settled in our favour. Apparently not.',
+        'That reopens something we had been told was closed.',
+        'One clause there undoes a year of goodwill.',
+        'We had that. You have taken it back quietly.'],
+      on: {
+        inventory: {
+          good: ['More football here is exactly what we paid for.',
+            'Give us the fixtures and we will fill them. We always have.'],
+          bad: ['Fewer games and the ones cut are ours. It is always ours.',
+            'You reduced the schedule by taking it away from the newest people in it.'],
+        },
+        access: {
+          good: ['A route in is all anybody ever wanted. Thank you.',
+            'That is the difference between playing and being invited.'],
+          bad: ['We can win everything here and still not be in that bracket.',
+            'You have built a ceiling and told us it is a schedule.'],
+        },
+        tradition: {
+          good: ['We are building our own. It helps when you do not trample it.',
+            'You protected something. We would like some of our own one day.'],
+          bad: ['Your hundred years of habit is the reason we are never in the room.',
+            'Tradition is the word this sport uses when it means no.'],
+        },
+      },
+    },
+    'The Programme': {
+      bands: [
+        ['That clears the manifest. We can fly it.',
+          'Good. The window is real and you have just made it.',
+          'That is an engineering answer to an engineering problem. Rare here.',
+          'Our directors will approve the next one on the strength of that.',
+          'You read the constraints. Nobody reads the constraints.',
+          'That is a launch. Everything else in this building is a slide deck.'],
+        ['It fits, with margin we do not love.',
+          'We can work the mass budget around that. Just.',
+          'Acceptable. The contingency is now thinner than we would file.',
+          'That holds. It holds the way a thing holds at the limit.',
+          'Fine. We will find the kilograms somewhere.',
+          'Nobody is scrubbing. Nobody is comfortable either.'],
+        ['That pushes us outside the window and the window does not move.',
+          'You have added mass to a thing that was already at the limit.',
+          'A decision like that costs a cycle, and a cycle is four years.',
+          'We told you the constraint in writing and it was the first line.',
+          'Somebody in that room does not understand that orbits are not negotiable.',
+          'That is not a delay. That is a different mission.'],
+        ['Our funding is annual and this is the sort of thing that ends it.',
+          'We have other payloads and all of them are easier than you.',
+          'There is a version of the manifest without a football game on it.',
+            'You are one more of these from being descoped.',
+          'We have begun writing the memo that explains why we stopped.',
+          'This programme does not need a sport. The sport needed us.'],
+        ['The slot is reassigned. There is nothing to discuss.',
+          'We are off the manifest and off the phone.',
+          'Whatever you sanction next, it stays on the ground.',
+          'You had a launch window. You have a press release.',
+          'Our directors have closed the file and they do not reopen files.',
+          'Do not call in March. There will be nothing in March.'],
+      ],
+      streak: ['Three in a row and every one cost us mass. That is a programme, not a run.',
+        'Third one. We have started modelling this office as a schedule risk.',
+        'Three straight. Our directors have asked, twice, why we are still doing this.'],
+      relief: ['That recovers some margin. Not the cycle.',
+        'Helpful. We are still outside where we wanted to be.',
+        'That buys back kilograms. It does not buy back the window.',
+        'Better. The mission is still the harder version of itself.'],
+      grudge: ['We had closed that trade. It is open again.',
+        'One line there undoes a year of mass reduction.',
+        'That reopens a constraint we had engineered around.',
+        'We solved that. You have unsolved it.'],
+      on: {
+        cost: {
+          good: ['Every dollar there is a kilogram. You have just bought us a kilogram.',
+            'That is money we can put into the vehicle instead of the paperwork.'],
+          bad: ['That comes out of the vehicle. Everything comes out of the vehicle.',
+            'You have spent our margin on a thing that does not fly.'],
+        },
+        inventory: {
+          good: ['More kickoffs is more flights. We are simple about this.',
+            'Give us the manifest and we will make the window.'],
+          bad: ['Fewer events and the hardware still costs what it costs.',
+            'You have cut the one Saturday that justified the launch.'],
+        },
+        exposure: {
+          good: ['Risk retired on the ground is risk that does not fly.',
+            'Our safety office read that and had nothing to add. That never happens.'],
+          bad: ['You have put a kid in a helmet in vacuum with no actuarial table.',
+            'That is a waiver a court has never seen before.'],
         },
       },
     },
@@ -1223,7 +1709,7 @@
      on whether the item carries a school. A guard that measures one of those and calls it
      safe is the guard that already failed once: it went on rendering bloc names ("The SEC",
      seven characters) for a room that had stopped drawing them. See test_desk.mjs. */
-  const publicAPI = { BLOCS, BY_ID, GAIN, MEMORY, VARIETY, VOICE, react, deltas, grudge, dot, moodOf, line, driver, hash,
+  const publicAPI = { BLOCS, SEATED, BY_ID, roomOf, GAIN, MEMORY, VARIETY, VOICE, react, deltas, grudge, dot, moodOf, line, driver, hash,
     SPEAKERS, AT_SCHOOL, speaker };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_BLOCS = publicAPI;

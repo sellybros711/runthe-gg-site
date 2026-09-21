@@ -243,6 +243,29 @@
   const myTerms = (limit) => call('commish_my_terms', {
     p_limit: Math.max(1, Math.min(50, limit || 20)),
   });
+  /* WHERE ONE TERM SITS WITHOUT RECORDING IT, which finishTerm answers for the term it is
+     filing and nothing else could ask. The standings screen needs it because it is drawn
+     long after the ending: a player opening the board in the middle of their next term
+     still wants to know where the last one stands, and asking finishTerm would file a
+     second copy of a term that has already been filed. */
+  const termStanding = (id, score) => call('commish_term_standing', {
+    p_doctrine: String(id), p_score: score == null ? null : Math.round(score),
+  });
+
+  /* ── the one board that is allowed to hold everybody ─────────────────────────
+     supabase/105_commish_tenure.sql, and its header argues the case at length. In short:
+     every other board here is scoped to a doctrine, because ranking six report cards on one
+     line rewards upsetting nobody. Years in the chair has no values behind it. You can last
+     forty years as a Landlord or as a Reformer, and the room removes you for losing it
+     rather than for what you believed, so this is the one question that can be asked of
+     everybody at once without telling anybody how to play. */
+  const tenureBoard = (limit) => call('commish_tenure_board', {
+    p_limit: Math.max(1, Math.min(50, limit || 20)),
+  });
+  /* YOUR OWN PLACE, COUNTED AGAINST EVERYBODY rather than against the rows the board
+     returned. A page that worked out "you are 51st" by failing to find itself in the top
+     fifty would tell the two hundredth commissioner the same thing as the fifty first. */
+  const myTenure = () => call('commish_my_tenure', {});
 
   const api = {
     API_VERSION: 1,
@@ -251,7 +274,8 @@
     phrase: phrase, bars: bars,
     rule: rule, split: split, many: many, mine: mine,
     finishTerm: finishTerm, doctrineSplit: doctrineSplit,
-    doctrineBoard: doctrineBoard, myTerms: myTerms,
+    doctrineBoard: doctrineBoard, myTerms: myTerms, termStanding: termStanding,
+    tenureBoard: tenureBoard, myTenure: myTenure,
     get offline() { return offline; },
   };
 

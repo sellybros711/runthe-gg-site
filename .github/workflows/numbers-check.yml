@@ -1,0 +1,73 @@
+name: Numbers check
+
+# A number a player reads has to be the number the game plays. The in-game rules
+# sheet interpolates its own constants; the guide, the homepage, about.html and the
+# share-card source cannot, so $11M is hardcoded across six files. Tune CAP_MUSD and
+# nothing fails, nothing throws, and every one of those pages goes on promising the
+# old number. See CLAUDE.md and the header of scripts/check-numbers.mjs.
+#
+# IT ALSO CHECKS COVERAGE, against scripts/numbers.json. A claim REWORDED out of
+# reach of the patterns would otherwise leave this green for ever, which is the way
+# an extractor in this repo has already failed twice. So a dropped claim and a new
+# one both fail, and both want re-recording on purpose:
+#   node scripts/check-numbers.mjs --update
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-numbers.mjs
+#
+# The paths cover the engines (which hold the truth), the pages that state it, and
+# the player data (whose first and last season "since 2005" is a claim about).
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'cfb/engine.js'
+      - 'football/engine.js'
+      - 'cfb/index.html'
+      - 'cfb/how-to-play.html'
+      - 'cfb/og-source.html'
+      - 'football/index.html'
+      - 'football/how-to-play.html'
+      - 'index.html'
+      - 'about.html'
+      - 'cfb/data/cfb_player_seasons.json'
+      - 'football/data/player_seasons.json'
+      - 'scripts/check-numbers.mjs'
+      - 'scripts/check-copy.mjs'
+      - 'scripts/numbers.json'
+      - '.github/workflows/numbers-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'cfb/engine.js'
+      - 'football/engine.js'
+      - 'cfb/index.html'
+      - 'cfb/how-to-play.html'
+      - 'cfb/og-source.html'
+      - 'football/index.html'
+      - 'football/how-to-play.html'
+      - 'index.html'
+      - 'about.html'
+      - 'cfb/data/cfb_player_seasons.json'
+      - 'football/data/player_seasons.json'
+      - 'scripts/check-numbers.mjs'
+      - 'scripts/check-copy.mjs'
+      - 'scripts/numbers.json'
+      - '.github/workflows/numbers-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: numbers-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-numbers.mjs

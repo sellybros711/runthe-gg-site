@@ -41,7 +41,7 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:{username:'${TESTER}'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
 const arm = `
 (function(){ var v;
   Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,
@@ -77,6 +77,20 @@ async function podium(pg) {
   }
 }
 
+
+/* A CUTSCENE CAN TAKE THE SCREEN THE MOMENT A TERM STARTS, and one that a walker does not
+   know about is a walker that stalls on the one screen with no dock. Skip it: the scenes have
+   their own suite in test_scene, and every other file here is testing something behind them.
+   Called after anything that could arrive at the office. */
+async function pastScene(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-scene', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#b-scene-skip').catch(() => {});
+    await pg.waitForTimeout(320);
+  }
+}
+
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 
@@ -88,6 +102,7 @@ await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
 await p.waitForTimeout(2400);
 await p.click('#g-start').catch(() => {});
 await p.waitForTimeout(900);
+await pastScene(p);
 
 const on = (id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
 const tap = async (s) => { try { await p.click(s, { timeout: 2000 }); return true; } catch (e) { return false; } };
@@ -100,6 +115,7 @@ for (let i = 0; i < 12; i++) {
   if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(400); continue; }
   if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(500); continue; }
   if (await on('s-press')) { await podium(p); continue; }
+  if (await on('s-scene')) { await pastScene(p); continue; }
   if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(500); continue; }
   break;
 }
@@ -108,50 +124,53 @@ console.log('\n=== the desk is shorter than it was ===');
 {
   ok('an item is on the desk', await on('s-desk'));
 
-  /* THE SETUP IS FOLDED, NOT GONE, and the check for that cannot depend on which item the
-     seed happened to deal. Plenty of briefs are three lines and are correctly left whole, so
-     asserting on whichever one turned up first would pass without opening anything. This
-     rules through beats until a clamped one appears and tests THAT.
+  /* THE SETUP IS THE CASE, SO IT IS NOT FOLDED. It used to be clamped to three lines under a
+     "Read the rest" button, and that was the wrong thing to fold: every other control on this
+     screen asks you to decide something, and the paragraph they are all about was the one
+     piece of it behind a tap.
 
-     The two states are one invariant: the class is on exactly when the button is there. A
-     clamp with no way past it is text nobody can read, and a button over a whole paragraph
-     promises something that is not behind it. */
-  let opened = null, looked = 0;
-  for (let i = 0; i < 14 && opened === null; i++) {
+     Walked across several items rather than asserted on whichever one the seed dealt first,
+     because the failure this replaces only showed on a LONG brief: a short one is whole
+     either way, so a check that stops at the first desk would pass with the clamp still on.
+     Ruling on each item is how the walk reaches the next one, so the item count is also what
+     keeps this cheap. */
+  let looked = 0, folded = [], longest = 0;
+  for (let i = 0; i < 8; i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-press')) { await podium(p); continue; }
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     if (!(await on('s-desk'))) break;
     looked++;
-    const clamped = await p.$eval('#d-brief', (e) => e.classList.contains('clamp'));
-    const more = await p.$('#d-brief button');
-    if (clamped !== !!more) { opened = { agree: false }; break; }
-    if (more) {
-      const before = await p.$eval('#d-brief p', (e) => e.clientHeight);
-      await more.click(); await p.waitForTimeout(250);
-      opened = { agree: true,
-        before, after: await p.$eval('#d-brief p', (e) => e.clientHeight),
-        gone: !(await p.$('#d-brief button')) };
-      break;
-    }
-    /* Short brief, nothing folded. Rule on anything and look at the next item. */
-    const o = await p.$('#d-options .opt'); if (o) { await o.click(); await p.waitForTimeout(250); }
+    const st = await p.evaluate(() => {
+      const el = document.getElementById('d-brief');
+      const par = el.querySelector('p');
+      return { clamp: el.classList.contains('clamp'),
+        button: !!el.querySelector('button'),
+        /* Nothing cut off: the paragraph's own scroll height is its drawn height. */
+        cut: par ? par.scrollHeight - par.clientHeight : 0,
+        chars: par ? par.textContent.length : 0 };
+    });
+    longest = Math.max(longest, st.chars);
+    if (st.clamp || st.button || st.cut > 2) folded.push(st.chars + ' chars');
+    const o = await p.$('#d-options .opt');
+    if (o) { await p.evaluate(() => document.querySelector('#d-options .opt').click());
+      await p.waitForTimeout(220); }
     if (!(await tap('#b-rule'))) break;
-    await p.waitForTimeout(700);
+    await p.waitForTimeout(200); await pastScene(p);
+    await p.waitForTimeout(650);
   }
-  ok('a setup long enough to be folded turns up', !!opened && opened.agree !== false,
-    opened ? 'after ' + looked + ' items' : 'none in ' + looked + ' items');
-  if (opened && opened.agree) {
-    ok('  and opening it really shows more', opened.after > opened.before,
-      opened.before + 'px to ' + opened.after + 'px');
-    ok('  with nothing left to press', opened.gone);
-  }
+  ok('several cases were read', looked >= 3, looked + ' items');
+  ok('  and a long setup turned up among them', longest > 260, longest + ' characters');
+  ok('  none of them folded the case away', !folded.length, folded.join(', '));
+
   /* Back to a desk for the rest of this block, wherever ruling left us. */
   for (let i = 0; i < 8 && !(await on('s-desk')); i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-press')) { await podium(p); continue; }
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     break;
   }
@@ -327,45 +346,77 @@ console.log('\n=== you get to answer the room ===');
      screen back into the standings screen, which is exactly what the first version did: it
      dropped all nine quotes and the delta column off the one screen the mode is remembered
      for, and nothing failed. */
-  let offered = 0, onForecast = 0, answered = null;
-  for (let i = 0; i < 26 && !answered; i++) {
-    if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(340); continue; }
-    if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(400); continue; }
-    if (await on('s-room')) {
-      const st = await p.evaluate(() => {
-        const c = document.getElementById('r-rebutcard');
-        if (!c || c.hidden) return null;
-        return { forecast: /if you ruled/i.test(document.getElementById('r-eyebrow').textContent),
-          opts: c.querySelectorAll('.reb').length };
-      });
-      if (st && st.forecast) onForecast++;
-      if (st && !st.forecast) {
-        offered++;
-        const before = await p.$$eval('#r-room .bl .lv', (e) => e.map((x) => Number(x.textContent)));
-        const says = await p.$$eval('#r-room .bl .say', (e) => e.length);
-        await p.click('#r-rebutcard .reb:nth-child(1)');
-        await p.waitForTimeout(500);
-        answered = await p.evaluate(() => ({
-          said: !!document.querySelector('#r-rebut .rebd'),
-          chips: [...document.querySelectorAll('#r-rebut .rebm span')].map((x) => x.textContent),
-          gone: !document.querySelector('#r-rebut .reb'),
-          says: document.querySelectorAll('#r-room .bl .say').length,
-          deltas: document.querySelectorAll('#r-room .bl .dl').length,
-        }));
-        answered.opts = st.opts;
-        answered.before = before;
-        answered.after = await p.$$eval('#r-room .bl .lv', (e) => e.map((x) => Number(x.textContent)));
-        answered.saysBefore = says;
-      }
-      await tap('#b-next'); await p.waitForTimeout(400); continue;
-    }
-    if (await on('s-desk')) {
-      const o = await p.$('#d-options .opt'); if (o) await o.click();
-      await p.waitForTimeout(200);
-      if (!(await tap('#b-rule'))) break;
-      await p.waitForTimeout(650); continue;
-    }
-    break;
+  /* ASKED FOR BY NAME RATHER THAN WALKED TO, and the walk it replaces flaked three times
+     in one afternoon before it was replaced. The offer is rare on purpose: it fires when a
+     ruling singles somebody out, which is about three rulings in ten, and a sixty step walk
+     reaches maybe fifteen of them. A guard that goes red a few runs in a hundred is worse
+     than no guard, because it teaches everybody to re-run rather than read.
+
+     welcome-suit / defend puts the Players at -11.5 against a room that barely moves, which
+     clears REBUT_FLOOR and REBUT_OUTLIER by a distance, and welcome-suit is the first case
+     of every term so it is always there to be asked for. Measured across the whole docket:
+     ninety-five of three hundred and nine options single somebody out, so this is one of
+     many rather than a special case built for the test. */
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.deskItem('welcome-suit'));
+  await p.waitForTimeout(500);
+  /* THE FORECAST FIRST, because the rule this guard exists for is that a rebuttal never
+     appears over a ruling nobody has made yet. Same option, tested rather than ruled. */
+  await p.evaluate(()=>{ try{ window.PS_CFB_COMMISH_TEST.setNote(''); }catch(e){} });
+  const optSel='#d-options .opt';
+  await p.$$eval(optSel,(els)=>{
+    const b=els.map((e)=>e.querySelector('.opick')).filter(Boolean)[1]
+      ||els[1]&&els[1].querySelector('.opick');
+    if(b) b.click();
+  }).catch(()=>{});
+  await p.waitForTimeout(300);
+  await tap('#b-test');
+  await p.waitForTimeout(700);
+  let onForecast = (await p.evaluate(()=>{
+    const c=document.getElementById('r-rebutcard');
+    const fc=/if you ruled/i.test((document.getElementById('r-eyebrow')||{}).textContent||'');
+    return (c&&!c.hidden&&fc)?1:0;
+  }))||0;
+  await tap('#b-next'); await p.waitForTimeout(500);
+
+  /* AND NOW THE RULING ITSELF. forceChoice presses the real Rule button on a named option,
+     so what lands on the room screen is what a player would land on. */
+  let offered = 0, answered = null;
+  await p.evaluate(()=>{ window.PS_CFB_COMMISH_TEST.deskItem('welcome-suit'); });
+  await p.waitForTimeout(450);
+  await p.evaluate(()=>{ window.PS_CFB_COMMISH_TEST.forceChoice('defend'); });
+  await p.waitForTimeout(900);
+  await pastScene(p);
+  await p.waitForTimeout(400);
+  const st = await p.evaluate(() => {
+    const c = document.getElementById('r-rebutcard');
+    if (!c || c.hidden) return null;
+    return { forecast: /if you ruled/i.test(document.getElementById('r-eyebrow').textContent),
+      opts: c.querySelectorAll('.reb').length };
+  });
+  if (st && st.forecast) onForecast++;
+  if (st && !st.forecast) {
+    offered++;
+    /* THE REAL NUMBERS, NOT THE PRINTED ONES. A rebuttal moves a bloc by six tenths of a
+       point on purpose, and the screen prints standings rounded to whole numbers, so
+       "did the room move" read off the page is really "did a fractional move happen to
+       cross a rounding boundary". Read the ledger the page is drawing from. */
+    const before = await p.evaluate(() =>
+      Object.assign({}, window.PS_CFB_COMMISH_TEST.world().blocs));
+    const says = await p.$$eval('#r-room .bl .say', (e) => e.length);
+    await p.click('#r-rebutcard .reb:nth-child(1)');
+    await p.waitForTimeout(500);
+    answered = await p.evaluate(() => ({
+      said: !!document.querySelector('#r-rebut .rebd'),
+      chips: [...document.querySelectorAll('#r-rebut .rebm span')].map((x) => x.textContent),
+      gone: !document.querySelector('#r-rebut .reb'),
+      says: document.querySelectorAll('#r-room .bl .say').length,
+      deltas: document.querySelectorAll('#r-room .bl .dl').length,
+    }));
+    answered.opts = st.opts;
+    answered.before = before;
+    answered.after = await p.evaluate(() =>
+      Object.assign({}, window.PS_CFB_COMMISH_TEST.world().blocs));
+    answered.saysBefore = says;
   }
   ok('somebody eventually wants a word', offered > 0, offered + ' times');
   ok('  and never about a ruling you have not made', onForecast === 0, onForecast + ' on a forecast');
@@ -374,8 +425,10 @@ console.log('\n=== you get to answer the room ===');
     ok('  answering says what it did', answered.said && answered.chips.length > 0,
       answered.chips.join(', '));
     ok('  and can only be done once', answered.gone);
-    ok('  it moves the room', answered.after.some((v, i) => v !== answered.before[i]),
-      answered.before.join(' ') + '  ->  ' + answered.after.join(' '));
+    const shifted = Object.keys(answered.after)
+      .filter((b) => answered.after[b] !== answered.before[b])
+      .map((b) => b + ' ' + answered.before[b].toFixed(1) + ' to ' + answered.after[b].toFixed(1));
+    ok('  it moves the room', shifted.length > 0, shifted.join(', ') || 'nothing moved');
     /* THE REGRESSION THIS EXISTS FOR. */
     ok('  and the room is still the reaction screen afterwards',
       answered.says === answered.saysBefore && answered.deltas === 9,
@@ -398,6 +451,7 @@ console.log('\n=== what every side wants, before you decide ===');
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-press')) { await podium(p); continue; }
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     break;
   }
@@ -470,6 +524,7 @@ console.log('\n=== reading an option is not choosing it, and the note survives e
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-press')) { await podium(p); continue; }
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     break;
   }
@@ -481,6 +536,7 @@ console.log('\n=== reading an option is not choosing it, and the note survives e
       if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(400); continue; }
       if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
       if (await on('s-press')) { await podium(p); continue; }
+      if (await on('s-scene')) { await pastScene(p); continue; }
       if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
       break;
     }
@@ -527,17 +583,21 @@ console.log('\n=== reading an option is not choosing it, and the note survives e
       (await p.$eval('#d-text', (e) => e.value)) === NOTE);
     ok('  and marks that option as the ruling', after.opts[after.opts.length - 1].on);
     ok('  and lets you rule', after.rule === false);
-    /* THE BUTTON NAMES WHICH OF THE TWO THINGS IT IS ABOUT TO FORECAST. */
+    /* THE BUTTON NAMES BOTH THINGS IT IS ABOUT TO FORECAST, because the note is read now. */
     ok('  with the test button saying what it will test',
-      /selected ruling/i.test(after.test.txt), after.test.txt);
+      /ruling and your note/i.test(after.test.txt), after.test.txt);
     await tap('#b-test');
     await p.waitForTimeout(900);
     const fc = await p.evaluate(() => ({
       title: document.getElementById('r-title').textContent,
       hidden: document.getElementById('r-note').hidden,
+      note: document.getElementById('r-note').textContent,
     }));
     ok('  and the forecast names the ruling it forecast', /^If you ruled: /.test(fc.title), fc.title);
-    ok('  and says the note is not what the room answered', fc.hidden === false);
+    /* The note is substantial, so whichever of the three states applies, the screen says
+       what the room did with the words rather than nothing. */
+    ok('  and says what the room did with the note', fc.hidden === false
+      && /note/i.test(fc.note), fc.note.slice(0, 80));
     await tap('#b-next');
     await p.waitForTimeout(500);
   } else {
@@ -563,6 +623,7 @@ console.log('\n=== what the desk promised is what the office got ===');
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-press')) { await podium(p); continue; }
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     if (!(await on('s-desk'))) break;
     beats++;
@@ -589,6 +650,7 @@ console.log('\n=== what the desk promised is what the office got ===');
     }
     if (promised) break;
     if (!(await tap('#b-rule'))) break;
+    await p.waitForTimeout(200); await pastScene(p);
     await p.waitForTimeout(700);
   }
 
@@ -599,10 +661,12 @@ console.log('\n=== what the desk promised is what the office got ===');
 
   if (promised) {
     await tap('#b-rule');
+    await p.waitForTimeout(200); await pastScene(p);
     await p.waitForTimeout(900);
     ok('  the ruling lands on the reaction screen', await on('s-room'));
     await tap('#b-next');
     await p.waitForTimeout(900);
+    await pastScene(p);
     /* Carrying on can roll into a year in review; either screen draws the same four facts. */
     const where = (await on('s-office')) ? '#off-sport' : (await on('s-year')) ? '#y-sport' : null;
     ok('  and the sport is on screen afterwards', !!where, where || 'neither screen');
@@ -641,6 +705,7 @@ console.log('\n=== the forecast is only as good as your council ===');
     await q.waitForTimeout(2400);
     await q.click('#g-start').catch(() => {});
     await q.waitForTimeout(900);
+    await pastScene(q);
     const at = (id) => q.$eval('#' + id, (x) => x.classList.contains('on')).catch(() => false);
     for (let i = 0; i < 10 && !(await at('s-desk')); i++) {
       if (await at('s-office')) { await q.click('#b-desk', { timeout: 2000 }).catch(() => {}); await skipSim(q); await q.waitForTimeout(380); continue; }
@@ -738,6 +803,7 @@ console.log('\n=== what every other commissioner did ===');
     await q.waitForTimeout(2400);
     await q.click('#g-start').catch(() => {});
     await q.waitForTimeout(900);
+    await pastScene(q);
     const qon = (id) => q.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
     for (let i = 0; i < 14; i++) {
       if (await qon('s-desk')) break;
@@ -756,11 +822,14 @@ console.log('\n=== what every other commissioner did ===');
       shown: await q.$eval('#r-split', (e) => !e.hidden).catch(() => null),
     };
     await q.click('#b-next').catch(() => {});
+    await q.waitForTimeout(250); await pastScene(q);
     await q.waitForTimeout(500);
     const o2 = await q.$('#d-options .opt');
     if (o2) { await o2.click(); await q.waitForTimeout(300); }
     await q.click('#b-rule').catch(() => {});
+    await q.waitForTimeout(200); await pastScene(q);
     await q.waitForTimeout(1200);
+    await pastScene(q);
     const box = await q.evaluate(() => {
       const e = document.getElementById('r-split');
       if (!e) return { missing: true };
@@ -955,6 +1024,68 @@ console.log('\n=== nothing the desk writes reaches the screen as a database key 
     'header ' + box.badge.hd + 'px, gap ' + box.badge.gap + 'px');
 
   await pg.close();
+}
+
+console.log('\n=== every case, on the real desk, saying it in English ===');
+{
+  /* AND THE SAME QUESTION ASKED OF THE SCREEN RATHER THAN OF THE TABLE.
+     The check above reads every (path, value) it can find on `option.edit.set` and runs it
+     through pathName and pathValue. It shipped a raw database key at a player anyway, twice,
+     because an edit is allowed to be a FUNCTION of the case's cast: resolving one with no
+     cast returns an empty object, so the sweep saw nothing at all for the sponsor items and
+     the title game bid. "venues.title / atl / was nobody" rendered under a heading that
+     promises plain English and no assertion here could see it.
+
+     So this one opens every case in the docket on the real desk, clicks every ruling, and
+     reads the rows the panel actually drew. It is slower and it is the only version of this
+     check that cannot be fooled by how an item chooses to build its edit. A label with a dot
+     in it is a ledger path. An empty value or a bare "was" is a lookup that found nothing. */
+  {
+    const D2 = require(ROOT + '/cfb/commish/docket.js');
+    const sw = await b.newPage({ viewport: { width: 900, height: 900 } });
+    const swErrs = []; sw.on('pageerror', (e) => swErrs.push(e.message));
+    await sw.addInitScript(arm + stub);
+    await sw.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
+    await sw.waitForTimeout(2200);
+    await sw.click('#g-start').catch(() => {});
+    await sw.waitForTimeout(900);
+    await pastScene(sw);
+    const raw = [], shut = [];
+    let rows = 0;
+    for (const it of D2.ITEMS) {
+      const open = await sw.evaluate((id) => {
+        try { return window.PS_CFB_COMMISH_TEST.deskItem(id); } catch (e) { return false; }
+      }, it.id).catch(() => false);
+      if (!open) { shut.push(it.id); continue; }
+      await sw.waitForTimeout(60);
+      const opts = await sw.$$eval('#d-options .opt', (e) => e.map((x) => x.dataset.o)).catch(() => []);
+      for (const o of opts) {
+        await sw.evaluate((x) => {
+          const el = document.querySelector('#d-options .opt[data-o="' + x + '"]');
+          if (el) el.click();
+        }, o);
+        await sw.waitForTimeout(55);
+        const drawn = await sw.$$eval('#d-effect .also span', (e) => e.map((x) => ({
+          n: (x.querySelector('b') || {}).textContent || '',
+          v: (x.querySelector('u') || {}).textContent || '',
+          w: x.querySelector('em') ? x.querySelector('em').textContent : '',
+        }))).catch(() => []);
+        drawn.forEach((r) => {
+          rows++;
+          if (/\./.test(r.n) || !r.v.trim() || r.w.trim() === 'was') {
+            raw.push(it.id + '/' + o + ' [' + r.n + '] [' + r.v + '] [' + r.w + ']');
+          }
+        });
+      }
+    }
+    ok('every case in the docket opens on the desk', !shut.length, shut.slice(0, 5).join(', ')
+      || D2.ITEMS.length + ' items');
+    ok('  and nothing threw while they were opened', !swErrs.length,
+      swErrs.slice(0, 2).join(' | ') || 'none');
+    await sw.close();
+    ok('  and what this changes says it in English', !raw.length,
+      raw.slice(0, 4).join('   |   ') || rows + ' rows drawn, none of them a ledger key');
+  }
 }
 
 await b.close();

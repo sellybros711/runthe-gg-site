@@ -655,7 +655,25 @@ function buildFullToBudget(rng, budget, targetSpendFraction) {
     const pool = (isDef ? fullDefenders : fullPlayers);
     const legal = pool.filter((p) => posOk(i, p)
       && !used.has(`${p.player_id}|${p.season}`));
-    const share = Math.min(remaining / left * 1.5, remaining - (left - 1) * 1.0);
+    /*
+     * THE JITTER, AND IT WAS MISSING FOR THE WHOLE LIFE OF THIS BOT.
+     *
+     * This function took an rng and never called it, so every `mid` Full Team row in this
+     * report was ONE deterministic roster replayed N times: what it measured was schedule
+     * luck, not the range a careful player meets. buildToBudget, the offense bot it is read
+     * against, spreads its per-slot spend with exactly this term, so the two rows were never
+     * the same kind of thing and the comparison between them was measuring the builders.
+     *
+     * What it hid: a mode's TAIL is made almost entirely of which roster you drafted, and a
+     * bot that drafts the same roster every time has no tail at all. The Full Team mid row
+     * reported a best of 15 wins in 400 seasons and 0.0% at 16, which read as a mode nobody
+     * could win big in, and was really one average roster having 400 average years.
+     *
+     * Same term as the offense bot, deliberately: a different spread here would put the
+     * difference between the two rows back into the builders.
+     */
+    const jitter = 1 + 0.9 * (rng() - 0.5) * 2;
+    const share = Math.min(remaining / left * 1.5 * jitter, remaining - (left - 1) * 1.0);
     let cand = legal.filter((p) => p.price_musd <= share)
       .sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
     /* Nothing affordable is a real outcome at a tight cap, not a harness bug. Take the
@@ -799,9 +817,27 @@ E.FULL_SLOT_POS.forEach((pos, i) => {
 });
 
 const FULL_OPTIMAL_CACHE = new Map();
+/*
+ * KEYED ON WHAT THE SOLVE ACTUALLY DEPENDS ON, which is not the budget alone.
+ *
+ * It was, and the solve reads the live constants through fullStrength: FULL_TALENT scales
+ * both sides and the Full Team suppression ceiling decides what a cheap defence costs. So
+ * in any sweep the FIRST cell solved was the only one solved, and every row after it
+ * reported that roster under different physics. It is what made a defmax sweep print nine
+ * identical splits, and it silently pinned the `optimal` row of a talent sweep to whichever
+ * talent ran first.
+ *
+ * The cache is still worth having: one solve is two knapsacks at six coach budgets and it is
+ * asked for once per season otherwise.
+ */
+function fullOptimalKey(budget) {
+  const t = constants.FULL_TALENT === undefined ? E.FULL_TALENT : constants.FULL_TALENT;
+  return budget + '|' + t + '|' + String(constants.FULL_DEF_SUPPRESS_MAX);
+}
 function buildFullOptimal(budget, wantSplit) {
-  if (FULL_OPTIMAL_CACHE.has(budget)) {
-    const hit = FULL_OPTIMAL_CACHE.get(budget);
+  const key = fullOptimalKey(budget);
+  if (FULL_OPTIMAL_CACHE.has(key)) {
+    const hit = FULL_OPTIMAL_CACHE.get(key);
     return wantSplit ? hit : { roster: hit.roster.slice(), coach: hit.coach };
   }
   let best = null;
@@ -841,9 +877,32 @@ function buildFullOptimal(budget, wantSplit) {
     }
    }
   }
-  FULL_OPTIMAL_CACHE.set(budget, best);
+  FULL_OPTIMAL_CACHE.set(key, best);
   return wantSplit ? best : { roster: best.roster.slice(), coach: best.coach };
 }
+
+/*
+ * THE TOP OF THE DISTRIBUTION, WHICH IS THE HALF A LEADERBOARD SHOWS.
+ *
+ * Everything else in this report is a middle: a win rate, a median record, a mean rating.
+ * Those are the right numbers for asking whether a mode is FAIR, and they are the wrong ones
+ * for asking what it FEELS like to compete in, because nobody competes against the median.
+ * A board is a list of the best seasons anybody played, so what a player actually meets at
+ * the top of it is the tail.
+ *
+ * Two modes can share a median and have nothing in common up there, and a report that prints
+ * only the middle says they are balanced. That is how a mode ships feeling far harder than
+ * the numbers beside it claim.
+ */
+function tail(wins) {
+  const s = wins.slice().sort((a, b) => a - b);
+  const at = (q) => s[Math.min(s.length - 1, Math.floor(q * s.length))];
+  const share = (k) => s.filter((w) => w >= k).length / s.length;
+  return { max: s[s.length - 1], p90: at(0.90), p99: at(0.99),
+    at15: share(15), at16: share(16), at17: share(17) };
+}
+const fmtTail = (t) => String(t.max).padStart(5) + String(t.p90).padStart(6)
+  + fmtPct(t.at15).padStart(8) + fmtPct(t.at16).padStart(8) + fmtPct(t.at17).padStart(8);
 
 function simulateFull(build, n, seed0) {
   let regGames = 0, regWon = 0, perfect = 0, title = 0, madePlayoffs = 0;
@@ -876,7 +935,10 @@ function simulateFull(build, n, seed0) {
     }
     regWins.push(run.regularWins);
     spends.push(roster.reduce((s, p) => s + p.price_musd, 0));
-    ratings.push(E.overallOf(roster, chem, 'full', coach));
+    /* fullOverall, not overallOf: overallOf takes no constants and so always rates against
+       the engine's built-in FULL_TALENT. This column therefore read the same number at every
+       talent in a sweep, which is a rating for a game the row beside it was not playing. */
+    ratings.push(E.fullOverall(roster, chem, coach, constants));
     if (run.perfect) perfect++;
     if (run.titleWon) title++;
     if (run.seed.made) madePlayoffs++;
@@ -887,6 +949,7 @@ function simulateFull(build, n, seed0) {
     perfectRate: perfect / n, titleRate: title / n, playoffRate: madePlayoffs / n,
     meanSpend: mean(spends), meanFor: mean(ptsFor), meanAgainst: mean(ptsAgainst),
     meanRating: mean(ratings),
+    tail: tail(regWins),
   };
 }
 
@@ -926,7 +989,7 @@ function offenseReference(n) {
     }
     out[name] = { perGameWin: regWon / regGames, medianRegWins: median(wins),
       playoffRate: madePlayoffs / n, titleRate: title / n,
-      meanFor: mean(pf), meanAgainst: mean(pa) };
+      meanFor: mean(pf), meanAgainst: mean(pa), tail: tail(wins) };
   }
   return out;
 }
@@ -951,14 +1014,16 @@ function fullTeamReport(n) {
   console.log(`N=${n} seasons per cell.\n`);
 
   console.log(`OFFENSE MODE AT $${constants.CAP_MUSD}M, 6 slots, the shipped calibration:`);
-  console.log('  play        win%   med rec    PO%   title%     PF     PA');
+  console.log('  play        win%   med rec    PO%   title%     PF     PA'
+    + '   best   p90     15+     16+    17-0');
   const ref = offenseReference(n);
   for (const name of ['careless', 'mid', 'optimal']) {
     const r = ref[name];
     console.log(`  ${name.padEnd(9)}` + fmtPct(r.perGameWin).padStart(7)
       + `${r.medianRegWins}-${17 - r.medianRegWins}`.padStart(9)
       + fmtPct(r.playoffRate).padStart(8) + fmtPct(r.titleRate).padStart(8)
-      + r.meanFor.toFixed(1).padStart(7) + r.meanAgainst.toFixed(1).padStart(7));
+      + r.meanFor.toFixed(1).padStart(7) + r.meanAgainst.toFixed(1).padStart(7)
+      + fmtTail(r.tail));
   }
   console.log('');
 
@@ -979,10 +1044,13 @@ function fullTeamReport(n) {
     { name: 'optimal',  build: (b) => () => buildFullOptimal(b) },   // roster AND coach
   ];
 
-  console.log('  cap   tal    play        win%   med rec    PO%   title%   20-0     PF     PA   rating   spend');
+  console.log('  cap   tal    play        win%   med rec    PO%   title%   20-0     PF     PA   rating'
+    + '   best   p90     15+     16+    17-0   spend');
   for (const cap of caps) {
    for (const tal of talents) {
     constants.FULL_TALENT = tal;
+    /* Swept the same way the other two are: PS_DEFMAX=1.6,1.3,1.18 */
+    if (process.env.PS_DEFMAX) constants.FULL_DEF_SUPPRESS_MAX = Number(process.env.PS_DEFMAX);
     for (const row of rows) {
       const r = simulateFull(row.build(cap), n, 424242);
       const rec = `${r.medianRegWins}-${17 - r.medianRegWins}`;
@@ -996,9 +1064,37 @@ function fullTeamReport(n) {
         + r.meanFor.toFixed(1).padStart(7)
         + r.meanAgainst.toFixed(1).padStart(7)
         + r.meanRating.toFixed(1).padStart(9)
+        + fmtTail(r.tail)
         + ('$' + r.meanSpend.toFixed(0)).padStart(8)
         + (row.name === 'optimal'
-          ? `   split ${'$' + buildFullOptimal(cap, true).off.toFixed(1)} off / ${'$' + buildFullOptimal(cap, true).def.toFixed(1)} def`
+          ? (() => {
+            /*
+             * THE SPLIT IS A GUARD, NOT A CURIOSITY, and it is here because a tuning pass
+             * that read perfectly in every other column was caught by nothing else.
+             *
+             * Full Team is too hard at the bottom: measured against the quick draft, careless
+             * play wins 8% of games against 25% and careful play makes the playoffs 4.5% of
+             * the time against 42%. The cause is that the mode is TWO-SIDED, so an imperfect
+             * roster is punished on both sides at once: its points allowed swing 2.06x across
+             * the drafting range where the quick draft's swing 1.16x.
+             *
+             * The obvious fix is to compress that swing. Tried, at an exponent that put the
+             * win rates almost exactly on the reference rows, and it GUTTED THE MODE: with
+             * defence worth less, the solver stopped buying any, and the optimal roster went
+             * from $159.5M / $100.4M to $242.0M / $17.9M. Twelve picks across two units is
+             * the whole premise, and every win-rate column said the change was working.
+             *
+             * So the split is printed with a verdict on it. A mode whose best roster spends
+             * nine tenths of the cap on one unit is not balanced however good its win rate
+             * looks.
+             */
+            const sp = buildFullOptimal(cap, true);
+            const share = sp.def / (sp.off + sp.def);
+            const verdict = share < 0.18 ? '  DEFENCE ABANDONED'
+              : share > 0.62 ? '  OFFENCE ABANDONED' : '';
+            return `   split ${'$' + sp.off.toFixed(1)} off / ${'$' + sp.def.toFixed(1)} def`
+              + verdict;
+          })()
             + `   coach ${(buildFullOptimal(cap, true).coach || {}).name || 'none'}`
           : ''));
     }
@@ -1230,10 +1326,17 @@ function policyReport(n) {
  * strategy in the game at 29.7 three-year wins against 29.6, 29.5 and 29.3 for the three
  * that manage the roster. A winter where doing nothing is optimal has no decision in it.
  *
- * The ratchet is what a contract actually is. Nobody renegotiates a veteran downward
- * because he slipped; he is on the deal he signed and the team eats it. It is the honest
- * source of the one tension a franchise mode needs and this game could not otherwise
- * produce, and it costs one number per man on the roster.
+ * A contract is what a contract actually is. Nobody renegotiates a veteran downward because
+ * he slipped; he is on the deal he signed and the team eats it. It is the honest source of
+ * the one tension a franchise mode needs and this game could not otherwise produce, and it
+ * costs one number per man on the roster.
+ *
+ * THE SHIPPING RULE IS NO LONGER A RATCHET AND THIS FLAG STILL WORKS. E.dynastySalary now
+ * holds a man at the price he was DRAFTED at rather than raising him when he improves, so
+ * the flag on means whatever that function currently says and the flag off means the
+ * free-to-fall rule the table above measured. The name is kept because the experiment it
+ * names is the one it still reproduces. See dynastySalary in engine.js for all three rules
+ * and what each of them measured.
  *
  * PS_DYN_RATCHET=0 turns it off, which reproduces the table above.
  */
@@ -1356,8 +1459,12 @@ const rankByValue = (rows) => rows.slice().sort((a, b) => worth(a) - worth(b));
    page will apply the same one and two implementations of a firing rule is how a player
    gets fired on one screen and not on another. The rest are the candidates it beat, kept so
    the comparison in dynastyWinBar's note can be reproduced. */
+/* The candidate owner rules. Every entry but the last is a road not taken, kept because the
+   spread between them is the argument for the one that shipped. There used to be a
+   'SHIPPED (2x ramp)' row at the top calling E.dynastySurvives, which is character for
+   character what 'one life' at the bottom does: two rows, one rule, identical numbers, and a
+   label claiming a ramp the function had stopped implementing. Gone. */
 const DYN_GOALS = {
-  'SHIPPED (2x ramp)': (h) => E.dynastySurvives(h),
   'win 9':       (h) => h[h.length - 1].wins >= 9,
   'win 10':      (h) => h[h.length - 1].wins >= 10,
   'playoffs':    (h) => h[h.length - 1].made,
@@ -1369,10 +1476,22 @@ const DYN_GOALS = {
   '2x losing':   (h) => h.length < 2 || h[h.length - 1].wins >= 9 || h[h.length - 2].wins >= 9,
   /* Two misses EVER rather than two in a row: the owner remembers. */
   'two total':   (h) => h.filter((x) => x.wins < 9).length < 2,
+  /* THE RULE THAT ACTUALLY SHIPS, and until now the one thing this report could not
+     measure. Every other entry above is a candidate that was considered and passed over;
+     the game itself calls E.dynastySurvives, which is one life against a bar that climbs.
+     A harness that cannot run the shipped rule can only ever tell you about roads not
+     taken. */
+  'one life':    (h) => E.dynastySurvives(h),
 };
 
-/* A safety stop, not a length. A dynasty ends when the owner ends it. */
-const DYN_MAX_SEASONS = E.DYNASTY_MAX_SEASONS;
+/* A SAFETY STOP, NOT A LENGTH, and now its own number rather than the game's.
+   A dynasty ends when the owner ends it; this exists so a simulated run that never gets
+   fired cannot loop forever. It used to borrow E.DYNASTY_MAX_SEASONS, which is how a
+   simulator's loop guard came to be read as the mode's design limit everywhere it was
+   mentioned. Set high enough to measure the deep game rather than to truncate it: the old
+   25 meant every distribution reported here was cut off exactly where the interesting tail
+   begins. */
+const DYN_MAX_SEASONS = Number(process.env.PS_DYN_MAX ?? 200);
 
 /*
  * Play one dynasty until the owner has seen enough. Returns the seasons survived and the
@@ -1454,7 +1573,8 @@ const DYN_START = (rng, y, history) => (history.length
 
 function dynastyReport(n) {
   const coaches = E.coachTable(ctx) || [];
-  console.log('THE LONG GAME: how many seasons does the owner give you?');
+  const MEV = E.DYNASTY_MILESTONE_EVERY;
+  console.log('DYNASTY: how many seasons does the owner give you?');
   console.log(`N=${n} dynasties per cell, twelve men and a coach at $${E.FULL_CAP_MUSD}M, `
     + `starting years ${DYN_FIRST_SEASON} to ${DYN_LAST_SEASON - 10}.\n`);
 
@@ -1463,7 +1583,12 @@ function dynastyReport(n) {
 
   for (const [gname, goal] of Object.entries(DYN_GOALS)) {
     console.log('  ' + gname.toUpperCase());
-    console.log('    winter        median   mean    p75    p90    best   fired in yr 1   hit the stop');
+    /* THE THREE MILESTONE COLUMNS, NAMED BY THE CADENCE RATHER THAN BY A NUMBER. What they
+       are worth knowing is "did this run ever see the authored content", so they follow
+       E.DYNASTY_MILESTONE_EVERY: the first mandate, the first boss, the second boss. */
+    console.log('    winter        median   mean    p75    p90    best'
+      + `  reach ${MEV}`.padStart(9) + `  reach ${MEV * 2}`.padStart(10)
+      + `  reach ${MEV * 4}`.padStart(10));
     for (const [cname, cutter] of Object.entries(DYN_CUTS)) {
       const lens = [];
       for (let d = 0; d < n; d++) {
@@ -1476,11 +1601,57 @@ function dynastyReport(n) {
         + String(q(lens, 0.75)).padStart(7)
         + String(q(lens, 0.9)).padStart(7)
         + String(Math.max(...lens)).padStart(7)
-        + fmtPct(lens.filter((x) => x <= 1).length / lens.length).padStart(16)
-        + fmtPct(lens.filter((x) => x >= DYN_MAX_SEASONS).length / lens.length).padStart(15));
+        /* HOW MANY EVER SEE THE AUTHORED CONTENT: "met a mandate", "met a boss" and "met the
+           second boss". They replaced "fired in year 1" and "hit the stop": the first is the
+           median saying the same thing again, and the second is now always zero because the
+           safety stop is 200.
+
+           THESE COLUMNS ARE MILESTONE-BLIND AND THAT IS THE POINT. playDynasty below models
+           no mandate, no boss and neither reward, so moving the cadence cannot move these
+           numbers. They measure the reach curve, and the schedule is then laid over it by
+           hand. Read them as "where the players are", not as a balance check on the
+           milestones themselves. */
+        + fmtPct(lens.filter((x) => x >= MEV).length / lens.length).padStart(9)
+        + fmtPct(lens.filter((x) => x >= MEV * 2).length / lens.length).padStart(10)
+        + fmtPct(lens.filter((x) => x >= MEV * 4).length / lens.length).padStart(10));
     }
     console.log('');
   }
+  /*
+   * HOW MUCH OF THE AUTHORED CONTENT A RUN ACTUALLY MEETS, under the rule that ships. The
+   * reach columns above answer this one milestone at a time; this answers it in the unit the
+   * writing was done in. Six bosses and four mandates were written, and the question that
+   * matters is how many of them a player ever sees.
+   *
+   * The cadence was five when this was first measured, and the answer was brutal: on the
+   * bot's best winter, 46% of runs met one mandate, 32% met one boss, and 3.8% met a second
+   * boss. Nine of the ten authored things existed for almost nobody. Moving the cadence to
+   * three did not write anything new. It moved the schedule onto the reach curve.
+   */
+  console.log('  CONTENT MET, under ONE LIFE, at a milestone every ' + MEV + ' seasons');
+  console.log('    winter        mandates   bosses   saw a boss   saw two bosses');
+  const nMand = E.DYNASTY_CHALLENGES.length, nBoss = E.DYNASTY_BOSSES.length;
+  for (const [cname, cutter] of Object.entries(DYN_CUTS)) {
+    const seen = [];
+    for (let d = 0; d < n; d++) {
+      const rng = E.createSeededRNG(551100 + d * 7919);
+      const L = playDynasty(rng, cutter, DYN_GOALS['one life'], coaches).length;
+      /* Milestones at MEV, 2*MEV, 3*MEV ...: the odd ones mandates, the even ones bosses.
+         Distinct, because a run long enough to lap the list is seeing a repeat rather than
+         something new, and the list lengths are what was written. */
+      const milestones = Math.floor(L / MEV);
+      seen.push({
+        mand: Math.min(Math.ceil(milestones / 2), nMand),
+        boss: Math.min(Math.floor(milestones / 2), nBoss),
+      });
+    }
+    const avg = (f) => (seen.reduce((s, x) => s + f(x), 0) / seen.length).toFixed(2);
+    const share = (f) => fmtPct(seen.filter(f).length / seen.length);
+    console.log('    ' + cname.padEnd(12)
+      + avg((x) => x.mand).padStart(9) + avg((x) => x.boss).padStart(9)
+      + share((x) => x.boss >= 1).padStart(13) + share((x) => x.boss >= 2).padStart(17));
+  }
+  console.log('');
   console.log('WHAT TO LOOK FOR. The bot is crude, so the rule to ship is the one where its');
   console.log('best strategy sits around two or three seasons with a tail that reaches into');
   console.log('double figures: that leaves the room a human needs to be visibly better. A rule');
@@ -1491,9 +1662,17 @@ function dynastyReport(n) {
 
 // ─── main ────────────────────────────────────────────────────────────────────
 
+/* REQUIRED RATHER THAN RUN, for a one-off measurement that needs these exact bots. Comparing
+   two modes with two different builders measures the builders. */
+if (require.main !== module) {
+  module.exports = { E, data, ctx, leagueContext, constants,
+    buildRandom, buildToBudget, buildOptimal,
+    buildFullRandom, buildFullToBudget, buildFullOptimal };
+}
 const arg = process.argv[2];
 const N = Number(process.env.PS_N ?? 2000);
-if (arg === '--sweep') sweep(Math.max(400, Math.floor(N / 2)));
+if (require.main !== module) { /* required for a measurement: run nothing */ }
+else if (arg === '--sweep') sweep(Math.max(400, Math.floor(N / 2)));
 else if (arg === '--chem') chemReport();
 else if (arg === '--schedule') scheduleReport(200);
 else if (arg === '--draft') draftReport(Number(process.env.PS_N ?? 3000));

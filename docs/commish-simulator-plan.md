@@ -373,10 +373,22 @@ page and a `LIVE` flag, with the database side applied **first** so a tester's w
 rejected by a constraint they cannot see.
 
 1. Migration first, so a commissioner term can be saved before anybody is invited.
-2. Deploy with names in `COMMISH_TESTERS`, who get the real mode against the real database.
-   Everybody else sees nothing: no card on the modes sheet and a door that does not open.
-3. Flip `COMMISH_LIVE` when it is ready for everybody, which turns on the card and the door
-   together because both read the same file.
+2. Deploy with names on the shared tester list, who get the real mode against the real
+   database. Everybody else sees nothing: no card on the modes sheet, no door on the front
+   page, and a mode that does not open.
+3. Flip `BUNDLE_LIVE` when it is ready for everybody.
+
+**The flag moved, because the mode is sold with another one.** It was `COMMISH_LIVE` in
+`cfb/commish/access.js`, beside football's own `DYNASTY_LIVE` and the same three names
+written out a third time. Commish Simulator and Dynasty are one product at one price, and
+three flags is a launch that can half happen: flip one and ship a bundle where one half
+opens and the other says it is in testing. The list and the flag are now in
+`/assets/bundle-access.js`, which both games load; `cfb/commish/access.js` and
+`football/dynasty-access.js` are handles on it and keep their public API. One edit turns on
+the card, the front page door and both modes, in both games.
+
+Full Team is deliberately NOT in it. Its blocker is its own, the `ps_runs_run_mode_ck`
+constraint that still rejects every full team run on submit, and it is not in the bundle.
 
 **Everybody else sees nothing, rather than a "Coming soon".** That was the plan and it is
 not any more. `/cfb/` is live, indexed and carries ads: a card on it naming a mode that
@@ -448,12 +460,18 @@ applies with no exceptions: the edit, the bump and the record in one commit.
    change, not a rebuild.
 3. ~~Era.~~ **Decided by the tiers:** the present day for free, any year from 2005 for
    paying. Stage 0 already proves both open on the real sport of their year.
-4. ~~Where does it live?~~ **Decided: a mode inside `/cfb/`.** The card is on the game's
-   "More ways to play" sheet, beside Conference Draft, and there is no front-page entry.
-   It is drawn only for accounts that can actually open the mode, which today is the tester
-   list and after `COMMISH_LIVE` is everybody. The list lives in `cfb/commish/access.js`
-   and both the card and the mode's own door read it, because a list written twice drifts
-   and both directions are bad: a card that refuses to open, or a mode nobody can find.
+4. ~~Where does it live?~~ **Decided: a mode inside `/cfb/`, with a door on the front
+   page.** The card is on the game's "More ways to play" sheet beside Conference Draft, and
+   there is now also a door on the front page under the two ways in, which is where the
+   football game puts Dynasty. The sheet card was the only entry while this was a variant of
+   the draft; it is the other half of a bundle now, and a bundle's second half is not two
+   taps and a scroll down. See `ensureCommishDoor()` in `cfb/index.html`.
+
+   Both surfaces are drawn only for accounts that can actually open the mode, which while
+   the bundle flip is false is the tester list and after it is everybody. Both ask
+   `commishOn()`, which reads `/assets/bundle-access.js` through
+   `cfb/commish/access.js`, because a list written twice drifts and both directions are bad:
+   a card that refuses to open, or a mode nobody can find.
 
    **An account is listed by username or by account id, and never by email.** The first
    version took usernames only, and the first username in it was inferred from an email

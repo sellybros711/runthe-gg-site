@@ -202,6 +202,7 @@ window.GA_ID='G-L29P5MRWKE';
   .eyebrow{font-family:var(--fn);text-transform:uppercase;letter-spacing:.16em;
     font-size:11px;color:var(--dim-2)}
   .eyebrow.green{color:var(--green)}
+  .eyebrow.gold{color:#fbbf24}
   .num{font-family:var(--fd);font-variant-numeric:tabular-nums;letter-spacing:.02em}
 
   /* ── header ─────────────────────────────────────────────────── */
@@ -586,6 +587,80 @@ window.GA_ID='G-L29P5MRWKE';
      wrapping is refused, which keeps the three on one line at one height. */
   .cta3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
   .cta3 .btn{white-space:nowrap;letter-spacing:0;padding-left:6px;padding-right:6px}
+
+  /* ---- THE COMMISH DOOR ----
+     The football game's front page carries Dynasty as a card under the quick draft, with a
+     line of lead-in over it, and this is that shape in this game's colours. Ported rather
+     than invented: the two front pages are already the same three-up layout on purpose, and
+     a second game inventing a second way to show its second mode is how they drift.
+
+     PURPLE, because the mode's own page is purple and the modes sheet card already is. A
+     card that changes colour between the place you tap it and the thing it opens reads as
+     two different features.
+
+     BUILT BY SCRIPT, NEVER SHIPPED HIDDEN. See ensureCommishDoor(). A hidden node still
+     ships to everybody, and a lead-in line reading "or run it instead of playing it" above
+     a page with no door under it is worse than no line at all. */
+  .hp-leadin{display:flex;align-items:center;gap:9px;margin:4px 2px -1px;
+    font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .hp-leadin:before,.hp-leadin:after{content:"";flex:1;height:1px;background:var(--line)}
+  .hp-commish{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:15px 12px 13px;border-radius:12px;cursor:pointer;text-decoration:none;
+    background:linear-gradient(180deg,rgba(45,26,66,.92),rgba(24,18,35,.92));
+    border:1.5px solid rgba(168,85,247,.42);
+    box-shadow:0 8px 22px -14px #000,inset 0 1px 0 rgba(216,180,254,.10)}
+  .hp-commish:active{transform:translateY(1px)}
+  .hp-commish:focus-visible{outline:2px solid #c084fc;outline-offset:2px}
+  .hp-commish .hp-name{font-family:var(--fd);font-size:19px;font-weight:800;letter-spacing:.02em;
+    color:#e9d5ff;line-height:1}
+  /* NOT UPPERCASE, unlike the rest of this card, and that is the point rather than an
+     oversight. This was spaced caps while it held "Five years. Nine groups. One chair.",
+     three fragments doing the work of an image. It holds a sentence now, and spaced caps at
+     10px is the setting a sentence gets skimmed in.
+     THE MEASURE IS WHAT MAKES IT TWO LINES, together with the unbreakable tail below. It has
+     to be wider than the first line ("Leave your mark on", 18 characters) or that half wraps
+     too and the card grows to three, and narrower than the whole sentence (42 characters) or
+     a desktop stretches it into one. 34ch sits in the middle of that band with room at both
+     ends, so the same two lines survive a phone, a tablet and a desk. Rewording either half
+     moves both numbers, so measure again if you do. */
+  .hp-commish .hp-sub{font-family:var(--fn);font-size:11.5px;font-weight:700;
+    letter-spacing:.01em;color:rgba(233,213,255,.72);line-height:1.35;text-align:center;
+    max-width:34ch;margin-top:1px}
+  /* The last three words, kept together. See the note where this is written. */
+  .hp-commish .hp-sub .hp-nb{white-space:nowrap}
+  /* IN THE CORNER, out of the flow, for the reason the football game found: anything in the
+     flow shifts the label off centre. */
+  .hp-commish .hp-tag{position:absolute;top:-8px;right:10px;
+    font-family:var(--fn);font-size:9.5px;font-weight:900;letter-spacing:.1em;
+    text-transform:uppercase;padding:3px 8px;border-radius:6px;
+    background:rgba(168,85,247,.18);border:1px solid rgba(168,85,247,.55);color:#e9d5ff}
+  /* NEW is the green one every other surface uses for something anybody can play. PREVIEW is
+     purple and quieter, because while the flip is false this card is only drawn for the
+     handful of accounts on the list and telling them it is finished is a lie they report. */
+  .hp-commish .hp-tag.new{background:linear-gradient(150deg,#6ee7b7 0%,#34d399 45%,#10b981 100%);
+    border-color:rgba(255,255,255,.55);color:#04241c}
+  /* THERE WAS A GOLD PRO TAG, A PADLOCK AND A GOLD SELL LINE HERE, and all three are gone
+     rather than being restyled. They were correct while Commissioner Simulator was sold at
+     the door. It is free now at a season a day (supabase/104_commish_free_clock.sql), so a
+     lock on this card would say the one thing about the mode that is no longer true, and it
+     is the exact complaint that sent me back here: "just looks like the game is fully locked
+     with no way to play for free". The pitch moved to the screen where it is honest, which
+     is the wait wall inside the mode, after a season has been played. */
+  .hp-commish .hp-namerow{display:flex;align-items:center;gap:7px}
+  /* THE PACE LINE. Quieter than the sentence above it and set apart by a hairline, because
+     it is a different KIND of thing: the sentence says what the mode is for and this says
+     what it costs you in time. Not a tag and not a lock, for the reason written where it is
+     drawn: this door is open and free, and the only thing this line adds is when the next
+     season lands. */
+  .hp-commish .hp-pace{display:block;margin-top:7px;padding-top:6px;
+    border-top:1px solid rgba(255,255,255,.10);
+    font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.06em;
+    color:rgba(226,214,245,.62);white-space:nowrap}
+  @media (max-width:340px){
+    .hp-commish .hp-name{font-size:17px}
+    .hp-commish .hp-sub{font-size:11px}
+  }
   /* 11px, not 12: at 12px "Leaderboard" wanted 108px of a 104px button on a 360 screen.
      Same word, same cause as the 340 rule below, one breakpoint up. */
   @media(max-width:440px){ .cta3 .btn{font-size:11px;padding-left:4px;padding-right:4px} }
@@ -1888,6 +1963,31 @@ window.GA_ID='G-L29P5MRWKE';
   .pfrow .t span{display:block;font-size:11px;color:var(--dim-2);margin-top:2px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pfrow .go{flex:0 0 auto;color:var(--dim-2);font-size:19px;line-height:1}
+  /* THE OFFER'S OWN CSS LIVES IN /assets/store.js, which injects it once on load and reads
+     this page's tokens, so the store wears the college palette without a second copy of a
+     price card existing anywhere. What is here is only the PROMPT that opens it: the
+     same card the football game's profile draws, because one account holds both games and
+     a customer should recognise the offer from either side. */
+  .pw-card{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+    border:1px solid rgba(251,191,36,.34);border-radius:14px;padding:12px 13px;margin-top:14px;
+    background:linear-gradient(135deg,rgba(251,191,36,.10),rgba(251,191,36,.02));
+    color:var(--ink);cursor:pointer;font:inherit}
+  .pw-card:hover{border-color:rgba(251,191,36,.55)}
+  .pw-card:active{transform:scale(.985)}
+  .pw-card .pwc-ic{flex:0 0 34px;height:34px;border-radius:10px;display:grid;place-items:center;
+    background:rgba(251,191,36,.14)}
+  .pw-card .pwc-ic svg{width:22px;height:22px;display:block}
+  .pw-card .pwc-t{flex:1;min-width:0}
+  .pw-card .pwc-t b{display:block;font-size:14px;line-height:1.2}
+  .pw-card .pwc-t span{display:block;font-size:11.5px;color:var(--dim-2);margin-top:2px;
+    line-height:1.3}
+  /* VALUE, NEVER A PRICE ON ITS OWN. A bare figure on a card like this is a cost with
+     nothing attached to it: the reader has to decide against a number with nothing on the
+     other side of the scale. What the money buys belongs on the screen that can also show
+     it, so this says how much there is rather than how much it costs. */
+  .pw-card .pwc-go{flex:0 0 auto;text-align:right;line-height:1.15}
+  .pw-card .pwc-go b{display:block;font-family:var(--fn);font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:#fbbf24;font-weight:800}
   /* The page header. The back arrow is a real button at a real size, because it is the only
      way out of every page here and a 12px chevron is not a target. */
   .pfhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -2619,12 +2719,24 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard.mc-commish{border-color:rgba(168,85,247,.38);text-decoration:none}
   .modecard.mc-commish .mc-icon{background:linear-gradient(135deg,#a855f7 0%,#6d28d9 100%)}
   .modecard.mc-commish .mc-title{color:#c084fc}
-  /* THE STICKER SAYS TESTING, not New, and it is not the green one. Green "New" is what
-     this sheet puts on something anybody can play; this card is only drawn for people on
-     the list, and telling them it is finished would be a lie they then report as a bug. */
+  /* THE STICKER SAYS TESTING BEFORE THE FLIP, and it is not the green one. Green "New" is
+     what this sheet puts on something anybody can play, and before the launch flag turns
+     this card is only drawn for people on the list, so telling them it is finished would be
+     a lie they then report as a bug. After the flip the word is New and the sticker stays
+     purple, because purple is this mode's own colour on every surface it appears on and the
+     word is what changed, not the thing.
+     THERE WAS A GOLD Pro VARIANT OF THIS and it is gone with the padlock beside it. See the
+     note at commishMetered(): the mode is free at a season a day now. */
   .modecard.mc-commish .mc-sticker{background:linear-gradient(150deg,#d8b4fe 0%,#c084fc 45%,#a855f7 100%);
     color:#2a0a45;box-shadow:0 6px 18px -4px rgba(168,85,247,.85),0 2px 6px rgba(0,0,0,.55);
     animation:none}
+  /* THE PACE, UNDER THE PARAGRAPH THAT DESCRIBES THE MODE. No figure in money on this sheet:
+     a price quoted before anything has been offered is a cost the reader weighs with nothing
+     on the other side of the scale, and it is a second copy of a number that lives in the
+     store one tap away. Gold because the second half of the line is the offer, and gold is
+     what the pill beside an account name and the store's own tag wear. */
+  .modecard .mc-pro{margin:7px 0 0;font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:#fbbf24;line-height:1.35}
 
   /* The five conferences, once the card is tapped. */
   .confgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
@@ -3197,10 +3309,10 @@ or endorsed by the NCAA, the CFP or any school.
         six-man roster built under an $11M NIL budget from any season since 2005. Then you play a
         full 12-game schedule and, if the committee ranks you high enough, chase the national title
         through the 12-team playoff.</p>
-      <p style="font-size:14px;line-height:1.6;opacity:.85;margin:0 0 10px;">Every player is priced from his real statistics in the season you drafted him from, so the
-        skill is knowing which college seasons were special: the Heisman years, the breakout
-        freshmen, the one-year wonders. Balance matters as much as star power, and signings who
-        shared a school or an era build a roster that plays bigger than its price.</p>
+      <p style="font-size:14px;line-height:1.6;opacity:.85;margin:0 0 10px;">Every player is priced from his real statistics in the season you drafted him from. The
+        skill is knowing which college seasons were special: Heisman years, breakout freshmen,
+        one-year wonders. Balance matters as much as star power, and signings who shared a
+        school or an era build a roster that plays bigger than its price.</p>
       <p style="font-size:14px;line-height:1.6;opacity:.85;margin:0;">New to it? Read the full
         <a href="/cfb/how-to-play.html" style="color:#5eead4;font-weight:700;">how to play guide</a>, try the NFL
         original, <a href="/football/" style="color:#5eead4;font-weight:700;">The Perfect Season</a>, or take on the daily
@@ -3212,7 +3324,7 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="legal" style="margin-top:28px">
       <p>Player data from <a href="https://collegefootballdata.com" target="_blank" rel="noopener">CollegeFootballData.com</a>.
         An unofficial fan project, not affiliated with or endorsed by the NCAA, the CFP or any school.</p>
-      <p><a href="/cfb/how-to-play.html">How to play</a> &middot; <a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="/disclaimer.html">Disclaimer</a></p>
+      <p><a href="/cfb/how-to-play.html">How to play</a> &middot; <a href="/ideas/#cfb">Ideas</a> &middot; <a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="/disclaimer.html">Disclaimer</a></p>
       <!-- Tell us what is wrong with it, in the footer, which is where the NFL game and
            RunThePitch and RunTheTour all put it, so somebody who plays two of these finds
            the same thing in the same place. A sheet rather than a link to a contact page:
@@ -3758,12 +3870,38 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="engine.js?v=34"></script>
 <script src="run.js?v=14"></script>
 <script src="achievements.js?v=11"></script>
-<script src="auth.js?v=3"></script>
+<script src="auth.js?v=6"></script>
 <script src="board.js?v=6"></script>
 <!-- The tester list for Commish Simulator, which this page reads to decide whether to draw
      the card on the modes sheet and cfb/commish/ reads to decide whether to open at all.
      One file so the two can never disagree. -->
-<script src="commish/access.js?v=3"></script>
+<script src="commish/access.js?v=6"></script>
+<!-- THE FULL TEAM TESTER LIST AND ITS LAUNCH FLAG, WHICH THIS PAGE ALSO NEEDS.
+     The store below names the modes the bundle unlocks and three of the four live in the
+     other game: Dynasty, the Trade Machine and Full Team. This page named the first two and
+     not the third, so its sheet sold three modes while the football page sold four, about one
+     purchase, on one day. That is the drift /assets/store.js exists to stop, arriving through
+     a question this page could not answer rather than through a second copy of a sentence.
+     WHY IT COULD NOT ANSWER IT. The store asks PW_FULL_ON, which reads RTG_FULLTEAM if a page
+     publishes one and otherwise falls back to PS_FULLTEAM_ACCESS.LIVE. This page loaded
+     neither, so the fallback found nothing at all and answered no, whatever the flag said.
+     ABSOLUTE, AND THE FOOTBALL PAGE SPELLS IT THE SAME WAY NOW. check-cachebust groups the
+     pages that share a script by the literal src string, so `fullteam-access.js` there and
+     `/football/fullteam-access.js` here would be two names for one file with nothing stopping
+     them drifting a version apart. -->
+<script src="/football/fullteam-access.js?v=3"></script>
+<!-- THE STORE, SHARED WITH THE FOOTBALL GAME AND WITH commish/index.html. One bundle is
+     sold on this site, it unlocks both games, and it is described in exactly one file. Two
+     copies of a price or a term is two chances to tell a customer something the other page
+     contradicts, and the one that is wrong is whichever was edited second. -->
+<script src="/assets/store.js?v=21"></script>
+<!-- THE FREE TIER'S CLOCK, WHICH THIS PAGE ONLY READS. It is the mode's module and the
+     mode is still the thing that decides: seasonWall() spends a season and reads the
+     server's answer, because only the server can settle it. All this page wants is to know
+     whether the door it is about to send somebody through is shut, so it can offer the
+     bundle instead of a wall one screen further in. See blocked() in that file for why
+     being wrong here costs a tap rather than a season. -->
+<script src="/cfb/commish/clock.js?v=4"></script>
 <!-- NO ARCADE HOUSE AD ON THIS GAME. /assets/arcade-ad.js still runs on the homepage,
      the NFL game and the golf game; this one asks nobody. Somebody arriving here has come
      to draft a team, and the front page has its own way to the arcade in "More ways to
@@ -4290,7 +4428,7 @@ function updateAvatar(){
    to know that the hub exists. */
 let profileTab='account';
 const TAB_TITLE={account:'Your account',school:'Customize',case:'Trophy case',
-  seasons:'Your seasons'};
+  seasons:'Your seasons',pro:'Your Pro access'};
 
 /* THE HUB IS ONLY A HUB WHEN THERE IS SOMEBODY TO BE ONE FOR. Signed out, or signed
    in without a name yet, every row on it would lead to a gate card, and the useful
@@ -4303,7 +4441,7 @@ const pfHubOk=()=>!!(A()&&authState.ready&&authState.signedIn&&authState.name);
    one is writing it into a screen that reused the same id. */
 let pfPaint=0;
 
-const PF_PAGES={account:1,school:1,case:1,seasons:1};
+const PF_PAGES={account:1,school:1,case:1,seasons:1,pro:1};
 /* `badge` is a badge id to land on, which is what a tapped toast passes. It survives the
    case's own repaint: trophyCaseHtml paints a spinner while the seasons are fetched and
    calls back through here with no argument, so the wanted id is parked rather than passed,
@@ -4315,6 +4453,10 @@ function openProfile(tab,badge){
   const page=PF_PAGES[tab]?tab:(pfHubOk()?'hub':'account');
   if(page!=='case') achRevealWanted=null;
   if(page==='hub') return pfHub();
+  /* A receipt for an account that has bought nothing is a blank page, so a non-owner
+     asking for this one gets the hub instead. Only the row on the hub ever asks for it,
+     and that row is drawn only for owners, so this is the stale-tap case. */
+  if(page==='pro') return ownsCfb()?pfPro():pfHub();
   if(page==='seasons') return pfSeasons('recent');
   if(page==='school') return pfLook();
   if(page==='case') return pfCase();
@@ -4339,13 +4481,17 @@ const PF_ICON={
   seasons:'M4 7h2M9 7h11M4 12h2M9 12h11M4 17h2M9 17h7',
   case:'M8.6 13.6 7 21l5-2.7 5 2.7-1.6-7.4',
   look:'M4 8h8M4 16h6M16 8h4M14 16h6',
-  acct:'M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4'
+  acct:'M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4',
+  /* A key, for the page that says what this account has been given the run of. Not a
+     padlock: a lock is the thing in the way of a mode, and this row is the opposite. */
+  pro:'M20.4 3.6 12.9 11.1M17.6 6.4l2.1 2.1M15.6 8.4l2.1 2.1'
 };
-/* Three of them need a circle as well as a path, and a circle is not expressible as one. */
+/* Four of them need a circle as well as a path, and a circle is not expressible as one. */
 const PF_ICON_EXTRA={
   case:'<circle cx="12" cy="9" r="5.2"/>',
   look:'<circle cx="14" cy="8" r="2.1"/><circle cx="12" cy="16" r="2.1"/>',
-  acct:'<circle cx="12" cy="8.6" r="4"/>'
+  acct:'<circle cx="12" cy="8.6" r="4"/>',
+  pro:'<circle cx="8.4" cy="15.6" r="4.6"/>'
 };
 function pfNavRow(id,title,sub,icon){
   const ic=icon&&PF_ICON[icon]
@@ -4393,7 +4539,7 @@ function pfHub(){
   box.innerHTML=
     '<div class="eyebrow green">Your profile</div>'+
     '<div class="pfid"><span class="pfp">'+esc(initialsOf(nm))+'</span>'+
-      '<span class="pfn"><b>'+esc(nm)+'</b>'+
+      '<span class="pfn"><b>'+esc(nm)+pwPill()+'</b>'+
       '<span>'+esc(authState.email||'Your RunThe.GG account')+'</span></span></div>'+
     /* TWO NUMBERS, NOT THE CAREER ROW. These are the two worth checking often enough to
        earn a place on the front; titles, playoffs and best rank are one tap away in the
@@ -4407,12 +4553,48 @@ function pfHub(){
       pfNavRow('pf-go-case','Trophy case','Your career, your streaks and your badges','case')+
       pfNavRow('pf-go-look','Customize','The school colors you play in','look')+
       pfNavRow('pf-go-acct','Account','Your name, feedback, signing out','acct')+
-    '</div>'+pfClose();
+      /* THE CUSTOMER'S OWN ROW, and only a customer has it. The pill beside the name says
+         Pro and stops there, which answers "am I" and not one word of "what did I buy,
+         when, and does it run out". Those are the questions a refund request is made of,
+         and a buyer who paid on the football page has to be able to ask them here too. */
+      (acctTier()==='pro'
+        ? pfNavRow('pf-go-pro','Your Pro access','What you own, and your receipts','pro')
+        : '')+
+    '</div>'+
+    /* THE WAY IN THAT IS NOT A REFUSAL. Until this card existed the only way to see the
+       offer from the college game was to open Commissioner Simulator and be turned away at
+       its gate, which is a wall rather than an offer. It sits UNDER the nav rather than in
+       it, because nobody opens their profile to be sold something: a player who has just
+       looked at their seasons and their trophy case is somebody the modes are worth
+       mentioning to, and a player who has not is one scroll from Close. */
+    (premiumPitch()
+      /* THE SAME WORDS THE FOOTBALL GAME'S CARD CARRIES, because it is the same purchase and
+         a customer who has seen one should recognise the other, and they are the store's
+         words rather than this line's so that stays true. What is dropped is the list: the
+         marks under the value name the modes better than a sentence does, and they are the
+         same drawings the sheet opens with. */
+      ? pwCard('pf-prem')
+      : '')+
+    pfClose();
   openSheet(); pfWire(box);
   $('pf-go-seasons').onclick=()=>openProfile('seasons');
   $('pf-go-case').onclick=()=>openProfile('case');
   $('pf-go-look').onclick=()=>openProfile('school');
   $('pf-go-acct').onclick=()=>openProfile('account');
+  const pro=$('pf-go-pro'); if(pro) pro.onclick=()=>openProfile('pro');
+  const prem=$('pf-prem'); if(prem) prem.onclick=()=>openPremium('profile');
+  /* OWNERSHIP CAN STILL BE IN FLIGHT WHEN THIS PAINTS, and all three things on this screen
+     that tell a customer from a visitor read it: the pill, the row and the card. acctTier()
+     answers null while the question is open, which is right, but it means an owner who
+     opens their profile in the first moment of a load sees a hub with no pill and no way to
+     their own purchase, and nothing ever puts them there. So the answer is asked for and
+     the hub is painted again when it lands.
+     Guarded on the paint token, so a slow answer cannot redraw the hub over a page the
+     player has since moved to. */
+  if(authState.signedIn&&premiumSet===null){
+    const mine=pfPaint;
+    premiumRefresh().then(()=>{ if(mine===pfPaint&&profileTab==='hub') pfHub(); });
+  }
   pfHubStats();
 }
 
@@ -5020,6 +5202,271 @@ const commishOn=()=>{
   const a=window.PS_CFB_COMMISH_ACCESS;
   return !!(a&&authState.signedIn&&a.allowed(authState));
 };
+/* WHO SEES THE DOOR, WHICH IS EVERYBODY, and that is a different question from who gets
+   sold to. commishOn() above still carries the signed in test and still gates the OFFER
+   card, because this game deliberately sells nothing to somebody with no account: a
+   purchase is tied to one, so a card asking a stranger for money is a card that cannot be
+   honoured. test_store asserts that and it stays true.
+   The DOOR had no business behind that test once the mode launched. A signed out visitor
+   was shown no sign that Commissioner Simulator exists, on the one screen everybody sees,
+   which is the same wall the offer card was added to knock down. They get the door now,
+   and tapping it reaches the gate, which asks them to sign in and says why. */
+const commishShow=()=>{
+  const a=window.PS_CFB_COMMISH_ACCESS;
+  return !!(a&&a.allowed(authState));
+};
+/* AND WHETHER THE DOOR IS SHUT BEHIND IT FOR THIS READER, which is the whole of what the
+   clock is read for here. Three ways to be false and only the last is a refusal:
+     signed out    the gate asks for an account, and that is not a thing to sell against
+     an owner      nothing is ever shut for them
+     no answer     blocked() fails open, so the tap goes through and the mode decides
+   A true answer means today's season is spent or the one free term is finished, and the
+   bundle is the useful thing to put in front of somebody in either case. */
+const commishShut=()=>{
+  if(!authState.signedIn) return false;
+  if(ownsCfb()) return false;
+  const C=window.PS_CFB_COMMISH_CLOCK;
+  return !!(C&&typeof C.blocked==='function'&&C.blocked());
+};
+/* WARM THE ANSWER SO A TAP HAS ONE. Read only: state() never spends. Nothing is repainted
+   when it lands, because the card looks the same either way by design, and a tap that beats
+   the answer simply goes through to the mode, which is where this page sent everybody
+   before any of this existed. */
+function commishClockWarm(){
+  const C=window.PS_CFB_COMMISH_CLOCK;
+  if(!C||typeof C.state!=='function') return;
+  if(!authState.signedIn||ownsCfb()) return;
+  try{ C.state(true).catch(()=>{}); }catch(e){}
+}
+/* AND WHETHER THE MODE HAS LAUNCHED, which is a different question from whether this reader
+   gets in. Before the flip the only accounts that see any of this are the tester list, so a
+   sticker reading New is a claim about the mode rather than about the account, and it is
+   false. Guarded the same way, for the same reason: this page opens with the script blocked. */
+const commishLive=()=>{
+  const a=window.PS_CFB_COMMISH_ACCESS;
+  return !!(a&&a.LIVE);
+};
+/* AND AT WHAT PACE IT PLAYS, which is the other half and a different file. The tester list
+   above decides who can SEE the mode. The cfb_premium row decides whether the mode is played
+   a season a day or as fast as the player wants.
+
+   THIS USED TO BE commishLocked() AND IT GATED THE DOOR. That was right while Commissioner
+   was sold at the entrance: a non-owner's tap was taken over and turned into the store, and
+   the card wore a padlock and a gold Pro tag to say so before the tap. The free tier
+   (supabase/104_commish_free_clock.sql) made every one of those wrong on the same day and
+   none of them failed, because selling somebody a mode they already have access to throws
+   nothing. What it produced was the bug report: a signed in free account tapped the door,
+   got the store, and read the whole mode as locked with no way in.
+
+   SO NOTHING HERE GATES ANYTHING ANY MORE. It picks copy. The door is an ordinary link to
+   the mode in both states, and the pitch lives at the wait wall inside it, which is the one
+   screen where a reader has played a season and knows what the money is for.
+
+   STILL NOT METERED WHILE THE ANSWER IS COMING. premiumSet is null for the length of one
+   round trip, and a line about a daily pace drawn through it would tell a paying customer
+   their mode had been slowed down and then hand it back a second later. The same rule
+   syncModesLock follows below. It is safe in the other direction: a failed or blocked ask
+   settles on the empty array rather than staying null, so it lands on metered, which now
+   costs a wrong reader one line of copy rather than the door. */
+/* HOW FAST A FREE ACCOUNT PLAYS IT, IN ONE PLACE. Two screens state this now, the front
+   page door and the modes sheet card, and a pace written twice is a pace that drifts the
+   first time somebody tunes commish_free_wait(). The RULE itself lives on the server and
+   this is only the words for it, which is why it is a phrase rather than a number: there is
+   no client side accessor to interpolate and inventing one would be a second copy of the
+   answer rather than of the sentence. */
+const COMMISH_PACE='one season a day';
+const commishMetered=()=>premiumSet!==null&&!ownsCfb();
+
+/* ── THE COMMISH DOOR ON THE FRONT PAGE ───────────────────────────────────────────
+   IT WAS BURIED AND IT IS THE SECOND GAME IN THE BUNDLE. Commish Simulator was one card
+   inside the "More ways to play" sheet, which is two taps and a scroll from the front page
+   and is where a mode goes when it is a variant of the draft. It is not a variant of the
+   draft: it is the other half of a product with a price on it, and the football game puts
+   its half on its own front page under the quick draft. This is that door, in this game's
+   colours and this game's layout.
+
+   BUILT RATHER THAN HIDDEN, which is the football game's rule and worth repeating: a hidden
+   node ships to everybody who opens the page, so a lead-in line reading "or run it instead
+   of playing it" would sit over a missing door for every visitor who is not on the list.
+   Nothing is in the markup, and nothing is created until the answer is yes.
+
+   THE ANSWER IS commishOn(), the same call the modes sheet uses and the same file the mode's
+   own door reads, so the front page, the sheet and the mode cannot disagree about who gets
+   in. While the bundle flip is false that is the tester list; when it flips it is everybody,
+   in one edit, on both games at once. */
+let commishDoor=null, commishLead=null;
+function ensureCommishDoor(){
+  const ctas=document.querySelector('.ctas');
+  if(!ctas) return;
+  const on=commishShow();
+  if(!on){
+    if(commishDoor&&commishDoor.parentNode) commishDoor.parentNode.removeChild(commishDoor);
+    if(commishLead&&commishLead.parentNode) commishLead.parentNode.removeChild(commishLead);
+    commishDoor=null; commishLead=null;
+    return;
+  }
+  if(!commishLead){
+    commishLead=document.createElement('div');
+    commishLead.className='hp-leadin'; commishLead.id='hp-leadin';
+    commishLead.innerHTML='<span>or run it instead of playing it</span>';
+  }
+  if(!commishDoor){
+    commishDoor=document.createElement('a');
+    commishDoor.className='hp-commish'; commishDoor.id='b-hp-commish';
+    commishDoor.href='/cfb/commish/';
+    /* A PLAIN LINK, AND THE HANDLER TAKES THE CLICK IN EXACTLY ONE CASE.
+     *
+     * IT USED TO TAKE IT FOR EVERY NON-OWNER and that was removed on purpose: the free
+     * tier made it wrong the day it shipped, and the bug report it produced was a signed
+     * in free account tapping the door, getting the store, and reading the whole mode as
+     * locked with no way in. That stays removed. A free account with a season in hand goes
+     * straight through, plays it, and is sold nothing on the way.
+     *
+     * WHAT IS DIFFERENT NOW is the reader this cannot help: a free account whose season is
+     * spent, or whose one free term is finished. They tapped, watched the mode load, and
+     * landed on the wait wall, which carries the offer. The offer was always what that tap
+     * was going to end at. This puts it there a screen sooner, and the difference between
+     * this and the version that produced the bug report is that the door is only taken
+     * when it is genuinely shut.
+     *
+     * preventDefault ONLY on that branch, so middle click, open in new tab and a long
+     * press keep working for everybody the way an anchor should. */
+    commishDoor.onclick=(ev)=>{
+      if(commishShut()){
+        if(ev&&typeof ev.preventDefault==='function') ev.preventDefault();
+        openPremium('commish-door');
+        return;
+      }
+      /* SEEN ONCE IS NOT NEW ANY MORE. The badge is the only thing on this card that
+         changes, and it changes for good the first time somebody opens the mode. */
+      try{ localStorage.setItem('cfb_commish_seen','1'); }catch(e2){}
+      ga('mode_opened',{mode:'commish',from:'home'});
+    };
+  }
+  /* THE BADGE SAYS WHICH OF TWO THINGS THIS IS. Before the flip only the list sees this card
+     at all, and "New" over an unfinished mode is a promise it cannot keep, so it reads
+     Preview. After the flip it is genuinely new to everybody, once.
+     THERE WAS A THIRD, A GOLD "Pro", and it is gone. It was there to stop a purple Preview
+     tag in a row of free buttons reading as one more free thing, which was the right worry
+     while the mode was sold at the door. The mode IS one more free thing now, at a season a
+     day, so the tag that said otherwise was the lie rather than the fix. */
+  let seen=false; try{ seen=localStorage.getItem('cfb_commish_seen')==='1'; }catch(e){}
+  const tag=!commishLive()?'<span class="hp-tag">Preview</span>'
+    :seen?'':'<span class="hp-tag new">New</span>';
+  commishDoor.innerHTML=tag
+    +'<span class="hp-namerow">'
+      +'<span class="hp-name">Commish Simulator</span></span>'
+    /* ONE SENTENCE, AND IT IS THE SAME ONE FOR EVERYBODY NOW.
+       What the mode is actually for is that the sport stays changed, and that is as true for
+       an account playing it a season a day as for one playing it flat out. There were two
+       versions of this line, and the other one opened "Go Pro and". It was the verb that
+       made a locked card say so in words rather than in pictures, and with the door open it
+       would be asking for money in front of a thing already included.
+
+       WHERE THE PITCH WENT. To the wait wall inside the mode, which is the screen a free
+       account reaches after playing a season. That reader knows what the sport is, what
+       their rulings did to it, and exactly what the money would buy them, which is none of
+       the things a slogan on a front page can tell them.
+
+       WHAT WENT EARLIER, AND WHY IT IS NOT A LOSS. "Five years. Nine groups. One chair." was
+       three beats in the football game's rhythm, and it described the SHAPE of the mode: how
+       long, how many, how alone. The lead-in directly above the card ("or run it instead of
+       playing it") already gives that, and a card gets one line. Shape is what a mode is;
+       this is what it is for. */
+    /* TWO LINES, AND THE SECOND ONE IS "College Football forever".
+       Left to itself the line broke wherever it ran out of room, which on a phone put the
+       word forever alone on a line under a full one. A one word last line is a widow, and a
+       widow made of the word this sentence turns on is the worst one available.
+       THE TAIL IS HELD TOGETHER RATHER THAN A BREAK BEING FORCED. A <br> would do it at one
+       width and be wrong at every other, and it would also weld the two halves together in
+       textContent, where a screen reader and a copy-paste both lose the space. Marking the
+       last three words unbreakable lets the browser find the only break left, which is the
+       space in front of them. */
+    +'<span class="hp-sub">Leave your mark on '
+      +'<span class="hp-nb">College Football forever</span></span>'
+    /* ---- AND HOW FAST YOU PLAY IT, BEFORE YOU START ----
+       THE OWNER'S REPORT: "I just don't want people to play this mode and then be suddenly
+       prompted with a paywall and be shocked by it." The wait wall inside the mode is an
+       honest place for the PITCH and it is the wrong place for the FACT: by the time a free
+       account reads it they have played a whole season of rulings and are being told the
+       terms afterwards. The terms belong on the door.
+       IT IS NOT A LOCK AND MUST NOT LOOK LIKE ONE. This card carried a padlock and a gold Pro
+       tag once and the complaint that took them off was "just looks like the game is fully
+       locked with no way to play for free". That is still true: the mode IS free, a whole
+       five season term of it, and what a pace line says is when the next season lands rather
+       than that the door is shut. Quiet, lower case, no colour, under the sentence.
+       DRAWN ONLY FOR SOMEBODY THE CLOCK APPLIES TO. An owner has no pace to be told about,
+       and commishMetered() is false until ownership is actually answered, so nobody is told
+       about a limit before the page knows whether they have one. */
+    +(commishMetered()
+      ? '<span class="hp-pace">Free &middot; '+COMMISH_PACE+'</span>' : '');
+  /* UNDER THE TWO WAYS IN AND ABOVE THE ROW OF THREE, which is where the football game puts
+     its second door: after the thing most people came for, before the things they came back
+     for. Re-anchored on every call rather than appended once, so a repaint after an account
+     lands cannot leave it below the row. */
+  const three=ctas.querySelector('.cta3');
+  if(three){
+    if(commishLead.nextSibling!==commishDoor||commishDoor.nextSibling!==three){
+      ctas.insertBefore(commishLead,three);
+      ctas.insertBefore(commishDoor,three);
+    }
+  }else{
+    ctas.appendChild(commishLead); ctas.appendChild(commishDoor);
+  }
+}
+
+/* ── THE OFFER ON THE FRONT PAGE, WHICH ONLY THE PROFILE CARRIED ──────────────────────
+ *
+ * The football game puts this card directly under its mode doors and this game put it two
+ * taps away, behind the avatar, on the profile hub. So the one screen every visitor to this
+ * game sees never mentioned that the thing they are playing has a paid tier, and the only
+ * ways to the offer from here were opening your own profile or being turned away somewhere.
+ * That is a quieter version of the wall the profile card was added to knock down: "a store
+ * you can only reach by being refused". A store you can only reach by going looking for it
+ * is the same shape with better manners.
+ *
+ * BUILT, NEVER SHIPPED HIDDEN, and removed when the answer changes, for the same two reasons
+ * ensureCommishDoor above gives: a hidden node still ships to everybody, and signing out of a
+ * tester account on the same tab has to take the card with it.
+ *
+ * GATED ON premiumPitch(), WHICH ASKS commishOn(). The thing this card sells on THIS game is
+ * Commissioner Mode, and while COMMISH_LIVE is false only the tester list can see that mode
+ * at all, so offering it to somebody who would still find nothing after paying is selling a
+ * door that does not open for them. Same call the door above makes, so the two appear
+ * together on the day the flag flips and neither can advertise what the other hides.
+ *
+ * UNDER THE DOORS AND ABOVE THE ROW OF THREE, which is exactly where the football page puts
+ * its own: after the thing people came for, before the things they came back for. A store
+ * between somebody and the play button is the thing everybody hates about stores.
+ */
+let premiumCard=null;
+function ensurePremiumCard(){
+  const ctas=document.querySelector('.ctas');
+  if(!ctas) return;
+  /* No store, no card. All it does is open the store's sheet. See pwCard. */
+  if(!premiumPitch()||!window.RTG_STORE){
+    if(premiumCard&&premiumCard.parentNode) premiumCard.parentNode.removeChild(premiumCard);
+    premiumCard=null;
+    return;
+  }
+  if(!premiumCard){
+    premiumCard=document.createElement('button');
+    premiumCard.className='pw-card';
+    premiumCard.id='b-premium';
+    /* The words and the marks are the store's. See RTG_STORE.cardInner. */
+    premiumCard.innerHTML=window.RTG_STORE.cardInner();
+    premiumCard.onclick=()=>openPremium('home_card');
+  }
+  /* RE-ANCHORED ON EVERY CALL rather than appended once, the same as the Commish door above
+     and for the same reason: a repaint after an account lands must not leave it below the
+     row it is meant to sit over. */
+  const three=ctas.querySelector('.cta3');
+  if(three){
+    if(three.previousSibling!==premiumCard) ctas.insertBefore(premiumCard,three);
+  }else if(premiumCard.parentNode!==ctas){
+    ctas.appendChild(premiumCard);
+  }
+}
 
 /* The padlock on the home screen's button, so the lock is visible before the tap.
    Re-run on every auth change, because the page paints long before auth answers and a
@@ -5056,26 +5503,58 @@ function modeMenu(){
       '</'+(locked?'div':'button')+'>'+
       (locked?gateCard({with:'Conference Draft comes with an account',
                         needs:'Conference Draft needs an account.'}):'')+
-      /* COMMISH SIMULATOR IS A MODE OF THIS GAME, so this sheet is where it lives rather
-         than the site's front page. It is drawn only for people who can actually open it,
-         which today is the tester list in cfb/commish/access.js and after COMMISH_LIVE is
-         everybody. A "coming soon" card for the rest is a different decision than the one
-         that was made: this game is live, indexed and carries ads, and advertising an
-         unfinished mode on it is a launch. Flipping the flag in that one file turns both
-         the card and the door on together, which is the whole reason the list is there
-         and not written out twice. */
-      (commishOn()?
-        '<a class="modecard mc-commish" href="/cfb/commish/" id="b-mc-commish">'+
+      /* COMMISH SIMULATOR HAS ITS OWN DOOR ON THE FRONT PAGE NOW, and this card stayed.
+         It used to be the only way in, on the reasoning that a mode of this game belongs on
+         this game's sheet rather than the site's front page. That was right while it was a
+         variant of the draft and it is not right now: it is the other half of a bundle with
+         a price on it, and the football game puts its half on its own front page. See
+         ensureCommishDoor(). Both surfaces ask commishOn(), so neither can advertise a door
+         the other keeps shut, and somebody who came looking through this sheet still finds
+         it here with the room for a paragraph the front page does not have.
+
+         Drawn only for accounts that can actually open it, which while the bundle flip is
+         false is the tester list and after it is everybody. A "coming soon" card for the
+         rest is a different decision than the one that was made: this game is live, indexed
+         and carries ads, and advertising an unfinished mode on it is a launch. Flipping
+         COMMISH_LIVE in cfb/commish/access.js turns the card, the front page door and the
+         mode's own gate on together, because all three read that one file. Whether the gate
+         then OPENS or pitches is a different question and a different file: that is the
+         cfb_premium row, and see ownsCfb() in the mode itself. */
+      /* THIS CARD CARRIED A PADLOCK AND A GOLD Pro STICKER, matching the front page door, and
+         both are gone for the reason written at commishMetered(): the mode is free at a
+         season a day and neither of those was true any more. What is left is the sentence
+         under the paragraph, which no longer asks a free account to pay to get IN. It tells
+         them the pace they will play at and what Pro changes about it, which is the one thing
+         this sheet can say that the mode itself cannot say until they are a season deep. */
+      /* DRAWN FOR EVERYBODY, the same answer the front page door gives. These are the two
+         places this game mentions Commissioner Simulator and they have to agree about
+         whether it exists, or the mode is visible on one screen and gone on the next. See
+         commishShow(): who SEES the mode and who gets SOLD to are different questions, and
+         only the offer card asks the second one. */
+      (commishShow()?
+        '<a class="modecard mc-commish" href="/cfb/commish/" '+
+          'id="b-mc-commish">'+
           '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
             /* A GAVEL. Not a trophy and not a pennant: the other cards on this sheet are
                about playing, and this one is about ruling. */
             '<path d="M14.5 3.5l6 6"/><path d="M17.5 2l4 4-3 3-4-4z"/>'+
             '<path d="M15.5 7.5L7 16"/><path d="M4 21h9"/><path d="M8.5 12.5l3 3"/>'+
-          '</svg></div><div class="mc-title">Commish Simulator</div>'+ARROW+'</div>'+
-          '<span class="mc-sticker">Testing</span>'+
+          '</svg></div><div class="mc-title">Commish Simulator</div>'+
+          ARROW+'</div>'+
+          '<span class="mc-sticker">'+(commishLive()?'New':'Testing')+'</span>'+
           '<p>Run college football instead of playing it. Expand the playoff, split the '+
           'money, let a conference die. Nine blocs answer every ruling, and the sport you '+
           'changed is the one you have to run next year.</p>'+
+          /* THE PACE, AND WHAT PRO DOES TO IT. The old version of this line sold the door,
+             and it is the second sentence that survived the free tier: the thing a reader of
+             THIS game cannot know is that the same payment opens a mode in the other one.
+             THE NUMBER IS HERE AND IT IS NOT A THIRD COPY OF THE RULE. commish_free_wait()
+             holds the rule and the wait wall inside the mode states it. This is the offer
+             saying what is being offered, which it cannot do without naming the pace, and it
+             is the same one sentence the wall opens with. Dynasty's own number is not here
+             and must not be: that rule lives on Dynasty's server and its own screen. */
+          (commishMetered()?'<p class="mc-pro">Free plays '+COMMISH_PACE+'. Unlock it to run the '+
+            'whole term at your own pace, and it unlocks the NFL game too.</p>':'')+
         '</a>':'')+
     '</div>'+
     '<div class="xpromo">'+
@@ -5126,7 +5605,19 @@ function modeMenu(){
   const gin=$('sheet-in').querySelector('#gate-in');
   if(gin) gin.onclick=()=>{ ga('gate_clicked',{from:'modes'}); openProfile('account'); };
   const cm=$('b-mc-commish');
-  if(cm) cm.onclick=()=>ga('mode_opened',{mode:'commish'});
+  /* AN ORDINARY LINK, EXCEPT WHEN THE DOOR IS SHUT, which is the front page door's rule and
+     is here for the same reason those two cards carry the same sentence: one mode, one
+     answer, whichever screen you found it on. It used to take EVERY non-owner's click and
+     repaint the sheet as the store, and that stopped being true the day the free tier
+     shipped. commishShut() is only true when there is really nothing to open today. */
+  if(cm) cm.onclick=(ev)=>{
+    if(commishShut()){
+      if(ev&&typeof ev.preventDefault==='function') ev.preventDefault();
+      openPremium('commish-card');
+      return;
+    }
+    ga('mode_opened',{mode:'commish'});
+  };
   $('b-mc-nfl').onclick=()=>ga('crosspromo_clicked',{to:'football'});
   $('b-mc-alma').onclick=()=>ga('crosspromo_clicked',{to:'almamater'});
   $('mm-x').onclick=closeSheet;
@@ -5199,6 +5690,414 @@ let authState={ready:false,waiting:true,signedIn:false};
 let authMode='in';        // 'in' | 'up', which form the panel is showing
 let authBusy=false;
 let authMsg=null;         // {err} or {ok}
+
+/* ── WHAT THIS ACCOUNT OWNS ───────────────────────────────────────────────────────────
+ *
+ * ONE STORE, NOT A STORE PER GAME. The bundle is bought once and unlocks both games, so
+ * this page sells exactly what the football page sells, out of exactly the same module
+ * (/assets/store.js), and the buttons emit the same two keys. There is no CFB price, no
+ * CFB product and no second payment path: every purchase on this site goes through
+ * POST /api/stripe/checkout-bundle.
+ *
+ * A STORE YOU CAN ONLY REACH BY BEING REFUSED IS A WALL. Until now the only way to see the
+ * offer from the college game was to open Commissioner Simulator and be turned away at its
+ * gate. Somebody who never opens a mode they cannot see was never shown a thing to buy.
+ * So the profile carries it, the way the football game's profile does.
+ *
+ * FROM THE DATABASE AND NEVER A LIST IN THIS PAGE. commish/access.js decides who can SEE
+ * the mode; the premium_unlocks row decides whether its door opens. null means not asked
+ * yet or the ask failed, and both read as owning nothing: wrong only in the harmless
+ * direction, and what that shows is an offer rather than a mode pretending not to exist. */
+let premiumSet=null;
+const ownsCfb=()=>!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
+/* `force` rides through to auth.js and skips its cache. Ordinary callers want the cache;
+   the walk back from Stripe must not have it, because a cached [] is exactly the answer
+   that makes a landed purchase look like a missing one. Returns the promise so that walk
+   can wait for a real answer rather than asking and hoping. */
+function premiumRefresh(force){
+  if(!authState.signedIn){ premiumSet=null; return Promise.resolve(null); }
+  const a=A();
+  if(!a||typeof a.premiumProducts!=='function'){ premiumSet=[]; return Promise.resolve([]); }
+  /* AND IT REPAINTS THE FRONT PAGE DOOR WHEN THE ANSWER LANDS. The door is drawn on the
+     auth change, which is always BEFORE this resolves, so its first paint is always the
+     unknown one: no lock and no Pro tag. Without a repaint here that is the only paint it
+     ever gets, and the card stays looking free for the whole visit. That is the bug, not
+     the timing. */
+  return a.premiumProducts(force).then((list)=>{ premiumSet=Array.isArray(list)?list:[]; return premiumSet; })
+    .catch(()=>{ premiumSet=[]; return premiumSet; })
+    .then((v)=>{
+      try{ ensureCommishDoor(); }catch(e){}
+      /* AND ASK THE CLOCK, now that we know this is not an owner. It has to be after the
+         ownership answer or every paying account would ask a question that is never true
+         for them. See commishClockWarm(). */
+      try{ commishClockWarm(); }catch(e){}
+      /* AND THE OFFER COMES OFF THE FRONT PAGE THE MOMENT OWNERSHIP LANDS. premiumPitch()
+         answers false while premiumSet is null, so the card is never drawn before the answer
+         is in; without a repaint here that "not yet" is the only answer it ever gets and a
+         signed in non-owner is never offered anything at all. The same call also removes it
+         for a buyer, which is the other half. */
+      try{ ensurePremiumCard(); }catch(e){}
+      /* And the modes sheet, if it happens to be the thing on screen when the answer
+         arrives. Same card, same lock, same reason. */
+      try{
+        if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='modes') modeMenu();
+      }catch(e){}
+      /* AND THE OFFER COMES OFF THE PROFILE, which nothing was doing. The card is written in
+         when the hub is drawn and the hub is not redrawn when ownership lands, so a buyer
+         whose purchase confirmed with their profile open sat looking at Go Pro on a Pro
+         account, under a gold pill saying so. The node is removed rather than the sheet
+         redrawn: a redraw would throw somebody back to the top of their profile to fix
+         something they were not looking at. Same fix, same reasoning, in the football game. */
+      try{ dropPitchCard(); }catch(e){}
+      return v;
+    });
+}
+function dropPitchCard(){
+  if(premiumPitch()) return;
+  const el=$('pf-prem');
+  if(el&&el.parentNode) el.parentNode.removeChild(el);
+}
+/* THREE ANSWERS, NOT TWO. Signed out is not "Free": a free account is a thing somebody
+   has, and a visitor with none has nothing to show a status for. Not known yet is not
+   "Free" either, and that one matters more: premiumSet is null for the length of the
+   round trip, and a pill that says Free through it says it to the paying customer too.
+   Null both ways, and nothing is drawn until there is something true to draw. */
+function acctTier(){
+  if(!authState.signedIn) return null;
+  if(premiumSet===null) return null;
+  return ownsCfb()?'pro':'free';
+}
+/* AN <i> AND NOT A <span>. The profile writes `.pfid .pfn span{display:block}` for the
+   line under the name, and that selector outranks a single class: as a span the pill
+   inherits display:block and renders as a full width gold bar on its own row. */
+const pwPill=()=>{
+  const t=acctTier();
+  return t?'<i class="pw-pill '+t+'">'+(t==='pro'?'Pro':'Free')+'</i>':'';
+};
+/* SET WHEN A CHECKOUT COMES BACK SUCCESSFUL, and never unset. The entitlement is written
+   by a webhook that can land after the browser does, and for that gap the account still
+   reads as free: without this, the screen thanking somebody for their payment would sit
+   directly above a card offering to sell it to them. Session-lived on purpose. */
+let justPaid=false;
+/* AND IT IS GATED ON THE SAME ANSWER THE DOOR IS. The thing this card sells on this game
+   is Commissioner Simulator, and while the launch flag is false only the tester list can
+   see that mode at all: offering it to somebody who would still find nothing after paying
+   is selling a door that does not open for them. commishOn() is the same call the front
+   page door and the modes sheet make, so all three appear together on the day the flag
+   flips and none of them can advertise what the others hide.
+   The RECEIPT is deliberately not gated on it. An owner who bought from the football page
+   owns what they own whether or not this game shows them a mode, and a receipt is not an
+   advertisement. */
+const premiumPitch=()=>{
+  if(justPaid) return false;
+  if(!commishOn()) return false;
+  if(authState.signedIn&&premiumSet===null) return false;
+  return !ownsCfb();
+};
+/* THE PROMPT CARD, and it is DRAWN BY THE STORE now rather than copied from it.
+   One account holds both games and a customer should recognise the offer, which was the
+   intention when this was the same shape written out a second time. It was not enough: the
+   two games drifted to "3 modes" here and "4 modes" on the football front page, about the
+   same purchase, because what a card is worth is part of the offer and the offer lives in
+   /assets/store.js.
+   AND THEN THEY DRIFTED AGAIN, because the markup moved and the WORDS stayed as arguments.
+   The football front page card read "Unlock every mode" while this one and the football
+   profile read "Unlock everything". A shared function that takes the sentence as a parameter
+   fixes the shape and fixes nothing about the sentence, so it takes no words at all now.
+   NO FALLBACK CARD EITHER. It used to draw its own markup when the store was missing, which
+   kept a copy of the sentence alive for the one case where the card is useless: all it does
+   is open the store's sheet, and a missing store has no sheet. No store, no card. */
+const pwCard=(id)=>(window.RTG_STORE&&window.RTG_STORE.card
+  ? window.RTG_STORE.card(id) : '');
+
+/* WHERE THE SHEET WAS OPENED FROM, for the one question worth asking of this screen:
+   which of the ways in actually sells anything. Set by each caller, read once, cleared. */
+let premiumFrom=null;
+const openPremium=(from)=>{ premiumFrom=from||null; premiumSheet(); };
+function premiumSheet(){
+  const box=$('sheet-in');
+  box.dataset.kind='premium';
+  /* ALREADY PRO, and reachable: a second tab, a card painted before the products call came
+     back, the profile row tapped as a purchase lands. Selling somebody the thing they have
+     just bought is the worst screen in the flow, so it is answered rather than left to
+     chance. The receipts are one tap away from here. */
+  if(ownsCfb()){
+    box.innerHTML='<div class="eyebrow gold">Your account</div>'+
+      '<h2 class="display" style="font-size:26px;margin:4px 0 8px">You are Pro</h2>'+
+      '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
+        'Every Pro mode is unlocked, on every device you sign in on. There is nothing to '+
+        'renew.</p>'+pfClose();
+    openSheet(); pfWire(box);
+    ga('premium_sheet_shown',{from:premiumFrom||'profile',tier:'pro'});
+    premiumFrom=null;
+    return;
+  }
+  /* THE OFFER ITSELF COMES FROM THE SHARED MODULE. This page frames it: a sheet with a
+     Close under it. The store never learns who the visitor is beyond whether they are
+     signed in, because the only thing that changes is the two button labels: a purchase is
+     tied to an account, so there is a step before the money and the buttons name it. */
+  box.innerHTML=(window.RTG_STORE
+    ? window.RTG_STORE.html({signedOut:!authState.signedIn})
+    : '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">The store could '+
+      'not be loaded. Reload the page and try again.</p>')+
+    '<div style="margin-top:12px"><button class="btn ghost sm" id="sp-x" '+
+      'style="width:100%">Not now</button></div>';
+  if(window.RTG_STORE) window.RTG_STORE.wire(box,{buy:(kind,btn)=>buyBundle(kind,btn)});
+  openSheet(); pfWire(box);
+  ga('premium_sheet_shown',{from:premiumFrom||'profile',tier:acctTier()||'out'});
+  premiumFrom=null;
+}
+
+/* One POST, verdict by the `error` field and never the status, the contract
+   functions/api/stripe/checkout-bundle.js keeps on purpose. The verdict lands on the
+   button that was pressed. A signed out visitor is sent to the account panel instead:
+   the store's own labels already told them that step was coming. */
+async function buyBundle(kind,btn){
+  if(!authState.signedIn){ openProfile('account'); return; }
+  const a=A();
+  const t=a&&typeof a.token==='function'?a.token():null;
+  if(!t){ openProfile('account'); return; }
+  ga('checkout_started',{bundle:kind,from:'cfb'});
+  if(btn){ btn.disabled=true; btn.textContent='Opening checkout...'; }
+  try{
+    const r=await fetch('/api/stripe/checkout-bundle',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+      body:JSON.stringify({bundle:kind,return_path:'/cfb/'})
+    });
+    const d=await r.json().catch(()=>({}));
+    if(d&&d.url){ location.href=d.url; return; }
+    if(btn){
+      btn.disabled=false;
+      btn.textContent=
+        d&&d.error==='stripe_not_configured'?'Not on sale yet'
+        :d&&d.error==='already_owned'?'This account already owns it'
+        :'Checkout could not start. Try again';
+    }
+  }catch(e){
+    if(btn){ btn.disabled=false; btn.textContent='Checkout could not start. Try again'; }
+  }
+}
+
+/* COMING BACK FROM STRIPE.
+ *
+ * checkout-bundle.js sends the buyer back here with ?checkout=success on the URL. The
+ * grant is NOT done when the browser arrives: it is written by the Stripe webhook, and
+ * the redirect races it. Usually the webhook wins by a second, sometimes it does not.
+ * So this asks, and keeps asking for about ten seconds, FORCING past auth.js's cache each
+ * time, rather than reading one "not owned" and calling a paid-for purchase a failure.
+ *
+ * IT NEVER SAYS THE PAYMENT FAILED, because it cannot know that. If the grant has not
+ * appeared by the last try, what is on screen is that the payment went through and the
+ * account is catching up, which is exactly what is happening. */
+let checkoutPolled=false, checkoutWhat=null;
+/* READ AT LOAD RATHER THAN INSIDE THE FUNCTION BELOW, because premiumPitch() reads
+   justPaid and the profile can be opened before the account has even answered. A screen
+   thanking somebody for their payment must never carry a card offering to sell it to
+   them, and that is decided the moment the page has a URL. */
+try{ checkoutWhat=new URLSearchParams(location.search).get('checkout'); }catch(e){}
+justPaid=checkoutWhat==='success';
+function checkoutStrip(){
+  try{
+    const u=new URL(location.href);
+    u.searchParams.delete('checkout');
+    history.replaceState(null,'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():'')+u.hash);
+  }catch(e){}
+}
+async function checkoutReturn(){
+  if(!checkoutWhat||checkoutPolled) return;
+  checkoutPolled=true;
+  /* Stripped first, so a reload cannot replay it and a shared link cannot carry it to
+     somebody who bought nothing. */
+  checkoutStrip();
+  if(checkoutWhat!=='success'){
+    /* CANCELLED IS NOT A FAILURE AND GETS NO SCREEN. They pressed back on a payment form,
+       which is a thing people do, and being chased about it is how a store gets closed. */
+    ga('checkout_cancelled',{from:'cfb'});
+    return;
+  }
+  ga('checkout_returned',{from:'cfb'});
+  /* THE THANK YOU IS SHOWN BEFORE THE ANSWER LANDS, because the wait is the part that
+     needs covering. It repaints itself the moment ownership arrives. */
+  thanksSheet();
+  if(ownsCfb()) return;
+  const waits=[600,1200,2000,3000,3500];
+  for(const ms of waits){
+    await new Promise((r)=>setTimeout(r,ms));
+    await premiumRefresh(true);
+    if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='thanks') thanksSheet();
+    if(ownsCfb()) return;
+  }
+}
+function thanksSheet(){
+  const box=$('sheet-in');
+  box.dataset.kind='thanks';
+  const done=ownsCfb();
+  box.innerHTML='<div class="eyebrow gold">Thank you</div>'+
+    '<h2 class="display" style="font-size:26px;margin:4px 0 8px">You are Pro</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
+      (done
+        ? 'Commissioner Simulator is open on every device you sign in on. Your receipt is '+
+          'in your profile.'
+        : 'Your payment went through. Your account catches up in a few seconds.')+'</p>'+
+    (done
+      ? '<div style="margin-top:14px"><a class="btn" href="/cfb/commish/" id="th-go" '+
+        'style="width:100%;display:block;text-align:center;text-decoration:none">'+
+        'Open Commissioner Simulator</a></div>'
+      : '')+
+    pfClose();
+  openSheet(); pfWire(box);
+  const go=$('th-go');
+  if(go) go.onclick=()=>ga('mode_opened',{mode:'commish',from:'checkout'});
+}
+
+/* ── YOUR PRO ACCESS ──────────────────────────────────────────────────────────────────
+ *
+ * A RECEIPT NO MATTER WHICH GAME THEY BOUGHT FROM. One account, one purchase, two games,
+ * so a customer who paid on the football page and then came here must still be able to
+ * see what they own. This reads premium_unlocks through auth.js, the same rows the
+ * football game's Your Pro access page reads.
+ *
+ * SAID ONCE, PLAINLY. Not a second store: an owner is done being sold to. Four facts
+ * (what, from which game, when, and whether it ends) and one button.
+ *
+ * THE COLOURS ARE THE STORE'S OWN, out of RTG_STORE.game, so the receipt and the card
+ * somebody bought from cannot disagree about which game a line belongs to. */
+/* `wait` marks the one product this site cannot deliver by itself. Three of the four are
+   honored by the database the moment the row exists. The Run The Tour coins are not: the
+   wallet that holds them belongs to the golf backend, so the webhook files that row with
+   fulfilled_at null and the golf side stamps it on credit. Written here rather than read
+   off the column alone, because a row that arrives without the field reads as null, and
+   three permanent unlocks telling their owner they are still on the way is a worse lie
+   than the one this prevents. */
+const PRO_ITEM={
+  /* WORDED THE SAME AS THE STORE LINE IT IS THE RECEIPT FOR, and as the football game's own
+     copy of this table. It read "Dynasty, Franchise and unlimited Trade Machine", which was
+     wrong twice: nothing in the game is called Franchise (the mode is One Franchise Dynasty),
+     and it implied only the Trade Machine was unlimited when the limit lifts on all three.
+     A receipt that describes less than the card somebody bought from reads as something
+     having been taken away. See pwGroupText('ps', ...) in /assets/store.js. */
+  ps_premium:{game:'ps',text:'Unlimited runs: Dynasty, One Franchise Dynasty, Trade Machine'},
+  cfb_premium:{game:'cfb',text:'Commissioner Mode'},
+  arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
+  runtour_pack:{game:'tour',text:'100,000 coins and one Tour Pack',wait:true}
+};
+/* THE ORDER IS THE STORE'S, not the database's. granted_at is the same instant for every
+   row of one purchase, so sorting by it leaves four items in whatever order Postgres felt
+   like. */
+const PRO_ORDER=['ps_premium','cfb_premium','arcade_card_year','runtour_pack'];
+const proDate=(s)=>{
+  const d=new Date(s);
+  return isNaN(d)?'':d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+};
+function pfPro(){
+  profileTab='pro'; pfPaint++;
+  const box=$('sheet-in');
+  box.dataset.kind='profile';
+  ga('pro_page_opened');
+  box.innerHTML=pfHead('Your Pro access')+
+    '<div class="pfpro-h"><i class="pw-pill pro">Pro</i>'+
+      '<span>Unlocked on every device you sign in on.</span></div>'+
+    '<div id="pf-pro-list" class="dim" style="font-size:12.5px;margin-top:12px">'+
+      'Loading what you own.</div>'+
+    '<div id="pf-pro-bill" style="margin-top:15px"></div>'+
+    pfClose();
+  openSheet(); pfWire(box);
+  pfProLoad();
+}
+async function pfProLoad(){
+  const mine=pfPaint, a=A();
+  let rows=[];
+  try{ rows=(a&&a.premiumUnlocks)?await a.premiumUnlocks():[]; }catch(e){ rows=[]; }
+  /* The sheet is one element that every page rewrites, so a slow read landing after the
+     player has moved on must not paint over wherever they went. */
+  if(mine!==pfPaint) return;
+  const list=$('pf-pro-list'); if(!list) return;
+
+  const by={};
+  rows.forEach((r)=>{ if(r&&r.product) by[r.product]=r; });
+  const owned=PRO_ORDER.filter((k)=>by[k]&&PRO_ITEM[k]);
+
+  if(!owned.length){
+    /* REACHABLE, AND NOT A BUG. The row that opened this page was drawn from
+       premium_products(), which answers through an RPC; this reads the table. A blocked
+       request, an expired token or an account comped by hand outside the table all land
+       here, and none of them is a reason to tell somebody their purchase is gone. */
+    list.innerHTML='<p class="dim" style="font-size:12.5px;line-height:1.45;margin:0">'+
+      'Your Pro modes are unlocked. The list of what is in your bundle could not be loaded '+
+      'just now. Reload the page and it will come back.</p>';
+  }else{
+    let ends=null, endedOn=null;
+    list.innerHTML=owned.map((k)=>{
+      const it=PRO_ITEM[k], row=by[k];
+      const g=(window.RTG_STORE&&window.RTG_STORE.game(it.game))||{name:'',c:'#94a3b8'};
+      const when=proDate(row.granted_at);
+      const till=row.expires_at?proDate(row.expires_at):'';
+      /* AN END DATE IN THE PAST IS NOT AN END DATE. premium_products() filters on expiry,
+         so an Arcade year that has run out drops out of the account's live products and
+         the modes behave correctly. This page does not use that RPC: it reads the table,
+         because a receipt has to show what was bought rather than what is still running.
+         Telling a customer they hold something they do not hold is the one thing a receipt
+         must never do. */
+      const gone=!!row.expires_at&&Date.parse(row.expires_at)<Date.now();
+      if(till&&gone) endedOn=till;
+      else if(till) ends=till;
+      /* NOT EVERYTHING IN A BUNDLE ARRIVES AT ONCE. See the note on PRO_ITEM. Both halves
+         are required: the product has to be one that is delivered elsewhere, and it has to
+         be still unstamped. */
+      const waiting=!!it.wait&&row.fulfilled_at==null&&!gone;
+      const dates=till
+        ? 'Bought '+when+'. '+(gone?'Ended ':'Ends ')+till+'.'
+        : 'Bought '+when+'. Yours for good.';
+      return '<div class="pw-line'+(gone?' ended':'')+'" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
+        '<span>'+esc(it.text)+'</span>'+
+        (when||till
+          ? '<i>'+esc(dates)+(waiting?' On its way to your account.':'')+'</i>'
+          : '')+
+      '</div>';
+    }).join('')+
+      /* THE ONE THING A ONE-OFF PAYMENT HAS TO SAY OUT LOUD. An Arcade Card year sitting on
+         the page with an end date on it looks exactly like a subscription about to bill,
+         and a customer who thinks they are on a recurring charge cancels the whole account
+         to stop it. Nothing here renews, and the sentence says so before they have to ask. */
+      '<p class="dim" style="font-size:12px;line-height:1.45;margin:13px 0 0">'+
+        'You paid once. Nothing here renews and nothing charges you again.'+
+        (ends?' Your Arcade Card year simply ends on '+esc(ends)+'.':'')+
+        (endedOn?' Your Arcade Card year ended on '+esc(endedOn)+'.':'')+
+      '</p>';
+      /* AND IT STOPS THERE. Stating that the year ended is the receipt doing its job;
+         following it with a way to buy a fresh one is a shop, and a shop for a product
+         that lives in a different game. The Arcade sells the Arcade. */
+  }
+
+  const bill=$('pf-pro-bill'); if(!bill) return;
+  bill.innerHTML='<button class="btn ghost sm" id="pf-bill" style="width:100%">'+
+      'Receipts and billing</button>'+
+    '<p class="dim" style="font-size:11.5px;margin:8px 0 0">Opens Stripe, where your '+
+      'receipts and payment details live.</p>';
+  $('pf-bill').onclick=async()=>{
+    const b0=$('pf-bill'); if(b0){ b0.disabled=true; b0.textContent='Opening...'; }
+    /* auth.js is a sibling script with its own cache version, so a browser one bump behind
+       has a copy of it with no billingPortal on it. Asked for rather than assumed, because
+       the alternative is a TypeError on the one button a customer with a billing question
+       presses. It falls into the same "could not open" answer as any other failure. */
+    const a2=A();
+    const r=(a2&&typeof a2.billingPortal==='function')
+      ? await a2.billingPortal('/cfb/')
+      : {error:'unavailable'};
+    if(r&&r.url){ location.href=r.url; return; }
+    /* SAY WHICH KIND OF NOTHING IT IS. no_customer is not a failure: an account comped by
+       hand never went through Stripe and has no receipt to show, and telling that person
+       to try again is telling them to keep pressing a button that cannot work. */
+    const b=$('pf-bill'); if(!b) return;
+    b.disabled=true;
+    b.textContent=(r&&r.error==='no_customer')?'No Stripe receipt for this account':'Could not open Stripe';
+    const note=b.nextElementSibling;
+    if(note) note.textContent=(r&&r.error==='no_customer')
+      ? 'This account was unlocked without a card payment, so there is no receipt to show.'
+      : 'Try again in a moment. Your Pro access is not affected.';
+  };
+}
 
 /* The season just recorded, so it can be claimed the moment somebody signs in
    having already finished it. Cleared once claimed, so a later sign-in on a later
@@ -5328,7 +6227,8 @@ function bootAuth(){
   const a=A();
   /* auth.js itself did not load, so nothing is coming. Say so now rather than
      leaving every gate spinning forever. */
-  if(!a){ authState={ready:false,waiting:false,signedIn:false}; syncModesLock(); return; }
+  if(!a){ authState={ready:false,waiting:false,signedIn:false}; syncModesLock();
+    ensureCommishDoor(); ensurePremiumCard(); return; }
   a.onChange((st)=>{
     const wasId=authState.userId;
     authState=st;
@@ -5336,6 +6236,22 @@ function bootAuth(){
     /* The padlock on the home screen follows the account. The page paints long before
        auth answers, so without this a member would find a lock on something they own. */
     syncModesLock();
+    /* And so does the Commish door, for the same reason: it is drawn only for accounts
+       that can open it, and the account arrives after the first paint. */
+    ensureCommishDoor();
+    /* And the offer card, which reads the same list. Signing OUT has to take it with it,
+       which is why this runs on every change rather than only when somebody signs in. */
+    ensurePremiumCard();
+    /* WHAT THE ACCOUNT OWNS FOLLOWS THE ACCOUNT TOO, and it has to be asked again on a
+       CHANGE of account rather than once: signing out and back in as somebody else on the
+       same tab would otherwise leave the previous person's purchases on screen. Cleared
+       first, so the gap between the two answers shows nothing rather than the old one. */
+    if(st.userId!==wasId) premiumSet=null;
+    if(st.signedIn) premiumRefresh();
+    else premiumSet=null;
+    /* The walk back from Stripe, once there is an account to ask about. It runs at most
+       once, and does nothing at all on a visit with no ?checkout=success on the URL. */
+    if(st.signedIn) checkoutReturn();
     /* Two sheets read the account and are repainted where they stand rather than left
        showing the state before the change. */
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='modes') modeMenu();
@@ -7572,7 +8488,7 @@ function guestPitch(){
     ['Your name on the leaderboard', 'Guest seasons are ranked but never listed.'],
     ['Conference Draft', 'Draft a single Power 5 conference.'],
     [badges?('All '+badges+' badges'):'Every badge in the game', 'Earned as a guest, kept with an account.'],
-    ['Your school’s colors', 'They theme the whole game.'],
+    ['Your school\'s colors', 'They theme the whole game.'],
   ];
   $('sheet-in').dataset.kind='pitch';
   $('sheet-in').innerHTML=
@@ -10422,7 +11338,7 @@ function enterChallengeAccept(t){ challengeTeam=t; pendingChallenge=false; paint
 function paintChallengeIntro(t){
   const rb=rosterFromBlob(t);
   const rating=rb?overallOf(teamRating(rb.roster,rb.chemistry)):null;
-  $('ch-title').textContent = t.n ? (t.n+'’s team') : 'Beat this team';
+  $('ch-title').textContent = t.n ? (t.n+'\'s team') : 'Beat this team';
   $('ch-sub').textContent = (t.n?(t.n+' drafted a team. '):'Someone drafted a team. ')+
     'Build your own six to beat it in the Challenge Bowl, then take your team into a full ranked season.';
   $('ch-mode').textContent = chModeLabel(t);
@@ -10432,7 +11348,7 @@ function paintChallengeIntro(t){
     if(draftBtn) draftBtn.textContent='Draft your team'; }
   else { $('ch-rating').textContent='--';
     $('ch-rost').innerHTML='<p class="dim" style="font-size:12.5px;margin:8px 0 0">This team was built with newer '+
-      'player data than this page has, so it can’t be shown here. You can still play a normal game.</p>';
+      'player data than this page has, so it can\'t be shown here. You can still play a normal game.</p>';
     if(draftBtn) draftBtn.textContent='Play a normal game'; }
 }
 
@@ -10446,7 +11362,7 @@ function bowlBroadcast(cfg){
   const themWash={bg:'#7d1c2f',accent:'#d33656'};
   const youEl=$('bowl-you'), themEl=$('bowl-them'), bug=$('bowl-bug');
   $('bowl-chhead').hidden=false;
-  $('bowl-title').textContent='Your team vs '+(cfg.themName?cfg.themName+'’s':'their team');
+  $('bowl-title').textContent='Your team vs '+(cfg.themName?cfg.themName+'\'s':'their team');
   $('bowl-tagline').textContent='The Challenge Bowl. One game, winner brags.';
   youEl.style.setProperty('--tcol',me.bg); youEl.style.setProperty('--tcol2',me.accent);
   themEl.style.setProperty('--tcol',themWash.bg); themEl.style.setProperty('--tcol2',themWash.accent);
@@ -10808,7 +11724,7 @@ function howToPlay(){
       '3</span>Re-spin the year or the team for '+R1+', off your budget.</li>'+
     '<li style="margin:10px 0;font-size:14px;line-height:1.5;counter-increment:n;position:relative;padding-left:26px">'+
       '<span style="position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim)">' +
-      '4</span>Players with a history together build <b>chemistry</b>: a quarterback and the receiver he threw to most of all, then teammates, brothers, a shared school, a shared coach, a shared home state, a shared conference. At most <b>two running backs</b>, and some players count at two positions.</li>'+
+      '4</span>Players with a history together build <b>chemistry</b>. The quarterback and the receiver he actually threw to counts for the most. After that: teammates, brothers, a shared school, coach, home state or conference. At most <b>two running backs</b>. Some players count at two positions.</li>'+
     '<li style="margin:10px 0;font-size:14px;line-height:1.5;counter-increment:n;position:relative;padding-left:26px">'+
       '<span style="position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim)">' +
       '5</span>Play all <b>12 games</b>. Finish in the <b>top 12</b> of the country and you are in the Playoff. Win big, not just often: margin is what separates two teams with the same record.</li>'+

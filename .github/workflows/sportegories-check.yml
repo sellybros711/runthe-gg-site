@@ -1,0 +1,47 @@
+name: Sportegories answers check
+
+# The rebuild job (sportegories.yml) is gated on this same script, which covers
+# the DATA path: a refreshed roster that starts calling a retired player active.
+# This covers the other path, a hand edit to the matcher or the builder, which
+# the daily job would not see until the next morning.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-sportegories.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/sportegories.js'
+      - 'arcade/sportegories-data.js'
+      - 'arcade/rosters.js'
+      - 'arcade/jerseys.js'
+      - 'scripts/build-sportegories.mjs'
+      - 'scripts/check-sportegories.mjs'
+      - '.github/workflows/sportegories-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/sportegories.js'
+      - 'arcade/sportegories-data.js'
+      - 'arcade/rosters.js'
+      - 'arcade/jerseys.js'
+      - 'scripts/build-sportegories.mjs'
+      - 'scripts/check-sportegories.mjs'
+      - '.github/workflows/sportegories-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: sportegories-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-sportegories.mjs

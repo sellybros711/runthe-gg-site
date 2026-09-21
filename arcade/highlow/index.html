@@ -13,7 +13,7 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="High Low: an endless higher-or-lower streak game for Arcade Card members. Pick a category, then call every next player higher or lower." />
-<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
@@ -32,7 +32,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/arcade/arcade.css?v=3" />
-<script src="/arcade/icons.js?v=2"></script>
+<script src="/arcade/icons.js?v=3"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -379,15 +379,15 @@ window.GA_ID='G-L29P5MRWKE';
 <ul>
   <li>Choose your lane: NBA, NFL or MLB stat pools.</li>
   <li>Each correct call reveals the real value and deals the next player.</li>
-  <li>There is no finish line. The run ends when you are wrong, and the only target is your best.</li>
+  <li>There is no finish line. The run ends on your first wrong call.</li>
 </ul>
 <h3>An endless game with a daily heartbeat</h3>
-<p>Your longest run is the score that matters, and the daily board resets the bragging rights every midnight local time. High Low is an Arcade Card game. Members play all twelve Arcade titles without limits, replay any past day from the <a href="/arcade/archive/">Archive</a>, and get NBA, NFL and MLB editions of five of the games. A free RunThe.GG account still gets a daily play of the Daily Crossword, Sportegories, Alma Mater and Career Path.</p>
+<p>Your longest run is the score that matters, and the daily board resets the bragging rights every midnight local time. High Low is an Arcade Card game. A free RunThe.GG account gets one play of it, once ever. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, with no account at all. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
 <h3>Surviving longer</h3>
 <ul>
-  <li>Respect the era. A 1970s scoring line and a modern one live on different planets; adjust before you call.</li>
-  <li>Volume stats favour long careers. When one player lasted 18 seasons and the other 9, the call is usually made for you.</li>
-  <li>Late in a run, slow down on the coin flips. One patient minute is worth thirty fast calls.</li>
+  <li>Every correct call reveals the real value, and that number is the baseline for the next one. Play the gap, not the name.</li>
+  <li>Career totals reward long careers over great ones. Eighteen seasons usually beats nine, whoever the nine belonged to.</li>
+  <li>Eras do not compare on raw totals. Check when each player played before you back the bigger name.</li>
 </ul>
 <p>Warm up with the <a href="/arcade/table/">Number Game</a>, or test your radar in <a href="/arcade/guess/">Guess the Player</a>.</p>
 </div>
@@ -418,33 +418,36 @@ window.GA_ID='G-L29P5MRWKE';
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/stars.js?v=4"></script>
-<script src="/arcade/awards.js?v=1"></script>
-<script src="/arcade/data.js?v=2"></script>
-<script src="/arcade/jerseys.js?v=1"></script>
+<script src="/arcade/awards.js?v=3"></script>
+<script src="/arcade/primary.js?v=21"></script>
+<script src="/arcade/data.js?v=5"></script>
+<script src="/arcade/jerseys.js?v=21"></script>
 <script src="/arcade/stats.js?v=3"></script>
 <script src="/arcade/hlstats.js?v=3"></script>
-<script src="/arcade/rosterstats.js?v=2"></script>
-<script src="/arcade/tokens.js?v=12"></script>
+<script src="/arcade/rosterstats.js?v=3"></script>
+<script src="/arcade/tokens.js?v=13"></script>
+<script src="/arcade/day.js?v=2"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=19"></script>
+<script src="/arcade/board.js?v=21"></script>
 <script src="/arcade/leaderboard.js?v=14"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=4"></script>
-<script src="/arcade/mycard.js?v=11"></script>
-<script src="/arcade/topbanner.js?v=8"></script>
-<script src="/arcade/auth-ui.js?v=5"></script>
-<script src="/arcade/card.js?v=19"></script>
-<script src="/arcade/referral.js?v=9"></script>
+<script src="/arcade/mycard.js?v=13"></script>
+<script src="/arcade/topbanner.js?v=9"></script>
+<script src="/arcade/auth-ui.js?v=6"></script>
+<script src="/arcade/card.js?v=20"></script>
+<script src="/arcade/referral.js?v=10"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/share.js?v=8"></script>
+<script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/gamemarks.js?v=3"></script>
 <!-- pregame.js gates the one free play of this Arcade Card game; calendar.js
      is what gives that gate the game's name and accent. -->
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/demo.js?v=3"></script>
-<script src="/arcade/pregame.js?v=24"></script>
+<script src="/arcade/pregame.js?v=25"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script>
@@ -806,6 +809,12 @@ window.GA_ID='G-L29P5MRWKE';
     document.getElementById('mMetric').textContent = cat ? cat.label : '-';
     document.getElementById('yourRun').textContent = run+' in a row';
     document.getElementById('yourBest').textContent = s.best;
+      /* One line for the shared result row (result.js): the rank, the best
+         as an event, and the streak, in the same order on every game.
+         isBest is the only part this file has to supply, because by the
+         time the modal is open the new best is already in storage. */
+    try{ window.RTGResultSpec = { key:GAME, date:DATE, statInt:run, best:s.best||0,
+      prevBest:(prevBest>0?prevBest:null), isBest:(run>0 && run>prevBest), streak:(s.streak||0) }; }catch(e){}
     var sub;
     if(NEWBEST) sub='NEW PERSONAL BEST';
     else if(prevBest>0 && run===prevBest) sub='Tied your best';
@@ -908,7 +917,7 @@ window.GA_ID='G-L29P5MRWKE';
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
 })();
 </script>
-<script src="/arcade/howto.js?v=21"></script>
+<script src="/arcade/howto.js?v=22"></script>
 <script>if (window.RTGHowto) RTGHowto.init('highlow');</script>
 </body>
 </html>

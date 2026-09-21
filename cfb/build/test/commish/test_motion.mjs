@@ -32,7 +32,7 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:{username:'${TESTER}'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
 const arm = `
 (function(){ var v;
   Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,
@@ -50,6 +50,20 @@ async function skipSim(pg) {
     if (!up) return;
     await pg.click('#off-monthcard', { timeout: 1500 }).catch(() => {});
     await pg.waitForTimeout(110);
+  }
+}
+
+
+/* A CUTSCENE CAN TAKE THE SCREEN THE MOMENT A TERM STARTS, and one that a walker does not
+   know about is a walker that stalls on the one screen with no dock. Skip it: the scenes have
+   their own suite in test_scene, and every other file here is testing something behind them.
+   Called after anything that could arrive at the office. */
+async function pastScene(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-scene', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#b-scene-skip').catch(() => {});
+    await pg.waitForTimeout(320);
   }
 }
 
@@ -77,6 +91,7 @@ async function walk(reduced) {
   await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
   await p.waitForTimeout(2400);
   await tap(p, '#g-start');
+  await pastScene(p);
   await p.waitForTimeout(1400);
 
   const office = {
@@ -115,7 +130,14 @@ async function walk(reduced) {
   for (let i = 0; i < 24 && !ruled; i++) {
     if (await on(p, 's-office')) { await tap(p, '#b-desk'); await skipSim(p); await p.waitForTimeout(350); continue; }
     if (await on(p, 's-desk')) {
-      const o = await p.$('#d-options .opt'); if (o) { await o.click(); await p.waitForTimeout(200); }
+      /* CLICKED IN THE PAGE RATHER THAN THROUGH THE POINTER. The dock is sticky at the
+         bottom of the desk, so whether an option happens to sit under it depends on how
+         tall the case above it is, and a walker that fails on a long brief is a walker
+         that reports layout as a broken ruling. What this suite is measuring is what the
+         bars do afterwards. */
+      const o = await p.$('#d-options .opt');
+      if (o) { await p.evaluate(() => document.querySelector('#d-options .opt').click());
+        await p.waitForTimeout(200); }
       if (!(await tap(p, '#b-rule'))) break;
       await p.waitForTimeout(1500);
       ruled = await on(p, 's-room');

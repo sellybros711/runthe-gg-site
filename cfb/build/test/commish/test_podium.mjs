@@ -36,13 +36,27 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:{username:'${TESTER}'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
 const arm = `
 (function(){ var v;
   Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,
     get:function(){ return v; },
     set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(TESTER)}); }catch(e){} }});
 })();`;
+
+
+/* A CUTSCENE CAN TAKE THE SCREEN THE MOMENT A TERM STARTS, and one that a walker does not
+   know about is a walker that stalls on the one screen with no dock. Skip it: the scenes have
+   their own suite in test_scene, and every other file here is testing something behind them.
+   Called after anything that could arrive at the office. */
+async function pastScene(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-scene', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#b-scene-skip').catch(() => {});
+    await pg.waitForTimeout(320);
+  }
+}
 
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
@@ -57,6 +71,7 @@ await p.goto(PAGE, { waitUntil: 'domcontentloaded', timeout: 40000 });
 await p.waitForTimeout(2400);
 await p.click('#g-start').catch(() => {});
 await p.waitForTimeout(900);
+await pastScene(p);
 
 const on = (id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
 
@@ -196,6 +211,7 @@ console.log('\n=== and the beat carries on ===');
   ok('the way out names where it goes', /office/i.test(label), label);
   await p.click('#b-next');
   await p.waitForTimeout(800);
+  await pastScene(p);
   ok('the office is back', await on('s-office'));
   const said = await p.$$eval('#off-said div', (e) => e.map((x) => x.textContent.trim()));
   ok('the office remembers what you said', said.length === 3, said.length);

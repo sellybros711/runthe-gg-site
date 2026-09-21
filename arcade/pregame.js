@@ -101,6 +101,13 @@
   function meta(){ return (window.RTGCalendar && RTGCalendar.get) ? RTGCalendar.get(GAME) : null; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   var LOCK='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>';
+  /* Our own marks, never stock emoji. RTGIcons loads ahead of this file on every
+     arcade page. A miss returns an empty string rather than throwing, because
+     this is the screen a player meets when their go is spent and it must render
+     with or without its decoration. */
+  function icon(name, opts){
+    try{ return (window.RTGIcons && RTGIcons.get(name, opts)) || ''; }catch(e){ return ''; }
+  }
   function $(id){ return document.getElementById(id); }
 
   function bestText(){
@@ -410,15 +417,17 @@
       '<div class="rtgpg-note">That’s today’s go at '+esc(name)+'. A fresh one lands at midnight.</div>'+
       '<div class="rtgpg-note2">Still free today:</div>'+
       freeLinks()+
+      /* Both wore a ticket, and neither is one. Signing up and inviting are
+         both "add a person", which is what the mark draws. */
       (!signedIn()
         ? '<button class="rtgpg-invite" id="rtgpgAcct" type="button">'+
-            '<span class="ic" aria-hidden="true">🎟️</span>'+
+            '<span class="ic">'+icon('invite')+'</span>'+
             '<span class="tx">Free account: <b>keep your streak, get on the leaderboard</b>, and play every Card game once</span>'+
           '</button>'
         : '')+
       (canInvite()
         ? '<button class="rtgpg-invite" id="rtgpgInvite" type="button">'+
-            '<span class="ic" aria-hidden="true">🎟️</span>'+
+            '<span class="ic">'+icon('invite')+'</span>'+
             '<span class="tx">Invite a friend, <b>you both get another go today</b></span>'+
           '</button>'
         : '')+

@@ -67,7 +67,169 @@
     return out;
   };
 
+  /* ---- WHAT THE SIGN SAID ----
+     NEVER "A VERB". The first draft of `gameday-sign` described the sign instead of printing
+     it: "referred to this office by name, an amount of money, and a verb". That is a joke the
+     player is told exists rather than one they get to read, and it is the single least
+     shareable sentence in the file. If a scenario is about a piece of writing, the writing has
+     to be on the screen.
+
+     THIRTEEN OF THEM, PICKED OFF THE TERM'S OWN RNG, so the case can come back in year four
+     with a different sign and land as the same running joke rather than as a repeat. Each one
+     carries the fallout it earned: the sign is the setup and `then` is the punchline, and a
+     shared pair of them is the whole point of the card.
+
+     Rules for adding one. It goes on a bedsheet at seven in the morning behind a television
+     set, so: block capitals, one breath, no profanity, and no real person's name. It has to be
+     about something this office actually does, because a sign about nothing is a sign nobody
+     paints a barn with. */
+  const SIGNS = [
+    { say: 'THE COMMISSIONER OWES MY ROOMMATE FOUR DOLLARS',
+      then: 'The roommate has been interviewed twice and has changed the amount both times.' },
+    { say: 'MY TUITION IS FIFTY-EIGHT THOUSAND AND KICKOFF IS AT ELEVEN PM',
+      then: 'It was fact checked by a newspaper, which found the tuition figure was low.' },
+    { say: 'THE PORTAL TOOK MY BOYFRIEND',
+      then: 'He has since transferred a second time and the sign is now treated as journalism.' },
+    { say: 'I HAVE READ THE PLAYOFF FORMAT AND I NEED TO SPEAK TO SOMEBODY',
+      then: 'Four different conference offices have privately said they agree with it.' },
+    { say: 'GIVE THE GROUP OF FIVE A BID YOU COWARDS',
+      then: 'It has been reprinted, without permission, in a Mountain West season ticket flyer.' },
+    { say: 'PAY THE PLAYERS, I AM ONE OF THEM',
+      then: 'They were on scholarship and on camera, and the compliance office is still writing.' },
+    { say: 'MY GRANDMOTHER WANTS HER BOWL GAME BACK AND SHE IS RIGHT BEHIND ME',
+      then: 'She was, and she waved, and it is the most watched eleven seconds of the season.' },
+    { say: 'MY DAD DROVE ELEVEN HOURS FOR AN ELEVEN AM KICKOFF',
+      then: 'The father was found asleep in section 114 and is now a recurring broadcast segment.' },
+    { say: 'THIS OFFICE HAS NEVER BEEN TO A TAILGATE',
+      then: 'Your own staff bought eleven of the shirts before anybody thought to check.' },
+    { say: 'I AM AN ACCOUNTING MAJOR AND I CANNOT FIND THE MONEY EITHER',
+      then: 'Their professor has built a lecture around it and the lecture is on the internet.' },
+    { say: 'FIRE THE COMMISSIONER, HIRE MY DAD, HE IS FREE SATURDAYS',
+      then: 'The father gave a sixteen minute interview in which he outlined an actual platform.' },
+    { say: 'TWELVE TEAMS, SIXTEEN TEAMS, WE ARE STILL NOT IN',
+      then: 'Two athletic directors have asked, seriously, whether the student is available.' },
+    { say: 'SOMEBODY IN THIS SPORT HAS TO OWN A CALENDAR',
+      then: 'It has been read into the record of a state senate committee on higher education.' },
+  ];
+  /* The sign the prose falls back on when the guards walk these strings with no cast. A real
+     one rather than a placeholder, because a placeholder is how "a verb" got shipped. */
+  const signOf = (c) => (c && c.sign) || SIGNS[0];
+
+  /* THE LADDER AT THE BOTTOM OF THIS FILE ASKS THIS ONE QUESTION, and it asks it in a when().
+     Resolved at the call for the same reason ledger.js does: two script tags must not be able
+     to decide silently whether ten items exist. NULL IS A LEGAL ANSWER and means no frontier
+     is ever open, so every rung is simply never eligible and the other hundred items are
+     untouched: this file stays dependency-free and every headless suite that builds a bare
+     world keeps working. */
+  let FR_CACHE = null;
+  function FR_MOD() {
+    if (FR_CACHE) return FR_CACHE;
+    if (typeof window !== 'undefined' && window.PS_CFB_COMMISH_FRONTIER) {
+      FR_CACHE = window.PS_CFB_COMMISH_FRONTIER;
+    } else if (typeof module !== 'undefined' && module.exports) {
+      try { FR_CACHE = require('./frontier.js'); } catch (e) { FR_CACHE = null; }
+    }
+    return FR_CACHE;
+  }
+  const FR = {
+    open: (w, id) => { const m = FR_MOD(); return !!m && m.open(w, id); },
+    has: (w, id) => { const m = FR_MOD(); return !!m && m.has(w, id); },
+    /* AND HOW LONG AGO YOU SAID NO, which the ordinary recency penalty is too gentle for.
+       `recency()` scales a repeat down to a fifth inside one season and lets it back to full
+       after two, which is right for an argument the sport has every year. These ten are not
+       that. Turning down the fund is a decision a commissioner makes once and defends for
+       years, and a sport that asks again the following spring is not pressure, it is nagging:
+       measured at the ordinary penalty, every run refused the same door four or five times
+       before taking it or reaching the end of the term.
+
+       Four years of silence, counted in beats off the ledger's own record, so a refusal is a
+       real answer that holds for a while and the question comes back once it is somebody
+       else's era. Not forever: the whole point of a frontier is that the sport eventually
+       asks again, in a world that has moved. */
+    quiet: (w, id, years) => {
+      const h = (w && w.history) || [];
+      const want = (years == null ? 4 : years) * 9;
+      const now = (w.year * 9) + (w.beat || 0);
+      for (let i = h.length - 1; i >= 0; i--) {
+        if (h[i].id && String(h[i].id).split(':')[0] === id) {
+          return (now - ((h[i].year * 9) + (h[i].beat || 0))) >= want;
+        }
+      }
+      return true;
+    },
+  };
+
   const ITEMS = [
+    /* ================================================================
+       THE FIRST CALL.
+
+       The opening cutscene ends with the chief saying your first call is already holding and
+       that it is a lawsuit. This is the call. It is a real case that goes on the record like
+       every other one, and it is also the only place this mode has ever explained itself.
+
+       WHY HERE AND NOT ON THE OFFICE. The office is a briefing with nine cards on it, and a
+       tour of nine cards is nine callouts before the player has made a single decision. The
+       desk is where the whole mode happens: read what landed, hear the room, pick, live with
+       it. Four numbered lines beside a real lawsuit teaches that by doing one. The office
+       explains itself in place instead, which is what the strip's gloss and the year card's
+       heading are for.
+
+       IT OUTRANKS EVERYTHING, including a crisis, because a tutorial that fires two beats in
+       is not a tutorial. See `first` in pick(). Its own gate is what keeps it to one beat:
+       first year, first window, nothing ruled yet, and after that it can never come back.
+       ================================================================ */
+    {
+      id: 'welcome-suit',
+      first: true,
+      beats: [WINTER],
+      weight: 1,
+      when: (w, L, sit) => !!(sit && sit.firstYear) && (w.beat || 0) === WINTER
+        && !(w.history || []).some(L_ISRULING),
+      teach: {
+        head: 'Your first case',
+        say: 'Every decision in this office looks like this one.',
+        steps: [
+          'Read what landed. One case a screen, and this is the whole of it.',
+          'The room argues first. Nine groups, and six of them hold a vote on your job.',
+          'Pick a ruling. The chips under it say what it moves and who it upsets.',
+          'Press Rule. The room answers, and the record keeps it for the rest of your term.',
+        ],
+      },
+      eyebrow: 'Your first call',
+      title: 'The lawsuit was already on the desk',
+      brief: 'It was filed at 8:51 this morning, nine minutes before you were sworn in, which '
+        + 'counsel calls either a coincidence or the most organized thing anybody has done all '
+        + 'year. Sixty-two athletes are suing over an eligibility rule your predecessor wrote '
+        + 'and then declined to explain. The rule is four sentences long. One of them '
+        + 'contradicts another one. Their lawyer is booked on a morning show at seven.',
+      voices: [
+        { id: 'Players', say: 'We asked for that rule in writing for two years. Now a judge is asking.' },
+        { id: 'Presidents', say: 'Your first day and our first headline. Do not let it be your second.' },
+        { id: 'Networks', say: 'We have their lawyer booked at seven. We would rather have you.' },
+      ],
+      options: [
+        { id: 'rewrite', label: 'Rewrite the rule this week',
+          body: 'Four sentences, one contradiction, gone by Friday. The suit loses its subject '
+            + 'and sixty-two athletes get the thing they were asking for.',
+          edit: { effects: { labour: 2.4, exposure: -1.8, autonomy: -0.8, tradition: -1 },
+            aimed: { Players: { labour: 2.8 }, Presidents: { exposure: -1.6 } } } },
+        { id: 'defend', label: 'Defend the rule you did not write',
+          body: 'You did not write it and you are about to own it under oath. It holds the line '
+            + 'for every badly written rule this office has ever issued, which is the argument '
+            + 'and also the problem.',
+          edit: { effects: { autonomy: 2, cost: 1.4, labour: -2, exposure: 1.2 },
+            aimed: { SEC: { autonomy: 1.6 }, Players: { labour: -2.4 },
+              Presidents: { exposure: -1.2 } } },
+          /* A trial has a verdict at the end of it, and this office chose to find out. */
+          plant: { id: 'fought-it', wait: [14, 24], note: 'A lawsuit this office chose to fight' } },
+        { id: 'settle', label: 'Settle it before the seven o\'clock',
+          body: 'A check this afternoon, no finding, no admission. The interview becomes an '
+            + 'eleven second mention and the sixty-two sign something.',
+          edit: { effects: { cost: 2.2, money: -1.6, labour: 1.2, exposure: -2.4 },
+            aimed: { Presidents: { cost: -2 }, Players: { labour: 1.4 },
+              SEC: { money: -1.4 } } } },
+      ],
+    },
     /* ================================================================
        WHEN A FUSE GOES OFF.
 
@@ -197,7 +359,7 @@
         { id: 'Networks', say: 'If there is no championship weekend there is no contract to talk about.' },
       ],
       options: [
-        { id: 'recognize', label: 'Recognize them and bargain',
+        { id: 'recognize', scene: 'r-union', label: 'Recognize them and bargain',
           body: 'The end of a hundred years of pretending. Every cost in this sport becomes '
             + 'negotiable and every rule becomes a term of employment.',
           edit: { set: { 'pressure.union': 10, 'labour.employment': 'employee' },
@@ -245,7 +407,7 @@
       options: [
         { id: 'onto-books', label: 'Put it on the athletic department books',
           body: 'One employer, one number, one place to audit. It ends the pretense and it '
-            + 'starts an argument with every labour lawyer in the country.',
+            + 'starts an argument with every labor lawyer in the country.',
           edit: { set: { 'labour.nil': 'school-paid' },
             effects: { labour: 2, exposure: 1.8, cost: 2.2, autonomy: -1.4 },
             aimed: { Players: { labour: 2.4 }, Presidents: { cost: -2, exposure: -2.4 } } } },
@@ -270,7 +432,7 @@
       eyebrow: 'The roster',
       title: 'How big a roster is',
       brief: 'The number has never been written down properly. Some programs carry a '
-        + 'hundred and twenty and some carry eighty five, the difference is mostly walk-ons, '
+        + 'hundred and twenty and some carry eighty-five, the difference is mostly walk-ons, '
         + 'and every version of a cap ends somebody\'s career on a Tuesday in February.',
       voices: [
         { id: 'Players', say: 'A cap is a cut list. Say that part out loud.' },
@@ -338,7 +500,7 @@
       title: 'Everybody wants the injury report',
       brief: 'Legal books are taking money on these games and they are pricing them off '
         + 'information that reaches the public through a message board on a Thursday. There '
-        + 'is a version of this that ends with a twenty year old being followed to class.',
+        + 'is a version of this that ends with a twenty-year-old being followed to class.',
       voices: [
         { id: 'Presidents', say: 'These are student medical records. Somebody needs to say that.' },
         { id: 'Networks', say: 'The wagering audience is the reason weeknight ratings hold up.' },
@@ -380,7 +542,7 @@
         { id: 'Networks', say: 'We bought a month of programming and half of it is unwatchable.' },
       ],
       options: [
-        { id: 'cut', label: 'Cut the field in half',
+        { id: 'cut', scene: 'r-bowls', label: 'Cut the field in half',
           body: 'A bowl becomes something you earn again. Fifteen cities lose a game and '
             + 'about forty schools lose a week of December practice.',
           edit: { set: { 'posture.bowlTieIns': false },
@@ -473,14 +635,14 @@
             + 'angle, and the clock running out on them while a network cut to a graphic. Nobody '
             + 'was asleep and nobody was corrupt. They were ninety seconds short.' },
         { id: 'crew', q: 'Who assigns that crew?',
-          a: 'The home conference, and they assigned the same crew to that programme three times '
+          a: 'The home conference, and they assigned the same crew to that program three times '
             + 'this season. It is legal, it is normal, and there is no version of it that looks '
             + 'right on a Monday.' },
         { id: 'cost', q: 'What did it actually cost them?',
           a: 'Two spots in the poll and, on the committee\'s own published criteria, a first '
             + 'round home game. It is the difference between a bye and a flight in December.' },
         { id: 'saw', q: 'How many people have watched it?',
-          a: 'Forty one million on the clip alone, and it has been on a morning news programme '
+          a: 'Forty-one million on the clip alone, and it has been on a morning news program '
             + 'that has never mentioned this sport before. Two senators have posted about it.' },
       ],
       options: [
@@ -528,7 +690,7 @@
       title: (c) => (c ? c.a + ' and ' + c.b + ' want their kickoff back'
         : 'A network wants to move a rivalry'),
       brief: (c) => (c
-        ? 'A rights holder wants ' + c.a + ' and ' + c.b + ' at nine o clock eastern, in '
+        ? 'A rights holder wants ' + c.a + ' and ' + c.b + ' at nine o\'clock eastern, in '
           + 'November, because it is the only thing on. Both athletic directors have written '
           + 'to this office. So have about eleven thousand season ticket holders.'
         : 'A rights holder wants the biggest game left on the board moved into a late window '
@@ -741,7 +903,12 @@
       id: 'playoff-format',
       beats: [WINTER],
       weight: 9,
-      when: (w) => w.playoff.teams < 16,
+      /* TWELVE EXACTLY, not "anything under sixteen". Every string in this item names the
+         field it is arguing about: the brief calls it twelve-team and the first ruling is
+         "leave it at twelve". Two other items already move the field to fourteen, and on a
+         fourteen team field this one came back offering to leave it at twelve and to add
+         two more seats it already had. */
+      when: (w) => w.playoff.teams === 12,
       eyebrow: 'The format',
       title: 'The playoff is up for renewal',
       brief: 'The twelve-team field has been through one cycle and every part of it is '
@@ -756,11 +923,11 @@
         { id: 'hold', label: 'Leave it at twelve',
           body: 'It works. Nobody is happy, which is usually the sign of a settlement.',
           edit: { effects: { tradition: 1, autonomy: 1 } } },
-        { id: 'to14', label: 'Fourteen',
+        { id: 'to14', scene: 'r-format', label: 'Fourteen',
           body: 'Two more seats. The smallest change that can be called a change.',
           edit: { set: { 'playoff.teams': 14 }, effects: { access: 1, inventory: 1, money: 1, tradition: -1 } } },
-        { id: 'to16', label: 'Sixteen',
-          body: 'A fourth of the country in the bracket. The regular season becomes '
+        { id: 'to16', scene: 'r-format', label: 'Sixteen',
+          body: 'Sixteen seats puts a three loss team in the bracket. The regular season becomes '
             + 'something else, and nobody agrees what.',
           edit: { set: { 'playoff.teams': 16 },
             effects: { access: 2, inventory: 3, money: 2, tradition: -3 },
@@ -883,7 +1050,7 @@
           edit: { set: { 'labour.revShare': 0.2, 'labour.employment': 'contracted' },
             effects: { labour: 3, cost: 3, exposure: -3, money: -1 },
             aimed: { Players: { labour: 2 }, Presidents: { cost: -1 } } } },
-        { id: 'employ', label: 'Make them employees',
+        { id: 'employ', scene: 'r-employee', label: 'Make them employees',
           body: 'Say the quiet part. It is cleaner, it is more expensive, and it cannot be '
             + 'walked back.',
           edit: { set: { 'labour.employment': 'employee', 'labour.revShare': 0.25 },
@@ -898,7 +1065,7 @@
           base: 0.2, free: [0.15, 0.2], pro: [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35],
           step: 0.05, per: { labour: 1.4, cost: 1.2, money: -0.6 },
           /* A PERCENTAGE OF A NUMBER NOBODY NAMED. "20%" is not a decision until it is
-             twenty per cent of something, and the something is on the same screen. */
+             twenty percent of something, and the something is on the same screen. */
           reads: (v, ctx) => {
             const pool = (ctx.world.money && ctx.world.money.pool) || 1.3;
             return Math.round(v * 100) + '% of a ' + money(pool) + ' pool is ' + money(pool * v)
@@ -944,7 +1111,7 @@
         { id: 'Fans', say: 'They have played each other for a hundred years.' },
       ],
       options: [
-        { id: 'allow', label: 'Stay out of it',
+        { id: 'allow', scene: 'r-raid', label: 'Stay out of it',
           body: 'Schools move. They always have. It is not this office\'s business and '
             + 'saying so is the whole job some days.',
           /* AND IT REALLY MOVES THEM. The first version of this had effects and no `move`,
@@ -961,7 +1128,7 @@
           body: 'Use the office. It works once.',
           edit: () => ({ effects: { autonomy: -3, tradition: 2, exposure: 3 },
             aimed: { ACC: { autonomy: 3 }, SEC: { autonomy: -2 }, 'Big Ten': { autonomy: -2 } } }) },
-        { id: 'toll', label: 'Let them go, at a price',
+        { id: 'toll', scene: 'r-raid', label: 'Let them go, at a price',
           body: 'An exit fee that funds the conference losing them. Everybody leaves the '
             + 'room having lost something, which is what a settlement looks like.',
           edit: (c) => ({ move: moveAll(c),
@@ -1025,7 +1192,7 @@
         { id: 'Fans', say: 'Not every game at eleven in the morning on a channel we have to buy twice.' },
       ],
       options: [
-        { id: 'one-deal', label: 'Sell it as one package',
+        { id: 'one-deal', scene: 'r-deal', label: 'Sell it as one package',
           body: 'The sport negotiates together. The most money, the least autonomy, and one '
             + 'phone number for every argument about a kickoff time for seven years.',
           edit: (c) => ({ set: { 'money.dealYears': 7 },
@@ -1037,7 +1204,7 @@
           edit: (c) => ({ set: { 'money.dealYears': 7 },
             effects: { money: c && c.up ? 1.8 : 1, autonomy: 3, access: -2, inventory: -1 },
             aimed: { SEC: { money: 3 }, 'Big Ten': { money: 3 }, 'Group of Five': { money: -2 } } }) },
-        { id: 'streaming', label: 'Take the streaming money',
+        { id: 'streaming', scene: 'r-deal', label: 'Take the streaming money',
           body: 'More money now, a smaller audience, and a generation that finds the sport '
             + 'somewhere else or does not find it at all.',
           edit: (c) => ({ set: { 'money.dealYears': 7, 'posture.tvWindows': 8 },
@@ -1077,7 +1244,7 @@
           body: 'Nobody is happy and nobody is furious.',
           edit: { effects: {} } },
         { id: 'open', label: 'Open it up',
-          body: 'Move when you like, sign where you like. It is a labour market and it '
+          body: 'Move when you like, sign where you like. It is a labor market and it '
             + 'will behave like one.',
           edit: { set: { 'labour.portalWindows': 4 },
             effects: { labour: 3, tradition: -2, exposure: -2, cost: 1 },
@@ -1173,7 +1340,7 @@
           body: 'Keep the money, end the marketing, hand the monitoring to somebody with '
             + 'no stake in the outcome.',
           edit: { effects: { exposure: -1, tradition: 1, money: -1 } } },
-        { id: 'ban', label: 'Cut it off entirely',
+        { id: 'ban', scene: 'r-gambling-out', label: 'Cut it off entirely',
           body: 'No sponsorship, no data deals, no odds on the broadcast. The money goes '
             + 'and the problem does not, because it never lived here.',
           edit: { set: { 'posture.gambling': 'banned' },
@@ -1280,7 +1447,7 @@
             aimed: { Networks: { inventory: 1.6 }, Fans: { tradition: -2.4 } } } },
         { id: 'sponsor', label: 'Sell the naming rights to it',
           body: 'Somebody will pay a great deal of money to have their logo on the thing '
-            + 'eighteen year olds cry on. That sentence is the entire argument, both ways.',
+            + 'eighteen-year-olds cry on. That sentence is the entire argument, both ways.',
           edit: { effects: { money: 3, tradition: -3.4, exposure: 1.2 },
             aimed: { Fans: { tradition: -3.6 }, Networks: { money: 1.4 },
               Presidents: { exposure: -1.4 } } } },
@@ -1315,7 +1482,7 @@
             + 'cleanest antitrust case anybody could bring against this association, and that '
             + 'somebody would bring it before Christmas.' },
         { id: 'sports', q: 'What does it cost the rest of the department?',
-          a: 'Across the three, four programmes cut and two more on notice, all of them sports '
+          a: 'Across the three, four programs cut and two more on notice, all of them sports '
             + 'that lose money and none of them football.' },
       ],
       options: [
@@ -1404,7 +1571,7 @@
       voices: [
         { id: 'Networks', say: 'Forty minutes of live television for the cost of a satellite truck.' },
         { id: 'Players', say: 'It is his day. He gets to have it however he wants it.' },
-        { id: 'Presidents', say: 'A seventeen year old just held a press conference and we sent a camera.' },
+        { id: 'Presidents', say: 'A seventeen-year-old just held a press conference and we sent a camera.' },
       ],
       asks: [
         { id: 'fourth', q: 'Where did the fourth hat come from?',
@@ -1413,14 +1580,14 @@
             + 'television at the same time as everybody else.' },
         { id: 'network', q: 'Who paid for the broadcast?',
           a: 'The network paid the high school four thousand dollars for the facility and the '
-            + 'exclusive. Nobody paid the seventeen year old anything, which is the only part of '
+            + 'exclusive. Nobody paid the seventeen-year-old anything, which is the only part of '
             + 'this nobody is arguing about.' },
         { id: 'mother', q: 'What did his mother mean by it?',
           a: 'She has not said and she has been asked about two hundred times in four days. A '
             + 'reporter went to her workplace on Tuesday.' },
         { id: 'how-many', q: 'How many of these are there?',
           a: 'Four hundred and ten televised commitments last cycle, up from ninety in five '
-            + 'years, and eleven of them were reversed inside a fortnight.' },
+            + 'years, and eleven of them were reversed inside two weeks.' },
       ],
       options: [
         { id: 'embrace', label: 'Make it an event',
@@ -1435,7 +1602,7 @@
             aimed: { Networks: { inventory: -2.6 }, Presidents: { exposure: 2 },
               Players: { labour: -1.2 } } } },
         { id: 'agent', label: 'Let them have representation',
-          body: 'If a seventeen year old is going to be on television negotiating a seven '
+          body: 'If a seventeen-year-old is going to be on television negotiating a seven '
             + 'figure deal, he should be allowed somebody in the room whose job is him.',
           edit: { set: { 'labour.nil': 'school-paid' },
             effects: { labour: 3, exposure: -2.4, cost: 1.4, autonomy: -1 },
@@ -1505,7 +1672,7 @@
             + 'years of filings, and the operating rights run twenty years. Nobody has ever '
             + 'valued a college athlete\'s deal in decades before.' },
         { id: 'strings', q: 'What does he have to do for it?',
-          a: 'Attend two openings a year and enroll in the franchise operator programme. There '
+          a: 'Attend two openings a year and enroll in the franchise operator program. There '
             + 'is no performance clause, no transfer clause and no morals clause, which is why '
             + 'the lawyers who wrote it are pleased with themselves.' },
         { id: 'who', q: 'Who is behind the collective?',
@@ -1523,7 +1690,7 @@
             aimed: { Players: { labour: 3 }, Presidents: { exposure: -2 } } } },
         { id: 'cash', label: 'Cash and services only',
           body: 'Money, endorsements, appearances. Not equity, not property, not a business '
-            + 'a nineteen year old now has to run in the spring.',
+            + 'a nineteen-year-old now has to run in the spring.',
           edit: { effects: { labour: -1.6, exposure: 1.6, cost: -0.6, tradition: 0.8 },
             aimed: { Players: { labour: -2 }, Presidents: { exposure: 1.8 } } } },
         { id: 'school', label: 'Take it in house',
@@ -1600,13 +1767,13 @@
       asks: [
         { id: 'who', q: 'Who registered the drone?',
           a: 'A shell company in Nevada with one director, and the director is a name that turns '
-            + 'up in two offshore betting filings. It is not a rival programme and it never was.',
+            + 'up in two offshore betting filings. It is not a rival program and it never was.',
           opens: 'book' },
         { id: 'footage', q: 'What is actually on the memory card?',
           a: 'Forty minutes of installation periods, one full script of a red zone package, and '
             + 'ninety seconds of a coordinator holding up a laminated call sheet to the wind.' },
         { id: 'again', q: 'Has this happened before?',
-          a: 'Four times this season that anybody reported, at four programmes, and this is the '
+          a: 'Four times this season that anybody reported, at four programs, and this is the '
             + 'first one anybody managed to bring down. Nobody had filed any of the other three '
             + 'with this office.' },
         { id: 'law', q: 'Is it even illegal?',
@@ -1636,7 +1803,7 @@
           edit: { effects: { inventory: 2.6, tradition: -2, autonomy: -2.2, exposure: 1.6 },
             aimed: { Networks: { inventory: 3 }, SEC: { autonomy: -2.6 },
               'Big Ten': { autonomy: -2.4 }, Fans: { inventory: 1.4 } } } },
-        /* BEHIND THE REGISTRATION QUESTION. It was never a rival programme, which turns a
+        /* BEHIND THE REGISTRATION QUESTION. It was never a rival program, which turns a
            story about cheating into a story about the sport's own partners. */
         { id: 'book', hidden: true, label: 'It is not a spying case, it is a betting case',
           body: 'A shell company that turns up in two offshore filings put a camera over a '
@@ -1778,7 +1945,7 @@
       when: (w, L, sit) => !!sit.upset && sit.upset.gap >= 0.9,
       cast: (w, L, rng, sit) => sit.upset,
       eyebrow: 'The schedule',
-      title: (c) => (c ? c.winner + ' were not supposed to win that'
+      title: (c) => (c ? c.winner + ' was not supposed to win that'
         : 'Somebody won a game they were paid to lose'),
       brief: (c) => (c
         ? c.winner + ' beat ' + c.loser + ' ' + c.score[0] + '-' + c.score[1] + ' in week '
@@ -1834,7 +2001,7 @@
       brief: (c) => ((c && c.school) || 'A member school') + '\'s charter went technical on a '
         + 'runway in the dark, sat there for five hours, and put a hundred and twenty people '
         + 'on two commercial flights and a bus. They walked into the stadium at ten past one '
-        + 'for a two o clock kickoff, in the clothes they had slept in, and lost by thirty-one. '
+        + 'for a two o\'clock kickoff, in the clothes they had slept in, and lost by thirty-one. '
         + 'Nobody stopped the game because there is no rule that says you can.',
       voices: [
         { id: 'Players', say: 'We ate at a gas station and played a conference game.' },
@@ -1852,10 +2019,10 @@
             + 'nobody in particular.',
           opens: 'doctor' },
         { id: 'cost', q: 'Who was paying for the charter?',
-          a: 'They were. It is a Group of Five budget and a charter is eleven per cent of it, '
+          a: 'They were. It is a Group of Five budget and a charter is eleven percent of it, '
             + 'which is why it was a broker and a spare aircraft in the first place.' },
         { id: 'result', q: 'What happened in the game?',
-          a: 'They lost by thirty one and two starters left it. The home programme has offered, '
+          a: 'They lost by thirty-one and two starters left it. The home program has offered, '
             + 'in public, to play it again, and their conference has told them they cannot.' },
       ],
       options: [
@@ -1963,15 +2130,15 @@
       when: (w, L, sit) => !!sit.outsider && sit.outsider.wins >= 6,
       cast: (w, L, rng, sit) => sit.outsider,
       eyebrow: 'The rankings',
-      title: (c) => (c ? c.school + ' are ' + c.wins + '-0 and ranked fourteenth'
+      title: (c) => (c ? c.school + ' is ' + c.wins + '-0 and ranked fourteenth'
         : 'An unbeaten team is ranked below three teams with losses'),
       brief: (c) => (c
-        ? c.school + ' have won ' + c.wins + ' games and lost none, and this week they are '
-          + 'behind three teams with a loss each and one with two. The stated reason is '
-          + 'strength of schedule. The schedule is the one nobody in a bigger conference would '
-          + 'agree to play them.'
+        ? c.school + ' has won ' + c.wins + ' games and lost none. This week it sits behind '
+          + 'three teams with a loss each and one with two. The stated reason is strength of '
+          + 'schedule, and the schedule is the one nobody in a bigger conference would agree '
+          + 'to play.'
         : 'An unbeaten team is behind three teams with losses. The stated reason is strength of '
-          + 'schedule, which is the schedule nobody would agree to play them.'),
+          + 'schedule, which is the schedule nobody would agree to play.'),
       voices: [
         { id: 'Group of Five', say: 'Tell us what a win is worth and we will go and get that many.' },
         { id: 'SEC', say: 'Nine of our teams would beat them by three scores and everybody here knows it.' },
@@ -2047,17 +2214,19 @@
       beats: [OCT, NOV],
       weight: 4,
       when: () => true,
+      /* THE SIGN IS THE ITEM, so it is drawn off the term's own rng and printed. See SIGNS. */
+      cast: (w, L, rng) => ({ sign: SIGNS[Math.floor((rng ? rng() : 0) * SIGNS.length) % SIGNS.length] }),
       eyebrow: 'The broadcast',
       title: 'The sign got on television',
-      brief: 'A student held up a sign behind the pregame set on Saturday morning that referred '
-        + 'to this office by name, an amount of money, and a verb. It was on air for eleven '
-        + 'seconds. It has since been printed on shirts, painted on a barn in Kentucky, and '
-        + 'read aloud in a state senate. Two athletic directors have apologized to you '
-        + 'personally and both of them were laughing.',
+      brief: (c) => 'A student stood behind the pregame set on Saturday morning holding a '
+        + 'bedsheet that read, in block capitals, ' + signOf(c).say + '. It was on air for '
+        + 'eleven seconds. It is now on shirts, on a barn in Kentucky, and on the front of a '
+        + 'newspaper that does not cover sport. ' + signOf(c).then + ' Two athletic directors '
+        + 'have apologized to you personally and both of them were laughing.',
       voices: [
         { id: 'Networks', say: 'We have a seven second delay for audio. Signs are not audio.' },
         { id: 'Fans', say: 'It has been the same joke behind that set for forty years and it is the best part.' },
-        { id: 'Presidents', say: 'He is enrolled at one of our institutions and is now nationally famous.' },
+        { id: 'Presidents', say: 'They are enrolled at one of our institutions and are now nationally famous.' },
       ],
       options: [
         { id: 'ignore', label: 'Say nothing',
@@ -2137,7 +2306,7 @@
             aimed: { SEC: { autonomy: 1.8 }, Networks: { inventory: -2 } } } },
         /* BEHIND THE STAFF QUESTION. Somebody laminated the word. It is not the players. */
         { id: 'staff', hidden: true, label: 'It is the staff, so punish the staff',
-          body: 'A quality control assistant with a laminated card is not a nineteen year old '
+          body: 'A quality control assistant with a laminated card is not a nineteen-year-old '
             + 'with a hamstring. Suspend the people who coached it, name them, and write nothing '
             + 'at all that puts a doctor in the middle of it.',
           edit: { effects: { labour: 2.2, tradition: 1.6, exposure: 0.8, cost: -0.6 },
@@ -2157,7 +2326,7 @@
       title: (c) => (c ? c.a.school + ' and ' + c.b.school + ' are both unbeaten'
         : 'Two unbeaten teams, one conference'),
       brief: (c) => (c
-        ? c.a.school + ' are ' + c.a.wins + '-0. ' + c.b.school + ' are ' + c.b.wins + '-0. '
+        ? c.a.school + ' is ' + c.a.wins + '-0. ' + c.b.school + ' is ' + c.b.wins + '-0. '
           + 'They are in the same conference, they do not play each other, and in two weeks '
           + 'one of them is going to lose a championship game and be sitting at home with one '
           + 'defeat. Every television executive in America has called this office to make sure '
@@ -2200,10 +2369,10 @@
       cast: (w, L, rng, sit) => ({ team: sit.unbeaten[0] || null, trend: sit.trend,
         perGame: sit.perGame }),
       eyebrow: 'The audience',
-      title: (c) => (c && c.team ? c.team.school + ' are ' + c.team.wins + '-0 and nobody is watching'
+      title: (c) => (c && c.team ? c.team.school + ' is ' + c.team.wins + '-0 and nobody is watching'
         : 'The best team in the sport is drawing nothing'),
       brief: (c) => (c && c.team
-        ? c.team.school + ' have not lost a game and their last four have averaged less than a '
+        ? c.team.school + ' has not lost a game. Its last four have averaged less than a '
           + 'Tuesday night basketball game. The sport is down '
           + (c.trend != null ? Math.abs(c.trend).toFixed(2) + ' million a game' : 'across the board')
           + ' on the term. Somebody in a meeting used the phrase "compelling matchups" nine times.'
@@ -2257,7 +2426,7 @@
         + 'have called. Neither of them sounded that upset.',
       voices: [
         { id: 'Fans', say: 'This has happened four times. It has come back four times. It is part of it.' },
-        { id: 'Presidents', say: 'It is a hundred year old object and a felony.' },
+        { id: 'Presidents', say: 'It is a hundred-year-old object and a felony.' },
         { id: 'Networks', say: 'We would like to do a documentary about it either way.' },
       ],
       asks: [
@@ -2389,19 +2558,45 @@
       beats: [CHAMP],
       weight: 5,
       when: () => true,
+      /* TWO TEAMS FROM ONE CONFERENCE, because a conference title game has never been
+         anything else. This took the two best teams on the board wherever they played, so
+         the item regularly stood an SEC side opposite a Big Ten one and called it their
+         league's championship. Walked in board order, so what comes back is the best pair
+         a single league can put on the field.
+
+         AND IT NO LONGER INVENTS A RESULT. The brief used to say one beat the other by
+         twenty-eight in October, on a cast whose first branch is teams that have not lost
+         all year: two unbeaten teams cannot have played each other. The season keeps no
+         head-to-head by school (season.js records opponents by rating), so there is no
+         honest way to name a margin here. The story does not need one. */
       cast: (w, L, rng, sit) => {
-        const t = sit.unbeaten.length >= 2 ? sit.unbeaten : sit.teams.slice(0, 2);
-        return t.length >= 2 ? { a: t[0].school, b: t[1].school } : null;
+        /* THE FALLBACK IS THE FIELD, not the whole board. The brief's first claim is that
+           both of them are already in, so the second pool is cut to however many seats the
+           playoff currently has and that sentence is true by construction. The unbeaten are
+           tried first and then dropped rather than kept: two unbeaten teams in different
+           leagues are not a conference title game, and a one loss pair from one league is. */
+        const seats = Math.max(2, (w.playoff && w.playoff.teams) || 12);
+        const pair = (pool) => {
+          for (let i = 0; i < pool.length; i++) {
+            for (let j = i + 1; j < pool.length; j++) {
+              if (pool[i].conference && pool[i].conference === pool[j].conference) {
+                return { a: pool[i].school, b: pool[j].school, conf: pool[i].conference };
+              }
+            }
+          }
+          return null;
+        };
+        return pair(sit.unbeaten || []) || pair((sit.teams || []).slice(0, seats));
       },
       eyebrow: 'The weekend',
-      title: (c) => (c ? c.a + ' and ' + c.b + ', again' : 'Nobody wants this rematch'),
+      title: (c) => (c ? c.a + ' and ' + c.b + ', for nothing' : 'A title game nobody needs'),
       brief: (c) => (c
-        ? c.a + ' beat ' + c.b + ' by twenty-eight in October and they meet again on Saturday '
-          + 'for the conference title. Both are already in the field whatever happens. The '
-          + 'winner gains a trophy and the loser loses nothing, and the injury risk is real '
-          + 'for both of them a fortnight before the playoff.'
-        : 'A championship game between two teams already in the field, three weeks after one '
-          + 'beat the other by twenty-eight.'),
+        ? c.a + ' and ' + c.b + ' meet on Saturday for the ' + c.conf + ' title. Both are '
+          + 'already in the field whatever happens. The winner gets a trophy. The loser '
+          + 'loses nothing except whoever comes off the turf, two weeks before a playoff '
+          + 'game that counts.'
+        : 'A conference title game between two teams already in the field. The winner gets '
+          + 'a trophy. The loser loses nothing except whoever comes off the turf.'),
       voices: [
         { id: 'Networks', say: 'It is a championship game. It has a trophy in it. People will watch.' },
         { id: 'Players', say: 'A meaningless game with a real ACL in it is not meaningless to us.' },
@@ -2422,7 +2617,7 @@
             aimed: { Networks: { inventory: 2.6 }, SEC: { access: 1.4 },
               'Group of Five': { access: -2 } } } },
         { id: 'scrap', label: 'Scrap championship games in a wide field',
-          body: 'A twelve team playoff already answers the question these games were invented '
+          body: 'A playoff this wide already answers the question these games were invented '
             + 'to answer. Give everybody a week off and one fewer chance to lose a quarterback.',
           edit: { effects: { labour: 2.8, inventory: -3, money: -2.2, tradition: -2 },
             aimed: { Players: { labour: 3 }, Networks: { inventory: -3.2, money: -2 },
@@ -2539,7 +2734,7 @@
             effects: { tradition: 2.8, inventory: 2.6, labour: -2.6 },
             aimed: { Fans: { tradition: 3.2 }, Networks: { inventory: 2.8 },
               Players: { labour: -3 } } } },
-        { id: 'cap', label: 'Cap it at four and go to a kick off',
+        { id: 'cap', label: 'Cap it at four and go to a kickoff',
           body: 'Past four overtimes it is decided by something short. Safer, sillier, and it '
             + 'will decide a national title one day in a way nobody accepts.',
           edit: { set: { 'rules.overtime': 'kick' },
@@ -2577,21 +2772,21 @@
             + 'and gets called about nine. The crew that called this one leads the country in '
             + 'calling it.' },
         { id: 'kid', q: 'How is he?',
-          a: 'He has not been to class since Sunday, his family have taken his phone off him, '
+          a: 'He has not been to class since Sunday, his family has taken his phone off him, '
             + 'and his coach has asked this office not to say his name in anything it publishes.' },
         { id: 'block', q: 'Did the penalty cause the block?',
-          a: 'The kick was from thirty three rather than eighteen and it was blocked by a man '
+          a: 'The kick was from thirty-three rather than eighteen and it was blocked by a man '
             + 'coming free off the edge, which had nothing to do with the distance. Nobody wants '
             + 'to say that out loud because it does not help anybody.' },
         { id: 'other', q: 'What do the other coaches want?',
-          a: 'Sixty one of a hundred and thirty six have signed a letter asking for it to be a '
-            + 'dead ball foul assessed on the kickoff. Not one of the sixty one is at a '
-            + 'programme that scores a lot of long touchdowns.' },
+          a: 'Sixty-one of a hundred and thirty-six have signed a letter asking for it to be a '
+            + 'dead ball foul assessed on the kickoff. Not one of the sixty-one is at a '
+            + 'program that scores a lot of long touchdowns.' },
       ],
       options: [
         { id: 'dead', label: 'Make it a dead ball foul',
-          body: 'Penalise the kickoff, not the touchdown. The score stands, the celebration '
-            + 'costs field position, and no nineteen year old ever loses a playoff game for '
+          body: 'Penalize the kickoff, not the touchdown. The score stands, the celebration '
+            + 'costs field position, and no nineteen-year-old ever loses a playoff game for '
             + 'being pleased again.',
           edit: { effects: { labour: 2, tradition: -1.2, inventory: 1.4, access: 1 },
             aimed: { Players: { labour: 2.4 }, Fans: { tradition: 1.6 } } } },
@@ -2697,7 +2892,7 @@
        the football reads them back through reentryDrift(): an open door stretches the league
        away from its middle, because the men coming back go to the twenty programs that can
        pay them and start them. Measured across seventy played seasons, that is the difference
-       between 21.8 per cent of games decided by four touchdowns and 26.6 per cent.
+       between 21.8 percent of games decided by four touchdowns and 26.6 percent.
 
        THE GOVERNANCE HALF IS THE INTERESTING HALF. Whether you decide this at all, or a
        conference decides it for you, is a different question from what the answer is, and it
@@ -2804,7 +2999,7 @@
       voices: [
         { id: 'Players', say: 'He got bad advice from adults and you want him to pay for it with a year.' },
         { id: 'Fans', say: 'He said goodbye. There was a graphic. There was a video.' },
-        { id: 'Networks', say: 'He is the best player who will be on a field this autumn if you let him be.' },
+        { id: 'Networks', say: 'He is the best player who will be on a field this fall if you let him be.' },
       ],
       /* THE ITEM A PLAYER WAS LOOKING AT WHEN HE ASKED FOR THIS. "Should you be able to ask
          questions about the case? Like did he attend minicamp." He should, the answer to that
@@ -2812,7 +3007,7 @@
       asks: [
         { id: 'camp', q: 'Did he go to a minicamp?',
           a: 'Three days in May, in a helmet, on a grass field, with a playbook they took back '
-            + 'off him at the end of it. He signed for eighty one dollars a day in per diem and '
+            + 'off him at the end of it. He signed for eighty-one dollars a day in per diem and '
             + 'there is a form with his name on it.',
           opens: 'paid' },
         { id: 'advice', q: 'Who told him not to withdraw?',
@@ -2925,7 +3120,7 @@
       },
       eyebrow: 'The roster',
       title: 'Somebody has to lose the spot',
-      brief: (c) => 'When he left for the draft they gave his scholarship to a nineteen year '
+      brief: (c) => 'When he left for the draft they gave his scholarship to a nineteen-year-'
         + 'old who has been in the building for eight months, learned the offense, and told '
         + 'his family. Now he is coming back and the roster is capped. '
         + ((c && c.school) || 'The school') + ' has asked this office, in writing and slightly '
@@ -2949,7 +3144,7 @@
           edit: { effects: { labour: 0.8, tradition: 1.6, access: 1.2, cost: -0.6 },
             aimed: { Players: { labour: 1.2 }, Fans: { tradition: 1.4 } } } },
         { id: 'shut', label: 'This is why the door has to shut',
-          body: 'Every returner is a nineteen year old being told to find another school in '
+          body: 'Every returner is a nineteen-year-old being told to find another school in '
             + 'August. Close it, and the roster a school builds in February is the roster it '
             + 'has in September.',
           edit: { set: { 'labour.reentry': 'closed' },
@@ -2981,7 +3176,7 @@
             + 'professional agency paper that has a clause about league discipline in it. The '
             + 'league in that clause is not this one.' },
         { id: 'cut', q: 'What is he taking?',
-          a: 'Twenty per cent of the marketing and three of any future contract. Twenty is '
+          a: 'Twenty percent of the marketing and three of any future contract. Twenty is '
             + 'double what the professional league permits its own certified agents to take.' },
         { id: 'how-many', q: 'How many players have one?',
           a: 'Somewhere between four hundred and two thousand, and the honest answer is that '
@@ -3003,7 +3198,7 @@
             + 'that, and hear it read back to you in a deposition in about two years.',
           edit: { effects: { autonomy: 1.8, exposure: -2.4, labour: 1 },
             aimed: { Players: { labour: 1.2 }, Presidents: { exposure: -2.6 } } } },
-        { id: 'employee', label: 'Say the word',
+        { id: 'employee', scene: 'r-employee', label: 'Say the word',
           body: 'Agents, salaries, contracts, a return from a professional league. Stop '
             + 'looking for a word that is not employee and write the one that is.',
           edit: { set: { 'labour.employment': 'employee', 'labour.revShare': 0.25 },
@@ -3022,12 +3217,12 @@
         return { school: t ? t.school : null, age: 22 + 2 + (sit.proYears || 1) };
       },
       eyebrow: 'The rules',
-      title: (c) => (c ? 'There is a ' + c.age + ' year old at media days'
-        : 'There is a twenty-five year old at media days'),
+      title: (c) => (c ? 'There is a ' + c.age + '-year-old at media days'
+        : 'There is a twenty-five-year-old at media days'),
       brief: (c) => 'He is ' + ((c && c.age) || 25) + '. He has a professional season, a wife, '
         + 'a mortgage and a very good year of college football ahead of him, and he was asked '
         + 'about all four of those things in the same eleven minutes. He answered them well. '
-        + 'The photograph of him beside a genuine eighteen year old freshman has been on every '
+        + 'The photograph of him beside a genuine eighteen-year-old freshman has been on every '
         + 'screen in the country since Tuesday and nobody can decide whether it is heartwarming '
         + 'or an indictment.',
       voices: [
@@ -3065,7 +3260,11 @@
       weight: 6,
       when: (w, L, sit) => sit.reentry !== 'open' || sit.proYears < 2,
       eyebrow: 'The calendar',
-      title: 'The deadline is in the wrong place',
+      /* A TITLE STATES THE CASE AND NOT THE RULING. "The deadline is in the wrong place" is
+         one of the three options talking: the dates are where the sport put them, on purpose,
+         and whether to move them is the whole question in front of you. A headline that has
+         already answered it makes "Leave the dates alone" read as the wrong button. */
+      title: 'The deadline comes before the information',
       brief: 'A player has to decide whether to withdraw from the draft eleven weeks before '
         + 'the draft tells him anything, and four weeks before the portal window he would need '
         + 'if he withdrew. So the decision every one of them makes is a guess made in the wrong '
@@ -3134,7 +3333,7 @@
             + 'sentence nobody in this building has had to think about before.',
           opens: 'waiver' },
         { id: 'others', q: 'Is anybody else in this position?',
-          a: 'Six men this autumn, four of whom nobody would take back anyway. The rule written '
+          a: 'Six men this fall, four of whom nobody would take back anyway. The rule written '
             + 'for him is the rule for all six and for however many there are next year, which '
             + 'everybody expects to be more.' },
       ],
@@ -3187,7 +3386,8 @@
       brief: (c) => 'He was released by a professional team on the twenty-eighth of August, '
         + 'was on a college campus by the second of September, and has been the best player in '
         + 'this sport since the fourth. '
-        + ((c && c.school) || 'His team') + ' are playing for a national title because of it. '
+        + ((c && c.school) || 'The team he signed with') + ' is playing for a national title '
+        + 'because of it. '
         + 'Every argument for the open door is standing on a field in December wearing his '
         + 'number, and so is every argument against it.',
       voices: [
@@ -3275,7 +3475,7 @@
       voices: [
         { id: 'Networks', say: 'A developmental league that outdraws them on eleven Saturdays a year.' },
         { id: 'Players', say: 'Fewer camp invitations is fewer men who ever get a look. That is the actual cost.' },
-        { id: 'Presidents', say: 'We are subsidising the talent identification of a trillion dollar industry.' },
+        { id: 'Presidents', say: 'We are subsidizing the talent identification of a trillion dollar industry.' },
       ],
       options: [
         { id: 'bill', label: 'Send them a bill',
@@ -3477,7 +3677,7 @@
         ? 'Two programs who would never schedule each other have agreed to, on the first '
           + 'Saturday, at a neutral site, for a check. Three cities want it. It is the only '
           + 'game on that night and it will set the tone of the entire season, which is a lot '
-          + 'to hang on a decision about a car park.'
+          + 'to hang on a decision about a parking lot.'
         : 'Two programs have agreed to open the season at a neutral site and three cities '
           + 'want it.'),
       voices: [
@@ -3674,7 +3874,7 @@
                 + 'people who own it.'
               : c.bowl.named.kind === 'free'
                 ? 'You can insist on this. You will be insisting on it about the one name on '
-                  + 'the board that would have travelled perfectly well, and everybody in the '
+                  + 'the board that would have traveled perfectly well, and everybody in the '
                   + 'room will notice.'
                 : 'The name is after ' + c.bowl.named.of + '. Move and you are a new bowl with '
                   + 'a new name and none of the history, which is most of what the city was '
@@ -3735,7 +3935,7 @@
             aimed: { Players: { labour: 2.8 }, Presidents: { cost: -1.4 } } } : {}) },
         { id: 'no', label: 'Not on the jersey',
           body: 'There is a line and this office has decided it is on the shoulder of an '
-            + 'unpaid nineteen year old. Say so, and know it moves the year after you leave.',
+            + 'unpaid nineteen-year-old. Say so, and know it moves the year after you leave.',
           edit: { effects: { tradition: 3, money: -3.2, labour: 0.8 },
             aimed: { Fans: { tradition: 3.4 }, Presidents: { money: -2.8 } } } },
       ],
@@ -3754,10 +3954,10 @@
       eyebrow: 'The venues',
       title: (c) => (c ? VEN.label(c.cur) + ' cannot deliver' : 'The host city cannot deliver'),
       brief: (c) => (c
-        ? 'The hotel block is forty per cent of what was in the bid, the transit project that '
+        ? 'The hotel block is forty percent of what was in the bid, the transit project that '
           + 'was going to be finished is not going to be finished, and the local organizing '
           + 'committee has lost its executive director and its chief financial officer in the '
-          + 'same fortnight. ' + (c.cur ? c.cur.name : 'The stadium') + ' is fine. Everything '
+          + 'same two weeks. ' + (c.cur ? c.cur.name : 'The stadium') + ' is fine. Everything '
           + 'around it is not, and the game is in four months.'
         : 'The host city cannot deliver what was in its bid and the game is in four months.'),
       voices: [
@@ -3937,14 +4137,14 @@
         + 'exactly what the contract said they would do and is somehow worse.',
       voices: [
         { id: 'Networks', say: 'Whatever this is, it is the only story next week.' },
-        { id: 'Players', say: 'Twenty year olds are about to have their phones taken.' },
+        { id: 'Players', say: 'Twenty-year-olds are about to have their phones taken.' },
         { id: 'Presidents', say: 'We took the money. That will be the first sentence.' },
       ],
       options: [
         { id: 'public', label: 'Announce it yourselves',
           body: 'Say it out loud, name the game, and run the investigation in front of '
             + 'everybody. Nobody gets to break it, and the sport owns the worst version of '
-            + 'the story for a fortnight.',
+            + 'the story for two weeks.',
           edit: { set: { 'pressure.legal': 22 },
             effects: { exposure: 2.6, tradition: 1.6, cost: 1.4, autonomy: -1.2 },
             aimed: { Fans: { tradition: 2 }, Presidents: { exposure: 2.2 },
@@ -4018,7 +4218,7 @@
             aimed: { Players: { labour: 3 }, Fans: { tradition: -2 },
               Presidents: { cost: -1.4 } } } },
         /* BEHIND THE MONEY QUESTION. Neither of them ever held a dollar of it, which is the
-           difference between a scandal and two twenty year olds in a group chat. */
+           difference between a scandal and two twenty-year-olds in a group chat. */
         { id: 'clear', hidden: true, label: 'Clear them, and publish why',
           body: 'The money went to a cousin\'s debt and out to a book in a third man\'s name. '
             + 'They knew and they did nothing, which is worth a conversation and not a career. '
@@ -4243,14 +4443,14 @@
         { id: 'Presidents', say: 'These are the people who become donors. That is the actual cost.' },
       ],
       options: [
-        { id: 'daylight', label: 'Take the windows back',
+        { id: 'daylight', scene: 'r-daylight', label: 'Take the windows back',
           body: 'Break the schedule agreement, pay whatever breaking it costs, and put the '
             + 'games back where people can attend them.',
           edit: { set: { 'money.pool': 1.3 },
             effects: { tradition: 3, money: -2.8, cost: 2, autonomy: 1.6 },
             aimed: { Fans: { tradition: 3.4 }, Networks: { inventory: -2.6 },
               Presidents: { money: -2 } } } },
-        { id: 'subsidise', label: 'Make the tickets free',
+        { id: 'subsidize', label: 'Make the tickets free',
           body: 'The sport pays for the student sections out of the pool. It is buying back '
             + 'an atmosphere it sold, which everybody can see, and it works.',
           edit: { effects: { cost: 2.6, tradition: 2, money: -1.6, exposure: 0.8 },
@@ -4406,7 +4606,7 @@
             aimed: { 'Group of Five': { money: 3 }, SEC: { money: -2.2 },
               'Big Ten': { money: -2 } } } },
         { id: 'tier', label: 'Let the division split in two',
-          body: 'Formalise it. A tier that plays for the title and a tier that plays football, '
+          body: 'Formalize it. A tier that plays for the title and a tier that plays football, '
             + 'each with its own economics, and nobody pretending any more.',
           edit: { set: { 'playoff.autobids': 4 },
             effects: { access: -3, tradition: -2.4, money: 1.8, cost: -2 },
@@ -4473,7 +4673,7 @@
 
        THE QUOTE IS THE POINT. A payoff a player cannot connect to its cause is a random
        item with extra steps, so each brief opens by reading the promise back. And the
-       ruling is a real one: honouring what you said costs money, votes or both, and walking
+       ruling is a real one: honoring what you said costs money, votes or both, and walking
        it back is always available and always visible.
        ================================================================ */
     {
@@ -4569,7 +4769,7 @@
       eyebrow: 'On the record',
       title: 'They took you at your word',
       brief: 'You said this office would sit across from a players association if one existed. '
-        + 'One exists. Cards signed at sixty one schools, counsel retained, and a letter that '
+        + 'One exists. Cards signed at sixty-one schools, counsel retained, and a letter that '
         + 'quotes you back to yourself in the second paragraph. They have asked for a date and '
         + 'a room, and they have copied the letter to three committees.',
       voices: [
@@ -4588,7 +4788,7 @@
               SEC: { autonomy: -3 }, 'Big Ten': { autonomy: -2.6 } } },
           plant: { id: 'the-table', wait: [8, 16],
             note: 'A bargaining table this office agreed to sit at' } },
-        { id: 'talk', label: 'Meet them without recognising them',
+        { id: 'talk', label: 'Meet them without recognizing them',
           body: 'A conversation, on the record, that is explicitly not negotiation. Everybody '
             + 'knows what it is and nobody has to say so, which is how most of this sport works.',
           edit: { set: { 'pressure.union': 30 },
@@ -4596,7 +4796,7 @@
             aimed: { Players: { labour: 0.8 }, Presidents: { exposure: -1 },
               SEC: { autonomy: -0.8 } } } },
         { id: 'refuse', label: 'Say the condition was never met',
-          body: 'Sixty one schools is not the sport. Argue the number, decline the meeting, and '
+          body: 'Sixty-one schools is not the sport. Argue the number, decline the meeting, and '
             + 'be the man who set a bar and moved it when somebody cleared it.',
           edit: { set: { 'pressure.union': 62 },
             effects: { labour: -3, exposure: 2.4, autonomy: 1.6, tradition: -1.6 },
@@ -4665,9 +4865,9 @@
         + ((c && c.bids) || 'this many') + ' automatic bids in the field, you said out loud that '
         + 'an unbeaten season is not enough on its own and that everybody knows it. That is the '
         + 'most honest thing anybody in this job has said about selection, and it has been read '
-        + 'everywhere as a commitment to fix it. Twenty two athletic directors have written in.',
+        + 'everywhere as a commitment to fix it. Twenty-two athletic directors have written in.',
       voices: [
-        { id: 'Group of Five', say: 'You said the maths does not work. So change the maths.' },
+        { id: 'Group of Five', say: 'You said the math does not work. So change the math.' },
         { id: 'SEC', say: 'Every seat you guarantee is a seat taken off a better team.' },
         { id: 'Networks', say: 'A first round nobody wants to watch is still a first round we paid for.' },
       ],
@@ -4764,16 +4964,24 @@
       voices: [
         { id: 'ACC', say: 'You offered. We did not ask. We are asking now.' },
         { id: 'SEC', say: 'Propping up a league nobody watches is a transfer from the leagues they do.' },
-        { id: 'Fans', say: 'Those are hundred year old programmes. Somebody should do something.' },
+        { id: 'Fans', say: 'Those are hundred-year-old programs. Somebody should do something.' },
       ],
       options: [
         { id: 'fund', label: 'Fund them out of the pool',
           body: (c) => 'A guaranteed distribution that keeps the ' + confOf(c) + ' solvent for '
             + 'five years, paid for by the leagues that would otherwise be picking over it.',
-          edit: (c) => ({ set: { ['money.share.' + c.pot]: 0.2 },
-            effects: { access: 2.6, cost: 2, money: -1.4, tradition: 2 },
-            aimed: { ACC: { access: 2.4 }, 'Big 12': { access: 2 },
-              Fans: { tradition: 2.4 }, SEC: { money: -2.4 }, 'Big Ten': { money: -2.2 } } }) },
+          /* THE SHARE GOES TO A NAMED LEAGUE OR NOWHERE. This read `c.pot` straight, and it is
+             the only line in the file that reads its cast without a guard, so resolving the
+             option against no cast threw and took the whole desk down with it: a blank screen
+             rather than a bad sentence. Every other line here is written defensively for
+             exactly this reason. */
+          edit: (c) => {
+            const e = { effects: { access: 2.6, cost: 2, money: -1.4, tradition: 2 },
+              aimed: { ACC: { access: 2.4 }, 'Big 12': { access: 2 },
+                Fans: { tradition: 2.4 }, SEC: { money: -2.4 }, 'Big Ten': { money: -2.2 } } };
+            if (c && c.pot) e.set = { ['money.share.' + c.pot]: 0.2 };
+            return e;
+          } },
         { id: 'schedule', label: 'Give them games instead of money',
           body: (c) => 'A scheduling agreement that puts the ' + confOf(c) + ' on television against '
             + 'the leagues that are leaving them behind. It costs nothing and it is worth '
@@ -4831,6 +5039,429 @@
             effects: { labour: -3.2, exposure: 2.8, cost: -1.6 },
             aimed: { Players: { labour: -3.8 }, Presidents: { cost: 1.8, exposure: -2.6 },
               Fans: { tradition: -1.4 } } } },
+      ],
+    },
+
+    /* ════════════════════════════════════════════════════════════════════════════════
+       THE LADDER, and why it is at the bottom of this file rather than filed by subject.
+
+       Everything above is an argument the sport is already capable of having. These ten are
+       the ones that CHANGE WHAT THE SPORT IS, and each one carries `opens` on exactly one of
+       its options: taking that option crosses a frontier, which seats somebody new in the
+       room, grafts fields onto the ledger, and makes the next rung on the ladder eligible for
+       the first time. See frontier.js for the chain and for the measurement that made it
+       necessary. In one line: fifty seasons move 38 of the ledger's 63 fields by year 25 and
+       0.6 more in the twenty-five after it, so a term cannot get stranger than its opening
+       day no matter how long it runs.
+
+       THREE RULES HOLD THIS TOGETHER AND ALL THREE ARE LOAD-BEARING.
+
+       ONE: every rung is gated on F.open(w, id), never on a year. A term is not on a
+       schedule. A commissioner who governs conservatively for fifty years sees none of this
+       and is playing the mode correctly; a commissioner who spends twenty years dismantling
+       what a member school is arrives at the last rung because each ruling made the next one
+       thinkable. Gate on the year instead and it becomes a cutscene that plays at year 30.
+
+       TWO: the strange option is never the only option, and never the safe one. Every item
+       here can be refused, and refusing is a real answer that leaves the sport where it is.
+       A ladder whose rungs are all "yes" is a corridor.
+
+       THREE: nothing here is announced. There is no tech tree on any screen and no "you have
+       unlocked" anywhere. What a player sees is that the room got bigger and the arguments
+       got stranger, which is what it would feel like.
+       ════════════════════════════════════════════════════════════════════════════════ */
+
+    /* ---- era 2 ---- */
+    {
+      id: 'fr-union', beats: [0, 2, 3], weight: 16,
+      /* THE PRESSURE HAS TO BE REAL FIRST. This is not offered to a sport that has kept the
+         players quiet: it arrives when the union fuse is already burning, so recognising them
+         is a thing that happened TO this office as much as a thing it chose. */
+      /* AMATEUR IS THE OPENING VALUE, and the first draft of this line tested against 'none',
+         which no world has ever held: the clause was true on day one, so the whole gate came
+         down to the fuse and the sport was offered a union in its first winter. The players
+         being something other than amateurs already is the state that makes this argument
+         arrive on its own. */
+      when: (w, L) => FR.open(w, 'union') && FR.quiet(w, 'fr-union')
+        && (w.pressure.union >= 34 || w.labour.employment !== 'amateur'),
+      eyebrow: 'The room next door',
+      title: 'They have been meeting without you',
+      brief: 'Four hundred players signed a card this spring and the counting is done. They are '
+        + 'not asking this office for permission, they are telling it there is now somebody to '
+        + 'call. The lawyers have drawn up what recognition would mean and it is nine pages, '
+        + 'and the first page is about who sits where.',
+      voices: [
+        { id: 'Players', say: 'We already did the hard part. You are deciding what to call it.' },
+        { id: 'Presidents', say: 'Recognise them and every cost in this sport is negotiated forever.' },
+        { id: 'SEC', say: 'If they are employees, say so and we will price it. The pretending is the expense.' },
+      ],
+      options: [
+        { id: 'recognise', label: 'Recognise them', opens: 'union',
+          body: 'Shake the hand. There is a chair at the table with somebody in it now, and '
+            + 'every year after this one is a negotiation rather than an announcement.',
+          edit: { opens: 'union', set: { 'labour.employment': 'employee', 'pressure.union': 8 },
+            effects: { labour: 3.4, autonomy: -2.6, cost: 2.4, tradition: -1.6, exposure: -1.4 },
+            aimed: { Players: { labour: 4 }, Presidents: { cost: -2.8, autonomy: -2 },
+              SEC: { autonomy: -1.4 }, Fans: { tradition: -1 } } } },
+        { id: 'stall', label: 'Send it to a committee',
+          body: 'Agree the question is serious and agree to study it. Everybody in the room '
+            + 'knows what that is, including the four hundred.',
+          edit: { set: { 'pressure.union': 62, 'pressure.legal': 44 },
+            effects: { labour: -2.4, exposure: 2.6, autonomy: 1.2 },
+            aimed: { Players: { labour: -3.4 }, Presidents: { cost: 1.4 } } } },
+        { id: 'refuse', label: 'Say no, on the record',
+          body: 'State that the members are schools and the players are students, and that '
+            + 'this office does not recognise a bargaining unit. Then wait to be sued.',
+          edit: { set: { 'pressure.union': 80, 'pressure.legal': 58 },
+            effects: { labour: -3.6, exposure: 3.4, tradition: 2.2, autonomy: 2 },
+            aimed: { Players: { labour: -4 }, Fans: { tradition: 2.4 },
+              Presidents: { cost: 2, exposure: -3 } } } },
+      ],
+    },
+    {
+      id: 'fr-capital', beats: [0, 1, 3], weight: 16,
+      when: (w, L) => FR.open(w, 'capital') && FR.quiet(w, 'fr-capital')
+        && (w.meters.revenue < 48 || w.money.pool >= 2.2),
+      eyebrow: 'The offer',
+      title: 'Somebody wants to buy in',
+      brief: 'A fund that owns pieces of four leagues on two continents has put a number on '
+        + 'the table for a share of what this office sells. It is more money than the sport '
+        + 'has ever seen at once. The paperwork uses the word "asset" eleven times and the '
+        + 'word "university" twice, both in the footnotes.',
+      voices: [
+        { id: 'Networks', say: 'We have seen what they do to a rights cycle. You will not like it.' },
+        { id: 'Presidents', say: 'We are non-profits. Read that sentence again, slowly.' },
+        { id: 'Big Ten', say: 'Everyone at this table has a stadium debt. Say the number out loud.' },
+      ],
+      options: [
+        { id: 'sell', label: 'Take the money', opens: 'capital',
+          body: 'Sign it. There is now somebody in this sport whose interest in it is a '
+            + 'return, and they are patient, and they are never leaving.',
+          edit: { opens: 'capital', set: { 'money.pool': 3.1, 'money.outside': 18 },
+            effects: { money: 3.6, cost: -2.2, tradition: -3, autonomy: -2.4, inventory: 2 },
+            aimed: { Presidents: { autonomy: -3, tradition: -2 }, Fans: { tradition: -3.4 },
+              SEC: { money: 2.4 }, Networks: { inventory: -2 } } } },
+        { id: 'minority', label: 'Take a sliver of it',
+          body: 'Sell a stake small enough to call a partnership and large enough to fix the '
+            + 'deficit. Everybody involved knows what the second round looks like.',
+          edit: { set: { 'money.pool': 2.4, 'pressure.congress': 30 },
+            effects: { money: 2, tradition: -1.4, autonomy: -1, exposure: 1.2 },
+            aimed: { Presidents: { autonomy: -1.4 }, Fans: { tradition: -1.6 } } } },
+        { id: 'refuse', label: 'Send them away',
+          body: 'Say this sport is not for sale and mean it. The deficit is still there on '
+            + 'Monday and so is the fund, and they have time.',
+          edit: { effects: { money: -2.4, tradition: 3, autonomy: 2.4, cost: -1.2 },
+            aimed: { Fans: { tradition: 3.4 }, Presidents: { autonomy: 2.4 },
+              SEC: { money: -2.2 } } } },
+      ],
+    },
+    {
+      id: 'fr-franchise', beats: [0, 2], weight: 15,
+      when: (w, L) => FR.open(w, 'franchise') && FR.quiet(w, 'fr-franchise'),
+      eyebrow: 'What a member is',
+      title: 'The application from a city with no university',
+      brief: 'A group with a stadium, a television market and the backing of the fund has '
+        + 'applied for membership. There is no campus. There are no students. Their filing '
+        + 'argues that the sport sells a team and a Saturday, and that the university part '
+        + 'has been decorative since the money arrived. The lawyers cannot find the rule '
+        + 'that says no, because nobody ever thought they would need to write it down.',
+      voices: [
+        { id: 'Presidents', say: 'The word college is in the name of the sport. That is the rule.' },
+        { id: 'Capital', say: 'You already sold us a share of this. We are asking you to grow it.' },
+        { id: 'Fans', say: 'Who exactly am I supposed to hate in this fixture?' },
+      ],
+      options: [
+        { id: 'admit', label: 'Admit them', opens: 'franchise',
+          body: 'Vote it through. A program is a thing that can be founded, moved and sold '
+            + 'from today, and the hundred and thirty that came from schools are now the '
+            + 'subset that happens to.',
+          edit: { opens: 'franchise', set: { 'posture.expansion': 1, 'money.valuation': 24 },
+            effects: { money: 3, inventory: 3.2, tradition: -3.6, autonomy: -1.4, exposure: 1.6 },
+            aimed: { Fans: { tradition: -4 }, Presidents: { tradition: -3, autonomy: -2 },
+              Networks: { inventory: 3 }, Capital: { money: 3.4 } } } },
+        { id: 'affiliate', label: 'Let them in without a vote',
+          body: 'Invent a category: they play the schedule, they do not play for the title, '
+            + 'and nobody has to say out loud what has been decided.',
+          edit: { set: { 'pressure.legal': 46 },
+            effects: { money: 1.6, inventory: 1.8, tradition: -1.6, exposure: 1.8 },
+            aimed: { Networks: { inventory: 2 }, Fans: { tradition: -1.8 } } } },
+        { id: 'refuse', label: 'Write the rule down',
+          body: 'Put it in the constitution: a member is a degree-granting institution. It '
+            + 'will hold until somebody with more money than this fund reads it.',
+          edit: { set: { 'pressure.legal': 52 },
+            effects: { tradition: 3.4, money: -1.8, exposure: 1.4, autonomy: 2 },
+            aimed: { Presidents: { tradition: 3.4 }, Fans: { tradition: 3 },
+              Capital: { money: -3 } } } },
+      ],
+    },
+
+    /* ---- era 3: the sport becomes a public question ---- */
+    {
+      id: 'fr-congress', beats: [0, 2, 3, 4], weight: 15,
+      when: (w, L) => FR.open(w, 'congress') && FR.quiet(w, 'fr-congress')
+        && (w.pressure.congress >= 30 || w.pressure.legal >= 40),
+      eyebrow: 'A letter with a seal on it',
+      title: 'You have been asked to appear',
+      brief: 'The letter is four sentences and the last one is a date. A subcommittee wants '
+        + 'this office to explain, under oath, what it is: who elected it, who it answers to, '
+        + 'and by what authority it decides where a nineteen year old may work. Counsel says '
+        + 'you can decline. Counsel also says declining is itself an answer.',
+      voices: [
+        { id: 'Union', say: 'We asked them to send it. Sit down and answer the question.' },
+        { id: 'Presidents', say: 'Nothing good has ever come out of that room for anybody.' },
+        { id: 'Networks', say: 'It will rate. That is not the same as it going well.' },
+      ],
+      options: [
+        { id: 'appear', label: 'Go and answer', opens: 'congress',
+          body: 'Sit down, take the oath and answer for six hours. There is a standing '
+            + 'committee on this sport from today, and it does not go away when you do.',
+          edit: { opens: 'congress', set: { 'pressure.congress': 20, 'pressure.hearings': 1 },
+            effects: { exposure: -1.6, autonomy: -3, labour: 1.8, cost: 1.2 },
+            aimed: { Union: { labour: 2.4 }, Presidents: { autonomy: -2.6 },
+              Congress: { autonomy: 2 } } } },
+        { id: 'counsel', label: 'Send the lawyers instead',
+          body: 'Comply with the letter and not with the point of it. They will write a '
+            + 'second letter, and the second one will not be four sentences.',
+          edit: { set: { 'pressure.congress': 64, 'pressure.legal': 50 },
+            effects: { exposure: 2.4, autonomy: 1.4, labour: -1.2 },
+            aimed: { Presidents: { autonomy: 1.6 }, Union: { labour: -2 } } } },
+        { id: 'decline', label: 'Decline',
+          body: 'Say this is a private association and the committee has no business in it. '
+            + 'It is true, it is defensible, and it is the sentence they will play back.',
+          edit: { set: { 'pressure.congress': 84, 'pressure.legal': 60 },
+            effects: { autonomy: 3, exposure: 3.4, labour: -2 },
+            aimed: { Presidents: { autonomy: 2.4 }, Union: { labour: -2.6 },
+              Fans: { tradition: 1 } } } },
+      ],
+    },
+    {
+      id: 'fr-antitrust', beats: [0, 2, 3], weight: 14,
+      when: (w, L) => FR.open(w, 'antitrust') && FR.quiet(w, 'fr-antitrust'),
+      eyebrow: 'The bill',
+      title: 'They have offered you the exemption',
+      brief: 'The committee has drafted something this office has wanted for ninety years: a '
+        + 'statutory exemption, in writing, that says the way this sport organises itself is '
+        + 'not a conspiracy. Every rule you have ever been sued over becomes lawful on the '
+        + 'day it passes. The price is in section four. A federal charter means the rules '
+        + 'this office writes are reviewable by people who were elected, and the first review '
+        + 'is in eighteen months.',
+      voices: [
+        { id: 'Congress', say: 'You get certainty. We get a say. That is the whole trade.' },
+        { id: 'Presidents', say: 'Ninety years of litigation ends. Take it and stop arguing.' },
+        { id: 'Union', say: 'Read section four again. It exempts them from us as well.' },
+      ],
+      options: [
+        { id: 'accept', label: 'Take the exemption', opens: 'antitrust',
+          body: 'Sign the charter. What this office is allowed to be was settled today, by '
+            + 'statute, and it can be unsettled the same way by a room you do not sit in.',
+          edit: { opens: 'antitrust',
+            set: { 'posture.exemption': 'statutory', 'posture.federalCharter': 'granted',
+              'pressure.legal': 6 },
+            effects: { autonomy: -3.2, cost: 3, exposure: -3, labour: -1.4, money: 1.6 },
+            aimed: { Presidents: { cost: 3.4 }, Congress: { autonomy: 2.6 },
+              Union: { labour: -2.6 }, SEC: { autonomy: -2.4 } } } },
+        { id: 'narrow', label: 'Ask them to cut section four',
+          body: 'Take the exemption and refuse the oversight. They have been told no by '
+            + 'better lobbyists than yours and the bill dies in committee.',
+          edit: { set: { 'pressure.congress': 58 },
+            effects: { autonomy: 2, exposure: 1.6, cost: -1.4 },
+            aimed: { Presidents: { autonomy: 1.6 }, Congress: { autonomy: -2 } } } },
+        { id: 'refuse', label: 'Keep litigating',
+          body: 'Say this office would rather be sued than supervised. It has survived ninety '
+            + 'years of exactly that, and the next case is already filed.',
+          edit: { set: { 'pressure.legal': 66 },
+            effects: { autonomy: 3.4, exposure: 2.8, cost: -2.4 },
+            aimed: { Presidents: { cost: -2.6 }, Congress: { autonomy: -2.6 },
+              SEC: { autonomy: 2.4 } } } },
+      ],
+    },
+    {
+      id: 'fr-whitehouse', beats: [2, 3, 4, 8], weight: 14,
+      when: (w, L) => FR.open(w, 'whitehouse') && FR.quiet(w, 'fr-whitehouse'),
+      eyebrow: 'The call you take',
+      title: 'The President would like a word about the schedule',
+      brief: 'It is not a request from a staffer. The sport has become a thing that moves a '
+        + 'poll, and there is a view in the building that the season should open somewhere '
+        + 'that needs the money, that the title game should be a national occasion, and that '
+        + 'this office should say yes on a call rather than in a filing. Nobody writes any '
+        + 'of it down. That is the part counsel does not like.',
+      voices: [
+        { id: 'Congress', say: 'Whatever you agree to on that call, we will ask you about under oath.' },
+        { id: 'Fans', say: 'A president at the title game is the biggest this has ever felt.' },
+        { id: 'Capital', say: 'Political capital is capital. Take the call.' },
+      ],
+      options: [
+        { id: 'take', label: 'Take the call', opens: 'whitehouse',
+          body: 'Say yes to most of it. There is a line into this office from the building '
+            + 'now, it goes both ways, and it will be used by whoever is there next.',
+          edit: { opens: 'whitehouse', set: { 'posture.national': 'aligned' },
+            effects: { exposure: -1.2, access: 2.2, tradition: 1.8, autonomy: -2.6, money: 1 },
+            aimed: { Fans: { tradition: 2.4, access: 2 }, Congress: { autonomy: -1.6 },
+              Presidents: { autonomy: -2 } } } },
+        { id: 'polite', label: 'Be gracious and commit to nothing',
+          body: 'Thirty minutes of warmth and no decisions. It works once.',
+          edit: { set: { 'pressure.congress': 48 },
+            effects: { autonomy: 1.4, exposure: 1 },
+            aimed: { Presidents: { autonomy: 1.4 } } } },
+        { id: 'refuse', label: 'Say the schedule is not political',
+          body: 'Decline on principle and put the reason in writing, so that when it leaks '
+            + 'the sentence is yours rather than theirs.',
+          edit: { set: { 'pressure.congress': 70 },
+            effects: { autonomy: 3.2, exposure: 2.6, access: -1.4 },
+            aimed: { Presidents: { autonomy: 2.6 }, Congress: { autonomy: -2.4 },
+              Fans: { access: -1.6 } } } },
+      ],
+    },
+
+    /* ---- era 4 ---- */
+    {
+      id: 'fr-abroad', beats: [0, 2, 3], weight: 14,
+      when: (w, L) => FR.open(w, 'abroad') && FR.quiet(w, 'fr-abroad'),
+      eyebrow: 'The offer from outside',
+      title: 'They will pay for the whole season to start there',
+      brief: 'A sovereign fund has offered to host the opening weekend: every game, one '
+        + 'city, a stadium that does not exist yet and will by August. The number is the '
+        + 'entire current television deal. They have asked for nothing except that it '
+        + 'happens, which is the part that everybody in this room finds difficult.',
+      voices: [
+        { id: 'Capital', say: 'This is the cheapest money anyone will ever offer you.' },
+        { id: 'Fans', say: 'Week one is a tailgate. You cannot fly a tailgate eight thousand miles.' },
+        { id: 'Union', say: 'Nobody has asked the people who would be on the plane.' },
+      ],
+      options: [
+        { id: 'go', label: 'Take the season there', opens: 'abroad',
+          body: 'Move the opening weekend. The sport plays outside the United States from '
+            + 'now on, and the argument every year after this one is how much.',
+          edit: { opens: 'abroad', set: { 'posture.abroad': 12, 'money.pool': 4.2 },
+            effects: { money: 3.8, inventory: 3, tradition: -3.4, cost: -2, exposure: 1.4 },
+            aimed: { Fans: { tradition: -3.8 }, Capital: { money: 3.4 },
+              'Host Nations': { inventory: 3 }, Union: { labour: -1.6 } } } },
+        { id: 'one', label: 'Send one game',
+          body: 'One fixture, neutral site, two programs who volunteer. A pilot, which is '
+            + 'what everybody calls the first one.',
+          edit: { set: { 'posture.abroad': 1 },
+            effects: { money: 1.4, inventory: 1, tradition: -1.2 },
+            aimed: { Fans: { tradition: -1.4 }, Capital: { money: 1.2 } } } },
+        { id: 'refuse', label: 'Keep the season here',
+          body: 'Say no to the largest cheque ever written to this sport, and say why: the '
+            + 'season starts where the people who pay for it live.',
+          edit: { effects: { money: -2.6, tradition: 3.6, cost: 1.4 },
+            aimed: { Fans: { tradition: 4 }, Capital: { money: -3.2 },
+              'Host Nations': { inventory: -2.4 } } } },
+      ],
+    },
+    {
+      id: 'fr-global', beats: [0, 3], weight: 13,
+      when: (w, L) => FR.open(w, 'global') && FR.quiet(w, 'fr-global'),
+      eyebrow: 'What a member is, again',
+      title: 'Three of them want to join properly',
+      brief: 'The programs that were built to host are now good, and they are tired of being '
+        + 'a fixture on somebody else\'s schedule. They want in: the conference, the '
+        + 'schedule, the bracket, the trophy. The constitution this office rewrote once '
+        + 'already says a member is whatever this office says a member is.',
+      voices: [
+        { id: 'Host Nations', say: 'We built what you asked for. Now let it play for something.' },
+        { id: 'White House', say: 'A national championship that leaves the country is a headline nobody here wants.' },
+        { id: 'SEC', say: 'Let them in and find out. They will not be ready for November.' },
+      ],
+      options: [
+        { id: 'admit', label: 'Let them in', opens: 'global',
+          body: 'Full members, full bracket, no asterisk. The national championship stops '
+            + 'being national and nobody renames it.',
+          edit: { opens: 'global', set: { 'posture.globalMembers': 3, 'playoff.teams': 16 },
+            effects: { access: 3, inventory: 3.4, tradition: -3.8, money: 2.4, exposure: 1.8 },
+            aimed: { 'Host Nations': { access: 4 }, Fans: { tradition: -4 },
+              'White House': { tradition: -2.6 }, Networks: { inventory: 2.6 } } } },
+        { id: 'bracket', label: 'Give them a bid and not a vote',
+          body: 'One guaranteed place in the bracket and no seat in the room. It answers the '
+            + 'football question and leaves the other one for your successor.',
+          edit: { set: { 'playoff.autobids': 6 },
+            effects: { access: 1.8, inventory: 1.4, tradition: -1.6 },
+            aimed: { 'Host Nations': { access: 2 }, Fans: { tradition: -1.6 } } } },
+        { id: 'refuse', label: 'They stay guests',
+          body: 'Say the championship is for the members and the members are here. They paid '
+            + 'for the stadium that this sentence is said in.',
+          edit: { effects: { tradition: 3, access: -2.4, money: -2 },
+            aimed: { 'Host Nations': { access: -4 }, Fans: { tradition: 3 } } } },
+      ],
+    },
+
+    /* ---- era 5: the part nobody plans for ---- */
+    {
+      id: 'fr-orbital', beats: [2, 3], weight: 12,
+      when: (w, L) => FR.open(w, 'orbital') && FR.quiet(w, 'fr-orbital'),
+      eyebrow: 'The proposal',
+      title: 'They want to play a game where there is no air',
+      brief: 'The launch programme has a habitat, a sponsor and a gap in its manifest, and '
+        + 'it has asked this office to sanction an exhibition on the lunar surface: eight a '
+        + 'side, a pressurised dome, a ball that behaves wrongly. They have run the numbers '
+        + 'on the audience and the number is every human being with a screen. Counsel has '
+        + 'asked, in writing, which jurisdiction a targeting foul would be appealed in.',
+      voices: [
+        { id: 'The Programme', say: 'The window is eleven days wide and it is in March. Yes or no.' },
+        { id: 'Union', say: 'You are asking people to sign a waiver for a thing with no actuarial table.' },
+        { id: 'Networks', say: 'Everyone alive watches this. We do not have a rate card for everyone alive.' },
+      ],
+      options: [
+        { id: 'sanction', label: 'Sanction it', opens: 'orbital',
+          body: 'Put the seal on it. A football game is played off the planet in March, and '
+            + 'this office is the body that said it could be.',
+          edit: { opens: 'orbital', set: { 'venues.offworld': 'sanctioned', 'posture.offworld': 1 },
+            effects: { exposure: 3.4, inventory: 3.6, money: 3.2, tradition: -3, cost: -3 },
+            aimed: { 'The Programme': { inventory: 4 }, Networks: { inventory: 3.4 },
+              Fans: { tradition: -2 }, Union: { labour: -3 }, Congress: { exposure: -3 } } } },
+        { id: 'exhibition', label: 'Sanction it as nothing',
+          body: 'Let it happen with no seal on it: not a game, an event. It still happens, '
+            + 'and this office still gets asked about the waiver.',
+          edit: { set: { 'pressure.legal': 54 },
+            effects: { exposure: 1.8, inventory: 1.6, autonomy: 1.2 },
+            aimed: { 'The Programme': { inventory: 1.4 }, Networks: { inventory: 1.6 } } } },
+        { id: 'refuse', label: 'Refuse to sanction it',
+          body: 'Say that this office governs a sport played on a field, and that nobody has '
+            + 'shown you a medical protocol. It is the correct decision and it will be in '
+            + 'the first line of your obituary either way.',
+          edit: { effects: { exposure: -2.6, tradition: 2.6, cost: 2.4, inventory: -2.4 },
+            aimed: { Union: { labour: 3 }, 'The Programme': { inventory: -4 },
+              Networks: { inventory: -3 } } } },
+      ],
+    },
+    {
+      id: 'fr-colony', beats: [0, 2], weight: 12,
+      when: (w, L) => FR.open(w, 'colony') && FR.quiet(w, 'fr-colony'),
+      eyebrow: 'The application',
+      title: 'The settlement has applied for membership',
+      brief: 'Eleven hundred people live there now and about four hundred of them are under '
+        + 'thirty. They have a dome big enough, a school that grants degrees, and a roster. '
+        + 'The travel is eight months each way, which means they cannot play a road game and '
+        + 'cannot be visited, so their application proposes that the entire season is played '
+        + 'there in one twelve week block every fourth year. Somebody in this building has '
+        + 'already worked out what the gravity does to a punt.',
+      voices: [
+        { id: 'The Programme', say: 'They are citizens with a stadium. You have admitted worse for less.' },
+        { id: 'Host Nations', say: 'We waited thirty years for a vote. They have been alive for eleven.' },
+        { id: 'Presidents', say: 'There is no version of the calendar where this works. Look at it.' },
+        { id: 'Fans', say: 'My grandfather took me to a game in the rain. What is this.' },
+      ],
+      options: [
+        { id: 'admit', label: 'Admit them', opens: 'colony',
+          body: 'Vote them in. There is a program in this league that cannot come home, and '
+            + 'the schedule bends around it every fourth year forever.',
+          edit: { opens: 'colony', set: { 'posture.colony': 1, 'rules.confGames': 8 },
+            effects: { inventory: 3.4, exposure: 3, tradition: -4, money: 2.6, cost: -3.4 },
+            aimed: { 'The Programme': { inventory: 4 }, Fans: { tradition: -4 },
+              Presidents: { cost: -3 }, Networks: { inventory: 3 } } } },
+        { id: 'associate', label: 'One game a cycle, no membership',
+          body: 'They host one sanctioned fixture every fourth year and that is the whole '
+            + 'relationship. It is generous and it is not what they asked for.',
+          edit: { set: { 'posture.offworld': 2 },
+            effects: { inventory: 1.6, exposure: 1.2, tradition: -1.4 },
+            aimed: { 'The Programme': { inventory: 1.4 }, Fans: { tradition: -1.4 } } } },
+        { id: 'refuse', label: 'No',
+          body: 'Tell eleven hundred people that the sport they grew up watching is not for '
+            + 'them, because of where their parents were sent to work.',
+          edit: { effects: { tradition: 3.4, inventory: -2.6, exposure: -1.6, access: -3 },
+            aimed: { Fans: { tradition: 3.4 }, 'The Programme': { inventory: -4 },
+              'Host Nations': { access: -3 } } } },
       ],
     },
   ];
@@ -4958,6 +5589,12 @@
        two are lit the older one goes first, because that is the order the letters arrived
        in. Weights are not consulted at all: a hundred against a five would still leave a one
        in twenty chance of the sport ignoring a lawsuit for a beat. */
+    /* AND ONE THING OUTRANKS EVEN A CRISIS: the case somebody is being taught on. A tutorial
+       that fires two beats into a term is not a tutorial, and there is exactly one item in
+       this file carrying the flag. Its gate is first year, first window, nothing ruled yet,
+       so this branch is dead from the second ruling of a career onward. See welcome-suit. */
+    const opening = pool.filter((it) => it.first);
+    if (opening.length) return opening[0];
     const urgent = pool.filter((it) => it.crisis);
     if (urgent.length) {
       if (urgent.length === 1) return urgent[0];
@@ -5092,6 +5729,12 @@
       effects: Object.assign({}, base.effects || {}),
       aimed: {},
     };
+    /* THE ONE OPTION ON THE LADDER THAT ENLARGES THE SPORT, carried through to the edit so
+       ledger.applyEdit can perform the crossing before it writes. Copied rather than merged
+       into `set`, because a frontier is not a field: it grafts the fields that the same
+       ruling then writes to. Absent on every other option in the file, which is the normal
+       case and stays free. */
+    if (base.opens) edit.opens = base.opens;
     for (const b in base.aimed || {}) edit.aimed[b] = Object.assign({}, base.aimed[b]);
 
     for (const dial of item.dials || []) {
@@ -5162,6 +5805,10 @@
   const publicAPI = { ITEMS, BY_ID, BEATS: { WINTER, PORTAL, SPRING, MEDIA, SEPT, OCT, NOV, CHAMP, PLAYOFF },
     eligible, pick, resolve, settings, format, castOf, text, recency, sinceRuled, NOSIT,
     plantsOf, voiceSay, voiceSays,
+    /* Exported for the guard rather than for the page: the sign is the one piece of writing
+       in this file that a player is shown as a quotation, so what it may say has rules and
+       something has to hold them. See SIGNS. */
+    SIGNS,
     PROBE_MAX, asksOf, optionsFor, allOptions };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_DOCKET = publicAPI;

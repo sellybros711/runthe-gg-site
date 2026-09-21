@@ -40,7 +40,7 @@
     'SEC',            /* two, and the other half */
   ];
 
-  /* SEATS YOU START WITH. Three, because a council of one is not a read, it is a rumour, and
+  /* SEATS YOU START WITH. Three, because a council of one is not a read, it is a rumor, and
      the first three hold no votes at all: at the start of a career you can tell what the
      sport FEELS about a ruling and not what the room will DO about it. That is the right
      shape for the beginning of this job. */

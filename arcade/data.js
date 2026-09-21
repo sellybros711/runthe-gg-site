@@ -14,6 +14,54 @@
   'use strict';
   var ENT = root.GRID_ENTITIES;
   if (!ENT || typeof ENT.push !== 'function') return;
+
+  /* TWO PEOPLE CAN SHARE A NAME, AND name|sport IS NOT A PERSON.
+   *
+   * Both folds below key on name + sport, so the Browns' Hall of Fame tackle
+   * and a linebacker who played for four clubs in the 2010s were one record,
+   * and the tackle was handed the linebacker's college. Alma Mater then asked
+   * where Joe Thomas went to college and marked Wisconsin wrong. A player
+   * wrote in about it.
+   *
+   * Sixteen pairs in the corpus share a name and a sport with no club in
+   * common. Nine are genuinely two people. The other seven are ONE person
+   * whose clubs are written two ways: Cleveland Indians against Cleveland
+   * Guardians, Brooklyn against Los Angeles Dodgers, the Washington Senators
+   * against the Minnesota Twins, plus the Negro Leaguers whose curated entry
+   * carries no club at all. So a shared club proves sameness and a missing one
+   * proves nothing, which is why this is not a rename list: that would be three
+   * sports of franchise history to maintain before it could answer.
+   *
+   * What separates the nine is that every one plays a DIFFERENT POSITION.
+   * Tackle against linebacker, quarterback against cornerback, first baseman
+   * against outfielder. The seven renames all match on position, and usually on
+   * the number too.
+   *
+   * Hence: the same person unless the clubs, the numbers AND the position all
+   * disagree. Deliberately permissive, because the costs are not symmetric. A
+   * wrongly blocked backfill loses one player a college and drops them from a
+   * pool. A wrongly allowed one tells somebody a false thing about a real
+   * person, and marks their right answer wrong.
+   *
+   * It costs one known false negative. Ronnie Lott really did finish at Kansas
+   * City and really did play both corner and safety, so his former row is
+   * refused. He is carried by stars.js, so nothing about him moves.
+   */
+  function shares(a, b) {
+    a = a || []; b = b || [];
+    for (var i = 0; i < a.length; i++) if (b.indexOf(a[i]) !== -1) return true;
+    return false;
+  }
+  function posOf(x) { return String((x && x.pos) || '').trim().toLowerCase(); }
+  function samePerson(a, b) {
+    if (!a || !b) return false;
+    if (shares(a.t, b.t)) return true;
+    if (shares(a.j, b.j)) return true;
+    var ap = posOf(a), bp = posOf(b);
+    if (!ap || !bp) return true;   // nothing recorded to disagree with
+    return ap === bp;
+  }
+
   var F = root.RTG_FORMER;
   if (F && F.players && F.players.length){
     // Fields where former.js's auto-scrape is authoritative when the curated
@@ -27,12 +75,18 @@
     ENT.forEach(function (e) {
       if (e && e.name && e.sport) byKey[e.name + '|' + e.sport] = e;
     });
-    var added = 0, enriched = 0;
+    var added = 0, enriched = 0, clashes = 0;
     F.players.forEach(function (p) {
       if (!p || !p.name || !p.sport) return;
       var k = p.name + '|' + p.sport;
       var cur = byKey[k];
       if (cur){
+        /* A namesake is skipped rather than added. Two entities sharing a
+           name and a sport would break every byKey lookup downstream, and the
+           curated entry is the one every game already points at. So the
+           second person stays out, exactly as before, and the only change is
+           that he no longer lends his college to the first. */
+        if (!samePerson(cur, p)) { clashes++; return; }
         // Curated entry wins on identity, but backfill the enrichment fields
         // it lacks so gates that key on col / ns / hp all light up.
         var touched = false;
@@ -51,6 +105,7 @@
     });
     F.merged = added;
     F.enriched = enriched;
+    F.clashes = clashes;   // namesakes refused, see samePerson above
   }
 
   /* ------------------------------------------------------------------
@@ -64,12 +119,16 @@
     var ENRICH2 = ['col','hs','hp','ns','dp','pos','decade'];
     var byKey2 = {};
     ENT.forEach(function(e){ if (e && e.name && e.sport) byKey2[e.name + '|' + e.sport] = e; });
-    var supAdded = 0, supEnriched = 0;
+    var supAdded = 0, supEnriched = 0, supClashes = 0;
     SUP.players.forEach(function (p) {
       if (!p || !p.name || !p.sport) return;
       var k = p.name + '|' + p.sport;
       var cur = byKey2[k];
       if (cur){
+        /* Same guard as the fold above, and it matters more here: this one
+           UNIONS the team list, so a namesake would not just lend a college,
+           he would add his clubs to somebody else's career. */
+        if (!samePerson(cur, p)) { supClashes++; return; }
         var touched2 = false;
         ENRICH2.forEach(function(f){
           if ((cur[f] === undefined || cur[f] === null || cur[f] === '') && p[f] !== undefined && p[f] !== null && p[f] !== ''){
@@ -91,6 +150,7 @@
     });
     SUP.added = supAdded;
     SUP.enriched = supEnriched;
+    SUP.clashes = supClashes;
   }
 
   /* ------------------------------------------------------------------
@@ -201,12 +261,57 @@
   }
 
   /* ------------------------------------------------------------------
-   * RTG_KNOWN — one answer to "would a fan recognise this name?"
+   * THE CLUB A PLAYER IS OF, from primary.js (window.RTG_PRIMARY) -> e.pt
+   *
+   * A player wrote in: Alma Mater captioned Tom Seaver "MLB . BOSTON RED
+   * SOX". He pitched sixteen games there in 1986, at the end of twenty
+   * years, eleven of them with the Mets. Two games were reading the LAST
+   * entry of e.t, which is right 15% of the time and produced California
+   * Angels for Nolan Ryan and Atlanta Falcons for Brett Favre.
+   *
+   * e.t is not a career order, so no index into it is the answer. This is
+   * counted from real tenure at build time. It does not cover everybody,
+   * so the contract is: READ e.pt, FALL BACK TO e.t[0]. Never e.t last.
+   * The fallback is right 62% where it is used, against 15%.
+   * ---------------------------------------------------------------- */
+  /* AND IT HAS TO BE A CLUB THIS RECORD ALREADY HAS.
+   *
+   * primary.js is addressed by name, so it inherits every way a name can be
+   * two people, and it is built off jersey stints that begin in 1990, so a
+   * career older than the record comes back truncated. Both fail the same way:
+   * a club the player never had, printed under his name as though counted.
+   * Jimmy Smith the Jaguars receiver was captioned Baltimore Ravens, which is
+   * the Ravens cornerback of the same name; Bobby Bonilla came back St. Louis
+   * Cardinals, where he spent one season, because the six Pittsburgh years
+   * that make him a Pirate are mostly older than the file.
+   *
+   * Neither is detectable inside primary.js, and neither has to be. The entity
+   * already carries the clubs it played for, so a `pt` that is not one of them
+   * is not an answer about this person, whatever went wrong upstream. Dropping
+   * it costs nothing: the documented contract above is read e.pt, fall back to
+   * e.t[0], and the first club is always a true thing to say.
+   */
+  var PR = root.RTG_PRIMARY;
+  if (PR && PR.of) {
+    var ptHit = 0, ptOdd = 0;
+    ENT.forEach(function (e) {
+      if (!e || !e.name || !e.sport || e.pt) return;
+      var t = PR.of(e.sport, e.name);
+      if (!t) return;
+      if (Array.isArray(e.t) && e.t.length && e.t.indexOf(t) === -1) { ptOdd++; return; }
+      e.pt = t; ptHit++;
+    });
+    PR.matched = ptHit;
+    PR.refused = ptOdd;
+  }
+
+  /* ------------------------------------------------------------------
+   * RTG_KNOWN: one answer to "would a fan recognise this name?"
    *
    * Every game had its own copy of this test and they all shared a flaw:
    * the fallback accepted LONGEVITY. `f >= 4` plus eight notable seasons
    * sounds like a credential until you notice f=4 is 5,048 of the 5,965
-   * entities — it is the default bucket, not a signal — and that lasting
+   * entities (the default bucket, not a signal), and that lasting
    * eight years in the NFL describes 2,625 players, most of them linemen
    * nobody outside their own city could name. That is how Bill Conaty,
    * Jerome Pathon and Brynden Trawick ended up as answers.
@@ -217,7 +322,7 @@
   /* An accolade is not one thing. MVP, All-Pro, a Hall of Fame plaque or a
      ring make a name stick in any sport. A Pro Bowl does not, on its own:
      the NFL sends about ninety players a year and most of them are linemen.
-     But it cannot simply be discounted either — for a lot of genuinely famous
+     But it cannot simply be discounted either. For a lot of genuinely famous
      quarterbacks it is the only tag this corpus carries, and dropping it took
      Russell Wilson, Tony Romo, Trevor Lawrence and Brock Purdy with it.
      Position is what separates the two cases. A Pro Bowl quarterback is a

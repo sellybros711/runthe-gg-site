@@ -8,17 +8,27 @@
    slots: hair | face | mask | attire | boots | acc | pattern
    rarity: common | rare | epic | legendary
    ============================================================ */
+/* PRICES ARE THE OTHER HALF OF THE ECONOMY, and they are set against a MEASURED
+   faucet, not a guess. A career year pays roughly 700 coins as a rookie and 2,300
+   at the top; a full fifteen-year career lands near 20,000. So a legendary is
+   about one whole career and the locked catalogue is a chase measured in dozens
+   of them, which is the point: gear outlives the wrestler wearing it.
+
+   Direct buy is deliberately the EXPENSIVE route. A base pack is 2,400 for three
+   items, so packs run about four times cheaper per item than picking one off the
+   shelf. Buying the exact thing you want is a premium you pay for certainty, and
+   the forge (shards) is the patient route to the same certainty. */
 window.RTR_RARITY = {
-  common:    { label:'Common',    color:'#b3a794', odds:0.62, price:1200,  shards:1 },
-  rare:      { label:'Rare',      color:'#6aa7c4', odds:0.26, price:4500,  shards:3 },
-  epic:      { label:'Epic',      color:'#b08ac6', odds:0.10, price:12000, shards:8 },
-  legendary: { label:'Legendary', color:'#e0b341', odds:0.02, price:30000, shards:20 },
+  common:    { label:'Common',    color:'#b3a794', odds:0.62, price:3000,  shards:1 },
+  rare:      { label:'Rare',      color:'#6aa7c4', odds:0.26, price:9000,  shards:3 },
+  epic:      { label:'Epic',      color:'#b08ac6', odds:0.10, price:24000, shards:8 },
+  legendary: { label:'Legendary', color:'#e0b341', odds:0.02, price:60000, shards:20 },
 };
 
 window.RTR_PACKS = [
-  { id:'p_base',   name:'Locker Room Pack', price:8000,  n:3, floor:'common', boost:0,    blurb:'3 items. Standard gear pulls.' },
-  { id:'p_elite',  name:'Main Event Pack',  price:22000, n:4, floor:'rare',   boost:0.18, blurb:'4 items, at least one Rare+.' },
-  { id:'p_legend', name:'Hall of Fame Pack',price:55000, n:5, floor:'epic',   boost:0.42, blurb:'5 items, at least one Epic+.' },
+  { id:'p_base',   name:'Locker Room Pack', price:2400,  n:3, floor:'common', boost:0,    pity:5,  blurb:'3 items. Standard gear pulls.' },
+  { id:'p_elite',  name:'Main Event Pack',  price:6500,  n:4, floor:'rare',   boost:0.18, pity:4,  blurb:'4 items, at least one Rare or better.' },
+  { id:'p_legend', name:'Hall of Fame Pack',price:15000, n:5, floor:'epic',   boost:0.42, pity:3,  blurb:'5 items, at least one Epic or better.' },
 ];
 
 // Cosmetic catalogue. `v` is the value the renderer reads for that slot.

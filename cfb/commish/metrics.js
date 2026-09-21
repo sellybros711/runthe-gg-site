@@ -142,7 +142,7 @@
     { id: 'share', label: 'The player share', sub: 'percent of the pool', group: 'The money',
       from: 'tape', color: '#c27a06', good: null, dp: 1, suffix: '%', scale: 100,
       pick: function (r) { return r.sh; },
-      about: 'What reaches the players. There is no correct value and every bloc in the '
+      about: 'What reaches the players. There is no correct value and every group in the '
         + 'room has a different one.' },
 
     /* ---- the office ---- */

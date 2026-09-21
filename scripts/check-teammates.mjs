@@ -62,6 +62,39 @@ D.roll.forEach(([team, year, ids], n) => {
   if (sports.size > 1) bad.push('roll #' + n + ' mixes sports: ' + [...sports].join(', '));
 });
 
+/* ---- one record is one man ---------------------------------------------------
+ * jerseys.js keys on the name, so a father and a son arrive as one record, and
+ * 68 of its 2323 names were exactly that. Zach Thomas held Miami from 1996 at
+ * number 54 and the Rams, Texans, Colts and Titans from 2023 at 57, 74, 64 and
+ * 72: a Hall of Fame linebacker and an offensive lineman who was two when the
+ * first was drafted. Merged, he is a BRIDGE, and Chain will route a 1996
+ * Dolphin to a 2026 Titan through him in three links.
+ *
+ * That failure is invisible from inside: the deck and the routes above are both
+ * derived from the same graph, so the check confirms a route that cannot be
+ * walked. It has to be caught on the shape of a career instead. The builder
+ * splits at an 11 year hole, so nothing here should carry one. */
+{
+  const HOLE = 11;
+  const wide = [];
+  D.players.forEach((p, i) => {
+    const st = p[3].slice().sort((a, b) => a[1] - b[1] || a[2] - b[2]);
+    let reach = 0;
+    for (const s of st) {
+      if (reach && s[1] - reach >= HOLE) {
+        wide.push(name(i) + ' (' + sport(i) + '): nothing between ' + reach + ' and ' + s[1]);
+        break;
+      }
+      reach = Math.max(reach, s[2]);
+    }
+  });
+  if (wide.length) {
+    bad.push(wide.length + ' record' + (wide.length === 1 ? '' : 's') +
+      ' span a gap of ' + HOLE + ' years or more, which is two men under one name: ' +
+      wide.slice(0, 4).join('; '));
+  }
+}
+
 // ---- Chain -------------------------------------------------------------------
 function dist(from, to, cap) {
   if (from === to) return 0;

@@ -23,7 +23,7 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:{username:'${TESTER}'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?['cfb_premium','ps_premium']:true,error:null})}}};`;
 const arm = `
 (function(){ var v;
   Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,
@@ -63,6 +63,20 @@ async function shotSim(pg, file) {
   return false;
 }
 
+
+/* A CUTSCENE CAN TAKE THE SCREEN THE MOMENT A TERM STARTS, and one that a walker does not
+   know about is a walker that stalls on the one screen with no dock. Skip it: the scenes have
+   their own suite in test_scene, and every other file here is testing something behind them.
+   Called after anything that could arrive at the office. */
+async function pastScene(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-scene', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#b-scene-skip').catch(() => {});
+    await pg.waitForTimeout(320);
+  }
+}
+
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const on = (p, id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
 const tap = async (p, s) => { try { await p.click(s, { timeout: 2000 }); return true; } catch (e) { return false; } };
@@ -74,6 +88,7 @@ async function run(width, suffix) {
   await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
   await p.waitForTimeout(2600);
   await tap(p, '#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
   await p.screenshot({ path: OUT + 'ui_office' + suffix + '.png', fullPage: true });
 
   /* The first window of the term, caught on the day it stops. */
@@ -94,10 +109,12 @@ async function run(width, suffix) {
       await p.screenshot({ path: OUT + 'ui_desk' + suffix + '.png', fullPage: true });
       shot = true;
       await tap(p, '#b-rule'); await p.waitForTimeout(700);
+      await pastScene(p);
       await p.screenshot({ path: OUT + 'ui_room' + suffix + '.png', fullPage: true });
       break;
     }
     await tap(p, '#b-rule'); await p.waitForTimeout(500);
+    await pastScene(p);
     if (await on(p, 's-room')) { await p.screenshot({ path: OUT + 'ui_room' + suffix + '.png', fullPage: true }); }
   }
 

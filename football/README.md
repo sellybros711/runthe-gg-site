@@ -431,7 +431,7 @@ nobody reaches this mode and then finds out their season was never listed.
 `oneTeamReady()` is `signedIn && name`. The guard is on the button AND inside
 `beginDraft()`, because that is the only door into a run and a check on one caller is a
 check somebody else's caller skips. Four states, all tested: signed out, signed in with
-no name, signed in with a name, and auth not yet answered — the last one says what it is
+no name, signed in with a name, and auth not yet answered. The last one says what it is
 waiting for rather than accusing a signed-in player of being signed out, and the padlock
 starts on **in the markup** so the pre-answer state is the honest one.
 

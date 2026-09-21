@@ -28,9 +28,15 @@
  * name, a college, a word into a grid; nothing on screen can be tapped until it
  * turns green. That is what the two most-played games have in common, and it is
  * the habit worth giving away, because a player who can do it comes back.
- * Common Ground was the odd one out here and moved behind the card with the
- * other recognition games - High Low, Odd One Out, Guess the Player, Rank It,
- * the Number Game.
+ *
+ * A swap was proposed and reverted on 2 September 2026: the four most
+ * SHAREABLE games (Sportegories, Career Path, Guess the Player, Common Ground)
+ * instead of the four most producible, on the argument that the two games that
+ * end in a grid worth screenshotting were both behind the card. It is a real
+ * argument and the counter-argument won: the crossword is a daily habit for
+ * people who already have one, and taking it from them is a cost paid today
+ * against a growth benefit that is a bet. If it is ever revisited, the whole
+ * change is one line here and one line in arcade_free_games().
  *
  * ENTITLEMENT: Arcade Card is the paid membership. Server truth lives in the
  * Supabase `subscriptions` row; board.js mirrors an active/trialing sub into

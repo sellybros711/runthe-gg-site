@@ -67,7 +67,7 @@
     el.className = 'rtg-topbanner';
     el.innerHTML =
       '<a class="rtb-logo" href="/arcade/" aria-label="Run The Arcade home">' +
-        '<img src="/arcade/assets/arcade-icon.png?v=2" alt="" width="30" height="30" decoding="async">' +
+        '<img src="/arcade/assets/arcade-icon.png?v=3" alt="" width="30" height="30" decoding="async">' +
         '<span class="rtb-name">Run The Arcade</span></a>' +
       '<div class="rtb-right">' +
         '<a class="rtb-site" href="https://runthe.gg">RunThe<i>.GG</i></a>' +

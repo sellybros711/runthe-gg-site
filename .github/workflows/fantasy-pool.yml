@@ -1,0 +1,138 @@
+name: Build the Fantasy Challenge week
+
+# One week of Fantasy Challenge is a board, and the board is built from the games that have
+# already been played. So it can only be built AFTER the previous week finishes and BEFORE
+# the next one starts, and that window is Tuesday.
+#
+# TUESDAY 11AM EASTERN, WHICH IS AFTER THE MONDAY NIGHT GAME AND WELL BEFORE THURSDAY. The
+# Monday game ends around midnight Eastern and nflverse publishes within a few hours, so
+# this is the first hour of the week when the season to date is complete. It leaves two and
+# a half days before the Thursday kickoff that locks the week.
+#
+# GITHUB'S CRON IS UTC AND DOES NOT KNOW ABOUT DAYLIGHT SAVING, so one entry cannot mean
+# 11am Eastern all year. Both are listed and the job asks WHICH SCHEDULE FIRED rather than
+# what time it is now, which is the fix setlist-data.yml carries a long note about: it used
+# to read the wall clock, GitHub delayed the runs by hours, and six days of refreshes
+# reported success while doing nothing.
+#
+# WHICH WEEK IS IT. Read off games.csv rather than counted from a start date: the first week
+# with no result yet is the week to build. A season with a flexed or postponed game does not
+# move, and neither does this.
+#
+# WHAT IT COMMITS is the week's pool plus fantasy_now.json, which is the only thing telling
+# the page which week is live. Both or neither: a pool with no pointer is invisible and a
+# pointer with no pool is a page that cannot load.
+#
+# NOTHING IS COMMITTED UNLESS check-fantasy PASSES. An unattended job that writes a board
+# nobody can draft from is worse than one that writes nothing, because the mode looks live.
+
+on:
+  schedule:
+    - cron: '0 15 * * 2'    # 11am Eastern while daylight saving is in effect
+    - cron: '0 16 * * 2'    # 11am Eastern the rest of the year
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'Week to build. Leave blank to use the first unplayed week.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fantasy-pool
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Is this the 11am Eastern entry
+        id: when
+        run: |
+          OFFSET=$(TZ=America/New_York date +%z)
+          FIRED='${{ github.event.schedule }}'
+          echo "New York is at UTC${OFFSET} ($(TZ=America/New_York date))"
+          echo "the schedule that fired: '${FIRED}'"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "manual run, proceeding"
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          elif [ "$OFFSET" = "-0400" ] && [ "$FIRED" = "0 15 * * 2" ]; then
+            echo "EDT, so 15:00 UTC is 11am Eastern. Proceeding."
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          elif [ "$OFFSET" = "-0500" ] && [ "$FIRED" = "0 16 * * 2" ]; then
+            echo "EST, so 16:00 UTC is 11am Eastern. Proceeding."
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "this is the other cron entry for the current offset. Stopping."
+            echo "go=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.when.outputs.go == 'yes'
+
+      - uses: actions/setup-node@v4
+        if: steps.when.outputs.go == 'yes'
+        with:
+          node-version: '22'
+
+      # THE WEEK IS THE FIRST ONE WITH NO SCORE IN IT. A finished game carries a result in
+      # games.csv, so the earliest week of this season with a blank home score is the week
+      # about to be played. Asked of the schedule rather than derived from today's date,
+      # because a bye, a flex or a postponement moves a date and never moves this.
+      - name: Which week
+        id: week
+        if: steps.when.outputs.go == 'yes'
+        run: node football/build/next-week.mjs --week '${{ inputs.week }}'
+
+      # SCORE THE WEEK THAT JUST FINISHED BEFORE BUILDING THE NEXT ONE, and the order is the
+      # point rather than tidiness: the page finds a result by asking for the week's own
+      # file, so a week whose board rolls forward before its result is written is a week
+      # somebody played and can never see. By Tuesday morning the Monday night game is in.
+      #
+      # `|| true` because this is allowed to have nothing to do. Week one has no week zero,
+      # and a manual run mid-week hits a week that is not finished, which the build refuses
+      # by design. Neither is a reason to skip building the board.
+      - name: Score the week that just ended
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          PREV=$(( ${{ steps.week.outputs.week }} - 1 ))
+          if [ "$PREV" -ge 1 ]; then
+            node football/build/weekly-results.mjs \
+              --season '${{ steps.week.outputs.season }}' --week "$PREV" --write || \
+              echo "week $PREV could not be scored yet, carrying on"
+          fi
+
+      - name: Build the board
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          node football/build/weekly-pool.mjs \
+            --season '${{ steps.week.outputs.season }}' \
+            --week '${{ steps.week.outputs.week }}' --write
+
+      # The gate. It plays 1,200 drafts three ways against the board that was just written,
+      # so a week that strands or prices somebody out of reach never reaches main.
+      - name: Can it be drafted
+        if: steps.when.outputs.go == 'yes'
+        run: node football/check-fantasy.mjs --quick
+
+      - name: Commit the week
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          git config user.name "fantasy-bot"
+          git config user.email "noreply@anthropic.com"
+          git add football/data/weekly_*.json football/data/results_*.json \
+                  football/data/fantasy_now.json
+          if git diff --cached --quiet; then
+            echo "the board has not moved"
+            exit 0
+          fi
+          git commit -m "Fantasy Challenge: ${{ steps.week.outputs.season }} week ${{ steps.week.outputs.week }}"
+          # Other scheduled jobs push to main too, so a concurrent run can advance the ref
+          # mid-job. Rebase and retry rather than fail on a non-fast-forward.
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "push rejected, rebasing onto latest main (attempt $i)"
+            git pull --rebase origin main || exit 1
+          done

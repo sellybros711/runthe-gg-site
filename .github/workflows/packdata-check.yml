@@ -1,0 +1,55 @@
+name: Packed data check
+
+# Four generated datasets ship packed: field names written once as a header,
+# repeated strings once in a dictionary, every row an array of indices. It
+# takes 1.7 MB of parsing off the arcade. It also puts a decoder between the
+# scraper and the player, and a decoder fails quietly: an off-by-one in a
+# dictionary hands out the wrong college for every player and every screen
+# still renders.
+#
+# scripts/pack-arcade-data.mjs refuses to WRITE a file that does not read back,
+# so the daily refreshes cannot ship a broken one. This is the other half: a
+# hand edit to the packer, or to a packed file, checked before it lands.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-packdata.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/former.js'
+      - 'arcade/rosters.js'
+      - 'arcade/jerseys.js'
+      - 'arcade/awards.js'
+      - 'scripts/lib/packdata.mjs'
+      - 'scripts/pack-arcade-data.mjs'
+      - 'scripts/check-packdata.mjs'
+      - '.github/workflows/packdata-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/former.js'
+      - 'arcade/rosters.js'
+      - 'arcade/jerseys.js'
+      - 'arcade/awards.js'
+      - 'scripts/lib/packdata.mjs'
+      - 'scripts/pack-arcade-data.mjs'
+      - 'scripts/check-packdata.mjs'
+      - '.github/workflows/packdata-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: packdata-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-packdata.mjs

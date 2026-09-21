@@ -1,12 +1,12 @@
 /* ============================================================================
-   RunTheGlobe — supplementary trivia bank
+   RunTheGlobe: supplementary trivia bank
    ----------------------------------------------------------------------------
    Richer, varied trivia keyed by country id: athletes/celebrities, culture,
    history, landmarks, inventions, geography. Merged into each country's
    tasks.trivia at load (see index.html).
 
    RULE: the correct answer is NEVER the country's own name (that's a giveaway
-   when you already know where you are). Answers are specific facts — a dish, a
+   when you already know where you are). Answers are specific facts: a dish, a
    person, a sport, a landmark, a number, a neighbour.
 
    Shape:  ID: [ { q, options:[a,b,c,d], a: <index of correct> }, ... ]
@@ -63,7 +63,7 @@
     CA: [
       { q: "Which sport played on ice is Canada's national winter game?", options: ["Ice hockey", "Cricket", "Sumo", "Handball"], a: 0 },
       { q: "Which leaf appears on Canada's flag?", options: ["Maple", "Oak", "Palm", "Fig"], a: 0 },
-      { q: "The huge waterfalls on the Canada–US border are called…?", options: ["Niagara Falls", "Victoria Falls", "Angel Falls", "Iguazu Falls"], a: 0 },
+      { q: "The huge waterfalls on the Canada-US border are called…?", options: ["Niagara Falls", "Victoria Falls", "Angel Falls", "Iguazu Falls"], a: 0 },
     ],
     GR: [
       { q: "The ancient Olympic Games were revived from which country's tradition?", options: ["Greek", "Roman", "Persian", "Egyptian"], a: 0 },
@@ -247,7 +247,7 @@
     ],
     BE: [
       { q: "Belgium is especially famous for making which sweet food?", options: ["Chocolate", "Marzipan", "Baklava", "Toffee"], a: 0 },
-      { q: "Crispy fried potato sticks and this breakfast treat share Belgium's fame — the Belgian…?", options: ["Waffle", "Pretzel", "Bagel", "Crumpet"], a: 0 },
+      { q: "Crispy fried potato sticks and this breakfast treat share Belgium's fame. The Belgian…?", options: ["Waffle", "Pretzel", "Bagel", "Crumpet"], a: 0 },
       { q: "Brussels, Belgium's capital, hosts the headquarters of the…?", options: ["European Union", "United Nations", "World Bank", "Red Cross"], a: 0 },
     ],
     AT: [
@@ -311,7 +311,7 @@
       { q: "Jordan lies mostly on which peninsula's northern edge?", options: ["Arabian", "Iberian", "Balkan", "Anatolian"], a: 0 },
     ],
     GH: [
-      { q: "Ghana was the first sub-Saharan nation to gain independence — on which continent?", options: ["Africa", "Asia", "Europe", "Oceania"], a: 0 },
+      { q: "Ghana was the first sub-Saharan nation to gain independence. On which continent?", options: ["Africa", "Asia", "Europe", "Oceania"], a: 0 },
       { q: "Ghana is a major exporter of which bean used to make chocolate?", options: ["Cocoa", "Coffee", "Soy", "Vanilla"], a: 0 },
       { q: "Ghana's coast lies along which body of water?", options: ["Atlantic Ocean", "Indian Ocean", "Red Sea", "Mediterranean"], a: 0 },
     ],
@@ -406,14 +406,14 @@
       { q: "Myanmar borders which two giant Asian countries?", options: ["India and China", "Japan and Korea", "Iran and Iraq", "Russia and Mongolia"], a: 0 },
     ],
     KZ: [
-      { q: "Kazakhstan is the world's largest landlocked country — on which continent?", options: ["Asia", "Africa", "Europe", "South America"], a: 0 },
+      { q: "Kazakhstan is the world's largest landlocked country. On which continent?", options: ["Asia", "Africa", "Europe", "South America"], a: 0 },
       { q: "The Baikonur Cosmodrome in Kazakhstan is used to launch what?", options: ["Spacecraft", "Submarines", "Jets", "Trains"], a: 0 },
       { q: "Kazakhstan was, until 1991, part of which former union?", options: ["The Soviet Union", "The Ottoman Empire", "The British Empire", "Yugoslavia"], a: 0 },
     ],
     UZ: [
       { q: "Samarkand and Bukhara were fabled cities along which ancient trade route?", options: ["The Silk Road", "The Spice Route", "The Amber Road", "The Tea Horse Road"], a: 0 },
       { q: "Uzbekistan lies in which region of Asia?", options: ["Central Asia", "Southeast Asia", "East Asia", "The Middle East"], a: 0 },
-      { q: "Uzbekistan is one of only two countries you must cross two borders to leave to reach a sea — it is thus…?", options: ["Double-landlocked", "An island", "A peninsula", "An archipelago"], a: 0 },
+      { q: "Uzbekistan is one of only two countries you must cross two borders to leave to reach a sea. It is thus…?", options: ["Double-landlocked", "An island", "A peninsula", "An archipelago"], a: 0 },
     ],
     IQ: [
       { q: "Ancient Mesopotamia lay between the Tigris and which other river?", options: ["Euphrates", "Nile", "Jordan", "Indus"], a: 0 },
@@ -472,7 +472,7 @@
     ],
     ZW: [
       { q: "Zimbabwe shares the massive Victoria Falls with which neighbour?", options: ["Zambia", "Botswana", "Mozambique", "Namibia"], a: 0 },
-      { q: "Which thundering waterfall lies on the Zimbabwe–Zambia border?", options: ["Victoria Falls", "Niagara Falls", "Angel Falls", "Iguazu Falls"], a: 0 },
+      { q: "Which thundering waterfall lies on the Zimbabwe-Zambia border?", options: ["Victoria Falls", "Niagara Falls", "Angel Falls", "Iguazu Falls"], a: 0 },
       { q: "Zimbabwe's national parks are famous for herds of which large tusked animal?", options: ["Elephants", "Kangaroos", "Bison", "Reindeer"], a: 0 },
     ],
     MZ: [

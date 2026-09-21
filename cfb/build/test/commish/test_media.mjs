@@ -119,7 +119,7 @@ console.log('\n=== every question can actually be asked ===');
     'q-unsold': () => {},
     'q-gambling-permitted': () => {},
     'q-deal': () => {},
-    'q-champion': (w) => { w.year = 2026; w.champs = { 2025: { school: 'Ohio State', color: '#bb0000' } }; },
+    'q-champion': (w) => { w.year = 2026; w.champions = { 2025: { school: 'Ohio State', color: '#bb0000' } }; },
     'q-coaches': () => {},
     'q-schedule': () => {},
   };
@@ -288,6 +288,30 @@ console.log('\n=== the width of it on a phone ===');
     });
   });
   ok('nothing runs past what a card can hold', !long.length, long.slice(0, 4).join(' '));
+}
+
+/* ================================================================
+   THE COMMISSIONER IS THE PERSON HOLDING THE PHONE, AND NOBODY KNOWS WHO THAT IS.
+
+   Eighty-five `wrote` lines report what the player said and eighty-one of them already got
+   there without a pronoun, which is the house answer: write the office, not a man. Four had
+   drifted to "he", "his" and "him", so the same career could be told it had built no
+   coalition and then read a headline calling itself a man. Third parties are a different
+   question and are left alone: a beat writer, a radio host and a cut linebacker are cast
+   with a gender on purpose. This looks only at the sentences about the player.
+   ================================================================ */
+console.log('\n=== the headline does not guess who you are ===');
+{
+  const HE = /\b(he|him|his|she|her|hers)\b/i;
+  const bad2 = [];
+  M.QUESTIONS.forEach((q) => {
+    (q.answers || []).forEach((a) => {
+      const line = String(a.wrote || '');
+      if (/commissioner|this office/i.test(line) && HE.test(line)) bad2.push(q.id + ':' + a.id);
+    });
+  });
+  ok('no headline about the commissioner carries a gendered pronoun', !bad2.length,
+    bad2.join(', ') || M.QUESTIONS.reduce((n, q) => n + (q.answers || []).length, 0) + ' headlines');
 }
 
 console.log(bad ? '\n' + bad + ' FAILED\n' : '\nall good\n');

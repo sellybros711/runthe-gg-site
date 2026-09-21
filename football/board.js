@@ -100,13 +100,35 @@
      migration's columns get their own flag or running N and not N+1 costs the board
      everything the earlier files added. */
   let ringColumn = true;
+  /* 107's column, tracked separately for the fourth time and for the fourth identical
+     reason. Without it every name draws plain, which is what the board drew before the
+     bundle existed. */
+  let proColumn = true;
+  /* 98's three and 94's pair. Optional in the same way as the sets above, and unlike ALL of
+     them these are asked for by mine() ALONE and are deliberately not in rowCols() below.
+     Only the badge cabinet reads them: 98's three say which seasons belong to the same
+     dynasty, without which a run is a pile of unrelated rows, and 94's pair say who coached a
+     Full Team season.
+
+     KEPT OUT OF THE BOARD LIST ON PURPOSE. Every optional set in rowCols() has to be handled
+     by a matching branch in the retry loop of every function that uses it, and there are
+     several. A set added to the list and not to those loops does not cost a column on a
+     database one migration behind, it 400s and BREAKS THE WHOLE LEADERBOARD, because the loop
+     reaches a body it has no branch for and stops. The board has no use for either set, so
+     the safe place for them is the one call that does. */
+  let dynastyColumns = true;
+  let coachColumns = true;
   const rowCols = () => BASE_COLS + (namesColumn ? ',display_name' : '') +
     (avatarColumns ? ',display_color,display_initials' : '') +
     (tradeColumns ? ',gm_rating,trade_moves' : '') +
     (defColumns ? ',def_takeaways,def_tds,points_allowed' : '') +
     (crestColumns ? ',display_mark,display_rung' : '') +
     (crestColumns && tierColumn ? ',display_tier' : '') +
-    (crestColumns && ringColumn ? ',display_ring' : '');
+    (crestColumns && ringColumn ? ',display_ring' : '') +
+    /* NOT nested under crestColumns, unlike the tier and the ring. Those two are layers OF
+       a crest and are meaningless without one; this is a mark on the NAME and has nothing
+       to do with the disc beside it. */
+    (proColumn ? ',display_pro' : '');
   const missingCol = (body, re) => {
     const m = (body && body.message) || '';
     return re.test(m) && /does not exist/i.test(m);
@@ -115,9 +137,12 @@
   const missingNameColumn = (body) => missingCol(body, /display_name/);
   const missingTradeColumn = (body) => missingCol(body, /gm_rating|trade_moves/);
   const missingDefColumn = (body) => missingCol(body, /def_takeaways|def_tds|points_allowed/);
+  const missingDynastyColumn = (body) => missingCol(body, /dynasty_id|dynasty_season|dynasty_score/);
+  const missingCoachColumn = (body) => missingCol(body, /\bcoach\b|\bplan\b/);
   const missingCrestColumn = (body) => missingCol(body, /display_mark|display_rung/);
   const missingTierColumn = (body) => missingCol(body, /display_tier/);
   const missingRingColumn = (body) => missingCol(body, /display_ring/);
+  const missingProColumn = (body) => missingCol(body, /display_pro/);
   /* Not retried, only remembered, for the reason above BASE_COLS. Set so the connection
      check can say which file to run instead of "the board cannot be read".
 
@@ -386,11 +411,20 @@
      Club and era need a second field to name the competition, so a run claiming one of
      those without it is not that competition and falls back to free play. The Trade
      Machine and One Stop need nothing: the mode IS the competition. */
-  /* THIS LIST HAS NOW BEEN THE BUG THREE TIMES. 'trade' was missing from the submit,
-     'defense' from all four call sites, and 'fullteam' from here, added in the same commit
-     that shipped the mode's button to testers. The consolidation above is what turned the
-     third one into a single missing word instead of four. */
-  const SOLO_MODES = ['trade', 'defense', 'fullteam'];
+  /* THIS LIST HAS NOW BEEN THE BUG FOUR TIMES. 'trade' was missing from the submit,
+     'defense' from all four call sites, 'fullteam' from here, and 'dynasty' from here and
+     from both SQL sites at once. The consolidation above is what turned the third one into
+     a single missing word instead of four.
+
+     THE FOURTH ONE WAS THE WORST AND IT IS WORTH SAYING WHY. The fallback above is a
+     kindness for a typo: an unknown mode records as free play rather than being refused,
+     because a misfiled run loses less than a rejected one. That reasoning does not hold
+     for a whole MODE. With 'dynasty' missing, every Dynasty season was being submitted as
+     free play, so a nine season run would have put nine rows on the classic leaderboard,
+     each a roster built over several seasons under an economy classic play does not have,
+     ranked against people who drafted once with $140M. Caught before the mode went live
+     rather than after, which is the first time out of four. */
+  const SOLO_MODES = ['trade', 'defense', 'fullteam', 'dynasty'];
   function modeOf(mode, franchise, era) {
     if (SOLO_MODES.indexOf(mode) >= 0) return mode;
     if (mode === 'era' && era) return 'era';
@@ -441,7 +475,15 @@
       p_playoff_wins: payload.playoffWins,
       p_point_diff: round1(payload.pointDiff),
       p_chemistry_pct: payload.chemistryPct,
-      p_spend_musd: payload.spendMusd,
+      /* ROUNDED, BECAUSE THIS IS A SUM OF FLOATS AND THE SERVER COMPARES IT TO THE CAP.
+         Every price in the pool has at most one decimal and a dynasty's dead cap is a
+         quarter of one, so two places hold every real number this can produce. What they do
+         not hold is the tail a float sum grows: 3 + 3 + 11.1 + 47.2 + 47.9 + 27.8 is exactly
+         the $140M cap and adds up to 140.00000000000002842, which ps_submit_run read as over
+         budget and refused outright. Real prices out of the shipped pool.
+         TWO PLACES AND NOT ONE. One would also round a genuinely over-cap payroll back under
+         the line, which is the one thing this number is checked for. */
+      p_spend_musd: round2(payload.spendMusd),
       p_respins: payload.respins || 0,
       p_franchise: payload.franchise || null,
       p_era: payload.era || null,
@@ -682,9 +724,14 @@
          than being mistaken for a schema one file behind. The loop cannot run away: each
          branch permanently clears the flag that let it in. */
       /* ONE PASS PER OPTIONAL SET, narrowest first. */
-      for (let pass = 0; pass < 7 && !res.ok && res.status === 400; pass++) {
+      /* THE BOUND IS ONE PER OPTIONAL SET AND IT MOVES WITH THEM. Left at 7 when 107's
+         column was added, a database missing every one of them would run out of passes on
+         the last and report the whole board offline. */
+      for (let pass = 0; pass < 8 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
-        if (ringColumn && missingRingColumn(body)) {
+        if (proColumn && missingProColumn(body)) {
+          proColumn = false;
+        } else if (ringColumn && missingRingColumn(body)) {
           ringColumn = false;
         } else if (tierColumn && missingTierColumn(body)) {
           tierColumn = false;
@@ -764,23 +811,32 @@
      BASE_COLS, without display_name: these are your own runs and the panel never prints a
      name on them.
 
-     ONE RETRY, and only for the trade pair. It used to need none, and that is no longer
-     true: these are the rows the badge cabinet is derived from, so gm_rating and
-     trade_moves have to come back here or every Trade Machine badge reads as unearned on a
-     database that has them. Nothing else in this call is optional, so a 400 that is not
-     about those two columns is still a plain failure. */
+     RETRIES, FOR EVERY OPTIONAL SET THE CABINET READS. It used to need none, and then one:
+     these are the rows the badge cabinet is derived from, so a column that is here and not
+     asked for costs badges rather than rows. gm_rating and trade_moves carry the Trade
+     Machine, 98's three carry which seasons belong to the same dynasty, and 94's pair carry
+     who coached a Full Team season. Each drops on its own, because a project that has run
+     one migration and not the next should lose that file's badges and no others. Nothing
+     else in this call is optional, so a 400 naming none of them is still a plain failure.
+
+     FOUR PASSES, one per droppable set. Three would stop one short of the last one and leave
+     a database missing all four answering nothing at all. */
   async function mine(userId, limit) {
     if (!userId) return null;
     try {
-      const cols = () => BASE_COLS + (tradeColumns ? ',gm_rating,trade_moves' : '');
+      const cols = () => BASE_COLS + (tradeColumns ? ',gm_rating,trade_moves' : '') +
+        (dynastyColumns ? ',dynasty_id,dynasty_season,dynasty_score' : '') +
+        (coachColumns ? ',coach,plan' : '');
       const q = () => base() + TABLE + '?select=' + cols() +
         '&user_id=eq.' + encodeURIComponent(userId) +
         '&order=created_at.desc&limit=' + (limit || 500);
       let res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
-      for (let pass = 0; pass < 2 && !res.ok && res.status === 400; pass++) {
+      for (let pass = 0; pass < 4 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
         if (defColumns && missingDefColumn(body)) defColumns = false;
         else if (tradeColumns && missingTradeColumn(body)) tradeColumns = false;
+        else if (dynastyColumns && missingDynastyColumn(body)) dynastyColumns = false;
+        else if (coachColumns && missingCoachColumn(body)) coachColumns = false;
         else break;
         res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
       }
@@ -992,10 +1048,236 @@
     return wins * 10000 + diff;
   }
 
+  /* ---------------- Dynasty's leaderboard ----------------
+     Dynasty ranks RUNS, not seasons. Every season is a validated ps_runs row exactly like
+     a classic season; ps_dynasty_board (98) reads the furthest row per run, so the axis here is
+     seasons survived with the run's total score behind it. These read or write that view and
+     its tag, and none of them touches the classic path. All fail soft: a leaderboard that does
+     not draw costs nothing, and the season it is reading was already recorded. */
+
+  /* Stamp the row ps_submit_run just returned with its run and its standing. Retried like
+     submit, because a lost tag leaves a played season off the run's board; the next season's
+     tag carries the whole run forward regardless, so one miss is not one lost run. */
+  async function dynastyTag(rowId, dynastyId, seasons, score) {
+    if (rowId == null || !dynastyId) return false;
+    const body = JSON.stringify({ p_row: rowId, p_dynasty_id: dynastyId,
+      p_season: Math.round(seasons), p_score: Math.max(0, Math.round(score || 0)) });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await timed(base() + 'rpc/ps_dynasty_tag', { method: 'POST', headers: headers(), body });
+        if (res.ok) { lastError = null; return true; }
+        if (res.status < 500) { await fail('dynastyTag', res); return false; }
+        await fail('dynastyTag', res);
+      } catch (e) { failThrown('dynastyTag', e); }
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt)));
+    }
+    return false;
+  }
+
+  /* ---------------- TWO AXES AND THREE WINDOWS ON DYNASTY BOARD ----------------
+     'seasons' ranks by how far a run got, ties behind it broken by total score. 'score'
+     ranks by the run's total points, ties broken by seasons survived. Every other board
+     here offers both a sort and the three windows, and this one now matches: the axis and
+     the window are the two things a player picks, so both are parameters rather than baked
+     into the query.
+
+     THE WINDOW FILTERS THE VIEW, NOT THE SEASONS UNDER IT. ps_dynasty_board is a DISTINCT ON
+     that keeps each run's FURTHEST season, and PostgREST hangs `created_at=gte` above that
+     collapse rather than below it (confirmed on the real planner: the filter sits on the
+     Subquery Scan, over the Unique, not on the Seq Scan). So a run counts for Today when its
+     furthest season landed today, carrying its whole standing, rather than being cut back to
+     the seasons it happened to play today. That is the season-board's own windowing read as
+     runs: a run is "this week's" when its latest season is. */
+  const dynOrder = (sort) => (sort === 'score')
+    ? 'score.desc,seasons.desc,created_at.asc'
+    : 'seasons.desc,score.desc,created_at.asc';
+  const dynWindow = (win) => {
+    const cut = cutoffISO(win || 'all');
+    return cut ? '&created_at=gte.' + encodeURIComponent(cut) : '';
+  };
+
+  /*
+   * THE RUN IS OVER, said once, after the last season.
+   *
+   * Its own call rather than a fifth argument on the tag, because the two happen at
+   * different moments: a tag lands with every season and this lands when the fate is
+   * known. Fails soft like everything else here and is never awaited by a caller: a
+   * dynasty that ends with the network down keeps its LIVE badge, which is a wrong badge
+   * on a board and not a lost run, and the next thing that account plays is not affected.
+   *
+   * NOT RETRIED, unlike the tag. A missed tag leaves a season off a run's board and the
+   * next season carries the whole run forward anyway; this has no next season to carry it,
+   * so a retry loop would be the only thing standing between a finished run and the page
+   * moving on. One attempt, and a stale badge is the cost.
+   */
+  async function dynastyEnd(dynastyId) {
+    if (!dynastyId) return false;
+    try {
+      const res = await timed(base() + 'rpc/ps_dynasty_end',
+        { method: 'POST', headers: headers(), body: JSON.stringify({ p_dynasty_id: dynastyId }) });
+      if (res.ok) { lastError = null; return true; }
+      await fail('dynastyEnd', res);
+    } catch (e) { failThrown('dynastyEnd', e); }
+    return false;
+  }
+
+  /* The board, best runs first on the chosen axis, inside the chosen window.
+     `select=*` rather than a column list, so 107's dynasty_over and display_pro arrive
+     with no probe on this path: a view without them simply answers without them, and the
+     page reads a missing column as no opinion. */
+  async function dynastyTop(limit, sort, win) {
+    try {
+      const q = base() + 'ps_dynasty_board?select=*&order=' + dynOrder(sort) +
+        dynWindow(win) + '&limit=' + (limit || 100);
+      const res = await timed(q, { headers: headers() });
+      if (!res.ok) return await fail('dynastyBoard', res);
+      const rows = await res.json().catch(() => null);
+      return Array.isArray(rows) ? rows : null;
+    } catch (e) { return failThrown('dynastyBoard', e); }
+  }
+
+  /* One player's runs on it, best first on the chosen axis. */
+  async function dynastyMine(userId, limit, sort, win) {
+    if (!userId) return null;
+    try {
+      const q = base() + 'ps_dynasty_board?select=*&user_id=eq.' + encodeURIComponent(userId) +
+        '&order=' + dynOrder(sort) + dynWindow(win) + '&limit=' + (limit || 20);
+      const res = await timed(q, { headers: headers() });
+      if (!res.ok) return await fail('dynastyMine', res);
+      const rows = await res.json().catch(() => null);
+      return Array.isArray(rows) ? rows : null;
+    } catch (e) { return failThrown('dynastyMine', e); }
+  }
+
+  /* Where a run of (seasons, score) sits on the chosen axis, in the chosen window: how many
+     are ahead of it, plus one. On the seasons axis, ahead means more seasons, or the same
+     seasons and more score; on the score axis the two swap. Either way it is the board's
+     ordering stated as a filter, so a tie shares a place exactly as the list shows it. */
+  async function dynastyRank(seasons, score, sort, win) {
+    const s = Math.round(seasons), sc = Math.max(0, Math.round(score || 0));
+    if (!Number.isFinite(s)) return null;
+    try {
+      const ahead = (sort === 'score')
+        ? 'or=(score.gt.' + sc + ',and(score.eq.' + sc + ',seasons.gt.' + s + '))'
+        : 'or=(seasons.gt.' + s + ',and(seasons.eq.' + s + ',score.gt.' + sc + '))';
+      const q = base() + 'ps_dynasty_board?select=dynasty_id&limit=1&' + ahead + dynWindow(win);
+      const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
+      if (!res.ok) return await fail('dynastyRank', res);
+      const n = countOf(res);
+      return n === null ? null : n + 1;
+    } catch (e) { return failThrown('dynastyRank', e); }
+  }
+
+  /* How many runs are on the board in the window, for the count line under the title. */
+  async function dynastyTotal(win) {
+    try {
+      const res = await timed(base() + 'ps_dynasty_board?select=dynasty_id&limit=1' + dynWindow(win),
+        { headers: headers({ Prefer: 'count=exact' }) });
+      if (!res.ok) return await fail('dynastyTotal', res);
+      return countOf(res);
+    } catch (e) { return failThrown('dynastyTotal', e); }
+  }
+
+  /* ---------------- the daily allowance ----------------
+     One start a day per mode, counted server side by 99_daily_attempts.sql and
+     100_daily_grace_reasons.sql. See those files for why it cannot live in this browser.
+     Three calls: read the day, spend one, and claim an extra one the run has earned.
+
+     EVERY ONE FAILS OPEN, which is the opposite of how the rest of this file fails and is
+     deliberate. A board that cannot be reached costs somebody a rank; a LIMIT that cannot be
+     reached would cost them the game. So a null answer here means "no opinion", and the page
+     treats no opinion as permission. The alternative is a network blip locking a paying
+     player out of a mode they have already paid for.
+
+     PostgREST returns a `returns table` function as an array of rows, so each of these takes
+     the first row and normalises the column names the page reads. */
+  const attemptRow = (r) => {
+    const row = Array.isArray(r) ? r[0] : r;
+    if (!row) return null;
+    const n = (v) => (v === null || v === undefined ? null : Number(v));
+    /* `unit` and `ended` arrive only from 101_dynasty_seasons.sql. Left NULL rather
+       than defaulted, because null is how the page tells a server that has not been
+       migrated yet from one that has, and it keeps the old rule until it has. */
+    return { ok: row.ok !== false, used: n(row.used), allowance: n(row.allowance),
+      resetsAt: row.resets_at || null,
+      unit: row.unit || null, ended: row.ended === true };
+  };
+  async function attemptsCall(fn, mode, extra) {
+    try {
+      const body = Object.assign({ p_mode: mode }, extra || {});
+      const res = await timed(base() + 'rpc/' + fn, {
+        method: 'POST', headers: headers(), body: JSON.stringify(body) });
+      if (!res.ok) return await fail(fn, res);
+      return attemptRow(await res.json().catch(() => null));
+    } catch (e) { return failThrown(fn, e); }
+  }
+  /* What the day looks like, without spending any of it. Safe to call on every paint. */
+  const attemptsState = (mode) => attemptsCall('ps_attempts_state', mode);
+  /* Spend one, at kickoff. Answers ok:false when the day is done. */
+  const attemptSpend = (mode) => attemptsCall('ps_attempt_spend', mode);
+  /* One more today. 'boss' is a boss battle won and is the only reason that pays;
+     'fired' is still accepted by the server and grants nothing, which is where the
+     season one mercy went when Dynasty started counting seasons. Sending the same
+     reason twice is not an error and is not a second grant: the server holds a flag
+     per reason, not a count. A reason the server does not know is refused outright,
+     so a typo here fails loudly rather than quietly handing something out. */
+  const attemptGrace = (mode, reason) =>
+    attemptsCall('ps_attempt_grace', mode, { p_reason: reason });
+  /* THE ONE CALL THAT STARTS A WAIT. Made at the moment a dynasty day ends, which
+     is the third season's results screen or any season's if it fired them, and
+     `fired` is which of the two it was. It never extends a wait already running,
+     so a results screen reopened from a save costs nothing.
+     Answers 404 on a database still on 100_daily_grace_reasons.sql, which fail()
+     turns into null, which the page reads as no opinion and lets the player play. */
+  const attemptDayEnd = (mode, fired) =>
+    attemptsCall('ps_attempt_day_end', mode, { p_fired: !!fired });
+
+  /* ── ONE NEW DYNASTY A DAY ────────────────────────────────────────────────────────
+     supabase/106_dynasty_one_run_a_day.sql. A SECOND meter beside the season budget,
+     and a different question: the three seasons meter how much you PLAY, this meters
+     how often you START. Without it a free account drafts, plays a season, abandons,
+     and drafts again, three times a day, which turns "one team, one life" into three
+     rolls of the wheel.
+
+     ITS OWN SHAPE, NOT attemptsCall's. These two take no p_mode (dynasty is the only
+     mode with a run worth re-rolling) and answer ok/pro/next_at rather than a used and
+     an allowance, so sharing the caller would mean a body with a dead argument in it
+     and a row normaliser that answers null for half its fields.
+
+     FAILS OPEN like every other allowance here, and for the reason the block above
+     gives: a wrongly granted redraft costs nothing anybody notices, and a wrongly
+     refused one tells somebody who came back to play that they cannot.
+
+     A 404 IS THE ANSWER ON A DATABASE WITHOUT 106, which fail() turns into null, which
+     the page reads as no opinion. So this ships safely before the migration is run. */
+  const runRow = (r) => {
+    const row = Array.isArray(r) ? r[0] : r;
+    if (!row) return null;
+    return { ok: row.ok !== false, pro: row.pro === true,
+      nextAt: row.next_at || null, nowAt: row.now_at || null };
+  };
+  async function runCall(fn) {
+    try {
+      const res = await timed(base() + 'rpc/' + fn, {
+        method: 'POST', headers: headers(), body: '{}' });
+      if (!res.ok) return await fail(fn, res);
+      return runRow(await res.json().catch(() => null));
+    } catch (e) { return failThrown(fn, e); }
+  }
+  /* May a new dynasty be started. A READ, safe on every paint, so the front page door
+     can draw the answer without the drawing ever costing somebody their run. */
+  const dynRunState = () => runCall('ps_dynasty_run_state');
+  /* Take it. Called once, at the moment the draft actually begins. */
+  const dynRunStart = () => runCall('ps_dynasty_run_start');
+
   window.PS_BOARD = {
-    API_VERSION: 11,
+    /* 18: 107's display_pro on the classic rows, and dynastyEnd. */
+    API_VERSION: 18,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
+    dynastyTag, dynastyEnd, dynastyTop, dynastyMine, dynastyRank, dynastyTotal,
+    attemptsState, attemptSpend, attemptGrace, attemptDayEnd,
+    dynRunState, dynRunStart,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsAccountsMigration() { return needsAccountsMigration; },
