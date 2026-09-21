@@ -1953,10 +1953,23 @@ async function main() {
         await new Promise(r => setTimeout(r, 500));
         window.scheduleCpuSwing = () => {};                 /* every pitch is taken */
         const res = {};
+        /* WAIT ON THE PITCH, NOT ON A CLOCK. This used to sleep 2600ms,
+           which was the flight plus its windup with about 200 to spare,
+           and lengthening the windup by 100 for thinking time took the
+           spare away: the umpire had not called it yet, the count had not
+           moved, and the section reported the late break as gone. A fixed
+           wait past a beat somebody is allowed to tune is a test that
+           fails on the next tuning pass rather than on a defect. */
+        const landed = async (p) => {
+          for (let i = 0; i < 160; i++) {
+            if (!p || p.resolved || p.closed || State.game.pitch !== p) return;
+            await new Promise(r => setTimeout(r, 50));
+          }
+        };
         /* Pitch one: hold right, read what the flight did with it. */
         endAtBatCleanup(); State.game.pitch = null; throwPitch();
         State.game.steerHeld = 1;
-        await new Promise(r => setTimeout(r, 2600));
+        await landed(State.game.pitch);
         {
           const p = State.game.pitch;
           res.steer = p ? p.steer : null;
@@ -1971,7 +1984,7 @@ async function main() {
           p.baseLocX = 0.92; p.loc.x = 0.92; p.loc.y = 0;
           State.game.steerHeld = 1;
           res.balls0 = State.game.balls; res.strikes0 = State.game.strikes;
-          await new Promise(r => setTimeout(r, 2600));
+          await landed(p);
           res.finX = p.loc.x;
           res.balls1 = State.game.balls; res.strikes1 = State.game.strikes;
         }
@@ -4037,7 +4050,16 @@ async function main() {
           State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
           startGame({ mode: 'exhibition', youHome: false });
         });
-        await wait(pg, 900);
+        /* WAIT FOR THE PLATE CAMERA, because the zone is only a target
+           while there is a pitch to hit. Between pitches the camera is the
+           wide field, which contains rather than crops, and the zone is
+           correspondingly small: measured there it read 37 across on a
+           screen where an at-bat gets 52. Timing the measurement so it
+           lands on the wide view is asking the wrong question. */
+        await pg.waitForFunction(() => {
+          try { return plateViewActive(State.game); } catch (e) { return false; }
+        }, null, { timeout: 12000 }).catch(() => {});
+        await wait(pg, 400);
         const r = await pg.evaluate(() => {
           const R = (s) => { const e = document.querySelector(s); return e && e.getBoundingClientRect(); };
           const f = R('#field');
@@ -4045,14 +4067,32 @@ async function main() {
           const tl = R('.arena .corner.tl'), tr = R('.arena .corner.tr');
           const over = (a, b) => !!(a && b && a.right > b.left && b.right > a.left
                                           && a.bottom > b.top && b.bottom > a.top);
-          /* The one button the at-bat is waiting on, whichever it is. Both
-             are built and one is hidden, so a hidden one measures zero and
-             would pass a test about the fold without being on the screen at
-             all: only a button that is actually laid out counts. */
-          const act = [...document.querySelectorAll('.controls button, .btn')]
-            .filter(b => /swing|throw/i.test(b.textContent || '') && b.offsetParent)
-            .map(b => b.getBoundingClientRect())
-            .filter(r => r.height > 0)[0];
+          /* THE CONTROL THE AT-BAT IS WAITING ON IS THE STRIKE ZONE, and
+             that is a change rather than a loosening. There used to be a
+             SWING button under the field and this read its rectangle. There
+             is not: a tap on the field has always been both the aim and the
+             timing, so the button could only ever swing at wherever the bat
+             already was, and it is gone while batting. What a player
+             actually has to be able to reach is the zone, so that is what
+             is measured: where it lands on screen, and how big it is.
+
+             A SIZE FLOOR IS THE POINT OF IT. The defect this section was
+             written for drew a 182 pixel field sideways, which puts the
+             zone at about 17 pixels across against a thumb of 45. Reaching
+             it is not the same question as it being on the screen. */
+          const zone = (() => {
+            const cv = document.getElementById('field');
+            const P = typeof plateGeom === 'function' ? plateGeom() : null;
+            if (!cv || !P) return null;
+            const r = cv.getBoundingClientRect();
+            if (!r.width) return null;
+            const sx = r.width / FIELD_W, sy = r.height / FIELD_H;
+            return { w: Math.round(P.zw * 2 * sx), h: Math.round(P.zh * 2 * sy),
+                     left: Math.round(r.left + (P.zx - P.zw) * sx),
+                     right: Math.round(r.left + (P.zx + P.zw) * sx),
+                     top: Math.round(r.top + (P.zy - P.zh) * sy),
+                     bottom: Math.round(r.top + (P.zy + P.zh) * sy) };
+          })();
           /* Nothing in the right hand column may hang off its own panel. */
           const card = R('.swing-modes') ? R('.swing-modes').right : 0;
           const panel = (() => { const e = document.querySelector('.swing-modes');
@@ -4060,7 +4100,7 @@ async function main() {
           return {
             field: [Math.round(f.width), Math.round(f.height)],
             fieldBottom: Math.round(f.bottom),
-            act: act ? Math.round(act.bottom) : -1,
+            zone,
             placards: over(bl, br) || over(tl, tr),
             spill: Math.max(0, Math.round(card - panel)),
             vw: innerWidth, vh: innerHeight,
@@ -4080,9 +4120,22 @@ async function main() {
       ok(flat.fieldBottom <= flat.vh,
          'and the whole field is on the screen without scrolling',
          `field ends at ${flat.fieldBottom} of ${flat.vh}`);
-      ok(flat.act > 0 && flat.act <= flat.vh,
-         'and so is the button the at-bat is waiting on',
-         `button ends at ${flat.act} of ${flat.vh}`);
+      const reachable = (r, label) => {
+        ok(!!r.zone, label + ': the strike zone is drawn at all',
+           JSON.stringify(r.zone));
+        if (!r.zone) return;
+        const z = r.zone;
+        ok(z.left >= 0 && z.right <= r.vw && z.top >= 0 && z.bottom <= r.vh,
+           label + ': the whole strike zone is on the screen',
+           JSON.stringify({ zone: z, vw: r.vw, vh: r.vh }));
+        /* 40 is a thumb. Below it aiming stops being a skill and starts
+           being a guess, which is what a 34 pixel zone on a 390 phone was. */
+        ok(Math.min(z.w, z.h) >= 40,
+           label + ': and it is big enough to aim at with a thumb',
+           `${z.w}x${z.h}`);
+      };
+      reachable(flat, 'sideways');
+      reachable(up, 'upright');
       ok(!flat.sideways, 'and the page does not scroll sideways', JSON.stringify(flat));
       /* The placards are positioned on the field's own corners at a fixed
          type size, so a small field is what makes them collide. */

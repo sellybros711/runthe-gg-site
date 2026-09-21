@@ -63,8 +63,94 @@
      height cap leaves room for the swing strip under the field, which on
      an 800px desktop used to sit just below the fold while the first pitch
      was already on its way. */
-  body.ingame .wrap{max-width:min(1560px, 98vw);}
-  body.ingame #field{max-width:calc(min(100vh - 265px, 760px) * 1.4545);}
+  /* THE GAME TAKES THE WHOLE WINDOW. It used to be a 920px column of cream
+     paper with a picture of a ballgame in it, which is what a web page
+     looks like and not what a game looks like. The window is the frame
+     now: no page scroll, no card around the field, and the arena is the
+     one thing that grows. The field's own box inside it is decided by
+     fitFieldCanvas, which is also what lets the plate view crop.
+
+     THE DECK KEEPS ITS ORDER AND LOSES ITS ROOM. Everything under the
+     arena (the pitch picker, the swing row, the at bat card, the play by
+     play) is still built in the order it always was and is still real
+     markup, so nothing that reads this screen has to change. What changed
+     is that the arena takes what is left rather than what is spare. */
+  body.ingame{overflow:hidden;}
+  body.ingame .wrap{max-width:none;margin:0;padding:0;
+    height:100vh;height:100dvh;display:flex;flex-direction:column;}
+  body.ingame .brand{flex:0 0 auto;margin:0;padding:5px 12px;border-bottom-width:2px;}
+  body.ingame .brand h1{font-size:17px;}
+  /* `#app` is the mount every screen is built into and it is an ordinary
+     block, so a flex child two levels down inherits nothing from the wrap
+     and is simply content sized: the screen measured 515 of a 900 tall
+     window and the arena took its floor. The chain has to be unbroken. */
+  body.ingame #app{flex:1;min-height:0;display:flex;flex-direction:column;}
+  body.ingame .screen{flex:1;min-height:0;padding:0;display:flex;flex-direction:column;
+    position:relative;}
+  /* THE LINE SCORE GOES ON THE FIELD. It is the one thing in the deck that
+     is pure information and never pressed, so it is the one that can leave
+     the flow: out of it, the arena is 69 pixels taller on every screen and
+     the top of the window stops being a strip of paper above a ballgame.
+     It keeps its markup and its place in the reading order. */
+  body.ingame .linescore{position:absolute;z-index:5;top:6px;left:50%;
+    transform:translateX(-50%);margin:0;opacity:.94;}
+  /* The park's name rides with it. On a phone the corner placard that
+     carries it is hidden, so this strip is the only place it appears, and
+     left in the flow it was a line of paper above the sky. */
+  body.ingame .park-strip{position:absolute;z-index:5;top:0;left:0;right:0;
+    margin:0;padding:2px 0;color:var(--gold);text-shadow:0 1px 2px #0b1015;}
+  /* UNDER THE PARK'S SIGN, NOT ON IT. Both are top centre: the sign is the
+     placard bolted to the arena at 8px and the line score is the overlay,
+     so at 16 the score bug covered the name of the ground it was played
+     at. 44 clears the placard's own height. */
+  body.ingame .linescore{top:44px;}
+  /* THE AT BAT CARD IS A LINE ON A PHONE. It is the same three facts as
+     the placards on the field and the row above it, laid out as a card
+     with a portrait, and at 151 pixels it was the single biggest thing
+     between the strike zone and the size it needed to be. The portrait is
+     what goes: the man it shows is already the biggest thing on the
+     screen, drawn six times this size, holding a bat. */
+  body.roomfill.ingame .atbat{padding:6px 8px;font-size:12px;}
+  body.roomfill.ingame .atbat img,
+  body.roomfill.ingame .atbat canvas{display:none;}
+  body.ingame .screen > *{flex:0 0 auto;}
+  /* BASIS ZERO, AND THAT IS THE WHOLE OF IT. Written `flex:1 1 auto` the
+     arena's basis is its own content, and the canvas inside it is absolutely
+     positioned so the content is nothing: the deck below then claimed more
+     than the window had, the free space came out NEGATIVE, and the arena
+     grew by none of it and measured zero pixels tall. Nothing threw. The
+     field fell back to drawing at its bitmap size and the fit was skipped
+     every frame. At basis zero the arena and the log divide what is left,
+     five to one, so the field always has the larger half of the window. */
+  /* THE FLOOR IS WHAT MAKES THE COVER ENGAGE AT ALL, and 180 pixels was
+     under it. A cover only zooms once the box is taller than its width
+     over 1.4545, which on a 390 phone is 268 pixels: at 265 the field is
+     width limited, the scale is 1, and the strike zone comes out 37 across
+     on a 664 tall phone against 74 on an 844. The floor is high enough
+     that the shorter phone is over that line with room. */
+  body.ingame .arena{flex:5 1 0;min-height:min(56vh, 480px);width:100%;max-width:none;
+    margin:0;border:0;border-radius:0;box-shadow:none;background:#0b1015;
+    position:relative;overflow:hidden;}
+  /* Absolutely positioned so the arena's size never depends on the
+     canvas's: a canvas whose bitmap is derived from its own layout width
+     and whose layout width came from its intrinsic size is a feedback
+     loop, and it settles somewhere arbitrary. */
+  body.ingame #field{position:absolute;max-width:none;max-height:none;
+    width:auto;height:auto;}
+  /* The deck, in the space the arena did not take. The gutter moved off
+     `.wrap` and onto these, because the arena is the one child that has to
+     reach the edge of the window. */
+  body.ingame .screen > *:not(.arena){margin-left:12px;margin-right:12px;}
+  /* The play by play is the least urgent thing on the screen and the only
+     one that grows without limit, so it is the one that gets a box and a
+     scrollbar rather than pushing the field out of the window. */
+  /* No floor: the arena's is what has to be met first, so on a short phone
+     the play by play is the thing that gives way rather than the zone. */
+  body.ingame .log{flex:0 1 auto;min-height:0;max-height:16vh;overflow-y:auto;}
+  /* The at bat card says who is up and what he is. It is worth its natural
+     height and never more than that: it is the one thing here that would
+     rather be read than played. */
+  body.ingame .atbat{flex:0 1 auto;min-height:0;overflow:hidden;}
   .brand{display:flex;align-items:center;gap:10px;padding:8px 0 12px;
     border-bottom:3px solid var(--line);margin-bottom:4px;}
   .brand h1{margin:0;font-size:24px;letter-spacing:.16em;text-transform:uppercase;
@@ -824,21 +910,46 @@
        Sideways is not short of width. It is short of height. So the
        furniture goes BESIDE the field rather than above and below it, and
        the field gets the whole window's height to be derived from. */
-    body.ingame.roomfill .screen{display:grid;
-      grid-template-columns:minmax(0,1fr) minmax(196px, 32%);
-      column-gap:10px;align-content:start;padding:4px 0 0;}
-    /* Everything that is not the field goes down the right hand column, in
-       the order it is built in. */
-    body.ingame.roomfill .screen > *{grid-column:2;}
-    /* span 30 rather than -1: the children are built by the game and their
-       number changes with the situation (the steal row, the meter), so a
-       row count is a number that would go stale. */
-    body.ingame.roomfill .arena{grid-column:1;grid-row:1 / span 30;
-      align-self:start;margin:0;}
-    body.ingame.roomfill #field{max-width:calc(min(100vh - 86px, 720px) * 1.4545);}
-    body.ingame.roomfill #field{max-width:calc(min(100dvh - 86px, 720px) * 1.4545);}
-    body.ingame.roomfill .linescore{margin-bottom:6px;}
+    /* THE ARENA COMES OUT OF THE FLOW HERE RATHER THAN OUT OF A GRID
+       COLUMN. It was a two column grid with the arena spanning thirty
+       rows, which worked while the arena's height came from the field's
+       own aspect. It does not any more: the canvas is absolute, so the
+       arena has no content height, and giving it one made the thirty
+       tracks it spans absorb that height and squeezed every item in the
+       right hand column into a row about eleven pixels tall. The line
+       score came out 8 pixels high with its table painted over the swing
+       buttons. Nothing threw.
+
+       Absolute on the left, and the deck flows normally in the padding it
+       leaves. The arena's height is the window's, which is what
+       fitFieldCanvas needs, and it cannot size anything else. */
+    body.ingame.roomfill .screen{display:block;position:relative;height:100%;
+      padding:4px 0 0 calc(66% + 10px);}
+    body.ingame.roomfill .arena{position:absolute;left:0;top:0;width:66%;
+      height:100%;margin:0;}
+    /* SIDEWAYS STILL PUTS THE FURNITURE BESIDE THE FIELD, and that is not
+       superseded by the full bleed layout above: a 391 tall window has
+       about 306 pixels of deck in it, so stacked there is 85 pixels left
+       for the arena. */
+    /* The height budget that used to derive this is gone: fitFieldCanvas
+       reads the arena's real box now. Left in place the cap WON over the
+       inline width and the field came out 442 of a 564 wide column, with
+       the rest of the arena showing as a black band down the side. */
+    body.ingame.roomfill #field{max-width:none;max-height:none;}
+    /* And the line score goes back in the flow here, because `left:50%` of
+       the screen is the middle of a TWO COLUMN grid: overlaid, it landed
+       on top of the swing buttons in the right hand column. */
+    body.ingame.roomfill .linescore{position:static;transform:none;
+      margin:0 0 6px;opacity:1;}
     body.ingame.roomfill .park-strip{display:none;}
+    /* AND THE AT BAT CARD GOES, because 358 pixels of column does not hold
+       the deck: with it the END GAME button sat at 400 in a 390 tall window
+       and the page scrolled, which is the exact fault the sideways layout
+       was built to fix. It is the only part of the deck that is pure
+       reading: the count, the inning and the side are placards ON the
+       field, the swing row is the control, and the play by play narrates.
+       Who is up is the biggest thing on the screen, holding a bat. */
+    body.ingame.roomfill .atbat{display:none;}
     body.ingame.roomfill .controls{margin-top:8px;}
     /* The play by play grows without limit and is the least urgent thing
        on the screen, so it is the one that gets a box to live in. */
@@ -6169,9 +6280,24 @@ const BASE_BEAT = {
   /* Trimmed again once the play itself became three to five seconds of
      continuous motion: the air around an event is there so the event can
      land, and a play that runs its own length needs less of it. */
-  windup:     900,  /* pitcher into set, meter shows but does not sweep yet */
-  betweenPitches: 1200,  /* after ball/called strike/foul */
-  afterWhiff: 1100,
+  /* THE GAP BEFORE A PITCH IS THINKING TIME AND IT WAS TOO SHORT. Reported
+     as wanting longer between pitches to think. What a batter actually gets
+     is `betweenPitches` plus `windup`, because the meter is up but frozen
+     through the windup, so the two are one pause as far as a reader is
+     concerned: it was 2.1 seconds and is 3.2 now, and that sum is the whole
+     of the claim. What a game's median pitch to pitch comes out at is
+     longer again, because the flight and the call sit inside it, and it is
+     NOT re-measured here: `scratchpad/pacing.mjs` is the file that can
+     answer it and its own header says it needs several games an arm before
+     it means anything.
+
+     It is the ONE beat raised. The beats after something HAPPENS (a whiff,
+     an out, a hit) are already long, and stretching those is ceremony
+     rather than thinking time: nobody is deciding anything while the ball
+     is in the outfield. */
+  windup:     1000, /* pitcher into set, meter shows but does not sweep yet */
+  betweenPitches: 2200, /* after ball/called strike/foul */
+  afterWhiff: 1600,
   afterOut:   1500,
   afterWalk:  1500,
   afterHit:   1700,
@@ -6284,6 +6410,65 @@ function fieldBitmapWidth(cv) {
   const want = css * (window.devicePixelRatio || 1);
   return world * clamp(Math.ceil(want / world), 2, Math.floor(FIELD_K * PIX));
 }
+/* THE FIELD FILLS THE WINDOW, AND THE PLATE VIEW IS ALLOWED TO CROP.
+   Reported as the game sitting in a box rather than being played: on a
+   1440x900 desktop the field was drawn 924x635 with 250 pixels of cream
+   paper down each side and the page scrolled anyway, and on a 390 phone it
+   was 358x246 in an 844 tall window, under a quarter of the screen.
+
+   THE STRIKE ZONE IS WHY THIS IS A GAMEPLAY FIX AND NOT A LOOK.
+   `plateGeom` sizes the zone against the batter, which is right, so the
+   zone is a fixed 92x120 of the 960x660 world and its size ON SCREEN is
+   whatever the field is drawn at. At 358 wide that is a 34x45 pixel box,
+   and a thumb is about 45 across: aiming was not a skill, it was a guess.
+   The same arithmetic run at a full bleed phone gives about 89.
+
+   THE TWO CAMERAS GET DIFFERENT ANSWERS AND THAT IS THE WHOLE RULE. The
+   plate view may COVER, because everything it is about (the zone, the bat,
+   the ball, the catcher) is within a third of a frame of the plate, so what
+   the crop throws away is stand. The wide view may NOT: a ball in the right
+   field corner is the entire point of it, and a camera that crops the
+   corners during a play would hide the play. So the wide view contains, and
+   what is left over is the letterbox `drawField` already paints.
+
+   IT NEEDS NO COORDINATE MATHS AND THAT IS DELIBERATE. `fieldPointFromEvent`
+   maps a pointer through the canvas's own `getBoundingClientRect`, so a
+   canvas moved and resized in CSS is still read correctly with nothing to
+   keep in step. Written as a transform inside the paint instead, the drawing
+   and the input would be two copies of one answer and the aim would drift
+   from the picture the first time either moved. */
+/* WHAT THE PLATE VIEW IS ABOUT IS NOT THE MIDDLE OF THE PICTURE. The zone
+   sits at world x 442 to 534 and the batter is drawn to the RIGHT of it,
+   about 553 to 750, so a crop centred on the canvas cut his bat off at the
+   frame's edge on a phone. 596 is the middle of the two together, which
+   holds both with room at the widths measured. The wide camera's focus is
+   the canvas centre because a contained picture has no offset to choose. */
+const FIELD_FOCUS = { wide: [480, 330], plate: [596, 452] };
+function fitFieldCanvas(cv) {
+  const box = cv.parentElement;
+  if (!box) return;
+  const bw = box.clientWidth, bh = box.clientHeight;
+  if (!bw || !bh) return;
+  const a = FIELD_W / FIELD_H;
+  const plate = plateViewActive(State.game);
+  const w = plate ? Math.max(bw, bh * a) : Math.min(bw, bh * a);
+  const h = w / a;
+  const s = w / FIELD_W;
+  const [fx, fy] = FIELD_FOCUS[plate ? 'plate' : 'wide'];
+  /* Put the focus in the middle of the box, then refuse to show past the
+     edge of the canvas: a clamp rather than a centre, because a centred
+     crop of the plate view puts the batter half out of frame. */
+  const left = clamp(bw / 2 - fx * s, Math.min(0, bw - w), Math.max(0, bw - w));
+  const top = clamp(bh / 2 - fy * s, Math.min(0, bh - h), Math.max(0, bh - h));
+  const css = Math.round(w) + 'px|' + Math.round(h) + 'px|'
+            + Math.round(left) + 'px|' + Math.round(top) + 'px';
+  if (cv.dataset.fit === css) return;     /* a style write a frame is waste */
+  cv.dataset.fit = css;
+  const [cw, ch, cl, ct] = css.split('|');
+  cv.style.width = cw; cv.style.height = ch;
+  cv.style.left = cl; cv.style.top = ct;
+}
+
 /* Resizing a canvas CLEARS it and resets its context, which is free here
    because the loop redraws every pixel every frame, and ruinous if it
    ran every frame. So it only writes when the answer has changed, which
@@ -6361,6 +6546,12 @@ function startFieldLoop() {
         }
       }
       const ctx = fCv.getContext('2d');
+      /* The CSS box first, because everything below reads off it: the
+         bitmap scale, FIELD_VIEW, and the rect a pointer is mapped
+         through. It is in the loop for the reason sizeFieldCanvas is,
+         plus one of its own: the camera cuts between the plate and the
+         wide field mid at-bat, and nothing fires an event for that. */
+      fitFieldCanvas(fCv);
       if (fCv.clientWidth) FIELD_VIEW = fCv.clientWidth / FIELD_W;
       /* Asked every frame and answering false on almost all of them. It has
          to be here rather than on a resize listener: the canvas also changes
@@ -6479,8 +6670,9 @@ const COACH = {
     + 'your mouse (or your finger, or the arrow keys). The box over the plate is '
     + 'the strike zone.',
     '<b>Put the oval where the pitch is going</b>, then swing as the ball reaches '
-    + 'the plate: <b>click</b>, press <b>Space</b>, or tap SWING. Where you put it '
-    + 'decides whether you hit it. When you swing decides how hard, and where it goes.',
+    + 'the plate: <b>click</b> or press <b>Space</b>. On a phone just <b>tap the '
+    + 'spot</b>. That one tap is the aim and the timing. Where you put it decides '
+    + 'whether you hit it. When you swing decides how hard, and where it goes.',
     '<b>Contact, Power, Bunt</b> (keys 1, 2, 3) change your swing before the pitch. '
     + 'Contact is the forgiving one. Power swings for the fence. Start with Contact.',
   ],
@@ -12958,8 +13150,21 @@ function refreshHud() {
   if (hint) hint.style.display = youBat ? '' : 'none';
   const modesRow = document.getElementById('swing-modes');
   if (modesRow) modesRow.style.display = youBat ? '' : 'none';
+  /* THE SWING BUTTON IS THE PITCHER'S NOW, AND ONLY HIS. Batting, a tap
+     on the field has always done both jobs at once: touchstart puts the
+     bat where the finger is and the click that follows swings it, so the
+     tap IS the aim and the timing. The button underneath could only ever
+     swing at wherever the bat already was, which on a phone is wherever
+     you last touched, so it was the one control that could not aim.
+     Pressing it was a worse swing than tapping, offered in bigger type.
+     It is 70 pixels of the deck as well, and on a phone the deck is what
+     the strike zone is paying for.
+
+     PITCHING KEEPS IT, because there is nothing to aim at the moment the
+     ball goes: the spot was already chosen and what is left is a release,
+     which is a button. */
   if (swingBtn) {
-    swingBtn.style.display = '';
+    swingBtn.style.display = youBat ? 'none' : '';
     swingBtn.textContent = youBat ? 'SWING' : 'THROW';
   }
   /* Replay is offered whenever a highlight is stored and nothing is
@@ -13700,8 +13905,9 @@ function renderHowTo() {
     + '<p>You see the pitch from behind the catcher. The box over the plate is the '
     + '<b>strike zone</b>; the oval that follows your mouse (or your finger, or the '
     + 'arrow keys) is <b>where your bat will be</b>. Put it on the ball and swing '
-    + 'as the ball arrives: <b>click</b>, press <b>Space</b>, or tap SWING. On a '
-    + 'phone, tapping the ball is both at once.</p>'
+    + 'as the ball arrives: <b>click</b> or press <b>Space</b>. On a phone there is '
+    + 'no button to find: <b>tap the spot you want to swing at</b>, and that one '
+    + 'tap is both the aim and the timing.</p>'
     + '<p><b>Timing</b> decides how hard you hit it and where it goes: early pulls '
     + 'the ball, late goes the other way. <b>Place</b> decides whether you hit it '
     + 'at all: a bat is a horizontal thing, so a miss along it still finds the '

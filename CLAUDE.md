@@ -2922,6 +2922,117 @@ is the point. Disney's Peter Pan, Universal's Frankenstein, MGM's green witch an
 ruby slippers are all still owned, and a redraw that drifts back toward one of
 them is the failure mode.
 
+### The window is the frame, and the strike zone was 34 pixels across
+
+Reported as the game sitting in a box rather than being played, and as the
+strike box being too small to aim at on a phone. Both are the same fault.
+
+**It was a 920px column of cream paper with a picture of a ballgame in it.**
+On a 1440x900 desktop the field drew 924x635 with 250 pixels of paper down
+each side and the page scrolled anyway; on a 390 phone it was 358x246 in an
+844 tall window, under a quarter of the screen. `body.ingame` takes the whole
+window now: no page scroll, no card around the field, and the arena is the
+one child that grows.
+
+**THE ZONE IS WHY THIS IS A GAMEPLAY FIX AND NOT A LOOK.** `plateGeom` sizes
+the zone against the batter, which is right, so it is a fixed 92x120 of the
+960x660 world and its size ON SCREEN is whatever the field is drawn at. At
+358 wide that is **34x45 CSS pixels against a thumb of about 45**: aiming was
+not a skill, it was a guess. Measured after, across six viewports:
+
+| | before | after |
+|---|---|---|
+| 390x844 | 34x45 | **78x102** |
+| 390x664 | | 52x68 |
+| 320x568 | | 44x58 |
+| 844x390 sideways | | 53x70 |
+| 1440x900 | 88x115 | **138x180** |
+
+**THE TWO CAMERAS GET DIFFERENT ANSWERS AND THAT IS THE WHOLE RULE.**
+`fitFieldCanvas` lets the PLATE view COVER, because everything it is about
+(the zone, the bat, the ball, the catcher) is within a third of a frame of
+the plate, so what the crop throws away is stand. The wide view may NOT: a
+ball in the right field corner is the entire point of it, and a camera that
+cropped the corners during a play would hide the play. So the wide view
+contains and what is left is the letterbox `drawField` already paints.
+
+**IT NEEDS NO COORDINATE MATHS, AND THAT IS THE REASON IT IS CSS.**
+`fieldPointFromEvent` maps a pointer through the canvas's own
+`getBoundingClientRect`, so a canvas moved and resized in CSS is read
+correctly with nothing to keep in step. Written as a transform inside the
+paint instead, the drawing and the input would be two copies of one answer
+and the aim would drift from the picture the first time either moved.
+Asserted rather than argued: four known points in zone units, driven through
+real screen coordinates on desktop and on a phone, come back within **0.014
+zone units**.
+
+**The plate camera's focus is not the middle of the picture.** The zone sits
+at world x 442 to 534 and the batter is drawn to the RIGHT of it, about 553
+to 750, so a crop centred on the canvas cut his bat off at the frame's edge.
+596 holds both.
+
+**Four layout faults, and every one of them was silent:**
+
+- **`flex:1 1 auto` gave the arena nothing.** Its basis is its own content
+  and the canvas inside it is absolutely positioned, so the content is
+  nothing: the deck below claimed more than the window had, free space came
+  out NEGATIVE, and the arena measured **zero pixels tall**. The field fell
+  back to drawing at its bitmap size and the fit was skipped every frame.
+- **`#app` is a plain block**, so a flex child two levels down inherits
+  nothing from the wrap and is content sized. The screen measured 515 of a
+  900 tall window. The chain has to be unbroken.
+- **A cover only zooms once the box is taller than its width over 1.4545**,
+  which on a 390 phone is 268 pixels. At an arena of 265 the field is width
+  limited, the scale is 1, and the zone comes out 37 on a 664 tall phone
+  against 74 on an 844. The arena's floor is what makes the cover engage.
+- **Sideways, the arena spanned thirty grid rows.** That worked while its
+  height came from the field's own aspect; given a height of its own, those
+  thirty tracks absorbed it and squeezed every item in the right hand column
+  into a row about eleven pixels tall. The line score came out 8 pixels high
+  with its table painted over the swing buttons. It is absolutely positioned
+  on the left now and the deck flows in the padding it leaves.
+
+**The SWING button is the pitcher's now, and only his.** Batting, a tap on
+the field has always done both jobs: `touchstart` puts the bat where the
+finger is and the click that follows swings it, so **the tap IS the aim and
+the timing**. The button underneath could only ever swing at wherever the bat
+already was, which on a phone is wherever you last touched, so it was the one
+control that could not aim: pressing it was a worse swing than tapping,
+offered in bigger type. It is also 70 pixels of deck, and on a phone the deck
+is what the zone is paying for. Pitching keeps it, because at the moment the
+ball goes there is nothing left to aim: the spot was already chosen.
+
+**Both how-to surfaces were edited in the same commit**, which is this repo's
+own rule about the coach notes teaching a removed control.
+
+**The guard changed from a button to the zone, and that is a change rather
+than a loosening.** The sideways section used to find the SWING button and
+assert it was above the fold. There is no button while batting, so it now
+measures the zone: where it lands, and how big it is, in both orientations,
+with a floor of 40. **The size floor is the point of it**: the defect that
+section was written for drew a 182 pixel field sideways, which puts the zone
+at about 17 across, and being on the screen is not the same question as being
+reachable. It caught a real shortfall on its first run (37 across at 390x664)
+and a second on its second: it was measuring during the WIDE camera, before a
+pitch was live, where the zone is correctly small because there is nothing to
+hit. It waits for `plateViewActive` now.
+
+**The gap before a pitch is thinking time and it was too short.** Reported as
+wanting longer to think. What a batter gets is `betweenPitches` plus
+`windup`, because the meter is up but frozen through the windup, so the two
+are one pause: **2.1 seconds, now 3.2**. That sum is the whole claim; what a
+game's median pitch to pitch comes out at is longer again and is not
+re-measured, because `scratchpad/pacing.mjs` needs several games an arm to
+say anything. Only that one beat moved: the beats after something HAPPENS are
+ceremony, and nobody is deciding anything while the ball is in the outfield.
+
+**And a fixed wait in the suite broke on it.** The late break section slept
+2600ms for a pitch, which was the flight plus its windup with about 200 to
+spare, and 100 more of windup took the spare away: the umpire had not called
+it, the count had not moved, and the section reported the mechanic as gone.
+It waits on the pitch being resolved now. A fixed wait past a beat somebody
+is allowed to tune is a test that fails on the next tuning pass.
+
 ### A phone gets a MENU, a desktop gets the room
 
 The home screen is the clubhouse. It is called the clubhouse everywhere the
