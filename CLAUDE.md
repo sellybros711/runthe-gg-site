@@ -2586,6 +2586,53 @@ Between them, poses the reader cannot tell from idle went **151 to 18**. The
 18 are the nine characters with no front view and no strips, where there is no
 second drawing to reach for. That is the art order, not a defect.
 
+#### The game was showing a quarter of the frames the artist drew
+
+**274 drawn, usable frames were never on screen.** A run strip is FOUR
+frames and a real cycle: contact, passing, the other contact, passing. The
+page played a two pose toggle off frames 0 and 2, so every runner in the
+game shuffled between two legs positions while the other two sat in the
+file. The swing strip is four beats and the page showed three, so the bat
+went from over the shoulder to the ball with nothing in between.
+
+**Nothing about the ART was wrong, which is why no check moved when this
+was fixed and none would have caught it.** Every guard here asks whether a
+drawing is right, present, or distinct from its neighbour. None of them
+asked whether the GAME ever puts it on screen.
+
+**The stride rate is unchanged, and that is arithmetic rather than taste.**
+Frames 0 and 2 are the two CONTACTS, the moments a foot lands. The old
+toggle put a contact up every `p`, so four frames run at HALF that period
+to keep the feet landing at the same rate. Run four at `p` each and the
+legs move half as fast: the same man, suddenly wading.
+
+**`runPose` is the cycle written ONCE.** It was written out four times, at
+three path sites and the batter's walk up, each as its own `stride ? a : b`.
+Four copies of a rule is four places to forget it, and the fifth thing that
+wanted it was the swing.
+
+**AWAY IS STILL TWO POSES and that is the art rather than the cadence.**
+The pack has no rear view at all, so `backrun1` and `backrun2` are both the
+left facing still and a runner going to second does not animate either way.
+It is written as a cycle anyway, so the day those frames exist it is one
+line rather than a fifth copy.
+
+**Every character is already drawn to the same standard**, which is worth
+knowing before anybody orders art to fix how the game looks. The thirteen
+with no animation at all have stills statistically identical to the
+fifty five with a full set: 1617 opaque pixels against 1593, 75 colours
+against 71, 61 rows tall against 62. They are the same artist's work. What
+makes one character look better than another here is whether he MOVES.
+
+**And there is no shared rig to lift, which was measured before it was
+believed.** If the artist had posed one template, the swing silhouettes
+would agree with each other MORE than the stills do. Across 45 humanoid
+characters the stills agree at 0.70 and the swing frames at 0.34 to 0.46,
+so every swing was drawn individually. Within one character the still and
+the contact frame overlap at 0.35, so a warp between them is a deformation
+large enough to destroy 64x64 art. Transferring motion from a character who
+has it to one who does not is not available.
+
 #### The batter stood at the plate holding an axe
 
 `pose === 'batting'` drew the `back` frame, which was right when the sprites

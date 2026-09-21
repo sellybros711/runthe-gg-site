@@ -70,12 +70,21 @@ NAME_MAP = {
 # the pack draws six, so the rest are filled from the stills rather than left
 # out. A missing pose falls through to idle, and idle faces the wrong way for
 # half of them: a runner heading for second would face the camera.
+# EVERY FRAME THE ARTIST DREW, because the game was showing about a quarter
+# of them. A run strip is a four frame cycle (contact, passing, contact,
+# passing) and the page played a two frame toggle off frames 0 and 2, so
+# every runner in the game shuffled between two poses while two more sat in
+# the file. The swing strip is four beats and the page used three. Counted
+# over the pack, 274 drawn and usable frames were never on screen.
 POSE_SOURCE = {
     'idle':    ('idle', 0),
     'run1':    ('run', 0),
-    'run2':    ('run', 2),
+    'run2':    ('run', 1),
+    'run3':    ('run', 2),
+    'run4':    ('run', 3),
     'ready':   ('batting_stance', 0),
     'load':    ('swing', 0),
+    'swing1':  ('swing', 1),
     'swing':   ('swing', 2),
     'follow':  ('swing', 3),
     'windup':  ('pitch', 0),
@@ -144,7 +153,8 @@ STILL_FALLBACK = {}
 # holding the pixels is the earliest use rather than whichever way a dict
 # happened to iterate. Every pose appears exactly once, which the build
 # asserts: a name missing here would be dropped from the table outright.
-ALIAS_ORDER = ['idle', 'ready', 'load', 'swing', 'follow', 'run1', 'run2',
+ALIAS_ORDER = ['idle', 'ready', 'load', 'swing1', 'swing', 'follow',
+               'run1', 'run2', 'run3', 'run4',
                'back', 'backrun1', 'backrun2', 'slump', 'windup', 'kick',
                'release', 'throw', 'catch', 'cheer']
 

@@ -1765,6 +1765,44 @@ async function main() {
       ok(sliced.length === 0,
          'and no frame is a figure cut in half by the side of its own cell',
          sliced.slice(0, 5).join(', '));
+
+      /* ---- the game shows what the artist drew ---- */
+      /* A RUN STRIP IS FOUR FRAMES AND THE PAGE PLAYED TWO. The pack draws a
+         real cycle (contact, passing, contact, passing) and `runPose` used to
+         be a two way toggle off frames 0 and 2, so every runner shuffled
+         between two poses while the other two sat in the file. The swing
+         strip is four beats and the page showed three, so the bat went from
+         over the shoulder to the ball with nothing in between. Counted over
+         the pack, 274 drawn and usable frames were never on screen.
+
+         NOTHING ABOUT THE ART CHANGED, which is why no other check here
+         moved. This is the one that would have noticed. It asks the CYCLE
+         rather than the table: how many distinct drawings can this reach. */
+      const cyc = await pg.evaluate(() => {
+        const M = { 'run-a': 'run1', 'run-b': 'run2', 'run-c': 'run3', 'run-d': 'run4' };
+        const draw = (k, p) => v2Frame(k, p).join('/');
+        const ks = Object.keys(V2_SPRITES);
+        /* a character whose four run frames are four different drawings is
+           one whose strip came through whole; ask the cycle about those */
+        const full = ks.filter(k => new Set(['run1', 'run2', 'run3', 'run4']
+          .map(f => draw(k, f))).size === 4);
+        const phases = new Set();
+        for (let i = 0; i < 40; i++) phases.add(runPose(i, false));
+        const reach = full.map(k => new Set([...phases].map(p => draw(k, M[p]))).size);
+        const swing = ks.filter(k => new Set(['load', 'swing1', 'swing', 'follow']
+          .map(f => draw(k, f))).size === 4).length;
+        return { full: full.length, phases: [...phases],
+                 minReach: reach.length ? Math.min(...reach) : 0, swing };
+      });
+      ok(cyc.phases.length === 4,
+         'THE RUN IS A FOUR FRAME CYCLE, not a two pose shuffle',
+         `the cycle walks ${cyc.phases.length} phases: ${cyc.phases.join(' ')}`);
+      ok(cyc.full > 40 && cyc.minReach === 4,
+         'and every one of those four drawings actually reaches the screen',
+         `${cyc.full} characters have four distinct run frames, the cycle reaches ${cyc.minReach}`);
+      ok(cyc.swing > 40,
+         'and the swing plays all four beats the artist drew',
+         `${cyc.swing} characters carry four distinct swing drawings`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
