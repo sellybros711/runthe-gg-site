@@ -76,6 +76,7 @@ jobs:
       # throws on any host but its own, so a run can never spend a credit.
       - run: node fantasy/check-math.mjs
       - run: node fantasy/check-worker.mjs
+      - run: node fantasy/check-compare.mjs
       # Prints what the shipped polling ladder costs. Not an assertion: it is
       # here so the number is in the log of every run, because a schedule the
       # allowance cannot carry is the one failure the brief says must never be
