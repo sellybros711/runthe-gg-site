@@ -3997,6 +3997,169 @@ block each side for the same reason.
 written in the wrong unit, which is exactly the class of bug that looks fine
 on the machine it was written on.
 
+#### And it was not even, because a stroke is centred on its path
+
+Reported from a desktop screenshot: the left edge of the box was visibly
+thicker than the right. It was. The zone runs **147.33 to 178 blocks** across,
+so `strokeRect` put half a line on each side of a boundary at one end and on
+a whole block at the other, and the same `lineWidth` drew two different
+widths on two sides of one rectangle.
+
+**No width fixes a stroke**, because half of it always falls either side of
+the path. It is **four filled bands on the block grid** now, which are the
+same number of blocks by construction whatever the camera is doing, and the
+rectangle itself is snapped to the grid. `plateGeom` is untouched: the snap
+moves the drawn box by at most half a block and the aim maps where it always
+did.
+
+#### THE CHARACTERS WERE SUPER BLURRY AND THE FIELD WAS NOT
+
+The oldest kind of finding in this file, reported by a player, invisible to
+every guard, and one rounding.
+
+A character is drawn into `pixWorld` through a `1/PIX` transform, so **three
+logical units are one pixel of the blit**, and the destination was rounded to
+a whole LOGICAL unit. Two positions in every three therefore put the bitmap
+between two pixels, **and a bitmap between two pixels is resampled across its
+WHOLE SURFACE rather than at its edges.** The chalk is a path and antialiases
+only where it ends; a person is a photograph of a person.
+
+Measured through one character at three of the sizes this game draws, the
+share of his own pixels that are one of his own palette colours:
+
+| | logical destination | on the grid |
+|---|---|---|
+| a fielder, 36.67 blocks | 37.3% | **100%** |
+| the pitcher, 55.67 blocks | 45.8% | **100%** |
+| the batter, 78 blocks | 55.1% | **100%** |
+
+**NOT ONE OF THE TWENTY SIZES THIS GAME DRAWS IS ON THE GRID** in the other
+direction either: blocks per pixel of the 64px art runs 0.234 to 1.219 and
+never lands on a whole ratio. That is not what was wrong and it is worth
+knowing before reading the numbers above as a claim about the art. What the
+snap buys is that the ART'S OWN upscale, which is `fillRect` and has hard
+edges by construction, is the only resampling left in the path.
+
+A character is also **built at the pixels the blit covers** rather than in
+logical units and reduced three to one on the way in. Measured, that alone
+changes nothing (100% either way once the destination lands), so it is kept
+for a different reason: a cached sprite is a ninth of the canvas it was.
+
+**The idle bob is one pixel of the BLIT, not one logical unit.** A third of a
+block would put the figure between two pixels on alternate beats, so every
+standing character would go soft and sharp about twice a second.
+
+**And `drawK` asks the context rather than assuming `PIX`.** The same function
+draws the clubhouse and the photo scene through transforms of their own, and
+`drawRunner`'s mirror makes the scale negative.
+
+**THE GUARD ASKS THE DESTINATION, NOT THE PIXELS.** A colour count cannot say
+whose pixel it is: a figure overlaps the grass, the dirt and the man behind
+him, and three ad hoc attempts at it in one afternoon each reported the
+opposite of what the eye and the controlled probe both said. The property is
+exact and it is the one that broke. Proved by reintroducing the rounding,
+which reports **20 of 20 figures off the grid**.
+
+**A half pixel of CSS is a separate hazard and it was NOT this.** The canvas's
+own offset came out at 1.5px on a 1512x850 desktop, because centring divides
+by two. It is snapped to a whole device pixel now, which is right on its own
+terms, and the edge profile is byte identical either way: Chromium happened to
+round it. Three of nine screens still land the canvas on a fraction, all of
+them from the arena's own layout, and all three are a hundredth of a pixel or
+a quarter of one.
+
+### The game is the window, and the deck floats on it
+
+Reported as still looking like a wide box on the screen. It was. Measured
+while pitching, which is the tallest the deck ever gets:
+
+| | the field got | now |
+|---|---|---|
+| 1512x850 desktop | 69% of the window | **95%** |
+| 390x844 phone | 65% | **83%** |
+| 320x568 phone | 55% | **74%** |
+
+**The arena is `inset:0` and the controls are an overlay.** This file's own
+note about the deck said what it needed was to be SMALLER and called that a
+design pass rather than a flex rule. The answer is not smaller, it is out of
+the flow: a control that sits over the picture costs the picture the
+control's own height and nothing else. It also ends the feedback the old
+`flex` basis note is about, because nothing the deck does can reach the
+camera any more.
+
+**THE AT BAT CARD IS GONE.** It is the same three facts as the placards on
+the field and the board above them, laid out as a card with a portrait of the
+man who is already the biggest thing on screen holding a bat. Sideways lost
+it a year ago on exactly that argument and nothing was missed; the argument
+was never about the width.
+
+**THE SCOREBOARD WAS OVER THE PITCHER.** Centred on the window, and the
+pitcher stands at world x 480 of 960, so the board sat across the face of the
+man about to throw in both cameras. It is right aligned under the away side's
+own placard now, and under 600px that placard is hidden so the board goes
+back to the top.
+
+#### The camera has to know what the deck is standing on
+
+**The middle of the picture is not the middle of what a player can see.**
+Framed on the canvas, the zone's bottom edge came out under the swing row:
+the one thing somebody has to find, half behind the one thing they press.
+
+`deckCoverBlocks` is that measurement, and it is **the OVERLAP and never the
+deck's own height**. A window too tall for this picture keeps the deck under
+the field, where it is just as tall and covers nothing; asked for a height,
+the camera would frame the plate a third of the way up a screen with nothing
+over it. It is written out as `--deck` as well, because the two bottom
+placards are CSS and cannot ask: one measurement, two readers.
+
+**AND THE OVERLAY IS NOT FOR EVERY WINDOW.** The world is 320 by 220 blocks
+and the plate camera covers the arena, so what it can show across is about the
+arena's aspect times 220. The plate and the batter need about 120 of them.
+A 390 by 810 arena comes out at **97**, and the strike zone's own left edge was
+outside the frame. There is no framing that fixes that: the picture is the
+wrong shape for the hole. So the overlay is gated at `min-aspect-ratio: 3/4`
+and a tall window keeps the deck under the field, winning back what this pass
+actually removed rather than what it could not.
+
+**The zone is clamped into the crop on top of all that**, because a phone
+still crops hard and the batter is the thing that may be lost. `PLATE_KEEP_X`
+and `PLATE_KEEP_Y` pull the crop toward the zone from either side, after the
+focus and before the world's own edge, which is last because it is the only
+one of the three that cannot be argued with.
+
+**EVERY PIXEL THE DECK IS TALL IS A PIXEL THE CAMERA OWES**, and the world
+runs out. At 1280x800 the plate crop is 190 of the world's 220 blocks, so
+there are 30 blocks of headroom and the deck may cost at most 22 of them. The
+pitch name over the swing row came to 27 and the zone went back under the
+buttons, at 24 pixels and then at 8. Beside each other they cost 17, and End
+Game moved out of the flow into a corner chip because its own row was 33
+pixels of that budget spent on the control nobody is looking for.
+
+**A `:not()` chain beats almost everything you write after it.** The rule that
+gives the deck its gutters carries three of them, so written with
+`position:relative` in it, it beat every later rule that wanted a deck item
+out of the flow: the End Game chip asked for a corner and drew in the flow at
+the bottom left, under the deck it was meant to sit on. It sets margins and
+nothing else now, and what needs a position is what needs a z-index.
+
+**The callout was on the pitcher too**, at 38% of the arena, which is the
+mound in both cameras: every call in the game was announced across his face.
+Half way down is the band of outfield grass with nothing in it, and it is
+still above the zone.
+
+#### The guard measures the glass, and it found two things the eye did not
+
+`check-firstpitch.mjs`'s fourth section reads where the zone lands in CSS
+pixels and where the deck starts, across five screens. On its first run it
+reported the 1280x800 overlap above, which no screenshot of a 1512 window
+would ever have shown.
+
+**Its other report was the check being wrong, and the shape is familiar.** A
+phone held sideways puts the deck in a COLUMN beside the field, and a column
+that starts high up the window is not standing on anything. Read as a height
+it failed on a screen with nothing wrong with it. The claim is about overlap,
+so it is only asked where the two share a column.
+
 ### Difficulty is what the other dugout KNOWS
 
 `DIFF` used to hold three columns and all three were about the player's half of

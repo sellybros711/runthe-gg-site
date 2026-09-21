@@ -92,18 +92,28 @@
      the flow: out of it, the arena is 69 pixels taller on every screen and
      the top of the window stops being a strip of paper above a ballgame.
      It keeps its markup and its place in the reading order. */
-  body.ingame .linescore{position:absolute;z-index:5;top:6px;left:50%;
-    transform:translateX(-50%);margin:0;opacity:.94;}
+  /* AND IT GOES TO A CORNER, BECAUSE TOP CENTRE IS THE MOUND. The pitcher
+     stands at world x 480 of 960, so a board centred on the window sat
+     directly over the man about to throw, in both cameras. Reported as the
+     scoreboard being right over the pitcher. The corner is the RIGHT one
+     because the batter's box and the plate are the bottom right of the
+     plate camera and the top right of it is crowd. */
+  body.ingame .linescore{position:absolute;z-index:5;top:6px;right:8px;
+    left:auto;transform:none;margin:0;opacity:.94;justify-content:flex-end;
+    max-width:calc(100% - 16px);}
   /* The park's name rides with it. On a phone the corner placard that
      carries it is hidden, so this strip is the only place it appears, and
      left in the flow it was a line of paper above the sky. */
   body.ingame .park-strip{position:absolute;z-index:5;top:0;left:0;right:0;
     margin:0;padding:2px 0;color:var(--gold);text-shadow:0 1px 2px #0b1015;}
-  /* UNDER THE PARK'S SIGN, NOT ON IT. Both are top centre: the sign is the
-     placard bolted to the arena at 8px and the line score is the overlay,
-     so at 16 the score bug covered the name of the ground it was played
-     at. 44 clears the placard's own height. */
-  body.ingame .linescore{top:44px;}
+  /* UNDER THE AWAY SIDE'S OWN PLACARD, NOT ON IT. Both are top right now:
+     the placard is bolted to the arena at 8px and the board is the overlay,
+     so at 6 the board covered the name of the club whose runs it was
+     printing. 56 clears the placard's own height. Under 600px that placard
+     is hidden, because three boards on a phone field is two too many, so
+     the board is the only thing up there and goes back to the top. */
+  body.ingame .linescore{top:56px;}
+  @media (max-width:600px){ body.ingame .linescore{top:24px;} }
   /* THE AT BAT CARD IS A LINE ON A PHONE. It is the same three facts as
      the placards on the field and the row above it, laid out as a card
      with a portrait, and at 151 pixels it was the single biggest thing
@@ -128,19 +138,148 @@
      width limited, the scale is 1, and the strike zone comes out 37 across
      on a 664 tall phone against 74 on an 844. The floor is high enough
      that the shorter phone is over that line with room. */
-  body.ingame .arena{flex:5 1 0;min-height:min(56vh, 480px);width:100%;max-width:none;
-    margin:0;border:0;border-radius:0;box-shadow:none;background:#0b1015;
-    position:relative;overflow:hidden;}
+  /* THE ARENA IS THE SCREEN, AND THE DECK FLOATS ON IT. Sharing the window
+     with the deck is what made this read as a wide box with a ballgame in
+     it: measured while pitching, the deck wanted 228 pixels on a desktop
+     and 261 on a phone, so the field got 69% of the window on the best
+     screen and 55% on the worst. This file's own note about the deck said
+     what it needed was to be SMALLER and called that a design pass rather
+     than a flex rule. This is the pass, and the answer is not smaller, it
+     is out of the flow: a control that sits over the picture costs the
+     picture the control's own height and nothing else.
+     `inset:0` rather than a flex basis, so the arena's height is the
+     screen's and cannot be argued down by whatever the deck wants. It also
+     ends the loop the old basis note is about: nothing the deck does can
+     reach the camera now. */
+  /* THE OVERLAY IS FOR A WINDOW SHAPED LIKE A BALLGAME, AND NOT EVERY
+     WINDOW IS. The world is 320 by 220 blocks, and the plate camera covers
+     the arena, so what it can show across is about the arena's aspect times
+     220 blocks. The plate and the batter need about 120 of them. Under an
+     aspect of about 0.55 the crop cannot hold them, and a 390 by 810 arena
+     comes out at 97: the strike zone's own left edge was outside the frame.
+     There is no framing that fixes that. The picture is the wrong shape for
+     the hole.
+     So a tall window keeps the deck UNDER the field, which is what it
+     always did, and wins back what this pass actually removed: the at bat
+     card and two of the deck's four rows. A phone goes from 65% of the
+     window to about 80% rather than to 96%, and every block of it is the
+     game. 3/4 rather than 0.55 because what CSS can ask about is the
+     viewport and the deck is most of the difference. */
+  body.ingame .arena{flex:5 1 0;min-height:min(56vh, 480px);width:100%;
+    max-width:none;margin:0;border:0;border-radius:0;box-shadow:none;
+    background:#0b1015;position:relative;overflow:hidden;}
+  @media (min-aspect-ratio: 3/4){
+    body.ingame .arena{position:absolute;inset:0;width:auto;min-height:0;}
+    /* AND THE DECK IS ONE ROW, WHICH IS THE CAMERA'S BUDGET RATHER THAN A
+       PREFERENCE. Every pixel it is tall is a pixel the camera pushes the
+       picture down by, and the world runs out: at 1280 by 800 the plate
+       crop is 190 of the world's 220 blocks, so there are 30 blocks of
+       headroom and the deck may cost at most 22 of them. Stacked, the pitch
+       name and the swing row came to 27 and the zone's bottom edge was
+       under the buttons. Beside each other they cost 17. */
+    body.ingame .meter-wrap{display:flex;align-items:center;gap:8px 18px;
+      flex-wrap:wrap;}
+    body.ingame .meter-wrap .label{margin:0;flex:0 0 auto;gap:12px;}
+    body.ingame .meter-wrap .hint{margin:0;}
+    body.ingame .swing-modes{margin:0;}
+    /* AND END GAME LEAVES THE FLOW HERE AND ONLY HERE. Its own row was 33
+       pixels of a 22 block budget spent on the one control nobody is
+       looking for. Under a tall window there is no budget to spend, the
+       deck is not standing on the picture at all, and a chip pinned to the
+       bottom of the screen lands on the swing buttons instead. */
+    body.ingame .screen > .controls:last-child{position:absolute;right:10px;
+      bottom:6px;left:auto;margin:0;z-index:7;}
+  }
   /* Absolutely positioned so the arena's size never depends on the
      canvas's: a canvas whose bitmap is derived from its own layout width
      and whose layout width came from its intrinsic size is a feedback
      loop, and it settles somewhere arbitrary. */
   body.ingame #field{position:absolute;max-width:none;max-height:none;
     width:auto;height:auto;}
-  /* The deck, in the space the arena did not take. The gutter moved off
-     `.wrap` and onto these, because the arena is the one child that has to
-     reach the edge of the window. */
-  body.ingame .screen > *:not(.arena){margin-left:12px;margin-right:12px;}
+  /* The deck, ON the space the arena took. The gutter moved off `.wrap` and
+     onto these, because the arena is the one child that has to reach the
+     edge of the window. */
+  /* THE TWO OVERLAYS ARE NAMED OUT OF IT, and they have to be. This
+     selector carries three classes and beats the rules that take the line
+     score and the park's name OUT of the flow, so written without them it
+     put both of them back in, one at the top of the deck and one over the
+     other. Nothing threw: a board in the flow is a board.
+     IT SETS MARGINS AND NOTHING ELSE. Written with `position:relative` in
+     it, the same three classes beat every later rule that wanted to take a
+     deck item out of the flow as well: the End Game chip asked for a corner
+     and drew in the flow at the bottom left, under the deck it was supposed
+     to sit on. What actually needs a position is what needs a z-index, so
+     that is where it is written. */
+  body.ingame .screen > *:not(.arena):not(.linescore):not(.park-strip){
+    margin-left:12px;margin-right:12px;}
+  body.ingame .meter-wrap,
+  body.ingame .log{position:relative;z-index:6;}
+  /* AND IT SITS AT THE BOTTOM, which is one `auto` on the first of them.
+     The arena is out of the flow, so the flex column holds only the deck
+     and the free space is the whole window. */
+  body.ingame .swing-modes{margin:4px 0 0;}
+  /* WHAT IT IS DRAWN ON. The panels are opaque paper and over a ballgame
+     that is a second box, so the deck wears the field instead: a dark wash
+     that the type reads on and the grass shows through. The swing row
+     keeps its own panel colour, because it is the one thing here that is
+     pressed and a control has to look like a control. */
+  /* A TALL WINDOW KEEPS THE DECK UNDER THE FIELD, and under it the cream
+     page showed through the deck's own gradient: a band of paper with a
+     dark strip floating in it, which is the box this pass removed wearing
+     a different colour. The screen is dark, so what is not the picture is
+     the dugout. In the overlay layout the arena covers all of it. */
+  body.ingame .screen{background:#0b1015;}
+  /* THE SWING ROW REACHES BOTH EDGES AND FADES INTO THE GRASS. Inset by
+     the deck's gutter and filled flat it is a slab lying on the outfield,
+     which is the box this pass removed arriving one row down. A gradient
+     with no border has no edge to read as a panel, and it still carries
+     the type: the darkest stop is under the words. */
+  body.ingame .meter-wrap{margin:auto 0 0;border:0;
+    padding:8px 14px 8px;box-shadow:none;color:var(--paper, #f4ead6);
+    background:linear-gradient(to bottom, rgba(8,16,26,0), rgba(8,16,26,.80) 38%,
+      rgba(8,16,26,.88));}
+  body.ingame .log{background:rgba(8,16,26,.72);border-color:rgba(11,16,21,.9);
+    box-shadow:none;color:var(--paper, #f4ead6);}
+  body.ingame .log{color:rgba(244,234,214,.82);}
+  body.ingame .log .line.big{color:var(--gold);}
+  body.ingame .meter-wrap .label,
+  body.ingame .meter-wrap .hint{color:rgba(244,234,214,.72);}
+  body.ingame .swing-modes .lbl{color:rgba(244,234,214,.72);}
+  /* THE AT BAT CARD IS GONE FROM THE GAME SCREEN. It is the same three
+     facts as the placards on the field and the board above them, laid out
+     as a card with a portrait of the man who is already the biggest thing
+     on screen holding a bat. Sideways lost it a year ago on exactly that
+     argument and nothing was missed; the argument was never about the
+     width. It stays in the markup and in the reading order. */
+  body.ingame .atbat{display:none;}
+  /* THE TWO BOTTOM PLACARDS SIT ON TOP OF THE DECK, not under it. Whose
+     turn it is and the count are the two facts the board above does not
+     carry, and at `bottom:8px` the End Game button was printed straight
+     through the first of them. `--deck` is the measurement the camera
+     already takes, written out so there is one answer rather than two. */
+  body.ingame .arena .corner.bl,
+  body.ingame .arena .corner.br{bottom:calc(10px + var(--deck, 0px));}
+  /* THE PLAY BY PLAY IS A CORNER, NOT A BAND. Full width over a ballgame
+     it is a dark stripe across the outfield that is empty most of the
+     game, which is the box this pass removed arriving back one row down.
+     It takes the left third and only the lines that fit. */
+  body.ingame .log{max-width:min(420px, 46%);margin-right:auto;
+    max-height:11vh;padding:6px 10px;font-size:11px;line-height:1.5;}
+  body.ingame .log:empty{display:none;}
+  /* END GAME IS THE QUIETEST THING ON THE SCREEN. It ends the run, so it
+     is never the control a thumb finds first: small, at the right, away
+     from the swing row and away from the count. */
+  /* AND IT IS OUT OF THE FLOW, WHICH IS ARITHMETIC RATHER THAN TIDINESS.
+     Every pixel the deck is tall is a pixel the camera has to push the
+     picture down by, and the world runs out: at 1280 by 800 the plate crop
+     is 190 of the world's 220 blocks, so there are 30 blocks of headroom
+     and the deck may cost at most 22 of them. Its own row was 33 pixels of
+     that budget spent on the one control nobody is looking for. */
+  body.ingame .screen > .controls:last-child{margin:0 12px 6px;padding:0;
+    justify-content:flex-end;}
+  body.ingame .screen > .controls:last-child .btn{font-size:10px;padding:5px 9px;
+    background:rgba(8,16,26,.72);color:rgba(244,234,214,.8);
+    border-color:rgba(11,16,21,.9);box-shadow:none;}
   /* The play by play is the least urgent thing on the screen and the only
      one that grows without limit, so it is the one that gets a box and a
      scrollbar rather than pushing the field out of the window. */
@@ -375,7 +514,12 @@
 
   .callout{
     position:absolute;
-    top:38%;
+    /* NOT ON THE PITCHER. 38% of the arena is the mound in both cameras, so
+       every call in the game was announced across the face of the man who
+       had just thrown it. Half way down is the band of outfield grass
+       between the infield and the plate, which is the one stretch of this
+       picture with nothing in it, and it is still above the zone. */
+    top:52%;
     left:50%;
     transform:translate(-50%,-50%) scale(.9);
     padding:14px 30px;
@@ -6530,6 +6674,45 @@ function fieldDraw(scale, dpr) {
   return scale;
 }
 
+/* HOW MUCH OF THE ARENA THE DECK IS SITTING ON, in world blocks.
+
+   The controls are an overlay now, so the picture is taller than the part
+   of it a player can use. This is the difference, and it is what both the
+   camera and the two bottom placards are told: the camera frames the band
+   above it and the placards sit on top of it.
+
+   IT IS ALSO WRITTEN OUT AS `--deck`, because the placards are CSS and
+   cannot ask. One measurement, two readers, so the two cannot disagree. */
+/* IT IS THE OVERLAP, NEVER THE DECK'S OWN HEIGHT, and the difference is the
+   whole reason it is measured rather than read off one element. A window
+   too tall to hold this picture gets the deck UNDER the field instead of on
+   it (see the aspect rule in the stylesheet), and there the deck is just as
+   tall and covers nothing at all. Asked for its height, the camera would
+   frame the plate a third of the way up a screen with nothing over it. */
+function deckCoverBlocks(box, scale) {
+  const m = document.querySelector('.meter-wrap');
+  const s = box.parentElement;
+  if (!m || !s || !m.offsetParent) return 0;
+  const ab = box.getBoundingClientRect(), mb = m.getBoundingClientRect();
+  const css = Math.max(0, Math.round(ab.bottom - mb.top));
+  if (s.dataset.deck !== String(css)) {
+    s.dataset.deck = String(css);
+    s.style.setProperty('--deck', css + 'px');
+  }
+  return (css * (window.devicePixelRatio || 1)) / scale;
+}
+
+/* WHAT THE PLATE VIEW IS NOT ALLOWED TO CUT, in world blocks. The zone runs
+   147 to 178 and it is the one thing on this screen a player has to find, so
+   a crop narrow enough to clip it is a crop that has taken the game away.
+   The batter is context and is what a narrow phone loses instead.
+
+   It is a CLAMP on the crop rather than a floor on the scale, because a
+   floor on the scale makes the bitmap shorter than the arena and the deck
+   then sits on a black band. */
+const PLATE_KEEP_X = [144, 181];
+const PLATE_KEEP_Y = [152, 198];
+
 function fitFieldCanvas(cv) {
   const box = cv.parentElement;
   if (!box) return;
@@ -6569,8 +6752,31 @@ function fitFieldCanvas(cv) {
   /* Put the focus in the middle of what is shown, then refuse to read past
      the edge of the world: a clamp rather than a centre, because a centred
      crop of the plate view puts the batter half out of frame. */
-  const sx = clamp(Math.round(fx / PIX - sw / 2), 0, Math.max(0, wBlocks - sw));
-  const sy = clamp(Math.round(fy / PIX - sh / 2), 0, Math.max(0, hBlocks - sh));
+  /* THE MIDDLE OF THE PICTURE IS NOT THE MIDDLE OF WHAT A PLAYER CAN SEE.
+     The deck floats over the bottom of the arena, so framing the plate on
+     the canvas put the strike zone's bottom edge under the swing row: the
+     one thing on this screen somebody has to find, half behind the one
+     thing they press. What the camera centres on is the band the deck
+     leaves, which on a desktop is about 150 pixels shorter than the arena.
+
+     IT IS MEASURED RATHER THAN WRITTEN, because the deck's height depends
+     on whether the pitch picker is up, and a number here would be right for
+     one of those two states. `offsetTop` is integer and cheap; this runs
+     every frame and writes almost never. */
+  const deck = deckCoverBlocks(box, scale);
+  let sx = Math.round(fx / PIX - sw / 2);
+  let sy = Math.round(fy / PIX - (sh - deck) / 2);
+  /* Then refuse to cut the zone. Pulled toward it from either side, and the
+     pull is harmless on a wide screen because the crop already holds it. */
+  if (plate) {
+    sx = Math.max(Math.min(sx, PLATE_KEEP_X[0]), PLATE_KEEP_X[1] - sw);
+    sy = Math.max(Math.min(sy, PLATE_KEEP_Y[0]),
+                  PLATE_KEEP_Y[1] - Math.max(1, sh - deck));
+  }
+  /* And refuse to read past the edge of the world, which is last because it
+     is the only one of the three that cannot be argued with. */
+  sx = clamp(sx, 0, Math.max(0, wBlocks - sw));
+  sy = clamp(sy, 0, Math.max(0, hBlocks - sh));
   /* The camera is settled. The last question is how many pixels the PAGE
      has to draw it at, and the browser makes up the difference by a whole
      number. See `fieldDraw` above for why that is safe and why it is not a

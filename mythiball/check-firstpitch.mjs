@@ -241,6 +241,73 @@ const main = async () => {
     await pg.close(); await ctx.close();
   }
 
+  /* ---- nothing is standing on the zone ---- */
+  {
+    console.log('nothing is standing on the zone');
+    /* The controls float over the picture, which is what stopped the game
+       being a wide box with a ballgame in it. What that can cost is the one
+       thing this screen exists for: framed on the canvas rather than on the
+       part of the canvas a player can see, the zone's bottom edge came out
+       under the swing row. And a crop narrow enough to hold the batter cut
+       the zone's left edge off the frame entirely on a phone, because a 390
+       by 810 arena can only show 97 of the world's 320 blocks across.
+
+       So both claims are read off the GLASS: where the zone lands in CSS
+       pixels, and where the deck starts. Neither is derived from the camera
+       twice. */
+    for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
+                                      ['small phone', 320, 568, 2],
+                                      ['phone sideways', 844, 390, 3],
+                                      ['desktop', 1280, 800, 1],
+                                      ['desktop, tall', 1512, 900, 1]]) {
+      const { ctx, pg, errors } = await game(browser, w, h, dpr);
+      await pg.waitForFunction(() => State.game && plateViewActive(State.game),
+        { timeout: 25000 });
+      await pg.waitForTimeout(250);
+      const r = await pg.evaluate(() => {
+        const P = plateGeom();
+        const cv = document.getElementById('field');
+        const box = cv.getBoundingClientRect();
+        /* logical field pixels to the page, through the camera the same way
+           fieldPointFromEvent inverts it */
+        const toPage = (lx, ly) => [
+          box.left + (lx / PIX - FIELD_CAM.sx) / FIELD_CAM.sw * box.width,
+          box.top + (ly / PIX - FIELD_CAM.sy) / FIELD_CAM.sh * box.height];
+        const [x0, y0] = toPage(P.zx - P.zw, P.zy - P.zh);
+        const [x1, y1] = toPage(P.zx + P.zw, P.zy + P.zh);
+        const m = document.querySelector('.meter-wrap');
+        const mb = m.getBoundingClientRect();
+        const ar = cv.parentElement.getBoundingClientRect();
+        return { x0, y0, x1, y1, deckTop: mb.top,
+                 /* A PHONE HELD SIDEWAYS PUTS THE DECK BESIDE THE FIELD, in
+                    a column of its own, and a column that starts high up the
+                    window is not standing on anything. The claim is about
+                    OVERLAP, so it is only asked where the two share a
+                    column. Read as a height, sideways failed on a screen
+                    with nothing wrong with it. */
+                 deckOver: mb.right > x0 && mb.left < x1,
+                 arena: { l: ar.left, t: ar.top, r: ar.right, b: ar.bottom },
+                 vw: innerWidth, vh: innerHeight };
+      });
+      const margin = 4;
+      ok(r.x0 >= r.arena.l - margin && r.x1 <= r.arena.r + margin,
+        `${label}: the whole zone is across the frame`,
+        `zone ${r.x0.toFixed(0)}..${r.x1.toFixed(0)} in an arena `
+        + `${r.arena.l.toFixed(0)}..${r.arena.r.toFixed(0)}`);
+      ok(r.y0 >= r.arena.t - margin && r.y1 <= r.arena.b + margin,
+        `${label}: and down it`,
+        `zone ${r.y0.toFixed(0)}..${r.y1.toFixed(0)} in an arena `
+        + `${r.arena.t.toFixed(0)}..${r.arena.b.toFixed(0)}`);
+      /* THE ONE THAT BREAKS WHEN THE DECK GROWS. A control the game is
+         waiting on may not stand on the thing it is waiting for. */
+      ok(!r.deckOver || r.y1 <= r.deckTop + margin,
+        `${label}: and the swing row does not stand on it`,
+        `the zone ends at ${r.y1.toFixed(0)} and the deck starts at ${r.deckTop.toFixed(0)}`);
+      ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+      await pg.close(); await ctx.close();
+    }
+  }
+
   await browser.close();
   console.log('');
   if (failures) { console.log(`${failures} check(s) failed.`); process.exit(1); }
