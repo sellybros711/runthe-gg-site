@@ -296,6 +296,34 @@ if (!rosterMatch) {
             + s.side).join(', ')}. That is a piece of the frame next door. `
             + 'Re-run mythiball/sprites/tools/build_table.py and install.py.');
         }
+
+        /* AND HIS FEET ARE ON THE BOTTOM OF HIS OWN CELL. A sprite is drawn
+           with the bottom of its CELL on the dirt, so a frame whose figure
+           stops short is a figure hovering over its own shadow by however
+           many rows are empty.
+
+           `cleaned()` seats every frame at y=62, so the gap is 1 by
+           construction and 0 for a character drawn the full height of the
+           canvas. Anything more means the seat was refused, which is what
+           left 291 of 1,360 frames floating up to 39 rows: the pitcher's
+           windup hung a quarter of his own height over the mound, on every
+           pitch, and nothing could report it because a frame drawn high in
+           its cell is a perfectly valid frame.
+
+           It is asked of the DECODED drawing, so a reference is resolved
+           first, which is the lesson the three guards aliasing defeated
+           already learnt. */
+        let lastLit = -1;
+        for (let y = 0; y < rows.length; y++) {
+          if (/[^.]/.test(rows[y] || '')) lastLit = y;
+        }
+        const gap = lastLit < 0 ? 0 : (H - 1) - lastLit;
+        if (gap > 1) {
+          problems.push(`sprite "${key}" pose "${pose}" leaves ${gap} empty rows under `
+            + 'the figure, so he is drawn hovering that far above the ground. '
+            + 'cleaned() seats every frame on y=62. Re-run '
+            + 'mythiball/sprites/tools/build_table.py and install.py.');
+        }
       }
     }
     if (rosterMatch) {

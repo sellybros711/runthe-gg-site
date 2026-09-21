@@ -3263,6 +3263,59 @@ Measured across all 1,360 frames: 1,342 baselines unchanged, **18 moved, every
 one of them DOWN**, the biggest being zombie's batting stance by five rows. Not
 one moved up, which is what says this was a correction rather than a shuffle.
 
+##### And the pitcher hovered over his own mound, because a guard read the wrong edge
+
+Found by looking at the plate camera: the pitcher stood on the infield dirt
+with the mound, its rubber and a strip of grass drawn BELOW him, empty.
+Measured, his `windup` frame left **17 empty rows** of its 64 row cell under
+the figure, which at that camera is 35 logical pixels of air.
+
+**A sprite is drawn with the bottom of its CELL on the dirt**, so an unseated
+frame is a figure hovering over its own shadow. `cleaned()` seats every frame
+on y=62 and the refusal above it was written:
+
+```python
+if shift > 0 and top - shift < 0:
+    shift = top          # as far down as there is room for
+```
+
+**That reads as "there is not enough room above to move it down" and is about
+the wrong edge.** Moving content DOWN drops rows off the BOTTOM, and the
+target is y=62 with row 63 spare, so nothing lit is ever lost: a downward
+shift cannot clip. What the clause actually did was refuse the whole shift for
+any figure drawn against the top of its cell, **which is exactly the frame
+that needs seating most**.
+
+| | frames of 1,360 |
+|---|---|
+| sitting six rows or more above the ground | **291** |
+| of those, refused by that one clause | **287** |
+| after the fix | **0** |
+
+The worst was 39 rows, more than half the cell.
+
+**They are complete figures rather than clipped ones**, which was settled by
+opening the pack's own strip rather than by reasoning: the middle two frames
+of a run are drawn high in the cell with a neighbour's hat bleeding in
+underneath, `drop_edge_bleed` takes the bleed off, and the figure is left
+where the artist put it. Hat, face and both feet are all there.
+
+**There was no animation bounce to lose**, which is the thing to check before
+seating anything. If seating flattened a stride it would already have
+flattened the other 1,070 frames the builder does seat, and the medians say it
+seats them: the pack's convention is feet on the floor with the motion in the
+limbs.
+
+**It cost nothing.** 807 poses from a drawn frame and 647 on a still, before
+and after, and the table is 1186KB either way. The same art, standing on the
+ground.
+
+**`check-posture.mjs` holds it**, beside the bleed rule and for the same
+reason: what shipped was data rather than behaviour. The gap is 1 by
+construction, so anything over that means a seat was refused. **Proved by
+pointing it at the table that shipped one pass ago: 296 problems against 0 on
+the rebuilt one**, and by lifting one frame ten rows, which it names exactly.
+
 ##### And the EDGE was the wrong half of the rule
 
 The fix above shipped with "ten frames in the clubhouse still carry a small
