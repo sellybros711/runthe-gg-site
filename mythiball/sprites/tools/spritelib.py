@@ -68,8 +68,19 @@ def components(mask):
     return out
 
 
+# HOW CLEAR OF THE FIGURE A TOP OR BOTTOM BLOB HAS TO BE TO BE SOMEBODY ELSE.
+# Measured over every frame in the pack: of the 400 detached blobs sitting on
+# the top or bottom edge, 10 are within a pixel of the figure, NONE are 2 or 3
+# away, 10 are 4 to 6 away and 380 are 7 or more. So the threshold sits in a
+# band that is genuinely empty rather than on the last value that passes, and
+# the ten it keeps are the case it is written for: Paul Bunyan's boot in
+# `run1` and `run2` is drawn clear of his leg and is 123 pixels of his own
+# character.
+BLEED_GAP = 3
+
+
 def drop_edge_bleed(frame):
-    """Remove detached blobs touching a side edge: the NEIGHBOURING frame.
+    """Remove detached blobs on an edge: the NEIGHBOURING frame's drawing.
 
     A strip is one image cut into 64px cells, and several characters are drawn
     a little wider than their cell, so a wing, a bat or a foot from the frame
@@ -87,6 +98,31 @@ def drop_edge_bleed(frame):
     THE CHARACTER IS THE LARGEST BLOB, always, so it is never what goes. A
     ball drawn hard against the edge would be dropped with the bleed, which is
     a few pixels against a frame of art.
+
+    IT ONLY EVER LOOKED AT THE SIDES, AND THE BLEED IS MOSTLY VERTICAL. The
+    docstring above says "cut into 64px cells" and every strip really is one
+    row of them, so a neighbour could only be left or right. That premise is
+    false one step earlier: the strips were themselves cut out of a TALLER
+    sheet, so a 64px cell catches the bottom of the figure above it or the top
+    of the one below. Opened by hand, `hermes_pitch` frame 2 is Mrs Claus with
+    her head clipped off at the top of the cell and the next Mrs Claus's white
+    hair intruding along the bottom.
+
+    Measured over the shipped table before this: of 558 detached blobs, **0**
+    survived on a side edge and 355 sat on the top or the bottom, because the
+    test was doing its job perfectly on the one axis it was given. What a
+    player saw was a pair of somebody else's shoes floating over Alice's head
+    and 278 pixels of another character lying at Hermes' feet. Nineteen of the
+    sixty eight carried one in a pose the clubhouse shows. Nothing could
+    report it: a stray blob is a valid drawing, every pose was present, and
+    every guard here asks whether a frame is its own art rather than whether
+    it is ONLY its own art.
+
+    A TOP OR BOTTOM BLOB NEEDS A CLEARANCE AND A SIDE ONE DOES NOT. Sideways,
+    the neighbour is past the cell wall and a character's own arm reaches the
+    edge attached to the character, so touching the edge is the whole of it.
+    Vertically the figure STANDS on the bottom edge, so a foot drawn clear of
+    the leg is a detached blob on that edge and is not bleed. See BLEED_GAP.
     """
     op = frame[:, :, 3] > 0
     if not op.any():
@@ -95,11 +131,21 @@ def drop_edge_bleed(frame):
     if len(blobs) < 2:
         return frame
     main = max(blobs, key=lambda m: m.sum())
+    mys = np.where(main.any(axis=1))[0]
+    mtop, mbot = int(mys.min()), int(mys.max())
     out = np.array(frame, copy=True)
     for m in blobs:
         if m is main:
             continue
         if m[:, 0].any() or m[:, -1].any():
+            out[m] = 0
+            continue
+        on_top, on_bot = bool(m[0, :].any()), bool(m[-1, :].any())
+        if not on_top and not on_bot:
+            continue
+        ys = np.where(m.any(axis=1))[0]
+        gap = int(ys.min()) - mbot if on_bot else mtop - int(ys.max())
+        if gap >= BLEED_GAP:
             out[m] = 0
     return out
 

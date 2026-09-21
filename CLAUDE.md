@@ -2758,6 +2758,86 @@ the wall. `EDGE_RUN_MAX` is 40, in the gap.
 is WHICH frame each pose gets: **poses that had to substitute went 138 to 49**,
 so 89 of them now show the drawing the animation actually intended.
 
+##### And it only ever looked at the SIDES, while the bleed is mostly vertical
+
+Reported by a player looking at the clubhouse: the four characters on the floor
+had black fragments hanging off them. They did. **Nineteen of the sixty eight
+carried a piece of a DIFFERENT figure** in a pose that screen can show: a pair
+of somebody else's shoes floating over Alice's head, 278 pixels of another
+character lying at Hermes' feet, a spare head along the bottom of Krampus and
+the Headless Horseman.
+
+**The premise one line up is false one step earlier.** "A strip is one image cut
+into 64px cells" is true, and every strip really is a single row of them, so the
+only neighbour `drop_edge_bleed` looked for was left or right. But the strips
+were themselves cut out of a TALLER sheet, so a 64px cell catches the bottom of
+the figure above it or the top of the one below. Opened by hand,
+`hermes_pitch` frame 2 is Mrs Claus with her head clipped off at the top of the
+cell and the next Mrs Claus's white hair intruding along the bottom.
+
+**The measurement is what named it, and it is the shape of a check doing its job
+on one axis.** Over the shipped table, of 558 detached blobs:
+
+| touching | count |
+|---|---|
+| a SIDE edge | **0** |
+| the top | 71 |
+| the bottom | 284 |
+| no edge at all | 203 |
+
+Zero on the sides is the rule working perfectly. Everything else was never
+asked about.
+
+**Nothing could report it**, which is why it took a player: a stray blob is a
+valid drawing, every pose was present, every pose was its own drawing and
+differed from idle, and that is every property the guards here ask for. They ask
+whether a frame is its own art. None asked whether it is ONLY its own art.
+
+**A TOP OR BOTTOM BLOB NEEDS A CLEARANCE AND A SIDE ONE DOES NOT**, and that
+asymmetry is the whole of the fix. Sideways, the neighbour is past the cell wall
+and a character's own arm reaches the edge still attached to the character, so
+touching the edge is the entire test. Vertically the figure STANDS on the bottom
+edge, so a foot drawn clear of the leg is a detached blob on that edge and is
+not bleed.
+
+**`BLEED_GAP` is 3 and the band it sits in is empty**, which is `MASS_FLOOR`'s
+rule rather than a guess. Of the 400 blobs on a top or bottom edge: 10 within a
+pixel of the figure, **none at 2 or 3**, 10 at 4 to 6, and 380 at 7 or more. The
+ten it keeps are the case it exists for, and the biggest is Paul Bunyan's boot
+in `run1` and `run2`, 123 pixels of his own character drawn clear of his leg.
+
+**It took nothing away**, which is the sign it is purely subtractive of bleed:
+drawn frames 807 before and after, poses on a still 647 before and after. The
+same art, with somebody else's removed. Edge strays went **355 to 4**, and the
+four are the feet above.
+
+**AND EIGHTEEN FIGURES CAME DOWN ONTO THE DIRT**, which is the paragraph above
+about seating paying off a second time. `cleaned()` drops the bleed BEFORE it
+measures the baseline, so a bottom edge intruder was the lowest thing in the
+frame and was what got seated on y=62, leaving the character hovering above it.
+Measured across all 1,360 frames: 1,342 baselines unchanged, **18 moved, every
+one of them DOWN**, the biggest being zombie's batting stance by five rows. Not
+one moved up, which is what says this was a correction rather than a shuffle.
+
+**What is deliberately left is the 203 blobs touching NO edge.** Some are art
+(Mother Nature's falling leaves, the ball off Alice's bat) and some are bleed
+that stops a few rows short of the edge, and no geometry tells the two apart:
+that is the colour matcher's lesson in a different coat. Ten frames in the
+clubhouse still carry a small mark. Widening this rule to reach them would
+delete the ball.
+
+**`check-posture.mjs` holds it now**, in the sprite section beside the row
+width and the palette keys, because the thing that shipped was data rather than
+behaviour. It walks every pose of every character, resolves a reference first,
+and reports any detached blob on an edge that is clear of the figure by
+`BLEED_GAP`. **The gap is written in both files on purpose**: the checker reads
+what the builder wrote, so a rebuild at a different gap fails here instead of
+shipping.
+
+**Proved by pointing it at the table that shipped**: 265 problems against 0 on
+the rebuilt one. A guard that has only ever seen the fixed file is a guard
+nobody knows the teeth of.
+
 #### A frame has to hold most of its own character
 
 `usable_frame`'s floor was a flat 200 pixels, written to catch a blank, and a
