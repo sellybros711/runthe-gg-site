@@ -178,6 +178,9 @@ jobs:
           fi
           echo ""
           echo "Watch it:   npx wrangler tail fantasy-odds-poller"
-          echo "Or read fantasy_poll_runs in Supabase, which survives you closing"
-          echo "the terminal. In observe mode there will be no rows there, by design:"
-          echo "the log is the whole record until it goes live."
+          echo ""
+          echo "Or run the 'Fantasy: poller status' workflow, which reads"
+          echo "fantasy_poll_runs and survives you closing the terminal. Observe"
+          echo "mode writes a row for every tick that decided something, plus a"
+          echo "heartbeat four times an hour, so an empty table there means the"
+          echo "Worker is not running rather than that it had nothing to do."
