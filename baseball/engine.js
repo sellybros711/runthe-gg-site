@@ -1,4 +1,4 @@
-/* Run The Diamond — game engine.
+/* Run The Diamond: game engine.
  *
  * Headless and dependency-free. Browser: window.RTD_ENGINE. Node:
  * require('./engine.js'). Mirror of The Perfect Season's engine.js,
@@ -12,7 +12,7 @@
 const CONSTANTS = {
   /* The budget has to say no, or there's no decision in the draft. At $245M
    * best-available was priced out on ~1.7 of 12 spins (it barely bit); $170M
-   * makes the budget bite hard — you can't afford a star most spins, and a
+   * makes the budget bite hard. You can't afford a star most spins, and a
    * strong roster takes real draft skill, not just best-available. */
   CAP_MUSD: 170,
   REGULAR_SEASON_GAMES: 162,
@@ -21,7 +21,7 @@ const CONSTANTS = {
   MAX_RESPINS: 3,
   MIN_RESERVE_PER_SLOT_MUSD: 1,
 
-  /* Playoff thresholds — calibrated to the 162-game sim.
+  /* Playoff thresholds, calibrated to the 162-game sim.
    * 95+ wins earns the division (top seed, LCS bye in a simplified bracket).
    * 88+ wins makes the wild card. Below 88 the season is over. */
   DIVISION_WINS: 95,
@@ -57,7 +57,7 @@ const CONSTANTS = {
   RECORD_WINS: 116,
   GOAT_WINS: 117,
 
-  /* Closer save conversion rate — base rate for an average closer. */
+  /* Closer save conversion rate: the base rate for an average closer. */
   CLOSER_BASE_SAVE_PCT: 0.80,
   CLOSER_WAR_SCALE: 0.02,
 
@@ -65,7 +65,7 @@ const CONSTANTS = {
   FILLER_ERA: 4.50,
   FILLER_IP_SHARE: 0.55,
 
-  /* SP anchor innings — the abstraction from GDD §8. */
+  /* SP anchor innings: the abstraction from GDD §8. */
   ANCHOR_IP: 210,
 };
 
@@ -85,8 +85,107 @@ const ERAS = {
   '2020s': [2020, 2025],
 };
 
+/* Divisions, as they actually were.
+ *
+ * Scoped to 1994 onward, the three-division era, because that is the only period
+ * where "AL East" names one stable thing a fan can picture. Divisions began in 1969
+ * with two per league, and anything before that is just the two leagues.
+ *
+ * Each entry is [club, firstSeason, lastSeason], so a club sits in the division it
+ * was really in that year: Detroit is AL East through 1997 and AL Central after,
+ * Milwaukee is AL Central for four years before moving to the NL, Houston is NL
+ * Central until 2013 and AL West after, and Montreal becomes Washington in 2005.
+ * Drafting the 1996 AL West and getting Houston would be the whole point missed. */
+const DIVISIONS = {
+  'AL East': [['BAL', 1994, 2025], ['BOS', 1994, 2025], ['NYY', 1994, 2025],
+    ['TOR', 1994, 2025], ['DET', 1994, 1997], ['TBD', 1998, 2007], ['TBR', 2008, 2025]],
+  'AL Central': [['CHW', 1994, 2025], ['CLE', 1994, 2025], ['KCR', 1994, 2025],
+    ['MIN', 1994, 2025], ['MIL', 1994, 1997], ['DET', 1998, 2025]],
+  'AL West': [['OAK', 1994, 2024], ['SEA', 1994, 2025], ['TEX', 1994, 2025],
+    ['ATH', 2025, 2025], ['CAL', 1994, 1996], ['ANA', 1997, 2004],
+    ['LAA', 2005, 2025], ['HOU', 2013, 2025]],
+  'NL East': [['ATL', 1994, 2025], ['NYM', 1994, 2025], ['PHI', 1994, 2025],
+    ['FLA', 1994, 2011], ['MIA', 2012, 2025], ['MON', 1994, 2004], ['WSN', 2005, 2025]],
+  'NL Central': [['CHC', 1994, 2025], ['CIN', 1994, 2025], ['PIT', 1994, 2025],
+    ['STL', 1994, 2025], ['HOU', 1994, 2012], ['MIL', 1998, 2025]],
+  'NL West': [['COL', 1994, 2025], ['LAD', 1994, 2025], ['SDP', 1994, 2025],
+    ['SFG', 1994, 2025], ['ARI', 1998, 2025]],
+};
+const DIVISION_FIRST_SEASON = 1994;
+
+/* Salary Cap Survivor.
+ *
+ * The draft is the same. What changes is that the roster does not stay bought:
+ * five times across the season the market moves, somebody's number goes up, and if
+ * that puts you over the cap you give a player away. The one you cut is replaced by
+ * a league-minimum body, so the roster stays legal and the cost is felt in the runs
+ * rather than in an error message.
+ *
+ * Shocks land on a fixed schedule so every run of this mode has the same shape, and
+ * the raise is drawn from the run's own seeded rng so a replay is a replay. */
+const MARKET = {
+  GAMES: [18, 47, 76, 105, 134],   // five shocks, roughly a month apart
+  RAISE_MIN: 0.18,
+  RAISE_MAX: 0.62,
+  MIN_RAISE_MUSD: 1.5,
+};
+
+/* A league-minimum body. Zero WAR, a million dollars, eligible where it has to be.
+ * Not a real person: the name says so, because putting a real player's name on a
+ * scrub would be a lie about that player. */
+function replacementFor(slotName, season) {
+  const pitcher = slotName === 'SP1' || slotName === 'SP2' || slotName === 'CL';
+  const base = slotName.replace(/[12]$/, '');
+  return {
+    i: 'repl_' + base.toLowerCase(),
+    n: 'Replacement ' + base,
+    s: season || 2025,
+    t: 'FA',
+    r: pitcher ? 'p' : 'b',
+    p: 1.0,
+    w: 0.0,
+    pp: base,
+    ep: pitcher ? (base === 'CL' ? 'CL;RP' : 'SP') : base,
+    _repl: true,
+  };
+}
+
+/* Was this club in this division that season? */
+function inDivision(division, team, season) {
+  const rows = DIVISIONS[division];
+  if (!rows) return false;
+  for (const [code, from, to] of rows) {
+    if (code === team && season >= from && season <= to) return true;
+  }
+  return false;
+}
+
+/* The clubs a division has ever held, newest membership first, for the picker. */
+function divisionClubs(division) {
+  const rows = DIVISIONS[division] || [];
+  return rows.slice().sort((a, b) => b[2] - a[2]).map(r => r[0]);
+}
+
 /* 12 roster slots per GDD §3. */
 const SLOTS = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'SP1', 'SP2', 'CL'];
+
+/* All-Time Staff draws twelve arms instead: a five-man rotation, a six-man pen and
+ * a closer. The lineup behind them is league average, so the whole season turns on
+ * run prevention. Slot names stay unique because the draft keys a pick to its slot. */
+const STAFF_SLOTS = ['SP1', 'SP2', 'SP3', 'SP4', 'SP5',
+  'RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'SU', 'CL'];
+const STAFF_ELIGIBILITY = {
+  SP1: ['SP'], SP2: ['SP'], SP3: ['SP'], SP4: ['SP'], SP5: ['SP'],
+  /* A starter can work out of the pen, which is what the bullpen of an all-time
+   * staff would actually look like, and without it the pen has far too thin a pool. */
+  RP1: ['RP', 'CL', 'SP'], RP2: ['RP', 'CL', 'SP'], RP3: ['RP', 'CL', 'SP'],
+  RP4: ['RP', 'CL', 'SP'], RP5: ['RP', 'CL', 'SP'],
+  SU: ['RP', 'CL', 'SP'],
+  CL: ['CL', 'RP'],
+};
+/* The slot list and eligibility a run plays under. */
+function slotsForMode(staff) { return staff ? STAFF_SLOTS : SLOTS; }
+function eligibilityForMode(staff) { return staff ? STAFF_ELIGIBILITY : SLOT_ELIGIBILITY; }
 
 /* What positions can fill each slot.
  * Hitter positions are currently blank in the data (pending Lahman),
@@ -191,8 +290,8 @@ function playerPositions(player) {
 }
 
 /* Can this player fill this slot? */
-function canFillSlot(player, slotName) {
-  const eligible = SLOT_ELIGIBILITY[slotName];
+function canFillSlot(player, slotName, elig) {
+  const eligible = (elig || SLOT_ELIGIBILITY)[slotName];
   if (!eligible) return false;
   const positions = playerPositions(player);
   return positions.some(pos => eligible.includes(pos));
@@ -249,7 +348,7 @@ function indexData(players) {
 
   // Strength model: every spinnable team-season gets an offense/defense
   // estimate and a 0-100 rating from its own best lineup. These drive real
-  // opponents (schedule) and national ranking (résumé) — the "how good was
+  // opponents (schedule) and national ranking (résumé): the "how good was
   // this really" layer that replaces flat win thresholds.
   const teamStats = {};
   const ratingTable = [];
@@ -340,6 +439,74 @@ function overallRating(winPct) {
   return Math.max(1, Math.min(100, Math.round(r * 10) / 10));
 }
 
+/* The rating and all-time rank the player is shown.
+ *
+ * Every real team-season in ratingTable is scored by teamStrength(), which
+ * reads a roster's top nine bats and top two starters and applies neither a
+ * chemistry nor a roster-shape multiplier. A drafted squad used to be scored
+ * by its own pipeline instead, which applies both, so the two numbers were on
+ * different scales: real clubs' projections median out near 64 wins and a
+ * drafted squad's near 88, which lifted the squad clear of all 2,594 real
+ * clubs. It billed 63% of finished seasons as the greatest team of all time,
+ * printed directly above records like 74-88.
+ *
+ * So the shown rating scores the squad the same way the field is scored.
+ * Chemistry and roster shape still do all their work: they move the runs the
+ * team scores and therefore the record. They just stop being counted twice,
+ * once in the season and again in the yardstick it is measured against. */
+function squadRating(roster) {
+  const st = teamStrength(roster);
+  return overallRating(teamWinPct(st.offense, st.defense));
+}
+
+/*
+ * THE NUMBER THE PLAYER IS SHOWN, and it is a different job from squadRating().
+ *
+ * squadRating() exists to put a drafted squad on the same yardstick as the 2,594
+ * real team-seasons it is ranked against, so it reads what a real club has: nine
+ * bats and two starters. That means it is blind to chemistry, to roster shape and
+ * to the closer, which is most of what decides the season. Measured over ninety
+ * drafts, three rosters inside 0.4 rating points of each other projected to 68,
+ * 81 and 96 wins. A player was shown 94 above a 79-83 record and was right to
+ * call it nonsense.
+ *
+ * So the shown rating is built from the offense and defense the season actually
+ * runs on, which correlates .997 with the wins it produces, and then says what it
+ * means in wins.
+ *
+ * TWO NUMBERS, TWO JOBS, and neither is allowed to do the other's:
+ *   squadRating  the all-time rank, and the title difficulty in generatePlayoffs
+ *   teamRating   the rating on the results and squad screens, and the badges
+ * Do not merge them. The rank needs the same yardstick as the field, the shown
+ * rating needs to predict the season, and no one number does both.
+ */
+const PROJ = {
+  /* Pythagorean expectation understates the spread this game's schedule
+   * produces: fitted over 220 drafted rosters against the season simulator,
+   * rms 1.5 wins. Refit rather than nudged if the run model changes. */
+  SLOPE: 1.5047,
+  INTERCEPT: -50.51,
+  /* The two anchors the scale hangs on, both of them things a player already
+   * knows: 88 wins is the wild card line and a coin flip for October, 116 wins
+   * ties the all-time record. A roster that cannot reach October now rates in
+   * the teens instead of the high seventies. */
+  PIVOT_WINS: 88, PIVOT_RATING: 50,
+  TOP_WINS: 116, TOP_RATING: 100,
+};
+
+/* What a roster projects to win over 162, on this game's schedule. */
+function projectedWins(offense, defense) {
+  return PROJ.SLOPE * (teamWinPct(offense, defense) * CONSTANTS.REGULAR_SEASON_GAMES)
+    + PROJ.INTERCEPT;
+}
+
+function teamRating(offense, defense) {
+  const w = projectedWins(offense, defense);
+  const k = (PROJ.TOP_RATING - PROJ.PIVOT_RATING) / (PROJ.TOP_WINS - PROJ.PIVOT_WINS);
+  const r = (w - PROJ.PIVOT_WINS) * k + PROJ.PIVOT_RATING;
+  return Math.max(1, Math.min(100, Math.round(r * 10) / 10));
+}
+
 /* National rank: where a finished season's rating places among all
  * spinnable team-seasons (1 = best ever). */
 function nationalRank(rating, ratingTable) {
@@ -379,14 +546,14 @@ function buildCheapBy(players) {
 
 const CHEMISTRY = {
   VALUES: {
-    /* Family is a real, rare, cross-era bond the formula can't infer — the
+    /* Family is a real, rare, cross-era bond the formula can't infer. The
      * strongest link, because drafting two brothers is a genuine story. */
     family:    0.09,
     reunion:   0.08,
     battery:   0.07,
     dp_combo:  0.06,
     franchise: 0.04,
-    /* Era is a weak ambient link — kept small so the deliberate links
+    /* Era is a weak ambient link, kept small so the deliberate links
      * (family/reunion/battery/DP) are what actually move the needle. */
     era:       0.005,
   },
@@ -423,7 +590,25 @@ function familyLink(a, b) {
  * - Battery: C + pitcher from same team-season
  * - Era: within 3 seasons of each other
  */
-function pairLinks(a, b) {
+/* A bond a mode hands you for free is not a bond.
+ *
+ * In Eras Mode every pair is inside one decade, so the "same era" link fires on
+ * nearly all 66 pairs whatever you draft. In One Franchise every pair shares the
+ * club by construction. Left in, those links push a constrained run straight to the
+ * chemistry cap, which is worth about 21 wins: measured, Eras and Division runs came
+ * out at 100-104 mean wins against the core game's 89 while carrying LESS talent and
+ * a LOWER rating. The constraint was paying better than it cost.
+ *
+ * So a mode suppresses the link its own rule guarantees. The Perfect Season does the
+ * same thing for the same reason. What remains is what you actually chose: the
+ * batteries, the double-play combos, the families, and the clubs you chose to stack
+ * inside a pool that did not force you to. */
+function suppressedIn(opts) {
+  return (opts && opts.suppress) || [];
+}
+
+function pairLinks(a, b, opts) {
+  const off = suppressedIn(opts);
   const links = [];
   const sameTeam = a.t === b.t;
   const sameSeason = a.s === b.s;
@@ -476,16 +661,20 @@ function pairLinks(a, b) {
       label: 'Same era' });
   }
 
+  if (off.length) return links.filter(l => off.indexOf(l.type) === -1);
+
   return links;
 }
 
-function resolveChemistry(roster) {
+function resolveChemistry(roster, opts) {
   const links = [];
   for (let i = 0; i < roster.length; i++) {
     for (let j = i + 1; j < roster.length; j++) {
-      const plinks = pairLinks(roster[i], roster[j]);
+      const plinks = pairLinks(roster[i], roster[j], opts);
       for (const l of plinks) {
-        links.push({ ...l, a: roster[i].n, b: roster[j].n });
+        // ai/bi are roster positions. Names alone cannot attribute a link when
+        // a roster holds two players of the same name, which real data does.
+        links.push({ ...l, a: roster[i].n, b: roster[j].n, ai: i, bi: j });
       }
     }
   }
@@ -504,6 +693,76 @@ function resolveChemistry(roster) {
     saturated,
     net,
     links: positives.concat(negatives),
+  };
+}
+
+/* Chemistry as points, for display.
+ *
+ * The VALUES above are already written as hundredths, so reading one as a whole
+ * number of points is not a re-scaling, it is just dropping the percent sign:
+ * family 0.09 is +9, a franchise tie 0.04 is +4, the ambient era link 0.005 is
+ * +0.5. The cap is +15. That gives the player a small integer to compare
+ * against, instead of a single team-wide percentage that never explains itself. */
+function chemPoints(value) {
+  return Math.round(value * 1000) / 10;
+}
+
+/* Chemistry attributed to each player on the roster.
+ *
+ * Every link pays both ends, so a player's total is the sum of every link they
+ * appear in, and the totals deliberately add up to more than the team's raw
+ * figure. That is the honest shape of the mechanic: a bond is a bond between
+ * two players, and both of them are better for it.
+ *
+ * Returns one entry per roster position: total points, the links themselves,
+ * the strongest single link (what the UI colors the badge by), and keyPoints,
+ * which drops the ambient era link. Era is +0.5 against a cap of +15 and it
+ * attaches to nearly everybody, so badging it would put a meaningless mark on
+ * ten of twelve players and drown the bonds that were actually chosen. */
+function chemistryByPlayer(roster, resolved, opts) {
+  const res = resolved || resolveChemistry(roster, opts);
+  const out = roster.map(() => ({ points: 0, keyPoints: 0, links: [], top: null }));
+  for (const l of res.links) {
+    if (l.value <= 0) continue;
+    for (const idx of [l.ai, l.bi]) {
+      if (typeof idx !== 'number' || !out[idx]) continue;
+      const e = out[idx];
+      e.points += chemPoints(l.value);
+      if (l.type !== 'era') e.keyPoints += chemPoints(l.value);
+      e.links.push(l);
+      if (!e.top || l.value > e.top.value) e.top = l;
+    }
+  }
+  for (const e of out) {
+    e.points = Math.round(e.points * 10) / 10;
+    e.keyPoints = Math.round(e.keyPoints * 10) / 10;
+  }
+  return out;
+}
+
+/* What chemistry is actually worth to this roster, in wins.
+ *
+ * The team rating deliberately excludes chemistry, because it is measured
+ * against real clubs that are scored without it (see squadRating). So chemistry
+ * never shows up in the headline number, only in the record, where the player
+ * cannot see how much of the record it bought. This states it outright: play
+ * the same roster with the bonus and without it, and take the difference. */
+function chemistryWorth(roster, slotNames, opts) {
+  const tagged = roster.map((p, i) => ({
+    ...p, _slot: (slotNames && slotNames[i]) || p._slot || SLOTS[i],
+  }));
+  const chem = resolveChemistry(tagged, opts);
+  const structure = rosterStructure(tagged);
+  const winsAt = (mult) => teamWinPct(
+    rosterOffense(tagged, mult, structure.multiplier),
+    rosterRunPrevention(tagged, mult)
+  ) * CONSTANTS.REGULAR_SEASON_GAMES;
+  const withChem = winsAt(chem.multiplier);
+  const without = winsAt(1);
+  return {
+    multiplier: chem.multiplier,
+    wins: Math.round((withChem - without) * 10) / 10,
+    points: chemPoints(chem.net),
   };
 }
 
@@ -537,7 +796,7 @@ function rosterOffense(roster, chemMultiplier, battingOrderBonus) {
  * SP1 and SP2 are rotation anchors (GDD §8). They cover ~45% of innings
  * between them; the rest is league-average filler.
  *
- * The closer converts save situations — a bad closer literally blows wins.
+ * The closer converts save situations, and a bad closer literally blows wins.
  *
  * Team defense from fielders' WAR provides a modifier.
  */
@@ -572,11 +831,84 @@ function rosterRunPrevention(roster, chemMultiplier) {
   return baseRA * defMod * (2 - chemMultiplier);
 }
 
+/* ─── All-Time Staff ───────────────────────────────────────────────────────
+ * You drafted twelve arms and no bats, so the lineup behind them is league
+ * average and the season is decided entirely on run prevention. */
+const STAFF = {
+  /* The lineup behind the staff: as good as the average opponent's, not as good
+   * as real baseball's average. Everything you face in this game is an all-time
+   * club, so OPP_RUNS_MEAN (4.5, the real league) is a league you never play in,
+   * and pinning the bats there costs about thirteen wins before a pitch is thrown.
+   * Measured at 4.5 the mode ran a mean of 74.5 against the core game's 88.9, and
+   * at the opponent mean of 5.34 it overshot to 94. At 5.0 it sits with the rest. */
+  LINEUP_RPG: 5.0,
+  /* Five starters carry about seventy percent of the innings, the pen the rest.
+   * Relief WAR is compressed against starter WAR (fewer innings for the same
+   * quality), so a reliever's ERA falls faster per win above replacement. */
+  ROTATION_IP_SHARE: 0.70,
+  SP_ERA_BASE: 5.0, SP_ERA_PER_WAR: 0.32, SP_ERA_FLOOR: 1.60,
+  RP_ERA_BASE: 4.60, RP_ERA_PER_WAR: 0.55, RP_ERA_FLOOR: 1.35,
+};
+function staffOffense() { return STAFF.LINEUP_RPG; }
+
+/* Runs allowed by a twelve-arm staff. Every slot pitches, so unlike the main
+ * game there is no league-average filler soaking up half the innings: what you
+ * drafted is what takes the ball. */
+/* The staff's blended ERA: the number the whole mode turns on. */
+function staffEra(roster) {
+  const era = (p, base, per, floor) =>
+    p ? Math.max(floor, base - Math.max(0, p.w) * per) : base;
+  const at = (slot) => roster.find(p => p._slot === slot);
+  const rot = ['SP1', 'SP2', 'SP3', 'SP4', 'SP5'].map(at);
+  const penArms = ['RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'SU', 'CL'].map(at);
+  const rotEra = rot.reduce((s, p) =>
+    s + era(p, STAFF.SP_ERA_BASE, STAFF.SP_ERA_PER_WAR, STAFF.SP_ERA_FLOOR), 0) / rot.length;
+  const penEra = penArms.reduce((s, p) =>
+    s + era(p, STAFF.RP_ERA_BASE, STAFF.RP_ERA_PER_WAR, STAFF.RP_ERA_FLOOR), 0) / penArms.length;
+  return rotEra * STAFF.ROTATION_IP_SHARE + penEra * (1 - STAFF.ROTATION_IP_SHARE);
+}
+
+/* A staff's 0-100 rating, on its own scale.
+ *
+ * It cannot borrow the team rating: that one is anchored to real team-seasons
+ * scored by teamStrength, and a roster with no hitters is not one of those. Nor can
+ * it be overallRating(winPct), which saturates at 100 for anything projecting 93+
+ * wins and pinned twelve of thirty test staffs at exactly 100.
+ *
+ * So it is anchored to what this mode actually produces. Measured over 60 drafts at
+ * three spending strategies, blended ERA runs 2.82 at the very best to 3.61 at the
+ * worst, median 3.22. The line below puts that median near 60 and leaves a perfect
+ * draft room to reach 100 without the ceiling doing the work. */
+function staffRating(roster) {
+  const era = staffEra(roster);
+  return Math.max(1, Math.min(100, Math.round((50 + (3.40 - era) * 55) * 10) / 10));
+}
+
+function staffRunPrevention(roster, chemMultiplier) {
+  const era = (p, base, per, floor) =>
+    p ? Math.max(floor, base - Math.max(0, p.w) * per) : base;
+  const at = (slot) => roster.find(p => p._slot === slot);
+  const rot = ['SP1', 'SP2', 'SP3', 'SP4', 'SP5'].map(at);
+  const pen = ['RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'SU'].map(at);
+  const closer = at('CL');
+
+  const rotEra = rot.reduce((s, p) =>
+    s + era(p, STAFF.SP_ERA_BASE, STAFF.SP_ERA_PER_WAR, STAFF.SP_ERA_FLOOR), 0) / rot.length;
+  /* The pen plus the closer, who also throws relief innings. */
+  const penArms = pen.concat([closer]);
+  const penEra = penArms.reduce((s, p) =>
+    s + era(p, STAFF.RP_ERA_BASE, STAFF.RP_ERA_PER_WAR, STAFF.RP_ERA_FLOOR), 0) / penArms.length;
+
+  const blended = rotEra * STAFF.ROTATION_IP_SHARE + penEra * (1 - STAFF.ROTATION_IP_SHARE);
+  const baseRA = blended * 1.08;   // unearned runs, same factor as the main game
+  return baseRA * (2 - chemMultiplier);
+}
+
 /*
  * ROSTER STRUCTURE (shape multiplier).
  *
  * WAR sum measures raw talent; structure measures how well that talent is
- * arranged. A great roster isn't just a pile of WAR — it balances bats and
+ * arranged. A great roster isn't just a pile of WAR: it balances bats and
  * arms, has no dead slots, and isn't one injury from collapse. This is the
  * "shape matters as much as talent" layer, applied to offense.
  *
@@ -598,7 +930,7 @@ const STRUCTURE = {
   ARCHETYPE_BONUS: 0.025,
 };
 
-/* Name the roster's identity — flavor for the coach report, plus a small
+/* Name the roster's identity: flavor for the coach report, plus a small
  * cohesion bonus when the shape reads as a deliberate build. */
 function detectArchetype(m) {
   if (m.topShare >= 0.24)
@@ -684,18 +1016,25 @@ function resolveGame(runsFor, runsAgainst, savePct, rng, advantage) {
   if (margin > 0 && margin <= 3) {
     // Save situation: closer might blow it
     if (rng() > savePct) {
-      oppRuns += margin + 0.5; // blown save — opponent scores to win
+      oppRuns += margin + 0.5; // blown save, so the opponent scores to win
     }
   }
 
   // Round to whole runs for display
-  const yR = Math.max(0, Math.round(yourRuns));
-  const oR = Math.max(0, Math.round(oppRuns));
+  let yR = Math.max(0, Math.round(yourRuns));
+  let oR = Math.max(0, Math.round(oppRuns));
 
   let won;
   if (yR > oR) won = true;
   else if (yR < oR) won = false;
-  else won = rng() < 0.5; // extra innings coin flip
+  else {
+    // Baseball has no ties, so a level scoreboard goes to extra innings and
+    // somebody walks it off. The coin flip already decided who; the winning
+    // run has to appear on the scoreboard too, or the box score reads "4-4"
+    // with a W beside it, which it did on the playoff bracket.
+    won = rng() < 0.5;
+    if (won) yR += 1; else oR += 1;
+  }
 
   return {
     won,
@@ -706,11 +1045,11 @@ function resolveGame(runsFor, runsAgainst, savePct, rng, advantage) {
 
 // ─── schedule ────────────────────────────────────────────────────────────────
 
-/* Opponent scheduling constants — your slate is real all-time teams. */
+/* Opponent scheduling constants: your slate is real all-time teams. */
 const SCHEDULE = {
   CONTENDER_MIN_RATING: 66,   // the pool a title team faces all year
   MARQUEE_MIN_RATING: 82,     // elite opponents injected as marquee games
-  MARQUEE_GAMES: 14,          // the gauntlet — why an unbeaten season is rare
+  MARQUEE_GAMES: 14,          // the gauntlet, why an unbeaten season is rare
   OPP_GAME_SD: 0.55,          // per-game noise around an opponent's true means
   // Real teams' run-prevention model floors around ~4.1; scale the pool so
   // these opponents play at the postseason intensity a title team faces all
@@ -727,7 +1066,7 @@ function buildOpponentPool(teamSeasons) {
   for (const t of teamSeasons) {
     if (typeof t.rating !== 'number') continue;
     const o = {
-      name: t.display, rating: t.rating,
+      name: t.display, team: t.team, season: t.season, rating: t.rating,
       off: t.offMean * SCHEDULE.OPP_OFF_SCALE,
       def: t.defMean * SCHEDULE.OPP_DEF_SCALE,
     };
@@ -782,7 +1121,7 @@ function generateSchedule(rng, games, pool) {
 
 /* Per-game expected runs for both sides.
  * Your scoring scales with the opponent's pitching (oppRunsAllowed);
- * their scoring scales YOUR run prevention by their offense quality —
+ * their scoring scales YOUR run prevention by their offense quality,
  * this is where SP1/SP2/defense enter every regular-season game. */
 function gameMeans(offense, defense, game) {
   const N = CONSTANTS.OPP_RUNS_MEAN;
@@ -820,7 +1159,7 @@ function playoffRoundNames(rounds) {
 
 /*
  * TITLE DIFFICULTY: the deepest rounds are scaled to your team rating, so a
- * title means you built a great team — not that you got hot in a short
+ * title means you built a great team, not that you got hot in a short
  * series. A weak team that sneaks into October faces a stiffened opponent in
  * the LCS and World Series; an all-time roster gets a fair fight. Returns a
  * multiplier applied to the opponent's scoring (>1 = tougher).
@@ -872,13 +1211,12 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
   // team from the elite pool, hardest saved for the World Series.
   const eliteSorted = (pool && pool.marquee && pool.marquee.length)
     ? pool.marquee.slice().sort((a, b) => a.rating - b.rating) : null;
-  const oppNameFor = (roundIdx) => {
+  const oppFor = (roundIdx) => {
     if (!eliteSorted) return null;
     const frac = rounds.length > 1 ? roundIdx / (rounds.length - 1) : 1;
     const lo = Math.floor(frac * (eliteSorted.length - 1) * 0.7);
     const hi = eliteSorted.length - 1;
-    const pick = eliteSorted[lo + Math.floor(rng() * Math.max(1, hi - lo + 1))];
-    return pick ? pick.name : null;
+    return eliteSorted[lo + Math.floor(rng() * Math.max(1, hi - lo + 1))] || null;
   };
 
   // Home-field advantage scales with regular-season wins
@@ -910,9 +1248,15 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
     const adv = seed.bye ? baseAdv : Math.max(1, baseAdv * 0.85);
 
     const series = playoffSeries(offAdj, oppRA, savePct, rng, bestOf, adv);
+    const opp = oppFor(i);
     results.push({
       round: roundName,
-      oppName: oppNameFor(i),
+      oppName: opp ? opp.name : null,
+      oppTeam: opp ? opp.team : null,   // club code, so the bracket can wear its colors
+      oppSeason: opp ? opp.season : null, // and so the at-bat sim can bat their real nine
+      oppRating: opp ? opp.rating : null,
+      bestOf,
+      homeField: !!seed.bye,
       ...series,
     });
 
@@ -923,6 +1267,732 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
     results[results.length - 1].round === 'World Series';
 
   return { rounds: results, won };
+}
+
+// ─── the bracket ─────────────────────────────────────────────────────────────
+
+/*
+ * Twelve clubs, four rounds, the field AROUND the player's path through October.
+ *
+ * IT DECIDES NOTHING, for the same reason the at-bat simulator below decides
+ * nothing. Your opponents are generatePlayoffs()'s ladder and stay exactly that:
+ * it picked them, stiffened them by round and by your rating, and the balance is
+ * measured on that. What this builds is the eleven OTHER series, simulated for the
+ * reveal alone off their own seeded RNG, so the screen can show a bracket filling
+ * in rather than six numbers appearing on a stagger.
+ *
+ * ONE THING IS AUTHORED RATHER THAN DERIVED, and it follows from that: the seat
+ * across from you carries the club the run really scheduled. The reseed decides who
+ * everybody else plays, but if it disagreed with the ladder you would watch a series
+ * against a club the bracket never put there.
+ *
+ * THE TWO SIDES ARE NOT THE AMERICAN AND NATIONAL LEAGUES and must not be labelled
+ * as such. A roster is drafted across every era from 71 clubs, half of which no
+ * longer exist and some of which were never in either league, so filing the 1931
+ * Homestead Grays under the AL would be a tidy-looking lie. They are the player's
+ * side and the other one.
+ */
+const BRACKET = {
+  ROUNDS: PLAYOFF_ROUND_NAMES,
+  SHORT: ['Wild Card', 'Division', 'Championship', 'World Series'],
+  /* MLB's wild card round: the top two seeds sit it out, 3 hosts 6 and 4 hosts 5. */
+  WC: [[3, 6], [4, 5]],
+  BYES: [1, 2],
+  BEST_OF: [3, 5, 7, 7],
+  SIDES: ['near', 'far'],
+};
+
+/* Seeded on the record, the way the real thing is. A bye is a division winner by
+ * definition (95+ wins), and the very best of those take the one seed. */
+function bracketSeed(wins, bye) {
+  const w = wins | 0;
+  if (bye) return w >= 100 ? 1 : 2;
+  if (w >= 93) return 3;
+  if (w >= 91) return 4;
+  if (w >= 89) return 5;
+  return 6;
+}
+
+/*
+ * opts: { seed, bye, rounds, wins, ladder, teamSeasons }
+ *   ladder      the run's own opponents, in the order they are met
+ *   teamSeasons the pool everybody else is drawn from
+ *
+ * Returns the field plus the four pairing helpers the screen walks. State
+ * (`results`, `scores`, `revealed`) lives on the object so a bracket redrawn
+ * mid-animation cannot change an answer it has already given.
+ */
+function createBracket(opts) {
+  const rng = createSeededRNG(hashSeed(String(opts.seed) + '|bracket'));
+  const bye = !!opts.bye;
+  const mySeed = bracketSeed(opts.wins, bye);
+  const firstCol = BRACKET.ROUNDS.length - (opts.rounds || 3);
+  /* INDEX-ALIGNED WITH THE ROUNDS PLAYED, never compacted: ladder[i] is the opponent
+   * in the run's round i, which sits in column firstCol + i. A hole stays a hole. */
+  const ladder = (opts.ladder || []).slice();
+
+  /* Every real opponent is reserved, not just the pinned ones: the seat across from
+   * the player is overwritten with the run's own club each round, so a filler that
+   * happened to be the same club would put that team on screen twice. */
+  const used = {}, clubs = {};
+  for (const t of ladder) if (t) { used[t.id] = 1; clubs[t.code] = 1; }
+
+  /* Fillers are real all-time clubs, strongest first, ONE SEASON PER FRANCHISE.
+   * Every year of every club is its own row, so drawing on rating alone seats the
+   * 1927, 1939 and 1998 Yankees in the same bracket. A bracket with three of
+   * anybody in it is not a bracket. */
+  const pool = (opts.teamSeasons || [])
+    .filter(t => t.rating != null && !used[t.team_season_id])
+    .sort((a, b) => b.rating - a.rating).slice(0, 220);
+  const take = (n) => {
+    const out = [];
+    while (out.length < n && pool.length) {
+      const t = pool.splice(Math.floor(rng() * Math.min(pool.length, 26)), 1)[0];
+      if (clubs[t.team]) continue;
+      used[t.team_season_id] = 1; clubs[t.team] = 1;
+      out.push({ code: t.team, season: t.season, rating: t.rating, id: t.team_season_id });
+    }
+    return out;
+  };
+
+  const near = new Array(7).fill(null), far = new Array(7).fill(null);
+  near[mySeed] = { you: true, seed: mySeed };
+  /* The World Series opponent is the far side's top seed, because the last rung of
+   * the ladder has to be on the other half of the bracket to be met there at all.
+   * The one before it takes the best seat left on the player's side. */
+  /* PINNED BY COLUMN, NOT BY POSITION IN THE LADDER. run.playoffs.rounds stops at the
+   * round the run went out in, so the last rung is only the World Series opponent when
+   * the run got there. Taking it as one anyway seated the club that knocked the player
+   * out in the Division Series as the other side's top seed, and that club then turned
+   * up as the near champion too: a World Series between the 1951 Giants and the 1951
+   * Giants. A run that never reached a round pins nobody for it, and the seats fill
+   * with the rest of the field. */
+  const ws = ladder[3 - firstCol] || null;
+  let lcs = ladder[2 - firstCol] || null;
+  /* THE LADDER CAN ALSO DRAW THE SAME CLUB TWICE, because generatePlayoffs() picks each
+   * round's opponent at random out of the elite pool and nothing stops it landing on
+   * the same one in consecutive rounds. Only the first pinning stands; the other round's
+   * seat is filled by the override in colGames(), which shows the club the run really
+   * scheduled. */
+  if (ws) far[1] = { team: ws, seed: 1 };
+  if (lcs && ws && lcs.id === ws.id) lcs = null;
+  if (lcs) { const s = mySeed === 1 ? 2 : 1; if (!near[s]) near[s] = { team: lcs, seed: s }; }
+  const fillNear = take(6 - near.filter(Boolean).length);
+  for (let s = 1, i = 0; s <= 6; s++) if (!near[s]) near[s] = { team: fillNear[i++] || null, seed: s };
+  const fillFar = take(6 - far.filter(Boolean).length);
+  for (let s = 1, i = 0; s <= 6; s++) if (!far[s]) far[s] = { team: fillFar[i++] || null, seed: s };
+
+  const B = {
+    mySeed, bye, firstCol, near, far, ladder,
+    results: {}, scores: {}, revealed: {},
+    colOf: (i) => firstCol + i,
+  };
+
+  /* One simulated series. Rating decides it, with enough noise that a six seed can
+   * turn one over: these are the series the player is not in, so they only have to
+   * be plausible. */
+  function play(key, a, b, r, bestOf) {
+    if (B.results[key] !== undefined) return B.results[key];
+    /* THE PLAYER'S LINE IS DRAWN FORWARD, never simulated. A bracket is drawn ahead
+     * of the games, so their own path has to run to the World Series until the run
+     * says otherwise, which it does through settleMine(). Left uncached so that
+     * write wins: simulating it instead put the player out in the Division Series
+     * on screen while they were still alive in the game. */
+    if ((a && a.you) || (b && b.you)) return (a && a.you) ? a : b;
+    let w;
+    if (!a || !b) w = a || b || null;
+    else {
+      const ra = (a.team && a.team.rating) || 70, rb = (b.team && b.team.rating) || 70;
+      const edge = (ra - rb) * 0.085 + ((b.seed || 6) - (a.seed || 6)) * 0.15;
+      w = (r() < 1 / (1 + Math.exp(-edge))) ? a : b;
+      const need = Math.ceil((bestOf || 7) / 2);
+      B.scores[key] = need + '-' + Math.floor(r() * need);
+    }
+    B.results[key] = w;
+    return w;
+  }
+
+  /* The four that survive a side, in seed order, once the wild card has been played. */
+  function survivors(side, r) {
+    const field = B[side];
+    const out = BRACKET.BYES.map(s => field[s]);
+    BRACKET.WC.forEach(([hi, lo], i) => { out.push(play(side + ':0:' + i, field[hi], field[lo], r, 3)); });
+    return out.filter(Boolean).sort((x, y) => x.seed - y.seed);
+  }
+
+  /* RESEEDED EVERY ROUND, which is the thing that makes this a bracket and not a
+   * fixed ladder: the best seed still alive always draws the worst seed still alive. */
+  function pairs(side, col, r) {
+    const field = B[side];
+    if (col === 0) return BRACKET.WC.map(([hi, lo]) => [field[hi], field[lo]]);
+    if (col === 1) { const v = survivors(side, r); return [[v[0], v[3]], [v[1], v[2]]]; }
+    if (col === 2) {
+      const d = pairs(side, 1, r).map(([a, b], i) => play(side + ':1:' + i, a, b, r, 5));
+      return [[d[0], d[1]]];
+    }
+    return [];
+  }
+
+  /* Every series in a column, both sides, plus the World Series across the middle. */
+  B.colGames = function (col) {
+    const r = createSeededRNG(hashSeed(String(opts.seed) + '|brk|' + col));
+    const mine = (g) => !!(g && ((g[0] && g[0].you) || (g[1] && g[1].you)));
+    let out;
+    if (col === 3) {
+      const champ = (side) => {
+        const p = pairs(side, 2, r);
+        return p.length ? play(side + ':2:0', p[0][0], p[0][1], r, 7) : null;
+      };
+      const g = [champ('near'), champ('far')];
+      out = [{ side: 'ws', i: 0, pair: g, me: mine(g), key: 'ws:3:0' }];
+    } else {
+      out = [];
+      for (const side of BRACKET.SIDES) {
+        pairs(side, col, r).forEach((pair, i) => {
+          out.push({ side, i, pair, me: mine(pair), key: side + ':' + col + ':' + i });
+        });
+      }
+    }
+    /* THE PLAYER'S OPPONENT IS THE RUN'S, not the bracket's. Every other seat is
+     * filled by the reseed above; the seat across from them carries whatever seed
+     * the pairing gave it and the club the run really scheduled. */
+    const opp = ladder[col - firstCol] || null;
+    if (opp) for (const g of out) if (g.me) {
+      const seat = g.pair[0] && g.pair[0].you ? 1 : 0;
+      const cur = g.pair[seat];
+      g.pair[seat] = { team: opp, seed: (cur && cur.seed) || 1 };
+    }
+    return out;
+  };
+
+  /*
+   * Once the player's series has been played, its winner is the run's own result.
+   *
+   * EVERYTHING DOWNSTREAM IS THROWN AWAY, and it has to be. The player's line is
+   * drawn forward, so every later round was worked out with them still in it: the
+   * Championship Series was paired off a set of survivors that included them, and
+   * that answer was cached under its slot. The moment they go out, the club that
+   * beat them takes their place in the reseed and those pairings change, but the
+   * cached winners do not. Left alone it showed a Championship Series between the
+   * 1930 Athletics and the 1930 Athletics, and a club advancing out of a series it
+   * was not in. Nothing past this column has been revealed yet (a column cannot be
+   * shown before the one feeding it), so nothing on screen moves.
+   */
+  B.settleMine = function (i, won, score) {
+    const col = firstCol + i;
+    const g = B.colGames(col).find(x => x.me);
+    if (!g) return;
+    const me = g.pair[0] && g.pair[0].you ? g.pair[0] : g.pair[1];
+    const them = g.pair[0] && g.pair[0].you ? g.pair[1] : g.pair[0];
+    for (const key of Object.keys(B.results)) {
+      if (parseInt(key.split(':')[1], 10) > col) {
+        delete B.results[key]; delete B.scores[key]; delete B.revealed[key];
+      }
+    }
+    B.results[g.key] = won ? me : them;
+    if (score) B.scores[g.key] = score;
+    B.revealed[g.key] = 1;
+  };
+
+  B.revealAll = function () {
+    for (let c = 0; c < 4; c++) B.colGames(c).forEach(g => { B.revealed[g.key] = 1; });
+  };
+
+  /* A column is empty until the round that feeds it has been played. Every series is
+   * decided the first time its pairing is asked for, so without this the bracket
+   * prints the whole thing on the first screen and the World Series can be read
+   * before the first pitch. */
+  B.knownAt = function (col) {
+    if (col === 0) return true;
+    return B.colGames(col - 1).every(g => !!B.revealed[g.key]);
+  };
+
+  return B;
+}
+
+// ─── at-bat simulation ───────────────────────────────────────────────────────
+
+/*
+ * WHO WINS AND WHAT IT LOOKS LIKE ARE TWO DIFFERENT JOBS, and keeping them apart
+ * is the whole design of this section.
+ *
+ * Everything above decides the season: resolveGame() samples runs, playoffSeries()
+ * stacks those games into a bracket, and the balance of this game (88.9 mean wins,
+ * 58% Octobers, 6.3% titles) was measured against exactly that model over thousands
+ * of seasons. A second, independent simulator down here would quietly become a
+ * second balance, and every one of those numbers would have to be re-tuned.
+ *
+ * So this does not decide anything. It is handed a final score that resolveGame()
+ * already produced, spreads those runs across innings the way real innings bunch
+ * up, and plays each half inning out batter by batter with real base and out state
+ * until exactly that many runs are in. A 5-3 game is always the same 5-3 game; what
+ * the at-bat engine supplies is the ninety plate appearances that got there.
+ *
+ * Nothing it draws touches the season's RNG either: the caller seeds it separately
+ * (round and game index off the run seed), so watching a game and skipping it
+ * produce the same bracket, and the same seed always replays the same game.
+ *
+ * The one rule imposed from outside is that the third out cannot be made until the
+ * inning's runs are in. That is also the only rule real baseball enforces about
+ * when an inning ends, so it never shows.
+ */
+
+/* Per plate appearance, roughly the modern league line: a .320 on-base rate split
+ * into its parts. `heat` scales every way of reaching base at once and the leftover
+ * is an out, which is how an inning that has runs to deliver gets them. */
+const PA_RATES = { BB: 0.081, HBP: 0.009, '1B': 0.150, '2B': 0.045, '3B': 0.004, HR: 0.031 };
+const PA_ON_BASE = 0.320;
+const ON_BASE_CODES = ['BB', 'HBP', '1B', '2B', '3B', 'HR'];
+const OUT_MIX = [['K', 0.36], ['GO', 0.28], ['FO', 0.22], ['LO', 0.09], ['PO', 0.05]];
+
+const FIELD = {
+  pull: ['left', 'left field', 'the left-field corner'],
+  gap: ['left-center', 'right-center', 'the gap'],
+  oppo: ['right', 'right field', 'the right-field corner'],
+  inf: ['short', 'second', 'third', 'first'],
+  air: ['left', 'center', 'right', 'left-center', 'right-center'],
+};
+
+function pickOne(list, rng) { return list[Math.floor(rng() * list.length)] || list[0]; }
+
+function occupied(bases) { return (bases[0] ? 1 : 0) + (bases[1] ? 1 : 0) + (bases[2] ? 1 : 0); }
+
+/*
+ * How many runs a given outcome can drive in from this base state, as a range.
+ * The floor is what the outcome forces (a runner on third scores on any hit); the
+ * ceiling is what it allows (a runner on first may or may not score from first on
+ * a double). The inning's run budget is spent by choosing a number inside this
+ * range, which is why the simulation never has to be rejected and retried.
+ */
+function runRange(code, bases, outs) {
+  const f = bases[0] ? 1 : 0, s = bases[1] ? 1 : 0, t = bases[2] ? 1 : 0;
+  switch (code) {
+    case 'HR': return [occupied(bases) + 1, occupied(bases) + 1];
+    case '3B': return [occupied(bases), occupied(bases)];
+    case '2B': return [t + s, t + s + f];
+    case '1B': return [t, t + s];
+    case 'BB': case 'HBP': return [(f && s && t) ? 1 : 0, (f && s && t) ? 1 : 0];
+    case 'OUT': return [0, (t && outs < 2) ? 1 : 0];
+    default: return [0, 0];
+  }
+}
+
+/* Move the runners for `code`, driving in exactly `k` runs. Everything the range
+ * above called optional is resolved here to hit that number. */
+function advanceBases(st, code, batter, k, rng) {
+  const f = st.bases[0], s = st.bases[1], t = st.bases[2];
+  const scored = [];
+  let nf = null, ns = null, nt = null;
+
+  if (code === 'HR') {
+    if (t) scored.push(t); if (s) scored.push(s); if (f) scored.push(f);
+    scored.push(batter);
+  } else if (code === '3B') {
+    if (t) scored.push(t); if (s) scored.push(s); if (f) scored.push(f);
+    nt = batter;
+  } else if (code === '2B') {
+    if (t) scored.push(t); if (s) scored.push(s);
+    if (f) { if (k > scored.length) scored.push(f); else nt = f; }
+    ns = batter;
+  } else if (code === '1B') {
+    if (t) scored.push(t);
+    if (s) { if (k > scored.length) scored.push(s); else nt = s; }
+    if (f) { if (!nt && rng() < 0.24) nt = f; else ns = f; }
+    nf = batter;
+  } else if (code === 'BB' || code === 'HBP') {
+    ns = s; nt = t; nf = batter;
+    if (f) {
+      if (s) { if (t) scored.push(t); nt = s; ns = f; }
+      else ns = f;
+    }
+  }
+  st.bases = [nf, ns, nt];
+  return scored;
+}
+
+/* An out, with the base running that comes with one. Returns the out type so the
+ * play-by-play can say what it was. */
+function makeOut(st, batter, k, rng, allowDouble) {
+  const f = st.bases[0], s = st.bases[1], t = st.bases[2];
+  const scored = [];
+  let kind = null;
+  let outs = 1;
+
+  /* A run scoring on an out is a groundout to the right side or a sacrifice fly,
+   * and both need a runner on third and fewer than two down. */
+  if (k > 0) {
+    kind = rng() < 0.55 ? 'SF' : 'GO';
+    scored.push(t);
+    st.bases = [f, s, null];
+    if (kind === 'GO' && f && !s) st.bases = [null, f, null];
+    return { kind, outs: 1, scored };
+  }
+
+  /* Two on the ground with a man on first is the double play a rally dies on, and
+   * it is the one out that can end an inning from one out down. The caller refuses
+   * it while the inning still owes runs, for the same reason it refuses the third
+   * out: the inning has a total to deliver and cannot be cut short. */
+  if (allowDouble && f && st.outs < 2 && rng() < 0.33) {
+    kind = 'DP';
+    outs = 2;
+    st.bases = [null, s, t];
+    if (s && !t && rng() < 0.3) st.bases = [null, null, s];
+    return { kind, outs, scored };
+  }
+
+  let r = rng(), acc = 0;
+  for (const [c, w] of OUT_MIX) { acc += w; if (r <= acc) { kind = c; break; } }
+  if (!kind) kind = 'K';
+
+  /* Runners move up on a ball in play often enough to matter to the picture. */
+  if (kind === 'GO' && st.outs < 2) {
+    if (s && !t && rng() < 0.35) st.bases = [f, null, s];
+  }
+  return { kind, outs, scored };
+}
+
+function describePlay(code, kind, batter, scored, rng, bases) {
+  const n = batter.name;
+  const on = occupied(bases);
+  switch (code) {
+    case 'BB': return n + ' draws a walk.';
+    case 'HBP': return n + ' is hit by the pitch.';
+    case '1B': return n + ' singles to ' + pickOne(FIELD.air, rng) + '.';
+    case '2B': return n + ' doubles to ' + pickOne(FIELD.gap.concat(FIELD.pull, FIELD.oppo), rng) + '.';
+    case '3B': return n + ' triples into ' + pickOne(FIELD.gap, rng) + '.';
+    case 'HR':
+      if (scored.length === 4) return n + ' hits a GRAND SLAM to ' + pickOne(FIELD.air, rng) + '.';
+      if (scored.length === 3) return n + ' hits a three-run shot to ' + pickOne(FIELD.air, rng) + '.';
+      if (scored.length === 2) return n + ' hits a two-run homer to ' + pickOne(FIELD.air, rng) + '.';
+      return n + ' goes deep to ' + pickOne(FIELD.air, rng) + '.';
+    default: break;
+  }
+  switch (kind) {
+    case 'K': return n + (rng() < 0.6 ? ' strikes out swinging.' : ' is called out on strikes.');
+    case 'DP': return n + ' grounds into a double play.';
+    case 'SF': return n + ' lifts a sacrifice fly to ' + pickOne(FIELD.air, rng) + '.';
+    case 'GO': return n + ' grounds out to ' + pickOne(FIELD.inf, rng) + '.';
+    case 'FO': return n + ' flies out to ' + pickOne(FIELD.air, rng) + '.';
+    case 'LO': return n + ' lines out to ' + pickOne(FIELD.inf, rng) + '.';
+    case 'PO': return n + ' pops out to ' + pickOne(FIELD.inf, rng) + '.';
+    default: return n + ' is retired.' + (on ? '' : '');
+  }
+}
+
+/*
+ * One half inning, worth exactly `target` runs.
+ *
+ * `need`, when given, is how many runs would put the batting side in front, and it
+ * is only ever passed for a home team's last at-bat in a game it wins. It keeps the
+ * lead from being taken twice: every play either leaves them behind or ends the
+ * game, which is what a walk-off is.
+ */
+function simHalfInning(target, rng, ctx) {
+  const lineup = ctx.lineup;
+  const st = { outs: 0, bases: [null, null, null] };
+  const plays = [];
+  let runs = 0, hits = 0, order = ctx.order || 0;
+  let guard = 0;
+
+  while (st.outs < 3 && guard++ < 60) {
+    const remaining = target - runs;
+    const batter = lineup[order % lineup.length];
+    const heat = remaining > 0 ? Math.min(2.4, 0.95 + 0.5 * remaining) : 0.60;
+
+    /* Which outcomes this base-out state can afford, and how many runs each may
+     * drive in without overshooting the inning or tripping the walk-off rule. */
+    const choices = [];
+    const codes = ON_BASE_CODES.slice();
+    if (!(st.outs === 2 && remaining > 0)) codes.push('OUT');
+    for (const c of codes) {
+      const [lo, hi] = runRange(c, st.bases, st.outs);
+      const ks = [];
+      for (let k = lo; k <= hi && k <= remaining; k++) {
+        if (ctx.need == null || runs + k < ctx.need || runs + k === target) ks.push(k);
+      }
+      if (!ks.length) continue;
+      const w = c === 'OUT' ? Math.max(0.04, 1 - PA_ON_BASE * heat) : PA_RATES[c] * heat;
+      choices.push([c, w, ks]);
+    }
+    /* Cannot happen with the rules above (a walk or a single with the bases not
+     * loaded is always legal), but an inning that cannot be continued is worse
+     * than one that ends early, so say so rather than spin. */
+    if (!choices.length) break;
+
+    let total = 0;
+    for (const ch of choices) total += ch[1];
+    let r = rng() * total, chosen = choices[choices.length - 1];
+    for (const ch of choices) { r -= ch[1]; if (r <= 0) { chosen = ch; break; } }
+
+    const code = chosen[0];
+    const ks = chosen[2];
+    /* Prefer the play that finishes the inning's business when one is on offer,
+     * so a rally resolves rather than trickling. */
+    let k = ks[Math.floor(rng() * ks.length)];
+    if (ks.indexOf(remaining) !== -1 && remaining > 0 && rng() < 0.6) k = remaining;
+
+    const before = st.bases.slice();
+    const outsBefore = st.outs;
+    let kind = code, scored;
+
+    if (code === 'OUT') {
+      const o = makeOut(st, batter, k, rng, remaining - k <= 0);
+      kind = o.kind; scored = o.scored;
+      st.outs = Math.min(3, st.outs + o.outs);
+    } else {
+      scored = advanceBases(st, code, batter, k, rng);
+      if (code !== 'BB' && code !== 'HBP') hits++;
+    }
+
+    runs += scored.length;
+    plays.push({
+      code, kind, batter,
+      pitcher: ctx.pitcherAt ? ctx.pitcherAt(order) : null,
+      text: describePlay(code, kind, batter, scored, rng, before),
+      scored: scored.map(p => p.name),
+      rbi: scored.length,
+      outsBefore, outs: st.outs,
+      basesBefore: before.map(p => (p ? p.name : null)),
+      bases: st.bases.map(p => (p ? p.name : null)),
+      runs,
+      hit: code !== 'BB' && code !== 'HBP' && code !== 'OUT',
+      walkoff: ctx.need != null && runs >= ctx.need,
+    });
+    order++;
+
+    if (ctx.need != null && runs >= ctx.need) break;
+  }
+
+  return { plays, runs, hits, order, lob: occupied(st.bases) };
+}
+
+/*
+ * Spread a game's runs across its innings. Real runs arrive in bunches: most
+ * innings are scoreless and the ones that are not tend to be worth more than one,
+ * so this hands out chunks rather than single runs.
+ */
+const RUN_CHUNKS = [[1, 0.50], [2, 0.24], [3, 0.14], [4, 0.08], [5, 0.04]];
+function spreadRuns(total, innings, rng) {
+  const out = new Array(innings).fill(0);
+  let left = total, guard = 0;
+  while (left > 0 && guard++ < 80) {
+    let r = rng(), acc = 0, chunk = 1;
+    for (const [c, w] of RUN_CHUNKS) { acc += w; if (r <= acc) { chunk = c; break; } }
+    chunk = Math.min(chunk, left);
+    /* A fresh inning is three times likelier than one that has already scored,
+     * which is about how often real clubs put up two crooked numbers. */
+    const weights = out.map(v => (v === 0 ? 3 : 1));
+    let tw = 0; for (const w of weights) tw += w;
+    let pick = rng() * tw, idx = 0;
+    for (let i = 0; i < innings; i++) { pick -= weights[i]; if (pick <= 0) { idx = i; break; } }
+    out[idx] += chunk;
+    left -= chunk;
+  }
+  if (left > 0) out[innings - 1] += left;
+  return out;
+}
+
+/* A batting order off a slot-tagged roster: the best bat hits third, the next two
+ * set the table, the rest fall in behind. */
+function battingOrder(batters) {
+  const s = batters.slice().sort((a, b) => (b.w || 0) - (a.w || 0));
+  if (s.length < 3) return s;
+  const head = [s[2], s[1], s[0]];
+  return head.concat(s.slice(3));
+}
+
+const GENERIC_SPOTS = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'];
+
+/*
+ * The nine who bat, off whatever the run handed us. A lineup roster supplies real
+ * names; All-Time Staff has no hitters at all, so it bats a nameless league-average
+ * nine and the drama sits with the arms, which is where that mode puts it anyway.
+ */
+function lineupFromRoster(roster) {
+  const batters = (roster || []).filter(p => p.r === 'b');
+  if (batters.length >= 9) {
+    return battingOrder(batters).slice(0, 9).map(p => ({
+      name: p.n, slot: p._slot || (p.ep || '').split(';')[0] || '', team: p.t, season: p.s, w: p.w,
+    }));
+  }
+  /* All-Time Staff drafts twelve arms and bats a league-average nine, so there
+   * are no names to print. "Your 2B grounds out to third" says what happened
+   * without inventing a person to have done it. */
+  return GENERIC_SPOTS.map(spot => ({ name: 'Your ' + spot, slot: spot, generic: true }));
+}
+
+/* The arms, in the order they will be used. */
+function staffFromRoster(roster, gameIndex) {
+  const arms = (roster || []).filter(p => p.r === 'p');
+  const by = (slot) => arms.find(p => p._slot === slot);
+  const rot = ['SP1', 'SP2', 'SP3', 'SP4', 'SP5'].map(by).filter(Boolean);
+  const pen = ['RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'SU'].map(by).filter(Boolean);
+  const cl = by('CL');
+  const start = rot.length ? rot[(gameIndex || 0) % rot.length] : arms[0];
+  const mid = pen.length ? pen[(gameIndex || 0) % pen.length] : null;
+  const wrap = (p) => (p ? { name: p.n, slot: p._slot, team: p.t, season: p.s, w: p.w } : null);
+  return { starter: wrap(start), reliever: wrap(mid) || wrap(start), closer: wrap(cl) || wrap(mid) };
+}
+
+/*
+ * The same two things for a real club, off its own season's roster.
+ *
+ * A third of the great clubs in the data carry seven or eight qualifying bats,
+ * because build time applies a playing-time floor and the bottom of a real
+ * lineup does not always clear it. Refusing those clubs would send the 1927
+ * Yankees out with nine nameless hitters, so the names that exist bat and the
+ * rest of the order is filled by position: a spot with no name is a spot whose
+ * man did not play enough to be in this data, which is the truth about it.
+ */
+function lineupFromTeamSeason(roster) {
+  if (!roster || !roster.length) return null;
+  const batters = roster.filter(p => p.r === 'b');
+  if (batters.length < 4) return null;
+  const out = battingOrder(batters).slice(0, 9).map(p => ({
+    name: p.n, slot: (p.pp || (p.ep || '').split(';')[0] || ''), team: p.t, season: p.s, w: p.w,
+  }));
+  const taken = {};
+  for (const p of out) taken[p.slot] = true;
+  for (const spot of GENERIC_SPOTS) {
+    if (out.length >= 9) break;
+    if (taken[spot]) continue;
+    out.push({ name: spot, slot: spot, generic: true });
+    taken[spot] = true;
+  }
+  while (out.length < 9) out.push({ name: 'DH', slot: 'DH', generic: true });
+  return out;
+}
+
+function staffFromTeamSeason(roster, gameIndex) {
+  if (!roster || !roster.length) return { starter: null, reliever: null, closer: null };
+  const arms = roster.filter(p => p.r === 'p').slice().sort((a, b) => (b.w || 0) - (a.w || 0));
+  const sp = arms.filter(p => p.ep === 'SP' || (p.pp === 'SP'));
+  const rp = arms.filter(p => p.ep !== 'SP' && p.pp !== 'SP');
+  const wrap = (p) => (p ? { name: p.n, slot: p.pp || p.ep || '', team: p.t, season: p.s, w: p.w } : null);
+  const rot = sp.length ? sp : arms;
+  return {
+    starter: wrap(rot[(gameIndex || 0) % Math.min(4, rot.length || 1)]),
+    reliever: wrap(rp[0] || rot[rot.length - 1]),
+    closer: wrap(rp.find(p => p.cl) || rp[1] || rp[0] || rot[0]),
+  };
+}
+
+/*
+ * The whole game, ready to animate.
+ *
+ * opts: { yourRuns, oppRuns, won, youHome, yourName, oppName, yourLineup, oppLineup,
+ *         yourStaff, oppStaff, rng }
+ *
+ * Returns the line score, every half inning, and every plate appearance inside it.
+ * The final line always equals the score it was handed.
+ */
+const INNINGS = 9;
+function simGameScript(opts) {
+  const rng = opts.rng;
+  const youHome = !!opts.youHome;
+  const awayRuns = youHome ? opts.oppRuns : opts.yourRuns;
+  const homeRuns = youHome ? opts.yourRuns : opts.oppRuns;
+  const homeWins = homeRuns > awayRuns;
+
+  let away = spreadRuns(awayRuns, INNINGS, rng);
+  let home = spreadRuns(homeRuns, INNINGS, rng);
+
+  /*
+   * Two rules about the last inning, both of them real. A home club that is ahead
+   * after the top of the ninth does not bat, and a home club that wins while batting
+   * does it by taking the lead on the last play of the game. Anything the spread
+   * produced that breaks either one gets its ninth-inning runs moved earlier.
+   */
+  let need = null;
+  if (homeWins && home[INNINGS - 1] > 0) {
+    const through = homeRuns - home[INNINGS - 1];
+    if (through > awayRuns || home[INNINGS - 1] > 4) {
+      /* Deal the whole total again across the first eight, which keeps it exact. */
+      home = spreadRuns(homeRuns, INNINGS - 1, rng).concat([0]);
+    } else {
+      need = awayRuns - through + 1;
+    }
+  }
+  const homeBatsNinth = !(homeWins && home[INNINGS - 1] === 0);
+
+  const awayName = youHome ? opts.oppName : opts.yourName;
+  const homeName = youHome ? opts.yourName : opts.oppName;
+  const awayLineup = youHome ? opts.oppLineup : opts.yourLineup;
+  const homeLineup = youHome ? opts.yourLineup : opts.oppLineup;
+  const awayStaff = youHome ? opts.oppStaff : opts.yourStaff;
+  const homeStaff = youHome ? opts.yourStaff : opts.oppStaff;
+
+  /* Who is on the mound: the starter into the seventh, a reliever after that, and
+   * the closer for the ninth when the game is still a save. Decoration, but it is
+   * the player's own bullpen doing the deciding, which is the point of drafting one. */
+  const armFor = (staff, inning, lead) => {
+    if (!staff) return null;
+    if (inning >= 9 && lead > 0 && lead <= 3 && staff.closer) return staff.closer;
+    if (inning >= 7 && staff.reliever) return staff.reliever;
+    return staff.starter || staff.reliever;
+  };
+
+  const halves = [];
+  const line = [];
+  let aScore = 0, hScore = 0, aHits = 0, hHits = 0;
+  let aOrder = 0, hOrder = 0;
+
+  for (let i = 0; i < INNINGS; i++) {
+    const top = simHalfInning(away[i], rng, {
+      lineup: awayLineup, order: aOrder,
+      pitcherAt: () => armFor(homeStaff, i + 1, hScore - aScore),
+    });
+    aOrder = top.order; aScore += top.runs; aHits += top.hits;
+    halves.push({
+      inning: i + 1, half: 'top', batting: youHome ? 'opp' : 'you',
+      team: awayName, runs: top.runs, hits: top.hits, plays: top.plays,
+      away: aScore, home: hScore,
+    });
+    const row = { top: top.runs, bot: null };
+
+    const lastInning = i === INNINGS - 1;
+    const skipBottom = lastInning && !homeBatsNinth;
+    if (!skipBottom) {
+      const bot = simHalfInning(home[i], rng, {
+        lineup: homeLineup, order: hOrder,
+        need: (lastInning && need != null) ? need : null,
+        pitcherAt: () => armFor(awayStaff, i + 1, aScore - hScore),
+      });
+      hOrder = bot.order; hScore += bot.runs; hHits += bot.hits;
+      halves.push({
+        inning: i + 1, half: 'bot', batting: youHome ? 'you' : 'opp',
+        team: homeName, runs: bot.runs, hits: bot.hits, plays: bot.plays,
+        away: aScore, home: hScore,
+        walkoff: lastInning && need != null,
+      });
+      row.bot = bot.runs;
+    }
+    line.push(row);
+  }
+
+  return {
+    youHome,
+    away: { name: awayName, lineup: awayLineup, staff: awayStaff, runs: aScore, hits: aHits },
+    home: { name: homeName, lineup: homeLineup, staff: homeStaff, runs: hScore, hits: hHits },
+    line, halves,
+    walkoff: need != null,
+    final: {
+      away: aScore, home: hScore,
+      yourRuns: youHome ? hScore : aScore,
+      oppRuns: youHome ? aScore : hScore,
+      won: !!opts.won,
+    },
+  };
+}
+
+/*
+ * Home field across a best-of-seven is 2-2-1-1-1, and across a best-of-five 2-2-1.
+ * Which end of it you are on is the one thing the bracket already knows, so the
+ * caller passes it and the animation just has to agree with the line score.
+ */
+function homeGames(bestOf, hasHomeField) {
+  const pattern = bestOf === 7 ? [1, 1, 0, 0, 0, 1, 1] : [1, 1, 0, 0, 1];
+  return pattern.map(v => (hasHomeField ? !!v : !v));
 }
 
 // ─── coach report (narrative end screen) ─────────────────────────────────────
@@ -959,10 +2029,15 @@ function coachReport(roster, chem, structure, rating, unspentMusd) {
     strengths.push(structure.archetype.name);
 
   let verdict;
-  if (rating >= 93) verdict = 'All-time great';
-  else if (rating >= 84) verdict = 'World Series contender';
-  else if (rating >= 72) verdict = 'Playoff team';
-  else if (rating >= 55) verdict = 'Fringe contender';
+  /* Pinned to what the rating now MEANS, measured over 260 drafts: 70+ takes the
+   * title two times in five, 50-60 makes October nine times in ten, 40-50 forty
+   * per cent of the time, and under 40 essentially never. A verdict that promises
+   * more than the band delivers is how a 79-83 season ends up under the words
+   * "all-time great". */
+  if (rating >= 70) verdict = 'All-time great';
+  else if (rating >= 55) verdict = 'World Series contender';
+  else if (rating >= 45) verdict = 'Playoff team';
+  else if (rating >= 35) verdict = 'Fringe contender';
   else verdict = 'Rebuilding';
 
   return { strengths, weaknesses, verdict, archetype: structure && structure.archetype };
@@ -975,16 +2050,18 @@ function lastNameOf(n) {
 
 // ─── full season play ────────────────────────────────────────────────────────
 
-function playRun(roster, rng, slotNames, pool) {
+function playRun(roster, rng, slotNames, pool, opts) {
+  const staffMode = !!(opts && opts.staff);
   // Tag each player with their actual slot. slotNames maps roster order to
   // slot names (players draft in random order); without it, fall back to
   // assuming the roster is already in SLOTS order.
   const tagged = roster.map((p, i) => ({ ...p, _slot: (slotNames && slotNames[i]) || SLOTS[i] }));
 
-  const chem = resolveChemistry(tagged);
-  const structure = rosterStructure(tagged);
-  const offense = rosterOffense(tagged, chem.multiplier, structure.multiplier);
-  const defense = rosterRunPrevention(tagged, chem.multiplier);
+  const chem = resolveChemistry(tagged, opts);
+  const structure = staffMode ? { multiplier: 1, archetype: null } : rosterStructure(tagged);
+  const offense = staffMode ? staffOffense() : rosterOffense(tagged, chem.multiplier, structure.multiplier);
+  const defense = staffMode ? staffRunPrevention(tagged, chem.multiplier)
+                            : rosterRunPrevention(tagged, chem.multiplier);
   const savePct = closerSavePct(tagged);
 
   // 162-game season vs real all-time opponents (pool) or abstract fallback.
@@ -1007,7 +2084,12 @@ function playRun(roster, rng, slotNames, pool) {
 
   const record = { wins, losses };
   const seed = seedFromRecord(wins);
-  const rating = overallRating(teamWinPct(offense, defense));
+  /* `rating` is the yardstick: it ranks against real clubs and it sets the title
+   * difficulty, and it stays exactly what it was so the balance does not move.
+   * `shownRating` is the one the player reads. See teamRating() for why they are
+   * two numbers and must not be merged. */
+  const rating = staffMode ? staffRating(tagged) : squadRating(roster);
+  const shownRating = staffMode ? staffRating(tagged) : teamRating(offense, defense);
   const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating, pool);
 
   const titleWon = playoffs && playoffs.won;
@@ -1019,6 +2101,7 @@ function playRun(roster, rng, slotNames, pool) {
     chemistry: chem,
     structure,
     rating,
+    shownRating,
     offense: Math.round(offense * 100) / 100,
     defense: Math.round(defense * 100) / 100,
     savePct: Math.round(savePct * 1000) / 1000,
@@ -1052,6 +2135,12 @@ const TEAM_COLORS = {
   BRO: ['#005A9C', '#FFFFFF'], NYG: ['#FD5A1E', '#27251F'], PHO: ['#003831', '#FFFFFF'],
   MLN: ['#CE1141', '#13274F'], MON: ['#003087', '#E4002B'], BSN: ['#CE1141', '#13274F'],
   WSH: ['#AB0003', '#14225A'], SLB: ['#BA0021', '#003263'],
+  // The rest of the relocated and renamed clubs, so none of them falls back to
+  // gray in the Franchise Mode picker. WSA is the expansion Senators and takes
+  // the reverse of WSH's pairing, or the two cards read as the same club.
+  PHA: ['#003278', '#C4CED4'], CAL: ['#BA0021', '#003263'], ANA: ['#BA0021', '#0C2340'],
+  FLA: ['#0077C8', '#231F20'], TBD: ['#5F259F', '#00A3A3'], WSA: ['#14225A', '#AB0003'],
+  KCA: ['#006341', '#FFB81C'],
   // Negro Leagues
   PS: ['#1a1a1a', '#d4af37'], CAG: ['#8B0000', '#FFFFFF'], KCM: ['#003087', '#C4CED4'],
   HG: ['#4A4A4A', '#C4CED4'], NLG: ['#2F4F4F', '#D4AF37'],
@@ -1065,18 +2154,27 @@ function teamColors(code) {
 
 const publicAPI = {
   CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
+  STAFF_SLOTS, STAFF_ELIGIBILITY, slotsForMode, eligibilityForMode,
+  DIVISIONS, DIVISION_FIRST_SEASON, inDivision, divisionClubs,
+  MARKET, replacementFor,
   POSITIONS_AVAILABLE: () => POSITIONS_AVAILABLE,
   setPositionsAvailable,
   hashSeed, createSeededRNG, sampleGamma,
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
   pairLinks, resolveChemistry, setCuratedChemistry,
-  teamStrength, teamWinPct, overallRating, nationalRank,
+  chemPoints, chemistryByPlayer, chemistryWorth,
+  teamStrength, teamWinPct, overallRating, squadRating, nationalRank,
+  PROJ, projectedWins, teamRating,
   generateSchedule, buildOpponentPool, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,
+  BRACKET, bracketSeed, createBracket,
+  PA_RATES, simGameScript, simHalfInning, spreadRuns, battingOrder, homeGames,
+  lineupFromRoster, staffFromRoster, lineupFromTeamSeason, staffFromTeamSeason,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
   respinCost, respinFees,
   pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,
+  STAFF, staffOffense, staffRunPrevention, staffEra, staffRating,
   coachReport,
   TEAM_COLORS, teamColors,
 };

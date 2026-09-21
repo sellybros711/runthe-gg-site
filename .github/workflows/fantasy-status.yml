@@ -1,0 +1,52 @@
+name: "Fantasy: poller status"
+
+# What is the poller doing? Read only, safe to run at any time, as often as
+# you like.
+#
+# WHY THIS EXISTS. The Worker logs every decision it makes, and Cloudflare's
+# log is reachable by exactly one thing: a person with the dashboard open or
+# wrangler installed. Not by a workflow, not by anything reading the database,
+# and not by anybody looking an hour later, because a tail shows what happens
+# next rather than what already did.
+#
+# So the durable record is in the database. Observe mode writes one row per
+# tick that had a plan, with the plan in it, and this reads it back. That is
+# what makes a polling schedule checkable BEFORE it has spent a credit.
+#
+# It NEVER writes and never calls anything. supabase/test/fantasy_status.sql
+# is six SELECTs.
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: fantasy-status
+  cancel-in-progress: true
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The status query is on this branch
+        run: |
+          if [ ! -f supabase/test/fantasy_status.sql ]; then
+            echo "::error::supabase/test/fantasy_status.sql is not on '${GITHUB_REF_NAME}'."
+            echo "Change the branch dropdown to the branch the fantasy work is on."
+            exit 1
+          fi
+
+      - name: Install the postgres client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Read it
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL is not set."
+            exit 1
+          fi
+          psql "$SUPABASE_DB_URL" -f supabase/test/fantasy_status.sql

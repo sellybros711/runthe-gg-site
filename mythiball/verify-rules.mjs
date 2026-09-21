@@ -3601,11 +3601,19 @@ async function main() {
          on a canvas the browser was upscaling by 1.87x.
 
          So the scale is read off FIELD_CAM, which is the one answer the
-         blit, the crisp pass and the aim all draw from, and the SECOND
-         claim is the one the old shape could not make at all: the bitmap
-         is EXACTLY the pixels the arena occupies. A bitmap under that is
-         a browser upscale and a ragged grid on the glass however clean the
-         blit was; a bitmap over it is fill nobody sees. */
+         blit, the crisp pass and the aim all draw from.
+
+         AND THE BROWSER IS ALLOWED ONE LAST STEP, as long as it is a whole
+         one. The page draws at `FIELD_CAM.draw` device pixels a block and
+         the element is laid out at `scale`, so the browser magnifies by
+         `scale / draw` and a whole number times a whole grid is still a
+         whole grid. That is what buys back the fill: at ratio 3 the page
+         draws a quarter of the pixels it used to. So the run lengths in the
+         BITMAP are `draw` and never `scale`, and the second claim is the one
+         the old shape could not make at all: the step is whole, and the
+         bitmap times the step is exactly the pixels the arena occupies. Off
+         either way and the browser is resampling on a fraction, which is a
+         ragged grid on the glass however clean the blit was. */
       for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
                                         ['phone, denser', 360, 780, 2],
                                         ['small phone', 320, 568, 2],
@@ -3642,36 +3650,39 @@ async function main() {
           }
           lens[run] = (lens[run] || 0) + 1;
           const all = Object.entries(lens).map(([k, v]) => [Number(k), v]);
-          const scale = FIELD_CAM.scale;
+          const scale = FIELD_CAM.scale, draw = FIELD_CAM.draw;
           /* pixels, not runs: one stray pixel must not weigh the same as
              a forty pixel stretch of flat sky */
           const px = all.reduce((a, [k, v]) => a + k * v, 0);
-          const stray = all.filter(([k]) => k % scale !== 0)
+          const stray = all.filter(([k]) => k % draw !== 0)
                            .reduce((a, [k, v]) => a + k * v, 0);
           const box = cv.parentElement, dpr = window.devicePixelRatio || 1;
-          return { w: cv.width, h: cv.height, scale,
+          return { w: cv.width, h: cv.height, scale, draw,
                    sw: FIELD_CAM.sw, sh: FIELD_CAM.sh,
                    wantW: box.clientWidth * dpr, wantH: box.clientHeight * dpr,
                    modal: all.slice().sort((a, b) => b[1] - a[1])[0][0],
                    strayShare: stray / px,
                    smoothing: cv.getContext('2d').imageSmoothingEnabled };
         });
-        const scale = r.scale;
+        const scale = r.scale, draw = r.draw, step = scale / draw;
         ok(scale === Math.round(scale) && scale >= 2,
           `${label}: the world is blown up by a whole number (${scale}x)`,
-          JSON.stringify({ bitmap: r.w, crop: r.sw, scale }));
-        ok(r.modal === scale && r.strayShare < 0.08,
-          `${label}: the blit lands on the grid, ${scale}px to a block`,
-          JSON.stringify({ modalRun: r.modal, scale,
+          JSON.stringify({ bitmap: r.w, crop: r.sw, scale, draw }));
+        ok(r.modal === draw && r.strayShare < 0.08,
+          `${label}: the blit lands on the grid, ${draw}px to a block`,
+          JSON.stringify({ modalRun: r.modal, draw,
                            offGrid: (100 * r.strayShare).toFixed(1) + '% of the row',
                            smoothing: r.smoothing }));
         /* A WHOLE SCALE IN THE BITMAP BUYS NOTHING IF THE BROWSER THEN
-           RESAMPLES IT. Within one block each way, because the crop is a
-           whole number of blocks and the arena is not. */
-        ok(r.wantW - r.w >= 0 && r.wantW - r.w < scale
-           && r.wantH - r.h >= 0 && r.wantH - r.h < scale,
-          `${label}: the bitmap is the pixels the arena occupies`,
-          JSON.stringify({ bitmap: [r.w, r.h], arena: [r.wantW, r.wantH], scale }));
+           RESAMPLES IT ON A FRACTION. Within one block each way, because
+           the crop is a whole number of blocks and the arena is not. */
+        ok(step === Math.round(step) && step >= 1
+           && r.wantW - r.w * step >= 0 && r.wantW - r.w * step < scale
+           && r.wantH - r.h * step >= 0 && r.wantH - r.h * step < scale,
+          `${label}: the browser's last step is a whole ${step}x onto the arena`,
+          JSON.stringify({ bitmap: [r.w, r.h], step,
+                           shown: [r.w * step, r.h * step],
+                           arena: [r.wantW, r.wantH], scale }));
         ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
         await pg.close(); await ctx.close();
       }

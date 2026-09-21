@@ -1,4 +1,4 @@
-/* Run The Diamond — achievements & streaks.
+/* Run The Diamond: achievements and streaks.
  *
  * Derive-everything design: the game persists only compact per-season rows;
  * every badge, streak, and career stat is recomputed from those rows on
@@ -10,7 +10,7 @@
  *   { ts, wins, losses, titleWon, madePlayoffs, seedLabel, isGOAT, beatRecord,
  *     rating, allTimeRank, chemPct, spend, respins, efficiency, archetype,
  *     era, picks:[{ i, s, t, slot, w }] }
- * Rows have holes — fields added over time — so tests treat missing as
+ * Rows have holes (fields added over time), so tests treat missing as
  * "unknown", never as a hard zero.
  */
 'use strict';
@@ -54,7 +54,7 @@ const CATALOGUE = [
     (c) => c.best.wins >= 110),
   A('tie_record', 'Immortal', 'Match the all-time record (116 wins).', 'legend', 'Winning',
     (c) => c.rows.some((r) => r.beatRecord)),
-  A('goat', 'Greatest of all time', 'Win 117+ games — the best ever.', 'legend', 'Winning',
+  A('goat', 'Greatest of all time', 'Win 117+ games, the best ever.', 'legend', 'Winning',
     (c) => c.rows.some((r) => r.isGOAT)),
   A('wildcard_title', 'Cinderella', 'Win it all as a wild card.', 'gold', 'Winning',
     (c) => c.rows.some((r) => r.titleWon && r.seedLabel === 'Wild card')),
@@ -70,10 +70,16 @@ const CATALOGUE = [
     (c) => c.bestRank != null && c.bestRank <= 10),
   A('rank_one', 'Greatest ever assembled', 'Build the #1 team of all time.', 'legend', 'The all-time list',
     (c) => c.bestRank != null && c.bestRank <= 1),
-  A('rating_90', 'Loaded', 'Field a team rated 90+.', 'silver', 'The all-time list',
-    (c) => c.best.rating >= 90),
-  A('rating_100', 'Perfect on paper', 'Field a team rated 100.', 'legend', 'The all-time list',
-    (c) => c.best.rating >= 100),
+  // Thresholds follow what the rating now MEANS, measured over 260 drafts on the
+  // scale teamRating() puts a squad on: 55 is a roster that reaches October nine
+  // times in ten and turns up in 11% of drafts, 70 is one that wins the thing two
+  // times in five and turns up in 2%. They read 86 and 90 on the old scale, where
+  // the number ignored chemistry, roster shape and the closer and sat thirty
+  // points high; left alone they would both have become unreachable.
+  A('rating_loaded', 'Loaded', 'Field a team rated 55 or better.', 'silver', 'The all-time list',
+    (c) => c.best.rating >= 55),
+  A('rating_paper', 'Best on paper', 'Field a team rated 70 or better.', 'legend', 'The all-time list',
+    (c) => c.best.rating >= 70),
 
   // ── Roster craft ──
   A('efficient', 'Sharp scout', 'Draft at 90%+ efficiency.', 'silver', 'Roster craft',

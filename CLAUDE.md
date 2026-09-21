@@ -56,8 +56,8 @@ push or pull request touching a guarded directory
 (`.github/workflows/dash-check.yml`).
 
 The guarded list inside that script is `wrestling`, `hoops`, `globe`,
-`mythiball`, `golf`, `cfb`, `football` and `assets`. The rest of the repo
-predates the rule and still contains hundreds of em dashes; add a directory to
+`mythiball`, `golf`, `cfb`, `football`, `assets` and `baseball`. The rest of the
+repo predates the rule and still contains hundreds of em dashes; add a directory to
 `GUARDED` only after cleaning it, never before, or the check becomes noise
 people learn to ignore.
 
@@ -83,6 +83,9 @@ string a tile shows when the figure is zero, so reading every dash as
 punctuation turned every blank tile into a stray comma. Nothing threw and no
 test caught it. A hyphen is the replacement there, the same as for a range. It
 is the same miss as the football placeholders above, found from the other side.
+
+**`baseball` was a contained job**: 57 offenders across six files, and almost
+all of them wanted a colon, a full stop or a pair of parentheses.
 
 Run the checker against anything ad hoc:
 
@@ -3120,16 +3123,21 @@ are each named. Proved by introducing all three.
 fault: 807 poses from a drawn frame before and after, 647 on a still before and
 after. The same frames, under the right characters.
 
-**A SECOND, SMALLER FAULT IS STILL OPEN AND IS DELIBERATELY NOT IN THIS FIX.**
-Twelve characters ship their strips fully opaque, with the background baked in,
-and their outline is the same near black as that background, so
-`border_background`'s flood walks along the outline and into the figure. 204
-frames arrive that way and **35 of them clean down to under 900 pixels**, which
-`usable_frame` then refuses, so those poses fall back to a still. It is the
-failure the `border_background` docstring predicts at `tol=12`, happening at
-`tol=0` because the two colours are identical. Worth about 35 drawn frames
-across pan, phoenix, pirate, poseidon, quasimodo, rabid_dog, ringmaster, santa,
-sasquatch, scarecrow, vampire and zombie.
+**A SECOND FAULT WAS WRITTEN UP HERE AND DOES NOT EXIST.** Twelve characters
+ship their strips fully opaque with the background baked in, and their outline
+is the same near black as that background, so the reading was that
+`border_background`'s flood walks along the outline and into the figure: 204
+frames arrive opaque, 35 of them clean down to under 900 pixels, `usable_frame`
+refuses those, and about 35 drawn frames were being thrown away. It is the
+failure that function's own docstring predicts at `tol=12`, arriving at `tol=0`
+because the two colours are identical, which is what made it convincing.
+
+**Measured, the flood removes ZERO non-background pixels across all 204.** The
+35 frames hold under 900 pixels of anything that is not the border colour
+before the flood is run at all: they are blank cells, and refusing them is the
+mass floor doing its job. There is nothing to recover. A prediction that fits
+the shape of a bug is not a measurement of one, and this one sat in the file
+for a pass as an open TODO worth thirty five frames.
 
 #### The batter stood at the plate holding an axe
 
@@ -3193,6 +3201,113 @@ the wall. `EDGE_RUN_MAX` is 40, in the gap.
 634 to 642, because the walk was already substituting a neighbour. What moved
 is WHICH frame each pose gets: **poses that had to substitute went 138 to 49**,
 so 89 of them now show the drawing the animation actually intended.
+
+##### And it only ever looked at the SIDES, while the bleed is mostly vertical
+
+Reported by a player looking at the clubhouse: the four characters on the floor
+had black fragments hanging off them. They did. **Nineteen of the sixty eight
+carried a piece of a DIFFERENT figure** in a pose that screen can show: a pair
+of somebody else's shoes floating over Alice's head, 278 pixels of another
+character lying at Hermes' feet, a spare head along the bottom of Krampus and
+the Headless Horseman.
+
+**The premise one line up is false one step earlier.** "A strip is one image cut
+into 64px cells" is true, and every strip really is a single row of them, so the
+only neighbour `drop_edge_bleed` looked for was left or right. But the strips
+were themselves cut out of a TALLER sheet, so a 64px cell catches the bottom of
+the figure above it or the top of the one below. Opened by hand,
+`hermes_pitch` frame 2 is Mrs Claus with her head clipped off at the top of the
+cell and the next Mrs Claus's white hair intruding along the bottom.
+
+**The measurement is what named it, and it is the shape of a check doing its job
+on one axis.** Over the shipped table, of 558 detached blobs:
+
+| touching | count |
+|---|---|
+| a SIDE edge | **0** |
+| the top | 71 |
+| the bottom | 284 |
+| no edge at all | 203 |
+
+Zero on the sides is the rule working perfectly. Everything else was never
+asked about.
+
+**Nothing could report it**, which is why it took a player: a stray blob is a
+valid drawing, every pose was present, every pose was its own drawing and
+differed from idle, and that is every property the guards here ask for. They ask
+whether a frame is its own art. None asked whether it is ONLY its own art.
+
+**A TOP OR BOTTOM BLOB NEEDS A CLEARANCE AND A SIDE ONE DOES NOT**, and that
+asymmetry is the whole of the fix. Sideways, the neighbour is past the cell wall
+and a character's own arm reaches the edge still attached to the character, so
+touching the edge is the entire test. Vertically the figure STANDS on the bottom
+edge, so a foot drawn clear of the leg is a detached blob on that edge and is
+not bleed.
+
+**`BLEED_GAP` is 3 and the band it sits in is empty**, which is `MASS_FLOOR`'s
+rule rather than a guess. Of the 400 blobs on a top or bottom edge: 10 within a
+pixel of the figure, **none at 2 or 3**, 10 at 4 to 6, and 380 at 7 or more. The
+ten it keeps are the case it exists for, and the biggest is Paul Bunyan's boot
+in `run1` and `run2`, 123 pixels of his own character drawn clear of his leg.
+
+**It took nothing away**, which is the sign it is purely subtractive of bleed:
+drawn frames 807 before and after, poses on a still 647 before and after. The
+same art, with somebody else's removed. Edge strays went **355 to 4**, and the
+four are the feet above.
+
+**AND EIGHTEEN FIGURES CAME DOWN ONTO THE DIRT**, which is the paragraph above
+about seating paying off a second time. `cleaned()` drops the bleed BEFORE it
+measures the baseline, so a bottom edge intruder was the lowest thing in the
+frame and was what got seated on y=62, leaving the character hovering above it.
+Measured across all 1,360 frames: 1,342 baselines unchanged, **18 moved, every
+one of them DOWN**, the biggest being zombie's batting stance by five rows. Not
+one moved up, which is what says this was a correction rather than a shuffle.
+
+##### And the EDGE was the wrong half of the rule
+
+The fix above shipped with "ten frames in the clubhouse still carry a small
+mark" written under it as an accepted cost, on the argument that the 203 blobs
+touching no edge are part art (Mother Nature's leaves, the ball off Alice's
+bat) and part bleed, and no geometry tells the two apart. **The first half of
+that is true and the conclusion was wrong**, because the rule has two tests in
+it and the argument only weighed one.
+
+**Requiring the blob to TOUCH the top or the bottom catches the neighbour that
+reached all the way in and misses the one the sheet cut short.** A bar of
+somebody's shoulder stopping two rows inside the cell, a hat, a shoe: **87 of
+those survived**, and they are what the ten clubhouse marks were.
+
+**The CLEARANCE is what tells art from bleed, and it always was.** A ball, a
+falling leaf or a prop is drawn WITH the figure and overlaps its rows, so it
+has no clearance to be dropped for. The edge was never doing that work. So the
+clearance is the whole test now, above or below, edge or not, and the blobs
+that OVERLAP the figure are still never touched.
+
+**All 87 were rendered and looked at one at a time**, which is the only way
+this question has ever been settled here. Not one is art: every one sits in the
+debris field at the head or the foot of a cell, beside other obvious fragments.
+57 of them are within two rows of a cell edge and the deepest eight were blown
+up on their own before this changed.
+
+**It took nothing away.** 807 poses from a drawn frame and 647 on a still,
+before and after, and the table went 1188KB to 1186KB. The same art, with two
+kilobytes of somebody else's removed.
+
+**`check-posture.mjs` holds it now**, in the sprite section beside the row
+width and the palette keys, because the thing that shipped was data rather than
+behaviour. It walks every pose of every character, resolves a reference first,
+and reports any detached blob clear of the figure by `BLEED_GAP`. **The gap is
+written in both files on purpose**: the checker reads what the builder wrote,
+so a rebuild at a different gap fails here instead of shipping. **And the edge
+test came out of both in the same commit**, or the checker would have gone on
+certifying the 87.
+
+**Proved by pointing the widened guard at the table that shipped one pass
+ago**: 58 poses named, against 0 on the rebuilt one.
+
+**Proved by pointing it at the table that shipped**: 265 problems against 0 on
+the rebuilt one. A guard that has only ever seen the fixed file is a guard
+nobody knows the teeth of.
 
 #### A frame has to hold most of its own character
 
@@ -3427,16 +3542,72 @@ rectangle handed to `drawImage` rather than an overhang. The browser scales
 nothing. Measured after: `scale` a whole 3 to 12 across six screens, bitmap to
 arena exactly **1.000** on every one.
 
-**What it costs in FILL, said honestly**, because the obvious reading is that an
-arena sized canvas must be bigger. The fill is the arena and never more than the
-arena, so on a phone it is **0.4 to 0.9 megapixels against the 1.13** of the
-fixed 1280x880 it replaced, where the old canvas hung off both sides of the
-screen. On a **retina desktop it IS more**, 3.6 megapixels at 1920x1080 at ratio
-2, and that is not a regression to tune away: it is what that screen shows, and
-the alternative is the browser resampling a smaller bitmap onto it, which is the
-ragged grid this exists to remove. Covering the same framing by growing the
-BITMAP alone would have wanted 2560 across on a dpr 3 phone, four times the
-work, on the device least able to pay for it.
+**What it costs in FILL was written up here as small and it is not.** The claim
+was "0.4 to 0.9 megapixels against the 1.13 of the fixed 1280x880 it replaced",
+which is what an arena sized canvas costs in CSS pixels. The arena is sized in
+DEVICE pixels, so a 390 phone at ratio 3 is **1.65 megapixels a frame** and a
+1920x1080 retina desktop is 3.6. Nobody had multiplied by the ratio. See the
+next section: the framing stays, and the drawing comes back down.
+
+#### So the page draws at a WHOLE FRACTION of the screen, and the browser finishes
+
+The camera above is right about the grid and it is 1.65 megapixels a frame on a
+390 phone at ratio 3, where the fixed bitmap it replaced spent 1.13. Measured
+at 4x throttle, changing nothing but the ratio, **the fill is the frame**: 1.65
+MP ran 36.3 and 36.6 ms with about two thirds of frames over 33ms, and 0.18 MP
+ran 19.7 and 20.0 with 1.5%.
+
+**That contradicts this file's own note that `setCPUThrottlingRate` leaves
+rasterizing alone, and the note is what is wrong.** Headless Chromium has no
+GPU here, so the compositor is on the CPU and the throttle slows it with
+everything else. A real phone composites on its GPU, so these numbers are a
+**ceiling** on what a player feels rather than a reading of it. What is not in
+doubt is that the pixels are spent.
+
+**The browser is allowed the last step as long as it is a WHOLE one.** A whole
+number upscale of a whole number grid is still a whole number grid: a block ends
+up `scale` device pixels across either way, and what changes is how much of that
+magnification the page pays for. `fieldDraw` picks the **smallest divisor of
+`scale` that is still at CSS resolution or better**. On a ratio 3 phone at scale
+8 that is 4, so the page draws a quarter of the pixels.
+
+**THE FRAMING IS NOT ALLOWED TO MOVE**, which is what makes this a drawing
+change rather than a camera one. Deciding the whole camera in CSS pixels was
+tried first and it CROPS: `ceil` overshoots by a fifth at 2.50 where it
+overshoots by a fifteenth at 7.49, so the phone lost 16 blocks of world. The
+scale, the crop and the offset are all still worked out in device pixels.
+
+**What it bought, interleaved, two runs an arm**, alternating because this
+file's own history records an A B A pass reading 9.5ms of nothing but a page
+warming up:
+
+| bitmap | mean | over 33ms | over 50ms |
+|---|---|---|---|
+| 0.48 MP | 34.0, 34.7 | 39%, 45% | 3.4%, 3.9% |
+| 1.65 MP | 37.6, 37.2 | 62%, 60% | 7.9%, 8.1% |
+
+The arms do not overlap on any of the three, which is what the single runs
+before them could not say. A visible hitch halves.
+
+**IT IS STILL OUT OF BAND, AND THAT IS THE FULL BLEED LAYOUT RATHER THAN THIS.**
+The field was a 358x246 box and it is the window now, so drawn at CSS resolution
+it is about two and a half times the pixels the boxed version spent. That is the
+thing that was asked for. Taking `draw` below the floor would buy the rest and
+would be drawing the type and the sprites softer than the screen can show, which
+is the one thing the resolution pass exists to refuse.
+
+**A prime scale gets nothing**, and that is worth knowing before reading a flat
+result as a broken function. The step has to be whole, so `draw` has to DIVIDE
+`scale`: at scale 7 the divisors are 1 and 7 and the floor rules out 1, so the
+wide camera on a ratio 3 phone draws at full device resolution like everything
+else. The plate camera is where the game sits and it lands on 8.
+
+**Two things read the draw resolution and two deliberately do not.** The bitmap
+and the crisp HUD pass are in bitmap pixels, so both are `draw`. The element's
+CSS size and `FIELD_VIEW` are about the SCREEN, so both are `scale`: sized off
+the bitmap the picture would shrink to a fraction of the arena instead of being
+upscaled onto it, and read off the draw the ball's minimum size would grow on
+exactly the phones that floor exists for.
 
 **The wide camera is contain ROUNDED UP, which is a crop.** The scale has to be
 whole, and rounding down spends the whole rounding loss on bars: a desktop at
@@ -3454,8 +3625,9 @@ repo's oldest lesson arriving at the checkers rather than the page:
   while the canvas held the whole world, and the canvas holds a CROP now, so
   bitmap over world is the crop's share and has no reason to be whole. **Asked
   the old way it passed on the canvas the browser was upscaling by 1.87.** It
-  reads `FIELD_CAM.scale`, and the second claim is the one the old shape could
-  not make at all: the bitmap is exactly the pixels the arena occupies.
+  reads `FIELD_CAM`, and the second claim is the one the old shape could not
+  make at all: the browser's last step is a whole number and the bitmap times
+  that step is exactly the pixels the arena occupies.
 - The upright zone measurement used `r.width / FIELD_W` and `r.height /
   FIELD_H`, which under a crop are two different scales, so it answered a zone
   **37 by 68** for a box that is 92 by 120. Not even the right shape. It inverts
@@ -3726,6 +3898,7 @@ node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands 
 node mythiball/check-frames.mjs 70 normal --phone --cpu=4   frame times, on the machine that matters
 node mythiball/check-runs.mjs      runs per game, with a defence that turns up (--jobs=N to run several at once)
 node mythiball/check-bat.mjs       the swing's own curves, and that skill pays
+node mythiball/check-firstpitch.mjs  whether a stranger can READ one pitch
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
 
@@ -3739,6 +3912,90 @@ itself once: it measured the CPU at 55 whiffs per hundred swings, the swing
 jitter tiers came down about a fifth, and it measures in the mid forties
 now (MLB runs about 25). The file's header records the procedure, and any
 further move repeats it: measure, touch the jitter, measure again.
+
+### EVERY OTHER CHECKER HERE ASKS WHETHER SOMETHING IS CORRECT
+
+```
+node mythiball/check-firstpitch.mjs
+```
+
+Reported as the game seeming very off inside one or two pitches, after weeks
+of green suites. It was, and nothing in this file could see it, because the
+question every guard here asks is whether a thing is DRAWN RIGHT and the
+question nobody had asked is whether it can be SEEN.
+
+**The audit loop is what produced that.** Pick a file, find a real silent
+defect, fix it, prove it, write it up. That loop never terminates on a
+codebase this size, because there is always another silent defect, and it
+never arrives at PLAYABLE because playable was never the target. This file
+reached four thousand lines of correct findings while the strike zone was a
+hairline nobody could find.
+
+**So this checker measures THE GLASS, never the source.** A zone drawn at
+`lineWidth = 2` is a claim about logical field pixels; what a thumb aims at
+is CSS pixels after the camera, the crop and the browser's own last step.
+The numbers are read back off the canvas and out of `FIELD_CAM`. Every
+assertion is a PROPERTY that survives a redesign: a contrast ratio, a size
+floor, a state that has to end. Pinning pixels would make it a test of the
+three phones somebody thought of, which is the mistake this file exists to
+stop repeating.
+
+#### The ball was still sitting there when the next pitch was due
+
+`pitch.closed` was only ever set where the AT BAT ends: a ball in play, a
+walk, an out. Every other outcome is most of them, so after a called ball, a
+called strike, a foul, a foul bunt and a whiff the arrived ball went on
+being drawn in the catcher's mitt for the whole gap.
+
+Measured on a 390 phone: the flight is **42 to 46 frames over about 700ms**,
+and the ball then sat motionless on the plate for **152 to 157 frames, which
+is 2.5 seconds**. The reader spent three and a half times longer looking at
+where the pitch stopped than at the pitch. Through the checker with the
+defect reintroduced: **662 frames of a ball in the mitt over 22 seconds, and
+it never cleared once.**
+
+**Nothing failed and nothing could.** A ball drawn in the mitt is a valid
+drawing, the flight was correct, the call was correct.
+
+`clearPitchSoon` is the one place, called from all four sites. It carries
+the identity check this file already runs at three other doors: **a timer
+fires into its OWN pitch or not at all**, because the next pitch, a new at
+bat or a new game can all have replaced it while the hold was out.
+
+**A FOULED BALL IS NOT IN THE MITT**, so the foul and the foul bunt clear at
+zero rather than after a beat. Held, the picture is a ball sitting on the
+plate while the log says it was fouled off.
+
+**The camera is not affected, which is the thing to check before moving
+this.** `plateViewActive` asks `pitch && !closed` OR `plateHold`, and every
+one of those sites sets `plateHold` to its own beat plus 300ms, so the plate
+view is held by the second clause throughout. Closing the pitch early cuts
+nothing away.
+
+#### And a hairline is not a target
+
+The strike zone was a **2px LOGICAL** line, which is **1.78 CSS pixels** on a
+390 phone, measuring **2.23:1** against the grass behind it, with a 6% fill
+at **1.33:1**. Three to one is the floor for a large graphical object
+somebody has to locate; under about 1.5 it is a shape you have to already
+know is there. It is **3.73:1** now.
+
+**THE WIDTH IS COUNTED IN BLOCKS, AND THE FIRST FIX COUNTED CSS PIXELS.**
+Written `3 / FIELD_VIEW` it asks for three CSS pixels, which is right on a
+phone and is **1.8 logical pixels on a desktop**. The world is drawn into
+`pixWorld` at `PIX` logical pixels to the block, so that is six tenths of a
+block: the line cannot be solid, it antialiases to partial coverage, and it
+washes out. Both phones cleared 3 and the desktop came back at **2.48**.
+
+**A line narrower than a block is a line this world cannot draw**, which is
+the one-resolution rule the blit already runs on arriving at a stroke. So
+`zoneLineMin()` is a whole number of blocks, at least one, and enough of
+them to cover three CSS pixels on whatever screen this is. The halo is a
+block each side for the same reason.
+
+**It is read across three screens on purpose**: the fault was a length
+written in the wrong unit, which is exactly the class of bug that looks fine
+on the machine it was written on.
 
 ### Difficulty is what the other dugout KNOWS
 
@@ -5896,6 +6153,133 @@ If it ever holds 171 rows again, the game has fallen back to
 must never be shown to a player as a fact about a real season. The dev banner
 said so and has come off, because saying it now would be false in the other
 direction.
+
+## Run The Diamond, the baseball game
+
+`baseball/`, at `/baseball/`. Same split as hoops: `engine.js`, `run.js`,
+`achievements.js` and `board.js` load beside the page and carry cache versions,
+so **read the cache-busting section above before editing any of them**.
+
+```
+node baseball/check-atbats.mjs    the at-bat simulator, against real brackets
+node baseball/check-bracket.mjs   the playoff field, against real runs
+```
+
+### Two ratings, two jobs, and they must not be merged
+
+`squadRating()` reads nine bats and two starters, the same shape a real club
+offers, so a drafted squad can be ranked against the 2,594 real team-seasons in
+`ratingTable`. It is therefore blind to chemistry, to roster shape and to the
+closer, which is most of what the season actually runs on. Measured over ninety
+drafts, **three rosters inside 0.4 rating points of each other projected to 68,
+81 and 96 wins**, and a player was shown 94 above a 79-83 record.
+
+So there are two numbers:
+
+| | what it reads | what it is for |
+|---|---|---|
+| `squadRating()` | nine bats, two arms, nothing else | the all-time rank, and `titleEdge` inside `generatePlayoffs` |
+| `teamRating()` | the offense and defense the sim runs on | the number on the squad and results screens, and the badges |
+
+`playRun()` returns both, as `rating` and `shownRating`. **Leave `rating` feeding
+`generatePlayoffs`**: the balance is measured on it, and swapping it moves the
+title rate. The UI reads `shownRating` through one accessor in `index.html` so
+nothing picks up the yardstick by accident.
+
+`teamRating()` says what it means in wins. Pythagorean expectation understates
+the spread this schedule produces, so `PROJ.SLOPE` and `PROJ.INTERCEPT` are
+**fitted** over 220 drafted rosters against the season simulator (rms 1.5 wins).
+Refit rather than nudge. The scale then hangs on two things a player already
+knows: **88 wins is the wild card line and rates 50, and the 116-win record
+rates 100**.
+
+What the bands are worth, over 260 drafts, which is what the verdicts and the
+badge thresholds are pinned to:
+
+| rating | mean wins | Octobers | titles |
+|---|---|---|---|
+| 70-80 | 99.4 | 100% | 40% |
+| 60-70 | 98.1 | 100% | 25% |
+| 50-60 | 92.7 | 90% | 3% |
+| 40-50 | 86.0 | 40% | 0% |
+| under 40 | 73.5 | 2% | 0% |
+
+The draft grade is a separate scale and is **not** inflated: it is the share of
+the WAR on your own board that you walked away with, and best-available medians
+B+ while a careless draft gets an F. It only ever needed to say what it graded.
+
+### Neither the bracket nor the at-bat simulator decides anything
+
+That is the one thing to hold on to before touching either. `generatePlayoffs()`
+picks the player's opponents and stiffens them by round and by rating, and the
+balance is measured on that. Everything October draws on screen is built around
+that path and settles nothing: the bracket simulates the eleven series the player
+is not in, and the at-bat engine plays out scores that already exist. Both run on
+their own seeded RNG so the season's stream is untouched.
+
+### The bracket
+
+Twelve clubs, four columns, reseeded every round the way MLB's is: the top two
+seeds sit out the wild card, then the best seed alive always draws the worst seed
+alive. `createBracket()` in `engine.js` holds all of it, which is why
+`check-bracket.mjs` can check it; `index.html` only draws.
+
+Three things it gets wrong if you are not careful, all of which render perfectly:
+
+- **`run.playoffs.rounds` stops at the round the run went out in**, so the last
+  rung is only the World Series opponent when the run reached the World Series.
+  Pinning it as one anyway seated the club that knocked the player out in the
+  Division Series as the far side's top seed, and that club then came through as
+  the near champion too: a World Series between the 1951 Giants and the 1951
+  Giants. Rungs are pinned BY COLUMN (`ladder[3 - firstCol]`), and the array is
+  never compacted.
+- **The ladder can draw the same club in two rounds**, because the opponent for
+  each round is picked at random out of the elite pool. Only the first pinning
+  stands.
+- **The seat across from the player is the run's own opponent**, written over
+  whatever the reseed produced. Without it you watch a series against a club the
+  bracket never put there.
+
+**The two sides are not the American and National Leagues and must never be
+labelled as such.** A roster is drafted across every era from 71 clubs, half of
+which no longer exist and some of which were never in either league, so filing the
+1931 Homestead Grays under the AL would be a tidy-looking lie. They are the
+player's side and the other one.
+
+### The at-bat simulator
+
+October is played out plate by plate in every mode except Classic and the daily,
+which watch the bracket fill in and never sit through a game. (A finished run can
+always go back and watch October from the results screen, whatever mode it was.)
+The thing to understand before touching it:
+
+**`resolveGame()` still decides every game.** The season, the bracket and the
+balance measured across thousands of runs (89.2 mean wins, 59.8% Octobers, 6.5%
+titles) all come from the model that was there before. `simGameScript()` is
+handed a final score that already exists and works out the nine innings that
+produced it: it spreads the runs across innings the way real innings bunch up,
+then plays each half out with real base and out state until exactly that many
+runs are in. A second simulator that decided its own games would be a second
+balance, and every one of those numbers would need re-tuning.
+
+Two consequences worth keeping:
+
+- **It draws from its own RNG**, seeded off the run seed plus the round and game
+  index. Watching a game and skipping it leave the bracket bit-identical, and a
+  seed always replays the same game. Do not let it touch the season's stream.
+- **The only rule imposed from outside is that the third out cannot land until
+  the inning's runs are in.** That is also the only rule real baseball enforces
+  about when an inning ends, so it never shows. Everything else (a double play
+  wiping out a rally, a runner held at third, a walk-off) falls out of the base
+  state. `check-atbats.mjs` asserts the line score always adds up to the score it
+  was handed, over 25,000 games plus every game of 25 real brackets, and checks
+  the shape against real baseball: plate appearances per game, hits, how often a
+  half inning is scoreless.
+
+The opponent bats its own roster: a marquee club carries its season, so the 1927
+Yankees send up Combs, Gehrig and Ruth. **A third of those clubs have seven or
+eight qualifying bats**, because the build applies a playing-time floor, and the
+rest of the order fills in by position rather than by inventing anybody.
 
 ## Two people can share a name, and `name|sport` is not a person
 

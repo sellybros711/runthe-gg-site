@@ -167,6 +167,60 @@ if (!rosterMatch) {
       }
       return out;
     });
+    /* BLEED_GAP in mythiball/sprites/tools/spritelib.py, which is where the
+       band it sits in was measured. The two are a pair: this reads what that
+       one wrote, so a build run with a different gap fails here rather than
+       shipping. */
+    const BLEED_GAP = 3;
+    /* Detached blobs clear of the figure above or below, plus anything on a
+       side edge. 8 connected, which is the connectivity the builder walks the
+       CHARACTER at, so a cape hanging off a shoulder by one diagonal pixel is
+       part of the character here too. Reading it at 4 would report half the
+       roster.
+
+       IT DOES NOT ASK WHETHER THE BLOB TOUCHES THE TOP OR THE BOTTOM, and it
+       used to. That was the builder's rule and the builder was wrong about it:
+       the sheet cuts some of the neighbour short, so 87 fragments stopped a
+       few rows in and sailed through. The clearance is the whole test now, in
+       both files. */
+    const strayBlobs = (rows) => {
+      const h = rows.length, w = rows[0] ? rows[0].length : 0;
+      if (!h || !w) return [];
+      const lab = new Int32Array(w * h).fill(-1);
+      const blobs = [];
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        if (rows[y][x] === '.' || lab[y * w + x] !== -1) continue;
+        const id = blobs.length, st = [[x, y]];
+        let n = 0, top = h, bot = -1, hitL = false, hitR = false;
+        lab[y * w + x] = id;
+        while (st.length) {
+          const [cx, cy] = st.pop(); n++;
+          if (cy < top) top = cy;
+          if (cy > bot) bot = cy;
+          if (cx === 0) hitL = true;
+          if (cx === w - 1) hitR = true;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            const nx = cx + dx, ny = cy + dy;
+            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            if (rows[ny][nx] === '.' || lab[ny * w + nx] !== -1) continue;
+            lab[ny * w + nx] = id; st.push([nx, ny]);
+          }
+        }
+        blobs.push({ n, top, bot, hitL, hitR });
+      }
+      if (blobs.length < 2) return [];
+      const main = blobs.reduce((a, c) => (c.n > a.n ? c : a));
+      const out = [];
+      for (const bl of blobs) {
+        if (bl === main) continue;
+        if (bl.hitL || bl.hitR) { out.push({ n: bl.n, side: 'the side' }); continue; }
+        const below = bl.top - main.bot, above = main.top - bl.bot;
+        if (Math.max(below, above) >= BLEED_GAP) {
+          out.push({ n: bl.n, side: below > above ? 'below the figure' : 'above it' });
+        }
+      }
+      return out;
+    };
     /* The poses the page asks for by name. A missing one is not a blank
        frame: spriteFor falls back to idle, so the character silently
        plays the wrong drawing for that beat. */
@@ -211,6 +265,36 @@ if (!rosterMatch) {
         const missing = [...used].filter(c => !palKeys.has(c));
         if (missing.length) {
           problems.push(`sprite "${key}" pose "${pose}" uses palette keys with no color: ${missing.join(', ')}.`);
+        }
+        /* NOBODY ELSE'S DRAWING IN THIS FRAME. The strips were cut out of a
+           taller sheet, so a 64px cell catches the bottom of the figure above
+           it or the top of the one below, and `drop_edge_bleed` in the builder
+           only ever tested the SIDE edges. Nineteen of the sixty eight shipped
+           with a piece of another character in a pose the clubhouse draws: a
+           pair of somebody's shoes over Alice's head, 278 pixels of another
+           figure at Hermes' feet. Reported by a player.
+
+           Every guard here asked whether a frame is its own art. None asked
+           whether it is ONLY its own art, which is why a stray blob rode all
+           the way to the screen: it is a valid drawing, the pose is present,
+           and it differs from idle.
+
+           THE FIGURE IS THE LARGEST BLOB, always, so it is never what is
+           reported. A blob above or below it is allowed to be the character's
+           own foot when it is within BLEED_GAP of him, which is the builder's
+           own constant and the reason Paul Bunyan keeps his boot.
+
+           A BLOB THAT OVERLAPS THE FIGURE'S OWN ROWS IS LEFT ALONE, and that
+           is where the art is: Mother Nature's leaves and the ball off a bat
+           are drawn WITH the character and have no clearance. Nothing in the
+           geometry tells one of those from bleed, so the clearance is what
+           decides and the overlap is never touched. */
+        const strays = strayBlobs(rows);
+        if (strays.length) {
+          problems.push(`sprite "${key}" pose "${pose}" carries ${strays.length} detached `
+            + `blob(s) clear of the figure: ${strays.map(s => s.n + 'px '
+            + s.side).join(', ')}. That is a piece of the frame next door. `
+            + 'Re-run mythiball/sprites/tools/build_table.py and install.py.');
         }
       }
     }

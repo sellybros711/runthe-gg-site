@@ -1,0 +1,195 @@
+/* CAN A STRANGER READ ONE PITCH.
+
+     node mythiball/check-firstpitch.mjs
+
+   Every other checker in this game asks whether something is CORRECT. This
+   one asks whether it can be SEEN, which is the question that was never put
+   and the reason the game read as broken inside two pitches while every
+   suite was green.
+
+   IT MEASURES THE GLASS, NOT THE SOURCE. A zone drawn at `lineWidth = 2` is
+   a claim about logical field pixels, and what a thumb is aiming at is CSS
+   pixels after the camera, the crop and the browser's own last step. So the
+   numbers here are read back off the canvas and out of FIELD_CAM rather
+   than reasoned about from the alpha something was drawn with. That is the
+   same discipline `one grid` already runs on, pointed at legibility.
+
+   WHAT IT DELIBERATELY DOES NOT DO is pin a pixel count or a hex. Every
+   assertion is a property that survives a redesign: a contrast ratio, a
+   minimum size on screen, a state that has to end. Pinned numbers would
+   make this a test of the three phones somebody thought of, and this file
+   exists precisely because the last year of checks tested the wrong thing
+   very thoroughly.
+
+   The bands are the accessibility floors for a graphical object somebody
+   has to locate, not taste: 3:1 for the thing you aim at, and a size floor
+   for the thing you track. */
+
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
+const require = createRequire(import.meta.url);
+let chromium;
+try { ({ chromium } = require('playwright')); }
+catch { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); }
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const URL = 'file://' + path.join(here, 'index.html');
+
+let failures = 0;
+const ok = (cond, what, detail) => {
+  if (cond) { console.log('  ok   ' + what); return; }
+  failures++;
+  console.log('  FAIL ' + what + (detail ? '\n       ' + detail : ''));
+};
+
+/* WCAG relative luminance, so "can it be seen" is the same question here as
+   it is anywhere else on this site. */
+const lum = ([R, G, B]) => {
+  const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(R) + 0.7152 * f(G) + 0.0722 * f(B);
+};
+const ratio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+
+async function game(browser, w, h, dpr) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h },
+    deviceScaleFactor: dpr, isMobile: w < 900, hasTouch: w < 900 });
+  const pg = await ctx.newPage();
+  const errors = [];
+  pg.on('pageerror', e => errors.push(e.message));
+  await pg.goto(URL);
+  await pg.evaluate(() => localStorage.clear());
+  await pg.goto(URL);
+  await pg.waitForTimeout(400);
+  await pg.evaluate(() => {
+    Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+    State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+    State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
+    startGame({ mode: 'exhibition', youHome: false });
+  });
+  return { ctx, pg, errors };
+}
+
+const main = async () => {
+  const browser = await chromium.launch();
+
+  /* ---- the ball is not still there ---- */
+  {
+    console.log('the ball is not still there');
+    /* `pitch.closed` used to be set only where the AT BAT ends, so after a
+       called ball, a called strike, a foul or a whiff (which is most
+       pitches) the arrived ball went on being drawn in the mitt for the
+       whole 2200ms gap. Measured on a 390 phone before the fix: a flight of
+       42 to 46 frames, then 152 to 157 frames of a ball sitting motionless
+       on the plate. The reader spent three times longer looking at where
+       the pitch stopped than at the pitch.
+
+       THE ASSERTION IS THAT THE STATE ENDS, never how many frames it runs
+       for. A frame count is a claim about the machine the check ran on. */
+    const { ctx, pg, errors } = await game(browser, 390, 844, 3);
+    const r = await pg.evaluate(() => new Promise((res) => {
+      const seen = { held: 0, cleared: false, calls: 0 };
+      const t0 = performance.now();
+      const tick = () => {
+        const g = State.game;
+        if (!g) return requestAnimationFrame(tick);
+        const p = g.pitch;
+        /* a pitch that has ARRIVED: e is clamped at 1 and it is still open */
+        if (p && !p.closed && p.arrivedAt) seen.held++;
+        if (p && p.closed) seen.cleared = true;
+        if (seen.cleared || performance.now() - t0 > 22000) {
+          return res({ ...seen, ms: performance.now() - t0 });
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }));
+    ok(r.cleared, 'an arrived pitch closes rather than sitting in the mitt',
+      JSON.stringify(r));
+    /* The hold has to be long enough to read the catch by. Both ends
+       matter: cleared instantly the catch never registers, never cleared
+       and the screen is a still life of the last pitch. */
+    ok(r.held >= 2, 'and it is held long enough to see the catch',
+      `only ${r.held} frame(s) with the ball in the mitt`);
+    ok(errors.length === 0, 'no page errors', errors.join(' | '));
+    await pg.close(); await ctx.close();
+  }
+
+  /* ---- you can see what you are aiming at ---- */
+  {
+    console.log('you can see what you are aiming at');
+    /* The strike zone was a 2px LOGICAL line, which is 1.78 CSS pixels on a
+       390 phone, at 2.23:1 against the grass behind it, with a 6% fill at
+       1.33:1. The geometry was right and the aim worked; a reader simply
+       could not find the box. Nothing in the repo could report it, because
+       every guard asks whether a thing is drawn correctly rather than
+       whether it can be seen.
+
+       It is read across THREE screens, because the fault was a length
+       written in the wrong unit and that is exactly the class of bug that
+       is fine on the machine it was written on. */
+    for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
+                                      ['small phone', 320, 568, 2],
+                                      ['desktop', 1280, 900, 1]]) {
+      const { ctx, pg, errors } = await game(browser, w, h, dpr);
+      await pg.waitForFunction(() => {
+        const g = State.game;
+        return g && plateViewActive(g) && (!g.pitch || g.pitch.closed);
+      }, { timeout: 25000 });
+      const r = await pg.evaluate(() => {
+        const P = plateGeom();
+        const cv = document.getElementById('field');
+        const c = cv.getContext('2d');
+        /* INVERTS FIELD_CAM the way fieldPointFromEvent does. The canvas
+           shows a WINDOW on the world, so a fraction of the element times
+           FIELD_W would be right only when nothing is cropped. */
+        const toBmp = (lx, ly) => [
+          (lx / PIX - FIELD_CAM.sx) * FIELD_CAM.draw,
+          (ly / PIX - FIELD_CAM.sy) * FIELD_CAM.draw];
+        const [bx0, by] = toBmp(P.zx - P.zw, P.zy);
+        const [bx1] = toBmp(P.zx + P.zw, P.zy);
+        const pad = 30;
+        const x0 = Math.max(0, Math.round(bx0 - pad));
+        const wid = Math.min(cv.width - x0, Math.round(bx1 - bx0 + pad * 2));
+        if (wid < 20) return { tooSmall: true };
+        const d = c.getImageData(x0, Math.round(by), wid, 1).data;
+        const px = [];
+        for (let i = 0; i < d.length; i += 4) px.push([d[i], d[i + 1], d[i + 2]]);
+        return { px, edgeAt: bx0 - x0, view: FIELD_VIEW,
+                 /* the frame's width as it lands on the glass */
+                 lineCss: (typeof zoneLineMin === 'function' ? zoneLineMin() : 2) * FIELD_VIEW,
+                 zoneCssW: (P.zw * 2) * FIELD_VIEW, zoneCssH: (P.zh * 2) * FIELD_VIEW };
+      });
+      if (r.tooSmall) {
+        ok(false, `${label}: the zone is on screen to be measured`);
+        await pg.close(); await ctx.close(); continue;
+      }
+      const L = Math.round(r.edgeAt);
+      const lums = r.px.map(lum);
+      const grass = lums.slice(Math.max(0, L - 14), Math.max(1, L - 5));
+      const grassAvg = grass.reduce((a, b) => a + b, 0) / grass.length;
+      const edge = Math.max(...lums.slice(Math.max(0, L - 4), L + 5));
+      const c = ratio(edge, grassAvg);
+      ok(c >= 3, `${label}: the zone's frame clears 3:1 against the grass`,
+        `measured ${c.toFixed(2)}:1`);
+      ok(r.lineCss >= 2.5, `${label}: and it is at least 2.5 CSS px wide`,
+        `measured ${r.lineCss.toFixed(2)}px`);
+      /* A target a thumb has to hit. The pad of a finger is about 45px, and
+         the zone is aimed at rather than tapped exactly, so the floor here
+         is the box being findable rather than the whole thumb fitting. */
+      ok(r.zoneCssW >= 40 && r.zoneCssH >= 40,
+        `${label}: the zone is at least 40 CSS px on both axes`,
+        `measured ${r.zoneCssW.toFixed(0)}x${r.zoneCssH.toFixed(0)}`);
+      ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+      await pg.close(); await ctx.close();
+    }
+  }
+
+  await browser.close();
+  console.log('');
+  if (failures) { console.log(`${failures} check(s) failed.`); process.exit(1); }
+  console.log('A pitch reads.');
+};
+
+main().catch((e) => { console.error(e); process.exit(1); });
