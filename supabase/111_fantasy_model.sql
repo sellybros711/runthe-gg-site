@@ -119,8 +119,22 @@ end $$;
 
 revoke all on function public.fantasy_budget_spend(int) from public;
 -- Service role only. This is a write, and nothing in a browser may move it.
--- The service role bypasses grants entirely, so the absence of a grant here is
--- the statement: no client role can call it.
+-- The absence of a grant here is the statement: no client role can call it.
+--
+-- "THE SERVICE ROLE BYPASSES GRANTS ENTIRELY" IS WHAT THIS COMMENT USED TO SAY
+-- AND IT IS FALSE. service_role carries BYPASSRLS, which skips row level
+-- security, and nothing at all that skips ordinary table, function and
+-- SEQUENCE privileges. Those are two different mechanisms and only one of them
+-- is bypassed.
+--
+-- It cost an evening. Five tables here have a bigserial primary key, an insert
+-- into one needs USAGE on its sequence, the Worker had the table and not the
+-- sequence, and every insert came back 403 42501 "permission denied for
+-- sequence fantasy_poll_runs_id_seq". 112 is the fix and says the rest.
+--
+-- It is still true that no client role can call this, because service_role
+-- reaches it through the GRANT supabase issues to that role rather than
+-- through a bypass.
 
 -- ---------------------------------------------------------------------------
 -- Reconciling against the provider

@@ -178,8 +178,35 @@ rows_ as (
          exists (select 1 from con where name = 'fantasy_projection_has_a_market'),
          'THE NO-FABRICATION RULE IS OFF. Without this constraint a projection can be written for a player with no posted props, which is the one thing the brief says is worse than showing a gap.'
 
+  -- THE ONE THAT SHIPPED. Every insert the Worker made came back 403 42501
+  -- "permission denied for sequence fantasy_poll_runs_id_seq", for an hour,
+  -- while Cloudflare reported zero errors and fantasy_events filled up
+  -- normally. BYPASSRLS skips row level security and skips no grant at all,
+  -- and a bigserial default is a privileged call on a sequence.
+  --
+  -- It asks the WEAKEST sequence rather than counting grants, because one
+  -- table added without the grant is the whole failure and an aggregate that
+  -- said "4 of 5" would still read as mostly fine.
   union all
-  select 22, 'STRUCTURE', 'the credit cap functions exist',
+  select 22, 'STRUCTURE', 'service_role can use every fantasy sequence',
+         not exists (
+           select 1 from pg_sequences
+            where schemaname = 'public' and sequencename like 'fantasy%'
+              and not has_sequence_privilege('service_role',
+                    schemaname || '.' || sequencename, 'USAGE')
+         )
+         and exists (select 1 from pg_sequences
+                      where schemaname = 'public' and sequencename like 'fantasy%'),
+         (select coalesce('cannot use: ' || string_agg(sequencename, ', '), 'no fantasy sequences exist at all, so 110 and 111 did not run')
+            from pg_sequences
+           where schemaname = 'public' and sequencename like 'fantasy%'
+             and not has_sequence_privilege('service_role',
+                   schemaname || '.' || sequencename, 'USAGE'))
+         || ' RUN 112. Without it the Worker polls, spends credits and stores NOTHING,'
+         || ' and the run log that would have told you is refused by the same grant.'
+
+  union all
+  select 23, 'STRUCTURE', 'the credit cap functions exist',
          (select count(*) from proc where name in
             ('fantasy_budget_spend', 'fantasy_budget_observe',
              'fantasy_budget_state', 'fantasy_default_cap')) = 4,
