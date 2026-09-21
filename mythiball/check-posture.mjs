@@ -172,11 +172,18 @@ if (!rosterMatch) {
        one wrote, so a build run with a different gap fails here rather than
        shipping. */
     const BLEED_GAP = 3;
-    /* Detached blobs sitting on an edge and clear of the figure. 8 connected,
-       which is the connectivity the builder walks the CHARACTER at, so a cape
-       hanging off a shoulder by one diagonal pixel is part of the character
-       here too. Reading it at 4 would report half the roster. */
-    const edgeStrays = (rows) => {
+    /* Detached blobs clear of the figure above or below, plus anything on a
+       side edge. 8 connected, which is the connectivity the builder walks the
+       CHARACTER at, so a cape hanging off a shoulder by one diagonal pixel is
+       part of the character here too. Reading it at 4 would report half the
+       roster.
+
+       IT DOES NOT ASK WHETHER THE BLOB TOUCHES THE TOP OR THE BOTTOM, and it
+       used to. That was the builder's rule and the builder was wrong about it:
+       the sheet cuts some of the neighbour short, so 87 fragments stopped a
+       few rows in and sailed through. The clearance is the whole test now, in
+       both files. */
+    const strayBlobs = (rows) => {
       const h = rows.length, w = rows[0] ? rows[0].length : 0;
       if (!h || !w) return [];
       const lab = new Int32Array(w * h).fill(-1);
@@ -207,10 +214,10 @@ if (!rosterMatch) {
       for (const bl of blobs) {
         if (bl === main) continue;
         if (bl.hitL || bl.hitR) { out.push({ n: bl.n, side: 'the side' }); continue; }
-        const onTop = bl.top === 0, onBot = bl.bot === h - 1;
-        if (!onTop && !onBot) continue;
-        const gap = onBot ? bl.top - main.bot : main.top - bl.bot;
-        if (gap >= BLEED_GAP) out.push({ n: bl.n, side: onBot ? 'the bottom' : 'the top' });
+        const below = bl.top - main.bot, above = main.top - bl.bot;
+        if (Math.max(below, above) >= BLEED_GAP) {
+          out.push({ n: bl.n, side: below > above ? 'below the figure' : 'above it' });
+        }
       }
       return out;
     };
@@ -273,16 +280,19 @@ if (!rosterMatch) {
            and it differs from idle.
 
            THE FIGURE IS THE LARGEST BLOB, always, so it is never what is
-           reported. A blob on a TOP or BOTTOM edge is allowed to be the
-           character's own foot when it is within BLEED_GAP of it, which is the
-           builder's own constant and the reason Paul Bunyan keeps his boot.
-           A blob touching NO edge is left alone here on purpose: some of those
-           are art (Mother Nature's leaves, the ball off a bat) and nothing in
-           the geometry tells them from bleed. */
-        const strays = edgeStrays(rows);
+           reported. A blob above or below it is allowed to be the character's
+           own foot when it is within BLEED_GAP of him, which is the builder's
+           own constant and the reason Paul Bunyan keeps his boot.
+
+           A BLOB THAT OVERLAPS THE FIGURE'S OWN ROWS IS LEFT ALONE, and that
+           is where the art is: Mother Nature's leaves and the ball off a bat
+           are drawn WITH the character and have no clearance. Nothing in the
+           geometry tells one of those from bleed, so the clearance is what
+           decides and the overlap is never touched. */
+        const strays = strayBlobs(rows);
         if (strays.length) {
           problems.push(`sprite "${key}" pose "${pose}" carries ${strays.length} detached `
-            + `blob(s) on an edge, clear of the figure: ${strays.map(s => s.n + 'px at '
+            + `blob(s) clear of the figure: ${strays.map(s => s.n + 'px '
             + s.side).join(', ')}. That is a piece of the frame next door. `
             + 'Re-run mythiball/sprites/tools/build_table.py and install.py.');
         }

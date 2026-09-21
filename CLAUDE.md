@@ -2969,16 +2969,21 @@ are each named. Proved by introducing all three.
 fault: 807 poses from a drawn frame before and after, 647 on a still before and
 after. The same frames, under the right characters.
 
-**A SECOND, SMALLER FAULT IS STILL OPEN AND IS DELIBERATELY NOT IN THIS FIX.**
-Twelve characters ship their strips fully opaque, with the background baked in,
-and their outline is the same near black as that background, so
-`border_background`'s flood walks along the outline and into the figure. 204
-frames arrive that way and **35 of them clean down to under 900 pixels**, which
-`usable_frame` then refuses, so those poses fall back to a still. It is the
-failure the `border_background` docstring predicts at `tol=12`, happening at
-`tol=0` because the two colours are identical. Worth about 35 drawn frames
-across pan, phoenix, pirate, poseidon, quasimodo, rabid_dog, ringmaster, santa,
-sasquatch, scarecrow, vampire and zombie.
+**A SECOND FAULT WAS WRITTEN UP HERE AND DOES NOT EXIST.** Twelve characters
+ship their strips fully opaque with the background baked in, and their outline
+is the same near black as that background, so the reading was that
+`border_background`'s flood walks along the outline and into the figure: 204
+frames arrive opaque, 35 of them clean down to under 900 pixels, `usable_frame`
+refuses those, and about 35 drawn frames were being thrown away. It is the
+failure that function's own docstring predicts at `tol=12`, arriving at `tol=0`
+because the two colours are identical, which is what made it convincing.
+
+**Measured, the flood removes ZERO non-background pixels across all 204.** The
+35 frames hold under 900 pixels of anything that is not the border colour
+before the flood is run at all: they are blank cells, and refusing them is the
+mass floor doing its job. There is nothing to recover. A prediction that fits
+the shape of a bug is not a measurement of one, and this one sat in the file
+for a pass as an open TODO worth thirty five frames.
 
 #### The batter stood at the plate holding an axe
 
@@ -3104,20 +3109,47 @@ Measured across all 1,360 frames: 1,342 baselines unchanged, **18 moved, every
 one of them DOWN**, the biggest being zombie's batting stance by five rows. Not
 one moved up, which is what says this was a correction rather than a shuffle.
 
-**What is deliberately left is the 203 blobs touching NO edge.** Some are art
-(Mother Nature's falling leaves, the ball off Alice's bat) and some are bleed
-that stops a few rows short of the edge, and no geometry tells the two apart:
-that is the colour matcher's lesson in a different coat. Ten frames in the
-clubhouse still carry a small mark. Widening this rule to reach them would
-delete the ball.
+##### And the EDGE was the wrong half of the rule
+
+The fix above shipped with "ten frames in the clubhouse still carry a small
+mark" written under it as an accepted cost, on the argument that the 203 blobs
+touching no edge are part art (Mother Nature's leaves, the ball off Alice's
+bat) and part bleed, and no geometry tells the two apart. **The first half of
+that is true and the conclusion was wrong**, because the rule has two tests in
+it and the argument only weighed one.
+
+**Requiring the blob to TOUCH the top or the bottom catches the neighbour that
+reached all the way in and misses the one the sheet cut short.** A bar of
+somebody's shoulder stopping two rows inside the cell, a hat, a shoe: **87 of
+those survived**, and they are what the ten clubhouse marks were.
+
+**The CLEARANCE is what tells art from bleed, and it always was.** A ball, a
+falling leaf or a prop is drawn WITH the figure and overlaps its rows, so it
+has no clearance to be dropped for. The edge was never doing that work. So the
+clearance is the whole test now, above or below, edge or not, and the blobs
+that OVERLAP the figure are still never touched.
+
+**All 87 were rendered and looked at one at a time**, which is the only way
+this question has ever been settled here. Not one is art: every one sits in the
+debris field at the head or the foot of a cell, beside other obvious fragments.
+57 of them are within two rows of a cell edge and the deepest eight were blown
+up on their own before this changed.
+
+**It took nothing away.** 807 poses from a drawn frame and 647 on a still,
+before and after, and the table went 1188KB to 1186KB. The same art, with two
+kilobytes of somebody else's removed.
 
 **`check-posture.mjs` holds it now**, in the sprite section beside the row
 width and the palette keys, because the thing that shipped was data rather than
 behaviour. It walks every pose of every character, resolves a reference first,
-and reports any detached blob on an edge that is clear of the figure by
-`BLEED_GAP`. **The gap is written in both files on purpose**: the checker reads
-what the builder wrote, so a rebuild at a different gap fails here instead of
-shipping.
+and reports any detached blob clear of the figure by `BLEED_GAP`. **The gap is
+written in both files on purpose**: the checker reads what the builder wrote,
+so a rebuild at a different gap fails here instead of shipping. **And the edge
+test came out of both in the same commit**, or the checker would have gone on
+certifying the 87.
+
+**Proved by pointing the widened guard at the table that shipped one pass
+ago**: 58 poses named, against 0 on the rebuilt one.
 
 **Proved by pointing it at the table that shipped**: 265 problems against 0 on
 the rebuilt one. A guard that has only ever seen the fixed file is a guard
@@ -3356,16 +3388,72 @@ rectangle handed to `drawImage` rather than an overhang. The browser scales
 nothing. Measured after: `scale` a whole 3 to 12 across six screens, bitmap to
 arena exactly **1.000** on every one.
 
-**What it costs in FILL, said honestly**, because the obvious reading is that an
-arena sized canvas must be bigger. The fill is the arena and never more than the
-arena, so on a phone it is **0.4 to 0.9 megapixels against the 1.13** of the
-fixed 1280x880 it replaced, where the old canvas hung off both sides of the
-screen. On a **retina desktop it IS more**, 3.6 megapixels at 1920x1080 at ratio
-2, and that is not a regression to tune away: it is what that screen shows, and
-the alternative is the browser resampling a smaller bitmap onto it, which is the
-ragged grid this exists to remove. Covering the same framing by growing the
-BITMAP alone would have wanted 2560 across on a dpr 3 phone, four times the
-work, on the device least able to pay for it.
+**What it costs in FILL was written up here as small and it is not.** The claim
+was "0.4 to 0.9 megapixels against the 1.13 of the fixed 1280x880 it replaced",
+which is what an arena sized canvas costs in CSS pixels. The arena is sized in
+DEVICE pixels, so a 390 phone at ratio 3 is **1.65 megapixels a frame** and a
+1920x1080 retina desktop is 3.6. Nobody had multiplied by the ratio. See the
+next section: the framing stays, and the drawing comes back down.
+
+#### So the page draws at a WHOLE FRACTION of the screen, and the browser finishes
+
+The camera above is right about the grid and it is 1.65 megapixels a frame on a
+390 phone at ratio 3, where the fixed bitmap it replaced spent 1.13. Measured
+at 4x throttle, changing nothing but the ratio, **the fill is the frame**: 1.65
+MP ran 36.3 and 36.6 ms with about two thirds of frames over 33ms, and 0.18 MP
+ran 19.7 and 20.0 with 1.5%.
+
+**That contradicts this file's own note that `setCPUThrottlingRate` leaves
+rasterizing alone, and the note is what is wrong.** Headless Chromium has no
+GPU here, so the compositor is on the CPU and the throttle slows it with
+everything else. A real phone composites on its GPU, so these numbers are a
+**ceiling** on what a player feels rather than a reading of it. What is not in
+doubt is that the pixels are spent.
+
+**The browser is allowed the last step as long as it is a WHOLE one.** A whole
+number upscale of a whole number grid is still a whole number grid: a block ends
+up `scale` device pixels across either way, and what changes is how much of that
+magnification the page pays for. `fieldDraw` picks the **smallest divisor of
+`scale` that is still at CSS resolution or better**. On a ratio 3 phone at scale
+8 that is 4, so the page draws a quarter of the pixels.
+
+**THE FRAMING IS NOT ALLOWED TO MOVE**, which is what makes this a drawing
+change rather than a camera one. Deciding the whole camera in CSS pixels was
+tried first and it CROPS: `ceil` overshoots by a fifth at 2.50 where it
+overshoots by a fifteenth at 7.49, so the phone lost 16 blocks of world. The
+scale, the crop and the offset are all still worked out in device pixels.
+
+**What it bought, interleaved, two runs an arm**, alternating because this
+file's own history records an A B A pass reading 9.5ms of nothing but a page
+warming up:
+
+| bitmap | mean | over 33ms | over 50ms |
+|---|---|---|---|
+| 0.48 MP | 34.0, 34.7 | 39%, 45% | 3.4%, 3.9% |
+| 1.65 MP | 37.6, 37.2 | 62%, 60% | 7.9%, 8.1% |
+
+The arms do not overlap on any of the three, which is what the single runs
+before them could not say. A visible hitch halves.
+
+**IT IS STILL OUT OF BAND, AND THAT IS THE FULL BLEED LAYOUT RATHER THAN THIS.**
+The field was a 358x246 box and it is the window now, so drawn at CSS resolution
+it is about two and a half times the pixels the boxed version spent. That is the
+thing that was asked for. Taking `draw` below the floor would buy the rest and
+would be drawing the type and the sprites softer than the screen can show, which
+is the one thing the resolution pass exists to refuse.
+
+**A prime scale gets nothing**, and that is worth knowing before reading a flat
+result as a broken function. The step has to be whole, so `draw` has to DIVIDE
+`scale`: at scale 7 the divisors are 1 and 7 and the floor rules out 1, so the
+wide camera on a ratio 3 phone draws at full device resolution like everything
+else. The plate camera is where the game sits and it lands on 8.
+
+**Two things read the draw resolution and two deliberately do not.** The bitmap
+and the crisp HUD pass are in bitmap pixels, so both are `draw`. The element's
+CSS size and `FIELD_VIEW` are about the SCREEN, so both are `scale`: sized off
+the bitmap the picture would shrink to a fraction of the arena instead of being
+upscaled onto it, and read off the draw the ball's minimum size would grow on
+exactly the phones that floor exists for.
 
 **The wide camera is contain ROUNDED UP, which is a crop.** The scale has to be
 whole, and rounding down spends the whole rounding loss on bars: a desktop at
@@ -3383,8 +3471,9 @@ repo's oldest lesson arriving at the checkers rather than the page:
   while the canvas held the whole world, and the canvas holds a CROP now, so
   bitmap over world is the crop's share and has no reason to be whole. **Asked
   the old way it passed on the canvas the browser was upscaling by 1.87.** It
-  reads `FIELD_CAM.scale`, and the second claim is the one the old shape could
-  not make at all: the bitmap is exactly the pixels the arena occupies.
+  reads `FIELD_CAM`, and the second claim is the one the old shape could not
+  make at all: the browser's last step is a whole number and the bitmap times
+  that step is exactly the pixels the arena occupies.
 - The upright zone measurement used `r.width / FIELD_W` and `r.height /
   FIELD_H`, which under a crop are two different scales, so it answered a zone
   **37 by 68** for a box that is 92 by 120. Not even the right shape. It inverts

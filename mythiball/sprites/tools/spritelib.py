@@ -118,6 +118,22 @@ def drop_edge_bleed(frame):
     every guard here asks whether a frame is its own art rather than whether
     it is ONLY its own art.
 
+    AND THE EDGE WAS THE WRONG HALF OF THE RULE, WHICH TOOK A SECOND PASS.
+    Requiring the blob to TOUCH the top or the bottom catches the neighbour
+    that reached all the way in and misses the one the sheet cut short: a bar
+    of somebody's shoulder stopping two rows in, a hat, a shoe. 87 of those
+    survived the edge rule, all of them in the debris field at the head or the
+    foot of a cell, and the clubhouse still showed ten of them.
+
+    SO THE CLEARANCE IS THE WHOLE TEST NOW, above or below, edge or not. The
+    docstring's own warning about eating a ball off a bat is what the clearance
+    answers and the edge never did: a ball, a falling leaf or a prop is drawn
+    WITH the figure and overlaps its rows, so it has no clearance to be dropped
+    for. All 87 were rendered and looked at one at a time before this changed,
+    which is the only way this question has ever been settled here. Not one is
+    art. The 203 blobs that overlap the figure are untouched and are where the
+    leaves and the ball live.
+
     A TOP OR BOTTOM BLOB NEEDS A CLEARANCE AND A SIDE ONE DOES NOT. Sideways,
     the neighbour is past the cell wall and a character's own arm reaches the
     edge attached to the character, so touching the edge is the whole of it.
@@ -140,12 +156,9 @@ def drop_edge_bleed(frame):
         if m[:, 0].any() or m[:, -1].any():
             out[m] = 0
             continue
-        on_top, on_bot = bool(m[0, :].any()), bool(m[-1, :].any())
-        if not on_top and not on_bot:
-            continue
         ys = np.where(m.any(axis=1))[0]
-        gap = int(ys.min()) - mbot if on_bot else mtop - int(ys.max())
-        if gap >= BLEED_GAP:
+        clear = max(int(ys.min()) - mbot, mtop - int(ys.max()))
+        if clear >= BLEED_GAP:
             out[m] = 0
     return out
 
