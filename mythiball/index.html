@@ -3569,6 +3569,22 @@ const ROOMFILL = window.matchMedia(
    copies of the same query is three places for one of them to be forgotten. */
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+/* IS THERE A POINTER TO MOVE, OR A FINGER TO TAP. The first notes a new
+   player reads described a mouse, arrow keys and number keys to somebody
+   holding a phone, which is this file's own clubhouse rail mistake arriving
+   at the one screen a stranger cannot skip: the rail said "Point at
+   something to see what it does" to a touch screen.
+
+   It is a POINTER query and not a width, for the reason `ROOMFILL`'s own
+   note gives about tablets: a 768 wide tablet is past no phone breakpoint
+   and still has no mouse, and a narrow window on a desktop still has one.
+   What the sentence is about is the hardware, so that is what it asks.
+
+   Read once, at load. A reader who plugs a mouse in mid at bat gets the
+   note they started with, which is the right cost for not re-rendering a
+   modal underneath somebody. */
+const COARSE = window.matchMedia('(pointer: coarse)').matches;
+
 /* Which shape the window wants. Narrow OR upright gets the upright room: a
    tablet held that way is past any phone breakpoint and has a worse version
    of the same problem, so what decides it is the SHAPE of the window rather
@@ -6128,6 +6144,59 @@ function startPlayoffMatch(nm) {
    on a name lookup with the whole game screen already up. Any key the
    roster no longer knows is replaced by an unlocked stand-in, in a fixed
    order so the same save repairs the same way every time. */
+/* NOBODY PLAYS FOR BOTH CLUBS.
+
+   A roster is drafted out of the same sixty eight the opponents are built
+   from, and nothing stopped a player taking a man the club they are playing
+   already fields. Measured over 6,800 drafts against all seventeen clubs,
+   **73.2%** of games put at least one character on both sides, and about one
+   in seventy put the SAME MAN at the plate and on the mound, which the at
+   bat card printed out loud: "The Great Ape at bat VS THE GREAT APE
+   PITCHING". Real baseball cannot do that, and a game that does reads as
+   broken inside one pitch.
+
+   THE OPPONENT IS THE ONE THAT YIELDS, and it has to be: a season schedules
+   clubs the player has never seen at the moment they draft, so a rule on the
+   draft would be a rule about a game that has not been arranged yet.
+
+   THE SUBSTITUTE IS MATCHED ON RATINGS, because an opponent's strength is
+   part of the balance this game is measured against. Swapping a star for
+   whoever happens to be free would make the schedule easier by exactly how
+   often the player drafts well.
+
+   IT DRAWS NO RANDOM NUMBER. The choice is a pure function of the man being
+   replaced and who is already spoken for, so a matchup gives the same nine
+   every time it is opened and no seeded stream anywhere moves. Ties break on
+   roster order rather than on a Set's iteration, which is the same rule the
+   sprite builder's own tie-break runs on. */
+function nearestFree(c, pool) {
+  if (!pool.length) return null;
+  if (!c) return pool[0];
+  let best = null, bestD = Infinity;
+  for (const o of pool) {
+    const d = (o.pow - c.pow) ** 2 + (o.con - c.con) ** 2
+            + (o.spd - c.spd) ** 2 + (o.pit - c.pit) ** 2;
+    if (d < bestD) { bestD = d; best = o; }
+  }
+  return best;
+}
+function opposingNine(mine, roster) {
+  const mineSet = new Set(mine || []);
+  /* Their own card is reserved as well, or a substitute would be somebody
+     further down it and the club would field one man twice. */
+  const taken = new Set([...mineSet, ...(roster || [])]);
+  const pool = ROSTER.filter(c => !taken.has(c.k));
+  const out = [];
+  for (const k of (roster || [])) {
+    if (!mineSet.has(k) && ROSTER_BY_KEY[k]) { out.push(k); continue; }
+    const sub = nearestFree(ROSTER_BY_KEY[k], pool);
+    if (!sub) { out.push(k); continue; }   /* the pool ran out: keep him */
+    pool.splice(pool.indexOf(sub), 1);
+    out.push(sub.k);
+  }
+  return out;
+}
+
 function repairLineup(keys) {
   const pool = ROSTER.filter(c => isUnlocked(c.k)).map(c => c.k);
   const out = [];
@@ -6153,7 +6222,10 @@ function startGame(opts) {
      the opponent draws the roster's own numbers even when their lineup
      names the same character. */
   const battersAway = State.team.map(k => developed(ROSTER_BY_KEY[k]));
-  const battersHome = repairLineup(State.opponent.roster).map(k => ROSTER_BY_KEY[k]);
+  /* Their nine, with anybody who is already on yours substituted out. See
+     `opposingNine`: three games in four used to field a man twice. */
+  const battersHome = repairLineup(opposingNine(State.team, State.opponent.roster))
+    .map(k => ROSTER_BY_KEY[k]);
   /* User bats AWAY (visitor), opponent home. In playoffs the flag flips. */
   const youHome = !!opts.youHome;
   State.game = {
@@ -7030,14 +7102,52 @@ function startAtBat() {
    arcade's lesson arriving in this game: two surfaces say how to play,
    the auto-opening one is the more read of the two, and both need the
    edit. */
-const COACH = {
+/* AND THEY NAMED HARDWARE THE READER DOES NOT HAVE. Every note was written
+   once for every device, so a phone was told about a mouse, arrow keys and
+   the number keys 1, 2 and 3, none of which it has, and the one control it
+   DOES have for bending a pitch was not named anywhere: holding a side of
+   the picture is the phone's late break, and the note said "hold left or
+   right", which is an arrow key.
+
+   So there are two sets and `COARSE` picks. A note that lists three ways to
+   do a thing is a note a stranger has to sort before they can follow it, and
+   they are reading it with a pitch about to be thrown. */
+const COACH = COARSE ? {
   bat: [
-    '<b>You are batting.</b> The green oval is your <b>bat</b>, and it follows '
-    + 'your mouse (or your finger, or the arrow keys). The box over the plate is '
-    + 'the strike zone.',
+    '<b>You are batting.</b> The green oval is your <b>bat</b>. The box over the '
+    + 'plate is the <b>strike zone</b>.',
+    '<b>Tap where you want to hit it</b>, just as the ball reaches the plate. That '
+    + 'one tap is the aim and the timing. Where you tap decides whether you hit it. '
+    + 'When you tap decides how hard, and where it goes.',
+    '<b>Contact, Power, Bunt</b> are under the field. They change your swing before '
+    + 'the pitch. Contact is the forgiving one. Power swings for the fence. Start '
+    + 'with Contact.',
+  ],
+  pitch: [
+    '<b>You are pitching.</b> Your first pick is on the mound for the whole game. '
+    + 'Nothing is thrown until you throw it.',
+    'Pick a <b>pitch</b>, then <b>tap in the picture</b> to put your spot where you '
+    + 'want it. The middle is always a strike and easy to hit. The corners are hard '
+    + 'to hit, and a miss out there is a ball.',
+    'Press <b>Throw</b>, then stop the bar in the <b>green</b> to release clean. '
+    + 'While it flies, <b>hold the left or right side of the picture</b> to bend it '
+    + 'that way. Every hitter has one pitch they cannot handle. Find it.',
+    /* THE FIELDING HALF WAS NEVER MENTIONED. Three windows can open once
+       the ball is hit and the notes named none of them, so a player met
+       a bar on screen with no idea what it wanted. The robbery is the
+       one worth teaching hardest, because missing it costs nothing and
+       nobody presses a button they think can hurt them. */
+    '<b>Then you field it.</b> A ball in play can open a short window. Press in the '
+    + '<b>green</b> to finish a throw or make a catch. Let it run out and the batter '
+    + 'reaches, nothing worse. A <b>ring</b> on a deep fly is a robbery. Time it and '
+    + 'his hit becomes an out. Miss that one and nothing is lost at all.',
+  ],
+} : {
+  bat: [
+    '<b>You are batting.</b> The green oval is your <b>bat</b> and it follows your '
+    + 'mouse. The box over the plate is the <b>strike zone</b>.',
     '<b>Put the oval where the pitch is going</b>, then swing as the ball reaches '
-    + 'the plate: <b>click</b> or press <b>Space</b>. On a phone just <b>tap the '
-    + 'spot</b>. That one tap is the aim and the timing. Where you put it decides '
+    + 'the plate: <b>click</b> or press <b>Space</b>. Where you put it decides '
     + 'whether you hit it. When you swing decides how hard, and where it goes.',
     '<b>Contact, Power, Bunt</b> (keys 1, 2, 3) change your swing before the pitch. '
     + 'Contact is the forgiving one. Power swings for the fence. Start with Contact.',
@@ -7051,11 +7161,6 @@ const COACH = {
     'Press <b>Throw</b>, then stop the bar in the <b>green</b> to release clean. '
     + 'While it flies, hold <b>left or right</b> to bend it. Every hitter has one '
     + 'pitch they cannot handle. Find it.',
-    /* THE FIELDING HALF WAS NEVER MENTIONED. Three windows can open once
-       the ball is hit and the notes named none of them, so a player met
-       a bar on screen with no idea what it wanted. The robbery is the
-       one worth teaching hardest, because missing it costs nothing and
-       nobody presses a button they think can hurt them. */
     '<b>Then you field it.</b> A ball in play can open a short window. Press in the '
     + '<b>green</b> to finish a throw or make a catch. Let it run out and the batter '
     + 'reaches, nothing worse. A <b>ring</b> on a deep fly is a robbery. Time it and '

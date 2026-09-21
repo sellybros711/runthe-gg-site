@@ -44,6 +44,7 @@
      the club remembers   a franchise carries its players' records, not only its win column
      and the club changes them  a man develops at what he did here, and the league rises with you
      the friendly button  Randomize hands you a mound, and a hand draft is told who is on it
+     both clubs           nobody you drafted is also playing for the club you are playing
      the picture agrees   no throw beats a safe runner to the bag, and no run outlasts the sim
      the walk back        a strikeout has a frame, and it belongs to the man it happened to
      speed is never a cost  a faster runner is never waved home on worse odds than a slower one
@@ -2260,10 +2261,31 @@ async function main() {
         };
 
         const N = 500;
+        /* THE STRIKE CELLS GET EIGHT TIMES THE SAMPLE, AND THAT IS THE FIX
+           FOR A BAND THAT COULD NOT RESOLVE ITS OWN CLAIM.
+
+           `DISCIPLINE IS NOT SILENCE` asks that a strike down the middle
+           draws the same swings on every tier, at a threshold of 8 points.
+           Measured over 60 repeats of this exact fixture, the true gap is
+           **0.00** and its standard deviation at 500 pitches a cell is
+           **3.03**, so the band is 2.6 sigma wide: about one run in 120
+           goes red on a build nobody has touched. It did, at easy 62.4
+           against hard 71.6.
+
+           THE SAMPLE IS WHAT MOVES, NEVER THE BAND. Loosening it to 12
+           would make the check unable to see a real inversion, which is the
+           thing it exists for. At 4,000 the spread is 0.93 and the worst of
+           40 repeats was 2.22, so 8 is seven sigma out. Two cells of 3,500
+           extra pitches cost about a second.
+
+           It is the same lesson as the chase sweep two paragraphs down and
+           as the commish magic seed: a threshold a sample cannot resolve is
+           measuring the sample. */
+        const NZ = 4000;
         const out = {
           /* and a strike down the middle, which no tier may duck */
-          zoneEasy:    sweep('easy',   0, 0, true, even, N).swing,
-          zoneHard:    sweep('hard',   0, 0, true, even, N).swing,
+          zoneEasy:    sweep('easy',   0, 0, true, even, NZ).swing,
+          zoneHard:    sweep('hard',   0, 0, true, even, NZ).swing,
           /* memory: the same pitch, an honest book against a one note one */
           mixed:       sweep('hard', 0, 0, true, even, N),
           patterned:   sweep('hard', 0, 0, true, oneNote, N),
@@ -2802,7 +2824,16 @@ async function main() {
           State.season = { year: y, team: nine, perPlayer: {}, careers: {} };
           return +leagueEdge().toFixed(3);
         });
-        /* and it belongs to YOUR side, against a lineup naming the same men */
+        /* AND IT BELONGS TO YOUR SIDE. This used to hand the opponent your
+           own nine and look up one man on each side, which is the plainest
+           way to ask the question and is no longer available: nobody plays
+           for both clubs now, so the mirror comes back as nine substitutes
+           and the lookup found undefined. The suite caught that on the
+           first run, which is what it is for.
+
+           The claim is asked of WHOEVER THEY FIELD instead, which is
+           stronger than the mirror was: every man on their card is the
+           roster's own object, and somebody on yours is not. */
         State.season = mk(4);
         State.team = nine.slice(); State.teamName = 'Testers';
         State.opponent = { name: 'Mirror', color: '#888', roster: nine.slice() };
@@ -2811,11 +2842,10 @@ async function main() {
         const g = State.game;
         const mineSide = g.away.isYou ? g.away : g.home;
         const theirs = g.away.isYou ? g.home : g.away;
-        const mineBat = mineSide.batters.find(c => c.k === bat);
-        const theirBat = theirs.batters.find(c => c.k === bat);
-        out.sidesDiffer = mineBat.con !== theirBat.con || mineBat.pow !== theirBat.pow;
-        out.theirsIsRaw = theirBat.con === ROSTER_BY_KEY[bat].con
-                       && theirBat.pow === ROSTER_BY_KEY[bat].pow;
+        out.theirsIsRaw = theirs.batters.every(c => c === ROSTER_BY_KEY[c.k]);
+        out.sidesDiffer = mineSide.batters.some(c => c !== ROSTER_BY_KEY[c.k]);
+        /* and the mirror itself: asked for your own nine, they field none */
+        out.mirrorShared = theirs.batters.filter(c => nine.includes(c.k)).length;
         return out;
       });
       ok(r.freshIdentity, 'no franchise: the roster object itself comes back untouched');
@@ -2839,8 +2869,11 @@ async function main() {
          'the league sharpens with tenure', r.edge.join(', '));
       ok(r.edge[5] === r.edge[4] && r.edge[5] <= 0.30,
          'and plateaus rather than running away', `caps at ${r.edge[5]}`);
-      ok(r.sidesDiffer, 'your man and their man are not the same man');
-      ok(r.theirsIsRaw, 'the opponent draws the roster, never your development');
+      ok(r.sidesDiffer, 'somebody on YOUR card is carrying what his years bought');
+      ok(r.theirsIsRaw, 'and every man on theirs is the roster, never your development');
+      ok(r.mirrorShared === 0,
+         'asked to field your own nine, the opponent fields none of them',
+         `${r.mirrorShared} of the nine turned out for both clubs`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -2939,6 +2972,86 @@ async function main() {
       ok(new RegExp(hand.best).test(hand.two) && /gold/.test(hand.two),
          'and is shown the better arm it already has, without being overruled',
          hand.two);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- nobody plays for both clubs ---- */
+    {
+      console.log('nobody plays for both clubs');
+      /* A roster is drafted out of the same sixty eight the opponents are
+         built from, so nothing stopped a player taking a man the club they
+         are playing already fields. Measured over 6,800 matchups, 73.5% of
+         games put at least one character on both sides and 1.47% put the
+         SAME MAN at the plate and on the mound, which the at bat card
+         printed out loud: "The Great Ape at bat VS THE GREAT APE PITCHING".
+
+         NOTHING COULD REPORT IT. Both lineups were legal, every rating was
+         read correctly and the game played perfectly. It is the class this
+         file is full of: a true sentence about a thing that cannot happen.
+
+         THE OPPONENT YIELDS, because a season schedules clubs the player
+         has never seen at the moment they draft.
+
+         It is swept over every club rather than sampled, because the
+         overlap is a property of two hand written lists and the way it
+         comes back is somebody adding a character to one of them. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const keys = ROSTER.map(c => c.k);
+        const mix = (n) => { n = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+          n ^= n >>> 13; n = Math.imul(n, 0xc2b2ae35); return (n ^ (n >>> 16)) >>> 0; };
+        const draw = (seed) => {
+          const pool = keys.slice(), pick = [];
+          for (let i = 0; i < 9; i++) pick.push(pool.splice(mix(seed * 31 + i) % pool.length, 1)[0]);
+          return pick;
+        };
+        const bat = (ks) => {
+          const c = ks.map(k => ROSTER_BY_KEY[k]).filter(Boolean);
+          return c.reduce((a, x) => a + x.pow + x.con + x.spd, 0) / c.length;
+        };
+        const out = { n: 0, both: 0, wouldHave: 0, dupInside: 0, short: 0,
+                      unknown: 0, drift: 0, subs: 0 };
+        for (const opp of OPPONENTS) {
+          for (let i = 0; i < 200; i++) {
+            const mine = draw(mix(i * 131 + opp.name.length * 7));
+            const nine = opposingNine(mine, opp.roster);
+            out.n++;
+            if (opp.roster.some(k => mine.includes(k))) out.wouldHave++;
+            if (nine.some(k => mine.includes(k))) out.both++;
+            if (new Set(nine).size !== nine.length) out.dupInside++;
+            if (nine.length !== 9) out.short++;
+            if (nine.some(k => !ROSTER_BY_KEY[k])) out.unknown++;
+            out.subs += nine.filter((k, j) => k !== opp.roster[j]).length;
+            out.drift += Math.abs(bat(nine) - bat(opp.roster));
+          }
+        }
+        /* And it is deterministic: the same matchup twice is the same nine,
+           or a schedule would reshuffle its opponents on every reload. */
+        const a = opposingNine(draw(7), OPPONENTS[0].roster).join(',');
+        const b = opposingNine(draw(7), OPPONENTS[0].roster).join(',');
+        out.stable = a === b;
+        return out;
+      });
+      ok(r.n > 0 && r.wouldHave > r.n * 0.5,
+        'the overlap this exists for is still most matchups',
+        `only ${r.wouldHave} of ${r.n} would have shared a man, so the sweep proves little`);
+      ok(r.both === 0, 'and not one of them fields a man on both sides',
+        `${r.both} of ${r.n} still do`);
+      ok(r.dupInside === 0 && r.short === 0 && r.unknown === 0,
+        'the club it hands back is nine different men this roster has',
+        JSON.stringify({ twice: r.dupInside, short: r.short, unknown: r.unknown }));
+      ok(r.stable, 'the same matchup gives the same nine twice running');
+      /* WHAT IT COSTS THE OPPONENT IS THE HALF THAT COULD GO WRONG QUIETLY.
+         Substituting whoever happens to be free would make the schedule
+         easier by exactly how often the player drafts well, and every win
+         rate in this file is measured against these clubs. The substitute
+         is matched on ratings, so the club it hands back is the club it
+         was asked about. */
+      const perGame = r.drift / r.n;
+      ok(perGame < 3, 'and it is the same club, within a rating point or two',
+        `the batting line moves ${perGame.toFixed(2)} of about 150, `
+        + `over ${(r.subs / r.n).toFixed(2)} substitutions a game`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

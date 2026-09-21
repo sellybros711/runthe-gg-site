@@ -308,6 +308,63 @@ const main = async () => {
     }
   }
 
+  /* ---- the first notes name this device ---- */
+  {
+    console.log('the first notes name this device');
+    /* These are the one screen a stranger cannot skip: a modal over the
+       field, three or four cards, before the first pitch. Every card was
+       written once for every device, so a phone was told the bat follows
+       "your mouse (or your finger, or the arrow keys)" and that keys 1, 2
+       and 3 change the swing, and the one control a phone HAS for bending
+       a pitch was named as an arrow key. That is this file's own clubhouse
+       rail mistake at the screen it costs most: the rail said "Point at
+       something to see what it does" to a touch screen.
+
+       THE CLAIM IS ABOUT HARDWARE, so it is asked as a word list rather
+       than as a layout. A note that names a mouse to a finger is wrong
+       however well it is laid out, and no measurement of the glass can
+       see it. */
+    const NEVER = {
+      coarse: /\bmouse\b|arrow key|\bclick\b|keys 1/i,
+      fine: /\btap\b|your finger/i,
+    };
+    const seen = {};
+    for (const [label, w, h, dpr, touch] of [['a phone', 390, 844, 3, true],
+                                             ['a desktop', 1280, 800, 1, false]]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h },
+        deviceScaleFactor: dpr, isMobile: touch, hasTouch: touch });
+      const pg = await ctx.newPage();
+      const errors = [];
+      pg.on('pageerror', e => errors.push(e.message));
+      await pg.goto(URL);
+      await pg.waitForTimeout(300);
+      const r = await pg.evaluate(() => ({
+        coarse: COARSE,
+        cards: [...COACH.bat, ...COACH.pitch].map(s => s.replace(/<[^>]+>/g, '')),
+      }));
+      seen[label] = { coarse: r.coarse, joined: r.cards.join(' ') };
+      const bad = r.cards.filter(s => NEVER[r.coarse ? 'coarse' : 'fine'].test(s));
+      ok(r.cards.length >= 6, `${label}: there are notes to read`,
+        `${r.cards.length} cards`);
+      ok(bad.length === 0, `${label}: and not one of them names hardware it does not have`,
+        bad.map(s => '"' + s.slice(0, 70) + '"').join('  '));
+      ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+      await pg.close(); await ctx.close();
+    }
+    /* COVERAGE, which is the half that would go quiet. A query that
+       answered the same on both would hand both readers one set, and the
+       word lists above are disjoint, so one of the two arms would simply
+       have nothing to catch. */
+    ok(seen['a phone'] && seen['a desktop']
+       && seen['a phone'].coarse !== seen['a desktop'].coarse,
+      'and the two devices are actually being told apart',
+      JSON.stringify({ phone: seen['a phone'] && seen['a phone'].coarse,
+                       desktop: seen['a desktop'] && seen['a desktop'].coarse }));
+    ok(seen['a phone'] && seen['a desktop']
+       && seen['a phone'].joined !== seen['a desktop'].joined,
+      'so they are read two different sets of notes');
+  }
+
   await browser.close();
   console.log('');
   if (failures) { console.log(`${failures} check(s) failed.`); process.exit(1); }

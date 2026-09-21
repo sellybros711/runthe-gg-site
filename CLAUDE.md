@@ -4160,6 +4160,123 @@ that starts high up the window is not standing on anything. Read as a height
 it failed on a screen with nothing wrong with it. The claim is about overlap,
 so it is only asked where the two share a column.
 
+### Nobody plays for both clubs
+
+```
+node mythiball/verify-rules.mjs    the section named "nobody plays for both clubs"
+```
+
+A roster is drafted out of the same sixty eight the opponents are built from,
+and nothing stopped a player taking a man the club they are playing already
+fields. The at bat card printed it out loud: **"The Great Ape at bat VS THE
+GREAT APE PITCHING"**.
+
+Measured over 6,800 matchups against all seventeen clubs:
+
+| | before | after |
+|---|---|---|
+| a character on BOTH sides | **73.5%** of games | **0%** |
+| the same man batting and pitching | 1.47% | 0% |
+
+**Nothing could report it.** Both lineups were legal, every rating was read
+correctly and the game played perfectly. Real baseball cannot field one man
+twice and a game that does reads as broken inside one pitch.
+
+**THE OPPONENT YIELDS, and it has to.** A season schedules clubs the player
+has never seen at the moment they draft, so a rule on the DRAFT would be a
+rule about a game that has not been arranged yet.
+
+**The substitute is matched on RATINGS**, because an opponent's strength is
+part of the balance every win rate in this game is measured against. Taking
+whoever happens to be free would make the schedule easier by exactly how
+often the player drafts well. Measured, the club's batting line moves **1.12
+of about 150** over **1.16 substitutions a game**, so it is the same club.
+
+**IT DRAWS NO RANDOM NUMBER.** The choice is a pure function of the man being
+replaced and who is already spoken for, so a matchup gives the same nine every
+time it is opened and no seeded stream anywhere moves. Their own card is
+reserved as well, or the substitute would be somebody further down it and the
+club would field one man twice by a different door.
+
+**The guard sweeps every club rather than sampling one**, because the overlap
+is a property of two hand written lists and the way it comes back is somebody
+adding a character to one of them. **It asserts the overlap still EXISTS
+first**: a sweep where nothing would have collided proves nothing, which is
+`check-numbers`' coverage argument in a third place. Proved by making
+`opposingNine` hand back the roster, which reports 2,515 of 3,400.
+
+**IT BROKE A FIXTURE ON THE FIRST RUN, WHICH IS WHAT THE SUITE IS FOR.** The
+development section asserted that your years belong to your side by handing
+the opponent YOUR OWN NINE and looking one man up on each card. That is the
+plainest way to ask it and it is no longer available, so the lookup found
+undefined and the section threw. The claim is asked of whoever they actually
+field now, which is stronger than the mirror was: **every man on their card is
+the roster's own object and somebody on yours is not**. The mirror is kept as
+an assertion of its own, that a club asked for your nine fields none of them.
+
+### The first notes named hardware the reader does not have
+
+The coach cards are the one screen a stranger cannot skip: a modal over the
+field, before the first pitch. Every card was written once for every device,
+so a phone was told the bat follows **"your mouse (or your finger, or the
+arrow keys)"** and that **keys 1, 2 and 3** change the swing.
+
+**And the one control a phone HAS was named as an arrow key.** Holding a side
+of the picture is the phone's late break, written up in `drawField`'s own
+note, and the card said "hold **left or right** to bend it".
+
+That is the clubhouse rail's mistake arriving at the screen where it costs
+most: the rail said "Point at something to see what it does" to a touch
+screen. **A note that lists three ways to do a thing is a note a stranger has
+to sort before they can follow it, and they are reading it with a pitch about
+to be thrown.**
+
+**`COARSE` is a POINTER query and not a width**, for the reason `ROOMFILL`'s
+own note gives about tablets: a 768 wide tablet is past no phone breakpoint
+and still has no mouse, and a narrow window on a desktop still has one. What
+the sentence is about is the hardware, so that is what it asks. It is read
+once at load, because a reader who plugs a mouse in mid at bat should not have
+a modal re-render underneath them.
+
+**THE LONG PAGE IS DELIBERATELY LEFT DEVICE NEUTRAL**, and that is the one
+place this repo's two-surfaces rule does not mean two identical edits. It
+already carries both halves of every control (`hold left or right (an arrow
+key, or a side of the picture)`), because it is a reference somebody may read
+on a laptop about a phone. The modal is read ON the device, once, at the worst
+possible moment to be reading anything.
+
+**The guard asks a WORD LIST, which is the one claim no measurement of the
+glass can make.** A note that names a mouse to a finger is wrong however well
+it is laid out. It also asserts the two devices are actually told apart and
+are read two different sets, because a query that answered the same on both
+would hand one set to everybody and the other arm would have nothing to catch.
+Proved by pinning the branch false: four cards reported on a phone.
+
+### A band a sample cannot resolve is measuring the sample, for the third time
+
+`DISCIPLINE IS NOT SILENCE` asks that a strike down the middle draws the same
+swings on every tier, and it went red at **easy 62.4 against hard 71.6** on a
+build that had not touched the dugout.
+
+**It is not a flake until it is measured, and "flake" is not a root cause.**
+Repeated over 60 runs of that exact fixture, which draws a random club and a
+random seated batter:
+
+| | mean gap | sd | worst of 60 |
+|---|---|---|---|
+| 500 pitches a cell | **0.00** | 3.03 | 7.40 |
+| 4,000 a cell | 0.07 | **0.93** | 2.22 |
+
+So the property holds exactly and the threshold of 8 was **2.6 sigma** wide:
+about one run in 120. Swept across all seventeen clubs at 1,200 pitches the
+gap runs -2.3 to +3.9, and across the nine batters of one club it runs -1.7 to
++1.7, so neither the club nor the batter is what moved.
+
+**THE SAMPLE IS WHAT MOVES, NEVER THE BAND.** Loosening the threshold to 12
+would make the check unable to see the inversion it exists for. Two cells of
+3,500 extra pitches cost about a second. This is the chase sweep's own lesson
+one section below it, and the commish magic seed two games over.
+
 ### Difficulty is what the other dugout KNOWS
 
 `DIFF` used to hold three columns and all three were about the player's half of
