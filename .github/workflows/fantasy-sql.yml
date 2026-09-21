@@ -1,0 +1,131 @@
+name: "Fantasy: apply the database layer"
+
+# Installs 109, 110 and 111 against the live database, in order, and then reads
+# the preflight back so the run says whether it actually worked.
+#
+# ONE BUTTON, ON PURPOSE. The generic "Apply a Perfect Season SQL file"
+# workflow takes a filename and runs one file, which means three dispatches in
+# the right order, from memory, and no way to reach the preflight at all
+# (it lives under supabase/test/ and that workflow refuses a path separator).
+# Three chances to do it in the wrong order is two too many, and this is the
+# kind of thing somebody sets up once from a phone.
+#
+# THE DRY RUN IS A REAL RUN, which is the generic workflow's argument and it
+# holds here. Leave "apply" unchecked and every file is executed inside a
+# transaction that is then rolled back: Postgres parses each statement, checks
+# it against the real schema, validates every constraint against every existing
+# row, and reports anything wrong before throwing the changes away.
+#
+# NO FREE TEXT INPUT. The file list is hardcoded below rather than taken as an
+# argument, because the only reason to point this at another file would be to
+# point it at a test fixture. supabase/test/fantasy_base.sql drops and recreates
+# the auth schema, and running that against production would be catastrophic in
+# a way no amount of care at dispatch time should be relied on to prevent.
+#
+# Uses the SAME SUPABASE_DB_URL secret as the other Supabase workflows.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Commit the changes? Unchecked = run everything and ROLL BACK.'
+        type: boolean
+        default: false
+
+concurrency:
+  group: fantasy-sql
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the postgres client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          psql --version
+
+      - name: Apply the migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL is not set. Add it under Settings, Secrets and variables, Actions."
+            exit 1
+          fi
+
+          FILES="109_fantasy_access.sql 110_fantasy_core.sql 111_fantasy_model.sql"
+
+          for f in $FILES; do
+            if [ ! -f "supabase/$f" ]; then
+              echo "::error::supabase/$f is not on this branch. Did you dispatch from the right branch?"
+              exit 1
+            fi
+          done
+
+          # ONE TRANSACTION ACROSS ALL THREE, not one each. 110 and 111 both
+          # depend on fantasy_is_allowed() from 109, so a partial install is a
+          # database with tables whose policies never attached. All or nothing.
+          cat supabase/109_fantasy_access.sql \
+              supabase/110_fantasy_core.sql \
+              supabase/111_fantasy_model.sql > /tmp/fantasy.sql
+
+          if [ "$APPLY" != "true" ]; then
+            echo "DRY RUN. Everything below is executed and then thrown away."
+            echo ""
+            { cat /tmp/fantasy.sql; echo ""; echo "rollback;"; } > /tmp/dry.sql
+            psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -f /tmp/dry.sql
+            echo ""
+            echo "DRY RUN PASSED. The three files are valid against the live schema."
+            echo "Nothing was written. Re-run with 'apply' ticked to commit them."
+            exit 0
+          fi
+
+          echo "APPLYING all three in one transaction."
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -f /tmp/fantasy.sql
+          echo ""
+          echo "Applied."
+
+      # ALWAYS, including after a dry run, because a preflight against a
+      # database that has not had the files is exactly the report somebody
+      # needs to see: it says which pieces are missing rather than nothing.
+      #
+      # Read only. It asks the catalog and calls nothing, for the reason its
+      # own header gives: Postgres resolves a function call at parse time, so
+      # one missing function in a query that called them would fail the whole
+      # statement and report nothing about the others.
+      - name: Preflight, and read it back
+        if: always()
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then exit 0; fi
+
+          psql "$SUPABASE_DB_URL" -f supabase/test/fantasy_preflight.sql | tee /tmp/pre.txt
+
+          echo ""
+          # The preflight's own summary row is the verdict. Reading the table
+          # for "| f |" rather than trusting the exit code, because psql exits 0
+          # on a query that returns rows saying everything is broken.
+          if grep -q "NOT READY" /tmp/pre.txt; then
+            echo "::warning::The database is NOT READY. Read the false rows above, top down."
+            echo "If this was a dry run, that is expected: nothing was written."
+          else
+            echo "ALL PRESENT. The gate is real and the tables are closed."
+          fi
+
+      - name: What to do next
+        if: ${{ inputs.apply }}
+        run: |
+          echo "The tables exist and are closed to everybody not on the allowlist."
+          echo ""
+          echo "If the preflight said 'somebody is on the allowlist' is false, the two"
+          echo "usernames in 109 matched no profile. Check the spelling on the"
+          echo "leaderboard, then add the row by hand. 109's footer has the SQL."
