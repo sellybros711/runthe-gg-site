@@ -66,11 +66,14 @@ export default {
     const observeOnly = String(env.FANTASY_MODE || 'observe').toLowerCase() !== 'live';
     log({ at: 'tick.start', cron: event.cron, season, week, mode: observeOnly ? 'observe' : 'live' });
 
+    const store = makeStore({
+      url: env.SUPABASE_URL, serviceKey: env.SUPABASE_SERVICE_ROLE, log,
+    });
+
     try {
       const summary = await sweepOnce({
         odds: makeOddsClient({ apiKey: env.ODDS_API_KEY, log }),
-        store: makeStore({ url: env.SUPABASE_URL, serviceKey: env.SUPABASE_SERVICE_ROLE, log }),
-        season, week, log, observeOnly,
+        store, season, week, log, observeOnly,
       });
       log({ at: 'tick.done', ...summary });
     } catch (e) {
@@ -79,6 +82,29 @@ export default {
          dashboard without anybody going looking. Swallowing it here would make
          every tick look successful. */
       log({ at: 'tick.threw', error: String(e && e.message || e), stack: String(e && e.stack || '') });
+
+      /* THE LAST HOLE IN "NEVER SILENT", and it is the one the first deploy
+         would have fallen into. sweep.mjs records a failed or empty event
+         list, but a throw anywhere else (a refused database write, a bad
+         response shape, anything unforeseen) ends the tick with nothing
+         written, which is the state that reads as "not running".
+         
+         So the handler tries once to leave a row saying it threw. Best
+         effort and wrapped, because if the database is what threw then this
+         will throw too, and an exception raised while recording an exception
+         helps nobody. */
+      try {
+        const id = await store.openRun({ eventId: null, markets: [], credits: 0 });
+        await store.closeRun(id, {
+          ok: false,
+          rows_written: 0,
+          error: 'tick threw: ' + String(e && e.message || e).slice(0, 300),
+          raw: { mode: observeOnly ? 'observe' : 'live', stage: 'throw' },
+        });
+      } catch (e2) {
+        log({ at: 'tick.threw.unrecorded', error: String(e2 && e2.message || e2) });
+      }
+
       throw e;
     }
   },
