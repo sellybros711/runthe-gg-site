@@ -1,0 +1,170 @@
+name: "Fantasy: checks"
+
+# The three guards for /fantasy, on every change that touches it.
+#
+# They do not overlap, and the split is the point. Each one can see a failure
+# the other two structurally cannot:
+#
+#   posture   reads the repo. Is the route disallowed, is it linked from
+#             anywhere, is a key committed. Instant, no services.
+#   sql       runs the migrations against a real Postgres and asserts the RLS
+#             actually denies. Runs as anon and authenticated, never as the
+#             owner, because the owner bypasses RLS and every check would pass
+#             with every policy deleted.
+#   gate      drives a real browser against the real Pages Functions. The only
+#             one that can see what is on screen AFTER the gate's JavaScript
+#             has run, which is the half that decides whether the product
+#             leaks.
+#
+# The sql job caught a missing GRANT that the posture check could not see, and
+# the posture check's sibling (the preflight) caught a missing FORCE that the
+# sql job could not see. Keep all three.
+
+on:
+  pull_request:
+    paths:
+      - 'fantasy/**'
+      - 'functions/fantasy/**'
+      - 'functions/api/fantasy/**'
+      - 'supabase/109_fantasy_access.sql'
+      - 'supabase/110_fantasy_core.sql'
+      - 'supabase/111_fantasy_model.sql'
+      - 'supabase/test/fantasy_*.sql'
+      - 'robots.txt'
+      - '.github/workflows/fantasy-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'fantasy/**'
+      - 'functions/fantasy/**'
+      - 'functions/api/fantasy/**'
+      - 'supabase/109_fantasy_access.sql'
+      - 'supabase/110_fantasy_core.sql'
+      - 'supabase/111_fantasy_model.sql'
+      - 'supabase/test/fantasy_*.sql'
+      - 'robots.txt'
+      - '.github/workflows/fantasy-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: fantasy-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  posture:
+    name: Discoverability and secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: node fantasy/check-posture.mjs
+      # The dash rule covers fantasy/ as of the commit that created it.
+      # dash-check.yml runs this too; it is here as well because that workflow
+      # is path-filtered on its own list and the two can drift.
+      - run: node scripts/check-dashes.mjs fantasy
+
+  sql:
+    name: Migrations and RLS
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fantasy
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGPASSWORD: postgres
+      PGHOST: localhost
+      PGUSER: postgres
+      PGDATABASE: fantasy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the postgres client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      # The roles a real Supabase project has. Without them the policies below
+      # install against roles that do not exist and the whole suite is testing
+      # nothing.
+      - name: Roles
+        run: psql -c 'create role authenticated; create role anon; create role service_role;'
+
+      - name: The stand-in auth schema
+        run: psql -v ON_ERROR_STOP=1 -q -f supabase/test/fantasy_base.sql
+
+      - name: Install 109, 110 and 111
+        run: |
+          for f in 109_fantasy_access 110_fantasy_core 111_fantasy_model; do
+            psql -v ON_ERROR_STOP=1 -q -f "supabase/$f.sql"
+          done
+
+      # RE-RUN THEM. Every migration in this repo is written to be re-runnable
+      # and that claim is worth checking rather than asserting: the workflow
+      # that applies them to production can and will be dispatched twice.
+      - name: And again, because they must be idempotent
+        run: |
+          for f in 109_fantasy_access 110_fantasy_core 111_fantasy_model; do
+            psql -v ON_ERROR_STOP=1 -q -f "supabase/$f.sql"
+          done
+          n=$(psql -tA -c 'select count(*) from fantasy_access_allowlist')
+          [ "$n" = "2" ] || { echo "::error::allowlist holds $n rows after two runs, expected 2"; exit 1; }
+
+      - name: Preflight
+        run: |
+          psql -f supabase/test/fantasy_preflight.sql | tee /tmp/pre.txt
+          grep -q "ALL PRESENT" /tmp/pre.txt || { echo "::error::preflight is not clean"; exit 1; }
+
+      # THE ONE THAT MATTERS. Reads NOTICE lines, because that is how every SQL
+      # suite in this repo reports. psql exits 0 on a file full of failures, so
+      # the FAIL count is what decides, never the exit code.
+      - name: RLS, in every account state
+        run: |
+          psql -f supabase/test/fantasy_rls_test.sql 2>&1 | sed 's/^psql:[^ ]* //;s/^NOTICE:  //' | tee /tmp/rls.txt
+          fails=$(grep -c "FAIL" /tmp/rls.txt || true)
+          oks=$(grep -c " ok  " /tmp/rls.txt || true)
+          echo ""
+          echo "$oks passed, $fails failed."
+          [ "$fails" = "0" ] || { echo "::error::$fails RLS check(s) failed"; exit 1; }
+          # A suite that found nothing to run passes silently, which is how an
+          # extractor in this repo has been wrong three times.
+          [ "$oks" -ge 35 ] || { echo "::error::only $oks checks ran, expected at least 35"; exit 1; }
+
+  gate:
+    name: The gate, in a browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Tools
+        run: |
+          npm install --no-audit --no-fund --no-save wrangler@4 playwright@1
+          npx playwright install --with-deps chromium
+
+      # Local dev mode needs no Cloudflare account and no token. The bindings
+      # point at the stand-in Supabase that check-gate.mjs starts for itself.
+      - name: Serve the site
+        run: |
+          npx wrangler pages dev . --port 8788 --ip 127.0.0.1 \
+            --compatibility-date=2026-01-01 \
+            --binding SUPABASE_URL=http://127.0.0.1:9099 SUPABASE_SERVICE_ROLE=svc-test-key \
+            > /tmp/wrangler.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://127.0.0.1:8788/ && break
+            sleep 2
+          done
+          curl -sf -o /dev/null http://127.0.0.1:8788/ || {
+            echo "::error::wrangler never came up"; tail -40 /tmp/wrangler.log; exit 1; }
+
+      - run: node fantasy/check-gate.mjs
+
+      - name: What wrangler said, if it went wrong
+        if: failure()
+        run: tail -60 /tmp/wrangler.log
