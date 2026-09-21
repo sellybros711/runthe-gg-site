@@ -6595,7 +6595,19 @@ function fitFieldCanvas(cv) {
      be a whole fraction of the screen's resolution now, and laying it out at
      its own pixel count would shrink the picture to that fraction of the
      arena rather than upscaling it. */
-  const px = (v) => (Math.round(v * 1000) / 1000) + 'px';
+  /* AND IT IS SNAPPED TO A WHOLE DEVICE PIXEL, WHICH IS THE WHOLE OF THE
+     LAST STEP. Everything above works in device pixels and lands exactly:
+     `cw0 * dpr` is `sw * scale`, a whole number by construction. The OFFSET
+     is not, because centring divides by two: `(bh - ch0) / 2` came out at
+     1.5px on a 1512x850 desktop at ratio 1, which is half a DEVICE pixel.
+     A canvas laid out on a half pixel is resampled by the browser across
+     its whole surface, so every sprite, every letter and every chalk line
+     is drawn through a bilinear filter. Reported as the characters being
+     super blurry, and it is uniform: the picture is correct and the glass
+     is soft.
+     Nothing could see it. The bitmap is perfect, the grid guard reads the
+     bitmap, and the element's own size was whole. It was the POSITION. */
+  const px = (v) => (Math.round(v * dpr) / dpr) + 'px';
   const cw0 = sw * scale / dpr, ch0 = sh * scale / dpr;
   const css = px(cw0) + '|' + px(ch0) + '|'
             + px((bw - cw0) / 2) + '|' + px((bh - ch0) / 2);
@@ -11106,28 +11118,52 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
      is `ballRadiusMin`'s rule at a second door. A line written as logical
      pixels is whatever the camera leaves it, so the same number is a
      hairline on a phone and heavy on a desktop. */
-  const zx0 = P.zx - P.zw, zy0 = P.zy - P.zh, zW = P.zw * 2, zH = P.zh * 2;
+  /* IT IS SNAPPED TO THE BLOCK GRID AND FILLED, NEVER STROKED, and that is
+     the second thing wrong with this box after nobody being able to see it.
+
+     The world is drawn at one low resolution, so a block is this game's
+     pixel. The zone's own geometry is logical: 442 to 534 across, which is
+     147.33 to 178 blocks. `strokeRect` then CENTRES the stroke on the path,
+     so the left edge straddles a third of a block and the right edge lands
+     on a whole one, and the same line is drawn two different widths on the
+     two sides of one box. Reported as the strike zone not being even.
+
+     A stroke cannot be fixed by choosing a better width, because half of it
+     always falls on each side of the path. A BAND can: it starts on a block
+     and ends on a block, so all four sides are the same number of blocks by
+     construction whatever the camera is doing.
+
+     The SNAP moves the drawn box by at most half a block. `plateGeom` is
+     untouched, so what the aim maps to is exactly what it always was. */
+  const snapB = (v) => Math.round(v / PIX) * PIX;
+  const zx0 = snapB(P.zx - P.zw), zy0 = snapB(P.zy - P.zh);
+  const zW = snapB(P.zw * 2), zH = snapB(P.zh * 2);
   const zLine = zoneLineMin();
+  const band = (x, y, w, h, t) => {
+    ctx.fillRect(x, y, w, t);
+    ctx.fillRect(x, y + h - t, w, t);
+    ctx.fillRect(x, y + t, t, h - t * 2);
+    ctx.fillRect(x + w - t, y + t, t, h - t * 2);
+  };
   ctx.fillStyle = 'rgba(255,255,255,.10)';
   ctx.fillRect(zx0, zy0, zW, zH);
   /* The dark halo is what carries the edge over the LIGHT things behind
      it (the chalk, the dirt), the way every sprite here wears a ring. It
-     is drawn wider than the bright line so it reads as an outline rather
-     than as a second line. */
-  ctx.strokeStyle = 'rgba(8,16,26,.62)';
-  ctx.lineWidth = zLine + PIX * 2;   /* a block of halo each side, on the grid */
-  ctx.strokeRect(zx0, zy0, zW, zH);
-  ctx.strokeStyle = 'rgba(255,255,255,1)';
-  ctx.lineWidth = zLine;
-  ctx.strokeRect(zx0, zy0, zW, zH);
+     is drawn a block wider each side than the bright line, so it reads as
+     an outline rather than as a second line. */
+  ctx.fillStyle = 'rgba(8,16,26,.62)';
+  band(zx0 - PIX, zy0 - PIX, zW + PIX * 2, zH + PIX * 2, zLine + PIX * 2);
+  ctx.fillStyle = 'rgba(255,255,255,1)';
+  band(zx0, zy0, zW, zH, zLine);
   /* The thirds are a reading aid rather than a boundary, so they stay
      quieter than the frame. They are floored too: at 1 logical pixel they
      were under a CSS pixel and vanished into the grass entirely. */
-  ctx.strokeStyle = 'rgba(255,255,255,.42)';
-  ctx.lineWidth = Math.max(1, zLine * 0.5);
+  ctx.fillStyle = 'rgba(255,255,255,.42)';
+  const tw = Math.max(PIX, snapB(zLine * 0.5));
   for (let i = 1; i < 3; i++) {
-    ctx.beginPath(); ctx.moveTo(zx0 + zW * i / 3, zy0); ctx.lineTo(zx0 + zW * i / 3, zy0 + zH); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(zx0, zy0 + zH * i / 3); ctx.lineTo(zx0 + zW, zy0 + zH * i / 3); ctx.stroke();
+    const gx = snapB(zx0 + zW * i / 3), gy = snapB(zy0 + zH * i / 3);
+    ctx.fillRect(gx, zy0 + zLine, tw, zH - zLine * 2);
+    ctx.fillRect(zx0 + zLine, gy, zW - zLine * 2, tw);
   }
 
   /* ---- the catcher's mitt: set up at the spot, moved to the ball ---- */
@@ -12589,10 +12625,22 @@ function runPose(phase, away) {
    holds, the catch mitt, the slide dust. A left-handed batter is the
    right-handed drawing seen in a mirror, which is also true of the
    real thing. */
+/* HOW MANY OF THE PIXELS BEING DRAWN INTO ONE OF THE CALLER'S UNITS IS.
+   The field is drawn into a low resolution world through a 1/PIX transform
+   and the clubhouse through one of its own, so nothing here may assume a
+   number: `a` is the live x scale and a mirrored context makes it negative. */
+const drawK = (ctx) => Math.abs(ctx.getTransform().a) || 1;
+/* Snap a coordinate to a whole pixel of whatever is being drawn into. See
+   drawRunnerAt for why a bitmap that lands between two of them is soft over
+   its whole surface rather than at its edges. */
+const snapTo = (v, k) => Math.round(v * k) / k;
+
 function drawRunner(ctx, x, y, character, scale, pose, flip) {
   if (!flip) return drawRunnerAt(ctx, x, y, character, scale, pose);
   ctx.save();
-  ctx.translate(2 * x, 0);
+  /* The mirror has to land on the grid too, or every left handed batter is
+     resampled by the half pixel the flip leaves behind. */
+  ctx.translate(snapTo(2 * x, drawK(ctx)), 0);
   ctx.scale(-1, 1);
   drawRunnerAt(ctx, x, y, character, scale, pose);
   ctx.restore();
@@ -12669,28 +12717,66 @@ function drawRunnerAt(ctx, x, y, character, scale, pose) {
        HERO_DRAW_H is the height the old art produced at scale 1, so every
        character on the field is exactly the size he always was, and the next
        change of frame shape costs nothing. */
+    /* AND IT IS BUILT AT THE RESOLUTION IT IS BLITTED AT, WHICH IS THE
+       WHOLE OF WHY THE PEOPLE LOOKED SOFT AND THE FIELD DID NOT.
+
+       The world is drawn into a low resolution canvas, one block to the
+       game's own pixel, and a character was built in LOGICAL units and then
+       drawn through that context's 1/PIX transform. So every figure on the
+       field was a bitmap REDUCED three to one on the way in, through the
+       filter that context has on by default, and then magnified back up by
+       the camera. Two resamples, neither of them whole.
+
+       Measured over the twenty sizes this game actually draws, NOT ONE
+       landed on a whole number of blocks per pixel of the 64px art: the
+       ladder ran 0.234 to 1.219. The field is on the grid and the people
+       were not, which is exactly what a reader sees when the chalk is sharp
+       and the batter is fuzzy. Reported as the characters being super
+       blurry.
+
+       THE SIZE ON SCREEN DOES NOT MOVE. `hpx` is what it always was; what
+       changes is that the sprite is BUILT at the pixels the blit will cover
+       and then drawn back out to the same logical size, so the blit is one
+       to one and there is no filter in the path at all. The art's own
+       upscale inside `drawHeroSprite` is fillRects, which has hard edges by
+       construction.
+
+       IT ASKS THE CONTEXT RATHER THAN ASSUMING `PIX`. The same function
+       draws the clubhouse and the photo scene through transforms of their
+       own, so a hardcoded three would build those at a third of the size
+       they are drawn at. `a` is the live x scale, and `drawRunner`'s flip
+       makes it negative. */
     const hpx = Math.round(HERO_DRAW_H * scale * V2_W / V2_H);
-    const hcv = spriteFor(character.k, hpx, frame);
+    const k = drawK(ctx);
+    const hbl = Math.max(8, Math.round(hpx * k));
+    const hcv = spriteFor(character.k, hbl, frame);
+    /* What the blit covers, in the units the caller is drawing in. Every
+       measurement below reads these rather than the canvas, because the
+       canvas is now in the BLIT's pixels and the shadow, the mitt and the
+       slide are all placed in the caller's. */
+    const dw = hbl / k, dh = hcv.height / k;
     /* Ground shadow. A slide's shadow is stretched and offset, because his
        feet are out ahead of him. */
     ctx.fillStyle = 'rgba(0,0,0,.35)';
     ctx.beginPath();
     if (pose === 'slide') {
-      ctx.ellipse(Math.round(x + 6), y + 1, hcv.width * 0.55, hcv.width * 0.08, 0, 0, Math.PI * 2);
+      ctx.ellipse(Math.round(x + 6), y + 1, dw * 0.55, dw * 0.08, 0, 0, Math.PI * 2);
     } else {
-      ctx.ellipse(x, y + 1, hcv.width * 0.34, hcv.width * 0.10, 0, 0, Math.PI * 2);
+      ctx.ellipse(x, y + 1, dw * 0.34, dw * 0.10, 0, 0, Math.PI * 2);
     }
     ctx.fill();
-    /* Idle bob when standing still */
+    /* Idle bob when standing still. ONE PIXEL OF THE BLIT, not one logical
+       unit: a bob of a third of a block would put the figure between two
+       pixels on alternate beats, so the whole man would go soft and sharp
+       and soft again about twice a second. */
     let dy = 0;
     if (pose == null || pose === 'batting' || pose === 'back') {
-      dy = Math.floor(((performance.now() / 420) + (character.k.charCodeAt(0) % 5) * 0.2) % 2) === 0 ? 0 : -1;
+      dy = Math.floor(((performance.now() / 420) + (character.k.charCodeAt(0) % 5) * 0.2) % 2) === 0 ? 0 : -1 / k;
     }
     /* The slide sits down and forward, and gets a small dust puff BEHIND
        him so the direction of travel reads even when he is momentarily
        still on the last frame. */
     if (pose === 'slide') {
-      const dw = hcv.width, dh = hcv.height;
       /* Dust puffs trailing back. Three small ones, offset from centre. */
       ctx.fillStyle = 'rgba(200,180,140,.72)';
       for (let i = 0; i < 3; i++) {
@@ -12701,22 +12787,30 @@ function drawRunnerAt(ctx, x, y, character, scale, pose) {
       /* The runner is drawn LOW (waist about where feet were) and shifted
          forward, in the direction of travel. The caller sets scale, so a
          forward-facing slide at home reads correctly. */
-      ctx.drawImage(hcv, Math.round(x - dw / 2 + 3), Math.round(y - dh * 0.72));
+      ctx.drawImage(hcv, snapTo(x - dw / 2 + 3, k), snapTo(y - dh * 0.72, k), dw, dh);
       /* A short horizontal foot bar poking out ahead of him, the last
          legible pixel of the slide. */
       ctx.fillStyle = 'rgba(90,60,30,.85)';
       ctx.fillRect(Math.round(x + dw * 0.18), Math.round(y - 3), 6, 2);
       return;
     }
-    ctx.drawImage(hcv, Math.round(x - hcv.width/2), Math.round(y - hcv.height + dy));
+    /* SNAPPED TO A WHOLE PIXEL OF THE BLIT, WHICH IS THE WHOLE OF THE BLUR.
+       `Math.round` here rounded to a whole LOGICAL unit, and the world is
+       drawn at three of those to a block, so two positions in every three
+       put the bitmap between two pixels. A bitmap that lands between two
+       pixels is resampled ACROSS ITS WHOLE SURFACE rather than at its
+       edges, so the man goes soft and the chalk beside him does not.
+       Measured on a fielder, the pitcher and the batter: the share of a
+       character's pixels that are one of his own palette colours goes 37%,
+       46% and 55% to 100% on all three. */
+    ctx.drawImage(hcv, snapTo(x - dw / 2, k), snapTo(y - dh + dy, k), dw, dh);
     /* The catch pose has both arms straight up. A small brown mitt sits
        where the hands meet, so the reach reads as reaching FOR something. */
     if (pose === 'catch') {
-      const dw = hcv.width;
       ctx.fillStyle = '#7a5426';
-      ctx.beginPath(); ctx.arc(Math.round(x), Math.round(y - hcv.height + dw * 0.22), Math.max(2, dw * 0.09), 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(Math.round(x), Math.round(y - dh + dw * 0.22), Math.max(2, dw * 0.09), 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#a97438';
-      ctx.fillRect(Math.round(x - dw * 0.08), Math.round(y - hcv.height + dw * 0.16), Math.max(2, dw * 0.16), 2);
+      ctx.fillRect(Math.round(x - dw * 0.08), Math.round(y - dh + dw * 0.16), Math.max(2, dw * 0.16), 2);
     }
     /* A batter waits with the bat UP. The swing arc only exists for the
        240ms of contact, so without this the player at the plate stood
@@ -12735,13 +12829,13 @@ function drawRunnerAt(ctx, x, y, character, scale, pose) {
     const spr = V2_SPRITES[character.k];
     const drawn = !!(spr && spr.b && spr.b.indexOf(frame) >= 0);
     if (!drawn && (pose === 'load' || pose === 'follow')) {
-      const bl = hcv.width * 0.58;
+      const bl = dw * 0.58;
       ctx.save();
       if (pose === 'load') {
-        ctx.translate(x + hcv.width * 0.36, y - hcv.height * 0.62);
+        ctx.translate(x + dw * 0.36, y - dh * 0.62);
         ctx.rotate(-0.28);
       } else {
-        ctx.translate(x - hcv.width * 0.34, y - hcv.height * 0.58);
+        ctx.translate(x - dw * 0.34, y - dh * 0.58);
         ctx.rotate(2.35);
       }
       ctx.fillStyle = '#6b4a24';
@@ -12753,9 +12847,9 @@ function drawRunnerAt(ctx, x, y, character, scale, pose) {
       ctx.restore();
     }
     if (!drawn && pose === 'batting') {
-      const bl = hcv.width * 0.58;
+      const bl = dw * 0.58;
       ctx.save();
-      ctx.translate(x + hcv.width * 0.30, y - hcv.height * 0.55 + dy);
+      ctx.translate(x + dw * 0.30, y - dh * 0.55 + dy);
       ctx.rotate(-0.75);
       ctx.fillStyle = '#6b4a24';                       /* grip */
       ctx.fillRect(-1.5, 0, 3, -bl * 0.35);

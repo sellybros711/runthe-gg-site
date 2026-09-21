@@ -186,6 +186,61 @@ const main = async () => {
     }
   }
 
+  /* ---- a character lands on the grid ---- */
+  {
+    console.log('a character lands on the grid');
+    /* THE FIELD WAS SHARP AND THE PEOPLE WERE NOT, and one rounding is the
+       whole of it. The world is drawn into a low resolution canvas through
+       a 1/PIX transform, so three logical units are one pixel of the blit,
+       and a sprite's destination was rounded to a whole LOGICAL unit. Two
+       positions in every three therefore put the bitmap between two pixels,
+       and a bitmap between two pixels is resampled over its WHOLE SURFACE
+       rather than at its edges. Reported as the characters being super
+       blurry, which is exactly what it looks like: the chalk is crisp and
+       the man standing on it is a photograph of a man.
+       Measured through one character at three of the sizes this game draws,
+       the share of his pixels that are one of his own palette colours went
+       37%, 46% and 55% to 100% on all three, purely from the destination.
+
+       IT IS ASKED OF THE DESTINATION AND NOT OF THE PIXELS, because a
+       colour count cannot say WHOSE pixel it is: a figure overlaps the
+       grass, the dirt and the man behind him. The property is exact and it
+       is the one that broke. */
+    const { ctx, pg, errors } = await game(browser, 390, 844, 3);
+    await pg.waitForFunction(() => State.game && plateViewActive(State.game),
+      { timeout: 25000 });
+    const r = await pg.evaluate(() => new Promise((res) => {
+      const c = pixWorld.getContext('2d');
+      const real = c.drawImage;
+      const off = [];
+      let n = 0;
+      c.drawImage = function (img, ...a) {
+        /* only the five and nine argument forms place a bitmap */
+        if (a.length === 4 || a.length === 8) {
+          const k = Math.abs(this.getTransform().a) || 1;
+          const [dx, dy] = a.length === 4 ? [a[0], a[1]] : [a[4], a[5]];
+          n++;
+          const fx = Math.abs(dx * k - Math.round(dx * k));
+          const fy = Math.abs(dy * k - Math.round(dy * k));
+          if (fx > 1e-6 || fy > 1e-6) {
+            off.push(`${(dx * k).toFixed(3)},${(dy * k).toFixed(3)}`);
+          }
+        }
+        return real.call(this, img, ...a);
+      };
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        c.drawImage = real;
+        res({ n, off: off.slice(0, 6), bad: off.length });
+      }));
+    }));
+    ok(r.n > 0, 'the frame put bitmaps on the field at all',
+      'nothing was drawn, so the check below asserted nothing');
+    ok(r.bad === 0, 'every one of them lands on a whole pixel of the blit',
+      `${r.bad} of ${r.n} landed between two: ${r.off.join('  ')}`);
+    ok(errors.length === 0, 'no page errors', errors.join(' | '));
+    await pg.close(); await ctx.close();
+  }
+
   await browser.close();
   console.log('');
   if (failures) { console.log(`${failures} check(s) failed.`); process.exit(1); }
