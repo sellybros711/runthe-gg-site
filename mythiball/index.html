@@ -9731,8 +9731,16 @@ function scheduleContactPlay(kind, batter, info) {
   }
 
   const applyMs = Math.round(g.play.sim.applyAt * 1000) + HITSTOP_MS;
+  const applyPlay = g.play;
   setTimeout(() => {
-    if (!g.play || g.play.applied) return;
+    /* Identity, like the two windows above. This one resolves the play it
+       finds rather than the play it was scheduled for, so a torn-down
+       play's timer applied its REPLACEMENT at the old play's clock.
+       Driven: a single replaced by a home run applied the homer 787ms
+       early, with the ball still in the air. Every play schedules its own
+       apply, so returning here costs nothing: the replacement resolves on
+       its own timer a moment later. */
+    if (!g.play || g.play !== applyPlay || g.play.applied) return;
     g.play.applied = true;
     /* Landing FX: dust on the ground where the ball comes down, glove
        flash on a caught fly ball, confetti + shake on a home run. */
@@ -10340,6 +10348,11 @@ function scheduleFlyCatchMinigame(kind, batter, info) {
 function startCatchWindow(kind, batter, landingX, landingY) {
   const g = State.game;
   if (!g.play) return;
+  /* THE WINDOW RESOLVES INTO ITS OWN PLAY OR NOT AT ALL, and the check at
+     the scheduler above is not that check. That one guards the OPENING;
+     this window then stands open for 900ms and the play can be torn down
+     and replaced inside it. See `finish`. */
+  const thisPlay = g.play;
   const ft = currentFieldingTeam();
   const of = [6, 7, 1].map(p => fielderAt(ft, p)).filter(Boolean);
   const avgDef = of.reduce((a, c) => a + c.def, 0) / (of.length || 1);
@@ -10360,11 +10373,23 @@ function startCatchWindow(kind, batter, landingX, landingY) {
   const finish = (t) => {
     if (window.resolved) return;
     window.resolved = true;
-    /* The play can be torn down under this timer (a new at bat, the end
-       of the game), the same race the throw window's finish guards. */
-    if (g.play) g.play.catchActive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('click', onClick, true);
+    /* IDENTITY, NOT EXISTENCE, and the difference was two live defects.
+       This asked whether there was A play and then resolved into it.
+       Driven: open the window on a fly ball, replace the play with a home
+       run, let the 900ms expire. `resolveCatch` sets `applied` on its
+       first line, so the HOMER came back applied and its own outcome
+       never landed, silently, on every replacement. And where the
+       replacement is a home run its sim has no `meetUV`, so `simDropBall`
+       hands null to `simRunPath` and throws "Cannot read properties of
+       null (reading '0')": the exact string the throw window's own fix
+       was written for, at the door that fix did not reach.
+
+       The flag goes back on THIS play rather than on whatever is there
+       now, or a stale window turns off a flag the new play just set. */
+    thisPlay.catchActive = false;
+    if (g.play !== thisPlay) return;
     /* t < 0 means the window expired, and it used to mean a MISS: the
        ball over his head, scored a TRIPLE. That is the worst outcome this
        window has, handed to somebody for doing nothing, and a player who
@@ -10404,6 +10429,7 @@ function startCatchWindow(kind, batter, landingX, landingY) {
 function startRobWindow(hitKind, batter, durMs) {
   const g = State.game;
   if (!g || !g.play || g.play.applied || g.play.catchActive) return;
+  const thisPlay = g.play;
   const sim = g.play.sim;
   const man = fielderAt(sim.fteam, sim.robPost);
   const geo = fieldGeom();
@@ -10425,11 +10451,14 @@ function startRobWindow(hitKind, batter, durMs) {
   const finish = (t) => {
     if (window.resolved) return;
     window.resolved = true;
-    /* Same teardown race the other two windows guard: the play can go
-       out from under this while the window is open. */
-    if (g.play) g.play.catchActive = false;
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('click', onClick, true);
+    /* Identity, for the reason the catch window above spells out. This one
+       is the cheaper of the two to get wrong, because a robbery that
+       misses does nothing at all, but a robbery that HITS turns whatever
+       play is on the field into a fly out and takes a run off the board. */
+    thisPlay.catchActive = false;
+    if (g.play !== thisPlay) return;
     const got = t >= 0 && Math.abs(t - 0.5) <= window.greenHalf;
     resolveRobbery(got, hitKind, batter, lx, ly);
   };

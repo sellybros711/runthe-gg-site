@@ -50,7 +50,9 @@
      speed is never a cost  a faster runner is never waved home on worse odds than a slower one
      a rating buys more   every curve a rating feeds moves one way, over the whole scale
      the stale timer      a play's timer fires into its OWN play or not at all
-     one grid             the world is blown up by a whole number, onto the arena's own pixels
+     a window's own play  a catch or a robbery never resolves into the play that replaced it
+     its own clock        a play is applied on its own timer, never on the one it replaced
+     one grid         the world is blown up by a whole number, onto the arena's own pixels
      the code's own claims  what the comments assert about the code is true of it
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
@@ -3662,6 +3664,148 @@ async function main() {
       ok(r.alive && errors.length === 0,
          'A TIMER FIRES INTO ITS OWN PLAY OR NOT AT ALL: the stale one is harmless',
          errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- and the two windows the fix above did not reach ---- */
+    {
+      console.log('a window resolves into its own play');
+      /* THE CHECK ABOVE GUARDS THE OPENING AND NOT THE CLOSING, and that
+         is the whole of this. `scheduleFlyCatchMinigame` compares
+         identity before it OPENS the catch window; the window then stands
+         open for 900ms, and its own expiry only asked whether there was A
+         play. So did the robbery window's.
+
+         Surfaced by a full `calibrate.mjs` run reporting one page error
+         reading "Cannot read properties of null (reading '0')", which is
+         the string the section above exists for, at a second door. Driven
+         here rather than waited for, which is that section's own rule.
+
+         TWO DEFECTS, AND THE CRASH IS THE RARE ONE. `resolveCatch` sets
+         `applied` on its first line, so an expiring window marked
+         WHATEVER play was on the field as applied and its real outcome
+         never landed: silent, and on every replacement rather than on the
+         one in twenty that is a home run. The crash needs the replacement
+         to have no meeting point, which only a ball in the seats has.
+
+         The robbery is the other way round: missing one does nothing at
+         all, so only a HIT is dangerous there, and a hit turns whatever
+         is on the field into a fly out. So that arm presses the button
+         rather than letting it expire. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        const out = {};
+
+        /* ---- the catch window, let it EXPIRE ---- */
+        endAtBatCleanup(); g.play = null; g.pitch = null; g.bases = [null, null, null];
+        scheduleFlyCatchMinigame('fly out', currentBatter(), { q: 0.6 });
+        for (let i = 0; i < 60 && !(g.play && g.play.catchActive); i++) await sleep(50);
+        out.catchOpened = !!(g.play && g.play.catchActive);
+        endAtBatCleanup(); g.play = null;
+        scheduleContactPlay('home run', currentBatter(), { q: 0.9 });
+        const homer = g.play;
+        /* COVERAGE: a homer really is the loaded gun, with no meeting point */
+        out.homerMeetUV = homer && homer.sim ? homer.sim.meetUV : 'no sim';
+        await sleep(1400);
+        out.homerIsStill = g.play === homer;
+        out.homerApplied = homer ? !!homer.applied : null;
+        out.homerKind = homer ? homer.kind : null;
+
+        /* ---- the robbery window, and PRESS it ---- */
+        endAtBatCleanup(); g.play = null; g.pitch = null; g.bases = [null, null, null];
+        scheduleContactPlay('double', currentBatter(), { q: 0.8 });
+        const robbed = g.play;
+        if (robbed && robbed.sim) robbed.sim.robSlack = 0;   /* a full green */
+        startRobWindow('double', currentBatter(), 1000);
+        out.robOpened = !!(g.play && g.play.catchActive);
+        await sleep(400);
+        endAtBatCleanup(); g.play = null;
+        scheduleContactPlay('triple', currentBatter(), { q: 0.8 });
+        const later = g.play;
+        await sleep(120);
+        document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await sleep(200);
+        out.laterIsStill = g.play === later;
+        out.laterKind = later ? later.kind : null;
+        out.laterIsOut = later ? !!later.isOut : null;
+        out.alive = !!State.game;
+        return out;
+      });
+      ok(r.catchOpened, 'a fly ball really does open a catch window',
+         JSON.stringify(r));
+      ok(r.homerMeetUV === null,
+         'and the play that replaces it really has no meeting point',
+         String(r.homerMeetUV));
+      ok(r.homerIsStill && r.homerApplied === false,
+         'AN EXPIRING CATCH WINDOW DOES NOT APPLY ITSELF TO THE NEXT PLAY',
+         `applied ${r.homerApplied}, kind ${r.homerKind}`);
+      ok(r.robOpened, 'a robbery window really does open',
+         JSON.stringify(r));
+      ok(r.laterIsStill && r.laterKind === 'triple' && r.laterIsOut === false,
+         'AND A ROBBERY PRESSED LATE DOES NOT TURN THE NEXT PLAY INTO AN OUT',
+         `kind ${r.laterKind}, isOut ${r.laterIsOut}`);
+      ok(r.alive && errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- and the apply timer, which needs a page of its own ---- */
+    {
+      console.log('a play is applied on its own clock');
+      /* THE ORDINARY APPLY TIMER IS THE SAME SHAPE AS THE TWO WINDOWS and
+         was the third unguarded one. It resolved whatever play it found
+         rather than the one it was scheduled for, so a torn-down play's
+         clock landed on its replacement: driven, a single replaced by a
+         home run applied the homer 787ms EARLY, with the ball still in
+         the air. Returning costs nothing, because every play schedules
+         its own apply and the replacement lands on that a moment later.
+
+         IT NEEDS A PAGE WITH NO LEFTOVERS, which is the harness lesson
+         from the football boss battle arriving here. Run after the two
+         window arms above, their pending transition timers (`play = null`
+         at arriveMs + 500) fire inside this fixture, so the home run's
+         OWN apply correctly declines and the arm reads a play that is
+         never applied at all. It failed that way once, and the failure
+         was the harness rather than the page. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        const out = {};
+        endAtBatCleanup(); g.play = null; g.pitch = null; g.bases = [null, null, null];
+        scheduleContactPlay('single', currentBatter(), { q: 0.4 });
+        out.aApplyMs = Math.round(g.play.sim.applyAt * 1000);
+        await sleep(60);
+        endAtBatCleanup(); g.play = null;
+        scheduleContactPlay('home run', currentBatter(), { q: 0.95 });
+        const hr = g.play;
+        out.bApplyMs = Math.round(hr.sim.applyAt * 1000);
+        /* COVERAGE: the torn-down play's clock has to land FIRST, or the
+           replacement's own timer wins and this arm proves nothing. */
+        out.orderOk = out.aApplyMs < out.bApplyMs - 200;
+        const t0 = performance.now();
+        let at = null;
+        for (let i = 0; i < 400 && at == null; i++) {
+          if (hr.applied) at = performance.now() - t0;
+          else await sleep(15);
+        }
+        out.appliedAfterMs = at == null ? null : Math.round(at);
+        out.onOwnClock = at != null && at > out.bApplyMs - 120;
+        out.alive = !!State.game;
+        return out;
+      });
+      ok(r.orderOk, 'the torn-down play really is the one whose apply lands first',
+         `${r.aApplyMs}ms against ${r.bApplyMs}ms`);
+      ok(r.appliedAfterMs != null,
+         'and the replacement really is applied, so this arm reads something',
+         'it was never applied at all');
+      ok(r.onOwnClock,
+         'A PLAY IS APPLIED ON ITS OWN CLOCK, not on the one it replaced',
+         `applied after ${r.appliedAfterMs}ms, its own is ${r.bApplyMs}ms`);
+      ok(r.alive && errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
 

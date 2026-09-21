@@ -5160,6 +5160,56 @@ just the pitch") arriving at a **third** door, after `catchActive` and
 `throwActive`. Three schedulers carry the identity check now: the throw window,
 the catch window and the robbery.
 
+#### And a scheduler is not a closer, which was three more of the same
+
+**"Three schedulers carry the identity check" was true and was read as the whole
+answer.** A scheduler decides whether to OPEN a window. The window then stands
+open, and what it does when it CLOSES was a different question nobody had put.
+`startCatchWindow`'s expiry, `startRobWindow`'s, and the ordinary apply timer all
+asked whether there was **a** play and then resolved into it.
+
+**Surfaced by a full `calibrate.mjs` run**, which reported one page error reading
+`Cannot read properties of null (reading '0')`: the exact string the section above
+exists for, at a door that fix did not reach. Every target was in band; the error
+was the only thing wrong with the run.
+
+**DRIVEN, never waited for**, which is that section's own rule. Open the window on
+a fly ball, replace the play with a home run, let the 900ms expire. Measured, with
+the guards removed:
+
+| | what the stale window did |
+|---|---|
+| the catch window | marked the **home run** `applied`, so its own outcome never landed |
+| the robbery, pressed | turned somebody else's **triple into a fly out** |
+| the apply timer | resolved the home run **787ms early**, with the ball still in the air |
+
+**THE CRASH IS THE RARE SYMPTOM AND THE QUIET ONE IS EVERY TIME.**
+`resolveCatch` sets `applied` on its first line, so a stale window spoiled
+whatever play it found, on every replacement. The throw is only null when the
+replacement has no meeting point, which is a ball in the seats and about one in
+twenty. That is why this went a year without a report: the crash needs a
+coincidence and the corruption needs nothing.
+
+**Returning costs nothing, which is what makes the guard safe.** Every play
+schedules its own resolution, so a timer that declines to act on a stranger
+leaves that stranger to its own clock a moment later. Nothing is dropped.
+
+**The flag goes back on THIS play, not on whatever is there now.** Written
+`if (g.play) g.play.catchActive = false` a stale window turns off a flag the new
+play has just set, which is a second bug hiding inside the first one's line.
+
+**The listeners come off BEFORE the identity check**, or a window that resolves
+into a stranger leaks its keydown and click handlers for the rest of the game.
+
+**THE APPLY ARM NEEDS A PAGE OF ITS OWN**, and it failed once for exactly the
+reason the football boss battle's pacing walk needs one. Run after the two window
+arms, their pending transition timers (`play = null` at `arriveMs + 500`) fire
+inside its fixture, so the home run's OWN apply correctly declines and the arm
+reads a play that is never applied at all. **That failure was the harness, not the
+page**, and the first reading of it was spent deciding which. It carries an
+assertion that the replacement was applied at all, so the next time that happens
+it says so rather than looking like the defect.
+
 ### Smoothness, measured, and one honest null result
 
 ```
