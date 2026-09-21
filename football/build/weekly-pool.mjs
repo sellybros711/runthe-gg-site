@@ -136,6 +136,63 @@ export function clubsPlaying(games, season, week) {
   return on;
 }
 
+/** Who each club plays in this week, read off the schedule. club code -> opponent code. */
+export function opponentsIn(games, season, week) {
+  const by = new Map();
+  for (const g of games) {
+    if (num(g.season) !== season || num(g.week) !== week) continue;
+    if (g.game_type && g.game_type !== 'REG') continue;
+    if (!g.home_team || !g.away_team) continue;
+    by.set(g.home_team, g.away_team);
+    by.set(g.away_team, g.home_team);
+  }
+  return by;
+}
+
+/* ─── what a defense has been giving up ────────────────────────────────────────────── */
+
+/**
+ * Half PPR allowed per game, by defense and position, over weeks 1 to `week - 1`.
+ *
+ * COUNTED OFF THE SCHEDULE AND NOT OFF THE STAT ROWS, which is the same no-lookahead rule
+ * the pool is built under and is also the only way to get the denominator right. Summing
+ * rows gives the points; dividing by the number of DISTINCT weeks that defense has played
+ * gives the per game figure. Count games by summing rows instead and a defense that faced
+ * four receivers one week and two the next has played six games.
+ *
+ * @returns {{allowed: Map<string, {games:number, pts:number}>, league: Map<string, number>}}
+ *          keyed `DEF|POS`, plus the league mean allowed per game at each position.
+ */
+export function allowedToDate(rows, week) {
+  const allowed = new Map();
+  const weeksOf = new Map();
+  for (const r of rows) {
+    if (String(r.season_type) !== 'REG') continue;
+    const w = num(r.week);
+    if (!(w >= 1 && w < week)) continue;
+    if (!POSITIONS.includes(r.position)) continue;
+    const def = r.opponent_team;
+    if (!def) continue;
+    if (!weeksOf.has(def)) weeksOf.set(def, new Set());
+    weeksOf.get(def).add(w);
+    const k = `${def}|${r.position}`;
+    const cur = allowed.get(k) || { games: 0, pts: 0 };
+    cur.pts += halfPPR(r);
+    allowed.set(k, cur);
+  }
+  for (const [k, v] of allowed) v.games = (weeksOf.get(k.split('|')[0]) || new Set()).size;
+
+  const league = new Map();
+  for (const pos of POSITIONS) {
+    let pts = 0, games = 0;
+    for (const [k, v] of allowed) {
+      if (k.endsWith(`|${pos}`)) { pts += v.pts; games += v.games; }
+    }
+    league.set(pos, games ? pts / games : 0);
+  }
+  return { allowed, league };
+}
+
 /* ─── pricing ──────────────────────────────────────────────────────────────────────── */
 
 /*
@@ -203,6 +260,43 @@ export const BASELINE_FRACTION = BASELINE_RANK / 380;
 export const SHRINK_K = 2;
 export const shrunkPPG = (p) => (p.games * p.half_ppg) / (p.games + SHRINK_K);
 
+/*
+ * ─── THE PROJECTION, WHICH IS THE SEASON TO DATE AND A CONSTANT ────────────────────
+ *
+ * The card shows no overall and no rating. The one number on it about the future is what
+ * this man is projected to score in half PPR this week, and six of them add up to what the
+ * lineup is projected to score. So it has to be right in LEVEL and not only in order, which
+ * is a different demand from the price above it.
+ *
+ * WHAT IS NOT IN IT, AND THE MEASUREMENT IS THE REASON. A matchup term (what this week's
+ * opponent has been giving up to this position) and a recency term (the last three games
+ * over the season's average) were both built and both fitted out of sample over 6,720
+ * draftable player-weeks. The matchup is worth 0.009 points of mean error and the recency
+ * 0.021, against a 5.89 baseline. Neither is a term. The recency one is actively harmful
+ * for a printed number: it nearly doubles the bias, because the last three games of a man
+ * near the top of the board run hot.
+ *
+ *   node football/build/test/probe_projection.mjs
+ *
+ * WHAT IS IN IT is one addition. The shrink above treats every man as though he also played
+ * SHRINK_K games of nothing, which is right for the price and leaves the estimate low by
+ * 0.54 points a man on the draftable board. Six men is three points of lineup projection
+ * that a player would watch come in high every single week.
+ *
+ * A FLAT OFFSET AND NOT A FITTED LINE, and the difference matters. Least squares fits a
+ * slope too, it came back at 0.972, and a slope under one FLATTENS the board: it takes the
+ * best men down toward the middle to buy back squared error on a number that is read as
+ * points. All three candidates land inside 0.013 of each other on mean error and all three
+ * remove the bias exactly, so the tiebreak is what they disturb. An offset disturbs nothing:
+ * the order, the spread and every price are untouched, and the only thing that moves is the
+ * one thing that was wrong.
+ *
+ * Fitted per position it is QB +0.65, RB +0.72, WR +0.20, TE +0.60, which buys 0.002 of
+ * mean error over the single figure and costs four constants to keep in step. One.
+ */
+export const PROJ_LIFT = 0.54;
+export const projectedPoints = (p) => Math.max(0, shrunkPPG(p) + PROJ_LIFT);
+
 export function pricePool(men) {
   for (const p of men) p.est_ppg = shrunkPPG(p);
   const desc = men.map((p) => p.est_ppg).sort((a, b) => b - a);
@@ -213,7 +307,28 @@ export function pricePool(men) {
 
   const asc = men.map((p) => p.vor).sort((a, b) => a - b);
   const lo = quantileSorted(asc, 0.01);
-  const ref = quantileSorted(asc, 0.99);
+  /*
+   * THE TOP OF THE BOARD IS THE BEST MAN ON IT, AND NOT A QUANTILE, which is where this
+   * departs from 01-players.mjs and the reason is the size of the pool.
+   *
+   * A finished season priced across 1999 to 2025 has tens of thousands of rows, so the 99th
+   * percentile is deep enough that the men above it are a handful of the greatest seasons
+   * ever played and clamping them together costs nothing. One week's board is about 500 men,
+   * so the 99th percentile is FIVE men in, and measured over twelve weeks of 2022 to 2024 it
+   * put four to seven men on the ceiling every single week, at one price, with up to 7.6
+   * points of projection between them.
+   *
+   * That is the shape with no decision in it. The dearest slot on the board becomes "take
+   * the highest projection", which is arithmetic rather than football, and it is the same
+   * fault the shrink above was added to remove at the other end of the board.
+   *
+   * Anchored at the maximum, exactly one man reaches $48M, every week, by construction, and
+   * the men behind him separate: 48 / 37 / 36 / 27 where it used to read 48 / 48 / 48 / 48.
+   * It is a single order statistic and therefore the most outlier-prone anchor there is,
+   * which is a real cost and the right one to pay here: a week with one runaway leader
+   * SHOULD price everybody else cheaper, because that is what that week is.
+   */
+  const ref = asc[asc.length - 1];
   const span = ref - lo;
 
   for (const p of men) {
@@ -260,7 +375,13 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
   if (!playing.size) throw new Error(`the schedule has no week ${week} of ${season}`);
 
   const todate = seasonToDate(rows, week);
-  const eligible = todate.filter((p) => p.games >= minGames);
+  /* THE BOARD IS PRICED AGAINST ITSELF. A man whose club is idle is not on it, so he is not
+     in the pricing either, and that is not tidiness: the anchors above are the cheapest and
+     the dearest man ON THE BOARD, so a leader sitting out a bye would otherwise set a
+     ceiling nobody draftable could reach and the whole week would have no $48M man in it. */
+  const played = todate.filter((p) => p.games >= minGames);
+  const eligible = played.filter((p) => playing.has(p.team));
+  if (!eligible.length) throw new Error(`nobody is draftable in week ${week} of ${season}`);
 
   const anchors = pricePool(eligible);
 
@@ -275,12 +396,12 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
        is. Carried on the row because the probe re-fits against it and a second copy of
        the arithmetic is how a curve and its sweep come apart. Never shown to a player. */
     est_ppg: round(p.est_ppg, 2),
+    /* THE ONE NUMBER ON THE CARD ABOUT THE FUTURE, and the only rating of any kind this
+       mode shows. One decimal, because it is points and a player will add six of them up. */
+    proj: round(projectedPoints(p), 1),
     half_total: round(p.half, 1),
     price_musd: p.price_musd,
     stat_line: statLine(p),
-    /* Read off the schedule. A man whose club is idle is not draftable this week, which is
-       the bye trap removed at the door rather than priced. */
-    playing: playing.has(p.team),
   }));
 
   return {
@@ -288,6 +409,10 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
     ...anchors,
     checked,
     clubs_playing: playing.size,
+    /* How many men with a game already played were left off because their club is idle.
+       Reported rather than shipped, because the bye trap is removed at the door here and a
+       reader of this file should be able to see how big the door was. */
+    idle: played.length - eligible.length,
     pool,
   };
 }
@@ -304,12 +429,12 @@ if (process.argv[1] && process.argv[1].endsWith('weekly-pool.mjs')) {
   const week = Number(arg('--week', '8'));
   const minGames = Number(arg('--min-games', '1'));
   const built = await buildWeeklyPool({ season, week, minGames });
-  const on = built.pool.filter((p) => p.playing);
+  const on = built.pool;
 
   console.log(`${season} week ${week}: built from weeks 1 to ${week - 1}`);
   console.log(`  half PPR identity held on ${built.checked.toLocaleString('en-US')} REG rows`);
   console.log(`  ${built.clubs_playing} clubs playing, `
-    + `${on.length} draftable of ${built.pool.length} with a game already played`);
+    + `${on.length} draftable, ${built.idle} left off for a bye`);
   console.log(`  baseline rank ${built.rank} = ${built.baseline} half PPG, `
     + `VOR anchors ${built.vorLo} to ${built.vorRef}`);
 
@@ -324,7 +449,8 @@ if (process.argv[1] && process.argv[1].endsWith('weekly-pool.mjs')) {
   console.log('\n  the six dearest men on the board:');
   for (const p of on.sort((a, b) => b.price_musd - a.price_musd).slice(0, 6)) {
     console.log(`    ${p.position.padEnd(3)} ${p.name.padEnd(20)} `
-      + `$${String(p.price_musd).padStart(5)}M  ${p.half_ppg} half PPG   ${p.stat_line}`);
+      + `$${String(p.price_musd).padStart(5)}M  proj ${String(p.proj).padStart(4)}  `
+      + `${p.half_ppg} half PPG   ${p.stat_line}`);
   }
 
   if (process.argv.includes('--write')) {
