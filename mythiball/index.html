@@ -149,7 +149,16 @@
   body.ingame .log{flex:0 1 auto;min-height:0;max-height:16vh;overflow-y:auto;}
   /* The at bat card says who is up and what he is. It is worth its natural
      height and never more than that: it is the one thing here that would
-     rather be read than played. */
+     rather be read than played.
+
+     IT IS ALSO THE ONLY THING IN THE DECK WITH ANY SHRINK IN IT, so the
+     whole of a short window's shortfall lands here. Measured on four
+     phones it wants 89 to 97 pixels and gets 47, 19, 16 and 16, which on
+     three of them is one line cut off mid sentence. Making it rigid is not
+     the fix and was tried: the shortfall moves to the window instead, and
+     the End Game row goes off the bottom of an `overflow:hidden` page with
+     no way to scroll to it. What the deck actually needs is to be smaller,
+     which is a design pass rather than a flex rule. */
   body.ingame .atbat{flex:0 1 auto;min-height:0;overflow:hidden;}
   .brand{display:flex;align-items:center;gap:10px;padding:8px 0 12px;
     border-bottom:3px solid var(--line);margin-bottom:4px;}
@@ -6372,24 +6381,21 @@ let fieldRafId = 0;
 let FIELD_VIEW = 1;
 /* The logical field, the size every coordinate in fieldGeom() is in, and the
    factor the on screen bitmap is larger by. */
-const FIELD_W = 960, FIELD_H = 660, FIELD_K = 1.5;
-/* THE WORLD IS BLOWN UP BY A WHOLE NUMBER, and FIELD_K is only a ceiling
-   now. The bitmap was a fixed 1440 wide whatever it was shown on, which
-   made the blit 320 world pixels to 1440 at 4.5x: blocks four device
-   pixels wide and blocks five device pixels wide, in equal measure,
-   counted along one row of the stands. The one-resolution pass below
-   exists so the field's grid and the sprites' grid read as ONE grid, and
-   it has never actually had one block size to read.
+const FIELD_W = 960, FIELD_H = 660;
+/* THE WORLD IS BLOWN UP BY A WHOLE NUMBER. The bitmap was a fixed 1440
+   wide whatever it was shown on, which made the blit 320 world pixels to
+   1440 at 4.5x: blocks four device pixels wide and blocks five device
+   pixels wide, in equal measure, counted along one row of the stands.
+   The one-resolution pass below exists so the field's grid and the
+   sprites' grid read as ONE grid, and it had never actually had one
+   block size to read.
 
    Nothing failed and nothing could. A ragged grid renders perfectly.
 
-   So the scale is an integer: the smallest whole multiple of the world
-   that covers what the screen can show, between two and four. A 390px
-   phone at a device ratio of 3 shows the canvas 358 CSS pixels wide,
-   which is 1074 device pixels, so it takes 4x and gets 1280. Every block
-   is four pixels. Every screen measured comes out at or under the old
-   1440, so this is never more work than before: 1280 on that phone, 960
-   on a 360 at ratio 2 and on an ordinary desktop.
+   `FIELD_K` WAS 1.5 AND IS GONE. It was the old fixed blow-up, kept for
+   a while as a ceiling on the bitmap, and once the canvas became the
+   arena's own device pixels nothing read it at all. A constant nothing
+   reads is a number the next person tunes expecting something to happen.
 
    IT IS NOT A SPEED FIX AND THE MEASUREMENT SAYS SO. An interleaved A/B
    at 6x CPU throttle, three runs an arm, put 1074 against 1440 at 0.3ms
@@ -6397,72 +6403,120 @@ const FIELD_W = 960, FIELD_H = 660, FIELD_K = 1.5;
    pass had read 9.5ms, which was the page still warming up: the three
    runs trended 35.6, 6.2, 16.3 and the middle one was flattered by its
    position. That is the sprite cache's null result arriving a second
-   time. Keep this for the grid, not for the frame rate.
+   time. Keep this for the grid, not for the frame rate. */
+/* ONE WHOLE NUMBER OF DEVICE PIXELS PER WORLD BLOCK, and the camera is what
+   keeps it that way. `FIELD_CAM` is the single answer the paint, the crisp
+   HUD pass and the pointer mapping all read, so there is no second copy of
+   it to drift.
 
-   PIX is read INSIDE the function and not into a const beside this one.
-   It is declared below, so a const here would be read before its own
-   line and throw on load. That is the football results screen's TDZ, and
-   it takes the whole page rather than one number. */
-function fieldBitmapWidth(cv) {
-  const world = FIELD_W / PIX;
-  const css = cv && cv.clientWidth;
-  if (!css) return world * 4;                  /* before layout, and the loop corrects it */
-  const want = css * (window.devicePixelRatio || 1);
-  return world * clamp(Math.ceil(want / world), 2, Math.floor(FIELD_K * PIX));
-}
-/* THE FIELD FILLS THE WINDOW, AND THE PLATE VIEW IS ALLOWED TO CROP.
-   Reported as the game sitting in a box rather than being played: on a
-   1440x900 desktop the field was drawn 924x635 with 250 pixels of cream
-   paper down each side and the page scrolled anyway, and on a 390 phone it
-   was 358x246 in an 844 tall window, under a quarter of the screen.
+   THE FULL BLEED LAYOUT BROKE THE GRID AND NOTHING SAID SO. The field used
+   to be an oversized canvas cropped by the arena's `overflow`, which needs
+   no coordinate maths at all and is why it was written that way. What it
+   cost is that the bitmap stayed capped at 1280 while the canvas grew: on a
+   390 phone at device ratio 3 the browser was handed 1280 pixels to show
+   across 2397, so it UPSCALED by 1.873. Every canvas here is
+   `image-rendering: pixelated`, so that is not blurry, it is RAGGED: at a
+   fractional nearest neighbour scale some blocks take two device pixels and
+   some take one. That is exactly what the one resolution pass exists to
+   prevent, arriving at the last step instead of the first.
 
-   THE STRIKE ZONE IS WHY THIS IS A GAMEPLAY FIX AND NOT A LOOK.
-   `plateGeom` sizes the zone against the batter, which is right, so the
-   zone is a fixed 92x120 of the 960x660 world and its size ON SCREEN is
-   whatever the field is drawn at. At 358 wide that is a 34x45 pixel box,
-   and a thumb is about 45 across: aiming was not a skill, it was a guess.
-   The same arithmetic run at a full bleed phone gives about 89.
+   THE OLD GUARD COULD NOT SEE IT, because it reads the BITMAP, where the
+   blit was still a clean 4x, and never asked what the browser did with that
+   bitmap afterwards. Measured before and after on the same region, the old
+   blocks are uniform squares and the new ones are stretched with banding.
 
-   THE TWO CAMERAS GET DIFFERENT ANSWERS AND THAT IS THE WHOLE RULE. The
-   plate view may COVER, because everything it is about (the zone, the bat,
-   the ball, the catcher) is within a third of a frame of the plate, so what
-   the crop throws away is stand. The wide view may NOT: a ball in the right
-   field corner is the entire point of it, and a camera that crops the
-   corners during a play would hide the play. So the wide view contains, and
-   what is left over is the letterbox `drawField` already paints.
+   SO THE CANVAS IS EXACTLY THE ARENA NOW and the crop moved into the blit.
+   The bitmap is the arena's own device pixels, the world is drawn at a whole
+   `scale` of them, and what does not fit is a SOURCE rectangle rather than
+   an overhang: `drawImage` takes `sx, sy, sw, sh` out of the low resolution
+   world and fills the display with it. The browser scales nothing.
 
-   IT NEEDS NO COORDINATE MATHS AND THAT IS DELIBERATE. `fieldPointFromEvent`
-   maps a pointer through the canvas's own `getBoundingClientRect`, so a
-   canvas moved and resized in CSS is still read correctly with nothing to
-   keep in step. Written as a transform inside the paint instead, the drawing
-   and the input would be two copies of one answer and the aim would drift
-   from the picture the first time either moved. */
+   WHAT IT COSTS IN FILL, SAID HONESTLY, because the obvious reading is that
+   an arena sized canvas must be bigger. The fill is the arena and never more
+   than the arena, so on a phone it is the screen rather than a canvas hanging
+   off both sides of it: 0.4 to 0.9 megapixels against the 1.13 of the fixed
+   1280x880 it replaced. On a RETINA DESKTOP it is more, 3.6 megapixels at
+   1920 by 1080 at ratio 2, and that is not a regression to tune away: it is
+   what that screen actually shows, and the alternative is the browser
+   resampling a smaller bitmap onto it, which is the ragged grid this exists
+   to remove. Covering the same framing by growing the BITMAP alone would
+   have wanted 2560 across on a dpr 3 phone, four times the fill, on the
+   device least able to pay for it.
+
+   `PIX` is read INSIDE the function rather than into a const beside it. It
+   is declared below, so a const here is read before its own line and throws
+   on load, which takes the page rather than one number. That is the football
+   results screen's TDZ. */
+const FIELD_CAM = { scale: 4, sx: 0, sy: 0, sw: 320, sh: 220, w: 0, h: 0 };
+
 /* WHAT THE PLATE VIEW IS ABOUT IS NOT THE MIDDLE OF THE PICTURE. The zone
    sits at world x 442 to 534 and the batter is drawn to the RIGHT of it,
    about 553 to 750, so a crop centred on the canvas cut his bat off at the
-   frame's edge on a phone. 596 is the middle of the two together, which
-   holds both with room at the widths measured. The wide camera's focus is
-   the canvas centre because a contained picture has no offset to choose. */
+   frame's edge on a phone. 596 is the middle of the two together. The wide
+   camera's focus is the centre, because a picture that fits has no offset
+   left to choose. */
 const FIELD_FOCUS = { wide: [480, 330], plate: [596, 452] };
+
 function fitFieldCanvas(cv) {
   const box = cv.parentElement;
   if (!box) return;
   const bw = box.clientWidth, bh = box.clientHeight;
   if (!bw || !bh) return;
-  const a = FIELD_W / FIELD_H;
+  const dpr = window.devicePixelRatio || 1;
+  const wBlocks = FIELD_W / PIX, hBlocks = FIELD_H / PIX;
   const plate = plateViewActive(State.game);
-  const w = plate ? Math.max(bw, bh * a) : Math.min(bw, bh * a);
-  const h = w / a;
-  const s = w / FIELD_W;
+  /* The scale is a whole number of DEVICE pixels per world block. Cover
+     takes the larger of the two ratios so nothing is letterboxed and the
+     overflow becomes crop; contain takes the smaller, which is the wide
+     camera's job, because a ball in the right field corner is the entire
+     point of that view. Two is the floor for the reason the old ceiling
+     had one: under it the blit is throwing the art away rather than
+     magnifying it.
+
+     IT IS CONTAIN ROUNDED UP AND NOT CONTAIN, and the difference is worth
+     stating because it is a crop. The scale has to be whole, so rounding
+     DOWN would spend the whole rounding loss on bars: a desktop at 2.54
+     would drop to 2 and draw a 640 wide field in a 1280 arena, half the
+     window dark. Rounding up spends it on the binding axis instead, so
+     the bars land on the axis with room and the crop is bounded by how
+     far the ratio had to climb. Measured over six screens, the wide view
+     crops nothing on three and 8.8%, 13% and 25% of ONE axis on the other
+     three, and the 25% case was looked at rather than reasoned about: the
+     foul lines, both corners and the whole wall are still in frame,
+     because the world carries margin around the park. */
+  const rw = (bw * dpr) / wBlocks, rh = (bh * dpr) / hBlocks;
+  const scale = Math.max(2, Math.ceil(plate ? Math.max(rw, rh) : Math.min(rw, rh)));
+  /* The bitmap is the arena, trimmed to a whole number of blocks so the
+     source rectangle lands exactly. That leaves under one block of the
+     arena uncovered, which is at most a couple of CSS pixels of the
+     letterbox colour the arena is painted in anyway. */
+  const sw = Math.max(1, Math.min(wBlocks, Math.floor((bw * dpr) / scale)));
+  const sh = Math.max(1, Math.min(hBlocks, Math.floor((bh * dpr) / scale)));
   const [fx, fy] = FIELD_FOCUS[plate ? 'plate' : 'wide'];
-  /* Put the focus in the middle of the box, then refuse to show past the
-     edge of the canvas: a clamp rather than a centre, because a centred
+  /* Put the focus in the middle of what is shown, then refuse to read past
+     the edge of the world: a clamp rather than a centre, because a centred
      crop of the plate view puts the batter half out of frame. */
-  const left = clamp(bw / 2 - fx * s, Math.min(0, bw - w), Math.max(0, bw - w));
-  const top = clamp(bh / 2 - fy * s, Math.min(0, bh - h), Math.max(0, bh - h));
-  const css = Math.round(w) + 'px|' + Math.round(h) + 'px|'
-            + Math.round(left) + 'px|' + Math.round(top) + 'px';
-  if (cv.dataset.fit === css) return;     /* a style write a frame is waste */
+  const sx = clamp(Math.round(fx / PIX - sw / 2), 0, Math.max(0, wBlocks - sw));
+  const sy = clamp(Math.round(fy / PIX - sh / 2), 0, Math.max(0, hBlocks - sh));
+  FIELD_CAM.scale = scale; FIELD_CAM.sx = sx; FIELD_CAM.sy = sy;
+  FIELD_CAM.sw = sw; FIELD_CAM.sh = sh;
+  FIELD_CAM.w = sw * scale; FIELD_CAM.h = sh * scale;
+  /* Resizing a canvas CLEARS it and resets its context, which is free in a
+     loop that redraws every pixel every frame and ruinous if it ran every
+     frame, so both of these only write when the answer has changed. */
+  if (cv.width !== FIELD_CAM.w) cv.width = FIELD_CAM.w;
+  if (cv.height !== FIELD_CAM.h) cv.height = FIELD_CAM.h;
+  /* THE CSS SIZE IS NOT ROUNDED TO WHOLE PIXELS, and that is the last step
+     of the grid rather than fussiness. A bitmap of 639 laid out across a
+     rounded 640 device pixels is a 1.002 stretch: almost every block is
+     right and one seam is not, which is the ragged grid again at a size
+     nobody would look for it. Written to three decimals the element is
+     exactly the bitmap and the browser scales nothing at all. */
+  const px = (v) => (Math.round(v * 1000) / 1000) + 'px';
+  const css = px(FIELD_CAM.w / dpr) + '|' + px(FIELD_CAM.h / dpr) + '|'
+            + px((bw - FIELD_CAM.w / dpr) / 2) + '|'
+            + px((bh - FIELD_CAM.h / dpr) / 2);
+  if (cv.dataset.fit === css) return;
   cv.dataset.fit = css;
   const [cw, ch, cl, ct] = css.split('|');
   cv.style.width = cw; cv.style.height = ch;
@@ -6473,12 +6527,6 @@ function fitFieldCanvas(cv) {
    because the loop redraws every pixel every frame, and ruinous if it
    ran every frame. So it only writes when the answer has changed, which
    is a rotation, a window resize, or a browser moving between screens. */
-function sizeFieldCanvas(cv) {
-  const w = fieldBitmapWidth(cv);
-  if (cv.width === w) return false;
-  cv.width = w; cv.height = Math.round(w * FIELD_H / FIELD_W);
-  return true;
-}
 /* ONE RESOLUTION. The characters are chunky pixel sprites and the field
    was smooth vector art: anti-aliased ellipses, perfect gradients,
    hairline chalk. Two art styles in one frame is the loudest "not a real
@@ -6546,20 +6594,19 @@ function startFieldLoop() {
         }
       }
       const ctx = fCv.getContext('2d');
-      /* The CSS box first, because everything below reads off it: the
-         bitmap scale, FIELD_VIEW, and the rect a pointer is mapped
-         through. It is in the loop for the reason sizeFieldCanvas is,
-         plus one of its own: the camera cuts between the plate and the
-         wide field mid at-bat, and nothing fires an event for that. */
+      /* THE CAMERA FIRST, because everything below reads it: the bitmap,
+         the blit, FIELD_VIEW and the crisp pass. It is asked every frame
+         and writes almost never. It has to be here rather than on a resize
+         listener, because the canvas also changes size when the arena is
+         laid out for the first time, when a rotation changes the column,
+         and when a browser moves to another screen, and only the first of
+         those three fires a resize. And it has one reason of its own: the
+         camera CUTS between the plate and the wide field mid at-bat, and
+         nothing fires an event for that. */
       fitFieldCanvas(fCv);
-      if (fCv.clientWidth) FIELD_VIEW = fCv.clientWidth / FIELD_W;
-      /* Asked every frame and answering false on almost all of them. It has
-         to be here rather than on a resize listener: the canvas also changes
-         size when the arena is laid out for the first time, when a rotation
-         changes the column, and when a browser moves to another screen, and
-         only the first of those three fires a resize. */
-      sizeFieldCanvas(fCv);
-      const fieldK = fCv.width / FIELD_W;
+      /* How big a logical pixel is drawn, in CSS pixels. Anything that has
+         to stay legible on screen floors its own size against it. */
+      FIELD_VIEW = FIELD_CAM.scale / (PIX * (window.devicePixelRatio || 1));
       /* The world at one low resolution (see PIX above), then blitted to
          the display bitmap with smoothing off. drawField saves and
          restores around its own transforms, so the base survives it. */
@@ -6574,21 +6621,29 @@ function startFieldLoop() {
       drawField(wctx, FIELD_W, FIELD_H, t, p || null, inWindup);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(pixWorld, 0, 0, fCv.width, fCv.height);
+      /* THE CROP IS A SOURCE RECTANGLE, which is what keeps a world block a
+         whole number of device pixels. Blitting the whole world into an
+         oversized canvas and letting the arena clip it is what handed the
+         browser a fractional scale to finish. */
+      ctx.drawImage(pixWorld, FIELD_CAM.sx, FIELD_CAM.sy, FIELD_CAM.sw, FIELD_CAM.sh,
+                    0, 0, fCv.width, fCv.height);
       /* The crisp pass: each queued site replays on the display canvas
          under the transform it was drawn with. The world context maps
-         logical through 1/PIX, the display maps through fieldK, so the
-         bridge between the two is one scale. It is the LIVE scale read off
-         the bitmap, never the FIELD_K ceiling: the two are the same number
-         only on a screen big enough to want every pixel, and everywhere
-         else a constant here would put the type in the wrong place. */
+         logical through 1/PIX and the display maps a block to `scale`
+         device pixels, so the bridge is one scale and the camera's own
+         offset. Both come off FIELD_CAM rather than being re-derived here:
+         a second copy of the camera is how the type ends up somewhere the
+         picture is not. */
+      const hudK = FIELD_CAM.scale / PIX;
       for (const [m, fn] of HUD_Q) {
-        ctx.setTransform(fieldK * PIX, 0, 0, fieldK * PIX, 0, 0);
+        ctx.setTransform(hudK, 0, 0, hudK, -FIELD_CAM.sx * FIELD_CAM.scale,
+                         -FIELD_CAM.sy * FIELD_CAM.scale);
         ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
         fn(ctx);
       }
       HUD_Q.length = 0;
       refreshStealButton();
+      refreshReleaseButton();
     }
     fieldRafId = requestAnimationFrame(paint);
   };
@@ -10645,16 +10700,24 @@ function plateGeom() {
 }
 function plateFromZone(P, x, y) { return [P.zx + x * P.zw, P.zy - y * P.zh]; }
 function plateToZone(P, lx, ly) { return { x: (lx - P.zx) / P.zw, y: (P.zy - ly) / P.zh }; }
-/* A pointer event, in logical field pixels. */
+/* A pointer event, in logical field pixels.
+
+   IT INVERTS FIELD_CAM RATHER THAN CARRYING ITS OWN COPY. The canvas shows
+   a WINDOW on the world now, not the whole of it, so a pointer read as a
+   fraction of the element and multiplied by FIELD_W would be right only
+   when nothing is cropped: on the plate camera it would land the bat a
+   couple of hundred logical pixels from the finger. The drawing and the aim
+   are one answer, and this is the one place it is read backwards. */
 function fieldPointFromEvent(e) {
   const cv = document.getElementById('field');
   if (!cv || !e) return null;
   const rect = cv.getBoundingClientRect();
-  if (!rect.width) return null;
+  if (!rect.width || !rect.height) return null;
   const src = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e;
   if (src.clientX == null) return null;
-  return [(src.clientX - rect.left) / rect.width * FIELD_W,
-          (src.clientY - rect.top) / rect.height * FIELD_H];
+  const bx = FIELD_CAM.sx + (src.clientX - rect.left) / rect.width * FIELD_CAM.sw;
+  const by = FIELD_CAM.sy + (src.clientY - rect.top) / rect.height * FIELD_CAM.sh;
+  return [bx * PIX, by * PIX];
 }
 /* When the picture is the plate. Anything that moves a man or a ball
    away from it (a play, a steal, a walk, the last play's tail, a replay)
@@ -12612,12 +12675,12 @@ function renderGame() {
 
   const arena = el('div','arena');
   const cv = document.createElement('canvas');
-  /* The bitmap is sized to the screen by sizeFieldCanvas, capped at one and
-     a half times the logical field. Everything else still thinks in 960x660:
-     the paint loop applies the scale once, before drawField. Nothing is laid
-     out yet at this point, so this is the ceiling and the loop corrects it on
-     the first frame that has a width to read. */
-  cv.id = 'field'; cv.width = FIELD_W * FIELD_K; cv.height = FIELD_H * FIELD_K;
+  /* The bitmap is the arena's own device pixels and fitFieldCanvas owns it.
+     Everything drawn still thinks in 960x660: the world is painted at one
+     low resolution and the camera decides which part of it fills the
+     display. Nothing is laid out yet at this point, so this is a placeholder
+     the loop corrects on the first frame that has a box to read. */
+  cv.id = 'field'; cv.width = FIELD_W / PIX * 4; cv.height = FIELD_H / PIX * 4;
   arena.appendChild(cv);
   /* THE BAT FOLLOWS THE MOUSE. Batting, the cursor over the zone is where
      the barrel will be; on a phone, a finger is. Pitching, a click in the
@@ -13162,11 +13225,18 @@ function refreshHud() {
 
      PITCHING KEEPS IT, because there is nothing to aim at the moment the
      ball goes: the spot was already chosen and what is left is a release,
-     which is a button. */
-  if (swingBtn) {
-    swingBtn.style.display = youBat ? 'none' : '';
-    swingBtn.textContent = youBat ? 'SWING' : 'THROW';
-  }
+     which is a button.
+
+     WHAT IT SAYS IS RELEASE AND THE PANEL'S OWN BUTTON SAYS THROW, and
+     the two are different presses a few hundred pixels apart. Labelled
+     THROW it read as a second copy of the button above it, in bigger
+     type and a louder colour, and it was DEAD for most of the time it was
+     on screen: it only does anything while `releaseNow` is set, which is
+     the 1150ms the meter sweeps. So the paint loop owns whether it is
+     there, not this function: `refreshHud` fires on a ball, a strike or
+     an out, and the meter starts and ends inside one pitch. */
+  if (swingBtn && youBat) swingBtn.style.display = 'none';
+  refreshReleaseButton();
   /* Replay is offered whenever a highlight is stored and nothing is
      already animating. */
   const rb = document.getElementById('replay-btn');
@@ -13267,6 +13337,23 @@ function refreshPenButton() {
     : st.level === 2 ? 'Mound · arm tiring'
     : st.level === 1 ? 'Mound · arm warm' : 'Mound';
   btn.classList.toggle('selected', st.level >= 2);
+}
+/* THE BIG BUTTON IS THE RELEASE AND NOTHING ELSE, so it is on screen for
+   exactly as long as there is a release to make. It is asked from the
+   paint loop rather than from refreshHud for the reason written over the
+   swing button: a meter starts and ends inside one pitch and refreshHud
+   only fires between them.
+
+   A pitcher who is BATTING never sees it. That is settled in refreshHud,
+   which hides it outright, so this only ever speaks for the mound. */
+function refreshReleaseButton() {
+  const btn = document.getElementById('swing-btn');
+  if (!btn) return;
+  const g = State.game;
+  const live = !!(g && !g.over && g.releaseNow && !playerIsBatting());
+  const want = live ? '' : 'none';
+  if (btn.style.display !== want) btn.style.display = want;
+  if (live && btn.textContent !== 'RELEASE') btn.textContent = 'RELEASE';
 }
 function refreshStealButton() {
   refreshSendButton();

@@ -51,7 +51,9 @@
      1074, so the game wrote 81% more pixels than the screen had. Sizing
      it down is worth 0.3ms a frame against 3.4ms of spread inside one
      arm. It was changed anyway, for the GRID rather than the frame rate
-     (see fieldBitmapWidth), and it is never more pixels than before.
+     (see `fitFieldCanvas` and `FIELD_CAM`, which size the bitmap to the
+     arena's own device pixels), and on a phone it is never more pixels
+     than before.
 
    HOW THAT ONE WENT WRONG, because the trap is in this file's own
    instrument. An A B A pass read the same change as 9.5ms a frame. The

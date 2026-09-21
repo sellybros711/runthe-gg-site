@@ -2954,7 +2954,8 @@ not a skill, it was a guess. Measured after, across six viewports:
 the plate, so what the crop throws away is stand. The wide view may NOT: a
 ball in the right field corner is the entire point of it, and a camera that
 cropped the corners during a play would hide the play. So the wide view
-contains and what is left is the letterbox `drawField` already paints.
+contains, and what is left is the letterbox `drawField` already paints. (A
+whole scale cannot contain exactly, and what that costs is measured below.)
 
 **IT NEEDS NO COORDINATE MATHS, AND THAT IS THE REASON IT IS CSS.**
 `fieldPointFromEvent` maps a pointer through the canvas's own
@@ -2965,6 +2966,71 @@ and the aim would drift from the picture the first time either moved.
 Asserted rather than argued: four known points in zone units, driven through
 real screen coordinates on desktop and on a phone, come back within **0.014
 zone units**.
+
+#### And the CSS crop broke the grid, which is the one thing that pass exists for
+
+The first full bleed version was an oversized canvas cropped by the arena's
+`overflow`, for the reason directly above: it needs no coordinate maths at all.
+What it cost is that the BITMAP stayed capped while the canvas grew. On a 390
+phone at device ratio 3 the browser was handed 1280 pixels to show across 2397,
+so it upscaled by **1.873**. Every canvas here is `image-rendering: pixelated`,
+so that is not blurry, it is **ragged**: at a fractional nearest neighbour scale
+some blocks take two device pixels and some take one. That is exactly what the
+one resolution pass exists to prevent, arriving at the last step instead of the
+first.
+
+**The old guard could not see it**, because it reads the bitmap, where the blit
+was still a clean 4x, and never asked what the browser did with that bitmap
+afterwards.
+
+**So the canvas is exactly the arena now and the crop moved into the blit.**
+`FIELD_CAM` is the one answer the paint, the crisp HUD pass and
+`fieldPointFromEvent` all read. The bitmap is the arena's own device pixels, the
+world is drawn at a whole `scale` of them, and what does not fit is a SOURCE
+rectangle handed to `drawImage` rather than an overhang. The browser scales
+nothing. Measured after: `scale` a whole 3 to 12 across six screens, bitmap to
+arena exactly **1.000** on every one.
+
+**What it costs in FILL, said honestly**, because the obvious reading is that an
+arena sized canvas must be bigger. The fill is the arena and never more than the
+arena, so on a phone it is **0.4 to 0.9 megapixels against the 1.13** of the
+fixed 1280x880 it replaced, where the old canvas hung off both sides of the
+screen. On a **retina desktop it IS more**, 3.6 megapixels at 1920x1080 at ratio
+2, and that is not a regression to tune away: it is what that screen shows, and
+the alternative is the browser resampling a smaller bitmap onto it, which is the
+ragged grid this exists to remove. Covering the same framing by growing the
+BITMAP alone would have wanted 2560 across on a dpr 3 phone, four times the
+work, on the device least able to pay for it.
+
+**The wide camera is contain ROUNDED UP, which is a crop.** The scale has to be
+whole, and rounding down spends the whole rounding loss on bars: a desktop at
+2.54 drops to 2 and draws a 640 wide field in a 1280 arena, half the window
+dark. Rounding up spends it on the binding axis. Measured over six screens it
+crops nothing on three and 8.8%, 13% and 25% of ONE axis on the other three,
+**and the 25% case was looked at rather than reasoned about**: the foul lines,
+both corners and the whole wall are still in frame, because the world carries
+margin around the park.
+
+**Two guards were reading the old camera and both had to change.** This is the
+repo's oldest lesson arriving at the checkers rather than the page:
+
+- `one grid` derived the scale as `cv.width / (FIELD_W / PIX)`. That was true
+  while the canvas held the whole world, and the canvas holds a CROP now, so
+  bitmap over world is the crop's share and has no reason to be whole. **Asked
+  the old way it passed on the canvas the browser was upscaling by 1.87.** It
+  reads `FIELD_CAM.scale`, and the second claim is the one the old shape could
+  not make at all: the bitmap is exactly the pixels the arena occupies.
+- The upright zone measurement used `r.width / FIELD_W` and `r.height /
+  FIELD_H`, which under a crop are two different scales, so it answered a zone
+  **37 by 68** for a box that is 92 by 120. Not even the right shape. It inverts
+  `FIELD_CAM` the way `fieldPointFromEvent` does.
+
+**And one guard was pinning a number rather than a claim.** `the ball is four
+CSS pixels on a phone` asserted `FIELD_VIEW < 0.5`, and the fix made the field
+BIGGER: a logical pixel went from just under half a CSS pixel to exactly half.
+`ballCss` on its own cannot fail, because the floor is four over the view and
+the check multiplies it back, so what it asks now is that the floor really is
+above the five logical pixels it replaced.
 
 **The plate camera's focus is not the middle of the picture.** The zone sits
 at world x 442 to 534 and the batter is drawn to the RIGHT of it, about 553
@@ -2992,6 +3058,37 @@ to 750, so a crop centred on the canvas cut his bat off at the frame's edge.
   with its table painted over the swing buttons. It is absolutely positioned
   on the left now and the deck flows in the padding it leaves.
 
+##### THE DECK IS TOO TALL FOR A SHORT PHONE, and this is the open one
+
+Measured through the real page while pitching, which is the tallest the deck
+gets:
+
+| | window | arena | the deck wants | what happens |
+|---|---|---|---|---|
+| 390x844 | 844 | 473 | 367 | the at bat card is cut to 47 of 97 |
+| 360x780 | 780 | 437 | 367 | cut to **19** |
+| 360x640 | 640 | 358 | 359 | cut to 16, **and 58px is off the window** |
+| 320x568 | 568 | 318 | 372 | cut to 16, **and 103px is off** |
+
+**`.atbat` is the only child in the deck with any shrink in it**, so the whole
+of a short window's shortfall lands there, and what a player sees is one line
+cut mid sentence: `The Great Ape cannot handle the`. Past that, the arena's
+floor wins outright and the page runs longer than a window that
+`overflow:hidden` then cuts, so the End Game row is off the bottom with no way
+to scroll to it.
+
+**Making the card rigid is not the fix and was tried**: the shortfall moves
+straight to the window, so 390x844 went from a clipped card to a page 54 pixels
+too long. **Capping the arena's floor is not the fix either**: reserving enough
+for the deck takes the arena under the cover threshold on a 360 phone, and the
+zone falls from 46 to about 30, which is the thing that floor was raised for.
+
+**What is actually wrong is that the deck needs about 360 pixels**, and on a 640
+tall phone there are 582 to share with the field. The answer is a smaller deck,
+which is a design pass rather than a flex rule: the at bat card on one line, and
+End Game somewhere other than a permanent 39 pixel row under the play by play.
+Nothing here should be changed by moving a `flex` value.
+
 **The SWING button is the pitcher's now, and only his.** Batting, a tap on
 the field has always done both jobs: `touchstart` puts the bat where the
 finger is and the click that follows swings it, so **the tap IS the aim and
@@ -3004,6 +3101,26 @@ ball goes there is nothing left to aim: the spot was already chosen.
 
 **Both how-to surfaces were edited in the same commit**, which is this repo's
 own rule about the coach notes teaching a removed control.
+
+**And it kept the batter's word, so a phone showed TWO THROW BUTTONS.** Relabelled
+from SWING to THROW it read as a second copy of the pitch panel's own Throw a few
+hundred pixels above it, in bigger type and a louder colour, and **it was dead for
+most of the time it was on screen**: the only thing it does is call `releaseNow`,
+which exists for the 1150ms the release meter sweeps. Before that, the biggest
+reddest control on the phone did nothing at all. Found by taking a screenshot of a
+real at bat and looking at it, which is how three things on this page have been
+found now.
+
+It says **RELEASE** and it is on screen for exactly as long as there is a release
+to make. **The paint loop owns that and `refreshHud` cannot**, which is the point
+worth keeping: `refreshHud` fires on a ball, a strike or an out, and a meter starts
+and ends between two of those. `refreshReleaseButton` sits beside
+`refreshStealButton` in the frame loop and writes only when the answer changes.
+
+**The copy was left alone deliberately.** The long page already says "click, tap or
+Space" and the short notes say "stop the bar in the green", both of which are true
+on every device. The button is confined to 900px and under by its own CSS, so
+naming it would be a note that is wrong on a desktop.
 
 **The guard changed from a button to the zone, and that is a change rather
 than a loosening.** The sideways section used to find the SWING button and
@@ -3935,7 +4052,7 @@ pass exists so the field's grid and the sprites' grid read as ONE grid, and it n
 had a single block size to read. **Nothing failed and nothing could.** A ragged grid
 renders, reads and sells perfectly well.
 
-So `fieldBitmapWidth()` picks the smallest WHOLE multiple of the world that covers
+So `fieldBitmapWidth()` picked the smallest WHOLE multiple of the world that covers
 what the screen can show, between two and four:
 
 | screen | can show | bitmap | scale |
@@ -3946,17 +4063,24 @@ what the screen can show, between two and four:
 | desktop 1280 | 924 | 960 | 3x |
 | 1920 at ratio 2 | 2210 | 1280 | 4x (the ceiling) |
 
-Every screen is at or under the 1440 it replaced, so it is **never more work than
-before**, and every one now has one block width. The ceiling is the old `FIELD_K`
-floored to a whole number, which is what makes 4x the most anything gets.
+Every screen was at or under the 1440 it replaced, so it was **never more work than
+before**, and every one had one block width.
+
+**`FIELD_CAM` REPLACED THAT FUNCTION AND THE WHOLE TABLE ABOVE IS HISTORY.** It was
+right about the bitmap and said nothing about what the browser did with the bitmap
+afterwards, which is where the full bleed layout broke it. The live rule is in the
+section above ("the window is the frame"): the canvas is the arena's own device
+pixels and the crop is a source rectangle. The floor of 2 survives it.
 
 **The floor is 2x and it is not decoration.** Below it the blit is DOWNscaling the
 art, and the grid stops landing on whole pixels in the other direction.
 
-**`FIELD_K` is a ceiling now and nothing may read it as the live scale.** The crisp
-HUD pass replays queued type at `fieldK * PIX`, and `fieldK` is read off the bitmap
-every frame: the two are the same number only on a screen big enough to want every
-pixel, and a constant there would put the type in the wrong place everywhere else.
+**`FIELD_K` was 1.5 and is DELETED.** It was the old fixed blow-up, kept for a while
+as a ceiling on the bitmap, and once the canvas became the arena's own device pixels
+nothing read it at all. A constant nothing reads is a number the next person tunes
+expecting something to happen. The crisp HUD pass replays queued type at
+`FIELD_CAM.scale / PIX`, off the same camera the blit used, so the type and the
+picture cannot come apart.
 
 **The sizer is asked every frame and writes almost never.** Resizing a canvas clears
 it, which is free in a loop that redraws every pixel every frame and ruinous if it
@@ -3969,8 +4093,10 @@ below `FIELD_W`, so a const there is read before its own line and throws on load
 which takes the page rather than one number. Same TDZ as the football results screen.
 
 **The guard asserts the PROPERTY, never a width**, over six viewports: the scale is a
-whole number, the blit lands on the grid, and the bitmap is never over 1440. Pinning
-the numbers would make it a test of whichever devices somebody thought of. It reads
+whole number, the blit lands on the grid, and the bitmap is exactly the pixels the
+arena occupies. (That last one replaced "never over 1440", which was a claim about
+the bitmap and therefore blind to the browser upscaling it.) Pinning the numbers
+would make it a test of whichever devices somebody thought of. It reads
 the row **up in the stands**, where the field is flat colour, because a row through
 the sprites or the chalk has real edges in it and the run lengths would be the art
 rather than the grid.

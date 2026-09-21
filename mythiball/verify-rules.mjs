@@ -49,7 +49,7 @@
      speed is never a cost  a faster runner is never waved home on worse odds than a slower one
      a rating buys more   every curve a rating feeds moves one way, over the whole scale
      the stale timer      a play's timer fires into its OWN play or not at all
-     one grid             the world is blown up by a whole number, so it has one block size
+     one grid             the world is blown up by a whole number, onto the arena's own pixels
      the code's own claims  what the comments assert about the code is true of it
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
@@ -3590,8 +3590,22 @@ async function main() {
          sliver. What that still catches is the thing only pixels can say,
          which is imageSmoothingEnabled coming back on. Blur the blit and
          the runs collapse to one, the modal run stops being the scale,
-         and the stray share goes to most of the row. */
-      const FIELD_W_CEIL = 1440;   /* the fixed bitmap this replaced, 960 x 1.5 */
+         and the stray share goes to most of the row.
+
+         THE SCALE IS NO LONGER THE BITMAP OVER THE WORLD, and reading it
+         that way is how this section certified a ragged screen. The
+         canvas used to hold the whole world and the crop was CSS overhang,
+         so the two were the same number. It holds a CROP now, sized to the
+         arena's own device pixels, so bitmap over world is the crop's
+         share and has no reason to be whole. Asked the old way this passed
+         on a canvas the browser was upscaling by 1.87x.
+
+         So the scale is read off FIELD_CAM, which is the one answer the
+         blit, the crisp pass and the aim all draw from, and the SECOND
+         claim is the one the old shape could not make at all: the bitmap
+         is EXACTLY the pixels the arena occupies. A bitmap under that is
+         a browser upscale and a ragged grid on the glass however clean the
+         blit was; a bitmap over it is fill nobody sees. */
       for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
                                         ['phone, denser', 360, 780, 2],
                                         ['small phone', 320, 568, 2],
@@ -3628,29 +3642,36 @@ async function main() {
           }
           lens[run] = (lens[run] || 0) + 1;
           const all = Object.entries(lens).map(([k, v]) => [Number(k), v]);
-          const scale = cv.width / (FIELD_W / PIX);
+          const scale = FIELD_CAM.scale;
           /* pixels, not runs: one stray pixel must not weigh the same as
              a forty pixel stretch of flat sky */
           const px = all.reduce((a, [k, v]) => a + k * v, 0);
           const stray = all.filter(([k]) => k % scale !== 0)
                            .reduce((a, [k, v]) => a + k * v, 0);
-          return { w: cv.width, h: cv.height, world: FIELD_W / PIX,
+          const box = cv.parentElement, dpr = window.devicePixelRatio || 1;
+          return { w: cv.width, h: cv.height, scale,
+                   sw: FIELD_CAM.sw, sh: FIELD_CAM.sh,
+                   wantW: box.clientWidth * dpr, wantH: box.clientHeight * dpr,
                    modal: all.slice().sort((a, b) => b[1] - a[1])[0][0],
                    strayShare: stray / px,
                    smoothing: cv.getContext('2d').imageSmoothingEnabled };
         });
-        const scale = r.w / r.world;
+        const scale = r.scale;
         ok(scale === Math.round(scale) && scale >= 2,
           `${label}: the world is blown up by a whole number (${scale}x)`,
-          JSON.stringify({ bitmap: r.w, world: r.world, scale }));
+          JSON.stringify({ bitmap: r.w, crop: r.sw, scale }));
         ok(r.modal === scale && r.strayShare < 0.08,
           `${label}: the blit lands on the grid, ${scale}px to a block`,
           JSON.stringify({ modalRun: r.modal, scale,
                            offGrid: (100 * r.strayShare).toFixed(1) + '% of the row',
                            smoothing: r.smoothing }));
-        ok(r.w <= FIELD_W_CEIL && r.h <= Math.round(FIELD_W_CEIL * 660 / 960),
-          `${label}: never more pixels than the fixed bitmap it replaced`,
-          JSON.stringify({ w: r.w, h: r.h, ceiling: FIELD_W_CEIL }));
+        /* A WHOLE SCALE IN THE BITMAP BUYS NOTHING IF THE BROWSER THEN
+           RESAMPLES IT. Within one block each way, because the crop is a
+           whole number of blocks and the arena is not. */
+        ok(r.wantW - r.w >= 0 && r.wantW - r.w < scale
+           && r.wantH - r.h >= 0 && r.wantH - r.h < scale,
+          `${label}: the bitmap is the pixels the arena occupies`,
+          JSON.stringify({ bitmap: [r.w, r.h], arena: [r.wantW, r.wantH], scale }));
         ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
         await pg.close(); await ctx.close();
       }
@@ -4080,18 +4101,33 @@ async function main() {
              written for drew a 182 pixel field sideways, which puts the
              zone at about 17 pixels across against a thumb of 45. Reaching
              it is not the same question as it being on the screen. */
+          /* THE CANVAS IS A CROP, so world over canvas is not the scale.
+             It was written `r.width / FIELD_W` and that was true while the
+             canvas held the whole world and the arena clipped it with
+             `overflow`. The camera crops in the BLIT now, so the canvas
+             holds `FIELD_CAM.sw` blocks of 320 at an offset of `sx`, and
+             the old reading answered a zone 37 by 68 for a box that is
+             really 92 by 120: not even the right shape, because the two
+             axes are cropped by different amounts.
+
+             It inverts FIELD_CAM the way `fieldPointFromEvent` does rather
+             than deriving a second mapping, because a second mapping is
+             how a reader ends up certifying a screen nobody could aim at.
+             That is this repo's oldest lesson about extractors, arriving
+             at the guard rather than at the page. */
           const zone = (() => {
             const cv = document.getElementById('field');
             const P = typeof plateGeom === 'function' ? plateGeom() : null;
             if (!cv || !P) return null;
             const r = cv.getBoundingClientRect();
             if (!r.width) return null;
-            const sx = r.width / FIELD_W, sy = r.height / FIELD_H;
-            return { w: Math.round(P.zw * 2 * sx), h: Math.round(P.zh * 2 * sy),
-                     left: Math.round(r.left + (P.zx - P.zw) * sx),
-                     right: Math.round(r.left + (P.zx + P.zw) * sx),
-                     top: Math.round(r.top + (P.zy - P.zh) * sy),
-                     bottom: Math.round(r.top + (P.zy + P.zh) * sy) };
+            const X = (wx) => r.left + (wx / PIX - FIELD_CAM.sx) / FIELD_CAM.sw * r.width;
+            const Y = (wy) => r.top + (wy / PIX - FIELD_CAM.sy) / FIELD_CAM.sh * r.height;
+            const left = X(P.zx - P.zw), right = X(P.zx + P.zw);
+            const top = Y(P.zy - P.zh), bottom = Y(P.zy + P.zh);
+            return { w: Math.round(right - left), h: Math.round(bottom - top),
+                     left: Math.round(left), right: Math.round(right),
+                     top: Math.round(top), bottom: Math.round(bottom) };
           })();
           /* Nothing in the right hand column may hang off its own panel. */
           const card = R('.swing-modes') ? R('.swing-modes').right : 0;
@@ -4534,7 +4570,18 @@ async function main() {
       });
       ok(r.n === 2 && !r.overlap, 'two placards on the field and they do not touch', JSON.stringify({ n: r.n, overlap: r.overlap }));
       ok(r.strip === 'block' && r.stripText === r.park, 'the park name is a strip above the board', JSON.stringify({ strip: r.strip, text: r.stripText, park: r.park }));
-      ok(r.view < 0.5 && Math.abs(r.ballCss - 4) < 0.01, 'the ball is four CSS pixels on a phone', JSON.stringify({ view: r.view, ballCss: r.ballCss }));
+      /* THE FLOOR IS WHAT IS ASSERTED, NOT THE SCALE IT HAPPENS TO MEET.
+         Written `view < 0.5` this failed the day the camera started
+         drawing a whole number of device pixels per block, because the
+         field got BIGGER: a logical pixel went from just under half a CSS
+         pixel to exactly half. The claim the floor is for survived that
+         untouched. `ballCss` on its own cannot fail, since the floor is
+         four over the view and the check multiplies it back, so the half
+         with teeth is that the floor really is above the five logical
+         pixels it replaced, which on a phone was a fleck on the grass. */
+      ok(Math.abs(r.ballCss - 4) < 0.01 && 4 / r.view > 5,
+         'the ball is four CSS pixels on a phone, which is more than five logical ones',
+         JSON.stringify({ view: r.view, ballCss: r.ballCss, logical: 4 / r.view }));
       ok(r.noWide, 'the page does not scroll sideways');
       ok(r.ring && r.chaseAt, 'the catch ring has a fielder to point from', JSON.stringify({ ring: r.ring, chaseAt: r.chaseAt }));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
