@@ -609,6 +609,51 @@ h1,h2,h3{margin:0}
 .rslot .rwar{font-family:var(--fn);font-size:12px;font-weight:800;color:var(--ink);width:38px;text-align:right}
 .rslot .rlink{font-size:9px;color:var(--gold);font-weight:700}
 
+/* ─── field beside lineup card, on a screen with room for it ───
+   The page is a 640px column, which is right for a phone and leaves a desktop
+   showing a diamond with half the window empty beside it. Above 900px the field
+   row alone steps outside that column and splits in two: the diamond on the left,
+   a lineup card on the right carrying all twelve including the pitching staff.
+   Nothing else on the page moves, and below 900px this rule does not exist. */
+.fieldrow .lineupcard{display:none}
+@media (min-width:900px){
+  .fieldrow{display:flex;gap:18px;align-items:flex-start;
+    width:min(1020px,calc(100vw - 40px));
+    margin-left:calc((100% - min(1020px,100vw - 40px)) / 2)}
+  .fieldrow .field{flex:1 1 auto;min-width:0;margin:0}
+  .fieldrow .lineupcard{display:block;flex:0 0 322px}
+  /* The card carries the staff, so the strip under the field would say it twice. */
+  .fieldrow+.staffline{display:none}
+  /* The squad screen already has the richer thing: its own twelve with prices and
+     chemistry. That list IS the right column there, so it gets no second card. */
+  .fieldrow.sq>div:last-child{flex:0 0 342px;min-width:0}
+  .fieldrow.sq .eyebrow{margin-top:0!important}
+  .fieldrow.sq .rslot{padding:7px 10px;min-height:36px;gap:8px}
+  .fieldrow.sq .rslot .rname{font-size:14px;min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+}
+.lineupcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:12px 12px 10px;box-shadow:0 2px 8px -4px rgba(0,0,0,.12)}
+.lc-head{display:flex;align-items:baseline;justify-content:space-between;
+  font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.lc-head span{color:var(--dim-2);letter-spacing:.06em}
+.lc-row{display:flex;align-items:center;gap:8px;padding:5px 2px;min-height:30px;
+  border-bottom:1px solid rgba(0,0,0,.05)}
+.lc-row:last-child{border-bottom:0}
+.lc-row.open{opacity:.5}
+/* The staff is the half the diamond cannot show, so it gets a line above it. */
+.lc-row.arm1{border-top:1px solid var(--line-2);margin-top:5px;padding-top:9px}
+.lc-pos{flex:0 0 34px;text-align:center;font-family:var(--fn);font-size:9.5px;
+  font-weight:800;letter-spacing:.03em;padding:3px 4px;border-radius:5px;color:#fff;
+  text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.lc-row.open .lc-pos{background:rgba(0,0,0,.1)!important;color:var(--dim-2);text-shadow:none}
+.lc-nm{flex:1;min-width:0;font-family:var(--fp);font-size:13.5px;font-weight:700;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lc-row.open .lc-nm{font-style:italic;font-weight:600;color:var(--dim-2)}
+.lc-yr{font-family:var(--fn);font-size:9.5px;font-weight:700;color:var(--dim);flex:0 0 auto}
+.lc-war{font-family:var(--fn);font-size:12px;flex:0 0 32px;text-align:right}
+
 /* ─── the staff strip ───
    Three arms share one mound on the diamond, so before this only one of them
    was ever on screen and signing a starter looked like it had done nothing.
@@ -1253,7 +1298,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div id="d-fold" style="height:1px"></div>
   </div>
 
-  <div class="field" id="field"></div>
+  <div class="fieldrow">
+    <div class="field" id="field"></div>
+    <div class="lineupcard" id="field-card"></div>
+  </div>
   <div class="staffline" id="field-staff"></div>
 
   <div class="reels" id="reels">
@@ -1276,10 +1324,11 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div class="eyebrow">Your roster is set</div>
     <h2 class="display" style="font-size:30px;margin:4px 0">The squad</h2>
   </div>
-  <div class="field" id="sq-field"></div>
-  <div class="staffline" id="sq-staff"></div>
+  <div class="fieldrow sq">
+    <div class="field" id="sq-field"></div>
+    <div id="sq-roster"></div>
+  </div>
   <div class="sq-verdict" id="sq-verdict"></div>
-  <div id="sq-roster"></div>
   <div class="ro-coach" style="margin-top:12px">
     <div class="ch"><span class="ceyebrow">Coach's take</span><span class="ro-arch" id="sq-arch"></span></div>
     <div class="ro-takes" id="sq-takes"></div>
@@ -1884,6 +1933,36 @@ const MOVE_MS=520;
 const easeOut=t=>1-Math.pow(1-t,3);
 
 const PITCHER_SLOTS=[9,10,11];
+/*
+ * The lineup card: all twelve slots, filled or not, in slot order.
+ *
+ * It exists because the diamond cannot do this job. Nine fielders have a place to
+ * stand and three pitchers share one mound, so the board could only ever show ten
+ * of the twelve, and an open slot on a diamond is a grey disc you have to hunt
+ * for. A card reads down: what you have, what you still owe, and what it cost in
+ * WAR. Only drawn where there is room for it beside the field.
+ */
+function drawLineupCard(el){
+  if(!el||!RUN)return;
+  const slots=SLOTS_NOW();
+  const bySlot=new Array(slots.length).fill(null);
+  RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
+  const left=slots.length-RUN.roster.length;
+  const firstArm=slots.indexOf(RUN.staff?'RP1':'SP1');
+  el.innerHTML='<div class="lc-head">Lineup card<span>'+
+    (left?left+' to fill':'Set')+'</span></div>'+
+    slots.map((slot,i)=>{
+      const p=bySlot[i];
+      return '<div class="lc-row'+(p?'':' open')+(i===firstArm?' arm1':'')+'">'+
+        '<span class="lc-pos" style="'+posPaint(slot)+'">'+esc(slot)+'</span>'+
+        (p?'<span class="lc-nm">'+esc(p.n)+'</span>'+
+            '<span class="lc-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'+
+            '<span class="lc-war">'+warHtml(p.w)+'</span>'
+          :'<span class="lc-nm">Open</span>')+
+        '</div>';
+    }).join('');
+}
+
 /* The three arms, in a row of their own.
    They share one spot on the diamond because there is one mound, which meant
    only the most recent of them was ever drawn: sign a starter and nothing on
@@ -2718,7 +2797,7 @@ function paintTop(){
 }
 
 function nextSpin(){
-  paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));watchFold();
+  paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));drawLineupCard($('field-card'));watchFold();
   $('opts').innerHTML='';$('tabs').innerHTML='';$('d-respin').innerHTML='';
   activeTab='ALL';
   try{
@@ -2868,7 +2947,7 @@ function paintRespins(){
       R.respin(RUN,DATA);
       const draw=RUN.currentDraw;
       buildDrawExtras(draw);
-      paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));
+      paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));drawLineupCard($('field-card'));
       spinBoth(draw,()=>paintOpts(draw));
     });
   }else{
@@ -2961,7 +3040,8 @@ function staffReport(tagged,chem,rating){
 
 function showSquad(){
   show('s-squad');
-  drawField($('sq-field'),false);drawStaffLine($('sq-staff'));
+  /* No staff strip here: the list beside the field already names all twelve. */
+  drawField($('sq-field'),false);
   const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
   const chem=R.chemOf(RUN,tagged);
   rosterList($('sq-roster'),{title:'All twelve',price:true,chem});
@@ -3865,9 +3945,9 @@ function showResult(){
      grade on the SEASON. The label says what was actually graded: how much of
      the value on your own board you walked away with. */
   const bps=RUN&&R.bestPossibleSquad?R.bestPossibleSquad(RUN,DATA):null;
-  $('ro-eff').textContent=bps?gradeFor(bps.efficiency):'n/a';
-  $('ro-eff-l').textContent=bps?('Draft grade \u00b7 '+Math.round(bps.efficiency)+'% of your board')
-    :'Draft grade';
+  $('ro-eff').textContent=bps?cappedGrade(bps.efficiency,o):'n/a';
+  $('ro-eff-l').textContent=bps?('Grade \u00b7 drafted '+Math.round(bps.efficiency)+'% of your board')
+    :'Grade';
 
   // Coach's take
   const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
@@ -3922,6 +4002,36 @@ function gradeFor(pct){
   if(pct>=97)return'A+';if(pct>=93)return'A';if(pct>=89)return'A-';
   if(pct>=85)return'B+';if(pct>=80)return'B';if(pct>=74)return'B-';
   if(pct>=68)return'C+';if(pct>=60)return'C';if(pct>=50)return'D';return'F';
+}
+
+/*
+ * THE GRADE IS CAPPED BY WHAT THE SEASON DID WITH THE ROSTER.
+ *
+ * On its own the grade is draft efficiency: the share of the WAR on your own
+ * board that you walked away with. That is a real and useful number, and it is
+ * still the thing that moves the grade. What it cannot do is sit at B+ directly
+ * above the words MISSED THE PLAYOFFS, because a draft that captured most of its
+ * board and then did not reach October did not do its job, whatever the ratio
+ * says.
+ *
+ * Capping rather than replacing keeps the discrimination: a careless draft that
+ * missed still gets an F and a sharp one gets the cap, so the grade says both
+ * "how well did you draft" and "did it work". The percentage stays in the label,
+ * so nothing is hidden, the grade just stops arguing with the record above it.
+ */
+const GRADE_LADDER=['F','D','C','C+','B-','B','B+','A-','A','A+'];
+function gradeCeiling(o){
+  if(o.titleWon)return'A+';
+  const rounds=(RUN&&RUN.playoffs&&RUN.playoffs.rounds)||[];
+  if(!o.madePlayoffs)return'C+';
+  if(rounds.some(r=>r.round==='World Series'))return'A-';
+  if(rounds.filter(r=>r.won).length>=1)return'B+';
+  return'B-';
+}
+function cappedGrade(pct,o){
+  const g=gradeFor(pct),cap=gradeCeiling(o);
+  const i=GRADE_LADDER.indexOf(g),c=GRADE_LADDER.indexOf(cap);
+  return (i<0||c<0||i<=c)?g:cap;
 }
 
 /* ─── confetti ─── */
