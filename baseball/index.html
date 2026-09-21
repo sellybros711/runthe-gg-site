@@ -21,7 +21,7 @@
 <meta property="og:image" content="https://runthe.gg/baseball/og.png?v=1">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Run The Diamond — draft an all-time MLB roster and chase the perfect season.">
+<meta property="og:image:alt" content="Run The Diamond: draft an all-time MLB roster and chase the perfect season.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Diamond: MLB Draft Game">
 <meta name="twitter:description" content="Draft an all-time MLB roster under a $170M cap. Simulate 162 games. Win the World Series.">
@@ -111,6 +111,10 @@ h1,h2,h3{margin:0}
 .hero-field.clearing .chip{transition:opacity .32s ease;opacity:0}
 .htitle{text-align:center;margin-bottom:16px}
 .htitle h1{font-family:'Righteous',var(--fd);font-size:clamp(34px,10vw,52px);text-transform:uppercase;letter-spacing:.03em;line-height:1.05}
+/* The sibling games all carry one word of the name in the game's own color. Flat
+   black on cream read as a document heading rather than a wordmark. */
+.htitle h1 em{font-style:normal;color:var(--leather);
+  text-shadow:0 2px 0 rgba(255,255,255,.4),0 3px 6px rgba(107,82,58,.22)}
 .htitle p{color:var(--dim);font-size:14px;margin:8px 0 0}
 .htitle .kicker{font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.24em;
   text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:center;gap:8px}
@@ -119,6 +123,11 @@ h1,h2,h3{margin:0}
 .hnote{margin:11px 0 0;text-align:center;font-size:12.5px;color:var(--dim-2)}
 .hp-start{margin-bottom:10px}
 .hp-secondary{margin-bottom:10px}
+.mode-row{display:flex;gap:8px;margin-bottom:10px}
+.mode-btn{flex:1;width:auto;flex-direction:column;gap:2px;padding:11px 8px;line-height:1.15}
+.mode-btn b{font-weight:400;font-size:14px;letter-spacing:.05em}
+.mode-btn span{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.02em;
+  text-transform:none;color:var(--dim-2)}
 .hrow{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
 .hp-util-btn{width:auto;flex:1}
 
@@ -205,18 +214,21 @@ h1,h2,h3{margin:0}
 @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
 .chip .lab{display:block}
 .chip{--labw:min(78px,19vw)}
-.chip .who{width:var(--labw);margin:3px 0 2px calc((62px - var(--labw))/2);
-  font-size:9px;font-weight:800;line-height:1.1;text-shadow:0 1px 4px rgba(0,0,0,.5);color:#fff;
+.chip .who{width:var(--labw);margin:2px 0 1px calc((62px - var(--labw))/2);
+  font-size:9px;font-weight:800;line-height:10px;text-shadow:0 1px 4px rgba(0,0,0,.5);color:#fff;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chip .yr{font-size:8px;color:rgba(255,255,255,.85);font-weight:700;line-height:13px;
+.chip .yr{font-size:8px;color:rgba(255,255,255,.85);font-weight:700;line-height:11px;
   max-width:100%;overflow:hidden;white-space:nowrap}
 .chip .yr .tc{display:inline-block;padding:0 4px;border-radius:4px;line-height:12px;
   font-size:7.5px;letter-spacing:.05em;vertical-align:1px;
   color:var(--tcon,#fff);background:var(--tcbg,#475569);
   border:1px solid rgba(255,255,255,.26);box-shadow:0 1px 3px rgba(0,0,0,.5)}
-.chip .pip{position:absolute;top:-3px;right:-3px;width:15px;height:15px;border-radius:50%;
-  display:none;place-items:center;font-family:var(--fn);font-size:9px;font-weight:600;
-  color:#08101f;border:1.5px solid #0b1220;font-style:normal}
+/* The chemistry badge on a fielder. Auto width so it can carry a value rather
+   than a single digit, and it takes the color of that player's strongest bond. */
+.chip .pip{position:absolute;top:-4px;right:-10px;min-width:17px;height:15px;padding:0 4px;
+  border-radius:99px;display:none;place-items:center;font-family:var(--fn);
+  font-size:9px;font-weight:800;color:#fff;border:1.5px solid rgba(0,0,0,.35);
+  font-style:normal;white-space:nowrap;box-shadow:0 1px 3px -1px rgba(0,0,0,.5)}
 
 /* ─── cap bar ─── */
 .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
@@ -230,6 +242,11 @@ h1,h2,h3{margin:0}
 .capline .amt.low{color:var(--red)}
 .chem{display:flex;align-items:baseline;gap:6px}
 .ck{font-size:11px;color:var(--dim-2);font-family:var(--fn);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.ck-btn{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:0;
+  cursor:pointer;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit}
+.ck-btn i{display:grid;place-items:center;width:13px;height:13px;border-radius:50%;
+  border:1px solid rgba(0,0,0,.22);font-style:normal;font-size:9px;font-weight:800;line-height:1}
+.ck-btn:hover i,.ck-btn:focus-visible i{border-color:var(--gold);color:var(--gold)}
 .chemval{font-size:18px;color:var(--green)}
 .chemval.zero{color:var(--dim)}
 .chemval.bump{animation:chembump .5s ease}
@@ -293,13 +310,29 @@ h1,h2,h3{margin:0}
 .tile .pts{display:flex;align-items:baseline;gap:4px}
 .tile .pts b{font-family:var(--fn);font-size:19px;font-weight:600;line-height:1}
 .tile .pts i{font-style:normal;font-family:var(--fn);font-size:9.5px;letter-spacing:.1em;color:var(--dim-2)}
+/* ─── WAR reads as a temperature ───
+   Every tile printed WAR in the same ink, so telling a 9.0 season from a 2.0 one
+   meant reading the digits on all six tiles. The bands are wide on purpose: a
+   drafted season is elite, very good, good, useful or filler, and a scale with
+   more steps than that is a gradient nobody can name. Gold is the top and the
+   only one that glows, because on this board there should be one obvious answer
+   to "is anybody here special". */
+.warv{font-weight:800}
+.warv.w5{color:#b8860b;text-shadow:0 0 12px rgba(184,134,11,.5)}
+.warv.w4{color:#d4772c}
+.warv.w3{color:#2e7d32}
+.warv.w2{color:#1a5276}
+.warv.w1{color:#6b6252}
+.warv.w0{color:var(--dim-2)}
+.tile.off .warv{color:var(--dim-2)!important;text-shadow:none}
 .tile.off{background:rgba(0,0,0,.02);border-style:dashed;border-color:rgba(0,0,0,.08);cursor:default;box-shadow:none}
 .tile.off:active{transform:none}
 .tile.off .pos{filter:grayscale(1);opacity:.45}
 .tile.off .nm,.tile.off .pr,.tile.off .pts b{color:var(--dim-2)}
-.chemtag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 6px;
-  border-radius:5px;background:rgba(46,125,50,.12);color:#2e7d32;max-width:100%;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chemtag{display:inline-block;font-family:var(--fn);font-size:9.5px;font-weight:800;
+  padding:2px 7px;border-radius:99px;background:var(--cc,#2e7d32);color:#fff;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  box-shadow:0 1px 3px -1px rgba(0,0,0,.4)}
 
 /* ─── respin ─── */
 .respin-row{display:flex;gap:8px;margin:12px 0}
@@ -324,28 +357,218 @@ h1,h2,h3{margin:0}
 .sim-game .gruns{width:54px;text-align:center;flex:0 0 auto;font-weight:700}
 .sim-game.marquee{background:rgba(184,134,11,.07);margin:0 -8px;padding:6px 8px;border-radius:6px}
 .sim-game.marquee .gopp{color:var(--gold);font-weight:700}
-.sim-progress{display:flex;flex-wrap:wrap;gap:2px;margin:12px 0;justify-content:center}
-.sim-pip{width:5px;height:14px;border-radius:2px;background:rgba(0,0,0,.08)}
+/* 162 pips laid out as a fixed 54x3 block. Wrapping a centred flex row left the
+   last row indented and the row lengths at the mercy of the viewport width. */
+.sim-progress{display:grid;grid-template-columns:repeat(54,1fr);gap:2px;margin:12px 0}
+@media (max-width:360px){.sim-progress{grid-template-columns:repeat(27,1fr);gap:1.5px}}
+.sim-pip{width:auto;height:14px;border-radius:2px;background:rgba(0,0,0,.08)}
 .sim-pip.w{background:var(--green)} .sim-pip.l{background:var(--red)}
 
-/* ─── playoffs ─── */
-.po-round{margin:12px 0;padding:14px 16px;border-radius:14px;background:var(--panel);
-  border:1px solid rgba(0,0,0,.10);box-shadow:0 2px 8px -3px rgba(0,0,0,.12);
+/* ─── the bracket ───
+   Four columns, one per round, on a rail that scrolls sideways when the screen is
+   not wide enough for all of them. A bracket read left to right is the shape
+   everybody already knows, and squashing it into something else to fit a phone
+   costs the one thing it is for. Same treatment the football game's uses.
+
+   width:fit-content plus margin:0 auto rather than justify-content:center, which
+   is the obvious way to write it and is broken on a scroll container: when the
+   content overflows, a centred flex row puts the first column at a NEGATIVE offset
+   no scroll position can reach, so a phone loses the Wild Card column entirely. */
+.brk-title{margin:3px 0 0;text-align:center;font-size:clamp(23px,7vw,34px);line-height:1.05}
+.brk-wrap{position:relative;margin-top:10px}
+.brk{position:relative;display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;
+  padding:4px 2px 12px;width:fit-content;max-width:100%;margin:0 auto;
+  scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.brk::-webkit-scrollbar{height:6px}
+.brk::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
+.brk-col{flex:0 0 150px;scroll-snap-align:start;display:flex;flex-direction:column;gap:7px}
+.brk-h{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gold);text-align:center;padding-bottom:2px}
+.brk-side{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--dim-2);margin-top:3px}
+.brk-g{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel)}
+.brk-g.live{border-color:rgba(184,134,11,.6);box-shadow:0 0 0 2px rgba(184,134,11,.2)}
+.brk-t{position:relative;display:flex;align-items:center;gap:6px;padding:6px 7px 6px 10px;
+  font-family:var(--fn);font-size:11.5px;color:var(--dim);min-height:28px}
+.brk-t+.brk-t{border-top:1px solid var(--line)}
+/* The club in its own colors, the way the reels and the old round cards wore them. */
+.brk-t::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--c1,transparent)}
+.brk-t .sd{flex:0 0 13px;text-align:center;font-size:9.5px;font-weight:800;color:var(--dim-2)}
+.brk-t .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-weight:800;letter-spacing:.02em}
+.brk-t .yr{font-size:9.5px;color:var(--dim-2);flex:0 0 auto}
+.brk-t .sc{font-size:10px;font-weight:800;color:var(--green);flex:0 0 auto}
+.brk-t.me .nm{color:var(--gold)}
+/* WINNERS ARE TINTED, NOT JUST BOLDED: weight alone is a poor signal at 11.5px in a
+   column you scan rather than read. Losers are dimmed rather than reddened, because
+   red is already doing a job on this screen. */
+.brk-t.won{color:var(--ink);background:rgba(46,125,50,.09)}
+.brk-t.won .nm{color:var(--green)}
+.brk-t.won.me .nm{color:var(--gold)}
+.brk-t.out{opacity:.4}
+.brk-t.tbd .nm{color:var(--dim-2);font-weight:600;font-style:italic}
+.brk-t.champ{background:linear-gradient(180deg,#f7efd8,#efe3c6)}
+.brk-t.champ .nm{color:var(--gold)}
+.brk-note{text-align:center;font-family:var(--fp);font-size:13px;color:var(--dim);
+  margin:6px 0 0;min-height:18px}
+@media (max-width:400px){.brk-col{flex:0 0 138px}}
+/* On a wide screen the whole bracket is on at once and there is nothing to scroll,
+   so the phone's 150px columns were just small. Same breakpoint the rest of the
+   game changes shape at. */
+/* THE PAGE IS A 600px COLUMN and four columns want more than that, so on a wide
+   screen this one block steps outside it. Without the breakout the rail is capped at
+   the column width and scrolls on a 1440px display with 800px going spare, which is
+   the one thing a bracket should never make you do. Everything else on the page stays
+   in the column: only the bracket is wider than the game. */
+@media (min-width:820px){
+  .brk-wrap{width:100vw;margin-left:calc(50% - 50vw)}
+  .brk{gap:14px;padding:6px 4px 16px;max-width:min(100%,calc(100vw - 28px))}
+  .brk-col{flex:0 0 clamp(150px,calc((100vw - 90px) / 4),210px);gap:9px}
+  .brk-h{font-size:11.5px;letter-spacing:.12em;padding-bottom:4px}
+  .brk-side{font-size:10px;margin-top:5px}
+  .brk-g{border-radius:11px}
+  .brk-t{gap:8px;padding:9px 11px 9px 13px;font-size:13.5px;min-height:36px}
+  .brk-t .sd{flex:0 0 16px;font-size:10.5px}
+  .brk-t .yr,.brk-t .sc{font-size:11px}
+  .brk-note{font-size:14px;margin-top:10px}
+}
+
+/* ─── the series card ─── */
+.sr-card{position:relative;margin:14px 0;padding:20px 18px 18px;border-radius:16px;overflow:hidden;
+  background:var(--grad-panel);border:1px solid var(--line);box-shadow:var(--shadow)}
+.sr-card::before{content:'';position:absolute;left:0;right:0;top:0;height:6px;
+  background:linear-gradient(90deg,var(--c1,#8a7e6e),var(--c2,#6b6252))}
+/* Stacked, not columned: two clubs sharing a row at phone width means both names
+   wrap and neither reads. */
+.sr-side{margin-top:2px}
+.sr-side .nm{font-family:var(--fd);font-size:29px;line-height:1.04;letter-spacing:.01em}
+.sr-side .sub{font-family:var(--fn);font-size:11px;font-weight:800;color:var(--dim-2);
+  text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
+/* A rule with VS sitting in the break, rather than a column that makes both
+   clubs fight for half the width and lose. */
+.sr-mid{display:flex;align-items:center;gap:10px;margin:9px 0 5px;
+  font-family:var(--fd);font-size:14px;color:var(--dim-2)}
+.sr-mid::before,.sr-mid::after{content:'';flex:1;height:1px;background:var(--line-2)}
+.sr-meta{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.sr-chip{font-family:var(--fn);font-size:11px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.06em;padding:5px 9px;border-radius:99px;background:rgba(0,0,0,.06);color:var(--dim)}
+.sr-chip.home{background:rgba(46,125,50,.14);color:var(--green)}
+/* The road ahead, so a series card says where it sits in October rather than
+   leaving the player to count. */
+.sr-path{display:flex;align-items:center;gap:6px;margin:16px 0 2px;flex-wrap:wrap}
+.sr-step{font-family:var(--fn);font-size:10px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--dim-2);padding:5px 9px;border-radius:99px;
+  border:1px solid var(--line)}
+.sr-step.done{color:var(--green);border-color:rgba(46,125,50,.35);background:rgba(46,125,50,.1)}
+.sr-step.now{color:var(--cream);background:var(--ink);border-color:var(--ink)}
+.sr-arrow{color:var(--dim-2);font-size:11px}
+.sr-actions{display:flex;gap:8px;margin:4px 0 10px}
+.sr-actions .btn{flex:1}
+.sr-all{display:block;width:100%;background:none;border:0;cursor:pointer;padding:8px;
+  font-family:var(--fn);font-size:12px;font-weight:700;color:var(--dim-2);
+  text-transform:uppercase;letter-spacing:.08em;text-decoration:underline;text-underline-offset:3px}
+.sr-all:hover{color:var(--ink)}
+
+/* ─── one game, at bat by at bat ─── */
+.gm-top{display:flex;align-items:center;gap:10px;margin:10px 0 8px}
+.gm-where{flex:1;min-width:0;font-family:var(--fn);font-size:10.5px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--gold)}
+.gm-where b{display:block;font-family:var(--fp);font-size:13px;color:var(--dim);
+  text-transform:none;letter-spacing:0;font-weight:700;margin-top:2px}
+.gm-speeds{display:flex;gap:6px;flex:0 0 auto}
+.gm-sp{min-width:36px;height:30px;padding:0 8px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--line-2);background:var(--panel);color:var(--dim);
+  font-family:var(--fn);font-size:12px;font-weight:800}
+.gm-sp:hover{color:var(--ink);border-color:var(--dim-2)}
+.gm-sp.on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.gm-wide{min-width:auto}
+
+.gm-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}
+.gm-line{border-collapse:collapse;width:100%;font-family:var(--fn);font-size:12px;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.gm-line th,.gm-line td{padding:5px 0;text-align:center;min-width:19px}
+.gm-line th{font-size:9px;font-weight:800;color:var(--dim-2);letter-spacing:.04em;
+  border-bottom:1px solid var(--line)}
+.gm-line td{font-weight:700;color:var(--dim)}
+.gm-line .tm{text-align:left;padding-left:10px;min-width:74px;max-width:110px;
+  font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-line .rhe{font-weight:800;color:var(--ink);background:rgba(0,0,0,.05)}
+.gm-line .now{background:rgba(184,134,11,.18);color:var(--ink);font-weight:800}
+.gm-line tr.you .tm{color:var(--green)}
+.gm-line td.fresh{animation:gmpop .45s ease both}
+@keyframes gmpop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.25)}100%{transform:scale(1);opacity:1}}
+
+.gm-field{display:flex;align-items:center;gap:14px;margin:12px 0 10px;padding:12px 14px;
+  border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.gm-diamond{position:relative;flex:0 0 auto;width:104px;height:104px}
+/* Inset so the frame's corners land ON the bases rather than outside them. */
+.gm-frame{position:absolute;inset:21px;border:1px dashed rgba(0,0,0,.16);
+  transform:rotate(45deg);border-radius:3px}
+.gm-base{position:absolute;width:19px;height:19px;transform:rotate(45deg);border-radius:3px;
+  background:rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.14);transition:background .25s,transform .25s}
+.gm-base.on{background:var(--gold);border-color:#8b6914;box-shadow:0 0 0 4px rgba(184,134,11,.18)}
+.gm-base.b1{right:4px;top:42px} .gm-base.b2{left:42px;top:4px} .gm-base.b3{left:4px;top:42px}
+.gm-home{position:absolute;left:44px;bottom:2px;width:15px;height:15px;transform:rotate(45deg);
+  background:var(--cream);border:1px solid rgba(0,0,0,.28);border-radius:2px}
+/* A run crossing the plate is the only thing on this screen worth a flourish. */
+.gm-diamond.scored .gm-home{animation:gmplate .7s ease both}
+@keyframes gmplate{
+  0%{background:var(--cream);box-shadow:none}
+  30%{background:var(--gold);box-shadow:0 0 0 5px rgba(184,134,11,.25);transform:rotate(45deg) scale(1.15)}
+  100%{background:var(--cream);box-shadow:none;transform:rotate(45deg) scale(1)}}
+.gm-state{flex:1;min-width:0}
+.gm-outs{display:flex;align-items:center;gap:5px;font-family:var(--fn);font-size:10px;
+  font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--dim-2)}
+.gm-dot{width:9px;height:9px;border-radius:50%;background:rgba(0,0,0,.12)}
+.gm-dot.on{background:var(--red)}
+.gm-inn{margin-left:6px;color:var(--gold)}
+.gm-up{font-family:var(--fd);font-size:24px;line-height:1.1;margin-top:7px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-up .spot{font-family:var(--fn);font-size:10px;font-weight:800;color:var(--dim-2);
+  letter-spacing:.08em;display:block;text-transform:uppercase}
+.gm-arm{font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim);margin-top:4px}
+
+/* Fixed height so the page never jumps as plays arrive, and faded at the foot so
+   the half-drawn card at the bottom reads as older news rather than a clipping bug. */
+.gm-feed{min-height:214px;max-height:214px;overflow:hidden;margin-bottom:10px;
+  -webkit-mask-image:linear-gradient(180deg,#000 76%,rgba(0,0,0,.12) 100%);
+  mask-image:linear-gradient(180deg,#000 76%,rgba(0,0,0,.12) 100%)}
+.gm-play{display:flex;gap:9px;align-items:baseline;padding:6px 10px;margin-bottom:5px;
+  border-radius:9px;background:var(--panel);border:1px solid var(--line);
+  font-family:var(--fp);font-size:13px}
+/* The feed is redrawn whole on every play, so only the newest card animates in.
+   On the whole list it would flash all six every time. */
+.gm-feed>.gm-play:first-child{animation:gmin .3s ease both}
+@keyframes gmin{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
+.gm-play .tag{flex:0 0 auto;font-family:var(--fn);font-size:9px;font-weight:800;
+  letter-spacing:.06em;padding:2px 5px;border-radius:5px;background:rgba(0,0,0,.07);
+  color:var(--dim-2);text-transform:uppercase}
+.gm-play.hit{border-color:rgba(46,125,50,.3)}
+.gm-play.hit .tag{background:rgba(46,125,50,.16);color:var(--green)}
+.gm-play.run{background:linear-gradient(180deg,#f7efd8,#efe3c6);border-color:rgba(184,134,11,.45)}
+.gm-play.run .tag{background:var(--grad-gold);color:#fff}
+.gm-play .rbi{color:var(--gold);font-weight:700}
+.gm-play.beat{justify-content:center;background:none;border:0;color:var(--dim-2);
+  font-family:var(--fn);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
+
+.gm-final{margin:6px 0 10px;padding:16px;border-radius:14px;text-align:center;
+  background:var(--grad-panel);border:1px solid var(--line-2);box-shadow:var(--shadow);
   animation:optin .3s ease both}
-.po-round.won{border-color:rgba(46,125,50,.4)}
-.po-round.lost{border-color:rgba(192,57,43,.4)}
-.po-round.champ{border-color:rgba(184,134,11,.55);background:linear-gradient(180deg,#f7efd8,#efe3c6)}
-.po-round .round-name{font-family:var(--fn);font-size:11px;font-weight:800;text-transform:uppercase;
-  letter-spacing:.1em;color:var(--gold);margin-bottom:3px}
-.po-round .po-opp{font-family:var(--fp);font-size:13px;font-weight:700;color:var(--dim);margin-bottom:8px}
-.po-round .po-opp b{color:var(--ink)}
-.po-series{font-family:'Righteous',var(--fd);font-size:20px;text-transform:uppercase;letter-spacing:.02em;margin:2px 0 10px}
-.po-series.won{color:var(--green)} .po-series.lost{color:var(--red)} .po-series.champ{color:var(--gold)}
-.po-games{display:flex;gap:6px;flex-wrap:wrap}
-.po-g{padding:5px 9px;border-radius:7px;display:flex;align-items:center;justify-content:center;
-  font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.02em}
-.po-g.w{background:rgba(46,125,50,.15);color:var(--green);border:1px solid rgba(46,125,50,.3)}
-.po-g.l{background:rgba(192,57,43,.12);color:var(--red);border:1px solid rgba(192,57,43,.25)}
+.gm-final .fl{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim-2)}
+.gm-final .fs{font-family:var(--fd);font-size:44px;line-height:1.05;margin:2px 0}
+.gm-final.w .fs{color:var(--green)} .gm-final.l .fs{color:var(--red)}
+.gm-final .fn{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--dim)}
+
+@media (max-width:380px){
+  .gm-line th,.gm-line td{min-width:16px;font-size:11px}
+  .gm-line .tm{min-width:62px;font-size:11px}
+  .gm-diamond{width:88px;height:88px}
+  .gm-base{width:16px;height:16px} .gm-base.b1{top:36px} .gm-base.b2{left:36px} .gm-base.b3{top:36px}
+  .gm-home{left:37px}
+  .gm-up{font-size:21px}
+}
 
 /* ─── result screen ─── */
 .result-card{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:14px;
@@ -374,13 +597,85 @@ h1,h2,h3{margin:0}
 .roster-final{display:flex;flex-direction:column;gap:4px;margin:12px 0}
 .rslot{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid rgba(0,0,0,.08);
   border-radius:8px;padding:8px 12px;min-height:40px}
-.rslot .rpos{font-family:var(--fn);font-size:10px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.06em;width:28px;text-align:center;color:var(--dim-2)}
+/* posPaint() paints a dark gradient behind this chip, so it needs white ink and
+   real padding. It read as a blank colored block while it inherited --dim-2. */
+.rslot .rpos{flex:0 0 auto;font-family:var(--fn);font-size:10px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.04em;min-width:32px;padding:4px 5px;
+  border-radius:6px;text-align:center;color:#fff;
+  text-shadow:0 1px 1px rgba(0,0,0,.35)}
 .rslot .rname{font-family:var(--fp);font-size:15px;font-weight:700;flex:1}
 .rslot .rteam{font-family:var(--fn);font-size:10px;color:var(--dim);font-weight:600}
 .rslot .rprice{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--green)}
 .rslot .rwar{font-family:var(--fn);font-size:12px;font-weight:800;color:var(--ink);width:38px;text-align:right}
 .rslot .rlink{font-size:9px;color:var(--gold);font-weight:700}
+
+/* ─── field beside lineup card, on a screen with room for it ───
+   The page is a 640px column, which is right for a phone and leaves a desktop
+   showing a diamond with half the window empty beside it. Above 900px the field
+   row alone steps outside that column and splits in two: the diamond on the left,
+   a lineup card on the right carrying all twelve including the pitching staff.
+   Nothing else on the page moves, and below 900px this rule does not exist. */
+.fieldrow .lineupcard{display:none}
+@media (min-width:900px){
+  .fieldrow{display:flex;gap:18px;align-items:flex-start;
+    width:min(1020px,calc(100vw - 40px));
+    margin-left:calc((100% - min(1020px,100vw - 40px)) / 2)}
+  .fieldrow .field{flex:1 1 auto;min-width:0;margin:0}
+  .fieldrow .lineupcard{display:block;flex:0 0 322px}
+  /* The card carries the staff, so the strip under the field would say it twice. */
+  .fieldrow+.staffline{display:none}
+  /* The squad screen already has the richer thing: its own twelve with prices and
+     chemistry. That list IS the right column there, so it gets no second card. */
+  .fieldrow.sq>div:last-child{flex:0 0 342px;min-width:0}
+  .fieldrow.sq .eyebrow{margin-top:0!important}
+  .fieldrow.sq .rslot{padding:7px 10px;min-height:36px;gap:8px}
+  .fieldrow.sq .rslot .rname{font-size:14px;min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+}
+.lineupcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:12px 12px 10px;box-shadow:0 2px 8px -4px rgba(0,0,0,.12)}
+.lc-head{display:flex;align-items:baseline;justify-content:space-between;
+  font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.lc-head span{color:var(--dim-2);letter-spacing:.06em}
+.lc-row{display:flex;align-items:center;gap:8px;padding:5px 2px;min-height:30px;
+  border-bottom:1px solid rgba(0,0,0,.05)}
+.lc-row:last-child{border-bottom:0}
+.lc-row.open{opacity:.5}
+/* The staff is the half the diamond cannot show, so it gets a line above it. */
+.lc-row.arm1{border-top:1px solid var(--line-2);margin-top:5px;padding-top:9px}
+.lc-pos{flex:0 0 34px;text-align:center;font-family:var(--fn);font-size:9.5px;
+  font-weight:800;letter-spacing:.03em;padding:3px 4px;border-radius:5px;color:#fff;
+  text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.lc-row.open .lc-pos{background:rgba(0,0,0,.1)!important;color:var(--dim-2);text-shadow:none}
+.lc-nm{flex:1;min-width:0;font-family:var(--fp);font-size:13.5px;font-weight:700;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lc-row.open .lc-nm{font-style:italic;font-weight:600;color:var(--dim-2)}
+.lc-yr{font-family:var(--fn);font-size:9.5px;font-weight:700;color:var(--dim);flex:0 0 auto}
+.lc-war{font-family:var(--fn);font-size:12px;flex:0 0 32px;text-align:right}
+
+/* ─── the staff strip ───
+   Three arms share one mound on the diamond, so before this only one of them
+   was ever on screen and signing a starter looked like it had done nothing.
+   They get their own row: they are not fielders, and a bullpen is how a real
+   broadcast shows them anyway. */
+.staffline{display:flex;gap:7px;margin:8px 0 2px}
+.sl-arm{flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:7px 9px;
+  border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.sl-arm.filled{border-color:rgba(0,0,0,.16)}
+.sl-pos{flex:0 0 auto;font-family:var(--fn);font-size:9.5px;font-weight:800;
+  letter-spacing:.04em;padding:3px 5px;border-radius:5px;color:#fff;
+  text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.sl-nm{font-family:var(--fp);font-size:13px;font-weight:700;flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sl-nm.open{color:var(--dim-2);font-weight:600;font-style:italic}
+.sl-yr{font-family:var(--fn);font-size:9.5px;color:var(--dim);font-weight:700;flex:0 0 auto}
+@media (max-width:400px){
+  .staffline{gap:5px}
+  .sl-arm{padding:6px 7px;gap:5px}
+  .sl-nm{font-size:12px}
+  .sl-yr{display:none}
+}
 
 /* ─── results v2 ─── */
 .ro-hero{position:relative;text-align:center;margin:14px 0 12px;padding:22px 18px 20px;
@@ -436,6 +731,28 @@ h1,h2,h3{margin:0}
 .ro-chemlink{font-family:var(--fn);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;
   background:rgba(46,125,50,.12);color:var(--green);border:1px solid rgba(46,125,50,.22)}
 .ro-chemlink.fam{background:rgba(184,134,11,.14);color:var(--gold);border-color:rgba(184,134,11,.3)}
+/* the per-player chemistry badge, colored by that player's strongest bond */
+.chembadge{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto;
+  padding:2px 7px;border-radius:99px;background:var(--cc);color:#fff;
+  font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.01em;
+  line-height:1.35;white-space:nowrap;box-shadow:0 1px 3px -1px rgba(0,0,0,.4)}
+.chembadge.sm{font-size:9px;padding:1px 6px}
+/* the legend, shared by the how-to and the draft's chemistry sheet */
+.chemkey{display:flex;flex-direction:column;gap:7px;margin:10px 0}
+.chemkey-row{display:flex;align-items:center;gap:9px}
+.chemkey-row .ck-val{flex:0 0 auto;min-width:34px;text-align:center;padding:3px 8px;
+  border-radius:99px;background:var(--cc);color:#fff;font-family:var(--fn);
+  font-size:11px;font-weight:800;box-shadow:0 1px 3px -1px rgba(0,0,0,.4)}
+.chemkey-row .ck-body{min-width:0;display:block}
+.chemkey-row .ck-name{display:block;font-family:var(--fn);font-size:13px;font-weight:800;color:var(--ink);line-height:1.2}
+.chemkey-row .ck-note{display:block;font-size:11px;color:var(--dim-2);line-height:1.3}
+.chemcap{font-size:12px;color:var(--dim);line-height:1.5;margin-top:10px;
+  padding-top:10px;border-top:1px solid rgba(0,0,0,.10)}
+/* chemistry stated in wins, on the results screen */
+.chemworth{display:flex;align-items:baseline;justify-content:center;gap:7px;
+  margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.10)}
+.chemworth b{font-family:'Righteous',var(--fd);font-size:22px;color:var(--green);line-height:1}
+.chemworth span{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--dim)}
 
 /* ─── new badges panel (results) ─── */
 .newbadges{background:var(--panel);border:1px solid rgba(184,134,11,.35);border-radius:14px;
@@ -518,6 +835,291 @@ h1,h2,h3{margin:0}
   color:var(--ink);transition:border-color .15s}
 .era-btn:hover{border-color:var(--gold)}
 
+/* ─── franchise picker ─── */
+.fran-sec{display:flex;align-items:center;gap:9px;margin:20px 0 9px;
+  font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim-2)}
+.fran-sec::after{content:'';flex:1;height:1px;background:rgba(0,0,0,.12)}
+.fran-sec .n{font-weight:700;color:var(--dim-2);opacity:.7;letter-spacing:.04em}
+.fran-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:8px}
+.fran-card{position:relative;display:block;width:100%;text-align:left;cursor:pointer;
+  background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:10px;
+  padding:10px 11px 10px 17px;overflow:hidden;font-family:var(--fn);
+  transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
+/* the club's own colors, as a spine down the left edge */
+.fran-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:7px;
+  background:linear-gradient(160deg,var(--c1) 0%,var(--c1) 52%,var(--c2) 52%,var(--c2) 100%);
+  transition:width .14s ease}
+.fran-card:hover,.fran-card:focus-visible{transform:translateY(-2px);border-color:rgba(0,0,0,.2);
+  box-shadow:0 5px 14px rgba(60,40,15,.16);outline:none}
+.fran-card:hover::before,.fran-card:focus-visible::before{width:10px}
+.fran-card:active{transform:translateY(0)}
+.fran-name{font-size:13px;font-weight:800;line-height:1.24;color:var(--ink)}
+.fran-yrs{margin-top:3px;font-size:10.5px;font-weight:700;color:var(--dim-2);
+  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fran-best{margin-top:5px;font-size:10.5px;font-weight:600;color:var(--dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fran-depth{display:flex;gap:3px;margin-top:7px}
+.fran-depth i{flex:1;height:3px;border-radius:2px;background:rgba(0,0,0,.11)}
+.fran-depth i.on{background:var(--c1)}
+@media (prefers-reduced-motion:reduce){
+  .fran-card,.fran-card::before{transition:none}
+  .fran-card:hover,.fran-card:focus-visible{transform:none}
+}
+
+/* ─── the staff board ───
+   Replaces the diamond in All-Time Staff. Same element, so it inherits the field's
+   size and rounding, but none of its grass. */
+.field.staffboard{background:var(--panel);border-color:var(--line-2);aspect-ratio:auto;
+  padding:10px 11px;display:flex;flex-direction:column;gap:8px;box-shadow:none}
+.sb-group{display:flex;flex-direction:column;gap:5px}
+.sb-lab{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim-2)}
+.sb-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(60px,1fr));gap:6px}
+.sb-card{position:relative;border-radius:9px;padding:6px 6px 7px;min-height:58px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  text-align:center;overflow:hidden}
+.sb-card.empty{border:1.5px dashed rgba(0,0,0,.20);background:rgba(0,0,0,.02)}
+.sb-card.empty .sb-slot{color:var(--dim-2)}
+.sb-card.now{border-color:var(--gold);border-style:solid;
+  box-shadow:0 0 0 3px rgba(184,134,11,.16)}
+.sb-card.filled{color:#fff;box-shadow:0 2px 6px -2px rgba(0,0,0,.4)}
+.sb-slot{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.06em;
+  opacity:.85}
+.sb-name{font-family:var(--fp);font-size:11.5px;font-weight:700;line-height:1.15;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  text-shadow:0 1px 3px rgba(0,0,0,.45)}
+.sb-meta{font-family:var(--fn);font-size:8.5px;font-weight:700;opacity:.85}
+.sb-war{font-family:var(--fn);font-size:12px;font-weight:800;line-height:1}
+.sb-chem{position:absolute;top:2px;right:2px;padding:1px 4px;border-radius:99px;
+  font-family:var(--fn);font-size:8px;font-weight:800;color:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.sb-foot{margin-top:2px;text-align:center;font-family:var(--fn);font-size:11px;
+  font-weight:700;color:var(--dim)}
+.sb-foot b{color:var(--ink);font-size:13px}
+
+/* ─── salary cap survivor ─── */
+.captrack{margin:10px 0 2px;padding:10px 12px;border-radius:12px;background:var(--panel);
+  border:1px solid var(--line-2)}
+.captrack.danger{border-color:rgba(192,57,43,.5);background:rgba(192,57,43,.06)}
+.ct-hd{display:flex;align-items:baseline;gap:8px}
+.ct-l{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim-2)}
+.ct-v{font-family:var(--fn);font-size:15px;font-weight:800;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.captrack.danger .ct-v{color:var(--red)}
+.ct-shocks{margin-left:auto;display:flex;gap:4px}
+.ct-shocks i{width:7px;height:7px;border-radius:50%;background:rgba(0,0,0,.14)}
+.ct-shocks i.hit{background:var(--red)}
+.ct-bar{height:6px;border-radius:99px;background:rgba(0,0,0,.09);overflow:hidden;margin-top:7px}
+.ct-bar i{display:block;height:100%;border-radius:99px;background:var(--grad-green);
+  transition:width .5s cubic-bezier(.33,1,.68,1)}
+.captrack.danger .ct-bar i{background:var(--grad-red)}
+/* the cut sheet */
+.shock-hd{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.shock-hd .amt{font-family:'Righteous',var(--fd);font-size:30px;color:var(--red);line-height:1}
+.cutlist{display:grid;gap:7px;margin:12px 0 4px;max-height:46vh;overflow-y:auto}
+.cutrow{display:flex;align-items:center;gap:9px;width:100%;text-align:left;cursor:pointer;
+  padding:9px 11px;border-radius:10px;border:1px solid var(--line-2);background:var(--panel);
+  font-family:inherit;transition:border-color .12s ease,transform .1s ease}
+.cutrow:hover{border-color:var(--red);transform:translateX(2px)}
+.cutrow:disabled{opacity:.42;cursor:default;transform:none}
+.cutrow .cpos{flex:0 0 auto;min-width:32px;padding:3px 5px;border-radius:6px;text-align:center;
+  font-family:var(--fn);font-size:9px;font-weight:800;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.cutrow .cname{flex:1;min-width:0;font-family:var(--fp);font-size:14px;font-weight:700;
+  color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cutrow .cwar{font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim-2)}
+.cutrow .cprice{font-family:var(--fn);font-size:13px;font-weight:800;color:var(--green);
+  font-variant-numeric:tabular-nums}
+.cutrow.enough .cprice{color:var(--red)}
+
+/* ─── the daily ─── */
+.dailycard{display:block;width:100%;text-align:left;font-family:inherit;cursor:pointer;
+  margin:0 0 10px;padding:12px 14px;border-radius:14px;border:1.5px solid rgba(184,134,11,.45);
+  background:linear-gradient(135deg,rgba(184,134,11,.10),rgba(184,134,11,.02));
+  -webkit-tap-highlight-color:transparent;transition:transform .1s ease,box-shadow .15s ease}
+.dailycard:hover{box-shadow:0 8px 20px -12px rgba(140,100,10,.6)}
+.dailycard:active{transform:scale(.99)}
+.dailycard.played{border-color:var(--line-2);background:var(--panel)}
+.dc-hd{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.dc-eye{font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--gold)}
+.dailycard.played .dc-eye{color:var(--dim-2)}
+.dc-no{font-family:var(--fn);font-size:10.5px;font-weight:800;color:var(--dim-2)}
+.dc-streak{margin-left:auto;font-family:var(--fn);font-size:11px;font-weight:800;
+  color:var(--orange);background:rgba(212,119,44,.12);padding:2px 8px;border-radius:99px}
+.dc-sub{font-size:12.5px;line-height:1.35;color:var(--dim)}
+.dc-done{display:flex;align-items:baseline;gap:9px}
+.dc-done b{font-family:'Righteous',var(--fd);font-size:20px;color:var(--ink)}
+.dc-grid{font-size:12px;letter-spacing:1px}
+.dd-rec{font-family:'Righteous',var(--fd);font-size:46px;text-align:center;color:var(--ink);line-height:1}
+.dd-rec span{color:var(--dim-2);margin:0 4px}
+.dd-verdict{text-align:center;font-family:var(--fn);font-size:13px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin-top:5px}
+.dd-grid{text-align:center;font-size:22px;letter-spacing:3px;margin-top:12px}
+
+/* ─── the board ─── */
+.ro-place{margin-top:7px;font-family:var(--fn);font-size:12.5px;font-weight:700;
+  color:var(--ink)}
+.ro-place b{font-family:'Righteous',var(--fd);font-size:17px;color:var(--gold)}
+.ro-place.dim{color:var(--dim-2);font-weight:600}
+.bd-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;
+  -webkit-overflow-scrolling:touch}
+.bd-tab{flex:0 0 auto;font-family:var(--fn);font-size:11.5px;font-weight:800;
+  letter-spacing:.03em;padding:7px 12px;border-radius:99px;cursor:pointer;
+  border:1px solid var(--line-2);background:transparent;color:var(--dim);white-space:nowrap}
+.bd-tab.on{background:var(--grad-gold);color:#fff;border-color:transparent}
+.bd-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;
+  background:var(--panel);border:1px solid var(--line);margin-bottom:6px}
+.bd-row.me{border-color:var(--gold);background:rgba(184,134,11,.07)}
+.bd-pos{flex:0 0 auto;min-width:26px;font-family:'Righteous',var(--fd);font-size:15px;
+  color:var(--dim-2);text-align:right}
+.bd-row:nth-child(1) .bd-pos,.bd-row:nth-child(2) .bd-pos,.bd-row:nth-child(3) .bd-pos{color:var(--gold)}
+.bd-who{flex:1;min-width:0}
+.bd-name{font-family:var(--fn);font-size:13.5px;font-weight:800;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bd-meta{font-family:var(--fn);font-size:10.5px;font-weight:700;color:var(--dim-2);margin-top:1px}
+.bd-rec{flex:0 0 auto;text-align:right}
+.bd-rec b{font-family:'Righteous',var(--fd);font-size:17px;color:var(--ink)}
+.bd-rec span{display:block;font-family:var(--fn);font-size:9.5px;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2)}
+.bd-empty{text-align:center;padding:30px 14px;color:var(--dim);font-size:13.5px;line-height:1.55}
+
+/* ─── the trade machine ─── */
+.offer{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;
+  padding:10px 12px;border-radius:11px;border:1px solid var(--line-2);
+  background:var(--panel);transition:border-color .12s ease,transform .1s ease}
+.offer:hover{border-color:var(--orange);transform:translateX(2px)}
+.offer:disabled{opacity:.45;cursor:default;transform:none}
+.of-hd{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.of-slot{flex:0 0 auto;min-width:32px;padding:3px 5px;border-radius:6px;text-align:center;
+  font-family:var(--fn);font-size:9px;font-weight:800;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.of-cost{margin-left:auto;font-family:var(--fn);font-size:12px;font-weight:800;color:var(--red)}
+.of-cost.free{color:var(--green)}
+.of-swap{display:flex;align-items:center;gap:8px}
+.of-side{flex:1;min-width:0}
+.of-side .nm{display:block;font-family:var(--fp);font-size:13px;font-weight:700;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.of-side .mt{display:block;font-family:var(--fn);font-size:10px;font-weight:700;color:var(--dim-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.of-side.out .nm{color:var(--dim)}
+.of-arrow{flex:0 0 auto;font-family:var(--fn);font-size:15px;font-weight:800;color:var(--orange)}
+.of-gain{font-family:var(--fn);font-size:11px;font-weight:800;color:var(--green)}
+
+/* ─── app header ───
+   The game had no header at all, so the page began with a spinning reel and there
+   was nothing on screen saying what this is or how to get back to it. Same shape as
+   the football and college games: mark, wordmark, the site pill, one round button. */
+header{position:sticky;top:0;z-index:60;display:flex;align-items:center;
+  padding:7px 0;margin:-4px 0 10px}
+header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-index:-1;
+  box-shadow:0 1px 0 var(--line)}
+.lockup{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit;
+  flex:0 1 auto;min-width:0;border-radius:10px}
+.lockup .mark{flex:0 0 auto;width:28px;height:28px;border-radius:7px;display:block}
+.brand{flex:0 1 auto;min-width:0;font-family:var(--fd);font-size:clamp(13px,4vw,18px);
+  letter-spacing:.03em;text-transform:uppercase;line-height:1.02;color:var(--ink)}
+.brand em{font-style:normal;color:var(--leather)}
+.hdr-r{margin-left:auto;display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.pill.site{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.04em;
+  text-transform:uppercase;text-decoration:none;color:var(--dim);padding:6px 11px;
+  border:1px solid var(--line-2);border-radius:99px;white-space:nowrap}
+.pill.site i{font-style:normal;color:var(--gold)}
+.pill.site:hover{border-color:var(--gold);color:var(--ink)}
+.hdr-btn{width:34px;height:34px;flex:0 0 auto;display:grid;place-items:center;
+  border:1px solid var(--line-2);border-radius:50%;background:transparent;cursor:pointer;
+  color:var(--dim);padding:0}
+.hdr-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.hdr-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ─── mode cards ───
+   One sheet instead of a column of look-alike buttons on the home screen. Same
+   anatomy the sibling games use: icon tile, title, chevron, a sentence saying what
+   the mode actually asks of you. */
+.modecards{display:grid;gap:12px;margin-top:6px}
+.modecard{display:block;width:100%;text-align:left;font-family:inherit;
+  padding:15px 16px;border-radius:14px;border:1.5px solid var(--line-2);
+  background:var(--grad-panel);cursor:pointer;-webkit-appearance:none;appearance:none;
+  -webkit-tap-highlight-color:transparent;text-decoration:none;
+  transition:transform .1s ease,box-shadow .15s ease,border-color .15s ease}
+.modecard:not(:disabled):hover{box-shadow:0 10px 24px -14px rgba(60,40,15,.5)}
+.modecard:not(:disabled):active{transform:scale(.985)}
+.modecard:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.modecard p{font-size:12.5px;line-height:1.45;color:var(--dim);margin:0}
+.modecard .mc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.modecard .mc-icon{width:32px;height:32px;border-radius:8px;display:flex;flex:0 0 auto;
+  align-items:center;justify-content:center;background:var(--grad-gold)}
+.modecard .mc-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.modecard .mc-icon-img{background:none;overflow:hidden}
+.modecard .mc-icon-img img{width:100%;height:100%;display:block;border-radius:8px}
+.modecard .mc-title{font-family:var(--fn);font-size:16px;font-weight:800;letter-spacing:.01em;
+  text-transform:uppercase;color:var(--ink);line-height:1.15}
+.modecard .mc-arrow{margin-left:auto;width:19px;height:19px;flex:0 0 auto;fill:none;
+  stroke:var(--dim-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.modecard:not(:disabled):hover .mc-arrow{stroke:var(--ink)}
+.modecard .mc-sticker{float:right;margin:-2px 0 0 8px;font-family:var(--fn);font-size:9px;
+  font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#fff;
+  background:var(--grad-gold);padding:3px 8px;border-radius:99px}
+/* each mode wears its own color, so the sheet reads as a set rather than a list */
+.modecard.mc-era{border-color:rgba(26,82,118,.34)}
+.modecard.mc-era .mc-icon{background:var(--grad-blue)} .modecard.mc-era .mc-title{color:var(--blue)}
+.modecard.mc-club{border-color:rgba(46,125,50,.34)}
+.modecard.mc-club .mc-icon{background:var(--grad-green)} .modecard.mc-club .mc-title{color:var(--green)}
+.modecard.mc-div{border-color:rgba(184,134,11,.36)}
+.modecard.mc-div .mc-icon{background:var(--grad-gold)} .modecard.mc-div .mc-title{color:var(--gold)}
+.modecard.mc-cap{border-color:rgba(192,57,43,.34)}
+.modecard.mc-cap .mc-icon{background:var(--grad-red)} .modecard.mc-cap .mc-title{color:var(--red)}
+.modecard.mc-staff{border-color:rgba(106,76,147,.34)}
+.modecard.mc-staff .mc-icon{background:linear-gradient(135deg,#6a4c93,#432d63)}
+.modecard.mc-staff .mc-title{color:var(--purple)}
+.modecard.mc-trade{border-color:rgba(212,119,44,.36)}
+.modecard.mc-trade .mc-icon{background:linear-gradient(135deg,#d4772c,#9c5214)}
+.modecard.mc-trade .mc-title{color:var(--orange)}
+/* A mode that exists on the sheet but is not open yet. Dimmed, not tappable, and the
+   description stays fully legible: the card is the advertisement for coming back. */
+.modecard.mc-soon{cursor:default;border-style:dashed;background:rgba(0,0,0,.015)}
+.modecard.mc-soon .mc-icon{filter:grayscale(1);opacity:.55}
+.modecard.mc-soon .mc-title{color:var(--dim-2)}
+.mc-sticker.soon{background:none;color:var(--dim-2);border:1px solid var(--line-2)}
+.div-clubs{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.div-clubs .dc{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.03em;
+  color:var(--dci,#fff);background:var(--dc);padding:2px 7px;border-radius:99px;
+  box-shadow:0 1px 3px -1px rgba(0,0,0,.4)}
+.xpromo{margin-top:18px;padding-top:14px;border-top:1px solid var(--line-2)}
+.xpromo .xp-h{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim-2);margin:0 0 10px}
+
+/* ─── first run ───
+   Numbered steps and the goal, once, before the first draft. The game used to open
+   straight onto a spinning reel with no statement of what you were trying to do. */
+.fr-steps{display:grid;gap:12px;margin:12px 0 14px}
+.fr-step{display:flex;gap:11px;align-items:flex-start}
+.fr-step .n{flex:0 0 auto;width:23px;height:23px;border-radius:50%;display:grid;
+  place-items:center;font-family:var(--fn);font-size:12px;font-weight:800;color:var(--gold);
+  border:1.5px solid rgba(184,134,11,.5)}
+.fr-step p{margin:1px 0 0;font-size:13.5px;line-height:1.45;color:var(--dim)}
+.fr-goal{border-left:3px solid var(--gold);background:rgba(184,134,11,.08);
+  border-radius:0 10px 10px 0;padding:12px 14px;margin:0 0 14px}
+.fr-goal p{margin:0;font-size:13.5px;line-height:1.5;color:var(--ink)}
+.fr-goal b{color:var(--gold)}
+
+/* ─── about, folded away ─── */
+.about{margin-top:22px;border-top:1px solid var(--line);padding-top:4px}
+.about summary{list-style:none;cursor:pointer;display:flex;align-items:center;
+  padding:12px 2px;font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--dim-2)}
+.about summary::-webkit-details-marker{display:none}
+.about summary::after{content:'';margin-left:auto;width:8px;height:8px;
+  border-right:2px solid var(--dim-2);border-bottom:2px solid var(--dim-2);
+  transform:rotate(45deg) translateY(-2px);transition:transform .18s ease}
+.about[open] summary::after{transform:rotate(-135deg) translateY(-2px)}
+.about-body{font-size:13px;line-height:1.6;color:var(--dim);padding:0 2px 8px}
+.about-body h3{font-family:var(--fn);font-size:13px;font-weight:800;color:var(--ink);
+  margin:14px 0 4px;text-transform:none;letter-spacing:0}
+.about-body p{margin:0 0 8px}
+
 /* ─── footer ─── */
 .legal{margin-top:32px;padding:16px 0;border-top:1px solid rgba(0,0,0,.08);font-size:12px;color:var(--dim);text-align:center}
 .legal a{color:var(--dim-2)} .legal p{margin:6px 0} .legal span{margin:0 6px}
@@ -547,6 +1149,21 @@ h1,h2,h3{margin:0}
 <body>
 <div class="wrap">
 
+<header>
+  <a class="lockup" href="." aria-label="Run The Diamond, back to the start">
+    <img class="mark" src="icon-192.png?v=1" alt="" width="28" height="28" decoding="async">
+    <span class="brand">Run The <em>Diamond</em></span>
+  </a>
+  <div class="hdr-r">
+    <a class="pill site" href="/">RunThe<i>.GG</i></a>
+    <button class="hdr-btn" id="b-trophy-hd" aria-label="Trophy case" title="Trophy case">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/>
+        <path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/>
+        <path d="M12 14v3"/><path d="M8.5 20h7"/><path d="M10 17h4l.6 3h-5.2z"/></svg>
+    </button>
+  </div>
+</header>
+
 <div class="screen on" id="s-load">
   <div class="load"><div class="dots"><i></i><i></i><i></i></div>
     <div class="dim">Loading every season since 1901</div></div>
@@ -566,16 +1183,41 @@ h1,h2,h3{margin:0}
 
   <div class="htitle">
     <div class="kicker">1901 to 2025</div>
-    <h1>Run The Diamond</h1>
+    <h1>Run The <em>Diamond</em></h1>
     <p>Draft twelve MLB legends. Build your lineup. Win the World Series.</p>
   </div>
 
-  <button class="btn hp-start" id="b-start">&#9918; Start a run &#9918;</button>
-  <button class="btn ghost hp-secondary" id="b-era">Eras Mode</button>
+  <button class="dailycard" id="daily-card"></button>
+  <button class="btn hp-start" id="b-start">&#9918; Draft your team &#9918;</button>
+  <button class="btn ghost hp-secondary" id="b-modes">More ways to play</button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">How to play</button>
+    <button class="btn ghost hp-util-btn" id="b-board">Leaderboard</button>
     <button class="btn ghost hp-util-btn" id="b-trophy">Trophy case</button>
   </div>
+
+  <details class="about">
+    <summary>About Run The Diamond</summary>
+    <div class="about-body">
+      <p>Run The Diamond is a free daily-style draft game built on every MLB season from
+        1901 to 2025. Each spin lands on a real team-season and you take one player off
+        that roster, twelve times, filling a full lineup and pitching staff under a
+        $170M budget.</p>
+      <h3>Where the numbers come from</h3>
+      <p>Player value is Wins Above Replacement from Baseball-Reference. A player's price
+        is set by their WAR that season, so the great years cost what they were worth and
+        you cannot afford a star at every spot.</p>
+      <h3>How a season is decided</h3>
+      <p>Your roster's bats and arms set the runs you score and allow, chemistry between
+        real teammates lifts both, and 162 games are played against actual all-time clubs.
+        Win enough and you reach October, where the deepest rounds stiffen against weaker
+        teams.</p>
+      <h3>Is it the same game every day?</h3>
+      <p>No. Every run draws its own team-seasons, so the board in front of you is new
+        each time. The modes change the rules rather than the data.</p>
+    </div>
+  </details>
+
   <footer class="legal">
     <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
       href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
@@ -596,16 +1238,46 @@ h1,h2,h3{margin:0}
   <div style="margin-top:16px"><button class="btn ghost sm" id="b-era-back">Back</button></div>
 </div>
 
+<div class="screen" id="s-fran">
+  <div class="eyebrow">Franchise Mode</div>
+  <h2 class="display" style="font-size:27px;margin:5px 0 8px">Build a dynasty</h2>
+  <p class="dim" style="font-size:13px;margin:0 0 12px">Draft one club's all-time roster. The Yankees give you a century of stars, the Marlins give you thirty years, and you live with whichever you picked. Sharing a uniform is the price of entry here, so it earns you nothing: the chemistry you get is the chemistry you build.</p>
+  <div id="fran-sections"></div>
+  <div style="margin-top:16px"><button class="btn ghost sm" id="b-fran-back">Back</button></div>
+</div>
+
+<div class="screen" id="s-div">
+  <div class="eyebrow">Division Draft</div>
+  <h2 class="display" style="font-size:27px;margin:5px 0 8px">Win your division</h2>
+  <p class="dim" style="font-size:13px;margin:0 0 12px">Draft only from the clubs that were
+    really in one division, from 1994 on. The map moves with history, so Houston is in the
+    NL Central until 2013 and the AL West after it.</p>
+  <div id="div-cards"></div>
+  <div style="margin-top:16px"><button class="btn ghost sm" id="b-div-back">Back</button></div>
+</div>
+
+<div class="screen" id="s-board">
+  <div class="eyebrow">Leaderboard</div>
+  <h2 class="display" style="font-size:27px;margin:5px 0 10px">Who is on top</h2>
+  <div class="bd-tabs" id="bd-tabs"></div>
+  <div id="bd-list"></div>
+  <div style="margin-top:16px"><button class="btn ghost sm" id="b-board-back">Back</button></div>
+</div>
+
 <div class="screen" id="s-how">
   <h2 class="display" style="font-size:27px;margin:0 0 12px">How to play</h2>
   <div style="font-size:14px;line-height:1.6;color:var(--dim)">
     <p><b style="color:var(--ink)">Spin.</b> Each spin draws a random team-season from MLB history (1901-2025). Draft one player from that roster who fits an open spot.</p>
-    <p><b style="color:var(--ink)">Budget.</b> You have $170M for all twelve spots. Prices come from WAR, so you can't afford a star every spin — spend wisely and don't blow it early. Scarce spots like catcher and closer are worth grabbing when a good one appears.</p>
-    <p><b style="color:var(--ink)">Positions.</b> C, 1B, 2B, 3B, SS, LF, CF, RF, DH, two starters, and a closer. Many players fit several spots — you choose where to play them, so your DH slot is a flex.</p>
-    <p><b style="color:var(--ink)">Chemistry &amp; shape.</b> Same-team reunions, batterymates, double-play combos, and real families (Alous, Griffeys) lift your chemistry. A balanced roster with no weak links plays better than a pile of stars — your build earns an archetype.</p>
-    <p><b style="color:var(--ink)">Season.</b> You play 162 games against real all-time opponents — the '27 Yankees, the '19 Astros — with a marquee gauntlet mixed in.</p>
+    <p><b style="color:var(--ink)">Budget.</b> You have $170M for all twelve spots. Prices come from WAR, so you can't afford a star every spin. Spend wisely and don't blow it early. Scarce spots like catcher and closer are worth grabbing when a good one appears.</p>
+    <p><b style="color:var(--ink)">Positions.</b> C, 1B, 2B, 3B, SS, LF, CF, RF, DH, two starters, and a closer. Many players fit several spots, so you choose where to play them and your DH slot is a flex.</p>
+    <p><b style="color:var(--ink)">Chemistry.</b> Teammates who share a real bond play better together. Every bond pays <b>both</b> players, and a player wears the color of their strongest one:</p>
+    <div class="chemkey" id="how-chem-key"></div>
+    <p class="chemcap" id="how-chem-cap" style="border:0;padding-top:0"></p>
+    <p><b style="color:var(--ink)">Roster shape.</b> A balanced roster with no weak links plays better than a pile of stars, and your build earns an archetype.</p>
+    <p><b style="color:var(--ink)">Season.</b> You play 162 games against real all-time opponents (the '27 Yankees, the '19 Astros) with a marquee gauntlet mixed in.</p>
     <p><b style="color:var(--ink)">Playoffs &amp; ranking.</b> Reach October and chase the World Series; the deepest rounds stiffen against weaker teams. Every season earns a 0-100 team rating and a rank among all 2,594 teams in history.</p>
-    <p><b style="color:var(--ink)">The record.</b> 116 wins ties the all-time mark; 117+ makes you the Greatest of All Time — a rare feat that takes a near-perfect draft.</p>
+    <p><b style="color:var(--ink)">October, batter by batter.</b> In every mode but the quick draft and the daily, the playoffs are played out a plate appearance at a time: nine innings, real base runners, your rotation against the club's own lineup. Watch a series or sim it, and after any season you can go back and watch October from the results screen.</p>
+    <p><b style="color:var(--ink)">The record.</b> 116 wins ties the all-time mark; 117+ makes you the Greatest of All Time, a rare feat that takes a near-perfect draft.</p>
   </div>
   <div style="margin-top:16px"><button class="btn ghost sm" id="b-how-back">Back</button></div>
 </div>
@@ -618,7 +1290,7 @@ h1,h2,h3{margin:0}
     </div>
     <div class="capline">
       <div class="amt num" id="c-amt">$170.0M</div>
-      <div class="chem"><span class="ck">Chemistry</span><span class="chemval num zero" id="c-chem">None</span></div>
+      <div class="chem"><button class="ck ck-btn" id="b-chemkey" title="What counts as chemistry?">Chemistry <i>?</i></button><span class="chemval num zero" id="c-chem">None</span></div>
     </div>
     <div class="bar"><i id="c-bar" style="width:100%"></i></div>
     <div class="perslot num" id="c-per"></div>
@@ -627,7 +1299,11 @@ h1,h2,h3{margin:0}
     <div id="d-fold" style="height:1px"></div>
   </div>
 
-  <div class="field" id="field"></div>
+  <div class="fieldrow">
+    <div class="field" id="field"></div>
+    <div class="lineupcard" id="field-card"></div>
+  </div>
+  <div class="staffline" id="field-staff"></div>
 
   <div class="reels" id="reels">
     <div class="reelcol"><span class="rlabel">&starf; Year &starf;</span>
@@ -649,7 +1325,10 @@ h1,h2,h3{margin:0}
     <div class="eyebrow">Your roster is set</div>
     <h2 class="display" style="font-size:30px;margin:4px 0">The squad</h2>
   </div>
-  <div class="field" id="sq-field"></div>
+  <div class="fieldrow sq">
+    <div class="field" id="sq-field"></div>
+    <div id="sq-roster"></div>
+  </div>
   <div class="sq-verdict" id="sq-verdict"></div>
   <div class="ro-coach" style="margin-top:12px">
     <div class="ch"><span class="ceyebrow">Coach's take</span><span class="ro-arch" id="sq-arch"></span></div>
@@ -666,6 +1345,12 @@ h1,h2,h3{margin:0}
     <h2 class="display" style="font-size:32px;margin:4px 0">Play ball</h2>
   </div>
   <div class="record-big" id="s-record"><span class="w">0</span><span class="sep">-</span><span class="l">0</span></div>
+  <div class="captrack" id="cap-track" hidden>
+    <div class="ct-hd"><span class="ct-l">Payroll</span>
+      <span class="ct-v" id="ct-total">$0.0M</span>
+      <span class="ct-shocks" id="ct-shocks"></span></div>
+    <div class="ct-bar"><i id="ct-fill"></i></div>
+  </div>
   <div class="sim-progress" id="s-pips"></div>
   <div class="record-line" id="s-pace"></div>
   <div class="sim-feed" id="s-feed"></div>
@@ -674,12 +1359,68 @@ h1,h2,h3{margin:0}
   </div>
 </div>
 
+<!-- The bracket, between rounds. The field is drawn once and walked forward a round
+     at a time: the games you are not in resolve on screen one after another, and when
+     yours is the last one left it hands off to the series card. -->
 <div class="screen" id="s-playoffs">
   <div class="sim-header">
     <div class="eyebrow" id="po-seed-label"></div>
-    <h2 class="display" style="font-size:28px;margin:4px 0">October baseball</h2>
+    <h2 class="display brk-title" id="brk-round">October baseball</h2>
   </div>
-  <div id="po-rounds"></div>
+  <div class="brk-wrap">
+    <div class="brk" id="brk-rail" role="group" aria-label="Playoff bracket"></div>
+  </div>
+  <p class="brk-note" id="brk-note"></p>
+  <button class="sr-all" id="b-brk-skip">Skip ahead</button>
+</div>
+
+<!-- The series card: the matchup, and the choice between watching it and
+     letting it happen. Shown once per round in the modes that play October out. -->
+<div class="screen" id="s-series">
+  <div class="sim-header">
+    <div class="eyebrow" id="sr-round"></div>
+    <h2 class="display" style="font-size:28px;margin:4px 0" id="sr-title"></h2>
+  </div>
+  <div class="sr-card" id="sr-card"></div>
+  <div class="sr-actions">
+    <button class="btn" id="sr-play">Play ball</button>
+    <button class="btn ghost" id="sr-sim">Sim the series</button>
+  </div>
+  <button class="sr-all" id="sr-simall">Sim the rest of October</button>
+</div>
+
+<!-- One playoff game, plate appearance by plate appearance. -->
+<div class="screen" id="s-game">
+  <div class="gm-top">
+    <div class="gm-where" id="gm-where"></div>
+    <div class="gm-speeds">
+      <button class="gm-sp gm-wide" id="gm-pause" title="Pause">Pause</button>
+      <button class="gm-sp" id="gm-speed" title="Speed">1&times;</button>
+      <button class="gm-sp gm-wide" id="gm-skipgame">Skip</button>
+    </div>
+  </div>
+
+  <div class="gm-scroll" id="gm-scroll"><table class="gm-line" id="gm-line"></table></div>
+
+  <div class="gm-field">
+    <div class="gm-diamond" id="gm-diamond">
+      <div class="gm-base b2" id="gm-b2"></div>
+      <div class="gm-base b1" id="gm-b1"></div>
+      <div class="gm-base b3" id="gm-b3"></div>
+      <div class="gm-home"></div>
+      <div class="gm-frame" id="gm-frame"></div>
+    </div>
+    <div class="gm-state">
+      <div class="gm-outs" id="gm-outs"></div>
+      <div class="gm-up" id="gm-up"></div>
+      <div class="gm-arm" id="gm-arm"></div>
+    </div>
+  </div>
+
+  <div class="gm-feed" id="gm-feed"></div>
+
+  <div class="gm-final" id="gm-final" hidden></div>
+  <button class="sr-all" id="gm-simall">Sim the rest of October</button>
 </div>
 
 <div class="screen" id="s-over">
@@ -688,14 +1429,15 @@ h1,h2,h3{margin:0}
     <div class="ro-record" id="ro-record"></div>
     <div class="ro-verdict" id="ro-verdict"></div>
     <div class="ro-sub" id="ro-sub"></div>
+    <div class="ro-place" id="ro-place" hidden></div>
   </div>
   <div id="r-goat" style="display:none"></div>
 
   <div class="ro-cells">
-    <div class="ro-cell"><div class="cv" id="ro-rating"></div><div class="cl">Team rating</div>
+    <div class="ro-cell"><div class="cv" id="ro-rating"></div><div class="cl" id="ro-rating-l">Team rating</div>
       <div class="ro-meter"><i id="ro-rating-bar"></i></div></div>
-    <div class="ro-cell"><div class="cv gold" id="ro-rank"></div><div class="cl">All-time rank</div></div>
-    <div class="ro-cell"><div class="cv green" id="ro-eff"></div><div class="cl">Draft grade</div></div>
+    <div class="ro-cell"><div class="cv gold" id="ro-rank"></div><div class="cl" id="ro-rank-l">All-time rank</div></div>
+    <div class="ro-cell"><div class="cv green" id="ro-eff"></div><div class="cl" id="ro-eff-l">Draft grade</div></div>
   </div>
 
   <div class="ro-coach">
@@ -703,6 +1445,7 @@ h1,h2,h3{margin:0}
     <div class="ro-takes" id="ro-takes"></div>
     <div class="ro-proj" id="ro-proj"></div>
     <div class="ro-chemlinks" id="ro-chemlinks"></div>
+    <div class="chemworth" id="ro-chemworth" style="display:none"></div>
   </div>
 
   <div id="ro-newbadges"></div>
@@ -711,6 +1454,7 @@ h1,h2,h3{margin:0}
   <div class="share-row">
     <button class="btn" id="b-share">&#9918; Share result</button>
   </div>
+  <button class="btn ghost" id="b-watch-oct" hidden style="margin-top:8px">&#9918; Watch October</button>
   <button class="btn ghost" id="b-again" style="margin-top:8px">Draft again</button>
   <button class="btn ghost trophy-cta" id="b-trophy-2">Trophy case</button>
   <footer class="legal">
@@ -738,6 +1482,96 @@ h1,h2,h3{margin:0}
   </div>
 </div>
 
+<div class="sheet" id="sheet-cut" aria-hidden="true">
+  <div class="sheet-scrim"></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="eyebrow" style="color:var(--red)" id="cut-eyebrow">The market moves</div>
+    <div class="shock-hd"><span class="amt" id="cut-amt"></span>
+      <h3 class="display" style="font-size:19px;margin:0">over the cap</h3></div>
+    <p class="pos-sub" id="cut-sub"></p>
+    <div class="cutlist" id="cut-list"></div>
+    <p class="dim" style="font-size:11.5px;margin:8px 0 0">Whoever you cut is replaced by a
+      league-minimum body at the same spot. The roster stays legal. It just gets worse.</p>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-daily" aria-hidden="true">
+  <div class="sheet-scrim" data-close-daily></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title">Today's board</h3>
+      <button class="sheet-x" data-close-daily aria-label="Close">&times;</button>
+    </div>
+    <div id="daily-done-in"></div>
+    <button class="btn" id="b-daily-share" style="margin-top:14px">&#9918; Share today's result</button>
+    <div style="margin-top:8px"><button class="btn ghost sm" data-close-daily>Close</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-trade" aria-hidden="true">
+  <div class="sheet-scrim"></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="eyebrow" style="color:var(--orange)" id="trade-eyebrow">The phone rings</div>
+    <h3 class="display" style="font-size:21px;margin:4px 0 2px">Deadline deals</h3>
+    <p class="pos-sub" id="trade-sub"></p>
+    <div class="cutlist" id="trade-list"></div>
+    <div style="margin-top:10px"><button class="btn ghost sm" id="b-trade-pass">Stand pat</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-modes" aria-hidden="true">
+  <div class="sheet-scrim" data-close-modes></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title">More ways to play</h3>
+      <button class="sheet-x" data-close-modes aria-label="Close">&times;</button>
+    </div>
+    <div id="modes-in"></div>
+    <div style="margin-top:14px"><button class="btn ghost sm" data-close-modes>Close</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-first" aria-hidden="true">
+  <div class="sheet-scrim" data-close-first></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="eyebrow" style="color:var(--gold)">First time here</div>
+    <h3 class="display" style="font-size:23px;margin:5px 0 2px">Draft twelve, then play a season</h3>
+    <div class="fr-steps">
+      <div class="fr-step"><span class="n">1</span><p>Every spin lands on a real team-season.
+        Take one player off that roster. Twelve times, filling a lineup and a staff.</p></div>
+      <div class="fr-step"><span class="n">2</span><p>All twelve share a <b>$170M</b> budget.
+        That is the puzzle: prices come from how good the season actually was, so the last
+        few spots are always the hard ones.</p></div>
+      <div class="fr-step"><span class="n">3</span><p>Then 162 games play out against real
+        all-time clubs, and October if you earn it.</p></div>
+    </div>
+    <div class="fr-goal"><p>Your goal: <b>116 wins and the World Series.</b> That ties the
+      all-time record. It is meant to be very hard, and almost nobody gets there first try.</p></div>
+    <button class="btn" id="b-first-go">&#9918; Draft your team &#9918;</button>
+    <div style="margin-top:8px"><button class="btn ghost sm" data-close-first>I have played before</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-chem" aria-hidden="true">
+  <div class="sheet-scrim" data-close-chem></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title">Chemistry</h3>
+      <button class="sheet-x" data-close-chem aria-label="Close">&times;</button>
+    </div>
+    <p class="pos-sub">Teammates who share a real bond play better together. Every bond pays
+      <b>both</b> players, and a player wears the color of their strongest one.</p>
+    <div class="chemkey" id="chem-key"></div>
+    <div class="chemcap" id="chem-cap"></div>
+  </div>
+</div>
+
 <div class="sheet" id="sheet-trophy" aria-hidden="true">
   <div class="sheet-scrim" data-close></div>
   <div class="sheet-inner">
@@ -752,9 +1586,10 @@ h1,h2,h3{margin:0}
   </div>
 </div>
 
-<script src="engine.js?v=8"></script>
-<script src="run.js?v=7"></script>
-<script src="achievements.js?v=1"></script>
+<script src="engine.js?v=19"></script>
+<script src="run.js?v=16"></script>
+<script src="achievements.js?v=4"></script>
+<script src="board.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -782,13 +1617,15 @@ function rowFromRun(o){
   return {
     ts:Date.now(),wins:o.wins,losses:o.losses,titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
     seedLabel:o.seedLabel||null,isGOAT:!!o.isGOAT,beatRecord:!!o.beatRecord,
-    rating:o.rating!=null?Math.round(o.rating):null,allTimeRank:o.allTimeRank!=null?o.allTimeRank:null,
+    rating:shownRating(o)!=null?Math.round(shownRating(o)):null,allTimeRank:o.allTimeRank!=null?o.allTimeRank:null,
     chemPct:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:null,
     spend:RUN.roster.reduce((s,p)=>s+p.p,0),respins:RUN.respinsUsed||0,
     efficiency:bps?bps.efficiency:null,archetype:o.structure&&o.structure.archetype?o.structure.archetype.key:null,
-    chemLinks:[...new Set(links)],era:RUN.era||null,
+    chemLinks:[...new Set(links)],era:RUN.era||null,franchise:RUN.franchise||null,division:RUN.division||null,
+    capSurvivor:!!RUN.capSurvivor,cuts:(RUN.cuts||[]).length,staff:!!RUN.staff,
+    tradeMachine:!!RUN.tradeMachine,trades:(RUN.trades||[]).filter(t=>t.accepted).length,
     eliminatedWS:!!(last&&last.round==='World Series'&&!o.titleWon),
-    picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:E.SLOTS[RUN.slotIndex[i]],w:p.w})),
+    picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:SLOTS_NOW()[RUN.slotIndex[i]],w:p.w})),
   };
 }
 let lastNewBadges=[];
@@ -826,7 +1663,7 @@ function renderTrophy(){
   const st=ev.stats;
   $('trophy-career').innerHTML=[
     ['Seasons',st.runs],['Titles',st.titles],
-    ['Best rank',st.bestRank?('#'+st.bestRank):'—'],['Day streak',ev.play.best],
+    ['Best rank',st.bestRank?('#'+st.bestRank):'n/a'],['Day streak',ev.play.best],
   ].map(s=>'<div class="stk"><div class="sv">'+s[1]+'</div><div class="sl">'+s[0]+'</div></div>').join('');
   const byGroup={};ACH.GROUPS.forEach(g=>byGroup[g]={earned:[],locked:[]});
   ev.earned.forEach(a=>byGroup[a.group]&&byGroup[a.group].earned.push(a));
@@ -846,13 +1683,64 @@ function renderTrophy(){
 function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
 
 const $=id=>document.getElementById(id);
+/* The slot list the screen is currently drawing. All-Time Staff fields twelve arms,
+   so nothing in the UI may read E.SLOTS directly once a run is live. */
+const SLOTS_NOW=()=>R.slotsOf(typeof RUN!=='undefined'?RUN:null);
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
 const M=v=>'$'+v.toFixed(1)+'M';
 const lastName=n=>{const p=n.trim().split(/\s+/);return p[p.length-1];};
+/* WAR as a temperature band. See .warv in the stylesheet for why five. */
+const warBand=w=>'w'+(w>=8?5:w>=6?4:w>=4.5?3:w>=3?2:w>=1.5?1:0);
+/* The rating the player is shown is NOT the one that ranks against real clubs or
+   sets the title difficulty. See teamRating() in engine.js. Older saved runs only
+   carry the yardstick, so fall back to it rather than printing nothing. */
+const shownRating=o=>(o&&o.shownRating!=null)?o.shownRating:(o?o.rating:null);
+const warHtml=(w,extra)=>'<span class="warv '+warBand(w)+(extra?' '+extra:'')+'">'+w.toFixed(1)+'</span>';
 
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):null;
 const reduceMotion=()=>!!(RM&&RM.matches);
+
+/* ─── chemistry, as one visual language ───
+   Every bond type gets a color and a short name, and they are used identically
+   on the draft board, the diamond, the squad sheet and the results roster, so
+   the player learns the taxonomy once by looking at it. Ordered strongest
+   first, which is also the order the legend prints. */
+const CHEM_TYPES=[
+  {type:'family',   label:'Family',        color:'#b8860b', note:'Brothers, fathers and sons'},
+  {type:'reunion',  label:'Reunion',       color:'#c0392b', note:'Same club, same season'},
+  {type:'battery',  label:'Battery',       color:'#1a5276', note:'A catcher and his pitcher'},
+  {type:'dp_combo', label:'DP combo',      color:'#6a4c93', note:'A second baseman and his shortstop'},
+  {type:'franchise',label:'Franchise',     color:'#2e7d32', note:'Same club, different seasons'},
+  {type:'era',      label:'Same era',      color:'#8a7e6e', note:'Contemporaries, a faint bond'},
+];
+const CHEM_BY_TYPE={};for(const c of CHEM_TYPES)CHEM_BY_TYPE[c.type]=c;
+/* Ink that survives the club's own color. Milwaukee's primary is #FFC52F and
+   Oakland's secondary is #EFB21E: white on either is unreadable, and a club chip
+   nobody can read is not a club chip. Relative luminance per WCAG, then the ink
+   that wins on contrast. */
+function readableInk(hex){
+  const h=String(hex||'').replace('#','');
+  if(h.length!==6) return '#fff';
+  const ch=i=>{const v=parseInt(h.slice(i,i+2),16)/255;
+    return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
+  const L=0.2126*ch(0)+0.7152*ch(2)+0.0722*ch(4);
+  return L>0.42?'#17130c':'#fff';
+}
+const chemColor=t=>(CHEM_BY_TYPE[t]||{}).color||'#8a7e6e';
+const chemLabel=t=>(CHEM_BY_TYPE[t]||{}).label||t;
+/* Trailing .0 reads as false precision on a badge, so 4.0 prints as 4. */
+const chemNum=v=>(Math.round(v*10)/10).toFixed(1).replace(/\.0$/,'');
+/* The badge a player wears. Colored by their strongest bond, valued by the sum
+   of the deliberate ones. Returns '' when there is nothing worth showing. */
+function chemBadge(entry,size){
+  if(!entry||entry.keyPoints<=0)return'';
+  const c=chemColor(entry.top&&entry.top.type);
+  const names=entry.links.filter(l=>l.type!=='era').map(l=>l.label).join(' &middot; ');
+  return '<span class="chembadge'+(size?' '+size:'')+'" style="--cc:'+c+'"'+
+    (names?' title="'+esc(names.replace(/&middot;/g,'/'))+'"':'')+
+    '>&#9889;'+chemNum(entry.keyPoints)+'</span>';
+}
 
 /* ─── position colors ─── */
 const POS_COLORS={
@@ -870,10 +1758,16 @@ function tcPlate(team,season){
 
 /* ─── diamond coordinates ─── */
 /* SLOTS: C,1B,2B,3B,SS, LF,CF,RF, DH, SP1,SP2,CL */
+/* A filled chip hangs below its spot: a disc plus two lines of label, about
+ * 52px once the label block is tightened. Two spots within a chip width of each
+ * other in x therefore need a chip height between them in y, and nothing can sit
+ * so low that its label falls off the bottom edge. The middle infield and the
+ * corners used to be 18% apart, so 1B covered 2B's name and SS covered 3B's,
+ * and the catcher and DH labels were clipped by the boundary. */
 const DIAMOND_SPOTS=[
-  {x:50,y:84},{x:67,y:55},{x:63,y:37},{x:33,y:55},{x:37,y:37},
-  {x:14,y:25},{x:50,y:10},{x:86,y:25},{x:13,y:89},
-  {x:50,y:57},{x:50,y:57},{x:50,y:57},
+  {x:50,y:79},{x:69,y:59},{x:65,y:34},{x:31,y:59},{x:35,y:34},
+  {x:13,y:23},{x:50,y:8},{x:87,y:23},{x:13,y:81},
+  {x:50,y:51},{x:50,y:51},{x:50,y:51},
 ];
 
 /* ─── reel system ─── */
@@ -986,7 +1880,7 @@ function diamondMarkings(sfx){
      hidden hero copy and Chrome refuses to paint them). */
   sfx=sfx||'f';
   /* viewBox height 68 matches the field's 1/0.68 aspect ratio, so one x unit
-     renders the same length as one y unit — strokes, circles, and rotated
+     renders the same length as one y unit, so strokes, circles and rotated
      squares keep their true shapes instead of being stretched. */
   const wh='rgba(255,255,255,';
   const wallH=13.6,fpL=3,fpR=97;
@@ -1041,11 +1935,98 @@ const MOVE_MS=520;
 const easeOut=t=>1-Math.pow(1-t,3);
 
 const PITCHER_SLOTS=[9,10,11];
+/*
+ * The lineup card: all twelve slots, filled or not, in slot order.
+ *
+ * It exists because the diamond cannot do this job. Nine fielders have a place to
+ * stand and three pitchers share one mound, so the board could only ever show ten
+ * of the twelve, and an open slot on a diamond is a grey disc you have to hunt
+ * for. A card reads down: what you have, what you still owe, and what it cost in
+ * WAR. Only drawn where there is room for it beside the field.
+ */
+function drawLineupCard(el){
+  if(!el||!RUN)return;
+  const slots=SLOTS_NOW();
+  const bySlot=new Array(slots.length).fill(null);
+  RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
+  const left=slots.length-RUN.roster.length;
+  const firstArm=slots.indexOf(RUN.staff?'RP1':'SP1');
+  el.innerHTML='<div class="lc-head">Lineup card<span>'+
+    (left?left+' to fill':'Set')+'</span></div>'+
+    slots.map((slot,i)=>{
+      const p=bySlot[i];
+      return '<div class="lc-row'+(p?'':' open')+(i===firstArm?' arm1':'')+'">'+
+        '<span class="lc-pos" style="'+posPaint(slot)+'">'+esc(slot)+'</span>'+
+        (p?'<span class="lc-nm">'+esc(p.n)+'</span>'+
+            '<span class="lc-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'+
+            '<span class="lc-war">'+warHtml(p.w)+'</span>'
+          :'<span class="lc-nm">Open</span>')+
+        '</div>';
+    }).join('');
+}
+
+/* The three arms, in a row of their own.
+   They share one spot on the diamond because there is one mound, which meant
+   only the most recent of them was ever drawn: sign a starter and nothing on
+   screen changed, so it read as a signing that had not happened. All-Time Staff
+   has its own board and does not need this. */
+function drawStaffLine(el){
+  if(!el)return;
+  if(!RUN||RUN.staff){el.innerHTML='';el.style.display='none';return;}
+  el.style.display='';
+  const slots=SLOTS_NOW();
+  const bySlot=new Array(slots.length).fill(null);
+  RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
+  el.innerHTML=PITCHER_SLOTS.map(i=>{
+    const p=bySlot[i];
+    return '<div class="sl-arm'+(p?' filled':'')+'">'+
+      '<span class="sl-pos" style="'+posPaint(slots[i])+'">'+esc(slots[i])+'</span>'+
+      (p?'<span class="sl-nm">'+esc(lastName(p.n))+'</span>'+
+          '<span class="sl-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'
+        :'<span class="sl-nm open">Open</span>')+
+      '</div>';
+  }).join('');
+}
+
+/* The twelve, as a list, in lineup-card order rather than the order the wheel
+   happened to stop in. The diamond says where everybody plays; this says who
+   they are, which is the one thing the diamond cannot do for a pitching staff. */
+function rosterList(host,opts){
+  const o=opts||{};
+  if(!host||!RUN)return;
+  host.innerHTML=o.title?'<div class="eyebrow" style="margin:14px 0 8px">'+esc(o.title)+'</div>':'';
+  const wrap=document.createElement('div');wrap.className='roster-final';
+  const slots=SLOTS_NOW();
+  const perChem=R.chemByPlayer(RUN,null,o.chem||null);
+  const rows=RUN.roster.map((p,i)=>({p,i,si:RUN.slotIndex[i]})).sort((a,b)=>a.si-b.si);
+  for(const r of rows){
+    const slot=slots[r.si];
+    const div=document.createElement('div');div.className='rslot';
+    div.innerHTML='<span class="rpos" style="'+posPaint(slot)+'">'+esc(slot)+'</span>'+
+      '<span class="rname">'+esc(r.p.n)+'</span>'+
+      chemBadge(perChem[r.i],'sm')+
+      '<span class="rteam">'+r.p.s+' '+esc(r.p.t)+'</span>'+
+      (o.price?'<span class="rprice">'+M(r.p.p)+'</span>':'')+
+      '<span class="rwar">'+warHtml(r.p.w)+'</span>';
+    wrap.appendChild(div);
+  }
+  host.appendChild(wrap);
+}
+
 function drawField(el,live){
+  if(RUN&&RUN.staff){drawStaffBoard(el,live);return;}
+  el.classList.remove('staffboard');
   const st=fieldState(el);
   const bySlot=new Array(E.SLOTS.length).fill(null);
   if(RUN) RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
   const openCount=E.SLOTS.length-(RUN?RUN.roster.length:0);
+  // Chemistry once for the whole diamond, keyed by slot. This used to resolve
+  // the entire roster again inside the chip loop, twelve times a redraw.
+  const chemBySlot=new Array(E.SLOTS.length).fill(null);
+  if(RUN&&RUN.roster.length>1){
+    const per=R.chemByPlayer(RUN);
+    RUN.roster.forEach((p,i)=>{chemBySlot[RUN.slotIndex[i]]=per[i];});
+  }
   if(el.id==='field') drawPips(bySlot);
 
   const pitchersFilled=PITCHER_SLOTS.filter(i=>bySlot[i]);
@@ -1068,22 +2049,77 @@ function drawField(el,live){
     c.querySelector('.who').textContent=p?lastName(p.n):'';
     c.querySelector('.yr').innerHTML=p?tcPlate(p.t,p.s)+' '+p.s:'';
     const pip=c.querySelector('.pip');
-    if(p&&RUN&&RUN.roster.length>1){
-      const chem=E.resolveChemistry(RUN.roster);
-      const mine=chem.links.filter(l=>l.a===p.n||l.b===p.n);
-      if(mine.length){pip.textContent=mine.length;pip.style.background='#4ade80';pip.style.display='grid';}
-      else{pip.style.display='none';}
-    }else{pip.style.display='none';}
+    const ce=p?chemBySlot[i]:null;
+    if(ce&&ce.keyPoints>0){
+      pip.textContent='⚡'+chemNum(ce.keyPoints);
+      pip.style.background=chemColor(ce.top&&ce.top.type);
+      pip.style.display='grid';
+      pip.title=ce.links.filter(l=>l.type!=='era').map(l=>l.label).join(' / ');
+    }else{pip.style.display='none';pip.title='';}
     c.style.left=DIAMOND_SPOTS[i].x+'%';
     c.style.top=DIAMOND_SPOTS[i].y+'%';
   });
+}
+
+/* ─── the staff board ───
+   A pitching staff has no shape on a diamond, so All-Time Staff gets its own
+   picture: the rotation in order, then the pen, then the closer, each card either
+   an empty slot waiting or the arm that filled it. Drawn into the same element the
+   field uses so every caller of drawField keeps working. */
+const STAFF_GROUPS=[
+  {label:'Rotation',slots:['SP1','SP2','SP3','SP4','SP5']},
+  {label:'Bullpen',slots:['RP1','RP2','RP3','RP4','RP5','SU']},
+  {label:'Closer',slots:['CL']},
+];
+function drawStaffBoard(el,live){
+  el.classList.add('staffboard');
+  const slots=SLOTS_NOW();
+  const bySlot=new Array(slots.length).fill(null);
+  if(RUN) RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
+  if(el.id==='field') drawPips(bySlot);
+  const openCount=slots.length-(RUN?RUN.roster.length:0);
+  const chemBySlot=new Array(slots.length).fill(null);
+  if(RUN&&RUN.roster.length>1){
+    const per=R.chemByPlayer(RUN);
+    RUN.roster.forEach((p,i)=>{chemBySlot[RUN.slotIndex[i]]=per[i];});
+  }
+  const nextOpen=slots.findIndex((_,i)=>!bySlot[i]);
+  el.innerHTML=STAFF_GROUPS.map(g=>
+    '<div class="sb-group"><div class="sb-lab">'+esc(g.label)+'</div><div class="sb-row">'+
+    g.slots.map(sl=>{
+      const i=slots.indexOf(sl);
+      const p=bySlot[i];
+      const ce=chemBySlot[i];
+      const now=live&&!p&&i===nextOpen;
+      if(!p) return '<div class="sb-card empty'+(now?' now':'')+'"><span class="sb-slot">'+
+        esc(sl)+'</span></div>';
+      return '<div class="sb-card filled" style="'+posPaint(sl.replace(/[0-9]/g,'')==='SU'?'RP':sl)+'">'+
+        '<span class="sb-slot">'+esc(sl)+'</span>'+
+        '<span class="sb-name">'+esc(lastName(p.n))+'</span>'+
+        '<span class="sb-meta">'+p.s+' '+esc(p.t)+'</span>'+
+        '<span class="sb-war">'+p.w.toFixed(1)+'</span>'+
+        (ce&&ce.keyPoints>0?'<span class="sb-chem" style="background:'+
+          chemColor(ce.top&&ce.top.type)+'">&#9889;'+chemNum(ce.keyPoints)+'</span>':'')+
+        '</div>';
+    }).join('')+'</div></div>').join('')+
+    '<div class="sb-foot"></div>';
+  /* Scoped to this element: the draft screen and the squad screen each own a board,
+     so an id here would be in the document twice and the squad one would never be
+     the one found. */
+  const foot=el.querySelector('.sb-foot');
+  if(foot){
+    if(RUN&&RUN.roster.length>=slots.length){
+      const tagged=RUN.roster.map((p,i)=>({...p,_slot:slots[RUN.slotIndex[i]]}));
+      foot.innerHTML='Staff ERA <b>'+E.staffEra(tagged).toFixed(2)+'</b>';
+    } else foot.textContent=openCount+' arm'+(openCount===1?'':'s')+' to go';
+  }
 }
 
 /* ─── pips in cap bar ─── */
 const PIP_LABELS={SP1:'SP',SP2:'SP',CL:'CP'};
 function drawPips(bySlot){
   const el=$('d-pips');if(!el) return;
-  el.innerHTML=E.SLOTS.map((slot,i)=>{
+  el.innerHTML=SLOTS_NOW().map((slot,i)=>{
     const p=bySlot[i];
     const label=PIP_LABELS[slot]||slot;
     if(!p) return '<i>'+esc(label)+'</i>';
@@ -1198,7 +2234,7 @@ function heroChips(){
     el.style.left=sp.x+'%';el.style.top=sp.y+'%';
     const style=on?' style="'+posPaint(on.pos)+'"':'';
     const label=isPitcher&&!on?(i===11?'CP':'SP'):
-      (on?on.pos:E.SLOTS[i]);
+      (on?on.pos:SLOTS_NOW()[i]);
     el.innerHTML='<div class="disc"'+style+'><span class="dl">'+label+'</span></div>'+
       (on?'<div class="lab"><div class="who">'+esc(lastName(on.name))+'</div><div class="yr">'+
       tcPlate(on.team,on.season)+' '+on.season+'</div></div>':'');
@@ -1240,6 +2276,7 @@ async function heroLoop(seq){
 function heroStart(){heroRun++;heroLoop(heroRun);}
 function heroStop(){heroRun++;}
 function heroSync(){
+  try{paintDailyCard();}catch(_){}
   const on=$('s-intro').classList.contains('on')&&!document.hidden;
   if(on&&!heroRunning){heroRunning=true;heroStart();}
   else if(!on&&heroRunning){heroRunning=false;heroStop();}
@@ -1251,7 +2288,7 @@ async function boot(){
     const res=await fetch('data/players.json?v=2');
     if(!res.ok) throw new Error('Failed to load player data');
     const players=await res.json();
-    // Curated real relationships (families) — non-fatal if it fails to load.
+    // Curated real relationships (families). Non-fatal if it fails to load.
     try{
       const cres=await fetch('data/chemistry.json?v=1');
       if(cres.ok) E.setCuratedChemistry(await cres.json());
@@ -1261,6 +2298,8 @@ async function boot(){
     if(hasPositions) E.setPositionsAvailable(true);
     show('s-intro');
     heroSync();
+    paintDailyCard();
+    maybeFirstRun();
   }catch(e){
     $('s-load').querySelector('.dim').textContent='Failed to load data. Please refresh.';
     console.error(e);
@@ -1269,9 +2308,319 @@ async function boot(){
 
 /* ─── navigation ─── */
 $('b-start').addEventListener('click',()=>startRun());
-$('b-era').addEventListener('click',()=>{buildEraGrid();show('s-era');});
 $('b-era-back').addEventListener('click',()=>{show('s-intro');heroSync();});
-$('b-how-play').addEventListener('click',()=>show('s-how'));
+$('b-fran-back').addEventListener('click',()=>{show('s-intro');heroSync();});
+$('b-div-back').addEventListener('click',()=>{show('s-intro');heroSync();});
+$('b-how-play').addEventListener('click',()=>{
+  $('how-chem-key').innerHTML=chemKeyRows();
+  $('how-chem-cap').innerHTML=chemCapNote();
+  show('s-how');
+});
+$('b-trophy-hd').addEventListener('click',openTrophy);
+$('b-modes').addEventListener('click',openModes);
+$('b-board').addEventListener('click',openBoard);
+$('b-board-back').addEventListener('click',()=>{show('s-intro');heroSync();});
+$('daily-card').addEventListener('click',startDaily);
+document.querySelectorAll('[data-close-daily]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-daily')));
+$('b-daily-share').addEventListener('click',shareDaily);
+document.querySelectorAll('[data-close-modes]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-modes')));
+document.querySelectorAll('[data-close-first]').forEach(el=>el.addEventListener('click',()=>{closeSheet('sheet-first');markSeen();}));
+$('b-first-go').addEventListener('click',()=>{closeSheet('sheet-first');markSeen();startRun();});
+
+/* ─── more ways to play ───
+   One sheet, the way the football and college games do it. Six modes as buttons on the
+   home screen was six things competing with the one button that matters. */
+const ARROW='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
+const MODE_CARDS=[
+  {id:'era',cls:'mc-era',title:'Eras Draft',
+   icon:'<path d="M12 2.4a9.6 9.6 0 1 0 0 19.2 9.6 9.6 0 0 0 0-19.2Z"/><path d="M12 6.7V12l3.5 2.1"/>',
+   text:'Pick a decade and draft only from it. Every era plays differently: the dead-ball years are all arms, the nineties are all bats.'},
+  {id:'fran',cls:'mc-club',title:'One Franchise',
+   icon:'<path d="M12 2.2 3.4 6.6v6c0 5.2 3.7 9.9 8.6 11.1 4.9-1.2 8.6-5.9 8.6-11.1v-6z"/>',
+   text:'Draft one club\'s all-time roster, from 44 franchises. A century of Yankees or thirty years of Marlins, and you live with the one you picked.'},
+  {id:'div',cls:'mc-div',title:'Division Draft',
+   icon:'<path d="M4 4h16"/><path d="M4 4v16"/><path d="M8 8h8v4H8z"/><path d="M8 16h8"/>',
+   text:'Pick a division and draft only from the clubs that were really in it, 1994 to today. The map moves with history: Houston is NL Central until 2013 and AL West after.',
+   sticker:'New'},
+  {id:'cap',cls:'mc-cap',title:'Salary Cap Survivor',
+   icon:'<path d="M12 2.6v18.8"/><path d="M16.6 6.4H9.8a2.9 2.9 0 0 0 0 5.8h4.4a2.9 2.9 0 0 1 0 5.8H6.8"/>',
+   text:'Contracts inflate as the season runs. Stay under the cap or cut somebody, every time the market moves against you.',
+   sticker:'New'},
+  {id:'staff',cls:'mc-staff',title:'All-Time Staff',
+   icon:'<path d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4Z"/><path d="M6.2 5.6c3.4 3 3.4 9.8 0 12.8"/><path d="M17.8 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
+   text:'Forget the bats. Draft a five-man rotation and a bullpen, and win on run prevention alone with a league-average lineup behind you.',
+   sticker:'New'},
+  {id:'trade',cls:'mc-trade',title:'The Trade Machine',
+   icon:'<path d="M4.4 9.4V8.2a3.2 3.2 0 0 1 3.2-3.2h9.6V2.2l4.4 3.9-4.4 3.9V7.4H7.6a.8.8 0 0 0-.8.8v1.2z"/><path opacity=".55" d="M19.6 14.6v1.2a3.2 3.2 0 0 1-3.2 3.2H6.8v2.8l-4.4-3.9 4.4-3.9v2.6h9.6a.8.8 0 0 0 .8-.8v-1.2z"/>',
+   text:'You are handed a roster you did not pick and a deadline. Trade your way to a contender, or find out you were never close.',
+   sticker:'New'},
+];
+function openModes(){
+  $('modes-in').innerHTML=
+    '<div class="modecards">'+
+    MODE_CARDS.map(m=>
+      '<button class="modecard '+m.cls+(m.soon?' mc-soon':'')+'" data-mode="'+m.id+'"'+
+        (m.soon?' disabled':'')+'>'+
+        (m.soon?'<span class="mc-sticker soon">Soon</span>'
+              :(m.sticker?'<span class="mc-sticker">'+esc(m.sticker)+'</span>':''))+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+m.icon+
+        '</svg></div><div class="mc-title">'+esc(m.title)+'</div>'+(m.soon?'':ARROW)+'</div>'+
+        '<p>'+esc(m.text)+'</p></button>').join('')+
+    '</div>'+
+    '<div class="xpromo"><p class="xp-h">More games like this one</p>'+
+      '<a class="modecard" href="/football/">'+
+        '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
+        '<img src="/football/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
+        '</div><div class="mc-title">The Perfect Season</div>'+ARROW+'</div>'+
+        '<p>The same idea in the NFL. Six legends under a $140M cap, then all 17 games.</p></a>'+
+      '<a class="modecard" style="margin-top:12px" href="/cfb/">'+
+        '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
+        '<img src="/cfb/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
+        '</div><div class="mc-title">Perfect College Season</div>'+ARROW+'</div>'+
+        '<p>College football, 2005 to 2025. Six players under an NIL budget, twelve games.</p></a>'+
+    '</div>';
+  $('modes-in').querySelectorAll('[data-mode]').forEach(btn=>{
+    btn.addEventListener('click',()=>{closeSheet('sheet-modes');pickMode(btn.dataset.mode);});
+  });
+  openSheet('sheet-modes');ga('modes_opened');
+}
+function pickMode(id){
+  if(id==='era'){buildEraGrid();show('s-era');return;}
+  if(id==='fran'){buildFranGrid();show('s-fran');return;}
+  if(id==='div'){buildDivGrid();show('s-div');return;}
+  if(id==='cap'){startRun({capSurvivor:true});return;}
+  if(id==='staff'){startRun({staff:true});return;}
+  if(id==='trade'){startTrade();return;}
+}
+
+/* ─── the board ───────────────────────────────────────────────────────────
+ * The results screen paints first and asks the board afterwards, always. A board
+ * that is down, or a migration that has not been run, must never cost somebody
+ * the season they just played. */
+const BOARD=()=>window.RTD_BOARD||null;
+function runModeOf(r){
+  if(!r)return 'free';
+  if(r.tradeMachine)return 'trade';
+  if(r.capSurvivor)return 'capsurvivor';
+  if(r.staff)return 'staff';
+  if(r.division)return 'division';
+  if(r.franchise)return 'franchise';
+  if(r.era)return 'era';
+  return 'free';
+}
+function runModeLabel(m){
+  return {free:'Classic',era:'Eras Draft',franchise:'One Franchise',
+    division:'Division Draft',capsurvivor:'Cap Survivor',staff:'All-Time Staff',
+    trade:'Trade Machine'}[m]||'Classic';
+}
+/* A per-browser id, so the daily board can keep one result per device without
+   asking anybody to make an account first. */
+const CLIENT_KEY='rtd_client';
+function clientId(){
+  try{
+    let v=localStorage.getItem(CLIENT_KEY);
+    if(!v){v=(Math.random().toString(36).slice(2)+Date.now().toString(36));
+      localStorage.setItem(CLIENT_KEY,v);}
+    return v;
+  }catch(e){return null;}
+}
+function boardPayload(o){
+  const slots=SLOTS_NOW();
+  const mode=runModeOf(RUN);
+  const po=RUN.playoffs&&RUN.playoffs.rounds
+    ? RUN.playoffs.rounds.filter(r=>r.won).length : 0;
+  const tg=RUN.staff?RUN.roster.map((p,i)=>({...p,_slot:slots[RUN.slotIndex[i]]})):null;
+  return {
+    wins:o.wins, playoffWins:po, mode,
+    franchise:mode==='franchise'?RUN.franchise:null,
+    era:mode==='era'?RUN.era:null,
+    division:mode==='division'?RUN.division:null,
+    dailyKey:RUN.daily?utcKey():null,
+    dailyClient:RUN.daily?clientId():null,
+    rating:shownRating(o)==null?null:Math.round(shownRating(o)*10)/10,
+    allTimeRank:RUN.staff?null:(o.allTimeRank==null?null:o.allTimeRank),
+    staffEra:RUN.staff&&tg?Math.round(E.staffEra(tg)*100)/100:null,
+    chemistryPct:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:0,
+    spendMusd:Math.round(RUN.roster.reduce((t,p)=>t+p.p,0)*100)/100,
+    respins:RUN.respinsUsed||0,
+    runsFor:o.totalRS, runsAgainst:o.totalRA,
+    cuts:(RUN.cuts||[]).length,
+    trades:(RUN.trades||[]).filter(t=>t.accepted).length,
+    picks:RUN.roster.map(p=>p.i+'|'+p.s+'|'+p.r),
+    slots:RUN.roster.map((p,i)=>slots[RUN.slotIndex[i]]),
+    rngSeed:RUN.seed, rngCalls:RUN.rngCalls,
+  };
+}
+/* Fire and forget, after the screen is up. Sets the place line if it can. */
+async function postToBoard(o){
+  const B=BOARD();if(!B)return;
+  const el=$('ro-place');if(!el)return;
+  el.hidden=false;el.textContent='Recording your season...';
+  let payload;
+  try{payload=boardPayload(o);}catch(e){console.error(e);el.hidden=true;return;}
+  const sent=await B.submit(payload);
+  if(!sent){
+    el.textContent=B.needsMigration?'Leaderboard not set up yet.':'Leaderboard unreachable.';
+    el.classList.add('dim');return;
+  }
+  const where=payload.dailyKey?{dailyKey:payload.dailyKey}:{mode:payload.mode};
+  const score=B.scoreOf(payload.wins,payload.playoffWins,payload.rating||0);
+  const [place,tot]=await Promise.all([
+    B.placeIn({...where,score}),B.total(where)]);
+  if(place==null||tot==null){el.textContent='On the board.';return;}
+  const board=payload.dailyKey?('Daily #'+dailyNo()):runModeLabel(payload.mode);
+  el.classList.remove('dim');
+  el.innerHTML='<b>#'+place+'</b> of '+tot.toLocaleString()+' on '+esc(board)+
+    (sent.duplicate?' <span class="dim">(already recorded today)</span>':'');
+}
+
+/* ─── the leaderboard screen ───
+   Tabs across the boards, because a Cap Survivor season and a Franchise season
+   are not the same competition and should not share a list. */
+let boardTab='daily';
+const BOARD_TABS=[{k:'daily',label:'Today'}].concat(
+  ['free','era','franchise','division','capsurvivor','staff','trade']
+    .map(m=>({k:m,label:runModeLabel(m)})));
+function openBoard(){show('s-board');paintBoard();}
+function paintBoard(){
+  $('bd-tabs').innerHTML=BOARD_TABS.map(t=>
+    '<button class="bd-tab'+(t.k===boardTab?' on':'')+'" data-k="'+t.k+'">'+
+    esc(t.label)+'</button>').join('');
+  $('bd-tabs').querySelectorAll('.bd-tab').forEach(b=>
+    b.addEventListener('click',()=>{boardTab=b.dataset.k;paintBoard();}));
+  const list=$('bd-list');
+  list.innerHTML='<div class="bd-empty">Loading...</div>';
+  const B=BOARD();
+  if(!B){list.innerHTML='<div class="bd-empty">The leaderboard is not available.</div>';return;}
+  const where=boardTab==='daily'?{dailyKey:utcKey()}:{mode:boardTab};
+  B.top({...where,limit:50}).then(rows=>{
+    if(rows==null){
+      list.innerHTML='<div class="bd-empty">'+(B.needsMigration
+        ? 'The leaderboard has not been set up on the server yet.'
+        : 'Could not reach the leaderboard. It will be here when the connection is.')+
+        '</div>';return;
+    }
+    if(!rows.length){
+      list.innerHTML='<div class="bd-empty">'+(boardTab==='daily'
+        ? 'Nobody has finished today\'s board yet. Be first.'
+        : 'No seasons here yet. Play one.')+'</div>';return;
+    }
+    list.innerHTML=rows.map((r,i)=>{
+      const detail=[];
+      if(r.title_won)detail.push('Champions');
+      else if(r.made_playoffs)detail.push(r.seed_label);
+      if(r.run_mode==='staff'&&r.staff_era!=null)detail.push(r.staff_era+' ERA');
+      else if(r.rating!=null)detail.push('Rating '+Math.round(r.rating));
+      if(r.franchise)detail.push(esc(teamFullName(r.franchise)));
+      if(r.division)detail.push(esc(r.division));
+      if(r.era)detail.push(esc(r.era));
+      if(r.cuts)detail.push(r.cuts+' cut');
+      if(r.trades)detail.push(r.trades+' dealt');
+      return '<div class="bd-row"><div class="bd-pos">'+(i+1)+'</div>'+
+        '<div class="bd-who"><div class="bd-name">'+
+          esc(r.display_name||'Anonymous')+'</div>'+
+        '<div class="bd-meta">'+detail.join(' \u00b7 ')+'</div></div>'+
+        '<div class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></div></div>';
+    }).join('');
+  });
+}
+
+/* ─── the daily ───────────────────────────────────────────────────────────
+ * One board a day, the same board for everybody, and a grid you can paste.
+ *
+ * The seed is the UTC date, so "today" starts at the same instant for every
+ * player and two people comparing results are comparing the same draft. One run
+ * per day is the whole point: it is what makes a result worth posting and what
+ * brings anybody back tomorrow. */
+const DAILY_EPOCH=Date.UTC(2026,0,1);
+function utcKey(d){
+  const t=d||new Date();
+  return t.getUTCFullYear()+'-'+String(t.getUTCMonth()+1).padStart(2,'0')+'-'+
+    String(t.getUTCDate()).padStart(2,'0');
+}
+function dailyNo(){
+  return Math.floor((Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),
+    new Date().getUTCDate())-DAILY_EPOCH)/86400000)+1;
+}
+const DAILY_KEY='rtd_daily';
+function loadDaily(){try{return JSON.parse(localStorage.getItem(DAILY_KEY)||'{}');}catch(e){return {};}}
+function saveDaily(o){try{localStorage.setItem(DAILY_KEY,JSON.stringify(o));}catch(e){}}
+function todaysDaily(){const d=loadDaily();return d.date===utcKey()?d:null;}
+/* The streak only survives if yesterday was played too. */
+function dailyStreak(){
+  const d=loadDaily();
+  if(!d.date)return 0;
+  const y=new Date();y.setUTCDate(y.getUTCDate()-1);
+  if(d.date===utcKey()||d.date===utcKey(y))return d.streak||0;
+  return 0;
+}
+function recordDaily(o){
+  const prev=loadDaily();
+  const y=new Date();y.setUTCDate(y.getUTCDate()-1);
+  const streak=(prev.date===utcKey(y)?(prev.streak||0):0)+1;
+  saveDaily({date:utcKey(),n:dailyNo(),wins:o.wins,losses:o.losses,
+    titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
+    rating:shownRating(o)!=null?Math.round(shownRating(o)):null,
+    rank:o.allTimeRank!=null?o.allTimeRank:null,
+    chem:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:0,
+    grid:seasonGrid(),streak});
+}
+
+/* The shape of a season in nine blocks, eighteen games each. Green for a winning
+   stretch, yellow for .500, red for a losing one. It is the season at a glance and
+   it pastes anywhere, which is the only reason it is emoji and not a chart. */
+function seasonGrid(){
+  /* finalizeSeason drops the sim state, so this reads the line it leaves behind. */
+  const res=(RUN&&RUN.gameLine)||((RUN&&RUN._simState&&RUN._simState.results)||[]).map(r=>r.won?1:0);
+  if(!res.length)return '';
+  const per=Math.ceil(res.length/9);
+  let out='';
+  for(let i=0;i<res.length;i+=per){
+    const chunk=res.slice(i,i+per);
+    const w=chunk.reduce((a,b)=>a+b,0);
+    const pct=w/chunk.length;
+    out+=pct>=0.60?'\uD83D\uDFE9':pct>=0.45?'\uD83D\uDFE8':'\uD83D\uDFE5';
+  }
+  return out;
+}
+
+function startDaily(){
+  const done=todaysDaily();
+  if(done){showDailyDone(done);return;}
+  startRun({seed:E.hashSeed('rtd-daily-'+utcKey()),daily:true});
+}
+function showDailyDone(d){
+  $('modes-in')&&0;
+  $('daily-done-in').innerHTML=
+    '<div class="dd-rec">'+d.wins+'<span>-</span>'+d.losses+'</div>'+
+    '<div class="dd-verdict">'+(d.titleWon?'World Series Champions':
+      d.madePlayoffs?'Reached October':'Missed the playoffs')+'</div>'+
+    (d.grid?'<div class="dd-grid">'+d.grid+'</div>':'')+
+    '<p class="dim" style="font-size:12.5px;margin:10px 0 0">A new board every day at '+
+    'midnight UTC. Come back tomorrow to keep the streak.</p>';
+  openSheet('sheet-daily');
+}
+function paintDailyCard(){
+  const el=$('daily-card');if(!el)return;
+  const d=todaysDaily();
+  const streak=dailyStreak();
+  el.innerHTML=
+    '<div class="dc-hd"><span class="dc-eye">Daily challenge</span>'+
+      '<span class="dc-no">#'+dailyNo()+'</span>'+
+      (streak>0?'<span class="dc-streak">&#128293; '+streak+'</span>':'')+'</div>'+
+    (d?'<div class="dc-done"><b>'+d.wins+'-'+d.losses+'</b>'+
+        (d.grid?'<span class="dc-grid">'+d.grid+'</span>':'')+'</div>'+
+        '<div class="dc-sub">Played. New board at midnight UTC.</div>'
+      :'<div class="dc-sub">Everybody gets the same twelve spins today. One try.</div>');
+  el.classList.toggle('played',!!d);
+}
+
+/* First run only. The key is versioned so a later change to what the sheet says can
+   show it again without clobbering anything else the game keeps. */
+const SEEN_KEY='rtd_seen_intro_v1';
+function hasSeen(){try{return !!localStorage.getItem(SEEN_KEY);}catch(e){return true;}}
+function markSeen(){try{localStorage.setItem(SEEN_KEY,'1');}catch(e){}}
+function maybeFirstRun(){if(!hasSeen())openSheet('sheet-first');}
 $('b-how-back').addEventListener('click',()=>{show('s-intro');heroSync();});
 $('b-quit').addEventListener('click',()=>{
   if(RUN&&RUN.phase===R.PHASES.DRAFT&&RUN.roster.length>0){
@@ -1285,7 +2634,36 @@ $('b-trophy').addEventListener('click',openTrophy);
 $('b-trophy-2').addEventListener('click',openTrophy);
 document.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-trophy')));
 document.querySelectorAll('[data-close-pos]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-pos')));
+document.querySelectorAll('[data-close-chem]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-chem')));
+$('b-chemkey').addEventListener('click',openChemKey);
 document.addEventListener('visibilitychange',heroSync);
+
+/* ─── the chemistry legend ───
+   One renderer, so the sheet on the draft board and the block in the how-to
+   can never drift apart from each other or from the engine's own values. */
+function chemKeyRows(){
+  return CHEM_TYPES.map(c=>{
+    const v=E.chemPoints(E.CHEMISTRY.VALUES[c.type]);
+    return '<div class="chemkey-row" style="--cc:'+c.color+'">'+
+      '<span class="ck-val">+'+chemNum(v)+'</span>'+
+      '<span class="ck-body"><span class="ck-name">'+esc(c.label)+'</span>'+
+      '<span class="ck-note">'+esc(c.note)+'</span></span></div>';
+  }).join('');
+}
+function chemCapNote(){
+  return 'Bonuses stack with diminishing returns and the team total tops out at <b>+'+
+    chemNum(E.chemPoints(E.CHEMISTRY.MAX))+'</b>. Chemistry lifts the runs you score, '+
+    'so it shows up in your record rather than in your team rating.<br><br>'+
+    'A mode never pays for the bond its own rule guarantees. Eras Draft keeps you inside '+
+    'one decade, so <b>Same era</b> stops counting there. One Franchise and Division Draft '+
+    'put everyone in a handful of uniforms, so <b>Franchise</b> stops counting in those. '+
+    'What is left is what you actually chose.';
+}
+function openChemKey(){
+  $('chem-key').innerHTML=chemKeyRows();
+  $('chem-cap').innerHTML=chemCapNote();
+  openSheet('sheet-chem');
+}
 
 /* ─── era mode ─── */
 function buildEraGrid(){
@@ -1297,6 +2675,93 @@ function buildEraGrid(){
     grid.appendChild(btn);
   }
 }
+
+/* ─── franchise mode ─── */
+/* The thirty clubs playing today. Everything else in the picker is a club that
+ * moved, was renamed, or folded, which is the more evocative half of the list
+ * and deserves its own heading rather than being interleaved alphabetically. */
+const CURRENT_CLUBS=new Set(['ARI','ATL','BAL','BOS','CHC','CHW','CIN','CLE','COL','DET',
+  'HOU','KCR','LAA','LAD','MIA','MIL','MIN','NYM','NYY','OAK','PHI','PIT','SDP','SEA',
+  'SFG','STL','TBR','TEX','TOR','WSN']);
+
+function franCard(f,maxDepth){
+  const tc=E.teamColors(f.team);
+  const btn=document.createElement('button');
+  btn.className='fran-card';
+  btn.style.setProperty('--c1',tc[0]);
+  btn.style.setProperty('--c2',tc[1]||tc[0]);
+  // Five pips on a square-root scale: the deepest club fills all five, and the
+  // thinnest still shows one, so the meter reads as a comparison and never as
+  // an empty card.
+  const tier=Math.max(1,Math.min(5,Math.round(Math.sqrt(f.depth/maxDepth)*5)));
+  let pips='';
+  for(let i=0;i<5;i++) pips+='<i class="'+(i<tier?'on':'')+'"></i>';
+  const yrs=f.lo===f.hi?String(f.lo):f.lo+'-'+f.hi;
+  const best=f.best?esc(f.best.n):'';
+  btn.innerHTML='<div class="fran-name">'+esc(teamFullName(f.team))+'</div>'+
+    '<div class="fran-yrs">'+yrs+' &middot; '+f.seasons+' seasons</div>'+
+    (best?'<div class="fran-best">Best: '+best+'</div>':'')+
+    '<div class="fran-depth">'+pips+'</div>';
+  btn.setAttribute('aria-label',teamFullName(f.team)+', '+f.lo+' to '+f.hi+', '+f.seasons+' seasons');
+  btn.addEventListener('click',()=>startRun({franchise:f.team}));
+  return btn;
+}
+
+function buildFranGrid(){
+  const host=$('fran-sections');host.innerHTML='';
+  const list=R.eligibleFranchises(DATA);
+  const maxDepth=list.reduce((m,f)=>Math.max(m,f.depth),1);
+  const byName=(a,b)=>teamFullName(a.team).localeCompare(teamFullName(b.team));
+  const now=list.filter(f=>CURRENT_CLUBS.has(f.team)).sort(byName);
+  const old=list.filter(f=>!CURRENT_CLUBS.has(f.team)).sort(byName);
+  for(const sec of [{label:'Playing today',rows:now},{label:'Moved, renamed, folded',rows:old}]){
+    if(!sec.rows.length) continue;
+    const h=document.createElement('div');
+    h.className='fran-sec';
+    h.innerHTML='<span>'+sec.label+'</span><span class="n">'+sec.rows.length+'</span>';
+    host.appendChild(h);
+    const grid=document.createElement('div');
+    grid.className='fran-grid';
+    for(const f of sec.rows) grid.appendChild(franCard(f,maxDepth));
+    host.appendChild(grid);
+  }
+}
+
+/* ─── division draft ───
+   The cards carry the clubs, because "AL Central" means nothing until you see that it
+   is the Guardians, the Twins and the White Sox, and the crest colors are already in
+   the engine. Every club the division has ever held is listed, since a run spans the
+   whole 1994-2025 window and the 1996 membership is as draftable as today's. */
+/* One accent per division rather than the first club's colors, which handed the
+   AL Central a black tile because Chicago happens to sort first. */
+const DIV_ACCENT={
+  'AL East':['#c0392b','#8b1a1a'], 'AL Central':['#1a5276','#123a54'],
+  'AL West':['#2e7d32','#1b5e20'], 'NL East':['#6a4c93','#432d63'],
+  'NL Central':['#d4772c','#9c5214'], 'NL West':['#b8860b','#8b6914'],
+};
+function buildDivCards(){
+  const host=$('div-cards');host.innerHTML='';
+  const grid=document.createElement('div');grid.className='modecards';
+  for(const name of Object.keys(E.DIVISIONS)){
+    const clubs=E.divisionClubs(name);
+    const btn=document.createElement('button');
+    btn.className='modecard';
+    const acc=DIV_ACCENT[name]||['#b8860b','#8b6914'];
+    btn.style.borderColor='rgba(0,0,0,.16)';
+    btn.innerHTML='<div class="mc-head"><div class="mc-icon" style="background:linear-gradient(135deg,'+
+      acc[0]+','+acc[1]+')"><svg viewBox="0 0 24 24">'+
+      '<path d="M4 20V5.5L12 3l8 2.5V20"/><path d="M4 20h16"/><path d="M12 3v17"/>'+
+      '</svg></div><div class="mc-title">'+esc(name)+'</div>'+ARROW+'</div>'+
+      '<div class="div-clubs">'+clubs.map(c=>{
+        const cc=E.teamColors(c)[0];
+        return '<span class="dc" style="--dc:'+cc+';--dci:'+readableInk(cc)+'">'+esc(c)+'</span>';
+      }).join('')+'</div>';
+    btn.addEventListener('click',()=>startRun({division:name}));
+    grid.appendChild(btn);
+  }
+  host.appendChild(grid);
+}
+function buildDivGrid(){buildDivCards();}
 
 /* ─── start run ─── */
 function startRun(opts={}){
@@ -1319,7 +2784,7 @@ function paintTop(){
   per.classList.toggle('low',left>0&&rem/Math.max(1,left)<E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD*2);
   const b=$('c-bar');b.style.width=Math.max(0,Math.min(100,rem/R.capOf(RUN)*100))+'%';
   b.classList.toggle('low',low);
-  const chem=RUN.roster.length>1?E.resolveChemistry(RUN.roster).multiplier:1;
+  const chem=RUN.roster.length>1?R.chemOf(RUN).multiplier:1;
   const el=$('c-chem');
   const zero=Math.abs(chem-1)<0.0005;
   const pct=((chem-1)*100).toFixed(1);
@@ -1334,7 +2799,7 @@ function paintTop(){
 }
 
 function nextSpin(){
-  paintTop();drawField($('field'),true);watchFold();
+  paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));drawLineupCard($('field-card'));watchFold();
   $('opts').innerHTML='';$('tabs').innerHTML='';$('d-respin').innerHTML='';
   activeTab='ALL';
   try{
@@ -1351,7 +2816,8 @@ function buildDrawExtras(draw){
   if(!DATA) return;
   const ts=DATA.teamSeasons;
   const era=RUN.era?E.ERAS[RUN.era]:null;
-  const pool=era?ts.filter(t=>t.season>=era[0]&&t.season<=era[1]):ts;
+  let pool=era?ts.filter(t=>t.season>=era[0]&&t.season<=era[1]):ts;
+  if(RUN.franchise)pool=pool.filter(t=>t.team===RUN.franchise);
   draw.yearOptions=[...new Set(pool.map(t=>String(t.season)))].sort();
   draw.teamOptions=[...new Set(pool.map(t=>t.team))];
   if(!draw.teamOptions.length) draw.teamOptions=[draw.team];
@@ -1439,18 +2905,26 @@ function optTile(r,i){
   if(!block){
     const bases=[];const seen=new Set();
     for(const idx of R.eligibleOpenSlots(RUN,p)){
-      const bs=E.SLOTS[idx].replace(/[12]$/,'');
-      if(DATA.scarcity&&DATA.scarcity[E.SLOTS[idx]]&&DATA.scarcity[E.SLOTS[idx]].premium&&p.w>=3.5) premium=true;
+      const bs=SLOTS_NOW()[idx].replace(/[12]$/,'');
+      const sN=SLOTS_NOW()[idx];
+      if(DATA.scarcity&&DATA.scarcity[sN]&&DATA.scarcity[sN].premium&&p.w>=3.5) premium=true;
       if(!seen.has(bs)){seen.add(bs);bases.push(bs);}
     }
     if(bases.length) destSlot=bases.length<=3?bases.join(' &middot; '):bases.slice(0,3).join(' &middot; ')+'&hellip;';
   }
+  // What signing this player would actually bond, named and valued, in the same
+  // colors the diamond and the results roster use. A percentage delta alone
+  // never told the player which bond they were buying.
   let chemHtml='';
   if(!block&&RUN.roster.length>0){
     const preview=R.previewSigning(RUN,p);
-    if(preview.delta>0.001){
-      const links=preview.newLinks.slice(0,2).map(l=>l.label).join(', ');
-      chemHtml='<span class="chemtag">+'+(preview.delta*100).toFixed(1)+'%'+(links?' '+links:'')+'</span>';
+    const gained=(preview.newLinks||[]).filter(l=>l.type!=='era'&&l.value>0);
+    if(gained.length){
+      const pts=gained.reduce((s,l)=>s+E.chemPoints(l.value),0);
+      const top=gained.reduce((b,l)=>(!b||l.value>b.value)?l:b,null);
+      chemHtml='<span class="chemtag" style="--cc:'+chemColor(top.type)+'">'+
+        '&#9889;+'+chemNum(pts)+' '+esc(gained.length>1?
+          chemLabel(top.type)+' +'+(gained.length-1):chemLabel(top.type))+'</span>';
     }
   }
   const hot=!block&&chemHtml;
@@ -1462,7 +2936,7 @@ function optTile(r,i){
     '<span class="pr">'+(block?esc(reason):M(p.p))+'</span></div>'+
     '<div class="nm">'+esc(p.n)+'</div>'+
     '<div class="sn">'+p.s+' '+esc(p.t)+(destSlot?' &rarr; '+destSlot:'')+'</div>'+
-    '<div class="tf"><div class="pts"><b>'+p.w.toFixed(1)+'</b><i>WAR</i></div>'+chemHtml+'</div>'+
+    '<div class="tf"><div class="pts"><b>'+warHtml(p.w)+'</b><i>WAR</i></div>'+chemHtml+'</div>'+
     '</button>';
 }
 
@@ -1475,7 +2949,7 @@ function paintRespins(){
       R.respin(RUN,DATA);
       const draw=RUN.currentDraw;
       buildDrawExtras(draw);
-      paintTop();drawField($('field'),true);
+      paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));drawLineupCard($('field-card'));
       spinBoth(draw,()=>paintOpts(draw));
     });
   }else{
@@ -1491,7 +2965,7 @@ function signChoices(p){
   const idxs=R.eligibleOpenSlots(RUN,p);
   const out=[];const seenSP=new Set();
   for(const i of idxs){
-    const name=E.SLOTS[i];const base=slotBase(name);
+    const name=SLOTS_NOW()[i];const base=slotBase(name);
     if(base==='SP'){if(seenSP.has('SP'))continue;seenSP.add('SP');}
     const natural=(p.pp===name)||(p.pp&&base===p.pp)||
       (name==='SP1'&&p.r==='p')||(name==='CL'&&p.r==='p');
@@ -1535,19 +3009,58 @@ function posLabel(name){
 }
 
 /* ─── squad review (no pre-play odds) ─── */
+/* The coach's take for a staff. The main one reads a lineup, a batting order and a
+   bench, none of which exist here. */
+function staffReport(tagged,chem,rating){
+  const era=E.staffEra(tagged);
+  const at=sl=>tagged.find(p=>p._slot===sl);
+  const rot=['SP1','SP2','SP3','SP4','SP5'].map(at).filter(Boolean);
+  const pen=['RP1','RP2','RP3','RP4','RP5','SU'].map(at).filter(Boolean);
+  const cl=at('CL');
+  const strengths=[],weaknesses=[];
+  const ace=rot.reduce((b,p)=>(!b||p.w>b.w)?p:b,null);
+  if(ace&&ace.w>=7) strengths.push(lastName(ace.n)+' is a true ace');
+  const rotAvg=rot.length?rot.reduce((s,p)=>s+p.w,0)/rot.length:0;
+  if(rotAvg>=4.5) strengths.push('Five deep in the rotation');
+  else if(rotAvg<2.5) weaknesses.push('The back of the rotation is thin');
+  const penAvg=pen.length?pen.reduce((s,p)=>s+p.w,0)/pen.length:0;
+  if(penAvg>=3.5) strengths.push('Lights-out bullpen');
+  else if(penAvg<1.8) weaknesses.push('The pen will give games back');
+  if(cl&&cl.w>=4) strengths.push('A closer who shuts the door');
+  else if(cl&&cl.w<1.5) weaknesses.push('Shaky closer');
+  if(era<=2.95) strengths.push('A staff ERA under three');
+  if(Math.abs(chem.multiplier-1)>0.02) strengths.push('Arms who have thrown together');
+  const rem=R.remaining(RUN);
+  if(rem>=15) weaknesses.push('$'+rem.toFixed(0)+'M left unspent');
+  let verdict;
+  if(rating>=90) verdict='An all-time staff';
+  else if(rating>=75) verdict='A rotation that wins in October';
+  else if(rating>=58) verdict='Solid arms';
+  else verdict='Somebody has to pitch';
+  return {strengths,weaknesses,verdict,archetype:null};
+}
+
 function showSquad(){
   show('s-squad');
+  /* No staff strip here: the list beside the field already names all twelve. */
   drawField($('sq-field'),false);
-  const tagged=RUN.roster.map((p,i)=>({...p,_slot:E.SLOTS[RUN.slotIndex[i]]}));
-  const chem=E.resolveChemistry(tagged);
-  const structure=E.rosterStructure(tagged);
-  const rating=E.overallRating(E.teamWinPct(
+  const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
+  const chem=R.chemOf(RUN,tagged);
+  rosterList($('sq-roster'),{title:'All twelve',price:true,chem});
+  /* All-Time Staff has no lineup to shape and no batting order to balance, so it
+     gets neither an archetype nor a coach's report about its hitting. Left alone it
+     told a twelve-arm roster it had a light-hitting lineup. */
+  const structure=RUN.staff?{multiplier:1,archetype:null}:E.rosterStructure(tagged);
+  /* The same number the results screen will show, from the same function, so the
+     squad screen cannot promise one thing and the season report another. */
+  const rating=RUN.staff?E.staffRating(tagged):E.teamRating(
     E.rosterOffense(tagged,chem.multiplier,structure.multiplier),
-    E.rosterRunPrevention(tagged,chem.multiplier)));
-  const cr=E.coachReport(tagged,chem,structure,rating,R.remaining(RUN));
+    E.rosterRunPrevention(tagged,chem.multiplier));
+  const cr=RUN.staff?staffReport(tagged,chem,rating)
+    :E.coachReport(tagged,chem,structure,rating,R.remaining(RUN));
   const vd=$('sq-verdict');
   vd.textContent=cr.verdict;
-  vd.className='sq-verdict'+(rating>=84?' great':'');
+  vd.className='sq-verdict'+(rating>=70?' great':'');
   $('sq-arch').textContent=(structure.archetype&&structure.archetype.name)||'';
   const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
   $('sq-takes').innerHTML=takes.length?takes.map(t=>
@@ -1579,40 +3092,185 @@ function startSeason(){
   }
   $('s-actions').style.display='';
   $('b-sim-fast').onclick=()=>{$('s-actions').style.display='none';simRemaining();};
+  paintCapTrack();
   simGame(0);
 }
+
+/* ─── salary cap survivor, in play ───
+   The season pauses on a shock rather than resolving it behind the scenes, because
+   the cut is the whole mode. Nothing advances until the roster is legal again. */
+function paintCapTrack(){
+  const el=$('cap-track');
+  if(!RUN||!RUN.capSurvivor){el.hidden=true;return;}
+  el.hidden=false;
+  const pay=R.payroll(RUN),cap=R.capOf(RUN),over=R.overCap(RUN);
+  el.classList.toggle('danger',over>0);
+  $('ct-total').textContent=M(pay)+(over>0?' over by '+M(over):'');
+  $('ct-fill').style.width=Math.max(2,Math.min(100,pay/cap*100))+'%';
+  const done=(RUN.market||[]).length;
+  $('ct-shocks').innerHTML=E.MARKET.GAMES.map((_,i)=>
+    '<i class="'+(i<done?'hit':'')+'"></i>').join('');
+}
+/* The cut. Every real player is offered; the ones that would clear the overage on
+   their own are flagged, because the alternative is doing the subtraction yourself
+   twelve times while a sheet is open. */
+function askCut(ev,onDone){
+  const over=R.overCap(RUN);
+  $('cut-amt').textContent=M(over);
+  $('cut-eyebrow').textContent='Shock '+ev.shock+' of '+E.MARKET.GAMES.length;
+  $('cut-sub').innerHTML='<b>'+esc(ev.name)+'</b> just went from '+M(ev.before)+' to '+
+    M(ev.after)+'. Your payroll is '+M(R.payroll(RUN))+' against a '+M(R.capOf(RUN))+
+    ' cap. Cut somebody.';
+  const list=$('cut-list');list.innerHTML='';
+  RUN.roster.forEach((p,i)=>{
+    const slot=SLOTS_NOW()[RUN.slotIndex[i]];
+    const btn=document.createElement('button');
+    btn.className='cutrow'+(!p._repl&&p.p>=over?' enough':'');
+    btn.disabled=!!p._repl;
+    btn.innerHTML='<span class="cpos" style="'+posPaint(slot)+'">'+slot+'</span>'+
+      '<span class="cname">'+esc(p.n)+'</span>'+
+      '<span class="cwar">'+p.w.toFixed(1)+' WAR</span>'+
+      '<span class="cprice">'+M(p.p)+'</span>';
+    btn.addEventListener('click',()=>{
+      const r=R.cutPlayer(RUN,i);
+      ga('cap_cut',{name:r.name,slot:r.slot,shock:ev.shock});
+      paintCapTrack();
+      if(R.overCap(RUN)>0){askCut(ev,onDone);return;}   // still over: keep cutting
+      closeSheet('sheet-cut');
+      onDone();
+    });
+    list.appendChild(btn);
+  });
+  openSheet('sheet-cut');
+}
+
+/* ─── the trade machine, in play ───
+   You did not draft this roster and you cannot re-draft it. Three times the phone
+   rings, and the season waits for your answer. */
+function startTrade(){
+  RUN=R.createRun({tradeMachine:true});
+  heroStop();heroRunning=false;
+  if(!R.dealRoster(RUN,DATA)){
+    alert('Could not assemble a roster. Please try again.');
+    RUN=null;show('s-intro');heroSync();return;
+  }
+  ga('game_started',{mode:'trade'});
+  showSquad();
+}
+
+function askTrade(offers,onDone){
+  const w=offers[0].window;
+  $('trade-eyebrow').textContent='Deadline '+w+' of '+E_TRADE_WINDOWS();
+  $('trade-sub').innerHTML='You have <b>'+M(R.capOf(RUN)-R.payroll(RUN))+
+    '</b> of room under the cap. Take one, or stand pat.';
+  const list=$('trade-list');list.innerHTML='';
+  const room=R.capOf(RUN)-R.payroll(RUN);
+  for(const o of offers){
+    const btn=document.createElement('button');
+    btn.className='offer';
+    btn.disabled=o.cost>room+1e-9;
+    const gain=(o.in.w-o.out.w);
+    btn.innerHTML='<div class="of-hd"><span class="of-slot" style="'+posPaint(o.slot)+'">'+
+      esc(o.slot)+'</span><span class="of-gain">+'+gain.toFixed(1)+' WAR</span>'+
+      '<span class="of-cost'+(o.cost<=0?' free':'')+'">'+(o.cost>0?'costs '+M(o.cost):'frees '+M(-o.cost))+'</span></div>'+
+      '<div class="of-swap">'+
+        '<span class="of-side out"><span class="nm">'+esc(o.out.n)+'</span>'+
+          '<span class="mt">'+o.out.s+' '+esc(o.out.t)+' &middot; '+o.out.w.toFixed(1)+' WAR</span></span>'+
+        '<span class="of-arrow">&rarr;</span>'+
+        '<span class="of-side"><span class="nm">'+esc(o.in.n)+'</span>'+
+          '<span class="mt">'+o.in.s+' '+esc(o.in.t)+' &middot; '+o.in.w.toFixed(1)+' WAR</span></span>'+
+      '</div>';
+    btn.addEventListener('click',()=>{
+      try{R.acceptTrade(RUN,DATA,o);}catch(e){console.error(e);return;}
+      ga('trade_accepted',{slot:o.slot,gain:Math.round(gain*10)/10,window:w});
+      closeSheet('sheet-trade');onDone();
+    });
+    list.appendChild(btn);
+  }
+  $('b-trade-pass').onclick=()=>{
+    R.declineTrades(RUN,offers[0].gameIndex,w);
+    ga('trade_passed',{window:w});
+    closeSheet('sheet-trade');onDone();
+  };
+  openSheet('sheet-trade');
+}
+const E_TRADE_WINDOWS=()=>R.TRADE.WINDOWS.length;
 
 let simTimer=null;
 function simGame(idx){
   if(idx>=E.CONSTANTS.REGULAR_SEASON_GAMES){finishSeason();return;}
+  if(RUN.capSurvivor){
+    const ev=R.applyMarket(RUN,idx);
+    if(ev){
+      paintCapTrack();
+      if(ev.over>0){askCut(ev,()=>simGame(idx));return;}
+    }
+  }
+  if(RUN.tradeMachine){
+    const offers=R.tradeOffers(RUN,DATA,idx);
+    if(offers){askTrade(offers,()=>simGame(idx));return;}
+  }
   const result=R.advanceGame(RUN,idx);
   if(!result){finishSeason();return;}
   const pip=$('pip-'+idx);
   if(pip) pip.className='sim-pip '+(result.won?'w':'l');
   $('s-record').innerHTML='<span class="w">'+result.record.wins+'</span><span class="sep">-</span><span class="l">'+result.record.losses+'</span>';
   const gp=idx+1;
-  $('s-pace').textContent='Game '+gp+' of 162 | On pace for '+Math.round(result.record.wins/gp*162)+' wins';
+  $('s-pace').innerHTML='Game '+gp+' of 162 &middot; On pace for <b>'+Math.round(result.record.wins/gp*162)+' wins</b>';
   const feed=$('s-feed');
   const row=document.createElement('div');row.className='sim-game'+(result.marquee?' marquee':'');
   const opp=result.oppName?'<span class="gopp">'+(result.marquee?'&starf; ':'')+'vs '+esc(result.oppName)+'</span>':'';
   row.innerHTML='<span class="gnum">G'+result.game+'</span>'+opp+
-    '<span class="gruns">'+result.yourRuns+'&ndash;'+result.oppRuns+'</span>'+
+    '<span class="gruns">'+result.yourRuns+'-'+result.oppRuns+'</span>'+
     '<span class="gscore '+(result.won?'gw':'gl')+'">'+(result.won?'W':'L')+'</span>';
   feed.insertBefore(row,feed.firstChild);
   if(feed.children.length>18) feed.removeChild(feed.lastChild);
+  if(RUN.capSurvivor&&idx%9===0) paintCapTrack();
   const speed=idx<10?120:idx<40?60:idx<100?30:15;
   simTimer=setTimeout(()=>simGame(idx+1),speed);
+}
+
+/* Fast-forward stops for a decision, so the screen behind the sheet has to agree
+   with where the season actually is. It was showing the record from the pause and
+   the game number from wherever the animated sim had got to. */
+function paintPause(st,i){
+  $('s-record').innerHTML='<span class="w">'+st.wins+'</span><span class="sep">-</span><span class="l">'+st.losses+'</span>';
+  const gp=st.results.length;
+  if(gp>0)$('s-pace').innerHTML='Game '+gp+' of 162 &middot; On pace for <b>'+
+    Math.round(st.wins/gp*162)+' wins</b>';
 }
 
 function simRemaining(){
   if(simTimer){clearTimeout(simTimer);simTimer=null;}
   const st=RUN._simState;if(!st) return;
   for(let i=st.results.length;i<E.CONSTANTS.REGULAR_SEASON_GAMES;i++){
+    // Fast-forward still stops for a shock. Skipping it would let the player
+    // outrun the one decision the mode is made of.
+    if(RUN.capSurvivor){
+      const ev=R.applyMarket(RUN,i);
+      if(ev){
+        paintCapTrack();
+        if(ev.over>0){
+          paintPause(st,i);
+          askCut(ev,()=>simRemaining());
+          return;
+        }
+      }
+    }
+    if(RUN.tradeMachine){
+      const offers=R.tradeOffers(RUN,DATA,i);
+      if(offers){
+        paintPause(st,i);
+        askTrade(offers,()=>simRemaining());
+        return;
+      }
+    }
     const result=R.advanceGame(RUN,i);
     if(!result) break;
     const pip=$('pip-'+i);
     if(pip) pip.className='sim-pip '+(result.won?'w':'l');
   }
+  paintCapTrack();
   $('s-record').innerHTML='<span class="w">'+st.wins+'</span><span class="sep">-</span><span class="l">'+st.losses+'</span>';
   $('s-pace').textContent='162 games complete';
   finishSeason();
@@ -1626,33 +3284,608 @@ function finishSeason(){
   else setTimeout(()=>showResult(),1500);
 }
 
-/* ─── playoffs ─── */
-function startPlayoffs(){
-  show('s-playoffs');
-  $('po-seed-label').textContent=RUN.playoffSeed.label;
-  const rounds=RUN.playoffs.rounds;
-  const container=$('po-rounds');container.innerHTML='';
-  let delay=0;
-  for(const round of rounds){
-    delay+=1200;
-    setTimeout(()=>{
-      const champ=round.won&&round.round==='World Series';
-      const div=document.createElement('div');
-      div.className='po-round '+(champ?'champ':round.won?'won':'lost');
-      div.innerHTML='<div class="round-name">'+esc(round.round)+'</div>'+
-        (round.oppName?'<div class="po-opp">vs <b>'+esc(round.oppName)+'</b></div>':'')+
-        '<div class="po-series '+(champ?'champ':round.won?'won':'lost')+'">'+
-        (champ?'&#127942; Champions '+round.yourWins+'-'+round.oppWins:
-          round.won?'Won '+round.yourWins+'-'+round.oppWins:'Lost '+round.oppWins+'-'+round.yourWins)+'</div>'+
-        '<div class="po-games">'+round.games.map((g,gi)=>
-          '<div class="po-g '+(g.won?'w':'l')+'">G'+(gi+1)+' '+g.yourRuns+'&ndash;'+g.oppRuns+'</div>'
-        ).join('')+'</div>';
-      container.appendChild(div);
-    },delay);
-  }
-  delay+=1500;
-  setTimeout(()=>showResult(),delay);
+/* ─── the bracket ───────────────────────────────────────────────────────────
+   The field and the pairings are E.createBracket()'s, which is where they can be
+   tested; everything from here down is drawing. Read the block above it in
+   engine.js before changing either: the bracket decides nothing, and the seat
+   across from you is the run's own opponent rather than the reseed's. */
+let BRK=null;
+function brkBuild(){
+  if(BRK&&BRK.forSeed===RUN.seed)return BRK;
+  BRK=E.createBracket({
+    seed:RUN.seed,
+    bye:!!RUN.playoffSeed.bye,
+    rounds:RUN.playoffSeed.rounds,
+    wins:RUN.outcome.wins,
+    ladder:(RUN.playoffs&&RUN.playoffs.rounds||[]).map(r=>r.oppTeam?{
+      code:r.oppTeam,season:r.oppSeason,rating:r.oppRating,
+      id:r.oppSeason?E.teamSeasonId(r.oppTeam,r.oppSeason):r.oppTeam}:null),
+    teamSeasons:(DATA&&DATA.teamSeasons)||[],
+  });
+  BRK.forSeed=RUN.seed;
+  return BRK;
 }
+const BRK_ROUNDS=E.BRACKET.ROUNDS, BRK_SHORT=E.BRACKET.SHORT, BRK_BYES=E.BRACKET.BYES;
+const brkColOf=(i)=>brkBuild().colOf(i);
+const brkFirstCol=()=>brkBuild().firstCol;
+const brkColGames=(col)=>brkBuild().colGames(col);
+function brkSettleMine(i,won){
+  const r=RUN.playoffs.rounds[i];
+  brkBuild().settleMine(i,won,r?(won?r.yourWins+'-'+r.oppWins:r.oppWins+'-'+r.yourWins):null);
+}
+const brkRevealAll=()=>brkBuild().revealAll();
+
+/* One seat. A seat with nobody in it yet is the winner of a series that has not been
+   played, and says so rather than sitting blank. */
+function brkSeat(e,won,settled,score,champ){
+  if(!e)return '<div class="brk-t tbd"><span class="sd"></span><span class="nm">TBD</span></div>';
+  const cls=(settled?(won?' won':' out'):'')+(champ&&won?' champ':'');
+  const sc=(settled&&won&&score)?'<span class="sc">'+esc(score)+'</span>':'';
+  if(e.you)return '<div class="brk-t me'+cls+'"><span class="sd">'+e.seed+'</span>'+
+    '<span class="nm">'+esc(myClubShort())+'</span>'+sc+'</div>';
+  const t=e.team;
+  if(!t)return '<div class="brk-t tbd"><span class="sd">'+e.seed+'</span>'+
+    '<span class="nm">TBD</span></div>';
+  const c=E.teamColors(t.code);
+  /* The year carries an apostrophe. Two bare digits hard right, in a row that already
+     has a number hard left, read as a score. */
+  return '<div class="brk-t'+cls+'" style="--c1:'+c[0]+'"><span class="sd">'+e.seed+'</span>'+
+    '<span class="nm">'+esc(t.code)+'</span>'+
+    '<span class="yr">'+(t.season?'&rsquo;'+esc(String(t.season).slice(2)):'')+'</span>'+sc+'</div>';
+}
+
+function brkRender(upTo){
+  const B=brkBuild(),rail=$('brk-rail');if(!rail)return;
+  /* A column is empty until the round that feeds it has been played, or the World
+     Series can be read before the first pitch. TBD is what an unfed seat says. */
+  const known=[0,1,2,3].map(c=>B.knownAt(c));
+  let h='';
+  for(let c=0;c<4;c++){
+    h+='<div class="brk-col"><div class="brk-h">'+esc(BRK_SHORT[c])+'</div>';
+    const games=brkColGames(c);
+    let side=null;
+    for(const g of games){
+      if(c<3&&g.side!==side){
+        side=g.side;
+        h+='<div class="brk-side">'+(side==='near'?'Your side':'The other side')+'</div>';
+      }
+      const settled=!!B.revealed[g.key];
+      const w=settled?B.results[g.key]:null;
+      const p0=known[c]?g.pair[0]:null,p1=known[c]?g.pair[1]:null;
+      /* The ring means "this one is on now", so it comes off the moment the series
+         has a result: a settled game wearing it reads as still to be played. */
+      h+='<div class="brk-g'+(g.me&&c===upTo&&!settled?' live':'')+'">'+
+        brkSeat(p0,!!(w&&p0&&w===p0),settled,B.scores[g.key],c===3)+
+        brkSeat(p1,!!(w&&p1&&w===p1),settled,B.scores[g.key],c===3)+'</div>';
+    }
+    /* The two seats per side that sat the wild card out. They played nothing, but
+       they are in the field and a bracket that leaves them off is missing four clubs. */
+    if(c===0)for(const s of ['near','far']){
+      h+='<div class="brk-side">'+(s==='near'?'Your side':'The other side')+' byes</div>'+
+        '<div class="brk-g">'+BRK_BYES.map(n=>brkSeat(B[s][n],false,false)).join('')+'</div>';
+    }
+    h+='</div>';
+  }
+  rail.innerHTML=h;
+}
+
+/* Where the player is in October: the round out of their own bracket, not out of
+   the four columns, because a division winner never plays the first one. */
+function brkWhere(col){
+  const n=E.playoffRoundNames(RUN.playoffSeed.rounds).length;
+  const i=col-brkFirstCol();
+  return i<0?'October baseball':('Round '+(i+1)+' of '+n);
+}
+
+/* The round being played, in view. Four columns at 150 wide is 627 and a phone shows
+   two of them, so by the World Series the one series that matters starts off the
+   right-hand edge and you have to go looking for it. */
+function brkFocus(col){
+  const rail=$('brk-rail');if(!rail)return;
+  const el=rail.children[col];if(!el)return;
+  rail.scrollTo({left:Math.max(0,el.offsetLeft-10),behavior:reduceMotion()?'auto':'smooth'});
+}
+
+/* The reveal. Every series in this column that you are not in flips to its winner one
+   after another; yours is left standing and the screen hands off. Nothing here decides
+   anything: the others were settled the moment the pairings were asked for, and yours
+   was settled by the engine before this screen was ever shown. */
+const BRK_STEP=520,BRK_LEAD=650,BRK_TAIL=620;
+let brkSkip=null;
+function brkShow(col,note,done){
+  const B=brkBuild();
+  /* The columns a bye walked past. Nobody animated them, but they happened, and the
+     column after them cannot be filled in until they are settled. */
+  for(let c=0;c<brkFirstCol();c++)brkColGames(c).forEach(g=>{B.revealed[g.key]=1;});
+  /* The eyebrow says where you are in October and the title says which round.
+     Both reading "Wild Card" told the player nothing twice. */
+  $('po-seed-label').textContent=brkWhere(col);
+  $('brk-round').textContent=BRK_ROUNDS[col]||'October baseball';
+  $('brk-note').textContent='';
+  brkRender(col);
+  show('s-playoffs');
+  brkFocus(col);
+  const games=brkColGames(col).filter(g=>!g.me&&!B.revealed[g.key]);
+  let i=0;
+  const finish=()=>{
+    poClear();brkSkip=null;
+    games.forEach(g=>{B.revealed[g.key]=1;});
+    brkRender(col);
+    $('brk-note').textContent=note||'';
+    done();
+  };
+  brkSkip=finish;
+  const tick=()=>{
+    if(i>=games.length){PO.timer=setTimeout(finish,BRK_TAIL/(PO.speed||1));return;}
+    B.revealed[games[i].key]=1;
+    i++;
+    brkRender(col);
+    PO.timer=setTimeout(tick,BRK_STEP/(PO.speed||1));
+  };
+  PO.timer=setTimeout(tick,BRK_LEAD/(PO.speed||1));
+}
+
+/* The quick draft stays quick: Classic and the daily watch the bracket fill in and
+   never sit through a game. Every mode you actually sit with plays October out. */
+function liveOctober(){
+  if(!RUN||RUN.daily)return false;
+  return !!(RUN.era||RUN.franchise||RUN.division||RUN.capSurvivor||RUN.staff||RUN.tradeMachine);
+}
+
+function startPlayoffs(){
+  octoberStart(!liveOctober(),null);
+}
+
+/* ─── October, plate appearance by plate appearance ───
+
+   The bracket above is already decided: R.finalizeSeason() ran the whole of
+   October through the same model that ran the 162, and this screen does not get
+   a vote. What it does is play the games that produced those scores, so a 4-2
+   in the Division Series stops being a number on a chip and becomes nine
+   innings with your catcher batting sixth.
+
+   Every game is seeded off the run seed plus its own round and game index, so
+   it draws nothing from the season's RNG. Watching a game and skipping it leave
+   the bracket identical, and the same game always plays the same way twice. */
+
+let PO=null;
+
+const myTagged=()=>RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
+const myClub=()=>RUN.franchise?teamFullName(RUN.franchise):'Your All-Stars';
+const myClubShort=()=>RUN.franchise||'YOU';
+
+function gameScript(ri,gi){
+  const round=RUN.playoffs.rounds[ri],g=round.games[gi];
+  const rng=E.createSeededRNG(E.hashSeed(String(RUN.seed)+'|po|'+ri+'|'+gi));
+  const homes=E.homeGames(round.bestOf||7,!!round.homeField);
+  const tagged=myTagged();
+  const oppRoster=(round.oppTeam&&round.oppSeason&&DATA&&DATA.byTeamSeason)
+    ?DATA.byTeamSeason[E.teamSeasonId(round.oppTeam,round.oppSeason)]:null;
+  return E.simGameScript({
+    yourRuns:g.yourRuns,oppRuns:g.oppRuns,won:g.won,
+    youHome:!!homes[gi],
+    yourName:myClubShort(),oppName:round.oppName||'The field',
+    yourLineup:E.lineupFromRoster(tagged),
+    oppLineup:E.lineupFromTeamSeason(oppRoster)||E.lineupFromRoster([]),
+    yourStaff:E.staffFromRoster(tagged,gi),
+    oppStaff:E.staffFromTeamSeason(oppRoster,gi),
+    rng,
+  });
+}
+
+function octoberStart(quick,returnTo){
+  const saved=parseInt(localStorage.getItem('rtd_po_speed')||'',10);
+  PO={round:0,game:0,speed:saved===2||saved===4?saved:(reduceMotion()?4:1),
+      paused:false,timer:null,returnTo:returnTo||null,quick:!!quick,
+      events:null,idx:-1,script:null};
+  BRK=null;
+  paintSpeed();
+  setTimeout(()=>openRound(0),returnTo?0:600);
+}
+
+function poClear(){if(PO&&PO.timer){clearTimeout(PO.timer);PO.timer=null;}}
+
+/* One round: the bracket fills in around you, then either the series card or, on
+   the quick path, your own result lands on the bracket with everybody else's. */
+function openRound(i){
+  poClear();
+  const rounds=RUN.playoffs.rounds;
+  if(i>=rounds.length){octoberDone();return;}
+  PO.round=i;PO.game=0;
+  const col=brkColOf(i);
+  brkShow(col,PO.quick?'':'Your series is next.',()=>{
+    if(!PO)return;
+    if(!PO.quick){PO.timer=setTimeout(()=>openSeries(i),620/(PO.speed||1));return;}
+    const r=rounds[i];
+    brkSettleMine(i,r.won);
+    brkRender(col);
+    $('brk-note').textContent=r.won
+      ?'You take it '+r.yourWins+'-'+r.oppWins+'.'
+      :'Out of it '+r.oppWins+'-'+r.yourWins+'.';
+    PO.timer=setTimeout(()=>{
+      if(r.won&&i+1<rounds.length)openRound(i+1);else octoberDone();
+    },1500/(PO.speed||1));
+  });
+}
+
+/* ─── the series card ─── */
+function openSeries(i){
+  poClear();
+  const rounds=RUN.playoffs.rounds;
+  if(i>=rounds.length){octoberDone();return;}
+  PO.round=i;PO.game=0;
+  const r=rounds[i];
+  show('s-series');
+  /* The BRACKET, not the rounds that were played. RUN.playoffs.rounds stops at
+     the round you went out in, so counting it would tell a player on the series
+     card that this is the last one they will see. */
+  const path=E.playoffRoundNames(RUN.playoffSeed.rounds);
+  $('sr-round').textContent='Round '+(i+1)+' of '+path.length;
+  $('sr-title').textContent=r.round;
+  const card=$('sr-card');
+  const tc=r.oppTeam?E.teamColors(r.oppTeam):['#8a7e6e','#6b6252'];
+  card.style.setProperty('--c1',tc[0]);card.style.setProperty('--c2',tc[1]||tc[0]);
+  const need=Math.ceil((r.bestOf||7)/2);
+  const SHORT={'Wild Card':'WC','Division Series':'LDS','Championship Series':'LCS',
+    'World Series':'WS'};
+  card.innerHTML=
+    '<div class="sr-side"><div class="nm">'+esc(myClub())+'</div>'+
+      '<div class="sub">'+RUN.outcome.wins+'-'+RUN.outcome.losses+' &middot; '+
+      esc(RUN.playoffSeed.label)+'</div></div>'+
+    '<div class="sr-mid">VS</div>'+
+    '<div class="sr-side"><div class="nm">'+esc(r.oppName||'The field')+'</div>'+
+      '<div class="sub">'+(r.oppRating!=null?'Rated '+Math.round(r.oppRating):'All-time club')+
+      '</div></div>'+
+    '<div class="sr-meta">'+
+      '<span class="sr-chip">Best of '+(r.bestOf||7)+'</span>'+
+      '<span class="sr-chip '+(r.homeField?'home':'')+'">'+
+        (r.homeField?'Home field':'Open on the road')+'</span>'+
+      '<span class="sr-chip">'+need+' to advance</span>'+
+    '</div>'+
+    '<div class="sr-path">'+path.map((n,k)=>
+      (k?'<span class="sr-arrow">&rsaquo;</span>':'')+
+      '<span class="sr-step '+(k<i?'done':k===i?'now':'')+'">'+esc(SHORT[n]||n)+'</span>'
+    ).join('')+'</div>';
+}
+
+/* ─── one game ─── */
+function flattenScript(s){
+  const ev=[];let a=0,h=0;
+  for(const hf of s.halves){
+    ev.push({type:'half',hf,a,h});
+    for(const p of hf.plays){
+      ev.push({type:'pa',hf,p,
+        a:hf.half==='top'?a+p.runs:a,
+        h:hf.half==='bot'?h+p.runs:h});
+    }
+    a=hf.away;h=hf.home;
+  }
+  return ev;
+}
+
+function playGame(){
+  poClear();brkSkip=null;
+  const r=RUN.playoffs.rounds[PO.round];
+  if(PO.game>=r.games.length){endSeries();return;}
+  PO.script=gameScript(PO.round,PO.game);
+  PO.events=flattenScript(PO.script);
+  PO.idx=-1;
+  /* A pause belongs to the game it was called in. Carrying it into the next one
+     leaves the screen frozen with no obvious reason why. */
+  PO.paused=false;paintSpeed();
+  show('s-game');
+  $('gm-final').hidden=true;
+  $('gm-feed').innerHTML='';
+  paintGameChrome();
+  nextPlay();
+}
+
+function paintGameChrome(){
+  const r=RUN.playoffs.rounds[PO.round],s=PO.script;
+  let w=0,l=0;
+  for(let i=0;i<PO.game;i++){if(r.games[i].won)w++;else l++;}
+  /* Round on its own line: "Championship Series - Game 6" wraps at phone width
+     and the wrap lands between the two halves of one label. */
+  $('gm-where').innerHTML=esc(r.round)+
+    '<b>Game '+(PO.game+1)+' &middot; '+(w||l?'series '+w+'-'+l:'series level')+
+    ' &middot; '+(s.youHome?'at home':'on the road')+'</b>';
+
+  const rows=[['aw',s.away.name,!s.youHome],['hm',s.home.name,s.youHome]];
+  let html='<tr><th class="tm"></th>';
+  for(let i=1;i<=9;i++)html+='<th id="lh-'+i+'">'+i+'</th>';
+  html+='<th class="rhe">R</th><th class="rhe">H</th></tr>';
+  for(const [k,name,mine] of rows){
+    html+='<tr class="'+(mine?'you':'')+'"><td class="tm">'+esc(name)+'</td>';
+    for(let i=0;i<9;i++)html+='<td id="ln-'+k+'-'+i+'"></td>';
+    html+='<td class="rhe" id="ln-'+k+'-R">0</td><td class="rhe" id="ln-'+k+'-H">0</td></tr>';
+  }
+  $('gm-line').innerHTML=html;
+  setBases([null,null,null]);setOuts(0);
+  $('gm-up').innerHTML='';$('gm-arm').textContent='';
+}
+
+function setBases(b){
+  $('gm-b1').classList.toggle('on',!!b[0]);
+  $('gm-b2').classList.toggle('on',!!b[1]);
+  $('gm-b3').classList.toggle('on',!!b[2]);
+}
+function setOuts(n,label){
+  $('gm-outs').innerHTML='Out'+
+    '<span class="gm-dot'+(n>0?' on':'')+'"></span>'+
+    '<span class="gm-dot'+(n>1?' on':'')+'"></span>'+
+    '<span class="gm-dot'+(n>2?' on':'')+'"></span>'+
+    (label?'<span class="gm-inn">'+esc(label)+'</span>':'');
+}
+
+const HALF_LABEL=n=>(n===1?'1st':n===2?'2nd':n===3?'3rd':n+'th');
+const PLAY_TAG={BB:'BB',HBP:'HBP','1B':'1B','2B':'2B','3B':'3B',HR:'HR',
+  K:'K',GO:'GO',FO:'FO',LO:'LO',PO:'PO',DP:'DP',SF:'SF'};
+
+/* One line of the feed, as markup, from the event alone. Pure: the same event
+   always produces the same card, which is what lets the feed be rebuilt rather
+   than appended to. */
+function feedCard(ev){
+  if(ev.type==='half')
+    return '<div class="gm-play beat">'+(ev.hf.half==='top'?'Top of the ':'Bottom of the ')+
+      HALF_LABEL(ev.hf.inning)+' &middot; '+esc(ev.hf.team)+' batting</div>';
+  const p=ev.p;
+  const tag=PLAY_TAG[p.code==='OUT'?p.kind:p.code]||'';
+  const cls=p.rbi>0?'run':(p.hit?'hit':'');
+  let text=esc(p.text);
+  if(p.code!=='HR'&&p.scored.length){
+    const who=p.scored.map(esc);
+    const last=who.pop();
+    text+=' '+(who.length?who.join(', ')+' and '+last:last)+
+      (p.scored.length>1?' score.':' scores.');
+  }
+  if(p.walkoff)text+=' Ballgame.';
+  return '<div class="gm-play '+cls+'"><span class="tag">'+esc(tag)+
+    '</span><span>'+text+'</span></div>';
+}
+
+/*
+ * THE FEED IS REBUILT FROM THE EVENT LIST, never appended to.
+ *
+ * It used to prepend each play as it was rendered, which is cheaper and is fine
+ * right up until two paints race: skipping a game hands off to the next one on a
+ * timer, and a player (or a test bot) tapping Skip through a series can land a
+ * paint from one game against a feed still holding another. What that looks like
+ * is your own left fielder batting under a line that says the 1998 Braves are up,
+ * with a correct line score beside it, which is the kind of thing nobody can
+ * debug from a screenshot. Drawn this way the feed is always exactly the last six
+ * events of the game being shown, so it cannot disagree with anything.
+ */
+function paintFeed(){
+  const out=[];
+  for(let i=PO.idx;i>=0&&out.length<6;i--){
+    const ev=PO.events[i];
+    if(ev)out.push(feedCard(ev));
+  }
+  $('gm-feed').innerHTML=out.join('');
+}
+
+function renderEvent(ev){
+  const s=PO.script;
+  if(ev.type==='half'){
+    setBases([null,null,null]);
+    setOuts(0,(ev.hf.half==='top'?'Top ':'Bot ')+HALF_LABEL(ev.hf.inning));
+    paintFeed();
+    for(let i=1;i<=9;i++)$('lh-'+i).classList.toggle('now',i===ev.hf.inning);
+    const first=ev.hf.plays[0];
+    if(first)paintUp(first,ev.hf);
+    return;
+  }
+  const p=ev.p,hf=ev.hf;
+  setBases(p.bases);
+  const dia=$('gm-diamond');
+  dia.classList.remove('scored');
+  if(p.rbi>0&&!reduceMotion()){void dia.offsetWidth;dia.classList.add('scored');}
+  setOuts(p.outs,(hf.half==='top'?'Top ':'Bot ')+HALF_LABEL(hf.inning));
+
+  const key=hf.half==='top'?'aw':'hm';
+  const cell=$('ln-'+key+'-'+(hf.inning-1));
+  if(cell){cell.textContent=p.runs;cell.classList.remove('fresh');
+    if(p.rbi>0){void cell.offsetWidth;cell.classList.add('fresh');}}
+  $('ln-aw-R').textContent=ev.a;$('ln-hm-R').textContent=ev.h;
+  $('ln-'+key+'-H').textContent=liveHits(hf,p);
+
+  paintFeed();
+
+  const nx=PO.events[PO.idx+1];
+  if(nx&&nx.type==='pa')paintUp(nx.p,nx.hf);
+}
+
+/* Hits are cumulative across the game, and the script only carries them per half,
+   so add up the finished halves for this side and the one in progress. */
+function liveHits(hf,p){
+  let n=0;
+  for(const h of PO.script.halves){
+    if(h.half!==hf.half)continue;
+    if(h.inning<hf.inning)n+=h.hits;
+  }
+  for(const q of hf.plays){n+=q.hit?1:0;if(q===p)break;}
+  return n;
+}
+
+function paintUp(p,hf){
+  const b=p.batter||{};
+  $('gm-up').innerHTML='<span class="spot">'+esc(hf.team)+' batting</span>'+esc(b.name||'');
+  const arm=p.pitcher;
+  $('gm-arm').textContent=arm?('Pitching: '+arm.name+(arm.slot?' ('+arm.slot+')':'')):'';
+}
+
+function delayFor(ev){
+  const sp=PO.speed||1;
+  if(ev.type==='half')return 320/sp;
+  const p=ev.p;
+  let d=270;
+  if(p.basesBefore.some(Boolean))d=380;
+  if(p.hit)d=540;
+  if(p.rbi>0)d=820;
+  if(p.code==='HR')d=1000;
+  if(p.walkoff)d=1500;
+  return d/sp;
+}
+
+function nextPlay(){
+  poClear();
+  if(!PO||PO.paused)return;
+  PO.idx++;
+  const ev=PO.events[PO.idx];
+  if(!ev){finishGame();return;}
+  renderEvent(ev);
+  PO.timer=setTimeout(nextPlay,delayFor(ev));
+}
+
+/* Skip: the score was never in doubt, so jumping to the end just means painting
+   the line score the script already holds. */
+function jumpToEnd(){
+  /* Already at the end, with the hold to the next game running: do nothing rather
+     than clear that timer and set it again, or a player tapping Skip through a
+     series keeps pushing the next game back and the screen never moves. */
+  if(!PO||!PO.events||PO.idx>=PO.events.length)return;
+  poClear();
+  const s=PO.script;
+  for(let i=0;i<9;i++){
+    const t=s.line[i];
+    $('ln-aw-'+i).textContent=t.top;
+    $('ln-hm-'+i).textContent=t.bot==null?'X':t.bot;
+  }
+  $('ln-aw-R').textContent=s.final.away;$('ln-hm-R').textContent=s.final.home;
+  $('ln-aw-H').textContent=s.away.hits;$('ln-hm-H').textContent=s.home.hits;
+  for(let i=1;i<=9;i++)$('lh-'+i).classList.remove('now');
+  setBases([null,null,null]);setOuts(3);
+  PO.idx=PO.events.length;
+  finishGame();
+}
+
+function finishGame(){
+  poClear();
+  const s=PO.script,r=RUN.playoffs.rounds[PO.round],g=r.games[PO.game];
+  for(let i=0;i<9;i++){
+    const t=s.line[i];
+    $('ln-aw-'+i).textContent=t.top;
+    $('ln-hm-'+i).textContent=t.bot==null?'X':t.bot;
+  }
+  $('ln-aw-H').textContent=s.away.hits;$('ln-hm-H').textContent=s.home.hits;
+  for(let i=1;i<=9;i++)$('lh-'+i).classList.remove('now');
+  /* Leaving the last hitter under "batting", with an inning still lit beside
+     him, reads as though the game is going on. */
+  $('gm-up').innerHTML='<span class="spot">Final</span>'+
+    esc(s.away.name)+' '+s.final.away+', '+esc(s.home.name)+' '+s.final.home;
+  $('gm-arm').textContent='';
+  setBases([null,null,null]);setOuts(3);
+
+  let w=0,l=0;
+  for(let i=0;i<=PO.game;i++){if(r.games[i].won)w++;else l++;}
+  const need=Math.ceil((r.bestOf||7)/2);
+  const over=w>=need||l>=need;
+  const fin=$('gm-final');
+  fin.className='gm-final '+(g.won?'w':'l');
+  fin.innerHTML='<div class="fl">'+(s.walkoff&&g.won?'Walk-off':'Final')+'</div>'+
+    '<div class="fs">'+(g.won?'W':'L')+' '+g.yourRuns+'-'+g.oppRuns+'</div>'+
+    '<div class="fn">'+(over?(w>=need?'Series won '+w+'-'+l:'Series lost '+l+'-'+w)
+      :'Series '+w+'-'+l)+'</div>';
+  fin.hidden=false;
+  PO.timer=setTimeout(()=>{
+    PO.game++;
+    if(PO.game>=r.games.length)endSeries();else playGame();
+  },1700/(PO.speed||1));
+}
+
+/* ─── between series ─── */
+
+/* Your result lands on the bracket, which is where it belongs: the seat you have
+   been sitting in all round finally settles, and the column ahead unlocks. */
+function endSeries(){
+  poClear();
+  const i=PO.round,r=RUN.playoffs.rounds[i],col=brkColOf(i);
+  brkSettleMine(i,r.won);
+  $('po-seed-label').textContent=brkWhere(col);
+  $('brk-round').textContent=BRK_ROUNDS[col]||r.round;
+  brkRender(col);
+  $('brk-note').textContent=r.won
+    ?(r.round==='World Series'?'Champions.':'You take it '+r.yourWins+'-'+r.oppWins+'. On you go.')
+    :'Out of it '+r.oppWins+'-'+r.yourWins+'. That is the season.';
+  show('s-playoffs');
+  brkFocus(col);
+  PO.timer=setTimeout(()=>{
+    if(r.won&&i+1<RUN.playoffs.rounds.length)openRound(i+1);
+    else octoberDone();
+  },1700/(PO.speed||1));
+}
+
+/* Every round left, settled at once. Pressing it again on the finished bracket
+   goes to the results rather than re-arming the hold, which on a fast tapper
+   meant the screen never moved on. */
+function simRestOfOctober(){
+  poClear();
+  if(PO.done){octoberOver();return;}
+  const rounds=RUN.playoffs.rounds;
+  for(let i=PO.round;i<rounds.length;i++)brkSettleMine(i,rounds[i].won);
+  octoberDone();
+}
+
+/* The finished field, champion and all, before the results screen takes over. */
+function octoberDone(){
+  poClear();
+  PO.done=true;brkSkip=null;
+  brkRevealAll();
+  brkRender(3);
+  const o=RUN.outcome;
+  $('po-seed-label').textContent=RUN.outcome.wins+'-'+RUN.outcome.losses+
+    ' \u00b7 '+RUN.playoffSeed.label;
+  $('brk-round').textContent=o.titleWon?'World Series Champions':'October is over';
+  const last=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];
+  $('brk-note').textContent=o.titleWon?'The whole field, and you on the end of it.'
+    :('Out in the '+(last?last.round:'playoffs')+'.');
+  show('s-playoffs');
+  brkFocus(3);
+  PO.timer=setTimeout(octoberOver,1900);
+}
+
+function octoberOver(){
+  poClear();
+  const back=PO&&PO.returnTo;
+  PO=null;brkSkip=null;
+  if(back==='result')show('s-over');
+  else showResult();
+}
+
+function paintSpeed(){
+  const b=$('gm-speed');if(!b||!PO)return;
+  b.innerHTML=PO.speed+'&times;';
+  $('gm-pause').classList.toggle('on',!!PO.paused);
+  $('gm-pause').textContent=PO.paused?'Play':'Pause';
+}
+
+(function wireOctober(){
+  $('sr-play').onclick=()=>{ga('october_watch',{round:PO?PO.round:0});playGame();};
+  $('sr-sim').onclick=()=>endSeries();
+  $('sr-simall').onclick=()=>simRestOfOctober();
+  $('gm-simall').onclick=()=>simRestOfOctober();
+  $('gm-skipgame').onclick=()=>{if(PO&&PO.script)jumpToEnd();};
+  $('gm-pause').onclick=()=>{
+    if(!PO)return;
+    PO.paused=!PO.paused;paintSpeed();
+    if(!PO.paused)nextPlay();else poClear();
+  };
+  $('gm-speed').onclick=()=>{
+    if(!PO)return;
+    PO.speed=PO.speed===1?2:PO.speed===2?4:1;
+    try{localStorage.setItem('rtd_po_speed',String(PO.speed));}catch(_){}
+    paintSpeed();
+  };
+  /* The bracket that skips ahead is the one being revealed, and the button only
+     means anything while a reveal is running. */
+  $('b-brk-skip').onclick=()=>{if(brkSkip)brkSkip();else if(PO)simRestOfOctober();};
+  /* Classic and the daily watch the bracket rather than the games, but the games are
+     there if you want them: the run is finished and replaying it changes nothing. */
+  $('b-watch-oct').onclick=()=>{
+    ga('october_replay',{});
+    octoberStart(false,'result');
+  };
+})();
 
 /* ─── result ─── */
 function ordinal(n){
@@ -1663,11 +3896,12 @@ function showResult(){
   show('s-over');
   const o=RUN.outcome;
   recordRun(o);
+  if(RUN.daily){try{recordDaily(o);}catch(_){}}
   paintNewBadges();
   const hero=$('ro-hero');
 
   // Hero: ribbon (all-time standing), record, verdict
-  $('ro-record').innerHTML='<span class="w">'+o.wins+'</span><span class="d">&ndash;</span><span class="l">'+o.losses+'</span>';
+  $('ro-record').innerHTML='<span class="w">'+o.wins+'</span><span class="d">-</span><span class="l">'+o.losses+'</span>';
   const rank=o.allTimeRank;
   $('ro-ribbon').textContent=rank?(ordinal(rank)+'-greatest team of all time'):'Season complete';
   const vd=$('ro-verdict');
@@ -1675,24 +3909,52 @@ function showResult(){
   else if(o.madePlayoffs){const last=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];
     hero.className='ro-hero lose';vd.textContent='Out in the '+last.round;vd.className='ro-verdict';}
   else{hero.className='ro-hero lose';vd.textContent='Missed the playoffs';vd.className='ro-verdict';}
-  $('ro-sub').textContent=o.seedLabel&&o.madePlayoffs?o.seedLabel:'';
+  let modeLabel='';
+  if(RUN.tradeMachine){const n=(RUN.trades||[]).filter(t=>t.accepted).length;
+    modeLabel='Trade Machine \u00b7 '+n+' deal'+(n===1?'':'s');}
+  else if(RUN.staff)modeLabel='All-Time Staff';
+  else if(RUN.capSurvivor)modeLabel='Cap Survivor \u00b7 '+(RUN.cuts||[]).length+' cut';
+  else if(RUN.franchise)modeLabel='The all-time '+teamFullName(RUN.franchise);
+  else if(RUN.division)modeLabel=RUN.division;
+  else if(RUN.era)modeLabel=RUN.era+' era';
+  const seedTxt=o.seedLabel&&o.madePlayoffs?o.seedLabel:'';
+  $('ro-sub').textContent=[modeLabel,seedTxt].filter(Boolean).join(' · ');
+  $('b-watch-oct').hidden=!o.madePlayoffs;
 
   // GOAT / record banner
   const goatDiv=$('r-goat');goatDiv.innerHTML='';goatDiv.style.display='none';
-  if(o.isGOAT){goatDiv.style.display='';goatDiv.innerHTML='<div class="goat-banner">Greatest of all time &mdash; '+o.wins+' wins</div>';}
-  else if(o.beatRecord){goatDiv.style.display='';goatDiv.innerHTML='<div class="record-banner">Tied the all-time record &mdash; 116 wins</div>';}
+  if(o.isGOAT){goatDiv.style.display='';goatDiv.innerHTML='<div class="goat-banner">Greatest of all time: '+o.wins+' wins</div>';}
+  else if(o.beatRecord){goatDiv.style.display='';goatDiv.innerHTML='<div class="record-banner">Tied the all-time record: 116 wins</div>';}
 
   // Big cells: rating / rank / draft grade
-  const rating=o.rating!=null?Math.round(o.rating):null;
-  $('ro-rating').innerHTML=rating!=null?rating+'<span class="u"></span>':'&mdash;';
+  const rating=shownRating(o)!=null?Math.round(shownRating(o)):null;
+  $('ro-rating').innerHTML=rating!=null?rating+'<span class="u"></span>':'n/a';
   $('ro-rating-bar').style.width=(rating!=null?Math.max(3,rating):0)+'%';
-  $('ro-rank').textContent=rank?('#'+rank):'&mdash;';
+  /* A staff has no all-time rank: the table it would be ranked against is full
+     team-seasons, and a roster with no hitters is not one of those. The cell shows
+     the number the mode actually turns on instead of standing empty. */
+  $('ro-rating-l').textContent=RUN.staff?'Staff rating':'Team rating';
+  if(RUN.staff){
+    const tg=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
+    $('ro-rank').textContent=E.staffEra(tg).toFixed(2);
+    $('ro-rank-l').textContent='Staff ERA';
+  }else{
+    $('ro-rank').textContent=rank?('#'+rank):'n/a';
+    $('ro-rank-l').textContent='All-time rank';
+  }
+  /* The grade is measurably well spread (best-available medians B+, a careless
+     draft gets an F), but the word "grade" next to a losing record reads as a
+     grade on the SEASON. The label says what was actually graded: how much of
+     the value on your own board you walked away with. */
   const bps=RUN&&R.bestPossibleSquad?R.bestPossibleSquad(RUN,DATA):null;
-  $('ro-eff').textContent=bps?gradeFor(bps.efficiency):'&mdash;';
+  $('ro-eff').textContent=bps?cappedGrade(bps.efficiency,o):'n/a';
+  $('ro-eff-l').textContent=bps?('Grade \u00b7 drafted '+Math.round(bps.efficiency)+'% of your board')
+    :'Grade';
 
   // Coach's take
-  const tagged=RUN.roster.map((p,i)=>({...p,_slot:E.SLOTS[RUN.slotIndex[i]]}));
-  const cr=E.coachReport(tagged,o.chemistry,o.structure,o.rating,R.remaining(RUN));
+  const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
+  const cr=RUN.staff?staffReport(tagged,o.chemistry,shownRating(o))
+    :E.coachReport(tagged,o.chemistry,o.structure,shownRating(o),R.remaining(RUN));
   $('ro-arch').textContent=(o.structure&&o.structure.archetype&&o.structure.archetype.name)||'';
   const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
   $('ro-takes').innerHTML=takes.length?takes.map(t=>
@@ -1702,7 +3964,7 @@ function showResult(){
   // Projection line
   if(RUN&&R.projectSeason){
     const proj=R.projectSeason(RUN,160);
-    $('ro-proj').innerHTML='This roster projects to <b>'+proj.lo+'&ndash;'+proj.hi+' wins</b> &middot; '+
+    $('ro-proj').innerHTML='This roster projects to <b>'+proj.lo+'-'+proj.hi+' wins</b> &middot; '+
       '<b>'+proj.playoffPct+'%</b> playoffs &middot; <b>'+proj.titlePct+'%</b> to win it all';
   }
 
@@ -1715,33 +3977,63 @@ function showResult(){
     '<span class="ro-chemlink">Chemistry +'+chemPct+'%</span>':'')+
     uniq.slice(0,4).map(l=>'<span class="ro-chemlink'+(l.type==='family'?' fam':'')+'">'+esc(l.label)+'</span>').join('');
 
+  // What the chemistry actually bought, in the game's own currency. The team
+  // rating leaves chemistry out by design, so this is the only place it is
+  // stated plainly rather than buried in the record.
+  const worth=R.chemWorth(RUN);
+  const cw=$('ro-chemworth');
+  if(worth.wins>=0.1){
+    cw.style.display='';
+    cw.innerHTML='<b>+'+chemNum(worth.wins)+'</b><span>wins from chemistry</span>';
+  } else cw.style.display='none';
+
   // Stat row
   $('r-stats').innerHTML=[
     {label:'Runs scored',value:o.totalRS},{label:'Runs allowed',value:o.totalRA},
     {label:'R/G',value:(o.totalRS/162).toFixed(1)},{label:'RA/G',value:(o.totalRA/162).toFixed(1)},
   ].map(s=>'<div class="stat-box"><div class="sv">'+s.value+'</div><div class="sl">'+s.label+'</div></div>').join('');
 
-  // Roster with WAR
-  const rosterDiv=$('r-roster');
-  rosterDiv.innerHTML='<div class="eyebrow" style="margin-bottom:8px">Your roster</div>';
-  const roster=document.createElement('div');roster.className='roster-final';
-  RUN.roster.forEach((p,i)=>{
-    const slot=E.SLOTS[RUN.slotIndex[i]];
-    const div=document.createElement('div');div.className='rslot';
-    div.innerHTML='<span class="rpos" style="'+posPaint(slot)+'">'+slot+'</span>'+
-      '<span class="rname">'+esc(p.n)+'</span>'+
-      '<span class="rteam">'+p.s+' '+esc(p.t)+'</span>'+
-      '<span class="rwar">'+p.w.toFixed(1)+'</span>';
-    roster.appendChild(div);
-  });
-  rosterDiv.appendChild(roster);
+  rosterList($('r-roster'),{title:'Your roster',chem:o.chemistry});
 
   if(o.titleWon||o.beatRecord) setTimeout(()=>fireConfetti(o.isGOAT||o.titleWon),300);
+  /* Last, and never awaited: the screen is already up and a board that is down
+     must not cost anybody the season they just played. */
+  setTimeout(()=>{postToBoard(o).catch(e=>console.error('board',e));},60);
 }
 function gradeFor(pct){
   if(pct>=97)return'A+';if(pct>=93)return'A';if(pct>=89)return'A-';
   if(pct>=85)return'B+';if(pct>=80)return'B';if(pct>=74)return'B-';
   if(pct>=68)return'C+';if(pct>=60)return'C';if(pct>=50)return'D';return'F';
+}
+
+/*
+ * THE GRADE IS CAPPED BY WHAT THE SEASON DID WITH THE ROSTER.
+ *
+ * On its own the grade is draft efficiency: the share of the WAR on your own
+ * board that you walked away with. That is a real and useful number, and it is
+ * still the thing that moves the grade. What it cannot do is sit at B+ directly
+ * above the words MISSED THE PLAYOFFS, because a draft that captured most of its
+ * board and then did not reach October did not do its job, whatever the ratio
+ * says.
+ *
+ * Capping rather than replacing keeps the discrimination: a careless draft that
+ * missed still gets an F and a sharp one gets the cap, so the grade says both
+ * "how well did you draft" and "did it work". The percentage stays in the label,
+ * so nothing is hidden, the grade just stops arguing with the record above it.
+ */
+const GRADE_LADDER=['F','D','C','C+','B-','B','B+','A-','A','A+'];
+function gradeCeiling(o){
+  if(o.titleWon)return'A+';
+  const rounds=(RUN&&RUN.playoffs&&RUN.playoffs.rounds)||[];
+  if(!o.madePlayoffs)return'C+';
+  if(rounds.some(r=>r.round==='World Series'))return'A-';
+  if(rounds.filter(r=>r.won).length>=1)return'B+';
+  return'B-';
+}
+function cappedGrade(pct,o){
+  const g=gradeFor(pct),cap=gradeCeiling(o);
+  const i=GRADE_LADDER.indexOf(g),c=GRADE_LADDER.indexOf(cap);
+  return (i<0||c<0||i<=c)?g:cap;
 }
 
 /* ─── confetti ─── */
@@ -1786,10 +4078,40 @@ function shareVerdict(o){
   if(o.madePlayoffs){const l=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];return 'Out in the '+l.round;}
   return 'Missed the playoffs';
 }
+/* What a daily result looks like pasted into a group chat. The grid first, because
+   that is the part people recognise, then the record, then one line of detail. */
+function dailyShareText(d){
+  const verdict=d.titleWon?'World Series Champions':
+    d.madePlayoffs?'Reached October':'Missed the playoffs';
+  let t='Run The Diamond \u00b7 Daily #'+d.n+'\n'+d.wins+'-'+d.losses+' \u00b7 '+verdict;
+  if(d.grid)t+='\n'+d.grid;
+  const bits=[];
+  if(d.rating!=null)bits.push('Rating '+d.rating);
+  if(d.rank)bits.push('#'+d.rank+' all time');
+  if(d.chem)bits.push('Chemistry +'+d.chem);
+  if(bits.length)t+='\n'+bits.join(' \u00b7 ');
+  if(d.streak>1)t+='\n\uD83D\uDD25 '+d.streak+' day streak';
+  t+='\nrunthe.gg/baseball';
+  return t;
+}
+async function shareDaily(){
+  const d=todaysDaily();if(!d)return;
+  const text=dailyShareText(d);
+  const btn=$('b-daily-share');const orig=btn.innerHTML;
+  try{
+    if(navigator.share){await navigator.share({text});ga('daily_shared');return;}
+  }catch(e){if(e&&e.name==='AbortError')return;}
+  try{if(navigator.clipboard)await navigator.clipboard.writeText(text);}catch(_){}
+  btn.innerHTML='Copied';ga('daily_shared');
+  setTimeout(()=>{btn.innerHTML=orig;},1400);
+}
+
 function shareLines(o){
-  const era=RUN.era?' ('+RUN.era+')':'';
-  let t='Run The Diamond'+era+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
-  if(o.rating!=null) t+=' Team rating '+Math.round(o.rating)+'.';
+  const tag=RUN.tradeMachine?' (Trade Machine)':RUN.staff?' (All-Time Staff)':RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
+  let t='Run The Diamond'+tag+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
+  const grid=seasonGrid();
+  if(grid)t+='\n'+grid;
+  if(shownRating(o)!=null) t+=' Team rating '+Math.round(shownRating(o))+'.';
   t+='\nCan you draft a better team?\nrunthe.gg/baseball';
   return t;
 }
@@ -1813,20 +4135,20 @@ function drawShareCard(o){
     c.fillText(ordinal(o.allTimeRank).toUpperCase()+'-GREATEST TEAM OF ALL TIME',W/2,168);}
   // record
   c.font='400 210px "Righteous", Impact, sans-serif';
-  const rec=o.wins+'–'+o.losses;
-  c.fillStyle='#2e7d32';const wt=c.measureText(o.wins+'').width, dt=c.measureText('–').width, lt=c.measureText(o.losses+'').width;
+  const rec=o.wins+'-'+o.losses;
+  c.fillStyle='#2e7d32';const wt=c.measureText(o.wins+'').width, dt=c.measureText('-').width, lt=c.measureText(o.losses+'').width;
   const tot=wt+dt+lt, sx=W/2-tot/2;
   c.textAlign='left';
   c.fillStyle='#2e7d32';c.fillText(o.wins+'',sx,368);
-  c.fillStyle='#8a7e6e';c.fillText('–',sx+wt,368);
+  c.fillStyle='#8a7e6e';c.fillText('-',sx+wt,368);
   c.fillStyle='#c0392b';c.fillText(o.losses+'',sx+wt+dt,368);
   c.textAlign='center';
   // verdict
   c.fillStyle=win?'#b8860b':'#1a1a1a';c.font='400 62px "Righteous", Impact, sans-serif';
   c.fillText(shareVerdict(o).toUpperCase(),W/2,452);
   // three cells
-  const cells=[['TEAM RATING',o.rating!=null?Math.round(o.rating):'—','#1a1a1a'],
-    ['ALL-TIME RANK',o.allTimeRank?('#'+o.allTimeRank):'—','#b8860b'],
+  const cells=[['TEAM RATING',shownRating(o)!=null?Math.round(shownRating(o)):'n/a','#1a1a1a'],
+    ['ALL-TIME RANK',o.allTimeRank?('#'+o.allTimeRank):'n/a','#b8860b'],
     ['CHEMISTRY',(o.chemistry.multiplier>=1?'+':'')+((o.chemistry.multiplier-1)*100).toFixed(0)+'%','#2e7d32']];
   const cw=300,ch=150,gap=30,startx=W/2-(cw*3+gap*2)/2,cy=510;
   cells.forEach((cell,i)=>{const x=startx+i*(cw+gap);
@@ -1836,7 +4158,7 @@ function drawShareCard(o){
     c.fillStyle='#8a7e6e';c.font='800 22px Archivo, sans-serif';c.fillText(cell[0],x+cw/2,cy+124);
   });
   // roster (two columns)
-  const roster=RUN.roster.map((p,i)=>({p,slot:E.SLOTS[RUN.slotIndex[i]]}));
+  const roster=RUN.roster.map((p,i)=>({p,slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
   const order=['C','1B','2B','3B','SS','LF','CF','RF','DH','SP1','SP2','CL'];
   roster.sort((a,b)=>order.indexOf(a.slot)-order.indexOf(b.slot));
   const ry=730,rh=88,colw=500,colgap=40,cx0=W/2-(colw*2+colgap)/2;

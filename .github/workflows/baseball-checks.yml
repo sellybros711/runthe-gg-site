@@ -1,0 +1,54 @@
+name: Baseball checks
+
+# Run The Diamond's October decides nothing on screen: generatePlayoffs() settles
+# the player's path, and both the bracket and the at-bat simulator are built around
+# it. The failures that follow from that are all invisible in a screenshot, which
+# is what these two check.
+#
+#   node baseball/check-atbats.mjs    the line score adds up to the score it was handed
+#   node baseball/check-bracket.mjs   the field agrees with the run it was built from
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'baseball/**'
+      - '.github/workflows/baseball-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'baseball/**'
+      - '.github/workflows/baseball-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: baseball-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 25,000 games off the run distribution resolveGame() actually produces,
+      # then every game of 25 real brackets drafted and played from scratch.
+      # Asserts the line score is always the score it was handed, that no inning
+      # runs past three outs, that a walk-off is a home win on the last play, and
+      # that the shape (plate appearances, hits, scoreless innings) is baseball.
+      - name: The at-bat simulator
+        run: node baseball/check-atbats.mjs 25000
+
+      # 150 brackets, each off a run drafted and played from scratch. Asserts the
+      # seat across from the player is the club the run really scheduled, twelve
+      # clubs from twelve franchises with no season drawn twice, that nobody is
+      # paired with themselves, and that a column stays unknown until the one
+      # feeding it has been played. A bracket that puts the 1951 Giants on both
+      # sides of the World Series renders perfectly, which is why this exists.
+      - name: The playoff bracket
+        run: node baseball/check-bracket.mjs 150

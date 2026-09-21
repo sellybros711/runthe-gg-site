@@ -25,16 +25,16 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "21",
-      "sha": "6e00be0921aee13c"
+      "v": "22",
+      "sha": "2323fa88864496d1"
     },
     "/arcade/data.js": {
       "v": "5",
       "sha": "f4a8616769d64a24"
     },
     "/arcade/rosters.js": {
-      "v": "3",
-      "sha": "0e15cfe4d0a517d3"
+      "v": "4",
+      "sha": "5e96b4c1e9aced70"
     },
     "/arcade/sfx.js": {
       "v": "2",
@@ -253,8 +253,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "21",
-      "sha": "6e00be0921aee13c"
+      "v": "22",
+      "sha": "2323fa88864496d1"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -475,8 +475,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/teammates.js": {
-      "v": "22",
-      "sha": "e59ab00a2c80e845"
+      "v": "23",
+      "sha": "b4673d60644424b1"
     },
     "/arcade/livecheck.js": {
       "v": "8",
@@ -529,8 +529,8 @@
       "sha": "a4222cc200670d79"
     },
     "/arcade/primary.js": {
-      "v": "21",
-      "sha": "6e00be0921aee13c"
+      "v": "22",
+      "sha": "2323fa88864496d1"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -679,16 +679,16 @@
       "sha": "a4222cc200670d79"
     },
     "/arcade/primary.js": {
-      "v": "21",
-      "sha": "6e00be0921aee13c"
+      "v": "22",
+      "sha": "2323fa88864496d1"
     },
     "/arcade/data.js": {
       "v": "5",
       "sha": "f4a8616769d64a24"
     },
     "/arcade/rosters.js": {
-      "v": "3",
-      "sha": "0e15cfe4d0a517d3"
+      "v": "4",
+      "sha": "5e96b4c1e9aced70"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -829,16 +829,16 @@
       "sha": "42bbabae620fcfbf"
     },
     "/arcade/primary.js": {
-      "v": "21",
-      "sha": "6e00be0921aee13c"
+      "v": "22",
+      "sha": "2323fa88864496d1"
     },
     "/arcade/data.js": {
       "v": "5",
       "sha": "f4a8616769d64a24"
     },
     "/arcade/jerseys.js": {
-      "v": "21",
-      "sha": "84f61c70f1eb1fa4"
+      "v": "22",
+      "sha": "716bd47e60ac8de0"
     },
     "/arcade/stats.js": {
       "v": "3",
@@ -1071,8 +1071,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "21",
-      "sha": "6e00be0921aee13c"
+      "v": "22",
+      "sha": "2323fa88864496d1"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -1221,8 +1221,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "21",
-      "sha": "6e00be0921aee13c"
+      "v": "22",
+      "sha": "2323fa88864496d1"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -1367,8 +1367,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "21",
-      "sha": "6e00be0921aee13c"
+      "v": "22",
+      "sha": "2323fa88864496d1"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -1585,8 +1585,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/teammates.js": {
-      "v": "22",
-      "sha": "e59ab00a2c80e845"
+      "v": "23",
+      "sha": "b4673d60644424b1"
     },
     "/arcade/livecheck.js": {
       "v": "8",
@@ -1737,16 +1737,16 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "21",
-      "sha": "6e00be0921aee13c"
+      "v": "22",
+      "sha": "2323fa88864496d1"
     },
     "/arcade/data.js": {
       "v": "5",
       "sha": "f4a8616769d64a24"
     },
     "/arcade/jerseys.js": {
-      "v": "21",
-      "sha": "84f61c70f1eb1fa4"
+      "v": "22",
+      "sha": "716bd47e60ac8de0"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -1885,16 +1885,20 @@
   },
   "baseball/index.html": {
     "engine.js": {
-      "v": "8",
-      "sha": "f7b6bcd81a5dffec"
+      "v": "19",
+      "sha": "6ab0f66a32570fc9"
     },
     "run.js": {
-      "v": "7",
-      "sha": "c6b6a039bb3e0c7b"
+      "v": "16",
+      "sha": "06488261bd590cfa"
     },
     "achievements.js": {
+      "v": "4",
+      "sha": "66c86a76b9d61c34"
+    },
+    "board.js": {
       "v": "1",
-      "sha": "085c658695b471ad"
+      "sha": "ca72c43361b377d7"
     }
   },
   "cfb/commish/index.html": {
@@ -2049,6 +2053,20 @@
       "sha": "d19df33aadff5118"
     }
   },
+  "football/fantasy/index.html": {
+    "/football/fantasy-access.js": {
+      "v": "1",
+      "sha": "cd646e46df3796f3"
+    },
+    "/football/auth.js": {
+      "v": "5",
+      "sha": "4267faaaa07774a5"
+    },
+    "draft.js": {
+      "v": "1",
+      "sha": "cda72e3c32d8a4f3"
+    }
+  },
   "football/index.html": {
     "engine.js": {
       "v": "97",
@@ -2065,6 +2083,10 @@
     "dynasty-access.js": {
       "v": "5",
       "sha": "0f9d94df1bda07be"
+    },
+    "fantasy-access.js": {
+      "v": "1",
+      "sha": "cd646e46df3796f3"
     },
     "board.js": {
       "v": "37",

@@ -333,33 +333,47 @@ console.log('\nAN ACCOUNT THAT IS NOBODY IN PARTICULAR IS LET IN');
    * The assertion survives on the second reason: two lists that are meant to match and
    * quietly stop matching is still the fault below, whatever they are being read for.
    *
-   * Two unannounced modes ship on one page and each keeps its own tester list. They drifted:
-   * csel8 and jordantest were added to dynasty-access.js and not to fullteam-access.js, so a
-   * tester was served a front page offering Dynasty with no Full Team on it, and reasonably
-   * concluded their Pro account was the problem. It is not: Pro stops the mode COUNTING runs,
-   * these lists decide whether the door is BUILT.
+   * Two unannounced modes shipped on one page and each kept its own tester list. They
+   * drifted: csel8 and jordantest were added to dynasty-access.js and not to
+   * fullteam-access.js, so a tester was served a front page offering Dynasty with no Full
+   * Team on it, and reasonably concluded their Pro account was the problem. It is not: Pro
+   * stops the mode COUNTING runs, these lists decide whether the door is BUILT.
    *
    * NOTHING FAILS WHEN THIS DRIFTS. A door that is never built throws nothing, renders
    * nothing and is reported by nobody, which is the shape of every bug this file exists for.
    *
+   * THERE ARE THREE LISTS NOW, and the third is the one the drift can actually cost
+   * something again: Fantasy Challenge ships FANTASY_LIVE = false, so its list is the only
+   * one of the three still deciding who sees a mode. So this walks whatever access files are
+   * on disk rather than naming two, and the next mode is covered without anybody remembering.
+   *
    * A DIFFERENCE IS ALLOWED, AND HAS TO BE ANNOUNCED. If one mode should preview to somebody
-   * the other should not, say so in both files and this assertion is the thing that makes
+   * the others should not, say so in the files and this assertion is the thing that makes
    * you. It compares the sets rather than the order, because the order carries nothing. */
-  const dyn = fs.readFileSync(path.join(ROOT, 'football/dynasty-access.js'), 'utf8');
+  const ACCESS = fs.readdirSync(path.join(ROOT, 'football'))
+    .filter((f) => /-access\.js$/.test(f)).sort();
   const names = (s, k) => {
     const m = s.match(new RegExp(k + '\\s*=\\s*\\[([^\\]]*)\\]'));
     if (!m) return null;
     return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1].toLowerCase()).sort();
   };
-  const ft = names(src, 'FULLTEAM_TESTERS'), dy = names(dyn, 'DYNASTY_TESTERS');
-  ok('  both lists were readable', !!ft && !!dy, ft && dy ? ft.length + ' / ' + dy.length : 'parse failed');
-  const only = (a, b) => (a || []).filter((x) => (b || []).indexOf(x) < 0);
-  const missFt = only(dy, ft), missDy = only(ft, dy);
-  ok('  and the two lists name the same testers',
-    !!ft && !!dy && !missFt.length && !missDy.length,
-    (missFt.length ? 'not on Full Team: ' + missFt.join(', ') + '  ' : '')
-    + (missDy.length ? 'not on Dynasty: ' + missDy.join(', ') : '')
-    || ft.join(', '));
+  /* The list's name is derived from the file's, so a fourth mode needs no edit here. A file
+     whose list cannot be read is a FAILURE and not a skip: a reader that finds nothing lets
+     every assertion below it pass green. */
+  const lists = ACCESS.map((f) => ({
+    file: f,
+    who: names(fs.readFileSync(path.join(ROOT, 'football', f), 'utf8'),
+      f.replace(/-access\.js$/, '').toUpperCase() + '_TESTERS'),
+  }));
+  ok('  every access file on disk was readable', lists.length >= 3 && lists.every((l) => l.who),
+    lists.map((l) => l.file + ' ' + (l.who ? l.who.length : 'PARSE FAILED')).join(', '));
+  const union = [...new Set(lists.flatMap((l) => l.who || []))].sort();
+  const miss = lists.filter((l) => l.who).map((l) => ({
+    file: l.file, gone: union.filter((x) => l.who.indexOf(x) < 0),
+  })).filter((l) => l.gone.length);
+  ok('  and every list names the same testers', !miss.length,
+    miss.length ? miss.map((m) => m.file + ' is missing ' + m.gone.join(', ')).join(' | ')
+      : union.join(', '));
 }
 
 /* ================================================================

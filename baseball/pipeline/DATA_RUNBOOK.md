@@ -1,9 +1,9 @@
-# Data Runbook — building the real 1901+ pricing dataset
+# Data Runbook: building the real 1901+ pricing dataset
 
 `build_pricing.py` is complete and validated, but the two WAR sources
 (Baseball-Reference, FanGraphs) and the GitHub archive/API are **blocked by the
 Cowork cloud sandbox's network allowlist**, so the raw pull has to run somewhere
-without that allowlist — Coby's machine or any normal dev box. It's ~5 minutes of
+without that allowlist, such as Coby's machine or any normal dev box. It's ~5 minutes of
 fetching, then one command.
 
 ## 1. Install deps
@@ -13,7 +13,7 @@ pip install pandas numpy pybaseball
 
 ## 2. Fetch the inputs into ./data
 ```python
-# fetch_inputs.py  — run on a machine with open internet
+# fetch_inputs.py  (run on a machine with open internet)
 import os, urllib.request
 os.makedirs("data", exist_ok=True)
 
@@ -42,12 +42,12 @@ python build_pricing.py --data-dir data --out-dir out
 ```
 
 ## 4. Outputs (in ./out)
-- `priced_players.csv` / `.json` — one row per player-season 1901+:
+- `priced_players.csv` / `.json`: one row per player-season 1901+:
   `bbref_id, name, season, team, role, primary_pos, eligible_pos, is_closer, bwar, fwar, rwar, rwar_source, price_m`
-- `decade_benchmarks.csv` — best real team win% per decade (Era-mode targets), incl. `proj_wins_162`.
-- `coverage_report.txt` — row counts, fWAR match rate, price range, unmatched sample.
+- `decade_benchmarks.csv`: best real team win% per decade (Era-mode targets), incl. `proj_wins_162`.
+- `coverage_report.txt`: row counts, fWAR match rate, price range, unmatched sample.
 
-## Locked constants (top of build_pricing.py — the tuning knobs)
+## Locked constants (top of build_pricing.py, the tuning knobs)
 ```
 W_BLEND  = 0.5     # rWAR = 0.5*bWAR + 0.5*fWAR
 COEF     = 1.5     # price = 1.5 * rWAR^1.6
@@ -61,7 +61,7 @@ SP_GS_RATIO   = 0.5  # GS/G >= this => starter-eligible
 
 ## Known items to smoke-test on real data
 - **fWAR join is name+season** (with accent/suffix normalization). Expect a few
-  unmatched pre-war seasons and duplicate common names — check `coverage_report.txt`
+  unmatched pre-war seasons and duplicate common names. Check `coverage_report.txt`
   and, if the miss rate is material, swap in the Chadwick register crosswalk
   (`key_bbref` ↔ `key_fangraphs`) for an exact-ID join.
 - **Mid-season trades** are collapsed to one season row (bWAR summed, team = `TOT`);

@@ -60,6 +60,11 @@ const GUARDED = [
      Its curly apostrophe is NOT a hit and must not become one again: see the note on
      the curly quote rule below, which is the same case and was already settled. */
   'cfb/build/06-og.mjs',
+  /* Fantasy Challenge. On the list from the day it was written rather than after an audit,
+     which is the cheap direction: the rule about adding a directory only once it is clean
+     exists because the rest of the repo predates the rule, and this page does not. */
+  'football/fantasy/index.html',
+  'football/fantasy/draft.js',
   // The wrestling game and its data files. Added after the audit that cleared
   // them, per the rule on the dash checker: guard a directory only once it is
   // clean, never before, or the check becomes noise people learn to ignore.
