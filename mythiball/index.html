@@ -6313,7 +6313,11 @@ const BASE_BEAT = {
   afterHomer: 2600,
   betweenHalfInnings: 2400,
   intoAtBat:  900,  /* new batter walks up */
+  /* HOW LONG THE ARRIVED BALL STAYS IN THE MITT. See clearPitchSoon: it
+     is a beat to read the catch by, not a share of the gap, so it does
+     NOT scale with the others and is not in the table above. */
 };
+const BALL_HOLD_MS = 420;
 
 /* Game speed. `beat` scales the dead time between events; `meter` scales
    the pitch sweep, kept mild because it also changes how hard the timing
@@ -7618,6 +7622,47 @@ function scheduleCpuSwing() {
   }, wait);
 }
 
+/* THE BALL WAS STILL SITTING THERE WHEN THE NEXT PITCH WAS DUE.
+
+   `pitch.closed` was only ever set where the AT BAT ends: a ball in play,
+   a walk, an out. Every other outcome is most of them, so on a called
+   ball, a called strike, a foul, a foul bunt and a whiff the arrived ball
+   went on being drawn in the catcher's mitt for the whole gap.
+
+   Measured on a 390 phone: the flight is 42 to 46 frames over about
+   700ms, and the ball then sat motionless on the plate for 152 to 157
+   frames, which is 2.5 seconds. The pitch is over in a quarter of the
+   time the reader spends looking at where it stopped, and the screen
+   during the pause is a still picture of the last thing that happened
+   rather than a set-up for the next one.
+
+   NOTHING FAILED AND NOTHING COULD. A ball drawn in the mitt is a valid
+   drawing, the flight is correct, the call is correct, and every guard in
+   this file asks whether a frame is right rather than whether it should
+   still be on screen.
+
+   The hold is a beat to read the catch by. After it the pitch closes,
+   `drawPlateView` falls through to `drawTarget`, and the screen goes back
+   to showing where the next one is meant to go.
+
+   THE CAMERA IS NOT AFFECTED, which is the thing to check before moving
+   this. `plateViewActive` asks `pitch && !closed` OR `plateHold`, and
+   every one of these sites sets `plateHold` to its own beat plus 300ms,
+   so the plate view is held by the second clause the whole time. Closing
+   the pitch early cuts nothing away. */
+function clearPitchSoon(ms) {
+  const g = State.game;
+  const p = g && g.pitch;
+  if (!p) return;
+  setTimeout(() => {
+    /* A TIMER FIRES INTO ITS OWN PITCH OR NOT AT ALL, which is this
+       file's rule arriving at a fourth door after the throw window, the
+       catch window and the robbery. The next pitch, a new at bat or a new
+       game can all have replaced this one while the hold was out. */
+    if (State.game === g && g.pitch === p) p.closed = true;
+  }, ms == null ? BALL_HOLD_MS : ms);
+}
+
 function resolveCalledPitch() {
   const g = State.game;
   const p = g.pitch;
@@ -7633,6 +7678,7 @@ function resolveCalledPitch() {
   if (g.strikes >= 3) return recordOut('called strikeout', true);
   if (g.balls >= 4) return recordWalk();
   g.plateHold = performance.now() + BEAT.betweenPitches + 300;
+  clearPitchSoon();
   setTimeout(nextPitch, BEAT.betweenPitches);
 }
 
@@ -7777,6 +7823,7 @@ function resolveSwing(cursorT, aim) {
       refreshHud();
       if (g.strikes >= 3) return recordOut('bunted foul with two strikes', true);
       g.plateHold = performance.now() + BEAT.betweenPitches + 300;
+      clearPitchSoon(0);   /* bunted away, not caught: see the foul below */
       return setTimeout(nextPitch, BEAT.betweenPitches);
     }
     g.lastSwing.res = 'hit';
@@ -7801,6 +7848,7 @@ function resolveSwing(cursorT, aim) {
       g.koVerdict = playerIsBatting() ? swingVerdict(geo) : null;
       return recordOut('swinging strikeout', true);
     }
+    clearPitchSoon();
     return setTimeout(nextPitch, BEAT.afterWhiff);
   }
 
@@ -7823,6 +7871,10 @@ function resolveSwing(cursorT, aim) {
         arc: 70 + Math.random() * 70 };
     }
     refreshHud();
+    /* A FOULED BALL IS NOT IN THE MITT, so this one clears at once rather
+       than after a beat: held, the picture is a ball sitting on the plate
+       while the log says it was fouled off. */
+    clearPitchSoon(0);
     return setTimeout(nextPitch, BEAT.betweenPitches);
   }
 
@@ -11037,18 +11089,42 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     ctx.fill();
   }
 
-  /* ---- the zone ---- */
+  /* ---- the zone ----
+
+     THE ONE THING A PLAYER HAS TO FIND BEFORE THE BALL ARRIVES, and it was
+     drawn as a 2px LOGICAL line, which is 1.8 CSS pixels on a 390 phone.
+     Read back off the canvas against the grass behind it, that edge
+     measured 2.23:1 and the 6% fill measured 1.33:1. Three to one is the
+     floor for a large graphical object somebody has to locate, and under
+     about 1.5 it is a shape you have to already know is there.
+
+     Nothing failed and nothing could. The box rendered, the aim worked,
+     and the geometry was correct the whole time: a reader simply could
+     not see what they were aiming at.
+
+     THE WIDTH IS FLOORED IN CSS PIXELS, not written in logical ones, which
+     is `ballRadiusMin`'s rule at a second door. A line written as logical
+     pixels is whatever the camera leaves it, so the same number is a
+     hairline on a phone and heavy on a desktop. */
   const zx0 = P.zx - P.zw, zy0 = P.zy - P.zh, zW = P.zw * 2, zH = P.zh * 2;
-  ctx.fillStyle = 'rgba(255,255,255,.06)';
+  const zLine = zoneLineMin();
+  ctx.fillStyle = 'rgba(255,255,255,.10)';
   ctx.fillRect(zx0, zy0, zW, zH);
-  ctx.strokeStyle = 'rgba(10,20,30,.45)';
-  ctx.lineWidth = 4;
+  /* The dark halo is what carries the edge over the LIGHT things behind
+     it (the chalk, the dirt), the way every sprite here wears a ring. It
+     is drawn wider than the bright line so it reads as an outline rather
+     than as a second line. */
+  ctx.strokeStyle = 'rgba(8,16,26,.62)';
+  ctx.lineWidth = zLine + PIX * 2;   /* a block of halo each side, on the grid */
   ctx.strokeRect(zx0, zy0, zW, zH);
-  ctx.strokeStyle = 'rgba(255,255,255,.9)';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,255,255,1)';
+  ctx.lineWidth = zLine;
   ctx.strokeRect(zx0, zy0, zW, zH);
-  ctx.strokeStyle = 'rgba(255,255,255,.22)';
-  ctx.lineWidth = 1;
+  /* The thirds are a reading aid rather than a boundary, so they stay
+     quieter than the frame. They are floored too: at 1 logical pixel they
+     were under a CSS pixel and vanished into the grass entirely. */
+  ctx.strokeStyle = 'rgba(255,255,255,.42)';
+  ctx.lineWidth = Math.max(1, zLine * 0.5);
   for (let i = 1; i < 3; i++) {
     ctx.beginPath(); ctx.moveTo(zx0 + zW * i / 3, zy0); ctx.lineTo(zx0 + zW * i / 3, zy0 + zH); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(zx0, zy0 + zH * i / 3); ctx.lineTo(zx0 + zW, zy0 + zH * i / 3); ctx.stroke();
@@ -12401,6 +12477,26 @@ function drawThrowBar(ctx, w, h, cx, win, t) {
    whatever the field is scaled to. Five logical pixels was two on a
    phone, which is a fleck on the grass. */
 function ballRadiusMin() { return 4 / (FIELD_VIEW || 1); }
+/* The narrowest the strike zone's frame may be drawn. Two LOGICAL pixels
+   was 1.78 CSS px on a phone at 2.23:1 against the grass, and a hairline
+   is not a target.
+
+   IT IS COUNTED IN BLOCKS, NOT IN CSS PIXELS, and the first version of
+   this got that wrong. Written `3 / FIELD_VIEW` it asks for three CSS
+   pixels, which is right on a phone and is 1.8 LOGICAL pixels on a
+   desktop, and the world is drawn into `pixWorld` at PIX logical pixels
+   to the block: 1.8 is six tenths of a block, so the line cannot be
+   solid. It antialiases to partial coverage and washes out. Measured, the
+   desktop came back at 2.48:1 while both phones cleared 3.
+
+   A LINE NARROWER THAN A BLOCK IS A LINE THIS WORLD CANNOT DRAW, which is
+   the one-resolution rule the blit already runs on, arriving at a stroke.
+   So it is a whole number of blocks, at least one, and enough of them to
+   cover three CSS pixels on whatever screen this is. */
+function zoneLineMin() {
+  const cssPerBlock = PIX * (FIELD_VIEW || 1);
+  return Math.max(1, Math.ceil(3 / cssPerBlock)) * PIX;
+}
 function drawBaseball(ctx, x, y, groundY) {
   /* Optional ground shadow: pass the y of the ground plane and we drop a
      small shadow there, so a high arc reads as high. */

@@ -3744,6 +3744,7 @@ node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands 
 node mythiball/check-frames.mjs 70 normal --phone --cpu=4   frame times, on the machine that matters
 node mythiball/check-runs.mjs      runs per game, with a defence that turns up (--jobs=N to run several at once)
 node mythiball/check-bat.mjs       the swing's own curves, and that skill pays
+node mythiball/check-firstpitch.mjs  whether a stranger can READ one pitch
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
 
@@ -3757,6 +3758,90 @@ itself once: it measured the CPU at 55 whiffs per hundred swings, the swing
 jitter tiers came down about a fifth, and it measures in the mid forties
 now (MLB runs about 25). The file's header records the procedure, and any
 further move repeats it: measure, touch the jitter, measure again.
+
+### EVERY OTHER CHECKER HERE ASKS WHETHER SOMETHING IS CORRECT
+
+```
+node mythiball/check-firstpitch.mjs
+```
+
+Reported as the game seeming very off inside one or two pitches, after weeks
+of green suites. It was, and nothing in this file could see it, because the
+question every guard here asks is whether a thing is DRAWN RIGHT and the
+question nobody had asked is whether it can be SEEN.
+
+**The audit loop is what produced that.** Pick a file, find a real silent
+defect, fix it, prove it, write it up. That loop never terminates on a
+codebase this size, because there is always another silent defect, and it
+never arrives at PLAYABLE because playable was never the target. This file
+reached four thousand lines of correct findings while the strike zone was a
+hairline nobody could find.
+
+**So this checker measures THE GLASS, never the source.** A zone drawn at
+`lineWidth = 2` is a claim about logical field pixels; what a thumb aims at
+is CSS pixels after the camera, the crop and the browser's own last step.
+The numbers are read back off the canvas and out of `FIELD_CAM`. Every
+assertion is a PROPERTY that survives a redesign: a contrast ratio, a size
+floor, a state that has to end. Pinning pixels would make it a test of the
+three phones somebody thought of, which is the mistake this file exists to
+stop repeating.
+
+#### The ball was still sitting there when the next pitch was due
+
+`pitch.closed` was only ever set where the AT BAT ends: a ball in play, a
+walk, an out. Every other outcome is most of them, so after a called ball, a
+called strike, a foul, a foul bunt and a whiff the arrived ball went on
+being drawn in the catcher's mitt for the whole gap.
+
+Measured on a 390 phone: the flight is **42 to 46 frames over about 700ms**,
+and the ball then sat motionless on the plate for **152 to 157 frames, which
+is 2.5 seconds**. The reader spent three and a half times longer looking at
+where the pitch stopped than at the pitch. Through the checker with the
+defect reintroduced: **662 frames of a ball in the mitt over 22 seconds, and
+it never cleared once.**
+
+**Nothing failed and nothing could.** A ball drawn in the mitt is a valid
+drawing, the flight was correct, the call was correct.
+
+`clearPitchSoon` is the one place, called from all four sites. It carries
+the identity check this file already runs at three other doors: **a timer
+fires into its OWN pitch or not at all**, because the next pitch, a new at
+bat or a new game can all have replaced it while the hold was out.
+
+**A FOULED BALL IS NOT IN THE MITT**, so the foul and the foul bunt clear at
+zero rather than after a beat. Held, the picture is a ball sitting on the
+plate while the log says it was fouled off.
+
+**The camera is not affected, which is the thing to check before moving
+this.** `plateViewActive` asks `pitch && !closed` OR `plateHold`, and every
+one of those sites sets `plateHold` to its own beat plus 300ms, so the plate
+view is held by the second clause throughout. Closing the pitch early cuts
+nothing away.
+
+#### And a hairline is not a target
+
+The strike zone was a **2px LOGICAL** line, which is **1.78 CSS pixels** on a
+390 phone, measuring **2.23:1** against the grass behind it, with a 6% fill
+at **1.33:1**. Three to one is the floor for a large graphical object
+somebody has to locate; under about 1.5 it is a shape you have to already
+know is there. It is **3.73:1** now.
+
+**THE WIDTH IS COUNTED IN BLOCKS, AND THE FIRST FIX COUNTED CSS PIXELS.**
+Written `3 / FIELD_VIEW` it asks for three CSS pixels, which is right on a
+phone and is **1.8 logical pixels on a desktop**. The world is drawn into
+`pixWorld` at `PIX` logical pixels to the block, so that is six tenths of a
+block: the line cannot be solid, it antialiases to partial coverage, and it
+washes out. Both phones cleared 3 and the desktop came back at **2.48**.
+
+**A line narrower than a block is a line this world cannot draw**, which is
+the one-resolution rule the blit already runs on arriving at a stroke. So
+`zoneLineMin()` is a whole number of blocks, at least one, and enough of
+them to cover three CSS pixels on whatever screen this is. The halo is a
+block each side for the same reason.
+
+**It is read across three screens on purpose**: the fault was a length
+written in the wrong unit, which is exactly the class of bug that looks fine
+on the machine it was written on.
 
 ### Difficulty is what the other dugout KNOWS
 
