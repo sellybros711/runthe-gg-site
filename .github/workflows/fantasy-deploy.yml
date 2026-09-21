@@ -50,6 +50,23 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
 
+      # THIS FILE LIVES ON main SO THE BUTTON EXISTS, and the poller does not.
+      # GitHub only lists a workflow_dispatch workflow if it is on the default
+      # branch, so this one is there while fantasy/ is still on a feature
+      # branch. Dispatched against main it would otherwise fail three steps
+      # later with "cannot find module", which is a true error about the wrong
+      # thing and sends the reader hunting for a broken import.
+      - name: The poller is actually on this branch
+        run: |
+          if [ ! -f fantasy/worker/wrangler.toml ]; then
+            echo "::error::fantasy/worker is not on '${GITHUB_REF_NAME}'."
+            echo "Re-run this workflow and change the branch dropdown to the"
+            echo "branch the fantasy work is on. This file lives on main only"
+            echo "so that the Run workflow button exists."
+            exit 1
+          fi
+          echo "Found the poller on ${GITHUB_REF_NAME}."
+
       # BEFORE ANYTHING IS DEPLOYED. If the poller is broken there is no point
       # putting it on a one minute cron, and a Worker that ticks every minute
       # doing something wrong is worse than one that is not there.
