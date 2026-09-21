@@ -2633,9 +2633,60 @@ and the job asks WHICH SCHEDULE FIRED rather than what time it is now, which is 
 `setlist-data.yml` carries a long note about. Nothing is committed unless `check-fantasy
 --quick` passes.
 
+### The week is scored, and the loop closes on the home screen
+
+```
+node football/build/weekly-results.mjs --season 2026 --week 3
+node football/build/weekly-results.mjs --season 2026 --week 3 --write
+```
+
+The other half of `weekly-pool.mjs`. That file is forbidden from reading week N; this one reads
+week N and nothing else, because by the time it runs there is nothing left to predict.
+
+**A MAN WITH NO ROW SCORED ZERO, and that is a result rather than a gap.** nflverse writes a row
+for a man who was active and did nothing, and no row at all for one who was inactive, hurt,
+benched or cut. All four are nought on a fantasy lineup, and telling them apart is exactly what
+the drafter was being asked to do. Read as "unknown" instead, a lineup quietly totals five men.
+So the screen prints `0.0` AND says `did not play`: a zero beside nothing reads as a rendering
+fault.
+
+**IT REFUSES AN UNFINISHED WEEK unless asked twice.** Publishing mid-Sunday shows somebody a
+total that climbs all afternoon, which reads as the game being broken rather than as the Monday
+night game not having kicked off. `--partial` is the deliberate override, and the page carries
+the honest wording for it (`3 of 16 games are in. This will move.`) because the workflow can be
+run by hand.
+
+**THE RESULT IS FOUND BY ASKING, NOT BY A POINTER.** `fantasy_now.json` says which week is live;
+nothing says which weeks are scored. The page derives `results_<season>_w<week>.json` from the
+week it already knows and treats a 404 as "not scored yet". A pointer would be a third
+hand-written field kept in step by two build scripts writing one file, and its failure mode is a
+week that is scored on disk and unscored on screen. It costs one request that usually misses.
+
+**ONE SCREEN, TWO STATES.** The entry and the result are the same six men either side of the
+games, so they are one painter. A second screen would be two places describing one lineup, and
+they would disagree the first time one was edited. What changes is the big number, the label over
+it, and whether each row carries what he did.
+
+**THE PROJECTION STAYS ON SCREEN NEXT TO THE REAL NUMBER.** 71.4 is a good week or a bad one
+depending on what the board thought, and the gap is the only thing on the page that tells a
+drafter whether the calls they made off what the board could not see were the right ones.
+
+**And the LOOP CLOSES ON THE HOME SCREEN.** The week rolls over on Tuesday, so the entry screen
+for the week just played stops being what the page shows, and without a card on the way in the
+only thing that ever told somebody how they did is gone before most of them come back. It reads
+last week's own key and last week's own POOL, because an entry stores player ids and this week's
+board cannot name last week's men: somebody on a bye, cut or traded is simply not in it, and six
+ids resolved against the wrong week silently draw a four man lineup. One week back and no
+further: a season of cards on the front page is a screen you scroll past to reach the draft.
+
+**The Tuesday workflow scores BEFORE it builds**, and the order is the point rather than
+tidiness: a week whose board rolls forward before its result is written is a week somebody played
+and can never see. That step is allowed to have nothing to do, because week one has no week zero
+and a manual mid-week run hits a week the build correctly refuses.
+
 ### What is NOT built yet
 
-**There is no server, no entry table, no leaderboard and no scoring.** A submitted lineup is in
+**There is no server, no entry table and no leaderboard.** A submitted lineup is in
 `localStorage` and nowhere else, and the page says so on the screen rather than letting somebody
 believe they have entered something. That is a feel test, not a competition.
 
@@ -2649,6 +2700,32 @@ and it should be said out loud rather than designed around quietly.
 **Pro must not buy draws or entries.** The bundle sells the counting away. Selling an advantage
 in a prize competition is a different kind of product and this mode has no paid tier at all,
 which is why there is no `fantasySold()` beside `fullTeamSold()`.
+
+#### The prize is decided, and one half of it must not go where it looks like it goes
+
+The top three get something. First takes the Pro bundle; all three get a mark on the account and
+a profile image only a winner has.
+
+**A WEEKLY WIN MUST NEVER ENTER `achievements.js`'s CATALOG**, and this is the Full Team gate
+argument arriving from the other side. `CATALOG.length` is the denominator `crest.js` divides by
+and it is one number for everybody, so a badge for finishing top three in a weekly competition
+is a badge almost nobody can ever light: every other account's GOAT would be permanently capped
+below 100% by something no amount of play can reach. That is the ceiling the bundle refused to
+put in front of Full Team, and it would arrive here by accident the first time somebody files a
+winner's badge in the obvious place. A winner's mark belongs on its own surface, outside the
+denominator.
+
+**It also cannot be DERIVED the way every other badge here is.** The cabinet is retroactive
+because every badge is a question about rows in `ps_runs`, and a fantasy entry is not one of
+those. Whatever holds a win has to be its own record.
+
+**The bundle grant is a `premium_unlocks` row and should be written by hand while the numbers
+are small.** An automated path from "won a week" to "owns the product" is a second way to obtain
+the thing the store sells, and the store has exactly one on purpose.
+
+**A profile image only a winner has is a claim about an account, so it is the board's own
+problem**: `display_pro` is already the pattern, a derived boolean written by a trigger rather
+than typed, because a mark anybody can set is a mark that means nothing.
 
 ## The wrestling game
 

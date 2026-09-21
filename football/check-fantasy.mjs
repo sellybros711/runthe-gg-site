@@ -237,7 +237,8 @@ const authStub = (who) => `
   })();`;
 
 async function openPage(browser, url, opts = {}) {
-  const { who = null, viewport = { width: 390, height: 844 }, at = null } = opts;
+  const { who = null, viewport = { width: 390, height: 844 }, at = null,
+    results = null, storage = null } = opts;
   const page = await browser.newPage({ viewport });
   const boom = [];
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
@@ -250,6 +251,17 @@ async function openPage(browser, url, opts = {}) {
       Date.now = function(){ return real() + off; };
     })();`);
   }
+  /* EACH newPage() GETS ITS OWN CONTEXT AND THEREFORE ITS OWN localStorage, which is worth
+     knowing before writing any walk here that spans two pages: a lineup submitted on one is
+     simply not there on the next, and the symptom is the second page sitting on the home
+     screen for ever waiting for an entry it never had. So an entry is carried across by
+     hand, which is also the honest fixture: it is the same bytes the first page wrote. */
+  if (storage) {
+    await page.addInitScript(`(function(){
+      try { localStorage.setItem(${JSON.stringify(storage.key)},
+        ${JSON.stringify(storage.value)}); } catch(e){}
+    })();`);
+  }
   await page.route('**/*', async (r) => {
     const u = new URL(r.request().url());
     if (u.hostname !== 'local.test') return r.abort();
@@ -258,6 +270,17 @@ async function openPage(browser, url, opts = {}) {
     /* auth.js is the ONE file swapped. fantasy-access.js is served exactly as it ships. */
     if (rel === '/football/auth.js') {
       return r.fulfill({ status: 200, contentType: 'text/javascript', body: authStub(who) });
+    }
+    /* THE RESULTS FILE IS FABRICATED AND NOT BUILT, for two reasons. The real build needs
+       nflverse, so a checker that called it would need the network; and a week nobody
+       drafted has no business sitting in the repo as 47KB of dead data just to be a
+       fixture. What is under test here is what the PAGE does with an answer.
+       A MISS IS SERVED AS A 404, deliberately: that is the state the page spends most of
+       its life in, and a route that answered `{}` instead would never exercise it. */
+    if (/^\/football\/data\/results_/.test(rel)) {
+      if (!results) return r.fulfill({ status: 404, body: 'no' });
+      return r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify(results) });
     }
     const f = path.join(ROOT, rel);
     if (!fs.existsSync(f)) return r.abort();
@@ -377,6 +400,99 @@ console.log('\nA WHOLE ENTRY, DRIVEN');
   ok('  and coming back lands on the entry, not on a fresh draft', true);
   ok('  nothing threw through any of it', !boom.length, boom.join(' | ') || 'clean');
   await page.close();
+}
+
+/* ---------------------------------------------------------------- */
+console.log('\nAND THEN THE WEEK IS SCORED');
+{
+  /* One entry, drafted and submitted, then the same page reopened with a results file in
+     place. The claim is that the six men are described the same way either side of the
+     games and that the total is the parts. */
+  const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+  await page.click('#b-draft');
+  for (let i = 0; i < D.SLOTS.length; i++) {
+    await page.waitForSelector('#d-men .man', { timeout: 10000 });
+    await page.locator('#d-men .man').first().click();
+  }
+  await page.waitForSelector('#s-review.on', { timeout: 10000 });
+  await page.locator('#r-five .lineup').first().click();
+  await page.click('#b-submit');
+  await page.waitForSelector('#s-in.on', { timeout: 10000 });
+  const entry = await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((k) => /^ps_fantasy_/.test(k));
+    return { key, value: localStorage.getItem(key) };
+  });
+  const mine = JSON.parse(entry.value).chances[JSON.parse(entry.value).submitted].ids;
+  ok('a lineup was submitted', mine.length === D.SLOTS.length, mine.length + ' men');
+  const projected = Number((await page.locator('#in-proj').innerText()).trim());
+  await page.close();
+
+  /* FIVE OF THE SIX SCORE AND ONE DOES NOT, which is the case the screen has to get right:
+     a man who never took the field is a zero AND a sentence, not a blank. */
+  const scores = {};
+  const want = [22.4, 17.1, 9.9, 4.3, 0.5];
+  mine.slice(0, 5).forEach((id, i) => { scores[id] = [want[i], '100 yds, 1 TD']; });
+  const total = Math.round(want.reduce((t, x) => t + x, 0) * 10) / 10;
+  const RES = { season: POOL.season, week: POOL.week, final: true, games: 16, played: 16,
+    scores };
+
+  const back = await openPage(browser, FANTASY,
+    { who: TESTER, at: Date.parse(POOL.locks_at) + 4 * 86400000, results: RES,
+      storage: entry });
+  await back.page.waitForSelector('#s-in.on', { timeout: 15000 });
+  await back.page.waitForFunction(() =>
+    document.getElementById('in-head').textContent.trim() === 'How it went',
+  null, { timeout: 10000 }).catch(() => {});
+  const got = await back.page.evaluate(() => ({
+    head: document.getElementById('in-head').textContent.trim(),
+    lab: document.getElementById('in-lab').textContent.trim(),
+    big: document.getElementById('in-proj').textContent.trim(),
+    vs: document.getElementById('in-vs').textContent.trim(),
+    vsShown: !document.getElementById('in-vs').hidden,
+    rows: [...document.querySelectorAll('#in-roster .rrow')].map((r) => ({
+      name: r.querySelector('.rn').textContent,
+      pts: r.querySelector('.rs') ? r.querySelector('.rs').textContent.trim() : null,
+    })),
+  }));
+  ok('coming back to a scored week shows the result', got.head === 'How it went'
+    && got.lab === 'Half PPR', got.head + ' / ' + got.lab);
+  /* THE TOTAL IS THE PARTS, which is the one property this screen must have. The football
+     box score's rule, arriving at a lineup. */
+  ok('  the big number is the six added up', Number(got.big) === total,
+    got.big + ' against ' + total);
+  ok('  and it names all six', got.rows.length === D.SLOTS.length, got.rows.length + '');
+  ok('  every row carries what he scored', got.rows.every((r) => r.pts !== null),
+    got.rows.map((r) => r.pts).join(', '));
+  /* A MAN WITH NO ROW IN THE RESULTS SCORED ZERO AND IS SAID TO HAVE NOT PLAYED. Read as
+     unknown he would be left out, and the lineup would quietly total five men. */
+  const missing = got.rows.filter((r) => r.pts === '0.0');
+  ok('  the man who did not play is 0.0 and says so', missing.length === 1
+    && /did not play/i.test(missing[0].name),
+    missing.length + ' at zero: ' + missing.map((r) => r.name).join(' | '));
+  /* THE PROJECTION STAYS ON SCREEN. A score with nothing to measure it against says
+     nothing about whether the draft was any good. */
+  ok('  the projection is still shown beside it', got.vsShown
+    && got.vs.indexOf(projected.toFixed(1)) >= 0, got.vs);
+  ok('  nothing threw', !back.boom.length, back.boom.join(' | ') || 'clean');
+  await back.page.close();
+
+  /* AND AN UNSCORED WEEK IS UNCHANGED. The fetch misses most of the time, so the state the
+     page is in for four days of every week is the one worth asserting did not move. */
+  const pre = await openPage(browser, FANTASY,
+    { who: TESTER, at: BEFORE, storage: entry });
+  await pre.page.waitForSelector('#s-in.on', { timeout: 15000 });
+  await pre.page.waitForTimeout(1500);
+  const before = await pre.page.evaluate(() => ({
+    head: document.getElementById('in-head').textContent.trim(),
+    big: document.getElementById('in-proj').textContent.trim(),
+    vsShown: !document.getElementById('in-vs').hidden,
+  }));
+  ok('a week with no results file still reads as an entry', before.head === 'You are in'
+    && !before.vsShown && Number(before.big) === projected,
+    before.head + ' / ' + before.big);
+  ok('  nothing threw', !pre.boom.length, pre.boom.join(' | ') || 'clean');
+  await pre.page.close();
 }
 
 /* ---------------------------------------------------------------- */

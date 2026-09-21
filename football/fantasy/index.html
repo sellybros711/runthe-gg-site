@@ -159,6 +159,41 @@
   .rrow .rp.WR{background:var(--wr)} .rrow .rp.TE{background:var(--te)}
   .rrow .rn{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .rrow .rc{flex:0 0 auto;color:var(--dim-2);font-variant-numeric:tabular-nums;font-size:12px}
+  /* A scored row: what he did under his name, and what he scored on the right.
+     THE NAME SHRINKS AND THE SCORE DOES NOT. A reader checking a total against six numbers
+     is looking at the right hand column, and a name is still a name with two letters off. */
+  .rrow.got{align-items:flex-start;padding:3px 0}
+  /* THE WRAP IS A FLEX COLUMN AND THE NAME GETS ITS OWN ELEMENT, which is not decoration.
+     `.rrow .rn` sets white-space:nowrap so a name never wraps, and white-space INHERITS, so
+     a two line clamp on the stat line under it does nothing at all: the line came out cut
+     mid word with no ellipsis, which is worse than the truncation it was added to fix. The
+     nowrap belongs on the NAME, which is the half that has to stay on one line. */
+  .rrow.got .rn{display:flex;flex-direction:column;min-width:0;white-space:normal;
+    overflow:visible}
+  .rrow.got .rn b{font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* TWO LINES, for the reason the board's stat line gets them: a quarterback's day is
+     "312 pass yds, 3 TD, 41 rush yds, 1 TD" and cut to one line it loses the rushing half,
+     which on this screen is a chunk of the number printed beside it. Clamped at two so a
+     six row list keeps one rhythm. */
+  .rrow.got .rn s{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    text-decoration:none;font-size:11px;line-height:1.35;color:var(--dim-2);overflow:hidden}
+  .rrow .rs{flex:0 0 auto;font-family:var(--fd);font-size:17px;font-weight:400;
+    font-variant-numeric:tabular-nums;min-width:42px;text-align:right}
+  .rrow .rs.zero{color:var(--dim-2)}
+  /* The projection beside the real total. Quiet, because the real one is the answer. */
+  .vs{margin-top:2px;font-family:var(--fn);font-size:12.5px;font-weight:600;color:var(--dim)}
+  .vs b{font-variant-numeric:tabular-nums;font-weight:800}
+  .vs .up{color:var(--green)} .vs .dn{color:#fca5a5}
+  /* Last week's result, on the home screen, so the loop closes. */
+  .lastwk{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin-top:12px;
+    padding:11px 13px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel)}
+  .lastwk .lw{flex:1 1 auto;min-width:0}
+  .lastwk .lw b{display:block;font-family:var(--fn);font-size:14px;font-weight:700}
+  .lastwk .lw s{display:block;text-decoration:none;font-size:11.5px;color:var(--dim-2)}
+  .lastwk .lp{flex:0 0 auto;font-family:var(--fd);font-size:25px;font-weight:400;
+    font-variant-numeric:tabular-nums}
+  /* display:flex, so the attribute needs its own rule. Eighth time in this repo. */
+  .lastwk[hidden]{display:none}
 
   .note{font-size:13px;color:var(--dim);margin:10px 0 0}
   .lede{font-size:14.5px;color:var(--dim);margin:8px 0 0}
@@ -214,6 +249,15 @@
         <button class="btn blue" id="b-review" hidden>See your lineups</button>
       </div>
       <p class="note" id="home-note"></p>
+      <!-- LAST WEEK'S RESULT, on the screen a player lands on. Without it the loop does not
+           close: the week rolls over on Tuesday, the entry screen for the week just played
+           is no longer what this page shows, and the only thing that ever told somebody how
+           they did is gone before most of them come back. Built rather than shipped hidden,
+           because it is drawn only when there is a scored entry to draw. -->
+      <button class="lastwk" id="b-last" hidden>
+        <span class="lw"><b id="last-say"></b><s id="last-sub"></s></span>
+        <span class="lp" id="last-pts"></span>
+      </button>
     </div>
   </section>
 
@@ -246,17 +290,29 @@
     </div>
   </section>
 
+  <!-- ONE SCREEN, TWO STATES, and they are the same lineup either side of the games. A
+       second screen for the result would be two places saying what your six men were, and
+       they would disagree the first time one of them was edited. What changes is the big
+       number, the label over it, and whether each row carries what he actually did. -->
   <section id="s-in" class="screen">
     <div class="card">
       <div class="eyebrow" id="in-week"></div>
-      <h2 class="display" style="font-size:28px;margin:6px 0 2px">You are in</h2>
+      <h2 class="display" style="font-size:28px;margin:6px 0 2px" id="in-head">You are in</h2>
       <p class="lede" id="in-say"></p>
       <div class="rule"></div>
-      <div class="eyebrow">Projected</div>
+      <div class="eyebrow" id="in-lab">Projected</div>
       <div class="big" id="in-proj">-</div>
+      <div class="vs" id="in-vs" hidden></div>
       <div class="roster" id="in-roster" style="margin-top:12px"></div>
       <p class="note" id="in-note"></p>
-      <div class="stack"><a class="btn quiet" href="/football/">Back to the game</a></div>
+      <!-- A WAY BACK, and only when there is somewhere to go back TO. The current week's
+           entry is a terminal screen and the button would be a control to nowhere; last
+           week's is opened from the home screen, and a screen you can only leave by leaving
+           the site is a trap. -->
+      <div class="stack">
+        <button class="btn quiet" id="b-in-back" hidden>Back</button>
+        <a class="btn quiet" href="/football/">Back to the game</a>
+      </div>
     </div>
   </section>
 </div>
@@ -299,9 +355,14 @@
      browser and nowhere else: clearing site data loses it, and a second device knows
      nothing about it. That is a feel test rather than a competition, and the screen says so
      rather than letting somebody believe they have entered something. */
-  var KEY = function(){ return 'ps_fantasy_' + POOL.season + '_w' + POOL.week; };
+  var keyFor = function(season, week){ return 'ps_fantasy_' + season + '_w' + week; };
+  var KEY = function(){ return keyFor(POOL.season, POOL.week); };
   function load(){
     try { return JSON.parse(localStorage.getItem(KEY())||'null'); } catch(e){ return null; }
+  }
+  function loadWeek(season, week){
+    try { return JSON.parse(localStorage.getItem(keyFor(season, week))||'null'); }
+    catch(e){ return null; }
   }
   function save(){
     try { localStorage.setItem(KEY(), JSON.stringify(state)); } catch(e){}
@@ -332,6 +393,39 @@
     var d = new Date(POOL.locks_at);
     return d.toLocaleString(undefined, { weekday:'short', hour:'numeric', minute:'2-digit' });
   };
+
+  /* ---- what the week actually scored ----
+   *
+   * FETCHED SPECULATIVELY AND NOT ANNOUNCED IN A POINTER, which is the opposite of how the
+   * pool is found and is the right way round for this one. A pointer would be a third
+   * hand-written field kept in step by two build scripts writing one file, and the failure
+   * is a week that is scored on disk and unscored on screen. The file either exists or it
+   * does not, the URL is derivable from the week, and a 404 is the honest answer to "has
+   * this week been scored yet". It costs one request that usually misses.
+   *
+   * A MAN WITH NO ENTRY SCORED ZERO. The build writes a row for everybody who was active,
+   * so an absent id is inactive, hurt, benched or cut, and all four are nought on a fantasy
+   * lineup. Read as "unknown" instead, a lineup would quietly total five men.
+   */
+  var RESULTS = {};
+  function resultsFor(season, week){
+    var k = season + '|' + week;
+    if (RESULTS[k] !== undefined) return Promise.resolve(RESULTS[k]);
+    return fetch('/football/data/results_' + season + '_w' + week + '.json',
+      { cache: 'no-cache' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .catch(function(){ return null; })
+      .then(function(j){ RESULTS[k] = j; return j; });
+  }
+  var scoreOf = function(res, id){
+    var row = res && res.scores && res.scores[id];
+    return { half: row ? row[0] : 0, line: row ? row[1] : '', played: !!row };
+  };
+  function scoreLineup(res, men){
+    var t = 0;
+    for (var i=0;i<men.length;i++) t += scoreOf(res, men[i].player_id).half;
+    return Math.round(t*10)/10;
+  }
 
   /* ---- the draft screen ---- */
   function paintDraft(){
@@ -459,40 +553,96 @@
 
   $('b-more').onclick = function(){ startChance(); };
   $('b-home').onclick = function(){ paintHome(); show('s-home'); };
+  $('b-in-back').onclick = function(){ paintHome(); show('s-home'); };
 
   $('b-submit').onclick = function(){
     if (state.pick == null) return;
     if (locked()){ paintHome(); show('s-home'); return; }
     state.submitted = state.pick;
     save();
-    paintIn();
+    openIn();
   };
 
-  /* ---- submitted ---- */
-  function paintIn(){
+  /* ---- submitted, and then scored ----
+   *
+   * `res` null is the lineup before the games. With results it is the same screen carrying
+   * what happened. Drawn from one function so the six men cannot be described two ways.
+   */
+  function paintIn(res, lookingBack){
     var c = chanceAt(state.submitted);
-    $('in-week').textContent = POOL.season + ' week ' + POOL.week;
-    $('in-proj').textContent = D.projected(c).toFixed(1);
+    var done = !!res;
+    $('b-in-back').hidden = !lookingBack;
+    var proj = D.projected(c);
+    $('in-week').textContent = POOL.season + ' week ' + POOL.week
+      + (done && !res.final ? ' · still being played' : '');
+    $('in-head').textContent = done ? 'How it went' : 'You are in';
+    $('in-lab').textContent = done ? 'Half PPR' : 'Projected';
+    var got = done ? scoreLineup(res, c.men) : proj;
+    $('in-proj').textContent = got.toFixed(1);
+
+    /* THE PROJECTION STAYS ON SCREEN NEXT TO THE REAL NUMBER, because a score on its own
+       says nothing. 71.4 is a good week or a bad one depending on what the board thought,
+       and the gap is the only thing on this page that tells a drafter whether the calls
+       they made off what the board could not see were the right ones. */
+    if (done){
+      var d = Math.round((got - proj) * 10) / 10;
+      $('in-vs').innerHTML = 'Projected <b>' + proj.toFixed(1) + '</b>. '
+        + (d === 0 ? 'Exactly that.'
+          : '<span class="' + (d > 0 ? 'up' : 'dn') + '">'
+            + (d > 0 ? '+' : '') + d.toFixed(1) + '</span>'
+            + (d > 0 ? ' better.' : ' short.'));
+    }
+    $('in-vs').hidden = !done;
+
     var rows = '';
     for (var k=0;k<c.men.length;k++){
       var m = c.men[k];
       var where = m.opp ? (m.home ? 'vs ' + m.opp : 'at ' + m.opp) : '';
-      rows += '<div class="rrow"><span class="rp ' + esc(m.position) + '">'
+      if (!done){
+        rows += '<div class="rrow"><span class="rp ' + esc(m.position) + '">'
+          + esc(m.position) + '</span>'
+          + '<span class="rn">' + esc(m.name) + '</span>'
+          + '<span class="rc">' + esc(where) + '</span></div>';
+        continue;
+      }
+      var s = scoreOf(res, m.player_id);
+      /* A MAN WHO DID NOT PLAY GETS A SENTENCE, not a blank. Zero beside nothing reads as
+         a rendering fault; zero beside "did not play" is the outcome the drafter was being
+         asked to see coming, and it is most of what separates two lineups. */
+      var under = s.played ? (s.line || 'played, nothing to show')
+        : (res.final ? 'did not play' : 'not played yet');
+      rows += '<div class="rrow got"><span class="rp ' + esc(m.position) + '">'
         + esc(m.position) + '</span>'
-        + '<span class="rn">' + esc(m.name) + '</span>'
-        + '<span class="rc">' + esc(where) + '</span></div>';
+        + '<span class="rn"><b>' + esc(m.name) + '</b>'
+        + '<s>' + esc(where) + (where ? ' · ' : '') + esc(under) + '</s></span>'
+        + '<span class="rs' + (s.half > 0 ? '' : ' zero') + '">'
+        + s.half.toFixed(1) + '</span></div>';
     }
     $('in-roster').innerHTML = rows;
+
     /* "The week closes" was wrong about both halves. The week ENDS on Monday night, and
        what happens at the Thursday kickoff is that entries stop. Shown in the reader's own
        zone by toLocaleString, which is why no zone is named beside it. */
-    $('in-say').textContent = locked()
-      ? 'Week ' + POOL.week + ' has kicked off. Your lineup is in.'
-      : 'Your lineup is in. Entries close ' + lockWhen() + '.';
+    $('in-say').textContent = done
+      ? (res.final ? 'Week ' + POOL.week + ' is done. This is what your six scored.'
+        : res.played + ' of ' + res.games + ' games are in. This will move.')
+      : (locked() ? 'Week ' + POOL.week + ' has kicked off. Your lineup is in.'
+        : 'Your lineup is in. Entries close ' + lockWhen() + '.');
     /* SAID PLAINLY RATHER THAN IMPLIED. Nothing is on a server yet. */
     $('in-note').textContent = 'Test build: this lineup is saved in this browser only. '
       + 'There is no leaderboard yet and nothing has been sent anywhere.';
     show('s-in');
+  }
+
+  /* The entry screen is opened once results may exist, so the fetch happens here rather
+     than at boot: a visitor who has not submitted anything never asks for a results file. */
+  function openIn(){
+    paintIn(null);
+    resultsFor(POOL.season, POOL.week).then(function(res){
+      /* Only repaint if this screen is still the one showing. A slow answer landing after
+         somebody pressed Back would put the entry up over whatever they went to. */
+      if (res && $('s-in').classList.contains('on')) paintIn(res);
+    });
   }
 
   /* ---- home ---- */
@@ -526,10 +676,72 @@
     $('home-note').textContent = locked()
       ? 'Week ' + POOL.week + ' has kicked off. Nothing more can be submitted.'
       : 'Test build: nothing is saved off this browser and there is no board yet.';
+    lastWeekCard();
+  }
+
+  /* ---- what you scored last week ----
+   *
+   * READ OFF THE PREVIOUS WEEK'S OWN KEY AND ITS OWN POOL, because the entry stores player
+   * ids and this week's board cannot name last week's men: a man on a bye, cut or traded is
+   * simply not in it, and six ids resolved against the wrong week would silently draw a
+   * four man lineup.
+   *
+   * ONE WEEK BACK AND NO FURTHER. This is the thing a player wants on the way in, not a
+   * history: a season of cards on the front page is a screen you scroll past to reach the
+   * draft, which is the one thing the page is for.
+   */
+  var LAST = null;
+  function lastWeekCard(){
+    var wk = POOL.week - 1;
+    if (wk < 1) return;
+    var prev = loadWeek(POOL.season, wk);
+    if (!prev || prev.submitted == null) return;
+    if (LAST){ drawLast(); return; }
+    Promise.all([
+      resultsFor(POOL.season, wk),
+      fetch('/football/data/weekly_' + POOL.season + '_w' + wk + '.json')
+        .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+    ]).then(function(got){
+      var res = got[0], pool = got[1];
+      if (!res || !pool) return;
+      var by = {};
+      for (var i=0;i<pool.pool.length;i++) by[pool.pool[i].player_id] = pool.pool[i];
+      var men = (prev.chances[prev.submitted].ids||[])
+        .map(function(id){ return by[id]; }).filter(Boolean);
+      if (men.length < D.SLOTS.length) return;
+      LAST = { week: wk, men: men, got: scoreLineup(res, men),
+        proj: Math.round(men.reduce(function(t,m){ return t + m.proj; }, 0) * 10) / 10,
+        res: res, final: res.final };
+      drawLast();
+    });
+  }
+  function drawLast(){
+    if (!LAST) return;
+    var d = Math.round((LAST.got - LAST.proj) * 10) / 10;
+    $('last-say').textContent = 'Week ' + LAST.week + (LAST.final ? '' : ', still playing');
+    $('last-sub').textContent = 'Projected ' + LAST.proj.toFixed(1) + '. '
+      + (d === 0 ? 'Exactly that.' : (d > 0 ? '+' : '') + d.toFixed(1)
+        + (d > 0 ? ' better.' : ' short.'));
+    $('last-pts').textContent = LAST.got.toFixed(1);
+    $('b-last').hidden = false;
   }
 
   $('b-draft').onclick = function(){ startChance(); };
   $('b-review').onclick = function(){ toReview(); };
+  /* Tapping it opens the same scored screen the entry uses. It has to swap what `state` and
+     `POOL.week` mean for the duration, because paintIn reads both, and it puts them back on
+     the way out: two ways to draw one lineup is how the two come to disagree. */
+  $('b-last').onclick = function(){
+    if (!LAST) return;
+    var keepState = state, keepWeek = POOL.week;
+    state = loadWeek(POOL.season, LAST.week);
+    POOL.week = LAST.week;
+    var keepBy = BY_ID;
+    BY_ID = {};
+    for (var i=0;i<LAST.men.length;i++) BY_ID[LAST.men[i].player_id] = LAST.men[i];
+    paintIn(LAST.res, true);
+    state = keepState; POOL.week = keepWeek; BY_ID = keepBy;
+  };
 
   /* ---- the gate ----
    *
@@ -564,7 +776,7 @@
       state = { season: POOL.season, week: POOL.week, chances: [], pick: null,
         submitted: null };
     }
-    if (state.submitted != null && D.full(chanceAt(state.submitted))){ paintIn(); return; }
+    if (state.submitted != null && D.full(chanceAt(state.submitted))){ openIn(); return; }
     paintHome();
     show('s-home');
   }

@@ -86,6 +86,24 @@ jobs:
         if: steps.when.outputs.go == 'yes'
         run: node football/build/next-week.mjs --week '${{ inputs.week }}'
 
+      # SCORE THE WEEK THAT JUST FINISHED BEFORE BUILDING THE NEXT ONE, and the order is the
+      # point rather than tidiness: the page finds a result by asking for the week's own
+      # file, so a week whose board rolls forward before its result is written is a week
+      # somebody played and can never see. By Tuesday morning the Monday night game is in.
+      #
+      # `|| true` because this is allowed to have nothing to do. Week one has no week zero,
+      # and a manual run mid-week hits a week that is not finished, which the build refuses
+      # by design. Neither is a reason to skip building the board.
+      - name: Score the week that just ended
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          PREV=$(( ${{ steps.week.outputs.week }} - 1 ))
+          if [ "$PREV" -ge 1 ]; then
+            node football/build/weekly-results.mjs \
+              --season '${{ steps.week.outputs.season }}' --week "$PREV" --write || \
+              echo "week $PREV could not be scored yet, carrying on"
+          fi
+
       - name: Build the board
         if: steps.when.outputs.go == 'yes'
         run: |
@@ -104,7 +122,8 @@ jobs:
         run: |
           git config user.name "fantasy-bot"
           git config user.email "noreply@anthropic.com"
-          git add football/data/weekly_*.json football/data/fantasy_now.json
+          git add football/data/weekly_*.json football/data/results_*.json \
+                  football/data/fantasy_now.json
           if git diff --cached --quiet; then
             echo "the board has not moved"
             exit 0
