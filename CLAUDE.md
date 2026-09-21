@@ -2203,6 +2203,64 @@ down keeps a stale badge, which is the cheapest thing on this screen to be wrong
 it is the run in this browser's hands, so it is live by the fact that it is being drawn, and the
 viewer's own unlocks are the one account this page can read.
 
+##### One account wore four of them, and the missing fact was the SLOT
+
+```
+psql -d dyn_slot -f supabase/108_dynasty_slot.sql
+psql -d dyn_slot -f supabase/test/dynasty_slot_test.sql
+```
+
+Reported with a screenshot: four rows of the Dynasty board wearing LIVE, all one player.
+`FB_SLOTS` has **two** dynasty slots, so two is the ceiling. Every one of the four was a true
+statement of "not explicitly ended, and played inside 48 hours" wearing a word that means
+something else, which is the paragraph above arriving as a bug: the window was the only thing
+standing between an unposted end and a wall of red, and two days is long enough for a tester
+to play four runs.
+
+**The server knew every dynasty and when each one's furthest season landed, and not which of
+the two slots it occupied**, so it could not tell the newest run in a slot from the ones
+abandoned behind it. `supabase/108_dynasty_slot.sql` adds `dynasty_slot`, and
+`dynasty_current` is the newest unfinished run in each slot. Two an account, by arithmetic on
+rows the server already has, rather than by hoping a fire-and-forget client call got through.
+
+**`dynasty_over` still means exactly what it meant.** Folding the two into one column would
+make "was this ended" un-askable and take 107's own test with it. A stale run is not over:
+nobody ended it, and that is the whole reason this exists.
+
+**It repairs the rows already on the board.** Every dynasty filed before today has a null
+slot and they share one bucket, so an account's older unfinished runs stop being current the
+moment a newer one exists. Four badges become one with nobody editing a row. An account that
+genuinely had two going loses one until its next season is filed, which is the small error in
+the quiet direction and is self-healing.
+
+**RANKED OVER ALL OF THE ACCOUNT'S RUNS, NOT ONLY THE UNFINISHED ONES**, and that is the
+clause most likely to be simplified wrongly. Rank the unfinished alone and a stale run whose
+slot was later taken by a run that has since FINISHED floats back to the top and wears the
+badge again. **A guest is not ranked at all**: `user_id` is null for a run filed by nobody, so
+a partition on it would put every guest run in the world into one bucket.
+
+**A SLOT BELONGS TO THE DYNASTY AND IS STORED ON A SEASON, and the first draft did not close
+that join.** Written `coalesce(p_slot, dynasty_slot)` in the tag, it reads like it defends the
+recorded slot and defends nothing, because every season is its OWN ROW and the row being
+written was inserted a moment earlier with a null in it. One season from a browser one deploy
+behind would then be the furthest season, the view reads the slot off that row, and a well
+recorded dynasty drops into the null bucket. A null argument INHERITS the dynasty's own slot
+now. **And the test of it passed with the defect in**, because it asked
+`bool_and(dynasty_slot = 'club')` over the dynasty's rows and **`bool_and` ignores nulls**, so
+the one row that had been blanked was the one row not counted. It reads the row the board
+reads.
+
+**The column order in the view is 107's with the new one appended**, which is load-bearing
+rather than tidy: `create or replace view` may add columns at the END and may not rename or
+reorder, so a more natural order fails outright. A `drop view` first would work and is worse,
+because it takes the grants with it and leaves a window where the board does not exist.
+
+**The two halves are guarded in two files, the same split 107 runs on.**
+`check-premium.mjs` fabricates the column and hands it to the painters, so it says nothing
+about what writes it; `supabase/test/dynasty_slot_test.sql` drives the real function and the
+real view. Three defects were reintroduced one at a time to prove that file bites: ranking the
+unfinished separately, dropping the guest clause, and dropping the inheritance.
+
 #### Every way this breaks renders perfectly, so the guard measures the screen
 
 The rows are fabricated and handed straight to the painters, covering live, live and paid,

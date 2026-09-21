@@ -1058,10 +1058,20 @@
   /* Stamp the row ps_submit_run just returned with its run and its standing. Retried like
      submit, because a lost tag leaves a played season off the run's board; the next season's
      tag carries the whole run forward regardless, so one miss is not one lost run. */
-  async function dynastyTag(rowId, dynastyId, seasons, score) {
+  /* THE SLOT RIDES WITH THE TAG, because it is the one thing the server cannot work out
+     for itself and it is what decides whether a run wears LIVE. See 108_dynasty_slot.sql:
+     the page has two dynasty slots, so an account has at most two runs in progress, and
+     without knowing which slot a run occupied the server cannot tell the newest one from
+     the three somebody abandoned behind it.
+     OPTIONAL, AND OMITTED RATHER THAN GUESSED. A caller with no slot to give leaves the
+     field off the body entirely, and the function then reads the slot off the dynasty's
+     own earlier seasons. Sending an empty string instead would be an answer, and a wrong
+     one: it is its own bucket, so it would split a run's seasons in two. */
+  async function dynastyTag(rowId, dynastyId, seasons, score, slot) {
     if (rowId == null || !dynastyId) return false;
     const body = JSON.stringify({ p_row: rowId, p_dynasty_id: dynastyId,
-      p_season: Math.round(seasons), p_score: Math.max(0, Math.round(score || 0)) });
+      p_season: Math.round(seasons), p_score: Math.max(0, Math.round(score || 0)),
+      ...(slot ? { p_slot: String(slot) } : {}) });
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const res = await timed(base() + 'rpc/ps_dynasty_tag', { method: 'POST', headers: headers(), body });
@@ -1272,7 +1282,7 @@
 
   window.PS_BOARD = {
     /* 18: 107's display_pro on the classic rows, and dynastyEnd. */
-    API_VERSION: 18,
+    API_VERSION: 19,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
     dynastyTag, dynastyEnd, dynastyTop, dynastyMine, dynastyRank, dynastyTotal,
