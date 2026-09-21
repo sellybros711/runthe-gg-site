@@ -149,6 +149,48 @@ export function opponentsIn(games, season, week) {
   return by;
 }
 
+/*
+ * A kickoff, as an instant.
+ *
+ * THE SCHEDULE IS IN EASTERN AND THE OFFSET IS NOT A CONSTANT. `gameday` and `gametime` are
+ * wall clock in America/New_York, and the season crosses a clock change in early November,
+ * so a hardcoded -04:00 puts every game from week ten on an hour out. An hour is enough to
+ * lock a week after the Thursday game has kicked off, which is the one error here that
+ * costs somebody an entry.
+ *
+ * So the offset is ASKED rather than assumed: read the wall clock back out of a guessed
+ * instant in that zone and correct by whatever it is off by. One pass is enough, because the
+ * correction is a whole number of minutes and no kickoff sits on a transition boundary.
+ */
+const ET = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York', hour12: false,
+  year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+});
+export function easternInstant(day, time) {
+  if (!day || !time) return null;
+  const want = Date.parse(`${day}T${time}:00Z`);
+  if (!Number.isFinite(want)) return null;
+  const p = Object.fromEntries(ET.formatToParts(new Date(want)).map((x) => [x.type, x.value]));
+  /* Hour 24 is midnight in this formatter's output, which reads as a day ahead. */
+  const hour = p.hour === '24' ? '00' : p.hour;
+  const got = Date.parse(`${p.year}-${p.month}-${p.day}T${hour}:${p.minute}:00Z`);
+  return new Date(want + (want - got)).toISOString();
+}
+
+/** Every club's week: who they play, whether at home, and when it kicks off. */
+export function weekGames(games, season, week) {
+  const by = new Map();
+  for (const g of games) {
+    if (num(g.season) !== season || num(g.week) !== week) continue;
+    if (g.game_type && g.game_type !== 'REG') continue;
+    if (!g.home_team || !g.away_team) continue;
+    const kick = easternInstant(g.gameday, g.gametime);
+    by.set(g.home_team, { opp: g.away_team, home: true, kick });
+    by.set(g.away_team, { opp: g.home_team, home: false, kick });
+  }
+  return by;
+}
+
 /* ─── what a defense has been giving up ────────────────────────────────────────────── */
 
 /**
@@ -373,6 +415,13 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
   const games = parseCSVObjects(await cachedCSV(GAMES_URL, 'games.csv'));
   const playing = clubsPlaying(games, season, week);
   if (!playing.size) throw new Error(`the schedule has no week ${week} of ${season}`);
+  const sched = weekGames(games, season, week);
+
+  /* THE WEEK LOCKS AT THE FIRST KICKOFF, not at the Sunday one. A Thursday game is a real
+     game and a lineup submitted after it has started is a lineup submitted knowing how one
+     of its men did. One lock for the week, and it is the earliest whistle in it. */
+  const kicks = [...sched.values()].map((g) => g.kick).filter(Boolean).sort();
+  if (!kicks.length) throw new Error(`week ${week} of ${season} has no kickoff times`);
 
   const todate = seasonToDate(rows, week);
   /* THE BOARD IS PRICED AGAINST ITSELF. A man whose club is idle is not on it, so he is not
@@ -402,6 +451,14 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
     half_total: round(p.half, 1),
     price_musd: p.price_musd,
     stat_line: statLine(p),
+    /* THE MATCHUP, WHICH IS THE ONE THING ON THE CARD THE PRICE DID NOT READ. Measured, a
+       defense's own allowed-to-position figure is worth nothing as a projection term (see
+       probe_projection.mjs), so this is not here as a number the game has an opinion about.
+       It is here because a reader does: they know who is hurt, who is starting and what the
+       weather is doing, and none of that reaches the board. */
+    opp: (sched.get(p.team) || {}).opp || '',
+    home: !!(sched.get(p.team) || {}).home,
+    kick: (sched.get(p.team) || {}).kick || null,
   }));
 
   return {
@@ -413,6 +470,7 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
        Reported rather than shipped, because the bye trap is removed at the door here and a
        reader of this file should be able to see how big the door was. */
     idle: played.length - eligible.length,
+    locks_at: kicks[0],
     pool,
   };
 }
@@ -435,6 +493,7 @@ if (process.argv[1] && process.argv[1].endsWith('weekly-pool.mjs')) {
   console.log(`  half PPR identity held on ${built.checked.toLocaleString('en-US')} REG rows`);
   console.log(`  ${built.clubs_playing} clubs playing, `
     + `${on.length} draftable, ${built.idle} left off for a bye`);
+  console.log(`  locks at ${built.locks_at} (the first kickoff of the week)`);
   console.log(`  baseline rank ${built.rank} = ${built.baseline} half PPG, `
     + `VOR anchors ${built.vorLo} to ${built.vorRef}`);
 
@@ -454,8 +513,13 @@ if (process.argv[1] && process.argv[1].endsWith('weekly-pool.mjs')) {
   }
 
   if (process.argv.includes('--write')) {
-    const out = path.join(DATA_DIR, `weekly_${season}_w${week}.json`);
-    fs.writeFileSync(out, JSON.stringify(built, null, 1));
-    console.log(`\n  wrote ${out}`);
+    const name = `weekly_${season}_w${week}.json`;
+    fs.writeFileSync(path.join(DATA_DIR, name), JSON.stringify(built, null, 1));
+    /* WHICH WEEK IS LIVE IS WRITTEN HERE AND READ BY THE PAGE, never typed into it. A week
+       number in the markup is a hand-written number beside a generated file, which is the
+       shape this repo keeps a checker for. One command ships a week. */
+    fs.writeFileSync(path.join(DATA_DIR, 'fantasy_now.json'),
+      JSON.stringify({ season, week, file: name, locks_at: built.locks_at }, null, 1) + '\n');
+    console.log(`\n  wrote ${name} and fantasy_now.json`);
   }
 }

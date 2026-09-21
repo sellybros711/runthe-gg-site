@@ -2049,6 +2049,20 @@
       "sha": "d19df33aadff5118"
     }
   },
+  "football/fantasy/index.html": {
+    "/football/fantasy-access.js": {
+      "v": "1",
+      "sha": "cd646e46df3796f3"
+    },
+    "/football/auth.js": {
+      "v": "5",
+      "sha": "4267faaaa07774a5"
+    },
+    "draft.js": {
+      "v": "1",
+      "sha": "cda72e3c32d8a4f3"
+    }
+  },
   "football/index.html": {
     "engine.js": {
       "v": "97",
@@ -2065,6 +2079,10 @@
     "dynasty-access.js": {
       "v": "5",
       "sha": "0f9d94df1bda07be"
+    },
+    "fantasy-access.js": {
+      "v": "1",
+      "sha": "cd646e46df3796f3"
     },
     "board.js": {
       "v": "37",

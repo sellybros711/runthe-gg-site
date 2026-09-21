@@ -2445,6 +2445,211 @@ Measured, and worth knowing before writing a badge that names any of it:
 - A Full Team squad reaches the Super Bowl in about one season in twenty and wins it in
   about one in a hundred, and never takes the top seed.
 
+## Fantasy Challenge, the weekly one
+
+```
+node football/check-fantasy.mjs            the gate, a whole entry, the lock, the phone
+node football/check-fantasy.mjs --quick    the draft engine only, no browser
+node football/build/weekly-pool.mjs --season 2026 --week 3 --write
+node football/build/next-week.mjs          which week is about to be played
+node football/build/test/probe_weekly.mjs     what a season to date is worth
+node football/build/test/probe_projection.mjs whether a projection can beat it
+node football/build/test/probe_cap.mjs        what cap makes the draft a decision
+```
+
+`football/fantasy/index.html` is the mode and `football/fantasy/draft.js` is the football.
+Six slots (QB, RB, RB, WR, WR, TE), a $90M cap, five whole drafts, one submitted. Half PPR,
+scored on what the six actually do. **It is a page of its own rather than a screen inside
+the football game**, because it shares nothing with that engine: no season, no sim, no
+ratings. What it shares is accounts, the palette and the tester pattern.
+
+**IT IS NOT LAUNCHED AND THE FLAG IS NOT A LOCK.** `fantasy-access.js` ships
+`FANTASY_LIVE = false`, so the door on the front page is BUILT for a tester and for nobody
+else. The file is served to every visitor and the list is a console line from being edited.
+Say that plainly rather than implying the page is private. It is the same gate the unlisted
+games run on.
+
+**THREE ACCESS FILES NOW, AND THEY ARE STILL THREE FILES.** `fullteam-access.js` says in as
+many words "when a third mode wants this, merge them". This is the third and the merge is
+DEFERRED, which is written in the new file's header: the other two ship `LIVE = true`, so
+merging means editing two launched modes and their callers in the middle of building an
+unlaunched one, and the way that fails is a door that is never built, which reports nothing.
+`check-fullteam.mjs` walks **every** `*-access.js` on disk now rather than naming two, so the
+lists cannot drift and a fourth mode is covered without anybody remembering.
+
+### The price is what he has done. The projection is the same number.
+
+`football/build/weekly-pool.mjs` builds one week's board from weeks 1 to N-1 plus the
+SCHEDULE, and nothing may read week N. "Everybody with a row in week N" is one filter away
+and would be a pool with the future in it: it excludes exactly the men who were inactive,
+hurt or rested, which is what the game asks a player to predict.
+
+**Half PPR is derived and asserted on every build.** nflverse ships standard and full PPR and
+no half. `fantasy_points + receptions == fantasy_points_ppr` holds exactly on all 18,130 REG
+rows of 2024, so half is standard plus half a catch. If that identity ever stops holding the
+build THROWS rather than quietly paying the wrong number.
+
+**A short sample cannot be priced like a long one, and the fix is the opposite of the obvious
+one.** On the raw average, 2024 week 8 put Russell Wilson at the $48M ceiling off ONE game
+beside Lamar Jackson at the same price off seven. Regressing toward the position's median
+made every measure worse, monotonically, because a man is on this board BECAUSE his one game
+was big, so a prior above his estimate pushes him further out. Toward ZERO at `SHRINK_K = 2`,
+the gap between what a one game man and a six game man deliver at the same price goes 3.48 to
+0.12, and r and mean error both improve at the same time.
+
+**And K was first fitted on the wrong objective.** Correlation asks whether the board is in
+the right ORDER; what pricing promises is that equal price means equal expected points, which
+is BIAS. Fitted on r, shrinkage of any kind looked strictly harmful and the thing it exists to
+fix went unmeasured.
+
+**THE PROJECTION IS THE SEASON TO DATE AND A CONSTANT, and that is a measurement rather than
+laziness.** No free weekly projection is licensable, so one was built and then tested. Over
+6,720 draftable player-weeks of 2022 to 2024, against a 5.887 baseline mean error:
+
+| | mae |
+|---|---|
+| the season to date alone | 5.887 |
+| plus the best matchup term found | 5.878 |
+| plus the best recency term found | 5.867 |
+
+Neither is a term. **The recency term is worse than useless for a number that is PRINTED**: it
+takes the bias from +0.54 to +1.06, because the last three games of a man near the top of the
+board run hot. What ships is one addition, `PROJ_LIFT = 0.54`, because the shrink leaves every
+estimate low by that much and six men is three points of lineup projection a reader would
+watch come in high every week. **A flat offset and not a fitted line**: least squares wants a
+slope of 0.972, and a slope under one flattens the board by pulling the best men toward the
+middle. All three candidates land inside 0.013 of each other and remove the bias exactly, so
+the tiebreak is what they disturb.
+
+**So price and projection are the same quantity up to a constant, which means THE BOARD
+CANNOT CONTAIN A DECISION ITS OWN NUMBERS RESOLVE.** The dearest man on any board is also the
+highest projected one. That is why the card shows the STAT LINE and the price and no per man
+projection: the edge is everything the board cannot see, which is injuries, snap shares,
+weather and who is actually starting. The lineup's projected total is shown after the six are
+in, which is the one number this mode prints about the future.
+
+**The top of the board is the best man on it, not the 99th percentile.** That anchor is
+inherited from a pricing built over tens of thousands of finished seasons where the 99th
+percentile is deep. One week is about 500 men, so it is five men in: measured over twelve
+weeks, four to seven men sat on the $48M ceiling every week with up to 7.6 points of
+projection between them, and the dearest slot was "take the highest projection". Anchored at
+the maximum, exactly one man reaches it every week by construction.
+
+**The board is priced against ITSELF.** A man whose club is idle is off it and out of the
+anchors, or a leader sitting a bye sets a ceiling nobody draftable can reach.
+
+### The cap is the crossover, and the wheel only reaches as far as the league starts
+
+`probe_cap.mjs` sweeps the cap against two real strategies. GREEDY takes the dearest man
+offered; BUDGET holds back a share for each remaining slot.
+
+| cap | greedy | budget | budget-greedy | greedy spends |
+|---|---|---|---|---|
+| 70 | 41.2 | 46.0 | +4.7 | 100% |
+| 80 | 47.3 | 49.6 | +2.2 | 99% |
+| **90** | **52.2** | **52.6** | **+0.4** | **97%** |
+| 93 | 53.5 | 53.6 | +0.1 | 96% |
+| 100 | 56.0 | 55.3 | -0.7 | 94% |
+| 125 | 60.2 | 59.0 | -1.3 | 81% |
+
+Above the mid nineties the cap stops binding and spending everything early is simply right.
+Below the eighties, holding money back is. They cross at 93 and are inside half a point from
+90, which is the only band where a drafter has to look at the board rather than apply a rule.
+**It ships at the round number inside that band** rather than at the crossover: four tenths
+of a point on a fifty point lineup, and `$90M` is a figure somebody can hold in their head.
+
+**Taking whatever the wheel offers scores 39.5**, which is 12.8 behind both. Drafting matters.
+
+**VALUE PER DOLLAR IS NOT A THIRD STRATEGY** and the probe keeps a row to say so. The price
+curve is convex on purpose, so points per million always picks the cheapest man on the board
+and finishes 22 points behind. Anybody reaching for a ratio here should see that row first.
+
+**DEPTH IS A CEILING, NOT THE NUMBER.** Week three has 42 quarterbacks with a game to their
+name and 168 receivers, so a flat 40 is the whole quarterback position and a quarter of the
+receivers. Driven, a quarterback board came up Caleb Williams, Jalen Hurts, Trevor Lawrence,
+Kenny Pickett and Mason Rudolph: two of five were men who will not take a snap, and the board
+reads as junk rather than as a choice. The depth is the smaller of the ceiling and **how many
+of that position the league starts**, derived from the clubs playing this week times how many
+of that position this lineup asks for. No table to keep in step, and a bye week narrows the
+wheel by itself.
+
+**THE RESERVE FLOOR IS NOT OPTIONAL.** A draft that spends so much on a quarterback that no
+tight end is affordable strands, and it strands silently: the board comes up empty and the
+player is looking at a screen with no way on. `reserveAfter()` is what stops it, and
+`check-fantasy.mjs` plays 1,200 drafts three ways to say so. The page still carries a sentence
+for an empty board, because a screen that would trap somebody should say which of the two it
+is rather than going blank.
+
+### The boards are per player, and the five chances are what makes that survivable
+
+Asked and answered: with a prize for the top three, every entrant meets their OWN wheel rather
+than a shared one. **Recorded here rather than argued again: part of the gap between first and
+fourth is who was offered whom.** The alternative, seeding the week so everybody spins the same
+wheel, is what hoops Daily does and is written up under "Today's run" above.
+
+**What carries most of the weight against that is the FIVE.** Measured at the shipped cap, the
+standard deviation of one draft against the best of five:
+
+| | one draft | best of five |
+|---|---|---|
+| taking whatever is offered | 6.76 | 4.17 |
+| drafting greedily | 3.33 | 1.01 |
+
+So two entrants who both draft well submit lineups within about a point of each other, where a
+single draft each would have put them three apart.
+
+**A CHANCE STORES A SEED, AND A RELOAD MUST NOT RE-ROLL IT.** Boards are rebuilt from the seed
+rather than stored, so pressing reload comes back to the same five men. Without it, five
+chances are as many as somebody has patience for, and nothing about that is visible: the board
+renders, the draft finishes, the lineup is legal. `check-fantasy.mjs` drives the reload through
+the page rather than through `draft.js`, because the property is that what is STORED is enough
+to rebuild the board: a seed kept only in a variable passes every engine assertion.
+
+### The week, the lock and the clock
+
+**`fantasy_now.json` says which week is live and the build writes it.** The page reads it and
+never carries a week number, because a hand-written number beside a generated file is the class
+of thing this repo keeps a checker for. Shipping a week is one command.
+
+**THE WEEK LOCKS AT THE FIRST KICKOFF, not at the Sunday one.** A Thursday game is a real game
+and a lineup submitted after it has started is a lineup submitted knowing how one of its men
+did.
+
+**The schedule is in Eastern and the offset is not a constant.** `gameday` and `gametime` are
+wall clock in America/New_York and the season crosses a clock change in early November, so a
+hardcoded `-04:00` puts every game from week ten an hour out, which is enough to lock a week
+after the Thursday game has kicked off. `easternInstant()` asks the zone rather than assuming
+it. Verified across the change: week 3 and week 10 both resolve to 8:15pm ET.
+
+**`next-week.mjs` asks the schedule, never the calendar**, and it asks for the earliest week in
+which NOT ONE game has been played. "The first week with an unplayed game" is the obvious
+version and it sticks forever on a postponement. And `home_score` is BLANK for an unplayed
+game while `Number('')` is 0, so read naively every future game looks like a nil-nil draw that
+has already happened and the season reads as finished in September.
+
+**`.github/workflows/fantasy-pool.yml` builds the week every Tuesday at 11am Eastern**, which is
+after the Monday night game and two and a half days before the Thursday lock. Two cron entries
+and the job asks WHICH SCHEDULE FIRED rather than what time it is now, which is the fix
+`setlist-data.yml` carries a long note about. Nothing is committed unless `check-fantasy
+--quick` passes.
+
+### What is NOT built yet
+
+**There is no server, no entry table, no leaderboard and no scoring.** A submitted lineup is in
+`localStorage` and nowhere else, and the page says so on the screen rather than letting somebody
+believe they have entered something. That is a feel test, not a competition.
+
+**When it becomes one, the authority has to move.** One entry an account, counted by the server,
+with the lock enforced there rather than by a page that trusts its own clock. A client that can
+post any six players at any price is a client that can win a prize with a lineup it invented,
+and with the top three paid that is not hypothetical. Accounts are free to make, so nothing stops
+one person entering five times under five accounts: that can be made harder and not impossible,
+and it should be said out loud rather than designed around quietly.
+
+**Pro must not buy draws or entries.** The bundle sells the counting away. Selling an advantage
+in a prize competition is a different kind of product and this mode has no paid tier at all,
+which is why there is no `fantasySold()` beside `fullTeamSold()`.
+
 ## The wrestling game
 
 `wrestling/index.html` is the whole career game in one self-contained file, by

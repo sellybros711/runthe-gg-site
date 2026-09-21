@@ -467,6 +467,11 @@ window.GA_ID='G-L29P5MRWKE';
   .hp-full[hidden]{display:none}
   .hp-full:before{display:none}
   .hp-full:active{transform:translateY(1px)}
+  /* THE ONE DOOR IN THIS GROUP THAT IS AN ANCHOR. Fantasy Challenge is another page, so its
+     door is a link and keeps middle click, open in a new tab and long press. Nothing in
+     .btn or .hp-full turns the browser's own underline off, because neither was ever worn
+     by an <a>, and the underline is the only thing that gives the anchor away. */
+  a.hp-full{text-decoration:none}
   .hp-full-name{font-family:var(--fd,var(--fn));font-size:19px;font-weight:800;
     letter-spacing:.02em;color:var(--ink);line-height:1}
   .hp-full-sub{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.05em;
@@ -8129,6 +8134,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      so no returning visitor notices. -->
 <script src="/football/fullteam-access.js?v=3"></script>
 <script src="dynasty-access.js?v=5"></script>
+<!-- WHO CAN SEE FANTASY CHALLENGE. The only one of the three whose flag is still false, so
+     the only one whose list currently decides anything. Read defensively by
+     canPlayFantasy(), which answers no when the file cannot be read. -->
+<script src="fantasy-access.js?v=1"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -8403,6 +8412,19 @@ const canPlayFull=()=>{
    no Full Team door is told nothing about it, so nothing here ever sells a mode they cannot
    find. */
 const fullTeamSold=()=>canPlayFull();
+/* FANTASY CHALLENGE, asked exactly the same way and read just as defensively. It is the one
+   of the three access files still answering false for the public, so this is the only one of
+   these three functions currently deciding anything.
+   IT IS NOT IN THE STORE AND MUST NOT BE. Nothing about this mode is sold, so there is no
+   `fantasySold()` beside it: the bundle's card names what the bundle contains, and a mode
+   that is free to enter and not yet finished is neither. */
+const canPlayFantasy=()=>{
+  const A=window.PS_FANTASY_ACCESS;
+  if(!A||typeof A.allowed!=='function') return false;
+  if(A.LIVE) return true;
+  if(!authState.signedIn) return false;
+  return A.allowed({name:authState.name,userId:authState.userId});
+};
 /* AND THE STORE ASKS THE PAGE, because only the page knows. Deciding this needs the tester
    list and who is signed in; /assets/store.js is handed neither and is drawn by the college
    game too. Published as the FUNCTION rather than its answer: sign-in and ownership both move
@@ -11011,6 +11033,7 @@ function paintHomeStart(){
      this sequence decides is that the group exists before the trim runs. */
   ensureFullButton();
   ensureDynastyButton();
+  ensureFantasyButton();
   trimLongGroup();
   ensurePremiumCard();
 }
@@ -11398,6 +11421,41 @@ function dynHiHTML(){
     (top?'<u>Record</u><b>'+dynHiNum(top.score)+'</b>':'')+
     (mine?'<u>Your best</u><b>'+dynHiNum(mine.score)+'</b>':'')+
   '</span>';
+}
+
+/* FANTASY CHALLENGE'S DOOR. Made rather than revealed, for the reason the two above give
+   and which matters here more than it does for either of them: those two are LIVE, so their
+   builders run for everybody and the choice is academic. This flag is false, so a node
+   shipped hidden really would be an unfinished mode sitting in the markup of a page the
+   public reads, one devtools inspection from being found.
+   IT IS A LINK AND NOT A BUTTON, because it goes to another page. Middle click, open in a
+   new tab and a long press all have to keep working, which is the note the college game's
+   Commish door carries about preventDefault.
+   NO METER TO ASK ABOUT, so this builder has no dailyEnsure and no shut state: one entry a
+   week is the rule and the lock is a kickoff rather than an allowance. */
+function ensureFantasyButton(){
+  let el=$('b-fantasy');
+  if(!canPlayFantasy()){
+    if(el&&el.parentNode) el.parentNode.removeChild(el);
+    return;
+  }
+  const box=ensureLongGroup(); if(!box) return;
+  if(!el){
+    el=document.createElement('a');
+    el.className='btn hp-full';
+    el.id='b-fantasy';
+    el.href='/football/fantasy/';
+    /* PREVIEW, WHICH IS THE HONEST WORD WHILE ONLY A TESTER CAN SEE IT, and is the word
+       Full Team's door wore until the day that mode launched. New is what a finished mode
+       that is new says; Preview tells the handful of people who can open this that the
+       rough edges are expected. */
+    el.innerHTML='<span class="hp-tag">Preview</span>'+
+      '<span class="hp-full-name">Fantasy Challenge</span>'+
+      '<span class="hp-full-sub">One lineup &middot; one week</span>';
+  }
+  /* LAST IN THE GROUP, under the two launched modes. */
+  if(box.lastChild!==el) box.appendChild(el);
+  el.hidden=false;
 }
 
 /* DYNASTY'S BUTTON, made rather than revealed, for every reason ensureFullButton
@@ -12218,7 +12276,7 @@ async function dynCloudPull(){
   /* THE DYNASTY DOOR IS THE ONLY THING ON SCREEN THAT READS ONE OF THESE. The Trade Machine's
      card lives inside the modes sheet, which reads tradeRead() every time it is drawn, so a
      season that just came down is already there the moment somebody opens it. */
-  if(painted){ ensureDynastyButton(); ensureFullButton(); }
+  if(painted){ ensureDynastyButton(); ensureFullButton(); ensureFantasyButton(); }
 }
 
 /* The save as it sits, before the checks dynRead makes. What goes up has to be the bytes that
