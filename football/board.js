@@ -1067,15 +1067,36 @@
      field off the body entirely, and the function then reads the slot off the dynasty's
      own earlier seasons. Sending an empty string instead would be an answer, and a wrong
      one: it is its own bucket, so it would split a run's seasons in two. */
+  /* AND IT DROPS THE SLOT RATHER THAN THE SEASON, which is the half a version pin cannot
+     cover. SQL is deployed by hand and this file is deployed by a push, so there is a window
+     in which the page asks for a function the database does not have yet. PostgREST resolves
+     an rpc by its ARGUMENT NAMES, so a five argument call against a database still on 107 is
+     not a slower answer or a null: it is 404 PGRST202, no function of that name and shape,
+     and the season is never tagged at all. That run then has no dynasty_id, so it is not on
+     the Dynasty board, and nothing anywhere says so.
+     So a refusal that names the SIGNATURE is retried without the slot. Any other refusal is
+     the refusal it always was. */
   async function dynastyTag(rowId, dynastyId, seasons, score, slot) {
     if (rowId == null || !dynastyId) return false;
-    const body = JSON.stringify({ p_row: rowId, p_dynasty_id: dynastyId,
-      p_season: Math.round(seasons), p_score: Math.max(0, Math.round(score || 0)),
-      ...(slot ? { p_slot: String(slot) } : {}) });
+    const core = { p_row: rowId, p_dynasty_id: dynastyId,
+      p_season: Math.round(seasons), p_score: Math.max(0, Math.round(score || 0)) };
+    const withSlot = slot ? Object.assign({ p_slot: String(slot) }, core) : core;
+    const post = (payload) => timed(base() + 'rpc/ps_dynasty_tag',
+      { method: 'POST', headers: headers(), body: JSON.stringify(payload) });
+    let payload = withSlot;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const res = await timed(base() + 'rpc/ps_dynasty_tag', { method: 'POST', headers: headers(), body });
+        const res = await post(payload);
         if (res.ok) { lastError = null; return true; }
+        if (res.status === 404 && payload !== core) {
+          /* Read once and reused: a Response body can only be consumed one way, and `fail`
+             below reads it too. */
+          const said = await res.clone().text().catch(() => '');
+          if (/PGRST202|function.*does not exist|Could not find the function/i.test(said)) {
+            payload = core;
+            continue;
+          }
+        }
         if (res.status < 500) { await fail('dynastyTag', res); return false; }
         await fail('dynastyTag', res);
       } catch (e) { failThrown('dynastyTag', e); }

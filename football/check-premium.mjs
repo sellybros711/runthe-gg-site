@@ -2181,6 +2181,71 @@ console.log('\nA BADGE THAT SAYS LIVE HAS TO MEAN ONE RUN A SLOT');
 }
 
 /*
+ * AND THE TAG DROPS THE SLOT RATHER THAN THE SEASON.
+ *
+ * SQL is deployed by hand and this page is deployed by a push, so there is a window in
+ * which the page asks for a function the database does not have yet. PostgREST resolves an
+ * rpc by its ARGUMENT NAMES, so a five argument call against a database still on 107 is not
+ * a slower answer and not a null: it is 404 PGRST202, and the season is never tagged. A run
+ * with no dynasty_id is not on the Dynasty board at all, and nothing on screen says so.
+ *
+ * It is the version pin's own problem in the one place a pin cannot reach: the page and the
+ * module move together in a commit and the SCHEMA does not move with either.
+ *
+ * DRIVEN THROUGH THE REAL FUNCTION, with fetch swapped for a recorder, because what is
+ * being asserted is which bodies go out and in what order. `timed` calls the global fetch,
+ * so nothing about board.js is faked.
+ */
+console.log('\nA TAG THAT MEETS A DATABASE ONE MIGRATION BEHIND');
+{
+  const tag = await lb.page.evaluate(async () => {
+    const real = window.fetch;
+    const run = async (has108) => {
+      const sent = [];
+      window.fetch = async (url, opts) => {
+        if (String(url).indexOf('rpc/ps_dynasty_tag') < 0) return real(url, opts);
+        const body = JSON.parse((opts && opts.body) || '{}');
+        sent.push(body);
+        if (!has108 && 'p_slot' in body) {
+          return new Response(JSON.stringify({ code: 'PGRST202',
+            message: 'Could not find the function public.ps_dynasty_tag'
+              + '(p_dynasty_id, p_row, p_score, p_season, p_slot) in the schema cache' }),
+            { status: 404, headers: { 'Content-Type': 'application/json' } });
+        }
+        /* A void rpc answers 204, and a 204 is a NULL BODY STATUS: `new Response('', ...)`
+           throws rather than answering, which the retry loop reads as a network blip and
+           swallows. The first draft of this section did exactly that and reported three
+           requests on the arm that should make one. */
+        return new Response(null, { status: 204 });
+      };
+      const ok = await window.PS_BOARD.dynastyTag(
+        7, '11111111-2222-3333-4444-555555555555', 3, 4000, 'club');
+      return { ok, sent };
+    };
+    const now = await run(true);
+    const old = await run(false);
+    window.fetch = real;
+    return { now, old };
+  });
+  ok('a database with 108 is asked once, with the slot',
+    tag.now.ok === true && tag.now.sent.length === 1 && tag.now.sent[0].p_slot === 'club',
+    tag.now.sent.length + ' request(s), slot ' + tag.now.sent[0].p_slot);
+  /* THE SEASON IS WHAT MUST NOT BE LOST. A badge that is briefly wrong is the whole of what
+     the fallback gives up, and it heals on the next season filed after the migration. */
+  ok('  and one behind still files the season', tag.old.ok === true);
+  ok('    by asking again without the slot', tag.old.sent.length === 2
+    && tag.old.sent[0].p_slot === 'club' && !('p_slot' in tag.old.sent[1]),
+    tag.old.sent.map((b) => ('p_slot' in b) ? 'with' : 'without').join(' then '));
+  /* Everything else the tag sends is unchanged, or the retry would file a different season
+     from the one that was refused. Written against `sent[1]` directly it THREW rather than
+     failing when the retry was reintroduced as missing, which takes the rest of the file
+     with it: a guard has to report the defect it was proved against, not crash on it. */
+  ok('    and nothing else about the season moved', tag.old.sent.length === 2
+    && ['p_row', 'p_dynasty_id', 'p_season', 'p_score']
+      .every((k) => JSON.stringify(tag.old.sent[0][k]) === JSON.stringify(tag.old.sent[1][k])));
+}
+
+/*
  * A DYNASTY SCORE GROWS WITH THE SQUARE OF THE RUN, SO THE LADDER HAS TO GO ON GOING UP.
  *
  * dynastySeasonScore multiplies a season by its own season number, so a run's total is

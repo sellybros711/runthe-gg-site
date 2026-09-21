@@ -2255,6 +2255,15 @@ rather than tidy: `create or replace view` may add columns at the END and may no
 reorder, so a more natural order fails outright. A `drop view` first would work and is worse,
 because it takes the grants with it and leaves a window where the board does not exist.
 
+**AND THE TAG DROPS THE SLOT RATHER THAN THE SEASON, which is the version pin's own problem
+in the one place a pin cannot reach.** SQL is deployed by hand and the page by a push, so
+there is a window where the page asks for a function the database does not have. PostgREST
+resolves an rpc by its ARGUMENT NAMES, so a five argument call against a database on 107 is
+not a slower answer and not a null: it is 404 PGRST202, the season is never tagged, the run
+has no `dynasty_id`, and it is simply not on the Dynasty board with nothing on screen saying
+so. A refusal that names the SIGNATURE is retried without the slot. What that gives up is a
+badge that is briefly wrong, and it heals on the next season filed after the migration.
+
 **The two halves are guarded in two files, the same split 107 runs on.**
 `check-premium.mjs` fabricates the column and hands it to the painters, so it says nothing
 about what writes it; `supabase/test/dynasty_slot_test.sql` drives the real function and the
