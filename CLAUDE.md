@@ -4200,6 +4200,58 @@ mound in both cameras: every call in the game was announced across his face.
 Half way down is the band of outfield grass with nothing in it, and it is
 still above the zone.
 
+#### And the wide camera left a black hole, which the full bleed layout made bigger
+
+Found by walking the first two pitches again after the pass above. Before the
+first pitch, and on every ball in play, the wide view is up, and on a portrait
+phone it was a strip of ballgame floating in the arena's near black:
+
+| | picture | arena | dead |
+|---|---|---|---|
+| 390x844 | 389x293 | 390x696 | **58%** of the arena |
+| 360x740 | 360x330 | 360x592 | 44% |
+| 320x568 | 320x220 | 320x420 | 48% |
+| sideways, desktop | | | under 1% |
+
+**THE WIDE VIEW CONTAINS**, because a ball in the right field corner is the
+entire point of it, and the world is 320 by 220 blocks (an aspect of 1.45)
+against a phone arena of about 0.56.
+
+**No camera fixes it, and all three were worked out rather than tried:**
+
+- Filling the HEIGHT means cropping to **117 of 320 blocks** across, which
+  loses both foul lines.
+- Filling the WIDTH still runs the world out vertically at any scale. The
+  world is not tall enough for that shape.
+- Shortening the arena to what the wide view can fill takes the plate view's
+  strike zone from **78 CSS pixels to 41**, which is the floor, and the zone
+  being findable is what this whole pass is for.
+
+So the band stays and stops reading as a hole. The arena is painted with the
+picture's OWN top and bottom rows, so the sky goes on being sky and the
+outfield goes on being grass, and the seam is invisible because the two
+colours are the same colour.
+
+**IT IS READ, NEVER WRITTEN.** Thirteen parks paint thirteen skies, from a
+cool blue through a sunset orange to a desert haze, and `drawField` shades
+each one, so a hex typed into the stylesheet would be wrong in twelve of them
+and wrong again the day somebody adds a park. `fieldBand` takes two pixels out
+of `pixWorld`, which is the small CPU canvas rather than the display one, so
+nothing is read back off the GPU.
+
+**It samples on a camera change and never per frame.** The key is the crop, so
+a cut between the two views takes one sample and holding either takes none.
+
+**The split is at half and that is exact rather than lucky**: the canvas is
+centred, so the band above is entirely in the top half and the band below
+entirely in the bottom, whatever size the band comes out.
+
+**The guard sweeps every park on two phones**, and asks the coverage question
+first: a screen with nothing to fill proves nothing about the fill. **Its
+"never the near black" clause passed green on the defect** until unset was
+counted as the fallback, which is exactly what a missing custom property is.
+Proved by removing the sampler: four failures, the colours reported as null.
+
 #### The guard measures the glass, and it found two things the eye did not
 
 `check-firstpitch.mjs`'s fourth section reads where the zone lands in CSS

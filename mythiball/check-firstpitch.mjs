@@ -365,6 +365,98 @@ const main = async () => {
       'so they are read two different sets of notes');
   }
 
+  /* ---- what the wide camera cannot reach is still the park ---- */
+  {
+    console.log('what the wide camera cannot reach is still the park');
+    /* The wide view CONTAINS, because a ball in the right field corner is
+       the entire point of it, and the world is 320 by 220 blocks against a
+       phone arena of about 0.56. So contain leaves a band above and below:
+       58% of the arena on a 390 phone, 44% and 48% on the other two. It was
+       the arena's near black, so the ballgame was a strip floating in a
+       hole, which is the box this pass removed arriving one layer down.
+
+       There is no camera that fixes it. Filling the height crops to 117 of
+       320 blocks across and loses both foul lines; filling the width runs
+       the world out vertically at any scale; and shortening the arena to
+       what the wide view can fill takes the strike zone from 78 CSS pixels
+       to 41. So the band stays and stops reading as a hole.
+
+       WHAT IT IS ASSERTED AGAINST IS THE PICTURE, NEVER A COLOUR. Thirteen
+       parks paint thirteen skies and `drawField` shades each one, so a hex
+       written here would be wrong in twelve of them and wrong again the day
+       somebody adds a park. Every park is swept for the same reason. */
+    for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
+                                      ['small phone', 320, 568, 2]]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h },
+        deviceScaleFactor: dpr, isMobile: true, hasTouch: true });
+      const pg = await ctx.newPage();
+      const errors = [];
+      pg.on('pageerror', e => errors.push(e.message));
+      await pg.goto(URL);
+      await pg.evaluate(() => localStorage.clear());
+      await pg.goto(URL);
+      await pg.waitForTimeout(350);
+      const r = await pg.evaluate(() => new Promise((res) => {
+        Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        const out = []; let i = 0;
+        const step = () => {
+          if (i >= OPPONENTS.length) return res(out);
+          State.opponent = OPPONENTS[i++];
+          State.innings = 5; State.mode = 'exhibition';
+          startGame({ mode: 'exhibition', youHome: false });
+          const g = State.game;
+          /* the WIDE camera: nothing in flight and no hold */
+          g.pitch = null; g.plateHold = 0; g.aiming = false; g.meter = null;
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              const cv = document.getElementById('field');
+              const c = cv.getContext('2d');
+              const at = (y) => { const d = c.getImageData(cv.width >> 1, y, 1, 1).data;
+                return [d[0], d[1], d[2]]; };
+              const cs = getComputedStyle(cv.parentElement);
+              const parse = (v) => { const m = /rgb\((\d+), ?(\d+), ?(\d+)\)/.exec(v || '');
+                return m ? [+m[1], +m[2], +m[3]] : null; };
+              const box = cv.parentElement.getBoundingClientRect();
+              const r2 = cv.getBoundingClientRect();
+              out.push({ park: currentTheme().park, band: !!FIELD_CAM.band,
+                         dead: Math.round((box.height - r2.height) * 100 / box.height),
+                         top: at(0), bottom: at(cv.height - 1),
+                         sky: parse(cs.getPropertyValue('--sky')),
+                         turf: parse(cs.getPropertyValue('--turf')) });
+              step();
+            });
+          }));
+        };
+        step();
+      }));
+      const parks = new Map();
+      for (const x of r) if (!parks.has(x.park)) parks.set(x.park, x);
+      const rows = [...parks.values()];
+      const banded = rows.filter(x => x.band);
+      /* COVERAGE. A screen with nothing to fill proves nothing about the
+         fill, so this is asked before anything below it. */
+      ok(banded.length === rows.length && rows.length > 1,
+        `${label}: the wide camera really does leave a band to fill`,
+        `${banded.length} of ${rows.length} parks had one`);
+      const far = (a, b) => !a || !b ? 999 : Math.max(...a.map((v, i) => Math.abs(v - b[i])));
+      const off = banded.filter(x => far(x.top, x.sky) > 2 || far(x.bottom, x.turf) > 2);
+      ok(off.length === 0,
+        `${label}: and it is that park's own sky and grass, in all ${rows.length}`,
+        off.slice(0, 3).map(x => `${x.park}: sky ${x.sky} under a top row of ${x.top}`).join('; '));
+      /* AND IT IS NEVER THE FALLBACK, WHICH IS WHAT SHIPPED. Unset counts as
+         the fallback: a missing custom property is precisely how the arena
+         goes back to painting its own near black, and written as a colour
+         test alone this clause passed green on exactly that. */
+      const dark = banded.filter(x => !x.sky
+        || (x.sky[0] < 30 && x.sky[1] < 40 && x.sky[2] < 45));
+      ok(dark.length === 0, `${label}: never the near black it used to be`,
+        `${dark.length} parks fall back to the arena's own colour`);
+      ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+      await pg.close(); await ctx.close();
+    }
+  }
+
   await browser.close();
   console.log('');
   if (failures) { console.log(`${failures} check(s) failed.`); process.exit(1); }

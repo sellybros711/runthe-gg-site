@@ -165,9 +165,18 @@
      window to about 80% rather than to 96%, and every block of it is the
      game. 3/4 rather than 0.55 because what CSS can ask about is the
      viewport and the deck is most of the difference. */
+  /* WHAT THE WIDE CAMERA CANNOT REACH IS STILL THE PARK. `--sky` and
+     `--turf` are the picture's own top and bottom rows, written by
+     `fieldBand` on a camera change, so the band above the outfield wall is
+     that park's sky and the band under the foreground is its grass. The
+     canvas is centred, so the split at half is exactly where the picture
+     is whatever size the band comes out. The near black is the fallback
+     for the frame before the first sample and for a park that has not
+     drawn yet. */
   body.ingame .arena{flex:5 1 0;min-height:min(56vh, 480px);width:100%;
     max-width:none;margin:0;border:0;border-radius:0;box-shadow:none;
-    background:#0b1015;position:relative;overflow:hidden;}
+    background:linear-gradient(to bottom, var(--sky, #0b1015) 0 50%,
+      var(--turf, #0b1015) 50% 100%);position:relative;overflow:hidden;}
   @media (min-aspect-ratio: 3/4){
     body.ingame .arena{position:absolute;inset:0;width:auto;min-height:0;}
     /* AND THE DECK IS ONE ROW, WHICH IS THE CAMERA'S BUDGET RATHER THAN A
@@ -6894,6 +6903,62 @@ function fitFieldCanvas(cv) {
   const [cw, ch, cl, ct] = css.split('|');
   cv.style.width = cw; cv.style.height = ch;
   cv.style.left = cl; cv.style.top = ct;
+  /* AND WHETHER THE WORLD RAN OUT. See `fieldBand` below: on a portrait
+     phone the wide camera leaves more than half the arena uncovered, and
+     what is in it has to go on being the park. Set here rather than
+     measured there, because this is where the two heights are already in
+     hand and it writes only when the fit changes. */
+  FIELD_CAM.band = ch0 < bh - 1;
+  fieldBandAt = '';
+}
+
+/* THE WIDE CAMERA CANNOT FILL A PORTRAIT PHONE, AND THE HOLE WAS BLACK.
+
+   The wide view CONTAINS, because a ball in the right field corner is the
+   entire point of it. The world is 320 by 220 blocks, an aspect of 1.45, and
+   a phone's arena is about 0.56, so contain leaves a band of the arena's own
+   background above and below. Measured with the deck floating:
+
+     390x844 phone   picture 389x293 in a 390x696 arena   58% of it dead
+     360x740         360x330 in 360x592                   44%
+     320x568         320x220 in 320x420                   48%
+     desktop, sideways                                    under 1%
+
+   THERE IS NO CAMERA THAT FIXES IT. Filling the height means cropping to 117
+   of 320 blocks across, which loses both foul lines; filling the width still
+   runs the world out vertically, because the world is not tall enough for
+   that shape at any scale. And shortening the arena to what the wide view can
+   fill takes the plate view's strike zone from 78 CSS pixels to 41, which is
+   the floor, and the zone being findable is what this whole pass was for.
+
+   So the band stays and stops reading as a hole. The arena is painted with
+   the picture's OWN top and bottom rows, so the sky goes on being sky and the
+   outfield goes on being grass.
+
+   IT IS READ, NEVER WRITTEN. Thirteen parks paint thirteen skies, from a cool
+   blue through a sunset orange to a desert haze, and `drawField` shades each
+   one, so a colour typed here would be wrong in twelve of them and would go
+   wrong again the day somebody adds a park. Two pixels out of `pixWorld`,
+   which is the small CPU canvas rather than the display one, so there is no
+   readback from the GPU.
+
+   IT SAMPLES ON A CAMERA CHANGE AND NOT PER FRAME. The key is the crop, so a
+   cut between the two views takes one sample and holding either takes none. */
+let fieldBandAt = '';
+function fieldBand(box) {
+  if (!FIELD_CAM.band || !pixWorld) return;
+  const key = FIELD_CAM.sx + ',' + FIELD_CAM.sy + ',' + FIELD_CAM.sw + ',' + FIELD_CAM.sh;
+  if (fieldBandAt === key) return;
+  fieldBandAt = key;
+  const w = pixWorld.getContext('2d');
+  const mid = Math.max(0, Math.min(pixWorld.width - 1,
+    FIELD_CAM.sx + (FIELD_CAM.sw >> 1)));
+  const rgb = (y) => {
+    const d = w.getImageData(mid, Math.max(0, Math.min(pixWorld.height - 1, y)), 1, 1).data;
+    return `rgb(${d[0]},${d[1]},${d[2]})`;
+  };
+  box.style.setProperty('--sky', rgb(FIELD_CAM.sy));
+  box.style.setProperty('--turf', rgb(FIELD_CAM.sy + FIELD_CAM.sh - 1));
 }
 
 /* Resizing a canvas CLEARS it and resets its context, which is free here
@@ -7025,6 +7090,8 @@ function startFieldLoop() {
         fn(ctx);
       }
       HUD_Q.length = 0;
+      /* After the blit, because it reads the world the blit just drew. */
+      fieldBand(fCv.parentElement);
       refreshStealButton();
       refreshReleaseButton();
     }
