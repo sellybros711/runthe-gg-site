@@ -2751,18 +2751,105 @@ tidiness: a week whose board rolls forward before its result is written is a wee
 and can never see. That step is allowed to have nothing to do, because week one has no week zero
 and a manual mid-week run hits a week the build correctly refuses.
 
-### What is NOT built yet
+### The entry is the server's, and this one fails CLOSED
 
-**There is no server, no entry table and no leaderboard.** A submitted lineup is in
-`localStorage` and nowhere else, and the page says so on the screen rather than letting somebody
-believe they have entered something. That is a feel test, not a competition.
+```
+psql -d fantasy -f supabase/test/fantasy_base.sql
+psql -d fantasy -f supabase/109_fantasy_challenge.sql
+psql -d fantasy -f supabase/test/fantasy_challenge_test.sql
+node football/build/publish-week.mjs --season 2026 --week 3 | psql "$SUPABASE_DB_URL"
+```
 
-**When it becomes one, the authority has to move.** One entry an account, counted by the server,
-with the lock enforced there rather than by a page that trusts its own clock. A client that can
-post any six players at any price is a client that can win a prize with a lineup it invented,
-and with the top three paid that is not hypothetical. Accounts are free to make, so nothing stops
-one person entering five times under five accounts: that can be made harder and not impossible,
-and it should be said out loud rather than designed around quietly.
+`supabase/109_fantasy_challenge.sql` holds the week, the board and the results.
+`football/fantasy/entries.js` is the only thing that talks to it. **The client sends six ids
+and nothing else**: the cap, the lock, the slot shape and whether a man was even on this
+week's board are all answered from rows, because a client that can post any six players at
+any price is a client that can win a prize with a lineup it invented.
+
+**IT FAILS CLOSED, AND THAT IS THE REVERSAL TO READ BEFORE COPYING ANYTHING HERE.** Every
+other allowance on this site fails open and argues for it at length: an unreachable
+Commissioner clock lets the season through, because a wrongly granted season costs a
+fraction of a sale and a wrongly refused one costs a player who came back. That inverts when
+there is a prize. A week with no row is a week with no entries.
+
+**The week carries its own cap and slots** rather than the migration hardcoding them, which
+is `108_hoops_leaderboard.sql`'s own warning heeded. `publish-week.mjs` writes them off the
+same `draft.js` the page drafts against, so an entry is checked against the rules the board
+it came from was built with.
+
+**A score is derived and never stored**, so a corrected stat re-scores every row on the next
+read with no backfill and no settle job to forget. `spend` and `projected` ARE stored, and
+the difference is what each is about: the score is a fact about the games, those two are
+facts about the draft at the moment it was entered.
+
+**THE BOARD OPENS AT THE LOCK**, and that is about the competition rather than privacy. Every
+entrant meets their own wheel, so before kickoff a list of everybody's lineups and their
+projections is the answer key handed to whoever enters last. What is answered before the lock
+is how many have entered.
+
+**On the entry screen an empty board is a SHUT one, never an empty one.** The reader has an
+entry by definition, so once the board opens their own row is in it: a "nobody yet" line
+there is a sentence that cannot be true, printed at the moment it is most likely to be read.
+That is the four-states rule bending, because two of the four cannot happen on this screen.
+
+**The name is copied at submit time**, unlike every other board here, which reads it live. A
+board of a finished week is a record of who entered it, and somebody renaming themselves in
+November should not rewrite week 3's result.
+
+#### A submit has three answers and the page draws all three
+
+**`entries.js` is not `board.js` and must not become it.** Every call in `board.js` fails
+soft and resolves to null, because a leaderboard that will not draw costs nothing: the season
+it is reading was already recorded. Nothing else records a fantasy lineup, so the same
+treatment is a player who believes they are in a competition they are not in.
+
+| | |
+|---|---|
+| `{ok:true}` | in, and the row is there |
+| `{ok:false, why}` | refused, and the server's own sentence says why |
+| `{ok:null}` | nobody knows, including this page |
+
+**THE THIRD IS RECONCILED RATHER THAN GUESSED.** A request can land, write the row and lose
+its answer, so the page ASKS: `mine()` is the one thing that can settle it. Read as a failure
+it tells somebody to try again on a week they are already in, and they then meet "you have
+already entered this week" and read the mode as broken. **Nothing is written locally until
+the server has said yes**, which is `dynNewSheet`'s lesson at a new door.
+
+**What the reader sees is the server's own sentence**, not a translation. Every refusal in
+`fantasy_submit` is already written for a person, so a second copy in the page would be nine
+strings that drift the first time one is edited. What the client refuses to pass on is
+anything that does not look like one, because a reader shown `PGRST202` has been told nothing.
+
+#### What the two guards found
+
+`check-fantasy.mjs` stubs the server and **not one request reaches the real one**, which is
+this file's version of the Stripe note: the live project holds the real competition, so a
+checker that let a request out would enter a lineup on somebody's account.
+
+- **`is_me` came back NULL for a signed out reader**, because `user_id = auth.uid()` is null
+  when the uid is. The page reads it as falsy and looks right, which is what makes it worth
+  fixing rather than leaving.
+- **The read-own policy had no grant behind it**, so reading your own entry raised permission
+  denied. RLS narrows a grant, it does not make one.
+- **A claim that the score's LEFT join was load bearing passed with an inner join in its
+  place**, because a missing row contributes null to a `sum` and null adds the same as
+  nothing. The comment was the half that was lying. It asserts the arithmetic and the join
+  KEY now, and a week 2 carrying wild numbers on the same ids is what catches a join that
+  forgets the week.
+- **A fixture arm that could never fire.** `if (s.submit && s.submit !== 'ok')` catches the
+  string `'lost'` too, so the lost-answer arm was served an ordinary refusal and the branch
+  it exists for was unreachable. It reported the page failing to reconcile something it had
+  never been asked to.
+- **Three of the four submit arms end on the screen they START on**, so
+  `waitForSelector('#s-review.on')` returns in the same tick and every assertion after it
+  reads the page before the answer has landed. The button's label is the one thing that is
+  different while a submit is in flight.
+
+#### What is still NOT built
+
+**Accounts are free to make, so nothing stops one person entering five times under five
+accounts.** That can be made harder and not impossible, and it should be said out loud rather
+than designed around quietly.
 
 **Pro must not buy draws or entries.** The bundle sells the counting away. Selling an advantage
 in a prize competition is a different kind of product and this mode has no paid tier at all,

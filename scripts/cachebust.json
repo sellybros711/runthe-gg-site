@@ -2061,6 +2061,10 @@
     "draft.js": {
       "v": "1",
       "sha": "cda72e3c32d8a4f3"
+    },
+    "entries.js": {
+      "v": "1",
+      "sha": "cd44719220d4d1fc"
     }
   },
   "football/index.html": {

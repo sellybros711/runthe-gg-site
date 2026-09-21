@@ -195,6 +195,24 @@
   /* display:flex, so the attribute needs its own rule. Eighth time in this repo. */
   .lastwk[hidden]{display:none}
 
+  /* The week's standings. A place, a name and a score, and the reader's own row picked out
+     by the blue rail every board on this site uses for WHOSE row it is. */
+  .board{display:flex;flex-direction:column;gap:2px}
+  .brow{display:flex;align-items:center;gap:9px;font-size:13px;padding:4px 7px;
+    border-radius:8px;border-left:3px solid transparent}
+  .brow.me{background:var(--panel);border-left-color:var(--blue)}
+  .brow .bp{flex:0 0 26px;font-family:var(--fd);font-size:15px;font-weight:400;
+    font-variant-numeric:tabular-nums;color:var(--dim-2);text-align:right}
+  .brow.me .bp{color:var(--ink)}
+  .brow .bn{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .brow .bs{flex:0 0 auto;font-family:var(--fd);font-size:17px;font-weight:400;
+    font-variant-numeric:tabular-nums;min-width:48px;text-align:right}
+  /* The gap between the top fifty and a reader below it. A row of dots rather than nothing,
+     because a board that jumps from 50 to 112 with no mark reads as a rendering fault. */
+  .brow.gap{color:var(--dim-2);justify-content:center;padding:1px 0}
+  #in-boardwrap[hidden]{display:none}
+
   .note{font-size:13px;color:var(--dim);margin:10px 0 0}
   .lede{font-size:14.5px;color:var(--dim);margin:8px 0 0}
   .big{font-family:var(--fd);font-size:44px;font-weight:400;line-height:.95;
@@ -304,6 +322,15 @@
       <div class="big" id="in-proj">-</div>
       <div class="vs" id="in-vs" hidden></div>
       <div class="roster" id="in-roster" style="margin-top:12px"></div>
+      <!-- THE BOARD OPENS AT THE LOCK, which is the server's rule and not this page's:
+           every entrant meets their own wheel, so a list of everybody's lineups before
+           kickoff is the answer key handed to whoever enters last. Before then this block
+           is not drawn at all, rather than drawn empty. -->
+      <div id="in-boardwrap" hidden>
+        <div class="rule"></div>
+        <div class="eyebrow" id="in-boardlab">This week</div>
+        <div class="board" id="in-board"></div>
+      </div>
       <p class="note" id="in-note"></p>
       <!-- A WAY BACK, and only when there is somewhere to go back TO. The current week's
            entry is a terminal screen and the button would be a control to nowhere; last
@@ -326,12 +353,32 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script defer src="/football/auth.js?v=5"></script>
 <script src="draft.js?v=1"></script>
+<script src="entries.js?v=1"></script>
 <script>
 (function(){
   'use strict';
 
   var D = window.PS_FANTASY_DRAFT;
   var ACCESS = window.PS_FANTASY_ACCESS;
+
+  /* THE OTHER PAIR OF HAND-WRITTEN NUMBERS, and on this page it is the loud one rather
+     than the silent one. Every other pin on the site falls through to a stub that answers
+     null, which for a leaderboard reads as a bad network day and costs nothing. Here the
+     stub also has to answer a SUBMIT, and a submit that resolves to "no opinion" is a
+     player who does not know whether they entered. So the stub refuses out loud, with a
+     sentence, and the reads stay null. Bump both halves in one commit, the way
+     check-cachebust holds every other pin on this site. */
+  var NEED_FANTASY = 1;
+  var F = (window.PS_FANTASY && window.PS_FANTASY.API_VERSION === NEED_FANTASY)
+    ? window.PS_FANTASY : {
+      API_VERSION: NEED_FANTASY, offline: true,
+      submit: function(){ return Promise.resolve({ ok: false,
+        why: 'This page could not reach the server. Reload and try again.' }); },
+      mine: function(){ return Promise.resolve(null); },
+      standings: function(){ return Promise.resolve(null); },
+      myPlace: function(){ return Promise.resolve(null); },
+      entryCount: function(){ return Promise.resolve(null); },
+    };
   var $ = function(id){ return document.getElementById(id); };
   var show = function(id){
     var all = document.querySelectorAll('.screen');
@@ -555,12 +602,72 @@
   $('b-home').onclick = function(){ paintHome(); show('s-home'); };
   $('b-in-back').onclick = function(){ paintHome(); show('s-home'); };
 
+  /* ---- submitting, which is the one thing here that is not this browser's to decide ----
+   *
+   * THE SERVER SAYS WHETHER YOU ARE IN. The page's own clock is a hint that saves a round
+   * trip on an obviously shut week, exactly as `blocked()` is on the Commish door, and it
+   * is deliberately NOT what decides: a browser whose clock is wrong would otherwise enter
+   * a week that has kicked off, and with a prize on it that is the one refusal that has to
+   * be somebody else's.
+   *
+   * THREE ANSWERS, AND THE THIRD IS THE INTERESTING ONE. In, refused, or nobody knows. An
+   * unknown answer is a request that may have written the row and lost its reply, so the
+   * page ASKS rather than guessing: read as a failure it tells somebody to try again on a
+   * week they are already in, and they then meet "you have already entered this week" and
+   * read the mode as broken.
+   *
+   * NOTHING IS WRITTEN LOCALLY UNTIL THE SERVER HAS SAID YES, which is `dynNewSheet`'s
+   * lesson at a new door: marking it submitted first and correcting on a refusal would
+   * leave a player looking at a screen saying they are in on a week that refused them.
+   */
+  var submitting = false;
+  function submitLabel(text, disabled){
+    $('b-submit').textContent = text;
+    $('b-submit').disabled = !!disabled;
+  }
+  function sayRefused(why){
+    $('r-say').textContent = why;
+    submitLabel('Submit this lineup', state.pick == null);
+  }
   $('b-submit').onclick = function(){
-    if (state.pick == null) return;
+    if (state.pick == null || submitting) return;
     if (locked()){ paintHome(); show('s-home'); return; }
-    state.submitted = state.pick;
-    save();
-    openIn();
+    var c = chanceAt(state.pick);
+    if (!D.full(c)){ sayRefused('That lineup is not finished.'); return; }
+    var ids = c.men.map(function(m){ return m.player_id; });
+    var why = '';
+    submitting = true;
+    submitLabel('Sending...', true);
+    F.submit(POOL.season, POOL.week, ids).then(function(r){
+      if (r.ok){ SERVER_IN = { week: POOL.week, row: { picks: ids } }; return true; }
+      if (r.ok === false){ why = r.why || ''; return false; }
+      /* Nobody knows. The one thing that can settle it is the row. */
+      return F.mine(POOL.season, POOL.week).then(function(m){
+        if (m){ SERVER_IN = { week: POOL.week, row: m }; return true; }
+        /* Still nobody knows: `mine` answers null for unreachable and false for "you have
+           not entered", and only the second is safe to report as a refusal. */
+        return m === false ? 'again' : 'unknown';
+      });
+    }).then(function(res){
+      submitting = false;
+      if (res === true){
+        state.submitted = state.pick;
+        save();
+        openIn();
+        return;
+      }
+      if (res === 'again'){
+        sayRefused('That did not get through. Nothing was entered. Try again.');
+      } else if (res === 'unknown'){
+        sayRefused('The server did not answer. Reload before trying again, '
+          + 'so this does not enter you twice.');
+      } else {
+        /* THE SERVER'S OWN SENTENCE, not a translation of it. Every refusal in
+           `fantasy_submit` is already written for a person, so a second copy here would be
+           nine strings that drift the first time one is edited. */
+        sayRefused('Not entered. ' + (why || 'That lineup was not accepted.'));
+      }
+    });
   };
 
   /* ---- submitted, and then scored ----
@@ -568,8 +675,27 @@
    * `res` null is the lineup before the games. With results it is the same screen carrying
    * what happened. Drawn from one function so the six men cannot be described two ways.
    */
+  /* THE SIX COME FROM THE ENTRY WHEREVER IT IS, and that is what moving to a server buys.
+     `state.submitted` is this browser's memory of it; `SERVER_IN` is the row, and the row
+     is the one that outlives clearing site data, a second device and a private window. The
+     men are rebuilt from ids either way, so the two produce the same screen. */
+  var SERVER_IN = null;   /* { week, row } for the week it was read for, or null */
+  /* SCOPED TO ITS OWN WEEK, and that is not belt and braces. `b-last` draws last week's
+     entry by swapping `POOL.week` and `state` around one `paintIn` call, so an unscoped
+     row would put THIS week's six men under last week's heading and its score. */
+  function serverEntry(){
+    return (SERVER_IN && SERVER_IN.week === POOL.week) ? SERVER_IN.row : null;
+  }
+  function entryMen(){
+    var row = serverEntry();
+    if (row && row.picks){
+      var men = row.picks.map(function(id){ return BY_ID[id]; }).filter(Boolean);
+      if (men.length) return men;
+    }
+    return (!state || state.submitted == null) ? [] : chanceAt(state.submitted).men;
+  }
   function paintIn(res, lookingBack){
-    var c = chanceAt(state.submitted);
+    var c = { men: entryMen() };
     var done = !!res;
     $('b-in-back').hidden = !lookingBack;
     var proj = D.projected(c);
@@ -628,16 +754,71 @@
         : res.played + ' of ' + res.games + ' games are in. This will move.')
       : (locked() ? 'Week ' + POOL.week + ' has kicked off. Your lineup is in.'
         : 'Your lineup is in. Entries close ' + lockWhen() + '.');
-    /* SAID PLAINLY RATHER THAN IMPLIED. Nothing is on a server yet. */
-    $('in-note').textContent = 'Test build: this lineup is saved in this browser only. '
-      + 'There is no leaderboard yet and nothing has been sent anywhere.';
+    /* SAID PLAINLY RATHER THAN IMPLIED, and what it says changed the day the entry became
+       a row. It read "saved in this browser only" for as long as that was true. */
+    $('in-note').textContent = serverEntry()
+      ? 'Entered on your account. One entry a week, and it is final.'
+      : 'Saved in this browser. It is not on your account, so it will not count.';
     show('s-in');
+  }
+
+  /* ---- where everybody came ----
+   *
+   * FOUR STATES AND THREE OF THEM SHIP BROKEN: unreachable, not locked yet, nobody has
+   * entered, and here is the board. Each needs its own sentence, because a blank box is
+   * how a feature teaches somebody it is broken. On a mode this new "nobody yet" is the
+   * COMMON case, so it says being first is the prize rather than apologising.
+   *
+   * THE PLACE IS ASKED SEPARATELY AND THAT IS NOT A SPARE REQUEST. The board is the top
+   * fifty; your place is counted against everybody. A page working the second out of the
+   * first would tell the two hundredth entrant the same thing as the fifty first.
+   */
+  function paintBoard(rows, place){
+    var wrap = $('in-boardwrap');
+    /* NO ROWS IS NOT AN EMPTY BOARD ON THIS SCREEN, IT IS A SHUT ONE, and the difference
+       matters because the two want opposite treatments. The server answers an empty list
+       for a week that has not locked, and once it has locked it answers every entry
+       including this reader's own. So on the entry screen, where the reader has by
+       definition entered, an empty answer can only mean the week is still open. A "nobody
+       yet" line here would be a sentence that cannot be true, printed at exactly the
+       moment it is most likely to be read. Null is the unreachable server, and it is the
+       same nothing: a board that will not draw costs nothing. */
+    if (!rows || !rows.length){ wrap.hidden = true; return; }
+    wrap.hidden = false;
+    var n = place && place.entries;
+    $('in-boardlab').textContent = 'This week'
+      + (n ? ' · ' + n + (n === 1 ? ' entry' : ' entries') : '');
+    var html = '', mine = false;
+    for (var i=0;i<rows.length;i++){
+      var r = rows[i];
+      if (r.is_me) mine = true;
+      html += '<div class="brow' + (r.is_me ? ' me' : '') + '">'
+        + '<span class="bp">' + r.place + '</span>'
+        + '<span class="bn">' + esc(r.display_name || 'Somebody') + '</span>'
+        + '<span class="bs">' + Number(r.score).toFixed(1) + '</span></div>';
+    }
+    /* Off the bottom of the fifty, and told so rather than left off their own board. */
+    if (!mine && place && place.place){
+      html += '<div class="brow gap">...</div>'
+        + '<div class="brow me"><span class="bp">' + place.place + '</span>'
+        + '<span class="bn">You</span>'
+        + '<span class="bs">' + Number(place.score).toFixed(1) + '</span></div>';
+    }
+    $('in-board').innerHTML = html;
   }
 
   /* The entry screen is opened once results may exist, so the fetch happens here rather
      than at boot: a visitor who has not submitted anything never asks for a results file. */
   function openIn(){
     paintIn(null);
+    paintBoard(null);
+    /* THE BOARD IS ASKED EVERY TIME AND NOT CACHED, because it is the one thing on this
+       page that moves while somebody is looking at it: a Sunday afternoon reload is the
+       whole reason to come back. */
+    Promise.all([F.standings(POOL.season, POOL.week, 50),
+      F.myPlace(POOL.season, POOL.week)]).then(function(a){
+      if (a[0] && $('s-in').classList.contains('on')) paintBoard(a[0], a[1] || null);
+    });
     resultsFor(POOL.season, POOL.week).then(function(res){
       /* Only repaint if this screen is still the one showing. A slow answer landing after
          somebody pressed Back would put the entry up over whatever they went to. */
@@ -675,7 +856,7 @@
     $('b-review').hidden = !done;
     $('home-note').textContent = locked()
       ? 'Week ' + POOL.week + ' has kicked off. Nothing more can be submitted.'
-      : 'Test build: nothing is saved off this browser and there is no board yet.';
+      : 'Draft as many as you like. One lineup goes in, on your account, and it is final.';
     lastWeekCard();
   }
 
@@ -770,15 +951,30 @@
     return true;
   }
 
+  /* THE ACCOUNT IS ASKED BEFORE THE BROWSER IS BELIEVED, which is what moving the entry to
+     a server is for. A row exists on a laptop that never drafted, in a private window, and
+     after clearing site data, and none of those can be known from here. So the boot waits
+     one round trip on the answer.
+     IT FAILS TO THE BROWSER'S OWN COPY rather than to nothing, because `mine()` answers
+     null for unreachable and false for "you have not entered": a bad network must not draw
+     the home screen over an entry somebody already made, and it must not invent one either.
+     The wait is the one place on this page a round trip is worth it, and only because the
+     alternative is showing a drafting screen to somebody who is already in. */
   function begin(){
     state = load();
     if (!state || state.week !== POOL.week || state.season !== POOL.season){
       state = { season: POOL.season, week: POOL.week, chances: [], pick: null,
         submitted: null };
     }
-    if (state.submitted != null && D.full(chanceAt(state.submitted))){ openIn(); return; }
-    paintHome();
-    show('s-home');
+    F.mine(POOL.season, POOL.week).then(function(row){
+      if (row) SERVER_IN = { week: POOL.week, row: row };
+      if (serverEntry() || (state.submitted != null && D.full(chanceAt(state.submitted)))){
+        openIn();
+        return;
+      }
+      paintHome();
+      show('s-home');
+    });
   }
 
   /* ---- boot ----
