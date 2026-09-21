@@ -1,0 +1,38 @@
+# The hot path. Deployed separately from the site: Cloudflare Pages has no
+# scheduled handler, so this is its own Worker project.
+#
+# NOTHING SECRET IS IN THIS FILE. The odds key and the Supabase service key are
+# Worker secrets, set with `wrangler secret put` or in the dashboard, and never
+# committed. fantasy/check-posture.mjs greps this whole directory for a key
+# shaped string on every change.
+#
+# Deploy:  npx wrangler deploy --config fantasy/worker/wrangler.toml
+# Tail:    npx wrangler tail fantasy-odds-poller
+# Fire one tick by hand, locally, against the real provider:
+#          npx wrangler dev --config fantasy/worker/wrangler.toml --test-scheduled
+#          then curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
+
+name = "fantasy-odds-poller"
+main = "src/index.mjs"
+compatibility_date = "2026-01-01"
+
+# EVERY MINUTE, AND THE LADDER DECIDES WHETHER TO SPEND ANYTHING.
+#
+# The cron is the heartbeat, not the polling rate. Cloudflare fires this sixty
+# times an hour; fantasy/lib/schedule.mjs works out which events are actually
+# due and most ticks spend nothing at all. That split is deliberate: putting
+# the schedule in the cron would mean a redeploy to change it, and the schedule
+# is a thing we will tune against a real Sunday.
+#
+# A tick that polls nothing costs no credits. It costs one free event-list
+# request, which the provider does not bill.
+[triggers]
+crons = ["* * * * *"]
+
+[observability]
+enabled = true
+
+# Secrets this needs, set by hand, never here:
+#   ODDS_API_KEY           the provider key
+#   SUPABASE_URL           https://<project>.supabase.co
+#   SUPABASE_SERVICE_ROLE  the service key, which bypasses RLS

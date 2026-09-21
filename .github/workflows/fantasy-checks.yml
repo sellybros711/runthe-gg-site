@@ -64,6 +64,24 @@ jobs:
       # is path-filtered on its own list and the two can drift.
       - run: node scripts/check-dashes.mjs fantasy
 
+  maths:
+    name: Projection maths and the poller
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      # Pure functions, no services, a couple of seconds. Both files drive
+      # fakes and neither can reach the odds provider: check-worker's stand-in
+      # throws on any host but its own, so a run can never spend a credit.
+      - run: node fantasy/check-math.mjs
+      - run: node fantasy/check-worker.mjs
+      # Prints what the shipped polling ladder costs. Not an assertion: it is
+      # here so the number is in the log of every run, because a schedule the
+      # allowance cannot carry is the one failure the brief says must never be
+      # quiet.
+      - run: node fantasy/plan-budget.mjs
+
   sql:
     name: Migrations and RLS
     runs-on: ubuntu-latest

@@ -1,0 +1,228 @@
+/* One tick of the hot path.
+ *
+ * Fetch the event list (free), work out what the ladder says is due, and for
+ * each due event: charge the budget, call the provider, parse, resolve names,
+ * write. Nothing here runs a model, fits a distribution or simulates anything.
+ * If a step needs more than arithmetic it belongs in the cold path.
+ *
+ *
+ * EVERY DEPENDENCY IS INJECTED, WHICH IS THE ONLY REASON THIS IS TESTABLE
+ * ---------------------------------------------------------------------------
+ * The clock, the odds client and the store all arrive as arguments. That is
+ * not ceremony: the behaviour worth checking is what happens at 3 hours out
+ * against 3 hours and one minute, what happens when the budget refuses, and
+ * what happens when the provider returns a 401. None of those can be reached
+ * by running the real thing and waiting, and two of them cost real money to
+ * reproduce for real.
+ *
+ *
+ * IT STOPS THE WHOLE TICK ON A BUDGET REFUSAL OR A FATAL ERROR
+ * ---------------------------------------------------------------------------
+ * Not "skips that event and carries on". A refused budget means the allowance
+ * is gone and every remaining event would be refused too, so continuing is a
+ * loop that does nothing but write failures. A 401 means the key is wrong, and
+ * the same request repeated sixteen times is sixteen wrong answers on a
+ * provider that may well count them.
+ *
+ * A single event failing for its own reasons (a timeout, a 500) does NOT stop
+ * the tick, because that is one game having a bad moment and the other fifteen
+ * are fine.
+ */
+import { MARKETS, REGIONS, LADDER_LEAN, dueEvents, pollDecision } from '../../lib/schedule.mjs';
+import { parseEvents, parseEventOdds, normName } from './parse.mjs';
+import { sweepCost } from './odds.mjs';
+
+/* WHICH LADDER SHIPS, AND WHY IT IS THE LEAN ONE TODAY.
+ *
+ * The full ladder costs 158,506 credits a month and the account has 500. The
+ * lean one costs 17,519, which still does not fit, so the Worker also carries
+ * a per-tick event cap and the database carries a hard budget.
+ *
+ * NONE OF THAT IS ALLOWED TO BE INVISIBLE. fantasy/plan-budget.mjs prices
+ * whatever is set here, and the screen reads the budget state, so a schedule
+ * the allowance cannot carry is a visible fact rather than a quiet
+ * degradation. Changing this line changes the printed cost, because the
+ * planner imports the same constant. */
+export const LADDER = LADDER_LEAN;
+
+/* At most this many events in one tick. A guard against one tick doing
+ * something enormous, not a budget: the budget is the database's, because only
+ * the database can be atomic about it. Kickoff order, so if the cap or the
+ * budget bites, what gets polled is the game about to start. */
+export const MAX_EVENTS_PER_TICK = 8;
+
+export async function sweepOnce({
+  odds, store, now = () => Date.now(), log = () => {},
+  season, week,
+  markets = MARKETS, regions = REGIONS,
+  ladder = LADDER, maxEvents = MAX_EVENTS_PER_TICK,
+}) {
+  const t0 = now();
+  const summary = {
+    startedAt: new Date(t0).toISOString(),
+    due: 0, polled: 0, rows: 0, skipped: 0, closed: 0,
+    creditsCharged: 0, stoppedBecause: null, errors: [],
+  };
+
+  /* 1. The event list. Free, so it runs on every tick regardless of what is
+        due, and it is what keeps kickoff times current when a game is moved. */
+  const evRes = await odds.events();
+  if (!evRes.ok) {
+    summary.stoppedBecause = `event list failed: ${evRes.error}`;
+    log({ at: 'sweep.events.failed', status: evRes.status, error: evRes.error });
+    return summary;
+  }
+  const { events, skipped: evSkips } = parseEvents(evRes.body, season, week);
+  if (evSkips.length) log({ at: 'sweep.events.skipped', count: evSkips.length, sample: evSkips[0] });
+
+  /* A VALID RESPONSE WITH NOTHING IN IT IS NOT A QUIET WEEK. The provider
+     returns an empty array in the offseason, and it also returns one if the
+     sport key changes under us. They are told apart by nothing in the payload,
+     so it is logged as a distinct event rather than being indistinguishable
+     from a normal tick with no games due. */
+  if (!events.length) {
+    summary.stoppedBecause = 'the provider listed no events';
+    log({ at: 'sweep.events.empty', raw: Array.isArray(evRes.body) ? evRes.body.length : 'not an array' });
+    return summary;
+  }
+  await store.upsertEvents(events);
+
+  /* 2. Anything that has kicked off stops being polled, for good. */
+  const t = now();
+  const closed = events
+    .filter((e) => pollDecision(e, t, null, ladder).action === 'closed')
+    .map((e) => e.event_id);
+  if (closed.length) {
+    await store.closeEvents(closed);
+    summary.closed = closed.length;
+  }
+
+  /* 3. What the ladder says is due. */
+  const lastPoll = await store.lastPollByEvent();
+  const live = events.filter((e) => !closed.includes(e.event_id));
+  const due = dueEvents(live, t, lastPoll, ladder, maxEvents);
+  summary.due = due.length;
+  if (!due.length) {
+    log({ at: 'sweep.nothing.due', events: live.length });
+    return summary;
+  }
+
+  /* The crosswalk, once for the tick rather than per event. */
+  let aliases = new Map();
+  try { aliases = await store.aliases(); } catch (e) {
+    log({ at: 'sweep.aliases.failed', error: String(e.message || e) });
+  }
+
+  const cost = sweepCost(markets, regions);
+
+  /* 4. The expensive part. */
+  for (const { event, decision } of due) {
+    /* CHARGED BEFORE THE REQUEST. Charging after would let every event in this
+       loop pass the check before any of them had been counted. */
+    let budget;
+    try {
+      budget = await store.spend(cost);
+    } catch (e) {
+      summary.stoppedBecause = `budget check failed: ${e.message || e}`;
+      log({ at: 'sweep.budget.error', error: String(e.message || e) });
+      break;
+    }
+    if (!budget.allowed) {
+      summary.stoppedBecause = `credit cap reached: ${budget.used} of ${budget.cap}`;
+      log({ at: 'sweep.budget.refused', used: budget.used, cap: budget.cap });
+      break;
+    }
+    summary.creditsCharged += cost;
+
+    const runId = await store.openRun({
+      eventId: event.event_id, markets, credits: cost,
+    }).catch(() => null);
+
+    const res = await odds.eventOdds(event.event_id, markets, regions);
+    await store.observe(res.usage);
+
+    if (!res.ok) {
+      summary.errors.push({ event: event.event_id, status: res.status, error: res.error });
+      await store.closeRun(runId, {
+        ok: false, http_status: res.status, error: String(res.error).slice(0, 500),
+        vendor_remaining: res.usage.remaining, vendor_used: res.usage.used,
+      });
+      log({ at: 'sweep.event.failed', event: event.event_id, status: res.status, fatal: res.fatal });
+      /* Fatal means the key or the request shape is wrong, which will be just
+         as wrong for the next fifteen events. */
+      if (res.fatal) {
+        summary.stoppedBecause = `fatal from the provider: ${res.status}`;
+        break;
+      }
+      continue;
+    }
+
+    const capturedAt = new Date(now()).toISOString();
+    const { rows, skipped } = parseEventOdds(res.body, {
+      capturedAt, season, week, pollId: runId,
+    });
+
+    /* Resolve names against the crosswalk. An unresolved name still gets its
+       quote STORED, with player_id null, because throwing the data away is how
+       you end up unable to backfill once somebody works out who it was. */
+    const unmatched = [];
+    for (const r of rows) {
+      const id = aliases.get(r.player_name_norm);
+      if (id) r.player_id = id;
+      else {
+        unmatched.push({
+          name_raw: r.player_name_raw, name_norm: r.player_name_norm,
+          market: r.market, event_id: r.event_id,
+        });
+      }
+    }
+
+    /* A PARSE THAT FINDS NOTHING AND SKIPS NOTHING IS A SCHEMA CHANGE, not a
+       quiet market. It is recorded as an error on the run rather than as a
+       successful sweep of zero rows, because the second is what a provider
+       renaming a field looks like and it would otherwise never be noticed. */
+    const empty = rows.length === 0 && skipped.length === 0;
+    if (empty) {
+      summary.errors.push({ event: event.event_id, error: 'parsed nothing at all' });
+      log({ at: 'sweep.parse.empty', event: event.event_id });
+    }
+
+    try {
+      await store.insertSnapshots(rows);
+      if (unmatched.length) await store.recordUnmatched(unmatched);
+    } catch (e) {
+      summary.errors.push({ event: event.event_id, error: String(e.message || e) });
+      await store.closeRun(runId, {
+        ok: false, error: String(e.message || e).slice(0, 500), rows_written: 0,
+        vendor_remaining: res.usage.remaining, vendor_used: res.usage.used,
+      });
+      log({ at: 'sweep.write.failed', event: event.event_id, error: String(e.message || e) });
+      continue;
+    }
+
+    await store.closeRun(runId, {
+      ok: !empty,
+      http_status: res.status,
+      rows_written: rows.length,
+      vendor_remaining: res.usage.remaining,
+      vendor_used: res.usage.used,
+      error: empty ? 'parsed nothing at all' : null,
+      raw: res.body,
+    });
+
+    summary.polled += 1;
+    summary.rows += rows.length;
+    summary.skipped += skipped.length;
+    log({
+      at: 'sweep.event.ok', event: event.event_id, rows: rows.length,
+      skipped: skipped.length, unmatched: unmatched.length,
+      hoursOut: Number(decision.hoursOut.toFixed(2)),
+      creditsLeft: budget.left,
+    });
+  }
+
+  summary.ms = now() - t0;
+  return summary;
+}
+
+export { normName };
