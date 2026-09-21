@@ -4,5 +4,7 @@ Allow: /
 Disallow: /scripts/
 Disallow: /supabase/
 Disallow: /functions/
+Disallow: /fantasy
+Disallow: /fantasy-pipeline/
 
 Sitemap: https://runthe.gg/sitemap.xml

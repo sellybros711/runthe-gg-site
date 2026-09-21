@@ -37,3 +37,8 @@ __pycache__/
 # safety net for one run of one script, not source, and it is a 2MB file that
 # would land in every commit that touched the sprite table.
 mythiball/index.html.prev
+
+# wrangler's local state, written by `wrangler pages dev` when driving the
+# /fantasy gate through fantasy/check-gate.mjs. Build output for one test run,
+# not source, and it holds a local cache of the site's own assets.
+.wrangler/
