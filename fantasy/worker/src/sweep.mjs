@@ -51,6 +51,19 @@ export const LADDER = LADDER_LEAN;
  * budget bites, what gets polled is the game about to start. */
 export const MAX_EVENTS_PER_TICK = 8;
 
+/* A row that says what happened, when what happened was not a poll.
+ *
+ * Failures, empty answers and heartbeats all land here. It never throws: a
+ * Worker that cannot write its own diagnostics must still try to do its job,
+ * and an error raised while recording an error is the least useful exception
+ * there is. */
+async function note(store, patch) {
+  try {
+    const id = await store.openRun({ eventId: null, markets: [], credits: 0 });
+    await store.closeRun(id, { rows_written: 0, ...patch });
+  } catch (e) { /* nothing to do about it, and nothing worth breaking for */ }
+}
+
 export async function sweepOnce({
   odds, store, now = () => Date.now(), log = () => {},
   season, week,
@@ -72,6 +85,11 @@ export async function sweepOnce({
   if (!evRes.ok) {
     summary.stoppedBecause = `event list failed: ${evRes.error}`;
     log({ at: 'sweep.events.failed', status: evRes.status, error: evRes.error });
+    await note(store, {
+      ok: false,
+      error: `event list failed: ${evRes.status} ${String(evRes.error).slice(0, 300)}`,
+      raw: { mode: observeOnly ? 'observe' : 'live', stage: 'events', status: evRes.status },
+    });
     return summary;
   }
   const { events, skipped: evSkips } = parseEvents(evRes.body, season, week);
@@ -85,6 +103,16 @@ export async function sweepOnce({
   if (!events.length) {
     summary.stoppedBecause = 'the provider listed no events';
     log({ at: 'sweep.events.empty', raw: Array.isArray(evRes.body) ? evRes.body.length : 'not an array' });
+    await note(store, {
+      ok: false,
+      error: 'the provider listed no events',
+      raw: {
+        mode: observeOnly ? 'observe' : 'live',
+        stage: 'events',
+        returned: Array.isArray(evRes.body) ? evRes.body.length : typeof evRes.body,
+        skipped: evSkips.slice(0, 5),
+      },
+    });
     return summary;
   }
   await store.upsertEvents(events);
@@ -106,6 +134,33 @@ export async function sweepOnce({
   summary.due = due.length;
   if (!due.length) {
     log({ at: 'sweep.nothing.due', events: live.length });
+    /* A HEARTBEAT, four times an hour, on the quarter.
+    
+       A quiet tick is the normal state: most minutes have nothing due, and
+       writing a row for each would be 1,440 a day saying nothing happened.
+       Writing NONE is worse, and this is the mistake the first version made: a
+       database with no rows in it reads identically whether the Worker is
+       ticking happily with nothing to do or is not running at all. Those are
+       the two states somebody checking on a Sunday morning most needs to tell
+       apart.
+    
+       Stateless, on the minute, so it needs no read to decide and lands
+       exactly four times an hour however many Workers are ticking. */
+    const min = new Date(t).getUTCMinutes();
+    if (min % 15 === 0) {
+      await note(store, {
+        ok: true,
+        error: null,
+        raw: {
+          mode: observeOnly ? 'observe' : 'live',
+          stage: 'heartbeat',
+          eventsLive: live.length,
+          nextKickoff: live.length
+            ? new Date(Math.min(...live.map((e) => e.commenceMs))).toISOString()
+            : null,
+        },
+      });
+    }
     return summary;
   }
 

@@ -51,14 +51,28 @@ select period,
 select id,
        started_at,
        coalesce(raw->>'mode', 'live') as mode,
-       coalesce(event_id, '(all events)') as event,
+       coalesce(raw->>'stage', 'poll') as stage,
+       coalesce(event_id, '(none)') as event,
        credits_charged as credits,
        ok,
-       rows_written as rows,
-       left(coalesce(error, ''), 60) as error
+       left(coalesce(error, ''), 70) as error
   from public.fantasy_poll_runs
  order by started_at desc
- limit 15;
+ limit 20;
+
+\echo ''
+\echo '--- IS IT RUNNING AT ALL? ---'
+-- The question the first status run could not answer, because a database with
+-- no rows reads the same whether the Worker is ticking happily with nothing to
+-- do, failing on every call, or not deployed. A heartbeat lands four times an
+-- hour, so anything over about twenty minutes old means it has stopped.
+select coalesce(
+         to_char(max(started_at), 'YYYY-MM-DD HH24:MI:SS'),
+         'NEVER. No tick has ever written a row.') as "last sign of life",
+       coalesce(
+         round(extract(epoch from (now() - max(started_at))) / 60.0)::text || ' min ago',
+         '') as "how long ago"
+  from public.fantasy_poll_runs;
 
 \echo ''
 \echo '=== 3. WHAT THE LAST OBSERVE TICK WOULD HAVE POLLED =============='

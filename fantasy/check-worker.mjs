@@ -605,6 +605,95 @@ section('Observe mode');
 }
 
 /* ===================================================================
+ * 4c. A TICK THAT DOES NOTHING MUST STILL BE DISTINGUISHABLE FROM A
+ *     WORKER THAT IS NOT RUNNING
+ * ================================================================ */
+section('Silence is not the same as health');
+
+/* THIS IS THE DEFECT THE FIRST DEPLOY EXPOSED. The poller ran for several
+ * minutes and wrote nothing at all, and the status query was six empty
+ * tables. That reads identically whether the Worker is ticking happily with
+ * nothing due, is failing on every call, or is not running.
+ *
+ * Those are the three states somebody checking on a Sunday morning most needs
+ * to tell apart, and the brief says a silent hot-path failure is the worst
+ * outcome this system can produce. It was silent. */
+
+{
+  const { store } = await runSweep({}, { cap: 1000 },
+    { fail: (url) => (/\/events(\?|$)/.test(url) ? { status: 401, body: 'bad key' } : null) });
+  const row = store.w.closes[0];
+  ck('a failing event list leaves a row saying so',
+    store.w.runs.length === 1 && row && row.ok === false,
+    JSON.stringify(store.w.closes));
+  ck('and the row carries the status and the stage',
+    row && /401/.test(row.error) && row.raw && row.raw.stage === 'events',
+    JSON.stringify(row && row.raw));
+}
+
+{
+  const { store } = await runSweep({}, { cap: 1000 }, { events: [] });
+  const row = store.w.closes[0];
+  ck('an empty event list leaves a row saying so',
+    store.w.runs.length === 1 && row && row.ok === false
+    && /listed no events/.test(row.error || ''),
+    JSON.stringify(store.w.closes));
+  ck('and records how many the provider actually returned',
+    row && row.raw && row.raw.returned === 0);
+}
+
+/* A heartbeat, so a healthy quiet Worker is visible. Four times an hour, on
+ * the quarter, decided from the clock so it needs no read and lands the same
+ * number of times however the ticks fall. */
+{
+  const KQ = Date.UTC(2026, 8, 27, 14, 30, 0);   // :30, a heartbeat minute
+  const KN = Date.UTC(2026, 8, 27, 14, 31, 0);   // :31, not one
+  const quiet = async (now) => {
+    const prov = fakeProvider({ events: [{
+      id: 'far', sport_key: 'americanfootball_nfl',
+      commence_time: new Date(now + 40 * 24 * H).toISOString(),
+      home_team: 'H', away_team: 'A',
+    }] });
+    const store = fakeStore({ cap: 1000 });
+    const odds = makeOddsClient({ apiKey: 'k', fetchImpl: prov.fetchImpl, log: () => {} });
+    const summary = await sweepOnce({
+      odds, store, season: 2026, week: 4, log: () => {}, now: () => now,
+    });
+    return { summary, store };
+  };
+
+  const on = await quiet(KQ);
+  ck('a quiet tick on the quarter leaves a heartbeat',
+    on.summary.due === 0 && on.store.w.runs.length === 1,
+    `due ${on.summary.due}, rows ${on.store.w.runs.length}`);
+  ck('and the heartbeat says the Worker is fine and what it is waiting for',
+    on.store.w.closes[0] && on.store.w.closes[0].ok === true
+    && on.store.w.closes[0].raw.stage === 'heartbeat'
+    && !!on.store.w.closes[0].raw.nextKickoff,
+    JSON.stringify(on.store.w.closes[0] && on.store.w.closes[0].raw));
+
+  const off = await quiet(KN);
+  ck('and the other fourteen minutes write nothing',
+    off.summary.due === 0 && off.store.w.runs.length === 0,
+    `${off.store.w.runs.length} rows`);
+}
+
+/* THE DIAGNOSTIC MUST NEVER BREAK THE JOB. A Worker that cannot write its own
+ * failure row still has to try to do its work, and an exception raised while
+ * recording an exception is the least useful one there is. */
+{
+  const prov = fakeProvider({ events: [] });
+  const store = fakeStore({ cap: 1000 });
+  store.openRun = async () => { throw new Error('the database is on fire'); };
+  const odds = makeOddsClient({ apiKey: 'k', fetchImpl: prov.fetchImpl, log: () => {} });
+  let threw = null;
+  try {
+    await sweepOnce({ odds, store, season: 2026, week: 4, log: () => {}, now: () => KICK - 2 * H });
+  } catch (e) { threw = e.message; }
+  ck('a diagnostic write that fails does not take the tick down', threw === null, threw);
+}
+
+/* ===================================================================
  * 5. SEASON AND WEEK
  * ================================================================ */
 section('Season and week');
