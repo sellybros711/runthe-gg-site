@@ -66,6 +66,18 @@ select id,
 -- no rows reads the same whether the Worker is ticking happily with nothing to
 -- do, failing on every call, or not deployed. A heartbeat lands four times an
 -- hour, so anything over about twenty minutes old means it has stopped.
+--
+-- NEVER DOES NOT PROVE THE WORKER IS DOWN, and the heartbeat cannot tell you
+-- that it does, because the heartbeat is written to this same table. Every row
+-- this section counts arrives through one insert, so a database that refuses
+-- that insert reads exactly like a Worker that is not running: no heartbeat,
+-- no failure row, no throw. That is the state this actually shipped in, for an
+-- evening, while Cloudflare reported 184 successful ticks and zero errors.
+--
+-- The Worker log is the one channel that does not share the failure, and it is
+-- persisted rather than a tail (observability is on in wrangler.toml). So NEVER
+-- here plus successful ticks there means the WRITE is being refused, and
+-- store.openRun.failed in the log carries the reason verbatim.
 select coalesce(
          to_char(max(started_at), 'YYYY-MM-DD HH24:MI:SS'),
          'NEVER. No tick has ever written a row.') as "last sign of life",

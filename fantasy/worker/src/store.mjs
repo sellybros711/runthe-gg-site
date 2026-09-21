@@ -84,13 +84,40 @@ export function makeStore({ url, serviceKey, fetchImpl = fetch, log = () => {} }
      * Poll runs: the freshness record and the failure log
      * ---------------------------------------------------------------- */
 
+    /* A FAILURE HERE USED TO HAVE NOWHERE TO GO, AND THAT IS HOW A POLLER GOES
+       QUIET WHILE REPORTING SUCCESS.
+
+       Every caller wrapped this in `.catch(() => null)`, and closeRun opens
+       with `if (id == null) return`, so a refused insert became a null, became
+       a no-op, and the tick carried on and logged tick.done. Measured against
+       the real thing: 184 successful ticks, zero errors, zero rows. The one
+       table that records what the Worker is doing was the one table it could
+       not write to, and nothing anywhere said so.
+
+       So the refusal is logged HERE, once, rather than at four call sites that
+       each have their own reason for not wanting to throw. It still returns
+       null, because none of those callers can do anything useful with an
+       exception; what changes is that the reason reaches the log, which is the
+       one channel that does not depend on this table working. */
     async openRun({ eventId, markets, credits }) {
-      const r = await rest('/fantasy_poll_runs', {
-        method: 'POST',
-        body: [{ event_id: eventId, markets, credits_charged: credits, ok: false }],
-        prefer: 'return=representation',
-      });
-      return Array.isArray(r) && r[0] ? r[0].id : null;
+      try {
+        const r = await rest('/fantasy_poll_runs', {
+          method: 'POST',
+          body: [{ event_id: eventId, markets, credits_charged: credits, ok: false }],
+          prefer: 'return=representation',
+        });
+        const id = Array.isArray(r) && r[0] ? r[0].id : null;
+        /* A 2xx THAT CARRIES NO ID IS NOT THE SAME FAILURE AS A REFUSAL, and
+           telling them apart is the difference between a permissions problem
+           and a Prefer header the server did not honour. */
+        if (id == null) {
+          log({ at: 'store.openRun.no_id', got: JSON.stringify(r || null).slice(0, 200) });
+        }
+        return id;
+      } catch (e) {
+        log({ at: 'store.openRun.failed', error: String(e.message || e) });
+        return null;
+      }
     },
 
     closeRun(id, patch) {

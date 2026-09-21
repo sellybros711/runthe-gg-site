@@ -393,6 +393,52 @@ ck('two regions doubles it',
     prov.calls.filter((u) => /\/odds\?/.test(u)).length === 0);
 }
 
+/* THE CAP BITING HAS TO BE VISIBLE IN THE TABLE, not only in the Worker log.
+ * A poller stopped dead by its own allowance and a poller that is not running
+ * are two different problems with one remedy each, and until this row existed
+ * they read identically from the database: no rows. */
+{
+  const { store } = await runSweep({}, { cap: 6 });
+  const refused = store.w.closes.filter((c) => /credit cap reached/.test(c.error || ''));
+  ck('a refused event leaves a row saying the cap stopped it', refused.length === 1,
+    JSON.stringify(store.w.closes));
+  ck('and that row claims no credits, because no request was made',
+    refused.length === 1 && refused[0].credits_charged === 0,
+    JSON.stringify(refused[0]));
+}
+
+/* A DATABASE THAT WILL NOT TAKE THE RUN ROW MUST NOT BECOME A SPIN LOOP, and
+ * this is the expensive one.
+ *
+ * lastPollByEvent() reads fantasy_poll_runs to decide what is due. A poll that
+ * spends six credits and writes no run row is invisible to the ladder, so the
+ * next tick finds the same event never polled and polls it again, once a
+ * minute, for ever. The whole 500 credit allowance goes in under ninety
+ * minutes on one game, and every tick reports success while it happens.
+ *
+ * It is not hypothetical: the first deployed poller could not write that table
+ * at all. Nothing was spent only because the mode happened to be observe.
+ *
+ * Reintroduced (open the run after the charge, ignore the failure) this fails
+ * all three: two odds requests go out and the budget is charged for both. */
+{
+  const prov = fakeProvider({});
+  const store = fakeStore({ cap: 1000 });
+  store.openRun = async () => null;
+  const odds = makeOddsClient({ apiKey: 'k', fetchImpl: prov.fetchImpl, log: () => {} });
+  const summary = await sweepOnce({
+    odds, store, season: 2026, week: 4, log: () => {}, now: () => KICK - 2 * H,
+  });
+  ck('a run row that cannot be opened stops the tick', summary.polled === 0,
+    `polled ${summary.polled}`);
+  ck('and no odds request goes out at all',
+    prov.calls.filter((u) => /\/odds\?/.test(u)).length === 0,
+    prov.calls.join('\n'));
+  ck('and the budget is never charged for a poll that will not be recorded',
+    summary.creditsCharged === 0 && store.w.spends.length === 0,
+    JSON.stringify(store.w.spends));
+}
+
 {
   const { store } = await runSweep({}, { cap: 1000 });
   ck("the provider's own remaining count is reconciled back",
@@ -676,6 +722,50 @@ section('Silence is not the same as health');
   ck('and the other fourteen minutes write nothing',
     off.summary.due === 0 && off.store.w.runs.length === 0,
     `${off.store.w.runs.length} rows`);
+}
+
+/* A DIAGNOSTIC THAT CANNOT BE WRITTEN HAS TO SAY SO SOMEWHERE ELSE, and this
+ * is the assertion the whole evening was about.
+ *
+ * Observe mode's row, the heartbeat and the failure rows all go to
+ * fantasy_poll_runs, and every one of them was written through a call whose
+ * failure was swallowed. So the one table that records what the Worker is
+ * doing was the one table it could not write to, and the Worker reported 184
+ * successful ticks and zero errors while doing it.
+ *
+ * The log is the only channel that does not share that failure mode, so the
+ * claim is that a refused write reaches it. Proved by reintroducing the bare
+ * `.catch(() => null)`: this fails and nothing else does. */
+{
+  const lines = [];
+  const prov = fakeProvider({});
+  const store = fakeStore({ cap: 1000 });
+  store.openRun = async () => null;
+  const odds = makeOddsClient({ apiKey: 'k', fetchImpl: prov.fetchImpl, log: () => {} });
+  await sweepOnce({
+    odds, store, season: 2026, week: 4, observeOnly: true,
+    log: (o) => lines.push(o), now: () => KICK - 2 * H,
+  });
+  ck('an observe row that cannot be written is reported in the log',
+    lines.some((l) => l.at === 'sweep.observe.unrecorded'),
+    JSON.stringify(lines.map((l) => l.at)));
+}
+
+/* The same claim for the heartbeat, which is the row somebody checking on a
+ * Sunday morning is actually looking for. */
+{
+  const lines = [];
+  const prov = fakeProvider({ events: [] });
+  const store = fakeStore({ cap: 1000 });
+  store.openRun = async () => null;
+  const odds = makeOddsClient({ apiKey: 'k', fetchImpl: prov.fetchImpl, log: () => {} });
+  await sweepOnce({
+    odds, store, season: 2026, week: 4,
+    log: (o) => lines.push(o), now: () => KICK - 2 * H,
+  });
+  ck('and so is a bookkeeping row that cannot be written',
+    lines.some((l) => l.at === 'sweep.note.unrecorded'),
+    JSON.stringify(lines.map((l) => l.at)));
 }
 
 /* THE DIAGNOSTIC MUST NEVER BREAK THE JOB. A Worker that cannot write its own

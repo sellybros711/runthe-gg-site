@@ -57,11 +57,19 @@ export const MAX_EVENTS_PER_TICK = 8;
  * Worker that cannot write its own diagnostics must still try to do its job,
  * and an error raised while recording an error is the least useful exception
  * there is. */
-async function note(store, patch) {
+async function note(store, patch, log = () => {}) {
   try {
     const id = await store.openRun({ eventId: null, markets: [], credits: 0 });
+    /* SAYING SO IS THE WHOLE DIFFERENCE. Swallowing this in silence is what
+       produced 184 clean ticks and an empty table: the row could not be
+       written, nothing threw, and the only record of the attempt was the
+       attempt. The log is the one channel that does not depend on the table
+       this is trying to write. */
+    if (id == null) { log({ at: 'sweep.note.unrecorded', patch: patch.raw && patch.raw.stage }); return; }
     await store.closeRun(id, { rows_written: 0, ...patch });
-  } catch (e) { /* nothing to do about it, and nothing worth breaking for */ }
+  } catch (e) {
+    log({ at: 'sweep.note.threw', error: String(e && e.message || e) });
+  }
 }
 
 export async function sweepOnce({
@@ -89,7 +97,7 @@ export async function sweepOnce({
       ok: false,
       error: `event list failed: ${evRes.status} ${String(evRes.error).slice(0, 300)}`,
       raw: { mode: observeOnly ? 'observe' : 'live', stage: 'events', status: evRes.status },
-    });
+    }, log);
     return summary;
   }
   const { events, skipped: evSkips } = parseEvents(evRes.body, season, week);
@@ -112,7 +120,7 @@ export async function sweepOnce({
         returned: Array.isArray(evRes.body) ? evRes.body.length : typeof evRes.body,
         skipped: evSkips.slice(0, 5),
       },
-    });
+    }, log);
     return summary;
   }
   await store.upsertEvents(events);
@@ -159,7 +167,7 @@ export async function sweepOnce({
             ? new Date(Math.min(...live.map((e) => e.commenceMs))).toISOString()
             : null,
         },
-      });
+      }, log);
     }
     return summary;
   }
@@ -200,6 +208,8 @@ export async function sweepOnce({
       const runId = await store.openRun({
         eventId: null, markets: [], credits: 0,
       }).catch(() => null);
+      /* NOT SILENTLY, which is what this line was for a whole evening. */
+      if (runId == null) log({ at: 'sweep.observe.unrecorded' });
       await store.closeRun(runId, {
         ok: true,
         rows_written: 0,
@@ -246,26 +256,62 @@ export async function sweepOnce({
 
   /* 4. The expensive part. */
   for (const { event, decision } of due) {
-    /* CHARGED BEFORE THE REQUEST. Charging after would let every event in this
-       loop pass the check before any of them had been counted. */
+    /* THE RUN ROW IS OPENED FIRST, AND NOT BEING ABLE TO OPEN ONE STOPS THE
+       TICK. Written the other way round this is a money leak, and it is not a
+       small one.
+
+       lastPollByEvent() reads this table to decide what is due. A poll that
+       spends six credits and writes no run row is a poll the ladder cannot
+       see, so the next tick finds the same event never polled and polls it
+       again, and the tick after that, once a minute at six credits each. The
+       whole 500 credit allowance goes in under ninety minutes, on one game,
+       while every tick reports success. That is the state the database was
+       actually in tonight: the run row could not be written, and the only
+       reason nothing was spent is that the mode happened to be observe.
+
+       Opening first also means a refusal costs nothing at all rather than
+       burning a charge against a poll that never happens. The charge still
+       lands BEFORE the request, which is the rule that matters: it stops every
+       event in this loop passing a check none of them had been counted
+       against. */
+    const runId = await store.openRun({
+      eventId: event.event_id, markets, credits: cost,
+    }).catch(() => null);
+    if (runId == null) {
+      summary.stoppedBecause = 'could not open a run row, so nothing was polled';
+      log({ at: 'sweep.openRun.failed', event: event.event_id });
+      break;
+    }
+
     let budget;
     try {
       budget = await store.spend(cost);
     } catch (e) {
       summary.stoppedBecause = `budget check failed: ${e.message || e}`;
       log({ at: 'sweep.budget.error', error: String(e.message || e) });
+      /* CREDITS BACK TO ZERO ON THE ROW. It was opened claiming the cost of a
+         poll that is not going to happen, and a table that says six credits
+         were charged for a request nobody made is a table the cap cannot be
+         trusted against. */
+      await store.closeRun(runId, {
+        ok: false, credits_charged: 0,
+        error: `budget check failed: ${String(e.message || e).slice(0, 300)}`,
+      });
       break;
     }
     if (!budget.allowed) {
       summary.stoppedBecause = `credit cap reached: ${budget.used} of ${budget.cap}`;
       log({ at: 'sweep.budget.refused', used: budget.used, cap: budget.cap });
+      /* AND THE CAP BITING IS NOW IN THE TABLE. Before this it was in the
+         Worker log alone, so a poller stopped dead by its own allowance looked
+         from the database exactly like a poller that was not running. */
+      await store.closeRun(runId, {
+        ok: false, credits_charged: 0,
+        error: `credit cap reached: ${budget.used} of ${budget.cap}`,
+      });
       break;
     }
     summary.creditsCharged += cost;
-
-    const runId = await store.openRun({
-      eventId: event.event_id, markets, credits: cost,
-    }).catch(() => null);
 
     const res = await odds.eventOdds(event.event_id, markets, regions);
     await store.observe(res.usage);
