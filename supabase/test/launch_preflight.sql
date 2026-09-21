@@ -54,7 +54,8 @@ con as (
 has_table as (
   select t as name from unnest(array[
     'ps_daily_attempts','ps_dynasty_day','premium_unlocks','ps_saves',
-    'commish_free_clock','ps_runs','profiles'
+    'commish_free_clock','ps_runs','profiles',
+    'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -136,7 +137,27 @@ check_rows(sort, migration, what, breaks, ok) as (
       'display_pro, dynasty_over and ps_dynasty_end',
       'The leaderboard loses two marks and NOTHING ELSE: no gold on a paid name, no LIVE on a running dynasty. The board is the board it was.',
       (select count(*) > 0 from proc where name = 'ps_dynasty_end')
-      and (select count(*) > 0 from proc where name = 'ps_is_pro'))
+      and (select count(*) > 0 from proc where name = 'ps_is_pro')),
+
+  (14, '108_dynasty_slot',
+      'dynasty_slot, and dynasty_current on the board',
+      'The LIVE badge over-counts: an account can wear one on every run it played inside 48 hours, and there are only two slots. Decoration, and it was reported by a player.',
+      (select count(*) > 0 from proc
+        where name = 'ps_dynasty_tag' and args like '%text%')),
+
+  -- ---- the one that is not live yet, and the one that fails CLOSED --------
+  -- Everything above fails OPEN or loses a mark. This one refuses, by design:
+  -- there is a prize on it, so a week the server has never heard of takes no
+  -- entries rather than waving everybody through. Loud rather than silent, and
+  -- only testers can reach it while FANTASY_LIVE is false.
+  (15, '109_fantasy_challenge',
+      'the weekly challenge can take an entry at all',
+      'Fantasy Challenge refuses every lineup. A tester drafts five times and is told the week is not open. Nothing is lost, and nothing can be entered.',
+      (select count(*) > 0 from proc where name = 'fantasy_submit')
+      and (select count(*) > 0 from proc where name = 'fantasy_standings')
+      and (select count(*) = 4 from has_table
+            where name in ('fantasy_weeks','fantasy_prices','fantasy_results',
+                           'fantasy_entries')))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

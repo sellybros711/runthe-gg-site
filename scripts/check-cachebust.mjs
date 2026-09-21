@@ -230,8 +230,20 @@ for (const page of pages(ROOT)) {
          E was on a page that is perfectly correct. A naming convention is not a fact about
          the code; which file assigns the global is. */
       let g = receiver.replace(/^window\./, '');
-      const setter = (n) => srcs.find((f) =>
-        new RegExp('window\\.' + n + '\\s*=[^=]').test(fs.readFileSync(f, 'utf8')));
+      /* AND A MODULE THAT WRITES THROUGH ITS IIFE PARAMETER IS STILL SETTING IT, which is
+         the same lesson as the PS_ prefix one line up, arriving at a second spelling. The
+         site's one-file modules are written
+         `(function (root) { ... root.X = api; })(typeof self !== 'undefined' ? self : this)`,
+         so `window.X =` never appears in them and this reported that nothing sets a global
+         a file plainly sets. It is not loosened to any receiver: the name has to be the
+         parameter that function was handed the global object as. */
+      const putsGlobal = (src, n) => {
+        if (new RegExp('window\\.' + n + '\\s*=[^=]').test(src)) return true;
+        const iife = src.match(
+          /\(\s*function\s*\(\s*([A-Za-z_$][\w$]*)\s*\)[\s\S]*\}\s*\)\s*\(\s*typeof\s+(?:self|globalThis)[^)]*\)\s*;?\s*$/);
+        return !!iife && new RegExp('\\b' + iife[1] + '\\.' + n + '\\s*=[^=]').test(src);
+      };
+      const setter = (n) => srcs.find((f) => putsGlobal(fs.readFileSync(f, 'utf8'), n));
       let file = setter(g);
       if (!file) {
         /* Then it is an alias: `var E = window.RTF_ENGINE, R = window.RTF_RUN;` */

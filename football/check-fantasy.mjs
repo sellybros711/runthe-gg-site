@@ -236,11 +236,64 @@ const authStub = (who) => `
     }
   })();`;
 
+/* THE SERVER IS A STUB AND NOT ONE REQUEST REACHES THE REAL ONE.
+ *
+ * `entries.js` posts to the live Supabase project, and the live project holds the real
+ * competition: a checker that let a request out would enter a lineup on somebody's account,
+ * or fill a real week with rows from a bot. That is this file's version of the note
+ * `check-premium.mjs` carries about Stripe being live with no test mode. The route below
+ * answers every rpc itself, and the catch-all `r.abort()` under it is the second half of
+ * that promise rather than tidiness: a call this stub has never heard of dies rather than
+ * going out.
+ *
+ * `server` is what the fixture says the database would answer, and every field is optional
+ * so a walk that does not care about the server writes nothing.
+ */
+const serverStub = (server) => {
+  const s = server || {};
+  /* IT REMEMBERS THE ENTRY, because the real one does. A stub that accepted a submit and
+     then went on answering "you have not entered" is not a server having a bad day, it is
+     a server that cannot exist, and a walk driven against it would be testing a state the
+     page will never meet. `mine` is seeded from the fixture and written by the submit. */
+  let entry = s.mine || null;
+  return {
+    /* An accepted call, or the shape PostgREST returns when a plpgsql function raises. */
+    fantasy_submit: (body) => {
+      /* THE TWO 5xx CASES ARE TESTED BEFORE THE REFUSAL, and the first draft of this stub
+         had them after: `if (s.submit && s.submit !== 'ok')` catches the string 'lost'
+         too, so the lost-answer arm was served a 400 and the branch it exists for was
+         unreachable. It reported the page failing to reconcile something it had never been
+         asked to. An unreachable arm in a fixture is the unearnable badge in a coat. */
+      if (s.submit === 'down') {
+        return { status: 503, body: JSON.stringify({ message: 'upstream' }) };
+      }
+      if (s.submit === 'lost') {
+        /* The answer goes missing AFTER the row lands, which is the one case the page
+           cannot tell from a failure and has to settle by asking. */
+        entry = { picks: body.p_picks, spend: 0, projected: 0, score: 0, scored: false };
+        return { status: 503, body: '' };
+      }
+      if (s.submit && s.submit !== 'ok') {
+        return { status: 400, body: JSON.stringify({ message: s.submit }) };
+      }
+      entry = { picks: body.p_picks, spend: 0, projected: 0, score: 0, scored: false };
+      return { status: 204, body: '' };
+    },
+    fantasy_my_entry: () => ({ status: 200, body: JSON.stringify(entry ? [entry] : []) }),
+    fantasy_standings: () => ({ status: 200, body: JSON.stringify(s.standings || []) }),
+    fantasy_my_place: () => ({ status: 200,
+      body: JSON.stringify(s.place ? [s.place] : []) }),
+    fantasy_entry_count: () => ({ status: 200,
+      body: JSON.stringify(s.count == null ? 0 : s.count) }),
+  };
+};
+
 async function openPage(browser, url, opts = {}) {
   const { who = null, viewport = { width: 390, height: 844 }, at = null,
-    results = null, storage = null } = opts;
+    results = null, storage = null, server = null } = opts;
   const page = await browser.newPage({ viewport });
   const boom = [];
+  const posted = [];
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
   /* Pinning the clock is how the lock gets tested at all: the shipped week is in the future
      or it is not, and a checker that only works before Thursday is a checker that starts
@@ -262,8 +315,17 @@ async function openPage(browser, url, opts = {}) {
         ${JSON.stringify(storage.value)}); } catch(e){}
     })();`);
   }
+  const RPC = serverStub(server);
   await page.route('**/*', async (r) => {
     const u = new URL(r.request().url());
+    const call = u.pathname.match(/\/rest\/v1\/rpc\/(\w+)$/);
+    if (call && RPC[call[1]]) {
+      let body = {};
+      try { body = JSON.parse(r.request().postData() || '{}'); } catch (e) {}
+      posted.push({ fn: call[1], body });
+      const a = RPC[call[1]](body);
+      return r.fulfill({ status: a.status, contentType: 'application/json', body: a.body });
+    }
     if (u.hostname !== 'local.test') return r.abort();
     let rel = decodeURIComponent(u.pathname);
     if (rel.endsWith('/')) rel += 'index.html';
@@ -289,7 +351,7 @@ async function openPage(browser, url, opts = {}) {
       body: fs.readFileSync(f) });
   });
   await page.goto(url, { waitUntil: 'domcontentloaded' });
-  return { page, boom };
+  return { page, boom, posted };
 }
 
 const TESTER = { name: ACCESS.TESTERS[0], userId: null };
@@ -329,7 +391,7 @@ ok('  the two refusals say different things', new Set(shut).size === shut.length
 /* ---------------------------------------------------------------- */
 console.log('\nA WHOLE ENTRY, DRIVEN');
 {
-  const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE });
+  const { page, boom, posted } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE });
   await page.waitForSelector('#s-home.on', { timeout: 15000 });
 
   /* One helper for one draft, pressing the page's own buttons throughout. Nothing here
@@ -389,10 +451,19 @@ console.log('\nA WHOLE ENTRY, DRIVEN');
   ok('  the submitted screen shows the chosen lineup\'s own projection',
     shown.trim() === proj.split('\n')[0].trim(), shown.trim() + ' against ' + proj.trim());
   ok('  and it names six men', await page.locator('#in-roster .rrow').count() === 6);
-  /* SAID PLAINLY. There is no server yet, and a screen that let somebody believe they had
-     entered a competition would be the one dishonest thing on it. */
+  /* THE SIX THAT WENT UP ARE THE SIX THAT WERE CHOSEN. The page sends ids and the screen
+     draws rows, and nothing else on this page compares the two. */
+  const sent = posted.filter((p) => p.fn === 'fantasy_submit');
+  ok('  one submit went out, and only one', sent.length === 1, sent.length + '');
+  ok('    carrying six ids for this week',
+    sent.length === 1 && (sent[0].body.p_picks || []).length === D.SLOTS.length
+      && sent[0].body.p_season === POOL.season && sent[0].body.p_week === POOL.week,
+    JSON.stringify(sent[0] && sent[0].body).slice(0, 120));
+  /* SAID PLAINLY, and this is the sentence that changed the day the entry became a row.
+     It read "saved in this browser only" for as long as that was true. */
   const note = await page.locator('#in-note').innerText();
-  ok('  and it says the lineup is only in this browser', /browser/i.test(note), note.trim());
+  ok('  and it says the entry is on the account', /account/i.test(note)
+    && !/this browser/i.test(note), note.trim());
 
   /* A RETURN VISIT SHOWS THE ENTRY RATHER THAN OFFERING ANOTHER. */
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -400,6 +471,130 @@ console.log('\nA WHOLE ENTRY, DRIVEN');
   ok('  and coming back lands on the entry, not on a fresh draft', true);
   ok('  nothing threw through any of it', !boom.length, boom.join(' | ') || 'clean');
   await page.close();
+}
+
+/* ================================================================
+   A SUBMIT HAS THREE ANSWERS AND THE PAGE HAS TO DRAW ALL THREE
+   ================================================================
+ *
+ * In, refused, and nobody knows. Every board on this site FAILS SOFT and resolves to null,
+ * and `board.js` argues for that at length: a leaderboard that will not draw costs nothing,
+ * because the season it is reading was already recorded. Nothing else records a fantasy
+ * lineup, so the same treatment here is a player who believes they are in a competition
+ * they are not in.
+ *
+ * THE THIRD ONE IS THE HALF THAT CANNOT BE REASONED ABOUT FROM THE SOURCE. A request can
+ * land, write the row and lose its answer on the way back, and the only thing that can tell
+ * the two apart is asking. Driven here rather than argued, because both arms look identical
+ * from inside the click handler.
+ */
+console.log('\nA SUBMIT HAS THREE ANSWERS');
+for (const [label, server, want] of [
+  ['refused, and the server\'s own sentence is what the reader gets',
+    { submit: 'that lineup is over the cap' }, { screen: 's-review', say: /over the cap/i }],
+  ['refused for a reason the page never heard of, and it still says something',
+    { submit: 'some new rule nobody has written yet' },
+    { screen: 's-review', say: /some new rule/i }],
+  ['the answer is lost after the row lands, so asking settles it',
+    { submit: 'lost' }, { screen: 's-in' }],
+  ['the server is down and nothing landed',
+    { submit: 'down' }, { screen: 's-review', say: /nothing was entered/i }],
+]) {
+  const { page, boom, posted } = await openPage(browser, FANTASY,
+    { who: TESTER, at: BEFORE, server });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+  await page.click('#b-draft');
+  for (let i = 0; i < D.SLOTS.length; i++) {
+    await page.waitForSelector('#d-men .man', { timeout: 10000 });
+    await page.locator('#d-men .man').first().click();
+  }
+  await page.waitForSelector('#s-review.on', { timeout: 10000 });
+  await page.locator('#r-five .lineup').first().click();
+  await page.click('#b-submit');
+  /* WAITED ON THE BUTTON AND NOT ON THE SCREEN, which cost a round of reading failures
+     that were not there. Three of these four arms end on `s-review`, which is the screen
+     they START on, so `waitForSelector('#s-review.on')` returns in the same tick and every
+     assertion after it reads the page before the answer has landed. The label is the one
+     thing that is different while a submit is in flight. */
+  await page.waitForFunction(
+    () => !/Sending/i.test(document.getElementById('b-submit').textContent)
+      || document.getElementById('s-in').classList.contains('on'),
+    null, { timeout: 15000 }).catch(() => {});
+  const on = await screenOn(page);
+  ok(label, on === want.screen, on);
+  if (want.say) {
+    const say = await page.locator('#r-say').innerText();
+    ok('  and it says why', want.say.test(say), say.trim());
+    /* AND THE BUTTON COMES BACK. A submit that refused and left the control reading
+       "Sending..." for ever is a mode that ended on its own. */
+    ok('  and the button is pressable again',
+      !(await page.locator('#b-submit').isDisabled())
+        && /submit/i.test(await page.locator('#b-submit').innerText()));
+  }
+  if (want.screen === 's-in') {
+    ok('  and it asked rather than guessing',
+      posted.filter((p) => p.fn === 'fantasy_my_entry').length >= 1,
+      posted.map((p) => p.fn).join(', '));
+  }
+  ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+  await page.close();
+}
+
+/* ================================================================
+   THE BOARD OPENS AT THE LOCK
+   ================================================================
+ *
+ * Which is a rule about the competition rather than about privacy: every entrant meets
+ * their own wheel, so before kickoff a list of everybody's lineups and their projections is
+ * the answer key handed to whoever enters last. The server is what enforces it, by
+ * answering no rows, and what is checked here is that the page draws the empty answer as
+ * NOTHING rather than as a heading over a blank box.
+ */
+console.log('\nTHE BOARD OPENS AT THE LOCK');
+{
+  const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
+    spend: 80, projected: 50, score: 0, scored: false };
+  const row = (place, name, score, me) => ({ place, display_name: name, score,
+    projected: 58, spend: 88, picks: [], is_me: !!me });
+  const IN_IT = [row(1, 'Somebody', 91.2), row(2, 'You', 77.5, true)];
+  const ABOVE = [row(1, 'Somebody', 91.2), row(2, 'Another', 77.5)];
+  for (const [label, server, want] of [
+    ['before the lock there is no board at all',
+      { mine: ENTRY, standings: [], place: null }, { wrap: false }],
+    ['and neither is there when it cannot be reached',
+      { mine: ENTRY, standings: null, place: null }, { wrap: false }],
+    ['once it is open it ranks the entries',
+      { mine: ENTRY, standings: IN_IT, place: { place: 2, entries: 2, score: 77.5 } },
+      { wrap: true, rows: 2, mine: 1 }],
+    ['a reader off the bottom of the fifty is still shown their own place',
+      { mine: ENTRY, standings: ABOVE, place: { place: 112, entries: 400, score: 31.0 } },
+      { wrap: true, rows: 4, mine: 1, tail: /112/ }],
+  ]) {
+    /* AN EMPTY LIST IS A WEEK THAT HAS NOT LOCKED, not a week nobody entered, and on this
+       screen those cannot be confused: the reader has an entry, so once the board opens
+       their own row is in it. A "nobody yet" line here would be a sentence that cannot be
+       true. Null is the unreachable server and draws the same nothing. */
+    const { page, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: BEFORE, server });
+    await page.waitForSelector('#s-in.on', { timeout: 15000 });
+    await page.waitForTimeout(400);
+    const seen = await page.evaluate(() => ({
+      hidden: document.getElementById('in-boardwrap').hidden,
+      rows: document.querySelectorAll('#in-board .brow').length,
+      mine: document.querySelectorAll('#in-board .brow.me').length,
+      text: document.getElementById('in-board').textContent,
+      lab: document.getElementById('in-boardlab').textContent,
+    }));
+    ok(label, seen.hidden === !want.wrap, seen.hidden ? 'not drawn' : seen.lab);
+    if (want.rows != null) {
+      ok('  with a row each', seen.rows === want.rows, seen.rows + '');
+      ok('  and the reader\'s own row picked out', seen.mine === want.mine, seen.mine + '');
+    }
+    if (want.tail) ok('  and their place is the one counted against everybody',
+      want.tail.test(seen.text), seen.text.trim().slice(-40));
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
 }
 
 /* ---------------------------------------------------------------- */

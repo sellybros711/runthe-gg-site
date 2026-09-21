@@ -8141,7 +8141,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=37"></script>
+<script src="board.js?v=39"></script>
 <script src="achievements.js?v=14"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
@@ -8319,7 +8319,7 @@ function loadDefensePool(){
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=18;
+const BOARD_VERSION=19;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
@@ -25135,7 +25135,8 @@ async function recordRun(){
      run's board and the next season carries the run forward, so it must not hold up the
      results screen or the badge pass below. */
   if(run.dynasty&&typeof id==='number'&&B.dynastyTag){
-    B.dynastyTag(id, run.dynastyId, R.seasonsSurvived(run), run.score||0).catch(()=>{});
+    B.dynastyTag(id, run.dynastyId, R.seasonsSurvived(run), run.score||0,
+      dynSlotOf(run)).catch(()=>{});
   }
   /* The career panel is cached, so a run that has just landed has to invalidate it or the
      profile shows a history one run out of date immediately after the run people most want
@@ -26072,8 +26073,23 @@ const proClass=(row)=>(row&&row.display_pro)?' pro-name':'';
  * short enough that an all-time board is not a wall of red.
  */
 const DYN_LIVE_HOURS=48;
+/* AND THE SERVER CAPS IT AT ONE RUN A SLOT, which is the half 48 hours could not do.
+ *
+ * Reported with a screenshot: one account wore four LIVE badges. There are two dynasty
+ * slots, so at most two of an account's runs can be in progress, and the other two were
+ * runs whose save had gone before anything could post their end. The window was the only
+ * thing standing between that and a wall of red, and two days is long enough for a tester
+ * to play four.
+ *
+ * `dynasty_current` is 108's answer: of this account's runs in this slot, is this the
+ * latest one. THREE STATES AGAIN, and undefined is the one that matters: a database that
+ * has had 107 and not 108 does not answer this at all, and reading that as "no" would take
+ * the badge off everybody the day this shipped. So the server is allowed to have no
+ * opinion, and the page then behaves exactly as it did under 107 alone.
+ */
 function dynRunLive(r){
   if(!r||r.dynasty_over!==false) return false;
+  if(r.dynasty_current===false) return false;
   const t=Date.parse(r.created_at||'');
   if(!isFinite(t)) return false;
   return (Date.now()-t)<DYN_LIVE_HOURS*3600*1000;
