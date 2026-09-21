@@ -62,6 +62,11 @@
   /* .btn sets display:block, so [hidden] loses to it. This file's own version of the rule
      that has been learned seven times in football/index.html. */
   .btn[hidden]{display:none}
+  /* Three of the buttons on this page are anchors, because they leave it. .btn was written
+     for <button>, so nothing in it turns the browser's own underline off, and a full width
+     control with an underline through its label reads as a mistake. Found by taking a
+     screenshot and looking at it, which is the only way this class of thing is ever found. */
+  a.btn{text-decoration:none}
   .card{background:var(--grad-panel);border:1px solid var(--line);border-radius:14px;
     padding:14px;box-shadow:var(--shadow)}
 
@@ -478,9 +483,12 @@
         + '<span class="rc">' + esc(where) + '</span></div>';
     }
     $('in-roster').innerHTML = rows;
+    /* "The week closes" was wrong about both halves. The week ENDS on Monday night, and
+       what happens at the Thursday kickoff is that entries stop. Shown in the reader's own
+       zone by toLocaleString, which is why no zone is named beside it. */
     $('in-say').textContent = locked()
-      ? 'This week is locked.'
-      : 'Locked in. The week closes ' + lockWhen() + '.';
+      ? 'Week ' + POOL.week + ' has kicked off. Your lineup is in.'
+      : 'Your lineup is in. Entries close ' + lockWhen() + '.';
     /* SAID PLAINLY RATHER THAN IMPLIED. Nothing is on a server yet. */
     $('in-note').textContent = 'Test build: this lineup is saved in this browser only. '
       + 'There is no leaderboard yet and nothing has been sent anywhere.';

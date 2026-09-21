@@ -427,8 +427,17 @@ for (const [label, who, want] of [
   const got = await page.evaluate(() => {
     const el = document.getElementById('b-fantasy');
     if (!el) return { there: false };
+    /* WHERE IT SITS, not just that it exists. Appended to the group it landed UNDER the
+       "Unlock everything" card, because that card is inserted into the same container by a
+       builder that runs afterwards, so the offer ended up in the middle of the list of
+       modes with one door stranded below it. Compared by document position rather than by
+       index, because the group's contents depend on who is looking. */
+    const card = document.getElementById('b-premium');
+    const after = card
+      ? !!(el.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING) : null;
     return { there: true, tag: el.tagName, href: el.getAttribute('href'),
       shown: !!(el.offsetWidth || el.offsetHeight),
+      aboveStore: after,
       underlined: getComputedStyle(el).textDecorationLine };
   });
   ok(label, got.there === want, JSON.stringify(got));
@@ -437,6 +446,11 @@ for (const [label, who, want] of [
     ok('  it is a link and it points at the mode', got.tag === 'A' && got.href === '/football/fantasy/',
       got.tag + ' ' + got.href);
     ok('  it is visible', got.shown);
+    /* null means this reader is not shown the store at all, which is a fine answer and not
+       a pass by default: the claim is only about a page that has both. */
+    ok('  and it is with the other mode doors, above the store card',
+      got.aboveStore !== false, 'store card ' + (got.aboveStore === null ? 'not drawn'
+        : (got.aboveStore ? 'below it' : 'ABOVE it')));
     /* .btn and .hp-full were both written for <button>, so neither turns the browser's own
        underline off, and the underline is the only thing that gives an anchor away here. */
     ok('  and it does not wear the browser\'s underline', got.underlined === 'none',

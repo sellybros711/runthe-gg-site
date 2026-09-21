@@ -11453,8 +11453,13 @@ function ensureFantasyButton(){
       '<span class="hp-full-name">Fantasy Challenge</span>'+
       '<span class="hp-full-sub">One lineup &middot; one week</span>';
   }
-  /* LAST IN THE GROUP, under the two launched modes. */
-  if(box.lastChild!==el) box.appendChild(el);
+  /* LAST OF THE MODE DOORS, AND STILL ABOVE THE STORE CARD. Appending to the group alone
+     put it under "Unlock everything", because ensurePremiumCard runs after this and inserts
+     into the same container, so the offer ended up in the middle of the list of modes with
+     one door stranded below it. The doors are one group and the card is what follows them. */
+  const card=$('b-premium');
+  const before=(card&&card.parentNode===box)?card:null;
+  if(el.parentNode!==box||el.nextSibling!==before) box.insertBefore(el,before);
   el.hidden=false;
 }
 
