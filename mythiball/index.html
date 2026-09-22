@@ -6713,11 +6713,48 @@ const FIELD_W = 960, FIELD_H = 660;
    results screen's TDZ. */
 const FIELD_CAM = { scale: 4, draw: 4, sx: 0, sy: 0, sw: 320, sh: 220, w: 0, h: 0 };
 
-/* WHAT THE PLATE VIEW IS ABOUT IS NOT THE MIDDLE OF THE PICTURE. The zone
-   sits at world x 442 to 534 and the batter is drawn beside it, so a crop
-   centred on the canvas cut his bat off at the frame's edge on a phone. 596
-   is the middle of the zone and the batter together. The wide camera's focus
-   is the centre, because a picture that fits has no offset left to choose.
+/* THE CAMERA LOOKS AT THE PLATE, and for a long time it looked between the
+   plate and the batter instead.
+
+   Everything in this scene RADIATES FROM HOME: the base paths, both foul
+   lines, the batter's boxes. So where the plate sits across the frame is
+   what decides whether the picture reads square or oblique, and it sat at
+   21% of the way across on a phone. Reported as the whole view looking
+   angled, and it was: one foul line swept across the entire frame and the
+   other was off it, with the origin they both point at jammed against the
+   left edge.
+
+   596 was the midpoint of the zone and the batter TOGETHER, chosen to keep
+   all of him in frame. The focus is the zone itself now (488 is `zx`), so
+   the plate lands at 48% and the two foul lines are symmetric about it.
+
+   WHAT IT COSTS IS THE BATTER, and this is a pick rather than a tuning
+   value, because the two cannot both be had. Measured on a 390 phone:
+
+     focus   plate at   zone spans   least visible batter
+      596      21%        10-36%           94.9%
+      545      32%        21-47%           83.2%
+      505      43%        32-58%           64.5%
+      488      48%        37-63%           55.9%
+
+   The arithmetic under that: a portrait phone shows 117 of the world's 320
+   blocks, the batter's sprite is 78 of them, and he has to stand clear of a
+   zone that is 31 blocks wide. Holding the plate axis AND all of him needs
+   183 blocks. There is no framing that does both, so somebody has to choose,
+   and the playtester chose square.
+
+   WHAT IS CROPPED IS ALWAYS HIS BACK, the edge facing away from the plate,
+   so his swing and the bat's whole arc are in frame at every setting. That
+   is the property the guard holds; the share is only a backstop.
+
+   THE REAL ANSWER IS A SMALLER BATTER and it is not taken here. At 2.5 times
+   the zone's width he is what makes this a trade at all; drawn smaller, the
+   plate could be centred with all of him beside it and nothing would have to
+   be given up. That is a scene change rather than a camera one and it wants
+   looking at before it ships.
+
+   The wide camera's focus is the centre, because a picture that fits has no
+   offset left to choose.
 
    THERE ARE TWO BATTER'S BOXES AND THIS ONLY EVER FRAMED ONE OF THEM. The
    old wording above said the batter is drawn "about 553 to 750", which is
@@ -6744,7 +6781,7 @@ const FIELD_CAM = { scale: 4, draw: 4, sx: 0, sy: 0, sw: 320, sh: 220, w: 0, h: 
    would stop holding the one thing it exists to hold. At 390 the mirrored
    focus and the keep box disagree by a single block and the keep box wins,
    which is the arrangement it was written for. */
-const FIELD_FOCUS = { wide: [480, 330], plate: [596, 452] };
+const FIELD_FOCUS = { wide: [480, 330], plate: [488, 452] };
 /* plateGeom's own cx. The scene mirrors about it, so the camera does too. */
 const PLATE_CX = 480;
 /* HOW FAR OFF THE MIDDLE A PITCH CAN LAND, in zone units, wild ones and all.

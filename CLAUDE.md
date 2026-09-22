@@ -4332,6 +4332,59 @@ make the scale larger and the crop NARROWER: at 140 blocks the phone would show 
 across, which is the width of the batter alone. The sky is what buys the
 horizontal room.
 
+##### And then the focus moved to the plate, because the whole view read as angled
+
+Reported next, from the same phone: **why is this angled.** It was.
+
+**Everything in this scene radiates from home**: the base paths, both foul lines,
+the batter's boxes. So where the plate sits across the frame is what decides
+whether the picture reads square or oblique, and it sat at **21%**. One foul line
+swept across the entire frame, the other was off it, and the origin they both
+point at was jammed against the left edge.
+
+596 was the midpoint of the zone and the batter TOGETHER, chosen to keep all of
+him in frame. The focus is the **zone itself** now (488 is `zx`), so the plate
+lands at 48% and the foul lines are symmetric about it.
+
+**IT IS A PICK AND NOT A TUNING VALUE**, because the two cannot both be had.
+Rendered at four framings and looked at:
+
+| focus | plate at | zone spans | least visible batter |
+|---|---|---|---|
+| 596 | 21% | 10-36% | 94.9% |
+| 545 | 32% | 21-47% | 83.2% |
+| 505 | 43% | 32-58% | 64.5% |
+| **488** | **48%** | **37-63%** | **55.9%** |
+
+The arithmetic underneath: a portrait phone shows 117 of the world's 320 blocks,
+the batter's sprite is 78 of them, and he has to stand clear of a 31 block zone.
+Holding the plate axis AND all of him needs **183 blocks**. No framing does both.
+**The playtester was shown all four and chose square.**
+
+**What is cropped is always his BACK**, the edge facing away from the plate, so
+his swing and the bat's whole arc are in frame at every setting and on every
+screen. That is what the guard holds. The ball's whole range and the zone stay at
+100% everywhere too.
+
+**THE GUARD'S SHARE WENT 70 TO 25, AND THAT IS NOT A BAND LOOSENED TO PASS.** The
+framing was deliberately changed underneath it, so a guard still demanding 70
+would be holding the page to a camera it no longer has. That distinction is the
+whole of why this paragraph exists: the rule against moving a band to make a run
+pass is about moving the band INSTEAD of fixing the page, and here the page moved
+first, on purpose, at the player's request.
+
+**THE BINDING SCREEN IS TALL AND LOW RATIO, NOT NARROW**, which is not the order
+anybody guesses and is the second time this file has had to say it. A 320 phone
+gets **160** of the world's blocks; a 360x950 at ratio 2 gets **90**, and that is
+where the batter bottoms out at **37.1%**. Measured across every plausible phone
+rather than assumed, and that screen is in the sweep now. Against a defect of 8.1%
+and an unmirrored focus of 0%, a floor of 25 is the middle of a real gap.
+
+**THE REAL ANSWER IS A SMALLER BATTER AND IT IS NOT TAKEN HERE.** At 2.5 times the
+zone's width he is what makes this a trade at all; drawn smaller, the plate could
+be centred with all of him beside it and nothing given up. That is a scene change
+rather than a camera one, so it wants looking at before it ships.
+
 ##### And measuring that turned up the ball leaving the frame, which was everybody's
 
 `PLATE_KEEP_X` was `[144, 181]`, a box around the zone and nothing else. A pitch
