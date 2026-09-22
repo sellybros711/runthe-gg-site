@@ -498,15 +498,46 @@ function squadRating(roster) {
 const PROJ = {
   /* Pythagorean expectation understates the spread this game's schedule
    * produces: fitted over 220 drafted rosters against the season simulator,
-   * rms 1.5 wins. Refit rather than nudged if the run model changes. */
+   * rms 1.5 wins. Refit rather than nudged if the run model changes.
+   *
+   * RE-MEASURED over 208 rosters swept across eight drafting-quality levels,
+   * from a bot holding back 94% of its budget to one spending the cap, each
+   * played for 16 seasons: actual = 1.019 * projected + 1.61, rms 1.60 wins,
+   * over a range of 50 to 107 actual wins. The projection is sound across the
+   * whole range a draft can reach, so it was left alone and only the anchors
+   * below moved. */
   SLOPE: 1.5047,
   INTERCEPT: -50.51,
-  /* The two anchors the scale hangs on, both of them things a player already
-   * knows: 88 wins is the wild card line and a coin flip for October, 116 wins
-   * ties the all-time record. A roster that cannot reach October now rates in
-   * the teens instead of the high seventies. */
-  PIVOT_WINS: 88, PIVOT_RATING: 50,
-  TOP_WINS: 116, TOP_RATING: 100,
+  /*
+   * THE SCALE IS ANCHORED ON WHAT A DRAFT CAN ACTUALLY PRODUCE, at both ends.
+   *
+   * It used to hang on 88 wins = 50 and 116 wins = 100, both of them real
+   * things (the wild card line, and the all-time record). The trouble is that
+   * a roster is not a real club: it is twelve men bought under a $170M cap,
+   * and 116 wins is not on the menu. Measured over 240 drafts, four ways:
+   *
+   *     cheapest man every time   every run rated exactly 1.0
+   *     best value per dollar     every run rated exactly 1.0
+   *     at random                 median 6.5, best 49.4
+   *     best available            median 37.5, best 71.4
+   *
+   * So the top 28 points were unreachable and the bottom was a WALL rather
+   * than a scale: `Math.max(1, ...)` crushed every careless draft onto one
+   * number, and two teams forty wins apart both read 1.0. A player reported a
+   * 73-89 season rating 17 and was right that it meant nothing.
+   *
+   * Both ends are measured now, through the real draft loop:
+   *
+   *     FLOOR  take the worst man on every board, 60 drafts: 31 projected wins
+   *     TOP    strong drafting, 250 drafts: p50 85, p95 98, best 106
+   *
+   * So 99 is the best roster this cap buys, reached about once in 250 good
+   * drafts, and 1 is a draft nobody could do worse than. Every point between
+   * is 0.77 of a win, and no part of the scale is unreachable in either
+   * direction. Re-measure both ends if the cap or the player pool moves: they
+   * are facts about the draft, not preferences. */
+  FLOOR_WINS: 31, FLOOR_RATING: 1,
+  TOP_WINS: 106, TOP_RATING: 99,
 };
 
 /* What a roster projects to win over 162, on this game's schedule. */
@@ -517,9 +548,9 @@ function projectedWins(offense, defense) {
 
 function teamRating(offense, defense) {
   const w = projectedWins(offense, defense);
-  const k = (PROJ.TOP_RATING - PROJ.PIVOT_RATING) / (PROJ.TOP_WINS - PROJ.PIVOT_WINS);
-  const r = (w - PROJ.PIVOT_WINS) * k + PROJ.PIVOT_RATING;
-  return Math.max(1, Math.min(100, Math.round(r * 10) / 10));
+  const k = (PROJ.TOP_RATING - PROJ.FLOOR_RATING) / (PROJ.TOP_WINS - PROJ.FLOOR_WINS);
+  const r = (w - PROJ.FLOOR_WINS) * k + PROJ.FLOOR_RATING;
+  return Math.max(PROJ.FLOOR_RATING, Math.min(PROJ.TOP_RATING, Math.round(r * 10) / 10));
 }
 
 /* National rank: where a finished season's rating places among all
@@ -2044,15 +2075,24 @@ function coachReport(roster, chem, structure, rating, unspentMusd) {
     strengths.push(structure.archetype.name);
 
   let verdict;
-  /* Pinned to what the rating now MEANS, measured over 260 drafts: 70+ takes the
-   * title two times in five, 50-60 makes October nine times in ten, 40-50 forty
-   * per cent of the time, and under 40 essentially never. A verdict that promises
-   * more than the band delivers is how a 79-83 season ends up under the words
-   * "all-time great". */
-  if (rating >= 70) verdict = 'All-time great';
-  else if (rating >= 55) verdict = 'World Series contender';
-  else if (rating >= 45) verdict = 'Playoff team';
-  else if (rating >= 35) verdict = 'Fringe contender';
+  /* Pinned to what the rating MEANS, re-measured over 390 drafts after the scale
+   * was re-anchored on what a draft can actually produce:
+   *
+   *     90+     104.2 mean wins, 100% Octobers, 20% titles
+   *     80-90    97.7 mean wins,  97% Octobers, 10% titles
+   *     70-80    88.7 mean wins,  52% Octobers
+   *     60-70    81.9 mean wins,  21% Octobers
+   *     under 60 72.6 and below,   2% Octobers
+   *
+   * These moved WITH the scale rather than being retuned: the old set (70 / 55 /
+   * 45 / 35) described a scale where 71 was the best anything reached, so left
+   * alone it would have called an 88-win wild card team an all-time great. A
+   * verdict that promises more than its band delivers is how a 79-83 season
+   * ended up under those words the first time. */
+  if (rating >= 90) verdict = 'All-time great';
+  else if (rating >= 80) verdict = 'World Series contender';
+  else if (rating >= 70) verdict = 'Playoff team';
+  else if (rating >= 60) verdict = 'Fringe contender';
   else verdict = 'Rebuilding';
 
   return { strengths, weaknesses, verdict, archetype: structure && structure.archetype };

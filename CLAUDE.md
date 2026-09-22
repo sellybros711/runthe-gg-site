@@ -6930,21 +6930,74 @@ nothing picks up the yardstick by accident.
 
 `teamRating()` says what it means in wins. Pythagorean expectation understates
 the spread this schedule produces, so `PROJ.SLOPE` and `PROJ.INTERCEPT` are
-**fitted** over 220 drafted rosters against the season simulator (rms 1.5 wins).
-Refit rather than nudge. The scale then hangs on two things a player already
-knows: **88 wins is the wild card line and rates 50, and the 116-win record
-rates 100**.
+**fitted** against the season simulator. Refit rather than nudge. Re-measured
+over 208 rosters swept across eight drafting-quality levels, each played for 16
+seasons: **actual = 1.019 x projected + 1.61, rms 1.60 wins**, over a range of 50
+to 107 actual wins. The projection is sound across everything a draft can reach.
 
-What the bands are worth, over 260 drafts, which is what the verdicts and the
+#### The scale is anchored on what a DRAFT can produce, at BOTH ends
+
+It used to hang on 88 wins = 50 and the 116-win record = 100. Both are real
+things and neither is on the menu: a roster is twelve men under a $170M cap, not
+a real club. Reported by a player whose 73-89 season rated **17**. Measured over
+240 drafts, four ways:
+
+| how you draft | p50 | best |
+|---|---|---|
+| cheapest man every time | **1.0** | **1.0** |
+| best value per dollar | **1.0** | **1.0** |
+| at random | 6.5 | 49.4 |
+| best available | 37.5 | 71.4 |
+
+So the top 28 points were unreachable AND the bottom was a wall rather than a
+scale: `Math.max(1, ...)` crushed every careless draft onto one number, and two
+teams forty wins apart both read 1.0. **Half the distribution was one value.**
+
+Both ends are measured now, through the real draft loop: the FLOOR takes the
+worst man on every board (60 drafts, 31 projected wins) and the TOP is strong
+drafting (250 drafts, p50 85, p95 98, best **106**). So **99 is the best roster
+this cap buys** and 1 is a draft nobody could do worse than, at 1.307 rating
+points per win. Re-measure both if the cap or the pool moves: they are facts
+about the draft, not preferences.
+
+What the bands are worth, over 390 drafts, which is what the verdicts and the
 badge thresholds are pinned to:
 
-| rating | mean wins | Octobers | titles |
-|---|---|---|---|
-| 70-80 | 99.4 | 100% | 40% |
-| 60-70 | 98.1 | 100% | 25% |
-| 50-60 | 92.7 | 90% | 3% |
-| 40-50 | 86.0 | 40% | 0% |
-| under 40 | 73.5 | 2% | 0% |
+| rating | mean wins | Octobers | titles | share of drafts |
+|---|---|---|---|---|
+| 90+ | 104.2 | 100% | 20% | 1.3% |
+| 80-90 | 97.7 | 97% | 10% | 15% |
+| 70-80 | 88.7 | 52% | 1% | 26% |
+| 60-70 | 81.9 | 21% | 0% | 19% |
+| 50-60 | 72.6 | 2% | 0% | 12% |
+| under 50 | 66.9 and down | 0% | 0% | 26% |
+
+Whole pool: p25 49, median 67, p95 87, best seen 95.3, and **6.2% on the floor
+clamp**, all of them the floor bot. The verdicts (`90 / 80 / 70 / 60`) and the
+two rating badges (**80** and **90**) sit on those boundaries.
+
+**THE BADGES MOVED BECAUSE THE SCALE DID**, not because they were mistuned.
+Against a scale whose top is now reachable, the old 55 and 70 would have been
+handed out for an ordinary draft, and a badge is DERIVED from stored rows, so
+one left too loose cannot be tightened later without stripping it off everybody
+who already earned it.
+
+**AND THAT PUT THEM OUT OF REACH IN ALL-TIME STAFF, which is a real cost rather
+than an oversight.** Both badges read `shownRating`, and staff mode answers that
+with `staffRating()`, a separate ERA-based scale this pass did not touch.
+Measured over 70 best-available staff drafts it runs p50 60.1, p95 73.8, **max
+75.6**, so neither 80 nor 90 lands there any more; on the old 55 and 70 both did.
+They are still reachable, in the team modes, so this is not the unearnable badge
+`check-badges.mjs` exists to catch. What it means is that staff mode has stopped
+being the cheap route to two badges about fielding a great TEAM, which is the
+right way round. The honest fix, if the two scales should ever be comparable, is
+to anchor `staffRating` on what a staff draft can produce the way `teamRating`
+now is, and that is its own measurement rather than a constant to nudge.
+
+**Nothing here touches the balance**, and that is the point of keeping the two
+ratings apart: `generatePlayoffs` reads `rating` (squadRating) and never
+`shownRating`. Verified rather than asserted, by running 400 identical seeds
+against the engine either side of the change and diffing the output.
 
 The draft grade is a separate scale and is **not** inflated: it is the share of
 the WAR on your own board that you walked away with, and best-available medians

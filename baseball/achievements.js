@@ -70,16 +70,22 @@ const CATALOGUE = [
     (c) => c.bestRank != null && c.bestRank <= 10),
   A('rank_one', 'Greatest ever assembled', 'Build the #1 team of all time.', 'legend', 'The all-time list',
     (c) => c.bestRank != null && c.bestRank <= 1),
-  // Thresholds follow what the rating now MEANS, measured over 260 drafts on the
-  // scale teamRating() puts a squad on: 55 is a roster that reaches October nine
-  // times in ten and turns up in 11% of drafts, 70 is one that wins the thing two
-  // times in five and turns up in 2%. They read 86 and 90 on the old scale, where
-  // the number ignored chemistry, roster shape and the closer and sat thirty
-  // points high; left alone they would both have become unreachable.
-  A('rating_loaded', 'Loaded', 'Field a team rated 55 or better.', 'silver', 'The all-time list',
-    (c) => c.best.rating >= 55),
-  A('rating_paper', 'Best on paper', 'Field a team rated 70 or better.', 'legend', 'The all-time list',
-    (c) => c.best.rating >= 70),
+  // Thresholds follow what the rating MEANS, re-measured over 390 drafts after
+  // teamRating() was re-anchored on what a draft can actually produce. 80 is a
+  // roster that reaches October 97 times in a hundred and turns up in 16% of
+  // drafts; 90 wins 104 games, always plays in October, takes the title one year
+  // in five, and turns up in 1.3%.
+  //
+  // THEY MOVED BECAUSE THE SCALE DID, not because either was mistuned. On the
+  // old anchors nothing ever exceeded 71.4, so 55 and 70 were a silver and a
+  // legend; against a scale whose top is now reachable they would have been
+  // handed out for an ordinary draft. A badge is DERIVED from the rows the board
+  // keeps, so one left too loose cannot be tightened later without stripping it
+  // off everybody who already has it.
+  A('rating_loaded', 'Loaded', 'Field a team rated 80 or better.', 'silver', 'The all-time list',
+    (c) => c.best.rating >= 80),
+  A('rating_paper', 'Best on paper', 'Field a team rated 90 or better.', 'legend', 'The all-time list',
+    (c) => c.best.rating >= 90),
 
   // ── Roster craft ──
   A('efficient', 'Sharp scout', 'Draft at 90%+ efficiency.', 'silver', 'Roster craft',
