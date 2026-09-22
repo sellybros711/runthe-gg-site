@@ -3691,6 +3691,40 @@ checker then starts demanding an ad tag on it. `hoops/check-posture.mjs` asserts
 all four rows of that column, so launching the game means editing a guard on
 purpose.
 
+### It answers at `/basketball` as well, and that is a door rather than a move
+
+The game stays at `/hoops/`. That is the canonical link, it is what the share
+card pastes into a chat, and every script beside the page loads relative to it.
+`/basketball` is a URL somebody can be handed, in the family `/baseball/`,
+`/football/` and `/soccer/` already belong to, and it is two rules in
+`_redirects`.
+
+**It is a 302 where `/grid` is a 301, which is the difference between a rename
+and an alias.** `/grid` became `/arcade` and is never coming back, so a browser
+is welcome to remember it for ever. This game is an unlaunched preview and
+where it finally lives is a decision nobody has made. A browser that cached a
+permanent redirect goes on answering `/basketball` out of its own cache, and
+nothing pushed to this site can change its mind.
+
+**It redirects rather than serving the game in place.** A 200 rewrite would
+keep `/basketball` in the address bar and would need the trailing slash right
+first: without it the page loads and every `engine.js?v=` beside it resolves
+against `/` instead, so the scripts 404 and the screen goes blank with nothing
+thrown. **A redirect that does not fire is a 404 somebody reports. A rewrite
+that half fires is a white page.**
+
+**A file beats a redirect on Cloudflare Pages**, so a `basketball/index.html`
+added later would take the path over carrying whatever robots tag it happened
+to have, which is the hole the noindex holds shut arriving by a door nobody is
+watching. `check-posture.mjs` asserts there is no such directory, that the rule
+exists, that its target is a page that is really on disk (`/hoop/` reads
+perfectly in a redirects file and lands in nothing), that it is not a 301, and
+that the alias is in no sitemap and on no page that carries navigation. All
+five were proved by reintroducing them one at a time.
+
+**`/baseball/` is a real directory holding a different game.** Nothing here may
+ever be written in a way that catches it.
+
 The regression suite, none of which needs a network:
 
 ```

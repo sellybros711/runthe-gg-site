@@ -1,2 +1,30 @@
+# Cloudflare Pages path rules. First match wins, top to bottom.
+
 /grid /arcade 301
 /grid/* /arcade/:splat 301
+
+# Run The Floor answers at /basketball too.
+#
+# The game lives at /hoops/ and stays there: that is the canonical link, it is
+# what the share card pastes into a chat, and every script beside the page
+# loads relative to it. This is a door with a name somebody can be handed,
+# beside /baseball/, /football/ and /soccer/.
+#
+# IT IS A 302 AND THE RULES ABOVE ARE 301s, WHICH IS THE WHOLE DIFFERENCE
+# BETWEEN A RENAME AND AN ALIAS. /grid became /arcade and is never coming
+# back, so a browser is welcome to remember that for ever. This game is an
+# unlaunched preview and where it finally lives is a decision nobody has made.
+# A browser that cached a permanent redirect would go on answering /basketball
+# out of its own cache, and nothing pushed to this site could change its mind.
+#
+# IT REDIRECTS RATHER THAN SERVING THE GAME IN PLACE, and that is deliberate.
+# A 200 rewrite would keep /basketball in the address bar and would need the
+# trailing slash to be right first: without it the page loads and every
+# `engine.js?v=` beside it resolves against / instead, so the scripts 404 and
+# the screen goes blank with nothing thrown. A redirect that does not fire is
+# a 404 somebody reports. A rewrite that half fires is a white page.
+#
+# /baseball/ IS A REAL DIRECTORY HOLDING A DIFFERENT GAME. Nothing here may
+# ever be written in a way that catches it.
+/basketball /hoops/ 302
+/basketball/* /hoops/:splat 302

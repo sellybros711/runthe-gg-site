@@ -115,6 +115,62 @@ if (!named.length) {
     + 'Every system the engine can put on screen needs a line the player can read.');
 }
 
+/* 9. THE /basketball DOOR IS A REDIRECT AND NOT A PAGE.
+ *
+ * The game answers at /basketball as well as /hoops/, so there is a URL worth
+ * handing somebody, beside /baseball/, /football/ and /soccer/. Every way that
+ * arrangement goes wrong is silent, so all four halves are asserted here:
+ *
+ *   the rule exists          a door nobody wrote is a 404 on a link that has
+ *                            already been sent to somebody
+ *   it lands on a real file  /hoop/ or /hoops (no slash) reads perfectly in
+ *                            this file and is a redirect into nothing
+ *   it is not a 301          a permanent redirect is cached by the browser for
+ *                            ever, and where an unlaunched game finally lives
+ *                            is a decision nobody has made. See _redirects.
+ *   no file shadows it       Cloudflare Pages serves a real file in preference
+ *                            to a redirect, so a basketball/index.html added
+ *                            later takes this path over with no robots tag on
+ *                            it, and quietly becomes an indexable page. That
+ *                            is the same hole the noindex above is holding
+ *                            shut, arriving by a door nobody is watching.
+ *
+ * And the door inherits the posture: a redirect carries no HTML, so there is
+ * nothing for a crawler to index, but the alias must stay out of the sitemap
+ * and off every page that carries navigation the same way /hoops/ does. */
+const redirects = read('_redirects');
+const door = /^\/basketball\s+(\S+)\s+(\d{3})\s*$/m.exec(redirects);
+if (!door) {
+  problems.push('_redirects has no /basketball rule. That path is a door somebody may '
+    + 'already have been handed, and without the rule it is a 404.');
+} else {
+  const target = door[1].replace(/\/$/, '') + '/index.html';
+  if (!fs.existsSync(path.join(ROOT, target))) {
+    problems.push(`/basketball redirects to ${door[1]}, and there is no page there. `
+      + 'A redirect into nothing reads exactly like a correct one in this file.');
+  }
+  if (door[2] === '301') {
+    problems.push('/basketball is a 301. A permanent redirect is cached by the browser '
+      + 'for ever, and this game is a preview whose final path nobody has settled. Use '
+      + '302 until it launches, and change this check on the day it does.');
+  }
+}
+if (fs.existsSync(path.join(ROOT, 'basketball'))) {
+  problems.push('there is a basketball/ directory. Cloudflare Pages serves a real file '
+    + 'ahead of a redirect, so whatever is in there takes /basketball over, carrying '
+    + 'whatever robots tag it happens to have. If that is intended, it needs checks 1 '
+    + 'to 3 above run against it too.');
+}
+if (read('sitemap.xml').includes('/basketball')) {
+  problems.push('sitemap.xml lists /basketball. It is an alias for a noindexed game.');
+}
+for (const nav of ['index.html', '404.html', 'about.html']) {
+  if (/href=["'][^"']*\/basketball/i.test(read(nav))) {
+    problems.push(`${nav} links to /basketball. The alias is a URL to hand somebody, not `
+      + 'a way around the rule that nothing on the site points at this game yet.');
+  }
+}
+
 if (problems.length) {
   console.error(`Run The Floor posture: ${problems.length} problem(s)\n`);
   for (const p of problems) console.error('  ' + p);
@@ -125,4 +181,5 @@ if (problems.length) {
 }
 
 console.log('Run The Floor posture: noindexed, no ad tag, not in the sitemap, linked from nowhere.');
+console.log(`  /basketball is a ${door ? door[2] : '?'} to ${door ? door[1] : '?'}, and nothing else answers there.`);
 console.log(`  ${players.length} player-seasons loaded.`);
