@@ -232,28 +232,30 @@ const ERAS = {
  * roster is the one shape a fan already has a picture of, and the bench man
  * was the only slot on the screen that had to be explained.
  *
- * YOU CAN STILL GO BIG OR SMALL, AND THE FIRST WRITE-UP OF THIS SAID YOU
- * COULD NOT. It claimed the 6TH slot was the only place a roster's shape
- * could vary and then, in its next sentence, that SLOT_ELIGIBILITY keeps the
- * shape a choice. Both halves cannot be true and it turns out neither is.
+ * YOU CAN GO BIG OR SMALL, AND FOR A WHILE THE SLOTS COULD NOT SAY SO. The
+ * first write-up of this change claimed the 6TH slot was the only place a
+ * roster's shape could vary, and then in its next sentence that
+ * SLOT_ELIGIBILITY keeps the shape a choice. Both halves cannot be true, and
+ * at the time neither was: every row the fetch produced carried a SINGLE
+ * position, so one position was legal at one slot, POSITION_MAX could never
+ * bind, and every roster the game could draft was one of each. Measured over
+ * 750 drafts with two bots deliberately stacking one end: one centre, every
+ * time, in all 750.
  *
- * SLOT_ELIGIBILITY HAS ALMOST NOTHING TO ACT ON. 16,056 of the 16,057 rows in
- * this data carry exactly ONE position out of PG, SG, SF, PF and C. There is
- * no G, no GF and no FC anywhere in the file, and one single row that is not
- * one of the five: Adam Keefe's 1998, listed F. So each position is legal at
- * exactly one slot, the overlap below is decorative, POSITION_MAX can never
- * bind, and every roster this game drafts is one of each. Measured over 750
- * drafts with two bots deliberately trying to stack one end: one centre,
- * every time.
+ * SO THE ELIGIBILITY IS DERIVED NOW, in `build-players.mjs`, off the
+ * positions the source listed the same man at in the seasons either side.
+ * 22.0% of rows play more than one. What that buys, measured over 400
+ * best-available drafts: 25 distinct roster shapes where there was exactly
+ * one, including two centres and no power forward 34 times, two small
+ * forwards 31 times and two point guards 9 times. POSITION_MAX binds rather
+ * than decorating: it refused 18 signings across 150 drafts by the bot that
+ * chases guards, and no shape in 400 drafts holds three of anything.
  *
- * WHAT DOES VARY IS THE MAN, WHICH IS WHAT GOING BIG MEANS ON A FIVE. Your
- * four and your five can be two men who own the glass, or your five can be a
- * shooter who never rebounds, and those are different teams. The engine could
- * not SAY so, because the two systems that name those shapes both tested the
- * position code: Twin Towers asked for two men eligible at centre, which went
- * from 175 of 800 drafts at six men to 0 at five, and the Death Lineup asked
- * for a roster holding no centre, which the centre slot has always made
- * impossible. Both are asked of what the five men DO now. See their entries.
+ * THE MAN MATTERS AS WELL AS THE SLOT. Your four and your five can be two men
+ * who own the glass, or your five can be a shooter who never rebounds, and
+ * those are different teams whatever the position codes say. That is why the
+ * two systems that NAME those shapes ask what the five men do rather than
+ * what they are listed as. See their entries.
  *
  * WHAT IS GENUINELY GONE is the 0.72: buying a great man at a discount and
  * playing him fewer minutes was a real play and there is no bench to do it on.
@@ -268,14 +270,13 @@ const SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
    can play the five, so the list says so rather than pretending the sport has
    five sealed boxes. What it will not do is let a center play point guard.
 
-   AND TODAY IT DECIDES NOTHING, WHICH IS A FACT ABOUT THE DATA RATHER THAN
-   ABOUT THIS TABLE. Every row in players.json carries a single position and
-   none of them is G, F, GF or FC, so each man is legal at exactly one slot.
-   The overlap is here for the day the build writes a real eligibility list,
-   which is the same day two point guards and no shooting guard becomes a
-   roster somebody can draft. Until then, read nothing into it: a comment
-   claiming the overlap keeps a roster's shape a choice was written here once
-   and was simply false. */
+   AND IT DECIDED NOTHING AT ALL FOR THE LIFE OF THIS FILE, which is a fact
+   about the data rather than about this table: every row the fetch produced
+   carried one position, so each man was legal at exactly one slot and the
+   overlap was decoration. `deriveEligibility` in build-players.mjs fills it
+   in now, off the positions the source listed the same man at in the seasons
+   either side, and 22.0% of rows play more than one. Two point guards and no
+   shooting guard is a roster somebody can draft. */
 const SLOT_ELIGIBILITY = {
   PG:  ['PG', 'G'],
   SG:  ['SG', 'G', 'GF'],
@@ -289,9 +290,10 @@ const SLOT_ELIGIBILITY = {
    listed G can take either guard spot and a man listed F either forward spot,
    so a roster really can arrive as two point guards and no shooting guard. One
    extra of any position is the limit.
-   IT CANNOT BIND ON TODAY'S DATA, for the reason the note above gives: one
-   position a man, one slot a position. It is the rule the overlap would need
-   the moment the overlap is real, and it is cheap to keep. */
+   IT BINDS. For the life of this file it could not, because every man carried
+   one position; with eligibility derived it refused 18 signings across 150
+   drafts by a bot chasing guards, and no roster in 400 best-available drafts
+   holds three of anything. */
 const POSITION_MAX = 2;
 
 function positionsOf(player) {
@@ -815,19 +817,26 @@ const SYSTEMS = [
     name: 'The Death Lineup',
     blurb: 'No true centre, five men who can switch every screen, and shooting at every position.',
     detect: (r, P) => {
-      /* NO TRUE CENTRE, AND THAT CANNOT BE ASKED OF A POSITION CODE HERE.
+      /* NO TRUE CENTRE, AND IT IS NOT ASKED OF A POSITION CODE.
          This read `r.filter(p => p.pp === 'C').length` and refused any roster
-         holding one, which is EVERY roster: there is a centre slot, every row
-         in this data carries exactly one position, and only a C or an FC may
+         holding one, which was EVERY roster: there is a centre slot, every row
+         the fetch produced carried one position, and only a C or an FC may
          fill it. So the test was false by construction and this system had
          never once been named, at five men or at six.
 
-         It is asked of what the big man DOES. The lineup this is named after
-         played Draymond Green at the five and he pulled down 9.5 a night, so
-         the bar sits above him: a roster whose best rebounder is under a real
-         centre's number is one playing a forward there, which is the whole
-         idea. The original comment argued for exactly this and then tested
-         the position anyway. */
+         DERIVED ELIGIBILITY MAKES THAT TEST SATISFIABLE AGAIN, and it is
+         still the wrong test. A power forward who is also listed at centre
+         can now hold the five, so a roster with no man whose primary is C is
+         a roster somebody can draft, and some of those men are sevenfooters
+         who happened to be listed PF the year before. A position code does
+         not say whether he plays like a five.
+
+         So it is asked of what the big man DOES. The lineup this is named
+         after played Draymond Green at the five and he pulled down 9.5 a
+         night, so the bar sits above him: a roster whose best rebounder is
+         under a real centre's number is one playing a forward there, which is
+         the whole idea. The original comment argued for exactly this and then
+         tested the position anyway. */
       /* PER 36 MINUTES, AND THAT IS THE ONE PLACE IN THIS FILE THAT IS. Every
          other reading here is per game, because the fit model's constants were
          measured that way and the totals have to agree with them. This is not
@@ -861,10 +870,17 @@ const SYSTEMS = [
       /* TWO MEN WHO REBOUND LIKE BIGS, not two men whose position says so.
          This asked for two players ELIGIBLE AT CENTRE, which was reachable
          while the sixth slot took anybody and became impossible the day the
-         roster went to a starting five: one centre slot, one centre. Measured
-         either side of that change, it fired on 175 of 800 drafts at six men
-         and 0 of 800 at five. Nothing threw, no check went red, and the only
-         symptom was that going big stopped having a name.
+         roster went to a starting five: one centre slot, one centre, because
+         every man carried a single position. Measured either side of that
+         change, it fired on 175 of 800 drafts at six men and 0 of 800 at
+         five. Nothing threw, no check went red, and the only symptom was that
+         going big stopped having a name.
+
+         DERIVED ELIGIBILITY WOULD MAKE THAT TEST WORK AGAIN and it is not
+         going back. Two men listed at centre is a claim about paperwork; two
+         men taking nine boards a night is the thing a fan means, it is true
+         of a frontcourt whose second big is listed PF, and it cannot be
+         broken again by whatever the source decides to serve next.
 
          What going big MEANS on a starting five is that the frontcourt owns
          the glass, so that is the question. Nine boards a man, twice over,

@@ -2562,7 +2562,7 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=18"></script>
+<script src="engine.js?v=19"></script>
 <script src="run.js?v=9"></script>
 <script src="badges.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
@@ -2912,7 +2912,7 @@ function renderAppBar(screen){
 
 function boot(){
   Promise.all([
-    fetch('data/players.json?v=3').then(function(r){ return r.json(); })
+    fetch('data/players.json?v=4').then(function(r){ return r.json(); })
       .then(function(v){ bootStep('Players loaded.'); return v; }),
     fetch('data/chemistry.json?v=1').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; }),

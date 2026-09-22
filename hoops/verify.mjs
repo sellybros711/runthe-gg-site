@@ -1812,22 +1812,44 @@ ok(bestWins > worstWins + 20,
  * fault verify caught once already when the animated season and the instant
  * season disagreed off one seed.
  */
+/* SIX SEASONS AND NOT ONE, BECAUSE THE OVERTIME CLAUSE IS THE INTERESTING ONE
+   AND OVERTIME IS RARE. This was a single seeded season, and whether it held
+   an overtime game at all depended on the roster that seed happened to draft:
+   it went red on a build that had not touched the box score, because a change
+   to the DATA moved the draft, moved the season, and left 82 games with no
+   overtime in them. A sample that can fail to contain the case it is written
+   for is measuring the sample, which this repo has now seen at a magic commish
+   seed, at a chase gap and at a discipline band. The seeds are fixed, so this
+   is still deterministic; there is just enough of it. */
 {
-  const run = R.createRun({ seed: 8191 });
-  let guard = 0;
-  while (run.phase === R.PHASES.DRAFT && guard++ < 40) {
-    const draw = R.spin(run, data);
-    const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
-    R.sign(run, opts.slice().sort((a, b) => b.w - a.w)[0]);
+  const bad = { sum: [], identity: [], attempts: [], minutes: [], quarters: [], level: [] };
+  let otSeen = 0, lines = 0, games = 0;
+  const season = [];
+  /* The first of the six is kept whole, because the gameDetail assertions
+     further down are about ONE run opening ONE game twice. */
+  let run = null;
+
+  for (const seed of [8191, 8192, 8193, 8194, 8195, 8196]) {
+    const r = R.createRun({ seed });
+    let guard = 0;
+    while (r.phase === R.PHASES.DRAFT && guard++ < 40) {
+      const draw = R.spin(r, data);
+      const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
+      R.sign(r, opts.slice().sort((a, b) => b.w - a.w)[0]);
+    }
+    R.playSeason(r);
+    /* One roster per season, because a box score is drawn against the men who
+       actually played it. */
+    const men = r.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[r.slotIndex[i]] }));
+    if (!run) run = r;
+    for (const gm of r.season) season.push({ gm, men });
   }
-  const tagged = run.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[run.slotIndex[i]] }));
-  R.playSeason(run);
 
   const rng = E.createSeededRNG(4242);
-  const bad = { sum: [], identity: [], attempts: [], minutes: [], quarters: [], level: [] };
-  let otSeen = 0, lines = 0;
 
-  for (const gm of run.season) {
+  for (const { gm, men } of season) {
+    games++;
+    const tagged = men;
     const ot = gm.ot || 0;
     const box = E.gameBox(tagged, gm.yourPoints, rng, ot);
 
@@ -1872,7 +1894,7 @@ ok(bestWins > worstWins + 20,
     }
   }
 
-  ok(lines > 400, `enough box score lines to be worth checking (${lines})`);
+  ok(lines > 400, `enough box score lines to be worth checking (${lines} over ${games} games)`);
   is(bad.sum.slice(0, 2), [], 'the points column is the scoreline');
   is(bad.identity.slice(0, 2), [], "a man's shooting line produces his points");
   is(bad.attempts.slice(0, 2), [], 'nobody makes more than he takes');

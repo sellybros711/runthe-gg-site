@@ -251,6 +251,16 @@ It runs in CI on any push or pull request touching an `.html` or `.js` file
 (`.github/workflows/cachebust-check.yml`), and it covers every page on the site that
 versions a script beside it, found rather than listed.
 
+**A DATA FILE IS NOT A SCRIPT AND CACHES EXACTLY LIKE ONE.** Six games fetch a pool
+with a hand-written version on it (`fetch('data/players.json?v=3')`), fourteen of
+them in all, and this checker saw none of them for as long as it has existed. Found
+when hoops derived multi-position eligibility onto all 16,057 rows: a returning
+visitor on the cached `v=3` would have gone on drafting the old pool, and **the only
+symptom is somebody insisting a feature is not there.** No crash, no wrong screen,
+and quieter than a stale script because the game still works. A version built from a
+variable (`'...?v=' + DATA_VERSION`) is skipped rather than mangled, since that is
+the problem already solved.
+
 ### The OTHER pair of hand-written numbers, and it is the silent one
 
 A `?v=` is not the only number a page keeps about a sibling script. Several also pin the API
@@ -6712,29 +6722,94 @@ words: you can still go big or small based on your starting 5.
 **They are right, and neither half was.** See the next section for what was
 actually stopping the game from saying so.
 
-#### Every man in this data has ONE position, so the eligibility table decides nothing
+#### Every man in this data had ONE position, so the eligibility table decided nothing
+
+```
+node hoops/build/build-players.mjs --eligibility
+node hoops/build/check-fetch.mjs                 the derivation's own claims
+```
 
 `SLOT_ELIGIBILITY` overlaps on purpose (a G at either guard spot, an FC at the
-three, the four or the five) and **almost none of it can ever fire**: 16,056 of
-the 16,057 rows in `players.json` carry a single position out of PG, SG, SF, PF
-and C. There is no G, no GF and no FC anywhere in the file, and exactly **one**
-row that is not one of the five: Adam Keefe's 1998, listed F, who is therefore
-the only man in the game legal at two slots. One position a man, one slot a
-position, 16,056 times out of 16,057. So every roster this game drafts is one
-of each, `POSITION_MAX` can never bind, and `slotForPlayer`'s walk down the
-open slots has one answer by construction. Measured over 750 drafts with two
-bots deliberately stacking one end: **one centre-eligible man, every time, in
-all 750**.
+three, the four or the five) and **none of it could ever fire**: 16,056 of the
+16,057 rows the fetch produced carried a single position out of PG, SG, SF, PF
+and C. No G, no GF, no FC anywhere, and one row that was not one of the five,
+Adam Keefe's 1998, listed F. One position a man, one slot a position. So every
+roster the game could draft was one of each, `POSITION_MAX` could never bind,
+and `slotForPlayer`'s walk down the open slots had one answer by construction.
+Measured over 750 drafts with two bots deliberately stacking one end: **one
+centre-eligible man, every time, in all 750**.
 
-The table stays. It is the rule the day the build writes a real eligibility
-list, which is the same day two point guards and no shooting guard becomes a
-roster somebody can draft. What may not stay is a comment reading anything into
-it, which is what was there.
+**IT IS NOT A SCRAPE BUG.** `positions()` in `fetch-nba.mjs` splits a
+hyphenated position and `check-fetch.mjs` proves it on `PF-SF`. Today
+Basketball-Reference states one position per season row, so that is what
+arrived, and re-running the fetch would not change it.
 
-**WHAT VARIES IS THE MAN, WHICH IS WHAT GOING BIG MEANS ON A FIVE.** Your four
-and your five can be two men who own the glass, or your five can be a shooter
-who never rebounds. Those are different teams and the draft reaches both. The
-engine had simply stopped being able to SAY so.
+**WHAT THE SOURCE DOES SAY, OVER MORE THAN ONE ROW**, is the same man at two
+positions in two seasons. Kevin Garnett is an SF in 1997 and a PF in 1998, and
+that is the source's own statement about Kevin Garnett. So `deriveEligibility`
+in `build-players.mjs` reads a season's eligibility off the positions this
+player was listed at in **the season before it, the season itself, and the
+season after**. **22.0% of rows** play more than one.
+
+**PLUS ONE AND MINUS ONE, AND THE WINDOW IS THE WHOLE OF THE JUDGEMENT.** It is
+the tightest claim the data supports: the source put him at both within a year.
+The three windows give 22.0%, 31.3% and 37.2%, and what the wider two buy is
+mostly a career ARC, which is a different and false claim: over five decades a
+guard becomes a forward, and a wide window lets 1974 him play where 1986 him
+played.
+
+**ADJACENT ON THE FLOOR, NEVER ACROSS THE COURT.** A point guard listed at
+centre two seasons later is an artefact rather than a swingman, and 64 rows
+carry one. A position may only pick up its neighbours.
+
+**IT READS THE ROWS THAT SHIP**, which is why it runs after the playing-time
+floor. That is deliberate rather than convenient: it is what lets the same
+function be applied to a `players.json` built before it existed and give the
+identical answer, instead of the build and the backfill quietly disagreeing
+about a season only one of them can see. It reads `pp` and never `ep`, so it is
+idempotent, which matters because the backfill writes over a file already in
+the tree.
+
+**The backfill is a MODE OF THE BUILDER and not a script of its own**, because
+Basketball-Reference is blocked from the dev sandbox (the same split the
+register build records) so the committed artefact has to be brought forward in
+place. A one-off script would be a second copy of the rule, and the way that
+fails is the next fetch quietly shipping single positions again.
+
+##### What it bought, measured
+
+**25 distinct roster shapes** over 400 best-available drafts, against exactly
+one before. Two centres and no power forward 34 times, two small forwards 31,
+two shooting guards 21, two point guards 9. A bot chasing bigs averages 2.50 of
+them and reaches 3.
+
+**`POSITION_MAX` binds rather than decorating**: it refused 18 signings across
+150 drafts by the bot chasing guards, 7 for the bot chasing bigs, and **no
+shape in 400 drafts holds three of anything**. Nothing stranded in 600 drafts.
+
+**The cost is 2.7 wins of the gap, and it is recorded rather than compensated.**
+
+| | before | after |
+|---|---|---|
+| greedy wins, median | 44.0 | **46.0** |
+| greedy playoffs | 61.3% | 66.8% |
+| ceiling wins | 60.9 | 60.2 |
+| ceiling title | 13.1% | 11.6% |
+| **the gap** | **16.9** | **14.2** |
+
+A thoughtless draft got better because the slot list used to punish it: greedy
+took the best man and stranded itself, and now it strands less. The ceiling
+barely moved, because a knapsack over the whole board already had the good men.
+All four TARGETS stay inside their bands and the gap is still more than double
+the six wins that was the alarm when price was a function of value. **Do not
+tune anything to win those 2.7 back**: the eligibility is truthful and the
+bands are what the numbers are held to.
+
+**WHAT VARIES IS ALSO THE MAN.** Your four and your five can be two men who own
+the glass, or your five can be a shooter who never rebounds, whatever the
+position codes say. That is why the two systems naming those shapes ask what
+the five men DO, and why neither went back to a position test when one became
+available again.
 
 #### Two of the fourteen systems were dead, and one of them the roster change killed
 

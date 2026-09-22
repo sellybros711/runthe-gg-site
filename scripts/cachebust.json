@@ -1899,6 +1899,14 @@
     "board.js": {
       "v": "1",
       "sha": "ca72c43361b377d7"
+    },
+    "data/players.json": {
+      "v": "2",
+      "sha": "6a2c12685d43e919"
+    },
+    "data/chemistry.json": {
+      "v": "1",
+      "sha": "73536afeab43b741"
     }
   },
   "cfb/commish/index.html": {
@@ -2013,6 +2021,22 @@
     "/assets/cloudsave.js": {
       "v": "1",
       "sha": "5f24ea88454d0669"
+    },
+    "/cfb/data/cfb_fbs.json": {
+      "v": "1",
+      "sha": "96e9ccde0941f2dc"
+    },
+    "/cfb/data/cfb_team_seasons.json": {
+      "v": "9",
+      "sha": "5a5c0f41e72d1f18"
+    },
+    "/cfb/data/cfb_places.json": {
+      "v": "1",
+      "sha": "b3b6025b5161f437"
+    },
+    "/cfb/data/us_states.json": {
+      "v": "1",
+      "sha": "80f518fa5e43a93d"
     }
   },
   "cfb/index.html": {
@@ -2051,6 +2075,10 @@
     "/cfb/commish/clock.js": {
       "v": "4",
       "sha": "d19df33aadff5118"
+    },
+    "data/cfb_rankings.json": {
+      "v": "9",
+      "sha": "a7aee657b01c3630"
     }
   },
   "football/fantasy/index.html": {
@@ -2115,12 +2143,20 @@
     "auth.js": {
       "v": "5",
       "sha": "4267faaaa07774a5"
+    },
+    "data/defender_seasons.json": {
+      "v": "1",
+      "sha": "71a1c259bf762e41"
+    },
+    "data/coach_colleges.json": {
+      "v": "1",
+      "sha": "21c57e68b8502972"
     }
   },
   "hoops/index.html": {
     "engine.js": {
-      "v": "18",
-      "sha": "dc72b635731cdd67"
+      "v": "19",
+      "sha": "6c961b5112ed3256"
     },
     "run.js": {
       "v": "9",
@@ -2137,6 +2173,18 @@
     "auth.js": {
       "v": "1",
       "sha": "f4d23b1fe32fff3a"
+    },
+    "data/players.json": {
+      "v": "4",
+      "sha": "98a0fe89d242ac52"
+    },
+    "data/chemistry.json": {
+      "v": "1",
+      "sha": "92660036068e82d5"
+    },
+    "data/teams.json": {
+      "v": "2",
+      "sha": "8c1cffe20bb50314"
     }
   },
   "ideas/index.html": {

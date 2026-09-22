@@ -204,6 +204,51 @@ section('4. .dtop changes nothing at a width that does not use it');
   }
 }
 
+// ── 5. a man who plays two spots gets two pills ─────────────────────────────
+/* `posPills` has drawn one pill per position since it was written, with a
+   comment explaining that one pill reading "PG/SG" in whichever colour the
+   data listed first was the wrong answer. It had never once drawn two,
+   because every row the fetch produced carried a single position, so the
+   branch this section exists for was unreachable for the life of the file.
+   Derived eligibility gives 22.0% of rows a second position.
+
+   IT SPINS UNTIL IT FINDS ONE rather than asserting on the first board. A
+   board is a real team-season and roughly a fifth of its men are eligible at
+   two spots, so a board with none is an ordinary board and not a defect. What
+   would be a defect is finding one and drawing it as a single pill. */
+section('5. a two-position man draws two pills, not one reading PG/SG');
+{
+  const { page, ctx, boom } = await draftPage(browser, 1512, 950);
+  let seen = 0, tiles = 0, glued = 0, spins = 0;
+  for (; spins < 12 && !seen; spins++) {
+    const read = await page.evaluate(() => {
+      const out = [];
+      for (const t of document.querySelectorAll('#opts .ptile:not(.pending)')) {
+        const pills = [...t.querySelectorAll('.poss .pos')].map((e) => e.textContent.trim());
+        out.push(pills);
+      }
+      return out;
+    });
+    tiles += read.length;
+    seen += read.filter((p) => p.length > 1).length;
+    glued += read.filter((p) => p.some((s) => /[/;]/.test(s))).length;
+    if (seen) break;
+    const spun = await page.evaluate(() => {
+      const b = document.querySelector('#b-respin');
+      if (!b || b.disabled) return false;
+      b.click(); return true;
+    });
+    if (!spun) break;
+    await page.waitForSelector('#opts .ptile:not(.pending)', { timeout: 30000 });
+    await page.waitForTimeout(300);
+  }
+  ok(tiles > 0, `the board drew tiles to read (${tiles} over ${spins + 1} boards)`);
+  ok(seen > 0, `a man eligible at two spots reached a board and drew two pills (${seen})`);
+  ok(glued === 0, `no pill carries two positions glued into one (${glued})`);
+  ok(!boom.length, `no page error while spinning for one${boom.length ? ': ' + boom[0] : ''}`);
+  await ctx.close();
+}
+
 await browser.close();
 
 console.log('');
