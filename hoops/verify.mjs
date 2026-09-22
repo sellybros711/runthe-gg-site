@@ -1101,6 +1101,64 @@ ok(bestWins > worstWins + 20,
   }
 }
 
+/* ── A STRAIGHT COLUMN OF DIGITS IS A FEATURE, NOT A TYPEFACE ───────────────
+ *
+ * This page was set in a code face. `--mono` was `ui-monospace` and 39 rules
+ * reached for it, which is more than the display face was used, and every one
+ * of the 39 was a NUMBER: a price, a record, a scoreline, a win share total,
+ * a streak. The Perfect Season, which this game is a reskin of, uses a
+ * monospace exactly zero times and sets the same figures in its own faces.
+ *
+ * What all 39 wanted was for digits to line up in a column, and
+ * `font-variant-numeric: tabular-nums` does that in ANY face. Reaching for a
+ * typewriter to get a straight line buys a whole voice nobody asked for.
+ *
+ * TWO THINGS ROT HERE AND BOTH ARE SILENT. A monospace can come back, because
+ * it is the reflex for a number and this page has thirty-odd sites where the
+ * next one lands. And a rule that asks for `--num` and forgets the feature
+ * renders a perfectly good number in a slightly wrong column, which nothing
+ * anywhere reports and no screenshot argues with.
+ *
+ * SO THE SECOND CLAIM IS ABOUT THE PAIR, never about one rule: `--num` is
+ * only there to carry the figures, so a rule that names it and no feature is
+ * a rule that has forgotten what it is for. Hero figures on the display face
+ * are checked the same way, because the display face is the other half of the
+ * split and the same reflex misses it.
+ *
+ * The page's own `--mono` is gone and `how-to-play.html`'s went with it: an
+ * unused variable is the next person's invitation.
+ */
+{
+  const pages = ['index.html', 'how-to-play.html'];
+  for (const page of pages) {
+    const raw = fs.readFileSync(path.join(HERE, page), 'utf8');
+    /* Comments out first. This very section names the thing it forbids, and
+       the last three extractors in this repo to read a comment as code each
+       reported a problem that was a paragraph. */
+    const src = raw.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/<!--[\s\S]*?-->/g, ' ');
+
+    ok(!/monospace/.test(src), `${page} reaches for no code face`);
+    ok(!/var\(--mono\)|--mono\s*:/.test(src), `${page} has no mono variable left`);
+
+    /* Every declaration block that sets one of the two number faces. The
+       body face is excluded: it is the page's default and is set on plenty
+       of things that are prose. */
+    const blocks = [...src.matchAll(/\{([^{}]*font-family\s*:\s*var\(--(?:num|display)\)[^{}]*)\}/g)];
+    if (page === 'index.html') {
+      ok(blocks.length >= 30, `${page}: the font scan found real rules (${blocks.length})`);
+    }
+    const bare = blocks
+      .filter(b => /var\(--num\)/.test(b[1]) && !/tabular-nums/.test(b[1]))
+      .map(b => b[1].trim().slice(0, 60));
+    is(bare, [], `${page}: every rule on the number face asks for tabular figures`);
+  }
+
+  /* The utility class went with the variable. `.mono` pointing at a face that
+     is not a monospace is a name that lies to whoever reads the markup. */
+  const idx = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  ok(!/class="[^"]*\bmono\b/.test(idx), 'and nothing in the markup is still called mono');
+}
+
 /* ── A SHARED RESULT HAS TO SAY WHICH GAME IT WAS, AND THE DAY HAS TO COUNT ─
  *
  * Four things live in this section and every one of them fails in silence.

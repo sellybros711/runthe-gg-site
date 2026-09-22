@@ -5915,6 +5915,7 @@ node hoops/check-board.mjs        the leaderboard, in a browser, in every state
 node hoops/check-live.mjs         the game you play yourself, and its fit
 node hoops/check-bracket.mjs      the playoff bracket, and the field it draws
 node hoops/check-draft.mjs        the draft screen's shape, desktop and phone
+node hoops/check-home.mjs         how far the front page scrolls, and the fold
 ```
 
 `check-badges.mjs` takes about two minutes, because proving a badge is reachable
@@ -6749,6 +6750,93 @@ disappeared into it, which is the flat court arriving by a different door. At
 .42 it is a floor lit in the club's colours. **The layer count and the layer
 types are identical in both states**, so the .35s fade between clubs still
 interpolates.
+
+### A straight column of digits is a FEATURE, not a typeface
+
+This game was set in a code face. `--mono` was `ui-monospace` and **39 rules
+reached for it, which is more than the display face was used**, and every one of
+the 39 was a NUMBER: a price, a record, a scoreline, a win share total, a
+streak. The Perfect Season, which this game is a reskin of, uses a monospace
+exactly ZERO times and sets the same figures in its own faces. Reported by a
+player asking for a more appealing font, and the monospace is what they were
+looking at.
+
+**What all 39 actually wanted is `font-variant-numeric: tabular-nums`, which
+lines digits up in ANY face.** Reaching for a typewriter to get a straight line
+buys a whole voice nobody asked for: a scoreboard set in a code face reads as a
+terminal, and this is a game about basketball.
+
+**Two number faces, and the split is SIZE rather than meaning.** The hero
+figures (the money left, a record, a scoreline, the streak) take `--display`,
+which is what football's own `.num` does. Everything inline stays on the body
+face, because the display face is a single heavy weight and at the 9.5px a badge
+count is set in it is a smudge.
+
+**`--num` POINTS AT `--body` rather than repeating its stack**, because the two
+are one answer and a copy of a font stack is what drifts the day somebody
+changes the body face and cannot work out why half the numbers did not follow.
+What the name carries is the ROLE.
+
+**The guard is a pair and not one rule.** `--num` exists only to carry figures,
+so a rule that names it and no `tabular-nums` has forgotten what it is for, and
+that renders a perfectly good number in a slightly wrong column with nothing
+anywhere reporting it. `verify.mjs` asserts both halves plus the absence of any
+code face, over `index.html` and `how-to-play.html`, whose own unused `--mono`
+went in the same commit: an unused variable is the next person's invitation.
+The `.mono` utility class is `.num` now, because a name pointing at a face that
+is not a monospace lies to whoever reads the markup. Three of the four defects
+were proved by reintroducing them one at a time.
+
+**Tabular on `.tab .n` is not about a column.** The position tab's count falls
+as you sign, so a 9 narrower than a 2 moves every tab to the right of it.
+
+**WHAT CANNOT BE JUDGED HERE IS THE WEBFONT.** Google Fonts does not resolve in
+the dev sandbox, so every screenshot in this repo shows the FALLBACK face and
+Anton and Archivo are invisible to it. That is written up at length under the
+football premium check. The monospace finding is the half that renders the same
+either way, because `ui-monospace` is a system face.
+
+### How to play is one folded card, and it was half the front page
+
+"How a run goes" and "Why six stars lose" were two open cards at the bottom of
+the home screen. Measured: **1,682px of a 3,082px page at 390 and 1,846 of 3,236
+at 360**, which is more than half the front page, on every visit, for as long as
+somebody keeps playing. Reported by a player as too much to scroll.
+
+| | before | after |
+|---|---|---|
+| 390x844 | 3.65 screens | **1.72** |
+| 360x740 | 4.37 screens | **1.94** |
+| 1512x950 | 2.62 screens | 1.56 |
+
+They are one subject and they are reference, so they are one `<details>` headed
+How to play, shut, with the second half under its own turn.
+
+**FOLDED IS NOT HIDDEN, which is the arcade's own note and is why the comment
+over the second card still holds.** That comment argues a game page whose every
+word arrives after a click reads as empty to a crawler and to a reviewer, and
+that survives a details element: the prose ships in the HTML either way. It
+would NOT survive the obvious alternative, which is moving the text to the rules
+page and linking it. So `check-home.mjs` counts the words in the DOM **while the
+card is shut**, which is the property that alternative breaks.
+
+**The summary holds the other cards' own `h2`.** This is one more card on a page
+of cards and the only thing different about it is that it opens, so the heading
+has to be the same element or it is a second copy of that rule waiting to drift.
+What it costs is one line: an `h2` is `display:flex` and a block, and a summary
+lays its marker out beside its content, so the heading has to be told to share
+the row or it sits across the marker and eats the press. The guard clicks the
+heading rather than setting `open`, for exactly that reason.
+
+**The card's bottom padding is on `[open]` alone.** Shut, the card IS the
+summary, so its own padding is a strip of empty card under the heading.
+
+**`check-home.mjs` measures in SCREENS of the viewport, not pixels**, because
+1.7 screens is the complaint answered and 1,450px is a number. 360 is the worst
+case rather than 320: what costs screens here is prose reflowing into more lines
+against a viewport with fewer pixels to spend on them. Shipping the card `open`
+reproduces the reported defect exactly (3.63, 4.31 and 2.63 screens) and breaks
+seven assertions.
 
 ### A game seven is not a scoreline
 

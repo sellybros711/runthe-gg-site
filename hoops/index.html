@@ -44,7 +44,32 @@
     --green:#22c55e; --red:#ef4444; --line:rgba(255,255,255,.09);
     --display:'Anton',Impact,'Arial Narrow',sans-serif;
     --body:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    /* ── ALIGNED DIGITS ARE A FONT FEATURE, NOT A TYPEFACE ──────────────────
+     *
+     * This game was set in a code face. `--mono` was `ui-monospace` and it was
+     * reached for 39 times, which is MORE than the display face was used, and
+     * every single one of those was a NUMBER: a price, a record, a scoreline,
+     * a win share total, a streak. The Perfect Season, which this game is a
+     * reskin of, uses a monospace exactly ZERO times and sets the same figures
+     * in its own display and body faces.
+     *
+     * What every one of those rules actually wanted is for digits to line up
+     * in a column, and `font-variant-numeric: tabular-nums` does that in ANY
+     * face. Reaching for a typewriter to get a straight line buys a whole
+     * voice nobody asked for: a scoreboard set in a code face reads as a
+     * terminal, and this is a game about basketball.
+     *
+     * So there are two number faces and the split is SIZE, not meaning. The
+     * hero figures (the money, a record, a scoreline) take the display face,
+     * which is what football's `.num` does. Everything inline stays on the
+     * body face, because the display face is a single heavy weight and at the
+     * 9.5px a badge count is set in it is a smudge.
+     *
+     * It points AT `--body` rather than repeating its stack, because the two
+     * are one answer and a copy of a font stack is the thing that drifts the
+     * day somebody changes the body face and cannot work out why half the
+     * numbers on the page did not follow. What `--num` carries is the ROLE. */
+    --num:var(--body);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html{background:var(--bg);-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -62,7 +87,7 @@
      chrome, so it sits flush against the top of the window rather than floating
      20px down it and then jumping up the moment you scroll. */
   .wrap{max-width:660px;margin:0 auto;padding:0 16px 64px;}
-  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+  .num{font-family:var(--num);font-variant-numeric:tabular-nums;}
   .dim{color:var(--mut);}
 
 
@@ -82,6 +107,44 @@
   h2 .sub{font-family:var(--body);font-size:12px;letter-spacing:0;text-transform:none;
     color:var(--dim);font-weight:600;}
   h3{font-size:14px;margin:16px 0 4px;color:var(--ink);font-weight:800;}
+
+  /* ── THE FOLDED CARD ───────────────────────────────────────────────────
+   *
+   * A details wearing .card, so the front page reads as four cards of which
+   * one opens rather than as a card and a widget.
+   *
+   * THE SUMMARY HOLDS AN h2 AND THAT IS DELIBERATE. The heading is the same
+   * heading the other three cards carry, so it has to be the same element or
+   * it is a second copy of that rule waiting to drift. What it costs is one
+   * line: an h2 is display:flex and a block, and a summary lays its marker
+   * out beside its content, so the h2 has to be told to share the row.
+   *
+   * `list-style:none` AND the webkit marker rule, because Safari draws the
+   * triangle through the first and not the second.
+   *
+   * Shut, the card is the summary and nothing else, so its own bottom
+   * padding would be a strip of empty card under the heading. It comes back
+   * when the card opens. */
+  details.howto{padding:16px 16px 0;}
+  details.howto[open]{padding-bottom:16px;}
+  .howto>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;
+    gap:10px;padding:0 0 16px;-webkit-tap-highlight-color:transparent;}
+  .howto[open]>summary{padding-bottom:0;}
+  .howto>summary::-webkit-details-marker{display:none;}
+  .howto>summary h2{margin:0;flex:1 1 auto;}
+  .howto .ht-chev{flex:0 0 auto;width:8px;height:8px;align-self:center;
+    border-right:2px solid var(--mut);border-bottom:2px solid var(--mut);
+    transform:rotate(45deg) translate(-2px,-2px);transition:transform .2s ease;}
+  .howto[open] .ht-chev{transform:rotate(-135deg);}
+  /* The first heading inside sits straight under the summary, so it does not
+     want the 16px an h3 uses to separate itself from the paragraph above it. */
+  .howto>h3:first-of-type{margin-top:12px;}
+  /* The second half was its own card with its own h2. Folded together it is a
+     turn in one document, so it gets a rule across the card rather than a
+     heading that looks like the six under it. */
+  .howto .ht-turn{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);
+    font-family:var(--display);font-weight:400;text-transform:uppercase;
+    letter-spacing:.02em;font-size:17px;}
   .card p.dim{font-size:14.5px;line-height:1.6;margin:0 0 4px;}
   .card p.dim b{color:var(--ink);}
   .card p.dim a{color:#5eead4;font-weight:700;text-decoration:none;}
@@ -109,7 +172,7 @@
     border:1px solid var(--line);border-radius:9px;padding:8px 10px;}
   .hud .label{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
     color:var(--dim);font-weight:800;}
-  .hud .value{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;}
+  .hud .value{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:17px;font-weight:700;margin-top:1px;}
   .hud .value.warn{color:var(--gold);} .hud .value.bad{color:var(--red);}
 
   /* the roster */
@@ -121,7 +184,7 @@
   .slot .pos{font-family:var(--display);font-size:15px;color:var(--orange);letter-spacing:.04em;}
   .slot .who{font-weight:700;font-size:14px;line-height:1.25;}
   .slot .who small{display:block;font-weight:600;color:var(--dim);font-size:11.5px;}
-  .slot .cost{font-family:var(--mono);font-size:13px;color:var(--mut);}
+  .slot .cost{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;color:var(--mut);}
 
   /* the board */
   .board{display:grid;gap:6px;margin:10px 0 0;}
@@ -131,7 +194,7 @@
   .pick:hover:not(:disabled){background:rgba(240,120,45,.13);border-color:var(--orange);}
   .pick small{display:block;font-weight:600;color:var(--dim);font-size:11.5px;
     margin-top:1px;letter-spacing:.01em;}
-  .pick .price{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--gold);white-space:nowrap;}
+  .pick .price{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:14px;font-weight:800;color:var(--gold);white-space:nowrap;}
   .pick:disabled{opacity:.4;}
   .pick:disabled .price{color:var(--red);}
 
@@ -140,7 +203,7 @@
     background:linear-gradient(90deg,rgba(240,120,45,.20),rgba(240,120,45,.04));
     border:1px solid rgba(240,120,45,.35);}
   .drawhead .club{font-family:var(--display);font-size:21px;letter-spacing:.02em;text-transform:uppercase;}
-  .drawhead .rec{font-family:var(--mono);font-size:12px;color:var(--mut);}
+  .drawhead .rec{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12px;color:var(--mut);}
   /* Real franchise history under the club the wheel landed on: when they
      started, what they had won BY THAT SEASON, and who they later became. */
   .clubnote{margin:6px 2px 0;font-size:12px;color:var(--dim);}
@@ -176,7 +239,7 @@
   .fitrow{display:grid;grid-template-columns:76px 1fr 62px;gap:9px;align-items:center;
     margin-bottom:6px;font-size:12px;}
   .fitrow .nm{color:var(--mut);font-weight:700;}
-  .fitrow .val{font-family:var(--mono);text-align:right;font-size:11.5px;color:var(--dim);}
+  .fitrow .val{font-family:var(--num);font-variant-numeric:tabular-nums;text-align:right;font-size:11.5px;color:var(--dim);}
   .meter{height:7px;border-radius:4px;background:rgba(255,255,255,.07);position:relative;
     overflow:hidden;}
   .meter i{position:absolute;top:0;bottom:0;left:0;border-radius:4px;display:block;
@@ -200,13 +263,13 @@
   table.season td{padding:4px 6px;border-bottom:1px solid var(--line);}
   table.season td.w{color:var(--green);font-weight:800;}
   table.season td.l{color:var(--red);font-weight:800;}
-  table.season td.sc{font-family:var(--mono);text-align:right;white-space:nowrap;}
+  table.season td.sc{font-family:var(--num);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
   .scroll{max-height:280px;overflow-y:auto;overflow-x:auto;}
 
   .verdict{font-family:var(--display);font-size:clamp(24px,6.5vw,34px);text-transform:uppercase;
     letter-spacing:.02em;margin:0 0 4px;}
   .verdict.good{color:var(--gold);} .verdict.bad{color:var(--mut);}
-  .record{font-family:var(--mono);font-size:30px;font-weight:700;margin:0 0 10px;}
+  .record{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:30px;font-weight:700;margin:0 0 10px;}
 
   .tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;}
   .tag{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;
@@ -244,11 +307,11 @@
   .cap-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
   .cap-budget .lbl,.mstat .lbl{display:block;font-size:9.5px;letter-spacing:.14em;
     text-transform:uppercase;color:var(--dim);font-weight:800;}
-  .capamt{font-family:var(--mono);font-size:27px;font-weight:700;line-height:1.05;
+  .capamt{font-family:var(--display);font-size:27px;font-weight:700;line-height:1.05;
     font-variant-numeric:tabular-nums;display:block;transition:color .2s ease;}
   .capamt.warn{color:var(--gold);} .capamt.bad{color:var(--red);}
   .cap-meta{display:flex;gap:14px;text-align:right;}
-  .mstat b{font-family:var(--mono);font-size:15px;font-weight:700;display:block;}
+  .mstat b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:15px;font-weight:700;display:block;}
   .chemval.zero{color:var(--dim);} .chemval.up{color:var(--green);}
   .capbar{height:6px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;
     margin:9px 0 6px;}
@@ -404,7 +467,7 @@
   .reel-strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform;}
   .reel-i{height:34px;display:flex;align-items:center;justify-content:center;
     color:var(--ink);opacity:.5;padding:0 6px;text-align:center;}
-  .reelbox.season .reel-i{font-family:var(--mono);font-size:20px;font-weight:700;}
+  .reelbox.season .reel-i{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:20px;font-weight:700;}
   .reelbox.club .reel-i{font-size:13.5px;font-weight:800;line-height:1.1;}
   .reel-i span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .reel-win{position:absolute;left:5px;right:5px;top:50%;height:34px;margin-top:-17px;z-index:3;
@@ -426,7 +489,7 @@
   .ptab{flex:1;background:transparent;border:1px solid var(--cardb);color:var(--mut);
     font-size:12.5px;font-weight:800;padding:0 10px;height:36px;min-height:36px;border-radius:9px;}
   .ptab.on{background:var(--card);color:var(--ink);border-color:var(--line);}
-  .ptab span{font-family:var(--mono);font-weight:700;opacity:.75;}
+  .ptab span{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:700;opacity:.75;}
   .badgegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;
     max-height:44vh;overflow-y:auto;padding-right:2px;}
   .bdg{border:1px solid var(--cardb);border-radius:10px;padding:9px 9px 8px;background:#10151f;
@@ -440,7 +503,7 @@
   .bdg .bp{display:block;margin-top:6px;height:4px;border-radius:99px;
     background:rgba(255,255,255,.08);overflow:hidden;}
   .bdg .bp i{display:block;height:100%;border-radius:99px;background:var(--mut);}
-  .bdg .bnum{display:block;font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:4px;}
+  .bdg .bnum{display:block;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:9.5px;color:var(--dim);margin-top:4px;}
   /* Four metals, so a cabinet reads at a glance as mostly-bronze or
      mostly-gold rather than as a wall of identical squares. */
   .bdg.on.bronze{border-color:#a1662f;background:linear-gradient(180deg,rgba(161,102,47,.2),#10151f);}
@@ -460,7 +523,7 @@
     border-radius:10px;padding:9px 11px;background:#10151f;min-width:0;}
   .ern .em{flex:0 0 auto;width:26px;height:26px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    font-family:var(--mono);font-size:12px;font-weight:700;color:#0d1117;}
+    font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:#0d1117;}
   .ern .et{min-width:0;}
   .ern .et b{display:block;font-size:13.5px;font-weight:800;line-height:1.3;color:var(--ink);}
   .ern .et span{display:block;font-size:11.5px;line-height:1.35;color:var(--dim);margin-top:2px;}
@@ -507,14 +570,14 @@
   .lbrow{display:flex;align-items:center;gap:10px;padding:9px 2px;
     border-bottom:1px solid var(--cardb);min-width:0;}
   .lbrow:last-child{border-bottom:0;}
-  .lbrow .pl{flex:0 0 30px;font-family:var(--mono);font-size:13px;color:var(--dim);
+  .lbrow .pl{flex:0 0 30px;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;color:var(--dim);
     text-align:right;}
   .lbrow .who{flex:1;min-width:0;}
   .lbrow .who b{display:block;font-size:13.5px;font-weight:800;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .lbrow .who span{display:block;font-size:11px;color:var(--dim);margin-top:2px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .lbrow .val{flex:0 0 auto;font-family:var(--mono);font-size:15px;font-weight:700;
+  .lbrow .val{flex:0 0 auto;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:15px;font-weight:700;
     text-align:right;}
   .lbrow .val em{display:block;font-family:var(--body);font-style:normal;
     font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);
@@ -534,7 +597,7 @@
     padding:11px 13px;transition:background .12s ease;}
   .lbstand[hidden]{display:none;}
   .lbstand:hover{background:#1a2333;}
-  .lbstand .lp{flex:0 0 auto;font-family:var(--mono);font-size:20px;font-weight:700;
+  .lbstand .lp{flex:0 0 auto;font-family:var(--display);font-variant-numeric:tabular-nums;font-size:20px;font-weight:700;
     color:var(--gold);}
   .lbstand .lt{flex:1;min-width:0;}
   .lbstand .lt b{display:block;font-size:12.5px;font-weight:800;}
@@ -813,7 +876,9 @@
   .tab{flex:0 0 auto;padding:9px 13px;border-radius:9px;border:1.5px solid var(--line);
     background:rgba(255,255,255,.03);font-family:var(--body);font-size:13px;font-weight:700;
     color:var(--mut);cursor:pointer;white-space:nowrap;transition:all .12s ease;min-height:38px;}
-  .tab .n{font-size:10.5px;opacity:.7;margin-left:4px;}
+  /* Tabular here is not about a column. The count falls as you sign, so a 9
+     narrower than a 2 moves every tab to the right of it. */
+  .tab .n{font-size:10.5px;opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums;}
   .tab.on{color:#fff;border-color:transparent;background:linear-gradient(135deg,#3f4c60,rgba(0,0,0,.5));}
   .tab:active{transform:scale(.97);}
   .tab.full{color:var(--dim);border-style:dashed;}
@@ -827,7 +892,7 @@
      skipped at any point without changing a single scoreline. */
   .scoreboard{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
     margin:0 0 10px;}
-  .scoreboard .rec{font-family:var(--mono);font-size:34px;font-weight:700;line-height:1;
+  .scoreboard .rec{font-family:var(--display);font-size:34px;font-weight:700;line-height:1;
     font-variant-numeric:tabular-nums;}
   .scoreboard .streak{font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);}
   .scoreboard .streak.hot{color:var(--green);} .scoreboard .streak.cold{color:var(--red);}
@@ -850,7 +915,7 @@
     padding:8px 10px;}
   .simbar .lbl{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);
     font-weight:800;display:block;}
-  .simbar b{font-family:var(--mono);font-size:16px;font-weight:700;}
+  .simbar b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:16px;font-weight:700;}
 
   /* The bracket, one row a round, each revealed as it is played. */
   .bracket{display:grid;gap:6px;margin:4px 0 0;}
@@ -865,7 +930,7 @@
   .brow .res{font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 8px;border-radius:5px;}
   .brow .res.w{color:var(--green);background:rgba(34,197,94,.12);}
   .brow .res.l{color:var(--red);background:rgba(239,68,68,.12);}
-  .brow .sc{font-family:var(--mono);font-size:13px;font-weight:700;}
+  .brow .sc{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;}
   .brow.title{border-color:var(--gold);background:rgba(242,193,78,.08);}
 
   /* ══ THE PLAYOFF BRACKET ═══════════════════════════════════════════════
@@ -914,7 +979,7 @@
   .brk-t .sd{flex:0 0 14px;text-align:center;font-size:9.5px;font-weight:800;color:var(--dim);}
   .brk-t .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     font-variant-numeric:tabular-nums;}
-  .brk-t .sc{flex:0 0 auto;font-family:var(--mono);font-size:11px;font-weight:700;
+  .brk-t .sc{flex:0 0 auto;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:11px;font-weight:700;
     color:var(--dim);}
   .brk-t.me .nm{color:var(--gold);font-weight:800;}
   .brk-t.won{color:var(--ink);background:rgba(34,197,94,.07);}
@@ -1040,11 +1105,11 @@
   .lvlog{display:grid;gap:4px;max-height:40vh;overflow:auto;}
   .lvrow{display:grid;grid-template-columns:54px 1fr auto;gap:8px;align-items:baseline;
     padding:5px 7px;border-radius:6px;font-size:12px;background:rgba(255,255,255,.02);}
-  .lvrow .lvt{font-family:var(--mono);font-size:10px;color:var(--dim);}
+  .lvrow .lvt{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:10px;color:var(--dim);}
   .lvrow .lvw{color:var(--mut);min-width:0;overflow:hidden;text-overflow:ellipsis;
     white-space:nowrap;}
   .lvrow .lvw b{color:var(--ink);font-weight:700;}
-  .lvrow .lvs{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--dim);}
+  .lvrow .lvs{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:11px;font-weight:700;color:var(--dim);}
   .lvrow.mine{background:rgba(242,193,78,.07);}
   .lvrow.call{background:rgba(240,120,45,.12);}
   .lvrow.call .lvw b{color:var(--orange);}
@@ -1122,7 +1187,7 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:1px;background:#141a26;pointer-events:none;}
   .modedoor .md-streak[hidden]{display:none;}
-  .modedoor .md-streak b{font-family:var(--mono);font-size:19px;color:#f2c14e;
+  .modedoor .md-streak b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:19px;color:#f2c14e;
     line-height:1;}
   .modedoor .md-streak span{font-size:9px;letter-spacing:.09em;text-transform:uppercase;
     color:var(--dim);}
@@ -1149,15 +1214,15 @@
   .clubchip .cc-city{display:block;font-size:10.5px;color:var(--dim);margin-top:2px;
     padding-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .clubchip .cc-meta{display:block;font-size:10px;color:var(--mut);margin-top:5px;
-    padding-left:6px;font-family:var(--mono);}
+    padding-left:6px;font-family:var(--num);font-variant-numeric:tabular-nums;}
   .clubchip .cc-rings{color:var(--gold);}
   .clubchip:hover{border-color:var(--cc-accent,#3d4a60);}
 
   /* ══ ONE GAME ══════════════════════════════════════════════════════════
-     A box score is a TABLE and wants to read as one: figures in a mono face,
-     right aligned, on a tight rhythm, with the name the only thing in the
-     body face. Anything prettier stops being scannable, which is the whole
-     job of a box score. */
+     A box score is a TABLE and wants to read as one: tabular figures, right
+     aligned, on a tight rhythm, with the name the only thing set normally.
+     Anything prettier stops being scannable, which is the whole job of a box
+     score. */
   .gs-head{margin:0 0 12px;}
   .gs-eyebrow{font-size:10px;letter-spacing:.15em;text-transform:uppercase;
     color:var(--dim);font-weight:800;margin-bottom:4px;}
@@ -1165,12 +1230,12 @@
   .gs-res{font-family:var(--display);font-size:15px;letter-spacing:.06em;
     text-transform:uppercase;}
   .gs-res.w{color:var(--green);} .gs-res.l{color:var(--red);}
-  .gs-score{font-family:var(--mono);font-size:27px;font-weight:700;
+  .gs-score{font-family:var(--display);font-size:27px;font-weight:700;
     font-variant-numeric:tabular-nums;color:var(--ink);}
   .gs-opp{font-size:12.5px;color:var(--mut);margin:5px 0 0;}
 
   .qtr{width:100%;border-collapse:collapse;margin:0 0 14px;
-    font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;}
+    font-family:var(--num);font-size:12.5px;font-variant-numeric:tabular-nums;}
   .qtr th{font-family:var(--body);font-size:9.5px;letter-spacing:.1em;
     text-transform:uppercase;color:var(--dim);font-weight:800;text-align:right;
     padding:0 0 5px;}
@@ -1181,7 +1246,7 @@
   .qtr td.tot{color:var(--ink);font-weight:700;}
   .qtr tr.you td{color:var(--ink);}
 
-  .boxs{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;
+  .boxs{width:100%;border-collapse:collapse;font-family:var(--num);font-size:12px;
     font-variant-numeric:tabular-nums;}
   .boxs th{font-family:var(--body);font-size:9px;letter-spacing:.08em;
     text-transform:uppercase;color:var(--dim);font-weight:800;text-align:right;
@@ -1210,7 +1275,7 @@
     color:var(--ink);font-family:var(--body);}
   .bestnight[hidden]{display:none;}
   .bestnight:hover{border-color:rgba(240,120,45,.7);}
-  .bestnight .bn-p{font-family:var(--mono);font-size:25px;font-weight:700;
+  .bestnight .bn-p{font-family:var(--display);font-size:25px;font-weight:700;
     line-height:1;color:var(--orange);flex:0 0 auto;font-variant-numeric:tabular-nums;}
   .bestnight .bn-t{flex:1;min-width:0;}
   .bestnight .bn-w{display:block;font-size:9.5px;letter-spacing:.13em;
@@ -1242,7 +1307,7 @@
     font-weight:800;color:var(--dim);min-width:46px;}
   .pogame .pg-r{font-weight:800;min-width:14px;}
   .pogame .pg-r.w{color:var(--green);} .pogame .pg-r.l{color:var(--red);}
-  .pogame .pg-s{font-family:var(--mono);font-variant-numeric:tabular-nums;
+  .pogame .pg-s{font-family:var(--num);font-variant-numeric:tabular-nums;
     margin-left:auto;color:var(--ink);}
   .pogame .pg-s:after{content:'\203A';margin-left:7px;color:var(--dim);}
 
@@ -1313,7 +1378,7 @@
     padding:9px 10px;text-align:center;}
   .pstat .lbl{display:block;font-size:9px;letter-spacing:.11em;text-transform:uppercase;
     color:var(--dim);font-weight:800;}
-  .pstat b{font-family:var(--mono);font-size:18px;font-weight:700;}
+  .pstat b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:18px;font-weight:700;}
   .plist{list-style:none;padding:0;margin:10px 0 0;font-size:13.5px;}
   .plist li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;
     border-top:1px solid var(--line);color:var(--mut);}
@@ -1360,13 +1425,13 @@
   .leaguestats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 0;}
   .lstat{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:10px;
     padding:11px 9px;text-align:center;}
-  .lstat b{display:block;font-family:var(--mono);font-size:19px;font-weight:700;line-height:1.1;}
+  .lstat b{display:block;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:19px;font-weight:700;line-height:1.1;}
   .lstat span{display:block;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
     color:var(--dim);font-weight:800;margin-top:3px;}
 
   /* The career strip, which only exists once there is a career. */
   .cstrip{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-  .cstrip .big-n{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1;}
+  .cstrip .big-n{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:26px;font-weight:700;line-height:1;}
   .cstrip .lab{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
     font-weight:800;}
   .lastrun{font-size:13px;color:var(--mut);margin:10px 0 0;line-height:1.5;}
@@ -1420,14 +1485,14 @@
      sentence: the tile is a button and a button that argues with you is slow. */
   .ptile .chemline{grid-column:1/-1;display:flex;align-items:baseline;gap:6px;
     margin-top:-3px;min-width:0;}
-  .ptile .chemline b{font-family:var(--mono);font-size:12px;font-weight:700;color:#4ade80;
+  .ptile .chemline b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:#4ade80;
     flex:0 0 auto;}
   .ptile .chemline i{font-style:normal;font-size:11.5px;color:#86efac;opacity:.85;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   /* The price block, and the thing that was missing: what that price BUYS. */
   .ptile .money{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
-  .ptile .price{font-family:var(--mono);font-size:17px;font-weight:700;line-height:1;
+  .ptile .price{font-family:var(--num);font-size:17px;font-weight:700;line-height:1;
     font-variant-numeric:tabular-nums;}
   .ptile .price.no{color:var(--red);}
   .deal{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
@@ -1439,7 +1504,7 @@
   /* The stat line as labelled figures rather than a run-on sentence. */
   .ptile .stats{grid-column:1/-1;display:flex;gap:12px;flex-wrap:wrap;margin-top:2px;}
   .ptile .st{display:flex;align-items:baseline;gap:3px;}
-  .ptile .st b{font-family:var(--mono);font-size:13.5px;font-weight:700;}
+  .ptile .st b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13.5px;font-weight:700;}
   .ptile .st i{font-style:normal;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
     color:var(--dim);font-weight:700;}
   .ptile .st.key b{color:var(--gold);}
@@ -1504,7 +1569,7 @@
      winning. It is the opposite: a draft that finishes $40M under the cap wins
      about thirteen games. What matters is what is left PER SLOT, so that is
      what the HUD leads with now. */
-  .perslot{font-family:var(--mono);font-size:12.5px;color:var(--mut);
+  .perslot{font-family:var(--num);font-size:12.5px;color:var(--mut);
     font-variant-numeric:tabular-nums;}
   .perslot b{color:var(--ink);font-weight:700;}
   #c-note.warn{color:var(--gold);}
@@ -1584,7 +1649,7 @@
     grid-template-columns:auto 1fr auto;gap:10px;align-items:center;min-height:44px;}
   .month > summary::-webkit-details-marker{display:none;}
   .month .mn{font-size:13px;font-weight:800;}
-  .month .mrec{font-family:var(--mono);font-size:13px;font-weight:700;}
+  .month .mrec{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;}
   .month .mbar{display:flex;gap:2px;}
   .month .mbar i{width:5px;height:14px;border-radius:1px;background:#7f1d1d;}
   .month .mbar i.w{background:var(--green);}
@@ -1635,7 +1700,7 @@
     font-size:12px;font-weight:700;padding:0 11px;height:34px;min-height:34px;border-radius:8px;}
   .appbar button.link:hover{color:var(--ink);}
   /* The state chip: what the top bar can say that the wordmark cannot. */
-  .appbar .state{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold);
+  .appbar .state{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:var(--gold);
     padding:0 9px;height:34px;display:flex;align-items:center;border-radius:8px;
     background:rgba(242,193,78,.1);white-space:nowrap;}
   /* display:flex ON A CLASS BEATS THE BROWSER'S OWN [hidden]{display:none}, which
@@ -1866,8 +1931,30 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>How a run goes <span class="sub">six spins, one cap</span></h2>
+  <!-- ONE FOLDED CARD, AND IT WAS FIFTY-FIVE PER CENT OF THE SCREEN.
+       "How a run goes" and "Why six stars lose" were two open cards at the
+       bottom of the front page, worth 1,682px of a 3,082px page at 390 and
+       1,846 of 3,236 at 360: more than half the home screen, every visit, for
+       the whole life of the reader's account. They are one subject (how this
+       game works) and they are reference, so they are one card now, headed
+       How to play, and shut.
+
+       FOLDED IS NOT HIDDEN, which is the arcade's own note and is why the
+       comment that used to sit over the second card still holds: the prose
+       ships in the HTML either way, a crawler reads a closed details at full
+       weight, and the part a basketball fan would want to argue with is still
+       on the page the model runs on. What changed is that somebody who came
+       to press Start no longer scrolls past an essay to reach the bottom of
+       the screen.
+
+       The summary is the other cards' own h2, because this is one more card
+       on a page of cards and the only thing different about it is that it
+       opens. -->
+  <details class="card howto" id="home-howto">
+    <summary><h2>How to play <span class="sub">six spins, one cap</span></h2>
+      <span class="ht-chev" aria-hidden="true"></span></summary>
+
+    <h3>How a run goes</h3>
     <p class="dim" style="font-size:14px;margin:0 0 10px">
       The wheel gives you a club and a season. You sign one player off that roster, and
       you do it six times to fill a point guard, a shooting guard, a small forward, a
@@ -1882,16 +1969,8 @@
       share a club, a college or a draft class build chemistry on top of that. Then you
       play all 82 against real teams out of the same data.
     </p>
-  </div>
 
-  <!-- REAL CONTENT, IN THE MARKUP, NOT BEHIND A START BUTTON.
-       A game page whose every word arrives after a click is a page a crawler and
-       a reviewer both read as empty. This is also the part a basketball fan
-       would actually want to argue with, which is the better reason to write it:
-       it is the thinking behind the model, in plain words, on the page the model
-       runs on. -->
-  <div class="card">
-    <h2>Why six stars lose <span class="sub">the thinking behind the game</span></h2>
+    <h3 class="ht-turn">Why six stars lose</h3>
 
     <h3>The ball only bounces once</h3>
     <p class="dim">
@@ -1932,7 +2011,7 @@
       too: six volume scorers are not a system, they are Too Many Mouths.
       <a href="/hoops/how-to-play.html">The full rules are here.</a>
     </p>
-  </div>
+  </details>
 </div>
 
 <!-- ── draft ────────────────────────────────────────────────────────────── -->
@@ -2095,15 +2174,15 @@
     <div class="lvscore">
       <div class="lvside" id="lv-syou">
         <span class="lvsname">Your six</span>
-        <span class="lvpts mono" id="lv-you">0</span>
+        <span class="lvpts num" id="lv-you">0</span>
       </div>
       <div class="lvmid">
         <span class="lvq" id="lv-q">Q1</span>
-        <span class="lvclock mono" id="lv-clock">12:00</span>
+        <span class="lvclock num" id="lv-clock">12:00</span>
       </div>
       <div class="lvside" id="lv-sthem">
         <span class="lvsname">The field</span>
-        <span class="lvpts mono" id="lv-them">0</span>
+        <span class="lvpts num" id="lv-them">0</span>
       </div>
     </div>
     <div class="lvbar"><i id="lv-fill"></i></div>
@@ -2122,7 +2201,7 @@
 
   <div class="card lvverdict" id="lv-verdict" hidden>
     <div class="lvv-res" id="lvv-res"></div>
-    <div class="lvv-score mono" id="lvv-score"></div>
+    <div class="lvv-score num" id="lvv-score"></div>
     <div class="lvv-line" id="lvv-line"></div>
     <button class="big" id="b-lv-next">Continue</button>
   </div>
@@ -2155,7 +2234,7 @@
       <span class="pl" id="o-gl"></span></span>
   </div>
   <div class="verdict" id="o-verdict">-</div>
-    <div class="record mono" id="o-record">-</div>
+    <div class="record num" id="o-record">-</div>
     <p class="story" id="o-story"></p>
     <p class="dim" style="margin:0;font-size:13.5px" id="o-seed"></p>
     <div class="tags" id="o-tags"></div>
