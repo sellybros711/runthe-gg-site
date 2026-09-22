@@ -2765,6 +2765,124 @@ the maximum, exactly one man reaches it every week by construction.
 **The board is priced against ITSELF.** A man whose club is idle is off it and out of the
 anchors, or a leader sitting a bye sets a ceiling nobody draftable can reach.
 
+#### A man who is not playing is not a pick
+
+```
+node football/build/injuries.mjs                 what the report says about the live week
+node football/build/injuries.mjs --write         and write the file the page reads
+node football/check-fantasy.mjs --quick          the engine half, no browser
+node football/check-fantasy.mjs                  the chip, the press and the sheet
+```
+
+Reported by a player with a screenshot: the wheel offered **Nico Collins at $8.5M**, and he
+had been ruled out in week 2 with a hamstring. It was right to. The pool is built from what a
+man has DONE and from the SCHEDULE, and neither of those has any idea whether he will be on
+the field, so nothing anywhere refused him. The board rendered, the price was correct, the
+lineup was legal, and it was worth nought.
+
+**Two sources, and they answer two different questions.**
+
+| | asks | so that |
+|---|---|---|
+| `players.csv` | is he on a roster at all | injured reserve is not a designation to read |
+| `injuries.csv` | what did his club file this week | Out, Doubtful, Questionable, the body part, the practice |
+
+**Injured reserve takes a man OFF THE BOARD and a designation does not.** There is no
+decision to make about somebody on IR and no news to read, so he leaves the pool the way a
+man whose club is idle was never in it. An Out or Doubtful designation is the opposite: it is
+this week's news and it is the most useful thing the board can say about a man a reader was
+about to take, so he is **drawn, in red, and cannot be picked**. Questionable is a real
+decision and is left alone.
+
+Measured on the live week 3 board: 5 priced men on reserve, 7 Out, 2 Doubtful, 11
+Questionable. Only two of the designated men are inside the wheel's reach at all, which is
+why the guard searches boards rather than assuming one.
+
+**THE SPLIT IS MADE IN `draft.js` AND NOT IN THE PAGE**, because four separate things ask a
+version of "can this man fill this slot": what greys a row, what refuses the press, what the
+reserve floor promises the last slot will cost, and which man fills the guaranteed signable
+seat. Written in the page, the board offers a seat that refuses the press, or worse promises
+a $3.0M tight end who is on injured reserve and strands the draft at the last slot with
+nothing legal on it. That is the Full Team glow's lesson: the picture and the rule read one
+function. `D.hurt()` is that function and `canSign` already carried the other half.
+
+**The reserve floor has to step over them**, and the guard nearly could not see it: 48% of
+the board sits at the $3.0M minimum, so knocking out ONE man at the floor leaves the floor
+exactly where it was and the assertion compares a number with itself. It marks every man at
+the floor now, and it moves.
+
+#### It is its own file, because prices must not move and injuries must
+
+`football/data/injuries_<season>_w<week>.json`, fetched beside the pool and merged over it.
+A price may never move once anybody has drafted against it, so the board is written on the
+Tuesday and left alone. The game status report is first filed on the **Wednesday**, firmed up
+on the Thursday and final on the Friday, and a club can file an IR move on any day. Baked
+into the pool, the only way to learn somebody is out would be to reprice the board underneath
+everybody who had already used it.
+
+**The week's report does not exist on the Tuesday and that is not an error.** The file carries
+`report_week`, which is allowed to be behind the week being played, and the sheet SAYS so:
+"From the week 2 report. Week 3 has not been filed yet, so this is the last thing that was
+said about him." A man ruled out on Sunday is the best available answer about next Sunday
+until Wednesday, and printing it as this week's would be inventing a certainty nobody has.
+
+**`.github/workflows/fantasy-injuries.yml` refreshes it twice a day and commits only when it
+moved**, which is about three times a week. That is the opposite of `fantasy-live.yml`, which
+commits nothing because it runs every ten minutes: a hundred commits a weekend is a hundred
+Cloudflare deploys. At twice a day a static file is the simplest thing that works, with no
+migration and no round trip, and **a week with no file behaves exactly as the mode did before
+any of this existed**.
+
+**A BOARD IS DERIVED FROM (seed, pool), SO A POOL THAT SHRINKS REDRAWS IT**, and that is
+accepted rather than worked around. Inside one visit nothing moves, which is what the reload
+guard is about. Across a refresh an unsigned board can come back with a different man on it,
+and the alternative is a wheel that goes on offering somebody the league has ruled out
+because it was drawn before anybody knew. What is stored is ids, so nothing a reader has
+actually SIGNED can move: `BY_ID` is built before the merge and is never filtered, or a
+lineup holding a man who went on IR on the Wednesday would be a screen reporting five.
+
+**A cleared man is not a warning.** 55 of the priced men carry a report row with no
+designation and **45 of those practised in full**: one board row in nine wearing a mark that
+means "he was on the report and he is fine". They are dropped at BUILD time rather than hidden
+in the page, because a row nothing can draw is a row nothing can open. The ten who did not
+practise fully keep their chip, which on a Tuesday is the most useful thing the report has.
+
+#### The chip, and the press it takes
+
+**Red for a man who will probably not play, gold for a man who might.** Two decisions, two
+colours; one colour for both would be the board saying the same thing about a hamstring that
+has ruled somebody out and one that has not. `Q` is the one abbreviation kept, because it is
+what a questionable man is called everywhere this mode's readers have seen one. DOUBT is not
+a word, so it is spelled.
+
+**AN INJURED ROW IS NOT `disabled`, AND THAT IS LOAD BEARING.** A disabled button swallows
+every pointer event in its subtree, so a chip on one could be read and never tapped, and the
+report is the whole reason that row is drawn. The press is refused by `canSign` instead,
+which is the same call that greyed it.
+
+**And a row that refuses and does nothing is a wall**, which is this repo's own rule about a
+locked door arriving at a list. Pressing anywhere on an injured row opens the report. **Found
+by the guard**, which clicked one and waited thirty seconds for a signing that was never
+coming.
+
+**Two things only a screenshot could say**, both of which render perfectly:
+
+- **The name was truncated to make room.** `cannot be picked` is sixteen characters in the
+  price column, which took about 26px off the name and left `Zay Flow...` on the one row
+  where knowing who it is matters most. It is `cannot pick`, the same length as the
+  `over budget` that sits in that slot already.
+- **The name line had to become a flex row.** As a block with `text-overflow`, a chip on it
+  wraps onto a second line and that row is taller than the other four, which is the board
+  stepping again. The name is what shrinks, inside its own element; the chip never does.
+
+**What the sheet says is the REPORT and it does not pretend to be anything else**: the
+designation, the body part and whether he practised, which is what a club is obliged to
+publish and what every fantasy site is reading when it says a man is questionable. It is not
+a beat writer's paragraph and the last line names the source. Writing the other kind needs a
+news feed, and **the two that would serve are refused by this machine's egress proxy**, so
+nothing here could have been checked against one. Said plainly rather than shipped as a
+sentence that looks like reporting.
+
 ### The cap is the crossover, and the wheel only reaches as far as the league starts
 
 `probe_cap.mjs` sweeps the cap against two real strategies. GREEDY takes the dearest man

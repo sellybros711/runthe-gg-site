@@ -225,6 +225,163 @@ console.log('\nA RELOAD CANNOT RE-ROLL THE WHEEL');
   ok('  and signing somebody changes what is left', after !== a);
 }
 
+/* ----------------------------------------------------------------
+ * A MAN WHO IS NOT PLAYING IS NOT A PICK
+ *
+ * Reported by a player, with a screenshot: the wheel offered Nico Collins at $8.5M, and he
+ * had been ruled out in week 2 with a hamstring. The pool is built from what a man has DONE
+ * and from the schedule, and neither of those knows whether he is going to be on the field,
+ * so nothing anywhere refused him. The board rendered, the price was right, the lineup was
+ * legal, and it was worth nought.
+ *
+ * TWO SOURCES AND THEY ANSWER TWO QUESTIONS. Injured reserve is not a designation to read,
+ * it is somebody who is not playing, so he is left out of the pool the way a man on a bye
+ * is. An Out or Doubtful designation IS this week's news, so he is drawn, in red, and
+ * cannot be picked. Questionable is a real decision and is left alone.
+ * ---------------------------------------------------------------- */
+console.log('\nA MAN WHO IS NOT PLAYING IS NOT A PICK');
+{
+  /* Built off the real board rather than a fixture, so the ranks, the depth and the
+     reserve floor are the ones the mode actually runs on. */
+  /* THE MAN HANDED BACK IS THE COPY THAT CARRIES THE REPORT, not the row it was made from.
+     Returning the original passed `canSign` a man with no `inj` on him and reported the
+     page refusing nobody: the fixture would have been asking about a different object from
+     the one it had just put on the board. */
+  const hurtOne = (pool, pos, st) => {
+    const men = pool.filter((m) => m.position === pos)
+      .sort((a, b) => b.price_musd - a.price_musd);
+    const of = men[1];
+    const man = Object.assign({}, of, { inj: { st, w: NOW.week, d: 'Hamstring' } });
+    return { man, was: of,
+      pool: pool.map((m) => (m.player_id === of.player_id ? man : m)) };
+  };
+  const { man, pool } = hurtOne(POOL.pool, 'WR', 'out');
+
+  ok('a man ruled out is refused', !D.canSign(pool, 3, 90, man), man.name);
+  ok('  and the same man is signable when he is not',
+    D.canSign(POOL.pool, 3, 90, POOL.pool.find((m) => m.player_id === man.player_id)));
+  /* HE IS STILL DRAWN, which is the half a filter would have thrown away. Out is the most
+     useful thing the board can tell a drafter about a man they were going to take. */
+  const seen = [];
+  for (let seed = 1; seed <= 400; seed++) {
+    const b = D.spin(pool, 3, 90, [], D.rngOf(seed));
+    if (b.some((x) => x.player_id === man.player_id)) seen.push(seed);
+  }
+  ok('  but he is still put on the board', seen.length > 0, seen.length + ' of 400 boards');
+  /* AND HE IS NEVER THE ANSWER TO A QUESTION ABOUT WHO CAN BE SIGNED. `eligible` is what
+     fills the guaranteed signable seat, so an out man in it is a board whose one promised
+     pick refuses the press. */
+  ok('  and never in the eligible list',
+    !D.eligible(pool, 3, 90, []).some((x) => x.player_id === man.player_id));
+
+  /* THE RESERVE FLOOR IS A PROMISE THAT THE LAST SLOT CAN BE FILLED, so it may not be read
+     off a man who cannot fill it. Written without this, a draft spends down to a floor set
+     by an injured tight end and strands at the last slot with nothing legal on the board,
+     which is the empty screen with no way on. */
+  {
+    const tes = POOL.pool.filter((m) => m.position === 'TE')
+      .sort((a, b) => a.price_musd - b.price_musd);
+    /* EVERY MAN AT THE FLOOR, not the first one. 48% of the board sits at the $3.0M
+       minimum, so knocking one out leaves the floor exactly where it was and the assertion
+       compares a number with itself. */
+    const floor = tes[0].price_musd;
+    const at = new Set(tes.filter((t) => t.price_musd === floor).map((t) => t.player_id));
+    const hurtPool = POOL.pool.map((m) => (at.has(m.player_id)
+      ? Object.assign({}, m, { inj: { st: 'out', w: NOW.week } }) : m));
+    const was = D.cheapestAt(POOL.pool, 'TE'), now = D.cheapestAt(hurtPool, 'TE');
+    ok('the reserve floor steps over the men who cannot be signed', now > was,
+      `$${was}M -> $${now}M, ${at.size} at the floor`);
+    ok('  and it lands on somebody who can be',
+      D.canSign(hurtPool, 5, now, hurtPool.find((t) => t.position === 'TE'
+        && t.price_musd === now)));
+  }
+
+  /* Questionable is a decision and the board must not take it away. */
+  const q = hurtOne(POOL.pool, 'RB', 'questionable');
+  ok('a questionable man is still a pick', D.canSign(q.pool, 1, 90, q.man), q.man.name);
+
+  /* A WHOLE SEASON'S WORTH OF DRAFTS STILL FINISHES with the injured men in it, which is
+     what says the floor and the guarantee survived the change. A stranded draft is an empty
+     board and no way on, and it is silent. */
+  {
+    const inj = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data',
+      `injuries_${NOW.season}_w${NOW.week}.json`), 'utf8'));
+    const live = POOL.pool.map((m) => {
+      const e = inj.men[m.player_id];
+      return e ? Object.assign({}, m, { inj: e }) : m;
+    }).filter((m) => !m.inj || m.inj.st !== 'off');
+    ok('the live report takes men off the board', live.length < POOL.pool.length,
+      `${POOL.pool.length} -> ${live.length}`);
+    let stranded = 0, hurtSigned = 0, done = 0;
+    for (let seed = 1; seed <= 400; seed++) {
+      const c = { seed, men: [] };
+      for (let i = 0; i < D.SLOTS.length; i++) {
+        const board = D.boardFor(live, c, i);
+        const left = D.CAP_MUSD - D.spent(c);
+        const take = board.find((m) => D.canSign(live, i, left, m));
+        if (!take) { stranded++; break; }
+        if (D.hurt(take)) hurtSigned++;
+        c.men.push(take);
+      }
+      if (c.men.length === D.SLOTS.length) done++;
+    }
+    ok('  and 400 drafts still finish against it', stranded === 0 && done === 400,
+      `${done} finished, ${stranded} stranded`);
+    ok('  and not one of them signed a man who is out', hurtSigned === 0);
+  }
+}
+
+/* ----------------------------------------------------------------
+ * AND THE REPORT ITSELF IS READ RATHER THAN GUESSED
+ * ---------------------------------------------------------------- */
+console.log('\nTHE INJURY REPORT IS BUILT FROM TWO SOURCES');
+{
+  const { buildInjuries, latestReports } = await import('./build/injuries.mjs');
+  const injuries = [
+    { season: 2026, week: 1, gsis_id: 'a', report_status: 'Questionable',
+      report_primary_injury: 'Knee', practice_status: 'Limited Participation In Practice' },
+    { season: 2026, week: 2, gsis_id: 'a', report_status: 'Out',
+      report_primary_injury: 'Hamstring', practice_status: 'Did Not Participate In Practice' },
+    { season: 2026, week: 3, gsis_id: 'a', report_status: 'Questionable',
+      report_primary_injury: 'Hamstring', practice_status: 'Full Participation In Practice' },
+    { season: 2026, week: 2, gsis_id: 'b', report_status: '',
+      report_primary_injury: 'Ankle', practice_status: 'Full Participation In Practice' },
+    { season: 2026, week: 2, gsis_id: 'c', report_status: '',
+      report_primary_injury: 'Ankle', practice_status: 'Did Not Participate In Practice' },
+    { season: 2025, week: 9, gsis_id: 'd', report_status: 'Out',
+      report_primary_injury: 'Knee', practice_status: '' },
+  ];
+  const players = [
+    { gsis_id: 'a', status: 'ACT' }, { gsis_id: 'b', status: 'ACT' },
+    { gsis_id: 'c', status: 'ACT' }, { gsis_id: 'd', status: 'ACT' },
+    { gsis_id: 'e', status: 'RES' }, { gsis_id: 'f', status: 'DEV' },
+  ];
+  const ids = ['a', 'b', 'c', 'd', 'e', 'f'];
+
+  /* NEVER READ AHEAD, which is the same rule the pool is built under. Asked for week 2, the
+     week 3 row does not exist yet. */
+  const w2 = buildInjuries({ season: 2026, week: 2, ids, injuries, players });
+  ok('the report never reads ahead of the week it is asked for',
+    w2.men.a.st === 'out' && w2.men.a.w === 2, JSON.stringify(w2.men.a));
+  ok('  and says which week it got to', w2.report_week === 2);
+
+  const w3 = buildInjuries({ season: 2026, week: 3, ids, injuries, players });
+  ok('the latest report is the one that counts',
+    w3.men.a.st === 'questionable' && w3.men.a.w === 3, JSON.stringify(w3.men.a));
+  ok('a man on reserve is off the board whatever the report says', w3.men.e.st === 'off');
+  ok('  and the practice squad is not', !w3.men.f);
+  /* A CLEARED MAN IS NOT A WARNING. 45 of the 55 no-designation men on the live board
+     practised in full, which is one board row in nine wearing a mark that means nothing. */
+  ok('on the report, no designation, full practice: nothing is said', !w3.men.b);
+  ok('  but not practising at all is', w3.men.c && w3.men.c.st === 'none');
+  /* A season boundary is not a week boundary. */
+  ok('last season is not this week\'s news', !w3.men.d);
+  ok('and the count is what it shipped', w3.counts.off === 1, JSON.stringify(w3.counts));
+
+  const only = latestReports(injuries, 2026, 3);
+  ok('the report week is the latest it covers', only.reportWeek === 3);
+}
+
 if (QUICK) {
   console.log(fails ? `\n${fails} FAILED` : '\nall good (engine only)');
   process.exit(fails ? 1 : 0);
@@ -357,7 +514,10 @@ async function signOne(page, nth = 0) {
      that presses blind: the slot never fills and the review screen never arrives. A thumb
      has the same constraint, and the guard on the grey rows is that there is always at
      least one of these. */
-  const men = page.locator('#d-men .man:not([disabled])');
+  const men = page.locator(/* NOT `[disabled]` AND NOT `.hurt`. An injured row is deliberately left pressable so its
+     chip can be tapped, and a press on it opens the report rather than signing anybody, so
+     a walk that took the first row it could click waited for a signing that never came. */
+    '#d-men .man:not([disabled]):not(.hurt)');
   const n = await men.count();
   if (!n) throw new Error('every man on the board is out of reach');
   /* `force` because the rows are mid-transition for the length of the deal and Playwright
@@ -1530,7 +1690,10 @@ console.log('\nTHE BOARD REVEALS, AND THE PAGE UNDER IT HOLDS STILL');
        it is the likeliest one to be out of reach late in a draft, and pressing it does
        nothing at all. Without this the section passes or hangs depending on the week's
        prices, which is a coin toss rather than a check. */
-    await page.locator('#d-men .man:not([disabled])').first().click({ force: true });
+    await page.locator(/* NOT `[disabled]` AND NOT `.hurt`. An injured row is deliberately left pressable so its
+     chip can be tapped, and a press on it opens the report rather than signing anybody, so
+     a walk that took the first row it could click waited for a signing that never came. */
+    '#d-men .man:not([disabled]):not(.hurt)').first().click({ force: true });
     /* Sampled while it runs rather than after, because the claim is about what happens
        DURING the reveal and a reading taken at the end cannot see a step that healed. */
     const tops = [];
@@ -1599,7 +1762,11 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
   const look = () => page.evaluate(() => {
     const rows = [...document.querySelectorAll('#d-men .man')];
     const poor = rows.find((e) => e.classList.contains('poor'));
-    const rich = rows.find((e) => !e.classList.contains('poor'));
+    /* AND THE ROW IT IS COMPARED AGAINST IS A PLAIN ONE. An injured row is dimmed too, for
+       a different reason, so picking one as the control compares two greys and reports a
+       correct page as flat. */
+    const rich = rows.find((e) => !e.classList.contains('poor')
+      && !e.classList.contains('hurt'));
     if (!poor || !rich) return null;
     const dim = (e) => Number(getComputedStyle(e.querySelector('.who')).opacity);
     return {
@@ -1611,9 +1778,21 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
         !== getComputedStyle(poor.querySelector('.who')).color,
     };
   });
+  /*
+   * DRAFT AGAIN THROUGH THE REAL CONTROL, and that is a fix rather than a tidy-up. The loop
+   * pressed `#b-abandon` between attempts, which only exists ON the draft screen: a walk
+   * that got all the way through six picks without meeting a grey row was on the REVIEW
+   * screen by then, and the next attempt waited thirty seconds for a button that was not
+   * there. It survived for as long as the first draft happened to find one.
+   */
   let sawGrey = null, drafts = 0;
-  for (; drafts < 8 && !sawGrey; drafts++) {
-    if (drafts) { await page.click('#b-abandon'); await page.waitForTimeout(200); }
+  for (; drafts < D.CHANCES && !sawGrey; drafts++) {
+    if (drafts) {
+      await page.waitForSelector('#s-review.on', { timeout: 10000 });
+      await page.click('#b-more');
+      await page.waitForSelector('#s-draft.on', { timeout: 10000 });
+      await page.waitForTimeout(200);
+    }
     for (let i = 0; i < D.SLOTS.length && !sawGrey; i++) {
       await page.locator('#d-men .man').first().waitFor({ timeout: 10000 });
       sawGrey = await look();
@@ -1622,7 +1801,7 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
   }
 
   ok(`a greedy draft is shown a man it cannot sign, within ${drafts} drafts`, !!sawGrey,
-    sawGrey ? sawGrey.says : 'never once refused anything over 8 drafts');
+    sawGrey ? sawGrey.says : 'never once refused anything over every draft');
   if (sawGrey) {
     ok('  it says why rather than just looking odd', /over budget/i.test(sawGrey.says),
       sawGrey.says);
@@ -1647,6 +1826,138 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
     ok('  and the board is not left half cleared by it', !stuck);
   }
   ok('  nothing threw', boom.length === 0, boom[0] || 'clean');
+  await page.close();
+}
+
+/* ---------------------------------------------------------------- */
+/* ----------------------------------------------------------------
+ * THE RED CHIP, AND THE PRESS IT TAKES
+ *
+ * Every way this breaks renders perfectly. A chip that is drawn and cannot be tapped, a row
+ * that refuses a press and says nothing, a board that steps because one row grew a chip:
+ * all three are a screen that looks right in a screenshot. So this drives a real board, at
+ * a phone, and presses what it finds.
+ * ---------------------------------------------------------------- */
+console.log('\nA MAN WHO CANNOT PLAY IS RED, AND THE CHIP OPENS THE REPORT');
+{
+  const INJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data',
+    `injuries_${NOW.season}_w${NOW.week}.json`), 'utf8'));
+  const off = Object.values(INJ.men).filter((e) => e.st === 'off').length;
+
+  const { page, boom } = await openPage(browser, FANTASY,
+    { who: TESTER, at: BEFORE, viewport: { width: 390, height: 844 } });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+
+  /* A MAN ON INJURED RESERVE IS NOT ON THE BOARD AT ALL, and the front page counts what is
+     left. Read off the page's own sentence rather than out of a variable, because the
+     count a reader is given is the claim. */
+  const said = await page.evaluate(() =>
+    document.getElementById('home-week').textContent);
+  ok('the men who cannot play are off the board',
+    said.includes(`${POOL.pool.length - off} men`),
+    said + ` (${off} on reserve)`);
+
+  /* Walk to a board with an injured man on it. Three picks reaches the first WR slot, which
+     is where the live report's two designated men in the wheel's reach are; a board that
+     does not have one is abandoned and the next is drawn. Searched rather than seeded,
+     because what is under test is the board a reader is actually handed. */
+  await page.click('#b-draft');
+  let found = false;
+  for (let attempt = 0; attempt < 25 && !found; attempt++) {
+    for (let i = 0; i < 3; i++) {
+      await page.waitForSelector('#d-men .man', { timeout: 10000 });
+      await page.waitForTimeout(400);
+      await signOne(page);
+    }
+    await page.waitForSelector('#d-men .man', { timeout: 10000 });
+    await page.waitForTimeout(430);
+    if (await page.locator('#d-men .man.hurt').count()) { found = true; break; }
+    await page.click('#b-abandon');
+  }
+  ok('a board offers a man the report has ruled out', found, 'within 25 draws');
+
+  if (found) {
+    const row = await page.evaluate(() => {
+      const r = document.querySelector('#d-men .man.hurt');
+      const chip = r.querySelector('.inj');
+      const cs = getComputedStyle(chip);
+      return {
+        id: r.dataset.id,
+        disabled: r.disabled,
+        chip: chip ? chip.textContent.trim() : null,
+        colour: cs.color,
+        /* ONE HEIGHT ACROSS THE FIVE. A chip that wrapped onto a second line would make its
+           row taller than the other four, which is the board stepping: the same defect the
+           stat line's two line floor was written for. */
+        heights: [...document.querySelectorAll('#d-men .man')]
+          .map((e) => Math.round(e.getBoundingClientRect().height)),
+        /* And the NAME survived it. The chip is small and the price column is what had to
+           give: at sixteen characters the refusal truncated "Zay Flowers" to "Zay Flow...",
+           on the one row where knowing who it is matters most. */
+        name: r.querySelector('.who b i').textContent,
+        clipped: (() => { const i = r.querySelector('.who b i');
+          return i.scrollWidth > i.clientWidth + 1; })(),
+      };
+    });
+    ok('  it carries a chip', !!row.chip, row.chip || 'none');
+    /* REDDISH, ASKED AS A PROPERTY RATHER THAN AS A HEX, so a palette change does not fail
+       a correct page. */
+    const rgb = (row.colour.match(/\d+/g) || []).map(Number);
+    ok('  and the chip is red', rgb[0] > 180 && rgb[0] > rgb[1] + 60 && rgb[0] > rgb[2] + 60,
+      row.colour);
+    /* NOT `disabled`, AND THAT IS LOAD BEARING RATHER THAN AN OVERSIGHT. A disabled button
+       swallows every pointer event in its subtree, so the chip on it could be read and
+       never tapped, and the report is the whole reason the row is drawn. */
+    ok('  and the row is pressable, so the chip can be', !row.disabled);
+    ok('  the board does not step for it',
+      new Set(row.heights).size === 1, row.heights.join(','));
+    ok('  and the name is not truncated to make room', !row.clipped, row.name);
+
+    /* PRESSING IT SIGNS NOBODY AND SAYS WHY. A row that refuses and does nothing is a wall,
+       which is this repo's own rule about a locked door arriving at a list. */
+    const before = await page.evaluate(() =>
+      document.querySelectorAll('#d-slots .slot .p').length);
+    const filled = () => page.evaluate(() =>
+      [...document.querySelectorAll('#d-slots .slot')]
+        .filter((e) => e.classList.contains('done')).length);
+    const was = await filled();
+    await page.click('#d-men .man.hurt');
+    await page.waitForSelector('#inj-sheet:not([hidden])', { timeout: 5000 });
+    ok('  pressing it opens the report', true);
+    ok('  and signs nobody', (await filled()) === was, `${was} slots filled`);
+    ok('  and the slot strip is untouched',
+      (await page.evaluate(() => document.querySelectorAll('#d-slots .slot .p').length))
+        === before);
+
+    const sheet = await page.evaluate(() => ({
+      name: document.getElementById('inj-name').textContent,
+      line: document.getElementById('inj-line').textContent,
+      when: document.getElementById('inj-when').textContent,
+    }));
+    ok('  the sheet names him', sheet.name === row.name, sheet.name);
+    /* THE DESIGNATION AND THE BODY PART, which is what the report actually says. */
+    ok('  says the designation and the injury',
+      /out|doubtful|questionable/i.test(sheet.line) && /[a-z]{4}/i.test(sheet.line),
+      sheet.line);
+    /* AND WHICH WEEK IT IS FROM. On a Tuesday the coming week has not been filed, so the
+       freshest answer is last week's, and a sheet that printed it as this week's would be
+       inventing a certainty nobody has. */
+    ok('  and which week it is from', /week \d/i.test(sheet.when) || /this week/i.test(sheet.when),
+      sheet.when);
+    ok('  and where it came from', /report/i.test(sheet.when), sheet.when);
+
+    /* The scrim closes it. A sheet with one way out is one somebody taps around and gets
+       nothing from. */
+    await page.evaluate(() => {
+      const el = document.getElementById('inj-sheet');
+      const r = el.getBoundingClientRect();
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: r.width / 2,
+        clientY: 8 }));
+    });
+    ok('  and the scrim closes it',
+      await page.evaluate(() => document.getElementById('inj-sheet').hidden));
+  }
+  ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
   await page.close();
 }
 

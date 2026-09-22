@@ -137,6 +137,30 @@
     return (Math.random() * 4294967296) >>> 0;
   }
 
+  /*
+   * ─── WHO CANNOT BE SIGNED, AND WHY IT IS HERE RATHER THAN IN THE PAGE ─────────────
+   *
+   * A man ruled OUT or DOUBTFUL on the week's injury report is still DRAWN onto the board,
+   * in red, because that is this week's news and it is the single most useful thing the
+   * board can tell a drafter. What he cannot be is signed.
+   *
+   * That splits the pool two ways and the split has to be made HERE, because four separate
+   * things ask a version of "can this man fill this slot": what greys a row, what refuses
+   * the press, what the reserve floor promises the last slot will cost, and which man fills
+   * the guaranteed signable seat. Written in the page, the board would offer a seat that
+   * refuses the press, or worse, promise a $3.0M tight end who is on injured reserve and
+   * strand the draft at the last slot with nothing legal on the board. That is the Full
+   * Team glow's lesson: the picture and the rule read one function.
+   *
+   * A MAN WHO IS NOT ON A ROSTER AT ALL NEVER REACHES THIS FILE. The page leaves him out
+   * of the pool, the same way a man whose club is idle was never in it: injured reserve is
+   * not a designation to read, it is somebody who is not playing this week.
+   */
+  var hurt = function (m) {
+    var s = m && m.inj && m.inj.st;
+    return s === 'out' || s === 'doubtful';
+  };
+
   var byPos = function (pool, pos) {
     var out = [];
     for (var i = 0; i < pool.length; i++) if (pool[i].position === pos) out.push(pool[i]);
@@ -146,7 +170,14 @@
   /* The cheapest man at a position, which is what a remaining slot is guaranteed to cost. */
   function cheapestAt(pool, pos) {
     var men = byPos(pool, pos), lo = Infinity;
-    for (var i = 0; i < men.length; i++) if (men[i].price_musd < lo) lo = men[i].price_musd;
+    for (var i = 0; i < men.length; i++) {
+      /* SKIPPED, because this number is a PROMISE that the last slot can be filled. A
+         floor read off a man who cannot be signed is a draft that spends down to it and
+         then finds nothing legal on the board, which is the stranded screen with no way
+         on that `reserveAfter` exists to prevent. */
+      if (hurt(men[i])) continue;
+      if (men[i].price_musd < lo) lo = men[i].price_musd;
+    }
     return lo === Infinity ? 0 : lo;
   }
 
@@ -182,6 +213,7 @@
     var men = atSlot(pool, i, takenIds), out = [];
     for (var k = 0; k < men.length; k++) {
       if (men[k].price_musd > ceiling + 1e-9) continue;
+      if (hurt(men[k])) continue;
       out.push(men[k]);
     }
     return out;
@@ -304,8 +336,12 @@
        board that LOOKS unaffordable and a press that is REFUSED can never come apart. That
        is the Full Team glow's lesson: the picture and the rule read one function. */
     canSign: function (pool, i, left, man) {
-      return !!man && man.price_musd <= ceilingAt(pool, i, left) + 1e-9;
+      return !!man && !hurt(man) && man.price_musd <= ceilingAt(pool, i, left) + 1e-9;
     },
+    /* WHY a row is refused, because the two reasons want two different sentences and two
+       different colours. A board that greyed an injured man with "over budget" on him
+       would be telling the reader something false about their own cap. */
+    hurt: hurt,
     boardFor: boardFor, spent: spent, projected: projected, full: full,
   };
 

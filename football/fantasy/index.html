@@ -130,6 +130,39 @@
   .man.poor .cost b{color:var(--gold)}
   .man.poor .cost s{color:var(--gold);opacity:.75}
 
+  /* ---- what the injury report says ----
+     RED IS FOR A MAN WHO WILL PROBABLY NOT PLAY and gold is for a man who might. Those are
+     two different decisions and one colour for both would be the board saying the same
+     thing about a hamstring that has ruled somebody out and one that has not.
+
+     A MAN ON INJURED RESERVE IS NEITHER, and he is not here: he is left out of the pool
+     entirely, the way a man whose club is idle is, because there is no decision about him
+     and no news to read. The chip only ever appears on somebody who is on a roster. */
+  .inj{flex:0 0 auto;display:inline-flex;align-items:center;
+    font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.07em;
+    text-transform:uppercase;padding:2px 6px;border-radius:5px;line-height:1.3;
+    border:1px solid rgba(239,68,68,.55);color:#fca5a5;background:rgba(239,68,68,.15)}
+  .inj.q{border-color:rgba(240,201,107,.5);color:var(--gold);background:rgba(240,201,107,.12)}
+  .inj.none{border-color:var(--line-2);color:var(--dim-2);background:none}
+
+  /* A MAN WHO CANNOT PLAY IS NOT THE SAME GREY AS A MAN YOU CANNOT AFFORD, and the two are
+     separated for the same reason the colours are: the cap row's price stays gold because
+     the price is why it is grey, and here the reason is the chip, so the chip stays loud
+     and the NAME stays fully legible. What recedes is everything that was about buying him. */
+  .man.hurt{border-color:rgba(239,68,68,.28);background:transparent}
+  .man.hurt .pos{opacity:.45}
+  .man.hurt .who s{opacity:.45}
+  .man.hurt .cost{opacity:.45}
+  .man.hurt:active{transform:none}
+
+  /* The sheet a chip opens. Bottom anchored, because it is opened by a thumb near the
+     bottom of a list and a centred box would put the answer under the hand that asked. */
+  .isheet{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;
+    justify-content:center;background:rgba(4,7,14,.74);padding:12px}
+  .isheet[hidden]{display:none}
+  .ibox{width:100%;max-width:560px;border-radius:16px;border:1px solid var(--line-2);
+    background:var(--grad-panel);box-shadow:var(--shadow);padding:16px 16px 14px}
+
   /* ---- the reveal ----
      THE ROWS ARE IN THE DOM BEFORE THEY ARE READABLE, which is the whole of why this is
      safe. A skeleton of placeholders cannot hold the layout exactly, because a row with a
@@ -176,8 +209,15 @@
   /* min-width:0 on the growing child, or a long name refuses to shrink and pushes the
      price off the row. The name is what absorbs it, never the price. */
   .who{flex:1 1 auto;min-width:0}
-  .who b{display:block;font-family:var(--fn);font-size:15px;font-weight:700;
+  /* A FLEX ROW RATHER THAN A BLOCK, so the injury chip sits on the name line and cannot
+     wrap onto a second one. A chip that wrapped would make that row taller than the other
+     four, which is the board stepping again: the same rule the stat line's two line floor
+     below is written for. The NAME is what shrinks, inside its own element, because the
+     chip is the one thing on the row that must not be truncated. */
+  .who b{display:flex;align-items:center;gap:7px;min-width:0;
+    font-family:var(--fn);font-size:15px;font-weight:700;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .who b i{font-style:normal;min-width:0;overflow:hidden;text-overflow:ellipsis}
   /* THE STAT LINE IS ALLOWED TWO LINES, because it is the whole of what the board tells a
      reader and truncating it is truncating the decision. Set to one line it came out
      "492 pass yds, 5 TD, 59 ..." on every quarterback, which drops the rushing half of
@@ -565,6 +605,18 @@
      works out to most weeks and is not what it means. -->
 <button class="livebtn" id="b-live" hidden><span class="bdot"></span>Live scores</button>
 
+<!-- WHAT THE CHIP OPENS. One sheet for every screen that draws a chip, because three
+     copies of one answer is how the three come to say different things about one hamstring. -->
+<div class="isheet" id="inj-sheet" hidden>
+  <div class="ibox">
+    <div class="eyebrow">Injury report</div>
+    <h3 class="display" id="inj-name" style="font-size:23px;margin:5px 0 0"></h3>
+    <p class="lede" id="inj-line" style="margin-top:10px"></p>
+    <p class="note" id="inj-when"></p>
+    <div class="stack"><button class="btn quiet" id="inj-close">Close</button></div>
+  </div>
+</div>
+
 <!-- The tester flag. Read defensively below: a blocked or stale copy leaves the global
      undefined, and the honest answer to "can this person see an unlaunched mode" when the
      list cannot be read is no. -->
@@ -573,7 +625,7 @@
      PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script defer src="/football/auth.js?v=5"></script>
-<script src="draft.js?v=2"></script>
+<script src="draft.js?v=3"></script>
 <script src="entries.js?v=2"></script>
 <script>
 (function(){
@@ -659,6 +711,114 @@
     if (of > m.games) return m.games + ' of ' + of + ' games';
     return m.games + (m.games === 1 ? ' game' : ' games');
   };
+
+  /*
+   * ─── THE INJURY LAYER ─────────────────────────────────────────────────────────────
+   *
+   * `injuries_<season>_w<week>.json`, fetched beside the pool and merged over it. It is a
+   * SECOND FILE because the two move at different speeds: a price is fixed on the Tuesday
+   * and may never move once anybody has drafted against it, while the game status report
+   * for a Sunday game lands on the Wednesday, firms up on the Thursday and is final on the
+   * Friday. Baked into the pool, the only way to learn that somebody is out would be to
+   * reprice the board underneath everybody who had already used it.
+   *
+   * IT FAILS SOFT AND THE MODE IS EXACTLY WHAT IT WAS WITHOUT IT. A 404 is the ordinary
+   * state of a week nobody has built one for, and a page that refused to draft without an
+   * injury report would be a page that stops working on the quietest possible failure.
+   */
+  var INJ = null;           /* the file, or null */
+
+  /** What the report says about one man, or null. */
+  var injOf = function (m) { return (m && m.inj) || null; };
+
+  /* Four states and each one is a different sentence. `off` never reaches a board, because
+     a man on injured reserve is left out of the pool, so it is only ever seen on a lineup
+     that was drafted before he went on it. */
+  /* SPELLED OUT RATHER THAN ABBREVIATED, except for the one abbreviation every fantasy
+     reader already knows. `Q` is what a questionable man is called everywhere this mode's
+     readers have ever seen one; DOUBT is not a word. */
+  var INJ_WORD = { off: 'OUT', out: 'OUT', doubtful: 'DOUBTFUL', questionable: 'Q',
+    none: 'INJ' };
+
+  /*
+   * THE CHIP IS A SPAN INSIDE A BUTTON AND NOT A BUTTON INSIDE ONE, which is invalid and
+   * would not survive a parse. What makes it pressable is that the row it sits on is NEVER
+   * `disabled` when it carries one: a disabled button swallows every pointer event in its
+   * subtree, so a chip on one could be looked at and never tapped. The press is refused by
+   * `canSign` instead, which is the call that greys the row, so the two cannot come apart.
+   */
+  var injChip = function (m) {
+    var e = injOf(m);
+    if (!e || !e.st) return '';
+    var cls = e.st === 'questionable' ? ' q' : (e.st === 'none' ? ' none' : '');
+    return '<span class="inj' + cls + '" data-inj="' + esc(m.player_id) + '">'
+      + esc(INJ_WORD[e.st] || 'INJ') + '</span>';
+  };
+
+  var INJ_SAY = {
+    off: 'Not on an active roster.',
+    out: 'Ruled out.',
+    doubtful: 'Doubtful.',
+    questionable: 'Questionable.',
+    none: 'On the injury report, with no designation.',
+  };
+  var ROSTER_SAY = {
+    RES: 'On injured reserve.', PUP: 'On the physically unable to perform list.',
+    NFI: 'On the non-football injury list.', SUS: 'Suspended.',
+    RET: 'Retired.', CUT: 'Not on a roster.', RSN: 'On reserve.', RSR: 'On reserve.',
+    NWT: 'Not with a team.',
+  };
+
+  /*
+   * WHAT IT SAYS IS THE REPORT, AND IT DOES NOT PRETEND TO BE ANYTHING ELSE.
+   *
+   * The designation, the body part and whether he practised. That is what a club is obliged
+   * to publish and it is what every fantasy site is reading when it tells somebody a man is
+   * questionable. It is not a beat writer's paragraph, and the sheet does not imply one:
+   * the last line names the source. Writing the other kind would need a news feed, and
+   * nothing here could have been checked against one.
+   *
+   * AND IT SAYS WHICH WEEK IT IS FROM. On a Tuesday the coming week has not been filed at
+   * all, so the freshest answer about Sunday is last Sunday's, and a sheet that printed it
+   * as though it were this week's would be inventing a certainty nobody has.
+   */
+  function showInj(id){
+    var m = BY_ID[id], e = injOf(m);
+    if (!m || !e) return;
+    $('inj-name').textContent = m.name;
+    var bits = [];
+    bits.push(e.st === 'off' ? (ROSTER_SAY[e.roster] || 'Not on an active roster.')
+      : (INJ_SAY[e.st] || 'On the injury report.'));
+    if (e.d) bits.push(e.d + (e.d2 ? ' and ' + e.d2 : '') + '.');
+    if (e.p) bits.push(e.p + '.');
+    $('inj-line').textContent = bits.join(' ');
+    var when;
+    if (e.st === 'off') when = 'Read off the roster, as it stands now.';
+    else if (e.w === POOL.week) when = 'From this week\'s report.';
+    else when = 'From the week ' + e.w + ' report. Week ' + POOL.week
+      + ' has not been filed yet, so this is the last thing that was said about him.';
+    $('inj-when').textContent = when + ' Source: the official NFL game status report.';
+    $('inj-sheet').hidden = false;
+  }
+  $('inj-close').onclick = function(){ $('inj-sheet').hidden = true; };
+  /* The scrim closes it, the box does not. A sheet you can only leave by finding one
+     button is a sheet somebody taps around the edge of and gets nothing. */
+  $('inj-sheet').addEventListener('click', function(ev){
+    if (ev.target === $('inj-sheet')) $('inj-sheet').hidden = true;
+  });
+  /* ONE LISTENER FOR EVERY CHIP ON THE PAGE, on the document, because chips are drawn into
+     four different containers by four different painters and every one of them rebuilds its
+     markup. Bound per container, the next painter to draw a chip would be the one nobody
+     remembered to wire up. */
+  document.addEventListener('click', function(ev){
+    var c = ev.target.closest && ev.target.closest('.inj');
+    if (!c || !c.dataset.inj) return;
+    /* Taking the press here is the whole point: on a row that IS signable, tapping the
+       chip must read the report rather than sign a doubtful man by accident. */
+    ev.stopPropagation();
+    ev.preventDefault();
+    showInj(c.dataset.inj);
+  }, true);
 
   var POOL = null;          /* the week, as built */
   var BY_ID = {};
@@ -858,14 +1018,28 @@
     for (var b=0;b<board.length;b++){
       var m = board[b];
       var where = m.opp ? (m.home ? 'vs ' + m.opp : 'at ' + m.opp) : '';
-      var poor = !D.canSign(POOL.pool, i, left, m);
-      html += '<button class="man' + (poor ? ' poor' : '') + '"'
+      /* TWO REASONS A ROW CANNOT BE PRESSED AND THEY ARE NOT THE SAME REASON. The injury
+         wins when a man is both, because it is the one that is about him rather than about
+         the money: a row greyed as "over budget" on somebody who has been ruled out would
+         be telling the reader something false about their own cap. */
+      var out = D.hurt(m);
+      var poor = !out && !D.canSign(POOL.pool, i, left, m);
+      html += '<button class="man' + (out ? ' hurt' : '') + (poor ? ' poor' : '') + '"'
+        /* AND AN INJURED ROW IS NOT `disabled`, deliberately. A disabled button swallows
+           every pointer event inside it, so the chip on it could be read and never tapped,
+           and the report is the whole reason that row is worth drawing. The press is
+           refused by `canSign` in the handler, which is the same call that greyed it. */
         + (poor ? ' disabled' : '') + ' data-id="' + esc(m.player_id) + '">'
         + '<span class="pos ' + esc(m.position) + '">' + esc(m.position) + '</span>'
-        + '<span class="who"><b>' + esc(m.name) + '</b>'
+        + '<span class="who"><b><i>' + esc(m.name) + '</i>' + injChip(m) + '</b>'
         + '<s>' + esc(m.team) + (where?' ' + esc(where):'') + ' &middot; ' + esc(m.stat_line) + '</s></span>'
         + '<span class="cost"><b>' + money(m.price_musd) + '</b><s>'
-        + (poor ? 'over budget' : gamesLine(m)) + '</s></span>'
+        /* THE SAME LENGTH AS "over budget", AND THAT IS A MEASUREMENT RATHER THAN A
+           PREFERENCE. This cell and the name share the row: at sixteen characters
+           ("cannot be picked") it took about 26px off the name column and truncated Zay
+           Flowers to "Zay Flow...", on the one row where the reader most needs to know who
+           it is. Found by taking a screenshot and looking at it. */
+        + (poor ? 'over budget' : (out ? 'cannot pick' : gamesLine(m))) + '</s></span>'
         + '</button>';
     }
     $('d-men').innerHTML = html;
@@ -897,6 +1071,16 @@
     if (!b || !b.dataset.id || busy) return;
     var man = BY_ID[b.dataset.id];
     if (!man) return;
+    /*
+     * A ROW THAT REFUSES AND DOES NOTHING IS A WALL, which is this repo's own rule about a
+     * locked door, arriving at a list. An injured row is deliberately not `disabled`, so a
+     * thumb landing anywhere on it produced a press that was silently refused and no
+     * explanation anywhere. The whole reason that row is drawn is the report, so that is
+     * what a press opens: the chip is the target, and the row is the same target made the
+     * size of a row. Found by the guard, which clicked one and waited for a signing that
+     * was never coming.
+     */
+    if (D.hurt(man)){ showInj(man.player_id); return; }
     var c = state.chances[cur];
     /* THE SAME CALL THAT GREYED THE ROW, asked again on the press. `disabled` already stops
        a real thumb, so this is the belt on a row that somehow got through: a man signed
@@ -939,9 +1123,14 @@
       var rows = '';
       for (var k=0;k<c.men.length;k++){
         var m = c.men[k];
+        /* THE CHIP FOLLOWS THE MAN ONTO EVERY SCREEN HE IS ON, which is the half that
+           matters most here: a lineup drafted on the Tuesday can have somebody ruled out
+           on the Thursday, and the five chances are what a reader has to do something
+           about it with. Drawn nowhere but the board, the news would arrive only to
+           people who happened to draft again. */
         rows += '<div class="rrow"><span class="rp ' + esc(m.position) + '">'
           + esc(m.position) + '</span>'
-          + '<span class="rn">' + esc(m.name) + '</span>'
+          + '<span class="rn">' + esc(m.name) + '</span>' + injChip(m)
           + '<span class="rc">' + money(m.price_musd) + '</span></div>';
       }
       html += '<button class="lineup' + (state.pick===i?' pick':'') + '" data-i="' + i + '">'
@@ -1112,7 +1301,7 @@
       if (!done){
         rows += '<div class="rrow"><span class="rp ' + esc(m.position) + '">'
           + esc(m.position) + '</span>'
-          + '<span class="rn">' + esc(m.name) + '</span>'
+          + '<span class="rn">' + esc(m.name) + '</span>' + injChip(m)
           + '<span class="rc">' + esc(where) + '</span></div>';
         continue;
       }
@@ -1133,6 +1322,7 @@
         + esc(m.position) + '</span>'
         + '<span class="rn"><b>' + esc(m.name) + '</b>'
         + '<s>' + esc(where) + (where && under ? ' · ' : '') + esc(under) + '</s></span>'
+        + injChip(m)
         + '<span class="rs' + (s.half > 0 ? '' : ' zero') + '">'
         + s.half.toFixed(1) + '</span></div>';
     }
@@ -1964,6 +2154,33 @@
     });
   }
 
+  /*
+   * MERGED OVER THE POOL, AND THE MEN WHO CANNOT PLAY AT ALL COME OUT OF IT.
+   *
+   * `BY_ID` is built BEFORE this runs and is never filtered, which is the load-bearing
+   * half. A man signed on the Tuesday who goes on injured reserve on the Wednesday is
+   * still in somebody's lineup, and a lineup that could not name its own sixth man would
+   * be a screen reporting five. So he leaves the WHEEL and stays in the dictionary.
+   *
+   * A BOARD IS DERIVED FROM (seed, pool), SO A POOL THAT SHRINKS REDRAWS IT, and that is
+   * accepted rather than worked around. Inside one visit nothing moves, which is what the
+   * reload guard is about. Across a refresh, an unsigned board can come back with a
+   * different man on it, and the alternative is a wheel that goes on offering somebody the
+   * league has ruled out because it was drawn before anybody knew. What is stored is ids,
+   * so nothing a reader has actually SIGNED can move.
+   */
+  function applyInjuries(inj){
+    if (!inj || !inj.men) return;
+    INJ = inj;
+    var men = POOL.pool, keep = [], i, e;
+    for (i=0;i<men.length;i++){
+      e = inj.men[men[i].player_id];
+      if (e) men[i].inj = e;
+      if (!e || e.st !== 'off') keep.push(men[i]);
+    }
+    POOL.pool = keep;
+  }
+
   /* ---- boot ----
    *
    * THE WEEK IS READ, NEVER WRITTEN IN THIS FILE. fantasy_now.json says which week is live
@@ -1982,7 +2199,15 @@
       .then(function(p){
         POOL = p;
         for (var i=0;i<p.pool.length;i++) BY_ID[p.pool[i].player_id] = p.pool[i];
-        waitForAuth();
+        /* THE INJURY FILE IS OPTIONAL AND ITS ABSENCE IS THE ORDINARY CASE, so a miss is a
+           404 that resolves to null rather than a throw. A week nobody has built one for,
+           a deploy that has not landed it and a phone on a bad connection all arrive here
+           the same way, and all three leave the mode exactly as it was. */
+        return fetch('/football/data/injuries_' + p.season + '_w' + p.week + '.json',
+          { cache: 'no-cache' })
+          .then(function(r){ return r.ok ? r.json() : null; })
+          .catch(function(){ return null; })
+          .then(function(inj){ applyInjuries(inj); waitForAuth(); });
       })
       .catch(function(){
         $('load-say').textContent = 'This week could not be loaded. Reload to try again.';
