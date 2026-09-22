@@ -110,12 +110,19 @@ console.log('\nA DRAFT ALWAYS FINISHES');
   /* Three ways of drafting, because a strand is a property of how the money was spent and
      a bot that never spends cannot find one. GREEDY is the one that can: it is the way to
      run out of money, and it is also what a player who likes the best name does. */
+  /*
+   * EVERY BOT SIGNS FROM THE SIGNABLE MEN, which is the change the out of reach rows force
+   * on this file. A board now holds men the cap cannot take, deliberately, so a bot that
+   * took `board[0]` blind would sign over the cap and report the page's own new feature as
+   * a defect. `canSign` is the one call the page, the click handler and these three all
+   * ask, so what LOOKS signable and what IS are the same answer by construction.
+   */
   const BOTS = {
     greedy: (b) => b[0],
     thrifty: (b) => b[b.length - 1],
     random: (b, rnd) => b[Math.floor(rnd() * b.length)],
   };
-  let stranded = 0, over = 0, short = 0, runs = 0, worst = 0;
+  let stranded = 0, over = 0, short = 0, runs = 0, worst = 0, noneCan = 0, shown = 0, grey = 0;
   for (const name of Object.keys(BOTS)) {
     for (let r = 0; r < 400; r++) {
       const c = { seed: (r * 2654435761 + name.length) >>> 0, men: [] };
@@ -123,11 +130,14 @@ console.log('\nA DRAFT ALWAYS FINISHES');
       for (let i = 0; i < D.SLOTS.length; i++) {
         const board = D.boardFor(POOL.pool, c, i);
         if (!board.length) { stranded++; break; }
-        /* EVERY MAN OFFERED MUST BE SIGNABLE. An offer the cap cannot take is a button that
-           does nothing, which is worse than no button. */
         const left = D.CAP_MUSD - D.spent(c);
-        for (const m of board) if (m.price_musd > left + 1e-9) over++;
-        c.men.push(BOTS[name](board, rnd));
+        /* AT LEAST ONE MAN ON EVERY BOARD MUST BE SIGNABLE, which is what replaced "every
+           man is". A board of five men the cap refuses is the empty screen with no way on
+           that the reserve floor exists to prevent, and it renders perfectly. */
+        const can = board.filter((m) => D.canSign(POOL.pool, i, left, m));
+        shown += board.length; grey += board.length - can.length;
+        if (!can.length) { noneCan++; break; }
+        c.men.push(BOTS[name](can, rnd));
       }
       runs++;
       if (c.men.length < D.SLOTS.length) { short++; continue; }
@@ -142,8 +152,18 @@ console.log('\nA DRAFT ALWAYS FINISHES');
   }
   ok(`${runs} drafts, three ways, none stranded`, !stranded, `${stranded} stranded`);
   ok('  every one finished with six different men', !short, `${short} did not`);
-  ok('  and nothing was ever offered or signed over the cap', !over,
+  ok('  every board had somebody on it the cap could take', !noneCan,
+    `${noneCan} boards with nothing signable`);
+  ok('  and nothing signed was ever over the cap', !over,
     `worst spend $${worst.toFixed(1)}M of $${D.CAP_MUSD}M`);
+  /* AND THE CAP IS ACTUALLY SEEN, which is the whole reason the out of reach rows exist.
+     A board that never shows one is the old board wearing new code: it would pass every
+     assertion above and change nothing a player notices, which is exactly how this mode
+     came to have an invisible budget in the first place. Measured on the live board it is
+     about one row in eight; the floor is loose because it depends on the week's own price
+     spread, and what it catches is the feature quietly reverting to nothing. */
+  ok('  and the cap is visible on the board rather than only in the totals',
+    grey / shown > 0.02, `${(grey / shown * 100).toFixed(1)}% of rows are out of reach`);
 }
 
 /* ================================================================
@@ -162,7 +182,13 @@ console.log('\nTHE PROJECTION IS THE SIX, ADDED UP');
     for (let i = 0; i < D.SLOTS.length; i++) {
       const board = D.boardFor(POOL.pool, c, i);
       if (!board.length) break;
-      c.men.push(board[Math.floor(rnd() * board.length)]);
+      /* SIGNED FROM THE SIGNABLE MEN, the same as every other bot here. Picking blind out
+         of the whole board signs men over the ceiling and strands about one draft in
+         thirty, which reads as the page losing lineups and is the bot breaking the rule. */
+      const left = D.CAP_MUSD - D.spent(c);
+      const can = board.filter((m) => D.canSign(POOL.pool, i, left, m));
+      if (!can.length) break;
+      c.men.push(can[Math.floor(rnd() * can.length)]);
     }
     if (!D.full(c)) continue;
     n++;
@@ -305,10 +331,15 @@ const serverStub = (server) => {
  */
 async function signOne(page, nth = 0) {
   const before = await page.locator('#d-slots .slot.done').count();
-  const men = page.locator('#d-men .man');
-  await men.first().waitFor({ timeout: 10000 });
+  await page.locator('#d-men .man').first().waitFor({ timeout: 10000 });
+  /* THE SIGNABLE ONES, because a board now holds men the cap cannot take and they are
+     `disabled`. Pressing one does nothing at all, which is correct and which hangs any walk
+     that presses blind: the slot never fills and the review screen never arrives. A thumb
+     has the same constraint, and the guard on the grey rows is that there is always at
+     least one of these. */
+  const men = page.locator('#d-men .man:not([disabled])');
   const n = await men.count();
-  if (!n) throw new Error('empty board');
+  if (!n) throw new Error('every man on the board is out of reach');
   /* `force` because the rows are mid-transition for the length of the deal and Playwright
      waits for stability otherwise, which turns every press into a race with the stagger. A
      thumb has no such scruples. */
@@ -786,7 +817,11 @@ console.log('\nTHE BOARD REVEALS, AND THE PAGE UNDER IT HOLDS STILL');
   for (let i = 1; i < D.SLOTS.length; i++) {
     const before = await page.locator('#d-slots .slot.done').count();
     const t0 = Date.now();
-    await page.locator('#d-men .man').first().click({ force: true });
+    /* `:not([disabled])` for the reason signOne carries: the first row is the DEAREST, so
+       it is the likeliest one to be out of reach late in a draft, and pressing it does
+       nothing at all. Without this the section passes or hangs depending on the week's
+       prices, which is a coin toss rather than a check. */
+    await page.locator('#d-men .man:not([disabled])').first().click({ force: true });
     /* Sampled while it runs rather than after, because the claim is about what happens
        DURING the reveal and a reading taken at the end cannot see a step that healed. */
     const tops = [];
@@ -822,6 +857,86 @@ console.log('\nTHE BOARD REVEALS, AND THE PAGE UNDER IT HOLDS STILL');
      sub-pixel layout and nothing else. */
   ok('  and nothing under the board moves while it happens', worstMove <= 1,
     `worst ${worstMove}px`);
+  ok('  nothing threw', boom.length === 0, boom[0] || 'clean');
+  await page.close();
+}
+
+/* ----------------------------------------------------------------
+ * THE CAP IS ON THE SCREEN, AND THE GUARD PRESSES IT
+ *
+ * The engine section above asserts the boards CONTAIN men the cap cannot take. That says
+ * nothing about whether the page draws them differently or refuses the press, and a row
+ * that looks signable and then does nothing is the worst of the three states: the reader
+ * presses it twice and concludes the mode is broken.
+ *
+ * So this drives a real draft until a grey row turns up and then PRESSES it. That is the
+ * dynasty lock's rule arriving here: a lock on a door that opens anyway is decoration, and
+ * a door that refuses with nothing to say is the wall it replaced.
+ * ---------------------------------------------------------------- */
+console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
+{
+  const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+  await page.click('#b-draft');
+
+  /*
+   * GREEDY, AND OVER SEVERAL DRAFTS, because spending is what makes the cap bite and one
+   * draft is a coin toss on whether it does. Measured in the engine, greedy meets an out of
+   * reach man on about a quarter of boards, so a six pick draft misses entirely about one
+   * time in five. The first version of this walked ONE draft, came back "never once refused
+   * anything" and was reporting its own seed. Same lesson as sampling six seeds for the
+   * boss battle's drive log.
+   */
+  const look = () => page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#d-men .man')];
+    const poor = rows.find((e) => e.classList.contains('poor'));
+    const rich = rows.find((e) => !e.classList.contains('poor'));
+    if (!poor || !rich) return null;
+    const dim = (e) => Number(getComputedStyle(e.querySelector('.who')).opacity);
+    return {
+      id: poor.dataset.id,
+      disabled: poor.disabled,
+      says: poor.querySelector('.cost s').textContent.trim(),
+      dimmer: dim(poor) < dim(rich) - 0.1,
+      priceLit: getComputedStyle(poor.querySelector('.cost b')).color
+        !== getComputedStyle(poor.querySelector('.who')).color,
+    };
+  });
+  let sawGrey = null, drafts = 0;
+  for (; drafts < 8 && !sawGrey; drafts++) {
+    if (drafts) { await page.click('#b-abandon'); await page.waitForTimeout(200); }
+    for (let i = 0; i < D.SLOTS.length && !sawGrey; i++) {
+      await page.locator('#d-men .man').first().waitFor({ timeout: 10000 });
+      sawGrey = await look();
+      if (!sawGrey) await signOne(page);
+    }
+  }
+
+  ok(`a greedy draft is shown a man it cannot sign, within ${drafts} drafts`, !!sawGrey,
+    sawGrey ? sawGrey.says : 'never once refused anything over 8 drafts');
+  if (sawGrey) {
+    ok('  it says why rather than just looking odd', /over budget/i.test(sawGrey.says),
+      sawGrey.says);
+    ok('  it is visibly quieter than a row you can take', sawGrey.dimmer);
+    /* THE PRICE IS THE REASON THE ROW IS GREY, so it must not be greyed with it. Written as
+       one opacity on the row this is impossible, because a child cannot opt out of a
+       parent's opacity, and the rule that tried to say otherwise was a line that did
+       nothing. Asserted as a colour rather than as a hex. */
+    ok('  and the price is not dimmed with the rest of him', sawGrey.priceLit);
+    /* PRESSED, NOT LOOKED AT. */
+    const before = await page.locator('#d-slots .slot.done').count();
+    await page.evaluate((id) => {
+      const el = document.querySelector('#d-men .man[data-id="' + id + '"]');
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    }, sawGrey.id);
+    await page.waitForTimeout(400);
+    const after = await page.locator('#d-slots .slot.done').count();
+    ok('  and pressing him signs nobody', after === before, `${before} -> ${after}`);
+    /* And the board is not left mid acknowledgement by a press that did nothing. */
+    const stuck = await page.evaluate(() =>
+      document.getElementById('d-men').className.indexOf('clearing') >= 0);
+    ok('  and the board is not left half cleared by it', !stuck);
+  }
   ok('  nothing threw', boom.length === 0, boom[0] || 'clean');
   await page.close();
 }

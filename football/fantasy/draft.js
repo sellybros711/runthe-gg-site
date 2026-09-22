@@ -160,13 +160,28 @@
     return t;
   }
 
-  /* Everybody who could legally be signed into slot i with `left` million to spend. */
-  function eligible(pool, i, left, takenIds) {
-    var ceiling = left - reserveAfter(pool, i);
+  /* The dearest a man can be and still leave every remaining slot fillable. */
+  function ceilingAt(pool, i, left) {
+    return left - reserveAfter(pool, i);
+  }
+
+  /* Everybody at slot i who is not already signed, dearest first. */
+  function atSlot(pool, i, takenIds) {
     var men = byPos(pool, SLOTS[i]), out = [];
     for (var k = 0; k < men.length; k++) {
-      if (men[k].price_musd > ceiling + 1e-9) continue;
       if (takenIds && takenIds.indexOf(men[k].player_id) >= 0) continue;
+      out.push(men[k]);
+    }
+    out.sort(function (a, b) { return b.price_musd - a.price_musd; });
+    return out;
+  }
+
+  /* Everybody who could legally be signed into slot i with `left` million to spend. */
+  function eligible(pool, i, left, takenIds) {
+    var ceiling = ceilingAt(pool, i, left);
+    var men = atSlot(pool, i, takenIds), out = [];
+    for (var k = 0; k < men.length; k++) {
+      if (men[k].price_musd > ceiling + 1e-9) continue;
       out.push(men[k]);
     }
     return out;
@@ -198,16 +213,59 @@
     return Math.min(DEPTH, clubsIn(pool) * starts);
   }
 
+  /*
+   * A BOARD SHOWS THE MEN YOU CANNOT AFFORD AS WELL AS THE ONES YOU CAN.
+   *
+   * It did not, and that is what a player meant by always having enough for the top men.
+   * Drawn from the AFFORDABLE men only, every man on every board is one the reader can buy,
+   * at every pick, by construction. So the cap decides the whole lineup and never once
+   * appears on screen: it binds in the totals and is invisible in the moment, which reads
+   * as a draft with no budget in it.
+   *
+   *   node football/build/test/probe_board.mjs
+   *
+   * Measured on the live week three board, greedy, 400 drafts: the cap gets through 97% of
+   * itself, and the dearest man ever OFFERED at the first press is $24.4M against a $48M
+   * ceiling and $90M to spend. Nothing was ever refused, so nothing was ever a decision.
+   *
+   * Drawn from the DEPTH dearest men at the slot instead, ignoring what is left, a board
+   * holds something out of reach on 25.7% of presses and the takeable count runs 5.0, 5.0,
+   * 4.9, 4.5, 3.6, 3.0 across the six picks. So there is still a real choice at the last
+   * slot, which is the thing that had to be checked before doing this: a board of four grey
+   * men and one signable one is the wheel picking the team.
+   *
+   * THE RESERVE FLOOR STAYS AND MOVES ONTO THE BOARD RATHER THAN OFF IT. Drawn with no
+   * guarantee at all, a board can come up with nothing on it a roster can sign, which is
+   * the empty screen with no way on that the floor exists to prevent: measured that way it
+   * strands every single draft. So one seat is guaranteed signable, filled with the dearest
+   * man in range when the draw produced none.
+   *
+   * NARROWING THE REACH WAS THE OTHER CANDIDATE AND IT IS WORSE. At a depth of 20 the
+   * dearest man offered at the first press goes to $29.5M, and the takeable count at the
+   * last two picks falls to 1.7 and 1.3. That buys the budget by taking the decision away.
+   */
   function spin(pool, i, left, takenIds, rnd) {
-    var men = eligible(pool, i, left, takenIds);
-    men.sort(function (a, b) { return b.price_musd - a.price_musd; });
-    var top = men.slice(0, depthFor(pool, SLOTS[i]));
+    var can = eligible(pool, i, left, takenIds);
+    /* Nothing signable at all is the stranded board, and it is still the same answer: the
+       page says so rather than showing five men it will refuse. */
+    if (!can.length) return [];
+    var top = atSlot(pool, i, takenIds).slice(0, depthFor(pool, SLOTS[i]));
     var out = [];
     for (var n = 0; n < DRAW && top.length; n++) {
       out.push(top.splice(Math.floor(rnd() * top.length), 1)[0]);
     }
-    /* The board reads in price order, which is the order a reader compares them in. */
+    /* The board reads in price order, which is the order a reader compares them in, and
+       sorting BEFORE the swap is what makes the swap land on the cheapest man rather than
+       on whoever the draw happened to pull last. */
     out.sort(function (a, b) { return b.price_musd - a.price_musd; });
+    var ceiling = ceilingAt(pool, i, left), any = false;
+    for (var k = 0; k < out.length; k++) {
+      if (out[k].price_musd <= ceiling + 1e-9) { any = true; break; }
+    }
+    /* The CHEAPEST drawn man is the one replaced, because he is the one closest to being
+       the guarantee already, and the dearest in range is what goes in: a reader who cannot
+       reach any of the five should be handed the best thing they CAN have, not the worst. */
+    if (!any) out[out.length - 1] = can[0];
     return out;
   }
 
@@ -240,7 +298,14 @@
     SLOTS: SLOTS, DRAW: DRAW, DEPTH: DEPTH, CAP_MUSD: CAP_MUSD, CHANCES: CHANCES,
     rngOf: rngOf, newSeed: newSeed,
     cheapestAt: cheapestAt, reserveAfter: reserveAfter, eligible: eligible, spin: spin,
-    clubsIn: clubsIn, depthFor: depthFor,
+    clubsIn: clubsIn, depthFor: depthFor, ceilingAt: ceilingAt, atSlot: atSlot,
+    /* WHETHER A MAN ON THE BOARD CAN BE SIGNED, which is now a question with two answers.
+       One source for the page's grey rows, the click handler's refusal and every bot, so a
+       board that LOOKS unaffordable and a press that is REFUSED can never come apart. That
+       is the Full Team glow's lesson: the picture and the rule read one function. */
+    canSign: function (pool, i, left, man) {
+      return !!man && man.price_musd <= ceilingAt(pool, i, left) + 1e-9;
+    },
     boardFor: boardFor, spent: spent, projected: projected, full: full,
   };
 

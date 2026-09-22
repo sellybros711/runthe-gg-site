@@ -159,8 +159,8 @@ const main = async () => {
    * sign. It is ZERO today, by construction, and it is the one number here that is about
    * what the screen says rather than about what the totals come to.
    */
-  const REACHES = [12, 20, 40];
-  const CAPS = [60, 70, 80, 90];
+  const REACHES = [20, 40];
+  const CAPS = [70, 80, 90];
   console.log('\nWHAT WOULD MAKE THE CAP VISIBLE. `dearest at QB1` is the best man the wheel'
     + '\noffers on the first press, and `out of reach` counts boards holding a man the'
     + '\nroster cannot sign. Greedy, same seeds.');
@@ -169,6 +169,11 @@ const main = async () => {
   for (const depth of REACHES) {
     for (const cap of CAPS) {
       let first = 0, reach = 0, picks = 0, spend = 0, runs = 0, strand = 0;
+      /* HOW MANY OF THE FIVE ARE TAKEABLE, per pick. This is the number that decides
+         whether showing out of reach men is a budget or a dead end: a last slot offering
+         one signable man and four grey ones has no decision in it at all, which is the
+         thing the affordability filter was doing for free. */
+      const canAt = SLOTS.map(() => 0);
       for (let run = 0; run < RUNS; run++) {
         const chance = { seed: (run * 2654435761) >>> 0, men: [] };
         let ok = true;
@@ -208,6 +213,7 @@ const main = async () => {
             can = [swap];
           }
           picks++;
+          canAt[i] += can.length;
           if (can.length < board.length) reach++;
           if (i === 0) first += board[0].price_musd;
           chance.men.push(can[0]);
@@ -220,7 +226,8 @@ const main = async () => {
         + `${pad(`$${fix(first / RUNS)}M`, 17)}`
         + `${pad(`${fix(reach / Math.max(1, picks) * 100)}%`, 14)}`
         + `${pad(runs ? `${fix(spend / runs / cap * 100)}%` : '-', 15)}`
-        + `${pad(strand, 10)}`);
+        + `${pad(strand, 10)}`
+        + `   takeable of 5: ${canAt.map((v) => fix(v / RUNS)).join(' ')}`);
     }
   }
 };

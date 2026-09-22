@@ -2572,9 +2572,8 @@ the right ORDER; what pricing promises is that equal price means equal expected 
 is BIAS. Fitted on r, shrinkage of any kind looked strictly harmful and the thing it exists to
 fix went unmeasured.
 
-**THE PROJECTION IS THE SEASON TO DATE AND A CONSTANT, and that is a measurement rather than
-laziness.** No free weekly projection is licensable, so one was built and then tested. Over
-6,720 draftable player-weeks of 2022 to 2024, against a 5.887 baseline mean error:
+**NO WEEKLY PROJECTION IS LICENSABLE**, so one was built and then tested. Over 6,720
+draftable player-weeks of 2022 to 2024, against a 5.887 baseline mean error:
 
 | | mae |
 |---|---|
@@ -2582,21 +2581,179 @@ laziness.** No free weekly projection is licensable, so one was built and then t
 | plus the best matchup term found | 5.878 |
 | plus the best recency term found | 5.867 |
 
-Neither is a term. **The recency term is worse than useless for a number that is PRINTED**: it
-takes the bias from +0.54 to +1.06, because the last three games of a man near the top of the
-board run hot. What ships is one addition, `PROJ_LIFT = 0.54`, because the shrink leaves every
-estimate low by that much and six men is three points of lineup projection a reader would
-watch come in high every week. **A flat offset and not a fitted line**: least squares wants a
-slope of 0.972, and a slope under one flattens the board by pulling the best men toward the
-middle. All three candidates land inside 0.013 of each other and remove the bias exactly, so
-the tiebreak is what they disturb.
+Neither is a term, and both are still out. **The recency term is worse than useless for a
+number that is PRINTED**: it takes the bias from +0.54 to +1.06, because the last three games
+of a man near the top of the board run hot.
 
-**So price and projection are the same quantity up to a constant, which means THE BOARD
-CANNOT CONTAIN A DECISION ITS OWN NUMBERS RESOLVE.** The dearest man on any board is also the
-highest projected one. That is why the card shows the STAT LINE and the price and no per man
-projection: the edge is everything the board cannot see, which is injuries, snap shares,
-weather and who is actually starting. The lineup's projected total is shown after the six are
-in, which is the one number this mode prints about the future.
+#### The projection was fitted POOLED, and the mode is played one week at a time
+
+```
+node football/build/test/probe_early.mjs
+```
+
+What shipped was `shrunkPPG + PROJ_LIFT`, one flat constant fitted over that same pool from
+week four on, so the shortest sample in it was three games and most of it was men with eight
+or ten. **Week three was never in the sample at all.** A player does not meet the pool. They
+meet ONE WEEK, and inside one week nearly every man has the same number of games, so a
+correction fitted at the pool's average sample length is right at exactly one point of the
+season:
+
+| games played | 1 | 2 | 3 | 4 | 5 | 6+ |
+|---|---|---|---|---|---|---|
+| what it was out by | +3.20 | +1.93 | +1.02 | +0.48 | -0.03 | -0.16 |
+
+Right about October, a third low about September. At two games, which is what week three is,
+that is 11.6 points on a six man lineup projected at 35.8. **Reported by a player** as the
+projection feeling too low to be half PPR, and they were right.
+
+**AND THE SHRINK TOWARD ZERO WAS AVAILABILITY WEARING A SAMPLE SIZE COSTUME.** Zero is where a
+man who is not on the field scores, so shrinking toward it is an argument about whether he
+PLAYS rather than about how much evidence there is, and the two only look alike because a man
+with two games in week ten has missed eight. Grouped by the share of his club's games a man
+has already played:
+
+| share of his club's games | under .5 | .5 to .8 | .8 to 1 | every one |
+|---|---|---|---|---|
+| he scores this much of his own average | 0.404 | 0.605 | 0.739 | 0.914 |
+| and he blanks | 59.6% | 39.0% | 24.1% | 8.9% |
+
+The first row is one minus the second to three decimals, at every share. Held to men who have
+played every one of their club's games, the games effect on the LEVEL all but vanishes and
+what is left is an ordinary shrink for a thin sample.
+
+**So there are two terms and they answer two questions**: how often he plays, and what he
+scores when he does, which is the season to date shrunk toward what his POSITION is doing on
+this board. **The prior is the part that was missing.** `shrunkPPG` is a shrinkage estimator
+with its prior set to zero, which is why it needed a constant bolted on the end and why that
+constant could only ever be right at one sample length: the prior's own contribution is
+`K*M/(g+K)` and it SHRINKS as the sample grows, where a bolted-on constant does not.
+
+**Per position and not one level for everybody**, because one level shrinks a tight end up
+toward a quarterback's rate and a quarterback down toward a tight end's, on the same board, at
+the same time. Measured, one global level over-projects both ends of a week three board.
+
+**Fitted on two seasons and reported on the third, rotating the holdout.** The level multiple
+came back **0.800 on all three rotations** and K at 2.25, 2.50 and 2.50 against the `SHRINK_K`
+of 2 the price already carries, so it is pinned to that rather than given a second constant.
+Pinning costs nothing: the worst mis-calibrated cell moves 2.03 to 2.01, 3.21 to 3.49 and 1.96
+to 1.65 across the three held out seasons. On a held out season:
+
+| | 1 | 2 | 3 | 4 | 5 | 6+ | worst cell | mae |
+|---|---|---|---|---|---|---|---|---|
+| shipped | +3.45 | +2.18 | +1.39 | +0.90 | +0.24 | +0.17 | 5.59 | 6.03 |
+| plays x rate | +0.12 | +0.26 | +0.01 | +0.31 | -0.26 | +0.08 | **2.01** | **5.81** |
+
+Better on the error as well as on the bias, which is worth stating because a calibration fix
+usually costs accuracy and this one does not.
+
+**NOT ONE OF THE 408 PRICES ON THE LIVE BOARD MOVED.** `pricePool` still runs on `shrunkPPG`,
+the cap was swept against those prices, and the projection is not an input to any of it. The
+probe measures that rather than asserting it from the algebra.
+
+**What it costs is that the projection is no longer a monotone restatement of the price.** Two
+men at one price project differently when one of them has missed a Sunday. That is real and it
+is on the card already, as how many of his club's games he was there for, so the card says
+`1 of 2 games` rather than `1 game`: in week ten the bare count says nothing at all.
+
+**The card still shows no per man projection.** What the board shows is what he has DONE and
+how available he has been, which is both halves of what the projection reads. The lineup's
+projected total comes after the six are in, and it is the one number this mode prints about
+the future.
+
+#### The cap bound the lineup and never once appeared on screen
+
+```
+node football/build/test/probe_board.mjs
+```
+
+Reported by a player as always having enough for all the top men. **They did, by
+construction.** `eligible()` filtered the position to men the roster could sign and `spin()`
+drew from the DEPTH dearest of THOSE, so every man on every board was affordable, at every
+pick, always. The cap decided the whole lineup and was never once seen.
+
+**The cap sweep cannot find this and is not wrong.** `probe_cap.mjs` asks whether the cap
+binds over a whole draft and on the live board it does: greedy gets through 97% of it, the
+crossover with a budget bot is exactly at $90M, nothing strands. That is a question about the
+totals and this is a question about one press.
+
+**And the whole-pool price distribution is a red herring.** 48% of the 408 men sit at the
+$3.0M floor, which looks alarming and means nothing: the wheel reaches 144 men and **0.7% of
+those** are at the floor.
+
+**What was actually wrong is the reach.** A spin draws five of the DEPTH dearest, so the
+dearest man OFFERED is about the `DEPTH/(DRAW+1)`th best at that position: at a depth of
+forty, the seventh, which on this board is **$24.4M against a $48M ceiling and $90M to
+spend**. Nothing is ever refused, so nothing is ever a decision.
+
+**So the board shows the men you cannot afford.** Drawn from the DEPTH dearest at the slot
+regardless of what is left, a board holds something out of reach on **25.7%** of presses. One
+seat is GUARANTEED signable, filled with the dearest man in range when the draw produced
+none, because the reserve floor's job does not go away: drawn with no guarantee at all it
+strands every single draft, which is the empty screen with no way on.
+
+**The takeable count is what had to be checked before doing it**: 5.0, 5.0, 4.9, 4.5, 3.6,
+3.0 across the six picks. A last slot offering one signable man and four grey ones is the
+wheel picking the team.
+
+**NARROWING THE REACH WAS THE OTHER CANDIDATE AND IT IS WORSE.** At a depth of 20 the dearest
+man offered at the first press goes to $29.5M and the takeable count at the last two picks
+falls to 1.7 and 1.3. That buys the budget by taking the decision away. `DEPTH` and
+`CAP_MUSD` are both unchanged, and the cap sweep is unchanged in shape after it: crossover
+still at 90, 97% spent, zero stranded.
+
+**`canSign()` is one call and every reader asks it**: what greys a row, what refuses the
+press, and what all three bots in `check-fantasy.mjs` and all four in `probe_cap.mjs` sign
+from. That is the Full Team glow's lesson, where the picture read `roster.length` and the
+board read `nextOpenSlot()` and the two came apart on four picks of six.
+
+**The price is the one thing on a grey row that is NOT dimmed**, because it is the reason the
+row is grey. That is only possible because the row itself is never faded: opacity on a parent
+applies to the whole subtree and a child cannot opt back out, so the first version's
+`opacity:1` on the price inside a faded row was a rule that did nothing. The parts are dimmed
+instead.
+
+**The guard presses the grey row rather than looking at it**, which is the dynasty lock's rule
+again, and it walks up to eight drafts to find one. Greedy meets an out of reach man on about
+a quarter of boards, so a six pick draft misses entirely about one time in five: the first
+version walked ONE draft, came back "never once refused anything" and was reporting its own
+seed.
+
+#### The board reveals, and it does not step
+
+Reported alongside the two above: nothing is revealed and the screen is jumpy.
+
+**Measured first, and the obvious diagnosis was wrong.** The hoops draft board's fault was a
+collapse (`drawInto` emptied the containers and the court moved 1,554px). Here the board's top
+never moved at all. What was wrong is that there was no motion of any kind: five men were
+replaced by five different men between two frames, with nothing on screen saying which one was
+taken.
+
+**The rows are in the DOM before they are readable**, dealt 55ms apart, which is what keeps
+the box exact on the first frame. A skeleton of placeholders cannot: a row with a two line
+stat line is 74px and a one line one is 63, so stand-ins step the moment the real men arrive.
+
+**A press is acknowledged before the board changes.** The row you took goes green and holds
+for 170ms while the other four fall away. **A second press inside that window is refused**, or
+a double tap signs a man out of the previous slot's board into the next slot. The state is
+written immediately and only the PAINT waits.
+
+**AND THE STAT LINE IS FLOORED AT TWO LINES AS WELL AS CLAMPED AT TWO.** The clamp held a row
+to one height within ONE board and said nothing about the next one, so a board of one line
+stat lines is 63px a row and the one after it is 74: signing somebody moved everything under
+the board by up to **31px**, on four presses of five, measured through the real page at
+390x844. Now 0px on every press.
+
+**Every timer is cancelled on a screen change and checks it is still working on the draft it
+was started for.** A stagger firing into a board that has been rebuilt leaves rows stuck at
+opacity 0: a board with men on it nobody can read, and nothing throws. `show()` cancels, so
+callers going TO the draft screen show it BEFORE they paint it.
+
+**The guard measures the glass over a whole draft at a phone**, and asserts properties that
+survive a redesign: every row ends up readable, it is over inside a bound, and the thing under
+the board does not move while it happens. Both defects were proved by reintroducing them
+alone, **and one of its claims was passing vacuously**: with the stagger stopped part way,
+`signed` is 0 and the worst settle time is 0, so a bare `< 1500` reported green on a board
+that never became readable at all.
 
 **The top of the board is the best man on it, not the 99th percentile.** That anchor is
 inherited from a pricing built over tens of thousands of finished seasons where the 99th

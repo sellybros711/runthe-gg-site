@@ -115,6 +115,20 @@
     background:var(--panel);transition:transform .07s ease,border-color .15s ease}
   .man:active{transform:translateY(1px)}
   .man:disabled{opacity:.38;cursor:default}
+  /* A MAN YOU CANNOT AFFORD IS STILL FULLY LEGIBLE, and that is the point of showing him.
+     Faded to nothing he is a rendering fault; faded a little he is what you gave up.
+
+     DIMMED PART BY PART AND NOT WITH ONE OPACITY ON THE ROW. Opacity on a parent applies to
+     the whole subtree and a child cannot opt back out of it, so `opacity:1` on the price
+     inside a faded row is a rule that does nothing. The price is the reason the row is grey,
+     so it is the one thing that stays at full strength, and that is only possible if the row
+     itself is never faded. `.man:disabled` above would do exactly that, so this wins on
+     order and puts the fade on the parts instead. */
+  .man.poor{opacity:1;border-color:rgba(255,255,255,.06);background:transparent}
+  .man.poor:active{transform:none}
+  .man.poor .pos,.man.poor .who{opacity:.42}
+  .man.poor .cost b{color:var(--gold)}
+  .man.poor .cost s{color:var(--gold);opacity:.75}
 
   /* ---- the reveal ----
      THE ROWS ARE IN THE DOM BEFORE THEY ARE READABLE, which is the whole of why this is
@@ -400,7 +414,7 @@
      PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script defer src="/football/auth.js?v=5"></script>
-<script src="draft.js?v=1"></script>
+<script src="draft.js?v=2"></script>
 <script src="entries.js?v=1"></script>
 <script>
 (function(){
@@ -648,16 +662,22 @@
         + 'That is a bug. Start this draft again.';
       return;
     }
+    /* THE CAP HAS TO BE ON THE SCREEN OR IT IS NOT A BUDGET. A board used to hold only men
+       this roster could afford, so the cap decided the whole lineup and was never once
+       seen. What greys a row and what refuses the press are the same call, so a row that
+       looks signable always is. */
     var html = '';
     for (var b=0;b<board.length;b++){
       var m = board[b];
       var where = m.opp ? (m.home ? 'vs ' + m.opp : 'at ' + m.opp) : '';
-      html += '<button class="man" data-id="' + esc(m.player_id) + '">'
+      var poor = !D.canSign(POOL.pool, i, left, m);
+      html += '<button class="man' + (poor ? ' poor' : '') + '"'
+        + (poor ? ' disabled' : '') + ' data-id="' + esc(m.player_id) + '">'
         + '<span class="pos ' + esc(m.position) + '">' + esc(m.position) + '</span>'
         + '<span class="who"><b>' + esc(m.name) + '</b>'
         + '<s>' + esc(m.team) + (where?' ' + esc(where):'') + ' &middot; ' + esc(m.stat_line) + '</s></span>'
         + '<span class="cost"><b>' + money(m.price_musd) + '</b><s>'
-        + gamesLine(m) + '</s></span>'
+        + (poor ? 'over budget' : gamesLine(m)) + '</s></span>'
         + '</button>';
     }
     $('d-men').innerHTML = html;
@@ -690,6 +710,11 @@
     var man = BY_ID[b.dataset.id];
     if (!man) return;
     var c = state.chances[cur];
+    /* THE SAME CALL THAT GREYED THE ROW, asked again on the press. `disabled` already stops
+       a real thumb, so this is the belt on a row that somehow got through: a man signed
+       over the ceiling strands the draft later, at a different slot, with nothing on screen
+       connecting the two. */
+    if (!D.canSign(POOL.pool, c.ids.length, D.CAP_MUSD - D.spent(chanceAt(cur)), man)) return;
     c.ids.push(man.player_id);
     save();
     JUST = c.ids.length - 1;

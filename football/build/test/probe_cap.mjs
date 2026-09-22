@@ -98,10 +98,16 @@ function draftOne(pool, cap, pick, seed, shares) {
     const taken = chance.men.map((m) => m.player_id);
     const board = DRAFT.spin(pool, i, left, taken, DRAFT.rngOf(seed + i * 0x9E3779B1));
     if (!board.length) return null;          /* stranded, which must never happen */
+    /* A BOARD HOLDS MEN THE CAP CANNOT TAKE NOW, on purpose, so every bot below signs from
+       the signable ones. Handed the whole board they would sign over the ceiling and strand
+       later at a different slot, and this file would report the cap sweep as broken when
+       what changed was what a board is. */
+    const can = board.filter((m) => DRAFT.canSign(pool, i, left, m));
+    if (!can.length) return null;
     /* `slack` is what earlier slots underspent, handed forward. Without it a budget bot
        that was offered nothing good at quarterback would never spend that money at all. */
     const slack = cap * shares.slice(0, i).reduce((t, s) => t + s, 0) - DRAFT.spent(chance);
-    chance.men.push(pick(board, rnd, { cap, i, share: shares, slack: Math.max(0, slack) }));
+    chance.men.push(pick(can, rnd, { cap, i, share: shares, slack: Math.max(0, slack) }));
   }
   return chance;
 }
