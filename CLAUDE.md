@@ -3015,6 +3015,203 @@ than designed around quietly.
 in a prize competition is a different kind of product and this mode has no paid tier at all,
 which is why there is no `fantasySold()` beside `fullTeamSold()`.
 
+### The board moves while the games are being played
+
+```
+node football/build/live-results.mjs --why        what it would do, and why
+node football/build/live-results.mjs | psql "$SUPABASE_DB_URL"
+psql -d fantasy -f supabase/110_fantasy_live.sql
+psql -d fantasy -f supabase/test/fantasy_live_test.sql
+```
+
+**109 already scored a live board correctly and nobody could tell.** A score is DERIVED, so
+the instant a `fantasy_results` row lands every entry that holds that man is right. What was
+missing was a writer during the games, and any way for the screen to say WHEN it last moved.
+A frozen feed and a quiet afternoon are the same picture.
+
+#### The source does move during a weekend, and that was measured rather than assumed
+
+nflverse fills its weekly stats file in as games finish. Measured on the real 2026 file: the
+build cache taken at **11:25pm ET on the Sunday of week 2 held 975 rows across 28 clubs**, and
+once the Sunday night and Monday night games were in it held **1,107 across 32**. Those two
+snapshots are also the fixture the whole chain was proved on, end to end, and the reorder
+between them is real: of eight lineups drafted through the real wheel, **five changed place**.
+
+**What is still NOT measured is whether it moves DURING a game**, and the difference decides
+whether the board ticks over or jumps a game at a time. So the writer records both clocks and
+one weekend of them answers it with data:
+
+| | |
+|---|---|
+| `checked_at` | the last time anything LOOKED |
+| `results_at` | the last time the answer actually CHANGED |
+
+`results_sig` is what makes the pair honest. The writer upserts the same rows every few
+minutes whether or not anything moved, so `results_at = now()` on every write would report a
+change every time it was checked: the frozen feed wearing a fresh timestamp. The signature is
+taken over the week's rows AS STORED, after the write, so it is a fact about the table rather
+than about what the writer thinks it sent.
+
+#### Three things the live path broke that the Tuesday path never could
+
+All three had cost nothing for as long as the only run happened two days after the last
+whistle.
+
+- **THE SCHEDULE SAYING A GAME IS OVER IS NOT THE STATS BEING IN.** `games.csv` carries a
+  final score the moment a game ends and the player rows land minutes later. `final` was read
+  off the schedule alone, so a run at the exact minute the Monday night game ended would mark
+  the week SCORED on incomplete stats, and `fantasy_mark_results` will not un-say it. Final
+  now means both: every game played AND every club that played has somebody with a row. The
+  28-club snapshot is exactly the state it refuses, and it names the four clubs it is waiting
+  for.
+- **THE CACHE NEVER EXPIRES.** Right for 1999 to last year, and a board that never moves for
+  a season being played: served from disk, the writer would poll the same bytes all afternoon.
+  In a GitHub runner the workspace is empty so it fetches anyway, which made it correct BY
+  ACCIDENT and would have broken silently the day somebody added a cache step to speed the
+  workflow up. `maxAgeMs` is opt-in, the default is unchanged, and the live path passes 0.
+- **`weekly-pool.mjs --write` REPOINTED THE LIVE WEEK BACKWARDS.** Building an old week to
+  make a fixture is an ordinary thing to want, and every one of those quietly moved
+  `fantasy_now.json` back: the mode serves a week that finished a fortnight ago, nothing
+  throws, the board is a real board. Found by doing it. The pointer only ever goes forward
+  now, and the week's own JSON is still written.
+
+#### The writer is a cron that decides for itself
+
+**The cron is a wide net in UTC and `live-results.mjs` makes the real decision off
+`games.csv`**, which is in Eastern and is already the one source for when a game starts.
+`fantasy-pool.yml` answers daylight saving by listing both entries and asking which fired,
+which is right for a job that must run at one exact hour; this one wants to be awake for a
+whole game day, so nothing here reads a wall clock at all and a clock change moves nothing.
+
+**The window has a tail and the tail is the point.** A game is watched from ten minutes before
+kickoff to six hours after, and then the week stays watched for as long as a club that has
+played is missing its stats. The stats land AFTER the game, so a window closing at the final
+whistle would stop watching at the exact moment the last game's points were about to arrive.
+
+**It commits nothing.** The live board is a Supabase read, so a score that moves costs one
+write and no deploy; committing `results_*.json` every ten minutes would be a hundred commits
+and a hundred Cloudflare deploys a weekend to publish a file the live screen does not read.
+
+**`set -o pipefail` is load bearing in the workflow.** Without it the exit status is psql's, so
+a build that failed outright pipes nothing into a psql that succeeds and the run goes green
+having scored nobody: the one failure here that looks exactly like a quiet afternoon.
+
+**Nothing scored yet is a real state and not an error.** Before the Thursday kickoff nflverse
+has no rows for the week, and an emitter that threw there would take the workflow red every
+single week for the one condition that is certain.
+
+#### The rows are keyed on the ENTRY, and the key is not the entry's id
+
+A board that animates cannot do without a stable row key. Keyed on PLACE, row one is always
+row one and nothing ever moves: the scores change under a board that never animates. Keyed on
+the NAME, two readers sharing one are a single row and a rename is a row that teleports.
+
+**It is not `fantasy_entries.id` either, and that is a disclosure decision.** That column is a
+bigserial over every entry ever made, so a public board carrying it publishes how many entries
+this mode has taken in total. `entry_no` is the same count taken WITHIN the week, which gives
+away only the order people entered, and the tiebreak already publishes that by putting the
+earlier entry above on a tie.
+
+**A HASH OF THE ID WOULD HAVE BEEN WORSE THAN EITHER.** md5 over a small integer is brute
+forced in a second, so it would have looked like a defence and been none. This file would
+rather make no claim than a false one.
+
+**It is stable for exactly as long as it needs to be**, and that rests on a property the mode
+already has: no entry can arrive after the lock, and the board does not open until the lock.
+The set of entries in a live week is frozen from the first kickoff.
+
+#### Three read policies that were granting nothing
+
+**RLS narrows a grant, it does not make one.** 109 found this once on `fantasy_entries`, where
+reading your own entry raised permission denied behind a perfectly good read-own policy. It is
+true of `fantasy_weeks`, `fantasy_prices` and `fantasy_results` too, and was missed because
+every screen reads them through a security definer function, which never consults the policy.
+
+Nothing was broken. What was wrong is that **109 says otherwise in as many words**, over
+`fantasy_prices`: "PUBLIC READ, deliberately, and it gives nothing away". Verified against a
+real database, `anon` was denied on all three. A comment claiming an access rule the database
+does not have is the dangerous direction, because the next person to want a direct read finds
+it refused and goes looking at the policy, which was never the problem. 110 grants all three
+and asserts it as a real read as the real role. **`fantasy_entries` is deliberately not
+widened**: the sanctioned way to see somebody else's lineup is the board, and that gate is the
+competition.
+
+#### FLIP, and the one forced reflow
+
+The rows are measured where they are, the list is rebuilt in its new order, they are measured
+again, each is given the INVERSE of the distance it just travelled, and that is played back to
+nothing. The browser lays out once and animates a transform, so fifty rows sliding past each
+other cost the compositor and nothing else.
+
+**Read everything, then write everything.** Both loops are one phase each and the single
+`offsetWidth` between them is the only forced reflow in the move. Measuring one row and then
+writing its transform before measuring the next is fifty reflows for one animation, on the
+frame the page is also parsing a poll.
+
+**The transition is declared in CSS and driven from script.** Written as a keyframe, every row
+would replay it on every repaint, because the painter rebuilds the list and a new node starts
+its animations over. That is the hoops bracket's own lesson.
+
+**Which way it went is marked for the half second it is going.** A row that climbed and a row
+that fell look identical once they have arrived, and the move is over in half a second: without
+the mark the only reader who knows what happened is the one who was watching that exact row.
+**A row whose SCORE moved and whose PLACE did not gets its own tick**, because most of a quiet
+afternoon is exactly that and the board would otherwise look frozen while working perfectly.
+
+**The first paint never animates.** There is nothing to move from, and fifty rows flying in
+from wherever they were measured is a screen announcing itself.
+
+#### `show('s-in')` was cancelling the whole feature, three ways at once
+
+`paintIn` ends with `show('s-in')`, which was a harmless re-assert of a class that was already
+set. It stopped being harmless the moment `show` grew teeth, and **none of the three throws**:
+
+- the poll was CANCELLED by the first live repaint, so the board updated once and never again,
+- the move timers went with it, so every row that had just moved kept its mark for ever,
+- and `scrollTo(0, 0)` yanked a reader half way down the board back to the top, every twenty
+  seconds, for as long as they watched.
+
+Showing the screen you are already on is not a screen change, and it returns early now. Found
+by the guard rather than by reading.
+
+#### What the guard measures, and the two shapes it got wrong first
+
+It drives two real states through the page's own poll and reads the glass: a row that changed
+place is caught MID FLIGHT, still drawn where it was, which is the one moment at which a board
+that reorders without animating and a board that animates are distinguishable. Proved by
+reintroducing both defects: with the invert removed nothing is moving, and keyed on the place
+instead of the entry **three separate assertions fail**.
+
+**Two handles are published for it and nothing on the page reads either.** `__rtgPoll` asks
+once through the real poll and the real painter, and `__pollMs` shortens the interval. That is
+`window.RTF_LIVE`'s argument in the hoops game: the claim is about the SECOND answer, and
+waiting the real twenty seconds would put twenty seconds into the suite per assertion.
+
+**A mark coming off is a bound, not a snapshot.** The first draft asserted the marks were gone
+at one arbitrary instant after the move, which is a claim about the suite's own arithmetic;
+measured, they come off at about 620ms. It waits for them now, which still catches the defect
+worth catching: a mark that is never removed at all.
+
+**And every fixture timestamp is relative to the PAGE's clock.** `openPage` pins `Date.now()`
+inside the browser, and these sections run at a point DURING the games, hours from the real
+time the suite runs at. Built off the harness's own `Date.now()`, a `checked_at` meant to be
+"a moment ago" lands sixteen hours in the page's past and the board correctly reports a feed
+that has stopped. The first draft did that and failed on the one assertion it existed to prove.
+
+#### The poll
+
+Twenty seconds, and it **only runs while there is something to see**: not before the lock, not
+after the week is settled, and not while the tab is hidden. `visibilitychange` restarts it AND
+asks immediately, because coming back to the tab is the moment somebody checks.
+
+**A null answer leaves the board alone rather than blanking it.** A leaderboard that hid itself
+on one bad request would flash empty every time a phone changed cell tower. **And it keeps
+asking after one**, because a board that gave up after a single unreachable poll would stay
+frozen for the rest of the afternoon on a reader whose train went into a tunnel.
+
+**Three ways an answer can be stale by the time it lands**, and all three are guarded: the
+reader left the screen, the poll was stopped, or the live week rolled over under a slow
+request. A board painted for the wrong week is somebody else's competition on your screen.
 #### The prize is decided, and one half of it must not go where it looks like it goes
 
 The top three get something. First takes the Pro bundle; all three get a mark on the account and

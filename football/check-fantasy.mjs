@@ -282,6 +282,9 @@ const serverStub = (server) => {
      a server that cannot exist, and a walk driven against it would be testing a state the
      page will never meet. `mine` is seeded from the fixture and written by the submit. */
   let entry = s.mine || null;
+  /* Which state of `s.boards` the next poll gets. Per stub, so two pages in one run do not
+     share a position in the sequence. */
+  let boardAt = 0;
   return {
     /* An accepted call, or the shape PostgREST returns when a plpgsql function raises. */
     fantasy_submit: (body) => {
@@ -311,6 +314,23 @@ const serverStub = (server) => {
       body: JSON.stringify(s.place ? [s.place] : []) }),
     fantasy_entry_count: () => ({ status: 200,
       body: JSON.stringify(s.count == null ? 0 : s.count) }),
+    /*
+     * THE LIVE BOARD, AND IT ANSWERS A DIFFERENT THING EACH TIME IT IS ASKED.
+     *
+     * `s.boards` is a list of states and every poll takes the next one, holding on the
+     * last. That is what makes this a fixture for a board that MOVES rather than one that
+     * is drawn: a stub answering the same rows every time would let a painter that never
+     * animates anything pass every assertion below.
+     */
+    fantasy_board: () => {
+      const list = s.boards;
+      if (!list || !list.length) {
+        return { status: 200, body: JSON.stringify(s.board == null ? null : s.board) };
+      }
+      const at = Math.min(boardAt, list.length - 1);
+      boardAt++;
+      return { status: 200, body: JSON.stringify(list[at]) };
+    },
   };
 };
 
@@ -416,10 +436,47 @@ async function openPage(browser, url, opts = {}) {
   return { page, boom, posted };
 }
 
+/*
+ * THE SHAPE `fantasy_board` ANSWERS, built in one place so every fixture below agrees with
+ * the server. A week that is open and not scored is the live case, which is what most of
+ * these are about.
+ */
+/*
+ * EVERY TIMESTAMP IS RELATIVE TO THE PAGE'S CLOCK AND NOT TO THIS PROCESS'S.
+ *
+ * `openPage` pins `Date.now()` inside the browser, and for these sections it is pinned to a
+ * point DURING the games, which is hours away from the real time this file is running at.
+ * Built off `Date.now()` here, a `checked_at` meant to be "a moment ago" lands sixteen hours
+ * in the page's past and the board correctly reports a feed that has stopped. The first
+ * draft did exactly that and failed on the one assertion it was written to prove, which is
+ * the right failure and cost a round of reading the page instead of the fixture.
+ */
+const boardOf = (o) => {
+  const base = o.now == null ? LIVE_AT : o.now;
+  const ago = (ms) => new Date(base - ms).toISOString();
+  return {
+    week: o.week === null ? null : {
+      locks_at: ago(3 * 3600e3),
+      scored_at: o.scored_at || null,
+      checked_at: o.checked_at === undefined ? ago(30e3) : o.checked_at,
+      results_at: o.results_at === undefined ? ago(90e3) : o.results_at,
+      games_final: o.games_final == null ? 3 : o.games_final,
+      games_total: o.games_total == null ? 16 : o.games_total,
+      open: o.open === undefined ? true : o.open,
+      entries: o.me ? o.me.entries : (o.rows || []).length,
+    },
+    rows: o.rows || [],
+    me: o.me || null,
+  };
+};
+
 const TESTER = { name: ACCESS.TESTERS[0], userId: null };
 const STRANGER = { name: 'somebody-else', userId: '00000000-0000-0000-0000-000000000000' };
 const FANTASY = 'http://local.test/football/fantasy/';
 const BEFORE = Date.parse(POOL.locks_at) - 36 * 3600 * 1000;
+/* THREE HOURS PAST THE LOCK: the Thursday game is on, which is the only clock at which a
+   live board is a real screen. Every section about movement runs at this one. */
+const LIVE_AT = Date.parse(POOL.locks_at) + 3 * 3600 * 1000;
 const AFTER = Date.parse(POOL.locks_at) + 60 * 1000;
 
 const browser = await pw.chromium.launch({ executablePath: CHROME });
@@ -608,20 +665,25 @@ console.log('\nTHE BOARD OPENS AT THE LOCK');
 {
   const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
     spend: 80, projected: 50, score: 0, scored: false };
+  /* `entry_no` IS THE KEY THE BOARD ANIMATES ON, so a fixture without one would drive a
+     painter that has nothing to match rows by. Derived from the NAME rather than the place,
+     which is the whole point of it: the same person keeps the same key as they move. */
   const row = (place, name, score, me) => ({ place, display_name: name, score,
-    projected: 58, spend: 88, picks: [], is_me: !!me });
+    projected: 58, spend: 88, picks: [], is_me: !!me,
+    entry_no: name.length * 7 + name.charCodeAt(0), played: 6 });
   const IN_IT = [row(1, 'Somebody', 91.2), row(2, 'You', 77.5, true)];
   const ABOVE = [row(1, 'Somebody', 91.2), row(2, 'Another', 77.5)];
   for (const [label, server, want] of [
     ['before the lock there is no board at all',
-      { mine: ENTRY, standings: [], place: null }, { wrap: false }],
+      { mine: ENTRY, board: boardOf({ rows: [], open: false }) }, { wrap: false }],
     ['and neither is there when it cannot be reached',
-      { mine: ENTRY, standings: null, place: null }, { wrap: false }],
+      { mine: ENTRY, board: null }, { wrap: false }],
     ['once it is open it ranks the entries',
-      { mine: ENTRY, standings: IN_IT, place: { place: 2, entries: 2, score: 77.5 } },
+      { mine: ENTRY, board: boardOf({ rows: IN_IT, me: { place: 2, entries: 2, score: 77.5 } }) },
       { wrap: true, rows: 2, mine: 1 }],
     ['a reader off the bottom of the fifty is still shown their own place',
-      { mine: ENTRY, standings: ABOVE, place: { place: 112, entries: 400, score: 31.0 } },
+      { mine: ENTRY,
+        board: boardOf({ rows: ABOVE, me: { place: 112, entries: 400, score: 31.0 } }) },
       { wrap: true, rows: 4, mine: 1, tail: /112/ }],
   ]) {
     /* AN EMPTY LIST IS A WEEK THAT HAS NOT LOCKED, not a week nobody entered, and on this
@@ -774,6 +836,244 @@ console.log('\nTHE BOARD FITS A PHONE');
   });
   ok('  and no row overflows sideways', wide <= 1, wide + 'px over');
   await page.close();
+}
+
+/* ----------------------------------------------------------------
+ * THE BOARD MOVES WHILE THE GAMES ARE ON, AND EVERY WAY IT FAILS RENDERS PERFECTLY
+ *
+ * A board that never polls, a board that polls and repaints with no animation, and a board
+ * that animates the wrong rows all draw a correct leaderboard. The only difference is
+ * whether a reader can see what happened, and no other assertion in this file can tell them
+ * apart. So this drives two real states through the page's own poll and measures the glass:
+ * does a row that changed place actually TRAVEL, and does it end where it should.
+ *
+ * THE STUB ANSWERS A DIFFERENT BOARD EACH TIME IT IS ASKED, which is what makes this a
+ * fixture for movement rather than for drawing. A stub that repeated itself would let a
+ * painter that animates nothing pass.
+ * ---------------------------------------------------------------- */
+console.log('\nTHE BOARD MOVES, AND YOU CAN SEE WHO MOVED');
+{
+  const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
+    spend: 80, projected: 50, score: 0, scored: false };
+  const r = (place, name, score, me) => ({ place, display_name: name, score,
+    projected: 58, spend: 88, picks: [], is_me: !!me, entry_no: name.charCodeAt(0), played: 3 });
+
+  /* Four entrants, and between the two states the top two swap and the reader climbs one.
+     Ada falls from first to third, which is a two row move: enough to be unambiguous when
+     it is measured, and exactly the shape a finished game produces. */
+  /* THE READER'S OWN SIX RIDE ON `me`, because the live screen draws them off the same
+     answer: without lines the six sit blank under a total that is climbing, which is the
+     screen arguing with itself. Three of the six have played at T1 and five at T2. */
+  const lines = (n) => POOL.pool.slice(0, 6).map((m, i) => ({
+    player_id: m.player_id, half_ppr: i < n ? 8.2 + i : 0, played: i < n }));
+  const T1 = boardOf({
+    rows: [r(1, 'Ada', 72.3), r(2, 'Bo', 67.5), r(3, 'You', 41.0, true), r(4, 'Cy', 24.1)],
+    me: { place: 3, entries: 4, score: 41.0, lines: lines(3) },
+    games_final: 3,
+  });
+  const T2 = boardOf({
+    rows: [r(1, 'Bo', 88.2), r(2, 'You', 80.4, true), r(3, 'Ada', 72.3), r(4, 'Cy', 45.6)],
+    me: { place: 2, entries: 4, score: 80.4, lines: lines(5) },
+    games_final: 7,
+  });
+
+  const { page, boom } = await openPage(browser, FANTASY,
+    { who: TESTER, at: LIVE_AT, server: { mine: ENTRY, boards: [T1, T2, T2, T2, T2] } });
+  await page.waitForSelector('#s-in.on', { timeout: 15000 });
+  await page.waitForSelector('#in-board .brow', { timeout: 15000 });
+  await page.waitForTimeout(300);
+
+  const read = () => page.evaluate(() => [...document.querySelectorAll('#in-board .brow')]
+    .map((e) => ({
+      k: e.getAttribute('data-k'),
+      name: (e.querySelector('.bn') || {}).textContent,
+      top: Math.round(e.getBoundingClientRect().top),
+      cls: e.className,
+    })));
+
+  const before = await read();
+  ok('the board draws without being reloaded', before.length === 4,
+    before.map((x) => x.name).join(' '));
+  ok('  and it says it is live', await page.evaluate(() => {
+    const el = document.getElementById('in-live');
+    return !el.hidden && /LIVE/.test(document.getElementById('in-livelab').textContent);
+  }));
+  ok('  with how much of the week is in',
+    /3 of 16 games/.test(await page.evaluate(() =>
+      document.getElementById('in-livesay').textContent)));
+
+  /* THE FIRST PAINT MUST NOT ANIMATE. There is nothing to move from, and four rows flying
+     in from wherever they were measured is a screen announcing itself. */
+  ok('  and the first paint moves nothing',
+    before.every((x) => !/\bmoving\b|\bup\b|\bdown\b/.test(x.cls)),
+    before.map((x) => x.cls).join(' | '));
+
+  /* Drive the page's OWN poll rather than waiting twenty seconds for it: the claim is about
+     what the painter does with a second answer, and sitting out the real interval would put
+     a twenty second wait in the suite for every assertion below. */
+  await page.evaluate(() => window.__rtgPoll());
+  await page.waitForTimeout(90);
+
+  /* MID FLIGHT. The transform is the inverse of the distance travelled, so a row that has
+     really moved is, for this instant, still drawn where it WAS. That is the whole of FLIP,
+     and it is the one moment at which a board that reorders with no animation and a board
+     that animates are distinguishable. */
+  const flying = await page.evaluate(() => [...document.querySelectorAll('#in-board .brow')]
+    .map((e) => ({
+      k: e.getAttribute('data-k'),
+      name: (e.querySelector('.bn') || {}).textContent,
+      t: getComputedStyle(e).transform,
+      cls: e.className,
+    })));
+  const moved = flying.filter((x) => x.t && x.t !== 'none' && !/matrix\(1, 0, 0, 1, 0, 0\)/.test(x.t));
+  ok('a row that changed place is caught mid flight', moved.length >= 2,
+    moved.map((x) => x.name + ' ' + x.t).join(' | ') || 'nothing was moving');
+  ok('  and it is marked with the way it went',
+    flying.some((x) => / up\b/.test(x.cls)) && flying.some((x) => / down\b/.test(x.cls)),
+    flying.map((x) => x.name + ':' + x.cls.replace('brow', '').trim()).join(' | '));
+
+  /* AND IT ARRIVES. A move that never finishes leaves the board permanently offset, which
+     is a leaderboard whose rows do not line up with their own places. */
+  /* WAITED FOR RATHER THAN SAMPLED AT AN INSTANT. The claim is that a mark never sticks,
+     and the first draft asserted instead that the marks were off at one arbitrary moment
+     after the move. That is a claim about the suite's own arithmetic: measured, they come
+     off at about 620ms, and the version that failed was reading before that for reasons
+     that had nothing to do with the page. A bound is the honest shape, and it still catches
+     a mark that is never removed at all, which is the defect worth catching. */
+  const clean = await page.waitForFunction(() =>
+    [...document.querySelectorAll('#in-board .brow')]
+      .every((e) => !/\bmoving\b|\bup\b|\bdown\b/.test(e.className)),
+    null, { timeout: 3000 }).then(() => true).catch(() => false);
+  const after = await read();
+  ok('  the board settles in the new order',
+    after.map((x) => x.name).join(' ') === 'Bo You Ada Cy',
+    after.map((x) => x.name).join(' '));
+  ok('  with every transform cleared',
+    await page.evaluate(() => [...document.querySelectorAll('#in-board .brow')]
+      .every((e) => !e.style.transform)));
+  ok('  and every mark comes off when it settles', clean,
+    after.map((x) => x.cls).join(' | '));
+
+  /* THE KEYS FOLLOW THE PEOPLE. Keyed on place instead, row one is always row one and
+     nothing ever moves: the scores would change under a board that never animates. */
+  const key = (list, name) => (list.find((x) => x.name === name) || {}).k;
+  ok('  and a row kept its key across the move',
+    key(before, 'Ada') === key(after, 'Ada') && key(before, 'Bo') === key(after, 'Bo'),
+    `Ada ${key(before, 'Ada')} -> ${key(after, 'Ada')}`);
+
+  /* THE READER'S OWN SIX, off the live answer rather than off a results file that does not
+     exist yet. Without it a total that is climbing sits over six blank men. */
+  ok('  and the reader\'s own six carry live points',
+    await page.evaluate(() => {
+      const got = [...document.querySelectorAll('#in-roster .rrow.got')];
+      return got.length >= 1;
+    }), 'live lines drawn');
+
+  ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+  await page.close();
+}
+
+/* ----------------------------------------------------------------
+ * A FEED THAT HAS STOPPED LOOKS EXACTLY LIKE A QUIET AFTERNOON
+ * ---------------------------------------------------------------- */
+console.log('\nA BOARD THAT IS NOT MOVING SAYS WHICH KIND OF NOT MOVING IT IS');
+{
+  const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
+    spend: 80, projected: 50, score: 0, scored: false };
+  const r = (place, name, score, me) => ({ place, display_name: name, score,
+    projected: 58, spend: 88, picks: [], is_me: !!me, entry_no: name.charCodeAt(0), played: 6 });
+  const ROWS = [r(1, 'Ada', 72.3), r(2, 'You', 41.0, true)];
+  const ME = { place: 2, entries: 2, score: 41.0 };
+  const hoursAgo = (h) => new Date(LIVE_AT - h * 3600e3).toISOString();
+
+  for (const [label, board, want] of [
+    ['a live week says LIVE',
+      boardOf({ rows: ROWS, me: ME }), { lab: 'LIVE', cls: /\bon\b/ }],
+    /* CHECKED LONG AGO IS THE ONE THAT MATTERS. The scores are perfectly good and the
+       writer has stopped: without this the screen goes on breathing a red dot over a board
+       that has not been looked at in an hour. */
+    ['a writer that has stopped says so',
+      boardOf({ rows: ROWS, me: ME, checked_at: hoursAgo(1), results_at: hoursAgo(1) }),
+      { lab: 'NOT UPDATING', cls: /\bcold\b/ }],
+    /* Locked, and nothing has looked yet: the gap between the Thursday kickoff and the
+       first run of the writer. */
+    ['a week nothing has scored yet says that instead',
+      boardOf({ rows: ROWS, me: ME, checked_at: null, results_at: null, games_final: 0 }),
+      { lab: 'NOT SCORED YET', cls: /\bcold\b/ }],
+    ['and a finished week says FINAL',
+      boardOf({ rows: ROWS, me: ME, scored_at: hoursAgo(2), games_final: 16 }),
+      { lab: 'FINAL', cls: /\bdone\b/ }],
+  ]) {
+    const { page, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: LIVE_AT, server: { mine: ENTRY, board } });
+    await page.waitForSelector('#in-board .brow', { timeout: 15000 });
+    await page.waitForTimeout(250);
+    const seen = await page.evaluate(() => ({
+      lab: document.getElementById('in-livelab').textContent,
+      cls: document.getElementById('in-live').className,
+      hidden: document.getElementById('in-live').hidden,
+    }));
+    ok(label, !seen.hidden && seen.lab === want.lab && want.cls.test(seen.cls),
+      seen.lab + ' / ' + seen.cls);
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+}
+
+/* ----------------------------------------------------------------
+ * THE POLL STOPS WHEN IT SHOULD, WHICH IS THE HALF NOBODY WOULD NOTICE
+ * ---------------------------------------------------------------- */
+console.log('\nTHE POLL KNOWS WHEN TO STOP');
+{
+  const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
+    spend: 80, projected: 50, score: 0, scored: false };
+  const r = (place, name, score, me) => ({ place, display_name: name, score,
+    projected: 58, spend: 88, picks: [], is_me: !!me, entry_no: name.charCodeAt(0), played: 6 });
+  const ROWS = [r(1, 'Ada', 72.3), r(2, 'You', 41.0, true)];
+  const ME = { place: 2, entries: 2, score: 41.0 };
+
+  /* A FINISHED WEEK IS ASKED ONCE AND NEVER AGAIN. Polling it is a request every twenty
+     seconds, per reader, for an answer that cannot change, and nothing on screen would
+     ever show it happening. */
+  {
+    const { page, posted, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: LIVE_AT,
+        server: { mine: ENTRY,
+          board: boardOf({ rows: ROWS, me: ME,
+            scored_at: new Date(LIVE_AT - 60e3).toISOString() }) } });
+    await page.waitForSelector('#in-board .brow', { timeout: 15000 });
+    await page.evaluate(() => { window.__pollMs(60); });
+    await page.waitForTimeout(700);
+    const asks = posted.filter((p) => p.fn === 'fantasy_board').length;
+    ok('a finished week is asked once and left alone', asks === 1, asks + ' asks');
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+
+  /* A LIVE WEEK KEEPS ASKING. The mirror claim, and without it the one above passes on a
+     page that never polls at all. */
+  {
+    const { page, posted, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: LIVE_AT,
+        server: { mine: ENTRY, board: boardOf({ rows: ROWS, me: ME }) } });
+    await page.waitForSelector('#in-board .brow', { timeout: 15000 });
+    await page.evaluate(() => { window.__pollMs(60); });
+    await page.waitForTimeout(700);
+    const asks = posted.filter((p) => p.fn === 'fantasy_board').length;
+    ok('a live week goes on asking', asks >= 3, asks + ' asks');
+
+    /* AND IT STOPS WHEN THE SCREEN IS LEFT. A leaderboard ticking behind another screen is
+       a request every twenty seconds for a screen nobody is looking at. */
+    await page.evaluate(() => { document.getElementById('b-in-back').hidden = false; });
+    await page.click('#b-in-back');
+    await page.waitForTimeout(120);
+    const at = posted.filter((p) => p.fn === 'fantasy_board').length;
+    await page.waitForTimeout(500);
+    const now = posted.filter((p) => p.fn === 'fantasy_board').length;
+    ok('  and stops the moment the screen is left', now === at, `${at} -> ${now}`);
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
 }
 
 /* ----------------------------------------------------------------

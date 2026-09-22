@@ -627,11 +627,40 @@ if (process.argv[1] && process.argv[1].endsWith('weekly-pool.mjs')) {
   if (process.argv.includes('--write')) {
     const name = `weekly_${season}_w${week}.json`;
     fs.writeFileSync(path.join(DATA_DIR, name), JSON.stringify(built, null, 1));
-    /* WHICH WEEK IS LIVE IS WRITTEN HERE AND READ BY THE PAGE, never typed into it. A week
-       number in the markup is a hand-written number beside a generated file, which is the
-       shape this repo keeps a checker for. One command ships a week. */
-    fs.writeFileSync(path.join(DATA_DIR, 'fantasy_now.json'),
-      JSON.stringify({ season, week, file: name, locks_at: built.locks_at }, null, 1) + '\n');
-    console.log(`\n  wrote ${name} and fantasy_now.json`);
+
+    /*
+     * WHICH WEEK IS LIVE IS WRITTEN HERE AND READ BY THE PAGE, never typed into it. A week
+     * number in the markup is a hand-written number beside a generated file, which is the
+     * shape this repo keeps a checker for. One command ships a week.
+     *
+     * ─── AND IT ONLY EVER GOES FORWARD ────────────────────────────────────────────────
+     *
+     * Building an OLD week is an ordinary thing to want: to re-price it, to check a change
+     * against a week whose results are known, to make a fixture. Every one of those used to
+     * repoint the live week backwards as a side effect, and the symptom is the whole mode
+     * silently serving a week that finished a fortnight ago. Nothing throws, the page boots,
+     * the board is a real board. Found by doing it while building a fixture for the live
+     * scoreboard, which is the only reason it is guarded rather than written up as a
+     * near miss.
+     *
+     * The pointer is NOT moved rather than the build refused: the week's own JSON is still
+     * wanted, and it is the pointer that was never asked for.
+     */
+    const nowFile = path.join(DATA_DIR, 'fantasy_now.json');
+    const was = fs.existsSync(nowFile)
+      ? JSON.parse(fs.readFileSync(nowFile, 'utf8')) : null;
+    const back = was && (was.season > season
+      || (was.season === season && was.week > week));
+    if (back) {
+      console.log(`\n  wrote ${name}`);
+      console.log(`  LEFT fantasy_now.json ALONE: it points at ${was.season} week ${was.week}, `
+        + `and this is week ${week}.`);
+      console.log('  Nothing moves the live week backwards. Edit it by hand if that is '
+        + 'really what you want.');
+    } else {
+      fs.writeFileSync(nowFile,
+        JSON.stringify({ season, week, file: name, locks_at: built.locks_at }, null, 1) + '\n');
+      console.log(`\n  wrote ${name} and fantasy_now.json`);
+    }
   }
 }

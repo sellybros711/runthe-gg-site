@@ -1,0 +1,108 @@
+name: Score the Fantasy Challenge week, live
+
+# THE BOARD MOVES WHILE THE GAMES ARE BEING PLAYED, and this is the only thing that moves
+# it. `fantasy-pool.yml` builds a week on the Tuesday and scores the one before it; this
+# runs every ten minutes through the games and writes whatever nflverse has so far.
+#
+# IT COMMITS NOTHING AND DEPLOYS NOTHING. The live board is a Supabase read, so a score
+# that moves costs one write. Committing `results_*.json` every ten minutes would be a
+# hundred commits and a hundred Cloudflare deploys a weekend to publish a file the live
+# screen does not read; the Tuesday job still writes it once, at the end.
+#
+# ─── THE CRON IS A WIDE NET AND THE JOB DECIDES ────────────────────────────────────────
+#
+# GitHub's cron is UTC and does not know about daylight saving, and the season crosses a
+# clock change in early November. `fantasy-pool.yml` answers that by listing both entries
+# and asking which one fired, which is right for a job that must run at one exact hour.
+# This one does not have an exact hour: it wants to be awake for roughly the whole of a game
+# day either side of a clock change, and a wide net in UTC does that with no arithmetic.
+#
+# So the windows below are deliberately loose and `live-results.mjs` makes the real
+# decision, off `games.csv`, which is in Eastern and is already the one source for when a
+# game starts. Nothing here reads a wall clock, so a clock change moves nothing. A run with
+# nothing to do prints a line and exits: it costs about twenty seconds and writes no SQL.
+#
+# WHY TEN MINUTES. GitHub's minimum is five and it says plainly that scheduled runs can be
+# delayed under load, so the real cadence is "about every ten minutes, sometimes worse". The
+# board is honest about that on its own: `checked_at` is when a run last looked, and the page
+# says so rather than implying it is a live wire.
+#
+# ─── IT ALSO ANSWERS A QUESTION NOBODY HAS MEASURED YET ────────────────────────────────
+#
+# nflverse fills its weekly file in as games finish, which is measured and written up in
+# 110_fantasy_live.sql. What is NOT measured is whether it moves DURING a game. Every run
+# here logs how many men have a row, so one weekend of these logs answers it with data, and
+# `results_at` against `checked_at` in the database answers it a second way.
+
+on:
+  schedule:
+    # Thursday night in Eastern is Friday in UTC, either 00:15 or 01:15 depending on the
+    # offset, so the net runs 00:00 to 06:00 and catches both.
+    - cron: '3,13,23,33,43,53 0-6 * * 5'
+    # Saturday evening, for the late season Saturday slate.
+    - cron: '3,13,23,33,43,53 17-23 * * 6'
+    # Sunday: the London games kick off at 9:30am Eastern, which is 13:30 UTC in summer.
+    - cron: '3,13,23,33,43,53 13-23 * * 0'
+    # Sunday night in Eastern is Monday in UTC.
+    - cron: '3,13,23,33,43,53 0-6 * * 1'
+    # Monday night in Eastern is Tuesday in UTC.
+    - cron: '3,13,23,33,43,53 0-6 * * 2'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Write even outside a game window'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+# NEVER TWO AT ONCE, AND THE LATE ONE IS THE ONE TO DROP. Two runs writing the same week
+# would both be correct (the upsert is idempotent) and would race on `results_at`, so the
+# board could report it had changed when the older of the two simply arrived second.
+# `cancel-in-progress: false` because a run that is already fetching should be allowed to
+# finish: the next tick is ten minutes away.
+concurrency:
+  group: fantasy-live
+  cancel-in-progress: false
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # NO actions/cache HERE, DELIBERATELY, and this is the one comment in the file that is
+      # about something that is not written. `build/.cache` never expires, so a cached
+      # `games.csv` or stats file would make this poll the same bytes all afternoon and the
+      # board would never move. `live-results.mjs` passes `maxAgeMs: 0` so it would be
+      # correct anyway, and the cost of a cache step here is still zero: the two files are
+      # the ones that have to be fresh, so there is nothing left worth caching.
+
+      - name: Install the postgres client
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      # THE WHOLE JOB. Nothing to do prints a line and writes no SQL, and psql handed an
+      # empty script is a no-op, so the pipe needs no condition around it.
+      #
+      # `set -o pipefail` IS LOAD BEARING. Without it the exit status is psql's, so a build
+      # that failed outright would pipe nothing into a psql that succeeded and the run would
+      # go green having scored nobody. That is the one failure here that looks exactly like
+      # a quiet afternoon.
+      - name: Score whatever has been played
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -o pipefail
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "SUPABASE_DB_URL is not set, so there is nowhere to write. Failing loudly."
+            exit 1
+          fi
+          node football/build/live-results.mjs \
+            ${{ inputs.force && '--force' || '' }} \
+            | psql -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL"

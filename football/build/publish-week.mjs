@@ -110,28 +110,50 @@ export function poolSQL(pool, { cap, slots }) {
   return out.join('\n') + '\n';
 }
 
+/*
+ * THE SAME EMITTER WRITES A FINISHED WEEK AND A LIVE ONE, and that is deliberate rather
+ * than a convenience. The live path runs this every few minutes during the games and the
+ * Tuesday path runs it once at the end; two emitters would be two definitions of what a
+ * result is, and the one that ran less often would be the one nobody noticed had drifted.
+ * What differs is `res.final`, which comes off the SCHEDULE rather than off the stats.
+ *
+ * NOTHING SCORED YET IS A REAL STATE AND NOT AN ERROR. Before the Thursday kickoff, and for
+ * the first minutes of it, nflverse has no rows for the week at all. An emitter that threw
+ * there would take the live workflow red on every run until somebody scored, which is a
+ * red tick for the one condition that is certain to happen every single week. It writes no
+ * rows and still moves the clocks, because "we looked, and there was nothing" is exactly
+ * what `checked_at` exists to record.
+ */
 export function resultsSQL(res) {
   const { season, week } = res;
   const ids = Object.keys(res.scores || {});
-  if (!ids.length) throw new Error('that results file scored nobody');
 
   const out = [];
   out.push('begin;');
   out.push('');
   out.push(`-- ${season} week ${week}: ${ids.length} men with a row, `
-    + `${res.played} of ${res.games} games`);
-  /* A PARTIAL WEEK IS PUBLISHED AND NOT MARKED SCORED. The build refuses an unfinished week
-     unless asked twice, and when it is asked twice the numbers are real and climbing: the
-     board should show them, and `scored_at` should stay null so every screen goes on saying
-     the week is still being played. */
-  out.push('insert into public.fantasy_results (season, week, player_id, half_ppr) values');
-  out.push(ids.map((id) => `  (${season},${week},${q(id)},`
-    + `${n2(res.scores[id][0], id + "'s points")})`).join(',\n'));
-  out.push('  on conflict (season, week, player_id) do update set '
-    + 'half_ppr = excluded.half_ppr;');
+    + `${res.played} of ${res.games} games`
+    + (res.final ? ', FINAL' : ', still being played'));
+  if (ids.length) {
+    out.push('insert into public.fantasy_results (season, week, player_id, half_ppr) values');
+    out.push(ids.map((id) => `  (${season},${week},${q(id)},`
+      + `${n2(res.scores[id][0], id + "'s points")})`).join(',\n'));
+    out.push('  on conflict (season, week, player_id) do update set '
+      + 'half_ppr = excluded.half_ppr;');
+  } else {
+    out.push('-- no man has a row yet, so there is nothing to upsert. The clocks still move.');
+  }
   out.push('');
-  out.push(`update public.fantasy_weeks set scored_at = `
-    + `${res.final ? 'now()' : 'null'} where season = ${season} and week = ${week};`);
+  /* ONE FUNCTION OWNS EVERY CLOCK ON THE WEEK, which is why this is a call rather than the
+     `update ... set scored_at` it replaced. Whether the board actually MOVED is a question
+     about the table after the write, not about what this file believes it just sent, and
+     `fantasy_mark_results` is the only thing positioned to answer it. It also refuses to
+     un-score a week that a final write has already settled, which the hand written update
+     did on every partial run: a stat correction on the Tuesday would have put every screen
+     back to "still being played". */
+  out.push(`select * from public.fantasy_mark_results(`
+    + `${season}, ${week}, ${Number(res.played)}, ${Number(res.games)}, `
+    + `${res.final ? 'true' : 'false'});`);
   out.push('');
   out.push('commit;');
   return out.join('\n') + '\n';

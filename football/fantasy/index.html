@@ -275,6 +275,55 @@
   .brow.gap{color:var(--dim-2);justify-content:center;padding:1px 0}
   #in-boardwrap[hidden]{display:none}
 
+  /* ---- the board while the games are on ----
+     EVERY MOVING THING HERE IS A TRANSFORM OR AN OPACITY, which is the rule the hoops live
+     board and the football boss battle both run on: both are composited, so twenty five
+     rows sliding past each other cost no layout and no repaint. A board that animated
+     `top` would ask for a layout of the whole list on every frame of every reorder.
+
+     THE TRANSITION IS DECLARED HERE AND DRIVEN FROM SCRIPT. The script does the measuring
+     (where a row was, where it now is) and writes one inverse transform; the rule below is
+     what plays it back to nothing. Written as a keyframe instead, every row would replay it
+     on every repaint, because the painter rebuilds the list and a new node starts its
+     animations over. That is the bracket's own lesson in the hoops game. */
+  .brow{transition:transform .52s cubic-bezier(.22,.9,.28,1),
+    background-color .5s ease,border-left-color .5s ease}
+  /* Mid flight, lifted clear so a row passing another reads as passing rather than merging.
+     Removed as soon as the move ends, so a settled board has a flat stack again. */
+  .brow.moving{position:relative;z-index:2}
+  /* WHICH WAY IT WENT, for the half second it is going. A row that climbed and a row that
+     fell look identical once they have arrived, and the movement is over in half a second:
+     without this the only reader who knows what happened is the one who was watching that
+     exact row. Green up, red down, gone by the time it settles. */
+  .brow.up{background-color:rgba(34,197,94,.13);border-left-color:rgba(34,197,94,.55)}
+  .brow.down{background-color:rgba(239,68,68,.10);border-left-color:rgba(239,68,68,.45)}
+  /* A row whose SCORE moved but whose PLACE did not. Most of a quiet afternoon is this:
+     somebody catches a pass, one number changes, nobody overtakes anybody. Without it the
+     board looks frozen while it is in fact working perfectly. */
+  @keyframes bscore{0%{transform:scale(1)}28%{transform:scale(1.13)}100%{transform:scale(1)}}
+  .brow .bs.tick{animation:bscore .45s ease;color:var(--gold)}
+
+  /* The live header: a dot that breathes, what it is as of, and how much of the week is in. */
+  .blive{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+    font-size:11.5px;color:var(--dim-2);margin:2px 0 7px}
+  .blive b{font-weight:600;color:var(--ink);letter-spacing:.06em;font-size:10.5px}
+  .bdot{width:7px;height:7px;border-radius:50%;background:#ef4444;flex:0 0 auto}
+  @keyframes bpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.78)}}
+  .blive.on .bdot{animation:bpulse 1.9s ease-in-out infinite}
+  /* STOPPED IS ITS OWN STATE AND NOT A MISSING ONE. A feed that has quietly died looks
+     exactly like a quiet afternoon, so the dot goes grey and stops rather than going on
+     breathing over a number that is not moving. */
+  .blive.cold .bdot{background:var(--dim-2);animation:none}
+  .blive.done .bdot{background:#22c55e;animation:none}
+
+  /* NONE OF IT IS LOAD BEARING. The board is the same board with every rule here disabled,
+     which is the test of whether motion is a mechanism or decoration. */
+  @media (prefers-reduced-motion:reduce){
+    .brow{transition:none}
+    .brow .bs.tick{animation:none}
+    .blive.on .bdot{animation:none}
+  }
+
   .note{font-size:13px;color:var(--dim);margin:10px 0 0}
   .lede{font-size:14.5px;color:var(--dim);margin:8px 0 0}
   .big{font-family:var(--fd);font-size:44px;font-weight:400;line-height:.95;
@@ -391,6 +440,12 @@
       <div id="in-boardwrap" hidden>
         <div class="rule"></div>
         <div class="eyebrow" id="in-boardlab">This week</div>
+        <!-- WHAT THE BOARD IS AS OF. A live leaderboard and a dead one render identically,
+             so the only way a reader can tell is if the screen says. -->
+        <div class="blive" id="in-live" hidden>
+          <span class="bdot"></span><b id="in-livelab">LIVE</b>
+          <span id="in-livesay"></span>
+        </div>
         <div class="board" id="in-board"></div>
       </div>
       <p class="note" id="in-note"></p>
@@ -415,7 +470,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script defer src="/football/auth.js?v=5"></script>
 <script src="draft.js?v=2"></script>
-<script src="entries.js?v=1"></script>
+<script src="entries.js?v=2"></script>
 <script>
 (function(){
   'use strict';
@@ -430,7 +485,7 @@
      player who does not know whether they entered. So the stub refuses out loud, with a
      sentence, and the reads stay null. Bump both halves in one commit, the way
      check-cachebust holds every other pin on this site. */
-  var NEED_FANTASY = 1;
+  var NEED_FANTASY = 2;
   var F = (window.PS_FANTASY && window.PS_FANTASY.API_VERSION === NEED_FANTASY)
     ? window.PS_FANTASY : {
       API_VERSION: NEED_FANTASY, offline: true,
@@ -440,6 +495,7 @@
       standings: function(){ return Promise.resolve(null); },
       myPlace: function(){ return Promise.resolve(null); },
       entryCount: function(){ return Promise.resolve(null); },
+      board: function(){ return Promise.resolve(null); },
     };
   var $ = function(id){ return document.getElementById(id); };
   /* CHANGING SCREEN CANCELS THE DRAFT SCREEN'S REVEAL, which is the rule the hoops live
@@ -447,9 +503,33 @@
      somebody has left. Here the cost of forgetting is a stagger firing into a board that
      has been rebuilt, which leaves rows stuck invisible. Callers going TO the draft screen
      show it BEFORE they paint it, or this would cancel the deal they just started. */
+  /*
+   * SHOWING THE SCREEN YOU ARE ALREADY ON IS NOT A SCREEN CHANGE, and until the board began
+   * polling it did not matter. `paintIn` ends with `show('s-in')`, which was a harmless
+   * re-assert of a class that was already set. It stopped being harmless the moment this
+   * function grew teeth, and it broke three things at once, none of which throws:
+   *
+   *   the poll was CANCELLED by the first live repaint, so the board updated once and then
+   *     never again, which is the whole feature failing silently,
+   *   the move timers were cancelled with it, so every row that had just moved kept its
+   *     green or red mark for ever,
+   *   and `scrollTo(0, 0)` yanked a reader who was half way down the board back to the top,
+   *     every twenty seconds, for as long as they watched.
+   *
+   * Found by the guard below rather than by reading, which is the only reason it is written
+   * up here instead of shipping.
+   */
   var show = function(id){
+    var cur = document.querySelector('.screen.on');
+    if (cur && cur.id === id) return;
     clearTimers();
     busy = false;
+    /* AND THE BOARD STOPS POLLING, for the same reason. A leaderboard left ticking behind
+       another screen is a request every twenty seconds for a screen nobody is looking at,
+       and its move timers would land on a board that has been rebuilt. Both are function
+       declarations below, so both are hoisted and callable from here. */
+    stopPolling();
+    clearBoardTimers();
     var all = document.querySelectorAll('.screen');
     for (var i=0;i<all.length;i++) all[i].classList.toggle('on', all[i].id===id);
     window.scrollTo(0,0);
@@ -970,8 +1050,51 @@
    * fifty; your place is counted against everybody. A page working the second out of the
    * first would tell the two hundredth entrant the same thing as the fifty first.
    */
-  function paintBoard(rows, place){
+  /*
+   * ─── THE BOARD MOVES, AND THE MOVEMENT IS THE POINT ───────────────────────────────
+   *
+   * FLIP, which is the only way to animate a reorder without animating layout. The rows are
+   * measured where they are, the list is rebuilt in its new order, they are measured again,
+   * each one is given the INVERSE of the distance it just travelled, and then that transform
+   * is played back to nothing. The browser lays out once and animates a transform, so a
+   * board of fifty rows sliding past each other costs the compositor and nothing else.
+   *
+   * READ EVERYTHING, THEN WRITE EVERYTHING. Both loops below are one phase each, and the
+   * single `offsetWidth` between them is the only forced reflow in the whole move. Measuring
+   * one row and then writing its transform before measuring the next is layout thrash: fifty
+   * reflows for one animation, on the frame the page is also parsing a poll.
+   *
+   * KEYED ON `entry_no` AND NEVER ON THE PLACE. Keyed on place, row one is always row one
+   * and NOTHING ever moves: the scores would change under a board that never animates. Keyed
+   * on the name, two readers sharing one and a rename are both a row that teleports. See
+   * 110_fantasy_live.sql for why that key is what it is.
+   *
+   * THE FIRST PAINT NEVER ANIMATES. There is nothing to move from, and fifty rows flying in
+   * from wherever they happened to be measured is a screen announcing itself.
+   */
+  var BOARD_SEEN = null;    /* key -> { place, score } as last drawn, or null before one */
+  var boardTimers = [];
+  function clearBoardTimers(){
+    for (var i=0;i<boardTimers.length;i++) clearTimeout(boardTimers[i]);
+    boardTimers = [];
+  }
+  var boardLater = function(f, ms){ boardTimers.push(setTimeout(f, ms)); };
+
+  /* How long a move takes, which has to match the transition in the CSS: it is what decides
+     when the `up`/`down` marks come off. Read once rather than written twice, so a designer
+     retuning the rule does not leave a row green for ever. */
+  var MOVE_MS = 520;
+
+  function boardRowHTML(key, place, name, score, cls){
+    return '<div class="brow' + (cls ? ' ' + cls : '') + '" data-k="' + esc(key) + '">'
+      + '<span class="bp">' + esc(String(place)) + '</span>'
+      + '<span class="bn">' + esc(name) + '</span>'
+      + '<span class="bs">' + esc(score) + '</span></div>';
+  }
+
+  function paintBoard(data){
     var wrap = $('in-boardwrap');
+    var rows = data && data.rows;
     /* NO ROWS IS NOT AN EMPTY BOARD ON THIS SCREEN, IT IS A SHUT ONE, and the difference
        matters because the two want opposite treatments. The server answers an empty list
        for a week that has not locked, and once it has locked it answers every entry
@@ -979,42 +1102,284 @@
        definition entered, an empty answer can only mean the week is still open. A "nobody
        yet" line here would be a sentence that cannot be true, printed at exactly the
        moment it is most likely to be read. Null is the unreachable server, and it is the
-       same nothing: a board that will not draw costs nothing. */
-    if (!rows || !rows.length){ wrap.hidden = true; return; }
+       same nothing: a board that will not draw costs nothing.
+       A POLL THAT ANSWERS NULL LEAVES THE BOARD ALONE rather than hiding it: a leaderboard
+       that blanked itself on one bad request would flash empty every time a phone changed
+       cell tower. */
+    if (!data) return;
+    if (!rows || !rows.length){ wrap.hidden = true; BOARD_SEEN = null; return; }
     wrap.hidden = false;
-    var n = place && place.entries;
+
+    var me = data.me && data.me.place ? data.me : null;
+    var n = me ? me.entries : null;
     $('in-boardlab').textContent = 'This week'
       + (n ? ' · ' + n + (n === 1 ? ' entry' : ' entries') : '');
-    var html = '', mine = false;
-    for (var i=0;i<rows.length;i++){
-      var r = rows[i];
+
+    var html = '', mine = false, i, r;
+    var want = {};
+    for (i=0;i<rows.length;i++){
+      r = rows[i];
       if (r.is_me) mine = true;
-      html += '<div class="brow' + (r.is_me ? ' me' : '') + '">'
-        + '<span class="bp">' + r.place + '</span>'
-        + '<span class="bn">' + esc(r.display_name || 'Somebody') + '</span>'
-        + '<span class="bs">' + Number(r.score).toFixed(1) + '</span></div>';
+      var key = String(r.entry_no == null ? 'p' + r.place : r.entry_no);
+      want[key] = { place: Number(r.place), score: Number(r.score) };
+      html += boardRowHTML(key, r.place, r.display_name || 'Somebody',
+        Number(r.score).toFixed(1), r.is_me ? 'me' : '');
     }
-    /* Off the bottom of the fifty, and told so rather than left off their own board. */
-    if (!mine && place && place.place){
-      html += '<div class="brow gap">...</div>'
-        + '<div class="brow me"><span class="bp">' + place.place + '</span>'
-        + '<span class="bn">You</span>'
-        + '<span class="bs">' + Number(place.score).toFixed(1) + '</span></div>';
+    /* Off the bottom of the fifty, and told so rather than left off their own board. The two
+       synthetic rows get keys of their own so they are not mistaken for somebody who moved. */
+    if (!mine && me){
+      html += '<div class="brow gap" data-k="gap">...</div>';
+      want.you = { place: Number(me.place), score: Number(me.score) };
+      html += boardRowHTML('you', me.place, 'You', Number(me.score).toFixed(1), 'me');
     }
-    $('in-board').innerHTML = html;
+
+    var box = $('in-board');
+
+    /* FIRST: where is everything now. */
+    var first = {}, kids = box.children, k;
+    for (i=0;i<kids.length;i++){
+      k = kids[i].getAttribute('data-k');
+      if (k) first[k] = kids[i].getBoundingClientRect().top;
+    }
+
+    var had = BOARD_SEEN;
+    box.innerHTML = html;
+    BOARD_SEEN = want;
+
+    if (REDUCE || !had) return;
+
+    /* LAST: read every new position before writing a single transform. */
+    kids = box.children;
+    var moves = [];
+    for (i=0;i<kids.length;i++){
+      k = kids[i].getAttribute('data-k');
+      if (!k) continue;
+      var was = had[k];
+      var top = kids[i].getBoundingClientRect().top;
+      var dy = (first[k] == null) ? 0 : first[k] - top;
+      var placeMoved = was && want[k] && was.place !== want[k].place;
+      var scoreMoved = was && want[k] && was.score !== want[k].score;
+      if (dy || placeMoved || scoreMoved) {
+        moves.push({ el: kids[i], dy: dy,
+          dir: placeMoved ? (want[k].place < was.place ? 'up' : 'down') : '',
+          tick: scoreMoved });
+      }
+    }
+    if (!moves.length) return;
+
+    /* INVERT: put every row back where it was, with no transition to get there. */
+    for (i=0;i<moves.length;i++){
+      if (!moves[i].dy) continue;
+      moves[i].el.style.transition = 'none';
+      moves[i].el.style.transform = 'translateY(' + moves[i].dy + 'px)';
+    }
+    /* The one forced reflow of the whole move. Without it the browser coalesces the invert
+       and the play into one style change and nothing travels at all. */
+    void box.offsetWidth;
+
+    /* PLAY. */
+    for (i=0;i<moves.length;i++){
+      var m = moves[i];
+      if (m.dy){
+        m.el.style.transition = '';
+        m.el.style.transform = '';
+        m.el.classList.add('moving');
+      }
+      if (m.dir) m.el.classList.add(m.dir);
+      if (m.tick){
+        var s = m.el.querySelector('.bs');
+        if (s) s.classList.add('tick');
+      }
+    }
+    /* AND THE MARKS COME OFF. A row left green is a row still claiming to have just moved,
+       on a screen that will be polled again in twenty seconds. Cancelled on a screen change
+       for the same reason the draft screen's stagger is: a timer landing on a board that has
+       been rebuilt would strip a class off a row that is mid flight. */
+    boardLater(function(){
+      var all = box.querySelectorAll('.brow.moving,.brow.up,.brow.down,.bs.tick');
+      for (var j=0;j<all.length;j++){
+        all[j].classList.remove('moving', 'up', 'down', 'tick');
+      }
+    }, MOVE_MS + 60);
+  }
+
+  /*
+   * WHAT THE BOARD IS AS OF, which is the half that makes a live board honest.
+   *
+   * `results_at` is when the scoring last CHANGED and `checked_at` is when anything last
+   * LOOKED. A board with a fresh `checked_at` and a stale `results_at` is a quiet afternoon;
+   * one where BOTH are stale is a feed that has stopped, and those two are indistinguishable
+   * without the pair. See 110_fantasy_live.sql.
+   */
+  var COLD_MS = 25 * 60 * 1000;   /* the writer runs about every ten minutes */
+  function paintLive(week){
+    var el = $('in-live');
+    if (!week || !week.open){ el.hidden = true; return; }
+    el.hidden = false;
+    var checked = week.checked_at ? Date.parse(week.checked_at) : 0;
+    var moved = week.results_at ? Date.parse(week.results_at) : 0;
+    var games = (week.games_final != null && week.games_total)
+      ? week.games_final + ' of ' + week.games_total + ' games' : '';
+    if (week.scored_at){
+      el.className = 'blive done';
+      $('in-livelab').textContent = 'FINAL';
+      $('in-livesay').textContent = games;
+      return;
+    }
+    if (!checked){
+      /* Locked, and nothing has looked yet. Honest rather than silent: this is the state
+         between the Thursday lock and the first run of the writer. */
+      el.className = 'blive cold';
+      $('in-livelab').textContent = 'NOT SCORED YET';
+      $('in-livesay').textContent = games;
+      return;
+    }
+    var cold = (Date.now() - checked) > COLD_MS;
+    el.className = 'blive ' + (cold ? 'cold' : 'on');
+    $('in-livelab').textContent = cold ? 'NOT UPDATING' : 'LIVE';
+    var when = moved ? new Date(moved).toLocaleTimeString([],
+      { hour: 'numeric', minute: '2-digit' }) : null;
+    $('in-livesay').textContent = (games ? games : '')
+      + (games && when ? ' · ' : '')
+      + (when ? (cold ? 'last moved ' : 'as of ') + when : '');
+  }
+
+  /*
+   * ─── THE POLL ─────────────────────────────────────────────────────────────────────
+   *
+   * The comment this replaces said the board "is asked every time and not cached, because
+   * it is the one thing on this page that moves while somebody is looking at it: a Sunday
+   * afternoon reload is the whole reason to come back". That was true and the reload was
+   * the part worth removing.
+   *
+   * IT ONLY RUNS WHILE THERE IS SOMETHING TO SEE. A poll that carried on against a week
+   * that is finished, or one that has not locked, is a request every twenty seconds per
+   * reader for an answer that cannot change.
+   *
+   * AND IT STOPS WHEN THE TAB IS HIDDEN. A phone left on this screen in a pocket would
+   * otherwise poll all afternoon. `visibilitychange` restarts it AND asks immediately, so
+   * coming back to the tab shows the current board rather than a twenty second old one.
+   * That first ask on return is the one that matters: it is the moment somebody checks.
+   */
+  var POLL_MS = 20000;
+  var pollTimer = 0;
+  var pollGen = 0;         /* bumped to orphan an answer that is already out */
+
+  function boardLive(week){
+    return !!(week && week.open && !week.scored_at);
+  }
+
+  function stopPolling(){
+    pollGen++;
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = 0; }
+  }
+
+  function pollOnce(){
+    var gen = pollGen;
+    var season = POOL.season, week = POOL.week;
+    return F.board(season, week, 50).then(function(d){
+      /* THREE WAYS AN ANSWER CAN BE STALE BY THE TIME IT LANDS, and all three have been
+         real on this page: the reader left the screen, the poll was stopped, or the live
+         week rolled over underneath a slow request. A board painted for the wrong week is
+         somebody else's competition on your screen. */
+      if (gen !== pollGen) return null;
+      if (!$('s-in').classList.contains('on')) return null;
+      if (season !== POOL.season || week !== POOL.week) return null;
+      if (d){ paintLive(d.week); paintBoard(d); paintLines(d); }
+      return d;
+    });
+  }
+
+  function startPolling(){
+    stopPolling();
+    var gen = pollGen;
+    var tick = function(){
+      if (gen !== pollGen) return;
+      pollOnce().then(function(d){
+        if (gen !== pollGen) return;
+        /* THE POLL STOPS ITSELF when the week is settled, and keeps going on a null: a
+           board that gave up after one unreachable request would stay frozen for the rest
+           of the afternoon on a reader whose train went into a tunnel. */
+        if (d && !boardLive(d.week)) { stopPolling(); return; }
+        pollTimer = setTimeout(tick, POLL_MS);
+      });
+    };
+    pollTimer = setTimeout(tick, POLL_MS);
+  }
+
+  document.addEventListener('visibilitychange', function(){
+    if (!$('s-in') || !$('s-in').classList.contains('on')) return;
+    if (document.hidden) { stopPolling(); return; }
+    pollOnce().then(function(d){
+      if (d && boardLive(d.week)) startPolling();
+    });
+  });
+
+  /*
+   * TWO HANDLES PUBLISHED FOR THE CHECKER, AND NOTHING ON THIS PAGE READS EITHER.
+   *
+   * This is `window.RTF_LIVE`'s argument in the hoops game, arriving here. The thing worth
+   * asserting about this board is what happens on the SECOND answer: whether a row that
+   * changed place actually travels. Waiting for the real twenty seconds would put twenty
+   * seconds into the suite for every one of those assertions, and a checker that slow is a
+   * checker nobody runs.
+   *
+   * `__rtgPoll` asks once, through the real poll, against the real stub, and paints with the
+   * real painter: nothing about the move is faked, only its timing. `__pollMs` shortens the
+   * interval so the "does it keep asking" and "does it stop" claims can be made in under a
+   * second rather than over a minute.
+   *
+   * THEY ARE NOT A BACK DOOR. Neither writes a score, neither reaches the server other than
+   * through the same one call the page already makes, and a page with nothing polling
+   * answers both harmlessly.
+   */
+  window.__rtgPoll = function(){ return pollOnce(); };
+  window.__pollMs = function(ms){
+    POLL_MS = Math.max(20, Number(ms) || POLL_MS);
+    if (pollTimer) startPolling();
+  };
+
+  /*
+   * THE READER'S OWN SIX, WHILE THE GAMES ARE ON.
+   *
+   * `paintIn` draws them off `results_<season>_w<week>.json`, which is written once at the
+   * end of the week: during the games it 404s, so the six sit blank. The live answer
+   * carries the same thing off the server, so a total that is climbing has six men under it
+   * that explain it. THE STATIC FILE STILL WINS once it exists, because it carries the stat
+   * line ("84 rush yds, 1 TD") and this does not.
+   */
+  function paintLines(d){
+    if (!d || !d.me || !d.me.lines || !d.me.lines.length) return;
+    /* THE STATIC FILE WINS ONCE IT EXISTS. It carries the stat line and this does not. */
+    if (RESULTS[POOL.season + '|' + POOL.week]) return;
+    /* SHAPED AS `scoreOf` ALREADY READS IT, `[half, line]`, rather than given a shape of
+       its own: one reader, one format, and `paintIn` needs no branch for a live week.
+       ONLY THE MEN WHO HAVE PLAYED GO IN. `scoreOf` reads the PRESENCE of the row as
+       `played`, so writing a zero for everybody would report six men who had all turned out
+       and done nothing, which is the one thing on that list a drafter is reading it for.
+       `line` is empty because a live row has no stat line here: `paintIn` prints "played,
+       nothing to show" for that, which is true of a man who is out there and has not
+       touched the ball. */
+    var by = {};
+    for (var i=0;i<d.me.lines.length;i++){
+      var l = d.me.lines[i];
+      if (l.played) by[l.player_id] = [Number(l.half_ppr), ''];
+    }
+    /* `final` is deliberately absent, so `paintIn` says "not played yet" under a man with
+       no row rather than "did not play": the week is not over and he may still be on. */
+    paintIn({ scores: by });
   }
 
   /* The entry screen is opened once results may exist, so the fetch happens here rather
      than at boot: a visitor who has not submitted anything never asks for a results file. */
   function openIn(){
     paintIn(null);
-    paintBoard(null);
-    /* THE BOARD IS ASKED EVERY TIME AND NOT CACHED, because it is the one thing on this
-       page that moves while somebody is looking at it: a Sunday afternoon reload is the
-       whole reason to come back. */
-    Promise.all([F.standings(POOL.season, POOL.week, 50),
-      F.myPlace(POOL.season, POOL.week)]).then(function(a){
-      if (a[0] && $('s-in').classList.contains('on')) paintBoard(a[0], a[1] || null);
+    stopPolling();
+    BOARD_SEEN = null;
+    clearBoardTimers();
+    $('in-live').hidden = true;
+    pollOnce().then(function(d){
+      if (d && boardLive(d.week)) startPolling();
     });
     resultsFor(POOL.season, POOL.week).then(function(res){
       /* Only repaint if this screen is still the one showing. A slow answer landing after
