@@ -289,17 +289,109 @@
      its right then hung off the screen: the price column, the re-spin button,
      the tabs. This one line is the difference. */
   .draftmain > *{min-width:0;}
-  /* On a phone the court follows the board. On a wide screen it becomes a rail
-     that stays put while the player list scrolls. */
-  @media(min-width:840px){
-    .draftmain{grid-template-columns:minmax(0,1fr) 316px;align-items:start;}
-    .dside{position:sticky;top:180px;}
+  /* ── THE DRAFT ON A WIDE SCREEN ─────────────────────────────────────────
+   *
+   * It is The Perfect Season's draft screen, in this sport, and that is a
+   * deliberate copy rather than a coincidence: the two games are the same
+   * skeleton and a player who knows one should not have to learn the other's
+   * shape. PICTURE LEFT, WHEEL RIGHT, board full width underneath.
+   *
+   * WHAT IT REPLACED WAS A 298px COLUMN ON A 1512px MONITOR. The page shipped
+   * at the 660px wrap every other screen uses, with the court taking a fixed
+   * 316px rail out of it, so the thing the whole screen is for (fourteen
+   * player tiles) was drawn narrower than it is on a phone, the position tabs
+   * overflowed and scrolled, and the sort row wrapped onto two lines. That is
+   * the football file's own "phone screenshot pasted into the middle of a
+   * desktop", with a rail taking half of what was left.
+   *
+   * NOTHING IS STICKY ANY MORE, and that is the one thing given up here. The
+   * court used to be a rail that held its place while the board scrolled,
+   * which is genuinely nice and is exactly what the football game refuses, in
+   * as many words, because a sticky block whose own height changes reshapes
+   * the page under the finger and that layout lost a day to it once. The
+   * board is three columns wide now, so it is about a third as tall and the
+   * court leaves the screen much later anyway.
+   *
+   * 920 IS FOOTBALL'S THRESHOLD and this file now uses it too. What it does
+   * NOT copy is the 1200 to 1259 fallback to one column: that exists because
+   * the ad rails appear at 1200 and take 200 a side, leaving 800, and this
+   * game carries no ad tag at all. See check-posture.mjs.
+   *
+   * EVERY RULE HERE IS INSIDE min-width:920px, so a phone renders exactly as
+   * it did. That is asserted rather than hoped: the mobile screenshots were
+   * compared byte for byte either side of this change. */
+  @media(min-width:920px){
+    /* :has, so only the draft gets the width. Every other screen in this game
+       is a column of cards and reads worse wide.
+
+       `.active`, NOT `.on`. The football game marks its live screen `.on` and
+       this one has always used `.active`, so the rule lifted across from there
+       matched nothing at all: no error, no warning, just a draft that stayed
+       660px wide on a 1512px monitor, which is indistinguishable from the bug
+       this block exists to fix. Caught by measuring the wrap rather than by
+       looking at the screen. */
+    .wrap:has(#s-draft.active){max-width:1040px;}
+    .draftmain{grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:24px;align-items:start;}
+    /* display:contents, so the four blocks inside .dpick become grid items of
+       .draftmain itself. Without it the board is trapped in one half and three
+       columns of tiles would be 170px each. */
+    .dpick{display:contents;}
+    .dside{grid-column:1;grid-row:1;}
+    .dtop{grid-column:2;grid-row:1;}
+    /* THE FLATTER COURT, which is the phone's rule arriving for the phone's
+       reason rather than for its width. 1/0.94 is nearly square, so across
+       half of 1040 it draws 492x462 against a wheel block of about 180 beside
+       it: a picture two and a half times the height of the thing it is
+       reference for, with the hole under the reels to prove it. At 1/0.72 the
+       two columns are within about 170px and the row reads as a row. */
+    .dside .court{aspect-ratio:1/0.72;}
+    .tabs,.opts{grid-column:1/-1;}
+    /* THE BOARD IS THREE ACROSS, which is what the extra width is for and what
+       football's `.opts` does at this width. */
+    .opts{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .optgroup,.sortbar{grid-column:1/-1;}
+    /* The sort belongs to the board under it, so it sits at the board's right
+       edge rather than floating at the left of a 1040px row. Its own top
+       margin goes with it: on a phone it separates the sort from the tabs
+       above, and here it is stacked on `.opts`'s margin and the tab row's
+       padding into about 40px of nothing between two controls that belong
+       together. */
+    /* `.opts .sortbar` AND NOT `.sortbar`, because a media query adds no
+       specificity and this block sits about eleven hundred lines above the
+       base rule it is arguing with: at equal weight the later one wins and
+       the margin stayed. The sort bar is built into `#opts`, so the deeper
+       selector is true rather than a trick. Same cascade the football prompt
+       card's `.pwc-marks` lost. */
+    .opts .sortbar{justify-content:flex-end;margin-top:0;}
+    /* THE SIX PIPS GO ENTIRELY, height and all. They exist to carry the lineup
+       once the court has scrolled out of reach, and in two columns the court
+       has its own half of the top row: all their reserved height did was leave
+       a band of nothing under the money bar. Reserving space for something
+       that cannot happen is a gap. Football hides them here for this reason. */
+    .dpips{display:none;}
   }
-  /* Shorter on a phone, because it is reference and the board is the decision. */
-  @media(max-width:839px){
-    .court{aspect-ratio:1/0.72;}
-    .spot{width:64px;}
-    .spot .disc{width:30px;height:30px;font-size:9px;}
+  /* Shorter on a phone, because it is reference and the board is the decision.
+     The ceiling is one pixel under the wide layout's floor, so there is no
+     width that gets neither rule.
+   *
+   * THIS BLOCK HAD NEVER ONCE APPLIED, and it was found by measuring the court
+   * across the breakpoint rather than by looking at it. A media query adds no
+   * specificity, and `.court` and `.spot` are both declared several hundred
+   * lines BELOW this, so at equal weight the later rule won every time: the
+   * draft court has always drawn at the base 1/0.94 (358x337 on a 390px
+   * phone against the 358x258 written here) with 74px spots. Nothing threw,
+   * nothing looked broken, and the file has said the opposite for as long as
+   * the rule has existed.
+   *
+   * SCOPED TO `.dside`, which raises it over the base rule and is also the
+   * honest reach: the sentence above is about the court you draft next to.
+   * The home hero and the results screen draw their own and keep 1/0.94,
+   * which is what they have always had. */
+  @media(max-width:919px){
+    .dside .court{aspect-ratio:1/0.72;}
+    .dside .spot{width:64px;}
+    .dside .spot .disc{width:30px;height:30px;font-size:9px;}
   }
   .reels{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;}
   .reelbox{position:relative;height:104px;overflow:hidden;border-radius:13px;
@@ -1873,22 +1965,31 @@
        nothing. -->
   <div class="draftmain">
     <div class="dpick">
-      <div class="reels">
-        <div class="reelbox season waiting" id="box-s" aria-label="Season">
-          <div class="reel-strip" id="reel-s"></div>
-          <div class="reel-win"></div>
+      <!-- THE WHEEL AND WHAT IT SAYS, as one block, because on a wide screen
+           it is one COLUMN: the court takes the other half of the top row and
+           the board runs full width underneath. That is the football game's
+           `.dcol`, and it is a wrapper rather than four grid placements
+           because two of these four are empty most of the draft and an empty
+           grid item still costs its row gap. On a phone it is a plain block
+           and changes nothing. -->
+      <div class="dtop">
+        <div class="reels">
+          <div class="reelbox season waiting" id="box-s" aria-label="Season">
+            <div class="reel-strip" id="reel-s"></div>
+            <div class="reel-win"></div>
+          </div>
+          <div class="reelbox club waiting" id="box-c" aria-label="Club">
+            <div class="reel-strip" id="reel-c"></div>
+            <div class="reel-win"></div>
+          </div>
         </div>
-        <div class="reelbox club waiting" id="box-c" aria-label="Club">
-          <div class="reel-strip" id="reel-c"></div>
-          <div class="reel-win"></div>
+        <p class="drawnote" id="d-note2"></p>
+        <div class="btnrow" style="margin-top:10px">
+          <button id="b-spin" style="flex:1">Spin</button>
+          <button class="ghost" id="b-respin">Re-spin</button>
         </div>
+        <p class="drawnote" id="d-note"></p>
       </div>
-      <p class="drawnote" id="d-note2"></p>
-      <div class="btnrow" style="margin-top:10px">
-        <button id="b-spin" style="flex:1">Spin</button>
-        <button class="ghost" id="b-respin">Re-spin</button>
-      </div>
-      <p class="drawnote" id="d-note"></p>
 
       <div class="tabs" id="tabs" role="tablist"></div>
       <div class="opts" id="opts"></div>

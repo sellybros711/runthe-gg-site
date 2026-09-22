@@ -5914,6 +5914,7 @@ node hoops/check-badges.mjs       every badge is reachable, against real runs
 node hoops/check-board.mjs        the leaderboard, in a browser, in every state
 node hoops/check-live.mjs         the game you play yourself, and its fit
 node hoops/check-bracket.mjs      the playoff bracket, and the field it draws
+node hoops/check-draft.mjs        the draft screen's shape, desktop and phone
 ```
 
 `check-badges.mjs` takes about two minutes, because proving a badge is reachable
@@ -6022,6 +6023,78 @@ reading one screen at 390px:
   SEASON, so what is said is whether they won it.
 - **"SIGNABLE" alone over ten signable players.** A divider only earns its line when
   there is something on the other side of it.
+
+### The draft on a desktop is The Perfect Season's draft, deliberately
+
+```
+node hoops/check-draft.mjs        the shape, at seven widths
+```
+
+The two games are the same skeleton and a player who knows one should not have
+to learn the other's shape, so the wide draft screen is football's: **picture
+left, wheel right, board full width underneath**, at football's own 920px
+threshold. Asked for by a player with the two screens side by side.
+
+**What it replaced was a 298px column on a 1512px monitor.** The page shipped
+at the 660px wrap every other screen here uses, with the court taking a fixed
+316px rail out of it, so the thing the whole screen is for was drawn NARROWER
+than it is on a phone: the position tabs overflowed and scrolled, and the sort
+row wrapped onto two lines. That is football's own "phone screenshot pasted
+into the middle of a desktop" with a rail taking half of what was left. The
+board is three columns of 330px now and the page went **2,280px to 1,221px**.
+
+**What it does NOT copy is football's 1200 to 1259 fallback to one column.**
+That exists because the ad rails appear at 1200 and take 200 a side, leaving
+800, and this game carries no ad tag at all.
+
+**Nothing is sticky any more, and that is the one thing given up.** The court
+was a rail that held its place while the board scrolled, which is genuinely
+nice and is what football refuses in as many words, because a sticky block
+whose own height changes reshapes the page under the finger. A board a third as
+tall keeps the court on screen far longer anyway.
+
+**The court is flatter here (1/0.72) and that is not a style choice.** At
+1/0.94 it draws 492x462 across half of 1040, against a wheel block of about 140
+beside it: a picture three times the height of the thing it is reference for,
+with the hole under the reels to prove it. **It cannot go as flat as football's
+field**, which is about 1.84 wide: a half court is roughly square in life, and
+squashing it past 1.4 stops depicting the sport.
+
+#### Every way this rots is silent, and two of them already had
+
+**`.active`, NOT `.on`.** The wrap gets its width from
+`.wrap:has(#s-draft.active)`, and the rule lifted from football was written
+`.on`, which is that game's class and has never been this one's. It matched
+nothing: no error, no warning, a draft that stayed 660px wide, which is
+indistinguishable from the defect the block exists to fix.
+
+**A MEDIA QUERY ADDS NO SPECIFICITY**, and the wide block sits about eleven
+hundred lines above the base rules it argues with, so at equal weight the later
+one wins. `.sortbar{margin-top:0}` lost that way and kept a 40px hole between
+two controls that belong together.
+
+**And the same trap had killed a whole block for the life of the file.**
+`@media(max-width:839px)` has always claimed to draw a shorter court on a
+phone, because it is reference and the board is the decision. It never once
+applied: `.court` and `.spot` are declared three hundred lines below it, so
+every phone that ever loaded this game drew the base 1/0.94 court at
+**358x337** against the 358x258 the file promised, with 74px spots rather than
+64. Nothing threw and nothing looked broken. Scoping the rules to `.dside`
+raises them over the base and is also the honest reach, since the sentence is
+about the court you draft next to; the home hero and the results screen keep
+1/0.94, which is what they have always had.
+
+**The wrapper is the one markup change and it is guarded from the other side.**
+`.dtop` groups the wheel and its notes so the top row is two columns rather
+than six grid placements, two of which are empty most of the draft and would
+each still cost a row gap. A wrapper is exactly the kind of change that quietly
+costs a margin, so section 4 measures ONE page twice, with `.dtop` flat and
+not: `display:contents` is exactly "as if the wrapper were not there", which is
+a controlled comparison with no seed in it. Two random drafts are two different
+boards, so comparing screenshots across runs measures the players.
+
+All three cascade defects were reintroduced one at a time, and each breaks
+exactly one assertion.
 
 ### It did not say what it was
 
@@ -6138,18 +6211,50 @@ Two more on that screen, both found only by looking at it:
 numbers that turn win shares into a record are now FITTED to twenty-two real NBA
 records (rms 3.5 wins), so a roster is worth what it was worth in life: rating
 all 1403 team-seasons puts the 2012 Bobcats last at 10.5 wins and the 1996 Bulls
-first at 73.8. What is still off is the GAP between a thoughtless draft and a
-perfect one, which never exceeds about six wins at any cap, because
-`build-players.mjs` prices players off `p.w` alone. Price being a monotone
-function of value means the board holds no bargains, so best-available is close
-to optimal. Fixing it means pricing on something other than value, or widening
-what roster shape is worth. Both are design changes. The TARGETS block says all
-of this at the point of failure, so read it there rather than trusting this
-paragraph to stay current.
+first at 73.8. The TARGETS block says all of this at the point of failure, so
+read it there rather than trusting this paragraph to stay current.
 
 **Refit, do not nudge.** If the data changes shape, re-run the solve rather than
 moving one constant: they trade off against each other, and the reason the
 previous set was uniformly 15 wins low is that no single number showed it.
+
+#### Price is what the market pays. Win shares are what the man is worth.
+
+**This paragraph used to say the opposite and was three sentences of stale.** It
+recorded that `build-players.mjs` prices off `p.w` alone, that price is
+therefore a monotone function of value, that the board holds no bargains, and
+that fixing it would be a design change nobody had made. **Every one of those
+was true when it was written and the fix has since shipped**, in that file's own
+header, which is the dangerous direction for a document to be wrong in: the next
+person explains a board they are looking at with a rule the game stopped
+playing. Reported by a player asking why sorting by best player is not the same
+as sorting by price.
+
+Price comes off a MARKET SCORE built from the counting stats. Value stays win
+shares. Real markets pay for POINTS above all and systematically underpay for
+efficiency, for rebounding and for defence, which is not a flaw to model around:
+it is the most familiar fact about NBA contracts and it is exactly what a fan
+brings to a draft.
+
+**So the two disagree on purpose, and the residual IS the game.** Measured over
+the shipped 16,057 rows, price and win shares correlate at **0.833**, and on
+**18.8%** of random pairs the CHEAPER man is worth more. The 1989 Kings board
+is the whole idea in two rows:
+
+| | price | win shares | what the market saw |
+|---|---|---|---|
+| Kenny Smith | $30.4M | 4.1 | 17.3 points |
+| Harold Pressley | $17.6M | **4.8** | 12.3 points, 6.1 rebounds |
+
+What falls out of the real data with nobody choosing it: Rodman 1990, Tyson
+Chandler 2012, Horace Grant 1992 and Kevon Looney 2023 are bargains, and Adam
+Morrison 2007, Michael Beasley 2013 and Scoot Henderson 2024 are traps.
+
+**The tile says which it is**, and that is the half a reader needs: `BARGAIN`,
+`GOING RATE` and `PAYING FOR POINTS` are the deal chip, so the board never asks
+somebody to do the arithmetic in their head to find the thing it was built
+around. Sort by Best player and the column is ordered by win shares with the
+prices deliberately out of order beside it.
 
 ### Today's run, and the one mode that gives two people the same question
 
