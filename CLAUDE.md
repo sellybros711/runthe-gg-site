@@ -6013,12 +6013,211 @@ shorter draft and it is the number CLAUDE.md already says to watch.
 
 #### What the mode gave up, said rather than hidden
 
-- **The 6TH slot was the FLEX.** It took anybody, so a roster could go big or
-  small and the slot list would not argue. What is left is `SLOT_ELIGIBILITY`,
-  which is loose enough at the edges that a combo guard really can take either
-  guard spot, so shape is still a choice rather than a form to fill in.
 - **The 0.72 was the only reason the bench was cheap.** "Buy a great man at a
   discount and play him less" was a real play and is not available.
+
+**THAT IS THE WHOLE LIST, AND THE FIRST VERSION OF IT HAD A SECOND ENTRY THAT
+WAS WRONG.** It said the 6TH slot was the flex, so going big or small went with
+it, and then in its own next sentence that `SLOT_ELIGIBILITY` keeps a roster's
+shape a choice. Both halves cannot be true. Reported by a player, in five
+words: you can still go big or small based on your starting 5.
+
+**They are right, and neither half was.** See the next section for what was
+actually stopping the game from saying so.
+
+#### Every man in this data has ONE position, so the eligibility table decides nothing
+
+`SLOT_ELIGIBILITY` overlaps on purpose (a G at either guard spot, an FC at the
+three, the four or the five) and **almost none of it can ever fire**: 16,056 of
+the 16,057 rows in `players.json` carry a single position out of PG, SG, SF, PF
+and C. There is no G, no GF and no FC anywhere in the file, and exactly **one**
+row that is not one of the five: Adam Keefe's 1998, listed F, who is therefore
+the only man in the game legal at two slots. One position a man, one slot a
+position, 16,056 times out of 16,057. So every roster this game drafts is one
+of each, `POSITION_MAX` can never bind, and `slotForPlayer`'s walk down the
+open slots has one answer by construction. Measured over 750 drafts with two
+bots deliberately stacking one end: **one centre-eligible man, every time, in
+all 750**.
+
+The table stays. It is the rule the day the build writes a real eligibility
+list, which is the same day two point guards and no shooting guard becomes a
+roster somebody can draft. What may not stay is a comment reading anything into
+it, which is what was there.
+
+**WHAT VARIES IS THE MAN, WHICH IS WHAT GOING BIG MEANS ON A FIVE.** Your four
+and your five can be two men who own the glass, or your five can be a shooter
+who never rebounds. Those are different teams and the draft reaches both. The
+engine had simply stopped being able to SAY so.
+
+#### Two of the fourteen systems were dead, and one of them the roster change killed
+
+```
+node hoops/check-badges.mjs    the last two sections
+```
+
+`detectSystem` names a roster's identity, and two entries tested the position
+CODE, which by the section above is the one thing a drafted roster cannot vary:
+
+| | what it asked | at six men | at five |
+|---|---|---|---|
+| Twin Towers | two men ELIGIBLE AT CENTRE, 8+ rebounds | **175 of 800** | **0 of 800** |
+| The Death Lineup | a roster holding no man whose position is C | 0 | 0 |
+
+**Twin Towers is the one the five man change killed**, and measured either side
+of it rather than argued: the sixth slot took anybody, so a second centre was
+signable, and a starting five has one centre slot. **The Death Lineup had never
+once been named**, at either size, because there has always been a centre slot.
+Its own comment argues at length that a true centre should be judged by
+position and not by rebound count, cites Draymond Green at 9.5 a night, and
+then wrote the test that excludes every roster there is.
+
+Both are asked of what the five men DO now. Twin Towers wants **two men
+rebounding nine or better** plus somebody protecting the rim, which lands on
+18% of best-available drafts, 27% of drafts chasing rebounds and none at all of
+a careless one. The Death Lineup wants **a best rebounder under 10.5**, which
+is above the man it is named for, plus the spacing, the switching and the
+threes it already asked for.
+
+**Twin Towers also moved ABOVE Pick and Roll.** A roster with two men owning
+the glass nearly always also holds a guard who passes and a big who scores, so
+under the looser rung the more distinctive shape is named on nothing. They
+carry the same bonus, so the move costs no rating and changes only the word.
+
+**What the whole block does now**, over the same 1,200 drafts six ways, before
+against after: Twin Towers **0 to 159**, the Death Lineup **0 to 9**, Moreyball
+4 to 23, Motion 3 to 21, Seven Seconds 7 to 8, Pace and Space 19 to 24, Too
+Many Mouths 0 to 2, and rosters with no identity at all **436 to 330**. Pick
+and Roll went 202 to 158, which is Twin Towers taking back the rosters it was
+being shadowed on and is the whole reason for the move.
+
+**Nothing could report any of this**, which is why it took a player: every
+roster was legal, every label was a real label, every rating was right, and a
+system that fires on nothing throws nothing. hoops has had a reachability guard
+for BADGES since its first catalog asked for three things the game cannot
+produce, and had none for systems. It has one now, in `check-badges.mjs`,
+sharing the runs the badge sweep already plays.
+
+**And `coachReport` compared a key no system has.** `archetype.key ===
+'hero_ball'` is the test for printing "Leans hard on <name>", and the key it
+means is `iso`, which is the second most common label a drafted roster gets. So
+that weakness had never printed once. An undefined key compares false rather
+than throwing, which is the `out.spendLeft` class one level up, and the guard
+beside the reachability one now asserts that every key a caller names is a key
+a system has.
+
+#### A TEAM TOTAL MOVES WITH THE ROSTER AND A PER-PLAYER NUMBER DOES NOT
+
+`FIT`'s four team totals were re-measured when the roster went to five.
+`SYSTEMS` has team totals of its own, written as literals inside the detect
+functions, and **not one of them was**. Measured over 960 drafts eight ways at
+each roster size, the share of rosters clearing each shipped threshold:
+
+| | at six | at five | now |
+|---|---|---|---|
+| `MODERN_TPA` 18.0 | 20.0% | **8.6%** | 15.0 |
+| Death Lineup steals 5.5 | 57.4% | **34.4%** | `SWITCH_STEALS` 4.7 |
+| Twin Towers rebounds 38 | 15.0% | **0.7%** | 32 |
+| Bully Ball rebounds 36 | 18.9% | **2.5%** | 31 |
+| Motion assists 22 | 26.7% | **5.9%** | 18 |
+| Grit and Grind `dws` 13 | 38.6% | **22.1%** | 11 |
+| Too Many Mouths, budget + 18 | 0.0% | 0.0% | budget + 8 |
+| *the second best rebounder, 8* | *24.8%* | *23.9%* | *unchanged* |
+
+**The last row is the control and it is why this is a rule rather than a list.**
+It is a PER-PERSON number, and it did not move. Everything above it is a sum
+over the roster, and all of it did. `MODERN_SHOOTER_TPA`, `RIM_ANCHOR`, every
+`paceAdjust` on one man and every ratio (`P.ast / P.shots`, Grit's defensive
+share, Iso's shot share) are per-person or scale free and were correctly left
+alone.
+
+**Each new value is where the old one SAT**, at the same percentile of the five
+man distribution, rather than the old one times five sixths. `MODERN_TPA`
+measured 14.7 and ships at 15.0.
+
+**Too Many Mouths has never fired at either size**, and that is not a rounding
+error: at +18 the gate was 90 shots against a six man maximum of 89.9, and 84
+against a five man maximum of 77.4. It is checked FIRST and overrides
+everything, so the roster its own comment exists to catch (five men who all had
+the ball, coming back labelled Showtime) was never caught. **+8** is the top of
+what a five man draft reaches: team shots run p99 72.0 and max 77.4.
+
+##### And the real-club fixtures were still six men long
+
+`verify.mjs` hands `rosterFit` a dozen actual NBA lineups and asserts the model
+calls each one what a fan would call it. Each is written as **PG, SG, SF, PF,
+C, sixth man**, because the game drafted six when they were written, and every
+one of them went on handing six men to a five man model.
+
+**It is a quiet way to be wrong, and it stayed quiet because the per-player
+tests do not care.** A system reading one man's assists, one man's points or
+one man's spacing gets the same answer from five men as from six, so most of
+the fixtures went on passing. Every TEAM TOTAL was a sixth too big.
+
+**It surfaced the moment the totals above were re-anchored**, as the 1987
+Lakers, the 1989 Pistons and the 2001 Lakers all coming back **Too Many
+Mouths**: six men's shots against a five man budget. The sixth id is sliced off
+by `E.SLOTS.length` now rather than deleted, so the fixture follows the roster
+instead of having to be remembered.
+
+##### A per-game average answers "is he a centre" with his rotation
+
+The rewritten Death Lineup then claimed the **2016 Warriors**, which is the one
+roster it must never claim: the unit it is named after is the one Andrew Bogut
+is NOT in, and Bogut is the centre on that starting five.
+
+**He rebounds 7.3 a game and 12.7 per 36**, because he played 20.7 minutes. A
+per-game bar read him as no centre at all. So that one test is **per 36
+minutes**, and it is the only reading in the file that is: everything else here
+is per game because `FIT`'s constants were measured that way and the totals
+have to agree with them. This is not a total. It asks whether one MAN is a
+centre, and the honest way to ask that is at a rate his minutes cannot move.
+**11.5 is the middle of a real gap**: Draymond Green, the man the system is
+named for, reads 10.3.
+
+This is the box score's own lesson arriving at a threshold. That column printed
+`mp`, a man's minutes in a ten man rotation, on a screen where five men cover
+all 240.
+
+#### The prose guard read the markup and not the game
+
+**The five man change shipped with eleven player-facing "six" strings still on
+the page** and a brand new guard that did not see one of them: the front page
+door ("Six signed, 82 still to play"), the daily's dare in both places it is
+written, the share text ("Can you build a better six?"), the empty profile, the
+bracket and the box score ("Your six"), the draft screen's no-identity line,
+the results screen's best-legal-six, and two hardcoded `of 6 signed`.
+
+**The guard stripped `<script>` whole**, on the correct argument that a code
+comment here is prose and is allowed to say what the roster used to be. But
+`hoops/index.html` is a one file game: **every sentence the game prints lives
+in that block.** So it read the markup and the meta description, found the cap
+claims and the one count in the folded card, and passed.
+
+**Its coverage clause did not save it**, because it counted both pages together
+and the other page yields claims. It is per page now.
+
+**The fourth wrong extractor in this repo, and the fix is not to write a fifth.**
+Telling a comment from a string needs a character walk, and telling a regex
+literal from a division needs one too: `/[&<>"']/g` is a real line in this page,
+which is the exact literal that desynced `check-copy.mjs` once already, and a
+reader lost there is lost for the rest of the file, which is where the share
+text and the front page door happen to live. So `scripts/check-copy.mjs` now
+**exports** `scriptBlocks`, `stripComments` and `stringLiterals`, and hoops
+reads through them. Adding hoops to that script's `GUARDED` list is a different
+job and still has to wait until the game has been read against its English
+rules.
+
+**And the extractor has to prove it read the script**, because the way it failed
+was by reading a page and finding nothing in it. Two probe sentences that exist
+only inside the script block, one of them past that regex literal. Reintroduced,
+the strip fails both probes and the restored "six spins" fails the count.
+
+**`YOUR_LOT` and `DAILY_DARE` exist because two of those eleven were the same
+sentence twice.** They sit BELOW the boot check and not beside `NUMWORD`, which
+is where they were written first: they read `E.SLOTS`, and the whole point of
+that check is that a blocked or stale `engine.js` is met with a reload rather
+than a crash. Evaluated above it, a missing engine is a TypeError on line one
+and the page is blank instead of self-healing.
 
 **The minutes column is arithmetic now.** Five men over 240 player minutes is
 **48 each**. `MINUTES_SHARE`, `minutesShare`, `BOX.MIN_SD` and `BOX.MIN_FLOOR`

@@ -25,6 +25,7 @@ const require = createRequire(import.meta.url);
 const E = require(path.join(HERE, 'engine.js'));
 const R = require(path.join(HERE, 'run.js'));
 import { AWARDS } from './build/fetch-awards.mjs';
+import { scriptBlocks, stripComments, stringLiterals } from '../scripts/check-copy.mjs';
 
 const players = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'players.json'), 'utf8'));
 const chemistry = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'chemistry.json'), 'utf8'));
@@ -655,10 +656,11 @@ ok(oneByOne._simState === undefined, 'finalizeSeason clears the sim state it bui
  * These assertions have already earned their place several times over. They
  * caught the 2018 Rockets being labelled Showtime off Harden's assist average,
  * the 1986 Celtics being labelled Moreyball, the 2016 Warriors being labelled
- * Point Centre because Draymond Green is eligible at centre, and the 1996 Bulls
- * being excluded from the triangle because Luc Longley averaged 9.1 rather than
- * 12. A model that gets these wrong is not a basketball model, whatever its
- * calibration report says.
+ * Point Centre because Draymond Green is eligible at centre, the 1996 Bulls
+ * being excluded from the triangle because Luc Longley averaged 9.1 rather
+ * than 12, and four of these fixtures still being six men long after the
+ * roster became five. A model that gets these wrong is not a basketball
+ * model, whatever its calibration report says.
  */
 /* BY PLAYER ID, NEVER BY NAME. Basketball-Reference renders names with their
    diacritics, so the real dataset holds "Nikola Jokic" with an accent on the c
@@ -666,10 +668,25 @@ ok(oneByOne._simState === undefined, 'finalizeSeason clears the sim state it bui
    nothing, and an assertion that silently finds nothing is an assertion that
    passes for the wrong reason or fails for a reason that has nothing to do with
    basketball. The slug is stable and is the key everything else joins on. */
+/* THE STARTING FIVE, AND THE SIXTH MAN IS WRITTEN DOWN AND NOT USED.
+ *
+ * Each row below lists six ids because the game drafted six when they were
+ * written, and every one of these fixtures went on handing six men to the
+ * model after the roster became a starting five. It is a quiet way to be
+ * wrong: a system's per-player tests are unaffected, so most of them went on
+ * passing, while every TEAM TOTAL the model reads was a sixth too big. It
+ * surfaced the moment those totals were re-anchored for five men, as the 1987
+ * Lakers, the 1989 Pistons and the 2001 Lakers all coming back Too Many
+ * Mouths: six men's shots against a five man budget.
+ *
+ * The sixth id stays in the list because it documents the club and because
+ * the day this roster size moves again is the day somebody will want it. It
+ * is sliced off rather than deleted, so the fixture follows SLOTS.length
+ * instead of having to be remembered. */
 const lineup = (ids) => {
   const rows = ids.map(([id, s]) => players.find(p => p.i === id && p.s === s));
   if (rows.some(r => !r)) return null;
-  return rows.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
+  return rows.slice(0, E.SLOTS.length).map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
 };
 
 /* WHICH MAN IS MISSING, AND WHAT HE IS PROBABLY CALLED INSTEAD.
@@ -700,7 +717,8 @@ const missingFrom = (ids) => {
   return out;
 };
 
-/* PG, SG, SF, PF, C, sixth man, in that order. */
+/* PG, SG, SF, PF, C, sixth man, in that order. The sixth is documentation and
+   is sliced off: see the note on `lineup` above. */
 const KNOWN = [
   // PG Steve Kerr, SG Michael Jordan, SF Scottie Pippen, PF Dennis Rodman, C Luc Longley, 6th Toni Kukoc
   ['the 1996 Bulls', 'The Triangle', [['kerrst01', 1996], ['jordami01', 1996],
@@ -1607,25 +1625,57 @@ ok(bestWins > worstWins + 20,
    * pages rendered perfectly and promised a cap the game does not charge,
    * which is the guide that lies, found by a player.
    *
-   * BOTH PAGES ARE STATIC AND CANNOT INTERPOLATE, which is the whole reason
-   * this class of check exists. index.html can (and its guide does, through
-   * NUMWORD), but its markup and its meta description cannot.
+   * how-to-play.html IS STATIC AND CANNOT INTERPOLATE, which is the whole
+   * reason this class of check exists. index.html can, and mostly does.
    *
-   * SCRIPT AND STYLE COME OUT FIRST. A code comment in this repo is prose for
-   * the next person and is allowed to say what the cap used to be; the
-   * engine's own cap note lists every value it has ever had. A reader that
-   * failed on those would be the bug, not the comment, which is the note
-   * check-copy.mjs carries.
+   * AND THE FIRST DRAFT OF THIS CHECK THREW THE SCRIPT AWAY, which is the
+   * fourth wrong extractor in this repo and the one that cost the most. It
+   * stripped `<script>` whole, on the argument directly below about comments,
+   * and index.html is a one file game: every sentence the game PRINTS lives
+   * in that block. So it read the markup and the meta description, found the
+   * cap claims and the one count in the folded card, passed, and left ELEVEN
+   * player-facing "six" strings behind on a five man game, among them the
+   * share text, the daily's dare, the front page door and two hardcoded
+   * "of 6 signed". Its own coverage clause did not save it, because the other
+   * page yields claims and the clause counted both pages together.
+   *
+   * COMMENTS STILL COME OUT, AND THAT PART WAS RIGHT. A code comment here is
+   * prose for the next person and is allowed to say what the roster used to
+   * be: the note above this one says "six men to five" and the engine's cap
+   * note lists every value it has ever had. A reader that failed on those
+   * would be the bug rather than the comment.
+   *
+   * SO IT READS STRINGS, THROUGH check-copy.mjs's OWN WALKER. Telling a
+   * comment from a string needs a character walk rather than a regex, and
+   * telling a regex literal from a division needs one too: `/[&<>"']/g` is a
+   * real line in this page, and a reader that takes its double quote for a
+   * string opener is lost for the rest of the file, which is where the share
+   * text and the front page door happen to live. That walker exists, it was
+   * fixed for that exact literal once already, and a second copy of it would
+   * be wrong a second time.
    */
   {
-    const prose = (src) => src
+    const markup = (src) => src
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
       .replace(/<!--[\s\S]*?-->/g, ' ');
+    /* The markup a reader sees, plus every string the script can print. */
+    const prose = (src) => [markup(src)]
+      .concat(scriptBlocks(src).flatMap(b => stringLiterals(stripComments(b))))
+      .join('\n');
     const pages = {
       'index.html': prose(pageSrc),
       'how-to-play.html': prose(fs.readFileSync(path.join(HERE, 'how-to-play.html'), 'utf8')),
     };
+
+    /* THE EXTRACTOR HAS TO PROVE IT READ THE SCRIPT, because the way it failed
+       was by reading a page and finding nothing in it. Two sentences that only
+       exist inside index.html's script block, one of them past the regex
+       literal that desyncs a naive walker. */
+    for (const probe of ['No identity yet', 'days in a row.']) {
+      ok(pages['index.html'].includes(probe),
+        `the copy reader reaches the script's own strings ("${probe}")`);
+    }
 
     /* Every "$NNNM cap" a reader can see. */
     const capClaims = [];
@@ -1660,8 +1710,12 @@ ok(bestWins > worstWins + 20,
         countClaims.push({ name, said: m[1].toLowerCase(), phrase: m[0] });
       }
     }
-    ok(countClaims.length >= 2,
-      `the roster count is written out in prose and was found (${countClaims.length})`);
+    /* PER PAGE, because counting both together is what let index.html yield
+       nothing from its script and still pass on how-to-play.html's claims. */
+    for (const name of Object.keys(pages)) {
+      const n = countClaims.filter(c => c.name === name).length;
+      ok(n >= 1, `${name} writes the roster count out in prose (${n} found)`);
+    }
     const wrongCount = countClaims.filter(c => c.said !== want)
       .map(c => `${c.name}: "${c.phrase}"`);
     is(wrongCount, [], `every roster count a reader sees is "${want}"`);

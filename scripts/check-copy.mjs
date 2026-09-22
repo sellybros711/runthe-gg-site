@@ -319,6 +319,14 @@ export function filesUnder(p) {
   return out;
 }
 export { GUARDED };
+/* THE WALKER IS EXPORTED BECAUSE IT HAS ALREADY BEEN GOT WRONG TWICE HERE, and
+   a third copy of it would be got wrong a third time. `hoops/verify.mjs` has
+   its own rule to enforce over the strings a player reads (that every roster
+   count is the roster's own count) and needs exactly this extraction to do it:
+   the script block, comments out, strings kept, and a regex literal known from
+   a division. It is not on GUARDED and must not be added to it until the game
+   has been read against the English rules in this file. */
+export { scriptBlocks, stripComments, stringLiterals, markupText };
 
 const isMain = !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) main();

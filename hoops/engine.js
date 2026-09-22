@@ -232,12 +232,31 @@ const ERAS = {
  * roster is the one shape a fan already has a picture of, and the bench man
  * was the only slot on the screen that had to be explained.
  *
- * WHAT IT COSTS IS A REAL DECISION AND IT IS WORTH NAMING. The 6TH slot took
- * anybody, so it was this game's FLEX: a roster could go big or small and the
- * slot list would not argue. Five sealed slots take that away. What is left in
- * its place is SLOT_ELIGIBILITY, which is loose enough at the edges that a
- * combo guard really can go either way, so the shape of a roster is still a
- * choice rather than a form to fill in.
+ * YOU CAN STILL GO BIG OR SMALL, AND THE FIRST WRITE-UP OF THIS SAID YOU
+ * COULD NOT. It claimed the 6TH slot was the only place a roster's shape
+ * could vary and then, in its next sentence, that SLOT_ELIGIBILITY keeps the
+ * shape a choice. Both halves cannot be true and it turns out neither is.
+ *
+ * SLOT_ELIGIBILITY HAS ALMOST NOTHING TO ACT ON. 16,056 of the 16,057 rows in
+ * this data carry exactly ONE position out of PG, SG, SF, PF and C. There is
+ * no G, no GF and no FC anywhere in the file, and one single row that is not
+ * one of the five: Adam Keefe's 1998, listed F. So each position is legal at
+ * exactly one slot, the overlap below is decorative, POSITION_MAX can never
+ * bind, and every roster this game drafts is one of each. Measured over 750
+ * drafts with two bots deliberately trying to stack one end: one centre,
+ * every time.
+ *
+ * WHAT DOES VARY IS THE MAN, WHICH IS WHAT GOING BIG MEANS ON A FIVE. Your
+ * four and your five can be two men who own the glass, or your five can be a
+ * shooter who never rebounds, and those are different teams. The engine could
+ * not SAY so, because the two systems that name those shapes both tested the
+ * position code: Twin Towers asked for two men eligible at centre, which went
+ * from 175 of 800 drafts at six men to 0 at five, and the Death Lineup asked
+ * for a roster holding no centre, which the centre slot has always made
+ * impossible. Both are asked of what the five men DO now. See their entries.
+ *
+ * WHAT IS GENUINELY GONE is the 0.72: buying a great man at a discount and
+ * playing him fewer minutes was a real play and there is no bench to do it on.
  *
  * NOTHING HERE MAY BE READ AS A LITERAL 5. Every count in this engine is
  * SLOTS.length, because the last change of this number is what proved which
@@ -247,7 +266,16 @@ const SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
 /* Eligibility is deliberately loose at the edges, because basketball positions
    are. A combo guard really can play either guard spot and a modern four really
    can play the five, so the list says so rather than pretending the sport has
-   five sealed boxes. What it will not do is let a center play point guard. */
+   five sealed boxes. What it will not do is let a center play point guard.
+
+   AND TODAY IT DECIDES NOTHING, WHICH IS A FACT ABOUT THE DATA RATHER THAN
+   ABOUT THIS TABLE. Every row in players.json carries a single position and
+   none of them is G, F, GF or FC, so each man is legal at exactly one slot.
+   The overlap is here for the day the build writes a real eligibility list,
+   which is the same day two point guards and no shooting guard becomes a
+   roster somebody can draft. Until then, read nothing into it: a comment
+   claiming the overlap keeps a roster's shape a choice was written here once
+   and was simply false. */
 const SLOT_ELIGIBILITY = {
   PG:  ['PG', 'G'],
   SG:  ['SG', 'G', 'GF'],
@@ -260,7 +288,10 @@ const SLOT_ELIGIBILITY = {
    this on their own, because the eligibility above overlaps on purpose: a man
    listed G can take either guard spot and a man listed F either forward spot,
    so a roster really can arrive as two point guards and no shooting guard. One
-   extra of any position is the limit. */
+   extra of any position is the limit.
+   IT CANNOT BIND ON TODAY'S DATA, for the reason the note above gives: one
+   position a man, one slot a position. It is the rule the overlap would need
+   the moment the overlap is real, and it is cheap to keep. */
 const POSITION_MAX = 2;
 
 function positionsOf(player) {
@@ -327,8 +358,13 @@ function respinFees(used) {
 // ─── indexing the data ──────────────────────────────────────────────────────
 
 /* Every spinnable team-season needs at least this many drawable players, or the
-   wheel lands on a board with nothing on it. Six is the roster size, so six is
-   the floor. */
+   wheel lands on a board with nothing on it.
+   IT IS NOT SLOTS.length AND THAT IS ON PURPOSE. Six was the roster size when
+   this was written and the comment said so; the roster is five now and this
+   stayed, because what the number is really for is a board worth reading. Five
+   would admit a club offering exactly one legal man per slot, which is a wheel
+   landing on a decision that has already been made. Left where it is, and named
+   for what it does rather than for a roster size it no longer matches. */
 const MIN_SPIN_ROSTER = 6;
 
 function indexData(players) {
@@ -711,8 +747,16 @@ const SYSTEMS = [
        and a half rating points for being unplayable. */
     key: 'too_many_mouths',
     name: 'Too Many Mouths',
-    blurb: 'Six men who all had the ball on their own team. Somebody here is not getting it back.',
-    detect: (r, P) => (P.shots > FIT.SHOT_BUDGET + 18 ? 1 : -1),
+    blurb: 'Five men who all had the ball on their own team. Somebody here is not getting it back.',
+    /* THE MARGIN IS A TEAM TOTAL AND WAS WRITTEN FOR SIX MEN. At +18 over the
+       budget this gate was 90 shots, and the most a six man roster ever took
+       across 960 drafts eight ways was 89.9; at five men the budget fell to 66
+       and the most anybody took was 77.4 against a gate of 84. So it fired on
+       nothing at either size and the roster it exists to catch went on being
+       labelled Showtime, which is the defect written up above it. Eight is the
+       margin that sits at the top of what a five man draft can actually reach:
+       team shots run p99 72.0 and max 77.4. */
+    detect: (r, P) => (P.shots > FIT.SHOT_BUDGET + 8 ? 1 : -1),
     bonus: 0,
   },
   {
@@ -771,17 +815,67 @@ const SYSTEMS = [
     name: 'The Death Lineup',
     blurb: 'No true centre, five men who can switch every screen, and shooting at every position.',
     detect: (r, P) => {
-      /* A TRUE CENTRE BY POSITION, not by rebound count. The lineup this is
-         named after played Draymond Green at the five and he pulled down 9.5 a
-         night, so testing on rebounds excluded the exact roster the system
-         exists to recognise. What makes it the Death Lineup is that the biggest
-         man on the floor is a forward. */
-      const centres = r.filter(p => p.pp === 'C').length;
-      if (centres) return -1;
-      if (P.spacing < 1.2 || P.steals < 5.5 || P.tpa < FIT.MODERN_TPA) return -1;
-      return fit(over(P.spacing, 1.2, 0.8), over(P.steals, 5.5, 3.0));
+      /* NO TRUE CENTRE, AND THAT CANNOT BE ASKED OF A POSITION CODE HERE.
+         This read `r.filter(p => p.pp === 'C').length` and refused any roster
+         holding one, which is EVERY roster: there is a centre slot, every row
+         in this data carries exactly one position, and only a C or an FC may
+         fill it. So the test was false by construction and this system had
+         never once been named, at five men or at six.
+
+         It is asked of what the big man DOES. The lineup this is named after
+         played Draymond Green at the five and he pulled down 9.5 a night, so
+         the bar sits above him: a roster whose best rebounder is under a real
+         centre's number is one playing a forward there, which is the whole
+         idea. The original comment argued for exactly this and then tested
+         the position anyway. */
+      /* PER 36 MINUTES, AND THAT IS THE ONE PLACE IN THIS FILE THAT IS. Every
+         other reading here is per game, because the fit model's constants were
+         measured that way and the totals have to agree with them. This is not
+         a total: it asks whether any ONE MAN is a centre, and a per-game
+         average answers that with his rotation rather than with him. Andrew
+         Bogut played 20.7 minutes for the 2016 Warriors, so he rebounds 7.3 a
+         game and 12.7 per 36, and at a per-game bar this lineup came back as
+         the Death Lineup with a true centre standing in it. That team is the
+         reason the system exists and it is the one roster it must not claim,
+         because the unit it is named after is the one Bogut is NOT in.
+         11.5 is the middle of the real gap: Draymond Green, the man this is
+         named for, reads 10.3, and Bogut reads 12.7. */
+      const glass = Math.max(...r.map(p =>
+        paceAdjust((p.reb || 0) / Math.max(12, p.mp || 36) * 36, p.s)));
+      if (glass >= 11.5) return -1;
+      if (P.spacing < 1.2 || P.steals < FIT.SWITCH_STEALS || P.tpa < FIT.MODERN_TPA) return -1;
+      return fit(over(P.spacing, 1.2, 0.8), over(P.steals, FIT.SWITCH_STEALS, 2.6));
     },
     bonus: 0.60,
+  },
+  {
+    /* ABOVE PICK AND ROLL, and it is where it belongs rather than where it
+       fits. A roster with two men owning the glass almost always also holds a
+       guard who passes and a big who scores, so below the looser rung the
+       more distinctive shape is named on nothing. The two carry the same
+       bonus, so the move costs no rating anywhere and only changes the word. */
+    key: 'twin_towers',
+    name: 'Twin Towers',
+    blurb: 'Two genuine bigs, the glass owned at both ends, and nothing easy at the rim.',
+    detect: (r, P) => {
+      /* TWO MEN WHO REBOUND LIKE BIGS, not two men whose position says so.
+         This asked for two players ELIGIBLE AT CENTRE, which was reachable
+         while the sixth slot took anybody and became impossible the day the
+         roster went to a starting five: one centre slot, one centre. Measured
+         either side of that change, it fired on 175 of 800 drafts at six men
+         and 0 of 800 at five. Nothing threw, no check went red, and the only
+         symptom was that going big stopped having a name.
+
+         What going big MEANS on a starting five is that the frontcourt owns
+         the glass, so that is the question. Nine boards a man, twice over,
+         plus somebody protecting the rim: measured over 150 drafts a bot, it
+         lands on 18% of best-available drafts, 27% of drafts chasing
+         rebounds, and none at all of a careless one. */
+      const towers = r.filter(p => paceAdjust(p.reb || 0, p.s) >= 9).length;
+      if (towers < 2 || P.bestRim < 1.4) return -1;
+      return fit(over(P.reb, 32, 8), over(P.bestRim, 1.4, 1.6));
+    },
+    bonus: 0.55,
   },
   {
     key: 'pick_and_roll',
@@ -800,18 +894,6 @@ const SYSTEMS = [
     bonus: 0.55,
   },
   {
-    key: 'twin_towers',
-    name: 'Twin Towers',
-    blurb: 'Two genuine bigs, the glass owned at both ends, and nothing easy at the rim.',
-    detect: (r, P) => {
-      const bigs = r.filter(p => hasAny(positionsOf(p), ['C', 'FC'])
-        && paceAdjust(p.reb || 0, p.s) >= 8).length;
-      if (bigs < 2 || P.bestRim < 1.4) return -1;
-      return fit(over(P.reb, 38, 10), over(P.bestRim, 1.4, 1.6));
-    },
-    bonus: 0.55,
-  },
-  {
     key: 'grit_and_grind',
     name: 'Grit and Grind',
     blurb: 'Nobody scores easily, nobody scores often, and the game is played in the mud.',
@@ -826,7 +908,10 @@ const SYSTEMS = [
          Pistons scraped in at exactly 70.0. A threshold that puts two teams
          with the same identity on opposite sides of itself is measuring
          something else. Spacing and the defensive share do the real work. */
-      if (dws < 13 || P.spacing > 1.0) return -1;
+      /* 11 AND NOT 13, for the roster size and nothing else. Thirteen
+         defensive win shares cleared 38.6% of six man drafts and 22.1% of
+         five man ones. The SHARE below is a ratio and did not move. */
+      if (dws < 11 || P.spacing > 1.0) return -1;
       /* THE SHARE, NOT THE TOTAL. Thirteen defensive win shares is true of
          almost any good roster, so on the total alone this became the label for
          half the league. What actually makes a team this is that its value sits
@@ -882,7 +967,9 @@ const SYSTEMS = [
       const post = r.filter(p => hasAny(positionsOf(p), ['C', 'FC'])
         && paceAdjust(p.pts || 0, p.s) >= 18)[0];
       if (!post || P.spacing > 1.0) return -1;
-      return fit(over(paceAdjust(post.pts, post.s), 18, 10), over(P.reb, 36, 10));
+      /* 31 AND NOT 36. The points are one man's and did not move; the
+         rebounds are the roster's and did, when the roster went to five. */
+      return fit(over(paceAdjust(post.pts, post.s), 18, 10), over(P.reb, 31, 8));
     },
     bonus: 0.45,
   },
@@ -908,9 +995,12 @@ const SYSTEMS = [
     name: 'Motion Offense',
     blurb: 'Nobody dominates the ball, everybody touches it, and the extra pass is always there.',
     detect: (r, P) => {
+      /* THE ASSISTS ARE A TEAM TOTAL AND THE SHOTS ARE ONE MAN'S, so only the
+         first moved to five men: at 22 this cleared 26.7% of six man drafts
+         and 5.9% of five man ones, which is a system quietly going rare. */
       const hog = Math.max(...r.map(p => paceAdjust(p.fga || 0, p.s)));
-      if (hog > 17 || P.ast < 22) return -1;
-      return fit(over(P.ast, 22, 8), 1 - over(hog, 12, 6));
+      if (hog > 17 || P.ast < 18) return -1;
+      return fit(over(P.ast, 18, 6), 1 - over(hog, 12, 6));
     },
     bonus: 0.50,
   },
@@ -1154,8 +1244,20 @@ const FIT = {
      a guard taking 1.2 threes a night in a league that took 2.4 is twice league
      average and still not spacing anybody out. So the modern identities carry an
      absolute floor in actual attempts on top of the relative one. */
-  MODERN_TPA: 18.0,          // the roster's own three-point attempts per game
+  /* MODERN_TPA IS A TEAM TOTAL AND MODERN_SHOOTER_TPA IS ONE MAN'S, which is
+     why only the first moved when the roster went from six men to five. At
+     18.0 it cleared 20.0% of six man drafts and 8.6% of five man ones, so
+     Moreyball, Seven Seconds, the Death Lineup and Pace and Space all went
+     quietly rarer together with nothing anywhere reporting it. 14.7 is where
+     18.0 sat, measured over 960 drafts eight ways at each size; it ships at
+     the round number just above. */
+  MODERN_TPA: 15.0,          // the roster's own three-point attempts per game
   MODERN_SHOOTER_TPA: 5.0,   // and what one man has to be taking
+
+  /* SWITCHING. The roster's steals, which is the closest thing the box score
+     has to "everybody can guard somebody". A team total, so it moved with the
+     roster: 5.5 cleared 57.4% at six men and 4.7 is where that sits at five. */
+  SWITCH_STEALS: 4.7,
 
   /* THE GLASS. A real starting five accounts for about 30 of a team's
      rebounds, measured over the same 1403 clubs: 29.6 against a top six's
@@ -2779,7 +2881,13 @@ function coachReport(roster, chem, structure, rating, unspentMusd, ortg, drtg) {
   else if (!weakest || weakest.w < WEAK_LINK.HOLE) weaknesses.push('A hole in the five');
   if (chemBonus >= 1.6) strengths.push('Real chemistry');
   else if (chemBonus < 0.4) weaknesses.push('Five strangers');
-  if (structure && structure.archetype && structure.archetype.key === 'hero_ball')
+  /* 'iso', AND IT READ 'hero_ball' FOR THE LIFE OF THIS FUNCTION. No system
+     has ever carried that key, so this weakness had never printed once, while
+     the system it means is the second most common label a drafted roster
+     gets. An undefined key compares false rather than throwing, which is why
+     nothing ever said so. Same class as the results screen reading a field
+     off an outcome that has no such field. */
+  if (structure && structure.archetype && structure.archetype.key === 'iso')
     weaknesses.push(`Leans hard on ${top ? lastNameOf(top.n) : 'one star'}`);
   if (typeof unspentMusd === 'number' && unspentMusd >= 15)
     weaknesses.push(`$${unspentMusd.toFixed(0)}M left on the table`);

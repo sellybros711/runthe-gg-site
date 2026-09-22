@@ -2562,7 +2562,7 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=17"></script>
+<script src="engine.js?v=18"></script>
 <script src="run.js?v=9"></script>
 <script src="badges.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
@@ -2642,6 +2642,22 @@ var NEED_VERSION = 6;
   throw new Error('version mismatch: page needs ' + NEED_VERSION
     + ', engine ' + (E && E.API_VERSION) + ', run ' + (R && R.API_VERSION));
 })();
+
+/* THE TWO PHRASES PRINTED FROM MORE THAN ONE PLACE, once each.
+ *
+ * "Your five" names the player's own side on the bracket and again in the box
+ * score, and the daily's dare is the same sentence in `shareText` and in
+ * `shareDaily`. Both were written out twice, and both survived the roster
+ * going from six men to five twice, for the reason anything written twice
+ * survives an edit.
+ *
+ * BELOW THE BOOT CHECK AND NOT BESIDE NUMWORD, which is where they were
+ * written first. They read `E.SLOTS`, and the whole point of the check above
+ * is that a blocked or stale engine.js is met with a reload rather than a
+ * crash: evaluated before it, a missing engine is a TypeError on line one and
+ * the page is blank instead of self-healing. */
+var YOUR_LOT = 'Your ' + NUMWORD(E.SLOTS.length);
+var DAILY_DARE = 'Everybody got the same ' + NUMWORD(E.SLOTS.length) + ' spins.';
 
 /* ── THE OTHER PAIR OF HAND-WRITTEN NUMBERS, AND IT IS THE SILENT ONE ──────
  *
@@ -5037,7 +5053,8 @@ function renderFit(){
     b2.textContent = 'No identity yet';
     line.appendChild(b2);
     line.appendChild(document.createTextNode(
-      'Six good players, but nothing they obviously do together.'));
+      NUMWORD(E.SLOTS.length, true)
+        + ' good players, but nothing they obviously do together.'));
   }
   box.appendChild(line);
 }
@@ -5504,7 +5521,7 @@ function brkSeat(e, state, score){
   var cls = state ? ' ' + state : '';
   return '<div class="brk-t' + (e.you ? ' me' : '') + cls + '">'
     + '<span class="sd">' + (e.seed == null ? '' : e.seed) + '</span>'
-    + '<span class="nm">' + (e.you ? 'Your six' : esc(e.wins + '-'
+    + '<span class="nm">' + (e.you ? YOUR_LOT : esc(e.wins + '-'
       + (E.CONSTANTS.REGULAR_SEASON_GAMES - e.wins))) + '</span>'
     + '<span class="sc">' + (score == null ? '' : score) + '</span></div>';
 }
@@ -5984,7 +6001,7 @@ function lvWords(p){
     if (p.kind === 'and1') return ['They score, and one', ''];
     return ['They score', ''];
   }
-  var who = p.name ? boxName(p.name) : 'Your six';
+  var who = p.name ? boxName(p.name) : YOUR_LOT;
   if (p.kind === 'to') return ['', 'Turnover'];
   if (p.kind === 'miss') return [who, ' misses'];
   if (p.kind === 'three') return [who, ' from three'];
@@ -6487,7 +6504,8 @@ function renderOver(out){
   if (squad) {
     $('o-grade').textContent = 'draft efficiency ' + squad.efficiency.toFixed(0) + '%';
     $('o-best').textContent = 'You signed ' + squad.actualWs.toFixed(1)
-      + ' win shares. The best legal six out of the clubs you actually spun was '
+      + ' win shares. The best legal ' + NUMWORD(E.SLOTS.length)
+      + ' out of the clubs you actually spun was '
       + squad.bestWs.toFixed(1) + ', for ' + money(squad.spend) + '.';
   } else {
     $('o-grade').textContent = '';
@@ -7254,7 +7272,7 @@ function shareDare(out){
   if (run && run.daily) return 'Same ' + NUMWORD(E.SLOTS.length) + ' spins. Can you beat it?';
   if (out.isGOAT) return 'Can you win 74?';
   if (out.titleWon) return 'Can you win a ring?';
-  return 'Can you build a better six?';
+  return 'Can you build a better ' + NUMWORD(E.SLOTS.length) + '?';
 }
 
 /* WHICH GAME THIS WAS, IN ONE LINE, and it is derived rather than written.
@@ -7298,7 +7316,7 @@ function shareText(out){
      read off the stored day rather than off the run, because the run does
      not know how many days came before it. */
   var d = (run && run.daily) ? dailyState() : null;
-  var dare = d ? 'Everybody got the same six spins.'
+  var dare = d ? DAILY_DARE
     + (d.streak > 1 ? '\n' + d.streak + ' days in a row.' : '')
     : shareDare(out);
   return head + '\n' + line + '\n' + dare + '\n' + SHARE_URL;
@@ -7889,7 +7907,8 @@ function renderCareer(){
     $('prof-sub').textContent = '';
     var li = document.createElement('li');
     li.style.cssText = 'display:block;border:0;color:var(--mut)';
-    li.textContent = 'No finished runs yet. Draft six and play the 82.';
+    li.textContent = 'No finished runs yet. Draft '
+      + NUMWORD(E.SLOTS.length) + ' and play the 82.';
     list.appendChild(li);
     return;
   }
@@ -8283,8 +8302,9 @@ function renderDailyDoor(){
   if (live) {
     name.textContent = "Today's run · day " + n;
     sub.textContent = run.phase === R.PHASES.DRAFT
-      ? run.roster.length + ' of 6 signed. Pick up where you left off.'
-      : 'Six signed, 82 still to play.';
+      ? run.roster.length + ' of ' + E.SLOTS.length
+        + ' signed. Pick up where you left off.'
+      : NUMWORD(E.SLOTS.length, true) + ' signed, 82 still to play.';
     main.onclick = function(){ show('s-draft'); renderDraft(); };
   } else if (done) {
     name.textContent = 'Day ' + n + ' · ' + s.label;
@@ -8292,7 +8312,8 @@ function renderDailyDoor(){
     main.onclick = shareDaily;
   } else {
     name.textContent = "Today's run · day " + n;
-    sub.textContent = 'The same six spins for everybody today.';
+    sub.textContent = 'The same ' + NUMWORD(E.SLOTS.length)
+      + ' spins for everybody today.';
     main.onclick = function(){ startRun(null, null, true); };
   }
 
@@ -8333,7 +8354,7 @@ function shareDaily(){
   if (!s || !s.done) return;
   var text = 'Run The Floor, day ' + s.day + '\n'
     + s.label + '. ' + s.headline + '. Rating ' + s.rating + '.\n'
-    + 'Everybody got the same six spins.\n'
+    + DAILY_DARE + '\n'
     + (s.streak > 1 ? s.streak + ' days in a row.\n' : '')
     + SHARE_URL;
   if (navigator.share) {
@@ -8374,11 +8395,11 @@ function renderHome(){
       : inBracket ? 'In the playoffs' : 'Season not played')
       + (chip ? ' · ' + chip : '');
     $('rz-where').textContent = drafting
-      ? run.roster.length + ' of 6 signed'
+      ? run.roster.length + ' of ' + E.SLOTS.length + ' signed'
       : inBracket ? bracketWhere()
-      : 'six signed, 82 to play';
+      : NUMWORD(E.SLOTS.length) + ' signed, 82 to play';
 
-    /* Who is actually on it, because "3 of 6" is a progress bar and the names
+    /* Who is actually on it, because "3 of 5" is a progress bar and the names
        are the reason to come back. */
     var names = [];
     for (var i = 0; i < run.roster.length; i++) names.push(run.roster[i].n);
