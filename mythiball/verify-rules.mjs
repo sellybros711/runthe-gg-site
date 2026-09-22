@@ -44,12 +44,16 @@
      the club remembers   a franchise carries its players' records, not only its win column
      and the club changes them  a man develops at what he did here, and the league rises with you
      the friendly button  Randomize hands you a mound, and a hand draft is told who is on it
+     both clubs           nobody you drafted is also playing for the club you are playing
      the picture agrees   no throw beats a safe runner to the bag, and no run outlasts the sim
      the walk back        a strikeout has a frame, and it belongs to the man it happened to
+     the pitcher faces    no profile frame reaches the mound, because this camera sees his front
      speed is never a cost  a faster runner is never waved home on worse odds than a slower one
      a rating buys more   every curve a rating feeds moves one way, over the whole scale
      the stale timer      a play's timer fires into its OWN play or not at all
-     one grid             the world is blown up by a whole number, so it has one block size
+     a window's own play  a catch or a robbery never resolves into the play that replaced it
+     its own clock        a play is applied on its own timer, never on the one it replaced
+     one grid         the world is blown up by a whole number, onto the arena's own pixels
      the code's own claims  what the comments assert about the code is true of it
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
@@ -535,8 +539,12 @@ async function main() {
         /* Every biped carries a distinct catch frame. Quadrupeds have no
            arms to raise, so they are excluded. */
         const bipeds = ['kong','franky','popeye','peter','tom','huck','sherlock','lupin','alice','dorothy','robin','sammy','wonderland'].filter(k => V2_SPRITES[k]);
-        const stagnant = bipeds.filter(k =>
-          JSON.stringify(V2_SPRITES[k].f.catch) === JSON.stringify(V2_SPRITES[k].f.idle));
+        /* ASK THE DECODED DRAWING, NEVER THE STORED STRING. A pose that
+           repeats another is stored as '@thatpose', so comparing what is in
+           the table would read a reference and a drawing as two different
+           things and pass on exactly the defect this line exists for. */
+        const drawing = (k, p) => v2Frame(k, p).join('/');
+        const stagnant = bipeds.filter(k => drawing(k, 'catch') === drawing(k, 'idle'));
         const missing = Object.keys(V2_SPRITES).filter(k => !V2_SPRITES[k].f.catch || !V2_SPRITES[k].f.throw);
         return { missing, stagnant };
       });
@@ -816,8 +824,16 @@ async function main() {
         /* The home page is the room. The roster used to print underneath
            it, which made the first thing anybody saw a wall of numbers. */
         out.menuCards = document.querySelectorAll('#app .charcard').length;
-        out.tab = (document.querySelector('.clubtabs .tab') || {}).textContent;
-        document.querySelector('.clubtabs .tab').click();
+        /* MEET THE PLAYERS IS A MODE TILE NOW, not a tab under everything
+           else. The claim is unchanged and is the one that matters: there
+           is a way from the home page to the squad, and it is not hidden.
+           What moved is which element carries it, so the selector moved
+           with it rather than the assertion. */
+        const meet = document.querySelector('.hmode-meet');
+        out.tab = meet && meet.querySelector('b').textContent;
+        out.tabArea = meet ? Math.round(meet.getBoundingClientRect().width
+                                      * meet.getBoundingClientRect().height) : 0;
+        meet.click();
         out.screen = State.screen;
 
         const hots = [...document.querySelectorAll('.photo .hot')];
@@ -868,8 +884,14 @@ async function main() {
       });
       ok(r.menuCards === 0, 'the clubhouse is the home page, with no roster printed under it',
          'cards=' + r.menuCards);
-      ok(/Meet the players/i.test(r.tab || ''), 'and a tab that opens the squad', r.tab);
-      ok(r.screen === 'meet', 'the tab goes to the photo', r.screen);
+      ok(/Meet the players/i.test(r.tab || ''), 'and a mode tile that opens the squad', r.tab);
+      /* IT IS NOT A FOOTNOTE. The roster is the most distinctive thing this
+         game has and it used to be a small tab under four bigger buttons,
+         so the tile has to be a real one: same order of size as the modes
+         it sits beside. */
+      ok(r.tabArea > 12000, 'and it is a proper tile rather than a small tab',
+         r.tabArea + ' square pixels');
+      ok(r.screen === 'meet', 'the tile goes to the photo', r.screen);
       ok(r.faces === r.roster && r.named === r.roster,
          `all ${r.roster} are in the frame, once each`,
          `faces=${r.faces} named=${r.named} roster=${r.roster}`);
@@ -917,7 +939,12 @@ async function main() {
         const r = await pg.evaluate(() => {
           const el = document.querySelector('.clubhouse canvas');
           const cv = el.getBoundingClientRect();
-          const tabs = document.querySelector('.clubtabs').getBoundingClientRect();
+          /* THE ROOM AND THE THING TO PRESS. It used to be the room and
+             the Meet tab, because the tab was the last thing on the page.
+             The page is longer now on purpose, and what a returning player
+             must not have to scroll for is the button that continues their
+             franchise. */
+          const tabs = document.querySelector('.bigplay').getBoundingClientRect();
           const hots = [...document.querySelectorAll('.clubhouse .hot')]
             .map(b => b.getBoundingClientRect());
           /* No two things in the room may claim the same pixel. */
@@ -949,16 +976,26 @@ async function main() {
         ok(Math.abs(r.cw / r.ch - r.ratio) < 0.02,
            `${tag}: the room keeps its shape rather than stretching`,
            `drawn ${Math.round(r.cw)}x${Math.round(r.ch)} ratio ${(r.cw / r.ch).toFixed(2)} want ${r.ratio.toFixed(2)}`);
-        ok(r.bottom <= r.vh, `${tag}: the whole room and its tab are above the fold`,
+        ok(r.bottom <= r.vh, `${tag}: the room and the button to press are above the fold`,
            `bottom=${Math.round(r.bottom)} vh=${r.vh}`);
         ok(r.docW <= r.winW + 1, `${tag}: and the page does not scroll sideways`,
            `doc=${r.docW} win=${r.winW}`);
         ok(r.hots === 4 && !r.overlap && r.inFrame,
            `${tag}: four things, none overlapping, all inside the frame`,
            JSON.stringify({ n: r.hots, overlap: r.overlap, inFrame: r.inFrame }));
+        /* THE ROOM IS NEVER SMALLER THAN IT IS ALLOWED TO BE, which is a
+           property rather than a percentage. It used to be the whole menu,
+           so "fills the window" meant the width and nothing else. There is
+           a franchise scoreboard and a button under it now, and on a SHORT
+           window the height budget is what binds: at 1280x800 the room is
+           78% of the width because going wider would push the button that
+           continues a save below the fold, which is the worse trade.
+           So it has to be limited by ONE of the two, never by neither. */
         if (w >= 1280) {
-          ok(r.cw >= w * 0.82, `${tag}: it actually fills the window`,
-             `drawn ${Math.round(r.cw)} of ${w}`);
+          const cap = Math.min(r.vh - 350, 760);
+          ok(r.cw >= w * 0.82 || r.ch >= cap - 4,
+             `${tag}: the room takes everything the layout allows it`,
+             `drawn ${Math.round(r.cw)} of ${w} wide, ${Math.round(r.ch)} tall against a ${Math.round(cap)} budget`);
         }
         ok(errors.length === 0, `${tag}: no page errors`, errors.join(' | '));
         await pg.close();
@@ -1478,12 +1515,26 @@ async function main() {
                  catTop: P.catY - 40 * P.catSc,
                  catOnPlate: hits(cat, plate), catOnZone: hits(cat, zone),
                  lefties: L, steady: L === L2, roster: ROSTER.length,
+                 headRoom: (P.zy - P.zh) - (P.batY - 40 * P.batSc),
                  leftBoxGap: (2 * P.cx - P.batX - 16 * P.batSc) - (P.zx + P.zw) };
       });
       ok(z.boxH < z.batH, 'the zone is shorter than the batter',
          `zone ${z.boxH} vs batter ${z.batH}`);
       ok(z.boxTop > z.batTop, 'and starts below the top of his head',
          `zone top ${z.boxTop}, batter top ${z.batTop}`);
+      /* AND BOTH OF THOSE HAVE ROOM, WHICH IS A SEPARATE CLAIM FROM PASSING.
+         These two bound the batter's size and his distance from the plate
+         from opposite sides, and they close on each other: the head rule
+         wants him BIGGER (40 * batSc > 175) and the mirrored box wants him
+         SMALLER the nearer he stands. Shrinking him to 4.4 at 356 satisfies
+         both and clears the first by one logical pixel and misses the second
+         by 0.4, which is the last value that passes rather than the first
+         with room. Eight is about a quarter of what the shipped pair carries
+         on the tighter of the two, so it fails a frontier and never a
+         reasonable scene. */
+      ok(z.headRoom >= 8 && z.leftBoxGap >= 8,
+         'and both of those bounds have room left in them',
+         `head ${z.headRoom.toFixed(1)}, mirrored box ${z.leftBoxGap.toFixed(1)}`);
       ok(z.boxBot < z.catTop, 'and ends above the catcher\'s crown',
          `zone bottom ${z.boxBot}, catcher top ${z.catTop}`);
       ok(!z.catOnPlate, 'the catcher does not cover home plate', JSON.stringify(z));
@@ -1614,16 +1665,48 @@ async function main() {
       const r = await pg.evaluate(() => {
         const keys = Object.keys(V2_SPRITES);
         const missing = [], same = [], bad = [];
+        /* the decoded drawing, never the stored string: see the field frames
+           section for what a '@' reference does to a raw comparison */
+        const drawing = (k, p) => v2Frame(k, p).join('/');
         for (const k of keys) {
           for (const fr of ['load', 'follow', 'kick', 'ready']) {
             if (!V2_SPRITES[k].f[fr]) { missing.push(k + '/' + fr); continue; }
             const rows = v2Frame(k, fr);
             if (rows.length !== V2_H || rows.some(r => r.length !== V2_W)) bad.push(k + '/' + fr);
-            if (V2_SPRITES[k].f[fr] === V2_SPRITES[k].f.idle || V2_SPRITES[k].f[fr] === V2_SPRITES[k].f.back) same.push(k + '/' + fr);
+            if (drawing(k, fr) === drawing(k, 'idle') || drawing(k, fr) === drawing(k, 'back')) same.push(k + '/' + fr);
           }
         }
         const distinct = keys.length * 4 - same.length;
-        return { n: keys.length, missing, same, bad, distinct, encoded: typeof V2_SPRITES[keys[0]].f.idle === 'string' };
+        /* EVERY POSE, NOT THE FOUR ABOVE, because a reference is the one
+           thing in this table that can point at nothing. A pose stored as
+           '@thatpose' whose target was renamed falls through to idle: the
+           character goes on drawing, in the wrong pose, and no other check
+           on this page asks. So every one of the sixteen has to decode to
+           the declared size, every target has to exist, and a target may not
+           itself be a reference, which is what keeps the resolution one step
+           rather than a walk that can loop.
+
+           A COUNT OF POSES IS DELIBERATELY NOT WRITTEN HERE. It was sixteen
+           until `cheer` was added, and a number in an assertion is a line
+           somebody has to edit to add a pose, which is how a check turns
+           into the thing standing in the way of the work. */
+        const refs = [], dangling = [], chained = [], wrong = [];
+        for (const k of keys) {
+          for (const p of Object.keys(V2_SPRITES[k].f)) {
+            const raw = V2_SPRITES[k].f[p];
+            if (typeof raw === 'string' && raw[0] === '@') {
+              refs.push(k + '/' + p);
+              const t = V2_SPRITES[k].f[raw.slice(1)];
+              if (t === undefined) dangling.push(k + '/' + p + ' -> ' + raw.slice(1));
+              else if (typeof t === 'string' && t[0] === '@') chained.push(k + '/' + p);
+            }
+            const rows = v2Frame(k, p);
+            if (rows.length !== V2_H || rows.some(r => r.length !== V2_W)) wrong.push(k + '/' + p);
+          }
+        }
+        return { n: keys.length, missing, same, bad, distinct, refs: refs.length,
+                 dangling, chained, wrong,
+                 encoded: typeof V2_SPRITES[keys[0]].f.idle === 'string' };
       });
       ok(r.missing.length === 0, 'every character carries load, follow, kick and ready', r.missing.slice(0, 6).join(', '));
       ok(r.bad.length === 0, 'and each decodes to the declared size', r.bad.slice(0, 6).join(', '));
@@ -1646,6 +1729,127 @@ async function main() {
          'and the roster keeps its drawn action poses rather than standing on stills',
          `${r.distinct} of ${r.n * 4} are their own drawing, ${r.same.length} repeat a still`);
       ok(r.encoded, 'the table is run length encoded', 'encoded=' + r.encoded);
+      ok(r.wrong.length === 0,
+         'every pose of all sixty eight decodes to the declared size',
+         r.wrong.slice(0, 6).join(', '));
+      ok(r.refs > 0 && r.dangling.length === 0 && r.chained.length === 0,
+         'and a repeated pose points at a real drawing rather than storing it twice',
+         `${r.refs} references, ${r.dangling.length} dangling, ${r.chained.length} chained`);
+
+      /* ---- the bat, and who is holding one ---- */
+      /* THE PROP BAT AND THE DRAWN BAT MUST NOT BOTH BE THERE. The page
+         draws a bat out of three fillRects over the sprite, written when
+         every figure was parametric and held nothing. The pack draws real
+         bats in its swing and batting stance strips, so 55 of the 68 carry
+         one in the art and were getting a second one on top, on the frame a
+         player looks at longest.
+
+         COUNTED THROUGH fillRect, NOT READ OUT OF THE SOURCE. The prop is a
+         canvas primitive with no handle to ask about, and a source match
+         would pass the day somebody moves the same three rectangles
+         somewhere else. The sprite arrives by drawImage and the shadow is an
+         ellipse, so during one drawRunner call a fillRect IS the prop. */
+      const bats = await pg.evaluate(() => {
+        const ks = Object.keys(V2_SPRITES);
+        const withArt = ks.filter(k => (V2_SPRITES[k].b || []).indexOf('ready') >= 0);
+        const without = ks.filter(k => (V2_SPRITES[k].b || []).indexOf('ready') < 0);
+        const cv = document.createElement('canvas');
+        cv.width = 200; cv.height = 200;
+        const ctx = cv.getContext('2d');
+        const props = (k) => {
+          let n = 0;
+          const real = ctx.fillRect.bind(ctx);
+          ctx.fillRect = (...a) => { n++; return real(...a); };
+          drawRunner(ctx, 100, 150, { k }, 2, 'batting');
+          delete ctx.fillRect;
+          return n;
+        };
+        return {
+          withArt: withArt.length, without: without.length,
+          drawnGotProp: withArt.filter(k => props(k) > 0).length,
+          plainGotNone: without.filter(k => props(k) === 0).length,
+        };
+      });
+      ok(bats.withArt > 30 && bats.without > 0,
+         'the pack draws a bat for most of the roster and a still for the rest',
+         `${bats.withArt} with drawn bats, ${bats.without} without`);
+      ok(bats.drawnGotProp === 0,
+         'A MAN HOLDING A DRAWN BAT IS NOT HANDED A SECOND ONE',
+         `${bats.drawnGotProp} of ${bats.withArt} got the prop as well`);
+      ok(bats.plainGotNone === 0,
+         'and a man whose art has no bat still gets one to hold',
+         `${bats.plainGotNone} of ${bats.without} were left empty handed`);
+
+      /* ---- nothing is sliced by the side of its own cell ---- */
+      /* A strip is one image cut into 64px cells and several characters are
+         drawn wider than their cell, so the frame next door bleeds in: a
+         wing or a foot floating beside the character with nothing holding it
+         up. The builder drops a DETACHED blob touching a side edge and keeps
+         the figure, which is what lets the contact and release frames
+         through at all: refusing any frame with a pixel in column 0 or 63
+         threw away 124 of them.
+
+         What is left to guard is the other end. A drawing that runs most of
+         the frame height flat down an edge has been CUT by the canvas, and
+         the measured spread is 0 to 30 with one at 51. */
+      const sliced = await pg.evaluate(() => {
+        const bad = [];
+        for (const k of Object.keys(V2_SPRITES)) {
+          for (const p of Object.keys(V2_SPRITES[k].f)) {
+            const rows = v2Frame(k, p);
+            for (const c of [0, V2_W - 1]) {
+              let run = 0, best = 0;
+              for (let y = 0; y < V2_H; y++) {
+                run = rows[y][c] !== '.' ? run + 1 : 0;
+                if (run > best) best = run;
+              }
+              if (best > 40) bad.push(k + '/' + p + ' run ' + best);
+            }
+          }
+        }
+        return bad;
+      });
+      ok(sliced.length === 0,
+         'and no frame is a figure cut in half by the side of its own cell',
+         sliced.slice(0, 5).join(', '));
+
+      /* ---- the game shows what the artist drew ---- */
+      /* A RUN STRIP IS FOUR FRAMES AND THE PAGE PLAYED TWO. The pack draws a
+         real cycle (contact, passing, contact, passing) and `runPose` used to
+         be a two way toggle off frames 0 and 2, so every runner shuffled
+         between two poses while the other two sat in the file. The swing
+         strip is four beats and the page showed three, so the bat went from
+         over the shoulder to the ball with nothing in between. Counted over
+         the pack, 274 drawn and usable frames were never on screen.
+
+         NOTHING ABOUT THE ART CHANGED, which is why no other check here
+         moved. This is the one that would have noticed. It asks the CYCLE
+         rather than the table: how many distinct drawings can this reach. */
+      const cyc = await pg.evaluate(() => {
+        const M = { 'run-a': 'run1', 'run-b': 'run2', 'run-c': 'run3', 'run-d': 'run4' };
+        const draw = (k, p) => v2Frame(k, p).join('/');
+        const ks = Object.keys(V2_SPRITES);
+        /* a character whose four run frames are four different drawings is
+           one whose strip came through whole; ask the cycle about those */
+        const full = ks.filter(k => new Set(['run1', 'run2', 'run3', 'run4']
+          .map(f => draw(k, f))).size === 4);
+        const phases = new Set();
+        for (let i = 0; i < 40; i++) phases.add(runPose(i, false));
+        const reach = full.map(k => new Set([...phases].map(p => draw(k, M[p]))).size);
+        const swing = ks.filter(k => new Set(['load', 'swing1', 'swing', 'follow']
+          .map(f => draw(k, f))).size === 4).length;
+        return { full: full.length, phases: [...phases],
+                 minReach: reach.length ? Math.min(...reach) : 0, swing };
+      });
+      ok(cyc.phases.length === 4,
+         'THE RUN IS A FOUR FRAME CYCLE, not a two pose shuffle',
+         `the cycle walks ${cyc.phases.length} phases: ${cyc.phases.join(' ')}`);
+      ok(cyc.full > 40 && cyc.minReach === 4,
+         'and every one of those four drawings actually reaches the screen',
+         `${cyc.full} characters have four distinct run frames, the cycle reaches ${cyc.minReach}`);
+      ok(cyc.swing > 40,
+         'and the swing plays all four beats the artist drew',
+         `${cyc.swing} characters carry four distinct swing drawings`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -1767,10 +1971,23 @@ async function main() {
         await new Promise(r => setTimeout(r, 500));
         window.scheduleCpuSwing = () => {};                 /* every pitch is taken */
         const res = {};
+        /* WAIT ON THE PITCH, NOT ON A CLOCK. This used to sleep 2600ms,
+           which was the flight plus its windup with about 200 to spare,
+           and lengthening the windup by 100 for thinking time took the
+           spare away: the umpire had not called it yet, the count had not
+           moved, and the section reported the late break as gone. A fixed
+           wait past a beat somebody is allowed to tune is a test that
+           fails on the next tuning pass rather than on a defect. */
+        const landed = async (p) => {
+          for (let i = 0; i < 160; i++) {
+            if (!p || p.resolved || p.closed || State.game.pitch !== p) return;
+            await new Promise(r => setTimeout(r, 50));
+          }
+        };
         /* Pitch one: hold right, read what the flight did with it. */
         endAtBatCleanup(); State.game.pitch = null; throwPitch();
         State.game.steerHeld = 1;
-        await new Promise(r => setTimeout(r, 2600));
+        await landed(State.game.pitch);
         {
           const p = State.game.pitch;
           res.steer = p ? p.steer : null;
@@ -1785,7 +2002,7 @@ async function main() {
           p.baseLocX = 0.92; p.loc.x = 0.92; p.loc.y = 0;
           State.game.steerHeld = 1;
           res.balls0 = State.game.balls; res.strikes0 = State.game.strikes;
-          await new Promise(r => setTimeout(r, 2600));
+          await landed(p);
           res.finX = p.loc.x;
           res.balls1 = State.game.balls; res.strikes1 = State.game.strikes;
         }
@@ -2061,10 +2278,31 @@ async function main() {
         };
 
         const N = 500;
+        /* THE STRIKE CELLS GET EIGHT TIMES THE SAMPLE, AND THAT IS THE FIX
+           FOR A BAND THAT COULD NOT RESOLVE ITS OWN CLAIM.
+
+           `DISCIPLINE IS NOT SILENCE` asks that a strike down the middle
+           draws the same swings on every tier, at a threshold of 8 points.
+           Measured over 60 repeats of this exact fixture, the true gap is
+           **0.00** and its standard deviation at 500 pitches a cell is
+           **3.03**, so the band is 2.6 sigma wide: about one run in 120
+           goes red on a build nobody has touched. It did, at easy 62.4
+           against hard 71.6.
+
+           THE SAMPLE IS WHAT MOVES, NEVER THE BAND. Loosening it to 12
+           would make the check unable to see a real inversion, which is the
+           thing it exists for. At 4,000 the spread is 0.93 and the worst of
+           40 repeats was 2.22, so 8 is seven sigma out. Two cells of 3,500
+           extra pitches cost about a second.
+
+           It is the same lesson as the chase sweep two paragraphs down and
+           as the commish magic seed: a threshold a sample cannot resolve is
+           measuring the sample. */
+        const NZ = 4000;
         const out = {
           /* and a strike down the middle, which no tier may duck */
-          zoneEasy:    sweep('easy',   0, 0, true, even, N).swing,
-          zoneHard:    sweep('hard',   0, 0, true, even, N).swing,
+          zoneEasy:    sweep('easy',   0, 0, true, even, NZ).swing,
+          zoneHard:    sweep('hard',   0, 0, true, even, NZ).swing,
           /* memory: the same pitch, an honest book against a one note one */
           mixed:       sweep('hard', 0, 0, true, even, N),
           patterned:   sweep('hard', 0, 0, true, oneNote, N),
@@ -2603,7 +2841,16 @@ async function main() {
           State.season = { year: y, team: nine, perPlayer: {}, careers: {} };
           return +leagueEdge().toFixed(3);
         });
-        /* and it belongs to YOUR side, against a lineup naming the same men */
+        /* AND IT BELONGS TO YOUR SIDE. This used to hand the opponent your
+           own nine and look up one man on each side, which is the plainest
+           way to ask the question and is no longer available: nobody plays
+           for both clubs now, so the mirror comes back as nine substitutes
+           and the lookup found undefined. The suite caught that on the
+           first run, which is what it is for.
+
+           The claim is asked of WHOEVER THEY FIELD instead, which is
+           stronger than the mirror was: every man on their card is the
+           roster's own object, and somebody on yours is not. */
         State.season = mk(4);
         State.team = nine.slice(); State.teamName = 'Testers';
         State.opponent = { name: 'Mirror', color: '#888', roster: nine.slice() };
@@ -2612,11 +2859,10 @@ async function main() {
         const g = State.game;
         const mineSide = g.away.isYou ? g.away : g.home;
         const theirs = g.away.isYou ? g.home : g.away;
-        const mineBat = mineSide.batters.find(c => c.k === bat);
-        const theirBat = theirs.batters.find(c => c.k === bat);
-        out.sidesDiffer = mineBat.con !== theirBat.con || mineBat.pow !== theirBat.pow;
-        out.theirsIsRaw = theirBat.con === ROSTER_BY_KEY[bat].con
-                       && theirBat.pow === ROSTER_BY_KEY[bat].pow;
+        out.theirsIsRaw = theirs.batters.every(c => c === ROSTER_BY_KEY[c.k]);
+        out.sidesDiffer = mineSide.batters.some(c => c !== ROSTER_BY_KEY[c.k]);
+        /* and the mirror itself: asked for your own nine, they field none */
+        out.mirrorShared = theirs.batters.filter(c => nine.includes(c.k)).length;
         return out;
       });
       ok(r.freshIdentity, 'no franchise: the roster object itself comes back untouched');
@@ -2640,8 +2886,11 @@ async function main() {
          'the league sharpens with tenure', r.edge.join(', '));
       ok(r.edge[5] === r.edge[4] && r.edge[5] <= 0.30,
          'and plateaus rather than running away', `caps at ${r.edge[5]}`);
-      ok(r.sidesDiffer, 'your man and their man are not the same man');
-      ok(r.theirsIsRaw, 'the opponent draws the roster, never your development');
+      ok(r.sidesDiffer, 'somebody on YOUR card is carrying what his years bought');
+      ok(r.theirsIsRaw, 'and every man on theirs is the roster, never your development');
+      ok(r.mirrorShared === 0,
+         'asked to field your own nine, the opponent fields none of them',
+         `${r.mirrorShared} of the nine turned out for both clubs`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -2707,16 +2956,119 @@ async function main() {
       ok(r.runs === 40 && r.mismatch === 0,
          'RANDOMIZE PUTS THE BEST ARM ON THE MOUND, every time',
          `${r.mismatch} of ${r.runs} started somebody else`);
-      ok(r.weak === 0, 'so it never opens with an arm a player would have to lose with',
-         `${r.weak} under 55 PIT`);
-      ok(Math.min(...(r.starters || [99])) > 40,
+      /* THE 55 FLOOR IS A FACT ABOUT THE ROSTER, NOT ABOUT RANDOMIZE, and
+         asserting it over forty random presses was a coin toss dressed as a
+         rule. Measured over 200,000 draws, the best arm of nine lands under
+         55 on 0.04% of them, which is 1.6% over forty presses: this section
+         went red about once in sixty runs on a build nobody had touched.
+         That is the commish magic seed and the chase gap arriving a third
+         time. What Randomize actually promises is the ORDERING, which the
+         assertion above holds deterministically.
+         So the depth is asked of the POOL, in closed form. The chance that
+         nine men drawn from the unlocked roster contain no arm at all is
+         hypergeometric and exact, so there is nothing here to flake. */
+      const depth = await pg.evaluate(() => {
+        const open = ROSTER.filter(c => isUnlocked(c.k));
+        const n = open.length;
+        const miss = (bar) => {
+          const w = open.filter(c => (c.pit | 0) < bar).length;   // no arm at all
+          let p = 1;
+          for (let i = 0; i < 9; i++) p *= (w - i) / (n - i);
+          return Math.max(p, 0);
+        };
+        return { n, at55: miss(55), at41: miss(41) };
+      });
+      ok(depth.at55 < 0.002,
+         'so the roster is deep enough in arms that a random nine has one',
+         `${depth.n} available, a nine misses 55 PIT entirely ${(depth.at55 * 100).toFixed(3)}% of the time`);
+      ok(depth.at41 < 1e-4,
          'and the worst mound it can hand out is still a mound',
-         String(Math.min(...(r.starters || []))));
+         `a nine with nothing over 40 PIT: ${(depth.at41 * 100).toFixed(4)}%`);
       ok(/starting/.test(hand.one) && new RegExp(hand.worst).test(hand.one),
          'a hand draft is told who its first pick puts on the mound', hand.one);
       ok(new RegExp(hand.best).test(hand.two) && /gold/.test(hand.two),
          'and is shown the better arm it already has, without being overruled',
          hand.two);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- nobody plays for both clubs ---- */
+    {
+      console.log('nobody plays for both clubs');
+      /* A roster is drafted out of the same sixty eight the opponents are
+         built from, so nothing stopped a player taking a man the club they
+         are playing already fields. Measured over 6,800 matchups, 73.5% of
+         games put at least one character on both sides and 1.47% put the
+         SAME MAN at the plate and on the mound, which the at bat card
+         printed out loud: "The Great Ape at bat VS THE GREAT APE PITCHING".
+
+         NOTHING COULD REPORT IT. Both lineups were legal, every rating was
+         read correctly and the game played perfectly. It is the class this
+         file is full of: a true sentence about a thing that cannot happen.
+
+         THE OPPONENT YIELDS, because a season schedules clubs the player
+         has never seen at the moment they draft.
+
+         It is swept over every club rather than sampled, because the
+         overlap is a property of two hand written lists and the way it
+         comes back is somebody adding a character to one of them. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const keys = ROSTER.map(c => c.k);
+        const mix = (n) => { n = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+          n ^= n >>> 13; n = Math.imul(n, 0xc2b2ae35); return (n ^ (n >>> 16)) >>> 0; };
+        const draw = (seed) => {
+          const pool = keys.slice(), pick = [];
+          for (let i = 0; i < 9; i++) pick.push(pool.splice(mix(seed * 31 + i) % pool.length, 1)[0]);
+          return pick;
+        };
+        const bat = (ks) => {
+          const c = ks.map(k => ROSTER_BY_KEY[k]).filter(Boolean);
+          return c.reduce((a, x) => a + x.pow + x.con + x.spd, 0) / c.length;
+        };
+        const out = { n: 0, both: 0, wouldHave: 0, dupInside: 0, short: 0,
+                      unknown: 0, drift: 0, subs: 0 };
+        for (const opp of OPPONENTS) {
+          for (let i = 0; i < 200; i++) {
+            const mine = draw(mix(i * 131 + opp.name.length * 7));
+            const nine = opposingNine(mine, opp.roster);
+            out.n++;
+            if (opp.roster.some(k => mine.includes(k))) out.wouldHave++;
+            if (nine.some(k => mine.includes(k))) out.both++;
+            if (new Set(nine).size !== nine.length) out.dupInside++;
+            if (nine.length !== 9) out.short++;
+            if (nine.some(k => !ROSTER_BY_KEY[k])) out.unknown++;
+            out.subs += nine.filter((k, j) => k !== opp.roster[j]).length;
+            out.drift += Math.abs(bat(nine) - bat(opp.roster));
+          }
+        }
+        /* And it is deterministic: the same matchup twice is the same nine,
+           or a schedule would reshuffle its opponents on every reload. */
+        const a = opposingNine(draw(7), OPPONENTS[0].roster).join(',');
+        const b = opposingNine(draw(7), OPPONENTS[0].roster).join(',');
+        out.stable = a === b;
+        return out;
+      });
+      ok(r.n > 0 && r.wouldHave > r.n * 0.5,
+        'the overlap this exists for is still most matchups',
+        `only ${r.wouldHave} of ${r.n} would have shared a man, so the sweep proves little`);
+      ok(r.both === 0, 'and not one of them fields a man on both sides',
+        `${r.both} of ${r.n} still do`);
+      ok(r.dupInside === 0 && r.short === 0 && r.unknown === 0,
+        'the club it hands back is nine different men this roster has',
+        JSON.stringify({ twice: r.dupInside, short: r.short, unknown: r.unknown }));
+      ok(r.stable, 'the same matchup gives the same nine twice running');
+      /* WHAT IT COSTS THE OPPONENT IS THE HALF THAT COULD GO WRONG QUIETLY.
+         Substituting whoever happens to be free would make the schedule
+         easier by exactly how often the player drafts well, and every win
+         rate in this file is measured against these clubs. The substitute
+         is matched on ratings, so the club it hands back is the club it
+         was asked about. */
+      const perGame = r.drift / r.n;
+      ok(perGame < 3, 'and it is the same club, within a rating point or two',
+        `the batting line moves ${perGame.toFixed(2)} of about 150, `
+        + `over ${(r.subs / r.n).toFixed(2)} substitutions a game`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -2836,31 +3188,63 @@ async function main() {
          so the screen looked the same whether he had just been rung up
          or was waiting on the next pitch.
 
-         The generator is parametric, so a pose is one authored offset
-         that all sixty eight inherit rather than sixty eight drawings.
-         It costs about 61KB of sprite table, which is what one pose
-         across this roster weighs.
+         The generator was parametric, so a pose was one authored offset
+         that all sixty eight inherited: the arms came down five pixels and
+         every character slumped. Two things there were only findable by
+         LOOKING, and a count of distinct frames was happy through both. At
+         eight pixels the arms hang PAST the shoes and cover them, so a
+         slumping Zeus read as a man with no feet. A one pixel leg sink,
+         tried to give the quadrupeds something, clipped every biped's shoes
+         off the bottom of the box while moving exactly one of the seven.
 
-         TWO THINGS HERE WERE ONLY FINDABLE BY LOOKING, and a count of
-         distinct frames was happy through both. At an eight pixel drop
-         the arms hang PAST the shoes and cover them, so a slumping Zeus
-         reads as a man with no feet. And a one pixel leg sink, tried to
-         give the quadrupeds something, clipped every biped's shoes off
-         the bottom of the 50px box while moving exactly one of the seven.
-         The arms carry it at five, and a dragon taking a called third
-         strike is a dragon standing there. */
+         THE ARMS ARE GONE NOW, AND THE ART IS WHY. The sprites are hand
+         drawn and there is nothing in a 64x64 bitmap that says which pixels
+         are an arm, so the offset has nothing to move. The pack drew no
+         dejection either. `slump` is the walk back and only that: the man
+         turns away from the plate, which is the same left facing still
+         `back` is, so it is stored as a reference to it and costs nothing.
+
+         AND THE FRAME IT USED TO HOLD MEANT THE OPPOSITE. It was sourced
+         from the pack's CELEBRATE strip, so for 51 of the 68 a called third
+         strike put both the batter's arms in the air. Nothing could report
+         it: the pose was present, it was its own drawing, and it differed
+         from the walk back, which is every property this section used to
+         ask for. FOUND BY RENDERING THE SLUMP OF EVERY CHARACTER ONTO ONE
+         SHEET AND LOOKING AT IT.
+
+         So the art moved to the man it belongs to rather than being thrown
+         away. `cheer` is the celebration and the PITCHER wears it over the
+         same beat, which is what the picture should have been saying all
+         along. The assertions below are about the batter, and the one that
+         asked for dropped arms is replaced by the two claims that are still
+         true and still load bearing: he is turned away, and he is not
+         celebrating. The second is the regression, written as the batter
+         never wearing the pitcher's pose. */
       const { pg, errors } = await fresh(browser);
       const r = await pg.evaluate(() => {
         const ks = Object.keys(V2_SPRITES);
         const f = (k) => V2_SPRITES[k].f || {};
+        /* THE DECODED DRAWING, NEVER THE STORED STRING, for the reason the
+           field frames section gives: a repeated pose is stored as a '@'
+           reference to the one holding the pixels. Read raw, '@back' has no
+           rows to count and is not equal to back either, so one assertion
+           here would fail on a correct table and the other would pass on a
+           slump nobody can tell from the walk back. */
+        const drawing = (k, p) => v2Frame(k, p).join('/');
         return {
           chars: ks.length,
           have: ks.filter(k => f(k).slump).length,
           /* every batter frame is seen from behind, and this is one */
           rows: ks.filter(k => f(k).slump &&
-                  f(k).slump.split('/').length === (f(k).back || '').split('/').length).length,
-          /* the ones with arms have to differ from the pose they came from */
-          distinct: ks.filter(k => f(k).slump && f(k).slump !== f(k).back).length,
+                  drawing(k, 'slump').split('/').length === drawing(k, 'back').split('/').length).length,
+          /* he turns away from the plate rather than standing in */
+          away: ks.filter(k => drawing(k, 'slump') === drawing(k, 'back')).length,
+          /* AND HE IS NOT CELEBRATING. The celebration exists and belongs
+             to the pitcher, so this is a real comparison rather than a
+             claim about something absent: reintroduced, all 51 fail. */
+          cheering: ks.filter(k => drawing(k, 'slump') === drawing(k, 'cheer')).length,
+          /* the pitcher's half of the same swap: he has one to wear */
+          cheers: ks.filter(k => drawing(k, 'cheer') !== drawing(k, 'idle')).length,
         };
       });
       const moment = await pg.evaluate(async () => {
@@ -2871,6 +3255,61 @@ async function main() {
         await new Promise(r => setTimeout(r, 700));
         endAtBatCleanup(); State.game.pitch = null;
         const g = State.game;
+
+        /* A POSE NAME MEANT SOMETHING ELSE UNDER THE GENERATED ART, and two
+           call sites kept using it. `back` was a REAR view, so the batter
+           standing in was drawn with it; the pack has no rear view, so it
+           became the left facing still and he waited at the plate facing
+           AWAY from the pitcher holding whatever he idles with (an axe, a
+           fishing rod, a pipe), then turned round with a bat the instant he
+           swung. `ready` was the FIELDER'S SET, so the four infielders spent
+           every pitch holding the pack's drawn batting stance.
+
+           Both render perfectly, so it asks the PICTURE: drawRunner for the
+           pose each man was given, and spriteFor for the frame that pose
+           became, which is the step both defects live in.
+
+           IT RUNS BEFORE ANY OUT IS RECORDED, on an ordinary at bat. Put
+           after the strikeout fixtures below it measured a batter who had
+           already been replaced, and reported the man at the plate as
+           somebody who was no longer there. */
+        const stance = (() => {
+          g.plateHold = performance.now() + 9000;
+          const who = currentBatter().k;
+          const inf = (fielderAt(currentFieldingTeam(), 4) || {}).k;
+          const realDraw = window.drawRunner, realSprite = window.spriteFor;
+          const poses = [], asked = [];
+          /* THE POSE AND THE FRAME ARE PAIRED, never looked up by key alone.
+             One character is drawn several times in one frame (the batter is
+             also on the fielding side in this fixture), so the first
+             spriteFor call carrying his key belongs to whichever copy was
+             painted first, which is a fielder. Tie the two together instead:
+             drawRunner names the pose, and every spriteFor inside that call
+             is the frame it became. */
+          let cur = null;
+          window.drawRunner = (ctx, x, y, c, sc, pose, flip) => {
+            cur = [c && c.k, pose];
+            poses.push(cur);
+            const out = realDraw(ctx, x, y, c, sc, pose, flip);
+            cur = null;
+            return out;
+          };
+          window.spriteFor = (key, px, fr) => {
+            if (cur && cur[0] === key) asked.push([key, cur[1], fr]);
+            return realSprite(key, px, fr);
+          };
+          const cv = document.createElement('canvas');
+          cv.width = FIELD_W; cv.height = FIELD_H;
+          drawField(cv.getContext('2d'), FIELD_W, FIELD_H, 0, null, false);
+          window.drawRunner = realDraw; window.spriteFor = realSprite;
+          const frameFor = (k, pose) => (asked.find(a => a[0] === k && a[1] === pose) || [])[2];
+          return {
+            standsIn: poses.some(p => p[0] === who && p[1] === 'batting'),
+            battingFrame: frameFor(who, 'batting'),
+            infieldFrame: inf ? frameFor(inf, null) : null,
+          };
+        })();
+
         g.strikes = 2; g.balls = 0;
         recordOut('called strikeout', true);
         const set = g.slumpUntil > performance.now();
@@ -2884,21 +3323,170 @@ async function main() {
         g.batterCtx = { flags: { rebirth: true } }; g.phoenixUsed = false;
         g.strikes = 2; recordOut('swinging strikeout', true);
         const phoenix = !g.slumpUntil;
-        return { set, cleared, onlyK, phoenix };
+
+        /* WHO WEARS WHAT, ASKED OF THE PICTURE. Everything above is about
+           the table and the beat, and the defect this replaced lived in
+           neither: the art was right, the beat was right, and the pose was
+           handed to the wrong man. So this spies on drawRunner over one
+           real frame of the plate camera and reads back which pose each of
+           the two was drawn with.
+
+           It DRAWS rather than reading a flag, because the pitcher's branch
+           is one `else if` in a chain and the way it breaks is another
+           branch above it winning. */
+        g.play = null; g.pitch = null;
+        g.strikes = 2; g.balls = 0;
+        recordOut('called strikeout', true);
+        g.plateHold = performance.now() + 9000;
+        const pit = currentPitcher().k, bat = currentBatter().k;
+        const real = window.drawRunner;
+        const seen = [];
+        window.drawRunner = (ctx, x, y, c, sc, pose, flip) => {
+          seen.push([c && c.k, pose]);
+          return real(ctx, x, y, c, sc, pose, flip);
+        };
+        const frame = () => {
+          seen.length = 0;
+          const cv = document.createElement('canvas');
+          cv.width = FIELD_W; cv.height = FIELD_H;
+          drawField(cv.getContext('2d'), FIELD_W, FIELD_H, 0, null, false);
+          const m = {};
+          for (const [k, p] of seen) (m[k] = m[k] || []).push(p);
+          return m;
+        };
+        const onBeat = frame();
+        g.slumpUntil = 0;
+        const off = frame();
+        window.drawRunner = real;
+        const has = (m, k, p) => !!(m[k] && m[k].indexOf(p) >= 0);
+
+        /* A POSE NAME MEANT SOMETHING ELSE UNDER THE GENERATED ART, and the
+           call sites kept using it. `back` was a REAR view, so a batter
+           standing in was drawn with it; the pack has no rear view, so it
+           became the left facing still and the batter waited at the plate
+           facing away from the pitcher holding his idle prop (an axe, a
+           fishing rod, a pipe), then turned round with a bat the instant he
+           swung. `ready` was the FIELDER'S SET, so the four infielders spent
+           every pitch holding the pack's drawn batting stance.
+
+           Both render perfectly. What catches them is asking the picture who
+           was drawn with what, so the same frame is read twice. */
+        return { set, cleared, onlyK, phoenix,
+                 plate: plateViewActive(g),
+                 pitCheers: has(onBeat, pit, 'cheer'),
+                 batSlumps: has(onBeat, bat, 'slump'),
+                 pitStops: !has(off, pit, 'cheer'),
+                 batStops: !has(off, bat, 'slump'),
+                 standsIn: stance.standsIn,
+                 battingFrame: stance.battingFrame,
+                 infieldFrame: stance.infieldFrame };
       });
       ok(r.have === r.chars, 'every character has a walk back frame',
          `${r.have} of ${r.chars}`);
       ok(r.rows === r.chars, 'and it is drawn from behind, like every other batter frame',
          `${r.rows} of ${r.chars}`);
-      ok(r.distinct >= 60,
-         'the ones with arms to drop actually drop them',
-         `${r.distinct} of ${r.chars} differ from their own back frame`);
+      ok(r.away === r.chars, 'and he is turned away from the plate, not standing in',
+         `${r.away} of ${r.chars}`);
+      ok(r.cheering === 0,
+         'A MAN WHO JUST STRUCK OUT IS NOT CELEBRATING',
+         `${r.cheering} of ${r.chars} wear the pitcher's pose`);
+      ok(r.cheers >= 40, 'and the pitcher who rang him up has one to wear',
+         `${r.cheers} of ${r.chars} carry their own cheer`);
       ok(moment.set, 'a strikeout sets the beat it is shown for', String(moment.set));
       ok(moment.onlyK, 'a ground out does not: he did not strike out', String(moment.onlyK));
       ok(moment.cleared,
          'IT BELONGS TO THE MAN IT HAPPENED TO: the next hitter does not inherit his shoulders',
          String(moment.cleared));
       ok(moment.phoenix, 'and a rebirth walks to first rather than slumping', String(moment.phoenix));
+      ok(moment.plate && moment.batSlumps && moment.pitCheers,
+         'ON THE SCREEN: the batter walks back and the PITCHER is the one celebrating',
+         JSON.stringify({ plate: moment.plate, bat: moment.batSlumps, pit: moment.pitCheers }));
+      ok(moment.batStops && moment.pitStops, 'and the beat ends for both of them',
+         JSON.stringify({ bat: moment.batStops, pit: moment.pitStops }));
+      ok(moment.standsIn && moment.battingFrame === 'ready',
+         'A BATTER STANDING IN IS DRAWN IN THE BATTING STANCE, not the walk back',
+         `stood in: ${moment.standsIn}, drawn with: ${moment.battingFrame}`);
+      ok(moment.infieldFrame !== 'ready',
+         'and an infielder is not standing in the dirt holding a bat',
+         `the second baseman is drawn with: ${moment.infieldFrame}`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the pitcher faces the plate ---- */
+    {
+      console.log('the pitcher faces the plate');
+      /* THE CAMERA IS BEHIND THE CATCHER, so the man on the mound is seen
+         from the FRONT. The pack's `windup`, `kick` and `release` are a
+         LEFT FACING PROFILE, and the plate view used all three, so every
+         pitch was a man throwing sideways toward third base while the ball
+         flew at the reader. Reported as the pitcher throwing to a base
+         instead of to home.
+
+         NOTHING COULD REPORT IT. Each frame is the right frame for the
+         right character, present, distinct from its neighbours and
+         correctly seated: every property the guards here ask of a drawing.
+         They are the wrong VIEW, which none of them asks.
+
+         SO THE ALLOWLIST IS WRITTEN OUT, and it was established by
+         rendering all sixty eight and looking. That is not laziness: this
+         file already records TWO automatic matchers written for the pack
+         and thrown away, both of which confidently contradicted the eye,
+         and nothing in a 64x64 bitmap says which way a figure is turned.
+
+         What it really defends against is somebody restoring the pitching
+         animation by reaching for the three poses that are literally NAMED
+         windup, kick and release. That is the obvious edit and it is the
+         wrong one, so the check is on the names.
+
+         It reads the PICTURE over a whole real pitch rather than at an
+         instant, because the pitcher's branch is a chain of `else if` and
+         the way it breaks is one of them winning at a moment nobody
+         sampled. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(async () => {
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        const g = State.game;
+        /* every pose the pack draws front on, looked at one at a time */
+        const FRONT = ['idle', 'catch', 'throw', 'ready', 'cheer'];
+        /* `exhibition` clears the at bat, so nothing has built batterCtx
+           and throwPitch would read weakPitch off undefined. It also
+           decides who is up, so the pitcher is read after it. */
+        startAtBat();
+        const pit = currentPitcher().k;
+        const real = window.drawRunner;
+        const seen = new Set();
+        window.drawRunner = (ctx, x, y, c, sc, pose, flip) => {
+          if (c && c.k === pit) seen.add(pose == null ? 'idle' : pose);
+          return real(ctx, x, y, c, sc, pose, flip);
+        };
+        g.pitch = null;
+        throwPitch();
+        const dur = Math.round((g.pitch.speed || 2) * 1000);
+        await sleep(BEAT.windup + dur + 400);
+        window.drawRunner = real;
+        /* how many of the roster have a cheer that is its own drawing, so
+           the windup is two frames rather than a statue */
+        let own = 0;
+        for (const c of ROSTER) {
+          const a = v2Frame(c.k, 'idle'), d = v2Frame(c.k, 'cheer');
+          if (d && (!a || d.join('/') !== a.join('/'))) own++;
+        }
+        return { poses: [...seen], FRONT, own, chars: ROSTER.length };
+      });
+      const bad = r.poses.filter(p => r.FRONT.indexOf(p) < 0);
+      ok(r.poses.length > 0, 'the pitcher really is drawn during a pitch',
+         'he was never drawn at all, so this section read nothing');
+      ok(r.poses.indexOf('cheer') >= 0,
+         'and the windup is a second frame rather than a statue',
+         `he wore only: ${r.poses.join(', ')}`);
+      ok(bad.length === 0,
+         'THE PITCHER IS NEVER TURNED SIDEWAYS: no profile frame reaches the mound',
+         `he was drawn with ${bad.join(', ')}, which the pack draws in profile`);
+      ok(r.own >= 60,
+         `and ${r.own} of ${r.chars} have a cheer of their own to wind up with`,
+         `only ${r.own} do, so most of the roster would not animate`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -3172,6 +3760,148 @@ async function main() {
       await pg.close();
     }
 
+    /* ---- and the two windows the fix above did not reach ---- */
+    {
+      console.log('a window resolves into its own play');
+      /* THE CHECK ABOVE GUARDS THE OPENING AND NOT THE CLOSING, and that
+         is the whole of this. `scheduleFlyCatchMinigame` compares
+         identity before it OPENS the catch window; the window then stands
+         open for 900ms, and its own expiry only asked whether there was A
+         play. So did the robbery window's.
+
+         Surfaced by a full `calibrate.mjs` run reporting one page error
+         reading "Cannot read properties of null (reading '0')", which is
+         the string the section above exists for, at a second door. Driven
+         here rather than waited for, which is that section's own rule.
+
+         TWO DEFECTS, AND THE CRASH IS THE RARE ONE. `resolveCatch` sets
+         `applied` on its first line, so an expiring window marked
+         WHATEVER play was on the field as applied and its real outcome
+         never landed: silent, and on every replacement rather than on the
+         one in twenty that is a home run. The crash needs the replacement
+         to have no meeting point, which only a ball in the seats has.
+
+         The robbery is the other way round: missing one does nothing at
+         all, so only a HIT is dangerous there, and a hit turns whatever
+         is on the field into a fly out. So that arm presses the button
+         rather than letting it expire. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        const out = {};
+
+        /* ---- the catch window, let it EXPIRE ---- */
+        endAtBatCleanup(); g.play = null; g.pitch = null; g.bases = [null, null, null];
+        scheduleFlyCatchMinigame('fly out', currentBatter(), { q: 0.6 });
+        for (let i = 0; i < 60 && !(g.play && g.play.catchActive); i++) await sleep(50);
+        out.catchOpened = !!(g.play && g.play.catchActive);
+        endAtBatCleanup(); g.play = null;
+        scheduleContactPlay('home run', currentBatter(), { q: 0.9 });
+        const homer = g.play;
+        /* COVERAGE: a homer really is the loaded gun, with no meeting point */
+        out.homerMeetUV = homer && homer.sim ? homer.sim.meetUV : 'no sim';
+        await sleep(1400);
+        out.homerIsStill = g.play === homer;
+        out.homerApplied = homer ? !!homer.applied : null;
+        out.homerKind = homer ? homer.kind : null;
+
+        /* ---- the robbery window, and PRESS it ---- */
+        endAtBatCleanup(); g.play = null; g.pitch = null; g.bases = [null, null, null];
+        scheduleContactPlay('double', currentBatter(), { q: 0.8 });
+        const robbed = g.play;
+        if (robbed && robbed.sim) robbed.sim.robSlack = 0;   /* a full green */
+        startRobWindow('double', currentBatter(), 1000);
+        out.robOpened = !!(g.play && g.play.catchActive);
+        await sleep(400);
+        endAtBatCleanup(); g.play = null;
+        scheduleContactPlay('triple', currentBatter(), { q: 0.8 });
+        const later = g.play;
+        await sleep(120);
+        document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await sleep(200);
+        out.laterIsStill = g.play === later;
+        out.laterKind = later ? later.kind : null;
+        out.laterIsOut = later ? !!later.isOut : null;
+        out.alive = !!State.game;
+        return out;
+      });
+      ok(r.catchOpened, 'a fly ball really does open a catch window',
+         JSON.stringify(r));
+      ok(r.homerMeetUV === null,
+         'and the play that replaces it really has no meeting point',
+         String(r.homerMeetUV));
+      ok(r.homerIsStill && r.homerApplied === false,
+         'AN EXPIRING CATCH WINDOW DOES NOT APPLY ITSELF TO THE NEXT PLAY',
+         `applied ${r.homerApplied}, kind ${r.homerKind}`);
+      ok(r.robOpened, 'a robbery window really does open',
+         JSON.stringify(r));
+      ok(r.laterIsStill && r.laterKind === 'triple' && r.laterIsOut === false,
+         'AND A ROBBERY PRESSED LATE DOES NOT TURN THE NEXT PLAY INTO AN OUT',
+         `kind ${r.laterKind}, isOut ${r.laterIsOut}`);
+      ok(r.alive && errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- and the apply timer, which needs a page of its own ---- */
+    {
+      console.log('a play is applied on its own clock');
+      /* THE ORDINARY APPLY TIMER IS THE SAME SHAPE AS THE TWO WINDOWS and
+         was the third unguarded one. It resolved whatever play it found
+         rather than the one it was scheduled for, so a torn-down play's
+         clock landed on its replacement: driven, a single replaced by a
+         home run applied the homer 787ms EARLY, with the ball still in
+         the air. Returning costs nothing, because every play schedules
+         its own apply and the replacement lands on that a moment later.
+
+         IT NEEDS A PAGE WITH NO LEFTOVERS, which is the harness lesson
+         from the football boss battle arriving here. Run after the two
+         window arms above, their pending transition timers (`play = null`
+         at arriveMs + 500) fire inside this fixture, so the home run's
+         OWN apply correctly declines and the arm reads a play that is
+         never applied at all. It failed that way once, and the failure
+         was the harness rather than the page. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        const out = {};
+        endAtBatCleanup(); g.play = null; g.pitch = null; g.bases = [null, null, null];
+        scheduleContactPlay('single', currentBatter(), { q: 0.4 });
+        out.aApplyMs = Math.round(g.play.sim.applyAt * 1000);
+        await sleep(60);
+        endAtBatCleanup(); g.play = null;
+        scheduleContactPlay('home run', currentBatter(), { q: 0.95 });
+        const hr = g.play;
+        out.bApplyMs = Math.round(hr.sim.applyAt * 1000);
+        /* COVERAGE: the torn-down play's clock has to land FIRST, or the
+           replacement's own timer wins and this arm proves nothing. */
+        out.orderOk = out.aApplyMs < out.bApplyMs - 200;
+        const t0 = performance.now();
+        let at = null;
+        for (let i = 0; i < 400 && at == null; i++) {
+          if (hr.applied) at = performance.now() - t0;
+          else await sleep(15);
+        }
+        out.appliedAfterMs = at == null ? null : Math.round(at);
+        out.onOwnClock = at != null && at > out.bApplyMs - 120;
+        out.alive = !!State.game;
+        return out;
+      });
+      ok(r.orderOk, 'the torn-down play really is the one whose apply lands first',
+         `${r.aApplyMs}ms against ${r.bApplyMs}ms`);
+      ok(r.appliedAfterMs != null,
+         'and the replacement really is applied, so this arm reads something',
+         'it was never applied at all');
+      ok(r.onOwnClock,
+         'A PLAY IS APPLIED ON ITS OWN CLOCK, not on the one it replaced',
+         `applied after ${r.appliedAfterMs}ms, its own is ${r.bApplyMs}ms`);
+      ok(r.alive && errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
     /* ---- one grid ---- */
     {
       console.log('one grid');
@@ -3210,8 +3940,30 @@ async function main() {
          sliver. What that still catches is the thing only pixels can say,
          which is imageSmoothingEnabled coming back on. Blur the blit and
          the runs collapse to one, the modal run stops being the scale,
-         and the stray share goes to most of the row. */
-      const FIELD_W_CEIL = 1440;   /* the fixed bitmap this replaced, 960 x 1.5 */
+         and the stray share goes to most of the row.
+
+         THE SCALE IS NO LONGER THE BITMAP OVER THE WORLD, and reading it
+         that way is how this section certified a ragged screen. The
+         canvas used to hold the whole world and the crop was CSS overhang,
+         so the two were the same number. It holds a CROP now, sized to the
+         arena's own device pixels, so bitmap over world is the crop's
+         share and has no reason to be whole. Asked the old way this passed
+         on a canvas the browser was upscaling by 1.87x.
+
+         So the scale is read off FIELD_CAM, which is the one answer the
+         blit, the crisp pass and the aim all draw from.
+
+         AND THE BROWSER IS ALLOWED ONE LAST STEP, as long as it is a whole
+         one. The page draws at `FIELD_CAM.draw` device pixels a block and
+         the element is laid out at `scale`, so the browser magnifies by
+         `scale / draw` and a whole number times a whole grid is still a
+         whole grid. That is what buys back the fill: at ratio 3 the page
+         draws a quarter of the pixels it used to. So the run lengths in the
+         BITMAP are `draw` and never `scale`, and the second claim is the one
+         the old shape could not make at all: the step is whole, and the
+         bitmap times the step is exactly the pixels the arena occupies. Off
+         either way and the browser is resampling on a fraction, which is a
+         ragged grid on the glass however clean the blit was. */
       for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
                                         ['phone, denser', 360, 780, 2],
                                         ['small phone', 320, 568, 2],
@@ -3248,29 +4000,39 @@ async function main() {
           }
           lens[run] = (lens[run] || 0) + 1;
           const all = Object.entries(lens).map(([k, v]) => [Number(k), v]);
-          const scale = cv.width / (FIELD_W / PIX);
+          const scale = FIELD_CAM.scale, draw = FIELD_CAM.draw;
           /* pixels, not runs: one stray pixel must not weigh the same as
              a forty pixel stretch of flat sky */
           const px = all.reduce((a, [k, v]) => a + k * v, 0);
-          const stray = all.filter(([k]) => k % scale !== 0)
+          const stray = all.filter(([k]) => k % draw !== 0)
                            .reduce((a, [k, v]) => a + k * v, 0);
-          return { w: cv.width, h: cv.height, world: FIELD_W / PIX,
+          const box = cv.parentElement, dpr = window.devicePixelRatio || 1;
+          return { w: cv.width, h: cv.height, scale, draw,
+                   sw: FIELD_CAM.sw, sh: FIELD_CAM.sh,
+                   wantW: box.clientWidth * dpr, wantH: box.clientHeight * dpr,
                    modal: all.slice().sort((a, b) => b[1] - a[1])[0][0],
                    strayShare: stray / px,
                    smoothing: cv.getContext('2d').imageSmoothingEnabled };
         });
-        const scale = r.w / r.world;
+        const scale = r.scale, draw = r.draw, step = scale / draw;
         ok(scale === Math.round(scale) && scale >= 2,
           `${label}: the world is blown up by a whole number (${scale}x)`,
-          JSON.stringify({ bitmap: r.w, world: r.world, scale }));
-        ok(r.modal === scale && r.strayShare < 0.08,
-          `${label}: the blit lands on the grid, ${scale}px to a block`,
-          JSON.stringify({ modalRun: r.modal, scale,
+          JSON.stringify({ bitmap: r.w, crop: r.sw, scale, draw }));
+        ok(r.modal === draw && r.strayShare < 0.08,
+          `${label}: the blit lands on the grid, ${draw}px to a block`,
+          JSON.stringify({ modalRun: r.modal, draw,
                            offGrid: (100 * r.strayShare).toFixed(1) + '% of the row',
                            smoothing: r.smoothing }));
-        ok(r.w <= FIELD_W_CEIL && r.h <= Math.round(FIELD_W_CEIL * 660 / 960),
-          `${label}: never more pixels than the fixed bitmap it replaced`,
-          JSON.stringify({ w: r.w, h: r.h, ceiling: FIELD_W_CEIL }));
+        /* A WHOLE SCALE IN THE BITMAP BUYS NOTHING IF THE BROWSER THEN
+           RESAMPLES IT ON A FRACTION. Within one block each way, because
+           the crop is a whole number of blocks and the arena is not. */
+        ok(step === Math.round(step) && step >= 1
+           && r.wantW - r.w * step >= 0 && r.wantW - r.w * step < scale
+           && r.wantH - r.h * step >= 0 && r.wantH - r.h * step < scale,
+          `${label}: the browser's last step is a whole ${step}x onto the arena`,
+          JSON.stringify({ bitmap: [r.w, r.h], step,
+                           shown: [r.w * step, r.h * step],
+                           arena: [r.wantW, r.wantH], scale }));
         ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
         await pg.close(); await ctx.close();
       }
@@ -3461,12 +4223,23 @@ async function main() {
         await pg.goto(URL);
         await wait(pg, 700);
         const r = await pg.evaluate(() => {
-          const doors = [...document.querySelectorAll('.ph-door')];
+          /* THE FOUR ROWS ARE FOUR TILES NOW, and the franchise is the big
+             button above them rather than the second row down. Every claim
+             below is the one it always was: one target a mode, real text at
+             a real size, even weight, no drawn room. What moved is the
+             element carrying them. */
+          const doors = [...document.querySelectorAll('.hmode')];
           const rect = doors.map(d => d.getBoundingClientRect());
           const nameFs = doors.map(d =>
             parseFloat(getComputedStyle(d.querySelector('b')).fontSize));
+          const cta = document.querySelector('.bigplay');
+          const cr = cta && cta.getBoundingClientRect();
           return {
             doors: doors.length,
+            ctaText: cta ? cta.textContent.trim() : '',
+            ctaWidth: cr ? cr.width / innerWidth : 0,
+            ctaFs: cta ? parseFloat(getComputedStyle(cta).fontSize) : 0,
+            ctaTouch: cr ? Math.min(cr.width, cr.height) : 0,
             room: !!document.querySelector('.clubhouse canvas'),
             strip: !!document.querySelector('.ph-strip'),
             names: doors.map(d => (d.querySelector('b').textContent || '').trim()),
@@ -3493,8 +4266,8 @@ async function main() {
       for (const sz of sizes) {
         const r = await look(sz.w, sz.h, true);
         ok(r.doors === 4 && !r.room,
-           `${sz.what}: the menu is four buttons, not a drawn room`,
-           `${r.doors} buttons, room canvas ${r.room}`);
+           `${sz.what}: the menu is four mode tiles, not a drawn room`,
+           `${r.doors} tiles, room canvas ${r.room}`);
         ok(r.names.every(v => v.length > 0) && r.icons === 4,
            `${sz.what}: each is named and carries its own art`,
            JSON.stringify(r.names));
@@ -3509,9 +4282,19 @@ async function main() {
         ok(r.minTouch >= 44,
            `${sz.what}: every one is a real touch target`,
            'smallest side ' + Math.round(r.minTouch) + 'px');
-        ok(r.width >= 0.8,
-           `${sz.what}: and runs the width of the screen`,
+        /* THE TILES ARE TWO UP, SO THE FULL WIDTH CLAIM MOVED TO THE ONE
+           CONTROL THAT STILL DESERVES IT. Four identical rows down the
+           screen was the layout this replaced; what must still run the
+           width is the thing a returning player came back to press. */
+        ok(r.width >= 0.4,
+           `${sz.what}: the tiles are a real share of the screen`,
            Math.round(r.width * 100) + '% of ' + r.vw);
+        ok(r.ctaWidth >= 0.8 && r.ctaTouch >= 44,
+           `${sz.what}: and the franchise button runs the width of it`,
+           Math.round(r.ctaWidth * 100) + '%, smallest side ' + Math.round(r.ctaTouch));
+        ok(r.ctaFs >= 16 && /franchise/i.test(r.ctaText),
+           `${sz.what}: the primary action is named in the largest type on the screen`,
+           r.ctaFs + 'px "' + r.ctaText + '"');
         /* Real text at a real size, which a canvas could never promise:
            the room's signs came out at six CSS pixels once and nothing in
            the code said so. */
@@ -3524,9 +4307,15 @@ async function main() {
       }
       /* The desktop keeps the room, which is the screen the rail and the
          wall of objects were designed for. */
+      /* THE DESKTOP KEEPS THE ROOM AND GAINS THE TILES. It used to be one
+         or the other: the room WAS the menu, so a desktop had no tiles at
+         all. The room is the hero now and the tiles are the menu under it,
+         so what this asserts is that the room is still there rather than
+         that nothing else is. */
       const desk = await look(1280, 860, false);
-      ok(desk.doors === 0 && desk.room,
-         'a desktop: still gets the clubhouse room', JSON.stringify(desk));
+      ok(desk.doors === 4 && desk.room,
+         'a desktop: still gets the clubhouse room, with the tiles under it',
+         JSON.stringify({ tiles: desk.doors, room: desk.room }));
       ok(desk.errors.length === 0, 'a desktop: no page errors', desk.errors.join(' | '));
     }
 
@@ -3545,7 +4334,7 @@ async function main() {
       /* HOW TO PLAY is the one door that goes somewhere without asking for
          a roster first, so it is the one to press. */
       const went = await pg.evaluate(async () => {
-        const doors = [...document.querySelectorAll('.ph-door')];
+        const doors = [...document.querySelectorAll('.hmode')];
         const howto = doors.find(d => /HOW TO PLAY/i.test(d.textContent));
         if (!howto) return { found: false };
         howto.click();
@@ -3575,7 +4364,7 @@ async function main() {
       await pg.goto(URL);
       await wait(pg, 700);
       const look = () => pg.evaluate(() => ({
-        doors: document.querySelectorAll('.ph-door').length,
+        doors: document.querySelectorAll('.hmode').length,
         room: !!document.querySelector('.clubhouse canvas'),
         over: document.documentElement.scrollWidth - innerWidth,
       }));
@@ -3583,7 +4372,7 @@ async function main() {
       await pg.setViewportSize({ width: 844, height: 390 });
       await wait(pg, 700);
       const flat = await look();
-      /* and out to a desktop, where the room takes over */
+      /* and out to a desktop, where the room comes back above the tiles */
       await pg.setViewportSize({ width: 1280, height: 860 });
       await wait(pg, 700);
       const desk = await look();
@@ -3596,8 +4385,15 @@ async function main() {
       ok(flat.doors === 4 && flat.over <= 1,
          'turned sideways it is still the menu, and still fits',
          JSON.stringify(flat));
-      ok(desk.room && desk.doors === 0,
-         'stretched to a desktop, the room takes over', JSON.stringify(desk));
+      /* THE DESKTOP KEEPS THE ROOM AND GAINS THE TILES. It used to be one or
+         the other: the room WAS the menu, so a desktop had no tiles at all.
+         The room is the hero now and the tiles are the menu under it, so what
+         this asserts is that the room came back rather than that nothing else
+         did. The phone assertion below is still one or the other, because a
+         phone gets no room. */
+      ok(desk.room && desk.doors === 4,
+         'stretched to a desktop, the room comes back with the tiles under it',
+         JSON.stringify(desk));
       ok(again.doors === 4 && !again.room,
          'and back to a phone gets the menu again', JSON.stringify(again));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
@@ -3636,7 +4432,16 @@ async function main() {
           State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
           startGame({ mode: 'exhibition', youHome: false });
         });
-        await wait(pg, 900);
+        /* WAIT FOR THE PLATE CAMERA, because the zone is only a target
+           while there is a pitch to hit. Between pitches the camera is the
+           wide field, which contains rather than crops, and the zone is
+           correspondingly small: measured there it read 37 across on a
+           screen where an at-bat gets 52. Timing the measurement so it
+           lands on the wide view is asking the wrong question. */
+        await pg.waitForFunction(() => {
+          try { return plateViewActive(State.game); } catch (e) { return false; }
+        }, null, { timeout: 12000 }).catch(() => {});
+        await wait(pg, 400);
         const r = await pg.evaluate(() => {
           const R = (s) => { const e = document.querySelector(s); return e && e.getBoundingClientRect(); };
           const f = R('#field');
@@ -3644,14 +4449,47 @@ async function main() {
           const tl = R('.arena .corner.tl'), tr = R('.arena .corner.tr');
           const over = (a, b) => !!(a && b && a.right > b.left && b.right > a.left
                                           && a.bottom > b.top && b.bottom > a.top);
-          /* The one button the at-bat is waiting on, whichever it is. Both
-             are built and one is hidden, so a hidden one measures zero and
-             would pass a test about the fold without being on the screen at
-             all: only a button that is actually laid out counts. */
-          const act = [...document.querySelectorAll('.controls button, .btn')]
-            .filter(b => /swing|throw/i.test(b.textContent || '') && b.offsetParent)
-            .map(b => b.getBoundingClientRect())
-            .filter(r => r.height > 0)[0];
+          /* THE CONTROL THE AT-BAT IS WAITING ON IS THE STRIKE ZONE, and
+             that is a change rather than a loosening. There used to be a
+             SWING button under the field and this read its rectangle. There
+             is not: a tap on the field has always been both the aim and the
+             timing, so the button could only ever swing at wherever the bat
+             already was, and it is gone while batting. What a player
+             actually has to be able to reach is the zone, so that is what
+             is measured: where it lands on screen, and how big it is.
+
+             A SIZE FLOOR IS THE POINT OF IT. The defect this section was
+             written for drew a 182 pixel field sideways, which puts the
+             zone at about 17 pixels across against a thumb of 45. Reaching
+             it is not the same question as it being on the screen. */
+          /* THE CANVAS IS A CROP, so world over canvas is not the scale.
+             It was written `r.width / FIELD_W` and that was true while the
+             canvas held the whole world and the arena clipped it with
+             `overflow`. The camera crops in the BLIT now, so the canvas
+             holds `FIELD_CAM.sw` blocks of 320 at an offset of `sx`, and
+             the old reading answered a zone 37 by 68 for a box that is
+             really 92 by 120: not even the right shape, because the two
+             axes are cropped by different amounts.
+
+             It inverts FIELD_CAM the way `fieldPointFromEvent` does rather
+             than deriving a second mapping, because a second mapping is
+             how a reader ends up certifying a screen nobody could aim at.
+             That is this repo's oldest lesson about extractors, arriving
+             at the guard rather than at the page. */
+          const zone = (() => {
+            const cv = document.getElementById('field');
+            const P = typeof plateGeom === 'function' ? plateGeom() : null;
+            if (!cv || !P) return null;
+            const r = cv.getBoundingClientRect();
+            if (!r.width) return null;
+            const X = (wx) => r.left + (wx / PIX - FIELD_CAM.sx) / FIELD_CAM.sw * r.width;
+            const Y = (wy) => r.top + (wy / PIX - FIELD_CAM.sy) / FIELD_CAM.sh * r.height;
+            const left = X(P.zx - P.zw), right = X(P.zx + P.zw);
+            const top = Y(P.zy - P.zh), bottom = Y(P.zy + P.zh);
+            return { w: Math.round(right - left), h: Math.round(bottom - top),
+                     left: Math.round(left), right: Math.round(right),
+                     top: Math.round(top), bottom: Math.round(bottom) };
+          })();
           /* Nothing in the right hand column may hang off its own panel. */
           const card = R('.swing-modes') ? R('.swing-modes').right : 0;
           const panel = (() => { const e = document.querySelector('.swing-modes');
@@ -3659,7 +4497,7 @@ async function main() {
           return {
             field: [Math.round(f.width), Math.round(f.height)],
             fieldBottom: Math.round(f.bottom),
-            act: act ? Math.round(act.bottom) : -1,
+            zone,
             placards: over(bl, br) || over(tl, tr),
             spill: Math.max(0, Math.round(card - panel)),
             vw: innerWidth, vh: innerHeight,
@@ -3679,9 +4517,22 @@ async function main() {
       ok(flat.fieldBottom <= flat.vh,
          'and the whole field is on the screen without scrolling',
          `field ends at ${flat.fieldBottom} of ${flat.vh}`);
-      ok(flat.act > 0 && flat.act <= flat.vh,
-         'and so is the button the at-bat is waiting on',
-         `button ends at ${flat.act} of ${flat.vh}`);
+      const reachable = (r, label) => {
+        ok(!!r.zone, label + ': the strike zone is drawn at all',
+           JSON.stringify(r.zone));
+        if (!r.zone) return;
+        const z = r.zone;
+        ok(z.left >= 0 && z.right <= r.vw && z.top >= 0 && z.bottom <= r.vh,
+           label + ': the whole strike zone is on the screen',
+           JSON.stringify({ zone: z, vw: r.vw, vh: r.vh }));
+        /* 40 is a thumb. Below it aiming stops being a skill and starts
+           being a guess, which is what a 34 pixel zone on a 390 phone was. */
+        ok(Math.min(z.w, z.h) >= 40,
+           label + ': and it is big enough to aim at with a thumb',
+           `${z.w}x${z.h}`);
+      };
+      reachable(flat, 'sideways');
+      reachable(up, 'upright');
       ok(!flat.sideways, 'and the page does not scroll sideways', JSON.stringify(flat));
       /* The placards are positioned on the field's own corners at a fixed
          type size, so a small field is what makes them collide. */
@@ -4080,7 +4931,18 @@ async function main() {
       });
       ok(r.n === 2 && !r.overlap, 'two placards on the field and they do not touch', JSON.stringify({ n: r.n, overlap: r.overlap }));
       ok(r.strip === 'block' && r.stripText === r.park, 'the park name is a strip above the board', JSON.stringify({ strip: r.strip, text: r.stripText, park: r.park }));
-      ok(r.view < 0.5 && Math.abs(r.ballCss - 4) < 0.01, 'the ball is four CSS pixels on a phone', JSON.stringify({ view: r.view, ballCss: r.ballCss }));
+      /* THE FLOOR IS WHAT IS ASSERTED, NOT THE SCALE IT HAPPENS TO MEET.
+         Written `view < 0.5` this failed the day the camera started
+         drawing a whole number of device pixels per block, because the
+         field got BIGGER: a logical pixel went from just under half a CSS
+         pixel to exactly half. The claim the floor is for survived that
+         untouched. `ballCss` on its own cannot fail, since the floor is
+         four over the view and the check multiplies it back, so the half
+         with teeth is that the floor really is above the five logical
+         pixels it replaced, which on a phone was a fleck on the grass. */
+      ok(Math.abs(r.ballCss - 4) < 0.01 && 4 / r.view > 5,
+         'the ball is four CSS pixels on a phone, which is more than five logical ones',
+         JSON.stringify({ view: r.view, ballCss: r.ballCss, logical: 4 / r.view }));
       ok(r.noWide, 'the page does not scroll sideways');
       ok(r.ring && r.chaseAt, 'the catch ring has a fielder to point from', JSON.stringify({ ring: r.ring, chaseAt: r.chaseAt }));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));

@@ -122,28 +122,42 @@ if (!rosterMatch) {
   }
 }
 
-/* 5b. EVERY CHARACTER HAS A GENERATED SPRITE, AND IT IS THE DECLARED SIZE.
-      Sprites come from mythiball/gen_sprites_v2.py as a V2_SPRITES table.
+/* 5b. EVERY CHARACTER HAS A SPRITE, AND IT IS THE DECLARED SIZE.
       The renderer walks a fixed V2_W by V2_H box and reads row[x] per cell,
       so a short row renders transparent at the end and a long one silently
       loses its tail: both look like a slightly wrong drawing rather than a
       bug. An earlier hand written sprite set shipped with twenty of those
       and nothing failed, which is why this check exists. It also catches a
-      roster entry with no sprite at all, which would throw on first draw. */
+      roster entry with no sprite at all, which would throw on first draw.
+
+      THE TABLE IS JSON ON ONE LINE, AND READING IT AS PRETTY PRINTED LINES
+      WENT SILENT. It used to come out of gen_sprites_v2.py one frame per
+      line, so this parsed it line by line; the handoff pack builder
+      minifies it, so every one of those patterns stopped matching, the
+      key set came back EMPTY, and the whole section reported one problem
+      (all 68 roster characters have no sprite) while the three checks it
+      is actually for, the row size, the palette keys and the missing
+      poses, ran over nothing at all. Fourth time an extractor in this repo
+      has been wrong in silence. It is parsed rather than pattern matched
+      now, so the next change of layout cannot repeat it.
+
+      A POSE MAY BE A REFERENCE. Repeated art is stored as '@otherpose'
+      and v2Frame resolves it before decoding, so this resolves it too: a
+      reference has no rows of its own and measuring its string would
+      report every shared drawing as the wrong size. */
 {
   const wM = page.match(/V2_W = (\d+)/);
   const hM = page.match(/V2_H = (\d+)/);
-  const tableM = page.match(/const V2_SPRITES = \{([\s\S]*?)\n\};/);
-  if (!wM || !hM || !tableM) {
+  const tableM = page.match(/const V2_SPRITES = (\{.*?\});\n/s);
+  let table = null;
+  if (wM && hM && tableM) {
+    try { table = JSON.parse(tableM[1]); } catch (e) { table = null; }
+  }
+  if (!table) {
     problems.push('could not read V2_W / V2_H / V2_SPRITES from mythiball/index.html. '
-      + 'Has the generated sprite block been replaced by hand?');
+      + 'Has the sprite table been replaced by hand, or is it no longer JSON?');
   } else {
     const W = +wM[1], H = +hM[1];
-    const spriteKeys = new Set();
-    /* The table is one character per block: a palette line, then one
-       line per frame holding the run length encoded rows (see v2Frame in
-       the page). Parsed line by line, decoded the same way the page does,
-       and every decoded row has to be exactly the declared size. */
     const decode = (raw) => raw.split('/').map(r => {
       let out = '', num = '';
       for (const ch of r) {
@@ -153,51 +167,171 @@ if (!rosterMatch) {
       }
       return out;
     });
-    let key = null, palKeys = null, seen = null;
-    const finish = () => {
-      if (!key) return;
-      for (const need of ['idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2',
-                          'windup', 'release', 'swing', 'catch', 'throw',
-                          'load', 'follow', 'kick', 'ready']) {
-        if (!seen.has(need)) problems.push(`sprite "${key}" is missing the "${need}" frame.`);
+    /* BLEED_GAP in mythiball/sprites/tools/spritelib.py, which is where the
+       band it sits in was measured. The two are a pair: this reads what that
+       one wrote, so a build run with a different gap fails here rather than
+       shipping. */
+    const BLEED_GAP = 3;
+    /* Detached blobs clear of the figure above or below, plus anything on a
+       side edge. 8 connected, which is the connectivity the builder walks the
+       CHARACTER at, so a cape hanging off a shoulder by one diagonal pixel is
+       part of the character here too. Reading it at 4 would report half the
+       roster.
+
+       IT DOES NOT ASK WHETHER THE BLOB TOUCHES THE TOP OR THE BOTTOM, and it
+       used to. That was the builder's rule and the builder was wrong about it:
+       the sheet cuts some of the neighbour short, so 87 fragments stopped a
+       few rows in and sailed through. The clearance is the whole test now, in
+       both files. */
+    const strayBlobs = (rows) => {
+      const h = rows.length, w = rows[0] ? rows[0].length : 0;
+      if (!h || !w) return [];
+      const lab = new Int32Array(w * h).fill(-1);
+      const blobs = [];
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        if (rows[y][x] === '.' || lab[y * w + x] !== -1) continue;
+        const id = blobs.length, st = [[x, y]];
+        let n = 0, top = h, bot = -1, hitL = false, hitR = false;
+        lab[y * w + x] = id;
+        while (st.length) {
+          const [cx, cy] = st.pop(); n++;
+          if (cy < top) top = cy;
+          if (cy > bot) bot = cy;
+          if (cx === 0) hitL = true;
+          if (cx === w - 1) hitR = true;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            const nx = cx + dx, ny = cy + dy;
+            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            if (rows[ny][nx] === '.' || lab[ny * w + nx] !== -1) continue;
+            lab[ny * w + nx] = id; st.push([nx, ny]);
+          }
+        }
+        blobs.push({ n, top, bot, hitL, hitR });
       }
+      if (blobs.length < 2) return [];
+      const main = blobs.reduce((a, c) => (c.n > a.n ? c : a));
+      const out = [];
+      for (const bl of blobs) {
+        if (bl === main) continue;
+        if (bl.hitL || bl.hitR) { out.push({ n: bl.n, side: 'the side' }); continue; }
+        const below = bl.top - main.bot, above = main.top - bl.bot;
+        if (Math.max(below, above) >= BLEED_GAP) {
+          out.push({ n: bl.n, side: below > above ? 'below the figure' : 'above it' });
+        }
+      }
+      return out;
     };
-    for (const line of tableM[1].split('\n')) {
-      const head = line.match(/^  (\w+):\{p:\{(.*)\},f:\{$/);
-      if (head) {
-        finish();
-        key = head[1]; spriteKeys.add(key);
-        palKeys = new Set([...head[2].matchAll(/'(.)':'#/g)].map(m => m[1]));
-        seen = new Set();
-        continue;
+    /* The poses the page asks for by name. A missing one is not a blank
+       frame: spriteFor falls back to idle, so the character silently
+       plays the wrong drawing for that beat. */
+    const NEED = ['idle', 'ready', 'load', 'swing1', 'swing', 'follow',
+                  'run1', 'run2', 'run3', 'run4',
+                  'back', 'backrun1', 'backrun2', 'slump',
+                  'windup', 'kick', 'release', 'throw', 'catch', 'cheer'];
+    const spriteKeys = new Set(Object.keys(table));
+    for (const [key, rec] of spriteKeys.size ? Object.entries(table) : []) {
+      const f = rec && rec.f;
+      if (!f) { problems.push(`sprite "${key}" has no frames at all.`); continue; }
+      const palKeys = new Set(Object.keys(rec.p || {}));
+      for (const need of NEED) {
+        if (!(need in f)) problems.push(`sprite "${key}" is missing the "${need}" frame.`);
       }
-      const fr = line.match(/^    (\w+):'(.*)',$/);
-      if (!fr || !key) continue;
-      const pose = fr[1];
-      seen.add(pose);
-      const rows = decode(fr[2]);
-      if (rows.length !== H) {
-        problems.push(`sprite "${key}" pose "${pose}" has ${rows.length} rows, expected ${H}.`);
-      }
-      const bad = rows.map((r, i) => [i, r.length]).filter(([, l]) => l !== W);
-      if (bad.length) {
-        problems.push(`sprite "${key}" pose "${pose}" has ${bad.length} row(s) not ${W} wide `
-          + `(first: row ${bad[0][0]} is ${bad[0][1]}).`);
-      }
-      const used = new Set();
-      for (const r of rows) for (const ch of r) if (ch !== '.') used.add(ch);
-      const missing = [...used].filter(c => !palKeys.has(c));
-      if (missing.length) {
-        problems.push(`sprite "${key}" pose "${pose}" uses palette keys with no color: ${missing.join(', ')}.`);
+      for (const pose of Object.keys(f)) {
+        let raw = f[pose], hops = 0;
+        while (typeof raw === 'string' && raw.charCodeAt(0) === 64 && hops++ < 4) {
+          const target = raw.slice(1);
+          if (!(target in f)) {
+            problems.push(`sprite "${key}" pose "${pose}" points at "${target}", which it does not have.`);
+            raw = null; break;
+          }
+          raw = f[target];
+        }
+        if (raw == null) continue;
+        if (typeof raw !== 'string' || raw.charCodeAt(0) === 64) {
+          problems.push(`sprite "${key}" pose "${pose}" never resolves to a drawing.`);
+          continue;
+        }
+        const rows = decode(raw);
+        if (rows.length !== H) {
+          problems.push(`sprite "${key}" pose "${pose}" has ${rows.length} rows, expected ${H}.`);
+        }
+        const bad = rows.map((r, i) => [i, r.length]).filter(([, l]) => l !== W);
+        if (bad.length) {
+          problems.push(`sprite "${key}" pose "${pose}" has ${bad.length} row(s) not ${W} wide `
+            + `(first: row ${bad[0][0]} is ${bad[0][1]}).`);
+        }
+        const used = new Set();
+        for (const r of rows) for (const ch of r) if (ch !== '.') used.add(ch);
+        const missing = [...used].filter(c => !palKeys.has(c));
+        if (missing.length) {
+          problems.push(`sprite "${key}" pose "${pose}" uses palette keys with no color: ${missing.join(', ')}.`);
+        }
+        /* NOBODY ELSE'S DRAWING IN THIS FRAME. The strips were cut out of a
+           taller sheet, so a 64px cell catches the bottom of the figure above
+           it or the top of the one below, and `drop_edge_bleed` in the builder
+           only ever tested the SIDE edges. Nineteen of the sixty eight shipped
+           with a piece of another character in a pose the clubhouse draws: a
+           pair of somebody's shoes over Alice's head, 278 pixels of another
+           figure at Hermes' feet. Reported by a player.
+
+           Every guard here asked whether a frame is its own art. None asked
+           whether it is ONLY its own art, which is why a stray blob rode all
+           the way to the screen: it is a valid drawing, the pose is present,
+           and it differs from idle.
+
+           THE FIGURE IS THE LARGEST BLOB, always, so it is never what is
+           reported. A blob above or below it is allowed to be the character's
+           own foot when it is within BLEED_GAP of him, which is the builder's
+           own constant and the reason Paul Bunyan keeps his boot.
+
+           A BLOB THAT OVERLAPS THE FIGURE'S OWN ROWS IS LEFT ALONE, and that
+           is where the art is: Mother Nature's leaves and the ball off a bat
+           are drawn WITH the character and have no clearance. Nothing in the
+           geometry tells one of those from bleed, so the clearance is what
+           decides and the overlap is never touched. */
+        const strays = strayBlobs(rows);
+        if (strays.length) {
+          problems.push(`sprite "${key}" pose "${pose}" carries ${strays.length} detached `
+            + `blob(s) clear of the figure: ${strays.map(s => s.n + 'px '
+            + s.side).join(', ')}. That is a piece of the frame next door. `
+            + 'Re-run mythiball/sprites/tools/build_table.py and install.py.');
+        }
+
+        /* AND HIS FEET ARE ON THE BOTTOM OF HIS OWN CELL. A sprite is drawn
+           with the bottom of its CELL on the dirt, so a frame whose figure
+           stops short is a figure hovering over its own shadow by however
+           many rows are empty.
+
+           `cleaned()` seats every frame at y=62, so the gap is 1 by
+           construction and 0 for a character drawn the full height of the
+           canvas. Anything more means the seat was refused, which is what
+           left 291 of 1,360 frames floating up to 39 rows: the pitcher's
+           windup hung a quarter of his own height over the mound, on every
+           pitch, and nothing could report it because a frame drawn high in
+           its cell is a perfectly valid frame.
+
+           It is asked of the DECODED drawing, so a reference is resolved
+           first, which is the lesson the three guards aliasing defeated
+           already learnt. */
+        let lastLit = -1;
+        for (let y = 0; y < rows.length; y++) {
+          if (/[^.]/.test(rows[y] || '')) lastLit = y;
+        }
+        const gap = lastLit < 0 ? 0 : (H - 1) - lastLit;
+        if (gap > 1) {
+          problems.push(`sprite "${key}" pose "${pose}" leaves ${gap} empty rows under `
+            + 'the figure, so he is drawn hovering that far above the ground. '
+            + 'cleaned() seats every frame on y=62. Re-run '
+            + 'mythiball/sprites/tools/build_table.py and install.py.');
+        }
       }
     }
-    finish();
     if (rosterMatch) {
       const rosterCharKeys = [...rosterMatch[1].matchAll(/\{ k:'([^']+)'/g)].map(m => m[1]);
       const noSprite = rosterCharKeys.filter(k => !spriteKeys.has(k));
       if (noSprite.length) {
-        problems.push(`roster characters with no generated sprite: ${noSprite.join(', ')}. `
-          + 'Add a SPEC in mythiball/gen_sprites_v2.py and regenerate.');
+        problems.push(`roster characters with no sprite: ${noSprite.join(', ')}. `
+          + 'Build one into the handoff pack and re-run mythiball/sprites/tools/install.py.');
       }
     }
   }

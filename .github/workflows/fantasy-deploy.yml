@@ -1,0 +1,183 @@
+name: "Fantasy: deploy the poller"
+
+# Pushes fantasy/worker to Cloudflare and sets its secrets.
+#
+# WHY THE SECRETS ARE PUSHED FROM HERE rather than typed into the Cloudflare
+# dashboard: there is then ONE place secrets live. Typed in two places they
+# drift, and the way that drift shows up is a Worker that has been running for
+# a week against a key that was rotated on Tuesday. GitHub holds them, this
+# job copies them across, and nobody has to remember which is current.
+#
+# `wrangler secret put` reads the value from stdin, so no secret ever appears
+# in a command line, in this file, or in the run log. GitHub also masks them in
+# the log as a second layer.
+#
+# THE DRY RUN IS THE DEFAULT, matching the SQL workflow beside it. Unticked,
+# wrangler builds and bundles the Worker and tells you what it would upload
+# without uploading anything. That catches an import that does not resolve,
+# which is the likeliest thing to be wrong and is invisible until deploy.
+#
+# Needs four secrets. The job names any that are missing and stops, rather than
+# failing somewhere in the middle with a Cloudflare error nobody can read:
+#
+#   CLOUDFLARE_API_TOKEN     an API token with Workers Scripts: Edit
+#   CLOUDFLARE_ACCOUNT_ID    the account the Worker belongs to
+#   SUPABASE_URL             https://<project>.supabase.co
+#   SUPABASE_SERVICE_ROLE    the service key, which bypasses RLS
+#   ODDS_API_KEY             the provider key (already set)
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Actually deploy? Unchecked = build and validate only.'
+        type: boolean
+        default: false
+      push_secrets:
+        description: 'Also push the Worker secrets across?'
+        type: boolean
+        default: true
+      mode:
+        description: 'observe = decide everything, spend nothing. live = actually poll.'
+        type: choice
+        options: [observe, live]
+        default: observe
+
+concurrency:
+  group: fantasy-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      # THIS FILE LIVES ON main SO THE BUTTON EXISTS, and the poller does not.
+      # GitHub only lists a workflow_dispatch workflow if it is on the default
+      # branch, so this one is there while fantasy/ is still on a feature
+      # branch. Dispatched against main it would otherwise fail three steps
+      # later with "cannot find module", which is a true error about the wrong
+      # thing and sends the reader hunting for a broken import.
+      - name: The poller is actually on this branch
+        run: |
+          if [ ! -f fantasy/worker/wrangler.toml ]; then
+            echo "::error::fantasy/worker is not on '${GITHUB_REF_NAME}'."
+            echo "Re-run this workflow and change the branch dropdown to the"
+            echo "branch the fantasy work is on. This file lives on main only"
+            echo "so that the Run workflow button exists."
+            exit 1
+          fi
+          echo "Found the poller on ${GITHUB_REF_NAME}."
+
+      # BEFORE ANYTHING IS DEPLOYED. If the poller is broken there is no point
+      # putting it on a one minute cron, and a Worker that ticks every minute
+      # doing something wrong is worse than one that is not there.
+      - name: The poller still passes its own checks
+        run: |
+          node fantasy/check-worker.mjs
+          node fantasy/check-math.mjs
+
+      - name: What this schedule will cost
+        run: node fantasy/plan-budget.mjs
+
+      # Named, before Cloudflare is touched, so a missing secret is one clear
+      # line rather than an authentication error forty seconds in.
+      - name: Every secret this needs is present
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+          ODDS: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          missing=""
+          [ -z "${CF_TOKEN:-}" ]  && missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -z "${CF_ACCOUNT:-}" ] && missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          [ -z "${SB_URL:-}" ]    && missing="$missing SUPABASE_URL"
+          [ -z "${SB_KEY:-}" ]    && missing="$missing SUPABASE_SERVICE_ROLE"
+          [ -z "${ODDS:-}" ]      && missing="$missing ODDS_API_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::missing secrets:$missing"
+            echo "Add them under Settings, Secrets and variables, Actions."
+            exit 1
+          fi
+          echo "All five present."
+
+      - name: Install wrangler
+        run: npm install --no-audit --no-fund --no-save wrangler@4
+
+      # Builds and bundles without uploading. Catches an unresolved import,
+      # which is the likeliest breakage here because the Worker imports from
+      # fantasy/lib/ two directories up.
+      - name: Build check
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config fantasy/worker/wrangler.toml --dry-run --outdir /tmp/wbuild
+
+      - name: What it bundled
+        run: ls -la /tmp/wbuild && wc -c /tmp/wbuild/*.js || true
+
+      - name: Stop here unless deploy was ticked
+        if: ${{ !inputs.deploy }}
+        run: |
+          echo "BUILD PASSED. Nothing was deployed."
+          echo "Re-run with 'deploy' ticked to put it live."
+
+      # OBSERVE OR LIVE, passed as a var so the choice is visible in the run
+      # log and on the deployed Worker rather than buried in a file somebody
+      # has to remember to edit. Observe is the default here AND in
+      # wrangler.toml, so the only way to start spending credits is to have
+      # picked it in the dropdown on purpose.
+      - name: Deploy
+        if: ${{ inputs.deploy }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+          echo "Deploying in ${MODE} mode."
+          npx wrangler deploy --config fantasy/worker/wrangler.toml \
+            --var "FANTASY_MODE:${MODE}"
+
+      # AFTER the deploy, because `wrangler secret put` needs the script to
+      # exist. Each value goes in on stdin so it never appears in a command
+      # line or in the log.
+      - name: Push the Worker secrets across
+        if: ${{ inputs.deploy && inputs.push_secrets }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+        run: |
+          set -euo pipefail
+          cfg="fantasy/worker/wrangler.toml"
+          for name in ODDS_API_KEY SUPABASE_URL SUPABASE_SERVICE_ROLE; do
+            printf '%s' "${!name}" | npx wrangler secret put "$name" --config "$cfg"
+            echo "set $name"
+          done
+
+      - name: Where to look now
+        if: ${{ inputs.deploy }}
+        run: |
+          if [ "${{ inputs.mode }}" = "live" ]; then
+            echo "THE POLLER IS LIVE. It ticks every minute and will spend credits"
+            echo "on any event the ladder says is due."
+          else
+            echo "The poller is deployed in OBSERVE mode."
+            echo ""
+            echo "It ticks every minute, works out exactly which events are due and"
+            echo "what they would cost, and spends NOTHING. Look at a tick before"
+            echo "turning it live."
+          fi
+          echo ""
+          echo "Watch it:   npx wrangler tail fantasy-odds-poller"
+          echo "Or read fantasy_poll_runs in Supabase, which survives you closing"
+          echo "the terminal. In observe mode there will be no rows there, by design:"
+          echo "the log is the whole record until it goes live."

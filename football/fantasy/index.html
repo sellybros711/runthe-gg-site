@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- UNLISTED AND NOINDEXED WHILE IT IS BEING BUILT, which is the same posture the wrestling
+     game and Run The Floor are in and is written up in CLAUDE.md under each of them. It is
+     not a lock: anybody with the URL is in, and the tester gate below is a feature flag
+     served to every visitor. Say that plainly rather than implying the link is private. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Fantasy Challenge | RunThe.GG</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* The football game's own tokens. Copied rather than imported because this page loads
+     none of that page's CSS and a link to it would drag 4,000 lines of game screens in for
+     eleven variables. They are the SAME values, and the position colours especially: a
+     QB chip here must be the QB chip a player already knows from the draft next door. */
+  :root{
+    --bg:#080b14; --panel:#131a2b; --panel-2:#1a2337;
+    --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.18);
+    --ink:#eef2f9; --dim:#94a3b8; --dim-2:#7d8fa8;
+    --red:#ef4444; --blue:#3b82f6; --green:#22c55e; --gold:#f0c96b;
+    --qb:#ff0a3b; --rb:#22c55e; --wr:#0f93ff; --te:#eb9500;
+    --grad-red:linear-gradient(135deg,#f05252 0%,#b91c1c 100%);
+    --grad-blue:linear-gradient(135deg,#4d8ef7 0%,#1a49c4 100%);
+    --grad-panel:linear-gradient(180deg,#182134 0%,#111827 100%);
+    --shadow:0 18px 40px -14px rgba(0,0,0,.85), 0 3px 10px -4px rgba(0,0,0,.6);
+    --fd:'Anton',Impact,'Haettenschweiler',sans-serif;
+    --fn:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --fb:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{overscroll-behavior:none}
+  html,body{margin:0;background:var(--bg);color:var(--ink)}
+  body{font-family:var(--fb);font-size:16px;line-height:1.45;
+    background-image:radial-gradient(1000px 600px at 50% -8%, rgba(59,130,246,.10), transparent 70%),
+                     radial-gradient(800px 500px at 100% 100%, rgba(239,68,68,.07), transparent 70%);
+    background-attachment:fixed}
+  .wrap{max-width:600px;margin:0 auto;padding:14px 14px 46px}
+  h1,h2,h3{margin:0;line-height:1.05}
+  .display{font-family:var(--fd);font-weight:400;letter-spacing:.01em;text-transform:uppercase}
+  .num{font-family:var(--fd);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  .eyebrow{font-family:var(--fn);text-transform:uppercase;letter-spacing:.16em;
+    font-size:11px;font-weight:700;color:var(--dim-2)}
+  .dim{color:var(--dim)}
+  button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+  a{color:var(--blue)}
+  .btn{display:block;width:100%;padding:16px 18px;border-radius:12px;background:var(--grad-red);
+    color:#fff;font-family:var(--fn);font-size:17px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.045em;text-align:center;box-shadow:var(--shadow);position:relative;
+    overflow:hidden;transition:transform .07s ease,filter .15s ease}
+  .btn:before{content:'';position:absolute;left:0;right:0;top:0;height:40%;
+    background:linear-gradient(180deg,rgba(255,255,255,.22),transparent)}
+  .btn:active{transform:translateY(1px) scale(.995);filter:brightness(1.08)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .btn.blue{background:var(--grad-blue)}
+  .btn.quiet{background:none;border:1px solid var(--line-2);color:var(--dim);box-shadow:none}
+  .btn.quiet:before{display:none}
+  /* .btn sets display:block, so [hidden] loses to it. This file's own version of the rule
+     that has been learned seven times in football/index.html. */
+  .btn[hidden]{display:none}
+  /* Three of the buttons on this page are anchors, because they leave it. .btn was written
+     for <button>, so nothing in it turns the browser's own underline off, and a full width
+     control with an underline through its label reads as a mistake. Found by taking a
+     screenshot and looking at it, which is the only way this class of thing is ever found. */
+  a.btn{text-decoration:none}
+  .card{background:var(--grad-panel);border:1px solid var(--line);border-radius:14px;
+    padding:14px;box-shadow:var(--shadow)}
+
+  /* ---- the header ---- */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  /* THE HEADER HAS TO HOLD TWO THINGS ON ONE LINE AT 360px, and the first draft did not:
+     the wordmark at 23px and a link reading THE PERFECT SEASON came to about 400px of the
+     362 available, so both wrapped and the page opened on four lines of chrome.
+     MEASURED IN THE HARNESS, WHICH IS THE SAFE DIRECTION HERE. Google Fonts does not
+     resolve in the dev sandbox, so Anton falls back to a face about a third wider: a header
+     that fits here has room to spare on a real phone. */
+  .top a{color:var(--dim);font-family:var(--fn);font-size:12px;font-weight:700;
+    letter-spacing:.04em;text-decoration:none;text-transform:uppercase;white-space:nowrap}
+  .mark{font-family:var(--fd);font-size:19px;letter-spacing:.01em;text-transform:uppercase;
+    white-space:nowrap}
+  .mark i{font-style:normal;color:var(--gold)}
+
+  /* ---- the screens ---- */
+  .screen{display:none}
+  .screen.on{display:block}
+
+  /* ---- the cap rail ---- */
+  .rail{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);
+    margin-bottom:10px}
+  .rail b{font-family:var(--fd);font-size:26px;font-variant-numeric:tabular-nums;font-weight:400}
+  .rail .lo{color:var(--red)}
+
+  /* ---- the slot strip ---- */
+  .slots{display:flex;gap:5px;margin-bottom:12px}
+  .slot{flex:1;text-align:center;padding:6px 2px 7px;border-radius:9px;
+    border:1px solid var(--line);background:rgba(255,255,255,.02);min-width:0}
+  .slot .p{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.08em;
+    color:var(--dim-2)}
+  .slot .n{font-family:var(--fb);font-size:10px;font-weight:600;color:var(--dim-2);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slot.done{background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.35)}
+  .slot.done .n{color:var(--ink)}
+  .slot.now{border-color:var(--gold);background:rgba(240,201,107,.10)}
+  .slot.now .p{color:var(--gold)}
+
+  /* ---- a man on the board ---- */
+  .men{display:flex;flex-direction:column;gap:8px}
+  .man{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+    background:var(--panel);transition:transform .07s ease,border-color .15s ease}
+  .man:active{transform:translateY(1px)}
+  .man:disabled{opacity:.38;cursor:default}
+  .pos{flex:0 0 38px;text-align:center;font-family:var(--fn);font-size:11px;font-weight:800;
+    letter-spacing:.04em;padding:3px 0;border-radius:6px;color:#fff}
+  .pos.QB{background:var(--qb)} .pos.RB{background:var(--rb)}
+  .pos.WR{background:var(--wr)} .pos.TE{background:var(--te)}
+  /* min-width:0 on the growing child, or a long name refuses to shrink and pushes the
+     price off the row. The name is what absorbs it, never the price. */
+  .who{flex:1 1 auto;min-width:0}
+  .who b{display:block;font-family:var(--fn);font-size:15px;font-weight:700;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* THE STAT LINE IS ALLOWED TWO LINES, because it is the whole of what the board tells a
+     reader and truncating it is truncating the decision. Set to one line it came out
+     "492 pass yds, 5 TD, 59 ..." on every quarterback, which drops the rushing half of
+     exactly the men whose rushing is why they are dear.
+     CLAMPED AT TWO rather than left to run, so that a row keeps one height across the five
+     and the board does not step. Same rule as the premium sheet's hero row. */
+  .who s{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    text-decoration:none;font-size:11.5px;line-height:1.3;color:var(--dim-2);overflow:hidden}
+  .cost{flex:0 0 auto;text-align:right}
+  .cost b{display:block;font-family:var(--fd);font-size:19px;font-weight:400;
+    font-variant-numeric:tabular-nums}
+  .cost s{display:block;text-decoration:none;font-family:var(--fn);font-size:9.5px;
+    font-weight:700;letter-spacing:.08em;color:var(--dim-2);text-transform:uppercase}
+
+  /* ---- the five, reviewed ---- */
+  .five{display:flex;flex-direction:column;gap:10px}
+  .lineup{border:1px solid var(--line);border-radius:14px;background:var(--grad-panel);
+    padding:12px;width:100%;text-align:left}
+  .lineup.pick{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+  .lineup .hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    margin-bottom:8px}
+  .lineup .hd b{font-family:var(--fd);font-size:15px;font-weight:400;letter-spacing:.04em;
+    text-transform:uppercase}
+  .lineup .pj{font-family:var(--fd);font-size:27px;font-weight:400;
+    font-variant-numeric:tabular-nums;line-height:1}
+  .lineup .pj s{text-decoration:none;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.09em;color:var(--dim-2);display:block;text-align:right}
+  .roster{display:flex;flex-direction:column;gap:3px}
+  .rrow{display:flex;align-items:center;gap:8px;font-size:13px}
+  .rrow .rp{flex:0 0 28px;font-family:var(--fn);font-size:9.5px;font-weight:800;
+    text-align:center;border-radius:4px;padding:2px 0;color:#fff}
+  .rrow .rp.QB{background:var(--qb)} .rrow .rp.RB{background:var(--rb)}
+  .rrow .rp.WR{background:var(--wr)} .rrow .rp.TE{background:var(--te)}
+  .rrow .rn{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rrow .rc{flex:0 0 auto;color:var(--dim-2);font-variant-numeric:tabular-nums;font-size:12px}
+  /* A scored row: what he did under his name, and what he scored on the right.
+     THE NAME SHRINKS AND THE SCORE DOES NOT. A reader checking a total against six numbers
+     is looking at the right hand column, and a name is still a name with two letters off. */
+  .rrow.got{align-items:flex-start;padding:3px 0}
+  /* THE WRAP IS A FLEX COLUMN AND THE NAME GETS ITS OWN ELEMENT, which is not decoration.
+     `.rrow .rn` sets white-space:nowrap so a name never wraps, and white-space INHERITS, so
+     a two line clamp on the stat line under it does nothing at all: the line came out cut
+     mid word with no ellipsis, which is worse than the truncation it was added to fix. The
+     nowrap belongs on the NAME, which is the half that has to stay on one line. */
+  .rrow.got .rn{display:flex;flex-direction:column;min-width:0;white-space:normal;
+    overflow:visible}
+  .rrow.got .rn b{font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* TWO LINES, for the reason the board's stat line gets them: a quarterback's day is
+     "312 pass yds, 3 TD, 41 rush yds, 1 TD" and cut to one line it loses the rushing half,
+     which on this screen is a chunk of the number printed beside it. Clamped at two so a
+     six row list keeps one rhythm. */
+  .rrow.got .rn s{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    text-decoration:none;font-size:11px;line-height:1.35;color:var(--dim-2);overflow:hidden}
+  .rrow .rs{flex:0 0 auto;font-family:var(--fd);font-size:17px;font-weight:400;
+    font-variant-numeric:tabular-nums;min-width:42px;text-align:right}
+  .rrow .rs.zero{color:var(--dim-2)}
+  /* The projection beside the real total. Quiet, because the real one is the answer. */
+  .vs{margin-top:2px;font-family:var(--fn);font-size:12.5px;font-weight:600;color:var(--dim)}
+  .vs b{font-variant-numeric:tabular-nums;font-weight:800}
+  .vs .up{color:var(--green)} .vs .dn{color:#fca5a5}
+  /* Last week's result, on the home screen, so the loop closes. */
+  .lastwk{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin-top:12px;
+    padding:11px 13px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel)}
+  .lastwk .lw{flex:1 1 auto;min-width:0}
+  .lastwk .lw b{display:block;font-family:var(--fn);font-size:14px;font-weight:700}
+  .lastwk .lw s{display:block;text-decoration:none;font-size:11.5px;color:var(--dim-2)}
+  .lastwk .lp{flex:0 0 auto;font-family:var(--fd);font-size:25px;font-weight:400;
+    font-variant-numeric:tabular-nums}
+  /* display:flex, so the attribute needs its own rule. Eighth time in this repo. */
+  .lastwk[hidden]{display:none}
+
+  /* The week's standings. A place, a name and a score, and the reader's own row picked out
+     by the blue rail every board on this site uses for WHOSE row it is. */
+  .board{display:flex;flex-direction:column;gap:2px}
+  .brow{display:flex;align-items:center;gap:9px;font-size:13px;padding:4px 7px;
+    border-radius:8px;border-left:3px solid transparent}
+  .brow.me{background:var(--panel);border-left-color:var(--blue)}
+  .brow .bp{flex:0 0 26px;font-family:var(--fd);font-size:15px;font-weight:400;
+    font-variant-numeric:tabular-nums;color:var(--dim-2);text-align:right}
+  .brow.me .bp{color:var(--ink)}
+  .brow .bn{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .brow .bs{flex:0 0 auto;font-family:var(--fd);font-size:17px;font-weight:400;
+    font-variant-numeric:tabular-nums;min-width:48px;text-align:right}
+  /* The gap between the top fifty and a reader below it. A row of dots rather than nothing,
+     because a board that jumps from 50 to 112 with no mark reads as a rendering fault. */
+  .brow.gap{color:var(--dim-2);justify-content:center;padding:1px 0}
+  #in-boardwrap[hidden]{display:none}
+
+  .note{font-size:13px;color:var(--dim);margin:10px 0 0}
+  .lede{font-size:14.5px;color:var(--dim);margin:8px 0 0}
+  .big{font-family:var(--fd);font-size:44px;font-weight:400;line-height:.95;
+    font-variant-numeric:tabular-nums}
+  .rule{height:1px;background:var(--line);margin:16px 0}
+  .pill{display:inline-block;font-family:var(--fn);font-size:10px;font-weight:800;
+    letter-spacing:.09em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
+    border:1px solid var(--line-2);color:var(--dim)}
+  .pill.gold{color:var(--gold);border-color:rgba(240,201,107,.5)}
+  .pill.red{color:#fca5a5;border-color:rgba(239,68,68,.5)}
+  .stack{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span class="mark">Fantasy <i>Challenge</i></span>
+    <a href="/football/">&larr; Perfect Season</a>
+  </div>
+
+  <!-- Every screen ships in the markup and is switched by a class, the way the football
+       page does it. Nothing here is built at runtime except the boards. -->
+  <section id="s-load" class="screen on">
+    <div class="card"><div class="eyebrow">Fantasy Challenge</div>
+      <p class="lede" id="load-say">Loading this week.</p></div>
+  </section>
+
+  <section id="s-shut" class="screen">
+    <div class="card">
+      <div class="eyebrow">Not open yet</div>
+      <h1 class="display" style="font-size:30px;margin-top:6px">Fantasy Challenge</h1>
+      <p class="lede" id="shut-say"></p>
+      <div class="stack"><a class="btn quiet" href="/football/">Back to the game</a></div>
+    </div>
+  </section>
+
+  <section id="s-home" class="screen">
+    <div class="card">
+      <div class="eyebrow" id="home-week"></div>
+      <h1 class="display" style="font-size:32px;margin-top:6px">One lineup. One week.</h1>
+      <p class="lede">Six men: QB, two RB, two WR, TE. Every man is priced on what he has
+        actually done this season. You get five drafts and submit one of them.</p>
+      <p class="lede">Half PPR. Whatever your six score between them is your score.</p>
+      <div class="rule"></div>
+      <div class="rail">
+        <span><span class="eyebrow">Locks</span><br><b id="home-lock" class="num">-</b></span>
+        <span style="text-align:right"><span class="eyebrow">Cap</span><br>
+          <b id="home-cap" class="num">-</b></span>
+      </div>
+      <div class="stack">
+        <button class="btn" id="b-draft">Start drafting</button>
+        <button class="btn blue" id="b-review" hidden>See your lineups</button>
+      </div>
+      <p class="note" id="home-note"></p>
+      <!-- LAST WEEK'S RESULT, on the screen a player lands on. Without it the loop does not
+           close: the week rolls over on Tuesday, the entry screen for the week just played
+           is no longer what this page shows, and the only thing that ever told somebody how
+           they did is gone before most of them come back. Built rather than shipped hidden,
+           because it is drawn only when there is a scored entry to draw. -->
+      <button class="lastwk" id="b-last" hidden>
+        <span class="lw"><b id="last-say"></b><s id="last-sub"></s></span>
+        <span class="lp" id="last-pts"></span>
+      </button>
+    </div>
+  </section>
+
+  <section id="s-draft" class="screen">
+    <div class="eyebrow" id="d-chance"></div>
+    <div class="rail">
+      <span><span class="eyebrow">Left to spend</span><br><b id="d-left" class="num">-</b></span>
+      <span style="text-align:right"><span class="eyebrow">Signing</span><br>
+        <b id="d-slot" class="num">-</b></span>
+    </div>
+    <div class="slots" id="d-slots"></div>
+    <div class="men" id="d-men"></div>
+    <p class="note" id="d-note"></p>
+    <div class="stack"><button class="btn quiet" id="b-abandon">Start this draft again</button></div>
+  </section>
+
+  <section id="s-review" class="screen">
+    <div class="eyebrow" id="r-eyebrow">Your lineups</div>
+    <h2 class="display" style="font-size:26px;margin:6px 0 4px" id="r-head">Your lineups</h2>
+    <p class="lede" id="r-say"></p>
+    <div class="five" id="r-five" style="margin-top:12px"></div>
+    <!-- THE ORDER IS FIXED AND THE EMPHASIS MOVES. Which of these two is the red one is
+         decided in paintReview by how many drafts are done, because after one draft the
+         thing to do is draft again and after five it is to submit. Moving the buttons
+         themselves would move the target under a thumb that already knows where it is. -->
+    <div class="stack">
+      <button class="btn" id="b-more">Draft another</button>
+      <button class="btn" id="b-submit" disabled>Submit this lineup</button>
+      <button class="btn quiet" id="b-home">Back</button>
+    </div>
+  </section>
+
+  <!-- ONE SCREEN, TWO STATES, and they are the same lineup either side of the games. A
+       second screen for the result would be two places saying what your six men were, and
+       they would disagree the first time one of them was edited. What changes is the big
+       number, the label over it, and whether each row carries what he actually did. -->
+  <section id="s-in" class="screen">
+    <div class="card">
+      <div class="eyebrow" id="in-week"></div>
+      <h2 class="display" style="font-size:28px;margin:6px 0 2px" id="in-head">You are in</h2>
+      <p class="lede" id="in-say"></p>
+      <div class="rule"></div>
+      <div class="eyebrow" id="in-lab">Projected</div>
+      <div class="big" id="in-proj">-</div>
+      <div class="vs" id="in-vs" hidden></div>
+      <div class="roster" id="in-roster" style="margin-top:12px"></div>
+      <!-- THE BOARD OPENS AT THE LOCK, which is the server's rule and not this page's:
+           every entrant meets their own wheel, so a list of everybody's lineups before
+           kickoff is the answer key handed to whoever enters last. Before then this block
+           is not drawn at all, rather than drawn empty. -->
+      <div id="in-boardwrap" hidden>
+        <div class="rule"></div>
+        <div class="eyebrow" id="in-boardlab">This week</div>
+        <div class="board" id="in-board"></div>
+      </div>
+      <p class="note" id="in-note"></p>
+      <!-- A WAY BACK, and only when there is somewhere to go back TO. The current week's
+           entry is a terminal screen and the button would be a control to nowhere; last
+           week's is opened from the home screen, and a screen you can only leave by leaving
+           the site is a trap. -->
+      <div class="stack">
+        <button class="btn quiet" id="b-in-back" hidden>Back</button>
+        <a class="btn quiet" href="/football/">Back to the game</a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- The tester flag. Read defensively below: a blocked or stale copy leaves the global
+     undefined, and the honest answer to "can this person see an unlaunched mode" when the
+     list cannot be read is no. -->
+<script src="/football/fantasy-access.js?v=1"></script>
+<!-- Accounts, exactly as the football page loads them. Optional: with the CDN blocked
+     PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script defer src="/football/auth.js?v=5"></script>
+<script src="draft.js?v=1"></script>
+<script src="entries.js?v=1"></script>
+<script>
+(function(){
+  'use strict';
+
+  var D = window.PS_FANTASY_DRAFT;
+  var ACCESS = window.PS_FANTASY_ACCESS;
+
+  /* THE OTHER PAIR OF HAND-WRITTEN NUMBERS, and on this page it is the loud one rather
+     than the silent one. Every other pin on the site falls through to a stub that answers
+     null, which for a leaderboard reads as a bad network day and costs nothing. Here the
+     stub also has to answer a SUBMIT, and a submit that resolves to "no opinion" is a
+     player who does not know whether they entered. So the stub refuses out loud, with a
+     sentence, and the reads stay null. Bump both halves in one commit, the way
+     check-cachebust holds every other pin on this site. */
+  var NEED_FANTASY = 1;
+  var F = (window.PS_FANTASY && window.PS_FANTASY.API_VERSION === NEED_FANTASY)
+    ? window.PS_FANTASY : {
+      API_VERSION: NEED_FANTASY, offline: true,
+      submit: function(){ return Promise.resolve({ ok: false,
+        why: 'This page could not reach the server. Reload and try again.' }); },
+      mine: function(){ return Promise.resolve(null); },
+      standings: function(){ return Promise.resolve(null); },
+      myPlace: function(){ return Promise.resolve(null); },
+      entryCount: function(){ return Promise.resolve(null); },
+    };
+  var $ = function(id){ return document.getElementById(id); };
+  var show = function(id){
+    var all = document.querySelectorAll('.screen');
+    for (var i=0;i<all.length;i++) all[i].classList.toggle('on', all[i].id===id);
+    window.scrollTo(0,0);
+  };
+  var esc = function(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  };
+  var money = function(m){ return '$' + (Math.round(m*10)/10) + 'M'; };
+
+  var POOL = null;          /* the week, as built */
+  var BY_ID = {};
+  var state = null;         /* { season, week, chances:[], pick, submitted } */
+  var cur = -1;             /* which chance is being drafted */
+
+  /* ---- what is kept, and where ----
+     LOCAL ONLY, ON PURPOSE, FOR NOW. There is no entry table yet, so a lineup lives in this
+     browser and nowhere else: clearing site data loses it, and a second device knows
+     nothing about it. That is a feel test rather than a competition, and the screen says so
+     rather than letting somebody believe they have entered something. */
+  var keyFor = function(season, week){ return 'ps_fantasy_' + season + '_w' + week; };
+  var KEY = function(){ return keyFor(POOL.season, POOL.week); };
+  function load(){
+    try { return JSON.parse(localStorage.getItem(KEY())||'null'); } catch(e){ return null; }
+  }
+  function loadWeek(season, week){
+    try { return JSON.parse(localStorage.getItem(keyFor(season, week))||'null'); }
+    catch(e){ return null; }
+  }
+  function save(){
+    try { localStorage.setItem(KEY(), JSON.stringify(state)); } catch(e){}
+  }
+
+  /* A chance stores the seed and the player IDS, never the player rows. The pool is
+     rebuilt from the file on every visit, so storing the rows would be a second copy of
+     every price that goes stale the moment the week is rebuilt. */
+  function hydrate(c){
+    return { seed: c.seed, men: (c.ids||[]).map(function(id){ return BY_ID[id]; })
+      .filter(Boolean) };
+  }
+  function dehydrate(c){
+    return { seed: c.seed, ids: c.men.map(function(m){ return m.player_id; }) };
+  }
+  var chanceAt = function(i){ return hydrate(state.chances[i]); };
+
+  /* ---- the clock ---- */
+  var locked = function(){ return Date.now() >= Date.parse(POOL.locks_at); };
+  function untilLock(){
+    var ms = Date.parse(POOL.locks_at) - Date.now();
+    if (ms <= 0) return 'now';
+    var h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
+    if (h >= 24) return Math.floor(h/24) + 'd ' + (h%24) + 'h';
+    return h ? h + 'h ' + m + 'm' : m + 'm';
+  }
+  var lockWhen = function(){
+    var d = new Date(POOL.locks_at);
+    return d.toLocaleString(undefined, { weekday:'short', hour:'numeric', minute:'2-digit' });
+  };
+
+  /* ---- what the week actually scored ----
+   *
+   * FETCHED SPECULATIVELY AND NOT ANNOUNCED IN A POINTER, which is the opposite of how the
+   * pool is found and is the right way round for this one. A pointer would be a third
+   * hand-written field kept in step by two build scripts writing one file, and the failure
+   * is a week that is scored on disk and unscored on screen. The file either exists or it
+   * does not, the URL is derivable from the week, and a 404 is the honest answer to "has
+   * this week been scored yet". It costs one request that usually misses.
+   *
+   * A MAN WITH NO ENTRY SCORED ZERO. The build writes a row for everybody who was active,
+   * so an absent id is inactive, hurt, benched or cut, and all four are nought on a fantasy
+   * lineup. Read as "unknown" instead, a lineup would quietly total five men.
+   */
+  var RESULTS = {};
+  function resultsFor(season, week){
+    var k = season + '|' + week;
+    if (RESULTS[k] !== undefined) return Promise.resolve(RESULTS[k]);
+    return fetch('/football/data/results_' + season + '_w' + week + '.json',
+      { cache: 'no-cache' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .catch(function(){ return null; })
+      .then(function(j){ RESULTS[k] = j; return j; });
+  }
+  var scoreOf = function(res, id){
+    var row = res && res.scores && res.scores[id];
+    return { half: row ? row[0] : 0, line: row ? row[1] : '', played: !!row };
+  };
+  function scoreLineup(res, men){
+    var t = 0;
+    for (var i=0;i<men.length;i++) t += scoreOf(res, men[i].player_id).half;
+    return Math.round(t*10)/10;
+  }
+
+  /* ---- the draft screen ---- */
+  function paintDraft(){
+    var c = chanceAt(cur);
+    var i = c.men.length;
+    $('d-chance').textContent = 'Draft ' + (cur+1) + ' of ' + D.CHANCES;
+    var left = D.CAP_MUSD - D.spent(c);
+    $('d-left').textContent = money(left);
+    $('d-left').className = 'num' + (left < 12 ? ' lo' : '');
+    $('d-slot').textContent = i < D.SLOTS.length ? D.SLOTS[i] : 'done';
+
+    var strip = '';
+    for (var k=0;k<D.SLOTS.length;k++){
+      var man = c.men[k];
+      strip += '<div class="slot ' + (man?'done':(k===i?'now':'')) + '">'
+        + '<div class="p">' + D.SLOTS[k] + '</div>'
+        + '<div class="n">' + (man ? esc(man.name.split(' ').slice(-1)[0]) : '&nbsp;') + '</div>'
+        + '</div>';
+    }
+    $('d-slots').innerHTML = strip;
+
+    if (i >= D.SLOTS.length){ toReview(); return; }
+
+    var board = D.boardFor(POOL.pool, c, i);
+    /* AN EMPTY BOARD IS THE ONE STATE WITH NO WAY OUT OF IT, so it gets a sentence rather
+       than a blank screen. The reserve floor in draft.js is what makes it unreachable and
+       check-fantasy.mjs drives 1,200 drafts three ways to say so, but a screen that would
+       trap a player if the guard were ever wrong should say which of the two it is. */
+    if (!board.length){
+      $('d-men').innerHTML = '';
+      $('d-note').textContent = 'No ' + D.SLOTS[i] + ' can be signed with what is left. '
+        + 'That is a bug. Start this draft again.';
+      return;
+    }
+    var html = '';
+    for (var b=0;b<board.length;b++){
+      var m = board[b];
+      var where = m.opp ? (m.home ? 'vs ' + m.opp : 'at ' + m.opp) : '';
+      html += '<button class="man" data-id="' + esc(m.player_id) + '">'
+        + '<span class="pos ' + esc(m.position) + '">' + esc(m.position) + '</span>'
+        + '<span class="who"><b>' + esc(m.name) + '</b>'
+        + '<s>' + esc(m.team) + (where?' ' + esc(where):'') + ' &middot; ' + esc(m.stat_line) + '</s></span>'
+        + '<span class="cost"><b>' + money(m.price_musd) + '</b><s>'
+        + m.games + (m.games===1?' game':' games') + '</s></span>'
+        + '</button>';
+    }
+    $('d-men').innerHTML = html;
+    /* THE ONLY NUMBER ABOUT THE FUTURE IS THE LINEUP'S, AND IT COMES AFTER THE SIX.
+       A per man projection would say nothing a reader cannot already see: the price is
+       built from the same estimate, so the dearest man on any board is also the highest
+       projected one and printing both is printing one number twice. What the board shows
+       is what he has DONE. What he does next is the question. */
+    $('d-note').textContent = 'What they have done so far. What they do on Sunday is yours '
+      + 'to call.';
+  }
+
+  $('d-men').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('.man');
+    if (!b || !b.dataset.id) return;
+    var man = BY_ID[b.dataset.id];
+    if (!man) return;
+    state.chances[cur].ids.push(man.player_id);
+    save();
+    paintDraft();
+  });
+
+  $('b-abandon').onclick = function(){
+    state.chances[cur] = { seed: D.newSeed(), ids: [] };
+    save();
+    paintDraft();
+  };
+
+  /* ---- the review screen ---- */
+  function toReview(){
+    var html = '';
+    for (var i=0;i<state.chances.length;i++){
+      var c = chanceAt(i);
+      if (!D.full(c)) continue;
+      var rows = '';
+      for (var k=0;k<c.men.length;k++){
+        var m = c.men[k];
+        rows += '<div class="rrow"><span class="rp ' + esc(m.position) + '">'
+          + esc(m.position) + '</span>'
+          + '<span class="rn">' + esc(m.name) + '</span>'
+          + '<span class="rc">' + money(m.price_musd) + '</span></div>';
+      }
+      html += '<button class="lineup' + (state.pick===i?' pick':'') + '" data-i="' + i + '">'
+        + '<div class="hd"><b>Draft ' + (i+1) + '</b>'
+        + '<span class="pj">' + D.projected(c).toFixed(1)
+        + '<s>projected</s></span></div>'
+        + '<div class="roster">' + rows + '</div>'
+        + '<div class="note" style="margin-top:8px">' + money(D.spent(c)) + ' of '
+        + money(D.CAP_MUSD) + ' spent</div>'
+        + '</button>';
+    }
+    $('r-five').innerHTML = html;
+    var done = state.chances.filter(function(c){
+      return (c.ids||[]).length >= D.SLOTS.length; }).length;
+    var last = done >= D.CHANCES;
+    $('r-eyebrow').textContent = done + ' of ' + D.CHANCES + ' drafted';
+    /* THE SCREEN SAYS WHAT THERE IS TO DO, and after one draft that is not "pick one". It
+       read "Pick the one to submit" over a single lineup with four drafts still owed, which
+       is a screen asking for a decision the player has nothing to make it with. */
+    $('r-head').textContent = last ? 'Pick the one to submit' : 'Draft another, or stop here';
+    $('r-say').textContent = last
+      ? 'Tap a lineup to choose it. One goes in. Once it is in it is in.'
+      : (D.CHANCES - done) + (D.CHANCES - done === 1 ? ' draft left.' : ' drafts left.')
+        + ' You can submit one of these instead. You do not have to use them all.';
+    $('b-more').hidden = last;
+    $('b-submit').disabled = state.pick == null;
+    /* Red is this page's primary. It follows the thing to do rather than sitting on Submit
+       while Submit is refused, which is a disabled red button reading as the main action. */
+    $('b-more').className = 'btn';
+    $('b-submit').className = 'btn' + (last ? '' : ' quiet');
+    show('s-review');
+  }
+
+  $('r-five').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('.lineup');
+    if (!b) return;
+    state.pick = Number(b.dataset.i);
+    save();
+    toReview();
+  });
+
+  $('b-more').onclick = function(){ startChance(); };
+  $('b-home').onclick = function(){ paintHome(); show('s-home'); };
+  $('b-in-back').onclick = function(){ paintHome(); show('s-home'); };
+
+  /* ---- submitting, which is the one thing here that is not this browser's to decide ----
+   *
+   * THE SERVER SAYS WHETHER YOU ARE IN. The page's own clock is a hint that saves a round
+   * trip on an obviously shut week, exactly as `blocked()` is on the Commish door, and it
+   * is deliberately NOT what decides: a browser whose clock is wrong would otherwise enter
+   * a week that has kicked off, and with a prize on it that is the one refusal that has to
+   * be somebody else's.
+   *
+   * THREE ANSWERS, AND THE THIRD IS THE INTERESTING ONE. In, refused, or nobody knows. An
+   * unknown answer is a request that may have written the row and lost its reply, so the
+   * page ASKS rather than guessing: read as a failure it tells somebody to try again on a
+   * week they are already in, and they then meet "you have already entered this week" and
+   * read the mode as broken.
+   *
+   * NOTHING IS WRITTEN LOCALLY UNTIL THE SERVER HAS SAID YES, which is `dynNewSheet`'s
+   * lesson at a new door: marking it submitted first and correcting on a refusal would
+   * leave a player looking at a screen saying they are in on a week that refused them.
+   */
+  var submitting = false;
+  function submitLabel(text, disabled){
+    $('b-submit').textContent = text;
+    $('b-submit').disabled = !!disabled;
+  }
+  function sayRefused(why){
+    $('r-say').textContent = why;
+    submitLabel('Submit this lineup', state.pick == null);
+  }
+  $('b-submit').onclick = function(){
+    if (state.pick == null || submitting) return;
+    if (locked()){ paintHome(); show('s-home'); return; }
+    var c = chanceAt(state.pick);
+    if (!D.full(c)){ sayRefused('That lineup is not finished.'); return; }
+    var ids = c.men.map(function(m){ return m.player_id; });
+    var why = '';
+    submitting = true;
+    submitLabel('Sending...', true);
+    F.submit(POOL.season, POOL.week, ids).then(function(r){
+      if (r.ok){ SERVER_IN = { week: POOL.week, row: { picks: ids } }; return true; }
+      if (r.ok === false){ why = r.why || ''; return false; }
+      /* Nobody knows. The one thing that can settle it is the row. */
+      return F.mine(POOL.season, POOL.week).then(function(m){
+        if (m){ SERVER_IN = { week: POOL.week, row: m }; return true; }
+        /* Still nobody knows: `mine` answers null for unreachable and false for "you have
+           not entered", and only the second is safe to report as a refusal. */
+        return m === false ? 'again' : 'unknown';
+      });
+    }).then(function(res){
+      submitting = false;
+      if (res === true){
+        state.submitted = state.pick;
+        save();
+        openIn();
+        return;
+      }
+      if (res === 'again'){
+        sayRefused('That did not get through. Nothing was entered. Try again.');
+      } else if (res === 'unknown'){
+        sayRefused('The server did not answer. Reload before trying again, '
+          + 'so this does not enter you twice.');
+      } else {
+        /* THE SERVER'S OWN SENTENCE, not a translation of it. Every refusal in
+           `fantasy_submit` is already written for a person, so a second copy here would be
+           nine strings that drift the first time one is edited. */
+        sayRefused('Not entered. ' + (why || 'That lineup was not accepted.'));
+      }
+    });
+  };
+
+  /* ---- submitted, and then scored ----
+   *
+   * `res` null is the lineup before the games. With results it is the same screen carrying
+   * what happened. Drawn from one function so the six men cannot be described two ways.
+   */
+  /* THE SIX COME FROM THE ENTRY WHEREVER IT IS, and that is what moving to a server buys.
+     `state.submitted` is this browser's memory of it; `SERVER_IN` is the row, and the row
+     is the one that outlives clearing site data, a second device and a private window. The
+     men are rebuilt from ids either way, so the two produce the same screen. */
+  var SERVER_IN = null;   /* { week, row } for the week it was read for, or null */
+  /* SCOPED TO ITS OWN WEEK, and that is not belt and braces. `b-last` draws last week's
+     entry by swapping `POOL.week` and `state` around one `paintIn` call, so an unscoped
+     row would put THIS week's six men under last week's heading and its score. */
+  function serverEntry(){
+    return (SERVER_IN && SERVER_IN.week === POOL.week) ? SERVER_IN.row : null;
+  }
+  function entryMen(){
+    var row = serverEntry();
+    if (row && row.picks){
+      var men = row.picks.map(function(id){ return BY_ID[id]; }).filter(Boolean);
+      if (men.length) return men;
+    }
+    return (!state || state.submitted == null) ? [] : chanceAt(state.submitted).men;
+  }
+  function paintIn(res, lookingBack){
+    var c = { men: entryMen() };
+    var done = !!res;
+    $('b-in-back').hidden = !lookingBack;
+    var proj = D.projected(c);
+    $('in-week').textContent = POOL.season + ' week ' + POOL.week
+      + (done && !res.final ? ' · still being played' : '');
+    $('in-head').textContent = done ? 'How it went' : 'You are in';
+    $('in-lab').textContent = done ? 'Half PPR' : 'Projected';
+    var got = done ? scoreLineup(res, c.men) : proj;
+    $('in-proj').textContent = got.toFixed(1);
+
+    /* THE PROJECTION STAYS ON SCREEN NEXT TO THE REAL NUMBER, because a score on its own
+       says nothing. 71.4 is a good week or a bad one depending on what the board thought,
+       and the gap is the only thing on this page that tells a drafter whether the calls
+       they made off what the board could not see were the right ones. */
+    if (done){
+      var d = Math.round((got - proj) * 10) / 10;
+      $('in-vs').innerHTML = 'Projected <b>' + proj.toFixed(1) + '</b>. '
+        + (d === 0 ? 'Exactly that.'
+          : '<span class="' + (d > 0 ? 'up' : 'dn') + '">'
+            + (d > 0 ? '+' : '') + d.toFixed(1) + '</span>'
+            + (d > 0 ? ' better.' : ' short.'));
+    }
+    $('in-vs').hidden = !done;
+
+    var rows = '';
+    for (var k=0;k<c.men.length;k++){
+      var m = c.men[k];
+      var where = m.opp ? (m.home ? 'vs ' + m.opp : 'at ' + m.opp) : '';
+      if (!done){
+        rows += '<div class="rrow"><span class="rp ' + esc(m.position) + '">'
+          + esc(m.position) + '</span>'
+          + '<span class="rn">' + esc(m.name) + '</span>'
+          + '<span class="rc">' + esc(where) + '</span></div>';
+        continue;
+      }
+      var s = scoreOf(res, m.player_id);
+      /* A MAN WHO DID NOT PLAY GETS A SENTENCE, not a blank. Zero beside nothing reads as
+         a rendering fault; zero beside "did not play" is the outcome the drafter was being
+         asked to see coming, and it is most of what separates two lineups. */
+      var under = s.played ? (s.line || 'played, nothing to show')
+        : (res.final ? 'did not play' : 'not played yet');
+      rows += '<div class="rrow got"><span class="rp ' + esc(m.position) + '">'
+        + esc(m.position) + '</span>'
+        + '<span class="rn"><b>' + esc(m.name) + '</b>'
+        + '<s>' + esc(where) + (where ? ' · ' : '') + esc(under) + '</s></span>'
+        + '<span class="rs' + (s.half > 0 ? '' : ' zero') + '">'
+        + s.half.toFixed(1) + '</span></div>';
+    }
+    $('in-roster').innerHTML = rows;
+
+    /* "The week closes" was wrong about both halves. The week ENDS on Monday night, and
+       what happens at the Thursday kickoff is that entries stop. Shown in the reader's own
+       zone by toLocaleString, which is why no zone is named beside it. */
+    $('in-say').textContent = done
+      ? (res.final ? 'Week ' + POOL.week + ' is done. This is what your six scored.'
+        : res.played + ' of ' + res.games + ' games are in. This will move.')
+      : (locked() ? 'Week ' + POOL.week + ' has kicked off. Your lineup is in.'
+        : 'Your lineup is in. Entries close ' + lockWhen() + '.');
+    /* SAID PLAINLY RATHER THAN IMPLIED, and what it says changed the day the entry became
+       a row. It read "saved in this browser only" for as long as that was true. */
+    $('in-note').textContent = serverEntry()
+      ? 'Entered on your account. One entry a week, and it is final.'
+      : 'Saved in this browser. It is not on your account, so it will not count.';
+    show('s-in');
+  }
+
+  /* ---- where everybody came ----
+   *
+   * FOUR STATES AND THREE OF THEM SHIP BROKEN: unreachable, not locked yet, nobody has
+   * entered, and here is the board. Each needs its own sentence, because a blank box is
+   * how a feature teaches somebody it is broken. On a mode this new "nobody yet" is the
+   * COMMON case, so it says being first is the prize rather than apologising.
+   *
+   * THE PLACE IS ASKED SEPARATELY AND THAT IS NOT A SPARE REQUEST. The board is the top
+   * fifty; your place is counted against everybody. A page working the second out of the
+   * first would tell the two hundredth entrant the same thing as the fifty first.
+   */
+  function paintBoard(rows, place){
+    var wrap = $('in-boardwrap');
+    /* NO ROWS IS NOT AN EMPTY BOARD ON THIS SCREEN, IT IS A SHUT ONE, and the difference
+       matters because the two want opposite treatments. The server answers an empty list
+       for a week that has not locked, and once it has locked it answers every entry
+       including this reader's own. So on the entry screen, where the reader has by
+       definition entered, an empty answer can only mean the week is still open. A "nobody
+       yet" line here would be a sentence that cannot be true, printed at exactly the
+       moment it is most likely to be read. Null is the unreachable server, and it is the
+       same nothing: a board that will not draw costs nothing. */
+    if (!rows || !rows.length){ wrap.hidden = true; return; }
+    wrap.hidden = false;
+    var n = place && place.entries;
+    $('in-boardlab').textContent = 'This week'
+      + (n ? ' · ' + n + (n === 1 ? ' entry' : ' entries') : '');
+    var html = '', mine = false;
+    for (var i=0;i<rows.length;i++){
+      var r = rows[i];
+      if (r.is_me) mine = true;
+      html += '<div class="brow' + (r.is_me ? ' me' : '') + '">'
+        + '<span class="bp">' + r.place + '</span>'
+        + '<span class="bn">' + esc(r.display_name || 'Somebody') + '</span>'
+        + '<span class="bs">' + Number(r.score).toFixed(1) + '</span></div>';
+    }
+    /* Off the bottom of the fifty, and told so rather than left off their own board. */
+    if (!mine && place && place.place){
+      html += '<div class="brow gap">...</div>'
+        + '<div class="brow me"><span class="bp">' + place.place + '</span>'
+        + '<span class="bn">You</span>'
+        + '<span class="bs">' + Number(place.score).toFixed(1) + '</span></div>';
+    }
+    $('in-board').innerHTML = html;
+  }
+
+  /* The entry screen is opened once results may exist, so the fetch happens here rather
+     than at boot: a visitor who has not submitted anything never asks for a results file. */
+  function openIn(){
+    paintIn(null);
+    paintBoard(null);
+    /* THE BOARD IS ASKED EVERY TIME AND NOT CACHED, because it is the one thing on this
+       page that moves while somebody is looking at it: a Sunday afternoon reload is the
+       whole reason to come back. */
+    Promise.all([F.standings(POOL.season, POOL.week, 50),
+      F.myPlace(POOL.season, POOL.week)]).then(function(a){
+      if (a[0] && $('s-in').classList.contains('on')) paintBoard(a[0], a[1] || null);
+    });
+    resultsFor(POOL.season, POOL.week).then(function(res){
+      /* Only repaint if this screen is still the one showing. A slow answer landing after
+         somebody pressed Back would put the entry up over whatever they went to. */
+      if (res && $('s-in').classList.contains('on')) paintIn(res);
+    });
+  }
+
+  /* ---- home ---- */
+  function startChance(){
+    var i = -1;
+    for (var k=0;k<state.chances.length;k++){
+      if ((state.chances[k].ids||[]).length < D.SLOTS.length){ i = k; break; }
+    }
+    if (i < 0){
+      if (state.chances.length >= D.CHANCES){ toReview(); return; }
+      state.chances.push({ seed: D.newSeed(), ids: [] });
+      i = state.chances.length - 1;
+    }
+    cur = i;
+    save();
+    paintDraft();
+    show('s-draft');
+  }
+
+  function paintHome(){
+    var done = state.chances.filter(function(c){
+      return (c.ids||[]).length >= D.SLOTS.length; }).length;
+    $('home-week').textContent = POOL.season + ' week ' + POOL.week
+      + ' · ' + POOL.pool.length + ' men on the board';
+    $('home-lock').textContent = locked() ? 'Locked' : untilLock();
+    $('home-cap').textContent = money(D.CAP_MUSD);
+    $('b-draft').hidden = locked() || state.chances.length >= D.CHANCES
+      && done >= D.CHANCES;
+    $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + D.CHANCES : 'Start drafting';
+    $('b-review').hidden = !done;
+    $('home-note').textContent = locked()
+      ? 'Week ' + POOL.week + ' has kicked off. Nothing more can be submitted.'
+      : 'Draft as many as you like. One lineup goes in, on your account, and it is final.';
+    lastWeekCard();
+  }
+
+  /* ---- what you scored last week ----
+   *
+   * READ OFF THE PREVIOUS WEEK'S OWN KEY AND ITS OWN POOL, because the entry stores player
+   * ids and this week's board cannot name last week's men: a man on a bye, cut or traded is
+   * simply not in it, and six ids resolved against the wrong week would silently draw a
+   * four man lineup.
+   *
+   * ONE WEEK BACK AND NO FURTHER. This is the thing a player wants on the way in, not a
+   * history: a season of cards on the front page is a screen you scroll past to reach the
+   * draft, which is the one thing the page is for.
+   */
+  var LAST = null;
+  function lastWeekCard(){
+    var wk = POOL.week - 1;
+    if (wk < 1) return;
+    var prev = loadWeek(POOL.season, wk);
+    if (!prev || prev.submitted == null) return;
+    if (LAST){ drawLast(); return; }
+    Promise.all([
+      resultsFor(POOL.season, wk),
+      fetch('/football/data/weekly_' + POOL.season + '_w' + wk + '.json')
+        .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+    ]).then(function(got){
+      var res = got[0], pool = got[1];
+      if (!res || !pool) return;
+      var by = {};
+      for (var i=0;i<pool.pool.length;i++) by[pool.pool[i].player_id] = pool.pool[i];
+      var men = (prev.chances[prev.submitted].ids||[])
+        .map(function(id){ return by[id]; }).filter(Boolean);
+      if (men.length < D.SLOTS.length) return;
+      LAST = { week: wk, men: men, got: scoreLineup(res, men),
+        proj: Math.round(men.reduce(function(t,m){ return t + m.proj; }, 0) * 10) / 10,
+        res: res, final: res.final };
+      drawLast();
+    });
+  }
+  function drawLast(){
+    if (!LAST) return;
+    var d = Math.round((LAST.got - LAST.proj) * 10) / 10;
+    $('last-say').textContent = 'Week ' + LAST.week + (LAST.final ? '' : ', still playing');
+    $('last-sub').textContent = 'Projected ' + LAST.proj.toFixed(1) + '. '
+      + (d === 0 ? 'Exactly that.' : (d > 0 ? '+' : '') + d.toFixed(1)
+        + (d > 0 ? ' better.' : ' short.'));
+    $('last-pts').textContent = LAST.got.toFixed(1);
+    $('b-last').hidden = false;
+  }
+
+  $('b-draft').onclick = function(){ startChance(); };
+  $('b-review').onclick = function(){ toReview(); };
+  /* Tapping it opens the same scored screen the entry uses. It has to swap what `state` and
+     `POOL.week` mean for the duration, because paintIn reads both, and it puts them back on
+     the way out: two ways to draw one lineup is how the two come to disagree. */
+  $('b-last').onclick = function(){
+    if (!LAST) return;
+    var keepState = state, keepWeek = POOL.week;
+    state = loadWeek(POOL.season, LAST.week);
+    POOL.week = LAST.week;
+    var keepBy = BY_ID;
+    BY_ID = {};
+    for (var i=0;i<LAST.men.length;i++) BY_ID[LAST.men[i].player_id] = LAST.men[i];
+    paintIn(LAST.res, true);
+    state = keepState; POOL.week = keepWeek; BY_ID = keepBy;
+  };
+
+  /* ---- the gate ----
+   *
+   * TWO ANSWERS AND THEY ARE DIFFERENT SENTENCES. Signed out is a thing the reader can fix
+   * and not-on-the-list is not, and one message for both would tell half of them to go and
+   * do something that will not help. A board with four states ships broken in three of them
+   * is the lesson this is borrowed from.
+   */
+  function gate(who){
+    if (!ACCESS || typeof ACCESS.allowed !== 'function'){
+      $('shut-say').textContent = 'This page could not check whether it is open. '
+        + 'Reload, or try again later.';
+      show('s-shut'); return false;
+    }
+    if (ACCESS.LIVE) return true;
+    if (!who || !who.signedIn){
+      $('shut-say').textContent = 'Fantasy Challenge is being tested. Sign in on The '
+        + 'Perfect Season first, then come back.';
+      show('s-shut'); return false;
+    }
+    if (!ACCESS.allowed(who)){
+      $('shut-say').textContent = 'Fantasy Challenge is not open yet. It is being tested '
+        + 'with a handful of accounts first.';
+      show('s-shut'); return false;
+    }
+    return true;
+  }
+
+  /* THE ACCOUNT IS ASKED BEFORE THE BROWSER IS BELIEVED, which is what moving the entry to
+     a server is for. A row exists on a laptop that never drafted, in a private window, and
+     after clearing site data, and none of those can be known from here. So the boot waits
+     one round trip on the answer.
+     IT FAILS TO THE BROWSER'S OWN COPY rather than to nothing, because `mine()` answers
+     null for unreachable and false for "you have not entered": a bad network must not draw
+     the home screen over an entry somebody already made, and it must not invent one either.
+     The wait is the one place on this page a round trip is worth it, and only because the
+     alternative is showing a drafting screen to somebody who is already in. */
+  function begin(){
+    state = load();
+    if (!state || state.week !== POOL.week || state.season !== POOL.season){
+      state = { season: POOL.season, week: POOL.week, chances: [], pick: null,
+        submitted: null };
+    }
+    F.mine(POOL.season, POOL.week).then(function(row){
+      if (row) SERVER_IN = { week: POOL.week, row: row };
+      if (serverEntry() || (state.submitted != null && D.full(chanceAt(state.submitted)))){
+        openIn();
+        return;
+      }
+      paintHome();
+      show('s-home');
+    });
+  }
+
+  /* ---- boot ----
+   *
+   * THE WEEK IS READ, NEVER WRITTEN IN THIS FILE. fantasy_now.json says which week is live
+   * and the build writes it, so shipping a new week is one command and no page edit. A
+   * hand-written week number here is the class of thing this repo has been bitten by often
+   * enough to have a checker for.
+   */
+  function boot(){
+    fetch('/football/data/fantasy_now.json', { cache: 'no-cache' })
+      .then(function(r){ if(!r.ok) throw new Error('now'); return r.json(); })
+      .then(function(now){
+        return fetch('/football/data/' + now.file).then(function(r){
+          if(!r.ok) throw new Error('pool'); return r.json();
+        });
+      })
+      .then(function(p){
+        POOL = p;
+        for (var i=0;i<p.pool.length;i++) BY_ID[p.pool[i].player_id] = p.pool[i];
+        waitForAuth();
+      })
+      .catch(function(){
+        $('load-say').textContent = 'This week could not be loaded. Reload to try again.';
+      });
+  }
+
+  /* auth.js is deferred and answers nothing until getSession resolves, so the gate has to
+     wait for a change rather than read state() once. A page that asked immediately would
+     show every signed in tester the not-open screen for a beat and then correct itself,
+     which reads as being let in by accident. */
+  function waitForAuth(){
+    var A = window.PS_AUTH;
+    if (!A){
+      /* No supabase at all. Nobody resolves as a tester, which is the safe answer. */
+      if (gate(null)) begin();
+      return;
+    }
+    var went = false;
+    var go = function(who){
+      if (went) return;
+      went = true;
+      if (gate(who)) begin();
+    };
+    A.onChange(function(who){ if (who && who.ready) go(who); });
+    A.boot();
+    var now = A.state();
+    if (now && now.ready && now.signedIn) go(now);
+    /* And a backstop, because a blocked CDN means onChange never fires at all. */
+    setTimeout(function(){ go(window.PS_AUTH ? window.PS_AUTH.state() : null); }, 4000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else boot();
+})();
+</script>
+</body>
+</html>

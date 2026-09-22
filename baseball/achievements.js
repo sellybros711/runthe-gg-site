@@ -1,4 +1,4 @@
-/* Run The Diamond — achievements & streaks.
+/* Run The Diamond: achievements and streaks.
  *
  * Derive-everything design: the game persists only compact per-season rows;
  * every badge, streak, and career stat is recomputed from those rows on
@@ -10,7 +10,7 @@
  *   { ts, wins, losses, titleWon, madePlayoffs, seedLabel, isGOAT, beatRecord,
  *     rating, allTimeRank, chemPct, spend, respins, efficiency, archetype,
  *     era, picks:[{ i, s, t, slot, w }] }
- * Rows have holes — fields added over time — so tests treat missing as
+ * Rows have holes (fields added over time), so tests treat missing as
  * "unknown", never as a hard zero.
  */
 'use strict';
@@ -54,7 +54,7 @@ const CATALOGUE = [
     (c) => c.best.wins >= 110),
   A('tie_record', 'Immortal', 'Match the all-time record (116 wins).', 'legend', 'Winning',
     (c) => c.rows.some((r) => r.beatRecord)),
-  A('goat', 'Greatest of all time', 'Win 117+ games — the best ever.', 'legend', 'Winning',
+  A('goat', 'Greatest of all time', 'Win 117+ games, the best ever.', 'legend', 'Winning',
     (c) => c.rows.some((r) => r.isGOAT)),
   A('wildcard_title', 'Cinderella', 'Win it all as a wild card.', 'gold', 'Winning',
     (c) => c.rows.some((r) => r.titleWon && r.seedLabel === 'Wild card')),
@@ -70,10 +70,22 @@ const CATALOGUE = [
     (c) => c.bestRank != null && c.bestRank <= 10),
   A('rank_one', 'Greatest ever assembled', 'Build the #1 team of all time.', 'legend', 'The all-time list',
     (c) => c.bestRank != null && c.bestRank <= 1),
-  A('rating_90', 'Loaded', 'Field a team rated 90+.', 'silver', 'The all-time list',
+  // Thresholds follow what the rating MEANS, re-measured over 390 drafts after
+  // teamRating() was re-anchored on what a draft can actually produce. 80 is a
+  // roster that reaches October 97 times in a hundred and turns up in 16% of
+  // drafts; 90 wins 104 games, always plays in October, takes the title one year
+  // in five, and turns up in 1.3%.
+  //
+  // THEY MOVED BECAUSE THE SCALE DID, not because either was mistuned. On the
+  // old anchors nothing ever exceeded 71.4, so 55 and 70 were a silver and a
+  // legend; against a scale whose top is now reachable they would have been
+  // handed out for an ordinary draft. A badge is DERIVED from the rows the board
+  // keeps, so one left too loose cannot be tightened later without stripping it
+  // off everybody who already has it.
+  A('rating_loaded', 'Loaded', 'Field a team rated 80 or better.', 'silver', 'The all-time list',
+    (c) => c.best.rating >= 80),
+  A('rating_paper', 'Best on paper', 'Field a team rated 90 or better.', 'legend', 'The all-time list',
     (c) => c.best.rating >= 90),
-  A('rating_100', 'Perfect on paper', 'Field a team rated 100.', 'legend', 'The all-time list',
-    (c) => c.best.rating >= 100),
 
   // ── Roster craft ──
   A('efficient', 'Sharp scout', 'Draft at 90%+ efficiency.', 'silver', 'Roster craft',

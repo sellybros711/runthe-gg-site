@@ -36,7 +36,12 @@ HEAD = """/* THE SPRITE TABLE IS THE HANDOFF PACK, not the generator any more.
    EVERY CHARACTER COMES FROM ONE SOURCE. Half a roster in the new art and
    half in the old reads worse than either, and so does one character with a
    new idle and an old swing, because he changes species when he swings.
-   729 of the poses here are real drawn frames from the pack.
+   637 of the 1088 poses here are real drawn frames from the pack, 541 stand
+   on one of its stills, and 18 are a character the pack drew once.
+
+   A POSE MAY BE '@anotherpose'. Several poses are the same drawing by
+   construction, so the repeat is a reference and v2Frame resolves it before
+   decoding. Lossless, and it is 37.7% of the table.
 
    FIVE POSES THE PACK CANNOT DRAW STAND ON ITS STILLS. There is no rear
    view in the pack and no fielding art anywhere, so `back` and the two

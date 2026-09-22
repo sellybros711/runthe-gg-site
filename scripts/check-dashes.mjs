@@ -41,11 +41,14 @@ import { join, relative } from 'path';
    Commissioner mode included, so the list was the only thing missing. It was
    also the largest unguarded surface on the site, which is the wrong way round
    for the newest and least reviewed copy in the repo.
+   baseball took a clean first too: 57 across six files, almost all of which
+   wanted a colon, a full stop or a pair of parentheses.
    football and assets took a real clean first: 62 and 4. Twenty of the football
    ones were reachable by a player, including the Challenge Bowl share text and
    the <title> of the two pages a shared challenge link opens. The rest were
    comments, which this rule covers too. */
-const GUARDED = ['wrestling', 'hoops', 'globe', 'mythiball', 'golf', 'cfb', 'football', 'assets'];
+const GUARDED = ['wrestling', 'hoops', 'globe', 'mythiball', 'golf', 'cfb', 'football',
+  'assets', 'baseball'];
 const EXT = /\.(html|js|mjs|css|json|md|txt|svg)$/i;
 const SKIP = /(^|\/)(node_modules|\.git)(\/|$)/;
 

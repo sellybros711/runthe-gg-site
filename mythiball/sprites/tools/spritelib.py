@@ -29,8 +29,13 @@ def frames_of(path_or_img):
     return [a[:, i * FRAME:(i + 1) * FRAME, :] for i in range(a.shape[1] // FRAME)]
 
 
-def components(mask):
-    """Runs of True in `mask`, 8 connected, as (size, (x0,y0,x1,y1))."""
+def component_masks(mask):
+    """Every 8 connected blob in `mask`, as its own boolean mask.
+
+    ONE WALKER, because `components` used to do this walk itself and anything
+    else needing the blobs would have walked a second time, which is how two
+    answers to one question start disagreeing.
+    """
     h, w = mask.shape
     seen = np.zeros((h, w), dtype=bool)
     out = []
@@ -40,22 +45,138 @@ def components(mask):
                 continue
             q = deque([(sy, sx)])
             seen[sy, sx] = True
-            size = 0
-            y0 = y1 = sy
-            x0 = x1 = sx
+            m = np.zeros((h, w), dtype=bool)
             while q:
                 y, x = q.popleft()
-                size += 1
-                y0, y1 = min(y0, y), max(y1, y)
-                x0, x1 = min(x0, x), max(x1, x)
+                m[y, x] = True
                 for dy in (-1, 0, 1):
                     for dx in (-1, 0, 1):
                         ny, nx = y + dy, x + dx
                         if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not seen[ny, nx]:
                             seen[ny, nx] = True
                             q.append((ny, nx))
-            out.append((size, (x0, y0, x1, y1)))
+            out.append(m)
     return out
+
+
+def components(mask):
+    """Runs of True in `mask`, 8 connected, as (size, (x0,y0,x1,y1))."""
+    out = []
+    for m in component_masks(mask):
+        ys, xs = np.where(m)
+        out.append((int(m.sum()), (int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max()))))
+    return out
+
+
+# HOW CLEAR OF THE FIGURE A TOP OR BOTTOM BLOB HAS TO BE TO BE SOMEBODY ELSE.
+# Measured over every frame in the pack: of the 400 detached blobs sitting on
+# the top or bottom edge, 10 are within a pixel of the figure, NONE are 2 or 3
+# away, 10 are 4 to 6 away and 380 are 7 or more. So the threshold sits in a
+# band that is genuinely empty rather than on the last value that passes, and
+# the ten it keeps are the case it is written for: Paul Bunyan's boot in
+# `run1` and `run2` is drawn clear of his leg and is 123 pixels of his own
+# character.
+BLEED_GAP = 3
+
+
+def drop_edge_bleed(frame):
+    """Remove detached blobs on an edge: the NEIGHBOURING frame's drawing.
+
+    A strip is one image cut into 64px cells, and several characters are drawn
+    a little wider than their cell, so a wing, a bat or a foot from the frame
+    next door lands inside this one. On screen that is a blob floating beside
+    the character with nothing holding it up.
+
+    IT IS WHAT THE EDGE RULE WAS REALLY CATCHING. Refusing any frame with a
+    pixel in column 0 or 63 threw away 124 frames, and 101 of them were the
+    swing and pitch strips, whose middle frame is CONTACT and RELEASE: the two
+    most important drawings in the game, rejected because a bat reaches the
+    side of its own cell. Measured, 36 of those frames have nothing but bleed
+    on the edge, and every one of the rest is a whole figure that simply fills
+    its canvas.
+
+    THE CHARACTER IS THE LARGEST BLOB, always, so it is never what goes. A
+    ball drawn hard against the edge would be dropped with the bleed, which is
+    a few pixels against a frame of art.
+
+    IT ONLY EVER LOOKED AT THE SIDES, AND THE BLEED IS MOSTLY VERTICAL. The
+    docstring above says "cut into 64px cells" and every strip really is one
+    row of them, so a neighbour could only be left or right. That premise is
+    false one step earlier: the strips were themselves cut out of a TALLER
+    sheet, so a 64px cell catches the bottom of the figure above it or the top
+    of the one below. Opened by hand, `hermes_pitch` frame 2 is Mrs Claus with
+    her head clipped off at the top of the cell and the next Mrs Claus's white
+    hair intruding along the bottom.
+
+    Measured over the shipped table before this: of 558 detached blobs, **0**
+    survived on a side edge and 355 sat on the top or the bottom, because the
+    test was doing its job perfectly on the one axis it was given. What a
+    player saw was a pair of somebody else's shoes floating over Alice's head
+    and 278 pixels of another character lying at Hermes' feet. Nineteen of the
+    sixty eight carried one in a pose the clubhouse shows. Nothing could
+    report it: a stray blob is a valid drawing, every pose was present, and
+    every guard here asks whether a frame is its own art rather than whether
+    it is ONLY its own art.
+
+    AND THE EDGE WAS THE WRONG HALF OF THE RULE, WHICH TOOK A SECOND PASS.
+    Requiring the blob to TOUCH the top or the bottom catches the neighbour
+    that reached all the way in and misses the one the sheet cut short: a bar
+    of somebody's shoulder stopping two rows in, a hat, a shoe. 87 of those
+    survived the edge rule, all of them in the debris field at the head or the
+    foot of a cell, and the clubhouse still showed ten of them.
+
+    SO THE CLEARANCE IS THE WHOLE TEST NOW, above or below, edge or not. The
+    docstring's own warning about eating a ball off a bat is what the clearance
+    answers and the edge never did: a ball, a falling leaf or a prop is drawn
+    WITH the figure and overlaps its rows, so it has no clearance to be dropped
+    for. All 87 were rendered and looked at one at a time before this changed,
+    which is the only way this question has ever been settled here. Not one is
+    art. The 203 blobs that overlap the figure are untouched and are where the
+    leaves and the ball live.
+
+    A TOP OR BOTTOM BLOB NEEDS A CLEARANCE AND A SIDE ONE DOES NOT. Sideways,
+    the neighbour is past the cell wall and a character's own arm reaches the
+    edge attached to the character, so touching the edge is the whole of it.
+    Vertically the figure STANDS on the bottom edge, so a foot drawn clear of
+    the leg is a detached blob on that edge and is not bleed. See BLEED_GAP.
+    """
+    op = frame[:, :, 3] > 0
+    if not op.any():
+        return frame
+    blobs = component_masks(op)
+    if len(blobs) < 2:
+        return frame
+    main = max(blobs, key=lambda m: m.sum())
+    mys = np.where(main.any(axis=1))[0]
+    mtop, mbot = int(mys.min()), int(mys.max())
+    out = np.array(frame, copy=True)
+    for m in blobs:
+        if m is main:
+            continue
+        if m[:, 0].any() or m[:, -1].any():
+            out[m] = 0
+            continue
+        ys = np.where(m.any(axis=1))[0]
+        clear = max(int(ys.min()) - mbot, mtop - int(ys.max()))
+        if clear >= BLEED_GAP:
+            out[m] = 0
+    return out
+
+
+def edge_run(frame):
+    """The longest unbroken run of drawing down either side edge.
+
+    This is what tells a figure CUT OFF by the canvas from one that reaches
+    it. Call it after drop_edge_bleed, or it measures the neighbour.
+    """
+    op = frame[:, :, 3] > 0
+    best = 0
+    for col in (op[:, 0], op[:, -1]):
+        run = 0
+        for v in col:
+            run = run + 1 if v else 0
+            best = max(best, run)
+    return best
 
 
 def _border_seeds(h, w):

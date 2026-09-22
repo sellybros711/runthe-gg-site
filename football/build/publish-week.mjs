@@ -1,0 +1,164 @@
+/* THE SERVER'S COPY OF A WEEK, AS SQL ON STDOUT.
+ *
+ *   node football/build/publish-week.mjs --season 2026 --week 3            the board
+ *   node football/build/publish-week.mjs --season 2026 --week 3 --results  what it scored
+ *   node football/build/publish-week.mjs --season 2026 --week 3 | psql "$SUPABASE_DB_URL"
+ *
+ * `supabase/109_fantasy_challenge.sql` holds the week, the prices and the results, and the
+ * reason it holds them is in that file's header: the client sends six ids and nothing else,
+ * so the cap, the lock, the shape and whether a man was even on the board are all answered
+ * from rows rather than from anything a page said. This is what puts the rows there.
+ *
+ * ─── IT EMITS SQL RATHER THAN CONNECTING ─────────────────────────────────────────────
+ *
+ * The workflow already has `psql` and `SUPABASE_DB_URL`, which is how every other Supabase
+ * job on this repo reaches the database, so a client library here would be a second way in
+ * and a dependency this build does not otherwise have. Text on stdout is also the version
+ * somebody can READ before it runs, and paste by hand on a week the workflow missed.
+ *
+ * ─── ONE TRANSACTION, WHICH IS WHAT MAKES THE ORDER NOT MATTER ───────────────────────
+ *
+ * The week row is what OPENS entries, and a week open with no prices refuses every lineup
+ * as "somebody who is not on this week's board", which is a true sentence about the wrong
+ * thing. The week is written FIRST because the prices carry a foreign key to it, so the
+ * other order simply fails; what stops the gap being reachable is the transaction, not the
+ * order. A publish that dies half way leaves the week exactly as shut as it was.
+ *
+ * ─── THE CAP AND THE SLOTS COME OFF THE ENGINE, NOT OUT OF THIS FILE ─────────────────
+ *
+ * `draft.js` is what the page drafts against, so it is what an entry has to be legal under.
+ * `108_hoops_leaderboard.sql` writes its engine's constants out as SQL literals and its own
+ * header records the cost of that drift; here the week row carries them and there is one
+ * copy. Change `CAP_MUSD` and the next publish moves the server with the page.
+ *
+ * ─── RE-RUNNABLE, BECAUSE A WEEK GETS REBUILT ────────────────────────────────────────
+ *
+ * The Tuesday job runs again if it is re-dispatched, a stat correction re-scores a week, and
+ * a board is rebuilt when a club's Sunday changes. Every statement is an upsert, so
+ * publishing twice is publishing once. What it must never do is DELETE a price that entries
+ * already name, so prices are added and updated and never removed: an entry stores ids, and
+ * a price row that vanished would make a submitted lineup unreadable.
+ */
+
+import fs from 'fs';
+import path from 'path';
+import { DATA_DIR } from './lib.mjs';
+
+/* Loaded rather than copied. The file is a browser IIFE that also does module.exports. */
+const DRAFT = (await import('../fantasy/draft.js')).default
+  || (await import('../fantasy/draft.js'));
+
+/** Postgres string literal. Ids and positions are nflverse's and never carry a quote,
+ *  which is exactly why this is here rather than trusted. */
+const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
+/** A money or points figure, to two places, with anything non-finite refused loudly. */
+const n2 = (v, what) => {
+  const x = Number(v);
+  if (!Number.isFinite(x)) throw new Error(`${what} is not a number: ${v}`);
+  return x.toFixed(2);
+};
+
+export function poolSQL(pool, { cap, slots }) {
+  const { season, week } = pool;
+  if (!Number.isFinite(season) || !Number.isFinite(week)) {
+    throw new Error('the pool file has no season or week');
+  }
+  if (!pool.locks_at || Number.isNaN(Date.parse(pool.locks_at))) {
+    throw new Error('the pool file has no lock time');
+  }
+  if (!Array.isArray(pool.pool) || !pool.pool.length) {
+    throw new Error('the pool file has no players in it');
+  }
+  /* A pool with nobody at one of the slots would publish a week no lineup can be legal in,
+     and the refusal a drafter would meet is "somebody who is not on this week's board",
+     which says nothing about the real fault. */
+  for (const pos of new Set(slots)) {
+    const have = pool.pool.filter((m) => m.position === pos).length;
+    const want = slots.filter((s) => s === pos).length;
+    if (have < want) {
+      throw new Error(`the board has ${have} ${pos} and a lineup needs ${want}`);
+    }
+  }
+
+  const out = [];
+  out.push('begin;');
+  out.push('');
+  out.push(`-- ${season} week ${week}: ${pool.pool.length} men, locks ${pool.locks_at}`);
+  /* The prices below reference this row, so it has to exist before them. On a REBUILD it
+     already does and this restates it, which is right: the lock can move if the schedule
+     moved, and the men and their prices are the same board being restated under it. */
+  out.push(`insert into public.fantasy_weeks (season, week, locks_at, cap_musd, slots)`);
+  out.push(`  values (${season}, ${week}, ${q(pool.locks_at)}::timestamptz, `
+    + `${n2(cap, 'the cap')}, array[${slots.map(q).join(',')}]::text[])`);
+  out.push(`  on conflict (season, week) do update set`);
+  out.push(`    locks_at = excluded.locks_at, cap_musd = excluded.cap_musd,`);
+  out.push(`    slots = excluded.slots, built_at = now();`);
+  out.push('');
+
+  const vals = pool.pool.map((m) => {
+    if (!m.player_id || !m.position) throw new Error(`a row has no id or position: ${m.name}`);
+    return `  (${season},${week},${q(m.player_id)},${q(m.position)},`
+      + `${n2(m.price_musd, m.name + "'s price")},${n2(m.proj, m.name + "'s projection")})`;
+  });
+  out.push('insert into public.fantasy_prices '
+    + '(season, week, player_id, pos, price_musd, proj) values');
+  out.push(vals.join(',\n'));
+  out.push('  on conflict (season, week, player_id) do update set');
+  out.push('    pos = excluded.pos, price_musd = excluded.price_musd, proj = excluded.proj;');
+  out.push('');
+  out.push('commit;');
+  return out.join('\n') + '\n';
+}
+
+export function resultsSQL(res) {
+  const { season, week } = res;
+  const ids = Object.keys(res.scores || {});
+  if (!ids.length) throw new Error('that results file scored nobody');
+
+  const out = [];
+  out.push('begin;');
+  out.push('');
+  out.push(`-- ${season} week ${week}: ${ids.length} men with a row, `
+    + `${res.played} of ${res.games} games`);
+  /* A PARTIAL WEEK IS PUBLISHED AND NOT MARKED SCORED. The build refuses an unfinished week
+     unless asked twice, and when it is asked twice the numbers are real and climbing: the
+     board should show them, and `scored_at` should stay null so every screen goes on saying
+     the week is still being played. */
+  out.push('insert into public.fantasy_results (season, week, player_id, half_ppr) values');
+  out.push(ids.map((id) => `  (${season},${week},${q(id)},`
+    + `${n2(res.scores[id][0], id + "'s points")})`).join(',\n'));
+  out.push('  on conflict (season, week, player_id) do update set '
+    + 'half_ppr = excluded.half_ppr;');
+  out.push('');
+  out.push(`update public.fantasy_weeks set scored_at = `
+    + `${res.final ? 'now()' : 'null'} where season = ${season} and week = ${week};`);
+  out.push('');
+  out.push('commit;');
+  return out.join('\n') + '\n';
+}
+
+/* ─── cli ──────────────────────────────────────────────────────────────────────────── */
+
+const arg = (flag, fallback) => {
+  const i = process.argv.indexOf(flag);
+  return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
+};
+
+if (process.argv[1] && process.argv[1].endsWith('publish-week.mjs')) {
+  const season = Number(arg('--season', '2026'));
+  const week = Number(arg('--week', '0'));
+  const results = process.argv.includes('--results');
+  const name = results ? `results_${season}_w${week}.json` : `weekly_${season}_w${week}.json`;
+  const f = path.join(DATA_DIR, name);
+  if (!fs.existsSync(f)) {
+    /* A MISSING FILE IS AN ERROR AND NOT A QUIET NOTHING. Week one has no week zero to
+       score, and the workflow answers that by not asking rather than by this exiting 0:
+       a publisher that shrugged would let a real build failure through as a green run. */
+    console.error(`${name} does not exist. Build it first.`);
+    process.exit(1);
+  }
+  const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+  process.stdout.write(results
+    ? resultsSQL(j)
+    : poolSQL(j, { cap: DRAFT.CAP_MUSD, slots: DRAFT.SLOTS }));
+}
