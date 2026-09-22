@@ -306,6 +306,12 @@ h1,h2,h3{margin:0}
   letter-spacing:.01em;padding-bottom:2px}
 .tile .sn{display:block;margin-top:3px;font-size:10.5px;color:var(--dim-2);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The draft screen is where a player reads a WAR figure, so it is where the
+   source belongs. how-to-play says it too, and that is a page nobody opens
+   mid-draft. Naming FanGraphs is the half that does the work: a reader who
+   looks a number up and finds a different one needs to know there are two
+   real answers and which one this is. */
+.srcnote{margin:12px 0 0;font-size:10.5px;line-height:1.45;color:var(--dim-2);text-align:center}
 .tile .tf{margin-top:auto;padding-top:7px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 .tile .pts{display:flex;align-items:baseline;gap:4px}
 .tile .pts b{font-family:var(--fn);font-size:19px;font-weight:600;line-height:1}
@@ -1002,6 +1008,7 @@ h1,h2,h3{margin:0}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .of-side .mt{display:block;font-family:var(--fn);font-size:10px;font-weight:700;color:var(--dim-2);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.of-side .mt.hf{color:var(--dim);opacity:.8}
 .of-side.out .nm{color:var(--dim)}
 .of-arrow{flex:0 0 auto;font-family:var(--fn);font-size:15px;font-weight:800;color:var(--orange)}
 .of-gain{font-family:var(--fn);font-size:11px;font-weight:800;color:var(--green)}
@@ -1316,6 +1323,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div id="tabs" class="tabs"></div>
   <div id="sortrow" class="sortrow"></div>
   <div id="opts" class="opts"></div>
+  <p class="srcnote">WAR is Baseball-Reference's, 1901 to 2025. FanGraphs rates the same season differently.</p>
 
   <div style="margin-top:14px"><button class="btn ghost sm" id="b-quit">Quit this run</button></div>
 </div>
@@ -1586,8 +1594,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=19"></script>
-<script src="run.js?v=16"></script>
+<script src="engine.js?v=20"></script>
+<script src="run.js?v=17"></script>
 <script src="achievements.js?v=4"></script>
 <script src="board.js?v=1"></script>
 <script>
@@ -1753,7 +1761,13 @@ function posPaint(p){const c=posColor(p);return'background:linear-gradient(160de
 
 function tcPlate(team,season){
   const tc=E.teamColors(team);
-  return'<span class="tc" style="--tcbg:'+tc[0]+';--tcon:#fff">'+esc(team)+'</span>';
+  /* Through clubTag like every other club on screen, though this chip is the
+     one place it cannot currently fire: every pool a player draws from filters
+     TOT out (three separate guards, in indexData, slotPool and the board), so
+     no multi-club row reaches a lineup card. It goes through anyway because the
+     chip is sized for a three letter code and the day one of those filters
+     changes is not the day to discover that. */
+  return'<span class="tc" style="--tcbg:'+tc[0]+';--tcon:#fff">'+esc(clubTag(team))+'</span>';
 }
 
 /* ─── diamond coordinates ─── */
@@ -1842,9 +1856,38 @@ const TEAM_NAMES={
   BBS:'Baltimore Black Sox',DS:'Detroit Stars',SLS:'St. Louis Stars',
   SLG:'St. Louis Giants',ABC:'Indianapolis ABCs',AC:'Bacharach Giants',
   HBG:'Harrisburg Giants',HIL:'Hilldale Club',MRM:'Monroe Monarchs',
-  TOT:'Multiple Teams',
+  /* Not a club. See clubTag below: it is the only reader, and the words are
+     kept here so the four surfaces that print it cannot end up with four
+     spellings. Short because the tightest of those four is a 10px nowrap
+     field about 28 characters wide, and a longer phrase truncates the WAR
+     figure off the end of a trade offer, which is the number the offer is
+     about. */
+  TOT:'2+ clubs',
 };
 function teamFullName(code){return TEAM_NAMES[code]||code;}
+
+/* Every other club code on a tile is a club a reader knows. TOT is not one:
+   it is Baseball-Reference's combined row for a man who played for more than
+   one club that year, and the WAR on it is his whole season, which is what
+   their own total line shows. So the number needs no apology and the CODE
+   does. One spelling, read off TEAM_NAMES, or the tile and the squad screen
+   would end up calling it two things. */
+function clubTag(code){return code==='TOT'?TEAM_NAMES.TOT:code;}
+
+/* Which half of a two-way season a row is, in words, once. Its own function
+   because the trade offer cannot put it on the same line as everything else
+   (see below) and two layouts must not become two spellings. */
+function halfTag(p){return p.half?p.half+' only':'';}
+
+/* Season, club, and which half of a two-way season this row is. */
+function seasonLine(p){
+  const h=halfTag(p);
+  return p.s+' '+esc(clubTag(p.t))+(h?' &middot; '+h:'');
+}
+function seasonText(p){
+  const h=halfTag(p);
+  return p.s+' '+clubTag(p.t)+(h?' · '+h:'');
+}
 
 function dressInTeamColors(team){
   return box=>{
@@ -2005,7 +2048,7 @@ function rosterList(host,opts){
     div.innerHTML='<span class="rpos" style="'+posPaint(slot)+'">'+esc(slot)+'</span>'+
       '<span class="rname">'+esc(r.p.n)+'</span>'+
       chemBadge(perChem[r.i],'sm')+
-      '<span class="rteam">'+r.p.s+' '+esc(r.p.t)+'</span>'+
+      '<span class="rteam">'+seasonLine(r.p)+'</span>'+
       (o.price?'<span class="rprice">'+M(r.p.p)+'</span>':'')+
       '<span class="rwar">'+warHtml(r.p.w)+'</span>';
     wrap.appendChild(div);
@@ -2096,7 +2139,7 @@ function drawStaffBoard(el,live){
       return '<div class="sb-card filled" style="'+posPaint(sl.replace(/[0-9]/g,'')==='SU'?'RP':sl)+'">'+
         '<span class="sb-slot">'+esc(sl)+'</span>'+
         '<span class="sb-name">'+esc(lastName(p.n))+'</span>'+
-        '<span class="sb-meta">'+p.s+' '+esc(p.t)+'</span>'+
+        '<span class="sb-meta">'+seasonLine(p)+'</span>'+
         '<span class="sb-war">'+p.w.toFixed(1)+'</span>'+
         (ce&&ce.keyPoints>0?'<span class="sb-chem" style="background:'+
           chemColor(ce.top&&ce.top.type)+'">&#9889;'+chemNum(ce.keyPoints)+'</span>':'')+
@@ -2935,7 +2978,7 @@ function optTile(r,i){
     (premium?'<span class="scarce">&#9733; Scarce spot</span>':'')+
     '<span class="pr">'+(block?esc(reason):M(p.p))+'</span></div>'+
     '<div class="nm">'+esc(p.n)+'</div>'+
-    '<div class="sn">'+p.s+' '+esc(p.t)+(destSlot?' &rarr; '+destSlot:'')+'</div>'+
+    '<div class="sn">'+seasonLine(p)+(destSlot?' &rarr; '+destSlot:'')+'</div>'+
     '<div class="tf"><div class="pts"><b>'+warHtml(p.w)+'</b><i>WAR</i></div>'+chemHtml+'</div>'+
     '</button>';
 }
@@ -2987,7 +3030,7 @@ function signPlayer(p,slotIdx){
 }
 function openPosChooser(p,choices){
   $('pos-title').textContent=lastName(p.n);
-  $('pos-sub').textContent='Where do you want to play '+p.n+'? ('+p.s+' '+p.t+')';
+  $('pos-sub').textContent='Where do you want to play '+p.n+'? ('+seasonText(p)+')';
   $('pos-opts').innerHTML=choices.map((ch,i)=>{
     const note=ch.base==='DH'?'Designated hitter':ch.natural?'Primary position':
       (p.r==='p'?'Pitcher':'Also played here');
@@ -3158,6 +3201,19 @@ function startTrade(){
   showSquad();
 }
 
+/* One side of a swap. This is the narrowest club line on the site, about 152px
+   of a 10px nowrap field, and it carries a WAR figure as well, so all four facts
+   do not fit on it: measured, `2023 LAA · pitching only · 3.8 WAR` truncates and
+   what it eats is the number the offer is about. So the two-way note drops to a
+   second line, and ONLY when there is one, which is about one offer in five
+   hundred. Same words as everywhere else, from halfTag, because two layouts of
+   one fact is how two spellings start. */
+function offerMeta(p){
+  const h=halfTag(p);
+  return '<span class="mt">'+p.s+' '+esc(clubTag(p.t))+' &middot; '+p.w.toFixed(1)+' WAR</span>'+
+    (h?'<span class="mt hf">'+h+'</span>':'');
+}
+
 function askTrade(offers,onDone){
   const w=offers[0].window;
   $('trade-eyebrow').textContent='Deadline '+w+' of '+E_TRADE_WINDOWS();
@@ -3174,11 +3230,9 @@ function askTrade(offers,onDone){
       esc(o.slot)+'</span><span class="of-gain">+'+gain.toFixed(1)+' WAR</span>'+
       '<span class="of-cost'+(o.cost<=0?' free':'')+'">'+(o.cost>0?'costs '+M(o.cost):'frees '+M(-o.cost))+'</span></div>'+
       '<div class="of-swap">'+
-        '<span class="of-side out"><span class="nm">'+esc(o.out.n)+'</span>'+
-          '<span class="mt">'+o.out.s+' '+esc(o.out.t)+' &middot; '+o.out.w.toFixed(1)+' WAR</span></span>'+
+        '<span class="of-side out"><span class="nm">'+esc(o.out.n)+'</span>'+offerMeta(o.out)+'</span>'+
         '<span class="of-arrow">&rarr;</span>'+
-        '<span class="of-side"><span class="nm">'+esc(o.in.n)+'</span>'+
-          '<span class="mt">'+o.in.s+' '+esc(o.in.t)+' &middot; '+o.in.w.toFixed(1)+' WAR</span></span>'+
+        '<span class="of-side"><span class="nm">'+esc(o.in.n)+'</span>'+offerMeta(o.in)+'</span>'+
       '</div>';
     btn.addEventListener('click',()=>{
       try{R.acceptTrade(RUN,DATA,o);}catch(e){console.error(e);return;}
@@ -4174,7 +4228,7 @@ function drawShareCard(o){
     let nm=r.p.n;if(nm.length>20)nm=nm.slice(0,19)+'…';
     c.fillText(nm,x+118,y+38);
     c.fillStyle='#8a7e6e';c.font='600 22px Archivo, sans-serif';
-    c.fillText(r.p.s+' '+r.p.t,x+118,y+64);
+    c.fillText(seasonText(r.p),x+118,y+64);
     c.textAlign='right';c.fillStyle='#1a1a1a';c.font='800 28px Archivo, sans-serif';
     c.fillText(r.p.w.toFixed(1),x+colw-18,y+50);c.textAlign='left';
   });

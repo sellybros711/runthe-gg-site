@@ -310,6 +310,7 @@ function indexData(players) {
   const byTeamSeason = {};
   const teamSeasons = [];
   const allPlayers = {};
+  const sideSeen = {};
 
   for (const p of players) {
     const tsId = teamSeasonId(p.t, p.s);
@@ -319,8 +320,22 @@ function indexData(players) {
     const key = `${p.i}|${p.s}|${p.r}`;
     allPlayers[key] = p;
 
+    const sk = `${p.i}|${p.s}`;
+    sideSeen[sk] = (!sideSeen[sk] || sideSeen[sk] === p.r) ? p.r : 'both';
+
     if (!byTeamSeason[tsId]) byTeamSeason[tsId] = [];
     byTeamSeason[tsId].push(p);
+  }
+
+  /* A two-way season arrives as two rows, one per side of the ball, because a
+   * draft has to put a man in one slot. So the WAR on each row is HALF of what
+   * a lookup shows for that season: Ohtani 2023 is 6.11 as a batter and 3.80 as
+   * a pitcher against Baseball-Reference's combined figure. 42 seasons in the
+   * pool are like this, and two of them are Ruth and Ohtani, so the row carries
+   * which half it is and the page says so. Marked here rather than at build
+   * time because it is derivable from the pool and a second copy would drift. */
+  for (const p of players) {
+    if (sideSeen[`${p.i}|${p.s}`] === 'both') p.half = p.r === 'b' ? 'batting' : 'pitching';
   }
 
   // Only real rosters are spinnable: skip TOT (Baseball-Reference's

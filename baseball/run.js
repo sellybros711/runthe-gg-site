@@ -764,8 +764,11 @@ function tradeOffers(run, data, gameIndex) {
     const got = cands[Math.floor(rng() * cands.length)];
     offers.push({
       window: n, gameIndex, slot: own.slot, rosterIdx: own.i,
-      out: { n: own.p.n, w: own.p.w, p: own.p.p, s: own.p.s, t: own.p.t },
-      in: { n: got.n, w: got.w, p: got.p, s: got.s, t: got.t },
+      /* `half` rides along because an offer is a flat projection rather than
+       * the player row, and without it a two-way season's WAR reads on this
+       * screen as the man's whole year when it is one side of his ball. */
+      out: { n: own.p.n, w: own.p.w, p: own.p.p, s: own.p.s, t: own.p.t, half: own.p.half },
+      in: { n: got.n, w: got.w, p: got.p, s: got.s, t: got.t, half: got.half },
       cost: money(got.p - own.p.p),
       key: pkey(got),
     });

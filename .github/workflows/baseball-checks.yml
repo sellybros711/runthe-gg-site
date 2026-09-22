@@ -52,3 +52,12 @@ jobs:
       # sides of the World Series renders perfectly, which is why this exists.
       - name: The playoff bracket
         run: node baseball/check-bracket.mjs 150
+
+      # What a row SAYS it is. A two-way season is two rows, so each one's WAR
+      # is half of what a lookup returns; TOT is not a club; and the WAR is
+      # bWAR rather than fWAR. None of that throws and none of it looks wrong,
+      # so the only symptom is a player checking a number and finding a
+      # different one. Also asserts the coverage: a new surface printing a raw
+      # club code is how the labels come back.
+      - name: What a player-season says it is
+        run: node baseball/check-labels.mjs

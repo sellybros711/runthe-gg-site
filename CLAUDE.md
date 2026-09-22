@@ -5755,7 +5755,79 @@ so **read the cache-busting section above before editing any of them**.
 ```
 node baseball/check-atbats.mjs    the at-bat simulator, against real brackets
 node baseball/check-bracket.mjs   the playoff field, against real runs
+node baseball/check-labels.mjs    what a player-season row says it is
 ```
+
+### The WAR is Baseball-Reference's, and the runbook said otherwise for months
+
+`baseball/data/players.json` carries **bWAR and nothing else**, 44,344
+player-seasons from 1901 to 2025, off the bulk `war_daily_bat.txt` and
+`war_daily_pitch.txt` files. Positions and closer flags are Lahman, joined on
+`bbrefID`.
+
+**`DATA_RUNBOOK.md` described a 50/50 FanGraphs blend that never ran.**
+`build_positions.py` wraps the FanGraphs fetch in a try/except that prints
+`Skipping fWAR blend` and falls through to bWAR-only on a 403, which is what
+happened. Nothing failed, because a bWAR-only pool is a perfectly good pool: the
+only symptom was a document describing a number the game does not have, which is
+the dangerous direction, since the next person explains a mismatch with it.
+Checked on the seasons where the sources diverge, every shipped row is bWAR
+(Bonds 2001 ships 11.86 against bWAR 11.9, fWAR 12.5 and a blend of 12.2).
+
+**Those reference figures were RECALLED, not fetched**, and that is the one soft
+spot in this section. Both baseball-reference.com and fangraphs.com are refused
+by the sandbox's egress proxy, the same split `hoops/` documents, so nothing here
+can verify a single number against its source. What IS solid is the structural
+half: the blend is skipped in an exception handler, and fifteen spot-checked
+seasons all land on bWAR rather than on a blend. **Ted Williams 1941 comes
+through at 10.36 against a remembered 10.6** and is worth re-checking on a
+machine with a network. If that gap is real it is a stale pull rather than a
+wrong source, and the fix is re-running `fetch_inputs.py`.
+
+**Leave it on bWAR.** A blend matches NEITHER published source, so it turns a
+number a player can check into one nobody can, and "where did you get this"
+stops having an answer. The draft screen names the source for the same reason,
+and names FanGraphs too, because a reader who finds a different number needs to
+know there are two real answers rather than one wrong one.
+
+Reported by a player who looked five up and got five different numbers. Four
+things make that happen, and three of them are now labelled:
+
+- **fWAR against bWAR**, which is most of it, and is a source choice rather
+  than a defect.
+- **A two-way season is two rows**, one per side of the ball, because a draft
+  has to put a man in one slot. So each row's WAR is HALF the season: Ohtani
+  2023 is 6.11 batting and 3.80 pitching. 42 seasons in the pool, and two of
+  them are Ruth and Ohtani, so the row count is misleading about how often it is
+  seen. `indexData` marks the halves (derived from the pool, never stored, or it
+  is a second copy that drifts) and every surface says which half it is.
+- **TOT is not a club.** It is Baseball-Reference's combined row for a man who
+  played for more than one club that year. `clubTag` renders it as words.
+  **This is belt and braces today and the guard says so**: three separate
+  filters keep TOT off every board (`indexData`, `slotPool`, and the board's own
+  draw), so no multi-club row is reachable, which `check-labels.mjs` asserts as
+  a fact rather than a requirement. The day one of those filters changes is not
+  the day to find out the chip is sized for three letters.
+- **The pitcher price is innings-normalized and the WAR shown is not.** Still
+  open. See below.
+
+**What TOT actually costs is not a label, it is 2,939 missing seasons.** The
+build collapses mid-season stints to one row, so a traded player has no
+draftable row for that year at all: Rickey Henderson's 1989, Tom Seaver's 1977
+and Bartolo Colón's 2002 are simply absent, 33 of them at 6.0 WAR or better,
+6.6% of the pool. Splitting them back out needs a re-fetch (the raw files are
+gitignored and both WAR sources are blocked from the sandbox) and it is a design
+question as well: a half-season at a fraction of the price is a draft-economy
+change, not a display one.
+
+**`w` is the raw figure and `p` is not.** For a starter,
+`price = 1.5 * (w * min(1, 210/ip))^1.6`, so 3,959 rows (32% of starters) carry
+a price computed off a discounted WAR, down to a factor of 0.45 for Ed Walsh's
+464-inning 1908. That reproduces on 44,267 of 44,344 rows from `w` and `ip`
+alone, the 77 misses being a single 0.1 rounding step, so **the page can recompute
+the discount without a data rebuild**. Do not close the gap by pricing off the
+raw WAR: Walsh goes from $17.6M to about $62M and every number in the balance
+table below needs re-measuring.
 
 ### Two ratings, two jobs, and they must not be merged
 
