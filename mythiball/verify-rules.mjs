@@ -1515,12 +1515,26 @@ async function main() {
                  catTop: P.catY - 40 * P.catSc,
                  catOnPlate: hits(cat, plate), catOnZone: hits(cat, zone),
                  lefties: L, steady: L === L2, roster: ROSTER.length,
+                 headRoom: (P.zy - P.zh) - (P.batY - 40 * P.batSc),
                  leftBoxGap: (2 * P.cx - P.batX - 16 * P.batSc) - (P.zx + P.zw) };
       });
       ok(z.boxH < z.batH, 'the zone is shorter than the batter',
          `zone ${z.boxH} vs batter ${z.batH}`);
       ok(z.boxTop > z.batTop, 'and starts below the top of his head',
          `zone top ${z.boxTop}, batter top ${z.batTop}`);
+      /* AND BOTH OF THOSE HAVE ROOM, WHICH IS A SEPARATE CLAIM FROM PASSING.
+         These two bound the batter's size and his distance from the plate
+         from opposite sides, and they close on each other: the head rule
+         wants him BIGGER (40 * batSc > 175) and the mirrored box wants him
+         SMALLER the nearer he stands. Shrinking him to 4.4 at 356 satisfies
+         both and clears the first by one logical pixel and misses the second
+         by 0.4, which is the last value that passes rather than the first
+         with room. Eight is about a quarter of what the shipped pair carries
+         on the tighter of the two, so it fails a frontier and never a
+         reasonable scene. */
+      ok(z.headRoom >= 8 && z.leftBoxGap >= 8,
+         'and both of those bounds have room left in them',
+         `head ${z.headRoom.toFixed(1)}, mirrored box ${z.leftBoxGap.toFixed(1)}`);
       ok(z.boxBot < z.catTop, 'and ends above the catcher\'s crown',
          `zone bottom ${z.boxBot}, catcher top ${z.catTop}`);
       ok(!z.catOnPlate, 'the catcher does not cover home plate', JSON.stringify(z));
