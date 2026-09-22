@@ -4332,6 +4332,62 @@ make the scale larger and the crop NARROWER: at 140 blocks the phone would show 
 across, which is the width of the batter alone. The sky is what buys the
 horizontal room.
 
+##### And then the focus moved to the plate, because the whole view read as angled
+
+Reported next, from the same phone: **why is this angled.** It was.
+
+**Everything in this scene radiates from home**: the base paths, both foul lines,
+the batter's boxes. So where the plate sits across the frame is what decides
+whether the picture reads square or oblique, and it sat at **21%**. One foul line
+swept across the entire frame, the other was off it, and the origin they both
+point at was jammed against the left edge.
+
+596 was the midpoint of the zone and the batter TOGETHER, chosen to keep all of
+him in frame. The focus is the **zone itself** now (488 is `zx`), so the plate
+lands at 48% and the foul lines are symmetric about it.
+
+**IT IS A PICK AND NOT A TUNING VALUE**, because the two cannot both be had.
+Rendered at four framings and looked at:
+
+| focus | plate at | zone spans | least visible batter |
+|---|---|---|---|
+| 596 | 21% | 10-36% | 94.9% |
+| 545 | 32% | 21-47% | 83.2% |
+| 505 | 43% | 32-58% | 64.5% |
+| **488** | **48%** | **37-63%** | **55.9%** |
+
+The arithmetic underneath: a portrait phone shows 117 of the world's 320 blocks,
+the batter's sprite is 78 of them, and he has to stand clear of a 31 block zone.
+Holding the plate axis AND all of him needs **183 blocks**. No framing does both.
+**The playtester was shown all four and chose square.**
+
+**What is cropped is always his BACK**, the edge facing away from the plate, so
+his swing and the bat's whole arc are in frame at every setting and on every
+screen. That is what the guard holds. The ball's whole range and the zone stay at
+100% everywhere too.
+
+**THE GUARD'S SHARE WENT 70 TO 25, AND THAT IS NOT A BAND LOOSENED TO PASS.** The
+framing was deliberately changed underneath it, so a guard still demanding 70
+would be holding the page to a camera it no longer has. That distinction is the
+whole of why this paragraph exists: the rule against moving a band to make a run
+pass is about moving the band INSTEAD of fixing the page, and here the page moved
+first, on purpose, at the player's request.
+
+**THE BINDING SCREEN IS TALL AND LOW RATIO, NOT NARROW**, which is not the order
+anybody guesses and is the second time this file has had to say it. A 320 phone
+gets **160** of the world's blocks; a 360x950 at ratio 2 gets **90**, and that is
+where the batter bottoms out at **37.1%**. Measured across every plausible phone
+rather than assumed, and that screen is in the sweep now. Against a defect of 8.1%
+and an unmirrored focus of 0%, a floor of 25 is the middle of a real gap.
+
+**A SMALLER BATTER WAS WRITTEN UP HERE AS THE REAL ANSWER AND IT IS HALF OF ONE.**
+The claim was that drawn smaller the plate could be centred with all of him beside
+it and nothing given up. **The second half of that is arithmetically false**, and
+the sum is two sections down: full containment needs him at about a third of his
+size, which the zone's own rules forbid several times over. What shrinking him
+really buys is a legible stance rather than a face against the lens, and it is
+taken now.
+
 ##### And measuring that turned up the ball leaving the frame, which was everybody's
 
 `PLATE_KEEP_X` was `[144, 181]`, a box around the zone and nothing else. A pitch
@@ -4392,6 +4448,99 @@ it is a backstop against gross loss and sits against a measured worst of 81 and 
 defect of 8.1. The two catch different directions and both are needed: with the
 keep box widened and the focus NOT mirrored, one character comes back at **0%**,
 entirely off the frame, while his plate-facing edge is still technically inside it.
+
+##### So he came down to 4.6, and FULL CONTAINMENT IS NOT AVAILABLE AT ANY SIZE
+
+He was **5.2 at x 322** and he read as a face against the lens: on a 390 phone the
+crop is 117 blocks and he was **78** of them, so a head and a shoulder filled the
+left edge and the bat was off the picture. At **4.6 at 344** the whole stance is
+legible. Measured through the real camera over all sixty eight:
+
+| | 5.2 at 322 | 4.6 at 344 |
+|---|---|---|
+| 390x844 at ratio 3 | 55.9% | **69.4%** |
+| 412x915 at ratio 2.625 | 50.1% | **62.8%** |
+| 360x950 at ratio 2, the binding one | 37.1% | **48.2%** |
+| 320x568 at ratio 2 | 87.5% | **100%** |
+
+**THE SIZE IS NOT WHAT WON THAT, AND ON THE BINDING PHONE IT LOSES.** Taken apart,
+one change at a time, at the most each is allowed on its own:
+
+| | 390x844 | 360x950 |
+|---|---|---|
+| shipped, 5.2 at 322 | 55.9% | 37.1% |
+| smaller only, 4.6 at 322 | 57.4% | **36.3%** |
+| nearer only, 5.2 at 334 | 61.6% | 42.9% |
+| both, 4.6 at 344 | **69.4%** | **48.2%** |
+
+He is centred on `batX`, so shrinking him pulls BOTH edges in and the one it pulls
+in is the PLATE-FACING edge, which is the half that was in frame. It gives back
+almost exactly what it wins. **The gain is the move, and the shrink is what buys the
+room to make it**: the mirrored-box rule is `batX < 426 - 16 * batSc`, so at 5.2 he
+can only reach 334 and at 4.6 he can reach 344. Ten more logical pixels of travel,
+bought with half a point of size.
+
+**So the size is justified on the PICTURE and not on the percentage**, which is the
+honest way round. At 5.2 a 390 phone showed a head and a shoulder; at 4.6 it shows
+a man holding a bat. That is not a number any guard here can read.
+
+**4.6 AT 344 IS THE FRONTIER, and the pair one step past it is the last value that
+passes.** Two rules bound this and they close on each other. His head must stay
+below the zone's top edge, which wants him BIGGER (`40 * batSc > 175`, so above
+4.375). The MIRRORED box must stay clear of the zone's right edge, which wants him
+smaller the nearer he stands (`batX < 426 - 16 * batSc`). **4.4 at 356 was the
+first pair tried past the frontier and it satisfies neither properly**: one logical
+pixel of head room, and 0.4 the WRONG side of the mirrored box. Solved for eight
+pixels of room on each, the answer is 4.6 and 344.
+
+**So `verify-rules` asks for the room as its own assertion**, rather than only
+asking the two rules to pass, and it has teeth the pair above cannot prove: 356
+fails the original rules as well, so it says nothing about the new one. **4.4 at
+347 is the case that does.** Both original rules are GREEN on it, on one pixel, and
+the room assertion is the only thing that reports it.
+
+**AND THE THING THAT WAS PROMISED CANNOT BE HAD.** Holding the plate centred AND
+the whole batter needs `batX - half >= zoneCentre - cropWidth / 2`, and with both
+rules substituted in that is `batSc <= 2.95` against a floor of 4.375. There is no
+size that does it, so the trade the 488 framing makes is the real trade and not a
+number waiting to be tuned away. What is cropped is still his back, on every
+screen.
+
+#### And the middle of the picture was a lawn
+
+Reported as the view still needing a lot of work, with the angle already fixed.
+About a **quarter** of a portrait phone's plate view was flat green with nothing in
+it at all, between the pitcher's feet and the plate.
+
+**It is geometry rather than missing art, and the crop is what makes it bite.** The
+plate camera shows about 350 logical pixels of width around the plate, and
+everything this scene draws in that band has diverged outside it by the time it
+gets there. Measured at y 500, the two base paths are at x **290 and 670** against
+a crop of **312 to 663**, and both foul lines are further out again. So the scene
+genuinely contained nothing in the one place the reader looks all game.
+
+**ZOOMING IN IS NOT THE FIX AND IT IS THE OBVIOUS ONE.** `sh` already clamps to the
+world's full 220 blocks, so this camera shows sky to catcher and the scale is set
+by the arena's height. Framing a shorter band raises the scale and NARROWS the
+crop. Worked through rather than driven, because the conclusion does not need a
+run: a band of 176 blocks puts a 390 phone at 90 across, which is what the 360x950
+already gets, and the batter there is **48.2%** against this phone's 69.4%. Less
+lawn bought with the thing the section above spent a pass winning.
+
+**A KEYHOLE IS A REAL BALLPARK FEATURE AND IT IS EXACTLY THE SHAPE OF THE HOLE.**
+The retro parks keep a strip of dirt from the mound to the plate, and it is drawn
+before both the home circle and the mound so the two ends are covered and it reads
+as one continuous piece of infield. It tapers WIDER toward the camera, the way every
+other circle of ground in this view already does. Nothing about the camera moves, so
+it costs nothing anywhere else.
+
+**Its first version drew a searchlight, and only one park showed it.** The two dirt
+ovals carry a lit centre and a darker rim, which is what a circle of ground looks
+like from here, and the strip inherited it. A pale tapering wedge with a bright core
+IS a beam, and the snow park's track colour is **white**: it drew a spotlight from
+the scoreboard to the plate. The strip is darker at both edges and NEUTRAL down the
+middle now, so it reads as worn ground. Found by rendering three parks and looking,
+which is the fourth time on this page.
 
 #### And the wide camera left a black hole, which the full bleed layout made bigger
 

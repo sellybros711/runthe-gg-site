@@ -486,8 +486,24 @@ const main = async () => {
      WHAT IS ASKED OF HIM IS STRUCTURAL, because on the narrowest screens the
      three things that must be here do not all fit and the batter is what
      gives. The claim is that his PLATE-FACING edge is in frame, so his swing
-     and the bat's whole arc are; the share is a backstop against gross loss
-     and sits at 70 against a measured worst of 81 and a defect of 8.1.
+     and the bat's whole arc are; the share is only a backstop against his
+     being gone altogether.
+
+     THE SHARE MOVED FROM 70 TO 25 AND THAT IS NOT A BAND LOOSENED TO MAKE A
+     RUN PASS, which is the thing this repo refuses everywhere else. The
+     FRAMING was deliberately changed underneath it: the plate now sits at
+     48% of the way across instead of 21%, because everything in the scene
+     radiates from home and an off-centre origin made the whole view read as
+     oblique. That was a playtester's pick between two framings that cannot
+     both be had, and the batter is what it was bought with. A guard still
+     demanding 70 would be holding the page to a camera it no longer has.
+
+     WHERE 25 COMES FROM. Measured over every plausible phone, the least
+     visible batter runs 37.1% to 100%, and it is a tall low-ratio phone
+     that binds rather than a narrow one: 360x950 at ratio 2 gets 90 of the
+     world's 320 blocks where a 320 phone gets 160. The defect this section
+     exists for is 8.1%, and the unmirrored focus gives 0%. So 25 is the
+     middle of a real gap, twelve points clear on both sides.
 
      Coverage is half of it, the same as everywhere else here: a run where
      both hands happened to frame identically would pass having exercised
@@ -498,10 +514,13 @@ const main = async () => {
      ------------------------------------------------------------------ */
   {
     console.log('the man at the plate is in the picture');
-    /* 412 is the narrowest crop of any phone in use, because its device
-       ratio is low against its height, so it is the one that binds. */
+    /* THE BINDING SCREEN IS TALL AND LOW RATIO, NOT NARROW, which is not
+       the order anybody guesses: a 320 phone gets 160 of the world's 320
+       blocks and a 360x950 at ratio 2 gets 90. Found by measuring rather
+       than by taking the smallest number on the list. */
     for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
                                       ['tall phone', 412, 915, 2.625],
+                                      ['tallest phone', 360, 950, 2],
                                       ['small phone', 320, 568, 2],
                                       ['sideways', 844, 390, 3]]) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h },
@@ -565,7 +584,7 @@ const main = async () => {
           const fr = bx - half + (z / 64) * half * 2;
           const v = +(seen(fl, fr) * 100).toFixed(1);
           if (v < out.worst.v) out.worst = { v, k: c.k, lefty };
-          if (v < 70) out.thin.push({ k: c.k, lefty, v });
+          if (v < 25) out.thin.push({ k: c.k, lefty, v });
           /* The edge FACING the plate carries the swing, so it is the one
              that may never go: right for a righty, left for a lefty. */
           const leadIn = lefty ? fl >= L - 1e-6 : fr <= R + 1e-6;
@@ -600,7 +619,7 @@ const main = async () => {
           .map(x => `${x.k} (${x.lefty ? 'L' : 'R'}) ${x.v}%`).join(', ')
           + (r.turned.length > 4 ? ` and ${r.turned.length - 4} more` : ''));
       ok(r.thin.length === 0,
-        `${label}: and none is under 70% drawn (worst ${r.worst.v}%, ${r.worst.k})`,
+        `${label}: and none is under 25% drawn (worst ${r.worst.v}%, ${r.worst.k})`,
         r.thin.slice(0, 4)
           .map(x => `${x.k} (${x.lefty ? 'L' : 'R'}) ${x.v}% in frame`).join(', ')
           + (r.thin.length > 4 ? ` and ${r.thin.length - 4} more` : ''));
