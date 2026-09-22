@@ -6528,16 +6528,41 @@ const BASE_BEAT = {
      It is the ONE beat raised. The beats after something HAPPENS (a whiff,
      an out, a hit) are already long, and stretching those is ceremony
      rather than thinking time: nobody is deciding anything while the ball
-     is in the outfield. */
-  windup:     1000, /* pitcher into set, meter shows but does not sweep yet */
-  betweenPitches: 2200, /* after ball/called strike/foul */
-  afterWhiff: 1600,
-  afterOut:   1500,
-  afterWalk:  1500,
-  afterHit:   1700,
-  afterHomer: 2600,
-  betweenHalfInnings: 2400,
-  intoAtBat:  900,  /* new batter walks up */
+     is in the outfield.
+
+     AND THEN THE WHOLE TABLE WENT UP BY A THIRD, which is a departure from
+     the paragraph above and from "NORMAL IS DELIBERATELY UNTOUCHED" below,
+     so here is the reason. Both of those were written from a playtest, and
+     the SAME playtester came back with "the game moves a little too fast,
+     should be natural" after the gap alone had been raised. A playtested
+     number is only playtested until the same person plays it again.
+
+     What was measured before changing anything, because "too fast" has
+     three candidates and only one of them is this table:
+
+       the pitch flight   2.0s for a fastball, 2.7s for a curveball, at
+                          medium against an average arm. Real baseball is
+                          about 0.4s. The ball is not what is quick.
+       the thinking gap   windup + betweenPitches, 3.2s
+       event to next      afterOut + intoAtBat + windup, 3.4s
+
+     So it is the dead time, and the complaint was about the GAME rather
+     than about one beat, which is what makes this a tempo change instead of
+     another single number. Scaled uniformly by 1.3 so the ratios the
+     playtest settled are all kept and only the tempo moves: the thinking
+     gap is 4.2s and an out to the next pitch is 4.4s.
+
+     NORMAL IS NOW WHAT RELAXED WAS, exactly, which is the cheapest way to
+     say what changed. Relaxed goes slower again. */
+  windup:     1300, /* pitcher into set, meter shows but does not sweep yet */
+  betweenPitches: 2860, /* after ball/called strike/foul */
+  afterWhiff: 2080,
+  afterOut:   1950,
+  afterWalk:  1950,
+  afterHit:   2210,
+  afterHomer: 3380,
+  betweenHalfInnings: 3120,
+  intoAtBat:  1170, /* new batter walks up */
   /* HOW LONG THE ARRIVED BALL STAYS IN THE MITT. See clearPitchSoon: it
      is a beat to read the catch by, not a share of the gap, so it does
      NOT scale with the others and is not in the table above. */
@@ -6573,10 +6598,24 @@ const BALL_HOLD_MS = 420;
    directly skips the very beats it was trying to weigh. Cutting the beat
    by a quarter moved its number from 1.41s to 1.39s, which is what gave
    it away. */
+/* FAST'S MULTIPLIER MOVED SO THAT FAST DID NOT, which is the half of the
+   tempo change most easily got wrong. Its 0.45 was measured against the old
+   table, and the table is 1.3x that now, so leaving 0.45 alone would have
+   quietly taken Fast from 8.1 minutes to about 10.5 and out of the five to
+   ten it was solved for. 0.346 x 1.3 is 0.45 of the old base, so every Fast
+   beat is within a millisecond of the number that measurement produced and
+   the reading above still stands.
+
+   The METER is untouched on all three. It scales the pitch sweep, which is
+   how hard the timing is, and the report was about pace: a speed setting
+   that also made the game easier would be a balance change wearing a
+   pacing change's name. That is also why the default was not simply moved
+   to Relaxed, which would have been the one line version of this and would
+   have handed everybody a 1.20 meter they did not ask for. */
 const SPEEDS = {
   relaxed: { beat: 1.30, meter: 1.20, label:'Relaxed' },
   normal:  { beat: 1.00, meter: 1.00, label:'Normal' },
-  fast:    { beat: 0.45, meter: 0.85, label:'Fast' },
+  fast:    { beat: 0.346, meter: 0.85, label:'Fast' },
 };
 const BEAT = Object.assign({}, BASE_BEAT);
 function applyGameSpeed() {
@@ -11569,15 +11608,51 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   for (let i = 0; i < 3; i++) {
     if (g.bases[i]) drawRunner(ctx, runnerSpots[i][0], runnerSpots[i][1], g.bases[i], runnerSpots[i][2], null);
   }
-  /* the pitcher: set, wound, kicked, released */
+  /* THE PITCHER FACES THE PLATE, and for a year he did not.
+
+     This camera stands behind the catcher, so the man on the mound is seen
+     from the FRONT. The pack's `windup`, `kick` and `release` are a LEFT
+     FACING PROFILE: rendered and looked at, all three turn him side on and
+     swing the arm across the screen, toward third base. So every pitch in
+     the game was a man throwing sideways while the ball flew at the reader,
+     and it was reported exactly that way, as a pitcher throwing to a base
+     rather than to home.
+
+     Nothing could report it. Each frame is the right frame, drawn by the
+     right artist for the right character, present, distinct and correctly
+     seated. They are simply the wrong VIEW for this camera, which is a
+     question no guard here asks.
+
+     THE PACK DREW NO FRONT FACING THROW, so this is built out of what it
+     did draw and the loss is stated rather than faked. `cheer` is front on
+     with both arms raised, for 67 of the 68 (nessie has no arms and gets
+     her still), and both hands over the head IS the top of a windup from
+     this angle. So the delivery is arms down, arms up, arms down, and the
+     BALL carries the rest of it, which is the thing a reader tracks anyway.
+
+     Two frames is less animation than three, and three of somebody throwing
+     to third is worth less than two of somebody throwing at you.
+
+     IT IS THE SAME FRAME THE STRIKEOUT USES, deliberately. The pack drew
+     one arms-up drawing and both moments are arms up; they are a whole beat
+     apart, one carries a ball and a live meter and the other a callout, so
+     nothing has to tell them apart by the picture alone. */
   const pit = currentPitcher();
   let pitPose = null;
+  let pitBall = null;
   if (live && inWindup) {
-    pitPose = pitch.windupUntil - now > 380 ? 'windup' : 'kick';
-  } else if (live && !pitch.swung && now - pitch.start < 260) {
-    pitPose = 'release';
-  } else if (live && pitch.swung && now - pitch.start < 260) {
-    pitPose = 'release';
+    const up = pitch.windupUntil - now > 380;
+    pitPose = up ? 'cheer' : null;
+    /* Against the FIGURE, not at a round number. He is drawn HERO_DRAW_H x
+       pitSc tall from `moundY` up, which is 130 logical pixels, and the
+       pack seats every frame on the bottom of its cell, so his raised
+       hands are about four fifths of the way up and his hip about a
+       third. */
+    pitBall = up ? [0, -104] : [15, -48];
+  } else if (live && now - pitch.start < 260) {
+    /* square to the plate with the ball gone, which is the front view's
+       honest follow through and is also where he already returned to. */
+    pitPose = null;
   } else if (g.slumpUntil && now < g.slumpUntil) {
     /* HE STRUCK SOMEBODY OUT, so he is the one celebrating. The pack draws
        a celebration for 51 of the 68 and it used to be the BATTER's slump,
@@ -11586,10 +11661,13 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     pitPose = 'cheer';
   }
   if (pit) drawRunner(ctx, P.moundX, P.moundY, pit, P.pitSc, pitPose);
-  if (live && inWindup) {
+  /* The ball rides his hands: over his head while they are up, at his side
+     when they come down. It is the whole of the delivery's motion now, so
+     it is placed against the figure rather than at a fixed offset. */
+  if (pitBall) {
     ctx.fillStyle = '#f4f4f4';
     ctx.beginPath();
-    ctx.arc(P.moundX + (pitPose === 'kick' ? 0 : 30), P.moundY - (pitPose === 'kick' ? 66 : 112), 3, 0, Math.PI * 2);
+    ctx.arc(P.moundX + pitBall[0], P.moundY + pitBall[1], 3, 0, Math.PI * 2);
     ctx.fill();
   }
 

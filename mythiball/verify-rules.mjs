@@ -47,6 +47,7 @@
      both clubs           nobody you drafted is also playing for the club you are playing
      the picture agrees   no throw beats a safe runner to the bag, and no run outlasts the sim
      the walk back        a strikeout has a frame, and it belongs to the man it happened to
+     the pitcher faces    no profile frame reaches the mound, because this camera sees his front
      speed is never a cost  a faster runner is never waved home on worse odds than a slower one
      a rating buys more   every curve a rating feeds moves one way, over the whole scale
      the stale timer      a play's timer fires into its OWN play or not at all
@@ -3394,6 +3395,84 @@ async function main() {
       ok(moment.infieldFrame !== 'ready',
          'and an infielder is not standing in the dirt holding a bat',
          `the second baseman is drawn with: ${moment.infieldFrame}`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the pitcher faces the plate ---- */
+    {
+      console.log('the pitcher faces the plate');
+      /* THE CAMERA IS BEHIND THE CATCHER, so the man on the mound is seen
+         from the FRONT. The pack's `windup`, `kick` and `release` are a
+         LEFT FACING PROFILE, and the plate view used all three, so every
+         pitch was a man throwing sideways toward third base while the ball
+         flew at the reader. Reported as the pitcher throwing to a base
+         instead of to home.
+
+         NOTHING COULD REPORT IT. Each frame is the right frame for the
+         right character, present, distinct from its neighbours and
+         correctly seated: every property the guards here ask of a drawing.
+         They are the wrong VIEW, which none of them asks.
+
+         SO THE ALLOWLIST IS WRITTEN OUT, and it was established by
+         rendering all sixty eight and looking. That is not laziness: this
+         file already records TWO automatic matchers written for the pack
+         and thrown away, both of which confidently contradicted the eye,
+         and nothing in a 64x64 bitmap says which way a figure is turned.
+
+         What it really defends against is somebody restoring the pitching
+         animation by reaching for the three poses that are literally NAMED
+         windup, kick and release. That is the obvious edit and it is the
+         wrong one, so the check is on the names.
+
+         It reads the PICTURE over a whole real pitch rather than at an
+         instant, because the pitcher's branch is a chain of `else if` and
+         the way it breaks is one of them winning at a moment nobody
+         sampled. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(async () => {
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        const g = State.game;
+        /* every pose the pack draws front on, looked at one at a time */
+        const FRONT = ['idle', 'catch', 'throw', 'ready', 'cheer'];
+        /* `exhibition` clears the at bat, so nothing has built batterCtx
+           and throwPitch would read weakPitch off undefined. It also
+           decides who is up, so the pitcher is read after it. */
+        startAtBat();
+        const pit = currentPitcher().k;
+        const real = window.drawRunner;
+        const seen = new Set();
+        window.drawRunner = (ctx, x, y, c, sc, pose, flip) => {
+          if (c && c.k === pit) seen.add(pose == null ? 'idle' : pose);
+          return real(ctx, x, y, c, sc, pose, flip);
+        };
+        g.pitch = null;
+        throwPitch();
+        const dur = Math.round((g.pitch.speed || 2) * 1000);
+        await sleep(BEAT.windup + dur + 400);
+        window.drawRunner = real;
+        /* how many of the roster have a cheer that is its own drawing, so
+           the windup is two frames rather than a statue */
+        let own = 0;
+        for (const c of ROSTER) {
+          const a = v2Frame(c.k, 'idle'), d = v2Frame(c.k, 'cheer');
+          if (d && (!a || d.join('/') !== a.join('/'))) own++;
+        }
+        return { poses: [...seen], FRONT, own, chars: ROSTER.length };
+      });
+      const bad = r.poses.filter(p => r.FRONT.indexOf(p) < 0);
+      ok(r.poses.length > 0, 'the pitcher really is drawn during a pitch',
+         'he was never drawn at all, so this section read nothing');
+      ok(r.poses.indexOf('cheer') >= 0,
+         'and the windup is a second frame rather than a statue',
+         `he wore only: ${r.poses.join(', ')}`);
+      ok(bad.length === 0,
+         'THE PITCHER IS NEVER TURNED SIDEWAYS: no profile frame reaches the mound',
+         `he was drawn with ${bad.join(', ')}, which the pack draws in profile`);
+      ok(r.own >= 60,
+         `and ${r.own} of ${r.chars} have a cheer of their own to wind up with`,
+         `only ${r.own} do, so most of the roster would not animate`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

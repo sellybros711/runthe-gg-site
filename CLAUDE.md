@@ -3171,6 +3171,72 @@ pass the day somebody moves the same three rectangles. The sprite arrives by
 `drawImage` and the shadow is an ellipse, so inside one `drawRunner` call a
 `fillRect` IS the prop. Reintroduced, it reports 37 of 37.
 
+#### And the pitcher threw it to third base, for as long as the pack has been in
+
+Reported from a phone: the pitcher looks like he is throwing to a base rather
+than to home. He was.
+
+**This camera stands behind the catcher, so the man on the mound is seen from
+the FRONT.** The pack's `windup`, `kick` and `release` are a **left facing
+profile**: rendered all sixty eight and looked at, every one of the three turns
+him side on and swings the arm across the screen. So every pitch in the game was
+a man throwing sideways while the ball flew at the reader, and the two halves of
+the picture disagreed about which way the ball was going.
+
+**Nothing could report it, and this is the sharpest case of that on the page.**
+Each frame is the right frame, drawn by the right artist for the right
+character, present, distinct from its neighbours, its own drawing, correctly
+seated and carrying no bleed. That is EVERY property the guards here ask of a
+drawing. They ask whether a frame is good art. None of them asks whether it is
+the right VIEW.
+
+**`cheer` is the answer and it is front on with both arms raised**, which from
+this angle is the top of a windup. **67 of the 68 have one that is their own
+drawing** (nessie has no arms and stands on her still), so the windup animates
+for almost everybody.
+
+| | what the pack drew |
+|---|---|
+| `idle`, `catch`, `throw`, `ready` | front on |
+| `cheer` | front on, arms up |
+| `windup`, `kick`, `release` | **left profile** |
+| `load`, `swing`, `follow`, `run1-4` | left profile |
+
+**THE PACK DREW NO FRONT FACING THROW**, so the delivery is arms down, arms up,
+arms down, and the BALL carries the rest: it rides his hands, over his head
+while they are up and at his hip when they come down. Two frames is less than
+three, and three of a man throwing to third is worth less than two of a man
+throwing at you. Stated as a loss rather than faked, which is `slump`'s own rule
+one section up.
+
+**It is the same frame the strikeout celebration uses, deliberately.** The pack
+drew one arms-up drawing and both moments ARE arms up. They are a whole beat
+apart, one carries a ball and a live meter and the other a callout, so nothing
+has to tell them apart by the picture alone.
+
+**THE ALLOWLIST IS WRITTEN OUT BY HAND AND THAT IS NOT LAZINESS.** This file
+already records two automatic matchers written for this pack and thrown away,
+both of which confidently contradicted the eye, and nothing in a 64x64 bitmap
+says which way a figure is turned. So the front facing set was established by
+rendering the roster and looking, and the guard asks for membership of it.
+
+**What it really defends against is the obvious edit.** The three poses are
+literally NAMED `windup`, `kick` and `release`, so restoring "the pitching
+animation" means reaching for exactly the three that are wrong. The guard reads
+the PICTURE over a whole real pitch rather than at an instant, because the
+pitcher's branch is a chain of `else if` and the way it breaks is one of them
+winning at a moment nobody sampled. Reintroduced, it reports `windup, kick`.
+
+**A STRIP FRAME IS ABOUT 15% SHORTER THAN A STILL, which is a pack-wide fact
+nobody had written down.** Measured over all 68, the lit height of a strip frame
+against the same character's `idle`: median **0.83 to 0.86**, worst **0.55**
+(mrsclaus 64 rows to 44). So any figure crossing between a still and a strip
+visibly changes size, and the pitcher always did, at the end of the old windup.
+It is not introduced here and it is not fixed here: pose heights legitimately
+differ, so there is no honest way to normalise them from the bitmap, and a
+per-character scale factor would be a second copy of an answer. Worth knowing
+before reading a size pop anywhere in this game as a bug in the page.
+
 #### A bat reaching the side of its cell is not a clipped frame
 
 The build refused any frame with a pixel in column 0 or 63, on the audit's own
@@ -5040,6 +5106,48 @@ in a high scoring game rather than faster ones.
 header says to normalise per half inning, and the two arms disagree about which
 way to normalise. Settling it needs several games an arm, and nothing currently
 depends on the answer.
+
+#### And then the whole table went up by a third, which overturns the note above
+
+Reported by the same playtester whose "slow down a lot" is what `BASE_BEAT`'s
+own header records, after the thinking gap alone had already been raised from
+2.1s to 3.2s: **the game moves a little too fast, it should be natural.**
+
+**A playtested number is only playtested until the same person plays it again.**
+That is the whole licence for moving `normal`, which this file twice says is
+deliberately untouched.
+
+**What was measured before anything moved**, because "too fast" has three
+candidates and only one of them is this table:
+
+| | |
+|---|---|
+| the pitch flight | **2.0s** for a fastball, **2.7s** for a curveball, at medium against an average arm |
+| the thinking gap | `windup` + `betweenPitches`, **3.2s** |
+| an out to the next pitch | `afterOut` + `intoAtBat` + `windup`, **3.4s** |
+
+Real baseball is about 0.4s of flight, so **the ball was never the quick part**
+and slowing it would have made the timing game easier rather than the pace
+calmer. It is the dead time.
+
+**Scaled UNIFORMLY by 1.3 rather than tuned beat by beat**, because the report
+was about the game and not about one pause: the ratios the playtest settled all
+survive and only the tempo moves. The thinking gap is **4.2s** and an out to the
+next pitch is **4.4s**. Normal is now exactly what Relaxed was, which is the
+cheapest way to say what changed; Relaxed goes slower again.
+
+**FAST'S MULTIPLIER MOVED SO THAT FAST DID NOT**, and this is the half most
+easily got wrong. Its 0.45 was solved against the old table for a five to ten
+minute game and measured at 8.1 minutes. The table is 1.3x now, so leaving 0.45
+alone would have taken Fast to about **10.5 minutes** and out of its own target
+without anybody touching Fast. **0.346 x 1.3 is 0.45 of the old base**, so every
+Fast beat lands on the same millisecond it was measured at.
+
+**The METER is untouched on all three.** It scales the pitch sweep, which is how
+hard the timing is, and the report was about pace. That is also why the default
+was not simply moved to Relaxed, which is the one line version of this: it would
+have handed everybody a 1.20 meter, making the game easier under a change named
+for its pacing.
 
 **Two ways this measurement went wrong before it went right**, both worth not
 repeating:
