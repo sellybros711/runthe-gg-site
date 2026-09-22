@@ -117,6 +117,58 @@ jobs:
         if: steps.when.outputs.go == 'yes'
         run: node football/check-fantasy.mjs --quick
 
+      # ─── the server's copy ───────────────────────────────────────────────────────────
+      #
+      # THE DATABASE IS PUBLISHED BEFORE THE BOARD IS COMMITTED, and of the two ways to be
+      # half done only one is survivable. A week open on the server that no page can see yet
+      # is an unvisited week and harmless. A board on the page with no week on the server is
+      # a mode that draws the wheel, takes five drafts and then refuses the submit, which is
+      # the worst screen this mode could show. So the write that must not be missing goes
+      # first, and a failure here stops the commit: no board at all is a state somebody
+      # notices, and this one is not.
+      #
+      # RESULTS BEFORE PRICES, the same order and the same reason as the two build steps
+      # above: the week just played has to be settled before the next one opens.
+      - name: Install the postgres client
+        if: steps.when.outputs.go == 'yes'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Publish the week to the leaderboard
+        if: steps.when.outputs.go == 'yes'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL is not set, so entries for this week would all"
+            echo "::error::be refused. Add it under Settings -> Secrets -> Actions."
+            exit 1
+          fi
+          SEASON='${{ steps.week.outputs.season }}'
+          WEEK='${{ steps.week.outputs.week }}'
+          PREV=$(( WEEK - 1 ))
+
+          # Allowed to have nothing to do, exactly as the scoring step above is: week one has
+          # no week zero, and a week the build refused has no file to publish.
+          if [ "$PREV" -ge 1 ] && [ -f "football/data/results_${SEASON}_w${PREV}.json" ]; then
+            node football/build/publish-week.mjs --season "$SEASON" --week "$PREV" --results \
+              | psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q
+            echo "published week $PREV's results"
+          fi
+
+          node football/build/publish-week.mjs --season "$SEASON" --week "$WEEK" \
+            | psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q
+          echo "published week $WEEK's board"
+
+          # READ IT BACK, because a publish that wrote nothing exits 0. An upsert of zero
+          # rows is a successful statement, and the symptom of one is a week that refuses
+          # every lineup as somebody who is not on the board.
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -tAc \
+            "select case when count(*) > 100 then 'ok ' || count(*) || ' priced'
+                    else 'FEW' end from public.fantasy_prices
+              where season = $SEASON and week = $WEEK" | tee /tmp/priced
+          grep -q '^ok ' /tmp/priced
+
       - name: Commit the week
         if: steps.when.outputs.go == 'yes'
         run: |

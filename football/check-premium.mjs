@@ -2107,6 +2107,145 @@ console.log('\nA PAID NAME AND A LIVE RUN');
 }
 
 /*
+ * ONE ACCOUNT CANNOT HAVE FOUR RUNS GOING, AND THE BOARD SAID IT DID.
+ *
+ * Reported with a screenshot: four rows of the Dynasty board wore LIVE and all four
+ * belonged to one player. The page has two dynasty slots, so at most two of an account's
+ * runs are in progress; the other two were runs whose local save had gone before anything
+ * could post their end, and the 48 hour window is not short enough to catch a tester who
+ * played four in two days. 108_dynasty_slot.sql gives the server the slot and answers
+ * `dynasty_current`: of this account's runs in this slot, is this the latest one.
+ *
+ * THE COLUMN IS FABRICATED HERE, so this section says nothing about what WRITES it. That
+ * is supabase/test/dynasty_slot_test.sql's job, the same split 107's two halves already
+ * run on. What is under test is the page's reading, and specifically the three-valued one:
+ * a database on 107 and not 108 answers nothing, and reading that as "no" would take the
+ * badge off everybody the day it shipped.
+ */
+console.log('\nA BADGE THAT SAYS LIVE HAS TO MEAN ONE RUN A SLOT');
+{
+  const seen = await lb.page.evaluate(() => {
+    const T = window.__t, now = Date.now();
+    const ago = (h) => new Date(now - h * 3600 * 1000).toISOString();
+    /* One account, four unfinished runs, all played inside the window. Two are the newest
+       in their slot and two are behind them. Plus a row from a database that has not had
+       108, which has no opinion to read. */
+    T.setRows([
+      { dynasty_id: 'p', seasons: 40, score: 900000, display_name: 'Pod A',
+        created_at: ago(1), dynasty_over: false, dynasty_current: true },
+      { dynasty_id: 'q', seasons: 39, score: 880000, display_name: 'Pod B',
+        created_at: ago(1), dynasty_over: false, dynasty_current: false },
+      { dynasty_id: 'r', seasons: 38, score: 870000, display_name: 'Pod C',
+        created_at: ago(1), dynasty_over: false, dynasty_current: true },
+      { dynasty_id: 'a', seasons: 20, score: 700000, display_name: 'Open Now',
+        created_at: ago(2), dynasty_over: false, dynasty_current: true },
+      { dynasty_id: 'b', seasons: 19, score: 690000, display_name: 'Club Now',
+        created_at: ago(3), dynasty_over: false, dynasty_current: true },
+      { dynasty_id: 'c', seasons: 18, score: 680000, display_name: 'Open Stale',
+        created_at: ago(4), dynasty_over: false, dynasty_current: false },
+      { dynasty_id: 'd', seasons: 17, score: 670000, display_name: 'Club Stale',
+        created_at: ago(5), dynasty_over: false, dynasty_current: false },
+      { dynasty_id: 'e', seasons: 16, score: 660000, display_name: 'No Opinion',
+        created_at: ago(6), dynasty_over: false },
+    ]);
+    T.paintDyn();
+    return [...document.querySelectorAll('#lb-rows .lbr')].map((r) => ({
+      name: r.querySelector('.who b').textContent.trim().replace(/^LIVE/, ''),
+      pill: !!r.querySelector('.livepill'),
+    }));
+  });
+  const by = {};
+  seen.forEach((r) => { by[r.name] = r.pill; });
+  ok('the five list rows drew', seen.length === 5, seen.map((r) => r.name).join(', '));
+  ok('  the newest run in each slot is live',
+    by['Open Now'] === true && by['Club Now'] === true);
+  /* The whole report, in two lines: an account may light two and never four. */
+  ok('  and the runs abandoned behind them are not',
+    by['Open Stale'] === false && by['Club Stale'] === false,
+    'open ' + by['Open Stale'] + ', club ' + by['Club Stale']);
+  /* THE THREE-VALUED READ. Written `dynasty_current !== true` this row goes dark, and so
+     does every row on every database that has had 107 and not 108. Undefined is the server
+     having no opinion, which is the "absent is not zero" rule the daily meter runs on. */
+  ok('  and a database without 108 is unchanged',
+    by['No Opinion'] === true, String(by['No Opinion']));
+  /* The podium reads the same answer, and it is drawn by a different painter. */
+  const pods = await lb.page.evaluate(() =>
+    [...document.querySelectorAll('#lb-podium .pod')].map((p) => ({
+      name: p.querySelector('.pn').textContent.trim().replace(/^LIVE/, ''),
+      pill: !!p.querySelector('.livepill'),
+    })));
+  const pod = {}; pods.forEach((p) => { pod[p.name] = p.pill; });
+  ok('  the podium caps it too', pod['Pod A'] === true && pod['Pod C'] === true
+    && pod['Pod B'] === false,
+    pods.map((p) => p.name + ':' + p.pill).join(', '));
+}
+
+/*
+ * AND THE TAG DROPS THE SLOT RATHER THAN THE SEASON.
+ *
+ * SQL is deployed by hand and this page is deployed by a push, so there is a window in
+ * which the page asks for a function the database does not have yet. PostgREST resolves an
+ * rpc by its ARGUMENT NAMES, so a five argument call against a database still on 107 is not
+ * a slower answer and not a null: it is 404 PGRST202, and the season is never tagged. A run
+ * with no dynasty_id is not on the Dynasty board at all, and nothing on screen says so.
+ *
+ * It is the version pin's own problem in the one place a pin cannot reach: the page and the
+ * module move together in a commit and the SCHEMA does not move with either.
+ *
+ * DRIVEN THROUGH THE REAL FUNCTION, with fetch swapped for a recorder, because what is
+ * being asserted is which bodies go out and in what order. `timed` calls the global fetch,
+ * so nothing about board.js is faked.
+ */
+console.log('\nA TAG THAT MEETS A DATABASE ONE MIGRATION BEHIND');
+{
+  const tag = await lb.page.evaluate(async () => {
+    const real = window.fetch;
+    const run = async (has108) => {
+      const sent = [];
+      window.fetch = async (url, opts) => {
+        if (String(url).indexOf('rpc/ps_dynasty_tag') < 0) return real(url, opts);
+        const body = JSON.parse((opts && opts.body) || '{}');
+        sent.push(body);
+        if (!has108 && 'p_slot' in body) {
+          return new Response(JSON.stringify({ code: 'PGRST202',
+            message: 'Could not find the function public.ps_dynasty_tag'
+              + '(p_dynasty_id, p_row, p_score, p_season, p_slot) in the schema cache' }),
+            { status: 404, headers: { 'Content-Type': 'application/json' } });
+        }
+        /* A void rpc answers 204, and a 204 is a NULL BODY STATUS: `new Response('', ...)`
+           throws rather than answering, which the retry loop reads as a network blip and
+           swallows. The first draft of this section did exactly that and reported three
+           requests on the arm that should make one. */
+        return new Response(null, { status: 204 });
+      };
+      const ok = await window.PS_BOARD.dynastyTag(
+        7, '11111111-2222-3333-4444-555555555555', 3, 4000, 'club');
+      return { ok, sent };
+    };
+    const now = await run(true);
+    const old = await run(false);
+    window.fetch = real;
+    return { now, old };
+  });
+  ok('a database with 108 is asked once, with the slot',
+    tag.now.ok === true && tag.now.sent.length === 1 && tag.now.sent[0].p_slot === 'club',
+    tag.now.sent.length + ' request(s), slot ' + tag.now.sent[0].p_slot);
+  /* THE SEASON IS WHAT MUST NOT BE LOST. A badge that is briefly wrong is the whole of what
+     the fallback gives up, and it heals on the next season filed after the migration. */
+  ok('  and one behind still files the season', tag.old.ok === true);
+  ok('    by asking again without the slot', tag.old.sent.length === 2
+    && tag.old.sent[0].p_slot === 'club' && !('p_slot' in tag.old.sent[1]),
+    tag.old.sent.map((b) => ('p_slot' in b) ? 'with' : 'without').join(' then '));
+  /* Everything else the tag sends is unchanged, or the retry would file a different season
+     from the one that was refused. Written against `sent[1]` directly it THREW rather than
+     failing when the retry was reintroduced as missing, which takes the rest of the file
+     with it: a guard has to report the defect it was proved against, not crash on it. */
+  ok('    and nothing else about the season moved', tag.old.sent.length === 2
+    && ['p_row', 'p_dynasty_id', 'p_season', 'p_score']
+      .every((k) => JSON.stringify(tag.old.sent[0][k]) === JSON.stringify(tag.old.sent[1][k])));
+}
+
+/*
  * A DYNASTY SCORE GROWS WITH THE SQUARE OF THE RUN, SO THE LADDER HAS TO GO ON GOING UP.
  *
  * dynastySeasonScore multiplies a season by its own season number, so a run's total is

@@ -44,12 +44,16 @@
      the club remembers   a franchise carries its players' records, not only its win column
      and the club changes them  a man develops at what he did here, and the league rises with you
      the friendly button  Randomize hands you a mound, and a hand draft is told who is on it
+     both clubs           nobody you drafted is also playing for the club you are playing
      the picture agrees   no throw beats a safe runner to the bag, and no run outlasts the sim
      the walk back        a strikeout has a frame, and it belongs to the man it happened to
+     the pitcher faces    no profile frame reaches the mound, because this camera sees his front
      speed is never a cost  a faster runner is never waved home on worse odds than a slower one
      a rating buys more   every curve a rating feeds moves one way, over the whole scale
      the stale timer      a play's timer fires into its OWN play or not at all
-     one grid             the world is blown up by a whole number, onto the arena's own pixels
+     a window's own play  a catch or a robbery never resolves into the play that replaced it
+     its own clock        a play is applied on its own timer, never on the one it replaced
+     one grid         the world is blown up by a whole number, onto the arena's own pixels
      the code's own claims  what the comments assert about the code is true of it
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
@@ -2260,10 +2264,31 @@ async function main() {
         };
 
         const N = 500;
+        /* THE STRIKE CELLS GET EIGHT TIMES THE SAMPLE, AND THAT IS THE FIX
+           FOR A BAND THAT COULD NOT RESOLVE ITS OWN CLAIM.
+
+           `DISCIPLINE IS NOT SILENCE` asks that a strike down the middle
+           draws the same swings on every tier, at a threshold of 8 points.
+           Measured over 60 repeats of this exact fixture, the true gap is
+           **0.00** and its standard deviation at 500 pitches a cell is
+           **3.03**, so the band is 2.6 sigma wide: about one run in 120
+           goes red on a build nobody has touched. It did, at easy 62.4
+           against hard 71.6.
+
+           THE SAMPLE IS WHAT MOVES, NEVER THE BAND. Loosening it to 12
+           would make the check unable to see a real inversion, which is the
+           thing it exists for. At 4,000 the spread is 0.93 and the worst of
+           40 repeats was 2.22, so 8 is seven sigma out. Two cells of 3,500
+           extra pitches cost about a second.
+
+           It is the same lesson as the chase sweep two paragraphs down and
+           as the commish magic seed: a threshold a sample cannot resolve is
+           measuring the sample. */
+        const NZ = 4000;
         const out = {
           /* and a strike down the middle, which no tier may duck */
-          zoneEasy:    sweep('easy',   0, 0, true, even, N).swing,
-          zoneHard:    sweep('hard',   0, 0, true, even, N).swing,
+          zoneEasy:    sweep('easy',   0, 0, true, even, NZ).swing,
+          zoneHard:    sweep('hard',   0, 0, true, even, NZ).swing,
           /* memory: the same pitch, an honest book against a one note one */
           mixed:       sweep('hard', 0, 0, true, even, N),
           patterned:   sweep('hard', 0, 0, true, oneNote, N),
@@ -2802,7 +2827,16 @@ async function main() {
           State.season = { year: y, team: nine, perPlayer: {}, careers: {} };
           return +leagueEdge().toFixed(3);
         });
-        /* and it belongs to YOUR side, against a lineup naming the same men */
+        /* AND IT BELONGS TO YOUR SIDE. This used to hand the opponent your
+           own nine and look up one man on each side, which is the plainest
+           way to ask the question and is no longer available: nobody plays
+           for both clubs now, so the mirror comes back as nine substitutes
+           and the lookup found undefined. The suite caught that on the
+           first run, which is what it is for.
+
+           The claim is asked of WHOEVER THEY FIELD instead, which is
+           stronger than the mirror was: every man on their card is the
+           roster's own object, and somebody on yours is not. */
         State.season = mk(4);
         State.team = nine.slice(); State.teamName = 'Testers';
         State.opponent = { name: 'Mirror', color: '#888', roster: nine.slice() };
@@ -2811,11 +2845,10 @@ async function main() {
         const g = State.game;
         const mineSide = g.away.isYou ? g.away : g.home;
         const theirs = g.away.isYou ? g.home : g.away;
-        const mineBat = mineSide.batters.find(c => c.k === bat);
-        const theirBat = theirs.batters.find(c => c.k === bat);
-        out.sidesDiffer = mineBat.con !== theirBat.con || mineBat.pow !== theirBat.pow;
-        out.theirsIsRaw = theirBat.con === ROSTER_BY_KEY[bat].con
-                       && theirBat.pow === ROSTER_BY_KEY[bat].pow;
+        out.theirsIsRaw = theirs.batters.every(c => c === ROSTER_BY_KEY[c.k]);
+        out.sidesDiffer = mineSide.batters.some(c => c !== ROSTER_BY_KEY[c.k]);
+        /* and the mirror itself: asked for your own nine, they field none */
+        out.mirrorShared = theirs.batters.filter(c => nine.includes(c.k)).length;
         return out;
       });
       ok(r.freshIdentity, 'no franchise: the roster object itself comes back untouched');
@@ -2839,8 +2872,11 @@ async function main() {
          'the league sharpens with tenure', r.edge.join(', '));
       ok(r.edge[5] === r.edge[4] && r.edge[5] <= 0.30,
          'and plateaus rather than running away', `caps at ${r.edge[5]}`);
-      ok(r.sidesDiffer, 'your man and their man are not the same man');
-      ok(r.theirsIsRaw, 'the opponent draws the roster, never your development');
+      ok(r.sidesDiffer, 'somebody on YOUR card is carrying what his years bought');
+      ok(r.theirsIsRaw, 'and every man on theirs is the roster, never your development');
+      ok(r.mirrorShared === 0,
+         'asked to field your own nine, the opponent fields none of them',
+         `${r.mirrorShared} of the nine turned out for both clubs`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -2939,6 +2975,86 @@ async function main() {
       ok(new RegExp(hand.best).test(hand.two) && /gold/.test(hand.two),
          'and is shown the better arm it already has, without being overruled',
          hand.two);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- nobody plays for both clubs ---- */
+    {
+      console.log('nobody plays for both clubs');
+      /* A roster is drafted out of the same sixty eight the opponents are
+         built from, so nothing stopped a player taking a man the club they
+         are playing already fields. Measured over 6,800 matchups, 73.5% of
+         games put at least one character on both sides and 1.47% put the
+         SAME MAN at the plate and on the mound, which the at bat card
+         printed out loud: "The Great Ape at bat VS THE GREAT APE PITCHING".
+
+         NOTHING COULD REPORT IT. Both lineups were legal, every rating was
+         read correctly and the game played perfectly. It is the class this
+         file is full of: a true sentence about a thing that cannot happen.
+
+         THE OPPONENT YIELDS, because a season schedules clubs the player
+         has never seen at the moment they draft.
+
+         It is swept over every club rather than sampled, because the
+         overlap is a property of two hand written lists and the way it
+         comes back is somebody adding a character to one of them. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const keys = ROSTER.map(c => c.k);
+        const mix = (n) => { n = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+          n ^= n >>> 13; n = Math.imul(n, 0xc2b2ae35); return (n ^ (n >>> 16)) >>> 0; };
+        const draw = (seed) => {
+          const pool = keys.slice(), pick = [];
+          for (let i = 0; i < 9; i++) pick.push(pool.splice(mix(seed * 31 + i) % pool.length, 1)[0]);
+          return pick;
+        };
+        const bat = (ks) => {
+          const c = ks.map(k => ROSTER_BY_KEY[k]).filter(Boolean);
+          return c.reduce((a, x) => a + x.pow + x.con + x.spd, 0) / c.length;
+        };
+        const out = { n: 0, both: 0, wouldHave: 0, dupInside: 0, short: 0,
+                      unknown: 0, drift: 0, subs: 0 };
+        for (const opp of OPPONENTS) {
+          for (let i = 0; i < 200; i++) {
+            const mine = draw(mix(i * 131 + opp.name.length * 7));
+            const nine = opposingNine(mine, opp.roster);
+            out.n++;
+            if (opp.roster.some(k => mine.includes(k))) out.wouldHave++;
+            if (nine.some(k => mine.includes(k))) out.both++;
+            if (new Set(nine).size !== nine.length) out.dupInside++;
+            if (nine.length !== 9) out.short++;
+            if (nine.some(k => !ROSTER_BY_KEY[k])) out.unknown++;
+            out.subs += nine.filter((k, j) => k !== opp.roster[j]).length;
+            out.drift += Math.abs(bat(nine) - bat(opp.roster));
+          }
+        }
+        /* And it is deterministic: the same matchup twice is the same nine,
+           or a schedule would reshuffle its opponents on every reload. */
+        const a = opposingNine(draw(7), OPPONENTS[0].roster).join(',');
+        const b = opposingNine(draw(7), OPPONENTS[0].roster).join(',');
+        out.stable = a === b;
+        return out;
+      });
+      ok(r.n > 0 && r.wouldHave > r.n * 0.5,
+        'the overlap this exists for is still most matchups',
+        `only ${r.wouldHave} of ${r.n} would have shared a man, so the sweep proves little`);
+      ok(r.both === 0, 'and not one of them fields a man on both sides',
+        `${r.both} of ${r.n} still do`);
+      ok(r.dupInside === 0 && r.short === 0 && r.unknown === 0,
+        'the club it hands back is nine different men this roster has',
+        JSON.stringify({ twice: r.dupInside, short: r.short, unknown: r.unknown }));
+      ok(r.stable, 'the same matchup gives the same nine twice running');
+      /* WHAT IT COSTS THE OPPONENT IS THE HALF THAT COULD GO WRONG QUIETLY.
+         Substituting whoever happens to be free would make the schedule
+         easier by exactly how often the player drafts well, and every win
+         rate in this file is measured against these clubs. The substitute
+         is matched on ratings, so the club it hands back is the club it
+         was asked about. */
+      const perGame = r.drift / r.n;
+      ok(perGame < 3, 'and it is the same club, within a rating point or two',
+        `the batting line moves ${perGame.toFixed(2)} of about 150, `
+        + `over ${(r.subs / r.n).toFixed(2)} substitutions a game`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -3283,6 +3399,84 @@ async function main() {
       await pg.close();
     }
 
+    /* ---- the pitcher faces the plate ---- */
+    {
+      console.log('the pitcher faces the plate');
+      /* THE CAMERA IS BEHIND THE CATCHER, so the man on the mound is seen
+         from the FRONT. The pack's `windup`, `kick` and `release` are a
+         LEFT FACING PROFILE, and the plate view used all three, so every
+         pitch was a man throwing sideways toward third base while the ball
+         flew at the reader. Reported as the pitcher throwing to a base
+         instead of to home.
+
+         NOTHING COULD REPORT IT. Each frame is the right frame for the
+         right character, present, distinct from its neighbours and
+         correctly seated: every property the guards here ask of a drawing.
+         They are the wrong VIEW, which none of them asks.
+
+         SO THE ALLOWLIST IS WRITTEN OUT, and it was established by
+         rendering all sixty eight and looking. That is not laziness: this
+         file already records TWO automatic matchers written for the pack
+         and thrown away, both of which confidently contradicted the eye,
+         and nothing in a 64x64 bitmap says which way a figure is turned.
+
+         What it really defends against is somebody restoring the pitching
+         animation by reaching for the three poses that are literally NAMED
+         windup, kick and release. That is the obvious edit and it is the
+         wrong one, so the check is on the names.
+
+         It reads the PICTURE over a whole real pitch rather than at an
+         instant, because the pitcher's branch is a chain of `else if` and
+         the way it breaks is one of them winning at a moment nobody
+         sampled. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(async () => {
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        const g = State.game;
+        /* every pose the pack draws front on, looked at one at a time */
+        const FRONT = ['idle', 'catch', 'throw', 'ready', 'cheer'];
+        /* `exhibition` clears the at bat, so nothing has built batterCtx
+           and throwPitch would read weakPitch off undefined. It also
+           decides who is up, so the pitcher is read after it. */
+        startAtBat();
+        const pit = currentPitcher().k;
+        const real = window.drawRunner;
+        const seen = new Set();
+        window.drawRunner = (ctx, x, y, c, sc, pose, flip) => {
+          if (c && c.k === pit) seen.add(pose == null ? 'idle' : pose);
+          return real(ctx, x, y, c, sc, pose, flip);
+        };
+        g.pitch = null;
+        throwPitch();
+        const dur = Math.round((g.pitch.speed || 2) * 1000);
+        await sleep(BEAT.windup + dur + 400);
+        window.drawRunner = real;
+        /* how many of the roster have a cheer that is its own drawing, so
+           the windup is two frames rather than a statue */
+        let own = 0;
+        for (const c of ROSTER) {
+          const a = v2Frame(c.k, 'idle'), d = v2Frame(c.k, 'cheer');
+          if (d && (!a || d.join('/') !== a.join('/'))) own++;
+        }
+        return { poses: [...seen], FRONT, own, chars: ROSTER.length };
+      });
+      const bad = r.poses.filter(p => r.FRONT.indexOf(p) < 0);
+      ok(r.poses.length > 0, 'the pitcher really is drawn during a pitch',
+         'he was never drawn at all, so this section read nothing');
+      ok(r.poses.indexOf('cheer') >= 0,
+         'and the windup is a second frame rather than a statue',
+         `he wore only: ${r.poses.join(', ')}`);
+      ok(bad.length === 0,
+         'THE PITCHER IS NEVER TURNED SIDEWAYS: no profile frame reaches the mound',
+         `he was drawn with ${bad.join(', ')}, which the pack draws in profile`);
+      ok(r.own >= 60,
+         `and ${r.own} of ${r.chars} have a cheer of their own to wind up with`,
+         `only ${r.own} do, so most of the roster would not animate`);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
     /* ---- speed is never a cost ---- */
     {
       console.log('speed is never a cost');
@@ -3552,6 +3746,148 @@ async function main() {
       await pg.close();
     }
 
+    /* ---- and the two windows the fix above did not reach ---- */
+    {
+      console.log('a window resolves into its own play');
+      /* THE CHECK ABOVE GUARDS THE OPENING AND NOT THE CLOSING, and that
+         is the whole of this. `scheduleFlyCatchMinigame` compares
+         identity before it OPENS the catch window; the window then stands
+         open for 900ms, and its own expiry only asked whether there was A
+         play. So did the robbery window's.
+
+         Surfaced by a full `calibrate.mjs` run reporting one page error
+         reading "Cannot read properties of null (reading '0')", which is
+         the string the section above exists for, at a second door. Driven
+         here rather than waited for, which is that section's own rule.
+
+         TWO DEFECTS, AND THE CRASH IS THE RARE ONE. `resolveCatch` sets
+         `applied` on its first line, so an expiring window marked
+         WHATEVER play was on the field as applied and its real outcome
+         never landed: silent, and on every replacement rather than on the
+         one in twenty that is a home run. The crash needs the replacement
+         to have no meeting point, which only a ball in the seats has.
+
+         The robbery is the other way round: missing one does nothing at
+         all, so only a HIT is dangerous there, and a hit turns whatever
+         is on the field into a fly out. So that arm presses the button
+         rather than letting it expire. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        const out = {};
+
+        /* ---- the catch window, let it EXPIRE ---- */
+        endAtBatCleanup(); g.play = null; g.pitch = null; g.bases = [null, null, null];
+        scheduleFlyCatchMinigame('fly out', currentBatter(), { q: 0.6 });
+        for (let i = 0; i < 60 && !(g.play && g.play.catchActive); i++) await sleep(50);
+        out.catchOpened = !!(g.play && g.play.catchActive);
+        endAtBatCleanup(); g.play = null;
+        scheduleContactPlay('home run', currentBatter(), { q: 0.9 });
+        const homer = g.play;
+        /* COVERAGE: a homer really is the loaded gun, with no meeting point */
+        out.homerMeetUV = homer && homer.sim ? homer.sim.meetUV : 'no sim';
+        await sleep(1400);
+        out.homerIsStill = g.play === homer;
+        out.homerApplied = homer ? !!homer.applied : null;
+        out.homerKind = homer ? homer.kind : null;
+
+        /* ---- the robbery window, and PRESS it ---- */
+        endAtBatCleanup(); g.play = null; g.pitch = null; g.bases = [null, null, null];
+        scheduleContactPlay('double', currentBatter(), { q: 0.8 });
+        const robbed = g.play;
+        if (robbed && robbed.sim) robbed.sim.robSlack = 0;   /* a full green */
+        startRobWindow('double', currentBatter(), 1000);
+        out.robOpened = !!(g.play && g.play.catchActive);
+        await sleep(400);
+        endAtBatCleanup(); g.play = null;
+        scheduleContactPlay('triple', currentBatter(), { q: 0.8 });
+        const later = g.play;
+        await sleep(120);
+        document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await sleep(200);
+        out.laterIsStill = g.play === later;
+        out.laterKind = later ? later.kind : null;
+        out.laterIsOut = later ? !!later.isOut : null;
+        out.alive = !!State.game;
+        return out;
+      });
+      ok(r.catchOpened, 'a fly ball really does open a catch window',
+         JSON.stringify(r));
+      ok(r.homerMeetUV === null,
+         'and the play that replaces it really has no meeting point',
+         String(r.homerMeetUV));
+      ok(r.homerIsStill && r.homerApplied === false,
+         'AN EXPIRING CATCH WINDOW DOES NOT APPLY ITSELF TO THE NEXT PLAY',
+         `applied ${r.homerApplied}, kind ${r.homerKind}`);
+      ok(r.robOpened, 'a robbery window really does open',
+         JSON.stringify(r));
+      ok(r.laterIsStill && r.laterKind === 'triple' && r.laterIsOut === false,
+         'AND A ROBBERY PRESSED LATE DOES NOT TURN THE NEXT PLAY INTO AN OUT',
+         `kind ${r.laterKind}, isOut ${r.laterIsOut}`);
+      ok(r.alive && errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- and the apply timer, which needs a page of its own ---- */
+    {
+      console.log('a play is applied on its own clock');
+      /* THE ORDINARY APPLY TIMER IS THE SAME SHAPE AS THE TWO WINDOWS and
+         was the third unguarded one. It resolved whatever play it found
+         rather than the one it was scheduled for, so a torn-down play's
+         clock landed on its replacement: driven, a single replaced by a
+         home run applied the homer 787ms EARLY, with the ball still in
+         the air. Returning costs nothing, because every play schedules
+         its own apply and the replacement lands on that a moment later.
+
+         IT NEEDS A PAGE WITH NO LEFTOVERS, which is the harness lesson
+         from the football boss battle arriving here. Run after the two
+         window arms above, their pending transition timers (`play = null`
+         at arriveMs + 500) fire inside this fixture, so the home run's
+         OWN apply correctly declines and the arm reads a play that is
+         never applied at all. It failed that way once, and the failure
+         was the harness rather than the page. */
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        const out = {};
+        endAtBatCleanup(); g.play = null; g.pitch = null; g.bases = [null, null, null];
+        scheduleContactPlay('single', currentBatter(), { q: 0.4 });
+        out.aApplyMs = Math.round(g.play.sim.applyAt * 1000);
+        await sleep(60);
+        endAtBatCleanup(); g.play = null;
+        scheduleContactPlay('home run', currentBatter(), { q: 0.95 });
+        const hr = g.play;
+        out.bApplyMs = Math.round(hr.sim.applyAt * 1000);
+        /* COVERAGE: the torn-down play's clock has to land FIRST, or the
+           replacement's own timer wins and this arm proves nothing. */
+        out.orderOk = out.aApplyMs < out.bApplyMs - 200;
+        const t0 = performance.now();
+        let at = null;
+        for (let i = 0; i < 400 && at == null; i++) {
+          if (hr.applied) at = performance.now() - t0;
+          else await sleep(15);
+        }
+        out.appliedAfterMs = at == null ? null : Math.round(at);
+        out.onOwnClock = at != null && at > out.bApplyMs - 120;
+        out.alive = !!State.game;
+        return out;
+      });
+      ok(r.orderOk, 'the torn-down play really is the one whose apply lands first',
+         `${r.aApplyMs}ms against ${r.bApplyMs}ms`);
+      ok(r.appliedAfterMs != null,
+         'and the replacement really is applied, so this arm reads something',
+         'it was never applied at all');
+      ok(r.onOwnClock,
+         'A PLAY IS APPLIED ON ITS OWN CLOCK, not on the one it replaced',
+         `applied after ${r.appliedAfterMs}ms, its own is ${r.bApplyMs}ms`);
+      ok(r.alive && errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
     /* ---- one grid ---- */
     {
       console.log('one grid');
@@ -3601,11 +3937,19 @@ async function main() {
          on a canvas the browser was upscaling by 1.87x.
 
          So the scale is read off FIELD_CAM, which is the one answer the
-         blit, the crisp pass and the aim all draw from, and the SECOND
-         claim is the one the old shape could not make at all: the bitmap
-         is EXACTLY the pixels the arena occupies. A bitmap under that is
-         a browser upscale and a ragged grid on the glass however clean the
-         blit was; a bitmap over it is fill nobody sees. */
+         blit, the crisp pass and the aim all draw from.
+
+         AND THE BROWSER IS ALLOWED ONE LAST STEP, as long as it is a whole
+         one. The page draws at `FIELD_CAM.draw` device pixels a block and
+         the element is laid out at `scale`, so the browser magnifies by
+         `scale / draw` and a whole number times a whole grid is still a
+         whole grid. That is what buys back the fill: at ratio 3 the page
+         draws a quarter of the pixels it used to. So the run lengths in the
+         BITMAP are `draw` and never `scale`, and the second claim is the one
+         the old shape could not make at all: the step is whole, and the
+         bitmap times the step is exactly the pixels the arena occupies. Off
+         either way and the browser is resampling on a fraction, which is a
+         ragged grid on the glass however clean the blit was. */
       for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
                                         ['phone, denser', 360, 780, 2],
                                         ['small phone', 320, 568, 2],
@@ -3642,36 +3986,39 @@ async function main() {
           }
           lens[run] = (lens[run] || 0) + 1;
           const all = Object.entries(lens).map(([k, v]) => [Number(k), v]);
-          const scale = FIELD_CAM.scale;
+          const scale = FIELD_CAM.scale, draw = FIELD_CAM.draw;
           /* pixels, not runs: one stray pixel must not weigh the same as
              a forty pixel stretch of flat sky */
           const px = all.reduce((a, [k, v]) => a + k * v, 0);
-          const stray = all.filter(([k]) => k % scale !== 0)
+          const stray = all.filter(([k]) => k % draw !== 0)
                            .reduce((a, [k, v]) => a + k * v, 0);
           const box = cv.parentElement, dpr = window.devicePixelRatio || 1;
-          return { w: cv.width, h: cv.height, scale,
+          return { w: cv.width, h: cv.height, scale, draw,
                    sw: FIELD_CAM.sw, sh: FIELD_CAM.sh,
                    wantW: box.clientWidth * dpr, wantH: box.clientHeight * dpr,
                    modal: all.slice().sort((a, b) => b[1] - a[1])[0][0],
                    strayShare: stray / px,
                    smoothing: cv.getContext('2d').imageSmoothingEnabled };
         });
-        const scale = r.scale;
+        const scale = r.scale, draw = r.draw, step = scale / draw;
         ok(scale === Math.round(scale) && scale >= 2,
           `${label}: the world is blown up by a whole number (${scale}x)`,
-          JSON.stringify({ bitmap: r.w, crop: r.sw, scale }));
-        ok(r.modal === scale && r.strayShare < 0.08,
-          `${label}: the blit lands on the grid, ${scale}px to a block`,
-          JSON.stringify({ modalRun: r.modal, scale,
+          JSON.stringify({ bitmap: r.w, crop: r.sw, scale, draw }));
+        ok(r.modal === draw && r.strayShare < 0.08,
+          `${label}: the blit lands on the grid, ${draw}px to a block`,
+          JSON.stringify({ modalRun: r.modal, draw,
                            offGrid: (100 * r.strayShare).toFixed(1) + '% of the row',
                            smoothing: r.smoothing }));
         /* A WHOLE SCALE IN THE BITMAP BUYS NOTHING IF THE BROWSER THEN
-           RESAMPLES IT. Within one block each way, because the crop is a
-           whole number of blocks and the arena is not. */
-        ok(r.wantW - r.w >= 0 && r.wantW - r.w < scale
-           && r.wantH - r.h >= 0 && r.wantH - r.h < scale,
-          `${label}: the bitmap is the pixels the arena occupies`,
-          JSON.stringify({ bitmap: [r.w, r.h], arena: [r.wantW, r.wantH], scale }));
+           RESAMPLES IT ON A FRACTION. Within one block each way, because
+           the crop is a whole number of blocks and the arena is not. */
+        ok(step === Math.round(step) && step >= 1
+           && r.wantW - r.w * step >= 0 && r.wantW - r.w * step < scale
+           && r.wantH - r.h * step >= 0 && r.wantH - r.h * step < scale,
+          `${label}: the browser's last step is a whole ${step}x onto the arena`,
+          JSON.stringify({ bitmap: [r.w, r.h], step,
+                           shown: [r.w * step, r.h * step],
+                           arena: [r.wantW, r.wantH], scale }));
         ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
         await pg.close(); await ctx.close();
       }
