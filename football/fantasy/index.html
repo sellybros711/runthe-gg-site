@@ -273,7 +273,6 @@
   /* The gap between the top fifty and a reader below it. A row of dots rather than nothing,
      because a board that jumps from 50 to 112 with no mark reads as a rendering fault. */
   .brow.gap{color:var(--dim-2);justify-content:center;padding:1px 0}
-  #in-boardwrap[hidden]{display:none}
 
   /* ---- the board while the games are on ----
      EVERY MOVING THING HERE IS A TRANSFORM OR AN OPACITY, which is the rule the hoops live
@@ -303,6 +302,62 @@
   @keyframes bscore{0%{transform:scale(1)}28%{transform:scale(1.13)}100%{transform:scale(1)}}
   .brow .bs.tick{animation:bscore .45s ease;color:var(--gold)}
 
+  /* ---- the real games ----
+     A SCOREBOARD IS READ AT A GLANCE AND THE GLANCE IS "WHO IS WINNING", so the leading
+     club is the only thing at full brightness and everything else recedes. A row where both
+     lines are equally loud is a row that has to be read rather than seen, sixteen times. */
+  .gms{display:flex;flex-direction:column;gap:6px}
+  .gm{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;
+    background:var(--panel);border:1px solid var(--line)}
+  .gm .gsides{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .gt{display:flex;align-items:baseline;gap:10px}
+  .gt b{flex:0 0 40px;font-family:var(--fn);font-size:13px;font-weight:700;
+    letter-spacing:.04em;color:var(--dim-2)}
+  .gt i{font-family:var(--fd);font-style:normal;font-size:17px;line-height:1.1;
+    font-variant-numeric:tabular-nums;color:var(--dim-2)}
+  .gt.lead b{color:var(--ink)}
+  .gt.lead i{color:var(--ink)}
+  .gm .gst{flex:0 0 auto;text-align:right;font-family:var(--fn);font-size:10px;
+    font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--dim-2)}
+  /* The clock under the quarter. Tabular, because a scoreboard of sixteen games with the
+     colons in sixteen places reads as a list of unrelated things. */
+  .gm .gst s{display:block;text-decoration:none;font-family:var(--fd);font-size:14px;
+    letter-spacing:.02em;color:var(--dim);font-variant-numeric:tabular-nums}
+  .gm.live{border-color:rgba(239,68,68,.34)}
+  .gm.live .gst{color:#fca5a5}
+
+  /* TWO PANELS, ONE AT A TIME, AND THAT IS A MEASUREMENT RATHER THAN A PREFERENCE.
+     Sixteen games is about 980px at 390 and a full board is fifty rows, so whichever of the
+     two is drawn second is behind a scroll of the other for the whole afternoon. Stacked,
+     the competition this site is actually about sat under the entire NFL slate. Found by
+     taking a screenshot and looking at it, which is how three things on this page have been
+     found now.
+     EACH DOOR LANDS ON WHAT IT PROMISED: the pill says Live scores and opens the games, the
+     entry screen's button says the board and opens the board. A single default would make
+     one of the two a control that takes you somewhere else. */
+  .tabs{display:flex;gap:8px;margin:14px 0 4px}
+  .tabs button{flex:1 1 0;padding:9px 10px;border-radius:999px;border:1px solid var(--line);
+    font-family:var(--fn);font-size:11.5px;font-weight:800;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--dim-2);background:none}
+  .tabs button.on{background:var(--panel-2);border-color:var(--line-2);color:var(--ink)}
+
+  /* THE WAY IN, WHILE THE GAMES ARE ON.
+     Pinned rather than put on a screen, because which screen somebody is on when they want
+     the scores is not something this page gets to decide: they are as likely to be looking
+     at their own six as at the home screen. It is the only fixed thing on this page, so the
+     wrap grows a floor to sit above it: over the last control it would be a button covering
+     the way out, which is the boss battle's own Continue arriving at a pill. */
+  .livebtn{position:fixed;left:50%;transform:translateX(-50%);z-index:30;
+    bottom:calc(14px + env(safe-area-inset-bottom));
+    display:flex;align-items:center;gap:8px;padding:11px 18px 11px 15px;border-radius:999px;
+    background:var(--grad-red);color:#fff;font-family:var(--fn);font-size:12.5px;
+    font-weight:800;letter-spacing:.07em;text-transform:uppercase;box-shadow:var(--shadow);
+    border:1px solid rgba(255,255,255,.16)}
+  /* display:flex, so the attribute needs its own rule. Ninth time in this repo. */
+  .livebtn[hidden]{display:none}
+  .livebtn .bdot{background:#fff;animation:bpulse 1.9s ease-in-out infinite}
+  body.haslive .wrap{padding-bottom:92px}
+
   /* The live header: a dot that breathes, what it is as of, and how much of the week is in. */
   .blive{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
     font-size:11.5px;color:var(--dim-2);margin:2px 0 7px}
@@ -322,6 +377,7 @@
     .brow{transition:none}
     .brow .bs.tick{animation:none}
     .blive.on .bdot{animation:none}
+    .livebtn .bdot{animation:none}
   }
 
   .note{font-size:13px;color:var(--dim);margin:10px 0 0}
@@ -432,22 +488,20 @@
       <div class="eyebrow" id="in-lab">Projected</div>
       <div class="big" id="in-proj">-</div>
       <div class="vs" id="in-vs" hidden></div>
-      <div class="roster" id="in-roster" style="margin-top:12px"></div>
-      <!-- THE BOARD OPENS AT THE LOCK, which is the server's rule and not this page's:
-           every entrant meets their own wheel, so a list of everybody's lineups before
-           kickoff is the answer key handed to whoever enters last. Before then this block
-           is not drawn at all, rather than drawn empty. -->
-      <div id="in-boardwrap" hidden>
-        <div class="rule"></div>
-        <div class="eyebrow" id="in-boardlab">This week</div>
-        <!-- WHAT THE BOARD IS AS OF. A live leaderboard and a dead one render identically,
-             so the only way a reader can tell is if the screen says. -->
-        <div class="blive" id="in-live" hidden>
-          <span class="bdot"></span><b id="in-livelab">LIVE</b>
-          <span id="in-livesay"></span>
-        </div>
-        <div class="board" id="in-board"></div>
+      <!-- WHAT THIS SCREEN IS AS OF. The six under it climb all afternoon, and a total that
+           moves with nothing saying when it last did is a total nobody can trust. The board
+           itself is not here: it is its own screen. -->
+      <div class="blive" id="in-live" hidden style="margin-top:8px">
+        <span class="bdot"></span><b id="in-livelab">LIVE</b>
+        <span id="in-livesay"></span>
       </div>
+      <div class="roster" id="in-roster" style="margin-top:12px"></div>
+      <!-- AND A WAY TO THE BOARD, drawn only once there is a board to go to. The pinned
+           button reaches the same screen while the games are on; this is what is left when
+           they are over, because a leaderboard whose only door was a live one would
+           disappear at about seven on the Tuesday morning. -->
+      <button class="btn quiet" id="b-in-board" hidden style="margin-top:12px">
+        See the week's board</button>
       <p class="note" id="in-note"></p>
       <!-- A WAY BACK, and only when there is somewhere to go back TO. The current week's
            entry is a terminal screen and the button would be a control to nowhere; last
@@ -459,7 +513,57 @@
       </div>
     </div>
   </section>
+
+  <!-- ─── THE LIVE SCREEN ───────────────────────────────────────────────────────────
+       TWO PANELS ABOUT ONE INSTANT: what the real games are doing, and what that has done
+       to the standings. They are one poll and one answer for exactly that reason, and the
+       "as of" over them belongs to both.
+
+       IT IS A SCREEN OF ITS OWN RATHER THAN A BLOCK ON THE ENTRY SCREEN, which is where the
+       board used to live. Two things made that wrong. A reader who never entered has no
+       entry screen and so had no way to the board at all, on the one afternoon it is worth
+       looking at. And the board hung under a lineup reads as a footnote to it, when on a
+       Sunday it is the thing somebody opened the page for. -->
+  <section id="s-live" class="screen">
+    <div class="card">
+      <div class="eyebrow" id="lv-week"></div>
+      <h2 class="display" style="font-size:28px;margin:6px 0 2px">Live scoreboard</h2>
+      <div class="blive" id="lv-live" hidden>
+        <span class="bdot"></span><b id="lv-livelab">LIVE</b>
+        <span id="lv-livesay"></span>
+      </div>
+      <p class="lede" id="lv-say"></p>
+      <!-- BOTH PANELS STAY IN THE DOM AND ONLY ONE IS SHOWN. The poll paints both on every
+           answer, so switching tabs is instant and neither is ever a screen that has to
+           load. -->
+      <div class="tabs">
+        <button id="lv-tab-games" class="on">The games</button>
+        <button id="lv-tab-board">The board</button>
+      </div>
+      <div id="lv-pane-games">
+        <div class="gms" id="lv-games" style="margin-top:10px"></div>
+      </div>
+      <div id="lv-pane-board" hidden>
+        <div class="eyebrow" id="lv-boardlab" style="margin-top:12px">This week</div>
+        <div class="board" id="lv-board" style="margin-top:6px"></div>
+        <!-- A BOARD HAS FOUR STATES AND THREE OF THEM SHIP BROKEN, and this screen can
+             reach all four where the entry screen could only reach two: the reader here has
+             not necessarily entered, so "nobody yet" is a sentence that can be true. -->
+        <p class="note" id="lv-boardsay"></p>
+      </div>
+      <div class="stack">
+        <button class="btn quiet" id="b-live-back">Back</button>
+        <a class="btn quiet" href="/football/">Back to the game</a>
+      </div>
+    </div>
+  </section>
 </div>
+
+<!-- Outside the wrap because it is fixed to the window rather than to the column. Hidden
+     until the first kickoff and gone again once the last game is well over, which is asked
+     of the SCHEDULE rather than of the day of the week: "Thursday to Monday" is what that
+     works out to most weeks and is not what it means. -->
+<button class="livebtn" id="b-live" hidden><span class="bdot"></span>Live scores</button>
 
 <!-- The tester flag. Read defensively below: a blocked or stale copy leaves the global
      undefined, and the honest answer to "can this person see an unlaunched mode" when the
@@ -533,6 +637,10 @@
     var all = document.querySelectorAll('.screen');
     for (var i=0;i<all.length;i++) all[i].classList.toggle('on', all[i].id===id);
     window.scrollTo(0,0);
+    /* The pinned button is not on any screen, so nothing else would ever hide it. It is
+       wrong on two of them: on the live screen it would be a door to the room it is in, and
+       on the draft screen it would sit over the board somebody is picking from. */
+    syncLiveButton();
   };
   var esc = function(s){
     return String(s==null?'':s).replace(/[&<>"']/g, function(c){
@@ -1012,12 +1120,19 @@
       /* A MAN WHO DID NOT PLAY GETS A SENTENCE, not a blank. Zero beside nothing reads as
          a rendering fault; zero beside "did not play" is the outcome the drafter was being
          asked to see coming, and it is most of what separates two lineups. */
-      var under = s.played ? (s.line || 'played, nothing to show')
+      /* AND A MAN WHO SCORED NEEDS NO SENTENCE AT ALL. "played, nothing to show" is the
+         right line for somebody who was out there and never touched the ball, and it is a
+         contradiction printed next to 8.2. A live row carries no stat line (nothing
+         upstream has written one yet), so the two cases are told apart by the SCORE rather
+         than by whether there is a line to print. Decided on the printed value, which is
+         the commish state card's rule at another door. */
+      var under = s.played
+        ? (s.line || (s.half > 0 ? '' : 'played, nothing to show'))
         : (res.final ? 'did not play' : 'not played yet');
       rows += '<div class="rrow got"><span class="rp ' + esc(m.position) + '">'
         + esc(m.position) + '</span>'
         + '<span class="rn"><b>' + esc(m.name) + '</b>'
-        + '<s>' + esc(where) + (where ? ' · ' : '') + esc(under) + '</s></span>'
+        + '<s>' + esc(where) + (where && under ? ' · ' : '') + esc(under) + '</s></span>'
         + '<span class="rs' + (s.half > 0 ? '' : ' zero') + '">'
         + s.half.toFixed(1) + '</span></div>';
     }
@@ -1026,9 +1141,16 @@
     /* "The week closes" was wrong about both halves. The week ENDS on Monday night, and
        what happens at the Thursday kickoff is that entries stop. Shown in the reader's own
        zone by toLocaleString, which is why no zone is named beside it. */
+    /* AND THE COUNT IS ONLY PRINTED WHEN THERE IS ONE. A live answer carries it off the
+       week and a week published before those columns existed does not, so written straight
+       the sentence reads "undefined of undefined games are in". That is this repo's oldest
+       rule about a number in copy: interpolate it or write the sentence without it. */
+    var inSoFar = (Number.isFinite(res && res.played) && Number.isFinite(res && res.games))
+      ? res.played + ' of ' + res.games + ' games are in. This will move.'
+      : 'The games are still being played. This will move.';
     $('in-say').textContent = done
       ? (res.final ? 'Week ' + POOL.week + ' is done. This is what your six scored.'
-        : res.played + ' of ' + res.games + ' games are in. This will move.')
+        : inSoFar)
       : (locked() ? 'Week ' + POOL.week + ' has kicked off. Your lineup is in.'
         : 'Your lineup is in. Entries close ' + lockWhen() + '.');
     /* SAID PLAINLY RATHER THAN IMPLIED, and what it says changed the day the entry became
@@ -1072,6 +1194,169 @@
    * THE FIRST PAINT NEVER ANIMATES. There is nothing to move from, and fifty rows flying in
    * from wherever they happened to be measured is a screen announcing itself.
    */
+  /*
+   * ─── THE WEEK'S SLATE, AND WHEN THE LIVE SCREEN IS WORTH HAVING ───────────────────
+   *
+   * ASKED OF THE SCHEDULE AND NEVER OF THE DAY OF THE WEEK. "Thursday to Monday" is what a
+   * normal week works out to and is not what it means: a week with a Saturday slate, a
+   * London game at half past nine in the morning, or a Friday after Thanksgiving is the
+   * same question with different answers, and a rule written in weekday names is wrong on
+   * all three with nothing to say so. The first kickoff is also exactly when the board
+   * opens, so one fact decides both.
+   *
+   * THE SLATE IS DERIVED FROM THE POOL, which every visitor already downloads: each man
+   * carries his club, his opponent, which of them is at home and when they kick off, so
+   * sixteen games fall out of it with no second request and no new file. Measured on the
+   * live week 3 board: all sixteen, because all thirty two clubs have a priced man.
+   *
+   * A CLUB WITH NOBODY PRICED WOULD DROP ITS GAME, and that is why the server's rows are
+   * merged over the top rather than used only for the scores. `nfl_games` is written off
+   * `games.csv`, which is the schedule whole, so a game the pool cannot see arrives the
+   * first time the writer runs. The pool's half is what makes the screen right BEFORE
+   * anything has been written at all.
+   */
+  var LIVE_TAIL_MS = 6 * 60 * 60 * 1000;   /* live-results.mjs watches for six hours too */
+  var SLATE = null;
+  function slate(){
+    if (SLATE) return SLATE;
+    if (!POOL || !POOL.pool) return [];
+    var by = {}, i, m, away, home;
+    for (i=0;i<POOL.pool.length;i++){
+      m = POOL.pool[i];
+      if (!m.team || !m.opp || !m.kick) continue;
+      away = m.home ? m.opp : m.team;
+      home = m.home ? m.team : m.opp;
+      by[away + '|' + home] = { away: away, home: home, kick: m.kick };
+    }
+    SLATE = Object.keys(by).map(function(k){ return by[k]; });
+    SLATE.sort(function(a,b){ return Date.parse(a.kick) - Date.parse(b.kick); });
+    return SLATE;
+  }
+
+  /** From the first kickoff until well after the last one, or null if the week has none. */
+  function liveWindow(){
+    var s = slate();
+    if (!s.length) return null;
+    var first = Date.parse(s[0].kick);
+    var last = Date.parse(s[s.length-1].kick);
+    if (!Number.isFinite(first) || !Number.isFinite(last)) return null;
+    return { from: first, to: last + LIVE_TAIL_MS };
+  }
+  function liveOpen(){
+    var w = liveWindow();
+    if (!w) return false;
+    var t = Date.now();
+    return t >= w.from && t <= w.to;
+  }
+
+  /*
+   * THE BUTTON IS NOT ON A SCREEN, so nothing else would ever hide it, and it is wrong on
+   * two of them. On the live screen it is a door into the room it is standing in. On the
+   * draft screen it would sit over the board somebody is picking a man from, and the draft
+   * screen cannot be reached inside the window anyway, because the week locks at the first
+   * kickoff.
+   *
+   * `body.haslive` is what gives the column a floor to sit above. Without it the pill
+   * covers whatever the last control on the screen is, which on the entry screen is the way
+   * back to the game.
+   */
+  function syncLiveButton(){
+    var b = $('b-live');
+    if (!b) return;
+    var cur = document.querySelector('.screen.on');
+    var id = cur ? cur.id : '';
+    var want = liveOpen() && (id === 's-home' || id === 's-review' || id === 's-in');
+    b.hidden = !want;
+    document.body.classList.toggle('haslive', want);
+  }
+
+  /*
+   * AND IT HAS TO ARRIVE WITHOUT A RELOAD. Somebody sitting on the home screen at a quarter
+   * past eight on the Thursday is the reader this is for, and nothing else on this page
+   * ticks before the lock: the poll only runs once the board is open. A minute is as often
+   * as a thing that appears once a week needs asking, and all it does is toggle an
+   * attribute.
+   */
+  setInterval(syncLiveButton, 60000);
+
+  /*
+   * ─── THE REAL GAMES ───────────────────────────────────────────────────────────────
+   *
+   * TWO CONTRIBUTORS AND THE SERVER WINS. The pool's slate is the sixteen games and their
+   * kickoffs, which is the whole screen before a ball is thrown and needs nothing to have
+   * run. `nfl_games` is what happened since. Merged rather than chosen between, so the
+   * screen is complete at every point of the weekend rather than only once the writer has
+   * been round.
+   *
+   * A PRE-GAME ROW WHOSE KICKOFF HAS PASSED SAYS SO. That is the shape of a feed outage
+   * from the reader's side: the server refuses to move a game forwards on a source that
+   * knows less, so what is stored stays honest, and a kickoff time printed beside a game
+   * that started an hour ago would be the page inventing the one thing nobody knows.
+   */
+  var QTR = ['', '1st', '2nd', '3rd', '4th'];
+  function periodLabel(p){
+    if (!p) return '';
+    if (p <= 4) return QTR[p];
+    return p === 5 ? 'OT' : (p - 4) + 'OT';
+  }
+  function kickLabel(kick){
+    var t = Date.parse(kick);
+    if (!Number.isFinite(t)) return '';
+    /* The reader's own clock, not Eastern. Somebody in California reading "1:00" about a
+       game that starts at ten is being told the time in a place they are not. */
+    return new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric',
+      minute: '2-digit' }).replace(',', '');
+  }
+
+  function gameRowHTML(g){
+    var live = g.state === 'in', done = g.state === 'post';
+    var a = g.away_score, h = g.home_score;
+    var has = a != null && h != null;
+    var lead = function(mine, other){ return has && mine > other ? ' lead' : ''; };
+    var right;
+    if (done){
+      right = '<b>' + (g.overtime ? 'Final / OT' : 'Final') + '</b>';
+    } else if (live){
+      right = '<b>' + esc(periodLabel(g.period) || 'Live') + '</b>'
+        + (g.clock ? '<s>' + esc(g.clock) + '</s>' : '');
+    } else if (g.kick && Date.now() >= Date.parse(g.kick)){
+      /* Kicked off, and nothing has told us anything about it. */
+      right = '<b>Under way</b>';
+    } else {
+      right = '<s>' + esc(kickLabel(g.kick)) + '</s>';
+    }
+    var side = function(club, mine, other){
+      return '<div class="gt' + lead(mine, other) + '"><b>' + esc(club) + '</b>'
+        + '<i>' + (has ? esc(String(mine)) : '') + '</i></div>';
+    };
+    return '<div class="gm' + (live ? ' live' : '') + (done ? ' done' : '') + '">'
+      + '<div class="gsides">' + side(g.away, a, h) + side(g.home, h, a) + '</div>'
+      + '<div class="gst">' + right + '</div></div>';
+  }
+
+  function paintScores(d){
+    var box = $('lv-games');
+    if (!box) return;
+    var by = {}, i, g, k, s = slate();
+    for (i=0;i<s.length;i++) by[s[i].away + '|' + s[i].home] = s[i];
+    var served = (d && Array.isArray(d.games)) ? d.games : [];
+    for (i=0;i<served.length;i++){
+      g = served[i];
+      if (!g || !g.away || !g.home) continue;
+      k = g.away + '|' + g.home;
+      by[k] = { away: g.away, home: g.home, kick: g.kick || (by[k] && by[k].kick),
+        state: g.state, away_score: g.away_score, home_score: g.home_score,
+        period: g.period, clock: g.clock, overtime: g.overtime };
+    }
+    var all = Object.keys(by).map(function(x){ return by[x]; });
+    all.sort(function(a,b){ return (Date.parse(a.kick)||0) - (Date.parse(b.kick)||0); });
+    var html = '';
+    for (i=0;i<all.length;i++) html += gameRowHTML(all[i]);
+    /* Nothing at all is a week whose pool this page could not read, which is a state the
+       loading screen already covers. Said rather than left blank anyway. */
+    box.innerHTML = html || '<p class="note">This week\'s games could not be read.</p>';
+  }
+
   var BOARD_SEEN = null;    /* key -> { place, score } as last drawn, or null before one */
   var boardTimers = [];
   function clearBoardTimers(){
@@ -1093,26 +1378,37 @@
   }
 
   function paintBoard(data){
-    var wrap = $('in-boardwrap');
     var rows = data && data.rows;
-    /* NO ROWS IS NOT AN EMPTY BOARD ON THIS SCREEN, IT IS A SHUT ONE, and the difference
-       matters because the two want opposite treatments. The server answers an empty list
-       for a week that has not locked, and once it has locked it answers every entry
-       including this reader's own. So on the entry screen, where the reader has by
-       definition entered, an empty answer can only mean the week is still open. A "nobody
-       yet" line here would be a sentence that cannot be true, printed at exactly the
-       moment it is most likely to be read. Null is the unreachable server, and it is the
-       same nothing: a board that will not draw costs nothing.
-       A POLL THAT ANSWERS NULL LEAVES THE BOARD ALONE rather than hiding it: a leaderboard
-       that blanked itself on one bad request would flash empty every time a phone changed
-       cell tower. */
-    if (!data) return;
-    if (!rows || !rows.length){ wrap.hidden = true; BOARD_SEEN = null; return; }
-    wrap.hidden = false;
+    /*
+     * A BOARD HAS FOUR STATES AND THREE OF THEM SHIP BROKEN, and this is the first screen
+     * on this page that can reach all four. While the board lived under the entry screen
+     * the reader had entered BY DEFINITION, so an empty answer could only ever mean the
+     * week had not locked, and "nobody yet" was a sentence that could not be true there.
+     * Here it can be: this screen is open to somebody who never drafted, which is most of
+     * the reason it exists.
+     *
+     * A POLL THAT ANSWERS NULL LEAVES THE BOARD ALONE rather than blanking it. A
+     * leaderboard that emptied itself on one bad request would flash blank every time a
+     * phone changed cell tower. It only says so when there is no board there to leave. */
+    if (!data){
+      if (!BOARD_SEEN) $('lv-boardsay').textContent = 'The board could not be reached. '
+        + 'The games above are this week\'s schedule.';
+      return;
+    }
+    if (!rows || !rows.length){
+      $('lv-board').innerHTML = '';
+      BOARD_SEEN = null;
+      $('lv-boardlab').textContent = 'This week';
+      $('lv-boardsay').textContent = (data.week && data.week.open)
+        ? 'Nobody has entered this week. Being first is the prize.'
+        : 'The board opens at the first kickoff.';
+      return;
+    }
+    $('lv-boardsay').textContent = '';
 
     var me = data.me && data.me.place ? data.me : null;
-    var n = me ? me.entries : null;
-    $('in-boardlab').textContent = 'This week'
+    var n = me ? me.entries : (data.week ? data.week.entries : null);
+    $('lv-boardlab').textContent = 'This week'
       + (n ? ' · ' + n + (n === 1 ? ' entry' : ' entries') : '');
 
     var html = '', mine = false, i, r;
@@ -1133,7 +1429,7 @@
       html += boardRowHTML('you', me.place, 'You', Number(me.score).toFixed(1), 'me');
     }
 
-    var box = $('in-board');
+    var box = $('lv-board');
 
     /* FIRST: where is everything now. */
     var first = {}, kids = box.children, k;
@@ -1146,7 +1442,12 @@
     box.innerHTML = html;
     BOARD_SEEN = want;
 
-    if (REDUCE || !had) return;
+    /* AND NOTHING ANIMATES WHILE THE BOARD IS NOT BEING LOOKED AT. The poll paints it on
+       every answer whatever screen or tab is up, so a repaint made while the reader is on
+       their own six, or on the games, is measuring elements with no layout box: every
+       rectangle is zero and every row appears to have travelled the height of the page. The
+       DOM is still updated, which is what makes opening either instant. */
+    if (REDUCE || !had || !boardShowing()) return;
 
     /* LAST: read every new position before writing a single transform. */
     kids = box.children;
@@ -1212,8 +1513,17 @@
    * without the pair. See 110_fantasy_live.sql.
    */
   var COLD_MS = 25 * 60 * 1000;   /* the writer runs about every ten minutes */
-  function paintLive(week){
-    var el = $('in-live');
+  /*
+   * TWO CHIPS, ONE PAINTER, AND THAT IS THE STORE CARD'S RULE ARRIVING HERE. The entry
+   * screen needs it because the six men under a climbing total are only readable if the
+   * screen says when they last moved; the live screen needs it because it IS the live
+   * screen. Written as two painters they would be two sets of words about one fact, and
+   * they would say different things inside a week. `prefix` is the only thing that differs
+   * and it is not a word: it is which element to write into.
+   */
+  function paintLiveInto(prefix, week){
+    var el = $(prefix + '-live');
+    if (!el) return;
     if (!week || !week.open){ el.hidden = true; return; }
     el.hidden = false;
     var checked = week.checked_at ? Date.parse(week.checked_at) : 0;
@@ -1222,26 +1532,30 @@
       ? week.games_final + ' of ' + week.games_total + ' games' : '';
     if (week.scored_at){
       el.className = 'blive done';
-      $('in-livelab').textContent = 'FINAL';
-      $('in-livesay').textContent = games;
+      $(prefix + '-livelab').textContent = 'FINAL';
+      $(prefix + '-livesay').textContent = games;
       return;
     }
     if (!checked){
       /* Locked, and nothing has looked yet. Honest rather than silent: this is the state
          between the Thursday lock and the first run of the writer. */
       el.className = 'blive cold';
-      $('in-livelab').textContent = 'NOT SCORED YET';
-      $('in-livesay').textContent = games;
+      $(prefix + '-livelab').textContent = 'NOT SCORED YET';
+      $(prefix + '-livesay').textContent = games;
       return;
     }
     var cold = (Date.now() - checked) > COLD_MS;
     el.className = 'blive ' + (cold ? 'cold' : 'on');
-    $('in-livelab').textContent = cold ? 'NOT UPDATING' : 'LIVE';
+    $(prefix + '-livelab').textContent = cold ? 'NOT UPDATING' : 'LIVE';
     var when = moved ? new Date(moved).toLocaleTimeString([],
       { hour: 'numeric', minute: '2-digit' }) : null;
-    $('in-livesay').textContent = (games ? games : '')
+    $(prefix + '-livesay').textContent = (games ? games : '')
       + (games && when ? ' · ' : '')
       + (when ? (cold ? 'last moved ' : 'as of ') + when : '');
+  }
+  function paintLive(week){
+    paintLiveInto('in', week);
+    paintLiveInto('lv', week);
   }
 
   /*
@@ -1269,6 +1583,12 @@
     return !!(week && week.open && !week.scored_at);
   }
 
+  /* THE TWO SCREENS THE ANSWER IS FOR. Both read the same one call: the entry screen takes
+     the reader's own six out of it and the live screen takes the games and the board. */
+  function watching(){
+    return $('s-in').classList.contains('on') || $('s-live').classList.contains('on');
+  }
+
   function stopPolling(){
     pollGen++;
     if (pollTimer) { clearTimeout(pollTimer); pollTimer = 0; }
@@ -1283,9 +1603,22 @@
          week rolled over underneath a slow request. A board painted for the wrong week is
          somebody else's competition on your screen. */
       if (gen !== pollGen) return null;
-      if (!$('s-in').classList.contains('on')) return null;
+      if (!watching()) return null;
       if (season !== POOL.season || week !== POOL.week) return null;
-      if (d){ paintLive(d.week); paintBoard(d); paintLines(d); }
+      /* PAINTED EVEN WHEN THE ANSWER IS NOTHING, because `paintBoard` has a sentence for
+         that and it is the one state a reader is most likely to be staring at. It leaves an
+         existing board alone; what it will not do is leave a blank box with no explanation
+         under it. */
+      paintBoard(d);
+      if (d){
+        paintLive(d.week);
+        paintScores(d);
+        /* THE ENTRY SCREEN'S OWN HALF, and only while it is the screen. `paintLines` ends
+           in `paintIn`, which ends in `show('s-in')`: called from the live screen it would
+           take a reader off the board they are watching, every twenty seconds. */
+        if ($('s-in').classList.contains('on')) paintLines(d);
+        if ($('b-in-board')) $('b-in-board').hidden = !(d.week && d.week.open);
+      }
       return d;
     });
   }
@@ -1308,12 +1641,23 @@
   }
 
   document.addEventListener('visibilitychange', function(){
-    if (!$('s-in') || !$('s-in').classList.contains('on')) return;
     if (document.hidden) { stopPolling(); return; }
-    pollOnce().then(function(d){
-      if (d && boardLive(d.week)) startPolling();
-    });
+    /* The button can have come and gone while the tab was away: a phone put in a pocket on
+       Thursday afternoon comes back out after kickoff. */
+    syncLiveButton();
+    if (!watching()) return;
+    watch();
   });
+
+  /* ONE WAY TO START WATCHING, called by both screens. Asks immediately, because the moment
+     somebody opens either of them is the moment they want the current answer rather than a
+     twenty second old one, and only then settles into the poll. */
+  function watch(){
+    return pollOnce().then(function(d){
+      if (d && boardLive(d.week)) startPolling();
+      return d;
+    });
+  }
 
   /*
    * TWO HANDLES PUBLISHED FOR THE CHECKER, AND NOTHING ON THIS PAGE READS EITHER.
@@ -1365,9 +1709,20 @@
       var l = d.me.lines[i];
       if (l.played) by[l.player_id] = [Number(l.half_ppr), ''];
     }
-    /* `final` is deliberately absent, so `paintIn` says "not played yet" under a man with
-       no row rather than "did not play": the week is not over and he may still be on. */
-    paintIn({ scores: by });
+    /*
+     * AND HOW FAR INTO THE WEEK IT IS, which is the half this was missing.
+     *
+     * `paintIn` prints "3 of 16 games are in. This will move." for an unfinished week, off
+     * `res.played` and `res.games`. A payload carrying only the scores has neither, so the
+     * sentence read "undefined of undefined games are in", on the screen a reader watches
+     * all afternoon. Nothing threw: it is a string built out of two missing numbers.
+     * Found by taking a screenshot of the real page and looking at it.
+     *
+     * `final` is deliberately still absent, so a man with no row reads "not played yet"
+     * rather than "did not play": the week is not over and he may still be on.
+     */
+    var wk = d.week || {};
+    paintIn({ scores: by, played: wk.games_final, games: wk.games_total });
   }
 
   /* The entry screen is opened once results may exist, so the fetch happens here rather
@@ -1375,18 +1730,79 @@
   function openIn(){
     paintIn(null);
     stopPolling();
-    BOARD_SEEN = null;
     clearBoardTimers();
     $('in-live').hidden = true;
-    pollOnce().then(function(d){
-      if (d && boardLive(d.week)) startPolling();
-    });
+    $('b-in-board').hidden = true;
+    watch();
     resultsFor(POOL.season, POOL.week).then(function(res){
       /* Only repaint if this screen is still the one showing. A slow answer landing after
          somebody pressed Back would put the entry up over whatever they went to. */
       if (res && $('s-in').classList.contains('on')) paintIn(res);
     });
   }
+
+  /*
+   * ─── OPENING THE LIVE SCREEN ──────────────────────────────────────────────────────
+   *
+   * THE SCHEDULE IS DRAWN BEFORE ANYTHING IS ASKED, so the screen is never blank for the
+   * length of a round trip: sixteen games with their kickoff times come out of the pool
+   * this page already has. What the poll adds is what has happened since.
+   */
+  /* WHICH PANEL IS SHOWING. Read by the board painter as well as set by the tabs, because
+     animating a reorder inside a hidden panel is measuring elements with no layout box:
+     every rectangle is zero and every row appears to have travelled the height of the
+     page. */
+  function lvTab(which){
+    var games = which !== 'board';
+    $('lv-tab-games').classList.toggle('on', games);
+    $('lv-tab-board').classList.toggle('on', !games);
+    $('lv-pane-games').hidden = !games;
+    $('lv-pane-board').hidden = games;
+    window.scrollTo(0,0);
+  }
+  function boardShowing(){
+    return $('s-live').classList.contains('on') && !$('lv-pane-board').hidden;
+  }
+  $('lv-tab-games').onclick = function(){ lvTab('games'); };
+  $('lv-tab-board').onclick = function(){ lvTab('board'); };
+
+  function openLive(tab){
+    $('lv-week').textContent = POOL.season + ' week ' + POOL.week;
+    $('lv-say').textContent = liveOpen()
+      ? 'Every game of the week, and where everybody is, while it happens.'
+      : 'Week ' + POOL.week + ' is not being played right now. This is how it finished.';
+    $('lv-live').hidden = true;
+    /*
+     * `BOARD_SEEN` IS DELIBERATELY NOT RESET HERE, AND IT WAS, FOR A PASS.
+     *
+     * The reasoning was that opening a screen is not watching a row move, so a board that
+     * animated on arrival would be announcing itself. The premise is false: the poll has
+     * been painting this board all along, while the reader was on their own six or on the
+     * games, so THE ROWS ON SCREEN ALREADY ARE `BOARD_SEEN`. An animation from there to the
+     * next answer is one honest step, and throwing the mark away only loses the first move
+     * after somebody arrives, which is the move they are most likely to have come for.
+     *
+     * What stops a hidden panel animating is `boardShowing()`, which is a different
+     * question asked in a different place.
+     */
+    clearBoardTimers();
+    lvTab(tab === 'board' ? 'board' : 'games');
+    paintScores(null);
+    show('s-live');
+    /* AFTER `show`, WHICH CANCELS TIMERS. The draft screen's reveal learnt this the same
+       way: a watch started before the screen change is a watch the screen change stops. */
+    watch();
+  }
+
+  $('b-live').onclick = function(){ openLive('games'); };
+  $('b-in-board').onclick = function(){ openLive('board'); };
+  $('b-live-back').onclick = function(){
+    /* BACK TO WHERE THEY CAME FROM, which is their own entry if they have one and the home
+       screen if they do not. A single destination would send somebody who has never drafted
+       to a screen about a lineup that does not exist. */
+    if (serverEntry() || (state && state.submitted != null)) openIn();
+    else { paintHome(); show('s-home'); }
+  };
 
   /* ---- home ---- */
   function startChance(){

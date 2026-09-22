@@ -4,6 +4,23 @@ name: Score the Fantasy Challenge week, live
 # it. `fantasy-pool.yml` builds a week on the Tuesday and scores the one before it; this
 # runs every ten minutes through the games and writes whatever nflverse has so far.
 #
+# IT ALSO WRITES THE SCOREBOARD, on the same tick, from the same run. The live screen shows
+# the real games and the standings side by side, and they are about one instant: written by
+# two jobs they would be two, and a board that had already paid for a touchdown the
+# scoreboard beside it had not shown reads as one of the two being broken.
+#
+# ─── AND IT IS THE FIRST PLACE THE LIVE FEED IS EVER EXERCISED ─────────────────────────
+#
+# `site.api.espn.com` is refused by the development sandbox's egress proxy, so the scoreboard
+# half has never run against the real feed: everything about it is verified against a saved
+# payload and against the schedule fallback. A RUN OF THIS WORKFLOW IS THE VERIFICATION.
+# What to read in the log is the `scoreboard:` line, and specifically the number it says the
+# feed answered. Sixteen games and a feed that answered none, while a game is on, is the
+# feed's week numbering disagreeing with ours rather than a quiet afternoon, and the job
+# says so in as many words rather than going green with an empty panel. Everything still
+# works in that state: every game falls back to the schedule, which means kickoff times
+# during the games and correct final scores a few hours after each one.
+#
 # IT COMMITS NOTHING AND DEPLOYS NOTHING. The live board is a Supabase read, so a score
 # that moves costs one write. Committing `results_*.json` every ten minutes would be a
 # hundred commits and a hundred Cloudflare deploys a weekend to publish a file the live

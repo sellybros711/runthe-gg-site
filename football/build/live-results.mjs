@@ -3,6 +3,13 @@
  *   node football/build/live-results.mjs | psql "$SUPABASE_DB_URL"
  *   node football/build/live-results.mjs --why          say what it decided and write nothing
  *   node football/build/live-results.mjs --force        write even outside a game window
+ *   node football/build/live-results.mjs --espn f.json  a saved payload instead of the feed
+ *
+ * IT WRITES TWO THINGS: what the week's six-man lineups have scored, and what the real games
+ * are doing. They are on one tick on purpose, because the live screen shows both and a board
+ * that has already paid for a touchdown the scoreboard beside it has not shown reads as one
+ * of the two being broken. The scoreboard half is `nfl-scores.mjs` and is allowed to fail
+ * without taking the scoring with it.
  *
  * It prints SQL on stdout and nothing else, so the pipe above is the whole of it. When
  * there is nothing to do it prints NOTHING, and psql handed an empty script is a no-op:
@@ -42,6 +49,7 @@ import { DATA_DIR, cachedCSV, parseCSVObjects, GAMES_URL } from './lib.mjs';
 import { buildWeeklyResults } from './weekly-results.mjs';
 import { weekGames } from './weekly-pool.mjs';
 import { resultsSQL } from './publish-week.mjs';
+import { buildScores, scoresSQL } from './nfl-scores.mjs';
 
 const arg = (flag, fallback) => {
   const i = process.argv.indexOf(flag);
@@ -49,6 +57,9 @@ const arg = (flag, fallback) => {
 };
 const WHY = process.argv.includes('--why');
 const FORCE = process.argv.includes('--force');
+/* A saved payload instead of the feed, which is the only way the scoreboard half of this
+   can be driven from a machine that cannot reach ESPN. See espn.mjs. */
+const ESPN_FILE = arg('--espn', null);
 
 /* Everything explanatory goes to stderr, so `| psql` only ever receives SQL. A workflow log
    still shows all of it, which is where the cadence question gets answered. */
@@ -128,11 +139,49 @@ const main = async () => {
     say('  the week is finished and every club is in. Nothing to do.');
     return;
   }
+
+  /* ─── THE PICTURE BESIDE THE NUMBER ───────────────────────────────────────────────
+   *
+   * The same tick writes the scoreboard, so what the live screen shows about the games and
+   * what it shows about the standings are one snapshot. Asked on two schedules they would
+   * be two, about twenty seconds apart, and a board that had already paid for a touchdown
+   * the scoreboard beside it had not shown reads as one of the two being broken.
+   *
+   * IT MAY NOT TAKE THIS JOB RED. Scoring the week is the thing that matters and a picture
+   * is a picture: `buildScores` already swallows everything the feed can do, and this
+   * catches the rest so that a scoreboard which cannot be built still leaves a week that
+   * can be scored. The log is loud about it, because a feed nobody here can reach is a feed
+   * whose first verification is a run of this workflow.
+   */
+  let scores = null;
+  try {
+    scores = await buildScores({ season, week, games, espnFile: ESPN_FILE, at });
+    const by = {};
+    for (const r of scores.rows) by[r.state] = (by[r.state] || 0) + 1;
+    say(`  scoreboard: ${scores.rows.length} games, the feed answered ${scores.matched}`
+      + ` (${scores.how}), ` + Object.entries(by).map(([k, v]) => `${v} ${k}`).join(', '));
+    /* THE NUMBER TO READ IN A WORKFLOW LOG. A run that fetched a payload and matched none
+       of our sixteen games is the feed's week numbering disagreeing with ours, and it looks
+       exactly like a quiet afternoon from every other angle. */
+    if (!scores.matched && inGame > 0) {
+      say('  scoreboard: THE FEED ANSWERED NOTHING WHILE A GAME IS ON. '
+        + 'Every game falls back to the schedule, so the board will show kickoff times.');
+    }
+  } catch (e) {
+    say('  scoreboard: could not be built (' + (e && e.message ? e.message : e)
+      + '). The week is still scored.');
+  }
+
   if (WHY) {
     say('  --why, so no SQL was written.');
     return;
   }
 
+  /* SCORES FIRST, and the order is not arbitrary: they are two statements and psql applies
+     them as it reads them, so a failure between the two leaves the scoreboard written and
+     the week unscored rather than the other way round. The week is what the Tuesday build
+     settles anyway; nothing settles a scoreboard. */
+  if (scores && scores.rows.length) process.stdout.write(scoresSQL(season, week, scores.rows));
   process.stdout.write(resultsSQL(built));
   say(`  wrote SQL for ${rows} men`
     + (built.final ? ' and marked the week final.' : '.'));

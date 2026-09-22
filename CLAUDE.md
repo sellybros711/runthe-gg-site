@@ -3212,6 +3212,221 @@ frozen for the rest of the afternoon on a reader whose train went into a tunnel.
 **Three ways an answer can be stale by the time it lands**, and all three are guarded: the
 reader left the screen, the poll was stopped, or the live week rolled over under a slow
 request. A board painted for the wrong week is somebody else's competition on your screen.
+### The real games, and a board that is its own screen
+
+```
+node football/build/test/test_scores.mjs     the feed's parser and the fallback
+node football/build/nfl-scores.mjs --why     what the live week looks like right now
+node football/check-fantasy.mjs              the screen, the pill and the scoreboard
+psql -d nfl_scores -f supabase/test/nfl_scores_test.sql   after 109, 110 and 111
+```
+
+`supabase/111_nfl_scores.sql` adds `nfl_games`, `football/build/espn.mjs` reads the feed,
+`football/build/nfl-scores.mjs` composes a week, and `s-live` in `football/fantasy/index.html`
+draws it. One pinned button reaches it while the games are on.
+
+**The board used to live under the entry screen and that was wrong twice over.** A reader who
+never drafted has no entry screen, so on the one afternoon a leaderboard is worth looking at
+they had no way to it at all, which is the dynasty board that rendered perfectly and had no
+door arriving at a second mode. And a board hung under a lineup reads as a footnote to it,
+when on a Sunday it is the thing somebody opened the page for.
+
+**Moving it gave the board back two of its four states.** While it sat under the entry screen
+the reader had entered BY DEFINITION, so an empty answer could only ever mean the week had not
+locked and "nobody yet" was a sentence that could not be true. On a screen open to somebody
+who never drafted it can be, so all four are written: unreachable, not open yet, nobody has
+entered, and here is the board.
+
+**THE WINDOW IS ASKED OF THE SCHEDULE, NEVER OF THE DAY OF THE WEEK.** "Thursday to Monday" is
+what a normal week works out to and is not what it means: a Saturday slate in December, a
+London kickoff at half past nine in the morning and the Friday after Thanksgiving are the same
+question with three different answers, and a rule written in weekday names is wrong about all
+three with nothing to say so. The button is up from the first kickoff until six hours after the
+last one. The first kickoff is also exactly when the board opens, so one fact decides both.
+
+**It is pinned rather than put on a screen**, because which screen somebody is on when they
+want the scores is not something the page gets to decide. `body.haslive` gives the column a
+floor to sit above: a fixed pill over the last control is a button covering the way out, which
+is the boss battle's Continue arriving at a different screen. It is hidden on the screen it
+opens (a door into the room it is standing in) and on the draft screen, which cannot be reached
+inside the window anyway because the week locks at the first kickoff.
+
+**A minute is how often the button asks whether it should be there.** Nothing else on this page
+ticks before the lock, since the poll only runs once the board is open, so without it somebody
+sitting on the home screen at a quarter past eight on the Thursday would have to reload to find
+the thing this was built for.
+
+**The entry screen keeps a way to the board and that is not a duplicate door.** The pill is a
+live control and disappears at about seven on the Tuesday morning; a leaderboard whose only
+door was a live one would go with it. Both open the same screen.
+
+**TWO PANELS, ONE AT A TIME, AND THAT IS ARITHMETIC RATHER THAN TASTE.** Sixteen games is about
+980px at 390 and a full board is fifty rows, so whichever of the two is drawn second is behind
+a scroll of the other for the whole afternoon. Stacked, the competition this site is actually
+about sat under the entire NFL slate. Found by taking a screenshot and looking at it.
+
+**Each door lands on what it promised**: the pill says Live scores and opens the games, the
+entry screen's button says the board and opens the board. A single default would make one of
+the two a control that takes you somewhere other than where it said. That is the premium card's
+own lesson, where the card read one thing and the sheet it opened read another, and both suites
+assert it for the same reason. Both panels stay in the DOM and the poll paints both, so
+switching is instant and neither is ever a screen that has to load.
+
+**`BOARD_SEEN` is deliberately NOT reset when the screen opens, and it was, for a pass.** The
+reasoning was that opening a screen is not watching a row move. The premise is false: the poll
+has been painting that board all along, while the reader was on their own six or on the games,
+so THE ROWS ON SCREEN ALREADY ARE `BOARD_SEEN`, and an animation from there is one honest step.
+Resetting only threw away the first move after somebody arrives, which is the move they came
+for. What stops a hidden panel animating is `boardShowing()`, which is a different question
+asked in a different place: measured inside `display:none` every rectangle is zero and every
+row appears to have travelled the height of the page.
+
+#### The scoreboard has two sources and the schedule is what names a club
+
+| | knows |
+|---|---|
+| the pool, which every visitor already downloads | the sixteen games and when they kick off |
+| `nfl_games`, written by the cron | what has happened since |
+
+**The slate is derived from the pool rather than fetched.** Each man carries his club, his
+opponent, which of them is at home and the kickoff, so sixteen games fall out of a file the
+page has already read. Measured on the live week 3 board: all sixteen, because all thirty two
+clubs have a priced man. **So the screen is complete before anything has been written at all**,
+which is also what it looks like against a database that never got the migration.
+
+**A club with nobody priced would drop its game**, which is why the server's rows are merged
+over the top rather than used only for the scores. `nfl_games` is written off `games.csv`, the
+whole schedule, so a game the pool cannot see arrives the first time the writer runs.
+
+**THE FEED IS JOINED ON ESPN'S OWN EVENT ID AND NEVER ON A CLUB CODE.** `games.csv` carries an
+`espn` column holding the event id of every game. ESPN writes WSH and LAR where nflverse writes
+WAS and LA, so a name-matched join would have silently dropped two clubs every week and looked
+like two byes. What the feed supplies is a state, a quarter, a clock and two numbers. Every
+name on the screen is ours.
+
+**An event that cannot be made sense of takes its own game out of the answer and nothing
+else.** A state that is not one of the three the page draws, a competition with one side, a
+score that will not parse: each of those leaves that game on the schedule's answer, so the
+board shows a kickoff time rather than half a scoreline. The fixture attaches all three to
+REAL week 3 games for that reason, so the fallback has somewhere to catch them.
+
+**BEFORE KICKOFF A SCORE IS NOT NIL-NIL, IT IS NOTHING.** ESPN answers "0" and "0" for a game on
+Thursday morning, and stored as a scoreline the board would say Atlanta and Green Bay were
+level. It answers a period of 0 and a clock of "0:00" too, which is a pre-game row carrying a
+quarter. Both are dropped. That is `next-week.mjs`'s own trap (`Number('')` is 0) arriving from
+the other side.
+
+**Overtime is derived from the quarter and never from the word OT in a sentence.** `type.detail`
+is display text, it has been spelled more than one way, and a finished game past the fourth went
+to overtime, which is arithmetic.
+
+**The status is read off the COMPETITION and not off the event.** Both carry one and they can
+disagree; reading the event's copy is how a board freezes at pre-game for a whole afternoon with
+every other field perfect. The sample payload carries a stale event status for that reason and
+the guard asserts the live one wins.
+
+#### A game only ever moves forwards, and that is what a feed outage needs
+
+Every ten minutes a tick arrives that knows less than the row already does, because the fallback
+can only ever say "kickoff is at 8:15" about a game in its fourth quarter. Taken, the board flips
+a live game back to pre-game twice an hour all afternoon and forward again when the feed returns.
+**Nothing throws, every row is a valid row, and the only symptom is a scoreboard that flickers.**
+
+So `nfl_put_games` ranks the three states and keeps the furthest along answer. A source that
+knows less writes nothing. **What it costs is that the cron cannot write a correction**: a game
+wrongly marked final stays final until somebody updates it by hand, and that is the right way
+round, because the failure it prevents happens every time the feed blinks and the one it causes
+needs the feed to be wrong.
+
+**A pre-game row whose kickoff has passed says "Under way" rather than a time.** That is what a
+feed outage looks like from the reader's side, and printing 8:15 beside a game that started an
+hour ago would be the page inventing the one thing nobody knows.
+
+**The merge is done in a CTE and not inside the `on conflict`.** Written as a `do update set`
+full of rank comparisons, every column carries its own copy of the same test and then whether the
+row MOVED has to be asked a third time by comparing the old row against an expression restating
+all of them. It was written that way first and ran to thirty lines. Resolved before the write,
+the rule is written once, `moved` is a comparison of two rows, and `excluded` is already the
+answer.
+
+#### The games ride in `fantasy_board`, which is why 111 restates it
+
+The live screen shows two things that are about ONE INSTANT: what the games are doing, and what
+that has done to the standings. Asked as two calls they are two instants, about twenty seconds
+apart in an order nobody controls, and the reader gets a board that has already paid for a
+touchdown the scoreboard beside it has not shown. Both read as one of the two being broken.
+
+**APPLY 111 AFTER 110.** 110's copy of `fantasy_board` has no `games` key in it, so the other
+order leaves a live screen whose scoreboard is permanently empty with nothing anywhere saying
+why. That is the one ordering hazard in the file.
+
+**The games are answered even when the week is not.** A week with no `fantasy_weeks` row is a
+competition nobody published, and the football is on regardless: the screen draws the scoreboard
+and says the board is not open, which is two true sentences rather than one blank panel.
+
+#### The cron writes both halves, and the feed cannot take it red
+
+`live-results.mjs` scores the week and writes the scoreboard on the same tick, from one snapshot.
+The scoreboard half is allowed to fail on its own: scoring the week is what matters and a picture
+is a picture, so `buildScores` swallows everything the feed can do and the caller catches the
+rest.
+
+**SCORES FIRST, THEN THE WEEK.** They are two statements and psql applies them as it reads them,
+so a failure between the two leaves the scoreboard written and the week unscored rather than the
+other way round. The Tuesday build settles a week; nothing settles a scoreboard.
+
+**ESPN CANNOT BE REACHED FROM THE DEVELOPMENT SANDBOX**, and that is worth saying plainly rather
+than leaving somebody to read a green suite as proof the feed works. `site.api.espn.com` is
+refused by the egress proxy on the CONNECT. So:
+
+| | |
+|---|---|
+| verified here | the parser against a saved payload, every malformed event, and the whole fallback against the real schedule |
+| NOT verified | that ESPN sends a payload of that shape |
+
+A hand written fixture can only prove the parser handles the shape it was told about. **The
+first real verification is a run of `fantasy-live.yml`**, and what to read in its log is the
+number the feed answered: sixteen games and a feed that matched none, while a game is on, is the
+feed's week numbering disagreeing with ours and looks exactly like a quiet afternoon from every
+other angle. The job says so in as many words. **There are two ways of asking for that reason**:
+the week form is one request for the whole slate and is the one most likely to be wrong in a way
+nobody here can test, so a week that matches none of our games is re-asked by DAY, and a date is
+not a numbering convention and cannot be off by one.
+
+**What a feed that never works at all costs is a quarter and a clock.** The slate, the clubs and
+the kickoffs are the schedule's, and `games.csv` fills in a final score a few hours after each
+whistle, so the week still ends with a correct scoreboard. That half IS verifiable here and the
+guard drives it against a week already played.
+
+#### Three things the guards found, and two of them were the guards
+
+**A `do $$` block is one transaction, so `now()` inside it is one timestamp.** The claim that an
+unchanged write leaves `updated_at` alone passed with its defect in: a writer stamping the clock
+on every single look is indistinguishable from one that stamps it only on a change when both are
+read inside one transaction. The writes are separate statements now, which is also what they are
+in life. Same class as this repo's three wrong extractors, arriving at a test fixture.
+
+**The entry screen asks before the board does.** Boot lands on the reader's own lineup and starts
+watching there, so the first fixture answer is spent before anybody presses anything. Listed
+once, the board's own first paint was already the second state and the move the section exists
+for had happened off screen: it reported four rows arriving mid flight and nothing marked as
+having moved.
+
+**And two things on the entry screen that only a screenshot could say.** Both render, both are
+valid strings, and no assertion in that suite was looking at either.
+
+- **It read "undefined of undefined games are in."** The live path handed `paintIn` the six
+  scores and nothing else, and that function prints how far into the week it is off two fields
+  the payload did not carry. The counts are passed now, and the sentence is written without
+  them when there are none, which is this repo's oldest rule about a number in copy. The guard
+  is a net over the WHOLE screen rather than that one line: `undefined`, `NaN` and `null` are
+  what a missing field prints, none is a word any copy here would use, and any of the three
+  reaching a reader is the same bug wherever it lands.
+- **A man who scored 8.2 was described as having done nothing.** "played, nothing to show" is
+  the right line for somebody who was out there and never touched the ball, and a live row
+  carries no stat line, so every man who had done anything got it. The two cases are told apart
+  by the SCORE now rather than by whether there is a line to print.
+
 #### The prize is decided, and one half of it must not go where it looks like it goes
 
 The top three get something. First takes the Pro bundle; all three get a mark on the account and

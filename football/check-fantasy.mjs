@@ -467,6 +467,11 @@ const boardOf = (o) => {
     },
     rows: o.rows || [],
     me: o.me || null,
+    /* THE GAMES RIDE IN THE SAME ANSWER, which is 111's whole argument: the scoreboard and
+       the standings are about one instant, and asked separately they are two. A fixture
+       that leaves them out is the state before the writer has ever run, where the page
+       falls back to the schedule out of the pool. */
+    games: o.games || [],
   };
 };
 
@@ -482,6 +487,22 @@ const AFTER = Date.parse(POOL.locks_at) + 60 * 1000;
 const browser = await pw.chromium.launch({ executablePath: CHROME });
 const screenOn = (page) => page.evaluate(() =>
   [...document.querySelectorAll('.screen.on')].map((s) => s.id).join(','));
+
+/* THE BOARD IS ITS OWN SCREEN NOW, so every section about it has to get there the way a
+   reader does. Pressed rather than shown by script, which is the dynasty lock's rule: a
+   door that is drawn and does not open is the thing worth catching, and a walk that set the
+   class itself would never meet it. */
+const openBoard = async (page, via = '#b-live') => {
+  await page.waitForSelector('#s-in.on', { timeout: 15000 });
+  await page.waitForSelector(via + ':not([hidden])', { timeout: 10000 });
+  await page.click(via);
+  await page.waitForSelector('#s-live.on', { timeout: 10000 });
+  /* THE SCREEN HAS TWO PANELS AND THE PILL LANDS ON THE GAMES, which is what it says it
+     does. Every section below is about the board, so it is asked for by name rather than
+     assumed to be the one showing. */
+  await page.click('#lv-tab-board');
+  await page.waitForSelector('#lv-pane-board:not([hidden])', { timeout: 5000 });
+};
 
 /* ---------------------------------------------------------------- */
 console.log('\nTHE GATE HAS THREE ANSWERS AND THEY ARE THREE DIFFERENT SENTENCES');
@@ -661,7 +682,7 @@ for (const [label, server, want] of [
  * answering no rows, and what is checked here is that the page draws the empty answer as
  * NOTHING rather than as a heading over a blank box.
  */
-console.log('\nTHE BOARD OPENS AT THE LOCK');
+console.log('\nTHE BOARD OPENS AT THE LOCK, AND IT IS ITS OWN SCREEN');
 {
   const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
     spend: 80, projected: 50, score: 0, scored: false };
@@ -673,41 +694,348 @@ console.log('\nTHE BOARD OPENS AT THE LOCK');
     entry_no: name.length * 7 + name.charCodeAt(0), played: 6 });
   const IN_IT = [row(1, 'Somebody', 91.2), row(2, 'You', 77.5, true)];
   const ABOVE = [row(1, 'Somebody', 91.2), row(2, 'Another', 77.5)];
-  for (const [label, server, want] of [
-    ['before the lock there is no board at all',
-      { mine: ENTRY, board: boardOf({ rows: [], open: false }) }, { wrap: false }],
-    ['and neither is there when it cannot be reached',
-      { mine: ENTRY, board: null }, { wrap: false }],
-    ['once it is open it ranks the entries',
-      { mine: ENTRY, board: boardOf({ rows: IN_IT, me: { place: 2, entries: 2, score: 77.5 } }) },
-      { wrap: true, rows: 2, mine: 1 }],
-    ['a reader off the bottom of the fifty is still shown their own place',
-      { mine: ENTRY,
-        board: boardOf({ rows: ABOVE, me: { place: 112, entries: 400, score: 31.0 } }) },
-      { wrap: true, rows: 4, mine: 1, tail: /112/ }],
-  ]) {
-    /* AN EMPTY LIST IS A WEEK THAT HAS NOT LOCKED, not a week nobody entered, and on this
-       screen those cannot be confused: the reader has an entry, so once the board opens
-       their own row is in it. A "nobody yet" line here would be a sentence that cannot be
-       true. Null is the unreachable server and draws the same nothing. */
+
+  /* BEFORE THE LOCK THERE IS NO DOOR, which is the same rule stated where a reader meets
+     it. The server answers no rows, and a screen carrying a button to an empty board is a
+     control that takes somebody somewhere to be told nothing. */
+  {
     const { page, boom } = await openPage(browser, FANTASY,
-      { who: TESTER, at: BEFORE, server });
+      { who: TESTER, at: BEFORE,
+        server: { mine: ENTRY, board: boardOf({ rows: [], open: false }) } });
     await page.waitForSelector('#s-in.on', { timeout: 15000 });
     await page.waitForTimeout(400);
     const seen = await page.evaluate(() => ({
-      hidden: document.getElementById('in-boardwrap').hidden,
-      rows: document.querySelectorAll('#in-board .brow').length,
-      mine: document.querySelectorAll('#in-board .brow.me').length,
-      text: document.getElementById('in-board').textContent,
-      lab: document.getElementById('in-boardlab').textContent,
+      door: document.getElementById('b-in-board').hidden,
+      pill: document.getElementById('b-live').hidden,
+      rows: document.querySelectorAll('.brow').length,
     }));
-    ok(label, seen.hidden === !want.wrap, seen.hidden ? 'not drawn' : seen.lab);
-    if (want.rows != null) {
-      ok('  with a row each', seen.rows === want.rows, seen.rows + '');
+    ok('before the lock there is no way to a board', seen.door && seen.pill,
+      `door ${seen.door ? 'hidden' : 'shown'}, pill ${seen.pill ? 'hidden' : 'shown'}`);
+    ok('  and no board anywhere on the page', seen.rows === 0, seen.rows + ' rows');
+    /* THE ENTRY SCREEN NO LONGER CARRIES ONE AT ALL, which is the structural half of
+       moving it: a leftover copy would be a second place describing one competition, and
+       the two would disagree the first time either was edited. */
+    ok('  and the entry screen has no board in it',
+      await page.evaluate(() => !document.querySelector('#s-in .board')));
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+
+  for (const [label, server, want] of [
+    ['a board that cannot be reached says so rather than going blank',
+      { mine: ENTRY, board: null }, { rows: 0, say: /could not be reached/i }],
+    ['a locked week nobody entered says being first is the prize',
+      { mine: ENTRY, board: boardOf({ rows: [] }) },
+      { rows: 0, say: /nobody has entered/i }],
+    ['once it is open it ranks the entries',
+      { mine: ENTRY, board: boardOf({ rows: IN_IT, me: { place: 2, entries: 2, score: 77.5 } }) },
+      { rows: 2, mine: 1, say: '' }],
+    ['a reader off the bottom of the fifty is still shown their own place',
+      { mine: ENTRY,
+        board: boardOf({ rows: ABOVE, me: { place: 112, entries: 400, score: 31.0 } }) },
+      { rows: 4, mine: 1, tail: /112/, say: '' }],
+  ]) {
+    const { page, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: LIVE_AT, server });
+    await openBoard(page);
+    await page.waitForTimeout(400);
+    const seen = await page.evaluate(() => ({
+      rows: document.querySelectorAll('#lv-board .brow').length,
+      mine: document.querySelectorAll('#lv-board .brow.me').length,
+      text: document.getElementById('lv-board').textContent,
+      lab: document.getElementById('lv-boardlab').textContent,
+      say: document.getElementById('lv-boardsay').textContent.trim(),
+    }));
+    ok(label, seen.rows === want.rows, seen.rows + ' rows, "' + seen.say + '"');
+    /* EACH OF THE FOUR STATES IS A DIFFERENT SENTENCE, which is the whole reason this
+       screen can reach states the entry screen could not: there, the reader had entered by
+       definition, so "nobody yet" could not be true. */
+    if (want.say instanceof RegExp) {
+      ok('  and says which kind of nothing it is', want.say.test(seen.say), seen.say);
+    } else if (want.say === '') {
+      ok('  with no apology over it', seen.say === '', seen.say || 'nothing said');
+      ok('  and a count of the entries', /entr/i.test(seen.lab), seen.lab);
       ok('  and the reader\'s own row picked out', seen.mine === want.mine, seen.mine + '');
     }
     if (want.tail) ok('  and their place is the one counted against everybody',
       want.tail.test(seen.text), seen.text.trim().slice(-40));
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+}
+
+/* ----------------------------------------------------------------
+ * EACH DOOR LANDS ON WHAT IT PROMISED
+ *
+ * Sixteen games is about 980px at a phone width and a full board is fifty rows, so stacked,
+ * whichever of the two was drawn second sat behind a scroll of the other all afternoon. They
+ * are two panels now, which makes WHICH ONE a control opens a thing that can be wrong: a
+ * button reading Live scores that opens a leaderboard is the premium card's own lesson,
+ * where the card said one thing and the sheet it opened said another.
+ * ---------------------------------------------------------------- */
+console.log('\nTHE PILL OPENS THE SCORES AND THE OTHER DOOR OPENS THE BOARD');
+{
+  const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
+    spend: 80, projected: 50, score: 0, scored: false };
+  const row = (place, name, score, me) => ({ place, display_name: name, score,
+    projected: 58, spend: 88, picks: [], is_me: !!me, entry_no: name.charCodeAt(0), played: 6 });
+  const board = boardOf({ rows: [row(1, 'Ada', 72.3), row(2, 'You', 41.0, true)],
+    me: { place: 2, entries: 2, score: 41.0 } });
+  const pane = (page) => page.evaluate(() => ({
+    games: !document.getElementById('lv-pane-games').hidden,
+    board: !document.getElementById('lv-pane-board').hidden,
+    tab: document.getElementById('lv-tab-board').className,
+  }));
+  for (const [label, door, want] of [
+    ['the pill says Live scores and opens the games', '#b-live', 'games'],
+    ['and the entry screen\'s own door opens the board', '#b-in-board', 'board'],
+  ]) {
+    const { page, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: LIVE_AT, server: { mine: ENTRY, board } });
+    await page.waitForSelector('#s-in.on', { timeout: 15000 });
+    await page.waitForSelector(door + ':not([hidden])', { timeout: 10000 });
+    await page.click(door);
+    await page.waitForSelector('#s-live.on', { timeout: 10000 });
+    const seen = await pane(page);
+    ok(label, seen[want] && !seen[want === 'games' ? 'board' : 'games'],
+      `games ${seen.games}, board ${seen.board}`);
+    /* AND THE OTHER ONE IS ONE PRESS AWAY, which is the whole reason they are tabs rather
+       than two screens. */
+    await page.click('#lv-tab-' + (want === 'games' ? 'board' : 'games'));
+    const then = await pane(page);
+    ok('  and the other panel is one press away',
+      then[want === 'games' ? 'board' : 'games'], `games ${then.games}, board ${then.board}`);
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+}
+
+/* ----------------------------------------------------------------
+ * A READER WHO NEVER DRAFTED IS WHO THIS SCREEN IS FOR
+ *
+ * While the board lived under the entry screen, the only way to it was to have an entry.
+ * So on the one afternoon it is worth looking at, somebody who missed the lock had no way
+ * to see the competition at all, and no error anywhere said so. That is the dynasty
+ * leaderboard that rendered perfectly and had no door, arriving here.
+ * ---------------------------------------------------------------- */
+console.log('\nAND SOMEBODY WHO NEVER ENTERED CAN STILL WATCH');
+{
+  const row = (place, name, score) => ({ place, display_name: name, score,
+    projected: 58, spend: 88, picks: [], is_me: false,
+    entry_no: name.charCodeAt(0), played: 6 });
+  const { page, boom } = await openPage(browser, FANTASY,
+    { who: TESTER, at: LIVE_AT,
+      /* `mine` false is the server saying "you have not entered", which is different from
+         null. The page must land on the home screen and still offer the scoreboard. */
+      server: { mine: false, board: boardOf({ rows: [row(1, 'Ada', 72.3), row(2, 'Bo', 40.1)],
+        me: null }) } });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+  ok('the pill is there for somebody with no entry',
+    await page.evaluate(() => !document.getElementById('b-live').hidden));
+  await page.click('#b-live');
+  await page.waitForSelector('#s-live.on', { timeout: 10000 });
+  await page.waitForTimeout(350);
+  const seen = await page.evaluate(() => ({
+    rows: document.querySelectorAll('#lv-board .brow').length,
+    mine: document.querySelectorAll('#lv-board .brow.me').length,
+    games: document.querySelectorAll('#lv-games .gm').length,
+  }));
+  ok('  and they get the whole board', seen.rows === 2, seen.rows + '');
+  ok('  with nobody picked out as them', seen.mine === 0, seen.mine + '');
+  ok('  and the games beside it', seen.games === 16, seen.games + '');
+  /* BACK GOES SOMEWHERE THAT EXISTS. A single destination would send a reader with no
+     lineup to a screen about one. */
+  await page.click('#b-live-back');
+  ok('  and Back goes to the home screen rather than an entry they do not have',
+    await screenOn(page) === 's-home', await screenOn(page));
+  ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+  await page.close();
+}
+
+/* ----------------------------------------------------------------
+ * THE PILL IS ASKED OF THE SCHEDULE, NEVER OF THE DAY OF THE WEEK
+ *
+ * "Thursday to Monday" is what a normal week works out to and is not what it means. A rule
+ * written in weekday names is wrong about a Saturday slate, a London kickoff and the Friday
+ * after Thanksgiving, and is wrong silently: the button renders perfectly at every hour of
+ * every day, and the only symptom is that it is there when there is nothing to watch or
+ * missing when there is.
+ * ---------------------------------------------------------------- */
+console.log('\nTHE LIVE BUTTON KNOWS WHEN THE WEEK IS BEING PLAYED');
+{
+  const first = Math.min(...POOL.pool.filter((m) => m.kick).map((m) => Date.parse(m.kick)));
+  const last = Math.max(...POOL.pool.filter((m) => m.kick).map((m) => Date.parse(m.kick)));
+  for (const [label, at, want] of [
+    ['a minute before the first kickoff there is nothing to watch', first - 60e3, false],
+    ['a minute after it there is', first + 60e3, true],
+    ['and through to well after the last game', last + 60e3, true],
+    ['and it is gone once that one is long over', last + 7 * 3600e3, false],
+  ]) {
+    const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at });
+    await page.waitForSelector('#s-home.on', { timeout: 15000 });
+    await page.waitForTimeout(150);
+    const shown = await page.evaluate(() => !document.getElementById('b-live').hidden);
+    ok(label, shown === want, shown ? 'shown' : 'hidden');
+    /* AND THE COLUMN GETS A FLOOR TO SIT ABOVE. A fixed pill over the last control is a
+       button covering the way out, which is the boss battle's Continue arriving at a
+       different screen. */
+    ok('  and the column makes room for it exactly when it is there',
+      await page.evaluate(() => document.body.classList.contains('haslive')) === want);
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+
+  /* NOT ON THE SCREEN IT OPENS, and not over a draft board. */
+  const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: first + 60e3 });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+  await page.click('#b-live');
+  await page.waitForSelector('#s-live.on', { timeout: 10000 });
+  ok('it is not a door to the room it is standing in',
+    await page.evaluate(() => document.getElementById('b-live').hidden));
+  ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+  await page.close();
+}
+
+/* ----------------------------------------------------------------
+ * THE GAMES, WHICH THE PAGE CAN DRAW BEFORE ANYTHING HAS WRITTEN ONE
+ *
+ * The slate comes out of the pool every visitor already downloads, so sixteen games with
+ * their kickoffs are on screen with no request and no migration. What the server adds is
+ * what has happened since. Both halves are asserted, because a screen that could only draw
+ * one of them is blank on exactly one of the two afternoons it is for.
+ * ---------------------------------------------------------------- */
+console.log('\nTHE SCOREBOARD IS THE SCHEDULE UNTIL SOMETHING HAS HAPPENED');
+{
+  const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
+    spend: 80, projected: 50, score: 0, scored: false };
+  const row = (place, name, score, me) => ({ place, display_name: name, score,
+    projected: 58, spend: 88, picks: [], is_me: !!me, entry_no: name.charCodeAt(0), played: 6 });
+  const ROWS = [row(1, 'Ada', 72.3), row(2, 'You', 41.0, true)];
+  const ME = { place: 2, entries: 2, score: 41.0 };
+
+  /* A pair of real week 3 clubs, so the merge is driven on the key the page actually uses
+     rather than on made up codes. */
+  const one = POOL.pool.find((m) => m.home);
+  const AWAY = one.opp, HOME = one.team;
+
+  /* NOTHING WRITTEN AT ALL. This is the state between publishing a week and the first run
+     of the live writer, and it is also every state if the migration is never applied. */
+  {
+    const { page, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: LIVE_AT,
+        server: { mine: ENTRY, board: boardOf({ rows: ROWS, me: ME, games: [] }) } });
+    await openBoard(page);
+    await page.waitForTimeout(350);
+    const seen = await page.evaluate(() => ({
+      games: document.querySelectorAll('#lv-games .gm').length,
+      live: document.querySelectorAll('#lv-games .gm.live').length,
+      scores: [...document.querySelectorAll('#lv-games .gt i')]
+        .filter((e) => e.textContent.trim()).length,
+      text: document.getElementById('lv-games').textContent,
+    }));
+    ok('with nothing written the whole slate is still drawn', seen.games === 16,
+      seen.games + ' games');
+    ok('  and not one of them claims a score', seen.scores === 0, seen.scores + ' numbers');
+    ok('  and none of them claims to be live', seen.live === 0, seen.live + '');
+    ok('  the clubs are named', seen.text.includes(AWAY) && seen.text.includes(HOME));
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+
+  /* AND THEN THE GAMES START. Three states on one board, because the three want three
+     different right hand cells and a page that drew them the same way would be a
+     scoreboard on which a final and a kickoff time look alike. */
+  {
+    const games = [
+      { game_id: 'g1', away: AWAY, home: HOME, kick: one.kick, state: 'in',
+        away_score: 7, home_score: 21, period: 3, clock: '4:12', overtime: null },
+    ];
+    /* Every other game of the week is left to the schedule, which is what a Thursday night
+       looks like. */
+    const { page, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: LIVE_AT,
+        server: { mine: ENTRY, board: boardOf({ rows: ROWS, me: ME, games }) } });
+    await openBoard(page);
+    await page.waitForTimeout(350);
+    const seen = await page.evaluate((k) => {
+      const gm = [...document.querySelectorAll('#lv-games .gm')]
+        .find((e) => e.textContent.includes(k.away) && e.textContent.includes(k.home));
+      return {
+        total: document.querySelectorAll('#lv-games .gm').length,
+        live: !!gm && gm.classList.contains('live'),
+        text: gm ? gm.textContent.replace(/\s+/g, ' ').trim() : '',
+        leads: gm ? [...gm.querySelectorAll('.gt')]
+          .map((e) => (e.classList.contains('lead') ? '*' : '') + e.textContent.trim()) : [],
+      };
+    }, { away: AWAY, home: HOME });
+    ok('a game in progress is drawn as one', seen.live, seen.text);
+    ok('  with the quarter and the clock', /3rd/.test(seen.text) && /4:12/.test(seen.text),
+      seen.text);
+    /* WHO IS WINNING IS WHAT A SCOREBOARD IS FOR, and it is the one thing on the row that
+       no amount of reading the numbers at a glance gives you if both sides look the same. */
+    ok('  and the club that is ahead is the loud one',
+      seen.leads.filter((x) => x[0] === '*').length === 1
+      && seen.leads.find((x) => x[0] === '*').includes(HOME),
+      seen.leads.join(' | '));
+    ok('  and it did not replace the rest of the slate', seen.total === 16, seen.total + '');
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+
+  /* A FINISHED GAME HAS NO CLOCK AND A KICKOFF THAT HAS PASSED IS NOT A KICKOFF TIME.
+     The second is the shape of a feed outage from the reader's side: the server refuses to
+     move a game forwards on a source that knows less, so a game really under way can sit at
+     `pre`, and printing "8:15" beside it would be the page inventing the one thing nobody
+     knows. */
+  {
+    const games = [
+      { game_id: 'g1', away: AWAY, home: HOME, kick: one.kick, state: 'post',
+        away_score: 17, home_score: 34, period: null, clock: null, overtime: false },
+    ];
+    const { page, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: LIVE_AT,
+        server: { mine: ENTRY, board: boardOf({ rows: ROWS, me: ME, games }) } });
+    await openBoard(page);
+    await page.waitForTimeout(350);
+    const seen = await page.evaluate((k) => {
+      const all = [...document.querySelectorAll('#lv-games .gm')];
+      const done = all.find((e) => e.textContent.includes(k.away)
+        && e.textContent.includes(k.home));
+      return {
+        done: done ? done.textContent.replace(/\s+/g, ' ').trim() : '',
+        /* Every other game of this week kicks off after the instant the page is pinned to,
+           except the Thursday one that is already final, so the rest still show a time. */
+        others: all.filter((e) => e !== done)
+          .map((e) => e.textContent.replace(/\s+/g, ' ').trim()),
+      };
+    }, { away: AWAY, home: HOME });
+    ok('a finished game says Final', /final/i.test(seen.done), seen.done);
+    ok('  and carries no clock', !/\d:\d\d/.test(seen.done.replace(/\d\d?:\d\d [AP]M/i, '')),
+      seen.done);
+    /* AND NOBODY ELSE IS TOUCHED BY IT. The rest of the slate is on the schedule's own
+       answer: a time if it has not started, and "Under way" if it has and nothing has been
+       written about it. What none of them may have is a score. */
+    ok('  and every other game is still on the schedule\'s answer',
+      seen.others.every((t) => /\d\d?:\d\d/.test(t) || /under way/i.test(t)),
+      seen.others.join(' | ').slice(0, 90));
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+
+  /* KICKED OFF AND NOTHING KNOWN. Driven at an instant past the Thursday kickoff with the
+     server still saying `pre`, which is exactly what a blind feed writes. */
+  {
+    const firstKick = Math.min(...POOL.pool.filter((m) => m.kick).map((m) => Date.parse(m.kick)));
+    const { page, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: firstKick + 45 * 60e3,
+        server: { mine: ENTRY, board: boardOf({ now: firstKick + 45 * 60e3,
+          rows: ROWS, me: ME, games: [] }) } });
+    await openBoard(page);
+    await page.waitForTimeout(350);
+    const under = await page.evaluate(() => [...document.querySelectorAll('#lv-games .gm')]
+      .filter((e) => /under way/i.test(e.textContent)).length);
+    ok('a game that has kicked off and said nothing does not print a kickoff time',
+      under === 1, under + ' under way');
     ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
     await page.close();
   }
@@ -877,13 +1205,19 @@ console.log('\nTHE BOARD MOVES, AND YOU CAN SEE WHO MOVED');
     games_final: 7,
   });
 
-  const { page, boom } = await openPage(browser, FANTASY,
-    { who: TESTER, at: LIVE_AT, server: { mine: ENTRY, boards: [T1, T2, T2, T2, T2] } });
-  await page.waitForSelector('#s-in.on', { timeout: 15000 });
-  await page.waitForSelector('#in-board .brow', { timeout: 15000 });
+  const { page, posted, boom } = await openPage(browser, FANTASY,
+    /* T1 TWICE, BECAUSE THE ENTRY SCREEN ASKS BEFORE THE BOARD DOES. Boot lands on the
+       reader's own lineup and starts watching there, so the first answer is spent before
+       anybody presses anything. Listed once, the board's own first paint is already the
+       second state, and the move this section exists for has happened off screen: the first
+       run of it reported exactly that, as four rows arriving mid flight. */
+    { who: TESTER, at: LIVE_AT,
+      server: { mine: ENTRY, boards: [T1, T1, T2, T2, T2, T2, T2] } });
+  await openBoard(page);
+  await page.waitForSelector('#lv-board .brow', { timeout: 15000 });
   await page.waitForTimeout(300);
 
-  const read = () => page.evaluate(() => [...document.querySelectorAll('#in-board .brow')]
+  const read = () => page.evaluate(() => [...document.querySelectorAll('#lv-board .brow')]
     .map((e) => ({
       k: e.getAttribute('data-k'),
       name: (e.querySelector('.bn') || {}).textContent,
@@ -895,12 +1229,12 @@ console.log('\nTHE BOARD MOVES, AND YOU CAN SEE WHO MOVED');
   ok('the board draws without being reloaded', before.length === 4,
     before.map((x) => x.name).join(' '));
   ok('  and it says it is live', await page.evaluate(() => {
-    const el = document.getElementById('in-live');
-    return !el.hidden && /LIVE/.test(document.getElementById('in-livelab').textContent);
+    const el = document.getElementById('lv-live');
+    return !el.hidden && /LIVE/.test(document.getElementById('lv-livelab').textContent);
   }));
   ok('  with how much of the week is in',
     /3 of 16 games/.test(await page.evaluate(() =>
-      document.getElementById('in-livesay').textContent)));
+      document.getElementById('lv-livesay').textContent)));
 
   /* THE FIRST PAINT MUST NOT ANIMATE. There is nothing to move from, and four rows flying
      in from wherever they were measured is a screen announcing itself. */
@@ -918,7 +1252,7 @@ console.log('\nTHE BOARD MOVES, AND YOU CAN SEE WHO MOVED');
      really moved is, for this instant, still drawn where it WAS. That is the whole of FLIP,
      and it is the one moment at which a board that reorders with no animation and a board
      that animates are distinguishable. */
-  const flying = await page.evaluate(() => [...document.querySelectorAll('#in-board .brow')]
+  const flying = await page.evaluate(() => [...document.querySelectorAll('#lv-board .brow')]
     .map((e) => ({
       k: e.getAttribute('data-k'),
       name: (e.querySelector('.bn') || {}).textContent,
@@ -941,7 +1275,7 @@ console.log('\nTHE BOARD MOVES, AND YOU CAN SEE WHO MOVED');
      that had nothing to do with the page. A bound is the honest shape, and it still catches
      a mark that is never removed at all, which is the defect worth catching. */
   const clean = await page.waitForFunction(() =>
-    [...document.querySelectorAll('#in-board .brow')]
+    [...document.querySelectorAll('#lv-board .brow')]
       .every((e) => !/\bmoving\b|\bup\b|\bdown\b/.test(e.className)),
     null, { timeout: 3000 }).then(() => true).catch(() => false);
   const after = await read();
@@ -949,7 +1283,7 @@ console.log('\nTHE BOARD MOVES, AND YOU CAN SEE WHO MOVED');
     after.map((x) => x.name).join(' ') === 'Bo You Ada Cy',
     after.map((x) => x.name).join(' '));
   ok('  with every transform cleared',
-    await page.evaluate(() => [...document.querySelectorAll('#in-board .brow')]
+    await page.evaluate(() => [...document.querySelectorAll('#lv-board .brow')]
       .every((e) => !e.style.transform)));
   ok('  and every mark comes off when it settles', clean,
     after.map((x) => x.cls).join(' | '));
@@ -962,12 +1296,71 @@ console.log('\nTHE BOARD MOVES, AND YOU CAN SEE WHO MOVED');
     `Ada ${key(before, 'Ada')} -> ${key(after, 'Ada')}`);
 
   /* THE READER'S OWN SIX, off the live answer rather than off a results file that does not
-     exist yet. Without it a total that is climbing sits over six blank men. */
+     exist yet. Without it a total that is climbing sits over six blank men.
+     THEY ARE ON THE ENTRY SCREEN AND THE BOARD IS NOT, which is the split this pass made:
+     one poll, two screens, and each takes the half of the answer it is about. So the walk
+     goes back the way a reader does and asks there. */
+  await page.click('#b-live-back');
+  await page.waitForSelector('#s-in.on', { timeout: 10000 });
+  await page.evaluate(() => window.__rtgPoll());
+  await page.waitForTimeout(120);
   ok('  and the reader\'s own six carry live points',
     await page.evaluate(() => {
       const got = [...document.querySelectorAll('#in-roster .rrow.got')];
       return got.length >= 1;
     }), 'live lines drawn');
+  /*
+   * AND NOTHING ON THE SCREEN SAYS `undefined`.
+   *
+   * It did. The live path handed `paintIn` the six scores and nothing else, and that
+   * function prints "3 of 16 games are in" off two fields the payload did not carry, so
+   * the entry screen read "undefined of undefined games are in" for the whole afternoon.
+   * Nothing threw, because it is a string built out of two missing numbers, and no
+   * assertion in this file was looking at that sentence. Found by taking a screenshot of
+   * the real page and looking at it.
+   *
+   * SO THE CLAIM IS ABOUT THE WHOLE SCREEN rather than about that one line. `undefined`,
+   * `NaN` and `null` are what a missing field prints, none of them is a word any copy here
+   * would ever use, and any of the three reaching a reader is the same bug wherever it
+   * lands.
+   */
+  {
+    const junk = await page.evaluate(() => {
+      const bad = [];
+      for (const el of document.querySelectorAll('#s-in *')) {
+        if (el.children.length) continue;
+        const t = (el.textContent || '').trim();
+        if (/\b(undefined|NaN|null)\b/.test(t)) bad.push(t.slice(0, 60));
+      }
+      return bad;
+    });
+    ok('  and nothing on it prints undefined at a reader', junk.length === 0,
+      junk.join(' | ') || 'clean');
+    /* AND THE COUNT IT REPLACED IS THE REAL ONE, off the week rather than invented. */
+    ok('  it says how much of the week is in',
+      /7 of 16 games/.test(await page.evaluate(() =>
+        document.getElementById('in-say').textContent)),
+      await page.evaluate(() => document.getElementById('in-say').textContent));
+    /* A MAN WHO SCORED NEEDS NO SENTENCE UNDER HIM. "played, nothing to show" beside 8.2 is
+       a row arguing with itself, and it is what a live row (which carries no stat line)
+       used to print for every man who had done anything. */
+    ok('  and a man who scored is not described as having done nothing',
+      await page.evaluate(() => ![...document.querySelectorAll('#in-roster .rrow.got')]
+        .some((e) => /nothing to show/.test(e.textContent)
+          && parseFloat((e.querySelector('.rs') || {}).textContent) > 0)));
+  }
+
+  /* AND THE POLL SURVIVED THE MOVE. `show` cancels every timer on this page, so a screen
+     change that did not start watching again would leave the entry screen frozen: the
+     total stops climbing and nothing anywhere says why. */
+  {
+    const was = posted.filter((x) => x.fn === 'fantasy_board').length;
+    await page.evaluate(() => { window.__pollMs(60); });
+    await page.waitForTimeout(400);
+    const now = posted.filter((x) => x.fn === 'fantasy_board').length;
+    ok('  and coming back off the board keeps the entry screen live', now > was,
+      `${was} -> ${now}`);
+  }
 
   ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
   await page.close();
@@ -1006,15 +1399,26 @@ console.log('\nA BOARD THAT IS NOT MOVING SAYS WHICH KIND OF NOT MOVING IT IS');
   ]) {
     const { page, boom } = await openPage(browser, FANTASY,
       { who: TESTER, at: LIVE_AT, server: { mine: ENTRY, board } });
-    await page.waitForSelector('#in-board .brow', { timeout: 15000 });
+    await openBoard(page);
     await page.waitForTimeout(250);
     const seen = await page.evaluate(() => ({
-      lab: document.getElementById('in-livelab').textContent,
-      cls: document.getElementById('in-live').className,
-      hidden: document.getElementById('in-live').hidden,
+      lab: document.getElementById('lv-livelab').textContent,
+      cls: document.getElementById('lv-live').className,
+      hidden: document.getElementById('lv-live').hidden,
+      /* The entry screen carries the same chip, because a total that climbs with nothing
+         saying when it last moved is a total nobody can read. */
+      inLab: document.getElementById('in-livelab').textContent,
+      inCls: document.getElementById('in-live').className,
+      inHidden: document.getElementById('in-live').hidden,
     }));
     ok(label, !seen.hidden && seen.lab === want.lab && want.cls.test(seen.cls),
       seen.lab + ' / ' + seen.cls);
+    /* ONE PAINTER, TWO CHIPS. Written as two painters they would be two sets of words about
+       one fact and would disagree the first time either was edited, which is the four
+       premium cards' own lesson. */
+    ok('  and the entry screen says exactly the same thing',
+      !seen.inHidden && seen.inLab === seen.lab && seen.inCls === seen.cls,
+      seen.inLab + ' / ' + seen.inCls);
     ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
     await page.close();
   }
@@ -1041,7 +1445,8 @@ console.log('\nTHE POLL KNOWS WHEN TO STOP');
         server: { mine: ENTRY,
           board: boardOf({ rows: ROWS, me: ME,
             scored_at: new Date(LIVE_AT - 60e3).toISOString() }) } });
-    await page.waitForSelector('#in-board .brow', { timeout: 15000 });
+    await page.waitForSelector('#s-in.on', { timeout: 15000 });
+    await page.waitForTimeout(250);
     await page.evaluate(() => { window.__pollMs(60); });
     await page.waitForTimeout(700);
     const asks = posted.filter((p) => p.fn === 'fantasy_board').length;
@@ -1056,14 +1461,18 @@ console.log('\nTHE POLL KNOWS WHEN TO STOP');
     const { page, posted, boom } = await openPage(browser, FANTASY,
       { who: TESTER, at: LIVE_AT,
         server: { mine: ENTRY, board: boardOf({ rows: ROWS, me: ME }) } });
-    await page.waitForSelector('#in-board .brow', { timeout: 15000 });
+    await page.waitForSelector('#s-in.on', { timeout: 15000 });
+    await page.waitForTimeout(250);
     await page.evaluate(() => { window.__pollMs(60); });
     await page.waitForTimeout(700);
     const asks = posted.filter((p) => p.fn === 'fantasy_board').length;
     ok('a live week goes on asking', asks >= 3, asks + ' asks');
 
     /* AND IT STOPS WHEN THE SCREEN IS LEFT. A leaderboard ticking behind another screen is
-       a request every twenty seconds for a screen nobody is looking at. */
+       a request every twenty seconds for a screen nobody is looking at.
+       THE HOME SCREEN, NOT THE LIVE ONE. The poll serves the entry screen and the board
+       both, so moving between those two is not leaving: a claim about stopping has to go
+       somewhere that is neither, or it passes on a page that never stops at all. */
     await page.evaluate(() => { document.getElementById('b-in-back').hidden = false; });
     await page.click('#b-in-back');
     await page.waitForTimeout(120);
