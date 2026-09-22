@@ -187,6 +187,35 @@ const STAFF_ELIGIBILITY = {
 function slotsForMode(staff) { return staff ? STAFF_SLOTS : SLOTS; }
 function eligibilityForMode(staff) { return staff ? STAFF_ELIGIBILITY : SLOT_ELIGIBILITY; }
 
+/* ─── SLOTS THE SIM CANNOT TELL APART ───
+ *
+ * staffEra and staffRunPrevention AVERAGE the five rotation slots together, and
+ * average RP1 through RP5 and SU together. So a staff's five starters are one job
+ * with five names, its six relievers are one job with six names, and where an arm
+ * lands inside its group changes nothing the season reads. The base game is the
+ * same story at a smaller size: SP1 and SP2 are its two starters and teamStrength
+ * adds them.
+ *
+ * The chooser has to know, and IT CANNOT WORK THIS OUT FROM THE NAME. A regex on
+ * the string is the version that shipped, and the strings do not carry the answer:
+ * SP2 and SP5 are the same job, RP5 and SU are the same job, and nothing in either
+ * pair of names says so. What it produced was a sheet offering nine doors into
+ * three rooms, with SP2 missing from it while SP5 was on it, because the regex
+ * stripped a trailing 1 or 2 and left every other digit alone.
+ *
+ * CL is deliberately on its own. It is the one arm read by name, in saveRate.
+ */
+const STAFF_SLOT_GROUP = {
+  SP1: 'ROTATION', SP2: 'ROTATION', SP3: 'ROTATION', SP4: 'ROTATION', SP5: 'ROTATION',
+  RP1: 'BULLPEN', RP2: 'BULLPEN', RP3: 'BULLPEN', RP4: 'BULLPEN', RP5: 'BULLPEN',
+  SU: 'BULLPEN',
+};
+const BASE_SLOT_GROUP = { SP1: 'ROTATION', SP2: 'ROTATION' };
+function slotGroup(slotName, staff) {
+  const m = staff ? STAFF_SLOT_GROUP : BASE_SLOT_GROUP;
+  return m[slotName] || slotName;
+}
+
 /* What positions can fill each slot.
  * Hitter positions are currently blank in the data (pending Lahman),
  * so until POSITIONS_AVAILABLE is true, all batters can fill any fielding slot.
@@ -2209,7 +2238,7 @@ function teamColors(code) {
 
 const publicAPI = {
   CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
-  STAFF_SLOTS, STAFF_ELIGIBILITY, slotsForMode, eligibilityForMode,
+  STAFF_SLOTS, STAFF_ELIGIBILITY, slotsForMode, eligibilityForMode, slotGroup,
   DIVISIONS, DIVISION_FIRST_SEASON, inDivision, divisionClubs,
   MARKET, replacementFor,
   POSITIONS_AVAILABLE: () => POSITIONS_AVAILABLE,
