@@ -385,19 +385,23 @@ async function boot(page){
 async function toPlayoffs(page){
   await page.evaluate(() => { try { localStorage.removeItem('runthefloor_run_v1'); } catch (e) {} });
   await page.evaluate(() => document.querySelector('#b-start').click());
-  for (let i = 0; i < 6; i++) {
+  /* HOW MANY TO SIGN IS THE ENGINE'S ANSWER, never a literal. Written 6 this
+     loop pressed one more time than the game drafts, so the last press landed
+     on a screen that was no longer the draft and the failure it reported was
+     a timeout about whatever that screen happened to be. */
+  for (let i = 0; i < E.SLOTS.length; i++) {
     await page.waitForSelector('.opts:not(.pending) .ptile:not(.off)', { timeout: 25000 });
     await page.evaluate(() =>
       document.querySelector('.opts:not(.pending) .ptile:not(.off)').click());
-    await page.waitForFunction((want) => {
+    await page.waitForFunction((a) => {
       try {
         const r = JSON.parse(localStorage.getItem('runthefloor_run_v1') || 'null');
-        if (!r || !Array.isArray(r.roster) || r.roster.length < want) return false;
-        if (r.roster.length >= 6) return true;
+        if (!r || !Array.isArray(r.roster) || r.roster.length < a.want) return false;
+        if (r.roster.length >= a.full) return true;
         const o = document.querySelector('.opts');
         return !!r.currentDraw && !!o && !/pending/.test(o.className);
       } catch (e) { return false; }
-    }, i + 1, { timeout: 25000 });
+    }, { want: i + 1, full: E.SLOTS.length }, { timeout: 25000 });
   }
   await page.waitForTimeout(400);
   await page.evaluate(() => document.querySelector('#b-play').click());

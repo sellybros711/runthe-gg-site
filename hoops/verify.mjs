@@ -82,7 +82,8 @@ function isLineup(actual, expect, what) {
 // ─── the data itself ────────────────────────────────────────────────────────
 
 ok(players.length > 0, 'players.json is not empty');
-ok(data.teamSeasons.length >= 6, 'enough team-seasons to fill a roster from');
+ok(data.teamSeasons.length >= E.SLOTS.length,
+  'enough team-seasons to fill a roster from');
 
 for (const p of players) {
   if (!(p.i && p.n && p.s && p.t)) { failures.push(`row missing an identity field: ${JSON.stringify(p)}`); break; }
@@ -1568,6 +1569,11 @@ ok(bestWins > worstWins + 20,
     ['RTF_RECORD_WINS', E.CONSTANTS.RECORD_WINS, 'the record'],
     ['RTF_GOAT_WINS', E.CONSTANTS.GOAT_WINS, 'the one nobody has done'],
     ['RTF_CAP_MUSD', E.CONSTANTS.CAP_MUSD, 'the cap'],
+    /* THE ROSTER SIZE, which the migration uses to refuse a run whose picks
+       do not line up. Missing from this list while it was six in both files,
+       so the day the game drafted five the server would have refused every
+       run with nothing on screen saying why. */
+    ['RTF_ROSTER_SIZE', E.SLOTS.length, 'how many men a run drafts'],
   ];
   /* COVERAGE FIRST. A reader that finds nothing lets all eight comparisons
      pass against undefined === undefined, which is how an extractor in this
@@ -1587,6 +1593,78 @@ ok(bestWins > worstWins + 20,
   ok(!!pageEpoch && !!sqlEpoch, 'the page and the migration each declare a daily epoch');
   if (pageEpoch && sqlEpoch) {
     is(sqlEpoch[1], pageEpoch[1], 'and they are the same day');
+  }
+
+  /* ── A NUMBER A PLAYER READS HAS TO BE THE NUMBER THE GAME PLAYS ───────
+   *
+   * This is `check-numbers.mjs`'s subject, and hoops is on neither that
+   * script's guarded list nor anybody else's, so the two pages that describe
+   * this game were free to describe a different one.
+   *
+   * IT HAPPENED WHILE THE ROSTER WAS BEING CHANGED. The cap was swept, a
+   * provisional $105M went into the rules page and the meta description
+   * before the sweep had finished, and $120M shipped. Nothing threw: both
+   * pages rendered perfectly and promised a cap the game does not charge,
+   * which is the guide that lies, found by a player.
+   *
+   * BOTH PAGES ARE STATIC AND CANNOT INTERPOLATE, which is the whole reason
+   * this class of check exists. index.html can (and its guide does, through
+   * NUMWORD), but its markup and its meta description cannot.
+   *
+   * SCRIPT AND STYLE COME OUT FIRST. A code comment in this repo is prose for
+   * the next person and is allowed to say what the cap used to be; the
+   * engine's own cap note lists every value it has ever had. A reader that
+   * failed on those would be the bug, not the comment, which is the note
+   * check-copy.mjs carries.
+   */
+  {
+    const prose = (src) => src
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<!--[\s\S]*?-->/g, ' ');
+    const pages = {
+      'index.html': prose(pageSrc),
+      'how-to-play.html': prose(fs.readFileSync(path.join(HERE, 'how-to-play.html'), 'utf8')),
+    };
+
+    /* Every "$NNNM cap" a reader can see. */
+    const capClaims = [];
+    for (const [name, text] of Object.entries(pages)) {
+      for (const m of text.matchAll(/\$([0-9]+(?:\.[0-9]+)?)M<\/b>?\s*cap|\$([0-9]+(?:\.[0-9]+)?)M\s+cap/gi)) {
+        capClaims.push({ name, value: Number(m[1] || m[2]) });
+      }
+    }
+    ok(capClaims.length >= 2,
+      `the cap is claimed in prose and the claims were found (${capClaims.length})`);
+    const wrongCap = capClaims.filter(c => c.value !== E.CONSTANTS.CAP_MUSD)
+      .map(c => `${c.name} says $${c.value}M`);
+    is(wrongCap, [], `every cap a reader sees is $${E.CONSTANTS.CAP_MUSD}M`);
+
+    /* And every count of the roster written as a WORD. "six spins" and "Six
+       men" are correct English sentences, so nothing but this can catch one
+       left behind.
+       TWO NOUNS ARE DELIBERATELY NOT ON THIS LIST and the first draft failed
+       on both. "times" and "players" each mean the roster in one sentence
+       and something else in another: the re-spin ladder is charged "three
+       times" and no club may give up more than "two players". A reader that
+       claimed those reports two correct sentences as defects, which is worse
+       than the hole it closes. What is left is the three nouns that only
+       ever mean the roster on these pages. */
+    const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six',
+      'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+    const want = WORDS[E.SLOTS.length];
+    const countClaims = [];
+    for (const [name, text] of Object.entries(pages)) {
+      const re = new RegExp('\\b(' + WORDS.join('|') + ')\\s+(spins|men|starters)\\b', 'gi');
+      for (const m of text.matchAll(re)) {
+        countClaims.push({ name, said: m[1].toLowerCase(), phrase: m[0] });
+      }
+    }
+    ok(countClaims.length >= 2,
+      `the roster count is written out in prose and was found (${countClaims.length})`);
+    const wrongCount = countClaims.filter(c => c.said !== want)
+      .map(c => `${c.name}: "${c.phrase}"`);
+    is(wrongCount, [], `every roster count a reader sees is "${want}"`);
   }
 
   /* The slot names the server will accept have to be the slots the game

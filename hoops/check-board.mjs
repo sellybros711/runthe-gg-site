@@ -208,7 +208,15 @@ async function playRun(page, opener) {
       await page.waitForSelector('.opts:not(.pending) .ptile:not(.off)', { timeout: 25000 });
       await page.evaluate(() =>
         document.querySelector('.opts:not(.pending) .ptile:not(.off)').click());
-      await page.waitForFunction((want) => {
+      /* THE `catch` BELOW IS WHY THIS SIGNATURE IS WORTH LOOKING AT TWICE.
+         It was left reading `(want)` while the body asked for `a.want`, so
+         every poll threw a ReferenceError, the catch answered false, and the
+         wait timed out reporting a draft that had stalled. Nothing had
+         stalled: the page had signed the man, drawn the next board and taken
+         it out of `pending`, and the dump beside this says all three. A
+         reader that cannot read looks exactly like the thing it reads being
+         broken, which is this repo's oldest lesson arriving inside a guard. */
+      await page.waitForFunction((a) => {
         try {
           const r = JSON.parse(localStorage.getItem('runthefloor_run_v1') || 'null');
           if (!r || !Array.isArray(r.roster) || r.roster.length < a.want) return false;
@@ -222,12 +230,23 @@ async function playRun(page, opener) {
          what it actually found. A page on the home screen, a draft whose
          tiles are all unaffordable, and a reel that never settled are three
          faults behind one message. */
-      const st = await page.evaluate(() => ({
-        screen: (document.querySelector('.screen.active') || {}).id,
-        tiles: document.querySelectorAll('.opts .ptile').length,
-        off: document.querySelectorAll('.opts .ptile.off').length,
-        pending: /pending/.test((document.querySelector('.opts') || {}).className || ''),
-      }));
+      const st = await page.evaluate(() => {
+        let r = null;
+        try { r = JSON.parse(localStorage.getItem('runthefloor_run_v1') || 'null'); } catch (e) {}
+        return {
+          screen: (document.querySelector('.screen.active') || {}).id,
+          tiles: document.querySelectorAll('.opts .ptile').length,
+          off: document.querySelectorAll('.opts .ptile.off').length,
+          pending: /pending/.test((document.querySelector('.opts') || {}).className || ''),
+          /* THE THREE THINGS THE WAIT ACTUALLY ASKS FOR. Without them a
+             timeout here reports the board and leaves which clause failed to
+             be worked out by hand, which is the whole thing the comment above
+             says this dump exists to stop. */
+          signed: r && Array.isArray(r.roster) ? r.roster.length : -1,
+          draw: !!(r && r.currentDraw),
+          phase: r ? r.phase : null,
+        };
+      });
       throw new Error(`draft stalled at pick ${i + 1} (signed ${await signedCount(page)}): `
         + JSON.stringify(st));
     }
@@ -347,12 +366,13 @@ const main = async () => {
       is(body.p_club, 'CHI', 'a One Franchise run is filed with its club');
       is(body.p_era, null, 'and with no era');
       is(body.p_daily_day, null, 'and no day');
-      is((body.p_picks || []).length, 6, 'six picks go up');
+      is((body.p_picks || []).length, ROSTER_SIZE,
+        `all ${ROSTER_SIZE} picks go up`);
       ok((body.p_picks || []).every((k) => /^[0-9a-z]{1,12}\|[12][0-9]{3}\|[A-Z]{2,4}$/.test(k)),
         'every pick is E.pkey\'s own format, which is what the server accepts');
       ok((body.p_picks || []).every((k) => k.endsWith('|CHI')),
         'and on a Bulls run every one of them is a Bull');
-      is((body.p_slots || []).length, 6, 'and six slots beside them');
+      is((body.p_slots || []).length, ROSTER_SIZE, 'and a slot beside each one');
       ok((body.p_slots || []).every((s) => ['PG', 'SG', 'SF', 'PF', 'C', '6TH'].indexOf(s) >= 0),
         'each of which the server knows');
       /* PER GAME AND NOT PER SEASON. The season total is 82 times bigger and

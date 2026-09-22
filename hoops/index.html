@@ -17,7 +17,7 @@
      ready to be reviewed. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Run The Floor: NBA Draft Game | RunThe.GG</title>
-<meta name="description" content="Run The Floor: spin for a season and a club, draft a five man NBA starting five under a $105M cap, then play all 82 games and chase a ring.">
+<meta name="description" content="Run The Floor: spin for a season and a club, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
@@ -843,8 +843,6 @@
   .court .side{position:absolute;left:0;right:0;bottom:20%;height:2px;
     background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,.62) 18%,
       rgba(255,255,255,.62) 82%,rgba(255,255,255,.18));}
-  .court .benchlbl{position:absolute;left:8px;bottom:5px;font-size:8.5px;letter-spacing:.16em;
-    text-transform:uppercase;color:var(--dim);font-weight:800;}
   .spot{position:absolute;transform:translate(-50%,-50%);width:74px;text-align:center;
     transition:opacity .3s ease;}
   .spot .disc{width:34px;height:34px;margin:0 auto;border-radius:50%;
@@ -1812,7 +1810,6 @@
       <div class="bb"></div>
       <div class="rim"></div>
       <div class="side"></div>
-      <div class="benchlbl">Bench</div>
     </div>
   </div>
   <div class="eyebrow">RunThe.GG</div>
@@ -2030,7 +2027,7 @@
         <span class="capamt" id="c-amt">$138.0M</span>
       </div>
       <div class="cap-meta">
-        <div class="mstat"><span class="lbl">Slot</span><b id="d-count">1 of 6</b></div>
+        <div class="mstat"><span class="lbl">Slot</span><b id="d-count">1 of 5</b></div>
         <div class="mstat"><span class="lbl">Chemistry</span><b class="chemval zero" id="c-chem">None</b></div>
       </div>
     </div>
@@ -2090,7 +2087,6 @@
         <div class="bb"></div>
       <div class="rim"></div>
         <div class="side"></div>
-        <div class="benchlbl">Bench</div>
       </div>
       <div class="rail off" id="rail"></div>
     </aside>
@@ -2286,7 +2282,6 @@
       <div class="bb"></div>
       <div class="rim"></div>
       <div class="side"></div>
-      <div class="benchlbl">Bench</div>
     </div>
     <div class="slots" id="o-slots" style="margin-top:12px"></div>
     <p class="dim" style="font-size:12.5px;margin:10px 0 0" id="o-best"></p>
@@ -4438,7 +4433,12 @@ function renderHud(justSlot){
 
   $('c-amt').textContent = money(remaining);
   $('c-amt').className = 'capamt' + (remaining < cap * 0.14 ? ' bad' : remaining < cap * 0.3 ? ' warn' : '');
-  $('d-count').textContent = (run.roster.length + 1 > 6 ? 6 : run.roster.length + 1) + ' of 6';
+  /* THE SLOT COUNTER IS THE SLOT LIST, twice: the ceiling and the total were
+     both a literal 6, so a five man draft counted "1 of 6" under a court with
+     five spots on it, all the way to a last pick that read "6 of 6". A number
+     on the HUD is the one number a drafter is actually watching. */
+  var full = E.SLOTS.length;
+  $('d-count').textContent = Math.min(run.roster.length + 1, full) + ' of ' + full;
 
   var pct = Math.max(0, Math.min(100, (remaining / cap) * 100));
   $('c-bar').style.width = pct + '%';
@@ -4592,7 +4592,7 @@ function renderDraft(justSlot){
  */
 function drawNote(draw){
   var slots = draw.openSlots.length === E.SLOTS.length
-    ? 'Filling all six'
+    ? 'Filling all ' + NUMWORD(E.SLOTS.length)
     : 'Filling ' + draw.openSlots.join(' / ');
   if (reelBusy) return slots;
   if (run.club) {

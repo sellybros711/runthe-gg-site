@@ -5932,6 +5932,173 @@ the strategies a player would use, never loosening a threshold to suit a bot.
 the constants: it states what the balance is supposed to look like and flags what
 is outside its band.
 
+### The roster is a STARTING FIVE, and six was never this sport's number
+
+```
+node hoops/verify.mjs      the refit, the budgets, the cap, and the prose
+```
+
+Six was the football and college games' count, landed on here by adding a sixth
+man to the five who actually take the floor, and that bench slot was the only
+thing on the draft screen that had to be explained. **Every count in the engine
+is `SLOTS.length`**, and the change from six to five is what proved which
+numbers were derived and which were typed.
+
+**THREE THINGS UNDERNEATH IT WERE TIED TO SIX AND ALL THREE FAIL IN SILENCE.**
+
+**The fitted ratings.** `OWS_TO_ORTG` and `DWS_TO_DRTG` are fitted to
+twenty-two real NBA records THROUGH `teamStrength`, which rates a real club by
+its best `SLOTS.length` men, so changing that number moves all twenty-two
+ratings and breaks the fit by the edit rather than by anything about the data.
+The twenty-two are not in this repo, so what was solved instead is **the pair
+at five men that best reproduces the rating every real club already had at
+six**: least squares through the origin over all 1,403 club-seasons, with
+replacement level held fixed because it is a fact about a team of nobodies
+rather than about how many nobodies. **0.695 to 0.7503 and 0.605 to 0.6838**,
+at a cost of **rms 1.08 wins and a worst case of 3.26**. The 1996 Bulls and the
+2012 Bobcats each move by 0.3, so the fit against the twenty-two is about 3.6
+wins rms now rather than 3.5.
+
+**The shot budget and the glass, MEASURED rather than scaled.** Over the same
+1,403 clubs the five men who play the most minutes take a pace-adjusted **63.7
+attempts** a game against a top six's 69.8, and **29.6 rebounds** against 32.9.
+
+| | at six | at five |
+|---|---|---|
+| `SHOT_BUDGET` | 72 | **66** |
+| `SHOT_SHY` | 58 | **53** |
+| `REB_TARGET` | 34.0 | **30.5** |
+| `TEAM_AST` | 20.0 | **18.4** |
+
+Re-measure rather than re-scale if the roster size moves again: the top man of
+a club takes far more than the sixth, so a ratio drawn off the wrong end of
+that list would say the wrong thing. The anchors (`RIM_ANCHOR`, `CREATOR`) are
+a PERSON rather than a sum and do not move; `SPACING` is a mean and does not
+either.
+
+**And a seam nobody had noticed.** `teamStrength` rates a real club's men at
+full weight with no `_slot` on any of them, so the reference every rating in
+this game is fitted against was summing SIX at 1.0 while a drafted roster
+summed five at 1.0 and one at 0.72. The two sides of that comparison were never
+the same shape. They are now.
+
+#### The cap went UP per slot, which is not the direction anybody guesses
+
+Six slots at $126M is $21M a slot and five at **$120M is $24M**, which reads
+like the draft got easier. It did not: dropping a man was paid for by the
+refit, so the cap buys the same team out of fewer, better contracts.
+
+Swept at 98, 102, 105, 108, 112, 116, 118, 120, 123 and 126:
+
+| cap | ceiling wins | ceiling title | beats 72 | greedy wins |
+|---|---|---|---|---|
+| $98M | 53.6 | 4.1 | 0.1 | 38.0 |
+| $105M | 56.3 | 5.8 | 0.3 | 40.0 |
+| $112M | 58.2 | 10.2 | 1.3 | 42.0 |
+| **$120M** | **60.9** | **13.0** | **2.9** | **44.0** |
+| $126M | 62.1 | 15.7 | **5.6** | 46.0 |
+| *want* | *58 to 66* | *6 to 18* | *0.5 to 6* | *40 to 50* |
+
+Everything is out of band under about 108, and **at the old 126 "beats 72"
+reaches 5.6 against a ceiling of 6**, which is the flip-on-the-seed case that
+block already warns about. **$123M puts the four nearest their middles and it
+ships at $120M**, which is the weekly fantasy cap's own call: three tenths of a
+win against a figure somebody can hold in their head.
+
+**THE GAP BETWEEN GREEDY AND THE CEILING NARROWED AND NO CAP RECOVERS IT.**
+About **17 wins** now against 18.6 at six, and measured at 116, 118, 120 and
+123 it sits between 16.2 and 16.9 whatever the cap is. What shrank is the
+NUMBER OF DECISIONS, not the room in the budget. That is the honest price of a
+shorter draft and it is the number CLAUDE.md already says to watch.
+
+#### What the mode gave up, said rather than hidden
+
+- **The 6TH slot was the FLEX.** It took anybody, so a roster could go big or
+  small and the slot list would not argue. What is left is `SLOT_ELIGIBILITY`,
+  which is loose enough at the edges that a combo guard really can take either
+  guard spot, so shape is still a choice rather than a form to fill in.
+- **The 0.72 was the only reason the bench was cheap.** "Buy a great man at a
+  discount and play him less" was a real play and is not available.
+
+**The minutes column is arithmetic now.** Five men over 240 player minutes is
+**48 each**. `MINUTES_SHARE`, `minutesShare`, `BOX.MIN_SD` and `BOX.MIN_FLOOR`
+are deleted rather than left computing a result that cannot vary: run through
+the old code, five men against a cap of 48 pin every one of them at the cap
+anyway, so the dice were being rolled for nothing. `apportionCapped` survives
+with no caller, which is the one piece of this worth revisiting.
+
+**A WEAKEST STARTER replaced the sixth man on the coach report**, because it is
+the observation five men make that six could not: there is no bench, so the man
+at the bottom is on the floor as long as the best one. Measured over 150 drafts
+each of three strategies, the weakest man runs median 1.7 / p90 3.6 greedy, 1.4
+/ 2.2 value, 0.2 / 0.8 cheapest. `WEAK_LINK` ships at **3.5 and 0.8**; its first
+draft carried 4.6 and 1.4, which is a strength a greedy draft reaches on under
+one run in twenty and a weakness it collects on half of them, so **two dead
+lines rather than two verdicts**.
+
+#### NUMWORD is the one place a roster count becomes an English word
+
+"Sign 5 players" is not how anybody says it, so this page wrote "six" out by
+hand wherever it came up, and every one of those became a page describing a
+game it was not running. That is this repo's oldest rule (when a number is in
+copy, either interpolate it or write the sentence without it) meeting the one
+case where **interpolating a digit is worse than the problem**. The answer is to
+interpolate the WORD.
+
+**The share card's tail is derived from the roster too.** Every y between the
+two rules was a constant written for six rows, which in the football game
+printed a seventh row through the closing rule and here leaves **92px of empty
+stock** on every card anybody posts. Checked from the other end: the arithmetic
+reproduces the six man card byte for byte at n=6.
+
+#### A number a player reads, on two pages that cannot interpolate
+
+**It went wrong DURING this change.** The cap was being swept, a provisional
+$105M went into the rules page and the meta description before the sweep had
+finished, and **$120M shipped**. Nothing threw: both pages rendered perfectly
+and promised a cap the game does not charge, which is the guide that lies,
+found by a player.
+
+Hoops is on no guarded list, so `verify.mjs` carries the check itself: every
+`$NNNM cap` a reader can see equals `CAP_MUSD`, and every roster count written
+as a WORD is the roster's own word. Script, style and comments come out first,
+because a code comment here is allowed to say what the cap used to be and the
+engine's own note lists every value it has ever had.
+
+**Two nouns are deliberately not on the list and the first draft failed on
+both.** "times" and "players" each mean the roster in one sentence and
+something else in another: the re-spin ladder is charged "three times" and no
+club may give up more than "two players". A reader that claimed those reports
+two correct sentences as defects. What is left is `spins`, `men` and
+`starters`. Both halves were proved by reintroducing a stale $105M and a stale
+"Six spins".
+
+#### FIVE GUARDS WERE READING A NUMBER RATHER THAN A CLAIM
+
+Each would have gone quiet or reported the wrong thing rather than going red:
+
+- **The palette check named all eight custom properties in one regex**, so
+  removing one matched nothing and it reported a page with **no position
+  colours at all**. It reads `POS_COL` and resolves through every `:root` block
+  now. Its own first fix read only the FIRST `:root`, which on this page is the
+  fonts block hundreds of lines above the colours.
+- **`check-board` and `check-bracket` signed six on a five man game**, so the
+  last press landed on a screen that was no longer the draft and the timeout
+  reported whatever that screen happened to be.
+- **`check-live` built its fixture from a written-out slot list** a slot longer
+  than the game drafts.
+- **`verify`'s era sweep asserted 36 readings**, which is six eras times a
+  roster size.
+
+**AND ONE OF THOSE FIXES BROKE ITSELF IN THE SHAPE THIS FILE KEEPS WARNING
+ABOUT.** `check-board`'s wait was left reading `(want)` while its body asked
+for `a.want`, so every poll threw a ReferenceError, **the function's own
+`catch` answered false**, and the wait timed out reporting a draft that had
+stalled. Nothing had stalled: the page had signed the man, drawn the next board
+and taken it out of `pending`. The stall dump prints `signed`, `draw` and
+`phase` now, which are the three things the wait actually asks for, so the next
+time a reader cannot read it says so instead of blaming the page.
+
 ### Three doors, and one of them was already built
 
 | | the wheel | what it is |

@@ -515,7 +515,9 @@ async function boot(page) {
    tile off a board that is about to be replaced. */
 async function toBracket(page) {
   await page.evaluate(() => document.querySelector('#b-start').click());
-  for (let i = 0; i < 6; i++) {
+  /* HOW MANY TO SIGN IS THE ENGINE'S ANSWER, never a literal: written 6 this
+     loop presses one more time than the game drafts. */
+  for (let i = 0; i < E.SLOTS.length; i++) {
       /* :not(.pending) IS LOAD-BEARING AND IT IS NOT BELT AND BRACES.
        `.opts.pending` hides the tile's CHILDREN and sets pointer-events
        none on the tile, so the tile itself is a visible box with a size and
@@ -528,15 +530,15 @@ async function toBracket(page) {
     await page.waitForSelector('.opts:not(.pending) .ptile:not(.off)', { timeout: 25000 });
     await page.evaluate(() =>
       document.querySelector('.opts:not(.pending) .ptile:not(.off)').click());
-    await page.waitForFunction((want) => {
+    await page.waitForFunction((a) => {
       try {
         const r = JSON.parse(localStorage.getItem('runthefloor_run_v1') || 'null');
-        if (!r || !Array.isArray(r.roster) || r.roster.length < want) return false;
-        if (r.roster.length >= 6) return true;
+        if (!r || !Array.isArray(r.roster) || r.roster.length < a.want) return false;
+        if (r.roster.length >= a.full) return true;
         const opts = document.querySelector('.opts');
         return !!r.currentDraw && !!opts && !/pending/.test(opts.className);
       } catch (e) { return false; }
-    }, i + 1, { timeout: 25000 });
+    }, { want: i + 1, full: E.SLOTS.length }, { timeout: 25000 });
   }
   await page.waitForTimeout(400);
   await page.evaluate(() => document.querySelector('#b-play').click());
