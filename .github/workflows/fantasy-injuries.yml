@@ -1,0 +1,103 @@
+name: Refresh the Fantasy Challenge injury report
+
+# THE BOARD IS BUILT ON THE TUESDAY AND THE INJURY REPORT IS NOT, which is the whole reason
+# this is a second workflow rather than a step inside `fantasy-pool.yml`.
+#
+# A price may never move once anybody has drafted against it, so the pool is written once
+# and left alone. An injury is the opposite: the game status report for a Sunday game is
+# first filed on the WEDNESDAY, firmed up on the Thursday and final on the Friday, and a
+# club can put somebody on injured reserve on any day of the week. So the board a reader
+# meets on the Thursday has to be the Tuesday's prices with the Thursday's news over them,
+# and that only works if the news has a file of its own.
+#
+# WHAT IT ACTUALLY CHANGES. Measured on the live week 3 board: five priced men are on
+# injured reserve and come off the wheel entirely, nine carry an Out or Doubtful designation
+# and are drawn but cannot be picked, and eleven are Questionable, which is a real decision
+# and is left to the reader. Nico Collins was ruled out in week 2 with a hamstring and the
+# wheel was offering him at $8.5M, which is what a player reported.
+#
+# ─── IT COMMITS, UNLIKE THE LIVE SCORER, AND THE DIFFERENCE IS THE CADENCE ─────────────
+#
+# `fantasy-live.yml` writes to Supabase and commits nothing, because it runs every ten
+# minutes through a game day and a hundred commits a weekend is a hundred Cloudflare
+# deploys. This one runs twice a day and only commits when the report has actually moved,
+# which is about three times a week. A static file is then the simplest thing that can work:
+# no migration, no round trip, and a week with no file behaves exactly as the mode did
+# before any of this existed.
+
+on:
+  schedule:
+    # Two passes a day, in UTC. The first is early evening Eastern, which is after the
+    # Wednesday, Thursday and Friday reports are filed; the second is late morning Eastern,
+    # which catches an overnight move and the Sunday inactives before the one o'clock games.
+    - cron: '20 22 * * *'
+    - cron: '20 15 * * *'
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'Week to refresh (blank for the live one)'
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fantasy-injuries
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # NO CACHE, for the reason `fantasy-live.yml` gives at length: `build/.cache` never
+      # expires, so a cached injury report is a report from before the thing that put
+      # somebody on it. The builder passes `maxAgeMs: 0` so it would be correct anyway, and
+      # there is nothing else here worth caching.
+
+      - name: Read the report
+        id: build
+        run: |
+          set -o pipefail
+          WEEK_ARG=""
+          if [ -n "${{ inputs.week }}" ]; then WEEK_ARG="--week ${{ inputs.week }}"; fi
+          node football/build/injuries.mjs $WEEK_ARG --write
+
+      # A FILE THAT WILL NOT PARSE IS WORSE THAN NO FILE, because the page fetches it on
+      # every boot and a broken one is a mode that loads and then draws a board nobody has
+      # checked. It is read back before it is committed.
+      - name: Read it back
+        run: |
+          node -e '
+            const fs = require("fs"), path = require("path");
+            const now = JSON.parse(fs.readFileSync("football/data/fantasy_now.json", "utf8"));
+            const f = path.join("football/data",
+              `injuries_${now.season}_w${"${{ inputs.week }}" || now.week}.json`);
+            const j = JSON.parse(fs.readFileSync(f, "utf8"));
+            if (!j.men || typeof j.men !== "object") throw new Error("no men in " + f);
+            const n = Object.keys(j.men).length;
+            console.log(`${f}: ${n} men, report covers week ${j.report_week}`);
+          '
+
+      - name: Commit it, but only if it moved
+        run: |
+          git config user.name "fantasy-bot"
+          git config user.email "noreply@anthropic.com"
+          git add football/data/injuries_*.json
+          if git diff --cached --quiet; then
+            echo "the report has not moved"
+            exit 0
+          fi
+          git commit -m "Fantasy Challenge: the injury report moved"
+          # Other scheduled jobs push to main too, so a concurrent run can advance the ref
+          # mid-job. Rebase and retry rather than fail on a non-fast-forward.
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "push rejected, rebasing onto latest main (attempt $i)"
+            git pull --rebase origin main || exit 1
+          done

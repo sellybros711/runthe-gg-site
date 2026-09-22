@@ -2572,9 +2572,8 @@ the right ORDER; what pricing promises is that equal price means equal expected 
 is BIAS. Fitted on r, shrinkage of any kind looked strictly harmful and the thing it exists to
 fix went unmeasured.
 
-**THE PROJECTION IS THE SEASON TO DATE AND A CONSTANT, and that is a measurement rather than
-laziness.** No free weekly projection is licensable, so one was built and then tested. Over
-6,720 draftable player-weeks of 2022 to 2024, against a 5.887 baseline mean error:
+**NO WEEKLY PROJECTION IS LICENSABLE**, so one was built and then tested. Over 6,720
+draftable player-weeks of 2022 to 2024, against a 5.887 baseline mean error:
 
 | | mae |
 |---|---|
@@ -2582,21 +2581,179 @@ laziness.** No free weekly projection is licensable, so one was built and then t
 | plus the best matchup term found | 5.878 |
 | plus the best recency term found | 5.867 |
 
-Neither is a term. **The recency term is worse than useless for a number that is PRINTED**: it
-takes the bias from +0.54 to +1.06, because the last three games of a man near the top of the
-board run hot. What ships is one addition, `PROJ_LIFT = 0.54`, because the shrink leaves every
-estimate low by that much and six men is three points of lineup projection a reader would
-watch come in high every week. **A flat offset and not a fitted line**: least squares wants a
-slope of 0.972, and a slope under one flattens the board by pulling the best men toward the
-middle. All three candidates land inside 0.013 of each other and remove the bias exactly, so
-the tiebreak is what they disturb.
+Neither is a term, and both are still out. **The recency term is worse than useless for a
+number that is PRINTED**: it takes the bias from +0.54 to +1.06, because the last three games
+of a man near the top of the board run hot.
 
-**So price and projection are the same quantity up to a constant, which means THE BOARD
-CANNOT CONTAIN A DECISION ITS OWN NUMBERS RESOLVE.** The dearest man on any board is also the
-highest projected one. That is why the card shows the STAT LINE and the price and no per man
-projection: the edge is everything the board cannot see, which is injuries, snap shares,
-weather and who is actually starting. The lineup's projected total is shown after the six are
-in, which is the one number this mode prints about the future.
+#### The projection was fitted POOLED, and the mode is played one week at a time
+
+```
+node football/build/test/probe_early.mjs
+```
+
+What shipped was `shrunkPPG + PROJ_LIFT`, one flat constant fitted over that same pool from
+week four on, so the shortest sample in it was three games and most of it was men with eight
+or ten. **Week three was never in the sample at all.** A player does not meet the pool. They
+meet ONE WEEK, and inside one week nearly every man has the same number of games, so a
+correction fitted at the pool's average sample length is right at exactly one point of the
+season:
+
+| games played | 1 | 2 | 3 | 4 | 5 | 6+ |
+|---|---|---|---|---|---|---|
+| what it was out by | +3.20 | +1.93 | +1.02 | +0.48 | -0.03 | -0.16 |
+
+Right about October, a third low about September. At two games, which is what week three is,
+that is 11.6 points on a six man lineup projected at 35.8. **Reported by a player** as the
+projection feeling too low to be half PPR, and they were right.
+
+**AND THE SHRINK TOWARD ZERO WAS AVAILABILITY WEARING A SAMPLE SIZE COSTUME.** Zero is where a
+man who is not on the field scores, so shrinking toward it is an argument about whether he
+PLAYS rather than about how much evidence there is, and the two only look alike because a man
+with two games in week ten has missed eight. Grouped by the share of his club's games a man
+has already played:
+
+| share of his club's games | under .5 | .5 to .8 | .8 to 1 | every one |
+|---|---|---|---|---|
+| he scores this much of his own average | 0.404 | 0.605 | 0.739 | 0.914 |
+| and he blanks | 59.6% | 39.0% | 24.1% | 8.9% |
+
+The first row is one minus the second to three decimals, at every share. Held to men who have
+played every one of their club's games, the games effect on the LEVEL all but vanishes and
+what is left is an ordinary shrink for a thin sample.
+
+**So there are two terms and they answer two questions**: how often he plays, and what he
+scores when he does, which is the season to date shrunk toward what his POSITION is doing on
+this board. **The prior is the part that was missing.** `shrunkPPG` is a shrinkage estimator
+with its prior set to zero, which is why it needed a constant bolted on the end and why that
+constant could only ever be right at one sample length: the prior's own contribution is
+`K*M/(g+K)` and it SHRINKS as the sample grows, where a bolted-on constant does not.
+
+**Per position and not one level for everybody**, because one level shrinks a tight end up
+toward a quarterback's rate and a quarterback down toward a tight end's, on the same board, at
+the same time. Measured, one global level over-projects both ends of a week three board.
+
+**Fitted on two seasons and reported on the third, rotating the holdout.** The level multiple
+came back **0.800 on all three rotations** and K at 2.25, 2.50 and 2.50 against the `SHRINK_K`
+of 2 the price already carries, so it is pinned to that rather than given a second constant.
+Pinning costs nothing: the worst mis-calibrated cell moves 2.03 to 2.01, 3.21 to 3.49 and 1.96
+to 1.65 across the three held out seasons. On a held out season:
+
+| | 1 | 2 | 3 | 4 | 5 | 6+ | worst cell | mae |
+|---|---|---|---|---|---|---|---|---|
+| shipped | +3.45 | +2.18 | +1.39 | +0.90 | +0.24 | +0.17 | 5.59 | 6.03 |
+| plays x rate | +0.12 | +0.26 | +0.01 | +0.31 | -0.26 | +0.08 | **2.01** | **5.81** |
+
+Better on the error as well as on the bias, which is worth stating because a calibration fix
+usually costs accuracy and this one does not.
+
+**NOT ONE OF THE 408 PRICES ON THE LIVE BOARD MOVED.** `pricePool` still runs on `shrunkPPG`,
+the cap was swept against those prices, and the projection is not an input to any of it. The
+probe measures that rather than asserting it from the algebra.
+
+**What it costs is that the projection is no longer a monotone restatement of the price.** Two
+men at one price project differently when one of them has missed a Sunday. That is real and it
+is on the card already, as how many of his club's games he was there for, so the card says
+`1 of 2 games` rather than `1 game`: in week ten the bare count says nothing at all.
+
+**The card still shows no per man projection.** What the board shows is what he has DONE and
+how available he has been, which is both halves of what the projection reads. The lineup's
+projected total comes after the six are in, and it is the one number this mode prints about
+the future.
+
+#### The cap bound the lineup and never once appeared on screen
+
+```
+node football/build/test/probe_board.mjs
+```
+
+Reported by a player as always having enough for all the top men. **They did, by
+construction.** `eligible()` filtered the position to men the roster could sign and `spin()`
+drew from the DEPTH dearest of THOSE, so every man on every board was affordable, at every
+pick, always. The cap decided the whole lineup and was never once seen.
+
+**The cap sweep cannot find this and is not wrong.** `probe_cap.mjs` asks whether the cap
+binds over a whole draft and on the live board it does: greedy gets through 97% of it, the
+crossover with a budget bot is exactly at $90M, nothing strands. That is a question about the
+totals and this is a question about one press.
+
+**And the whole-pool price distribution is a red herring.** 48% of the 408 men sit at the
+$3.0M floor, which looks alarming and means nothing: the wheel reaches 144 men and **0.7% of
+those** are at the floor.
+
+**What was actually wrong is the reach.** A spin draws five of the DEPTH dearest, so the
+dearest man OFFERED is about the `DEPTH/(DRAW+1)`th best at that position: at a depth of
+forty, the seventh, which on this board is **$24.4M against a $48M ceiling and $90M to
+spend**. Nothing is ever refused, so nothing is ever a decision.
+
+**So the board shows the men you cannot afford.** Drawn from the DEPTH dearest at the slot
+regardless of what is left, a board holds something out of reach on **25.7%** of presses. One
+seat is GUARANTEED signable, filled with the dearest man in range when the draw produced
+none, because the reserve floor's job does not go away: drawn with no guarantee at all it
+strands every single draft, which is the empty screen with no way on.
+
+**The takeable count is what had to be checked before doing it**: 5.0, 5.0, 4.9, 4.5, 3.6,
+3.0 across the six picks. A last slot offering one signable man and four grey ones is the
+wheel picking the team.
+
+**NARROWING THE REACH WAS THE OTHER CANDIDATE AND IT IS WORSE.** At a depth of 20 the dearest
+man offered at the first press goes to $29.5M and the takeable count at the last two picks
+falls to 1.7 and 1.3. That buys the budget by taking the decision away. `DEPTH` and
+`CAP_MUSD` are both unchanged, and the cap sweep is unchanged in shape after it: crossover
+still at 90, 97% spent, zero stranded.
+
+**`canSign()` is one call and every reader asks it**: what greys a row, what refuses the
+press, and what all three bots in `check-fantasy.mjs` and all four in `probe_cap.mjs` sign
+from. That is the Full Team glow's lesson, where the picture read `roster.length` and the
+board read `nextOpenSlot()` and the two came apart on four picks of six.
+
+**The price is the one thing on a grey row that is NOT dimmed**, because it is the reason the
+row is grey. That is only possible because the row itself is never faded: opacity on a parent
+applies to the whole subtree and a child cannot opt back out, so the first version's
+`opacity:1` on the price inside a faded row was a rule that did nothing. The parts are dimmed
+instead.
+
+**The guard presses the grey row rather than looking at it**, which is the dynasty lock's rule
+again, and it walks up to eight drafts to find one. Greedy meets an out of reach man on about
+a quarter of boards, so a six pick draft misses entirely about one time in five: the first
+version walked ONE draft, came back "never once refused anything" and was reporting its own
+seed.
+
+#### The board reveals, and it does not step
+
+Reported alongside the two above: nothing is revealed and the screen is jumpy.
+
+**Measured first, and the obvious diagnosis was wrong.** The hoops draft board's fault was a
+collapse (`drawInto` emptied the containers and the court moved 1,554px). Here the board's top
+never moved at all. What was wrong is that there was no motion of any kind: five men were
+replaced by five different men between two frames, with nothing on screen saying which one was
+taken.
+
+**The rows are in the DOM before they are readable**, dealt 55ms apart, which is what keeps
+the box exact on the first frame. A skeleton of placeholders cannot: a row with a two line
+stat line is 74px and a one line one is 63, so stand-ins step the moment the real men arrive.
+
+**A press is acknowledged before the board changes.** The row you took goes green and holds
+for 170ms while the other four fall away. **A second press inside that window is refused**, or
+a double tap signs a man out of the previous slot's board into the next slot. The state is
+written immediately and only the PAINT waits.
+
+**AND THE STAT LINE IS FLOORED AT TWO LINES AS WELL AS CLAMPED AT TWO.** The clamp held a row
+to one height within ONE board and said nothing about the next one, so a board of one line
+stat lines is 63px a row and the one after it is 74: signing somebody moved everything under
+the board by up to **31px**, on four presses of five, measured through the real page at
+390x844. Now 0px on every press.
+
+**Every timer is cancelled on a screen change and checks it is still working on the draft it
+was started for.** A stagger firing into a board that has been rebuilt leaves rows stuck at
+opacity 0: a board with men on it nobody can read, and nothing throws. `show()` cancels, so
+callers going TO the draft screen show it BEFORE they paint it.
+
+**The guard measures the glass over a whole draft at a phone**, and asserts properties that
+survive a redesign: every row ends up readable, it is over inside a bound, and the thing under
+the board does not move while it happens. Both defects were proved by reintroducing them
+alone, **and one of its claims was passing vacuously**: with the stagger stopped part way,
+`signed` is 0 and the worst settle time is 0, so a bare `< 1500` reported green on a board
+that never became readable at all.
 
 **The top of the board is the best man on it, not the 99th percentile.** That anchor is
 inherited from a pricing built over tens of thousands of finished seasons where the 99th
@@ -2607,6 +2764,124 @@ the maximum, exactly one man reaches it every week by construction.
 
 **The board is priced against ITSELF.** A man whose club is idle is off it and out of the
 anchors, or a leader sitting a bye sets a ceiling nobody draftable can reach.
+
+#### A man who is not playing is not a pick
+
+```
+node football/build/injuries.mjs                 what the report says about the live week
+node football/build/injuries.mjs --write         and write the file the page reads
+node football/check-fantasy.mjs --quick          the engine half, no browser
+node football/check-fantasy.mjs                  the chip, the press and the sheet
+```
+
+Reported by a player with a screenshot: the wheel offered **Nico Collins at $8.5M**, and he
+had been ruled out in week 2 with a hamstring. It was right to. The pool is built from what a
+man has DONE and from the SCHEDULE, and neither of those has any idea whether he will be on
+the field, so nothing anywhere refused him. The board rendered, the price was correct, the
+lineup was legal, and it was worth nought.
+
+**Two sources, and they answer two different questions.**
+
+| | asks | so that |
+|---|---|---|
+| `players.csv` | is he on a roster at all | injured reserve is not a designation to read |
+| `injuries.csv` | what did his club file this week | Out, Doubtful, Questionable, the body part, the practice |
+
+**Injured reserve takes a man OFF THE BOARD and a designation does not.** There is no
+decision to make about somebody on IR and no news to read, so he leaves the pool the way a
+man whose club is idle was never in it. An Out or Doubtful designation is the opposite: it is
+this week's news and it is the most useful thing the board can say about a man a reader was
+about to take, so he is **drawn, in red, and cannot be picked**. Questionable is a real
+decision and is left alone.
+
+Measured on the live week 3 board: 5 priced men on reserve, 7 Out, 2 Doubtful, 11
+Questionable. Only two of the designated men are inside the wheel's reach at all, which is
+why the guard searches boards rather than assuming one.
+
+**THE SPLIT IS MADE IN `draft.js` AND NOT IN THE PAGE**, because four separate things ask a
+version of "can this man fill this slot": what greys a row, what refuses the press, what the
+reserve floor promises the last slot will cost, and which man fills the guaranteed signable
+seat. Written in the page, the board offers a seat that refuses the press, or worse promises
+a $3.0M tight end who is on injured reserve and strands the draft at the last slot with
+nothing legal on it. That is the Full Team glow's lesson: the picture and the rule read one
+function. `D.hurt()` is that function and `canSign` already carried the other half.
+
+**The reserve floor has to step over them**, and the guard nearly could not see it: 48% of
+the board sits at the $3.0M minimum, so knocking out ONE man at the floor leaves the floor
+exactly where it was and the assertion compares a number with itself. It marks every man at
+the floor now, and it moves.
+
+#### It is its own file, because prices must not move and injuries must
+
+`football/data/injuries_<season>_w<week>.json`, fetched beside the pool and merged over it.
+A price may never move once anybody has drafted against it, so the board is written on the
+Tuesday and left alone. The game status report is first filed on the **Wednesday**, firmed up
+on the Thursday and final on the Friday, and a club can file an IR move on any day. Baked
+into the pool, the only way to learn somebody is out would be to reprice the board underneath
+everybody who had already used it.
+
+**The week's report does not exist on the Tuesday and that is not an error.** The file carries
+`report_week`, which is allowed to be behind the week being played, and the sheet SAYS so:
+"From the week 2 report. Week 3 has not been filed yet, so this is the last thing that was
+said about him." A man ruled out on Sunday is the best available answer about next Sunday
+until Wednesday, and printing it as this week's would be inventing a certainty nobody has.
+
+**`.github/workflows/fantasy-injuries.yml` refreshes it twice a day and commits only when it
+moved**, which is about three times a week. That is the opposite of `fantasy-live.yml`, which
+commits nothing because it runs every ten minutes: a hundred commits a weekend is a hundred
+Cloudflare deploys. At twice a day a static file is the simplest thing that works, with no
+migration and no round trip, and **a week with no file behaves exactly as the mode did before
+any of this existed**.
+
+**A BOARD IS DERIVED FROM (seed, pool), SO A POOL THAT SHRINKS REDRAWS IT**, and that is
+accepted rather than worked around. Inside one visit nothing moves, which is what the reload
+guard is about. Across a refresh an unsigned board can come back with a different man on it,
+and the alternative is a wheel that goes on offering somebody the league has ruled out
+because it was drawn before anybody knew. What is stored is ids, so nothing a reader has
+actually SIGNED can move: `BY_ID` is built before the merge and is never filtered, or a
+lineup holding a man who went on IR on the Wednesday would be a screen reporting five.
+
+**A cleared man is not a warning.** 55 of the priced men carry a report row with no
+designation and **45 of those practised in full**: one board row in nine wearing a mark that
+means "he was on the report and he is fine". They are dropped at BUILD time rather than hidden
+in the page, because a row nothing can draw is a row nothing can open. The ten who did not
+practise fully keep their chip, which on a Tuesday is the most useful thing the report has.
+
+#### The chip, and the press it takes
+
+**Red for a man who will probably not play, gold for a man who might.** Two decisions, two
+colours; one colour for both would be the board saying the same thing about a hamstring that
+has ruled somebody out and one that has not. `Q` is the one abbreviation kept, because it is
+what a questionable man is called everywhere this mode's readers have seen one. DOUBT is not
+a word, so it is spelled.
+
+**AN INJURED ROW IS NOT `disabled`, AND THAT IS LOAD BEARING.** A disabled button swallows
+every pointer event in its subtree, so a chip on one could be read and never tapped, and the
+report is the whole reason that row is drawn. The press is refused by `canSign` instead,
+which is the same call that greyed it.
+
+**And a row that refuses and does nothing is a wall**, which is this repo's own rule about a
+locked door arriving at a list. Pressing anywhere on an injured row opens the report. **Found
+by the guard**, which clicked one and waited thirty seconds for a signing that was never
+coming.
+
+**Two things only a screenshot could say**, both of which render perfectly:
+
+- **The name was truncated to make room.** `cannot be picked` is sixteen characters in the
+  price column, which took about 26px off the name and left `Zay Flow...` on the one row
+  where knowing who it is matters most. It is `cannot pick`, the same length as the
+  `over budget` that sits in that slot already.
+- **The name line had to become a flex row.** As a block with `text-overflow`, a chip on it
+  wraps onto a second line and that row is taller than the other four, which is the board
+  stepping again. The name is what shrinks, inside its own element; the chip never does.
+
+**What the sheet says is the REPORT and it does not pretend to be anything else**: the
+designation, the body part and whether he practised, which is what a club is obliged to
+publish and what every fantasy site is reading when it says a man is questionable. It is not
+a beat writer's paragraph and the last line names the source. Writing the other kind needs a
+news feed, and **the two that would serve are refused by this machine's egress proxy**, so
+nothing here could have been checked against one. Said plainly rather than shipped as a
+sentence that looks like reporting.
 
 ### The cap is the crossover, and the wheel only reaches as far as the league starts
 
@@ -2857,6 +3132,418 @@ than designed around quietly.
 **Pro must not buy draws or entries.** The bundle sells the counting away. Selling an advantage
 in a prize competition is a different kind of product and this mode has no paid tier at all,
 which is why there is no `fantasySold()` beside `fullTeamSold()`.
+
+### The board moves while the games are being played
+
+```
+node football/build/live-results.mjs --why        what it would do, and why
+node football/build/live-results.mjs | psql "$SUPABASE_DB_URL"
+psql -d fantasy -f supabase/110_fantasy_live.sql
+psql -d fantasy -f supabase/test/fantasy_live_test.sql
+```
+
+**109 already scored a live board correctly and nobody could tell.** A score is DERIVED, so
+the instant a `fantasy_results` row lands every entry that holds that man is right. What was
+missing was a writer during the games, and any way for the screen to say WHEN it last moved.
+A frozen feed and a quiet afternoon are the same picture.
+
+#### The source does move during a weekend, and that was measured rather than assumed
+
+nflverse fills its weekly stats file in as games finish. Measured on the real 2026 file: the
+build cache taken at **11:25pm ET on the Sunday of week 2 held 975 rows across 28 clubs**, and
+once the Sunday night and Monday night games were in it held **1,107 across 32**. Those two
+snapshots are also the fixture the whole chain was proved on, end to end, and the reorder
+between them is real: of eight lineups drafted through the real wheel, **five changed place**.
+
+**What is still NOT measured is whether it moves DURING a game**, and the difference decides
+whether the board ticks over or jumps a game at a time. So the writer records both clocks and
+one weekend of them answers it with data:
+
+| | |
+|---|---|
+| `checked_at` | the last time anything LOOKED |
+| `results_at` | the last time the answer actually CHANGED |
+
+`results_sig` is what makes the pair honest. The writer upserts the same rows every few
+minutes whether or not anything moved, so `results_at = now()` on every write would report a
+change every time it was checked: the frozen feed wearing a fresh timestamp. The signature is
+taken over the week's rows AS STORED, after the write, so it is a fact about the table rather
+than about what the writer thinks it sent.
+
+#### Three things the live path broke that the Tuesday path never could
+
+All three had cost nothing for as long as the only run happened two days after the last
+whistle.
+
+- **THE SCHEDULE SAYING A GAME IS OVER IS NOT THE STATS BEING IN.** `games.csv` carries a
+  final score the moment a game ends and the player rows land minutes later. `final` was read
+  off the schedule alone, so a run at the exact minute the Monday night game ended would mark
+  the week SCORED on incomplete stats, and `fantasy_mark_results` will not un-say it. Final
+  now means both: every game played AND every club that played has somebody with a row. The
+  28-club snapshot is exactly the state it refuses, and it names the four clubs it is waiting
+  for.
+- **THE CACHE NEVER EXPIRES.** Right for 1999 to last year, and a board that never moves for
+  a season being played: served from disk, the writer would poll the same bytes all afternoon.
+  In a GitHub runner the workspace is empty so it fetches anyway, which made it correct BY
+  ACCIDENT and would have broken silently the day somebody added a cache step to speed the
+  workflow up. `maxAgeMs` is opt-in, the default is unchanged, and the live path passes 0.
+- **`weekly-pool.mjs --write` REPOINTED THE LIVE WEEK BACKWARDS.** Building an old week to
+  make a fixture is an ordinary thing to want, and every one of those quietly moved
+  `fantasy_now.json` back: the mode serves a week that finished a fortnight ago, nothing
+  throws, the board is a real board. Found by doing it. The pointer only ever goes forward
+  now, and the week's own JSON is still written.
+
+#### The writer is a cron that decides for itself
+
+**The cron is a wide net in UTC and `live-results.mjs` makes the real decision off
+`games.csv`**, which is in Eastern and is already the one source for when a game starts.
+`fantasy-pool.yml` answers daylight saving by listing both entries and asking which fired,
+which is right for a job that must run at one exact hour; this one wants to be awake for a
+whole game day, so nothing here reads a wall clock at all and a clock change moves nothing.
+
+**The window has a tail and the tail is the point.** A game is watched from ten minutes before
+kickoff to six hours after, and then the week stays watched for as long as a club that has
+played is missing its stats. The stats land AFTER the game, so a window closing at the final
+whistle would stop watching at the exact moment the last game's points were about to arrive.
+
+**It commits nothing.** The live board is a Supabase read, so a score that moves costs one
+write and no deploy; committing `results_*.json` every ten minutes would be a hundred commits
+and a hundred Cloudflare deploys a weekend to publish a file the live screen does not read.
+
+**`set -o pipefail` is load bearing in the workflow.** Without it the exit status is psql's, so
+a build that failed outright pipes nothing into a psql that succeeds and the run goes green
+having scored nobody: the one failure here that looks exactly like a quiet afternoon.
+
+**Nothing scored yet is a real state and not an error.** Before the Thursday kickoff nflverse
+has no rows for the week, and an emitter that threw there would take the workflow red every
+single week for the one condition that is certain.
+
+#### The rows are keyed on the ENTRY, and the key is not the entry's id
+
+A board that animates cannot do without a stable row key. Keyed on PLACE, row one is always
+row one and nothing ever moves: the scores change under a board that never animates. Keyed on
+the NAME, two readers sharing one are a single row and a rename is a row that teleports.
+
+**It is not `fantasy_entries.id` either, and that is a disclosure decision.** That column is a
+bigserial over every entry ever made, so a public board carrying it publishes how many entries
+this mode has taken in total. `entry_no` is the same count taken WITHIN the week, which gives
+away only the order people entered, and the tiebreak already publishes that by putting the
+earlier entry above on a tie.
+
+**A HASH OF THE ID WOULD HAVE BEEN WORSE THAN EITHER.** md5 over a small integer is brute
+forced in a second, so it would have looked like a defence and been none. This file would
+rather make no claim than a false one.
+
+**It is stable for exactly as long as it needs to be**, and that rests on a property the mode
+already has: no entry can arrive after the lock, and the board does not open until the lock.
+The set of entries in a live week is frozen from the first kickoff.
+
+#### Three read policies that were granting nothing
+
+**RLS narrows a grant, it does not make one.** 109 found this once on `fantasy_entries`, where
+reading your own entry raised permission denied behind a perfectly good read-own policy. It is
+true of `fantasy_weeks`, `fantasy_prices` and `fantasy_results` too, and was missed because
+every screen reads them through a security definer function, which never consults the policy.
+
+Nothing was broken. What was wrong is that **109 says otherwise in as many words**, over
+`fantasy_prices`: "PUBLIC READ, deliberately, and it gives nothing away". Verified against a
+real database, `anon` was denied on all three. A comment claiming an access rule the database
+does not have is the dangerous direction, because the next person to want a direct read finds
+it refused and goes looking at the policy, which was never the problem. 110 grants all three
+and asserts it as a real read as the real role. **`fantasy_entries` is deliberately not
+widened**: the sanctioned way to see somebody else's lineup is the board, and that gate is the
+competition.
+
+#### FLIP, and the one forced reflow
+
+The rows are measured where they are, the list is rebuilt in its new order, they are measured
+again, each is given the INVERSE of the distance it just travelled, and that is played back to
+nothing. The browser lays out once and animates a transform, so fifty rows sliding past each
+other cost the compositor and nothing else.
+
+**Read everything, then write everything.** Both loops are one phase each and the single
+`offsetWidth` between them is the only forced reflow in the move. Measuring one row and then
+writing its transform before measuring the next is fifty reflows for one animation, on the
+frame the page is also parsing a poll.
+
+**The transition is declared in CSS and driven from script.** Written as a keyframe, every row
+would replay it on every repaint, because the painter rebuilds the list and a new node starts
+its animations over. That is the hoops bracket's own lesson.
+
+**Which way it went is marked for the half second it is going.** A row that climbed and a row
+that fell look identical once they have arrived, and the move is over in half a second: without
+the mark the only reader who knows what happened is the one who was watching that exact row.
+**A row whose SCORE moved and whose PLACE did not gets its own tick**, because most of a quiet
+afternoon is exactly that and the board would otherwise look frozen while working perfectly.
+
+**The first paint never animates.** There is nothing to move from, and fifty rows flying in
+from wherever they were measured is a screen announcing itself.
+
+#### `show('s-in')` was cancelling the whole feature, three ways at once
+
+`paintIn` ends with `show('s-in')`, which was a harmless re-assert of a class that was already
+set. It stopped being harmless the moment `show` grew teeth, and **none of the three throws**:
+
+- the poll was CANCELLED by the first live repaint, so the board updated once and never again,
+- the move timers went with it, so every row that had just moved kept its mark for ever,
+- and `scrollTo(0, 0)` yanked a reader half way down the board back to the top, every twenty
+  seconds, for as long as they watched.
+
+Showing the screen you are already on is not a screen change, and it returns early now. Found
+by the guard rather than by reading.
+
+#### What the guard measures, and the two shapes it got wrong first
+
+It drives two real states through the page's own poll and reads the glass: a row that changed
+place is caught MID FLIGHT, still drawn where it was, which is the one moment at which a board
+that reorders without animating and a board that animates are distinguishable. Proved by
+reintroducing both defects: with the invert removed nothing is moving, and keyed on the place
+instead of the entry **three separate assertions fail**.
+
+**Two handles are published for it and nothing on the page reads either.** `__rtgPoll` asks
+once through the real poll and the real painter, and `__pollMs` shortens the interval. That is
+`window.RTF_LIVE`'s argument in the hoops game: the claim is about the SECOND answer, and
+waiting the real twenty seconds would put twenty seconds into the suite per assertion.
+
+**A mark coming off is a bound, not a snapshot.** The first draft asserted the marks were gone
+at one arbitrary instant after the move, which is a claim about the suite's own arithmetic;
+measured, they come off at about 620ms. It waits for them now, which still catches the defect
+worth catching: a mark that is never removed at all.
+
+**And every fixture timestamp is relative to the PAGE's clock.** `openPage` pins `Date.now()`
+inside the browser, and these sections run at a point DURING the games, hours from the real
+time the suite runs at. Built off the harness's own `Date.now()`, a `checked_at` meant to be
+"a moment ago" lands sixteen hours in the page's past and the board correctly reports a feed
+that has stopped. The first draft did that and failed on the one assertion it existed to prove.
+
+#### The poll
+
+Twenty seconds, and it **only runs while there is something to see**: not before the lock, not
+after the week is settled, and not while the tab is hidden. `visibilitychange` restarts it AND
+asks immediately, because coming back to the tab is the moment somebody checks.
+
+**A null answer leaves the board alone rather than blanking it.** A leaderboard that hid itself
+on one bad request would flash empty every time a phone changed cell tower. **And it keeps
+asking after one**, because a board that gave up after a single unreachable poll would stay
+frozen for the rest of the afternoon on a reader whose train went into a tunnel.
+
+**Three ways an answer can be stale by the time it lands**, and all three are guarded: the
+reader left the screen, the poll was stopped, or the live week rolled over under a slow
+request. A board painted for the wrong week is somebody else's competition on your screen.
+### The real games, and a board that is its own screen
+
+```
+node football/build/test/test_scores.mjs     the feed's parser and the fallback
+node football/build/nfl-scores.mjs --why     what the live week looks like right now
+node football/check-fantasy.mjs              the screen, the pill and the scoreboard
+psql -d nfl_scores -f supabase/test/nfl_scores_test.sql   after 109, 110 and 111
+```
+
+`supabase/111_nfl_scores.sql` adds `nfl_games`, `football/build/espn.mjs` reads the feed,
+`football/build/nfl-scores.mjs` composes a week, and `s-live` in `football/fantasy/index.html`
+draws it. One pinned button reaches it while the games are on.
+
+**The board used to live under the entry screen and that was wrong twice over.** A reader who
+never drafted has no entry screen, so on the one afternoon a leaderboard is worth looking at
+they had no way to it at all, which is the dynasty board that rendered perfectly and had no
+door arriving at a second mode. And a board hung under a lineup reads as a footnote to it,
+when on a Sunday it is the thing somebody opened the page for.
+
+**Moving it gave the board back two of its four states.** While it sat under the entry screen
+the reader had entered BY DEFINITION, so an empty answer could only ever mean the week had not
+locked and "nobody yet" was a sentence that could not be true. On a screen open to somebody
+who never drafted it can be, so all four are written: unreachable, not open yet, nobody has
+entered, and here is the board.
+
+**THE WINDOW IS ASKED OF THE SCHEDULE, NEVER OF THE DAY OF THE WEEK.** "Thursday to Monday" is
+what a normal week works out to and is not what it means: a Saturday slate in December, a
+London kickoff at half past nine in the morning and the Friday after Thanksgiving are the same
+question with three different answers, and a rule written in weekday names is wrong about all
+three with nothing to say so. The button is up from the first kickoff until six hours after the
+last one. The first kickoff is also exactly when the board opens, so one fact decides both.
+
+**It is pinned rather than put on a screen**, because which screen somebody is on when they
+want the scores is not something the page gets to decide. `body.haslive` gives the column a
+floor to sit above: a fixed pill over the last control is a button covering the way out, which
+is the boss battle's Continue arriving at a different screen. It is hidden on the screen it
+opens (a door into the room it is standing in) and on the draft screen, which cannot be reached
+inside the window anyway because the week locks at the first kickoff.
+
+**A minute is how often the button asks whether it should be there.** Nothing else on this page
+ticks before the lock, since the poll only runs once the board is open, so without it somebody
+sitting on the home screen at a quarter past eight on the Thursday would have to reload to find
+the thing this was built for.
+
+**The entry screen keeps a way to the board and that is not a duplicate door.** The pill is a
+live control and disappears at about seven on the Tuesday morning; a leaderboard whose only
+door was a live one would go with it. Both open the same screen.
+
+**TWO PANELS, ONE AT A TIME, AND THAT IS ARITHMETIC RATHER THAN TASTE.** Sixteen games is about
+980px at 390 and a full board is fifty rows, so whichever of the two is drawn second is behind
+a scroll of the other for the whole afternoon. Stacked, the competition this site is actually
+about sat under the entire NFL slate. Found by taking a screenshot and looking at it.
+
+**Each door lands on what it promised**: the pill says Live scores and opens the games, the
+entry screen's button says the board and opens the board. A single default would make one of
+the two a control that takes you somewhere other than where it said. That is the premium card's
+own lesson, where the card read one thing and the sheet it opened read another, and both suites
+assert it for the same reason. Both panels stay in the DOM and the poll paints both, so
+switching is instant and neither is ever a screen that has to load.
+
+**`BOARD_SEEN` is deliberately NOT reset when the screen opens, and it was, for a pass.** The
+reasoning was that opening a screen is not watching a row move. The premise is false: the poll
+has been painting that board all along, while the reader was on their own six or on the games,
+so THE ROWS ON SCREEN ALREADY ARE `BOARD_SEEN`, and an animation from there is one honest step.
+Resetting only threw away the first move after somebody arrives, which is the move they came
+for. What stops a hidden panel animating is `boardShowing()`, which is a different question
+asked in a different place: measured inside `display:none` every rectangle is zero and every
+row appears to have travelled the height of the page.
+
+#### The scoreboard has two sources and the schedule is what names a club
+
+| | knows |
+|---|---|
+| the pool, which every visitor already downloads | the sixteen games and when they kick off |
+| `nfl_games`, written by the cron | what has happened since |
+
+**The slate is derived from the pool rather than fetched.** Each man carries his club, his
+opponent, which of them is at home and the kickoff, so sixteen games fall out of a file the
+page has already read. Measured on the live week 3 board: all sixteen, because all thirty two
+clubs have a priced man. **So the screen is complete before anything has been written at all**,
+which is also what it looks like against a database that never got the migration.
+
+**A club with nobody priced would drop its game**, which is why the server's rows are merged
+over the top rather than used only for the scores. `nfl_games` is written off `games.csv`, the
+whole schedule, so a game the pool cannot see arrives the first time the writer runs.
+
+**THE FEED IS JOINED ON ESPN'S OWN EVENT ID AND NEVER ON A CLUB CODE.** `games.csv` carries an
+`espn` column holding the event id of every game. ESPN writes WSH and LAR where nflverse writes
+WAS and LA, so a name-matched join would have silently dropped two clubs every week and looked
+like two byes. What the feed supplies is a state, a quarter, a clock and two numbers. Every
+name on the screen is ours.
+
+**An event that cannot be made sense of takes its own game out of the answer and nothing
+else.** A state that is not one of the three the page draws, a competition with one side, a
+score that will not parse: each of those leaves that game on the schedule's answer, so the
+board shows a kickoff time rather than half a scoreline. The fixture attaches all three to
+REAL week 3 games for that reason, so the fallback has somewhere to catch them.
+
+**BEFORE KICKOFF A SCORE IS NOT NIL-NIL, IT IS NOTHING.** ESPN answers "0" and "0" for a game on
+Thursday morning, and stored as a scoreline the board would say Atlanta and Green Bay were
+level. It answers a period of 0 and a clock of "0:00" too, which is a pre-game row carrying a
+quarter. Both are dropped. That is `next-week.mjs`'s own trap (`Number('')` is 0) arriving from
+the other side.
+
+**Overtime is derived from the quarter and never from the word OT in a sentence.** `type.detail`
+is display text, it has been spelled more than one way, and a finished game past the fourth went
+to overtime, which is arithmetic.
+
+**The status is read off the COMPETITION and not off the event.** Both carry one and they can
+disagree; reading the event's copy is how a board freezes at pre-game for a whole afternoon with
+every other field perfect. The sample payload carries a stale event status for that reason and
+the guard asserts the live one wins.
+
+#### A game only ever moves forwards, and that is what a feed outage needs
+
+Every ten minutes a tick arrives that knows less than the row already does, because the fallback
+can only ever say "kickoff is at 8:15" about a game in its fourth quarter. Taken, the board flips
+a live game back to pre-game twice an hour all afternoon and forward again when the feed returns.
+**Nothing throws, every row is a valid row, and the only symptom is a scoreboard that flickers.**
+
+So `nfl_put_games` ranks the three states and keeps the furthest along answer. A source that
+knows less writes nothing. **What it costs is that the cron cannot write a correction**: a game
+wrongly marked final stays final until somebody updates it by hand, and that is the right way
+round, because the failure it prevents happens every time the feed blinks and the one it causes
+needs the feed to be wrong.
+
+**A pre-game row whose kickoff has passed says "Under way" rather than a time.** That is what a
+feed outage looks like from the reader's side, and printing 8:15 beside a game that started an
+hour ago would be the page inventing the one thing nobody knows.
+
+**The merge is done in a CTE and not inside the `on conflict`.** Written as a `do update set`
+full of rank comparisons, every column carries its own copy of the same test and then whether the
+row MOVED has to be asked a third time by comparing the old row against an expression restating
+all of them. It was written that way first and ran to thirty lines. Resolved before the write,
+the rule is written once, `moved` is a comparison of two rows, and `excluded` is already the
+answer.
+
+#### The games ride in `fantasy_board`, which is why 111 restates it
+
+The live screen shows two things that are about ONE INSTANT: what the games are doing, and what
+that has done to the standings. Asked as two calls they are two instants, about twenty seconds
+apart in an order nobody controls, and the reader gets a board that has already paid for a
+touchdown the scoreboard beside it has not shown. Both read as one of the two being broken.
+
+**APPLY 111 AFTER 110.** 110's copy of `fantasy_board` has no `games` key in it, so the other
+order leaves a live screen whose scoreboard is permanently empty with nothing anywhere saying
+why. That is the one ordering hazard in the file.
+
+**The games are answered even when the week is not.** A week with no `fantasy_weeks` row is a
+competition nobody published, and the football is on regardless: the screen draws the scoreboard
+and says the board is not open, which is two true sentences rather than one blank panel.
+
+#### The cron writes both halves, and the feed cannot take it red
+
+`live-results.mjs` scores the week and writes the scoreboard on the same tick, from one snapshot.
+The scoreboard half is allowed to fail on its own: scoring the week is what matters and a picture
+is a picture, so `buildScores` swallows everything the feed can do and the caller catches the
+rest.
+
+**SCORES FIRST, THEN THE WEEK.** They are two statements and psql applies them as it reads them,
+so a failure between the two leaves the scoreboard written and the week unscored rather than the
+other way round. The Tuesday build settles a week; nothing settles a scoreboard.
+
+**ESPN CANNOT BE REACHED FROM THE DEVELOPMENT SANDBOX**, and that is worth saying plainly rather
+than leaving somebody to read a green suite as proof the feed works. `site.api.espn.com` is
+refused by the egress proxy on the CONNECT. So:
+
+| | |
+|---|---|
+| verified here | the parser against a saved payload, every malformed event, and the whole fallback against the real schedule |
+| NOT verified | that ESPN sends a payload of that shape |
+
+A hand written fixture can only prove the parser handles the shape it was told about. **The
+first real verification is a run of `fantasy-live.yml`**, and what to read in its log is the
+number the feed answered: sixteen games and a feed that matched none, while a game is on, is the
+feed's week numbering disagreeing with ours and looks exactly like a quiet afternoon from every
+other angle. The job says so in as many words. **There are two ways of asking for that reason**:
+the week form is one request for the whole slate and is the one most likely to be wrong in a way
+nobody here can test, so a week that matches none of our games is re-asked by DAY, and a date is
+not a numbering convention and cannot be off by one.
+
+**What a feed that never works at all costs is a quarter and a clock.** The slate, the clubs and
+the kickoffs are the schedule's, and `games.csv` fills in a final score a few hours after each
+whistle, so the week still ends with a correct scoreboard. That half IS verifiable here and the
+guard drives it against a week already played.
+
+#### Three things the guards found, and two of them were the guards
+
+**A `do $$` block is one transaction, so `now()` inside it is one timestamp.** The claim that an
+unchanged write leaves `updated_at` alone passed with its defect in: a writer stamping the clock
+on every single look is indistinguishable from one that stamps it only on a change when both are
+read inside one transaction. The writes are separate statements now, which is also what they are
+in life. Same class as this repo's three wrong extractors, arriving at a test fixture.
+
+**The entry screen asks before the board does.** Boot lands on the reader's own lineup and starts
+watching there, so the first fixture answer is spent before anybody presses anything. Listed
+once, the board's own first paint was already the second state and the move the section exists
+for had happened off screen: it reported four rows arriving mid flight and nothing marked as
+having moved.
+
+**And two things on the entry screen that only a screenshot could say.** Both render, both are
+valid strings, and no assertion in that suite was looking at either.
+
+- **It read "undefined of undefined games are in."** The live path handed `paintIn` the six
+  scores and nothing else, and that function prints how far into the week it is off two fields
+  the payload did not carry. The counts are passed now, and the sentence is written without
+  them when there are none, which is this repo's oldest rule about a number in copy. The guard
+  is a net over the WHOLE screen rather than that one line: `undefined`, `NaN` and `null` are
+  what a missing field prints, none is a word any copy here would use, and any of the three
+  reaching a reader is the same bug wherever it lands.
+- **A man who scored 8.2 was described as having done nothing.** "played, nothing to show" is
+  the right line for somebody who was out there and never touched the ball, and a live row
+  carries no stat line, so every man who had done anything got it. The two cases are told apart
+  by the SCORE now rather than by whether there is a line to print.
 
 #### The prize is decided, and one half of it must not go where it looks like it goes
 

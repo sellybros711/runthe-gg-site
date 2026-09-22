@@ -137,10 +137,33 @@
     return typeof j === 'number' ? j : null;
   }
 
+  /*
+   * THE WHOLE BOARD IN ONE CALL, which is what a screen that POLLS needs.
+   *
+   * `standings` and `myPlace` are still here and still correct, and a screen that asks once
+   * should go on using them. This one exists because the live board asks three questions
+   * every twenty seconds (the rows, the reader's place against everybody, how far into the
+   * week the scoring has got) and three round trips a tick, per reader, is three times the
+   * cost of the thing being measured.
+   *
+   * IT IS A WRAPPER ON THE SERVER AND NOT A FOURTH QUERY, so the ordering is still written
+   * once. See 110_fantasy_live.sql.
+   *
+   * FAILS SOFT LIKE EVERY OTHER READ HERE. A poll that cannot reach the server answers null
+   * and the page keeps the board it already has: a leaderboard that blanked itself on one
+   * bad request would flash empty every time a phone changed cell tower.
+   */
+  async function board(season, week, limit) {
+    const j = await rpc('fantasy_board',
+      { p_season: season, p_week: week, p_limit: limit || 50 });
+    return (j && typeof j === 'object' && Array.isArray(j.rows)) ? j : null;
+  }
+
   root.PS_FANTASY = {
-    /* 1: the entry, the board and the two ways to ask where you came. */
-    API_VERSION: 1,
-    submit, mine, standings, myPlace, entryCount,
+    /* 1: the entry, the board and the two ways to ask where you came.
+       2: `board`, one call for a board that polls while the games are on. */
+    API_VERSION: 2,
+    submit, mine, standings, myPlace, entryCount, board,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.PS_FANTASY;
 })(typeof self !== 'undefined' ? self : this);
