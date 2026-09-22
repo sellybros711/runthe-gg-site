@@ -7270,6 +7270,112 @@ Yankees send up Combs, Gehrig and Ruth. **A third of those clubs have seven or
 eight qualifying bats**, because the build applies a playing-time floor, and the
 rest of the order fills in by position rather than by inventing anybody.
 
+### And then the door went too, because the staff can assign itself
+
+```
+node baseball/check-staff.mjs        the assignment, the ranking and the blast radius
+node baseball/check-staff.mjs 400    a bigger sample
+```
+
+Asked for, and it is the section above taken to its conclusion: if SP3 and SP4 are
+one job, stop asking. **All-Time Staff opens no chooser at all now.** A starter
+fills the rotation, a reliever the bullpen, and the twelve slots re-rank themselves
+so SP1 is the ace.
+
+**Two things the sim can hear, and the draft answers both.**
+
+**THE ROTATION TAKES THE BEST ARMS.** A rotation slot is a fifth of 70% of the
+innings and a relief slot a seventh of 30%: **14.0% against 4.3%**. That gap beats
+the steeper return relief WAR pays (0.55 of an ERA point per win against 0.32), so
+the bigger arm belongs in the rotation every time, by 0.021 of staff ERA per win
+above the man he displaces.
+
+**And CL**, because `closerSavePct` reads that slot by name and nothing else does.
+Both slots sit in the same relief average, so the label costs nothing in ERA and
+can only raise the save rate. **That clause is also what keeps the roster LEGAL**,
+which is not obvious: a starter who overflowed into the bullpen is not
+closer-eligible, and without CL filled first the ranking hands it to him. Nothing
+throws. The sim reads him as the closer and converts saves off his WAR.
+
+#### The first rule refused to cross the rotation line, and the card said so
+
+It filled the rotation in DRAFT ORDER and sorted only within each group, on the
+argument that a sort free to move a man between them is an optimiser rather than a
+tidy-up and would drift every win rate the mode is balanced on. **That is the right
+worry about the wrong rule.** Driven for real it put Greg Maddux's 9.1 WAR at RP1
+above a 4.7 WAR SP1, because he was picked tenth. The card read as broken, the
+staff really was worse, and "sorted by ranking" was the one thing it was not.
+
+**WHAT IT COSTS IS LARGE AND IS NOT A SIDE EFFECT**, measured over 220 drafts a
+cell against the same seeds:
+
+| | wins | Octobers | titles | save% | staff ERA |
+|---|---|---|---|---|---|
+| best-available, draft order | 86.4 | 43% | 2.7% | 82.8 | 3.194 |
+| **best-available, ranked** | **94.2** | **76%** | **8.2%** | 85.8 | **3.030** |
+| middling draft, draft order | 55.9 | 0% | 0% | 82.4 | 4.173 |
+| **middling draft, ranked** | **57.8** | 0% | 0% | 84.6 | **4.136** |
+
+**IT IS NOT A FLAT INFLATION AND THE SHAPE IS THE POINT.** The ERA moves 0.164 for
+a good draft and **0.037 for a middling one**, because ranking only pays when there
+is a spread to rank: a staff of twelve similar arms is the same staff in any order.
+So what this rewards is having a real ace, which is what the mode is about.
+
+**The baseline is the LAZY path and not the good one.** With the chooser up, every
+SP slot was a "natural position" for a starter, so the first option on the sheet
+was the lowest open SP slot: clicking through gave you draft order. A player who
+thought about it already put their best arms in the rotation and is where they
+were. So this is not a buff to good play, it is the removal of a trap for careless
+play, which is `check-runs`' own "doing nothing was the worst outcome" arriving in
+a draft.
+
+**IT MOVES `staffRating`, WHICH IS ITS OWN DECISION AND IS NOT TAKEN HERE.** That
+scale is anchored at `50 + (3.40 - era) * 55` against a measured median ERA of
+3.22, and it was measured on the draft-order assignment because that is what a bot
+signing without choosing produced. At 55 points per ERA point the drift is **about
+nine rating points at the top of the range and two in the middle**, so the scale
+does not shift, it STRETCHES: the gap between a good staff and an ordinary one
+opens by about seven points. Re-anchoring is a one line change and its own
+measurement pass; leaving it means a strong staff reads higher than it used to and
+existing staff board rows sit low. Decide it deliberately rather than by noticing
+the drift later.
+
+#### The guard, and the four mutations that gave it teeth
+
+Every claim was proved by reintroducing a defect, and **two of the four passed green
+on the first attempt**, which is the whole reason the file reads the way it does.
+
+- **"The sort never moves a man across the rotation line" could not fail.** It read
+  the ERA, called the sort again and read it again. The sort is idempotent, so a
+  sort that crossed the line crossed it identically both times and the delta was
+  zero: it compared an already sorted staff with itself. That assertion is gone
+  anyway, because the rule it guarded was the wrong one.
+- **"The sort does not reach the other modes" could not fail either**, for the same
+  reason one level along: with the mode guard removed the sort has ALREADY run
+  inside `sign()`, so the fixture was the sorted answer and the second call agreed
+  with it. The fixture is deliberately scrambled now, and the check asserts the
+  scramble is one a sort would visibly change before asserting it survived.
+- **What actually catches a sort that crosses the line is ELIGIBILITY**, which the
+  first draft never asked. A reliever at SP1 is an illegal roster the sim reads
+  perfectly happily: he is simply rated on the starter's ERA curve from then on.
+
+**The tile prints where he ENDS UP, not where the signing takes him.**
+`slotForPlayer` names the slot the pick claims and the re-rank then moves everybody,
+so a tile promising the rotation to the sixth-best starter on the board would be
+wrong a frame later. `staffLanding()` does the real signing on a clone and reads the
+answer back, so there is never a second copy of the ranking rule written out for
+display. That is this mode's own tile-and-sheet disagreement, caught before it
+shipped a second time.
+
+**A tile can still say Bullpen for a man who ends at CL, and that is honest.** CL is
+last in `STAFF_SLOTS`, so it is not an open slot until the twelfth pick: at pick
+eleven the answer really was the bullpen, and the later pick is what freed the job.
+
+**The sort runs at the draft and nowhere else.** `cutPlayer` puts a
+replacement-level arm in the slot a man was cut from, mid-season, and re-sorting
+there would promote the best remaining reliever into CL and hand back the save rate
+the player had just lost. A cut is meant to cost something.
+
 ### One job, one door, and the chooser was answering with a regex
 
 Reported as "why can't I choose SP2 for Mathewson if that is available". SP2 was

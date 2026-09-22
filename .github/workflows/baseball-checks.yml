@@ -62,6 +62,14 @@ jobs:
       - name: What a player-season says it is
         run: node baseball/check-labels.mjs
 
+      # All-Time Staff assigns its own slots, because SP3 against SP4 is a
+      # question staffEra cannot hear: it averages the rotation and averages the
+      # pen. What it CAN hear is rotation against bullpen and who closes, so the
+      # sort is held to the ranking, to eligibility, and to leaving every other
+      # mode alone. A staff sorted wrong is a legal roster the sim reads happily.
+      - name: The staff sorts itself
+        run: node baseball/check-staff.mjs 60
+
       # The two themes. A dark mode bolted onto a cream page fails silently three
       # ways: a panel nobody tokenised stays cream, a hairline written
       # rgba(0,0,0,.10) stops existing, and an accent solved against paper goes

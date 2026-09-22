@@ -1748,7 +1748,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 </div>
 
 <script src="engine.js?v=22"></script>
-<script src="run.js?v=17"></script>
+<script src="run.js?v=18"></script>
 <script src="achievements.js?v=5"></script>
 <script src="board.js?v=1"></script>
 <script>
@@ -3128,6 +3128,11 @@ function paintOpts(draw){
       const key=tile.dataset.key;
       const p=DATA.allPlayers[key];
       if(!p) return;
+      /* THE STAFF NEVER ASKS. Twelve arms into twelve arm-shaped slots is not a
+         decision the sim can hear: see sortStaffSlots in run.js. A starter takes
+         the rotation until it is full, a reliever takes the bullpen, and the slots
+         re-rank themselves best first as the board fills. */
+      if(RUN.staff){ signPlayer(p); return; }
       const choices=signChoices(p);
       if(choices.length<=1){ signPlayer(p, choices.length?choices[0].slotIdx:undefined); }
       else openPosChooser(p, choices);
@@ -3150,8 +3155,19 @@ function optTile(r,i){
       const sN=SLOTS_NOW()[idx];
       if(DATA.scarcity&&DATA.scarcity[sN]&&DATA.scarcity[sN].premium&&p.w>=3.5) premium=true;
     }
-    const bases=openJobs(p).map(j=>j.base);
-    if(bases.length) destSlot=bases.length<=3?bases.join(' &middot; '):bases.slice(0,3).join(' &middot; ')+'&hellip;';
+    if(RUN.staff){
+      /* WHERE HE ENDS UP, not where the signing happens to take him. The staff
+         assigns itself, so a list of open arm slots would offer a reader a choice
+         the tap does not give them, and slotForPlayer alone would be wrong a frame
+         later: it names the slot the pick TAKES and the re-rank then moves
+         everybody. staffLanding does the real signing on a clone and reads the
+         answer back. It is the JOB rather than the slot number because SP3 is not
+         a thing the sim can tell from SP4. */
+      destSlot=R.staffLanding(RUN,p);
+    }else{
+      const bases=openJobs(p).map(j=>j.base);
+      if(bases.length) destSlot=bases.length<=3?bases.join(' &middot; '):bases.slice(0,3).join(' &middot; ')+'&hellip;';
+    }
   }
   // What signing this player would actually bond, named and valued, in the same
   // colors the diamond and the results roster use. A percentage delta alone
