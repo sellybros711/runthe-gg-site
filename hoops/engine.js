@@ -5,8 +5,8 @@
  * cfb/engine.js, and the closest sibling is baseball/engine.js, which is the
  * previous reskin of that skeleton. Adapted for basketball:
  *
- *   6 roster slots (PG, SG, SF, PF, C, 6TH)
- *   a $126M cap, in the range of a real NBA cap
+ *   5 roster slots (PG, SG, SF, PF, C)
+ *   a $120M cap, in the range of a real NBA cap
  *   an 82 game season against real all-time team-seasons
  *   offense and defense expressed as ratings per 100 possessions, not per game
  *   Pythagorean expectation at the basketball exponent
@@ -38,16 +38,17 @@
 /* Bumped when the page and this file can no longer be mixed. index.html checks
    it at boot and reloads once, because a returning visitor CAN hold a cached
    copy of this file against a current page. 2: playerTags() removed, wheel
-   colors and title resolution added. */
-const ENGINE_API_VERSION = 5;
+   colors and title resolution added. 6: the roster is five men, so SLOTS is a
+   different length and MINUTES_SHARE and minutesShare are gone. */
+const ENGINE_API_VERSION = 6;
 
 // ─── constants ──────────────────────────────────────────────────────────────
 
 const CONSTANTS = {
   /* THE CAP HAS TO SAY NO, or the draft is not a decision, it is a sequence of
-     clicks on whoever scored most. $126M is about $21M a slot across six
+     clicks on whoever scored most. $120M is about $24M a slot across five
      players, and the priciest player in the data costs $60M. So one superstar
-     eats nearly half the roster and the other five have to come in under $66M.
+     eats half the roster and the other four have to come in under $60M.
      That is the shape of the squeeze: one great player is comfortable, two is
      tight, and three means filling the rest with minimum contracts.
      Best-available on every spin runs to about $300M and busts before the
@@ -58,8 +59,25 @@ const CONSTANTS = {
      $145M when the ratings were guessed, $125M once they were fitted to real
      records, $138M once price stopped being a function of value and the playoff
      bracket was fitted to history, $134M once the schedule stopped being harder
-     than a real one, and $126M once a season's price started depending on how
-     much of it the man actually played. That last one moved the median price
+     than a real one, $126M once a season's price started depending on how
+     much of it the man actually played, and $120M when the roster went from
+     six men to five.
+
+     THAT LAST ONE WENT UP PER SLOT AND THE REASON IS NOT OBVIOUS. Six slots
+     at $126M is $21M a slot and five at $120M is $24M, which reads like the
+     draft got easier. It did not: dropping a man was paid for by re-solving
+     OWS_TO_ORTG and DWS_TO_DRTG so five men rate where six did, so the cap is
+     buying the same team out of fewer, better contracts. Swept at 98, 102,
+     105, 108, 112, 116, 118, 120, 123 and 126: every target is out of band
+     under about 108 and "beats 72" reaches 5.6 against a ceiling of 6 at the
+     old 126, which is the flip-on-the-seed case this block already warns
+     about. All four land inside their bands from 112 up.
+
+     $123M PUTS THEM MARGINALLY NEARER THE MIDDLES AND IT SHIPS AT $120M,
+     which is the call the weekly fantasy cap makes in as many words: the
+     difference is three tenths of a win on the ceiling and a fifth of a point
+     on the record rate, and $120M is a figure somebody can hold in their head
+     while $123M is a figure nobody can. That last one moved the median price
      from $10.7M to $8.6M, which is a real economy change wearing the clothes of
      a data refresh: at the old cap "beats 72 wins" went out of band at 7.4%
      against a ceiling of 6, and the playoff rate for a thoughtless draft jumped
@@ -70,7 +88,7 @@ const CONSTANTS = {
 
      Priced against hoops/build/build-players.mjs, and the two numbers are one
      decision: moving either without the other breaks the draft. */
-  CAP_MUSD: 126,
+  CAP_MUSD: 120,
   REGULAR_SEASON_GAMES: 82,
 
   RESPIN_LADDER_MUSD: [5, 10, 15],
@@ -99,7 +117,7 @@ const CONSTANTS = {
    * it produced described a league that does not exist.
    *
    * HOW WRONG, measured the only way that means anything: assemble a real
-   * club's actual best six out of the real data, play the season, and compare
+   * club's actual best men out of the real data, play the season, and compare
    * to what that club actually did. Across nineteen teams from 1983 to 2023 the
    * old constants were out by a MEAN OF 15.1 WINS, every single one of them low,
    * from 5.7 (2004 Pistons) to 25.6 (1989 Pistons). A model that under-rates
@@ -113,7 +131,7 @@ const CONSTANTS = {
    * The fit is evaluated at a NEUTRAL schedule, and that matters: a real NBA
    * team plays a balanced one, because the league sums to zero. This game's
    * slate is deliberately about 1.5 net rating points harder (see SCHEDULE), so
-   * the same six wins roughly four fewer games here than the club did in life.
+   * the same men win roughly four fewer games here than the club did in life.
    * That gap is the difficulty, not an error.
    *
    * WHAT IT REPRODUCES WITHOUT BEING ASKED TO. Rating every one of the 1403
@@ -122,18 +140,35 @@ const CONSTANTS = {
    * at a 8.7 win pace, and the best at 73.8 and names it as the 1996 Bulls, who
    * won 72. Neither was a fit target.
    *
-   * The two it misses are the two a six-man model has to miss: the 1989 Pistons
-   * come out 10.2 wins light and the 2016 Warriors 6.8, both because a great
-   * team is more than six men and Detroit in particular went nine deep.
+   * The two it misses are the two a short-roster model has to miss: the 1989
+   * Pistons come out 10.2 wins light and the 2016 Warriors 6.8, both because a
+   * great team is more than a starting five and Detroit in particular went
+   * nine deep.
    *
-   * REFIT, DO NOT NUDGE. If the data changes shape again, run the same solve
-   * rather than moving one of these by hand: they trade off against each other,
-   * and the reason the old set was uniformly low is that nobody could see that
-   * from any single number. */
+   * THE ROSTER WENT FROM SIX TO FIVE AND THESE TWO WERE RE-SOLVED FOR IT.
+   * The twenty-two records are hit THROUGH `teamStrength`, which rates a real
+   * club by its best SLOTS.length men, so changing that number moves every one
+   * of the twenty-two ratings and breaks the fit by the edit rather than by
+   * anything about the data. The twenty-two are not in this repo, so what was
+   * solved instead is the pair at five men that best reproduces the rating
+   * every real club already had at six: least squares through the origin on
+   * the win share term, replacement level held fixed because it is a fact
+   * about a team of nobodies rather than about how many nobodies. 0.695 to
+   * 0.7503 and 0.605 to 0.6838.
+   *
+   * WHAT IT COSTS, over all 1403 club-seasons and stated in wins rather than
+   * in rating points: rms 1.08, worst 3.26, and the two clubs named above move
+   * by 0.3 and 0.3. So the fit against the twenty-two is about 3.6 wins rms
+   * now rather than 3.5. That is a real loss and it is smaller than one game.
+   *
+   * REFIT, DO NOT NUDGE. If the data changes shape again, or the roster size
+   * does, run a solve rather than moving one of these by hand: they trade off
+   * against each other, and the reason the old set was uniformly low is that
+   * nobody could see that from any single number. */
   REPLACEMENT_ORTG: 106.25,
   REPLACEMENT_DRTG: 127.75,
-  OWS_TO_ORTG: 0.695,
-  DWS_TO_DRTG: 0.605,
+  OWS_TO_ORTG: 0.7503,
+  DWS_TO_DRTG: 0.6838,
 
   /* Morey's exponent, and IT IS WHY THIS ENGINE IS NOT THE BASEBALL ENGINE WITH
      THE WORDS CHANGED. Basketball's Pythagorean curve is far steeper than
@@ -189,12 +224,25 @@ const ERAS = {
 
 // ─── roster shape ───────────────────────────────────────────────────────────
 
-/* FIVE STARTERS AND A SIXTH MAN. The football game drafts six, the college game
-   drafts six, and a basketball starting five plus the first man off the bench
-   is the honest way to land on the same number in this sport. The sixth man
-   slot is this game's FLEX: it takes anybody, so a roster can go big or small
-   without the slot list forbidding it. */
-const SLOTS = ['PG', 'SG', 'SF', 'PF', 'C', '6TH'];
+/* A STARTING FIVE, AND THAT IS THE WHOLE ROSTER.
+ *
+ * It was five starters and a sixth man, to land on the six the football and
+ * college games draft. Six is those games' number for their own reasons and it
+ * was never this sport's: basketball puts FIVE on the floor, so a five man
+ * roster is the one shape a fan already has a picture of, and the bench man
+ * was the only slot on the screen that had to be explained.
+ *
+ * WHAT IT COSTS IS A REAL DECISION AND IT IS WORTH NAMING. The 6TH slot took
+ * anybody, so it was this game's FLEX: a roster could go big or small and the
+ * slot list would not argue. Five sealed slots take that away. What is left in
+ * its place is SLOT_ELIGIBILITY, which is loose enough at the edges that a
+ * combo guard really can go either way, so the shape of a roster is still a
+ * choice rather than a form to fill in.
+ *
+ * NOTHING HERE MAY BE READ AS A LITERAL 5. Every count in this engine is
+ * SLOTS.length, because the last change of this number is what proved which
+ * numbers were derived and which were typed. */
+const SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
 
 /* Eligibility is deliberately loose at the edges, because basketball positions
    are. A combo guard really can play either guard spot and a modern four really
@@ -206,13 +254,13 @@ const SLOT_ELIGIBILITY = {
   SF:  ['SF', 'F', 'GF', 'FC'],
   PF:  ['PF', 'F', 'FC'],
   C:   ['C', 'FC'],
-  '6TH': ['PG', 'SG', 'SF', 'PF', 'C', 'G', 'F', 'GF', 'FC'],
 };
 
-/* HOW MANY OF ONE POSITION A ROSTER MAY HOLD. With the sixth man slot open to
-   anybody, a roster could otherwise carry two centers and no wing, which is not
-   a basketball team. One extra of any position is the limit, so a second center
-   is legal in the sixth man slot and a third is not. */
+/* HOW MANY OF ONE POSITION A ROSTER MAY HOLD. Five sealed slots do not settle
+   this on their own, because the eligibility above overlaps on purpose: a man
+   listed G can take either guard spot and a man listed F either forward spot,
+   so a roster really can arrive as two point guards and no shooting guard. One
+   extra of any position is the limit. */
 const POSITION_MAX = 2;
 
 function positionsOf(player) {
@@ -357,18 +405,18 @@ function indexData(players) {
  * A run stores keys rather than objects so it stays serializable. */
 const pkey = (p) => `${p.i}|${p.s}|${p.t}`;
 
-/* What a team-season is worth if you drafted its best six.
+/* What a team-season is worth if you drafted its best SLOTS.length men.
  *
  * THE SAME FORMULAS YOUR OWN ROSTER RUNS THROUGH, CHEMISTRY INCLUDED. Leaving
  * chemistry off here quietly rigged every comparison in the player's favour: a
  * drafted roster collected a bonus and the real team it was being ranked
  * against did not, so a 43 win side came back third best in the data. And a real
  * team-season is the one roster in the whole game that is CERTAIN to have
- * chemistry, because all six of them are the same club in the same year. If
+ * chemistry, because every one of them is the same club in the same year. If
  * anything has earned the bonus it is these.
  *
  * Roster shape is deliberately NOT applied. Shape measures how well a drafted
- * six was assembled, and nobody assembled these: they are the six best men a
+ * roster was assembled, and nobody assembled these: they are the best men a
  * real club happened to have. */
 function teamStrength(players) {
   const best = [...players].sort((a, b) => b.w - a.w).slice(0, SLOTS.length);
@@ -595,9 +643,10 @@ function resolveChemistry(roster) {
 /* OFFENSE, per 100 possessions. Offensive win shares only: a defensive
    specialist contributes here by being on the roster at all, not by having his
    defensive value quietly counted a second time.
-   The sixth man is real but partial, see MINUTES_SHARE. */
+   Every man is a starter, so the sum is a plain one: see the note under
+   rosterDefense for what used to weight it and why that is gone. */
 function rosterOffense(roster, chemBonus, structureBonus) {
-  const ows = roster.reduce((s, p) => s + Math.max(0, p.ow) * minutesShare(p), 0);
+  const ows = roster.reduce((s, p) => s + Math.max(0, p.ow), 0);
   return CONSTANTS.REPLACEMENT_ORTG
     + ows * CONSTANTS.OWS_TO_ORTG
     + (chemBonus || 0) * CHEMISTRY.OFFENSE_SHARE
@@ -608,20 +657,30 @@ function rosterOffense(roster, chemBonus, structureBonus) {
    the chemistry term is SUBTRACTED here and added above: it is the same bonus
    pointed at the other end of the game. */
 function rosterDefense(roster, chemBonus) {
-  const dws = roster.reduce((s, p) => s + Math.max(0, p.dw) * minutesShare(p), 0);
+  const dws = roster.reduce((s, p) => s + Math.max(0, p.dw), 0);
   return CONSTANTS.REPLACEMENT_DRTG
     - dws * CONSTANTS.DWS_TO_DRTG
     - (chemBonus || 0) * (1 - CHEMISTRY.OFFENSE_SHARE);
 }
 
-/* A starter plays starter minutes and the sixth man does not. 0.72 is about
-   what the sixth man on a real rotation gets against a starter, and it is the
-   only reason the 6TH slot is a cheaper place to put a star than a starting
-   spot is. */
-const MINUTES_SHARE = { starter: 1.0, sixth: 0.72 };
-function minutesShare(p) {
-  return p._slot === '6TH' ? MINUTES_SHARE.sixth : MINUTES_SHARE.starter;
-}
+/* EVERY MAN ON A FIVE MAN ROSTER IS A STARTER, so there is no share to take.
+ *
+ * `MINUTES_SHARE` was `{ starter: 1.0, sixth: 0.72 }` and `minutesShare(p)`
+ * read `p._slot === '6TH'`. Both are gone rather than left answering 1.0 for
+ * everybody: a constant nothing reads is a number the next person tunes
+ * expecting something to happen, which is the note `FIELD_K` carries in the
+ * baseball game for the same reason.
+ *
+ * WHAT WENT WITH IT IS A DECISION, and it is the second thing the five man
+ * roster costs. The 0.72 was the only reason the bench slot was a cheaper
+ * place to park a star than a starting spot was, so "buy a great man at a
+ * discount and play him less" was a real play and is not available now.
+ *
+ * IT ALSO CLOSED A SEAM NOBODY HAD NOTICED. `teamStrength` rates a real club's
+ * best men at full weight with no `_slot` on any of them, so the reference
+ * every rating in this game is fitted against was summing SIX at 1.0 while a
+ * drafted roster summed five at 1.0 and one at 0.72. The two sides of that
+ * comparison were never the same shape. They are now. */
 
 // ─── what this team actually plays ──────────────────────────────────────────
 
@@ -1042,15 +1101,23 @@ const FIT = {
   MAX: 3.0,
 
   /* THE SHOT BUDGET. An NBA team takes about 88 field goal attempts a game, and
-     a six man core is not the whole team: the rest of the bench takes theirs
-     too. 72 is what a real core six accounts for. Every attempt over that is a
-     shot somebody on this roster is not going to get, and it is charged for. */
-  SHOT_BUDGET: 72,
+     a starting five is not the whole team: the bench takes theirs too. 66 is
+     what a real starting five accounts for. Every attempt over that is a shot
+     somebody on this roster is not going to get, and it is charged for.
+
+     MEASURED, NOT SCALED. Over all 1403 real club-seasons, the five men who
+     played the most minutes take a pace-adjusted 63.7 attempts a game and the
+     top six take 69.8, against the 72 this constant carried for the six man
+     roster. The budget went with the roster: 72 x 63.7 / 69.8 is 65.7, and it
+     ships at 66. Re-measure rather than re-scale if the roster size moves
+     again, because the top man of a club takes far more than the sixth and a
+     ratio drawn off the wrong end of that list would say the wrong thing. */
+  SHOT_BUDGET: 66,
   SHOT_COST: 0.16,          // rating points per attempt over budget
   /* Under budget is a real problem too, but a much smaller one, because a
      roster nobody wants to shoot on has already been punished by having no
      offensive win shares. This is just the last nudge. */
-  SHOT_SHY: 58,
+  SHOT_SHY: 53,
   SHOT_SHY_COST: 0.07,
 
   /* SPACING. The roster's mean spacing index, where 1.0 is five league-average
@@ -1074,7 +1141,9 @@ const FIT = {
   CREATOR_NONE: 2.5,
   CREATION_COST: 2.0,
   CREATION_GAIN: 0.8,
-  TEAM_AST: 20.0,
+  /* 20.0 at six men, measured the same way: a real top six assists 19.7 a game
+     and a real top five 18.1. */
+  TEAM_AST: 18.4,
   TEAM_AST_WEIGHT: 0.04,
 
   /* SOME SYSTEMS DID NOT EXIST BEFORE THE THREE-POINT LINE, and naming a roster
@@ -1088,35 +1157,35 @@ const FIT = {
   MODERN_TPA: 18.0,          // the roster's own three-point attempts per game
   MODERN_SHOOTER_TPA: 5.0,   // and what one man has to be taking
 
-  /* THE GLASS. A core six accounts for about 34 of a team's rebounds. */
-  REB_TARGET: 34.0,
+  /* THE GLASS. A real starting five accounts for about 30 of a team's
+     rebounds, measured over the same 1403 clubs: 29.6 against a top six's
+     32.9, which is what the 34.0 here stood for. */
+  REB_TARGET: 30.5,
   REB_WEIGHT: 0.07,
   REB_CAP: 1.2,
 };
 
 /* Everything the fit model needs about a roster, computed once. Pace-adjusted
    throughout, so a 1972 line and a 2023 line are being asked the same question.
-   The sixth man contributes at his minutes share, like everywhere else. */
+   Every man is a starter, so the sums are plain and the spacing mean divides
+   by the roster size. */
 function rosterProfile(roster) {
-  let shots = 0, ast = 0, reb = 0, spacing = 0, weight = 0, tpa = 0;
+  let shots = 0, ast = 0, reb = 0, spacing = 0, tpa = 0;
   let bestRim = 0, bestCreator = 0, bestSpacing = 0, steals = 0;
 
   for (const p of roster) {
-    const m = minutesShare(p);
-    shots += paceAdjust(p.fga || 0, p.s) * m;
-    ast += paceAdjust(p.ast || 0, p.s) * m;
-    reb += paceAdjust(p.reb || 0, p.s) * m;
-    steals += paceAdjust(p.stl || 0, p.s) * m;
-    tpa += paceAdjust(p.tpa || 0, p.s) * m;
+    shots += paceAdjust(p.fga || 0, p.s);
+    ast += paceAdjust(p.ast || 0, p.s);
+    reb += paceAdjust(p.reb || 0, p.s);
+    steals += paceAdjust(p.stl || 0, p.s);
+    tpa += paceAdjust(p.tpa || 0, p.s);
 
     const si = spacingIndex(p);
-    spacing += si * m;
-    weight += m;
+    spacing += si;
     if (si > bestSpacing) bestSpacing = si;
 
-    /* The anchors are read at full strength whoever they are. A rim protector
-       coming off the bench still protects the rim while he is out there, and
-       docking him for it would say something false about basketball. */
+    /* The anchors are a PERSON rather than a sum, so they are read off the best
+       man on the roster whoever he is. */
     const blk = paceAdjust(p.blk || 0, p.s);
     if (blk > bestRim) bestRim = blk;
     const a = paceAdjust(p.ast || 0, p.s);
@@ -1125,7 +1194,7 @@ function rosterProfile(roster) {
 
   return {
     shots, ast, reb, steals, tpa,
-    spacing: weight ? spacing / weight : 1,
+    spacing: roster.length ? spacing / roster.length : 1,
     bestRim, bestCreator, bestSpacing,
   };
 }
@@ -1306,13 +1375,10 @@ const BOX = {
      30 point night came entirely from the field, which is worse. */
   FT_SHARE: 0.17,
   FT_PCT: 0.77,
-  /* Minutes. The engine already weights a sixth man at MINUTES_SHARE.sixth,
-     and `mp` in the data is what he really played, so this only varies it. */
-  MIN_SD: 3.4,
-  /* Nobody in a six man rotation sits for three quarters. The floor is what
-     stops the split handing somebody four minutes and the man beside him the
-     whole game, and six times it has to stay under 240. */
-  MIN_FLOOR: 18,
+  /* MINUTES ARE NOT HERE, and their absence is the point. See gameBox: five
+     men share 240 player minutes, so every one of them plays 48 and there is
+     nothing left to spread or to vary. `MIN_SD` and `MIN_FLOOR` were the
+     spread and the floor of a split that no longer happens. */
 };
 
 /* Split a total into integer parts in the given proportions, hitting the total
@@ -1469,58 +1535,58 @@ function shootingLine(p, pts, rng, load) {
   return { pts, fgm, fga, tpm, tpa, ftm, fta };
 }
 
-/* The six lines for one side of one game. `teamPoints` is what the scoreline
-   already says, and the points column sums to it exactly. */
+/* The lines for one side of one game, one per man. `teamPoints` is what the
+   scoreline already says, and the points column sums to it exactly. */
 function gameBox(roster, teamPoints, rng, ot) {
-  const men = roster.map(p => ({ p, share: minutesShare(p) }));
+  const men = roster;
 
-  /* Scoring weight is his real per-game average, scaled by the minutes his
-     slot actually gets, jittered by his own spread. Negative draws are floored
-     rather than reflected: a man can have a quiet night and cannot score less
-     than nothing. */
-  const weights = men.map(({ p, share }) => {
-    const base = Math.max(0.5, (p.pts || 1) * share);
+  /* Scoring weight is his real per-game average, jittered by his own spread.
+     Negative draws are floored rather than reflected: a man can have a quiet
+     night and cannot score less than nothing. */
+  const weights = men.map((p) => {
+    const base = Math.max(0.5, p.pts || 1);
     return Math.max(0, base + normal(rng) * BOX.PTS_SD_K * Math.sqrt(base));
   });
   const pts = apportion(teamPoints, weights);
 
-  /* What the six are carrying against what they averaged. See shootingLine:
+  /* What the roster is carrying against what it averaged. See shootingLine:
      this is the structural half of the scale-up and it reaches the attempts
      in full. Guarded against a roster of men with no scoring at all, which
      the fixtures can build. */
-  const expected = men.reduce((s, { p, share }) => s + Math.max(0, p.pts || 0) * share, 0);
+  const expected = men.reduce((s, p) => s + Math.max(0, p.pts || 0), 0);
   const load = expected > 1 ? teamPoints / expected : 1;
 
-  /* FIVE MEN ARE ON THE FLOOR FOR EVERY MINUTE OF IT, so the column has to add
-   * to 240 and not to whatever six men happened to play for real clubs with
-   * benches behind them.
+  /* THE MINUTES COLUMN IS ARITHMETIC NOW, AND THAT IS WHAT FIVE MEANS.
    *
-   * Printed off `mp` alone it added to 153, and a box score saying six men
-   * played two thirds of the game and scored all of the points is a box score
-   * arguing with itself. `mp` is his minutes in a ten man rotation, which is
-   * the wrong denominator for a mode whose whole premise is that these six ARE
-   * the team. So it is his SHARE of the minutes, and a 44 minute starter is
-   * the honest price of a six man roster rather than a number to shrink.
+   * A basketball game is five men on the floor for 48 minutes, which is 240
+   * player minutes, and this roster is exactly five men with nobody behind
+   * them. So every one of them plays all of it. There is nothing to split and
+   * nothing to jitter: a column of 48s is not a placeholder, it is the whole
+   * statement of what a five man roster is.
    *
-   * An overtime is five more minutes with five men on the floor. */
+   * IT WAS A SPLIT AND THE SPLIT IS GONE. Six men over 240 needed apportioning,
+   * a per man spread (`MIN_SD`) and a floor (`MIN_FLOOR`) to stop one man
+   * taking 67 minutes of a 48 minute game. All three are deleted rather than
+   * left computing a result that cannot vary: run through the old code five men
+   * against a cap of 48 pins every one of them at the cap anyway, so the dice
+   * were being rolled for nothing.
+   *
+   * An overtime is five more minutes with the same five men on the floor. */
   const extra = Math.max(0, ot | 0);
-  const floorMinutes = 240 + extra * 25;
-  const minutes = apportionCapped(floorMinutes,
-    men.map(({ p, share }) => Math.max(1, (p.mp || 30) * share + normal(rng) * BOX.MIN_SD)),
-    BOX.MIN_FLOOR, 48 + extra * 5);
+  const minutes = 48 + extra * 5;
 
-  return men.map(({ p, share }, i) => {
-    const reb = Math.max(0, Math.round((p.reb || 0) * share
-      + normal(rng) * BOX.REB_SD_K * Math.sqrt(Math.max(1, (p.reb || 0) * share))));
-    const ast = Math.max(0, Math.round((p.ast || 0) * share
-      + normal(rng) * BOX.AST_SD_K * Math.sqrt(Math.max(1, (p.ast || 0) * share))));
+  return men.map((p, i) => {
+    const reb = Math.max(0, Math.round((p.reb || 0)
+      + normal(rng) * BOX.REB_SD_K * Math.sqrt(Math.max(1, p.reb || 0))));
+    const ast = Math.max(0, Math.round((p.ast || 0)
+      + normal(rng) * BOX.AST_SD_K * Math.sqrt(Math.max(1, p.ast || 0))));
     /* Blocks and steals are small counts, so a normal draw around a mean under
        one produces a lot of negatives. Floored, which is what a real box score
        looks like: most nights most men have none. */
-    const blk = Math.max(0, Math.round((p.blk || 0) * share + normal(rng) * 0.8));
-    const stl = Math.max(0, Math.round((p.stl || 0) * share + normal(rng) * 0.8));
+    const blk = Math.max(0, Math.round((p.blk || 0) + normal(rng) * 0.8));
+    const stl = Math.max(0, Math.round((p.stl || 0) + normal(rng) * 0.8));
     return {
-      i: p.i, n: p.n, slot: p._slot || null, min: minutes[i], reb, ast, blk, stl,
+      i: p.i, n: p.n, slot: p._slot || null, min: minutes, reb, ast, blk, stl,
       ...shootingLine(p, pts[i], rng, load),
     };
   });
@@ -2230,7 +2296,7 @@ LIVE_KREF = liveMakeScale(CONSTANTS.LEAGUE_RTG * LIVE.POSS / 100, LIVE.POSS);
    one. Built once per game rather than per possession. */
 function liveShooters(roster) {
   const men = roster.map((p, i) => {
-    const share = minutesShare(p);
+    const share = 1;
     return {
       i, p, share,
       /* His share of this team's shots: his own scoring, scaled by the minutes
@@ -2660,14 +2726,45 @@ function liveQuarters(sim) {
    win share sums here told a 39 win team it had an elite offense AND locked
    teams down, while the page beside it printed a defensive rating of 113.4,
    which is exactly average. Sums do not know about minutes, about roster shape,
-   or about the fact that fifteen defensive win shares spread over six men is
-   ordinary. The ratings do, they are the numbers the season is actually played
+   or about the fact that fifteen defensive win shares spread over a whole
+   roster is ordinary. The ratings do, they are the numbers the season is actually played
    with, and they are what the player is looking at. */
+/* THE TWO ENDS OF THE WEAKEST STARTER, read off what a draft actually
+ * produces rather than picked. The line they replace read the SIXTH MAN at 8
+ * win shares and under 2, which are numbers about a different man on a roster
+ * that no longer exists.
+ *
+ * Measured over 150 drafts each of the three ways anybody drafts, at the
+ * shipped cap, on the weakest man of a finished roster:
+ *
+ *            median   p90   max
+ *   greedy     1.7    3.6   6.1
+ *   value      1.4    2.2   3.9
+ *   cheapest   0.2    0.8   1.7
+ *
+ * BOTH ENDS ARE THE UNEARNABLE BADGE IN A DIFFERENT COAT if they are set off
+ * the eye. The first draft of this block carried 4.6 and 1.4, and against the
+ * table above that is a strength a greedy draft reaches on under one run in
+ * twenty and a weakness it collects on half of them: a compliment nobody gets
+ * and a complaint everybody gets, which is two dead lines rather than two
+ * verdicts.
+ *
+ * 3.5 is greedy's p90, so a roster whose FIFTH best man is that good was
+ * drafted deliberately. 0.8 is a quarter of greedy's runs and the top of the
+ * cheapest bot's whole range, so it names a roster that really did fill a
+ * starting spot with nobody. */
+const WEAK_LINK = { STRONG: 3.5, HOLE: 0.8 };
+
 function coachReport(roster, chem, structure, rating, unspentMusd, ortg, drtg) {
   const L = CONSTANTS.LEAGUE_RTG;
   const chemBonus = chem ? chem.bonus : 0;
   const top = [...roster].sort((a, b) => b.w - a.w)[0];
-  const sixth = roster.find(p => p._slot === '6TH');
+  /* THE WEAKEST STARTER, which is the observation a five man roster makes
+     that a six man one could not. There is no bench, so the man at the bottom
+     of this list is on the floor for all 48 minutes of every game and there is
+     nobody to hide him behind. That is the whole difference between a roster
+     with a star and four holes and a roster that can play. */
+  const weakest = [...roster].sort((a, b) => a.w - b.w)[0];
 
   const strengths = [], weaknesses = [];
   if (typeof ortg === 'number') {
@@ -2678,10 +2775,10 @@ function coachReport(roster, chem, structure, rating, unspentMusd, ortg, drtg) {
     if (drtg <= L - 5) strengths.push('Locks teams down');
     else if (drtg > L + 3) weaknesses.push('Nobody guards anybody');
   }
-  if (sixth && sixth.w >= 8) strengths.push('Sixth man carries the bench');
-  else if (!sixth || sixth.w < 2) weaknesses.push('No bench to speak of');
+  if (weakest && weakest.w >= WEAK_LINK.STRONG) strengths.push('No weak link');
+  else if (!weakest || weakest.w < WEAK_LINK.HOLE) weaknesses.push('A hole in the five');
   if (chemBonus >= 1.6) strengths.push('Real chemistry');
-  else if (chemBonus < 0.4) weaknesses.push('Six strangers');
+  else if (chemBonus < 0.4) weaknesses.push('Five strangers');
   if (structure && structure.archetype && structure.archetype.key === 'hero_ball')
     weaknesses.push(`Leans hard on ${top ? lastNameOf(top.n) : 'one star'}`);
   if (typeof unspentMusd === 'number' && unspentMusd >= 15)
@@ -3154,12 +3251,12 @@ function teamNote(code, season) {
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
   CONSTANTS, ERAS, CHEMISTRY, SCHEDULE, TITLE,
-  SLOTS, SLOT_ELIGIBILITY, POSITION_MAX, MINUTES_SHARE,
+  SLOTS, SLOT_ELIGIBILITY, POSITION_MAX,
   positionsOf, canFillSlot, teamSeasonId, pkey,
   hashSeed, createSeededRNG, normal,
   indexData, buildCheapBy, teamStrength,
   pairLinks, resolveChemistry, setCuratedChemistry,
-  rosterOffense, rosterDefense, rosterFit, detectSystem, minutesShare,
+  rosterOffense, rosterDefense, rosterFit, detectSystem,
   rosterProfile, spacingIndex, paceAdjust, eraOf, ERA_CONTEXT, SYSTEMS, FIT,
   teamWinPct, overallRating, nationalRank, pythagorean,
   buildOpponentPool, generateSchedule, gameMeans,

@@ -176,29 +176,78 @@ for (const slot of E.SLOTS) {
 /* ── THE SHARE CARD'S PALETTE IS A SECOND COPY OF THE POSITION COLOURS ─────
  *
  * The page paints a position pill as a gradient off a CSS custom property. A
- * canvas cannot read one, so the card carries the same six colours again as
- * flat hex. Two copies of anything drift, and this pair drifts SILENTLY: the
- * card still renders, it just hands somebody a picture where the centre is a
+ * canvas cannot read one, so the card carries the same colours again as flat
+ * hex. Two copies of anything drift, and this pair drifts SILENTLY: the card
+ * still renders, it just hands somebody a picture where the centre is a
  * different red from the one they were looking at when they signed him.
+ *
+ * THE PAIR IS FOUND, NEVER SPELLED OUT, and the first draft of this spelled it
+ * out: one regex naming all eight properties in order. That reads the two
+ * copies correctly and is a THIRD copy of the same list, so the day the sixth
+ * man slot was removed the regex matched nothing and this section reported the
+ * page as having no position colours at all. A reader that finds nothing lets
+ * every assertion under it pass green, which is how an extractor in this repo
+ * has been silently wrong four times.
+ *
+ * So it reads whatever `POS_COL` names, resolves each one through `:root`, and
+ * asks that the card carries exactly that set. A position added or removed is
+ * covered with nobody remembering this section exists.
  *
  * Read as text rather than executed, which is all this needs to answer.
  */
 {
   const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
-  const cssBlock = /--pg:([^;]+);\s*--sg:([^;]+);\s*--sf:([^;]+);\s*--pf:([^;]+);\s*--c:([^;]+);\s*\n?\s*--sixth:([^;]+);\s*--g:([^;]+);\s*--f:([^;]+);/.exec(src);
-  ok(!!cssBlock, 'the page declares the position colours as custom properties');
+
+  /* POS_COL is the page's own answer to which positions get painted, and it
+     maps each to the custom property that holds its colour. GF and FC share a
+     property with another position on purpose, so the SET of properties is
+     what matters rather than the count of positions. */
+  const colBlock = /var POS_COL = \{([\s\S]*?)\};/.exec(src);
+  ok(!!colBlock, 'the page names which positions get a colour');
   const hexBlock = /var POS_HEX = \{([\s\S]*?)\};/.exec(src);
   ok(!!hexBlock, 'the share card carries a flat copy of the position colours');
-  if (cssBlock && hexBlock) {
-    const css = { PG: cssBlock[1], SG: cssBlock[2], SF: cssBlock[3], PF: cssBlock[4],
-      C: cssBlock[5], '6TH': cssBlock[6], G: cssBlock[7], F: cssBlock[8] };
+
+  if (colBlock && hexBlock) {
+    const wantProp = {};
+    for (const m of colBlock[1].matchAll(/'?([A-Z0-9]+)'?\s*:\s*'(--[a-z0-9]+)'/gi)) wantProp[m[1]] = m[2];
+    ok(Object.keys(wantProp).length >= 5,
+      `the position map was read (${Object.keys(wantProp).length} entries)`);
+
+    /* Every custom property declared on :root, which is where the page keeps
+       them. EVERY :root BLOCK, not the first one: this page opens with a
+       palette-and-fonts block hundreds of lines above the position colours,
+       so a reader that stopped at the first brace found no position at all
+       and reported a page with no colours on it. */
+    const declared = {};
+    for (const rb of src.matchAll(/:root\{([\s\S]*?)\}/g)) {
+      for (const m of rb[1].matchAll(/(--[a-z0-9]+)\s*:\s*(#[0-9a-f]{3,8})/gi)) {
+        declared[m[1]] = m[2];
+      }
+    }
+    ok(Object.keys(declared).length >= 8,
+      `the page's custom properties were read (${Object.keys(declared).length})`);
+    const missing = Object.entries(wantProp)
+      .filter(([, prop]) => !declared[prop]).map(([pos, prop]) => `${pos} wants ${prop}`);
+    is(missing, [], 'every painted position has a custom property to paint with');
+
     const flat = {};
     for (const m of hexBlock[1].matchAll(/'?([A-Z0-9]+)'?\s*:\s*'(#[0-9a-f]{6})'/gi)) flat[m[1]] = m[2];
+
+    /* The card carries the five slots plus the loose eligibility codes that
+       have a colour of their own. GF and FC alias, so they are not expected
+       on the card: what is asserted is that every colour the card DOES carry
+       is the colour the page declares, and that no painted position whose
+       property is its own is missing from it. */
     const drift = [];
-    for (const [slot, hex] of Object.entries(css)) {
-      const want = hex.trim().toLowerCase();
-      const got = (flat[slot] || '').toLowerCase();
-      if (got !== want) drift.push(`${slot}: page ${want}, card ${got || 'missing'}`);
+    for (const [pos, prop] of Object.entries(wantProp)) {
+      const own = Object.values(wantProp).filter(x => x === prop).length === 1;
+      if (!own) continue;
+      const want = (declared[prop] || '').trim().toLowerCase();
+      const got = (flat[pos] || '').toLowerCase();
+      if (got !== want) drift.push(`${pos}: page ${want || 'missing'}, card ${got || 'missing'}`);
+    }
+    for (const pos of Object.keys(flat)) {
+      if (!wantProp[pos]) drift.push(`${pos}: on the card and painted by nothing`);
     }
     ok(drift.length === 0,
       `the share card paints positions the colour the page does${drift.length ? `\n      ${drift.join('\n      ')}` : ''}`);
@@ -383,15 +432,18 @@ for (const slot of E.SLOTS) {
     if (!bySeason.has(k)) bySeason.set(k, []);
     bySeason.get(k).push(p);
   }
-  const seasonTop6 = new Map();
+  /* A club's best SLOTS.length men, which is the roster this game drafts, so
+     the sweep asks about the same shape the game plays. */
+  const seasonTop = new Map();
   for (const [k, ros] of bySeason) {
-    if (ros.length < 6) continue;
+    if (ros.length < E.SLOTS.length) continue;
     const s = Number(k.split('|')[0]);
-    const six = [...ros].sort((a, b) => b.w - a.w).slice(0, 6).reduce((a, b) => a + b.w, 0);
-    if (!seasonTop6.has(s)) seasonTop6.set(s, []);
-    seasonTop6.get(s).push(six);
+    const core = [...ros].sort((a, b) => b.w - a.w).slice(0, E.SLOTS.length)
+      .reduce((a, b) => a + b.w, 0);
+    if (!seasonTop.has(s)) seasonTop.set(s, []);
+    seasonTop.get(s).push(core);
   }
-  const seasonMean = [...seasonTop6.entries()]
+  const seasonMean = [...seasonTop.entries()]
     .map(([s, v]) => [s, v.reduce((a, b) => a + b, 0) / v.length]);
   if (seasonMean.length >= 10) {
     const all = seasonMean.map(([, v]) => v).sort((a, b) => a - b);
@@ -751,14 +803,15 @@ if (preThree) {
 ok(E.paceAdjust(20, 1972) < 19, 'a 1972 counting stat is deflated to the modern game');
 ok(E.paceAdjust(20, 1999) > 20, 'and a 1999 one is inflated');
 
-/* Chemistry saturates. Six players off one club cannot be worth six times one
-   link, or stacking one team-season beats every talent decision in the draft. */
-const bulls = players.filter(p => p.t === 'CHI' && p.s === 1996).slice(0, 6);
+/* Chemistry saturates. A whole roster off one club cannot be worth one link
+   times the number of pairs, or stacking one team-season beats every talent
+   decision in the draft. */
+const bulls = players.filter(p => p.t === 'CHI' && p.s === 1996).slice(0, E.SLOTS.length);
 const chem6 = E.resolveChemistry(bulls);
 const chem2 = E.resolveChemistry(bulls.slice(0, 2));
 ok(chem6.bonus <= E.CHEMISTRY.MAX + 1e-9, 'chemistry never exceeds its ceiling');
 ok(chem6.raw > chem6.saturated * 3,
-  `nineteen links pay out far less than they are worth face value (raw ${chem6.raw.toFixed(1)}, paid ${chem6.saturated.toFixed(2)})`);
+  `every link pays out far less than face value (raw ${chem6.raw.toFixed(1)}, paid ${chem6.saturated.toFixed(2)})`);
 /* The property that actually matters: adding four more players to a pair
    TRIPLES the link count many times over and cannot triple the payout. */
 ok((chem6.bonus / chem2.bonus) < (chem6.links.length / chem2.links.length) / 3,
@@ -789,8 +842,8 @@ if (mychal && klay) {
 
 /* Better roster, better season. Not on any single run, which is variance, but
    over a hundred of them, which is the model. */
-const best = [...players].sort((x, y) => y.w - x.w).slice(0, 6);
-const worst = [...players].sort((x, y) => x.w - y.w).slice(0, 6);
+const best = [...players].sort((x, y) => y.w - x.w).slice(0, E.SLOTS.length);
+const worst = [...players].sort((x, y) => x.w - y.w).slice(0, E.SLOTS.length);
 const meanWins = (roster) => {
   let total = 0;
   for (let i = 0; i < 60; i++) {
@@ -973,9 +1026,9 @@ ok(bestWins > worstWins + 20,
      of what the club sweep found and is worth writing down rather than
      asserting a difference that does not exist.
      Measured: a decade holds between 1,252 and 3,696 rows and between 34 and
-     121 men priced at the minimum, at every position, so the six cheapest
-     legal bodies cost the same 6 x $2.0M whether the pool is one decade or
-     all of them. 0 of 36 readings differ. So scoping the floor to an era is
+     121 men priced at the minimum, at every position, so the cheapest legal
+     bodies cost the same SLOTS.length x $2.0M whether the pool is one decade
+     or all of them. 0 of 30 readings differ. So scoping the floor to an era is
      defensive on its own.
      It is NOT defensive when the two locks COMPOSE, and that is the case
      worth keeping it for: the Lakers in the eighties floor at $19.9M against
@@ -983,7 +1036,12 @@ ok(bestWins > worstWins + 20,
      decade would be quoting $7.9M that this run cannot spend. */
   is(floorDiff, 0, 'an era alone never moves the reserve floor, because every '
     + 'decade holds minimum-priced men at every position');
-  ok(floorSame === 36, `all 36 era floor readings were taken (${floorSame})`);
+  /* Six eras times SLOTS.length, derived rather than written: this read 36
+     while the roster was six men and the number is about the sweep rather
+     than about the game. */
+  const eraReadings = 6 * E.SLOTS.length;
+  ok(floorSame === eraReadings,
+    `all ${eraReadings} era floor readings were taken (${floorSame})`);
 
   const both = R.createRun({ club: 'LAL', era: 'eighties' });
   const codes = new Set(E.franchiseCodes('LAL'));
@@ -1211,16 +1269,47 @@ ok(bestWins > worstWins + 20,
      has been silently wrong three times. */
   const WANT = ['cardTag', 'dayNumberOf', 'dailySeed', 'dailyRecord',
     'freshBadges', 'bestsSet', 'shareDare'];
+  /* NUMWORD is not in WANT because it is not a `function` declaration but a
+     `var` holding one, and it is lifted separately below. It is the page's one
+     place that turns a roster count into an English word, so every tagline
+     here reaches for it and a lift without it throws rather than failing an
+     assertion. */
   const missing = WANT.filter(n => !fnSource(n));
   is(missing, [], 'every function this section reads is still in the page');
 
   const lift = (name, names, vals) =>
     new Function(...names, fnSource(name) + '\nreturn ' + name + ';')(...vals);
 
+  /* NUMWORD, lifted out of its `var` the same way and for the same reason as
+     everything else here: a copy of it would agree with itself. */
+  const numwordSrc = (() => {
+    const head = pageSrc.indexOf('var NUMWORD = function(');
+    if (head < 0) return null;
+    let i = pageSrc.indexOf('{', head), depth = 0;
+    for (let j = i; j < pageSrc.length; j++) {
+      if (pageSrc[j] === '{') depth++;
+      else if (pageSrc[j] === '}' && --depth === 0) return pageSrc.slice(head, j + 1) + ';';
+    }
+    return null;
+  })();
+  ok(!!numwordSrc, 'the page still carries NUMWORD, which every tagline reads');
+  const NUMWORD = numwordSrc
+    ? new Function(numwordSrc + '\nreturn NUMWORD;')()
+    : ((n) => String(n));
+  if (numwordSrc) {
+    /* IT IS THE ONE PLACE A ROSTER COUNT BECOMES A WORD, so it is asserted to
+       answer the roster this game actually drafts. A page saying "six" on a
+       five man game is the exact failure it exists to prevent. */
+    is(NUMWORD(E.SLOTS.length), ['zero', 'one', 'two', 'three', 'four', 'five',
+      'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'][E.SLOTS.length],
+      'NUMWORD spells the roster size');
+    is(NUMWORD(5, true), 'Five', 'and capitalises for the start of a sentence');
+  }
+
   /* ---- the tagline names the mode ---- */
   if (fnSource('cardTag')) {
     const ERA_NAMES = { eighties: 'The Eighties', nineties: 'The Nineties' };
-    const cardTag = lift('cardTag', ['E', 'ERA_NAMES'], [E, ERA_NAMES]);
+    const cardTag = lift('cardTag', ['E', 'ERA_NAMES', 'NUMWORD'], [E, ERA_NAMES, NUMWORD]);
     const league = cardTag({});
     const club = cardTag({ club: 'CHI' });
     const era = cardTag({ era: 'eighties' });
@@ -1241,7 +1330,7 @@ ok(bestWins > worstWins + 20,
 
   /* ---- the dare ---- */
   if (fnSource('shareDare')) {
-    const mk = (r) => lift('shareDare', ['run'], [r]);
+    const mk = (r) => lift('shareDare', ['run', 'E', 'NUMWORD'], [r, E, NUMWORD]);
     const plain = mk(null)({ isGOAT: false, titleWon: false });
     const day = mk({ daily: 3 })({ isGOAT: false, titleWon: false });
     ok(plain !== day, 'the daily dares differently from an ordinary run');

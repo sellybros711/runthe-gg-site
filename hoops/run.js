@@ -119,7 +119,7 @@ function cheapByFor(run) {
  *
  * EVERY ONE OF THOSE CLAUSES IS LOAD-BEARING, and the position one was added
  * after it stranded a draft: Malone, O'Neal, Capela, Hornacek and Shumpert is
- * two centers and two shooting guards, so the sixth man slot had no legal
+ * two centers and two shooting guards, so the last open slot had no legal
  * player left at any price, while the floor was still quoting $2.5M off a
  * center it was not allowed to sign. A floor that counts players the roster
  * cannot take is not a floor.
@@ -151,8 +151,8 @@ function cheapestForSlot(slotName, usedIds, drawn, taken, posCount, cheapBy) {
    its way into a roster it cannot legally finish: five signed, one center slot
    open, and $3M left when the cheapest center in the data costs $4M. So the
    floor is position-aware and assigns the narrowest slot first (a dedicated
-   center before the sixth man spot, which anybody can fill), and never counts
-   one player twice. */
+   center before a wing spot a guard could also take), and never counts one
+   player twice. */
 function assignedFloors(run, slotNames, pending) {
   const usedIds = new Set(run.usedPlayers);
   const drawn = {};
@@ -271,8 +271,9 @@ function drawsUsed(run, player) {
 }
 
 /* POSITION_MAX, enforced. A player counts against his primary position, so a
-   roster can carry two centers and not three. Without this the sixth man slot
-   turns into "a second of whoever was best", and every roster looks the same. */
+   roster can carry two centers and not three. Eligibility overlaps on purpose,
+   so without this the wing spots turn into "a second of whoever was best" and
+   every roster looks the same. */
 function positionFull(run, player) {
   const primary = player.pp || E.positionsOf(player)[0];
   const held = run.roster.filter(p => (p.pp || E.positionsOf(p)[0]) === primary).length;
@@ -286,13 +287,13 @@ function openSlots(run) {
 
 const openSlotNames = (run) => openSlots(run).map(i => E.SLOTS[i]);
 
-/* Prefer a dedicated slot over the sixth man spot, so signing a center with
-   both C and 6TH open puts him at center and leaves the flexible slot flexible.
-   That is the same rule the college game uses for its FLEX. */
+/* WHICH OF THE OPEN SLOTS A MAN LANDS IN. Eligibility overlaps, so a man
+   listed G is legal at both guard spots and the first open one takes him.
+   This used to prefer a dedicated slot over the flexible 6TH spot; there is no
+   flexible spot on a starting five, so the preference has nothing left to
+   express and the first eligible open slot IS the answer. */
 function slotForPlayer(run, player) {
   const open = openSlots(run);
-  const dedicated = open.find(i => E.SLOTS[i] !== '6TH' && E.canFillSlot(player, E.SLOTS[i]));
-  if (dedicated !== undefined) return dedicated;
   const any = open.find(i => E.canFillSlot(player, E.SLOTS[i]));
   return any === undefined ? null : any;
 }
@@ -466,7 +467,10 @@ function fitNow(run, player) {
   if (!player) return E.rosterFit(tagged);
   const slot = slotForPlayer(run, player);
   return E.rosterFit(tagged.concat([{
-    ...player, _slot: slot === null ? '6TH' : E.SLOTS[slot],
+    /* A man the roster has no open slot for is still scored, at the slot he
+       is most likely to take, because this is a PREVIEW of signing him and the
+       board draws it before the rules have refused him. */
+    ...player, _slot: slot === null ? E.SLOTS[E.SLOTS.length - 1] : E.SLOTS[slot],
   }]));
 }
 
@@ -1156,7 +1160,7 @@ const publicAPI = {
   /* Moves with engine.js, not independently: index.html asks both files for the
      SAME number, so one version means one answer to "is this page and its
      scripts the same age". */
-  API_VERSION: 5,
+  API_VERSION: 6,
   PHASES, TUNING, BLOCK,
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,

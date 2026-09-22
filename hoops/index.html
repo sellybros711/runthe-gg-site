@@ -17,7 +17,7 @@
      ready to be reviewed. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Run The Floor: NBA Draft Game | RunThe.GG</title>
-<meta name="description" content="Run The Floor: spin for a season and a club, draft a six man NBA rotation under a $126M cap, then play all 82 games and chase a ring.">
+<meta name="description" content="Run The Floor: spin for a season and a club, draft a five man NBA starting five under a $105M cap, then play all 82 games and chase a ring.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
@@ -227,8 +227,8 @@
     background:linear-gradient(180deg,#fde68a,#d19410);color:#2a1b02;
     border:1px solid #f0c25a;box-shadow:0 1px 4px rgba(0,0,0,.45);
     max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  /* Still a plate, just duller metal. A roster with six All-Stars must not read
-     like a roster with six MVPs. */
+  /* Still a plate, just duller metal. A roster of All-Stars must not read like
+     a roster of MVPs. */
   .awd.minor{background:linear-gradient(180deg,#e3c883,#a67c24);border-color:#c2a04a;
     box-shadow:0 1px 3px rgba(0,0,0,.4);}
   .awdmore{font-size:9.5px;font-weight:800;letter-spacing:.04em;color:#e0b64a;
@@ -328,7 +328,7 @@
      has been written because a node with no content still had a box. */
   #c-note:empty,#d-note:empty,#d-note2:empty{display:none;}
 
-  /* The lineup as six dots, so the HUD can say what you have without the
+  /* The lineup as one dot a slot, so the HUD can say what you have without the
      roster card being on screen. Filled dots carry the slot's first letter. */
   .dpips{display:flex;gap:5px;margin-top:9px;}
   .dpip{flex:1 1 0;height:26px;border-radius:7px;border:1px dashed var(--line);
@@ -427,7 +427,7 @@
        selector is true rather than a trick. Same cascade the football prompt
        card's `.pwc-marks` lost. */
     .opts .sortbar{justify-content:flex-end;margin-top:0;}
-    /* THE SIX PIPS GO ENTIRELY, height and all. They exist to carry the lineup
+    /* THE PIPS GO ENTIRELY, height and all. They exist to carry the lineup
        once the court has scrolled out of reach, and in two columns the court
        has its own half of the top row: all their reserved height did was leave
        a band of nothing under the money bar. Reserving space for something
@@ -678,12 +678,12 @@
   /* ── AND SO DOES THE PAGE AROUND IT ────────────────────────────────────
      Once a club has landed, the chrome you draft inside takes its colours: the
      cap panel's edge and the wash behind it, the money bar, and the floor those
-     six men stand on. body.clubbed is set when the reels land and cleared when
+     the roster stands on. body.clubbed is set when the reels land and cleared when
      the next spin starts, so the page and the wheel are never claiming
      different clubs.
 
      WHAT DELIBERATELY DOES NOT CHANGE. The position pills, the discs on the
-     court and the slot pips keep their own six colours everywhere, because a
+     court and the slot pips keep their own position colours everywhere, because a
      position colour means one thing across the whole game and a club cannot be
      allowed to repaint it. The cap bar's gold and red warning states are
      untouched for the same reason: those two colours are a message about money,
@@ -746,8 +746,8 @@
   /* ── the half court ─────────────────────────────────────────────────────
      The football games draw a field with the roster standing on it. This is
      the same idea in the sport it belongs to: five spots where those players
-     actually stand, plus the sixth man on the bench outside the sideline,
-     because he is not on the floor and the picture should not pretend he is. */
+     actually stand, and the roster is exactly those five, so the picture is
+     the team rather than the team and a note about the bench. */
   /* ── IT IS A HARDWOOD FLOOR, AND EVERY LAYER IS DOING A JOB ─────────────
    *
    * It was a flat brown radial gradient with four white outlines on it, which
@@ -831,7 +831,7 @@
     margin-left:-6.5%;border-radius:1px;background:rgba(255,255,255,.8);}
   /* THE PAINT IS PAINTED. An old school lane is a solid block of colour and
      it is the second thing anybody recognises about a court after the wood.
-     Neutral until a club is drawn, because the six position colours on the
+     Neutral until a club is drawn, because the position colours on the
      discs are the only palette this screen owns by default. */
   .court .key{left:34%;right:34%;top:0;height:38%;border-top:0;
     background:linear-gradient(180deg,rgba(138,52,20,.62),rgba(112,42,16,.5));}
@@ -1087,7 +1087,7 @@
   .lvv-score{font-size:26px;font-weight:700;margin:4px 0 2px;}
   .lvv-line{font-size:13px;color:var(--mut);margin:0 0 12px;}
 
-  /* The six, with their points climbing. This is the half of a live game a
+  /* The starters, with their points climbing. This is the half of a live game a
      resolved one cannot show at all: whose night it is, while it is his. */
   .lvmen{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
   .lvman{padding:8px 6px;border-radius:8px;border:1px solid var(--line);
@@ -1441,18 +1441,22 @@
   /* ══ POSITION COLOURS ══════════════════════════════════════════════════
      The football game paints every position its own colour and puts it on a
      pill, which is the one bit of that UI worth stealing wholesale: a board of
-     six names is scannable by shape and colour before a word of it is read.
+     a column of names is scannable by shape and colour before a word of it is read.
      Ported here with the same rule it uses, that a man who plays two spots gets
      TWO pills in their own colours rather than one pill reading "PG/SG" painted
      whichever colour came first.
 
      Backcourt cool, frontcourt warm, so the two halves of a lineup separate at a
-     glance even for somebody who cannot name the five positions. The bench spot
-     is purple and deliberately outside that scheme, because it is a place on the
-     roster rather than a position anybody plays. */
+     glance even for somebody who cannot name the five positions.
+
+     THE PURPLE IS GONE WITH THE BENCH SPOT. It was deliberately outside the
+     scheme, because a sixth man slot was a place on the roster rather than a
+     position anybody plays, and a starting five has no such place. What is
+     left is five positions and the three loose eligibility codes (G, F, FC)
+     that a data row can carry. */
   :root{
     --pg:#3b82f6; --sg:#06b6d4; --sf:#22c55e; --pf:#f59e0b; --c:#ef4444;
-    --sixth:#a855f7; --g:#6366f1; --f:#84cc16;
+    --g:#6366f1; --f:#84cc16;
   }
   .poss{display:flex;align-items:center;gap:3px;flex:0 0 auto;flex-wrap:wrap;}
   .pos{flex:0 0 auto;min-width:30px;text-align:center;padding:3px 5px;border-radius:6px;
@@ -1464,7 +1468,7 @@
   /* ══ THE PLAYER BOARD ══════════════════════════════════════════════════
      Rebuilt for a phone first. The old row put the name, four stats, the badges
      and the price on one line, which on a 390px screen wrapped into a paragraph
-     and made six of them an undifferentiated wall. */
+     and made a column of them an undifferentiated wall. */
   .opts{display:grid;gap:9px;margin-top:10px;}
   .ptile{display:grid;grid-template-columns:1fr auto;gap:10px 12px;align-items:start;
     width:100%;text-align:left;padding:12px 13px;border-radius:12px;
@@ -1602,7 +1606,7 @@
      to keep only its arcs and answer "who is THIS man tied to".
 
      It replaces a bullet list. The list said the same facts and none of the
-     shape: six players with one dense cluster and one loner is a picture, and
+     shape: a roster with one dense cluster and one loner is a picture, and
      it was five lines of prose. */
   .rail{position:relative;margin:10px 0 0;transition:height .28s ease;}
   .rail.off{height:0;margin:0;overflow:hidden;opacity:0;}
@@ -1813,7 +1817,7 @@
   </div>
   <div class="eyebrow">RunThe.GG</div>
   <h1>Run The <span>Floor</span></h1>
-  <p>Spin for a season and a club. Draft six. Play 82 and chase a ring.</p>
+  <p>Spin for a season and a club. Draft a starting five. Play 82 and chase a ring.</p>
 </header>
 
 <!-- ── home ─────────────────────────────────────────────────────────────── -->
@@ -1845,7 +1849,7 @@
 
   <!-- TODAY'S RUN, AND IT SITS ABOVE THE OTHER TWO BECAUSE IT EXPIRES.
        One Franchise and Decades are there every day and are chosen by mood.
-       This one is the same six spins for everybody and it is gone at
+       This one is the same spins for everybody and it is gone at
        midnight, so it is the only door on this page with a reason to be
        taken NOW, and the only one that gives two people something to compare.
        Its own class rather than .modedoor: it carries a result once it has
@@ -1853,7 +1857,7 @@
   <div class="modedoor daily" id="b-daily">
     <button class="md-main" id="b-daily-go">
       <span class="md-name" id="dl-name">Today's run</span>
-      <span class="md-sub" id="dl-sub">The same six spins for everybody today.</span>
+      <span class="md-sub" id="dl-sub">The same spins for everybody today.</span>
     </button>
     <span class="md-streak" id="dl-streak" hidden></span>
   </div>
@@ -1895,7 +1899,7 @@
   <div class="modedoor" id="b-decade">
     <button class="md-main" id="b-decade-go">
       <span class="md-name" id="dc-name">Decades</span>
-      <span class="md-sub" id="dc-sub">One decade, the whole league. Six men out of one era.</span>
+      <span class="md-sub" id="dc-sub">One decade, the whole league. A starting five out of one era.</span>
     </button>
     <button class="md-pick" id="b-decade-pick" hidden
       aria-label="Switch decade"><span class="md-chev" aria-hidden="true"></span></button>
@@ -1932,7 +1936,7 @@
   </div>
 
   <!-- ONE FOLDED CARD, AND IT WAS FIFTY-FIVE PER CENT OF THE SCREEN.
-       "How a run goes" and "Why six stars lose" were two open cards at the
+       "How a run goes" and "Why five stars lose" were two open cards at the
        bottom of the front page, worth 1,682px of a 3,082px page at 390 and
        1,846 of 3,236 at 360: more than half the home screen, every visit, for
        the whole life of the reader's account. They are one subject (how this
@@ -1951,15 +1955,15 @@
        on a page of cards and the only thing different about it is that it
        opens. -->
   <details class="card howto" id="home-howto">
-    <summary><h2>How to play <span class="sub">six spins, one cap</span></h2>
+    <summary><h2>How to play <span class="sub">five spins, one cap</span></h2>
       <span class="ht-chev" aria-hidden="true"></span></summary>
 
     <h3>How a run goes</h3>
     <p class="dim" style="font-size:14px;margin:0 0 10px">
       The wheel gives you a club and a season. You sign one player off that roster, and
-      you do it six times to fill a point guard, a shooting guard, a small forward, a
-      power forward, a centre and a sixth man. Every signing comes out of a
-      <b style="color:var(--ink)">$126M</b> cap, and the cap is the whole game: the best
+      you do it five times to fill a point guard, a shooting guard, a small forward, a
+      power forward and a centre. Every signing comes out of a
+      <b style="color:var(--ink)">$120M</b> cap, and the cap is the whole game: the best
       man on every board runs to about $300M, so it cannot be done.
     </p>
     <p class="dim" style="font-size:14px;margin:0 0 4px">
@@ -1970,14 +1974,14 @@
       play all 82 against real teams out of the same data.
     </p>
 
-    <h3 class="ht-turn">Why six stars lose</h3>
+    <h3 class="ht-turn">Why five stars lose</h3>
 
     <h3>The ball only bounces once</h3>
     <p class="dim">
-      An NBA team takes about 88 shots a night, and a starting five plus a sixth
-      man accounts for roughly 72 of them. Every player here carries the shots he
-      actually took. Draft six men who each took twenty a night on their own team
-      and you have a roster asking for 120 shots that do not exist. Jordan,
+      An NBA team takes about 88 shots a night, and a starting five accounts for
+      roughly 66 of them. Every player here carries the shots he
+      actually took. Draft five men who each took twenty a night on their own team
+      and you have a roster asking for 100 shots that do not exist. Jordan,
       Harden, Bryant, Malone and O'Neal is the most talented lineup you can
       assemble in this game and one of the worst basketball teams in it.
     </p>
@@ -2003,12 +2007,12 @@
 
     <h3>Then it tells you what you built</h3>
     <p class="dim">
-      When the sixth man signs, the game names the system your roster plays:
+      When the fifth man signs, the game names the system your roster plays:
       Showtime, the Triangle, Grit and Grind, Pick and Roll, Twin Towers,
       Moreyball, Point Centre and the rest. They are checked against real
       lineups, so the 1996 Bulls come back running the Triangle and the 1989
       Pistons come back Grit and Grind. Get it wrong and it will tell you that
-      too: six volume scorers are not a system, they are Too Many Mouths.
+      too: five volume scorers are not a system, they are Too Many Mouths.
       <a href="/hoops/how-to-play.html">The full rules are here.</a>
     </p>
   </details>
@@ -2018,7 +2022,7 @@
 <div class="screen" id="s-draft">
   <!-- THE PINNED HUD. Budget on the left as the hero, slot count and chemistry
        on the right as two matched tiles, a bar under all three, and the lineup
-       as six pips so the roster is legible without the court being on screen. -->
+       as pips so the roster is legible without the court being on screen. -->
   <div class="capwrap">
     <div class="cap-head">
       <div class="cap-budget">
@@ -2173,7 +2177,7 @@
   <div class="card lvboard">
     <div class="lvscore">
       <div class="lvside" id="lv-syou">
-        <span class="lvsname">Your six</span>
+        <span class="lvsname">Your five</span>
         <span class="lvpts num" id="lv-you">0</span>
       </div>
       <div class="lvmid">
@@ -2269,7 +2273,7 @@
 
   <div class="card">
     <h2>Your draft <span class="sub" id="o-grade"></span></h2>
-    <!-- The same court as the draft screen, so the six men you finished with are
+    <!-- The same court as the draft screen, so the men you finished with are
          seen where they played rather than only listed. -->
     <div class="court" id="o-court" role="img" aria-label="Your rotation on the floor">
       <div class="oob"></div>
@@ -2385,7 +2389,7 @@
   <div class="panel">
     <h2 id="era-h">Decades <span class="sub">pick an era</span></h2>
     <p class="dim" style="font-size:13px;margin:0 0 12px;line-height:1.5">
-      Every club, one decade. Six men who could have met on the floor.
+      Every club, one decade. Five men who could have met on the floor.
     </p>
     <div class="clubgrid" id="eragrid"></div>
     <div class="btnrow" style="margin-top:14px">
@@ -2520,7 +2524,7 @@
   <div class="frg-scrim"></div>
   <div class="frg-panel" id="frg-panel">
     <div class="frg-eyebrow">First time here</div>
-    <h2>Draft six, then play 82</h2>
+    <h2>Draft five, then play 82</h2>
     <ol class="frg-steps" id="frg-steps"></ol>
     <p class="frg-goal" id="frg-goal"></p>
     <p class="frg-later">The other modes, your career and the badges can all wait
@@ -2563,8 +2567,8 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=16"></script>
-<script src="run.js?v=8"></script>
+<script src="engine.js?v=17"></script>
+<script src="run.js?v=9"></script>
 <script src="badges.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
@@ -2585,6 +2589,28 @@ var DATA = null, run = null, board = [];
 
 var $ = function(id){ return document.getElementById(id); };
 var money = function(v){ return '$' + (Math.round(v * 10) / 10).toFixed(1) + 'M'; };
+
+/* A ROSTER COUNT, AS AN ENGLISH WORD, IN ONE PLACE.
+ *
+ * This page prints how many men a roster holds in ordinary sentences, and a
+ * sentence cannot interpolate a digit without reading like a spec: "sign 5
+ * players" is not how anybody says it. So it was written out as "Six" and
+ * "six" wherever it came up, and the day the roster went from six men to five
+ * every one of those became a page describing a game it was not running.
+ *
+ * That is this repo's oldest rule (when a number is in copy, either
+ * interpolate it or write the sentence without it) meeting the one case where
+ * interpolating a digit is worse than the problem. The answer is to
+ * interpolate the WORD. `cap` capitalises it for the start of a sentence.
+ *
+ * It answers a digit past twelve rather than throwing, because a wrong-looking
+ * "13" in a sentence is a smaller failure than a page that will not boot. */
+var NUMWORD = function(n, cap){
+  var words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six',
+    'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+  var w = (n >= 0 && n < words.length) ? words[n] : String(n);
+  return cap ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+};
 var bold = function(text){
   var b = document.createElement('b');
   b.textContent = text;
@@ -2607,7 +2633,7 @@ var bold = function(text){
  * comes back still disagrees, say so in words instead of dying quietly. One
  * retry, so this can never become a reload loop.
  */
-var NEED_VERSION = 5;
+var NEED_VERSION = 6;
 (function bootCheck(){
   if (E && R && E.API_VERSION === NEED_VERSION && R.API_VERSION === NEED_VERSION) return;
   if (!/[?&]fresh=/.test(location.search)) {
@@ -3257,7 +3283,9 @@ function renderGame(d){
       + 'reconstruction. No rebounds or assists: nothing in a live game counts '
       + 'them. The other side is a strength here rather than a roster, so it '
       + 'has no box score.'
-    : 'Six men, ' + (240 + d.ot * 25)
+    /* THE MINUTES ARE DERIVED, and at five men they are arithmetic: five on
+       the floor for the whole game is 240 player minutes and 48 each. */
+    : NUMWORD(E.SLOTS.length, true) + ' men, ' + (240 + d.ot * 25)
       + ' minutes, every point. The other side is a strength here rather than a '
       + 'roster, so it has no box score.';
 
@@ -3277,7 +3305,7 @@ function renderGame(d){
  * EVERY NUMBER IS READ OUT OF THE CONSTANTS. A guide is copy, and copy with a
  * typed number in it is a guide that lies the first time somebody sweeps the
  * cap. The cap has already been swept twice in this game's short life ($134M
- * to $126M), and a first-time player told the wrong one has no way to know.
+ * to $120M), and a first-time player told the wrong one has no way to know.
  *
  * WHAT IT DOES NOT DO is walk anybody through a practice draft. The football
  * game has one and it is worth having; it is also a second copy of the draft
@@ -3295,7 +3323,7 @@ function frgFill(){
   var C = E.CONSTANTS;
   /* THE DEAREST MAN IN THE GAME, read out of the data. "A star costs half the
      cap" was the first draft of that sentence and it is not true: the top
-     price in 16,057 rows is Bob McAdoo's 1975 at $60.0M against a $126M cap,
+     price in 16,057 rows is Bob McAdoo's 1975 at $60.0M against a $120M cap,
      which is 48%, and nobody is over half. A guide is the worst place to be
      nearly right, so it prints the real number. */
   var dearest = 0;
@@ -3306,11 +3334,16 @@ function frgFill(){
     }
   }
   var steps = [
+    /* THE COUNT IS READ OFF THE SLOT LIST, never written. This step said
+       "Six times" beside a five position line for as long as the two were
+       different numbers, which is the class of thing check-numbers exists
+       for, arriving inside one sentence. */
     'Spin for a season and a club, then sign one player off that roster. '
-      + '<b>Six times</b>, filling the five positions and a sixth man.',
-    'All six fit under a <b>' + money(C.CAP_MUSD) + '</b> cap'
+      + '<b>' + NUMWORD(E.SLOTS.length) + ' times</b>, one for every position '
+      + 'on the floor.',
+    'All ' + NUMWORD(E.SLOTS.length) + ' fit under a <b>' + money(C.CAP_MUSD) + '</b> cap'
       + (dearest ? ', and the dearest man in the game is <b>' + money(dearest) + '</b>' : '')
-      + '. Six stars is not a roster you can afford.',
+      + '. ' + NUMWORD(E.SLOTS.length, true) + ' stars is not a roster you can afford.',
     'Then the season plays itself. <b>' + C.REGULAR_SEASON_GAMES + ' games</b>, '
       + 'and the playoffs if you get there.'
   ];
@@ -3422,7 +3455,8 @@ function renderEraDoor(){
     door.className = 'modedoor';
     name.textContent = 'Decades';
     name.style.removeProperty('color');
-    sub.textContent = 'One decade, the whole league. Six men out of one era.';
+    sub.textContent = 'One decade, the whole league. '
+      + NUMWORD(E.SLOTS.length, true) + ' men out of one era.';
     pick.hidden = true;
     main.onclick = openEras;
     return;
@@ -3465,7 +3499,7 @@ function modeChip(r){
 
 /* ── TODAY'S RUN ───────────────────────────────────────────────────────────
  *
- * The seed is the date, so every player gets the same six spins and two
+ * The seed is the date, so every player gets the same spins and two
  * records are comparable for the first time in this game. Everything else
  * here is an ordinary league run.
  *
@@ -3663,7 +3697,7 @@ function lockClubReel(draw){
 
 /* WHAT YOU DREW, WITHOUT THE ANIMATION. A run restored mid-draft has a club and
    a season already drawn and no spin coming, and the reels used to sit empty
-   and grey through it: the board underneath said which six men were on offer
+   and grey through it: the board underneath said which men were on offer
    and nothing on the page said whose team they were. */
 function showDraw(draw){
   if (!draw) return;
@@ -3885,10 +3919,10 @@ function fireConfetti(){
 // ── position pills ─────────────────────────────────────────────────────────
 
 /* ONE PLACE THAT PAINTS A POSITION, which is the football game's rule and the
- * reason a palette change there is one edit rather than a hunt through six call
+ * reason a palette change there is one edit rather than a hunt through the call
  * sites writing the same gradient four slightly different ways. */
 var POS_COL = { PG: '--pg', SG: '--sg', SF: '--sf', PF: '--pf', C: '--c',
-  '6TH': '--sixth', G: '--g', F: '--f', GF: '--sf', FC: '--pf' };
+  G: '--g', F: '--f', GF: '--sf', FC: '--pf' };
 
 function posPaint(pos){
   return 'linear-gradient(160deg,var(' + (POS_COL[pos] || '--g') + '),rgba(0,0,0,.42))';
@@ -4117,14 +4151,18 @@ function reelPools(){
 
 // ── the court ──────────────────────────────────────────────────────────────
 
-/* WHERE THESE MEN ACTUALLY STAND. The five on the floor sit where their
-   position plays: the point at the top of the key, the wings out beyond the
-   arc, the forward on the weak side block and the centre in the paint. The
-   sixth man is deliberately BELOW the sideline, off the floor, because he is
-   not on it and a picture that puts him there is telling a small lie. */
+/* WHERE THESE MEN ACTUALLY STAND. The five sit where their position plays:
+   the point at the top of the key, the wings out beyond the arc, the forward
+   on the weak side block and the centre in the paint.
+
+   THERE IS NO SIXTH SPOT, and that is the picture this screen was always
+   trying to draw. The sixth man used to sit BELOW the sideline, off the floor,
+   because he was not on it and a picture that put him there would have been
+   telling a small lie. Five men is five spots, so the lie has nothing left to
+   avoid and the court is simply the team. */
 var SPOTS = {
   PG:  { x: 50, y: 62 }, SG: { x: 84, y: 46 }, SF: { x: 16, y: 46 },
-  PF:  { x: 27, y: 20 }, C:  { x: 62, y: 15 }, '6TH': { x: 50, y: 89 }
+  PF:  { x: 27, y: 20 }, C:  { x: 62, y: 15 }
 };
 
 function renderCourt(justSlot, into){
@@ -6884,12 +6922,14 @@ function renderOverDoors(){
       door('Day ' + d.day + ' is done · ' + d.label, 'Send it to somebody.', true, shareDaily);
     }
   } else {
-    door("Today's run", 'The same six spins for everybody today.', true,
+    door("Today's run", 'The same ' + NUMWORD(E.SLOTS.length)
+      + ' spins for everybody today.', true,
       function(){ startRun(null, null, true); });
   }
 
   if (run.club || run.era || run.daily) {
-    door('The league', 'Every season, every club, six spins.', false,
+    door('The league', 'Every season, every club, ' + NUMWORD(E.SLOTS.length)
+      + ' spins.', false,
       function(){ startRun(); });
   }
   if (!run.club) {
@@ -6902,8 +6942,9 @@ function renderOverDoors(){
   if (!run.era) {
     var le = lastEra();
     door(le ? (ERA_NAMES[le] || le) : 'Decades',
-      le ? 'Six men out of one decade.'
-         : 'One decade, the whole league. Six men out of one era.',
+      le ? NUMWORD(E.SLOTS.length, true) + ' men out of one decade.'
+         : 'One decade, the whole league. ' + NUMWORD(E.SLOTS.length, true)
+           + ' men out of one era.',
       false, le ? function(){ startRun(null, le); } : openEras);
   }
 }
@@ -7208,9 +7249,9 @@ function shareDare(out){
   /* THE DAILY'S DARE IS A DIFFERENT KIND OF QUESTION and it belongs on the
      card as well as in the text. Every other dare asks somebody to go and
      play a game, which they can answer with any roster at all. This one asks
-     them to play the SAME six spins, which is the only dare here with one
+     them to play the SAME spins, which is the only dare here with one
      answer, and it is the whole reason the mode exists. */
-  if (run && run.daily) return 'Same six spins. Can you beat it?';
+  if (run && run.daily) return 'Same ' + NUMWORD(E.SLOTS.length) + ' spins. Can you beat it?';
   if (out.isGOAT) return 'Can you win 74?';
   if (out.titleWon) return 'Can you win a ring?';
   return 'Can you build a better six?';
@@ -7226,10 +7267,16 @@ function shareDare(out){
  * the club's own name is already the longest thing that goes in it.
  */
 function cardTag(r){
-  if (r && r.daily) return 'Day ' + r.daily + '. The same six spins for everybody.';
-  if (r && r.club) return 'One franchise: ' + E.team(r.club).full + ', six seasons of it.';
-  if (r && r.era) return (ERA_NAMES[r.era] || r.era) + '. Six men out of one decade.';
-  return 'Six NBA seasons, one cap, 82 games.';
+  /* EVERY COUNT HERE IS THE SLOT LIST, because a tagline is the one string on
+     this card nobody re-reads and the football game's own card fell through to
+     "Classic Mode. Six spins, one roster" three separate times. A literal has
+     no branch to forget AND no number to update. */
+  var n = NUMWORD(E.SLOTS.length);
+  if (r && r.daily) return 'Day ' + r.daily + '. The same ' + n + ' spins for everybody.';
+  if (r && r.club) return 'One franchise: ' + E.team(r.club).full + ', ' + n + ' seasons of it.';
+  if (r && r.era) return (ERA_NAMES[r.era] || r.era) + '. ' + NUMWORD(E.SLOTS.length, true)
+    + ' men out of one decade.';
+  return NUMWORD(E.SLOTS.length, true) + ' NBA seasons, one cap, 82 games.';
 }
 
 function shareText(out){
@@ -7268,18 +7315,41 @@ function shareText(out){
  * anchors written down, a six man card always lands the same and the gaps
  * between blocks can be read off without running it.
  */
-var CARD = {
-  W: 1080, H: 1350, PAD: 76,
-  TITLE: 96, TAG: 126,
-  REC: 372, VERDICT: 436,
-  RULE1: 482,
-  ROWS: 552, ROW: 92,          // six players, last baseline 1012
-  RULE2: 1064,
-  STAT: 1150, STAT_LABEL: 1192,
-  DARE: 1258,
-  LINK_T: 1282, LINK_H: 58,
-  KEEL: 10
-};
+/* THE CARD'S TAIL IS DERIVED FROM THE ROSTER, and the reason is the football
+ * game's share card, whose own section records every y between the two rules
+ * being a constant written for a six man roster: the day that mode drafted
+ * twelve, the seventh row printed THROUGH the closing rule and the next five
+ * on top of the footer, and it still rendered, still saved and still shared.
+ *
+ * THIS GAME LOST A ROW RATHER THAN GAINING SIX, so the failure is the quiet
+ * one in the other direction: nothing overlaps, the card simply carries 92px
+ * of empty stock between the last man and the rule under him, on every card
+ * anybody posts. Nothing throws and no check that reads the layout function's
+ * own numbers can see it, because they still add up.
+ *
+ * So the row pitch and the type are fixed and everything AFTER the roster
+ * hangs off where the roster actually ends. A card at five men is byte for
+ * byte the six man card with one row taken out of the middle. */
+var CARD = (function(){
+  var PAD = 76, ROWS = 552, ROW = 92;
+  var n = (E && E.SLOTS) ? E.SLOTS.length : 5;
+  /* The last man's baseline, and then the gap the closing rule always sat at
+     under it: 1064 against a six man card's last baseline of 1012. */
+  var lastBaseline = ROWS + (n - 1) * ROW;
+  var RULE2 = lastBaseline + 52;
+  return {
+    W: 1080, H: RULE2 + 286, PAD: PAD,
+    TITLE: 96, TAG: 126,
+    REC: 372, VERDICT: 436,
+    RULE1: 482,
+    ROWS: ROWS, ROW: ROW,
+    RULE2: RULE2,
+    STAT: RULE2 + 86, STAT_LABEL: RULE2 + 128,
+    DARE: RULE2 + 194,
+    LINK_T: RULE2 + 218, LINK_H: 58,
+    KEEL: 10
+  };
+})();
 
 function hexAt(hex, a){
   var h = String(hex).replace('#', '');
@@ -7359,7 +7429,7 @@ function drawShareCard(){
   };
   rule(CARD.RULE1);
 
-  /* THE SIX, in the order they fill the floor rather than the order they were
+  /* THE ROSTER, in the order it fills the floor rather than the order it was
      signed, so two cards of the same roster read the same way. Each carries the
      colour its position wears everywhere else in the game. */
   var filled = {};
@@ -7435,7 +7505,7 @@ function drawShareCard(){
    custom properties, which a canvas cannot read, so the values live here too.
    verify.mjs asserts the two agree. */
 var POS_HEX = { PG: '#3b82f6', SG: '#06b6d4', SF: '#22c55e', PF: '#f59e0b',
-  C: '#ef4444', '6TH': '#a855f7', G: '#6366f1', F: '#84cc16' };
+  C: '#ef4444', G: '#6366f1', F: '#84cc16' };
 
 function roundRect(x, left, top, w, h, r){
   x.beginPath();

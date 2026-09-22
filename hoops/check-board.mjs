@@ -37,6 +37,19 @@ const ROOT = path.resolve(HERE, '..');
 const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const PW = '/opt/node22/lib/node_modules/playwright/index.js';
 
+/* HOW MANY MEN A DRAFT SIGNS, read out of the engine rather than written. It
+   was a literal 6 in the draft loop, which is the class of thing that makes a
+   walk quietly stop drafting a whole roster the day the roster size moves: the
+   loop signs six on a five man game, the sixth press lands on a screen that is
+   no longer the draft, and the failure it reports is about whatever that
+   screen happens to be. */
+const ROSTER_SIZE = (() => {
+  const src = fs.readFileSync(path.join(ROOT, 'hoops', 'engine.js'), 'utf8');
+  const m = /const SLOTS = \[([^\]]*)\]/.exec(src);
+  if (!m) throw new Error('could not read SLOTS out of engine.js');
+  return m[1].split(',').filter(x => x.trim()).length;
+})();
+
 let pass = 0;
 const failures = [];
 const ok = (cond, what) => { if (cond) pass++; else failures.push(what); };
@@ -168,7 +181,7 @@ const signedCount = (page) => page.evaluate(() => {
 
 async function playRun(page, opener) {
   await opener();
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < ROSTER_SIZE; i++) {
     /* A FIXED WAIT BETWEEN PICKS IS A RACE, and so is waiting on the ROSTER
        alone, which is what the second draft of this did. The roster grows
        INSIDE sign(), and sign() spins the next board a beat later
@@ -181,7 +194,7 @@ async function playRun(page, opener) {
 
        So the wait is for the NEXT BOARD to be up and readable: the roster has
        grown, there is a fresh draw, and the tiles are out of `pending`. On
-       the sixth pick there is no next board, because the draft is over. */
+       the LAST pick there is no next board, because the draft is over. */
     try {
       /* :not(.pending) IS LOAD-BEARING AND IT IS NOT BELT AND BRACES.
          `.opts.pending` hides the tile's CHILDREN and sets pointer-events
@@ -198,12 +211,12 @@ async function playRun(page, opener) {
       await page.waitForFunction((want) => {
         try {
           const r = JSON.parse(localStorage.getItem('runthefloor_run_v1') || 'null');
-          if (!r || !Array.isArray(r.roster) || r.roster.length < want) return false;
-          if (r.roster.length >= 6) return true;
+          if (!r || !Array.isArray(r.roster) || r.roster.length < a.want) return false;
+          if (r.roster.length >= a.full) return true;
           const opts = document.querySelector('.opts');
           return !!r.currentDraw && !!opts && !/pending/.test(opts.className);
         } catch (e) { return false; }
-      }, i + 1, { timeout: 25000 });
+      }, { want: i + 1, full: ROSTER_SIZE }, { timeout: 25000 });
     } catch (e) {
       /* A TIMEOUT HERE REPORTS THE BOARD AND NOT THE DRAFT unless it says
          what it actually found. A page on the home screen, a draft whose

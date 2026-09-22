@@ -302,8 +302,8 @@ declare
   RTF_ROUNDS_PLAYIN constant int := 5;    -- PLAYOFF_ROUNDS_PLAY_IN
   RTF_RECORD_WINS   constant int := 72;   -- RECORD_WINS
   RTF_GOAT_WINS     constant int := 74;   -- GOAT_WINS
-  RTF_ROSTER_SIZE   constant int := 6;
-  RTF_CAP_MUSD      constant numeric := 126;  -- CAP_MUSD
+  RTF_ROSTER_SIZE   constant int := 5;
+  RTF_CAP_MUSD      constant numeric := 120;  -- CAP_MUSD
   -- Day 1 of today's run, as hoops/index.html's DAILY_EPOCH. Eastern, because
   -- that is where the page's day rolls.
   RTF_DAILY_EPOCH   constant date := date '2026-09-18';
@@ -467,7 +467,7 @@ begin
       raise exception 'slots must line up with picks';
     end if;
     if exists (select 1 from unnest(p_slots) s
-                where s not in ('PG','SG','SF','PF','C','6TH')) then
+                where s not in ('PG','SG','SF','PF','C')) then
       raise exception 'unknown slot name';
     end if;
   end if;

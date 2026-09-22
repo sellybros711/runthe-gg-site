@@ -68,7 +68,7 @@ for (const nav of ['index.html', '404.html', 'about.html']) {
 const players = JSON.parse(read('hoops/data/players.json'));
 if (!Array.isArray(players) || players.length < 50) {
   problems.push(`hoops/data/players.json holds ${players.length || 0} rows. The game cannot `
-    + 'fill a six man roster out of that.');
+    + 'fill a roster out of that.');
 }
 
 /* 6. EVERY CLUB IN THE PLAYER DATA HAS A FRANCHISE ROW.
