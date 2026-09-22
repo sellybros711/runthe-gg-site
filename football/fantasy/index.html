@@ -115,6 +115,46 @@
     background:var(--panel);transition:transform .07s ease,border-color .15s ease}
   .man:active{transform:translateY(1px)}
   .man:disabled{opacity:.38;cursor:default}
+
+  /* ---- the reveal ----
+     THE ROWS ARE IN THE DOM BEFORE THEY ARE READABLE, which is the whole of why this is
+     safe. A skeleton of placeholders cannot hold the layout exactly, because a row with a
+     two line stat line is 74px and a one line one is 63, so a board built out of
+     stand-ins steps the moment the real men arrive. Built for real and revealed, the box
+     is right on the first frame and nothing below the board ever moves. That is the hoops
+     draft board's lesson, where emptying the container first moved the court 1,554px.
+
+     OPACITY AND TRANSFORM ONLY. Both are composited, so a five row stagger costs no layout
+     and no paint, and a row animating in cannot push its neighbours around. */
+  .man{opacity:1}
+  .men.dealing .man{opacity:0;transform:translateY(8px) scale(.985)}
+  .men.dealing .man.up{opacity:1;transform:none;
+    transition:opacity .22s ease,transform .26s cubic-bezier(.2,.9,.3,1)}
+  /* The man you just signed, on his way out. He is the only thing on the board that has
+     to be acknowledged, so he goes green and lifts while the other four fall away. */
+  .men.clearing .man{opacity:0;transform:translateY(-6px);
+    transition:opacity .16s ease,transform .16s ease}
+  .men.clearing .man.took{opacity:1;transform:none;border-color:rgba(34,197,94,.55);
+    background:rgba(34,197,94,.10)}
+
+  /* A slot filling in. One pop, on the cell that just changed, never on the strip. */
+  @keyframes slotIn{from{transform:scale(.9);opacity:.4}to{transform:none;opacity:1}}
+  .slot.just{animation:slotIn .26s cubic-bezier(.2,.9,.3,1)}
+
+  /* THE MONEY IS COUNTED DOWN IN SCRIPT, so the only thing CSS does here is mark the tick.
+     A number that snaps from $90M to $66M reads as a different screen rather than as
+     something you spent. */
+  #d-left{transition:color .2s ease}
+  #d-left.spending{color:var(--gold)}
+
+  /* NOTHING ABOVE IS LOAD-BEARING, so all of it comes off for a reader who asked. The
+     board is fully readable with every rule here disabled, which is the test of whether a
+     reveal is decoration or a mechanism. */
+  @media (prefers-reduced-motion:reduce){
+    .men.dealing .man,.men.clearing .man{opacity:1;transform:none;transition:none}
+    .slot.just{animation:none}
+    #d-left{transition:none}
+  }
   .pos{flex:0 0 38px;text-align:center;font-family:var(--fn);font-size:11px;font-weight:800;
     letter-spacing:.04em;padding:3px 0;border-radius:6px;color:#fff}
   .pos.QB{background:var(--qb)} .pos.RB{background:var(--rb)}
@@ -129,9 +169,17 @@
      "492 pass yds, 5 TD, 59 ..." on every quarterback, which drops the rushing half of
      exactly the men whose rushing is why they are dear.
      CLAMPED AT TWO rather than left to run, so that a row keeps one height across the five
-     and the board does not step. Same rule as the premium sheet's hero row. */
+     and the board does not step. Same rule as the premium sheet's hero row.
+
+     AND FLOORED AT TWO AS WELL, which is the half that was missing. The clamp holds a row
+     to one height within ONE board and says nothing about the next one: a board whose five
+     stat lines all fit on one line is 63px a row and the board after it is 74, so signing
+     somebody moved everything under the board by up to 31px. Measured through the real page
+     at 390x844, on four of the five presses of a draft. A fixed two line box makes every
+     board the same height, so the only thing that changes when you sign is who is on it. */
   .who s{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-    text-decoration:none;font-size:11.5px;line-height:1.3;color:var(--dim-2);overflow:hidden}
+    text-decoration:none;font-size:11.5px;line-height:1.3;color:var(--dim-2);overflow:hidden;
+    min-height:2.6em}
   .cost{flex:0 0 auto;text-align:right}
   .cost b{display:block;font-family:var(--fd);font-size:19px;font-weight:400;
     font-variant-numeric:tabular-nums}
@@ -380,7 +428,14 @@
       entryCount: function(){ return Promise.resolve(null); },
     };
   var $ = function(id){ return document.getElementById(id); };
+  /* CHANGING SCREEN CANCELS THE DRAFT SCREEN'S REVEAL, which is the rule the hoops live
+     board and the baseball game both carry: nothing may go on animating behind a screen
+     somebody has left. Here the cost of forgetting is a stagger firing into a board that
+     has been rebuilt, which leaves rows stuck invisible. Callers going TO the draft screen
+     show it BEFORE they paint it, or this would cancel the deal they just started. */
   var show = function(id){
+    clearTimers();
+    busy = false;
     var all = document.querySelectorAll('.screen');
     for (var i=0;i<all.length;i++) all[i].classList.toggle('on', all[i].id===id);
     window.scrollTo(0,0);
@@ -391,6 +446,17 @@
     });
   };
   var money = function(m){ return '$' + (Math.round(m*10)/10) + 'M'; };
+
+  /* HOW MANY OF HIS CLUB'S GAMES HE HAS PLAYED, not how many he has played.
+     The projection reads that share as how likely he is to be out there on Sunday, and it
+     is the biggest single thing moving a man's number, so the card has to show the reader
+     what it is reading. "1 game" in week ten says nothing. "1 of 9" says everything.
+     Falls back to the bare count for a board built before that field existed. */
+  var gamesLine = function(m){
+    var of = m.played_of || 0;
+    if (of > m.games) return m.games + ' of ' + of + ' games';
+    return m.games + (m.games === 1 ? ' game' : ' games');
+  };
 
   var POOL = null;          /* the week, as built */
   var BY_ID = {};
@@ -474,24 +540,98 @@
     return Math.round(t*10)/10;
   }
 
+  /* ---- the reveal ----
+   *
+   * EVERY TIMER HERE IS CANCELLED BEFORE THE NEXT ONE IS SET, and each one checks it is
+   * still working on the draft it was started for. A draft can be abandoned, a chance
+   * switched or the screen left in the middle of a deal, and a stagger that fired into a
+   * board that is no longer there would leave rows stuck at opacity 0: a blank board with
+   * no way on, which is the failure the empty-board sentence below exists to catch and
+   * which this would produce without anything throwing. Same identity check the baseball
+   * game carries at three schedulers.
+   */
+  var REDUCE = false;
+  try { REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+  var timers = [];
+  function clearTimers(){
+    for (var t=0;t<timers.length;t++) clearTimeout(timers[t]);
+    timers = [];
+  }
+  var later = function(f, ms){ timers.push(setTimeout(f, ms)); };
+  /* Which slot the last signing filled, so the strip pops one cell and not on every paint,
+     and whether a press is already being acknowledged. Declared here with the rest of the
+     reveal's state rather than beside the handler that writes them, because paintDraft
+     READS both and is defined above it. */
+  var JUST = -1;
+  var busy = false;
+
+  /* One row at a time, 55ms apart. Measured on the board rather than chosen: five rows is
+     220ms of stagger on top of a 220ms fade, so the last man is readable a little over
+     four hundred milliseconds after the press. Slower than that and the wheel is in the
+     way of the game. */
+  var DEAL_STEP = 55;
+  function deal(){
+    var men = $('d-men');
+    if (REDUCE) { men.className = 'men'; return; }
+    men.className = 'men dealing';
+    var rows = men.querySelectorAll('.man');
+    /* Reading offsetWidth is what commits the opacity 0 start state, or the browser
+       coalesces it with the class added a line later and nothing fades at all. */
+    void men.offsetWidth;
+    for (var r=0;r<rows.length;r++){
+      (function(el, n){ later(function(){ el.classList.add('up'); }, n * DEAL_STEP); })(rows[r], r);
+    }
+  }
+
+  /* THE NUMBER COUNTS RATHER THAN SNAPPING, and it is driven off rAF instead of a timer
+     because it is the one thing here that writes on every frame. It always LANDS on the
+     real figure, written outside the ramp as well as at the end of it, so a tab that is
+     backgrounded mid-count comes back to the right money rather than to wherever the
+     animation got to. */
+  var moneyRaf = 0, moneyFrom = D.CAP_MUSD;
+  function countMoney(to){
+    var el = $('d-left');
+    el.className = 'num' + (to < 12 ? ' lo' : '');
+    if (REDUCE || moneyFrom === to){ moneyFrom = to; el.textContent = money(to); return; }
+    var from = moneyFrom, t0 = 0, ms = 320;
+    moneyFrom = to;
+    if (moneyRaf) cancelAnimationFrame(moneyRaf);
+    el.classList.add('spending');
+    var step = function(t){
+      if (!t0) t0 = t;
+      var k = Math.min(1, (t - t0) / ms);
+      var e = 1 - Math.pow(1 - k, 3);
+      el.textContent = money(Math.round((from + (to - from) * e) * 10) / 10);
+      if (k < 1) { moneyRaf = requestAnimationFrame(step); return; }
+      moneyRaf = 0;
+      el.textContent = money(to);
+      el.classList.remove('spending');
+    };
+    moneyRaf = requestAnimationFrame(step);
+  }
+
   /* ---- the draft screen ---- */
   function paintDraft(){
     var c = chanceAt(cur);
     var i = c.men.length;
     $('d-chance').textContent = 'Draft ' + (cur+1) + ' of ' + D.CHANCES;
     var left = D.CAP_MUSD - D.spent(c);
-    $('d-left').textContent = money(left);
-    $('d-left').className = 'num' + (left < 12 ? ' lo' : '');
+    countMoney(left);
     $('d-slot').textContent = i < D.SLOTS.length ? D.SLOTS[i] : 'done';
 
     var strip = '';
     for (var k=0;k<D.SLOTS.length;k++){
       var man = c.men[k];
-      strip += '<div class="slot ' + (man?'done':(k===i?'now':'')) + '">'
+      /* ONLY THE CELL THAT JUST CHANGED POPS. Marked on the slot the last signing filled,
+         which is i-1, so a repaint that signed nobody (a reload, coming back to the
+         screen) animates nothing and the strip does not flash on arrival. */
+      strip += '<div class="slot ' + (man?'done':(k===i?'now':''))
+        + (JUST === k ? ' just' : '') + '">'
         + '<div class="p">' + D.SLOTS[k] + '</div>'
         + '<div class="n">' + (man ? esc(man.name.split(' ').slice(-1)[0]) : '&nbsp;') + '</div>'
         + '</div>';
     }
+    JUST = -1;
     $('d-slots').innerHTML = strip;
 
     if (i >= D.SLOTS.length){ toReview(); return; }
@@ -503,6 +643,7 @@
        trap a player if the guard were ever wrong should say which of the two it is. */
     if (!board.length){
       $('d-men').innerHTML = '';
+      $('d-men').className = 'men';
       $('d-note').textContent = 'No ' + D.SLOTS[i] + ' can be signed with what is left. '
         + 'That is a bug. Start this draft again.';
       return;
@@ -516,30 +657,61 @@
         + '<span class="who"><b>' + esc(m.name) + '</b>'
         + '<s>' + esc(m.team) + (where?' ' + esc(where):'') + ' &middot; ' + esc(m.stat_line) + '</s></span>'
         + '<span class="cost"><b>' + money(m.price_musd) + '</b><s>'
-        + m.games + (m.games===1?' game':' games') + '</s></span>'
+        + gamesLine(m) + '</s></span>'
         + '</button>';
     }
     $('d-men').innerHTML = html;
+    deal();
     /* THE ONLY NUMBER ABOUT THE FUTURE IS THE LINEUP'S, AND IT COMES AFTER THE SIX.
-       A per man projection would say nothing a reader cannot already see: the price is
-       built from the same estimate, so the dearest man on any board is also the highest
-       projected one and printing both is printing one number twice. What the board shows
-       is what he has DONE. What he does next is the question. */
+       A per man projection would say nothing a reader cannot already act on: what the board
+       shows is what he has DONE, and how many of his club's games he was there for, which
+       is both halves of what the projection reads. What he does next is the question. */
     $('d-note').textContent = 'What they have done so far. What they do on Sunday is yours '
       + 'to call.';
   }
 
+  /*
+   * A PRESS HAS TO BE ACKNOWLEDGED BEFORE THE BOARD CHANGES.
+   *
+   * Signed and repainted in the same tick, five men are replaced by five different men
+   * between two frames and nothing on screen says which one was taken. The row you pressed
+   * goes green and holds while the other four fall away, and only then does the next board
+   * deal in. It is 170ms, which is under the threshold where a control starts to feel
+   * unresponsive and is long enough to read a colour.
+   *
+   * THE STATE IS WRITTEN IMMEDIATELY AND ONLY THE PAINT WAITS. A press that put the man in
+   * the roster 170ms later would be a press that can be made twice, and the second one
+   * signs a second man into a slot that already has one. `busy` refuses the second press
+   * for the same reason, so a double tap is one signing on every device.
+   */
   $('d-men').addEventListener('click', function(ev){
     var b = ev.target.closest && ev.target.closest('.man');
-    if (!b || !b.dataset.id) return;
+    if (!b || !b.dataset.id || busy) return;
     var man = BY_ID[b.dataset.id];
     if (!man) return;
-    state.chances[cur].ids.push(man.player_id);
+    var c = state.chances[cur];
+    c.ids.push(man.player_id);
     save();
-    paintDraft();
+    JUST = c.ids.length - 1;
+    if (REDUCE){ paintDraft(); return; }
+    busy = true;
+    b.classList.add('took');
+    $('d-men').className = 'men clearing';
+    var was = cur, len = c.ids.length;
+    later(function(){
+      busy = false;
+      /* The identity check. A draft abandoned or a chance switched inside those 170ms has
+         moved on, and repainting then would put the old board's next spin on screen. */
+      if (cur !== was || !state.chances[was] || state.chances[was].ids.length !== len) return;
+      paintDraft();
+    }, 170);
   });
 
   $('b-abandon').onclick = function(){
+    clearTimers();
+    busy = false;
+    JUST = -1;
+    moneyFrom = D.CAP_MUSD;
     state.chances[cur] = { seed: D.newSeed(), ids: [] };
     save();
     paintDraft();
@@ -839,8 +1011,17 @@
     }
     cur = i;
     save();
-    paintDraft();
+    /* SHOWN BEFORE IT IS PAINTED. `show` cancels the draft screen's timers, so painting
+       first would start a deal and then immediately cancel its stagger, and the board
+       would come up with one row on it. */
     show('s-draft');
+    /* A fresh chance starts the money at the full cap so the first signing counts DOWN
+       from it. Carried over, the number would ramp from whatever the last chance ended on,
+       which is a count in the wrong direction on the first press of every draft after the
+       first. */
+    moneyFrom = D.CAP_MUSD - D.spent(chanceAt(i));
+    JUST = -1;
+    paintDraft();
   }
 
   function paintHome(){

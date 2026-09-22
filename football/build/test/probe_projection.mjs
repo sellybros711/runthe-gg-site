@@ -3,6 +3,22 @@
  *   node football/build/test/probe_projection.mjs
  *   node football/build/test/probe_projection.mjs --seasons 2022,2023,2024 --from 4 --top 40
  *
+ * ─── THE PROJ_LIFT THIS FILE FITTED IS GONE, AND WHY IS WORTH READING FIRST ─────────
+ *
+ *   node football/build/test/probe_early.mjs
+ *
+ * Everything below about the matchup and the recency still stands: both were measured, both
+ * are worth nothing, and neither is in the shipped projection. What did NOT stand is the
+ * flat +0.54 this file fitted to remove the bias, and the reason is in this file's own
+ * defaults: `--from 4`, so the shortest sample it ever saw was three games and the pool it
+ * averaged over was dominated by men with eight or ten. Week three was never in it.
+ *
+ * Fitted pooled, one constant is the right correction at the pool's average sample length
+ * and at no other. Split by games played it ran +3.20 at one game down to -0.16 at six or
+ * more, so the projection was a third low every September and dead on every October. The
+ * shipped version is availability times a shrink that has its prior back, and `probe_early`
+ * carries the measurement.
+ *
  * Fantasy Challenge prices a man on his season to date mixed with a projection for the week
  * he is about to play, and shows that projection as the only number on the card that is
  * about the future. So the projection has to exist, and it has to be measurably better than

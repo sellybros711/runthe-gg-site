@@ -288,6 +288,37 @@ const serverStub = (server) => {
   };
 };
 
+/*
+ * SIGN ONE MAN AND WAIT FOR THE BOARD TO ACTUALLY MOVE.
+ *
+ * The draft screen acknowledges a press before it repaints: the row you took goes green,
+ * the other four fall away, and 170ms later the next board deals in. A second press inside
+ * that window is REFUSED, deliberately, because otherwise a double tap signs a second man
+ * out of the previous slot's board into the next slot.
+ *
+ * So a walk that presses six times in a tight loop signs about three men and then waits for
+ * a review screen that is never coming. Every version of this file before the reveal did
+ * exactly that. Waiting on `.man` is not enough either: the old board's rows are still on
+ * screen through the acknowledgement, so the selector resolves to the men that were already
+ * there. What says a press LANDED is the slot strip, which is the page's own record of how
+ * many men are signed. That is the hoops draft harness's lesson arriving here.
+ */
+async function signOne(page, nth = 0) {
+  const before = await page.locator('#d-slots .slot.done').count();
+  const men = page.locator('#d-men .man');
+  await men.first().waitFor({ timeout: 10000 });
+  const n = await men.count();
+  if (!n) throw new Error('empty board');
+  /* `force` because the rows are mid-transition for the length of the deal and Playwright
+     waits for stability otherwise, which turns every press into a race with the stagger. A
+     thumb has no such scruples. */
+  await men.nth(nth % n).click({ force: true });
+  await page.waitForFunction(
+    (was) => document.querySelectorAll('#d-slots .slot.done').length > was
+      || document.getElementById('s-review').classList.contains('on'),
+    before, { timeout: 10000 });
+}
+
 async function openPage(browser, url, opts = {}) {
   const { who = null, viewport = { width: 390, height: 844 }, at = null,
     results = null, storage = null, server = null } = opts;
@@ -397,12 +428,7 @@ console.log('\nA WHOLE ENTRY, DRIVEN');
   /* One helper for one draft, pressing the page's own buttons throughout. Nothing here
      reaches into state: the claim is about what a player can do with a thumb. */
   const draftOne = async () => {
-    for (let i = 0; i < D.SLOTS.length; i++) {
-      await page.waitForSelector('#d-men .man', { timeout: 10000 });
-      const n = await page.locator('#d-men .man').count();
-      if (!n) throw new Error('empty board at slot ' + i);
-      await page.locator('#d-men .man').nth(i % n).click();
-    }
+    for (let i = 0; i < D.SLOTS.length; i++) await signOne(page, i);
   };
 
   await page.click('#b-draft');
@@ -504,10 +530,7 @@ for (const [label, server, want] of [
     { who: TESTER, at: BEFORE, server });
   await page.waitForSelector('#s-home.on', { timeout: 15000 });
   await page.click('#b-draft');
-  for (let i = 0; i < D.SLOTS.length; i++) {
-    await page.waitForSelector('#d-men .man', { timeout: 10000 });
-    await page.locator('#d-men .man').first().click();
-  }
+  for (let i = 0; i < D.SLOTS.length; i++) await signOne(page);
   await page.waitForSelector('#s-review.on', { timeout: 10000 });
   await page.locator('#r-five .lineup').first().click();
   await page.click('#b-submit');
@@ -606,10 +629,7 @@ console.log('\nAND THEN THE WEEK IS SCORED');
   const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE });
   await page.waitForSelector('#s-home.on', { timeout: 15000 });
   await page.click('#b-draft');
-  for (let i = 0; i < D.SLOTS.length; i++) {
-    await page.waitForSelector('#d-men .man', { timeout: 10000 });
-    await page.locator('#d-men .man').first().click();
-  }
+  for (let i = 0; i < D.SLOTS.length; i++) await signOne(page);
   await page.waitForSelector('#s-review.on', { timeout: 10000 });
   await page.locator('#r-five .lineup').first().click();
   await page.click('#b-submit');
@@ -722,6 +742,87 @@ console.log('\nTHE BOARD FITS A PHONE');
     return el.scrollWidth - el.clientWidth;
   });
   ok('  and no row overflows sideways', wide <= 1, wide + 'px over');
+  await page.close();
+}
+
+/* ----------------------------------------------------------------
+ * THE REVEAL, WHICH FAILS SILENTLY IN BOTH DIRECTIONS
+ *
+ * A stagger that never finishes leaves rows at opacity 0: a board with men on it that
+ * nobody can read, no error, and a screen with no way on. A board that steps moves
+ * everything under it when you sign somebody, which is what "jumpy" means and is invisible
+ * to every other assertion in this file, because the men, the prices and the totals are all
+ * correct while it happens.
+ *
+ * SO IT IS MEASURED ON THE GLASS, over a whole draft, at a real phone. Nothing here reads
+ * a duration or a class name out of the source: what is asserted is that every row ends up
+ * readable, that it happens within a bound, and that the thing under the board does not
+ * move while it does. All three survive a redesign of how the reveal is written.
+ * ---------------------------------------------------------------- */
+console.log('\nTHE BOARD REVEALS, AND THE PAGE UNDER IT HOLDS STILL');
+{
+  const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+  await page.click('#b-draft');
+  await page.waitForSelector('#d-men .man', { timeout: 10000 });
+
+  const readable = () => page.evaluate(() => [...document.querySelectorAll('#d-men .man')]
+    .every((e) => Number(getComputedStyle(e).opacity) > 0.99));
+  const noteTop = () => page.evaluate(() => {
+    const e = document.getElementById('d-note');
+    return e ? Math.round(e.getBoundingClientRect().top) : null;
+  });
+
+  /* The FIRST board is dealt too, so a reveal that only ran on later presses would be
+     caught. It is read before anything is pressed. */
+  let dealt = false;
+  for (let f = 0; f < 60 && !dealt; f++) {
+    await page.waitForTimeout(25);
+    dealt = await readable();
+  }
+  ok('the first board comes up readable', dealt);
+
+  let worstSettle = 0, worstMove = 0, signed = 0;
+  for (let i = 1; i < D.SLOTS.length; i++) {
+    const before = await page.locator('#d-slots .slot.done').count();
+    const t0 = Date.now();
+    await page.locator('#d-men .man').first().click({ force: true });
+    /* Sampled while it runs rather than after, because the claim is about what happens
+       DURING the reveal and a reading taken at the end cannot see a step that healed. */
+    const tops = [];
+    let done = false;
+    for (let f = 0; f < 80 && !done; f++) {
+      await page.waitForTimeout(25);
+      const t = await noteTop();
+      if (t != null) tops.push(t);
+      const moved = await page.locator('#d-slots .slot.done').count();
+      done = moved > before && await readable();
+    }
+    if (!done) break;
+    signed++;
+    worstSettle = Math.max(worstSettle, Date.now() - t0);
+    worstMove = Math.max(worstMove, Math.max(...tops) - Math.min(...tops));
+  }
+  ok('  every press lands and every board ends up readable',
+    signed === D.SLOTS.length - 1, `${signed} of ${D.SLOTS.length - 1}`);
+  /* A BOUND AND NOT A DURATION. The reveal is an acknowledgement plus a five row stagger
+     plus a fade, and any of the three is allowed to be retuned. What is not allowed is for
+     it to stop ending, which is the failure that leaves a board unreadable for ever, so the
+     ceiling is generous and the floor is that it finishes at all. */
+  /* SCOPED TO THE PRESSES THAT LANDED, or it passes on zero of them. Driven with the
+     stagger deliberately stopped part way, `signed` is 0 and `worstSettle` is 0, so a bare
+     `< 1500` reports green on a board that never became readable at all: the vacuous pass
+     this repo has caught itself at three times. */
+  ok('  and it is over inside a second and a half',
+    signed === D.SLOTS.length - 1 && worstSettle > 0 && worstSettle < 1500,
+    `worst ${worstSettle}ms`);
+  /* THE STEP. Reintroduced by taking the two line floor off the stat line, this reads 31px
+     at 390x844: a board of one line stat lines is 63px a row and the next one is 74, so
+     signing somebody moves everything under the board by half a row. One pixel of slack for
+     sub-pixel layout and nothing else. */
+  ok('  and nothing under the board moves while it happens', worstMove <= 1,
+    `worst ${worstMove}px`);
+  ok('  nothing threw', boom.length === 0, boom[0] || 'clean');
   await page.close();
 }
 

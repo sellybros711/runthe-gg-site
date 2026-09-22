@@ -303,41 +303,139 @@ export const SHRINK_K = 2;
 export const shrunkPPG = (p) => (p.games * p.half_ppg) / (p.games + SHRINK_K);
 
 /*
- * ─── THE PROJECTION, WHICH IS THE SEASON TO DATE AND A CONSTANT ────────────────────
+ * ─── THE PROJECTION IS HOW OFTEN HE PLAYS TIMES WHAT HE SCORES WHEN HE DOES ────────
  *
- * The card shows no overall and no rating. The one number on it about the future is what
- * this man is projected to score in half PPR this week, and six of them add up to what the
- * lineup is projected to score. So it has to be right in LEVEL and not only in order, which
- * is a different demand from the price above it.
+ *   node football/build/test/probe_early.mjs
  *
- * WHAT IS NOT IN IT, AND THE MEASUREMENT IS THE REASON. A matchup term (what this week's
- * opponent has been giving up to this position) and a recency term (the last three games
- * over the season's average) were both built and both fitted out of sample over 6,720
- * draftable player-weeks. The matchup is worth 0.009 points of mean error and the recency
- * 0.021, against a 5.89 baseline. Neither is a term. The recency one is actively harmful
- * for a printed number: it nearly doubles the bias, because the last three games of a man
- * near the top of the board run hot.
+ * The card shows no overall and no rating. What the review screen shows is the lineup's
+ * projected half PPR total, and six men add up to it, so it has to be right in LEVEL and
+ * not only in order. That is a different demand from the price above it, and the two were
+ * being answered by one function.
  *
- *   node football/build/test/probe_projection.mjs
+ * WHAT SHIPPED WAS `shrunkPPG + 0.54` AND IT WAS A THIRD LOW IN SEPTEMBER. The lift was
+ * fitted over 6,720 draftable player-weeks from week four on, so it removed the bias of the
+ * POOL. A player does not meet the pool. They meet one week, and inside one week nearly
+ * every man has the same number of games, so a correction fitted at the pool's average
+ * sample length is the right correction at exactly one point of the season. Measured out of
+ * sample over 2022 to 2024, what the board actually scored against what it was told:
  *
- * WHAT IS IN IT is one addition. The shrink above treats every man as though he also played
- * SHRINK_K games of nothing, which is right for the price and leaves the estimate low by
- * 0.54 points a man on the draftable board. Six men is three points of lineup projection
- * that a player would watch come in high every single week.
+ *      games played      1      2      3      4      5     6+
+ *      shipped bias  +3.20  +1.93  +1.02  +0.48  -0.03  -0.16
  *
- * A FLAT OFFSET AND NOT A FITTED LINE, and the difference matters. Least squares fits a
- * slope too, it came back at 0.972, and a slope under one FLATTENS the board: it takes the
- * best men down toward the middle to buy back squared error on a number that is read as
- * points. All three candidates land inside 0.013 of each other on mean error and all three
- * remove the bias exactly, so the tiebreak is what they disturb. An offset disturbs nothing:
- * the order, the spread and every price are untouched, and the only thing that moves is the
- * one thing that was wrong.
+ * Right about October, a third low about September. At two games, which is what week three
+ * is, that is 11.6 points on a six man lineup projected at 35.8. Reported by a player as
+ * the projection feeling too low to be half PPR, and they were right.
  *
- * Fitted per position it is QB +0.65, RB +0.72, WR +0.20, TE +0.60, which buys 0.002 of
- * mean error over the single figure and costs four constants to keep in step. One.
+ * ─── AND THE SHRINK WAS AVAILABILITY WEARING A SAMPLE SIZE COSTUME ─────────────────
+ *
+ * The shrink toward ZERO won its fit because zero is where a man who is not on the field
+ * scores. That is not an argument about evidence, it is an argument about whether he plays,
+ * and the two only look alike because a man with two games in week ten has missed eight.
+ * Split apart, the second one is almost the whole effect. Grouped by the share of his
+ * club's games a man has already played:
+ *
+ *      share of his club's games    under .5    .5 to .8    .8 to 1    every one
+ *      he scores this much of his
+ *        own average                  0.404       0.605      0.739        0.914
+ *      and he blanks                  59.6%       39.0%      24.1%         8.9%
+ *
+ * The first row is one minus the second to three decimals, at every share. So it is not a
+ * discount, it is the chance he is out there: a man who has missed Sundays misses more, and
+ * what he scores on one he is absent for is nothing.
+ *
+ * Held to men who have played EVERY one of their club's games, the games effect on the
+ * LEVEL all but vanishes and what is left is an ordinary shrink for a thin sample.
+ *
+ * ─── SO THERE ARE TWO TERMS AND THEY ANSWER TWO QUESTIONS ──────────────────────────
+ *
+ *   plays   the share of his club's games he has already played
+ *   rate    the season to date shrunk toward what his POSITION is doing on this board
+ *
+ * THE PRIOR IS THE PART THAT WAS MISSING. `shrunkPPG` is a shrinkage estimator with its
+ * prior set to zero, which is why it needed a constant bolted on the end, and why that
+ * constant could only ever be right at one sample length: the prior's own contribution is
+ * K*M/(g+K) and it SHRINKS as the sample grows, where a bolted-on constant does not. Put it
+ * back and the correction sizes itself.
+ *
+ * PER POSITION AND NOT ONE LEVEL FOR EVERYBODY, because one level shrinks a tight end up
+ * toward a quarterback's rate and a quarterback down toward a tight end's, on the same
+ * board, at the same time. Measured, one global level over-projects both ends of a week
+ * three board and the position's own level lands both.
+ *
+ * FITTED ON TWO SEASONS AND REPORTED ON THE THIRD, rotating which was held out. The level
+ * multiple came back 0.800 on all three rotations, and K at 2.25, 2.50 and 2.50 against the
+ * SHRINK_K of 2 the price already carries, so it is pinned to that rather than given a
+ * second constant of its own. Pinning costs nothing: the worst mis-calibrated cell moves
+ * 2.03 to 2.01, 3.21 to 3.49 and 1.96 to 1.65 across the three held out seasons.
+ *
+ * What it buys, on a held out season, worst cell being the worst any (sample length x
+ * height on the board) group is out by:
+ *
+ *                  1      2      3      4      5     6+   worst cell   mean abs error
+ *      shipped  +3.45  +2.18  +1.39  +0.90  +0.24  +0.17         5.59             6.03
+ *      this     +0.12  +0.26  +0.01  +0.31  -0.26  +0.08         2.01             5.81
+ *
+ * Better on the error as well as on the bias, which is worth stating because a calibration
+ * fix usually costs accuracy and this one does not.
+ *
+ * ─── THE PRICE IS NOT TOUCHED, DELIBERATELY ────────────────────────────────────────
+ *
+ * `pricePool` still runs on `shrunkPPG`. The shrink is right for the price for the reason
+ * its own comment gives, the cap was swept against these prices, and the projection is not
+ * an input to any of it.
+ *
+ * What that costs is that the projection is no longer a monotone restatement of the price:
+ * two men at one price now project differently when one of them has missed a Sunday. That
+ * is a REAL difference and it is on the card already, as how many games he has played, so
+ * it is football a reader can see rather than an edge the board is hiding.
  */
-export const PROJ_LIFT = 0.54;
-export const projectedPoints = (p) => Math.max(0, shrunkPPG(p) + PROJ_LIFT);
+
+/** How many REG games each club has already played before `week`, read off the schedule. */
+export function clubGamesToDate(games, season, week) {
+  const by = new Map();
+  for (const g of games) {
+    if (num(g.season) !== season || !(num(g.week) >= 1 && num(g.week) < week)) continue;
+    if (g.game_type && g.game_type !== 'REG') continue;
+    for (const t of [g.home_team, g.away_team]) {
+      if (t) by.set(t, (by.get(t) || 0) + 1);
+    }
+  }
+  return by;
+}
+
+/* How many men a position the LEVEL is read over. The same reach `draft.js` gives the
+   wheel, because the level is meant to be what a draftable man at this position is doing
+   and the draftable men are the ones the wheel can offer. */
+export const PROJ_DEPTH = 40;
+
+/* How much of that level a thin sample is argued toward. Fitted three ways, 0.800 every
+   time. */
+export const PROJ_LEVEL = 0.80;
+
+/** Mean raw half PPG of the top PROJ_DEPTH men at each position. pos -> number. */
+export function positionLevels(men) {
+  const out = new Map();
+  for (const pos of POSITIONS) {
+    const top = men.filter((p) => p.position === pos)
+      .sort((a, b) => b.half_ppg - a.half_ppg).slice(0, PROJ_DEPTH);
+    out.set(pos, top.length ? top.reduce((t, p) => t + p.half_ppg, 0) / top.length : 0);
+  }
+  return out;
+}
+
+/**
+ * @param p       a season to date row, carrying `played_of`: his club's games so far.
+ * @param levels  what positionLevels() answered for this board.
+ */
+export const projectedPoints = (p, levels) => {
+  /* A man cannot have played more games than his club, and a missing denominator means a
+     club with no schedule read, which is availability unknown rather than availability
+     zero. Never below zero and never above one. */
+  const of = p.played_of || p.games;
+  const plays = of > 0 ? Math.min(1, Math.max(0, p.games / of)) : 1;
+  const level = PROJ_LEVEL * ((levels && levels.get(p.position)) || 0);
+  return Math.max(0, plays * ((p.games * p.half_ppg + SHRINK_K * level) / (p.games + SHRINK_K)));
+};
 
 export function pricePool(men) {
   for (const p of men) p.est_ppg = shrunkPPG(p);
@@ -434,12 +532,26 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
 
   const anchors = pricePool(eligible);
 
+  /* HOW MANY GAMES HIS CLUB HAS ALREADY PLAYED, which is what turns "two games" into
+     availability. Read off the schedule rather than as `week - 1`, because a bye is a week
+     nobody could have played in and counting it as a miss would mark half the league unfit
+     every October. */
+  const clubGames = clubGamesToDate(games, season, week);
+  for (const p of eligible) p.played_of = clubGames.get(p.team) || p.games;
+
+  /* What each position is doing on THIS board, which is what a thin sample is argued
+     toward. Read over the eligible men, so a bye week narrows it by itself. */
+  const levels = positionLevels(eligible);
+
   const pool = eligible.map((p) => ({
     player_id: p.player_id,
     name: p.name,
     position: p.position,
     team: p.team,
     games: p.games,
+    /* How many his club has played, so the card can say one of two rather than one, and so
+       a reader can see the availability the projection is reading. */
+    played_of: p.played_of,
     half_ppg: round(p.half_ppg, 2),
     /* What the PRICE was set against: the average discounted for how little of it there
        is. Carried on the row because the probe re-fits against it and a second copy of
@@ -447,7 +559,7 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
     est_ppg: round(p.est_ppg, 2),
     /* THE ONE NUMBER ON THE CARD ABOUT THE FUTURE, and the only rating of any kind this
        mode shows. One decimal, because it is points and a player will add six of them up. */
-    proj: round(projectedPoints(p), 1),
+    proj: round(projectedPoints(p, levels), 1),
     half_total: round(p.half, 1),
     price_musd: p.price_musd,
     stat_line: statLine(p),
