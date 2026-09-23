@@ -514,6 +514,17 @@ const serverStub = (server) => {
       return { status: 204, body: '' };
     },
     fantasy_my_entry: () => ({ status: 200, body: JSON.stringify(entry ? [entry] : []) }),
+    /* WHERE THE READER FINISHED, AND THE ACK THAT SHOWS IT ONCE.
+       `s.result` undefined is the server having no opinion, which the page must not read as
+       "you did not enter": the two are different answers and a stub that could not express
+       both would let the page conflate them. `[]` is the real "nothing to say". */
+    fantasy_my_result: () => (s.result === undefined
+      ? { status: 500, body: '' }
+      : { status: 200, body: JSON.stringify(s.result ? [s.result] : []) }),
+    /* The ack is asserted through `posted`, which already records every rpc, rather
+       than through a counter here that only this file could read. */
+    fantasy_ack_result: () => ({ status: 200, body: 'true' }),
+    fantasy_my_wins: () => ({ status: 200, body: JSON.stringify(s.wins || []) }),
     fantasy_standings: () => ({ status: 200, body: JSON.stringify(s.standings || []) }),
     fantasy_my_place: () => ({ status: 200,
       body: JSON.stringify(s.place ? [s.place] : []) }),
@@ -1116,6 +1127,157 @@ console.log('\nTHE BOARD OPENS AT THE LOCK, AND IT IS ITS OWN SCREEN');
     }
     if (want.tail) ok('  and their place is the one counted against everybody',
       want.tail.test(seen.text), seen.text.trim().slice(-40));
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+}
+
+/* ================================================================
+   WHERE YOU FINISHED, TOLD ONCE, AND THE ONE CODE THAT IS WORTH MONEY
+   ================================================================
+ *
+ * `supabase/114_fantasy_prizes.sql` settles the top three when a week is marked scored and
+ * `supabase/test/fantasy_prizes_test.sql` drives that end of it: who won, in the board's own
+ * ordering, and that a promotion code reaches exactly one account. None of that says
+ * anything about the screen.
+ *
+ * What is asked here is the half only the glass can answer. The sheet opens on its own for
+ * somebody who has not seen it, it does not open for somebody who has, the winner's code is
+ * on it and NOBODY ELSE'S PAGE CONTAINS ONE, and closing it is what acknowledges it.
+ *
+ * THE FIXTURE IS THE SERVER'S ANSWER AND NOT A LINEUP, deliberately. A result is a fact the
+ * server settles, so a walk that drafted its way to one would be testing `fantasy_standings`
+ * through a browser, which the SQL suite already does properly and this cannot do at all.
+ */
+console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
+{
+  const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
+    spend: 80, projected: 50, score: 0, scored: false };
+  const res = (o) => Object.assign({ entered: true, place: 4, entries: 12,
+    score: 71.9, projected: 69.2, prize_place: null, promo_code: null, seen: false }, o);
+
+  const CODE = 'RTG-W3-9QK4ZM';
+  for (const [label, result, want] of [
+    /* THE WINNER. The one arm where a string worth $19.99 is on the page at all. */
+    ['a winner is told, and handed their code',
+      res({ place: 1, prize_place: 1, promo_code: CODE }),
+      { open: true, place: '1st', code: CODE, store: true, say: /won the week/i }],
+    ['the podium is told, and handed nothing',
+      res({ place: 3, prize_place: 3 }),
+      { open: true, place: '3rd', code: null, store: false, say: /podium/i }],
+    /* THE REST OF THE FIELD, which is most of it, and the arm a popup written for the
+       podium alone would be silent for. */
+    ['somebody who placed nowhere is still told where they came',
+      res({ place: 9, entries: 12 }),
+      { open: true, place: '9th', code: null, store: false, say: /next week/i }],
+    /* 11th IS THE ONE EVERY NAIVE ORDINAL GETS WRONG, and twelve entrants meet it at once. */
+    ['and eleventh is eleventh rather than eleven-st',
+      res({ place: 11, entries: 12 }),
+      { open: true, place: '11th', code: null, store: false }],
+    ['a reader who has already seen it is not told again',
+      res({ place: 2, prize_place: 2, seen: true }), { open: false }],
+    ['somebody who never entered that week is told nothing',
+      null, { open: false }],
+  ]) {
+    const { page, boom, posted } = await openPage(browser, FANTASY,
+      { who: TESTER, at: BEFORE, server: { mine: ENTRY, result } });
+    /* THE READER HAS ENTERED THIS WEEK TOO, so boot lands on the entry screen and never on
+       the home one. That is the ordinary case for somebody who plays every week, and it is
+       exactly the reader the first draft of this feature never showed the popup to. */
+    await page.waitForSelector('#s-in.on', { timeout: 15000 });
+    await page.waitForTimeout(500);
+    const seen = await page.evaluate(() => {
+      const sh = document.getElementById('prz-sheet');
+      return {
+        open: !sh.hidden,
+        place: document.getElementById('prz-place').textContent.trim(),
+        say: document.getElementById('prz-say').textContent.trim(),
+        code: document.getElementById('prz-win').hidden
+          ? null : document.getElementById('prz-code-txt').textContent.trim(),
+        store: !document.getElementById('prz-store').hidden,
+        door: !document.getElementById('b-prize').hidden,
+        /* THE WHOLE DOCUMENT, because the claim is that a page belonging to somebody who
+           did not win contains no code anywhere, not merely that the box is hidden. A
+           hidden element still ships its text to every reader. */
+        html: document.documentElement.innerHTML,
+      };
+    });
+    ok(label, seen.open === want.open, seen.open ? 'sheet open' : 'sheet shut');
+    if (want.open) {
+      ok('  and it says where they came', seen.place === want.place, seen.place);
+      if (want.say) ok('  with a line about it', want.say.test(seen.say), seen.say);
+      ok('  and a door back to it', seen.door);
+      ok('  the code is ' + (want.code ? 'there' : 'not'),
+        seen.code === want.code, seen.code || 'none');
+      ok('  and the way to spend it is ' + (want.store ? 'shown' : 'hidden'),
+        seen.store === want.store);
+      /* NOT ANYWHERE IN THE DOCUMENT for anybody who did not win it. */
+      if (!want.code) ok('  and no code is anywhere on the page',
+        !seen.html.includes(CODE) && !/RTG-W\d/.test(seen.html));
+    } else {
+      /* A SHUT SHEET IS NOT A MISSING ONE. Somebody who has seen it keeps the door; a
+         reader who never entered gets neither. */
+      ok('  and the door matches', seen.door === (result !== null), seen.door + '');
+    }
+    ok('  nothing was acknowledged yet',
+      posted.filter((p) => p.fn === 'fantasy_ack_result').length === 0);
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+
+  /* ---- closing is what acknowledges it, and the door survives ---- */
+  {
+    /* NO ENTRY FOR THIS WEEK, so this reader lands on the home screen: somebody who played
+       last week and has not drafted yet this one, which is who the door is for. The arms
+       above cover the other reader, who is already in and lands on `s-in`. */
+    const { page, boom, posted } = await openPage(browser, FANTASY, { who: TESTER,
+      at: BEFORE,
+      server: { result: res({ place: 1, prize_place: 1, promo_code: CODE }) } });
+    await page.waitForSelector('#prz-sheet:not([hidden])', { timeout: 15000 });
+    await page.click('#prz-close');
+    /* `state: 'hidden'` AND NOT A `[hidden]` SELECTOR. `waitForSelector` waits for an
+       element to become VISIBLE by default, and a hidden one never is, so `#prz-sheet
+       [hidden]` resolves the node and then times out waiting for it to appear. This file
+       has recorded that trap once already, on `#r-five`. */
+    await page.waitForSelector('#prz-sheet', { state: 'hidden', timeout: 5000 });
+    ok('closing the sheet acknowledges it',
+      posted.filter((p) => p.fn === 'fantasy_ack_result').length === 1,
+      posted.filter((p) => p.fn === 'fantasy_ack_result').length + ' acks');
+
+    /* AND A WINNER CAN GET BACK TO THEIR CODE. The sheet shows once on its own, which is
+       right for something that arrives unasked and would be wrong as the only time a
+       $19.99 code is ever on screen.
+       THE DOOR IS ON THE HOME SCREEN, beside the last week card, which is the screen a
+       reader who has not drafted yet is already looking at. */
+    await page.click('#b-prize');
+    await page.waitForSelector('#prz-sheet:not([hidden])', { timeout: 5000 });
+    ok('  and the door reopens it with the code still on it',
+      (await page.locator('#prz-code-txt').innerText()).trim() === CODE);
+
+    /* CLOSING AGAIN DOES NOT ASK TWICE. The server ignores a second ack, so this is about
+       the page not spending a round trip per close for ever. */
+    await page.click('#prz-close');
+    await page.waitForTimeout(200);
+    ok('  and closing a second time asks nothing',
+      posted.filter((p) => p.fn === 'fantasy_ack_result').length === 1);
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+
+  /* ---- an unreachable server is not "you finished nowhere" ---- */
+  {
+    const { page, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: BEFORE, server: { mine: ENTRY } });
+    await page.waitForSelector('#s-in.on', { timeout: 15000 });
+    await page.waitForTimeout(500);
+    const seen = await page.evaluate(() => ({
+      open: !document.getElementById('prz-sheet').hidden,
+      door: !document.getElementById('b-prize').hidden,
+    }));
+    /* NULL IS NOT AN ANSWER. A popup drawn off a failed request would announce a placement
+       nobody has settled, and a door to it would open a sheet with nothing in it. */
+    ok('an unreachable server opens nothing', !seen.open && !seen.door,
+      `sheet ${seen.open}, door ${seen.door}`);
     ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
     await page.close();
   }

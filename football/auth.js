@@ -292,11 +292,35 @@
     } catch (e) { return { error: 'failed' }; }
   }
 
+  /* WEEKS THIS ACCOUNT PLACED IN, for the profile's own mark.
+   *
+   * IT IS HERE RATHER THAN IN `football/fantasy/entries.js` because the profile lives on
+   * this page and that module does not, and loading a whole mode's client onto the main
+   * game page to read one list would be the wrong way round. What it shares with that
+   * module is the FUNCTION, `fantasy_my_wins`, so there is one answer and not two.
+   *
+   * NO CODE COMES BACK, by the function's own definition: a profile is a record of what
+   * somebody did rather than a place to keep a voucher, and the promotion code lives on
+   * the one screen that hands it over.
+   *
+   * [] FOR SIGNED OUT, FOR AN ERROR AND FOR AN ACCOUNT THAT HAS WON NOTHING, which is
+   * `premiumUnlocks`' own rule directly above: a mark that is absent and a mark that could
+   * not be read look the same on a profile, and neither is worth a sentence there. */
+  async function fantasyWins() {
+    if (!sb || !session) return [];
+    try {
+      const r = await sb.rpc('fantasy_my_wins');
+      if (r && !r.error && Array.isArray(r.data)) return r.data;
+    } catch (e) {}
+    return [];
+  }
+
   window.PS_AUTH = {
-    API_VERSION: 1,
+    /* 2: `fantasyWins`, the weeks this account placed in. */
+    API_VERSION: 2,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
     available, setName, claim, token, deleteAccount,
-    premiumProducts, premiumUnlocks, billingPortal,
+    premiumProducts, premiumUnlocks, billingPortal, fantasyWins,
   };
 })();

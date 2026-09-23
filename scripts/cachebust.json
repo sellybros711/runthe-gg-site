@@ -2087,16 +2087,16 @@
       "sha": "cd646e46df3796f3"
     },
     "/football/auth.js": {
-      "v": "5",
-      "sha": "4267faaaa07774a5"
+      "v": "6",
+      "sha": "e5f17581ed6580f6"
     },
     "draft.js": {
       "v": "3",
       "sha": "68b407e38656dce2"
     },
     "entries.js": {
-      "v": "3",
-      "sha": "9ce207ce00143914"
+      "v": "4",
+      "sha": "f38a845d7aec4239"
     }
   },
   "football/index.html": {
@@ -2141,8 +2141,8 @@
       "sha": "db78661bbd724b47"
     },
     "auth.js": {
-      "v": "5",
-      "sha": "4267faaaa07774a5"
+      "v": "6",
+      "sha": "e5f17581ed6580f6"
     },
     "data/defender_seasons.json": {
       "v": "1",

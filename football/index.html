@@ -6603,6 +6603,21 @@ window.GA_ID='G-L29P5MRWKE';
   /* Two numbers, not six. The rest live one tap away on Career; these are the two a player
      checks often enough to earn a place on the front. */
   .pfstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:13px 0 4px}
+  /* The weeks this account placed in. Gold for a win and quiet for the other two, which is
+     the same rule gold follows everywhere else on this site: an achievement rather than a
+     decoration. It scrolls sideways rather than wrapping, because a profile that grows a
+     row every good week is a profile that pushes its own nav off the screen. */
+  .pfwins{margin:12px 0 2px}
+  .pfwins[hidden]{display:none}
+  .pfwrow{display:flex;gap:7px;margin-top:6px;overflow-x:auto;padding-bottom:2px;
+    scrollbar-width:none}
+  .pfwrow::-webkit-scrollbar{display:none}
+  .pfwin{flex:0 0 auto;display:flex;flex-direction:column;gap:1px;padding:7px 11px;
+    border-radius:10px;border:1px solid var(--line);background:var(--panel)}
+  .pfwin b{font-family:var(--fd);font-size:15px;font-weight:400;line-height:1}
+  .pfwin span{font-size:10.5px;color:var(--dim-2);white-space:nowrap}
+  .pfwin.won{border-color:rgba(212,175,55,.55);background:rgba(212,175,55,.10)}
+  .pfwin.won b{color:var(--gold)}
   .pfstat{padding:9px 11px;border-radius:11px;background:var(--panel);
     border:1px solid var(--line)}
   .pfstat b{display:block;font-family:var(--fd);font-size:21px;line-height:1;color:var(--ink)}
@@ -8165,7 +8180,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      here: without it the game keeps its runs exactly where it always did, in this browser
      and nowhere else. See supabase/103_cloud_saves.sql. -->
 <script src="/assets/cloudsave.js?v=2"></script>
-<script defer src="auth.js?v=5"></script>
+<script defer src="auth.js?v=6"></script>
 <script>
 (function(){
 'use strict';
@@ -24055,6 +24070,16 @@ function pfHub(msg,ok){
       '<div class="pfstat"><b id="pf-runs">-</b><span>Runs played</span></div>'+
       '<div class="pfstat"><b id="pf-best">-</b><span>Best rating</span></div>'+
     '</div>'+
+    /* THE WEEKS THIS ACCOUNT PLACED IN, drawn only when there are some. A Fantasy Challenge
+       win is deliberately NOT a badge: `CATALOG.length` is the denominator crest.js divides
+       by, and a badge almost nobody can light would cap every other account's GOAT below
+       100% for ever by something no amount of play can reach. That is the ceiling the
+       bundle refused to put in front of Full Team. So it lives on its own surface, here.
+       AND IT IS NOT ON ANY BOARD ROW. Gold on a board means an achievement in that game and
+       the blue rail means whose row it is; a third meaning on a row that carries two is how
+       a board stops being readable. This is the reader's own profile, which only they see,
+       so it publishes nothing about anybody. */
+    '<div class="pfwins" id="pf-wins" hidden></div>'+
     '<div class="pfnav">'+
       /* Reversed, so the two pages that are about YOU sit under your name and the two that
          are about your record sit at the bottom, nearest the thumb. */
@@ -24091,6 +24116,7 @@ function pfHub(msg,ok){
       : '')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet(); pfWireCommon();
+  pfHubWins();
   const pfp=$('pf-prem');
   if(pfp) pfp.onclick=()=>openPremium('profile');
   /* The same circle the header and every board row draw, from the same function, so the
@@ -24304,6 +24330,33 @@ async function pfProLoad(){
 /* The two headline numbers, filled once the history lands. The hub opens immediately and
    these arrive into it, because a profile that waits on a network call to draw anything is
    a profile that feels broken on a slow connection. */
+/* Filled after the sheet is up, like the two numbers above it, and absent rather than
+   apologetic when there is nothing or when the read failed: a mark that could not be
+   loaded and a mark that was never earned look the same on a profile, and neither is
+   worth a sentence there. */
+async function pfHubWins(){
+  const a=A();
+  let rows=[];
+  try{ rows=(a&&a.fantasyWins)?await a.fantasyWins():[]; }catch(_){ rows=[]; }
+  /* One element, every page rewrites it: a slow read must not paint over wherever the
+     reader has gone. The same guard `pfProLoad` carries. */
+  const box=$('pf-wins');
+  if(!box||!rows.length||$('sheet-in').dataset.kind!=='profile') return;
+  const PL={1:'Won',2:'2nd',3:'3rd'};
+  const wins=rows.filter((r)=>r&&r.place===1).length;
+  box.innerHTML='<div class="eyebrow">Fantasy Challenge</div>'+
+    '<div class="pfwrow">'+rows.slice(0,6).map((r)=>
+      '<span class="pfwin'+(r.place===1?' won':'')+'">'+
+        '<b>'+esc(PL[r.place]||('#'+r.place))+'</b>'+
+        '<span>Week '+esc(String(r.week))+'</span></span>').join('')+'</div>'+
+    /* THE COUNT IS COUNTED, never written: this repo's oldest rule about a number in copy,
+       on a line that would otherwise go stale the next time somebody places. */
+    '<p class="note" style="margin-top:6px">'+
+      (wins?wins+(wins===1?' win':' wins'):'On the podium')+
+      ' out of '+rows.length+(rows.length===1?' week':' weeks')+'.</p>';
+  box.hidden=false;
+}
+
 async function pfHubStats(userId){
   const c=await careerLoad(userId);
   if(!c||$('sheet-in').dataset.kind!=='profile') return;

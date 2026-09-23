@@ -160,6 +160,35 @@
   .isheet{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;
     justify-content:center;background:rgba(4,7,14,.74);padding:12px}
   .isheet[hidden]{display:none}
+
+  /* ---- where you finished ----
+     The place is the loudest thing on the sheet, because it is the one fact a reader opened
+     it for. Everything else is a caption on it. */
+  .przhead{display:flex;align-items:baseline;gap:10px;margin-top:6px}
+  .przplace{font-family:var(--fd);font-size:46px;line-height:1;font-weight:400;
+    font-variant-numeric:tabular-nums}
+  .przof{flex:1 1 auto;min-width:0}
+  .przof b{display:block;font-family:var(--fn);font-size:15px;font-weight:700}
+  .przof s{display:block;text-decoration:none;font-size:12px;color:var(--dim-2);
+    font-variant-numeric:tabular-nums}
+  /* Gold for the top three and nothing else, which is what gold means everywhere else on
+     this site: an achievement rather than a decoration. */
+  .przplace.pod{color:var(--gold)}
+
+  /* THE CODE IS A BUTTON BECAUSE THE ONLY THING ANYBODY WANTS TO DO WITH IT IS COPY IT.
+     Written as text it is fifteen characters somebody has to select by hand on a phone,
+     mid sheet, and get exactly right. `user-select:all` is the fallback for a browser that
+     refuses the clipboard: one tap selects the whole string rather than a word of it. */
+  .przcode{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;cursor:pointer;
+    text-align:left;background:rgba(212,175,55,.10);border:1px solid rgba(212,175,55,.5)}
+  .przcode span{font-family:var(--fd);font-size:21px;letter-spacing:.04em;color:var(--gold);
+    user-select:all;word-break:break-all}
+  .przcode em{flex:0 0 auto;font-style:normal;font-size:11px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .przcode:disabled{cursor:default}
+  /* display:flex, so the attribute needs its own rule. Ninth time in this repo. */
+  #prz-win[hidden]{display:none}
   .ibox{width:100%;max-width:560px;border-radius:16px;border:1px solid var(--line-2);
     background:var(--grad-panel);box-shadow:var(--shadow);padding:16px 16px 14px}
 
@@ -296,6 +325,9 @@
     font-variant-numeric:tabular-nums}
   /* display:flex, so the attribute needs its own rule. Eighth time in this repo. */
   .lastwk[hidden]{display:none}
+  /* The place on the door takes the same gold the sheet's does, and the same rule: the top
+     three and nothing else. */
+  .lastwk .lp.pod{color:var(--gold)}
 
   /* The week's standings. A place, a name and a score, and the reader's own row picked out
      by the blue rail every board on this site uses for WHOSE row it is. */
@@ -505,6 +537,15 @@
         <span class="lw"><b id="last-say"></b><s id="last-sub"></s></span>
         <span class="lp" id="last-pts"></span>
       </button>
+      <!-- A WAY BACK TO THE SHEET, and for the winner it is the way back to their code.
+           The popup shows once and then never again on its own, which is right for
+           something that arrives unasked, and would be wrong as the only time a $19.99
+           promotion code is ever on screen. Drawn only when there is a settled result to
+           reopen, so it is never a control that opens nothing. -->
+      <button class="lastwk" id="b-prize" hidden>
+        <span class="lw"><b id="prize-say"></b><s id="prize-sub"></s></span>
+        <span class="lp" id="prize-pl"></span>
+      </button>
     </div>
   </section>
 
@@ -644,6 +685,45 @@
   </div>
 </div>
 
+<!-- WHERE YOU FINISHED. One sheet for the whole field, because a podium and a mid table are
+     the same fact told at different volumes, and two sheets would be two places describing
+     one week. What changes is the place, the line under it, and whether there is a code.
+
+     THE SCRIM DOES NOT CLOSE THIS ONE, which is the opposite of the injury sheet directly
+     above and is deliberate. That sheet is reference a reader opened on purpose and can
+     reopen any time. This one arrives unasked, shows once, and for one reader carries a
+     promotion code worth $19.99: a stray tap on the edge of the screen must not be the
+     thing that takes it away. The button is the way out and it says so. -->
+<div class="isheet" id="prz-sheet" hidden>
+  <div class="ibox">
+    <div class="eyebrow" id="prz-eye">Week 3</div>
+    <div class="przhead">
+      <div class="przplace" id="prz-place">4th</div>
+      <div class="przof">
+        <b id="prz-of">of 12</b>
+        <s id="prz-score">71.9 points</s>
+      </div>
+    </div>
+    <p class="lede" id="prz-say" style="margin-top:12px"></p>
+
+    <!-- The winner's half. Built rather than revealed, so nobody who did not win ever has a
+         code in their page at all. -->
+    <div id="prz-win" hidden>
+      <div class="eyebrow" style="margin-top:16px">Your code</div>
+      <button class="przcode" id="prz-code" type="button">
+        <span id="prz-code-txt"></span>
+        <em id="prz-code-hint">tap to copy</em>
+      </button>
+      <p class="note" id="prz-win-say"></p>
+    </div>
+
+    <div class="stack">
+      <a class="btn go" id="prz-store" href="/football/" hidden>Go and claim it</a>
+      <button class="btn quiet" id="prz-close">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- The tester flag. Read defensively below: a blocked or stale copy leaves the global
      undefined, and the honest answer to "can this person see an unlaunched mode" when the
      list cannot be read is no. -->
@@ -651,9 +731,9 @@
 <!-- Accounts, exactly as the football page loads them. Optional: with the CDN blocked
      PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script defer src="/football/auth.js?v=5"></script>
+<script defer src="/football/auth.js?v=6"></script>
 <script src="draft.js?v=3"></script>
-<script src="entries.js?v=3"></script>
+<script src="entries.js?v=4"></script>
 <script>
 (function(){
   'use strict';
@@ -668,7 +748,7 @@
      player who does not know whether they entered. So the stub refuses out loud, with a
      sentence, and the reads stay null. Bump both halves in one commit, the way
      check-cachebust holds every other pin on this site. */
-  var NEED_FANTASY = 2;
+  var NEED_FANTASY = 3;
   var F = (window.PS_FANTASY && window.PS_FANTASY.API_VERSION === NEED_FANTASY)
     ? window.PS_FANTASY : {
       API_VERSION: NEED_FANTASY, offline: true,
@@ -679,6 +759,13 @@
       myPlace: function(){ return Promise.resolve(null); },
       entryCount: function(){ return Promise.resolve(null); },
       board: function(){ return Promise.resolve(null); },
+      /* NULL AND NOT FALSE. False is "you did not enter that week", which is a real answer
+         and closes the question; null is "nobody knows", which leaves the popup shut and
+         asks again next visit. A stub that answered false would quietly retire a result
+         somebody is owed. */
+      myResult: function(){ return Promise.resolve(null); },
+      ackResult: function(){ return Promise.resolve(false); },
+      myWins: function(){ return Promise.resolve(null); },
     };
   var $ = function(id){ return document.getElementById(id); };
   /* CHANGING SCREEN CANCELS THE DRAFT SCREEN'S REVEAL, which is the rule the hoops live
@@ -2185,6 +2272,10 @@
       ? 'Week ' + POOL.week + ' has kicked off. Nothing more can be submitted.'
       : 'Draft as many as you like. One lineup goes in, on your account, and it is final.';
     lastWeekCard();
+    /* AND THE DOOR BACK TO IT, if the answer has already landed. The ASK is at boot rather
+       than here, because the reader most likely to have a result is the one who entered
+       this week as well, and they never reach this screen on the way in. */
+    drawPrizeDoor();
   }
 
   /* ---- what you scored last week ----
@@ -2233,6 +2324,138 @@
     $('last-pts').textContent = LAST.got.toFixed(1);
     $('b-last').hidden = false;
   }
+
+  /* ================================================================
+     WHERE YOU FINISHED, TOLD ONCE, AFTER THE WEEK IS OVER
+     ================================================================
+   *
+   * `supabase/114_fantasy_prizes.sql` settles the top three the moment a week is marked
+   * scored, and `fantasy_my_result` answers one reader's own question about it. This is the
+   * only thing on the site that tells an entrant the competition finished, so the rule is
+   * that it arrives on its own rather than being gone looking for.
+   *
+   * IT ASKS ABOUT LAST WEEK AND NOT THIS ONE. The week rolls over on the Tuesday, so by the
+   * time a result exists the page is already serving the next board: `POOL.week - 1` is the
+   * week that was just played, which is the same week `lastWeekCard` reads. Asking about
+   * `POOL.week` would be asking about a competition that has not been played yet, for ever.
+   *
+   * SHOWN ONCE, AND THE SERVER IS WHAT REMEMBERS. See `ackResult` in entries.js.
+   */
+  var PRZ = null;      /* the answer, kept so the sheet can be reopened within a visit */
+  var PRZ_ASKED = false;
+
+  /* 11th, 12th and 13th are the exceptions every naive version of this gets wrong, and a
+     competition with twelve entrants meets one of them immediately.
+     THE SUFFIX IS RESOLVED BEFORE IT IS JOINED, because `n + map[x] || n + 'th'` reads as
+     "fall back to th" and is not: `+` binds tighter than `||`, so a miss produces the
+     TRUTHY string "4undefined" and the fallback is never reached. Written that way first,
+     and it renders perfectly. */
+  var ordinal = function(n){
+    var t = n % 100;
+    if (t >= 11 && t <= 13) return n + 'th';
+    var suf = ({ 1: 'st', 2: 'nd', 3: 'rd' })[n % 10];
+    return n + (suf || 'th');
+  };
+
+  function prizeCheck(){
+    if (PRZ_ASKED) return;
+    var wk = POOL.week - 1;
+    if (wk < 1) return;
+    PRZ_ASKED = true;
+    F.myResult(POOL.season, wk).then(function(r){
+      /* NULL IS "NOBODY KNOWS" AND FALSE IS "YOU DID NOT ENTER". Only the second one is an
+         answer, and neither opens the sheet by itself: a reader who has already seen it is
+         not told again. The ask is re-armed on a null, because a popup lost to one bad
+         request is a result somebody is never told about. */
+      if (r == null){ PRZ_ASKED = false; return; }
+      if (r === false || !r.entered) return;
+      PRZ = { week: wk, r: r };
+      drawPrizeDoor();
+      if (!r.seen) showPrize();
+    });
+  }
+
+  /* The door, which says where they came so pressing it is never a surprise. */
+  function drawPrizeDoor(){
+    /* Called from every home paint as well as from the answer, so it has to be safe before
+       there is anything to draw: no result is a door that is simply not there. */
+    if (!PRZ) return;
+    var place = Number(PRZ.r.place);
+    $('prize-say').textContent = PRZ.r.promo_code
+      ? 'You won week ' + PRZ.week
+      : 'Week ' + PRZ.week + ' is settled';
+    $('prize-sub').textContent = PRZ.r.promo_code
+      ? 'Your code is in here'
+      : 'Where you finished, out of ' + PRZ.r.entries;
+    $('prize-pl').textContent = ordinal(place);
+    $('prize-pl').classList.toggle('pod', place <= 3);
+    $('b-prize').hidden = false;
+  }
+  $('b-prize').onclick = function(){ showPrize(); };
+
+  function showPrize(){
+    if (!PRZ) return;
+    var r = PRZ.r, place = Number(r.place), entries = Number(r.entries);
+    $('prz-eye').textContent = 'Week ' + PRZ.week + ' is settled';
+    $('prz-place').textContent = ordinal(place);
+    $('prz-place').classList.toggle('pod', place <= 3);
+    $('prz-of').textContent = 'of ' + entries + (entries === 1 ? ' entry' : ' entries');
+    $('prz-score').textContent = Number(r.score).toFixed(1) + ' points';
+
+    /* WHAT IT SAYS IS ABOUT THEIR OWN WEEK AND NEVER ABOUT ANYBODY ELSE'S. The board is one
+       press away and carries the rest; a sheet that listed the people above them would be
+       the leaderboard, badly, on a screen that is already the width of a phone. */
+    var say;
+    if (place === 1) say = 'You won the week.';
+    else if (place <= 3) say = 'You finished on the podium.';
+    else if (entries > 1 && place <= Math.ceil(entries / 2)) say = 'Top half of the field.';
+    else say = 'Better luck next week.';
+    $('prz-say').textContent = say + ' The full board is on the live screen.';
+
+    /* THE CODE IS DRAWN ONLY FOR THE ACCOUNT IT BELONGS TO, and the server is what decides
+       that: `fantasy_my_result` hands a code to its owner and a null to everybody else, so
+       there is nothing here that a reader who did not win could reveal by opening the page
+       source. This branch has nothing to hide because it has nothing to draw. */
+    var code = r.promo_code;
+    $('prz-win').hidden = !code;
+    $('prz-store').hidden = !code;
+    if (code){
+      $('prz-code-txt').textContent = code;
+      $('prz-code-hint').textContent = 'tap to copy';
+      $('prz-win-say').textContent = 'That is the Perfect Season Premium Bundle, free, on '
+        + 'the account you entered with. Paste the code at checkout. It works once.';
+    }
+    $('prz-sheet').hidden = false;
+  }
+
+  /* CLOSING IS WHAT ACKNOWLEDGES IT, and the write is not awaited. Every allowance on this
+     page fails open and this is the one sheet a reader cannot get back, so hanging the
+     close on a round trip would be a sheet that will not shut in a tunnel. The cost of a
+     lost ack is being told once more next visit. */
+  function closePrize(){
+    $('prz-sheet').hidden = true;
+    if (PRZ && !PRZ.r.seen){ PRZ.r.seen = true; F.ackResult(POOL.season, PRZ.week); }
+  }
+  $('prz-close').onclick = closePrize;
+
+  /* COPYING IS A CONVENIENCE AND NEVER THE ONLY WAY OUT. `navigator.clipboard` needs a
+     secure context and a user gesture and is refused outright by some in-app browsers, so
+     the string is selectable either way (`user-select:all` on the span) and the button says
+     what happened rather than pretending. */
+  $('prz-code').onclick = function(){
+    var txt = $('prz-code-txt').textContent;
+    var done = function(ok){
+      $('prz-code-hint').textContent = ok ? 'copied' : 'select it and copy';
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(txt).then(function(){ done(true); },
+          function(){ done(false); });
+        return;
+      }
+    } catch (e) {}
+    done(false);
+  };
 
   $('b-draft').onclick = function(){ startChance(); };
   $('b-review').onclick = function(){ toReview(); };
@@ -2295,6 +2518,13 @@
     }
     F.mine(POOL.season, POOL.week).then(function(row){
       if (row) SERVER_IN = { week: POOL.week, row: row };
+      /* ASKED AT BOOT AND NOT INSIDE `paintHome`, which is where it was first written and
+         is the one screen the reader most likely to have a result never sees. Somebody who
+         placed last week has almost certainly entered this week too, and an entry lands
+         them on `s-in`: the popup would have been shown to everybody EXCEPT the people
+         playing every week. It guards itself against being asked twice, so the screen it
+         arrives over does not matter. */
+      prizeCheck();
       if (serverEntry() || (state.submitted != null && D.full(chanceAt(state.submitted)))){
         openIn();
         return;

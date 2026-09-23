@@ -181,11 +181,50 @@
     return (j && typeof j === 'object' && Array.isArray(j.rows)) ? j : null;
   }
 
+  /*
+   * ─── WHERE YOU FINISHED, ONCE THE WEEK IS OVER ─────────────────────────────────────
+   *
+   * One call answers the whole popup: whether this reader entered, where they came, out of
+   * how many, and whether there is a promotion code with their name on it. Everything in it
+   * is about `auth.uid()`, so there is nothing here that says anything about anybody else.
+   *
+   * NULL MEANS "NO OPINION" AND FALSE MEANS "NOTHING TO SAY", which are different answers
+   * and the page draws neither the same way. A week that is not scored yet, or a reader who
+   * never entered, is a legitimate nothing: the popup simply does not open. An unreachable
+   * server is null, and the page tries again on the next visit rather than telling somebody
+   * they finished nowhere.
+   */
+  async function myResult(season, week) {
+    const j = await rpc('fantasy_my_result', { p_season: season, p_week: week });
+    if (!Array.isArray(j)) return null;
+    return j.length ? j[0] : false;
+  }
+
+  /* SEEN IS THE SERVER'S, not this browser's, which is the whole reason it is a call at all.
+     Kept in localStorage it would be per device: a reader who entered on a phone and came
+     back on a laptop would be told twice, and one who cleared site data would be told for
+     ever. FAILS SOFT, because the cost of a lost ack is one repeated popup and the cost of
+     blocking on it is a sheet that will not close. */
+  async function ackResult(season, week) {
+    const j = await rpc('fantasy_ack_result', { p_season: season, p_week: week });
+    return j === true;
+  }
+
+  /* Every week this account placed in, for the profile. No code in it: a profile is a record
+     of what somebody did rather than a place to keep a voucher. */
+  async function myWins() {
+    const j = await rpc('fantasy_my_wins', {});
+    return Array.isArray(j) ? j : null;
+  }
+
   root.PS_FANTASY = {
     /* 1: the entry, the board and the two ways to ask where you came.
-       2: `board`, one call for a board that polls while the games are on. */
-    API_VERSION: 2,
+       2: `board`, one call for a board that polls while the games are on.
+       3: where you finished once it is settled, the ack that shows it once, and the wins a
+          profile carries. */
+    API_VERSION: 3,
     submit, mine, standings, myPlace, entryCount, board,
+    myResult, ackResult, myWins,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.PS_FANTASY;
 })(typeof self !== 'undefined' ? self : this);
