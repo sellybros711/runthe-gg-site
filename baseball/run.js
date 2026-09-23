@@ -774,14 +774,31 @@ function rebuildSimState(run) {
     ...st,
     tagged, chem, structure, offense, defense,
     savePct: E.closerSavePct(tagged),
-    /* LEFT AS IT WAS, deliberately. advanceGame() seeds `rating` with squadRating()
-     * and this rebuild has always replaced it with the full-pipeline number, so a
-     * Cap Survivor run that cuts somebody has its playoff difficulty measured on a
-     * different scale than one that does not. That is a real inconsistency, and
-     * correcting it here would move those two modes' title rates, which is a
-     * balance change and not part of making the SHOWN rating honest. Fix it on
-     * purpose, with a measurement, not as a rider. */
-    rating: run.staff ? E.staffRating(tagged) : E.overallRating(E.teamWinPct(offense, defense)),
+    /* THE SAME FORMULA advanceGame() SEEDS, and for a while it was not.
+     *
+     * This rebuild used to write `overallRating(teamWinPct(offense, defense))`,
+     * which is a THIRD number: teamRating's inputs through squadRating's tail. So
+     * the yardstick a run was graded on depended on whether it had cut anybody,
+     * and engine.js says in as many words that these two may not do each other's
+     * job. Only two functions reach here, `cutPlayer` and `acceptTrade`, so it was
+     * exactly Cap Survivor and the Trade Machine, and cutting is Cap Survivor's
+     * whole loop: the market puts you over and the sheet reopens until you are
+     * under. Nobody had to go looking for it.
+     *
+     * What it cost, driven over 25 Cap Survivor runs cutting the cheapest man:
+     * the team got genuinely worse on 25 of 25 (shownRating always fell) and the
+     * yardstick still ROSE a mean of 8.8 points, moving the all-time rank a mean
+     * of 282 places better. The direction is arbitrary rather than generous,
+     * because the two are different scales: over 180 rosters the swap ran a median
+     * +15.1 and from -2.9 to +34.1. The Trade Machine takes three trades a run, so
+     * it rebuilt three times, and finished on a mean all-time rank of FOURTH of
+     * 2,594 real team-seasons (seventh on a greedier draft bot, second on the
+     * sweep in check-yardstick: every reading of it is the top ten).
+     *
+     * It is a balance change and was made on purpose: a higher rating buys a
+     * weaker opponent (titleEdge's PIVOT is 84), so at a fixed record a good
+     * roster's title rate fell 7.7% back to 5.7% when this was corrected. */
+    rating: run.staff ? E.staffRating(tagged) : E.squadRating(run.roster),
     shownRating: run.staff ? E.staffRating(tagged) : E.teamRating(offense, defense),
   };
 }

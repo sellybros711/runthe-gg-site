@@ -9370,6 +9370,118 @@ The draft grade is a separate scale and is **not** inflated: it is the share of
 the WAR on your own board that you walked away with, and best-available medians
 B+ while a careless draft gets an F. It only ever needed to say what it graded.
 
+#### And cutting a player used to change which scale you were graded on
+
+```
+node baseball/check-yardstick.mjs         a real cut, and what the run is then graded on
+node baseball/check-yardstick.mjs 40      a bigger sample
+```
+
+`run._simState.rating` is the yardstick: it feeds `titleEdge` inside
+`generatePlayoffs` and the all-time rank on the results screen. **Two different
+formulas were writing it.** `advanceGame` seeds it with `squadRating(roster)` and
+`rebuildSimState` replaced it with `overallRating(teamWinPct(offense, defense))`,
+which is teamRating's inputs through squadRating's tail: a THIRD number, and
+exactly the thing the section above forbids in as many words.
+
+**Only `cutPlayer` and `acceptTrade` reach that rebuild**, so it was Cap Survivor
+and the Trade Machine, and **cutting is Cap Survivor's whole loop**: the market
+puts you over the cap and the sheet reopens until you are under. This was not an
+exploit somebody had to find, it was the mode's ordinary path.
+
+Driven over 25 Cap Survivor runs cutting the cheapest man on the roster: the team
+got genuinely worse on 25 of 25 (`shownRating` always fell) and **the yardstick
+still rose a mean of 8.8 points, moving the all-time rank a mean of 282 places
+BETTER**. The direction is arbitrary rather than generous, because the two are
+different scales: over 180 rosters the swap ran a median **+15.1** and from -2.9
+to +34.1. Paired on identical seeds, 40 runs a mode:
+
+| | yardstick | all-time rank |
+|---|---|---|
+| Cap Survivor, dearest cut | 78.0 to **65.9** | 141 to **370** |
+| Cap Survivor, cheapest cut | 79.1 to **65.1** | 137 to **435** |
+| Trade Machine | 94.3 to **75.6** | **4 to 98** |
+
+**The Trade Machine takes three trades a run, so it rebuilt three times and
+finished on a mean all-time rank of FOURTH of 2,594 real team-seasons.** Every
+run, one of the best team-seasons in history, for accepting the offers the mode
+exists to offer. A greedier draft bot read seventh and the guard's own sweep
+reads second: every measurement of it lands in the top ten.
+
+**The wins are byte-identical either side** (82.1, 83.5 and 86.1 on both), which
+is the thing to check before believing any of it: this moves the grading and
+never the play.
+
+**AND THE LEADERBOARD DOES NOT MOVE**, which is what makes this safe to ship on a
+live game. Every rating the page displays or files goes through `shownRating()`,
+including the board payload, and `scoreOf` is computed from that. Only the
+yardstick and the all-time rank change, so rows already on the board stay
+comparable with rows filed after it. Existing ranks on a FINISHED run are stored
+in the row and do not move either.
+
+**It is a balance change and it was made on purpose**, which is what the old
+comment in `rebuildSimState` asked for. A higher rating buys a WEAKER opponent
+(`TITLE.PIVOT` is 84 and the edge is a multiplier on the opponent's scoring), so
+at a fixed record a good roster's title rate falls **7.7% back to 5.7%**. Cutting
+a player no longer makes October easier.
+
+**The guard asks the REBUILT STATE and never the source.** The defect was a third
+number spelled differently, so reading `run.js` for a function name would pass
+the day somebody writes it a fourth way. It cuts a real player on a real run and
+reads what the run is then graded on.
+
+**Its claim is DIRECTIONAL, and a magnitude threshold was tried first and was not
+founded.** Losing one of the nine bats really can move `squadRating` eight points,
+so "no cut moves it more than a band" failed on a correct page. What holds is that
+a cut which lowers the shown rating may never raise the yardstick: both measure
+the same team. The old number raised it on three runs of five.
+
+**And the non-vacuity clause is deliberately not "all of them".** Cutting the
+cheapest man weakens the squad on 19 of 20 and occasionally does not, because he
+can already be near replacement level and losing him can leave the chemistry or
+the roster shape slightly better off. The section needs the cut to be doing real
+damage most of the time, not to never fail to.
+
+#### The re-spin looks like a control nobody should press, and the fee is NOT why
+
+**Measured and then NOT changed**, which is the point of writing it down.
+
+Paired on the same seeds, a bot that presses it only when the board is genuinely
+poor loses monotonically: 79.0 wins never pressing, 76.3 at 0.63 presses, 69.7 at
+2.08, 63.7 at 2.87. About **-5.3 wins a press**. Blind pressing measures the same.
+
+**The mechanic itself works, and works hard.** A re-spin discards the board and
+draws three new men off a new team-season, so it is a gamble rather than a re-roll
+you keep, and it regresses to the mean exactly as it should:
+
+| best man on the board | presses | gain from redrawing | improved |
+|---|---|---|---|
+| 0 to 3 WAR | 20 | **+2.88 WAR** | 95% |
+| 3 to 5 WAR | 115 | **+1.87 WAR** | 78% |
+| 5 to 7 WAR | 154 | +0.26 WAR | 49% |
+| 7+ WAR | 111 | **-2.47 WAR** | 14% |
+
+**THE FEE LADDER IS NOT THE LEVER, and the first reading of this said it was.**
+Swept at [5,10,15], [4,8,12], [3,6,9], [2,4,6] and [1,2,3], the loss came back
+-3.4, -6.4, -5.9, -6.2 and -3.4: no trend, and the spread between ladders is
+inside the noise at 60 runs a cell. That is this repo's own rule about a band a
+sample cannot resolve, arriving at a sweep.
+
+**Set the fee to ZERO and it still loses**, which is what settles it: 79.7 wins
+never pressing against 76.8 pressing three times for free, and the payroll is
+$170M in both arms because the cap is spent either way. What the fee actually buys
+is roster: **43.9 WAR against 38.9 at [5,10,15], and 43.9 against 42.9 free**. So
+the fee is about four of the five WAR lost, roughly 1.5 WAR a press against a
++1.87 WAR board gain, which is close to balanced.
+
+**The residual is the BOT, not the button.** A greedy bot signs the best man on a
+better board, which is a pricier man, and strands the tail of its roster. It loses
+here even when the press is free. So nothing was changed: no strategy has been
+shown to be hurt by the current fee, and cutting a constant because one bot is bad
+is the mistake `hoops/check-badges.mjs` already records. **What would settle it is
+a bot that re-spins AND manages its budget**, which is a measurement nobody has
+made yet.
+
 ### Neither the bracket nor the at-bat simulator decides anything
 
 That is the one thing to hold on to before touching either. `generatePlayoffs()`
