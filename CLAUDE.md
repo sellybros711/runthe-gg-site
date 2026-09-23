@@ -8371,6 +8371,8 @@ node baseball/check-atbats.mjs    the at-bat simulator, against real brackets
 node baseball/check-bracket.mjs   the playoff field, against real runs
 node baseball/check-labels.mjs    what a player-season row says it is
 node baseball/check-theme.mjs     both themes, in a browser, on the real screens
+node baseball/check-home.mjs      the front page's two designs, and the reel under them
+node baseball/check-staff.mjs     the All-Time Staff assignment and its blast radius
 ```
 
 ### The $170M cap is right, and the per-slot dollar is the wrong comparison
@@ -8827,6 +8829,96 @@ against 418 at exactly 1000.
 **A `.dcols` grid sat in the stylesheet and was in no markup**, so it set the width
 of nothing on any screen. Two columns is the wrong answer on this game anyway: the
 lineup card already has the right hand side.
+
+### The front page is two designs, not two sizes of one
+
+```
+node baseball/check-home.mjs      the order, the flank, the reel, at seven widths
+```
+
+Asked for: the desktop front page should lead with the name and stand the two reels
+either side of the field, and the phone should stay exactly as it is.
+
+**They really are two designs, which is mythiball's clubhouse lesson arriving at a
+second game.** A phone reads top to bottom, so the field and the reels come first and
+the name of the game sits under them, where it is a caption on a picture the reader
+has already looked at. A desktop is a MASTHEAD and a stage: the name, what it is, the
+one thing to press, and then the field with the wheels standing beside it. Neither
+arrangement works at the other width, and the phone's is not the desktop's squeezed.
+
+**THE ORDER IS CSS AND THE MARKUP IS THE PHONE'S.** Written into the DOM instead, the
+reels and the field would have to live in two different parents to get side by side,
+and every handle on that screen would depend on which width it was built at.
+`#s-intro.on` is a flex column past 1000px and `order` does the rest, so the phone is
+byte for byte what it was: measured at 390, 360, 320, 768 and 999, every box on the
+front page is at the same coordinate to two decimals before and after.
+
+**`display:contents` is what lets the reels flank without the markup moving.** The two
+columns stop being a grid of their own and become items of the hero's, so the year
+takes column one, the field column two and the team column three. The side columns are
+a FIXED width rather than a fraction, because they are two wheels of a known size and
+what should take the room a wider window brings is the picture between them.
+
+**The default order is 9 and not 0**, which is the clause most likely to be tidied
+away. Every child of that screen is given one; an element added later with none takes
+0 and jumps silently above the title, which is a page that renders perfectly and reads
+wrong. At 9 it lands just above the footer, which is where a new thing belongs.
+
+#### A reel is three rows, and that was six copies of one number
+
+The desktop draws a bigger reel, and doing it turned up the reason it could not simply
+be made taller. The strip lands its target `REEL_H` from the top of the box and the
+band is centred at 50%, so **the two agree only while the box is exactly three rows
+tall**. That was written out as a 114px height, a 38px band with a -19px offset, a
+38px row, a 38px wash and a `REEL_H = 38` in the script: six numbers that have to
+agree and nothing making them.
+
+Move any one and the reel spins, eases and lands perfectly, and draws the highlight
+around the row above or below the pick. **Nothing throws**, no value anywhere is
+wrong, and the only symptom is a wheel lying about what it stopped on.
+
+`--reel-h` is the one answer now. The height is `calc(var(--reel-h) * 3)` by
+construction, the band and the wash derive from it, and `reelH()` reads it back off
+the box, so a bigger desktop reel is one property. **The phone is unchanged at 38 and
+the desktop is 64**, and the landed face sits 2px off its band at BOTH, which is the
+box's own 2px border and is what the page read before any of this.
+
+**The guard's first tolerance was a quarter of a row and was too loose to bite.** At
+64px that is 16px, and a band written back as a hardcoded 38 lands 13px out: it slipped
+through the offset claim and was caught only by the one about the band's height. The
+tolerance is a few absolute pixels now, plus the claim no single reading can make: **the
+offset must not grow with the row**, because a derivation error is a fraction of a row
+and a border is not. Reintroduced, that defect now fails three assertions instead of one.
+
+**The daily card's label is a LABEL and not a second control.** The whole card has
+always been the button, so the desktop's CTA is drawn inside it and `.dc-go` is the
+only thing added. It names what the press does in each state, because the card opens
+the draft on an open day and last night's result on a played one, and one sentence for
+both would be wrong about one of them. The guard asserts the two differ and that the
+card holds no nested control.
+
+**Six defects were reintroduced one at a time** and each is caught by the assertions it
+should be: a hardcoded band, a hardcoded row in the script, the reels made a grid again,
+the desktop block leaking under its own breakpoint (16 failures), the default order
+removed, and one sentence for both daily states.
+
+#### And it made `check-theme` go red on a screen it never touched
+
+`.tile` was on that file's list of five --edge borders, and **`.tile.hot` paints its own
+green edge**: it is the chemistry mark, so a tile can only be hot once there is somebody
+on the roster to have chemistry with. The file's own comment already says the `:not()`
+are what keep these selectors off a coloured state, and names `.modecard`'s blue and
+`.sbtn`'s gold. `.tile` was a third case nobody spotted.
+
+**It stayed latent because unlike the other two its state is a coin flip on the draw.**
+That section drafts twice, once per theme, and compares the first `.tile` of two
+independent boards. Measured over 30 real drafts at that width, the first tile is hot on
+**17%** of them, so the two arms are looking at different states about **one run in
+four**. It went red on a front page change that never touched a tile, which is the repo's
+own note about a band a sample cannot resolve, arriving at a selector instead of a
+threshold. It is `.tile:not(.hot)` now. `.tile.off` is deliberately left in: an
+unaffordable tile is still an --edge border, at a different alpha, and only the channels
+are compared.
 
 ### Both themes
 

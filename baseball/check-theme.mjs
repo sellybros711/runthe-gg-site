@@ -363,8 +363,21 @@ console.log('\n4. --edge flips, and only --edge');
   /* Each of these really is an --edge border, which the first list was not:
      .modecard's edge is --blue at 34% and the first .sbtn on screen is the active
      one wearing --gold, so two of five were reporting an accent colour failing to
-     be black. The :not() are what keep them off the selected state. */
-  const SEL = ['.hdr-btn', '.btn.ghost', '.tile', '.lineupcard', '.sbtn:not(.on)', '.tab:not(.on)'];
+     be black. The :not() are what keep them off the selected state.
+
+     AND `.tile` WAS A THIRD OF THOSE AND STAYED LATENT FOR A RELEASE, because unlike
+     the other two its state is a coin flip on the draw. `.tile.hot` is a board's
+     chemistry mark and paints its own green edge, and a tile can only be hot once
+     there is somebody on the roster to have chemistry with, so the first board is
+     never hot and the board this section reads sometimes is. Measured over 30 real
+     drafts at this width: the first tile is hot on 17% of them, so the two arms of
+     this comparison are looking at different states about ONE RUN IN FOUR. It went
+     red on a change to the front page that never touched a tile, which is what the
+     repo's own note about a band a sample cannot resolve is describing.
+
+     A tile can also be `.off`, and that one is safe: an unaffordable tile is still
+     an --edge border, at a different alpha, and only the channels are compared. */
+  const SEL = ['.hdr-btn', '.btn.ghost', '.tile:not(.hot)', '.lineupcard', '.sbtn:not(.on)', '.tab:not(.on)'];
   const vals = {};
   for (const theme of ['dark', 'light']) {
     const { ctx, page } = await open(theme);

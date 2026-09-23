@@ -77,8 +77,16 @@ jobs:
       # somebody looked at shows none of them. It measures the real screens in a
       # real browser, and what it FAILS on is a regression against the light
       # theme rather than an absolute, because the light palette predates it.
-      - name: Both themes
+      #
+      # The front page is two designs rather than two sizes of one, and the order
+      # is CSS over the phone's markup, so every way it rots renders perfectly: a
+      # block that leaks under its breakpoint, a display:contents that stops
+      # applying, an element added with no order. And the reel geometry under both
+      # is one property now, where a wrong row height spins, lands and draws the
+      # highlight around the row next to the pick.
+      - name: The front page, and the reel under it
         run: |
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
           node baseball/check-theme.mjs
+          node baseball/check-home.mjs

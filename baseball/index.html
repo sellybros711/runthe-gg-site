@@ -212,13 +212,27 @@ h1,h2,h3{margin:0}
   text-transform:none;color:var(--dim-2)}
 .hrow{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
 .hp-util-btn{width:auto;flex:1}
+/* The phone keeps the three plain buttons it has always had. The icon and the line
+   under the name are the DESKTOP card, and they are in the markup rather than built
+   there because a door that only exists at one width is a door that gets forgotten. */
+.hp-util-btn b{font-weight:inherit}
+.hp-util-btn .hu-i,.hp-util-btn .hu-s{display:none}
 
 /* ─── reels ─── */
 .reels{display:grid;grid-template-columns:120px 1fr;gap:10px;margin-top:11px}
 .reelcol{min-width:0}
 .rlabel{display:block;margin:0 0 5px 0;font-family:var(--fn);font-size:9px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--dim-2);text-align:center}
-.reelbox{position:relative;height:114px;overflow:hidden;border-radius:8px;
+/* A REEL IS THREE ROWS AND THE MIDDLE ONE IS THE BAND, and that was six copies of
+   one number. The strip lands its target `REEL_H` from the top of the box and the
+   band is centred at 50%, so the two agree only while the box is exactly three rows
+   tall. Written out as 114, 38, -19, 38, 38 and a `REEL_H=38` in the script, any one
+   of them could move on its own: the reel would spin perfectly, land perfectly, and
+   draw the highlight around the row above or below the pick. Nothing throws.
+   `--reel-h` is the one answer now. The height is `* 3` by construction, the band and
+   the wash derive from it, and `reelH()` reads it back off the box, so the desktop
+   front page can ask for a bigger reel by setting one property. */
+.reelbox{--reel-h:38px;position:relative;height:calc(var(--reel-h) * 3);overflow:hidden;border-radius:8px;
   border:2px solid rgba(var(--edge),.20);box-shadow:inset 0 2px 6px rgba(0,0,0,.25),0 2px 4px rgba(0,0,0,.08)}
 .reelbox.year{background:linear-gradient(180deg,#2a5e1a,#1e4a14 50%,#174010)}
 .reelbox.team{background:linear-gradient(180deg,#8b3a2a,#6d2c1e 50%,#5a2418)}
@@ -236,12 +250,12 @@ h1,h2,h3{margin:0}
 .reelbox .strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform,filter}
 .reelbox .wash{display:none}
 .reelbox.clubbed .wash{display:block}
-.reelbox .band{position:absolute;left:6px;right:6px;top:50%;height:38px;margin-top:-19px;z-index:3;
+.reelbox .band{position:absolute;left:6px;right:6px;top:50%;height:var(--reel-h);margin-top:calc(var(--reel-h) / -2);z-index:3;
   border-radius:7px;border:1.5px solid rgba(255,255,255,.18);pointer-events:none;
   transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
 .reelbox.year .band{border-color:rgba(200,180,80,.40);background:rgba(200,180,80,.06)}
 .reelbox.team .band{border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.04)}
-.reel-i{height:38px;display:grid;place-items:center;padding:0 9px;text-align:center;
+.reel-i{height:var(--reel-h);display:grid;place-items:center;padding:0 9px;text-align:center;
   font-family:var(--fd);text-transform:uppercase;letter-spacing:.06em;color:#fff;
   line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .reelbox.year .reel-i{font-size:24px;font-weight:400}
@@ -267,7 +281,7 @@ h1,h2,h3{margin:0}
 .reelbox.clubbed .reel-i{color:var(--on,#fff);opacity:.34}
 .reelbox.clubbed .reel-i.land{opacity:1;font-weight:900;letter-spacing:.03em}
 .reelbox.clubbed .band,.reelbox.clubbed.done .band{border-color:var(--c2);border-width:1.5px;background:rgba(255,255,255,.13)}
-.reelbox.clubbed .wash{position:absolute;left:6px;right:6px;top:50%;height:38px;margin-top:-19px;
+.reelbox.clubbed .wash{position:absolute;left:6px;right:6px;top:50%;height:var(--reel-h);margin-top:calc(var(--reel-h) / -2);
   border-radius:7px;z-index:0;background:var(--c1);opacity:0;pointer-events:none;animation:clubwash .5s ease-out}
 @keyframes clubwash{0%{opacity:0;transform:scale(.86)}45%{opacity:.9;transform:scale(1.05)}100%{opacity:0;transform:scale(1)}}
 
@@ -1073,6 +1087,9 @@ h1,h2,h3{margin:0}
 .dc-streak{margin-left:auto;font-family:var(--fn);font-size:11px;font-weight:800;
   color:var(--orange);background:rgba(212,119,44,.12);padding:2px 8px;border-radius:99px}
 .dc-sub{font-size:12.5px;line-height:1.35;color:var(--dim)}
+/* The phone card is what it has always been: the text, and the whole card presses.
+   `.dc-go` is the desktop's, where the card is a wide band with room to the right. */
+.dc-go{display:none}
 .dc-done{display:flex;align-items:baseline;gap:9px}
 .dc-done b{font-family:'Righteous',var(--fd);font-size:20px;color:var(--ink)}
 .dc-grid{font-size:12px;letter-spacing:1px}
@@ -1278,13 +1295,93 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
    thing a drafter reads. */
 @media(min-width:1000px){
   .wrap:has(#s-draft.on),
-  .wrap:has(#s-squad.on){max-width:1040px}
+  .wrap:has(#s-squad.on),
+  .wrap:has(#s-intro.on){max-width:1040px}
   .wrap:has(#s-season.on),
   .wrap:has(#s-playoffs.on),
   .wrap:has(#s-series.on),
   .wrap:has(#s-game.on),
   .wrap:has(#s-over.on){max-width:860px}
   .opts{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+  /* ─── the front page, wide ───
+     Two designs rather than two sizes of one, which is the clubhouse's own lesson.
+     A phone reads top to bottom, so the field and the reels come first and the name
+     of the game sits under them, where it is a caption on a picture somebody has
+     already looked at. A desktop is a MASTHEAD and a stage: the name, what it is, and
+     the one thing to press, and then the picture with the two wheels standing either
+     side of it. Neither arrangement works at the other width.
+
+     THE ORDER IS CSS AND THE MARKUP IS THE PHONE'S. Written into the DOM instead, the
+     reels and the field would have to live in two different parents to get side by
+     side here, and every JS handle on this screen would then depend on which width it
+     was built at. `order` on a flex column costs nothing and the phone is byte for
+     byte what it was.
+
+     Every child is given one, and the default is 9 rather than 0: an element added
+     later with no order lands just above the footer, which is where a new thing on
+     this page belongs. At 0 it would jump silently to the very top. */
+  #s-intro.on{display:flex;flex-direction:column}
+  #s-intro.on>*{order:9}
+  #s-intro .htitle{order:1;margin-bottom:20px}
+  #s-intro .dailycard{order:2;margin-bottom:22px;
+    display:flex;align-items:center;gap:20px;padding:18px 18px 18px 20px}
+  #s-intro .dc-txt{flex:1 1 auto;min-width:0}
+  #s-intro .dc-go{display:block;flex:0 0 auto;font-family:var(--fd);font-size:17px;
+    text-transform:uppercase;letter-spacing:.05em;padding:13px 22px;border-radius:9px;
+    background:linear-gradient(180deg,var(--gold),#a5791a);color:#1a1205;
+    border-bottom:3px solid #6f4f0d}
+  #s-intro .dailycard.played .dc-go{background:none;border:1.5px solid var(--line-2);
+    border-bottom-width:1.5px;color:var(--dim);font-size:15px;padding:11px 18px}
+  #s-intro .dc-sub{font-size:13.5px}
+  #s-intro .hero{order:3}
+  #s-intro #b-start{order:4}
+  #s-intro #b-modes{order:5}
+  #s-intro .hrow{order:6}
+  #s-intro .legal{order:10}
+
+  /* The title carries the rule the kicker above it already draws, because at this
+     width the name has a whole band of page to itself and needs an edge to sit in. */
+  .htitle h1{font-size:62px;display:flex;align-items:center;justify-content:center;gap:24px}
+  .htitle h1::before,.htitle h1::after{content:'';flex:0 0 62px;height:2px;border-radius:2px;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  .htitle p{font-size:15px;letter-spacing:.02em}
+
+  /* THE REELS FLANK THE FIELD, and `display:contents` is what lets them, without the
+     markup moving: the two columns stop being a grid of their own and become items of
+     the hero's. A fixed side column rather than a fraction, because these are two
+     wheels of a fixed size and what should take the width a wider window brings is the
+     picture of the ballpark between them. */
+  .hero{display:grid;grid-template-columns:150px minmax(0,1fr) 150px;
+    gap:0 24px;align-items:center;margin-bottom:20px}
+  .hero-reels{display:contents}
+  .hero .reelcol:first-child{grid-column:1;grid-row:1}
+  .hero .reelcol:last-child{grid-column:3;grid-row:1}
+  .hero-field{grid-column:2;grid-row:1;margin-top:0}
+  .hnote{grid-column:1/-1;grid-row:2;margin-top:16px;font-size:13.5px}
+  /* One property, because the box is three rows by construction and the script reads
+     the row back off the box. A 114px reel beside a 480px field reads as a postage
+     stamp, which is what the first pass at this looked like. */
+  .hero .reelbox{--reel-h:64px;border-radius:11px}
+  .hero .reelbox.year .reel-i{font-size:34px}
+  .hero .reelbox.team .reel-i{font-size:15px;white-space:normal;line-height:1.15;letter-spacing:.04em}
+  .hero .rlabel{font-size:10px;letter-spacing:.2em;margin-bottom:8px}
+
+  #s-intro #b-start{font-size:24px;padding:22px 28px}
+  #s-intro #b-modes{margin-bottom:22px}
+
+  /* Three cards rather than three buttons, which is the same three doors wearing the
+     room this width has. The icon and the line under the name are already in the
+     markup and hidden on a phone, so nothing here builds a control. */
+  #s-intro .hrow{gap:14px}
+  #s-intro .hp-util-btn{flex-direction:column;gap:7px;padding:20px 16px;border-radius:12px;
+    text-align:center;background:var(--panel);border-color:var(--line)}
+  #s-intro .hp-util-btn:hover{border-color:var(--gold);color:var(--ink)}
+  #s-intro .hp-util-btn .hu-i{display:block;width:26px;height:26px;fill:none;stroke:currentColor;
+    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--gold)}
+  #s-intro .hp-util-btn b{font-size:15px;letter-spacing:.05em;color:var(--ink)}
+  #s-intro .hp-util-btn .hu-s{display:block;font-family:var(--fn);font-size:11.5px;font-weight:600;
+    text-transform:none;letter-spacing:0;color:var(--dim-2)}
 }
 @media(max-height:800px){
   .field.hero-field{aspect-ratio:auto;height:280px}
@@ -1351,9 +1448,19 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <button class="btn hp-start" id="b-start">&#9918; Draft your team &#9918;</button>
   <button class="btn ghost hp-secondary" id="b-modes">More ways to play</button>
   <div class="hrow">
-    <button class="btn ghost hp-util-btn" id="b-how-play">How to play</button>
-    <button class="btn ghost hp-util-btn" id="b-board">Leaderboard</button>
-    <button class="btn ghost hp-util-btn" id="b-trophy">Trophy case</button>
+    <button class="btn ghost hp-util-btn" id="b-how-play">
+      <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.2h6a3 3 0 0 1 3 3v11a2.4 2.4 0 0 0-2.4-2.4H3z"/>
+        <path d="M21 5.2h-6a3 3 0 0 0-3 3v11a2.4 2.4 0 0 1 2.4-2.4H21z"/></svg>
+      <b>How to play</b><span class="hu-s">Learn the rules and scoring.</span></button>
+    <button class="btn ghost hp-util-btn" id="b-board">
+      <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12"/><path d="M10 20V4"/>
+        <path d="M16 20v-6"/><path d="M22 20H2"/></svg>
+      <b>Leaderboard</b><span class="hu-s">See how you stack up.</span></button>
+    <button class="btn ghost hp-util-btn" id="b-trophy">
+      <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/>
+        <path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/>
+        <path d="M12 14v3"/><path d="M8.5 20h7"/><path d="M10 17h4l.6 3h-5.2z"/></svg>
+      <b>Trophy case</b><span class="hu-s">Past winners and top scores.</span></button>
   </div>
 
   <details class="about">
@@ -1960,7 +2067,15 @@ const DIAMOND_SPOTS=[
 ];
 
 /* ─── reel system ─── */
-const REEL_H=38, REEL_FACES=3;
+/* REEL_FACES is 3 because a reel box IS three rows: the pick and the one either side
+   of it. The ROW HEIGHT is the stylesheet's, read back off the box rather than written
+   here a second time, because the desktop front page draws a bigger reel beside the
+   field and a hardcoded 38 there would land every pick a row out of its own band. */
+const REEL_FACES=3, REEL_H_FALLBACK=38;
+function reelH(box){
+  const v=parseFloat(getComputedStyle(box).getPropertyValue('--reel-h'));
+  return v>0?v:REEL_H_FALLBACK;
+}
 
 function reelEase(t){
   const glide=1-Math.pow(1-t,3.4);
@@ -1985,7 +2100,7 @@ function reel(el,faces,target,ms,done,onLand){
   items.push(target);
   for(let i=0;i<REEL_FACES;i++) items.push(nextFace(i===0?target:null));
   el.innerHTML=items.map((t,i)=>'<div class="reel-i'+(i===N?' land':'')+'">'+esc(t)+'</div>').join('');
-  const dist=(N-1)*REEL_H;
+  const dist=(N-1)*reelH(box);
   box.classList.remove('waiting','done','hit');
   box.classList.add('spin');
   const t0=(window.performance||Date).now();
@@ -2844,14 +2959,22 @@ function paintDailyCard(){
   const el=$('daily-card');if(!el)return;
   const d=todaysDaily();
   const streak=dailyStreak();
+  /* The whole card is the button and always has been, so `.dc-go` is a LABEL on the
+     press rather than a second control: it is drawn inside the same button and says
+     what pressing it does. Both states name their own, because the card opens the
+     draft on one and last night's result on the other, and it is only shown where
+     there is room for it (see the desktop block in the stylesheet). */
   el.innerHTML=
-    '<div class="dc-hd"><span class="dc-eye">Daily challenge</span>'+
-      '<span class="dc-no">#'+dailyNo()+'</span>'+
-      (streak>0?'<span class="dc-streak">&#128293; '+streak+'</span>':'')+'</div>'+
-    (d?'<div class="dc-done"><b>'+d.wins+'-'+d.losses+'</b>'+
-        (d.grid?'<span class="dc-grid">'+d.grid+'</span>':'')+'</div>'+
-        '<div class="dc-sub">Played. New board at midnight UTC.</div>'
-      :'<div class="dc-sub">Everybody gets the same twelve spins today. One try.</div>');
+    '<div class="dc-txt">'+
+      '<div class="dc-hd"><span class="dc-eye">Daily challenge</span>'+
+        '<span class="dc-no">#'+dailyNo()+'</span>'+
+        (streak>0?'<span class="dc-streak">&#128293; '+streak+'</span>':'')+'</div>'+
+      (d?'<div class="dc-done"><b>'+d.wins+'-'+d.losses+'</b>'+
+          (d.grid?'<span class="dc-grid">'+d.grid+'</span>':'')+'</div>'+
+          '<div class="dc-sub">Played. New board at midnight UTC.</div>'
+        :'<div class="dc-sub">Everybody gets the same twelve spins today. One try.</div>')+
+    '</div>'+
+    '<span class="dc-go">'+(d?'See your result':'Start today\'s draft')+' &rarr;</span>';
   el.classList.toggle('played',!!d);
 }
 
