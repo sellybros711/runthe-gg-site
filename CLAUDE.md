@@ -9046,11 +9046,21 @@ in the tree**, because the top directory is named after whichever archive
 answered and the tables moved into `core/` at some point, and `People.csv`
 answers to `Master.csv` too.
 
-**THE MIRRORS ARE UNOFFICIAL AND THE FILE SAYS SO.** What they carry is positions
-and saves, which barely move for a season already played, so a mirror a year
-behind costs this game almost nothing. Anybody who needs the current database
-should go to SABR and look rather than trust that a mirror is current, and the
-refusal message says that rather than implying the list is maintained.
+**THE MIRRORS ARE UNOFFICIAL, AND "A MIRROR A YEAR BEHIND COSTS ALMOST NOTHING"
+WAS WRITTEN HERE AND IS FALSE.** The argument was that positions and saves barely
+move for a season already played, which is true of a season the mirror HAS. A
+mirror does not lag by a rounding error: the one that answers today carries
+Appearances to about 2016 and saves to about 2021, so a rebuild off it leaves
+**2,421 batters with no position, every one of them from 2017 on**. The pool is
+then perfectly correct about Babe Ruth and knows nothing about anybody currently
+playing, which is the half of the board a reader recognises. Measured rather
+than argued, and what now catches it is the staleness clause two sections down.
+
+Upstream is still first so it wins the day it comes back, and a refresh that has
+to SHIP needs a current archive rather than whichever mirror answers. SABR
+publishes the current database through a Box folder with no url a script can
+fetch, so the refusal message points a person there rather than implying the list
+is maintained.
 
 **A 404 page is a perfectly good HTTP response**, which is the whole reason the
 old failure read as "not a zip file": the request succeeded and the bytes were
@@ -9135,9 +9145,55 @@ the price curve. **Proved twice**: the round trip is still byte identical on all
 shipped pool exactly. The first of those alone proves nothing, because the
 shipped pool is already filtered and the floor is vacuous over it.
 
-**The pipeline can rebuild the pool now**, on any machine that can reach one of
-the four archives. **This one cannot reach any of them**, so that sentence is
-about the runner and not about a green run here.
+##### Two more per-club reads, and a flag that could not say no
+
+The rebuild then came back **44,344 rows, 24,644 batters, 19,700 pitchers**,
+which is the shipped pool exactly, so the floor above was right. Two columns
+still disagreed and `pool_shape.py` stopped it, which is what it is for.
+
+**Closers, 6,041 against 905.** The saves loop set the flag True on a save total
+and left it alone otherwise, under a comment saying a reliever with no saves
+"could still close". So the innings proxy survived UNDERNEATH the real answer and
+the flag meant "pure reliever OR real closer". `closerSavePct` reads the CL slot
+by name, so that is most of every bullpen in the game handed a genuine closer's
+save rate. **Eligibility is deliberately untouched**: every reliever in the
+shipped pool carries `RP;CL`, all 7,239 of them, and only 905 carry the flag.
+Being able to close is a roster shape, having closed is a fact about the season,
+and narrowing the eligibility would empty the CL slot for most of the board.
+
+**Positions, 22,077 against 24,499**, and this is the pricing build's own per-club
+read arriving in the file that actually builds the shipped pool. Appearances is
+one row per club and the loop is keyed per season, so a traded player wrote his
+key twice and the last stint won. The pricing one THREW, because its answer was
+joined and the duplicate multiplied rows; this one just drops a column.
+
+**THAT FIX BOUGHT EXACTLY ONE ROW, and the measurement is what said so.** Eight
+games at one club and seven at another is fifteen, which qualifies on the season
+and on neither stint, and that is real and almost never happens: 22,077 to 22,078.
+The honest reading is that the fix is correct and was not the cause, which is
+only knowable by rebuilding and counting.
+
+**What the 2,421 actually were is the mirror.** Reconstructed by blanking
+positions from 2017 and the flag from 2022 on the shipped pool, the result lands
+within 22 rows of what the runner built, which is what pins the diagnosis rather
+than leaving it a plausible story.
+
+**A SHARE CANNOT SEE A SOURCE THAT SIMPLY STOPS, and that is how it got past the
+gate.** Coverage went 99.4% to 89.6%, inside a fifteen point band, reading as a
+rounding difference, while every missing man was from one year on. So
+`pool_shape.py` compares the NEWEST season carrying each column as well as the
+share. `STALE_YEARS` is **2**, because Lahman's own release lands in the January
+after a season, so a refresh run before it is published is legitimately one year
+short of the WAR files, which come from a different source and are current. Two
+is that, plus a year of nobody updating a mirror. Proved on the runner's own
+pool: it names `positions stop at 2016 and the pool runs to 2025`.
+
+**The chain is green end to end now**: the reference seasons unchanged, the shape
+gate passed, `check-labels` reproducing all 44,344 prices from `w`, `ip` and `pp`
+with the same 3,959 discounted starters, and `check-numbers` agreeing on 34
+claims. **What is NOT done is shipping it**, because a pool whose recent
+positions come from a mirror eight years behind is not the pool that ships, and
+every run so far has been `commit: false`.
 
 ### Two ratings, two jobs, and they must not be merged
 

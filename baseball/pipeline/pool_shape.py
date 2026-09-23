@@ -48,6 +48,11 @@ def load(path):
         return json.load(fh)
 
 
+def newest(rows, pred):
+    got = [r["s"] for r in rows if pred(r)]
+    return max(got) if got else 0
+
+
 def shape(rows):
     bats = [r for r in rows if r["r"] == "b"]
     pitch = [r for r in rows if r["r"] == "p"]
@@ -58,6 +63,17 @@ def shape(rows):
         "batter positions": sum(1 for r in bats if r.get("pp")),
         "closers": sum(1 for r in rows if r.get("cl")),
         "pitchers with innings": sum(1 for r in pitch if r.get("ip") is not None),
+        # A SHARE CANNOT SEE A STALE SOURCE, and that is what let one through.
+        # The first rebuild that passed this gate carried positions on 89.6% of
+        # its batters against 99.4%, which is inside a 15 point band and reads as
+        # a rounding difference. It was not scattered: every missing man was from
+        # 2017 on, because the Lahman MIRROR the fetch fell back to is years
+        # behind. So the pool was correct about Babe Ruth and had no position for
+        # anybody currently playing, which is the half of the board a reader
+        # recognises.
+        "newest season": newest(rows, lambda r: True),
+        "newest with a position": newest(bats, lambda r: r.get("pp")),
+        "newest closer": newest(pitch, lambda r: r.get("cl")),
     }
 
 
@@ -111,6 +127,27 @@ def main():
             f"closers went from {was_cl:.1%} of pitchers to {now_cl:.1%}. "
             f"The flag is falling back to an innings proxy."
         )
+
+    # A COLUMN HAS TO REACH THE END OF THE POOL. The shares above are an average
+    # over a hundred and twenty-five years, so a source that simply stops in 2017
+    # moves them by a few points and sails through, while the game loses the
+    # position of every player anybody watching today would recognise.
+    #
+    # STALE_YEARS is 2 because Lahman's own release lands in the January after a
+    # season, so a refresh run before it is published is legitimately one year
+    # short of the WAR files, which come from a different source and are current.
+    # Two is that, plus a year of somebody not having updated a mirror.
+    STALE_YEARS = 2
+    end = new["newest season"]
+    for field, what in [("newest with a position", "positions"),
+                        ("newest closer", "closer flags")]:
+        got = new[field]
+        if end - got > STALE_YEARS:
+            problems.append(
+                f"{what} stop at {got} and the pool runs to {end}. "
+                f"That source is {end - got} years behind the rest of the pool, "
+                f"so every recent season is missing it."
+            )
 
     if not problems:
         print("The rebuilt pool is the same kind of thing as the one that ships.")

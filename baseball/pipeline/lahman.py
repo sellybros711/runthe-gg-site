@@ -20,13 +20,24 @@ hoops draft fetch, which demanded one way of writing a link and returned zero
 picks for sixty six years. So `SOURCES` is whole urls, tried in order, and the
 first that answers with a real zip wins.
 
-**THE MIRRORS ARE UNOFFICIAL AND ARE SAID TO BE.** Upstream is first so it wins
-the day it comes back, and under it are two community mirrors of the last
-Chadwick snapshot. What they carry is positions and saves, which barely move for
-a season already played, so a mirror a year behind costs this game almost
-nothing. SABR publishes the current database through a Box folder, which has no
-stable url a script can fetch, so it is not in this list and a person updating
-the pipeline should go and look rather than trust that a mirror is current.
+**THE MIRRORS ARE UNOFFICIAL, AND "A MIRROR A YEAR BEHIND COSTS ALMOST NOTHING"
+WAS WRITTEN HERE AND IS FALSE.** The argument was that positions and saves barely
+move for a season already played, which is true of a season the mirror HAS. What
+it misses is that a mirror does not lag by a rounding error: the one that answers
+today carries Appearances to about 2016 and saves to about 2021, so a rebuild off
+it gives the pool no position for **2,421 batters**, every one of them from 2017
+on. The pool is then perfectly correct about Babe Ruth and knows nothing about
+anybody currently playing, which is the half of the board a reader recognises.
+
+Measured rather than argued, and it sailed through a 15 point coverage band at
+89.6% against 99.4%. `pool_shape.py` compares the NEWEST season carrying each
+column now, because a share averaged over a hundred and twenty-five years cannot
+see a source that simply stops.
+
+Upstream is still first so it wins the day it comes back. SABR publishes the
+current database through a Box folder, which has no stable url a script can
+fetch, so it is not in this list, and **a refresh that has to ship needs a
+current archive rather than whichever mirror answers**.
 
 **A 404 PAGE IS A PERFECTLY GOOD HTTP RESPONSE**, which is the whole reason the
 old failure read as "not a zip file" rather than as "not found": the request
