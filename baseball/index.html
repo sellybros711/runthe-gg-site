@@ -1819,7 +1819,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div class="fr-steps">
       <div class="fr-step"><span class="n">1</span><p>Every spin lands on a real team-season.
         Take one player off that roster. Twelve times, filling a lineup and a staff.</p></div>
-      <div class="fr-step"><span class="n">2</span><p>All twelve share a <b>$170M</b> budget.
+      <div class="fr-step"><span class="n">2</span><p>All twelve share a $170M budget.
         That is the puzzle: prices come from how good the season actually was, so the last
         few spots are always the hard ones.</p></div>
       <div class="fr-step"><span class="n">3</span><p>Then 162 games play out against real
@@ -1964,6 +1964,34 @@ const SLOTS_NOW=()=>R.slotsOf(typeof RUN!=='undefined'?RUN:null);
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
 const M=v=>'$'+v.toFixed(1)+'M';
+/* ── A NUMBER A PLAYER READS HAS TO BE THE NUMBER THE GAME PLAYS ──
+   The cap is written out by hand a dozen times across this page and how-to-play.html,
+   including the JSON-LD block Google renders, and nothing held any of them to
+   CAP_MUSD. Change the cap and the game charges the new one while every sentence
+   describing it promises the old one. Nothing throws; the only symptom is a guide
+   that lies, found by a player. This game has already had its cap swept once.
+
+   `baseball/check-numbers.mjs` holds all twelve now, which is the same mechanism
+   football and the college game use for their own twenty-two hardcoded figures.
+
+   INTERPOLATING THE PROSE WAS TRIED FIRST AND MADE THINGS WORSE, which is worth
+   knowing before reaching for it again. Wrapping each figure in a `<span>` so a
+   `capSync()` could correct it at boot SPLITS THE TEXT NODE, and check-copy's
+   walker reads text nodes: three sentences came out as "All twelve share a" and
+   "budget. That is the puzzle", with the $170M between them belonging to neither.
+   The claim stayed on the page and left the checker's view entirely. That is this
+   repo's own extractor-desync trap, self-inflicted, and it is a net loss: the guard
+   is the thing that catches the drift at COMMIT time for the half of the copy that
+   cannot interpolate at all, and interpolation bought self-correction by making the
+   guard cover less. The sentences are whole and the checker owns every one.
+
+   What is still interpolated is the one figure that is not prose: the money line's
+   placeholder, which `paintCap` overwrites on the first paint of a run anyway, so
+   left alone it is stale only for a frame and in view source for ever. */
+function capSync(){
+  const amt=$('c-amt');
+  if(amt) amt.textContent=M(E.CONSTANTS.CAP_MUSD);
+}
 const lastName=n=>{const p=n.trim().split(/\s+/);return p[p.length-1];};
 /* WAR as a temperature band. See .warv in the stylesheet for why five. */
 const warBand=w=>'w'+(w>=8?5:w>=6?4:w>=4.5?3:w>=3?2:w>=1.5?1:0);
@@ -2636,6 +2664,7 @@ async function boot(){
     DATA=R.indexData(players);
     const hasPositions=players.some(p=>p.r==='b'&&p.ep&&p.ep.length>0);
     if(hasPositions) E.setPositionsAvailable(true);
+    capSync();
     show('s-intro');
     heroSync();
     paintDailyCard();

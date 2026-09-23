@@ -65,6 +65,13 @@ const GUARDED = [
      exists because the rest of the repo predates the rule, and this page does not. */
   'football/fantasy/index.html',
   'football/fantasy/draft.js',
+  // Run The Diamond. Added after the audit that cleared it: nothing on the banned
+  // list across both pages, only long-sentence warnings, which this file does not
+  // fail on. Its NUMBERS are held by baseball/check-numbers.mjs rather than by
+  // scripts/check-numbers.mjs, because that one accepts a claim matching EITHER of
+  // the two football games and a third engine would loosen it again for both.
+  'baseball/index.html',
+  'baseball/how-to-play.html',
   // The wrestling game and its data files. Added after the audit that cleared
   // them, per the rule on the dash checker: guard a directory only once it is
   // clean, never before, or the check becomes noise people learn to ignore.
