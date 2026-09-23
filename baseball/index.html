@@ -944,6 +944,21 @@ h1,h2,h3{margin:0}
   text-transform:uppercase;color:var(--dim)}
 .trophy-group .tg-count{font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim-2)}
 .trophy-grid{display:flex;flex-direction:column;gap:6px}
+/* THE LOCKED HALF FOLDS, and that is arithmetic rather than taste. The catalogue
+   went from 36 badges to 205, and drawn flat that is a sheet about nine thousand
+   pixels deep whose first screen is the same for somebody on their first season
+   and somebody on their hundredth. A trophy cabinet is FOR what you earned, so
+   that is what is open; what is left is the map, one tap behind a line that says
+   how much of it there is. Folded is not hidden: every badge is in the DOM either
+   way, so nothing is lost to a reader who wants the whole list. */
+.tg-more{margin-top:6px}
+.tg-more>summary{list-style:none;cursor:pointer;font-family:var(--fn);font-size:11px;
+  font-weight:700;color:var(--dim-2);padding:7px 2px}
+.tg-more>summary::-webkit-details-marker{display:none}
+.tg-more>summary::after{content:' +';font-weight:800}
+.tg-more[open]>summary::after{content:' -'}
+.tg-more>summary:hover{color:var(--ink)}
+.tg-more .trophy-grid{margin-top:4px}
 .ach{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid rgba(var(--edge),.07);
   border-radius:10px;padding:9px 12px}
 .ach.locked{opacity:.62}
@@ -1864,7 +1879,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 <script src="engine.js?v=22"></script>
 <script src="run.js?v=18"></script>
-<script src="achievements.js?v=5"></script>
+<script src="achievements.js?v=6"></script>
 <script src="board.js?v=1"></script>
 <script>
 (function(){
@@ -1900,6 +1915,9 @@ function rowFromRun(o){
     chemLinks:[...new Set(links)],era:RUN.era||null,franchise:RUN.franchise||null,division:RUN.division||null,
     capSurvivor:!!RUN.capSurvivor,cuts:(RUN.cuts||[]).length,staff:!!RUN.staff,
     tradeMachine:!!RUN.tradeMachine,trades:(RUN.trades||[]).filter(t=>t.accepted).length,
+    /* The daily was the one mode the row did not record, so no badge could ask
+       about it. Every other mode has been on the row since it was written. */
+    daily:!!RUN.daily,
     eliminatedWS:!!(last&&last.round==='World Series'&&!o.titleWon),
     picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:SLOTS_NOW()[RUN.slotIndex[i]],w:p.w})),
   };
@@ -1947,13 +1965,16 @@ function renderTrophy(){
   $('trophy-body').innerHTML='<div style="text-align:center;font-family:var(--fn);font-size:12px;'+
     'font-weight:700;color:var(--gold);margin-bottom:12px">'+ev.earned.length+' of '+ev.total+' badges</div>'+
     ACH.GROUPS.map(g=>{
-      const grp=byGroup[g];const all=grp.earned.concat(grp.locked);
+      const grp=byGroup[g];const total=grp.earned.length+grp.locked.length;
+      const tile=(a,earned)=>'<div class="ach'+(earned?'':' locked')+'">'+badgeIc(a,earned)+
+        '<div><div class="ach-t">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div></div>';
+      const got=grp.earned.length
+        ? '<div class="trophy-grid">'+grp.earned.map(a=>tile(a,true)).join('')+'</div>' : '';
+      const left=grp.locked.length
+        ? '<details class="tg-more"><summary>'+grp.locked.length+' still to earn</summary>'+
+          '<div class="trophy-grid">'+grp.locked.map(a=>tile(a,false)).join('')+'</div></details>' : '';
       return '<div class="trophy-group"><div class="tg-hd"><span class="tg-name">'+g+
-        '</span><span class="tg-count">'+grp.earned.length+'/'+all.length+'</span></div><div class="trophy-grid">'+
-        all.map(a=>{const earned=grp.earned.includes(a);
-          return '<div class="ach'+(earned?'':' locked')+'">'+badgeIc(a,earned)+
-            '<div><div class="ach-t">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div></div>';
-        }).join('')+'</div></div>';
+        '</span><span class="tg-count">'+grp.earned.length+'/'+total+'</span></div>'+got+left+'</div>';
     }).join('');
 }
 function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}

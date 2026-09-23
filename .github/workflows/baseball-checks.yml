@@ -89,6 +89,23 @@ jobs:
       - name: The staff sorts itself
         run: node baseball/check-staff.mjs 60
 
+      # Every badge, against real runs. The catalogue went from 36 to 205 in one
+      # pass, and a badge nobody can earn throws no error and breaks no test: the
+      # cabinet renders, the square stays dark, and nobody reports it. The hoops
+      # catalogue shipped three of those. This one shipped two on its first draft,
+      # both found here: a re-spin rung asking for five of a thing capped at three,
+      # and a play streak that reported ten after forty consecutive days because it
+      # sorted its day keys as text.
+      # --quick IS THE STRICT ONE HERE, which is the opposite of what the flag
+      # usually means. The two excuse lists are a record of what a sweep reaches,
+      # so they can only be tuned to one sweep, and they are tuned to this one: the
+      # full run reaches strictly more and would call some of them stale, pruning
+      # them would then fail this run, and that loop has no end. Reachability is
+      # hard on both. The full sweep is three minutes and is the developer's
+      # stronger answer.
+      - name: Every badge is reachable
+        run: node baseball/check-badges.mjs --quick
+
       # The two themes. A dark mode bolted onto a cream page fails silently three
       # ways: a panel nobody tokenised stays cream, a hairline written
       # rgba(0,0,0,.10) stops existing, and an accent solved against paper goes

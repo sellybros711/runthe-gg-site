@@ -67,6 +67,12 @@ const bad = (m, d) => { checks++; fails++; console.log('  FAIL  ' + m); if (d) c
 const claim = (c, m, d) => (c ? ok(m) : bad(m, d));
 const head = (m) => console.log('\n' + m + '\n' + '-'.repeat(m.length));
 
+/* Read out of the page, so the fixture cannot describe a stored daily the page
+   has stopped recognising. */
+const PAGE_SRC = readFileSync(path.join(ROOT, 'baseball', 'index.html'), 'utf8');
+const DAILY_V = Number((/\bconst\s+DAILY_V\s*=\s*(\d+)/.exec(PAGE_SRC) || [])[1]);
+if (!DAILY_V) { console.log('  FAIL  could not read DAILY_V out of index.html'); process.exit(1); }
+
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 const errors = [];
 
@@ -80,14 +86,21 @@ async function open(w, h, extra) {
     try {
       localStorage.setItem('rtd_seen_intro_v1', '1');
       if (o && o.played) {
-        const t = new Date();
-        const date = t.getUTCFullYear() + '-' + String(t.getUTCMonth() + 1).padStart(2, '0')
-          + '-' + String(t.getUTCDate()).padStart(2, '0');
+        /* TWO THINGS THE PAGE ASKS OF A STORED DAILY, and this fixture got both
+           wrong the day the daily moved to an Eastern rolling day. It wrote a
+           UTC date, which is the next day's puzzle for four hours every night,
+           and it carried no `v`, which the page reads as a record from before the
+           migration and correctly discards. So the card came up on its OPEN state
+           in the arm testing the PLAYED one, and what failed was the harness.
+           The version is read out of the page rather than typed here, or the two
+           drift again the next time it moves. */
+        const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' })
+          .format(new Date());
         localStorage.setItem('rtd_daily', JSON.stringify(
-          { date, wins: 97, losses: 65, grid: 'xxox', madePlayoffs: true }));
+          { v: o.dailyV, date, n: 1, wins: 97, losses: 65, grid: 'xxox', madePlayoffs: true }));
       }
     } catch (_) {}
-  }, extra || {});
+  }, { ...(extra || {}), dailyV: DAILY_V });
   await p.goto(`http://localhost:${PORT}/baseball/`, { waitUntil: 'load' });
   await p.waitForSelector('#s-intro.on', { timeout: 20000 });
   return { ctx, p };
