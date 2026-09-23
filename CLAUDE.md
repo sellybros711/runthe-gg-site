@@ -3153,6 +3153,104 @@ That is the four-states rule bending, because two of the four cannot happen on t
 board of a finished week is a record of who entered it, and somebody renaming themselves in
 November should not rewrite week 3's result.
 
+#### "No lineups before the lock" was implemented as "no rows", and those are two claims
+
+```
+psql -d fantasy -f supabase/112_fantasy_entrants.sql
+psql -d fantasy -f supabase/test/fantasy_entrants_test.sql
+node football/check-fantasy.mjs      the section named WHO IS IN
+```
+
+The argument one section up is sound and is not weakened by any of this: a list of everybody's
+lineups before kickoff is the answer key handed to whoever enters last. What was wrong is that
+the rule was enforced by answering NOTHING, so the only thing this screen could say to
+somebody who had just entered was a count on a label. Reported by a player, who asked to land
+on the board after submitting and see who else was in.
+
+**THE PRE-LOCK ANSWER IS A LIST OF NAMES, AND IT IS A SEPARATE FUNCTION RATHER THAN A FLAG ON
+THE STANDINGS.** `fantasy_entrants` selects no pick, no projection, no spend and no score, so
+the payload a reader gets before kickoff CANNOT carry a lineup however the page draws it.
+Nulling those columns out of `fantasy_standings` would have been one `case` away from leaking
+the thing the lock exists to protect, and the way that fails is silent: a correct looking board
+with the answer key in the network tab. **So the SQL test asserts the key set as a SET.**
+Written as "no picks key" it goes quiet the day somebody adds a fourth field, which is exactly
+how a leak of this shape would arrive.
+
+**EXACTLY ONE OF THE TWO IS EVER POPULATED**, and the lock is the one thing that decides.
+Entrants before it, rows after. Two lists of names would be two answers to one question, and
+they would disagree the first time either was edited. `entry_no` is the same key either side,
+because no entry can arrive after the lock, so a row does not change key at kickoff.
+
+**IT DISCLOSES NOTHING NEW.** These are the display names the board already publishes after the
+lock, and the entry count is already public before it. What changes is that the count has the
+names in it.
+
+**The door is drawn when the board has something to SAY, read off the answer rather than off
+the clock.** It used to be the lock and nothing else, correctly: before 112 the only pre-lock
+answer was no rows, so a button here would have taken somebody somewhere to be told nothing,
+and that is still exactly what it does against a database without the migration.
+
+**ABSENT IS NOT EMPTY, and the entry count is what tells them apart.** SQL is deployed by hand
+and this page by a push, so a database still on 111 answers with no `entrants` key at all while
+the week genuinely has entries in it. Read as "nobody", that is the page telling a reader the
+competition is empty on the evening it fills up. So the page falls back to the sentence it has
+always drawn, and the guard's first arm IS that database: the fixture leaves the key out
+entirely rather than defaulting it to an array.
+
+**A third sentence arrived with it that nobody had ever read.** This screen could not be
+reached before the first kickoff until there was something to say, so "Week 3 is not being
+played right now. This is how it finished" was only ever seen after a week had finished. Read
+before one starts it is wrong about a week nobody has played a down of.
+
+**The pre-lock list is asked once per visit and not polled.** `boardLive` is unchanged, so the
+twenty second poll still only runs while the games are on. A list that moves a handful of times
+between Tuesday and Thursday does not need a request every twenty seconds for two days, and
+`openLive` asks on the way in, which is the moment somebody wants it.
+
+**A SUBMIT LANDS ON THE BOARD, not on your own six.** The entry screen is a correct receipt and
+answers the wrong question. The board carries the confirmation anyway, because the reader's own
+row is on it and is marked, so nothing is lost by going to the screen that also says who else
+is in. The receipt is one press back, and the guard asserts that from the other end: moving a
+destination is how a redirect quietly costs a screen.
+
+**And the two halves are guarded in two files, which is 107's own split.**
+`check-fantasy.mjs` fabricates an `entrants` array and hands it to the painter, so it says
+nothing about what the server sends; `supabase/test/fantasy_entrants_test.sql` drives the real
+function. Four defects were reintroduced one at a time to prove that file bites: dropping the
+lock clause, adding a fourth key carrying the lineup, dropping the `coalesce` on `is_me`, and
+`security invoker` in place of `security definer`.
+
+**One of its claims could only ever pass, and the shape is worth recognising.** The first
+version asserted that `anon` may CALL the function, on 109's "RLS narrows a grant, it does not
+make one". That rule is about TABLES: Postgres gives PUBLIC execute on a new function by
+default, so the assertion passed with the grant line deleted. What actually says something is
+the definer: `anon` gets the list AND is refused a direct read of `fantasy_entries`, and both
+halves have to be asserted together or the pair is one careless `security invoker` from being a
+list nobody can read and one careless policy from being a table anybody can.
+
+#### A refusal said into an empty room is a button that does nothing
+
+Reported as "nothing happens when I press submit". Something did: the server refused it, in one
+of the nine sentences below, and the page wrote that sentence into `#r-say`, which is the lede
+at the TOP of the review screen. Measured through the real page at 390x844: the page is 1691px,
+the reader has scrolled to the Submit button at y=673, and **the refusal landed at y=-715,
+which is 694px above the top of the window.**
+
+**Nothing threw, nothing rendered wrong, and the sentence was correct.** It was 694px away from
+the thumb that had just pressed the button.
+
+It is its own box now, red, directly above the button, with a `scrollIntoView` for the case
+where it still is not. **The guard measures the rectangle against the phone rather than reading
+the text**, because `innerText` does not care where an element is and that section passed on
+this for as long as it has existed. It asserts the lede is NOT carrying it as well, so the box
+cannot quietly move back to the top of the screen.
+
+**The page owns the JOIN and not the words.** Those nine sentences are written to stand alone
+and start lowercase (`sign in to enter`), so pasted after a full stop they read `Not entered.
+sign in to enter`. `asSentence()` capitalises the first letter and closes it, which is
+presentation rather than translation: not one word moves. Found by taking a screenshot and
+reading it, which is the fourth time on this mode.
+
 #### A submit has three answers and the page draws all three
 
 **`entries.js` is not `board.js` and must not become it.** Every call in `board.js` fails

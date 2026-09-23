@@ -673,6 +673,11 @@ const boardOf = (o) => {
        that leaves them out is the state before the writer has ever run, where the page
        falls back to the schedule out of the pool. */
     games: o.games || [],
+    /* 112'S KEY, AND `undefined` IS A STATE RATHER THAN A MISSING FIELD. SQL is deployed by
+       hand and this page by a push, so a database still on 111 answers without it. A fixture
+       passing `entrants: undefined` IS that database, which is why this is written to leave
+       the key out entirely rather than defaulting it to an empty array. */
+    ...(o.entrants === undefined ? {} : { entrants: o.entrants }),
   };
 };
 
@@ -732,7 +737,14 @@ ok('  the two refusals say different things', new Set(shut).size === shut.length
 /* ---------------------------------------------------------------- */
 console.log('\nA WHOLE ENTRY, DRIVEN');
 {
-  const { page, boom, posted } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE });
+  /* A BOARD TO LAND ON, because a submit now ends on it. Before the lock that is the
+     entrants list, so the fixture carries one: with `board: null` the walk would arrive at
+     "the board could not be reached", which is a real state and is not the one this section
+     is about. */
+  const { page, boom, posted } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE,
+    server: { board: boardOf({ rows: [], open: false,
+      entrants: [{ entry_no: 1, display_name: 'Ada', is_me: false },
+        { entry_no: 2, display_name: 'You', is_me: true }] }) } });
   await page.waitForSelector('#s-home.on', { timeout: 15000 });
 
   /* One helper for one draft, pressing the page's own buttons throughout. Nothing here
@@ -811,6 +823,24 @@ console.log('\nA WHOLE ENTRY, DRIVEN');
   await page.locator('#r-five .lineup').nth(2).click();
   ok('  and live once one is', !(await page.locator('#b-submit').isDisabled()));
   await page.click('#b-submit');
+  /*
+   * A SUBMIT LANDS ON THE BOARD, which is what a player asked for in as many words, and it
+   * is a claim about the DESTINATION rather than about the board: the entry screen is a
+   * correct receipt and answers the wrong question, because what somebody wants at the
+   * moment they enter is whether anybody else has.
+   */
+  /* CAUGHT, so this reports as a sentence rather than as a Playwright timeout. The way it
+     fails is a submit that goes back to the entry screen, which is where it used to go, and
+     a suite that dies on machinery makes the next person read the wrong file first. */
+  await page.waitForSelector('#s-live.on', { timeout: 10000 }).catch(() => {});
+  ok('  a submit lands on the board', await page.evaluate(() =>
+    document.getElementById('s-live').classList.contains('on')
+      && !document.getElementById('lv-pane-board').hidden), await screenOn(page));
+  ok('    with the reader\'s own row on it',
+    await page.locator('#lv-board .erow.me').count() === 1);
+  /* AND THE RECEIPT IS ONE PRESS AWAY. Moving the destination must not take the entry
+     screen away, which is the half a redirect most easily costs. */
+  await page.click('#b-live-back');
   await page.waitForSelector('#s-in.on', { timeout: 10000 });
   const shown = await page.locator('#in-proj').innerText();
   /* THE NUMBER ON THE RECEIPT IS THE NUMBER ON THE LINEUP THAT WAS CHOSEN. Two screens
@@ -862,8 +892,11 @@ for (const [label, server, want] of [
   ['refused for a reason the page never heard of, and it still says something',
     { submit: 'some new rule nobody has written yet' },
     { screen: 's-review', say: /some new rule/i }],
+  /* A RECONCILED LOST ANSWER IS AN ENTRY, so it ends where every other entry ends, which is
+     the board. It used to end on `s-in` because that is where every entry used to end; the
+     claim was never about which screen, it is that the page ASKED rather than guessing. */
   ['the answer is lost after the row lands, so asking settles it',
-    { submit: 'lost' }, { screen: 's-in' }],
+    { submit: 'lost' }, { screen: 's-live', asked: true }],
   ['the server is down and nothing landed',
     { submit: 'down' }, { screen: 's-review', say: /nothing was entered/i }],
 ]) {
@@ -882,24 +915,84 @@ for (const [label, server, want] of [
      thing that is different while a submit is in flight. */
   await page.waitForFunction(
     () => !/Sending/i.test(document.getElementById('b-submit').textContent)
-      || document.getElementById('s-in').classList.contains('on'),
+      || document.getElementById('s-live').classList.contains('on'),
     null, { timeout: 15000 }).catch(() => {});
   const on = await screenOn(page);
   ok(label, on === want.screen, on);
   if (want.say) {
-    const say = await page.locator('#r-say').innerText();
+    const say = await page.locator('#r-refuse').innerText();
     ok('  and it says why', want.say.test(say), say.trim());
+    /* THE LEDE AT THE TOP OF THE SCREEN IS NOT WHERE IT GOES, which is where it used to go
+       and is what made a refusal invisible. WHERE the box lands is measured on its own, one
+       block down, because the fault grows with the length of the page and this loop drafts
+       one lineup. */
+    ok('  and the lede at the top of the screen is not carrying it',
+      !want.say.test(await page.locator('#r-say').innerText()));
     /* AND THE BUTTON COMES BACK. A submit that refused and left the control reading
        "Sending..." for ever is a mode that ended on its own. */
     ok('  and the button is pressable again',
       !(await page.locator('#b-submit').isDisabled())
         && /submit/i.test(await page.locator('#b-submit').innerText()));
   }
-  if (want.screen === 's-in') {
+  if (want.asked) {
     ok('  and it asked rather than guessing',
       posted.filter((p) => p.fn === 'fantasy_my_entry').length >= 1,
       posted.map((p) => p.fn).join(', '));
   }
+  ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+  await page.close();
+}
+
+/* ================================================================
+   A REFUSAL SAID INTO AN EMPTY ROOM IS A BUTTON THAT DOES NOTHING
+   ================================================================
+ *
+ * Reported as "nothing happens when I press submit". Something did: the server refused it,
+ * in one of its nine sentences, and the page wrote that sentence into `#r-say`, the lede at
+ * the TOP of the review screen. Measured through the real page at 390x844: the page is
+ * 1691px, the reader has scrolled to the Submit button at y=673, and the refusal landed at
+ * y=-715, which is 694px above the top of the window.
+ *
+ * THE FAULT GROWS WITH THE LENGTH OF THE PAGE, so it is measured on the LONGEST review
+ * screen this mode has: all five lineups drafted, which is the screen every reader who uses
+ * their five chances submits from. The section above drafts one, where the whole screen fits
+ * in 844px and the box is on screen wherever it is put. Written there it passed with the box
+ * moved back to the top of the screen, which is exactly the defect it exists for.
+ *
+ * That is the boss battle's call box arriving at a different screen, and the same rule:
+ * measure the deepest real case, against a PHONE rather than against the harness's window.
+ */
+console.log('\nA REFUSAL IS ON THE SCREEN AT THE MOMENT IT IS SAID');
+{
+  const { page, boom } = await openPage(browser, FANTASY,
+    { who: TESTER, at: BEFORE, server: { submit: 'that lineup is over the cap' } });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+  await page.click('#b-draft');
+  for (let c = 0; c < D.CHANCES; c++) {
+    await page.waitForSelector('#s-draft.on', { timeout: 10000 });
+    for (let i = 0; i < D.SLOTS.length; i++) await signOne(page, i);
+    await page.waitForSelector('#s-review.on', { timeout: 10000 });
+    if (c < D.CHANCES - 1) await page.click('#b-more');
+  }
+  await page.locator('#r-five .lineup').first().click();
+  await page.click('#b-submit');
+  await page.waitForFunction(
+    () => !document.getElementById('r-refuse').hidden, null, { timeout: 15000 });
+  const seen = await page.evaluate(() => {
+    const r = document.getElementById('r-refuse').getBoundingClientRect();
+    const b = document.getElementById('b-submit').getBoundingClientRect();
+    return { top: Math.round(r.top), bottom: Math.round(r.bottom), h: Math.round(r.height),
+      btn: Math.round(b.top), page: Math.round(document.body.scrollHeight),
+      vh: window.innerHeight };
+  });
+  ok('the review screen is longer than the window with five drafted',
+    seen.page > seen.vh, `${seen.page}px page, ${seen.vh}px window`);
+  ok('  and the refusal is on the screen', seen.top >= 0 && seen.bottom <= seen.vh
+    && seen.h > 0, `top ${seen.top}, bottom ${seen.bottom}, in a ${seen.vh}px phone`);
+  /* AND ABOVE THE BUTTON THAT CAUSED IT, so a reader's eye goes from the control they just
+     pressed to the answer without leaving the thumb. */
+  ok('  directly above the button that was pressed', seen.bottom <= seen.btn + 1,
+    `box ends ${seen.bottom}, button starts ${seen.btn}`);
   ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
   await page.close();
 }
@@ -991,6 +1084,108 @@ console.log('\nTHE BOARD OPENS AT THE LOCK, AND IT IS ITS OWN SCREEN');
     }
     if (want.tail) ok('  and their place is the one counted against everybody',
       want.tail.test(seen.text), seen.text.trim().slice(-40));
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+}
+
+/* ================================================================
+   WHO IS IN, BEFORE ANYBODY CAN SEE A LINEUP
+   ================================================================
+ *
+ * "No lineups before the lock" was implemented as "no rows", and those are two different
+ * claims. What a reader wants at the moment they enter is whether anybody else has, and the
+ * only answer this screen could give was a count on a label.
+ *
+ * `supabase/112_fantasy_entrants.sql` answers it with names and nothing else, and the claim
+ * that the PAYLOAD cannot carry a lineup is proved where it lives, in
+ * `supabase/test/fantasy_entrants_test.sql`, which asserts the key set of an entrant as a
+ * SET. What is asked here is the half only the glass can answer: that the list is drawn, that
+ * it carries no place and no score, and that a database still on 111 falls back to the
+ * sentence this screen has always had rather than claiming nobody is there.
+ */
+console.log('\nWHO IS IN, BEFORE ANYBODY CAN SEE A LINEUP');
+{
+  const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
+    spend: 80, projected: 50, score: 0, scored: false };
+  const ENTS = [
+    { entry_no: 1, display_name: 'Ada', is_me: false },
+    { entry_no: 2, display_name: 'You', is_me: true },
+    { entry_no: 3, display_name: 'Cy', is_me: false },
+  ];
+  const shut = (o) => boardOf(Object.assign({ rows: [], open: false, now: BEFORE }, o));
+
+  for (const [label, board, want] of [
+    /* ABSENT IS NOT EMPTY, and the entry count is what tells them apart. SQL is deployed by
+       hand and this page by a push, so a database one migration behind answers with no
+       `entrants` key at all while the week genuinely has entries in it. Read as "nobody",
+       that is the page telling a reader the competition is empty on the evening it fills up.
+       This arm IS that database: `boardOf` leaves the key out entirely. */
+    ['a database without the migration keeps the sentence it always had',
+      shut({ me: { place: 0, entries: 3, score: 0 } }),
+      { erows: 0, door: false, say: /opens at the first kickoff/i }],
+    ['and with it, the board says who is in',
+      shut({ entrants: ENTS, me: { place: 0, entries: 3, score: 0 } }),
+      { erows: 3, door: true, say: /lineups open at the first kickoff/i }],
+    ['a week nobody has entered still says being first is the prize',
+      shut({ entrants: [] }),
+      { erows: 0, door: false, say: /being first is the prize/i }],
+  ]) {
+    const { page, boom } = await openPage(browser, FANTASY,
+      { who: TESTER, at: BEFORE, server: { mine: ENTRY, board } });
+    await page.waitForSelector('#s-in.on', { timeout: 15000 });
+    await page.waitForTimeout(400);
+    const seen = await page.evaluate(() => ({
+      door: !document.getElementById('b-in-board').hidden,
+      say: document.getElementById('lv-boardsay').textContent.trim(),
+      erows: document.querySelectorAll('#lv-board .erow').length,
+      mine: document.querySelectorAll('#lv-board .erow.me').length,
+      brows: document.querySelectorAll('#lv-board .brow').length,
+      text: document.getElementById('lv-board').textContent,
+      lab: document.getElementById('lv-boardlab').textContent,
+    }));
+    ok(label, seen.erows === want.erows && seen.say && want.say.test(seen.say),
+      `${seen.erows} names, "${seen.say}"`);
+    /* THE DOOR IS DRAWN WHEN THE BOARD HAS SOMETHING TO SAY, which used to be the lock and
+       nothing else. A button that opens a screen carrying one sentence is a control that
+       takes somebody somewhere to be told nothing, so it stays hidden on both of the other
+       two arms. */
+    ok('  and the door matches what is behind it', seen.door === want.door,
+      seen.door ? 'shown' : 'hidden');
+    if (want.erows) {
+      ok('  the reader finds themselves in it', seen.mine === 1, seen.mine + ' marked');
+      /* NO PLACE AND NO SCORE, because a place implies a score and there is no score yet:
+         a numbered list before the games would invent a standing out of who pressed first.
+         Asked as "no digit anywhere in the list", which is a property of the drawn list
+         rather than a count of the elements somebody happened to name. THE THREE FIXTURE
+         NAMES CARRY NO DIGIT ON PURPOSE, so the only thing that can put one there is the
+         page: a real display name is allowed all the digits it likes, because that is the
+         reader's own name rather than something this screen invented. */
+      ok('  and it ranks nobody', !/\d/.test(seen.text) && seen.brows === 0,
+        JSON.stringify(seen.text));
+      ok('  and the label counts them', /3 entries/.test(seen.lab), seen.lab);
+    }
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+
+  /* AND ONCE IT LOCKS, THE LIST IS THE BOARD. The server sends one or the other and never
+     both, so the page must not be able to draw two lists of names at once. */
+  {
+    const row = (place, name, score, me) => ({ place, display_name: name, score,
+      projected: 58, spend: 88, picks: [], is_me: !!me, entry_no: place, played: 6 });
+    const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: LIVE_AT,
+      server: { mine: ENTRY,
+        board: boardOf({ rows: [row(1, 'Ada', 72.3), row(2, 'You', 41.0, true)],
+          entrants: [], me: { place: 2, entries: 2, score: 41.0 } }) } });
+    await openBoard(page, '#b-in-board');
+    await page.waitForTimeout(400);
+    const seen = await page.evaluate(() => ({
+      brows: document.querySelectorAll('#lv-board .brow').length,
+      erows: document.querySelectorAll('#lv-board .erow').length,
+    }));
+    ok('once it locks the names are the board and the list is gone',
+      seen.brows === 2 && seen.erows === 0, `${seen.brows} rows, ${seen.erows} names`);
     ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
     await page.close();
   }
@@ -1286,6 +1481,11 @@ console.log('\nAND THEN THE WEEK IS SCORED');
   await page.waitForSelector('#s-review.on', { timeout: 10000 });
   await page.locator('#r-five .lineup').first().click();
   await page.click('#b-submit');
+  /* A SUBMIT LANDS ON THE BOARD NOW, and the entry screen is one press back. This section is
+     about what the entry screen says either side of the games, so it goes there the way a
+     reader does rather than by setting a class. */
+  await page.waitForSelector('#s-live.on', { timeout: 10000 });
+  await page.click('#b-live-back');
   await page.waitForSelector('#s-in.on', { timeout: 10000 });
   const entry = await page.evaluate(() => {
     const key = Object.keys(localStorage).find((k) => /^ps_fantasy_/.test(k));

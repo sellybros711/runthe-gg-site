@@ -314,6 +314,18 @@
      because a board that jumps from 50 to 112 with no mark reads as a rendering fault. */
   .brow.gap{color:var(--dim-2);justify-content:center;padding:1px 0}
 
+  /* Who is in, before anybody can see a lineup. It wears the board's own shape and the blue
+     rail every board on this site uses for WHOSE row it is, AND IT CARRIES NO NUMBER, which
+     is the whole difference: a place implies a score and there is no score yet, so a numbered
+     list before the games would invent a standing out of who pressed first. */
+  .erow{display:flex;align-items:center;gap:9px;font-size:13px;padding:4px 7px;
+    border-radius:8px;border-left:3px solid transparent}
+  .erow.me{background:var(--panel);border-left-color:var(--blue)}
+  .erow .en{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .erow .ey{flex:0 0 auto;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--dim-2)}
+
   /* ---- the board while the games are on ----
      EVERY MOVING THING HERE IS A TRANSFORM OR AN OPACITY, which is the rule the hoops live
      board and the football boss battle both run on: both are composited, so twenty five
@@ -422,6 +434,16 @@
 
   .note{font-size:13px;color:var(--dim);margin:10px 0 0}
   .lede{font-size:14.5px;color:var(--dim);margin:8px 0 0}
+  /* A REFUSAL IS NOT A NOTE. It is the answer to the button under it, it is the reason
+     nothing happened, and it has to be findable by somebody whose thumb is already on the
+     control. Red because every refusal on this page is red, and its own box because a
+     sentence in the dim grey the rest of the furniture uses is one more line of furniture.
+     `[hidden]` is written out because this element is display:block and would otherwise
+     ignore the attribute, which is the seventh time on this site. */
+  .refuse{font-size:14px;line-height:1.4;color:var(--red);margin:14px 0 0;
+    background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.45);
+    border-radius:10px;padding:10px 12px}
+  .refuse[hidden]{display:none}
   .big{font-family:var(--fd);font-size:44px;font-weight:400;line-height:.95;
     font-variant-numeric:tabular-nums}
   .rule{height:1px;background:var(--line);margin:16px 0}
@@ -504,10 +526,15 @@
     <h2 class="display" style="font-size:26px;margin:6px 0 4px" id="r-head">Your lineups</h2>
     <p class="lede" id="r-say"></p>
     <div class="five" id="r-five" style="margin-top:12px"></div>
-    <!-- THE ORDER IS FIXED AND THE EMPHASIS MOVES. Which of these two is the red one is
-         decided in paintReview by how many drafts are done, because after one draft the
-         thing to do is draft again and after five it is to submit. Moving the buttons
-         themselves would move the target under a thumb that already knows where it is. -->
+    <!-- THE ANSWER TO A CONTROL GOES WHERE THE CONTROL IS.
+         A refusal used to be written into `r-say`, the lede at the top of this screen, and
+         the button is under five lineup cards. Measured on a 390x844 phone with all five
+         drafted: the page is 1691px, Submit is pressed at a scroll of 847, and the refusal
+         landed 694px ABOVE the top of the window. The button went back to reading "Submit
+         this lineup" and the reader saw nothing happen at all, which is what was reported.
+         That is the boss battle's own rule (a control the game is waiting on goes above the
+         record of it) arriving at the ANSWER rather than at the question. -->
+    <p class="refuse" id="r-refuse" hidden></p>
     <div class="stack">
       <button class="btn" id="b-more">Draft another</button>
       <button class="btn" id="b-submit" disabled>Submit this lineup</button>
@@ -1193,6 +1220,7 @@
     if (!b) return;
     state.pick = Number(b.dataset.i);
     save();
+    clearRefused();
     toReview();
   });
 
@@ -1223,13 +1251,37 @@
     $('b-submit').textContent = text;
     $('b-submit').disabled = !!disabled;
   }
+  /* IT IS WRITTEN BESIDE THE BUTTON AND NOT AT THE TOP OF THE SCREEN, for the reason the
+     markup carries at length: measured, the old `r-say` landed 694px above the window on a
+     390x844 phone with five lineups drafted, so the whole of a refusal was "nothing
+     happened". It is also SCROLLED TO rather than trusted to be in view, because the same
+     screen is 1691px and a reader who pressed Submit from the top of it would be the same
+     distance away in the other direction. */
   function sayRefused(why){
-    $('r-say').textContent = why;
+    var el = $('r-refuse');
+    el.textContent = why;
+    el.hidden = false;
     submitLabel('Submit this lineup', state.pick == null);
+    try { el.scrollIntoView({ block: 'nearest' }); } catch (e) { el.scrollIntoView(); }
+  }
+  /* A REFUSAL IS ABOUT THE PRESS THAT CAUSED IT, so it goes the moment anything about that
+     press changes: a different lineup picked, or the same one sent again. Left up, the
+     reader gets last attempt's reason under this attempt's spinner. */
+  function clearRefused(){
+    var el = $('r-refuse');
+    if (el){ el.hidden = true; el.textContent = ''; }
+  }
+  /** A server sentence, capitalised and closed, with nothing else touched. */
+  function asSentence(s){
+    var t = String(s || '').trim();
+    if (!t) return t;
+    t = t.charAt(0).toUpperCase() + t.slice(1);
+    return /[.!?]$/.test(t) ? t : t + '.';
   }
   $('b-submit').onclick = function(){
     if (state.pick == null || submitting) return;
     if (locked()){ paintHome(); show('s-home'); return; }
+    clearRefused();
     var c = chanceAt(state.pick);
     if (!D.full(c)){ sayRefused('That lineup is not finished.'); return; }
     var ids = c.men.map(function(m){ return m.player_id; });
@@ -1251,7 +1303,20 @@
       if (res === true){
         state.submitted = state.pick;
         save();
-        openIn();
+        /*
+         * A SUBMIT LANDS ON THE BOARD, not on your own six.
+         *
+         * It used to open the entry screen, which is a correct receipt and answers the
+         * wrong question: the thing somebody wants at the moment they enter is whether
+         * anybody else has, and their own six are what they were just looking at. The
+         * board carries the confirmation anyway, because their own row is on it and is
+         * marked, so nothing is lost by going to the screen that also says who else is in.
+         *
+         * THE ENTRY SCREEN IS NOT GONE and is one press away: `b-live-back` returns, and
+         * the home screen's own card opens it. What changed is which of the two is the
+         * destination.
+         */
+        openLive('board');
         return;
       }
       if (res === 'again'){
@@ -1262,8 +1327,12 @@
       } else {
         /* THE SERVER'S OWN SENTENCE, not a translation of it. Every refusal in
            `fantasy_submit` is already written for a person, so a second copy here would be
-           nine strings that drift the first time one is edited. */
-        sayRefused('Not entered. ' + (why || 'That lineup was not accepted.'));
+           nine strings that drift the first time one is edited.
+           WHAT THE PAGE OWNS IS THE JOIN. Those sentences are written to stand alone and
+           start lowercase ('sign in to enter'), so pasted after a full stop they read
+           `Not entered. sign in to enter`. Capitalising the first letter and closing the
+           sentence is presentation rather than translation: not one word moves. */
+        sayRefused('Not entered. ' + asSentence(why || 'That lineup was not accepted.'));
       }
     });
   };
@@ -1627,12 +1696,39 @@
       return;
     }
     if (!rows || !rows.length){
-      $('lv-board').innerHTML = '';
+      /*
+       * WHO IS IN, BEFORE ANYBODY CAN SEE A LINEUP. "No lineups before the lock" was
+       * implemented as "no rows", and those are two different claims: what a reader wants at
+       * the moment they enter is whether anybody else has, and the only answer this screen
+       * could give was a count on a label. `supabase/112_fantasy_entrants.sql` answers it
+       * with names and NOTHING else, in a function that selects no pick, no projection and
+       * no spend, so the payload cannot carry the answer key however this is painted.
+       *
+       * ABSENT IS NOT EMPTY, and the entry count is what tells them apart. SQL is deployed by
+       * hand and this page by a push, so a database still on 111 answers with no `entrants`
+       * key at all while the week genuinely has entries in it: that falls back to the
+       * sentence this screen has always drawn rather than claiming nobody is there. */
+      var ents = (data.entrants && data.entrants.length) ? data.entrants : null;
+      var n0 = data.week ? data.week.entries : null;
       BOARD_SEEN = null;
-      $('lv-boardlab').textContent = 'This week';
-      $('lv-boardsay').textContent = (data.week && data.week.open)
-        ? 'Nobody has entered this week. Being first is the prize.'
-        : 'The board opens at the first kickoff.';
+      $('lv-boardlab').textContent = 'This week'
+        + (n0 ? ' · ' + n0 + (n0 === 1 ? ' entry' : ' entries') : '');
+      if (ents){
+        var eh = '', j, e;
+        for (j=0;j<ents.length;j++){
+          e = ents[j];
+          eh += '<div class="erow' + (e.is_me ? ' me' : '') + '">'
+            + '<span class="en">' + esc(e.display_name || 'Somebody') + '</span>'
+            + (e.is_me ? '<span class="ey">you</span>' : '') + '</div>';
+        }
+        $('lv-board').innerHTML = eh;
+        $('lv-boardsay').textContent = 'Lineups open at the first kickoff.';
+        return;
+      }
+      $('lv-board').innerHTML = '';
+      $('lv-boardsay').textContent = (n0 && !(data.week && data.week.open))
+        ? 'The board opens at the first kickoff.'
+        : 'Nobody has entered this week. Being first is the prize.';
       return;
     }
     $('lv-boardsay').textContent = '';
@@ -1848,7 +1944,14 @@
            in `paintIn`, which ends in `show('s-in')`: called from the live screen it would
            take a reader off the board they are watching, every twenty seconds. */
         if ($('s-in').classList.contains('on')) paintLines(d);
-        if ($('b-in-board')) $('b-in-board').hidden = !(d.week && d.week.open);
+        /* THE DOOR IS DRAWN WHEN THE BOARD HAS SOMETHING TO SAY, which used to be the lock
+           and nothing else. It is the lock OR a list of entrants now: before 112 the only
+           pre-lock answer was no rows, so a button here would have taken somebody somewhere
+           to be told nothing, and that is still exactly what it does on a database without
+           the migration. Read off the answer rather than off the clock, so the door and the
+           screen behind it can never disagree about whether there is a list. */
+        if ($('b-in-board')) $('b-in-board').hidden =
+          !((d.week && d.week.open) || (d.entrants && d.entrants.length));
       }
       return d;
     });
@@ -1999,9 +2102,15 @@
 
   function openLive(tab){
     $('lv-week').textContent = POOL.season + ' week ' + POOL.week;
+    /* THREE STATES, AND THE THIRD ONE ARRIVED WITH THE ENTRANTS LIST. This screen could not
+       be reached before the first kickoff until 112 gave it something to say, so the "not
+       being played" sentence was only ever read after the week had finished. Read before it
+       starts, "this is how it finished" is wrong about a week nobody has played a down of. */
     $('lv-say').textContent = liveOpen()
       ? 'Every game of the week, and where everybody is, while it happens.'
-      : 'Week ' + POOL.week + ' is not being played right now. This is how it finished.';
+      : (!locked()
+        ? 'Week ' + POOL.week + ' has not kicked off yet.'
+        : 'Week ' + POOL.week + ' is not being played right now. This is how it finished.');
     $('lv-live').hidden = true;
     /*
      * `BOARD_SEEN` IS DELIBERATELY NOT RESET HERE, AND IT WAS, FOR A PASS.
