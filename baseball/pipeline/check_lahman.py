@@ -34,6 +34,10 @@ def claim(ok, what, detail=""):
         FAILS.append(what)
 
 
+def _csvs_of(z):
+    return [p for p in z.namelist() if p.lower().endswith('.csv')]
+
+
 def zip_of(paths):
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as z:
@@ -504,6 +508,82 @@ claim(len(rows or []) == base,
       str(rows))
 claim(any("CF" in (r or "") for r in (rows or [])),
       "and the traded man's two stints sum to one eligible position", str(rows))
+
+print("\n9. A zip of a zip is still the archive")
+
+# SABR publishes lahman_1871-2025_csv.zip INSIDE a Box folder, so downloading the
+# folder gives a zip whose only useful member is another zip. A reader that
+# looked for Appearances.csv at the top would report an archive with no tables
+# and move on to a mirror four years out of date, which is the quiet failure
+# this whole chain exists to stop.
+
+
+def nest(paths, inner_name="lahman_1871-2025_csv.zip", extra=()):
+    """A zip holding a zip holding the tables, plus whatever else."""
+    inner = io.BytesIO()
+    with zipfile.ZipFile(inner, "w") as w:
+        for p in paths:
+            w.writestr(p, "playerID,yearID\nruthba01,1923\n")
+    outer = io.BytesIO()
+    with zipfile.ZipFile(outer, "w") as w:
+        w.writestr(inner_name, inner.getvalue())
+        for name, body in extra:
+            w.writestr(name, body)
+    return zipfile.ZipFile(io.BytesIO(outer.getvalue()))
+
+
+z = nest(["lahman_1871-2025_csv/Appearances.csv",
+          "lahman_1871-2025_csv/People.csv"])
+try:
+    got = with_archive(lahman.descend(z), lambda: lahman.member("Appearances.csv"))
+    claim(got.endswith("Appearances.csv"), "a table inside a nested zip is found", got)
+except Exception as e:
+    claim(False, "a table inside a nested zip is found", f"{type(e).__name__}: {e}")
+
+# A FOLDER CARRIES THE OTHER BUILDS TOO, and they are zips with no csv in them.
+# WHAT THIS PROVES IS THAT ONE DOES NOT STOP THE SEARCH, and not that the csv
+# build is tried first: the loop keeps going until it finds csv, so ordering the
+# candidates is an optimisation and no outcome can distinguish it from a plain
+# sort. That is asserted honestly rather than dressed up, the same way the
+# trailing-slash skip is in section 4. The decoy still sorts AHEAD of the real
+# one (Lahman really does publish an Access build) so the arm is at least
+# exercising the case where the first candidate is the wrong one.
+acc = io.BytesIO()
+with zipfile.ZipFile(acc, "w") as w:
+    w.writestr("lahman_1871-2025_access/lahman.mdb", "not a table\n")
+z = nest(["lahman_1871-2025_csv/Appearances.csv"],
+         extra=[("lahman_1871-2025_access.zip", acc.getvalue())])
+try:
+    got = with_archive(lahman.descend(z), lambda: lahman.member("Appearances.csv"))
+    claim(got.endswith("Appearances.csv"),
+          "and a build with no csv in it does not stop the search", got)
+except Exception as e:
+    claim(False, "and a build with no csv in it does not stop the search",
+          f"{type(e).__name__}: {e}")
+
+# A GITHUB ARCHIVE MUST NOT PAY FOR ANY OF THIS. It has csv at the top, so the
+# descent returns it untouched, which is asserted as identity rather than by
+# reading it: a copy would be a second object and a second decode of 30MB.
+flat = zip_of(["baseballdatabank-main/core/Appearances.csv"])
+claim(lahman.descend(flat) is flat,
+      "a flat archive is handed back as it is, not re-opened")
+
+# Bounded, because a zip can name itself and the fetch must not hang.
+deep = nest(["a/Appearances.csv"])
+for _ in range(4):
+    outer = io.BytesIO()
+    with zipfile.ZipFile(outer, "w") as w:
+        buf = io.BytesIO()
+        deep.fp.seek(0)
+        w.writestr("more.zip", deep.fp.read())
+    deep = zipfile.ZipFile(io.BytesIO(outer.getvalue()))
+try:
+    got = lahman.descend(deep)
+    claim(not _csvs_of(got), "a zip nested past the bound is given up on rather than chased",
+          str(got.namelist()[:3]))
+except Exception as e:
+    claim(False, "a zip nested past the bound is given up on rather than chased",
+          f"{type(e).__name__}: {e}")
 
 print("")
 if FAILS:

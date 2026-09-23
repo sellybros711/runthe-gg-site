@@ -67,11 +67,30 @@ def _gh(repo, ref):
     return f"https://github.com/{repo}/archive/refs/heads/{ref}.zip"
 
 
-# In order, and the order is the argument. Upstream first, both of its branch
-# names, so the day the Chadwick Bureau puts it back nothing here has to change.
-# Then the mirrors, which are somebody else's copy of the last snapshot before
-# it went.
+# SABR'S OWN FOLDER, AND IT IS NOT A DOCUMENTED DOWNLOAD URL. SABR maintains the
+# Lahman database now and publishes it through a Box folder, which has no link a
+# script is invited to fetch: `rm=box_download_shared_folder` is what the web
+# app's own Download button calls and it is undocumented, so it is allowed to
+# stop working and the walk simply moves on to the next source when it does.
+#
+# It is FIRST because it is the only current one. The mirrors under it stop in
+# 2021 and predate SABR adding the Negro Leagues, which between them leave 2,421
+# batters with no position and 1,312 players the archive has never heard of.
+_SABR_FOLDER = "rsry2en86bimvybwsorumfsxmf91002a"
+
+
+def _box(host):
+    return (f"https://{host}/index.php?rm=box_download_shared_folder"
+            f"&shared_name={_SABR_FOLDER}")
+
+
+# In order, and the order is the argument. SABR first because it is the live
+# database. Then upstream under both of its branch names, so the day the
+# Chadwick Bureau puts it back nothing here has to change. Then the mirrors,
+# which are somebody else's copy of the last snapshot before it went.
 SOURCES = [
+    ("SABR, via its Box folder", _box("sabr.app.box.com")),
+    ("SABR, via app.box.com", _box("app.box.com")),
     ("chadwickbureau, master", _gh("chadwickbureau/baseballdatabank", "master")),
     ("chadwickbureau, main", _gh("chadwickbureau/baseballdatabank", "main")),
     ("xorq-labs mirror", _gh("xorq-labs/baseballdatabank", "master")),
@@ -95,6 +114,48 @@ def _fetch(url):
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=180) as r:
         return r.read()
+
+
+def _csvs(z):
+    return [p for p in z.namelist()
+            if p.lower().endswith(".csv") and not p.endswith("/")]
+
+
+def descend(z, depth=2):
+    """A zip of a zip is still the archive, so go in and find the tables.
+
+    A GITHUB ARCHIVE HOLDS THE CSVs AND A BOX FOLDER HOLDS A ZIP OF THEM. SABR
+    publishes `lahman_1871-2025_csv.zip` inside its folder, so downloading the
+    folder gives a zip whose only useful member is another zip, and a reader that
+    looked for `Appearances.csv` in it would report an archive with no tables in
+    it and move on to a mirror four years out of date.
+
+    It only descends when there is NO csv at the current level, so a GitHub
+    archive is untouched and never pays for this. Bounded, because a zip can name
+    itself and the point of the fetch is to not hang.
+    """
+    if depth <= 0 or _csvs(z):
+        return z
+    inner = [p for p in z.namelist() if p.lower().endswith(".zip")]
+    # Try the one that says it is the csv release first. A folder download can
+    # carry the SQL and Access builds too, and those are zips holding no csv at
+    # all. THIS IS AN OPTIMISATION AND NOT THE RULE: the loop below keeps going
+    # until it finds csv either way, so no outcome can tell this ordering from a
+    # plain sort, and check_lahman.py says so rather than claiming otherwise.
+    # What it buys is not decoding a hundred megabytes of Access to learn there
+    # is nothing in it.
+    inner.sort(key=lambda p: (0 if "csv" in posixpath.basename(p).lower() else 1, p))
+    for p in inner:
+        try:
+            with z.open(p) as fh:
+                nested = zipfile.ZipFile(io.BytesIO(fh.read()))
+        except Exception:
+            continue
+        got = descend(nested, depth - 1)
+        if _csvs(got):
+            print(f"  Lahman: the tables are inside {posixpath.basename(p)}")
+            return got
+    return z
 
 
 def archive():
@@ -121,7 +182,7 @@ def archive():
             tried.append(f"{label}: {len(body)} bytes, not a zip ({head!r})")
             continue
 
-        _archive = zipfile.ZipFile(io.BytesIO(body))
+        _archive = descend(zipfile.ZipFile(io.BytesIO(body)))
         _source = url
         print(f"  Lahman: {label} ({len(body) // 1024}KB, "
               f"{len(_archive.namelist())} files)")
