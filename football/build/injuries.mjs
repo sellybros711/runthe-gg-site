@@ -161,12 +161,34 @@ export function buildInjuries({ season, week, ids, injuries, players }) {
     if (pr) men[id].p = pr;
     if (st) flagged++;
   }
+  /*
+   * THERE IS NO `built` TIMESTAMP, AND IT IS THE ONE FIELD THIS FILE CARRIED THAT NOTHING
+   * READ.
+   *
+   * It was `new Date().toISOString()`, so the bytes changed on EVERY run whether or not one
+   * word of the report had moved. That defeats the workflow's whole commit rule: `git diff
+   * --cached --quiet` was never quiet, so the job committed twice a day for ever, and every
+   * commit is a Cloudflare deploy. Measured on the first cron run after it shipped: one
+   * commit, identical counts, and the only line in the diff was the clock.
+   *
+   * That is `110_fantasy_live.sql`'s `results_sig` argument arriving at a static file. A
+   * clock written on every CHECK says the answer changed every time anybody looked at it,
+   * which is the frozen feed wearing a fresh timestamp. There the answer was a signature
+   * over the rows; here the answer is to not write the clock at all, because the file IS
+   * the comparison and git already records when it last moved.
+   *
+   * `report_week` is what a reader actually needs and the sheet already prints it. And a
+   * run that fails here is LOUD rather than silent: the workflow goes red and its read-back
+   * step throws, so nothing needs a clock to tell a stale file from a broken job.
+   *
+   * Neither sibling carries one either (`fantasy_now.json`, `weekly_<season>_w<week>.json`),
+   * so this is the convention rather than an exception to it.
+   */
   return {
     season, week,
     /* The latest week the REPORT covers, which on a Tuesday is the week before. The page
        says so rather than implying a designation is about the coming Sunday. */
     report_week: reportWeek || null,
-    built: new Date().toISOString(),
     source: 'nflverse injuries and players',
     men,
     counts: { off, flagged, known: Object.keys(men).length },

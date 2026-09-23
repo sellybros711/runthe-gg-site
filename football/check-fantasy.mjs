@@ -380,6 +380,47 @@ console.log('\nTHE INJURY REPORT IS BUILT FROM TWO SOURCES');
 
   const only = latestReports(injuries, 2026, 3);
   ok('the report week is the latest it covers', only.reportWeek === 3);
+
+  /*
+   * A WRITER WHOSE OUTPUT MOVES WHEN ITS INPUT DID NOT CANNOT SAY WHETHER ANYTHING MOVED,
+   * and this file's whole workflow rule is built on the answer.
+   *
+   * `fantasy-injuries.yml` commits only when the report has changed, which it asks by
+   * staging the file and testing `git diff --cached --quiet`. A `built: new Date()` made
+   * that test meaningless: the bytes differed on every run, so the job committed twice a
+   * day for ever and each commit is a Cloudflare deploy. It shipped, and the first cron
+   * run after it proved it: one commit, identical counts, a one line diff holding nothing
+   * but the clock.
+   *
+   * THE CLOCK IS DRIVEN RATHER THAN RACED, AND THE FIRST DRAFT OF THIS GUARD RACED IT.
+   * Written as two builds back to back it passed WITH THE DEFECT IN, because two
+   * `new Date().toISOString()` calls in a tight loop land in the same millisecond and
+   * produce the same string. It would have bitten on about one run in however many
+   * milliseconds the two calls straddle, which is this repo's own rule arriving again: a
+   * timing property cannot be checked by hoping to lose the race.
+   *
+   * So `Date` is moved an hour between the two builds. Deterministic, and it catches any
+   * clock rather than one field: written as `!out.built` it would pass the day somebody
+   * adds a different timestamp under a different name, which is exactly how this arrived.
+   */
+  const RealDate = Date;
+  const at = (iso) => {
+    const fixed = new RealDate(iso);
+    globalThis.Date = class extends RealDate {
+      constructor(...a) { return a.length ? new RealDate(...a) : fixed; }
+      static now() { return fixed.getTime(); }
+    };
+  };
+  let twice;
+  try {
+    at('2026-09-23T01:00:00.000Z');
+    const a = JSON.stringify(buildInjuries({ season: 2026, week: 3, ids, injuries, players }));
+    at('2026-09-23T02:00:00.000Z');
+    const b = JSON.stringify(buildInjuries({ season: 2026, week: 3, ids, injuries, players }));
+    twice = [a, b];
+  } finally { globalThis.Date = RealDate; }
+  ok('the report does not move when only the clock does', twice[0] === twice[1],
+    twice[0] === twice[1] ? `${twice[0].length} bytes` : 'the output carries a clock');
 }
 
 if (QUICK) {

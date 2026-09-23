@@ -2843,6 +2843,38 @@ Cloudflare deploys. At twice a day a static file is the simplest thing that work
 migration and no round trip, and **a week with no file behaves exactly as the mode did before
 any of this existed**.
 
+##### And that rule shipped false, because the file carried a clock nothing read
+
+The report was written with `built: new Date().toISOString()`, so its bytes changed on every
+run whether or not one word of it had moved. `git diff --cached --quiet` was therefore never
+quiet and the job committed on **every firing, twice a day, for ever**, which is the hundred
+deploys the cadence argument above exists to avoid, arriving at a third of the rate and by a
+door nobody was watching. **The first cron run after it shipped proved it**: one commit,
+`{"off":5,"flagged":20,"known":35}` either side, and a one line diff holding nothing but the
+timestamp.
+
+**That is 110's `results_sig` argument arriving at a static file.** A clock written on every
+CHECK says the answer changed every time anybody looked at it, which is the frozen feed
+wearing a fresh timestamp. There the fix was a signature over the rows; here it is to not
+write the clock at all, because the file IS the comparison and git already records when it
+last moved. **Nothing read `built`**: not the page, not the sheet, not the guard. Neither
+sibling data file carries one either, so it was the exception rather than the convention.
+`report_week` is what a reader actually needs and the sheet already prints it, and a run that
+fails is loud rather than silent, because the workflow goes red and its read-back step throws.
+
+**THE FIRST GUARD RACED THE CLOCK AND PASSED WITH THE DEFECT IN.** Written as two builds back
+to back, it compared two `new Date().toISOString()` calls that land in the same millisecond,
+so it reported byte equality on exactly the output it was written to catch. It bites on about
+one run in however many milliseconds the two calls straddle, which is nothing. `Date` is
+driven an hour between the two builds now, which is this repo's own rule about the late meter
+answer: **a timing property cannot be checked by hoping to lose the race.** Reintroduced, it
+reports `the output carries a clock`.
+
+**And it asks for byte stability rather than for the absence of one field.** Written
+`!out.built` it would pass the day somebody adds a different timestamp under a different name,
+which is exactly how this one arrived. Proved end to end against live nflverse data: two real
+builds, identical bytes.
+
 **A BOARD IS DERIVED FROM (seed, pool), SO A POOL THAT SHRINKS REDRAWS IT**, and that is
 accepted rather than worked around. Inside one visit nothing moves, which is what the reload
 guard is about. Across a refresh an unsigned board can come back with a different man on it,

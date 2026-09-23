@@ -24,6 +24,14 @@ name: Refresh the Fantasy Challenge injury report
 # which is about three times a week. A static file is then the simplest thing that can work:
 # no migration, no round trip, and a week with no file behaves exactly as the mode did
 # before any of this existed.
+#
+# THAT RULE IS ONLY AS TRUE AS THE BUILDER'S OUTPUT IS STABLE, and it shipped false. The
+# report carried a `built` timestamp written on every run, so `git diff --cached --quiet`
+# below was never quiet and this job committed on EVERY firing, twice a day, for ever. The
+# first cron run after it shipped proved it: one commit, identical counts, and a one line
+# diff holding nothing but the clock. The fix is in `injuries.mjs` and its own header
+# argues it; what this file needs to know is that the commit rule has a dependency, and it
+# is that two builds of an unchanged report are byte identical.
 
 on:
   schedule:
