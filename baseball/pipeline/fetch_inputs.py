@@ -72,8 +72,15 @@ with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
 print("\n" + "="*50)
 print(f"DONE. Bundled {len(ok)} files -> {os.path.abspath(zpath)}")
 if failed:
+    # NOT TRUNCATED. This used to print `e[:120]`, and the Lahman refusal is a
+    # line per source: 120 characters cut it off after three of the four, so the
+    # log read as if the last one had never been tried. The whole point of that
+    # message is which places answered what, and a summary that drops the tail
+    # is the "File is not a zip file" problem arriving one level up. Four
+    # sources times four tables is sixteen lines once, which is cheap.
     print(f"\n{len(failed)} file(s) failed:")
-    for n,e in failed: print(f"  - {n}: {e[:120]}")
+    for n, e in failed:
+        print(f"  - {n}: {e}")
 print("="*50)
 
 # WHAT IS ALLOWED TO FAIL, AND WHAT IS NOT.
