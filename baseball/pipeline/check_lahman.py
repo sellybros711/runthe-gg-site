@@ -361,6 +361,86 @@ claim("under 50%" in log, "and names the coverage rather than the exception",
 # module a machine WITH pybaseball would reach for, and pretending otherwise
 # would be an assertion that can only pass.
 
+print("\n8. The pricing build survives Lahman actually loading")
+
+# THIS BRANCH HAD NEVER RUN. `load_eligibility` returned None on every previous
+# run of this pipeline, because Lahman had not loaded since the archive moved, so
+# the merge below it was dead code and took the build down the first time it
+# fired. That is this repo's own "look for the door before building the room",
+# arriving at a branch rather than a screen.
+#
+# ONE DEFECT AND NOT TWO. It surfaced as `Unalignable boolean Series` from the
+# coverage report's sample line, which reads like a second fault and is not: the
+# join duplicated rows, so the boolean was shorter than the frame it indexed.
+# Moving that sample above the merge is hardening, it is written up as such in
+# build_pricing.py, and reintroducing it alone passes green here.
+
+BAT = ("player_ID,name_common,year_ID,team_ID,WAR\n"
+       "ruthba01,Babe Ruth,1923,NYY,14.1\n"
+       "hornsro01,Rogers Hornsby,1924,SLN,12.5\n"
+       # TRADED MID SEASON, which is the whole point: two Appearances rows, one
+       # priced row, and a join that must not turn him into two.
+       "hendero01,Rickey Henderson,1989,NYA,3.1\n"
+       "hendero01,Rickey Henderson,1989,OAK,4.2\n")
+PIT = ("player_ID,name_common,year_ID,team_ID,WAR,G,GS,SV\n"
+       "johnswa01,Walter Johnson,1913,WSH,14.6,48,36,2\n"
+       "riverma01,Mariano Rivera,2004,NYY,4.0,74,0,53\n")
+
+APP = ("playerID,yearID,teamID,G_c,G_1b,G_2b,G_3b,G_ss,G_lf,G_cf,G_rf,G_dh\n"
+       "ruth,1923,NYA,0,4,0,0,0,148,0,0,0\n"
+       "hornsby,1924,SLN,0,0,143,0,0,0,0,0,0\n"
+       # 40 and 45 games in centre, neither over ELIG_GAMES on its own at a
+       # higher floor, and 85 together: summing is the right reading as well as
+       # the unique one.
+       "henderson,1989,NYA,0,0,0,0,0,0,40,0,0\n"
+       "henderson,1989,OAK,0,0,0,0,0,0,45,0,0\n")
+PEOPLE = ("playerID,bbrefID\n"
+          "ruth,ruthba01\nhornsby,hornsro01\n"
+          "henderson,hendero01\njohnson,johnswa01\nrivera,riverma01\n")
+TEAMS = ("yearID,teamID,name,W,L\n1923,NYA,New York Yankees,98,54\n"
+         "1989,OAK,Oakland Athletics,99,63\n")
+
+
+def price_run(tables):
+    tmp = tempfile.mkdtemp(prefix="pricing-")
+    try:
+        d = os.path.join(tmp, "data")
+        out = os.path.join(tmp, "out")
+        os.makedirs(d)
+        os.makedirs(out)
+        open(os.path.join(d, "war_daily_bat.txt"), "w").write(BAT)
+        open(os.path.join(d, "war_daily_pitch.txt"), "w").write(PIT)
+        for name, body in tables.items():
+            open(os.path.join(d, name), "w").write(body)
+        r = subprocess.run([sys.executable, "build_pricing.py",
+                            "--data-dir", d, "--out-dir", out],
+                           cwd=HERE, capture_output=True, text=True, timeout=300)
+        rows = None
+        priced = os.path.join(out, "priced_players.csv")
+        if os.path.exists(priced):
+            rows = [ln for ln in open(priced).read().splitlines() if ln.strip()][1:]
+        return r.returncode, r.stdout + r.stderr, rows
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+ALL_LAH = {"Appearances.csv": APP, "People.csv": PEOPLE, "Teams.csv": TEAMS}
+
+code, log, rows = price_run({})
+claim(code == 0, "it builds with no Lahman at all, as it always has", log[-400:])
+base = len(rows or [])
+claim(base == 5, f"five priced men, the traded one collapsed to a season ({base})",
+      str(rows))
+
+code, log, rows = price_run(ALL_LAH)
+claim(code == 0, "and it builds with Lahman loaded, which had never once happened",
+      log[-600:])
+claim(len(rows or []) == base,
+      f"the eligibility join multiplies nobody ({len(rows or [])} against {base})",
+      str(rows))
+claim(any("CF" in (r or "") for r in (rows or [])),
+      "and the traded man's two stints sum to one eligible position", str(rows))
+
 print("")
 if FAILS:
     print(f"{len(FAILS)} failed.\n")

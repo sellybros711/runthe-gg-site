@@ -133,6 +133,23 @@ def load_eligibility(data_dir):
     A = pd.read_csv(ap, low_memory=False); P = pd.read_csv(pe, low_memory=False)
     P = P[[pick(P,"playerID"), pick(P,"bbrefID")]].rename(columns={pick(P,"playerID"):"playerID", pick(P,"bbrefID"):"bbref_id"})
     A = A.merge(P, on="playerID", how="left")
+
+    # APPEARANCES IS ONE ROW PER CLUB, NOT PER SEASON, and the caller left-joins
+    # this table onto the priced frame by (bbref_id, season). So a traded player
+    # arrived with two rows under one key and the join MULTIPLIED him: two priced
+    # rows for one man in one year, at one price, in a pool whose whole job is to
+    # be drafted from. Nothing throws, every row is a valid row, and the only
+    # symptom is one man being offered twice.
+    #
+    # Summing first is also the right baseball answer rather than a dedup. A man
+    # who caught forty games for one club and twenty for another caught sixty
+    # that season, and ELIG_GAMES is a claim about his SEASON. Read per stint he
+    # is eligible nowhere, which is the same defect wearing the opposite sign.
+    yid = pick(A, "yearID")
+    games = [c for c in POS_COLS.values() if c in A.columns]
+    A = (A.dropna(subset=["bbref_id"])
+           .groupby(["bbref_id", yid], as_index=False)[games].sum())
+
     rows = []
     for _,r in A.iterrows():
         elig = [pos for pos,col in POS_COLS.items() if col in A.columns and pd.notna(r.get(col)) and r.get(col,0) >= ELIG_GAMES]
@@ -207,9 +224,28 @@ def main():
         merged.loc[is_pitch,"is_closer"] = roles[1].values
     merged["is_closer"] = merged.get("is_closer", pd.Series(False, index=merged.index)).fillna(False)
 
+    # THE UNMATCHED SAMPLE IS TAKEN HERE, while `both` provably lines up with the
+    # frame it was computed from, and this is HARDENING RATHER THAN THE FIX. What
+    # actually raised `Unalignable boolean Series` on the runner is the join
+    # below, which duplicated rows: `both` was then shorter than the frame. With
+    # that join honest the old placement works, because a left merge hands back a
+    # fresh RangeIndex of the same length and pandas aligns on the values. So this
+    # move cannot be proved by mutation and does not pretend to be a second
+    # defect. It is kept because the alignment holds by coincidence of the index
+    # being a RangeIndex, and a diagnostic nothing reads should not be the thing
+    # that can take a four stage build down.
+    unmatched = merged.loc[~both, ["name","season","team"]].head(15)
+
     E = load_eligibility(a.data_dir)
     if E is not None:
+        before = len(merged)
         merged = merged.merge(E, on=["bbref_id","season"], how="left", suffixes=("","_lah"))
+        if len(merged) != before:
+            # A left join on a key with duplicates does not fail, it multiplies.
+            sys.exit(f"FATAL: the eligibility join changed the row count, "
+                     f"{before} to {len(merged)}.\n"
+                     "  Appearances is one row per club, so (bbref_id, season) has to be\n"
+                     "  summed to one row before this join. See load_eligibility.")
         for c in ["eligible_pos","primary_pos"]:
             merged[c] = merged[c+"_lah"].where(merged[c+"_lah"].notna() & (merged[c+"_lah"]!=""), merged[c])
             merged.drop(columns=[c+"_lah"], inplace=True)
@@ -227,9 +263,9 @@ def main():
         f.write(f"fWAR match rate: {matched:.1%}\n")
         f.write(f"blended rows: {int(both.sum())} | bWAR-only rows: {int((~both).sum())}\n")
         f.write(f"price range: ${out['price_m'].min():.1f}M - ${out['price_m'].max():.1f}M\n")
-        if (~both).any():
-            f.write("\nsample unmatched (no fWAR join) — check name normalization:\n")
-            f.write(merged.loc[~both,["name","season","team"]].head(15).to_string(index=False))
+        if len(unmatched):
+            f.write("\nsample unmatched (no fWAR join), check name normalization:\n")
+            f.write(unmatched.to_string(index=False))
     print(f"[ok] priced_players.csv  ({len(out)} rows)  fWAR match {matched:.1%}")
     print(out.head(12).to_string(index=False))
 
