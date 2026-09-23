@@ -113,6 +113,22 @@ jobs:
         run: python3 baseball/pipeline/reference_seasons.py
              baseball/data/players.json /tmp/pool_before.json
 
+      # AND THE SHAPE, because the reference seasons cannot see this and proved
+      # it on the first real run: they agreed to the decimal on all ten while the
+      # pool underneath them had 109,859 rows against 44,344, positions on none
+      # of its 60,208 batters, and 22,019 closers against 905. The bulk WAR files
+      # fetched cleanly, so every number those ten rows print was right; what
+      # failed was Lahman, which is positions and closer flags. A pool can be
+      # correct about every figure it shows and still be the wrong pool.
+      #
+      # The only thing that went red was check-labels, on the longest CLUB LINE
+      # being 38 characters, because a pool 2.5 times the size holds a longer
+      # name. That is a catastrophe caught by its shadow, and this is the step
+      # that catches it by its face.
+      - name: The rebuilt pool is the same kind of thing
+        run: python3 baseball/pipeline/pool_shape.py
+             baseball/data/players.json /tmp/pool_before.json
+
       # The pool the game will actually serve, checked before it is committed.
       # check-labels drives every shipped row through the pricing rule, so a build
       # that changed the formula or lost the innings anchor fails here rather than
