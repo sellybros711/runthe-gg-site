@@ -180,6 +180,21 @@ try:
     A["season"] = A["yearID"]
     A = A.dropna(subset=["bbref_id"])
 
+    # APPEARANCES IS ONE ROW PER CLUB AND THE LOOP BELOW IS KEYED PER SEASON, so
+    # a traded player wrote his key more than once and the LAST stint won. That
+    # is not a duplicate the way the pricing build's join was, it is a silent
+    # LOSS: ELIG_GAMES is a claim about the season, so a man who played eight
+    # games at short for one club and seven for another played fifteen and
+    # qualifies, while neither stint does and he comes out with no position at
+    # all. Measured against the pool that ships, 2,422 batters lost theirs.
+    #
+    # The same read is in build_pricing.py and was fixed there first, which is
+    # the half worth remembering: that one THREW, because its answer was joined
+    # and the duplicate multiplied rows. This one is the same mistake in the file
+    # that actually builds the shipped pool, and it just quietly drops a column.
+    gcols = [c for c in POS_COLS.values() if c in A.columns]
+    A = A.groupby(["bbref_id", "season"], as_index=False)[gcols].sum()
+
     # Build position eligibility per player-season
     pos_data = {}
     for _, r in A.iterrows():
@@ -275,21 +290,30 @@ try:
         if pd.notna(r["SV"]) and r["SV"] >= CLOSER_MIN_SV:
             saves_map[(r["bbref_id"], int(r["season"]))] = True
 
-    # Override closer flag for pitchers with real saves data
+    # THE SAVES COLUMN DECIDES, INCLUDING WHEN IT SAYS NO. This loop used to set
+    # the flag True on a save total and leave it alone otherwise, with a comment
+    # saying a reliever with no saves "could still close". So the innings proxy
+    # survived underneath the real answer and the flag meant "pure reliever OR
+    # real closer", which is 6,041 player-seasons against the saves column's 905.
+    # `closerSavePct` reads the CL slot by name, so that is most of every bullpen
+    # in the game handed a genuine closer's save rate.
+    #
+    # ELIGIBILITY IS NOT THE FLAG AND IS DELIBERATELY UNTOUCHED. Every reliever
+    # in the pool that ships carries `RP;CL`, all 7,239 of them, and only 905
+    # carry the flag: being ABLE to close is a roster shape and having closed is
+    # a fact about the season. Narrowing the eligibility here would empty the CL
+    # slot for most of the board.
     updated = 0
     for idx, row in df.iterrows():
         if row["role"] != "pitch":
             continue
         key = (row["bbref_id"], int(row["season"]))
-        if key in saves_map:
-            df.at[idx, "is_closer_proxy"] = True
+        real = key in saves_map
+        df.at[idx, "is_closer_proxy"] = real
+        if real:
             if "CL" not in str(df.at[idx, "eligible_pos"]):
                 df.at[idx, "eligible_pos"] = "RP;CL"
             updated += 1
-        elif row["eligible_pos"] == "RP;CL":
-            # Was flagged by innings heuristic but doesn't have saves — keep as RP;CL
-            # since they're still relievers who could close
-            pass
 
     print(f"  Found {len(saves_map)} player-seasons with {CLOSER_MIN_SV}+ saves")
     print(f"  Updated {updated} pitcher rows with real closer flags")

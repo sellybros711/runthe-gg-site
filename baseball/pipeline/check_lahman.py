@@ -257,24 +257,42 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 BAT = ("player_ID,name_common,year_ID,team_ID,WAR,pitcher\n"
        "ruthba01,Babe Ruth,1923,NYY,14.1,N\n"
-       "gehrilo01,Lou Gehrig,1927,NYY,11.8,N\n")
+       "gehrilo01,Lou Gehrig,1927,NYY,11.8,N\n"
+       # TRADED MID SEASON, and his two stints are what the position read has to
+       # sum. Two rows in the spine collapse to one priced season already.
+       "hendero01,Rickey Henderson,1989,NYA,3.1,N\n"
+       "hendero01,Rickey Henderson,1989,OAK,4.2,N\n")
 PIT = ("player_ID,name_common,year_ID,team_ID,WAR,pitcher,IPouts_start,IPouts_relief\n"
        "johnswa01,Walter Johnson,1913,WSH,14.6,Y,1040,20\n"
-       "riverma01,Mariano Rivera,2004,NYY,4.0,Y,0,240\n")
+       # A REAL CLOSER: no starts, 53 saves.
+       "riverma01,Mariano Rivera,2004,NYY,4.0,Y,0,240\n"
+       # A SETUP MAN: no starts and two saves. The innings proxy calls him a
+       # closer, because all it knows is that he never starts, and the saves
+       # column says he is not one. Both readings sit in the pool at once until
+       # the saves answer is allowed to say no.
+       "quantpa01,Paul Quantrill,2001,TOR,2.5,Y,0,250\n")
 
-APPEARANCES = ("playerID,yearID,G_c,G_1b,G_2b,G_3b,G_ss,G_lf,G_cf,G_rf,G_of,G_dh\n"
-               "ruth,1923,0,4,0,0,0,148,0,0,148,0\n"
-               "gehrig,1927,0,155,0,0,0,0,0,0,0,0\n")
+APPEARANCES = ("playerID,yearID,G_c,G_1b,G_2b,G_3b,G_ss,G_lf,G_cf,G_rf,G_dh\n"
+               "ruth,1923,0,4,0,0,0,148,0,0,0\n"
+               "gehrig,1927,0,155,0,0,0,0,0,0,0\n"
+               # Eight games in left and seven for the other club is fifteen, so
+               # he qualifies on the SEASON and on neither stint. Read per club
+               # he comes out with no position at all, which is how 2,422
+               # batters lost theirs against the pool that ships.
+               "henderson,1989,0,0,0,0,0,8,0,0,0\n"
+               "henderson,1989,0,0,0,0,0,7,0,0,0\n")
 PITCHING = ("playerID,yearID,SV\n"
             "johnson,1913,2\n"
-            "rivera,2004,53\n")
+            "rivera,2004,53\n"
+            "quantrill,2001,2\n")
+PEOPLE_ROWS = [("ruth", "ruthba01"), ("gehrig", "gehrilo01"),
+               ("henderson", "hendero01"), ("johnson", "johnswa01"),
+               ("rivera", "riverma01"), ("quantrill", "quantpa01")]
 
 
 def people(with_ids=True):
-    rows = [("ruth", "ruthba01"), ("gehrig", "gehrilo01"),
-            ("johnson", "johnswa01"), ("rivera", "riverma01")]
     out = "playerID,bbrefID\n"
-    for lah, bbref in rows:
+    for lah, bbref in PEOPLE_ROWS:
         out += f"{lah},{bbref if with_ids else ''}\n"
     return out
 
@@ -317,12 +335,58 @@ ALL = {"Appearances.csv": APPEARANCES, "People.csv": people(),
 # runner the fetch would have worked and both would have reported the build
 # failing to stop. A fixture that passes because the machine is offline is the
 # repo's own note about a timing property checked by hoping to lose the race.
+# THE COUNTS ARE DERIVED FROM THE FIXTURE, never written. Both were pinned as
+# "2/2" and "0/2" and went red the moment the fixture grew a third batter, which
+# is a check that fails on somebody improving it.
+BATTERS = len({ln.split(",")[0] for ln in BAT.strip().splitlines()[1:]})
+CLOSERS = sum(1 for ln in PITCHING.strip().splitlines()[1:]
+              if int(ln.split(",")[2]) >= 20)
+
 code, log = drive("everything present", lahman_src=REFUSES, tables=ALL)
 claim(code == 0, "a build with the Lahman tables finishes", log[-400:])
-claim("Batters with positions: 2/2" in log,
-      "and the positions land", log[-400:])
-claim("Closers (saves-based): 1" in log,
-      "and one of the two arms is the closer, off the saves column", log[-400:])
+claim(f"Batters with positions: {BATTERS}/{BATTERS}" in log,
+      f"and the positions land, all {BATTERS} of them", log[-500:])
+claim(f"Closers (saves-based): {CLOSERS}" in log,
+      f"and {CLOSERS} of the three arms is the closer, off the saves column",
+      log[-500:])
+
+# THE SETUP MAN IS THE CLAIM, and the count above cannot make it: he never
+# starts, so the innings proxy calls him a closer, and two saves says he is not
+# one. Read off the shipped row rather than off the log, because what the game
+# reads is the flag.
+def closer_flags(text):
+    import json as _j
+    return {r["name"]: bool(r.get("is_closer_proxy"))
+            for r in _j.loads(text) if r.get("role") == "pitch"}
+
+
+flags = None
+tmp = tempfile.mkdtemp(prefix="lahman-flags-")
+try:
+    shutil.copy(os.path.join(HERE, "build_positions.py"), tmp)
+    open(os.path.join(tmp, "lahman.py"), "w").write(REFUSES)
+    d = os.path.join(tmp, "data")
+    os.makedirs(d)
+    open(os.path.join(d, "war_daily_bat.txt"), "w").write(BAT)
+    open(os.path.join(d, "war_daily_pitch.txt"), "w").write(PIT)
+    for name, body in ALL.items():
+        open(os.path.join(d, name), "w").write(body)
+    subprocess.run([sys.executable, "build_positions.py"], cwd=tmp,
+                   capture_output=True, text=True, timeout=300)
+    out = os.path.join(tmp, "priced_players_enriched.json")
+    if os.path.exists(out):
+        flags = closer_flags(open(out).read())
+finally:
+    shutil.rmtree(tmp, ignore_errors=True)
+
+claim(flags is not None, "the enriched rows are readable", str(flags))
+if flags:
+    claim(flags.get("Mariano Rivera") is True,
+          "53 saves is a closer", str(flags))
+    claim(flags.get("Paul Quantrill") is False,
+          "and two saves is NOT, however few games he starts", str(flags))
+    claim(flags.get("Walter Johnson") is False,
+          "and a starter is not one either", str(flags))
 
 # ONE TABLE MISSING AT A TIME, or the arm proves nothing about the step it
 # names. Written with no tables at all, reintroducing the Appearances swallow
@@ -338,8 +402,8 @@ code, log = drive("no Appearances, waved through", lahman_src=REFUSES,
                   tables={"People.csv": people(), "Pitching.csv": PITCHING},
                   args=("--allow-no-positions",))
 claim(code == 0, "and the flag is still a way through", log[-300:])
-claim("Batters with positions: 0/2" in log,
-      "which builds exactly the pool that shipped", log[-400:])
+claim(f"Batters with positions: 0/{BATTERS}" in log,
+      "which builds exactly the pool that shipped", log[-500:])
 
 code, log = drive("no Pitching", lahman_src=REFUSES,
                   tables={"Appearances.csv": APPEARANCES, "People.csv": people()})
