@@ -8937,6 +8937,71 @@ the discount without a data rebuild**. Do not close the gap by pricing off the
 raw WAR: Walsh goes from $17.6M to about $62M and every number in the balance
 table below needs re-measuring.
 
+#### The refresh could not write the pool it committed
+
+```
+python3 baseball/pipeline/compact_pool.py          the fourth stage
+python3 baseball/pipeline/reference_seasons.py     ten seasons, against a second pool
+```
+
+`.github/workflows/baseball-data.yml` exists because both WAR sources are refused
+by the development sandbox, so the runner is the only machine in this project that
+can rebuild the pool. It ran three stages and then did
+`git add baseball/data/players.json`, **on a file it had never written**.
+
+`build_positions.py` ends at `priced_players_enriched.json`, which carries verbose
+column names (`bbref_id`, `primary_pos`, `war_raw`) because it is the frame the
+build was working in. The game fetches `players.json`, which carries compact keys
+(`i`, `pp`, `w`) because every visitor downloads it. **Nothing in the repo turned
+one into the other**, so the pool that ships was produced by a step nobody
+committed and the workflow could not reproduce it.
+
+**IT IS NOT A CRASH AND NOT A RED RUN.** Every firing would have fetched, built,
+found the file unchanged, printed "The pool did not move" and exited green. A
+workflow that looks like it refreshes the pool every time and has never once
+written a byte of it, which is the worst shape a data job can have and is why
+this was found by trying to answer a question with it rather than by a check.
+
+**The compaction rule is read off the shipped file rather than guessed**, and it
+is PROVED BY ROUND TRIP: invert it on the pool that ships, run `compact_pool.py`
+over the result, and the bytes come back identical on all 44,344 rows. Two things
+that read like tidying cost exactly that, and both were caught by the comparison
+rather than by reasoning:
+
+- **Coercing a whole number to an int.** The pool came out of pandas, so every one
+  of these columns is a float and the file says `7.0` and `217.0`. It diverges at
+  Rogers Hornsby, the fifth row.
+- **Dropping the ascii escaping.** The file writes `Martínez` rather than the
+  byte, so `ensure_ascii=False` changes every accented name in the pool.
+
+What the round trip CANNOT prove is how ties are broken against a fresh build,
+because the compact file does not carry the order the enriched frame was in. That
+is left to pandas' stable sort, exactly as before, and said rather than implied.
+
+**`pp`, `ep`, `cl` and `ip` are DROPPED rather than written null**, which is not a
+micro-optimisation: 145 rows have no position at all (Negro Leagues seasons Lahman
+cannot place), every batter has no innings, and 940 pitchers have none either. The
+page already reads all four as optional. **The order is price descending and is
+load-bearing**: the board walks the pool and the reserve floor reads off the cheap
+end, so a pool in input order is a different game.
+
+**The refresh bumps the `?v=` now**, which is the rule this repo already keeps a
+checker for arriving at the one writer that cannot do it by hand. The page fetches
+`data/players.json?v=N` with the number written by hand; a bot rewriting 4.7MB and
+leaving it alone serves a RETURNING visitor the old pool, and the only symptom is
+somebody insisting a season is not in the game. It bumps only what `git diff
+--quiet` says actually moved, which is what the hoops refresh already does.
+
+**`reference_seasons.py` is a READING and not a guard, and says so.** Every figure
+in the section above was recalled rather than fetched, because nothing here can
+reach the source, and one of them disagrees with the pool: Ted Williams 1941 ships
+at **10.36** against a remembered 10.6. So the refresh prints ten seasons a reader
+can look up, **against the pool from before the build**, because a single column of
+numbers asks somebody to remember what they were yesterday. Ruth 1923 anchors the
+top of the price curve, Walter Johnson 1913 is the dearest arm and so carries the
+innings discount, and Bonds 2001 is the row the bWAR against fWAR argument was
+settled on.
+
 ### Two ratings, two jobs, and they must not be merged
 
 `squadRating()` reads nine bats and two starters, the same shape a real club
