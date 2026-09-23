@@ -94,9 +94,41 @@ jobs:
       # failed source and carries on by design, so the log is the only place a 403
       # shows up, and reading it is how the blend's absence should have been caught
       # the first time.
+      #
+      # AND THE COLUMNS, because a row count cannot say what is IN a file and
+      # this sandbox cannot reach Baseball-Reference to look. The runbook never
+      # recorded what the bulk WAR files carry, so what the pipeline may ask of
+      # them was guesswork from here, and the newest season each source reaches
+      # is the fact that decides whether a rebuild is shippable at all: the
+      # Lahman mirror the fetch falls back to stops in 2021 and has no Negro
+      # Leagues, which is 2,421 batters with no position and is invisible in a
+      # row count.
       - name: What the fetch actually got
         working-directory: baseball/pipeline
-        run: ls -la data/ && wc -l data/*.txt data/*.csv 2>/dev/null || true
+        run: |
+          ls -la data/ && wc -l data/*.txt data/*.csv 2>/dev/null || true
+          echo ""
+          for f in data/*.txt data/*.csv; do
+            [ -f "$f" ] || continue
+            echo "== $f"
+            head -1 "$f" | tr ',' '\n' | tr -d '\r' | paste -sd' ' -
+          done
+          echo ""
+          echo "== newest season each Lahman table reaches"
+          python3 - <<'PY'
+          import csv, glob, os
+          for p in sorted(glob.glob("data/*.csv")):
+              try:
+                  with open(p, newline="", encoding="utf-8-sig") as fh:
+                      r = csv.DictReader(fh)
+                      col = next((c for c in (r.fieldnames or []) if c.lower() == "yearid"), None)
+                      if not col:
+                          continue
+                      years = [int(x[col]) for x in r if (x.get(col) or "").strip().isdigit()]
+                  print(f"  {os.path.basename(p):20} {min(years)} to {max(years)}  ({len(years):,} rows)")
+              except Exception as e:
+                  print(f"  {os.path.basename(p):20} could not be read: {e}")
+          PY
 
       # FOUR STAGES, AND THE FOURTH ONE WAS MISSING FOR THE LIFE OF THIS FILE.
       # build_positions.py ends at priced_players_enriched.json, which carries
