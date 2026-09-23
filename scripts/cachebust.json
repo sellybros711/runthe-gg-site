@@ -2019,8 +2019,8 @@
       "sha": "153192c9aeb27834"
     },
     "/assets/cloudsave.js": {
-      "v": "1",
-      "sha": "5f24ea88454d0669"
+      "v": "2",
+      "sha": "db78661bbd724b47"
     },
     "/cfb/data/cfb_fbs.json": {
       "v": "1",
@@ -2137,8 +2137,8 @@
       "sha": "905aa4f7e9d42645"
     },
     "/assets/cloudsave.js": {
-      "v": "1",
-      "sha": "5f24ea88454d0669"
+      "v": "2",
+      "sha": "db78661bbd724b47"
     },
     "auth.js": {
       "v": "5",
@@ -2173,6 +2173,14 @@
     "auth.js": {
       "v": "1",
       "sha": "f4d23b1fe32fff3a"
+    },
+    "/assets/cloudsave.js": {
+      "v": "2",
+      "sha": "db78661bbd724b47"
+    },
+    "cloud.js": {
+      "v": "1",
+      "sha": "d401cefb277986c4"
     },
     "data/players.json": {
       "v": "5",

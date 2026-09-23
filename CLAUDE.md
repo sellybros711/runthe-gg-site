@@ -6682,6 +6682,7 @@ node hoops/check-live.mjs         the game you play yourself, and its fit
 node hoops/check-bracket.mjs      the playoff bracket, and the field it draws
 node hoops/check-draft.mjs        the draft screen's shape, desktop and phone
 node hoops/check-home.mjs         how far the front page scrolls, and the fold
+node hoops/check-cloudsave.mjs    the run, the career and the daily, on two devices
 ```
 
 `check-badges.mjs` takes about two minutes, because proving a badge is reachable
@@ -8489,6 +8490,176 @@ database it is broken and teaches everybody to ignore the column.
 **108 twice is not a typo.** `108_hoops_leaderboard` and `108_dynasty_slot`
 were written for two different games in the same week and touch nothing in
 common.
+
+### The career belongs to the account, and a career MERGES where a run does not
+
+```
+node hoops/check-cloudsave.mjs           the merges, then a real second device
+node hoops/check-cloudsave.mjs --quick   the merges only, no browser
+```
+
+The run, the career and the daily were all in localStorage and nowhere else,
+which `supabase/103_cloud_saves.sql`'s own header already lists five ways of
+losing. What makes it worse here than in the football game is that **every
+badge in `badges.js` is DERIVED from the career**, so a second device or a
+cleared jar is not a missing number, it is an empty cabinet somebody spent
+weeks filling, with nothing on screen to explain it.
+
+**IT NEEDED NO MIGRATION.** `ps_saves` is keyed on (user, game, slot) with
+`game` a free-form text column, so `rtf` is a value rather than a schema
+change. 103 is already deployed, so there is nothing new in the preflight and
+nothing to deploy by hand: the one shape of failure this whole section usually
+warns about does not exist here.
+
+`/assets/cloudsave.js` is the TRANSPORT and is shared with the football and
+college games; `hoops/cloud.js` is this game's POLICY. Only the game knows what
+further along means, which is 103's own argument, and only the game knows what
+a career is.
+
+**THREE SLOTS, one `ps_save_all` on boot.** The run, the career and the daily.
+**The preferences stay local** (the last club, the last era, whether the guide
+has been seen): each is worth one tap, none is worth a round trip, and a
+remembered club following somebody to a second device would be slightly wrong
+anyway, because it is a fact about the browser they drafted in.
+
+#### A football dynasty is one run at two points. A career is not.
+
+Progress-wins is the whole answer for a dynasty: two devices are at different
+points of ONE run, and more play is never the wrong thing to keep. **Two
+devices can each hold runs the other has never seen.** A laptop plays five, a
+phone plays three, and neither is behind the other. Run the progress rule over
+that and the phone's three are deleted by the laptop's next save, which is the
+exact failure this exists to stop, arriving by the door built to prevent it.
+
+So the career and the daily MERGE, and the merge has one property everything
+else is built to protect:
+
+> **A MERGE MAY NEVER TAKE A BADGE AWAY.**
+
+Every badge is a `>=` over a counter, a count of distinct keys in a map, or a
+question about the rows. So scalars take the MAXIMUM, maps take the union with
+the maximum per key, and rows take the union. All three only grow. That is
+**checked as a property over the real catalog** rather than trusted: 220 pairs
+of random careers, and the merged cabinet has to be a superset of both. **The
+sweep asserts it is not vacuous**, because a fuzz that lit nothing would prove
+the empty set is a superset of the empty set.
+
+**A COUNTER UNDER-COUNTS, AND THAT IS CHOSEN.** Five runs on a laptop and three
+on a phone merge to `runs: 5`, not 8, because a maximum is not a sum and a sum
+would double every time the same two careers met again. Exactness would mean
+deriving the count from the rows, and the rows are capped at 250 while the
+count is not. **Under-counting is the safe direction**: it can delay a badge
+and can never hand one out that was not earned. Anybody swapping the maximum
+for a sum should read that sentence and then the idempotence assertion.
+
+#### A row had no identity, and without one the merge doubles it every boot
+
+A career row is a compact line of numbers about a finished season and carried
+nothing to tell it from another one. Merged without an identity, **every row on
+the device doubles on every single boot**.
+
+New rows carry `id`, the run's own seed. Rows already on a device have none and
+fall back to a key built from their CONTENTS, so two genuinely identical runs
+collapse into one row: one line of evidence lost on a coincidence, which is the
+same safe direction as the paragraph above. **No version bump**, because
+`loadCareer` accepts version 1 and nothing else and raising it would throw away
+every career on every device. That is `recordRun`'s own rule about new fields.
+
+**`id: undefined` IS A SEAM AND IT IS NOT OBVIOUS.** The literal writes the key
+whether or not there is a seed, and `JSON.stringify` drops it, so a row keyed
+one way in memory and another way on the wire would be held twice by a union
+that is supposed to be idempotent. `rowKey` skips undefined values, and the
+guard asserts the key is the same either side of JSON.
+
+#### Two accounts on one browser is a DISCLOSURE, not a lost save
+
+Merging turns 103's fifth failure into its opposite: sign in as somebody else
+and their cabinet quietly adopts the runs, the rings and the streak of whoever
+used this browser last. Neither record is true afterwards and nothing says so.
+
+So the browser records whose copy it is holding, in `rtf.owner.v1`, which never
+leaves the device. Nobody's is MERGED, which is claiming a signed-out career
+the way the leaderboard already claims a finished run on the way in. The same
+account is MERGED. **Somebody else's is REPLACED**, with the account's own copy
+or with nothing.
+
+**IT DOES NOT APPLY TO THE RUN, deliberately.** A draft in progress makes no
+claim about who did what, is on no board, and nothing is derived from it.
+Signing in part way through one means that draft is now yours on this account.
+Clearing somebody's half-finished draft because they changed accounts would be
+this file destroying a run rather than keeping one.
+
+#### The copy said the career was private, and it had been true for a year
+
+The profile sheet read **"Stored in this browser only"** and **"nothing here is
+sent anywhere"**. A page telling a reader their record is private while it is
+on a server is the worst kind of stale copy, and it is the exact class this
+repo already has a checker for: a sentence that goes wrong without anybody
+editing it. `renderCareerNote()` writes it off whether there is an account, and
+**`clearCareer` deletes the shelf row too**, or the next pull merges it
+straight back and the button appears to do nothing a moment later.
+
+#### Three rules the page runs on, and each has a failure that renders perfectly
+
+- **Local first, never awaited.** `save()` is called on every signing, every
+  re-spin and every round of the bracket. The upload rides behind through the
+  transport's per-slot queue, so a draft signing five men in a minute sends the
+  state as it stands when the wire is free.
+- **`startRun` DROPS BEFORE IT BUILDS.** A fresh run is progress zero, so a put
+  over a stored bracket is refused, and the refusal is silent: this device goes
+  on drafting while every boot anywhere resumes the run just abandoned. The
+  guard reads the source for the ORDER and drives it as well, and the stand-in
+  keeps 103's refusal so removing the drop actually fails.
+- **A run is adopted only on the front page.** Replacing `run` under somebody
+  who is drafting swaps the game out from under a decision they are making. The
+  answer lands after boot has finished, so the test is what is on screen at that
+  moment rather than what was on screen when the request went out.
+
+**THE SEASON HAS NO WITHIN-PHASE PROGRESS AND THAT IS NOT AN OVERSIGHT.** The
+reveal lives in `run._simState`, which holds the rng as a function and does not
+survive JSON, so a restored season restarts its own reveal. There is nothing
+stored to measure. **Every phase the game has needs a rank**, though: one
+missing from the ladder silently ranks zero, so a bracket would compare equal to
+an empty draft, and the way that arrives is somebody adding a phase to `run.js`.
+The guard reads `R.PHASES` rather than a list of its own.
+
+#### The push moved out of `dailyRecord`, because verify.mjs LIFTS that function
+
+`verify.mjs` brace-matches `dailyRecord`, `bestsSet`, `freshBadges` and four
+others out of `index.html` and drives them in node, never a copy of the
+arithmetic. So a page-level call inside one of them is a ReferenceError in a
+suite that has nothing to do with the shelf, and it shipped that way for one
+run. `dailyPut` is the other tempting hook and is worse: the pull writes a
+merged record through it, so hooking the setter queues that write and then
+queues the pull's own settle behind it, two round trips carrying the same
+bytes. `recordRun` is the one caller that is neither, and the guard asserts the
+push is NOT inside the lifted function.
+
+#### What the harness got wrong, twice, and both were the harness
+
+- **The draft helper always pressed Start.** So the walk meant to carry an
+  ADOPTED run further quietly began a fresh one: the shelf then held a two man
+  draft where the assertion above it had just asked for a full one, and the
+  failure landed two steps later as a device that would not adopt. Pressing
+  Start is a parameter now, never a default.
+- **A wait that times out names a line number.** Waiting for an adopt that never
+  comes is indistinguishable from every other way this feature fails, so both
+  waits are allowed to lapse and the assertion under them reports what the page
+  was actually holding, plus the progress the shelf held. Reintroducing the
+  ownership defect went from a stack trace to `expected null, got 11`.
+
+**`window.RTF_SYNC` is published and nothing on the page reads it**, which is
+`window.RTF_LIVE`'s own argument: the pull is fired by a change of account,
+that needs a live supabase client, and a save test has no business loading one.
+**Nothing else goes on that object.** Starting a run, abandoning one and opening
+the cabinet are all buttons, and a guard that presses the button is testing the
+thing a player does.
+
+**The transport honours `RTF_BOARD_URL` as well as `PS_BOARD_URL`, and that is
+a safety rule rather than a convenience.** Each game stubs its own board under
+its own name, and a page whose board is pointed at a stand-in while its SAVES
+still go to the live project is a checker writing real rows on somebody's
+account. Redirecting the board redirects the shelf with it.
 
 ## Run The Diamond, the baseball game
 
