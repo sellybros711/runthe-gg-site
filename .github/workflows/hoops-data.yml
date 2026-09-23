@@ -31,9 +31,8 @@ on:
         required: false
         default: '1974'
       to_season:
-        description: 'Last season'
+        description: 'Last season. Leave blank for the last one that has ended.'
         required: false
-        default: '2025'
       commit:
         description: 'Commit the rebuilt data back to this branch?'
         type: boolean
@@ -76,11 +75,38 @@ jobs:
       - name: Fetch parsers still parse
         run: node hoops/build/check-fetch.mjs
 
+      # THE LAST SEASON THAT HAS ENDED, COMPUTED RATHER THAN TYPED.
+      #
+      # This was three copies of the literal '2025', and a SCHEDULED run passes
+      # no inputs, so THE ANNUAL REFRESH WOULD HAVE ASKED FOR 2025 EVERY JULY
+      # FOR EVER. It fires, it re-fetches fifty-two seasons it already has, it
+      # reports "data unchanged", and the new season is never added. A green
+      # run, a correct-looking log, and a game a year behind the sport with
+      # nothing anywhere saying so.
+      #
+      # A season is named for the calendar year it ENDS in and the Finals are
+      # over by the end of June, so from July the current year is the answer and
+      # before July it is last year. Same cutoff fetch-teams.mjs uses to decide
+      # which champions to demand, and the same reason the cron fires in July.
+      - name: The last season that has ended
+        id: season
+        run: |
+          TO="${{ inputs.to_season }}"
+          if [ -z "$TO" ]; then
+            Y=$(date -u +%Y)
+            M=$(date -u +%m)
+            # 10# forces base ten, or 08 and 09 are invalid octal and this dies.
+            if [ "$((10#$M))" -lt 7 ]; then Y=$((Y - 1)); fi
+            TO="$Y"
+          fi
+          echo "to=$TO" >> "$GITHUB_OUTPUT"
+          echo "Fetching seasons through $TO"
+
       - name: Player-seasons
         run: |
           node hoops/build/fetch-nba.mjs \
             --from "${{ inputs.from_season || '1974' }}" \
-            --to "${{ inputs.to_season || '2025' }}"
+            --to "${{ steps.season.outputs.to }}"
 
       # NON-FATAL, AND THAT IS A DELIBERATE DEMOTION. Draft year and college feed
       # exactly two chemistry links out of eight. The player data is the point of
@@ -94,7 +120,7 @@ jobs:
       # than invisible.
       - name: Draft years and colleges
         continue-on-error: true
-        run: node hoops/build/fetch-draft.mjs --from 1960 --to "${{ inputs.to_season || '2025' }}"
+        run: node hoops/build/fetch-draft.mjs --from 1960 --to "${{ steps.season.outputs.to }}"
 
       # NON-FATAL FOR THE SAME REASON as the draft step above, and it is worth
       # saying which reason: the player data is the point of this workflow and
@@ -110,7 +136,7 @@ jobs:
         run: |
           node hoops/build/fetch-awards.mjs \
             --from "${{ inputs.from_season || '1974' }}" \
-            --to "${{ inputs.to_season || '2025' }}"
+            --to "${{ steps.season.outputs.to }}"
 
       # Franchises change: a club relocates, renames, or wins a title. Refreshed
       # in the same run so the team table and the player table are never built
