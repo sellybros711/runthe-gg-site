@@ -229,12 +229,9 @@ if (bsn && bsn2) {
   if (lab) ok(lab.label.startsWith('BSN'), `two Boston Braves are labelled "${lab.label}"`);
 }
 
-/* ── 5. the picker says which club is which ───────────────────────────────── */
-section('5. NO TWO CARDS READ THE SAME');
+/* ── 5. thirty cards, and no name lost ───────────────────────────────────── */
+section('5. THIRTY CLUBS, AND EVERY EARLIER NAME STILL ON ONE OF THEM');
 
-/* Four true names, two pairs a reader cannot tell apart: the 1901-02 Baltimore
-   Orioles who became the Yankees against the Orioles who are the Browns, and the
-   Senators who became the Twins against the Senators who became the Rangers. */
 const NAMES = {};
 for (const line of require('fs').readFileSync(path.join(HERE, 'index.html'), 'utf8')
   .split('\n')) {
@@ -242,46 +239,86 @@ for (const line of require('fs').readFileSync(path.join(HERE, 'index.html'), 'ut
 }
 ok(Object.keys(NAMES).length > 40, 'could not read TEAM_NAMES out of the page');
 
-const byName = {};
+/* EXACTLY THE CLUBS PLAYING TODAY. Both directions, because each fails a different
+   way: a missing one is a club nobody can draft, and an extra one is a card for a
+   club that does not exist, which is what the picker used to carry fifteen of. */
+const CURRENT = E.CURRENT_FRANCHISES;
+ok(CURRENT.length === 30, `E.CURRENT_FRANCHISES holds ${CURRENT.length} clubs, not thirty`);
+for (const code of CURRENT) ok(cardFor(code), `${code} is not offered in the picker at all`);
 for (const c of cards) {
-  const n = NAMES[c.team] || c.team;
-  (byName[n] = byName[n] || []).push(c.team);
+  ok(CURRENT.includes(c.team),
+    `${NAMES[c.team] || c.team} is in the picker and is not a club playing today`);
 }
-for (const [n, codes] of Object.entries(byName)) {
-  if (codes.length < 2) continue;
-  /* Sharing a name is allowed. Sharing a name with nothing else to tell them
-     apart is not, and what tells them apart is the lineage note. */
-  for (const code of codes) {
-    const c = cardFor(code);
-    const isIdentity = E.franchiseOf(code, c.hi) !== code;
-    const hasLineage = isIdentity || E.franchiseCodes(code).length > 1;
-    ok(hasLineage,
-      `${code} and ${codes.filter(x => x !== code).join('/')} both read "${n}" ` +
-      `and ${code} carries nothing to tell them apart`);
+ok(cards.length === CURRENT.length,
+  `the picker drew ${cards.length} cards for ${CURRENT.length} clubs`);
+
+/* EVERY KEY OF FRANCHISES IS A CLUB PLAYING TODAY. A lineage keyed on a club that
+   folded would be a history no card can reach, which is the shape of the bug this
+   whole pass exists to remove, arriving from the other side. */
+for (const fran of Object.keys(E.FRANCHISES)) {
+  ok(CURRENT.includes(fran), `${fran} has a lineage and is not a club playing today`);
+}
+
+/* NO PAST NAME MAY VANISH. The fifteen earlier identities used to be cards of their
+   own; dropping those cards is only safe because each name is now printed on the
+   card of the club that wears it. Asserted per code rather than by counting, so a
+   lineage quietly losing an entry is named. */
+for (const [fran, spans] of Object.entries(E.FRANCHISES)) {
+  const card = cardFor(fran);
+  if (!card) continue;
+  for (const [code] of spans) {
+    if (code === fran) continue;
+    /* A code the pool cannot draw is correctly absent: MLA is the 1901 Milwaukee
+       Brewers and nine rows, too thin to be a team-season. */
+    const drawable = DATA.teamSeasons.some(t => t.team === code);
+    if (!drawable) continue;
+    ok(card.codes.includes(code),
+      `${NAMES[fran] || fran}'s card does not name ${NAMES[code] || code}, ` +
+      `which it now contains and which no longer has a card of its own`);
   }
 }
 
-/* Every current club is offered, whole. */
-const CURRENT = ['ARI', 'ATH', 'ATL', 'BAL', 'BOS', 'CHC', 'CHW', 'CIN', 'CLE', 'COL', 'DET',
-  'HOU', 'KCR', 'LAA', 'LAD', 'MIA', 'MIL', 'MIN', 'NYM', 'NYY', 'PHI', 'PIT', 'SDP', 'SEA',
-  'SFG', 'STL', 'TBR', 'TEX', 'TOR', 'WSN'];
-ok(CURRENT.length === 30, 'the current-club list is not thirty clubs');
-for (const code of CURRENT) ok(cardFor(code), `${code} is not offered in the picker at all`);
-/* The page keeps its own copy of that list for the two headings, so the two are
-   held together here rather than left to drift. */
-const pageSet = require('fs').readFileSync(path.join(HERE, 'index.html'), 'utf8')
-  .match(/const CURRENT_CLUBS=new Set\(\[([\s\S]*?)\]\)/);
-ok(pageSet, 'could not read CURRENT_CLUBS out of the page');
-if (pageSet) {
-  const onPage = [...pageSet[1].matchAll(/'([A-Z0-9]{2,3})'/g)].map(m => m[1]).sort();
-  ok(onPage.join(',') === CURRENT.slice().sort().join(','),
-    'CURRENT_CLUBS in the page and the list here disagree:\n    page ' + onPage.join(' ') +
-    '\n    here ' + CURRENT.slice().sort().join(' '));
+/* AND THE SAME QUESTION FROM THE POOL'S SIDE, because the check above can only
+   look for names the lineage already claims. Delete `['MLN', 1953, 1965]` from the
+   Braves and the Milwaukee Braves vanish from the card AND from that loop, which is
+   a name lost with nothing reporting it.
+   So: any club in the data deep enough to have earned a card of its own must resolve
+   to a club playing today. The fifteen earlier identities all clear that bar, which
+   is why they used to be cards. Nothing else does, so the orphan set is empty and a
+   person has to look at the day it is not. */
+const deepEnough = {};
+for (const ts of DATA.teamSeasons) {
+  const info = (deepEnough[ts.team] = deepEnough[ts.team] || { seasons: 0, men: {} });
+  info.seasons++;
+  for (const p of (DATA.byTeamSeason[ts.team_season_id] || [])) info.men[p.i + '|' + p.s] = p;
 }
+const orphans = [];
+for (const [code, info] of Object.entries(deepEnough)) {
+  const men = Object.values(info.men);
+  const has = (slot) => men.some(p => E.canFillSlot(p, slot));
+  const countSlot = (slot) => men.filter(p => E.canFillSlot(p, slot)).length;
+  /* The picker's own gates, asked of the raw code. */
+  if (info.seasons < 6 || men.length < 16) continue;
+  if (!has('C') || !has('CL') || countSlot('SP1') < 2) continue;
+  const fran = E.franchiseOf(code, info.seasons ? undefined : 0);
+  const reachable = E.CURRENT_FRANCHISES.some(f =>
+    DATA.teamSeasons.some(t => t.team === code && E.inFranchise(f, t.team, t.season)));
+  if (!reachable) orphans.push(`${NAMES[code] || code} (${code}, ${info.seasons} seasons)`);
+}
+ok(orphans.length === 0,
+  `${orphans.length} clubs are deep enough for a card and belong to no club playing ` +
+  `today, so their history is in the picker nowhere:\n    ` + orphans.join('\n    '));
 
-/* An earlier identity names what it became, and a franchise names what it holds. */
-const broCard = cardFor('BRO'), miaCard = cardFor('MIA');
-ok(broCard && E.franchiseOf('BRO', broCard.hi) === 'LAD', 'Brooklyn does not resolve to the Dodgers');
+/* An earlier identity is NOT a card, and the engine still resolves it, because a
+   run saved while the picker offered one carries that bare code. */
+ok(!cardFor('BRO'), 'the Brooklyn Dodgers still have a card of their own');
+ok(!cardFor('MON'), 'the Montreal Expos still have a card of their own');
+ok(E.franchiseOf('BRO', 1955) === 'LAD', 'Brooklyn does not resolve to the Dodgers');
+ok(E.franchiseOf('MON', 1990) === 'WSN', 'Montreal does not resolve to the Nationals');
+ok(R.drawable(R.createRun({ franchise: 'BRO', seed: 5 }), DATA).length > 0,
+  'a run saved as a Brooklyn Dodgers run can no longer draw anything');
+
+const miaCard = cardFor('MIA');
 ok(miaCard && miaCard.codes.length === 2, 'the Marlins card does not know it contains Florida');
 
 /* ── 6. the card a player actually reads ──────────────────────────────────── */
@@ -336,7 +373,8 @@ if (browser) {
       }));
     });
     ok(errs.length === 0, 'the page threw while building the picker: ' + errs.join(' | '));
-    ok(cards.length > 40, `the picker drew ${cards.length} cards`);
+    ok(cards.length === E.CURRENT_FRANCHISES.length,
+      `the picker drew ${cards.length} cards for ${E.CURRENT_FRANCHISES.length} clubs`);
 
     const marlins = cards.find(c => c.name === 'Miami Marlins');
     ok(marlins, 'no Miami Marlins card in the picker');
@@ -349,9 +387,16 @@ if (browser) {
 
     /* The lineage note has to be DRAWN, not merely present in the markup: a rule
        that failed to load would leave it in the DOM and invisible. */
+    /* One note per franchise that has worn another name, and the number is derived
+       rather than written: it is however many lineages E.FRANCHISES holds, so adding
+       one cannot leave this check quietly behind. Every card used to be able to
+       carry a note, since an earlier identity carried "Now the ...", and with those
+       cards gone only the lineages do. */
     const withNote = cards.filter(c => c.was);
-    ok(withNote.length >= 25,
-      `only ${withNote.length} cards carry a lineage note; the rule may not be applying`);
+    const wantNotes = Object.keys(E.FRANCHISES).length;
+    ok(withNote.length === wantNotes,
+      `${withNote.length} cards carry a lineage note and ${wantNotes} franchises have ` +
+      `a lineage; the rule may not be applying`);
 
     /* No two cards may read the same without something telling them apart. */
     const seen = {};

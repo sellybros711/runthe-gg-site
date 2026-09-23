@@ -164,10 +164,32 @@ const FRANCHISES = {
   WSN: [['MON', 1969, 2004], ['WSN', 2005, 2025]],
 };
 
-/* Does this club-season belong to this franchise? `fran` is either a key above
- * or a bare code, because the picker offers BOTH: the whole Dodgers lineage, and
- * the Brooklyn Dodgers on their own. A bare code answers for itself, so locking
- * on BRO gives Brooklyn and never Los Angeles. */
+/* THE THIRTY CLUBS PLAYING TODAY, and the only things One Franchise offers.
+ *
+ * Every earlier name is reached THROUGH the franchise that wears it now: the Boston
+ * and Milwaukee Braves are the Atlanta Braves, the Montreal Expos are the Washington
+ * Nationals, the St. Louis Browns are the Baltimore Orioles. The picker used to list
+ * those fifteen a second time as cards of their own, which made one club two entries
+ * and asked a reader to know that the Browns and the Orioles are the same history.
+ *
+ * It is a LIST rather than a filter on the pool, because the two questions are not
+ * the same. "Which clubs may be drafted" is a fact about the league today; "which
+ * clubs have enough men to fill a roster" is a fact about the data, and leaving the
+ * first to fall out of the second is how a Negro League club or a Federal League
+ * club appears the day somebody loosens a depth gate. Every key of FRANCHISES is in
+ * here, and check-franchise.mjs holds the two together. */
+const CURRENT_FRANCHISES = [
+  'ARI', 'ATH', 'ATL', 'BAL', 'BOS', 'CHC', 'CHW', 'CIN', 'CLE', 'COL',
+  'DET', 'HOU', 'KCR', 'LAA', 'LAD', 'MIA', 'MIL', 'MIN', 'NYM', 'NYY',
+  'PHI', 'PIT', 'SDP', 'SEA', 'SFG', 'STL', 'TBR', 'TEX', 'TOR', 'WSN',
+];
+
+/* Does this club-season belong to this franchise? `fran` is normally one of the
+ * thirty above. A BARE CODE still answers for itself, which the picker no longer
+ * needs and a SAVED RUN does: a run started when the picker offered the Brooklyn
+ * Dodgers on their own carries `franchise: 'BRO'`, and that run has to go on
+ * drawing Brooklyn rather than quietly becoming a Los Angeles run or drawing
+ * nothing at all. */
 function inFranchise(fran, team, season) {
   const rows = FRANCHISES[fran];
   if (!rows) return team === fran;
@@ -2341,7 +2363,7 @@ const publicAPI = {
   CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
   STAFF_SLOTS, STAFF_ELIGIBILITY, slotsForMode, eligibilityForMode, slotGroup,
   DIVISIONS, DIVISION_FIRST_SEASON, inDivision, divisionClubs,
-  FRANCHISES, inFranchise, franchiseOf, franchiseCodes,
+  FRANCHISES, CURRENT_FRANCHISES, inFranchise, franchiseOf, franchiseCodes,
   MARKET, replacementFor,
   POSITIONS_AVAILABLE: () => POSITIONS_AVAILABLE,
   setPositionsAvailable,

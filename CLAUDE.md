@@ -10541,25 +10541,34 @@ per season, because the Terrapins really were a club for two years and their own
 seasons are team-mates. Caught as `the card says 110 seasons and the lock allows 109`,
 which is exactly the size of defect nothing else here would ever report.
 
-#### Two cards can name one club, and that is the point
+#### Thirty cards, and every earlier name is on one of them
 
-A key is either a **franchise** (its whole lineage, so the Marlins are 1993-2025) or
-one **earlier identity** on its own (the Brooklyn Dodgers, 1901-1957). Both are things
-a player wants and they are not the same thing: one is a club's whole history, the
-other is the club it was in a city it has left. `inFranchise` answers for both, so
-locking on either works with no second rule.
+**The picker is the thirty clubs playing today and nothing else.** An earlier identity
+is not a card: the Boston Braves and the Milwaukee Braves are lines on the Atlanta
+Braves, and the Montreal Expos are a line on the Washington Nationals. Asked for in
+those words, and it is the right shape for two reasons the first version had to learn.
 
-**What tells them apart is a line on the card**, because without it the picker prints
-two cards reading "Baltimore Orioles" (the 1901-02 club that became the Yankees, and
-the Browns who became the Orioles) and two reading "Washington Senators" (one became
-the Twins, one the Rangers). Four true names and two pairs a reader cannot separate.
-A franchise card names what it contains, an identity card names what it became, and
-both are read off `FRANCHISES` rather than written out.
+**A list a reader already has beats a list they have to be taught.** Thirty clubs is
+a fact somebody brings with them, so the grid is scannable by a name they were already
+looking for, and an era a club spent in another city is exactly where they would look
+for it.
 
-**The note is a middot list rather than a sentence.** Written "the X, the Y and the
-Z" the Athletics' three earlier names are three commas on a card two inches wide,
-which is where this repo's short-sentence rule bites hardest, and the middot is what
-it already recommends for fields on one line.
+**The version it replaces printed a card per identity, and that needed a second line
+to be readable at all**: two cards reading "Baltimore Orioles" (the 1901-02 club that
+became the Yankees, and the Browns who became the Orioles) and two reading "Washington
+Senators" (one became the Twins, one the Rangers). Four true names and two pairs a
+reader cannot separate, solved by a `Now the ...` note under each. **Under thirty cards
+the collision cannot happen**: the 1901 Orioles and both Senators are lines under the
+club they became, and no two cards carry one name.
+
+`inFranchise` is unchanged and still answers for a bare code, so a run locked on `BRO`
+or `MON` is still a legal run that still drafts. What went is the DOOR to it, not the
+mode, and the guard asserts that from both ends.
+
+**The lineage note is what the franchise contains, in a middot list rather than a
+sentence.** Written "the X, the Y and the Z" the Athletics' three earlier names are
+three commas on a card two inches wide, which is where this repo's short-sentence rule
+bites hardest, and the middot is what it already recommends for fields on one line.
 
 **It lists only what the card can DRAW.** `franchiseCodes('BAL')` names `MLA`, the
 1901 Milwaukee Brewers, and the pool holds nine of their rows: too thin to survive
@@ -10610,9 +10619,28 @@ ellipsis in a screenshot and may well not on a real phone. **That is the reason
 season count in any face, which is not a claim this harness can make about a line
 that truncates.
 
-**`CURRENT_CLUBS` holds ATH and not OAK**, because the Athletics' current code is what
-the franchise is keyed on, and Oakland is now an earlier identity of it the way Kansas
-City and Philadelphia are. The guard holds that list against the page's own copy.
+**`CURRENT_FRANCHISES` holds ATH and not OAK**, because the Athletics' current code is
+what the franchise is keyed on, and Oakland is now an earlier identity of it the way
+Kansas City and Philadelphia are. **It lives in `engine.js` beside `FRANCHISES` and not
+in the page**, because the same question decides which card is drawn and whether a
+lineage is complete, and a copy in the page is what the first version had.
+
+#### A card is a name, a span and a best player, and nothing else
+
+The first version carried a depth bar and a season count. **The count is arithmetic on
+the span** ("1961-2025" and "64 seasons" are one fact written twice) and the bar is a
+fifth thing on a card two inches wide, competing with the one line a reader is actually
+choosing on. Asked for as three lines and one colour, and a card is now the club, the
+years, the earlier names if there are any, and who its best player was.
+
+**One colour, not two.** `--c1` alone paints the rail, because two club colours on a
+30px strip is a flag rather than a marker, and the name beside it is what says which
+club it is.
+
+**`.fran-yrs` and `.fran-best` WRAP rather than truncate.** See the ellipsis note
+below: a line that wraps cannot hide half of itself in any face, which is not a claim
+this harness can make about a line that truncates. It cost a row of height on the
+longest names and a grid row stretches, so nothing beside them moves.
 
 #### What the guard asserts, and the one that had teeth and no voice
 
@@ -10631,11 +10659,19 @@ argument arriving at a lineage.
 seeded sample, and a season a mode can reach is indistinguishable from one it happened
 not to draw.
 
-**Six defects were reintroduced one at a time** and each is named: the raw-code
+**Eight defects were reintroduced one at a time** and each is named: the raw-code
 chemistry (4 failures, including a Terrapin linked to an Oriole), the raw-code lock
 (`a Marlins run cannot reach a single season before 2012`), the Terrapins folded back
-in, overlapping Angels spans, an Orioles lineage reaching back over the Terrapins, and
-the Marlins lineage deleted.
+in, overlapping Angels spans, an Orioles lineage reaching back over the Terrapins, the
+Marlins lineage deleted, the identity cards restored (`Oakland Athletics is in the
+picker and is not a club playing today`), and one lineage row dropped.
+
+**That last one is the clause that closes the thirty-card rule**, and it needed asking
+from the POOL's side rather than the card's. Written as "every past name appears on
+some card", dropping `['MLN', 1953, 1965]` from the Braves takes the Milwaukee Braves
+off the card AND out of the check, so it passes on the exact defect it exists for. What
+is asked instead is that no club deep enough to have had a card of its own belongs to
+nothing: reintroduced, it reports `Milwaukee Braves (MLN, 13 seasons)` by name.
 
 **That last one passed on the first attempt and it is worth recognising.** Written to
 assume the row exists, deleting it crashed the file with a `TypeError`, and read

@@ -327,16 +327,20 @@ function respin(run, data, focus) {
  * seasons (you draw one team-season per pick, max 2 each) and at least one
  * eligible player for every hard slot (C, closer, two starters). Returns
  * codes sorted by pool depth, for the Franchise Mode picker. */
-/* TWO CARDS CAN NAME ONE CLUB AND THAT IS THE POINT, not a duplicate.
+/* ONE CARD PER CLUB PLAYING TODAY, and every earlier name folded into it.
  *
- * A key here is either a FRANCHISE (its whole lineage, so the Marlins are
- * 1993-2025 across FLA and MIA) or one EARLIER IDENTITY on its own (the Brooklyn
- * Dodgers, 1901-1957). Both are things a player wants and they are not the same
- * thing: one is a club's whole history, the other is the club it was in a city it
- * has left. `inFranchise` answers for both, so locking on either works with no
- * second rule. What is NOT offered is a franchise's current code as an identity,
- * since "Miami Marlins 2012-2025" beside "Miami Marlins 1993-2025" would be two
- * cards for one club where only one of them is the whole story. */
+ * The picker used to offer the fifteen earlier identities as cards of their own
+ * beside the thirty, so the Braves were three entries, the Athletics four, and a
+ * reader had to already know that the St. Louis Browns and the Baltimore Orioles
+ * are one history to understand why both were there. Every one of those fifteen
+ * resolves into a current franchise, so nothing is lost by dropping them: what the
+ * card says instead is which names it contains.
+ *
+ * SCOPED TO E.CURRENT_FRANCHISES rather than to whatever clears the depth gates
+ * below. Those gates are about the DATA (enough men to fill a roster) and this is
+ * about the LEAGUE, and no club in the pool happens to clear them today that is not
+ * one of the thirty. Leaving it to the gates means the day one is loosened a
+ * Federal League club appears in the picker, which nothing would report. */
 function eligibleFranchises(data) {
   const byTeam = {};
   const add = (key, ts, players) => {
@@ -354,16 +358,15 @@ function eligibleFranchises(data) {
     if (!info.codes.includes(ts.team)) info.codes.push(ts.team);
     for (const p of players) info.players[pkey(p)] = p;
   };
+  const current = new Set(E.CURRENT_FRANCHISES);
   for (const ts of data.teamSeasons) {
-    const players = data.byTeamSeason[ts.team_season_id] || [];
     const fran = E.franchiseOf(ts.team, ts.season);
-    add(fran, ts, players);
-    /* The identity on its own, when the franchise has since moved on from it.
-       Gated on the season actually resolving to a LINEAGE: without that clause the
-       1914 Terrapins (whose franchise is the sentinel `BAL*`) were also filed under
-       the bare code `BAL`, which is the Orioles' own card, and the picker counted
-       a folded Federal League club among the Orioles' seasons. */
-    if (E.FRANCHISES[fran] && fran !== ts.team) add(ts.team, ts, players);
+    /* A club-season that belongs to no club playing today is simply not in the
+       picker. That is the Negro Leagues, the Federal League, and the 1914 Terrapins
+       whose franchise is the sentinel `BAL*`. They stay fully draftable in Classic
+       and Eras, where the wheel is not locked to one club. */
+    if (!current.has(fran)) continue;
+    add(fran, ts, data.byTeamSeason[ts.team_season_id] || []);
   }
   const out = [];
   for (const team of Object.keys(byTeam)) {
