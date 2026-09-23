@@ -78,10 +78,32 @@
      them here would be a second copy of nine strings that drifts the first time one is
      edited. What this does is refuse to pass on anything that does not look like one:
      PostgREST puts its own machinery in `code` and `details`, and a reader who is shown
-     `PGRST202` has been told nothing. */
+     `PGRST202` has been told nothing.
+
+     THE TEST USED TO BE "SHORT, AND NOT AN ALL-CAPS CODE", AND THAT LET MACHINERY THROUGH.
+     `column p.display_name does not exist` is 36 characters of lower case English and
+     passed both halves, so a player pressing submit was shown the inside of the database.
+     It is a real sentence about a real fault and it is not a sentence for them.
+
+     `code` IS THE HONEST DISCRIMINATOR AND IT NEEDS NO COPY OF ANY STRING. A message
+     written for a person got there through `raise exception` in `fantasy_submit`, which is
+     SQLSTATE `P0001`. Everything Postgres raises about itself carries its own class
+     instead: a missing column is 42703, a missing function 42883, a denied table 42501,
+     and PostgREST's own refusals are `PGRST...`. So the rule is a PROPERTY of how the
+     message was produced rather than a list of the nine sentences, which is what keeps
+     this from becoming the second copy the paragraph above refuses to write.
+
+     AND THE MACHINERY IS NOT THROWN AWAY, it is moved. Reading the raw code and message
+     off a player's screenshot is exactly how the `display_name` fault was found in one
+     round, so it goes to the console: a developer opening it gets the whole answer, and
+     nobody is shown a column name mid-draft. */
   const SAY = (j, fallback) => {
     const m = j && typeof j.message === 'string' ? j.message.trim() : '';
-    return (m && m.length < 140 && !/^[A-Z0-9_]+$/.test(m)) ? m : fallback;
+    if (j && j.code !== 'P0001') {
+      try { console.warn('fantasy_submit refused:', j.code, m); } catch (e) {}
+      return fallback;
+    }
+    return (m && m.length < 140) ? m : fallback;
   };
 
   async function submit(season, week, picks) {
@@ -159,11 +181,50 @@
     return (j && typeof j === 'object' && Array.isArray(j.rows)) ? j : null;
   }
 
+  /*
+   * ─── WHERE YOU FINISHED, ONCE THE WEEK IS OVER ─────────────────────────────────────
+   *
+   * One call answers the whole popup: whether this reader entered, where they came, out of
+   * how many, and whether there is a promotion code with their name on it. Everything in it
+   * is about `auth.uid()`, so there is nothing here that says anything about anybody else.
+   *
+   * NULL MEANS "NO OPINION" AND FALSE MEANS "NOTHING TO SAY", which are different answers
+   * and the page draws neither the same way. A week that is not scored yet, or a reader who
+   * never entered, is a legitimate nothing: the popup simply does not open. An unreachable
+   * server is null, and the page tries again on the next visit rather than telling somebody
+   * they finished nowhere.
+   */
+  async function myResult(season, week) {
+    const j = await rpc('fantasy_my_result', { p_season: season, p_week: week });
+    if (!Array.isArray(j)) return null;
+    return j.length ? j[0] : false;
+  }
+
+  /* SEEN IS THE SERVER'S, not this browser's, which is the whole reason it is a call at all.
+     Kept in localStorage it would be per device: a reader who entered on a phone and came
+     back on a laptop would be told twice, and one who cleared site data would be told for
+     ever. FAILS SOFT, because the cost of a lost ack is one repeated popup and the cost of
+     blocking on it is a sheet that will not close. */
+  async function ackResult(season, week) {
+    const j = await rpc('fantasy_ack_result', { p_season: season, p_week: week });
+    return j === true;
+  }
+
+  /* Every week this account placed in, for the profile. No code in it: a profile is a record
+     of what somebody did rather than a place to keep a voucher. */
+  async function myWins() {
+    const j = await rpc('fantasy_my_wins', {});
+    return Array.isArray(j) ? j : null;
+  }
+
   root.PS_FANTASY = {
     /* 1: the entry, the board and the two ways to ask where you came.
-       2: `board`, one call for a board that polls while the games are on. */
-    API_VERSION: 2,
+       2: `board`, one call for a board that polls while the games are on.
+       3: where you finished once it is settled, the ack that shows it once, and the wins a
+          profile carries. */
+    API_VERSION: 3,
     submit, mine, standings, myPlace, entryCount, board,
+    myResult, ackResult, myWins,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.PS_FANTASY;
 })(typeof self !== 'undefined' ? self : this);

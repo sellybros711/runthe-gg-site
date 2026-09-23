@@ -35,11 +35,11 @@ insert into auth.users(id) values
   ('bbbbbbbb-0000-0000-0000-00000000000b'),
   ('cccccccc-0000-0000-0000-00000000000c')
 on conflict do nothing;
-insert into public.profiles(id, display_name) values
+insert into public.profiles(id, username) values
   ('aaaaaaaa-0000-0000-0000-00000000000a', 'Ada'),
   ('bbbbbbbb-0000-0000-0000-00000000000b', 'Bo'),
   ('cccccccc-0000-0000-0000-00000000000c', 'Cy')
-on conflict (id) do update set display_name = excluded.display_name;
+on conflict (id) do update set username = excluded.username;
 
 -- THE WEEK IS OPENED, ENTERED, AND THEN THE LOCK IS MOVED INTO THE PAST, rather than
 -- starting locked and inserting rows by hand. `fantasy_submit` refuses a locked week, which

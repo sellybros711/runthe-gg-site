@@ -20,6 +20,35 @@
 <meta name="description" content="Run The Floor: spin for a season and a club, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/">
+<!-- THE SHARE CARD.
+     Every finished run offers a share ending in this page's URL, and the DAILY's whole
+     loop is that share: the mode exists so two people can compare the same five spins.
+     Without an og:image that unfurls as a bare line of text in iMessage, WhatsApp,
+     Discord and Slack, which is the single worst place for a game spread by sharing to
+     have a gap. The football game's own note here says the same thing; this page simply
+     had none of the block at all.
+
+     IT IS HERE WHILE THE PAGE IS STILL NOINDEXED, deliberately. A robots tag tells a
+     CRAWLER not to index; it does nothing to a chat app unfurling a link somebody was
+     handed, which is exactly how an unlaunched game reaches its first testers. The two
+     questions are unrelated and only one of them is about launching.
+
+     hoops/og.png is built by hoops/build/og.mjs from hoops/og-source.html. -->
+<meta property="og:title" content="Run The Floor: NBA Draft Game">
+<meta property="og:description" content="Run The Floor: spin for a season and a club, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
+<meta property="og:url" content="https://runthe.gg/hoops/">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://runthe.gg/hoops/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games. The five roster spots shown as PG, SG, SF, PF and C.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Run The Floor: Free NBA Roster Draft Game">
+<meta name="twitter:description" content="Spin for a season and a club, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
+<meta name="twitter:image" content="https://runthe.gg/hoops/og.png?v=1">
+<meta name="twitter:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1905,7 +1934,7 @@
   <!-- WHAT YOU ARE DRAFTING FROM. Filled from the data once it loads, so the
        numbers are the file's rather than a claim typed into the markup. -->
   <div class="card">
-    <h2>The league <span class="sub" id="home-era">1974 to 2025</span></h2>
+    <h2>The league <span class="sub" id="home-era">1974 to 2026</span></h2>
     <div class="leaguestats">
       <div class="lstat"><b id="ls-players">-</b><span>Player-seasons</span></div>
       <div class="lstat"><b id="ls-clubs">-</b><span>Club seasons</span></div>
@@ -2431,8 +2460,13 @@
     <div class="btnrow" style="margin-top:8px">
       <button class="ghost" id="b-prof-clear" style="flex:1">Clear career</button>
     </div>
-    <p class="dim" style="font-size:11.5px;margin:10px 0 0">Stored in this browser only.
-      Clearing site data or a private window loses it, and nothing here is sent anywhere.</p>
+    <!-- WHERE THE CAREER IS KEPT, AND IT IS TWO DIFFERENT SENTENCES NOW. This
+         said "Stored in this browser only" and "nothing here is sent anywhere",
+         which was true for a year and stopped being true the day the shelf
+         landed. A page telling somebody their record is private while it is on
+         a server is the worst kind of stale copy, so the line is written by
+         renderCareerNote off whether there is an account to keep it against. -->
+    <p class="dim" id="pf-store" style="font-size:11.5px;margin:10px 0 0"></p>
   </div>
 </div>
 
@@ -2575,6 +2609,13 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=1"></script>
 <script src="auth.js?v=1"></script>
+<!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
+     college games; cloud.js is this game's own policy about slots, progress and
+     what happens when two devices disagree. The transport asks window.RTF_AUTH
+     for a token at CALL time rather than at load, so the order here is for a
+     reader rather than for the browser. -->
+<script src="/assets/cloudsave.js?v=2"></script>
+<script src="cloud.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -2712,6 +2753,17 @@ var A = window.RTF_AUTH || {
   token: function(){ return null; },
   claim: function(){ return Promise.resolve(false); },
 };
+
+/* AND THE SHELF, PINNED THE SAME WAY THE BOARD IS. cloud.js decides what a merge
+ * keeps, and a page running one version of that rule against a script holding
+ * another is the quietest failure on this page: nothing throws, every screen
+ * renders, and the only symptom is a cabinet that comes back slightly wrong.
+ * `null` is the honest answer when either half is missing, and every caller
+ * below is written to do nothing at all when it is. */
+var NEED_CLOUD = 1;
+var CL = (window.RTF_CLOUD && window.RTF_CLOUD.API_VERSION === NEED_CLOUD)
+  ? window.RTF_CLOUD : null;
+var SV = window.RTG_SAVE || null;
 
 /* AN UNHANDLED ERROR IN OUR CODE SAYS SO ON SCREEN. A silent throw mid-draft
  * looks exactly like the game being broken with no explanation, which is how
@@ -2912,11 +2964,11 @@ function renderAppBar(screen){
 
 function boot(){
   Promise.all([
-    fetch('data/players.json?v=4').then(function(r){ return r.json(); })
+    fetch('data/players.json?v=5').then(function(r){ return r.json(); })
       .then(function(v){ bootStep('Players loaded.'); return v; }),
     fetch('data/chemistry.json?v=1').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; }),
-    fetch('data/teams.json?v=2').then(function(r){ return r.json(); })
+    fetch('data/teams.json?v=3').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; })
   ]).then(function(res){
     if (res[1]) E.setCuratedChemistry(res[1]);
@@ -2973,6 +3025,13 @@ function boot(){
     A.boot();
     A.onChange(function(){
       if ($('sheet').classList.contains('open')) renderAccount();
+      /* THE SHELF IS ASKED ON EVERY CHANGE OF ACCOUNT, and the boot is one of
+         them: nothing is signed in at parse time, so a pull started beside
+         A.boot() would always find no token and answer nothing. Signing IN is
+         the moment somebody expects their cabinet to arrive, and cloudPull
+         refuses to run twice at once, so a change that fires more than once
+         while the first answer is out costs nothing. */
+      cloudPull();
       /* A RUN FINISHED BEFORE SIGNING IN IS CLAIMED ON THE WAY IN. The id is
          on the saved run, so this survives the reload that a Google sign-in
          redirect puts in the middle of it, which is the case that would
@@ -3016,6 +3075,13 @@ function startRun(club, era, daily){
   /* STARTING A RUN IS THE WAY OUT OF THE GUIDE, which is why the scrim never
      covered the button. Marked seen whichever door was used. */
   if (!$('frg').hidden) frgClose();
+  /* THE OLD RUN IS DELETED BEFORE THE NEW ONE IS SAVED, and the order is the
+     whole of it. A fresh run is progress zero, so a put would be REFUSED by a
+     shelf holding a bracket, and the refusal is silent: this device would go on
+     drafting while the next boot on any device resumed the run that was just
+     abandoned. Dropping also discards whatever write of the old run was still
+     pending, because it goes through the same per-slot queue. */
+  cloudDropRun();
   run = R.createRun(opts);
   /* Read off opts and not off the arguments, because the daily branch above
      clears both locks and a remember taken from the argument would file a
@@ -7784,6 +7850,14 @@ function recordRun(out){
 
   c.rows = Array.isArray(c.rows) ? c.rows : [];
   c.rows.push({
+    /* THE RUN'S OWN SEED, so two devices merging their careers can tell one
+       finished season from another. Without an identity the union in cloud.js
+       is not idempotent and every row on the device doubles on every boot.
+       Rows already on a device have none and fall back to a key built from
+       their contents, which is why this is a new field rather than a version
+       bump: loadCareer accepts version 1 and nothing else, and raising it
+       would throw away every career on every device. */
+    id: (run && typeof run.seed === 'number') ? run.seed : undefined,
     w: out.wins, l: out.losses,
     ring: !!out.titleWon,
     po: !!(run.playoffs && run.playoffs.rounds.length),
@@ -7813,6 +7887,7 @@ function recordRun(out){
   if (c.rows.length > 250) c.rows = c.rows.slice(-250);
 
   try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
+  cloudPushCareer(c);
 
   /* THE ORDER OF THESE THREE LINES IS LOAD-BEARING and they are statements
      rather than fields of one literal for that reason. bestsSet compares
@@ -7823,6 +7898,15 @@ function recordRun(out){
   var fresh = freshBadges(before, c);
   var bests = bestsSet(before, out);
   var day = dailyIsToday() ? dailyRecord(out) : null;
+  /* THE DAILY IS PUSHED FROM HERE AND NOT FROM dailyRecord OR dailyPut, and
+     both of those were tried. `dailyRecord` is LIFTED OUT OF THIS PAGE by
+     verify.mjs and driven in node, so a page-level call inside it is a
+     ReferenceError in a suite that has nothing to do with the shelf. `dailyPut`
+     is also what the pull writes a merged record through, so hooking the setter
+     would queue this write and then queue the pull's own settle behind it: two
+     round trips carrying the same bytes. The caller is the one place that is
+     neither. */
+  if (day) cloudPushDaily(day);
   return { career: c, fresh: fresh, bests: bests, daily: day };
 }
 
@@ -7899,6 +7983,7 @@ function renderCareer(){
   var c = loadCareer();
   var list = $('pf-list');
   list.textContent = '';
+  renderCareerNote();
 
   if (!c || !c.runs) {
     $('pf-runs').textContent = '0';
@@ -8001,7 +8086,30 @@ function closeProfile(){
 
 function clearCareer(){
   try { localStorage.removeItem(PKEY); } catch (e) {}
+  /* AND OFF THE SHELF, OR THE NEXT BOOT BRINGS IT STRAIGHT BACK. The pull
+     merges rather than overwrites, so a career cleared here and left on the
+     server is a button that appears to do nothing a moment later. Deleting is
+     the same rule the run follows and the same rule 103 argues for: starting
+     over deletes, because progress can never be used to write something
+     smaller over something bigger. */
+  if (cloudReady()) cloudPush(CL.SLOT_CAREER, function(){ return { drop: true }; });
   renderCareer();
+  renderHome();
+}
+
+/* WHERE THE CAREER IS KEPT, in a sentence that has to be true of the reader
+   looking at it. Signed out it is this browser and nothing else, which is what
+   it has always been. Signed in it is on the account, which is the whole point
+   of the shelf and is also a disclosure: somebody should not have to read the
+   source to find out their record left the device. */
+function renderCareerNote(){
+  var el = $('pf-store');
+  if (!el) return;
+  el.textContent = cloudReady()
+    ? ('Kept on your account, so it follows you to another device. '
+       + 'Clear career removes it there too.')
+    : ('Stored in this browser only. Clearing site data or a private window loses it. '
+       + 'Sign in and it is kept on your account instead.');
 }
 
 /* ── THE ACCOUNT ROW ───────────────────────────────────────────────────────
@@ -8474,6 +8582,11 @@ var KEY = 'runthefloor_run_v1';
 
 function save(){
   try { localStorage.setItem(KEY, JSON.stringify(run)); } catch (e) {}
+  /* LOCAL FIRST AND NEVER AWAITED. This is called on every signing, every
+     re-spin and every round of the bracket, so a version that waited on a
+     round trip would put the network between a tap and the board redrawing.
+     The upload rides behind, coalesced per slot. */
+  cloudPushRun();
 }
 
 function restore(){
@@ -8517,9 +8630,255 @@ function resumeRun(){
 
 function abandonRun(){
   try { localStorage.removeItem(KEY); } catch (e) {}
+  /* THE SHELF IS TOLD, AND IT IS A DELETE RATHER THAN A SMALLER WRITE. Progress
+     decides a conflict, so writing an empty run over a stored one would be
+     refused and the run would come back on the next boot. 103's own header
+     says this: starting over deletes. */
+  cloudDropRun();
   run = null;
   renderHome();
   show('s-home');
+}
+
+// ── the shelf ──────────────────────────────────────────────────────────────
+
+/*
+ * THE RUN, THE CAREER AND THE DAILY BELONG TO THE ACCOUNT. localStorage above
+ * is still written first and synchronously, and still authoritative for speed:
+ * nothing here sits between a tap and the screen responding. What changes is
+ * that the browser copy is a cache of supabase/103_cloud_saves.sql rather than
+ * the only copy of anything.
+ *
+ * WHAT IT IS ACTUALLY FOR is the cabinet. A run in progress is worth twenty
+ * minutes and a career is worth however long somebody has been playing, and
+ * every badge in badges.js is DERIVED from that career, so a second device or a
+ * cleared jar is an empty cabinet with no error anywhere to explain it. That is
+ * the failure this exists to stop, and it is silent by construction.
+ *
+ * EVERY CALL FAILS SOFT AND NOTHING HERE IS AWAITED. cloudsave.js answers null
+ * for "no opinion", never for "you have no save", and a shelf that cannot be
+ * reached must never be the reason a run goes. Signed out, blocked, offline or
+ * missing a version: the game is exactly the game it was before any of this.
+ *
+ * The merge rules live in cloud.js beside the argument for them.
+ */
+
+function cloudReady(){
+  return !!(CL && SV && typeof SV.signedIn === 'function' && SV.signedIn());
+}
+
+/* Queued per slot by the transport, so a draft signing five men in a minute
+   sends the state as it stands when the wire is free rather than five writes
+   racing each other to one row. */
+function cloudPush(slot, build){
+  if (!cloudReady()) return null;
+  try { return SV.queue(CL.GAME, slot, build); } catch (e) { return null; }
+}
+
+function cloudPushRun(){
+  if (!cloudReady()) return null;
+  return cloudPush(CL.SLOT_RUN, function(){
+    if (!run) return null;
+    return { payload: run, progress: CL.runProgress(run) };
+  });
+}
+
+function cloudDropRun(){
+  if (!cloudReady()) return null;
+  return cloudPush(CL.SLOT_RUN, function(){ return { drop: true }; });
+}
+
+function cloudPushCareer(c){
+  if (!cloudReady() || !c) return null;
+  return cloudPush(CL.SLOT_CAREER, function(){
+    return { payload: c, progress: CL.careerProgress(c) };
+  });
+}
+
+function cloudPushDaily(s){
+  if (!cloudReady() || !s) return null;
+  return cloudPush(CL.SLOT_DAILY, function(){
+    return { payload: s, progress: CL.dailyProgress(s) };
+  });
+}
+
+/*
+ * THE PULL, and the three slots are three different questions.
+ *
+ * A CAREER AND A DAILY ARE MERGED AND PUSHED BACK, always, because neither side
+ * is behind the other: two devices hold runs the other has never seen. The
+ * merge is monotone, so the answer is at least as good as both and the push
+ * after it always lands.
+ *
+ * A RUN IS ADOPTED, AND ONLY ON THE FRONT PAGE. Replacing `run` under somebody
+ * who is already drafting swaps the game out from under a decision they are
+ * making, which is the rule the football pull runs on. The answer arrives after
+ * boot has finished, so the test is what is on screen at that moment and not
+ * what was on screen when the request went out.
+ */
+var cloudPulling = false;
+
+/*
+ * WHOSE COPY THE BROWSER IS HOLDING, which is the question that decides whether
+ * a pull MERGES or REPLACES, and getting it wrong is a disclosure rather than a
+ * lost save.
+ *
+ * Two accounts on one browser is the fifth way 103's own header lists for
+ * losing a run, and merging is what turns it into the opposite problem: sign in
+ * as somebody else and their cabinet quietly adopts the runs, the rings and the
+ * streak of whoever used this browser last. Neither account's record is true
+ * afterwards and nothing anywhere says so.
+ *
+ * So the browser records whose it is. Three cases, and the middle one is the
+ * one worth keeping:
+ *
+ *   nobody's     a career played signed out. MERGED, which is claiming it, the
+ *                same way a finished run is claimed on the way in.
+ *   this account MERGED, which is the ordinary second device.
+ *   somebody else REPLACED, with the account's own copy or with nothing. It is
+ *                not this reader's record and it is safe on the shelf it
+ *                belongs to.
+ *
+ * IT DOES NOT APPLY TO THE RUN, and that line is drawn deliberately. A draft in
+ * progress is not a record of anybody's: it makes no claim about who did what,
+ * it is on no board, and nothing is derived from it. Signing in part way
+ * through one means that draft is now yours on this account, which is exactly
+ * the rule the leaderboard already runs on when it claims a finished run on the
+ * way in. Clearing somebody's half-finished draft because they changed accounts
+ * would be this file destroying a run rather than keeping one.
+ *
+ * It is a per-browser fact and never leaves the device, so it lives here rather
+ * than in the payload.
+ */
+var OWNERKEY = 'rtf.owner.v1';
+
+function cloudOwner(){
+  try { return localStorage.getItem(OWNERKEY) || null; } catch (e) { return null; }
+}
+function cloudSetOwner(id){
+  try {
+    if (id) localStorage.setItem(OWNERKEY, id); else localStorage.removeItem(OWNERKEY);
+  } catch (e) {}
+}
+
+function cloudPull(){
+  if (!cloudReady() || cloudPulling) return null;
+  var who = (A.state && A.state().userId) || null;
+  /* MINE UNLESS THE BROWSER SAYS IT BELONGS TO SOMEBODY ELSE. An unknown owner
+     is treated as mine deliberately: it is either a first sign in or a browser
+     from before this existed, and refusing to claim those would throw away the
+     careers this whole feature is for. */
+  var mine = !who || !cloudOwner() || cloudOwner() === who;
+  cloudPulling = true;
+  return SV.all(CL.GAME).then(function(rows){
+    cloudPulling = false;
+    if (!rows) return;           /* no opinion. The local copy stands. */
+    var by = {}, i;
+    for (i = 0; i < rows.length; i++) if (rows[i].slot) by[rows[i].slot] = rows[i];
+    /* THE OWNER IS WRITTEN BEFORE ANYTHING IS ADOPTED, so a merge interrupted
+       half way cannot leave this browser claiming to hold the previous
+       account's record while it actually holds a mixture. */
+    cloudSetOwner(who);
+    cloudAdoptCareer(by[CL.SLOT_CAREER], mine);
+    cloudAdoptDaily(by[CL.SLOT_DAILY], mine);
+    cloudAdoptRun(by[CL.SLOT_RUN]);
+  }, function(){ cloudPulling = false; });
+}
+
+/* THE PUSH IS SKIPPED WHEN THE MERGE CHANGED NOTHING, which is the common case
+   for somebody playing on one device: the shelf already holds exactly this. A
+   missing row compares unequal and is therefore always written, which is how a
+   career that has never been uploaded gets there. */
+function cloudSettle(slot, merged, stored, progress){
+  var had = stored && stored.payload ? JSON.stringify(stored.payload) : null;
+  if (had === JSON.stringify(merged)) return false;
+  cloudPush(slot, function(){ return { payload: merged, progress: progress }; });
+  return true;
+}
+
+/* WHAT THE BROWSER SHOULD NOW HOLD, and the local write is the same shape for
+   both records: write it if it changed, clear the key if there is nothing left,
+   and repaint whatever was on screen while the answer was out. */
+function cloudWriteLocal(key, value, before){
+  var now = value == null ? null : JSON.stringify(value);
+  if (now === before) return false;
+  try {
+    if (now === null) localStorage.removeItem(key); else localStorage.setItem(key, now);
+  } catch (e) {}
+  /* The front page reads both records, the cabinet reads the career, and a
+     merge landing under an empty shelf has to redraw it or the only way to see
+     a cabinet that has just arrived is to reload. */
+  renderHome();
+  if ($('sheet').classList.contains('open')) renderCareer();
+  return true;
+}
+
+function cloudAdoptCareer(rowIn, claim){
+  var before = null;
+  try { before = localStorage.getItem(PKEY); } catch (e) {}
+  var theirs = rowIn && rowIn.payload ? rowIn.payload : null;
+  /* NOT MINE: the account's own copy stands alone, and no copy at all means an
+     empty cabinet rather than the previous reader's. Nothing is pushed on this
+     path, because what is on the shelf IS the answer. */
+  if (!claim) { cloudWriteLocal(PKEY, theirs, before); return; }
+  var mine = loadCareer();
+  if (!mine && !theirs) return;
+  var merged = CL.mergeCareer(mine || blankCareer(), theirs || {});
+  cloudWriteLocal(PKEY, merged, before);
+  cloudSettle(CL.SLOT_CAREER, merged, rowIn, CL.careerProgress(merged));
+}
+
+function cloudAdoptDaily(rowIn, claim){
+  var before = null;
+  try { before = localStorage.getItem(DAILYKEY); } catch (e) {}
+  var theirs = rowIn && rowIn.payload ? rowIn.payload : null;
+  if (!claim) { cloudWriteLocal(DAILYKEY, theirs, before); return; }
+  var mine = dailyState();
+  if (!mine && !theirs) return;
+  var merged = CL.mergeDaily(mine || {}, theirs || {});
+  if (!merged) return;
+  cloudWriteLocal(DAILYKEY, merged, before);
+  cloudSettle(CL.SLOT_DAILY, merged, rowIn, CL.dailyProgress(merged));
+}
+
+/* THE SHELF, PUBLISHED, AND NOTHING ON THIS PAGE READS IT.
+ *
+ * It is here so hoops/check-cloudsave.mjs can ask for a pull at the moment it
+ * has arranged, rather than waiting for one: the pull is fired by a change of
+ * account, which needs a live supabase client, and a save test has no business
+ * loading one. Same argument as window.RTF_LIVE above.
+ *
+ * The two pushes are exported for the same reason and no other. Filing a real
+ * career means playing 82 games and a bracket through the page for every row,
+ * which is minutes per assertion, and what is under test here is the SYNC. The
+ * merge itself is swept over the real badge catalog in node.
+ *
+ * NOTHING ELSE GOES ON THIS OBJECT. Starting a run, abandoning one and opening
+ * the cabinet are all buttons, and a guard that presses the button is testing
+ * the thing a player does. */
+window.RTF_SYNC = {
+  pull: function(){ return cloudPull(); },
+  pushCareer: function(c){ return cloudPushCareer(c); },
+  pushDaily: function(s){ return cloudPushDaily(s); },
+};
+
+function cloudAdoptRun(rowIn){
+  var theirs = rowIn && rowIn.payload ? rowIn.payload : null;
+  var here = run ? CL.runProgress(run) : -1;
+  if (!theirs || theirs.version !== 1) {
+    /* Nothing stored, or something this page cannot open. Either way the local
+       run is the only one there is, so it goes up. */
+    if (run) cloudPushRun();
+    return;
+  }
+  if (CL.runProgress(theirs) <= here) { if (run) cloudPushRun(); return; }
+  /* FURTHER ALONG THAN THIS DEVICE, so adopt it. Never mid-game: `restore` is
+     what decides which screen a run belongs on, and it is only honest to call
+     it while nobody is looking at a screen of their own. */
+  if (!$('s-home').classList.contains('active')) return;
+  try { localStorage.setItem(KEY, JSON.stringify(theirs)); } catch (e) {}
+  restore();
+  renderHome();
 }
 
 // ── wiring ─────────────────────────────────────────────────────────────────

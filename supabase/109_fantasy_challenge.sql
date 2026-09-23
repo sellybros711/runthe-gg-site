@@ -274,7 +274,12 @@ begin
     raise exception 'that lineup is over the cap';
   end if;
 
-  select p.display_name into v_name from public.profiles p where p.id = v_user;
+  /* `username`, WHICH IS WHAT AN ACCOUNT'S NAME IS CALLED. This read was written
+     `p.display_name` and there is no such column: `supabase/10_accounts.sql` names it
+     `username`, a citext, and every other board on this site copies it out as
+     `select username::text`. It raised on the first real entry anybody tried to make.
+     See 113 for the whole story, including why no test caught it. */
+  select p.username::text into v_name from public.profiles p where p.id = v_user;
 
   begin
     insert into public.fantasy_entries

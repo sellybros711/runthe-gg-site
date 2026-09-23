@@ -48,11 +48,11 @@ insert into auth.users(id) values
   ('bbbbbbbb-0000-0000-0000-00000000000b'),
   ('cccccccc-0000-0000-0000-00000000000c')
 on conflict do nothing;
-insert into public.profiles(id, display_name) values
+insert into public.profiles(id, username) values
   ('aaaaaaaa-0000-0000-0000-00000000000a', 'Ada'),
   ('bbbbbbbb-0000-0000-0000-00000000000b', 'Bo'),
   ('cccccccc-0000-0000-0000-00000000000c', 'Cy')
-on conflict (id) do update set display_name = excluded.display_name;
+on conflict (id) do update set username = excluded.username;
 
 -- ---------- a week with no row refuses, and that is the point ---------------
 --
@@ -282,7 +282,7 @@ end $$;
 do $$
 declare u record; v_place int; v_board int; v_n int;
 begin
-  for u in select id, display_name from public.profiles loop
+  for u in select id, username as display_name from public.profiles loop
     perform public.become(u.id);
     select place into v_place from public.fantasy_my_place(2026,3);
     select place into v_board from public.fantasy_standings(2026,3,200)
@@ -338,7 +338,7 @@ end $$;
 
 do $$
 begin
-  update public.profiles set display_name = 'Ada Renamed'
+  update public.profiles set username = 'Ada Renamed'
    where id = 'aaaaaaaa-0000-0000-0000-00000000000a';
   perform public.claim('a rename does not rewrite a week already entered',
     (select count(*) = 1 from public.fantasy_standings(2026,3) where display_name = 'Ada'));

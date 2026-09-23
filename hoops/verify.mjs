@@ -1666,6 +1666,13 @@ ok(bestWins > worstWins + 20,
     const pages = {
       'index.html': prose(pageSrc),
       'how-to-play.html': prose(fs.readFileSync(path.join(HERE, 'how-to-play.html'), 'utf8')),
+      /* THE SHARE CARD IS COPY, and it is the most public copy this game has: it
+         is what a link to it looks like in somebody else's chat. It is also a
+         BUILD ASSET, rendered to a png once and never interpolated, so a cap
+         that moves leaves a picture promising the old one with no page to fix
+         it and no reader who can tell. Same argument that put cfb's own og
+         build script on check-copy's guarded list. */
+      'og-source.html': prose(fs.readFileSync(path.join(HERE, 'og-source.html'), 'utf8')),
     };
 
     /* THE EXTRACTOR HAS TO PROVE IT READ THE SCRIPT, because the way it failed
@@ -1689,6 +1696,31 @@ ok(bestWins > worstWins + 20,
     const wrongCap = capClaims.filter(c => c.value !== E.CONSTANTS.CAP_MUSD)
       .map(c => `${c.name} says $${c.value}M`);
     is(wrongCap, [], `every cap a reader sees is $${E.CONSTANTS.CAP_MUSD}M`);
+
+    /* AND THE SEASON RANGE, WHICH GOES STALE ON ITS OWN ONCE A YEAR.
+       `home-era` is interpolated from the data on load, so the "1974 to 2025"
+       in the markup is only what a reader sees for the moment before the pool
+       arrives, and for as long as it does not. That still makes it a claim: a
+       refresh that adds a season leaves it a year out, in the heading of the
+       front page, with nothing to catch it, because the number that replaced
+       it was right. This is the one number on these pages that moves without
+       anybody editing anything.
+
+       IT READS THE ELEMENT AND NOT THE PROSE, and the first draft did the
+       other thing. A bare "NNNN to NNNN" means several things on these pages:
+       how-to-play lists the seven era bands, and 1980 to 1986 is a correct
+       sentence about the eighties rather than a stale claim about the pool.
+       Scanning for the shape reported all seven as defects, which is the same
+       trap that kept "times" and "players" off the noun list above. The claim
+       lives in one element, so that is what is read. */
+    const seasons = players.map(p => p.s);
+    const span = `${Math.min(...seasons)} to ${Math.max(...seasons)}`;
+    const era = /id="home-era"[^>]*>([^<]*)</.exec(pageSrc);
+    ok(!!era, 'the front page still carries the season range in #home-era');
+    if (era) {
+      is(era[1].trim(), span,
+        `the season range the front page opens on is ${span}`);
+    }
 
     /* And every count of the roster written as a WORD. "six spins" and "Six
        men" are correct English sentences, so nothing but this can catch one

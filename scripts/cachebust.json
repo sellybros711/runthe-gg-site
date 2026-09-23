@@ -25,8 +25,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "23",
-      "sha": "8118f97f95104467"
+      "v": "24",
+      "sha": "97f509962d4497d0"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -253,8 +253,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "23",
-      "sha": "8118f97f95104467"
+      "v": "24",
+      "sha": "97f509962d4497d0"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -475,8 +475,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/teammates.js": {
-      "v": "24",
-      "sha": "7d51a6d82d61d427"
+      "v": "25",
+      "sha": "a6d21cd8e37a9c6e"
     },
     "/arcade/livecheck.js": {
       "v": "8",
@@ -529,8 +529,8 @@
       "sha": "a4222cc200670d79"
     },
     "/arcade/primary.js": {
-      "v": "23",
-      "sha": "8118f97f95104467"
+      "v": "24",
+      "sha": "97f509962d4497d0"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -679,8 +679,8 @@
       "sha": "a4222cc200670d79"
     },
     "/arcade/primary.js": {
-      "v": "23",
-      "sha": "8118f97f95104467"
+      "v": "24",
+      "sha": "97f509962d4497d0"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -829,16 +829,16 @@
       "sha": "42bbabae620fcfbf"
     },
     "/arcade/primary.js": {
-      "v": "23",
-      "sha": "8118f97f95104467"
+      "v": "24",
+      "sha": "97f509962d4497d0"
     },
     "/arcade/data.js": {
       "v": "5",
       "sha": "f4a8616769d64a24"
     },
     "/arcade/jerseys.js": {
-      "v": "23",
-      "sha": "0afe7906b6494ba9"
+      "v": "24",
+      "sha": "d892af579ccb1629"
     },
     "/arcade/stats.js": {
       "v": "3",
@@ -1071,8 +1071,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "23",
-      "sha": "8118f97f95104467"
+      "v": "24",
+      "sha": "97f509962d4497d0"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -1221,8 +1221,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "23",
-      "sha": "8118f97f95104467"
+      "v": "24",
+      "sha": "97f509962d4497d0"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -1367,8 +1367,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "23",
-      "sha": "8118f97f95104467"
+      "v": "24",
+      "sha": "97f509962d4497d0"
     },
     "/arcade/data.js": {
       "v": "5",
@@ -1585,8 +1585,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/teammates.js": {
-      "v": "24",
-      "sha": "7d51a6d82d61d427"
+      "v": "25",
+      "sha": "a6d21cd8e37a9c6e"
     },
     "/arcade/livecheck.js": {
       "v": "8",
@@ -1737,16 +1737,16 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "23",
-      "sha": "8118f97f95104467"
+      "v": "24",
+      "sha": "97f509962d4497d0"
     },
     "/arcade/data.js": {
       "v": "5",
       "sha": "f4a8616769d64a24"
     },
     "/arcade/jerseys.js": {
-      "v": "23",
-      "sha": "0afe7906b6494ba9"
+      "v": "24",
+      "sha": "d892af579ccb1629"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -2019,8 +2019,8 @@
       "sha": "153192c9aeb27834"
     },
     "/assets/cloudsave.js": {
-      "v": "1",
-      "sha": "5f24ea88454d0669"
+      "v": "2",
+      "sha": "db78661bbd724b47"
     },
     "/cfb/data/cfb_fbs.json": {
       "v": "1",
@@ -2087,16 +2087,16 @@
       "sha": "cd646e46df3796f3"
     },
     "/football/auth.js": {
-      "v": "5",
-      "sha": "4267faaaa07774a5"
+      "v": "6",
+      "sha": "e5f17581ed6580f6"
     },
     "draft.js": {
       "v": "3",
       "sha": "68b407e38656dce2"
     },
     "entries.js": {
-      "v": "2",
-      "sha": "f93079737e2340f2"
+      "v": "4",
+      "sha": "f38a845d7aec4239"
     }
   },
   "football/index.html": {
@@ -2137,12 +2137,12 @@
       "sha": "905aa4f7e9d42645"
     },
     "/assets/cloudsave.js": {
-      "v": "1",
-      "sha": "5f24ea88454d0669"
+      "v": "2",
+      "sha": "db78661bbd724b47"
     },
     "auth.js": {
-      "v": "5",
-      "sha": "4267faaaa07774a5"
+      "v": "6",
+      "sha": "e5f17581ed6580f6"
     },
     "data/defender_seasons.json": {
       "v": "1",
@@ -2174,17 +2174,25 @@
       "v": "1",
       "sha": "f4d23b1fe32fff3a"
     },
+    "/assets/cloudsave.js": {
+      "v": "2",
+      "sha": "db78661bbd724b47"
+    },
+    "cloud.js": {
+      "v": "1",
+      "sha": "d401cefb277986c4"
+    },
     "data/players.json": {
-      "v": "4",
-      "sha": "98a0fe89d242ac52"
+      "v": "5",
+      "sha": "16037dd46b6ac2f9"
     },
     "data/chemistry.json": {
       "v": "1",
       "sha": "92660036068e82d5"
     },
     "data/teams.json": {
-      "v": "2",
-      "sha": "8c1cffe20bb50314"
+      "v": "3",
+      "sha": "b46bbe6c1ea84b64"
     }
   },
   "ideas/index.html": {

@@ -2670,6 +2670,43 @@ how available he has been, which is both halves of what the projection reads. Th
 projected total comes after the six are in, and it is the one number this mode prints about
 the future.
 
+#### But once the six ARE in, the total has to show its working
+
+Reported by a player looking at five finished lineups: they wanted each man's projected
+points for the week. The rule above is about the WHEEL, where the six are not in yet and a
+per man figure would be the page guessing at a decision the reader is still making. On the
+review screen and the entry screen the six are in and the total is already printed, so the
+argument does not reach them. What those two screens had was **a headline with no working**:
+`63.0` against `77.0` is two numbers to trust rather than two lineups to compare, and a
+reader cannot tell a total carried by one man from six solid ones, which on a Sunday is most
+of what separates them. That is the Full Team results screen's rule arriving at the screen
+where somebody is choosing.
+
+**It goes in the `.rs` column, the one the result screen puts the REAL score in**, and that
+is the point rather than reuse. The rightmost figure on a man's row is his points on every
+screen: projected before the games, real after, same place, same face, same size. A reader
+learns one column and the card's own eyebrow says which of the two it is, so six rows do not
+each repeat the word. **After the games it is deliberately not doubled up**: `.rs` is the
+real score by then and the projection is already beside the real TOTAL on `in-vs`, which is
+where this mode has always said it belongs, because the gap between the two is a fact about
+the lineup rather than about any one man.
+
+**THE PARTS ADD UP TO THE TOTAL EXACTLY, and that is a property rather than a hope.** Every
+`proj` in the pool is one decimal and `D.projected` is their sum, so a reader can check the
+headline by eye. Measured over 20,000 random lineups: no rounding seam, ever. So the guard
+asserts the arithmetic **on the rendered page** and needs no tolerance. Asking `draft.js`
+whether its own sum adds up is asking a function whether it agrees with itself; what can
+actually break is a painter printing to a different precision from the one the total was
+summed at, and only the glass can see that. Reintroduced as `toFixed(0)` it reports
+`17+15+7+10+5+10=63.7`, which renders perfectly and is exactly the defect nothing else here
+would catch.
+
+**The price stays, quieter, to its left.** The money is spent by the time anybody reads the
+review screen, so it is no longer a decision, but the spend line under the card is a total
+with the same problem the projection had. Measured at 360 and 390: the longest name in the
+pool (`Jacory Croskey-Merritt`, 144px) sits in a 198px column at the tightest, so nothing
+truncates and the six rows hold one height.
+
 #### The cap bound the lineup and never once appeared on screen
 
 ```
@@ -3115,6 +3152,150 @@ That is the four-states rule bending, because two of the four cannot happen on t
 **The name is copied at submit time**, unlike every other board here, which reads it live. A
 board of a finished week is a record of who entered it, and somebody renaming themselves in
 November should not rewrite week 3's result.
+
+#### "No lineups before the lock" was implemented as "no rows", and those are two claims
+
+```
+psql -d fantasy -f supabase/112_fantasy_entrants.sql
+psql -d fantasy -f supabase/test/fantasy_entrants_test.sql
+node football/check-fantasy.mjs      the section named WHO IS IN
+```
+
+The argument one section up is sound and is not weakened by any of this: a list of everybody's
+lineups before kickoff is the answer key handed to whoever enters last. What was wrong is that
+the rule was enforced by answering NOTHING, so the only thing this screen could say to
+somebody who had just entered was a count on a label. Reported by a player, who asked to land
+on the board after submitting and see who else was in.
+
+**THE PRE-LOCK ANSWER IS A LIST OF NAMES, AND IT IS A SEPARATE FUNCTION RATHER THAN A FLAG ON
+THE STANDINGS.** `fantasy_entrants` selects no pick, no projection, no spend and no score, so
+the payload a reader gets before kickoff CANNOT carry a lineup however the page draws it.
+Nulling those columns out of `fantasy_standings` would have been one `case` away from leaking
+the thing the lock exists to protect, and the way that fails is silent: a correct looking board
+with the answer key in the network tab. **So the SQL test asserts the key set as a SET.**
+Written as "no picks key" it goes quiet the day somebody adds a fourth field, which is exactly
+how a leak of this shape would arrive.
+
+**EXACTLY ONE OF THE TWO IS EVER POPULATED**, and the lock is the one thing that decides.
+Entrants before it, rows after. Two lists of names would be two answers to one question, and
+they would disagree the first time either was edited. `entry_no` is the same key either side,
+because no entry can arrive after the lock, so a row does not change key at kickoff.
+
+**IT DISCLOSES NOTHING NEW.** These are the display names the board already publishes after the
+lock, and the entry count is already public before it. What changes is that the count has the
+names in it.
+
+**The door is drawn when the board has something to SAY, read off the answer rather than off
+the clock.** It used to be the lock and nothing else, correctly: before 112 the only pre-lock
+answer was no rows, so a button here would have taken somebody somewhere to be told nothing,
+and that is still exactly what it does against a database without the migration.
+
+**ABSENT IS NOT EMPTY, and the entry count is what tells them apart.** SQL is deployed by hand
+and this page by a push, so a database still on 111 answers with no `entrants` key at all while
+the week genuinely has entries in it. Read as "nobody", that is the page telling a reader the
+competition is empty on the evening it fills up. So the page falls back to the sentence it has
+always drawn, and the guard's first arm IS that database: the fixture leaves the key out
+entirely rather than defaulting it to an array.
+
+**A third sentence arrived with it that nobody had ever read.** This screen could not be
+reached before the first kickoff until there was something to say, so "Week 3 is not being
+played right now. This is how it finished" was only ever seen after a week had finished. Read
+before one starts it is wrong about a week nobody has played a down of.
+
+**The pre-lock list is asked once per visit and not polled.** `boardLive` is unchanged, so the
+twenty second poll still only runs while the games are on. A list that moves a handful of times
+between Tuesday and Thursday does not need a request every twenty seconds for two days, and
+`openLive` asks on the way in, which is the moment somebody wants it.
+
+**A SUBMIT LANDS ON THE BOARD, not on your own six.** The entry screen is a correct receipt and
+answers the wrong question. The board carries the confirmation anyway, because the reader's own
+row is on it and is marked, so nothing is lost by going to the screen that also says who else
+is in. The receipt is one press back, and the guard asserts that from the other end: moving a
+destination is how a redirect quietly costs a screen.
+
+**And the two halves are guarded in two files, which is 107's own split.**
+`check-fantasy.mjs` fabricates an `entrants` array and hands it to the painter, so it says
+nothing about what the server sends; `supabase/test/fantasy_entrants_test.sql` drives the real
+function. Four defects were reintroduced one at a time to prove that file bites: dropping the
+lock clause, adding a fourth key carrying the lineup, dropping the `coalesce` on `is_me`, and
+`security invoker` in place of `security definer`.
+
+**One of its claims could only ever pass, and the shape is worth recognising.** The first
+version asserted that `anon` may CALL the function, on 109's "RLS narrows a grant, it does not
+make one". That rule is about TABLES: Postgres gives PUBLIC execute on a new function by
+default, so the assertion passed with the grant line deleted. What actually says something is
+the definer: `anon` gets the list AND is refused a direct read of `fantasy_entries`, and both
+halves have to be asserted together or the pair is one careless `security invoker` from being a
+list nobody can read and one careless policy from being a table anybody can.
+
+#### A refusal said into an empty room is a button that does nothing
+
+Reported as "nothing happens when I press submit". Something did: the server refused it, in one
+of the nine sentences below, and the page wrote that sentence into `#r-say`, which is the lede
+at the TOP of the review screen. Measured through the real page at 390x844: the page is 1691px,
+the reader has scrolled to the Submit button at y=673, and **the refusal landed at y=-715,
+which is 694px above the top of the window.**
+
+**Nothing threw, nothing rendered wrong, and the sentence was correct.** It was 694px away from
+the thumb that had just pressed the button.
+
+It is its own box now, red, directly above the button, with a `scrollIntoView` for the case
+where it still is not. **The guard measures the rectangle against the phone rather than reading
+the text**, because `innerText` does not care where an element is and that section passed on
+this for as long as it has existed. It asserts the lede is NOT carrying it as well, so the box
+cannot quietly move back to the top of the screen.
+
+**The page owns the JOIN and not the words.** Those nine sentences are written to stand alone
+and start lowercase (`sign in to enter`), so pasted after a full stop they read `Not entered.
+sign in to enter`. `asSentence()` capitalises the first letter and closes it, which is
+presentation rather than translation: not one word moves. Found by taking a screenshot and
+reading it, which is the fourth time on this mode.
+
+#### And what it was actually saying was `column p.display_name does not exist`
+
+```
+psql -d fantasy -f supabase/113_fantasy_submit_username.sql
+```
+
+**AN ACCOUNT'S NAME IS `username`.** `supabase/10_accounts.sql` has no `display_name` column
+at all, and every other board on this site copies the name out with `select username::text`:
+108 for hoops, 97 for baseball, 53 and 66 when they denormalise it onto a run.
+`fantasy_submit` alone asked for `p.display_name`, so **every entry anybody ever tried to make
+raised**, and not one lineup was ever recorded. The column on `fantasy_entries` is correctly
+called `display_name` and is not what was wrong: only the READ from `profiles` was.
+
+**THE FIXTURE IS WHY NO TEST CAUGHT IT, and it said so in its own comment.**
+`supabase/test/fantasy_base.sql` built `create table public.profiles (id, display_name)` under
+a line reading **"Only the column 109 reads"**. That is a stand-in written to agree with the
+code it stands in for rather than with the table that exists, so all four suites (109, 110,
+111, 112) passed against a database production does not have. It is the real shape now, citext
+and unique constraint included, and the 109 suite fails on the old read with the player's exact
+error at line 101.
+
+**A fixture allowed to invent the schema can only ever certify that a function agrees with
+itself.** That is this repo's oldest lesson arriving at the account layer, and it is the fifth
+time a stand-in here has been wrong in silence.
+
+**`raise exception` IS `P0001`, AND THAT IS THE ONE HONEST WAY TO TELL A SENTENCE FROM
+MACHINERY.** `SAY` in `entries.js` asked whether a message was short and not an all-caps code.
+`column p.display_name does not exist` is 36 characters of lower case English and passed both
+halves, so the page put the inside of the database on screen, under SUBMIT THIS LINEUP, on a
+phone. Nine sentences reach a reader because a person wrote them with `raise exception`, which
+carries SQLSTATE `P0001`; a missing column is 42703, a missing function 42883, a denied table
+42501, and PostgREST's own refusals are `PGRST...`. **Keyed on `code`, so it is a property of
+how the message was produced rather than a second copy of nine strings**, which is the thing
+the paragraph above refuses to write.
+
+**The machinery is MOVED rather than dropped.** Reading the raw message off a player's
+screenshot is exactly how this was found in one round, so it goes to `console.warn`: a
+developer gets the whole answer and nobody is shown a column name mid-draft.
+
+**And the JS stub had the same fault as the SQL fixture, in the same week.** It answered
+`{ message }` with no `code`, because nothing read one. A stub that cannot express the
+defect a player met is a stub shaped to suit the checker, so it sends the SQLSTATE now, which
+is what PostgREST always sends. Both halves of the new arm were proved by restoring the old
+filter: it reports `Not entered. Column p.display_name does not exist.`, which is the
+screenshot.
 
 #### A submit has three answers and the page draws all three
 
@@ -6645,6 +6826,7 @@ node hoops/check-live.mjs         the game you play yourself, and its fit
 node hoops/check-bracket.mjs      the playoff bracket, and the field it draws
 node hoops/check-draft.mjs        the draft screen's shape, desktop and phone
 node hoops/check-home.mjs         how far the front page scrolls, and the fold
+node hoops/check-cloudsave.mjs    the run, the career and the daily, on two devices
 ```
 
 `check-badges.mjs` takes about two minutes, because proving a badge is reachable
@@ -8359,6 +8541,269 @@ If it ever holds 171 rows again, the game has fallen back to
 must never be shown to a player as a fact about a real season. The dev banner
 said so and has come off, because saying it now would be false in the other
 direction.
+
+### TWO NUMBERS ABOUT TIME, AND BETWEEN THEM A GAME THAT STAYS A SEASON BEHIND
+
+A season is named for the calendar year it ENDS in, so 2026 is 2025-26. Both
+places that number is decided were stale in the same direction.
+
+**The workflow's `to_season` was the literal 2025, three times.** A SCHEDULED
+run passes no inputs, so the annual July refresh would have asked for 2025
+every year: it fires, re-fetches the fifty-two seasons it already has, reports
+"data unchanged", and never adds the new one. A green run, a correct-looking
+log, and a game a year behind the sport. It is computed now, in its own step,
+from the rule that the Finals are over by the end of June.
+
+**And `fetch-teams.mjs` demanded champions only up to LAST year**, which is
+right in March and wrong from July onwards. Read in September 2026 it reported
+every season from 1974 to 2025 complete while 2026 had no champion at all and
+the upstream table had not caught up: six months of every year in which a
+missing title was invisible to the one check written to find it. Same July
+cutoff now, which is also why the cron fires on the 5th of it.
+
+**`SUPPLEMENT` is where the answer goes and it is not a workaround.**
+nba_api's static table is generated upstream on somebody else's schedule and
+lags a season; it lagged for 2024 and it lags for 2026. New York over San
+Antonio, and it is the Knicks' first title since 1973, so every other year on
+their card is out of this game's range and 2026 is the only one a player will
+ever see.
+
+**A refresh now bumps what it invalidates.** A pool caches exactly like a
+script, and this workflow is the one writer that cannot do the bump by hand:
+everywhere else the edit and the bump are one commit by a person, here a bot
+rewrites 3.6MB once a year and nobody is watching. It moves the `?v=` of
+whatever `git diff --quiet` says actually changed, so a refresh that finds no
+new basketball moves no number, and it commits `index.html` and
+`scripts/cachebust.json` alongside the data.
+
+### The link block, and the one number that goes stale without an edit
+
+```
+(nohup python3 -m http.server 8080 &) ; node hoops/build/og.mjs
+```
+
+**A link to this game was a bare grey rectangle.** No `og:image`, no
+`og:title`, no card, while the daily's whole loop is a share. `og-source.html`
+renders to `og.png` at 1200x630 in the game's own language, and the build is
+`cfb/build/06-og.mjs`'s whole lesson inherited: fonts curled and inlined as
+data URIs because Chromium here reaches the network only through a CONNECT
+proxy and the page's own `<link>` arrives empty, and a refusal to write if a
+display face is missing, read off the loaded FontFace set rather than
+`document.fonts.check()`.
+
+**The ball is drawn rather than an image file**, because this game ships no
+logo and a card waiting on one would not exist. **The tags go in while the page
+is still noindexed**, deliberately: a robots tag tells a crawler not to index
+and does nothing to a chat app unfurling a link somebody was handed, which is
+how an unlaunched game reaches its testers.
+
+**And the card is COPY.** It is a PNG: rendered once, never interpolated, so a
+cap that moves leaves a picture promising the old one with no page to fix it
+and no reader who can tell. `og-source.html` is on verify's prose guard, which
+is the same argument that put cfb's og build script on `check-copy`'s list.
+
+**`#home-era` is the one claim on these pages that goes wrong without anybody
+editing anything.** It is interpolated from the pool on load, so "1974 to 2025"
+in the markup is what a reader sees for the moment before the data arrives, and
+for as long as it does not. The annual refresh adds a season and leaves it a
+year out, while the number that replaced it at runtime is right.
+
+**It reads the ELEMENT and not the prose**, and the first draft did the other
+thing. A bare "NNNN to NNNN" means several things here: `how-to-play.html`
+lists the seven era bands, and 1980 to 1986 is a correct sentence about the
+eighties. Scanning for the shape reported all seven as defects, which is the
+trap that kept "times" and "players" off the roster-count noun list.
+
+### The board is in the preflight now, and the helper under it could only say NO
+
+Run The Floor's leaderboard was in no preflight. Its board fails soft the way
+every board here does, so an undeployed migration is **indistinguishable from a
+network that is down**: every call in `board.js` resolves to null, the screen
+says not reachable, and it says that for ever while the game plays perfectly,
+the run records in the career and the badges light. There is no state a player
+can tell the two apart from.
+
+**Writing the row found the trap under it.** `has_table` in
+`launch_preflight.sql` reads like a general helper and is an ALLOWLIST of
+eleven names, so a row naming a table missing from it finds nothing and reads
+false against a database where the table is sitting right there. The first run
+said NO with `rtf_runs` and all four functions loaded. **A preflight row that
+can only ever say NO is worse than no row**, because it tells a correct
+database it is broken and teaches everybody to ignore the column.
+
+**108 twice is not a typo.** `108_hoops_leaderboard` and `108_dynasty_slot`
+were written for two different games in the same week and touch nothing in
+common.
+
+### The career belongs to the account, and a career MERGES where a run does not
+
+```
+node hoops/check-cloudsave.mjs           the merges, then a real second device
+node hoops/check-cloudsave.mjs --quick   the merges only, no browser
+```
+
+The run, the career and the daily were all in localStorage and nowhere else,
+which `supabase/103_cloud_saves.sql`'s own header already lists five ways of
+losing. What makes it worse here than in the football game is that **every
+badge in `badges.js` is DERIVED from the career**, so a second device or a
+cleared jar is not a missing number, it is an empty cabinet somebody spent
+weeks filling, with nothing on screen to explain it.
+
+**IT NEEDED NO MIGRATION.** `ps_saves` is keyed on (user, game, slot) with
+`game` a free-form text column, so `rtf` is a value rather than a schema
+change. 103 is already deployed, so there is nothing new in the preflight and
+nothing to deploy by hand: the one shape of failure this whole section usually
+warns about does not exist here.
+
+`/assets/cloudsave.js` is the TRANSPORT and is shared with the football and
+college games; `hoops/cloud.js` is this game's POLICY. Only the game knows what
+further along means, which is 103's own argument, and only the game knows what
+a career is.
+
+**THREE SLOTS, one `ps_save_all` on boot.** The run, the career and the daily.
+**The preferences stay local** (the last club, the last era, whether the guide
+has been seen): each is worth one tap, none is worth a round trip, and a
+remembered club following somebody to a second device would be slightly wrong
+anyway, because it is a fact about the browser they drafted in.
+
+#### A football dynasty is one run at two points. A career is not.
+
+Progress-wins is the whole answer for a dynasty: two devices are at different
+points of ONE run, and more play is never the wrong thing to keep. **Two
+devices can each hold runs the other has never seen.** A laptop plays five, a
+phone plays three, and neither is behind the other. Run the progress rule over
+that and the phone's three are deleted by the laptop's next save, which is the
+exact failure this exists to stop, arriving by the door built to prevent it.
+
+So the career and the daily MERGE, and the merge has one property everything
+else is built to protect:
+
+> **A MERGE MAY NEVER TAKE A BADGE AWAY.**
+
+Every badge is a `>=` over a counter, a count of distinct keys in a map, or a
+question about the rows. So scalars take the MAXIMUM, maps take the union with
+the maximum per key, and rows take the union. All three only grow. That is
+**checked as a property over the real catalog** rather than trusted: 220 pairs
+of random careers, and the merged cabinet has to be a superset of both. **The
+sweep asserts it is not vacuous**, because a fuzz that lit nothing would prove
+the empty set is a superset of the empty set.
+
+**A COUNTER UNDER-COUNTS, AND THAT IS CHOSEN.** Five runs on a laptop and three
+on a phone merge to `runs: 5`, not 8, because a maximum is not a sum and a sum
+would double every time the same two careers met again. Exactness would mean
+deriving the count from the rows, and the rows are capped at 250 while the
+count is not. **Under-counting is the safe direction**: it can delay a badge
+and can never hand one out that was not earned. Anybody swapping the maximum
+for a sum should read that sentence and then the idempotence assertion.
+
+#### A row had no identity, and without one the merge doubles it every boot
+
+A career row is a compact line of numbers about a finished season and carried
+nothing to tell it from another one. Merged without an identity, **every row on
+the device doubles on every single boot**.
+
+New rows carry `id`, the run's own seed. Rows already on a device have none and
+fall back to a key built from their CONTENTS, so two genuinely identical runs
+collapse into one row: one line of evidence lost on a coincidence, which is the
+same safe direction as the paragraph above. **No version bump**, because
+`loadCareer` accepts version 1 and nothing else and raising it would throw away
+every career on every device. That is `recordRun`'s own rule about new fields.
+
+**`id: undefined` IS A SEAM AND IT IS NOT OBVIOUS.** The literal writes the key
+whether or not there is a seed, and `JSON.stringify` drops it, so a row keyed
+one way in memory and another way on the wire would be held twice by a union
+that is supposed to be idempotent. `rowKey` skips undefined values, and the
+guard asserts the key is the same either side of JSON.
+
+#### Two accounts on one browser is a DISCLOSURE, not a lost save
+
+Merging turns 103's fifth failure into its opposite: sign in as somebody else
+and their cabinet quietly adopts the runs, the rings and the streak of whoever
+used this browser last. Neither record is true afterwards and nothing says so.
+
+So the browser records whose copy it is holding, in `rtf.owner.v1`, which never
+leaves the device. Nobody's is MERGED, which is claiming a signed-out career
+the way the leaderboard already claims a finished run on the way in. The same
+account is MERGED. **Somebody else's is REPLACED**, with the account's own copy
+or with nothing.
+
+**IT DOES NOT APPLY TO THE RUN, deliberately.** A draft in progress makes no
+claim about who did what, is on no board, and nothing is derived from it.
+Signing in part way through one means that draft is now yours on this account.
+Clearing somebody's half-finished draft because they changed accounts would be
+this file destroying a run rather than keeping one.
+
+#### The copy said the career was private, and it had been true for a year
+
+The profile sheet read **"Stored in this browser only"** and **"nothing here is
+sent anywhere"**. A page telling a reader their record is private while it is
+on a server is the worst kind of stale copy, and it is the exact class this
+repo already has a checker for: a sentence that goes wrong without anybody
+editing it. `renderCareerNote()` writes it off whether there is an account, and
+**`clearCareer` deletes the shelf row too**, or the next pull merges it
+straight back and the button appears to do nothing a moment later.
+
+#### Three rules the page runs on, and each has a failure that renders perfectly
+
+- **Local first, never awaited.** `save()` is called on every signing, every
+  re-spin and every round of the bracket. The upload rides behind through the
+  transport's per-slot queue, so a draft signing five men in a minute sends the
+  state as it stands when the wire is free.
+- **`startRun` DROPS BEFORE IT BUILDS.** A fresh run is progress zero, so a put
+  over a stored bracket is refused, and the refusal is silent: this device goes
+  on drafting while every boot anywhere resumes the run just abandoned. The
+  guard reads the source for the ORDER and drives it as well, and the stand-in
+  keeps 103's refusal so removing the drop actually fails.
+- **A run is adopted only on the front page.** Replacing `run` under somebody
+  who is drafting swaps the game out from under a decision they are making. The
+  answer lands after boot has finished, so the test is what is on screen at that
+  moment rather than what was on screen when the request went out.
+
+**THE SEASON HAS NO WITHIN-PHASE PROGRESS AND THAT IS NOT AN OVERSIGHT.** The
+reveal lives in `run._simState`, which holds the rng as a function and does not
+survive JSON, so a restored season restarts its own reveal. There is nothing
+stored to measure. **Every phase the game has needs a rank**, though: one
+missing from the ladder silently ranks zero, so a bracket would compare equal to
+an empty draft, and the way that arrives is somebody adding a phase to `run.js`.
+The guard reads `R.PHASES` rather than a list of its own.
+
+#### The push moved out of `dailyRecord`, because verify.mjs LIFTS that function
+
+`verify.mjs` brace-matches `dailyRecord`, `bestsSet`, `freshBadges` and four
+others out of `index.html` and drives them in node, never a copy of the
+arithmetic. So a page-level call inside one of them is a ReferenceError in a
+suite that has nothing to do with the shelf, and it shipped that way for one
+run. `dailyPut` is the other tempting hook and is worse: the pull writes a
+merged record through it, so hooking the setter queues that write and then
+queues the pull's own settle behind it, two round trips carrying the same
+bytes. `recordRun` is the one caller that is neither, and the guard asserts the
+push is NOT inside the lifted function.
+
+#### What the harness got wrong, twice, and both were the harness
+
+- **The draft helper always pressed Start.** So the walk meant to carry an
+  ADOPTED run further quietly began a fresh one: the shelf then held a two man
+  draft where the assertion above it had just asked for a full one, and the
+  failure landed two steps later as a device that would not adopt. Pressing
+  Start is a parameter now, never a default.
+- **A wait that times out names a line number.** Waiting for an adopt that never
+  comes is indistinguishable from every other way this feature fails, so both
+  waits are allowed to lapse and the assertion under them reports what the page
+  was actually holding, plus the progress the shelf held. Reintroducing the
+  ownership defect went from a stack trace to `expected null, got 11`.
+
+**`window.RTF_SYNC` is published and nothing on the page reads it**, which is
+`window.RTF_LIVE`'s own argument: the pull is fired by a change of account,
+that needs a live supabase client, and a save test has no business loading one.
+**Nothing else goes on that object.** Starting a run, abandoning one and opening
+the cabinet are all buttons, and a guard that presses the button is testing the
+thing a player does.
+
+**The transport honours `RTF_BOARD_URL` as well as `PS_BOARD_URL`, and that is
+a safety rule rather than a convenience.** Each game stubs its own board under
+its own name, and a page whose board is pointed at a stand-in while its SAVES
+still go to the live project is a checker writing real rows on somebody's
+account. Redirecting the board redirects the shelf with it.
 
 ## Run The Diamond, the baseball game
 
