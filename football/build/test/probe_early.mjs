@@ -39,8 +39,22 @@ import {
   POSITIONS, nflverseCSV, cachedCSV, parseCSVObjects, GAMES_URL,
 } from '../lib.mjs';
 import {
-  seasonToDate, halfPPR, clubsPlaying, shrunkPPG, SHRINK_K, PROJ_LIFT, pricePool,
+  seasonToDate, halfPPR, clubsPlaying, shrunkPPG, SHRINK_K, pricePool,
+  projectedPoints, positionLevels,
 } from '../weekly-pool.mjs';
+
+/*
+ * PROJ_LIFT IS HISTORY AND IS DECLARED HERE RATHER THAN IMPORTED. It was the flat lift this
+ * file argued against, so the pass that won the argument removed it from `weekly-pool.mjs`
+ * and left this probe importing a name that no longer existed: it has not run since, and
+ * nothing said so, because a probe is a command somebody types rather than a thing CI runs.
+ * Found by `probe_price.mjs` needing the same import list.
+ *
+ * It stays as a candidate because a probe that cannot draw the line it moved off is a probe
+ * that cannot show its own result twice. `shipped` below is the projection that ACTUALLY
+ * ships now, so the baseline column means what its heading says.
+ */
+const PROJ_LIFT = 0.54;
 
 const arg = (flag, fallback) => {
   const i = process.argv.indexOf(flag);
@@ -65,8 +79,10 @@ const pad = (s, n) => String(s).padStart(n);
  * to be worth existing.
  */
 const CANDIDATES = {
-  /* what ships today */
-  shipped: (p) => Math.max(0, shrunkPPG(p) + PROJ_LIFT),
+  /* what ships today: plays x rate, per position. This file is the pass that put it there. */
+  shipped: (p, ctx) => projectedPoints(p, ctx.level),
+  /* what shipped BEFORE it, and what the argument was against */
+  'flat lift': (p) => Math.max(0, shrunkPPG(p) + PROJ_LIFT),
   /* the stat line divided by the games, and no opinion at all */
   raw: (p) => p.half_ppg,
   /* the raw average with the pooled lift on it */
@@ -185,7 +201,10 @@ const main = async () => {
                 p.half_ppg = (want * (p.games + SHRINK_K)) / Math.max(1, p.games);
               }
             }
-            pricePool(copy);
+            /* w = 0 EXPLICITLY. The price carries its own blend weight now, so a call that
+               left it to the default would price these two lists under a rule this section
+               is not asking about and the invariance claim would be measuring that instead. */
+            pricePool(copy, positionLevels(copy), 0);
             return copy.map((p) => p.price_musd);
           };
           priceRuns.push({ base: priceOf(null), alt: priceOf(CANDIDATES.raw) });

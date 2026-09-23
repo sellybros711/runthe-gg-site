@@ -2796,6 +2796,110 @@ how available he has been, which is both halves of what the projection reads. Th
 projected total comes after the six are in, and it is the one number this mode prints about
 the future.
 
+#### And the price was blind to whether he plays, which is worth 2.87 points
+
+```
+node football/build/test/probe_price.mjs          the two bias axes, 2022 to 2024
+node football/build/test/probe_price.mjs --board  who moves on the live board, by name
+```
+
+Reported by a player as the price feeling too weighted toward what a man has done all
+season and not enough toward what he is expected to do this week. **It is measurable and
+it was true.**
+
+`shrunkPPG` is what the price runs on and it is **blind to availability**: a man who has
+played two of his club's three games and a man who has played all three are the same row
+to it, because the shrink toward zero discounts a thin SAMPLE, which is a different
+question. `projectedPoints` is what the card prints and it knows, because the refit two
+sections up put `plays` in it. So the two came apart that day and nothing put them side by
+side.
+
+Measured over **21,291 draftable player-weeks**, holding the price band fixed:
+
+| at equal price | scores this week |
+|---|---|
+| played every one of his club's games | the reference |
+| missed one | **2.87 points less** |
+
+That is most of a seventh of a six man lineup, paid for and not delivered, and it is worst
+where it costs most: the $25-48M band ran **-8.21**.
+
+**Nothing could report it.** Every price was a correct summary of September, every
+projection on every card was right, and no screen ever showed the two disagreeing.
+
+**`PRICE_PROJ_W` is the answer and it is 0.25**, blending the projection into the estimate
+the price is built from. Three things bound it and they close from both sides:
+
+| | 0 | 0.25 | 0.5 | 0.75 | 1 |
+|---|---|---|---|---|---|
+| absence gap | -2.87 | **-2.53** | -2.15 | -1.68 | -1.39 |
+| thin sample gap | -1.25 | **-1.25** | -1.28 | -1.33 | -1.42 |
+| price/proj rank agreement | .896 | **.943** | .980 | .994 | .999 |
+| budget minus top at $90M | +1.3 | **+2.4** | +3.5 | | |
+| top minus random at $90M | 11.2 | **9.7** | 7.3 | | |
+
+**The top of the range is ruled out by the CARD.** At 0.75 and past it the price IS the
+projection in rank, and the whole reason the projection was refitted was to stop it being a
+restatement of the price. The residual between them is the decision this mode is built
+around.
+
+**The middle is ruled out by the CAP**, and that one cost a measurement rather than an
+argument. `probe_cap.mjs` picks $90M because it is the band where spending everything and
+holding money back trade places; at 0.5 the budget bot is 3.5 clear there and the crossover
+walks to about 105. **That is not the blend being wrong**: a more accurate price against a
+CONVEX price curve genuinely does reward spreading money, so better pricing moves that
+band. The honest answer at 0.5 is to move the cap with it, which is a bigger change and not
+one to make mid-season, because the cap is on every published week row and moving it makes
+two weeks incomparable.
+
+**The control is what says 0.25 is SAFE rather than merely small.** `SHRINK_K` was fitted on
+sample size and took that gap 3.48 to 0.12, so a fix for availability that re-opens it has
+moved the defect rather than removed it. At 0.25 that axis does not move at all to two
+decimals. A cheaper looking candidate, `shrunkPPG * playShare`, is worse on **both** axes at
+once (-2.06 and -1.43), because it discounts a thin sample twice.
+
+**What it does to a board**, which is the half a reader can see: on week 3, 217 of 414 men
+move by more than a million and **only six move by more than three**, and those six are the
+men who missed a game (Zay Flowers $12.1M to $7.7M). At 0.5 it is 97 men past three million,
+which is a rebuild rather than an adjustment. **It does not close the gap and is not meant
+to**: an eighth of a defect this file now knows the size of.
+
+**THE PRICE COULD NOT READ AVAILABILITY WHERE IT SAT.** `pricePool` ran on line 533 and
+`played_of` and `positionLevels` were both computed AFTER it, so the whole fix is half an
+ordering change. Left alone, `projectedPoints` falls back to `plays = 1` when `played_of` is
+missing and a level of 0 when the map is: no error, an ordinary looking set of prices, and
+the exact defect still in them. **So `pricePool` throws** rather than trusting the order to
+be remembered, on a missing level map and on any man with no `played_of`, and both halves
+were proved by removing them.
+
+**A WEEK ALREADY PUBLISHED MUST NOT BE REPRICED.** A price may never move once anybody has
+drafted against it, and `fantasy_prices` for the live week is on the server. This changes
+what the next Tuesday build produces and nothing that is already out.
+
+##### The probe measured the new default against itself, and the guard is what caught it
+
+Its baseline column was written `f: null`, meaning "price it the way the build does", which
+was right for exactly as long as the build priced at zero. **The moment `PRICE_PROJ_W`
+shipped that column became the blend**, so the file would have reported the defect it had
+just fixed as untouched. Every rule states its own weight now, so moving the constant cannot
+move what this file thinks it is comparing against.
+
+**And the injection technique it inherited stopped working in the same instant.**
+`probe_early.mjs` fakes a candidate estimate by scaling `half_ppg` so `shrunkPPG` lands on
+the number wanted, which is sound while `pricePool` reads `shrunkPPG` and nothing else. With
+a blend inside `pricePool` that estimate is blended a SECOND time: every column read one
+weight to its right and the baseline read the shipped default. It surfaced as the whole
+table shifting left by one column, which is visible only because the old numbers were on
+screen a minute earlier. **`pricePool` takes the weight as an argument now**, so a blend is
+one parameter and nothing is applied twice.
+
+**`probe_early.mjs` had already been dead for a pass**, and this is how it was found. It
+imports `PROJ_LIFT`, which the pass it argued for REMOVED from `weekly-pool.mjs`, so it has
+thrown on load ever since and nothing said so, because a probe is a command somebody types
+rather than a thing CI runs. The constant is declared locally as the history it is, and its
+`shipped` candidate is the projection that actually ships, so its baseline column means what
+its heading says.
+
 #### But once the six ARE in, the total has to show its working
 
 Reported by a player looking at five finished lineups: they wanted each man's projected
