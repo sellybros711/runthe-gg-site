@@ -3183,6 +3183,42 @@ and the job asks WHICH SCHEDULE FIRED rather than what time it is now, which is 
 `setlist-data.yml` carries a long note about. Nothing is committed unless `check-fantasy
 --quick` passes.
 
+#### And it settled last week ahead of publishing this one, so this one was never published
+
+**THE STEP'S OWN COMMENT SAID THE WRITE THAT MUST NOT BE MISSING GOES FIRST, AND THE CODE
+UNDER IT PUT THAT WRITE SECOND.** The comment was right and it had been read as a
+description of the code rather than as a claim about it, which is the direction that costs
+something: `fantasy_results` carries a foreign key onto `fantasy_weeks`, the previous week
+had no row, the results publish raised, `set -e` took the step down, and **the board this
+job exists to write was never sent at all.**
+
+It happened on the first Tuesday after the chain was deployed, and the log says it in one
+line: `Key (season, week)=(2026, 2) is not present in table "fantasy_weeks"`. Week 2 was
+played before any of this existed, so no week row for it was ever written and none ever
+should be. The run went red, `Commit the week` was skipped with it, and what a reader would
+have met is a mode drawing a wheel that refuses every submit.
+
+**THE FILE ON DISK CANNOT ANSWER WHETHER A WEEK WAS OPENED, WHICH IS THE WHOLE MISS.** The
+guard was `[ -f results_<season>_w<prev>.json ]`, and `Score the week that just ended`
+writes that file on every single run, for any week that has been PLAYED. Played and open
+are two different questions and only the server holds the second. It asks
+`fantasy_weeks` now, **on its own line and never inside the `if`**, because `set -e` does
+not fire on a command in a condition: written there, an unreachable database hands the test
+an empty string and the step carries on past a question it never got an answer to.
+
+**The board publish moved above it, and nothing is given up.** "Results before prices" is
+the two BUILD steps' rule and it is about the files: a week whose board rolls forward on
+disk before its result is written is a week somebody played and can never see. On the server
+these are two tables about two different weeks, neither reads the other, and
+`fantasy_now.json` is not written in that step at all.
+
+**Both arms were driven against a real Postgres 16 holding the chain**, with the step body
+extracted from the workflow by yaml rather than retyped. The shipped order reproduces the
+live failure exactly, same message and same exit 3, with **week 3 priced 0**. The order that
+ships now publishes 408 prices and skips week 2 by name. The other three branches were
+driven too, and the one that matters is that a week which really WAS opened still gets its
+results: 40 rows, rather than a guard that has quietly stopped settling anything.
+
 ### The week is scored, and the loop closes on the home screen
 
 ```
