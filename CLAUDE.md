@@ -764,6 +764,98 @@ exist" and report nothing about the other eleven. Verified both ways against a r
 `ps_runs` row and its clock fails open, so a database missing `104` gives seasons away
 instead of losing them. Dynasty and Full Team lose the season.
 
+#### And it could not run at all against any database it was written for
+
+**`pg_get_functiondef` RAISES on an aggregate**, and the `proc` CTE walked every row of
+`pg_proc` in `public` and called it on all of them. `create extension citext` puts
+`min(citext)` and `max(citext)` there, and `10_accounts.sql` needs citext because an
+account's `username` is one. So every real Supabase project answered this file with **one
+line reading `ERROR: "min" is an aggregate function` and not a single row of the report.**
+
+That is **this file's own header argument arriving from a side it did not expect.** It asks
+the catalog rather than calling anything, precisely so one missing piece cannot take the
+whole report down, and then took the whole report down on a catalog function raising over a
+row nothing was asking about. `prokind = 'f'` is the whole fix: nothing here asks about an
+aggregate, a window function or a procedure.
+
+**It was found by running it, which is the only way it could be.** Every guard in this repo
+had passed, because no guard runs this file: it is a paste, and the one thing a paste has
+never had is a harness. A scratch Postgres built from `supabase/test/fantasy_base.sql` (which
+creates the citext extension, because the real `profiles` needs it) reproduces it exactly.
+
+**The fantasy chain is six rows now rather than one**, because the ways those six files go
+missing are not one failure at different sizes. 113 refuses every lineup and says so. 110,
+111 and 112 each leave a screen that renders perfectly and is quietly a week behind, or
+empty, or silent about who is in. A single row reading "the fantasy layer" would answer NO
+to all six and say which of those is happening about none of them. Each was proved by
+staging the chain one file at a time and watching its row turn over at exactly the right
+step, plus the pre-fix 109 for 113's row and a deliberate 111-before-110 for 111's.
+
+`col` and `trg` were added for those rows and are **deliberately not allowlists**, which is
+the trap the `has_table` block above them already carries as a warning. They ask the catalog
+for every column and every trigger in the schema and let the row do the filtering, so a check
+naming something nobody added to a list up top cannot quietly read false for ever.
+
+#### The one button that applies the fantasy chain
+
+```
+.github/workflows/fantasy-sql.yml     dry run by default, tick "apply" to commit
+```
+
+**It named four files that never existed**, so it had never once run.
+`109_fantasy_access.sql`, `110_fantasy_core.sql`, `111_fantasy_model.sql` and
+`supabase/test/fantasy_preflight.sql` are from a plan that was renamed before any of it was
+written. It failed at its own file guard, which is loud, so nothing was damaged; what it
+cost is that the message it failed with was "did you dispatch from the right branch", which
+is a wrong diagnosis, and all six real files were pasted into the SQL editor by hand instead.
+
+**THE ORDER IS LOAD BEARING AND IT IS THE FILENAME ORDER.** 110 restates two of 109's
+functions, 111 and 112 each restate 110's board, and 113 restates 109's submit, so for
+anything touched more than once the LAST file to run wins. **111 before 110 is the one hazard
+with a silent symptom**: 110 carries a copy of `fantasy_board` with no `games` key, so the
+tables and the writer end up in place under a board that never answers with a scoreboard, and
+the live screen shows sixteen games with no score on any of them for ever. The preflight row
+for 111 asks the board's own body rather than the table's existence, so it catches exactly
+that.
+
+**109 WAS NOT RE-APPLIABLE AND THAT IS WHAT MAKES A ONE BUTTON APPLY WORTH ANYTHING.** 110
+changed the return type of `fantasy_standings`, `create or replace` refuses to change a
+return type, and a `returns table` function's row type IS its return type. So against any
+database that had 110, re-running the chain died half way with "cannot change return type of
+existing function". 109 carries the same `drop function if exists` that 110 already carried,
+for the same reason and in the same words. Nothing depends on it in the catalog sense: 114's
+`fantasy_settle_week` calls it, and plpgsql resolves a call at CALL time rather than
+recording a dependency.
+
+Every one of the six is written to be applied twice, and the whole chain was run three times
+over against a scratch Postgres 16 to say so. **Re-running the workflow is safe and is the
+point**: it is how you find out whether what is deployed is what is in the repo.
+
+**The dry run is a real run** and rolls back, proved from the other side rather than argued:
+after a dry run of all six against a database holding nothing but the account tables,
+`fantasy_weeks` and `fantasy_prizes` are both still absent. The dry file carries its own
+`begin`/`rollback` and the apply uses `--single-transaction`, which is the one asymmetry
+here: wrapping a second transaction around a file that already opens one means the inner
+rollback throws away the outer one too and psql finishes by committing nothing with a
+warning, which is the right result reached by an accident nobody should have to reason about.
+
+**The read-back is the SITE WIDE preflight and not a fantasy one.** Writing a second report
+asking a version of the same questions is `commish_my_tenure`'s standing warning about two
+implementations of one answer. What the step does have to do on its own is decide, and it
+**reads the same file twice** rather than restating the six checks: once aligned for a person
+and once with `-tA -F '|'` for an awk, because judging a verdict off column positions in an
+aligned table is how the old version of this step came to grep for `NOT READY`, **a string
+this report has never printed.** A fantasy row reading NO after an apply is an error and
+names which; anything else on the site missing is a warning, because taking the run red on a
+migration nobody dispatched here teaches everybody that this workflow goes red for reasons
+that are not its business.
+
+**Two more workflows in that folder are dead the same way and are NOT fixed.**
+`fantasy-status.yml` reads `supabase/test/fantasy_status.sql` and `fantasy-deploy.yml`
+deploys a Cloudflare Worker at `fantasy/worker` with an `ODDS_API_KEY`. Neither file nor the
+directory exists, and neither is anything this game does. They are from the same abandoned
+plan.
+
 ### The Commish door is always there, and a shut one offers the bundle
 
 Who SEES the mode and who gets SOLD to are different questions, and `cfb/index.html` keeps

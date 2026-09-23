@@ -1,26 +1,58 @@
 name: "Fantasy: apply the database layer"
 
-# Installs 109, 110 and 111 against the live database, in order, and then reads
-# the preflight back so the run says whether it actually worked.
+# Installs the Fantasy Challenge migrations against the live database, in order,
+# inside ONE transaction, and then reads the preflight back so the run says
+# whether it actually worked.
 #
-# ONE BUTTON, ON PURPOSE. The generic "Apply a Perfect Season SQL file"
-# workflow takes a filename and runs one file, which means three dispatches in
-# the right order, from memory, and no way to reach the preflight at all
-# (it lives under supabase/test/ and that workflow refuses a path separator).
-# Three chances to do it in the wrong order is two too many, and this is the
-# kind of thing somebody sets up once from a phone.
+# THIS FILE NAMED FOUR MIGRATIONS THAT NEVER EXISTED, so it had never once run.
+# 109_fantasy_access.sql, 110_fantasy_core.sql, 111_fantasy_model.sql and
+# supabase/test/fantasy_preflight.sql are from a plan that was renamed before any
+# of it was written. It failed at its own file guard, which is loud, so nothing
+# was ever damaged. What it cost is that the message it failed with was "did you
+# dispatch from the right branch", which is a wrong diagnosis for somebody
+# reaching for the one button path from a phone, and the six files it was meant
+# to apply were all pasted into the SQL editor by hand instead.
 #
-# THE DRY RUN IS A REAL RUN, which is the generic workflow's argument and it
-# holds here. Leave "apply" unchecked and every file is executed inside a
-# transaction that is then rolled back: Postgres parses each statement, checks
-# it against the real schema, validates every constraint against every existing
-# row, and reports anything wrong before throwing the changes away.
+# ONE BUTTON, ON PURPOSE. The generic "Apply a Perfect Season SQL file" workflow
+# takes a filename and runs one file, which here means six dispatches in the
+# right order, from memory. Six chances to do it in the wrong order is five too
+# many, and the order matters (see below).
+#
+# THE ORDER IS LOAD BEARING, NOT ALPHABETICAL LUCK. 110 restates two of 109's
+# functions, 111 and 112 each restate 110's board, and 113 restates 109's submit,
+# so for anything touched more than once the LAST file to run is the one that
+# wins. 111 before 110 is the one hazard with a silent symptom: 110 carries a
+# copy of `fantasy_board` with no `games` key, so the tables and the writer end
+# up in place under a board that never answers with a scoreboard, and the live
+# screen shows sixteen games with no score on any of them for ever. The preflight
+# row for 111 asks the board's own body, so it catches exactly that.
+#
+# RUNNING IT AGAIN IS SAFE AND IS THE POINT. Every one of the six is written to
+# be re-appliable: `create table if not exists`, `create index if not exists`,
+# `drop policy if exists` before each `create policy`, `add column if not
+# exists`, `create or replace function`, `drop trigger if exists` before the
+# trigger. Verified by applying the whole chain three times over against a
+# scratch Postgres 16 holding the real fixture.
+#
+#   That was not true when this was written. 110 changed the return type of
+#   `fantasy_standings`, and `create or replace` refuses to change a return type,
+#   so 109 could not be re-run against any database that had 110: the chain died
+#   half way with "cannot change return type of existing function". 109 carries
+#   the same `drop function if exists` that 110 already carried, for the same
+#   reason, and its comment says so.
+#
+# THE DRY RUN IS A REAL RUN. Leave "apply" unticked and every file is executed
+# inside a transaction that is then rolled back: Postgres parses each statement,
+# checks it against the real schema, validates every constraint against every
+# existing row, and reports anything wrong before throwing the changes away.
+# Proved against a database holding nothing but the account tables: after a dry
+# run of all six, `fantasy_weeks` and `fantasy_prizes` are both still absent.
 #
 # NO FREE TEXT INPUT. The file list is hardcoded below rather than taken as an
 # argument, because the only reason to point this at another file would be to
 # point it at a test fixture. supabase/test/fantasy_base.sql drops and recreates
-# the auth schema, and running that against production would be catastrophic in
-# a way no amount of care at dispatch time should be relied on to prevent.
+# the profiles table, and running that against production would be catastrophic
+# in a way no amount of care at dispatch time should be relied on to prevent.
 #
 # Uses the SAME SUPABASE_DB_URL secret as the other Supabase workflows.
 
@@ -60,72 +92,140 @@ jobs:
             exit 1
           fi
 
-          FILES="109_fantasy_access.sql 110_fantasy_core.sql 111_fantasy_model.sql"
+          # THE CHAIN, IN THE ONLY ORDER IT MAY BE RUN IN. See the header.
+          FILES="109_fantasy_challenge \
+                 110_fantasy_live \
+                 111_nfl_scores \
+                 112_fantasy_entrants \
+                 113_fantasy_submit_username \
+                 114_fantasy_prizes"
 
+          # Checked before anything is concatenated, so a missing file is named
+          # rather than producing a chain with a hole in it.
           for f in $FILES; do
-            if [ ! -f "supabase/$f" ]; then
-              echo "::error::supabase/$f is not on this branch. Did you dispatch from the right branch?"
+            if [ ! -f "supabase/$f.sql" ]; then
+              echo "::error::supabase/$f.sql is not on this branch. Dispatch this from main."
               exit 1
             fi
           done
 
-          # ONE TRANSACTION ACROSS ALL THREE, not one each. 110 and 111 both
-          # depend on fantasy_is_allowed() from 109, so a partial install is a
-          # database with tables whose policies never attached. All or nothing.
-          cat supabase/109_fantasy_access.sql \
-              supabase/110_fantasy_core.sql \
-              supabase/111_fantasy_model.sql > /tmp/fantasy.sql
+          # ONE TRANSACTION ACROSS ALL SIX, not one each. Every file after 109
+          # depends on something an earlier one made, so a partial install is a
+          # database whose board is two files behind its tables, and every way
+          # that shows up on screen looks like a network problem. All or nothing.
+          : > /tmp/chain.sql
+          for f in $FILES; do
+            echo "-- ===== supabase/$f.sql =====" >> /tmp/chain.sql
+            cat "supabase/$f.sql" >> /tmp/chain.sql
+            echo "" >> /tmp/chain.sql
+          done
+          echo "$(grep -c '' /tmp/chain.sql) lines across $(echo $FILES | wc -w) files."
 
           if [ "$APPLY" != "true" ]; then
             echo "DRY RUN. Everything below is executed and then thrown away."
             echo ""
-            { cat /tmp/fantasy.sql; echo ""; echo "rollback;"; } > /tmp/dry.sql
-            psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -f /tmp/dry.sql
+            # THE DRY FILE CARRIES ITS OWN TRANSACTION and the apply does not,
+            # which is the one asymmetry here. This one has to END in a rollback,
+            # and --single-transaction would wrap a second transaction around a
+            # file that already opens one: the inner rollback would then throw
+            # away the outer transaction too and psql would finish by committing
+            # nothing, with a warning, which is the right result reached by an
+            # accident nobody should have to reason about.
+            { echo "begin;"; cat /tmp/chain.sql; echo "rollback;"; } > /tmp/dry.sql
+            psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f /tmp/dry.sql
             echo ""
-            echo "DRY RUN PASSED. The three files are valid against the live schema."
+            echo "DRY RUN PASSED. All six files are valid against the live schema."
             echo "Nothing was written. Re-run with 'apply' ticked to commit them."
+            echo "The preflight below will still say NO for anything not already deployed."
             exit 0
           fi
 
-          echo "APPLYING all three in one transaction."
-          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -f /tmp/fantasy.sql
+          echo "APPLYING all six in one transaction."
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 --single-transaction -f /tmp/chain.sql
           echo ""
           echo "Applied."
 
-      # ALWAYS, including after a dry run, because a preflight against a
-      # database that has not had the files is exactly the report somebody
-      # needs to see: it says which pieces are missing rather than nothing.
+      # ALWAYS, including after a dry run and after a failure, because a
+      # preflight against a database that has not had the files is exactly the
+      # report somebody needs to see: it says which pieces are missing rather
+      # than nothing.
       #
-      # Read only. It asks the catalog and calls nothing, for the reason its
-      # own header gives: Postgres resolves a function call at parse time, so
-      # one missing function in a query that called them would fail the whole
-      # statement and report nothing about the others.
+      # Read only. It asks the catalog and calls nothing, for the reason its own
+      # header gives: Postgres resolves a function call at parse time, so one
+      # missing function in a query that called them would fail the whole
+      # statement and report nothing about any of the others.
+      #
+      # IT IS THE SITE WIDE PREFLIGHT AND NOT A FANTASY ONE. The file this step
+      # used to name did not exist. Writing one would have meant a second report
+      # asking a version of the same questions, and 96's `commish_my_tenure` is
+      # the standing warning about what two implementations of one answer do.
+      # launch_preflight.sql already carried a row for 109; it carries all six
+      # now, and the rest of the site comes along for free.
       - name: Preflight, and read it back
         if: always()
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          APPLY: ${{ inputs.apply }}
         run: |
           set -euo pipefail
           if [ -z "${SUPABASE_DB_URL:-}" ]; then exit 0; fi
 
-          psql "$SUPABASE_DB_URL" -f supabase/test/fantasy_preflight.sql | tee /tmp/pre.txt
-
+          echo "The whole site, not just the six. Read the last column."
           echo ""
-          # The preflight's own summary row is the verdict. Reading the table
-          # for "| f |" rather than trusting the exit code, because psql exits 0
-          # on a query that returns rows saying everything is broken.
-          if grep -q "NOT READY" /tmp/pre.txt; then
-            echo "::warning::The database is NOT READY. Read the false rows above, top down."
-            echo "If this was a dry run, that is expected: nothing was written."
-          else
-            echo "ALL PRESENT. The gate is real and the tables are closed."
+          psql "$SUPABASE_DB_URL" -f supabase/test/launch_preflight.sql | tee /tmp/pre.txt
+          echo ""
+
+          # READ TWICE, ONE FILE. The run above is what a person reads; this one
+          # is the same file in a shape a script can be sure of, because judging
+          # the verdict off column positions in an aligned table is how the old
+          # version of this step came to grep for a string the report has never
+          # printed. Field 3 of an unaligned row is exactly "yes" or "NO".
+          #
+          # The alternative was a second, narrower query naming the six checks
+          # again, which is two copies of one answer and would drift the first
+          # time either was edited. Reading one file twice is not.
+          psql "$SUPABASE_DB_URL" -tA -F '|' -f supabase/test/launch_preflight.sql > /tmp/pre.psv
+
+          MISSING=$(awk -F'|' '
+            $1 ~ /^(109_fantasy_challenge|110_fantasy_live|111_nfl_scores|112_fantasy_entrants|113_fantasy_submit_username|114_fantasy_prizes)$/ \
+              && $3 == "NO" { printf "%s ", $1 }
+          ' /tmp/pre.psv)
+
+          if [ "${APPLY:-false}" != "true" ]; then
+            echo "Dry run, so anything not already deployed reads NO above. That is expected."
+            exit 0
+          fi
+
+          if [ -n "$MISSING" ]; then
+            # The apply said it worked and the catalog says otherwise, which is a
+            # real contradiction rather than a missing migration: psql exited 0,
+            # so every statement committed. Read the if_missing column above.
+            echo "::error::Applied, and the preflight still says NO for: $MISSING"
+            exit 1
+          fi
+
+          echo "All six fantasy migrations are deployed."
+
+          # A WARNING AND NOT A FAILURE, because this job's subject is the six.
+          # The rest of the report is about migrations nobody dispatched here,
+          # and taking the run red on one of those would teach everybody that
+          # this workflow goes red for reasons that are not its business.
+          if grep -q "SOMETHING IS MISSING" /tmp/pre.txt; then
+            echo "::warning::Something ELSE on the site is not deployed. Read the NO rows above, top down."
           fi
 
       - name: What to do next
-        if: ${{ inputs.apply }}
+        if: ${{ inputs.apply && success() }}
         run: |
-          echo "The tables exist and are closed to everybody not on the allowlist."
+          echo "The chain is deployed. Nothing about it is visible to a player yet:"
+          echo "FANTASY_LIVE is false in football/fantasy-access.js, so the door is"
+          echo "built for a tester and for nobody else."
           echo ""
-          echo "If the preflight said 'somebody is on the allowlist' is false, the two"
-          echo "usernames in 109 matched no profile. Check the spelling on the"
-          echo "leaderboard, then add the row by hand. 109's footer has the SQL."
+          echo "Entries fail CLOSED, which is the one place this site does. A week"
+          echo "with no row in fantasy_weeks takes no lineups at all, so publishing"
+          echo "the week is the step after this one:"
+          echo ""
+          echo "  node football/build/publish-week.mjs --season 2026 --week 3 | psql \"\$SUPABASE_DB_URL\""
+          echo ""
+          echo "Re-running this workflow is safe. Every file is written to be"
+          echo "applied twice and the whole chain is verified that way."
