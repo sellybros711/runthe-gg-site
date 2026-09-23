@@ -9110,6 +9110,37 @@ walk. `check_lahman.py`'s last section prints that it did NOT walk it instead.
 Both live arms were proved by mutation: letting the fetch error out of `from_cran`
 fails two claims, and a `table()` that does not fall through fails one.
 
+##### THE PIPELINE REBUILDS THE POOL NOW, and what moved was 940 pitchers
+
+Driven on a runner with `commit: false`, against the pool that ships:
+
+| | was | now |
+|---|---|---|
+| rows, batters, pitchers, closers | 44,344 · 24,644 · 19,700 · 905 | **identical** |
+| newest season, position, closer | 2025 · 2025 · 2025 | **identical** |
+| the ten reference seasons | | **unchanged to the decimal** |
+| batter positions | 24,499 | 24,503 |
+| **pitchers with innings** | **18,760** | **19,700** |
+
+**The shipped pool was already good, and that is the nuance most easily lost
+here.** Positions moved by four, because a laptop run years ago had a Lahman
+current enough to cover 99.4% of batters. What was broken was never the pool, it
+was the pipeline's ability to REPRODUCE it, and a refresh that cannot reproduce
+what ships cannot ship anything either.
+
+**The 940 are Negro Leagues pitchers, 1920 to 1948**: Slim Jones, Bill Foster,
+Bullet Rogan, Ray Brown, Dave Brown. The innings column comes from Lahman
+`Pitching`, the Chadwick snapshot predates those seasons, so they had no innings
+at all. So the second deficit closes on the pitching side too, which the
+measurement above had only asked of `People` and `Appearances`.
+
+**IT MOVES NO PRICE, and that was checked rather than assumed.** A starter's
+price carries `min(1, 210/ip)`, so gaining an innings figure can only make a man
+CHEAPER, and a Negro Leagues season is nowhere near 210 innings. The run reports
+**3,959 of 12,461 starters priced below their own WAR**, which is the shipped
+count exactly. What the 940 buy is that the innings tag and anything built on it
+are now right about them.
+
 **A 404 page is a perfectly good HTTP response**, which is the whole reason the
 old failure read as "not a zip file": the request succeeded and the bytes were
 HTML. The magic number is checked before the archive is opened, and the refusal

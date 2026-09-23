@@ -84,46 +84,104 @@ same reason.
 `W_BLEND` stays in both scripts because the blend is still the right option if
 anybody wants it. It is not what is running.
 
-`build_pricing.py` is complete and validated, but the two WAR sources
-(Baseball-Reference, FanGraphs) and the GitHub archive/API are **blocked by the
-Cowork cloud sandbox's network allowlist**, so the raw pull has to run somewhere
-without that allowlist, such as Coby's machine or any normal dev box. It's ~5 minutes of
-fetching, then one command.
+## IT IS A WORKFLOW NOW, AND THIS SECTION USED TO SAY OTHERWISE
+
+**`.github/workflows/baseball-data.yml` is where the refresh runs.** Dispatch it,
+read its log, and it commits the pool. The instructions below used to say the raw
+pull "has to run somewhere without that allowlist, such as Coby's machine or any
+normal dev box", so the pool was whatever one laptop produced on the day, with no
+record of which sources answered. That is precisely how the FanGraphs blend above
+came to be described as fact for months.
+
+It still cannot run in this sandbox, and that half is unchanged:
+baseball-reference.com and fangraphs.com are refused by the egress proxy on the
+CONNECT. What changed is that a GitHub runner is not somebody's laptop.
+
+**The four stages are `fetch_inputs.py`, `build_pricing.py`,
+`build_positions.py`, `compact_pool.py`**, and the last one was missing from this
+document and from the workflow for the life of both. `build_positions.py` ends at
+`priced_players_enriched.json`, which carries verbose column names; the game
+fetches `players.json`, which carries compact keys. Nothing turned one into the
+other, so every run committed a file it had never written.
+
+### LAHMAN IS `lahman.py` AND NOT `pybaseball.lahman`
+
+The snippet that used to sit here called `pybaseball.lahman.appearances`,
+`people` and `teams`. All three are broken, two different ways, and **both arrive
+as a warning the build prints and carries on past**:
+
+- It downloads `chadwickbureau/baseballdatabank/archive/master.zip`, and **that
+  repository has been taken down**. A missing repository and a missing branch
+  answer identically, with GitHub's 404 page, so the symptom is `File is not a
+  zip file`.
+- There is no `lahman.teams` in pybaseball 2.2.7. It is `teams_core`.
+
+A refresh on that path built a pool with a position on **0 of its 60,208
+batters** and **22,019 closers against the saves column's 905**. Every price in it
+was right, which is what made it survivable and what made it invisible.
+
+`lahman.py` replaces it. **The CURRENT database comes from CRAN**, because SABR
+maintains Lahman now and publishes it through a Box folder with no link a script
+may fetch (that folder's own download endpoint answers HTTP 512 from a runner).
+The R package that redistributes it is the hand download, published, and CRAN's
+GitHub mirror serves every table on its own path as `.RData`, current to 2025.
+
+**So `pyreadr` is in the install list and is not optional in practice.** Without
+it `from_cran` returns `None` at its first statement and the reader falls through
+to zip mirrors that stop in **2021**, which is 2,421 batters with no position.
+The build does not stop there; `pool_shape.py` does, two stages later, on the
+staleness clause. A refusal at the right stage would be better and is not what
+this is.
 
 ## 1. Install deps
 ```bash
-pip install pandas numpy pybaseball
+pip install pandas numpy pybaseball pyreadr
 ```
 
 ## 2. Fetch the inputs into ./data
-```python
-# fetch_inputs.py  (run on a machine with open internet)
-import os, urllib.request
-os.makedirs("data", exist_ok=True)
-
-# --- bWAR: Baseball-Reference bulk WAR files (comma-separated .txt) ---
-for f in ["war_daily_bat.txt", "war_daily_pitch.txt"]:
-    urllib.request.urlretrieve(f"https://www.baseball-reference.com/data/{f}", f"data/{f}")
-
-# --- fWAR: FanGraphs season leaderboards (qual=0 => everyone) ---
-from pybaseball import batting_stats, pitching_stats
-batting_stats(1901, 2025, qual=0).to_csv("data/fg_bat.csv", index=False)     # has 'WAR' (fWAR)
-pitching_stats(1901, 2025, qual=0).to_csv("data/fg_pitch.csv", index=False)  # has 'WAR','G','GS','SV'
-
-# --- Lahman: positions + decade benchmarks ---
-from pybaseball.lahman import appearances, people, teams
-appearances().to_csv("data/Appearances.csv", index=False)
-people().to_csv("data/People.csv", index=False)   # maps playerID -> bbrefID
-teams().to_csv("data/Teams.csv", index=False)
-```
-Notes:
-- If `pybaseball`'s bWAR helpers are preferred over the direct URL: `from pybaseball import bwar_bat, bwar_pitch` then `bwar_bat(return_all=True)`.
-- FanGraphs' `batting_stats`/`pitching_stats` cover 1901+ but pre-1920 fWAR coverage thins; the pipeline falls back to bWAR-only for any season it can't match, and lists those in `coverage_report.txt`.
-
-## 3. Build the priced dataset
 ```bash
-python build_pricing.py --data-dir data --out-dir out
+python3 fetch_inputs.py
 ```
+
+It gets the bWAR bulk files direct from Baseball-Reference, the FanGraphs
+leaderboards through pybaseball, and the four Lahman tables through `lahman.py`.
+A source that does not answer is reported and the build carries on by design, so
+**the log is the only place a 403 shows**, and reading it is how the blend's
+absence should have been caught the first time. `provenance.json` records what
+actually answered, so the claim and the data cannot drift again.
+
+Notes:
+- FanGraphs' `batting_stats`/`pitching_stats` cover 1901+ but pre-1920 fWAR coverage thins; the pipeline falls back to bWAR-only for any season it can't match, and lists those in `coverage_report.txt`.
+- `war_daily_bat.txt` carries **no position column at all**. Its `runs_position` is a run value, so the bulk WAR files cannot stand in for Lahman Appearances. Known only because the fetch step prints the headers.
+
+## 3. Build the priced dataset, and then the pool the game downloads
+```bash
+python3 build_pricing.py
+python3 build_positions.py
+python3 compact_pool.py
+```
+
+**The last line is the one this document used to stop before.** `build_pricing`
+prices every player-season and `build_positions` adds positions, closer flags and
+the starter innings anchor, and both of them end at a verbose frame that no
+browser ever fetches. `compact_pool.py` is what turns it into
+`baseball/data/players.json`, and it is also where the **WAR floor of 0.50**
+lives: 65,515 rows sit under it, half of them a September call-up or somebody
+hurt in April, and a board drawn from them is names nobody recognises at a price
+nobody will pay.
+
+## 3a. And then read the two gates before shipping anything
+```bash
+python3 reference_seasons.py ../data/players.json /tmp/pool_before.json
+python3 pool_shape.py         ../data/players.json /tmp/pool_before.json
+```
+
+**They fail differently on purpose.** The ten reference seasons read WAR and
+price, and on the rebuild that had no positions at all they agreed **to the
+decimal**, because the bulk WAR files had fetched cleanly. A pool can be perfectly
+correct about every number it prints and still be the wrong pool, so `pool_shape`
+asks about shape: row count, coverage as a share, and how recent each column
+actually reaches.
 
 ## 4. Outputs (in ./out)
 - `priced_players.csv` / `.json`: one row per player-season 1901+:
@@ -135,7 +193,7 @@ python build_pricing.py --data-dir data --out-dir out
 ```
 W_BLEND  = 0.5     # rWAR = 0.5*bWAR + 0.5*fWAR
 COEF     = 1.5     # price = 1.5 * rWAR^1.6
-EXPONENT = 1.6     # calibrated so a ~60-rWAR roster ≈ $245M cap
+EXPONENT = 1.6     # calibrated when the cap was $245M. It is $170M now.
 PRICE_FLOOR_M = 1.0
 POOL_MIN_YEAR = 1901
 ELIG_GAMES    = 10   # min games at a position to be draft-eligible there
@@ -144,11 +202,30 @@ SP_GS_RATIO   = 0.5  # GS/G >= this => starter-eligible
 ```
 
 ## Known items to smoke-test on real data
-- **fWAR join is name+season** (with accent/suffix normalization). Expect a few
-  unmatched pre-war seasons and duplicate common names. Check `coverage_report.txt`
-  and, if the miss rate is material, swap in the Chadwick register crosswalk
-  (`key_bbref` ↔ `key_fangraphs`) for an exact-ID join.
-- **Mid-season trades** are collapsed to one season row (bWAR summed, team = `TOT`);
-  confirm that matches how you want split seasons drafted.
-- **Two-way players** (Ohtani, deadball-era swingmen) appear in both bat and pitch
-  spines; decide whether to keep both rows or merge.
+
+**The three below were open questions and two of them have answers now**, from
+the shipped pool rather than from reasoning. They are kept because what was
+decided is more useful than the question was.
+
+- **fWAR join is name+season** (with accent/suffix normalization). Still open in
+  principle and moot in practice: FanGraphs answers 403 and the blend has never
+  run, so nothing is currently joined on a name. If it ever does run, check
+  `coverage_report.txt` and, if the miss rate is material, swap in the Chadwick
+  register crosswalk (`key_bbref` to `key_fangraphs`) for an exact-ID join.
+- **Mid-season trades** are collapsed to one season row (bWAR summed, team =
+  `TOT`). **ANSWERED: that costs 2,939 seasons**, 33 of them at 6.0 WAR or
+  better, and a traded player then has no draftable row for that year at all.
+  Rickey Henderson's 1989, Tom Seaver's 1977 and Bartolo Colon's 2002 are simply
+  absent. `split_stints` is a workflow input rather than a default, because half
+  a season at a fraction of the price moves the draft economy: the price curve is
+  convex. **Re-run the cap sweep and compare the best-available against budget-bot
+  gap before shipping the result.**
+- **Two-way players** appear in both bat and pitch spines. **ANSWERED: both rows
+  are kept**, because a draft has to put a man in one slot. 42 seasons, and
+  Ohtani 2023 is 6.11 batting and 3.80 pitching, which is a reader looking up 9.9
+  and finding neither. `indexData` marks the halves and every surface says which
+  half it is. The mark is derived from the pool rather than stored, or it is a
+  second copy of an answer.
+- **`TOT` is not a club.** Three separate filters keep multi-club rows off every
+  board, so nothing reachable carries it, and `check-labels.mjs` asserts that as
+  a fact rather than as a requirement.
