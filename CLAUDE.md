@@ -8397,6 +8397,99 @@ must never be shown to a player as a fact about a real season. The dev banner
 said so and has come off, because saying it now would be false in the other
 direction.
 
+### TWO NUMBERS ABOUT TIME, AND BETWEEN THEM A GAME THAT STAYS A SEASON BEHIND
+
+A season is named for the calendar year it ENDS in, so 2026 is 2025-26. Both
+places that number is decided were stale in the same direction.
+
+**The workflow's `to_season` was the literal 2025, three times.** A SCHEDULED
+run passes no inputs, so the annual July refresh would have asked for 2025
+every year: it fires, re-fetches the fifty-two seasons it already has, reports
+"data unchanged", and never adds the new one. A green run, a correct-looking
+log, and a game a year behind the sport. It is computed now, in its own step,
+from the rule that the Finals are over by the end of June.
+
+**And `fetch-teams.mjs` demanded champions only up to LAST year**, which is
+right in March and wrong from July onwards. Read in September 2026 it reported
+every season from 1974 to 2025 complete while 2026 had no champion at all and
+the upstream table had not caught up: six months of every year in which a
+missing title was invisible to the one check written to find it. Same July
+cutoff now, which is also why the cron fires on the 5th of it.
+
+**`SUPPLEMENT` is where the answer goes and it is not a workaround.**
+nba_api's static table is generated upstream on somebody else's schedule and
+lags a season; it lagged for 2024 and it lags for 2026. New York over San
+Antonio, and it is the Knicks' first title since 1973, so every other year on
+their card is out of this game's range and 2026 is the only one a player will
+ever see.
+
+**A refresh now bumps what it invalidates.** A pool caches exactly like a
+script, and this workflow is the one writer that cannot do the bump by hand:
+everywhere else the edit and the bump are one commit by a person, here a bot
+rewrites 3.6MB once a year and nobody is watching. It moves the `?v=` of
+whatever `git diff --quiet` says actually changed, so a refresh that finds no
+new basketball moves no number, and it commits `index.html` and
+`scripts/cachebust.json` alongside the data.
+
+### The link block, and the one number that goes stale without an edit
+
+```
+(nohup python3 -m http.server 8080 &) ; node hoops/build/og.mjs
+```
+
+**A link to this game was a bare grey rectangle.** No `og:image`, no
+`og:title`, no card, while the daily's whole loop is a share. `og-source.html`
+renders to `og.png` at 1200x630 in the game's own language, and the build is
+`cfb/build/06-og.mjs`'s whole lesson inherited: fonts curled and inlined as
+data URIs because Chromium here reaches the network only through a CONNECT
+proxy and the page's own `<link>` arrives empty, and a refusal to write if a
+display face is missing, read off the loaded FontFace set rather than
+`document.fonts.check()`.
+
+**The ball is drawn rather than an image file**, because this game ships no
+logo and a card waiting on one would not exist. **The tags go in while the page
+is still noindexed**, deliberately: a robots tag tells a crawler not to index
+and does nothing to a chat app unfurling a link somebody was handed, which is
+how an unlaunched game reaches its testers.
+
+**And the card is COPY.** It is a PNG: rendered once, never interpolated, so a
+cap that moves leaves a picture promising the old one with no page to fix it
+and no reader who can tell. `og-source.html` is on verify's prose guard, which
+is the same argument that put cfb's og build script on `check-copy`'s list.
+
+**`#home-era` is the one claim on these pages that goes wrong without anybody
+editing anything.** It is interpolated from the pool on load, so "1974 to 2025"
+in the markup is what a reader sees for the moment before the data arrives, and
+for as long as it does not. The annual refresh adds a season and leaves it a
+year out, while the number that replaced it at runtime is right.
+
+**It reads the ELEMENT and not the prose**, and the first draft did the other
+thing. A bare "NNNN to NNNN" means several things here: `how-to-play.html`
+lists the seven era bands, and 1980 to 1986 is a correct sentence about the
+eighties. Scanning for the shape reported all seven as defects, which is the
+trap that kept "times" and "players" off the roster-count noun list.
+
+### The board is in the preflight now, and the helper under it could only say NO
+
+Run The Floor's leaderboard was in no preflight. Its board fails soft the way
+every board here does, so an undeployed migration is **indistinguishable from a
+network that is down**: every call in `board.js` resolves to null, the screen
+says not reachable, and it says that for ever while the game plays perfectly,
+the run records in the career and the badges light. There is no state a player
+can tell the two apart from.
+
+**Writing the row found the trap under it.** `has_table` in
+`launch_preflight.sql` reads like a general helper and is an ALLOWLIST of
+eleven names, so a row naming a table missing from it finds nothing and reads
+false against a database where the table is sitting right there. The first run
+said NO with `rtf_runs` and all four functions loaded. **A preflight row that
+can only ever say NO is worse than no row**, because it tells a correct
+database it is broken and teaches everybody to ignore the column.
+
+**108 twice is not a typo.** `108_hoops_leaderboard` and `108_dynasty_slot`
+were written for two different games in the same week and touch nothing in
+common.
+
 ## Run The Diamond, the baseball game
 
 `baseball/`, at `/baseball/`. Same split as hoops: `engine.js`, `run.js`,
