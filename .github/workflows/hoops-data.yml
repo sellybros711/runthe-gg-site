@@ -149,6 +149,33 @@ jobs:
           node hoops/build/build-players.mjs \
             --from hoops/build/raw/nba_player_seasons.json
 
+      # A POOL CACHES EXACTLY LIKE A SCRIPT, so a refresh that rewrites one and
+      # leaves its ?v= alone serves a RETURNING player the old basketball. The
+      # page revalidates, the data does not, and the only symptom is somebody
+      # insisting the new season is not in the game. No crash, no wrong screen.
+      #
+      # THIS STEP EXISTS BECAUSE THE REFRESH IS THE ONE WRITER THAT CANNOT DO IT
+      # BY HAND. Everywhere else the bump and the edit are the same commit by a
+      # person; here a bot rewrites 3.6MB of player-seasons once a year and
+      # nobody is watching. So it bumps what it actually changed, and only that:
+      # `git diff --quiet` is the test, so a run that finds no new basketball
+      # moves no number and commits nothing.
+      - name: Bump the cache version of anything that moved
+        run: |
+          for f in players teams; do
+            git diff --quiet -- "hoops/data/$f.json" && continue
+            CUR=$(grep -o "data/$f\.json?v=[0-9]\+" hoops/index.html | head -1 | sed 's/.*=//')
+            if [ -z "$CUR" ]; then
+              echo "hoops/index.html does not version data/$f.json, which it must" >&2
+              exit 1
+            fi
+            NEXT=$((CUR + 1))
+            sed -i "s|data/$f\.json?v=$CUR|data/$f.json?v=$NEXT|g" hoops/index.html
+            echo "data/$f.json: v=$CUR -> v=$NEXT"
+          done
+          node scripts/check-cachebust.mjs --update
+          node scripts/check-cachebust.mjs
+
       # BEFORE the assertions, deliberately. Everything above this line is a
       # quarter of an hour of throttled fetching, and everything below it is a
       # second of arithmetic that can fail. Uploading first means a failed
@@ -195,7 +222,11 @@ jobs:
         run: |
           git config user.name "hoops-data-bot"
           git config user.email "noreply@anthropic.com"
-          git add hoops/data/players.json hoops/data/teams.json
+          # The page and the record go with the data: the bump step above edits
+          # index.html and scripts/cachebust.json, and a commit that left either
+          # behind would ship a pool under a version nobody asks for.
+          git add hoops/data/players.json hoops/data/teams.json \
+                  hoops/index.html scripts/cachebust.json
           git diff --cached --quiet && echo "data unchanged" || {
             git commit -m "Refresh Run The Floor player data from Basketball-Reference"
             for i in 1 2 3 4 5; do

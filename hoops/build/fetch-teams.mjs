@@ -179,6 +179,10 @@ async function main() {
    * below makes harmless either way. */
   const SUPPLEMENT = {
     BOS: [2024],
+    /* New York over San Antonio, and the first Knicks title since 1973, which
+       is before this game's data starts: every other year on their card is out
+       of range, so 2026 is the only one a player will ever see. */
+    NYK: [2026],
   };
   const supplemented = [];
   for (const [code, years] of Object.entries(SUPPLEMENT)) {
