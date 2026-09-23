@@ -1666,6 +1666,13 @@ ok(bestWins > worstWins + 20,
     const pages = {
       'index.html': prose(pageSrc),
       'how-to-play.html': prose(fs.readFileSync(path.join(HERE, 'how-to-play.html'), 'utf8')),
+      /* THE SHARE CARD IS COPY, and it is the most public copy this game has: it
+         is what a link to it looks like in somebody else's chat. It is also a
+         BUILD ASSET, rendered to a png once and never interpolated, so a cap
+         that moves leaves a picture promising the old one with no page to fix
+         it and no reader who can tell. Same argument that put cfb's own og
+         build script on check-copy's guarded list. */
+      'og-source.html': prose(fs.readFileSync(path.join(HERE, 'og-source.html'), 'utf8')),
     };
 
     /* THE EXTRACTOR HAS TO PROVE IT READ THE SCRIPT, because the way it failed
