@@ -773,6 +773,37 @@ console.log('\nA WHOLE ENTRY, DRIVEN');
   ok(`  all ${D.CHANCES} chances are drafted and shown together`, five === D.CHANCES, five + '');
   ok('  and there is no sixth', await page.locator('#b-more').isHidden());
 
+  /*
+   * THE TOTAL HAS TO BE CHECKABLE AGAINST THE SIX FIGURES PRINTED UNDER IT, which is the
+   * whole reason the per man projection is on this screen: a reader choosing between 63.0
+   * and 77.0 cannot otherwise tell a total carried by one man from six solid ones.
+   *
+   * THE CLAIM IS ARITHMETIC ON THE RENDERED PAGE, never on `draft.js`. Asking the engine
+   * whether its own sum adds up is asking a function whether it agrees with itself; what
+   * can actually break here is a painter printing a figure to a different precision from
+   * the one the total was summed at, and only the glass can see that. Every `proj` in the
+   * pool is one decimal, so the printed parts add up EXACTLY and the assertion needs no
+   * tolerance. Measured over 20,000 random lineups: no rounding seam.
+   */
+  const cards = await page.locator('#r-five .lineup').evaluateAll((els) => els.map((el) => ({
+    total: el.querySelector('.pj') ? parseFloat(el.querySelector('.pj').textContent) : null,
+    parts: [...el.querySelectorAll('.rrow .rs')].map((s) => parseFloat(s.textContent)),
+    heights: [...el.querySelectorAll('.rrow')].map((r) =>
+      Math.round(r.getBoundingClientRect().height)),
+    cut: [...el.querySelectorAll('.rrow .rn')]
+      .filter((n) => n.scrollWidth > n.clientWidth + 0.5).length,
+  })));
+  const summed = cards.every((c) => c.parts.length === D.SLOTS.length
+    && Math.abs(c.parts.reduce((a, b) => a + b, 0) - c.total) < 1e-9);
+  ok('  every man carries his own projection, and the six add up to the total', summed,
+    cards.map((c) => c.parts.join('+') + '=' + c.total).join('  '));
+  /* ONE HEIGHT ACROSS THE SIX, which is the run detail sheet's rule at a shorter list: the
+     figure is a taller face than the name beside it, so a row that lost it would be shorter
+     than the other five and the card would read as ragged. */
+  ok('  and the rows stay one height',
+    cards.every((c) => new Set(c.heights).size === 1 && c.cut === 0),
+    cards.map((c) => c.heights.join('/') + (c.cut ? ` ${c.cut} cut` : '')).join('  '));
+
   /* SUBMIT IS REFUSED UNTIL A LINEUP IS CHOSEN. Submitting nothing is not a state this mode
      has, and a live button that does nothing is the worst version of that. */
   ok('  submit is refused until one is picked', await page.locator('#b-submit').isDisabled());

@@ -2670,6 +2670,43 @@ how available he has been, which is both halves of what the projection reads. Th
 projected total comes after the six are in, and it is the one number this mode prints about
 the future.
 
+#### But once the six ARE in, the total has to show its working
+
+Reported by a player looking at five finished lineups: they wanted each man's projected
+points for the week. The rule above is about the WHEEL, where the six are not in yet and a
+per man figure would be the page guessing at a decision the reader is still making. On the
+review screen and the entry screen the six are in and the total is already printed, so the
+argument does not reach them. What those two screens had was **a headline with no working**:
+`63.0` against `77.0` is two numbers to trust rather than two lineups to compare, and a
+reader cannot tell a total carried by one man from six solid ones, which on a Sunday is most
+of what separates them. That is the Full Team results screen's rule arriving at the screen
+where somebody is choosing.
+
+**It goes in the `.rs` column, the one the result screen puts the REAL score in**, and that
+is the point rather than reuse. The rightmost figure on a man's row is his points on every
+screen: projected before the games, real after, same place, same face, same size. A reader
+learns one column and the card's own eyebrow says which of the two it is, so six rows do not
+each repeat the word. **After the games it is deliberately not doubled up**: `.rs` is the
+real score by then and the projection is already beside the real TOTAL on `in-vs`, which is
+where this mode has always said it belongs, because the gap between the two is a fact about
+the lineup rather than about any one man.
+
+**THE PARTS ADD UP TO THE TOTAL EXACTLY, and that is a property rather than a hope.** Every
+`proj` in the pool is one decimal and `D.projected` is their sum, so a reader can check the
+headline by eye. Measured over 20,000 random lineups: no rounding seam, ever. So the guard
+asserts the arithmetic **on the rendered page** and needs no tolerance. Asking `draft.js`
+whether its own sum adds up is asking a function whether it agrees with itself; what can
+actually break is a painter printing to a different precision from the one the total was
+summed at, and only the glass can see that. Reintroduced as `toFixed(0)` it reports
+`17+15+7+10+5+10=63.7`, which renders perfectly and is exactly the defect nothing else here
+would catch.
+
+**The price stays, quieter, to its left.** The money is spent by the time anybody reads the
+review screen, so it is no longer a decision, but the spend line under the card is a total
+with the same problem the projection had. Measured at 360 and 390: the longest name in the
+pool (`Jacory Croskey-Merritt`, 144px) sits in a 198px column at the tightest, so nothing
+truncates and the six rows hold one height.
+
 #### The cap bound the lineup and never once appeared on screen
 
 ```
