@@ -66,6 +66,11 @@ jobs:
       - name: Install
         run: pip install pandas numpy pybaseball
 
+      # The pool as it stands, kept aside so the run can print what MOVED rather
+      # than a column of numbers somebody has to remember the old value of.
+      - name: Keep the pool that ships
+        run: cp baseball/data/players.json /tmp/pool_before.json
+
       - name: Fetch the raw inputs
         working-directory: baseball/pipeline
         run: python3 fetch_inputs.py
@@ -78,6 +83,15 @@ jobs:
         working-directory: baseball/pipeline
         run: ls -la data/ && wc -l data/*.txt data/*.csv 2>/dev/null || true
 
+      # FOUR STAGES, AND THE FOURTH ONE WAS MISSING FOR THE LIFE OF THIS FILE.
+      # build_positions.py ends at priced_players_enriched.json, which carries
+      # verbose column names because it is the frame the build was working in.
+      # The game fetches baseball/data/players.json, which carries compact keys
+      # because every visitor downloads it. Nothing turned one into the other, so
+      # the commit step below did `git add` on a file this workflow had never
+      # written: every run found it unchanged, printed "The pool did not move"
+      # and exited green. A workflow that looks like it refreshes the pool on
+      # every firing and has never once written a byte of it.
       - name: Build
         working-directory: baseball/pipeline
         run: |
@@ -86,7 +100,18 @@ jobs:
           python3 build_positions.py \
             ${{ inputs.split_stints && '--split-stints' || '' }} \
             ${{ inputs.require_fwar && '--require-fwar' || '' }}
+          python3 compact_pool.py
           cat provenance.json
+
+      # WHAT THE SOURCES ACTUALLY SAID ABOUT TEN SEASONS A READER CAN LOOK UP.
+      # Neither WAR source can be reached from the development sandbox, so every
+      # figure in this game's write-up was recalled rather than fetched, and one
+      # of them disagrees with the pool: Ted Williams 1941 ships at 10.36 against
+      # a remembered 10.6. This runner is the only machine in the project that
+      # can settle that, and it settles it by printing both pools side by side.
+      - name: The seasons a reader can check
+        run: python3 baseball/pipeline/reference_seasons.py
+             baseball/data/players.json /tmp/pool_before.json
 
       # The pool the game will actually serve, checked before it is committed.
       # check-labels drives every shipped row through the pricing rule, so a build
@@ -97,15 +122,52 @@ jobs:
           node baseball/check-labels.mjs
           node baseball/check-numbers.mjs
 
+      # A DATA FILE CACHES EXACTLY LIKE A SCRIPT. The page fetches
+      # data/players.json?v=N with the number written by hand, so a refresh that
+      # rewrites 4.7MB of player-seasons and leaves that number alone serves a
+      # RETURNING visitor the old pool. index.html revalidates and the data does
+      # not, so nothing throws, no screen is wrong, and the only symptom is
+      # somebody insisting a season is not in the game.
+      #
+      # THIS IS THE ONE WRITER THAT CANNOT DO THE BUMP BY HAND. Everywhere else
+      # the edit and the bump are one commit by a person; here a bot rewrites the
+      # pool and nobody is watching. It bumps only what `git diff --quiet` says
+      # actually moved, so a run that finds no new baseball moves no number.
+      - name: Bump the cache version if the pool moved
+        if: ${{ inputs.commit }}
+        run: |
+          if git diff --quiet -- baseball/data/players.json; then
+            echo "The pool did not move, so the version stays where it is."
+            exit 0
+          fi
+          CUR=$(grep -o "data/players\.json?v=[0-9]\+" baseball/index.html | head -1 | sed 's/.*=//')
+          if [ -z "$CUR" ]; then
+            echo "baseball/index.html does not version data/players.json, which it must" >&2
+            exit 1
+          fi
+          NEXT=$((CUR + 1))
+          sed -i "s|data/players\.json?v=$CUR|data/players.json?v=$NEXT|g" baseball/index.html
+          echo "data/players.json: v=$CUR -> v=$NEXT"
+          node scripts/check-cachebust.mjs --update
+          node scripts/check-cachebust.mjs
+
       - name: Commit
         if: ${{ inputs.commit }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add baseball/data/players.json baseball/pipeline/provenance.json
+          # The page and the record go with the data: the bump step edits
+          # index.html and scripts/cachebust.json, and a commit that left either
+          # behind would ship a pool under a version nobody asks for.
+          git add baseball/data/players.json baseball/pipeline/provenance.json \
+                  baseball/index.html scripts/cachebust.json
           if git diff --cached --quiet; then
             echo "The pool did not move."
             exit 0
           fi
           git commit -m "Baseball: refresh the player pool from Baseball-Reference"
-          git push
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "push rejected, rebasing (attempt $i)"
+            git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+          done
