@@ -71,7 +71,11 @@ jobs:
           python-version: '3.11'
 
       - name: Install
-        run: pip install pandas numpy pybaseball
+        # pyreadr reads CRAN's .RData, which is where the CURRENT Lahman comes
+        # from: SABR's own Box folder answers HTTP 512 to a script. Without it
+        # lahman.py falls back to the zip mirrors, which stop in 2021, and
+        # pool_shape.py then refuses to ship the result.
+        run: pip install pandas numpy pybaseball pyreadr
 
       # The pool as it stands, kept aside so the run can print what MOVED rather
       # than a column of numbers somebody has to remember the old value of.

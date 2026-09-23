@@ -9049,18 +9049,66 @@ answers to `Master.csv` too.
 **THE MIRRORS ARE UNOFFICIAL, AND "A MIRROR A YEAR BEHIND COSTS ALMOST NOTHING"
 WAS WRITTEN HERE AND IS FALSE.** The argument was that positions and saves barely
 move for a season already played, which is true of a season the mirror HAS. A
-mirror does not lag by a rounding error: the one that answers today carries
-Appearances to about 2016 and saves to about 2021, so a rebuild off it leaves
-**2,421 batters with no position, every one of them from 2017 on**. The pool is
-then perfectly correct about Babe Ruth and knows nothing about anybody currently
-playing, which is the half of the board a reader recognises. Measured rather
-than argued, and what now catches it is the staleness clause two sections down.
+mirror does not lag by a rounding error: the ones that answer today stop at
+**2021**, so a rebuild off them leaves **2,421 batters with no position**. The
+pool is then perfectly correct about Babe Ruth and knows nothing about anybody
+currently playing, which is the half of the board a reader recognises. Measured
+rather than argued, and what now catches it is the staleness clause two sections
+down.
 
-Upstream is still first so it wins the day it comes back, and a refresh that has
-to SHIP needs a current archive rather than whichever mirror answers. SABR
-publishes the current database through a Box folder with no url a script can
-fetch, so the refusal message points a person there rather than implying the list
-is maintained.
+**And the first reading of that measurement was wrong too**, in the way this file
+keeps warning about: 2,421 divided by the seasons since 2021 gave a plausible
+start year, so the deficit was reported as "positions stop at 2017" from
+arithmetic rather than from the rows. There are **two** deficits and only one is
+the lag. The other is the Negro Leagues, which Lahman added to `People` long
+after these snapshots were taken, so those seasons are missing at the OLD end as
+well. One cause assumed from one number is how a measurement becomes a guess.
+
+##### WHERE A CURRENT ARCHIVE ACTUALLY COMES FROM: CRAN
+
+```
+python3 -c "import lahman; print(len(lahman.table('Appearances.csv')))"
+```
+
+SABR maintains Lahman now and publishes it through a Box folder with no link a
+script may fetch. Driven from a runner, that folder's own
+`rm=box_download_shared_folder` endpoint answers **HTTP 512** on both
+`sabr.app.box.com` and `app.box.com`, so both urls came back out of `SOURCES`
+rather than sitting there as a branch that can only fail. The R package's own
+download script says "Current download URL unknown", so this is not a url anybody
+has and did not write down.
+
+**The package that REDISTRIBUTES it is the hand download, published.** CRAN's
+GitHub mirror serves every table on its own path as `.RData`, and
+`raw.githubusercontent.com` is the one host this sandbox can reach, so it is the
+only part of this chain that can be checked from here at all. Version 14.0-0, and
+all four tables run **1871 to 2025**.
+
+| | mirror | CRAN |
+|---|---|---|
+| Appearances | 110,423 rows, to 2021 | **128,512 rows, to 2025** |
+| People | 20,662 bbrefIDs | **22,983** |
+| shipped batters the archive has never heard of | 1,312 | **75** |
+| Pitching | | 57,630 rows, 1,053 seasons of 20+ saves |
+
+Heavy Johnson and Charlie Blackwell (the Negro Leagues end) and Pete
+Crow-Armstrong and Wyatt Langford (the recent end) are all present, which is the
+two deficits closing from both sides at once.
+
+**IT IS `.RData` AND NOT CSV, so it has its own path rather than joining the zip
+chain**, and `from_cran` **answers `None` rather than raising**: no `pyreadr`, no
+route, a renamed file are all "this route is shut", and the caller's job is then
+to try the zips. A raise there would take down a build with a working fallback
+under it. The workflow installs `pyreadr` for that reason, and says so at the
+install step, because without it a runner silently falls through to the 2021
+mirrors and the staleness clause stops the result anyway, two stages later.
+
+**Its guard refuses to pass vacuously**, which is the half worth copying. With
+`pyreadr` missing, `from_cran` returns at its first statement and every stub under
+it is never reached, so a green line there would certify a path the check did not
+walk. `check_lahman.py`'s last section prints that it did NOT walk it instead.
+Both live arms were proved by mutation: letting the fetch error out of `from_cran`
+fails two claims, and a `table()` that does not fall through fails one.
 
 **A 404 page is a perfectly good HTTP response**, which is the whole reason the
 old failure read as "not a zip file": the request succeeded and the bytes were

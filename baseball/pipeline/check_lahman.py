@@ -612,6 +612,73 @@ except Exception as e:
     claim(False, "a zip nested past the bound is given up on rather than chased",
           f"{type(e).__name__}: {e}")
 
+print("\n10. CRAN is where a current archive comes from")
+
+# SABR'S OWN FOLDER ANSWERS HTTP 512 TO A SCRIPT, measured on a runner, so the
+# live database reaches this pipeline through the R package that redistributes
+# it. What that is worth is not a preference: the zip mirrors stop in 2021 and
+# predate the Negro Leagues, and pool_shape.py refuses to ship a pool built on
+# them.
+
+claim("raw.githubusercontent.com/cran/Lahman" in lahman.CRAN,
+      "the current archive is CRAN's mirror of the R package", lahman.CRAN)
+claim(all("box.com" not in u for _, u in lahman.SOURCES),
+      "and Box is no longer in the chain, because it answered 512",
+      str([u for _, u in lahman.SOURCES]))
+
+# IT ANSWERS None RATHER THAN RAISING, which is what makes it a preference and
+# not a dependency: a machine with no pyreadr, or no route to raw.github, has to
+# fall through to the zips rather than take the build down.
+#
+# AND THE ARM BELOW IS VACUOUS WITHOUT pyreadr, which is worth saying rather than
+# printing a green line about it. With the reader missing, from_cran returns None
+# at its first statement and every stub under it is never reached, so the check
+# would certify a path it did not walk. That is this repo's own rule about a
+# check that can only pass. The workflow installs it; a developer may not have
+# it, and is told so instead of being told it is fine.
+try:
+    import pyreadr  # noqa: F401
+    HAVE_PYREADR = True
+except ImportError:
+    HAVE_PYREADR = False
+
+keep_fetch = lahman._fetch
+keep_archive = lahman._archive
+
+
+def boom(url):
+    raise OSError("no route to host")
+
+
+if not HAVE_PYREADR:
+    print("  ....  pyreadr is not installed here, so the CRAN path was NOT walked.")
+    print("        pip install pyreadr to check it. The workflow installs it.")
+else:
+    try:
+        lahman._fetch = boom
+        claim(lahman.from_cran("Appearances.csv") is None,
+              "an unreachable CRAN answers None rather than raising")
+    except Exception as e:
+        claim(False, "an unreachable CRAN answers None rather than raising",
+              f"{type(e).__name__}: {e}")
+    finally:
+        lahman._fetch = keep_fetch
+
+    # AND table() FALLS THROUGH TO THE ZIPS when it does. Driven rather than
+    # read: the zip chain is pinned to a known archive and CRAN is broken
+    # underneath it, so the row that comes back says which of the two answered.
+    z = zip_of(["baseballdatabank-main/core/Appearances.csv"])
+    try:
+        lahman._fetch, lahman._archive = boom, z
+        df = lahman.table("Appearances.csv")
+        claim(len(df) == 1, "and table() falls through to the zip chain",
+              str(df.shape))
+    except Exception as e:
+        claim(False, "and table() falls through to the zip chain",
+              f"{type(e).__name__}: {e}")
+    finally:
+        lahman._fetch, lahman._archive = keep_fetch, keep_archive
+
 print("")
 if FAILS:
     print(f"{len(FAILS)} failed.\n")

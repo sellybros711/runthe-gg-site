@@ -20,24 +20,22 @@ hoops draft fetch, which demanded one way of writing a link and returned zero
 picks for sixty six years. So `SOURCES` is whole urls, tried in order, and the
 first that answers with a real zip wins.
 
-**THE MIRRORS ARE UNOFFICIAL, AND "A MIRROR A YEAR BEHIND COSTS ALMOST NOTHING"
-WAS WRITTEN HERE AND IS FALSE.** The argument was that positions and saves barely
-move for a season already played, which is true of a season the mirror HAS. What
-it misses is that a mirror does not lag by a rounding error: the one that answers
-today carries Appearances to about 2016 and saves to about 2021, so a rebuild off
-it gives the pool no position for **2,421 batters**, every one of them from 2017
-on. The pool is then perfectly correct about Babe Ruth and knows nothing about
-anybody currently playing, which is the half of the board a reader recognises.
+**WHERE A CURRENT ARCHIVE ACTUALLY COMES FROM: CRAN.** SABR maintains Lahman now
+and publishes it through a Box folder with no link a script may fetch, and driven
+from a runner that folder's own Download endpoint answers HTTP 512. The R package
+that redistributes it is the hand download, published: CRAN's GitHub mirror serves
+every table on its own path, current to 2025. `from_cran` is tried first and the
+zips below are the fallback. See the CRAN block for what it is worth in rows.
 
-Measured rather than argued, and it sailed through a 15 point coverage band at
-89.6% against 99.4%. `pool_shape.py` compares the NEWEST season carrying each
-column now, because a share averaged over a hundred and twenty-five years cannot
-see a source that simply stops.
-
-Upstream is still first so it wins the day it comes back. SABR publishes the
-current database through a Box folder, which has no stable url a script can
-fetch, so it is not in this list, and **a refresh that has to ship needs a
-current archive rather than whichever mirror answers**.
+**"A MIRROR A YEAR BEHIND COSTS ALMOST NOTHING" WAS WRITTEN HERE AND IS FALSE.**
+The argument was that positions and saves barely move for a season already played,
+which is true of a season the mirror HAS. A mirror does not lag by a rounding
+error: every one in the list below stops in 2021 and predates SABR adding the
+Negro Leagues, so a rebuild off them leaves 2,421 batters with no position and
+1,312 players the archive has never heard of. Measured rather than argued, and it
+sailed through a 15 point coverage band at 89.6% against 99.4%, which is why
+`pool_shape.py` compares the NEWEST season carrying each column: a share averaged
+over a hundred and twenty-five years cannot see a source that simply stops.
 
 **A 404 PAGE IS A PERFECTLY GOOD HTTP RESPONSE**, which is the whole reason the
 old failure read as "not a zip file" rather than as "not found": the request
@@ -67,30 +65,44 @@ def _gh(repo, ref):
     return f"https://github.com/{repo}/archive/refs/heads/{ref}.zip"
 
 
-# SABR'S OWN FOLDER, AND IT IS NOT A DOCUMENTED DOWNLOAD URL. SABR maintains the
-# Lahman database now and publishes it through a Box folder, which has no link a
-# script is invited to fetch: `rm=box_download_shared_folder` is what the web
-# app's own Download button calls and it is undocumented, so it is allowed to
-# stop working and the walk simply moves on to the next source when it does.
+# THE CURRENT SABR DATABASE ARRIVES THROUGH CRAN, and that is the whole answer
+# to "where do we get a current archive".
 #
-# It is FIRST because it is the only current one. The mirrors under it stop in
-# 2021 and predate SABR adding the Negro Leagues, which between them leave 2,421
-# batters with no position and 1,312 players the archive has never heard of.
-_SABR_FOLDER = "rsry2en86bimvybwsorumfsxmf91002a"
+# SABR maintains Lahman now and publishes it through a Box folder with no link a
+# script is invited to fetch. `rm=box_download_shared_folder` is what that page's
+# own Download button calls; driven from a runner it answers **HTTP 512** on both
+# hosts, so it does not work unauthenticated. The R package's own script says
+# "Current download URL unknown" and expects a hand-downloaded zip, which is the
+# ecosystem saying out loud that it does this by hand.
+#
+# THE R PACKAGE IS THAT HAND DOWNLOAD, PUBLISHED. Its maintainers take SABR's
+# release, build it into `Lahman` on CRAN, and CRAN's GitHub mirror serves every
+# table on its own at a stable path. Version 14.0-0 of 2026-02-11 carries all
+# four tables 1871 to 2025.
+#
+# Measured against the mirrors it replaces: Appearances 128,512 rows against
+# 110,423, People 22,983 bbrefIDs against 20,662, and the shipped batters the
+# archive has never heard of fall from **1,312 to 75**. Heavy Johnson's 1923 and
+# Charlie Blackwell's 1921 are there (SABR's Negro Leagues, which the Chadwick
+# snapshot predates) and so are Pete Crow-Armstrong and Wyatt Langford (who
+# debuted after it).
+#
+# IT IS .RData AND NOT CSV, so it needs `pyreadr` and is tried through its own
+# path rather than the zip chain below. A machine without pyreadr falls through
+# to the zips exactly as before, which is why this is a preference and not a
+# dependency.
+CRAN = "https://raw.githubusercontent.com/cran/Lahman/master/data"
+
+# Lahman's own table names, which are the file names. `People` was `Master` in
+# the same rename the zip chain already knows about.
+_CRAN_NAMES = {"people.csv": ["People", "Master"]}
 
 
-def _box(host):
-    return (f"https://{host}/index.php?rm=box_download_shared_folder"
-            f"&shared_name={_SABR_FOLDER}")
-
-
-# In order, and the order is the argument. SABR first because it is the live
-# database. Then upstream under both of its branch names, so the day the
-# Chadwick Bureau puts it back nothing here has to change. Then the mirrors,
-# which are somebody else's copy of the last snapshot before it went.
+# THE ZIP CHAIN IS THE FALLBACK NOW, tried only when CRAN does not answer.
+# Upstream under both of its branch names, so the day the Chadwick Bureau puts
+# it back nothing here has to change, then the mirrors, which are somebody
+# else's copy of the last snapshot before it went. All four stop in 2021.
 SOURCES = [
-    ("SABR, via its Box folder", _box("sabr.app.box.com")),
-    ("SABR, via app.box.com", _box("app.box.com")),
     ("chadwickbureau, master", _gh("chadwickbureau/baseballdatabank", "master")),
     ("chadwickbureau, main", _gh("chadwickbureau/baseballdatabank", "main")),
     ("xorq-labs mirror", _gh("xorq-labs/baseballdatabank", "master")),
@@ -230,9 +242,51 @@ def member(name):
     )
 
 
+def from_cran(name):
+    """One Lahman table off CRAN's mirror, or None if that route is not open.
+
+    IT ANSWERS None RATHER THAN RAISING, on purpose. Missing pyreadr, a renamed
+    file and an unreachable host are all "this route is shut", and the caller's
+    job is then to try the zips. A raise here would take down a build that has a
+    perfectly good fallback sitting under it.
+    """
+    try:
+        import pyreadr
+    except ImportError:
+        return None
+    for stem in _CRAN_NAMES.get(name.lower(), [name[:-4] if name.lower().endswith(".csv") else name]):
+        try:
+            body = _fetch(f"{CRAN}/{stem}.RData")
+        except Exception:
+            continue
+        # pyreadr reads a path rather than bytes, so it lands in a temp file.
+        import tempfile
+        fd, path = tempfile.mkstemp(suffix=".RData")
+        try:
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(body)
+            got = pyreadr.read_r(path)
+        except Exception:
+            continue
+        finally:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+        if not got:
+            continue
+        df = got[next(iter(got))]
+        print(f"  Lahman: {stem} from CRAN ({len(df):,} rows)")
+        return df
+    return None
+
+
 def table(name):
-    """One Lahman table as a DataFrame."""
+    """One Lahman table as a DataFrame, current for preference."""
     import pandas as pd
+    df = from_cran(name)
+    if df is not None:
+        return df
     with archive().open(member(name)) as fh:
         return pd.read_csv(fh, low_memory=False, encoding="utf-8-sig")
 
