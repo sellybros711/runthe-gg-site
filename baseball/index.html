@@ -2826,7 +2826,7 @@ function boardPayload(o){
     franchise:mode==='franchise'?RUN.franchise:null,
     era:mode==='era'?RUN.era:null,
     division:mode==='division'?RUN.division:null,
-    dailyKey:RUN.daily?utcKey():null,
+    dailyKey:RUN.daily?easternISO():null,
     dailyClient:RUN.daily?clientId():null,
     rating:shownRating(o)==null?null:Math.round(shownRating(o)*10)/10,
     allTimeRank:RUN.staff?null:(o.allTimeRank==null?null:o.allTimeRank),
@@ -2883,7 +2883,7 @@ function paintBoard(){
   list.innerHTML='<div class="bd-empty">Loading...</div>';
   const B=BOARD();
   if(!B){list.innerHTML='<div class="bd-empty">The leaderboard is not available.</div>';return;}
-  const where=boardTab==='daily'?{dailyKey:utcKey()}:{mode:boardTab};
+  const where=boardTab==='daily'?{dailyKey:easternISO()}:{mode:boardTab};
   B.top({...where,limit:50}).then(rows=>{
     if(rows==null){
       list.innerHTML='<div class="bd-empty">'+(B.needsMigration
@@ -2919,37 +2919,71 @@ function paintBoard(){
 /* ─── the daily ───────────────────────────────────────────────────────────
  * One board a day, the same board for everybody, and a grid you can paste.
  *
- * The seed is the UTC date, so "today" starts at the same instant for every
- * player and two people comparing results are comparing the same draft. One run
- * per day is the whole point: it is what makes a result worth posting and what
- * brings anybody back tomorrow. */
-const DAILY_EPOCH=Date.UTC(2026,0,1);
-function utcKey(d){
+ * The day is the EASTERN date, which is what every other calendar-day clock on
+ * this site already uses, and it shipped on UTC. THE DIFFERENCE IS NOT COSMETIC:
+ * UTC rolls at 7 or 8pm Eastern, so the board a player was part way through was
+ * taken off them in the middle of their own evening, and the "one try" they had
+ * spent was spent on yesterday's puzzle. The visitor's own midnight is the other
+ * wrong answer, because it gives two people in one group chat different boards on
+ * the same night, and everybody getting the same twelve spins is the whole mode.
+ *
+ * `dayNumberOf` does its arithmetic in UTC ON PURPOSE, over a date that was
+ * resolved in Eastern. Two local midnights are 23 or 25 hours apart across a clock
+ * change, which floors to the wrong day twice a year and hands two players
+ * different boards with nothing anywhere throwing. */
+const DAILY_EPOCH='2026-01-01';          // day 1
+function easternISO(d){
   const t=d||new Date();
-  return t.getUTCFullYear()+'-'+String(t.getUTCMonth()+1).padStart(2,'0')+'-'+
-    String(t.getUTCDate()).padStart(2,'0');
+  try{
+    /* en-CA formats as YYYY-MM-DD, which is the one locale that gives this shape
+       without reassembling parts. Tested rather than trusted: anything else falls
+       through to the local date, because a browser with no time zone database
+       should answer the wrong day rather than no day at all. */
+    const s=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',
+      year:'numeric',month:'2-digit',day:'2-digit'}).format(t);
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  }catch(_){}
+  const p=n=>(n<10?'0':'')+n;
+  return t.getFullYear()+'-'+p(t.getMonth()+1)+'-'+p(t.getDate());
 }
-function dailyNo(){
-  return Math.floor((Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),
-    new Date().getUTCDate())-DAILY_EPOCH)/86400000)+1;
+function dayNumberOf(iso){
+  const a=String(iso).split('-'), b=DAILY_EPOCH.split('-');
+  return Math.floor((Date.UTC(+a[0],+a[1]-1,+a[2])-Date.UTC(+b[0],+b[1]-1,+b[2]))/86400000)+1;
 }
+/* The clamp is a guard against a wrong device clock, never a place to keep an
+   off-by-one: hoops kept an epoch that was a day out behind exactly this line. */
+function dailyNo(){ return Math.max(1,dayNumberOf(easternISO())); }
 const DAILY_KEY='rtd_daily';
 function loadDaily(){try{return JSON.parse(localStorage.getItem(DAILY_KEY)||'{}');}catch(e){return {};}}
 function saveDaily(o){try{localStorage.setItem(DAILY_KEY,JSON.stringify(o));}catch(e){}}
-function todaysDaily(){const d=loadDaily();return d.date===utcKey()?d:null;}
-/* The streak only survives if yesterday was played too. */
+/* THE RECORD CARRIES A VERSION, AND A RECORD FROM BEFORE THE CLOCK MOVED IS READ
+   AS "NOT TODAY". That is the whole migration and it has to be in this direction.
+   A record written under UTC stamped the date it was already tomorrow in Greenwich,
+   so somebody who played at 8pm Eastern stored tomorrow's date: read against the
+   Eastern key the next evening it MATCHES, and they would be told they had already
+   played a board they had not seen. Refusing to trust a v1 record costs at worst
+   one extra board, once, to somebody who played in that window. Being wrongly
+   locked out of the day's only try is the mistake that cannot be undone. */
+const DAILY_V=2;
+function todaysDaily(){const d=loadDaily();return (d.v===DAILY_V&&d.date===easternISO())?d:null;}
+/* The streak is counted in DAY NUMBERS rather than by rebuilding yesterday's date
+   string, which is one fewer place for a clock change to be wrong. */
 function dailyStreak(){
   const d=loadDaily();
-  if(!d.date)return 0;
-  const y=new Date();y.setUTCDate(y.getUTCDate()-1);
-  if(d.date===utcKey()||d.date===utcKey(y))return d.streak||0;
-  return 0;
+  if(!d.n)return 0;
+  const n=dailyNo();
+  return (d.n===n||d.n===n-1)?(d.streak||0):0;
 }
 function recordDaily(o){
   const prev=loadDaily();
-  const y=new Date();y.setUTCDate(y.getUTCDate()-1);
-  const streak=(prev.date===utcKey(y)?(prev.streak||0):0)+1;
-  saveDaily({date:utcKey(),n:dailyNo(),wins:o.wins,losses:o.losses,
+  const n=dailyNo();
+  /* `prev.n === n` continues the streak as well as `n-1`, and that clause is the
+     migration rather than an off-by-one: a v1 record written in the 8pm-to-midnight
+     window carries the UTC day, which is this day's number, and todaysDaily has
+     deliberately ignored it. Without it that player's streak resets once for having
+     played in the evening. It can only ever be generous by a day, one time. */
+  const streak=((prev.n===n-1||prev.n===n)?(prev.streak||0):0)+1;
+  saveDaily({v:DAILY_V,date:easternISO(),n,wins:o.wins,losses:o.losses,
     titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
     rating:shownRating(o)!=null?Math.round(shownRating(o)):null,
     rank:o.allTimeRank!=null?o.allTimeRank:null,
@@ -2978,7 +3012,7 @@ function seasonGrid(){
 function startDaily(){
   const done=todaysDaily();
   if(done){showDailyDone(done);return;}
-  startRun({seed:E.hashSeed('rtd-daily-'+utcKey()),daily:true});
+  startRun({seed:E.hashSeed('rtd-daily-'+easternISO()),daily:true});
 }
 function showDailyDone(d){
   $('modes-in')&&0;
@@ -2988,7 +3022,7 @@ function showDailyDone(d){
       d.madePlayoffs?'Reached October':'Missed the playoffs')+'</div>'+
     (d.grid?'<div class="dd-grid">'+d.grid+'</div>':'')+
     '<p class="dim" style="font-size:12.5px;margin:10px 0 0">A new board every day at '+
-    'midnight UTC. Come back tomorrow to keep the streak.</p>';
+    'midnight Eastern. Come back tomorrow to keep the streak.</p>';
   openSheet('sheet-daily');
 }
 function paintDailyCard(){
@@ -3007,7 +3041,7 @@ function paintDailyCard(){
         (streak>0?'<span class="dc-streak">&#128293; '+streak+'</span>':'')+'</div>'+
       (d?'<div class="dc-done"><b>'+d.wins+'-'+d.losses+'</b>'+
           (d.grid?'<span class="dc-grid">'+d.grid+'</span>':'')+'</div>'+
-          '<div class="dc-sub">Played. New board at midnight UTC.</div>'
+          '<div class="dc-sub">Played. New board at midnight Eastern.</div>'
         :'<div class="dc-sub">Everybody gets the same twelve spins today. One try.</div>')+
     '</div>'+
     '<span class="dc-go">'+(d?'See your result':'Start today\'s draft')+' &rarr;</span>';

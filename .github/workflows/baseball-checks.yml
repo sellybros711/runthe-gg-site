@@ -72,6 +72,15 @@ jobs:
       - name: A number a player reads
         run: node baseball/check-numbers.mjs
 
+      # The daily shipped on a UTC day, which rolls at 7 or 8pm Eastern: it took the
+      # board away in the middle of somebody's evening and spent their one try on
+      # what was by then yesterday's puzzle. Every way a day boundary breaks is
+      # invisible on the machine it is written on, so this walks the evening hours,
+      # both offsets, and the two Sundays the clocks move. Run under a non-Eastern
+      # zone deliberately: the claim is that the machine's own zone cannot matter.
+      - name: The daily rolls at Eastern midnight
+        run: TZ=Asia/Tokyo node baseball/check-daily.mjs
+
       # All-Time Staff assigns its own slots, because SP3 against SP4 is a
       # question staffEra cannot hear: it averages the rotation and averages the
       # pen. What it CAN hear is rotation against bullpen and who closes, so the
