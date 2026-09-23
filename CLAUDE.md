@@ -8373,6 +8373,8 @@ node baseball/check-labels.mjs    what a player-season row says it is
 node baseball/check-theme.mjs     both themes, in a browser, on the real screens
 node baseball/check-home.mjs      the front page's two designs, and the reel under them
 node baseball/check-staff.mjs     the All-Time Staff assignment and its blast radius
+node baseball/check-badges.mjs    every badge is reachable, against real runs
+node baseball/check-run.mjs       a whole run, in a browser, to the screen it ends on
 ```
 
 ### The $170M cap is right, and the per-slot dollar is the wrong comparison
@@ -9028,6 +9030,121 @@ not say whether that was a missed swap or a slower draft. It asks five selectors
 name, so a selector that is not painted at all is its own failure rather than a smaller
 number. The reel's band and the empty disc are correctly white in light and correctly
 black in dark, which is exactly what a count cannot tell from a defect.
+
+### The badge cabinet asked about none of the six modes
+
+```
+node baseball/check-badges.mjs           every badge, against real runs
+node baseball/check-badges.mjs --quick   the CI run, and the strict one
+node baseball/check-badges.mjs --list    what lit each badge
+```
+
+The catalogue was 36 and is **205**, across nine shelves. Every one of the original
+36 ids survives, because a badge is DERIVED from stored rows and renaming one takes
+it off everybody who has it.
+
+**THE ROW ALREADY RECORDED SIX MODES AND NOT ONE BADGE ASKED ABOUT ANY OF THEM.**
+Eras, One Franchise, Division, Salary Cap Survivor, All-Time Staff and The Trade
+Machine have each been on the run row since the day that mode shipped, along with
+cuts, trades, efficiency and the chemistry links, and the cabinet asked about none
+of it. That is this game's own version of the dynasty leaderboard that rendered
+perfectly and had no door: the data was there and the shelf was not. The daily was
+the one mode the row did not record, so `rowFromRun` writes it.
+
+**`MODES` names seven and Classic is DERIVED**, because a run that is none of the
+six is the quick draft and a seventh flag would be a second copy of an answer. The
+daily is deliberately not one of them: it is a Classic draft on a pinned seed, so
+filing it as a mode of its own would take every daily out of the Classic count and
+leave somebody who only plays the daily with an empty Classic shelf.
+
+**The checker plays the game for real** through `run.js`, in all seven ways and six
+ways of drafting, turns each finished season into the row the page files, and names
+anything nothing lit. The hoops catalogue is why it exists, and **it found two
+unearnable badges on the catalogue's first day**:
+
+- A re-spin rung asking for FIVE of a thing `CONSTANTS.MAX_RESPINS` caps at three.
+  The hoops mistake, made again, by the person writing the guard against it. The
+  guard asks the TEST rather than the words now: a row that used every re-spin the
+  game allows has to light every badge on that shelf.
+- **The play streak sorted its day keys as TEXT.** `2026-1-2` sorts after
+  `2026-1-19`, so every month was walked out of order and the count reset in the
+  middle of it. Measured, **forty consecutive days of play reported a best streak
+  of ten**, so "A month straight" had been unearnable since the file was written.
+  Nothing threw, the number was plausible, and the only symptom was a streak that
+  would not grow. Padded, the key also parses as ISO, so two of them are exactly 24
+  hours apart rather than 23 on the day a clock goes forward.
+
+**Three thresholds were measured rather than argued**, over 1,750 played seasons:
+
+- `bargain_title` asked for a title under **$210M against a $170M cap**, so it was
+  a second copy of "win the title" wearing gold. It was written when the cap was
+  $245M. **$140M was the first replacement and no title in the pool reaches it**:
+  the 26 title rosters spent a minimum of $147.8M and a median of $168.9M. It is
+  $160M, which is about a fifth of titles.
+- `one_franchise_8` is asked of an OPEN draft, because One Franchise fields twelve
+  from one club by definition and the badge would have been gold for pressing a
+  mode button.
+- The chemistry shelf has no "all six" rung: the most any roster carried is four.
+
+**--QUICK IS THE STRICT ONE, which is the opposite of what that flag usually
+means.** The two excuse lists are a record of what a sweep REACHES, so they can only
+be tuned to one sweep, and the full run reaches strictly more: pruning against it
+would then fail the quick one, and that loop has no end. Reachability is hard on
+both. The full sweep is three minutes and lights 194 of 205.
+
+**The cabinet folds.** 205 drawn flat is a sheet about nine thousand pixels deep
+whose first screen is the same on season one and season a hundred. What you earned
+is open and what is left is one tap behind a line saying how much of it there is.
+Measured at 390px on a six season career: 3,535px.
+
+### A whole run, in a browser, to the screen it ends on
+
+```
+node baseball/check-run.mjs      a Classic run and a daily, about three minutes
+```
+
+**NOTHING HERE REACHED THE RESULTS SCREEN.** `check-atbats` holds the line score to
+the score it was handed, `check-bracket` holds the field to the run, `check-badges`
+plays the game in node and never opens a page, and the theme walk drafts a few picks
+and stops. So the results screen, the trophy cabinet, the share card, the board
+submit and the daily record had never been opened in a browser at all, and they are
+the last five things a player meets.
+
+It drafts twelve through the real tiles, plays the season, walks October to
+`#s-over`, reads what that screen claims, opens the cabinet, presses Share and reads
+the canvas, then does the whole thing again as a daily and comes back to the front
+page to see whether the card knows.
+
+**EVERY REQUEST OUT OF THE PAGE IS REFUSED AT THE ROUTE**, and the refusals are read
+rather than counted. The board is a live Supabase project holding a real
+competition, so a submit that got out would file a fabricated season on it. That is
+the Stripe note arriving at a different service. What is ASSERTED is the other half:
+that the submit path RAN, because `board.js` fails soft by design and one that
+quietly stopped submitting looks exactly like one that works.
+
+**Four things a walker of this game has to know**, each of which cost a round:
+
+| | |
+|---|---|
+| the board | `#opts` is EMPTY until the reels land, because `paintOpts` is `spinBoth`'s callback. Waiting on the container waits on nothing. |
+| a tile | is not always a signing. A man who fits two open slots opens the position chooser, and a walk that does not answer it clicks the same tile for ever at "Spin 1 of 12". |
+| a sheet | is a scrim over the whole page, so the press after the cabinet lands on the scrim and retries against a sheet nobody closed. It reads as a button that cannot be clicked. |
+| the panel | lists at most six badges and then says how many more, so its count comes from the headline. |
+
+**THREE OF ITS OWN ASSERTIONS WERE WRONG FIRST.** It asked the draft grade for a
+number and the grade is a LETTER, so it reported a correct screen as broken. It
+compared every pixel of the share card with pixel (0,0), which is the border rather
+than the stock, and read 97.6% of the image as ink: it would have passed on a card
+with one rule drawn across a wash, so it counts colours and the modal colour's share
+instead. And it asked the badge panel for eight rows when the panel prints six,
+which is an unearnable threshold inside the checker written to stop unearnable
+thresholds shipping.
+
+**Proved by mutation rather than by passing.** Filing the row before asking what it
+lit takes the panel to nothing, and a card handed back blank takes its colour count
+to 1 and its commonest colour to 100%. The badge claim names **"Play ball"**, which
+cannot be earned by a history that already contains the season, because the first
+version merely looked for the word "badge" and passed on the ordering defect.
 
 ## Two people can share a name, and `name|sport` is not a person
 
