@@ -184,6 +184,14 @@ def archive():
 
         _archive = descend(zipfile.ZipFile(io.BytesIO(body)))
         _source = url
+        # WHAT WAS SKIPPED ON THE WAY IS THE HALF WORTH READING, and it was
+        # thrown away: `tried` was only ever printed when EVERY source failed, so
+        # a run that fell through to a mirror said nothing but the mirror's name.
+        # SABR is first precisely so somebody learns whether it answers, and the
+        # one run that could have said so reported only that xorq-labs had won.
+        # A source that is skipped in silence is a source nobody can fix.
+        for t in tried:
+            print(f"  Lahman: skipped {t}")
         print(f"  Lahman: {label} ({len(body) // 1024}KB, "
               f"{len(_archive.namelist())} files)")
         return _archive

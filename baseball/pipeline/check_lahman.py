@@ -203,6 +203,33 @@ try:
         claim(False, "an empty archive is refused by the reader",
               f"{type(e).__name__}: {e}")
 
+    # A SOURCE SKIPPED ON THE WAY TO A LATER ONE HAS TO SAY SO. `tried` used to
+    # be printed only when every source failed, so a run that fell through to a
+    # mirror reported the mirror's name and nothing else. SABR is first exactly
+    # so somebody learns whether it answers, and the one run that could have
+    # said so was silent about it.
+    import io as _io, contextlib as _ctx
+    good = _io.BytesIO()
+    with zipfile.ZipFile(good, "w") as w:
+        w.writestr("baseballdatabank-main/core/People.csv", "playerID\nx\n")
+
+    answers = [HTML, HTML, good.getvalue()]
+
+    def walk(url):
+        calls.append(url)
+        return answers[len(calls) - 1]
+
+    calls.clear()
+    lahman._fetch, lahman._archive = walk, None
+    said = _io.StringIO()
+    with _ctx.redirect_stdout(said):
+        lahman.archive()
+    out = said.getvalue()
+    claim(out.count("skipped") == 2,
+          f"the two sources it walked past are named ({out.count('skipped')})", out)
+    claim("404 Not Found" in out,
+          "and each one says what it actually answered", out)
+
     # And the walk STOPS at the first real one rather than fetching them all.
     good = io.BytesIO()
     with zipfile.ZipFile(good, "w") as w:
