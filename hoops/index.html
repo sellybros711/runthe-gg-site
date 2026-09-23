@@ -2941,7 +2941,7 @@ function renderAppBar(screen){
 
 function boot(){
   Promise.all([
-    fetch('data/players.json?v=4').then(function(r){ return r.json(); })
+    fetch('data/players.json?v=5').then(function(r){ return r.json(); })
       .then(function(v){ bootStep('Players loaded.'); return v; }),
     fetch('data/chemistry.json?v=1').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; }),
