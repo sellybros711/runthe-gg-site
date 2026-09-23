@@ -9991,6 +9991,187 @@ whose first screen is the same on season one and season a hundred. What you earn
 is open and what is left is one tap behind a line saying how much of it there is.
 Measured at 390px on a six season career: 3,535px.
 
+### A FRANCHISE OUTLIVES ITS CLUB CODE, and One Franchise offered the code
+
+```
+node baseball/check-franchise.mjs        the table, the lock, the chemistry, the picker
+node baseball/check-franchise.mjs 40     a bigger draft sample
+```
+
+Reported by a player: the Marlins have played since 1993 and One Franchise offered
+**2012 onward, fourteen seasons**. Baseball-Reference writes the code a club wore
+THAT YEAR, so one continuous franchise arrives under several, and every reader of
+`t` that compared codes was asking the wrong question.
+
+**It is most of the league rather than one club.** What the picker promised against
+what the franchise has actually played:
+
+| | the card said | now |
+|---|---|---|
+| Marlins | 2012-2025, 14 | **1993-2025, 33** |
+| Angels | **1961-2025, 25** | 1961-2025, 64 |
+| Athletics | 1968-2024, 57 | **1902-2025, 111** |
+| Braves, Dodgers, Giants, Twins, Yankees, Orioles | 1901/1958/1966 on | **the whole century** |
+| Rays | 2008-2025, 18 | 1998-2025, 27 |
+| Nationals | 2005-2024, 19 | 1969-2025, 52 |
+
+**The Angels card was the one that read as nonsense**, and nobody had looked at it:
+`LAA` is 1961-1964 AND 2005-2025 with `CAL` and `ANA` in between, so a span read off
+the raw code printed **"1961-2025, 25 seasons"**, sixty-five years with forty of them
+missing. Nothing threw, because a span and a count are two independent true facts
+about one wrong grouping.
+
+**AND THE QUIETER HALF REACHES EVERY MODE, not just this one.** The chemistry
+franchise link asks whether two men played for the same club, written `a.t === b.t`.
+So a 2011 Marlin and a 2013 Marlin were strangers, and a 1952 Boston Brave and a 1954
+Milwaukee Brave were strangers. **A link that does not fire is a link nobody can see
+the absence of.** Measured on a fixed set of 150 drafted rosters, the fix is worth
+**+0.46 franchise links a roster and +0.0087 of net chemistry**, which on this game's
+own scale (the 0.15 cap is about 21 wins) is **about +1.2 wins**. Recorded rather
+than compensated: those links should always have fired, so it is a correction and not
+a buff, and board rows filed before it sit very slightly low.
+
+#### The years in the table are load-bearing, and two codes prove it
+
+`FRANCHISES` is `[code, firstSeason, lastSeason]`, which is `DIVISIONS`' own shape,
+because two codes in this data mean two different things at two different times:
+
+- **`LAA` is the Angels twice**, 1961-1964 and 2005-2025. A lineage keyed on codes
+  alone collapses the gap and claims the `CAL` and `ANA` years twice.
+- **`BAL` is two unrelated clubs.** 1914-1915 is the **Federal League Baltimore
+  Terrapins**, who folded; 1954 on is the Orioles, who are the St. Louis Browns
+  moved. So the Orioles lineage starts at 1954 and the Terrapins belong to no
+  franchise, which is the truth about them.
+
+**ONLY A FRANCHISE THAT HAS WORN MORE THAN ONE CODE IS LISTED.** `franchiseOf` falls
+back to the code itself, so the Cubs need no row and cannot drift from one.
+
+**That fallback had a hole the guard found on its first run, and it is the sharper
+half of the lesson.** Returning the bare code is right for the Cubs and wrong for
+`BAL`, because `BAL` is *itself a franchise key*: the 1914 Terrapins resolved to
+`'BAL'`, were filed under the Orioles' own card, and the picker counted them among
+the Orioles' seasons. It returns a sentinel (`BAL*`) now, ONE bucket rather than one
+per season, because the Terrapins really were a club for two years and their own two
+seasons are team-mates. Caught as `the card says 110 seasons and the lock allows 109`,
+which is exactly the size of defect nothing else here would ever report.
+
+#### Two cards can name one club, and that is the point
+
+A key is either a **franchise** (its whole lineage, so the Marlins are 1993-2025) or
+one **earlier identity** on its own (the Brooklyn Dodgers, 1901-1957). Both are things
+a player wants and they are not the same thing: one is a club's whole history, the
+other is the club it was in a city it has left. `inFranchise` answers for both, so
+locking on either works with no second rule.
+
+**What tells them apart is a line on the card**, because without it the picker prints
+two cards reading "Baltimore Orioles" (the 1901-02 club that became the Yankees, and
+the Browns who became the Orioles) and two reading "Washington Senators" (one became
+the Twins, one the Rangers). Four true names and two pairs a reader cannot separate.
+A franchise card names what it contains, an identity card names what it became, and
+both are read off `FRANCHISES` rather than written out.
+
+**The note is a middot list rather than a sentence.** Written "the X, the Y and the
+Z" the Athletics' three earlier names are three commas on a card two inches wide,
+which is where this repo's short-sentence rule bites hardest, and the middot is what
+it already recommends for fields on one line.
+
+**It lists only what the card can DRAW.** `franchiseCodes('BAL')` names `MLA`, the
+1901 Milwaukee Brewers, and the pool holds nine of their rows: too thin to survive
+`indexData`, so no board can ever land there and the note read `Earlier: MLA ·
+St. Louis Browns`. The codes are collected off the team-seasons the card actually
+holds, so it can never name a club a player cannot reach.
+
+#### Three ways the card was measured wrong before it was measured right
+
+**The whole picker is not one row.** The first height assertion asked that every card
+match and failed at 80.1 to 113.2 on a correct page: a grid row stretches its own
+cells, and a row of cards all carrying a two line note is legitimately taller than a
+row carrying none. Asked per ROW, all 23 rows are uniform at 390px and all 15 at
+1280px. The premium sheet's rule is about one row and had been copied a level up.
+
+**`scrollWidth > clientWidth` CANNOT SEE AN ELLIPSIS.** The years line rendered
+`1902-2025 · 111 seaso...` on screen while `scrollWidth` and `clientWidth` were both
+147, because `text-overflow` paints inside the box and the box never reports itself
+as overflowing. The check passed on 45 of 45 cards while every long-history card was
+cutting the season count, **which is the number this whole fix exists to show**. Found
+by taking a screenshot and looking at it, which is the fourth time on this game. What
+is asked now is whether the text FITS: the same string measured in the same face with
+no constraint, against the room the card gives it, plus the box's own `scrollHeight`
+against `clientHeight`, which IS reliable for a line clamp because the clamp hides
+whole lines and the box reports them.
+
+**And that probe measured at 16px.** `getComputedStyle(el).font` serialises as the
+empty string in Chromium unless every longhand is set, so the first version set
+nothing, measured a 10.5px line as 152px wide in a 147px column, and failed four
+cards that render perfectly. The longhands are set one at a time now. **A measurement
+that silently falls back to a different size is worse than no measurement.**
+
+**THE ARITHMETIC PASSED WHILE THE CARD READ "... Oakland...".** `need > avail *
+lines` assumes perfect packing, and real wrapping breaks at spaces and leaves ragged
+ends, so 409px over three 147px lines cleared the sum and clipped on the glass. That
+is what the `scrollHeight` clause catches, and it is why the note is clamped at
+**four**: measured rather than reasoned, on the Athletics, at the narrowest card the
+grid draws. It costs height on that one card and a grid row stretches, so nothing
+beside it moves.
+
+**EVERY ONE OF THOSE NUMBERS IS THE FALLBACK FACE AND THAT IS THE SAFE DIRECTION.**
+Google Fonts does not resolve in this sandbox (`document.fonts.size` is 0), so each
+string is set in a face wider than the Archivo a visitor gets: a card that fits here
+fits on a phone with room spare, and the converse does not follow. The years line
+measured exactly 147px in a 147px column, on the seam, which is why it drew an
+ellipsis in a screenshot and may well not on a real phone. **That is the reason
+`.fran-yrs` WRAPS rather than being made to fit**: a line that wraps cannot hide the
+season count in any face, which is not a claim this harness can make about a line
+that truncates.
+
+**`CURRENT_CLUBS` holds ATH and not OAK**, because the Athletics' current code is what
+the franchise is keyed on, and Oakland is now an earlier identity of it the way Kansas
+City and Philadelphia are. The guard holds that list against the page's own copy.
+
+#### What the guard asserts, and the one that had teeth and no voice
+
+Every claim is a PROPERTY of the table against the data rather than a number typed
+beside it: no season claimed twice, no code in two franchises, spans that never
+overlap, and **the card's span equals what the lock actually allows**, because the
+picker counts seasons one way and `drawable` filters them another and those are two
+answers to one question.
+
+**Section 2 exists because a table that agreed with the raw codes would pass
+everything else and fix nothing.** It measures how many franchises are wider than
+their own code and names the Marlins by hand, which is `check-numbers`' coverage
+argument arriving at a lineage.
+
+**`drawable` is exported for it.** Driven through `spin` instead, the answer is one
+seeded sample, and a season a mode can reach is indistinguishable from one it happened
+not to draw.
+
+**Six defects were reintroduced one at a time** and each is named: the raw-code
+chemistry (4 failures, including a Terrapin linked to an Oriole), the raw-code lock
+(`a Marlins run cannot reach a single season before 2012`), the Terrapins folded back
+in, overlapping Angels spans, an Orioles lineage reaching back over the Terrapins, and
+the Marlins lineage deleted.
+
+**That last one passed on the first attempt and it is worth recognising.** Written to
+assume the row exists, deleting it crashed the file with a `TypeError`, and read
+through a grep for FAIL **the run looked clean**. That is `check_lahman.py`'s own note
+arriving here: an arm that cannot express the defect reports nothing rather than
+failing. The helper falls back to the bare code now, and deleting the Marlins lineage
+fails six assertions by name.
+
+#### What is NOT fixed, said plainly
+
+**A 1914 Terrapin is still called a Baltimore Oriole where the page prints a full club
+name.** `teamFullName` takes a code and no season, so the hero reel and the draw
+banner read `TEAM_NAMES.BAL`. The franchise half is fixed (the Orioles card no longer
+counts those seasons, and the chemistry no longer links them), and the NAME needs a
+season at every call site, which is its own pass. The tiles are unaffected: they print
+the raw code through `clubTag`, so a Terrapin's tile reads `BAL` rather than a wrong
+club name.
+
+**The Eras side was measured and is not missing anything.** All thirteen decades are
+offered and every one is deep: the thinnest is the 1900s at 102 team-seasons, 17 clubs
+and 1,291 men. What the lineage fixes for Eras is the chemistry, not the pool.
+
 ### The share card had no source and no builder, and was set in a fallback
 
 ```

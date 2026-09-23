@@ -113,6 +113,98 @@ const DIVISIONS = {
 };
 const DIVISION_FIRST_SEASON = 1994;
 
+/* A FRANCHISE outlives its club code, and until this table existed the game had
+ * no way to say so.
+ *
+ * Baseball-Reference writes the code the club wore THAT YEAR, so one continuous
+ * franchise arrives under several: the Marlins are FLA through 2011 and MIA after,
+ * the Dodgers are BRO through 1957 and LAD after, the Athletics are PHA, KCA, OAK
+ * and now ATH. Keyed on the raw code, One Franchise offered the Marlins as
+ * 2012-2025 and fourteen seasons, of a club that has played since 1993. Reported
+ * by a player. The Angels were worse and read as nonsense on the card: LAA is
+ * 1961-1964 AND 2005-2025 with CAL and ANA in between, so the picker printed
+ * "1961-2025, 25 seasons", a span of sixty-five years with forty missing.
+ *
+ * IT IS NOT ONLY THE PICKER, and the quieter half reaches every mode. The
+ * chemistry franchise link asks whether two men played for the same club, so a
+ * 2011 Marlin and a 2013 Marlin were strangers, and a 1952 Boston Brave and a 1954
+ * Milwaukee Brave were strangers. Nothing throws: a link that does not fire is a
+ * link nobody can see the absence of.
+ *
+ * [code, firstSeason, lastSeason], which is DIVISIONS' own shape, and the years
+ * are load-bearing rather than tidy. Two codes in this data mean two different
+ * things at two different times:
+ *
+ *   LAA  1961-1964 the Los Angeles Angels, and 2005-2025 the same franchise come
+ *        back to the name, with CAL and ANA in the middle. A lineage keyed on
+ *        codes alone would collapse the gap and claim the CAL and ANA years twice.
+ *   BAL  1914-1915 is the FEDERAL LEAGUE Baltimore Terrapins, who folded, and
+ *        1954-2025 is the Orioles, who are the St. Louis Browns moved. Those are
+ *        two unrelated clubs on one code, so the Orioles lineage starts at 1954
+ *        and the Terrapins belong to no franchise, which is the truth about them.
+ *
+ * ONLY A FRANCHISE THAT HAS WORN MORE THAN ONE CODE IS LISTED. `franchiseOf`
+ * falls back to the code itself, so the Cubs need no row and cannot drift from
+ * one. Everything here was validated against the pool before it was written: every
+ * span holds real seasons, no season is claimed twice, and the only pool season no
+ * lineage claims is the Terrapins. */
+const FRANCHISES = {
+  ATL: [['BSN', 1901, 1952], ['MLN', 1953, 1965], ['ATL', 1966, 2025]],
+  BAL: [['MLA', 1901, 1901], ['SLB', 1902, 1953], ['BAL', 1954, 2025]],
+  LAA: [['LAA', 1961, 1964], ['CAL', 1965, 1996], ['ANA', 1997, 2004], ['LAA', 2005, 2025]],
+  LAD: [['BRO', 1901, 1957], ['LAD', 1958, 2025]],
+  MIA: [['FLA', 1993, 2011], ['MIA', 2012, 2025]],
+  MIL: [['SEP', 1969, 1969], ['MIL', 1970, 2025]],
+  MIN: [['WSH', 1901, 1960], ['MIN', 1961, 2025]],
+  NYY: [['BLA', 1901, 1902], ['NYY', 1903, 2025]],
+  ATH: [['PHA', 1901, 1954], ['KCA', 1955, 1967], ['OAK', 1968, 2024], ['ATH', 2025, 2025]],
+  SFG: [['NYG', 1901, 1957], ['SFG', 1958, 2025]],
+  TBR: [['TBD', 1998, 2007], ['TBR', 2008, 2025]],
+  TEX: [['WSA', 1961, 1971], ['TEX', 1972, 2025]],
+  WSN: [['MON', 1969, 2004], ['WSN', 2005, 2025]],
+};
+
+/* Does this club-season belong to this franchise? `fran` is either a key above
+ * or a bare code, because the picker offers BOTH: the whole Dodgers lineage, and
+ * the Brooklyn Dodgers on their own. A bare code answers for itself, so locking
+ * on BRO gives Brooklyn and never Los Angeles. */
+function inFranchise(fran, team, season) {
+  const rows = FRANCHISES[fran];
+  if (!rows) return team === fran;
+  for (const [code, from, to] of rows) {
+    if (code === team && season >= from && season <= to) return true;
+  }
+  return false;
+}
+
+/* Which franchise a club-season belongs to, as the code that franchise wears
+ * today. The season is required and is not decoration: BAL in 1914 is a club
+ * that folded and BAL in 1970 is the Orioles. */
+function franchiseOf(team, season) {
+  for (const fran of Object.keys(FRANCHISES)) {
+    if (inFranchise(fran, team, season)) return fran;
+  }
+  /* A CODE THAT IS ITSELF A FRANCHISE KEY, IN A SEASON THAT KEY DOES NOT CLAIM,
+     IS A DIFFERENT CLUB WEARING THE SAME THREE LETTERS. Returning the bare code
+     here folded the 1914 Federal League Terrapins into the Baltimore Orioles: the
+     picker counted their seasons on the Orioles card and the chemistry linked a
+     Terrapin to an Oriole. Found by the guard rather than by reading, because a
+     card one season wide of the truth looks exactly like a card.
+     The star cannot collide with a real code, and it is ONE bucket rather than one
+     per season, because the Terrapins were a club for two years and their own two
+     seasons really are team-mates. */
+  return FRANCHISES[team] ? team + '*' : team;
+}
+
+/* The codes a franchise has worn, oldest first, for the card and the guard. */
+function franchiseCodes(fran) {
+  const rows = FRANCHISES[fran];
+  if (!rows) return [fran];
+  const seen = [];
+  for (const [code] of rows) if (!seen.includes(code)) seen.push(code);
+  return seen;
+}
+
 /* Salary Cap Survivor.
  *
  * The draft is the same. What changes is that the roster does not stay bought:
@@ -685,7 +777,13 @@ function suppressedIn(opts) {
 function pairLinks(a, b, opts) {
   const off = suppressedIn(opts);
   const links = [];
-  const sameTeam = a.t === b.t;
+  /* SAME FRANCHISE, NOT SAME CODE. Written `a.t === b.t` a rename made two
+     team-mates strangers: a 2011 Marlin (FLA) and a 2013 Marlin (MIA) shared no
+     link, nor a 1952 Boston Brave and a 1954 Milwaukee Brave. See FRANCHISES.
+     `sameSeason` still guards the reunion and the double-play combo below, and a
+     club cannot wear two codes in one year, so those are unaffected. */
+  const franA = franchiseOf(a.t, a.s);
+  const sameTeam = franA === franchiseOf(b.t, b.s);
   const sameSeason = a.s === b.s;
 
   // Family: a real relationship across any team or season (e.g. two Alous).
@@ -700,8 +798,11 @@ function pairLinks(a, b, opts) {
   }
 
   if (sameTeam && !sameSeason) {
+    /* Name the code they actually shared when they shared one, and the franchise
+       only when they did not. Two 1950s Boston Braves reading "ATL franchise"
+       would be a link telling a reader something that never happened to them. */
     links.push({ type: 'franchise', value: CHEMISTRY.VALUES.franchise,
-      label: `${a.t} franchise` });
+      label: `${a.t === b.t ? a.t : franA} franchise` });
   }
 
   // DP combo: 2B + SS from same team-season
@@ -2240,6 +2341,7 @@ const publicAPI = {
   CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
   STAFF_SLOTS, STAFF_ELIGIBILITY, slotsForMode, eligibilityForMode, slotGroup,
   DIVISIONS, DIVISION_FIRST_SEASON, inDivision, divisionClubs,
+  FRANCHISES, inFranchise, franchiseOf, franchiseCodes,
   MARKET, replacementFor,
   POSITIONS_AVAILABLE: () => POSITIONS_AVAILABLE,
   setPositionsAvailable,

@@ -254,9 +254,10 @@ function drawable(run, data, focus) {
         const r = E.ERAS[run.era];
         if (!(t.season >= r[0] && t.season <= r[1])) return false;
       }
-      if (run.franchise && t.team !== run.franchise) return false;   // Franchise mode
+      // Franchise mode. The lineage, not the code: see E.FRANCHISES.
+      if (run.franchise && !E.inFranchise(run.franchise, t.team, t.season)) return false;
       if (run.division && !E.inDivision(run.division, t.team, t.season)) return false;
-      if (focus && focus.franchise && t.team !== focus.franchise) return false;
+      if (focus && focus.franchise && !E.inFranchise(focus.franchise, t.team, t.season)) return false;
       if (focus && focus.era) {
         const r = E.ERAS[focus.era];
         if (!(r && t.season >= r[0] && t.season <= r[1])) return false;
@@ -326,14 +327,43 @@ function respin(run, data, focus) {
  * seasons (you draw one team-season per pick, max 2 each) and at least one
  * eligible player for every hard slot (C, closer, two starters). Returns
  * codes sorted by pool depth, for the Franchise Mode picker. */
+/* TWO CARDS CAN NAME ONE CLUB AND THAT IS THE POINT, not a duplicate.
+ *
+ * A key here is either a FRANCHISE (its whole lineage, so the Marlins are
+ * 1993-2025 across FLA and MIA) or one EARLIER IDENTITY on its own (the Brooklyn
+ * Dodgers, 1901-1957). Both are things a player wants and they are not the same
+ * thing: one is a club's whole history, the other is the club it was in a city it
+ * has left. `inFranchise` answers for both, so locking on either works with no
+ * second rule. What is NOT offered is a franchise's current code as an identity,
+ * since "Miami Marlins 2012-2025" beside "Miami Marlins 1993-2025" would be two
+ * cards for one club where only one of them is the whole story. */
 function eligibleFranchises(data) {
   const byTeam = {};
-  for (const ts of data.teamSeasons) {
-    const info = (byTeam[ts.team] = byTeam[ts.team] || { seasons: 0, players: {}, lo: Infinity, hi: 0 });
+  const add = (key, ts, players) => {
+    const info = (byTeam[key] = byTeam[key] || {
+      seasons: 0, players: {}, lo: Infinity, hi: 0, codes: [],
+    });
     info.seasons++;
     if (ts.season < info.lo) info.lo = ts.season;
     if (ts.season > info.hi) info.hi = ts.season;
-    for (const p of (data.byTeamSeason[ts.team_season_id] || [])) info.players[pkey(p)] = p;
+    /* The codes this card can actually DRAW, collected rather than read off the
+       lineage. `franchiseCodes('BAL')` names MLA, the 1901 Milwaukee Brewers, and
+       the pool holds nine of their rows: too thin to survive indexData, so no
+       board can ever land there. A card listing a club the lock will never offer
+       is a card naming something a player cannot reach. */
+    if (!info.codes.includes(ts.team)) info.codes.push(ts.team);
+    for (const p of players) info.players[pkey(p)] = p;
+  };
+  for (const ts of data.teamSeasons) {
+    const players = data.byTeamSeason[ts.team_season_id] || [];
+    const fran = E.franchiseOf(ts.team, ts.season);
+    add(fran, ts, players);
+    /* The identity on its own, when the franchise has since moved on from it.
+       Gated on the season actually resolving to a LINEAGE: without that clause the
+       1914 Terrapins (whose franchise is the sentinel `BAL*`) were also filed under
+       the bare code `BAL`, which is the Orioles' own card, and the picker counted
+       a folded Federal League club among the Orioles' seasons. */
+    if (E.FRANCHISES[fran] && fran !== ts.team) add(ts.team, ts, players);
   }
   const out = [];
   for (const team of Object.keys(byTeam)) {
@@ -353,6 +383,9 @@ function eligibleFranchises(data) {
     out.push({
       team, seasons: info.seasons, depth: players.length,
       lo: info.lo, hi: info.hi,
+      /* Oldest first, and only what this card can draw. One entry means a card
+         whose club never changed its name, which is most of them. */
+      codes: E.franchiseCodes(team).filter(c => info.codes.includes(c)),
       best: bat && arm ? (bat.w >= arm.w ? bat : arm) : (bat || arm),
     });
   }
@@ -365,8 +398,15 @@ function eligibleFranchises(data) {
  * franchise for chemistry. Returned most-invested first. */
 function focusTargets(run, data) {
   if (run.phase !== PHASES.DRAFT) return [];
+  /* Counted by FRANCHISE, because the chemistry this focus exists to stack is
+     franchise-wide. Counted by code, a Marlin from 2011 and one from 2013 were
+     two targets holding one man each, so the control offered to stack something
+     the player had already stacked and under-reported what they held. */
   const counts = {};
-  for (const p of run.roster) counts[p.t] = (counts[p.t] || 0) + 1;
+  for (const p of run.roster) {
+    const f = E.franchiseOf(p.t, p.s);
+    counts[f] = (counts[f] || 0) + 1;
+  }
   const targets = [];
   for (const team of Object.keys(counts)) {
     if (drawable(run, data, { franchise: team }).length > 0) {
@@ -1083,6 +1123,10 @@ const publicAPI = {
   API_VERSION: 1,
   PHASES,
   createRun,
+  /* `drawable` is exported so a guard can ask the REAL rule what a lock allows.
+     Driven through `spin` instead, the answer is one seeded sample and a season a
+     mode can reach is indistinguishable from one it happened not to draw. */
+  drawable,
   spin, respin, sign, focusTargets, eligibleFranchises,
   chemOpts, chemOf, chemByPlayer, chemWorth,
   slotsOf, eligOf,
