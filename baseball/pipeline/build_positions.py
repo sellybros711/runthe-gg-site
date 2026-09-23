@@ -152,16 +152,20 @@ POS_COLS = {
 }
 
 def load_lahman_table(name):
-    """Load a Lahman table from local CSV (preferred) or pybaseball fallback."""
+    """A Lahman table, off disk if the fetch got it, from the archive if not."""
     local = os.path.join(DATA_DIR, name)
     if os.path.exists(local):
         print(f"  Reading {name} from disk...")
         return pd.read_csv(local, low_memory=False, encoding="utf-8-sig")
-    # Fallback to pybaseball
-    from pybaseball import lahman
-    fn = name.replace(".csv", "").lower()
-    print(f"  Downloading {name} via pybaseball...")
-    return getattr(lahman, fn)()
+    # THE FALLBACK USED TO BE `pybaseball.lahman`, WHICH IS TWO BROKEN THINGS.
+    # It asks for a branch the Chadwick Bureau renamed, so the download answers
+    # with a 404 page and ZipFile reports "File is not a zip file"; and it has
+    # no `teams` function any more, so `getattr` raised on Teams.csv. Both
+    # arrived here as an exception the step below swallowed. lahman.py reads
+    # the archive itself and says which ref answered.
+    import lahman
+    print(f"  {name} was not fetched, reading the archive...")
+    return lahman.table(name)
 
 try:
     A = load_lahman_table("Appearances.csv")
@@ -203,12 +207,49 @@ try:
             applied += 1
 
     total_batters = (df["role"] == "bat").sum()
-    print(f"  Applied positions to {applied}/{total_batters} batters ({100*applied/max(1,total_batters):.1f}%)")
+    share = applied / max(1, total_batters)
+    print(f"  Applied positions to {applied}/{total_batters} batters ({100*share:.1f}%)")
+
+    # AND AN EXCEPTION IS NOT THE ONLY WAY THIS ENDS UP EMPTY. A People table
+    # whose bbrefID column arrives blank, or an Appearances table joined against
+    # the wrong id, produces a clean run that applies a position to nobody:
+    # `applied > 0` was the whole test, so zero was the one value it caught and
+    # 4% would have passed.
+    #
+    # POS_FLOOR IS A CATASTROPHE FLOOR AND NOT A QUALITY ONE. The shipped pool
+    # carries a position on 99.4% of its batters, but that is measured AFTER the
+    # playing-time floor, and this frame is the whole of Baseball-Reference, so
+    # the honest figure here is lower and is not a number to guess at. What
+    # holds the real coverage is pool_shape.py, which compares the built pool
+    # against the one that ships. This is here to catch the join collapsing.
+    POS_FLOOR = 0.50
+    if share < POS_FLOOR and "--allow-no-positions" not in sys.argv:
+        sys.exit(
+            f"FATAL: positions reached {100*share:.1f}% of batters, under "
+            f"{100*POS_FLOOR:.0f}%.\n"
+            "  The join has collapsed rather than the data being thin. Check "
+            "that People.csv\n  carries bbrefID, or pass --allow-no-positions."
+        )
     HAS_POSITIONS = applied > 0
 
 except Exception as e:
-    print(f"  WARNING: Could not fetch Lahman Appearances: {e}")
-    print("  Hitter positions will remain blank.")
+    # THIS USED TO BE A WARNING AND THE BUILD CARRIED ON. It produced a pool
+    # with 60,208 batters and a position on none of them, which is not a worse
+    # pool but an unusable one: every slot in the draft is a position, so a
+    # roster cannot be filled at all. The workflow then committed it, because
+    # the step above it had printed a warning and exited zero.
+    #
+    # The dangerous thing is opt in now. --allow-no-positions is there for
+    # somebody rebuilding the price curve on a machine that cannot reach the
+    # archive, which is a real thing to want and is not a thing to ship.
+    print(f"  ERROR: Could not load Lahman Appearances: {e}")
+    if "--allow-no-positions" not in sys.argv:
+        sys.exit(
+            "FATAL: no positions, so nothing could fill a draft slot.\n"
+            "  Run baseball/pipeline/check_lahman.py to read the archive, or\n"
+            "  pass --allow-no-positions to build a pool that cannot be played."
+        )
+    print("  --allow-no-positions: hitter positions will remain blank.")
     HAS_POSITIONS = False
 
 # ---- Step 3: Real closer detection (Lahman Pitching saves) ----
@@ -254,8 +295,21 @@ try:
     print(f"  Updated {updated} pitcher rows with real closer flags")
 
 except Exception as e:
-    print(f"  WARNING: Could not fetch Lahman Pitching: {e}")
-    print("  Closer flags remain innings-based.")
+    # "CLOSER FLAGS REMAIN INNINGS-BASED" READS LIKE A FALLBACK AND IS NOT ONE.
+    # The heuristic guesses a closer off innings alone, and measured against the
+    # real saves column it calls 22,019 player-seasons a closer where the saves
+    # say 905. `closerSavePct` reads the CL slot by name, so a pool built this
+    # way hands a quarter of every bullpen the save rate of a genuine closer.
+    # That is not a coarser pool, it is a different game, and it shipped as a
+    # warning under a green step.
+    print(f"  ERROR: Could not load Lahman Pitching: {e}")
+    if "--allow-innings-closers" not in sys.argv:
+        sys.exit(
+            "FATAL: no saves, so every closer flag would be a guess off innings.\n"
+            "  Measured against the real column that is 22,019 closers against 905.\n"
+            "  Pass --allow-innings-closers only if you know what that does to the pool."
+        )
+    print("  --allow-innings-closers: closer flags remain innings-based.")
 
 # ---- Step 4: fWAR blend (optional) ----
 print("\nStep 4: Attempting fWAR blend from FanGraphs...")

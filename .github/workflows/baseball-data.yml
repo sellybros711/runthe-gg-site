@@ -16,10 +16,17 @@ name: Refresh Run The Diamond player data
 # The build writes pipeline/provenance.json now, so the claim and the data cannot
 # drift again, and that file is committed with the pool.
 #
-# Three stages:
+# Four stages:
 #   fetch_inputs.py     bWAR bulk files, FanGraphs leaderboards, Lahman tables
 #   build_pricing.py    joins them and prices every player-season
 #   build_positions.py  positions, closer flags, the starter innings anchor
+#   compact_pool.py     the verbose frame becomes the file the game downloads
+#
+# AND LAHMAN IS READ BY lahman.py RATHER THAN BY pybaseball, which asks for a
+# branch the Chadwick Bureau renamed and has no `teams` function any more. Both
+# of those reached this workflow as a warning it printed and carried on past, so
+# a refresh built a pool with a position on 0 of its 60,208 batters and 22,019
+# closers against the saves column's 905. Every price in it was right.
 #
 # NO SECRETS. It reads public sources and writes files back to this branch.
 #
@@ -70,6 +77,14 @@ jobs:
       # than a column of numbers somebody has to remember the old value of.
       - name: Keep the pool that ships
         run: cp baseball/data/players.json /tmp/pool_before.json
+
+      # THE READER, AND THE TWO STEPS THAT USED TO SWALLOW IT. This needs no
+      # network at all, so it goes before the fetch: a run that cannot read the
+      # archive layout, or that would carry on past a Lahman failure, should say
+      # so in ten seconds rather than after a 35MB download.
+      - name: The Lahman reader, and the build that depends on it
+        working-directory: baseball/pipeline
+        run: python3 check_lahman.py
 
       - name: Fetch the raw inputs
         working-directory: baseball/pipeline

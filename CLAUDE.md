@@ -8887,10 +8887,16 @@ spot in this section. Both baseball-reference.com and fangraphs.com are refused
 by the sandbox's egress proxy, the same split `hoops/` documents, so nothing here
 can verify a single number against its source. What IS solid is the structural
 half: the blend is skipped in an exception handler, and fifteen spot-checked
-seasons all land on bWAR rather than on a blend. **Ted Williams 1941 comes
-through at 10.36 against a remembered 10.6** and is worth re-checking on a
-machine with a network. If that gap is real it is a stale pull rather than a
-wrong source, and the fix is re-running `fetch_inputs.py`.
+seasons all land on bWAR rather than on a blend.
+
+**TED WILLIAMS 1941 IS SETTLED AT 10.36, AND THE REMEMBERED 10.6 WAS THE BAD
+HALF.** It sat here as an open question worth re-checking on a machine with a
+network, on the reading that a gap like that is a stale pull. The workflow
+fetched `war_daily_bat.txt` fresh, 35MB and 126,547 rows, and all ten of
+`reference_seasons.py`'s figures came back identical to the pool that ships. The
+pull was never stale. **The way to settle a recalled number is to fetch it, and
+the only machine here that can is the runner**, which is why that step prints
+both pools side by side rather than one column.
 
 **Leave it on bWAR.** A blend matches NEITHER published source, so it turns a
 number a player can check into one nobody can, and "where did you get this"
@@ -9001,6 +9007,100 @@ numbers asks somebody to remember what they were yesterday. Ruth 1923 anchors th
 top of the price curve, Walter Johnson 1913 is the dearest arm and so carries the
 innings discount, and Bonds 2001 is the row the bWAR against fWAR argument was
 settled on.
+
+#### And then it wrote one, and the pool it wrote could not be drafted
+
+```
+python3 baseball/pipeline/check_lahman.py    the reader, and the build under it
+python3 baseball/pipeline/lahman.py data     the archive, from a machine with a network
+python3 baseball/pipeline/pool_shape.py new.json old.json
+```
+
+The first refresh that could actually write a pool wrote **109,859 rows against
+44,344, a position on 0 of its 60,208 batters, and 22,019 closers against 905**.
+Every price in it was right, every name was right, and the ten reference seasons
+agreed to the decimal, because the bulk WAR files fetched cleanly. What failed
+was Lahman, which is the positions and the closer flags.
+
+**TWO UPSTREAM CHANGES, AND BOTH ARRIVED AS A WARNING THE BUILD PRINTED AND
+CARRIED ON PAST.** `pybaseball.lahman` downloads the `master.zip` of a branch the
+Chadwick Bureau renamed, so the request answers with a 404 PAGE and `ZipFile`
+reports `File is not a zip file`, which says nothing about which url answered or
+what it sent. And pybaseball 2.2.7 has no `lahman.teams` at all: it is
+`teams_core` now, so `getattr` raised. `lahman.py` reads the archive itself.
+
+**IT DOES NOT PIN ONE URL, because pinning one is the fault.** `REFS` is a list
+tried in order and the first real zip wins, so a branch rename costs a redirect
+rather than an empty column. That is the hoops draft fetch's own lesson, which
+demanded one way of writing a link and returned zero picks for sixty six years.
+**Members are found by BASENAME anywhere in the tree**, because the top directory
+is named after whichever ref answered and the tables moved into `core/` at some
+point, and `People.csv` answers to `Master.csv` too.
+
+**A 404 page is a perfectly good HTTP response**, which is the whole reason the
+old failure read as "not a zip file": the request succeeded and the bytes were
+HTML. The magic number is checked before the archive is opened, and the refusal
+carries what the server actually sent.
+
+##### A pool with no positions is not a worse pool, it is an unplayable one
+
+Every slot in this draft is a position, so a pool with none cannot fill a roster
+at all, and the innings guess that stands in for the saves column calls 22,019
+player-seasons a closer where the saves say 905. `closerSavePct` reads the CL
+slot by name, so that is a quarter of every bullpen handed a genuine closer's
+save rate. **Both of those are now fatal by default**, and the escape hatches
+(`--allow-no-positions`, `--allow-innings-closers`) are there for somebody
+rebuilding the price curve offline rather than for a run that ships.
+
+**AN EXCEPTION IS NOT THE ONLY WAY THE COLUMN ENDS UP EMPTY.** `HAS_POSITIONS =
+applied > 0` was the whole test, so zero was the one value it caught and 4% would
+have passed: a People table whose `bbrefID` arrives blank gives a clean run that
+applies a position to nobody. `POS_FLOOR` is **0.50** and is a CATASTROPHE floor
+rather than a quality one, because the shipped pool's 99.4% is measured after the
+playing-time floor and this frame is the whole of Baseball-Reference. What holds
+the real coverage is `pool_shape.py`, against the pool that ships.
+
+**And the fetch and the builds disagreed about which tables to get.** The fetch
+got Appearances, People and Teams; `build_positions.py` loads Appearances, People
+and **Pitching**, so the closer flags fell through to a download of their own on
+every run, including the runs where the other three worked. `LAHMAN_TABLES` is
+one list and `check_lahman.py`'s sixth section holds the two ends of it together.
+
+##### What the guard drives, and the four arms that were lying
+
+`check_lahman.py` needs no network: every archive is built in memory, and the
+last section runs the real `build_positions.py` in a copy of its own directory
+against a `lahman` module that refuses. **Asserting the source carries a
+`sys.exit` would only ask whether the file says what it says.**
+
+- **Three mutations bit and one crashed.** Removing the magic number check sent
+  the HTML straight to `ZipFile`, which raised `BadZipFile` from inside the loop
+  and took the whole checker down as a traceback: a guard with teeth and no
+  voice. Every arm catches the general case now and reports the type it got.
+- **Two arms passed because this machine is offline.** They were written against
+  the real reader, so the Pitching fetch reached for GitHub and failed, and on a
+  runner it would have worked and the arm would have reported the build failing
+  to stop. Every arm refuses explicitly now. That is this repo's own rule about a
+  timing property checked by hoping to lose the race.
+- **One table missing at a time, or the arm proves nothing about its step.**
+  Written with no tables at all, reintroducing the Appearances swallow still
+  stopped the build, at the PITCHING step one screen down, so the arm passed on
+  the exact defect it exists for.
+- **The trailing-slash skip cannot be proved by mutation and the section does not
+  pretend to.** `posixpath.basename` of a path ending in a slash is the empty
+  string, so a directory can never match a table name and the skip is belt and
+  braces. What is asserted instead is the requirement underneath it, which
+  survives any rewrite of the matching: whatever comes back has to open.
+- **And it cannot say the fallback is ours rather than pybaseball's**, because
+  pybaseball is not installed here either, so both raise and the guards below
+  them fire identically. Section 6 holds the table list; nothing here proves
+  which module a machine WITH pybaseball reaches for.
+
+**STILL NOT REPRODUCIBLE FROM THIS REPO, and that is the open one.** The step
+that takes 109,859 rows down to the shipped 44,344 is a playing-time floor that
+is in none of the four stages. Until it is, a refresh rebuilds a pool of a
+different size and `pool_shape.py` stops it, which is the right failure and is
+not the same as the pipeline working.
 
 ### Two ratings, two jobs, and they must not be merged
 
