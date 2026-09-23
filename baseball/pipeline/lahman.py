@@ -1,20 +1,32 @@
 #!/usr/bin/env python3
 """The Lahman tables, fetched without pybaseball's lahman module.
 
-WHAT BROKE. `pybaseball.lahman` downloads
-`https://github.com/chadwickbureau/baseballdatabank/archive/master.zip` and the
-Chadwick Bureau renamed that branch, so the request now answers with a 404 page
-and `ZipFile` raises `File is not a zip file`. Separately, pybaseball 2.2.7 has
-no `lahman.teams` at all: it is `teams_core` now. Two upstream changes, and both
+WHAT BROKE, AND IT IS NOT A BRANCH RENAME. `pybaseball.lahman` downloads
+`https://github.com/chadwickbureau/baseballdatabank/archive/master.zip`, and
+**that repository has been taken down**. The Lahman database is SABR's now. A
+missing repository and a missing branch answer identically, with GitHub's own
+404 page, so `ZipFile` said `File is not a zip file` about both and the first
+reading of it here was the wrong one: `refs/heads/main` was tried, 404ed, and
+that looked like confirmation of a rename. Separately, pybaseball 2.2.7 has no
+`lahman.teams` at all: it is `teams_core` now. Two upstream changes, and both
 reached this pipeline as a warning it printed and carried on past, which is how
 a refresh produced a pool with positions on 0 of its 60,208 batters.
 
-WHY THIS DOES NOT PIN ONE URL. That is the mistake that produced the fault: one
-hardcoded branch name, correct until somebody else renamed it. This repo already
-records the same lesson from the hoops draft fetch, which demanded one way of
-writing a link and returned zero picks for sixty six years. So the refs are a
-LIST, tried in order, and the first one that answers with a real zip wins. A
-branch rename costs a redirect rather than a silent empty column.
+WHY THIS TAKES A LIST OF PLACES RATHER THAN A LIST OF REFS. Pinning one url is
+the mistake that produced the fault, and the first fix here made a smaller
+version of it: refs of ONE repository, which is no help at all when the
+repository is what went. This repo already records the same lesson from the
+hoops draft fetch, which demanded one way of writing a link and returned zero
+picks for sixty six years. So `SOURCES` is whole urls, tried in order, and the
+first that answers with a real zip wins.
+
+**THE MIRRORS ARE UNOFFICIAL AND ARE SAID TO BE.** Upstream is first so it wins
+the day it comes back, and under it are two community mirrors of the last
+Chadwick snapshot. What they carry is positions and saves, which barely move for
+a season already played, so a mirror a year behind costs this game almost
+nothing. SABR publishes the current database through a Box folder, which has no
+stable url a script can fetch, so it is not in this list and a person updating
+the pipeline should go and look rather than trust that a mirror is current.
 
 **A 404 PAGE IS A PERFECTLY GOOD HTTP RESPONSE**, which is the whole reason the
 old failure read as "not a zip file" rather than as "not found": the request
@@ -40,16 +52,19 @@ import urllib.error
 import urllib.request
 import zipfile
 
-REPO = "https://github.com/chadwickbureau/baseballdatabank/archive"
+def _gh(repo, ref):
+    return f"https://github.com/{repo}/archive/refs/heads/{ref}.zip"
 
-# In order. `main` first because that is what the rename landed on, `master`
-# after it because a fork or a mirror may not have followed, and the dated tags
-# last so a refresh still works on the day somebody renames the branch again.
-REFS = [
-    "refs/heads/main",
-    "refs/heads/master",
-    "refs/tags/v2024.1",
-    "refs/tags/v2023.1",
+
+# In order, and the order is the argument. Upstream first, both of its branch
+# names, so the day the Chadwick Bureau puts it back nothing here has to change.
+# Then the mirrors, which are somebody else's copy of the last snapshot before
+# it went.
+SOURCES = [
+    ("chadwickbureau, master", _gh("chadwickbureau/baseballdatabank", "master")),
+    ("chadwickbureau, main", _gh("chadwickbureau/baseballdatabank", "main")),
+    ("xorq-labs mirror", _gh("xorq-labs/baseballdatabank", "master")),
+    ("cbwinslow mirror", _gh("cbwinslow/baseballdatabank", "master")),
 ]
 
 # A zip begins PK\x03\x04. An empty archive is PK\x05\x06, which is not one of
@@ -78,35 +93,38 @@ def archive():
         return _archive
 
     tried = []
-    for ref in REFS:
-        url = f"{REPO}/{ref}.zip"
+    for label, url in SOURCES:
         try:
             body = _fetch(url)
         except urllib.error.HTTPError as e:
-            tried.append(f"{ref}: HTTP {e.code}")
+            tried.append(f"{label}: HTTP {e.code}")
             continue
         except Exception as e:
-            tried.append(f"{ref}: {e}")
+            tried.append(f"{label}: {type(e).__name__}: {e}")
             continue
 
         if not body.startswith(ZIP_MAGIC):
             # Name what actually came back. "File is not a zip file" is what the
             # old path said about exactly this, and it says nothing about why.
             head = body[:80].decode("utf-8", "replace").replace("\n", " ")
-            tried.append(f"{ref}: {len(body)} bytes, not a zip ({head!r})")
+            tried.append(f"{label}: {len(body)} bytes, not a zip ({head!r})")
             continue
 
         _archive = zipfile.ZipFile(io.BytesIO(body))
         _source = url
-        print(f"  Lahman: {ref} ({len(body) // 1024}KB, "
+        print(f"  Lahman: {label} ({len(body) // 1024}KB, "
               f"{len(_archive.namelist())} files)")
         return _archive
 
     raise RuntimeError(
         "No Lahman archive answered. Tried:\n    " + "\n    ".join(tried)
-        + "\n  The repository may have moved. Check "
-        "https://github.com/chadwickbureau/baseballdatabank and add the ref "
-        "to REFS in baseball/pipeline/lahman.py."
+        + "\n  Every one of these is somebody else's repository and any of them"
+        " can go the\n  way chadwickbureau/baseballdatabank did. SABR maintains"
+        " the database now, at\n  sabr.org/lahman-database, and publishes it"
+        " through a Box folder with no url a\n  script can fetch. Find a"
+        " current archive, add it to SOURCES in"
+        " baseball/pipeline/lahman.py, and put a note in CLAUDE.md saying where"
+        " it came from."
     )
 
 

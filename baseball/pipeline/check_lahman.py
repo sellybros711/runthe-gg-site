@@ -177,8 +177,13 @@ try:
         claim("not a zip" in msg, "an archive of HTML is refused", msg[:120])
         claim("404 Not Found" in msg,
               "and the message carries what the server actually sent", msg[:160])
-        claim(len(calls) == len(lahman.REFS),
-              f"every ref is tried before giving up ({len(calls)} of {len(lahman.REFS)})")
+        claim(len(calls) == len(lahman.SOURCES),
+              f"every source is tried before giving up "
+              f"({len(calls)} of {len(lahman.SOURCES)})")
+        claim(len({u for _, u in lahman.SOURCES}) == len(lahman.SOURCES)
+              and len({u.split("/archive/")[0] for _, u in lahman.SOURCES}) > 1,
+              "and they are not all one repository, which is what actually went",
+              str([u for _, u in lahman.SOURCES]))
     except Exception as e:
         claim(False, "an archive of HTML is refused by the reader",
               f"ZipFile got there first: {type(e).__name__}: {e}")

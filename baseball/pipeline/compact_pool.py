@@ -50,6 +50,9 @@ REPO = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 IN_PATH = os.path.join(SCRIPT_DIR, "priced_players_enriched.json")
 OUT_PATH = os.path.join(REPO, "baseball", "data", "players.json")
 
+# See compact() for how this was read off the shipped pool and what it is for.
+WAR_FLOOR = 0.5
+
 
 def _num(v):
     """A missing value arrives as None, as NaN, or as the string 'nan'."""
@@ -97,6 +100,27 @@ def _text(v):
 def compact(rows):
     out = []
     for row in rows:
+        # THE CUT, AND IT IS NOT THE PLAYING-TIME FLOOR THIS WAS WRITTEN UP AS.
+        # The build frame is every player-season Baseball-Reference has, 109,859
+        # of them, and the pool that ships is 44,344. What separates them was in
+        # none of the four stages, so a refresh rebuilt a pool two and a half
+        # times the size and the only thing that went red was check-labels, on
+        # the longest club line being 38 characters.
+        #
+        # Read off the shipped file rather than guessed, the same way the field
+        # rules above were: its lowest war_raw is EXACTLY 0.50, with 259 rows
+        # sitting on it and not one below. That is a cliff rather than a
+        # distribution, so it is a filter, and it is on war_raw for both roles
+        # rather than on innings or games. A pitcher's price is discounted by
+        # the innings anchor and his floor is not.
+        #
+        # What it is FOR is the wheel. Half the men below it are a September
+        # call-up or a man who got hurt in April, and a board drawn from them is
+        # a board of names nobody recognises at a price nobody will pay. It is
+        # also 65,515 rows every visitor would download to never be offered.
+        w = _num(row.get("war_raw"))
+        if w is None or w < WAR_FLOOR:
+            continue
         rec = {
             "i": _text(row.get("bbref_id")),
             "n": _text(row.get("name")),
@@ -149,6 +173,8 @@ def main():
 
     bats = sum(1 for r in out if r["r"] == "b")
     print(f"  Wrote {dst}")
+    print(f"  {len(rows)} rows in, {len(rows) - len(out)} under "
+          f"{WAR_FLOOR} WAR, {len(out)} out")
     print(f"  {len(out)} rows: {bats} batting, {len(out) - bats} pitching")
     print(f"  seasons {min(r['s'] for r in out)} to {max(r['s'] for r in out)}")
     print(f"  dearest {out[0]['n']} {out[0]['s']} at ${out[0]['p']}M")
