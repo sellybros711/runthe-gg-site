@@ -78,10 +78,32 @@
      them here would be a second copy of nine strings that drifts the first time one is
      edited. What this does is refuse to pass on anything that does not look like one:
      PostgREST puts its own machinery in `code` and `details`, and a reader who is shown
-     `PGRST202` has been told nothing. */
+     `PGRST202` has been told nothing.
+
+     THE TEST USED TO BE "SHORT, AND NOT AN ALL-CAPS CODE", AND THAT LET MACHINERY THROUGH.
+     `column p.display_name does not exist` is 36 characters of lower case English and
+     passed both halves, so a player pressing submit was shown the inside of the database.
+     It is a real sentence about a real fault and it is not a sentence for them.
+
+     `code` IS THE HONEST DISCRIMINATOR AND IT NEEDS NO COPY OF ANY STRING. A message
+     written for a person got there through `raise exception` in `fantasy_submit`, which is
+     SQLSTATE `P0001`. Everything Postgres raises about itself carries its own class
+     instead: a missing column is 42703, a missing function 42883, a denied table 42501,
+     and PostgREST's own refusals are `PGRST...`. So the rule is a PROPERTY of how the
+     message was produced rather than a list of the nine sentences, which is what keeps
+     this from becoming the second copy the paragraph above refuses to write.
+
+     AND THE MACHINERY IS NOT THROWN AWAY, it is moved. Reading the raw code and message
+     off a player's screenshot is exactly how the `display_name` fault was found in one
+     round, so it goes to the console: a developer opening it gets the whole answer, and
+     nobody is shown a column name mid-draft. */
   const SAY = (j, fallback) => {
     const m = j && typeof j.message === 'string' ? j.message.trim() : '';
-    return (m && m.length < 140 && !/^[A-Z0-9_]+$/.test(m)) ? m : fallback;
+    if (j && j.code !== 'P0001') {
+      try { console.warn('fantasy_submit refused:', j.code, m); } catch (e) {}
+      return fallback;
+    }
+    return (m && m.length < 140) ? m : fallback;
   };
 
   async function submit(season, week, picks) {

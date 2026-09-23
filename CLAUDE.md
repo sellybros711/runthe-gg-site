@@ -3251,6 +3251,52 @@ sign in to enter`. `asSentence()` capitalises the first letter and closes it, wh
 presentation rather than translation: not one word moves. Found by taking a screenshot and
 reading it, which is the fourth time on this mode.
 
+#### And what it was actually saying was `column p.display_name does not exist`
+
+```
+psql -d fantasy -f supabase/113_fantasy_submit_username.sql
+```
+
+**AN ACCOUNT'S NAME IS `username`.** `supabase/10_accounts.sql` has no `display_name` column
+at all, and every other board on this site copies the name out with `select username::text`:
+108 for hoops, 97 for baseball, 53 and 66 when they denormalise it onto a run.
+`fantasy_submit` alone asked for `p.display_name`, so **every entry anybody ever tried to make
+raised**, and not one lineup was ever recorded. The column on `fantasy_entries` is correctly
+called `display_name` and is not what was wrong: only the READ from `profiles` was.
+
+**THE FIXTURE IS WHY NO TEST CAUGHT IT, and it said so in its own comment.**
+`supabase/test/fantasy_base.sql` built `create table public.profiles (id, display_name)` under
+a line reading **"Only the column 109 reads"**. That is a stand-in written to agree with the
+code it stands in for rather than with the table that exists, so all four suites (109, 110,
+111, 112) passed against a database production does not have. It is the real shape now, citext
+and unique constraint included, and the 109 suite fails on the old read with the player's exact
+error at line 101.
+
+**A fixture allowed to invent the schema can only ever certify that a function agrees with
+itself.** That is this repo's oldest lesson arriving at the account layer, and it is the fifth
+time a stand-in here has been wrong in silence.
+
+**`raise exception` IS `P0001`, AND THAT IS THE ONE HONEST WAY TO TELL A SENTENCE FROM
+MACHINERY.** `SAY` in `entries.js` asked whether a message was short and not an all-caps code.
+`column p.display_name does not exist` is 36 characters of lower case English and passed both
+halves, so the page put the inside of the database on screen, under SUBMIT THIS LINEUP, on a
+phone. Nine sentences reach a reader because a person wrote them with `raise exception`, which
+carries SQLSTATE `P0001`; a missing column is 42703, a missing function 42883, a denied table
+42501, and PostgREST's own refusals are `PGRST...`. **Keyed on `code`, so it is a property of
+how the message was produced rather than a second copy of nine strings**, which is the thing
+the paragraph above refuses to write.
+
+**The machinery is MOVED rather than dropped.** Reading the raw message off a player's
+screenshot is exactly how this was found in one round, so it goes to `console.warn`: a
+developer gets the whole answer and nobody is shown a column name mid-draft.
+
+**And the JS stub had the same fault as the SQL fixture, in the same week.** It answered
+`{ message }` with no `code`, because nothing read one. A stub that cannot express the
+defect a player met is a stub shaped to suit the checker, so it sends the SQLSTATE now, which
+is what PostgREST always sends. Both halves of the new arm were proved by restoring the old
+filter: it reports `Not entered. Column p.display_name does not exist.`, which is the
+screenshot.
+
 #### A submit has three answers and the page draws all three
 
 **`entries.js` is not `board.js` and must not become it.** Every call in `board.js` fails

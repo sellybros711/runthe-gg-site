@@ -501,7 +501,14 @@ const serverStub = (server) => {
         return { status: 503, body: '' };
       }
       if (s.submit && s.submit !== 'ok') {
-        return { status: 400, body: JSON.stringify({ message: s.submit }) };
+        /* `code` IS PART OF THE ANSWER AND THE STUB USED TO LEAVE IT OUT, which is the
+           same fault as the SQL fixture that invented a `profiles` column: a stand-in
+           shaped to suit the code rather than to match the server. PostgREST always sends
+           the SQLSTATE, and it is what tells a sentence written for a person (`P0001`,
+           from `raise exception`) from Postgres talking about itself. A stub with no code
+           could not express the defect a player actually met. */
+        return { status: 400, body: JSON.stringify({
+          code: s.submitCode || 'P0001', message: s.submit }) };
       }
       entry = { picks: body.p_picks, spend: 0, projected: 0, score: 0, scored: false };
       return { status: 204, body: '' };
@@ -899,6 +906,23 @@ for (const [label, server, want] of [
     { submit: 'lost' }, { screen: 's-live', asked: true }],
   ['the server is down and nothing landed',
     { submit: 'down' }, { screen: 's-review', say: /nothing was entered/i }],
+  /*
+   * MACHINERY NEVER REACHES THE READER, and this is the defect a player actually met.
+   *
+   * `fantasy_submit` read `p.display_name` off `profiles`, which has no such column, so
+   * every entry raised `column p.display_name does not exist`. That is 36 characters of
+   * lower case English, so the old filter ("short, and not an all-caps code") passed it
+   * straight to the screen: the player was shown the inside of the database.
+   *
+   * The SQL is fixed in 113 and the fixture that hid it in `fantasy_base.sql`. This arm is
+   * the other half: whatever the database says about ITSELF, the page says something a
+   * person can act on. Keyed on the SQLSTATE rather than on this one string, so the next
+   * missing function (42883) or denied table (42501) is covered without anybody
+   * remembering.
+   */
+  ['a database error is not a sentence, and the reader gets one anyway',
+    { submit: 'column p.display_name does not exist', submitCode: '42703' },
+    { screen: 's-review', say: /not accepted/i, hides: /display_name|column/i }],
 ]) {
   const { page, boom, posted } = await openPage(browser, FANTASY,
     { who: TESTER, at: BEFORE, server });
@@ -928,6 +952,14 @@ for (const [label, server, want] of [
        one lineup. */
     ok('  and the lede at the top of the screen is not carrying it',
       !want.say.test(await page.locator('#r-say').innerText()));
+    /* AND NOT ANYWHERE ELSE ON THE SCREEN EITHER. Asserted over the whole review screen
+       rather than over the box, because the claim is that a reader never meets a column
+       name, and a page is free to print one somewhere this section was not looking. */
+    if (want.hides) {
+      const whole = await page.locator('#s-review').innerText();
+      ok('  and the database is not quoted anywhere on the screen',
+        !want.hides.test(whole), (whole.match(want.hides) || ['clean'])[0]);
+    }
     /* AND THE BUTTON COMES BACK. A submit that refused and left the control reading
        "Sending..." for ever is a mode that ended on its own. */
     ok('  and the button is pressable again',
