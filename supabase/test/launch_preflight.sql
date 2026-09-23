@@ -51,11 +51,20 @@ con as (
   join pg_namespace n on n.oid = c.connamespace
   where n.nspname = 'public'
 ),
+-- EVERY TABLE ANY ROW BELOW ASKS ABOUT HAS TO BE ON THIS LIST, and that is a
+-- trap rather than a convenience. `has_table` reads like a general helper and
+-- is an allowlist: a check that names a table missing from it finds nothing,
+-- reads false against a database where the table is sitting right there, and
+-- says NO for ever. A preflight row that can only ever say NO is worse than no
+-- row at all, because it tells a correctly deployed database it is broken and
+-- everybody learns to ignore the column. Caught the first time a row was added
+-- after this list was written: rtf_runs existed and the report said it did not.
 has_table as (
   select t as name from unnest(array[
     'ps_daily_attempts','ps_dynasty_day','premium_unlocks','ps_saves',
     'commish_free_clock','ps_runs','profiles',
-    'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries'
+    'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
+    'rtf_runs'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -157,7 +166,26 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from proc where name = 'fantasy_standings')
       and (select count(*) = 4 from has_table
             where name in ('fantasy_weeks','fantasy_prices','fantasy_results',
-                           'fantasy_entries')))
+                           'fantasy_entries'))),
+
+  -- AND THE ONE THAT LOOKS EXACTLY LIKE A BAD NETWORK DAY. Run The Floor's
+  -- board fails soft on purpose, the way every board on this site does: an
+  -- unreachable server costs a list and never a run. That is right, and it is
+  -- what makes this migration's absence unreportable. Every call in board.js
+  -- resolves to null, the screen says the board is not reachable, and it says
+  -- that for ever, on every device, while the game plays perfectly. There is
+  -- no state in which a player can tell the two apart, so the only way to know
+  -- is to ask here.
+  --
+  -- 108 TWICE IS NOT A TYPO. This migration and 108_dynasty_slot were written
+  -- for two different games in the same week and share a number. They touch
+  -- nothing in common, so the collision costs nothing but a second look.
+  (16, '108_hoops_leaderboard',
+      'rtf_runs, and a Run The Floor season can be filed at all',
+      'The Run The Floor board never loads, for everybody, for ever, and it is indistinguishable from a network that is down. The game plays, the run records in the career, the badges light, and the one thing missing is the list. Nobody reports it.',
+      (select count(*) > 0 from has_table where name = 'rtf_runs')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_run')
+      and (select count(*) > 0 from proc where name = 'rtf_board_modes'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
