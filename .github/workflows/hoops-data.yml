@@ -176,6 +176,25 @@ jobs:
           node scripts/check-cachebust.mjs --update
           node scripts/check-cachebust.mjs
 
+      # AND THE SEASON RANGE ON THE FRONT PAGE, for the same reason and by the
+      # same argument. `#home-era` is interpolated from the pool at runtime, so
+      # the range in the markup is what a reader sees for the moment before the
+      # data arrives and for as long as it does not. It is the only claim on
+      # that page that goes wrong WITHOUT anybody editing anything: this refresh
+      # adds a season and leaves it a year out.
+      #
+      # IT WENT RED ON THE FIRST REFRESH AFTER THE GUARD WAS WRITTEN, which is
+      # the guard working and is also a chore nobody should have to do. The bot
+      # adds the season, so the bot rewrites the sentence.
+      - name: The season range the front page opens on
+        run: |
+          SPAN=$(node -e "
+            const p = require('./hoops/data/players.json').map(r => r.s);
+            process.stdout.write(Math.min(...p) + ' to ' + Math.max(...p));
+          ")
+          perl -0pi -e "s{(id=\"home-era\"[^>]*>)[^<]*}{\${1}$SPAN}" hoops/index.html
+          echo "#home-era: $SPAN"
+
       # BEFORE the assertions, deliberately. Everything above this line is a
       # quarter of an hour of throttled fetching, and everything below it is a
       # second of arithmetic that can fail. Uploading first means a failed
