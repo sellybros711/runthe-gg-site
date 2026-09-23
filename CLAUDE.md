@@ -3042,6 +3042,84 @@ the maximum, exactly one man reaches it every week by construction.
 **The board is priced against ITSELF.** A man whose club is idle is off it and out of the
 anchors, or a leader sitting a bye sets a ceiling nobody draftable can reach.
 
+#### A row is three lines, and the clubs wear their own colours
+
+Reported with a screenshot: the stat line was hard to read, and the teams should be colour
+coded. Both were true and they are one fix.
+
+**The matchup and the stats shared the NAME COLUMN**, which is about 215px at 390, so
+`DET vs NYJ · 533 pass yds, 6 TD, 9 rush yds, 0 TD` ran to two lines with `TD` orphaned on
+the second. The stats are a row of their own now, spanning the whole button: **334px against
+215**, one line, at every width down to 320 with 47px still spare in the harness's own wider
+fallback face.
+
+**It retires the two line floor rather than working around it.** That `min-height:2.6em` was
+there because a board whose five stat lines all fitted on one line was 63px a row and the
+next board was 74, so signing somebody moved everything under the board by up to 31px. Every
+row is now a name, a matchup and a stat line whatever is on it, so one height is a property
+of the SHAPE and not of a number somebody has to remember.
+
+**A GRID AND NOT A WRAPPING FLEX ROW**, which is a correction. `flex-wrap` with
+`flex:0 0 100%` on the stat line is the obvious way to give it a row and works perfectly at
+390. Wrap is a property of the CONTAINER, so it cannot be granted to one child: at 320 the
+chip, the name and the price no longer fit on one line either, the price wrapped onto its
+own, and that row came out **121px against the other four at 81**. Named areas are two rows
+at every width by construction.
+
+##### Thirty of the thirty two club colours are unreadable as published
+
+`football/fantasy/clubs.js`. This is the hoops wheel's finding arriving at a second game. The
+row sits on `#131a2b` and against it only Cincinnati and Denver clear 4.5:1; Las Vegas is
+**1.21:1** and Pittsburgh **1.03:1**. Dropping the site's table in would have given a board
+where almost every tag was invisible, with nothing to report.
+
+**The PRIMARY is lifted and the secondary is not used**, which is only obvious once both are
+printed. Picking whichever of a club's two published colours reads better puts **fourteen
+clubs in one gold bucket**, because most NFL secondaries are gold, and worse it stops naming
+the club: Washington comes out gold rather than burgundy, Dallas silver rather than navy. The
+primary is the identity, so the primary is what is lifted: hue kept, lightness raised until it
+clears, saturation floored on the way up or a navy arrives as a pale grey.
+
+**The blues converge and that is the league, not a defect.** Four pairs are identical in the
+published data before anything is done to them (New England and Seattle are both `#002244`,
+Dallas and the Rams both `#003594`). The tag carries the three letter CODE, so the colour is
+reinforcement and never what identifies the club.
+
+**THE RAMS HAD NO COLOUR AT ALL, AND A FIVE ROW BOARD MEETS THEM ABOUT ONE WEEK IN SIX.**
+nflverse spells them `LA` and the site's table spells them `LAR`, so that one club fell
+through to the line's own grey: not an error, not a wrong colour, a tag nobody would think to
+question. It is `espn.mjs`'s own note about `WSH` and `WAS` arriving at a colour. Found only
+because the guard asks every code the POOL can produce rather than the five a board dealt, and
+it is an ALIAS rather than a new row in the table, because that table is asserted to match
+`engine.js` hex for hex and a club added to suit this page's data source would break the
+comparison that stops the two copies drifting.
+
+**The lift judged the unrounded colour and shipped the rounded one**, which is half a step and
+is the difference between 4.48 and 4.50: Green Bay and the Giants were accepted and then did
+not clear. Decide on the value that ships, which is this repo's own rule at a fourth door.
+
+##### Two measurements that were of the animation rather than of the layout
+
+**`getBoundingClientRect()` INCLUDES TRANSFORMS.** The reveal animates each row in at
+`scale(.985)`, so read mid deal every row came back 80px where its laid out height is 81, and
+two rows read differently from each other purely by where they had got to. "Every row is the
+same height" passed or failed on timing. `offsetHeight` is the used layout box and ignores
+transforms, which is the property actually being claimed.
+
+**`scrollWidth` IS FLOORED AT `clientWidth`**, so a spare computed from it is zero on a row
+that fits and zero on a row that exactly fills. It reported `0px spare` on a board with 117px
+of room and could never have said anything else. Measured with a Range over the text node it
+reads what is actually there.
+
+**And one 39px failure was the screenshot I took to look at the board.** Three runs without it
+report 0px. This file's own rule applies to its own instrument: it is not a flake until it is
+measured, so it was measured rather than dismissed.
+
+**The name line needed an explicit `line-height`**, because `normal` is a font metric: it
+wobbled 21.638px to 21.750px name to name, which rounded to two different whole pixels at some
+widths and one at others. Pinned, the row is three line heights and its padding, which is
+arithmetic.
+
 #### A man who is not playing is not a pick
 
 ```

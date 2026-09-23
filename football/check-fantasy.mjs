@@ -423,6 +423,75 @@ console.log('\nTHE INJURY REPORT IS BUILT FROM TWO SOURCES');
     twice[0] === twice[1] ? `${twice[0].length} bytes` : 'the output carries a clock');
 }
 
+/* ---------------------------------------------------------------- */
+/*
+ * THE CLUB COLOURS, ASKED OF THE POOL RATHER THAN OF A BOARD.
+ *
+ * The browser half below reads the five men a board happens to deal, and that is the wrong
+ * question for coverage: nflverse spells the Rams `LA` where the site's table spells them
+ * `LAR`, so the Rams were the one club on the board with no colour at all and a five row
+ * sample meets them about one week in six. Not an error and not a wrong colour, just a grey
+ * tag nobody would think to question.
+ *
+ * So the question is asked of every code the POOL can produce, which is the set a reader can
+ * actually be shown.
+ */
+console.log('\nEVERY CLUB THE BOARD CAN NAME HAS A COLOUR THAT READS');
+{
+  const src = fs.readFileSync(path.join(ROOT, 'football/fantasy/clubs.js'), 'utf8');
+  /* Loaded rather than re-implemented: the lift is the thing under test, so a second copy of
+     it here would agree with itself and say nothing. `clubs.js` is a browser IIFE that hangs
+     its answer on `window`, so it gets one. */
+  const win = {};
+  new Function('window', src)(win);
+  const CLUBS = win.RTF_CLUBS;
+
+  const codes = new Set();
+  for (const m of POOL.pool) { codes.add(m.team); if (m.opp) codes.add(m.opp); }
+  const missing = [...codes].filter((c) => !CLUBS.color(c));
+  ok(`every one of the ${codes.size} codes on the board resolves`, !missing.length,
+    missing.join(', ') || 'all of them');
+
+  /* THE CONTRAST IS THE POINT OF THE LIFT, so it is asserted rather than assumed. Thirty of
+     the thirty two published primaries are under 4.5:1 on this panel, so a lift that quietly
+     stopped working would give a board of tags nobody can read. */
+  const weak = [...codes].map((c) => [c, CLUBS.contrast(CLUBS.color(c), CLUBS.PANEL)])
+    .filter(([, v]) => v < CLUBS.TARGET);
+  ok('  and clears 4.5:1 on the row it is drawn on', !weak.length,
+    weak.map(([c, v]) => `${c} ${v.toFixed(2)}`).join(', ') || `worst `
+      + Math.min(...[...codes].map((c) => CLUBS.contrast(CLUBS.color(c), CLUBS.PANEL)))
+        .toFixed(2) + ':1');
+
+  /* AND THE LIFT HAS TO HAVE DONE SOMETHING. A table that returned the published hexes
+     untouched would pass a check that only asked for a colour, and would be the board this
+     whole file exists to prevent: Las Vegas at 1.21:1 is a tag that is simply not there. */
+  const lifted = [...codes].filter((c) => {
+    const pub = CLUBS.PUBLISHED[c] || CLUBS.PUBLISHED[{ LA: 'LAR' }[c]];
+    return pub && CLUBS.color(c).toLowerCase() !== pub.toLowerCase();
+  });
+  ok('  and most of them had to be lifted to get there', lifted.length >= 25,
+    `${lifted.length} of ${codes.size} moved off the published hex`);
+
+  /*
+   * ONE TABLE, TWO COPIES, AND THIS IS WHAT STOPS THEM DRIFTING. `clubs.js` carries the
+   * colours because the fantasy page deliberately loads none of `engine.js`, so the site's
+   * own table is copied rather than imported. A copy nobody compares is a copy that goes
+   * stale the first time somebody corrects a hex.
+   */
+  const eng = fs.readFileSync(path.join(ROOT, 'football/engine.js'), 'utf8');
+  const block = eng.slice(eng.indexOf('const TEAM_COLORS'));
+  const table = block.slice(0, block.indexOf('};'));
+  const mine = CLUBS.PUBLISHED;
+  const theirs = {};
+  for (const m of table.matchAll(/(\w+):\s*\['(#[0-9A-Fa-f]{6})'/g)) theirs[m[1]] = m[2];
+  ok(`  the site's own table was read`, Object.keys(theirs).length === 32,
+    Object.keys(theirs).length + ' clubs');
+  const off = Object.keys(theirs).filter((k) =>
+    (mine[k] || '').toLowerCase() !== theirs[k].toLowerCase());
+  ok('  and this page agrees with engine.js on every club', !off.length,
+    off.map((k) => `${k} ${mine[k] || 'missing'} against ${theirs[k]}`).join(', ') || '32 clubs');
+}
+
 if (QUICK) {
   console.log(fails ? `\n${fails} FAILED` : '\nall good (engine only)');
   process.exit(fails ? 1 : 0);
@@ -773,6 +842,132 @@ console.log('\nA WHOLE ENTRY, DRIVEN');
 
   await page.click('#b-draft');
   await page.waitForSelector('#s-draft.on', { timeout: 10000 });
+
+  /* ---------------------------------------------------------------- */
+  /*
+   * THE ROW IS THREE LINES AND THE STAT LINE IS ONE OF THEM.
+   *
+   * Reported as hard to read: the matchup and the stat line shared the name column, which is
+   * about 215px at 390, so the line ran to two and orphaned "TD" on the second. The stats
+   * are a row of their own now, spanning the whole button.
+   *
+   * MEASURED RATHER THAN READ, because every way this goes wrong renders perfectly. A line
+   * that wraps is a row taller than the other four and a board that steps when you sign; a
+   * line that truncates drops the rushing half of exactly the men whose rushing is why they
+   * are dear, which is the defect the old two line clamp existed to prevent and the one this
+   * could reintroduce by giving the stats less room rather than more.
+   */
+  const rowCount = await page.locator('#d-men .man').count();
+  {
+    /*
+     * MEASURED AFTER THE DEAL, AND WITH `offsetHeight` RATHER THAN A CLIENT RECT.
+     *
+     * The reveal animates each row in with `transform: scale(.985)`, and a bounding client
+     * rect includes transforms: read mid deal, every row came back 80px where its laid out
+     * height is 81, and two rows read differently from each other purely by where they had
+     * got to. Both readings were of the ANIMATION rather than of the layout, and the second
+     * one made "every row is the same height" pass or fail on timing.
+     *
+     * `offsetHeight` is the used layout box and ignores transforms, which is the property
+     * actually being claimed. The wait is still there because the widths below resize the
+     * viewport, and a resize mid animation is a different question again.
+     */
+    await page.waitForFunction(() => {
+      const men = document.getElementById('d-men');
+      const p = men && men.parentElement;
+      if (!men || (p && /dealing|clearing/.test(p.className))) return false;
+      return [...men.querySelectorAll('.man')]
+        .every((r) => getComputedStyle(r).opacity === '1');
+    }, null, { timeout: 10000 }).catch(() => {});
+
+    const read = () => page.evaluate(() => {
+      const rows = [...document.querySelectorAll('#d-men .man')];
+      return rows.map((r) => {
+        const s = r.querySelector('.statline');
+        const lh = parseFloat(getComputedStyle(s).lineHeight) || 1;
+        const rg = document.createRange();
+        rg.selectNodeContents(s);
+        return {
+          h: r.offsetHeight,
+          lines: Math.round(s.offsetHeight / lh),
+          clipped: s.scrollWidth > s.clientWidth + 1,
+          /* MEASURED WITH A RANGE, because `scrollWidth` is floored at `clientWidth`: text
+             that fits reports the box's own width, so a spare computed from it is zero on
+             every row that fits and zero on every row that exactly fills. It read 0px spare
+             on a board with room and could never have said anything else. */
+          spare: Math.round(s.clientWidth - rg.getBoundingClientRect().width),
+          text: s.textContent,
+        };
+      });
+    });
+
+    const seen = await read();
+    ok('the stat line is one line on every row', seen.every((r) => r.lines === 1),
+      seen.map((r) => r.lines).join(','));
+    ok('  and none of it is cut off', seen.every((r) => !r.clipped),
+      seen.filter((r) => r.clipped).map((r) => r.text).join(' | ') || 'all of it fits');
+    /* THE ROOM LEFT OVER IS THE CLAIM WORTH KEEPING, because "it fits" is true of the five
+       men this board happened to deal and says nothing about next week's. The longest line
+       the pool can produce is forty characters; a board that fits with two pixels to spare
+       is one word of a stat line away from truncating. */
+    ok('  with room to spare on the tightest row',
+      Math.min(...seen.map((r) => r.spare)) > 20,
+      Math.min(...seen.map((r) => r.spare)) + 'px spare');
+
+    /* AND THE SAME AT EVERY WIDTH A PHONE COMES IN. The suite opens 390, which is the middle
+       of the range and not the binding end: 320 is where it runs out, and it is where the
+       first version of this row broke. Read at each rather than argued from the 390 reading,
+       because what a line costs is the face's own metrics and this harness renders the
+       FALLBACK face, about a third wider than the condensed one a reader gets. That is the
+       safe direction: a line that fits here fits on a phone with room. */
+    const at = [];
+    for (const w of [390, 360, 320]) {
+      await page.setViewportSize({ width: w, height: 844 });
+      await page.waitForTimeout(120);
+      at.push([w, await read()]);
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    ok('  one line and one height at 390, 360 and 320',
+      at.every(([, v]) => v.every((r) => r.lines === 1) && new Set(v.map((r) => r.h)).size === 1),
+      at.map(([w, v]) => `${w}: ${[...new Set(v.map((r) => r.lines))].join('/')} line, `
+        + `${[...new Set(v.map((r) => r.h))].join('/')}px`).join('  '));
+    ok('  and nothing is cut off at the narrowest',
+      at.every(([, v]) => v.every((r) => !r.clipped && r.spare >= 0)),
+      at.map(([w, v]) => `${w}: ${Math.min(...v.map((r) => r.spare))}px spare`).join('  '));
+  }
+
+  /*
+   * THE CLUB WEARS ITS OWN COLOUR, AND THIRTY OF THE THIRTY TWO HAD TO BE LIFTED TO GET
+   * THERE. `clubs.js` carries the measurement; this asks the rendered page, because a
+   * published hex that never reaches the element is the same screen as no colour at all.
+   */
+  {
+    const tags = await page.evaluate(() => {
+      const out = [];
+      for (const e of document.querySelectorAll('#d-men .man .who s .club')) {
+        const row = e.closest('.man');
+        out.push({
+          code: e.textContent.trim(),
+          colour: getComputedStyle(e).color,
+          /* The line's own grey, which is what an uncoloured tag would come back as. */
+          against: getComputedStyle(row.querySelector('.who s')).color,
+        });
+      }
+      return out;
+    });
+    ok('every club on the board carries a colour', tags.length > 0, tags.length + ' tags');
+    /* ASKED AS "NOT THE LINE'S OWN GREY" rather than against a table of hexes, so a palette
+       change does not fail a correct page. An uncoloured tag inherits, so it is exactly the
+       comparison that catches the fallback silently winning. */
+    ok('  and it is not the line\'s own grey',
+      tags.every((t) => t.colour !== t.against),
+      tags.map((t) => t.code + ' ' + t.colour).join(', '));
+    /* BOTH SIDES OF THE MATCHUP, because colouring only the man's own club would leave the
+       opponent grey and the row saying the tag means something it does not. */
+    ok('  on his club and on the opponent', tags.length === 2 * rowCount,
+      tags.length + ' tags across ' + rowCount + ' rows');
+  }
+
   await draftOne();
   await page.waitForSelector('#s-review.on', { timeout: 10000 });
   ok('six picks lands on the review screen', true);
