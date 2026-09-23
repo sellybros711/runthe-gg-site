@@ -378,17 +378,85 @@ export const shrunkPPG = (p) => (p.games * p.half_ppg) / (p.games + SHRINK_K);
  * Better on the error as well as on the bias, which is worth stating because a calibration
  * fix usually costs accuracy and this one does not.
  *
- * ─── THE PRICE IS NOT TOUCHED, DELIBERATELY ────────────────────────────────────────
+ * ─── THE PRICE WAS NOT TOUCHED, AND THAT LEFT THE BOARD OVERPAYING FOR ABSENCE ─────
  *
- * `pricePool` still runs on `shrunkPPG`. The shrink is right for the price for the reason
- * its own comment gives, the cap was swept against these prices, and the projection is not
- * an input to any of it.
+ *   node football/build/test/probe_price.mjs
  *
- * What that costs is that the projection is no longer a monotone restatement of the price:
- * two men at one price now project differently when one of them has missed a Sunday. That
- * is a REAL difference and it is on the card already, as how many games he has played, so
- * it is football a reader can see rather than an edge the board is hiding.
+ * This section used to end here, saying the price still runs on `shrunkPPG` and the
+ * projection is not an input to any of it. Reported by a player as the price feeling too
+ * weighted toward what a man has done all season and not enough toward what he is expected
+ * to do this week, and they were right, with a number behind it.
+ *
+ * `shrunkPPG` is BLIND TO AVAILABILITY. A man who has played two of his club's three games
+ * and a man who has played all three are the same row to it, and the shrink toward zero
+ * only discounts him for having a thin SAMPLE, which is a different question. Measured over
+ * 21,291 draftable player-weeks of 2022 to 2024, holding the price band fixed:
+ *
+ *      a man who had missed one of his club's games scored 2.87 points LESS
+ *      that week than a man at the same price who had played every one
+ *
+ * That is most of a seventh of a six man lineup, paid for and not delivered, and it is
+ * worst exactly where it costs most: the $25-48M band ran -8.21.
+ *
+ * Nothing could report it. Every price was a correct summary of September, every projection
+ * on every card was right, and the two simply disagreed about a man in a way no screen put
+ * side by side.
+ *
+ * ─── SO THE PRICE READS BOTH, AT `PRICE_PROJ_W` ────────────────────────────────────
+ *
+ *      est = (1 - w) * shrunkPPG + w * projectedPoints
+ *
+ * Both are half PPR points, so the blend is dimensionally sound and every constant below it
+ * (the baseline, the VOR span, the power curve, the ceiling anchor) reads the quantity it
+ * always did.
+ *
+ * WHY A QUARTER, WHICH IS THE PART TO READ BEFORE MOVING IT. Three things bound it and
+ * they close from both sides. Availability bias, the rank agreement between price and
+ * projection on the live week 3 board, and the cap sweep on that same board:
+ *
+ *      w                       0        0.25      0.5       0.75      1
+ *      absence gap         -2.87      -2.53     -2.15     -1.68     -1.39
+ *      thin sample gap     -1.25      -1.25     -1.28     -1.33     -1.42
+ *      price/proj rank      .896       .943      .980      .994      .999
+ *      budget - top at 90   +1.3       +2.4      +3.5         -         -
+ *      top - random at 90   11.2        9.7       7.3         -         -
+ *
+ * THE TOP OF THE RANGE IS RULED OUT BY THE CARD. At 0.75 and past it the price IS the
+ * projection in rank, and the whole reason the projection was refitted was to stop it being
+ * a restatement of the price. The residual between the two is the decision this mode is
+ * built around, and pricing off the projection deletes it.
+ *
+ * THE MIDDLE IS RULED OUT BY THE CAP, and that is the one that cost a measurement rather
+ * than an argument. `probe_cap.mjs` picks $90M because it is the band where spending
+ * everything and holding money back trade places; at 0.5 the budget bot is 3.5 points clear
+ * there and the crossover has walked to about 105, which is the one-strategy shape that
+ * sweep exists to refuse. What drafting is worth at all falls with it, 11.2 to 7.3.
+ *
+ * None of that is the blend being wrong. A more accurate price against a CONVEX price curve
+ * genuinely does reward spreading money, so better pricing moves that band. The honest
+ * answer at 0.5 would be to move the cap with it, and that is a bigger change than this one
+ * and not one to make in the middle of a season: the cap is on every published week row, so
+ * moving it makes two weeks of results incomparable.
+ *
+ * AND THE CONTROL IS WHAT SAYS 0.25 IS SAFE RATHER THAN MERELY SMALL. `SHRINK_K` was fitted
+ * on sample size and took that gap from 3.48 to 0.12, so a fix for availability that
+ * re-opens it has moved the defect rather than removed it. At 0.25 that axis does not move
+ * at all, to two decimals; by w = 1 it is -1.42 and drifting. A cheaper looking candidate,
+ * `shrunkPPG * playShare`, was measured too and is worse on BOTH axes at once (-2.06 and
+ * -1.43), because it discounts a thin sample twice.
+ *
+ * WHAT IT ACTUALLY DOES TO A BOARD, which is the half a reader can see. On week 3, 217 of
+ * 414 men move by more than a million and only SIX move by more than three, and those six
+ * are the men who missed a game: Zay Flowers goes $12.1M to $7.7M. That is the shape this
+ * is meant to have. At 0.5 it is 97 men past three million, which is a rebuild rather than
+ * an adjustment.
+ *
+ * IT DOES NOT CLOSE THE GAP AND IS NOT MEANT TO. -2.87 to -2.53 is an eighth of a defect
+ * this file now knows the size of. Going further is available and costs the cap; that is a
+ * decision about the mode rather than about the pricing, so it is written down here rather
+ * than taken quietly.
  */
+export const PRICE_PROJ_W = 0.25;
 
 /** How many REG games each club has already played before `week`, read off the schedule. */
 export function clubGamesToDate(games, season, week) {
@@ -437,8 +505,39 @@ export const projectedPoints = (p, levels) => {
   return Math.max(0, plays * ((p.games * p.half_ppg + SHRINK_K * level) / (p.games + SHRINK_K)));
 };
 
-export function pricePool(men) {
-  for (const p of men) p.est_ppg = shrunkPPG(p);
+/**
+ * @param men     the eligible board, each row carrying `played_of` when a blend is asked for
+ * @param levels  what `positionLevels()` answered for this board, or null for no blend
+ * @param w       the blend weight, defaulting to what ships. A caller that wants a DIFFERENT
+ *                weight passes one rather than scaling `half_ppg` to fake an estimate, which
+ *                is what `probe_price.mjs` did until this parameter existed: the injection
+ *                round-tripped through `shrunkPPG` correctly and then got blended a second
+ *                time by this function, so every column of that probe was reading one weight
+ *                to its right and the baseline was reading the shipped default.
+ *
+ * THE LEVELS ARE REQUIRED RATHER THAN OPTIONAL, and that is the whole guard. `projectedPoints`
+ * falls back to `plays = 1` when `played_of` is missing and to a level of 0 when the map is,
+ * so a caller that forgot either would get a board priced as though nobody had ever missed a
+ * game: no error, a perfectly ordinary set of prices, and the exact defect this exists to fix
+ * still sitting in it. That is the shape this repo keeps finding, so it throws.
+ */
+export function pricePool(men, levels = null, w = PRICE_PROJ_W) {
+  if (w > 0) {
+    if (!levels) {
+      throw new Error('pricePool: a blend weight is set, so positionLevels() must be passed. '
+        + 'Without them every man prices as though he had played every game.');
+    }
+    const blind = men.filter((p) => !p.played_of);
+    if (blind.length) {
+      throw new Error(`pricePool: ${blind.length} of ${men.length} men have no played_of, `
+        + `so their availability would read as perfect (first: ${blind[0].name}).`);
+    }
+  }
+  for (const p of men) {
+    p.est_ppg = w > 0
+      ? (1 - w) * shrunkPPG(p) + w * projectedPoints(p, levels)
+      : shrunkPPG(p);
+  }
   const desc = men.map((p) => p.est_ppg).sort((a, b) => b - a);
   const rank = Math.max(1, Math.round(desc.length * BASELINE_FRACTION));
   const baseline = desc[Math.min(desc.length - 1, rank - 1)] ?? 0;
@@ -530,8 +629,6 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
   const eligible = played.filter((p) => playing.has(p.team));
   if (!eligible.length) throw new Error(`nobody is draftable in week ${week} of ${season}`);
 
-  const anchors = pricePool(eligible);
-
   /* HOW MANY GAMES HIS CLUB HAS ALREADY PLAYED, which is what turns "two games" into
      availability. Read off the schedule rather than as `week - 1`, because a bye is a week
      nobody could have played in and counting it as a miss would mark half the league unfit
@@ -542,6 +639,13 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
   /* What each position is doing on THIS board, which is what a thin sample is argued
      toward. Read over the eligible men, so a bye week narrows it by itself. */
   const levels = positionLevels(eligible);
+
+  /* BOTH OF THE ABOVE USED TO BE COMPUTED BELOW THIS LINE, and moving them up is half of
+     what `PRICE_PROJ_W` needed. The price now reads availability, so a board priced before
+     `played_of` exists is one where nobody has ever missed a game: no error, ordinary
+     looking prices, and the defect intact. `pricePool` throws rather than trusting this
+     order to be remembered, and the two of them together are the fix. */
+  const anchors = pricePool(eligible, levels);
 
   const pool = eligible.map((p) => ({
     player_id: p.player_id,

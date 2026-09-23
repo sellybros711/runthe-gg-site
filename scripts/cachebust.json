@@ -1691,8 +1691,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/sportegories-data.js": {
-      "v": "31",
-      "sha": "3820aadfde52913b"
+      "v": "32",
+      "sha": "c72fc1b814ebe9c0"
     },
     "/arcade/type.js": {
       "v": "5",
@@ -2090,6 +2090,10 @@
       "v": "6",
       "sha": "e5f17581ed6580f6"
     },
+    "clubs.js": {
+      "v": "1",
+      "sha": "1d357230a3aac62e"
+    },
     "draft.js": {
       "v": "3",
       "sha": "68b407e38656dce2"
@@ -2155,12 +2159,12 @@
   },
   "hoops/index.html": {
     "engine.js": {
-      "v": "19",
-      "sha": "6c961b5112ed3256"
+      "v": "20",
+      "sha": "4b097b7584a5add1"
     },
     "run.js": {
-      "v": "9",
-      "sha": "53223c6e45d958b1"
+      "v": "10",
+      "sha": "ae44f3f1fae86358"
     },
     "badges.js": {
       "v": "1",

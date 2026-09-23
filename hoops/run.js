@@ -46,12 +46,57 @@ function capOf(run) {
     ? run.capMusd : E.CONSTANTS.CAP_MUSD;
 }
 
+/*
+ * WHAT THE RE-SPINS ACTUALLY COST, which is no longer the ladder summed.
+ *
+ * The last slot's re-spin is free (see respinFeeNow), so the fees paid are no
+ * longer a function of how many were used and CANNOT be recomputed from the
+ * count. Written the old way, a waived fee is charged back the next time
+ * anything reads the budget: the money vanishes a frame later, the floor says
+ * the roster cannot be filled, and nothing throws.
+ *
+ * So the total is STORED. A run written before this field existed has none and
+ * falls back to the ladder, which is exactly what it did pay, because there
+ * was no way to get a free one. Same rule as every other field added to a save
+ * here: a new key, no version bump, and the reader copes with its absence.
+ */
+function feesPaid(run) {
+  return typeof run.respinFeesPaid === 'number'
+    ? run.respinFeesPaid
+    : E.respinFees(run.respinsUsed);
+}
+
 function remaining(run) {
   const spent = run.roster.reduce((s, p) => s + p.p, 0);
-  return money(capOf(run) - spent - E.respinFees(run.respinsUsed));
+  return money(capOf(run) - spent - feesPaid(run));
 }
 
 const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
+
+/*
+ * THE LAST SLOT'S RE-SPIN IS FREE, AND IT IS A VALVE RATHER THAN A DISCOUNT.
+ *
+ * Measured over 500 drafts a bot, the last board offers a mean of 1.8 signable
+ * men to a drafter taking best available and 1.6 to one spending the cap, and
+ * it is a SINGLE forced option on 47.6% and 61.0% of runs. The re-spin is the
+ * way out of that, and it was shut at exactly the same moment: the fee is
+ * charged against a budget that is by then down at the floor, so `canRespin`
+ * refused it. Best available was forced with no re-spin on 24.8% of runs and a
+ * cap-spender on 43.6%.
+ *
+ * The shape of that is backwards. The cheapest bot, which hoards money and
+ * drafts badly, was never once trapped. So the game took the last of its five
+ * decisions away from exactly the player who had drafted the way it rewards,
+ * with a better man greyed out on the same board and nothing saying why.
+ *
+ * IT STILL COUNTS AGAINST MAX_RESPINS, which is the whole of what stops this
+ * being an exploit: free AND unlimited is an infinite reroll on the one board
+ * where the pool is small enough to fish. Three is the bound, each burns the
+ * team-season it rejected, and a player who spent them earlier has spent them.
+ */
+function respinFeeNow(run) {
+  return slotsLeft(run) <= 1 ? 0 : E.respinCost(run.respinsUsed);
+}
 
 /* ── THE CLUB LOCK ──────────────────────────────────────────────────────────
  *
@@ -214,30 +259,75 @@ function reserveFloor(run) {
 
 const spendable = (run) => money(remaining(run) - reserveFloor(run));
 
-/* THE AUTHORITATIVE PRICE GATE. Tentatively put this player in the slot he
-   would take, then ask whether the rest of the roster can still be filled. */
-function canFinishAfter(run, player) {
+/* WHAT SIGNING HIM WOULD LEAVE ABOVE THE FLOOR. Tentatively put this player in
+   the slot he would take, then answer how much is left over once every
+   remaining slot has its cheapest legal body earmarked. Negative means the
+   roster could not be finished; null means he has nowhere to go.
+
+   THE FLOOR PROMISES A LEGAL ROSTER AND NEVER A CHOICE, which is the whole
+   reason this number is worth printing: `assignedFloors` reserves the CHEAPEST
+   man per open slot, so a drafter who spends down to it arrives at the last
+   slot able to afford precisely that man and nobody else. */
+function marginAfter(run, player) {
   const slot = slotForPlayer(run, player);
-  if (slot === null) return false;
+  if (slot === null) return null;
   const rest = openSlotNames(run).filter(s => s !== E.SLOTS[slot]);
   const need = assignedFloors(run, rest, player).total;
-  return money(remaining(run) - player.p) >= need - 1e-9;
+  return money(remaining(run) - player.p - need);
+}
+
+/* THE AUTHORITATIVE PRICE GATE, and one source with the margin above rather
+   than a second copy of the same arithmetic. */
+function canFinishAfter(run, player) {
+  const m = marginAfter(run, player);
+  return m !== null && m >= -1e-9;
+}
+
+/*
+ * HOW MUCH ROOM THE LAST SLOT NEEDS TO BE A DECISION.
+ *
+ * Measured at the second to last signing over 900 drafts, spread across five
+ * ways of drafting, against what the last board then offered:
+ *
+ *   headroom left    mean signable    one man only
+ *   under $2M              1.2            82.5%
+ *   $2M to $5M             1.5            62.7%
+ *   $5M to $10M            1.6            57.1%
+ *   $10M to $20M           2.2            30.0%
+ *   $20M to $40M           2.5            17.6%
+ *   $40M and up            2.7             9.8%
+ *
+ * So $10M is where the last pick stops being a coin toss on whether the game
+ * makes it for you, and it is the first value with real room rather than the
+ * last one that passes: the band under it runs 57% to 83% and the one over it
+ * is 30% and falling.
+ *
+ * IT IS ONLY ASKED AT THE SECOND TO LAST PICK, which is where the table was
+ * measured. With three slots open the same number is headroom shared between
+ * two of them, which is a different quantity, and answering it the same way
+ * would be reading this table for a question nobody asked it.
+ */
+const LAST_SLOT_ROOM_MUSD = 10;
+
+function leavesNoChoice(run, player) {
+  if (slotsLeft(run) !== 2) return false;
+  const m = marginAfter(run, player);
+  return m !== null && m >= 0 && m < LAST_SLOT_ROOM_MUSD;
 }
 
 function canRespin(run) {
-  const cost = E.respinCost(run.respinsUsed);
+  const cost = respinFeeNow(run);
   if (run.phase !== PHASES.DRAFT) return { ok: false, reason: 'not drafting', cost };
   if (run.respinsUsed >= E.CONSTANTS.MAX_RESPINS)
     return { ok: false, reason: 'no re-spins left', cost };
 
-  /* Charge the fee, ask the question, put it back. A re-spin you cannot afford
-     to pay for is a re-spin that would strand the roster. */
-  run.respinsUsed++;
-  let short = false;
-  try { short = remaining(run) < fullFloor(run); }
-  finally { run.respinsUsed--; }
-
-  if (short) return { ok: false, reason: 'would leave too little to fill your roster', cost };
+  /* A re-spin you cannot afford to pay for is one that would strand the roster.
+     SUBTRACTED RATHER THAN SIMULATED: this used to increment respinsUsed, read
+     the budget and put it back, which worked only while the fee was a function
+     of that count. It is stored now, so the increment moves nothing and the
+     probe would have answered yes to every re-spin there is. */
+  if (money(remaining(run) - cost) < fullFloor(run))
+    return { ok: false, reason: 'would leave too little to fill your roster', cost };
   return { ok: true, cost };
 }
 
@@ -331,6 +421,9 @@ function createRun(opts) {
     seed: o.seed ?? E.hashSeed(String(Math.random())),
     rngCalls: 0,
     capMusd: E.CONSTANTS.CAP_MUSD,
+    /* What the re-spins have actually cost. See feesPaid: it cannot be summed
+       back out of respinsUsed once one of them can be free. */
+    respinFeesPaid: 0,
     phase: PHASES.DRAFT,
     roster: [],
     slotIndex: [],
@@ -413,6 +506,9 @@ function respin(run, data) {
   const check = canRespin(run);
   if (!check.ok) throw new Error(`cannot re-spin: ${check.reason}`);
   const draw = run.currentDraw;
+  /* BEFORE the count moves, because the fee is indexed by how many have been
+     used and the waiver is read off how many slots are still open. */
+  run.respinFeesPaid = money(feesPaid(run) + respinFeeNow(run));
   run.respinsUsed++;
   if (draw) run.usedTeamSeasons.push(draw.team_season_id);
   run.currentDraw = null;
@@ -1160,7 +1256,7 @@ const publicAPI = {
   /* Moves with engine.js, not independently: index.html asks both files for the
      SAME number, so one version means one answer to "is this page and its
      scripts the same age". */
-  API_VERSION: 6,
+  API_VERSION: 7,
   PHASES, TUNING, BLOCK,
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,
@@ -1169,7 +1265,8 @@ const publicAPI = {
   indexData, drawable, clubSeasons, eraSeasons,
   gameDetail, bigGames, bestNight, taggedRoster,
   remaining, reserveFloor, fullFloor, spendable, capOf, money,
-  canRespin, canFinishAfter, blockFor, positionFull,
+  canRespin, canFinishAfter, marginAfter, leavesNoChoice, blockFor, positionFull,
+  LAST_SLOT_ROOM_MUSD,
   openSlots, openSlotNames, slotForPlayer, eligibleOpenSlots, slotsLeft,
 };
 

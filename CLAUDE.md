@@ -764,6 +764,132 @@ exist" and report nothing about the other eleven. Verified both ways against a r
 `ps_runs` row and its clock fails open, so a database missing `104` gives seasons away
 instead of losing them. Dynasty and Full Team lose the season.
 
+#### And it could not run at all against any database it was written for
+
+**`pg_get_functiondef` RAISES on an aggregate**, and the `proc` CTE walked every row of
+`pg_proc` in `public` and called it on all of them. `create extension citext` puts
+`min(citext)` and `max(citext)` there, and `10_accounts.sql` needs citext because an
+account's `username` is one. So every real Supabase project answered this file with **one
+line reading `ERROR: "min" is an aggregate function` and not a single row of the report.**
+
+That is **this file's own header argument arriving from a side it did not expect.** It asks
+the catalog rather than calling anything, precisely so one missing piece cannot take the
+whole report down, and then took the whole report down on a catalog function raising over a
+row nothing was asking about. `prokind = 'f'` is the whole fix: nothing here asks about an
+aggregate, a window function or a procedure.
+
+**It was found by running it, which is the only way it could be.** Every guard in this repo
+had passed, because no guard runs this file: it is a paste, and the one thing a paste has
+never had is a harness. A scratch Postgres built from `supabase/test/fantasy_base.sql` (which
+creates the citext extension, because the real `profiles` needs it) reproduces it exactly.
+
+**The fantasy chain is six rows now rather than one**, because the ways those six files go
+missing are not one failure at different sizes. 113 refuses every lineup and says so. 110,
+111 and 112 each leave a screen that renders perfectly and is quietly a week behind, or
+empty, or silent about who is in. A single row reading "the fantasy layer" would answer NO
+to all six and say which of those is happening about none of them. Each was proved by
+staging the chain one file at a time and watching its row turn over at exactly the right
+step, plus the pre-fix 109 for 113's row and a deliberate 111-before-110 for 111's.
+
+`col` and `trg` were added for those rows and are **deliberately not allowlists**, which is
+the trap the `has_table` block above them already carries as a warning. They ask the catalog
+for every column and every trigger in the schema and let the row do the filtering, so a check
+naming something nobody added to a list up top cannot quietly read false for ever.
+
+#### The one button that applies the fantasy chain
+
+```
+.github/workflows/fantasy-sql.yml     dry run by default, tick "apply" to commit
+```
+
+**IT NAMED FOUR FILES THAT ARE NOT ON MAIN, AND READING THAT AS "A PLAN THAT WAS RENAMED"
+WAS WRONG.** `109_fantasy_access.sql`, `110_fantasy_core.sql`, `111_fantasy_model.sql` and
+`supabase/test/fantasy_preflight.sql` are a **second fantasy stack**, on
+`claude/fantasy-league-build-brief`, an odds poller with a Cloudflare Worker behind it. That
+branch has dispatched this workflow twice and both runs went green.
+
+So main's copy was only ever what makes the Run workflow button exist, which GitHub grants
+off the default branch, and that branch's own commit message says so. Dispatched from main
+it correctly could not find its files, and "did you dispatch from the right branch" was the
+RIGHT diagnosis read as a wrong one. **The Actions tab is what settles a question like
+that**, and it was not looked at: a workflow with two green runs on it is not a workflow
+that has never run, and no amount of reading the file says so.
+
+Editing it on main costs that branch nothing, because `workflow_dispatch` runs the workflow
+file from the ref you pick.
+
+**What IS real is that both chains number from 109 and both are applied to one database.**
+109 through 112 name different files on the two branches. Nothing collides in the database,
+since the objects have different names, and a merge would put two 109s, two 110s, two 111s
+and two 112s in one directory. This repo already tolerates that (108, 101, 102 and 103 are
+each taken twice), so it is a thing to know rather than a thing to fix in a hurry.
+
+**THE ORDER IS LOAD BEARING AND IT IS THE FILENAME ORDER.** 110 restates two of 109's
+functions, 111 and 112 each restate 110's board, and 113 restates 109's submit, so for
+anything touched more than once the LAST file to run wins. **111 before 110 is the one hazard
+with a silent symptom**: 110 carries a copy of `fantasy_board` with no `games` key, so the
+tables and the writer end up in place under a board that never answers with a scoreboard, and
+the live screen shows sixteen games with no score on any of them for ever. The preflight row
+for 111 asks the board's own body rather than the table's existence, so it catches exactly
+that.
+
+**109 WAS NOT RE-APPLIABLE AND THAT IS WHAT MAKES A ONE BUTTON APPLY WORTH ANYTHING.** 110
+changed the return type of `fantasy_standings`, `create or replace` refuses to change a
+return type, and a `returns table` function's row type IS its return type. So against any
+database that had 110, re-running the chain died half way with "cannot change return type of
+existing function". 109 carries the same `drop function if exists` that 110 already carried,
+for the same reason and in the same words. Nothing depends on it in the catalog sense: 114's
+`fantasy_settle_week` calls it, and plpgsql resolves a call at CALL time rather than
+recording a dependency.
+
+Every one of the six is written to be applied twice, and the whole chain was run three times
+over against a scratch Postgres 16 to say so. **Re-running the workflow is safe and is the
+point**: it is how you find out whether what is deployed is what is in the repo.
+
+**The dry run is a real run** and rolls back, proved from the other side rather than argued:
+after a dry run of all six against a database holding nothing but the account tables,
+`fantasy_weeks` and `fantasy_prizes` are both still absent. The dry file carries its own
+`begin`/`rollback` and the apply uses `--single-transaction`, which is the one asymmetry
+here: wrapping a second transaction around a file that already opens one means the inner
+rollback throws away the outer one too and psql finishes by committing nothing with a
+warning, which is the right result reached by an accident nobody should have to reason about.
+
+**The read-back is the SITE WIDE preflight and not a fantasy one.** Writing a second report
+asking a version of the same questions is `commish_my_tenure`'s standing warning about two
+implementations of one answer. What the step does have to do on its own is decide, and it
+**reads the same file twice** rather than restating the six checks: once aligned for a person
+and once with `-tA -F '|'` for an awk, because judging a verdict off column positions in an
+aligned table is how the old version of this step came to grep for `NOT READY`, **a string
+this report has never printed.** A fantasy row reading NO after an apply is an error and
+names which; anything else on the site missing is a warning, because taking the run red on a
+migration nobody dispatched here teaches everybody that this workflow goes red for reasons
+that are not its business.
+
+**Two more workflows in that folder belong to that branch and are deliberately LEFT ALONE.**
+`fantasy-status.yml` reads `supabase/test/fantasy_status.sql` and `fantasy-deploy.yml`
+deploys the Worker at `fantasy/worker` with an `ODDS_API_KEY`. Neither file is on main and
+both are on the branch, so they are on main for the same reason this one is: the button.
+Deleting them from main would take the button away from a branch that is using it.
+
+#### What the first read-back found, which is the whole argument for having one
+
+**114 was applied and its TRIGGER was not.** The live database carries `fantasy_prizes`,
+both its unique indexes and `result_seen_at` on `fantasy_entries`, and has no
+`fantasy_settle_on_scored` on `fantasy_weeks`. Two independent sources in one run said so:
+the preflight row read NO, and psql's own `drop trigger if exists` printed `trigger
+"fantasy_settle_on_scored" for relation "public.fantasy_weeks" does not exist, skipping`.
+
+**It is the one object in that file whose absence is invisible from every side.** The table
+is there to be read, the popup's `fantasy_my_result` answers, the page draws, and nothing
+anywhere throws. What does not happen is that a week going final settles the top three, so
+there is no placement for any entrant, no winner recorded, and nothing for
+`mint-winner-code.mjs` to read. A competition that runs and pays nobody, reported by no one,
+because there is nothing on any screen to report.
+
+**Pasting a file into the SQL editor and reading "Success" is not the same claim as the
+objects existing**, and that is the finding rather than the trigger. The fix was one
+dispatch with apply ticked.
+
 ### The Commish door is always there, and a shut one offers the bundle
 
 Who SEES the mode and who gets SOLD to are different questions, and `cfb/index.html` keeps
@@ -2670,6 +2796,110 @@ how available he has been, which is both halves of what the projection reads. Th
 projected total comes after the six are in, and it is the one number this mode prints about
 the future.
 
+#### And the price was blind to whether he plays, which is worth 2.87 points
+
+```
+node football/build/test/probe_price.mjs          the two bias axes, 2022 to 2024
+node football/build/test/probe_price.mjs --board  who moves on the live board, by name
+```
+
+Reported by a player as the price feeling too weighted toward what a man has done all
+season and not enough toward what he is expected to do this week. **It is measurable and
+it was true.**
+
+`shrunkPPG` is what the price runs on and it is **blind to availability**: a man who has
+played two of his club's three games and a man who has played all three are the same row
+to it, because the shrink toward zero discounts a thin SAMPLE, which is a different
+question. `projectedPoints` is what the card prints and it knows, because the refit two
+sections up put `plays` in it. So the two came apart that day and nothing put them side by
+side.
+
+Measured over **21,291 draftable player-weeks**, holding the price band fixed:
+
+| at equal price | scores this week |
+|---|---|
+| played every one of his club's games | the reference |
+| missed one | **2.87 points less** |
+
+That is most of a seventh of a six man lineup, paid for and not delivered, and it is worst
+where it costs most: the $25-48M band ran **-8.21**.
+
+**Nothing could report it.** Every price was a correct summary of September, every
+projection on every card was right, and no screen ever showed the two disagreeing.
+
+**`PRICE_PROJ_W` is the answer and it is 0.25**, blending the projection into the estimate
+the price is built from. Three things bound it and they close from both sides:
+
+| | 0 | 0.25 | 0.5 | 0.75 | 1 |
+|---|---|---|---|---|---|
+| absence gap | -2.87 | **-2.53** | -2.15 | -1.68 | -1.39 |
+| thin sample gap | -1.25 | **-1.25** | -1.28 | -1.33 | -1.42 |
+| price/proj rank agreement | .896 | **.943** | .980 | .994 | .999 |
+| budget minus top at $90M | +1.3 | **+2.4** | +3.5 | | |
+| top minus random at $90M | 11.2 | **9.7** | 7.3 | | |
+
+**The top of the range is ruled out by the CARD.** At 0.75 and past it the price IS the
+projection in rank, and the whole reason the projection was refitted was to stop it being a
+restatement of the price. The residual between them is the decision this mode is built
+around.
+
+**The middle is ruled out by the CAP**, and that one cost a measurement rather than an
+argument. `probe_cap.mjs` picks $90M because it is the band where spending everything and
+holding money back trade places; at 0.5 the budget bot is 3.5 clear there and the crossover
+walks to about 105. **That is not the blend being wrong**: a more accurate price against a
+CONVEX price curve genuinely does reward spreading money, so better pricing moves that
+band. The honest answer at 0.5 is to move the cap with it, which is a bigger change and not
+one to make mid-season, because the cap is on every published week row and moving it makes
+two weeks incomparable.
+
+**The control is what says 0.25 is SAFE rather than merely small.** `SHRINK_K` was fitted on
+sample size and took that gap 3.48 to 0.12, so a fix for availability that re-opens it has
+moved the defect rather than removed it. At 0.25 that axis does not move at all to two
+decimals. A cheaper looking candidate, `shrunkPPG * playShare`, is worse on **both** axes at
+once (-2.06 and -1.43), because it discounts a thin sample twice.
+
+**What it does to a board**, which is the half a reader can see: on week 3, 217 of 414 men
+move by more than a million and **only six move by more than three**, and those six are the
+men who missed a game (Zay Flowers $12.1M to $7.7M). At 0.5 it is 97 men past three million,
+which is a rebuild rather than an adjustment. **It does not close the gap and is not meant
+to**: an eighth of a defect this file now knows the size of.
+
+**THE PRICE COULD NOT READ AVAILABILITY WHERE IT SAT.** `pricePool` ran on line 533 and
+`played_of` and `positionLevels` were both computed AFTER it, so the whole fix is half an
+ordering change. Left alone, `projectedPoints` falls back to `plays = 1` when `played_of` is
+missing and a level of 0 when the map is: no error, an ordinary looking set of prices, and
+the exact defect still in them. **So `pricePool` throws** rather than trusting the order to
+be remembered, on a missing level map and on any man with no `played_of`, and both halves
+were proved by removing them.
+
+**A WEEK ALREADY PUBLISHED MUST NOT BE REPRICED.** A price may never move once anybody has
+drafted against it, and `fantasy_prices` for the live week is on the server. This changes
+what the next Tuesday build produces and nothing that is already out.
+
+##### The probe measured the new default against itself, and the guard is what caught it
+
+Its baseline column was written `f: null`, meaning "price it the way the build does", which
+was right for exactly as long as the build priced at zero. **The moment `PRICE_PROJ_W`
+shipped that column became the blend**, so the file would have reported the defect it had
+just fixed as untouched. Every rule states its own weight now, so moving the constant cannot
+move what this file thinks it is comparing against.
+
+**And the injection technique it inherited stopped working in the same instant.**
+`probe_early.mjs` fakes a candidate estimate by scaling `half_ppg` so `shrunkPPG` lands on
+the number wanted, which is sound while `pricePool` reads `shrunkPPG` and nothing else. With
+a blend inside `pricePool` that estimate is blended a SECOND time: every column read one
+weight to its right and the baseline read the shipped default. It surfaced as the whole
+table shifting left by one column, which is visible only because the old numbers were on
+screen a minute earlier. **`pricePool` takes the weight as an argument now**, so a blend is
+one parameter and nothing is applied twice.
+
+**`probe_early.mjs` had already been dead for a pass**, and this is how it was found. It
+imports `PROJ_LIFT`, which the pass it argued for REMOVED from `weekly-pool.mjs`, so it has
+thrown on load ever since and nothing said so, because a probe is a command somebody types
+rather than a thing CI runs. The constant is declared locally as the history it is, and its
+`shipped` candidate is the projection that actually ships, so its baseline column means what
+its heading says.
+
 #### But once the six ARE in, the total has to show its working
 
 Reported by a player looking at five finished lineups: they wanted each man's projected
@@ -2811,6 +3041,84 @@ the maximum, exactly one man reaches it every week by construction.
 
 **The board is priced against ITSELF.** A man whose club is idle is off it and out of the
 anchors, or a leader sitting a bye sets a ceiling nobody draftable can reach.
+
+#### A row is three lines, and the clubs wear their own colours
+
+Reported with a screenshot: the stat line was hard to read, and the teams should be colour
+coded. Both were true and they are one fix.
+
+**The matchup and the stats shared the NAME COLUMN**, which is about 215px at 390, so
+`DET vs NYJ · 533 pass yds, 6 TD, 9 rush yds, 0 TD` ran to two lines with `TD` orphaned on
+the second. The stats are a row of their own now, spanning the whole button: **334px against
+215**, one line, at every width down to 320 with 47px still spare in the harness's own wider
+fallback face.
+
+**It retires the two line floor rather than working around it.** That `min-height:2.6em` was
+there because a board whose five stat lines all fitted on one line was 63px a row and the
+next board was 74, so signing somebody moved everything under the board by up to 31px. Every
+row is now a name, a matchup and a stat line whatever is on it, so one height is a property
+of the SHAPE and not of a number somebody has to remember.
+
+**A GRID AND NOT A WRAPPING FLEX ROW**, which is a correction. `flex-wrap` with
+`flex:0 0 100%` on the stat line is the obvious way to give it a row and works perfectly at
+390. Wrap is a property of the CONTAINER, so it cannot be granted to one child: at 320 the
+chip, the name and the price no longer fit on one line either, the price wrapped onto its
+own, and that row came out **121px against the other four at 81**. Named areas are two rows
+at every width by construction.
+
+##### Thirty of the thirty two club colours are unreadable as published
+
+`football/fantasy/clubs.js`. This is the hoops wheel's finding arriving at a second game. The
+row sits on `#131a2b` and against it only Cincinnati and Denver clear 4.5:1; Las Vegas is
+**1.21:1** and Pittsburgh **1.03:1**. Dropping the site's table in would have given a board
+where almost every tag was invisible, with nothing to report.
+
+**The PRIMARY is lifted and the secondary is not used**, which is only obvious once both are
+printed. Picking whichever of a club's two published colours reads better puts **fourteen
+clubs in one gold bucket**, because most NFL secondaries are gold, and worse it stops naming
+the club: Washington comes out gold rather than burgundy, Dallas silver rather than navy. The
+primary is the identity, so the primary is what is lifted: hue kept, lightness raised until it
+clears, saturation floored on the way up or a navy arrives as a pale grey.
+
+**The blues converge and that is the league, not a defect.** Four pairs are identical in the
+published data before anything is done to them (New England and Seattle are both `#002244`,
+Dallas and the Rams both `#003594`). The tag carries the three letter CODE, so the colour is
+reinforcement and never what identifies the club.
+
+**THE RAMS HAD NO COLOUR AT ALL, AND A FIVE ROW BOARD MEETS THEM ABOUT ONE WEEK IN SIX.**
+nflverse spells them `LA` and the site's table spells them `LAR`, so that one club fell
+through to the line's own grey: not an error, not a wrong colour, a tag nobody would think to
+question. It is `espn.mjs`'s own note about `WSH` and `WAS` arriving at a colour. Found only
+because the guard asks every code the POOL can produce rather than the five a board dealt, and
+it is an ALIAS rather than a new row in the table, because that table is asserted to match
+`engine.js` hex for hex and a club added to suit this page's data source would break the
+comparison that stops the two copies drifting.
+
+**The lift judged the unrounded colour and shipped the rounded one**, which is half a step and
+is the difference between 4.48 and 4.50: Green Bay and the Giants were accepted and then did
+not clear. Decide on the value that ships, which is this repo's own rule at a fourth door.
+
+##### Two measurements that were of the animation rather than of the layout
+
+**`getBoundingClientRect()` INCLUDES TRANSFORMS.** The reveal animates each row in at
+`scale(.985)`, so read mid deal every row came back 80px where its laid out height is 81, and
+two rows read differently from each other purely by where they had got to. "Every row is the
+same height" passed or failed on timing. `offsetHeight` is the used layout box and ignores
+transforms, which is the property actually being claimed.
+
+**`scrollWidth` IS FLOORED AT `clientWidth`**, so a spare computed from it is zero on a row
+that fits and zero on a row that exactly fills. It reported `0px spare` on a board with 117px
+of room and could never have said anything else. Measured with a Range over the text node it
+reads what is actually there.
+
+**And one 39px failure was the screenshot I took to look at the board.** Three runs without it
+report 0px. This file's own rule applies to its own instrument: it is not a flake until it is
+measured, so it was measured rather than dismissed.
+
+**The name line needed an explicit `line-height`**, because `normal` is a font metric: it
+wobbled 21.638px to 21.750px name to name, which rounded to two different whole pixels at some
+widths and one at others. Pinned, the row is three line heights and its padding, which is
+arithmetic.
 
 #### A man who is not playing is not a pick
 
@@ -3056,6 +3364,42 @@ after the Monday night game and two and a half days before the Thursday lock. Tw
 and the job asks WHICH SCHEDULE FIRED rather than what time it is now, which is the fix
 `setlist-data.yml` carries a long note about. Nothing is committed unless `check-fantasy
 --quick` passes.
+
+#### And it settled last week ahead of publishing this one, so this one was never published
+
+**THE STEP'S OWN COMMENT SAID THE WRITE THAT MUST NOT BE MISSING GOES FIRST, AND THE CODE
+UNDER IT PUT THAT WRITE SECOND.** The comment was right and it had been read as a
+description of the code rather than as a claim about it, which is the direction that costs
+something: `fantasy_results` carries a foreign key onto `fantasy_weeks`, the previous week
+had no row, the results publish raised, `set -e` took the step down, and **the board this
+job exists to write was never sent at all.**
+
+It happened on the first Tuesday after the chain was deployed, and the log says it in one
+line: `Key (season, week)=(2026, 2) is not present in table "fantasy_weeks"`. Week 2 was
+played before any of this existed, so no week row for it was ever written and none ever
+should be. The run went red, `Commit the week` was skipped with it, and what a reader would
+have met is a mode drawing a wheel that refuses every submit.
+
+**THE FILE ON DISK CANNOT ANSWER WHETHER A WEEK WAS OPENED, WHICH IS THE WHOLE MISS.** The
+guard was `[ -f results_<season>_w<prev>.json ]`, and `Score the week that just ended`
+writes that file on every single run, for any week that has been PLAYED. Played and open
+are two different questions and only the server holds the second. It asks
+`fantasy_weeks` now, **on its own line and never inside the `if`**, because `set -e` does
+not fire on a command in a condition: written there, an unreachable database hands the test
+an empty string and the step carries on past a question it never got an answer to.
+
+**The board publish moved above it, and nothing is given up.** "Results before prices" is
+the two BUILD steps' rule and it is about the files: a week whose board rolls forward on
+disk before its result is written is a week somebody played and can never see. On the server
+these are two tables about two different weeks, neither reads the other, and
+`fantasy_now.json` is not written in that step at all.
+
+**Both arms were driven against a real Postgres 16 holding the chain**, with the step body
+extracted from the workflow by yaml rather than retyped. The shipped order reproduces the
+live failure exactly, same message and same exit 3, with **week 3 priced 0**. The order that
+ships now publishes 408 prices and skips week 2 by name. The other three branches were
+driven too, and the one that matters is that a week which really WAS opened still gets its
+results: 40 rows, rather than a guard that has quietly stopped settling anything.
 
 ### The week is scored, and the loop closes on the home screen
 
@@ -7273,6 +7617,148 @@ stalled. Nothing had stalled: the page had signed the man, drawn the next board
 and taken it out of `pending`. The stall dump prints `signed`, `draw` and
 `phase` now, which are the three things the wait actually asks for, so the next
 time a reader cannot read it says so instead of blaming the page.
+
+### The last of five picks was made by the game, on a quarter to a half of runs
+
+```
+node hoops/verify.mjs            the fee model, the free re-spin and the margin
+node hoops/check-draft.mjs       the warning and the button, in a real browser
+```
+
+**THE RESERVE FLOOR PROMISES A LEGAL ROSTER AND NEVER A CHOICE.**
+`assignedFloors` earmarks the CHEAPEST legal man for every open slot, so a
+drafter who spends down to it reaches the last slot able to afford precisely
+that man and nobody else. Measured over 500 drafts a bot, through the real
+`run.js`:
+
+| pick | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| signable men, best available | 11.5 | 9.7 | 7.2 | 4.1 | **1.8** |
+| forced to one man | 0% | 0% | 0.4% | 10.6% | **47.6%** |
+| forced AND no re-spin | 0% | 0% | 0.4% | 7.6% | **24.8%** |
+| forced AND no re-spin, spending the cap | 0% | 0% | 0.4% | 10.6% | **43.6%** |
+| forced AND no re-spin, hoarding money | 0% | 0% | 0% | 0% | **0%** |
+
+**The shape of that is backwards.** The bot that hoards money and drafts badly
+was never trapped once; the one that spends the cap, which is the good way to
+draft and what every other number here rewards, was trapped on 43.6% of runs.
+One fifth of the decisions in the mode, removed, from the player who played it
+best.
+
+**THE RE-SPIN IS THE VALVE AND IT SHUT AT THE SAME MOMENT.** Its fee is charged
+against a budget that is by then at the floor, so `canRespin` refused it: at the
+last slot a cap-spender could re-spin on 42% of runs. The escape hatch closed
+exactly when it was needed.
+
+**It is not a balance bug, and saying so is the point.** Trapped runs rate
+**57.7** against 55.9 for free ones, because four stars plus a scrub really does
+beat five good players. The trade is coherent. What is wrong is that the forced
+man averages **0.98 win shares** against 3.00, and on 96 of 101 trapped boards a
+man **+4.77 win shares better** sat greyed out on the same board, costing $18.5M
+more. That reads as the game malfunctioning, not as a consequence.
+
+#### The fee is no longer a ladder sum, and that is the trap under the fix
+
+**The last slot's re-spin is free.** `respinFeeNow` waives it at `slotsLeft <= 1`.
+After it: trapped goes **24.8% to 0.0%** and **43.6% to 0.0%**, and pick-5
+re-spin availability is 100% for every bot. All four TARGETS are byte-identical
+(60.6, 13.6, 4.4, 46.0), because removing a constraint hands nobody a better
+roster on its own.
+
+**`remaining()` RECOMPUTED THE FEES FROM `respinsUsed` EVERY TIME IT WAS
+READ.** So a waived fee is charged back the moment anything looks at the budget:
+the money vanishes a frame later, the floor says the roster cannot be filled,
+and nothing throws. The total is STORED in `respinFeesPaid` now, and a save
+written before that field falls back to the ladder, which is exactly what it did
+pay because there was no way to get a free one.
+
+**`verify.mjs` was making the same mistake one line at a time.** Its cap-bust
+check rebuilt the spend as `roster + E.respinFees(respinsUsed)`, which would
+report a false bust on any run that took a free one. It reads
+`CAP - R.remaining(run)` now: one source, the run's own budget.
+
+**IT STILL COUNTS AGAINST `MAX_RESPINS`, which is the whole of what stops it
+being an exploit.** Free and unlimited is an infinite reroll on the one board
+small enough to fish in. Three, each burning the team-season it rejected.
+
+**And `canRespin` stopped simulating.** It used to increment `respinsUsed`, read
+the budget and put it back, which worked only while the fee was a function of
+that count. Stored, the increment moves nothing and the probe would have said
+yes to every re-spin there is. It subtracts the prospective cost instead.
+
+#### Said before the tap, and the threshold is derived rather than picked
+
+`leavesNoChoice` marks a signing that leaves the last slot tight. Measured at the
+second to last signing over 900 drafts across five ways of drafting:
+
+| headroom left for the last slot | mean signable | one man only |
+|---|---|---|
+| under $2M | 1.2 | **82.5%** |
+| $2M to $5M | 1.5 | 62.7% |
+| $5M to $10M | 1.6 | 57.1% |
+| $10M to $20M | 2.2 | 30.0% |
+| $20M to $40M | 2.5 | 17.6% |
+| $40M and up | 2.7 | 9.8% |
+
+`LAST_SLOT_ROOM_MUSD` is **10**: the first value with real room rather than the
+last one that passes, since the band under it runs 57% to 83% and the one over
+it is 30% and falling. **The $5M seam is not a coincidence either**: it is the
+first rung of the re-spin ladder, so under it the fee itself was unaffordable,
+which is why that column reads 82.5% stuck and the next reads 0.0%.
+
+**ASKED ONLY AT THE SECOND TO LAST PICK**, which is where the table was measured.
+With three slots open the same number is headroom shared between two of them,
+which is a different quantity, and answering it off this table would be reading
+it for a question nobody put to it.
+
+**PER TILE, OR ONCE, AND NEVER BOTH.** Measured over 450 second to last boards:
+21.9% of signable tiles carry the mark, **51.1% of boards carry none at all**,
+and on **23.3% every signable man leaves it tight**. That last case is the
+board's own divider rule arriving one line up: a mark on everything marks
+nothing, and what it is really saying is a fact about the board rather than
+about any man on it. So it is one line above the board there instead.
+
+**`marginAfter` is one source with the price gate.** `canFinishAfter` is now the
+margin's own sign, so the two can never disagree about whether a signing is
+legal, which they would the first time either was edited alone.
+
+**Amber and fully pressable.** Spending the cap is the good way to draft, so this
+line exists to make the cost of it visible rather than to talk anybody out of it.
+And the button says **Re-spin (free)**, because `Re-spin ($0M)` reads as a
+rendering fault rather than as the one thing that screen has to offer.
+
+#### What the guards got wrong, and it was the same lesson twice
+
+**A GUARD THAT DIES ON A STACK TRACE HAS NOT REPORTED ANYTHING.** `respin` throws
+on a refusal, and the fixture for the free re-spin is a state where it used to be
+refused, so reintroducing the charge killed the whole suite on a line number
+rather than naming the trap it exists for. It is taken through a guard now, and
+reintroduced it reads `and is actually offered there (would leave too little to
+fill your roster)`, which is the defect in the reader's own words.
+
+**The browser walk pressed a board that had not landed.** `pending` sits on the
+PARENT, so `#opts .ptile:not(.pending)` matches every tile the moment it exists,
+mid-spin included, and a scripted click ignores the `pointer-events:none` that is
+the only other thing holding it shut. The signing was dropped, and what the walk
+then reported was the re-spin button being dead. That selector is written up
+under `check-live` as load-bearing; this is the third time it has been.
+
+**And its restart pressed a button that was not there.** The front door says
+Resume once a run is saved, so a fresh run needs the run in hand dropped first.
+Left alone the retry silently did nothing and the walk reported one attempt.
+
+**It retries up to eight drafts**, because half of second to last boards
+correctly carry no warning: one draft is a coin toss on whether the thing exists
+to be found, which is this file's own note about a check reporting its own seed.
+Reintroduced, it searches all eight and says so.
+
+#### What is still open
+
+**Pick 4 can be forced with no re-spin on 7.6% of best-available runs and 10.6%
+of cap-spending ones**, and the waiver deliberately does not reach it: the
+warning fires at pick 4 about pick 5, so it says nothing about pick 4 itself.
+That is a third of what pick 5 was and it is recorded rather than fixed, because
+widening the waiver to two slots gives away a good deal more than it buys.
 
 ### Three doors, and one of them was already built
 

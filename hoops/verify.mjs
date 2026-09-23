@@ -467,10 +467,13 @@ for (const slot of E.SLOTS) {
 /* Play a full draft by always taking the best player the board will let you
    sign. This is the greedy strategy the cap is supposed to punish, so it is
    also the one most likely to walk into an illegal state. */
-function greedyDraft(seed) {
+/* `picks` stops the draft part way, for the fixtures that need a run standing
+   at a particular slot. Absent, it drafts the whole roster as it always did. */
+function greedyDraft(seed, picks) {
   const run = R.createRun({ seed });
   let guard = 0;
   while (run.phase === R.PHASES.DRAFT && guard++ < 50) {
+    if (picks != null && run.roster.length >= picks) break;
     const draw = R.spin(run, data);
     const options = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
     if (!options.length) throw new Error('a draw came back with no signable options');
@@ -490,7 +493,11 @@ for (let i = 0; i < DRAFTS; i++) runs.push(greedyDraft(1000 + i));
 
 let capBusts = 0, wrongSlot = 0, dupes = 0, overdrawn = 0, positionStacks = 0;
 for (const run of runs) {
-  const spend = run.roster.reduce((s, p) => s + p.p, 0) + E.respinFees(run.respinsUsed);
+  /* READ OFF remaining(), NOT REBUILT FROM THE LADDER. The last slot's re-spin
+     is free, so fees are no longer a function of how many were used: summing
+     the ladder here would over-count a run that took one and report a cap bust
+     that never happened. One source, which is the run's own budget. */
+  const spend = E.CONSTANTS.CAP_MUSD - R.remaining(run);
   if (spend > E.CONSTANTS.CAP_MUSD + 1e-9) capBusts++;
   if (run.roster.length !== E.SLOTS.length) wrongSlot++;
 
@@ -1124,6 +1131,105 @@ ok(bestWins > worstWins + 20,
   /* The scan has to be finding something, or a broken regex passes green.
      Same reason check-numbers records its coverage counts. */
   ok(read.size >= 10, `the outcome scan found real reads (${read.size})`);
+}
+
+/* ── THE LAST PICK IS THE PLAYER'S, AND THE FEE IS NO LONGER A LADDER SUM ───
+ *
+ * The reserve floor promises a LEGAL ROSTER AND NEVER A CHOICE, so a drafter
+ * who spends down to it reaches the last slot able to afford the one man the
+ * floor earmarked. Measured over 500 drafts a bot before this shipped, the
+ * last board was a single forced option on 47.6% of best-available runs and
+ * 61.0% of cap-spending ones, and the re-spin that is supposed to be the way
+ * out was refused at the same moment, because its fee is charged against a
+ * budget already at the floor: trapped on 24.8% and 43.6% of runs. The bot
+ * that hoarded money and drafted badly was never trapped once.
+ *
+ * So the last slot's re-spin is free, and the fee it did not pay has to be
+ * STORED. Written the old way, `remaining()` sums the ladder out of
+ * `respinsUsed` on every read and charges a waived fee back the moment
+ * anything looks at the budget: the money disappears a frame later, the floor
+ * says the roster cannot be filled, and nothing throws.
+ */
+{
+  const seeded = () => R.createRun({ seed: 4242 });
+
+  /* A MID-DRAFT RE-SPIN STILL COSTS THE LADDER, and paying it sticks. Reading
+     the budget twice must not charge twice, which is the whole defect. */
+  const mid = seeded();
+  R.spin(mid, data);
+  const fee = R.canRespin(mid).cost;
+  is(fee, E.CONSTANTS.RESPIN_LADDER_MUSD[0], 'the first re-spin costs the top of the ladder');
+  const before = R.remaining(mid);
+  R.respin(mid, data);
+  is(R.remaining(mid), R.money(before - fee), 'paying it comes off the budget once');
+  is(R.remaining(mid), R.remaining(mid), 'and reading the budget again does not charge it again');
+
+  /* THE LAST SLOT IS FREE, and free is what reopens the valve: the budget is
+     at the floor by then, so a charged re-spin is a refused one. */
+  const last = greedyDraft(31337, E.SLOTS.length - 1);
+  is(R.slotsLeft(last), 1, 'the fixture is at the last open slot');
+  R.spin(last, data);
+  const re = R.canRespin(last);
+  is(re.cost, 0, 'the last slot re-spins for nothing');
+  ok(re.ok, `and is actually offered there (${re.reason || 'ok'})`);
+  /* TAKEN THROUGH A GUARD, because `respin` THROWS on a refusal and the whole
+     point of this fixture is a state where it used to be refused. Left bare,
+     reintroducing the charge kills the suite on a stack trace pointing at this
+     line rather than reporting the trap it exists to name. */
+  const held = R.remaining(last);
+  let refused = null;
+  try { R.respin(last, data); } catch (e) { refused = String((e && e.message) || e); }
+  is(refused, null, 'the free re-spin can actually be taken');
+  is(R.remaining(last), held, 'a free re-spin moves no money at all');
+  is(last.respinsUsed, 1, 'and still counts against the three');
+
+  /* THE BOUND IS THE WHOLE OF WHAT STOPS IT BEING AN EXPLOIT. Free and
+     unlimited is an infinite reroll on the one board small enough to fish. */
+  let spins = 1;
+  while (R.canRespin(last).ok && spins < 20) {
+    try { R.respin(last, data); } catch (e) { break; }
+    spins++;
+  }
+  is(spins, E.CONSTANTS.MAX_RESPINS, 'a free re-spin runs out at MAX_RESPINS');
+  is(R.canRespin(last).reason, 'no re-spins left', 'and says which of the two limits stopped it');
+
+  /* A SAVE WRITTEN BEFORE THE FIELD EXISTED. It never had a free one, so the
+     ladder IS what it paid, and the fallback has to agree to the penny. */
+  const legacy = seeded();
+  legacy.respinsUsed = 2;
+  delete legacy.respinFeesPaid;
+  is(E.CONSTANTS.CAP_MUSD - R.remaining(legacy), E.respinFees(2),
+    'a run saved before the fee was stored still reads its fees off the ladder');
+
+  /* ONE SOURCE FOR THE PRICE GATE. canFinishAfter is the margin's own sign, so
+     the two can never disagree about whether a signing is legal. */
+  const probe = greedyDraft(777, 2);
+  R.spin(probe, data);
+  let checked = 0, disagreed = 0;
+  for (const row of probe.currentDraw.board) {
+    const p = data.allPlayers[row.key];
+    if (!p) continue;
+    const m = R.marginAfter(probe, p);
+    if (m === null) continue;
+    checked++;
+    if ((m >= -1e-9) !== R.canFinishAfter(probe, p)) disagreed++;
+  }
+  ok(checked >= 3, `the margin was asked of a real board (${checked} men)`);
+  is(disagreed, 0, 'the margin and the price gate never disagree');
+
+  /* THE WARNING IS ONLY ASKED WHERE IT WAS MEASURED. With three slots open the
+     same number is headroom shared between two of them, which is a different
+     quantity, and answering it off this table would be reading it for a
+     question nobody put to it. */
+  const early = greedyDraft(555, 1);
+  R.spin(early, data);
+  const anyEarly = early.currentDraw.board.some(row => {
+    const p = data.allPlayers[row.key];
+    return p && R.leavesNoChoice(early, p);
+  });
+  is(R.slotsLeft(early), E.SLOTS.length - 1, 'the early fixture has four slots open');
+  is(anyEarly, false, 'nothing is marked tight while there is more than one pick left');
+  ok(R.LAST_SLOT_ROOM_MUSD > 0, 'the room the last slot needs is a real number');
 }
 
 /* ── THE FLOOR IS UNDER THE CLUB, NOT REPLACED BY IT ────────────────────────

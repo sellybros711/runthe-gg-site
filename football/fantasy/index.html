@@ -110,7 +110,20 @@
 
   /* ---- a man on the board ---- */
   .men{display:flex;flex-direction:column;gap:8px}
-  .man{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  /* A GRID AND NOT A WRAPPING FLEX ROW, and that is a correction rather than a preference.
+     `flex-wrap` was the first way to give the stat line a row of its own, with `flex:0 0
+     100%` on it, and it works at 390. It also lets the TOP row break: at 320 the position
+     chip, the name and the price no longer fit on one line, so the price wrapped onto its
+     own and that row came out 121px against the other four at 81. Wrap is a property of the
+     container, so it cannot be granted to one child.
+     Named areas cannot do that. The row is two rows at every width by construction, and the
+     only thing narrowing the viewport can take is name characters, which is what
+     `minmax(0,1fr)` and the ellipsis on it are for.
+     The row gap is small and separate from the column gap: the three lines of a man are one
+     block, and a 10px gutter between them would read as three unrelated things. */
+  .man{display:grid;grid-template-columns:38px minmax(0,1fr) auto;
+    grid-template-areas:"pos who cost" "stat stat stat";
+    align-items:center;column-gap:10px;row-gap:3px;width:100%;text-align:left;
     padding:10px 12px;border-radius:12px;border:1px solid var(--line);
     background:var(--panel);transition:transform .07s ease,border-color .15s ease}
   .man:active{transform:translateY(1px)}
@@ -126,7 +139,9 @@
      order and puts the fade on the parts instead. */
   .man.poor{opacity:1;border-color:rgba(255,255,255,.06);background:transparent}
   .man.poor:active{transform:none}
-  .man.poor .pos,.man.poor .who{opacity:.42}
+  /* The stat line fades with the name and the chip, or a row greyed for the money keeps one
+     part at full strength for no reason a reader could name. */
+  .man.poor .pos,.man.poor .who,.man.poor .statline{opacity:.42}
   .man.poor .cost b{color:var(--gold)}
   .man.poor .cost s{color:var(--gold);opacity:.75}
 
@@ -151,7 +166,7 @@
      and the NAME stays fully legible. What recedes is everything that was about buying him. */
   .man.hurt{border-color:rgba(239,68,68,.28);background:transparent}
   .man.hurt .pos{opacity:.45}
-  .man.hurt .who s{opacity:.45}
+  .man.hurt .who s,.man.hurt .statline{opacity:.45}
   .man.hurt .cost{opacity:.45}
   .man.hurt:active{transform:none}
 
@@ -231,39 +246,54 @@
     .slot.just{animation:none}
     #d-left{transition:none}
   }
-  .pos{flex:0 0 38px;text-align:center;font-family:var(--fn);font-size:11px;font-weight:800;
+  .pos{grid-area:pos;text-align:center;font-family:var(--fn);font-size:11px;font-weight:800;
     letter-spacing:.04em;padding:3px 0;border-radius:6px;color:#fff}
   .pos.QB{background:var(--qb)} .pos.RB{background:var(--rb)}
   .pos.WR{background:var(--wr)} .pos.TE{background:var(--te)}
   /* min-width:0 on the growing child, or a long name refuses to shrink and pushes the
      price off the row. The name is what absorbs it, never the price. */
-  .who{flex:1 1 auto;min-width:0}
+  .who{grid-area:who;min-width:0}
   /* A FLEX ROW RATHER THAN A BLOCK, so the injury chip sits on the name line and cannot
      wrap onto a second one. A chip that wrapped would make that row taller than the other
      four, which is the board stepping again: the same rule the stat line's two line floor
      below is written for. The NAME is what shrinks, inside its own element, because the
      chip is the one thing on the row that must not be truncated. */
+  /* AN EXPLICIT LINE HEIGHT, because `normal` is a FONT METRIC and the row's height is
+     otherwise one. Measured across a board it wobbled 21.638px to 21.750px name to name, so
+     the five rows came out 80.83 to 81.25 and rounded to two different whole pixels at some
+     widths and one at others. Nothing a reader would see, and it makes "every row is the
+     same height" a claim that holds or not depending on which names were dealt. Pinned, the
+     row is three line heights and its padding, which is arithmetic. */
   .who b{display:flex;align-items:center;gap:7px;min-width:0;
-    font-family:var(--fn);font-size:15px;font-weight:700;
+    font-family:var(--fn);font-size:15px;font-weight:700;line-height:1.45;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .who b i{font-style:normal;min-width:0;overflow:hidden;text-overflow:ellipsis}
-  /* THE STAT LINE IS ALLOWED TWO LINES, because it is the whole of what the board tells a
-     reader and truncating it is truncating the decision. Set to one line it came out
-     "492 pass yds, 5 TD, 59 ..." on every quarterback, which drops the rushing half of
-     exactly the men whose rushing is why they are dear.
-     CLAMPED AT TWO rather than left to run, so that a row keeps one height across the five
-     and the board does not step. Same rule as the premium sheet's hero row.
+  /* THE MATCHUP, AND NOTHING ELSE ON THIS LINE. It used to carry the stat line after a
+     middot, which in this column had about 215px at 390 and therefore ran to two lines with
+     "TD" orphaned on the second. The stats are a row of their own now, below.
 
-     AND FLOORED AT TWO AS WELL, which is the half that was missing. The clamp holds a row
-     to one height within ONE board and says nothing about the next one: a board whose five
-     stat lines all fit on one line is 63px a row and the board after it is 74, so signing
-     somebody moved everything under the board by up to 31px. Measured through the real page
-     at 390x844, on four of the five presses of a draft. A fixed two line box makes every
-     board the same height, so the only thing that changes when you sign is who is on it. */
-  .who s{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-    text-decoration:none;font-size:11.5px;line-height:1.3;color:var(--dim-2);overflow:hidden;
-    min-height:2.6em}
-  .cost{flex:0 0 auto;text-align:right}
+     ONE LINE BY CONSTRUCTION. "DET vs NYJ" is eleven characters and cannot wrap, so the two
+     line clamp and the two line floor this rule used to carry are both gone: every row on
+     every board is now a name, a matchup and a stat line, which is the same three lines
+     whatever is on it. That is what keeps the board from stepping when you sign somebody,
+     and it is now a property of the SHAPE rather than of a min-height somebody has to
+     remember. The defect it replaces was worth up to 31px on four presses of five. */
+  .who s{display:block;text-decoration:none;font-size:11.5px;line-height:1.3;
+    color:var(--dim-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* The club wears its own colour and the joining word does not: "vs" is not a team. */
+  .who s .club{font-style:normal;font-weight:700;letter-spacing:.02em}
+  .who s i{font-style:normal;opacity:.7}
+
+  /* THE STAT LINE, FULL WIDTH AND NEVER WRAPPING. `flex:0 0 100%` is what puts it on its own
+     row of the button's wrap, under the position chip as well as the name, which is where
+     the width comes from: 334px against the name column's 215 at a 390px phone. The longest
+     line the board can produce is 40 characters, so it fits with room even in the fallback
+     face this repo's harness renders, which is the wider of the two.
+     Ellipsis rather than wrap, so that a longer line somebody adds later costs a few
+     characters instead of silently making one row taller than the other four. */
+  .statline{grid-area:stat;min-width:0;font-size:11.5px;line-height:1.3;color:var(--dim-2);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cost{grid-area:cost;text-align:right}
   .cost b{display:block;font-family:var(--fd);font-size:19px;font-weight:400;
     font-variant-numeric:tabular-nums}
   .cost s{display:block;text-decoration:none;font-family:var(--fn);font-size:9.5px;
@@ -732,6 +762,7 @@
      PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script defer src="/football/auth.js?v=6"></script>
+<script src="clubs.js?v=1"></script>
 <script src="draft.js?v=3"></script>
 <script src="entries.js?v=4"></script>
 <script>
@@ -867,6 +898,20 @@
     var cls = e.st === 'questionable' ? ' q' : (e.st === 'none' ? ' none' : '');
     return '<span class="inj' + cls + '" data-inj="' + esc(m.player_id) + '">'
       + esc(INJ_WORD[e.st] || 'INJ') + '</span>';
+  };
+
+  /*
+   * A CLUB CODE IN THE CLUB'S OWN COLOUR. `clubs.js` does the lifting and the argument for
+   * it; all this does is put the answer on the tag and fall back to inheriting the line's
+   * colour for a code that table does not know, which is what a relocation or an expansion
+   * side would be. It writes a style attribute rather than a class because thirty two rules
+   * for something read off data is a stylesheet that has to be edited every time the league
+   * moves a team.
+   */
+  var club = function (code) {
+    if (!code) return '';
+    var c = window.RTF_CLUBS && window.RTF_CLUBS.color(code);
+    return '<em class="club"' + (c ? ' style="color:' + c + '"' : '') + '>' + esc(code) + '</em>';
   };
 
   var INJ_SAY = {
@@ -1146,7 +1191,9 @@
         + (poor ? ' disabled' : '') + ' data-id="' + esc(m.player_id) + '">'
         + '<span class="pos ' + esc(m.position) + '">' + esc(m.position) + '</span>'
         + '<span class="who"><b><i>' + esc(m.name) + '</i>' + injChip(m) + '</b>'
-        + '<s>' + esc(m.team) + (where?' ' + esc(where):'') + ' &middot; ' + esc(m.stat_line) + '</s></span>'
+        + '<s>' + club(m.team)
+        + (m.opp ? ' <i>' + (m.home ? 'vs' : 'at') + '</i> ' + club(m.opp) : '')
+        + '</s></span>'
         + '<span class="cost"><b>' + money(m.price_musd) + '</b><s>'
         /* THE SAME LENGTH AS "over budget", AND THAT IS A MEASUREMENT RATHER THAN A
            PREFERENCE. This cell and the name share the row: at sixteen characters
@@ -1154,6 +1201,12 @@
            Flowers to "Zay Flow...", on the one row where the reader most needs to know who
            it is. Found by taking a screenshot and looking at it. */
         + (poor ? 'over budget' : (out ? 'cannot pick' : gamesLine(m))) + '</s></span>'
+        /* THE STAT LINE IS A ROW OF ITS OWN, spanning the whole button rather than sharing
+           the middle column with the name. Reported as hard to read, and it was: in the name
+           column it had about 215px at 390 and ran to two lines with "TD" orphaned on the
+           second. Full width it has the button's own 334px, which holds the longest line the
+           board can produce with room to spare, so it is one line and never wraps. */
+        + '<span class="statline">' + esc(m.stat_line) + '</span>'
         + '</button>';
     }
     $('d-men').innerHTML = html;
