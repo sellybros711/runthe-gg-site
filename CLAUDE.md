@@ -802,12 +802,27 @@ naming something nobody added to a list up top cannot quietly read false for eve
 .github/workflows/fantasy-sql.yml     dry run by default, tick "apply" to commit
 ```
 
-**It named four files that never existed**, so it had never once run.
-`109_fantasy_access.sql`, `110_fantasy_core.sql`, `111_fantasy_model.sql` and
-`supabase/test/fantasy_preflight.sql` are from a plan that was renamed before any of it was
-written. It failed at its own file guard, which is loud, so nothing was damaged; what it
-cost is that the message it failed with was "did you dispatch from the right branch", which
-is a wrong diagnosis, and all six real files were pasted into the SQL editor by hand instead.
+**IT NAMED FOUR FILES THAT ARE NOT ON MAIN, AND READING THAT AS "A PLAN THAT WAS RENAMED"
+WAS WRONG.** `109_fantasy_access.sql`, `110_fantasy_core.sql`, `111_fantasy_model.sql` and
+`supabase/test/fantasy_preflight.sql` are a **second fantasy stack**, on
+`claude/fantasy-league-build-brief`, an odds poller with a Cloudflare Worker behind it. That
+branch has dispatched this workflow twice and both runs went green.
+
+So main's copy was only ever what makes the Run workflow button exist, which GitHub grants
+off the default branch, and that branch's own commit message says so. Dispatched from main
+it correctly could not find its files, and "did you dispatch from the right branch" was the
+RIGHT diagnosis read as a wrong one. **The Actions tab is what settles a question like
+that**, and it was not looked at: a workflow with two green runs on it is not a workflow
+that has never run, and no amount of reading the file says so.
+
+Editing it on main costs that branch nothing, because `workflow_dispatch` runs the workflow
+file from the ref you pick.
+
+**What IS real is that both chains number from 109 and both are applied to one database.**
+109 through 112 name different files on the two branches. Nothing collides in the database,
+since the objects have different names, and a merge would put two 109s, two 110s, two 111s
+and two 112s in one directory. This repo already tolerates that (108, 101, 102 and 103 are
+each taken twice), so it is a thing to know rather than a thing to fix in a hurry.
 
 **THE ORDER IS LOAD BEARING AND IT IS THE FILENAME ORDER.** 110 restates two of 109's
 functions, 111 and 112 each restate 110's board, and 113 restates 109's submit, so for
@@ -850,11 +865,30 @@ names which; anything else on the site missing is a warning, because taking the 
 migration nobody dispatched here teaches everybody that this workflow goes red for reasons
 that are not its business.
 
-**Two more workflows in that folder are dead the same way and are NOT fixed.**
+**Two more workflows in that folder belong to that branch and are deliberately LEFT ALONE.**
 `fantasy-status.yml` reads `supabase/test/fantasy_status.sql` and `fantasy-deploy.yml`
-deploys a Cloudflare Worker at `fantasy/worker` with an `ODDS_API_KEY`. Neither file nor the
-directory exists, and neither is anything this game does. They are from the same abandoned
-plan.
+deploys the Worker at `fantasy/worker` with an `ODDS_API_KEY`. Neither file is on main and
+both are on the branch, so they are on main for the same reason this one is: the button.
+Deleting them from main would take the button away from a branch that is using it.
+
+#### What the first read-back found, which is the whole argument for having one
+
+**114 was applied and its TRIGGER was not.** The live database carries `fantasy_prizes`,
+both its unique indexes and `result_seen_at` on `fantasy_entries`, and has no
+`fantasy_settle_on_scored` on `fantasy_weeks`. Two independent sources in one run said so:
+the preflight row read NO, and psql's own `drop trigger if exists` printed `trigger
+"fantasy_settle_on_scored" for relation "public.fantasy_weeks" does not exist, skipping`.
+
+**It is the one object in that file whose absence is invisible from every side.** The table
+is there to be read, the popup's `fantasy_my_result` answers, the page draws, and nothing
+anywhere throws. What does not happen is that a week going final settles the top three, so
+there is no placement for any entrant, no winner recorded, and nothing for
+`mint-winner-code.mjs` to read. A competition that runs and pays nobody, reported by no one,
+because there is nothing on any screen to report.
+
+**Pasting a file into the SQL editor and reading "Success" is not the same claim as the
+objects existing**, and that is the finding rather than the trigger. The fix was one
+dispatch with apply ticked.
 
 ### The Commish door is always there, and a shut one offers the bundle
 

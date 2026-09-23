@@ -4,14 +4,31 @@ name: "Fantasy: apply the database layer"
 # inside ONE transaction, and then reads the preflight back so the run says
 # whether it actually worked.
 #
-# THIS FILE NAMED FOUR MIGRATIONS THAT NEVER EXISTED, so it had never once run.
-# 109_fantasy_access.sql, 110_fantasy_core.sql, 111_fantasy_model.sql and
-# supabase/test/fantasy_preflight.sql are from a plan that was renamed before any
-# of it was written. It failed at its own file guard, which is loud, so nothing
-# was ever damaged. What it cost is that the message it failed with was "did you
-# dispatch from the right branch", which is a wrong diagnosis for somebody
-# reaching for the one button path from a phone, and the six files it was meant
-# to apply were all pasted into the SQL editor by hand instead.
+# THIS FILE USED TO NAME FOUR MIGRATIONS THAT ARE NOT ON MAIN, and the first
+# reading of that was wrong in a way worth recording. 109_fantasy_access.sql,
+# 110_fantasy_core.sql, 111_fantasy_model.sql and supabase/test/fantasy_preflight
+# .sql look like files from a plan that was renamed, and they are nothing of the
+# kind: they are a SECOND fantasy stack, on `claude/fantasy-league-build-brief`,
+# an odds poller with a Cloudflare Worker behind it. That branch has dispatched
+# this workflow twice and both runs went green.
+#
+# So the version of this file on MAIN was only ever the copy that makes the Run
+# workflow button exist at all, which GitHub grants off the default branch. That
+# branch's own commit message says so in as many words. Dispatched from main it
+# correctly could not find its files, and the message it stopped with was "did
+# you dispatch from the right branch", which was the RIGHT diagnosis and was read
+# as a wrong one.
+#
+# Editing it here costs that branch nothing: workflow_dispatch runs the workflow
+# file from the ref you pick, so dispatching from the branch still runs the
+# branch's copy against the branch's files.
+#
+# WHAT IS REAL IS THAT BOTH CHAINS NUMBER FROM 109 AND BOTH ARE APPLIED TO ONE
+# DATABASE. 109 through 112 name different files on the two branches. Nothing
+# collides in the database itself, since the objects have different names, and a
+# merge would put two 109s, two 110s, two 111s and two 112s in one directory.
+# This repo already tolerates that (108, 101, 102 and 103 are each taken twice),
+# so it is a thing to know rather than a thing to fix in a hurry.
 #
 # ONE BUTTON, ON PURPOSE. The generic "Apply a Perfect Season SQL file" workflow
 # takes a filename and runs one file, which here means six dispatches in the
