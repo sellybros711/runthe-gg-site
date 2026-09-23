@@ -90,6 +90,21 @@ function jsonLdStrings(file) {
 const require = createRequire(import.meta.url);
 const ACH = require('./achievements.js');
 
+/* THE SHARE CARD IS DELIBERATELY NOT ON THIS LIST, and it was added here first,
+   which is worth recording because adding it LOOKS right and does nothing.
+   og-source.html is the one surface that can never interpolate: it is rendered to
+   og.png once and is then a picture, so tuning CAP_MUSD leaves the most public
+   thing this game produces promising a number it does not charge.
+
+   Put on PAGES it contributed ZERO claims and the total stayed at 34. `copyOf`
+   filters through `isCopy`, which wants at least three words, and the card says
+   "$170M cap", which is two. So the page sat on the list reading nothing, which is
+   this file's own "a regex that finds nothing passes" arriving one level up: the
+   ledger would have carried no key for it and nobody would have noticed.
+
+   The card is checked in baseball/build/og.mjs instead, at the moment it is
+   rendered, against the engine's own CAP_MUSD. A check at the point of production
+   cannot be vacuous, and the builder already refuses to write. */
 const PAGES = ['baseball/index.html', 'baseball/how-to-play.html'];
 const LEDGER = new URL('numbers.json', import.meta.url);
 

@@ -9991,6 +9991,84 @@ whose first screen is the same on season one and season a hundred. What you earn
 is open and what is left is one tap behind a line saying how much of it there is.
 Measured at 390px on a six season career: 3,535px.
 
+### The share card had no source and no builder, and was set in a fallback
+
+```
+(nohup python3 -m http.server 8080 &) ; node baseball/build/og.mjs
+```
+
+`baseball/og.png` is the most public thing this game produces: it is what a chat app
+draws when somebody pastes a link, and for most people it is the only part of the game
+they will ever see. **It shipped with no source file and no builder anywhere in the
+repo**, so nobody could re-render it, a cap or a season range moving on it meant
+redrawing it by hand, and it was plainly set in a FALLBACK face. That last one is this
+repo's own note about measuring type in a headless browser, baked into an image.
+
+**It was also the light page photographed**, which is a picture that cannot argue back:
+cream stock, so in a dark thread it arrived as a bright rectangle with the contrast of a
+receipt. It is the game's own DARK theme now, which is a real palette this page already
+ships rather than a mood invented for a card. `--gold`, `--green` and `--ink` come off
+that theme, already lifted until each clears the charcoal. The light theme's green is
+`#2e7d32`, which is a tagline nobody can read on this.
+
+**The faces are the page's three and there is no Anton.** Bebas Neue sets the headline
+and the pill labels, Bitter the one line of prose, Archivo the wordmark and the footnote.
+Anton is the football and basketball cards' face and on this card it would say the wrong
+sport.
+
+**Two things were rendered, looked at, and taken back out**, which is why they are
+written down rather than silently absent:
+
+- **A 22px blur on the end of the extrude smudged it.** At 158px the soft edge spreads
+  under the letter and the whole headline reads slightly out of focus, which is the one
+  thing a share card cannot be. The stack is hard the whole way down now, with a single
+  tight blur doing nothing but seating the letters on the stock.
+- **Seam arcs do not read as stitching at any opacity that is also visible.** Close in,
+  one sweeps across the middle and reads as a scratch on the image; far out, the
+  curvature is so slight that what is left is a straight diagonal through a corner and
+  reads as a rendering artefact. Do not add them back without rendering the result and
+  looking at it.
+
+#### A number on a picture can never be interpolated, so the builder refuses
+
+The card names the cap, the roster size and the season range, and once rendered it is a
+picture: a cap that moves leaves it promising a figure the game does not charge, with no
+reader who can tell and no page to correct. So the builder reads its own rendered text
+and holds all three to `E.CONSTANTS.CAP_MUSD`, `E.SLOTS.length` and the min and max
+season in `data/players.json`. The range is read off the pool rather than pinned, because
+the annual refresh adds a season and this card cannot notice on its own.
+
+**`check-numbers.mjs` WAS THE OBVIOUS HOME AND IS VACUOUS HERE.** Put on that file's
+`PAGES` list, `og-source.html` contributed **zero** claims and the total stayed at 34:
+`copyOf()` filters through `isCopy()`, which wants three words, and the card says
+`$170M cap`, which is two. **A page on a list reading nothing is worse than no page at
+all**, because the list then looks like coverage. A check at the point of PRODUCTION
+cannot be vacuous, so it lives in the builder, and all three were proved by mutation.
+
+#### And the version on the image is one number in four places
+
+`og.png` is an asset with a hand-written `?v=`, which is exactly the class
+`scripts/check-cachebust.mjs` exists for, and **that file cannot see this one**: it reads
+a `<script src>`, a module import and a `fetch` of a `.json`, and this is a `<meta>` tag.
+Two pages carry it, twice each (`og:image` and `twitter:image`), and nothing held the
+four together.
+
+**They came apart inside one edit.** Bumping the card to `v=2` on `index.html` left
+`how-to-play.html` asking for `v=1` of a file that had just been rewritten, so the two
+pages pointed at one image under two names and a scraper that had seen either one went
+on serving the old card out of its own cache. Nothing throws. The only symptom is a share
+preview a version behind, on whichever of the two pages somebody happened to paste.
+
+The builder holds the four in step, and what it asks is that they AGREE. **That the
+number MOVED when the bytes did is not knowable there**: the pages are edited by hand
+either side of the run, so there is no earlier version to compare against, and inventing
+a record beside `cachebust.json` would be a second copy of an answer.
+
+**The same drift is live elsewhere on the site and is NOT fixed here.**
+`assets/runthegames-og_1200x630.png` is asked for at `?v=4` by the homepage, `about.html`
+and `ideas/`, and at `?v=3` by `disclaimer.html`. 35 pages across the site version an
+`og:image` by hand and nothing checks any of them.
+
 ### A whole run, in a browser, to the screen it ends on
 
 ```
