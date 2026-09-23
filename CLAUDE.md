@@ -9023,19 +9023,34 @@ agreed to the decimal, because the bulk WAR files fetched cleanly. What failed
 was Lahman, which is the positions and the closer flags.
 
 **TWO UPSTREAM CHANGES, AND BOTH ARRIVED AS A WARNING THE BUILD PRINTED AND
-CARRIED ON PAST.** `pybaseball.lahman` downloads the `master.zip` of a branch the
-Chadwick Bureau renamed, so the request answers with a 404 PAGE and `ZipFile`
-reports `File is not a zip file`, which says nothing about which url answered or
-what it sent. And pybaseball 2.2.7 has no `lahman.teams` at all: it is
-`teams_core` now, so `getattr` raised. `lahman.py` reads the archive itself.
+CARRIED ON PAST.** `pybaseball.lahman` downloads the `master.zip` of
+`chadwickbureau/baseballdatabank`, and pybaseball 2.2.7 has no `lahman.teams` at
+all: it is `teams_core` now, so `getattr` raised. `lahman.py` reads the archive
+itself.
 
-**IT DOES NOT PIN ONE URL, because pinning one is the fault.** `REFS` is a list
-tried in order and the first real zip wins, so a branch rename costs a redirect
-rather than an empty column. That is the hoops draft fetch's own lesson, which
-demanded one way of writing a link and returned zero picks for sixty six years.
-**Members are found by BASENAME anywhere in the tree**, because the top directory
-is named after whichever ref answered and the tables moved into `core/` at some
-point, and `People.csv` answers to `Master.csv` too.
+**THE REPOSITORY HAS BEEN TAKEN DOWN, AND THE FIRST READING OF THAT WAS WRONG.**
+A missing repository and a missing branch answer identically, with GitHub's own
+404 page, so `ZipFile` said `File is not a zip file` about both. Read as a branch
+rename, the fix was a list of REFS on that one repository, `main` first: the
+runner answered 404 on every one of them, which is what a repository that is not
+there says. The Lahman database is SABR's now, published through a Box folder
+with no url a script can fetch.
+
+**SO IT IS A LIST OF PLACES AND NOT A LIST OF REFS**, which is the same fault at
+a smaller size: refs of one repository are no help when the repository is what
+went. `SOURCES` is whole urls, tried in order, upstream first so it wins the day
+it comes back, then two community mirrors of the last Chadwick snapshot. That is
+the hoops draft fetch's own lesson, which demanded one way of writing a link and
+returned zero picks for sixty six years. **Members are found by BASENAME anywhere
+in the tree**, because the top directory is named after whichever archive
+answered and the tables moved into `core/` at some point, and `People.csv`
+answers to `Master.csv` too.
+
+**THE MIRRORS ARE UNOFFICIAL AND THE FILE SAYS SO.** What they carry is positions
+and saves, which barely move for a season already played, so a mirror a year
+behind costs this game almost nothing. Anybody who needs the current database
+should go to SABR and look rather than trust that a mirror is current, and the
+refusal message says that rather than implying the list is maintained.
 
 **A 404 page is a perfectly good HTTP response**, which is the whole reason the
 old failure read as "not a zip file": the request succeeded and the bytes were
@@ -9096,11 +9111,33 @@ against a `lahman` module that refuses. **Asserting the source carries a
   them fire identically. Section 6 holds the table list; nothing here proves
   which module a machine WITH pybaseball reaches for.
 
-**STILL NOT REPRODUCIBLE FROM THIS REPO, and that is the open one.** The step
-that takes 109,859 rows down to the shipped 44,344 is a playing-time floor that
-is in none of the four stages. Until it is, a refresh rebuilds a pool of a
-different size and `pool_shape.py` stops it, which is the right failure and is
-not the same as the pipeline working.
+##### The missing stage was a WAR floor, not the playing-time floor it was called
+
+The build frame is 109,859 rows and the pool that ships is 44,344, and what
+separates them was in none of the four stages. It was written up here as a
+playing-time floor, which is what `hoops/` has and is not what this is.
+
+**Read off the shipped file the way the field rules were**: its lowest `war_raw`
+is **exactly 0.50**, 259 rows sit on it, and not one is below. That is a cliff
+rather than a distribution, so it is a filter; it is the same on both roles, and
+it is on `war_raw` rather than on innings or games, so a pitcher discounted by
+the innings anchor still keeps his own floor.
+
+**What it is FOR is the wheel.** Half the men under it are a September call-up or
+somebody who got hurt in April, and a board drawn from them is names nobody
+recognises at a price nobody will pay. It is also 65,515 rows every visitor would
+download to never be offered one of.
+
+**It goes in `compact_pool.py`**, whose job is turning the build frame into the
+file the game downloads, so the enriched frame stays whole for anybody measuring
+the price curve. **Proved twice**: the round trip is still byte identical on all
+44,344 rows, and three rows added under the floor are dropped to reproduce the
+shipped pool exactly. The first of those alone proves nothing, because the
+shipped pool is already filtered and the floor is vacuous over it.
+
+**The pipeline can rebuild the pool now**, on any machine that can reach one of
+the four archives. **This one cannot reach any of them**, so that sentence is
+about the runner and not about a green run here.
 
 ### Two ratings, two jobs, and they must not be merged
 
