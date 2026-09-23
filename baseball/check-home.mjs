@@ -3,11 +3,13 @@
  *   node baseball/check-home.mjs
  *
  * THE PHONE AND THE DESKTOP ARE TWO DESIGNS RATHER THAN TWO SIZES OF ONE, which is
- * the clubhouse's own lesson in mythiball. A phone reads top to bottom, so the field
- * and the reels come first and the name of the game is a caption under a picture the
- * reader has already looked at. A desktop is a masthead and a stage: the name, what
- * it is, the one thing to press, and then the field with the two wheels standing
- * either side of it. Neither arrangement works at the other width.
+ * the clubhouse's own lesson in mythiball. What differs is the STAGE: a phone stacks
+ * the two reels over the field because there is no room beside it, and a desktop
+ * stands them either side of it. The name of the game is a caption under the picture
+ * on both. What the two widths really disagree about is the DAILY: on a phone it is
+ * the markup's own order, under the name, and on a desktop it leads, because it is
+ * the offer with a clock on it and the only thing on this page that is different
+ * today from yesterday.
  *
  * The order is CSS `order` over the phone's markup, so EVERY WAY THIS BREAKS IS
  * SILENT. A block that leaks under the breakpoint renders a perfectly good page in
@@ -188,6 +190,7 @@ for (const [w, h] of [[390, 844], [360, 740], [320, 568], [768, 1024], [999, 900
   const { ctx, p } = await open(w, h);
   const hero = await box(p, '.hero');
   const title = await box(p, '.htitle');
+  const daily = await box(p, '.dailycard');
   const y = await box(p, '#h-box-y');
   const t = await box(p, '#h-box-t');
   const field = await box(p, '.field.hero-field');
@@ -197,6 +200,12 @@ for (const [w, h] of [[390, 844], [360, 740], [320, 568], [768, 1024], [999, 900
   });
   claim(hero.top < title.top, `${w}px: the field comes before the name`,
     `hero ${hero.top}, title ${title.top}`);
+  /* THE DAILY IS WHAT THE TWO WIDTHS DISAGREE ABOUT, now that the name sits under
+     the picture on both. On a phone it is the markup's own order, under the name;
+     on a desktop it leads. Without this the phone section would assert only things
+     that are true of the desktop too, and could not catch the block leaking down. */
+  claim(title.top < daily.top, `${w}px: the daily sits under the name`,
+    `title ${title.top}, daily ${daily.top}`);
   /* The two reels share a row above the field, which is what the game's own draft
      screen does and is what a phone was asked to keep. */
   claim(Math.abs(y.top - t.top) < 2 && y.bottom <= field.top + 1,
@@ -206,8 +215,8 @@ for (const [w, h] of [[390, 844], [360, 740], [320, 568], [768, 1024], [999, 900
   await ctx.close();
 }
 
-/* ══ 3. the desktop is the masthead ═══════════════════════════════════════════ */
-head('3. THE DESKTOP READS NAME FIRST AND FLANKS THE FIELD');
+/* ══ 3. the desktop flanks the field, and leads with the daily ════════════════ */
+head('3. THE DESKTOP LEADS WITH THE DAILY AND FLANKS THE FIELD');
 
 for (const [w, h] of [[1000, 900], [1280, 900], [1440, 900], [1680, 1050]]) {
   const { ctx, p } = await open(w, h);
@@ -221,12 +230,16 @@ for (const [w, h] of [[1000, 900], [1280, 900], [1440, 900], [1680, 1050]]) {
   const y = await box(p, '#h-box-y');
   const t = await box(p, '#h-box-t');
 
-  claim(title.top < daily.top && daily.top < field.top,
-    `${w}px: the name, then the daily, then the field`,
-    `title ${title.top}, daily ${daily.top}, field ${field.top}`);
-  claim(field.bottom <= note.top && note.bottom <= start.top && start.top < row.top && row.top < legal.top,
-    `${w}px: the tagline, the button and the three doors follow the field`,
-    `field ${field.bottom}, note ${note.top}, start ${start.top}, row ${row.top}`);
+  /* THE DAILY IS THE ONLY THING ABOVE THE PICTURE. It is the offer with a clock on
+     it, so it leads; the name of the game is a caption on something already looked
+     at and sits under the field here exactly as it does on a phone. */
+  claim(daily.top < field.top && field.bottom <= title.top,
+    `${w}px: the daily, then the field, then the name`,
+    `daily ${daily.top}, field ${field.top}-${field.bottom}, title ${title.top}`);
+  claim(field.bottom <= note.top && note.bottom <= title.top && title.bottom <= start.top
+        && start.top < row.top && row.top < legal.top,
+    `${w}px: the tagline, the name, the button and the three doors follow the field`,
+    `field ${field.bottom}, note ${note.top}, title ${title.top}, start ${start.top}, row ${row.top}`);
   /* THE REELS FLANK IT, which is the claim `display:contents` carries. Asked as a
      SIDE rather than as a coordinate: the year is entirely left of the field and the
      team entirely right of it, at any width. */
@@ -278,9 +291,9 @@ claim(globalThis.__openText !== globalThis.__playedText,
 /* ══ 5. nothing on the screen is unplaced ═════════════════════════════════════ */
 head('5. EVERY CHILD OF THE SCREEN HAS A PLACE');
 
-/* An element added later with no `order` takes 0 and jumps above the title, which is
-   a page that renders and reads wrong. The default is 9, so the claim is that every
-   child carries one and that none of them is 0. */
+/* An element added later with no `order` takes 0 and jumps to the very top of the
+   screen, which is a page that renders and reads wrong. The default is 9, so the
+   claim is that every child carries one and that none of them is 0. */
 {
   const { ctx, p } = await open(1440, 900);
   const orders = await p.evaluate(() => [...document.querySelectorAll('#s-intro.on > *')]
@@ -289,9 +302,9 @@ head('5. EVERY CHILD OF THE SCREEN HAS A PLACE');
   claim(orders.every((o) => o.order !== '0' && o.order !== 'auto'),
     'no child of the front page falls back to order 0',
     JSON.stringify(orders));
-  const title = orders.find((o) => /htitle/.test(o.tag));
-  claim(title && Math.min(...orders.map((o) => +o.order)) === +title.order,
-    'and the name of the game is the first of them',
+  const daily = orders.find((o) => /dailycard/.test(o.tag));
+  claim(daily && Math.min(...orders.map((o) => +o.order)) === +daily.order,
+    'and the daily challenge is the first of them',
     JSON.stringify(orders));
   await ctx.close();
 }

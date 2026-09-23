@@ -1306,11 +1306,15 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
   /* ─── the front page, wide ───
      Two designs rather than two sizes of one, which is the clubhouse's own lesson.
-     A phone reads top to bottom, so the field and the reels come first and the name
-     of the game sits under them, where it is a caption on a picture somebody has
-     already looked at. A desktop is a MASTHEAD and a stage: the name, what it is, and
-     the one thing to press, and then the picture with the two wheels standing either
-     side of it. Neither arrangement works at the other width.
+     What differs is the STAGE, not the running order: a phone stacks the two reels
+     over the field because there is no room beside it, and a desktop stands them
+     either side of it. The name of the game sits under the picture on both, where it
+     is a caption on something the reader has already looked at.
+
+     THE DAILY IS THE ONE THING THAT MOVES UP. It is the offer with a clock on it and
+     the only thing on this page that is different today from yesterday, so on a screen
+     with a whole band to spare it goes above the field rather than below the name,
+     where a reader has to scroll past the game to find out there is one.
 
      THE ORDER IS CSS AND THE MARKUP IS THE PHONE'S. Written into the DOM instead, the
      reels and the field would have to live in two different parents to get side by
@@ -1323,8 +1327,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
      this page belongs. At 0 it would jump silently to the very top. */
   #s-intro.on{display:flex;flex-direction:column}
   #s-intro.on>*{order:9}
-  #s-intro .htitle{order:1;margin-bottom:20px}
-  #s-intro .dailycard{order:2;margin-bottom:22px;
+  #s-intro .dailycard{order:1;margin-bottom:22px;
     display:flex;align-items:center;gap:20px;padding:18px 18px 18px 20px}
   #s-intro .dc-txt{flex:1 1 auto;min-width:0}
   #s-intro .dc-go{display:block;flex:0 0 auto;font-family:var(--fd);font-size:17px;
@@ -1334,7 +1337,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   #s-intro .dailycard.played .dc-go{background:none;border:1.5px solid var(--line-2);
     border-bottom-width:1.5px;color:var(--dim);font-size:15px;padding:11px 18px}
   #s-intro .dc-sub{font-size:13.5px}
-  #s-intro .hero{order:3}
+  #s-intro .hero{order:2}
+  #s-intro .htitle{order:3;margin-bottom:20px}
   #s-intro #b-start{order:4}
   #s-intro #b-modes{order:5}
   #s-intro .hrow{order:6}
@@ -1352,8 +1356,11 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
      the hero's. A fixed side column rather than a fraction, because these are two
      wheels of a fixed size and what should take the width a wider window brings is the
      picture of the ballpark between them. */
+  /* 30px under the picture rather than 20: the tagline is the last line of the hero
+     and the kicker is the first of the title, so at the phone's spacing the two read
+     as one four line block with the wordmark buried in the middle of it. */
   .hero{display:grid;grid-template-columns:150px minmax(0,1fr) 150px;
-    gap:0 24px;align-items:center;margin-bottom:20px}
+    gap:0 24px;align-items:center;margin-bottom:30px}
   .hero-reels{display:contents}
   .hero .reelcol:first-child{grid-column:1;grid-row:1}
   .hero .reelcol:last-child{grid-column:3;grid-row:1}

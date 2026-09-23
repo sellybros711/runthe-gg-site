@@ -8836,15 +8836,27 @@ lineup card already has the right hand side.
 node baseball/check-home.mjs      the order, the flank, the reel, at seven widths
 ```
 
-Asked for: the desktop front page should lead with the name and stand the two reels
-either side of the field, and the phone should stay exactly as it is.
+Asked for: the desktop front page should stand the two reels either side of the field,
+and the phone should stay exactly as it is.
 
 **They really are two designs, which is mythiball's clubhouse lesson arriving at a
-second game.** A phone reads top to bottom, so the field and the reels come first and
-the name of the game sits under them, where it is a caption on a picture the reader
-has already looked at. A desktop is a MASTHEAD and a stage: the name, what it is, the
-one thing to press, and then the field with the wheels standing beside it. Neither
-arrangement works at the other width, and the phone's is not the desktop's squeezed.
+second game.** What differs is the STAGE: a phone stacks the two reels over the field
+because there is no room beside it, and a desktop stands them either side of it. The
+phone's arrangement is not the desktop's squeezed.
+
+**THE NAME SITS UNDER THE PICTURE ON BOTH**, and that is a reversal worth reading
+before undoing it. The first pass at this put the wordmark at the top as a masthead,
+which is the shape a marketing page has, and it was moved back on the second look: the
+name of the game is a CAPTION on something the reader has already looked at, and this
+page's whole job above the fold is the field with the two wheels turning beside it.
+Leading with a 62px wordmark spends the top of the screen saying what the tab already
+says.
+
+**The daily is the one thing that moves up**, and the only real disagreement between
+the two widths. It is the offer with a clock on it, the one thing on this page that is
+different today from yesterday, so on a screen with a whole band to spare it goes above
+the field. On a phone it stays where the markup puts it, under the name, because there
+is no band to spare and the field has to come first.
 
 **THE ORDER IS CSS AND THE MARKUP IS THE PHONE'S.** Written into the DOM instead, the
 reels and the field would have to live in two different parents to get side by side,
@@ -8861,8 +8873,17 @@ what should take the room a wider window brings is the picture between them.
 
 **The default order is 9 and not 0**, which is the clause most likely to be tidied
 away. Every child of that screen is given one; an element added later with none takes
-0 and jumps silently above the title, which is a page that renders perfectly and reads
-wrong. At 9 it lands just above the footer, which is where a new thing belongs.
+0 and jumps silently to the very top of the page, above the daily, which is a page that
+renders perfectly and reads wrong. At 9 it lands just above the footer, which is where
+a new thing belongs.
+
+**AND THE PHONE SECTION HAD TO GROW A CLAIM WHEN THE NAME MOVED BACK.** While the
+desktop led with the wordmark, "the field comes before the name" was true of the phone
+and false of the desktop, so it caught a block leaking down. With the name under the
+field on both, that assertion is true either side of the breakpoint and catches
+nothing. What the two widths still disagree about is the DAILY, so that is what the
+phone section asks now. A guard whose claims are all true of the thing it is meant to
+tell apart is the badge nobody can light, arriving at a media query.
 
 #### A reel is three rows, and that was six copies of one number
 
