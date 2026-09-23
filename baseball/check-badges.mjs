@@ -266,6 +266,20 @@ const SKILL = {
      sweep this size meets once if it is lucky. A person drafting deliberately
      does better than any bot here. */
   tie_record: 'win_110', goat: 'tie_record',
+  /* THE NUMBER ONE TEAM OF ALL TIME, and it used to light for the wrong reason.
+     `bestRank` is nationalRank() over squadRating, so rank 1 means beating the
+     best of 2,594 real team-seasons, which rates 95.4. Measured over 250 seeds a
+     greedy draft tops out at 87.7 (rank 8) and 150 seeds of three other bots
+     never passed 86.4, so no bot here reaches it.
+
+     It LIT before `rebuildSimState` was corrected, and that is the whole reason
+     it is only being excused now: the old yardstick swapped scales on any run
+     that cut a player or took a trade and reached 100.0, which clears 95.4
+     comfortably. A badge lit by a defect was never really reachable.
+
+     `rank_top3` wants 89.5 and DOES light, so the excuse rests on the same
+     mechanic being reached one rung down rather than on nothing. */
+  rank_one: 'rank_top3',
   /* A TITLE IS ABOUT ONE RUN IN SIXTY even for the best bot, so anything that
      asks for a title AND a second condition is a coincidence the sweep cannot
      schedule. Each is excused by the half of itself that IS reached, so no claim
@@ -274,12 +288,10 @@ const SKILL = {
   murderers_row: 'arch_murderers_row',
   respin_title: 'respin_3',
   threepeat: 'btb_title', fourpeat: 'threepeat',
-  btb_title: 'win_title',
   daily_title: 'win_title',
   mode_classic_title: 'mode_classic_oct',
   mode_survivor_title: 'mode_survivor_oct',
   mode_division_title: 'mode_division_oct',
-  mode_trade_title: 'mode_trade_oct',
   /* SALARY CAP SURVIVOR IS THE HARD MODE AND THAT IS THE DESIGN. The market takes
      a roster apart over a season, so October there is a 5% event against Classic's
      17%, and reaching it with nobody cut is rarer again. Anchored on finishing one
