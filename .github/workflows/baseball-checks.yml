@@ -126,3 +126,16 @@ jobs:
           npx playwright install --with-deps chromium
           node baseball/check-theme.mjs
           node baseball/check-home.mjs
+
+      # A WHOLE RUN, TO THE SCREEN IT ENDS ON. Nothing here reached the results
+      # screen before: the theme walk drafts a few picks and stops, and everything
+      # else runs in node. So the results screen, the trophy cabinet, the share
+      # card, the board submit and the daily record had never been opened in a
+      # browser at all, and they are the last five things a player meets. The bug
+      # that lives in a join like that leaves the last screen up and the button
+      # doing nothing for ever, so page errors are collected throughout and are
+      # their own failure. Every request out is refused at the route: the
+      # leaderboard is a live competition and a submit that got out would file a
+      # fabricated season on it.
+      - name: A whole run, to the results screen
+        run: node baseball/check-run.mjs
