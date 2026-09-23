@@ -40,7 +40,7 @@
    copy of this file against a current page. 2: playerTags() removed, wheel
    colors and title resolution added. 6: the roster is five men, so SLOTS is a
    different length and MINUTES_SHARE and minutesShare are gone. */
-const ENGINE_API_VERSION = 6;
+const ENGINE_API_VERSION = 7;
 
 // ─── constants ──────────────────────────────────────────────────────────────
 

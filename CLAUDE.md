@@ -7400,6 +7400,148 @@ and taken it out of `pending`. The stall dump prints `signed`, `draw` and
 `phase` now, which are the three things the wait actually asks for, so the next
 time a reader cannot read it says so instead of blaming the page.
 
+### The last of five picks was made by the game, on a quarter to a half of runs
+
+```
+node hoops/verify.mjs            the fee model, the free re-spin and the margin
+node hoops/check-draft.mjs       the warning and the button, in a real browser
+```
+
+**THE RESERVE FLOOR PROMISES A LEGAL ROSTER AND NEVER A CHOICE.**
+`assignedFloors` earmarks the CHEAPEST legal man for every open slot, so a
+drafter who spends down to it reaches the last slot able to afford precisely
+that man and nobody else. Measured over 500 drafts a bot, through the real
+`run.js`:
+
+| pick | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| signable men, best available | 11.5 | 9.7 | 7.2 | 4.1 | **1.8** |
+| forced to one man | 0% | 0% | 0.4% | 10.6% | **47.6%** |
+| forced AND no re-spin | 0% | 0% | 0.4% | 7.6% | **24.8%** |
+| forced AND no re-spin, spending the cap | 0% | 0% | 0.4% | 10.6% | **43.6%** |
+| forced AND no re-spin, hoarding money | 0% | 0% | 0% | 0% | **0%** |
+
+**The shape of that is backwards.** The bot that hoards money and drafts badly
+was never trapped once; the one that spends the cap, which is the good way to
+draft and what every other number here rewards, was trapped on 43.6% of runs.
+One fifth of the decisions in the mode, removed, from the player who played it
+best.
+
+**THE RE-SPIN IS THE VALVE AND IT SHUT AT THE SAME MOMENT.** Its fee is charged
+against a budget that is by then at the floor, so `canRespin` refused it: at the
+last slot a cap-spender could re-spin on 42% of runs. The escape hatch closed
+exactly when it was needed.
+
+**It is not a balance bug, and saying so is the point.** Trapped runs rate
+**57.7** against 55.9 for free ones, because four stars plus a scrub really does
+beat five good players. The trade is coherent. What is wrong is that the forced
+man averages **0.98 win shares** against 3.00, and on 96 of 101 trapped boards a
+man **+4.77 win shares better** sat greyed out on the same board, costing $18.5M
+more. That reads as the game malfunctioning, not as a consequence.
+
+#### The fee is no longer a ladder sum, and that is the trap under the fix
+
+**The last slot's re-spin is free.** `respinFeeNow` waives it at `slotsLeft <= 1`.
+After it: trapped goes **24.8% to 0.0%** and **43.6% to 0.0%**, and pick-5
+re-spin availability is 100% for every bot. All four TARGETS are byte-identical
+(60.6, 13.6, 4.4, 46.0), because removing a constraint hands nobody a better
+roster on its own.
+
+**`remaining()` RECOMPUTED THE FEES FROM `respinsUsed` EVERY TIME IT WAS
+READ.** So a waived fee is charged back the moment anything looks at the budget:
+the money vanishes a frame later, the floor says the roster cannot be filled,
+and nothing throws. The total is STORED in `respinFeesPaid` now, and a save
+written before that field falls back to the ladder, which is exactly what it did
+pay because there was no way to get a free one.
+
+**`verify.mjs` was making the same mistake one line at a time.** Its cap-bust
+check rebuilt the spend as `roster + E.respinFees(respinsUsed)`, which would
+report a false bust on any run that took a free one. It reads
+`CAP - R.remaining(run)` now: one source, the run's own budget.
+
+**IT STILL COUNTS AGAINST `MAX_RESPINS`, which is the whole of what stops it
+being an exploit.** Free and unlimited is an infinite reroll on the one board
+small enough to fish in. Three, each burning the team-season it rejected.
+
+**And `canRespin` stopped simulating.** It used to increment `respinsUsed`, read
+the budget and put it back, which worked only while the fee was a function of
+that count. Stored, the increment moves nothing and the probe would have said
+yes to every re-spin there is. It subtracts the prospective cost instead.
+
+#### Said before the tap, and the threshold is derived rather than picked
+
+`leavesNoChoice` marks a signing that leaves the last slot tight. Measured at the
+second to last signing over 900 drafts across five ways of drafting:
+
+| headroom left for the last slot | mean signable | one man only |
+|---|---|---|
+| under $2M | 1.2 | **82.5%** |
+| $2M to $5M | 1.5 | 62.7% |
+| $5M to $10M | 1.6 | 57.1% |
+| $10M to $20M | 2.2 | 30.0% |
+| $20M to $40M | 2.5 | 17.6% |
+| $40M and up | 2.7 | 9.8% |
+
+`LAST_SLOT_ROOM_MUSD` is **10**: the first value with real room rather than the
+last one that passes, since the band under it runs 57% to 83% and the one over
+it is 30% and falling. **The $5M seam is not a coincidence either**: it is the
+first rung of the re-spin ladder, so under it the fee itself was unaffordable,
+which is why that column reads 82.5% stuck and the next reads 0.0%.
+
+**ASKED ONLY AT THE SECOND TO LAST PICK**, which is where the table was measured.
+With three slots open the same number is headroom shared between two of them,
+which is a different quantity, and answering it off this table would be reading
+it for a question nobody put to it.
+
+**PER TILE, OR ONCE, AND NEVER BOTH.** Measured over 450 second to last boards:
+21.9% of signable tiles carry the mark, **51.1% of boards carry none at all**,
+and on **23.3% every signable man leaves it tight**. That last case is the
+board's own divider rule arriving one line up: a mark on everything marks
+nothing, and what it is really saying is a fact about the board rather than
+about any man on it. So it is one line above the board there instead.
+
+**`marginAfter` is one source with the price gate.** `canFinishAfter` is now the
+margin's own sign, so the two can never disagree about whether a signing is
+legal, which they would the first time either was edited alone.
+
+**Amber and fully pressable.** Spending the cap is the good way to draft, so this
+line exists to make the cost of it visible rather than to talk anybody out of it.
+And the button says **Re-spin (free)**, because `Re-spin ($0M)` reads as a
+rendering fault rather than as the one thing that screen has to offer.
+
+#### What the guards got wrong, and it was the same lesson twice
+
+**A GUARD THAT DIES ON A STACK TRACE HAS NOT REPORTED ANYTHING.** `respin` throws
+on a refusal, and the fixture for the free re-spin is a state where it used to be
+refused, so reintroducing the charge killed the whole suite on a line number
+rather than naming the trap it exists for. It is taken through a guard now, and
+reintroduced it reads `and is actually offered there (would leave too little to
+fill your roster)`, which is the defect in the reader's own words.
+
+**The browser walk pressed a board that had not landed.** `pending` sits on the
+PARENT, so `#opts .ptile:not(.pending)` matches every tile the moment it exists,
+mid-spin included, and a scripted click ignores the `pointer-events:none` that is
+the only other thing holding it shut. The signing was dropped, and what the walk
+then reported was the re-spin button being dead. That selector is written up
+under `check-live` as load-bearing; this is the third time it has been.
+
+**And its restart pressed a button that was not there.** The front door says
+Resume once a run is saved, so a fresh run needs the run in hand dropped first.
+Left alone the retry silently did nothing and the walk reported one attempt.
+
+**It retries up to eight drafts**, because half of second to last boards
+correctly carry no warning: one draft is a coin toss on whether the thing exists
+to be found, which is this file's own note about a check reporting its own seed.
+Reintroduced, it searches all eight and says so.
+
+#### What is still open
+
+**Pick 4 can be forced with no re-spin on 7.6% of best-available runs and 10.6%
+of cap-spending ones**, and the waiver deliberately does not reach it: the
+warning fires at pick 4 about pick 5, so it says nothing about pick 4 itself.
+That is a third of what pick 5 was and it is recorded rather than fixed, because
+widening the waiver to two slots gives away a good deal more than it buys.
+
 ### Three doors, and one of them was already built
 
 | | the wheel | what it is |

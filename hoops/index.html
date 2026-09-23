@@ -1521,6 +1521,22 @@
   .ptile .chemline i{font-style:normal;font-size:11.5px;color:#86efac;opacity:.85;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
+  /* WHAT THIS SIGNING LEAVES THE LAST SLOT. Amber rather than red: it is a
+     consequence worth knowing and not a refusal, and the tile stays fully
+     pressable, because spending the cap is the good way to draft and this
+     line exists so the cost of it is visible rather than to talk anybody out
+     of it. It spans the row the way chemline does, so the grid's other two
+     columns keep their widths whether or not it is there.
+     TABULAR, because the figure changes per tile and a column of prices that
+     shifted under the eye would be the one thing this line adds noise with. */
+  .ptile .tight{grid-column:1/-1;margin-top:-2px;font-size:11.5px;
+    font-family:var(--num);font-variant-numeric:tabular-nums;
+    color:#fbbf24;opacity:.9;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* Said once, above the board, when it is true of every man on it. */
+  .opts .tightall{grid-column:1/-1;margin:0 0 2px;font-size:12px;
+    color:#fbbf24;opacity:.9;}
+
   /* The price block, and the thing that was missing: what that price BUYS. */
   .ptile .money{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
   .ptile .price{font-family:var(--num);font-size:17px;font-weight:700;line-height:1;
@@ -2596,8 +2612,8 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=19"></script>
-<script src="run.js?v=9"></script>
+<script src="engine.js?v=20"></script>
+<script src="run.js?v=10"></script>
 <script src="badges.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
@@ -2669,7 +2685,7 @@ var bold = function(text){
  * comes back still disagrees, say so in words instead of dying quietly. One
  * retry, so this can never become a reload loop.
  */
-var NEED_VERSION = 6;
+var NEED_VERSION = 7;
 (function bootCheck(){
   if (E && R && E.API_VERSION === NEED_VERSION && R.API_VERSION === NEED_VERSION) return;
   if (!/[?&]fresh=/.test(location.search)) {
@@ -4647,7 +4663,12 @@ function renderDraft(justSlot){
 
   var re = R.canRespin(run);
   $('b-respin').disabled = !re.ok || !draw || reelBusy;
-  $('b-respin').textContent = 'Re-spin (' + money(re.cost) + ')';
+  /* FREE IS A WORD AND NOT A PRICE OF ZERO. The last slot's re-spin costs
+     nothing, and "Re-spin ($0M)" reads as a rendering fault rather than as the
+     one thing that screen has to offer. */
+  $('b-respin').textContent = re.cost > 0
+    ? 'Re-spin (' + money(re.cost) + ')'
+    : 'Re-spin (free)';
   $('d-note').textContent = re.ok ? '' : (draw ? re.reason : '');
 
   renderFit();
@@ -4773,6 +4794,38 @@ function renderOptions(draw){
 
   renderSortBar(draw);
 
+  /* ── WHAT THIS PICK DOES TO THE LAST ONE ─────────────────────────────────
+   *
+   * The reserve floor promises a LEGAL ROSTER AND NEVER A CHOICE: it earmarks
+   * the cheapest man for every open slot, so a drafter who spends down to it
+   * reaches the last slot able to afford precisely that man. Measured, the
+   * last board is a single forced option on 47.6% of best-available runs and
+   * 61.0% of runs that spend the cap, against 10.2% for a bot that hoards
+   * money. The game was taking the last of its five decisions away from the
+   * player who had drafted the way it rewards, and nothing on screen said so
+   * until it had happened.
+   *
+   * So it is said BEFORE the tap, which is the rule the dynasty door in the
+   * football game already runs on.
+   *
+   * MARKED PER TILE, OR ONCE, AND NEVER BOTH. Measured over 450 second to last
+   * boards: 21.9% of signable tiles would carry the mark, 51.1% of boards
+   * carry none at all, and on 23.3% EVERY signable man leaves it tight. That
+   * last case is the divider rule below arriving one line up: a mark that is
+   * on everything marks nothing, and what it is really saying is a fact about
+   * the board rather than about any man on it. */
+  var signableRows = rows.filter(function(row){ return !row.block && row.p.p <= afford; });
+  var tightRows = signableRows.filter(function(row){ return R.leavesNoChoice(run, row.p); });
+  var allTight = signableRows.length > 0 && tightRows.length === signableRows.length;
+  var markTight = tightRows.length > 0 && !allTight;
+
+  if (allTight) {
+    var warn = document.createElement('p');
+    warn.className = 'dim tightall';
+    warn.textContent = 'Every man here leaves the last pick tight. That re-spin is free.';
+    boardEl.appendChild(warn);
+  }
+
   /* A HEADING OVER THE WHOLE LIST IS NOT A HEADING. On an opening board every
      man is affordable, so "SIGNABLE" sat alone above ten signable players and
      told nobody anything, for 26px off the top of the one screen that matters.
@@ -4801,7 +4854,9 @@ function renderOptions(draw){
       g.appendChild(lb); g.appendChild(rule);
       boardEl.appendChild(g);
     }
-    boardEl.appendChild(playerTile(p, block, tooDear, r));
+    boardEl.appendChild(playerTile(p, block, tooDear, r,
+      markTight && !block && !tooDear && R.leavesNoChoice(run, p)
+        ? R.marginAfter(run, p) : null));
   }
 
   if (!rows.length) {
@@ -4929,7 +4984,7 @@ function chemHint(p, block){
   return el;
 }
 
-function playerTile(p, block, tooDear, idx){
+function playerTile(p, block, tooDear, idx, tightLeft){
   var off = !!block || tooDear;
   var b = document.createElement('button');
   b.className = 'ptile' + (off ? ' off' : '');
@@ -4973,6 +5028,16 @@ function playerTile(p, block, tooDear, idx){
      shorter on average than it was. */
   var chem = chemHint(p, block);
   if (chem) b.appendChild(chem);
+
+  /* What signing him leaves for the last slot, on the tiles where that is the
+     thing worth knowing. Null on every other pick and on every other board,
+     so this line is absent far more often than it is present. */
+  if (tightLeft !== null && tightLeft !== undefined) {
+    var tl = document.createElement('span');
+    tl.className = 'tight';
+    tl.textContent = 'Leaves $' + tightLeft.toFixed(1) + 'M for your last pick.';
+    b.appendChild(tl);
+  }
 
   var stats = document.createElement('span');
   stats.className = 'stats';

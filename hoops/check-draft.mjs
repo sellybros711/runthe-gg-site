@@ -249,6 +249,133 @@ section('5. a two-position man draws two pills, not one reading PG/SG');
   await ctx.close();
 }
 
+/* ── THE LAST PICK IS SAID BEFORE THE TAP, AND THE VALVE IS OPEN ───────────
+ *
+ * The reserve floor promises a legal roster and never a CHOICE, so a drafter
+ * who spends down to it reaches the last slot able to afford one man. Measured
+ * before the fix, the last board was a single forced option on 61.0% of
+ * cap-spending runs and the re-spin was refused at the same moment on 43.6%,
+ * because its fee is charged against a budget already at the floor.
+ *
+ * Both halves of the answer are on screen and neither throws if it goes: a
+ * board with no warning on it looks exactly like a board that did not need
+ * one, and "Re-spin ($0M)" reads as a rendering fault rather than as the one
+ * thing that screen has to offer.
+ *
+ * IT DRAFTS THE DEAREST MAN IT CAN, because the cheapest bot is never trapped
+ * and a walk that hoards money would pass having exercised nothing. And it
+ * RETRIES THE RUN, because half of second to last boards correctly carry no
+ * warning at all: one draft is a coin toss on whether the mark exists to find,
+ * which is the seed this file's own header warns about reporting. */
+{
+  const { page, ctx, boom } = await draftPage(browser, 420, 900);
+
+  /* A LANDED BOARD, NEVER JUST A TILE. `pending` sits on the PARENT, so
+     `.ptile:not(.pending)` matches every tile the moment it exists, mid-spin
+     included, and a scripted click ignores the pointer-events none that is the
+     only other thing holding it shut. Pressed early the signing is dropped and
+     the walk then reports the page as stuck. CLAUDE.md records this selector
+     as load-bearing; this is it being load-bearing. */
+  const board = () => page.waitForSelector('.opts:not(.pending) .ptile', { timeout: 20000 })
+    .then(() => true, () => false);
+
+  const slotsOpen = () => page.evaluate(() => {
+    try {
+      const r = JSON.parse(localStorage.getItem('runthefloor_run_v1') || 'null');
+      return r && r.roster ? (window.RTF_ENGINE.SLOTS.length - r.roster.length) : -1;
+    } catch (e) { return -1; }
+  });
+
+  /* The DEAREST man each time, because the cheapest bot is never trapped and a
+     walk that hoards money would pass having exercised nothing. */
+  const signDearest = async () => {
+    if (!(await board())) return false;
+    const before = await slotsOpen();
+    const got = await page.evaluate(() => {
+      const t = [...document.querySelectorAll('.opts:not(.pending) .ptile:not(.off)')];
+      if (!t.length) return false;
+      const price = (el) => Number((el.querySelector('.price')?.textContent || '')
+        .replace(/[^0-9.]/g, '')) || 0;
+      t.sort((a, b) => price(b) - price(a));
+      t[0].click();
+      return true;
+    });
+    if (!got) return false;
+    await page.waitForFunction((n) => {
+      try {
+        const r = JSON.parse(localStorage.getItem('runthefloor_run_v1') || 'null');
+        return r && r.roster && r.roster.length > n;
+      } catch (e) { return false; }
+    }, before === -1 ? 0 : (5 - before), { timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(220);
+    return true;
+  };
+
+  /* Home, then a fresh run. THE DOOR SAYS RESUME once a run is saved, so the
+     start button is not what is on it: the run in hand has to be dropped
+     first or the walk presses a control that is not there. */
+  const freshRun = async () => {
+    await page.evaluate(() => { const b = document.querySelector('#b-mark'); if (b) b.click(); });
+    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      const ab = document.querySelector('#b-abandon');
+      if (ab && ab.offsetParent !== null) ab.click();
+    });
+    await page.waitForTimeout(200);
+    await page.evaluate(() => { const b = document.querySelector('#b-start'); if (b) b.click(); });
+    return board();
+  };
+
+  let warned = null, lastFee = null, attempts = 0;
+  while (attempts < 8 && (warned === null || lastFee === null)) {
+    attempts++;
+    let guard = 0;
+    while ((await slotsOpen()) > 2 && guard++ < 10) { if (!(await signDearest())) break; }
+
+    if ((await slotsOpen()) === 2 && (await board()) && warned === null) {
+      const w = await page.evaluate(() => ({
+        tiles: document.querySelectorAll('#opts .ptile .tight').length,
+        all: document.querySelectorAll('#opts .tightall').length,
+        text: (document.querySelector('#opts .tight, #opts .tightall') || {}).textContent || '',
+      }));
+      if (w.tiles + w.all > 0) warned = w;
+    }
+
+    while ((await slotsOpen()) > 1 && guard++ < 14) { if (!(await signDearest())) break; }
+    if ((await slotsOpen()) === 1 && (await board()) && lastFee === null) {
+      lastFee = await page.evaluate(() => {
+        const b = document.querySelector('#b-respin');
+        return b ? { label: b.textContent, off: b.disabled } : null;
+      });
+    }
+    if ((warned === null || lastFee === null) && attempts < 8) {
+      if (!(await freshRun())) break;
+    }
+  }
+
+  ok(warned !== null,
+    `a tight last slot was called out before the tap (found in ${attempts} drafts)`);
+  if (warned) {
+    /* ONE OR THE OTHER, NEVER BOTH. A mark on every tile says the same thing N
+       times, which is this page's own divider rule one line up. */
+    ok(!(warned.tiles > 0 && warned.all > 0),
+      `the warning is per tile or said once, not both (${warned.tiles} tiles, ${warned.all} lines)`);
+    ok(/\$\d/.test(warned.text) || /last pick/i.test(warned.text),
+      `and it names what is left or what it costs ("${warned.text.slice(0, 60)}")`);
+  }
+
+  ok(lastFee !== null, 'the walk reached the last slot');
+  if (lastFee) {
+    ok(/free/i.test(lastFee.label),
+      `the last slot re-spin is offered as free, not as a price ("${lastFee.label}")`);
+    ok(!/\$0/.test(lastFee.label),
+      `and never as $0M, which reads as a rendering fault ("${lastFee.label}")`);
+    ok(!lastFee.off, 'and the button is live, which is the whole valve');
+  }
+  ok(!boom.length, `no page error on the draft walk${boom.length ? ': ' + boom[0] : ''}`);
+  await ctx.close();
+}
+
 await browser.close();
 
 console.log('');
