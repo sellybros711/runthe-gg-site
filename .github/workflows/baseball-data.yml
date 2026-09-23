@@ -1,0 +1,111 @@
+name: Refresh Run The Diamond player data
+
+# Builds baseball/data/players.json from Baseball-Reference and commits it.
+#
+# THIS IS THE ONLY PLACE THE PIPELINE CAN RUN, which is the same split the hoops
+# data workflow documents: baseball-reference.com and fangraphs.com are both
+# refused by the development sandbox's egress proxy (403 on CONNECT) and open
+# from GitHub's runners.
+#
+# AND UNTIL NOW IT WAS A LAPTOP JOB. fetch_inputs.py's own docstring says "run
+# this on a normal machine, then hand the zip back", so the pool was whatever
+# somebody's machine produced on the day, with no record of which sources
+# answered. That is how DATA_RUNBOOK.md came to describe a 50/50 FanGraphs blend
+# that never ran: FanGraphs answered 403, the build printed a friendly note and
+# carried on, and nothing anywhere recorded that the shipped file was bWAR only.
+# The build writes pipeline/provenance.json now, so the claim and the data cannot
+# drift again, and that file is committed with the pool.
+#
+# Three stages:
+#   fetch_inputs.py     bWAR bulk files, FanGraphs leaderboards, Lahman tables
+#   build_pricing.py    joins them and prices every player-season
+#   build_positions.py  positions, closer flags, the starter innings anchor
+#
+# NO SECRETS. It reads public sources and writes files back to this branch.
+#
+# WHAT IT WILL NOT DO ON ITS OWN is change the shape of the pool. `split_stints`
+# is an input and defaults to false: splitting a traded player's season into one
+# row per club recovers 2,939 seasons that are currently draftable from nowhere,
+# and it moves the draft economy, because the price curve is convex and half the
+# WAR costs much less than half the price. Run it, then re-run the cap sweep and
+# compare the best-available against budget-bot gap BEFORE shipping the result.
+
+on:
+  workflow_dispatch:
+    inputs:
+      split_stints:
+        description: 'One row per club for a traded season (MOVES THE DRAFT ECONOMY, measure before shipping)'
+        type: boolean
+        default: false
+      require_fwar:
+        description: 'Fail if the FanGraphs blend does not run, instead of falling back to bWAR'
+        type: boolean
+        default: false
+      commit:
+        description: 'Commit the rebuilt pool'
+        type: boolean
+        default: true
+
+concurrency:
+  group: baseball-data
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install
+        run: pip install pandas numpy pybaseball
+
+      - name: Fetch the raw inputs
+        working-directory: baseball/pipeline
+        run: python3 fetch_inputs.py
+
+      # WHAT ANSWERED, printed before anything is built. fetch_inputs.py reports a
+      # failed source and carries on by design, so the log is the only place a 403
+      # shows up, and reading it is how the blend's absence should have been caught
+      # the first time.
+      - name: What the fetch actually got
+        working-directory: baseball/pipeline
+        run: ls -la data/ && wc -l data/*.txt data/*.csv 2>/dev/null || true
+
+      - name: Build
+        working-directory: baseball/pipeline
+        run: |
+          set -o pipefail
+          python3 build_pricing.py
+          python3 build_positions.py \
+            ${{ inputs.split_stints && '--split-stints' || '' }} \
+            ${{ inputs.require_fwar && '--require-fwar' || '' }}
+          cat provenance.json
+
+      # The pool the game will actually serve, checked before it is committed.
+      # check-labels drives every shipped row through the pricing rule, so a build
+      # that changed the formula or lost the innings anchor fails here rather than
+      # on somebody's draft screen.
+      - name: The pool still says what it is
+        run: |
+          node baseball/check-labels.mjs
+          node baseball/check-numbers.mjs
+
+      - name: Commit
+        if: ${{ inputs.commit }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add baseball/data/players.json baseball/pipeline/provenance.json
+          if git diff --cached --quiet; then
+            echo "The pool did not move."
+            exit 0
+          fi
+          git commit -m "Baseball: refresh the player pool from Baseball-Reference"
+          git push

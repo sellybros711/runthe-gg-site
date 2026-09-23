@@ -44,6 +44,7 @@ globalThis.window = globalThis;
 await import(path.join(DIR, 'engine.js'));
 await import(path.join(DIR, 'run.js'));
 const R = window.RTD_RUN;
+const E = window.RTD_ENGINE;
 R.indexData(players);
 
 /* Derived independently of the engine, or the check is the engine agreeing
@@ -92,7 +93,11 @@ function lift(name) {
 const namesBlock = html.slice(html.indexOf('const TEAM_NAMES={'), html.indexOf('function teamFullName'));
 claim(/TOT:/.test(namesBlock), 'TEAM_NAMES carries a TOT entry to read the words from');
 
-const page = eval(`(function(){const esc=s=>String(s);${namesBlock}${lift('clubTag')}${lift('halfTag')}${lift('seasonLine')}${lift('seasonText')}${lift('offerMeta')}return{clubTag,halfTag,seasonLine,seasonText,offerMeta};})()`);
+/* EVERY FUNCTION seasonLine LEANS ON, not just seasonLine. It was three names and
+   is five, and this lift is what caught the change: splitting the row's facts into
+   rowFacts and heavyIP left the old list resolving a ReferenceError at the first
+   call. `E` is passed in because heavyIP reads ANCHOR_IP off the engine. */
+const page = eval(`(function(E){const esc=s=>String(s);${namesBlock}${lift('clubTag')}${lift('halfTag')}${lift('heavyIP')}${lift('rowFacts')}${lift('seasonLine')}${lift('seasonText')}${lift('offerMeta')}return{clubTag,halfTag,heavyIP,rowFacts,seasonLine,seasonText,offerMeta};})`)(E);
 
 claim(page.clubTag('TOT') !== 'TOT' && page.clubTag('TOT').length > 3,
   'TOT is rendered as words, not as the code',
@@ -146,7 +151,8 @@ console.log('\n3. Every surface goes through the renderer');
    take, and its `.t` is the sentence rather than a club. Excluding it by name
    is the weak part of this scan, so the take list is asserted to still be
    what that name means. */
-const helperSrc = lift('clubTag') + lift('halfTag') + lift('seasonLine') + lift('seasonText') + lift('tcPlate') + lift('offerMeta');
+const helperSrc = lift('clubTag') + lift('halfTag') + lift('heavyIP') + lift('rowFacts')
+  + lift('seasonLine') + lift('seasonText') + lift('tcPlate') + lift('offerMeta');
 const scanned = html.split(helperSrc).join('');
 const ESCAPED_CODE = /esc\(\s*([A-Za-z_$][\w.$]*)\.t\s*\)/g;
 const strays = [...scanned.matchAll(ESCAPED_CODE)]
@@ -163,9 +169,20 @@ claim(strays.length === 0,
   'no surface prints a club code without going through clubTag',
   strays.length ? `found: ${[...new Set(strays)].join(' | ')}` : '');
 
-/* The two renderers the page actually calls both have to read it. */
-for (const fn of ['seasonLine', 'seasonText', 'tcPlate']) {
-  claim(/clubTag\(/.test(lift(fn)), `${fn}() goes through clubTag`);
+/* THE CHAIN, not the call site. The renderers used to name clubTag themselves and
+   now share a rowFacts that does, and reading each body for the word reported two
+   correct functions as broken. Following the indirection is the fix rather than
+   dropping the claim: what matters is that a club code cannot reach a screen
+   without passing through clubTag, and the route is now one hop long. */
+claim(/clubTag\(/.test(lift('rowFacts')), 'rowFacts() is where the club code goes through clubTag');
+for (const fn of ['seasonLine', 'seasonText']) {
+  claim(/rowFacts\(/.test(lift(fn)), `${fn}() builds its row from rowFacts`);
+}
+claim(/clubTag\(/.test(lift('tcPlate')), 'tcPlate() goes through clubTag');
+/* And rowFacts is the ONLY thing they read it from, or a second list of facts is a
+   second spelling of a row, which is the reason rowFacts exists. */
+for (const fn of ['seasonLine', 'seasonText']) {
+  claim(!/clubTag\(/.test(lift(fn)), `${fn}() does not keep a second copy of the club rule`);
 }
 
 /* Today this is belt and braces, and saying so is the point: a guard whose
@@ -197,6 +214,64 @@ claim(/Baseball-Reference/.test(fs.readFileSync(path.join(DIR, 'how-to-play.html
 const runbook = fs.readFileSync(path.join(DIR, 'pipeline/DATA_RUNBOOK.md'), 'utf8');
 claim(/never ran|bWAR and nothing else/i.test(runbook),
   'the runbook says the shipped pool is bWAR-only');
+
+/* ── 5. the fourth reason, which was the one left unlabelled ───────────────── */
+console.log('\n5. A starter priced on 210 innings says so');
+
+/* build_positions.py scales a STARTER's WAR by min(1, ANCHOR_IP/ip) before pricing
+   him and leaves relievers and batters alone, so a heavy workload makes the price
+   on a tile disagree with the WAR beside it. The pipeline cannot be run from here
+   (both WAR sources are refused by the sandbox's proxy), so the rule is verified
+   against every shipped row instead, which is stronger: it is the data the game
+   actually serves rather than the script that was supposed to have made it. */
+const ANCHOR = E.CONSTANTS.ANCHOR_IP;
+const price = (w) => Math.round(Math.max(1, 1.5 * Math.pow(Math.max(w, 0), 1.6)) * 10) / 10;
+{
+  let bad = null, discounted = 0, starters = 0;
+  for (const r of players) {
+    const isSP = r.r === 'p' && r.pp === 'SP' && r.ip > 0;
+    if (isSP) starters++;
+    const f = isSP ? Math.min(1, ANCHOR / r.ip) : 1;
+    if (f < 0.999) discounted++;
+    const want = price(r.w * f);
+    if (Math.abs(want - r.p) > 0.1001 && !bad) bad = `${r.n} ${r.s}: w=${r.w} ip=${r.ip} pp=${r.pp} price=${r.p}, rule says ${want}`;
+  }
+  claim(!bad, `every one of the ${players.length} shipped rows reproduces from w, ip and pp`, bad);
+  /* And the discount really bites, or the label below is dressing nothing. */
+  claim(discounted > 500,
+    `${discounted} starters of ${starters} are priced below their own WAR (${(100 * discounted / starters).toFixed(1)}%)`);
+}
+
+/* The label is on exactly those rows. Driven through the page's own heavyIP rather
+   than a copy of the predicate, for the reason the rest of this file is written:
+   a second implementation agrees with itself. */
+{
+  const src = html.slice(html.indexOf('function heavyIP('));
+  const body = src.slice(0, src.indexOf('\n}') + 2);
+  claim(/function heavyIP/.test(body), 'heavyIP is still in the page');
+  const heavyIP = new Function('E', body + '\nreturn heavyIP;')(E);
+  let wrong = null, tagged = 0;
+  for (const r of players) {
+    const want = r.r === 'p' && r.pp === 'SP' && r.ip > ANCHOR;
+    const got = !!heavyIP(r);
+    if (got) tagged++;
+    if (got !== want && !wrong) wrong = `${r.n} ${r.s} (${r.pp}, ${r.ip} IP): tagged ${got}, should be ${want}`;
+  }
+  claim(!wrong, `the innings tag is on exactly the ${tagged} rows whose price it explains`, wrong);
+  /* A batter and a reliever are never tagged, which is the half a loose predicate
+     would get wrong and which no sample of one draft board would notice. */
+  const bats = players.filter((r) => r.r === 'b' && heavyIP(r)).length;
+  const pen = players.filter((r) => r.r === 'p' && r.pp !== 'SP' && heavyIP(r)).length;
+  claim(bats === 0 && pen === 0, 'and never on a batter or a reliever, who are priced raw',
+    `batters ${bats}, relievers ${pen}`);
+}
+
+/* The two surfaces that explain it, because a tag with nothing to explain it is a
+   three letter code again. */
+claim(new RegExp(String(ANCHOR) + ' innings').test(draft),
+  'the draft screen says what the innings do to a price');
+claim(new RegExp(String(ANCHOR) + ' innings').test(fs.readFileSync(path.join(DIR, 'how-to-play.html'), 'utf8')),
+  'and how-to-play says it too');
 
 console.log(failures ? `\n${failures} failed.\n` : '\nAll checks passed.\n');
 process.exit(failures ? 1 : 0);

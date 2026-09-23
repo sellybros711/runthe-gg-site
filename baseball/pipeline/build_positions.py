@@ -81,19 +81,43 @@ pit = pd.DataFrame({
 })
 
 # Aggregate multi-stint seasons
-def combine(df, extra=None):
+#
+# A TRADED PLAYER HAS NO DRAFTABLE ROW AT ALL, WHICH IS 2,939 SEASONS. Collapsing
+# his stints to one row labelled TOT is correct arithmetic and makes him
+# unreachable, because three separate filters keep TOT off every board: a man who
+# changed clubs in July is simply not on either club's wheel. Rickey Henderson's
+# 1989, Tom Seaver's 1977 and Bartolo Colon's 2002 are all missing, 33 of them at
+# 6.0 WAR or better, 6.6% of the pool.
+#
+# SPLITTING IS OPT-IN AND DEFAULTS OFF, and that is deliberate rather than timid.
+# The price curve is CONVEX (price = 1.5 * war ** 1.6), so half the WAR costs far
+# less than half the price: splitting a season into two stints makes a great
+# player's half-year the best value on the board, and the draft economy this game
+# is balanced around would move. That is a measurement (re-run the cap sweep in
+# scripts and compare the best-available against budget-bot gap), and the
+# measurement cannot be made until a build has actually produced the split pool.
+#
+# So --split-stints exists, nothing runs it by default, and today's pool is
+# reproduced byte for byte without it. Do not turn it on and ship in one step.
+def combine(df, extra=None, split=False):
     agg = {"bwar": "sum", "name": "first", "role": "first"}
     if extra:
         for c in extra:
             agg[c] = "sum"
     if "ip" in df.columns and not extra:
         agg["ip"] = "first"
-    return (df.dropna(subset=["season", "bwar"])
-              .groupby(["bbref_id", "season"], as_index=False)
+    clean = df.dropna(subset=["season", "bwar"])
+    if split:
+        # One row per club, so each board offers what he did THERE.
+        return clean.groupby(["bbref_id", "season", "team"], as_index=False).agg(agg)
+    return (clean.groupby(["bbref_id", "season"], as_index=False)
               .agg({**agg, "team": lambda s: "TOT" if s.nunique() > 1 else s.iloc[0]}))
 
-bat = combine(bat)
-pit = combine(pit, extra=["ip_start", "ip_relief"])
+SPLIT_STINTS = "--split-stints" in sys.argv
+if SPLIT_STINTS:
+    print("  --split-stints: one row per club. THE DRAFT ECONOMY MOVES, see combine().")
+bat = combine(bat, split=SPLIT_STINTS)
+pit = combine(pit, extra=["ip_start", "ip_relief"], split=SPLIT_STINTS)
 pit["ip"] = (pit["ip_start"] + pit["ip_relief"]) / 3.0
 
 # Pitcher classification
@@ -284,11 +308,48 @@ try:
     print(f"  Blended fWAR for {matched}/{len(df)} player-seasons ({100*matched/len(df):.1f}%)")
 
 except Exception as e:
+    # THIS except IS WHY THE RUNBOOK LIED FOR MONTHS. FanGraphs answers 403, the
+    # blend is skipped, the build prints a friendly note and carries on, and the
+    # only record of which source actually won was a markdown file somebody wrote
+    # by hand from what the code was SUPPOSED to do. Nothing failed, so nobody
+    # looked: a bWAR-only pool is a perfectly good pool. The symptom was a document
+    # describing a number the game does not have, which is the dangerous direction.
+    #
+    # It still fails soft, because a pool is better than no pool. What changed is
+    # that the build now RECORDS what it did, in a file it writes itself, so the
+    # claim and the data cannot drift again. And --require-fwar is there for the
+    # run that means to have it: asking for a blend and silently not getting one is
+    # the exact shape of this bug.
+    WAR_SOURCE = "bwar"
+    WAR_SOURCE_WHY = f"fWAR blend skipped: {e}"
     print(f"  Skipping fWAR blend: {e}")
-    print("  Prices remain bWAR-only (this is fine for v1).")
+    if "--require-fwar" in sys.argv:
+        sys.exit("FATAL: --require-fwar was given and the blend did not run.")
+    print("  Prices are bWAR-only. Recorded in provenance.json.")
+else:
+    WAR_SOURCE = "blend-50-50"
+    WAR_SOURCE_WHY = f"fWAR blended for {matched}/{len(df)} rows"
 
 # ---- Step 5: Output ----
 print("\nStep 5: Writing output...")
+
+# WHAT THIS BUILD ACTUALLY DID, written by the build. DATA_RUNBOOK.md described a
+# 50/50 FanGraphs blend that never ran, for months, because the only record of
+# which source won was prose somebody wrote from what the code was meant to do.
+# A machine-written file cannot drift from the data beside it.
+prov = {
+    "war_source": WAR_SOURCE,
+    "war_source_note": WAR_SOURCE_WHY,
+    "split_stints": SPLIT_STINTS,
+    "anchor_ip": ANCHOR_IP,
+    "rows": int(len(df)),
+    "seasons": [int(df["season"].min()), int(df["season"].max())],
+}
+prov_path = os.path.join(SCRIPT_DIR, "provenance.json")
+with open(prov_path, "w") as fh:
+    json.dump(prov, fh, indent=2)
+    fh.write("\n")
+print(f"  Wrote {prov_path}: {prov['war_source']}, {prov['rows']} rows")
 
 out_cols = ["bbref_id", "name", "season", "team", "role", "primary_pos",
             "eligible_pos", "is_closer_proxy", "ip", "war_raw", "war_value", "price_m"]

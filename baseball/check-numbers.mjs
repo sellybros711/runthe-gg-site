@@ -193,6 +193,17 @@ const FACTS = [
     why: 'SLOTS.length',
   },
   {
+    id: 'the anchor innings',
+    /* A starter over this many innings is priced on what he did in this many, which
+       is the fourth reason a WAR lookup disagrees with a tile. The moment it was
+       written into a sentence it became a number that can go stale, which is what
+       this file is for. */
+    find: /\b(\d+) innings\b/gi,
+    near: /priced|price|starter|threw|WAR/i,
+    ok: (e) => [e.C.ANCHOR_IP],
+    why: 'ANCHOR_IP',
+  },
+  {
     id: 'the badge catalog',
     find: /\b([\w-]+)\s+badges\b/gi,
     near: /badge/i,

@@ -29,6 +29,53 @@ number. **Ted Williams 1941 ships as 10.36 against a remembered 10.6** and wants
 checking on a machine with a network: a real gap there means a stale pull, and
 the fix is re-running the fetch below.
 
+## The build records what it did, so this file cannot lie again
+
+The paragraph above is a document describing the data, written by hand, which is
+exactly the arrangement that went wrong: the blend was skipped in an exception
+handler, the build printed `Skipping fWAR blend` and carried on, and nothing
+anywhere recorded which source had actually won.
+
+`build_positions.py` writes **`pipeline/provenance.json`** on every run now:
+
+```json
+{ "war_source": "bwar", "war_source_note": "fWAR blend skipped: HTTP 403",
+  "split_stints": false, "anchor_ip": 210, "rows": 44344, "seasons": [1901, 2025] }
+```
+
+It is written by the build from what the build did, so it cannot drift from the
+file beside it the way prose can. `--require-fwar` turns a skipped blend into a
+hard failure for the run that means to have one: asking for a blend and silently
+not getting it is the whole of the original bug.
+
+## And it is no longer a laptop job
+
+`fetch_inputs.py` still says "run this on a normal machine", and that was the
+other half of the problem: the pool was whatever somebody's machine produced on
+the day. `.github/workflows/baseball-data.yml` runs the three stages on a GitHub
+runner, where both sources are reachable, prints what the fetch actually got,
+drives the shipped pool through `check-labels.mjs` before committing, and commits
+`provenance.json` alongside the data.
+
+**That workflow is what settles Ted Williams.** One dispatch, then read 1941 out
+of the rebuilt pool.
+
+## The 2,939 seasons a traded player does not have
+
+`combine()` collapses a mid-season move into one row labelled `TOT`, which is
+correct arithmetic and makes the man **undraftable**: three separate filters keep
+TOT off every board, so somebody who changed clubs in July is on neither club's
+wheel. Rickey Henderson's 1989, Tom Seaver's 1977 and Bartolo Colon's 2002 are
+all simply absent, 33 of them at 6.0 WAR or better, 6.6% of the pool.
+
+`--split-stints` emits one row per club instead, so each board offers what he did
+there. **It defaults to off, and turning it on is not a one-step change.** The
+price curve is convex (`1.5 * war ** 1.6`), so half the WAR costs far less than
+half the price, and a great player's half-season would become the best value on
+the board. Run the build with the flag, then re-measure the cap sweep's
+best-available against budget-bot gap, and only then ship the pool. The gap is
+the mode; it was +11.2 rating points at the shipped cap.
+
 **Leave it on bWAR.** A blend matches NEITHER published source, so it turns a
 number a player can check into one they cannot, and "where did you get this"
 becomes unanswerable. The page names the source on the draft screen for the

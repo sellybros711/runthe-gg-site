@@ -1590,7 +1590,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div id="tabs" class="tabs"></div>
   <div id="sortrow" class="sortrow"></div>
   <div id="opts" class="opts"></div>
-  <p class="srcnote">WAR is Baseball-Reference's, 1901 to 2025. FanGraphs rates the same season differently.</p>
+  <p class="srcnote">WAR is Baseball-Reference's, 1901 to 2025. FanGraphs rates the same season differently.
+    A starter who threw more than 210 innings is priced on what he did in 210. The WAR shown is his whole season.</p>
 
   <div style="margin-top:14px"><button class="btn ghost sm" id="b-quit">Quit this run</button></div>
 </div>
@@ -2204,14 +2205,38 @@ function clubTag(code){return code==='TOT'?TEAM_NAMES.TOT:code;}
    (see below) and two layouts must not become two spellings. */
 function halfTag(p){return p.half?p.half+' only':'';}
 
-/* Season, club, and which half of a two-way season this row is. */
+/* ── THE FOURTH REASON A LOOKUP DISAGREES, and the last one that was unlabelled.
+   Three are already on the row: bWAR against fWAR (the source note under the
+   board), a two-way season being two half rows (halfTag), and TOT not being a club
+   (clubTag). The fourth is that A STARTER'S PRICE IS NOT SET ON THE WAR BESIDE IT.
+
+   `build_positions.py` scales a starter's WAR by min(1, ANCHOR_IP / ip) before
+   pricing him, so a man who threw 264 innings is priced on what he did in 210. The
+   figure on the tile is the whole season, because that is the number a reader looks
+   up. So Clemens' 1997 shows 11.9 WAR and costs less than a 10.4, and until this
+   was labelled there was nothing anywhere on the page to say why.
+
+   It applies to STARTERS ONLY, which is what the build does: relievers and batters
+   are priced on the raw figure. Verified against every shipped row rather than read
+   off the script, because the script cannot be run here: all 44,344 reproduce
+   exactly from w, ip and pp, and 3,959 of the 12,461 starters (31.8%) carry a
+   discount. So the page can say which rows they are with no rebuild. */
+function heavyIP(p){
+  const anchor=(E.CONSTANTS&&E.CONSTANTS.ANCHOR_IP)||210;
+  return (p.r==='p'&&p.pp==='SP'&&p.ip>anchor)?Math.round(p.ip)+' IP':'';
+}
+/* Season, club, which half of a two-way season this row is, and the innings when
+   they are what set the price. Built once from a list so the two spellings below
+   cannot drift into two different rows. */
+function rowFacts(p){
+  return [p.s+' '+clubTag(p.t), halfTag(p), heavyIP(p)].filter(Boolean);
+}
 function seasonLine(p){
-  const h=halfTag(p);
-  return p.s+' '+esc(clubTag(p.t))+(h?' &middot; '+h:'');
+  const f=rowFacts(p);
+  return esc(f[0])+f.slice(1).map(x=>' &middot; '+esc(x)).join('');
 }
 function seasonText(p){
-  const h=halfTag(p);
-  return p.s+' '+clubTag(p.t)+(h?' · '+h:'');
+  return rowFacts(p).join(' · ');
 }
 
 function dressInTeamColors(team){
