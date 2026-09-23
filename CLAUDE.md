@@ -8370,7 +8370,52 @@ so **read the cache-busting section above before editing any of them**.
 node baseball/check-atbats.mjs    the at-bat simulator, against real brackets
 node baseball/check-bracket.mjs   the playoff field, against real runs
 node baseball/check-labels.mjs    what a player-season row says it is
+node baseball/check-theme.mjs     both themes, in a browser, on the real screens
 ```
+
+### The $170M cap is right, and the per-slot dollar is the wrong comparison
+
+Asked, because football gives $140M for 6 and $280M for 12 and hoops gives $126M for
+6, which is about $23M and $21M a slot against this game's **$14.2M**. That reads as
+a third tighter and it is not the difference. Measured over the two boards:
+
+| | a slot's share | that share buys | the dearest man |
+|---|---|---|---|
+| Run The Diamond | $14.2M | **86.4%** of the board | $103.7M, **7.3 slots**, 61% of the cap |
+| The Perfect Season | $23.3M | 85.1% | $48.0M, 2.1 slots, 34% |
+| Full Team | $23.3M | 85.1% | $48.0M, 2.1 slots, 17% |
+
+**An ordinary pick costs the same relative amount in both games.** What is different
+is the top: a football star costs two of your spots and a baseball star costs seven
+of your twelve. That is the PRICE CURVE rather than the cap, and it is why a roster
+here cannot hold two genuine all-timers.
+
+**The cap binds, and stopping it binding is what raising it would do.** The fantasy
+probe's crossover test, 70 drafts a cell, best-available against a bot that holds a
+pro-rata share back for every open slot:
+
+| cap | best-available | holds money back | the gap | best-available spends | titles, careful |
+|---|---|---|---|---|---|
+| $140M | 48.3 | 64.8 | +16.5 | 100% | 3% |
+| **$170M** | **63.6** | **74.8** | **+11.2** | **100%** | **7%** |
+| $200M | 75.9 | 83.4 | +7.5 | 99% | 23% |
+| $230M | 86.9 | 87.0 | **+0.1** | 98% | 33% |
+| $300M | 93.0 | 91.9 | **-1.1** | 86% | 37% |
+| $400M | 92.9 | 94.5 | +1.6 | 65% | 49% |
+
+**They cross between $230M and $300M.** Above it, holding money back stops paying and
+the draft is "take the best man every time", which is no decision at all. `engine.js`
+already records $245M being tried and barely biting. At $170M the gap is eleven rating
+points, and **best-available won no title in 70 runs** where careful drafting won 7%.
+That gap IS the mode.
+
+**What it costs is 5.2 of 12 spins where the top man on the board is priced out** for
+a best-available drafter, against 6.8 at $140M and 3.7 at $200M. That is the axis to
+watch if this is ever revisited, not the per-slot dollar.
+
+**Value per dollar is not a third strategy** and the probe keeps its row to say so.
+The price curve is convex, so points per dollar always takes the cheapest man on the
+board: it spends 14% of the cap and finishes at a rating of 5.5.
 
 ### The WAR is Baseball-Reference's, and the runbook said otherwise for months
 
@@ -8611,6 +8656,265 @@ The opponent bats its own roster: a marquee club carries its season, so the 1927
 Yankees send up Combs, Gehrig and Ruth. **A third of those clubs have seven or
 eight qualifying bats**, because the build applies a playing-time floor, and the
 rest of the order fills in by position rather than by inventing anybody.
+
+### And then the door went too, because the staff can assign itself
+
+```
+node baseball/check-staff.mjs        the assignment, the ranking and the blast radius
+node baseball/check-staff.mjs 400    a bigger sample
+```
+
+Asked for, and it is the section above taken to its conclusion: if SP3 and SP4 are
+one job, stop asking. **All-Time Staff opens no chooser at all now.** A starter
+fills the rotation, a reliever the bullpen, and the twelve slots re-rank themselves
+so SP1 is the ace.
+
+**Two things the sim can hear, and the draft answers both.**
+
+**THE ROTATION TAKES THE BEST ARMS.** A rotation slot is a fifth of 70% of the
+innings and a relief slot a seventh of 30%: **14.0% against 4.3%**. That gap beats
+the steeper return relief WAR pays (0.55 of an ERA point per win against 0.32), so
+the bigger arm belongs in the rotation every time, by 0.021 of staff ERA per win
+above the man he displaces.
+
+**And CL**, because `closerSavePct` reads that slot by name and nothing else does.
+Both slots sit in the same relief average, so the label costs nothing in ERA and
+can only raise the save rate. **That clause is also what keeps the roster LEGAL**,
+which is not obvious: a starter who overflowed into the bullpen is not
+closer-eligible, and without CL filled first the ranking hands it to him. Nothing
+throws. The sim reads him as the closer and converts saves off his WAR.
+
+#### The first rule refused to cross the rotation line, and the card said so
+
+It filled the rotation in DRAFT ORDER and sorted only within each group, on the
+argument that a sort free to move a man between them is an optimiser rather than a
+tidy-up and would drift every win rate the mode is balanced on. **That is the right
+worry about the wrong rule.** Driven for real it put Greg Maddux's 9.1 WAR at RP1
+above a 4.7 WAR SP1, because he was picked tenth. The card read as broken, the
+staff really was worse, and "sorted by ranking" was the one thing it was not.
+
+**WHAT IT COSTS IS LARGE AND IS NOT A SIDE EFFECT**, measured over 220 drafts a
+cell against the same seeds:
+
+| | wins | Octobers | titles | save% | staff ERA |
+|---|---|---|---|---|---|
+| best-available, draft order | 86.4 | 43% | 2.7% | 82.8 | 3.194 |
+| **best-available, ranked** | **94.2** | **76%** | **8.2%** | 85.8 | **3.030** |
+| middling draft, draft order | 55.9 | 0% | 0% | 82.4 | 4.173 |
+| **middling draft, ranked** | **57.8** | 0% | 0% | 84.6 | **4.136** |
+
+**IT IS NOT A FLAT INFLATION AND THE SHAPE IS THE POINT.** The ERA moves 0.164 for
+a good draft and **0.037 for a middling one**, because ranking only pays when there
+is a spread to rank: a staff of twelve similar arms is the same staff in any order.
+So what this rewards is having a real ace, which is what the mode is about.
+
+**The baseline is the LAZY path and not the good one.** With the chooser up, every
+SP slot was a "natural position" for a starter, so the first option on the sheet
+was the lowest open SP slot: clicking through gave you draft order. A player who
+thought about it already put their best arms in the rotation and is where they
+were. So this is not a buff to good play, it is the removal of a trap for careless
+play, which is `check-runs`' own "doing nothing was the worst outcome" arriving in
+a draft.
+
+**IT MOVES `staffRating`, WHICH IS ITS OWN DECISION AND IS NOT TAKEN HERE.** That
+scale is anchored at `50 + (3.40 - era) * 55` against a measured median ERA of
+3.22, and it was measured on the draft-order assignment because that is what a bot
+signing without choosing produced. At 55 points per ERA point the drift is **about
+nine rating points at the top of the range and two in the middle**, so the scale
+does not shift, it STRETCHES: the gap between a good staff and an ordinary one
+opens by about seven points. Re-anchoring is a one line change and its own
+measurement pass; leaving it means a strong staff reads higher than it used to and
+existing staff board rows sit low. Decide it deliberately rather than by noticing
+the drift later.
+
+#### The guard, and the four mutations that gave it teeth
+
+Every claim was proved by reintroducing a defect, and **two of the four passed green
+on the first attempt**, which is the whole reason the file reads the way it does.
+
+- **"The sort never moves a man across the rotation line" could not fail.** It read
+  the ERA, called the sort again and read it again. The sort is idempotent, so a
+  sort that crossed the line crossed it identically both times and the delta was
+  zero: it compared an already sorted staff with itself. That assertion is gone
+  anyway, because the rule it guarded was the wrong one.
+- **"The sort does not reach the other modes" could not fail either**, for the same
+  reason one level along: with the mode guard removed the sort has ALREADY run
+  inside `sign()`, so the fixture was the sorted answer and the second call agreed
+  with it. The fixture is deliberately scrambled now, and the check asserts the
+  scramble is one a sort would visibly change before asserting it survived.
+- **What actually catches a sort that crosses the line is ELIGIBILITY**, which the
+  first draft never asked. A reliever at SP1 is an illegal roster the sim reads
+  perfectly happily: he is simply rated on the starter's ERA curve from then on.
+
+**The tile prints where he ENDS UP, not where the signing takes him.**
+`slotForPlayer` names the slot the pick claims and the re-rank then moves everybody,
+so a tile promising the rotation to the sixth-best starter on the board would be
+wrong a frame later. `staffLanding()` does the real signing on a clone and reads the
+answer back, so there is never a second copy of the ranking rule written out for
+display. That is this mode's own tile-and-sheet disagreement, caught before it
+shipped a second time.
+
+**A tile can still say Bullpen for a man who ends at CL, and that is honest.** CL is
+last in `STAFF_SLOTS`, so it is not an open slot until the twelfth pick: at pick
+eleven the answer really was the bullpen, and the later pick is what freed the job.
+
+**The sort runs at the draft and nowhere else.** `cutPlayer` puts a
+replacement-level arm in the slot a man was cut from, mid-season, and re-sorting
+there would promote the best remaining reliever into CL and hand back the save rate
+the player had just lost. A cut is meant to cost something.
+
+### One job, one door, and the chooser was answering with a regex
+
+Reported as "why can't I choose SP2 for Mathewson if that is available". SP2 was
+open, the sheet offered SP1 and SP5, and SP2 was not on it.
+
+**`slotGroup()` in the engine is where that question is answered now.** `staffEra`
+and `staffRunPrevention` AVERAGE the five rotation slots together and average RP1
+through RP5 and SU together, so a staff's five starters are one job with five names
+and its six relievers are one job with six. CL is on its own, because it is the one
+arm read by name, in `saveRate`.
+
+**The page cannot work that out from the STRING, and three separate loops were
+trying to.** Each carried its own `name.replace(/[12]$/,'')`, which strips a trailing
+1 or 2 and leaves every other digit alone. In All-Time Staff that makes SP2 the same
+job as SP1 and SP5 a job of its own, so the chooser offered nine doors into three
+rooms and hid one of them. The tile above it printed a fourth answer again
+(`1909 NYG → SP · SP5 · RP…`).
+
+`openJobs(p)` is the one function now, read by the tile and the sheet.
+
+**The same regex was colouring the chips**, from `POS_COLORS`, which names SP, SP1,
+SP2, CL and RP and not SP3 to SP5, RP1 to RP5 or SU. So the lineup card drew the
+whole back of the rotation and the whole bullpen in the fallback grey that means
+"no position", beside two blue starters. `posColor` falls through to the base.
+
+**And the sheet said the same thing twice.** A pitcher offered a relief slot read
+`Reliever` over a note reading `Pitcher`, which answers nothing the sheet is asking.
+`slotNote()` says what taking it would MEAN: in the rotation, out of the bullpen,
+closing games.
+
+### The desktop page is football's, and the two columns have to be the same length
+
+Asked for: on desktop baseball should look like football, with the lineup card kept
+where it is and the same length as the field beside it.
+
+**The row used to step outside the column and the whole page widens now**, which is
+`.wrap:has(#s-draft.on)`, football's own arrangement. A row wider than the page it
+sits in gives the diamond and the board under it different left edges, so the screen
+has two rulers on it: 1020px of field over a 640px column of tiles, which reads as a
+panel pasted onto a phone layout. The board goes to three across at the same time,
+because two 480px tiles on a 1440 monitor is the same complaint.
+
+**STRETCH, AND THE FIELD PINNED.** The card is twelve rows of fixed height and the
+field is an aspect ratio, so left alone they are different lengths. `align-items:
+stretch` alone is not enough either: a block card grows and leaves the slack at the
+bottom, so the card is a flex column and its rows share what the field's height
+gives them. And the FIELD may not stretch: it is an aspect-ratio box, so a stretched
+one takes the line's height instead and the diamond is drawn into a shape it was not
+laid out for, `inset:0` SVG and all. `align-self:flex-start` is what makes the
+stretch mean "the card matches the field" rather than "whichever is taller wins".
+
+**The breakpoint is 1000 and it is arithmetic rather than football's 920.** The card
+has a floor: a head and twelve rows at 30px is 411px and nothing makes it shorter.
+For the field to reach 411 it needs 604px of width, and 604 plus the 18px gap plus a
+340px card plus 28px of page padding is 990. Measured at 920 the field came out 363
+against the card's 411, which is the same imbalance wearing the other hat. Under
+1000 the page stays one column, where the diamond has the whole width.
+
+Measured through the real page: 445px against 445px at 1440, 1100 and 1040, and 418
+against 418 at exactly 1000.
+
+**A `.dcols` grid sat in the stylesheet and was in no markup**, so it set the width
+of nothing on any screen. Two columns is the wrong answer on this game anyway: the
+lineup card already has the right hand side.
+
+### Both themes
+
+```
+node baseball/check-theme.mjs
+```
+
+`runthegrid_theme` is the key the whole suite shares, so somebody who set dark on the
+arcade arrives here dark, and the boot script runs BEFORE first paint or the page
+flashes cream on the way in.
+
+**A dark mode retrofitted onto a cream page fails silently, three ways.** A panel
+nobody tokenised stays cream, and its dark text on it passes every contrast rule
+there is. A hairline written `rgba(0,0,0,.10)` stops existing, at an alpha nobody can
+tell from the panel behind it, so every card loses its edge. And an accent solved
+against paper goes unreadable: `#1a5276` is a fine link on cream and 2.1:1 on
+charcoal. None of the three throws.
+
+**`--edge` carries CHANNELS and never an alpha.** `rgba(var(--edge),.08)` keeps every
+one of the thirty-odd alphas exactly where it was set, so the light theme is byte for
+byte what it was and one token flips sixty-one declarations. Written as a handful of
+finished colours instead, a .02 tint and a .05 tint collapse into one and the light
+page quietly changes under a dark-mode commit.
+
+**Shadows are not on it**, because a shadow is an absence of light rather than a line
+drawn on a surface, and flipping those puts a white glow around every card at night.
+
+**TWO OVERLAYS HAD TO COME BACK OFF IT, and a screenshot is what said so.** The reel's
+vignette darkens the top and bottom rows of a reel painted in the drawn CLUB'S colours,
+so what is under it is not a surface the theme owns. Flipped white it became a veil,
+and on a club with pale colours (Milwaukee's gold) the two rows either side of the
+selection washed out to nothing. The field's mown stripes are the same case: shade on
+grass, and the grass is green at night. The empty position disc's border is a third,
+drawn against its own cream fill rather than against the page.
+
+**Only surfaces and ink move.** The field's green, the dirt, the position colours and
+the club plates are the SPORT rather than the theme, and inverting those is how a
+themed page ends up lying about what it is showing.
+
+**Nothing is repainted on the switch and nothing needs to be**: no code on this page
+reads a colour back out of `getComputedStyle`. The one canvas is the share card and it
+is built from literals on purpose, because an image somebody posts has to look the same
+to everybody rather than like the theme the sharer happened to be in.
+
+#### What the checker fails on is a REGRESSION, and that is the whole design of it
+
+The light theme's accents predate all of this and several are under 4.5:1 on their own:
+`--gold` is **2.40:1** on the page's cream, `--leather` 3.53 and `--green` 3.79.
+Repainting the brand colour of a live game is a design decision rather than a side
+effect of adding a night mode, so the file REPORTS those and does not fail on them. It
+would be the easiest thing in the world to "fix" them into a check that passes and a
+game that looks like somebody else's.
+
+What it DOES fail on is an element that reads in light and stops reading in dark, and
+an absolute floor of 3:1, which is unreadable in anybody's theme.
+
+**Two quiet inks were moved, and that is a change to the light theme said out loud.**
+`--dim` measured 4.44:1 on the page's own cream and `--dim-2` 2.93, so every eyebrow,
+kicker and "x of 12" on the site was under the bar the arcade is already held to.
+Solved against the three surfaces they land on: the page, a panel, and the daily card's
+gold tint.
+
+**The club plate picks its own ink.** It was `--tcon:#fff` for all fifty clubs and five
+are light enough that white 9px type on them is not readable: Milwaukee's gold at
+1.58:1, then Baltimore, Miami and both San Francisco codes between 2.9 and 4.2. A
+club's colours are a fact about the club, so `inkOn()` is what gives. Neither theme
+moves it, because the plate is the club's colour in both.
+
+#### Three ways the checker was wrong before it was right
+
+- **It read a gradient as opaque.** `linear-gradient(135deg,rgba(184,134,11,.10),
+  rgba(184,134,11,.02))` averaged into a solid gold, so the daily card's gold eyebrow
+  measured 1:1 against a fill that is really a 6% tint over the page. Four failures, in
+  BOTH themes, all invented. This repo's fourth wrong extractor.
+- **Its persistence test was measuring the harness.** `addInitScript` runs on every
+  document, so the context that pinned the theme key re-pinned it during the reload and
+  the page was reported losing a choice it had stored correctly.
+- **Its coverage floor was measuring the reels.** The draft loop ends the moment the
+  last signing lands and the reels then spin for as long as they spin, so a sleep left
+  the walk looking at a screen with no tiles on it: 14 surfaces against the 26 that are
+  really there. It waits for a board.
+
+**And section 4 counted where it should have named.** Filtering every translucent
+border on the page and asserting a total read 22 edges in dark and 4 in light and could
+not say whether that was a missed swap or a slower draft. It asks five selectors by
+name, so a selector that is not painted at all is its own failure rather than a smaller
+number. The reel's band and the empty disc are correctly white in light and correctly
+black in dark, which is exactly what a count cannot tell from a defect.
 
 ## Two people can share a name, and `name|sport` is not a person
 

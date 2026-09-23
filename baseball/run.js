@@ -382,6 +382,128 @@ function eligibleOpenSlots(run, player) {
   return openSlots(run).filter(i => fills(run, player, slotsOf(run)[i]));
 }
 
+/* ─── THE STAFF SORTS ITSELF ───
+ *
+ * All-Time Staff draws twelve arms into twelve named slots, and the page used to
+ * stop on every pick to ask which one. Most of that question has no answer:
+ * `staffEra` AVERAGES the five rotation slots and averages the seven relief slots,
+ * so where a man sits INSIDE his group changes nothing the season reads. What the
+ * player was being asked for, one pick at a time, was the difference between SP3
+ * and SP4.
+ *
+ * So the draft assigns and this re-ranks. Two things are real and both are decided
+ * here rather than asked:
+ *
+ * THE ROTATION TAKES THE BEST ARMS. A rotation slot is a fifth of 70% of the
+ * innings and a relief slot a seventh of 30%, which is 14.0% against 4.3%, and
+ * that gap beats the steeper return relief WAR pays (0.55 an ERA point against
+ * 0.32). Worked through at every gap that comes up, the bigger arm belongs in the
+ * rotation every time, by 0.021 of staff ERA per win above the man he displaces
+ * and 0.207 at the worst pairing this actually produced.
+ *
+ * AND CL, because `closerSavePct` reads that slot by name and nothing else does.
+ * Both slots sit in the same relief average, so the label costs nothing and can
+ * only raise the save rate: the best closer-eligible arm takes it.
+ *
+ * A FIRST VERSION REFUSED TO MOVE A MAN ACROSS THE ROTATION LINE, on the argument
+ * that a sort free to do so is an optimiser rather than a tidy-up and would drift
+ * every win rate the mode is balanced on. That is the right worry about the wrong
+ * rule. Driven for real it put Greg Maddux's 9.1 WAR at RP1 above a 4.7 WAR SP1,
+ * because the rotation had filled in DRAFT ORDER and he was picked tenth. The card
+ * read as broken, the staff really was worse, and "sorted by ranking" was the one
+ * thing it was not. The cost is recorded rather than avoided: see the write-up.
+ *
+ * Within a group the order is pure display, so it is best first and SP1 is the
+ * ace. A tie goes to whoever was drafted first, so the sort is stable and
+ * re-sorting an unchanged staff moves nothing.
+ */
+function sortStaffSlots(run) {
+  if (!run || !run.staff) return;
+  const slots = slotsOf(run);
+  const held = run.slotIndex.slice();
+  const eligible = (k, slotName) => fills(run, run.roster[k], slotName);
+
+  /* The slots this staff actually occupies, which partway through a draft is
+     fewer than twelve. Reassigning among them is a permutation, so the draft's
+     own choice of WHICH slots to fill is left alone and only who holds them moves. */
+  const rotSlots = held.filter(si => E.slotGroup(slots[si], true) === 'ROTATION').sort((a, b) => a - b);
+  const penSlots = held.filter(si => E.slotGroup(slots[si], true) !== 'ROTATION').sort((a, b) => a - b);
+
+  /* Best first, index breaking the tie so the sort is stable. */
+  const rank = run.roster.map((p, k) => k).sort((a, b) =>
+    (run.roster[b].w - run.roster[a].w) || (a - b));
+
+  const put = [];
+  const placed = new Set();
+  /* The rotation first, from the whole staff rather than from whoever happens to
+     be standing in it. A reliever cannot start, so eligibility is what stops this
+     handing SP1 to a closer. */
+  for (const si of rotSlots) {
+    const who = rank.find(k => !placed.has(k) && eligible(k, slots[si]));
+    if (who === undefined) continue;
+    placed.add(who); put.push([who, si]);
+  }
+  /* Then CL, before the rest of the pen, because it is the one relief slot the sim
+     reads by name AND the one not every arm may fill: a starter who overflowed
+     into the bullpen is not closer-eligible. SO THIS CLAUSE IS NOT ONLY THE BUFF,
+     IT IS WHAT KEEPS THE ROSTER LEGAL. Removed, the fill below hands CL to whoever
+     the ranking leaves there, and nothing throws: the sim reads him as the closer
+     and converts saves off his WAR. */
+  const clSlot = penSlots.find(si => slots[si] === 'CL');
+  if (clSlot !== undefined) {
+    const who = rank.find(k => !placed.has(k) && eligible(k, 'CL'));
+    if (who !== undefined) { placed.add(who); put.push([who, clSlot]); }
+  }
+  for (const si of penSlots) {
+    if (si === clSlot && put.some(([, s]) => s === si)) continue;
+    const who = rank.find(k => !placed.has(k) && eligible(k, slots[si]));
+    if (who === undefined) continue;
+    placed.add(who); put.push([who, si]);
+  }
+
+  /* ALL OR NOTHING. Every arm has to land or the staff comes back with two men in
+     one slot and one slot empty, which is a legal-looking roster the sim reads
+     without complaint. Eligibility makes a complete assignment possible here (each
+     slot was filled by an eligible man at draft time), so a short answer is a bug
+     in this function rather than a roster it cannot solve. */
+  if (put.length !== run.roster.length) return;
+
+  for (const [k, si] of put) {
+    run.slotIndex[k] = si;
+    /* `draws` records what a pick became. Nothing reads its slot today, and a
+       field that quietly stops being true is how the next reader gets it wrong. */
+    if (run.draws[k]) run.draws[k].slot = slots[si];
+  }
+}
+
+/* WHERE THIS ARM WOULD ACTUALLY END UP, for the tile to print before the tap.
+ *
+ * `slotForPlayer` is the wrong answer to show: it says which slot the signing
+ * TAKES, and the re-rank then moves everybody, so a tile promising the rotation to
+ * the sixth-best starter on the board would be wrong a frame later. That is the
+ * tile-and-sheet disagreement this mode has already had once, arriving at a tile
+ * and a lineup card instead.
+ *
+ * It answers by doing it: a shallow clone, the real signing, the real sort. A
+ * second copy of the ranking rule written out for display is how the two come
+ * apart, and this way there is only ever one.
+ */
+function staffLanding(run, player) {
+  if (!run || !run.staff) return null;
+  const slot = slotForPlayer(run, player);
+  if (slot === null) return null;
+  const probe = {
+    ...run,
+    roster: run.roster.concat([player]),
+    slotIndex: run.slotIndex.concat([slot]),
+    draws: run.draws.concat([null]),
+  };
+  sortStaffSlots(probe);
+  const name = slotsOf(run)[probe.slotIndex[probe.roster.length - 1]];
+  if (name === 'CL') return 'Closer';
+  return E.slotGroup(name, true) === 'ROTATION' ? 'Rotation' : 'Bullpen';
+}
+
 /* Sign a player from the current draw. Pass slotIdx to place them at a chosen
  * position (from the click-to-choose UI); otherwise auto-assign. */
 function sign(run, player, slotIdx) {
@@ -410,6 +532,12 @@ function sign(run, player, slotIdx) {
     slot: slotsOf(run)[slot],
   });
   run.currentDraw = null;
+
+  /* AT THE DRAFT AND NOWHERE ELSE. `cutPlayer` puts a replacement-level arm in the
+     slot a man was cut from, mid-season, and re-sorting there would promote the
+     best remaining reliever into CL and hand back save rate the player had just
+     lost. A cut is meant to cost something. */
+  sortStaffSlots(run);
 
   // Draft complete?
   if (run.roster.length >= slotsOf(run).length) {
@@ -947,7 +1075,7 @@ const publicAPI = {
   previewSigning, bestPossibleSquad, projectSeason,
   indexData,
   remaining, reserveFloor, fullFloor, spendable, canRespin, canFinishAfter,
-  openSlots, openSlotNames, slotForPlayer, eligibleOpenSlots, slotsLeft,
+  openSlots, openSlotNames, slotForPlayer, eligibleOpenSlots, slotsLeft, sortStaffSlots, staffLanding,
   capOf, money, blockFor, BLOCK,
 };
 
