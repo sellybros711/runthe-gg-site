@@ -3186,7 +3186,13 @@ window.GA_ID='G-L29P5MRWKE';
     .ov-shop .sgrid{ grid-template-columns:repeat(auto-fill,minmax(110px,1fr)) }
   }
   .sthumb{width:48px; height:48px; border-radius:11px; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(180deg,#47614f,#31473a); border:1px solid rgba(255,255,255,.16); overflow:hidden; flex:0 0 auto}
+    background:radial-gradient(circle at 50% 36%,#5a7c66,#34503f 58%,#26382d); border:1px solid rgba(255,255,255,.16); overflow:hidden; flex:0 0 auto;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -8px 12px -6px rgba(0,0,0,.4)}
+  /* the slot takes its rarity's light, so a rare or better item reads from across the grid */
+  .stile.r-rare .sthumb:not(.color){background:radial-gradient(circle at 50% 36%,#4d7fa8,#2b4a5e 58%,#1f3340)}
+  .stile.r-epic .sthumb:not(.color){background:radial-gradient(circle at 50% 36%,#8a5fae,#4a3163 58%,#301f40)}
+  .stile.r-legendary .sthumb:not(.color){background:radial-gradient(circle at 50% 36%,#b69a3e,#6a5520 58%,#3f3212)}
+  .stile.r-rare{border-color:rgba(74,163,255,.38)}
   .sthumb.color{border-width:2px}
   .snm{font:800 11px/1.2 var(--body); color:var(--oncard); min-height:26px; display:flex; align-items:center;
     overflow:hidden; text-overflow:ellipsis}
@@ -14968,7 +14974,7 @@ function pxBagThumb(club,tier){ const map=PXG_CLUBS[BAG_SHAPE[club]]||PXG_CLUBS.
 // CS414: ball thumbnail (a zoomed crop of the teed-ball sprite; 'none' → an empty-outline placeholder)
 function pxBallThumb(id){ const map=PXG_BALL[id], pal=PXG_BALL_PAL[id];
   if(!map||!pal) return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#5e7468;font:700 10px var(--body)">None</span>`;
-  const ox=34,oy=46,W=10,H=10,px=8; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
+  const ox=32,oy=46,W=10,H=10,px=8; /* the ball is six wide at x 34, so 32 centres it */ const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
   for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
   return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
 // CS414: rocket-cleats thumbnail (a zoomed crop of the boot overlay; 'none' → empty placeholder)
@@ -16474,11 +16480,14 @@ Object.assign(PXG_EYEWEAR, PXG_S2_EW);
 const PXG_S2_BALL={
   jackolantern: pxgRows([[46,36,'gg'],[47,35,'oooo'],[48,34,'oCfCfo'],[49,34,'ohCCCo'],[50,34,'ofCfCo'],[51,34,'osfffo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]),
   acorn: pxgRows([[45,36,'g'],[46,35,'cccc'],[47,34,'cdcdcc'],[48,34,'dddddd'],[49,34,'ohCCCo'],[50,34,'oCCCCo'],[51,35,'oCso'],[52,36,'oo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]),
+  // the Run The Games Ball had a catalog row and no sprite, so its tile read "None" and it never showed on the tee
+  rungames: pxgRows([[47,35,'oooo'],[48,34,'ohCCCo'],[49,34,'ogggMo'],[50,34,'oCCCCo'],[51,34,'oCCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]),
   cranberry: pxgRows([[46,37,'gg'],[47,35,'oooo'],[48,34,'oCCCCo'],[49,34,'ohhCCo'],[50,34,'ohCCCo'],[51,34,'oCCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]),
 };
 const PXG_S2_BALL_PAL={
   jackolantern:{o:'#8a3a0a',C:'#f08a1e',h:'#ffc06a',s:'#c05a10',g:'#3f7a2a',f:'#2a1606',T:'#e8ebf0'},
   acorn:{o:'#5a3414',C:'#c08a4a',h:'#e6b878',s:'#9a6428',c:'#7a5028',d:'#5a3818',g:'#4a3a1a',T:'#e8ebf0'},
+  rungames:{o:'#0d2b4a',C:'#5bcfe8',h:'#d8f6ff',s:'#3a8fb0',g:'#80ff76',M:'#3fbf4a',T:'#e8ebf0'},
   cranberry:{o:'#5a0a18',C:'#b0162e',h:'#ff8a96',s:'#7a0c20',g:'#3f7a2a',T:'#e8ebf0'},
 };
 Object.assign(PXG_BALL, PXG_S2_BALL); Object.assign(PXG_BALL_PAL, PXG_S2_BALL_PAL);
@@ -35413,7 +35422,7 @@ function shopTile(o){
   else if(o.state==='eq') foot=`<span class="sfoot eqf">Equipped</span>`;
   else if(o.state==='own') foot=`<span class="sfoot own">Owned</span>`;
   else foot=`<span class="sfoot price${o.afford?'':' no'}"><span style="width:12px;height:12px">${ic('coin',{size:'12px'})}</span>${coinFmt(o.price||0)}</span>`;
-  return `<button class="stile ${o.state}${o.cls?' '+o.cls:''}${(o.rar==='epic'||o.rar==='legendary')?' r-'+o.rar:''}" ${o.data||''}>`
+  return `<button class="stile ${o.state}${o.cls?' '+o.cls:''}${(o.rar==='rare'||o.rar==='epic'||o.rar==='legendary')?' r-'+o.rar:''}" ${o.data||''}>`
     +(o.rarColor?`<span class="srar" style="background:${o.rarColor}"></span>`:'')
     +(o.isNew?`<span style="position:absolute;top:4px;left:4px;background:#e2554e;color:#fff;font:800 8px/1 var(--body);letter-spacing:.05em;padding:2px 4px;border-radius:4px;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.4)">NEW</span>`:'')
     +(o.state==='eq'?`<span class="sbadge">✓</span>`:'')
@@ -35522,10 +35531,29 @@ function cosThumbHTML(cat,o){
      : (cat==='hw'||cat==='ew'||cat==='top'||cat==='leg') ? pxItemThumb(cat,o.id)
      : (cat==='cardbg') ? `<span class="sthumb" style="padding:0;overflow:hidden"><img src="${pxCardBgURL(o.id)}" alt="" style="width:100%;height:100%;object-fit:cover;image-rendering:pixelated"></span>`
      : (cat==='plate') ? `<span class="sthumb color" style="${plateCss(o.id)};display:flex;align-items:center;justify-content:center"><span style="font-weight:900;font-size:8.5px;letter-spacing:.06em">NAME</span></span>`
+     : (o.pat===undefined && PXCOLTHUMB[cat] && colOfCos(cat,o)) ? pxColorThumb(cat,colOfCos(cat,o))
      : (o.pat!==undefined
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
         : `<span class="sthumb color" style="background:${o.col||'#54736a'}"></span>`);
 }
+// A colour is a thing you wear, so its tile draws the thing: a polo, a cap, trousers or a pair of shoes
+// in that colour, lit from the upper left like every other sprite here. k outline, d shade, a colour,
+// l light, w white (collar, buttons, a sole), g a belt buckle.
+const PXCOLTHUMB={
+  shirt:['....kkkkkk....','..kkadwwdakk..','.kaaaldwdaaak.','kaaaaalwaaaaak','kaaaaaawaaaaak','kaakaaaaaaakak','kkkkaaaaaaakkk','...kaaaaaaak..','...kaaaaaaak..','...klaaaaaak..','...kdaaaaadk..','...kddddddk...','...kkkkkkkk...'],
+  hat:['.....kkkk.......','...kkaaaakk.....','..kalaaaaadk....','.kaalaaaaaadk...','.kaaaaaaaaaadk..','.kdddddddddddkkk','..kkkkkkkkkddddk','..........kkkkk.'],
+  pants:['kkkkkkkkkkkk','kddddgdddddk','kalaaaaaalak','kalaaakaalak','kalaak.kalak','kaaak...kaak','kaaak...kaak','kaaak...kaak','kaaak...kaak','kaadk...kadk','kkkkk...kkkk'],
+  shoes:['.......kkkk...','.....kkaaaak..','..kkkaaalaaak.','.kaaaaaaaaaaak','kaaaaaaaaaaaak','kwwwwwwwwwwwwk','.kkkkkkkkkkkk.']
+};
+var _pxColThumb={};
+function pxColorThumb(cat,col){ const key=cat+col; if(!_pxColThumb[key]){
+    const map=PXCOLTHUMB[cat], W=16, H=16, sc=6, pal={k:pxShade(col,-110),d:pxShade(col,-45),a:col,l:pxShade(col,55),w:'#eef0eb',g:'#e2b43c'};
+    const cv=document.createElement('canvas'); cv.width=W*sc; cv.height=H*sc; const ctx=cv.getContext('2d');
+    const ox=Math.floor((W-map[0].length)/2), oy=Math.floor((H-map.length)/2);
+    map.forEach(function(row,y){ for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c) continue; ctx.fillStyle=c; ctx.fillRect((x+ox)*sc,(y+oy)*sc,sc,sc); } });
+    _pxColThumb[key]=cv.toDataURL(); }
+  return `<span class="sthumb"><img src="${_pxColThumb[key]}" alt="" style="width:86%;height:86%;image-rendering:pixelated"></span>`; }
+function colOfCos(cat,o){ if(o.col) return o.col; try{ const it=(cosmeticItems(cat)||[]).find(x=>x.id===o.id); return it&&it.col; }catch(e){ return null; } }
 // COLLECTION REWARD thumbnail: a clean picture of the reward item itself (backdrop/apparel/etc),
 // reusing the store thumbnail renderer so a cardbg shows its pixel backdrop and a 'top' its sprite.
 function rewardThumbHTML(cat,id){
@@ -35768,61 +35796,92 @@ const PACK_PAL_OVR={
   winter:{ E:'#2f6ea8', e:'#245688', D:'#163a5e', L:'#6fb8e8', S:'#eaf6ff' },                                       // ice blue, snow band
   seasonal:{ E:'#b8561a', e:'#8a4012', D:'#5a280a', L:'#e8893a', S:'#ffd39a' }                                      // the placeholder in a month with none
 };
-const PXPACK=[
-"gggggggggggggggggggggggggggggg",
-"HHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
-"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
-"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
-"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
-"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
-"GggGggGggGggGggGggGggGggGggGgg",
-"gLEgEEgEEgEEgEEgEEgeegeegDDgDD",
-"LLEEEEEEEEEEEEEEEEeeeeeeDDDDDD",
-"LLEEEEEEEEESSEEEEEeeeeeeDDDDDD",
-"LLEEEEEEEEESSEEEEEeeeeeeWDDDDD",
-"LLEEEEEEEEESSEEEEEeeeeeHHHDDDD",
-"LLEEEEEEEEESSEEEEEeeeeeeHDDDDD",
-"LLEEEEEEEESSEEEEEEeeeeeeDDDDDD",
-"LLEEEEEEGGGGGGGGGGGGGGeeDDDDDD",
-"LLEEEEEEGKKKKKKKKKKKKGeeDDDDDD",
-"LLEEEEEEGKDDDDDDDDDDKGeeDDDDDD",
-"LLEEEEEEGKDDWDDDDDDDKGeeDDDDDD",
-"LLEEEEEEGKDDWHGGGGDDKGeeDDDDDD",
-"LLEEEEEEGKDDWGGGGDDDKGeeDDDDDD",
-"LLEEEEEEGKDDWGGGDDDDKGeeDDDDDD",
-"LLEEEEEEGKDDWGGGGDDDKGeeDDDDDD",
-"LLEEEEEEGKDDWgggggDDKGeeDDDDDD",
-"LLEEEEEEGKDDWDDDDDDDKGeeDDDDDD",
-"LLEEEEEEGKDDWDDDWWDDKGeeDDDDDD",
-"LLEEEEESGKLLWLLLWWLLKGeeDDDDDD",
-"LLEEEEESGKLLLLLLLLLLKGeeDDDDDD",
-"LLEEEEESGKEEEEEEEEEEKGeeDDDDDD",
-"LLEEEEESGKDEEEEEEEEDKGeeDDDDDD",
-"LLEEEESSgKKKKKKKKKKKKgeeDDDDDD",
-"LLEEEESSggggggggggggggeeDDDDDD",
-"LLEEEESSEEEEEEEEEEeeeeeeDDDDDD",
-"LLEEEESSEEEEEEEEEEeeeeeeDDDDDD",
-"LLEEESSEEEEEEEEEEEeeeeeeDDDDDD",
-"LLEEESSEEEEEEEEEEEeeeeeeDDDDDD",
-"LLEEESWEEEEEEEEEEEeeeeeeDDDDDD",
-"LLEEEHHHEEEEEEEEEEeeeeeeDDDDDD",
-"LLEESSHEEEEEEEEEEEeeeeeeDDDDDD",
-"LLEESSEEEEEEEEEEEEeeeeeeDDDDDD",
-"LLEESSEEEEEEEEEEEEeeeeeeDDDDDD",
-"LLEESSEEEEEEEEEEEEeeeeeeDDDDDD",
-"LLESSEEEEEEEEEEEEEeeeeeeDDDDDD",
-"LLEEEEEEEEEEEEEEEEeeeeeeDDDDDD",
-"LLEEEEEEEEEEEEEEEEeeeeeeDDDDDD",
-"LLEEEEEEEEEEEEEEEEeeeeeeDDDDDD"
-];
+// A foil pack, painted pixel by pixel: crimped seals top and bottom, a pillowed body lit from the left,
+// a foil sheen running across it, a crest in the middle and the tier's stars under it. 40 by 60 logical
+// pixels, so it keeps the 2:3 shape every call site already sizes for.
 const PXPACK_PAL={K:'#141c16',E:'#146e46',e:'#0f5034',D:'#0b3624',L:'#40b278',G:'#e2b43c',g:'#b48c28',H:'#fff0b4',W:'#eef0eb',R:'#c8423c',T:'#18968c',S:'#78d2b4'};
 var _pxPackURL={};
 function pxPackURL(tier){ tier=tier||'base'; if(tier==='seasonal') tier=liveSeasonalPackId()||'seasonal'; if(_pxPackURL[tier]) return _pxPackURL[tier];
-  var pal=Object.assign({}, PXPACK_PAL, PACK_PAL_OVR[tier]||{});
-  var pxw=PXPACK[0].length, pxh=PXPACK.length, sc=8;
-  var cv=document.createElement('canvas'); cv.width=pxw*sc; cv.height=pxh*sc; var ctx=cv.getContext('2d');
-  for(var y=0;y<pxh;y++){ var row=PXPACK[y]; for(var x=0;x<row.length;x++){ var c=pal[row[x]]; if(!c) continue; ctx.fillStyle=c; ctx.fillRect(x*sc,y*sc,sc,sc); } }
+  var P=Object.assign({}, PXPACK_PAL, PACK_PAL_OVR[tier]||{});
+  var W=40, H=60, sc=8, px=new Array(W*H).fill(null);
+  function put(x,y,c){ if(x>=0&&y>=0&&x<W&&y<H&&c) px[y*W+x]=c; }
+  function get(x,y){ return (x>=0&&y>=0&&x<W&&y<H)?px[y*W+x]:null; }
+  // body tones, dark to light: the pillow is lit from the upper left
+  var body=[P.D,P.e,P.E,P.L,P.S];
+  function inset(y){ return (y<9||y>50)?2:(y<11||y>48)?1:0; }   // the body pinches in toward each seal
+  for(var y=7;y<=52;y++){ var i0=1+inset(y), i1=W-2-inset(y);
+    for(var x=i0;x<=i1;x++){ var u=(x-i0)/Math.max(1,i1-i0);
+      var t=u<0.1?3:u<0.62?2:u<0.86?1:0;                          // column light
+      if(y<=9||y>=50) t=Math.max(0,t-1);                         // the pinch is in shadow
+      var d=x+y*0.62;                                            // foil sheen: a wide soft band and a thin bright one
+      if(d>24&&d<31) t=Math.min(4,t+1);
+      if(d>=33&&d<34.6) t=4;
+      put(x,y,body[t]); } }
+  // crinkles where the foil gathers into each seal
+  for(var x=4;x<=35;x+=4){ put(x,8,P.D); put(x+1,9,P.S); put(x,51,P.D); put(x+1,50,P.S); }
+  // crimped seals: vertical ridges, sawtooth outer edge
+  function seal(y0,y1,edgeTop){ for(var y=y0;y<=y1;y++) for(var x=0;x<W;x++){
+      var tooth=edgeTop?(y===y0&&(x%2===1)):(y===y1&&(x%2===1)); if(tooth) continue;
+      var c=(x%2===0)?P.G:P.g; if(y===(edgeTop?y1:y0)) c=P.g; if(x<3&&c===P.G) c=P.H;
+      put(x,y,c); } }
+  seal(0,6,true); seal(53,59,false);
+  for(var x=0;x<W;x++){ if(get(x,2)) put(x,2,P.H); if(get(x,56)&&x%2===0) put(x,56,P.H); }   // a light catch along each crimp
+  // tear notch in the top seal
+  [[35,3],[36,3],[37,3],[36,4],[35,2],[36,2],[37,2],[38,2],[34,1],[35,1],[36,1],[37,1],[38,1],[39,1]].forEach(function(p){ px[p[1]*W+p[0]]=null; });
+  // the crest: a gold ring with a scene inside
+  var cx=19.5, cy=24.5, r=9.6;
+  for(var y=12;y<=37;y++) for(var x=8;x<=31;x++){ var dx=x-cx, dy=y-cy, q=Math.sqrt(dx*dx+dy*dy);
+    if(q<=r-2.2) put(x,y,P.K);
+    else if(q<=r-1) put(x,y,(dx+dy>2)?P.g:P.G);
+    else if(q<=r) put(x,y,(dx+dy>2)?P.D:P.H); }
+  var icon=(PACK_TYPES[tier]&&PACK_TYPES[tier].seasonal)?tier:'flag';
+  crest(icon);
+  function inDisc(x,y){ var dx=x-cx, dy=y-cy; return dx*dx+dy*dy<=(r-2.2)*(r-2.2); }
+  function crest(k){
+    if(k==='flag'||k==='seasonal'){
+      for(var y=27;y<=33;y++) for(var x=10;x<=29;x++) if(inDisc(x,y)) put(x,y,y===27?P.L:y<30?P.E:P.e);   // the green
+      put(18,29,P.K); put(19,29,P.K); put(20,29,P.K); put(19,30,P.K);                                      // the cup
+      for(var y=18;y<=29;y++) put(19,y,P.W);                                                               // the pin
+      var fl=['aaaa','aaaaa','bbbb','bb'];   // a red pin flag, lit on its top edge
+      fl.forEach(function(row,j){ for(var i=0;i<row.length;i++) put(20+i,18+j,row[i]==='a'?(j===0?'#ff7a6a':'#e0483e'):'#c23a32'); });
+      put(14,21,P.S); put(26,24,P.S); }
+    else if(k==='spooky'){ // a jack o' lantern
+      for(var y=19;y<=31;y++) for(var x=12;x<=27;x++){ var dx=(x-19.5)/7.2, dy=(y-25.5)/6; if(dx*dx+dy*dy<=1) put(x,y,(x===15||x===19||x===20||x===24)?'#c25f10':'#f08a24'); }
+      put(19,18,'#3f7a2a'); put(20,18,'#3f7a2a'); put(20,17,'#3f7a2a');
+      [[16,23],[17,23],[16,24],[22,23],[23,23],[23,24],[16,28],[17,28],[18,28],[19,28],[20,28],[21,28],[22,28],[23,28],[18,29],[21,29]].forEach(function(p){ put(p[0],p[1],'#ffd45e'); }); }
+    else if(k==='harvest'){ // a maple leaf
+      var lf=['....a....','...aaa...','a..aaa..a','aa.aaa.aa','aaaaaaaaa','.aaaaaaa.','..aaaaa..','.aaaaaaa.','....b....','....b....','....b....'];
+      lf.forEach(function(row,j){ for(var i=0;i<row.length;i++){ if(row[i]==='a') put(15+i,18+j,(i<4)?'#f2a23a':'#d8641c'); if(row[i]==='b') put(15+i,18+j,'#8a4416'); } }); put(19,19,'#ffd39a'); }
+    else if(k==='winter'){ // a snowflake
+      for(var i=-6;i<=6;i++){ put(19+i,25,P.S); put(19,25+i,P.S); if(Math.abs(i)<=4){ put(19+i,25+i,P.W); put(19+i,25-i,P.W); } }
+      [[17,20],[21,20],[17,30],[21,30],[14,23],[14,27],[24,23],[24,27]].forEach(function(p){ put(p[0],p[1],P.S); }); put(19,25,P.H); }
+    else if(k==='summer'){ // the sun, with its rays
+      for(var y=17;y<=33;y++) for(var x=11;x<=28;x++){ var dx=x-19.5, dy=y-25, q=dx*dx+dy*dy;
+        if(q<=17) put(x,y,dx+dy<-2?'#fff0b4':'#ffc23a');
+        else if(q>=34&&q<=52){ var a=Math.atan2(dy,dx), k8=Math.round(a/(Math.PI/4))*(Math.PI/4); if(Math.abs(a-k8)<0.2) put(x,y,'#ffb15a'); } } }
+    else crest('flag');
+  }
+  // the label band across the lower body, and the tier's stars on it
+  for(var y=40;y<=46;y++){ var i0=1+inset(y), i1=W-2-inset(y); for(var x=i0;x<=i1;x++) put(x,y,(y===40)?P.H:(y===46)?P.g:P.G); }
+  var n=tier==='champ'?3:tier==='tour'?2:tier==='base'?1:0;
+  var star=['..a..','..a..','aaaaa','.aaa.','.a.a.'];
+  for(var s=0;s<n;s++){ var sx=Math.round(20-(n*6-1)/2+s*6); star.forEach(function(row,j){ for(var i=0;i<5;i++) if(row[i]==='a') put(sx+i,41+j,P.K); }); }
+  if(!n){ for(var x=9;x<=30;x+=3) put(x,43,P.K), put(x+1,44,P.K); }   // a seasonal pack: a stitched band instead of stars
+  // a dark outline wherever the pack meets the air, so it reads at any size
+  var out=px.slice();
+  for(var y=0;y<H;y++) for(var x=0;x<W;x++){ if(!px[y*W+x]) continue;
+    if(!get(x-1,y)||!get(x+1,y)||!get(x,y-1)||!get(x,y+1)) out[y*W+x]=(y<=6||y>=53)?P.g:P.K; }
+  px=out;
+  // glints
+  [[5,13],[4,14],[5,14],[6,14],[5,15]].forEach(function(p){ put(p[0],p[1],P.W); }); put(33,36,P.H); put(6,38,P.S);
+  var cv=document.createElement('canvas'); cv.width=W*sc; cv.height=H*sc; var ctx=cv.getContext('2d');
+  for(var y=0;y<H;y++) for(var x=0;x<W;x++){ var c=px[y*W+x]; if(!c) continue; ctx.fillStyle=c; ctx.fillRect(x*sc,y*sc,sc,sc); }
   _pxPackURL[tier]=cv.toDataURL(); return _pxPackURL[tier]; }
+// the pack on its shelf in the store: a slow fan of its tier's light, a shadow on the floor, a gentle
+// float and a foil glint. The CSS lives in packStyleOnce; with reduced motion it simply stands there.
+function packStandHTML(tier,h){ var pt=packType(tier), url=pxPackURL(tier); h=h||104;
+  return '<div class="pkstand" style="--pkc:'+pt.col+';--pkg:'+pt.glow+';--pkm:url('+url+');--pkh:'+h+'px"><div class="pkstray"></div><div class="pkstflr"></div>'
+    +'<div class="pkstpk"><img src="'+url+'" alt="'+esc(pt.name)+'"></div></div>'; }
 function pxPackImg(h,tier){ return '<img src="'+pxPackURL(tier)+'" alt="pack" style="height:'+(h||160)+'px;image-rendering:pixelated;display:block;margin:0 auto">'; }
 
 function packsOn(){ return PACKS_ENABLED===true || (typeof window!=='undefined' && window._PACKSTEST===true); }
@@ -36794,7 +36853,7 @@ function packCardVisual(e){
   return '<span style="width:50px;height:50px;color:'+rc+';margin:16px 0">'+ic(icon,{size:'50px'})+'</span>';
 }
 function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=document.createElement('style'); st.id='packcss';
-  st.textContent='.packov{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 36%,#12321f,#050f0a);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;text-align:center}'
+  st.textContent='.packov{position:fixed;inset:0;z-index:60;overflow-x:hidden;background:radial-gradient(circle at 50% 36%,#12321f,#050f0a);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;text-align:center}'
    +'.packconf{position:fixed;inset:0;pointer-events:none;z-index:61}'
    +'.packtitle{font:800 13px var(--body);letter-spacing:.2em;text-transform:uppercase;color:#eadfc4;margin-bottom:18px}'
    +'.pcardrow{display:flex;gap:9px;justify-content:center;align-items:stretch;width:100%;max-width:430px}'
@@ -36887,7 +36946,41 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.pkbundle:disabled{opacity:.5;cursor:default;box-shadow:none}'
    +'.pkbundle:disabled:after{display:none}'
    +'.preq{font:800 12.5px var(--body);color:#41dea6;margin:2px 0;animation:prpop .45s cubic-bezier(.2,1.5,.4,1)}'
-   +'@media(prefers-reduced-motion:reduce){.pkbundle:after{animation:none;background:none}.preq{animation:none}.pcard-inner,.pcard.win,.pwstrip,.pwcell.pwlit{transition:none!important;animation:none!important}}';
+   +'@media(prefers-reduced-motion:reduce){.pkbundle:after{animation:none;background:none}.preq{animation:none}.pcard-inner,.pcard.win,.pwstrip,.pwcell.pwlit{transition:none!important;animation:none!important}}'
+   /* The pack itself, on stage before the spin. It floats in its tier's light, and the tap that
+      spins the reel tears it open first: the crimp flies off, the pack flashes and drops away, and
+      only then does the reel run. It collapses to nothing afterwards so the reveal has the room. */
+   +'.pkhero{position:relative;height:178px;width:100%;display:flex;align-items:center;justify-content:center;margin-bottom:4px;transition:height .45s ease .25s,margin .45s ease .25s}'
+   +'.pkhero.gone{height:0;margin:0;overflow:hidden}'
+   +'.pkrays{position:absolute;left:50%;top:50%;width:330px;height:330px;margin:-165px 0 0 -165px;border-radius:50%;background:repeating-conic-gradient(from 0deg,var(--pkc) 0deg 7deg,transparent 7deg 22deg);opacity:.22;-webkit-mask:radial-gradient(circle,#000 18%,transparent 66%);mask:radial-gradient(circle,#000 18%,transparent 66%);animation:pkspin 14s linear infinite;pointer-events:none}'
+   +'.pkhalo{position:absolute;left:50%;top:50%;width:190px;height:190px;margin:-95px 0 0 -95px;border-radius:50%;background:radial-gradient(circle,var(--pkg) 0%,transparent 70%);pointer-events:none}'
+   +'@keyframes pkspin{to{transform:rotate(360deg)}}'
+   +'.pkfloat{position:relative;width:112px;height:168px;animation:pkbob 2.6s ease-in-out infinite}'
+   +'@keyframes pkbob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}'
+   +'.pkfloat img{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;filter:drop-shadow(0 10px 16px rgba(0,0,0,.6))}'
+   +'.pkfloat .pktop{clip-path:inset(0 0 88% 0)}.pkfloat .pkbody{clip-path:inset(12% 0 0 0)}'
+   +'.pkfloat:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.28) 50%,transparent 62%);background-size:260% 100%;animation:foilSweep 3.2s ease-in-out .4s infinite;-webkit-mask:var(--pkm) center/100% 100%;mask:var(--pkm) center/100% 100%}'
+   +'.pkhero.rip .pkfloat{animation:pkshake .34s linear}'
+   +'.pkhero.rip .pkfloat:after{display:none}'
+   +'.pkhero.rip .pktop{animation:pktear .5s cubic-bezier(.3,.7,.4,1) .3s forwards}'
+   +'.pkhero.rip .pkbody{animation:pkdrop .5s ease-in .38s forwards}'
+   +'.pkhero.rip .pkrays{animation:pkspin 1.4s linear infinite,pkfade .5s ease .4s forwards}'
+   +'.pkhero.rip .pkhalo{animation:pkflash .6s ease-out .3s forwards}'
+   +'@keyframes pkshake{0%,100%{transform:none}20%{transform:translateX(-5px) rotate(-4deg)}40%{transform:translateX(5px) rotate(4deg)}60%{transform:translateX(-4px) rotate(-3deg)}80%{transform:translateX(3px) rotate(2deg)}}'
+   +'@keyframes pktear{to{transform:translate(38px,-70px) rotate(28deg);opacity:0}}'
+   +'@keyframes pkdrop{0%{transform:none;filter:brightness(1) drop-shadow(0 10px 16px rgba(0,0,0,.6))}30%{filter:brightness(2.4) drop-shadow(0 0 22px #fff)}100%{transform:translateY(24px) scale(.6);opacity:0;filter:brightness(1.6)}}'
+   +'@keyframes pkflash{0%{transform:scale(1);opacity:1}40%{transform:scale(1.9);opacity:1;background:radial-gradient(circle,#fff 0%,var(--pkg) 30%,transparent 70%)}100%{transform:scale(2.4);opacity:0}}'
+   +'@keyframes pkfade{to{opacity:0}}'
+   /* the reveal gets its own light: slow rays in the rarity colour, brighter the rarer it is */
+   +'.prrays{position:absolute;top:50%;left:50%;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;background:repeating-conic-gradient(from 0deg,var(--rc) 0deg 6deg,transparent 6deg 20deg);-webkit-mask:radial-gradient(circle,#000 10%,transparent 62%);mask:radial-gradient(circle,#000 10%,transparent 62%);opacity:var(--ro,.14);animation:pkspin 22s linear infinite;pointer-events:none;z-index:0}'
+   +'.pkstand{position:relative;flex:0 0 auto;width:calc(var(--pkh) * .82);height:calc(var(--pkh) + 24px);display:flex;align-items:center;justify-content:center}'
+   +'.pkstray{position:absolute;left:50%;top:44%;width:190px;height:190px;margin:-95px 0 0 -95px;border-radius:50%;background:repeating-conic-gradient(from 0deg,var(--pkc) 0deg 8deg,transparent 8deg 24deg);opacity:.16;-webkit-mask:radial-gradient(circle,#000 14%,transparent 64%);mask:radial-gradient(circle,#000 14%,transparent 64%);animation:pkspin 24s linear infinite;pointer-events:none}'
+   +'.pkstflr{position:absolute;left:14%;right:14%;bottom:2px;height:9px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.55),transparent 70%);animation:pkshad 3.4s ease-in-out infinite}'
+   +'.pkstpk{position:relative;height:var(--pkh);aspect-ratio:2/3;animation:pkbob 3.4s ease-in-out infinite;filter:drop-shadow(0 0 10px var(--pkg))}'
+   +'.pkstpk img{display:block;width:100%;height:100%;image-rendering:pixelated}'
+   +'.pkstpk:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.3) 50%,transparent 62%);background-size:260% 100%;animation:foilSweep 4.2s ease-in-out 1s infinite;-webkit-mask:var(--pkm) center/100% 100%;mask:var(--pkm) center/100% 100%}'
+   +'@keyframes pkshad{0%,100%{transform:scaleX(1);opacity:1}50%{transform:scaleX(.78);opacity:.6}}'
+   +'@media(prefers-reduced-motion:reduce){.pkrays,.pkfloat,.pkfloat:after,.prrays,.pkstray,.pkstflr,.pkstpk,.pkstpk:after{animation:none!important}.pkhero{transition:none}}';
   document.head.appendChild(st); }
 // CS404: the pack-opening WHEEL SPIN (replaces the 3-card pick). One item is already decided (rollPackWin,
 // odds unchanged); the reel scrolls and decelerates onto it under a center pointer, then reveals it.
@@ -36963,6 +37056,13 @@ function overlayPackWheel(app){
   var ov=$('<div class="ov packov" role="dialog" aria-modal="true" aria-label="Pack wheel"></div>');
   function titleTxt(){ if(w.exchange){ var lab=ACC_RARITY[w.targetRarity].label; return '<span style="color:'+pt.col+'">Shard Exchange</span> · '+(w.done?'You got a '+lab+' item!':(w.spun?'Landing...':'Spin for a '+lab+' item')); }
     var pre=(pt.id!=='base'?('<span style="color:'+pt.col+'">'+esc(pt.name)+'</span> · '):''); if(S.packBundle){ pre+='Pack '+(S.packBundle.done||1)+' of '+S.packBundle.total+' · '; } return pre+(w.done?'You got it!':(w.spun?'Landing...':'Spin for your pack')); }
+  // the pack on stage (not for a shard exchange, which has no pack): gone once it has been torn open
+  var hero=null;
+  if(!w.exchange){ var purl=pxPackURL(w.pack||'base');
+    hero=$('<div class="pkhero'+(w.spun?' gone':'')+'" style="--pkc:'+pt.col+';--pkg:'+pt.glow+';--pkm:url('+purl+')" aria-hidden="true">'
+      +'<div class="pkrays"></div><div class="pkhalo"></div>'
+      +'<div class="pkfloat"><img class="pkbody" src="'+purl+'" alt=""><img class="pktop" src="'+purl+'" alt=""></div></div>');
+    ov.appendChild(hero); }
   var title=$('<div class="packtitle">'+titleTxt()+'</div>'); ov.appendChild(title);
   // CS463: an escape hatch so a pack open can never trap the shop. Only shown when nothing prepaid is left
   // un-opened (a single pack, or the last pack of a bundle): the shown item is already granted, so closing loses nothing.
@@ -36976,7 +37076,8 @@ function overlayPackWheel(app){
   var CW=104, GAP=8, PITCH=CW+GAP;
   w.reel.forEach(function(it,i){ var rc=PACK_RCOL[it.rarity]||'#b8c4bd';
     var bz=packItemBoostTxt(it);
-    var cell=$('<div class="pwcell'+(i===w.winIdx?' pwwin':'')+'" style="color:'+rc+';border-color:'+rc+'">'
+    // the winner is NOT marked here: a glowing cell rolling toward the pointer gave the result away mid spin
+    var cell=$('<div class="pwcell" style="color:'+rc+';border-color:'+rc+';background:linear-gradient(180deg,'+rc+'2b,#0c1f16 62%)">'
       +'<div class="pwtier" style="color:'+rc+'">'+PACK_RLABEL[it.rarity]+'</div>'
       +packCardVisual(it)
       +'<div class="pwname">'+esc(it.name)+'</div>'
@@ -37007,6 +37108,7 @@ function overlayPackWheel(app){
       catName=(COS_CATS.find(function(c){return c.k===item.cat;})||{}).name||''; } }catch(e){}
     var bObj=packItemBoostObj(item);   // per-stat coloring: green for a boost, red for a downgrade
     footer.appendChild($('<div class="prwrap">'
+      +'<div class="prrays" style="--rc:'+rc+';--ro:'+({common:.08,rare:.13,epic:.2,legendary:.3}[win.rarity]||.1)+'"></div>'
       +(big?'<div class="prburst" style="--rc:'+rc+'"></div>':'')
       +'<div class="prcard'+(big?' prbig':'')+'" style="--rc:'+rc+'">'
         +'<div class="prribbon" style="background:'+rc+'">'+PACK_RLABEL[win.rarity]+'</div>'
@@ -37069,7 +37171,7 @@ function overlayPackWheel(app){
     w.done=true; title.innerHTML=titleTxt();
     try{ wheel.classList.remove('pwtension'); wheel.classList.add('pwdone'); }catch(e){}
     var winCell=strip.children[w.winIdx];
-    if(winCell) winCell.classList.add('pwlit');
+    if(winCell){ winCell.classList.add('pwwin'); winCell.classList.add('pwlit'); }
     try{ if(typeof sfx==='function') sfx(big?'win':'hole'); }catch(e){}
     try{ if(typeof buzz==='function') buzz(big?[12,40,12]:[10]); }catch(e){}
     if(!reduce && big){ var rc=PACK_RCOL[win.rarity]; var cv=$('<canvas class="packconf"></canvas>'); app.appendChild(cv);
@@ -37109,6 +37211,9 @@ function overlayPackWheel(app){
   }
   function spin(){
     if(w.spun) return; w.spun=true; title.innerHTML=titleTxt(); renderFoot();
+    if(hero && !reduce){ hero.classList.add('rip'); try{ if(typeof buzz==='function') buzz([14,40,22]); }catch(e){}
+      setTimeout(function(){ if(ov.isConnected===false) return; hero.classList.add('gone'); runSpinAnim(); }, 720); return; }
+    if(hero) hero.classList.add('gone');
     runSpinAnim();
   }
   renderFoot();
@@ -37267,9 +37372,9 @@ function packShopNode(){
   try{ var sc=packCredits('seasonal');
     if(sc>0 && !liveSeasonalPackId()){ var spt=SEASONAL_PACK;
       var sEp=spt.odds.reduce(function(a,o){ return a+((o[0]==='epic'||o[0]==='legendary')?o[1]:0); },0), sLg=(spt.odds.find(function(o){return o[0]==='legendary';})||[0,0])[1];
-      var scard=$('<div class="packcard-glow" data-savedseasonal style="--pkg:'+spt.glow+';max-width:380px;margin:12px auto 0;padding:12px;border-radius:16px;background:linear-gradient(165deg,'+spt.col+'1c,#0c1f16);border:2px solid '+spt.col+'">'
-        +'<div style="display:flex;gap:12px;align-items:center"><div style="flex:0 0 auto;filter:drop-shadow(0 0 12px '+spt.glow+')">'+pxPackImg(80,'seasonal')+'</div>'
-        +'<div style="flex:1;min-width:0"><div style="font:800 9px var(--body);letter-spacing:.12em;text-transform:uppercase;color:'+spt.col+'">🎁 Saved from your rewards</div>'
+      var scard=$('<div class="packcard-glow" data-savedseasonal style="--pkg:'+spt.glow+';max-width:380px;margin:12px auto 0;padding:12px;border-radius:16px;position:relative;overflow:hidden;background:linear-gradient(165deg,'+spt.col+'1c,#0c1f16);border:2px solid '+spt.col+'">'
+        +'<div style="display:flex;gap:12px;align-items:center">'+packStandHTML('seasonal',104)
+        +'<div style="flex:1;min-width:0;position:relative"><div style="font:800 9px var(--body);letter-spacing:.12em;text-transform:uppercase;color:'+spt.col+'">🎁 Saved from your rewards</div>'
         +'<div style="font-family:var(--display);font-size:20px;color:'+spt.col+'">'+esc(spt.name)+'</div>'
         +'<div class="small" style="color:#cfe6d8;margin-top:3px">Epic+ <b style="color:'+PACK_RCOL.epic+'">'+Math.round(sEp*100)+'%</b> · Legendary <b style="color:'+PACK_RCOL.legendary+'">'+Math.round(sLg*100)+'%</b></div>'
         +'<div class="small muted" style="margin-top:2px">No seasonal pack in the store this month. The ones you saved still open.</div></div></div></div>');
@@ -37285,10 +37390,10 @@ function packShopNode(){
     var isBase=(id==='base'), cr=packCredits(id), freeThis=(isBase&&free)||cr>0, afford=freeThis||bal>=pt.price;
     var seasonD=pt.seasonal?dropById(pt.dropId):null;
     var glowSh=pt.seasonal?'':'box-shadow:0 0 22px '+pt.glow+';';   // seasonal card gets an animated pulsing glow instead
-    var card=$('<div class="'+(pt.seasonal?'packcard-glow':'')+'" style="--pkg:'+pt.glow+';max-width:380px;margin:12px auto 0;padding:12px;border-radius:16px;background:linear-gradient(165deg,'+pt.col+'1c,#0c1f16);border:2px solid '+pt.col+';'+glowSh+'"></div>');
+    var card=$('<div class="'+(pt.seasonal?'packcard-glow':'')+'" style="--pkg:'+pt.glow+';max-width:380px;margin:12px auto 0;padding:12px;border-radius:16px;position:relative;overflow:hidden;background:linear-gradient(165deg,'+pt.col+'1c,#0c1f16);border:2px solid '+pt.col+';'+glowSh+'"></div>');
     card.appendChild($('<div style="display:flex;gap:12px;align-items:center">'
-      +'<div style="flex:0 0 auto;filter:drop-shadow(0 0 12px '+pt.glow+')">'+pxPackImg(80,id)+'</div>'
-      +'<div style="flex:1;min-width:0">'
+      +packStandHTML(id,104)
+      +'<div style="flex:1;min-width:0;position:relative">'
         +(pt.seasonal?'<div style="font:800 9px var(--body);letter-spacing:.12em;text-transform:uppercase;color:'+pt.col+'">'+(pt.icon||'✦')+' Limited time'+(seasonD&&seasonD.window?' · ends '+_DROP_MON[seasonD.window[1][0]-1]+' '+seasonD.window[1][1]:'')+'</div>':'')
         +'<div style="font-family:var(--display);font-size:20px;color:'+pt.col+'">'+esc(pt.name)+'</div>'
         +'<div class="small" style="color:#cfe6d8;margin-top:3px">Epic+ <b style="color:'+PACK_RCOL.epic+'">'+Math.round(epicPlus*100)+'%</b> · Legendary <b style="color:'+PACK_RCOL.legendary+'">'+Math.round(legPct*100)+'%</b></div>'
