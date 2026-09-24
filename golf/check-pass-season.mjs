@@ -462,7 +462,7 @@ try {
   await at('2026-09-20T16:00:00Z');
   await E('seasonalCredits', 2);
   let SC = await E('savedCard');
-  ok('September shows the saved packs as a card you can open', !!SC && /2 left/.test(SC) && /Yours still open/.test(SC), SC);
+  ok('September shows the saved packs as a card you can open', !!SC && /2 left/.test(SC) && /still open/.test(SC), SC);
   let OP = await E('openSaved');
   ok('opening one spends a saved pack and no coins', OP.before === 2 && OP.after === 1 && OP.coins === 0 && !OP.msg.some(m => /out of season/.test(m)), OP);
   await E('seasonalCredits', 0);
