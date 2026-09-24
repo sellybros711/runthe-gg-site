@@ -480,6 +480,67 @@ window.GA_ID='G-L29P5MRWKE';
      anything in the flow would shift the label off centre. */
   .hp-tag-pro{background:rgba(226,178,90,.16);border-color:rgba(226,178,90,.5);
     color:#F3DDAE}
+  /* BETA. Not the launch green .mc-new wears, which says a finished mode is new, and not
+     the grey of something broken. Blue is the one colour on this page that is neither a
+     paid thing nor a warning, so it reads as a label rather than as a state. */
+  .hp-tag-beta{background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.55);
+    color:#93c5fd}
+  /* ---- FANTASY CHALLENGE'S DOOR IS A NEON SIGN, AND THE COLOUR IS THE STATE ----
+     RED until a lineup is in, GREEN once one is. That is the only door on this page whose
+     border answers a question rather than naming a mode, and it earns it: the mode is one
+     lineup a week against a clock, so "have I entered this week" is the single thing a
+     returning reader wants off the front page, and it is exactly what a scrolling thumb
+     can read without stopping.
+     A NEON TUBE IS A BRIGHT LINE PLUS THE AIR AROUND IT, so it is three shadows and not
+     one: a tight inner bloom, a wider outer haze, and an inset that lights the glass from
+     behind. One flat glow reads as a focus ring, which is a state this page already uses
+     for something else. */
+  .hp-full.hp-fan{border:1.5px solid var(--fan-l);
+    background:linear-gradient(180deg,var(--fan-bg1),var(--fan-bg2));
+    box-shadow:0 0 6px -1px var(--fan-g1), 0 0 18px -4px var(--fan-g2),
+      inset 0 0 14px -8px var(--fan-g1)}
+  .hp-full.hp-fan{--fan-l:rgba(239,68,68,.82); --fan-g1:rgba(239,68,68,.75);
+    --fan-g2:rgba(239,68,68,.55);
+    --fan-bg1:rgba(42,12,14,.62); --fan-bg2:rgba(26,9,11,.62)}
+  /* IN, AND THE WHOLE SIGN CHANGES COLOUR RATHER THAN GAINING A BADGE. A tick beside a red
+     border would be two marks answering one question, and on a 360px phone the border is
+     the half that is legible at a glance. */
+  .hp-full.hp-fan.hp-fan-in{--fan-l:rgba(34,197,94,.82); --fan-g1:rgba(34,197,94,.7);
+    --fan-g2:rgba(34,197,94,.5);
+    --fan-bg1:rgba(8,38,20,.62); --fan-bg2:rgba(6,26,14,.62)}
+  .hp-full.hp-fan .hp-full-name{color:#ffe8e8}
+  .hp-full.hp-fan.hp-fan-in .hp-full-name{color:#dcfce7}
+  .hp-full.hp-fan .hp-full-sub{color:rgba(255,226,226,.72)}
+  .hp-full.hp-fan.hp-fan-in .hp-full-sub{color:rgba(220,252,231,.72)}
+  .hp-full.hp-fan:hover{--fan-g1:rgba(239,68,68,.95); --fan-g2:rgba(239,68,68,.7)}
+  .hp-full.hp-fan.hp-fan-in:hover{--fan-g1:rgba(34,197,94,.9); --fan-g2:rgba(34,197,94,.65)}
+  /* THE TUBE BREATHES, AND ONLY THE GLOW MOVES. Animating the border colour makes the line
+     itself flicker, which reads as a failing sign rather than a lit one, and animating the
+     box-shadow's SPREAD would relayout nothing but does repaint the whole card. This rides
+     on opacity through a pseudo element, so it is a compositor job.
+     4.5s AND SHALLOW. A neon sign hums; it does not blink. Anything quicker than about
+     three seconds on a control this size reads as a notification demanding a tap. */
+  .hp-full.hp-fan{position:relative}
+  .hp-full.hp-fan::after{content:'';position:absolute;inset:-1px;border-radius:inherit;
+    pointer-events:none;box-shadow:0 0 12px -2px var(--fan-g1), 0 0 26px -6px var(--fan-g2);
+    opacity:.45}
+  @media (prefers-reduced-motion:no-preference){
+    .hp-full.hp-fan::after{animation:fanhum 4.5s ease-in-out infinite}
+  }
+  @keyframes fanhum{0%,100%{opacity:.30} 50%{opacity:.85}}
+  /* ---- AND THE SHUT VERSION OF IT ----
+     The border stays RED rather than going gold, because red already means "no lineup in"
+     and that is true of a guest: they have not entered either. A third colour would be a
+     third thing to learn for a state the padlock and the sub line already name.
+     FULLY PRESSABLE. .mc-soon is the wrong treatment and is deliberately not reused: it
+     sets pointer-events:none, and a lock a thumb falls straight through is a lock with no
+     way to the thing that opens it. The press opens the sign-in sheet, which is where that
+     tap was always going to end. */
+  .hp-full.hp-fan.hp-lock .hp-full-name{color:rgba(255,232,232,.92)}
+  /* Sized off the label it sits in rather than in pixels, so it tracks the name at every
+     width instead of needing a breakpoint of its own. */
+  .hp-lk{width:.82em;height:.82em;vertical-align:-0.06em;margin-right:5px;
+    opacity:.9}
   /* ---- FULL TEAM'S OWN FILL, AND WHY IT IS NOT MORE OF THE GREY ABOVE ----
      .hp-full is the shared card shape and it stays neutral, because the Trade Machine wears
      it too. This modifier is Full Team's alone (ensureFullButton adds it) so nothing else
@@ -8152,7 +8213,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- WHO CAN SEE FANTASY CHALLENGE. The only one of the three whose flag is still false, so
      the only one whose list currently decides anything. Read defensively by
      canPlayFantasy(), which answers no when the file cannot be read. -->
-<script src="fantasy-access.js?v=1"></script>
+<script src="fantasy-access.js?v=2"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -8433,12 +8494,26 @@ const fullTeamSold=()=>canPlayFull();
    IT IS NOT IN THE STORE AND MUST NOT BE. Nothing about this mode is sold, so there is no
    `fantasySold()` beside it: the bundle's card names what the bundle contains, and a mode
    that is free to enter and not yet finished is neither. */
+/* WHETHER IT OPENS. An account, always, because an entry belongs to one and the server
+   refuses a signed out lineup itself. */
 const canPlayFantasy=()=>{
   const A=window.PS_FANTASY_ACCESS;
   if(!A||typeof A.allowed!=='function') return false;
-  if(A.LIVE) return true;
-  if(!authState.signedIn) return false;
-  return A.allowed({name:authState.name,userId:authState.userId});
+  return A.allowed({signedIn:authState.signedIn,name:authState.name,userId:authState.userId});
+};
+/* WHETHER THE DOOR IS DRAWN, which is a different question and is the reason a guest ever
+   hears about this mode at all. Launched, everybody gets it; signed out it wears a padlock
+   and the press goes to sign in. Read defensively like the two above: a blocked or stale
+   access file leaves PS_FANTASY_ACCESS undefined and the honest answer is then no door. */
+const fantasyShow=()=>{
+  const A=window.PS_FANTASY_ACCESS;
+  if(!A) return false;
+  /* `show` is new, so a CACHED copy of this file one deploy behind has `allowed` and not
+     `show`. Falling back to LIVE keeps that visitor's door drawn rather than silently
+     taking the mode off their page, which is the failure this whole split exists to stop.
+     Same shape as the board's version pin: the older answer is the safe one here. */
+  if(typeof A.show!=='function') return !!A.LIVE;
+  return A.show({signedIn:authState.signedIn,name:authState.name,userId:authState.userId});
 };
 /* AND THE STORE ASKS THE PAGE, because only the page knows. Deciding this needs the tester
    list and who is signed in; /assets/store.js is handed neither and is drawn by the college
@@ -11448,26 +11523,128 @@ function dynHiHTML(){
    Commish door carries about preventDefault.
    NO METER TO ASK ABOUT, so this builder has no dailyEnsure and no shut state: one entry a
    week is the rule and the lock is a kickoff rather than an allowance. */
+/* ---- HAS THIS BROWSER ENTERED THE LIVE WEEK ----
+ *
+ * The door's neon is red until a lineup is in and green after, so the front page has to
+ * answer a question the mode owns. It reads the mode's OWN localStorage record, which is
+ * written only after `fantasy_submit` has said yes: `state.submitted` is set on the success
+ * path and nowhere else, so a refused entry never lights this green.
+ *
+ * IT FAILS SOFT TO RED, AND THAT IS THE SAFE DIRECTION rather than a shrug. Red means "no
+ * lineup in", which is what an unknown answer should say: the worst it costs is a tap onto
+ * a screen that says you are already in, and the mode's own screens are the truth. Green on
+ * a bad read would tell somebody they had entered a competition they had not.
+ *
+ * WHAT IT CANNOT SEE IS ANOTHER DEVICE. A lineup entered on a phone leaves this laptop's
+ * door red until the mode is opened here. The row is the server's and `fantasy_my_entry`
+ * knows, but asking it needs `entries.js`, a supabase client and a round trip on every
+ * front page paint for a border colour. Decoration must never hold up a page that works
+ * without it, so this reads what is already on disk and is wrong in the quiet direction.
+ *
+ * THE WEEK IS READ AND NEVER WRITTEN HERE, which is the mode's own rule. A week number in
+ * this file is the class of thing this repo keeps a checker for, and it would go stale
+ * every Tuesday: the door would stay green into a week nobody had entered. */
+let fanWeek=null, fanAsked=false;
+function fantasyEntered(){
+  if(!fanWeek) return false;
+  try{
+    const raw=localStorage.getItem('ps_fantasy_'+fanWeek.season+'_w'+fanWeek.week);
+    if(!raw) return false;
+    const s=JSON.parse(raw);
+    return !!s&&s.submitted!=null;
+  }catch(_){ return false; }
+}
+/* ASKED ONCE, LAZILY, AND ONLY FOR SOMEBODY WHO IS SHOWN THE DOOR. Never awaited: the door
+   is drawn red immediately and repaints itself if the answer says otherwise, so a slow or
+   blocked pointer costs a colour and never a paint. */
+function fantasyWeekEnsure(){
+  if(fanAsked) return;
+  fanAsked=true;
+  fetch('/football/data/fantasy_now.json',{cache:'no-cache'})
+    .then(r=>r.ok?r.json():null)
+    .then(n=>{
+      if(!n||n.season==null||n.week==null) return;
+      fanWeek=n;
+      /* Only repaint if the answer actually changes the door, so this is a no-op on the
+         common visit and cannot fight whatever else has repainted since. */
+      if(fantasyEntered()) ensureFantasyButton();
+    })
+    .catch(()=>{});
+}
+
+/* THE SAME PADLOCK THE modes sheet DRAWS, written out again rather than shared, because
+   MC_LOCK is a const inside the sheet's own painter and hoisting it to module scope to
+   reach it from here is a bigger change than one path. Its own class, sized off the label
+   it sits in so it tracks the name rather than being pinned in pixels. */
+const HP_LOCK='<svg class="hp-lk" viewBox="0 0 24 24" aria-hidden="true">'+
+  '<path fill="none" stroke="currentColor" stroke-width="2.4" '+
+    'd="M7.6 10.4V7a4.4 4.4 0 0 1 8.8 0v3.4"/>'+
+  '<rect x="4.2" y="10.2" width="15.6" height="11.6" rx="2.4" fill="currentColor"/></svg>';
+
 function ensureFantasyButton(){
   let el=$('b-fantasy');
-  if(!canPlayFantasy()){
+  if(!fantasyShow()){
     if(el&&el.parentNode) el.parentNode.removeChild(el);
     return;
   }
   const box=ensureLongGroup(); if(!box) return;
+  /* Asked here rather than at boot, so the request only ever goes out for somebody who is
+     actually shown this door. Same rule dynHiEnsure follows beside the Dynasty one. */
+  fantasyWeekEnsure();
   if(!el){
     el=document.createElement('a');
-    el.className='btn hp-full';
     el.id='b-fantasy';
     el.href='/football/fantasy/';
-    /* PREVIEW, WHICH IS THE HONEST WORD WHILE ONLY A TESTER CAN SEE IT, and is the word
-       Full Team's door wore until the day that mode launched. New is what a finished mode
-       that is new says; Preview tells the handful of people who can open this that the
-       rough edges are expected. */
-    el.innerHTML='<span class="hp-tag">Preview</span>'+
-      '<span class="hp-full-name">Fantasy Challenge</span>'+
-      '<span class="hp-full-sub">One lineup &middot; one week</span>';
   }
+  /* REBUILT ON EVERY CALL, not only on the one that made the node, which is the Dynasty
+     door's rule and matters here for the same reason: this runs on every auth change, and
+     signing in has to take the padlock off without a reload. Written once at creation, a
+     guest who signed in would be left looking at a locked door onto a mode they can now
+     play. */
+  const open=canPlayFantasy();
+  /* THE PADLOCK WAITS FOR AN ANSWER, WHICH IS THE MODE PAGE'S OWN RULE ARRIVING HERE.
+     paintHomeStart runs at boot, synchronously, before PS_AUTH has resolved getSession, so
+     authState is {ready:false,signedIn:false} for the first beat of every visit. Decided
+     off that, a returning signed in player is shown a door reading "Sign in to play" and
+     then corrected, which reads as having been signed out.
+     THE TWO MISTAKES ARE NOT SYMMETRIC. Telling somebody who is signed in to sign in is
+     alarming; showing a guest an unlocked door for a beat costs nothing, because the
+     HANDLER asks canPlayFantasy() again at press time and a guest who taps inside that
+     window still gets the sheet. So the chrome waits and the rule does not. */
+  const showLock=authState.ready&&!open;
+  /* GREEN ONLY FOR SOMEBODY WHO COULD HAVE ENTERED. A guest's browser can hold a lineup
+     from before they signed out, and a green door promising a stranger they are in is the
+     one thing this light must never say. */
+  const inThisWeek=open&&fantasyEntered();
+  el.className='btn hp-full hp-fan'+(inThisWeek?' hp-fan-in':'')+(showLock?' hp-lock':'');
+  /* BETA, BECAUSE IT IS. Preview was the honest word while only a tester could open it and
+     New is what a finished mode says. Beta is the one that tells a reader the mode is real,
+     is theirs, and has rough edges. */
+  el.innerHTML='<span class="hp-tag hp-tag-beta">Beta</span>'+
+    '<span class="hp-full-name">'+(showLock?HP_LOCK:'')+'Fantasy Challenge</span>'+
+    '<span class="hp-full-sub">'+(inThisWeek
+      ? 'Lineup in &middot; watch it score'
+      : showLock
+        ? 'Sign in to play &middot; one lineup a week'
+        : 'One lineup &middot; one week')+'</span>';
+  /* THE COLOUR IS A CLAIM ABOUT THIS ACCOUNT, so it is said out loud for a reader who
+     cannot see a border at all. The border is the fast answer and this is the true one. */
+  el.setAttribute('aria-label','Fantasy Challenge, beta. '+(inThisWeek
+    ? 'Your lineup is in for this week.'
+    : showLock ? 'Sign in to play.' : 'No lineup entered yet this week.'));
+  /* THE LOCKED DOOR IS FULLY PRESSABLE AND THE PRESS GOES TO SIGN IN, which is the whole
+     point of drawing it. `.mc-soon` is the wrong treatment and is deliberately not reused:
+     it sets pointer-events:none, and a lock a thumb falls straight through is a lock with
+     no way to the thing that opens it.
+     preventDefault ONLY on this branch, so an open door keeps middle click, open in a new
+     tab and a long press working the way an anchor should. That is the college game's
+     Commish door rule, and it is why this is an <a> and not a <button>. */
+  el.onclick=(e)=>{
+    if(canPlayFantasy()) return;
+    e.preventDefault();
+    authMode='in';
+    profileSheet();
+  };
   /* LAST OF THE MODE DOORS, AND STILL ABOVE THE STORE CARD. Appending to the group alone
      put it under "Unlock everything", because ensurePremiumCard runs after this and inserts
      into the same container, so the offer ended up in the middle of the list of modes with
@@ -22788,8 +22965,34 @@ function authBoot(){
        inherits the last one's marks. */
     if(!st.signedIn){ myCrest=null; myMark=null; mySeen=null; }
     else { loadMyMark(); loadSeen(); crestBoot(); }
+    signinHash();
   });
   a.boot();
+}
+
+/* #signin OPENS THE SIGN-IN SHEET ON ARRIVAL, because another page has to be able to send
+   somebody here to do exactly one thing. Fantasy Challenge's shut screen is the first
+   caller: the sheet lives on this page and a second copy of an auth form on that one would
+   be two ways to sign in that drift.
+   ASKED FROM THE AUTH CHANGE AND NOT AT BOOT, because PS_AUTH answers nothing until
+   getSession resolves. Asked at boot, a returning visitor with a live session is shown a
+   sign-in sheet for a beat and then corrected, which reads as having been signed out.
+   ONCE, AND THE HASH IS CLEARED. It is a one-shot instruction rather than a state, so a
+   reader who closes the sheet and reloads should get the page rather than the sheet again,
+   and a shared link should not carry it. replaceState so the back button is untouched.
+   AND NOT FOR SOMEBODY ALREADY SIGNED IN: profileSheet() answers with the profile hub for
+   them, which is a screen they did not ask for. The hash is still cleared, so following
+   the link with a live session simply lands on the front page. */
+let signinDone=false;
+function signinHash(){
+  if(signinDone) return;
+  if(!authState.ready) return;
+  if(location.hash!=='#signin') return;
+  signinDone=true;
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+  if(authState.signedIn) return;
+  authMode='in';
+  profileSheet();
 }
 
 /* Fetch the rows the crest needs, once per account, and repaint what is already on screen.

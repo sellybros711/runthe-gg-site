@@ -213,5 +213,11 @@ if (process.argv[1] && process.argv[1].endsWith('publish-week.mjs')) {
   const j = JSON.parse(fs.readFileSync(f, 'utf8'));
   process.stdout.write(results
     ? resultsSQL(j)
-    : poolSQL(j, { cap: DRAFT.CAP_MUSD, slots: DRAFT.SLOTS }));
+    /* THE WEEK'S OWN CAP AND NOT THE CONSTANT. What the server stores has to be the number
+       the board on disk was drawn and priced for, because `fantasy_submit` checks a lineup
+       against the row and the page drafts against the pool. Read off the constant, a
+       republish of an older week would send TODAY's cap with YESTERDAY's prices, which is
+       the one thing a published week must never do to itself. `capFor` falls back to the
+       constant for a pool built before that key existed. */
+    : poolSQL(j, { cap: DRAFT.capFor(j), slots: DRAFT.SLOTS }));
 }

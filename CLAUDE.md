@@ -2669,19 +2669,96 @@ scored on what the six actually do. **It is a page of its own rather than a scre
 the football game**, because it shares nothing with that engine: no season, no sim, no
 ratings. What it shares is accounts, the palette and the tester pattern.
 
-**IT IS NOT LAUNCHED AND THE FLAG IS NOT A LOCK.** `fantasy-access.js` ships
-`FANTASY_LIVE = false`, so the door on the front page is BUILT for a tester and for nobody
-else. The file is served to every visitor and the list is a console line from being edited.
-Say that plainly rather than implying the page is private. It is the same gate the unlisted
-games run on.
+**IT IS LAUNCHED, IN BETA, AND WHAT IT ASKS FOR IS AN ACCOUNT.** `fantasy-access.js` ships
+`FANTASY_LIVE = true`, so the door is built for everybody. What decides whether it OPENS is
+whether somebody is signed in, and those are two questions kept apart the way the Commish
+door and the One Franchise lock keep theirs:
+
+| | asks | so that |
+|---|---|---|
+| whether the door is DRAWN | `show()` | everybody finds the mode |
+| whether it OPENS | `allowed()` | nothing drafts that cannot enter |
+
+A guest gets the same door wearing a padlock and the press opens the sign-in sheet. **The
+lock is fully pressable**: `.mc-soon` sets `pointer-events:none` and is deliberately not
+reused, because a lock a thumb falls straight through is a lock with no way to the thing
+that opens it.
+
+**THE POINT OF THE GATE IS WHERE THE REFUSAL LANDS, NOT THAT THERE IS ONE.**
+`fantasy_submit` has always refused a signed out lineup itself, in the one place that can,
+because there is a prize. Without the gate a stranger who follows a link drafts five whole
+lineups, chooses one, presses the last button of the mode and meets a wall. The work is the
+drafting. This is still a feature flag and not a permission.
+
+**THE DOOR IS A NEON SIGN AND THE COLOUR IS THE STATE.** Red until a lineup is in, green
+once one is. It is the only door on this page whose border answers a question rather than
+naming a mode, and it earns it: one lineup a week against a clock makes "have I entered this
+week" the single thing a returning reader wants off the front page. It reads the mode's OWN
+`ps_fantasy_<season>_w<week>` record, which `save()` writes only after the server has said
+yes, so a refused entry can never light it green. **It fails soft to RED**, which is the safe
+direction: an unknown answer costs a tap onto a screen that says you are already in, where
+green on a bad read would tell somebody they had entered a competition they had not. What it
+cannot see is another device, and that is recorded rather than fixed: asking the server needs
+`entries.js`, a client and a round trip on every front page paint, for a border colour.
+**A guest holding a lineup is still red**, because a browser keeps localStorage across a sign
+out and a green door telling a stranger they are in is the one thing this light must never
+say.
 
 **THREE ACCESS FILES NOW, AND THEY ARE STILL THREE FILES.** `fullteam-access.js` says in as
 many words "when a third mode wants this, merge them". This is the third and the merge is
-DEFERRED, which is written in the new file's header: the other two ship `LIVE = true`, so
-merging means editing two launched modes and their callers in the middle of building an
-unlaunched one, and the way that fails is a door that is never built, which reports nothing.
+DEFERRED. It was deferred while this one was unlaunched, for the obvious reason, and it is
+**still** deferred now that all three flags are true, for a different one: this file is no
+longer the same SHAPE as the other two. It has a show/allow split they do not have, because
+it is the only mode here that asks for an account. Merging means teaching the other two a
+question they never ask, and the way that fails is a door that is never built, which reports
+nothing. Do it on a day with nothing on the clock.
 `check-fullteam.mjs` walks **every** `*-access.js` on disk now rather than naming two, so the
 lists cannot drift and a fourth mode is covered without anybody remembering.
+
+#### A published week's cap is the WEEK's, and the constant is only the next one's
+
+```
+node football/check-fantasy.mjs --quick   the section named THE LIVE WEEK CARRIES ITS OWN CAP
+```
+
+**IT SHIPPED BROKEN AND NOTHING ANYWHERE THREW.** Week 3 of 2026 was published to the server
+at **$90M** with 414 prices. `CAP_MUSD` went to **110** the next day, with the pricing change
+that earned it. `fantasy_weeks.cap_musd` does not move, ever, because a price may never move
+once anybody has drafted against it and `fantasy_submit` checks a lineup against the ROW.
+
+So the page and the server disagreed by $20M. A lineup spending $95M drafted perfectly,
+looked legal on every screen, and would have been refused at the last press of five drafts.
+
+**AND THE BOARD ITSELF MOVES, WHICH IS WORSE THAN THE REFUSAL.** The cap reaches `ceilingAt`
+through `boardFor`, which sets the guaranteed signable seat and the reserve floor, so a board
+drawn at 110 is not the board drawn at 90 with a different number over it. It is a different
+board, and two readers on two deploys would have drafted different weeks.
+
+**IT WAS ALSO VISIBLE AS THE THING A PLAYER REPORTED.** Greedy drafting on that board leaves
+**$10.6M** at $110M, $5.8M at $100M and **$2.2M** at the $90M it was priced for. "I picked
+the best player every round and still had leftover money" is that row of the table. The cap
+binds at 90 and strands 0 of 120 drafts, which is what it was tuned for.
+
+**SO THE POOL CARRIES ITS OWN CAP AND EVERYTHING ASKS THE POOL.** `weekly-pool.mjs` writes
+`cap_musd` at build time, `publish-week.mjs` sends the POOL's cap to the server rather than
+the constant (or a republish of an older week would send today's cap with yesterday's
+prices), and the page reads it off the week it fetched into one `CAP` that every screen
+spends. One answer, three readers, and `CAP_MUSD` is only ever the seed for the next build.
+
+**THE FALLBACK IS THE LOUD HALF, NOT THE QUIET ONE.** `capFor` answers the constant for a
+pool built before the key existed, which is right, and is exactly the original defect if the
+live week ever loses it. So `check-fantasy.mjs` asserts the live pool CARRIES one rather than
+trusting the fallback, and asserts the cap changes the board, **which its own first draft got
+wrong**: at pick one with the whole cap in hand every drawn man is affordable at either cap,
+so the fixture compared two identical boards and would have reported the defect as fixed.
+Measured, the two agree at pick one and differ on 240 of 360 (seed, pick) pairs once money
+has been spent, so the fixture spends first.
+
+**AND THE POOL WAS THE ONE DATA FILE FETCHED WITHOUT REVALIDATION.** `fantasy_now.json` and
+the injury file are both `no-cache` and this was not, which cost nothing while a week's
+filename only ever appeared with its final contents. It stopped costing nothing the moment
+the pool grew a cap: the name does not change when the file does, so a returning visitor
+would be served their own cached copy, find no cap on it and fall back to the constant.
 
 ### The price is what he has done. The projection is the same number.
 

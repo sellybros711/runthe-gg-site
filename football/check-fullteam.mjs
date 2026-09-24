@@ -342,10 +342,14 @@ console.log('\nAN ACCOUNT THAT IS NOBODY IN PARTICULAR IS LET IN');
    * NOTHING FAILS WHEN THIS DRIFTS. A door that is never built throws nothing, renders
    * nothing and is reported by nobody, which is the shape of every bug this file exists for.
    *
-   * THERE ARE THREE LISTS NOW, and the third is the one the drift can actually cost
-   * something again: Fantasy Challenge ships FANTASY_LIVE = false, so its list is the only
-   * one of the three still deciding who sees a mode. So this walks whatever access files are
-   * on disk rather than naming two, and the next mode is covered without anybody remembering.
+   * THERE ARE THREE LISTS NOW AND ALL THREE FLAGS ARE TRUE, so none of them decides who
+   * sees a mode any more. Fantasy Challenge was the last one that did and it launched: its
+   * `allowed()` asks for an ACCOUNT rather than for the list, because there is a prize and
+   * an entry belongs to somebody. The assertion survives on the reason the other two keep
+   * theirs: turning a flag back off is how a mode gets closed again, and a list rebuilt
+   * from memory in that moment would be the wrong list.
+   * IT WALKS WHATEVER ACCESS FILES ARE ON DISK rather than naming them, so a fourth mode is
+   * covered without anybody remembering. That is what caught the third one for free.
    *
    * A DIFFERENCE IS ALLOWED, AND HAS TO BE ANNOUNCED. If one mode should preview to somebody
    * the others should not, say so in the files and this assertion is the thing that makes

@@ -49,14 +49,117 @@ const POOL = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data', NOW.fil
 console.log('THE MODE IS GATED, AND THE GATE IS READ OFF DISK');
 {
   const src = fs.readFileSync(path.join(ROOT, 'football/fantasy-access.js'), 'utf8');
-  /* Asserted in either position, the way Full Team's launch line is. Flipping it opens an
-     unfinished mode to everybody, so it should be a decision rather than a merge. */
-  ok('fantasy-access.js ships FANTASY_LIVE = false', /FANTASY_LIVE = false/.test(src));
+  /* Asserted in either position, the way Full Team's launch line is. Flipping it moves who
+     can see the mode, so it should be a decision rather than a merge. */
+  ok('fantasy-access.js ships FANTASY_LIVE = true', /FANTASY_LIVE = true/.test(src));
   ok('  and no email address is in it, which is the file\'s own rule',
     !/@[a-z0-9.-]+\.[a-z]{2,}/i.test(src.replace(/runthe\.gg\/football\/fantasy-access\.js/g, '')));
-  ok('  a tester is allowed', ACCESS.allowed({ name: ACCESS.TESTERS[0], userId: null }));
-  ok('  and a stranger is not', !ACCESS.allowed({ name: 'nobody-at-all', userId: 'x' }));
-  ok('  and so is nobody at all', !ACCESS.allowed(null));
+
+  /* TWO QUESTIONS, AND THE WHOLE LAUNCH IS THAT THEY ARE DIFFERENT.
+   *
+   *      show()     whether the door is DRAWN, so everybody finds the mode
+   *      allowed()  whether it OPENS, which is an account
+   *
+   * Written as one function, a launched flag answers yes to everybody and a guest walks
+   * into the drafting screen, drafts five lineups and is refused by `fantasy_submit` at
+   * the last press. That is the failure this split exists to stop, and it is invisible
+   * from every screen before the last one. */
+  const GUEST = null;
+  const FAN = { signedIn: true, name: 'somebody-new', userId: 'u-1' };
+  const TEST = { signedIn: true, name: ACCESS.TESTERS[0], userId: null };
+  ok('  a signed in account may play it', ACCESS.allowed(FAN));
+  ok('  and so may a tester, who is nothing special now', ACCESS.allowed(TEST));
+  ok('  a guest may NOT', !ACCESS.allowed(GUEST));
+  /* THE SHAPE A GUEST ACTUALLY ARRIVES IN. `PS_AUTH.state()` answers an OBJECT with
+     signedIn false rather than null, so a gate that only tested for null would let every
+     signed out reader through. Asserted separately because they are different values and
+     only one of them was ever going to be passed by the page. */
+  ok('  nor a signed out auth state, which is what the page really holds',
+    !ACCESS.allowed({ signedIn: false, name: null, userId: null }));
+  /* A BARE NAME CANNOT SAY WHETHER SOMEBODY IS SIGNED IN, so it is refused. The only
+     caller that ever passed one was asking about the list, and at a door with a prize
+     behind it the safe direction is no. */
+  ok('  and not a bare name, which cannot answer the question being asked',
+    !ACCESS.allowed(ACCESS.TESTERS[0]));
+
+  ok('  the door is DRAWN for a guest, or nobody ever hears about the mode',
+    ACCESS.show(GUEST));
+  ok('  and for a signed in account', ACCESS.show(FAN));
+  /* THE PAIR IS THE CLAIM, not either half. A build where show() and allowed() agree for a
+     guest is either a mode nobody can find or a mode that lets one draft. */
+  ok('  so a guest sees a door that does not open',
+    ACCESS.show(GUEST) && !ACCESS.allowed(GUEST));
+}
+
+/* ================================================================
+   THE CAP THE PAGE DRAFTS AGAINST IS THE WEEK'S, NOT THE CONSTANT
+   ================================================================ */
+/*
+ * IT WENT WRONG AND THIS IS THE CHECK THAT WOULD HAVE CAUGHT IT.
+ *
+ * Week 3 of 2026 was published to the server at $90M with 414 prices. `CAP_MUSD` went to
+ * 110 the next day, with the pricing change that earned it. `fantasy_weeks.cap_musd` does
+ * not move, ever, because a price may never move once anybody has drafted against it and
+ * `fantasy_submit` checks a lineup against the row.
+ *
+ * SO THE PAGE AND THE SERVER DISAGREED BY $20M and nothing threw. A lineup spending $95M
+ * drafted perfectly, looked legal on every screen, and was refused at the last press of
+ * five drafts. WORSE, the board itself moves: the cap reaches `ceilingAt` through
+ * `boardFor`, which sets the guaranteed signable seat and the reserve floor, so it is a
+ * different board rather than the same board with a different number over it.
+ *
+ * THE POOL CARRYING A CAP IS THE HALF THAT CANNOT BE LEFT TO A FALLBACK. `capFor` answers
+ * the constant for a pool without one, which is right for a week built before the key
+ * existed and is exactly the silent failure above if the live week ever loses it.
+ */
+console.log('\nTHE LIVE WEEK CARRIES ITS OWN CAP, AND EVERYTHING READS IT');
+const WEEK_CAP = D.capFor(POOL);
+{
+  ok('the pool on disk carries a cap of its own', POOL.cap_musd != null,
+    POOL.cap_musd == null ? 'MISSING, so the page falls back to the constant'
+      : `$${POOL.cap_musd}M`);
+  ok('  and capFor reads it rather than the constant', WEEK_CAP === POOL.cap_musd,
+    `capFor says $${WEEK_CAP}M`);
+  /* NOT AN ASSERTION THAT THEY MATCH. They are allowed to differ and right now they do:
+     that is the whole point of the week carrying its own. What must never happen is the
+     page reading the constant. */
+  if (WEEK_CAP !== D.CAP_MUSD) {
+    console.log(`        (the constant is $${D.CAP_MUSD}M, so this week is a week the `
+      + 'constant would have got wrong)');
+  }
+  /* A pool with no cap falls back, which is the documented behaviour and is asserted so
+     nobody deletes the fallback and strands a week built before the key existed. */
+  ok('  a pool built before the key existed still drafts, at the constant',
+    D.capFor({ season: 2026, week: 1 }) === D.CAP_MUSD);
+  ok('  and a junk value does not become NaN, which would refuse every man',
+    D.capFor({ cap_musd: 'later' }) === D.CAP_MUSD);
+
+  /* THE BOARD IS DERIVED FROM THE CAP, which is what makes this more than a refusal at
+     the end. Driven rather than argued: the same seed at two caps has to deal different
+     men, or the claim above is wrong and the fix is only cosmetic. */
+  const seed = 20260925;
+  const ids = (chance, i, cap) => D.boardFor(POOL.pool, chance, i, cap)
+    .map((m) => m.player_id).join(',');
+
+  /* AT AN EMPTY ROSTER THE TWO CAPS DEAL THE SAME BOARD, and that is the fixture this
+     assertion got wrong first. `ceilingAt` only bites once there is something to be short
+     of: at pick one with the whole cap in hand every drawn man is affordable at $90M and
+     at $140M alike, so a check written there compares two identical boards and reports
+     the defect as fixed. Measured: SAME at pick one, and 240 of 360 (seed, pick) pairs
+     differ once money has been spent. So it is asked of a roster that has spent. */
+  const dear = POOL.pool.filter((m) => m.price_musd > 20).slice(0, 3);
+  const spent = { seed, men: dear, ids: dear.map((m) => m.player_id) };
+  ok('  the two caps deal the SAME board at pick one, which is why the fixture spends',
+    ids({ seed, men: [], ids: [] }, 0, 90) === ids({ seed, men: [], ids: [] }, 0, 140));
+  ok('  and the CAP CHANGES THE BOARD once there is money spent, so this is not only '
+    + 'a refusal at the submit',
+    ids(spent, 3, 90) !== ids(spent, 3, 140),
+    `$${D.spent(spent).toFixed(1)}M spent, same seed, two caps, two boards`);
+  /* And the default is the constant, so a caller that forgets is wrong in the loud
+     direction rather than silently drafting somebody else's week. */
+  ok('  boardFor with no cap falls back to the constant',
+    ids(spent, 3, D.CAP_MUSD) === D.boardFor(POOL.pool, spent, 3)
+      .map((m) => m.player_id).join(','));
 }
 
 /* ================================================================
@@ -77,11 +180,11 @@ console.log('\nTHE POOL IS A BOARD, NOT A FILE THAT PARSES');
   /* The cap has to cover the cheapest legal lineup with room to make a choice, or the
      reserve floor eats every board and the wheel picks the team. */
   const floor = D.reserveAfter(POOL.pool, -1);
-  ok('  the cap clears the reserve floor with real room', D.CAP_MUSD > floor * 2,
-    `floor $${floor.toFixed(1)}M against a $${D.CAP_MUSD}M cap`);
+  ok('  the cap clears the reserve floor with real room', WEEK_CAP > floor * 2,
+    `floor $${floor.toFixed(1)}M against a $${WEEK_CAP}M cap`);
   /* NOBODY IS PRICED ABOVE THE CAP, which would be a man on the board who can never be
      signed: he would be offered, refused and there would be nothing on screen to say why. */
-  const over = POOL.pool.filter((p) => p.price_musd > D.CAP_MUSD - floor);
+  const over = POOL.pool.filter((p) => p.price_musd > WEEK_CAP - floor);
   ok('  and nobody on the board is unsignable', !over.length,
     over.length ? over.slice(0, 3).map((p) => p.name).join(', ') : 'all reachable');
 
@@ -130,9 +233,9 @@ console.log('\nA DRAFT ALWAYS FINISHES');
       const c = { seed: (r * 2654435761 + name.length) >>> 0, men: [] };
       const rnd = D.rngOf(c.seed ^ 0x5bf03635);
       for (let i = 0; i < D.SLOTS.length; i++) {
-        const board = D.boardFor(POOL.pool, c, i);
+        const board = D.boardFor(POOL.pool, c, i, WEEK_CAP);
         if (!board.length) { stranded++; break; }
-        const left = D.CAP_MUSD - D.spent(c);
+        const left = WEEK_CAP - D.spent(c);
         /* AT LEAST ONE MAN ON EVERY BOARD MUST BE SIGNABLE, which is what replaced "every
            man is". A board of five men the cap refuses is the empty screen with no way on
            that the reserve floor exists to prevent, and it renders perfectly. */
@@ -148,7 +251,7 @@ console.log('\nA DRAFT ALWAYS FINISHES');
       runs++;
       if (c.men.length < D.SLOTS.length) { short++; continue; }
       worst = Math.max(worst, D.spent(c));
-      if (D.spent(c) > D.CAP_MUSD + 1e-9) over++;
+      if (D.spent(c) > WEEK_CAP + 1e-9) over++;
       /* THE SIX ARE SIX DIFFERENT MEN. Both running back slots draw from the same pool, so
          without the exclusion the same man fills them both and the lineup is illegal in a
          way nothing on the screen would show. */
@@ -161,7 +264,7 @@ console.log('\nA DRAFT ALWAYS FINISHES');
   ok('  every board had somebody on it the cap could take', !noneCan,
     `${noneCan} boards with nothing signable`);
   ok('  and nothing signed was ever over the cap', !over,
-    `worst spend $${worst.toFixed(1)}M of $${D.CAP_MUSD}M`);
+    `worst spend $${worst.toFixed(1)}M of $${WEEK_CAP}M`);
   /*
    * AND THE CAP IS ACTUALLY SEEN, which is the whole reason the out of reach rows exist. A
    * board that never shows one is the old board wearing new code: it would pass every
@@ -214,12 +317,12 @@ console.log('\nTHE PROJECTION IS THE SIX, ADDED UP');
     const c = { seed: (r * 40503 + 7) >>> 0, men: [] };
     const rnd = D.rngOf(c.seed);
     for (let i = 0; i < D.SLOTS.length; i++) {
-      const board = D.boardFor(POOL.pool, c, i);
+      const board = D.boardFor(POOL.pool, c, i, WEEK_CAP);
       if (!board.length) break;
       /* SIGNED FROM THE SIGNABLE MEN, the same as every other bot here. Picking blind out
          of the whole board signs men over the ceiling and strands about one draft in
          thirty, which reads as the page losing lineups and is the bot breaking the rule. */
-      const left = D.CAP_MUSD - D.spent(c);
+      const left = WEEK_CAP - D.spent(c);
       const can = board.filter((m) => D.canSign(POOL.pool, i, left, m));
       if (!can.length) break;
       c.men.push(can[Math.floor(rnd() * can.length)]);
@@ -350,8 +453,8 @@ console.log('\nA MAN WHO IS NOT PLAYING IS NOT A PICK');
     for (let seed = 1; seed <= 400; seed++) {
       const c = { seed, men: [] };
       for (let i = 0; i < D.SLOTS.length; i++) {
-        const board = D.boardFor(live, c, i);
-        const left = D.CAP_MUSD - D.spent(c);
+        const board = D.boardFor(live, c, i, WEEK_CAP);
+        const left = WEEK_CAP - D.spent(c);
         const take = board.find((m) => D.canSign(live, i, left, m));
         if (!take) { stranded++; break; }
         if (D.hurt(take)) hurtSigned++;
@@ -979,12 +1082,27 @@ const openBoard = async (page, via = '#b-live') => {
 };
 
 /* ---------------------------------------------------------------- */
+/*
+ * A GUEST IS TOLD BEFORE THE DRAFTING, NOT AFTER IT.
+ *
+ * `fantasy_submit` refuses a signed out lineup itself and always has, so the mode was
+ * never going to record one. What the gate buys is WHERE the refusal lands. Without it a
+ * stranger who followed a link drafts five whole lineups, chooses one, presses the last
+ * button of the mode and meets a wall, and the work is the drafting. That is the one
+ * screen on this page a refusal costs something real on.
+ *
+ * SO THE CLAIM IS THE SCREEN, and the screen is structural. `s-home` is the drafting
+ * side of the mode and `s-shut` is the refusal, so a guest reaching `s-home` at all is
+ * the defect, whatever the copy on it says.
+ */
 console.log('\nTHE GATE HAS THREE ANSWERS AND THEY ARE THREE DIFFERENT SENTENCES');
 const said = {};
 for (const [label, who, want] of [
+  /* LAUNCHED, SO A TESTER IS NOTHING SPECIAL AND THAT IS ASSERTED RATHER THAN ASSUMED.
+     If the list somehow still decided anything, this and the row below it would disagree. */
   ['a tester gets the mode', TESTER, 's-home'],
-  ['a signed in stranger does not', STRANGER, 's-shut'],
-  ['a signed out visitor does not', null, 's-shut'],
+  ['a signed in account on no list gets it too', STRANGER, 's-home'],
+  ['a signed out visitor is asked to sign in first', null, 's-shut'],
 ]) {
   const { page, boom } = await openPage(browser, FANTASY, { who, at: BEFORE });
   await page.waitForFunction(() => !document.getElementById('s-load').classList.contains('on'),
@@ -992,15 +1110,38 @@ for (const [label, who, want] of [
   const on = await screenOn(page);
   ok(label, on === want, on + (boom.length ? ' | ' + boom.join(' | ') : ''));
   ok('  and nothing threw', !boom.length, boom.join(' | ') || 'clean');
-  said[label] = await page.evaluate(() => document.getElementById('shut-say').textContent.trim());
+  said[label] = await page.evaluate(() => {
+    const go = document.getElementById('shut-go');
+    return {
+      say: document.getElementById('shut-say').textContent.trim(),
+      /* THE WAY OUT, MEASURED RATHER THAN READ. `.btn` sets display:block, which is the
+         trap this repo has hit eight times: a painter's `hidden` never takes without a
+         `.btn[hidden]` rule, so asking for the attribute would pass on a button that is
+         sitting on the screen. getComputedStyle is what actually answers. */
+      goShown: !!go && getComputedStyle(go).display !== 'none',
+      goHref: go && go.getAttribute('href'),
+    };
+  });
   await page.close();
 }
-/* A blank box is how a feature teaches somebody it is broken, and one message for two
-   different situations tells half the readers to go and do something that will not help.
-   The commissioner standings' own lesson, arriving here. */
-const shut = Object.values(said).filter(Boolean);
-ok('  the two refusals say different things', new Set(shut).size === shut.length,
-  shut.join(' || '));
+/* A REFUSAL A READER CAN ACT ON. The whole point of stopping a guest here rather than at
+   the submit is that here there is something to do about it, so the sentence has to say so
+   and the button has to be on the screen and pointed at the thing that fixes it. */
+{
+  const g = said['a signed out visitor is asked to sign in first'];
+  ok('  the guest is told to sign in, in as many words', /sign in/i.test(g.say), g.say);
+  ok('  and the way to do it is ON the screen, not just described',
+    g.goShown === true, 'shut-go display ' + (g.goShown ? 'shown' : 'NONE'));
+  ok('  and it points at the sheet that signs somebody in',
+    g.goHref === '/football/#signin', String(g.goHref));
+  /* AND A SIGNED IN READER IS NEVER OFFERED IT, because they are not on this screen at
+     all. Asserted from the other end: both signed in fixtures reached the mode, so a
+     `shut-say` that is not empty for either of them means the gate refused somebody it
+     should not have. */
+  for (const k of ['a tester gets the mode', 'a signed in account on no list gets it too']) {
+    ok(`  ${k}: and was never shown a refusal`, !said[k].say, said[k].say || 'nothing said');
+  }
+}
 
 /* ---------------------------------------------------------------- */
 console.log('\nA WHOLE ENTRY, DRIVEN');
@@ -2974,12 +3115,24 @@ console.log('\nA MAN WHO CANNOT PLAY IS RED, AND THE CHIP OPENS THE REPORT');
   await page.close();
 }
 
-/* ---------------------------------------------------------------- */
-console.log('\nTHE DOOR IS BUILT FOR A TESTER AND FOR NOBODY ELSE');
+/* ----------------------------------------------------------------
+ *
+ * THE DOOR IS DRAWN FOR EVERYBODY AND IT OPENS FOR AN ACCOUNT.
+ *
+ * Two questions, and the launch is that they are different. Written as one, a launched
+ * flag answers yes to everybody and a guest walks into the drafting screen; written as
+ * one the other way, a guest is served a page with no Fantasy Challenge on it and never
+ * learns the mode exists. The pair is the claim and neither half is worth asserting alone.
+ *
+ * AND THE LOCK IS PRESSED RATHER THAN LOOKED AT, which is the dynasty lock's own rule: a
+ * lock on a door that opens anyway is decoration, and a door that refuses with nothing
+ * behind it is the wall this replaced. So the walk clicks it and reads what comes up.
+ * ---------------------------------------------------------------- */
+console.log('\nTHE DOOR IS DRAWN FOR EVERYBODY AND OPENS FOR AN ACCOUNT');
 for (const [label, who, want] of [
   ['a tester gets the door', TESTER, true],
-  ['a signed in stranger does not', STRANGER, false],
-  ['a signed out visitor does not', null, false],
+  ['a signed in account on no list gets it too', STRANGER, true],
+  ['and so does a signed out visitor, locked', null, true],
 ]) {
   const { page, boom } = await openPage(browser, 'http://local.test/football/',
     { who, at: BEFORE });
@@ -2995,10 +3148,32 @@ for (const [label, who, want] of [
     const card = document.getElementById('b-premium');
     const after = card
       ? !!(el.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING) : null;
+    const cs = getComputedStyle(el);
+    const tag = el.querySelector('.hp-tag');
     return { there: true, tag: el.tagName, href: el.getAttribute('href'),
       shown: !!(el.offsetWidth || el.offsetHeight),
       aboveStore: after,
-      underlined: getComputedStyle(el).textDecorationLine };
+      underlined: cs.textDecorationLine,
+      locked: el.classList.contains('hp-lock'),
+      /* A LOCK A THUMB FALLS THROUGH IS THE ONE THING THIS MUST NOT BE. `.mc-soon` sets
+         pointer-events:none and is deliberately not reused here, so the property is
+         asserted rather than trusted to the class list. */
+      pressable: cs.pointerEvents !== 'none',
+      /* AND IT IS REALLY THE TOP ELEMENT AT ITS OWN CENTRE. pointer-events on the node
+         says nothing about a scrim or a sibling sitting over it, and a screenshot of a
+         door with something on top of it looks exactly like a door. */
+      atCentre: (() => {
+        const r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return !!hit && (hit === el || el.contains(hit));
+      })(),
+      badge: tag ? tag.textContent.trim() : null,
+      badgeBeta: !!(tag && tag.classList.contains('hp-tag-beta')),
+      neon: el.classList.contains('hp-fan'),
+      green: el.classList.contains('hp-fan-in'),
+      label: el.getAttribute('aria-label') || '',
+      sub: (el.querySelector('.hp-full-sub') || {}).textContent || '',
+      padlocks: el.querySelectorAll('.hp-lk').length };
   });
   ok(label, got.there === want, JSON.stringify(got));
   if (want) {
@@ -3015,9 +3190,270 @@ for (const [label, who, want] of [
        underline off, and the underline is the only thing that gives an anchor away here. */
     ok('  and it does not wear the browser\'s underline', got.underlined === 'none',
       got.underlined);
+    /* THE BETA TAG, on every reader, because the mode is in beta for all of them. */
+    ok('  it wears a BETA tag', /^beta$/i.test(got.badge || '') && got.badgeBeta,
+      String(got.badge));
+    /* THE NEON IS THE DOOR'S IDENTITY AND IS ON IN EVERY STATE. Red until a lineup is in,
+       and none of these fixtures has entered, so none of them is green. */
+    ok('  and the neon frame', got.neon);
+    ok('  which is RED, because nobody here has entered', !got.green);
+
+    const guest = who === null;
+    ok('  ' + (guest ? 'locked for a guest' : 'unlocked for an account'),
+      got.locked === guest, got.locked ? 'locked' : 'open');
+    ok('    with ' + (guest ? 'a padlock' : 'no padlock'),
+      got.padlocks === (guest ? 1 : 0), got.padlocks + ' padlocks');
+    /* THE COLOUR IS A CLAIM AND A BORDER IS NOT READABLE BY EVERYBODY, so the same claim
+       has to be in the accessible name. */
+    ok('    and the state is said out loud, not only drawn',
+      guest ? /sign in/i.test(got.label) : /no lineup/i.test(got.label), got.label);
+    if (guest) {
+      ok('    the sub line says what to do about it', /sign in/i.test(got.sub), got.sub);
+      /* PRESSED, NOT LOOKED AT. A lock with nothing behind it is the wall this replaced. */
+      ok('    the lock is pressable, not a thumb falling through it', got.pressable);
+      /* THE FIRST RUN GUIDE IS OVER IT, AND THAT IS THE PAGE WORKING. A fresh context is a
+         first visit, so `#frg` covers the front page with its own scrim and the door is
+         correctly not the top element at its own centre: the guide is what a first time
+         reader is meant to answer first. So it is dismissed the way they dismiss it,
+         through its own button, rather than with a forced click. A forced click would
+         prove the handler runs and say nothing about whether a thumb can reach it, which
+         is the half this section is actually about. */
+      const guided = await page.evaluate(() =>
+        !!document.getElementById('frg') && !document.getElementById('frg').hidden);
+      if (guided) {
+        /* FORCED, because the guide's own scrim panes sit over its button and Playwright
+           refuses an intercepted click. Dismissing the guide is not the claim here and a
+           forced press cannot fake the claim that follows: `elementFromPoint` is read
+           AFTER it, so a guide that did not actually close still fails that line. */
+        await page.click('#frg-x', { force: true });
+        /* `state: 'hidden'` AND NOT THE DEFAULT, which is the trap this cost a run to.
+           waitForSelector waits for VISIBLE unless told otherwise, so asking for
+           `#frg[hidden]` asks for an element to be visible and hidden at once: it can
+           never resolve. The guide had closed on the first press every time, and the log
+           said so in as many words ("locator resolved to hidden", twenty one times) while
+           the wait sat there for the full timeout. */
+        await page.waitForSelector('#frg', { state: 'hidden', timeout: 8000 });
+      }
+      const reach = await page.evaluate(() => {
+        const el = document.getElementById('b-fantasy');
+        /* SCROLLED TO FIRST, because elementFromPoint is in VIEWPORT coordinates and
+           answers null for a point outside it. This door is the last of the mode doors,
+           so on a phone it starts well below the fold and the hit test was asking about
+           a spot that is not on the screen: a correct door reported as covered. A thumb
+           scrolls to it too. */
+        el.scrollIntoView({ block: 'center' });
+        const r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return { ok: !!hit && (hit === el || el.contains(hit)),
+          on: hit ? (hit.id || hit.className || hit.tagName) : 'nothing at that point' };
+      });
+      ok('    and with the first run guide answered, nothing is on top of it',
+        reach.ok, (guided ? 'guide dismissed first, ' : 'no guide was up, ') + reach.on);
+      await page.click('#b-fantasy');
+      await page.waitForTimeout(700);
+      const after = await page.evaluate(() => {
+        const sheet = document.getElementById('sheet');
+        const on = !!sheet && sheet.classList.contains('on');
+        return { on, kind: (document.getElementById('sheet-in') || {}).dataset
+            ? document.getElementById('sheet-in').dataset.kind : null,
+          text: on ? (document.getElementById('sheet-in').textContent || '').slice(0, 400) : '',
+          went: location.pathname };
+      });
+      /* THE PRESS LEADS TO SIGN IN, which is the whole reason the door is drawn for
+         somebody who cannot open it. Asserted as the SHEET rather than as navigation: the
+         door is on the page the sheet lives on, so it opens in place. */
+      ok('    and pressing it opens the sign-in sheet', after.on && /sign in/i.test(after.text),
+        after.on ? after.kind + ': ' + after.text.slice(0, 90) : 'no sheet opened');
+      ok('    and it did NOT navigate away, so the tap is not lost',
+        after.went === '/football/', after.went);
+    } else {
+      ok('    the sub line names the mode rather than an account',
+        !/sign in/i.test(got.sub), got.sub);
+    }
   }
   ok('  the game still boots', !boom.length, boom.join(' | ') || 'clean');
   await page.close();
+}
+
+/* ----------------------------------------------------------------
+ *
+ * THE NEON IS THE STATE, SO THE STATE HAS TO CHANGE IT.
+ *
+ * Red until a lineup is in and green once one is. A door that is always red renders
+ * perfectly, reads perfectly and is exactly the bug: the one thing this light exists to
+ * say is the one thing it would never say. So the entry is put in the browser the way the
+ * mode puts it there and the door is read again.
+ *
+ * THE RECORD IS THE MODE'S OWN, not a flag invented here. `ps_fantasy_<season>_w<week>`
+ * with `submitted` set is what `save()` writes after the server has said yes, so a fixture
+ * that agreed with the checker instead of with the page would be a fixture shaped to suit
+ * itself. That is this repo's oldest lesson and it has cost it five stand-ins already.
+ * ---------------------------------------------------------------- */
+/* ----------------------------------------------------------------
+ *
+ * AND THE LINK THE SHUT SCREEN HANDS A GUEST HAS TO LAND ON SOMETHING.
+ *
+ * The mode's refusal points at `/football/#signin`, because the sign-in sheet lives on The
+ * Perfect Season and a second copy of an auth form on the mode page would be two ways to
+ * sign in that drift. A hash nothing handles is a link that lands on the front page and
+ * leaves the reader exactly where they were, with no error and nothing to report: they
+ * followed the one instruction on the screen and arrived somewhere that did not answer.
+ * So the hash is driven rather than trusted.
+ * ---------------------------------------------------------------- */
+console.log('\nTHE SIGN IN LINK LANDS ON THE SIGN IN SHEET');
+{
+  const { page, boom } = await openPage(browser, 'http://local.test/football/#signin',
+    { who: null, at: BEFORE });
+  await page.waitForTimeout(5000);
+  const got = await page.evaluate(() => {
+    const sheet = document.getElementById('sheet');
+    const on = !!sheet && sheet.classList.contains('on');
+    return { on, text: on ? (document.getElementById('sheet-in').textContent || '').slice(0, 300) : '',
+      hash: location.hash };
+  });
+  ok('a guest arriving on #signin gets the sign-in sheet', got.on && /sign in/i.test(got.text),
+    got.on ? got.text.slice(0, 90) : 'no sheet');
+  /* THE HASH IS A ONE SHOT INSTRUCTION AND NOT A STATE, so it is cleared. Left on, a
+     reader who closes the sheet and reloads gets it again, and a shared link carries it. */
+  ok('  and the hash is cleared, so a reload is the page and not the sheet',
+    got.hash === '', got.hash || 'cleared');
+  ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+  await page.close();
+
+  /* NOT FOR SOMEBODY ALREADY SIGNED IN. profileSheet() answers with the profile hub for
+     them, which is a screen they did not ask for by following a sign-in link. */
+  const p2 = await openPage(browser, 'http://local.test/football/#signin',
+    { who: STRANGER, at: BEFORE });
+  await p2.page.waitForTimeout(5000);
+  const on2 = await p2.page.evaluate(() =>
+    document.getElementById('sheet').classList.contains('on'));
+  ok('  and a signed in reader is not shown a sheet they did not ask for', !on2);
+  await p2.page.close();
+}
+
+console.log('\nTHE DOOR GOES GREEN WHEN A LINEUP IS IN, AND NOT BEFORE');
+{
+  const KEY = `ps_fantasy_${POOL.season}_w${POOL.week}`;
+  const entry = JSON.stringify({ season: POOL.season, week: POOL.week,
+    chances: [{ seed: 1, ids: [], men: [] }], pick: 0, submitted: 0 });
+  const read = async (opts) => {
+    const { page, boom } = await openPage(browser, 'http://local.test/football/',
+      { at: BEFORE, ...opts });
+    await page.waitForTimeout(5000);
+    const got = await page.evaluate(() => {
+      const el = document.getElementById('b-fantasy');
+      if (!el) return { there: false };
+      return { there: true, green: el.classList.contains('hp-fan-in'),
+        neon: el.classList.contains('hp-fan'),
+        sub: (el.querySelector('.hp-full-sub') || {}).textContent || '',
+        label: el.getAttribute('aria-label') || '' };
+    });
+    await page.close();
+    return { got, boom };
+  };
+
+  const none = await read({ who: STRANGER });
+  ok('an account with no lineup in gets a RED door', none.got.there && !none.got.green);
+
+  const done = await read({ who: STRANGER, storage: { key: KEY, value: entry } });
+  ok('  and one with a lineup in gets a GREEN one', done.got.green,
+    done.got.green ? 'green' : 'still red');
+  ok('  which still wears the neon rather than losing it', done.got.neon);
+  ok('  and says so in words as well as in colour', /lineup in/i.test(done.got.sub)
+    && /lineup is in/i.test(done.got.label), done.got.sub + ' | ' + done.got.label);
+  ok('  nothing threw either way', !none.boom.length && !done.boom.length,
+    [...none.boom, ...done.boom].join(' | ') || 'clean');
+
+  /* A GUEST HOLDING A LINEUP IS STILL RED, and this is the one arm worth having beyond the
+     pair above. A browser keeps its localStorage across a sign out, so the record really
+     can be there with nobody signed in, and a green door telling a stranger they are in a
+     competition is the one thing this light must never say. */
+  const out = await read({ who: null, storage: { key: KEY, value: entry } });
+  ok('  but a SIGNED OUT reader holding one is red, whatever is in their browser',
+    out.got.there && !out.got.green, out.got.green ? 'GREEN, which is a lie' : 'red');
+
+  /* LAST WEEK'S ENTRY DOES NOT LIGHT THIS WEEK, which is what reading the live week's own
+     key buys over scanning for any entry at all. Without it the door stays green from
+     Tuesday onward into a week nobody has drafted. */
+  const stale = await read({ who: STRANGER,
+    storage: { key: `ps_fantasy_${POOL.season}_w${POOL.week - 1}`, value: entry } });
+  ok('  and last week\'s lineup does not light this week', !stale.got.green,
+    stale.got.green ? 'GREEN off a stale week' : 'red');
+}
+
+/* ----------------------------------------------------------------
+ *
+ * ON A PHONE, WHICH IS WHERE IT IS READ.
+ *
+ * The door is a row of three things (a corner tag, a name that may carry a padlock, a sub
+ * line) and every one of them is set in the FALLBACK face here, because Google Fonts does
+ * not resolve in this sandbox. That is the safe direction for an overflow claim and the
+ * unsafe one for a claim that something fits, so what is asserted is that nothing spills
+ * and that the tag does not land on the name: both survive a narrower face.
+ * ---------------------------------------------------------------- */
+console.log('\nTHE DOOR AND ITS BETA TAG, AT A PHONE');
+for (const vp of [{ width: 360, height: 740 }, { width: 390, height: 844 }]) {
+  for (const [who, what] of [[STRANGER, 'signed in'], [null, 'a guest']]) {
+    const { page, boom } = await openPage(browser, 'http://local.test/football/',
+      { who, at: BEFORE, viewport: vp });
+    await page.waitForTimeout(5000);
+    const m = await page.evaluate(() => {
+      const el = document.getElementById('b-fantasy');
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      const tag = el.querySelector('.hp-tag').getBoundingClientRect();
+      const name = el.querySelector('.hp-full-name').getBoundingClientRect();
+      const sub = el.querySelector('.hp-full-sub');
+      const sr = sub.getBoundingClientRect();
+      /* THE TEXT AND NOT THE BOX. A block fills its column whatever is in it, so the box
+         says nothing about whether the words fit. A Range over the text node reads what is
+         actually drawn, which is the fix the hoops draft row needed for the same claim. */
+      const rng = document.createRange(); rng.selectNodeContents(sub);
+      const ink = rng.getBoundingClientRect();
+      /* THE CLAIM IS THAT THE TWO RECTANGLES DO NOT INTERSECT, and it has to be both
+         axes at once because the doors on this page clear their tags on DIFFERENT ones.
+         Measured: Fantasy's Beta tag overlaps the name vertically and is 13.1px clear of
+         it horizontally, while Dynasty's New tag is the other way round. A check written
+         for one axis reports a correct door as broken, which is what the first draft of
+         this did on all four fixtures. */
+      const hOver = tag.left < name.right && tag.right > name.left;
+      const vOver = tag.top < name.bottom && tag.bottom > name.top;
+      return { w: r.width, h: r.height, right: r.right,
+        tagOnName: hOver && vOver,
+        gapX: hOver ? 0 : Math.round((tag.left >= name.right
+          ? tag.left - name.right : name.left - tag.right) * 10) / 10,
+        tagTop: tag.top, tagRight: tag.right, tagBottom: tag.bottom,
+        nameTop: name.top, nameLeft: name.left, nameRight: name.right,
+        subInk: ink.width, subBox: sr.width,
+        /* One line, measured as the ink's height against the line box rather than counted
+           in characters: the column depends on the face and the face depends on the
+           sandbox. */
+        subLines: Math.round(ink.height / parseFloat(getComputedStyle(sub).lineHeight)) };
+    });
+    const at = `${vp.width}x${vp.height} ${what}`;
+    ok(`${at}: the door is drawn`, !!m, m ? `${m.w.toFixed(0)}x${m.h.toFixed(0)}` : 'missing');
+    if (m) {
+      ok(`  ${at}: it is inside the viewport`, m.right <= vp.width + 0.5,
+        `right edge ${m.right.toFixed(1)} of ${vp.width}`);
+      /* THE TAG IS ABSOLUTELY POSITIONED IN THE CORNER, and the reason .hp-tag is written
+         that way is that the name is centred and nearly the full width of the card: in the
+         flow it ran straight under the label by as much as 14px. So the claim is vertical
+         separation, which does not depend on how long the word is. */
+      ok(`  ${at}: the Beta tag clears the name rather than sitting on it`,
+        !m.tagOnName,
+        m.tagOnName ? 'the two rectangles intersect' : `${m.gapX}px clear horizontally`);
+      ok(`  ${at}: and it is inside the card`, m.tagRight <= m.right + 0.5,
+        `${m.tagRight.toFixed(1)} against ${m.right.toFixed(1)}`);
+      /* THE SUB LINE IS THE LONGEST STRING ON THE DOOR and the guest's is longer than the
+         account's, so this is where a phone gives out first. One line, and the ink inside
+         its own column. */
+      ok(`  ${at}: the sub line holds one line`, m.subLines <= 1, m.subLines + ' lines');
+      ok(`  ${at}: and does not spill its column`, m.subInk <= m.subBox + 0.5,
+        `${m.subInk.toFixed(1)} of ${m.subBox.toFixed(1)}`);
+    }
+    ok(`  ${at}: nothing threw`, !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
 }
 
 await browser.close();

@@ -536,10 +536,16 @@
 
   <section id="s-shut" class="screen">
     <div class="card">
-      <div class="eyebrow">Not open yet</div>
+      <div class="eyebrow">Beta</div>
       <h1 class="display" style="font-size:30px;margin-top:6px">Fantasy Challenge</h1>
       <p class="lede" id="shut-say"></p>
-      <div class="stack"><a class="btn quiet" href="/football/">Back to the game</a></div>
+      <!-- THE WAY IN, ABOVE THE WAY OUT. A control the reader is being asked to press goes
+           above the one that leaves, and it is hidden rather than absent so the refusal
+           that is not about signing in does not offer it. -->
+      <div class="stack">
+        <a class="btn" id="shut-go" href="/football/#signin" hidden>Sign in</a>
+        <a class="btn quiet" href="/football/">Back to the game</a>
+      </div>
     </div>
   </section>
 
@@ -781,13 +787,13 @@
 <!-- The tester flag. Read defensively below: a blocked or stale copy leaves the global
      undefined, and the honest answer to "can this person see an unlaunched mode" when the
      list cannot be read is no. -->
-<script src="/football/fantasy-access.js?v=1"></script>
+<script src="/football/fantasy-access.js?v=2"></script>
 <!-- Accounts, exactly as the football page loads them. Optional: with the CDN blocked
      PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script defer src="/football/auth.js?v=6"></script>
 <script src="clubs.js?v=2"></script>
-<script src="draft.js?v=4"></script>
+<script src="draft.js?v=5"></script>
 <script src="entries.js?v=4"></script>
 <script>
 (function(){
@@ -1014,6 +1020,10 @@
   }, true);
 
   var POOL = null;          /* the week, as built */
+  /* THE WEEK'S OWN CAP, set from POOL at boot and read by every screen. It is the constant
+     until the week arrives, which matters only for the seconds before boot resolves: the
+     first thing that spends it is a draft, and there is no draft before a pool. */
+  var CAP = D.CAP_MUSD;
   var BY_ID = {};
   var state = null;         /* { season, week, chances:[], pick, submitted } */
   var cur = -1;             /* which chance is being drafted */
@@ -1143,7 +1153,7 @@
      real figure, written outside the ramp as well as at the end of it, so a tab that is
      backgrounded mid-count comes back to the right money rather than to wherever the
      animation got to. */
-  var moneyRaf = 0, moneyFrom = D.CAP_MUSD;
+  var moneyRaf = 0, moneyFrom = CAP;
   function countMoney(to){
     var el = $('d-left');
     el.className = 'num' + (to < 12 ? ' lo' : '');
@@ -1170,7 +1180,7 @@
     var c = chanceAt(cur);
     var i = c.men.length;
     $('d-chance').textContent = 'Draft ' + (cur+1) + ' of ' + D.CHANCES;
-    var left = D.CAP_MUSD - D.spent(c);
+    var left = CAP - D.spent(c);
     countMoney(left);
     $('d-slot').textContent = i < D.SLOTS.length ? D.SLOTS[i] : 'done';
 
@@ -1191,7 +1201,7 @@
 
     if (i >= D.SLOTS.length){ toReview(); return; }
 
-    var board = D.boardFor(POOL.pool, c, i);
+    var board = D.boardFor(POOL.pool, c, i, CAP);
     /* AN EMPTY BOARD IS THE ONE STATE WITH NO WAY OUT OF IT, so it gets a sentence rather
        than a blank screen. The reserve floor in draft.js is what makes it unreachable and
        check-fantasy.mjs drives 1,200 drafts three ways to say so, but a screen that would
@@ -1291,7 +1301,7 @@
   function showConfirm(man){
     var c = state.chances[cur];
     var at = c.ids.length;
-    var after = D.CAP_MUSD - D.spent(chanceAt(cur)) - man.price_musd;
+    var after = CAP - D.spent(chanceAt(cur)) - man.price_musd;
     var more = D.SLOTS.length - at - 1;
     PENDING = { id: man.player_id, chance: cur, at: at };
     $('cf-slot').textContent = 'Signing at ' + D.SLOTS[at];
@@ -1319,7 +1329,7 @@
        unaffordable in between is refused here by the same call rather than by a second copy
        of the rule. */
     if (D.hurt(man)) return;
-    if (!D.canSign(POOL.pool, c.ids.length, D.CAP_MUSD - D.spent(chanceAt(cur)), man)) return;
+    if (!D.canSign(POOL.pool, c.ids.length, CAP - D.spent(chanceAt(cur)), man)) return;
     signNow(man);
   }
 
@@ -1353,7 +1363,7 @@
        a real thumb, so this is the belt on a row that somehow got through: a man signed
        over the ceiling strands the draft later, at a different slot, with nothing on screen
        connecting the two. */
-    if (!D.canSign(POOL.pool, c.ids.length, D.CAP_MUSD - D.spent(chanceAt(cur)), man)) return;
+    if (!D.canSign(POOL.pool, c.ids.length, CAP - D.spent(chanceAt(cur)), man)) return;
     showConfirm(man);
   });
 
@@ -1388,7 +1398,7 @@
     clearTimers();
     busy = false;
     JUST = -1;
-    moneyFrom = D.CAP_MUSD;
+    moneyFrom = CAP;
     state.chances[cur] = { seed: D.newSeed(), ids: [] };
     save();
     paintDraft();
@@ -1443,7 +1453,7 @@
         + '<s>projected</s></span></div>'
         + '<div class="roster">' + rows + '</div>'
         + '<div class="note" style="margin-top:8px">' + money(D.spent(c)) + ' of '
-        + money(D.CAP_MUSD) + ' spent</div>'
+        + money(CAP) + ' spent</div>'
         + '</button>';
     }
     $('r-five').innerHTML = html;
@@ -2418,7 +2428,7 @@
        from it. Carried over, the number would ramp from whatever the last chance ended on,
        which is a count in the wrong direction on the first press of every draft after the
        first. */
-    moneyFrom = D.CAP_MUSD - D.spent(chanceAt(i));
+    moneyFrom = CAP - D.spent(chanceAt(i));
     JUST = -1;
     paintDraft();
   }
@@ -2426,10 +2436,15 @@
   function paintHome(){
     var done = state.chances.filter(function(c){
       return (c.ids||[]).length >= D.SLOTS.length; }).length;
-    $('home-week').textContent = POOL.season + ' week ' + POOL.week
+    /* BETA LEADS THE EYEBROW, because this is the first line of the mode and a reader who
+       meets a rough edge should have been told before they met it rather than after. The
+       door says it too: one word, both surfaces, the way the two how-to surfaces on the
+       arcade pages have to agree. A middot list rather than a sentence, which is what this
+       repo already reaches for when three facts share a line. */
+    $('home-week').textContent = 'Beta · ' + POOL.season + ' week ' + POOL.week
       + ' · ' + POOL.pool.length + ' men on the board';
     $('home-lock').textContent = locked() ? 'Locked' : untilLock();
-    $('home-cap').textContent = money(D.CAP_MUSD);
+    $('home-cap').textContent = money(CAP);
     $('b-draft').hidden = locked() || state.chances.length >= D.CHANCES
       && done >= D.CHANCES;
     $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + D.CHANCES : 'Start drafting';
@@ -2653,18 +2668,35 @@
         + 'Reload, or try again later.';
       show('s-shut'); return false;
     }
-    if (ACCESS.LIVE) return true;
+    if (ACCESS.allowed(who)) return true;
+    /* SIGNED OUT, WHICH IS NOW THE ORDINARY REFUSAL RATHER THAN THE RARE ONE.
+     *
+     * A GUEST IS TOLD HERE AND NOT AT THE SUBMIT, which is the whole reason this branch
+     * is worth anything. `fantasy_submit` refuses a signed out lineup itself and always
+     * has, so without this a stranger who followed a link would draft five whole lineups,
+     * choose one, press the last button of the mode and meet a wall. The work is the
+     * drafting. Refusing after it is the worst place on this page to refuse anybody.
+     *
+     * AND THE WAY OUT IS ON THE SCREEN. The sign-in sheet lives on The Perfect Season, so
+     * the button goes there and says what to do, rather than this page carrying a second
+     * copy of an auth form. `#signin` is what opens the sheet on arrival; a build that
+     * has not got that hash yet lands on the front page with the pill in the header, so
+     * the link is worth taking either way. */
     if (!who || !who.signedIn){
-      $('shut-say').textContent = 'Fantasy Challenge is being tested. Sign in on The '
-        + 'Perfect Season first, then come back.';
+      $('shut-say').textContent = 'Fantasy Challenge is in beta and it needs an account. '
+        + 'Your lineup is scored against everybody else who entered, so it has to have a '
+        + 'name on it. Sign in and come straight back.';
+      $('shut-go').hidden = false;
       show('s-shut'); return false;
     }
-    if (!ACCESS.allowed(who)){
-      $('shut-say').textContent = 'Fantasy Challenge is not open yet. It is being tested '
-        + 'with a handful of accounts first.';
-      show('s-shut'); return false;
-    }
-    return true;
+    /* SIGNED IN AND STILL REFUSED, which can only happen with the flag back off. Kept
+       rather than deleted: turning it off is how this mode gets closed again, and the
+       sentence that greets a signed in reader then has to be about the mode and not about
+       their account. */
+    $('shut-go').hidden = true;
+    $('shut-say').textContent = 'Fantasy Challenge is not open right now. It is being '
+      + 'tested with a handful of accounts first.';
+    show('s-shut'); return false;
   }
 
   /* THE ACCOUNT IS ASKED BEFORE THE BROWSER IS BELIEVED, which is what moving the entry to
@@ -2738,12 +2770,26 @@
     fetch('/football/data/fantasy_now.json', { cache: 'no-cache' })
       .then(function(r){ if(!r.ok) throw new Error('now'); return r.json(); })
       .then(function(now){
-        return fetch('/football/data/' + now.file).then(function(r){
+        /* REVALIDATED, THE WAY ITS TWO SIBLINGS ALREADY ARE. The pointer above and the
+           injury file below are both no-cache and this was the one that was not, which
+           cost nothing while a week's filename only ever appeared with its final contents.
+           It stopped costing nothing when the pool grew a cap: the name does not change
+           when the file does, so a returning visitor revisiting the same week would be
+           served their own cached copy, find no cap on it and fall back to the constant.
+           That is a whole different board, drawn from a stale file, with nothing to say so.
+           No-cache is a conditional request rather than a refusal to cache: a 304 on every
+           visit that has not moved, fresh bytes on the one that has. */
+        return fetch('/football/data/' + now.file, { cache: 'no-cache' }).then(function(r){
           if(!r.ok) throw new Error('pool'); return r.json();
         });
       })
       .then(function(p){
         POOL = p;
+        /* THE CAP THIS WEEK WAS PUBLISHED WITH, read once, off the week itself. Every
+           screen below spends CAP and nothing reads D.CAP_MUSD, which is the constant the
+           NEXT week will be built with and has already been a different number from the
+           live week's for a day. */
+        CAP = D.capFor(p);
         for (var i=0;i<p.pool.length;i++) BY_ID[p.pool[i].player_id] = p.pool[i];
         /* THE INJURY FILE IS OPTIONAL AND ITS ABSENCE IS THE ORDINARY CASE, so a miss is a
            404 that resolves to null rather than a throw. A week nobody has built one for,

@@ -145,6 +145,40 @@
   var CAP_MUSD = 110;
 
   /*
+   * AND THE CAP A PLAYER ACTUALLY DRAFTS AGAINST IS THE WEEK'S, NEVER THIS CONSTANT.
+   *
+   * This one is what the NEXT week is built and published with. A week already on the
+   * server was published with whatever this said on the day, `fantasy_weeks.cap_musd`
+   * holds that number for ever, and `fantasy_submit` checks a lineup against the ROW. So
+   * the moment this constant moves, every week already out there is a week whose server
+   * cap and whose page cap disagree.
+   *
+   * IT HAPPENED, AND THE SHAPE OF IT IS WHY THIS FUNCTION EXISTS. Week 3 of 2026 was
+   * published at $90M, with 414 prices, and this line went to 110 the next day. Nothing
+   * threw: a lineup spending $95M drafted perfectly, looked legal on every screen, and was
+   * refused by the server at the last press of five drafts. The one screen a player cannot
+   * afford to meet a wall on is the one after all the work.
+   *
+   * WORSE THAN A REFUSAL, THE BOARD ITSELF MOVES. `boardFor` spends the cap through
+   * `ceilingAt`, which decides the guaranteed signable seat and the reserve floor, so a
+   * board drawn at 110 is not the board drawn at 90 with a different number over it. It is
+   * a different board. Two readers on two deploys would have drafted different weeks.
+   *
+   * SO THE POOL CARRIES ITS OWN CAP and everything asks the pool. `weekly-pool.mjs` writes
+   * it at build time, `publish-week.mjs` sends the POOL's cap to the server rather than
+   * this constant, and the page reads it off the week it fetched. One answer, three
+   * readers, and the constant is only ever the seed for the next build.
+   *
+   * THE FALLBACK IS FOR A POOL BUILT BEFORE THIS EXISTED and is deliberately the loud half
+   * rather than the quiet one: `check-fantasy.mjs` asserts the live pool carries a cap, so
+   * a week that lost it fails a check rather than silently drafting at whatever this says.
+   */
+  function capFor(week) {
+    var c = week && week.cap_musd;
+    return (c == null || !isFinite(Number(c))) ? CAP_MUSD : Number(c);
+  }
+
+  /*
    * How many whole lineups a player drafts before choosing one to submit.
    *
    * THIS IS THE DAMPER ON THE PER-PLAYER WHEEL, and it is worth more than it looks. Measured
@@ -347,9 +381,13 @@
 
   /* A chance is a seed and the men signed so far. Everything else is derived, so there is
      nothing to keep in step and a reload rebuilds the boards rather than restoring them. */
-  function boardFor(pool, chance, i) {
+  /* THE CAP IS AN ARGUMENT, because the board is derived from it: `left` reaches
+     `ceilingAt`, which sets the guaranteed signable seat and the reserve floor. A caller
+     that leaves it out gets the constant, which is right for a build and wrong for a page,
+     and the page is what `check-fantasy.mjs` drives to make sure it passes the week's. */
+  function boardFor(pool, chance, i, cap) {
     var rnd = rngOf(chance.seed + i * 0x9E3779B1);
-    var left = CAP_MUSD - spent(chance);
+    var left = (cap == null ? CAP_MUSD : cap) - spent(chance);
     var taken = chance.men.map(function (m) { return m.player_id; });
     return spin(pool, i, left, taken, rnd);
   }
@@ -372,6 +410,9 @@
 
   var api = {
     SLOTS: SLOTS, DRAW: DRAW, DEPTH: DEPTH, CAP_MUSD: CAP_MUSD, CHANCES: CHANCES,
+    /* THE CAP THE WEEK WAS PUBLISHED WITH. Every screen and every bot asks this rather
+       than CAP_MUSD, or the page drafts a week the server will not take. */
+    capFor: capFor,
     rngOf: rngOf, newSeed: newSeed,
     cheapestAt: cheapestAt, reserveAfter: reserveAfter, eligible: eligible, spin: spin,
     clubsIn: clubsIn, depthFor: depthFor, ceilingAt: ceilingAt, atSlot: atSlot,
