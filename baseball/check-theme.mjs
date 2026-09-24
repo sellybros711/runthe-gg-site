@@ -260,7 +260,17 @@ console.log('\n2. No surface stayed light in the dark theme');
     const { surfaces } = await page.evaluate(PROBE);
     /* 0.45 is a long way above any charcoal and a long way below any cream, so
        nothing lands near the line by accident. */
-    const light = surfaces.filter((s) => s.lum >= 0.45);
+    /* THE BALL IS THE ONE LIGHT SURFACE ALLOWED AT NIGHT, and it is exempt by name
+       rather than by luminance. The draft button is a close crop of a baseball, and
+       a baseball is white under lights: it belongs with the field's green and the
+       club plates on the list of things that are the SPORT rather than the page,
+       so inverting it would draw a charcoal ball, which is not a thing.
+       An exemption on its own is a hole, so section 4 carries the other half and
+       asserts the hide and the lace are the SAME colour in both themes. That pair
+       is what tells a deliberate sport colour from a surface nobody tokenised:
+       an unconverted panel would be light here AND light there for no reason
+       anybody wrote down. */
+    const light = surfaces.filter((s) => s.lum >= 0.45 && !/\bball\b/.test(s.cls));
     const uniq = [...new Map(light.map((s) => [s.cls + '#' + s.id, s])).values()];
     claim(!uniq.length, `${label}: every surface is a dark-theme surface`,
       uniq.map((s) => `${s.cls || s.id} rgb(${s.rgb}) L=${s.lum}`).join('; '));
@@ -400,12 +410,30 @@ console.log('\n4. --edge flips, and only --edge');
         if (el && el.offsetWidth) out[s] = getComputedStyle(el).borderTopColor; }
       return out;
     }, SEL);
-    vals[theme] = { ...front, ...mid, _edge: await page.evaluate(() =>
-      getComputedStyle(document.documentElement).getPropertyValue('--edge').trim()) };
+    vals[theme] = { ...front, ...mid, ...await page.evaluate(() => {
+      const cs = getComputedStyle(document.documentElement);
+      const g = (n) => cs.getPropertyValue(n).trim();
+      /* The hide is read off the BUTTON rather than off :root, because what a
+         reader sees is the painted fill and a token nothing reads flips just as
+         happily as one everything reads. That is this section's own argument
+         about --edge, applied to the pair that must NOT flip. */
+      const b = document.querySelector('.btn.ball');
+      const bs = b ? getComputedStyle(b) : null;
+      return { _edge: g('--edge'), _hide: bs ? bs.backgroundColor : '', _lace: bs ? bs.color : '' };
+    }) };
     await ctx.close();
   }
   claim(vals.light._edge === '0,0,0', 'light resolves --edge to black', vals.light._edge);
   claim(vals.dark._edge === '255,255,255', 'dark resolves it to white', vals.dark._edge);
+  /* AND ONLY --edge, which is the half of this section's title that had nothing
+     under it. The draft button is a baseball, so its hide and its lace are the
+     SPORT and are the same colour on paper and at night. Section 2 excuses that
+     button from the light-surface sweep; this is what stops the excuse covering a
+     surface somebody simply forgot to convert. */
+  claim(!!vals.light._hide && vals.light._hide === vals.dark._hide,
+    'the ball is the same hide in both themes', `light ${vals.light._hide} / dark ${vals.dark._hide}`);
+  claim(!!vals.light._lace && vals.light._lace === vals.dark._lace,
+    'and the same lace red', `light ${vals.light._lace} / dark ${vals.dark._lace}`);
   /* THE REAL CLAIM IS ON PAINTED BORDERS, not on the token. A token nothing reads
      flips just as happily as one everything reads, which is how a sweep that missed
      half the file would pass a check written against :root alone. */

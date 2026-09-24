@@ -10694,6 +10694,73 @@ club name.
 offered and every one is deep: the thinnest is the 1900s at 102 team-seasons, 17 clubs
 and 1,291 men. What the lineage fixes for Eras is the chemistry, not the pool.
 
+### The draft button IS a baseball, and the one light surface allowed at night
+
+Asked for with two screenshots: drop the ball emoji either side of the words, and
+make the whole control look like the ball rather than like a brown bar standing
+next to one. It is a close crop of a baseball now: hide, a seam sweeping in from
+each end, and the label in the red the laces are.
+
+**The stitches are a MIRROR PAIR ACROSS THE SEAM, never a copy**, and getting that
+wrong is what the first render looked like. Each stitch leaves the gutter pointing
+outward and leans along the curve (`rot(n*side, -LEAN*side)`), so a pair meets as a
+shallow chevron. Leaned the same way (`+LEAN*side`) one row comes out nearly
+parallel to the seam and the picture stops being a baseball at all, which is
+obvious on screen and invisible in the source.
+
+**Four geometries were rendered and looked at**, which is the only way this has
+ever been settled here:
+
+| | what came back |
+|---|---|
+| one arc a side, bulging inward | **a ball**, at 358px and at 660 |
+| two arcs converging at the outer edge | scattered, reads as nothing |
+| two arcs converging inward | an ARROW, and it ran through the label at 358 |
+| two long shallow arcs | tyre tread |
+
+**One symbol, `<use>`d four times and mirrored in CSS.** Two buttons carry it (the
+front page and the first-time guide) at two ends each, and the stitch path is about
+a kilobyte, so a second copy for the right hand seam is a second copy of a drawing
+that would drift the first time either was retouched. Same rule as mythiball's
+repeated poses.
+
+**The corduroy came back**, which is the hoops floor's own note arriving here. The
+hide's grain shipped at `.045` over a 3px pitch and the button read as cloth: one
+repeating gradient at one period is found by the eye in about a second. It is `.02`
+over 7px.
+
+#### The hide does not flip, and that is asserted rather than excused
+
+A baseball is white under lights and white in the afternoon, so it belongs with the
+field's green and the club plates on the list of things that are the SPORT rather
+than the page. So it is the **one light surface allowed in the dark theme**, and
+`check-theme.mjs`'s section 2 excuses it by name.
+
+**An exemption on its own is a hole**, so section 4 carries the other half: the
+button's painted `background-color` and `color` have to be the SAME in both themes.
+That pair is what tells a deliberate sport colour from a panel nobody tokenised,
+which would be light in both places for no reason anybody wrote down. It is read
+off the BUTTON and not off `:root`, which is that section's own argument about
+`--edge` applied to the pair that must not flip.
+
+**`background:` resets `background-color` to transparent**, so the shorthand is
+followed by an opaque `background-color:var(--hide)`. Without it the label's real
+backdrop is whatever is behind the button and every contrast probe measures the
+page instead of the hide.
+
+#### Two reds, because the checker was pessimistic and right anyway
+
+The label came back **4.49:1**, a hundredth under the bar, on the one control the
+whole front page is for. `bgOf` composites a gradient by AVERAGING its `rgba()`
+stops, so it modelled the vignette that darkens the ball's ENDS as if it were under
+the label in the MIDDLE, where the real backdrop is the flat hide at 6.89:1. The
+probe is pessimistic rather than wrong, and arguing the point was not worth it: the
+reference photo's text is a deeper brick than the thread anyway.
+
+So `--lace` is the waxed thread, which on a real ball is bright, and `--lace-ink`
+is the label, which has to be read rather than admired. `#8a1626` measures 8.23:1
+on the hide and clears the probe's own model at about 5.4.
+
 ### The share card had no source and no builder, and was set in a fallback
 
 ```

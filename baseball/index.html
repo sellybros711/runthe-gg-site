@@ -175,6 +175,56 @@ h1,h2,h3{margin:0}
 .btn.sm{font-size:13px;padding:8px 14px;width:auto}
 .btn:disabled{opacity:.4;pointer-events:none}
 
+/* ─── the button that IS a baseball ───
+   The primary call to action was a brown bar with a ball emoji stuck on each end
+   of the words, which is a button with a picture of the sport beside it rather
+   than a button made of it. It is a close crop of a ball now: leather, a seam
+   sweeping in from each end, and the label stitched into the middle in the red
+   the laces are.
+
+   THE LEATHER IS THE SAME COLOUR IN BOTH THEMES, and that is deliberate rather
+   than an unconverted surface. A baseball is white under lights and white in the
+   afternoon, so it belongs with the field's green and the club plates on the list
+   of things that are the SPORT rather than the page: inverting it would draw a
+   charcoal ball, which is not a thing. check-theme.mjs asserts that from both
+   ends rather than simply skipping it.
+
+   --lace and --hide are tokens because the same two colours are the stitching,
+   the label and the hide, in a fixed pairing that no theme moves. */
+/* TWO REDS, AND THAT IS THE REFERENCE RATHER THAN AN OVERSIGHT. --lace is the
+   waxed thread, which on a real ball is bright; --lace-ink is the label, which has
+   to be read rather than admired and is a deeper brick. It measured 4.49:1 at the
+   brighter red, which is under the bar on the one control the whole page is for. */
+:root{--hide:#f4efe3;--lace:#b9182b;--lace-ink:#8a1626}
+.btn.ball{background:
+  radial-gradient(120% 150% at 50% -30%,rgba(255,255,255,.85) 0%,transparent 60%),
+  radial-gradient(130% 120% at 50% 50%,transparent 52%,rgba(120,96,70,.16) 100%),
+  /* The tooth of the hide, at .02 over a 7px pitch. It was .045 over 3px first
+     and the button read as corduroy, which is the hoops floor's own note about
+     its seams arriving here: one repeating gradient at one period is found by the
+     eye in a second, and at that point it is cloth rather than leather. */
+  repeating-linear-gradient(108deg,rgba(150,120,96,.02) 0 1px,transparent 1px 7px),
+  linear-gradient(180deg,#fbf7ef 0%,var(--hide) 46%,#e9e1d1 100%);
+  /* Stated again, opaquely, AFTER the shorthand. `background:` resets
+     background-color to transparent, so without this the label's real backdrop is
+     whatever is behind the button and every contrast probe measures the page
+     instead of the hide. */
+  background-color:var(--hide);
+  color:var(--lace-ink);border-bottom:none;
+  box-shadow:0 2px 0 rgba(120,96,70,.28),0 10px 22px -10px rgba(60,44,28,.45),
+    inset 0 0 0 1px rgba(120,96,70,.16)}
+/* The sheen and the fine ruling on .btn::before are written for the brown fill
+   and read as a smear on leather. */
+.btn.ball::before{display:none}
+.bs{position:absolute;top:0;height:100%;width:auto;aspect-ratio:1;pointer-events:none}
+.bs-l{left:0}
+/* One symbol, mirrored. A second path for the right hand seam is a second copy of
+   a drawing, and the two would drift the first time either was retouched. */
+.bs-r{right:0;transform:scaleX(-1)}
+/* The label sits over the seams and never under them. The padding is what keeps
+   the two apart at 358px, where each seam is as wide as the button is tall. */
+.btn.ball span{position:relative;padding:0 4px}
+
 /* ─── loading ─── */
 .load{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px}
 .dots{display:flex;gap:6px}
@@ -1452,6 +1502,24 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 </style>
 </head>
 <body>
+<!-- ONE SEAM, DRAWN ONCE. Four of these are on the page (both ends of two
+     buttons) and the stitch path is a kilobyte, so it is a <symbol> the buttons
+     <use>, the way mythiball stores a repeated pose as a reference rather than as
+     the drawing again. The right hand copy is the same symbol mirrored in CSS.
+
+     THE STITCHES ARE A MIRROR PAIR ACROSS THE SEAM, never a copy. Each one leaves
+     the gutter pointing outward and leans along the curve, so a pair meets as a
+     shallow chevron, which is what the stitching on a real ball is. Leaned the
+     same way instead, one row comes out nearly parallel to the seam and the whole
+     thing stops reading as a baseball. Generated rather than drawn by hand: the
+     curve is a quadratic and each stitch is placed on its normal. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="seam" viewBox="0 0 100 100">
+    <path d="M2 -16Q78 50 2 116" fill="none" stroke="rgba(150,120,96,.34)" stroke-width="2.2"/>
+    <path fill="none" stroke="var(--lace)" stroke-width="3.2" stroke-linecap="round"
+      d="M9.1 -13.9L10.2 -22.4M4.7 -9.3L-3.6 -7.6M18.0 -5.0L19.8 -13.3M13.3 -0.6L4.9 0.4M25.6 4.1L28.1 -4.1M20.6 7.9L12.1 8.2M31.9 13.1L35.2 5.3M26.5 16.5L18.0 15.9M36.8 22.3L41.0 14.9M31.0 24.9L22.7 23.3M40.4 31.5L45.5 24.7M34.2 33.3L26.2 30.6M42.5 40.7L48.6 34.8M36.2 41.7L28.6 37.9M43.2 50.0L50.1 45.1M36.8 50.0L29.9 45.1M42.5 59.3L50.1 55.5M36.2 58.3L30.1 52.4M40.4 68.5L48.4 65.8M34.2 66.7L29.1 59.9M36.8 77.7L45.2 76.1M31.0 75.1L26.8 67.7M31.9 86.9L40.4 86.3M26.5 83.5L23.2 75.7M25.6 95.9L34.1 96.2M20.6 92.1L18.1 83.9M18.0 105.0L26.5 106.0M13.3 100.6L11.6 92.3M9.1 113.9L17.4 115.6M4.7 109.3L3.6 100.8"/>
+  </symbol>
+</svg>
 <div class="wrap">
 
 <header>
@@ -1498,7 +1566,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 
   <button class="dailycard" id="daily-card"></button>
-  <button class="btn hp-start" id="b-start">&#9918; Draft your team &#9918;</button>
+  <button class="btn ball hp-start" id="b-start"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Draft your team</span></button>
   <button class="btn ghost hp-secondary" id="b-modes">More ways to play</button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">
@@ -1874,7 +1942,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     </div>
     <div class="fr-goal"><p>Your goal: <b>116 wins and the World Series.</b> That ties the
       all-time record. It is meant to be very hard, and almost nobody gets there first try.</p></div>
-    <button class="btn" id="b-first-go">&#9918; Draft your team &#9918;</button>
+    <button class="btn ball" id="b-first-go"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Draft your team</span></button>
     <div style="margin-top:8px"><button class="btn ghost sm" data-close-first>I have played before</button></div>
   </div>
 </div>
