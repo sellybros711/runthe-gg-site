@@ -181,7 +181,7 @@ const dismiss = (page) => page.evaluate(() => {
   const b = [...document.querySelectorAll('button')].find((x) => x.offsetParent && /played before/i.test(x.textContent));
   if (b) b.click();
 });
-async function draft(page, picks) {
+async function draft(page, picks, onBoard) {
   await dismiss(page);
   await page.evaluate(() => document.querySelector('#b-start').click());
   await page.waitForTimeout(1100);
@@ -193,6 +193,12 @@ async function draft(page, picks) {
       await page.waitForFunction(() => !!document.querySelector('#opts .tile:not(.off)')
         && !document.querySelector('#sheet-pos.on'), null, { timeout: 15000 });
     } catch (_) { return false; }
+    /* THE BOARD ITSELF, WHILE IT IS UP. A full twelve finishes the draft and hands
+       off to the squad screen, so a probe placed after this loop has never once
+       read a tile: the black-name buttons shipped dark for a player to report
+       while section 3 was green, because the tile's ink was collected on NO run.
+       Mid-draft is the only moment the board exists to be read. */
+    if (i === 6 && onBoard) { await page.waitForTimeout(500); await onBoard(); }
     await page.evaluate(() => document.querySelector('#opts .tile:not(.off)').click());
     await page.waitForTimeout(420);
     await page.evaluate(() => { const o = document.querySelector('#sheet-pos.on .pos-opt'); if (o) o.click(); });
@@ -270,7 +276,16 @@ console.log('\n2. No surface stayed light in the dark theme');
        is what tells a deliberate sport colour from a surface nobody tokenised:
        an unconverted panel would be light here AND light there for no reason
        anybody wrote down. */
-    const light = surfaces.filter((s) => s.lum >= 0.45 && !/\bball\b/.test(s.cls));
+    /* THE CLUBBED REEL IS THE OTHER SPORT SURFACE, and it is stateful: the reel
+       is painted in the drawn CLUB's own published colours once it lands, so on
+       the draws that land a light club (Milwaukee's gold is rgb(255,197,47))
+       this sweep reads a bright surface that is a fact about the Brewers rather
+       than about the theme. Whether it fired depended on the draw, which is the
+       .tile.hot flake in section 4's own words. The paint is inline from
+       E.teamColors, the same table both themes read, so there is no second
+       theme-varying copy for an identity claim to hold. */
+    const light = surfaces.filter((s) => s.lum >= 0.45 && !/\bball\b/.test(s.cls)
+      && !/\bclubbed\b|\bwash\b/.test(s.cls));
     const uniq = [...new Map(light.map((s) => [s.cls + '#' + s.id, s])).values()];
     claim(!uniq.length, `${label}: every surface is a dark-theme surface`,
       uniq.map((s) => `${s.cls || s.id} rgb(${s.rgb}) L=${s.lum}`).join('; '));
@@ -329,7 +344,7 @@ console.log('\n3. The dark theme never reads worse than the light one');
     const { ctx, page } = await open(theme);
     const all = [];
     all.push(...(await page.evaluate(PROBE)).text);
-    await draft(page, 12);
+    await draft(page, 12, async () => { all.push(...(await page.evaluate(PROBE)).text); });
     all.push(...(await page.evaluate(PROBE)).text);
     /* Keyed on the WORDS plus the rule, because the two runs are two drafts and
        the players are not the same; the chrome is. */

@@ -797,6 +797,15 @@ function suppressedIn(opts) {
 }
 
 function pairLinks(a, b, opts) {
+  /* A REPLACEMENT IS NOBODY, AND NOBODY HAS TEAM-MATES. Every league-minimum
+   * body carries t:'FA' and the cut man's season, so two of them read as the
+   * same franchise, often the same season: a Cap Survivor that cut seven men
+   * measured 62 of its 66 links BETWEEN replacements ("1985 FA reunion"),
+   * saturated the +15% cap, drew "Great clubhouse chemistry" over a roster of
+   * scrubs, and lit five chemistry badges for the cutting. Nothing threw and
+   * every label was a well-formed label. Cutting a player must cost, which is
+   * cutPlayer's own header, and this was the mechanic quietly paying it back. */
+  if (a._repl || b._repl) return [];
   const off = suppressedIn(opts);
   const links = [];
   /* SAME FRANCHISE, NOT SAME CODE. Written `a.t === b.t` a rename made two
