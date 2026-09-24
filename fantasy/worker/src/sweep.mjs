@@ -188,8 +188,7 @@ export async function sweepOnce({
   if (observeOnly) {
     summary.wouldHaveCharged = due.length * cost;
 
-    /* A DURABLE RECORD, not just a log line, and only when there is something
-       to record.
+    /* A DURABLE RECORD, not just a log line, on the quarter hour.
 
        The first version of observe mode wrote nothing and said so: "the log is
        the whole record until it goes live." That is true and it is useless to
@@ -197,14 +196,28 @@ export async function sweepOnce({
        that can read the database. An observation nobody can retrieve is not an
        observation.
 
-       Written ONLY when the plan is non-empty, because a row a minute for a
-       week is 10,000 rows saying nothing happened. The interesting tick is the
-       one that would have spent something, and that is the one kept.
-
        event_id is null, which keeps it out of lastPollByEvent()'s answer: that
        function reads runs per event to decide what is due, and an observe row
-       must never make the ladder think an event was polled. */
-    if (due.length) {
+       must never make the ladder think an event was polled.
+
+       AND THAT NULL IS WHY THE FIRST GUARD HERE COULD NEVER FIRE. It was
+       `if (due.length)`, with a comment saying a row a minute for a week is
+       ten thousand rows saying nothing happened. In observe mode the plan is
+       NEVER empty: nothing is ever recorded against an event, so the ladder
+       finds every event never polled, so every event is due, on every tick,
+       for ever. The condition was written as though it were about a quiet
+       week and it is about a mode that has no quiet ticks by construction.
+       Measured after two and a half days: 3,268 rows, one a minute, which is
+       exactly the number the comment forbade.
+
+       So it lands on the quarter, the same stateless rule the heartbeat uses,
+       and for the same reason: no read to decide, four an hour however the
+       ticks fall. 96 rows a day rather than 1,440. What that costs is up to
+       fifteen minutes of delay before a game moving into a tighter band shows
+       up here, which is nothing against a ladder whose fastest rung is ten
+       minutes, and the Worker log still carries every tick. */
+    const observeMin = new Date(t).getUTCMinutes();
+    if (due.length && observeMin % 15 === 0) {
       const runId = await store.openRun({
         eventId: null, markets: [], credits: 0,
       }).catch(() => null);

@@ -604,6 +604,32 @@ section('Observe mode');
   ck('so it cannot make the ladder think anything was polled',
     store.w.runs[0].eventId === null);
 
+  /* AND THE NULL ABOVE IS WHY THIS ONE IS NEEDED, which is the connection the
+     first version of both the code and this file missed.
+
+     The row was written on `if (due.length)`, guarded by a comment about a row
+     a minute being ten thousand rows of nothing. Because the row names no
+     event, the ladder never records that event as polled, so in observe mode
+     EVERY event is due on EVERY tick and the guard can never fire. Measured
+     against the deployed poller after two and a half days: 3,268 rows, one a
+     minute, exactly the number that comment forbade.
+
+     The fixture clock sits at 15:00:00, minute 0, so the section above passes
+     on the broken version and on the fixed one alike. A claim about a cadence
+     has to be asked at a minute that is not on the cadence. */
+  {
+    const offQuarter = await runSweep(
+      { observeOnly: true, now: () => KICK - 2 * H + 7 * 60000 },
+      { cap: 1000 });
+    ck('a minute that is not on the quarter writes no row at all',
+      offQuarter.store.w.runs.length === 0,
+      `${offQuarter.store.w.runs.length} rows`);
+    ck('and it still did the whole decision, which is what the row would report',
+      offQuarter.summary.due === summary.due
+        && offQuarter.summary.wouldHaveCharged === summary.wouldHaveCharged,
+      `due ${offQuarter.summary.due}, would charge ${offQuarter.summary.wouldHaveCharged}`);
+  }
+
   /* And the plan is IN the row, which is the whole reason for writing it. */
   const rec = store.w.closes.find((c) => c.raw && c.raw.mode === 'observe');
   ck('the row carries the plan it would have followed',
