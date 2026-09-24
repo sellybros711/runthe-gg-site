@@ -184,30 +184,6 @@ jobs:
         run: python3 baseball/pipeline/pool_shape.py
              baseball/data/players.json /tmp/pool_before.json
 
-      # AND WHETHER IT STILL PLAYS THE SAME GAME, which is the question the shape
-      # gate cannot ask. `split_stints` is the input this exists for: the price
-      # curve is convex, so half a season's WAR costs much less than half the
-      # price, and splitting a traded man's season fills the board with cheap
-      # production. This file's own header tells whoever runs it to re-run the
-      # cap sweep by hand first, and there was no way to: with `commit` off the
-      # pool never left the runner, and the artifact host is refused from the
-      # development sandbox. So the runner does the sweep, because it is the one
-      # machine in the project holding both pools.
-      #
-      # It runs on EVERY rebuild rather than only on split_stints. Any pool
-      # change can move the gap, and two minutes on a job that fires once a year
-      # is the difference between shipping a pool and shipping a pool that plays
-      # the same game.
-      - name: And whether it still plays the same game
-        if: ${{ always() }}
-        # THE DEFAULT IS A TRIPWIRE AND NOT A MEASUREMENT. At 40 drafts a bot the
-        # standard error on the GAP is about 2.8 rating points, which is the size
-        # of the whole effect split_stints has, so the default run says only that
-        # nothing fell over. Raise it before deciding anything.
-        run: node baseball/pipeline/draft_economy.mjs
-             baseball/data/players.json /tmp/pool_before.json
-             ${{ inputs.economy_runs || '40' }}
-
       # The pool the game will actually serve, checked before it is committed.
       # check-labels drives every shipped row through the pricing rule, so a build
       # that changed the formula or lost the innings anchor fails here rather than
@@ -288,3 +264,36 @@ jobs:
             echo "push rejected, rebasing (attempt $i)"
             git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
           done
+
+      # AND WHETHER IT STILL PLAYS THE SAME GAME, which is the question the shape
+      # gate cannot ask.
+      #
+      # IT IS THE LAST STEP BECAUSE ITS ANSWER HAS TO BE FINDABLE. Run in the
+      # middle, a fourteen minute measurement printed its verdict seven hundred
+      # lines from the end of the log, under every line check-labels writes, and
+      # a number nobody can find is a number nobody reads. It never fails the
+      # job and never gates the commit, so it costs nothing to run last: the
+      # steps that decide whether the pool ships are the checks above.
+      #
+      # `split_stints` is the input this exists for: the price
+      # curve is convex, so half a season's WAR costs much less than half the
+      # price, and splitting a traded man's season fills the board with cheap
+      # production. This file's own header tells whoever runs it to re-run the
+      # cap sweep by hand first, and there was no way to: with `commit` off the
+      # pool never left the runner, and the artifact host is refused from the
+      # development sandbox. So the runner does the sweep, because it is the one
+      # machine in the project holding both pools.
+      #
+      # It runs on EVERY rebuild rather than only on split_stints. Any pool
+      # change can move the gap, and two minutes on a job that fires once a year
+      # is the difference between shipping a pool and shipping a pool that plays
+      # the same game.
+      - name: And whether it still plays the same game
+        if: ${{ always() }}
+        # THE DEFAULT IS A TRIPWIRE AND NOT A MEASUREMENT. At 40 drafts a bot the
+        # standard error on the GAP is about 2.8 rating points, which is the size
+        # of the whole effect split_stints has, so the default run says only that
+        # nothing fell over. Raise it before deciding anything.
+        run: node baseball/pipeline/draft_economy.mjs
+             baseball/data/players.json /tmp/pool_before.json
+             ${{ inputs.economy_runs || '40' }}
