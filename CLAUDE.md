@@ -6308,6 +6308,30 @@ inherited by the wide view because a play refuses resampling.
   at a tolerance of 2. The majority-median steps in only when the midline is
   the row's minority, which no current crop produces and the next camera might.
 
+#### The park is on the structure, and the ground says people play here
+
+The follow-on the materials pass named: each park's identity lived only in its
+sky (the landmark) while its wall and stands were the same building in a
+different hue. Two additions, both cameras, both cheap:
+
+- **Pennants in the crowd's own colours**, hung from the plate view's roofline
+  and along the wide view's stands-top curve. At the snow park they read as
+  garland, at the Iron Yard as steel and rust, with nobody writing a park a
+  custom drawing. **Alternate wall panels take a whisper of the crowd's first
+  colour** (0.08 alpha over the wall hue), so the fence has the rhythm of a
+  real outfield wall's mixed boards. **Snow sits on what is flat**: the
+  roofline and the top of the batter's eye, `theme.snow` only.
+- **Ground wear, drawn under the chalk**: a worn patch in each batter's box
+  where the feet dig in, scuff speckles around them, and the pitcher's landing
+  scuff a stride in front of the rubber. The wide camera gets the same three,
+  small at its distance. Paint sits over dirt, so the wear goes in before the
+  chalk lines and the box outlines.
+
+Nothing here touches a sampled row: the pennants sit at y 138-147 of the plate
+scene and the wear at 263 and 613, away from the band's rows and the zone
+contrast row, which is why the band and zone clauses were re-run rather than
+re-derived.
+
 #### And the wide camera left a black hole, which the full bleed layout made bigger
 
 Found by walking the first two pitches again after the pass above. Before the

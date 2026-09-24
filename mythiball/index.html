@@ -11757,16 +11757,39 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   ctx.fillRect(eyeL, 138, eyeR - eyeL, 40);
   ctx.fillStyle = 'rgba(255,255,255,.06)';
   ctx.fillRect(eyeL, 138, eyeR - eyeL, 3);
+  /* THE PARK BLEEDS INTO THE STANDS, not only into the sky. A string of
+     pennants hangs from the roofline in the crowd's own colours, over
+     the fans and the eye alike, which is the cheapest way a strip of
+     stands says whose park this is. */
+  for (let x = 8, i = 0; x < w; x += 26, i++) {
+    ctx.fillStyle = crowd[i % crowd.length];
+    ctx.beginPath();
+    ctx.moveTo(x, 138); ctx.lineTo(x + 10, 138); ctx.lineTo(x + 5, 147);
+    ctx.closePath(); ctx.fill();
+  }
   /* The wall is padded panels, not a slab: seams every 46, a foot
-     shadow, and the home run line along the top. */
+     shadow, and the home run line along the top. Alternate panels take
+     a whisper of the crowd's first colour, so the fence has the rhythm
+     of a real outfield wall's mixed panels and boards. */
   ctx.fillStyle = theme.wall;
   ctx.fillRect(0, 176, w, 14);
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = crowd[1] || '#fff';
+  for (let x = 0; x < w; x += 92) ctx.fillRect(x, 176, 46, 14);
+  ctx.globalAlpha = 1;
   ctx.fillStyle = 'rgba(0,0,0,.22)';
   for (let x = 20; x < w; x += 46) ctx.fillRect(x, 178, 2, 12);
   ctx.fillStyle = 'rgba(0,0,0,.25)';
   ctx.fillRect(0, 187, w, 3);
   ctx.fillStyle = theme.wallLine || '#fff';
   ctx.fillRect(0, 176, w, 2);
+  /* Snow sits on whatever is flat, which in this strip is the roofline
+     and the top of the batter's eye. */
+  if (theme.snow) {
+    ctx.fillStyle = '#f5efe8';
+    ctx.fillRect(0, 126, w, 4);
+    ctx.fillRect(eyeL, 137, eyeR - eyeL, 3);
+  }
   /* light towers, lit at night */
   for (const tx of [96, w - 96]) {
     ctx.fillStyle = '#2a2f36';
@@ -11915,6 +11938,21 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     const ey = far ? 258 : 618, exr = far ? 430 : 170, eyr = far ? 40 : 52;
     ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.07)';
     ctx.fillRect(cx + Math.cos(a) * exr * rr, ey + Math.sin(a) * eyr * rr, 3, 3);
+  }
+  /* GROUND WEAR is what says people play here. A worn patch in each
+     batter's box where the feet dig in, and the pitcher's landing scuff
+     a stride in front of the rubber, all drawn under the chalk so the
+     lines sit over the wear the way paint sits over dirt. */
+  ctx.fillStyle = 'rgba(0,0,0,.10)';
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(cx + side * 81, 613, 30, 11, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.beginPath(); ctx.ellipse(cx, 263, 11, 3, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.12)';
+  for (let i = 0; i < 14; i++) {
+    const side = i % 2 ? 1 : -1;
+    ctx.fillRect(cx + side * (66 + (i * 37) % 30), 604 + (i * 23) % 18, 3, 3);
   }
   /* foul lines and the bases: the lines run through first and third and
      on to the fence, the way they do from behind the plate */
@@ -12557,12 +12595,29 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     }
   }
 
+  /* Pennants along the top of the stands, riding the same curve, in
+     the crowd's own colours: the park's identity on the structure
+     rather than only in the sky. */
+  for (let x = 10, i = 0; x < w; x += 30, i++) {
+    const py = wallTopAt(x) - crowdH;
+    ctx.fillStyle = crowdCols[i % crowdCols.length];
+    ctx.beginPath();
+    ctx.moveTo(x, py); ctx.lineTo(x + 9, py); ctx.lineTo(x + 4.5, py + 8);
+    ctx.closePath(); ctx.fill();
+  }
   /* Outfield wall: padded panels with seams and the yellow home run
      line on top, column by column along the curve. */
   for (let x = 0; x < w; x += 4) {
     const wy = wallTopAt(x);
     ctx.fillStyle = theme.wall;
     ctx.fillRect(x, wy, 4, wallH);
+    /* alternate panels take a whisper of the crowd's first colour */
+    if (Math.floor(x / 46) % 2) {
+      ctx.globalAlpha = 0.08;
+      ctx.fillStyle = crowdCols[1] || '#fff';
+      ctx.fillRect(x, wy, 4, wallH);
+      ctx.globalAlpha = 1;
+    }
     if (x % 46 < 4) {
       ctx.fillStyle = 'rgba(0,0,0,.22)';
       ctx.fillRect(x, wy + 2, 2, wallH - 2);
@@ -12756,6 +12811,14 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     ctx.fillRect(cx + Math.cos(a + 1) * rad * 0.8, moundY + Math.sin(a + 1) * rad * 0.4, 2, 2);
   }
 
+  /* Ground wear: the batters' stances beside the plate and the
+     pitcher's landing scuff, small at this distance. */
+  ctx.fillStyle = 'rgba(0,0,0,.10)';
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(cx + side * 16, plateY + 1, 8, 4, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.beginPath(); ctx.ellipse(cx, moundY + 6, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
   /* Foul lines: from the plate THROUGH first and third out to the wall,
      plus the short segments behind the plate. The originals only ran
      down off the bottom of the screen, so the field had no fair
