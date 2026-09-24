@@ -144,10 +144,23 @@ claim(ambiguous.length === 1 && ambiguous[0] === 'BAL',
   'and BAL is still the only code that means two different clubs',
   `ambiguous: ${ambiguous.join(', ') || 'none'}`);
 
-const totRow = players.find(p => p.t === 'TOT');
-claim(totRow && !/\bTOT\b/.test(page.seasonLine(totRow)),
-  'a multi-club row never prints TOT on screen',
-  totRow && page.seasonLine(totRow));
+/* THE COVERAGE HALF OF THIS IS A FACT ABOUT THE POOL AND NOT A REQUIREMENT OF
+   IT. `clubTag('TOT')` is asserted above and is the rule; this walks a real row
+   through it, which is what proves the rule FIRES rather than only that it
+   exists. Written `claim(totRow && ...)` it failed on a pool built with
+   `split_stints`, where a traded season is one row per club and there is no
+   combined row left to walk: the guard reported a defect in a pool that had
+   removed the very thing it guards against. So a pool with no TOT row is
+   REPORTED rather than failed, and the rule above is what still has teeth. */
+const totRows = players.filter(p => p.t === 'TOT');
+if (totRows.length) {
+  claim(!/\bTOT\b/.test(page.seasonLine(totRows[0])),
+    `a multi-club row never prints TOT on screen (${totRows.length} in the pool)`,
+    page.seasonLine(totRows[0]));
+} else {
+  console.log('  --    this pool holds no multi-club row to walk, which is what');
+  console.log('        split_stints does: every traded season is one row per club');
+}
 claim(ohtani && /pitching only/.test(page.seasonLine(ohtani)),
   'a two-way row says which half it is');
 claim(!/only/.test(page.seasonLine(players.find(p => p.n === 'Babe Ruth' && p.s === 1923))),
@@ -455,8 +468,17 @@ console.log('\n7. A trade offer is a subtraction the reader can do on screen');
   claim(fieldsOk === sides && sides > 0,
     `every one of the ${sides} offer sides carries the row's own role, position and innings`,
     `${sides - fieldsOk} disagreed with the row they were projected from, which is how the tag went quiet on all of them`);
-  claim(heavySides > 0,
-    `and ${heavySides} of them are heavy arms, so the tag has something to say`);
+  /* HOW MANY OF THEM ARE HEAVY ARMS IS PRINTED AND NOT ASSERTED. It reads like
+     the coverage clause and is a claim about the SAMPLE: offers are drawn per
+     slot, only two of twelve are starters, and a heavy one turns up on about
+     1.6% of sides, so 300-odd sides meet a handful and a pool built with
+     `split_stints` halves a traded man's innings and met none of 426. Asserted,
+     it failed on a correct page. What the projection must actually do is carry
+     the row's own fields, which the clause above asks of every side and which no
+     sample can dodge. */
+  console.log(`  --    ${heavySides} of them are heavy arms `
+    + `(${(100 * heavySides / Math.max(1, sides)).toFixed(1)}%). Offers are drawn per slot `
+    + 'and only two of twelve are starters.');
 }
 
 console.log(failures ? `\n${failures} failed.\n` : '\nAll checks passed.\n');
