@@ -169,9 +169,53 @@ def main():
         rows = json.load(fh)
 
     out = compact(rows)
+
+    # IT WROTE THE POOL BEFORE IT COULD NOTICE THE POOL WAS EMPTY. `compact`
+    # reads the enriched frame's verbose keys, so handed the ALREADY COMPACT
+    # file, which is an ordinary mistake to make by hand, every row misses and
+    # the result is `[]`. That was written to disk and the stage exited 0: the
+    # shape gate two steps later is what caught it, which is a guard catching
+    # another stage's garbage rather than the stage refusing to make it.
+    #
+    # The floor is a share of what came IN rather than a row count, so it is
+    # right whatever the pool grows to, and it is generous: the real WAR floor
+    # drops about 60% of the frame, so anything under a tenth surviving is a
+    # reader that matched nothing rather than a filter that bit hard.
+    if len(out) < max(1, len(rows) // 10):
+        print(f"  {len(out)} of {len(rows)} rows survived, which is not a pool.")
+        print("  compact() reads the enriched frame's own column names, so this is")
+        print("  almost always the wrong input file rather than a real filter.")
+        return 1
+
     write(out, dst)
 
     bats = sum(1 for r in out if r["r"] == "b")
+
+    # THE RECORD HAS TO DESCRIBE THE FILE THAT SHIPS. build_positions.py writes
+    # provenance.json off its own frame, which is every player-season the sources
+    # hold; this stage then drops everything under the WAR floor, so the record
+    # said 109,859 rows beside a pool of 44,344. That file's own header argues a
+    # machine-written record cannot drift from the data beside it, and it was
+    # drifting by a factor of two and a half: it is the record of the BUILD and
+    # the pool is what a reader has. So the shipped counts are written back here,
+    # at the stage that produces them, and the build's own figure is kept under
+    # its own name rather than overwritten, because how many rows the sources
+    # held is a real fact about the run and the only place it is recorded.
+    prov_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "provenance.json")
+    if os.path.exists(prov_path):
+        with open(prov_path) as fh:
+            prov = json.load(fh)
+        prov["built_rows"] = prov.get("rows")
+        prov["war_floor"] = WAR_FLOOR
+        prov["rows"] = len(out)
+        prov["batting"] = bats
+        prov["pitching"] = len(out) - bats
+        prov["seasons"] = [min(r["s"] for r in out), max(r["s"] for r in out)]
+        with open(prov_path, "w") as fh:
+            json.dump(prov, fh, indent=2)
+            fh.write("\n")
+        print(f"  Recorded the shipped shape in {prov_path}")
+
     print(f"  Wrote {dst}")
     print(f"  {len(rows)} rows in, {len(rows) - len(out)} under "
           f"{WAR_FLOOR} WAR, {len(out)} out")
