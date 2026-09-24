@@ -29,7 +29,7 @@
  * how often we look and how many games and markets we look at.
  */
 import {
-  MARKETS, REGIONS, LADDER_FULL, LADDER_LEAN,
+  MARKETS, REGIONS, LADDER_FULL, LADDER_LEAN, LADDER_FREE,
   pollsPerEvent, creditsPerSweep, creditsPerEvent,
   creditsPerWeek, creditsPerMonth, weeksOfRunway,
 } from './lib/schedule.mjs';
@@ -66,11 +66,19 @@ console.log(`\n  ${MK} markets x ${REGIONS.length} region = ${creditsPerSweep(MK
   + `to sweep ONE game once.`);
 console.log(`  A ${GAMES} game slate is ${n(creditsPerSweep(MK) * GAMES)} credits a full sweep.\n`);
 
-for (const [label, ladder] of [['FULL (the brief\'s ladder)', LADDER_FULL], ['LEAN', LADDER_LEAN]]) {
+for (const [label, ladder] of [
+  ['FULL (the brief\'s ladder)', LADDER_FULL],
+  ['LEAN', LADDER_LEAN],
+  ['FREE (what 500 credits a month actually carries)', LADDER_FREE],
+]) {
   console.log(`${label}`);
   for (const b of ladder) {
     const every = b.everyMin >= 60 ? `${b.everyMin / 60}h` : `${b.everyMin}min`;
-    const polls = Math.floor(((b.fromH - b.untilH) * 60) / b.everyMin);
+    /* max(1, ...) for pollsPerEvent's reason: a band shorter than its own
+       interval still polls once, on entry. Written floor() alone here this
+       line would disagree with the total printed three lines below it, which
+       is a budget table arguing with itself. */
+    const polls = Math.max(1, Math.floor(((b.fromH - b.untilH) * 60) / b.everyMin));
     console.log(`    ${String(b.fromH).padStart(3)}h to ${String(b.untilH).padStart(2)}h out, `
       + `every ${every.padEnd(5)} ${String(polls).padStart(4)} looks`);
   }
@@ -82,11 +90,12 @@ for (const [label, ladder] of [['FULL (the brief\'s ladder)', LADDER_FULL], ['LE
 }
 
 console.log(`How long each plan lasts\n${'-'.repeat(60)}`);
-console.log(`  ${'plan'.padEnd(24)}${'credits/mo'.padStart(11)}  ${'FULL'.padStart(12)}  ${'LEAN'.padStart(12)}`);
+console.log(`  ${'plan'.padEnd(24)}${'credits/mo'.padStart(11)}  ${'FULL'.padStart(12)}  ${'LEAN'.padStart(12)}  ${'FREE'.padStart(12)}`);
 for (const p of PLANS) {
   console.log(`  ${(p.name + ' ' + p.price).padEnd(24)}${n(p.credits).padStart(11)}  `
     + `${runway(weeksOfRunway(p.credits, LADDER_FULL, MK, GAMES)).padStart(12)}  `
-    + `${runway(weeksOfRunway(p.credits, LADDER_LEAN, MK, GAMES)).padStart(12)}`);
+    + `${runway(weeksOfRunway(p.credits, LADDER_LEAN, MK, GAMES)).padStart(12)}  `
+    + `${runway(weeksOfRunway(p.credits, LADDER_FREE, MK, GAMES)).padStart(12)}`);
 }
 
 /* The free allowance, said in the way that actually lands. A monthly figure

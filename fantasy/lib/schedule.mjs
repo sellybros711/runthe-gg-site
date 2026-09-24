@@ -71,14 +71,70 @@ export const LADDER_LEAN = [
   { fromH: 4, untilH: 0, everyMin: 10 },
 ];
 
+/* AND WHAT IT LOOKS LIKE ON 500 CREDITS A MONTH, WHICH IS WHAT WE ACTUALLY
+ * HAVE. This is not a stretched lean ladder either. It is a different answer
+ * to a different question.
+ *
+ * THE ARITHMETIC THAT FORCES IT. Lean is 252 credits per game per week, so one
+ * Sunday slate is about 4,000 and the free allowance is 500. A cap alone does
+ * not solve that, and this is the part that is easy to get wrong: lean starts
+ * watching at 72 hours out, so Sunday's games enter the ladder on Thursday
+ * afternoon and six-hourly polls through Thursday, Friday and Saturday spend
+ * the whole allowance before Sunday morning arrives. The budget would be gone
+ * on lines nobody was going to read, and the one window the brief names as the
+ * proving ground would collect nothing.
+ *
+ * So this gives up EVERYTHING outside six hours and buys two looks per game:
+ * one about five hours before kickoff and one about an hour before. For a 1pm
+ * Eastern Sunday game that is 8am and noon, both inside the 9am to 1pm window
+ * this product exists for.
+ *
+ * TWO LOOKS IS NOT A TREND, AND THE SCREEN HAS TO SAY SO. Two points tell you
+ * a line moved and give no shape at all: a number that drifted and a number
+ * that gapped on an injury report look identical. That is honest to ship only
+ * while the freshness panel is honest about how many observations are behind
+ * it, which is the same condition LADDER_LEAN's own note sets and is the
+ * reason neither of these is allowed to be a silent downgrade.
+ *
+ * The second band is 90 minutes against an hour of room on purpose, so a game
+ * whose first look landed late still gets its second one rather than being
+ * refused by a minute. */
+export const LADDER_FREE = [
+  { fromH: 5, untilH: 1, everyMin: 240 },
+  { fromH: 1, untilH: 0, everyMin: 90 },
+];
+
 /* How many times one event is swept under a ladder.
  *
  * Math.floor rather than round: a band from 3 hours out to kickoff at one
  * minute apart is 180 looks, not 181. Off by one here is off by one per event
  * per band, which is 64 credits a week on a full slate, and the kind of error
  * that makes a budget model quietly optimistic. */
+/* ENTERING A BAND IS ALWAYS A LOOK, AND THE FLOOR ALONE MISSED IT.
+ *
+ * Written as floor() alone this undercounts any band shorter than its own
+ * interval by exactly one, because such a band scores zero while in fact it
+ * polls once: an event crossing into a tighter band has a last poll older than
+ * the new interval by construction, so it is due the moment it arrives.
+ *
+ * FULL and LEAN have no band shorter than its interval, so the fault was
+ * invisible in both and would have stayed invisible. LADDER_FREE's second band
+ * is one hour at ninety minutes apart, which scored 0, and the whole ladder
+ * priced at ONE look per game against a measured two. Half the real cost, on
+ * the number a credit cap is set from, which is precisely the "quietly
+ * optimistic budget model" this function's own comment was written against.
+ *
+ * max(1, ...) rather than 1 + floor(...): the entry look is the first look of
+ * the band, not an extra one on top. Adding would overcount every band that
+ * was already right, which is the same error facing the other way.
+ *
+ * It holds only for a ladder that TIGHTENS toward kickoff, which is asserted
+ * separately, and cross-checked against a real minute-by-minute walk of
+ * pollDecision in fantasy/check-worker.mjs. Two implementations of one answer
+ * are only safe while something compares them. */
 export function pollsPerEvent(ladder = LADDER_FULL) {
-  return ladder.reduce((n, b) => n + Math.floor(((b.fromH - b.untilH) * 60) / b.everyMin), 0);
+  return ladder.reduce(
+    (n, b) => n + Math.max(1, Math.floor(((b.fromH - b.untilH) * 60) / b.everyMin)), 0);
 }
 
 export function creditsPerSweep(markets = MARKETS.length, regions = REGIONS.length) {

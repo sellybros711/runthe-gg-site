@@ -28,22 +28,36 @@
  * the tick, because that is one game having a bad moment and the other fifteen
  * are fine.
  */
-import { MARKETS, REGIONS, LADDER_LEAN, dueEvents, pollDecision } from '../../lib/schedule.mjs';
+import { MARKETS, REGIONS, LADDER_FREE, dueEvents, pollDecision } from '../../lib/schedule.mjs';
 import { parseEvents, parseEventOdds, normName } from './parse.mjs';
 import { sweepCost } from './odds.mjs';
 
-/* WHICH LADDER SHIPS, AND WHY IT IS THE LEAN ONE TODAY.
+/* WHICH LADDER SHIPS, AND WHY IT IS THE FREE ONE TODAY.
  *
- * The full ladder costs 158,506 credits a month and the account has 500. The
- * lean one costs 17,519, which still does not fit, so the Worker also carries
- * a per-tick event cap and the database carries a hard budget.
+ * Full costs 158,506 credits a month and the account has 500. Lean costs
+ * 17,519, which is 35 times the allowance. Free costs 834 a month, or 192 for
+ * a sixteen game week, and is the first of the three that a real Sunday fits
+ * inside.
  *
- * NONE OF THAT IS ALLOWED TO BE INVISIBLE. fantasy/plan-budget.mjs prices
- * whatever is set here, and the screen reads the budget state, so a schedule
- * the allowance cannot carry is a visible fact rather than a quiet
- * degradation. Changing this line changes the printed cost, because the
- * planner imports the same constant. */
-export const LADDER = LADDER_LEAN;
+ * A CAP ALONE COULD NOT HAVE DONE THIS, and that is the part worth reading
+ * before reaching for lean again. Lean starts watching at 72 hours out, so a
+ * Sunday slate enters its ladder on Thursday afternoon and six-hourly polls
+ * across Thursday, Friday and Saturday spend the whole allowance before Sunday
+ * morning arrives. The money would go on lines nobody reads and the one window
+ * the brief names as the proving ground would collect nothing. The budget had
+ * to be SHAPED, not just sized.
+ *
+ * WHAT IT GIVES UP, SAID PLAINLY: two looks per game is not a trend. A line
+ * that drifted and a line that gapped on an injury report are the same two
+ * points. This is honest to ship only while the freshness panel says how many
+ * observations are behind a number, which is the condition lean's own note
+ * sets and applies here with more force.
+ *
+ * NONE OF IT IS ALLOWED TO BE INVISIBLE. fantasy/plan-budget.mjs prices
+ * whatever is set here, and check-worker walks pollDecision minute by minute
+ * and asserts the price matches what the poller would really do, because the
+ * cap is set from one and spent by the other. */
+export const LADDER = LADDER_FREE;
 
 /* At most this many events in one tick. A guard against one tick doing
  * something enormous, not a budget: the budget is the database's, because only

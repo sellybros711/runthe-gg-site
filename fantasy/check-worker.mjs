@@ -29,7 +29,8 @@
  *      response that parses, a sweep that succeeds, and a screen that looks
  *      fine.
  */
-import { LADDER_FULL, LADDER_LEAN, pollDecision, dueEvents } from './lib/schedule.mjs';
+import { LADDER_FULL, LADDER_LEAN, LADDER_FREE, pollDecision, dueEvents,
+  pollsPerEvent } from './lib/schedule.mjs';
 import { parseEventOdds, parseEvents, normName } from './worker/src/parse.mjs';
 import { makeOddsClient, sweepCost, LIMITS, readUsage } from './worker/src/odds.mjs';
 import { sweepOnce, LADDER, MAX_EVENTS_PER_TICK } from './worker/src/sweep.mjs';
@@ -958,10 +959,42 @@ ck('a season with no anchor says so rather than pretending',
  * ================================================================ */
 section('What ships');
 
-console.log(`         ladder: ${LADDER === LADDER_LEAN ? 'LEAN' : 'FULL'}, `
+const LADDER_NAME = LADDER === LADDER_FREE ? 'FREE'
+  : LADDER === LADDER_LEAN ? 'LEAN' : 'FULL';
+console.log(`         ladder: ${LADDER_NAME}, `
   + `max ${MAX_EVENTS_PER_TICK} events a tick`);
-ck('the shipped ladder is one of the two priced by plan-budget.mjs',
-  LADDER === LADDER_LEAN || LADDER === LADDER_FULL);
+ck('the shipped ladder is one of the three priced by plan-budget.mjs',
+  LADDER === LADDER_FREE || LADDER === LADDER_LEAN || LADDER === LADDER_FULL);
+
+/* THE PLANNER AND THE POLLER MUST AGREE, AND THEY DID NOT.
+ *
+ * pollsPerEvent() is arithmetic over the band table. pollDecision() is what
+ * the Worker actually asks sixty times an hour. Those are two implementations
+ * of one answer, and the credit cap is set from the first while the money is
+ * spent by the second.
+ *
+ * Measured, they disagreed by 2x on LADDER_FREE: the planner said one look per
+ * game and a real walk gives two, because a band shorter than its own interval
+ * scored floor(60/90) = 0 while in fact it polls on entry. FULL and LEAN have
+ * no such band, so nothing in this file could ever have seen it.
+ *
+ * So it is driven rather than reasoned about: one simulated event, one minute
+ * at a time, from outside the ladder to kickoff, counting real 'poll'
+ * decisions. Reintroducing the bare floor() fails this on FREE and passes on
+ * the other two, which is exactly the shape of the bug. */
+ck('the planner agrees with a real walk of the poller, on every ladder', (() => {
+  const bad = [];
+  for (const [name, L] of [['FULL', LADDER_FULL], ['LEAN', LADDER_LEAN], ['FREE', LADDER_FREE]]) {
+    const start = KICK - (L[0].fromH + 2) * H;
+    let last = null, walked = 0;
+    for (let t = start; t < KICK; t += 60000) {
+      if (pollDecision(ev, t, last, L).action === 'poll') { walked += 1; last = t; }
+    }
+    const priced = pollsPerEvent(L);
+    if (priced !== walked) bad.push(`${name}: priced ${priced}, walked ${walked}`);
+  }
+  return bad.length === 0 || bad.join('; ');
+})() === true, 'the credit cap is set from the priced number and spent by the walked one');
 ck('the per tick event cap is small enough to be a guard',
   MAX_EVENTS_PER_TICK > 0 && MAX_EVENTS_PER_TICK <= 16, String(MAX_EVENTS_PER_TICK));
 ck('the shipped ladder still tightens toward kickoff', (() => {
