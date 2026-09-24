@@ -466,30 +466,83 @@ console.log('\nEVERY CLUB THE BOARD CAN NAME HAS A COLOUR THAT READS');
      untouched would pass a check that only asked for a colour, and would be the board this
      whole file exists to prevent: Las Vegas at 1.21:1 is a tag that is simply not there. */
   const lifted = [...codes].filter((c) => {
-    const pub = CLUBS.PUBLISHED[c] || CLUBS.PUBLISHED[{ LA: 'LAR' }[c]];
-    return pub && CLUBS.color(c).toLowerCase() !== pub.toLowerCase();
+    const code = CLUBS.PUBLISHED[c] ? c : { LA: 'LAR' }[c];
+    return code && CLUBS.color(c).toLowerCase() !== CLUBS.PUBLISHED[code][0].toLowerCase();
   });
   ok('  and most of them had to be lifted to get there', lifted.length >= 25,
-    `${lifted.length} of ${codes.size} moved off the published hex`);
+    `${lifted.length} of ${codes.size} moved off the published primary`);
+
+  /*
+   * THE THREE CLUBS WHOSE IDENTITY IS THEIR SECOND COLOUR. Reported by a player: Vegas as a
+   * grey and Pittsburgh as a BLUE, which is a hue the Steelers do not have. Nothing in a pair
+   * of hexes says which one a fan would name, so `SECOND` is a hand-written list and this is
+   * an assertion of membership.
+   *
+   * THE THREE CODES ARE WRITTEN OUT HERE and deliberately not read off `CLUBS.SECOND`. Asked
+   * that way it walks the keys of the thing under test, so an emptied list has nothing to
+   * disagree with and the check PASSES GREEN on the exact defect it is written for. It did,
+   * on its first run. A second copy of a three item list is the right price for a claim that
+   * is about the page rather than about itself.
+   *
+   * BOTH DIRECTIONS, because the list can go wrong by shrinking or by growing, and a club
+   * wrongly added to it is the blanket rule this file's own header rejected: fourteen NFL
+   * secondaries are gold, so the way that arrives is a board where most tags are yellow.
+   */
+  const OWN_SECOND = ['LV', 'NO', 'PIT'];
+  const drewSecond = Object.keys(CLUBS.PUBLISHED)
+    .filter((c) => CLUBS.color(c).toLowerCase() === CLUBS.PUBLISHED[c][1].toLowerCase());
+  const missedIt = OWN_SECOND.filter((c) => !drewSecond.includes(c));
+  const extra = drewSecond.filter((c) => !OWN_SECOND.includes(c));
+  ok('  the three black-primary clubs wear their own second colour', !missedIt.length,
+    missedIt.map((c) => `${c} drew ${CLUBS.color(c)} not ${CLUBS.PUBLISHED[c][1]}`).join(', ')
+      || OWN_SECOND.map((c) => `${c} ${CLUBS.color(c)}`).join(' '));
+  ok('  and no other club is sourced from its second colour', !extra.length,
+    extra.map((c) => `${c} drew ${CLUBS.color(c)}`).join(', ') || `${drewSecond.length} of 32`);
+
+  /*
+   * AND THE LIFT MAY NEVER MANUFACTURE A HUE OUT OF SOMETHING THAT HAS NONE, which is the
+   * defect under the report: #101820 is 6% chroma and HSL saturation reads it as 0.33, so a
+   * floor written on saturation raised it to 0.45 and the black became a blue.
+   *
+   * Asked over EVERY hex in the table rather than over the sources actually used, because all
+   * three near-black primaries are on the list above and so are never handed to the lift. A
+   * check scoped to what ships would pass with the wrong measure restored and say nothing.
+   */
+  const everyHex = Object.values(CLUBS.PUBLISHED).flat();
+  const flat = everyHex.filter((h) => CLUBS.chroma(h) < CLUBS.CHROMA_MIN);
+  ok(`  the table holds ${flat.length} hexes with no real colour in them`, flat.length >= 6,
+    [...new Set(flat)].join(', '));
+  const invented = flat.filter((h) => CLUBS.chroma(CLUBS.lift(h)) >= CLUBS.CHROMA_MIN);
+  ok('  and not one of them lifts into a colour', !invented.length,
+    invented.map((h) => `${h} -> ${CLUBS.lift(h)}`).join(', ') || 'all stay neutral');
 
   /*
    * ONE TABLE, TWO COPIES, AND THIS IS WHAT STOPS THEM DRIFTING. `clubs.js` carries the
    * colours because the fantasy page deliberately loads none of `engine.js`, so the site's
    * own table is copied rather than imported. A copy nobody compares is a copy that goes
    * stale the first time somebody corrects a hex.
+   *
+   * BOTH HEXES, and that is not thoroughness. Three clubs are drawn from their SECOND colour
+   * now, so a stale second entry is a club on the board wearing a colour the site does not
+   * think it has. Before those three existed this check read the primary alone and the second
+   * column could have been anything at all.
    */
   const eng = fs.readFileSync(path.join(ROOT, 'football/engine.js'), 'utf8');
   const block = eng.slice(eng.indexOf('const TEAM_COLORS'));
   const table = block.slice(0, block.indexOf('};'));
   const mine = CLUBS.PUBLISHED;
   const theirs = {};
-  for (const m of table.matchAll(/(\w+):\s*\['(#[0-9A-Fa-f]{6})'/g)) theirs[m[1]] = m[2];
+  for (const m of table.matchAll(/(\w+):\s*\['(#[0-9A-Fa-f]{6})',\s*'(#[0-9A-Fa-f]{6})'\]/g)) {
+    theirs[m[1]] = [m[2], m[3]];
+  }
   ok(`  the site's own table was read`, Object.keys(theirs).length === 32,
-    Object.keys(theirs).length + ' clubs');
-  const off = Object.keys(theirs).filter((k) =>
-    (mine[k] || '').toLowerCase() !== theirs[k].toLowerCase());
+    Object.keys(theirs).length + ' clubs, both colours each');
+  const off = Object.keys(theirs).filter((k) => !mine[k]
+    || mine[k][0].toLowerCase() !== theirs[k][0].toLowerCase()
+    || mine[k][1].toLowerCase() !== theirs[k][1].toLowerCase());
   ok('  and this page agrees with engine.js on every club', !off.length,
-    off.map((k) => `${k} ${mine[k] || 'missing'} against ${theirs[k]}`).join(', ') || '32 clubs');
+    off.map((k) => `${k} ${(mine[k] || ['missing', '']).join('/')} against ${theirs[k].join('/')}`)
+      .join(', ') || '32 clubs, 64 hexes');
 }
 
 if (QUICK) {

@@ -3073,17 +3073,70 @@ row sits on `#131a2b` and against it only Cincinnati and Denver clear 4.5:1; Las
 **1.21:1** and Pittsburgh **1.03:1**. Dropping the site's table in would have given a board
 where almost every tag was invisible, with nothing to report.
 
-**The PRIMARY is lifted and the secondary is not used**, which is only obvious once both are
-printed. Picking whichever of a club's two published colours reads better puts **fourteen
-clubs in one gold bucket**, because most NFL secondaries are gold, and worse it stops naming
-the club: Washington comes out gold rather than burgundy, Dallas silver rather than navy. The
-primary is the identity, so the primary is what is lifted: hue kept, lightness raised until it
-clears, saturation floored on the way up or a navy arrives as a pale grey.
+**The PRIMARY is lifted, and that is right for twenty nine of the thirty two.** Picking
+whichever of a club's two published colours reads better puts **fourteen clubs in one gold
+bucket**, because most NFL secondaries are gold, and worse it stops naming the club:
+Washington comes out gold rather than burgundy, Dallas silver rather than navy. The primary is
+the identity, so the primary is what is lifted: hue kept, lightness raised until it clears,
+saturation floored on the way up or a navy arrives as a pale grey.
 
-**The blues converge and that is the league, not a defect.** Four pairs are identical in the
+##### A BLACK HAS NO HUE TO LIFT, AND THE MEASURE FOR THAT WAS THE WRONG ONE
+
+Reported by a player: Vegas should be white and Pittsburgh should be yellow. They are right,
+and Pittsburgh was the worse of the two, because **the Steelers were on the board in blue**.
+
+| | published primary | shipped as |
+|---|---|---|
+| Las Vegas | `#000000` | `#828282`, a mid grey |
+| Pittsburgh | `#101820` | `#4f86bc`, **a blue** |
+| New Orleans | `#101820` | `#4f86bc`, the same blue |
+
+**HOW MUCH COLOUR A HEX CARRIES IS ITS CHROMA AND NOT ITS HSL SATURATION.** Saturation is
+divided by how dark a colour is, so it EXPLODES near black: `#101820` is **6% chroma** and
+reads **0.33 saturation**, which sailed over a floor of 0.12 and was then raised to 0.45 on
+the way up. A hue that is six percent of a black pixel is noise, and the lift was amplifying
+the noise into a colour. This is the hoops wheel's own note ("HSL lightness is not
+brightness") arriving one step along, at saturation.
+
+**`CHROMA_MIN` is 0.08 and the band is thin, which is worth knowing before moving it.** Sorted,
+the primaries run 0.0 (Las Vegas), 6.3 (the two blacks), **9.0 (GREEN BAY)** and 12.2. About
+one point of room each side, and Green Bay is what the top of that gap defends: `#203731` is a
+genuine dark green with very little chroma in it, and a floor at 0.10 turns the Packers grey.
+
+**IT CHANGES NO COLOUR ON THE BOARD TODAY**, because all three clubs it fires on are named in
+`SECOND` and sourced from a colour needing no lift at all. It is the backstop: without it the
+next club to publish a black primary goes quietly blue and nothing anywhere says so.
+
+**`SECOND` is three clubs, written out by hand.** Vegas silver, Pittsburgh gold, New Orleans
+gold, and all three clear unaided (7.54:1, 9.87, 9.38) so what ships is the published hex
+untouched. **New Orleans was not reported and is on the list anyway**: it publishes the
+identical `#101820`, so it drew the identical blue, and fixing one of that pair leaves the
+same complaint on the board. **Nothing in a pair of hexes says which one a fan would name**, so
+this is observed rather than derived, the way the sprite pack's `FILE_DRAWS` is: the geometry
+can say a primary is colourless and cannot say Cleveland's brown is fine while Carolina's black
+second colour would be worse. The guard asks for membership of a list, and the list is short on
+purpose.
+
+**Both directions are asserted, because a club wrongly ADDED to that list is the blanket rule
+above arriving by the back door**, and the way that shows up is a board where most tags are
+yellow.
+
+**AND THE FIRST VERSION OF THAT GUARD PASSED GREEN ON THE DEFECT.** It walked
+`Object.keys(CLUBS.SECOND)`, which is the keys of the thing under test, so an emptied list has
+nothing to disagree with. The three codes are written out in the checker now. A second copy of
+a three item list is the right price for a claim that is about the page rather than about
+itself.
+
+**The drift check reads BOTH hexes now**, which is not thoroughness: three clubs are drawn from
+their second colour, so a stale second entry is a club wearing a colour the site does not think
+it has. Before those three existed it read the primary alone and the second column could have
+been anything at all.
+
+**The blues converge and that is the league, not a defect.** Three pairs are identical in the
 published data before anything is done to them (New England and Seattle are both `#002244`,
-Dallas and the Rams both `#003594`). The tag carries the three letter CODE, so the colour is
-reinforcement and never what identifies the club.
+Dallas and the Rams both `#003594`, Cincinnati and Denver both `#FB4F14`). It was four until
+New Orleans and Pittsburgh came off their shared `#101820`. The tag carries the three letter
+CODE, so the colour is reinforcement and never what identifies the club.
 
 **THE RAMS HAD NO COLOUR AT ALL, AND A FIVE ROW BOARD MEETS THEM ABOUT ONE WEEK IN SIX.**
 nflverse spells them `LA` and the site's table spells them `LAR`, so that one club fell
