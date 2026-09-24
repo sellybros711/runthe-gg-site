@@ -6584,6 +6584,97 @@ it: 100 CSS pixels covers the phone and cuts the desktop's own upper label off.
 the rest, since a label is centred on its ring to within 6 CSS pixels on every
 screen measured and nothing else here is.
 
+### And then the PAGE was the thing that did not match
+
+The field is painted now and the page around it was still the 1980s cabinet
+its own stylesheet header describes: a terminal monospace setting every name,
+every quirk and every sentence in the game, a flat 2px navy line around 52
+objects, 16 hard offset shadows, square corners, and tracking chosen for a
+face whose letters were already a fixed width apart. **That is the one
+resolution rule one layer out.** A reader does not see a renderer, they see a
+screen, and half of this screen was drawn with a printing technique the other
+half had stopped using.
+
+**WHAT IS KEPT IS THE WARMTH AND THE WEIGHT, AND THAT IS THE WHOLE
+JUDGEMENT.** The instinct on hearing "smooth" is a minimal dashboard, and it
+is wrong here: the reference this game is measured against has a bold, warm,
+playful interface, not a clean one. Scorecard cream, navy ink and arcade red
+are also the FIELD's colours (the dirt, the shadow under a figure, the seam on
+the ball), and a button that goes down when you hit it is real game feel. None
+of that moved. What went is the woodcut.
+
+**IT IS SIX STRINGS.** The page draws a border 52 times and a shadow 16 times
+and does it in six spellings, so the cabinet look is a token swap rather than a
+decision taken per component: `border:2px solid var(--line)` (30),
+`border:3px solid var(--line)` (19), `border-radius:0` (21) and four hard
+`Npx Npx 0` shadows. Swapping the strings moves every screen at once and
+leaves each rule's own box model alone, which is what stops a redesign quietly
+costing a margin on a screen nobody reshot.
+
+**THE FACES ARE THE SYSTEM'S, DELIBERATELY.** This game is one self contained
+file that asks the network for nothing, and a webfont would be both a new
+dependency and unverifiable here, since Google Fonts does not resolve in the
+sandbox and every screenshot would be of the fallback anyway. `ui-rounded` is
+SF Pro Rounded on Apple, which is the friendly geometric face this wants, and
+elsewhere the stack lands on the platform's own UI face. What matters most is
+the thing being LEFT.
+
+#### Two things the monospace was doing for free
+
+Both broke the moment it went, and both were visible only by looking.
+
+**THE BRAND ROW HELD TOGETHER BY ACCIDENT.** Every glyph was one width, so the
+line happened to fit; in a proportional face the same words are wider and the
+row wrapped, putting the wordmark on one line and MAIN MENU on another.
+`min-width:0` is what lets a flex item shrink below its own text at all, and
+the two straplines shrink while the controls do not.
+
+**AND EVERY COLUMN OF DIGITS LOST ITS COLUMN.** Six ratings in three columns
+only read as a table if the digits are one width. The answer is
+`font-variant-numeric:tabular-nums`, which lines digits up in ANY face, and it
+is the hoops game's own lesson: reaching for a typewriter to get a straight
+column buys a whole voice nobody asked for. It is applied by ROLE (tables,
+line scores, stat grids, meters, counts) rather than per component, because a
+list of the places a number appears is a list somebody forgets to add to.
+
+**A LABEL AND ITS VALUE ARE ONE THING.** Three stat cells share a card about
+160px wide, so a cell is around 50: `POW 45` fits and `POW` over `45` is what
+happens the moment it does not. The monospace hid this by being narrow, and
+the fix is to say the pair may not break rather than to go back to a face that
+could not.
+
+#### A SMALL UPPERCASE LABEL KEEPS ITS TRACKING AND A BIG WORD DOES NOT
+
+Sixty eight rules set a tracking value and the instinct is to sweep them all.
+Most of them are right: wide tracking on nine and ten pixel caps is what makes
+a sport screen's labels read as labels, and it is correct in any face. What
+was wrong is the SAME value on display sized words, where a monospace's own
+spacing was being added to rather than replaced: `.28em` on a sixteen pixel
+button, `.16em` on a twenty six pixel shout, `.14em` on a twenty pixel name.
+Those are the ones a reader takes in as a word rather than as a label, and
+they are the ones that moved, along with the display face they should have
+been set in.
+
+#### What it cost, measured rather than assumed
+
+The deck is the fragile surface here (its own section above records a short
+phone already running past the bottom), so it was measured either side:
+
+| | before | after |
+|---|---|---|
+| deck at 390x844 | 156px | **150px** |
+| deck at 360x640 | 156px | 163px |
+| deck sideways | 177px | **171px** |
+| 320x568 overflow | 29px | **24px** |
+
+So the type got bigger and the deck did not, and the one screen that already
+ran past its window runs 5px less past it. **The 320 overflow is not fixed and
+is not new**, which is what measuring the old build was for.
+
+**RETRO IS A FIELD OPTION INSIDE THE NEW DESIGN, not a second skin.** Doubling
+the interface for it would double every guard, and a classic graphics setting
+in a real game does not revert your menus.
+
 Found by walking the first two pitches again after the pass above. Before the
 first pitch, and on every ball in play, the wide view is up, and on a portrait
 phone it was a strip of ballgame floating in the arena's near black:
