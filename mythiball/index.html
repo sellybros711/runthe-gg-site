@@ -7027,6 +7027,9 @@ function fitFieldCanvas(cv) {
   FIELD_CAM.scale = scale; FIELD_CAM.draw = draw;
   FIELD_CAM.sx = sx; FIELD_CAM.sy = sy;
   FIELD_CAM.sw = sw; FIELD_CAM.sh = sh;
+  /* How many blocks of the bottom of the crop the deck floats over, so a
+     control drawn on the field can stay above it. See `drawThrowBar`. */
+  FIELD_CAM.deck = deck;
   FIELD_CAM.w = sw * draw; FIELD_CAM.h = sh * draw;
   /* Resizing a canvas CLEARS it and resets its context, which is free in a
      loop that redraws every pixel every frame and ruinous if it ran every
@@ -7108,8 +7111,22 @@ function fitFieldCanvas(cv) {
 let fieldBandAt = '';
 function fieldBand(box) {
   if (!FIELD_CAM.band || !pixWorld) return;
-  const key = FIELD_CAM.sx + ',' + FIELD_CAM.sy + ',' + FIELD_CAM.sw + ',' + FIELD_CAM.sh;
+  const key = FIELD_CAM.sx + ',' + FIELD_CAM.sy + ',' + FIELD_CAM.sw + ',' + FIELD_CAM.sh
+            + ',' + currentTheme().park;
   if (fieldBandAt === key) return;
+  /* ONLY WHILE THE IN-WORLD CAMERA IS AT REST. `cameraNow` punches in on a
+     close play, and punched in on first base the top row of the world
+     canvas is the STANDS, not the sky. The fit changes mid play too (the
+     log under the field grows a line on every call, so the arena shrinks),
+     and that is what asked for a fresh sample at exactly that moment: the
+     band above the picture went near black for the rest of the inning,
+     `rgb(5,5,8)` over a park whose sky is blue. Measured through a ground
+     out at first. So a sample is refused while anything is moving the
+     camera, and asked for again next frame, until the field is quiet. The
+     park is in the key because a new game in a new park keeps the crop. */
+  const g = State.game;
+  if (g && (g.play || g.tail || g.steal || g.replay)) return;
+  if (typeof Cam === 'object' && Cam && Cam.zoom > CAM_BAT.zoom + 0.02) return;
   fieldBandAt = key;
   const w = pixWorld.getContext('2d');
   const mid = Math.max(0, Math.min(pixWorld.width - 1,
@@ -7242,8 +7259,20 @@ function startFieldLoop() {
          into the BITMAP and the bitmap is whatever the page chose to draw at.
          Written off `scale` on a phone the type lands two or three times too
          large and two or three times too far right, which is the second copy
-         of the camera this file already warns about. */
-      const hudK = FIELD_CAM.draw / PIX;
+         of the camera this file already warns about.
+
+         AND IT IS `draw`, NOT `draw / PIX`, because the transform each site
+         captured ALREADY carries the world context's 1/PIX: `m` maps logical
+         to blocks, and a block is `draw` bitmap pixels. Divided by PIX a
+         second time, every label on the field landed a third of the way to
+         the origin at a third of its size. "THROW TO FIRST · SPACE OR CLICK",
+         meant under the throw bar, sat four CSS pixels tall beside the left
+         fielder; "CATCH IT!" was by the light tower. Every fielding window's
+         own instruction, the umpire's OUT!, the GET READY plate and the
+         replay badge, all of them, on every screen, and nothing threw: a
+         label drawn in the wrong place is a valid label. Found by touring
+         the pitching half on a phone and zooming into a yellow smudge. */
+      const hudK = FIELD_CAM.draw;
       for (const [m, fn] of HUD_Q) {
         ctx.setTransform(hudK, 0, 0, hudK, -FIELD_CAM.sx * FIELD_CAM.draw,
                          -FIELD_CAM.sy * FIELD_CAM.draw);
@@ -9560,7 +9589,7 @@ function drawUmpCall(ctx, G, base, verdict, dt) {
   if (called) {
     const pop = Math.min(1, Math.max(0, dt) / 0.18);
     hud(ctx, (c) => {
-      c.font = `bold ${Math.round(10 + 5 * pop)}px monospace`;
+      c.font = `bold ${Math.round(hudPx(10 + 5 * pop, 11 + 6 * pop))}px monospace`;
       c.textAlign = 'center';
       c.textBaseline = 'middle';
       c.fillStyle = 'rgba(20,40,63,.85)';
@@ -13212,7 +13241,7 @@ function drawScreenPass(ctx, w, h, g, theme, cam, cx, cy, r, chipY) {
       const color = st.level >= 3 ? '#c94b1a' : st.level === 2 ? '#e3b04c'
         : st.level === 1 ? '#5bb083' : '#8fd0a0';
       hud(ctx, (c) => {
-        c.font = 'bold 10px monospace';
+        c.font = `bold ${hudPx(10, 9)}px monospace`;
         c.textAlign = 'center';
         c.textBaseline = 'middle';
         c.fillStyle = color;
@@ -13247,8 +13276,10 @@ function drawCatchRing(ctx, lx, ly, t) {
   /* Green target ring: shrinks as t moves through the middle, widens
      past the sweet spot. Radius drives visual read of when to click. */
   const shrink = 1 - 4 * Math.abs(t - 0.5) * (1 - Math.abs(t - 0.5));
-  const rBig = 46;
-  const rSmall = 12;
+  /* A ring a thumb can find: 46 logical was twenty CSS pixels of radius
+     on a phone, so it is floored the way the labels are. */
+  const rBig = Math.max(46, hudPx(46, 30));
+  const rSmall = Math.max(12, hudPx(12, 8));
   const rNow = rSmall + (rBig - rSmall) * shrink;
   ctx.strokeStyle = '#0f6b39';
   ctx.lineWidth = 3;
@@ -13259,22 +13290,41 @@ function drawCatchRing(ctx, lx, ly, t) {
   ctx.beginPath(); ctx.arc(lx, ly, rSmall, 0, Math.PI * 2); ctx.stroke();
   /* Label */
   hud(ctx, (c) => {
+    const fs = hudPx(12);
     c.fillStyle = '#f4c25a';
-    c.font = 'bold 12px monospace';
+    c.font = `bold ${fs}px monospace`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText('CATCH IT!', lx, ly - rBig - 12);
-    c.fillText('SPACE / CLICK', lx, ly + rBig + 12);
+    c.fillText('CATCH IT!', lx, ly - rBig - fs);
+    c.fillText('SPACE / CLICK', lx, ly + rBig + fs);
   });
 }
+/* A LABEL A PLAYER HAS TO READ IS SIZED IN CSS PIXELS, and every one of
+   these was written in logical ones: `12px` on a phone, where a logical
+   pixel is under half a CSS pixel, is five pixels of type. The crisp pass
+   keeps type sharp; it cannot make it big. So a field label asks for its
+   logical size or whatever gives it `minCss` on this screen, whichever is
+   more, the same way the ball has a floor. */
+function hudPx(px, minCss) { return Math.max(px, (minCss || 11) / (FIELD_VIEW || 1)); }
 function drawThrowBar(ctx, w, h, cx, win, t) {
   const barW = w * 0.5;
   const barX = cx - barW/2;
-  const barY = h * 0.90;
-  const barH = 22;
+  /* Tall enough to hit with a thumb: 22 logical is ten CSS pixels on a
+     phone, and the cursor inside it a hairline. */
+  const barH = Math.max(22, hudPx(22, 18));
+  const fs = hudPx(12);
+  /* ABOVE THE DECK, which is the boss battle's own rule arriving at a
+     bar. `h * 0.90` is the bottom tenth of the world, and on a desktop
+     the deck floats over exactly that: the bar and its cursor sat behind
+     the pitch buttons and the window was played blind. `FIELD_CAM.deck`
+     is how many blocks of the crop's bottom the deck covers, measured
+     rather than assumed, so the bar sits on the deck's top edge when
+     there is one and where it always was when there is not. */
+  const deckTop = (FIELD_CAM.sy + FIELD_CAM.sh - (FIELD_CAM.deck || 0)) * PIX;
+  const barY = Math.min(h * 0.90, deckTop - barH - fs - 26);
   /* Background */
   ctx.fillStyle = 'rgba(11,16,21,.92)';
-  ctx.fillRect(barX - 6, barY - 6, barW + 12, barH + 34);
+  ctx.fillRect(barX - 6, barY - 6, barW + 12, barH + fs + 22);
   /* Yellow zone */
   ctx.fillStyle = 'rgba(244,194,90,.36)';
   ctx.fillRect(barX + (win.ideal - win.yellowHalf) * barW, barY,
@@ -13289,10 +13339,10 @@ function drawThrowBar(ctx, w, h, cx, win, t) {
   /* Label */
   hud(ctx, (c) => {
     c.fillStyle = '#f4c25a';
-    c.font = 'bold 12px monospace';
+    c.font = `bold ${fs}px monospace`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + 12);
+    c.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + fs * 0.5 + 6);
   });
 }
 
@@ -13711,17 +13761,18 @@ function drawTimingRing(ctx, G, t, pitch, inWindup) {
     ring(R0, `rgba(27,58,92,${0.35 + pulse * 0.5})`, 3);
     /* On a daylight field white text at 75 percent is a smudge. It goes
        on a plate, like everything else that has to be read over grass. */
-    const gy = cyp - R0 * 0.62 - 12;
+    const fs = hudPx(12), k = fs / 12;
+    const gy = cyp - R0 * 0.62 - 12 * k;
     hud(ctx, (c) => {
-      c.font = 'bold 12px monospace';
+      c.font = `bold ${fs}px monospace`;
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      const gw = c.measureText('GET READY').width + 14;
+      const gw = c.measureText('GET READY').width + 14 * k;
       c.fillStyle = 'rgba(255,252,242,.94)';
-      c.fillRect(cxp - gw / 2, gy - 9, gw, 18);
+      c.fillRect(cxp - gw / 2, gy - 9 * k, gw, 18 * k);
       c.strokeStyle = '#1b3a5c';
       c.lineWidth = 2;
-      c.strokeRect(cxp - gw / 2, gy - 9, gw, 18);
+      c.strokeRect(cxp - gw / 2, gy - 9 * k, gw, 18 * k);
       c.fillStyle = '#cf3229';
       c.fillText('GET READY', cxp, gy);
     });

@@ -35,7 +35,12 @@ try { ({ chromium } = require('playwright')); }
 catch { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); }
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const URL = 'file://' + path.join(here, 'index.html');
+/* MYTHIBALL_PAGE points this file at another copy of the page, which is how
+   a section proves it has teeth: run it against the commit before the fix
+   and read the failure. A guard that has only ever seen the fixed file is a
+   guard nobody knows the teeth of. */
+const URL = 'file://' + (process.env.MYTHIBALL_PAGE
+  ? path.resolve(process.env.MYTHIBALL_PAGE) : path.join(here, 'index.html'));
 
 let failures = 0;
 const ok = (cond, what, detail) => {
@@ -627,6 +632,140 @@ const main = async () => {
         `${label}: the zone and everything the arm can throw stay in frame`,
         r.lost.slice(0, 3)
           .map(x => `${x.k}: zone ${x.zone}%, ball range ${x.ball}%`).join('; '));
+      ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+      await pg.close(); await ctx.close();
+    }
+  }
+
+  /* ---- the field's own instructions are where the eye is ---- */
+  {
+    console.log('the field\'s own instructions are where the eye is');
+    /* Three windows can open once the ball is hit, and each one draws its
+       instruction ON THE FIELD through the crisp pass: `THROW TO FIRST ·
+       SPACE OR CLICK` under the bar, `CATCH IT!` over the ring. For a pass
+       every one of them landed a third of the way to the corner at a third
+       of its size, because the bridge into the display bitmap divided by
+       PIX twice, and nothing here read type off the canvas so nothing said
+       so. This does: it drives a real throw window and a real catch window,
+       finds the label's gold on the glass, and asks where and how big.
+
+       THE CLAIMS ARE PROPERTIES. The throw bar is centred on the plate, so
+       its label is centred on the crop; it stands in the bottom half; and it
+       is at least eight CSS pixels of cap height, which is the floor the
+       ball already has. On a screen where the deck floats over the field it
+       also has to be ABOVE the deck, because the bar used to sit behind the
+       pitch buttons on a desktop and the window was played blind. The
+       catch ring's two labels have to bracket the ring. Reintroduce the old
+       bridge and the throw label reads 13% across, 32% down, four pixels
+       tall: every claim but "found" fails. */
+    const boxes = (d, W, H) => {
+      /* Self contained, because it is shipped into the page as source. */
+      const gold = (d, i) => d[i] >= 232 && d[i + 1] >= 180 && d[i + 1] <= 208
+                          && d[i + 2] >= 70 && d[i + 2] <= 112;
+      /* Row histogram of gold, split into bands where a row has none: one
+         line of type is one band. Returns each band's bbox in bitmap px. */
+      const rows = new Array(H).fill(0);
+      let x0 = new Array(H).fill(1e9), x1 = new Array(H).fill(-1);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 4;
+        if (gold(d, i)) { rows[y]++; if (x < x0[y]) x0[y] = x; if (x > x1[y]) x1[y] = x; }
+      }
+      const out = []; let cur = null;
+      for (let y = 0; y < H; y++) {
+        if (rows[y] >= 3) {
+          if (!cur) cur = { y0: y, y1: y, x0: x0[y], x1: x1[y], n: rows[y] };
+          else { cur.y1 = y; cur.x0 = Math.min(cur.x0, x0[y]); cur.x1 = Math.max(cur.x1, x1[y]); cur.n += rows[y]; }
+        } else if (cur && y > cur.y1 + 2) { out.push(cur); cur = null; }
+      }
+      if (cur) out.push(cur);
+      /* A STRAW HAT IS GOLD TOO. Humpty Dumpty bats in one, at the plate,
+         which is the bottom centre of the crop: 71 pixels wide, 8 rows,
+         centred, and the first draft of this took it for the throw bar's
+         label and passed the old page on a desktop. The label is printed on
+         the bar's near black, so each band records whether the pixels just
+         outside it are dark, and the throw claim asks for that. */
+      for (const b of out) {
+        const ym = (b.y0 + b.y1) >> 1;
+        const dark = (x) => { x = Math.max(0, Math.min(W - 1, x)); const i = (ym * W + x) * 4;
+                              return d[i] < 48 && d[i + 1] < 48 && d[i + 2] < 48; };
+        b.dark = dark(b.x0 - 4) && dark(b.x1 + 4);
+      }
+      /* a band of type is wide: a stray gold pixel or a chip is not */
+      return out.filter(b => b.x1 - b.x0 > 40 && b.n > 60);
+    };
+    for (const [label, w, h, dpr] of [['phone', 390, 844, 3], ['desktop', 1440, 900, 1]]) {
+      const { ctx, pg, errors } = await game(browser, w, h, dpr);
+      await pg.evaluate(() => startGame({ mode: 'exhibition', youHome: true }));
+      await pg.waitForTimeout(900);
+      /* the throw window */
+      await pg.evaluate(() => { const g = State.game; endAtBatCleanup(); g.pitch = null;
+        scheduleContactPlay('ground out', currentBatter(), { off: 0, q: 0.6, lefty: batsLeft(currentBatter().k) }); });
+      const opened = await pg.waitForFunction(() => State.game.play && State.game.play.throwActive,
+        null, { timeout: 8000 }).then(() => true).catch(() => false);
+      await pg.waitForTimeout(120);
+      const r = await pg.evaluate((boxesSrc) => {
+        const boxes = eval('(' + boxesSrc + ')');
+        const cv = document.getElementById('field');
+        const c = cv.getContext('2d');
+        const d = c.getImageData(0, 0, cv.width, cv.height).data;
+        const rect = cv.getBoundingClientRect();
+        const k = cv.width / rect.width;                 /* bitmap px per CSS px */
+        const bands = boxes(d, cv.width, cv.height).map(b => ({
+          cx: (b.x0 + b.x1) / 2 / cv.width, cy: (b.y0 + b.y1) / 2 / cv.height,
+          h: (b.y1 - b.y0 + 1) / k, bottomPage: rect.top + b.y1 / k, dark: b.dark }));
+        const m = document.querySelector('.meter-wrap');
+        const deckTop = m && m.offsetParent ? m.getBoundingClientRect().top : null;
+        const overlaps = deckTop != null && deckTop < rect.bottom - 1;
+        return { bands, deckTop, overlaps, cvBottom: rect.bottom };
+      }, boxes.toString());
+      ok(opened, `${label}: a throw window opens on a grounder`);
+      const lab = r.bands.filter(b => b.cy > 0.5 && b.dark).sort((a, b) => b.h - a.h)[0];
+      ok(!!lab, `${label}: the throw bar's label is on the glass, on the bar`,
+        `gold bands: ${JSON.stringify(r.bands)}`);
+      if (lab) {
+        ok(Math.abs(lab.cx - 0.5) < 0.06, `${label}: and it is centred on the plate, under the bar`,
+          `centre at ${(lab.cx * 100).toFixed(0)}% across`);
+        ok(lab.h >= 7, `${label}: and it is at least seven CSS pixels of cap, core pixels only`,
+          `${lab.h.toFixed(1)}px`);
+        if (r.overlaps) {
+          ok(lab.bottomPage < r.deckTop - 2, `${label}: and the bar stands above the deck that floats over the field`,
+            `label bottom ${lab.bottomPage.toFixed(0)}, deck top ${r.deckTop.toFixed(0)}`);
+        }
+      }
+      /* the catch window, on a fresh play */
+      await pg.waitForFunction(() => !State.game.play, null, { timeout: 15000 }).catch(() => {});
+      await pg.waitForTimeout(2500);
+      await pg.evaluate(() => { const g = State.game; endAtBatCleanup(); g.pitch = null;
+        scheduleFlyCatchMinigame('fly out', currentBatter(), { off: 0, q: 0.6, lefty: batsLeft(currentBatter().k) }); });
+      const ring = await pg.waitForFunction(() => State.game.play && State.game.play.catchActive,
+        null, { timeout: 8000 }).then(() => true).catch(() => false);
+      await pg.waitForTimeout(200);
+      const r2 = await pg.evaluate((boxesSrc) => {
+        const boxes = eval('(' + boxesSrc + ')');
+        const cv = document.getElementById('field');
+        const c = cv.getContext('2d');
+        const d = c.getImageData(0, 0, cv.width, cv.height).data;
+        const rect = cv.getBoundingClientRect();
+        const k = cv.width / rect.width;
+        const cw = State.game.play && State.game.play.catchWindow;
+        /* the ring's centre on the bitmap, through the same camera the
+           blit used: logical / PIX is blocks, minus the crop, times draw */
+        const ring = cw ? { x: (cw.landingX / PIX - FIELD_CAM.sx) * FIELD_CAM.draw / cv.width,
+                            y: (cw.landingY / PIX - FIELD_CAM.sy) * FIELD_CAM.draw / cv.height } : null;
+        return { ring, bands: boxes(d, cv.width, cv.height).map(b => ({
+          cx: (b.x0 + b.x1) / 2 / cv.width, cy: (b.y0 + b.y1) / 2 / cv.height, h: (b.y1 - b.y0 + 1) / k })) };
+      }, boxes.toString());
+      ok(ring && r2.ring, `${label}: a catch window opens on a fly ball`);
+      if (r2.ring) {
+        /* within a ring's reach of the ring, in both axes, so the hat at the
+           plate cannot be the lower label of a ring in centre field */
+        const near = r2.bands.filter(b => Math.abs(b.cx - r2.ring.x) < 0.12 && Math.abs(b.cy - r2.ring.y) < 0.2);
+        const above = near.some(b => b.cy < r2.ring.y), below = near.some(b => b.cy > r2.ring.y);
+        ok(above && below, `${label}: CATCH IT! and SPACE / CLICK bracket the ring`,
+          `ring at (${(r2.ring.x * 100).toFixed(0)}%, ${(r2.ring.y * 100).toFixed(0)}%), bands ${JSON.stringify(r2.bands)}`);
+        ok(near.every(b => b.h >= 7), `${label}: and both are at least seven CSS pixels of cap, core pixels only`,
+          near.map(b => b.h.toFixed(1)).join(', '));
+      }
       ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
       await pg.close(); await ctx.close();
     }

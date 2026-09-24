@@ -5965,6 +5965,62 @@ than staying as constants nothing reads, and the three `verify-rules` claims abo
 crown became one claim that there is no catcher geometry: a rule about a figure that is
 not drawn is a rule that can only pass.
 
+### Every label on the field was a third of its size, a third of the way to the corner
+
+Found by touring the PITCHING half on a phone, which nothing this session had looked at,
+and zooming into a yellow smudge beside the left fielder. It was `THROW TO FIRST · SPACE
+OR CLICK`, four CSS pixels tall, a hundred pixels from the bar it belongs under.
+`CATCH IT!` was by the light tower.
+
+**`hud()` captures the world context's transform, and that transform already carries
+`1/PIX`.** The crisp pass then bridged with `draw / PIX`, so every queued label was
+divided by PIX twice: block (160, 209) landed at 13% across and 32% down, which is the
+light tower, at a third of its size. Every fielding window's own instruction, the
+umpire's `OUT!`, the `GET READY` plate and the replay badge, on every screen, since the
+whole-fraction draw pass went in (`ac99f413`). **Nothing threw and nothing could**: a
+label drawn in the wrong place is a valid label, and no guard here reads type off the
+canvas. The bridge is `draw` now, and the comment over it says why in the same words as
+this paragraph so the next person does not re-derive `/ PIX` from the sentence above it.
+
+**And correctly placed they were still five pixels tall on a phone**, because every one
+was written in logical pixels and a logical pixel is under half a CSS pixel there. The
+crisp pass keeps type sharp; it cannot make it big. `hudPx(px, minCss)` is the ball's
+floor arriving at type: a label asks for its logical size or whatever gives it eleven
+CSS pixels on this screen, whichever is more, and the throw bar's height and the catch
+ring's radii are floored the same way, because a ten pixel bar with a hairline cursor is
+not a target either.
+
+**The throw bar was behind the deck on a desktop.** `h * 0.90` is the bottom tenth of the
+world, and on a desktop the deck floats over exactly that, so the bar and its cursor sat
+behind the pitch buttons and the window was played blind. `FIELD_CAM.deck` is how many
+blocks of the crop's bottom the deck covers, measured by `deckCoverBlocks` rather than
+assumed, and the bar sits on the deck's top edge when there is one. That is the boss
+battle's own rule (a control the game is waiting on goes above the record of it)
+arriving at a bar.
+
+**So `check-firstpitch` reads type off the canvas now**, in its last section: it drives a
+real throw window and a real catch window on a phone and a desktop, finds the labels'
+gold on the glass, and asks where and how big. The throw label has to be centred under
+the bar, in the bottom half, at least seven CSS pixels of core, and above the deck where
+the deck floats; the catch labels have to bracket the ring. **Its first draft passed the
+old page on a desktop, on Humpty Dumpty's straw hat**: 71 gold pixels wide, 8 rows,
+centred at the plate, which is exactly the shape of a label. The label is printed on the
+bar's near black and a hat is not, so every band records whether the pixels beside it
+are dark and the throw claim asks for that; the catch claim asks for a ring's reach in
+both axes. Proved with `MYTHIBALL_PAGE` pointed at the commit before the fix: the phone
+finds no label at all, the desktop finds the hat and refuses it, four claims red.
+
+**The band above the picture went black mid inning, and it was two things meeting.**
+`fieldBand` samples the world's top row for the sky, keyed on the crop, and re-samples
+when the fit changes. On a phone the log under the field grows a line on every call, so
+the arena shrinks and the fit changes DURING A PLAY; and `cameraNow` punches in on a
+close play at first, which puts the STANDS at the top of the world canvas. Together: a
+sample at exactly the wrong frame, `rgb(5,5,8)` over a blue sky, stuck for the rest of
+the inning. Measured through a ground out at first. A sample is refused while anything
+is moving the camera (a play, a tail, a steal, a replay, or `Cam.zoom` above rest) and
+asked again next frame, and the park is in the key because a new game in a new park
+keeps the same crop.
+
 #### And the wide camera left a black hole, which the full bleed layout made bigger
 
 Found by walking the first two pitches again after the pass above. Before the
