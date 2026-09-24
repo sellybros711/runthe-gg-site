@@ -266,10 +266,21 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
   await pg.waitForTimeout(400);
 
   /* Now the result screen, whose controls nothing above has looked at. */
-  const mid = await pg.evaluate(() => ({
-    inn: State.game ? State.game.inning : 0,
-    log: State.game && State.game.log ? State.game.log.length : 0,
-  })).catch(() => ({ inn: 0, log: 0 }));
+  const mid = await pg.evaluate(() => {
+    const el = document.querySelector('#app .log');
+    return {
+      inn: State.game ? State.game.inning : 0,
+      log: State.game && State.game.log ? State.game.log.length : 0,
+      /* THE CAP IS THE CLAIM, NOT A LINE COUNT. The play by play is held to
+         40vh and scrolls past it, so the deck is as tall as it will ever get
+         the moment the box overflows. Counted in LINES the threshold is a
+         guess about the font and the phone: measured, two minutes of a Fast
+         game writes thirteen of them, and thirteen already overflows 227
+         pixels. Asked of the box, there is nothing to guess. */
+      full: el ? (el.scrollHeight > el.clientHeight + 2) : false,
+      logPx: el ? Math.round(el.clientHeight) : 0,
+    };
+  }).catch(() => ({ inn: 0, log: 0, full: false, logPx: 0 }));
   await pg.evaluate(() => {
     const g = State.game;
     if (g && !g.finished) { g.over = true; g.winner = g.home.score >= g.away.score ? 'home' : 'away'; finishGame(); }
@@ -294,7 +305,7 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
     inn: State.game ? State.game.inning : 0,
     sc: State.game ? State.game.away.score + '-' + State.game.home.score : '',
   })).catch(() => ({}));
-  fin.inn = mid.inn; fin.log = mid.log;
+  fin.inn = mid.inn; fin.log = mid.log; fin.full = mid.full; fin.logPx = mid.logPx;
   await ctx.close();
   return { worst, seen, overlaps, pageOver, samples, errs, fin,
            turnAgree: turned ? turned.agree : null };
@@ -327,7 +338,8 @@ async function main() {
        fills up, and the log is capped at 40vh, which is about sixteen lines on
        the shortest phone. So the claim is that the log filled, which is the
        state every one of the four faults was worst in. */
-    ok(r.fin.log >= 16, `${tag}  the play by play filled up`, r.fin.log + ' lines');
+    ok(r.fin.full === true, `${tag}  the play by play filled its box`,
+       `${r.fin.log} lines in ${r.fin.logPx}px, not overflowing`);
   }
   /* COVERAGE. A run that never opened a deck saw no controls, and a run where
      nobody ever fielded is a shorter game with fewer of them: both would pass

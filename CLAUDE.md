@@ -5530,12 +5530,15 @@ out.** A press budget is a guess about how fast the game runs. The result screen
 has controls of its own and nothing about them depends on how the game got there,
 so it is reached by ENDING the game rather than by playing to the last out.
 
-**AND ITS COVERAGE CLAIM ASKED THE WRONG THING FIRST.** It wanted two innings,
-which two minutes of a Fast game does not reach, and innings are not what this is
-about: the deck grows because the PLAY BY PLAY fills up, and that log is capped at
-40vh, which is about sixteen lines on the shortest phone. So the claim is that the
-log filled, which is the state all four faults were worst in. Measured on the
-first run of it: 344 samples and twelve controls on one screen in two minutes.
+**AND ITS COVERAGE CLAIM ASKED THE WRONG THING TWICE.** It wanted two innings
+first, which two minutes of a Fast game does not reach, and innings are not what
+this is about: the deck grows because the PLAY BY PLAY fills up. Counted in LINES
+instead, the threshold is a guess about the font and the phone, and it guessed
+sixteen against a measured thirteen. **The cap is the claim**: the log is held to
+40vh and scrolls past it, so the deck is as tall as it will ever get the moment
+that box OVERFLOWS, and asked of the box there is nothing to guess. Thirteen
+lines already overflow 227 pixels. Measured on one screen in two minutes: 344
+samples, twelve controls, a full log.
 
 ##### THE DECK WAS TOO TALL FOR A SHORT PHONE, and it took three passes to close
 
