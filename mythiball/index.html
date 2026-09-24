@@ -56,8 +56,28 @@
      screen, so the clubhouse and every menu keep the arcade wash where
      it costs nothing. */
   body.ingame::after{content:none;}
-  img.pico{image-rendering:pixelated;image-rendering:crisp-edges;}
-  canvas{image-rendering:pixelated;image-rendering:crisp-edges;}
+  img.pico{image-rendering:var(--pxr);}
+  canvas{image-rendering:var(--pxr);}
+  /* The browser's own last step, and it is the one rule that has to move
+     with the renderer. Retro hands it a whole number magnification of a
+     low resolution bitmap and wants no filter on it; smooth hands it a
+     picture already drawn at CSS resolution and wants the filter, or the
+     mode's one remaining resize is the only hard edged thing left in a
+     frame with no hard edges in it.
+
+     IT IS A CUSTOM PROPERTY AND NOT A SELECTOR, which is the shape the
+     hoops court's `--floor-tint` already runs on and is load bearing for
+     the same reason. Fifteen rules on this page declare a rendering mode
+     and FOUR of them carry two classes (`.board .due canvas`,
+     `.atbat .avatar`, `.ph-hero .ph-cast`, `.meetbar .mug canvas`), so a
+     `body.smooth canvas` override at one class LOSES to all four on
+     specificity: the field would smooth and the avatar beside it would
+     stay blocky, in the one mode whose whole argument is that a frame has
+     one style in it. A property inherits instead, so it reaches every one
+     of the fifteen whatever they weigh, and a sixteenth added later is
+     covered by writing `var(--pxr)`. */
+  :root{--pxr:pixelated;}
+  body.smooth{--pxr:auto;}
 
   .wrap{max-width:920px;margin:0 auto;padding:14px 14px 60px;}
   .swing-modes{display:flex;align-items:center;gap:8px;margin:8px 0 2px;}
@@ -365,7 +385,7 @@
   .charcard:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--navy);}
   .charcard.picked{background:var(--panel-2);box-shadow:3px 3px 0 var(--gold);}
   .charcard canvas{width:64px;height:auto;background:#bfe4f7;border:2px solid var(--line);
-    border-radius:0;image-rendering:pixelated;}
+    border-radius:0;image-rendering:var(--pxr);}
   .charcard .name{margin-top:6px;font-size:12px;color:var(--text);letter-spacing:.06em;}
   .charcard .role{font-size:10px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;}
   .charcard .pickno{position:absolute;top:5px;right:5px;background:var(--gold);color:#fff;
@@ -688,7 +708,7 @@
   .board .due{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;
     max-width:84px;}
   .board .due span{max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .board .due canvas{image-rendering:pixelated;}
+  .board .due canvas{image-rendering:var(--pxr);}
   .board .board-arm{margin-top:6px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);}
   .board .board-arm b{color:var(--text);}
   @media (max-width:600px){.board{font-size:10px;padding:8px 10px;bottom:8%;} .board .board-head b{font-size:12px;}}
@@ -701,7 +721,7 @@
 
   .atbat{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:10px 14px;
     display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:var(--shadow);}
-  .atbat .avatar{width:36px;height:auto;image-rendering:pixelated;}
+  .atbat .avatar{width:36px;height:auto;image-rendering:var(--pxr);}
   .atbat .who{font-size:14px;letter-spacing:.06em;}
   .atbat .who b{color:var(--gold);}
   .atbat .vs{font-size:11px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
@@ -727,7 +747,7 @@
   .pen-arm{border:2px solid var(--line);background:var(--panel-2);padding:5px 4px;text-align:center;
     cursor:pointer;font:inherit;color:inherit;box-shadow:var(--shadow-sm);}
   .pen-arm:hover{background:var(--gold);color:#fff6ea;}
-  .pen-arm canvas{display:block;margin:0 auto 2px;image-rendering:pixelated;}
+  .pen-arm canvas{display:block;margin:0 auto 2px;image-rendering:var(--pxr);}
   .pen-arm .nm{font-size:10px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .pen-arm .con{font-size:9px;letter-spacing:.12em;color:var(--text-dim);}
   .pen-arm:hover .con{color:#fff6ea;}
@@ -764,7 +784,7 @@
   .award,.earn{border:2px solid var(--line);padding:8px;text-align:center;background:var(--panel-2);
     box-shadow:var(--shadow-sm);}
   .award .ttl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:900;}
-  .award canvas,.earn canvas{display:block;margin:6px auto;image-rendering:pixelated;}
+  .award canvas,.earn canvas{display:block;margin:6px auto;image-rendering:var(--pxr);}
   .award .nm,.earn .nm{font-weight:900;font-size:12px;}
   .award .ln,.earn .ln{font-size:10px;color:var(--text-dim);margin-top:2px;}
   .earn{opacity:.9;} .earn .nm{color:var(--text-dim);}
@@ -803,7 +823,7 @@
   .press-portrait{background:linear-gradient(180deg,#bfe4f7,#8fd0e8);
     border-bottom:3px solid var(--line);display:flex;justify-content:center;
     align-items:flex-end;overflow:hidden;}
-  .press-portrait canvas{display:block;image-rendering:pixelated;}
+  .press-portrait canvas{display:block;image-rendering:var(--pxr);}
   .press-box{padding:12px 16px 14px;position:relative;min-height:132px;}
   .press-name{font-size:20px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;}
   .press-outlet{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);
@@ -870,7 +890,7 @@
   body.inroom h2{margin-bottom:8px;}
   body.inroom .card{padding:10px;}
   .clubhouse{position:relative;width:100%;margin:0 auto;}
-  .clubhouse canvas{display:block;width:100%;height:auto;image-rendering:pixelated;
+  .clubhouse canvas{display:block;width:100%;height:auto;image-rendering:var(--pxr);
     border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);background:#6b4a24;}
   .clubhouse .hot{position:absolute;background:none;border:0;padding:0;margin:0;
     cursor:pointer;font:inherit;color:transparent;}
@@ -882,7 +902,7 @@
   .ph-hero{position:relative;}
   .ph-hero .ph-cast{position:absolute;left:0;top:0;width:100%;height:100%;
     border:0;box-shadow:none;background:none;pointer-events:none;
-    image-rendering:pixelated;image-rendering:crisp-edges;}
+    image-rendering:var(--pxr);}
 
   /* ---------------------------------------------------------- the franchise
      THE ONE OBVIOUS THING TO PRESS. It is a scoreboard with a button under
@@ -934,7 +954,7 @@
   .hmode-art{flex:0 0 auto;width:56px;height:56px;display:grid;place-items:center;
     background:#f7ecd0;border:2px solid var(--line);}
   .hmode-art canvas{display:block;width:100%;height:100%;
-    image-rendering:pixelated;image-rendering:crisp-edges;}
+    image-rendering:var(--pxr);}
   .hmode-txt{min-width:0;}
   .hmode-txt b{display:block;font-size:13px;font-weight:900;letter-spacing:.12em;
     text-transform:uppercase;color:var(--gold);}
@@ -1021,7 +1041,7 @@
 
      The desktop keeps the room. It has the width for it and a pointer to
      drive the rail, which is what the room was designed around. */
-  .ph-strip{display:block;width:100%;height:auto;image-rendering:pixelated;
+  .ph-strip{display:block;width:100%;height:auto;image-rendering:var(--pxr);
     border:3px solid var(--line);box-shadow:4px 4px 0 var(--navy);
     background:#9c6b3a;}
   .ph-menu{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
@@ -1031,7 +1051,7 @@
     box-shadow:4px 4px 0 var(--navy);}
   .ph-door:active{transform:translate(3px,3px);box-shadow:none;}
   .ph-door canvas{display:block;flex:none;width:58px;height:58px;
-    image-rendering:pixelated;background:#6b4a24;border:2px solid var(--line);}
+    image-rendering:var(--pxr);background:#6b4a24;border:2px solid var(--line);}
   .ph-door .ph-txt{display:flex;flex-direction:column;gap:3px;min-width:0;}
   .ph-door b{font-size:19px;font-weight:900;letter-spacing:.08em;
     text-transform:uppercase;color:var(--red);line-height:1.05;}
@@ -1139,7 +1159,7 @@
      Same canvas-plus-transparent-buttons trick as the clubhouse, for the same
      reason: hit testing on coordinates would cost the keyboard. */
   .photo{position:relative;width:100%;max-width:940px;margin:0 auto;}
-  .photo canvas{display:block;width:100%;height:auto;image-rendering:pixelated;
+  .photo canvas{display:block;width:100%;height:auto;image-rendering:var(--pxr);
     border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);background:#7fc9ea;}
   .photo .hot{position:absolute;background:none;border:0;padding:0;margin:0;
     cursor:pointer;font:inherit;color:transparent;}
@@ -1153,7 +1173,7 @@
   .meetbar .mug{flex:0 0 auto;width:64px;height:100px;background:#bfe4f7;
     border:2px solid var(--line);display:flex;align-items:flex-end;justify-content:center;
     overflow:hidden;}
-  .meetbar .mug canvas{image-rendering:pixelated;}
+  .meetbar .mug canvas{image-rendering:var(--pxr);}
   .meetbar .body{flex:1;min-width:0;}
   .meetbar .mname{font-size:18px;font-weight:900;letter-spacing:.06em;}
   .meetbar .mrole{font-size:10px;letter-spacing:.2em;text-transform:uppercase;
@@ -1982,11 +2002,69 @@ function drawHeroSprite(ctx, key, size, frame) {
     }
   }
 }
+/* EPX, TWICE. The art is 64 pixels and a batter is drawn about four times
+   that, so magnifying it is what puts visible squares on the one thing a
+   reader looks at all game. This is the standard pixel art scaler: each
+   pixel becomes four, and a corner is rounded only where its two
+   neighbours agree and the opposite pair does not. It invents no colour,
+   which is the property that matters on this roster: every output pixel is
+   one of the character's own palette entries, so a scaled Medusa is still
+   drawn in Medusa's greens and nothing goes muddy at the edges.
+
+   TWICE RATHER THAN ONCE, because one pass is 128 against a draw of about
+   256 and the remaining magnification lands back on visible squares. Two
+   is 256, which is at or above what the field ever asks for, so the final
+   step is a filtered REDUCTION and reductions do not show steps.
+
+   IT IS NOT AN ANTI-ALIASER AND MUST NOT BE READ AS ONE. A straight
+   diagonal stays a staircase of half the step, because the source really
+   does only know 64 rows. What it removes is the single pixel jaggies and
+   the hard corner; what it cannot remove is the resolution. */
+function epxUp(src) {
+  const w = src.width, h = src.height;
+  const sarr = new Uint32Array(src.getContext('2d', { willReadFrequently: true })
+    .getImageData(0, 0, w, h).data.buffer);
+  const out = document.createElement('canvas');
+  out.width = w * 2; out.height = h * 2;
+  const octx = out.getContext('2d');
+  const od = octx.createImageData(w * 2, h * 2);
+  const oarr = new Uint32Array(od.data.buffer);
+  const at = (x, y) => sarr[Math.min(h - 1, Math.max(0, y)) * w + Math.min(w - 1, Math.max(0, x))];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const P = at(x, y), A = at(x, y - 1), B = at(x + 1, y), C = at(x - 1, y), D = at(x, y + 1);
+    let e1 = P, e2 = P, e3 = P, e4 = P;
+    if (C === A && C !== D && A !== B) e1 = A;
+    if (A === B && A !== C && B !== D) e2 = B;
+    if (D === C && D !== B && C !== A) e3 = C;
+    if (B === D && B !== A && D !== C) e4 = B;
+    const i = (y * 2) * (w * 2) + x * 2;
+    oarr[i] = e1; oarr[i + 1] = e2; oarr[i + w * 2] = e3; oarr[i + w * 2 + 1] = e4;
+  }
+  octx.putImageData(od, 0, 0);
+  return out;
+}
 function heroSpriteCanvas(key, size, frame) {
+  if (!graphicsSmooth()) {
+    const cv = document.createElement('canvas');
+    cv.width = size;
+    cv.height = Math.round(size * V2_H / V2_W);
+    drawHeroSprite(cv.getContext('2d'), key, size, frame || 'idle');
+    return cv;
+  }
+  /* Built at the art's OWN size first, because EPX reads neighbours and a
+     sprite already magnified into fat squares has none: every neighbour of
+     a pixel in the middle of a 4x4 block is itself, so every test fails and
+     two passes of it hand back exactly what they were given. */
+  const base = document.createElement('canvas');
+  base.width = V2_W; base.height = V2_H;
+  drawHeroSprite(base.getContext('2d', { willReadFrequently: true }), key, V2_W, frame || 'idle');
+  const up = epxUp(epxUp(base));
   const cv = document.createElement('canvas');
   cv.width = size;
   cv.height = Math.round(size * V2_H / V2_W);
-  drawHeroSprite(cv.getContext('2d'), key, size, frame || 'idle');
+  const c = cv.getContext('2d');
+  c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+  c.drawImage(up, 0, 0, cv.width, cv.height);
   return cv;
 }
 /* ONE BUILT SPRITE PER (character, size, frame), FOR EVER.
@@ -1995,7 +2073,13 @@ function heroSpriteCanvas(key, size, frame) {
    once and keep it. */
 const spriteStore = new Map();
 function spriteFor(key, px, frame) {
-  const ck = key + '|' + px + '|' + (frame || 'idle');
+  /* THE MODE IS IN THE KEY RATHER THAN CLEARED ON THE TOGGLE. What is
+     cached is a DRAWING and the two modes draw different ones, so a key
+     without it hands a retro player the smoothed art for the rest of the
+     session, on whichever characters happened to be built first. Clearing
+     the map on the toggle would work and is the version that goes wrong
+     later, because it is a thing to remember at every future caller. */
+  const ck = key + '|' + px + '|' + (frame || 'idle') + (graphicsSmooth() ? '|s' : '');
   let cv = spriteStore.get(ck);
   if (!cv) { cv = heroSpriteCanvas(key, px, frame); spriteStore.set(ck, cv); }
   return cv;
@@ -2308,6 +2392,23 @@ Sound.muted = !!PREFS.muted;
 /* Cutscenes default ON: they are the reason the season mode has a shape.
    The toggle exists for a second playthrough, not for the first. */
 if (PREFS.cutscenes === undefined) PREFS.cutscenes = true;
+/* SMOOTH DEFAULTS ON, AND RETRO IS KEPT RATHER THAN RETIRED. The two are
+   one renderer with one branch, not two pictures: the same drawField, the
+   same camera, the same geometry in the same logical units. What differs
+   is where it is rasterized. Retro draws the world into a small canvas and
+   magnifies it with smoothing off, which is what makes a block a block;
+   smooth rasterizes the same paths straight onto the display bitmap and
+   upscales the sprite art instead.
+
+   The toggle exists because the COST cannot be measured here. This sandbox
+   has no GPU, so Canvas2D rasterizes in software and a large anti-aliased
+   fill is charged at a rate no real phone pays. Measured at 4x throttle on
+   a 390 phone the two modes are level (36.3ms against 36.4ms), and that
+   number is a ceiling rather than a reading. A player whose device
+   disagrees has one tap out of it, and the answer costs nothing to change
+   because neither path was deleted. */
+if (PREFS.smooth === undefined) PREFS.smooth = true;
+function graphicsSmooth() { return PREFS.smooth !== false; }
 function savePrefs() {
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
@@ -2317,6 +2418,7 @@ function savePrefs() {
       teamName: State.teamName,
       muted: Sound.muted,
       cutscenes: PREFS.cutscenes !== false,
+      smooth: PREFS.smooth !== false,
       coach: PREFS.coach !== false,
       coach_bat: !!PREFS.coach_bat,
       coach_pitch: !!PREFS.coach_pitch,
@@ -2550,6 +2652,11 @@ function render() {
   app.innerHTML = '';
   const s = State.screen;
   document.body.classList.toggle('ingame', s === 'game');
+  /* On EVERY render rather than only on the toggle, for the reason
+     `seasonTag` returns an empty string: written where the choice is made,
+     it is one place to forget, and what it costs is a canvas filtered as
+     though it were the other mode with nothing anywhere saying so. */
+  document.body.classList.toggle('smooth', graphicsSmooth());
   /* The clubhouse is the home page, so on the menu the page gets out of its way. */
   /* `inroom` is the ROOM's page layout, so it is off when the menu is the
      phone one: there is no canvas to fill the window with. */
@@ -4955,6 +5062,14 @@ function renderSettings() {
         (v) => State.gameSpeed === v,
         (v) => { State.gameSpeed = v; applyGameSpeed(); });
 
+  /* The words are what the two look like, never how they work. "Smooth"
+     and "Retro" are a picture a reader can predict; "direct raster" and
+     "nearest neighbour" are the inside of the renderer, and a settings row
+     that needs the code read to answer it is a row nobody touches. */
+  group('Graphics', [{ v:true, label:'Smooth' }, { v:false, label:'Retro' }],
+        (v) => graphicsSmooth() === v,
+        (v) => { PREFS.smooth = v; document.body.classList.toggle('smooth', v); });
+
   group('Cutscenes', [{ v:true, label:'On' }, { v:false, label:'Off' }],
         (v) => (PREFS.cutscenes !== false) === v,
         (v) => { PREFS.cutscenes = v; });
@@ -6877,6 +6992,24 @@ function plateFocus() {
    the one thing this is not allowed to do. */
 function fieldDraw(scale, dpr) {
   const floor = scale / (dpr || 1);
+  /* SMOOTH MODE WANTS THE FLOOR ITSELF, NOT THE NEXT WHOLE DIVISOR ABOVE
+     IT. The divisor exists so the browser's last step is a whole number,
+     which is what keeps a block from being four device pixels here and
+     five there. Nothing in smooth mode is a block, so a fractional last
+     step is a filtered resize of a picture that is already filtered, and
+     rounding UP to a divisor is then pure fill for nothing: measured on a
+     390 phone at ratio 3, drawing the field at device resolution is 148ms
+     a frame against 36ms at CSS resolution, which is the whole difference
+     between the mode being playable and not. */
+  /* CEIL AND NEVER ROUND, and the difference is a whole mode. `round` takes
+     4/3 to 1, so the wide camera on a 390 phone drew a 292 pixel bitmap
+     into a 389 pixel element: three quarters of CSS resolution, upscaled
+     back, which is softer than the glass can show. That is the one way this
+     mode can look WORSE than the one it replaces, and it is invisible in
+     the source because the number it produces is a perfectly ordinary
+     number. Found by dumping the bitmap beside the element it is laid out
+     in. Going the other way costs fill and can only ever be sharper. */
+  if (graphicsSmooth()) return Math.max(1, Math.ceil(floor - 1e-9));
   for (let d = 1; d <= scale; d++) {
     if (scale % d === 0 && d >= floor - 1e-9) return d;
   }
@@ -7118,7 +7251,16 @@ function fitFieldCanvas(cv) {
    cut between the two views takes one sample and holding either takes none. */
 let fieldBandAt = '';
 function fieldBand(box) {
-  if (!FIELD_CAM.band || !pixWorld) return;
+  if (!FIELD_CAM.band) return;
+  /* WHICHEVER CANVAS THE MODE ACTUALLY DREW INTO. Retro has the small
+     world canvas and reads it, which is what the note above is about.
+     Smooth never builds one, so the only picture in existence is the
+     display bitmap, and the band is read off that instead. A readback
+     from it is the thing the note warns against, and it is affordable
+     for the same reason the sample is affordable at all: it happens on
+     a camera change and not per frame, and it is nine pixels. */
+  const smoothBand = graphicsSmooth();
+  if (!smoothBand && !pixWorld) return;
   const key = FIELD_CAM.sx + ',' + FIELD_CAM.sy + ',' + FIELD_CAM.sw + ',' + FIELD_CAM.sh
             + ',' + currentTheme().park;
   if (fieldBandAt === key) return;
@@ -7143,8 +7285,10 @@ function fieldBand(box) {
      letterbox under a ball in play wore the plate crop's dirt, a beach
      under a green field. The band belongs to the camera that shows it. */
   if (plateViewActive(g)) return;
+  const fcv = smoothBand ? box.querySelector('canvas') : pixWorld;
+  if (!fcv || !fcv.width || !fcv.height) return;
   fieldBandAt = key;
-  const w = pixWorld.getContext('2d');
+  const w = fcv.getContext('2d', smoothBand ? { willReadFrequently: true } : undefined);
   /* THE ROW'S TYPICAL PIXEL, NEVER THE MIDLINE ONE. The plate scene's
      bottom row is the home circle's dirt at the midline and grass either
      side of it, so one centre pixel painted the letterbox tan under a
@@ -7156,14 +7300,20 @@ function fieldBand(box) {
      shares its dominant channel: averaged in, it pulled the band seven
      channels off the sky it sits against, and the guard on the band
      rightly refused a colour that is no pixel of the row. */
+  /* Both modes are asked in WORLD BLOCKS and each maps to its own canvas:
+     retro's holds the whole world at one block a pixel, smooth's holds the
+     crop at `draw` pixels a block. One reader, two mappings, so the choice
+     of row can never drift from the choice of canvas. */
+  const cx = (bx) => smoothBand ? (bx - FIELD_CAM.sx) * FIELD_CAM.draw : bx;
+  const cy = (by) => smoothBand ? (by - FIELD_CAM.sy) * FIELD_CAM.draw : by;
   const rgb = (y) => {
-    const yy = Math.max(0, Math.min(pixWorld.height - 1, y));
+    const yy = Math.max(0, Math.min(fcv.height - 1, Math.round(cy(y))));
     const dom = (d) => d[1] >= d[0] && d[1] >= d[2] ? 'g' : d[2] >= d[0] ? 'b' : 'r';
     const groups = { r: [], g: [], b: [] };
     let mid = null;
     for (let i = 0; i < 9; i++) {
-      const x = Math.max(0, Math.min(pixWorld.width - 1,
-        Math.round(FIELD_CAM.sx + FIELD_CAM.sw * (i + 0.5) / 9)));
+      const x = Math.max(0, Math.min(fcv.width - 1,
+        Math.round(cx(FIELD_CAM.sx + FIELD_CAM.sw * (i + 0.5) / 9))));
       const d = w.getImageData(x, yy, 1, 1).data;
       groups[dom(d)].push([d[0], d[1], d[2]]);
       if (i === 4) mid = [d[0], d[1], d[2]];
@@ -7276,23 +7426,54 @@ function startFieldLoop() {
       /* The world at one low resolution (see PIX above), then blitted to
          the display bitmap with smoothing off. drawField saves and
          restores around its own transforms, so the base survives it. */
-      if (!pixWorld) {
-        pixWorld = document.createElement('canvas');
-        pixWorld.width = Math.round(FIELD_W / PIX);
-        pixWorld.height = Math.round(FIELD_H / PIX);
-      }
-      const wctx = pixWorld.getContext('2d');
-      wctx.setTransform(1 / PIX, 0, 0, 1 / PIX, 0, 0);
       HUD_Q.length = 0;
-      drawField(wctx, FIELD_W, FIELD_H, t, p || null, inWindup);
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.imageSmoothingEnabled = false;
-      /* THE CROP IS A SOURCE RECTANGLE, which is what keeps a world block a
-         whole number of device pixels. Blitting the whole world into an
-         oversized canvas and letting the arena clip it is what handed the
-         browser a fractional scale to finish. */
-      ctx.drawImage(pixWorld, FIELD_CAM.sx, FIELD_CAM.sy, FIELD_CAM.sw, FIELD_CAM.sh,
-                    0, 0, fCv.width, fCv.height);
+      const smooth = graphicsSmooth();
+      if (smooth) {
+        /* SMOOTH: THE SAME DRAW, WITH THE MIDDLE CANVAS TAKEN OUT. The two
+           transforms retro applies one after the other are composed into
+           one here: logical through 1/PIX is blocks, and a block is `draw`
+           bitmap pixels at the crop's offset. So every shape is rasterized
+           ONCE, at the bitmap's own resolution, with the anti-aliasing the
+           2D context does by default, and nothing is resampled at all.
+
+           PIX STAYS 3 AND IS STILL THE UNIT, which is what keeps this a
+           branch rather than a second game. Every constant on the camera
+           is counted in blocks (the crop, `PLATE_KEEP_Y`, `deckCoverBlocks`,
+           `zoneLineMin`, `snapB`), and all of them are about where things
+           are and how big, never about whether a block is visible as one.
+           Drawing the same geometry at a finer grain does not move any of
+           them, and that is why both modes frame the plate identically.
+
+           IT IS ALSO CHEAPER THAN THE OBVIOUS VERSION. Keeping the middle
+           canvas and merely making it fine (PIX 1, a filtered blit) was
+           measured at 103ms a frame on a throttled phone against this
+           path's 36ms, because it pays for a nine times larger world AND
+           a filtered magnification of it. */
+        const wk = FIELD_CAM.draw / PIX;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.setTransform(wk, 0, 0, wk, -FIELD_CAM.sx * FIELD_CAM.draw,
+                         -FIELD_CAM.sy * FIELD_CAM.draw);
+        drawField(ctx, FIELD_W, FIELD_H, t, p || null, inWindup);
+      } else {
+        if (!pixWorld) {
+          pixWorld = document.createElement('canvas');
+          pixWorld.width = Math.round(FIELD_W / PIX);
+          pixWorld.height = Math.round(FIELD_H / PIX);
+        }
+        const wctx = pixWorld.getContext('2d');
+        wctx.setTransform(1 / PIX, 0, 0, 1 / PIX, 0, 0);
+        drawField(wctx, FIELD_W, FIELD_H, t, p || null, inWindup);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.imageSmoothingEnabled = false;
+        /* THE CROP IS A SOURCE RECTANGLE, which is what keeps a world block a
+           whole number of device pixels. Blitting the whole world into an
+           oversized canvas and letting the arena clip it is what handed the
+           browser a fractional scale to finish. */
+        ctx.drawImage(pixWorld, FIELD_CAM.sx, FIELD_CAM.sy, FIELD_CAM.sw, FIELD_CAM.sh,
+                      0, 0, fCv.width, fCv.height);
+      }
       /* The crisp pass: each queued site replays on the display canvas
          under the transform it was drawn with. The world context maps
          logical through 1/PIX and the display maps a block to `scale`
@@ -7317,10 +7498,19 @@ function startFieldLoop() {
          replay badge, all of them, on every screen, and nothing threw: a
          label drawn in the wrong place is a valid label. Found by touring
          the pitching half on a phone and zooming into a yellow smudge. */
+      /* IN SMOOTH MODE THE CAPTURED TRANSFORM IS ALREADY THE ANSWER, and
+         bridging it a second time is the exact bug the paragraph above
+         records. Retro captures a transform on the WORLD context, which
+         maps logical to blocks, so it needs the camera in front of it to
+         reach the bitmap. Smooth captures on the DISPLAY context, which
+         already carries the camera, so the bridge is the identity and
+         applying `draw` on top of it would put every label `draw` times
+         too large and too far from the origin. */
       const hudK = FIELD_CAM.draw;
       for (const [m, fn] of HUD_Q) {
-        ctx.setTransform(hudK, 0, 0, hudK, -FIELD_CAM.sx * FIELD_CAM.draw,
-                         -FIELD_CAM.sy * FIELD_CAM.draw);
+        if (smooth) ctx.setTransform(1, 0, 0, 1, 0, 0);
+        else ctx.setTransform(hudK, 0, 0, hudK, -FIELD_CAM.sx * FIELD_CAM.draw,
+                              -FIELD_CAM.sy * FIELD_CAM.draw);
         ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
         fn(ctx);
       }

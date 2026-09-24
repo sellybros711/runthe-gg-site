@@ -53,7 +53,8 @@
      the stale timer      a play's timer fires into its OWN play or not at all
      a window's own play  a catch or a robbery never resolves into the play that replaced it
      its own clock        a play is applied on its own timer, never on the one it replaced
-     one grid         the world is blown up by a whole number, onto the arena's own pixels
+     one grid         retro blows the world up by a whole number, onto the arena's own
+                      pixels, and smooth frames the identical crop at the screen's own
      the code's own claims  what the comments assert about the code is true of it
      the coach tells the truth  the first notes a player reads name the controls that exist
      the phone menu       a phone gets four real buttons, and a desktop the room
@@ -91,7 +92,14 @@ try { ({ chromium } = require('playwright')); }
 catch { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); }
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const URL = 'file://' + path.join(here, 'index.html');
+/* `MYTHIBALL_PAGE` points this at another copy of the page, which is what
+   `check-firstpitch` already takes and is here for the same reason: the way
+   to find out whether a guard has teeth is to reintroduce the defect and
+   read the failure, and doing that by editing the shipped file means the
+   tree is broken for as long as the run takes. A guard that has only ever
+   seen the fixed file is a guard nobody knows the teeth of. */
+const URL = 'file://' + (process.env.MYTHIBALL_PAGE
+  ? path.resolve(process.env.MYTHIBALL_PAGE) : path.join(here, 'index.html'));
 
 let failures = 0;
 const ok = (cond, what, detail) => {
@@ -1133,12 +1141,21 @@ async function main() {
         out.hubProse = [...document.querySelectorAll('#app .card > p')].map(p => p.textContent);
         return out;
       });
+      /* THE LIST IS PINNED AND THE COUNT IS NOT IN THE SENTENCE. What this
+         is about is that a group is a heading and its own words with
+         nothing explaining them, so the list has to be exact or a
+         paragraph could come back under one of them and still pass. The
+         NUMBER is incidental, and writing it into the assertion's own
+         wording is how a correct screen gets reported as broken by a
+         message that has gone stale: this read "settings is five
+         headings" while the page shipped six. */
       ok(JSON.stringify(r.heads) === JSON.stringify(
-           ['Innings','Difficulty','Game speed','Cutscenes','Coaching tips']),
-         'settings is five headings', JSON.stringify(r.heads));
+           ['Innings','Difficulty','Game speed','Graphics','Cutscenes','Coaching tips']),
+         'settings is headings and nothing else', JSON.stringify(r.heads));
       ok(r.prose.length === 0, 'and not one line of prose', JSON.stringify(r.prose));
       ok(JSON.stringify(r.toggles) === JSON.stringify(
-           ['5','9','easy','medium','hard','Relaxed','Normal','Fast','On','Off','On','Off']),
+           ['5','9','easy','medium','hard','Relaxed','Normal','Fast',
+            'Smooth','Retro','On','Off','On','Off']),
          'the choices are the words themselves', JSON.stringify(r.toggles));
       ok(r.btns.length === 2, 'two buttons and no more', JSON.stringify(r.btns));
       ok(r.innings === 9 && r.nineOn, 'and the switches still switch', 'innings=' + r.innings);
@@ -3971,7 +3988,21 @@ async function main() {
          the old shape could not make at all: the step is whole, and the
          bitmap times the step is exactly the pixels the arena occupies. Off
          either way and the browser is resampling on a fraction, which is a
-         ragged grid on the glass however clean the blit was. */
+         ragged grid on the glass however clean the blit was.
+
+         AND IT IS ASKED OF RETRO, WHICH IS A NARROWING AND NOT A LOOSENING.
+         Every sentence above is about a BLOCK, and a block is what retro
+         makes and smooth does not: smooth rasterizes the same shapes onto
+         the display bitmap at the bitmap's own resolution, so there is no
+         magnification to keep whole, the run lengths are the art rather
+         than the grid, and `imageSmoothingEnabled` is on because the
+         sprites are meant to be filtered. Asked of smooth this section
+         would be demanding that the mode stop being the mode, which is the
+         one way a guard can be changed to make a run pass. Nothing here is
+         weakened: the page still ships both renderers, retro still has to
+         hold every claim it ever held, and what the SMOOTH side must hold
+         instead is the section straight after this one. */
+      let sawTwoScales = false;
       for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
                                         ['phone, denser', 360, 780, 2],
                                         ['small phone', 320, 568, 2],
@@ -3989,12 +4020,19 @@ async function main() {
         await wait(pg, 400);
         await pg.evaluate(() => {
           Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+          PREFS.smooth = false; document.body.classList.remove('smooth');
           State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
           State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
           startGame({ mode: 'exhibition', youHome: true });
         });
         await wait(pg, 1200);
-        /* the WIDE field: an at bat draws the plate camera instead */
+        /* Ask for the wide field. IT DOES NOT ALWAYS HOLD, and the comment
+           that used to sit here said it did: the next pitch is about a
+           second away and puts the plate camera straight back, so by the
+           time the read below happens the scale is the plate's on every
+           screen here. Nothing above cares, because the grid claims are
+           true of either camera. The one claim that DOES care samples both
+           on purpose, and says so where it is made. */
         await pg.evaluate(() => { const g = State.game; if (g) { g.aiming = false; g.pitch = null; } });
         await wait(pg, 400);
         const r = await pg.evaluate(() => {
@@ -4016,6 +4054,7 @@ async function main() {
                            .reduce((a, [k, v]) => a + k * v, 0);
           const box = cv.parentElement, dpr = window.devicePixelRatio || 1;
           return { w: cv.width, h: cv.height, scale, draw,
+                   sx: FIELD_CAM.sx, sy: FIELD_CAM.sy,
                    sw: FIELD_CAM.sw, sh: FIELD_CAM.sh,
                    wantW: box.clientWidth * dpr, wantH: box.clientHeight * dpr,
                    modal: all.slice().sort((a, b) => b[1] - a[1])[0][0],
@@ -4041,9 +4080,122 @@ async function main() {
           JSON.stringify({ bitmap: [r.w, r.h], step,
                            shown: [r.w * step, r.h * step],
                            arena: [r.wantW, r.wantH], scale }));
+
+        /* ---- and the other renderer, on the same screen ---- */
+        /* IN THE SAME PAGE, which is what makes the comparison worth
+           anything. The claim is that smooth is a branch of one renderer
+           rather than a second game, so the two answers have to come from
+           one layout, one arena and one park: opened as two contexts, a
+           difference could always be the window rather than the mode. */
+        const s = await pg.evaluate(() => {
+          const two = (fn) => new Promise((res) => requestAnimationFrame(() =>
+            requestAnimationFrame(() => res(fn()))));
+          const snap = () => {
+            const cv = document.getElementById('field');
+            return { scale: FIELD_CAM.scale, draw: FIELD_CAM.draw,
+                     sx: FIELD_CAM.sx, sy: FIELD_CAM.sy,
+                     sw: FIELD_CAM.sw, sh: FIELD_CAM.sh,
+                     w: cv.width, h: cv.height,
+                     plate: !!plateViewActive(State.game),
+                     smoothing: cv.getContext('2d').imageSmoothingEnabled,
+                     pxr: getComputedStyle(cv).imageRendering };
+          };
+          PREFS.smooth = true; document.body.classList.add('smooth');
+          return two(snap).then((a) => {
+            /* AND THEN THE OTHER CAMERA, which is where the resolution
+               claim actually bites. Cleared and read inside two frames,
+               because the next pitch is a second away and would put the
+               plate camera back under the sample. */
+            const g = State.game;
+            if (g) { try { endAtBatCleanup(); } catch (e) {} g.pitch = null; g.aiming = false; }
+            return two(snap).then((b) => ({ a, b }));
+          });
+        }).then(r => ({ ...r.a, other: r.b }));
+        /* THE CAMERA MAY NOT MOVE. Every constant it runs on is counted in
+           BLOCKS and PIX is still the block, so a reader who switches modes
+           is looking at the same framing of the same park from the same
+           place: same crop, same offset, same magnification onto the arena.
+           This is the assertion that would catch somebody "simplifying"
+           smooth mode by making the world finer, which is the version that
+           was measured at 103ms a frame and reframed every screen. */
+        ok(s.scale === scale && s.sx === r.sx && s.sy === r.sy
+           && s.sw === r.sw && s.sh === r.sh,
+          `${label}: smooth frames the identical crop at the identical scale`,
+          JSON.stringify({ retro: { scale, sx: r.sx, sy: r.sy, sw: r.sw, sh: r.sh },
+                           smooth: { scale: s.scale, sx: s.sx, sy: s.sy, sw: s.sw, sh: s.sh } }));
+        /* AT THE SCREEN'S OWN RESOLUTION, AT OR ABOVE AND NEVER BELOW.
+           Below CSS resolution the picture is softer than the glass can
+           show, which is the only way this mode can look worse than the one
+           it replaced; more than a step above it and the fill is paid for
+           nothing, at a rate that was measured: drawing the field at device
+           resolution on a ratio 3 phone is 148ms a frame against 36ms at
+           CSS resolution.
+
+           IT IS ONE SIDED AND THE FIRST DRAFT WAS NOT, which is the whole
+           reason this assertion exists rather than being assumed. Written
+           as "within half a block either way" it permits rounding DOWN, and
+           the page was rounding down: the wide camera on a 390 phone took
+           `scale / dpr` of 1.33 to a draw of 1 and put a 292 pixel bitmap
+           in a 389 pixel element. The assertion was as wrong as the code
+           and in the same direction, so it would have passed it for ever.
+
+           AND IT IS ASKED OF BOTH CAMERAS, WHICH IS THE OTHER HALF OF THE
+           SAME MISS. Everything above this line is read with the PLATE
+           camera up, whatever the comment at the top of the section says,
+           and at the plate `scale / dpr` comes out 2.67, 2.50, 1.50, 2.00,
+           4.00 and 6.00 on the six screens here: `round` and `ceil` agree
+           on every one of them. So the rounding mutation was run and this
+           section passed it green. The wide camera is where the two differ
+           (1.33 on a 390 phone), which is exactly where the defect was.
+           A second sample, and the claim asked of each. */
+        const cams = [['plate', s], ['wide', s.other]];
+        /* NON VACUOUS: the two samples have to BE two cameras, or this is
+           one reading written down twice and the case that matters is
+           never visited.
+
+           THE CAMERA AND NOT THE SCALE, and the first draft asked for both.
+           The plate view covers and the wide view contains, so on a screen
+           with room they can land on the SAME whole scale honestly: on a
+           1280 desktop both came out 4 and the clause failed a page with
+           nothing wrong with it. What has to differ per viewport is which
+           camera was up. That the SCALES ever differ is a claim about the
+           sweep rather than about a screen, so it is made once, below, over
+           all six. */
+        ok(s.plate !== s.other.plate,
+          `${label}: and the two samples really are the two cameras`,
+          JSON.stringify({ first: { plate: s.plate, scale: s.scale },
+                           second: { plate: s.other.plate, scale: s.other.scale } }));
+        if (s.scale !== s.other.scale) sawTwoScales = true;
+        for (const [cam, v] of cams) {
+          const want = v.scale / dpr;
+          ok(v.draw >= want - 1e-9 && v.draw < want + 1 && v.draw >= 1,
+            `${label}: smooth draws the ${cam} at the screen's own resolution or better (${v.draw} for ${want.toFixed(2)})`,
+            JSON.stringify({ draw: v.draw, want, scale: v.scale, dpr }));
+        }
+        /* AND THE FILTER IS ON, AT BOTH OF THE TWO PLACES IT HAS TO BE.
+           The context filters the sprite blits and the CSS filters the
+           browser's last step, and they are set in two different files'
+           worth of thinking: one is `imageSmoothingEnabled` in the paint
+           loop, the other is `--pxr` inherited off the body. Either one
+           left behind is a mode that is smooth in half of its picture. */
+        ok(s.smoothing === true && s.pxr === 'auto',
+          `${label}: and nothing in the path is asking for hard pixels`,
+          JSON.stringify({ imageSmoothingEnabled: s.smoothing, imageRendering: s.pxr }));
+
         ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
         await pg.close(); await ctx.close();
       }
+      /* AND THE SWEEP HAS TO VISIT A SCREEN WHERE THE TWO CAMERAS ASK FOR
+         DIFFERENT RESOLUTIONS, or the claim above is six copies of one
+         reading. This is the case the rounding defect lived in: a phone
+         where the plate wants 2.67 and the wide wants 1.33, which `round`
+         takes to 3 and 1 and `ceil` takes to 3 and 2. On a desktop both
+         cameras land on the same whole scale honestly, so no single
+         viewport can be asked for this. */
+      ok(sawTwoScales,
+        'and at least one screen asks the two cameras for different scales',
+        'every viewport gave both cameras one scale, so the resolution claim '
+        + 'was the same reading twice and the rounding case was never visited');
     }
 
     /* ---- the code's own claims ---- */

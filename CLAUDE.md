@@ -6392,10 +6392,11 @@ scene and the wear at 263 and 613, away from the band's rows and the zone
 contrast row, which is why the band and zone clauses were re-run rather than
 re-derived.
 
-#### The CRT comes off while a game is up, and the smoothness question is a fork
+#### The CRT comes off while a game is up
 
 Asked as the graphics not having the smoothness and clarity of other games.
-Two different things answer that and only one of them is a fix.
+Two different things answer that: one is a stripe over the picture, and the
+other is the picture.
 
 **The scanlines were a .055 stripe across every third row of the one picture
 three sharpening passes went into.** `body::after` is the arcade CRT and its
@@ -6406,25 +6407,182 @@ clubhouse and every menu keep the wash. One rule, and the contrast guards can
 only be helped by it, because the overlay is a DOM layer no canvas readback
 ever saw: the pixel guards were blind to it in both directions.
 
-**The rest of the gap is the ART STYLE, not a defect**, and it was prototyped
-rather than argued: the reference games are smooth painted art at native
-resolution and this game is deliberate 3px-block pixel art. A working smooth
-build of the same page exists as a recipe, five edits: `PIX = 1`, every
-`imageSmoothingEnabled` true, `image-rendering:auto`, `heroSpriteCanvas`
-rebuilt as 64px art through two EPX passes then a smoothed downscale, and the
-camera's one literal block constant rescaled (`PLATE_KEEP_Y` is [152,198] in
-blocks and blocks stopped being 3 logical px, plus the whole-number scale and
-`fieldDraw` dropped, which smoothing makes unnecessary). It renders both
-cameras correctly and reads like a different, more modern game.
+**The rest of the gap is the ART STYLE**, and the answer is a second
+renderer rather than a tuning pass.
 
-**It is a decision and not a pass**, because what it costs is real: pixWorld
-grows ninefold (320x220 to 960x660 CPU-drawn per frame, against a measured
-2.48ms drawField at phone throttle), the whole grid guard family in
-`check-firstpitch` and `verify-rules` asserts the opposite of it (whole-number
-blit, off-grid share, smoothing OFF), and the dirt seams, the block snapping
-and the zone's block-counted widths were all designed FOR the pixel look. The
-one-resolution rule survives either way: it says the field and the sprites
-must be ONE style, never which style. Do not ship it as a tuning change.
+### Smooth and Retro are one renderer with one branch
+
+```
+node mythiball/verify-rules.mjs       `one grid` now asks both modes
+node mythiball/check-firstpitch.mjs   the sprite claim, once per mode
+```
+
+`PREFS.smooth` ships TRUE. The same `drawField` draws the same geometry in the
+same logical units through the same camera; what differs is where it is
+rasterized.
+
+| | retro | smooth |
+|---|---|---|
+| the world | drawn into a 320x220 canvas, one block a pixel | drawn straight onto the display bitmap |
+| the magnification | nearest neighbour, whole number | none: the shapes are rasterized at the size they are shown |
+| the sprites | 64px art as hard squares | 64px art through two EPX passes, then a filtered reduction |
+| `imageSmoothingEnabled` | false | true |
+| `--pxr` | `pixelated` | `auto` |
+
+**PIX STAYS 3 IN BOTH, AND THAT IS WHAT MAKES IT A BRANCH.** Every constant the
+camera runs on is counted in BLOCKS (the crop, `PLATE_KEEP_Y`,
+`deckCoverBlocks`, `zoneLineMin`, `snapB`) and all of them are about where a
+thing is and how big, never about whether a block is visible as one. So the two
+modes frame the identical crop at the identical scale, which `one grid` now
+asserts by flipping the mode inside ONE page: two contexts could always blame
+the window.
+
+**THE OBVIOUS VERSION IS THE EXPENSIVE ONE, and it was built first.** Making the
+world canvas fine (`PIX = 1`, a filtered blit) renders correctly and measured
+**103ms a frame** on a throttled 390 phone against retro's 36ms, because it pays
+for a nine times larger world AND a filtered magnification of it. It also
+reframes every screen, since `PLATE_KEEP_Y` is written in blocks and blocks
+stopped being 3 logical pixels. Taking the middle canvas out instead and drawing
+once is the cheap version and the crisper one.
+
+**THE RESOLUTION IS THE WHOLE COST, MEASURED RATHER THAN ARGUED**, interleaved
+because this repo's own history records an A B A pass reading 9.5ms of nothing
+but a page warming up. A 390 phone at ratio 3, 4x throttle:
+
+| where the field is drawn | mean frame |
+|---|---|
+| device resolution | **148ms** |
+| half device | 78ms |
+| **CSS resolution (ships)** | **36.3ms** |
+| retro, for comparison | **36.4ms** |
+
+So `fieldDraw` returns the floor itself in smooth mode rather than the next whole
+divisor above it: nothing is a block, so a fractional last step is a filtered
+resize of an already filtered picture, and rounding up to a divisor is fill for
+nothing.
+
+**AND IT CEILS THE FLOOR RATHER THAN ROUNDING IT, WHICH IS A WHOLE MODE.**
+Written `Math.round`, `scale / dpr` of 1.33 becomes a draw of 1, and the WIDE
+camera on a 390 phone then drew a **292 pixel bitmap into a 389 pixel element**:
+three quarters of CSS resolution, upscaled back by the browser, which is softer
+than the glass can show. That is the one way this mode can look WORSE than the
+one it replaces, and it is invisible in the source because the number it produces
+is an ordinary number. **Found by dumping the bitmap beside the element it is
+laid out in**, while chasing something else. The plate camera never showed it,
+because `ceil(8/3)` and `round(8/3)` are both 3.
+
+**The guard was as wrong as the code, in the same direction.** The assertion read
+"within half a block either way", which PERMITS rounding down, so it would have
+passed that for ever. It is one sided now: at or above CSS resolution, and less
+than one step above it.
+
+**THE TOGGLE EXISTS BECAUSE THE COST CANNOT BE MEASURED HERE.** This sandbox has
+no GPU, so Canvas2D rasterizes in software and a large anti-aliased fill is
+charged at a rate no real phone pays. Desktop unthrottled the two modes are 17.0
+against 16.7ms; desktop at 4x throttle smooth is **2.9x** retro, because a dpr of
+1 means CSS resolution IS device resolution and none of the saving above is
+available. Every number here is a ceiling rather than a reading, and a player
+whose device disagrees has one tap out of it.
+
+**`--pxr` IS A CUSTOM PROPERTY BECAUSE A BODY CLASS LOSES.** Fifteen rules on the
+page declare a rendering mode and four carry two classes (`.board .due canvas`,
+`.atbat .avatar`, `.ph-hero .ph-cast`, `.meetbar .mug canvas`), so a
+`body.smooth canvas` override at one class is beaten by all four: the field would
+smooth and the avatar beside it would stay blocky, in the mode whose whole
+argument is that a frame has one style in it. A property inherits instead. Same
+shape as the hoops court's `--floor-tint`.
+
+**THE MODE IS IN THE SPRITE CACHE KEY**, not cleared on the toggle. What is
+cached is a DRAWING and the two modes draw different ones, so a key without it
+hands a retro player the smoothed art for the rest of the session, on whichever
+characters happened to be built first.
+
+**EPX IS NOT AN ANTI-ALIASER AND MUST NOT BE READ AS ONE.** It invents no colour,
+which is the property that matters on this roster: every output pixel is one of
+the character's own palette entries, so nothing goes muddy at the edges. What it
+removes is the single pixel jaggies and the hard corner. What it cannot remove is
+the resolution: a diagonal is still a staircase of half the step, because the
+source really does only know 64 rows. **Higher fidelity than that is commissioned
+frames, in either mode.**
+
+**The one-resolution rule survives and decided nothing here.** It says the field
+and the sprites must be ONE style, never which style, so smooth field plus
+smoothed sprites satisfies it exactly as pixel plus pixel does.
+
+**Two guards were narrowed and neither was weakened.** `one grid` and `a
+character lands on the grid` are sentences about a BLOCK, so they are asked of
+retro, which still has to hold every claim it ever held. What smooth must hold
+instead is asserted beside each: the identical crop, the screen's own resolution,
+and the filter on at both places it has to be.
+
+#### The sprite claim, and the half a guard that read like a whole one
+
+The obvious smooth-mode sprite claim CANNOT FAIL. "The destination a sprite
+covers is the size of the canvas it came from" is true by construction rather
+than by correctness: the blit is `drawImage(hcv, x, y, dw, dh)` with `dw = hbl /
+k`, so the destination in bitmap pixels is `dw * k`, which is `hbl`, which is the
+source width, whatever `hbl` turns out to be. Written that way it PASSED the
+mutation that builds the sprite at the wrong size. This repo has that trap
+written down four times and it was walked into a fifth.
+
+**What the claim is about is the ART, and the measurement is the share of a
+built sprite's opaque pixels that are EXACTLY a palette colour.** EPX invents no
+colour, which is its defining property: a flat interior comes through untouched
+and only the edges are blended, by the near 1:1 resize at the end. Over six
+characters at the size the plate camera asks for:
+
+| the same frame, built three ways | left exactly palette |
+|---|---|
+| retro, `fillRect` on a 64 grid | **1.000** |
+| smooth, EPX twice then the resize | 0.583 to 0.711 |
+| a straight bilinear blowup of the 64px art | 0.153 to 0.358 |
+
+**A BAND RATHER THAN A FLOOR, because both ends are real and opposite failures.**
+At 1.0 smooth has fallen through to the hard squares. Under about 0.45 it is
+smearing the whole figure rather than its edges, which is what a naive upscale
+does: rendered side by side, the faces and the bat visibly lose definition. The
+threshold sits in the widest gap available, between 0.358 and 0.583.
+
+**A COLOUR COUNT WAS THE FIRST VERSION AND IT CAUGHT ONLY ONE END**, because
+blurring everything also produces thousands of colours. It failed the mutation
+that removes the smooth path and passed the one that removes EPX. Half a guard
+reads exactly like a whole one.
+
+**And mean gradient is the WRONG sharpness metric here**, measured before it was
+believed: EPX against a naive blowup is 1.05 to 1.08, which is inside the noise,
+because a blurry figure has more pixels carrying smaller differences and the
+total edge mass is about the same. The difference is obvious to the eye and
+nearly invisible to that number.
+
+#### Two numbers in the label check, and one of them had been a coin flip
+
+**The gold band filter was in BITMAP pixels** (`x1 - x0 > 40`, `n > 60`), which
+was right for as long as the page always drew at or above CSS resolution. Smooth
+draws at exactly it, so a nine character `CATCH IT!` loses width and nearly half
+its pixel count and fell under both. The label was the same size on the glass the
+whole time, and the cap height assertion beside it went on reporting so
+correctly: the only symptom was one of two bands vanishing from a check that
+could see the other. It is in CSS pixels now.
+
+**AND THE `near` WINDOW WAS A SHARE OF THE CANVAS, WHICH PREDATES ALL OF THIS.**
+The labels sit a fixed distance off the ring, so as a fraction of the canvas that
+distance depends on how much world the crop holds: the upper one landed at 0.189
+to 0.204 of the height against a window of 0.2, so whether this passed was
+decided by **where the fly ball happened to come down**. It went red twice in
+three runs on a page with nothing wrong with it, in BOTH renderers. Measured
+across both screens, in CSS pixels off the ring:
+
+| | phone | desktop |
+|---|---|---|
+| `CATCH IT!` | 56 | 107 to 142 |
+| `SPACE / CLICK` | 26 | 38 to 48 |
+| the straw hat at the plate | 139 to 145 | 429 to 452 |
+
+So neither a share of the canvas NOR a CSS distance alone was ever going to do
+it: 100 CSS pixels covers the phone and cuts the desktop's own upper label off.
+250 has about a 1.7x margin on both sides at once, and the horizontal window does
+the rest, since a label is centred on its ring to within 6 CSS pixels on every
+screen measured and nothing else here is.
 
 Found by walking the first two pitches again after the pass above. Before the
 first pitch, and on every ball in play, the wide view is up, and on a portrait
