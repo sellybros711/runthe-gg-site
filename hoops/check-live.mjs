@@ -965,20 +965,44 @@ const main = async () => {
       ok(call.deepest <= call.vh,
         `the deepest option is on the screen (${Math.round(call.deepest)} of ${call.vh})`);
 
-      const before = await p2.evaluate(() => window.RTF_LIVE.sim.n);
+      /* WATCHED, NEVER SAMPLED. "Answering puts the question away" was read
+         as `#lv-call.hidden` 250ms after the click, and the comment eight
+         lines down already says a game can genuinely ask TWICE: the box is
+         put away and then shown again for the next call, so a reading taken
+         later reports a question that was never left up. It failed about one
+         run in three, on a page that was behaving correctly, and the burst
+         after an answer is wide enough to make it likely (one run measured
+         22 possessions inside that 250ms). An observer records the
+         TRANSITION, which is the pattern this repo already uses for the
+         football board's move marks. */
+      const before = await p2.evaluate(() => {
+        const box = document.querySelector('#lv-call');
+        window.__lvAway = false;
+        window.__lvSeen = [];
+        window.__lvObs = new MutationObserver(() => {
+          window.__lvSeen.push(box.hidden ? 'away' : 'asked');
+          if (box.hidden) window.__lvAway = true;
+        });
+        window.__lvObs.observe(box, { attributes: true, attributeFilter: ['hidden'] });
+        return window.RTF_LIVE.sim.n;
+      });
       await p2.evaluate(() => document.querySelectorAll('.lvc-opt')[0].click());
       await p2.waitForTimeout(250);
-      const after = await p2.evaluate(() => ({
-        n: window.RTF_LIVE.sim.n,
-        hidden: document.querySelector('#lv-call').hidden,
-        noted: [...document.querySelectorAll('#lv-log .lvrow.call')].length,
-      }));
+      const after = await p2.evaluate(() => {
+        if (window.__lvObs) window.__lvObs.disconnect();
+        return {
+          n: window.RTF_LIVE.sim.n,
+          away: window.__lvAway,
+          seen: window.__lvSeen.join(' then ') || 'nothing',
+          noted: [...document.querySelectorAll('#lv-log .lvrow.call')].length,
+        };
+      });
       /* ADVANCED, not "advanced by exactly one". The flag is on, so the
          possession after the answer plays in the same breath. That the
          answer is worth exactly one possession is asserted headlessly in
          section 3, through the engine, where the clock is not racing. */
       ok(after.n > before, 'answering plays the possession');
-      ok(after.hidden, 'and puts the question away');
+      ok(after.away, `and puts the question away (the box went: ${after.seen})`);
       /* THE CALLS GO IN THE LOG, which is the half a reader keeps: the line
          over the board is painted over by the next possession, and under Sim
          the rest it is gone in a frame. */

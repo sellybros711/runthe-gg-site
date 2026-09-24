@@ -158,6 +158,66 @@ section('2. one shut card, with the prose in the DOM while it is shut');
   await ctx.close();
 }
 
+// ── 3. the guide says what the game actually asks of you ────────────────────
+section('3. the first run guide names the games you get to call');
+/*
+ * The guide is the one screen a stranger cannot skip, and its three steps
+ * said "then the season plays itself" and stopped. The most distinctive thing
+ * this game does is hand you the playoff games that can end a series, and a
+ * first-timer was told the opposite in as many words.
+ *
+ * A WORD LIST IS THE ONLY CLAIM THAT FITS. No measurement of the glass can
+ * say whether a guide is telling the truth about the mode, which is the same
+ * shape as the coach-note guard in the baseball game. What is also asserted
+ * is the ROOM: the panel is content sized under a max-height and 360x640 is
+ * the tight one, so a fourth step added later has to fail here rather than
+ * ship as a guide whose own explanation is below its own fold.
+ */
+{
+  for (const [w, h] of [[390, 844], [360, 640]]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
+    const page = await ctx.newPage();
+    const boom = [];
+    page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
+    await page.route('**/*', serve);
+    await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+    await page.waitForTimeout(400);
+
+    const g = await page.evaluate(() => {
+      const pan = document.querySelector('#frg-panel');
+      const start = document.querySelector('#b-start');
+      const r = start.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return {
+        up: !document.querySelector('#frg').hidden,
+        steps: [...document.querySelectorAll('#frg-steps li')].map((li) => li.textContent),
+        scrolls: pan.scrollHeight > pan.clientHeight + 1,
+        need: pan.scrollHeight, have: pan.clientHeight,
+        startLive: hit === start || start.contains(hit),
+      };
+    });
+
+    ok(g.up, `${w}x${h}: the guide is up on a first visit`);
+    const all = g.steps.join(' ');
+    ok(/end a series/i.test(all),
+      `${w}x${h}: it says you call the games that can end a series`);
+    ok(/finals/i.test(all), `${w}x${h}: and that the Finals are yours too`);
+    /* THE OLD SENTENCE ON ITS OWN IS THE DEFECT. "The season plays itself" is
+       still true of the 82 and stays; what may not come back is that clause
+       standing alone as the whole of what happens after the draft. */
+    ok(!/plays itself[^.]*\.\s*\d+ games[^.]*\.\s*$/i.test(g.steps[2] || ''),
+      `${w}x${h}: the season step does not end at "the playoffs if you get there"`);
+    ok(!g.scrolls, `${w}x${h}: and the panel does not scroll inside itself `
+      + `(${g.need} of ${g.have})`);
+    /* The way out of the guide is the button it points at, which is the
+       whole of its design and the thing an extra line could cover. */
+    ok(g.startLive, `${w}x${h}: Start is still the element at its own centre`);
+    ok(boom.length === 0, `${w}x${h}: no page errors (${boom.join(' | ') || 'none'})`);
+    await ctx.close();
+  }
+}
+
 await browser.close();
 
 console.log('');

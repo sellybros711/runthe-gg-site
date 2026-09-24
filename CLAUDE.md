@@ -9283,6 +9283,83 @@ two-position man and **0.03% of four-board searches do**, over 3000 real drafts.
 That is the whole difference between a guard that flakes about one run in ten
 and one that does not. Four selectors in that file, fixed in one commit.
 
+#### The two the first pass left, and one figure in it that was wrong
+
+Both were written up as judgement calls and both are done. One of the two
+descriptions was also wrong, which is worth reading before trusting a number
+measured the same way.
+
+**THE GUIDE SAID THE SEASON PLAYS ITSELF AND STOPPED.** It is the one screen a
+stranger cannot skip, three numbered steps over the front page, and the most
+distinctive thing this game does was in none of them: a first-timer was told
+the opposite in as many words. Step 3 names it now, in one clause on the step
+that is already about the season. It is a rule rather than a number, so there
+is nothing to interpolate; the claim describes `big` in `engine.js`, which is a
+game either side can go out in, a game that wins the series, and every Finals
+game.
+
+**A FOURTH STEP IS WHAT WOULD NOT FIT, and the room is measured.** The panel is
+content sized under a max-height and 360x640 is the tight one: 515 of 538 with
+this sentence in, against 495 before it. 320x568 scrolled inside itself BEFORE
+this and scrolls 41px more now, which is a cost rather than a regression, and
+the way out there is the Start button the guide points at rather than the Got
+it inside the panel. `check-home.mjs` asserts the words, the room and that
+Start is still the element at its own centre, because no measurement of the
+glass can say whether a guide is telling the truth about the mode.
+
+**THE PLAY-IN FLOATED CLEAR OF THE SEAT IT FILLS.** Every column of the bracket
+is a centred list, which is right for a whole round and wrong for the play-in:
+it is ONE game feeding ONE named seat. Measured at 390x844, the box sat at 306
+against the pairing it fills at 259, with the TBD it is about on the line
+above. It is level with it now.
+
+**THE OFFSET IS MEASURED AND NOT DERIVED**, because a box is 62px today and the
+conference labels between the groups are not. It runs on a frame AFTER the
+screen is shown, since `brkRender` is called ahead of `show('s-brk')` and at
+that instant every rectangle in the rail is zero, which is `showFact`'s own
+lesson about a `scrollTop` written to a hidden element arriving at a
+measurement. A stale frame measuring zero writes nothing rather than
+un-centring the column on the way back.
+
+**And the CSS rule written to make room for it did nothing.** `.brk-col.pin >
+:nth-child(2){margin-top:0}` was added to turn off the auto centring, and the
+guard passed with it deleted: an INLINE style beats a stylesheet rule whatever
+its specificity, so the measured margin was already winning. The rule is gone
+and `pin` stays as the marker that says which column anchors, which is what the
+guard reads.
+
+**ONE FIGURE IN THE FIRST WRITE-UP WAS WRONG, and the way it was wrong is the
+lesson.** The play-in column was reported as "one box under about 1,100px of
+empty space, because it is aligned to the seat it feeds". Both halves were
+false: it was **306px**, and it was CENTRED rather than aligned. The 1,100 came
+off a full-page screenshot, and **a full-page screenshot resizes the viewport**,
+so every length in it is about a window nobody has. Read the rectangles, not
+the picture, whenever the claim is a number.
+
+**The guard's own first draft found the wrong game.** It looked for the pairing
+holding the play-in seed, and the winner is the 7 seed: until the play-in
+resolves the near side draws that seat as TBD while the FAR conference has a
+real 7 in its own 2/7 pairing. It reported 378 against 680 and blamed a page
+that was correct. Exactly one first-round pairing is WAITING on somebody, and
+that is the honest way to name it.
+
+#### And a third guard was measuring the race rather than the page
+
+`check-live.mjs` asserted that answering a call "puts the question away" by
+reading `#lv-call.hidden` **250ms after the click**. The comment eight lines
+below it already says a game can genuinely ask TWICE, which is exactly what
+that sample races: the box is put away and shown again for the next call, so a
+late reading reports a question that was never left up. **It failed about one
+run in three**, on a page doing the right thing, and the burst after an answer
+is wide enough to make it likely: one run played **22 possessions inside that
+250ms**.
+
+A MutationObserver on the `hidden` attribute, installed before the click,
+records the TRANSITION instead, and the failure message carries the sequence
+the box actually went through. Same rule as the football board's move marks,
+and the same rule this repo states for the late meter answer: **a timing
+property cannot be checked by hoping to win the race.**
+
 ### A straight column of digits is a FEATURE, not a typeface
 
 This game was set in a code face. `--mono` was `ui-monospace` and **39 rules
