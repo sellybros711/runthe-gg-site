@@ -5873,6 +5873,11 @@ never tested the one out charged to a man who came to the plate an at bat ago,
 so the counts are asserted. The two claims a random sweep can only meet by luck
 are set by hand beside it.
 
+**Both new guards run in CI** (`.github/workflows/mythiball-checks.yml`), and
+`check-rules` goes BEFORE `verify-rules` because it is the cheap one and the
+broad one: it sweeps games rather than posing situations, so it names a broken
+rule in a minute where the other takes the best part of an hour.
+
 ### EVERY OTHER CHECKER HERE ASKS WHETHER SOMETHING IS CORRECT
 
 ```

@@ -5,11 +5,22 @@ name: MythiBall checks
 # Both commands run locally, unchanged:
 #
 #   node mythiball/check-posture.mjs   the game stays out of the indexed site
+#   node mythiball/check-rules.mjs     whole games, and the arithmetic every half
+#                                     inning owes: batters equal outs plus runs
+#                                     plus men left on base
+#   node mythiball/check-reach.mjs     every control a game offers is inside the
+#                                     window, on the shortest phone anybody holds
 #   node mythiball/verify-rules.mjs    walk-offs, the mercy rule, extra innings,
 #                                     one standings order, abandoned games
 #
-# The second needs Playwright's Chromium, installed here and nowhere else.
+# All but the first need Playwright's Chromium, installed here and nowhere else.
 # No secrets, no deploy.
+#
+# check-rules runs BEFORE verify-rules because it is the cheap one and the
+# broad one: it sweeps games rather than posing situations, so it names a
+# broken rule in a minute where the other takes the best part of an hour.
+# check-reach takes its one screen, which is the 320 by 568 phone three of the
+# four unreachable controls were found on.
 
 on:
   pull_request:
@@ -50,6 +61,12 @@ jobs:
         run: |
           npm install --no-save playwright@1.47.2
           npx playwright install --with-deps chromium
+
+      - name: The sport's own arithmetic
+        run: node mythiball/check-rules.mjs 120
+
+      - name: Every control is inside the window
+        run: node mythiball/check-reach.mjs --quick
 
       - name: The rules, replayed
         run: node mythiball/verify-rules.mjs
