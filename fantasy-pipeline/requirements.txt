@@ -1,0 +1,11 @@
+# The cold path's whole dependency list.
+#
+# nflreadpy, NOT nfl_data_py, per the brief. It pulls polars in with it, which
+# is what load_players() returns.
+#
+# Supabase is spoken to with urllib from the standard library rather than with
+# supabase-py, on purpose: the Worker talks PostgREST over plain HTTP too, so
+# there is one way of writing to this database rather than two, and one fewer
+# package that can change its auth handling under a scheduled job nobody is
+# watching.
+nflreadpy>=0.1.5

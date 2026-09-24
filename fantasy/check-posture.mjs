@@ -50,13 +50,22 @@ const FEATURE = [
   'fantasy-pipeline/',
   'functions/fantasy/',
   'functions/api/fantasy/',
-  'supabase/109_fantasy_access.sql',
-  'supabase/110_fantasy_core.sql',
-  'supabase/111_fantasy_model.sql',
   'supabase/test/fantasy_',
   'CLAUDE.md',
 ];
-const inFeature = (rel) => FEATURE.some((f) => rel.startsWith(f) || rel === f);
+
+/* THE MIGRATIONS ARE MATCHED BY NAME, NOT LISTED BY NUMBER, and that is a fix
+ * rather than a tidy-up. This list used to name 109, 110 and 111 one line each.
+ * 112, 113 and 114 were added later and nobody came back here, so for three
+ * migrations the feature's own files were outside the feature's own definition
+ * and a /fantasy link in one of them would have been reported as a leak from
+ * unrelated code. The numbering is the thing that grows; the word in the
+ * filename is the thing that does not. */
+const isFantasyMigration = (rel) =>
+  /^supabase\/\d+_fantasy_[a-z_]+\.sql$/.test(rel);
+
+const inFeature = (rel) =>
+  isFantasyMigration(rel) || FEATURE.some((f) => rel.startsWith(f) || rel === f);
 
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.github']);
 function walk(dir, out = []) {

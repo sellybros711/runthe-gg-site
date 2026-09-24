@@ -1,0 +1,78 @@
+{
+  "_what": "The name normalisation contract, read by BOTH languages. Never edit one side to make the other pass.",
+
+  "_why": [
+    "A quote arrives from the odds provider, is normalised by normName() in",
+    "fantasy/worker/src/parse.mjs, and is stored as player_name_norm. The",
+    "crosswalk is built by fantasy-pipeline/norm.py and stored as search_name",
+    "and alias_norm. The join between every quote in this product and every",
+    "player it is about is a string equality between those two outputs.",
+    "",
+    "So there are two implementations of one rule, in two languages, and there",
+    "is no way around that: the hot path is a Cloudflare Worker and the cold",
+    "path is Python because that is where nflreadpy lives. CLAUDE.md records",
+    "three extractors in this repo going silently wrong for less than this.",
+    "",
+    "WHAT IT LOOKS LIKE WHEN THEY DRIFT is precisely what the database showed",
+    "the night this was written: 192 real quotes, real names, and every single",
+    "one unresolved. Nothing throws. Nothing is logged as an error. The product",
+    "just has no projections in it.",
+    "",
+    "So neither implementation is the authority. This file is. fantasy/",
+    "check-worker.mjs drives normName against it and fantasy-pipeline/",
+    "test_norm.py drives norm() against it, and both run in CI."
+  ],
+
+  "_rules": [
+    "lowercase",
+    "drop a generational suffix (jr, sr, ii, iii, iv, v) as a whole word, with an optional trailing dot",
+    "delete everything that is not a-z or whitespace, which DELETES accented letters rather than transliterating them",
+    "collapse runs of whitespace to one space, and trim"
+  ],
+
+  "_traps": [
+    "ALTERNATION ORDER: 'ii' is listed before 'iii', so a naive engine could match the first two letters of III. Both engines backtrack to the word boundary and take 'iii'. Asserted.",
+    "ASCII WORD BOUNDARIES: JavaScript's \\b treats an accented letter as a NON word character. Python's \\b on a str is Unicode aware and treats it as a word character, so norm.py MUST compile with re.ASCII. Measured: without it, 'Nv' with a tilde gives 'v' in Python and '' in JavaScript. Asserted by the last two cases.",
+    "A NAME THAT IS NOTHING BUT A SUFFIX normalises to the empty string. Nothing may ever store that as an alias: it is a key that every empty normalisation matches. build_players.py refuses it and the guard asserts that too."
+  ],
+
+  "cases": [
+    { "raw": "Jordan Love",           "norm": "jordan love",      "why": "a real quote from the provider, 24 Sep 2026" },
+    { "raw": "Michael Penix Jr.",     "norm": "michael penix",    "why": "a real quote, and the commonest suffix" },
+    { "raw": "Bijan Robinson",        "norm": "bijan robinson",   "why": "a real quote" },
+    { "raw": "Olamide Zaccheaus",     "norm": "olamide zaccheaus","why": "a real quote, and nothing to normalise" },
+    { "raw": "Tucker Kraft",          "norm": "tucker kraft",     "why": "a real quote" },
+
+    { "raw": "Ja'Marr Chase",         "norm": "jamarr chase",     "why": "an apostrophe is deleted, not turned into a space" },
+    { "raw": "A.J. Brown",            "norm": "aj brown",         "why": "initials collapse to one token" },
+    { "raw": "D.K. Metcalf",          "norm": "dk metcalf",       "why": "the same, and the one people write both ways" },
+    { "raw": "Amon-Ra St. Brown",     "norm": "amonra st brown",  "why": "a hyphen is deleted, so the two halves join" },
+    { "raw": "Equanimeous St. Brown", "norm": "equanimeous st brown", "why": "'st' is not a suffix and must survive" },
+
+    { "raw": "Kenneth Walker III",    "norm": "kenneth walker",   "why": "THE ALTERNATION TRAP: ii is listed before iii" },
+    { "raw": "Robert Griffin III",    "norm": "robert griffin",   "why": "the same trap, a name people actually write" },
+    { "raw": "Patrick Mahomes II",    "norm": "patrick mahomes",  "why": "II on its own" },
+    { "raw": "Deebo Samuel Sr.",      "norm": "deebo samuel",     "why": "Sr, which is rarer and just as real" },
+    { "raw": "Odell Beckham Jr",      "norm": "odell beckham",    "why": "no trailing dot, because books write it both ways" },
+    { "raw": "Ivan Pace Jr.",         "norm": "ivan pace",        "why": "a short surname before the suffix" },
+
+    { "raw": "Marvin Harrison Jr.",   "norm": "marvin harrison",  "why": "THE NAMESAKE. This collides with his father on purpose." },
+    { "raw": "Marvin Harrison",       "norm": "marvin harrison",  "why": "and this is the father. The crosswalk tells them apart, never this string." },
+
+    { "raw": "Von Miller",            "norm": "von miller",       "why": "'von' starts with v and must NOT lose it" },
+    { "raw": "Vernon Davis",          "norm": "vernon davis",     "why": "the same, longer" },
+
+    { "raw": "JORDAN LOVE",           "norm": "jordan love",      "why": "case is folded" },
+    { "raw": "  Jordan   Love  ",     "norm": "jordan love",      "why": "runs of whitespace collapse, and the ends are trimmed" },
+
+    { "raw": "Jose Ramirez",          "norm": "jose ramirez",     "why": "plain ASCII, for contrast with the next one" },
+    { "raw": "José Ramírez",          "norm": "jos ramrez",       "why": "ACCENTS ARE DELETED, NOT TRANSLITERATED. Ugly, and it is what both sides must do." },
+
+    { "raw": "Jr.",                   "norm": "",                 "why": "a name that is only a suffix. Nothing may store this as an alias." },
+    { "raw": "",                      "norm": "",                 "why": "empty in, empty out" },
+    { "raw": "   ",                   "norm": "",                 "why": "whitespace only" },
+
+    { "raw": "Peñv",                  "norm": "pe",               "why": "THE ASCII BOUNDARY CASE. Python without re.ASCII answers 'pev'." },
+    { "raw": "Ñv",                    "norm": "",                 "why": "the same, isolated. Python without re.ASCII answers 'v'." }
+  ]
+}

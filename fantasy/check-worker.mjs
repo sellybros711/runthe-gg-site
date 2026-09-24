@@ -34,6 +34,7 @@ import { parseEventOdds, parseEvents, normName } from './worker/src/parse.mjs';
 import { makeOddsClient, sweepCost, LIMITS, readUsage } from './worker/src/odds.mjs';
 import { sweepOnce, LADDER, MAX_EVENTS_PER_TICK } from './worker/src/sweep.mjs';
 import { seasonAndWeek } from './worker/src/season.mjs';
+import { readFileSync } from 'node:fs';
 
 let fails = 0, ran = 0;
 const ck = (label, cond, detail) => {
@@ -346,11 +347,52 @@ ck('rubbish in is a skip note, not a crash', (() => {
 }
 
 section('Name normalising');
-ck('punctuation and case go', normName("Ja'Marr Chase") === 'jamarr chase');
-ck('a generational suffix goes', normName('Marvin Harrison Jr.') === 'marvin harrison');
-ck('so the two Harrisons collide, which the crosswalk must resolve',
+
+/* DRIVEN FROM THE SHARED FIXTURE, NOT FROM CASES WRITTEN HERE.
+ *
+ * This rule exists twice, in two languages: normName() below and norm_name()
+ * in fantasy-pipeline/norm.py. There is no shared runtime to put it in, since
+ * the hot path is a Cloudflare Worker and the cold path needs nflreadpy. The
+ * join between every quote in this product and every player it is about is a
+ * string equality between those two functions' outputs.
+ *
+ * WHAT DRIFT LOOKS LIKE is what the live database showed the night this was
+ * written: 192 real quotes, correct names, every one unresolved, nothing
+ * thrown and nothing logged as an error.
+ *
+ * So neither side is the authority and neither test may be fixed by editing
+ * the fixture. fantasy-pipeline/test_norm.py reads the same file. Four cases
+ * here used to be written inline and are now three rows of it, which is the
+ * point: a case added for one language is a case the other must meet. */
+{
+  const fx = JSON.parse(
+    readFileSync(new URL('./lib/name-fixture.json', import.meta.url), 'utf8'));
+  const cases = fx.cases || [];
+
+  /* Coverage first, for check-numbers.mjs's reason: a loop over no cases
+     passes every assertion under it. The floor is near the real count rather
+     than at 1, because a fixture that lost most of its rows is as broken as
+     one that lost all of them and only this line would say so. */
+  ck('the shared fixture was actually read', cases.length >= 25,
+    `${cases.length} cases`);
+
+  let bad = 0;
+  for (const c of cases) {
+    const got = normName(c.raw);
+    if (got !== c.norm) {
+      bad += 1;
+      ck(`${JSON.stringify(c.raw)} -> ${JSON.stringify(c.norm)}`, false,
+        `got ${JSON.stringify(got)} (${c.why || ''})`);
+    }
+  }
+  ck('every case in the contract holds on the JavaScript side', bad === 0,
+    `${bad} of ${cases.length} disagree`);
+}
+
+/* AND THE ONE CLAIM THE FIXTURE CANNOT MAKE, because it is about two rows of
+   the fixture rather than about either one. */
+ck('the two Harrisons collide, which the crosswalk must resolve and this must not',
   normName('Marvin Harrison Jr.') === normName('Marvin Harrison'));
-ck('whitespace is collapsed', normName('  Amon-Ra   St. Brown ') === 'amonra st brown');
 
 /* ===================================================================
  * 3. THE MONEY

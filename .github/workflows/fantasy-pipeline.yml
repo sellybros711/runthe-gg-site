@@ -1,0 +1,119 @@
+name: "Fantasy: build the crosswalk"
+
+# The cold path. Reads nflverse, writes fantasy_players and
+# fantasy_player_aliases, then attaches every quote that was collected before
+# the crosswalk knew who it was about.
+#
+# WHY THIS ONE IS ALLOWED TO BE A GITHUB CRON, when the poller is explicitly
+# not. The brief rules out Actions cron for the hot path because it is
+# routinely ten to thirty minutes late and a product about freshness cannot be
+# built on a clock that is sometimes half an hour wrong. None of that matters
+# here: this rebuilds a table of who plays for whom, which changes about as
+# fast as an NFL roster does. Half an hour late is invisible.
+#
+# 09:00 UTC is about 5am Eastern, after the overnight nflverse refresh and long
+# before anybody is setting a lineup.
+#
+# THE DRY RUN IS THE DEFAULT ON THE BUTTON, matching every other fantasy
+# workflow here. Unticked it does the whole build, reports the counts and the
+# refusals, and writes nothing.
+#
+# It needs two secrets and NOT the odds key. This path never touches the
+# provider; if a change here starts wanting that key, the change belongs in the
+# Worker instead.
+#
+#   SUPABASE_URL           https://<project>.supabase.co
+#   SUPABASE_SERVICE_ROLE  the service key, which bypasses RLS
+
+on:
+  workflow_dispatch:
+    inputs:
+      write:
+        description: 'Actually write? Unchecked = build everything and write nothing.'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 9 * * *'
+
+concurrency:
+  group: fantasy-pipeline
+  cancel-in-progress: false
+
+jobs:
+  crosswalk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+
+      # THIS FILE HAS TO LIVE ON main FOR THE BUTTON TO EXIST, and the pipeline
+      # does not. Same note as fantasy-deploy.yml: dispatched against main it
+      # would otherwise fail later with a missing file, which is a true error
+      # about the wrong thing.
+      - name: The pipeline is actually on this branch
+        run: |
+          if [ ! -f fantasy-pipeline/build_players.py ]; then
+            echo "::error::fantasy-pipeline is not on '${GITHUB_REF_NAME}'."
+            echo "Re-run and change the branch dropdown to the branch the"
+            echo "fantasy work is on. This file lives on main only so that the"
+            echo "Run workflow button exists."
+            exit 1
+          fi
+
+      # BEFORE ANYTHING IS INSTALLED OR WRITTEN, because it needs no network
+      # and it is the claim everything else depends on. The normalisation is
+      # written twice, in two languages, and the join between every quote and
+      # every player is a string equality between them. A run that built a
+      # crosswalk under a drifted normaliser would write a thousand rows that
+      # match nothing, and report success.
+      - name: The name contract holds in BOTH languages
+        run: |
+          python3 fantasy-pipeline/test_norm.py
+          node fantasy/check-worker.mjs
+
+      - name: Install
+        run: pip install --quiet -r fantasy-pipeline/requirements.txt
+
+      - name: Every secret this needs is present
+        if: ${{ inputs.write || github.event_name == 'schedule' }}
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+        run: |
+          missing=""
+          [ -z "${SB_URL:-}" ] && missing="$missing SUPABASE_URL"
+          [ -z "${SB_KEY:-}" ] && missing="$missing SUPABASE_SERVICE_ROLE"
+          if [ -n "$missing" ]; then
+            echo "::error::missing secrets:$missing"
+            exit 1
+          fi
+          echo "Both present. The odds key is deliberately not one of them."
+
+      # A scheduled run WRITES. A dispatched one writes only if the box was
+      # ticked. Written this way round because the whole point of the schedule
+      # is that nobody is watching it, and a nightly job that did a dry run for
+      # ever would look healthy and keep the crosswalk frozen on the day it was
+      # first built.
+      - name: Build the crosswalk
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+        run: |
+          if [ "${{ inputs.write }}" = "true" ] || [ "${{ github.event_name }}" = "schedule" ]; then
+            python3 fantasy-pipeline/build_players.py
+          else
+            echo "DRY RUN. Everything is built and nothing is written."
+            echo ""
+            python3 fantasy-pipeline/build_players.py --dry-run
+          fi
+
+      - name: What to look at
+        run: |
+          echo "crosswalk.collision lines are players who got NO alias, on"
+          echo "purpose. Two people sharing a normalised name cannot both own"
+          echo "the primary key, and guessing is how somebody's quotes end up"
+          echo "attributed to a different person."
+          echo ""
+          echo "resolved.snapshots_attached is how many quotes that were"
+          echo "already stored just found out who they were about."
