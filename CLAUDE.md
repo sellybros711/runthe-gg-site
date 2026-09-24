@@ -6094,6 +6094,56 @@ near two thirds, drawn wider as they come toward the camera, and sixteen pale fl
 none in the snow park. They are the cheapest thing in this pass and about a quarter of
 why the grass reads as a field now rather than a fill.
 
+### A materials pass: the difference between drawn and plotted
+
+The follow-up to the composition pass, asked for in five words: it is about the
+quality of the graphics. Put beside Backyard Baseball as MATERIALS rather than as
+a layout, every surface there is rich where ours was flat: their grass is a
+textured lawn, their fence is planks, every ground seam is soft, and everything
+sits on a shadow. Ours was flat wedges, a slab with confetti on it, and hard
+vector edges. The fixes are all in the page's own pixel language, because soft
+painterly is not available to a 3px block world and should not be imitated.
+
+**`dirtSeam` is most of it: a dirt edge is TEETH, not a boundary.** Every dirt
+shape in both cameras was a clean ellipse or trapezoid edge, which is a plotter's
+line; hand-set pixel art breaks a ground seam. Two dashed strokes over the
+shape's own path do it, teeth of the dirt jutting out and a dark bite the other
+way, at 6 logical units so the teeth are 2 blocks and survive the low-res snap.
+**The bite is a dark alpha and never the grass colour**, because the path crosses
+OTHER dirt (the keyhole under the home circle, the mound on the keyhole) and
+grass-coloured teeth would nick every overlap. At the snow park the same seam
+reads as banked snow, which was looked at rather than assumed.
+
+**The plate view's stands are the wide camera's recipe at strip size**: tiered
+rows of seated fans with step shadows and aisles, a padded wall with seams, a
+foot shadow and the home run line, in place of a slab with 300 random flecks
+over it. **Dead centre is the batter's eye**, the dark hedge every real park
+keeps behind the pitcher, and it earns its place twice: the pitch in this game
+really does fly out of that band, and a white ball on a dark hedge is the most
+legible thing the screen can offer. Clouds go in above the roofline, day parks
+only. A figure sits on a two-step shadow now, a soft ring under the hard core.
+
+#### The letterbox wore the plate camera's dirt, and the fix took three tries
+
+The band under the wide picture came back TAN: a beach below a green field,
+across forty percent of a portrait arena. `fieldBand` sampled ONE midline pixel,
+and on a narrow plate crop the bottom row's midline is the home circle. The
+plate view COVERS, so that sample is displayed by nobody, and it is then
+inherited by the wide view because a play refuses resampling.
+
+- **Modal colour buckets failed first**: the mow stripes split one lawn across
+  two fine buckets and four samples of unified dirt outvoted five of grass.
+- **A dominant-channel mean failed second, against the guard**: a light tower's
+  pole crosses the sky row and shares its dominant channel, so the average was
+  seven channels off the sky and `check-firstpitch` rightly refused a band that
+  is no pixel of the row.
+- **What ships is three rules that each do one job.** The plate camera never
+  writes the band at all, because the band belongs to the camera that shows it.
+  The midline pixel is the answer whenever it is typical of its own row, since
+  the picture meets the band at the seam's centre and the guard compares there
+  at a tolerance of 2. The majority-median steps in only when the midline is
+  the row's minority, which no current crop produces and the next camera might.
+
 #### And the wide camera left a black hole, which the full bleed layout made bigger
 
 Found by walking the first two pitches again after the pass above. Before the

@@ -7127,13 +7127,50 @@ function fieldBand(box) {
   const g = State.game;
   if (g && (g.play || g.tail || g.steal || g.replay)) return;
   if (typeof Cam === 'object' && Cam && Cam.zoom > CAM_BAT.zoom + 0.02) return;
+  /* AND NEVER FROM THE PLATE CAMERA. That view COVERS the arena, so its
+     band is never shown, and its crop is narrow enough that the home
+     circle is most of the bottom row: a sample taken there is honestly
+     TAN, is displayed by nobody, and is then inherited by the wide view
+     because a play refuses resampling. Measured on a 390 phone: the
+     letterbox under a ball in play wore the plate crop's dirt, a beach
+     under a green field. The band belongs to the camera that shows it. */
+  if (plateViewActive(g)) return;
   fieldBandAt = key;
   const w = pixWorld.getContext('2d');
-  const mid = Math.max(0, Math.min(pixWorld.width - 1,
-    FIELD_CAM.sx + (FIELD_CAM.sw >> 1)));
+  /* THE ROW'S TYPICAL PIXEL, NEVER THE MIDLINE ONE. The plate scene's
+     bottom row is the home circle's dirt at the midline and grass either
+     side of it, so one centre pixel painted the letterbox tan under a
+     picture whose edge is two thirds green: a beach below a ballfield.
+     Nine samples across the row, grouped by DOMINANT CHANNEL (all grass
+     is g-dominant whichever mow stripe it sits on, all sky b-dominant),
+     and the band is the MEDIAN of the biggest group. A median rather
+     than a mean, because a light tower's pole crosses the sky row and
+     shares its dominant channel: averaged in, it pulled the band seven
+     channels off the sky it sits against, and the guard on the band
+     rightly refused a colour that is no pixel of the row. */
   const rgb = (y) => {
-    const d = w.getImageData(mid, Math.max(0, Math.min(pixWorld.height - 1, y)), 1, 1).data;
-    return `rgb(${d[0]},${d[1]},${d[2]})`;
+    const yy = Math.max(0, Math.min(pixWorld.height - 1, y));
+    const dom = (d) => d[1] >= d[0] && d[1] >= d[2] ? 'g' : d[2] >= d[0] ? 'b' : 'r';
+    const groups = { r: [], g: [], b: [] };
+    let mid = null;
+    for (let i = 0; i < 9; i++) {
+      const x = Math.max(0, Math.min(pixWorld.width - 1,
+        Math.round(FIELD_CAM.sx + FIELD_CAM.sw * (i + 0.5) / 9)));
+      const d = w.getImageData(x, yy, 1, 1).data;
+      groups[dom(d)].push([d[0], d[1], d[2]]);
+      if (i === 4) mid = [d[0], d[1], d[2]];
+    }
+    const best = Object.values(groups).sort((a, b) => b.length - a.length)[0];
+    /* The midline pixel is the answer whenever it is typical of its own
+       row, because the picture the band continues meets it at the seam's
+       centre. The median steps in only when the midline is the row's
+       minority (a crop whose bottom centre is a dirt circle in a row of
+       grass), so no averaging or vignette can pull the band off the
+       exact colour the picture shows beside it. */
+    if (dom(mid) === dom(best[0])) return `rgb(${mid[0]},${mid[1]},${mid[2]})`;
+    best.sort((a, b) => (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2]));
+    const m = best[best.length >> 1];
+    return `rgb(${m[0]},${m[1]},${m[2]})`;
   };
   box.style.setProperty('--sky', rgb(FIELD_CAM.sy));
   box.style.setProperty('--turf', rgb(FIELD_CAM.sy + FIELD_CAM.sh - 1));
@@ -11633,6 +11670,30 @@ function platePitchPos(P, pitch, t) {
   return { x, y, r: 6.5 + 6 * Math.pow(e, 1.3), e, lx, ly, arrive };
 }
 
+/* A DITHERED SEAM IS WHAT MAKES A DIRT SHAPE READ AS DRAWN RATHER THAN
+   PLOTTED. Every dirt edge here was a clean ellipse or trapezoid boundary,
+   which is a vector's edge; hand-set pixel art (and Backyard Baseball,
+   which is the reference) breaks a ground seam into teeth. Two dashed
+   strokes over the shape's own path do it: teeth of the dirt jutting into
+   the grass, offset by a dark bite the other way. Both are harmless where
+   the path crosses OTHER dirt (the keyhole under the home circle, the
+   mound on the keyhole), which is why the bite is a dark alpha rather
+   than a grass colour: painted in grass green it would nick every
+   dirt-on-dirt overlap with a green notch. Dash and width are 6 logical
+   units, which is 2 blocks: one-block teeth vanish into the low-res snap
+   and 3-block teeth read as damage. */
+function dirtSeam(ctx, col) {
+  ctx.save();
+  ctx.lineWidth = 6;
+  ctx.setLineDash([6, 6]);
+  ctx.strokeStyle = col;
+  ctx.stroke();
+  ctx.lineDashOffset = 6;
+  ctx.strokeStyle = 'rgba(0,0,0,.16)';
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   const P = plateGeom();
   const g = State.game;
@@ -11647,28 +11708,63 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   sky.addColorStop(1, plateTint(theme.sky, night ? 0.05 : 0.22));
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, P.horizon);
+  /* Daylight gets the wide camera's cloud banks: flat pixel slabs, no
+     gradients, above the roofline so they never touch the stands. */
+  if (!night) {
+    ctx.fillStyle = 'rgba(255,255,255,.72)';
+    for (const [cxf, cyf, cw2] of [[0.10, 44, 52], [0.40, 22, 34],
+                                   [0.66, 56, 42], [0.88, 30, 58]]) {
+      const bx = w * cxf, by = cyf;
+      ctx.fillRect(bx, by + 6, cw2, 7);
+      ctx.fillRect(bx + cw2 * 0.18, by, cw2 * 0.5, 7);
+      ctx.fillRect(bx + cw2 * 0.55, by + 2, cw2 * 0.32, 6);
+    }
+  }
   if (theme.landmark) { ctx.save(); ctx.globalAlpha = 0.9; theme.landmark(ctx, w, h * 0.9); ctx.restore(); }
-  /* THE STANDS ARE A FAR STRIP NOW, not a wall the game is played against.
-     A roofline, a crowd band a third of what it was, and the wall. The
-     crowd is fewer dots at lower alpha for the same reason: from behind
-     the plate a crowd is a texture at the edge of the picture, and 640
-     saturated flecks in a band a sixth of the frame tall was the loudest
-     thing on the screen after the batter. */
+  /* THE STANDS ARE A FAR STRIP NOW, not a wall the game is played against,
+     and they are TIERED rather than confetti. The first strip was a flat
+     slab with 300 random flecks over it, which reads as static; the wide
+     camera's stands are rows of seated fans stepping down to the wall,
+     so this is the same recipe at strip size. Each tier carries its own
+     step shadow, an aisle breaks the rows every 120px, and dead centre
+     is the BATTER'S EYE: the dark hedge every real park keeps behind the
+     pitcher so a hitter can pick the ball up. It earns its place twice
+     here, because the pitch in this game really does fly out of that
+     exact band, and a white ball on a dark hedge is the most legible
+     thing this screen can offer. */
   ctx.fillStyle = plateTint(theme.wall, -0.55);
   ctx.fillRect(0, 128, w, 10);
-  ctx.fillStyle = plateTint(theme.wall, night ? -0.5 : -0.38);
+  ctx.fillStyle = plateTint(theme.wall, night ? -0.55 : -0.44);
   ctx.fillRect(0, 138, w, 40);
   const crowd = theme.crowd || ['#ccc', '#999', '#eee', '#aaa', '#bbb'];
-  for (let i = 0; i < 300; i++) {
-    const x = (i * 97 + (i >> 3) * 13) % w;
-    const y = 140 + (i * 53) % 36;
-    ctx.fillStyle = crowd[i % crowd.length];
-    ctx.globalAlpha = night ? 0.45 : 0.62;
-    ctx.fillRect(x, y, 3, 3);
+  const eyeL = cx - 78, eyeR = cx + 78;
+  for (let row = 0; row < 5; row++) {
+    const ry = 140 + row * 7;
+    ctx.fillStyle = 'rgba(0,0,0,.22)';
+    ctx.fillRect(0, ry + 4, w, 2);
+    for (let x = 3 + (row % 2) * 3; x < w; x += 7) {
+      if (x > eyeL - 4 && x < eyeR) continue;      /* the batter's eye */
+      if (x % 120 < 5) continue;                   /* an aisle */
+      const v = (x * 7 + row * 13) % 10;
+      if (v >= 8) continue;                        /* an empty seat */
+      ctx.fillStyle = crowd[v % crowd.length];
+      ctx.globalAlpha = night ? 0.55 : 0.8;
+      ctx.fillRect(x, ry, 3, 3);
+    }
+    ctx.globalAlpha = 1;
   }
-  ctx.globalAlpha = 1;
+  ctx.fillStyle = night ? '#0c1c13' : '#10231a';
+  ctx.fillRect(eyeL, 138, eyeR - eyeL, 40);
+  ctx.fillStyle = 'rgba(255,255,255,.06)';
+  ctx.fillRect(eyeL, 138, eyeR - eyeL, 3);
+  /* The wall is padded panels, not a slab: seams every 46, a foot
+     shadow, and the home run line along the top. */
   ctx.fillStyle = theme.wall;
   ctx.fillRect(0, 176, w, 14);
+  ctx.fillStyle = 'rgba(0,0,0,.22)';
+  for (let x = 20; x < w; x += 46) ctx.fillRect(x, 178, 2, 12);
+  ctx.fillStyle = 'rgba(0,0,0,.25)';
+  ctx.fillRect(0, 187, w, 3);
   ctx.fillStyle = theme.wallLine || '#fff';
   ctx.fillRect(0, 176, w, 2);
   /* light towers, lit at night */
@@ -11741,8 +11837,10 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   const dirt = theme.track || '#c8a06a';
   ctx.fillStyle = dirt;
   ctx.beginPath(); ctx.ellipse(cx, 258, 430, 40, 0, 0, Math.PI * 2); ctx.fill();
+  dirtSeam(ctx, dirt);
   ctx.fillStyle = theme.grass;
   ctx.beginPath(); ctx.ellipse(cx, 262, 340, 24, 0, 0, Math.PI * 2); ctx.fill();
+  dirtSeam(ctx, theme.grass);
   /* base paths, first and third */
   for (const side of [-1, 1]) {
     ctx.fillStyle = dirt;
@@ -11750,6 +11848,7 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     ctx.moveTo(cx + side * 60, 606); ctx.lineTo(cx + side * 96, 606);
     ctx.lineTo(cx + side * 398, 264); ctx.lineTo(cx + side * 372, 256);
     ctx.closePath(); ctx.fill();
+    dirtSeam(ctx, dirt);
   }
   /* THE KEYHOLE, WHICH IS WHAT FILLS THE MIDDLE OF THIS CAMERA.
 
@@ -11774,6 +11873,7 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   ctx.moveTo(cx - 26, 264); ctx.lineTo(cx + 26, 264);
   ctx.lineTo(cx + 92, 586); ctx.lineTo(cx - 92, 586);
   ctx.closePath(); ctx.fill();
+  dirtSeam(ctx, dirt);
   /* Darker at both edges and NEUTRAL down the middle, so the strip reads
      as worn ground rather than as a shape with its own light in it. The
      first version lifted the centre the way the two ovals do, which is
@@ -11800,6 +11900,7 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   hg.addColorStop(1, 'rgba(0,0,0,.13)');
   ctx.fillStyle = hg;
   ctx.beginPath(); ctx.ellipse(cx, 618, 170, 52, 0, 0, Math.PI * 2); ctx.fill();
+  dirtSeam(ctx, dirt);
   ctx.fillStyle = dirt;
   /* the mound, its rubber */
   ctx.beginPath(); ctx.ellipse(cx, 256, 46, 11, 0, 0, Math.PI * 2); ctx.fill();
@@ -12590,9 +12691,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   dGrad.addColorStop(1, '#9a6428');
   ctx.fillStyle = dGrad;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,.20)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  dirtSeam(ctx, DIRT);
   /* Grain on the dirt, clipped to the shape while its path is still
      current. The grass interior paints over the middle next, so what
      survives is grain on the basepaths, which is where dirt shows. */
@@ -12619,9 +12718,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.fill();
   ctx.fillStyle = 'rgba(0,0,0,.10)';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,.18)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  dirtSeam(ctx, theme.grass);
   /* Mow stripes across the infield grass: diagonal bands clipped to the
      diamond, the groundskeeper's touch that makes it read manicured. */
   ctx.save();
@@ -12646,6 +12743,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     grd.addColorStop(1, DIRT_DARK);
     ctx.fillStyle = grd;
     ctx.beginPath(); ctx.ellipse(x, y, ox, oy, 0, 0, Math.PI * 2); ctx.fill();
+    dirtSeam(ctx, DIRT);
   };
   dirtOval(cx, moundY, 30, 15);
   dirtOval(cx, plateY, 40, 19);
@@ -13738,7 +13836,15 @@ function drawRunnerAt(ctx, x, y, character, scale, pose) {
     const dw = hbl / k, dh = hcv.height / k;
     /* Ground shadow. A slide's shadow is stretched and offset, because his
        feet are out ahead of him. */
-    ctx.fillStyle = 'rgba(0,0,0,.35)';
+    ctx.fillStyle = 'rgba(0,0,0,.14)';
+    ctx.beginPath();
+    if (pose === 'slide') {
+      ctx.ellipse(Math.round(x + 6), y + 1, dw * 0.72, dw * 0.11, 0, 0, Math.PI * 2);
+    } else {
+      ctx.ellipse(x, y + 1, dw * 0.46, dw * 0.14, 0, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.32)';
     ctx.beginPath();
     if (pose === 'slide') {
       ctx.ellipse(Math.round(x + 6), y + 1, dw * 0.55, dw * 0.08, 0, 0, Math.PI * 2);
