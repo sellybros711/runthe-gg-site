@@ -78,7 +78,7 @@ function sweep(games, seed) {
 
   const bad = [];
   const census = {
-    games: 0, halves: 0, pa: 0, extras: 0, extraBottoms: 0, walkoffs: 0,
+    games: 0, halves: 0, pa: 0, extraBottoms: 0, walkoffs: 0,
     mercies: 0, ties: 0, dp: 0, sacFly: 0, bunts: 0, homers: 0, errors: 0,
     thrownOutAtPlate: 0, awayWins: 0, homeWins: 0, maxInning: 0, runs: 0,
   };
@@ -132,7 +132,7 @@ function sweep(games, seed) {
       if (g.balls !== 0 || g.strikes !== 0) say(`the count is ${g.balls}-${g.strikes} before a pitch`, g);
       if (g.inning < 1) say('the inning is ' + g.inning, g);
       census.maxInning = Math.max(census.maxInning, g.inning);
-      if (g.inning > g.innings) { census.extras = 1; if (g.half === 'bottom') census.extraBottoms++; }
+      if (g.inning > g.innings && g.half === 'bottom') census.extraBottoms++;
       {
         const on = g.bases.filter(Boolean);
         const keys = on.map(c => c.k);
@@ -277,7 +277,6 @@ function sweep(games, seed) {
         say('the game ended before the last inning', g);
       }
     }
-    abandonGame && null;
   }
 
   window.setTimeout = realTimeout;

@@ -5371,6 +5371,11 @@ to 750, so a crop centred on the canvas cut his bat off at the frame's edge.
 
 ##### FOUR CONTROLS WERE OFF THE WINDOW, AND THE ARENA'S OWN FLOOR PUT ONE OF THEM THERE
 
+```
+node mythiball/check-reach.mjs          six screens, a whole game each
+node mythiball/check-reach.mjs --quick  one screen, for a loop
+```
+
 Measured across eleven viewports, both halves of the game, reading every
 pressable control's rectangle against the window rather than looking at a
 screenshot. `body.ingame` sets `overflow:hidden`, so a control past the edge is
@@ -5390,7 +5395,7 @@ hung off the end. Wrapping is on the base rule now: it costs nothing when there
 is room, and it is the net rather than the plan, because a wrapped row is a
 second line of deck and the deck is what the camera pays for.
 
-**THE SWING LABEL NAMED TWO KEYS A PHONE DOES NOT HAVE**, and it was 43 of the
+**THE SWING LABEL NAMED THREE KEYS A PHONE DOES NOT HAVE**, and it was 43 of the
 50 pixels that row was over by. `Swing (1/2/3)` is an instruction for a
 keyboard, on the row a thumb uses most. It is a POINTER question rather than a
 width one, the same way the coach notes are: a narrow desktop window still has
@@ -5442,6 +5447,20 @@ names, the row wraps rather than overflowing, and everything still fits.
 nothing overflowing.** The one arena that got smaller is 320x568 while pitching,
 318 to 305, which is the half where you aim a reticle that is floored in CSS
 pixels anyway.
+
+**AND THERE IS A GUARD NOW, because nothing here could see this class at all.**
+`check-firstpitch` measures the glass and asks whether one pitch can be READ;
+`verify-rules` puts the game in a situation and asks whether the rule is right. A
+button off the side of the window is neither: the rule is right, the picture is
+right, and the control is not there.
+
+**IT PLAYS RATHER THAN POSING, and the first draft of it posed.** Measuring the
+first frame of a game would have passed every one of the four faults, because the
+deck GROWS: the play by play fills up all game, a pitching deck is taller than a
+batting one, and the mound offer and the send button come and go with the
+situation. So it drives a whole game at each screen and keeps the worst reading
+of every control. **It asks both pointer kinds**, because one of the four was a
+label naming keys and the label is shorter on a touch screen.
 
 ##### THE DECK WAS TOO TALL FOR A SHORT PHONE, and it took three passes to close
 
@@ -5684,6 +5703,7 @@ The regression suite, which is the thing to run after editing:
 ```
 node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
 node mythiball/check-rules.mjs     whole games, and the sport's own arithmetic
+node mythiball/check-reach.mjs      every control a game offers is inside the window
 node mythiball/verify-rules.mjs    the rules replayed in a headless browser
 node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop, --easy/--hard for a tier)
 node mythiball/check-frames.mjs 70 normal --phone --cpu=4   frame times, on the machine that matters
@@ -5704,7 +5724,7 @@ jitter tiers came down about a fifth, and it measures in the mid forties
 now (MLB runs about 25). The file's header records the procedure, and any
 further move repeats it: measure, touch the jitter, measure again.
 
-### A SITUATION IS NOT A GAME, AND THREE RULES WERE WRONG IN EVERY ONE
+### A SITUATION IS NOT A GAME, AND THREE RULES DID NOT SURVIVE ONE
 
 ```
 node mythiball/check-rules.mjs          120 games
@@ -5738,8 +5758,9 @@ is what the play timers do once the ball has landed. Timers are suppressed for
 the sweep, or a game would take its own eight minutes and the sweep would be a
 reading of one.
 
-**Three rules were wrong, and the first two were wrong in every game ever
-played here.** None of them threw and none of them drew anything odd.
+**Three rules were wrong, and one of them was wrong in every half inning of
+every game ever played here.** None of them threw and none of them drew
+anything odd.
 
 - **THE HOME TEAM NEVER BATTED IN AN EXTRA INNING IT WAS BEHIND IN.**
   `checkGameOver`'s regulation clause asked `inning > innings` alone, and
