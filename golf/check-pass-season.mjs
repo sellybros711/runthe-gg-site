@@ -99,6 +99,45 @@ window.__P = {
     var pitch=d.querySelector('.tp-cta'), t=pitch?pitch.innerText:''; d.remove(); S.overlay=null; _walletCache.passActive=had; return t; },
   launch(){ var d=document.createElement('div'); document.body.appendChild(d); overlaySeasonLaunch(d); var t=d.innerText.replace(/\\s+/g,' '); var n=d.querySelectorAll('.sl-th').length; d.remove(); return {txt:t, thumbs:n}; },
   launchGate(){ try{ localStorage.removeItem('bag_s2_launch_seen'); }catch(e){} return {owed:seasonLaunchOwed(), pending:s1LaunchPending(), key:seasonLaunchKey(passSeason().n)}; },
+  /* ---- overtime, stamps, holiday XP, Pass challenges ---- */
+  setXp(xp){ var s=passState(); s.xp=xp; passSave(s); return {x:passTierX(xp), t:passTierAt(xp), claim:passClaimable()}; },
+  xpAt(t){ return passXpForTierX(t); },
+  consts(){ return {tiers:PASS_TIERS, otMax:PASS_OT_MAX, otCost:PASS_OT_COST, stamp:PASS_STAMP_TIER, marks:PASS_MARKS}; },
+  histReset(){ try{ localStorage.removeItem(acctKey('bag_passhist')); }catch(e){} return passHist(); },
+  hist(){ return passHist(); },
+  /* a stale season's state sitting in storage, as a device carries it across a season boundary */
+  staleSeason(n, tier){ LS.set(acctKey('bag_tourpass'), {season:n, xp:passXpForTierX(tier), pro:false, curveV:PASS_CURVE_V, claimed:{free:[],prem:[]}});
+    var cur=passState(); return {hist:passHist(), now:cur.season, xp:cur.xp}; },
+  histFrom(obj){ passHistFromState(obj); return passHist(); },
+  mergeHist(a,b){ return mergePassHist(a,b); },
+  stamps(){ return {list:passStamps(), code:passStampsCode(), html:passStampsHTML(), decoded:passStampsDecode(passStampsCode()), look:lookForBoard().stamps||null}; },
+  card(){ var d=document.createElement('div'); d.innerHTML=playerCardHTML({self:true, name:'Rig', look:S.look||DEFLOOK, rep:'Amateur'}); var st=d.querySelector('.pcstamps'); return st?st.textContent:null; },
+  otherCard(code){ var d=document.createElement('div'); d.innerHTML=playerCardHTML({self:false, uid:'x', name:'Other', look:Object.assign({},DEFLOOK,{stamps:code}), rep:'Amateur'}); var st=d.querySelector('.pcstamps'); return st?st.textContent:null; },
+  event(){ return {now:(passEventNow()||{}).id||null, mult:passEventMult(), soon:(passEventSoon(3)||{e:{}}).e.id||null, line:passEventLine().replace(/<[^>]+>/g,''), chip:passEventChip().replace(/<[^>]+>/g,'')}; },
+  addXp(n, boost){ try{ var w=wheelState(); w.boostUntil=boost?Date.now()+600000:0; wheelSave(w); }catch(e){}
+    var s=passState(), before=s.xp; passAddXp(n); var after=passState().xp; S._passPop=null; return after-before; },
+  eventNote(){ var got=[]; var t0=window.toast; window.toast=function(h){ got.push(String(h).replace(/<[^>]+>/g,' ')); };
+    try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('bag_passev_')>=0) localStorage.removeItem(k); }); }catch(e){}
+    maybePassEventNote(); maybePassEventNote(); return new Promise(function(r){ setTimeout(function(){ window.toast=t0; r(got); }, 1700); }); },
+  chalReset(){ try{ localStorage.removeItem(acctKey('bag_passchal')); }catch(e){} },
+  chal(){ var st=passChalState(); return {theme:(passChalTheme()||{}).name||null, set:passChalSet().map(function(c){ return {id:c.id,grp:c.grp||null,metric:c.metric,target:c.target,xp:c.xp,label:c.label}; }), prog:st.prog, done:st.done, week:st.week, season:st.season}; },
+  /* drive a metric through the REAL hook the game calls, and report the Pass XP it paid */
+  hit(metric, n){ var t0=window.toast; window.toast=function(){}; var s0=passState().xp;
+    if(metric==='dailyUnder'||metric==='packsOpened') passChalProgress(metric,n); else questWeekly(metric,n);
+    window.toast=t0; S._passPop=null; return passState().xp-s0; },
+  mergeChal(a,b){ return mergePassChal(a,b); },
+  homeCard(){ return tourPassCard().textContent.replace(/\\s+/g,' '); },
+  chalHTML(){ return passChalHTML().replace(/<[^>]+>/g,' ').replace(/\\s+/g,' '); },
+  board(){ var n=challengesNode(); return n?n.textContent.replace(/\\s+/g,' '):''; },
+  trackPage(){ var d=document.createElement('div'); document.body.appendChild(d); S.overlay='tourpass'; overlayTourPass(d);
+    var q=function(x){ var e=d.querySelector(x); return e?e.textContent.replace(/\\s+/g,' '):null; };
+    var out={head:q('.tp-tblock'), xp:q('.tp-xp'), ev:q('.tp-ev'), chal:q('.pchal'), stamps:q('.tp-stamps'), ot:q('.tp-ot'), otOn:d.querySelectorAll('.tp-otm.on').length, stampTag:!!d.querySelector('[data-t="30"] .tp-stq')};
+    d.remove(); S.overlay=null; return out; },
+  levelUp(fromTier, toTier){ var s=passState(); s.xp=passXpForTierX(toTier); passSave(s);
+    S._passPop={xp0:passXpForTierX(fromTier), tier0:fromTier}; S.overlay=null; S.screen='title';
+    var pend=passLevelPending(); flushPassLevel(); var pl=S.passLevel;
+    var d=document.createElement('div'); document.body.appendChild(d); S.overlay='passlevel'; overlayPassLevel(d);
+    var t=d.textContent.replace(/\\s+/g,' '); d.remove(); S.overlay=null; S.passLevel=null; return {pend:pend, tier1:pl&&pl.tier1, txt:t}; },
 };`;
 
 const src = fs.readFileSync(SRC, 'utf8');
@@ -231,12 +270,150 @@ try {
   ok('...and not Season 1\'s', !/Champion Aura|Summer Smash/.test(sales));
   const L = await E('launch');
   ok('the launch popup says Season 2 and shows the exclusives', /season 2 is here/i.test(L.txt) && L.thumbs >= 6, L);
+  ok('...and lists what is new about the track, from the live constants', /NEW THIS SEASON/i.test(L.txt) && /tier 90/.test(L.txt) && /tier 30/.test(L.txt) && /Halloween and Thanksgiving/.test(L.txt), L.txt.slice(L.txt.search(/NEW THIS SEASON/i), L.txt.search(/NEW THIS SEASON/i) + 400));
   const G = await E('launchGate');
   ok('it is owed once, under its own flag', G.owed && G.key === 'bag_s2_launch_seen', G);
 
   head('claiming the whole track');
   const CL = await E('claimAll');
   ok(`all ${CL.n} rewards claim, and every cosmetic lands in the closet`, CL.cos.length === 17 && CL.cos.every(c => c.owned), CL.cos.filter(c => !c.owned));
+
+  const at = async (iso) => { await page.clock.setSystemTime(new Date(iso)); };
+
+  head('overtime: the track keeps counting past 60, and pays nothing but a mark');
+  await at('2026-10-10T16:00:00Z');
+  await E('addXp', 0, false);   // clear any wheel boost left by the harness
+  const K = await E('consts'), cap = await E('xpAt', 60);
+  ok('overtime runs 61 to 90 at a flat cost', K.otMax === 90 && K.otCost > 0 && (await E('xpAt', 61)) - cap === K.otCost, K);
+  let X = await E('setXp', cap);
+  ok('tier 60 is tier 60 on both counts', X.x === 60 && X.t === 60, X);
+  const claim60 = X.claim;
+  X = await E('setXp', cap + K.otCost - 1);
+  ok('one XP short of overtime tier 61 is still 60', X.x === 60, X);
+  X = await E('setXp', cap + K.otCost);
+  ok('overtime tier 61, while the reward tier stays 60', X.x === 61 && X.t === 60, X);
+  X = await E('setXp', (await E('xpAt', 90)) + 999999);
+  ok('overtime stops at 90', X.x === 90 && X.t === 60, X);
+  ok('overtime adds nothing to claim', X.claim === claim60, { at60: claim60, at90: X.claim });
+  await E('setXp', await E('xpAt', 75));
+  let TP = await E('trackPage');
+  ok('the header counts overtime', /OVERTIME/.test(TP.head) && /75/.test(TP.head) && /\/90/.test(TP.head), TP.head);
+  ok('the overtime panel lights one mark at 75', TP.otOn === 1 && /TIER 70/.test(TP.ot), TP.ot);
+  let LU = await E('levelUp', 60, 71);
+  ok('crossing 70 is a level-up moment', LU.pend && LU.tier1 === 71 && /Overtime tier 71 reached/.test(LU.txt), LU.txt.slice(0, 200));
+  ok('...that names the prestige mark', /★ Prestige mark on your Season 2 stamp/.test(LU.txt), LU.txt.slice(0, 400));
+  ok('...and sends you to the track, with nothing to collect', /View the Track/.test(LU.txt) && !/Collect in the Tour Pass/.test(LU.txt));
+  LU = await E('levelUp', 58, 62);
+  ok('a climb through 60 lists the real tiers, then the overtime ones', /T59/.test(LU.txt) && /T60/.test(LU.txt) && /Overtime tiers 61 to 62 of 90/.test(LU.txt) && !/T61/.test(LU.txt), LU.txt.slice(0, 400));
+
+  head('season stamps: tier 30 keeps a stamp for good');
+  await E('setXp', await E('xpAt', 29));
+  await E('histReset');   // after the move: setXp reads the old state first, and that read records its tier
+  await E('trackPage');
+  let H = await E('hist');
+  ok('tier 29 is recorded, and is not a stamp', H['2'] === 29 && (await E('stamps')).list.length === 0, H);
+  ok('no stamp, no stamp strip on the card', (await E('card')) === null);
+  let tp29 = await E('trackPage');
+  ok('the track says what the stamp needs', /Reach tier 30 to keep a Season 2 stamp/.test(tp29.stamps) && tp29.stampTag, tp29.stamps);
+  const got = await E('addXp', (await E('xpAt', 31)) - (await E('xpAt', 29)), false);
+  H = await E('hist');
+  ok('earning XP records the new best tier by itself', H['2'] === 31 && got > 0, H);
+  let ST = await E('stamps');
+  ok('tier 31 is a Season 2 stamp', ST.list.length === 1 && ST.list[0].n === 2 && ST.list[0].marks === 0, ST.list);
+  ok('the card carries it', (await E('card')) === 'S2', await E('card'));
+  ok('the board look carries it for other players', ST.look === ST.code && ST.code === '2:31', ST);
+  // Season 1 is kept even though its state is about to be thrown away.
+  await E('histReset');
+  let SS = await E('staleSeason', 1, 35);
+  ok('a Season 1 track still on the device on Oct 5 becomes a Season 1 stamp', SS.hist['1'] === 35 && SS.now === 2 && SS.xp === 0, SS);
+  await E('histReset');
+  SS = await E('staleSeason', 1, 20);
+  ok('tier 20 in Season 1 is recorded and earns nothing', SS.hist['1'] === 20 && (await E('stamps')).list.length === 0, SS.hist);
+  H = await E('histFrom', { season: 1, xp: await E('xpAt', 72), curveV: 4 });
+  ok('a Season 1 track arriving from the cloud counts too, overtime included', H['1'] === 72, H);
+  H = await E('histFrom', { season: 1, xp: 10, curveV: 4 });
+  ok('a smaller one never lowers it', H['1'] === 72, H);
+  ok('the merge keeps each season\'s best and drops junk', JSON.stringify(await E('mergeHist', { 1: 35, 2: 10 }, { 1: 20, 2: 44, x: 5, 3: 400 })) === JSON.stringify({ 1: 35, 2: 44, 3: 90 }), await E('mergeHist', { 1: 35, 2: 10 }, { 1: 20, 2: 44, x: 5, 3: 400 }));
+  ok('Season 1 at 72 shows one mark', (await E('card')) === 'S1★', await E('card'));
+  ok('another player\'s stamps come off their look', (await E('otherCard', '1:35,2:90')) === 'S1S2★★★', await E('otherCard', '1:35,2:90'));
+  ok('a garbled look shows nothing rather than breaking the card', (await E('otherCard', 'nonsense')) === null);
+
+  head('holiday XP: Halloween and Thanksgiving weekends');
+  await E('setXp', await E('xpAt', 20));
+  await at('2026-10-10T16:00:00Z');
+  let EV = await E('event');
+  ok('Oct 10 is an ordinary day', EV.now === null && EV.mult === 1 && EV.soon === null && EV.line === '', EV);
+  ok('an ordinary day pays ordinary XP', (await E('addXp', 100, false)) === 100);
+  await at('2026-10-28T16:00:00Z');
+  EV = await E('event');
+  ok('two days out, the track says it is coming', EV.now === null && EV.soon === 'halloween' && /starts in 2 days/.test(EV.line), EV);
+  await at('2026-10-29T16:00:00Z');
+  ok('...and tomorrow the day before', /starts tomorrow/.test((await E('event')).line));
+  await at('2026-10-31T16:00:00Z');
+  EV = await E('event');
+  ok('Halloween is double Pass XP', EV.now === 'halloween' && EV.mult === 2 && /2× Pass XP/.test(EV.chip), EV);
+  ok('an award pays double', (await E('addXp', 100, false)) === 200);
+  ok('a Prize Wheel boost stacks with it, so a boost won that weekend is not wasted', (await E('addXp', 100, true)) === 400);
+  await E('addXp', 0, false);
+  const note = await E('eventNote');
+  ok('the weekend is announced once, with the day it ends', note.length === 1 && /Halloween Weekend/.test(note[0]) && /Sunday/.test(note[0]), note);
+  TP = await E('trackPage');
+  ok('the track says so', /Halloween Weekend/.test(TP.ev || '') && /2 days left/.test(TP.ev || ''), TP.ev);
+  ok('the home screen\'s Tour Pass card wears the chip', /2× Pass XP/.test(await E('homeCard')), await E('homeCard'));
+  await at('2026-11-02T04:30:00Z');   // 11:30pm ET Sunday Nov 1
+  ok('it runs to the end of Sunday Eastern', (await E('event')).now === 'halloween');
+  await at('2026-11-02T16:00:00Z');
+  ok('Monday is ordinary again', (await E('event')).now === null && (await E('addXp', 100, false)) === 100);
+  await at('2026-11-26T16:00:00Z');
+  EV = await E('event');
+  ok('Thanksgiving is double Pass XP', EV.now === 'thanksgiving' && EV.mult === 2, EV);
+  await at('2026-11-30T16:00:00Z');
+  ok('the Monday after is ordinary', (await E('event')).now === null);
+  await at('2026-12-10T16:00:00Z');
+  ok('Season 3 has no events until somebody writes them', (await E('event')).now === null && (await E('season')).n === 3);
+
+  head('Pass challenges: three a week, Pass XP only');
+  await at('2026-10-10T16:00:00Z');
+  await E('setXp', await E('xpAt', 20));
+  await E('chalReset');
+  let CH = await E('chal');
+  ok('three challenges, one from each group', CH.set.length === 3 && ['daily', 'career', 'extra'].every(g => CH.set.some(c => c.grp === g)) && CH.theme === null, CH.set);
+  ok('each pays 300 Pass XP', CH.set.every(c => c.xp === 300));
+  const c0 = CH.set[0];
+  ok('short of the target pays nothing', (await E('hit', c0.metric, c0.target - 1)) === 0);
+  ok('reaching it through the game\'s own hook pays once', (await E('hit', c0.metric, 1)) === 300);
+  ok('...and never twice', (await E('hit', c0.metric, 5)) === 0);
+  const other = ['dailyPlays', 'dailyBeats', 'dailyUnder', 'seasonsDone', 'tourneysWon', 'majorsWon', 'h2hMatches', 'h2hWins', 'packsOpened'].find(m => !CH.set.some(c => c.metric === m));
+  ok('a metric not in this week\'s set pays nothing', (await E('hit', other, 50)) === 0, other);
+  const txt = await E('chalHTML');
+  ok('the panel shows progress and says it is Pass XP only', /1\/3/.test(txt) && /Pass XP only/.test(txt) && /Thursday/.test(txt), txt.slice(0, 200));
+  const board = await E('board');
+  ok('the Challenges board lists them under the weekly ones', board.indexOf('Weekly Challenges') >= 0 && board.indexOf('Pass Challenges') > board.indexOf('Weekly Challenges'), board.slice(0, 120));
+  const weeks = new Set();
+  for (const d of ['2026-10-08', '2026-10-15', '2026-10-22', '2026-11-12', '2026-11-19']) { await at(d + 'T16:00:00Z'); weeks.add((await E('chal')).set.map(c => c.id).join(',')); }
+  ok('the set changes from week to week', weeks.size >= 3, [...weeks]);
+  await at('2026-10-31T16:00:00Z');
+  CH = await E('chal');
+  ok('Halloween Week is its own themed set', CH.theme === 'Halloween Week' && CH.set.length === 3 && CH.set.every(c => c.xp === 450), CH.set.map(c => c.label));
+  const packC = CH.set.find(c => c.metric === 'packsOpened');
+  ok('opening packs completes the trick-or-treat challenge, doubled by the weekend', !!packC && (await E('hit', 'packsOpened', packC.target)) === 900);
+  await at('2026-11-04T16:00:00Z');
+  ok('the theme runs the whole challenge week, to Wednesday', (await E('chal')).theme === 'Halloween Week');
+  await at('2026-11-05T16:00:00Z');
+  ok('and Thursday is an ordinary week', (await E('chal')).theme === null);
+  await at('2026-11-26T16:00:00Z');
+  ok('Thanksgiving Week is themed too', (await E('chal')).theme === 'Thanksgiving Week');
+  await at('2026-10-04T16:00:00Z');
+  await E('chalReset'); await E('hit', 'dailyPlays', 2);
+  const s1w = await E('chal');
+  await at('2026-10-05T16:00:00Z');
+  const s2w = await E('chal');
+  ok('a week split by the season boundary starts fresh on Oct 5', s1w.season === 1 && s2w.season === 2 && s1w.week === s2w.week && Object.keys(s2w.prog).length === 0, { s1: s1w.prog, s2: s2w.prog });
+  const MC = await E('mergeChal', { week: 5, season: 2, prog: { a: 1, b: 4 }, done: { x: 1 } }, { week: 5, season: 2, prog: { a: 3 }, done: { y: 1 } });
+  ok('two devices in one week merge to the most of each', MC.prog.a === 3 && MC.prog.b === 4 && MC.done.x && MC.done.y, MC);
+  ok('a newer week wins outright', (await E('mergeChal', { week: 5, season: 2, prog: { a: 9 }, done: {} }, { week: 6, season: 2, prog: {}, done: {} })).week === 6);
+  ok('a newer season wins even with an older-looking week', (await E('mergeChal', { week: 9, season: 1, prog: {}, done: {} }, { week: 8, season: 2, prog: {}, done: {} })).season === 2);
+  await at('2026-10-10T16:00:00Z');
 
   head('page errors');
   ok('none', errs.length === 0, errs.slice(0, 3));
