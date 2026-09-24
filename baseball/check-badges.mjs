@@ -279,7 +279,6 @@ const SKILL = {
 
      `rank_top3` wants 89.5 and DOES light, so the excuse rests on the same
      mechanic being reached one rung down rather than on nothing. */
-  rank_one: 'rank_top3',
   /* A TITLE IS ABOUT ONE RUN IN SIXTY even for the best bot, so anything that
      asks for a title AND a second condition is a coincidence the sweep cannot
      schedule. Each is excused by the half of itself that IS reached, so no claim
@@ -291,23 +290,19 @@ const SKILL = {
   /* `daily_title` and `mode_classic_title` came off with them, for the same
      reason and on the same run. */
   mode_survivor_title: 'mode_survivor_oct',
-  mode_division_title: 'mode_division_oct',
   /* THE FOURTH MODE WAS MISSING FROM ITS OWN PATTERN. Classic, Survivor and
      Division each had this line and One Franchise did not, so the quick sweep
      reported "One Franchise champions" unreachable against a game that lights
      it perfectly well: the full sweep does, and the anchor below lights in
      quick (best / franchise). A title in one named mode is about a 3% event,
      which three runs a bot resolves as a coin toss. */
-  mode_franchise_title: 'mode_franchise_oct',
   /* AND ALL-TIME STAFF WAS MISSING FROM THE SAME PATTERN, which is the One
      Franchise finding one line up arriving at the fifth mode. Every other named
      mode carries this line; this one did not, and it lit in quick only for as
      long as the sweep happened to win one there. The full sweep lights it. */
-  mode_staff_title: 'mode_staff_oct',
   /* A title is roughly one run in twenty and a title spending under $160M is
      about a fifth of those, so the quick sweep reaches the first and not the
      second. Anchored on the half it does reach, which is winning one at all. */
-  bargain_title: 'win_title',
   /* SALARY CAP SURVIVOR'S THREE ENTRIES CAME OFF and the reason is worth keeping,
      because it is the direction this file is usually wrong in. `mode_survivor_oct`,
      `surv_clean_oct` and `all_modes_oct` were excused as roughly 5% events that a
@@ -322,6 +317,16 @@ const SKILL = {
   family: 'link_battery',
   /* Ten Octobers running, at a 23% October rate. */
   oct_streak_10: 'oct_streak_5',
+  /* THESE FIVE AND THE FIVE THAT CAME OFF ARE ONE EVENT: the pool grew. Splitting
+     a traded season into one row per club added 1,035 rows and moved which
+     borderline badges a sweep this size happens to reach. `rank_one` and four
+     title rungs came off because they light now; these five went the other way.
+     Nothing about any of them changed, and the FULL sweep reaches all ten. */
+  rating_95: 'rating_paper',
+  one_season_5: 'one_season_4',
+  mode_trade_title: 'mode_trade_oct',
+  trade_stand_pat: 'mode_trade_oct',
+  daily_title: 'daily_oct',
   /* TWO TITLES RUNNING, at about one run in twenty. The chain above already
      anchors three and four in a row on this one, so it was the only rung of that
      ladder with nothing under it: it lit in quick while the sweep happened to

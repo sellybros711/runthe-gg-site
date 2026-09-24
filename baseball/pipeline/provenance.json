@@ -1,11 +1,15 @@
 {
   "war_source": "bwar",
   "war_source_note": "fWAR blend skipped: Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403",
-  "split_stints": false,
+  "split_stints": true,
   "anchor_ip": 210.0,
-  "rows": 109859,
+  "rows": 45379,
   "seasons": [
     1901,
     2025
-  ]
+  ],
+  "built_rows": 119102,
+  "war_floor": 0.5,
+  "batting": 25117,
+  "pitching": 20262
 }
