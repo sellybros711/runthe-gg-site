@@ -97,6 +97,9 @@ const practiceOf = (s) => {
  */
 export function latestReports(rows, season, week) {
   const last = new Map();
+  /* THE LATEST WEEK EACH CLUB HAS FILED. What makes an old row stale is not the calendar,
+     it is the club having spoken since and left him off. */
+  const filed = new Map();
   let reportWeek = 0;
   for (const r of rows) {
     if (Number(r.season) !== season) continue;
@@ -104,8 +107,30 @@ export function latestReports(rows, season, week) {
     if (!Number.isFinite(w) || w > week) continue;      /* never read ahead */
     if (!r.gsis_id) continue;
     if (w > reportWeek) reportWeek = w;
+    if (r.team && w > (filed.get(r.team) || 0)) filed.set(r.team, w);
     const prev = last.get(r.gsis_id);
     if (!prev || w > Number(prev.week)) last.set(r.gsis_id, r);
+  }
+  /*
+   * A DESIGNATION EXPIRES THE MOMENT HIS CLUB FILES A NEWER REPORT WITHOUT HIM ON IT.
+   *
+   * "The latest row per man" carried a week 2 Out forward for ever, which is right on a
+   * Tuesday and wrong by Thursday. The report is a list of the men a club is WORRIED about:
+   * a man it leaves off is practising in full. So once Minnesota files its week 3 report
+   * with eight names and Kyler Murray is not one of them, his week 2 concussion is history,
+   * and printing it as this week's news is inventing a certainty in the other direction.
+   *
+   * FOUND BY REBUILDING ON LAUNCH DAY. Murray and Jauan Jennings both came out "out (week
+   * 2)" off a club that had already filed week 3 without them. It was wrong before that day
+   * too (they were drawn red and refused) and it became invisible the same afternoon, when
+   * Out stopped being drawn at all: two healthy players would simply have left every board.
+   *
+   * ON A TUESDAY NOTHING CHANGES, because no club has filed the coming week, so every club's
+   * latest filing is the week just played and the carry forward the header argues for is
+   * untouched. It is keyed on the ROW's club, which is the club that filed it.
+   */
+  for (const [id, r] of last) {
+    if (Number(r.week) < (filed.get(r.team) || 0)) last.delete(id);
   }
   return { last, reportWeek };
 }
@@ -195,6 +220,72 @@ export function buildInjuries({ season, week, ids, injuries, players }) {
   };
 }
 
+/*
+ * ─── A MAN THE SITE HAS RULED OUT BEFORE THE REPORT CAN ──────────────────────────────
+ *
+ * THE OFFICIAL REPORT CANNOT SAY "OUT" UNTIL FRIDAY, and that is not a lag in the feed. For
+ * a Sunday game the Wednesday and Thursday reports are PRACTICE reports: a man carries a
+ * body part and "did not practise", and the game designation (Out, Doubtful, Questionable)
+ * is only filed on the Friday. So a quarterback whose club has already said he will not
+ * play reads, in the one source this file trusts, exactly like a man having a rest day.
+ *
+ * FOUND BY A PLAYER ON LAUNCH DAY. Jayden Daniels was offered on the wheel, unmarked, with
+ * the report saying `Elbow, Did Not Participate In Practice` and no designation. Every
+ * row in that file was correct. The Friday rule is what made it useless for two days.
+ *
+ * SO THE SITE CAN RULE A MAN OUT, in `fantasy_ruled_out.json`, keyed on season and week so
+ * a ruling can never leak into the next one. It is applied HERE rather than in the page so
+ * there is still one file saying who cannot play, and so the twice daily refresh keeps it:
+ * the workflow runs this builder, the builder reads the list, and the bytes it writes are
+ * the same bytes as long as neither the report nor the list has moved.
+ *
+ * THE NAME IS WRITTEN BESIDE THE ID AND BOTH HAVE TO AGREE WITH THE BOARD, or it throws.
+ * An id is opaque and a hand edited list of opaque ids is how the wrong man gets ruled
+ * out: one transposed digit and a fit receiver disappears from every board in the country
+ * with nothing to say why. A name alone is worse, because two people share one often
+ * enough that this repo keeps a checker about it.
+ *
+ * IT NEVER UNDOES A ROSTER. A man on injured reserve is `off`, which is a stronger answer
+ * than `out`, and a ruling that softened it would be the list overruling the league.
+ *
+ * AND IT DOES NOT PRETEND TO BE THE REPORT. The entry is marked `by: 'site'` and the page
+ * says so, because the sheet's last line otherwise names the official NFL game status
+ * report as its source, and that would be false about exactly this man.
+ */
+export function applyRulings(out, rulings, pool) {
+  const byId = new Map(pool.map((m) => [m.player_id, m]));
+  let ruled = 0;
+  for (const [id, r] of Object.entries(rulings || {})) {
+    const m = byId.get(id);
+    if (!m) throw new Error(`ruled out ${id} (${r && r.name}), who is not on this week's board`);
+    if (!r || r.name !== m.name) {
+      throw new Error(`ruled out ${id} as "${r && r.name}", but the board calls him "${m.name}"`);
+    }
+    const prev = out.men[id];
+    if (prev && prev.st === 'off') continue;
+    out.men[id] = { ...(prev || {}), st: 'out', by: 'site' };
+    ruled++;
+  }
+  /* Recounted rather than incremented, so a ruling on a man the report had already
+     designated is not counted twice. */
+  const e = Object.values(out.men);
+  out.counts = {
+    off: e.filter((x) => x.st === 'off').length,
+    flagged: e.filter((x) => ['out', 'doubtful', 'questionable'].includes(x.st)).length,
+    known: e.length,
+  };
+  if (ruled) out.counts.ruled = ruled;
+  return out;
+}
+
+/* The list for one week, or none. A missing file is the ordinary case and is not an
+   error: it is the week where the report has said everything. */
+export function rulingsFor(file, season, week) {
+  if (!fs.existsSync(file)) return {};
+  const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+  return (j.weeks && j.weeks[`${season}-${week}`]) || {};
+}
+
 /* ─── cli ──────────────────────────────────────────────────────────────────────────── */
 
 const arg = (flag, fallback) => {
@@ -222,12 +313,14 @@ if (process.argv[1] && process.argv[1].endsWith('injuries.mjs')) {
     await nflverseCSV('injuries', `injuries_${season}.csv`, fresh));
   const players = parseCSVObjects(await nflverseCSV('players', 'players.csv', fresh));
 
-  const out = buildInjuries({ season, week, ids, injuries, players });
+  const out = applyRulings(buildInjuries({ season, week, ids, injuries, players }),
+    rulingsFor(path.join(DATA_DIR, 'fantasy_ruled_out.json'), season, week), pool);
   const byId = new Map(pool.map((m) => [m.player_id, m]));
   const line = (id) => {
     const m = byId.get(id), e = out.men[id];
     return `  $${String(m.price_musd).padStart(5)} ${m.position} ${m.name.padEnd(22)}`
-      + ` ${e.st === 'off' ? e.roster : e.st + (e.w === week ? '' : ' (week ' + e.w + ')')}`
+      + ` ${e.st === 'off' ? e.roster : e.st + (e.by === 'site' ? ' (ruled out by the site)'
+        : (e.w === week ? '' : ' (week ' + e.w + ')'))}`
       + (e.d ? ' · ' + e.d : '');
   };
   const keys = Object.keys(out.men)

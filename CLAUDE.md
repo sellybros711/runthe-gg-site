@@ -3484,16 +3484,67 @@ lineup was legal, and it was worth nought.
 | `players.csv` | is he on a roster at all | injured reserve is not a designation to read |
 | `injuries.csv` | what did his club file this week | Out, Doubtful, Questionable, the body part, the practice |
 
-**Injured reserve takes a man OFF THE BOARD and a designation does not.** There is no
-decision to make about somebody on IR and no news to read, so he leaves the pool the way a
-man whose club is idle was never in it. An Out or Doubtful designation is the opposite: it is
-this week's news and it is the most useful thing the board can say about a man a reader was
-about to take, so he is **drawn, in red, and cannot be picked**. Questionable is a real
-decision and is left alone.
+**Injured reserve, Out and Doubtful all take a man OFF THE BOARD.** That is a reversal, made
+by the site's owner on launch day, and the old argument is worth keeping so nobody restores
+it by accident. An Out or Doubtful man used to be **drawn in red and refused on the press**,
+on the ground that the report is the most useful thing a board can say about a man a reader
+was about to take. The answer to that is arithmetic: a board is five seats, and a seat
+holding a man nobody can take offered the reader nothing. It was a choice that was not a
+choice. **Doubtful goes with Out because the data says it is Out**: 99.2% of doubtful men
+blank, against 47.7% of questionable ones. Questionable is a real decision and stays.
 
-Measured on the live week 3 board: 5 priced men on reserve, 7 Out, 2 Doubtful, 11
-Questionable. Only two of the designated men are inside the wheel's reach at all, which is
-why the guard searches boards rather than assuming one.
+It is done in `applyInjuries` in the page, beside injured reserve, and `D.hurt()` in
+`draft.js` still refuses both as a second line. **`BY_ID` is never filtered**, so a man
+signed before he was ruled out stays in that reader's lineup and his chip still opens the
+report.
+
+The guard's non vacuous half is the COUNT: the front page prints how many men are on the
+board, and that number is asked for with all three removed, while the live file is required
+to hold at least one Out or Doubtful man. Without that second clause the old rule and the
+new one give the same count and the assertion says nothing.
+
+#### The report cannot say Out until Friday, so the site can
+
+```
+football/data/fantasy_ruled_out.json     keyed "season-week", id and name
+node football/build/injuries.mjs --write the list is applied here, and by the workflow
+```
+
+**Found by the owner on launch day: Jayden Daniels was offered, unmarked, and was not
+going to play.** Every row in the file was correct. nflverse had him as `Elbow, Did Not
+Participate In Practice` with NO designation, because for a Sunday game the Wednesday and
+Thursday reports are PRACTICE reports and Out, Doubtful and Questionable are only filed on
+the Friday. So a man his club has already ruled out reads, in the one source this trusts,
+exactly like a man having a rest day, for two of the four days a week is open.
+
+**The list is applied in the BUILDER and not the page**, so there is still one file saying
+who cannot play and the twice daily refresh keeps it. The workflow runs the builder, the
+builder reads the list, and the bytes stay identical until the report or the list moves.
+
+**The name is written beside the id and both must match the board, or it throws.** A hand
+edited list of opaque ids is how the wrong man is ruled out: one transposed digit and a fit
+receiver leaves every board with nothing to say why. A name alone is worse, for the reason
+`check-namesakes` exists.
+
+**It never softens a roster** (injured reserve stays `off`), and **it does not pretend to be
+the report**: the entry carries `by: 'site'` and the sheet says RunThe.GG ruled him out,
+because every other sheet names the official NFL report as its source and that would be
+false about exactly him. **A ruling outranks the report**, so an entry for a man who is
+cleared has to be deleted by hand.
+
+#### And a designation expires when his club files without him
+
+Rebuilding for Daniels turned up the opposite fault. The builder kept the LATEST ROW per
+man, so Kyler Murray and Jauan Jennings came out "out (week 2)" off a Minnesota that had
+already filed week 3 with eight names and neither of theirs. The report lists the men a
+club is worried about; a man it leaves off is practising in full. It was already wrong (they
+were drawn red and refused) and it went invisible the same afternoon, when Out stopped
+being drawn: two healthy players would simply have left every board.
+
+**The rule is per CLUB and not per calendar.** A row is dropped once its club has filed a
+newer week. On a Tuesday no club has filed the coming week, so every carry forward the
+header argues for is untouched. It is keyed on the row's own club, which is the one that
+filed it.
 
 **THE SPLIT IS MADE IN `draft.js` AND NOT IN THE PAGE**, because four separate things ask a
 version of "can this man fill this slot": what greys a row, what refuses the press, what the
@@ -3577,6 +3628,11 @@ in the page, because a row nothing can draw is a row nothing can open. The ten w
 practise fully keep their chip, which on a Tuesday is the most useful thing the report has.
 
 #### The chip, and the press it takes
+
+**The red chip is now only ever seen in a LINEUP**, on a man somebody signed before he was
+ruled out, because the wheel no longer offers Out or Doubtful men at all (see above). On the
+board a chip is gold (`Q`) or the quiet `INJ` of a man who did not practise and has no
+designation yet, and both of those are real picks.
 
 **Red for a man who will probably not play, gold for a man who might.** Two decisions, two
 colours; one colour for both would be the board saying the same thing about a hamstring that

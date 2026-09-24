@@ -992,6 +992,17 @@
     if (e.p) bits.push(e.p + '.');
     $('inj-line').textContent = bits.join(' ');
     var when;
+    /* A RULING BY THE SITE IS NOT THE REPORT AND DOES NOT SAY IT IS. The report files no
+       Out until Friday for a Sunday game, so a man his club has already ruled out is
+       ruled out HERE, and the sentence below that names the official NFL report as the
+       source would be false about exactly him. The body part and the practice line above
+       are still the report's, so they stay. */
+    if (e.by === 'site'){
+      $('inj-when').textContent = 'Ruled out for week ' + POOL.week + ' by RunThe.GG. '
+        + 'The official report files game designations on Friday.';
+      $('inj-sheet').hidden = false;
+      return;
+    }
     if (e.st === 'off') when = 'Read off the roster, as it stands now.';
     else if (e.w === POOL.week) when = 'From this week\'s report.';
     else when = 'From the week ' + e.w + ' report. Week ' + POOL.week
@@ -2750,11 +2761,22 @@
   function applyInjuries(inj){
     if (!inj || !inj.men) return;
     INJ = inj;
+    /* A MAN WHO WILL NOT PLAY IS NOT OFFERED AT ALL, and that is a reversal of how this
+       used to work. Out and Doubtful were drawn on the wheel in red and refused on the
+       press, on the argument that the report is the most useful thing the board can say
+       about a man somebody was about to take. Asked to change by the site's owner, and the
+       argument against it is better: a board is five seats, and a seat holding a man
+       nobody can take is a seat that offered the reader nothing. He was a choice that was
+       not a choice. Doubtful goes with Out because the measurement says it is Out: 99.2%
+       of doubtful men blank, against 47.7% of questionable ones.
+       QUESTIONABLE STAYS, because that one really is a decision.
+       A ruling by the site (`by: 'site'`) is an Out like any other here. */
+    var GONE = { off: 1, out: 1, doubtful: 1 };
     var men = POOL.pool, keep = [], i, e;
     for (i=0;i<men.length;i++){
       e = inj.men[men[i].player_id];
       if (e) men[i].inj = e;
-      if (!e || e.st !== 'off') keep.push(men[i]);
+      if (!e || !GONE[e.st]) keep.push(men[i]);
     }
     POOL.pool = keep;
   }
