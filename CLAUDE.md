@@ -9511,6 +9511,56 @@ for a release**, and the section above on `BOARD_VERSION` tells the whole
 story. `check-cachebust.mjs` found this pin on its own, by who SETS the global,
 and there are eight pins across the site now.
 
+#### A ring outranks a record, because the game says the ring is the goal
+
+**The board ranked on the regular season alone, and a champion sat 98th.** `score`
+was wins then point differential, so over 1,800 simulated league runs the median
+champion was 98th on the board, under a pile of 60 win teams that went out in the
+first round. The guide says "your goal: win the ring" and hands the player the
+playoff games to call themselves, and the one list that ranks them filed the title
+as decoration. Nothing failed: every row was right and the order was a different
+game's.
+
+`depth` is how far a run went, 0 to 6, derived by `rtf_submit_run()` and never
+sent: missed, lost the play-in, out in each of the four rounds, champions. A
+seeded run starts at 2 and a play-in run at 1, so a ring is 6 from either door.
+**`score` leads with it** (`depth * 1000000` over the old key), so a 45 win
+champion outranks a 68 win Finals loser and a Finals loss outranks a second round
+one. **The record is a board of its own**, `record_score`, because chasing 72 is
+its own sport. Three tabs: Best run, Best record, Team rating.
+
+**It shipped undeployed, which is what made it cheap.** A generated column cannot
+be altered, so a table created by the first version gets `score` dropped and
+re-added in an idempotent block that also backfills `depth` from columns that
+version already derived. Dropping the column drops its two indexes and the
+`create index if not exists` below puts them back. Applied twice over rows from
+the old file, verified on Postgres 16. The preflight row asks for `record_score`,
+so a database still on the first cut reads NO.
+
+**Made the playoffs means the bracket.** A play-in loss is not the playoffs in the
+NBA, and `made_playoffs`, the career's playoff count and the "In the field" badge
+all counted one. `madePlayoffs()` in the page is the rule, and `check-badges`
+restates it in `rowOf` beside the page's.
+
+**One daily per account per day, and the first stands.** The page refuses a
+replay, but a browser is not a wall: a cleared jar or a second device before the
+cloud save lands filed the day again with the board in hand. The function hands
+back the first entry, a unique partial index holds it, and `rtf_claim_run` will
+not turn a signed out daily into a second entry for a day already filed.
+
+**A board row opens to its five.** The picks rode on every row from day one and
+nothing drew them, so the board said who won and never what they built. They are
+drawn against this browser's own `DATA.allPlayers`, with no request.
+
+**A signed out run is placed in a field that counts it.** Its row is not on a named
+list, so the standing read "313th of 312" at the bottom. It says "Would be 41st of
+313" now, and a signed in standing waits for its own submit before it counts.
+
+**The SQL test had been dead since the roster went to five.** Its fixture sent six
+picks, the function has refused six since that change, and the file died at its
+first submit. Nothing ran it. It is five now and asserts both four and six are
+refused.
+
 #### Accounts are the site's, and nothing here is a gate
 
 `hoops/auth.js` adds NO new account system: `profiles` from
@@ -9578,6 +9628,16 @@ every team-season in the data. A bracket that picked the opponent instead
 would quietly rebuild the difficulty curve. What is drawn here is the field
 AROUND that path, and the fourteen games the player is not in are simulated
 for the reveal alone.
+
+#### A conference is twenty wins wide, and the walk made it fourteen
+
+Every seat was the player's record stepped one to three wins a seed, and the far
+conference stepped down from a 62 to 68 win top seed the same way. So an East 8
+seed won 56 and every club in it was better than every club in the player's West,
+which a fan reads in one glance. `brkLadder()` holds each seed within two wins of
+where it usually lands, off `BRK_OVER` and the play-in line, and the player's own
+record is still never moved. `check-bracket` asserts the far conference runs at
+least fourteen wins top to bottom and that no 8 seed has a top six record.
 
 #### It names nobody, and that is this game's rule rather than a shortcut
 
@@ -9778,6 +9838,15 @@ disappeared into it, which is the flat court arriving by a different door. At
 .42 it is a floor lit in the club's colours. **The layer count and the layer
 types are identical in both states**, so the .35s fade between clubs still
 interpolates.
+
+### The 1988 to 2002 Hornets are Charlotte's
+
+`CHH` pointed at the Pelicans, which is the legal entity that moved. The NBA handed
+that history back to Charlotte in 2014, and it is the history a Hornets fan means:
+Mourning, Larry Johnson and Muggsy. A Charlotte run in One Franchise had none of
+them and the draft note said "later the New Orleans Pelicans". It is `became:
+'CHO'` in `fetch-teams.mjs` and in `teams.json`, and `verify.mjs` asserts both
+directions.
 
 ### Playing all four modes, which is a different question from checking them
 

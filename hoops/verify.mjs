@@ -908,11 +908,14 @@ ok(bestWins > worstWins + 20,
   is(fr.length, 30, 'thirty current franchises are offered');
   ok(E.franchiseCodes('OKC').includes('SEA'), 'Oklahoma City reaches Seattle');
   ok(E.franchiseCodes('MEM').includes('VAN'), 'Memphis reaches Vancouver');
-  ok(E.franchiseCodes('NOP').includes('CHH'), 'New Orleans reaches the Charlotte Hornets');
-  /* The two Charlotte clubs are different franchises and this is the one pair
-     in the table that a lineage walk can plausibly merge. The Hornets left for
-     New Orleans and the Bobcats took the name later. */
-  ok(!E.franchiseCodes('CHO').includes('CHH'), 'the Hornets who left are not the Hornets who stayed');
+  /* THE HORNETS OF 1988 TO 2002 ARE CHARLOTTE'S, which is the NBA's own record
+     since 2014 and is what a fan picking the Hornets expects to find: Mourning,
+     Larry Johnson and Muggsy. This table once filed them under the Pelicans,
+     the legal entity that moved, and a Charlotte run had none of them. The two
+     New Orleans codes stay New Orleans. */
+  ok(E.franchiseCodes('CHO').includes('CHH'), 'Charlotte reaches the Hornets of 1988 to 2002');
+  ok(!E.franchiseCodes('NOP').includes('CHH'), 'and New Orleans does not claim them');
+  ok(E.franchiseCodes('NOP').includes('NOH'), 'New Orleans reaches its own Hornets years');
   ok(E.franchiseCodes('CHO').includes('CHA'), 'Charlotte reaches the Bobcats');
   ok(E.franchiseCodes('ZZZ').length === 1, 'a code with no row is a franchise of one, not a crash');
 
@@ -1879,29 +1882,70 @@ ok(bestWins > worstWins + 20,
     /* board.js's own copy, lifted out of the shipped file rather than
        rewritten here, for the reason the whole repo distrusts a second
        implementation: a copy of the arithmetic agrees with itself. */
-    const head = boardSrc.indexOf('function scoreOf(');
-    let depth = 0, end = -1;
-    for (let j = boardSrc.indexOf('{', head); j < boardSrc.length; j++) {
-      if (boardSrc[j] === '{') depth++;
-      else if (boardSrc[j] === '}' && --depth === 0) { end = j + 1; break; }
-    }
-    ok(head >= 0 && end > head, 'board.js still has a scoreOf to compare against');
     const roundTo = (n, places) => {
       const f = Math.pow(10, places);
       const v = Number(n) * f;
       return (v < 0 ? -Math.round(-v) : Math.round(v)) / f;
     };
-    const scoreOf = new Function('round1',
-      boardSrc.slice(head, end) + '\nreturn scoreOf;')((n) => roundTo(n, 1));
+    /* board.js carries three functions for this now (the record score, the
+       depth, and the score that adds them), so the lift takes the whole run of
+       them rather than one brace-matched function. */
+    const lh = boardSrc.indexOf('function depthOf(');
+    const le = boardSrc.indexOf('/* THE SIGNED-IN USER');
+    ok(lh >= 0 && le > lh, 'board.js still has depthOf, recordScoreOf and scoreOf together');
+    const lifted = new Function('round1', boardSrc.slice(lh, le)
+      + '\nreturn { depthOf, recordScoreOf, scoreOf };')((n) => roundTo(n, 1));
+    const { depthOf, recordScoreOf } = lifted;
+    const scoreOf = lifted.scoreOf;
+
+    const dm = /depth::int \* (\d+) \+ wins::int \* \d+/.exec(sql);
+    ok(!!dm, 'the score column leads with how far the run went');
+    const depthMul = dm ? Number(dm[1]) : NaN;
+    const runFromSql = (wins, diff, depth) => depth * depthMul + fromSql(wins, diff);
 
     let worst = null;
     for (let w = 0; w <= 82; w++) {
       for (let d = -20; d <= 20; d += 0.1) {
         const diff = roundTo(d, 1);
-        if (scoreOf(w, diff) !== fromSql(w, diff) && !worst) worst = [w, diff];
+        if (recordScoreOf(w, diff) !== fromSql(w, diff) && !worst) worst = ['record', w, diff];
+        for (let dp = 0; dp <= 6; dp += 3) {
+          if (scoreOf(w, diff, dp) !== runFromSql(w, diff, dp) && !worst) worst = ['run', w, diff, dp];
+        }
       }
     }
     is(worst, null, 'the client and the column compute the same score everywhere');
+
+    /* HOW FAR IT WENT, against the engine's own bracket. The SQL, board.js
+       and the engine each decide how many rounds a record gets, so every
+       legal (wins, series won) pair is walked through all three. A seeded run
+       starts at 2 and a play-in run at 1, and a ring is 6 from either door. */
+    const C = E.CONSTANTS;
+    let depthBad = null;
+    for (let w = 0; w <= 82; w++) {
+      const seat = E.seedFromRecord(w);
+      const rounds = seat.made ? seat.rounds : 0;
+      for (let po = 0; po <= rounds; po++) {
+        const want = rounds === 0 ? 0 : 6 - (rounds - po);
+        const got = depthOf(w, po, C.TOP_SIX_WINS, C.PLAY_IN_WINS);
+        if (got !== want && !depthBad) depthBad = [w, po, got, want];
+      }
+    }
+    is(depthBad, null, 'depth is 0 for the lottery and 6 for a ring, from either door');
+    /* The upgrade block backfills old rows with literal lines, because a DO
+       block cannot read the function's constants. They are a copy and have to
+       agree. */
+    const bf = /when regular_wins >= (\d+) then 2 \+ playoff_wins\s+when regular_wins >= (\d+) then 1 \+ playoff_wins/.exec(sql);
+    ok(!!bf, 'the migration still backfills depth for a table from the first version');
+    if (bf) is([Number(bf[1]), Number(bf[2])], [C.TOP_SIX_WINS, C.PLAY_IN_WINS],
+      'and its backfill uses the lines the game plays');
+
+    /* One step deeper always outranks any record one step shallower: a 22 win
+       champion is impossible, but the arithmetic has to hold for it anyway. */
+    let deeper = null;
+    for (let dp = 0; dp < 6; dp++) {
+      if (scoreOf(82, 60, dp) >= scoreOf(0, -60, dp + 1) && !deeper) deeper = dp;
+    }
+    is(deeper, null, 'going one round further always outranks any record');
 
     /* AND THE PROPERTY THE SHIFT AND THE CLAMP EXIST FOR. A differential can
        never carry into the wins digit, so a 49 win blowout never outranks a
@@ -1910,7 +1954,7 @@ ok(bestWins > worstWins + 20,
        question about the whole range. */
     let carried = null;
     for (let w = 0; w < 82; w++) {
-      const best = scoreOf(w, 60), worstNext = scoreOf(w + 1, -60);
+      const best = recordScoreOf(w, 60), worstNext = recordScoreOf(w + 1, -60);
       if (best >= worstNext && !carried) carried = [w, best, worstNext];
     }
     is(carried, null, 'one more win always outranks any differential');

@@ -596,8 +596,21 @@
   .lbnote.first{color:#f2c14e;}
 
   .lbrows{list-style:none;margin:0;padding:0;max-height:46vh;overflow-y:auto;}
-  .lbrow{display:flex;align-items:center;gap:10px;padding:9px 2px;
-    border-bottom:1px solid var(--cardb);min-width:0;}
+  .lbrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:9px 2px;
+    border-bottom:1px solid var(--cardb);min-width:0;cursor:pointer;}
+  .lbrow:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
+  /* THE FIVE, under the row that drafted them. A board of names and records
+     answers who won and never what they built, which is the first thing a fan
+     asks of the top of any leaderboard. The picks have ridden on every row
+     since the day it shipped and nothing drew them. */
+  .lbfive{flex:0 0 100%;margin:2px 0 0 40px;padding:0;list-style:none;
+    font-size:12px;line-height:1.55;color:var(--ink);}
+  .lbfive[hidden]{display:none;}
+  .lbfive li{display:flex;gap:8px;min-width:0;}
+  .lbfive .ps{flex:0 0 22px;color:var(--dim);font-weight:800;font-size:10.5px;
+    letter-spacing:.04em;padding-top:1px;}
+  .lbfive .pn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lbfive .pn i{font-style:normal;color:var(--dim);}
   .lbrow:last-child{border-bottom:0;}
   .lbrow .pl{flex:0 0 30px;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;color:var(--dim);
     text-align:right;}
@@ -2569,12 +2582,14 @@
       </label>
     </div>
 
-    <!-- TWO AXES AND NOT THREE. The record is the headline and the rating is
-         the roster, which are the two questions this game asks. A third on
-         point differential would order almost the same rows, because the
-         score already breaks a tie on wins with exactly that. -->
+    <!-- THREE AXES, AND HOW FAR YOU WENT COMES FIRST. The goal the guide
+         names is the ring, so Best run ranks a title above any record and a
+         Finals loss above a second round one. Best record is the 72 chase on
+         its own, and the rating is the roster. See board.js for why all three
+         earn a tab. -->
     <div class="ptabs" role="tablist">
-      <button class="ptab on" id="lb-ax-record" role="tab" aria-selected="true">Record</button>
+      <button class="ptab on" id="lb-ax-run" role="tab" aria-selected="true">Best run</button>
+      <button class="ptab" id="lb-ax-record" role="tab" aria-selected="false">Best record</button>
       <button class="ptab" id="lb-ax-rating" role="tab" aria-selected="false">Team rating</button>
     </div>
 
@@ -2656,7 +2671,7 @@
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
 <script src="engine.js?v=21"></script>
-<script src="run.js?v=10"></script>
+<script src="run.js?v=11"></script>
 <script src="badges.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
@@ -2666,7 +2681,7 @@
      for it rather than reading window.supabase once: on a repeat visit the data
      comes out of cache in milliseconds while this is still in flight. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=1"></script>
+<script src="board.js?v=2"></script>
 <script src="auth.js?v=1"></script>
 <!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
      college games; cloud.js is this game's own policy about slots, progress and
@@ -2683,7 +2698,13 @@ var E = window.RTF_ENGINE, R = window.RTF_RUN;
 var DATA = null, run = null, board = [];
 
 var $ = function(id){ return document.getElementById(id); };
-var money = function(v){ return '$' + (Math.round(v * 10) / 10).toFixed(1) + 'M'; };
+/* A WHOLE NUMBER OF MILLIONS IS WRITTEN WHOLE. "$120.0M" is how a spreadsheet
+   writes a salary cap and "$120M" is how a basketball fan does, so the decimal
+   only appears when there is something in it. */
+var money = function(v){
+  var r = Math.round(v * 10) / 10;
+  return '$' + (r % 1 === 0 ? r.toFixed(0) : r.toFixed(1)) + 'M';
+};
 
 /* A ROSTER COUNT, AS AN ENGLISH WORD, IN ONE PLACE.
  *
@@ -2783,7 +2804,7 @@ var DAILY_DARE = 'Everybody got the same ' + NUMWORD(E.SLOTS.length) + ' spins.'
  * handle. It is also what carries the diagnosis: `lastError` says which of the
  * two halves is missing, in words, on the screen that would otherwise just be
  * empty. */
-var NEED_BOARD = 1;
+var NEED_BOARD = 2;
 var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
   ? window.RTF_BOARD
   : {
@@ -3027,7 +3048,7 @@ function boot(){
       .then(function(v){ bootStep('Players loaded.'); return v; }),
     fetch('data/chemistry.json?v=1').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; }),
-    fetch('data/teams.json?v=3').then(function(r){ return r.json(); })
+    fetch('data/teams.json?v=4').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; })
   ]).then(function(res){
     if (res[1]) E.setCuratedChemistry(res[1]);
@@ -3491,7 +3512,7 @@ function frgFill(){
        different numbers, which is the class of thing check-numbers exists
        for, arriving inside one sentence. */
     'Spin for a season and a club, then sign one player off that roster. '
-      + '<b>' + NUMWORD(E.SLOTS.length) + ' times</b>, one for every position '
+      + '<b>' + NUMWORD(E.SLOTS.length, true) + ' times</b>, one for every position '
       + 'on the floor.',
     'All ' + NUMWORD(E.SLOTS.length) + ' fit under a <b>' + money(C.CAP_MUSD) + '</b> cap'
       + (dearest ? ', and the dearest man in the game is <b>' + money(dearest) + '</b>' : '')
@@ -5390,8 +5411,11 @@ function toSeason(){
      BEFORE tip-off, which is honest and useful, and the only thing wrong was
      the tense: the reader was being handed two records with nothing saying
      one of them had already been overtaken. */
-  $('p-proj').textContent = st.archetype.name + ' · before tip-off, '
-    + proj.typical + '-' + (82 - proj.typical) + ' and a ' + proj.titlePct + '% title';
+  /* "a 0% title" is not a phrase anybody says. Odds under one percent are
+     said as that, rather than printed as a zero that reads like a verdict. */
+  $('p-proj').textContent = st.archetype.name + ' · projected '
+    + proj.typical + '-' + (82 - proj.typical) + ' · title odds '
+    + (proj.titlePct < 1 ? 'under 1%' : proj.titlePct + '%');
 
   /* THE FIVE MEN, so the roster is on screen for the season it is playing.
      R.capOf rather than the constant, which is the one that stays true if a
@@ -5581,15 +5605,30 @@ function brkColumnWins(anchorSeed, anchorWins, rng){
   var out = new Array(8), cur = anchorWins;
   out[anchorSeed - 1] = anchorWins;
   for (var s = anchorSeed - 1; s >= 1; s--) {
-    cur += 1 + Math.floor(rng() * 3);
+    cur = Math.max(cur + 1 + Math.floor(rng() * 3), brkLadder(s) - 2);
     out[s - 1] = Math.min(E.CONSTANTS.REGULAR_SEASON_GAMES, cur);
   }
   cur = anchorWins;
   for (var t = anchorSeed + 1; t <= 8; t++) {
-    cur -= 1 + Math.floor(rng() * 3);
+    cur = Math.min(cur - 1 - Math.floor(rng() * 3), brkLadder(t) + 2);
     out[t - 1] = Math.max(20, cur);
   }
   return out;
+}
+
+/* WHERE A SEED USUALLY LANDS, and the walk above is held near it. Stepping one
+   to three wins a seed from a single anchor is monotone and is also far too
+   narrow: a real conference runs about twenty wins from its 1 seed to its 8,
+   and the walk ran fourteen. From a 67 win top seed it drew a 56 win 8 seed,
+   so every club in the far conference was better than every club in the
+   player's own, which a fan reads in one glance. The six seeds with a place
+   come off BRK_OVER, the two play-in seats sit between the play-in line and
+   the top six line, and the walk may not wander more than two wins from any
+   of it. The player's own record is still never moved. */
+function brkLadder(seed){
+  var C = E.CONSTANTS;
+  if (seed <= BRK_OVER.length) return C.TOP_SIX_WINS + BRK_OVER[seed - 1] + 1;
+  return seed === BRK_OVER.length + 1 ? C.TOP_SIX_WINS - 3 : C.PLAY_IN_WINS + 2;
 }
 
 /* How often the better seed takes the series, and how long it goes. Nothing
@@ -5625,7 +5664,7 @@ function brkBuild(){
   /* The far conference has no player, so it is anchored on its own top seed
      rather than on anybody: the same ladder the seeds are named off, plus a
      little room. */
-  var farTop = E.CONSTANTS.TOP_SIX_WINS + BRK_OVER[0] + Math.floor(rng() * 7);
+  var farTop = brkLadder(1) - 1 + Math.floor(rng() * 5);
   var farWins = brkColumnWins(1, farTop, rng);
 
   var seat = function(s, w, you){ return { seed: s, wins: w, you: !!you }; };
@@ -6725,7 +6764,8 @@ function renderOver(out){
       + ' wins gets you into the play-in, ' + E.CONSTANTS.TOP_SIX_WINS + ' gets you a seed.';
     po.appendChild(none);
   } else {
-    $('o-porounds').textContent = run.playoffs.rounds.length + ' rounds';
+    $('o-porounds').textContent = run.playoffs.rounds.length
+      + (run.playoffs.rounds.length === 1 ? ' round' : ' rounds');
 
     /* ONE BLOCK PER SERIES, AND IT USED TO BE TWO.
      *
@@ -6837,7 +6877,7 @@ function renderOver(out){
  * is decide the board is broken.
  */
 var lbMode = { door: 'league', key: null, day: null };
-var lbAxis = 'record';
+var lbAxis = 'run';
 /* The row this browser just put on the board, so it can be marked in the list.
    The id and not the whole run: a row comes back from the server and the local
    run is not it. */
@@ -6860,6 +6900,32 @@ function modeOfRun(r){
   return { door: 'league', key: null, day: null };
 }
 
+/* HOW MANY SERIES THE RUN WON, counted off the bracket rather than stored,
+   because run.playoffs is the record of what happened and a second count
+   beside it would be the thing that drifts. The submit and the standing both
+   read it, so the place the results screen shows is counted against the
+   number the row will actually hold. */
+function seriesWon(r){
+  return r && r.playoffs
+    ? r.playoffs.rounds.filter(function(x){ return x.won; }).length : 0;
+}
+function runDepth(r, out){
+  return B.depthOf(out.wins, seriesWon(r),
+    E.CONSTANTS.TOP_SIX_WINS, E.CONSTANTS.PLAY_IN_WINS);
+}
+
+/* HOW FAR A BOARD ROW WENT, in the words a fan uses. The server stores it as a
+   number from 0 to 6 and the list is ordered on it, so the line under a name
+   leads with it: the row above yours is above you for a reason you can read. */
+var DEPTH_WORDS = ['Missed the playoffs', 'Lost the play-in', 'Out in round one',
+  'Out in round two', 'Out in the conference finals', 'Lost the Finals', 'Champions'];
+
+/* The mode's name as it reads inside a sentence, where "on The league" is a
+   capital letter in the middle of a line. */
+function boardPhrase(m){
+  return modeName(m).replace(/^The /, 'the ');
+}
+
 function modeName(m){
   if (!m) return 'The league';
   if (m.door === 'daily') return "Today's run · day " + m.day;
@@ -6879,6 +6945,10 @@ function modeName(m){
    submitting there would put the same season on the board every time somebody
    reopened the tab. rtf_submit_run() swallows a same-minute duplicate as well,
    which covers a retry rather than this. */
+/* The submit in flight, so the standing can count the field AFTER this run's
+   row is in it rather than racing it. Raced, a signed in run was counted
+   against a field that did not hold it yet and printed one short. */
+var submitP = null;
 function submitRun(out){
   if (!run || run.submitted) return Promise.resolve(null);
   run.submitted = true;
@@ -6889,8 +6959,7 @@ function submitRun(out){
     /* HOW MANY SERIES WERE WON, counted off the bracket rather than stored,
        because run.playoffs is the record of what happened and a second count
        beside it would be the thing that drifts. */
-    playoffWins: run.playoffs
-      ? run.playoffs.rounds.filter(function(r){ return r.won; }).length : 0,
+    playoffWins: seriesWon(run),
     /* PER GAME, which is what a basketball differential means everywhere else
        and what the column holds. The season total is 82 times bigger and would
        be refused by the range check, loudly, which is the right direction for
@@ -6918,7 +6987,7 @@ function submitRun(out){
     seed: String(run.seed),
     rngCalls: run.rngCalls,
   };
-  return B.submit(payload).then(function(id){
+  return submitP = B.submit(payload).then(function(id){
     if (id) {
       lbMine = id;
       run.boardId = id;
@@ -6944,7 +7013,7 @@ function renderStanding(out){
   if (!el) return;
   var m = modeOfRun(run);
   var score = B.scoreOf(out.wins, (out.totalPF - out.totalPA)
-    / E.CONSTANTS.REGULAR_SEASON_GAMES);
+    / E.CONSTANTS.REGULAR_SEASON_GAMES, runDepth(run, out));
 
   var draw = function(big, head, sub, open){
     el.textContent = '';
@@ -6971,7 +7040,9 @@ function renderStanding(out){
   };
 
   el.hidden = true;
-  B.ranks(m, score).then(function(r){
+  (submitP || Promise.resolve(null)).then(function(){
+    return B.ranks(m, score);
+  }).then(function(r){
     if (!run || run.phase !== R.PHASES.OVER) return;   // they moved on
     if (r.place === null || r.total === null) {
       /* NOT REACHABLE IS NOT NOBODY. A board that cannot be asked and a board
@@ -6983,15 +7054,29 @@ function renderStanding(out){
           : 'Your run is safe. It is the board that is offline.', false);
       return;
     }
-    if (r.total === 0) {
-      draw('1st', 'First on the ' + modeName(m).toLowerCase() + ' board',
-        'Nobody has finished one here yet. Sign in and it has your name on it.', true);
+    /* A RUN PLAYED SIGNED OUT IS NOT ON THE LIST, which is named runs only,
+       so its place is where it WOULD sit and the field it is out of has to
+       count it: "313th of 312" is what this printed before, for any signed
+       out run at the bottom. A signed in run whose row has not landed yet is
+       the same case for a moment, so the field is never smaller than the
+       place. */
+    var st = A.state();
+    var named = !!(st && st.signedIn);
+    var field = Math.max(r.total + (named && run.boardId ? 0 : 1), r.place);
+    var at = r.place + ordinalOf(r.place);
+    if (!named) {
+      draw(at, 'Would be ' + at + ' of ' + field + ' on ' + boardPhrase(m),
+        'Sign in and your name goes on it.', true);
       return;
     }
-    draw(r.place + ordinalOf(r.place), r.place + ordinalOf(r.place) + ' of '
-      + r.total + ' on ' + modeName(m),
+    if (field === 1) {
+      draw('1st', 'First on ' + boardPhrase(m),
+        'Nobody has finished one here yet. The top spot is yours.', true);
+      return;
+    }
+    draw(at, at + ' of ' + field + ' on ' + boardPhrase(m),
       (r.played && r.played > r.total)
-        ? r.played + ' runs played here, ' + r.total + ' of them signed'
+        ? r.played + ' runs played here. ' + r.total + ' of them are signed in.'
         : 'Tap to see the board', true);
   });
 }
@@ -7067,10 +7152,10 @@ function paintBoard(){
   note.textContent = 'Loading.';
   foot.textContent = '';
 
-  $('lb-ax-record').className = 'ptab' + (lbAxis === 'record' ? ' on' : '');
-  $('lb-ax-rating').className = 'ptab' + (lbAxis === 'rating' ? ' on' : '');
-  $('lb-ax-record').setAttribute('aria-selected', lbAxis === 'record' ? 'true' : 'false');
-  $('lb-ax-rating').setAttribute('aria-selected', lbAxis === 'rating' ? 'true' : 'false');
+  ['run', 'record', 'rating'].forEach(function(ax){
+    $('lb-ax-' + ax).className = 'ptab' + (lbAxis === ax ? ' on' : '');
+    $('lb-ax-' + ax).setAttribute('aria-selected', lbAxis === ax ? 'true' : 'false');
+  });
 
   B.top(lbMode, 50, lbAxis).then(function(list){
     /* A SLOWER REQUEST MUST NOT PAINT OVER A FASTER ONE. Two selects a half
@@ -7114,13 +7199,16 @@ function lbRow(row, place){
   name.textContent = row.display_name || 'Anonymous';
   who.appendChild(name);
   var line = document.createElement('span');
-  /* WHAT THE ROSTER WAS, in the words the results screen already uses, and
-     never a number this board invented. A ring is the thing worth marking. */
+  /* HOW FAR IT WENT FIRST, because that is what the list is ordered on and
+     the reason the row above yours is above you. Then the system, in the words
+     the results screen already uses, and never a number this board invented.
+     A row filed before depth existed falls back to its seed. */
   var bits = [];
-  if (row.title_won) bits.push('Champion');
+  var d = row.depth == null ? null : Number(row.depth);
+  if (d !== null && DEPTH_WORDS[d]) bits.push(DEPTH_WORDS[d]);
+  else if (row.title_won) bits.push('Champions');
   else if (row.seed_label) bits.push(row.seed_label);
   if (row.archetype) bits.push(row.archetype);
-  if (row.all_time_rank) bits.push(row.all_time_rank + getOrdinal(row.all_time_rank) + ' all time');
   line.textContent = bits.join(' · ');
   if (row.title_won) line.className = 'ring';
   who.appendChild(line);
@@ -7138,6 +7226,50 @@ function lbRow(row, place){
   val.appendChild(em);
 
   li.appendChild(p); li.appendChild(who); li.appendChild(val);
+
+  /* THE FIVE, one tap away. Every row carries its picks as E.pkey strings,
+     which is the key DATA.allPlayers is built on, so a row is drawn against
+     this browser's own copy of the league with no request and no translation.
+     A pick the local data cannot name (a season this copy does not have yet)
+     says so rather than being skipped, because a roster of four reads as a
+     rendering fault. */
+  var picks = Array.isArray(row.picks) ? row.picks : [];
+  if (picks.length) {
+    var five = document.createElement('ul');
+    five.className = 'lbfive';
+    five.hidden = true;
+    var slots = Array.isArray(row.slots) ? row.slots : [];
+    picks.forEach(function(k, i){
+      var pl = DATA && DATA.allPlayers ? DATA.allPlayers[k] : null;
+      var r = document.createElement('li');
+      var ps = document.createElement('span');
+      ps.className = 'ps';
+      ps.textContent = slots[i] || (pl && pl.pp) || '';
+      var pn = document.createElement('span');
+      pn.className = 'pn';
+      if (pl) {
+        pn.textContent = pl.n + ' ';
+        var yr = document.createElement('i');
+        yr.textContent = pl.s + ' ' + E.teamName(pl.t);
+        pn.appendChild(yr);
+      } else {
+        pn.textContent = 'A season this copy of the game does not have';
+      }
+      r.appendChild(ps); r.appendChild(pn);
+      five.appendChild(r);
+    });
+    li.appendChild(five);
+    li.tabIndex = 0;
+    li.setAttribute('aria-expanded', 'false');
+    var flip = function(){
+      five.hidden = !five.hidden;
+      li.setAttribute('aria-expanded', five.hidden ? 'false' : 'true');
+    };
+    li.onclick = flip;
+    li.onkeydown = function(e){
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
+    };
+  }
   return li;
 }
 
@@ -7445,7 +7577,10 @@ function renderMonths(){
     box.appendChild(d);
   }
   if (best) {
-    $('o-monthsub').textContent = 'best stretch ' + best.w + '-' + best.l
+    /* NAMED BY ITS LENGTH. The story line above counts the best TEN games and
+       this counts the best block of twelve, so both called "best stretch" put
+       8-2 and 9-3 on one screen as two answers to one question. */
+    $('o-monthsub').textContent = 'best block ' + best.w + '-' + best.l
       + ', games ' + (best.from + 1) + ' to ' + best.to;
   }
 }
@@ -7531,7 +7666,7 @@ function seasonStory(out){
   if (!bits.length) {
     var run10 = bestStretch(games, 10);
     if (run10) {
-      bits.push('Best stretch: ' + run10.w + '-' + run10.l + ' ' + when(run10.at) + '.');
+      bits.push('Best ten games: ' + run10.w + '-' + run10.l + ' ' + when(run10.at) + '.');
     }
   }
 
@@ -7991,6 +8126,16 @@ function blankCareer(){
  * cannot reach into the one being compared against. A structuredClone would
  * do the same job and is not available everywhere this has to run.
  */
+/* MADE THE PLAYOFFS MEANS THE BRACKET, NOT THE PLAY-IN. In the NBA a club that
+   loses its play-in game did not make the playoffs, and "In the field" lit on
+   exactly that season, beside a results screen reading LOST THE PLAY-IN. A
+   play-in run is in the field once it has won the play-in, and not before. */
+function madePlayoffs(r){
+  var rs = r && r.playoffs && r.playoffs.rounds;
+  if (!rs || !rs.length) return false;
+  return rs[0].round !== 'Play-In' || !!rs[0].won;
+}
+
 function recordRun(out){
   var before = loadCareer() || blankCareer();
   var c = loadCareer() || blankCareer();
@@ -7999,7 +8144,7 @@ function recordRun(out){
   c.totalLosses += out.losses;
   if (out.titleWon) c.rings++;
   if (out.beatRecord) c.beat72++;
-  if (run.playoffs && run.playoffs.rounds.length) c.playoffs++;
+  if (madePlayoffs(run)) c.playoffs++;
   if (out.wins > c.bestWins) {
     c.bestWins = out.wins;
     c.bestLabel = out.wins + '-' + out.losses;
@@ -8101,7 +8246,7 @@ function recordRun(out){
     id: (run && typeof run.seed === 'number') ? run.seed : undefined,
     w: out.wins, l: out.losses,
     ring: !!out.titleWon,
-    po: !!(run.playoffs && run.playoffs.rounds.length),
+    po: madePlayoffs(run),
     rating: Math.round(out.rating),
     chem: out.chemistry && typeof out.chemistry.bonus === 'number'
       ? Math.round(out.chemistry.bonus * 100) / 100 : 0,
@@ -9175,6 +9320,7 @@ $('lb-key').onchange = function(){
   lbMode = { door: lbMode.door, key: this.value, day: null };
   paintBoard();
 };
+$('lb-ax-run').onclick = function(){ lbAxis = 'run'; paintBoard(); };
 $('lb-ax-record').onclick = function(){ lbAxis = 'record'; paintBoard(); };
 $('lb-ax-rating').onclick = function(){ lbAxis = 'rating'; paintBoard(); };
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a

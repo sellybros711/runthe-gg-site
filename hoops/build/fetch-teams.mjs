@@ -70,7 +70,13 @@ const DEFUNCT = {
   BUF: { city: 'Buffalo', name: 'Braves', from: 1970, to: 1978, became: 'LAC' },
   NOH: { city: 'New Orleans', name: 'Hornets', from: 2002, to: 2013, became: 'NOP' },
   NOK: { city: 'New Orleans/Oklahoma City', name: 'Hornets', from: 2005, to: 2007, became: 'NOP' },
-  CHH: { city: 'Charlotte', name: 'Hornets', from: 1988, to: 2002, became: 'NOP' },
+  /* THE NBA'S OWN RECORD, NOT THE LEGAL ENTITY'S. The club that moved to New
+     Orleans in 2002 is the Pelicans, but in 2014 the league handed the
+     Hornets' 1988 to 2002 history back to Charlotte, and that is the history
+     a Hornets fan means: Mourning, Larry Johnson and Muggsy are Charlotte's.
+     This row pointed at NOP for a while and a fan picking Charlotte in One
+     Franchise got none of them. */
+  CHH: { city: 'Charlotte', name: 'Hornets', from: 1988, to: 2002, became: 'CHO' },
   SFW: { city: 'San Francisco', name: 'Warriors', from: 1962, to: 1971, became: 'GSW' },
   STL: { city: 'St. Louis', name: 'Hawks', from: 1955, to: 1968, became: 'ATL' },
   SDR: { city: 'San Diego', name: 'Rockets', from: 1967, to: 1971, became: 'HOU' },

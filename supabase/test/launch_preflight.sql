@@ -300,7 +300,12 @@ check_rows(sort, migration, what, breaks, ok) as (
       'The Run The Floor board never loads, for everybody, for ever, and it is indistinguishable from a network that is down. The game plays, the run records in the career, the badges light, and the one thing missing is the list. Nobody reports it.',
       (select count(*) > 0 from has_table where name = 'rtf_runs')
       and (select count(*) > 0 from proc where name = 'rtf_submit_run')
-      and (select count(*) > 0 from proc where name = 'rtf_board_modes'))
+      and (select count(*) > 0 from proc where name = 'rtf_board_modes')
+      -- AND THE VERSION THAT RANKS A RING FIRST. The first cut of 108 ranked
+      -- on the regular season alone, and a database holding it plays and
+      -- files perfectly while the board puts a champion 98th. record_score
+      -- only exists in the version that fixed it.
+      and (select count(*) > 0 from col where tbl = 'rtf_runs' and name = 'record_score'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

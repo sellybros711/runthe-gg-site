@@ -81,10 +81,12 @@ function fakeRow(i, o = {}) {
     display_name: o.name || ('player' + i),
     run_mode: o.mode || 'league', lock_key: o.key ?? null, daily_day: o.day ?? null,
     wins, losses: 82 - wins, games: 82, playoff_wins: o.po ?? 0,
+    depth: o.ring ? 6 : 2 + (o.po ?? 0),
     made_playoffs: true, title_won: !!o.ring, beat_record: wins >= 72, is_goat: wins >= 74,
     seed_label: 'Top six seed', point_diff: 5.5, rating: o.rating ?? (80 - i),
     ortg: 118, drtg: 112, chemistry: 1.4, structure_mult: 1.02, archetype: 'Triangle',
-    spend_musd: 120, respins: 0, all_time_rank: 50 + i, picks: [], slots: [],
+    spend_musd: 120, respins: 0, all_time_rank: 50 + i,
+    picks: o.picks || [], slots: o.slots || [],
   };
 }
 
@@ -409,7 +411,13 @@ const main = async () => {
     /* One of the rows IS this browser's, so the "you" mark has something to
        land on. Without it that assertion can only ever pass by not finding a
        mark, which is the badge that cannot be lit. */
-    stub.rows = [fakeRow(0, { ring: true, name: 'jordan' }),
+    /* Five real seasons out of the shipped pool, keyed the way a row carries
+       them, so tapping the champion's row has a roster to draw. */
+    const POOL = JSON.parse(fs.readFileSync(path.join(ROOT, 'hoops', 'data', 'players.json'), 'utf8'));
+    const FIVE = ['PG', 'SG', 'SF', 'PF', 'C'].map((pos) => POOL.find((r) => r.pp === pos && r.s === 1996));
+    const FIVE_KEYS = FIVE.map((r) => r.i + '|' + r.s + '|' + r.t);
+    stub.rows = [fakeRow(0, { ring: true, name: 'jordan', picks: FIVE_KEYS,
+        slots: ['PG', 'SG', 'SF', 'PF', 'C'] }),
       fakeRow(1, { id: stub.yourId, name: 'you' }), fakeRow(2)];
     await boot(page);
     /* A DECADES RUN AND NOT A LEAGUE ONE, and that is the difference between
@@ -434,7 +442,14 @@ const main = async () => {
     });
     ok(!stand.hidden, 'the results screen says where the run landed');
     ok(/41st/.test(stand.text), `and names the place (${stand.text})`);
-    ok(/312/.test(stand.text), 'out of the field it was counted against');
+    /* SIGNED OUT, THIS RUN IS NOT ON THE LIST, which is named runs only, so
+       the field it is placed in has to count it: the stand-in answers 312
+       named runs and the place is where it WOULD sit among 313. This read
+       "313th of 312" for any signed out run at the bottom before. */
+    ok(/Would be 41st of 313/.test(stand.text),
+      `out of the field it was counted against, itself included (${stand.text})`);
+    ok(/sign in/i.test(stand.text), 'and it says what puts the name on it');
+    ok(!/on The /.test(stand.text), 'and the board is named mid-sentence in lower case');
     ok(!stand.disabled, 'and it opens something');
 
     await page.evaluate(() => document.querySelector('#o-stand').click());
@@ -448,6 +463,35 @@ const main = async () => {
     ok(s.keyShown, 'with the decade it was played in already chosen');
     is(s.rows, 3, 'the rows are listed');
     is(s.mine, 1, 'and this browser\'s own row is the one marked');
+
+    /* HOW FAR IT WENT LEADS THE LINE, because that is what Best run orders on
+       and the reason the row above yours is above you. */
+    const lines = await page.evaluate(() => [...document.querySelectorAll('#lb-rows .lbrow .who > span')]
+      .map((e) => e.textContent));
+    ok(/^Champions/.test(lines[0] || ''), `the champion's row says so first (${lines[0]})`);
+    ok(/^Out in round one/.test(lines[2] || ''), `and a first round exit says that (${lines[2]})`);
+    ok(!lines.some((l) => /all time/.test(l)), 'and the line carries no second ranking to argue with the first');
+
+    /* THE FIVE ARE ONE TAP AWAY. The picks ride on every row and nothing drew
+       them, so the board answered who won and never what they built. */
+    const shut = await page.evaluate(() => {
+      const f = document.querySelector('#lb-rows .lbrow .lbfive');
+      return f ? f.hidden : null;
+    });
+    is(shut, true, 'the roster under a row starts folded');
+    await page.evaluate(() => document.querySelector('#lb-rows .lbrow').click());
+    await page.waitForTimeout(150);
+    const five = await page.evaluate(() => {
+      const row = document.querySelector('#lb-rows .lbrow');
+      const f = row.querySelector('.lbfive');
+      return { hidden: f.hidden, exp: row.getAttribute('aria-expanded'),
+        names: [...f.querySelectorAll('li')].map((li) => li.textContent) };
+    });
+    ok(!five.hidden && five.exp === 'true', 'tapping the row opens its five');
+    is(five.names.length, 5, 'all five are drawn');
+    ok(FIVE.every((r, i) => (five.names[i] || '').includes(r.n)),
+      `by name, in slot order (${five.names.join(' | ')})`);
+    ok(five.names.every((t) => /1996/.test(t)), 'each with the season it was');
 
     /* TWO PATHS REACH THE SHEET AND BOTH HAVE TO LAND ON THE SAME BOARD. The
        standing passes the mode; Home and the career sheet pass nothing and
@@ -525,7 +569,11 @@ const main = async () => {
       'and leaves out rows that have no rating, so the list and the count agree');
     await page.evaluate(() => document.querySelector('#lb-ax-record').click());
     await page.waitForTimeout(400);
-    ok(lastQuery().includes('order=score.desc'), 'the record axis orders on the score');
+    ok(lastQuery().includes('order=record_score.desc'), 'the record axis orders on the record alone');
+    await page.evaluate(() => document.querySelector('#lb-ax-run').click());
+    await page.waitForTimeout(400);
+    ok(lastQuery().includes('order=score.desc'),
+      'and Best run orders on the score, which leads with how far the run went');
 
     /* SWITCHING THE DOOR RESETS THE LOCK. Coming back to Decades and getting
        whichever era the last session left behind is a screen answering a

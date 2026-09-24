@@ -2163,16 +2163,16 @@
       "sha": "a941d8a3dd17a335"
     },
     "run.js": {
-      "v": "10",
-      "sha": "ae44f3f1fae86358"
+      "v": "11",
+      "sha": "5f6c878f376382a4"
     },
     "badges.js": {
       "v": "1",
       "sha": "0b4588cf96acbdd3"
     },
     "board.js": {
-      "v": "1",
-      "sha": "fd3b8aa6a64326c3"
+      "v": "2",
+      "sha": "e05bac77c8126345"
     },
     "auth.js": {
       "v": "1",
@@ -2195,8 +2195,8 @@
       "sha": "92660036068e82d5"
     },
     "data/teams.json": {
-      "v": "3",
-      "sha": "b46bbe6c1ea84b64"
+      "v": "4",
+      "sha": "2fd302df45789fe0"
     }
   },
   "ideas/index.html": {
