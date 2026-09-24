@@ -216,7 +216,27 @@ h1,h2,h3{margin:0}
 /* The sheen and the fine ruling on .btn::before are written for the brown fill
    and read as a smear on leather. */
 .btn.ball::before{display:none}
-.bs{position:absolute;top:0;height:100%;width:auto;aspect-ratio:1;pointer-events:none}
+/* 2.1 TIMES THE BUTTON'S HEIGHT, and that is how far the seam reaches in rather
+   than how wide the box is: a wider box is a LONGER, FLATTER arc at the same
+   stitch pitch, never a stretched one, because the aspect ratio is preserved.
+   It shipped at 1 and the seams hugged the two ends with a wide empty field
+   between them, which reads as a pale bar with a decoration at each end rather
+   than as a ball. Reported.
+
+   PICKED WITH REAL ROOM, NOT AS THE LAST VALUE THAT FITS. Measured ink to label
+   on a 358px button: 45px of clearance a side at 1, 21 at 2.0, 19 at 2.1 and 14
+   at 2.3, and at 2.7 the seam runs through the D of DRAFT. Every one of those is
+   the FALLBACK face, which is wider than the Bebas a visitor gets, so a reach
+   that clears here clears on a phone with room spare. */
+.bs{position:absolute;top:0;height:100%;width:auto;aspect-ratio:2.1;pointer-events:none}
+/* THE LABEL DOES NOT SHRINK AND THE BUTTON DOES, so there is a width where 2.1
+   stops fitting. Measured ink to label on the real page: 135px of clearance a
+   side at 660, 30 at 390, 15 at 360 and MINUS 4.8 at 320, where the seams run
+   into the D and the M. 320 is an iPhone SE rather than a hypothetical, so the
+   reach comes back to 1.55 under 360, which is 9px of clearance there.
+   All of those are the FALLBACK face, which is wider than the Bebas a visitor
+   gets, so each is the pessimistic reading and a real phone has more. */
+@media (max-width:359px){.bs{aspect-ratio:1.55}}
 .bs-l{left:0}
 /* One symbol, mirrored. A second path for the right hand seam is a second copy of
    a drawing, and the two would drift the first time either was retouched. */
@@ -1514,10 +1534,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
      thing stops reading as a baseball. Generated rather than drawn by hand: the
      curve is a quadratic and each stitch is placed on its normal. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-  <symbol id="seam" viewBox="0 0 100 100">
-    <path d="M2 -16Q78 50 2 116" fill="none" stroke="rgba(150,120,96,.34)" stroke-width="2.2"/>
+  <symbol id="seam" viewBox="0 0 210 100">
+    <path d="M4 -16Q166 50 4 116" fill="none" stroke="rgba(150,120,96,.34)" stroke-width="2.2"/>
     <path fill="none" stroke="var(--lace)" stroke-width="3.2" stroke-linecap="round"
-      d="M9.1 -13.9L10.2 -22.4M4.7 -9.3L-3.6 -7.6M18.0 -5.0L19.8 -13.3M13.3 -0.6L4.9 0.4M25.6 4.1L28.1 -4.1M20.6 7.9L12.1 8.2M31.9 13.1L35.2 5.3M26.5 16.5L18.0 15.9M36.8 22.3L41.0 14.9M31.0 24.9L22.7 23.3M40.4 31.5L45.5 24.7M34.2 33.3L26.2 30.6M42.5 40.7L48.6 34.8M36.2 41.7L28.6 37.9M43.2 50.0L50.1 45.1M36.8 50.0L29.9 45.1M42.5 59.3L50.1 55.5M36.2 58.3L30.1 52.4M40.4 68.5L48.4 65.8M34.2 66.7L29.1 59.9M36.8 77.7L45.2 76.1M31.0 75.1L26.8 67.7M31.9 86.9L40.4 86.3M26.5 83.5L23.2 75.7M25.6 95.9L34.1 96.2M20.6 92.1L18.1 83.9M18.0 105.0L26.5 106.0M13.3 100.6L11.6 92.3M9.1 113.9L17.4 115.6M4.7 109.3L3.6 100.8"/>
+      d="M12.8 -15.8L11.0 -24.1M10.3 -9.9L3.0 -5.5M26.9 -9.5L25.4 -17.8M24.1 -3.7L16.7 0.4M39.5 -3.1L38.4 -11.5M36.5 2.5L28.9 6.3M50.7 3.3L50.1 -5.2M47.3 8.7L39.5 12.1M60.4 9.7L60.4 1.2M56.7 14.9L48.7 17.7M68.7 16.1L69.5 7.7M64.6 21.0L56.3 23.0M75.6 22.7L77.3 14.3M70.9 27.0L62.5 28.2M81.0 29.3L83.8 21.3M75.8 33.0L67.3 32.9M85.0 36.1L89.1 28.7M79.2 38.8L70.8 37.2M87.4 43.0L93.0 36.6M81.1 44.4L73.3 41.2M88.2 50.0L95.1 45.1M81.8 50.0L74.9 45.1M87.4 57.0L95.2 53.8M81.1 55.6L75.5 49.2M85.0 63.9L93.3 62.4M79.2 61.2L75.0 53.8M81.0 70.7L89.5 70.6M75.8 67.0L72.9 59.0M75.6 77.3L84.0 78.4M70.9 73.0L69.2 64.6M68.7 83.9L77.0 85.9M64.6 79.0L63.8 70.5M60.4 90.3L68.4 93.1M56.7 85.1L56.7 76.6M50.7 96.7L58.5 100.1M47.3 91.3L47.9 82.8M39.5 103.1L47.1 106.9M36.5 97.5L37.6 89.0M26.9 109.5L34.3 113.6M24.1 103.7L25.6 95.3M12.8 115.8L20.1 120.2M10.3 109.9L12.1 101.6"/>
   </symbol>
 </svg>
 <div class="wrap">

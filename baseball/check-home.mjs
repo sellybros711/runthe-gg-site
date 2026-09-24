@@ -225,6 +225,64 @@ for (const [w, h] of [[390, 844], [360, 740], [320, 568], [768, 1024], [999, 900
     `${w}px: the two reels share one line above the field`,
     `year ${y.top}-${y.bottom}, team ${t.top}, field ${field.top}`);
   claim(go === 'none', `${w}px: the daily card carries no second control`, `display ${go}`);
+  /* THE SEAMS REACH IN, AND THE LABEL KEEPS THE MIDDLE. The draft button is a crop
+     of a baseball and the seam is sized off the button's HEIGHT, so it is a fixed
+     number of pixels while the button narrows with the screen: there is a width
+     where it runs into the words. Measured at 2.1x the height it is 33px clear at
+     390 and MINUS 4.8 at 320, which is an iPhone SE rather than a hypothetical, so
+     the reach steps back under 360.
+
+     THE INK IS READ WITH getBBox THROUGH THE SYMBOL, and the two obvious handles
+     are both wrong. The <svg> BOX is 111px where the drawing inside it is 50, so
+     it reports a collision that is not there. And getBoundingClientRect on the
+     <use> answers 23.3px in a place the ink is 50.5 wide: Chromium is not
+     reporting the referenced geometry there, and a guard built on it certified a
+     ball a fifth of its real size. getBBox on the path inside the <symbol> works
+     even though a symbol never renders, and it reads the SHIPPED drawing rather
+     than a second copy of the numbers that generated it. */
+  const seam = await p.evaluate(() => {
+    const el = document.querySelector('#b-start');
+    if (!el || !el.offsetWidth) return null;
+    const sym = document.querySelector('#seam');
+    const stitches = sym && sym.querySelectorAll('path')[1];
+    const boxes = [...el.querySelectorAll('.bs')].map((s) => s.getBoundingClientRect());
+    if (!stitches || boxes.length !== 2) return null;
+    const bb = stitches.getBBox();
+    const vbW = Number(sym.getAttribute('viewBox').split(/[\s,]+/)[2]);
+    const pad = Number(stitches.getAttribute('stroke-width') || 0) / 2;
+    /* How far across its own box the drawing reaches, as a fraction. */
+    const f = (bb.x + bb.width + pad) / vbW;
+    const lab = el.querySelector('span').getBoundingClientRect();
+    const inkW = f * boxes[0].width - (Math.max(0, bb.x - pad) / vbW) * boxes[0].width;
+    return { l: +(lab.left - (boxes[0].left + f * boxes[0].width)).toFixed(1),
+      /* The right seam is the same symbol mirrored, so its ink is the same
+         fraction measured back from the box's right edge. */
+      r: +((boxes[1].right - f * boxes[1].width) - lab.right).toFixed(1),
+      ink: +inkW.toFixed(1) };
+  });
+  claim(seam && seam.l > 0 && seam.r > 0,
+    `${w}px: the seams never touch the label`,
+    seam ? `gap ${seam.l} left, ${seam.r} right` : 'no ball button found');
+  /* And the seam is still a BALL rather than a mark at each end, which is the
+     defect the reach was widened for.
+
+     AGAINST THE BUTTON'S HEIGHT, NOT ITS WIDTH, and the first draft had it the
+     other way round and failed on a correct desktop. The button is a crop of a
+     ball: a wider screen shows MORE clear leather between the same two seams,
+     which is what a wider crop is, so a share of the width falls as the page
+     grows and says nothing about the drawing. The height is the ball.
+
+     Measured ink over button height: 0.46 at the 1.0 reach this replaced, 0.71 at
+     the 1.55 the narrowest phones get, 0.97 at the 2.1 everything else gets. The
+     threshold is 0.58, the MIDDLE of the gap between the defect and the narrow
+     arm rather than the last value that clears it. It is a backstop against a
+     gross regression and not a fine measure of the reach, because those two arms
+     are only a third of a button-height apart. */
+  const btn = await box(p, '#b-start');
+  claim(seam && btn && seam.ink / btn.h > 0.58,
+    `${w}px: and they are a ball rather than a mark at each end`,
+    seam && btn ? `${seam.ink}px of ink against a ${btn.h}px tall button`
+      + ` (${(seam.ink / btn.h).toFixed(2)}x)` : '');
   await ctx.close();
 }
 

@@ -10814,6 +10814,23 @@ shallow chevron. Leaned the same way (`+LEAN*side`) one row comes out nearly
 parallel to the seam and the picture stops being a baseball at all, which is
 obvious on screen and invisible in the source.
 
+**The seams reach 2.1 times the button's HEIGHT in, and it shipped at 1.** At 1
+they hugged the two ends with a wide empty field between them, which reads as a
+pale bar with a decoration at each end rather than as a ball. Reported. A wider
+seam box is a LONGER, FLATTER arc at the same stitch pitch (10.4 against 10.5),
+never a stretched one, because the aspect ratio is preserved.
+
+**Picked with real room, not as the last value that fits.** Ink to label on a
+358px button: 45px of clearance a side at 1, 21 at 2.0, 19 at 2.1, 14 at 2.3, and
+at 2.7 the seam runs through the D of DRAFT.
+
+**THE LABEL DOES NOT SHRINK AND THE BUTTON DOES**, so there is a width where 2.1
+stops fitting: measured on the real page it is 135px clear a side at 660, 30 at
+390, 15 at 360 and **minus 4.8 at 320**, where the seams run into the D and the M.
+320 is an iPhone SE rather than a hypothetical, so the reach steps back to 1.55
+under 360. Every one of those is the FALLBACK face, which is wider than the Bebas
+a visitor gets, so each is the pessimistic reading.
+
 **Four geometries were rendered and looked at**, which is the only way this has
 ever been settled here:
 
@@ -10866,6 +10883,36 @@ reference photo's text is a deeper brick than the thread anyway.
 So `--lace` is the waxed thread, which on a real ball is bright, and `--lace-ink`
 is the label, which has to be read rather than admired. `#8a1626` measures 8.23:1
 on the hide and clears the probe's own model at about 5.4.
+
+#### Two handles for the seam's ink are wrong, and the guard tried both
+
+`check-home.mjs` asserts the seams never touch the label and are still a ball, at
+every width it already walks. Getting at the drawing took three attempts:
+
+- **The `<svg>` BOX is 111px where the drawing inside it is 50.** The arc tops out
+  about two thirds across its own box, so measuring the box reports a collision
+  that is not there: it failed at 320, 360 and 390 on a page with nothing wrong.
+- **`getBoundingClientRect()` on the `<use>` answers 23.3px** in a place the ink is
+  50.5 wide. Chromium is not reporting the referenced geometry there, and a guard
+  built on it certified a ball at a fifth of its real size.
+- **`getBBox()` on the path inside the `<symbol>` works**, even though a symbol
+  never renders, and it reads the SHIPPED drawing rather than a second copy of the
+  numbers that generated it.
+
+**The second claim is against the button's HEIGHT, and the first draft used its
+WIDTH and failed on a correct desktop.** The button is a crop of a ball, so a wider
+screen shows more clear leather between the same two seams: a share of the width
+falls as the page grows and says nothing about the drawing. The height is the ball.
+
+Measured ink over button height: **0.46** at the reach this replaced, **0.71** at
+the 1.55 the narrowest phones get, **0.97** at 2.1. The threshold is 0.58, the
+middle of the gap rather than the last value that clears it, and it is a backstop
+against a gross regression rather than a fine measure, because those two arms are
+only a third of a button-height apart.
+
+Both were proved by mutation: putting the reach back to 1 fails the ball claim at
+all five widths naming `0.45x`, and removing the narrow step-back fails the
+overlap claim at 320 alone naming `gap -2.9 left, -2.9 right`.
 
 ### The share card had no source and no builder, and was set in a fallback
 
