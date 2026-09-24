@@ -5806,8 +5806,18 @@ first.
 
 **It is worth +0.58 runs a nine innings a side**, measured through the sweep
 against a copy of the page with the rule alone removed, over 200 games an arm on
-one seed. That is a real move and it is recorded rather than compensated: the
-old behaviour was not cheaper, it was wrong.
+one seed, which is the controlled comparison: one build, one distribution, the
+rule the only difference. That is a real move and it is recorded rather than
+compensated, because the old behaviour was not cheaper, it was wrong.
+
+**WHAT WAS NOT RE-MEASURED IS THE ABSOLUTE FIGURE.** `check-runs.mjs` is the
+instrument for that, it plays real games through the real buttons, and it takes
+the better part of an hour for a sample that its own header says cannot resolve
+half a run. So the 6.2 a nine recorded above is now a LOWER BOUND, and the
+sweep's +14% says the real number is somewhere near seven. Read it that way, and
+if the mode ever needs the run environment settled, that is the file to run
+rather than this one: the sweep's outcome distribution is the harness's, not the
+game's, so its absolute number means nothing and its difference means everything.
 
 **AN X IS NOT A BLANK, AND THE BOARD HAD A COLUMN TOO MANY.** A home team ahead
 when the top of the last inning ends does not bat, and the board wrote the same
