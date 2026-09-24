@@ -114,7 +114,16 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
   const worst = new Map();     /* control -> the worst overflow it ever had */
   const seen = new Set();      /* every control this screen ever offered */
   let pageOver = 0, samples = 0, guard = 0;
-  while (guard++ < 2600) {
+  /* BOUNDED IN WALL CLOCK RATHER THAN IN PRESSES, because a press budget is a
+     guess about how fast the game runs and a five inning game at Fast is
+     minutes of real time. What this needs is not a finished game: it needs the
+     deck at its FULLEST, and the play by play is what grows it, so a couple of
+     innings is most of the way there. The result screen is reached by ending
+     the game rather than by waiting it out, since its controls are worth
+     sampling and nothing about them depends on how the game got there. */
+  const until = Date.now() + (QUICK ? 60e3 : 120e3);
+  while (Date.now() < until) {
+    guard++;
     const st = await pg.evaluate(() => {
       const g = State.game;
       const btn = [...document.querySelectorAll('#app button, #app .btn')]
@@ -157,11 +166,33 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
     }
     await pg.waitForTimeout(110);
   }
+  /* Now the result screen, whose controls nothing above has looked at. */
+  const midInn = await pg.evaluate(() => State.game ? State.game.inning : 0).catch(() => 0);
+  await pg.evaluate(() => {
+    const g = State.game;
+    if (g && !g.finished) { g.over = true; g.winner = g.home.score >= g.away.score ? 'home' : 'away'; finishGame(); }
+  }).catch(() => {});
+  await pg.waitForTimeout(1200);
+  const res = await pg.evaluate(() => {
+    const out = [];
+    for (const e of document.querySelectorAll('#app button, #app .btn')) {
+      const s = getComputedStyle(e);
+      if (s.display === 'none' || s.visibility === 'hidden') continue;
+      const r = e.getBoundingClientRect();
+      if (!r.height || !r.width) continue;
+      out.push([(e.textContent || '').trim().slice(0, 22) || e.id || 'unnamed',
+                Math.round(Math.max(r.right - innerWidth, -r.left))]);
+    }
+    return { out, screen: State.screen };
+  }).catch(() => ({ out: [], screen: '?' }));
+  for (const [t, o] of res.out) { seen.add(t); if (o > 1) worst.set(t + ' (result)', o); }
+
   const fin = await pg.evaluate(() => ({
     screen: State.screen, fielded: window.__fielded | 0,
     inn: State.game ? State.game.inning : 0,
     sc: State.game ? State.game.away.score + '-' + State.game.home.score : '',
   })).catch(() => ({}));
+  fin.inn = midInn;
   await ctx.close();
   return { worst, seen, pageOver, samples, errs, fin };
 }
@@ -181,8 +212,9 @@ async function main() {
        (off.length ? 'off the window: ' + off.join(', ') : '') +
        (r.pageOver > 0 ? `  the page is ${r.pageOver}px longer than the window` : ''));
     ok(r.errs.length === 0, `${tag}  no page errors`, [...new Set(r.errs)].join(' | '));
-    ok(r.fin.screen === 'result', `${tag}  the game reached its result screen`,
+    ok(r.fin.screen === 'result', `${tag}  the result screen came up and fits`,
        'screen=' + r.fin.screen);
+    ok(r.fin.inn >= 2, `${tag}  it played real innings`, 'reached inning ' + r.fin.inn);
   }
   /* COVERAGE. A run that never opened a deck saw no controls, and a run where
      nobody ever fielded is a shorter game with fewer of them: both would pass

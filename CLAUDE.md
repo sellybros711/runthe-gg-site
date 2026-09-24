@@ -5372,7 +5372,7 @@ to 750, so a crop centred on the canvas cut his bat off at the frame's edge.
 ##### FOUR CONTROLS WERE OFF THE WINDOW, AND THE ARENA'S OWN FLOOR PUT ONE OF THEM THERE
 
 ```
-node mythiball/check-reach.mjs          six screens, a whole game each
+node mythiball/check-reach.mjs          six screens, two minutes of play each
 node mythiball/check-reach.mjs --quick  one screen, for a loop
 ```
 
@@ -5458,9 +5458,16 @@ right, and the control is not there.
 first frame of a game would have passed every one of the four faults, because the
 deck GROWS: the play by play fills up all game, a pitching deck is taller than a
 batting one, and the mound offer and the send button come and go with the
-situation. So it drives a whole game at each screen and keeps the worst reading
-of every control. **It asks both pointer kinds**, because one of the four was a
-label naming keys and the label is shorter on a touch screen.
+situation. So it plays at each screen and keeps the WORST reading of every
+control. **It asks both pointer kinds**, because one of the four was a label
+naming keys and the label is shorter on a touch screen.
+
+**IT IS BOUNDED IN WALL CLOCK RATHER THAN IN PRESSES, and it does not wait a game
+out.** A press budget is a guess about how fast the game runs, and what this
+needs is not a finished game: it needs the deck at its FULLEST, which is the play
+by play filling up, which is a couple of innings. The result screen has controls
+of its own and nothing about them depends on how the game got there, so it is
+reached by ENDING the game rather than by playing to the last out.
 
 ##### THE DECK WAS TOO TALL FOR A SHORT PHONE, and it took three passes to close
 

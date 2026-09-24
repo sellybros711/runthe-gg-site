@@ -10601,8 +10601,12 @@ function applyHitMutation(kind, batter, opts) {
    the board's own. */
 function groundOutForce(batter) {
   const g = State.game;
-  if (g.outs >= 3) return;
-  if (!g.bases[0]) return;
+  /* It answers whether a run came in, so the callout can say so. Every exit
+     returns that answer rather than falling out undefined: a caller reading a
+     missing return as "no run" happens to be right here and is one edit from
+     not being. */
+  if (g.outs >= 3) return false;
+  if (!g.bases[0]) return false;
   let top = 0;
   while (top < 2 && g.bases[top + 1]) top++;
   const nb = g.bases.slice();
