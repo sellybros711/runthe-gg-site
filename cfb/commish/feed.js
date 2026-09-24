@@ -243,7 +243,7 @@
       ],
       angry: [
         { who: 'midmajor', say: 'thirteen wins, a conference title and a bowl game in Boca. cool. very normal sport' },
-        { who: 'midmajor', say: 'they\'re arguing about the eighth slice. we\'re still asking to see the pie.' },
+        { who: 'midmajor', say: 'the big two are splitting the check again and we never even got a menu' },
         { who: 'wire', say: 'There\'s an antitrust attorney inside one of these leagues who has been waiting years for a paragraph like this.' },
       ],
     },

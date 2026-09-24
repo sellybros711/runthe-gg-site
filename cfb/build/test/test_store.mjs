@@ -606,7 +606,7 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
   await p.waitForTimeout(3200);
   ok('the sheet is open on the thank you', (await p.$eval('#sheet-in', (e) => e.dataset.kind)) === 'thanks');
   const t = await txt(p, '#sheet-in');
-  ok('it says the account is Pro', /You are Pro/.test(t));
+  ok('it says the account is Pro', /You(?:'re| are) Pro/.test(t));
   ok('and offers the door that was just bought', await has(p, '#th-go'));
   ok('which goes to the mode',
     (await p.$eval('#th-go', (e) => e.getAttribute('href'))) === '/cfb/commish/');
