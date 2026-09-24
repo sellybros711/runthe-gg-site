@@ -32,6 +32,15 @@
       linear-gradient(180deg,#151113,#0c0b0b 58%);
     --bg:#0c0b0b;
   }
+  /* SMOOTH AND RETRO ARE ONE DEVICE SETTING FOR THE WHOLE GAME. The career
+     page owns the toggle and writes rtr_gfx; this page reads the same key in
+     the head script below, so the two pages can never disagree about which
+     style you picked. What Smooth changes here is the voice: the system
+     monospace is the pixel game's terminal face, and every rule that reached
+     for it wanted a straight column of digits, which tabular-nums gives in any
+     face. Retro keeps the monospace, exactly as the career page does. */
+  html:not(.gfx-retro){--mono:'Barlow Semi Condensed',system-ui,'Segoe UI',Roboto,sans-serif;}
+  html:not(.gfx-retro) body{font-variant-numeric:tabular-nums;}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;overscroll-behavior-y:none;}
   body{background:var(--bg); color:var(--text); font-family:var(--body); -webkit-font-smoothing:antialiased; min-height:100vh; line-height:1.4;}
@@ -91,7 +100,7 @@
   input[type=text]{width:240px; max-width:100%;}
   select:focus,input:focus{outline:2px solid var(--gold); outline-offset:1px; border-color:var(--gold);}
   label.fld{display:block;}
-  .stat-mini.fldlab{margin-bottom:5px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); font-weight:700;}
+  .stat-mini.fldlab{white-space:normal; margin-bottom:5px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); font-weight:700;}
 
   .builder-box{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px;}
   .row-wrap{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;}
@@ -184,6 +193,10 @@
     .tabs{top:56px;}
   }
 </style>
+<script>
+  /* before first paint, or a Retro player sees the smooth face flash first */
+  try{ if(localStorage.getItem('rtr_gfx')==='retro') document.documentElement.classList.add('gfx-retro'); }catch(_){}
+</script>
 </head>
 <body>
 

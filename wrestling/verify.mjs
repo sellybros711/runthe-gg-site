@@ -168,6 +168,29 @@ section('pages load');
   else ok(`booking sim starts a career (${r.promos} promotions, ${r.roster} on the roster, ${r.pool} in the pool) and runs a show (grade ${r.grade}, ${r.title})`);
   await page.close();
 }
+/* The booking sim follows the career page's graphics setting. It has no toggle
+   of its own, so the only way it can drift is by forgetting to read the key,
+   and what that looks like is the pixel game's terminal face on one page of a
+   game that is smooth on the other. Asked of the face actually applied, in
+   both styles, because a rule that is present and loses the cascade renders
+   exactly like a rule that is missing. */
+{
+  const {page, errs} = await fresh(URL+'/wrestling/booking/');
+  const face = async (mode)=>{
+    await page.evaluate(m=>{ try{ localStorage.setItem('rtr_gfx', m); }catch(_){} }, mode);
+    await page.reload({waitUntil:'domcontentloaded'}); await page.waitForTimeout(300);
+    return page.evaluate(()=>{ const s=document.createElement('span'); s.className='mono'; s.textContent='0-0';
+      document.body.appendChild(s); const f=getComputedStyle(s).fontFamily; s.remove();
+      return {f, retro:document.documentElement.classList.contains('gfx-retro')}; });
+  };
+  const sm=await face('smooth'), rt=await face('retro');
+  if(errs.length) bad('booking styles: '+errs.slice(0,2).join(' | '));
+  (/Barlow/.test(sm.f) && !sm.retro) ? ok('the booking sim speaks in the body face under Smooth')
+    : bad(`the booking sim kept the terminal face under Smooth: ${JSON.stringify(sm)}`);
+  (/monospace/.test(rt.f) && rt.retro) ? ok('and keeps the monospace under Retro, the same setting as the career page')
+    : bad(`the booking sim ignored Retro: ${JSON.stringify(rt)}`);
+  await page.close();
+}
 
 /* ---------- 4. the title rule ---------- */
 section('a belt never moves on a DQ or a count-out');
