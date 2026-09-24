@@ -343,7 +343,7 @@ check(!/\.steps b\{[^}]*border-radius:50%/.test(game),
    entirely. Either way this is the only page on the site that explains what
    Segue is, and it is indexed, so all of the following have to hold at once. */
 const scriptless = game.replace(/<script[\s\S]*?<\/script>/g, '');
-check(scriptless.includes('is a free setlist-builder game about jam bands'),
+check(scriptless.includes('is a free setlist builder game for jam band fans'),
       'the about copy is in the served markup, not injected by the game');
 /* A closed sheet is hidden by visibility. display:none would take the prose
    away from a crawler as well as from the reader, which is the whole reason
@@ -766,7 +766,7 @@ check(/theOneThatGotAway\(S\.drafted, S\.sets\)/.test(gameBare),
 /* FOLDED, NOT DELETED. A <details> so the full working is one tap away, and a
    summary that says what is inside rather than "details". */
 check(/<details class="card scoresheet">/.test(game), 'the full maths is folded away');
-check(/class="ss-open"/.test(game) && /See how every point was scored/.test(game),
+check(/class="ss-open"/.test(game) && /See where every point came from/.test(game),
   'behind a summary that says what it opens');
 check(/\.scoresheet\[open\] \.ss-open:after\{content:'Hide';?\}/.test(game),
   'and the affordance says which way it goes');
@@ -1113,7 +1113,7 @@ check(/scoreShow\(S\.sets, S\.data\.segues, S\.spent, S\.data\.segueCounts, S\.d
 check(/bestPossible\(S\.drafted, S\.data\.segues, S\.data\.segueCounts, S\.spent, S\.data\.suites\)/.test(gameBare),
   'and to the ceiling, or a suite could beat an unbeatable target');
 check(/COMPLETES THE SUITE/.test(gameBare), 'the draft names a suite when one is on offer');
-check(/Two movements of one piece/.test(gameBare), 'and the scoresheet explains what it paid for');
+check(/Two parts of one piece/.test(gameBare), 'and the scoresheet explains what it paid for');
 
 /* CHANGING YOUR NAME, and being able to find where. Reported as "I don't see
    where to adjust my user name": the only route in was tapping your own name in
@@ -1224,7 +1224,7 @@ check(/!S\.sets\.flat\(\)\.length \? `<div class="firsthint">/.test(gameBare),
 /* AND NOT A WALL ON THE BUTTON ITSELF: "too much wording there that no one will
    read and they will be tempted to just click". */
 {
-  const i = gameBare.indexOf("hd: 'Press this one first'");
+  const i = gameBare.indexOf("hd: 'Tap this first'");
   const step = gameBare.slice(i, gameBare.indexOf('extra:', i));
   check(i > -1 && (step.match(/<p>/g) || []).length === 1,
     'the start step is one paragraph, not three');
@@ -1271,9 +1271,9 @@ check(!!homePage, 'renderHome can be read');
   /* \s+ between the words rather than a literal space: the source wraps these
      sentences at 80 columns, so where a phrase breaks across two lines is an
      accident of formatting and a guard that depends on it fails on a reflow. */
-  check(/one\s+real\s+concert\s+at\s+a\s+time/i.test(hero),
+  check(/real\s+shows,\s+one\s+at\s+a\s+time/i.test(hero),
     'the hero says one show at a time');
-  check(/a\s+song\s+off\s+each/i.test(hero), 'and one song off each');
+  check(/one\s+song\s+from\s+each/i.test(hero), 'and one song from each');
   check(/running\s+time/i.test(hero), 'and what that song costs');
 }
 
@@ -2196,7 +2196,7 @@ check(/data-go="nights"/.test(gameBare), 'the profile links to it');
 /* A night with no setlist STILL GETS A ROW. It is a show you went to, and one
    in five played shows has never been typed up. */
 check(/hasSet: !!sh/.test(gameBare), 'a night with no setlist is still a night');
-check(/Nobody has typed this one up on elgoose yet/.test(gameBare), 'and says why it is bare');
+check(/Nobody's typed this one up on elgoose yet/.test(gameBare), 'and says why it is bare');
 // Multi-night runs are how anybody who was there describes a show.
 check(/night \$\{n\.run\.night\} of \$\{n\.run\.of\}/.test(gameBare),
   'a night in a run says which night it was');

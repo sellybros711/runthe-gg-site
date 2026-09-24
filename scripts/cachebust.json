@@ -2225,19 +2225,19 @@
   },
   "setlist/index.html": {
     "/setlist/auth.js": {
-      "v": "40",
+      "v": "41",
       "sha": "2bfbddde6b67b5fc"
     },
     "/setlist/board.js": {
-      "v": "40",
+      "v": "41",
       "sha": "6a24e3fc3fd4a887"
     },
     "scoring.js": {
-      "v": "40",
-      "sha": "0c273e46cd6b4a32"
+      "v": "41",
+      "sha": "b6db34df68865f7a"
     },
     "dataLoader.js": {
-      "v": "40",
+      "v": "41",
       "sha": "30180c7247719f6c"
     }
   },
