@@ -6010,6 +6010,29 @@ are dark and the throw claim asks for that; the catch claim asks for a ring's re
 both axes. Proved with `MYTHIBALL_PAGE` pointed at the commit before the fix: the phone
 finds no label at all, the desktop finds the hat and refuses it, four claims red.
 
+**THE CATCH RING WAS DRAWN WHERE THE SPOT WOULD BE WITH THE CAMERA AT REST**, and the
+camera is never at rest while a fly ball is in the air. `drawScreenPass` runs after
+`camApply` is restored, so the landing spot (a world point) was painted raw while the
+fielder running at it was painted under `cameraNow`'s track, zoomed and panned toward
+the ball. Measured on a phone through a real fly out: **44 logical pixels** between the
+ring and the spot at the moment the window opened (the camera was still panned toward
+the plate from the previous play), 3.5 once the track caught up, 8.9 as it eased out.
+Fifty CSS pixels between the ring and the glove, at the instant somebody is deciding
+when to press, and it drifted while they looked. `camPt()` is `camApply` as a function
+of one point, and the spot and the lead line go through it; the ring's SIZE does not,
+because it is floored in CSS pixels for a thumb rather than being a thing in the world.
+The robbery borrows the catch ring's drawing, so it is covered by the same line.
+
+**The pitcher's reticle and the release cursor were hairlines on a phone**, for the same
+reason as the labels. The reticle was a white ring of radius 13 in a 2 logical stroke:
+eleven CSS pixels across, under a pixel thick, no dark edge, over the zone's own grid.
+The release meter was 16 logical wide with a 4 logical cursor: a two pixel line in a
+seven pixel bar, and the release is the whole of pitching. The bat's oval beside them
+has had a dark halo, a solid dot and real weight for a year. Both are floored in CSS
+pixels through `hudPx` now and the reticle wears the dark ring first. The batting half
+got its readability pass first because that is the half that was reported; the pitching
+half had every one of the same faults and nobody had toured it.
+
 **The band above the picture went black mid inning, and it was two things meeting.**
 `fieldBand` samples the world's top row for the sky, keyed on the crop, and re-samples
 when the fit changes. On a phone the log under the field grows a line on every call, so

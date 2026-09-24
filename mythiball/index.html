@@ -11402,6 +11402,13 @@ function camApply(ctx, cam, w, h) {
   ctx.scale(cam.zoom, cam.zoom);
   ctx.translate(-cam.x, -cam.y);
 }
+/* The same map as a function of one point, for a screen pass that has to
+   put a mark on something the world pass drew under the camera. A null cam
+   is the plate view, which has no camera, and maps to itself. */
+function camPt(cam, w, h, x, y) {
+  if (!cam) return [x, y];
+  return [w / 2 + (x - cam.x) * cam.zoom, h / 2 + (y - cam.y) * cam.zoom];
+}
 
 /* The camera should not drift in from wherever the last game left it. */
 function resetCamera() { Cam = null; }
@@ -12162,21 +12169,47 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   }
   if (!playerIsBatting() && (g.aiming || g.meter || (live && pitch.aim))) {
     const src = (g.aiming || g.meter) ? (g.aimPt || { x: 0, y: 0 }) : pitch.aim;
-    const [ax, ay] = plateFromZone(P, src.x, src.y);
+    const [ax0, ay0] = plateFromZone(P, src.x, src.y);
+    /* THE PITCHER'S RETICLE GETS THE BATTER'S TREATMENT. It was a white
+       circle of radius 13 in a 2 logical stroke: on a phone that is an
+       eleven pixel ring drawn a hairline thick, with no dark edge, over
+       whatever the zone's grid put behind it. The bat's oval beside it
+       has had a dark halo and a solid dot for a year. This is the one
+       thing a pitcher places, so it is floored in CSS pixels the way the
+       ball and the labels are, and it wears the dark ring first. */
+    const rr = Math.max(13, hudPx(13, 12));
+    /* Whole blocks, or the stroke is a fraction of one and antialiases to
+       grey, which is the zone line's own lesson. The halo is a block a
+       side. The centre is snapped for the same reason. */
+    const lw = Math.ceil(Math.max(2, hudPx(2, 2)) / PIX) * PIX;
+    const [ax, ay] = [snapB(ax0), snapB(ay0)];
+    const ticks = () => {
+      ctx.beginPath(); ctx.arc(ax, ay, rr, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        ctx.moveTo(ax + dx * rr * 0.6, ay + dy * rr * 0.6); ctx.lineTo(ax + dx * rr * 1.4, ay + dy * rr * 1.4);
+      }
+      ctx.stroke();
+    };
     ctx.globalAlpha = live ? 0.4 : 1;
+    ctx.strokeStyle = 'rgba(10,20,30,.55)';
+    ctx.lineWidth = lw + 2 * PIX;
+    ticks();
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(ax, ay, 13, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath();
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      ctx.moveTo(ax + dx * 8, ay + dy * 8); ctx.lineTo(ax + dx * 18, ay + dy * 18);
-    }
-    ctx.stroke();
+    ctx.lineWidth = lw;
+    ticks();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(ax, ay, Math.max(2, lw * 0.9), 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1;
   }
   if (g.meter && (!g.meter.released || now < g.meter.doneAt + 600)) {
     const m = g.meter;
-    const bx = P.zx + P.zw + 44, by0 = P.zy - P.zh, bh = P.zh * 2, bw = 16;
+    /* Sixteen logical wide was seven CSS pixels on a phone, and the
+       cursor across it four logical tall was under two: the release, which
+       is the whole of pitching, read off a hairline in a sliver. Both are
+       floored in CSS pixels; the bar's height is the zone's and was fine. */
+    const bw = Math.max(16, hudPx(16, 14)), ch = Math.max(4, hudPx(4, 3));
+    const bx = P.zx + P.zw + 44, by0 = P.zy - P.zh, bh = P.zh * 2;
     const pos = m.released ? m.pos : clamp((now - m.t0) / m.dur, 0, 1);
     ctx.fillStyle = 'rgba(11,16,21,.85)';
     ctx.fillRect(bx - 4, by0 - 4, bw + 8, bh + 8);
@@ -12185,7 +12218,7 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     ctx.fillStyle = 'rgba(91,176,131,.9)';
     ctx.fillRect(bx, by0 + (m.sweet - m.band) * bh, bw, m.band * 2 * bh);
     ctx.fillStyle = m.released ? (m.q > 0.6 ? '#8ef0b0' : m.q > 0.25 ? '#f4c25a' : '#e0524a') : '#ffffff';
-    ctx.fillRect(bx - 3, by0 + pos * bh - 2, bw + 6, 4);
+    ctx.fillRect(bx - 3, by0 + pos * bh - ch / 2, bw + 6, ch);
   }
 }
 
@@ -13205,19 +13238,33 @@ function drawScreenPass(ctx, w, h, g, theme, cam, cx, cy, r, chipY) {
   if (g && g.play && g.play.catchActive && g.play.catchWindow) {
     const cw = g.play.catchWindow;
     const t = clamp((performance.now() - cw.startedAt) / cw.duration, 0, 1);
+    /* THROUGH THE CAMERA, which this pass is not under. The landing spot
+       is a WORLD point and the fielder running at it is drawn under
+       `cameraNow`'s track, which is zoomed in and panned toward the ball
+       while a fly is in the air. Drawn raw, the ring sat where the spot
+       would be with the camera at rest: measured on a phone, 44 logical
+       pixels from the spot at the moment the window opened (the camera was
+       still panned toward the plate), which is fifty CSS pixels between
+       the ring and the man's glove, settling to 3.5 as the track caught up
+       and 8.9 as it eased out. A ring that drifts away from what it marks
+       reads as a bug in the ring. So the spot and the lead line go through
+       the same camera the picture did, and the ring's SIZE does not: it is
+       floored in CSS pixels for a thumb, not a thing in the world. */
+    const [lx, ly] = camPt(cam, w, h, cw.landingX, cw.landingY);
     /* A line from the man chasing to the spot, so the ring reads as HIS
        target and not a shape on the grass. On a phone the fielder and the
        ring can be a thumb apart. */
     const at = g.play.chaseAt;
     if (at) {
+      const [ax, ay] = camPt(cam, w, h, at.x, at.y);
       ctx.save();
       ctx.strokeStyle = 'rgba(15,107,57,.75)';
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 6]);
-      ctx.beginPath(); ctx.moveTo(at.x, at.y); ctx.lineTo(cw.landingX, cw.landingY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(lx, ly); ctx.stroke();
       ctx.restore();
     }
-    drawCatchRing(ctx, cw.landingX, cw.landingY, t);
+    drawCatchRing(ctx, lx, ly, t);
   }
 
   /* Throw minigame overlay: appears when a grounder is in the field and
