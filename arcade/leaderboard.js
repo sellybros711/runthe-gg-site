@@ -1,4 +1,4 @@
-/* leaderboard.js — the shared arcade leaderboard (window.RTG_LB).
+/* leaderboard.js: the shared arcade leaderboard (window.RTG_LB).
  *
  * Every game used to carry its own renderRealBoard() and its own markup, so
  * the boards drifted apart and none of them answered the question players
@@ -48,7 +48,7 @@
   function fmtN(n) { return String(n == null ? 0 : n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
   function ord(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
   /* "Top 12%" is a brag; "Top 96%" is an insult wearing a brag's clothes. Only
-   * claim a percentile when it's actually the top half — below that the rank
+   * claim a percentile when it's actually the top half. Below that the rank
    * and the field size already say everything true. */
   function standing(rank, total) {
     if (rank === 1) return 'Leading';
@@ -60,7 +60,7 @@
   /* `game` and `variant` may be given as FUNCTIONS, resolved on every read.
    *
    * The sport editions decide which board they belong to from state that is
-   * not always settled when the page mounts — one game briefly queried the
+   * not always settled when the page mounts: one game briefly queried the
    * all-sports board before its cardholder status resolved, then switched.
    * Resolving lazily removes the whole class of ordering bug: the board asks
    * for the current key at the moment it queries, not once at startup. */
@@ -419,10 +419,10 @@
       h = '<button class="rtglb-cta" type="button">Sign in to see where you rank</button>';
     } else if (!row || !rank) {
       h = '<div class="rtglb-pinmsg">' + (tab === 'all'
-        ? 'No all-time result yet. Finish a puzzle to claim a spot.'
-        : 'You haven’t posted today. Finish the puzzle to take a spot.') + '</div>';
+        ? 'No all-time result yet. Finish a puzzle to get on the board.'
+        : 'You haven’t posted today. Finish the puzzle to get on the board.') + '</div>';
     } else {
-      // Only offer the jump when the row is actually loaded — a button that
+      // Only offer the jump when the row is actually loaded. A button that
       // silently does nothing is worse than no button.
       canJump = !!(bodyEl && bodyEl.querySelector('.rtglb-rows li[data-rank="' + rank + '"]'));
       var bits = ['of ' + fmtN(total || rank)];
@@ -458,7 +458,7 @@
     var lead = rank === 1 ? 'Leading today' : standing(rank, total);
     var fill = total > 1 ? Math.max(4, Math.round((1 - (rank - 1) / total) * 100)) : 100;
     var gap = '';
-    // Only when the player above is actually on screen — measuring against the
+    // Only when the player above is actually on screen. Measuring against the
     // last visible row would quote a gap to the wrong person entirely.
     var above = (rank > 1 && rank <= rows.length) ? rows[rank - 2] : null;
     if (above) {
@@ -486,9 +486,9 @@
 
   function footNote(total) {
     var what = CFG.kind === 'time' ? 'Fastest clean solve wins' :
-      (CFG.kind === 'pts' ? 'Most points wins, ties broken by time' :
-      (CFG.kind === 'tries' ? 'Fewest tries wins, ties broken by time' :
-       'Longest run wins, ties broken by time'));
+      (CFG.kind === 'pts' ? 'Most points wins. Ties go to whoever was faster' :
+      (CFG.kind === 'tries' ? 'Fewest tries wins. Ties go to whoever was faster' :
+       'Longest run wins. Ties go to whoever was faster'));
     return what + (total ? ' · <b>' + total + '</b> played today' : '') + '. Resets at midnight.';
   }
 
@@ -496,11 +496,11 @@
     if (!CFG || !bodyEl) return;
     styles(); syncVariant();
     var B = window.RTG_BOARD;
-    if (!B || !B.leaderboard) { paint('<div class="rtglb-msg">Leaderboard unavailable.</div>'); return; }
+    if (!B || !B.leaderboard) { paint('<div class="rtglb-msg">Couldn’t load the leaderboard.</div>'); return; }
     // Show what we already have and refresh underneath the bar; only a first,
     // contentless load starts empty.
     if (!gameOf()) {
-      paint('<div class="rtglb-msg">This board is misconfigured and can’t load. Your results are safe.' +
+      paint('<div class="rtglb-msg">This board isn’t set up right and can’t load. Your results are safe.' +
             debugLine() + '</div>');
       if (pinEl) pinEl.hidden = true;
       return;
@@ -520,12 +520,12 @@
       var rows = res[0], total = res[1], mine = res[2];
       cache.mine = mine;
       if (rows === null) {
-        paint('<div class="rtglb-msg">Board unavailable offline. Your result is saved and will post when you reconnect.</div>');
+        paint('<div class="rtglb-msg">Can’t load the board offline. Your result is saved and will post when you’re back online.</div>');
         if (pinEl) pinEl.hidden = true;
         return;
       }
       if (!rows.length) {
-        paint('<div class="rtglb-msg"><b>Nobody has posted today.</b> Finish the puzzle and you’ll be first on the board.' +
+        paint('<div class="rtglb-msg"><b>Nobody’s posted today.</b> Finish the puzzle and you’ll be first on the board.' +
               debugLine() + '</div>');
         renderPin(null, 0, null, st);
         tease('Be the first on today’s board');
@@ -544,7 +544,7 @@
       else done(null);
     }).catch(function () {
       busy = false; busyBar(false);
-      if (!lastHTML.today) paint('<div class="rtglb-msg">Couldn’t load the board. It’ll retry shortly.</div>');
+      if (!lastHTML.today) paint('<div class="rtglb-msg">Couldn’t load the board. We’ll try again in a sec.</div>');
     });
   }
 
@@ -576,7 +576,7 @@
 
   function renderAll() {
     var B = window.RTG_BOARD;
-    if (!B || !B.allTimePage) { busyBar(false); paint('<div class="rtglb-msg">All-time board unavailable.</div>'); return; }
+    if (!B || !B.allTimePage) { busyBar(false); paint('<div class="rtglb-msg">Couldn’t load the all-time board.</div>'); return; }
     // Already loaded this session: repaint what we have, don't refetch pages.
     if (allRows.length) {
       var st = (B.state && B.state()) || {};
@@ -604,7 +604,7 @@
       var st = (B.state && B.state()) || {};
       if (stats) { allStats = stats; allTotal = stats.total == null ? null : (stats.total | 0); }
       if (!page) {
-        if (first) paint('<div class="rtglb-msg">All-time board unavailable offline.</div>');
+        if (first) paint('<div class="rtglb-msg">Can’t load the all-time board offline.</div>');
         else syncAllFoot();
         return;
       }
@@ -616,7 +616,7 @@
       allRows = allRows.concat(page.rows);
       if (first) {
         if (!allRows.length) {
-          paint('<div class="rtglb-msg">No all-time results yet. Be the first name on this board.</div>');
+          paint('<div class="rtglb-msg">No all-time results yet. Be the first one on this board.</div>');
           renderPin(null, 0, null, st);
           return;
         }
@@ -666,7 +666,7 @@
     setDate: function (d) { if (CFG) { CFG.date = d; cache = {}; resetAll(); render(); } },
     /* Repoint the board at another game key without remounting.
      *
-     * The sport editions switch in place — no reload — so the board has to
+     * The sport editions switch in place (no reload), so the board has to
      * follow, or you sit on the NBA version looking at the all-sports ranking.
      * `variant` is the human label ("NBA"); it shows in the sheet header so it
      * is never ambiguous which board you are reading. */

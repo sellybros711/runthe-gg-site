@@ -46,6 +46,8 @@
     return (n >= 0 && n <= 20) ? W[n] : String(n);
   }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  /* "A outfielder" is what a bare 'A ' + position printed. */
+  function an(w) { return /^[aeiou]/i.test(String(w || '')) ? 'An' : 'A'; }
   function list(a) {
     if (a.length === 1) return a[0];
     if (a.length === 2) return a[0] + ' and ' + a[1];
@@ -64,7 +66,7 @@
     { kind: 'draft', weight: 9, make: function (e) {
       if (e.dp !== 1) return null;
       var t = uniq(e.t);
-      return 'Taken first overall' + (t.length ? ', by the ' + t[0] : '') + '.';
+      return 'Taken first overall' + (t.length ? ' by the ' + t[0] : '') + '.';
     } },
     /* "Six franchises in all." and then the club that was actually his.
      *
@@ -93,7 +95,7 @@
     { kind: 'decade', weight: 7, make: function (e) {
       var d = e.decade || [];
       if (d.length < 4) return null;
-      return 'On the field across ' + num(d.length) + ' decades, from the ' + d[0] + 's to the ' + d[d.length - 1] + 's.';
+      return 'Played in ' + num(d.length) + ' decades, from the ' + d[0] + 's to the ' + d[d.length - 1] + 's.';
     } },
     { kind: 'award', weight: 7, make: function (e) {
       var aw = (e.aw || []).filter(function (a) { return /MVP|Cy Young|Rookie of the Year|Defensive Player|Offensive Player|Triple Crown|Scoring Champ/i.test(a); });
@@ -121,16 +123,16 @@
     } },
     { kind: 'col', weight: 5, make: function (e) {
       if (!e.col) return null;
-      return (e.pos ? 'A ' + e.pos.toLowerCase() + ' out of ' + e.col : 'Played college ball at ' + e.col) + '.';
+      return (e.pos ? an(e.pos) + ' ' + e.pos.toLowerCase() + ' out of ' + e.col : 'Played college ball at ' + e.col) + '.';
     } },
     { kind: 'nat', weight: 4, make: function (e) {
       if (!e.nat || e.nat === 'United States') return null;
-      return 'One of the ' + (LEAGUE[e.sport] || e.sport) + ' names to come out of ' + e.nat + '.';
+      return 'One of the ' + (LEAGUE[e.sport] || e.sport) + ' players from ' + e.nat + '.';
     } },
     { kind: 'award', weight: 4, make: function (e) {
       var aw = uniq(e.aw || []).filter(function (a) { return !/Hall of Fame/i.test(a); });
       if (aw.length < 3) return null;
-      return list(aw.slice(0, 3)) + ', all on the same résumé.';
+      return list(aw.slice(0, 3)) + '. All on one résumé.';
     } },
     { kind: 'seasons', weight: 3, make: function (e) {
       if ((e.ns || 0) < 16) return null;
@@ -144,17 +146,17 @@
     { kind: 'pos', weight: 3, make: function (e) {
       var t = uniq(e.t), d = e.decade || [];
       if (!e.pos || !t.length || !d.length) return null;
-      return 'A ' + e.pos.toLowerCase() + ', first suited up for the ' + t[0] + ' in the ' + d[0] + 's.';
+      return an(e.pos) + ' ' + e.pos.toLowerCase() + ' who started out with the ' + t[0] + ' in the ' + d[0] + 's.';
     } },
     { kind: 'active', weight: 3, make: function (e) {
       var d = e.decade || [];
       if (!e.act || d.length < 2) return null;
-      return 'Still going, and has been since the ' + d[0] + 's.';
+      return 'Still playing. Been at it since the ' + d[0] + 's.';
     } },
     { kind: 'decade', weight: 2, make: function (e) {
       var d = e.decade || [];
       if (!d.length) return null;
-      return 'First seen in the ' + d[0] + 's.';
+      return 'Broke in during the ' + d[0] + 's.';
     } }
   ];
 

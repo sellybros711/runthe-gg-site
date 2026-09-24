@@ -13,20 +13,20 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="The Vault: play any past day's Run The Arcade puzzles, an Arcade Card perk." />
+<meta name="description" content="The Vault: play any past day’s Run The Arcade puzzles. It’s an Arcade Card perk." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="The Run The Arcade Vault" />
-<meta property="og:description" content="Replay any past day across all eleven games and chase your personal best." />
+<meta property="og:description" content="Replay any past day in all eleven games. Try to beat your personal best." />
 <meta property="og:url" content="https://runthe.gg/arcade/archive/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="The Run The Arcade Vault" />
-<meta name="twitter:description" content="Replay any past day across all eleven games and chase your personal best." />
+<meta name="twitter:description" content="Replay any past day in all eleven games. Try to beat your personal best." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/archive/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -34,7 +34,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/arcade/arcade.css?v=3" />
 <script src="/arcade/icons.js?v=3"></script>
-<script src="/arcade/gamemarks.js?v=3"></script>
+<script src="/arcade/gamemarks.js?v=4"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -247,11 +247,11 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=21"></script>
 <script src="/arcade/auth.js?v=4"></script>
-<script src="/arcade/mycard.js?v=13"></script>
+<script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=9"></script>
-<script src="/arcade/auth-ui.js?v=6"></script>
-<script src="/arcade/card.js?v=20"></script>
-<script src="/arcade/referral.js?v=10"></script>
+<script src="/arcade/auth-ui.js?v=7"></script>
+<script src="/arcade/card.js?v=21"></script>
+<script src="/arcade/referral.js?v=11"></script>
 <script src="/arcade/nav.js?v=2"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script>
@@ -277,11 +277,11 @@ window.GA_ID='G-L29P5MRWKE';
         '<h2>' + (VAULTD > 0 ? (VAULTD + ' days are waiting') : 'The Vault is an Arcade Card perk') + '</h2>'+
         '<p>' + (VAULTD > 0
           ? ('That’s ' + (VAULTD * 11) + ' puzzles you can still play, across all eleven games.')
-          : 'Go back and play any puzzle you missed, from any game.') + '</p>'+
+          : 'Go back and play any puzzle you missed, in any game.') + '</p>'+
         '<ul>'+
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Replay every past day, every game</span></li>'+
-          '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>All ten games, unlimited, every day</span></li>'+
-          '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Your streak and today’s leaderboard stay untouched</span></li>'+
+          '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>All twelve games, unlimited, every day</span></li>'+
+          '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Doesn’t touch your streak or today’s leaderboard</span></li>'+
         '</ul>'+
         '<button class="btn" id="goPro">Get Arcade Card</button>'+
         '<p class="fine" id="gateFine">$4.17/mo billed annually (save 30%) or $5.99/month. Cancel anytime.</p>'+
@@ -304,9 +304,9 @@ window.GA_ID='G-L29P5MRWKE';
      days. Anything the calendar adds later that is not listed here still shows,
      under "Daily puzzles", rather than vanishing. */
   var SECTIONS=[
-    { title:'Daily puzzles', sub:'One past day at a time, as many as you like.',
+    { title:'Daily puzzles', sub:'Play past days one at a time, as many as you want.',
       keys:['match','sportegories','crossword','rollcall','chain','rankit','guess'] },
-    { title:'Streak games', sub:'That day’s run, replayed until you beat it.',
+    { title:'Streak games', sub:'Replay that day’s run until you beat it.',
       keys:['almamater','career','table','oddone'] }
   ];
 
@@ -401,7 +401,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(extra) html+=extra;
     html+='</div>';
 
-    html+='<div class="arch-note">Every day back to launch, on every game above.<br>Vault runs chase your personal best. Today’s streak and leaderboard belong to today’s game.</div>';
+    html+='<div class="arch-note">Every day back to launch, for every game above.<br>Vault runs go for your personal best. They don’t count toward today’s streak or leaderboard.</div>';
     content.innerHTML=html;
 
     [].forEach.call(content.querySelectorAll('[data-k]'), function(btn){

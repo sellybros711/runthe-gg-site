@@ -49,8 +49,8 @@
       "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/resultart.js": {
       "v": "2",
@@ -97,8 +97,8 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/alltime.js": {
       "v": "3",
@@ -109,28 +109,28 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/mycard.js": {
-      "v": "13",
-      "sha": "200e6c2520746e27"
+      "v": "14",
+      "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
       "v": "9",
       "sha": "aa67b17bf8fcf213"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -141,16 +141,16 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -161,8 +161,8 @@
       "sha": "3c801e8a64f49dc8"
     },
     "/arcade/fact.js": {
-      "v": "2",
-      "sha": "459b2d92b12a14fe"
+      "v": "3",
+      "sha": "461a7e57340e2d24"
     }
   },
   "arcade/archive/index.html": {
@@ -171,8 +171,8 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/tokens.js": {
       "v": "13",
@@ -199,24 +199,24 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/mycard.js": {
-      "v": "13",
-      "sha": "200e6c2520746e27"
+      "v": "14",
+      "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
       "v": "9",
       "sha": "aa67b17bf8fcf213"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/nav.js": {
       "v": "2",
@@ -277,8 +277,8 @@
       "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/resultart.js": {
       "v": "2",
@@ -321,8 +321,8 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/alltime.js": {
       "v": "3",
@@ -333,28 +333,28 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/mycard.js": {
-      "v": "13",
-      "sha": "200e6c2520746e27"
+      "v": "14",
+      "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
       "v": "9",
       "sha": "aa67b17bf8fcf213"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -365,24 +365,24 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     },
     "/arcade/type.js": {
       "v": "5",
       "sha": "3c801e8a64f49dc8"
     },
     "/arcade/fact.js": {
-      "v": "2",
-      "sha": "459b2d92b12a14fe"
+      "v": "3",
+      "sha": "461a7e57340e2d24"
     }
   },
   "arcade/chain/index.html": {
@@ -407,8 +407,8 @@
       "sha": "15970ca0ab5a2b04"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -419,8 +419,8 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/alltime.js": {
       "v": "3",
@@ -431,32 +431,32 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/funnel.js": {
       "v": "11",
       "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/result.js": {
       "v": "1",
@@ -491,8 +491,8 @@
       "sha": "3c801e8a64f49dc8"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     }
   },
   "arcade/crossword/index.html": {
@@ -553,8 +553,8 @@
       "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/resultart.js": {
       "v": "2",
@@ -593,8 +593,8 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/alltime.js": {
       "v": "3",
@@ -605,28 +605,28 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/mycard.js": {
-      "v": "13",
-      "sha": "200e6c2520746e27"
+      "v": "14",
+      "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
       "v": "9",
       "sha": "aa67b17bf8fcf213"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -637,16 +637,16 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     }
   },
   "arcade/guess/index.html": {
@@ -707,8 +707,8 @@
       "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/resultart.js": {
       "v": "2",
@@ -751,8 +751,8 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/alltime.js": {
       "v": "3",
@@ -763,28 +763,28 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/mycard.js": {
-      "v": "13",
-      "sha": "200e6c2520746e27"
+      "v": "14",
+      "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
       "v": "9",
       "sha": "aa67b17bf8fcf213"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -795,20 +795,20 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     },
     "/arcade/fact.js": {
-      "v": "2",
-      "sha": "459b2d92b12a14fe"
+      "v": "3",
+      "sha": "461a7e57340e2d24"
     }
   },
   "arcade/highlow/index.html": {
@@ -869,8 +869,8 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/alltime.js": {
       "v": "3",
@@ -881,32 +881,32 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/mycard.js": {
-      "v": "13",
-      "sha": "200e6c2520746e27"
+      "v": "14",
+      "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
       "v": "9",
       "sha": "aa67b17bf8fcf213"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/sfx.js": {
       "v": "2",
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/result.js": {
       "v": "1",
@@ -917,20 +917,20 @@
       "sha": "c49475bf3f7d39c2"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
       "sha": "d633f99672c5715c"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/resultstats.js": {
       "v": "2",
@@ -941,8 +941,8 @@
       "sha": "bfc89e7ef5333115"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     }
   },
   "arcade/index.html": {
@@ -951,8 +951,8 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/tokens.js": {
       "v": "13",
@@ -975,24 +975,24 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/mycard.js": {
-      "v": "13",
-      "sha": "200e6c2520746e27"
+      "v": "14",
+      "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
       "v": "9",
       "sha": "aa67b17bf8fcf213"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/nav.js": {
       "v": "2",
@@ -1033,16 +1033,16 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     }
   },
   "arcade/match/index.html": {
@@ -1095,8 +1095,8 @@
       "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/resultart.js": {
       "v": "2",
@@ -1139,8 +1139,8 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/alltime.js": {
       "v": "3",
@@ -1151,28 +1151,28 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/mycard.js": {
-      "v": "13",
-      "sha": "200e6c2520746e27"
+      "v": "14",
+      "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
       "v": "9",
       "sha": "aa67b17bf8fcf213"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -1183,16 +1183,16 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     }
   },
   "arcade/oddone/index.html": {
@@ -1237,8 +1237,8 @@
       "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/result.js": {
       "v": "1",
@@ -1281,8 +1281,8 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/alltime.js": {
       "v": "3",
@@ -1293,28 +1293,28 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/mycard.js": {
-      "v": "13",
-      "sha": "200e6c2520746e27"
+      "v": "14",
+      "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
       "v": "9",
       "sha": "aa67b17bf8fcf213"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -1325,20 +1325,20 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     },
     "/arcade/fact.js": {
-      "v": "2",
-      "sha": "459b2d92b12a14fe"
+      "v": "3",
+      "sha": "461a7e57340e2d24"
     }
   },
   "arcade/rankit/index.html": {
@@ -1391,8 +1391,8 @@
       "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/result.js": {
       "v": "1",
@@ -1439,8 +1439,8 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/alltime.js": {
       "v": "3",
@@ -1451,28 +1451,28 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/mycard.js": {
-      "v": "13",
-      "sha": "200e6c2520746e27"
+      "v": "14",
+      "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
       "v": "9",
       "sha": "aa67b17bf8fcf213"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -1483,16 +1483,16 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     }
   },
   "arcade/rollcall/index.html": {
@@ -1517,8 +1517,8 @@
       "sha": "15970ca0ab5a2b04"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -1529,8 +1529,8 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/alltime.js": {
       "v": "3",
@@ -1541,32 +1541,32 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/funnel.js": {
       "v": "11",
       "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/result.js": {
       "v": "1",
@@ -1601,8 +1601,8 @@
       "sha": "3c801e8a64f49dc8"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     }
   },
   "arcade/sportegories/index.html": {
@@ -1627,8 +1627,8 @@
       "sha": "15970ca0ab5a2b04"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -1639,32 +1639,32 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/auth.js": {
       "v": "4",
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/result.js": {
       "v": "1",
@@ -1675,8 +1675,8 @@
       "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/resultart.js": {
       "v": "2",
@@ -1707,8 +1707,8 @@
       "sha": "2ee59dc2d41d4219"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     }
   },
   "arcade/table/index.html": {
@@ -1761,8 +1761,8 @@
       "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
-      "v": "8",
-      "sha": "7cf694dc920c5c91"
+      "v": "9",
+      "sha": "8e8be1349a40b386"
     },
     "/arcade/result.js": {
       "v": "1",
@@ -1805,8 +1805,8 @@
       "sha": "27a1b436e35138e6"
     },
     "/arcade/leaderboard.js": {
-      "v": "14",
-      "sha": "9476280dd70162ca"
+      "v": "15",
+      "sha": "9217fd4dc1037f65"
     },
     "/arcade/alltime.js": {
       "v": "3",
@@ -1817,28 +1817,28 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/mycard.js": {
-      "v": "13",
-      "sha": "200e6c2520746e27"
+      "v": "14",
+      "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
       "v": "9",
       "sha": "aa67b17bf8fcf213"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "/arcade/card.js": {
-      "v": "20",
-      "sha": "365ceddc5ece9060"
+      "v": "21",
+      "sha": "a085ebe098d4d5f5"
     },
     "/arcade/referral.js": {
-      "v": "10",
-      "sha": "ed1665a1f76245f4"
+      "v": "11",
+      "sha": "6ce91876969d0a6e"
     },
     "/arcade/gamemarks.js": {
-      "v": "3",
-      "sha": "6d64d541e37b24fc"
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -1849,24 +1849,24 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "3",
-      "sha": "5e38214ee2a73abf"
+      "v": "4",
+      "sha": "d277c7b4b177127f"
     },
     "/arcade/pregame.js": {
-      "v": "25",
-      "sha": "4f02045dd872516c"
+      "v": "26",
+      "sha": "5f267114e89f4340"
     },
     "/arcade/howto.js": {
-      "v": "23",
-      "sha": "c6cb224f3e9ea15c"
+      "v": "24",
+      "sha": "0a745924acffb8bb"
     },
     "/arcade/type.js": {
       "v": "5",
       "sha": "3c801e8a64f49dc8"
     },
     "/arcade/fact.js": {
-      "v": "2",
-      "sha": "459b2d92b12a14fe"
+      "v": "3",
+      "sha": "461a7e57340e2d24"
     }
   },
   "archive/daily-drive/index.html": {
@@ -2205,8 +2205,8 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/auth-ui.js": {
-      "v": "6",
-      "sha": "341e5d2e5bd698b0"
+      "v": "7",
+      "sha": "566d8430234ab9b9"
     },
     "ideas.js": {
       "v": "2",

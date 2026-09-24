@@ -312,12 +312,12 @@
         if(go){ go.disabled=false; go.textContent='Manage subscription'; }
         var err = d && d.error, msg;
         if(err==='no_customer') msg='This membership is complimentary. There’s nothing to bill or manage.';
-        else if(err==='signin') msg='Please sign in to manage your membership.';
-        else if(err==='unauthorized'){ msg='Your session expired. Please sign in again.'; if(window.RTGAuthUI) RTGAuthUI.open('signin'); }
-        else if(err==='stripe_not_configured') msg='Billing isn’t fully connected yet. Please contact support.';
+        else if(err==='signin') msg='Sign in to manage your membership.';
+        else if(err==='unauthorized'){ msg='Your session expired. Sign in again.'; if(window.RTGAuthUI) RTGAuthUI.open('signin'); }
+        else if(err==='stripe_not_configured') msg='Billing isn’t hooked up yet. Contact support.';
         else if(err==='stripe_error') msg='Stripe couldn’t open the portal'+((d&&d.detail)?(': '+d.detail):'.');
-        else if(err==='network') msg='Could not reach the billing service. Check your connection and try again.';
-        else msg='Could not open the billing portal'+((d&&d.status)?(' (HTTP '+d.status+')'):'')+((d&&d.detail)?(': '+d.detail):'.');
+        else if(err==='network') msg='Couldn’t reach billing. Check your connection and try again.';
+        else msg='Couldn’t open the billing portal'+((d&&d.status)?(' (HTTP '+d.status+')'):'')+((d&&d.detail)?(': '+d.detail):'.');
         showErr(msg);
       });
     };
@@ -402,7 +402,7 @@
     }
     var go=$('rtgcardGo'); if(go){ go.disabled=true; go.textContent='Starting…'; }
     var uid=userId();
-    if(!uid){ showErr('Please sign in and try again.'); return; }
+    if(!uid){ showErr('Sign in and try again.'); return; }
     fetch('/api/stripe/checkout', {
       method:'POST', headers:authHeaders(),
       body: JSON.stringify({ user_id: uid, plan: plan, return_path: returnPath() })
@@ -412,12 +412,12 @@
         if(d && d.error==='already_active'){ renderMember(); return; }   // server says: you already have a card
         var msg = (d && d.detail) ? ('Checkout error: '+d.detail)
           : (d && d.error==='stripe_not_configured') ? 'Checkout isn’t configured yet (missing keys/prices).'
-          : (d && (d.error==='missing_user_id'||d.error==='unauthorized')) ? 'Please sign in, then try again.'
+          : (d && (d.error==='missing_user_id'||d.error==='unauthorized')) ? 'Sign in, then try again.'
           : (d && d.error) ? ('Checkout error: '+d.error)
-          : 'Could not start checkout. Please try again.';
+          : 'Couldn’t start checkout. Try again.';
         showErr(msg);
       })
-      .catch(function(){ showErr('Could not start checkout. Please try again.'); });
+      .catch(function(){ showErr('Couldn’t start checkout. Try again.'); });
   }
   function showErr(msg){
     var e=$('rtgcardErr'); if(e) e.innerHTML='<div class="rtgc-err">'+esc(msg)+'</div>';

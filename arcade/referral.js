@@ -126,7 +126,7 @@
   // ---- share: hand the inviter their link ----------------------------------
   // Native share sheet where there is one (phones), clipboard everywhere else,
   // with a toast either way. cb(ok) fires when the link is out the door.
-  var SHARE_TEXT = 'Play Run The Arcade with me: twelve quick daily sports puzzles. Sign up with my link and we both get an extra go today.';
+  var SHARE_TEXT = 'Play Run The Arcade with me. It’s twelve quick daily sports puzzles. Sign up with my link and we both get an extra go today.';
   function toast(msg){
     try{
       var el=document.getElementById('rtg-ref-toast');
@@ -147,7 +147,7 @@
   function reasonSuffix(){
     var e=null; try{ e = window.RTG_BOARD && RTG_BOARD.referralError && RTG_BOARD.referralError(); }catch(x){}
     if(!e) return '. Check your connection and try again.';
-    if(e.status===404) return ': the invite feature is not set up on the server yet.';
+    if(e.status===404) return ': invites aren’t set up on our end yet.';
     if(e.status===401 || e.status===403) return ': your session expired. Sign out and back in.';
     return ' (error ' + (e.status||'?') + ').';
   }
@@ -181,7 +181,7 @@
         // A signed-in player with no link did not fail to sign in: the code
         // fetch did. Say WHY where we can, because "try again" on a repeatable
         // failure is the least useful sentence a UI can produce.
-        toast(signedIn() ? ('Invite link unavailable' + reasonSuffix()) : 'Sign in to get your invite link');
+        toast(signedIn() ? ('Couldn’t get your invite link' + reasonSuffix()) : 'Sign in to get your invite link');
         if(cb) cb(false); return;
       }
       dispatch(url, cb);
@@ -232,8 +232,8 @@
        time: this sits at the foot of every result screen, including a
        cardholder's and a first play of the day. "Play again?" is true for
        everybody looking at it. */
-    ad.innerHTML='<div class="h">Play again? <b>Refer a friend for another try.</b></div>'+
-      '<div class="s">They sign up with your link, you both get an extra go at today’s games.</div>'+
+    ad.innerHTML='<div class="h">Play again? <b>Invite a friend for another try.</b></div>'+
+      '<div class="s">They sign up with your link and you both get an extra go at today’s games.</div>'+
       '<button type="button">'+icon('invite')+' Invite a friend</button>';
     ad.querySelector('button').addEventListener('click', function(){ share(); });
     sheet.appendChild(ad);                            // foot of the modal
@@ -332,7 +332,7 @@
         // nothing in it, which reads as a picture that failed to load.
         (cap ? '<div class="cap" aria-hidden="true">'+cap+'</div>' : '')+
         '<h2>That’s all four for today</h2>'+
-        '<p>Two ways to keep playing. Invite a friend and you <b>both</b> get another go today, or go unlimited with the Arcade Card.</p>'+
+        '<p>Two ways to keep playing. Invite a friend and you <b>both</b> get another go today. Or go unlimited with the Arcade Card.</p>'+
         '<button class="go" type="button" id="rtgRefGo">'+icon('invite')+' Invite a friend</button>'+
         (canCard ? '<div class="or">or</div>'+
           '<button class="card" type="button" id="rtgRefCard">'+icon('ticket')+' <span>Get the <b>Arcade Card</b>, unlimited</span></button>' : '')+

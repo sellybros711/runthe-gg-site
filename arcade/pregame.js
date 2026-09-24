@@ -33,18 +33,18 @@
 
   // How-to-play (2-3 short lines each).
   var RULES = {
-    table:      ['What number did they wear for that club?', 'Type it. Within two counts. One save, then the run ends.'],
-    match:      ['Sixteen names hide four secret groups of four.', 'Tap four that belong together. Four wrong guesses ends the day.'],
-    career:     ['A well-travelled career, revealed one club at a time.', 'Type the name. Off the first club it is worth 5. One miss ends your run.'],
-    oddone:     ['Four names share a connection, one doesn’t.', 'Spot it for a point, then name the link for another.'],
-    rankit:     ['Five players, one career stat, most at the top.', 'Tap two names to swap them. Five tries.'],
-    almamater:  ['Name the college each player attended.', 'Type it for 2 points, take four choices for 1.'],
-    guess:      ['Guess the mystery player, from any era.', 'Eight tries. Tiles compare careers, not this season.'],
-    crossword:  ['Fill the sports mini crossword.', 'Beat the clock; no mistakes for a flawless.'],
-    sportegories: ['One letter, eight categories, two minutes.', 'First or last name starts with the letter. Rarer names score more.'],
-    rollcall:   ['One club, one season, ninety seconds.', 'Name as many of that roster as you can. Wrong names cost nothing but the clock.'],
-    chain:      ['Two players, two teammates in between.', 'Each name has to have played alongside the one above it. Four wrong and the chain breaks.'],
-    highlow:    ['One stat, two players. Higher or lower?', 'Call every athlete that follows. There is no finish line, only your best.'],
+    table:      ['What number did they wear for that team?', 'Type it. Off by 2 or less counts. You get one save, then your run’s over.'],
+    match:      ['Sixteen names. Four hidden groups of four.', 'Tap four that go together. 4 wrong guesses and your day’s over.'],
+    career:     ['A player who moved around, shown one team at a time.', 'Type the name. Get it off the first team for 5 points. One miss ends your run.'],
+    oddone:     ['Four names have something in common. One doesn’t.', 'Spot it for a point. Name the link for another.'],
+    rankit:     ['Five players, one career stat. Most goes on top.', 'Tap two names to swap them. You get 5 tries.'],
+    almamater:  ['Name where each player went to college.', 'Type it for 2 points. Take the 4 choices for 1.'],
+    guess:      ['Guess the mystery player. Could be from any era.', '8 tries. The tiles compare whole careers, not this season.'],
+    crossword:  ['Fill in the sports mini crossword.', 'Beat the clock. No mistakes and it’s flawless.'],
+    sportegories: ['One letter, eight categories, two minutes.', 'The first or last name has to start with the letter. Rarer names score more.'],
+    rollcall:   ['One team, one season, 90 seconds.', 'Name as many players on that roster as you can. Wrong names only cost you time.'],
+    chain:      ['Two players, two teammates in between.', 'Each name has to have played with the one above it. 4 wrong and the chain breaks.'],
+    highlow:    ['One stat, two players. Higher or lower?', 'Keep calling every player that comes next. There’s no finish line, just your best run.'],
   };
   // Personal-best source per game (localStorage). t:true = time in seconds.
   var BEST = {
@@ -203,7 +203,7 @@
    * The flag is the same 'rtg:howto:<game>' key howto.js reads, so the gate
    * and the modal can never both onboard the same person.
    */
-  var INTRO_NOTE='<div class="rtgpg-note2">Rules are under the ? button up top.</div>';
+  var INTRO_NOTE='<div class="rtgpg-note2">Need the rules? Tap the ? up top.</div>';
   var demoHandle = null;
   /* THIS IS THE FIRST SCREEN A NEW PLAYER SEES, and the one every free look at
      a card game goes through, so it is where a demo is worth the most. The
@@ -307,9 +307,9 @@
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
         '<div class="rtgpg-tag">Your free play</div>'+
         introBody()+
-        '<div class="rtgpg-note">This one is on the Arcade Card, and you get one play of it free. Once you start, that is your go: it locks after this.</div>'+
+        '<div class="rtgpg-note">This one’s on the Arcade Card. You get one free play of it. Once you start, that’s your go. It locks after this.</div>'+
         '<button class="rtgpg-go" id="rtgpgGo" type="button">Play it free</button>'+
-        '<div class="rtgpg-note2">Not now? It will still be here. <a class="rtgpg-link" id="rtgpgCard">See the Arcade Card</a> for all twelve, unlimited.</div>'+
+        '<div class="rtgpg-note2">Not now? It’ll still be here. <a class="rtgpg-link" id="rtgpgCard">See the Arcade Card</a> for all twelve, no limits.</div>'+
         '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
       $('rtgpgGo').onclick=done;
       $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
@@ -327,7 +327,7 @@
       var unlimited = left===Infinity;
       var note = unlimited ? 'Unlimited plays' : 'Your free go at this one today';
       var upsell = unlimited ? '' :
-        '<div class="rtgpg-note2">Want to play it more than once? <a class="rtgpg-link" id="rtgpgCard">Get an Arcade Card</a> for all twelve games, unlimited.</div>';
+        '<div class="rtgpg-note2">Want to play it more than once? <a class="rtgpg-link" id="rtgpgCard">Get an Arcade Card</a> for all twelve games, no limits.</div>';
       var mid;
       if(!INTRO_SEEN){
         mid=intro();
@@ -335,7 +335,7 @@
         var hs=bestText();
         mid='<div class="rtgpg-tag">Welcome back</div>'+
           ((hs && hs.n!=='0')?('<div class="rtgpg-hs"><div class="rtgpg-stat"><div class="v">'+esc(hs.n)+'</div><div class="l">Your '+esc(hs.cap)+'</div></div></div>'):'')+
-          '<div class="rtgpg-note2">Rules are under the ? button up top.</div>';
+          '<div class="rtgpg-note2">Need the rules? Tap the ? up top.</div>';
       }
       b.innerHTML=
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
@@ -365,7 +365,7 @@
       b.innerHTML=
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
         intro()+
-        '<div class="rtgpg-note">This one is on the Arcade Card, and a free account gets you one play of it, plus a play of every other card game. Four games are free every day with no account at all.</div>'+
+        '<div class="rtgpg-note">This one’s on the Arcade Card. A free account gets you one play of it, plus one play of every other card game. Four games are free every day, no account needed.</div>'+
         '<button class="rtgpg-go" id="rtgpgGo" type="button">Create a free account</button>'+
         '<div><button class="rtgpg-ghost" id="rtgpgSignin" type="button">Already have one? Sign in</button></div>'+
         '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
@@ -387,11 +387,11 @@
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
         (tried
           ? '<div class="rtgpg-tag"><span class="rtgpg-lock">'+LOCK+'Free play used</span></div>'+
-            '<div class="rtgpg-note">You have had your free play of '+esc(name)+'. The Arcade Card opens it again, as often as you like.</div>'
+            '<div class="rtgpg-note">You’ve used your free play of '+esc(name)+'. The Arcade Card opens it back up, as often as you want.</div>'
           : '<div class="rtgpg-tag"><span class="rtgpg-lock">'+LOCK+'Arcade Card game</span></div>'+
             introBody())+
         '<ul class="rtgpg-perks">'+
-          '<li><b>›</b><span>All twelve games, as often as you like</span></li>'+
+          '<li><b>›</b><span>All twelve games, as often as you want</span></li>'+
           '<li><b>›</b><span>NBA, NFL and MLB editions of five of them</span></li>'+
           '<li><b>›</b><span>The Archive: every past day, still playable</span></li>'+
         '</ul>'+
@@ -414,7 +414,7 @@
     b.innerHTML=
       '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
       '<div class="rtgpg-tag">Back tomorrow</div>'+
-      '<div class="rtgpg-note">That’s today’s go at '+esc(name)+'. A fresh one lands at midnight.</div>'+
+      '<div class="rtgpg-note">That’s your go at '+esc(name)+' for today. A new one drops at midnight.</div>'+
       '<div class="rtgpg-note2">Still free today:</div>'+
       freeLinks()+
       /* Both wore a ticket, and neither is one. Signing up and inviting are
@@ -428,7 +428,7 @@
       (canInvite()
         ? '<button class="rtgpg-invite" id="rtgpgInvite" type="button">'+
             '<span class="ic">'+icon('invite')+'</span>'+
-            '<span class="tx">Invite a friend, <b>you both get another go today</b></span>'+
+            '<span class="tx">Invite a friend. <b>You both get another go today!</b></span>'+
           '</button>'
         : '')+
       '<button class="rtgpg-go buy" id="rtgpgGo" type="button">Play it again with the Arcade Card</button>'+
@@ -458,7 +458,7 @@
 
   function fillBoard(){
     var ol=$('rtgpgLb'); if(!ol) return;
-    if(!(window.RTG_BOARD && RTG_BOARD.allTimeBoard)){ ol.innerHTML='<li class="empty">Leaderboard unavailable.</li>'; return; }
+    if(!(window.RTG_BOARD && RTG_BOARD.allTimeBoard)){ ol.innerHTML='<li class="empty">Couldn’t load the leaderboard.</li>'; return; }
     var timed=!!TIMED[GAME];
     RTG_BOARD.allTimeBoard(GAME, 5).then(function(rows){
       if(!ol) return;
@@ -471,7 +471,7 @@
           (dt?'<span class="d">'+esc(dt)+'</span>':'')+
           '<span class="s">'+esc(amt)+'</span></li>';
       }).join('');
-    }).catch(function(){ if(ol) ol.innerHTML='<li class="empty">Leaderboard unavailable.</li>'; });
+    }).catch(function(){ if(ol) ol.innerHTML='<li class="empty">Couldn’t load the leaderboard.</li>'; });
   }
 
   build();
