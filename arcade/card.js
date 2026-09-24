@@ -377,8 +377,7 @@
       '<h2 style="font-family:var(--f,inherit);font-weight:900;font-size:26px;line-height:1.1;color:var(--ink,#eaf0f7);margin:0 0 14px;">'+
         (opts.spent ? 'That’s today’s go' : 'Ready to play?')+'</h2>'+
       (opts.spent ? (acct+banner) : (banner+acct))+
-      '<button class="rtgc-ghost" id="rtgcardSignin" type="button">I already have an account</button>'+
-      '<div class="rtgc-fine">No card required for account.</div>';
+      '<button class="rtgc-ghost" id="rtgcardSignin" type="button">I already have an account</button>';
     $('rtgcardCreate').onclick=function(){ close(); if(window.RTGAuthUI) RTGAuthUI.open('signup', { src: opts.spent ? 'wall_spent' : 'wall_cardgame' }); };
     $('rtgcardCard').onclick=function(){ paywall({ reason:'upsell' }); };
     $('rtgcardSignin').onclick=function(){ close(); if(window.RTGAuthUI) RTGAuthUI.open('signin'); };
