@@ -288,8 +288,8 @@ const SKILL = {
   murderers_row: 'arch_murderers_row',
   respin_title: 'respin_3',
   threepeat: 'btb_title', fourpeat: 'threepeat',
-  daily_title: 'win_title',
-  mode_classic_title: 'mode_classic_oct',
+  /* `daily_title` and `mode_classic_title` came off with them, for the same
+     reason and on the same run. */
   mode_survivor_title: 'mode_survivor_oct',
   mode_division_title: 'mode_division_oct',
   /* THE FOURTH MODE WAS MISSING FROM ITS OWN PATTERN. Classic, Survivor and
@@ -299,23 +299,39 @@ const SKILL = {
      quick (best / franchise). A title in one named mode is about a 3% event,
      which three runs a bot resolves as a coin toss. */
   mode_franchise_title: 'mode_franchise_oct',
+  /* AND ALL-TIME STAFF WAS MISSING FROM THE SAME PATTERN, which is the One
+     Franchise finding one line up arriving at the fifth mode. Every other named
+     mode carries this line; this one did not, and it lit in quick only for as
+     long as the sweep happened to win one there. The full sweep lights it. */
+  mode_staff_title: 'mode_staff_oct',
   /* A title is roughly one run in twenty and a title spending under $160M is
      about a fifth of those, so the quick sweep reaches the first and not the
      second. Anchored on the half it does reach, which is winning one at all. */
   bargain_title: 'win_title',
-  /* SALARY CAP SURVIVOR IS THE HARD MODE AND THAT IS THE DESIGN. The market takes
-     a roster apart over a season, so October there is a 5% event against Classic's
-     17%, and reaching it with nobody cut is rarer again. Anchored on finishing one
-     intact, which is the half the sweep does reach. */
-  mode_survivor_oct: 'surv_clean',
-  surv_clean_oct: 'mode_survivor_oct',
-  all_modes_oct: 'mode_survivor_oct',
+  /* SALARY CAP SURVIVOR'S THREE ENTRIES CAME OFF and the reason is worth keeping,
+     because it is the direction this file is usually wrong in. `mode_survivor_oct`,
+     `surv_clean_oct` and `all_modes_oct` were excused as roughly 5% events that a
+     sweep this size could not schedule. All three light now, in quick, and nothing
+     about Survivor was touched: what moved is that the rotation stopped being
+     over-valued, so a season is decided by the roster the market leaves you rather
+     than by two arms. An excuse on a badge that lights is not harmless, it is the
+     check quietly agreeing not to look at that badge again. */
   /* Two men from a curated family, which needs the draft to offer both and the
      drafter to want them. Five rosters in 1,750 had one. The anchor is the other
      link that has to be gone looking for rather than fallen into. */
   family: 'link_battery',
   /* Ten Octobers running, at a 23% October rate. */
   oct_streak_10: 'oct_streak_5',
+  /* TWO TITLES RUNNING, at about one run in twenty. The chain above already
+     anchors three and four in a row on this one, so it was the only rung of that
+     ladder with nothing under it: it lit in quick while the sweep happened to
+     stack two, and the full sweep lights it. Anchored on winning one at all. */
+  btb_title: 'win_title',
+  /* 98% draft efficiency, which is the share of the WAR on your own boards that
+     you walked away with. `eff_95` is the rung below and lights; the last three
+     points need every board to offer the best man at a price the roster can still
+     afford, which is the draft going right twelve times running. */
+  perfect_draft: 'eff_95',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's
      own target: an excuse written for something that turned out to be reachable,

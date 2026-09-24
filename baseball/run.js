@@ -532,9 +532,13 @@ function sortStaffSlots(run) {
   const rotSlots = held.filter(si => E.slotGroup(slots[si], true) === 'ROTATION').sort((a, b) => a - b);
   const penSlots = held.filter(si => E.slotGroup(slots[si], true) !== 'ROTATION').sort((a, b) => a - b);
 
-  /* Best first, index breaking the tie so the sort is stable. */
+  /* Best first, index breaking the tie so the sort is stable. BEST BY WHAT THIS
+     STAFF IS RATED ON, which is workloadWar: `staffEra` reads a starter over 210
+     innings, so ranking on the season line puts a 300 inning arm at SP1 above the
+     man who will actually be the better fifth of this rotation, and the card then
+     says ace about somebody the ERA underneath it disagrees with. */
   const rank = run.roster.map((p, k) => k).sort((a, b) =>
-    (run.roster[b].w - run.roster[a].w) || (a - b));
+    (E.workloadWar(run.roster[b]) - E.workloadWar(run.roster[a])) || (a - b));
 
   const put = [];
   const placed = new Set();
@@ -997,26 +1001,49 @@ function tradeOffers(run, data, gameIndex) {
   const used = new Set(run.usedPlayers);
   const headroom = money(capOf(run) - payroll(run));
   const offers = [];
-  // Weakest first: those are the holes a real GM would be shopping.
+  /* Weakest first: those are the holes a real GM would be shopping. Weakest by
+   * what he is WORTH TO THIS CLUB rather than by his season line, or a heavy
+   * innings starter is read as the best arm on the roster and never shopped. */
   const mine = run.roster.map((p, i) => ({ p, i, slot: slots[run.slotIndex[i]] }))
-    .sort((a, b) => a.p.w - b.p.w);
+    .sort((a, b) => E.workloadWar(a.p) - E.workloadWar(b.p));
 
   for (const own of mine) {
     if (offers.length >= TRADE.OFFERS) break;
     if (offers.some(o => o.slot === own.slot)) continue;
     const pool = slotPool(run, data, own.slot);
     const budget = own.p.p + headroom;
+    /* MIN_GAIN_WAR IS A PROMISE AND IT WAS MEASURED ON THE WRONG NUMBER. This
+     * mode's whole offer is a better player for one of yours, and a season WAR
+     * is not what a heavy innings starter is worth here: the price was built on
+     * 210 innings and, since workloadWar, so is the season. Filtered raw, one
+     * offer in five advertised a gain that was really a loss or nothing, worst
+     * case "+5.2 WAR" for a swap worth -0.5, measured over 1,578 real offers.
+     * Nothing threw: every figure on the sheet was a true statement about a
+     * season, and the only symptom was a mode that made your team worse. */
+    const ownW = E.workloadWar(own.p);
     const cands = pool.filter(c =>
-      c.w >= own.p.w + TRADE.MIN_GAIN_WAR && c.p <= budget && !used.has(c.i));
+      E.workloadWar(c) >= ownW + TRADE.MIN_GAIN_WAR && c.p <= budget && !used.has(c.i));
     if (!cands.length) continue;
     const got = cands[Math.floor(rng() * cands.length)];
     offers.push({
       window: n, gameIndex, slot: own.slot, rosterIdx: own.i,
       /* `half` rides along because an offer is a flat projection rather than
        * the player row, and without it a two-way season's WAR reads on this
-       * screen as the man's whole year when it is one side of his ball. */
-      out: { n: own.p.n, w: own.p.w, p: own.p.p, s: own.p.s, t: own.p.t, half: own.p.half },
-      in: { n: got.n, w: got.w, p: got.p, s: got.s, t: got.t, half: got.half },
+       * screen as the man's whole year when it is one side of his ball.
+       *
+       * `r`, `pp` and `ip` ride along for the same reason and a sharper one.
+       * A heavy starter is priced on what he did in 210 innings AND, since
+       * workloadWar, played on it, so his real value to your club is under the
+       * figure this screen prints. Without these three the page's own heavyIP
+       * reads `r` as undefined, answers no for every man alive, and the offer
+       * is the one decision surface that cannot tell a 240 inning arm from a
+       * 180 inning one. It failed that way silently: measured over 2,274 offer
+       * sides it tagged exactly none of them, which reads as a pool with no
+       * workhorses in it rather than as a projection missing a field. */
+      out: { n: own.p.n, w: own.p.w, p: own.p.p, s: own.p.s, t: own.p.t, half: own.p.half,
+        r: own.p.r, pp: own.p.pp, ip: own.p.ip },
+      in: { n: got.n, w: got.w, p: got.p, s: got.s, t: got.t, half: got.half,
+        r: got.r, pp: got.pp, ip: got.ip },
       cost: money(got.p - own.p.p),
       key: pkey(got),
     });
