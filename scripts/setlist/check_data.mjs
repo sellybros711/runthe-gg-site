@@ -712,7 +712,9 @@ console.log('the module cache version');
 {
   const cb = read('scripts/check-cachebust.mjs');
   check(/const MOD = /.test(cb), 'the checker looks at module imports as well as script tags');
-  check(/for \(const re of \[TAG, MOD\]\)/.test(cb), 'and runs both over every page');
+  /* Main has since added a third pattern (DATA) to the same loop, so this asks
+     that TAG and MOD are both in it rather than that they are all of it. */
+  check(/for \(const re of \[TAG, MOD[\],]/.test(cb), 'and runs both over every page');
   const mods = [...gameBare.matchAll(/from '\.\/([A-Za-z0-9_.-]+\.js)\?v=(\d+)'/g)];
   check(mods.length >= 2, `the page versions ${mods.length} sibling modules`);
   /* The checker's own regex, run against the page, has to find what the page
@@ -972,7 +974,7 @@ check((gameBare.match(/Close anyway, lose the segue/g) || []).length === 2,
   'and both say what it gives up');
 /* The banner used to offer a paid respin as the only alternative to playing
    on, which was true while the close was blocked and is not true now. */
-check(/close the set\s*\n?\s*and give it up/.test(gameBare),
+check(/close the set\s*\n?\s*and let it go/.test(gameBare),
   'the hunt banner offers closing as a way out');
 
 /* TIME CARRIES ONE SET FORWARD, and three separate bits of copy promise it to
@@ -1023,7 +1025,7 @@ check((gameBare.match(/bankGoesTo\(si\)/g) || []).length >= 3,
     'and the rules do not promise a decision the scoring punishes');
   /* The cost has to be said where the choice is made, or leaving it out is the
      same omission in the other direction. */
-  check(/a short set scores less/.test(say),
+  check(/Short sets score less/.test(say),
     'the close button states what a short set costs');
   check(/the crowd notices a short set/.test(say),
     'and so does the hint beside it');
@@ -1200,8 +1202,11 @@ check(/Added to \$\{esc\(SETS\[just\.si\]\.label\)\}/.test(gameBare),
   'naming the set it went into');
 check(/song\$\{inSet === 1 \? '' : 's'\} in/.test(gameBare),
   'and how many are in that set now');
-check(/Drawing your next show/.test(gameBare),
-  'and the reels say they are drawing the NEXT one, not spinning from scratch');
+/* The words changed to match the home screen's "Spin the wheel", so the check
+   is on what the label has to SAY rather than its exact wording: that this is
+   the NEXT show, not the game starting over. */
+check(/'Spinning for your next show'/.test(gameBare),
+  'and the reels say they are spinning for the NEXT one, not starting from scratch');
 /* A METER, NOT TABS: "At first I thought set 1 and two were tab buttons." */
 check(/\.nightstrip\{[^}]*pointer-events:none/.test(game),
   'the set meter cannot be pressed');
@@ -1412,7 +1417,10 @@ check(/<span class="sg-w">Their<\/span> \$\{\s*esc\(setLabel\(k\)\)\}/.test(game
   const box = gameBare.slice(gameBare.indexOf('<div class="scorebox">'),
     gameBare.indexOf('</div>', gameBare.indexOf('band-meta', gameBare.indexOf('<div class="scorebox">'))));
   check(/class="sb-pct"/.test(box), 'the percentage is inside the score box');
-  check(/best show those nights had in them/.test(box), 'and says what it is a percentage of');
+  /* One phrase, named once, so the scorebox and the "not said twice" check
+     below can never drift onto two different wordings of the same claim. */
+  const PCT_OF = /best setlist you could've built/;
+  check(PCT_OF.test(box), 'and says what it is a percentage of');
   check(/grade-\$\{gradeScore\(r\.total\)\}/.test(box), 'coloured by the same grade as the score');
   /* Above the headline, not below it: the quip is flavour and this is the
      answer to the question the player is actually asking. */
@@ -1428,7 +1436,7 @@ check(/<span class="sg-w">Their<\/span> \$\{\s*esc\(setLabel\(k\)\)\}/.test(game
      the ceiling bar labels its own axis with it and a comparison needs both
      numbers on it; what must not come back is the scorebox's CLAIM restated
      underneath, which is what made neither of them land. */
-  check(!/best show those nights had in them/.test(ceil),
+  check(!PCT_OF.test(ceil),
     'the card below does not restate the scorebox line');
   /* AND THE BENCHMARK IS ON THE BAR. 29 words of fine print explained the
      replay and ended with "picking at random gets about 77% of it", asking
