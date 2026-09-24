@@ -4542,6 +4542,58 @@ the scoreboard to the plate. The strip is darker at both edges and NEUTRAL down 
 middle now, so it reads as worn ground. Found by rendering three parks and looking,
 which is the fourth time on this page.
 
+### The ball was the smallest thing on the screen it is the point of
+
+Asked for: gameplay and graphics comparable to Backyard Baseball. The whole loop was
+walked on a phone as a player meets it (the wait, the flight, the swing, the cut, the
+play) and the biggest gap was the same in both cameras. **The ball.** Mid flight it was a
+6 logical pixel dot leaving the mound, which is 3.5 CSS pixels on a 390 phone, and it
+only became a ball for the last third of the trip. After contact the field camera drew
+it as an 8 pixel white disc with a one pixel seam and a shadow two pixels by one, which
+against the infield is a speck, and on a base path's chalk was nothing at all. Backyard
+Baseball's ball is the biggest, most legible thing on its screen at every moment,
+because you cannot time what you cannot see.
+
+- **The plate camera's ball is `6.5 + 6 * e^1.3` now**, 13 logical at release against
+  25 at the plate: a 1:2 swell rather than 1:3.6, about a tenth of the pitcher's height
+  the whole way. The arrival size did not move, so the mitt still covers it.
+- **`ballRadiusMin` is six CSS pixels of radius**, from four. `drawBaseball` draws the
+  same dark ring the plate camera's ball has always worn, at a weight scaled to the
+  floor, and its shadow is the ball's own width rather than a five logical pixel
+  constant. Both ghost trails in the field view were 2 and 3 logical pixels, hardcoded,
+  which on a phone is under one CSS pixel: the streak that makes speed read did not
+  exist there. They scale off the floor too.
+
+**THE CONTACT FRAME WAS NEVER SHOWN.** `plateViewActive` returned false the instant
+`g.play` existed, and `HITSTOP_MS` shifted every play timer by 80 without holding the
+picture, so the cut to the field landed on the same frame as the press. The one thing a
+batter presses for was the one thing they never saw, and a hit and a whiff felt the same
+at the moment of the thumb. A play holds the plate camera for exactly the hit stop now,
+and only a play that began with a swing (`g.contactFx`, set beside `lastSwing.res =
+'hit'`): `startedAt` is already shifted by `HITSTOP_MS`, so the hold is the window every
+play timer already waits out and the field comes up with the ball at t = 0, which is
+where the plate camera leaves it. `HITSTOP_MS` is **150**, because 80 is a fighting
+game's number and this beat has a second job.
+
+What is drawn in it: the bat forced onto the contact frame whatever the swing clock
+says (which is what a hit stop is), the ball where the pitch landed, a ring and eight
+rays opening behind it in the swing's own colour, so a bunt and a power swing read as
+their own kind of hit. `verify-rules` asserts both halves: a play scheduled with no swing
+behind it still cuts at once, and a swing that connects holds for the hit stop and then
+cuts.
+
+**AND THE CATCHER IS GONE FROM THE PLATE CAMERA.** He was a "sliver" at the bottom
+right, helmet and shoulders, on the argument that a helmet at the edge says where the
+camera stands. On a phone the crop is a third of the scene and the count chip sits in
+that corner, so what arrived was a red cap and a brown lump under the placard, cut by
+the frame and by the chip, reading as a rendering fault. Backyard Baseball, the mobile
+MLB games and The Show's catcher cameras draw no catcher, because the camera IS the
+catcher. His mitt stays, as the target and the glove the ball lands in, which is the
+only part of him a batter looks at. `catX`, `catY` and `catSc` went with him rather
+than staying as constants nothing reads, and the three `verify-rules` claims about his
+crown became one claim that there is no catcher geometry: a rule about a figure that is
+not drawn is a rule that can only pass.
+
 #### And the wide camera left a black hole, which the full bleed layout made bigger
 
 Found by walking the first two pitches again after the pass above. Before the
