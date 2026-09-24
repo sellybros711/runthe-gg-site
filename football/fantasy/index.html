@@ -1069,6 +1069,59 @@
   }
   var chanceAt = function(i){ return hydrate(state.chances[i]); };
 
+  /*
+   * A DRAFT OVER THE WEEK'S CAP IS REOPENED, NOT KEPT, AND NOT SUBMITTED.
+   *
+   * For a morning the page drafted week 3 at $110M while the server held it at $90M, so a
+   * tester could finish a lineup spending $106.7M that `fantasy_submit` refuses with "that
+   * lineup is over the cap". Nothing on the review screen said so: it printed "$106.7M of
+   * $90M spent" under a Submit button that sent it anyway. Reported by the owner with a
+   * screenshot of exactly that, SENDING... over a lineup the server was always going to
+   * turn away.
+   *
+   * THE WEEK KEEPS ITS $90M, which the owner chose twice, and the lineup gives way. It is
+   * replaced by a FRESH draft in the same chance, so nobody loses one of their five. Its
+   * seed is DERIVED from the old one rather than drawn, so a reload cannot re-roll it: the
+   * rule a chance lives by (store the seed, never re-draw it) holds for the reopened one
+   * the moment it is saved, and holds even where storage is blocked, because the same old
+   * seed always gives the same new one.
+   *
+   * ONLY A LINEUP THE SERVER WOULD REFUSE IS TOUCHED. A legal draft stays exactly as it
+   * is, and a submitted one is never reopened: the row is the server's and it was accepted
+   * under the cap, so if it reads over now the cap is what moved, and taking a reader's
+   * entry away on the strength of that would be this page overruling the competition.
+   * A PARTIAL draft over the cap is reopened too, because the next board would have
+   * negative money to spend and the draft would strand.
+   */
+  function reopenOverCap(){
+    var hit = [];
+    for (var i = 0; i < state.chances.length; i++){
+      if (i === state.submitted) continue;
+      var c = chanceAt(i);
+      if (!c || D.spent(c) <= CAP + 1e-9) continue;
+      var old = state.chances[i];
+      state.chances[i] = { seed: ((old.seed >>> 0) ^ 0x5bd1e995) >>> 0, ids: [],
+        reopened: true };
+      if (state.pick === i) state.pick = null;
+      hit.push(i + 1);
+    }
+    if (hit.length) save();
+  }
+  /* "Draft 3 was" or "Drafts 3 and 4 were". Short, because it is read on the way past. */
+  function reopenedLine(){
+    var open = [];
+    for (var i = 0; i < state.chances.length; i++){
+      var c = state.chances[i];
+      if (c && c.reopened && (c.ids || []).length < D.SLOTS.length) open.push(i + 1);
+    }
+    if (!open.length) return '';
+    var list = open.length === 1 ? String(open[0])
+      : open.slice(0, -1).join(', ') + ' and ' + open[open.length - 1];
+    return (open.length === 1 ? 'Draft ' + list + ' was' : 'Drafts ' + list + ' were')
+      + ' over the ' + money(CAP) + ' cap. '
+      + (open.length === 1 ? 'It is' : 'They are') + ' open to draft again. ';
+  }
+
   /* ---- the clock ---- */
   var locked = function(){ return Date.now() >= Date.parse(POOL.locks_at); };
   function untilLock(){
@@ -1558,6 +1611,15 @@
     clearRefused();
     var c = chanceAt(state.pick);
     if (!D.full(c)){ sayRefused('That lineup is not finished.'); return; }
+    /* AND NEVER SEND ONE THE SERVER WILL REFUSE ON MONEY. Reopening at boot means this
+       should not happen, which is exactly why it is checked here as well: the review
+       screen printing "$106.7M of $90M spent" over a Submit button that sent it anyway is
+       what the owner reported. */
+    if (D.spent(c) > CAP + 1e-9){
+      sayRefused('That lineup is over the ' + money(CAP) + ' cap. Pick another, or draft '
+        + 'again.');
+      return;
+    }
     var ids = c.men.map(function(m){ return m.player_id; });
     var why = '';
     submitting = true;
@@ -2460,9 +2522,12 @@
       && done >= D.CHANCES;
     $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + D.CHANCES : 'Start drafting';
     $('b-review').hidden = !done;
+    /* THE REOPENED DRAFTS ARE NAMED WHERE THE READER LANDS, so nobody opens their five
+       and finds one gone with nothing to say why. */
     $('home-note').textContent = locked()
       ? 'Week ' + POOL.week + ' has kicked off. Nothing more can be submitted.'
-      : 'Draft as many as you like. One lineup goes in, on your account, and it is final.';
+      : reopenedLine()
+        + 'Draft as many as you like. One lineup goes in, on your account, and it is final.';
     lastWeekCard();
     /* AND THE DOOR BACK TO IT, if the answer has already landed. The ASK is at boot rather
        than here, because the reader most likely to have a result is the one who entered
@@ -2725,6 +2790,10 @@
       state = { season: POOL.season, week: POOL.week, chances: [], pick: null,
         submitted: null };
     }
+    /* FAILS OPEN. This runs for every visitor holding a saved week, before anything is
+       drawn, so a malformed save must cost the reopen and never the page. The submit
+       guard is still there behind it. */
+    try { reopenOverCap(); } catch (e) {}
     F.mine(POOL.season, POOL.week).then(function(row){
       if (row) SERVER_IN = { week: POOL.week, row: row };
       /* ASKED AT BOOT AND NOT INSIDE `paintHome`, which is where it was first written and

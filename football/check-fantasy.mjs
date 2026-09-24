@@ -3565,6 +3565,120 @@ for (const vp of [{ width: 360, height: 740 }, { width: 390, height: 844 }]) {
   }
 }
 
+/* ----------------------------------------------------------------
+ * A LINEUP OVER THE WEEK'S CAP IS REOPENED, AND ONE UNDER IT STILL GOES IN
+ *
+ * For a morning the page drafted week 3 at $110M against a server holding $90M, and the
+ * owner's own lineup came back from the review screen reading "$106.7M of $90M spent"
+ * under SENDING..., which the server was always going to refuse. Every user has to be able
+ * to submit, so an over-cap draft is reopened as a fresh draft in the same chance and a
+ * legal one is left exactly alone.
+ *
+ * THE CLAIM IS MADE ON WHAT IS POSTED. The stub accepts any lineup, so "the page refused
+ * it" and "the page sent it and the stub said yes" look identical on screen. What must
+ * never happen is an over-cap lineup leaving the browser, and what must happen is the
+ * legal one arriving.
+ * ---------------------------------------------------------------- */
+console.log('\nA LINEUP OVER THE CAP IS REOPENED, AND ONE UNDER IT STILL GOES IN');
+{
+  const WEEK_CAP_B = D.capFor(POOL);
+  const INJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data',
+    `injuries_${NOW.season}_w${NOW.week}.json`), 'utf8'));
+  const fit = POOL.pool.filter((m) => !INJ.men[m.player_id]);
+  /* Built off the slot list, cheapest fit man for the legal one and dearest for the one
+     over, so the fixture reshapes itself with the slots and the prices. */
+  const six = (pick) => {
+    const used = new Set();
+    return D.SLOTS.map((pos) => {
+      const m = pick(fit.filter((x) => x.position === pos && !used.has(x.player_id)));
+      used.add(m.player_id);
+      return m;
+    });
+  };
+  const LEGAL = six((a) => a.sort((x, y) => x.price_musd - y.price_musd)[0]);
+  const OVER = six((a) => a.sort((x, y) => y.price_musd - x.price_musd)[0]);
+  const spend = (men) => men.reduce((t, m) => t + m.price_musd, 0);
+  ok('the fixture has one lineup under the cap and one over it',
+    spend(LEGAL) <= WEEK_CAP_B && spend(OVER) > WEEK_CAP_B,
+    `$${spend(LEGAL).toFixed(1)}M and $${spend(OVER).toFixed(1)}M against $${WEEK_CAP_B}M`);
+
+  const KEY = `ps_fantasy_${NOW.season}_w${NOW.week}`;
+  const OLD_SEED = 424242;
+  const state = { season: NOW.season, week: NOW.week, submitted: null,
+    /* THE OVER ONE IS THE PICK, which is the owner's screenshot exactly: the gold card was
+       the $106.7M lineup. */
+    pick: 1,
+    chances: [{ seed: 7, ids: LEGAL.map((m) => m.player_id) },
+      { seed: OLD_SEED, ids: OVER.map((m) => m.player_id) }] };
+  const { page, boom, posted } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE,
+    storage: { key: KEY, value: JSON.stringify(state) }, server: { submit: 'ok' } });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+
+  const kept = await page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
+  ok('the over-cap draft is reopened', kept.chances[1].ids.length === 0 && kept.chances[1].reopened,
+    JSON.stringify(kept.chances[1]));
+  ok('  as a fresh draft in the same chance, so nobody loses one of their five',
+    kept.chances.length === 2);
+  /* DERIVED, NOT DRAWN, or a reload is a re-roll. */
+  ok('  with a seed derived from the old one, so a reload cannot re-roll it',
+    kept.chances[1].seed === ((OLD_SEED ^ 0x5bd1e995) >>> 0), String(kept.chances[1].seed));
+  ok('  and it is no longer the lineup picked to go in', kept.pick === null, String(kept.pick));
+  ok('the legal draft is left exactly as it was',
+    kept.chances[0].seed === 7 && kept.chances[0].ids.join() === LEGAL.map((m) => m.player_id).join());
+  const note = await page.evaluate(() => document.getElementById('home-note').textContent);
+  ok('  and the home screen says which draft was reopened and why',
+    /Draft 2 was over the \$\d+M cap/.test(note) && /open to draft again/.test(note), note);
+
+  /* REOPENING IS IDEMPOTENT. A second visit finds an empty draft, which spends nothing, so
+     it is not reopened again and its seed does not move. */
+  const p2 = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE,
+    storage: { key: KEY, value: JSON.stringify(kept) } });
+  await p2.page.waitForSelector('#s-home.on', { timeout: 15000 });
+  const again = await p2.page.evaluate((k) => JSON.parse(localStorage.getItem(k)), KEY);
+  ok('  a second visit does not reopen it again', again.chances[1].seed === kept.chances[1].seed);
+  await p2.page.close();
+
+  /* AND THE LEGAL ONE GOES IN. */
+  await page.click('#b-review');
+  await page.waitForSelector('#s-review.on', { timeout: 8000 });
+  const cards = await page.locator('#r-five .lineup').count();
+  ok('the review screen offers only the lineup that can be submitted', cards === 1, cards + ' cards');
+  /* THE SECOND LINE, which reopening makes unreachable and which is therefore only ever
+     exercised when reopening has broken. If an over-cap card is on screen at all, pressing
+     Submit on it must send nothing and say why. */
+  if (await page.locator('#r-five .lineup[data-i="1"]').count()) {
+    await page.click('#r-five .lineup[data-i="1"]');
+    await page.click('#b-submit');
+    await page.waitForTimeout(600);
+    const said = await page.evaluate(() => {
+      const r = document.getElementById('r-refuse');
+      return r && !r.hidden ? r.textContent : '';
+    });
+    ok('  an over-cap card that got through is refused on the press, and says why',
+      /over the \$\d+M cap/.test(said), said || 'nothing said');
+    /* ASKED HERE AND NOT ONLY AT THE END, because the defect this catches is the page
+       SENDING it, and a page that sends it moves on to the board: the walk below would
+       then be clicking a review card that is no longer on screen, throw, and never report
+       the one line that matters. */
+    ok('  and nothing was sent', !posted.some((x) => x.fn === 'fantasy_submit'
+      && x.body.p_picks.join() === OVER.map((m) => m.player_id).join()));
+  }
+  if (await page.locator('#s-review.on').count()) {
+    await page.click('#r-five .lineup[data-i="0"]');
+    await page.click('#b-submit');
+    await page.waitForFunction(() => !document.getElementById('s-review').classList.contains('on'),
+      null, { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(600);
+  }
+  const sent = posted.filter((x) => x.fn === 'fantasy_submit').map((x) => x.body.p_picks.join());
+  ok('the legal lineup is submitted', sent.includes(LEGAL.map((m) => m.player_id).join()),
+    sent.length + ' submits');
+  ok('  and the over-cap lineup never leaves the browser',
+    !sent.includes(OVER.map((m) => m.player_id).join()));
+  ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+  await page.close();
+}
+
 await browser.close();
 console.log(fails ? `\n${fails} FAILED` : '\nall good');
 process.exit(fails ? 1 : 0);

@@ -2760,6 +2760,28 @@ filename only ever appeared with its final contents. It stopped costing nothing 
 the pool grew a cap: the name does not change when the file does, so a returning visitor
 would be served their own cached copy, find no cap on it and fall back to the constant.
 
+**AND THE LINEUPS ALREADY DRAFTED AT THE WRONG CAP ARE REOPENED, NOT SUBMITTED.** Fixing the
+cap stopped new over-cap drafts and did nothing about the ones in people's browsers. The
+owner's own review screen read "$106.7M of $90M spent" under SENDING..., and the page had no
+check of its own: it posted a lineup `fantasy_submit` was always going to refuse. Only
+testers were affected, because the launch and the fix went out in one commit, so the public
+has only ever drafted at $90M.
+
+Asked "raise the week to $110M, or reopen the over-cap drafts", the owner chose to reopen.
+`reopenOverCap()` runs at boot: any unsubmitted draft spending more than the week's cap
+becomes a fresh draft in the same chance, so nobody loses one of their five, and the home
+note names which. **The new seed is DERIVED from the old one**, never drawn, or a reload
+would be a re-roll. A legal draft is untouched, a submitted one is never touched (the row is
+the server's and was accepted under the cap), and a partial draft over the cap is reopened
+too because its next board would have negative money. It **fails open** in a try, since it
+runs before anything is drawn for every visitor with a saved week.
+
+**The submit button checks the cap as well**, which reopening makes unreachable. That is the
+point of it. The guard proves it from both sides: with reopening removed the second line
+refuses the press and nothing is sent, and with both removed the leak is reported the moment
+it happens rather than after the page has moved on to the board, which is where the first
+draft of that check crashed before it could say anything.
+
 ### The price is what he has done. The projection is the same number.
 
 `football/build/weekly-pool.mjs` builds one week's board from weeks 1 to N-1 plus the
