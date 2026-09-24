@@ -1106,6 +1106,10 @@ const STAFF = {
    * rather than the whole pool: the pool is mostly men nobody signs. */
   SP_ERA_BASE: 5.0, SP_ERA_PER_WAR: 0.386, SP_ERA_FLOOR: 1.60,
   RP_ERA_BASE: 4.60, RP_ERA_PER_WAR: 0.55, RP_ERA_FLOOR: 1.35,
+  /* The two ends of the rating scale, in blended ERA. See staffRating for how
+   * they were measured and for what went wrong when only one end was. */
+  FLOOR_ERA: 4.63, FLOOR_RATING: 1,
+  TOP_ERA: 2.91, TOP_RATING: 99,
 };
 function staffOffense() { return STAFF.LINEUP_RPG; }
 
@@ -1136,13 +1140,29 @@ function staffEra(roster) {
  * it be overallRating(winPct), which saturates at 100 for anything projecting 93+
  * wins and pinned twelve of thirty test staffs at exactly 100.
  *
- * So it is anchored to what this mode actually produces. Measured over 60 drafts at
- * three spending strategies, blended ERA runs 2.82 at the very best to 3.61 at the
- * worst, median 3.22. The line below puts that median near 60 and leaves a perfect
- * draft room to reach 100 without the ceiling doing the work. */
+ * SO IT IS ANCHORED ON WHAT THIS MODE PRODUCES, AT BOTH ENDS, which is teamRating's
+ * own rule and is why that one was rescaled. The first version was `50 + (3.40 -
+ * era) * 55`, fitted to a median blended ERA of 3.22 over 60 drafts at three
+ * spending strategies. Two things moved under it since: the rotation auto-sort,
+ * which puts the best arms in the five slots carrying 70% of the innings, and the
+ * workload reading with its refitted coefficient. Re-measured over 640 drafts at
+ * eight grades of drafting quality plus 900 more sweeping how much budget is held
+ * back, that line had the same two defects teamRating had:
+ *
+ *     THE TOP WAS DEAD      the best staff any strategy reached is 2.93 ERA, which
+ *                           that line puts at 75.9. The top 24 points could not be
+ *                           lit by anybody, and holding money back does not help:
+ *                           greedy reaches 2.93 and so does every budget share.
+ *     THE BOTTOM WAS A WALL 196 of 640 pinned at exactly 1.0, so two staffs a third
+ *                           of a run apart in ERA read the same number.
+ *
+ * Both ends are measured now. Re-measure them if the cap, the pool or the ERA
+ * model moves: they are facts about the draft, not preferences. */
 function staffRating(roster) {
   const era = staffEra(roster);
-  return Math.max(1, Math.min(100, Math.round((50 + (3.40 - era) * 55) * 10) / 10));
+  const k = (STAFF.TOP_RATING - STAFF.FLOOR_RATING) / (STAFF.FLOOR_ERA - STAFF.TOP_ERA);
+  const r = STAFF.FLOOR_RATING + (STAFF.FLOOR_ERA - era) * k;
+  return Math.max(1, Math.min(100, Math.round(r * 10) / 10));
 }
 
 function staffRunPrevention(roster, chemMultiplier) {

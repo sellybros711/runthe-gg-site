@@ -251,5 +251,57 @@ console.log('\n6. Nothing here reaches the other modes');
     'and the sort leaves it exactly as it found it', 'the sort touched a mode that is not its own');
 }
 
+/* ── 7. BOTH ENDS OF THE RATING SCALE ARE ALIVE ────────────────────────────── */
+console.log('\n7. Both ends of the staff rating scale can be reached');
+
+/* The first anchor was fitted to a median and to nothing else, so the top 24
+   points of the scale could not be lit by anybody and 196 of 640 drafts pinned
+   at exactly 1.0, which is two staffs a third of a run apart in ERA reading the
+   same number. That is the pair of defects teamRating was rescaled for, and
+   neither throws: a rating of 1 renders perfectly.
+
+   The three bots above are all real drafts and cluster near the top, so this
+   section adds the two ends deliberately rather than hoping a sample reaches
+   them: nobody can beat the best arm on every board, and nobody can do worse
+   than the worst. */
+{
+  const ends = {
+    'the best arm on every board': (o) => o.reduce((a, b) => (b.w > a.w ? b : a)),
+    'the worst man alive': (o) => o.reduce((a, b) => (b.w < a.w ? b : a)),
+  };
+  const seen = {};
+  for (const name of Object.keys(ends)) {
+    const rats = [];
+    for (let i = 0; i < Math.max(30, Math.floor(RUNS / 3)); i++) {
+      const r = draft(E.hashSeed(`ends-${name}-${i}`), ends[name]);
+      if (r) rats.push(E.staffRating(tag(r)));
+    }
+    seen[name] = rats;
+  }
+  const top = seen['the best arm on every board'];
+  const low = seen['the worst man alive'];
+  claim(top.length > 20 && low.length > 20,
+    `both ends drafted (${top.length} and ${low.length} runs)`);
+
+  /* A CEILING AND A FLOOR ARE DIFFERENT CLAIMS FROM A CLAMP. What must be true is
+     that the scale is USED at each end, and that nothing is stuck against the
+     stop: a best-possible draft reading 76 is a dead top, and a wall of 1.0 is a
+     dead bottom. */
+  const best = Math.max(...top), worst = Math.min(...low);
+  claim(best >= 90, `the best draft anybody can make reaches the top of the scale (${best.toFixed(1)})`,
+    'the old line put it at 75.9, so the top 24 points could not be lit');
+  claim(worst <= 15, `and the worst reaches the bottom (${worst.toFixed(1)})`);
+  const pinnedLow = low.filter((x) => x <= 1).length, pinnedTop = top.filter((x) => x >= 100).length;
+  claim(!pinnedLow && !pinnedTop,
+    `and nothing is stuck against either stop (${pinnedLow} at 1, ${pinnedTop} at 100)`,
+    'a clamp is not a scale: two staffs a third of a run apart read the same number');
+
+  /* The anchors are what the two claims above rest on, so a build that moved them
+     without re-measuring says so here rather than in a player's screenshot. */
+  claim(E.STAFF.TOP_ERA < E.STAFF.FLOOR_ERA && E.STAFF.TOP_RATING > E.STAFF.FLOOR_RATING,
+    `the anchors run the right way (${E.STAFF.FLOOR_ERA} ERA -> ${E.STAFF.FLOOR_RATING}, `
+    + `${E.STAFF.TOP_ERA} -> ${E.STAFF.TOP_RATING})`);
+}
+
 console.log(`\n${fails ? fails + ' of ' + checks + ' checks FAILED' : 'All ' + checks + ' checks passed.'}`);
 process.exit(fails ? 1 : 0);
