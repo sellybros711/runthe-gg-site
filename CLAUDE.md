@@ -5369,7 +5369,94 @@ to 750, so a crop centred on the canvas cut his bat off at the frame's edge.
   with its table painted over the swing buttons. It is absolutely positioned
   on the left now and the deck flows in the padding it leaves.
 
-##### THE DECK IS TOO TALL FOR A SHORT PHONE, and this is the open one
+##### FOUR CONTROLS WERE OFF THE WINDOW, AND THE ARENA'S OWN FLOOR PUT ONE OF THEM THERE
+
+Measured across eleven viewports, both halves of the game, reading every
+pressable control's rectangle against the window rather than looking at a
+screenshot. `body.ingame` sets `overflow:hidden`, so a control past the edge is
+not a scroll away, it is **gone**.
+
+| | what was off the screen |
+|---|---|
+| 320x568, batting | `Bunt`, 24px off the right: the third swing was unreachable |
+| 320x568, pitching | `End Game`, 24px below the bottom |
+| 667x375 sideways, pitching | `Mound`, 18px below the bottom |
+| 844x390 sideways, pitching | `Slowball`, 30px off the right |
+
+**A ROW OF CONTROLS THAT DOES NOT WRAP DOES NOT GET SHORTER, IT RUNS OFF THE
+SIDE.** `.swing-modes` and `.pitch-select .type-row` were both `display:flex`
+with no wrap, so three buttons that want 318 pixels in a 268 pixel deck simply
+hung off the end. Wrapping is on the base rule now: it costs nothing when there
+is room, and it is the net rather than the plan, because a wrapped row is a
+second line of deck and the deck is what the camera pays for.
+
+**THE SWING LABEL NAMED TWO KEYS A PHONE DOES NOT HAVE**, and it was 43 of the
+50 pixels that row was over by. `Swing (1/2/3)` is an instruction for a
+keyboard, on the row a thumb uses most. It is a POINTER question rather than a
+width one, the same way the coach notes are: a narrow desktop window still has
+the keys and a 768 tablet still does not, so it reads `COARSE`.
+
+**AND THE TIGHTENING IS NOT BEHIND A WIDTH QUERY, which the first version was.**
+What is narrow is the COLUMN and not the window: held sideways the deck is a 253
+pixel column beside the field in a 667 pixel window, so a query on the viewport
+tightened the phone that needed it and missed the one that needed it more. The
+deck's own End Game and Mound buttons have been at ten pixels since the
+redesign, so the two pressed rows join them rather than getting a new size.
+
+**THE ARENA'S FLOOR WAS PUSHING A CONTROL OFF THE SCREEN, and it was dead
+everywhere else.** It read `min-height:min(56vh, 480px)`. The arena is the one
+child of that column with grow, so on any window with spare pixels it takes
+everything the deck does not want and the floor is never reached. **The only
+window where the floor did anything was one with no spare pixels**, and a flex
+box cannot shrink a child below its min-height: at 320x568 the deck wanted 231
+of 536, the floor held 318, and the Mound row was laid out 13 pixels below the
+bottom of the window.
+
+What the floor is actually for is the plate camera's COVER, which only zooms
+once the box is taller than its width over 1.4545; under that the field is width
+limited and the zone collapses to something a thumb cannot aim at. **So the
+floor is that threshold and nothing else**, written against the WIDTH because
+that is what it is a fact about: `69vw` is 220 at 320 wide and 269 at 390, which
+is the 268 the threshold was measured at. Above it the arena still takes
+everything going, so no screen that fitted before moves: the one arena that
+changed is 320x568 while pitching, 318 to 305.
+
+**AND THE SELECTOR FOR THE TIGHTENING WAS WRONG FIRST, which the measurement
+caught and reading would not have.** The swing buttons are `.mode-btn` and the
+rule asked for `.btn`, so it matched nothing, and the row passed only because
+the wrap it had just been given caught it. Under a fine pointer that is the
+right answer and on a phone it is a line of deck bought for nothing.
+
+**What the row was really doing is worth seeing**, because `flex-shrink` hides
+it: with no wrap the label was being CRUSHED from 90 pixels to 43, its own text
+cut, and Bunt still hung off the edge. Two faults in one row, and the crushed
+label is invisible in any rule.
+
+**Measured as a touch device, which is the one that ships**, the label reads
+`Swing`, the row is 253 of 268 and holds one line, and the deck is smaller than
+it was before any of this: the field GREW on every phone. 320x568 batting 421 to
+458, 390x844 batting 702 to 705. Under a fine pointer the label keeps its key
+names, the row wraps rather than overflowing, and everything still fits.
+
+**Eleven viewports, both halves, both pointer kinds: nothing off the window and
+nothing overflowing.** The one arena that got smaller is 320x568 while pitching,
+318 to 305, which is the half where you aim a reticle that is floored in CSS
+pixels anyway.
+
+##### THE DECK WAS TOO TALL FOR A SHORT PHONE, and it took three passes to close
+
+**IT IS CLOSED. What follows is the history**, kept because the two things it
+rules out are still ruled out and the third pass only worked because they were.
+The at bat card is gone from the deck, End Game left the flow, and the section
+above finishes it: no control is off the window on any of eleven viewports.
+
+**The one line here that the fix contradicts is the one about the arena's
+floor**, so read them together. Capping the floor to RESERVE room for the deck
+is still wrong, for the reason given below. What was done instead is that the
+floor stopped being a viewport-height number at all: `min(56vh, 480px)` was dead
+on every window with spare pixels and harmful on the one without, and it is the
+cover threshold in `vw` now, which is the thing it was always standing in for.
+The zone on the 360 phone this paragraph worries about does not move.
 
 Measured through the real page while pitching, which is the tallest the deck
 gets:

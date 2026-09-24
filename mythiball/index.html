@@ -127,7 +127,14 @@
   body.smooth{--pxr:auto;}
 
   .wrap{max-width:920px;margin:0 auto;padding:14px 14px 60px;}
-  .swing-modes{display:flex;align-items:center;gap:8px;margin:8px 0 2px;}
+  /* WRAPPING IS THE NET AND NOT THE PLAN. A row of controls that does not
+     wrap does not get shorter when it runs out of width, it runs off the
+     side of the window, and a control off the side of the window is one
+     nobody can press. It is written on the base rule rather than inside a
+     query because it costs nothing when there is room, and because the two
+     places that had to add it later (the sideways column and the phone deck)
+     were both discovering the same thing about the same row. */
+  .swing-modes{display:flex;align-items:center;gap:8px;margin:8px 0 2px;flex-wrap:wrap;}
   .swing-modes .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);}
   .mode-btn{font:inherit;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
     background:var(--panel);color:var(--text);border:var(--bd);border-radius:var(--r-sm);
@@ -248,7 +255,25 @@
      is whatever size the band comes out. The near black is the fallback
      for the frame before the first sample and for a park that has not
      drawn yet. */
-  body.ingame .arena{flex:5 1 0;min-height:min(56vh, 480px);width:100%;
+  /* THE FLOOR IS THE COVER THRESHOLD AND NOTHING ELSE, which is a
+     correction. It was `min(56vh, 480px)`, and on a tall window that number
+     is never reached: the arena is the one child with grow, so it takes every
+     pixel the deck does not want and the floor is dead. The ONLY window where
+     it did anything was one with no spare pixels, and there it did the wrong
+     thing: at 320 by 568 while pitching the deck wanted 231, the floor held
+     318 of 536, and the flex box cannot shrink a child below its min-height,
+     so the Mound row was laid out 13 pixels BELOW the bottom of the window
+     and `overflow:hidden` cut it off. A field floor that pushes a control off
+     the screen is a floor arguing with the game.
+
+     What the floor is actually for is the plate camera's COVER: it only zooms
+     once the box is taller than its width over 1.4545, and under that the
+     field is width limited and the strike zone collapses to something a thumb
+     cannot aim at. So that is the number, written against the WIDTH because
+     that is what it is a fact about: 69vw is 220 at 320 wide and 269 at 390,
+     which is the 268 that threshold was measured at. Above it the arena still
+     takes everything going. */
+  body.ingame .arena{flex:5 1 0;min-height:min(56vh, 480px, 69vw);width:100%;
     max-width:none;margin:0;border:0;border-radius:var(--r-sm);box-shadow:none;
     background:linear-gradient(to bottom, var(--sky, #0b1015) 0 50%,
       var(--turf, #0b1015) 50% 100%);position:relative;overflow:hidden;}
@@ -274,6 +299,36 @@
     body.ingame .screen > .controls:last-child{position:absolute;right:10px;
       bottom:6px;left:auto;margin:0;z-index:7;}
   }
+  /* THE WAY OUT OF A GAME HAS TO BE ON THE SCREEN, and on the shortest phone
+     anybody holds it was not. Measured at 320 by 568 while pitching, which is
+     the tallest the deck gets: the page ran 592 against a 568 window, and
+     `body.ingame` sets `overflow:hidden`, so the End Game row was cut off the
+     bottom with no way to scroll to it. Its own row is 23 pixels and its
+     margin another twelve, which is more than the whole shortfall, and it is
+     the one control on the screen nobody is hunting for. So on a window this
+     short it takes the corner the same way it does over a wide one. It is
+     bounded at 600 rather than left open, because every taller phone fits
+     with the row in the flow and there is no reason to move a control that
+     is not in anybody's way. */
+  @media (max-aspect-ratio: 3/4) and (max-height: 600px){
+    body.ingame .screen > .controls:last-child{position:absolute;right:10px;
+      bottom:6px;left:auto;margin:0;z-index:7;}
+  }
+  /* AND THE TWO ROWS THAT ARE PRESSED MATCH THE CONTROLS BESIDE THEM. Both
+     wrap now, so nothing can leave the window, and this is what keeps them
+     from needing to: a wrapped row is a second line of deck, and the deck is
+     what the camera pays for.
+
+     IT IS NOT BEHIND A WIDTH QUERY, and the first version was. What is
+     narrow here is the COLUMN and not the window: held sideways the deck is
+     a 253 pixel column beside the field in a 667 pixel window, so a query on
+     the viewport tightens the phone that needed it and misses the one that
+     needed it more. The deck's own End Game and Mound buttons have been at
+     ten pixels and this padding since the redesign, so this is the two rows
+     joining them rather than a new size. */
+  body.ingame .swing-modes{gap:6px;}
+  body.ingame .swing-modes .mode-btn,
+  body.ingame .pitch-select .type-row .btn{padding:6px 9px;font-size:10px;}
   /* Absolutely positioned so the arena's size never depends on the
      canvas's: a canvas whose bitmap is derived from its own layout width
      and whose layout width came from its intrinsic size is a feedback
@@ -743,7 +798,11 @@
   .pitch-select .col{display:flex;flex-direction:column;gap:4px;align-items:center;}
   .pitch-select .throw-hint{font-size:10px;letter-spacing:.12em;text-transform:uppercase;
     color:var(--text-dim);}
-  .pitch-select .type-row{display:flex;gap:6px;}
+  /* And the pitch picker, for the same reason. Three of this arm's own
+     pitches come to 281 pixels, and sideways the deck is a 253 pixel column
+     beside the field, so the third one hung 30 pixels off the right of the
+     window: the whole point of the row is choosing between them. */
+  .pitch-select .type-row{display:flex;gap:6px;flex-wrap:wrap;}
   .zone-grid{display:grid;grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px);
     gap:2px;background:var(--navy);padding:3px;border:var(--bd);
     border-radius:var(--r-sm);box-shadow:var(--shadow-sm);}
@@ -10328,7 +10387,15 @@ function simReconcile(p) {
   for (const r of sim.runners) {
     if (r.isBatter) continue;
     const still = g.bases.indexOf(r.c);
-    const dest = still >= 0 ? still : 3;          /* not on a base: he scored, or was put out at home */
+    /* NOT ON A BASE MEANS HE SCORED, UNLESS SOMEBODY SAID WHERE HE WAS PUT
+       OUT. A man off the bases was assumed to have reached home, which is
+       right for the two cases this was written for: a runner waved round who
+       scored, and one gunned down at the plate, who really did run there.
+       It is wrong for a man thrown out at THIRD tagging up from second, and
+       the picture ran him past the bag he was tagged at and slid him into
+       home. So a caller that knows the bag records it. */
+    const marked = p.outAt ? p.outAt.get(r.c) : undefined;
+    const dest = still >= 0 ? still : (marked == null ? 3 : marked);
     if (dest === r.toIdx) continue;
     const here = simSample(r.run, now).uv;
     /* waved further: run on through the bags. Held short: turn and get
@@ -10349,6 +10416,11 @@ function applyDoublePlayMutation(batter) {
   noteForm(batter.k, false);
   const preRunner = g.bases[0];
   g.bases[0] = null;
+  /* He was forced at SECOND. Off the bases and unmarked, the reconcile reads
+     him as a man who scored and runs him all the way to the plate. */
+  if (preRunner && g.play) {
+    (g.play.outAt || (g.play.outAt = new Map())).set(preRunner, 1);
+  }
   addOuts(2);
   addLog(`Double play. ${batter.n} and ${preRunner.n} both out. ${g.outs} out.`);
   showCallout('DOUBLE PLAY', 'strike');
@@ -10652,7 +10724,16 @@ function tagUp() {
       addOuts(1);
       addLog(`${runner.n} tags and is thrown out${from === 2 ? ' at the plate' : ' at third'}. ${g.outs} out.`);
       showCallout('THROWN OUT', 'strike');
-      if (g.play) g.play.plateOut = { runner, at: performance.now() };
+      /* THE PLATE MARKER IS FOR A PLAY AT THE PLATE. It draws the catcher
+         standing on home with the ball and the runner sliding into him, so on
+         a man thrown out at THIRD it was a picture of a play that did not
+         happen, at a base nobody was near. `outAt` is the other half: it tells
+         the reconcile which bag he was tagged at, so the sim runs him there
+         and stops rather than carrying him home. */
+      if (g.play) {
+        if (from === 2) g.play.plateOut = { runner, at: performance.now() };
+        (g.play.outAt || (g.play.outAt = new Map())).set(runner, from + 1);
+      }
     }
   }
   /* Show the legs. The walk's jog already knows how to trot a man from
@@ -10830,6 +10911,15 @@ function resolveThrow(outcome, kind, batter) {
     Sound.play('aww');
     applyErrorMutation(batter);
   }
+  /* THE PICTURE HAS TO FOLLOW THE BOOK HERE TOO, and on the two plays the
+     PLAYER fields it never did. `scheduleContactPlay` reconciles and these
+     two resolvers, which are the paths a fielded grounder and a fielded fly
+     take, did not: an infield single moves every runner up and a throwing
+     error moves them two, so the book had them on the next bag and the sim
+     left them standing where the plan put them. It is not a new gap, but the
+     ground out's force makes it a third case, so it is closed rather than
+     worked around. */
+  simReconcile(g.play);
   refreshHud();
   /* Complete the play: clear the animation state and advance to the next
      batter (or end the half). Without this the game freezes right here,
@@ -11065,6 +11155,9 @@ function resolveCatch(outcome, kind, batter, landingX, landingY) {
     Sound.play('aww');
     applyHitMutation('triple', batter);
   }
+  /* And the same here: a caught fly runs the tag, which sends a man from
+     third home and a man from second to third. */
+  simReconcile(g.play);
   refreshHud();
   /* Complete the play: same freeze guard as the throw minigame. */
   const wasOut = outcome === 'catch';
@@ -14546,7 +14639,14 @@ function renderGame() {
      Bunt lays it down. Keys 1/2/3 work too. */
   const modes = el('div','swing-modes');
   modes.id = 'swing-modes';
-  modes.innerHTML = `<span class="lbl">Swing (1/2/3)</span>`
+  /* THE LABEL NAMED TWO KEYS A PHONE DOES NOT HAVE. `Swing (1/2/3)` is an
+     instruction for a keyboard, on the one row a thumb uses most, and it is
+     also 43 of the 50 pixels this row was over by at 320 wide: measured on
+     that phone the Bunt button ran 24 pixels off the right of the window, so
+     the third swing was not reachable at all. It is a pointer question
+     rather than a width one, the same way the coach notes are: a narrow
+     desktop window still has the keys, and a 768 tablet still does not. */
+  modes.innerHTML = `<span class="lbl">${COARSE ? 'Swing' : 'Swing (1/2/3)'}</span>`
     + `<button class="mode-btn selected" data-mode="contact">Contact</button>`
     + `<button class="mode-btn" data-mode="power">Power</button>`
     + `<button class="mode-btn" data-mode="bunt">Bunt</button>`;
