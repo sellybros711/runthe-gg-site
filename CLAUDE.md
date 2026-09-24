@@ -4798,6 +4798,14 @@ system monospace, the pixel game's terminal voice. Smooth points `--mono` at the
 body face and turns `tabular-nums` on page wide, which is the column the monospace
 was really there for (Run The Floor's lesson). Retro keeps the monospace.
 
+**The booking sim follows the same setting and has no toggle of its own.**
+`wrestling/booking/` reads `rtr_gfx` in a head script, before first paint, and
+takes the same `--mono` override: it has no figures to redraw, so what Smooth
+changes there is the voice. It had been left in the terminal face while the career
+page went smooth, which is one game showing two styles. The guard reads the face
+actually applied, in both styles, because a rule that loses the cascade renders
+exactly like a rule that is missing.
+
 The roster, the mentors in `legends.js`, the free agents in `personalities.js` and the
 booking sim's promotions all use LEGAL names and invented companies. No ring names,
 no trademarked match or event names, no catchphrases. The suite's second section
