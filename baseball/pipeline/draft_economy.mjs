@@ -119,6 +119,18 @@ const gaps = pools.map(economy);
 if (gaps.length > 1) {
   const d = gaps[0] - gaps[1];
   console.log(`\nthe gap moves ${(d >= 0 ? '+' : '') + d.toFixed(1)} points from the second pool to the first.`);
+  /* AND WHETHER THAT IS A MEASUREMENT OR A COIN TOSS, because a gap is a
+     difference of two means and this file is read for decisions. A rating sd of
+     about 13 over N drafts puts one standard error on a mean near 13/sqrt(N),
+     and a gap doubles the variance again, so the whole effect split_stints has
+     was inside its own error bar at the default 40. Printed rather than left to
+     whoever reads the two numbers. */
+  const se = 2 * (13 / Math.sqrt(RUNS));
+  console.log(`one standard error on a gap at ${RUNS} drafts a bot is about ${se.toFixed(1)} points,`
+    + ` so this difference is ${Math.abs(d) > 2 * se ? 'bigger than' : 'INSIDE'} two of them.`);
+  if (Math.abs(d) <= 2 * se) {
+    console.log('Raise economy_runs before deciding anything on it.');
+  }
 }
 console.log('\nCLAUDE.md records the gap at about +11 points at this cap, and that it closes');
 console.log('as the cap loosens. A gap near zero is a draft with no decision left in it.');

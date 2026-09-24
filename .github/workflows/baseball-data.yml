@@ -52,6 +52,10 @@ on:
         description: 'Commit the rebuilt pool'
         type: boolean
         default: true
+      economy_runs:
+        description: 'Drafts per bot in the draft-economy sweep (raise it before deciding anything)'
+        type: string
+        default: '40'
 
 concurrency:
   group: baseball-data
@@ -196,8 +200,13 @@ jobs:
       # the same game.
       - name: And whether it still plays the same game
         if: ${{ always() }}
+        # THE DEFAULT IS A TRIPWIRE AND NOT A MEASUREMENT. At 40 drafts a bot the
+        # standard error on the GAP is about 2.8 rating points, which is the size
+        # of the whole effect split_stints has, so the default run says only that
+        # nothing fell over. Raise it before deciding anything.
         run: node baseball/pipeline/draft_economy.mjs
-             baseball/data/players.json /tmp/pool_before.json 40
+             baseball/data/players.json /tmp/pool_before.json
+             ${{ inputs.economy_runs || '40' }}
 
       # The pool the game will actually serve, checked before it is committed.
       # check-labels drives every shipped row through the pricing rule, so a build
