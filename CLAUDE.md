@@ -5596,6 +5596,7 @@ The regression suite, which is the thing to run after editing:
 
 ```
 node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
+node mythiball/check-rules.mjs     whole games, and the sport's own arithmetic
 node mythiball/verify-rules.mjs    the rules replayed in a headless browser
 node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop, --easy/--hard for a tier)
 node mythiball/check-frames.mjs 70 normal --phone --cpu=4   frame times, on the machine that matters
@@ -5615,6 +5616,130 @@ itself once: it measured the CPU at 55 whiffs per hundred swings, the swing
 jitter tiers came down about a fifth, and it measures in the mid forties
 now (MLB runs about 25). The file's header records the procedure, and any
 further move repeats it: measure, touch the jitter, measure again.
+
+### A SITUATION IS NOT A GAME, AND THREE RULES WERE WRONG IN EVERY ONE
+
+```
+node mythiball/check-rules.mjs          120 games
+node mythiball/check-rules.mjs 400      more of them
+```
+
+`verify-rules.mjs` asks whether a SITUATION is handled, and every scenario in it
+is one the audit found the game getting wrong: a walk-off walk, a mercy rule, a
+tag on a caught fly. So each of its claims is about one line. **Nothing had ever
+asked whether the sport's arithmetic holds over a WHOLE GAME**, which is a
+different question with a different shape: a property of every state the game
+can reach rather than of a state somebody thought to set up.
+
+**THE CLAIM IS THE IDENTITY.** Every batter who comes to the plate in a half
+inning either makes an out, scores, or is standing on a base when it ends, so
+
+```
+plate appearances = outs + runs + men left on base
+```
+
+exactly, every half inning, with no tolerance. It is violated by any runner
+duplicated, dropped, advanced twice or put out twice, which is most of the ways
+a base-running rule can be wrong, and **not one of them throws**: a runner who
+quietly vanishes off second leaves a game that renders perfectly and is missing
+a man.
+
+**IT DRIVES THE REAL FUNCTIONS AND NEVER A COPY**, in the order
+`scheduleContactPlay` calls them, and what it leaves out is the ANIMATION layer:
+a plate appearance here is the outcome applied and the transition taken, which
+is what the play timers do once the ball has landed. Timers are suppressed for
+the sweep, or a game would take its own eight minutes and the sweep would be a
+reading of one.
+
+**Three rules were wrong, and the first two were wrong in every game ever
+played here.** None of them threw and none of them drew anything odd.
+
+- **THE HOME TEAM NEVER BATTED IN AN EXTRA INNING IT WAS BEHIND IN.**
+  `checkGameOver`'s regulation clause asked `inning > innings` alone, and
+  `endHalfInning` flips the half BEFORE it asks, so the clause also fired at the
+  end of the TOP of an extra inning, where the number has already passed
+  regulation and the home team has not come to the plate. Every extra-inning
+  game the away team scored in ended on the spot with a legal-looking final
+  score. **What ends a game is a COMPLETED inning, and that is read off the half
+  rather than off the number.**
+- **THE MAN WHO MADE THE THIRD OUT LED OFF THE NEXT INNING.** Three functions
+  ended a half by handing straight to `endHalfInning` and not one advanced the
+  order first, so the batter who had just been rung up was standing back in the
+  box. **Putting the advance inside `endHalfInning` is the wrong fix and it is
+  the obvious one**, because a half inning can also end on a runner caught
+  stealing, and that plate appearance is NOT finished: the batter at the plate
+  leads off the next inning, which is the real rule and is what the steal path
+  already does. Advancing there would skip a man. So the advance belongs to the
+  end of an APPEARANCE, which is what `endPlateAppearance` is.
+- **A HIT COULD BE THE THIRD OUT AND THE INNING DID NOT END.** A runner waved
+  round and gunned down at the plate is an out charged to a man who came to the
+  plate an at bat ago, so the batter is safe, the play is a hit, and `wasOut` is
+  false: `afterHitTransition` had no test for three, and the game carried on
+  with three outs on the board, a fourth batter and a fifth. **What ends a half
+  inning is the third out and never what produced it.**
+
+**A GROUND OUT NOW MOVES THE MEN IT FORCED, and that one is a rule the game
+never had rather than a rule it got wrong.** A runner on first stayed on first
+for ever, so the fielder's choice, the run-scoring grounder and the whole idea
+of a productive out were missing, and what the screen showed was a legal play no
+defence would ever choose. The batter is retired at first and everybody on an
+unbroken chain of bases behind him moves up; a man on second or third with first
+EMPTY was never forced and holds, which is why it walks the chain rather than
+shoving every runner along. **Nobody moves on the third out**, because no run
+may score on a play whose third out is the batter retired before he reaches
+first.
+
+**It is worth +0.58 runs a nine innings a side**, measured through the sweep
+against a copy of the page with the rule alone removed, over 200 games an arm on
+one seed. That is a real move and it is recorded rather than compensated: the
+old behaviour was not cheaper, it was wrong.
+
+**A SACRIFICE IS NOT AN AT BAT**, which is the whole reason a man who gives
+himself up for the runner does not pay for it in his average. Both kinds were
+charged one. The sacrifice fly has to be read off the SCORE and never off the
+fact that somebody moved, because a man tagging to third is not one; and **a
+bunt with nobody on is not a sacrifice at all**, so it is an ordinary out, an
+ordinary at bat, and the screen no longer calls it something it was not.
+
+**`recordHit` IS GONE.** Fifty lines nobody called: a second copy of the runner
+rule, written before `applyHitMutation` existed, with no send, no hold and no
+tag in it. A dead copy of a rule is the worst kind of comment, because the next
+person to fix a base-running bug finds two answers and fixes the one that is not
+running.
+
+**And extra innings announced themselves every inning.** `inning > innings` is
+true of the eleventh and the twelfth as well, so a long game said "tied after
+nine, extra innings" at the top of each of them, by which point it had not been
+tied for three innings.
+
+#### Three ways the harness was wrong, and two of them read as the page being wrong
+
+- **OUTS ARE READ ABSOLUTE AND NEVER AS A DELTA.** The outs made in a half ARE
+  `g.outs` at the moment it ends, because that counter is what `endHalfInning`
+  resets. A delta over one plate appearance is the outs that appearance made,
+  which is never three, and the first draft reported every half inning in the
+  game as unbalanced.
+- **IT DID THE PAGE'S JOB AND HID THE DEFECT IT SHOULD HAVE FOUND.** Every
+  branch carried its own `if (g.outs >= 3) endHalfInning()` before handing on,
+  so the hit whose third out is a runner gunned down at the plate ended the
+  inning HERE and not there, and the third defect above was invisible until the
+  branch was replaced by `scheduleContactPlay`'s own four lines verbatim.
+- **THE SACRIFICE FLY SCENARIO RACED THE DICE.** `tagUp` reads the SEND button
+  only for the team you are managing and the other dugout is always on auto, so
+  a scenario that sets the rule on a game you are playing at HOME sets a rule
+  nobody consults, and then rolls for the throw. Written that way it passed or
+  failed on how fast the man on third happened to be.
+
+**Every guard was proved by reintroducing its defect in a copy of the page**
+(`MYTHIBALL_PAGE`, which both browser suites here already take). The extra
+innings clause fails two claims, the order fails four, and the third out fails
+one, naming itself: `an at bat starts with 3 out`.
+
+**COVERAGE IS HALF OF IT.** A sweep that never reached an extra inning says
+nothing about extra innings, and one with no runner thrown out at the plate
+never tested the one out charged to a man who came to the plate an at bat ago,
+so the counts are asserted. The two claims a random sweep can only meet by luck
+are set by hand beside it.
 
 ### EVERY OTHER CHECKER HERE ASKS WHETHER SOMETHING IS CORRECT
 

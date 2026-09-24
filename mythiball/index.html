@@ -10306,7 +10306,12 @@ function scheduleContactPlay(kind, batter, info) {
     /* Check for a walk-off: home team leads at the end of a play in the
        bottom of the final inning or later. */
     if (checkWalkOff()) return finishGame();
-    if (wasDP && g.outs >= 3) return endHalfInning();
+    /* A double play that also ended the half. afterOutTransition below
+       reaches the same place, and this line is kept only so a future play
+       kind that is a double play without being an out cannot fall past it.
+       It goes through endPlateAppearance for the reason every other door
+       does: the order is continuous. */
+    if (wasDP && g.outs >= 3) return void endPlateAppearance();
     if (wasOut) afterOutTransition();
     else        afterHitTransition(g && g.away && g.home ? kind : kind);
   }, finishMs);
@@ -10506,25 +10511,94 @@ function applyHitMutation(kind, batter, opts) {
   }
 }
 
+/* A GROUND OUT MOVES THE MEN IT FORCED.
+
+   The batter is retired at first, and everybody standing on an unbroken
+   chain of bases behind him was running on contact, so he moves up: a man
+   on first takes second, first and second take second and third, and the
+   bases loaded send one home. A man on second or third with first EMPTY was
+   never forced and holds, which is why this walks the chain rather than
+   shoving every runner along. Before it existed a runner on first stayed on
+   first for ever: the fielder's choice, the run-scoring grounder and the
+   whole idea of a productive out were missing from the mode, and the
+   picture was a legal one the defence would never actually play.
+
+   NOBODY MOVES ON THE THIRD OUT, and that is the rule rather than
+   tidiness: no run may score on a play whose third out is the batter
+   retired before he reaches first base. Read after addOuts, so the test is
+   the board's own. */
+function groundOutForce(batter) {
+  const g = State.game;
+  if (g.outs >= 3) return;
+  if (!g.bases[0]) return;
+  let top = 0;
+  while (top < 2 && g.bases[top + 1]) top++;
+  const nb = g.bases.slice();
+  let scorer = null;
+  if (top === 2) { scorer = nb[2]; }
+  for (let i = top; i >= 0; i--) {
+    if (i + 1 <= 2) nb[i + 1] = nb[i];
+    nb[i] = null;
+  }
+  g.bases = nb;
+  if (!scorer) return false;
+  scoreRuns(1, { rbi: batter ? batter.k : null, scorers: [scorer.k] });
+  addLog(`${scorer.n} scores on the play.`);
+  return true;
+}
+
 function applyOutMutation(kind, batter) {
   const g = State.game;
-  statBump(batter.k,'ab');
   noteForm(batter.k, false);
   noteFragileOut(batter);
   if (kind === 'bunt out') {
     /* The sacrifice: the batter is out, everybody else moves up. */
     const fromThird = g.bases[2];
+    /* A BUNT WITH NOBODY ON IS NOT A SACRIFICE. There is nothing to
+       sacrifice for, so it is an ordinary out and an ordinary at bat, and
+       calling it a sacrifice put a word on the screen that was not true of
+       the play the reader had just watched. */
+    const sac = !!(g.bases[0] || g.bases[1] || g.bases[2]);
     g.bases = [null, g.bases[0], g.bases[1]];
     addOuts(1);
     if (fromThird) scoreRuns(1, { rbi: batter.k, scorers: [fromThird.k] });
-    addLog(`${batter.n} lays down a sacrifice bunt${fromThird ? ', a run scores' : ''}. ${g.outs} out.`);
-    showCallout(fromThird ? 'SQUEEZE! RUN SCORES' : 'SACRIFICE BUNT', fromThird ? 'homer' : 'sub');
+    /* A SACRIFICE IS NOT AN AT BAT, which is the whole reason a man who
+       gives himself up for the runner does not pay for it in his average.
+       It is a plate appearance either way. */
+    if (!sac) statBump(batter.k, 'ab');
+    addLog(sac
+      ? `${batter.n} lays down a sacrifice bunt${fromThird ? ', a run scores' : ''}. ${g.outs} out.`
+      : `${batter.n} bunts, out at first. ${g.outs} out.`);
+    showCallout(fromThird ? 'SQUEEZE! RUN SCORES' : (sac ? 'SACRIFICE BUNT' : 'BUNT OUT'),
+                fromThird ? 'homer' : 'sub');
     return;
   }
   addOuts(1);
   addLog(`${batter.n} out (${kind}) to the ${randPos(kind)}. ${g.outs} out.`);
-  showCallout(kind === 'ground out' ? 'GROUND OUT' : 'FLY OUT', 'sub');
-  if (kind === 'fly out') tagUp();
+  if (kind === 'ground out') {
+    /* THE PLAQUE HAS TO SAY THE RUN CAME IN. A grounder that forces one home
+       is the productive out the rule was added for, and a plaque reading
+       GROUND OUT over a scoreboard that just moved is the screen arguing
+       with itself. So the force runs first and the callout reads its
+       answer. */
+    const drove = groundOutForce(batter);
+    showCallout(drove ? 'GROUND OUT · 1 IN' : 'GROUND OUT', drove ? 'homer' : 'sub');
+    statBump(batter.k, 'ab');
+    return;
+  }
+  showCallout('FLY OUT', 'sub');
+  if (kind === 'fly out') {
+    /* A SACRIFICE FLY IS NOT AN AT BAT EITHER, and the only way to know
+       whether this one was is to run the tag and see whether a run came in.
+       A man tagging to third is not a sacrifice fly: the exemption is for
+       driving a run home, so it is read off the score and never off the
+       fact that somebody moved. */
+    const before = currentBattingTeam().score;
+    tagUp();
+    if (currentBattingTeam().score === before) statBump(batter.k, 'ab');
+    return;
+  }
+  statBump(batter.k, 'ab');
 }
 
 /* THE TAG. The one place in baseball where making an out moves a runner,
@@ -11026,21 +11100,52 @@ function applyErrorMutation(batter) {
   if (scored) scoreRuns(scored, { scorers: crossed });
 }
 
+/* THE ORDER IS CONTINUOUS, AND THAT IS WHY THIS IS ITS OWN FUNCTION.
+
+   A plate appearance that FINISHES advances the order, whether or not it also
+   ended the half inning. Three functions used to end a half by handing
+   straight to endHalfInning, and not one of them advanced first, so the man
+   who made the third out led off the next inning: measured through the real
+   engine, it happened on essentially every half inning of every game ever
+   played here. Nothing threw, every lineup was legal, and the only symptom was
+   that the batter who had just been rung up was standing back in the box.
+
+   PUTTING THE ADVANCE INSIDE endHalfInning IS THE WRONG FIX, and it is the
+   obvious one because it is one line in one place. A half inning can also end
+   on a runner caught stealing, and that plate appearance is NOT finished: the
+   batter who was at the plate leads off the next inning, which is the real
+   rule and is what the steal path already does. Advancing there would skip a
+   man. So the advance belongs to the end of an APPEARANCE, which is here.
+
+   It answers whether the half inning went with it, so a caller can stop. */
+function endPlateAppearance() {
+  const g = State.game;
+  nextBatter();
+  if (g.outs >= 3) { endHalfInning(); return true; }
+  return false;
+}
+
 function afterHitTransition(kind) {
   const g = State.game;
   if (g.walkoff) {
     g.over = true; g.winner = 'home';
     return setTimeout(finishGame, BEAT.afterHomer);
   }
-  nextBatter();
+  /* A HIT CAN BE THE THIRD OUT, which this branch did not know. A runner
+     waved round and gunned down at the plate is an out charged to a man who
+     came to the plate an at bat ago, so the batter is safe, the play is a
+     hit, and `wasOut` is false: scheduleContactPlay sends it here, and here
+     there was no test for three. The game carried on with three outs on the
+     board, a fourth batter, and a fifth. It needs the same test the out path
+     has always had, because what ends a half inning is the third out and
+     never what produced it. */
+  if (endPlateAppearance()) return;
   refreshHud();
   setTimeout(startAtBat, kind === 'home run' ? BEAT.afterHomer : BEAT.afterHit);
 }
 
 function afterOutTransition() {
-  const g = State.game;
-  if (g.outs >= 3) return endHalfInning();
-  nextBatter();
+  if (endPlateAppearance()) return;
   refreshHud();
   setTimeout(startAtBat, BEAT.afterOut);
 }
@@ -11050,47 +11155,12 @@ function randPos(out) {
   return ['left','center','right'][Math.floor(Math.random()*3)];
 }
 
-function recordHit(kind, batter) {
-  const g = State.game;
-  statBump(batter.k,'ab');
-  statBump(batter.k,'hits');
-  if (kind === 'double') statBump(batter.k, 'd');
-  if (kind === 'triple') statBump(batter.k, 't');
-  const bases = { 'single':1,'double':2,'triple':3,'home run':4,'bunt single':1 }[kind];
-  if (kind === 'home run') {
-    statBump(batter.k,'hr');
-    let scored = 1;   /* the batter */
-    const crossed = [batter.k];
-    for (let i=0;i<3;i++) if (g.bases[i]) { scored++; crossed.push(g.bases[i].k); }
-    g.bases = [null,null,null];
-    scoreRuns(scored, { rbi: batter.k, scorers: crossed });
-    addLog(`${batter.n} crushes it. HOME RUN. ${scored} run${scored>1?'s':''} score.`, true);
-    showCallout(`HOME RUN · ${scored} RUN${scored>1?'S':''}`, 'homer');
-  } else {
-    /* Advance existing runners by `bases`, then place batter */
-    let scored = 0;
-    const crossed = [];
-    const newBases = [null,null,null];
-    for (let i=2;i>=0;i--) {
-      const runner = g.bases[i];
-      if (!runner) continue;
-      const dest = i + bases;   /* 0=first, 1=second, 2=third; dest>=3 scores */
-      if (dest >= 3) { scored++; crossed.push(runner.k); }
-      else newBases[dest] = runner;
-    }
-    if (bases < 4) newBases[bases-1] = batter;
-    g.bases = newBases;
-    if (scored) scoreRuns(scored, { rbi: batter.k, scorers: crossed });
-    const verb = kind === 'bunt single' ? 'drops a bunt and beats it out'
-               : `lines a ${kind}`;
-    addLog(`${batter.n} ${verb}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
-    showCallout(kind.toUpperCase() + (scored ? ` · ${scored} IN` : ''), scored ? 'homer' : 'hit');
-  }
-  nextBatter();
-  refreshHud();
-  setTimeout(startAtBat, kind === 'home run' ? BEAT.afterHomer : BEAT.afterHit);
-}
-
+/* `recordHit` USED TO LIVE HERE AND IS GONE. It was fifty lines nobody
+   called: a second copy of the runner rule, written before applyHitMutation
+   existed, with no send, no hold and no tag in it. A dead copy of a rule is
+   the worst kind of comment, because the next person to fix a base-running
+   bug reads the file, finds two answers, and fixes the one that is not
+   running. The live one is applyHitMutation, above. */
 function recordWalk() {
   const g = State.game;
   const batter = currentBatter();
@@ -11199,8 +11269,7 @@ function recordOut(reason, isStrikeout) {
       g.koVerdict = null;
     }
   }
-  if (g.outs >= 3) return endHalfInning();
-  nextBatter();
+  if (endPlateAppearance()) return;
   refreshHud();
   setTimeout(startAtBat, BEAT.afterOut);
 }
@@ -11272,8 +11341,12 @@ function endHalfInning() {
      final inning, in case the home team is already ahead. */
   if (checkWalkOff()) return finishGame();
   /* Into extra innings: the board grows a column and the plaque says so,
-     after SIDE RETIRED has had its moment. */
-  if (g.half === 'top' && g.inning > g.innings) {
+     after SIDE RETIRED has had its moment. ONCE, ON THE WAY IN. Asked as
+     `inning > innings` it is true of the eleventh and the twelfth as well,
+     so a long game announced extra innings at the top of every one of them
+     and told the reader it was tied after nine each time, which by then it
+     had not been for three innings. */
+  if (g.half === 'top' && g.inning === g.innings + 1) {
     addLog(`Tied after ${g.innings}. Extra innings.`, true);
     /* after SIDES CHANGE has had its moment and before the next batter
        takes the plaque back: at Fast the whole beat is fourteen hundred
@@ -11294,33 +11367,26 @@ function endHalfInning() {
 
 function checkGameOver() {
   const g = State.game;
-  /* Walk-off in real time: home team is batting in the bottom of the
-     final (or later) inning and takes the lead, the game ends on the
-     spot. checkForWalkoff runs after every scoring play so the game can
-     end mid-inning. */
-  /* After 9 (or configured) full innings, tied continues; unless capped for arcade. */
-  if (g.inning > g.innings) {
-    if (g.away.score !== g.home.score) {
-      g.over = true;
-      g.winner = g.home.score > g.away.score ? 'home' : 'away';
-      return true;
-    }
+  /* WHAT ENDS A GAME IS A COMPLETED INNING, AND THAT IS READ OFF THE HALF
+     RATHER THAN OFF THE INNING NUMBER.
+
+     endHalfInning flips the half before it asks, so `top` here means the
+     inning that just finished was a whole one and both sides have had their
+     half of it. Asked as `inning > innings` alone, this clause ALSO fired at
+     the end of the top of an extra inning, where the number has already
+     passed regulation and the home team has not batted: an away run in the
+     tenth ended the game on the spot and the home team never came to the
+     plate. Every extra-inning game the away team scored in was decided that
+     way, the board read a legal final score, and nothing threw. */
+  if (g.half === 'top' && g.inning > g.innings && g.away.score !== g.home.score) {
+    g.over = true;
+    g.winner = g.home.score > g.away.score ? 'home' : 'away';
+    return true;
   }
-  /* Walk off: home leads at end of top after regulation */
-  if (g.inning > g.innings && g.half === 'bottom' && g.home.score > g.away.score) {
-    g.over = true; g.winner = 'home'; return true;
-  }
-  /* If we're in bottom of last inning and home leads, skip */
-  if (g.inning === g.innings && g.half === 'top' && g.home.score > g.away.score && g.outs === 0 && g.away.idx === 0) {
-    /* We just wrapped, home already leads, no need to bat bottom */
-    /* Not triggered normally; the natural flow handles this */
-  }
-  /* End of top of final inning: if home is ahead, home does not bat */
-  if (g.inning > g.innings && g.half === 'bottom') {
-    /* We flipped past regulation with home leading or tied is handled above */
-  }
-  /* Skip bottom half if home leads after top of final inning */
-  if (g.half === 'bottom' && g.inning === g.innings && g.home.score > g.away.score) {
+  /* THE HOME TEAM DOES NOT BAT WHEN IT CANNOT MATTER: ahead at the end of
+     the top of the last inning, or of any inning after it. One clause covers
+     regulation and extras, because it is one rule. */
+  if (g.half === 'bottom' && g.inning >= g.innings && g.home.score > g.away.score) {
     g.over = true; g.winner = 'home'; return true;
   }
   /* Mercy rule: a lead of MERCY_RUNS from the second last inning on ends it.
@@ -14827,19 +14893,32 @@ function refreshAtBatCard(node) {
   node.appendChild(count);
 }
 
+/* AN X IS NOT A BLANK, AND A SCOREBOARD SAYS SO. A home team that is ahead
+   when the top of the last inning ends does not bat, and the board wrote the
+   same empty cell there that it writes for an inning nobody has reached. Two
+   different facts under one blank: the reader cannot tell a game that stopped
+   early from one still to be played. The convention is an X, everywhere this
+   sport keeps a line score, and it is only ever the home side and only once
+   the game is finished. */
+function lineBlank(isHome, i) {
+  const g = State.game;
+  if (!isHome || !g.over) return '';
+  return (i + 1) <= g.inning ? 'X' : '';
+}
+
 function renderLineScore(node) {
   const g = State.game;
   if (!g) return;
   /* Extra innings grow the board. It used to stop at the scheduled count,
      so a tenth inning was played on a nine column board. */
   const innings = Math.max(g.innings, g.inning, g.lineScore.away.length, g.lineScore.home.length);
-  const rowFor = (label, arr, score, isYou) => {
+  const rowFor = (label, arr, score, isYou, isHome) => {
     let html = `<td class="team">${label}${isYou?' *':''}</td>`;
     for (let i = 0; i < innings; i++) {
       const cell = arr[i];
       const isCur = (i + 1) === g.inning;
       const cls = isCur ? 'cur' : '';
-      html += `<td class="${cls}">${cell == null ? '' : cell}</td>`;
+      html += `<td class="${cls}">${cell == null ? lineBlank(isHome, i) : cell}</td>`;
     }
     html += `<td class="r">${score}</td>`;
     return html;
@@ -14848,8 +14927,8 @@ function renderLineScore(node) {
   for (let i = 1; i <= innings; i++) header += `<th>${i}</th>`;
   header += '<th>R</th>';
   node.innerHTML = `<table><thead><tr>${header}</tr></thead><tbody>`
-    + `<tr>${rowFor(g.away.name.slice(0,10), g.lineScore.away, g.away.score, g.away.isYou)}</tr>`
-    + `<tr>${rowFor(g.home.name.slice(0,10), g.lineScore.home, g.home.score, g.home.isYou)}</tr>`
+    + `<tr>${rowFor(g.away.name.slice(0,10), g.lineScore.away, g.away.score, g.away.isYou, false)}</tr>`
+    + `<tr>${rowFor(g.home.name.slice(0,10), g.lineScore.home, g.home.score, g.home.isYou, true)}</tr>`
     + `</tbody></table>`;
 }
 
@@ -15247,7 +15326,7 @@ function renderResult() {
     body += `<tr><td class="team">${team.name}${team.isYou ? ' *' : ''}</td>`;
     for (let i = 0; i < innCount; i++) {
       const v = g.lineScore[side][i];
-      body += `<td>${v == null ? '' : v}</td>`;
+      body += `<td>${v == null ? lineBlank(side === 'home', i) : v}</td>`;
     }
     body += `<td class="r">${team.score}</td></tr>`;
   }
