@@ -4652,6 +4652,81 @@ The distribution needs a dozen careers and lives in a probe. What is in `verify.
 each of the three mechanisms still bites, because a green distribution would pass just as
 well on a fix that had quietly stopped working.
 
+### Smooth and Retro, and why the smooth figure is the pixel rig
+
+```
+node wrestling/verify.mjs --quick   the section named "two styles, one rig"
+```
+
+The game draws in two styles and **Smooth is the default**. Retro is the pixel
+game exactly as it was, kept whole behind a toggle on the home screen rather than
+deleted: `wrestlerSVGRetro` is byte for byte the old `wrestlerSVG`. It is a device
+setting (`rtr_gfx` in localStorage), not part of a save, because it is about the
+screen in front of you. Switching reloads the page, because figures, icons and
+belts drawn in the old style are sitting in markup all over it (the inbox, the
+news, the locker) and a reload is the one repaint that cannot miss any of them.
+
+**THE SMOOTH FIGURE IS THE SAME RIG, AND THAT IS THE WHOLE DESIGN.** Every bone
+sits on the joints in `JOINT`, every pose is the bag of angles in `POSES`, and the
+rig is assembled by the same transforms. So a suplex, a pin or a ref's count lands
+on exactly the same marks in either style and nothing in the match engine knows
+which one it is drawing. The guard asserts that as a property of the markup: for
+all 43 poses, the ordered list of transforms the two figures emit is identical.
+Pointing one knee at the hip joint fails 26 of them.
+
+What changes is the ink. The body is tapered tubes, a real torso and a real head,
+each lit by a cylindrical gradient. The silhouette still gets ONE continuous
+outline in a pass of its own under every fill, exactly as the pixel figure does.
+**Every fill also carries a thin inner line, which the pixel figure never needed**:
+its shading steps told an arm apart from a chest of the same skin, and a smooth
+gradient does not.
+
+**The long tail of gear is the pixel code, read smooth.** About a hundred and fifty
+patterns, masks, boots and accessories are each a handful of `P()` and `LIMB()`
+calls in figure space. Inside `wrestlerSVGSmooth` those two names are shadowed by
+rounded, gradient versions, so every item keeps its placement. The pieces a reader
+looks at first (the body, the face, twenty four hairstyles, the beards, the three
+masks an opponent can roll, boots and trunks) are drawn by hand. **A new gear item
+written in `P()` works in both styles on day one**, and the guard draws every value
+of every slot in two poses and fails on a throw, a NaN or an undefined.
+
+**Hair that hangs behind the head has its own layer**, `HB`, dropped in under the
+neck and face. The first version drew a mullet and dreads straight across the face.
+**The first guard for it could not fail**: it looked for the marker leaking into the
+output, and the rig split keeps shapes only, so a forgotten marker is discarded
+silently and the tail simply is not there. What it asserts now is that a pony, a
+mullet and dreads are drawn at all AND drawn before the face fill, proved by
+deleting the drop-in and by moving the pony to the front.
+
+**Gradient ids carry the figure's own counter.** Two wrestlers on one screen with
+the same id would paint each other, and a def inside a `display:none` screen does
+not resolve for anybody else. Asserted.
+
+**What else went smooth, and the rule for each:**
+
+| surface | smooth | retro |
+|---|---|---|
+| wrestlers | `wrestlerSVGSmooth` | `wrestlerSVGRetro` |
+| icons | `PICO_SM`, one per `PICO` id, same 16 unit square | `PICO` |
+| belts | `beltPlateSmooth`, the same six plate shapes as real outlines | `beltPlate`'s 11x9 masks |
+| pundit sets | no crisp edges, props get rounded corners | crisp |
+| the crowd | soft blobs | hard dots |
+| `image-rendering` | `--pxr: auto` | `html.gfx-retro` sets `pixelated` |
+
+**Every icon has a smooth drawing and the guard says so**, because an id falling
+back to its pixel square is a pixel icon on a smooth screen, the one resolution rule
+MythiBall already carries. The fallback exists so a NEW id can never render as
+nothing; the guard is what stops that fallback being used in anger.
+
+**The belt keeps what makes the twenty four tell apart.** Shape, metal, stone and
+strap are unchanged, so the existing "no two belts share a design" guard is still
+the one that matters.
+
+**The page chrome follows the figure.** Seventy odd rules set labels and stats in a
+system monospace, the pixel game's terminal voice. Smooth points `--mono` at the
+body face and turns `tabular-nums` on page wide, which is the column the monospace
+was really there for (Run The Floor's lesson). Retro keeps the monospace.
+
 The roster, the mentors in `legends.js`, the free agents in `personalities.js` and the
 booking sim's promotions all use LEGAL names and invented companies. No ring names,
 no trademarked match or event names, no catchphrases. The suite's second section
