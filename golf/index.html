@@ -2198,6 +2198,13 @@ window.GA_ID='G-L29P5MRWKE';
   /* one-window HUD: scoreboard / hole info / current-shot description float ON the tracer
      as translucent chips (Pixel-Pro-style), so the course view is the whole screen */
   .hvshell{position:relative}
+  /* THE LENS (owner, Sep 2026: "look and feel like a real video game"). The map pans and zooms under a fixed
+     frame, so light that belongs to the CAMERA has to live on the frame, not in the terrain tile: a warm sun
+     wash from the top left (the side every cast shadow assumes) and a soft vignette that settles the eye on
+     the middle, where the ball is. Under the HUD (z 1 against the chips' 2) and never interactive. */
+  .hvshell::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+    background:radial-gradient(120% 90% at 18% 0%, rgba(255,236,190,.14), rgba(255,236,190,0) 55%),
+      radial-gradient(130% 110% at 50% 45%, rgba(0,0,0,0) 58%, rgba(2,10,6,.34) 100%)}
   /* TRACER REVAMP: ambient + transition motion. Nothing here is position:fixed, so transforms are safe (the
      iOS drift bug only bites a fixed element). The flag waves from its pole edge, cloud shadows drift across
      the course, a new hole cross-fades in, the HUD chips slide in once per hole, and a freshly-finished shot's
@@ -2257,7 +2264,7 @@ window.GA_ID='G-L29P5MRWKE';
   .hvhole.right{left:auto;right:8px}
   /* the wind chip (item 04): bottom-LEFT, mirroring the scoreboard at bottom-right, so all four corners
      stay fixed all round. It cannot live top-right: the holed-result pill (.hvresult) owns that corner. */
-  .hvwind{bottom:48px;left:8px;display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;
+  .hvwind{bottom:calc(var(--hvdh,40px) + 8px);left:8px;display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;
     background:rgba(8,17,26,.72);border:1px solid rgba(255,255,255,.16);
     font:800 10px/1 var(--body);letter-spacing:.1em;color:#e8efe9}
   .hvwind.nodesc{bottom:10px}
@@ -2281,7 +2288,7 @@ window.GA_ID='G-L29P5MRWKE';
      hole, so a top-right board covered it (owner). Anchored to the bottom, it grows upward into the
      lower fairway/rough, never the green. CS251: restyled as ONE cohesive dark gold-bordered panel
      (owner mockup) with a THRU/TARGET header, name+score rows, and a "TO BEAT" footer. */
-  .hvboard{bottom:48px;right:8px;width:176px;max-width:64%;
+  .hvboard{bottom:calc(var(--hvdh,40px) + 8px);right:8px;width:176px;max-width:64%;
     background:linear-gradient(180deg,rgba(10,21,31,.9),rgba(6,14,22,.92));
     border:1.5px solid rgba(241,208,74,.5);border-radius:13px;padding:7px 8px 7px;
     box-shadow:0 12px 30px -12px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.05);
@@ -2562,10 +2569,10 @@ window.GA_ID='G-L29P5MRWKE';
     .screen.scr-dailyround .hvhole.sig .hvsigname{font-size:17px}
     .screen.scr-dailyround .hvhole.sig .hvsigmeta{font-size:13.5px}
     .screen.scr-dailyround .hvhole.sig .hvsigblurb{font-size:13.5px; line-height:1.35}
-    .screen.scr-dailyround .hvwind{font-size:13px; padding:7px 11px; gap:8px; border-radius:11px; bottom:62px}
+    .screen.scr-dailyround .hvwind{font-size:13px; padding:7px 11px; gap:8px; border-radius:11px; bottom:calc(var(--hvdh,50px) + 12px)}
     .screen.scr-dailyround .hvwind.nodesc{bottom:12px}
     .screen.scr-dailyround .hvwind svg{width:19px; height:19px}
-    .screen.scr-dailyround .hvboard{width:228px; padding:9px 10px; border-radius:16px; bottom:62px}
+    .screen.scr-dailyround .hvboard{width:228px; padding:9px 10px; border-radius:16px; bottom:calc(var(--hvdh,50px) + 12px)}
     .screen.scr-dailyround .hvboard.nodesc{bottom:12px}
     .screen.scr-dailyround .hvbcap{font-size:11px}
     .screen.scr-dailyround .hvbtarget{font-size:14px}
@@ -2611,10 +2618,10 @@ window.GA_ID='G-L29P5MRWKE';
     .screen.scr-dailyround .hvhole.sig .hvsigname{font-size:20px}
     .screen.scr-dailyround .hvhole.sig .hvsigmeta{font-size:15px}
     .screen.scr-dailyround .hvhole.sig .hvsigblurb{font-size:15px}
-    .screen.scr-dailyround .hvwind{font-size:15px; padding:9px 13px; bottom:72px}
+    .screen.scr-dailyround .hvwind{font-size:15px; padding:9px 13px; bottom:calc(var(--hvdh,60px) + 12px)}
     .screen.scr-dailyround .hvwind.nodesc{bottom:12px}
     .screen.scr-dailyround .hvwind svg{width:22px; height:22px}
-    .screen.scr-dailyround .hvboard{width:264px; padding:11px 12px; bottom:72px}
+    .screen.scr-dailyround .hvboard{width:264px; padding:11px 12px; bottom:calc(var(--hvdh,60px) + 12px)}
     .screen.scr-dailyround .hvboard.nodesc{bottom:12px}
     .screen.scr-dailyround .hvbcap{font-size:12.5px}
     .screen.scr-dailyround .hvbtarget{font-size:16px}
@@ -30667,8 +30674,9 @@ const HV_BIOMES={
    scatter:[['saguaro',0.3],['barrel',0.17],['scrub',0.28],['ocotillo',0.13],['rock',0.12]],
    cactus:['#4f8f3f','#6aa74f'],trunk:'#8a6b42',flowerCols:['#f2c53d','#d47ad4','#e8703a']},
  // links: treeless fescue + marram dunes, yellow gorse, a grey sliver of sea on the horizon
+ // a links green is still GREEN (firm and a touch yellow, never lime): the grade in pxTerrainURL lifts it off the golden fescue
  links:{ground:'links',base:'#93a04c',tickD:'#7f8c40',tickL:'#adba60',cut:'#9aa64f',fw:'#aeba5b',fwEdge:'#6f7a33',
-   green:'#ccd97e',fringe:'#bcca6e',gLine:'#84924a',sand:'#e7dcbc',sandLine:'#a89a6a',sandSpeck:'#cdc099',
+   green:'#a6d06e',fringe:'#93b95c',gLine:'#6f8f40',sand:'#e7dcbc',sandLine:'#a89a6a',sandSpeck:'#cdc099',
    water:'#5a8fb0',waterBank:'#7a6a44',ripple:'#c7ddec',outline:'#484f24',shad:'#5f6634',
    backdrop:'dunesea',ocean:true,oceanW:[40,58],deep:'#3f6f92',shallow:'#6fa4c2',beach:'#d8c99e',bunkerScale:0.6,
    scatter:[['dune',0.5],['gorse',0.28],['fescue',0.22]],
@@ -30691,7 +30699,7 @@ const HV_BIOMES={
    pine:['#123a10','#1e4e18','#2c6522'],trunk:'#9a6a3a',flowerCols:['#ff8fbf','#ffffff','#e0567f','#ff6aa0']},
  // sandhills: Carolina sandy waste (Pinehurst) - tawny sand rough, wiregrass tufts, longleaf pines, green pops
  sandhills:{ground:'links',base:'#b89a5e',tickD:'#a2864a',tickL:'#cdb478',cut:'#8fae44',fw:'#93c04a',fwEdge:'#5f8a2e',
-   green:'#bcda66',fringe:'#a8c957',gLine:'#6f9437',sand:'#ede0bd',sandLine:'#b79a6a',sandSpeck:'#d6c49a',
+   green:'#a2d460',fringe:'#8fbf52',gLine:'#648f36',sand:'#ede0bd',sandLine:'#b79a6a',sandSpeck:'#d6c49a',
    water:'#4a9cd8',waterBank:'#8a6b42',ripple:'#c7ddec',outline:'#5a4a22',shad:'#6a5a2e',
    backdrop:'treeline',ocean:false,bunkerScale:1.1,
    scatter:[['pine',0.5],['fescue',0.3],['scrub',0.2]],
@@ -30716,7 +30724,7 @@ const HV_BIOMES={
    treeG:['#22502c','#316a38','#468048'],treeA:['#6a7a34'],trunk:'#6b4a2a',flowerCols:['#d68ac9','#ffffff','#c47ac4']},
  // heathland: windswept purple moor - heather bloom, sandy scrapes, birch + Scots pine, wispy fescue
  heath:{ground:'links',base:'#7c7c40',tickD:'#6c6c36',tickL:'#969650',cut:'#8c9c46',fw:'#9cae4e',fwEdge:'#657430',
-   green:'#c2d270',fringe:'#aebe60',gLine:'#7c8c3e',sand:'#e4d6ae',sandLine:'#a89a6a',sandSpeck:'#cdc099',
+   green:'#a4cc68',fringe:'#8fb35a',gLine:'#6a8a3c',sand:'#e4d6ae',sandLine:'#a89a6a',sandSpeck:'#cdc099',
    water:'#5a8fb0',waterBank:'#7a6a44',ripple:'#c7ddec',outline:'#43471f',shad:'#4c4c28',
    backdrop:'moor',ocean:false,bunkerScale:0.7,autumnP:0.22,
    scatter:[['heather',0.44],['birch',0.2],['pine',0.16],['fescue',0.2]],
@@ -31112,7 +31120,7 @@ function hvBackdrop(g, seedN, B, detailCam){
         // when zoomed to a close-up, overlay a high-density tile of the visible region so the course pixels
         // match the golfer's pixel size instead of blowing up into big blocks (owner: pixels should match on zoom)
         if(detailCam){
-          const gh=Math.max(120,Math.min(360,Math.round(HV_PX_DETAIL))), gw=Math.max(120,Math.min(760,Math.round(HV_PX_DETAIL*detailCam[2]/detailCam[3])));
+          const dens=HV_PX_DETAIL*1.14, gh=Math.max(120,Math.min(420,Math.round(dens))), gw=Math.max(120,Math.min(900,Math.round(dens*detailCam[2]/detailCam[3])));   // 1.14 = (1+2*.26)/(1+2*.12): the same pixel size over the wider tile
           // os = detail px-density / base px-density → scenery + course features keep their true course scale
           const os=(gh/detailCam[3])/(HV_PX_BASEH/HV_H);
           const durl=pxTerrainURL(g, seedN, B, {cam:detailCam, gw, gh, os});
@@ -31172,7 +31180,9 @@ function hvGreenCam(g, ball){
 }
 const hvDetailCam=(camTarget,live)=>{
   if(!live || !camTarget || camTarget[2] >= HV_W*0.6) return null;   // only when genuinely zoomed
-  const m=0.12, c=camTarget;
+  // m: how far past the target the sharp tile reaches. At .12 a phone's close-up showed a band of the
+  // coarse base tile down one edge; .26 covers the frame, and the density below grows to match.
+  const m=0.26, c=camTarget;
   return [c[0]-c[2]*m, c[1]-c[3]*m, c[2]*(1+2*m), c[3]*(1+2*m)];
 };
 function pxTerrainURL(g, seedN, B, opts){
@@ -31438,6 +31448,31 @@ function pxTerrainURL(g, seedN, B, opts){
           put(cx,cy,vnoise(cx*0.7,cy*0.7+3)>0.6?shade(rk,-16):rk); } }
     }
   }
+  /* THE GRADE (owner, Sep 2026: "make this game look and feel like a real video game"). Everything above
+     paints each surface in its own palette, and the result read flat: on a links course the fairway, the
+     rough and the green were three olives a shade apart. This is the pass a game's renderer does last,
+     and it is all multiplication on pixels already placed, so every biome and every course inherits it:
+       - VIBRANCE per surface: grass and water gain colour around their own luminance, so nothing is
+         brightened or darkened by it, only separated. Links and desert get less, because a dry course
+         is meant to look dry;
+       - SUNLIGHT from the top left, the same side every tree's cast shadow already assumes;
+       - a CROWNED GREEN: brighter toward its middle, cooler at the collar, plus the diagonal mow a TV
+         green carries, so the one surface the eye hunts for pops off the approach;
+       - BUNKER LIPS: a bunker is a hole, so with the sun top-left its top and left walls sit in shadow
+         and its far walls catch the light. That one band is what turns a sand shape into a hazard. */
+  { const vib=links?1.1:desert?1.06:1.2, bandB=Math.max(1,Math.round(2*os)), crown=Math.max(3,8*os);
+    const GD=new Uint8Array(GW*GH);   // steps inside the green (chamfer distance to its edge)
+    for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){ const i=y*GW+x; if(T[i]!==GR) continue; GD[i]=Math.min(x>0?GD[i-1]:0, y>0?GD[i-GW]:0)+1; }
+    for(let y=GH-1;y>=0;y--)for(let x=GW-1;x>=0;x--){ const i=y*GW+x; if(T[i]!==GR) continue; GD[i]=Math.min(GD[i], Math.min(x<GW-1?GD[i+1]:0, y<GH-1?GD[i+GW]:0)+1); }
+    const sandIn=(x,y,dx,dy)=>{ for(let k=1;k<=bandB;k++) if(at(x+dx*k,y+dy*k)!==SA) return true; return false; };
+    for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){ const j=y*GW+x, i=j*4, t=T[j];
+      let r=D[i], gg=D[i+1], b=D[i+2];
+      const s=(t===GR||t===FR)?1.18:(t===WA||t===OC)?1.14:(t===SA)?1.03:vib;
+      const L=0.299*r+0.587*gg+0.114*b; r=L+(r-L)*s; gg=L+(gg-L)*s; b=L+(b-L)*s;
+      let k=1.05-0.1*((x/GW)*0.45+(y/GH)*0.55);
+      if(t===GR){ k*=0.95+0.1*Math.min(1,GD[j]/crown); if((Math.floor((x+y)/(4*os))&1)===0) k*=1.035; }
+      else if(t===SA){ if(sandIn(x,y,0,-1)||sandIn(x,y,-1,0)) k*=0.84; else if(sandIn(x,y,0,1)||sandIn(x,y,1,0)) k*=1.06; }
+      D[i]=r*k; D[i+1]=gg*k; D[i+2]=b*k; } }
   // Floor genuinely near-black terrain pixels. The deep-rough horizon depth-darkening + stacked tree cast
   // shadows can drive a dark green all the way to pure black ([0,~15,0]), which reads as scattered black
   // dots / a black horizon smear in the shared GIF & stills. Lift ONLY near-black pixels to a dark forest
@@ -31581,17 +31616,27 @@ function hvDistChip(g,p,live,small){
 function hvRevealDist(){ ['hv-dist','hv-carry'].forEach(id=>{ const d=document.getElementById(id); if(d) d.setAttribute('opacity','1'); }); }
 // one shot's static (already-played) tracer + marker. `small` shrinks markers/strokes for the
 // green close-up camera (a zoomed viewBox scales everything, so chips drawn full-size read huge)
+// The wind chip and the scoreboard sit ON the shot caption, and a caption can wrap to two lines on a
+// phone. Their offset used to be a fixed 48px, so a long caption ran underneath both. Each shell now
+// carries its caption's real height in --hvdh, measured whenever the DOM changes (rAF-throttled).
+let _hvFitQ=false;
+function hvFitHud(){ _hvFitQ=false; try{ document.querySelectorAll('.hvshell').forEach(sh=>{ const d=sh.querySelector(':scope > .hvdesc');
+  if(d){ const h=Math.ceil(d.getBoundingClientRect().height); if(h>0 && sh._hvdh!==h){ sh._hvdh=h; sh.style.setProperty('--hvdh', h+'px'); } } }); }catch(e){} }
+try{ new MutationObserver(()=>{ if(!_hvFitQ){ _hvFitQ=true; requestAnimationFrame(hvFitHud); } }).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
+try{ addEventListener('resize',()=>{ document.querySelectorAll('.hvshell').forEach(sh=>{ sh._hvdh=0; }); hvFitHud(); }); }catch(e){}
 function hvDoneShot(g,p,dim,small,pcol,fresh){
   // pcol = the player's assigned ball color (multi-ball H2H); default = the single-player teal
   // fresh = this marker was just left by the shot that finished (TRACER REVAMP: it pops in instead of appearing)
-  const base=pcol||'#0a5e53';
-  const col=`${base}${dim?'8c':'e6'}`;   // hex alpha: dim .55 / bright .9
-  const w=(dim?1.6:2)*(small?0.45:1);
+  // A finished shot is a bright core over a dark halo (it was a dark teal line, which vanished into a links
+  // fescue or a pine rough). H2H keeps each player's own colour as the core so the balls still read apart.
+  const base=pcol||'#f4f7f4';
+  const col=`${base}${dim?'a6':'f2'}`;   // hex alpha: dim .65 / bright .95
+  const w=(dim?1.6:2)*(small?0.45:1), halo=`rgba(4,21,10,${dim?'.32':'.45'})`;
   let s='';
-  if(p.k==='putt'||p.k==='hole'){ s+=`<path d="${hvPuttPathD(g,p)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`; }
+  if(p.k==='putt'||p.k==='hole'){ s+=`<path d="${hvPuttPathD(g,p)}" fill="none" stroke="${halo}" stroke-width="${(w+1.6).toFixed(2)}" stroke-linecap="round"/><path d="${hvPuttPathD(g,p)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`; }
   else if(p.k==='pen'){ const A=hvProj(g,p.from[0],p.from[1]),B=hvProj(g,p.rest[0],p.rest[1]);
     s+=`<path d="M ${A[0]} ${A[1]} L ${B[0]} ${B[1]}" fill="none" stroke="${col}" stroke-width="1.3" stroke-dasharray="3 4"/>`; }
-  else { s+=`<path d="${hvPathD(g,p)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
+  else { s+=`<path d="${hvPathD(g,p)}" fill="none" stroke="${halo}" stroke-width="${(w+1.8).toFixed(2)}" stroke-linecap="round"/><path d="${hvPathD(g,p)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
     s+=`<path d="${hvRollD(g,p)}" fill="none" stroke="${col}" stroke-width="${(1.2*(small?0.5:1)).toFixed(1)}" stroke-linecap="round" opacity=".85"/>`; }
   // CS356n: no numbered ground chip once the ball is on the green (the tracer path still shows the shot) -
   // keeps the tight green close-up uncrowded; the current shot number lives on the gold pin above the golfer.
