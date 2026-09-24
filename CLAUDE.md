@@ -4569,6 +4569,15 @@ those. Whatever holds a win has to be its own record.
 are small.** An automated path from "won a week" to "owns the product" is a second way to obtain
 the thing the store sells, and the store has exactly one on purpose.
 
+**The result sheet says something kind to everybody and throws confetti for one.** Second
+is "so close", third is a podium finish, the top half had a good week, and everybody else
+is told every week starts from zero, plus that they beat their projection when the PRINTED
+difference says they did. No line promises anything about the next board, because the
+sheet can open after that week has locked. Confetti is first place only, skipped under
+reduced motion, sits above the sheet with no pointer events, and goes when the sheet
+closes. `check-fantasy.mjs` asserts all of it, including that a tap on the code still
+lands on the code, and each claim was proved by reintroducing its defect.
+
 **A profile image only a winner has is a claim about an account, so it is the board's own
 problem**: `display_pro` is already the pattern, a derived boolean written by a trigger rather
 than typed, because a mark anybody can set is a mark that means nothing.
