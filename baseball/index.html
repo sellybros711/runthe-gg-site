@@ -216,33 +216,34 @@ h1,h2,h3{margin:0}
 /* The sheen and the fine ruling on .btn::before are written for the brown fill
    and read as a smear on leather. */
 .btn.ball::before{display:none}
-/* 2.1 TIMES THE BUTTON'S HEIGHT, and that is how far the seam reaches in rather
-   than how wide the box is: a wider box is a LONGER, FLATTER arc at the same
-   stitch pitch, never a stretched one, because the aspect ratio is preserved.
-   It shipped at 1 and the seams hugged the two ends with a wide empty field
-   between them, which reads as a pale bar with a decoration at each end rather
-   than as a ball. Reported.
+/* THE SEAM IS NEAR-VERTICAL AND CHUNKY, WHICH IS THE THIRD SHAPE IT HAS WORN,
+   and the history is the warning. It shipped as a tight bow hugging each end,
+   which read as a pale bar with a decoration at each corner; then the bow was
+   STRETCHED 2.1x inward and the same stitches spread over the longer arc came
+   out thin and clipped, a pair of wings rather than laces. Reported both times.
+   What the reference photo actually has is neither: a gentle, almost vertical
+   seam spanning the full height, laces thick enough to count, sitting INSIDE
+   the ball with leather on both sides. So the seam was rebuilt to that, not
+   stretched a third time. Four rebuilds were rendered and looked at; the
+   near-vertical chunky one is the photo.
 
-   PICKED WITH REAL ROOM, NOT AS THE LAST VALUE THAT FITS. Measured ink to label
-   on a 358px button: 45px of clearance a side at 1, 21 at 2.0, 19 at 2.1 and 14
-   at 2.3, and at 2.7 the seam runs through the D of DRAFT. Every one of those is
-   the FALLBACK face, which is wider than the Bebas a visitor gets, so a reach
-   that clears here clears on a phone with room spare. */
-.bs{position:absolute;top:0;height:100%;width:auto;aspect-ratio:2.1;pointer-events:none}
-/* THE LABEL DOES NOT SHRINK AND THE BUTTON DOES, so there is a width where 2.1
-   stops fitting. Measured ink to label on the real page: 135px of clearance a
-   side at 660, 30 at 390, 15 at 360 and MINUS 4.8 at 320, where the seams run
-   into the D and the M. 320 is an iPhone SE rather than a hypothetical, so the
-   reach comes back to 1.55 under 360, which is 9px of clearance there.
-   All of those are the FALLBACK face, which is wider than the Bebas a visitor
-   gets, so each is the pessimistic reading and a real phone has more. */
-@media (max-width:359px){.bs{aspect-ratio:1.55}}
-.bs-l{left:0}
+   The strip is one button-height square, so the seam scales with the ball and
+   never with the width: a wider button shows more leather between the same two
+   seams, which is what a wider crop of a ball is. */
+.bs{position:absolute;top:0;height:100%;width:auto;aspect-ratio:1;pointer-events:none;overflow:visible}
+/* WHERE THE SEAM STANDS is a percentage of the button, so the composition holds
+   as the crop widens. Measured ink to label in the FALLBACK face, which is wider
+   than the Bebas a visitor gets, so every number is the pessimistic one: at 2%
+   the gap is 35px on a 358px button and about 4px at 320, which is an iPhone SE
+   rather than a hypothetical, so the narrowest phones pull the seam back to 1%
+   (about 10px of gap) and a desktop pushes it in to 4% for the photo's spacing. */
+.bs-l{left:2%}
 /* One symbol, mirrored. A second path for the right hand seam is a second copy of
    a drawing, and the two would drift the first time either was retouched. */
-.bs-r{right:0;transform:scaleX(-1)}
-/* The label sits over the seams and never under them. The padding is what keeps
-   the two apart at 358px, where each seam is as wide as the button is tall. */
+.bs-r{right:2%;transform:scaleX(-1)}
+@media (max-width:359px){.bs-l{left:1%}.bs-r{right:1%}}
+@media (min-width:600px){.bs-l{left:4%}.bs-r{right:4%}}
+/* The label sits over the seams and never under them. */
 .btn.ball span{position:relative;padding:0 4px}
 
 /* ─── loading ─── */
@@ -1534,10 +1535,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
      thing stops reading as a baseball. Generated rather than drawn by hand: the
      curve is a quadratic and each stitch is placed on its normal. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-  <symbol id="seam" viewBox="0 0 210 100">
-    <path d="M4 -16Q166 50 4 116" fill="none" stroke="rgba(150,120,96,.34)" stroke-width="2.2"/>
-    <path fill="none" stroke="var(--lace)" stroke-width="3.2" stroke-linecap="round"
-      d="M12.8 -15.8L11.0 -24.1M10.3 -9.9L3.0 -5.5M26.9 -9.5L25.4 -17.8M24.1 -3.7L16.7 0.4M39.5 -3.1L38.4 -11.5M36.5 2.5L28.9 6.3M50.7 3.3L50.1 -5.2M47.3 8.7L39.5 12.1M60.4 9.7L60.4 1.2M56.7 14.9L48.7 17.7M68.7 16.1L69.5 7.7M64.6 21.0L56.3 23.0M75.6 22.7L77.3 14.3M70.9 27.0L62.5 28.2M81.0 29.3L83.8 21.3M75.8 33.0L67.3 32.9M85.0 36.1L89.1 28.7M79.2 38.8L70.8 37.2M87.4 43.0L93.0 36.6M81.1 44.4L73.3 41.2M88.2 50.0L95.1 45.1M81.8 50.0L74.9 45.1M87.4 57.0L95.2 53.8M81.1 55.6L75.5 49.2M85.0 63.9L93.3 62.4M79.2 61.2L75.0 53.8M81.0 70.7L89.5 70.6M75.8 67.0L72.9 59.0M75.6 77.3L84.0 78.4M70.9 73.0L69.2 64.6M68.7 83.9L77.0 85.9M64.6 79.0L63.8 70.5M60.4 90.3L68.4 93.1M56.7 85.1L56.7 76.6M50.7 96.7L58.5 100.1M47.3 91.3L47.9 82.8M39.5 103.1L47.1 106.9M36.5 97.5L37.6 89.0M26.9 109.5L34.3 113.6M24.1 103.7L25.6 95.3M12.8 115.8L20.1 120.2M10.3 109.9L12.1 101.6"/>
+  <symbol id="seam" viewBox="0 0 100 100">
+    <path d="M42 -14Q51 50 42 114" fill="none" stroke="rgba(150,120,96,.38)" stroke-width="2.6"/>
+    <path fill="none" stroke="var(--lace)" stroke-width="5.5" stroke-linecap="round"
+      d="M47.9 -7.5L59.3 -15.7M38.0 -6.3L25.0 -11.4M49.5 6.9L61.1 -1.0M39.5 7.8L26.7 2.3M50.6 21.2L62.4 13.8M40.6 21.9L27.9 15.9M51.3 35.6L63.3 28.5M41.3 35.9L28.8 29.6M51.5 50.0L63.8 43.3M41.5 50.0L29.2 43.3M51.3 64.4L63.8 58.1M41.3 64.1L29.2 57.0M50.6 78.8L63.3 72.8M40.6 78.1L28.8 70.7M49.5 93.1L62.3 87.6M39.5 92.2L27.9 84.4M47.9 107.5L60.9 102.4M38.0 106.3L26.6 98.1"/>
   </symbol>
 </svg>
 <div class="wrap">

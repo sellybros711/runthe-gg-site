@@ -225,17 +225,17 @@ for (const [w, h] of [[390, 844], [360, 740], [320, 568], [768, 1024], [999, 900
     `${w}px: the two reels share one line above the field`,
     `year ${y.top}-${y.bottom}, team ${t.top}, field ${field.top}`);
   claim(go === 'none', `${w}px: the daily card carries no second control`, `display ${go}`);
-  /* THE SEAMS REACH IN, AND THE LABEL KEEPS THE MIDDLE. The draft button is a crop
-     of a baseball and the seam is sized off the button's HEIGHT, so it is a fixed
-     number of pixels while the button narrows with the screen: there is a width
-     where it runs into the words. Measured at 2.1x the height it is 33px clear at
-     390 and MINUS 4.8 at 320, which is an iPhone SE rather than a hypothetical, so
-     the reach steps back under 360.
+  /* THE SEAMS STAND INSIDE THE BALL, AND THE LABEL KEEPS THE MIDDLE. The seam
+     strip is one button-height square positioned by a share of the button, and
+     the label does not shrink while the button does, so there is a width where
+     the two meet: measured in the fallback face the gap is about 35px a side at
+     358 and about 4px at 320, which is an iPhone SE rather than a hypothetical,
+     which is why the narrowest phones pull the seam back a point.
 
      THE INK IS READ WITH getBBox THROUGH THE SYMBOL, and the two obvious handles
-     are both wrong. The <svg> BOX is 111px where the drawing inside it is 50, so
-     it reports a collision that is not there. And getBoundingClientRect on the
-     <use> answers 23.3px in a place the ink is 50.5 wide: Chromium is not
+     are both wrong. The <svg> BOX is wider than the drawing inside it, so it
+     reports a collision that is not there. And getBoundingClientRect on the
+     <use> answered 23.3px in a place the ink was 50.5 wide: Chromium is not
      reporting the referenced geometry there, and a guard built on it certified a
      ball a fifth of its real size. getBBox on the path inside the <symbol> works
      even though a symbol never renders, and it reads the SHIPPED drawing rather
@@ -248,41 +248,46 @@ for (const [w, h] of [[390, 844], [360, 740], [320, 568], [768, 1024], [999, 900
     const boxes = [...el.querySelectorAll('.bs')].map((s) => s.getBoundingClientRect());
     if (!stitches || boxes.length !== 2) return null;
     const bb = stitches.getBBox();
-    const vbW = Number(sym.getAttribute('viewBox').split(/[\s,]+/)[2]);
-    const pad = Number(stitches.getAttribute('stroke-width') || 0) / 2;
+    const vb = sym.getAttribute('viewBox').split(/[\s,]+/).map(Number);
+    const sw = Number(stitches.getAttribute('stroke-width') || 0);
+    const scale = boxes[0].height / vb[3];
     /* How far across its own box the drawing reaches, as a fraction. */
-    const f = (bb.x + bb.width + pad) / vbW;
+    const f = (bb.x + bb.width + sw / 2) / vb[2];
     const lab = el.querySelector('span').getBoundingClientRect();
-    const inkW = f * boxes[0].width - (Math.max(0, bb.x - pad) / vbW) * boxes[0].width;
     return { l: +(lab.left - (boxes[0].left + f * boxes[0].width)).toFixed(1),
       /* The right seam is the same symbol mirrored, so its ink is the same
          fraction measured back from the box's right edge. */
       r: +((boxes[1].right - f * boxes[1].width) - lab.right).toFixed(1),
-      ink: +inkW.toFixed(1) };
+      /* What a lace is drawn at on screen, and how much of the button's height
+         the seam sweeps. */
+      lace: +(sw * scale).toFixed(2),
+      sweep: +((bb.height + sw) * scale).toFixed(1) };
   });
   claim(seam && seam.l > 0 && seam.r > 0,
     `${w}px: the seams never touch the label`,
     seam ? `gap ${seam.l} left, ${seam.r} right` : 'no ball button found');
-  /* And the seam is still a BALL rather than a mark at each end, which is the
-     defect the reach was widened for.
+  /* And the seam is still LACES rather than a thin curl at each end.
 
-     AGAINST THE BUTTON'S HEIGHT, NOT ITS WIDTH, and the first draft had it the
-     other way round and failed on a correct desktop. The button is a crop of a
-     ball: a wider screen shows MORE clear leather between the same two seams,
-     which is what a wider crop is, so a share of the width falls as the page
-     grows and says nothing about the drawing. The height is the ball.
+     THE DISCRIMINATOR IS THE RENDERED STROKE, because the width of the ink is not
+     one: the first guard asked ink width over button height and the seam this
+     page ships is deliberately NARROW and bold, near-vertical like the reference
+     photo, so a width test cannot tell it from the defect. Both bad states this
+     button has actually shipped (the tight bow at the ends and the 2.1x stretch
+     that read as a pair of wings) drew their laces at 1.7px; the rebuild draws
+     at 2.9 and up, scaling with the button. 2.3 is the middle of that gap.
 
-     Measured ink over button height: 0.46 at the 1.0 reach this replaced, 0.71 at
-     the 1.55 the narrowest phones get, 0.97 at the 2.1 everything else gets. The
-     threshold is 0.58, the MIDDLE of the gap between the defect and the narrow
-     arm rather than the last value that clears it. It is a backstop against a
-     gross regression and not a fine measure of the reach, because those two arms
-     are only a third of a button-height apart. */
+     The sweep is the other half: a seam that stopped spanning the ball would be
+     a badge stuck on the leather, so the ink has to run at least the button's
+     full height. Every shape this button has worn passes that one, so it is a
+     backstop rather than a discriminator, and the stroke is the claim with
+     teeth. */
   const btn = await box(p, '#b-start');
-  claim(seam && btn && seam.ink / btn.h > 0.58,
-    `${w}px: and they are a ball rather than a mark at each end`,
-    seam && btn ? `${seam.ink}px of ink against a ${btn.h}px tall button`
-      + ` (${(seam.ink / btn.h).toFixed(2)}x)` : '');
+  claim(seam && seam.lace > 2.3,
+    `${w}px: and the laces are drawn bold rather than as a hairline`,
+    seam ? `stroke ${seam.lace}px` : '');
+  claim(seam && btn && seam.sweep >= btn.h,
+    `${w}px: and the seam sweeps the ball's full height`,
+    seam && btn ? `sweep ${seam.sweep}px on a ${btn.h}px button` : '');
   await ctx.close();
 }
 

@@ -10814,32 +10814,38 @@ shallow chevron. Leaned the same way (`+LEAN*side`) one row comes out nearly
 parallel to the seam and the picture stops being a baseball at all, which is
 obvious on screen and invisible in the source.
 
-**The seams reach 2.1 times the button's HEIGHT in, and it shipped at 1.** At 1
-they hugged the two ends with a wide empty field between them, which reads as a
-pale bar with a decoration at each end rather than as a ball. Reported. A wider
-seam box is a LONGER, FLATTER arc at the same stitch pitch (10.4 against 10.5),
-never a stretched one, because the aspect ratio is preserved.
+**THE SEAM IS NEAR-VERTICAL AND CHUNKY, AND IT IS THE THIRD SHAPE IT HAS WORN.**
+The history is the warning, because both earlier shapes were reported by the
+player inside a day of shipping:
 
-**Picked with real room, not as the last value that fits.** Ink to label on a
-358px button: 45px of clearance a side at 1, 21 at 2.0, 19 at 2.1, 14 at 2.3, and
-at 2.7 the seam runs through the D of DRAFT.
+| | what it was | what it read as |
+|---|---|---|
+| first | a tight bow hugging each end | a pale bar with a decoration at each corner |
+| second | the same bow STRETCHED 2.1x inward | a pair of thin clipped wings |
+| ships | a rebuild: gentle near-vertical seam, laces at 5.5 of a 100 viewBox | the reference photo |
 
-**THE LABEL DOES NOT SHRINK AND THE BUTTON DOES**, so there is a width where 2.1
-stops fitting: measured on the real page it is 135px clear a side at 660, 30 at
-390, 15 at 360 and **minus 4.8 at 320**, where the seams run into the D and the M.
-320 is an iPhone SE rather than a hypothetical, so the reach steps back to 1.55
-under 360. Every one of those is the FALLBACK face, which is wider than the Bebas
-a visitor gets, so each is the pessimistic reading.
+**The stretch made it worse and the reason is worth keeping.** Spreading the same
+stitches over a longer, flatter arc thinned the look, clipping the bow's ends at
+the button's edge left an open V, and the laces rendered at **1.7px**. What the
+reference photo actually has is neither of the first two: a seam spanning the full
+height almost straight, laces thick enough to count, standing INSIDE the ball with
+leather on both sides. When a drawing reads wrong, rebuild it to the reference
+rather than stretching the last attempt again.
 
-**Four geometries were rendered and looked at**, which is the only way this has
-ever been settled here:
+**The strip is one button-height square and its POSITION is a share of the
+button** (2%, 1% under 360, 4% from 600), so the seam scales with the ball, never
+with the width: a wider button shows more leather between the same two seams,
+which is what a wider crop of a ball is. Ink to label in the FALLBACK face, which
+is wider than the Bebas a visitor gets: about 35px a side at 358 and about 4px at
+320, which is an iPhone SE rather than a hypothetical and is why the narrowest
+phones pull the seam back a point.
 
-| | what came back |
-|---|---|
-| one arc a side, bulging inward | **a ball**, at 358px and at 660 |
-| two arcs converging at the outer edge | scattered, reads as nothing |
-| two arcs converging inward | an ARROW, and it ran through the label at 358 |
-| two long shallow arcs | tyre tread |
+**Four geometries were rendered and looked at in each round**, which is the only
+way this has ever been settled here. Round one: one arc bulging inward reads as a
+ball, arcs converging at the outer edge read as nothing, converging inward reads
+as an ARROW, two shallow arcs read as tyre tread. Round two: near-vertical chunky
+is the photo, the same seam finer reads wispy, and the bulge's direction is
+indistinguishable at this size.
 
 **One symbol, `<use>`d four times and mirrored in CSS.** Two buttons carry it (the
 front page and the first-time guide) at two ends each, and the stitch path is about
@@ -10899,20 +10905,26 @@ every width it already walks. Getting at the drawing took three attempts:
   never renders, and it reads the SHIPPED drawing rather than a second copy of the
   numbers that generated it.
 
-**The second claim is against the button's HEIGHT, and the first draft used its
-WIDTH and failed on a correct desktop.** The button is a crop of a ball, so a wider
-screen shows more clear leather between the same two seams: a share of the width
-falls as the page grows and says nothing about the drawing. The height is the ball.
+**The "still a ball" claim has been rewritten TWICE and the second rewrite is the
+lesson.** The first draft asked ink width over button WIDTH and failed on a correct
+desktop, because a wider crop legitimately shows more leather. The second asked
+ink width over button HEIGHT, and the rebuild broke it on a correct page: the
+photo's seam is deliberately NARROW and bold, so a width test cannot tell the good
+shape from the bad ones at all.
 
-Measured ink over button height: **0.46** at the reach this replaced, **0.71** at
-the 1.55 the narrowest phones get, **0.97** at 2.1. The threshold is 0.58, the
-middle of the gap rather than the last value that clears it, and it is a backstop
-against a gross regression rather than a fine measure, because those two arms are
-only a third of a button-height apart.
+**THE DISCRIMINATOR IS THE RENDERED STROKE.** Both bad states this button actually
+shipped read **1.7px** on the guard's model (and the letterboxed one drew thinner
+still on screen); the rebuild draws at **2.9 and up**, scaling with the button. The
+claim is `lace > 2.3`, the middle of that gap, plus a backstop that the seam still
+sweeps the button's full height. Proved by restoring the previous commit's page
+whole: the guard names it at every width as `stroke 1.7px`.
 
-Both were proved by mutation: putting the reach back to 1 fails the ball claim at
-all five widths naming `0.45x`, and removing the narrow step-back fails the
-overlap claim at 320 alone naming `gap -2.9 left, -2.9 right`.
+**The 2.1 era also carried a quiet SVG fault the guard's numbers exposed.** The
+symbol's viewBox went to 210x100 while the four `<use>` instances kept
+`viewBox="0 0 100 100"`, so the widened drawing was letterboxed inside the old
+frame, which is part of why the stretch rendered small and thin. Two viewBoxes
+describing one drawing are the `?v=` pair's problem in SVG: nothing throws, and
+the only symptom is art that looks wrong. They are the same 100x100 now.
 
 ### The share card had no source and no builder, and was set in a fallback
 
