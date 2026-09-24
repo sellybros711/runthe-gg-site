@@ -281,8 +281,11 @@
   .who s{display:block;text-decoration:none;font-size:11.5px;line-height:1.3;
     color:var(--dim-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   /* The club wears its own colour and the joining word does not: "vs" is not a team. */
-  .who s .club{font-style:normal;font-weight:700;letter-spacing:.02em}
-  .who s i{font-style:normal;opacity:.7}
+  /* THE CLUB CHIP AND ITS JOINING WORD, defined once because two surfaces draw them: the
+     board row and the confirm sheet. `em` and `i` are italic by default, so a second surface
+     that forgot these rules would print the code in italics and nothing would say so. */
+  .club{font-style:normal;font-weight:700;letter-spacing:.02em}
+  .vs{font-style:normal;opacity:.7}
 
   /* THE STAT LINE, FULL WIDTH AND NEVER WRAPPING. `flex:0 0 100%` is what puts it on its own
      row of the button's wrap, under the position chip as well as the name, which is where
@@ -715,6 +718,27 @@
   </div>
 </div>
 
+<!-- THE CONFIRM. Reported by a player: a press signed somebody outright, so a thumb landing
+     on the wrong row spent a slot and money that cannot be handed back, and the only way out
+     was to start the whole draft again.
+
+     IT NAMES HIM AND IT NAMES THE MONEY, because a confirm that only asks "are you sure" is a
+     tap somebody learns to hit without reading. What this page can say that the row cannot is
+     the CONSEQUENCE: which slot he fills, and what is left for the rest of the lineup after
+     he is paid for. -->
+<div class="isheet" id="cf-sheet" hidden>
+  <div class="ibox">
+    <div class="eyebrow" id="cf-slot"></div>
+    <h3 class="display" id="cf-name" style="font-size:23px;margin:5px 0 0"></h3>
+    <p class="lede" id="cf-where" style="margin-top:8px"></p>
+    <p class="note" id="cf-money"></p>
+    <div class="stack">
+      <button class="btn" id="cf-go">Sign him</button>
+      <button class="btn quiet" id="cf-no">Back to the board</button>
+    </div>
+  </div>
+</div>
+
 <!-- WHERE YOU FINISHED. One sheet for the whole field, because a podium and a mid table are
      the same fact told at different volumes, and two sheets would be two places describing
      one week. What changes is the place, the line under it, and whether there is a code.
@@ -762,7 +786,7 @@
      PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script defer src="/football/auth.js?v=6"></script>
-<script src="clubs.js?v=1"></script>
+<script src="clubs.js?v=2"></script>
 <script src="draft.js?v=3"></script>
 <script src="entries.js?v=4"></script>
 <script>
@@ -831,6 +855,10 @@
        declarations below, so both are hoisted and callable from here. */
     stopPolling();
     clearBoardTimers();
+    /* AND ANY CONFIRM GOES WITH THE SCREEN IT WAS ASKED ON. Its scrim covers everything, so
+       left up it is a sheet about a draft board over whatever screen is now underneath, and
+       the only control on it signs into a board nobody can see. Hoisted, like the two above. */
+    closeConfirm();
     var all = document.querySelectorAll('.screen');
     for (var i=0;i<all.length;i++) all[i].classList.toggle('on', all[i].id===id);
     window.scrollTo(0,0);
@@ -912,6 +940,12 @@
     if (!code) return '';
     var c = window.RTF_CLUBS && window.RTF_CLUBS.color(code);
     return '<em class="club"' + (c ? ' style="color:' + c + '"' : '') + '>' + esc(code) + '</em>';
+  };
+  /* HIS CLUB AND WHO HE PLAYS, WRITTEN ONCE. The board row and the confirm sheet both draw
+     it, and two copies is how the two come to say different things about one bye week. */
+  var matchup = function (m) {
+    return club(m.team)
+      + (m.opp ? ' <i class="vs">' + (m.home ? 'vs' : 'at') + '</i> ' + club(m.opp) : '');
   };
 
   var INJ_SAY = {
@@ -1191,9 +1225,7 @@
         + (poor ? ' disabled' : '') + ' data-id="' + esc(m.player_id) + '">'
         + '<span class="pos ' + esc(m.position) + '">' + esc(m.position) + '</span>'
         + '<span class="who"><b><i>' + esc(m.name) + '</i>' + injChip(m) + '</b>'
-        + '<s>' + club(m.team)
-        + (m.opp ? ' <i>' + (m.home ? 'vs' : 'at') + '</i> ' + club(m.opp) : '')
-        + '</s></span>'
+        + '<s>' + matchup(m) + '</s></span>'
         + '<span class="cost"><b>' + money(m.price_musd) + '</b><s>'
         /* THE SAME LENGTH AS "over budget", AND THAT IS A MEASUREMENT RATHER THAN A
            PREFERENCE. This cell and the name share the row: at sixteen characters
@@ -1233,6 +1265,74 @@
    * signs a second man into a slot that already has one. `busy` refuses the second press
    * for the same reason, so a double tap is one signing on every device.
    */
+  /*
+   * AND THE PRESS ASKS BEFORE IT SPENDS.
+   *
+   * Reported by a player: a press signed somebody outright, so a thumb landing on the wrong
+   * row took a slot and money that cannot be handed back. There is no undo here and there
+   * should not be one, because a board is redrawn from the roster and putting a man back
+   * would have to un-draw the board he was taken from. The only way out was "Start this
+   * draft again", which throws away every pick made so far to correct the last one.
+   *
+   * WHAT THE SHEET SAYS IS THE CONSEQUENCE, not "are you sure". A confirm that only asks for
+   * a second tap is a tap somebody learns to make without reading, so it names him, names the
+   * slot he fills and says what is left for the rest of the lineup once he is paid for.
+   *
+   * THE TWO PRESSES ARE DIFFERENT MOMENTS AND THE SECOND ONE IS CHECKED AGAIN. A sheet sits
+   * open for as long as somebody leaves it open, so the draft can be started again or the
+   * chance switched underneath it. `signPending` refuses a sheet about a board that is gone
+   * rather than applying it to whatever is on screen now, which is `dynNewSheet`'s own lesson
+   * in the football game arriving at a draft board.
+   */
+  var PENDING = null;
+
+  function closeConfirm(){ $('cf-sheet').hidden = true; PENDING = null; }
+
+  function showConfirm(man){
+    var c = state.chances[cur];
+    var at = c.ids.length;
+    var after = D.CAP_MUSD - D.spent(chanceAt(cur)) - man.price_musd;
+    var more = D.SLOTS.length - at - 1;
+    PENDING = { id: man.player_id, chance: cur, at: at };
+    $('cf-slot').textContent = 'Signing at ' + D.SLOTS[at];
+    $('cf-name').textContent = man.name;
+    $('cf-where').innerHTML = matchup(man);
+    $('cf-money').textContent = money(man.price_musd) + '. ' + (more
+      ? 'That leaves ' + money(after) + ' for ' + more + ' more.'
+      : 'That is the last slot.');
+    $('cf-sheet').hidden = false;
+  }
+
+  function signPending(){
+    var p = PENDING;
+    closeConfirm();
+    if (!p || busy) return;
+    var c = state.chances[cur];
+    /* THE BOARD THIS SHEET WAS OPENED ABOUT HAS TO STILL BE THE BOARD. A slot filled or a
+       draft restarted while it was open means this man is the answer to a question nobody
+       is asking any more. */
+    if (p.chance !== cur || !c || c.ids.length !== p.at) return;
+    var man = BY_ID[p.id];
+    if (!man) return;
+    /* And the same two refusals the row already made, asked again on the press that spends.
+       `canSign` is what greys a row and what refused the first press, so a man who became
+       unaffordable in between is refused here by the same call rather than by a second copy
+       of the rule. */
+    if (D.hurt(man)) return;
+    if (!D.canSign(POOL.pool, c.ids.length, D.CAP_MUSD - D.spent(chanceAt(cur)), man)) return;
+    signNow(man);
+  }
+
+  $('cf-go').onclick = signPending;
+  $('cf-no').onclick = closeConfirm;
+  /* THE SCRIM CLOSES IT, the way the injury sheet's does. A full screen scrim with no way
+     out but one button is a sheet somebody taps around the edge of and gets nothing. Closing
+     is the SAFE answer here, unlike the injury sheet where either is, so tapping away can
+     only ever cost a press and never a slot. */
+  $('cf-sheet').addEventListener('click', function(ev){
+    if (ev.target === $('cf-sheet')) closeConfirm();
+  });
+
   $('d-men').addEventListener('click', function(ev){
     var b = ev.target.closest && ev.target.closest('.man');
     if (!b || !b.dataset.id || busy) return;
@@ -1254,12 +1354,25 @@
        over the ceiling strands the draft later, at a different slot, with nothing on screen
        connecting the two. */
     if (!D.canSign(POOL.pool, c.ids.length, D.CAP_MUSD - D.spent(chanceAt(cur)), man)) return;
+    showConfirm(man);
+  });
+
+  /* THE SIGNING ITSELF, reached only from the sheet's own button. */
+  function signNow(man){
+    var c = state.chances[cur];
     c.ids.push(man.player_id);
     save();
     JUST = c.ids.length - 1;
     if (REDUCE){ paintDraft(); return; }
     busy = true;
-    b.classList.add('took');
+    /* THE ROW IS FOUND AGAIN RATHER THAN HELD, because the press that opened the sheet and
+       the press that signs are different moments and the board could have been repainted in
+       between. Walked rather than queried, since a player id is data and a selector built
+       out of it is a selector somebody else's id gets to write. */
+    var rows = $('d-men').children;
+    for (var k=0;k<rows.length;k++){
+      if (rows[k].dataset && rows[k].dataset.id === man.player_id) rows[k].classList.add('took');
+    }
     $('d-men').className = 'men clearing';
     var was = cur, len = c.ids.length;
     later(function(){
@@ -1269,7 +1382,7 @@
       if (cur !== was || !state.chances[was] || state.chances[was].ids.length !== len) return;
       paintDraft();
     }, 170);
-  });
+  }
 
   $('b-abandon').onclick = function(){
     clearTimers();

@@ -2995,6 +2995,59 @@ a quarter of boards, so a six pick draft misses entirely about one time in five:
 version walked ONE draft, came back "never once refused anything" and was reporting its own
 seed.
 
+#### A press asks before it spends
+
+```
+node football/check-fantasy.mjs   the section named A PRESS ASKS BEFORE IT SPENDS
+```
+
+Reported by a player: a press signed somebody outright, so a thumb landing on the wrong row
+took a slot and money. **There is no undo here and there should not be one**, because a board
+is derived from `(seed, pool)` and the roster, so putting a man back would have to un-draw the
+board he was taken from. The only way out was **Start this draft again**, which throws away
+every pick made so far to correct the last one.
+
+**WHAT THE SHEET SAYS IS THE CONSEQUENCE, not "are you sure".** A confirm that only asks for a
+second tap is a tap somebody learns to make without reading, and it would be the Full Team
+coach grid's problem in miniature: a control that costs an action and tells you nothing. So it
+names him, names the slot he fills, and says **what is left for the rest of the lineup** once
+he is paid for. That last number is the one the row cannot say.
+
+**THE TWO PRESSES ARE DIFFERENT MOMENTS AND THE SECOND ONE IS CHECKED AGAIN.** A sheet sits
+open for as long as somebody leaves it open, so the draft can be started again or the chance
+switched underneath it. `signPending` refuses a sheet about a board that is gone rather than
+applying it to whatever is on screen now. That is `dynNewSheet`'s lesson arriving at a draft
+board, and **it is not theoretical**: with the clause removed the guard drives exactly that
+sequence and reports `0 -> 1`, a man signed into a draft that had just been restarted.
+
+**Closing is the SAFE answer here**, which is the difference from the injury sheet where either
+is, so the scrim closes it too and tapping around the edge can only ever cost a press.
+
+**The row's two refusals are unchanged and now have a second thing to assert.** An injured row
+still opens the REPORT and an over-budget row still does nothing, and both are sheets over the
+board, so "a sheet came up" has stopped being the same claim as "the right sheet came up". A
+press that offered to sign a man the page has already said cannot play would render perfectly.
+
+**`matchup()` is the club line written once.** The row and the sheet both draw a man's club and
+who he plays, so `.club` and `.vs` are one CSS rule each rather than the `.who s .club` pair
+they were: `em` and `i` are italic by default, and the second surface to forget those rules
+prints the code in italics with nothing to say so.
+
+**THE SHARED HELPER IS WHAT MADE THE GUARD CHEAP, AND IT IS ALSO WHAT MAKES A MISSING CONFIRM
+LOUD.** Every walk in `check-fantasy.mjs` signs through `signOne`, so the confirm went in once.
+Removed from the page, the suite dies in its first browser section naming `#cf-sheet` rather
+than timing out on a slot that never fills. It waits for that selector by NAME instead of
+leaving it to the click's own timeout, because "the confirm never opened" and "the confirm
+opened and its button does nothing" are two different faults and a bare click reports both as
+the same thirty second hang.
+
+**Measured at 360x740 with the longest name the pool can produce**, which is
+`Jacory Croskey-Merritt`: nothing overflows and both buttons are fully on the screen. What is
+asserted is the BUTTONS and not the height, because the sheet is bottom anchored, so a tall one
+pushes its own eyebrow off the top and that is fine. The control the page is waiting on going
+off the screen is what must never happen, which is the boss battle's Continue button arriving
+at a sheet.
+
 #### The board reveals, and it does not step
 
 Reported alongside the two above: nothing is revealed and the screen is jumpy.
@@ -3073,17 +3126,70 @@ row sits on `#131a2b` and against it only Cincinnati and Denver clear 4.5:1; Las
 **1.21:1** and Pittsburgh **1.03:1**. Dropping the site's table in would have given a board
 where almost every tag was invisible, with nothing to report.
 
-**The PRIMARY is lifted and the secondary is not used**, which is only obvious once both are
-printed. Picking whichever of a club's two published colours reads better puts **fourteen
-clubs in one gold bucket**, because most NFL secondaries are gold, and worse it stops naming
-the club: Washington comes out gold rather than burgundy, Dallas silver rather than navy. The
-primary is the identity, so the primary is what is lifted: hue kept, lightness raised until it
-clears, saturation floored on the way up or a navy arrives as a pale grey.
+**The PRIMARY is lifted, and that is right for twenty nine of the thirty two.** Picking
+whichever of a club's two published colours reads better puts **fourteen clubs in one gold
+bucket**, because most NFL secondaries are gold, and worse it stops naming the club:
+Washington comes out gold rather than burgundy, Dallas silver rather than navy. The primary is
+the identity, so the primary is what is lifted: hue kept, lightness raised until it clears,
+saturation floored on the way up or a navy arrives as a pale grey.
 
-**The blues converge and that is the league, not a defect.** Four pairs are identical in the
+##### A BLACK HAS NO HUE TO LIFT, AND THE MEASURE FOR THAT WAS THE WRONG ONE
+
+Reported by a player: Vegas should be white and Pittsburgh should be yellow. They are right,
+and Pittsburgh was the worse of the two, because **the Steelers were on the board in blue**.
+
+| | published primary | shipped as |
+|---|---|---|
+| Las Vegas | `#000000` | `#828282`, a mid grey |
+| Pittsburgh | `#101820` | `#4f86bc`, **a blue** |
+| New Orleans | `#101820` | `#4f86bc`, the same blue |
+
+**HOW MUCH COLOUR A HEX CARRIES IS ITS CHROMA AND NOT ITS HSL SATURATION.** Saturation is
+divided by how dark a colour is, so it EXPLODES near black: `#101820` is **6% chroma** and
+reads **0.33 saturation**, which sailed over a floor of 0.12 and was then raised to 0.45 on
+the way up. A hue that is six percent of a black pixel is noise, and the lift was amplifying
+the noise into a colour. This is the hoops wheel's own note ("HSL lightness is not
+brightness") arriving one step along, at saturation.
+
+**`CHROMA_MIN` is 0.08 and the band is thin, which is worth knowing before moving it.** Sorted,
+the primaries run 0.0 (Las Vegas), 6.3 (the two blacks), **9.0 (GREEN BAY)** and 12.2. About
+one point of room each side, and Green Bay is what the top of that gap defends: `#203731` is a
+genuine dark green with very little chroma in it, and a floor at 0.10 turns the Packers grey.
+
+**IT CHANGES NO COLOUR ON THE BOARD TODAY**, because all three clubs it fires on are named in
+`SECOND` and sourced from a colour needing no lift at all. It is the backstop: without it the
+next club to publish a black primary goes quietly blue and nothing anywhere says so.
+
+**`SECOND` is three clubs, written out by hand.** Vegas silver, Pittsburgh gold, New Orleans
+gold, and all three clear unaided (7.54:1, 9.87, 9.38) so what ships is the published hex
+untouched. **New Orleans was not reported and is on the list anyway**: it publishes the
+identical `#101820`, so it drew the identical blue, and fixing one of that pair leaves the
+same complaint on the board. **Nothing in a pair of hexes says which one a fan would name**, so
+this is observed rather than derived, the way the sprite pack's `FILE_DRAWS` is: the geometry
+can say a primary is colourless and cannot say Cleveland's brown is fine while Carolina's black
+second colour would be worse. The guard asks for membership of a list, and the list is short on
+purpose.
+
+**Both directions are asserted, because a club wrongly ADDED to that list is the blanket rule
+above arriving by the back door**, and the way that shows up is a board where most tags are
+yellow.
+
+**AND THE FIRST VERSION OF THAT GUARD PASSED GREEN ON THE DEFECT.** It walked
+`Object.keys(CLUBS.SECOND)`, which is the keys of the thing under test, so an emptied list has
+nothing to disagree with. The three codes are written out in the checker now. A second copy of
+a three item list is the right price for a claim that is about the page rather than about
+itself.
+
+**The drift check reads BOTH hexes now**, which is not thoroughness: three clubs are drawn from
+their second colour, so a stale second entry is a club wearing a colour the site does not think
+it has. Before those three existed it read the primary alone and the second column could have
+been anything at all.
+
+**The blues converge and that is the league, not a defect.** Three pairs are identical in the
 published data before anything is done to them (New England and Seattle are both `#002244`,
-Dallas and the Rams both `#003594`). The tag carries the three letter CODE, so the colour is
-reinforcement and never what identifies the club.
+Dallas and the Rams both `#003594`, Cincinnati and Denver both `#FB4F14`). It was four until
+New Orleans and Pittsburgh came off their shared `#101820`. The tag carries the three letter
+CODE, so the colour is reinforcement and never what identifies the club.
 
 **THE RAMS HAD NO COLOUR AT ALL, AND A FIVE ROW BOARD MEETS THEM ABOUT ONE WEEK IN SIX.**
 nflverse spells them `LA` and the site's table spells them `LAR`, so that one club fell
