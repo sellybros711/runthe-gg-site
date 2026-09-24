@@ -198,7 +198,7 @@ async function draft(page, picks, onBoard) {
        read a tile: the black-name buttons shipped dark for a player to report
        while section 3 was green, because the tile's ink was collected on NO run.
        Mid-draft is the only moment the board exists to be read. */
-    if (i === 6 && onBoard) { await page.waitForTimeout(500); await onBoard(); }
+    if (onBoard) { await page.waitForTimeout(i === 0 ? 300 : 0); await onBoard(i); }
     await page.evaluate(() => document.querySelector('#opts .tile:not(.off)').click());
     await page.waitForTimeout(420);
     await page.evaluate(() => { const o = document.querySelector('#sheet-pos.on .pos-opt'); if (o) o.click(); });
@@ -281,7 +281,10 @@ console.log('\n2. No surface stayed light in the dark theme');
        the draws that land a light club (Milwaukee's gold is rgb(255,197,47))
        this sweep reads a bright surface that is a fact about the Brewers rather
        than about the theme. Whether it fired depended on the draw, which is the
-       .tile.hot flake in section 4's own words. The paint is inline from
+       shape section 4's `.tile:not(.hot)` reading had too, and there it turned
+       out to be fixable by sampling the one board on which no tile can be hot.
+       Here there is no such board: a light club is a light club whenever it is
+       drawn, so this is an exemption rather than a sampling fix. The paint is inline from
        E.teamColors, the same table both themes read, so there is no second
        theme-varying copy for an identity claim to hold. */
     const light = surfaces.filter((s) => s.lum >= 0.45 && !/\bball\b/.test(s.cls)
@@ -344,7 +347,9 @@ console.log('\n3. The dark theme never reads worse than the light one');
     const { ctx, page } = await open(theme);
     const all = [];
     all.push(...(await page.evaluate(PROBE)).text);
-    await draft(page, 12, async () => { all.push(...(await page.evaluate(PROBE)).text); });
+    await draft(page, 12, async (i) => {
+      if (i === 6) { await page.waitForTimeout(500); all.push(...(await page.evaluate(PROBE)).text); }
+    });
     all.push(...(await page.evaluate(PROBE)).text);
     /* Keyed on the WORDS plus the rule, because the two runs are two drafts and
        the players are not the same; the chrome is. */
@@ -410,22 +415,31 @@ console.log('\n4. --edge flips, and only --edge');
     /* The modes sheet, then a draft: between them every selector above is painted. */
     await page.evaluate(() => document.querySelector('#b-modes').click());
     await page.waitForTimeout(500);
-    const front = await page.evaluate((sel) => {
-      const out = {};
-      for (const s of sel) { const el = document.querySelector(s);
-        if (el && el.offsetWidth) out[s] = getComputedStyle(el).borderTopColor; }
-      return out;
-    }, SEL);
+    /* SAMPLED ON EVERY BOARD, KEEPING THE FIRST READING OF EACH SELECTOR rather
+       than the last, and `.tile:not(.hot)` is the whole reason. A tile goes hot
+       when the man on it would add chemistry to what is already signed, so by
+       the fourth board every tile can be hot at once, the selector then matches
+       nothing, and the claim fails reporting `dark undefined` about a page with
+       nothing wrong with it. That is the flake this file has carried for
+       months, and it is a fact about WHEN the reading was taken.
+       The first board has nobody signed, so no tile on it can be hot: a reading
+       taken there cannot go missing, whatever the draw does afterwards. */
+    const seen = {};
+    const grab = async () => {
+      const got = await page.evaluate((sel) => {
+        const out = {};
+        for (const s of sel) { const el = document.querySelector(s);
+          if (el && el.offsetWidth) out[s] = getComputedStyle(el).borderTopColor; }
+        return out;
+      }, SEL);
+      for (const k of Object.keys(got)) if (seen[k] === undefined) seen[k] = got[k];
+    };
+    await grab();
     await page.keyboard.press('Escape');
     await page.waitForTimeout(300);
-    await draft(page, 3);
-    const mid = await page.evaluate((sel) => {
-      const out = {};
-      for (const s of sel) { const el = document.querySelector(s);
-        if (el && el.offsetWidth) out[s] = getComputedStyle(el).borderTopColor; }
-      return out;
-    }, SEL);
-    vals[theme] = { ...front, ...mid, ...await page.evaluate(() => {
+    await draft(page, 3, grab);
+    await grab();
+    vals[theme] = { ...seen, ...await page.evaluate(() => {
       const cs = getComputedStyle(document.documentElement);
       const g = (n) => cs.getPropertyValue(n).trim();
       /* The hide is read off the BUTTON rather than off :root, because what a

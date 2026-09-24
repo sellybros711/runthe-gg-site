@@ -2664,7 +2664,7 @@ node football/build/test/probe_cap.mjs        what cap makes the draft a decisio
 ```
 
 `football/fantasy/index.html` is the mode and `football/fantasy/draft.js` is the football.
-Six slots (QB, RB, RB, WR, WR, TE), a $90M cap, five whole drafts, one submitted. Half PPR,
+Six slots (QB, RB, RB, WR, WR, TE), a $110M cap, five whole drafts, one submitted. Half PPR,
 scored on what the six actually do. **It is a page of its own rather than a screen inside
 the football game**, because it shares nothing with that engine: no season, no sim, no
 ratings. What it shares is accounts, the palette and the tester pattern.
@@ -2827,8 +2827,9 @@ where it costs most: the $25-48M band ran **-8.21**.
 **Nothing could report it.** Every price was a correct summary of September, every
 projection on every card was right, and no screen ever showed the two disagreeing.
 
-**`PRICE_PROJ_W` is the answer and it is 0.25**, blending the projection into the estimate
-the price is built from. Three things bound it and they close from both sides:
+**`PRICE_PROJ_W` was the answer and it shipped at 0.25**, blending the projection into the
+estimate the price is built from. **It is 1 now**, which the section after this one records.
+The bounding argument is kept because it is what the move had to answer:
 
 | | 0 | 0.25 | 0.5 | 0.75 | 1 |
 |---|---|---|---|---|---|
@@ -2863,6 +2864,164 @@ move by more than a million and **only six move by more than three**, and those 
 men who missed a game (Zay Flowers $12.1M to $7.7M). At 0.5 it is 97 men past three million,
 which is a rebuild rather than an adjustment. **It does not close the gap and is not meant
 to**: an eighth of a defect this file now knows the size of.
+
+#### And then it was asked for whole: `PRICE_PROJ_W` is 1
+
+```
+node football/build/test/probe_cap.mjs --runs 600 --caps 95,100,105,108,112,118
+node football/check-fantasy.mjs --quick   the section named THE PRICE IS THE PROJECTION
+```
+
+Asked for in as many words: the price should be based solely on what a man is projected to
+do this week, as accurately and as freshly as the mode allows. The section above ends by
+saying going further is available, costs the cap, and is a decision about the MODE rather
+than about the pricing, to be taken deliberately rather than quietly. **It was taken.**
+
+**What it buys is half the absence gap**, -2.87 to -1.39, against an eighth at a quarter.
+**What it costs is the residual**: at .999 rank agreement the price IS the projection, so
+the decision the card used to carry is gone. What replaces it is the thing a reader knows
+and the board cannot: the matchup, the weather, who is starting, and the report on any man
+it has not spoken about yet. The thin sample gap widens 1.25 to 1.42, which is 0.17 of a
+point against 1.48 gained, so it is a trade rather than a wash and it is the axis to watch
+if the board starts feeling generous to a man with one week in him.
+
+##### The cap had to move, and stranding is what forced it rather than balance
+
+`draft.js`'s own header had already written down that a more accurate price against a CONVEX
+curve rewards spreading money and walks the crossover up. Re-swept on the week 3 board:
+
+| cap | top | budget | random | top minus random | budget minus top | stranded |
+|---|---|---|---|---|---|---|
+| **90** | 69.5 | 73.9 | 64.7 | 4.8 | +4.3 | **41 of 500** |
+| 100 | 75.3 | 77.3 | 65.9 | 9.5 | +2.0 | 0 |
+| 105 | 78.2 | 78.8 | 66.1 | 12.1 | +0.7 | 0 |
+| **110** | **80.8** | **80.4** | **66.2** | **14.5** | **-0.4** | **0** |
+| 118 | 84.0 | 82.5 | 66.4 | 17.5 | -1.4 | 0 |
+
+**AT $90M IT STRANDED**, which is not a balance question: the board comes up with nothing
+signable and the player is looking at a screen with no way on. Driven bot by bot on the real
+`spin`, a greedy drafter strands **28 of 600** at $90M and **0** at $110M. The cause is the
+projection shrinking a thin sample toward the POSITION LEVEL where `shrunkPPG` shrank it
+toward zero, so the cheap end of the board lifts and the reserve floor lifts with it.
+
+**It ships at $110M**, the round number inside the half point band (105 to 112, centred on
+108), which is the same rule that picked 90 against a crossover of 93.
+
+**AND DRAFTING IS WORTH WHAT IT WAS**, which is the number to read before assuming a more
+accurate price flattens the mode. Each pricing at ITS OWN crossover: `shrunkPPG` at $100M is
+14.7, the projection at $110M is 14.5. **The 4.8 at $90M was the wrong cap and not the
+pricing.** At a MATCHED cap the projection does differentiate less (14.5 against 18.3), which
+is the honest cost and is what a fair price does: when every man is worth what he costs, any
+lineup that spends the cap scores about the same.
+
+**What it costs is that week 3 and week 4 are not comparable.** The cap rides on each
+published week row, so nothing already out there is repriced and week 3 keeps its $90M for
+ever. Two weeks under two caps is a real loss and it is the price of changing the pricing.
+
+##### And the projection grew the one live signal the mode has
+
+"As accurate as possible" is a claim about the PROJECTION rather than about the blend. What
+it did not read is the game status report: `plays` is availability measured BACKWARDS off
+games already missed, and the report is what the club says about Sunday. Measured over the
+same 21,291 draftable player-weeks, actual against what the projection expected:
+
+| status | men | proj | actual | actual/proj | blanked |
+|---|---|---|---|---|---|
+| no report | 17,179 | 4.75 | 4.37 | 0.919 | 44.8% |
+| on it, no call | 2,179 | 7.34 | 7.87 | 1.073 | 21.0% |
+| **questionable** | **1,066** | **6.20** | **4.33** | **0.699** | 47.7% |
+| doubtful | 122 | 6.28 | 0.02 | 0.003 | 99.2% |
+| out | 744 | 5.38 | 0.00 | 0.000 | 100.0% |
+
+**A QUESTIONABLE MAN DELIVERS SEVEN TENTHS OF HIS PROJECTION** and the board charged full
+price for him: a 43% overpay on about one board row in twenty, and the largest single
+inaccuracy left in the price.
+
+**ONLY QUESTIONABLE IS PRICED, and the split is principled rather than cautious.** Read the
+blank column: a questionable man blanks 47.7% against a clear man's 44.8%, almost no change
+for a group whose projection is a third higher, so he is not mostly missing the game. He is
+PLAYING HURT and producing less, which is a fact about his points. Out and doubtful are about
+ABSENCE, `D.hurt` already takes those men off the board, and **36% of men out in one week's
+report are playing by the next**, so a price near zero on one of them is a free star the
+moment he is cleared.
+
+**AND IT IS ONLY READ WHEN THE REPORT IS THIS WEEK'S**, which is measured rather than a
+formality. The same table against the PREVIOUS week's report, which is what a build running
+before the club has filed anything sees: questionable **0.951** against 0.699, doubtful 0.693
+against 0.003, out 0.336 against 0.000. **70.6% of last week's questionable men are cleared
+by this week**, so a week old designation is worth nothing and applying the discount to one
+would be a 30% cut on a man his club has passed fit.
+
+**The build reads the SAME FILE the page reads**, `injuries_<season>_w<week>.json`, rather
+than fetching the CSV again, so the price, the red chip and the sheet are one answer about
+one hamstring. Its absence is exactly the old behaviour, so a fixture or a probe rebuilding
+2022 prices on `plays` alone with nothing to be wrong about.
+
+**0.70 IS MEASURED ON THE FINAL REPORT AND THAT IS THE ONE SOFT EDGE.** nflverse keeps ONE
+ROW per player-week rather than a history, and **78% of them were last modified on a Friday**,
+so the table above is the report as it FINISHED. There is no way from that archive to measure
+what a Wednesday build would have seen. Said rather than implied.
+
+**SO THE TUESDAY BUILD MOSTLY BUYS NOTHING FROM THIS**, and that is worth knowing before
+reading the 0.70 as something the mode collects today. The report for the coming week is
+first filed on the Wednesday, so on a Tuesday `report_week` is usually the week just played
+and `injuryFactor` correctly returns 1 for every man. What this is worth scales with how late
+the build runs, and a later build is a shorter drafting window, which is a decision about the
+mode and is not taken here. `report_week` and `report_priced` are on the built pool so the
+log says which of the two happened rather than leaving somebody to diff prices.
+
+##### A price cannot be live, and that is the rule rather than a limitation
+
+"As live as possible" runs into the one thing this mode cannot bend: **a price may never move
+once anybody has drafted against it.** Two entrants drafting at different times against
+different prices are not in one competition, and there is a prize.
+
+**What IS live is availability**, and it already was: `fantasy-injuries.yml` refreshes the
+report twice a day, the page merges it over the board, and a man ruled out after the build
+leaves the wheel. What that cannot do is move his price.
+
+**AND THE RULE WAS A SENTENCE IN A COMMENT WITH NOTHING KEEPING IT.** Every statement
+`publish-week.mjs` emits is an UPSERT, so a second run of the Tuesday job against a week that
+is already out rewrites `cap_musd` and all 400-odd prices under every lineup entered. Their
+stored `spend` was checked against the old numbers and is then a total of a board that no
+longer exists, and nothing throws. **It went from annoying to fatal when the cap started
+moving**: a rebuild now hands entrants a budget they never drafted with.
+
+So the SQL refuses, rather than the script, because the script has no database to ask and the
+SQL is what actually runs. Driven against a real Postgres 16, both arms: a week with no
+entries publishes 414 prices at the new cap, and a week with one entry **raises, exits 3 so
+`set -e` catches it, and leaves the cap and all 414 prices exactly where they were.** The
+results path is deliberately not guarded, because results are published after a week and
+entries obviously exist by then.
+
+##### Two guards that were reading a number rather than a claim
+
+**`probe_board.mjs` swept `[70, 80, 90]`**, chosen when the cap WAS 90 so the sweep ran up to
+it. With the cap at 110 the whole table sat below the game, reporting 82 stranded drafts at
+its own top row while the mode strands none. It is anchored on `DRAFT.CAP_MUSD` now. A sweep
+that does not contain the value it is about is a sweep about a different game.
+
+**And the cap visibility check pooled three bots**, two of which never approach the cap:
+`thrifty` takes the cheapest man on every board by definition, so its presses dilute the ratio
+with ones where nothing could ever be out of reach. Survivable at $90M, and at $110M the
+pooled figure fell to 1.4% and failed while `probe_board` reported a spending drafter meeting
+an unaffordable man on 22.3% of presses. **The page had not stopped showing the cap. The
+measurement was averaging it away.** It counts BOARDS for the one bot that can run out of
+money now.
+
+**Its floor has to clear two different boards**, which is worth knowing before tightening it.
+The suite reads the pool FILE on disk, and that file is week 3, published and drafted against,
+so it must not be rebuilt: until the next Tuesday build this runs the OLD board at the NEW
+cap. Week 3's shipped pool reads 8.8%, a pool priced at `PRICE_PROJ_W = 1` reads 19.8%, and
+the same pool at the old $90M cap reads 42.3% and strands.
+
+**And the first two drafts of the new guard measured the fixture rather than the page.**
+Asserting that discounting one man moves nobody else, it was asked of the DEAREST man and 47
+others moved: the ceiling is anchored on the best man ON THE BOARD, so marking the anchor
+questionable rescales everything under him, which is the pricing working. Moved to the middle
+of a 60 man slice, 56 others still moved, because at 60 men the discounted man becomes the
+bottom of the VOR range himself and `lo` moves with him. **A fixture small enough to change
+its own percentiles is measuring the fixture.** Over the real 414 man board, 0 others move.
 
 **THE PRICE COULD NOT READ AVAILABILITY WHERE IT SAT.** `pricePool` ran on line 533 and
 `played_of` and `positionLevels` were both computed AFTER it, so the whole fix is half an
@@ -3395,6 +3554,11 @@ Below the eighties, holding money back is. They cross at 93 and are inside half 
 90, which is the only band where a drafter has to look at the board rather than apply a rule.
 **It ships at the round number inside that band** rather than at the crossover: four tenths
 of a point on a fifty point lineup, and `$90M` is a figure somebody can hold in their head.
+
+**EVERY NUMBER IN THAT TABLE IS A PRICE BUILT ON `shrunkPPG` AND THE CAP IS $110M NOW.** The
+same sweep against a price built on the projection puts the crossover at about 108 and $90M
+strands, which is written up in full under `PRICE_PROJ_W`. The rule that picked the value did
+not change; the board it was measured on did.
 
 **Taking whatever the wheel offers scores 39.5**, which is 12.8 behind both. Drafting matters.
 
@@ -11425,6 +11589,89 @@ excuse), proved by A/B against the pre-fix engine: identical either side. The
 FULL sweep is clean. The quick sweep's daily bots play TODAY's board, so its
 excuse list flaps with the calendar; pinning the sweep's daily date is the fix
 and is its own pass.
+
+### And then the seven things the playtest only recommended
+
+The pass above fixed what was broken. These are the seven it wrote down and left
+for a decision, taken in one go.
+
+**THE RIBBON WAS CROWNING SEASONS THAT LOST.** `allTimeRank` ranks the ROSTER's
+rating against 2,594 real team-seasons and knows nothing about how the season
+went, so the gold band at the top of the results hero read "97th-GREATEST TEAM OF
+ALL TIME" over 73-89, and on a title run it hung a 101st-place ribbon ABOVE WORLD
+SERIES CHAMPIONS, louder than the verdict it was undercutting. It was also a
+second copy of the rank cell three rows below it. It shows now only on a **top-100
+roster that reached October**, which is the badge catalogue's own band plus the
+thing that says the season backed the roster up. Every rank still shows, in its
+labelled cell. Proved in both directions in one afternoon: shown on a 98-64 run at
+#54, hidden on 87-75 and on 76-86.
+
+**RUN IT BACK NOW REPLAYS THE MODE IT WAS RUN IN.** It said "Draft again" and went
+to the front page, whose button is Classic whatever was just played, so the one
+control on that screen for doing it again quietly took the mode away. **The daily
+is the exception and the button says so** rather than faking it: the board is
+pinned to the day, so what it offers is the same draft unpinned. Under it are the
+**other six modes**, Classic included, because Classic is on no card and the front
+page's button was its only door. The mode just played is left out: Run it back
+directly above IS that button.
+
+**THE TRADE MACHINE WAS WEARING A DRAFTED MODE'S CLOTHES.** Its grade cell read
+"DRAFTED 96% OF YOUR BOARD" about a roster the mode hands you and forbids you to
+re-draft; it counts the deals and what they were worth now. Its squad screen never
+said the roster was handed over or that the phone would ring, and the coach's take
+marked the cap room red as "$22M left unspent" while that room is the only thing
+that buys a deal. **The results screen still counts it**, because by then the
+deadlines have gone and room never used is room never used.
+
+**CAP SURVIVOR DID NOT EXIST UNTIL GAME 20.** Its draft and squad screens were
+Classic's exactly, so the first sign the mode was on was a shock sheet mid-season,
+and by then the drafting decision it should have changed was made. Both screens
+carry the rule now, and the draft's version is the one that matters: leave
+yourself room. `modeNote()` is the one painter, `.sq-mode` the one rule.
+
+**THE ERA PICKER WAS THIRTEEN BARE BUTTONS** beside a franchise grid carrying a
+span, a lineage and a best player, so the mode with the most character on the
+board read as the one with the least. `eligibleEras` reads each decade off the
+same rows `drawable` filters, and the cards carry the real span, the clubs that
+played in it, and its best season. **The character line is DERIVED and most cards
+do not get one**: arms in a decade's top forty run 7 (the 2000s) to 28 (the 1900s),
+so the bands leave seven of thirteen unlabelled, because a note on every card says
+nothing. It also caught the mode card lying: it said "the nineties are all bats"
+and the 1990s are the flattest decade there is at 19.
+
+**THE BRACKET RAIL SCROLLED AND NOTHING SAID SO.** Four columns at 150px is 627
+against a 362px phone, so the third header renders as "CHAMPI" against the right
+edge and reads as a broken layout rather than as a rail. `brkFocus` already walked
+to the round being played; what was missing was any sign, before it moves, that
+there is more beside what you can see. Edge fades on both sides, off the real
+scroll state, which is the cut sheet's shade arriving at a horizontal box.
+
+**AND EVERY BADGE WAS THE SAME BROWN DISC.** The glyph was the TIER (a crown, a
+trophy, and a black dot for everything else) and so was the disc colour, so two
+hundred badges were two hundred identical medallions. The disc is the tier and the
+glyph is the shelf now: nine drawn SVGs, one a group, asserted against `ACH.GROUPS`
+so a shelf added later gets the fallback rather than a blank.
+
+**AND THE `.tile:not(.hot)` FLAKE WAS NOT A FLAKE.** check-theme's border section
+had carried it for months as "fails about one run in several on draft randomness,
+confirmed by re-run, never chased", and it is a fact about WHEN the reading is
+taken. A tile goes hot when the man on it would add chemistry to what is already
+signed, so after three signings every tile on a board can be hot at once, the
+selector then matches nothing, and the claim fails reporting `dark undefined`
+about a page with nothing wrong with it. **The first board has nobody signed, so
+no tile on it can be hot.** The section samples every board and keeps the FIRST
+reading of each selector, which cannot go missing whatever the draw does after.
+Three consecutive runs, where the old shape needed several to show one.
+
+**check-badges --quick was failing three, and the diagnosis in the report was
+wrong.** It said the sweep played today's daily board; it does not, it passes an
+explicit seed. What the three actually were: `mode_franchise_title` was **missing
+from its own pattern** (Classic, Survivor and Division each had a
+`mode_*_title: mode_*_oct` excuse and One Franchise did not), `bargain_title` is a
+title under $160M and the quick sweep reaches a title and not a fifth of one, and
+`daily_100w` **had an excuse and did not need one**, which is exactly what section
+5 exists to prune. A wrong diagnosis written down confidently is worse than none:
+the fix is the list, not a date.
 
 ### A whole run, in a browser, to the screen it ends on
 

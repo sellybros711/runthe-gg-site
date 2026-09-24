@@ -598,6 +598,20 @@ h1,h2,h3{margin:0}
    no scroll position can reach, so a phone loses the Wild Card column entirely. */
 .brk-title{margin:3px 0 0;text-align:center;font-size:clamp(23px,7vw,34px);line-height:1.05}
 .brk-wrap{position:relative;margin-top:10px}
+/* THE RAIL SCROLLS AND NOTHING SAID SO. Four columns at 150px is 627 against a
+   362px phone column, so the third header renders as "CHAMPI" hard against the
+   right edge and the World Series is off the screen entirely: a reader sees a
+   word cut in half and reads it as a broken layout rather than as a rail.
+   brkFocus already walks to the round being played, so what was missing is a
+   sign, BEFORE anything moves, that there is more beside what you can see.
+   Driven off the real scroll state and on both edges, the way the cut sheet's
+   shade is: a fade still showing at the end of the rail is the opposite lie. */
+.brk-wrap::before,.brk-wrap::after{content:'';position:absolute;top:0;bottom:12px;width:30px;
+  pointer-events:none;opacity:0;transition:opacity .18s ease;z-index:2}
+.brk-wrap::before{left:0;background:linear-gradient(90deg,var(--bg),var(--bg-fade))}
+.brk-wrap::after{right:0;background:linear-gradient(90deg,var(--bg-fade),var(--bg))}
+.brk-wrap.more-l::before{opacity:1}
+.brk-wrap.more-r::after{opacity:1}
 .brk{position:relative;display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;
   padding:4px 2px 12px;width:fit-content;max-width:100%;margin:0 auto;
   scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
@@ -938,6 +952,9 @@ h1,h2,h3{margin:0}
 .ro-ribbon{display:inline-block;font-family:var(--fn);font-size:10.5px;font-weight:800;
   letter-spacing:.14em;text-transform:uppercase;color:var(--warm-ink);background:rgba(184,134,11,.14);
   border:1px solid rgba(184,134,11,.35);padding:4px 12px;border-radius:99px;margin-bottom:12px}
+/* It sets display, so the `hidden` the results screen writes would not take.
+   Third time on this page in one pass, after .btn and the position chooser. */
+.ro-ribbon[hidden]{display:none}
 .ro-record{font-family:var(--fd);font-size:clamp(48px,15vw,76px);line-height:.95;letter-spacing:.02em}
 .ro-record .w{color:var(--green)} .ro-record .l{color:var(--red)} .ro-record .d{color:var(--dim);margin:0 6px}
 .ro-verdict{font-family:'Righteous',var(--fd);font-size:clamp(18px,5vw,24px);text-transform:uppercase;
@@ -1027,6 +1044,15 @@ h1,h2,h3{margin:0}
 .bdg-ic.gold{background:linear-gradient(160deg,#f0c850,#b8860b)}
 .bdg-ic.legend{background:linear-gradient(160deg,#8e6aad,#5a3d7a)}
 .bdg-ic.off{background:rgba(var(--edge),.06);border-color:rgba(var(--edge),.10);box-shadow:none;filter:grayscale(1);opacity:.5}
+/* THE DISC IS THE TIER AND THE GLYPH IS THE SUBJECT, which is two facts in two
+   places rather than one carrying both badly. The glyph used to be the tier too
+   (a crown, a trophy, and a black dot for everything else), so a cabinet of two
+   hundred badges was two hundred identical brown discs and the only one a reader
+   could tell apart at a glance was the one they had already read. The colour
+   still says bronze, silver, gold, legend. */
+.bdg-ic svg{width:17px;height:17px;fill:none;stroke:#fff;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.bdg-ic.off svg{stroke:var(--dim-2)}
 
 /* ─── bottom sheet ─── */
 .sheet{position:fixed;inset:0;z-index:120;display:none}
@@ -1098,11 +1124,11 @@ h1,h2,h3{margin:0}
 .pos-opt .pgo{font-size:20px;color:var(--dim-2)}
 
 /* ─── era picker ─── */
-.era-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin:12px 0}
-.era-btn{background:var(--panel);border:1px solid rgba(var(--edge),.10);border-radius:8px;padding:10px 8px;
-  text-align:center;cursor:pointer;font-family:var(--fn);font-size:14px;font-weight:700;
-  color:var(--ink);transition:border-color .15s}
-.era-btn:hover{border-color:var(--gold)}
+/* The same track the franchise grid runs on, because they hold the same card. */
+.era-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:8px;margin:12px 0}
+/* `.era-btn` is DELETED rather than left sitting here. The decade buttons it
+   styled are cards now, nothing carries the class, and an unused rule is the
+   next person's invitation to style something with it. */
 
 /* ─── franchise picker ─── */
 .fran-sec{display:flex;align-items:center;gap:9px;margin:20px 0 9px;
@@ -1218,6 +1244,31 @@ h1,h2,h3{margin:0}
 /* the cut sheet */
 .shock-hd{display:flex;align-items:center;gap:10px;margin-bottom:4px}
 .shock-hd .amt{font-family:'Righteous',var(--fd);font-size:30px;color:var(--red);line-height:1}
+/* WHAT THIS MODE IS ABOUT TO DO, on the screen where it first matters. Cap
+   Survivor's draft and squad screens were identical to Classic's, so the first
+   sign the mode existed was a shock sheet at game 20, and the Trade Machine
+   never said the roster had been handed to you or that the phone would ring.
+   A rule that arrives as a surprise reads as a bug. */
+.sq-mode{margin-top:12px;padding:11px 13px;border-radius:12px;font-size:12.5px;line-height:1.45;
+  background:rgba(var(--edge),.03);border:1px solid rgba(var(--edge),.10);color:var(--dim)}
+.sq-mode[hidden]{display:none}
+.sq-mode b{color:var(--ink)}
+.sq-mode.warn{border-color:rgba(192,57,43,.32);background:rgba(192,57,43,.06)}
+/* The doors out of the results screen. Run it back is the mode just played, so
+   what these offer is every OTHER mode, on the one screen a reader is on at the
+   moment they decide to take another. */
+.ro-modes{margin-top:16px}
+.ro-modes[hidden]{display:none}
+.rm-h{font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--dim-2);text-align:center;margin-bottom:8px}
+.rm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.rm-door{display:flex;align-items:center;gap:9px;width:100%;text-align:left;font-family:inherit;
+  background:var(--panel);border:1px solid rgba(var(--edge),.10);border-radius:10px;
+  padding:10px 11px;cursor:pointer;transition:border-color .12s ease,transform .1s ease}
+.rm-door:active{transform:scale(.985)}
+.rm-door .rm-dot{width:9px;height:9px;border-radius:99px;flex:0 0 auto}
+.rm-door .rm-t{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--ink);
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cutlist{display:grid;gap:7px;margin:12px 0 4px;max-height:46vh;overflow-y:auto}
 /* 46vh on an 844 phone is 388px, which is nine 43px rows EXACTLY: the list
    clipped on a row boundary with the footnote right below, so three of twelve
@@ -1767,6 +1818,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div id="d-fold" style="height:1px"></div>
   </div>
 
+  <div class="sq-mode" id="d-mode" hidden></div>
+
   <div class="fieldrow">
     <div class="field" id="field"></div>
     <div class="lineupcard" id="field-card"></div>
@@ -1800,6 +1853,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div id="sq-roster"></div>
   </div>
   <div class="sq-verdict" id="sq-verdict"></div>
+  <div class="sq-mode" id="sq-mode" hidden></div>
   <div class="ro-coach" style="margin-top:12px">
     <div class="ch"><span class="ceyebrow">Coach's take</span><span class="ro-arch" id="sq-arch"></span></div>
     <div class="ro-takes" id="sq-takes"></div>
@@ -1925,7 +1979,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <button class="btn" id="b-share">&#9918; Share result</button>
   </div>
   <button class="btn ghost" id="b-watch-oct" hidden style="margin-top:8px">&#9918; Watch October</button>
-  <button class="btn ghost" id="b-again" style="margin-top:8px">Draft again</button>
+  <button class="btn ghost" id="b-again" style="margin-top:8px">Run it back</button>
+  <div class="ro-modes" id="ro-modes" hidden></div>
   <button class="btn ghost trophy-cta" id="b-trophy-2">Trophy case</button>
   <footer class="legal">
     <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
@@ -2056,8 +2111,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=25"></script>
-<script src="run.js?v=21"></script>
+<script src="engine.js?v=26"></script>
+<script src="run.js?v=22"></script>
 <script src="achievements.js?v=6"></script>
 <script src="board.js?v=1"></script>
 <script>
@@ -2111,9 +2166,27 @@ function recordRun(o){
   try{ga('run_complete',{outcome:o.titleWon?'title':o.madePlayoffs?'playoffs':'missed',wins:o.wins,rating:o.rating!=null?Math.round(o.rating):0,rank:o.allTimeRank||0});}catch(_){}
   lastNewBadges.forEach(a=>{try{ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group});}catch(_){}});
 }
+/* One glyph a shelf, drawn rather than set in emoji, because the medallion is
+   34px and an emoji at that size is whatever the reader's phone thinks it is.
+   Keyed on the group the badge already carries, so a shelf added to
+   achievements.js gets the fallback rather than a blank disc. */
+const BDG_GLYPH={
+  'Milestones':'<path d="M5 3v18"/><path d="M5 4.5h12l-2.4 3.6L17 11.7H5z"/>',
+  'Winning':'<polyline points="3 16.5 9 10.5 13 14.5 21 6.5"/><polyline points="15 6.5 21 6.5 21 12.5"/>',
+  'October':'<path d="M4 5h5v6h5V5h5"/><path d="M4 19h5v-6"/><path d="M20 19h-5v-6"/>',
+  'The all-time list':'<path d="M4 20V9"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M4 20h16"/>',
+  'Roster craft':'<path d="M9.5 14.5 7 17a3.5 3.5 0 1 1-5-5l2.5-2.5"/><path d="M14.5 9.5 17 7a3.5 3.5 0 1 1 5 5l-2.5 2.5"/><path d="M9 15l6-6"/>',
+  'The roster':'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16.5 7.5h4.5"/><path d="M16.5 12h4.5"/><path d="M17.5 16.5h3.5"/>',
+  'The modes':'<rect x="3.5" y="3.5" width="7" height="7" rx="1.4"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.4"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.4"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.4"/>',
+  'The daily':'<rect x="3.5" y="5" width="17" height="15.5" rx="2.2"/><path d="M3.5 10h17"/><path d="M8 3v4"/><path d="M16 3v4"/>',
+  'Streaks':'<path d="M12 21c3.9 0 6.5-2.6 6.5-6 0-4.4-4.2-6.3-4.2-9.6C14.3 3.6 13 2.6 12 2.2c.5 2.6-1.1 4-2.6 5.6C7.6 9.6 5.5 11.4 5.5 15c0 3.4 2.6 6 6.5 6Z"/><path d="M12 21c1.8 0 3-1.3 3-3 0-2.2-2.2-2.9-2.2-4.8-1 1-2.3 1.9-2.3 3.6 0 2.2 1.1 4.2 1.5 4.2Z"/>',
+};
+const BDG_FALLBACK='<circle cx="12" cy="12" r="8"/><path d="M8.2 6.6c2.3 2.7 2.3 8.1 0 10.8"/><path d="M15.8 6.6c-2.3 2.7-2.3 8.1 0 10.8"/>';
+const BDG_LOCK='<rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/>';
 function badgeIc(a,earned){
-  const em=a.tier==='legend'?'&#128081;':a.tier==='gold'?'&#127942;':'&#9899;';
-  return '<span class="bdg-ic '+a.tier+(earned?'':' off')+'">'+(earned?em:'&#128274;')+'</span>';
+  const g=earned?(BDG_GLYPH[a.group]||BDG_FALLBACK):BDG_LOCK;
+  return '<span class="bdg-ic '+a.tier+(earned?'':' off')+'" aria-hidden="true">'+
+    '<svg viewBox="0 0 24 24">'+g+'</svg></span>';
 }
 
 /* ─── new-badges panel on the results screen ─── */
@@ -2954,29 +3027,34 @@ $('b-first-go').addEventListener('click',()=>{closeSheet('sheet-first');markSeen
    home screen was six things competing with the one button that matters. */
 const ARROW='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
 const MODE_CARDS=[
-  {id:'era',cls:'mc-era',title:'Eras Draft',
+  {id:'era',mode:'era',tint:'var(--blue)',cls:'mc-era',title:'Eras Draft',
    icon:'<path d="M12 2.4a9.6 9.6 0 1 0 0 19.2 9.6 9.6 0 0 0 0-19.2Z"/><path d="M12 6.7V12l3.5 2.1"/>',
-   text:'Pick a decade and draft only from it. Every era plays differently: the dead-ball years are all arms, the nineties are all bats.'},
-  {id:'fran',cls:'mc-club',title:'One Franchise',
+   /* THE POOL DISAGREED WITH THE OLD SENTENCE. It said "the nineties are all
+      bats", and the 1990s are the flattest decade there is: 19 arms in its top
+      forty, dead centre of a range running 7 to 28. The 2000s are the bats
+      decade (7), and the picker now derives that line per card rather than
+      taking anybody's word for it. */
+   text:'Pick a decade and draft only from it. Every era plays differently: the dead-ball years are all arms, the 2000s are all bats.'},
+  {id:'fran',mode:'franchise',tint:'var(--green)',cls:'mc-club',title:'One Franchise',
    icon:'<path d="M12 2.2 3.4 6.6v6c0 5.2 3.7 9.9 8.6 11.1 4.9-1.2 8.6-5.9 8.6-11.1v-6z"/>',
    /* NO COUNT IN THIS SENTENCE. It said "from 44 franchises" while the picker it
       opens is the thirty clubs playing today with its count interpolated beside
       the heading: a hand-written number one screen from the screen that knows.
       This repo's oldest rule, and the sheet is the one surface that broke it. */
    text:'Draft one club\'s all-time roster, from every club playing today. A century of Yankees or three decades of Marlins, and you live with the one you picked.'},
-  {id:'div',cls:'mc-div',title:'Division Draft',
+  {id:'div',mode:'division',tint:'var(--gold)',cls:'mc-div',title:'Division Draft',
    icon:'<path d="M4 4h16"/><path d="M4 4v16"/><path d="M8 8h8v4H8z"/><path d="M8 16h8"/>',
    text:'Pick a division and draft only from the clubs that were really in it, 1994 to today. The map moves with history: Houston is NL Central until 2013 and AL West after.',
    sticker:'New'},
-  {id:'cap',cls:'mc-cap',title:'Salary Cap Survivor',
+  {id:'cap',mode:'capsurvivor',tint:'var(--red)',cls:'mc-cap',title:'Salary Cap Survivor',
    icon:'<path d="M12 2.6v18.8"/><path d="M16.6 6.4H9.8a2.9 2.9 0 0 0 0 5.8h4.4a2.9 2.9 0 0 1 0 5.8H6.8"/>',
    text:'Contracts inflate as the season runs. Stay under the cap or cut somebody, every time the market moves against you.',
    sticker:'New'},
-  {id:'staff',cls:'mc-staff',title:'All-Time Staff',
+  {id:'staff',mode:'staff',tint:'var(--purple)',cls:'mc-staff',title:'All-Time Staff',
    icon:'<path d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4Z"/><path d="M6.2 5.6c3.4 3 3.4 9.8 0 12.8"/><path d="M17.8 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
    text:'Forget the bats. Draft a five-man rotation and a bullpen, and win on run prevention alone with a league-average lineup behind you.',
    sticker:'New'},
-  {id:'trade',cls:'mc-trade',title:'The Trade Machine',
+  {id:'trade',mode:'trade',tint:'var(--orange)',cls:'mc-trade',title:'The Trade Machine',
    icon:'<path d="M4.4 9.4V8.2a3.2 3.2 0 0 1 3.2-3.2h9.6V2.2l4.4 3.9-4.4 3.9V7.4H7.6a.8.8 0 0 0-.8.8v1.2z"/><path opacity=".55" d="M19.6 14.6v1.2a3.2 3.2 0 0 1-3.2 3.2H6.8v2.8l-4.4-3.9 4.4-3.9v2.6h9.6a.8.8 0 0 0 .8-.8v-1.2z"/>',
    text:'You are handed a roster you did not pick and a deadline. Trade your way to a contender, or find out you were never close.',
    sticker:'New'},
@@ -3011,6 +3089,10 @@ function openModes(){
   openSheet('sheet-modes');ga('modes_opened');
 }
 function pickMode(id){
+  /* The quick draft is a door here even though it has no card: the front page's
+     own button is its only other way in, and the results screen has no front
+     page under it. */
+  if(id==='free'){startRun();return;}
   if(id==='era'){buildEraGrid();show('s-era');return;}
   if(id==='fran'){buildFranGrid();show('s-fran');return;}
   if(id==='div'){buildDivGrid();show('s-div');return;}
@@ -3296,7 +3378,55 @@ $('b-quit').addEventListener('click',()=>{
   }
   RUN=null;show('s-intro');heroSync();
 });
-$('b-again').addEventListener('click',()=>{RUN=null;show('s-intro');heroSync();});
+/* RUN IT BACK REPLAYS THE MODE IT WAS RUN IN. It said "Draft again" and went to
+   the front page, whose button is Classic whatever was just played: the one
+   control a reader presses to do that again quietly took their mode away. The
+   doors under it offer every OTHER mode, which is the hoops results screen's
+   own rule, on the one screen somebody is looking at when they decide.
+   THE DAILY CANNOT BE RUN BACK, and the button says so rather than faking it:
+   the board is pinned to the day and a second go at it is not the game everybody
+   else is playing. What it offers instead is the same draft, unpinned. */
+function replayRun(){
+  const r=RUN;
+  RUN=null;
+  if(!r){show('s-intro');heroSync();return;}
+  if(r.tradeMachine){startTrade();return;}
+  startRun(r.daily?{}
+    :r.staff?{staff:true}
+    :r.capSurvivor?{capSurvivor:true}
+    :r.franchise?{franchise:r.franchise}
+    :r.division?{division:r.division}
+    :r.era?{era:r.era}
+    :{});
+}
+$('b-again').addEventListener('click',replayRun);
+
+/* Every mode but the one just played, because Run it back directly above IS
+   that button and two controls for one decision is the premium card's lesson. */
+function paintResultModes(){
+  const host=$('ro-modes');if(!host)return;
+  const cur=runModeOf(RUN);
+  /* CLASSIC IS A DOOR AND IS ON NO CARD, because the front page's own button is
+     the way in and there is no front page from here. Without it a reader who had
+     played a mode had no route back to the quick draft at all. */
+  const doors=[{id:'free',mode:'free',title:'Classic',tint:'var(--leather)'}]
+    .concat(MODE_CARDS.map(m=>({id:m.id,mode:m.mode,title:m.title,tint:m.tint})));
+  /* A DAILY COUNTS AS CLASSIC HERE, and that is right rather than incidental:
+     runModeOf answers 'free' for one because a daily carries no mode flag, and
+     the button above it starts exactly that, a Classic draft with a fresh seed.
+     So the rule holds unchanged, and the daily does not get a door to a game
+     the control above it already offers. */
+  const others=doors.filter(d=>d.mode!==cur);
+  host.hidden=!others.length;
+  host.innerHTML='<div class="rm-h">Try another way to play</div><div class="rm-grid">'+
+    others.map(d=>'<button class="rm-door" data-go="'+d.id+'">'+
+      '<span class="rm-dot" style="background:'+d.tint+'"></span>'+
+      '<span class="rm-t">'+esc(d.title)+'</span></button>').join('')+'</div>';
+  host.querySelectorAll('[data-go]').forEach(b=>{
+    b.addEventListener('click',()=>{RUN=null;ga('mode_from_result',{mode:b.dataset.go});
+      pickMode(b.dataset.go);});
+  });
+}
 $('b-share').addEventListener('click',shareResult);
 $('b-trophy').addEventListener('click',openTrophy);
 $('b-trophy-2').addEventListener('click',openTrophy);
@@ -3334,14 +3464,29 @@ function openChemKey(){
 }
 
 /* ─── era mode ─── */
+/* A DECADE IS A CARD, not a word on a button. Thirteen bare buttons stood beside
+   a franchise picker carrying a span, a lineage and a best player, so the mode
+   with the most character on the board read as the one with the least, and a
+   reader choosing between 1910s and 1970s was choosing between two labels.
+   It wears the franchise card's own classes rather than new ones: those rules
+   are wrap-safe and their line clamps were measured at the narrowest card this
+   grid draws, and a second card shape is a second set of the same bugs. */
+function eraCard(e){
+  const btn=document.createElement('button');
+  btn.className='fran-card';
+  btn.style.setProperty('--c1','var(--blue)');
+  btn.innerHTML='<div class="fran-name">'+esc(e.era)+'</div>'+
+    '<div class="fran-yrs">'+e.lo+'-'+e.hi+' &middot; '+e.clubs+' clubs</div>'+
+    (e.note?'<div class="fran-was">'+esc(e.note)+'</div>':'')+
+    (e.best?'<div class="fran-best">Best Player: '+esc(e.best.n)+' '+e.best.s+'</div>':'');
+  btn.setAttribute('aria-label',e.era+', '+e.lo+' to '+e.hi+', '+e.clubs+' clubs'+
+    (e.note?', '+e.note:'')+(e.best?', best player '+e.best.n+' '+e.best.s:''));
+  btn.addEventListener('click',()=>startRun({era:e.era}));
+  return btn;
+}
 function buildEraGrid(){
   const grid=$('era-grid');grid.innerHTML='';
-  for(const era of Object.keys(E.ERAS)){
-    const btn=document.createElement('button');
-    btn.className='era-btn';btn.textContent=era;
-    btn.addEventListener('click',()=>startRun({era}));
-    grid.appendChild(btn);
-  }
+  for(const e of R.eligibleEras(DATA)) grid.appendChild(eraCard(e));
 }
 
 /* ─── franchise mode ─── */
@@ -3459,7 +3604,33 @@ function startRun(opts={}){
   RUN=R.createRun(opts);
   heroStop();heroRunning=false;
   show('s-draft');
+  modeNote('d-mode','draft');
   nextSpin();
+}
+
+/* The mode's own rule, where it first changes what a reader should do. It is
+   painted once per screen rather than per spin: nothing in it moves while the
+   draft runs, and rewriting it twelve times would be twelve rebuilds of a
+   paragraph nobody asked to change. */
+function modeNote(id,where){
+  const n=$(id);if(!n)return;
+  if(RUN&&RUN.capSurvivor){
+    n.hidden=false;n.className='sq-mode warn';
+    n.innerHTML=where==='draft'
+      ?'<b>Prices rise as the season runs.</b> '+E.MARKET.GAMES.length+' times somebody on '+
+       'your roster gets more expensive. Leave yourself room, or you will be cutting players to stay under the cap.'
+      :'<b>The market moves '+E.MARKET.GAMES.length+' times this season.</b> Each time somebody '+
+       'here gets dearer, and every dollar over the '+M(R.capOf(RUN))+' cap costs you a player.';
+    return;
+  }
+  if(RUN&&RUN.tradeMachine&&where!=='draft'){
+    n.hidden=false;n.className='sq-mode';
+    n.innerHTML='<b>You did not draft this roster and you cannot re-draft it.</b> The phone rings '+
+      E_TRADE_WINDOWS()+' times before the deadline. The '+M(R.capOf(RUN)-R.payroll(RUN))+
+      ' of room you are carrying is what you trade with.';
+    return;
+  }
+  n.hidden=true;
 }
 
 /* ─── draft ─── */
@@ -3640,7 +3811,13 @@ function optTile(r,i){
   return '<button class="tile'+(block?' off':'')+(hot?' hot':'')+'" data-key="'+r.key+'"'+(block?' disabled':'')+
     ' style="animation-delay:'+(i*0.04)+'s">'+
     '<div class="th"><span class="pos" style="'+posPaint(pos)+'">'+esc(pos)+'</span>'+
-    (premium?'<span class="scarce">&#9733; Scarce spot</span>':'')+
+    /* "Scarce" rather than "Scarce spot". The tag shares a row with a position
+       chip and a price, and it is the flex item that gives, so on a tile whose
+       price runs to five figures the longer label ellipsised to "Sc...", which
+       is a chip that has stopped saying anything while still taking the room.
+       Four characters shorter is the difference between a tag that fits and a
+       tag that has to be cut; the ellipsis stays as the backstop. */
+    (premium?'<span class="scarce">&#9733; Scarce</span>':'')+
     '<span class="pr">'+(block?esc(reason):M(p.p))+'</span></div>'+
     '<div class="nm">'+esc(p.n)+'</div>'+
     '<div class="sn">'+seasonLine(p)+(destSlot?' &rarr; '+destSlot:'')+'</div>'+
@@ -3794,11 +3971,17 @@ function showSquad(){
   const rating=RUN.staff?E.staffRating(tagged):E.teamRating(
     E.rosterOffense(tagged,chem.multiplier,structure.multiplier),
     E.rosterRunPrevention(tagged,chem.multiplier));
+  /* UNSPENT MONEY IS NOT A WEAKNESS IN THE TRADE MACHINE, before the deadlines.
+     Room under the cap is the thing that buys a deal, and the note directly
+     under this said so while the take beside it marked the same money red. The
+     RESULTS screen still counts it, because by then the deadlines have been and
+     gone and room you never used is room you never used. */
   const cr=RUN.staff?staffReport(tagged,chem,rating)
-    :E.coachReport(tagged,chem,structure,rating,R.remaining(RUN));
+    :E.coachReport(tagged,chem,structure,rating,RUN.tradeMachine?null:R.remaining(RUN));
   const vd=$('sq-verdict');
   vd.textContent=cr.verdict;
   vd.className='sq-verdict'+(rating>=70?' great':'');
+  modeNote('sq-mode','squad');
   /* A staff run has no roster shape, and an empty pill still draws its border:
      the coach's take on All-Time Staff carried a small blank capsule. Hidden
      works here because .ro-arch declares no display of its own. */
@@ -4130,6 +4313,16 @@ function brkRender(upTo){
     h+='</div>';
   }
   rail.innerHTML=h;
+  /* Measured after the paint, because a rail with no children has no scroll
+     width to compare against and would report itself as having nothing to show. */
+  rail.onscroll=brkEdges;
+  requestAnimationFrame(brkEdges);
+}
+
+function brkEdges(){
+  const rail=$('brk-rail'),wrap=rail&&rail.parentElement;if(!wrap)return;
+  wrap.classList.toggle('more-l',rail.scrollLeft>4);
+  wrap.classList.toggle('more-r',rail.scrollWidth-rail.scrollLeft-rail.clientWidth>4);
 }
 
 /* Where the player is in October: the round out of their own bracket, not out of
@@ -4665,8 +4858,18 @@ function showResult(){
 
   // Hero: ribbon (all-time standing), record, verdict
   $('ro-record').innerHTML='<span class="w">'+o.wins+'</span><span class="d">-</span><span class="l">'+o.losses+'</span>';
+  /* THE RIBBON IS AN ACCOLADE, NOT A SECOND COPY OF THE RANK CELL. allTimeRank
+     ranks the ROSTER's rating against real team-seasons and knows nothing about
+     how the season went, so it crowned a 73-89 run "97th-greatest team of all
+     time" and hung a 101st-place ribbon in gold ABOVE World Series Champions,
+     louder than the verdict it was undercutting. Every rank still shows, in the
+     cell below, labelled, where it means what it says.
+     Top 100 is the band the badge catalogue already cuts at, and reaching
+     October is what says the season backed the roster up. */
   const rank=o.allTimeRank;
-  $('ro-ribbon').textContent=rank?(ordinal(rank)+'-greatest team of all time'):'Season complete';
+  const crowned=!!rank&&rank<=100&&o.madePlayoffs;
+  $('ro-ribbon').textContent=crowned?(ordinal(rank)+'-greatest team of all time'):'';
+  $('ro-ribbon').hidden=!crowned;
   const vd=$('ro-verdict');
   if(o.titleWon){hero.className='ro-hero win';vd.textContent='World Series Champions';vd.className='ro-verdict ring';}
   else if(o.madePlayoffs){const last=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];
@@ -4687,6 +4890,8 @@ function showResult(){
   else if(RUN.era)modeLabel=RUN.era+' era';
   const seedTxt=o.seedLabel&&o.madePlayoffs?o.seedLabel:'';
   $('ro-sub').textContent=[modeLabel,seedTxt].filter(Boolean).join(' · ');
+  $('b-again').textContent=RUN.daily?'Draft a team of your own':'Run it back';
+  paintResultModes();
   $('b-watch-oct').hidden=!o.madePlayoffs;
 
   // GOAT / record banner
@@ -4714,10 +4919,24 @@ function showResult(){
      draft gets an F), but the word "grade" next to a losing record reads as a
      grade on the SEASON. The label says what was actually graded: how much of
      the value on your own board you walked away with. */
-  const bps=RUN&&R.bestPossibleSquad?R.bestPossibleSquad(RUN,DATA):null;
-  $('ro-eff').textContent=bps?cappedGrade(bps.efficiency,o):'n/a';
-  $('ro-eff-l').textContent=bps?('Grade \u00b7 drafted '+Math.round(bps.efficiency)+'% of your board')
-    :'Grade';
+  /* THE TRADE MACHINE DRAFTED NOTHING, so the grade is a sentence about a draft
+     that never happened: it read "drafted 96% of your board" on a roster the
+     mode hands you and forbids you to re-draft. What this mode did instead is
+     the deals, and what they were worth, which is the one number the screen was
+     not saying anywhere. */
+  if(RUN.tradeMachine){
+    const took=(RUN.trades||[]).filter(t=>t.accepted);
+    const gain=took.reduce((s,t)=>s+(((t.in&&t.in.w)||0)-((t.out&&t.out.w)||0)),0);
+    $('ro-eff').textContent=took.length;
+    $('ro-eff-l').textContent=took.length
+      ?('Deal'+(took.length===1?'':'s')+' \u00b7 '+(gain>=0?'+':'')+gain.toFixed(1)+' WAR')
+      :'Deals \u00b7 stood pat';
+  }else{
+    const bps=RUN&&R.bestPossibleSquad?R.bestPossibleSquad(RUN,DATA):null;
+    $('ro-eff').textContent=bps?cappedGrade(bps.efficiency,o):'n/a';
+    $('ro-eff-l').textContent=bps?('Grade \u00b7 drafted '+Math.round(bps.efficiency)+'% of your board')
+      :'Grade';
+  }
 
   // Coach's take
   const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));

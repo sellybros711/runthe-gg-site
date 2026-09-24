@@ -97,8 +97,52 @@
    * VALUE PER DOLLAR IS NOT A THIRD STRATEGY and the probe keeps a row to say so. The price
    * curve is convex on purpose, so points per million always picks the cheapest man on the
    * board and finishes 22 points behind.
+   *
+   * ─── AND THE CAP MOVED WITH THE PRICE, WHICH IT WAS ALWAYS GOING TO HAVE TO ──────
+   *
+   * Everything above was measured against a price built on `shrunkPPG`. `PRICE_PROJ_W` is 1
+   * now, so the price is the projection, and `weekly-pool.mjs` had already written down that
+   * a more accurate price against a CONVEX curve rewards spreading money and walks this band
+   * upward. It does. Re-swept on the same week 3 board, 600 lineups a bot a cap:
+   *
+   *      cap     top   budget   random   top-random   budget-top   stranded
+   *       90    69.5     73.9     64.7          4.8         +4.3      41/500
+   *       95    72.2     75.7     65.4          6.8         +3.5       2/600
+   *      100    75.3     77.3     65.9          9.5         +2.0           0
+   *      105    78.2     78.8     66.1         12.1         +0.7           0
+   *      108    79.8     79.9     66.2         13.5         +0.2           0
+   *      110    80.8     80.4     66.2         14.5         -0.4           0
+   *      112    81.6     81.1     66.4         15.3         -0.5           0
+   *      118    84.0     82.5     66.4         17.5         -1.4           0
+   *
+   * AT $90M IT STRANDED, which is what forced this rather than any argument about balance.
+   * 41 drafts in 500 could not fill a lineup: the board comes up with nothing signable and
+   * the player is looking at a screen with no way on. The projection shrinks a thin sample
+   * toward the POSITION LEVEL where `shrunkPPG` shrank it toward zero, so the cheap end of
+   * the board lifts, the reserve floor lifts with it ($19.1M for a whole lineup), and a
+   * drafter who spends early runs out of legal men. Nothing about that is tunable.
+   *
+   * IT SHIPS AT $110M, the round number inside the half-point band, which is 105 to 112 and
+   * centres on 108. Same rule that picked 90 against a crossover of 93.
+   *
+   * AND DRAFTING IS WORTH WHAT IT WAS, which is the number to read before assuming a more
+   * accurate price flattens the mode. Each pricing at ITS OWN crossover:
+   *
+   *      shrunkPPG at $100M      top-random 14.7
+   *      the projection at $110M top-random 14.5
+   *
+   * The 4.8 at $90M was the wrong cap and not the pricing. Compared at a MATCHED cap the
+   * projection does differentiate less (14.5 against 18.3 at 110), which is the honest cost
+   * and is exactly what a fair price does: when every man is worth what he costs, any lineup
+   * that spends the cap scores about the same. What is left to decide is what a reader knows
+   * and the board does not.
+   *
+   * WHAT IT COSTS IS THAT WEEK 3 AND WEEK 4 ARE NOT COMPARABLE. The cap rides on each
+   * published week row (`publish-week.mjs` writes it off this file), so nothing already out
+   * there is repriced and week 3 keeps its $90M for ever. Two weeks under two caps is a real
+   * loss and it is the price of changing the pricing at all.
    */
-  var CAP_MUSD = 90;
+  var CAP_MUSD = 110;
 
   /*
    * How many whole lineups a player drafts before choosing one to submit.
