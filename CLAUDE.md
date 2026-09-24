@@ -4811,6 +4811,23 @@ booking sim's promotions all use LEGAL names and invented companies. No ring nam
 no trademarked match or event names, no catchphrases. The suite's second section
 carries the blocklist; add to it when you remove something.
 
+### The voice is a fan talking, and the game reads some of its own sentences
+
+Everything a player reads is written the way a wrestling fan talks to a friend:
+contractions, American spelling, short lines. It used to say "you are not going
+out tonight" and "cheque" and "half four". A rulebook entry explains the rule in
+one breath and keeps every real number.
+
+**Rewording can break the game, because a few functions match its own prose.**
+`inferStoryKind` picks a feud's story type by regex over the reason sentence the
+loss trigger wrote, and it looked for "not ready" and "does not consider you".
+Contracted, those read "aren't ready" and "doesn't consider you", the match
+missed, and a two loss underdog story started as a title story ten times in
+twelve. Nothing threw. The `underdog did not start` check in `verify.mjs` is what
+caught it. The promo reader's `TONE` lists and the scene lint's `SITS` regex are
+the same shape. Before a wording sweep, grep for `.test(` over prose and write
+both spellings into any regex that reads a sentence the game produced.
+
 The game is unlisted: not linked from the homepage, nav or sitemap, and
 noindexed. Keep it that way unless asked.
 

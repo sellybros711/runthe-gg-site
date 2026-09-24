@@ -2277,20 +2277,20 @@
   },
   "wrestling/index.html": {
     "moves.js": {
-      "v": "2",
-      "sha": "4ad230bac6bce8f9"
+      "v": "3",
+      "sha": "3346626a00aa6a99"
     },
     "legends.js": {
       "v": "2",
       "sha": "1901d3930e7ddfbe"
     },
     "cosmetics.js": {
-      "v": "3",
-      "sha": "70a46b8e40bfbd6f"
+      "v": "4",
+      "sha": "a9fa7a820658a0f2"
     },
     "world.js": {
-      "v": "2",
-      "sha": "6b79fe462e39db5c"
+      "v": "3",
+      "sha": "ae8d13fb75695dc9"
     }
   }
 }

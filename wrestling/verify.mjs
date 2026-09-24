@@ -56,7 +56,7 @@ const BLOCK = [
   'Elimination Chamber','Hell in a Cell','Survivor Series','Wrestle Kingdom','Premium Live Event',
   // ring names the roster, the mentors and the personalities moved off
   'Stone Cold','The Undertaker','Triple H','Karrion Kross',"'The Rock'",'Mistico','Effy','Hulk Hogan','Hulkamania',
-  'Ultimate Warrior','El Santo','Rey Mysterio','Cero Miedo','Tribal Chief',
+  'Ultimate Warrior','El Santo','Rey Mysterio','Cero Miedo','Tribal Chief','The Bloodline',
   // trademarked move and catchphrase names
   'Rock Bottom','Sweet Chin Music','Tombstone Piledriver','Attitude Adjustment','Austin 3:16','One Winged Angel',
   'Styles Clash','Rainmaker','Batista Bomb','Sharpshooter',
@@ -776,7 +776,7 @@ section('a scene that says you are not going out takes you off the card');
     try{ endTour(); closeModal(); }catch(_){}
     const out={liars:[], pulled:null, started:null};
     // any outcome whose prose says you did not work that night
-    const SITS=/\b(sit it out|sat it out|sits it out|cannot go|could not go|not going out|pulled? (yourself )?out|off the card|miss(ed)? the show|somebody else (works|worked) your spot)\b/i;
+    const SITS=/\b(sit it out|sat it out|sits it out|cannot go|can't go|could not go|couldn't go|not going out|pulled? (yourself )?out|off the card|miss(ed)? the show|somebody else (works|worked) your spot)\b/i;
     // Many scenes build their options around a cast member and throw without
     // one, so each is attempted on its own and the skipped count is reported
     // rather than swallowed: a lint that silently covers nothing is worse than

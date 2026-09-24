@@ -244,7 +244,7 @@
     <span class="beta-tag" style="align-self:flex-start;">Beta</span>
   </div>
   <div style="color:var(--text-faint); font-size:12px; letter-spacing:.24em; text-transform:uppercase; margin:8px 0 6px; font-weight:800;">Wrestling Booking Sim · Career Mode</div>
-  <p class="hint" style="max-width:640px;">Take control of a wrestling promotion. Sign and poach talent, book weekly shows, run feuds, defend championships, and grow your company. Every rating is deterministic and fully inspectable: no random bombs, just booking decisions with visible consequences.</p>
+  <p class="hint" style="max-width:640px;">You run the company. Sign talent, steal talent, book the weekly show, run feuds, move the belts and grow the whole thing. Nothing is random. Every rating shows you exactly why it came out that way.</p>
 
   <div id="continueBar" class="continue-bar" style="display:none;">
     <div>
@@ -268,7 +268,7 @@
     <div class="mode-card" data-mode="junkie" onclick="selectMode('junkie')">
       <h3>Wrestling Junkie</h3>
       <div class="meta">Deep sim · run the whole company</div>
-      <p>The full experience. Real budget and P&amp;L, venues and ticket pricing, TV deals, contracts, feuds, stables, managers: every lever of running a promotion.</p>
+      <p>The whole thing. Real budget, P&amp;L, venues, ticket prices, TV deals, contracts, feuds, stables and managers. Every lever there is.</p>
       <ul><li>Full budget &amp; line-item finances</li><li>Pick venues &amp; set ticket prices</li><li>Deep multi-category grading</li></ul>
     </div>
   </div>
@@ -365,7 +365,7 @@
             </select>
           </label>
           <label class="fld build-full">
-            <div class="stat-mini fldlab">Participants <span class="hint" style="text-transform:none; letter-spacing:0;">(click to select; hold Ctrl / Cmd (or ⇧) to pick more)</span></div>
+            <div class="stat-mini fldlab">Participants <span class="hint" style="text-transform:none; letter-spacing:0;">(click to pick. Hold Ctrl, Cmd or Shift to pick more)</span></div>
             <select id="segWorkers" class="participant-list" multiple size="9"></select>
           </label>
           <label class="fld">
@@ -415,7 +415,7 @@
         <div class="row-wrap">
           <label class="fld"><div class="stat-mini fldlab">Type</div>
             <select id="teamType"><option value="tag">Tag Team</option><option value="stable">Stable</option></select></label>
-          <label class="fld"><div class="stat-mini fldlab">Name</div><input type="text" id="teamName" placeholder="e.g. The Bloodline"></label>
+          <label class="fld"><div class="stat-mini fldlab">Name</div><input type="text" id="teamName" placeholder="e.g. The Night Shift"></label>
           <label class="fld"><div class="stat-mini fldlab">Members (pick 2+)</div>
             <select id="teamMembers" multiple size="6" style="min-width:230px;"></select></label>
           <label class="fld"><div class="stat-mini fldlab">Manager (optional)</div>
@@ -469,7 +469,7 @@
 
     <!-- EDITOR -->
     <div class="panel" id="panel-editor">
-      <h2>Worker Editor <span class="sub2">retune any wrestler: changes save with your career</span></h2>
+      <h2>Worker Editor <span class="sub2">tweak any wrestler. It saves with your career</span></h2>
       <div class="builder-box">
         <label class="fld" style="margin-bottom:12px;">
           <div class="stat-mini fldlab">Wrestler</div>
@@ -1065,7 +1065,7 @@ function cycleAlign(id){
 
 function releaseWorker(id){
   const w = rosterById(id); if(!w) return;
-  openModal('Release '+w.name+'?', `They'll enter the free-agent pool and a rival can sign them immediately. Releasing a popular star can hurt locker-room morale.`,
+  openModal('Release '+w.name+'?', `They go to free agency and a rival can sign them right away. Cutting a popular star can hurt locker room morale.`,
     [{label:'Cancel', cls:'ghost', fn:closeModal},
      {label:'Release', cls:'danger', fn:()=>{ closeModal(); doRelease(id); }}]);
 }
@@ -1336,7 +1336,7 @@ function showScorecard(M, deltas){
       <div class="stat-mini">${M.venueName} · ${money(S.promo.ticketPrice)}/ticket · ${M.attendance.toLocaleString()} in the building</div></div>
     </div>
     <div class="score-grid">${cells.map(([l,v,d])=>`<div class="score-cell"><div class="lab">${l}</div><div class="val">${v}</div><div>${d}</div></div>`).join('')}</div>`;
-  if(!junkie){ body += `<div class="hint">Quick Mode: venue &amp; pricing are handled for you. Switch to Wrestling Junkie for full budget control.</div>`; }
+  if(!junkie){ body += `<div class="hint">Quick Mode handles the venue and ticket prices for you. Switch to Wrestling Junkie if you want the whole budget.</div>`; }
   openModal(M.ppv?'Event Results':'Show Results', body, [{label:'Continue', cls:'', fn:()=>{ closeModal(); switchTab('inbox'); }}]);
 }
 
@@ -1639,7 +1639,7 @@ function endFeud(id){
 }
 function renderFeuds(){
   const el = $('feudList');
-  if(!S.feuds.length){ el.innerHTML='<div class="empty-note">No active feuds. Start one above: booked rivals build heat, and heat makes their matches hit harder.</div>'; return; }
+  if(!S.feuds.length){ el.innerHTML='<div class="empty-note">No feuds going. Start one above. Book two rivals together and they build heat, and heat makes their matches hit harder.</div>'; return; }
   el.innerHTML = S.feuds.map(f=>{
     const beats = f.beats.slice(-4).map(b=>`W${b.week}: ${typeMeta[b.type]?typeMeta[b.type].label:b.type} (${b.rating})${b.winner?' → '+b.winner:''}`).join('<br>');
     return `<div class="feud-card">
@@ -1672,7 +1672,7 @@ function createTeam(){
   const warn=$('teamWarn'); warn.textContent='';
   if(!name){ warn.textContent='Give the unit a name.'; return; }
   if(ids.length<2){ warn.textContent='Pick at least 2 members.'; return; }
-  if(type==='tag' && ids.length>3){ warn.textContent='Tag teams are 2-3 members; use a stable for larger groups.'; return; }
+  if(type==='tag' && ids.length>3){ warn.textContent='Tag teams are 2-3 people. Use a stable for anything bigger.'; return; }
   S.teams.push({ id:nextId('tm_'), type, name, memberIds:ids, leaderId:ids[0], chemistry:50, startWeek:S.week, managerId: $('teamManager').value||null });
   $('teamName').value=''; $('teamMembers').selectedIndex=-1; $('teamManager').value='';
   renderStables(); renderBuildSelectors(); scheduleSave(); toast((type==='tag'?'Tag team':'Stable')+' formed: '+name);
@@ -1701,7 +1701,7 @@ function doBreak(id, feud){
 }
 function renderStables(){
   const el=$('teamList');
-  if(!S.teams.length){ el.innerHTML='<div class="empty-note">No units yet. Form a tag team or stable above: booked together, they build chemistry that boosts their matches; break a stable up for an instant feud.</div>'; return; }
+  if(!S.teams.length){ el.innerHTML='<div class="empty-note">No teams yet. Form a tag team or stable above. Book them together and they build chemistry. Break up a stable for an instant feud.</div>'; return; }
   el.innerHTML=S.teams.map(t=>{
     const members=t.memberIds.map(nm).join(', ');
     return `<div class="feud-card">
@@ -1768,15 +1768,15 @@ function renderPersonalities(){
   // GM section
   let html = `<div class="builder-box"><div class="vs-line" style="margin-bottom:8px;">General Manager</div>`;
   const gmEligible = mgrs.filter(m=>m.canGM);
-  html += `<div class="stat-mini" style="margin-bottom:8px;">A GM lifts locker-room morale and sharpens the business: a small company-wide edge each week.</div>`;
+  html += `<div class="stat-mini" style="margin-bottom:8px;">A GM keeps the locker room happy and the business tight. A small edge every week.</div>`;
   html += `<select id="gmPick" onchange="setGM(this.value)"><option value="">(no GM)</option>` +
     gmEligible.map(m=>`<option value="${m.id}" ${g&&g.id===m.id?'selected':''}>${m.name} (mgr ${m.mgrBonus})</option>`).join('') + `</select>`;
-  if(!gmEligible.length) html += `<div class="hint" style="margin-top:6px;">Sign a legend or a booking-minded manager (Heyman, Callis, Cornette…) from the Market to fill this role.</div>`;
+  if(!gmEligible.length) html += `<div class="hint" style="margin-top:6px;">Sign a legend or a manager with a booking brain (Heyman, Callis, Cornette) from the Market to fill this spot.</div>`;
   html += `</div>`;
 
   // Managers on roster + assignment
   if(!mgrs.length){
-    html += `<div class="empty-note">No managers or legends signed. Head to the Market: legends and famous managers sit in the free-agent pool. Pair one with a wrestler or a stable to boost their segments and heat.</div>`;
+    html += `<div class="empty-note">No managers or legends yet. Check the Market. The big-name managers and legends are sitting in free agency. Pair one with a wrestler or stable to boost their segments and heat.</div>`;
   } else {
     html += mgrs.map(m=>{
       const clients = wrestlers.filter(w=>w.managerId===m.id).map(w=>w.name)
