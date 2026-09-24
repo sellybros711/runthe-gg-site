@@ -11218,6 +11218,89 @@ FULL sweep is clean. The quick sweep's daily bots play TODAY's board, so its
 excuse list flaps with the calendar; pinning the sweep's daily date is the fix
 and is its own pass.
 
+### And then the seven things the playtest only recommended
+
+The pass above fixed what was broken. These are the seven it wrote down and left
+for a decision, taken in one go.
+
+**THE RIBBON WAS CROWNING SEASONS THAT LOST.** `allTimeRank` ranks the ROSTER's
+rating against 2,594 real team-seasons and knows nothing about how the season
+went, so the gold band at the top of the results hero read "97th-GREATEST TEAM OF
+ALL TIME" over 73-89, and on a title run it hung a 101st-place ribbon ABOVE WORLD
+SERIES CHAMPIONS, louder than the verdict it was undercutting. It was also a
+second copy of the rank cell three rows below it. It shows now only on a **top-100
+roster that reached October**, which is the badge catalogue's own band plus the
+thing that says the season backed the roster up. Every rank still shows, in its
+labelled cell. Proved in both directions in one afternoon: shown on a 98-64 run at
+#54, hidden on 87-75 and on 76-86.
+
+**RUN IT BACK NOW REPLAYS THE MODE IT WAS RUN IN.** It said "Draft again" and went
+to the front page, whose button is Classic whatever was just played, so the one
+control on that screen for doing it again quietly took the mode away. **The daily
+is the exception and the button says so** rather than faking it: the board is
+pinned to the day, so what it offers is the same draft unpinned. Under it are the
+**other six modes**, Classic included, because Classic is on no card and the front
+page's button was its only door. The mode just played is left out: Run it back
+directly above IS that button.
+
+**THE TRADE MACHINE WAS WEARING A DRAFTED MODE'S CLOTHES.** Its grade cell read
+"DRAFTED 96% OF YOUR BOARD" about a roster the mode hands you and forbids you to
+re-draft; it counts the deals and what they were worth now. Its squad screen never
+said the roster was handed over or that the phone would ring, and the coach's take
+marked the cap room red as "$22M left unspent" while that room is the only thing
+that buys a deal. **The results screen still counts it**, because by then the
+deadlines have gone and room never used is room never used.
+
+**CAP SURVIVOR DID NOT EXIST UNTIL GAME 20.** Its draft and squad screens were
+Classic's exactly, so the first sign the mode was on was a shock sheet mid-season,
+and by then the drafting decision it should have changed was made. Both screens
+carry the rule now, and the draft's version is the one that matters: leave
+yourself room. `modeNote()` is the one painter, `.sq-mode` the one rule.
+
+**THE ERA PICKER WAS THIRTEEN BARE BUTTONS** beside a franchise grid carrying a
+span, a lineage and a best player, so the mode with the most character on the
+board read as the one with the least. `eligibleEras` reads each decade off the
+same rows `drawable` filters, and the cards carry the real span, the clubs that
+played in it, and its best season. **The character line is DERIVED and most cards
+do not get one**: arms in a decade's top forty run 7 (the 2000s) to 28 (the 1900s),
+so the bands leave seven of thirteen unlabelled, because a note on every card says
+nothing. It also caught the mode card lying: it said "the nineties are all bats"
+and the 1990s are the flattest decade there is at 19.
+
+**THE BRACKET RAIL SCROLLED AND NOTHING SAID SO.** Four columns at 150px is 627
+against a 362px phone, so the third header renders as "CHAMPI" against the right
+edge and reads as a broken layout rather than as a rail. `brkFocus` already walked
+to the round being played; what was missing was any sign, before it moves, that
+there is more beside what you can see. Edge fades on both sides, off the real
+scroll state, which is the cut sheet's shade arriving at a horizontal box.
+
+**AND EVERY BADGE WAS THE SAME BROWN DISC.** The glyph was the TIER (a crown, a
+trophy, and a black dot for everything else) and so was the disc colour, so two
+hundred badges were two hundred identical medallions. The disc is the tier and the
+glyph is the shelf now: nine drawn SVGs, one a group, asserted against `ACH.GROUPS`
+so a shelf added later gets the fallback rather than a blank.
+
+**AND THE `.tile:not(.hot)` FLAKE WAS NOT A FLAKE.** check-theme's border section
+had carried it for months as "fails about one run in several on draft randomness,
+confirmed by re-run, never chased", and it is a fact about WHEN the reading is
+taken. A tile goes hot when the man on it would add chemistry to what is already
+signed, so after three signings every tile on a board can be hot at once, the
+selector then matches nothing, and the claim fails reporting `dark undefined`
+about a page with nothing wrong with it. **The first board has nobody signed, so
+no tile on it can be hot.** The section samples every board and keeps the FIRST
+reading of each selector, which cannot go missing whatever the draw does after.
+Three consecutive runs, where the old shape needed several to show one.
+
+**check-badges --quick was failing three, and the diagnosis in the report was
+wrong.** It said the sweep played today's daily board; it does not, it passes an
+explicit seed. What the three actually were: `mode_franchise_title` was **missing
+from its own pattern** (Classic, Survivor and Division each had a
+`mode_*_title: mode_*_oct` excuse and One Franchise did not), `bargain_title` is a
+title under $160M and the quick sweep reaches a title and not a fifth of one, and
+`daily_100w` **had an excuse and did not need one**, which is exactly what section
+5 exists to prune. A wrong diagnosis written down confidently is worse than none:
+the fix is the list, not a date.
+
 ### A whole run, in a browser, to the screen it ends on
 
 ```

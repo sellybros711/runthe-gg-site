@@ -292,6 +292,17 @@ const SKILL = {
   mode_classic_title: 'mode_classic_oct',
   mode_survivor_title: 'mode_survivor_oct',
   mode_division_title: 'mode_division_oct',
+  /* THE FOURTH MODE WAS MISSING FROM ITS OWN PATTERN. Classic, Survivor and
+     Division each had this line and One Franchise did not, so the quick sweep
+     reported "One Franchise champions" unreachable against a game that lights
+     it perfectly well: the full sweep does, and the anchor below lights in
+     quick (best / franchise). A title in one named mode is about a 3% event,
+     which three runs a bot resolves as a coin toss. */
+  mode_franchise_title: 'mode_franchise_oct',
+  /* A title is roughly one run in twenty and a title spending under $160M is
+     about a fifth of those, so the quick sweep reaches the first and not the
+     second. Anchored on the half it does reach, which is winning one at all. */
+  bargain_title: 'win_title',
   /* SALARY CAP SURVIVOR IS THE HARD MODE AND THAT IS THE DESIGN. The market takes
      a roster apart over a season, so October there is a 5% event against Classic's
      17%, and reaching it with nobody cut is rarer again. Anchored on finishing one
@@ -305,10 +316,12 @@ const SKILL = {
   family: 'link_battery',
   /* Ten Octobers running, at a 23% October rate. */
   oct_streak_10: 'oct_streak_5',
-  /* A hundred wins on a daily, where the seed is pinned: a daily is a Classic
-     draft whose board nobody chose, so the best roster available on a given day
-     is whatever that day's wheel offers. */
-  daily_100w: 'daily_90',
+  /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
+     lights in the quick sweep (spread / classic), so the entry was section 5's
+     own target: an excuse written for something that turned out to be reachable,
+     standing in the way of the claim it was meant to support. Removed rather
+     than left, because a stale excuse is exactly what that section exists to
+     prune and it had been sitting in the file failing it. */
 };
 
 // ── report ─────────────────────────────────────────────────────────────────

@@ -1885,12 +1885,12 @@
   },
   "baseball/index.html": {
     "engine.js": {
-      "v": "25",
+      "v": "26",
       "sha": "a70c1d89036629ca"
     },
     "run.js": {
-      "v": "21",
-      "sha": "7c8dd4366d21f13a"
+      "v": "22",
+      "sha": "475c8cfbbefacb6f"
     },
     "achievements.js": {
       "v": "6",

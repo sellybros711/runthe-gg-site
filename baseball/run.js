@@ -40,6 +40,15 @@ const pkey = (p) => `${p.i}|${p.s}|${p.r}`;
 
 const money = (v) => Math.round(v * 100) / 100;
 
+/* How the era picker reads a decade's character. Forty is deep enough that one
+ * freak season cannot swing it and shallow enough to be about the TOP of the
+ * board, which is what a drafter meets. The two bands are set off the measured
+ * spread (7 arms in the 2000s to 28 in the 1900s) rather than at halfway, so a
+ * decade has to be genuinely lopsided to earn the line. */
+const ERA_TOP_N = 40;
+const ERA_ARMS_HI = 22;
+const ERA_ARMS_LO = 12;
+
 const TUNING = {
   MAX_DRAWS_PER_TEAM_SEASON: 2,
   SPIN_OPTIONS: 3,
@@ -393,6 +402,57 @@ function eligibleFranchises(data) {
     });
   }
   out.sort((a, b) => b.depth - a.depth);
+  return out;
+}
+
+/* THE ERAS, WITH WHAT EACH DECADE ACTUALLY HOLDS.
+ *
+ * The picker was thirteen bare buttons standing beside a franchise grid that
+ * carries a span, a lineage and a best player, so the mode with the most
+ * character on the whole board read as the one with the least.
+ *
+ * Every figure here is READ OFF THE ROWS `drawable` filters, which is the only
+ * honest span: `ERAS['1900s']` says 1901 to 1909 and what a run there can reach
+ * is whatever survived the pool's own floor. Same rule that put `eraSeasons`
+ * behind the era picker rather than the decade's nominal bounds.
+ *
+ * ONE PASS, bucketed. Thirteen walks of 44,344 rows is thirteen times the work
+ * for an answer each row contributes to exactly once.
+ */
+function eligibleEras(data) {
+  const bounds = Object.keys(E.ERAS).map(era => ({ era, from: E.ERAS[era][0], to: E.ERAS[era][1] }));
+  const bucket = {};
+  for (const b of bounds) bucket[b.era] = { clubs: new Set(), lo: Infinity, hi: 0, rows: [] };
+  for (const ts of data.teamSeasons) {
+    const b = bounds.find(x => ts.season >= x.from && ts.season <= x.to);
+    if (!b) continue;
+    const e = bucket[b.era];
+    e.clubs.add(ts.team);
+    if (ts.season < e.lo) e.lo = ts.season;
+    if (ts.season > e.hi) e.hi = ts.season;
+    for (const p of (data.byTeamSeason[ts.team_season_id] || [])) e.rows.push(p);
+  }
+  const out = [];
+  for (const b of bounds) {
+    const e = bucket[b.era];
+    if (!e.rows.length) continue;
+    const top = e.rows.slice().sort((x, y) => y.w - x.w).slice(0, ERA_TOP_N);
+    const arms = top.filter(p => p.r === 'p').length;
+    /* WHAT THE DECADE WAS MADE OF, derived rather than written, because a
+     * sentence typed here about the dead-ball years is a sentence that goes
+     * stale the day the pool moves. Measured over the shipped rows, arms in a
+     * decade's top forty run 7 (the 2000s) to 28 (the 1900s), so the axis is
+     * real and wide. The bands leave seven of the thirteen decades unlabelled
+     * ON PURPOSE: a note on every card is a note that says nothing, and a
+     * balanced decade is a true thing to say nothing about. */
+    const note = arms >= ERA_ARMS_HI ? 'Arms decade: the pitchers rule'
+      : arms <= ERA_ARMS_LO ? 'Hitters’ decade: the bats rule'
+      : '';
+    out.push({
+      era: b.era, lo: e.lo, hi: e.hi, clubs: e.clubs.size,
+      depth: e.rows.length, arms, note, best: top[0] || null,
+    });
+  }
   return out;
 }
 
@@ -1130,7 +1190,7 @@ const publicAPI = {
      Driven through `spin` instead, the answer is one seeded sample and a season a
      mode can reach is indistinguishable from one it happened not to draw. */
   drawable,
-  spin, respin, sign, focusTargets, eligibleFranchises,
+  spin, respin, sign, focusTargets, eligibleFranchises, eligibleEras,
   chemOpts, chemOf, chemByPlayer, chemWorth,
   slotsOf, eligOf,
   payroll, overCap, marketAt, applyMarket, cutPlayer,
