@@ -522,6 +522,13 @@ h1,h2,h3{margin:0}
 .tile .pts{display:flex;align-items:baseline;gap:4px}
 .tile .pts b{font-family:var(--fn);font-size:19px;font-weight:600;line-height:1}
 .tile .pts i{font-style:normal;font-family:var(--fn);font-size:9.5px;letter-spacing:.1em;color:var(--dim-2)}
+/* The figure a heavy starter is worth over 210 innings, which is what the price
+   was built from and what the season is played on. Quieter than the season WAR
+   beside it and in the game's own green, so it reads as this game's answer
+   rather than as a second season total. It is the LAST flex item on a baseline
+   row, so it never moves the number it is about. */
+.tile .pts i.wadj{letter-spacing:.02em;color:var(--green);margin-left:2px}
+:root[data-theme="dark"] .tile .pts i.wadj{color:#5cb85f}
 /* ─── WAR reads as a temperature ───
    Every tile printed WAR in the same ink, so telling a 9.0 season from a 2.0 one
    meant reading the digits on all six tiles. The bands are wide on purpose: a
@@ -1838,7 +1845,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div id="sortrow" class="sortrow"></div>
   <div id="opts" class="opts"></div>
   <p class="srcnote">WAR is Baseball-Reference's, 1901 to 2025. FanGraphs rates the same season differently.
-    A starter who threw more than 210 innings is priced on what he did in 210. The WAR shown is his whole season.</p>
+    A starter who threw more than 210 innings is priced and rated on what he did in 210, which his card names.
+    The WAR beside his name is his whole season.</p>
 
   <div style="margin-top:14px"><button class="btn ghost sm" id="b-quit">Quit this run</button></div>
 </div>
@@ -2111,8 +2119,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=26"></script>
-<script src="run.js?v=22"></script>
+<script src="engine.js?v=27"></script>
+<script src="run.js?v=23"></script>
 <script src="achievements.js?v=6"></script>
 <script src="board.js?v=1"></script>
 <script>
@@ -2469,7 +2477,28 @@ const TEAM_NAMES={
      about. */
   TOT:'2+ clubs',
 };
-function teamFullName(code){return TEAM_NAMES[code]||code;}
+/* A CODE THAT IS ITSELF A FRANCHISE KEY, IN A SEASON THAT KEY DOES NOT CLAIM, IS
+   A DIFFERENT CLUB. franchiseOf already knows: it answers `BAL*` for a 1914
+   Baltimore side, because the Federal League Terrapins are not the Orioles, who
+   are the St. Louis Browns moved and did not exist until 1954. TEAM_NAMES is
+   keyed on the code alone, so every surface that printed a full club name called
+   that 1914 team the Baltimore Orioles: a factual error about a real club, on a
+   game whose whole pitch is real history.
+   KEYED ON THE SENTINEL rather than on a hand-written (code, year) range, so the
+   next code that gets reused is named by adding one line here rather than by
+   somebody remembering this exists. Measured over the shipped pool, BAL is the
+   only code today that resolves to two franchises, and only for 1914.
+   The season is OPTIONAL and a caller without one gets what it always got: a
+   franchise card, a run's own locked club and the lineage note all name a modern
+   franchise by definition, and there is no season to pass them. */
+const HISTORIC_NAMES={'BAL*':'Baltimore Terrapins'};
+function teamFullName(code,season){
+  if(season!=null){
+    const h=HISTORIC_NAMES[E.franchiseOf(code,season)];
+    if(h)return h;
+  }
+  return TEAM_NAMES[code]||code;
+}
 
 /* Every other club code on a tile is a club a reader knows. TOT is not one:
    it is Baseball-Reference's combined row for a man who played for more than
@@ -2499,10 +2528,34 @@ function halfTag(p){return p.half?p.half+' only':'';}
    are priced on the raw figure. Verified against every shipped row rather than read
    off the script, because the script cannot be run here: all 44,344 reproduce
    exactly from w, ip and pp, and 3,959 of the 12,461 starters (31.8%) carry a
-   discount. So the page can say which rows they are with no rebuild. */
+   discount. So the page can say which rows they are with no rebuild.
+
+   THE SEASON LINE SAYS THE INNINGS AND NOTHING MORE, and the FIGURE they convert
+   to goes beside the WAR rather than here. Two reasons, and the first is a rule
+   this line cannot break: `.of-side .mt` on a trade offer is 10px nowrap with an
+   ellipsis at about 28 characters, so everything on this row is inside a 30
+   character budget that the season, the club and a two-way note have already
+   spent 23 of. `346 IP` is 6 and `346 IP -> 9.2 WAR` is 16, which does not fit
+   and would eat the number the offer is about. The second is that the tile
+   already writes ` -> SP1` after this line for a destination slot, so an arrow
+   here is a second arrow on one row meaning something else. */
 function heavyIP(p){
   const anchor=(E.CONSTANTS&&E.CONSTANTS.ANCHOR_IP)||210;
   return (p.r==='p'&&p.pp==='SP'&&p.ip>anchor)?Math.round(p.ip)+' IP':'';
+}
+/* What a heavy starter is worth TO YOUR TEAM, drawn under the season figure.
+   The number beside his name is the whole year, because that is what a reader
+   looks up; this is what the price was built from and, since `workloadWar`
+   landed, what the season is played on too. So the tile carries both rather
+   than leaving the reader to convert 15.2 into the 9.2 the game is charging
+   them for. Read from the ENGINE rather than recomputed here, so the tile and
+   the season can never disagree about what a man is worth. */
+function warAdjHtml(p){
+  if(!heavyIP(p))return '';
+  const w=E.workloadWar(p);
+  if(Math.abs(w-p.w)<0.05)return '';
+  return '<i class="wadj" title="What he is worth over '
+    +((E.CONSTANTS&&E.CONSTANTS.ANCHOR_IP)||210)+' innings">'+w.toFixed(1)+' here</i>';
 }
 /* Season, club, which half of a two-way season this row is, and the innings when
    they are what set the price. Built once from a list so the two spellings below
@@ -2537,8 +2590,14 @@ function spinBoth(draw,done){
   const rm=reduceMotion();
   const dur=faces=>(rm||new Set(faces).size<=1)?(rm?195:390):null;
   const years=draw.yearOptions||[String(draw.season)];
-  const teams=(draw.teamOptions||[draw.team]).map(teamFullName);
-  const target=teamFullName(draw.team);
+  /* WRITTEN OUT RATHER THAN `.map(teamFullName)`, because map hands its callback
+     the INDEX as a second argument and the second argument is now the season: the
+     first decoy on every reel would have been named as of season 0, which for any
+     code that is also a franchise key resolves to the sentinel and would have
+     called a 1954 Baltimore side the Terrapins. The target has to be spelled the
+     same way as its face in the list or the reel cannot land on it. */
+  const teams=(draw.teamOptions||[draw.team]).map(c=>teamFullName(c,draw.season));
+  const target=teamFullName(draw.team,draw.season);
   reel(yEl,years.map(String),String(draw.season),dur(years)??860,()=>{
     setTimeout(()=>reel(tEl,teams,target,dur(teams)??940,done,dressInTeamColors(draw.team)),rm?68:195);
   });
@@ -2873,7 +2932,7 @@ function heroFaces(){
   if(!DATA) return{years:['1927','1954','1966','1972','1908','2004'],
     teams:['New York Yankees','New York Giants','Los Angeles Dodgers','Cincinnati Reds','Pittsburgh Pirates']};
   const years=[...new Set(DATA.teamSeasons.map(t=>String(t.season)))].sort();
-  const teams=[...new Set(DATA.teamSeasons.map(t=>teamFullName(t.team)))];
+  const teams=[...new Set(DATA.teamSeasons.map(t=>teamFullName(t.team,t.season)))];
   return{years,teams};
 }
 
@@ -2928,7 +2987,7 @@ async function heroLoop(seq){
       if(!live()) return;
       $('h-box-t').className='reelbox team';
       $('h-box-t').removeAttribute('style');
-      const spinTeam=heroSpin($('h-reel-t'),faces.teams,teamFullName(pk.team),HERO.team,dressInTeamColors(pk.team));
+      const spinTeam=heroSpin($('h-reel-t'),faces.teams,teamFullName(pk.team,pk.season),HERO.team,dressInTeamColors(pk.team));
       await Promise.all([spinYear,spinTeam]);
       if(!live()) return;
       await heroNap(HERO.land);
@@ -3509,7 +3568,10 @@ function franLineageNote(f){
      three earlier names, and written as a sentence that is three commas on a card
      two inches wide, which is the one place this repo's short-sentence rule bites
      hardest. The middot is what it already recommends for fields on one line. */
-  return 'Earlier: '+older.map(teamFullName).join(' · ');
+  /* Spelled out for the reason the reel's list is: `.map(teamFullName)` would
+     pass each entry's index as the season. These are franchise codes with no
+     season to give, which is the case the optional argument exists for. */
+  return 'Earlier: '+older.map(c=>teamFullName(c)).join(' · ');
 }
 
 function franCard(f){
@@ -3821,7 +3883,7 @@ function optTile(r,i){
     '<span class="pr">'+(block?esc(reason):M(p.p))+'</span></div>'+
     '<div class="nm">'+esc(p.n)+'</div>'+
     '<div class="sn">'+seasonLine(p)+(destSlot?' &rarr; '+destSlot:'')+'</div>'+
-    '<div class="tf"><div class="pts"><b>'+warHtml(p.w)+'</b><i>WAR</i></div>'+chemHtml+'</div>'+
+    '<div class="tf"><div class="pts"><b>'+warHtml(p.w)+'</b><i>WAR</i>'+warAdjHtml(p)+'</div>'+chemHtml+'</div>'+
     '</button>';
 }
 
@@ -4100,9 +4162,27 @@ function startTrade(){
    second line, and ONLY when there is one, which is about one offer in five
    hundred. Same words as everywhere else, from halfTag, because two layouts of
    one fact is how two spellings start. */
+/* THE FIGURE ON AN OFFER IS WHAT HE IS WORTH TO YOU, NOT HIS SEASON, and that is
+   the one place on the page where those two part company on purpose. Everywhere
+   else a WAR is the season, because a season is what a reader looks up. An offer
+   is not a card, it is a button that swaps two men, so every number on it has to
+   describe what happens when it is pressed: the headline is `in` minus `out` on
+   exactly these two figures, and printing the season instead makes that
+   subtraction wrong in front of the reader. 35.8% of offer sides are heavy
+   innings starters, so this is most of a third of the sheet rather than an edge.
+   The innings tag rides along as the flag, which is what tells somebody who has
+   seen the man's draft tile why the number is not the one they remember. */
+/* THE FIGURE AS PRINTED, because the headline above these two is their difference
+   and a reader can do that subtraction on screen. Taken raw, 2.44 against 3.34 is
+   a headline of +0.9 over two rows reading 2.4 and 3.3, which subtract to 0.9 and
+   sometimes to 1.0: measured, 64 of 207 offers disagreed with their own arithmetic
+   by a tenth. Same rounding seam the state card and the fit percentage already
+   carry, and it predates the workload reading rather than arriving with it. */
+function offerWar(p){ return Math.round(E.workloadWar(p)*10)/10; }
 function offerMeta(p){
-  const h=halfTag(p);
-  return '<span class="mt">'+p.s+' '+esc(clubTag(p.t))+' &middot; '+p.w.toFixed(1)+' WAR</span>'+
+  const h=halfTag(p),ip=heavyIP(p);
+  return '<span class="mt">'+p.s+' '+esc(clubTag(p.t))+' &middot; '+
+    (ip?esc(ip)+' &middot; ':'')+offerWar(p).toFixed(1)+' WAR</span>'+
     (h?'<span class="mt hf">'+h+'</span>':'');
 }
 
@@ -4117,7 +4197,10 @@ function askTrade(offers,onDone){
     const btn=document.createElement('button');
     btn.className='offer';
     btn.disabled=o.cost>room+1e-9;
-    const gain=(o.in.w-o.out.w);
+    /* On the same two figures offerMeta prints, AS PRINTED, so the headline is a
+       subtraction the reader can do on screen. See offerMeta for both halves of
+       why: why they are not seasons, and why they are rounded first. */
+    const gain=offerWar(o.in)-offerWar(o.out);
     btn.innerHTML='<div class="of-hd"><span class="of-slot" style="'+posPaint(o.slot)+'">'+
       esc(o.slot)+'</span><span class="of-gain">+'+gain.toFixed(1)+' WAR</span>'+
       '<span class="of-cost'+(o.cost<=0?' free':'')+'">'+(o.cost>0?'costs '+M(o.cost):'frees '+M(-o.cost))+'</span></div>'+
@@ -4926,7 +5009,10 @@ function showResult(){
      not saying anywhere. */
   if(RUN.tradeMachine){
     const took=(RUN.trades||[]).filter(t=>t.accepted);
-    const gain=took.reduce((s,t)=>s+(((t.in&&t.in.w)||0)-((t.out&&t.out.w)||0)),0);
+    /* The same subtraction the offer sheet showed when each of these was
+       pressed, rounded per DEAL the way the sheet rounded it, or the receipt
+       disagrees with the offers it is a receipt for. */
+    const gain=took.reduce((s,t)=>s+(t.in?offerWar(t.in):0)-(t.out?offerWar(t.out):0),0);
     $('ro-eff').textContent=took.length;
     $('ro-eff-l').textContent=took.length
       ?('Deal'+(took.length===1?'':'s')+' \u00b7 '+(gain>=0?'+':'')+gain.toFixed(1)+' WAR')

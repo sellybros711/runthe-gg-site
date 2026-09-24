@@ -10330,6 +10330,161 @@ claims. **What is NOT done is shipping it**, because a pool whose recent
 positions come from a mirror eight years behind is not the pool that ships, and
 every run so far has been `commit: false`.
 
+### The price was normalized for innings and the engine's value was not
+
+```
+node baseball/check-labels.mjs    section 6, which is the half a label cannot cover
+```
+
+Reported by a player as the pitcher price being innings-normalized while the WAR
+shown is not. The label for it had already shipped: a heavy starter's tile carries
+his innings, and the draft screen and how-to-play both explain the rule. **The
+label was the small half.** `build_positions.py` scales a starter's WAR by
+`min(1, 210/ip)` before pricing him, and `rosterRunPrevention`, `staffEra` and
+`staffRunPrevention` all read the season line, so **at equal price a heavy innings
+starter bought a better rotation ERA than a light one**, in every band:
+
+| price band | heavy arm's advantage, before | after |
+|---|---|---|
+| $10-20M | 0.044 ERA | **0.007** |
+| $20-30M | 0.066 ERA | **0.005** |
+| $30-50M | 0.069 ERA | **-0.004** |
+
+**Nothing could report it.** Every price was a correct summary of a season, every
+WAR on every tile was the figure a reader looks up, and no screen ever put the two
+side by side. It is the weekly fantasy board's own availability defect arriving in
+a different sport: a price built on one estimate and a value read off another.
+
+`workloadWar(p)` is the one reading, and it is a **no-op for everybody but a
+starter over the anchor**: relievers and batters are priced raw and have no anchor
+to apply.
+
+**`teamStrength` DELIBERATELY STILL READS THE SEASON LINE**, and that is not an
+oversight to tidy up. It is the yardstick that ranks a drafted squad against 2,594
+real team-seasons, and a real club genuinely did throw those innings, so moving one
+side of that comparison and not the other is what would break it. Both sides stay
+raw. `check-labels` asserts which reading is in which function, because both
+answers are valid numbers and no measurement of an output can say which fit
+produced it.
+
+#### CHANGING THE INPUT WITHOUT REFITTING THE COEFFICIENT IS NOT A RE-RANKING, IT IS A NERF
+
+`SP_ERA_PER_WAR` was fitted against the season line, so feeding it a systematically
+smaller number makes every rotation in the game worse in absolute terms rather than
+only re-ordering them. Measured over 400 drafted starters a side, the anchor takes a
+mean **5.42 WAR down to 4.53**, so at the old 0.32 the whole game moved:
+
+| | best available | careful | heavy-arm chaser |
+|---|---|---|---|
+| before any of this | 83.7 wins, 41% Octobers | 89.6, 61% | 84.9, 45% |
+| workloadWar at 0.32 | 79.3, 29% | 85.9, 43% | 80.5, 25% |
+| **workloadWar at 0.386** | **83.5, 36%** | **89.3, 59%** | **85.3, 41%** |
+
+**The quick badge sweep is what caught it**, and it caught it the way that file
+exists to: nothing dark before, **21 badges nothing could light** after. Every one
+of them was a win-a-lot or win-a-title rung, which is the shape of a global nerf
+rather than of a re-ranking.
+
+**The ratio is 1.20 for the three bots that draft real players** (best 1.220,
+careful 1.196, heavy-arm 1.206) and near 1.0 for the two that draft nobody, because
+a $3M arm never threw 300 innings. It is solved against the three that matter, since
+they are what a person plays like. **0.386** lands on the old numbers almost exactly,
+including the band populations: 97 runs in the 80-90 band either side.
+
+**REFITTING THE COEFFICIENT REINTRODUCES NOTHING**, and that is the part worth being
+sure of rather than reasoning about. The arbitrage was that at equal PRICE a heavy arm
+bought a better ERA; the price is built on `workloadWar`, so once the ERA is too, two
+men at one price have one ERA whatever the coefficient is. It only sets the LEVEL. The
+guard measures the gap per price band and is what says so.
+
+**The bottom band is out of that guard on purpose.** Under $10M the price floor packs
+thousands of men onto one figure, so "equal price" stops meaning equal and a residual
+0.032 survives there. It is the band where the least is at stake and the one no
+coefficient can clean.
+
+#### The Trade Machine advertised gains that were losses
+
+The offer sides are a **flat projection** rather than the player row, and it carried
+`n, w, p, s, t, half` and nothing else. So the page's own `heavyIP` read `r` as
+undefined, answered no for every man alive, and **tagged none of 2,274 offer sides**,
+which reads as a pool with no workhorses in it rather than as a projection missing a
+field. The comment above that literal already recorded this exact lesson for `half`.
+
+What it cost is the mode's whole promise. `MIN_GAIN_WAR` filtered candidates on the
+season line and the sheet's headline was `in.w - out.w`, so measured over 1,578 real
+offers **one in five advertised a gain that was really a loss or nothing**, worst case
+**"+5.2 WAR" for a swap worth -0.5**. Nothing threw: every figure on the sheet was a
+true statement about a season, and the only symptom was a mode that made your team
+worse. It is 0 of 1,032 now.
+
+**THE FIGURE ON AN OFFER IS WHAT HE IS WORTH TO YOU, NOT HIS SEASON, and that is the
+one place on this page where those two part company on purpose.** Everywhere else a
+WAR is the season, because a season is what a reader looks up. An offer is not a card,
+it is a button that swaps two men, so every number on it has to describe what happens
+when it is pressed, and the headline is `in` minus `out` on exactly the two figures
+printed beside it. Printing the season instead makes that subtraction wrong in front
+of the reader, on **35.8%** of offer sides. The innings tag rides along as the flag.
+
+**The receipt reads the same subtraction.** `Deal(s) · +N WAR` on the results screen
+was summing raw, so it disagreed with the offer it is a receipt for. **And the
+headline is rounded from the two figures printed beside it**, or a reader doing
+3.3 minus 2.4 gets 0.9 under a headline reading +1.0: 64 of 207 offers disagreed
+with their own arithmetic by a tenth. That seam predates the workload reading
+rather than arriving with it.
+
+##### IT COST THE ROTATION ALMOST ALL OF ITS OFFERS, and that is mostly the lies going
+
+Measured over 120 runs either side: HEAD shopped SP1 and SP2 on **399 of 909**
+offers and the fix shops them on **15 of 522**. That looks like a mode losing its
+pitching and is mostly a mode losing its fiction, because **56.4% of HEAD's rotation
+offers were not gains at all** against **0% at every other slot**. The whole defect
+lived in the rotation.
+
+**The rest of the drop is structural and no threshold fixes it**, which was measured
+rather than assumed: `MIN_GAIN_WAR` swept 0.8 down to 0.5 moves rotation offers 15 to
+18, and reverting the weakest-first sort to the season line moves it to 12. A
+starter's price is `1.5 * workloadWar^1.6`, so once the ERA reads the same figure the
+price is built from, **price is monotone in value and an equal-money rotation upgrade
+cannot exist**. Only headroom buys one: a bot that leaves half the cap gets 6.8% of
+its offers in the rotation against 2.1% for one that spends it.
+
+**A batter is not in that trap** because his slot pool is a position rather than a
+curve: same-price upgrades exist among bats and 510 of HEAD's other-slot offers were
+already honest. **Do not reach for a smaller starter threshold to win the rotation
+back.** It buys three offers, and what it would really be buying back is the 56%.
+
+**And the All-Time Staff sort ranked on the season line** while `staffEra` rated the
+staff on `workloadWar`, so the card said ace about a man the ERA underneath it
+disagreed with. `check-staff` was reading `.w` too and had become a second copy of the
+rule: it asks `E.workloadWar` now, so the sort and the suite cannot drift.
+
+#### What the tile says, and why the conversion is not on the season line
+
+The tile's big number stays the **whole season**, because that is what a reader looks
+up and what the source note promises. Under it, in green, is what he is worth here.
+
+**It is not on the season line, and two things forbid it.** `.of-side .mt` on a trade
+offer is 10px nowrap with an ellipsis at about 28 characters, so everything on that row
+is inside a 30 character budget the season, the club and a two-way note have already
+spent 23 of: `346 IP` is 6 and `346 IP -> 9.2 WAR` is 16, which does not fit and eats
+the number the offer is about. **`check-labels` caught that on the first attempt**, at
+32 characters. And the tile already writes ` -> SP1` after that line for a destination
+slot, so an arrow there is a second arrow on one row meaning something else.
+
+So it goes in the WAR cell, where the unit already is, and is read from the engine
+rather than recomputed: the tile and the season can never disagree about what a man is
+worth.
+
+#### What this did NOT do
+
+**The rating scale was not re-anchored**, and the reason is that it did not need to be
+once the coefficient was refitted. `PROJ.FLOOR_WINS` is untouched (638 of 1,200 floor
+drafts pin at rating 1 either side) and the top came back with the level: the 80-90
+band holds the same 97 runs of 360 it held before. Re-anchoring is a change that raises
+every rating and therefore makes both rating badges easier for ever, and a badge left
+too loose cannot be tightened without stripping it off everybody who earned it. Do not
+reach for it to fix a level: refit the coefficient, which is what the level is.
+
 ### Two ratings, two jobs, and they must not be merged
 
 `squadRating()` reads nine bats and two starters, the same shape a real club
