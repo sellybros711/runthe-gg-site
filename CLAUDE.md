@@ -4578,6 +4578,41 @@ reduced motion, sits above the sheet with no pointer events, and goes when the s
 closes. `check-fantasy.mjs` asserts all of it, including that a tap on the code still
 lands on the code, and each claim was proved by reintroducing its defect.
 
+#### Nobody is told the result until the winner's code exists
+
+```
+psql -d fantasy -f supabase/115_fantasy_result_when_ready.sql
+psql -d fantasy -f supabase/test/fantasy_ready_test.sql
+node scripts/stripe/mint-winner-code.mjs --pending          what it would do
+```
+
+Asked for by the owner. Under 114 the popup answered the moment a week was scored and the
+code arrived whenever somebody minted it, so a winner could open the page in that gap, be
+told "1st" with no code, and close a sheet that only opens by itself once. **115 holds
+EVERY entrant's result back** until first place has left `none`, so the whole field hears it
+at the moment the winner can be paid. `void` counts as ready.
+
+**The code is made by the live job, on the tick that closes the week.** `fantasy-live.yml`
+runs `mint-winner-code.mjs --pending --mint` after it scores, and the scoring write that
+marks a week final (Monday night game played and every club's stats in) settles the top
+three by trigger in the same tick. `fantasy-pool.yml` runs it again after its commit, for
+the week whose stats landed after the live window closed. `--pending` asks the database
+which weeks are unpaid, so a missed tick is picked up by the next one.
+
+**A field of one is voided unattended**, which releases that entrant's result with no code
+and a sentence saying why, and no confetti. `--force` still pays one by hand.
+
+**The page asks about THIS week first, then last week**, because the week that closed on
+Monday night is still `POOL.week` until Tuesday's build rolls the board. The ack is keyed
+on the week, so a reader told on Monday is not told again on Tuesday.
+
+**It needs two repository secrets it did not have**: `STRIPE_SECRET_KEY` (a restricted key
+with write on coupons and promotion codes and read on prices is enough) and
+`STRIPE_PRICE_PS_PREMIUM_BUNDLE`. Without them a week with a real winner fails the live job
+every tick, loudly, and nobody is told the result, which is the intended failure. The
+success path has only ever run against a local stand-in (`STRIPE_API_BASE`, refused unless
+it is loopback), because api.stripe.com is blocked from the dev sandbox.
+
 **A profile image only a winner has is a claim about an account, so it is the board's own
 problem**: `display_pro` is already the pattern, a derived boolean written by a trigger rather
 than typed, because a mark anybody can set is a mark that means nothing.

@@ -199,17 +199,17 @@ check_rows(sort, migration, what, breaks, ok) as (
   -- takes no entries rather than waving everybody through. Loud rather than
   -- silent, and only testers can reach it while FANTASY_LIVE is false.
   --
-  -- IT IS SIX FILES AND THEY ARE SIX ROWS, because the ways they go missing are
+  -- IT IS SEVEN FILES AND THEY ARE SEVEN ROWS, because the ways they go missing are
   -- not the same failure at different sizes. One of them refuses every lineup
   -- and says so. Three of them leave a screen that renders perfectly and is
   -- quietly a week behind, or empty, or silent about who is in. A single row
-  -- reading "the fantasy layer" would answer NO to all six and say which of
+  -- reading "the fantasy layer" would answer NO to all seven and say which of
   -- those is happening about none of them.
   --
   -- The order they are listed in is the order they must be applied in. 110
   -- restates two of 109's functions, 111 and 112 each restate 110's board, and
   -- 113 restates 109's submit, so the LAST file to touch a thing is the one
-  -- that wins. `.github/workflows/fantasy-sql.yml` runs all six in that order
+  -- that wins. `.github/workflows/fantasy-sql.yml` runs all seven in that order
   -- inside one transaction, which is why a half applied chain is not a state
   -- this report expects to meet.
   (15, '109_fantasy_challenge',
@@ -275,6 +275,14 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from trg
             where name = 'fantasy_settle_on_scored' and tbl = 'fantasy_weeks')),
 
+  -- Asked of the body, the way 113's row is: 115 restates a function 114 already
+  -- declares, so its presence says nothing about which of the two wrote it.
+  (21, '115_fantasy_result_when_ready',
+      'nobody is told the result until the winner has a code',
+      'The result popup opens the moment a week is scored, before the code is made. A winner who looks in that gap is told they won with no code on the sheet, and the sheet only opens by itself once.',
+      (select count(*) > 0 from proc
+        where name = 'fantasy_my_result' and body like '%promo_state%')),
+
   -- AND THE ONE THAT LOOKS EXACTLY LIKE A BAD NETWORK DAY. Run The Floor's
   -- board fails soft on purpose, the way every board on this site does: an
   -- unreachable server costs a list and never a run. That is right, and it is
@@ -287,7 +295,7 @@ check_rows(sort, migration, what, breaks, ok) as (
   -- 108 TWICE IS NOT A TYPO. This migration and 108_dynasty_slot were written
   -- for two different games in the same week and share a number. They touch
   -- nothing in common, so the collision costs nothing but a second look.
-  (21, '108_hoops_leaderboard',
+  (22, '108_hoops_leaderboard',
       'rtf_runs, and a Run The Floor season can be filed at all',
       'The Run The Floor board never loads, for everybody, for ever, and it is indistinguishable from a network that is down. The game plays, the run records in the career, the badges light, and the one thing missing is the list. Nobody reports it.',
       (select count(*) > 0 from has_table where name = 'rtf_runs')

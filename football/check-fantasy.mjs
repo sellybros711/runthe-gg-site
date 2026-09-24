@@ -940,9 +940,18 @@ const serverStub = (server) => {
        `s.result` undefined is the server having no opinion, which the page must not read as
        "you did not enter": the two are different answers and a stub that could not express
        both would let the page conflate them. `[]` is the real "nothing to say". */
-    fantasy_my_result: () => (s.result === undefined
-      ? { status: 500, body: '' }
-      : { status: 200, body: JSON.stringify(s.result ? [s.result] : []) }),
+    fantasy_my_result: (b) => {
+      /* BY WEEK WHEN THE FIXTURE SAYS SO, because the page asks about this week and then last
+         week, and which of the two answered is the claim. A week the fixture does not name is
+         the server's real "nothing to say". */
+      if (s.resultByWeek) {
+        const r = s.resultByWeek[b && b.p_week];
+        return { status: 200, body: JSON.stringify(r ? [r] : []) };
+      }
+      return s.result === undefined
+        ? { status: 500, body: '' }
+        : { status: 200, body: JSON.stringify(s.result ? [s.result] : []) };
+    },
     /* The ack is asserted through `posted`, which already records every rpc, rather
        than through a counter here that only this file could read. */
     fantasy_ack_result: () => ({ status: 200, body: 'true' }),
@@ -1792,13 +1801,33 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
     ['and eleventh is eleventh rather than eleven-st',
       res({ place: 11, entries: 12 }),
       { open: true, place: '11th', code: null, store: false }],
+    /* A FIELD OF ONE IS VOIDED, NOT PAID, and the sheet has to say so rather than "you won"
+       over a prize that is not there. No confetti over "there is no prize". */
+    ['the only entrant is told there is no prize, and gets no confetti',
+      res({ place: 1, entries: 1, prize_place: 1 }),
+      { open: true, place: '1st', code: null, store: false, say: /only entry.*no prize/i,
+        confetti: false }],
+    /* THE WEEK THAT JUST CLOSED IS STILL THE LIVE WEEK UNTIL TUESDAY'S BUILD, and the code
+       is made on Monday night, so the result has to be found under THIS week too. Asking
+       only about last week made everybody wait a night for the new board. */
+    ['a week that closed tonight is told before the board rolls over',
+      { byWeek: { [POOL.week]: res({ place: 1, prize_place: 1, promo_code: CODE }) } },
+      { open: true, place: '1st', code: CODE, store: true, say: /won the week/i,
+        eye: 'Week ' + POOL.week + ' is settled' }],
+    ['and once it has rolled over, last week is still found',
+      { byWeek: { [POOL.week - 1]: res({ place: 2, prize_place: 2 }) } },
+      { open: true, place: '2nd', code: null, store: false, say: /so close/i,
+        eye: 'Week ' + (POOL.week - 1) + ' is settled' }],
     ['a reader who has already seen it is not told again',
       res({ place: 2, prize_place: 2, seen: true }), { open: false }],
     ['somebody who never entered that week is told nothing',
       null, { open: false }],
   ]) {
     const { page, boom, posted } = await openPage(browser, FANTASY,
-      { who: TESTER, at: BEFORE, server: { mine: ENTRY, result }, reduced: !!want.reduced });
+      { who: TESTER, at: BEFORE, reduced: !!want.reduced,
+        server: result && result.byWeek
+          ? { mine: ENTRY, resultByWeek: result.byWeek }
+          : { mine: ENTRY, result } });
     /* THE READER HAS ENTERED THIS WEEK TOO, so boot lands on the entry screen and never on
        the home one. That is the ordinary case for somebody who plays every week, and it is
        exactly the reader the first draft of this feature never showed the popup to. */
@@ -1809,6 +1838,7 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
       return {
         open: !sh.hidden,
         place: document.getElementById('prz-place').textContent.trim(),
+        eye: document.getElementById('prz-eye').textContent.trim(),
         say: document.getElementById('prz-say').textContent.trim(),
         code: document.getElementById('prz-win').hidden
           ? null : document.getElementById('prz-code-txt').textContent.trim(),
@@ -1835,6 +1865,7 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
     if (want.open) {
       ok('  and it says where they came', seen.place === want.place, seen.place);
       if (want.say) ok('  with a line about it', want.say.test(seen.say), seen.say);
+      if (want.eye) ok('  about the right week', seen.eye === want.eye, seen.eye);
       ok('  and a door back to it', seen.door);
       ok('  the code is ' + (want.code ? 'there' : 'not'),
         seen.code === want.code, seen.code || 'none');

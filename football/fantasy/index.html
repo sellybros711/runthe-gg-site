@@ -2592,12 +2592,18 @@
    * only thing on the site that tells an entrant the competition finished, so the rule is
    * that it arrives on its own rather than being gone looking for.
    *
-   * IT ASKS ABOUT LAST WEEK AND NOT THIS ONE. The week rolls over on the Tuesday, so by the
-   * time a result exists the page is already serving the next board: `POOL.week - 1` is the
-   * week that was just played, which is the same week `lastWeekCard` reads. Asking about
-   * `POOL.week` would be asking about a competition that has not been played yet, for ever.
+   * IT ASKS ABOUT THIS WEEK FIRST, THEN LAST WEEK. The server answers nothing about a week
+   * until it is scored AND the winner's code exists (115_fantasy_result_when_ready.sql), and
+   * the live job makes that code on the tick that closes the week, which is normally Monday
+   * night. The board does not roll over until the Tuesday build, so for those hours the week
+   * that just finished is still `POOL.week`. Asking only about `POOL.week - 1` made every
+   * entrant wait for Tuesday's board to be told how Monday went. Once the board has rolled,
+   * the finished week is `POOL.week - 1`, which is the same week `lastWeekCard` reads, and
+   * asking the new `POOL.week` first costs one call that answers nothing.
    *
-   * SHOWN ONCE, AND THE SERVER IS WHAT REMEMBERS. See `ackResult` in entries.js.
+   * SHOWN ONCE, AND THE SERVER IS WHAT REMEMBERS. See `ackResult` in entries.js. So a reader
+   * told on Monday night is not told again on Tuesday, when the same week has become
+   * `POOL.week - 1`: the ack is keyed on the week, not on which question found it.
    */
   var PRZ = null;      /* the answer, kept so the sheet can be reopened within a visit */
   var PRZ_ASKED = false;
@@ -2617,19 +2623,25 @@
 
   function prizeCheck(){
     if (PRZ_ASKED) return;
-    var wk = POOL.week - 1;
-    if (wk < 1) return;
     PRZ_ASKED = true;
-    F.myResult(POOL.season, wk).then(function(r){
-      /* NULL IS "NOBODY KNOWS" AND FALSE IS "YOU DID NOT ENTER". Only the second one is an
-         answer, and neither opens the sheet by itself: a reader who has already seen it is
-         not told again. The ask is re-armed on a null, because a popup lost to one bad
-         request is a result somebody is never told about. */
-      if (r == null){ PRZ_ASKED = false; return; }
-      if (r === false || !r.entered) return;
+    /* NULL IS "NOBODY KNOWS" AND FALSE IS "NOTHING TO SAY". Only the second one is an
+       answer, and neither opens the sheet by itself: a reader who has already seen it is
+       not told again. The ask is re-armed on a null, because a popup lost to one bad
+       request is a result somebody is never told about. */
+    var take = function(wk, r){
       PRZ = { week: wk, r: r };
       drawPrizeDoor();
       if (!r.seen) showPrize();
+    };
+    F.myResult(POOL.season, POOL.week).then(function(r){
+      if (r == null){ PRZ_ASKED = false; return; }
+      if (r && r.entered) return take(POOL.week, r);
+      var prev = POOL.week - 1;
+      if (prev < 1) return;
+      return F.myResult(POOL.season, prev).then(function(r2){
+        if (r2 == null){ PRZ_ASKED = false; return; }
+        if (r2 && r2.entered) take(prev, r2);
+      });
     });
   }
 
@@ -2669,7 +2681,12 @@
        sheet can open after that week has already locked, and a line telling somebody to go
        and draft into a shut week is the one encouraging sentence that would be false. */
     var say;
-    if (place === 1) say = 'You won the week. Nobody drafted better.';
+    /* A WIN WITH NO CODE IS A FIELD OF ONE, which the minting script voids rather than
+       pays. Said plainly, because "you won" over a sheet with no prize on it reads as the
+       prize going missing. The win itself is real and stays on their profile. */
+    if (place === 1 && !r.promo_code && entries < 2)
+      say = 'You were the only entry this week, so there is no prize. The win still counts.';
+    else if (place === 1) say = 'You won the week. Nobody drafted better.';
     else if (place === 2) say = 'So close. One spot off the top.';
     else if (place === 3) say = 'Top three. That is a podium finish.';
     else if (entries > 1 && place <= Math.ceil(entries / 2)) say = 'Top half of the field. That is a good week.';
@@ -2698,9 +2715,10 @@
         + 'the account you entered with. Paste the code at checkout. It works once.';
     }
     $('prz-sheet').hidden = false;
-    /* The winner and nobody else. After the sheet is on the glass, so the confetti falls over
-       a screen that is already telling them why. */
-    if (place === 1) requestAnimationFrame(function(){ requestAnimationFrame(winConfetti); });
+    /* The winner and nobody else, and only a winner holding a prize: confetti over "there is
+       no prize" is a party for nothing. After the sheet is on the glass, so the confetti
+       falls over a screen that is already telling them why. */
+    if (place === 1 && code) requestAnimationFrame(function(){ requestAnimationFrame(winConfetti); });
   }
 
   /* CONFETTI FOR FIRST PLACE, lifted from the football game's own `fireConfetti` so a win

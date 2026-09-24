@@ -123,3 +123,23 @@ jobs:
           node football/build/live-results.mjs \
             ${{ inputs.force && '--force' || '' }} \
             | psql -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL"
+
+      # AND THE WINNER'S CODE, ON THE SAME TICK THAT CLOSES THE WEEK. The step above marks a
+      # week final once every game is played and every club's stats are in, which for a normal
+      # week is shortly after the Monday night game. 114's trigger settles the top three in
+      # that same write, so by the time this runs there is a first place waiting on a code.
+      #
+      # EVERY ENTRANT'S RESULT WAITS ON THIS, by 115_fantasy_result_when_ready.sql: nobody is
+      # told how the week went until the winner can be handed their prize. So a failure here
+      # is loud on purpose (the run goes red), and it is retried for free on the next tick,
+      # because `--pending` asks the database which weeks are still unpaid rather than being
+      # told one. A tick with nothing to pay costs one query and says so.
+      #
+      # A field of one is voided rather than paid, which releases that entrant's result with
+      # no code in it. See the script's header.
+      - name: Pay the winner once the week is closed
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PRICE_PS_PREMIUM_BUNDLE: ${{ secrets.STRIPE_PRICE_PS_PREMIUM_BUNDLE }}
+        run: node scripts/stripe/mint-winner-code.mjs --pending --mint
