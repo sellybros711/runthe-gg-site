@@ -4962,7 +4962,9 @@ function wrestlerSVGRetro(L,opt){
    an opponent can roll, boots and trunks) are drawn by hand.
    ============================================================ */
 let WSN=0;
-const FIG_INK='rgba(18,15,15,.82)';
+/* the inner line that keeps an arm apart from a chest of the same skin: a
+   shadow, not an ink line, so it reads as a fold rather than a drawn edge */
+const FIG_INK='rgba(20,10,6,.30)';
 function hex6(c){
   if(typeof c!=='string'||c[0]!=='#') return c;
   if(c.length===4) return '#'+c[1]+c[1]+c[2]+c[2]+c[3]+c[3];
@@ -5477,7 +5479,13 @@ function wrestlerSVGSmooth(L,opt){
     const upper = R(p.torso||0, JOINT.pelvis, M.torso + armG('L') + armG('R') + R(p.head||0, JOINT.neck, M.head));
     return M.back + legG('L') + legG('R') + upper;
   };
-  const inner = rig(OUTB) + rig(FILB);
+  /* NO OUTLINE PASS. The pixel figure needs its black border to read as a
+     figure at all; an illustration does not, and a black edge round a smooth
+     figure is the sticker look. The silhouettes are still built (the gear code
+     draws its own borders in OUTLINE and they route there) and then left out,
+     so what separates the figure from the ring is its own shading and the
+     drop shadow the page already puts under it. */
+  const inner = rig(FILB);
   const bt = p.body||[0,0,0];
   const bodyG = (bt[0]||bt[1]||bt[2])
     ? `<g transform="translate(${bt[0]} ${bt[1]}) rotate(${bt[2]} ${JOINT.root[0]} ${JOINT.root[1]})">${inner}</g>`

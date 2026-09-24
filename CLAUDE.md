@@ -4675,11 +4675,22 @@ all 43 poses, the ordered list of transforms the two figures emit is identical.
 Pointing one knee at the hip joint fails 26 of them.
 
 What changes is the ink. The body is tapered tubes, a real torso and a real head,
-each lit by a cylindrical gradient. The silhouette still gets ONE continuous
-outline in a pass of its own under every fill, exactly as the pixel figure does.
-**Every fill also carries a thin inner line, which the pixel figure never needed**:
-its shading steps told an arm apart from a chest of the same skin, and a smooth
-gradient does not.
+each lit by a cylindrical gradient.
+
+**THERE IS NO BLACK OUTLINE, and that was asked for after the first version had
+one.** The pixel figure needs its border to read as a figure at all; round an
+illustration it is the sticker look. The outline pass is still BUILT (the gear code
+draws its own borders in `OUTLINE` and they route there) and then left out, so what
+separates the figure from the ring is its own shading and the drop shadow the page
+already puts under it. **Every fill carries a thin translucent inner line instead**
+(`FIG_INK`, a shadow at .30 rather than an ink line): without it an arm crossing a
+chest of the same skin disappears into it, because a smooth gradient has no shading
+steps to tell them apart.
+
+**So the rig guard compares against HALF of Retro.** Retro emits the rig twice (the
+outline pass, then the fills) and smooth once. The whole-body move wraps both passes
+and comes first, so it is set aside before the halves are split; the first draft did
+not and failed 39 poses on a correct page.
 
 **The long tail of gear is the pixel code, read smooth.** About a hundred and fifty
 patterns, masks, boots and accessories are each a handful of `P()` and `LIMB()`
