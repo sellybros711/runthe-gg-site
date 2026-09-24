@@ -5530,6 +5530,14 @@ out.** A press budget is a guess about how fast the game runs. The result screen
 has controls of its own and nothing about them depends on how the game got there,
 so it is reached by ENDING the game rather than by playing to the last out.
 
+**AND IT PLAYED A SECOND GAME WITHOUT NOTICING.** Pressing Space all game is a
+dreadful pitcher, so the other side can reach the mercy rule inside two minutes.
+The walk asked for a Continue button BEFORE it asked whether the game was over,
+found `Play again` on the result screen, clicked it, and every reading at the end
+belonged to a game four pitches old: it reported a play by play of nought lines
+on a screen that had just played a whole game. **The final whistle is asked
+first now**, and the button list no longer matches anything that starts a game.
+
 **AND ITS COVERAGE CLAIM ASKED THE WRONG THING TWICE.** It wanted two innings
 first, which two minutes of a Fast game does not reach, and innings are not what
 this is about: the deck grows because the PLAY BY PLAY fills up. Counted in LINES
@@ -5854,8 +5862,9 @@ anything odd.
   box. **The inning board said so out loud and nobody read it**: `Due up` is
   three names off `bat.idx`, so it led with the man who had just made the third
   out, every half inning, on the one screen between the halves. **Putting the
-  advance inside `endHalfInning` is the wrong fix and it is the obvious one**, because a half inning can also end on a runner caught
-  stealing, and that plate appearance is NOT finished: the batter at the plate
+  advance inside `endHalfInning` is the wrong fix and it is the obvious one**,
+  because a half inning can also end on a runner caught stealing, and that
+  plate appearance is NOT finished: the batter at the plate
   leads off the next inning, which is the real rule and is what the steal path
   already does. Advancing there would skip a man. So the advance belongs to the
   end of an APPEARANCE, which is what `endPlateAppearance` is.
@@ -5926,6 +5935,31 @@ running.
 true of the eleventh and the twelfth as well, so a long game said "tied after
 nine, extra innings" at the top of each of them, by which point it had not been
 tied for three innings.
+
+#### And on a play the PLAYER fields, the picture never followed the book
+
+`scheduleContactPlay` calls `simReconcile` after the mutation, for the reason
+that function's own header gives: the book can send a runner further than the
+plan did, so his run is extended from where he is now and the picture agrees.
+**The two resolvers a FIELDED play goes through never called it.** An infield
+single moves every runner up, a throwing error moves them two, and a caught fly
+runs the tag, and in all three the sim left them standing where the plan put
+them. It is not a new gap, and the ground out's force made it a third case, so
+it is closed rather than worked around.
+
+**AND "NOT ON A BASE" MEANT "HE SCORED", WHICH IS WRONG FOR A MAN PUT OUT ON
+ONE.** `simReconcile` reads `g.bases`, so a runner who is off it was assumed to
+have reached home. That is right for the two cases it was written for, a runner
+waved round and one gunned down at the plate, who really did run there. It is
+wrong for a man thrown out at THIRD tagging up from second, and for a man forced
+at second on a double play: the picture carried both of them past the bag they
+were tagged at and slid them into home. A caller that knows the bag records it
+now, in `p.outAt`.
+
+**And the plate marker drew a play at the plate for an out at third.** It puts
+the catcher on home with the ball and the runner sliding into him, and `tagUp`
+set it for both of its outs, so a man thrown out at third was a picture of a
+play at a base nobody was near.
 
 #### Three ways the harness was wrong, and two of them read as the page being wrong
 

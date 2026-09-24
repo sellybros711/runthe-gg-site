@@ -156,14 +156,21 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
     guard++;
     const st = await pg.evaluate(() => {
       const g = State.game;
+      /* THE FINAL WHISTLE IS ASKED FIRST, and the first version asked it last.
+         Pressing Space all game is a dreadful pitcher, so the other side can
+         reach the mercy rule inside two minutes; the button branch then found
+         `Play again` on the result screen, clicked it, and the readings at the
+         end of the walk belonged to a game that was four pitches old. It
+         reported a play by play of nought lines on a screen that had just
+         played a whole game. */
+      if (!g || g.over) return { over: true };
       const btn = [...document.querySelectorAll('#app button, #app .btn')]
         .find(e => {
-          if (!/^(Continue|Next|Play|Sim the rest|Skip|Got it)/i.test((e.textContent || '').trim())) return false;
+          if (!/^(Continue|Next|Got it)/i.test((e.textContent || '').trim())) return false;
           const s = getComputedStyle(e);
           return s.display !== 'none' && s.visibility !== 'hidden';
         });
       if (btn) { btn.click(); return {}; }
-      if (!g || g.over) return { over: true };
       /* Space is the one key that means "act" on every screen of this game:
          it swings, it releases, and it answers a fielding window. */
       document.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
