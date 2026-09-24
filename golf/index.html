@@ -31695,9 +31695,9 @@ function hvFitHud(){ _hvFitQ=false; try{ document.querySelectorAll('.hvshell').f
   try{ hvHudDodge(sh,null); }catch(e){} }); }catch(e){} }
 try{ new MutationObserver(()=>{ if(!_hvFitQ){ _hvFitQ=true; requestAnimationFrame(hvFitHud); } }).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
 try{ addEventListener('resize',()=>{ document.querySelectorAll('.hvshell').forEach(sh=>{ sh._hvdh=0; }); hvFitHud(); }); }catch(e){}
-/* A BIRDIE IS A HIGHLIGHT (owner, Sep 2026: "look and feel like a real video game"). Under par the result
-   pill already turned the score colour; now the moment gets the treatment a broadcast gives it: confetti
-   out of the pill's corner, and on an eagle or an ace a flash across the whole frame. Played ONCE per
+/* AN EAGLE IS A HIGHLIGHT (owner, Sep 2026: "look and feel like a real video game"). Under par the result
+   pill glows in the score colour. An eagle or an ace also gets confetti out of the pill's corner and a
+   flash across the whole frame. Not a birdie: the owner judged that too repetitive. Played ONCE per
    hole (_hvCeleKey), because the round screen re-renders many times while the result is up and a burst
    that replayed on every one of them would read as a glitch. Pure CSS particles, no loop to leak. */
 let _hvCeleKey='';
@@ -34417,8 +34417,10 @@ function scrDailyRound(){
       }
       const hot=lh.toPar<0;
       shell.appendChild($(`<div class="hvob hvresult${hot?' hot':''}" style="border-color:${col};--rc:${col}"><span class="rn" style="color:${col}">${big}</span><span class="rs" style="color:${col}">${dtp(total)}</span>${boldSub}</div>`));
-      if(hot) try{ const ck=(S.dailyCourse||'')+':'+(S.dailySeed||'')+':'+lastIdx;
-        if(ck!==_hvCeleKey){ _hvCeleKey=ck; shell.appendChild($(hvCelebrateHTML(ace?3:(lh.toPar<=-2?2:1), col))); } }catch(e){}
+      // confetti is for an eagle or better: a birdie happens several times a round, and a burst every time
+      // stops meaning anything (owner). A birdie keeps the glowing pill.
+      if(ace || lh.toPar<=-2) try{ const ck=(S.dailyCourse||'')+':'+(S.dailySeed||'')+':'+lastIdx;
+        if(ck!==_hvCeleKey){ _hvCeleKey=ck; shell.appendChild($(hvCelebrateHTML(ace?3:2, col))); } }catch(e){}
     }
     if(latest && !dec){   // the scoreboard is ALWAYS shown on the live window (owner: it must never disappear, even
       // during the holed-result pill - the pill floats over the center, the board stays put top-corner)
