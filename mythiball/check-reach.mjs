@@ -10,6 +10,13 @@
      Mound     18px below the bottom at 667x375 held sideways
      Slowball  30px off the right at 844x390 held sideways
 
+   AND ONE UNDER ANOTHER IS THE WORSE HALF OF THE SAME FAULT: off the screen it
+   does nothing, and underneath something else it does the WRONG thing. A chip
+   pinned to a corner lands on whatever is in that corner, and the corner of a
+   deck is where the buttons are. Sideways on a 667 by 375 phone the End Game
+   chip covered ten pixels of Mound, so a tap meaning "change my pitcher" opened
+   the sheet that abandons the game.
+
    NOTHING ELSE HERE CAN SEE THIS. `check-firstpitch` measures the glass and asks
    whether one pitch can be READ; `verify-rules` puts the game in a situation and
    asks whether the rule is right. A button off the side of the window is neither:
@@ -19,12 +26,24 @@
    game and would have passed the fault it was written for, because the deck
    grows: the play by play fills up all game, a pitching deck is taller than a
    batting one, and the mound offer and the send button come and go with the
-   situation. So it drives a whole game at each screen and samples every
-   pressable control's rectangle throughout, keeping the worst reading.
+   situation. So it plays at each screen and samples every pressable control's
+   rectangle throughout, keeping the WORST reading. It is bounded in wall clock
+   rather than in presses, because a press budget is a guess about how fast the
+   game runs, and it reaches the result screen by ENDING the game: that screen's
+   controls are worth sampling and nothing about them depends on how it got
+   there.
 
    BOTH POINTER KINDS, because one of the four was a label naming keys, and the
    label is shorter on a touch screen. A phone is the device that ships and a
    narrow desktop window is the pessimistic case, so it asks for both.
+
+   AND IT TURNS EVERY SCREEN SIDEWAYS MID GAME, which is a thing a player does
+   with a phone and nothing here had ever done. `roomfill` is the class the
+   stylesheet keys off and it is toggled in `render()`, so a window turned during
+   a game kept whichever answer it had at kickoff while the media queries beside
+   it moved on: one branch's CSS with the other branch's class. The rectangles
+   are only asked of a turned window the game fits in, which in landscape means
+   371 pixels of height; the class agreement is asked always.
 
      node mythiball/check-reach.mjs
      node mythiball/check-reach.mjs --quick   one screen, for a loop
@@ -56,8 +75,13 @@ const ok = (cond, what, detail) => {
    320x568 is the shortest phone anybody holds and the one three of the four
    faults were on. 667x375 and 844x390 are the same phones sideways, where the
    deck is a column beside the field rather than a band under it. */
+/* THE ONE SCREEN `--quick` TAKES IS THE PITCHING HALF OF THE SHORTEST PHONE,
+   which is `youHome: true`: the deck is tallest when you are pitching (a pitch
+   picker, a release meter and a mound offer against a swing row), and that is
+   the half the End Game row was pushed off the bottom of. Taking the batting
+   half instead would run a smaller deck on the screen with the least room. */
 const SCREENS = QUICK ? [
-  [320, 568, 2, true, false],
+  [320, 568, 2, true, true],
 ] : [
   [320, 568, 2, true, false],
   [320, 568, 2, false, true],
@@ -113,6 +137,7 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
 
   const worst = new Map();     /* control -> the worst overflow it ever had */
   const seen = new Set();      /* every control this screen ever offered */
+  const overlaps = new Set();  /* pairs that were ever on top of each other */
   let pageOver = 0, samples = 0, guard = 0;
   /* BOUNDED IN WALL CLOCK RATHER THAN IN PRESSES, because a press budget is a
      guess about how fast the game runs and a five inning game at Fast is
@@ -121,7 +146,12 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
      innings is most of the way there. The result screen is reached by ending
      the game rather than by waiting it out, since its controls are worth
      sampling and nothing about them depends on how the game got there. */
-  const until = Date.now() + (QUICK ? 60e3 : 120e3);
+  /* TWO MINUTES WHETHER OR NOT IT IS THE QUICK RUN, because the budget is not
+     what `--quick` is for: it cuts the SCREENS from six to one. The coverage
+     claim is that the play by play filled, and a minute of a Fast game does not
+     fill it, so a shorter budget here would make CI fail on a page with nothing
+     wrong with it. */
+  const until = Date.now() + 120e3;
   while (Date.now() < until) {
     guard++;
     const st = await pg.evaluate(() => {
@@ -146,28 +176,100 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
       samples++;
       const lay = await pg.evaluate(() => {
         const out = [];
+        const boxes = [];
         for (const e of document.querySelectorAll('#app button, #app .btn')) {
           const s = getComputedStyle(e);
           if (s.display === 'none' || s.visibility === 'hidden') continue;
           const r = e.getBoundingClientRect();
           if (!r.height || !r.width) continue;
+          const name = (e.textContent || '').trim().slice(0, 22) || e.id || 'unnamed';
           const over = Math.max(r.bottom - innerHeight, r.right - innerWidth, -r.top, -r.left);
-          out.push([(e.textContent || '').trim().slice(0, 22) || e.id || 'unnamed', Math.round(over)]);
+          out.push([name, Math.round(over)]);
+          boxes.push({ name, t: r.top, b: r.bottom, l: r.left, r: r.right });
         }
-        return { out, page: Math.round(document.documentElement.scrollHeight), win: innerHeight };
+        /* AND NO TWO OF THEM MAY OVERLAP, which is the worse half of the same
+           fault: a control off the screen does nothing and a control UNDER
+           another one does the wrong thing. A chip pinned to a corner lands on
+           whatever is in that corner, and the corner of a deck is where the
+           buttons are. */
+        const hits = [];
+        for (let i = 0; i < boxes.length; i++) {
+          for (let j = i + 1; j < boxes.length; j++) {
+            const a = boxes[i], c = boxes[j];
+            const ox = Math.min(a.r, c.r) - Math.max(a.l, c.l);
+            const oy = Math.min(a.b, c.b) - Math.max(a.t, c.t);
+            if (ox > 1 && oy > 1) {
+              hits.push(`${a.name} under ${c.name} (${Math.round(ox)}x${Math.round(oy)})`);
+            }
+          }
+        }
+        return { out, hits, page: Math.round(document.documentElement.scrollHeight), win: innerHeight };
       }).catch(() => null);
       if (lay) {
         for (const [t, o] of lay.out) {
           seen.add(t);
           if (o > 1) worst.set(t, Math.max(worst.get(t) || 0, o));
         }
+        for (const hit of lay.hits) overlaps.add(hit);
         pageOver = Math.max(pageOver, lay.page - lay.win);
       }
     }
     await pg.waitForTimeout(110);
   }
+  /* AND TURNED SIDEWAYS MID GAME, which is a thing a player does with a phone
+     and which nothing here had ever done. The media queries follow the window
+     on their own; the layout CLASS is toggled in `render()`, and the resize
+     handler returned early on any screen but the menu, so a window turned
+     during a game kept whichever answer it had at kickoff and got one branch's
+     CSS with the other branch's class. */
+  const turned = await pg.setViewportSize({ width: h, height: w })
+    .then(() => pg.waitForTimeout(700))
+    .then(() => pg.evaluate(() => {
+      const out = [], boxes = [];
+      for (const e of document.querySelectorAll('#app button, #app .btn')) {
+        const s = getComputedStyle(e);
+        if (s.display === 'none' || s.visibility === 'hidden') continue;
+        const r = e.getBoundingClientRect();
+        if (!r.height || !r.width) continue;
+        const name = (e.textContent || '').trim().slice(0, 22) || e.id || 'unnamed';
+        out.push([name, Math.round(Math.max(r.bottom - innerHeight, r.right - innerWidth, -r.top, -r.left))]);
+        boxes.push({ name, t: r.top, b: r.bottom, l: r.left, r: r.right });
+      }
+      const hits = [];
+      for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i], c = boxes[j];
+        const ox = Math.min(a.r, c.r) - Math.max(a.l, c.l);
+        const oy = Math.min(a.b, c.b) - Math.max(a.t, c.t);
+        if (ox > 1 && oy > 1) hits.push(`${a.name} under ${c.name} (turned)`);
+      }
+      /* The class the stylesheet keys off has to agree with the query the
+         script reads, or the two halves of the layout are describing
+         different windows. */
+      const agree = document.body.classList.contains('roomfill') === ROOMFILL.matches;
+      return { out, hits, agree, page: Math.round(document.documentElement.scrollHeight), win: innerHeight };
+    })).catch(() => null);
+  /* THE RECTANGLES ONLY COUNT IF THE TURNED WINDOW IS ONE THE GAME FITS IN,
+     and the class agreement counts always. Landscape needs 371 pixels of window
+     height: the sideways deck is a fixed 339 of content whatever the window is
+     (the line score, the meter and its rows, the controls) plus the brand strip.
+     Turning a 320 by 568 phone gives 320 of height, which is 51 short, and that
+     was true before any of this: the deck has to be redesigned to fit there
+     rather than a rule moved, and it is written up below. Asserting the
+     rectangles there would be holding the page to a size it has never claimed. */
+  const LANDSCAPE_FLOOR = 371;
+  if (turned && w >= LANDSCAPE_FLOOR) {
+    for (const [t, o] of turned.out) { seen.add(t); if (o > 1) worst.set(t + ' (turned)', o); }
+    for (const hit of turned.hits) overlaps.add(hit);
+    pageOver = Math.max(pageOver, turned.page - turned.win);
+  }
+  await pg.setViewportSize({ width: w, height: h }).catch(() => {});
+  await pg.waitForTimeout(400);
+
   /* Now the result screen, whose controls nothing above has looked at. */
-  const midInn = await pg.evaluate(() => State.game ? State.game.inning : 0).catch(() => 0);
+  const mid = await pg.evaluate(() => ({
+    inn: State.game ? State.game.inning : 0,
+    log: State.game && State.game.log ? State.game.log.length : 0,
+  })).catch(() => ({ inn: 0, log: 0 }));
   await pg.evaluate(() => {
     const g = State.game;
     if (g && !g.finished) { g.over = true; g.winner = g.home.score >= g.away.score ? 'home' : 'away'; finishGame(); }
@@ -192,9 +294,10 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
     inn: State.game ? State.game.inning : 0,
     sc: State.game ? State.game.away.score + '-' + State.game.home.score : '',
   })).catch(() => ({}));
-  fin.inn = midInn;
+  fin.inn = mid.inn; fin.log = mid.log;
   await ctx.close();
-  return { worst, seen, pageOver, samples, errs, fin };
+  return { worst, seen, overlaps, pageOver, samples, errs, fin,
+           turnAgree: turned ? turned.agree : null };
 }
 
 async function main() {
@@ -211,10 +314,20 @@ async function main() {
        `${tag}  ${r.seen.size} controls, ${r.samples} samples, ${r.fin.inn} innings, ${r.fin.sc}`,
        (off.length ? 'off the window: ' + off.join(', ') : '') +
        (r.pageOver > 0 ? `  the page is ${r.pageOver}px longer than the window` : ''));
+    ok(r.overlaps.size === 0, `${tag}  and none of them is under another`,
+       [...r.overlaps].join(', '));
+    ok(r.turnAgree === true, `${tag}  turned sideways, the layout class follows the window`,
+       'roomfill=' + r.turnAgree);
     ok(r.errs.length === 0, `${tag}  no page errors`, [...new Set(r.errs)].join(' | '));
     ok(r.fin.screen === 'result', `${tag}  the result screen came up and fits`,
        'screen=' + r.fin.screen);
-    ok(r.fin.inn >= 2, `${tag}  it played real innings`, 'reached inning ' + r.fin.inn);
+    /* COVERAGE, AND THE FIRST VERSION ASKED THE WRONG THING. It wanted two
+       innings, which two minutes of a Fast game does not reach, and innings are
+       not what this is about anyway: the deck grows because the PLAY BY PLAY
+       fills up, and the log is capped at 40vh, which is about sixteen lines on
+       the shortest phone. So the claim is that the log filled, which is the
+       state every one of the four faults was worst in. */
+    ok(r.fin.log >= 16, `${tag}  the play by play filled up`, r.fin.log + ' lines');
   }
   /* COVERAGE. A run that never opened a deck saw no controls, and a run where
      nobody ever fielded is a shorter game with fewer of them: both would pass

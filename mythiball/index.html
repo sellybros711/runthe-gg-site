@@ -299,21 +299,20 @@
     body.ingame .screen > .controls:last-child{position:absolute;right:10px;
       bottom:6px;left:auto;margin:0;z-index:7;}
   }
-  /* THE WAY OUT OF A GAME HAS TO BE ON THE SCREEN, and on the shortest phone
-     anybody holds it was not. Measured at 320 by 568 while pitching, which is
-     the tallest the deck gets: the page ran 592 against a 568 window, and
-     `body.ingame` sets `overflow:hidden`, so the End Game row was cut off the
-     bottom with no way to scroll to it. Its own row is 23 pixels and its
-     margin another twelve, which is more than the whole shortfall, and it is
-     the one control on the screen nobody is hunting for. So on a window this
-     short it takes the corner the same way it does over a wide one. It is
-     bounded at 600 rather than left open, because every taller phone fits
-     with the row in the flow and there is no reason to move a control that
-     is not in anybody's way. */
-  @media (max-aspect-ratio: 3/4) and (max-height: 600px){
-    body.ingame .screen > .controls:last-child{position:absolute;right:10px;
-      bottom:6px;left:auto;margin:0;z-index:7;}
-  }
+  /* THE END GAME ROW STAYS IN THE FLOW ON A TALL WINDOW, and it was pinned to
+     the corner here for one commit. The way out of a game really was off the
+     bottom of a 320 by 568 phone while pitching, and pinning the row won the
+     24 pixels back, and then it landed on the swing buttons: measured, the
+     chip covered the whole width of Bunt and a sliver of Power. A control
+     that abandons the game sitting on top of the one that bunts is worse than
+     a control off the screen, because the tap does something, and the note on
+     the wide branch above says so in as many words.
+
+     WHAT ACTUALLY FIXED THE OVERFLOW IS THE ARENA'S FLOOR, one rule up, and
+     this was redundant the moment that landed: with the floor at the cover
+     threshold the arena gives the deck whatever it asks for, so the row fits
+     where it always was. Two fixes for one fault, and the one that keeps
+     every control apart is the one to keep. */
   /* AND THE TWO ROWS THAT ARE PRESSED MATCH THE CONTROLS BESIDE THEM. Both
      wrap now, so nothing can leave the window, and this is what keeps them
      from needing to: a wrapped row is a second line of deck, and the deck is
@@ -323,9 +322,11 @@
      narrow here is the COLUMN and not the window: held sideways the deck is
      a 253 pixel column beside the field in a 667 pixel window, so a query on
      the viewport tightens the phone that needed it and misses the one that
-     needed it more. The deck's own End Game and Mound buttons have been at
-     ten pixels and this padding since the redesign, so this is the two rows
-     joining them rather than a new size. */
+     needed it more. The End Game chip has been at ten pixels and this padding
+     since the redesign, so this is the two pressed rows joining it rather
+     than a new size. The MOUND row is not part of that and keeps its own
+     height and colour, because it is pressed and a control has to look like
+     one: see the rule that gives it a narrower gutter instead. */
   body.ingame .swing-modes{gap:6px;}
   body.ingame .swing-modes .mode-btn,
   body.ingame .pitch-select .type-row .btn{padding:6px 9px;font-size:10px;}
@@ -419,6 +420,21 @@
   body.ingame .screen > .controls:last-child .btn{font-size:10px;padding:5px 9px;
     background:rgba(8,16,26,.72);color:rgba(244,234,214,.8);
     border-color:rgba(11,16,21,.9);box-shadow:none;}
+  /* AND THE ROW IT IS PINNED OVER HAS TO KEEP CLEAR OF IT. Out of the flow,
+     the chip lands in the bottom right corner of whatever is there, and
+     sideways the deck is a column about a third of the window wide: measured
+     on a 667 by 375 phone, Mound ran to 572 and the chip started at 562, so
+     ten pixels of the button that changes your pitcher opened the sheet that
+     abandons the game instead. A control that does the wrong thing is worse
+     than one off the screen.
+
+     The row keeps its height and its panel colour, because Mound and Steal
+     are pressed and a control has to look like one; only the side padding
+     comes in, which is what a narrow column is short of. It buys 20 pixels,
+     so the gap goes from minus ten to plus ten at 667, plus 28 at 720 and
+     plus 70 at 844, and nothing wider moves at all. */
+  body.ingame.roomfill .screen > .controls:not(:last-child) .btn{
+    padding-left:10px;padding-right:10px;}
   /* The play by play is the least urgent thing on the screen and the only
      one that grows without limit, so it is the one that gets a box and a
      scrollbar rather than pushing the field out of the window. */
@@ -3857,6 +3873,16 @@ function roomForWindow() { return landscapeRoom(); }
    to be the room that went stale; now it is the choice between the two. */
 let roomRedrawT = 0;
 function onRoomResize() {
+  /* THE LAYOUT CLASS HAS TO FOLLOW THE WINDOW, AND IT STOPPED AT THE MENU.
+     `roomfill` is toggled in `render()`, and this handler returned early on
+     any screen but the menu, so a window turned mid-game kept whichever
+     answer it had when the game started. The media queries beside it update
+     on their own, so what a rotated tablet got was the wide branch's CSS with
+     the narrow branch's class: two halves of one layout disagreeing, and
+     nothing anywhere saying so. The class is one line and costs nothing to
+     keep current; the menu still only repaints on the menu, because that is a
+     redraw of a canvas and this is not. */
+  document.body.classList.toggle('roomfill', ROOMFILL.matches);
   if (State.screen !== 'menu') return;
   clearTimeout(roomRedrawT);
   roomRedrawT = setTimeout(() => { if (State.screen === 'menu') render(); }, 120);

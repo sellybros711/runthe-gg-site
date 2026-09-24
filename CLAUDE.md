@@ -5448,7 +5448,70 @@ nothing overflowing.** The one arena that got smaller is 320x568 while pitching,
 318 to 305, which is the half where you aim a reticle that is floored in CSS
 pixels anyway.
 
-**AND THERE IS A GUARD NOW, because nothing here could see this class at all.**
+##### A CONTROL UNDER ANOTHER ONE IS THE WORSE HALF OF THE SAME FAULT
+
+Off the screen it does nothing. Underneath something else it does the WRONG
+thing, and that is the one that cost a game. Measured by asking every pair of
+visible controls whether their rectangles meet:
+
+| | what was on top of what |
+|---|---|
+| 320x568, batting | `End Game` over the whole width of `Bunt` and a sliver of `Power` |
+| 667x375 sideways, pitching | `End Game` over ten pixels of `Mound` |
+
+**THE FIRST WAS MINE, ONE COMMIT OLD, AND THE WIDE BRANCH'S OWN NOTE PREDICTED
+IT.** Pinning the End Game row to the corner won back the 24 pixels a 320x568
+phone was over by while pitching, and then landed it on the swing buttons: the
+note above says in as many words that a chip pinned to the bottom of a tall
+window lands there. **What actually fixed the overflow is the arena's floor**,
+and the pin was redundant the moment that landed. Two fixes for one fault, and
+the one that keeps every control apart is the one to keep.
+
+**The second predates all of this.** Out of the flow, the chip lands in the
+bottom right corner of whatever is there, and sideways the deck is a column
+about a third of the window wide, so `Mound` ran to 572 and the chip started at
+562. A tap meaning "change my pitcher" opened the sheet that abandons the game.
+
+**The row keeps its height and its panel colour and gives up side padding**,
+because Mound and Steal are pressed and a control has to look like one, and what
+a narrow column is short of is width. Twenty pixels: the gap goes minus ten to
+plus ten at 667, plus 28 at 720, plus 70 at 844, and nothing wider moves at all.
+Four candidates were measured; the two that moved the chip instead bought nothing
+or made it worse (putting the row back in the flow at that width pushes the chip
+off the bottom).
+
+**AND THE SIDEWAYS DECK HAS A FLOOR, which is recorded rather than fixed.** It is
+a fixed 339 pixels of content whatever the window is (a line score, the meter and
+its rows, and the controls), so landscape needs 371 pixels of window height.
+667x375 makes it by four. **568x320, an iPhone 5 held sideways, is 51 over and
+`Mound` is off the bottom**, and it was before any of this. Capping the play by
+play there buys nothing, because the play by play is not what is over: the column
+is about 170 pixels wide, the three pitch buttons wrap to three lines in it, and
+the meter alone is 214. That is a redesign of the sideways deck rather than a
+rule, so `check-reach` does not list that screen and this paragraph says why.
+
+##### AND THE LAYOUT CLASS DID NOT FOLLOW A PHONE BEING TURNED
+
+`roomfill` is what the stylesheet keys off, and it is toggled in `render()`.
+`onRoomResize` returned early on any screen but the menu, so **a window turned
+mid-game kept whichever answer it had at kickoff.** The media queries beside it
+follow the window on their own, so what a rotated tablet got was one branch's
+CSS with the other branch's class: two halves of one layout describing different
+windows, and nothing anywhere saying so.
+
+**It is the rule the menu already runs on, arriving at the game.** The section on
+the phone menu says a rotation is not a render and that the listener is what
+keeps the two in step; the listener was there and its first statement was a
+return. The class is one line and costs nothing to keep current, and the menu
+still only repaints on the menu, because that is a canvas redraw and this is not.
+
+**`check-reach` turns every screen sideways mid-game now**, which is a thing a
+player does with a phone and nothing here had ever done, and asserts both halves:
+that the class agrees with the query, and that no control has left the window or
+landed on another one in the new shape.
+
+##### THE GUARD FOR ALL THREE, and nothing else here could see the class
+
 `check-firstpitch` measures the glass and asks whether one pitch can be READ;
 `verify-rules` puts the game in a situation and asks whether the rule is right. A
 button off the side of the window is neither: the rule is right, the picture is
@@ -5463,11 +5526,16 @@ control. **It asks both pointer kinds**, because one of the four was a label
 naming keys and the label is shorter on a touch screen.
 
 **IT IS BOUNDED IN WALL CLOCK RATHER THAN IN PRESSES, and it does not wait a game
-out.** A press budget is a guess about how fast the game runs, and what this
-needs is not a finished game: it needs the deck at its FULLEST, which is the play
-by play filling up, which is a couple of innings. The result screen has controls
-of its own and nothing about them depends on how the game got there, so it is
-reached by ENDING the game rather than by playing to the last out.
+out.** A press budget is a guess about how fast the game runs. The result screen
+has controls of its own and nothing about them depends on how the game got there,
+so it is reached by ENDING the game rather than by playing to the last out.
+
+**AND ITS COVERAGE CLAIM ASKED THE WRONG THING FIRST.** It wanted two innings,
+which two minutes of a Fast game does not reach, and innings are not what this is
+about: the deck grows because the PLAY BY PLAY fills up, and that log is capped at
+40vh, which is about sixteen lines on the shortest phone. So the claim is that the
+log filled, which is the state all four faults were worst in. Measured on the
+first run of it: 344 samples and twelve controls on one screen in two minutes.
 
 ##### THE DECK WAS TOO TALL FOR A SHORT PHONE, and it took three passes to close
 
@@ -5780,8 +5848,10 @@ anything odd.
 - **THE MAN WHO MADE THE THIRD OUT LED OFF THE NEXT INNING.** Three functions
   ended a half by handing straight to `endHalfInning` and not one advanced the
   order first, so the batter who had just been rung up was standing back in the
-  box. **Putting the advance inside `endHalfInning` is the wrong fix and it is
-  the obvious one**, because a half inning can also end on a runner caught
+  box. **The inning board said so out loud and nobody read it**: `Due up` is
+  three names off `bat.idx`, so it led with the man who had just made the third
+  out, every half inning, on the one screen between the halves. **Putting the
+  advance inside `endHalfInning` is the wrong fix and it is the obvious one**, because a half inning can also end on a runner caught
   stealing, and that plate appearance is NOT finished: the batter at the plate
   leads off the next inning, which is the real rule and is what the steal path
   already does. Advancing there would skip a man. So the advance belongs to the
