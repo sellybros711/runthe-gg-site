@@ -164,15 +164,32 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
          reported a play by play of nought lines on a screen that had just
          played a whole game. */
       if (!g || g.over) return { over: true };
+      const shown = (e) => {
+        if (!e) return false;
+        const st = getComputedStyle(e);
+        return st.display !== 'none' && st.visibility !== 'hidden';
+      };
       const btn = [...document.querySelectorAll('#app button, #app .btn')]
-        .find(e => {
-          if (!/^(Continue|Next|Got it)/i.test((e.textContent || '').trim())) return false;
-          const s = getComputedStyle(e);
-          return s.display !== 'none' && s.visibility !== 'hidden';
-        });
+        .find(e => /^(Continue|Next|Got it)/i.test((e.textContent || '').trim()) && shown(e));
       if (btn) { btn.click(); return {}; }
-      /* Space is the one key that means "act" on every screen of this game:
-         it swings, it releases, and it answers a fielding window. */
+      /* THE PITCHING HALF NEEDS THREE PRESSES AND SPACE IS ONLY THE THIRD.
+         A pitch is a type, then Throw, then the release. Space answers the
+         release meter and nothing else, so a walk that only pressed Space sat
+         on the selection screen for its whole budget: measured, two minutes on
+         the pitching half produced nought pitches, nought log lines and an
+         inning that never ended, which read as the play by play failing to
+         fill rather than as a pitch never being thrown. */
+      const row = document.querySelector('#pitch-select');
+      if (shown(row)) {
+        const types = [...row.querySelectorAll('button[data-pt]')].filter(shown);
+        const picked = types.find(e => e.classList.contains('selected'));
+        if (types.length && !picked) { types[0].click(); return {}; }
+        const thr = [...row.querySelectorAll('button, .btn')]
+          .find(e => /^Throw/i.test((e.textContent || '').trim()) && shown(e) && !e.disabled);
+        if (thr) { thr.click(); return {}; }
+      }
+      /* Space is what acts on every other screen: it swings, it releases the
+         meter, and it answers a fielding window. */
       document.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
       return {};
     }).catch(e => ({ err: String(e).slice(0, 90) }));
