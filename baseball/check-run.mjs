@@ -239,6 +239,23 @@ claim(/\w/.test(r.arch), `the roster has a shape: ${JSON.stringify(r.arch)}`);
 claim(r.rosterText > 100, 'the twelve are listed under it', `roster text ${r.rosterText} chars`);
 claim(r.share && r.again && r.trophy, 'there is somewhere to go from here',
   `share ${r.share}, again ${r.again}, trophy ${r.trophy}`);
+/* WATCH OCTOBER IS DRAWN EXACTLY WHEN THERE IS AN OCTOBER. The page writes
+   `hidden` off madePlayoffs and .btn sets display, so for as long as no rule
+   made `hidden` mean anything the button sat on every missed-playoffs results
+   screen and threw on the bracket it reached for (null.rounds): a control that
+   does nothing, on the game's most common ending. READ OFF getComputedStyle,
+   never the attribute, which is the football coach grid's lesson; and the claim
+   bites whichever way this run went, so it is never vacuous. */
+const oct = await p.evaluate(() => {
+  const b = document.getElementById('b-watch-oct');
+  return {
+    visible: !!b && getComputedStyle(b).display !== 'none' && b.offsetParent !== null,
+    missed: /missed/i.test((document.getElementById('ro-verdict') || {}).textContent || ''),
+  };
+});
+claim(oct.visible === !oct.missed,
+  `Watch October is ${oct.missed ? 'not offered on a run with no October' : 'offered on a run that had one'}`,
+  `visible ${oct.visible}, verdict missed ${oct.missed}`);
 
 // ══ 3. the row it files is the row the cabinet reads ═══════════════════════
 head('3. THE SEASON IS FILED, AND THE BADGES IT LIT ARE NAMED');

@@ -11004,6 +11004,78 @@ a record beside `cachebust.json` would be a second copy of an answer.
 and `ideas/`, and at `?v=3` by `disclaimer.html`. 35 pages across the site version an
 `og:image` by hand and nothing checks any of them.
 
+### Every mode was PLAYED, and the dark board's names were black
+
+A pass that drove all eight modes through the real page and looked at the
+screens. What it found, every item silent:
+
+**A BUTTON DOES NOT INHERIT THE PAGE'S INK.** The UA sheet gives it
+`buttontext`, black in both themes, so every button-built card that declared no
+color of its own shipped black text on the dark theme's charcoal: the draft
+tile's name and price, the chooser's slot labels, the franchise cards. Reported
+by a player from the live dark board. `button{color:inherit}` is the reset;
+every control that declares a color still wins.
+
+**AND CHECK-THEME WAS GREEN THE WHOLE TIME, because its draft helper finishes
+the draft.** Section 3 probed the front page and then after `draft(page, 12)`,
+and a full twelve hands off to the squad screen, so the BOARD's text was
+collected on no run ever: the probe read the screens either side of the one the
+defect was on. It probes mid-draft now, while the board exists to be read.
+Proved by reverting the reset: two claims fail. Three more dark finds came out
+of the widened probe: the WAR temperature rungs were light-theme literals (the
+blue "useful" rung was #1a5276, the exact hex the dark token block calls
+unreadable, so it drew DIMMER than the grey filler under it and the scale
+inverted), the active filter chips borrowed LIFTED accents as fills under white
+type (the dark theme lifts accents for ink duty, so the chip got brighter as
+the page got darker: dark grads now), and the sticky draft header faded through
+a cream literal at night (`--bg-fade` carries the theme's own bg at alpha
+zero).
+
+**CUTTING A PLAYER BOUGHT CHEMISTRY.** Every replacement body carries `t:'FA'`
+and the cut man's season, so two of them read as the same franchise and often
+the same season: a Cap Survivor that cut seven measured **62 of its 66 links
+BETWEEN replacements** ("1985 FA reunion"), saturated the +15% cap, printed
+"Great clubhouse chemistry" and "+20.8 wins from chemistry" over a roster of
+scrubs, and lit five chemistry badges for the cutting. `pairLinks` answers []
+when either side is `_repl` now: the seven-cut fixture reads 1.0187 against
+1.1499 and an all-real roster is identical. The full badge sweep still lights
+its recorded 194 of 205, so the catalogue lost nothing. **Cap Survivor board
+rows filed before this sit high**, the honest direction.
+
+**WATCH OCTOBER THREW ON EVERY MISSED RUN.** `.btn` sets display, so the
+`hidden` the results screen writes never took (the football file's `[hidden]`
+pair, an eighth time): every missed-playoffs run drew the button and pressing
+it threw on the bracket that does not exist (`null.rounds`), which reads as a
+button that does nothing on the game's most common ending. `.btn[hidden]` is
+the rule and `check-run` asserts the pairing off getComputedStyle, in whichever
+direction the run it played came out, so it is never vacuous.
+
+Smaller, each verified: a scarce tag beside a three-digit price pushed the
+price 35.8px past the tile's edge (the tag ellipsizes now, the price never
+gives); the modes sheet said "44 franchises" one screen from the picker whose
+interpolated count says 30 (the sentence carries no number now); All-Time
+Staff drew an empty archetype capsule on the coach's take (hidden, and legal
+because .ro-arch declares no display); the cut sheet's 46vh list is EXACTLY
+nine 43px rows on an 844 phone, so three of twelve candidates hid below a
+clean edge (a sticky scroll shade now, toggled off the real scroll state, and
+NOT a mask or inset shadow: a mask fades cream rows toward a cream sheet,
+eight channel points, measured invisible, and an inset shadow paints under
+opaque children); and the daily's results screen and share never said DAILY,
+on the one mode built around everybody playing the same board (hero sub, share
+tag and its own dare now, which is the hoops card's lesson).
+
+**check-theme's section 2 has a second sport-colour exemption**: the landed
+reel is painted in the drawn CLUB's published colours, so a draw that lands a
+light club (Milwaukee's gold) read as a light surface about one run in
+several. `clubbed` and the reel's `wash` are excused by name, like `.ball`.
+
+**check-badges --quick fails 3 today on numbers that predate this pass**
+(bargain_title and mode_franchise_title dark, daily_100w lit against its
+excuse), proved by A/B against the pre-fix engine: identical either side. The
+FULL sweep is clean. The quick sweep's daily bots play TODAY's board, so its
+excuse list flaps with the calendar; pinning the sweep's daily date is the fix
+and is its own pass.
+
 ### A whole run, in a browser, to the screen it ends on
 
 ```

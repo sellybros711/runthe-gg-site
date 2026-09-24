@@ -71,6 +71,10 @@ document.head.appendChild(s);})();
      page, a panel and the daily card's gold tint. They are still the quiet half of
      the page, they are now readable while being it. */
   --ink:#1a1a1a;--dim:#5a5242;--dim-2:#665d4e;
+  /* The page background at alpha zero, for fades. A fade written against a cream
+     literal keeps fading THROUGH cream in the dark theme: the sticky draft
+     header's bottom edge wore a faint warm haze at night. */
+  --bg-fade:rgba(232,220,200,0);
   --red:#c0392b;--green:#2e7d32;--blue:#1a5276;--gold:#b8860b;--orange:#d4772c;--purple:#6a4c93;
   --cream:#f5f0e6;--tan:#c8b898;--leather:#8b6d4c;--dirt:#6b523a;
   --grad-red:linear-gradient(135deg,#c0392b 0%,#8b1a1a 100%);
@@ -130,6 +134,7 @@ document.head.appendChild(s);})();
   --bg:#14171c;--panel:#1d222a;--panel-2:#171b22;
   --line:rgba(255,255,255,.10);--line-2:rgba(255,255,255,.16);
   --ink:#ece6da;--dim:#aaa294;--dim-2:#948d7e;
+  --bg-fade:rgba(20,23,28,0);
   /* Each accent lifted until it clears the charcoal. The light theme's blue is
      #1a5276 at 2.1:1 on this background, which is a link nobody can read. */
   --red:#e0685a;--green:#5cb85f;--blue:#6aa9d8;--gold:#e0ac3c;--orange:#e89552;--purple:#a98ad4;
@@ -146,6 +151,13 @@ document.head.appendChild(s);})();
   --warm-ink:#e8c25c;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* A BUTTON DOES NOT INHERIT THE PAGE'S INK. The UA sheet gives it `buttontext`,
+   which is black in both themes, so any button-based card that sets no color of
+   its own ships black names on the dark theme's charcoal: the draft tile's name
+   and price, the chooser's slot labels, the franchise cards. Reported by a
+   player from the live dark board. Every control that declares its own color
+   still wins; this only changes what "no color" means. */
+button{color:inherit}
 html{background:var(--bg);color:var(--ink);font-family:var(--fb);-webkit-font-smoothing:antialiased}
 body{margin:0;min-height:100dvh;padding:0;background:var(--bg)}
 .wrap{max-width:600px;margin:0 auto;padding:14px 14px 46px}
@@ -160,6 +172,11 @@ h1,h2,h3{margin:0}
 .screen.on{display:block}
 
 /* ─── buttons ─── */
+/* .btn sets display, so the `hidden` the results screen writes on Watch October
+   never took: every missed-playoffs run drew the button, and pressing it threw
+   on a bracket that does not exist (null.rounds), which reads as a button that
+   does nothing. The football page has hit this same pair seven times. */
+.btn[hidden]{display:none}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
   font-family:var(--fd);font-size:18px;font-weight:400;text-transform:uppercase;
   letter-spacing:.06em;padding:16px 28px;border:none;border-radius:10px;cursor:pointer;
@@ -410,7 +427,7 @@ h1,h2,h3{margin:0}
 
 /* ─── cap bar ─── */
 .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
-  background:linear-gradient(180deg,var(--bg) 92%,rgba(232,220,200,0))}
+  background:linear-gradient(180deg,var(--bg) 92%,var(--bg-fade))}
 #s-draft{--sq:0}
 .capwrap:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
   background:var(--line);opacity:var(--sq)}
@@ -452,6 +469,11 @@ h1,h2,h3{margin:0}
   background:var(--panel);color:var(--dim);font-family:var(--fn);font-size:11px;font-weight:700;
   letter-spacing:.05em;cursor:pointer;white-space:nowrap;transition:border-color .15s}
 .tab.on{border-color:var(--green);background:var(--green);color:#fff}
+/* The dark theme LIFTS the accents for ink duty, so a chip that borrows one as
+   a FILL under white type gets brighter exactly when the page gets darker:
+   white on the lifted green is 2.0:1. The fill takes the theme's deep gradient
+   and the border keeps the lifted accent, so the chip still reads green. */
+:root[data-theme="dark"] .tab.on{background:var(--grad-green)}
 .tab.full{opacity:.35;order:99}
 .tab .n{margin-left:4px;font-weight:800;opacity:.6}
 
@@ -463,6 +485,7 @@ h1,h2,h3{margin:0}
   background:var(--panel);color:var(--dim);font-family:var(--fn);font-size:11px;
   font-weight:700;letter-spacing:.04em;cursor:pointer;white-space:nowrap;transition:border-color .15s}
 .sbtn.on{border-color:var(--gold);background:var(--gold);color:#fff}
+:root[data-theme="dark"] .sbtn.on{background:var(--grad-gold)}
 
 /* ─── player tiles ─── */
 .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:11px}
@@ -478,7 +501,12 @@ h1,h2,h3{margin:0}
   color:#fff;font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.06em}
 .tile .pr{font-family:var(--fn);font-size:15px;font-weight:600;letter-spacing:.01em;white-space:nowrap;margin-left:auto}
 .tile .scarce{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.04em;color:var(--gold);
-  background:rgba(184,134,11,.13);border:1px solid rgba(184,134,11,.3);border-radius:99px;padding:2px 6px;white-space:nowrap}
+  background:rgba(184,134,11,.13);border:1px solid rgba(184,134,11,.3);border-radius:99px;padding:2px 6px;white-space:nowrap;
+  /* The tag is the flex item that GIVES. Without min-width:0 nothing in this row
+     can shrink, so a scarce tag beside a three-digit price pushed the price
+     35.8px past the tile's own edge at 390px, painted over the next column
+     (.tile clips nothing). The price is the fact; the tag is the decoration. */
+  min-width:0;overflow:hidden;text-overflow:ellipsis}
 .tile .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   margin-top:7px;font-family:var(--fp);font-size:18px;font-weight:700;line-height:1.15;
   letter-spacing:.01em;padding-bottom:2px}
@@ -508,6 +536,16 @@ h1,h2,h3{margin:0}
 .warv.w2{color:#1a5276}
 .warv.w1{color:#6b6252}
 .warv.w0{color:var(--dim-2)}
+/* The rungs above are LIGHT-THEME LITERALS, so at night the blue "useful" rung
+   (#1a5276, the exact hex the dark token block calls a link nobody can read)
+   drew DIMMER than the warm-grey filler under it: the temperature inverted.
+   Reported with the black-name tiles. These are the dark theme's own lifted
+   accents, in the same order, each clearing the dark panel. */
+:root[data-theme="dark"] .warv.w5{color:#e0ac3c;text-shadow:0 0 12px rgba(224,172,60,.45)}
+:root[data-theme="dark"] .warv.w4{color:#e89552}
+:root[data-theme="dark"] .warv.w3{color:#5cb85f}
+:root[data-theme="dark"] .warv.w2{color:#6aa9d8}
+:root[data-theme="dark"] .warv.w1{color:#a29a89}
 .tile.off .warv{color:var(--dim-2)!important;text-shadow:none}
 .tile.off{background:rgba(var(--edge),.02);border-style:dashed;border-color:rgba(var(--edge),.08);cursor:default;box-shadow:none}
 .tile.off:active{transform:none}
@@ -857,6 +895,10 @@ h1,h2,h3{margin:0}
   font-weight:800;letter-spacing:.03em;padding:3px 4px;border-radius:5px;color:#fff;
   text-shadow:0 1px 1px rgba(0,0,0,.35)}
 .lc-row.open .lc-pos{background:rgba(var(--edge),.1)!important;color:var(--dim-2);text-shadow:none}
+/* An open slot's chip is 9.5px bold on a 10% edge tint, and the dark --dim-2 on
+   that tint is 3.6:1 against light's 4.6: the one chip that regressed at night.
+   One step up the same ramp; the row's own .5 opacity still quiets it. */
+:root[data-theme="dark"] .lc-row.open .lc-pos{color:var(--dim)}
 .lc-nm{flex:1;min-width:0;font-family:var(--fp);font-size:13.5px;font-weight:700;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lc-row.open .lc-nm{font-style:italic;font-weight:600;color:var(--dim-2)}
@@ -1048,8 +1090,11 @@ h1,h2,h3{margin:0}
 .pos-opt .pchip{flex:0 0 auto;min-width:42px;text-align:center;padding:6px 0;border-radius:8px;
   color:#fff;font-family:var(--fn);font-size:13px;font-weight:800;letter-spacing:.04em}
 .pos-opt .pmeta{flex:1;min-width:0}
-.pos-opt .pmeta .pname{font-family:var(--fn);font-size:14px;font-weight:700;color:var(--ink)}
-.pos-opt .pmeta .pnote{font-size:11px;color:var(--dim-2);margin-top:1px}
+/* Blocks, or the pair is one run-on line: a span is inline, so the note sat
+   flush against the name ("Second BasePrimary position") and its margin-top
+   was doing nothing. The stack this was drawn as needs saying out loud. */
+.pos-opt .pmeta .pname{display:block;font-family:var(--fn);font-size:14px;font-weight:700;color:var(--ink)}
+.pos-opt .pmeta .pnote{display:block;font-size:11px;color:var(--dim-2);margin-top:1px}
 .pos-opt .pgo{font-size:20px;color:var(--dim-2)}
 
 /* ─── era picker ─── */
@@ -1174,6 +1219,20 @@ h1,h2,h3{margin:0}
 .shock-hd{display:flex;align-items:center;gap:10px;margin-bottom:4px}
 .shock-hd .amt{font-family:'Righteous',var(--fd);font-size:30px;color:var(--red);line-height:1}
 .cutlist{display:grid;gap:7px;margin:12px 0 4px;max-height:46vh;overflow-y:auto}
+/* 46vh on an 844 phone is 388px, which is nine 43px rows EXACTLY: the list
+   clipped on a row boundary with the footnote right below, so three of twelve
+   cut candidates were invisible with nothing anywhere saying so. Toggled from
+   script off the real scroll state, never painted always, because a cue still
+   there at the bottom of the list would be the lie in the other direction.
+   A STICKY OVERLAY, NOT A MASK AND NOT AN INSET SHADOW: the mask faded cream
+   rows toward a cream sheet (eight channel points, measured, invisible), and
+   an inset box-shadow paints UNDER opaque children, which the rows are. The
+   shade is a zero-height grid item pinned to the scrollport's bottom, so it
+   rides above the rows; the script's toggle takes it off at the scroll end. */
+.cutlist .cutshade{position:sticky;bottom:0;height:0;display:none;pointer-events:none}
+.cutlist.more .cutshade{display:block}
+.cutlist .cutshade::before{content:'';position:absolute;left:-2px;right:-2px;bottom:-4px;height:26px;
+  background:linear-gradient(rgba(60,44,28,0),rgba(60,44,28,.30))}
 .cutrow{display:flex;align-items:center;gap:9px;width:100%;text-align:left;cursor:pointer;
   padding:9px 11px;border-radius:10px;border:1px solid var(--line-2);background:var(--panel);
   font-family:inherit;transition:border-color .12s ease,transform .1s ease}
@@ -1997,7 +2056,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=24"></script>
+<script src="engine.js?v=25"></script>
 <script src="run.js?v=21"></script>
 <script src="achievements.js?v=6"></script>
 <script src="board.js?v=1"></script>
@@ -2900,7 +2959,11 @@ const MODE_CARDS=[
    text:'Pick a decade and draft only from it. Every era plays differently: the dead-ball years are all arms, the nineties are all bats.'},
   {id:'fran',cls:'mc-club',title:'One Franchise',
    icon:'<path d="M12 2.2 3.4 6.6v6c0 5.2 3.7 9.9 8.6 11.1 4.9-1.2 8.6-5.9 8.6-11.1v-6z"/>',
-   text:'Draft one club\'s all-time roster, from 44 franchises. A century of Yankees or thirty years of Marlins, and you live with the one you picked.'},
+   /* NO COUNT IN THIS SENTENCE. It said "from 44 franchises" while the picker it
+      opens is the thirty clubs playing today with its count interpolated beside
+      the heading: a hand-written number one screen from the screen that knows.
+      This repo's oldest rule, and the sheet is the one surface that broke it. */
+   text:'Draft one club\'s all-time roster, from every club playing today. A century of Yankees or three decades of Marlins, and you live with the one you picked.'},
   {id:'div',cls:'mc-div',title:'Division Draft',
    icon:'<path d="M4 4h16"/><path d="M4 4v16"/><path d="M8 8h8v4H8z"/><path d="M8 16h8"/>',
    text:'Pick a division and draft only from the clubs that were really in it, 1994 to today. The map moves with history: Houston is NL Central until 2013 and AL West after.',
@@ -3736,7 +3799,12 @@ function showSquad(){
   const vd=$('sq-verdict');
   vd.textContent=cr.verdict;
   vd.className='sq-verdict'+(rating>=70?' great':'');
-  $('sq-arch').textContent=(structure.archetype&&structure.archetype.name)||'';
+  /* A staff run has no roster shape, and an empty pill still draws its border:
+     the coach's take on All-Time Staff carried a small blank capsule. Hidden
+     works here because .ro-arch declares no display of its own. */
+  const sqArch=(structure.archetype&&structure.archetype.name)||'';
+  $('sq-arch').textContent=sqArch;
+  $('sq-arch').hidden=!sqArch;
   const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
   $('sq-takes').innerHTML=takes.length?takes.map(t=>
     '<div class="ro-take '+(t.p?'pos':'neg')+'"><span class="ic">'+(t.p?'&#10003;':'!')+'</span><span class="tt">'+esc(t.t)+'</span></div>'
@@ -3816,7 +3884,16 @@ function askCut(ev,onDone){
     });
     list.appendChild(btn);
   });
+  const shade=document.createElement('div');
+  shade.className='cutshade';
+  list.appendChild(shade);
   openSheet('sheet-cut');
+  /* Measured AFTER the sheet is on: a hidden sheet has no layout box, so a read
+     here at build time answers zero for everything (showFact's own lesson). */
+  const more=()=>list.classList.toggle('more',
+    list.scrollHeight-list.scrollTop-list.clientHeight>8);
+  list.onscroll=more;
+  requestAnimationFrame(more);
 }
 
 /* ─── the trade machine, in play ───
@@ -4596,7 +4673,12 @@ function showResult(){
     hero.className='ro-hero lose';vd.textContent='Out in the '+last.round;vd.className='ro-verdict';}
   else{hero.className='ro-hero lose';vd.textContent='Missed the playoffs';vd.className='ro-verdict';}
   let modeLabel='';
-  if(RUN.tradeMachine){const n=(RUN.trades||[]).filter(t=>t.accepted).length;
+  /* THE DAILY SAYS IT IS THE DAILY. It is a Classic draft on a pinned seed, so
+     no mode flag names it, and this screen read as an ordinary run on the one
+     mode built around everybody playing the same board. First in the chain:
+     a daily run carries no other mode flag. */
+  if(RUN.daily)modeLabel='Daily Challenge #'+dailyNo();
+  else if(RUN.tradeMachine){const n=(RUN.trades||[]).filter(t=>t.accepted).length;
     modeLabel='Trade Machine \u00b7 '+n+' deal'+(n===1?'':'s');}
   else if(RUN.staff)modeLabel='All-Time Staff';
   else if(RUN.capSurvivor)modeLabel='Cap Survivor \u00b7 '+(RUN.cuts||[]).length+' cut';
@@ -4641,7 +4723,9 @@ function showResult(){
   const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
   const cr=RUN.staff?staffReport(tagged,o.chemistry,shownRating(o))
     :E.coachReport(tagged,o.chemistry,o.structure,shownRating(o),R.remaining(RUN));
-  $('ro-arch').textContent=(o.structure&&o.structure.archetype&&o.structure.archetype.name)||'';
+  const roArch=(o.structure&&o.structure.archetype&&o.structure.archetype.name)||'';
+  $('ro-arch').textContent=roArch;
+  $('ro-arch').hidden=!roArch;
   const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
   $('ro-takes').innerHTML=takes.length?takes.map(t=>
     '<div class="ro-take '+(t.p?'pos':'neg')+'"><span class="ic">'+(t.p?'&#10003;':'!')+'</span><span class="tt">'+esc(t.t)+'</span></div>'
@@ -4793,12 +4877,17 @@ async function shareDaily(){
 }
 
 function shareLines(o){
-  const tag=RUN.tradeMachine?' (Trade Machine)':RUN.staff?' (All-Time Staff)':RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
+  /* The daily leads the chain: it is the one mode whose whole point is that the
+     reader met the same board, and its share used to read as plain Classic.
+     Its dare is different for the same reason: every other dare asks somebody
+     to go play a game, this one asks them to play the SAME twelve spins, which
+     is the only dare here with one answer. The hoops card learned both. */
+  const tag=RUN.daily?' (Daily #'+dailyNo()+')':RUN.tradeMachine?' (Trade Machine)':RUN.staff?' (All-Time Staff)':RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
   let t='Run The Diamond'+tag+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
   const grid=seasonGrid();
   if(grid)t+='\n'+grid;
   if(shownRating(o)!=null) t+=' Team rating '+Math.round(shownRating(o))+'.';
-  t+='\nCan you draft a better team?\nrunthe.gg/baseball';
+  t+='\n'+(RUN.daily?'Same twelve spins for everybody today. One try.':'Can you draft a better team?')+'\nrunthe.gg/baseball';
   return t;
 }
 function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
