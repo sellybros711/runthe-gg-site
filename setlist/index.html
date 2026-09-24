@@ -3343,7 +3343,7 @@ function renderHome(){
               whose whole job is to be pressed. The countdown was 91px of that,
               and it is the one thing in the card that nobody came here to
               press. Rules, then the button, then what the band is up to. */''}
-        <button class="btn primary big" data-start="${b.id}">Draft a setlist</button>
+        <button class="btn primary big" data-start="${b.id}">Build a setlist</button>
 
         ${next ? `<div class="nextline">
           <span class="nl-k">Next show</span>
@@ -3593,7 +3593,7 @@ function renderReveal(){
       <div class="reveal-win landed" id="revealWin">
         <div class="reveal-bar">
           <span class="eyebrow" id="revealLbl">${just
-            ? 'Drawing your next show' : 'Spinning the archive'}</span>
+            ? 'Spinning for your next show' : 'Spinning the wheel'}</span>
           <span class="n">${String(S.round + 1).padStart(2, '0')}</span>
         </div>
         <div class="reveal-body">
@@ -3611,7 +3611,7 @@ function renderReveal(){
         </div>
       </div>
       <div class="skip" id="skipHint">Tap to skip</div>
-      <div class="reveal-cue hidden" id="rCue">Pull your song &darr;</div>
+      <div class="reveal-cue hidden" id="rCue">Pick your song &darr;</div>
     </div>`;
 
   const years = [...new Set(pool.map(yearOf))].sort();
@@ -4049,9 +4049,9 @@ function renderDraft(){
                 true when an open segue blocked the close button and is not
                 true any more. */''}
           ${canFinish
-            ? 'is still going. A song below finishes it.'
-            : `is still going. Nothing here lands it: play on, or close the set
-                and give it up${
+            ? 'is still going. One of these lands it.'
+            : `is still going. Nothing here lands it. Keep playing, or close the set
+                and let it go${
                 canRespin(S.sets, si, S.respins, S.closed, S.spent)
                   ? `. A respin costs ${fmtClock(respinCost(S.respins))}` : ''}.`}
         </div>` : ''}
@@ -4063,9 +4063,8 @@ function renderDraft(){
               action and then gets out of the way for good without needing a
               dismiss button or a flag to remember. */''}
         ${!S.sets.flat().length ? `<div class="firsthint">
-          <b>Tap any song below to add it to ${esc(cfg.label)}.</b>
-          Its running time comes off your clock, and the set runs until the
-          clock does.
+          <b>Pick any song below for ${esc(cfg.label)}.</b>
+          However long they played it, that comes off your clock.
         </div>` : ''}
         ${fits.length ? '' : `<div class="warn">Nothing here fits ${esc(cfg.label)}.
           Close the set and move on.</div>`}
@@ -4112,8 +4111,8 @@ function renderDraft(){
                    partner turns up in the next show 73.8% of the time. The
                    game was talking a player out of the thing it most wants
                    them to try. -->
-              <div class="commit">This one segues. Land it next round and the
-                transition scores. Most shows have a song that can.</div>` : ''}
+              <div class="commit">This one segues. Land it next round and you get the points.
+                Most shows have a song that can.</div>` : ''}
             <button class="btn closeset ${closeArmed ? 'forfeit' : ''} ${
               !closeArmed && (!fits.length || left < 6 * 60) ? 'urge' : ''}"
               type="button" id="closeSetBtn" data-close-set>
@@ -4124,12 +4123,12 @@ function renderDraft(){
                 ? 'Tap again to confirm'
                 : si === ENCORE_INDEX
                   ? 'Final. Scores the night.'
-                  : `${fmtClock(Math.max(0, left))} carries to ${esc(bankGoesTo(si))}, and a short set scores less`}</span>
+                  : `${fmtClock(Math.max(0, left))} carries to ${esc(bankGoesTo(si))}. Short sets score less.`}</span>
             </button>
             <div class="hint ${S.hintBad ? 'bad' : ''}">${esc(S.hint
-              || (!fits.length ? "Nothing here fits. You'll have to close the set."
+              || (!fits.length ? "Nothing here fits. Time to close the set."
                 : si === ENCORE_INDEX ? 'Whatever Set II left over is yours here.'
-                : `Close early and the rest of the clock carries to ${bankGoesTo(si)}, but the crowd notices a short set.`))}</div>
+                : `Close early and your leftover time carries to ${bankGoesTo(si)}. Just know the crowd notices a short set.`))}</div>
           </div>
         </aside>
       </div>
@@ -4295,7 +4294,7 @@ function renderResult(){
         <div class="n" id="scoreN">0</div>
         ${pct === null ? '' : `<div class="sb-pct">
           <b class="grade-${gradeScore(r.total)}">${pct}%</b>
-          of the best show those nights had in them</div>`}
+          of the best setlist you could've built</div>`}
         <div class="headline">&ldquo;${esc(r.headline)}&rdquo;</div>
         <div class="band-meta" style="margin:6px 0 0">${esc(S.band.label)} ·
           ${r.stats.songs} songs · ${fmtClock(r.totalUsed)} on stage</div>
@@ -4304,13 +4303,12 @@ function renderResult(){
       ${S.best ? (() => {
         const gap = S.best.total - r.total;
         return `<div class="card ceiling${gap <= 0 ? ' maxed' : ''}">
-          <div class="ceil-lbl">Where that percentage comes from</div>
+          <div class="ceil-lbl">The best you could have done</div>
           <div class="ceil-row">
             <div class="ceil-n">${S.best.total}</div>
             <div class="ceil-say">${gap <= 0
-              ? 'Nothing we tried beat you. That is the show those nights had in them.'
-              : `is the most those nights could have scored, so ${gap} points
-                 were left on the table.`}</div>
+              ? 'Nothing we tried beat you. That was the best those shows had.'
+              : `was possible from those same shows. You left ${gap} on the table.`}</div>
           </div>
           ${/* THE BENCHMARK IS ON THE BAR, not underneath it in prose. This
                  said "We replayed the same shows in the same order and played
@@ -4512,10 +4510,10 @@ function renderResult(){
       </details>
 
       <div class="actions">
-        <button class="btn primary" type="button" id="shareImgBtn">Share score card</button>
+        <button class="btn primary" type="button" id="shareImgBtn">Share your setlist</button>
         <button class="btn" type="button" id="shareBtn">Copy as text</button>
         <button class="btn" type="button" data-start="${S.band.id}">Play again</button>
-        <button class="btn ghost" type="button" id="homeBtn">Back to bands</button>
+        <button class="btn ghost" type="button" id="homeBtn">Back home</button>
       </div>
     </div>`;
 
