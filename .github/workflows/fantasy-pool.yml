@@ -104,12 +104,94 @@ jobs:
               echo "week $PREV could not be scored yet, carrying on"
           fi
 
-      - name: Build the board
+      # THE PRICE READS THE GAME STATUS REPORT, SO THE REPORT HAS TO BE THIS MORNING'S, AND
+      # THE TWO OF THEM NEED EACH OTHER. That is why the board is built twice.
+      #
+      # `weekly-pool.mjs` prices off `injuries_<season>_w<week>.json`, deliberately the same
+      # file the page reads, and that file is written by a DIFFERENT job on a different
+      # clock: fantasy-injuries.yml fires at 11:20am and 6:20pm Eastern. This one fires at
+      # 11:00. So without a refresh here the board is priced off a report last refreshed at
+      # twenty past six the previous evening, seventeen hours stale, and nothing anywhere
+      # says so: the prices are ordinary, the board drafts, and the one number the whole
+      # pricing pass was about is simply out of date.
+      #
+      # AND THE REFRESH CANNOT GO FIRST, which is the part that is not obvious.
+      # `injuries.mjs` scopes the report to the men ON THE BOARD, so it reads the week's
+      # pool file and exits 1 with "no pool for <season> week <week>. Build it first." A
+      # refresh placed above the build is a step that reliably does nothing at all, and the
+      # board then prices off whatever report was last committed, which is the defect this
+      # is here to fix, silently intact behind a step that looks like the fix.
+      #
+      # SO: build, refresh, build again. THE ID SET DOES NOT DEPEND ON THE REPORT, which is
+      # what makes the first pass a valid scope for the second: `eligible` comes off played
+      # games, the schedule and `minGames`, and none of those reads a designation. Driven on
+      # the live week 3 board, with the report present and with it moved aside: the same 414
+      # men in the same order, and 5 prices different. A build is under a second against the
+      # nflverse cache the first pass warms, so this costs nothing worth naming.
+      - name: Build the board, to scope the report
         if: steps.when.outputs.go == 'yes'
         run: |
           node football/build/weekly-pool.mjs \
             --season '${{ steps.week.outputs.season }}' \
             --week '${{ steps.week.outputs.week }}' --write
+
+      # IT WRITES INTO THE RUNNER'S CHECKOUT so the rebuild below reads today's answer, and
+      # the commit step at the bottom ships it with the board it priced. The injuries job
+      # still owns the CADENCE (twice a day, commit only when it moves, which is what stops
+      # a hundred deploys a weekend); this job commits once a week either way, so the report
+      # rides along for nothing. The two never write the same week's file: the injuries job
+      # writes whatever `fantasy_now.json` points at, and on the Tuesday that pointer has
+      # not moved yet.
+      #
+      # It carries on rather than failing, because a report that cannot be fetched must not
+      # stop the week. Every man then falls back to no designation, which is the board this
+      # mode priced for a year, the rebuild below is then a no-op, and the read-back after it
+      # is what says which of the two happened.
+      - name: Refresh the injury report the price reads
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          node football/build/injuries.mjs \
+            --season '${{ steps.week.outputs.season }}' \
+            --week '${{ steps.week.outputs.week }}' --write \
+            || echo "the report could not be refreshed, pricing on availability alone"
+
+      - name: Build it again, priced off that report
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          node football/build/weekly-pool.mjs \
+            --season '${{ steps.week.outputs.season }}' \
+            --week '${{ steps.week.outputs.week }}' --write
+
+      # WHICH REPORT THE PRICE ACTUALLY READ, said out loud rather than inferred from prices.
+      #
+      # A Tuesday build reads LAST week's report, always, because the coming week's is first
+      # filed on the Wednesday: the live file's own history has `report_week` still on 2 at
+      # 11:10pm Eastern Tuesday and on 3 by 3:05pm Wednesday. That is not a fault and the
+      # board is correct either way, but the two are priced off different amounts of
+      # information (a week old DID NOT PRACTISE is worth 0.511, a week old designation is
+      # worth nothing) and the log is where somebody finds out which they got.
+      - name: Which report the price read
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          node -e '
+            const fs = require("fs");
+            const f = "football/data/weekly_${{ steps.week.outputs.season }}_w${{ steps.week.outputs.week }}.json";
+            const p = JSON.parse(fs.readFileSync(f, "utf8"));
+            /* COUNTED PER MAN, never off report_week. That field is the latest week any
+               man is reported for, so a single fresh row makes a fortnight old report look
+               current. report_ages is what the price actually saw. */
+            const a = p.report_ages || {};
+            const seen = Object.values(a).reduce((s, n) => s + n, 0);
+            if (!seen) {
+              console.log(`week ${p.week}: NO REPORT AT ALL, priced on availability alone`);
+            } else {
+              console.log(`week ${p.week}: ${seen} men are on the report`);
+              console.log(`  reported for this week: ${a["this week"] || 0}`);
+              console.log(`  a week old:             ${a["a week old"] || 0}`);
+              console.log(`  older, so not news:     ${a.older || 0}`);
+            }
+            console.log(`${p.report_priced} of ${p.pool.length} men were repriced`);
+          '
 
       # The gate. It plays 1,200 drafts three ways against the board that was just written,
       # so a week that strands or prices somebody out of reach never reaches main.
@@ -219,8 +301,23 @@ jobs:
         run: |
           git config user.name "fantasy-bot"
           git config user.email "noreply@anthropic.com"
+          # The injury report is in here because this job REFRESHED it above and priced
+          # the board off it. Two reasons, and the second is the one that bites:
+          #
+          #   the page fetches injuries_<season>_w<week>.json for whatever week
+          #   fantasy_now.json points at, so a commit that advanced the pointer and left
+          #   the report behind would serve a board with no injury chips on it until the
+          #   injuries job next ran, twenty minutes later;
+          #
+          #   and an uncommitted refresh is an UNSTAGED CHANGE, which `git pull --rebase`
+          #   below refuses outright ("cannot pull with rebase: You have unstaged
+          #   changes", exit 128). That hits `|| exit 1` and takes this job RED on any
+          #   push collision, which is the one branch the loop exists for.
+          #
+          # It costs no extra deploy: this job commits once a week either way. The
+          # injuries job still owns the CADENCE, and writes a different week's file.
           git add football/data/weekly_*.json football/data/results_*.json \
-                  football/data/fantasy_now.json
+                  football/data/fantasy_now.json football/data/injuries_*.json
           if git diff --cached --quiet; then
             echo "the board has not moved"
             exit 0

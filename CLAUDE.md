@@ -3150,13 +3150,162 @@ ROW per player-week rather than a history, and **78% of them were last modified 
 so the table above is the report as it FINISHED. There is no way from that archive to measure
 what a Wednesday build would have seen. Said rather than implied.
 
-**SO THE TUESDAY BUILD MOSTLY BUYS NOTHING FROM THIS**, and that is worth knowing before
-reading the 0.70 as something the mode collects today. The report for the coming week is
-first filed on the Wednesday, so on a Tuesday `report_week` is usually the week just played
-and `injuryFactor` correctly returns 1 for every man. What this is worth scales with how late
-the build runs, and a later build is a shorter drafting window, which is a decision about the
-mode and is not taken here. `report_week` and `report_priced` are on the built pool so the
-log says which of the two happened rather than leaving somebody to diff prices.
+##### PRACTICE IS THE SIGNAL, AND IT IS WHAT MAKES THE TUESDAY BUILD WORTH ANYTHING
+
+The first version of this priced off the DESIGNATION alone, and left the Tuesday build
+collecting nothing, on the reading that the report for the coming week is first filed on the
+Wednesday so `injuryFactor` correctly returns 1 for every man. **The live file's own commit
+history says exactly when that happens**: `report_week` was still 2 at 11:10pm Eastern on the
+Tuesday and 3 by 3:05pm on the Wednesday. So a Tuesday 11am build can never see this week's
+report, and the conclusion drawn from that was that the build day would have to move.
+
+**It does not, because PRACTICE PARTICIPATION is a different signal and a better one.**
+Measured over the same 21,291 player-weeks:
+
+| practice | men | actual/proj |
+|---|---|---|
+| full | 1,880 | 1.082 |
+| **limited** | 1,076 | **0.814** |
+| **did not practise** | 1,131 | **0.233** |
+
+Two things follow and both matter. **Practice is filed on the WEDNESDAY with the first
+report**, where a Sunday game status is not final until the Friday, which is after the week
+has already locked, so the designation a build can see is never the one that was measured.
+And **practice survives a week where a designation does not**:
+
+| | a week old designation | a week old practice line |
+|---|---|---|
+| questionable / limited | 0.951 | 0.979 |
+| out / did not practise | 0.336 | **0.511** |
+
+**A man who did not practise at all last week delivers 0.511 of his projection this week**,
+and that is a large, measured discount a Tuesday build can read. So there are two tables,
+`INJ_THIS_WEEK` keyed on the PAIR and `INJ_LAST_WEEK` keyed on practice alone, and which one
+a build gets is decided by the clock rather than by anybody's choice. **The build day did not
+have to move.**
+
+The pair is worth keying on because the spread across it is large: a questionable man who
+practised in full delivers 0.886, one who was limited 0.711, and one who did not practise at
+all 0.448. A table on the designation alone prices all three the same.
+
+**NOTHING IS EVER PRICED ABOVE 1**, and the measured numbers invite it: a man on the report
+practising in full delivers 1.104. That is the projection under-reading good players (their
+projection runs a third higher than the pool's), which is a level bias rather than an
+availability signal, and paying for it here would be fixing one estimator's bias inside
+another.
+
+**And a report more than one week old is not news.** The 0.511 was measured one week apart; a
+man who missed practice in week 3 says nothing about week 7.
+
+###### `report_week` IS A MAX OVER THE MEN, AND THE PRICE WAS READING IT AS A DATE
+
+`injuries.mjs` keeps each man's LATEST report row, so one file holds designations of several
+ages at once, and `report_week` is the highest of them. The live week 3 file reads
+**`report_week: 3` off exactly ONE man**, while 23 of the others were last reported in week 2
+and 7 in week 1.
+
+`injuryFactor` took that one number for the whole file, so **every one of the 31 was priced as
+this week's news**: a fortnight old designation discounted as though the club had said it on
+Wednesday. **Nothing throws.** A stale designation is a real designation, the table lookup
+succeeds, and the price it produces looks exactly like a price.
+
+**The week is a fact about the MAN.** It is on every row already, as `w`, so the fix is to read
+it: `injuryFactor` takes `p.report_at` and the file's own `report_week` is kept for the page's
+sentence and the log and never for a price. Repriced men on the live board go **17 to 6**, and
+the six are the did-not-practise men, which is the signal the whole table is about.
+
+**THE SHEET HAD BEEN SAYING THE RIGHT THING ON SCREEN THE WHOLE TIME.** `injuryReport` reads
+`e.w` and writes `From the week 2 report. Week 3 has not been filed yet, so this is the last
+thing that was said about him.` So a reader tapping a red row was correctly told the news was a
+week old, while the price beside it had discounted him as though it were today's. Two answers to
+one question, one of them on screen and right, and the one that moved money was the wrong one.
+That is the nearest thing this had to a visible symptom and it reads as the page working.
+
+**The guard drives the REAL report rather than rows it invented**, because the defect is a
+property of the file's shape and an invented row cannot have it. Reintroduced, it reports
+`no man more than a week old is discounted at all: 7 men, worst x0.448`.
+
+**It asserts a PROPERTY over every man in the file, which the first draft did not.** That
+version hunted one hand picked pair (a questionable man who did not practise, reported two
+weeks back) and would have gone quiet on any week whose report happens not to contain one.
+And it pinned the filename, which accumulates one a week. It reads the newest report on disk
+and asks the rule of everybody in it.
+
+**Both directions, or the property passes on a function that discounts nobody.** "No man over
+a week old is discounted" is true of an `injuryFactor` that returns 1 for everything, so the
+clause beside it asks that the RECENT men are discounted. Proved: stubbed to return 1, it
+reports `0 of 24 men within a week of the report are discounted`.
+
+**And the first version of its message wrote the expected value in as a literal**, so it failed
+while printing the `x1` it had just refused. A failure that misreports what happened costs the
+next person the round it takes to disbelieve it. Every number is read back now.
+
+**The read-back counts men rather than restating the max**, for the same reason: one fresh row
+made a fortnight old report log as "priced off the report for this same week". It prints how
+many men are reported for this week, how many are a week old, and how many are older.
+
+##### The build was reading a report seventeen hours old, and nothing refreshed it
+
+The price reads `injuries_<season>_w<week>.json`, and that file is written by a DIFFERENT job
+on a different clock: `fantasy-injuries.yml` fires at 11:20am and 6:20pm Eastern, and
+`fantasy-pool.yml` fires at 11:00. **So the board was priced off a report last refreshed at
+twenty past six the previous evening.** Nothing anywhere said so: the prices are ordinary, the
+board drafts, and the one number the whole pricing pass is about is out of date.
+
+The pool job refreshes the report itself now. A refresh that fails carries on and prices on
+availability alone, because a report that cannot be fetched must not stop the week.
+
+**AND THE REFRESH CANNOT GO FIRST, SO THE BOARD IS BUILT TWICE.** `injuries.mjs` scopes the
+report to the men ON THE BOARD, so it reads the week's pool file and exits 1 with
+`no pool for 2026 week 4. Build it first.` **The first version of this put the refresh above the
+build**, where it does nothing at all: no report is written, the board prices off whatever was
+last committed, and the defect is intact behind a step that looks exactly like the fix. Driven
+for a week with no pool file, which is every Tuesday, that is what it reports.
+
+So it is build, refresh, build again. **The ID SET DOES NOT DEPEND ON THE REPORT**, which is
+what makes the first pass a valid scope for the second: `eligible` comes off played games, the
+schedule and `minGames`, and none of those reads a designation. Driven on the live week 3
+board with the report present and with it moved aside, the same 414 men come back in the same
+order and 5 prices differ. A build is under a second against the nflverse cache the first pass
+warms.
+
+Driven end to end for week 4: build 1 prices `0 of 414` with no report, the refresh writes one,
+build 2 prices `1 of 414` with ages `{"older":30,"a week old":1}`. Week 3's own files were put
+back afterwards, because **a published week must never be repriced**, and `fantasy_now.json`
+had to go back with them: the build advances the pointer.
+
+**AND IT COMMITS THE REPORT, WHICH THE FIRST VERSION DELIBERATELY DID NOT.** That version
+scoped the `git add` to the pool, the results and the pointer, on the argument that the
+injuries job owns that file and commits only when it moves, which is the rule that stops a
+hundred Cloudflare deploys a weekend. The rule is real and it is about the CADENCE, and this
+job commits once a week either way, so the report rides in that one commit for nothing.
+
+**What the first version actually cost is the Tuesday job going red.** An uncommitted refresh
+is an UNSTAGED CHANGE, and the push-rejection branch under it runs `git pull --rebase`, which
+refuses outright: `cannot pull with rebase: You have unstaged changes`, exit **128**, straight
+into the loop's `|| exit 1`. That loop is there because other scheduled jobs push to main, so
+the one branch it exists for was the one branch that could not work. Driven both ways against
+a real repo with an unrelated upstream commit: unstaged is exit 128 and a red job, committed is
+exit 0, a clean tree and both files on main.
+
+**The quieter half is the page.** It fetches `injuries_<season>_w<week>.json` for whatever week
+`fantasy_now.json` points at, so a commit that advanced the pointer and left the report behind
+serves a board with no injury chips until the injuries job next runs, twenty minutes later. A
+week with no file is a state the page handles by design, which is exactly why nothing would
+have reported it.
+
+**The two jobs never write the same file.** The injuries job writes the LIVE week's report, and
+on the Tuesday the pointer has not moved yet, so it is still the week just played; this job
+writes the week it is building. Both `git add` with the same glob and both are no-ops on the
+other's file.
+
+**And the log says which report it got**, because a Tuesday build and a Wednesday one are
+priced off different amounts of information and the prices alone do not say which. The
+read-back was driven all four ways (a Wednesday report, a Tuesday one, none at all, and a pool
+built before `report_ages` existed) with its body extracted from the yaml rather than retyped,
+which is how the pool filename in it was found to be wrong: it said `pool_` where the build
+writes `weekly_`, so it would have thrown on a file that does not exist rather than reporting
+anything.
 
 ##### A price cannot be live, and that is the rule rather than a limitation
 
@@ -3202,6 +3351,21 @@ The suite reads the pool FILE on disk, and that file is week 3, published and dr
 so it must not be rebuilt: until the next Tuesday build this runs the OLD board at the NEW
 cap. Week 3's shipped pool reads 8.8%, a pool priced at `PRICE_PROJ_W = 1` reads 19.8%, and
 the same pool at the old $90M cap reads 42.3% and strands.
+
+**And `#b-more` ran out, which is the same lesson from the other side.** The search for a
+grey row drafts again through the real control, and that control was `#b-more`, which takes
+the next of five CHANCES: the search could never look at more than five drafts. Five stopped
+being enough at $110M. Measured over 4,000 greedy drafts on the shipped board, a man out of
+reach appears on **12.1%** of boards, the median search finds one on the FIRST draft, p90 is
+5 and p99 is 16, so **a five draft search fails 9.8% of runs**. A flake reporting its own
+seed, about a feature that was on one board in eight the whole time.
+
+**The answer is to never leave the draft screen.** `#b-abandon` re-seeds the current chance
+and costs nothing, and the only reason it failed when this section was first written is that
+the walk had finished a draft and moved on to the review screen, where that button does not
+exist. So the walk signs at most five of the six, inspects all six boards, and abandons
+rather than completing: the button is always there, chances are never spent, and the search
+runs to 24 against a measured p99 of 16 and a worst case of 33.
 
 **And the first two drafts of the new guard measured the fixture rather than the page.**
 Asserting that discounting one man moves nobody else, it was asked of the DEAREST man and 47

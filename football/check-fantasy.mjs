@@ -661,35 +661,122 @@ console.log('\nTHE INJURY REPORT IS BUILT FROM TWO SOURCES');
 console.log('\nTHE PRICE IS THE PROJECTION, AND IT READS THE GAME STATUS REPORT');
 {
   const WP = await import('./build/weekly-pool.mjs');
-  const { injuryFactor, projectedPoints, pricePool, positionLevels, INJ_FACTOR,
-    PRICE_PROJ_W } = WP;
+  const { injuryFactor, projectedPoints, pricePool, positionLevels, INJ_THIS_WEEK,
+    INJ_LAST_WEEK, PRICE_PROJ_W } = WP;
+  /* `at` is the week the man's OWN report row was filed for, `w` the week being priced. */
+  const F = (o, at, w) => injuryFactor({ ...o, report_at: at }, w);
+  const LIM = 'Limited in practice', DNP = 'Did not practise', FULL = 'Full practice';
 
   ok('the price is the projection and nothing else', PRICE_PROJ_W === 1,
     `PRICE_PROJ_W = ${PRICE_PROJ_W}`);
 
-  /* A QUESTIONABLE MAN DELIVERS 0.70 OF HIS PROJECTION, measured over 21,291 draftable
+  /* A QUESTIONABLE MAN DELIVERS LESS THAN HIS PROJECTION, measured over 21,291 draftable
      player-weeks. Asked of the function rather than of the table, because what ships is
      what `injuryFactor` returns. */
-  const q = { report: 'questionable' };
   ok('  a questionable man in THIS week\'s report is discounted',
-    injuryFactor(q, 3, 3) === INJ_FACTOR.questionable && injuryFactor(q, 3, 3) < 1,
-    `x${injuryFactor(q, 3, 3)}`);
+    F({ report: 'questionable', practice: LIM }, 3, 3) < 1,
+    `x${F({ report: 'questionable', practice: LIM }, 3, 3)}`);
 
-  /* AND A WEEK OLD ONE IS NOT, which is the clause most likely to be tidied away as an
-     equality nobody needs. Measured: last week's questionable men deliver 0.951, because
-     70.6% of them are cleared by this week, so applying the discount to one would be a
-     30% cut on a man his club has since passed fit. */
-  ok('  and a week old designation is worth nothing', injuryFactor(q, 2, 3) === 1);
-  ok('  and no report at all is worth nothing', injuryFactor({ report: null }, 3, 3) === 1
-    && injuryFactor(q, null, 3) === 1);
+  /*
+   * PRACTICE IS WHAT SEPARATES THEM, and it is the half that carries the signal: a
+   * questionable man who practised in full delivers 0.886 and one who did not practise at
+   * all 0.448. A table keyed on the designation alone would price those two the same, which
+   * is what the first version of this did.
+   */
+  const byPractice = [FULL, LIM, DNP].map((pr) => F({ report: 'questionable', practice: pr }, 3, 3));
+  ok('  and practice is what separates two questionable men',
+    byPractice[0] > byPractice[1] && byPractice[1] > byPractice[2],
+    `full ${byPractice[0]}, limited ${byPractice[1]}, did not practise ${byPractice[2]}`);
+  /* A MAN THE REPORT NAMES WITH NO DESIGNATION IS STILL NEWS IF HE DID NOT PRACTISE, which
+     is the case the page already draws a chip for and the price used to ignore. */
+  ok('  and not practising is priced even with no designation called',
+    F({ report: 'none', practice: DNP }, 3, 3) < 1 && F({ report: 'none', practice: FULL }, 3, 3) === 1,
+    `x${F({ report: 'none', practice: DNP }, 3, 3)}`);
 
-  /* OUT AND DOUBTFUL ARE DELIBERATELY NOT PRICED. They are absence rather than performance,
-     `D.hurt` already takes those men off the board, and 36% of men out in one week's report
-     are playing by the next: a price near zero on one of them is a free star the moment he
-     is cleared. */
+  /*
+   * A WEEK OLD DESIGNATION IS WORTH NOTHING AND A WEEK OLD PRACTICE LINE IS NOT, which is
+   * the whole reason the Tuesday build reads anything at all. Measured: last week's
+   * questionable men deliver 0.951, because 70.6% of them are cleared by this week, but
+   * last week's did-not-practise men deliver 0.511.
+   */
+  ok('  a week old designation is worth nothing',
+    F({ report: 'questionable', practice: LIM }, 2, 3) === 1);
+  ok('  but a week old DID NOT PRACTISE is not', F({ report: 'none', practice: DNP }, 2, 3) < 1,
+    `x${F({ report: 'none', practice: DNP }, 2, 3)}`);
+  /* AND TWO WEEKS OLD IS NOT NEWS AT ALL. The 0.511 was measured one week apart; a man who
+     missed practice in week 3 says nothing about week 7. */
+  ok('  and a report two weeks old is not news', F({ report: 'none', practice: DNP }, 1, 3) === 1);
+  ok('  and no report at all is worth nothing', F({ report: null }, 3, 3) === 1
+    && F({ report: 'questionable', practice: LIM }, null, 3) === 1);
+
+  /*
+   * THE AGE IS A FACT ABOUT THE MAN AND NEVER ABOUT THE FILE, which is the one thing here a
+   * checker has to drive against the real report rather than against made up rows.
+   *
+   * `injuries.mjs` keeps each man's LATEST report row, so one file holds designations of
+   * several ages at once, and its `report_week` is a MAX over them. The live week 3 file
+   * reads `report_week: 3` off ONE man while 23 of the others were last reported in week 2
+   * and 7 in week 1. Written against that number, every one of the 31 was priced as this
+   * week's news, and nothing throws: a stale designation is a real designation and the price
+   * it produces looks perfectly ordinary.
+   */
+  /* THE NEWEST REPORT ON DISK, never a pinned filename. These accumulate one a week, so a
+     name written here is a name that goes stale, and any real one has the shape being asked
+     about because `injuries.mjs` keeps each man's latest row whatever week that was. */
+  const reports = fs.readdirSync(path.join(ROOT, 'football/data'))
+    .filter((f) => /^injuries_\d+_w\d+\.json$/.test(f)).sort();
+  ok('  there is a real report on disk to ask', reports.length > 0,
+    reports.length ? reports[reports.length - 1] : 'none found');
+  const rep = JSON.parse(fs.readFileSync(
+    path.join(ROOT, 'football/data', reports[reports.length - 1]), 'utf8'));
+  /* Priced as if it were the report's own latest week, which is what `report_week` claims
+     and is exactly the number the broken version read. */
+  const W = rep.report_week;
+  const named = Object.values(rep.men).filter((m) => m.st && m.st !== 'off' && m.w != null);
+  const age = (m) => W - m.w;
+  const fac = (m) => injuryFactor(
+    { report: m.st, practice: m.p || '', report_at: m.w }, W);
+  const ages = new Set(named.map(age));
+  ok('  and it holds men of more than one age', ages.size > 1,
+    `report_week ${W}, men last reported ${[...ages].sort().map((a) => a + ' wk ago').join(', ')}`);
+
+  /*
+   * ASSERTED AS A PROPERTY OVER EVERY MAN IN IT rather than as one hand picked pair, which
+   * the first draft did and which would go quiet on any week whose report happens not to
+   * contain that pair. The claim is the rule: past one week, the report is not news.
+   */
+  const old = named.filter((m) => age(m) >= 2);
+  ok('  no man more than a week old is discounted at all',
+    old.length > 0 && old.every((m) => fac(m) === 1),
+    old.length ? `${old.length} men, worst x${Math.min(...old.map(fac))}`
+      : 'no man in this report is more than a week old, so this proves nothing');
+  /* THE OTHER DIRECTION, or the clause above passes on a function that discounts nobody. */
+  const recent = named.filter((m) => age(m) <= 1);
+  const cut = recent.filter((m) => fac(m) !== 1);
+  ok('  and the recent ones are', cut.length > 0,
+    `${cut.length} of ${recent.length} men within a week of the report are discounted`);
+  /* AND THE FILE'S OWN MAX MUST NOT BE WHAT DECIDES. Most of a Tuesday report is older than
+     a week, so the count the price discounts is far short of the count the report names. */
+  ok('  so most of a Tuesday report is correctly not priced', cut.length < named.length / 2,
+    `${cut.length} of ${named.length} designated men are discounted`);
+
+  /* NOTHING IS EVER PRICED ABOVE 1. A man on the report practising in full delivers 1.104,
+     which is the projection under-reading good players rather than an availability signal,
+     and paying for it here would be fixing one estimator's bias inside another. */
+  const every = [...Object.values(INJ_THIS_WEEK).flatMap((r) => Object.values(r)),
+    ...Object.values(INJ_LAST_WEEK)];
+  ok('  and no factor anywhere is above 1', every.every((v) => v > 0 && v <= 1),
+    `${every.length} factors, worst ${Math.min(...every)}, best ${Math.max(...every)}`);
+
+  /* OUT AND DOUBTFUL ARE DELIBERATELY NOT PRICED, in either table and at any practice
+     status. They are absence rather than performance, `D.hurt` already takes those men off
+     the board, and 36% of men out in one week's report are playing by the next: a price near
+     zero on one of them is a free star the moment he is cleared. */
   for (const st of ['out', 'doubtful']) {
-    ok(`  ${st} is not repriced, because the board removes him instead`,
-      injuryFactor({ report: st }, 3, 3) === 1);
+    for (const pr of [FULL, LIM, DNP, '']) {
+      ok(`  ${st}${pr ? ', ' + pr.toLowerCase() : ''}: not repriced, the board removes him`,
+        F({ report: st, practice: pr }, 3, 3) === 1 && F({ report: st, practice: pr }, 2, 3) === 1);
+    }
   }
 
   /* IT REACHES THE PROJECTION AND THE PRICE, not just the lookup. Two identical men, one
@@ -725,7 +812,7 @@ console.log('\nTHE PRICE IS THE PROJECTION, AND IT READS THE GAME STATUS REPORT'
   const MID = Math.floor(POOL.pool.length / 2);
   const plain = men();
   const hurt = men();
-  hurt[MID].fit = INJ_FACTOR.questionable;
+  hurt[MID].fit = F({ report: 'questionable', practice: LIM }, 3, 3);
   pricePool(plain, positionLevels(plain));
   pricePool(hurt, positionLevels(hurt));
   ok('  and a questionable man is cheaper than the same man cleared',
@@ -3211,19 +3298,40 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
    * that got all the way through six picks without meeting a grey row was on the REVIEW
    * screen by then, and the next attempt waited thirty seconds for a button that was not
    * there. It survived for as long as the first draft happened to find one.
+   *
+   * ─── AND THEN `#b-more` RAN OUT, WHICH IS THE SAME LESSON FROM THE OTHER SIDE ─────
+   *
+   * `#b-more` takes the next of five CHANCES, so the search could never look at more than
+   * five drafts, and five stopped being enough the moment the cap moved to $110M. Measured
+   * over 4,000 greedy drafts on the shipped board: a man out of reach appears on 12.1% of
+   * boards, the median search finds one on the FIRST draft, p90 is 5 and p99 is 16. So a
+   * five draft search fails 9.8% of runs. That is a flake reporting its own seed, which is
+   * exactly what the first version of this section did, and the feature it was reporting
+   * missing was on one board in eight the whole time.
+   *
+   * THE ANSWER IS TO NEVER LEAVE THE DRAFT SCREEN. `#b-abandon` re-seeds the current chance
+   * and costs nothing, and the only reason it failed before is that the walk had finished a
+   * draft and moved on. So the walk signs at most five of the six, inspects all six boards,
+   * and abandons rather than completing. The button is then always there, chances are never
+   * spent, and the search can run as long as it needs to.
+   *
+   * TWENTY FOUR, against a measured p99 of 16 and a worst case of 33 over 4,000 drafts.
    */
+  const MAX_DRAFTS = 24;
   let sawGrey = null, drafts = 0;
-  for (; drafts < D.CHANCES && !sawGrey; drafts++) {
+  for (; drafts < MAX_DRAFTS && !sawGrey; drafts++) {
     if (drafts) {
-      await page.waitForSelector('#s-review.on', { timeout: 10000 });
-      await page.click('#b-more');
       await page.waitForSelector('#s-draft.on', { timeout: 10000 });
+      await page.click('#b-abandon');
       await page.waitForTimeout(200);
     }
     for (let i = 0; i < D.SLOTS.length && !sawGrey; i++) {
       await page.locator('#d-men .man').first().waitFor({ timeout: 10000 });
       sawGrey = await look();
-      if (!sawGrey) await signOne(page);
+      /* THE LAST BOARD IS INSPECTED AND NEVER SIGNED FROM. Signing the sixth man finishes
+         the draft and moves to the review screen, which is where `#b-abandon` does not
+         exist. Every board is looked at; only five are drafted from. */
+      if (!sawGrey && i < D.SLOTS.length - 1) await signOne(page);
     }
   }
 

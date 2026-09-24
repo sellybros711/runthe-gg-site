@@ -496,43 +496,114 @@ export const shrunkPPG = (p) => (p.games * p.half_ppg) / (p.games + SHRINK_K);
  *      doubtful last week          0.693        against 0.003
  *      out last week               0.336        against 0.000
  *
- * A week old designation is worth almost nothing: 70.6% of last week's questionable men are
- * cleared by this week. So `injuryFactor` returns 1 unless the report is for the week being
- * priced, and the accuracy this buys scales with how fresh the report is when the build
- * runs. See `buildWeeklyPool` for what that means for the Tuesday build.
+ * A week old DESIGNATION is worth almost nothing: 70.6% of last week's questionable men are
+ * cleared by this week. A week old PRACTICE LINE is not, which is what `INJ_THIS_WEEK` and
+ * `INJ_LAST_WEEK` split on, and it is measured a man at a time rather than a file at a time.
+ * See those two tables and `injuryFactor` for the rule, and `buildWeeklyPool` for what it
+ * means for the Tuesday build.
  */
 export const PRICE_PROJ_W = 1;
 
 /*
- * WHAT A DESIGNATION IS WORTH, as a multiplier on the projection.
+ * WHAT THE REPORT IS WORTH, as a multiplier on the projection.
  *
- * Measured above. Only `questionable` is here, and the empty entries are the argument: out
- * and doubtful are absence rather than performance, the board removes those men, and a
- * price near zero on a man who is later cleared is a free star.
+ * TWO TABLES, BECAUSE A BUILD READS ONE OF TWO DIFFERENT REPORTS and they carry completely
+ * different amounts of information. Which one it gets is decided by the clock, not by
+ * anybody's choice: the report for the coming week is first filed on the WEDNESDAY, and the
+ * live file's own commit history says so exactly. `report_week` was still 2 at 11:10pm
+ * Eastern on the Tuesday and 3 by 3:05pm on the Wednesday. So the Tuesday build reads last
+ * week's report and can never read this week's.
  *
- * A NUMBER MEASURED ON THE FINAL REPORT, and that is the one soft edge in it. nflverse
- * keeps ONE ROW per player-week rather than a history, and 78% of them were last modified
- * on a Friday, so what the table above reads is the report as it FINISHED. There is no way
- * from that archive to measure what a Wednesday build would have seen, so 0.70 is what a
- * complete report is worth and a partial one is worth somewhere between that and nothing.
- * Said rather than implied, because the alternative is reading a fitted constant as though
- * it were measured at the moment the build actually runs.
+ * ─── PRACTICE IS THE SIGNAL, NOT THE DESIGNATION ───────────────────────────────────
+ *
+ * Measured over the same 21,291 draftable player-weeks, actual points against what the
+ * projection expected, by practice participation alone:
+ *
+ *      full practice        1,880    1.082
+ *      limited              1,076    0.814
+ *      did not practise     1,131    0.233
+ *
+ * That matters because practice participation is filed on the Wednesday with the first
+ * report, where a game status designation for a Sunday game is not final until the Friday,
+ * which is after this week has already locked.
+ *
+ * ─── AND IT SURVIVES A WEEK, WHERE A DESIGNATION DOES NOT ──────────────────────────
+ *
+ * This is what makes a Tuesday build worth anything at all. Against LAST week's report:
+ *
+ *                            designation        practice
+ *      questionable / limited      0.951           0.979
+ *      out / did not practise      0.336           0.511
+ *
+ * A week old DESIGNATION is worth nothing, because 70.6% of last week's questionable men
+ * are cleared by this week. A week old DID NOT PRACTISE is worth a great deal: those men
+ * deliver 0.511 of their projection. So the Tuesday build has something measured to read
+ * after all, and the build day did not have to move to collect it.
  */
-export const INJ_FACTOR = { questionable: 0.70 };
+export const INJ_THIS_WEEK = {
+  /* practice, then designation. Read off the pair, because the pair is what was measured
+     and the spread across it is large: a questionable man who practised in full delivers
+     0.886 and one who did not practise at all delivers 0.448. */
+  'Full practice':       { questionable: 0.886 },
+  'Limited in practice': { questionable: 0.711 },
+  'Did not practise':    { questionable: 0.448, none: 0.770 },
+  /* NO PRACTICE LINE AT ALL is its own row rather than a fallback to 1, because the report
+     has still spoken about him. It is the designation-only figure. */
+  '':                    { questionable: 0.699 },
+};
+export const INJ_LAST_WEEK = { 'Did not practise': 0.511 };
+
+/*
+ * NOTHING IS EVER PRICED ABOVE 1, and the measured numbers invite it. A man on the report
+ * practising in full delivers 1.104 and one on it with no designation 1.073, so the table
+ * could pay them a premium. It must not: men on the report are BETTER PLAYERS than the pool
+ * average (their projection runs a third higher), so what those figures measure is the
+ * projection under-reading good players, which is a level bias and not an availability
+ * signal. Paying for it here would be fixing one estimator's bias inside another one.
+ *
+ * OUT AND DOUBTFUL ARE IN NEITHER TABLE, deliberately. They are absence rather than
+ * performance, `D.hurt` in `draft.js` already takes those men off the board, and 36% of men
+ * out in one week's report are playing by the next: a price near zero on one of them is a
+ * free star the moment he is cleared.
+ *
+ * AND EVERY NUMBER HERE IS MEASURED ON THE FINAL REPORT, which is the one soft edge.
+ * nflverse keeps ONE ROW per player-week rather than a history, and 78% of them were last
+ * modified on a Friday, so the archive can only say what a report looked like once it was
+ * finished. A Wednesday report is worth somewhere between these figures and nothing. Said
+ * rather than implied.
+ */
 
 /**
- * How much of his projection a man's own club expects him to deliver.
+ * How much of his projection the game status report expects a man to deliver.
  *
- * @param p       a row, optionally carrying `report`: his status in `report_week`'s report
- * @param report_week  the week that report was filed for, or null when there is none
- * @param week    the week being priced
+ * THE REPORT WEEK IS A FACT ABOUT THE MAN AND NEVER ABOUT THE FILE, which is the whole
+ * reason this takes `p.report_at` rather than the file's own `report_week`. `injuries.mjs`
+ * keeps each man's LATEST report row, so one file holds designations of several ages at
+ * once: the live week 3 file carries 7 men last reported in week 1, 23 in week 2 and
+ * exactly 1 in week 3. And `report_week` is a MAX over those rows, so it read 3.
+ *
+ * Written against that number, every one of the 31 was priced as this week's news, which
+ * discounted men the report had not mentioned for a fortnight. Nothing throws: a stale
+ * designation is a real designation and the price it produces looks ordinary.
+ *
+ * @param p     a row, optionally carrying `report` (the designation), `practice`, and
+ *              `report_at`, the week his own report row was filed for
+ * @param week  the week being priced
  */
-export function injuryFactor(p, reportWeek, week) {
-  /* THE REPORT HAS TO BE ABOUT THE WEEK BEING PRICED. A designation from last week is worth
-     0.951 on a questionable man, which is to say nothing, and applying 0.70 to it would be
-     a 30% discount on a man the club has since cleared. */
-  if (!p || !p.report || reportWeek == null || week == null || reportWeek !== week) return 1;
-  return INJ_FACTOR[p.report] ?? 1;
+export function injuryFactor(p, week) {
+  if (!p || week == null || !p.report || p.report_at == null) return 1;
+  /* OUT AND DOUBTFUL LEAVE BEFORE ANYTHING ELSE IS ASKED, so no combination of practice and
+     designation can ever discount a man the board is going to remove anyway. */
+  if (p.report === 'out' || p.report === 'doubtful') return 1;
+  const practice = p.practice || '';
+  if (p.report_at === week) {
+    const row = INJ_THIS_WEEK[practice] || INJ_THIS_WEEK[''];
+    return row[p.report] ?? 1;
+  }
+  /* A REPORT THAT IS MORE THAN ONE WEEK OLD IS NOT NEWS. A man who did not practise in week
+     3 says nothing about week 7, and the 0.511 was measured one week apart. */
+  if (p.report_at === week - 1) return INJ_LAST_WEEK[practice] ?? 1;
+  return 1;
 }
 
 /** How many REG games each club has already played before `week`, read off the schedule. */
@@ -735,14 +806,22 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
    * fixture, a probe rebuilding 2022: every one of those prices on `plays` alone, which is
    * what shipped before this. No throw, because there is nothing to be wrong about.
    *
-   * AND THE TUESDAY BUILD MOSTLY READS LAST WEEK'S. The report for the coming week is first
-   * filed on the Wednesday, so on a Tuesday `report_week` is usually the week just played,
-   * `injuryFactor` correctly returns 1 for every man, and this costs and buys nothing. What
-   * it is worth scales with how late the build runs, and the numbers for moving it are in
-   * `INJ_FACTOR`'s own note. Nothing here decides that: a later build is a shorter drafting
-   * window, which is a decision about the mode.
+   * AND THE TUESDAY BUILD MOSTLY READS LAST WEEK'S, which is what `INJ_LAST_WEEK` is for.
+   * The report for the coming week is first filed on the Wednesday, so on a Tuesday almost
+   * every man's own row is the week just played. What that is worth is measured rather than
+   * nothing: a man who did not practise last week delivers 0.511 of his projection. A later
+   * build reads a fresher report and a shorter drafting window, which is a decision about
+   * the mode and is not taken here.
+   *
+   * EVERY MAN CARRIES HIS OWN WEEK. The file's `report_week` is a MAX over the men in it, so
+   * it is the wrong thing for a price to read and `injuryFactor` reads `report_at` instead.
+   * It is still recorded on the pool, because the page prints it and the log reports it.
    */
   let reportWeek = null;
+  const clearReport = () => {
+    for (const p of eligible) { p.report = null; p.practice = ''; p.report_at = null; }
+  };
+  clearReport();
   try {
     const f = path.join(DATA_DIR, `injuries_${season}_w${week}.json`);
     if (fs.existsSync(f)) {
@@ -751,15 +830,21 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
       for (const p of eligible) {
         const e = rep.men && rep.men[p.player_id];
         p.report = e ? e.st : null;
+        /* THE PRACTICE LINE, which is the half that carries the signal and the half that
+           survives a week. `injuries.mjs` has already reduced it to one of three phrases. */
+        p.practice = e ? (e.p || '') : '';
+        /* WHICH WEEK HIS OWN ROW WAS FILED FOR. A man on injured reserve has no week and
+           needs none: he is off the board rather than discounted. */
+        p.report_at = e && e.w != null ? Number(e.w) : null;
       }
     }
   } catch (e) {
     /* A REPORT THAT WILL NOT PARSE MUST NOT TAKE THE WEEK'S BOARD DOWN. Every man falls
        back to no designation, which is the price this file shipped for a year. */
     reportWeek = null;
-    for (const p of eligible) p.report = null;
+    clearReport();
   }
-  for (const p of eligible) p.fit = injuryFactor(p, reportWeek, week);
+  for (const p of eligible) p.fit = injuryFactor(p, week);
 
   /* What each position is doing on THIS board, which is what a thin sample is argued
      toward. Read over the eligible men, so a bye week narrows it by itself. */
@@ -822,8 +907,19 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
        inferred: a build whose report is a week old is a build pricing on `plays` alone,
        which is a correct board and a different one, and the log is where somebody finds
        that out rather than by diffing prices. */
+    /* THREE NUMBERS ABOUT THE REPORT, AND `report_week` ALONE IS MISLEADING. It is the
+       latest week any man's row covers, so one man reported this week makes it read as this
+       week's report while the other thirty are a fortnight old. `report_at` is what the
+       price reads, so these two count men rather than restating the max. */
     report_week: reportWeek,
     report_priced: eligible.filter((p) => p.fit !== 1).length,
+    report_ages: eligible.reduce((a, p) => {
+      if (!p.report || p.report_at == null) return a;
+      const age = week - p.report_at;
+      const k = age <= 0 ? 'this week' : age === 1 ? 'a week old' : 'older';
+      a[k] = (a[k] || 0) + 1;
+      return a;
+    }, {}),
     /* How many men with a game already played were left off because their club is idle.
        Reported rather than shipped, because the bye trap is removed at the door here and a
        reader of this file should be able to see how big the door was. */
