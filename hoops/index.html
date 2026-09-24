@@ -981,6 +981,24 @@
   .brk-col{flex:0 0 150px;scroll-snap-align:start;display:flex;flex-direction:column;gap:7px;}
   .brk-col > :nth-child(2){margin-top:auto;}
   .brk-col > :last-child{margin-bottom:auto;}
+  /* A ROUND IS A CENTRED LIST AND THE PLAY-IN IS NOT A ROUND. Every other
+     column holds a whole round's games and centring the group is right for
+     all of them. The play-in is ONE game feeding ONE named seat, and centred
+     it floated 47px clear of the first round pairing it fills, with the TBD
+     it is about sitting just above it. brkAlignPlayIn measures the offset and
+     writes it here, so the two are on one line and the leftmost column reads
+     as the game that answers that TBD rather than as a box in space.
+
+     THE OFFSET CANNOT BE DERIVED, only measured: a box is 62px today and the
+     conference labels between the groups are not, so arithmetic here would be
+     a second copy of the layout that goes wrong the first time either moves.
+
+     AND THERE IS NO RULE HERE TO TURN THE AUTO OFF, which one was written
+     for and then deleted once the guard passed with it gone. An inline style
+     beats a stylesheet rule whatever its specificity, so the measured margin
+     already wins against the auto above and a `.brk-col.pin` rule was doing
+     nothing at all. `pin` stays as the MARKER that says which column is
+     anchored, which is what the guard reads; it is deliberately not styling. */
   .brk-h{font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
     color:var(--dim);text-align:center;padding-bottom:3px;border-bottom:1px solid var(--line);}
   .brk-col.now .brk-h{color:var(--orange);border-bottom-color:rgba(240,120,45,.45);}
@@ -3478,8 +3496,25 @@ function frgFill(){
     'All ' + NUMWORD(E.SLOTS.length) + ' fit under a <b>' + money(C.CAP_MUSD) + '</b> cap'
       + (dearest ? ', and the dearest man in the game is <b>' + money(dearest) + '</b>' : '')
       + '. ' + NUMWORD(E.SLOTS.length, true) + ' stars is not a roster you can afford.',
+    /* AND THE PLAYOFF GAMES ARE YOURS, which three steps never mentioned.
+       It is the most distinctive thing this game does and a first-timer was
+       told the opposite in as many words: "the season plays itself" and then
+       nothing. The claim describes `big` in engine.js, which is a game either
+       side can be knocked out in, a game that wins the series, and every
+       Finals game. It is a rule rather than a number, so there is nothing to
+       interpolate.
+
+       ONE CLAUSE ON THE STEP THAT IS ALREADY ABOUT THE SEASON, rather than a
+       fourth step, and the room is measured rather than guessed. The panel
+       is content sized under a max-height, and 360x640 is the tight one: 515
+       of 538 with this sentence in, against 495 before it, so a fourth step
+       is what would tip it over. 320x568 scrolled inside itself BEFORE this
+       and scrolls 41px more now, which is a cost rather than a regression,
+       and the way out of the guide there is the Start button it points at
+       rather than the Got it inside the panel. */
     'Then the season plays itself. <b>' + C.REGULAR_SEASON_GAMES + ' games</b>, '
-      + 'and the playoffs if you get there.'
+      + 'and the playoffs if you get there. <b>You call the games that can end '
+      + 'a series</b>, and every Finals game.'
   ];
   var ol = $('frg-steps');
   ol.textContent = '';
@@ -5819,7 +5854,8 @@ function brkRender(){
   var known = brkKnown();
   var h = '';
   for (var c = 0; c < B.names.length; c++) {
-    h += '<div class="brk-col' + (c === brkCol ? ' now' : '') + '">'
+    h += '<div class="brk-col' + (c === brkCol ? ' now' : '')
+      + (B.off && c === 0 ? ' pin' : '') + '">'
       + '<div class="brk-h">' + esc(BRK_SHORT[B.names[c]] || B.names[c]) + '</div>';
     var games = brkColumn(c);
     var side = null;
@@ -5835,6 +5871,53 @@ function brkRender(){
     h += '</div>';
   }
   rail.innerHTML = h;
+  /* AFTER THE SCREEN IS SHOWN, NEVER BEFORE IT. brkRender runs ahead of
+     show('s-brk') on the way into the postseason, so at this instant the rail
+     has no layout box and every rectangle is zero. That is showFact's own
+     lesson about a scrollTop written to a hidden element, arriving at a
+     measurement instead of a write. One frame later the screen is up. */
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(brkAlignPlayIn);
+  else brkAlignPlayIn();
+}
+
+/* THE PLAY-IN SITS OPPOSITE THE SEAT IT FILLS.
+ *
+ * One game, one named seat, and centred in a column as tall as the first
+ * round it floated clear of the pairing it belongs to: measured at 390x844,
+ * the box sat at 306 against a target at 259, with the TBD it is about on the
+ * line above it. Every other column holds a whole round, where centring the
+ * group is right, so this is the one that needs an anchor.
+ *
+ * WHICH SEAT IS DERIVED FROM BRK_TREE, never written as an index. The play-in
+ * winner is the 7 seed and 7 is in the last pairing today, and writing 3 here
+ * would be a second copy of a table that already exists one screen up.
+ */
+function brkAlignPlayIn(){
+  var rail = $('brk-rail');
+  if (!rail) return;
+  var B = brkBuild();
+  var col0 = rail.children[0], col1 = rail.children[1];
+  if (!B.off || !col0 || !col1) return;
+  var anchor = col0.children[1], box = col0.querySelector('.brk-g');
+  if (!anchor || !box) return;
+
+  var idx = -1;
+  for (var i = 0; i < BRK_TREE.length; i++)
+    if (BRK_TREE[i][0] === B.mySeed || BRK_TREE[i][1] === B.mySeed) { idx = i; break; }
+  /* The near side is emitted first, so the nth box of column one is the nth
+     near pairing. A seed the tree does not hold leaves the column centred,
+     which is what it did before any of this. */
+  var target = idx < 0 ? null : col1.querySelectorAll('.brk-g')[idx];
+  if (!target) return;
+
+  anchor.style.marginTop = '0px';
+  var a = box.getBoundingClientRect(), t = target.getBoundingClientRect();
+  /* NOTHING IS WRITTEN OFF A HIDDEN RAIL. A stale frame landing after the
+     screen has changed measures zero on both, and a zero delta written as a
+     margin would silently un-centre the column on the way back. */
+  if (!a.height || !t.height) { anchor.style.marginTop = ''; return; }
+  var delta = Math.round(t.top - a.top);
+  anchor.style.marginTop = (delta > 0 ? delta : 0) + 'px';
 }
 
 /* THE ROUND BEING PLAYED, IN VIEW. Five columns do not fit on a phone, so by

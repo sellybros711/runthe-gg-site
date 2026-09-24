@@ -3372,7 +3372,7 @@ function firstNightDebrief(o,res){
   const next = /psychology/i.test(bad) ? 'Put your next training point in Psychology.'
              : /stamina|gassed/i.test(bad) ? 'Put your next training point in Stamina.'
              : /banged up|condition/i.test(bad) ? 'Rest before your next match.'
-             : /near-fall/i.test(bad) ? 'Next match, build to the near-falls. Hit the big spots when the match asks.'
+             : /near-fall|close call|escape/i.test(bad) ? 'Next match, build to the near-falls. Hit the big spots when the match asks.'
              : 'Study the tape before your next match. It raises your odds.';
   const verdict = res.draw||res.win===null ? 'A draw.' : res.win ? 'You won.' : 'You lost.';
   const body=`<div class="seasonbrief">
@@ -7488,7 +7488,7 @@ const STIP_RULES = {
   hardcore:{ label:'Hardcore Match',     desc:'No disqualification. Weapons legal, anything counts.',
              ends:['pin','sub'],           danger:1, mod:3, noDQ:true },
   ladder:  { label:'Ladder Match',       desc:'The prize hangs above the ring. Climb the ladder and take it down.',
-             ends:['climb'],               danger:1, mod:4 },
+             ends:['climb'],               danger:1, mod:4, noCount:true },
   cage:    { label:'Steel Cage',         desc:'No count-outs. Escape by pinfall, submission, or over the top of the cage.',
              ends:['pin','sub','climb'],   danger:.6, mod:2, noCount:true, noDQ:true },
   sub:     { label:'Submission Match',   desc:'The only way to win is to make them tap. Pinfalls do nothing.',
@@ -7506,11 +7506,26 @@ const STIP_RULES = {
   chamber: { label:'Steel Dome', desc:'Six wrestlers, staggered entries, no way out. Eliminate them all to win.',
              ends:['pin','sub'],           danger:1,   mod:6, marquee:true, noDQ:true, noCount:true },
   mitb:    { label:'Briefcase Ladder Match',   desc:'Ladders and a briefcase above the ring. Win it, cash in on any champion, any time.',
-             ends:['climb'],               danger:1,   mod:5, marquee:true },
+             ends:['climb'],               danger:1,   mod:5, marquee:true, noCount:true },
   tlc:     { label:'Tables, Ladders, Chairs', desc:'Every weapon legal, prize hanging above. Climb to take it, put someone through everything on the way.',
-             ends:['climb'],               danger:1.2, mod:5, marquee:true, noDQ:true },
+             ends:['climb'],               danger:1.2, mod:5, marquee:true, noDQ:true, noCount:true },
 };
 function stipRules(o){ return STIP_RULES[o&&o.stip] || STIP_RULES.singles; }
+/* A NEAR-FALL IS A TWO COUNT. Every stipulation counts the same drama into
+   MS.nearFalls (a hold nearly escaped, a climb nearly made), so the NUMBER is
+   right everywhere and only the WORD is wrong: a ladder match has close calls
+   and a submission match has escapes. Said in one place because it is said on
+   the match log, in the reasons the match was good, and in the reason it was
+   not, and those three drifting apart is how the recap ends up describing a
+   different match from the one on screen. */
+function fallNoun(o,n){
+  const ends=stipRules(o).ends;
+  if(ends.includes('pin'))                  return `${n} near-fall${n===1?'':'s'}`;
+  if(ends.length===1 && ends[0]==='sub')    return `${n} escape${n===1?'':'s'}`;
+  return `${n} close call${n===1?'':'s'}`;
+}
+// "The fall" is the pin word for the moment a match ends. Nothing else has one.
+function timeLabel(o){ return stipRules(o).ends.includes('pin') ? 'Time of the fall' : 'Time'; }
 // Take the finish the engine wants to record and rewrite it to whatever the
 // stipulation actually allows. A pin in a Submission Match becomes a tap; a
 // long-count knockdown in Last Man Standing wins instead of a three-count.
@@ -8019,7 +8034,7 @@ const COLOR_PHASE={
                 '"Anything ends this now. Anything at all."',
                 '"They are trading and neither one is blocking any more."',
                 '"Somebody is about to do something they cannot take back."',
-                '"Every near-fall from here is the last one until it is not."',
+                '"Every exchange from here is the last one until it is not."',
                 '"This is what you paid for. Both of them know it."'],
 };
 let COMM_SAID={};                 // which colour lines have been used lately
@@ -8721,7 +8736,11 @@ async function tripleBreakUp(px, A){
 /* The stolen pin. You hit it, you covered, and the third body throws you off
    and takes the fall for himself. You did the work and lost the match. There
    is nothing else in wrestling that does this. */
-async function tripleSteal(px){
+/* viaHold: the same theft off a SUBMISSION rather than a cover. One function
+   rather than two, because the beat is identical and only the last few seconds
+   differ: a cover is stolen by hooking the leg and a hold is stolen by locking
+   your own on before the man on the mat can move. */
+async function tripleSteal(px, viaHold){
   MS.thirdBusy=true; trace('steal');
   const who=MS.third.name;
   poseSet('extra','run');
@@ -8731,16 +8750,21 @@ async function tripleSteal(px){
   impact(px,34,2); shake(); hitFlash('me',220); sfx('boo');
   burst(px,'THROWN OFF THE COVER');
   fmv('me',{pose:'prone', x:px+52, up:0, rot:0},180); await sleep(190);
-  fmv('extra',{pose:'pin', x:px+22, up:0, rot:0},220);
-  fLog(`<span class="bad">${who} throws you off the cover and hooks the leg himself.</span>`);
+  fmv('extra',{pose:viaHold?'submit':'pin', x:px+22, up:0, rot:0},220);
+  fLog(viaHold
+    ? `<span class="bad">${who} drags you off the hold and locks his own on before ${MS.opp.name} can move.</span>`
+    : `<span class="bad">${who} throws you off the cover and hooks the leg himself.</span>`);
   await sleep(260);
-  for(let n=1;n<=3;n++){ await refSlap(); showCount(n, n>=2); await sleep(n===1?460:620); }
+  if(viaHold){ await sleep(520); }
+  else { for(let n=1;n<=3;n++){ await refSlap(); showCount(n, n>=2); await sleep(n===1?460:620); } }
   sfx('crowdBig'); await flashScreen();
   await callout('HE STOLE IT!');
-  fLog(`<span class="bad">Three. ${who} pins ${MS.opp.name} off your finish. You did every bit of the work and you are not the winner.</span>`);
+  fLog(viaHold
+    ? `<span class="bad">${MS.opp.name} taps to ${who}. You did every bit of the work and you are not the winner.</span>`
+    : `<span class="bad">Three. ${who} pins ${MS.opp.name} off your finish. You did every bit of the work and you are not the winner.</span>`);
   const R=rel(MS.third.id); R.heat=clamp((R.heat||0)+20,0,100);
   MS.quality+=8;
-  commitFinish({type:'pin', by:false, who, stolen:true});
+  commitFinish({type:viaHold?'sub':'pin', by:false, who, stolen:true});
   MS.thirdBusy=false;
   await sleep(420);
   await endFight(false);
@@ -9150,7 +9174,7 @@ const PHASES=[
   {id:'shine',  name:'The Shine',      beats:3, tier:[1,3], say:'Early control, and the crowd is with it.'},
   {id:'heat',   name:'The Heat',       beats:4, tier:[1,3], say:'The cut-off. Now the body part gets worked.'},
   {id:'come',   name:'The Comeback',   beats:3, tier:[2,4], say:'The building senses it turning.'},
-  {id:'stretch',name:'Finish Stretch', beats:99,tier:[3,5], say:'Signatures, near-falls, and somebody has to lose.'},
+  {id:'stretch',name:'Finish Stretch', beats:99,tier:[3,5], say:'Signatures, big spots, and somebody has to lose.'},
 ];
 function phaseNow(){ return PHASES[Math.min(MS.phase,PHASES.length-1)]; }
 // which body part a move family punishes; submissions and mat work go
@@ -9375,7 +9399,7 @@ const MID_EXCHANGES = [
       cold:`They hold the lock-up a half second too long. "Do not embarrass us. Take it home properly."`,
       warm:`"You alright? Genuinely." A beat. "Good. Because I am not going easy now."`,
       unhinged:`"THIS is what I am TALKING about! Let us hurt each other for these people!"`,
-      pro:`"Two more near-falls and then we go home. On your call. Yes?"`,
+      pro:`"Two more big spots and then we go home. On your call. Yes?"`,
       bitter:`"Enjoy this. They do not give you many of these."`,
     }),
     opts:(ch)=>[
@@ -10140,14 +10164,27 @@ async function runFight(){
         busy(true);
         await chBeltShot('me','opp');
         if(ok){
-          fLog(`<span class="hi">The belt lands flush. ${MS.opp.name} is out. You slide the cover in.</span>`);
+          // What a flush belt shot BUYS is the stipulation's business. commitFinish
+          // already rewrites an illegal finish type, so the result was never wrong;
+          // what was wrong is that a ladder match played the whole 1-2-3 under a
+          // log reading "you slide the cover in" and a result reading "pulled down
+          // the prize". Same rule the cover already follows.
+          const _be=stipRules(o).ends;
+          const _bafter = _be.includes('pin')   ? 'You slide the cover in.'
+                        : _be.includes('climb') ? 'Nobody is stopping you climbing now.'
+                        : _be.includes('sub')   ? 'Now you take your time and pick the hold.'
+                        :                         'Nobody is getting up from that.';
+          fLog(`<span class="hi">The belt lands flush. ${MS.opp.name} is out. ${_bafter}</span>`);
           MS.opp.hp=0; setBar('hpOpp',0); MS.mom=100; setMom();
           MS.quality-=4;
           G.car.pop=clamp(G.car.pop-3,1,100);
           G.car.reaction=clamp((G.car.reaction||G.car.pop)+8,0,100);
           if(FIG.ref) refDrift();
           // the cover is counted like any other, and this one is a three
-          await pinSequence(true, true, 100, 'a belt shot behind the ref', false);
+          if(_be.includes('pin'))        await pinSequence(true, true, 100, 'a belt shot behind the ref', false);
+          else if(_be.includes('climb')) await climbAttempt();
+          // a submission stipulation falls through to the finish below, which
+          // commitFinish names with the last hold actually applied
           if(!MS.ended){ commitFinish({type:'pin',by:true,move:'a belt shot behind the ref',fin:false}); MS.ended=true; return endFight(true); }
           return;
         } else {
@@ -10474,6 +10511,17 @@ async function submissionAttempt(byMe, mvName){
     }
     $('arena').classList.remove('tense');
     refDrift();
+  }
+  /* AND HE CAN STEAL A TAP THE SAME WAY HE STEALS A COVER. The break-up was
+     wired into this path and the theft was not, so a triple threat that went
+     to a submission could never produce one: the harness would force 'steal',
+     the match would end by tap, and the beat simply never happened. Same gap
+     the break-up comment above this one records, left open one line further. */
+  if(willTap && byMe && isTriple() && !MS.thirdBusy && !MS.ended && !MS.thirdStole && MS.phase>=4
+     && (pinnedIs('steal') || (!randomBeatsOff() && rnd()<0.30))){
+    MS.thirdStole=true;
+    await tripleSteal(Math.round(atX(D)*0.30), true);
+    return true;
   }
   if(willTap){
     // Iron Man: a tap-out is a FALL on the scoreboard, not the finish. The
@@ -11013,7 +11061,7 @@ async function endFight(iWon){
     fLog(iWon?`<span class="hi">Three count. ${MS.me.name} wins it with the ${bare(f.move)||'cover'}.</span>`
              :`<span class="bad">Three count. ${MS.opp.name} takes it with the ${bare(f.move)||'cover'}.</span>`);
   }
-  fLog(`<span class="hint">Time of the fall: ${clockStr()}${MS.nearFalls?` · ${MS.nearFalls} near-fall${MS.nearFalls>1?'s':''}`:''}</span>`);
+  fLog(`<span class="hint">${timeLabel(MS.o)}: ${clockStr()}${MS.nearFalls?` · ${fallNoun(MS.o,MS.nearFalls)}`:''}</span>`);
   $('fClock').textContent=clockStr();
   const pc=charById(MS.o.oppId);
   if(pc){
@@ -11116,7 +11164,7 @@ function finalizeFight(iWon){
   if(mgrBonus) good.push(`${myManager().name} at ringside kept you focused`);
   // ---- the things that actually make a match good ----
   const nf=MS.nearFalls||0;
-  if(nf){ const b=Math.min(9,nf*3); quality+=b; good.push(`${nf} near-fall${nf>1?'s':''} the crowd bought`); }
+  if(nf){ const b=Math.min(9,nf*3); quality+=b; good.push(`${fallNoun(o,nf)} the crowd bought`); }
   const variety=new Set(used.map(m=>m.id)).size;
   if(used.length>=4){
     const vr=variety/used.length;
@@ -11131,7 +11179,7 @@ function finalizeFight(iWon){
     const line=`${MS.decWon}/${MS.decisions} big moments nailed${MS.big?` · ${MS.big} big spot${MS.big>1?'s':''}`:''}`;
     (MS.decWon*2>=MS.decisions?good:bad).push(line);
   }
-  if(!nf && MS.beat>8){ quality-=5; bad.push('no near-falls: nothing the crowd could believe in'); }
+  if(!nf && MS.beat>8){ quality-=5; bad.push(`no ${fallNoun(o,2).replace(/^2 /,'')}: nothing the crowd could believe in`); }
   // ---- the things holding you back ----
   const psychFloor=34+o.mult*6;
   if(a.ps<psychFloor){ const p=(psychFloor-a.ps)*0.45; quality-=p; bad.push(`ring psychology too green (${a.ps} vs ${Math.round(psychFloor)} needed)`); }
@@ -11510,7 +11558,7 @@ function simMatch(o){
   const sub = finMv && finMv.cat==='submission';
   const secs=420+Math.floor(rnd()*600);
   const nf=1+Math.floor(rnd()*3);
-  if(nf) { quality+=Math.min(10,nf*3.5); good.push(`${nf} near-fall${nf>1?'s':''} the crowd bought`); }
+  if(nf) { quality+=Math.min(10,nf*3.5); good.push(`${fallNoun(o,nf)} the crowd bought`); }
   return {quality:Math.round(clamp(quality)), win, good, bad, used, p,
     nearFalls:nf, time:`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`,
     finish:{type:sub?'sub':'pin',by:win,move:finMv?finMv.name:'a cover',fin:!!(finMv&&finMv.tier>=4)}};
@@ -12282,7 +12330,7 @@ function renderMatch(o,res){
     ${(q=>q?`<div class="dirtsheet"><div class="dq">"${q}"</div><div class="ds">The Ropes Report · Year ${c.year}, Week ${c.week}</div></div>`:'')(pressQuote(o,res,s))}
     <div class="mstats">
       <span><b>${res.time||'-'}</b> time</span>
-      <span><b>${res.nearFalls||0}</b> near-fall${(res.nearFalls||0)===1?'':'s'}</span>
+      <span><b>${res.nearFalls||0}</b> ${fallNoun(o,res.nearFalls||0).replace(/^\d+\s*/,'')}</span>
       <span><b>${res.used.length}</b> moves called</span>
       ${res.limb?`<span>worked the <b>${LIMB_NAME[res.limb]||res.limb}</b></span>`:''}
       ${res.win&&c.streak>=2?`<span class="streakchip">${pico('fire',12)} ${c.streak} straight</span>`:''}

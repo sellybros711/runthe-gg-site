@@ -4437,6 +4437,66 @@ and `../personalities.js`, which look unused from the career game and are not: t
 were deleted once as dead code and the booking sim shipped broken for a week. The
 suite's first section fails on any script tag that points at a missing file.
 
+### A stipulation only speaks its own language
+
+**A NEAR-FALL IS A TWO COUNT.** Every stipulation counts the same drama into
+`MS.nearFalls` (a hold nearly escaped, a climb nearly made), so the NUMBER is right
+everywhere and only the WORD can be wrong. It was, in four shared places at once: the
+closing log line, the result screen's stat row, the reasons the match was good, and the
+phase banner, which is logged in EVERY match that reaches the stretch. So a ladder match
+told you about its near-falls.
+
+**`commitFinish` is a NORMALIZER, and that is why none of this ever failed.** It rewrites
+an illegal finish TYPE to one the stipulation allows, so a pinfall in a ladder match comes
+out as a climb and the RESULT is always right. What it cannot fix is the picture: a belt
+shot behind the referee played the whole 1-2-3 and logged "you slide the cover in" under a
+result reading "pulled down the prize". Two paths reach `pinSequence` without going through
+`coverAttempt`'s gate (the tag turn, which is in a tag match and is fine, and the belt shot,
+which is not), and the belt shot's own gate asks `noDQ`, which is a question about
+disqualification rather than about whether a fall counts.
+
+`fallNoun(o,n)` and `timeLabel(o)` are the one place the word lives: near-falls where a fall
+ends it, escapes in a submission match, close calls everywhere else. **The guard reads the
+WORDS and not the finish type**, because the finish type was never wrong.
+
+**A climb stipulation cannot end by count-out.** Ladder, briefcase and TLC are fetched from
+the floor, so being counted out for leaving the ring contradicts the one thing the match
+asks you to do. TLC carried `noDQ` and not `noCount`, which is what gave the oversight away;
+all three carry both now.
+
+**A thin sample is a coin toss on this.** The first sweep ran one match per stipulation and
+called four of six clean, because a match that ends before the stretch never logs the phase
+banner. The check plays each stipulation several times and asserts at least one run REACHED
+the stretch, or the run proves nothing about the line that carried the bad word.
+
+### The late career was a spiral, and rest is what ends it
+
+Reported as the game getting sloppier the longer it ran. Measured over a fourteen year
+career: years 9 to 13 spent **30 to 38 of 40 weeks injured**, and the severity index had
+saturated so nearly every draw was a 12-to-34 week neck. `c.wear` only ever climbed, so
+mileage drove injuries, injuries added weeks, and nothing pulled the number back.
+
+Three things turn it into an equilibrium, and **each fails silently**, a decade into a save:
+
+- **Wear comes off during a layoff**, 1.2 a week, down to a floor of `(age-21)*4`. The floor
+  is the miles that never come off, so a 35 year old can rehab back to heavy miles and never
+  to a rookie's legs. Without it the fix overshoots and a veteran reads "fresh legs".
+- **Chronic damage stops compounding past four entries.** It is a list with no ceiling, so a
+  twenty year veteran's own file guaranteed his next injury.
+- **After any ten week layoff the top of the injury table is off the menu for two years.**
+  One catastrophe is a story; one every spring is a treadmill.
+
+**Measured over twelve fourteen-year careers (168 career-years) rather than one**, which is
+what the first pass got wrong: matches a year fall from 26 in year one to about 17 by year
+seven and then **plateau**, oscillating 15 to 20 through year fourteen rather than falling to
+nothing. Injured weeks settle around 20. Wear pins at the floor (52 to 55 at that age).
+**The plateau is the claim, not the number**: the old behaviour was monotonic, and the guard
+fails if the last four years each play fewer matches AND spend more weeks hurt.
+
+The distribution needs a dozen careers and lives in a probe. What is in `verify.mjs` is that
+each of the three mechanisms still bites, because a green distribution would pass just as
+well on a fix that had quietly stopped working.
+
 The roster, the mentors in `legends.js`, the free agents in `personalities.js` and the
 booking sim's promotions all use LEGAL names and invented companies. No ring names,
 no trademarked match or event names, no catchphrases. The suite's second section
@@ -9254,6 +9314,83 @@ disabled by `reelBusy`, broke out after ONE board and failed.
 two-position man and **0.03% of four-board searches do**, over 3000 real drafts.
 That is the whole difference between a guard that flakes about one run in ten
 and one that does not. Four selectors in that file, fixed in one commit.
+
+#### The two the first pass left, and one figure in it that was wrong
+
+Both were written up as judgement calls and both are done. One of the two
+descriptions was also wrong, which is worth reading before trusting a number
+measured the same way.
+
+**THE GUIDE SAID THE SEASON PLAYS ITSELF AND STOPPED.** It is the one screen a
+stranger cannot skip, three numbered steps over the front page, and the most
+distinctive thing this game does was in none of them: a first-timer was told
+the opposite in as many words. Step 3 names it now, in one clause on the step
+that is already about the season. It is a rule rather than a number, so there
+is nothing to interpolate; the claim describes `big` in `engine.js`, which is a
+game either side can go out in, a game that wins the series, and every Finals
+game.
+
+**A FOURTH STEP IS WHAT WOULD NOT FIT, and the room is measured.** The panel is
+content sized under a max-height and 360x640 is the tight one: 515 of 538 with
+this sentence in, against 495 before it. 320x568 scrolled inside itself BEFORE
+this and scrolls 41px more now, which is a cost rather than a regression, and
+the way out there is the Start button the guide points at rather than the Got
+it inside the panel. `check-home.mjs` asserts the words, the room and that
+Start is still the element at its own centre, because no measurement of the
+glass can say whether a guide is telling the truth about the mode.
+
+**THE PLAY-IN FLOATED CLEAR OF THE SEAT IT FILLS.** Every column of the bracket
+is a centred list, which is right for a whole round and wrong for the play-in:
+it is ONE game feeding ONE named seat. Measured at 390x844, the box sat at 306
+against the pairing it fills at 259, with the TBD it is about on the line
+above. It is level with it now.
+
+**THE OFFSET IS MEASURED AND NOT DERIVED**, because a box is 62px today and the
+conference labels between the groups are not. It runs on a frame AFTER the
+screen is shown, since `brkRender` is called ahead of `show('s-brk')` and at
+that instant every rectangle in the rail is zero, which is `showFact`'s own
+lesson about a `scrollTop` written to a hidden element arriving at a
+measurement. A stale frame measuring zero writes nothing rather than
+un-centring the column on the way back.
+
+**And the CSS rule written to make room for it did nothing.** `.brk-col.pin >
+:nth-child(2){margin-top:0}` was added to turn off the auto centring, and the
+guard passed with it deleted: an INLINE style beats a stylesheet rule whatever
+its specificity, so the measured margin was already winning. The rule is gone
+and `pin` stays as the marker that says which column anchors, which is what the
+guard reads.
+
+**ONE FIGURE IN THE FIRST WRITE-UP WAS WRONG, and the way it was wrong is the
+lesson.** The play-in column was reported as "one box under about 1,100px of
+empty space, because it is aligned to the seat it feeds". Both halves were
+false: it was **306px**, and it was CENTRED rather than aligned. The 1,100 came
+off a full-page screenshot, and **a full-page screenshot resizes the viewport**,
+so every length in it is about a window nobody has. Read the rectangles, not
+the picture, whenever the claim is a number.
+
+**The guard's own first draft found the wrong game.** It looked for the pairing
+holding the play-in seed, and the winner is the 7 seed: until the play-in
+resolves the near side draws that seat as TBD while the FAR conference has a
+real 7 in its own 2/7 pairing. It reported 378 against 680 and blamed a page
+that was correct. Exactly one first-round pairing is WAITING on somebody, and
+that is the honest way to name it.
+
+#### And a third guard was measuring the race rather than the page
+
+`check-live.mjs` asserted that answering a call "puts the question away" by
+reading `#lv-call.hidden` **250ms after the click**. The comment eight lines
+below it already says a game can genuinely ask TWICE, which is exactly what
+that sample races: the box is put away and shown again for the next call, so a
+late reading reports a question that was never left up. **It failed about one
+run in three**, on a page doing the right thing, and the burst after an answer
+is wide enough to make it likely: one run played **22 possessions inside that
+250ms**.
+
+A MutationObserver on the `hidden` attribute, installed before the click,
+records the TRANSITION instead, and the failure message carries the sequence
+the box actually went through. Same rule as the football board's move marks,
+and the same rule this repo states for the late meter answer: **a timing
+property cannot be checked by hoping to win the race.**
 
 ### A straight column of digits is a FEATURE, not a typeface
 
