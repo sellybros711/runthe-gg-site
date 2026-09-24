@@ -207,8 +207,13 @@ jobs:
       # runner to do it: the log prints the SHAPE and says nothing about the
       # draft economy, which is the whole question that input asks. So a run
       # that does not commit hands the pool back as an artifact instead.
+      # `always()`, BECAUSE THE RUN THAT FAILS IS THE ONE YOU MOST WANT THE POOL
+      # FROM. Placed after the checks with a plain `if`, this step was skipped on
+      # exactly the dispatch it was added for: the split_stints dry run went red
+      # at check-labels and handed back nothing, so the only way to see what that
+      # input builds was to read a log. A dry run exists to be inspected.
       - name: Keep the pool for measuring
-        if: ${{ !inputs.commit }}
+        if: ${{ always() && !inputs.commit }}
         uses: actions/upload-artifact@v4
         with:
           name: players-json${{ inputs.split_stints && '-split-stints' || '' }}
