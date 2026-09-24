@@ -705,6 +705,13 @@ async function signOne(page, nth = 0) {
      waits for stability otherwise, which turns every press into a race with the stagger. A
      thumb has no such scruples. */
   await men.nth(nth % n).click({ force: true });
+  /* AND THE PRESS ONLY ASKS. The signing is on the sheet, so a walk that stopped at the row
+     press waited ten seconds for a slot that was never going to fill. Waited for by NAME
+     rather than left to the click's own timeout, because "the confirm never opened" and "the
+     confirm opened and its button does nothing" are two different faults and a bare click
+     reports them both as the same thirty second hang. */
+  await page.waitForSelector('#cf-sheet:not([hidden])', { timeout: 10000 });
+  await page.locator('#cf-go').click({ force: true });
   await page.waitForFunction(
     (was) => document.querySelectorAll('#d-slots .slot.done').length > was
       || document.getElementById('s-review').classList.contains('on'),
@@ -2373,6 +2380,162 @@ console.log('\nTHE POLL KNOWS WHEN TO STOP');
  * readable, that it happens within a bound, and that the thing under the board does not
  * move while it does. All three survive a redesign of how the reveal is written.
  * ---------------------------------------------------------------- */
+/* ----------------------------------------------------------------
+ * A PRESS ASKS BEFORE IT SPENDS
+ *
+ * Reported by a player: a press signed somebody outright, so a thumb on the wrong row took a
+ * slot and money with no way back but starting the draft again.
+ *
+ * EVERY CLAIM HERE IS DRIVEN THROUGH THE REAL BOARD, because the failure that matters is the
+ * one where the sheet renders perfectly and the signing happens anyway. Reading the markup
+ * would say the sheet exists and nothing about whether Back backed out.
+ * ---------------------------------------------------------------- */
+console.log('\nA PRESS ASKS BEFORE IT SPENDS');
+{
+  const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+  await page.click('#b-draft');
+  await page.waitForSelector('#d-men .man', { timeout: 10000 });
+
+  const filled = () => page.locator('#d-slots .slot.done').count();
+  const row = page.locator('#d-men .man:not([disabled]):not(.hurt)').first();
+  const nameOf = () => row.locator('.who b i').textContent();
+
+  const first = await nameOf();
+  const was = await filled();
+  await row.click({ force: true });
+  await page.waitForSelector('#cf-sheet:not([hidden])', { timeout: 5000 });
+  ok('pressing a man opens the confirm', true, first);
+  ok('  and signs nobody yet', (await filled()) === was, `${was} filled`);
+
+  /* WHAT IT SAYS IS THE CONSEQUENCE, and every part of it is read off the page rather than
+     recomputed here: the name, the slot it is filling and the money. A confirm that only
+     asked "are you sure" would pass a check that asserted it opened. */
+  const sheet = await page.evaluate(() => ({
+    slot: document.getElementById('cf-slot').textContent,
+    name: document.getElementById('cf-name').textContent,
+    where: document.getElementById('cf-where').textContent,
+    money: document.getElementById('cf-money').textContent,
+    go: document.getElementById('cf-go').textContent.trim(),
+    clubs: document.querySelectorAll('#cf-where .club').length,
+  }));
+  ok('  it names the man the press was on', sheet.name === first, sheet.name);
+  ok('  and the slot he fills', new RegExp(`\\b(${D.SLOTS.join('|')})\\b`).test(sheet.slot),
+    sheet.slot);
+  ok('  and his club, in the club colours the row uses', sheet.clubs >= 1,
+    `${sheet.where} (${sheet.clubs} coloured)`);
+  /* TWO NUMBERS, and the second is the one the row cannot say: what is left for the rest of
+     the lineup once he is paid for. A sheet with only the price on it is the row again. */
+  ok('  and what he costs, and what that leaves',
+    /\$[\d.]+M/.test(sheet.money) && (/\$[\d.]+M.*\$[\d.]+M/.test(sheet.money)
+      || /last slot/i.test(sheet.money)), sheet.money);
+
+  /* BACK IS THE WHOLE POINT OF THE FEATURE, so it is the first thing driven. */
+  await page.click('#cf-no');
+  await page.waitForTimeout(250);
+  ok('  Back closes it and signs nobody',
+    (await page.evaluate(() => document.getElementById('cf-sheet').hidden))
+      && (await filled()) === was, `${await filled()} filled`);
+  /* AND THE BOARD IT BACKED OUT OF IS THE SAME BOARD. A cancel that redrew would be a
+     reroll: press, look at the sheet, cancel, and get five different men. */
+  ok('  and the board is untouched', (await nameOf()) === first, await nameOf());
+
+  /* A DIFFERENT MAN, so the sheet is proved to follow the press rather than to remember the
+     first one it was ever opened about. */
+  const second = page.locator('#d-men .man:not([disabled]):not(.hurt)').nth(1);
+  const other = await second.locator('.who b i').textContent();
+  await second.click({ force: true });
+  await page.waitForSelector('#cf-sheet:not([hidden])', { timeout: 5000 });
+  ok('  a second press asks about the second man',
+    (await page.evaluate(() => document.getElementById('cf-name').textContent)) === other,
+    other);
+
+  /* THE SCRIM IS THE OTHER WAY OUT, and here it is the SAFE one: tapping around the edge of
+     this sheet may only ever cost a press. */
+  await page.evaluate(() => {
+    const el = document.getElementById('cf-sheet');
+    const r = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: r.width / 2,
+      clientY: 8 }));
+  });
+  ok('  the scrim closes it too, and signs nobody',
+    (await page.evaluate(() => document.getElementById('cf-sheet').hidden))
+      && (await filled()) === was);
+
+  /* AND THEN IT ACTUALLY SIGNS, or every assertion above is about a button that does
+     nothing. The man is read off the sheet and checked against the slot strip, so this is
+     the round trip rather than a slot count going up. */
+  await row.click({ force: true });
+  await page.waitForSelector('#cf-sheet:not([hidden])', { timeout: 5000 });
+  const taking = await page.evaluate(() =>
+    document.getElementById('cf-name').textContent);
+  await page.click('#cf-go');
+  await page.waitForFunction((n) =>
+    document.querySelectorAll('#d-slots .slot.done').length > n, was, { timeout: 10000 });
+  ok('  and Sign him signs exactly that man',
+    (await page.locator('#d-slots .slot.done .n').last().textContent())
+      === taking.split(' ').slice(-1)[0], taking);
+  ok('  and the sheet is gone afterwards',
+    await page.evaluate(() => document.getElementById('cf-sheet').hidden));
+
+  /*
+   * A SHEET SITS OPEN FOR AS LONG AS SOMEBODY LEAVES IT OPEN, so the board it was asked
+   * about can go. Opened on one board, then the draft is started again underneath it, and
+   * what must not happen is a man signed into a draft that no longer exists. This is
+   * `dynNewSheet`'s lesson in the football game: the gate is above the line that spends.
+   */
+  const stale = page.locator('#d-men .man:not([disabled]):not(.hurt)').first();
+  await stale.click({ force: true });
+  await page.waitForSelector('#cf-sheet:not([hidden])', { timeout: 5000 });
+  await page.evaluate(() => document.getElementById('b-abandon').click());
+  await page.waitForTimeout(300);
+  const afterReset = await filled();
+  await page.evaluate(() => document.getElementById('cf-go').click());
+  await page.waitForTimeout(400);
+  ok('  a confirm answered after the draft was restarted signs nobody',
+    (await filled()) === afterReset, `${afterReset} -> ${await filled()}`);
+
+  /*
+   * AND IT FITS THE SHORTEST PHONE HOLDING THE LONGEST NAME.
+   *
+   * Measured rather than eyeballed, against 360x740 rather than against the harness's own
+   * window, which is this repo's own rule: a sheet checked at 390x844 is checked on a screen
+   * a good many readers do not have. The name is the one thing on it that can grow, so it is
+   * replaced with the longest the pool can produce and the box is measured again.
+   *
+   * WHAT IS ASSERTED IS THE BUTTONS, not the height. The sheet is bottom anchored, so a tall
+   * one pushes its own eyebrow off the top and that is fine; what must never happen is the
+   * control the page is waiting on going off the screen, which is the football boss battle's
+   * Continue button arriving at a sheet.
+   */
+  const longest = POOL.pool.map((m) => m.name).sort((a, b) => b.length - a.length)[0];
+  await page.setViewportSize({ width: 360, height: 740 });
+  await row.click({ force: true });
+  await page.waitForSelector('#cf-sheet:not([hidden])', { timeout: 5000 });
+  const fit = await page.evaluate((name) => {
+    document.getElementById('cf-name').textContent = name;
+    const r = (id) => document.getElementById(id).getBoundingClientRect();
+    const nm = document.getElementById('cf-name');
+    return {
+      go: r('cf-go'), no: r('cf-no'),
+      /* The NAME's own box, because a display face at 23px is the one thing here that can
+         run past its column, and a name clipped at the edge on the sheet asking somebody to
+         confirm who they are signing is the one word it cannot afford to lose. */
+      over: Math.round(nm.scrollWidth - nm.clientWidth),
+      h: window.innerHeight,
+    };
+  }, longest);
+  ok(`  at 360x740 the longest name in the pool fits`, fit.over <= 1,
+    `${longest}, ${fit.over}px over`);
+  ok('  and both buttons are fully on the screen',
+    fit.go.top >= 0 && fit.go.bottom <= fit.h && fit.no.bottom <= fit.h,
+    `Sign him ${Math.round(fit.go.top)} to ${Math.round(fit.go.bottom)} of ${fit.h}`);
+
+  ok('  nothing threw', !boom.length, boom[0] || 'clean');
+  await page.close();
+}
+
+/* ---------------------------------------------------------------- */
 console.log('\nTHE BOARD REVEALS, AND THE PAGE UNDER IT HOLDS STILL');
 {
   const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE });
@@ -2399,7 +2562,6 @@ console.log('\nTHE BOARD REVEALS, AND THE PAGE UNDER IT HOLDS STILL');
   let worstSettle = 0, worstMove = 0, signed = 0;
   for (let i = 1; i < D.SLOTS.length; i++) {
     const before = await page.locator('#d-slots .slot.done').count();
-    const t0 = Date.now();
     /* `:not([disabled])` for the reason signOne carries: the first row is the DEAREST, so
        it is the likeliest one to be out of reach late in a draft, and pressing it does
        nothing at all. Without this the section passes or hangs depending on the week's
@@ -2408,6 +2570,12 @@ console.log('\nTHE BOARD REVEALS, AND THE PAGE UNDER IT HOLDS STILL');
      chip can be tapped, and a press on it opens the report rather than signing anybody, so
      a walk that took the first row it could click waited for a signing that never came. */
     '#d-men .man:not([disabled]):not(.hurt)').first().click({ force: true });
+    /* THE CONFIRM IS ANSWERED BEFORE THE CLOCK STARTS ON THE REVEAL. It is a sheet over the
+       board, so the reveal does not begin until it is closed, and timing from the row press
+       would be timing how long the harness took to find a button. */
+    await page.waitForSelector('#cf-sheet:not([hidden])', { timeout: 10000 });
+    const t0 = Date.now();
+    await page.locator('#cf-go').click({ force: true });
     /* Sampled while it runs rather than after, because the claim is about what happens
        DURING the reveal and a reading taken at the end cannot see a step that healed. */
     const tops = [];
@@ -2534,6 +2702,11 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
     await page.waitForTimeout(400);
     const after = await page.locator('#d-slots .slot.done').count();
     ok('  and pressing him signs nobody', after === before, `${before} -> ${after}`);
+    /* AND IT DOES NOT EVEN ASK. The confirm sheet is where a signing is agreed to, so a
+       press that opened it on a man the cap cannot take would put a Sign him button in
+       front of somebody it is then going to refuse. */
+    const asked = await page.locator('#cf-sheet:not([hidden])').count();
+    ok('  and does not open the confirm either', asked === 0);
     /* And the board is not left mid acknowledgement by a press that did nothing. */
     const stuck = await page.evaluate(() =>
       document.getElementById('d-men').className.indexOf('clearing') >= 0);
@@ -2638,6 +2811,11 @@ console.log('\nA MAN WHO CANNOT PLAY IS RED, AND THE CHIP OPENS THE REPORT');
     await page.click('#d-men .man.hurt');
     await page.waitForSelector('#inj-sheet:not([hidden])', { timeout: 5000 });
     ok('  pressing it opens the report', true);
+    /* THE REPORT AND NOT THE CONFIRM. Both are a sheet over the board now, so "a sheet came
+       up" is no longer the same claim as "the right sheet came up", and the way this goes
+       wrong is a press that offers to sign a man the page has already said cannot play. */
+    ok('  and not the confirm',
+      await page.evaluate(() => document.getElementById('cf-sheet').hidden));
     ok('  and signs nobody', (await filled()) === was, `${was} slots filled`);
     ok('  and the slot strip is untouched',
       (await page.evaluate(() => document.querySelectorAll('#d-slots .slot .p').length))
