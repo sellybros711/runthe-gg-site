@@ -129,10 +129,22 @@ select away_team || ' at ' || home_team as matchup,
 
 \echo ''
 \echo '=== 5. WHAT HAS ACTUALLY BEEN COLLECTED =========================='
+-- ATTRIBUTED IS THE COLUMN THAT WAS MISSING, and its absence hid a real
+-- failure for a whole evening. "players_seen" counts distinct RAW names, so it
+-- reads 16 whether every quote is attached to a player or none of them is. It
+-- said 16 while player_name_norm was not even a column on this table and
+-- PostgREST was discarding it on every insert.
+--
+-- A quote with no player_id is a quote no projection can ever be built from.
+-- That is the number, and it belongs beside the total rather than being
+-- inferred from section 6 being empty.
 select (select count(*) from public.fantasy_events)          as events,
        (select count(*) from public.fantasy_odds_snapshots)  as snapshots,
-       (select count(distinct player_name_raw)
-          from public.fantasy_odds_snapshots)                as players_seen,
+       (select count(*) from public.fantasy_odds_snapshots
+         where player_id is not null)                        as attributed,
+       (select count(distinct player_id) from public.fantasy_odds_snapshots
+         where player_id is not null)                        as players_matched,
+       (select count(*) from public.fantasy_players)         as crosswalk,
        (select count(*) from public.fantasy_projections)     as projections,
        (select max(captured_at) from public.fantasy_odds_snapshots) as newest_quote;
 
