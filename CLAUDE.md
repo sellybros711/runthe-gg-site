@@ -4437,6 +4437,66 @@ and `../personalities.js`, which look unused from the career game and are not: t
 were deleted once as dead code and the booking sim shipped broken for a week. The
 suite's first section fails on any script tag that points at a missing file.
 
+### A stipulation only speaks its own language
+
+**A NEAR-FALL IS A TWO COUNT.** Every stipulation counts the same drama into
+`MS.nearFalls` (a hold nearly escaped, a climb nearly made), so the NUMBER is right
+everywhere and only the WORD can be wrong. It was, in four shared places at once: the
+closing log line, the result screen's stat row, the reasons the match was good, and the
+phase banner, which is logged in EVERY match that reaches the stretch. So a ladder match
+told you about its near-falls.
+
+**`commitFinish` is a NORMALIZER, and that is why none of this ever failed.** It rewrites
+an illegal finish TYPE to one the stipulation allows, so a pinfall in a ladder match comes
+out as a climb and the RESULT is always right. What it cannot fix is the picture: a belt
+shot behind the referee played the whole 1-2-3 and logged "you slide the cover in" under a
+result reading "pulled down the prize". Two paths reach `pinSequence` without going through
+`coverAttempt`'s gate (the tag turn, which is in a tag match and is fine, and the belt shot,
+which is not), and the belt shot's own gate asks `noDQ`, which is a question about
+disqualification rather than about whether a fall counts.
+
+`fallNoun(o,n)` and `timeLabel(o)` are the one place the word lives: near-falls where a fall
+ends it, escapes in a submission match, close calls everywhere else. **The guard reads the
+WORDS and not the finish type**, because the finish type was never wrong.
+
+**A climb stipulation cannot end by count-out.** Ladder, briefcase and TLC are fetched from
+the floor, so being counted out for leaving the ring contradicts the one thing the match
+asks you to do. TLC carried `noDQ` and not `noCount`, which is what gave the oversight away;
+all three carry both now.
+
+**A thin sample is a coin toss on this.** The first sweep ran one match per stipulation and
+called four of six clean, because a match that ends before the stretch never logs the phase
+banner. The check plays each stipulation several times and asserts at least one run REACHED
+the stretch, or the run proves nothing about the line that carried the bad word.
+
+### The late career was a spiral, and rest is what ends it
+
+Reported as the game getting sloppier the longer it ran. Measured over a fourteen year
+career: years 9 to 13 spent **30 to 38 of 40 weeks injured**, and the severity index had
+saturated so nearly every draw was a 12-to-34 week neck. `c.wear` only ever climbed, so
+mileage drove injuries, injuries added weeks, and nothing pulled the number back.
+
+Three things turn it into an equilibrium, and **each fails silently**, a decade into a save:
+
+- **Wear comes off during a layoff**, 1.2 a week, down to a floor of `(age-21)*4`. The floor
+  is the miles that never come off, so a 35 year old can rehab back to heavy miles and never
+  to a rookie's legs. Without it the fix overshoots and a veteran reads "fresh legs".
+- **Chronic damage stops compounding past four entries.** It is a list with no ceiling, so a
+  twenty year veteran's own file guaranteed his next injury.
+- **After any ten week layoff the top of the injury table is off the menu for two years.**
+  One catastrophe is a story; one every spring is a treadmill.
+
+**Measured over twelve fourteen-year careers (168 career-years) rather than one**, which is
+what the first pass got wrong: matches a year fall from 26 in year one to about 17 by year
+seven and then **plateau**, oscillating 15 to 20 through year fourteen rather than falling to
+nothing. Injured weeks settle around 20. Wear pins at the floor (52 to 55 at that age).
+**The plateau is the claim, not the number**: the old behaviour was monotonic, and the guard
+fails if the last four years each play fewer matches AND spend more weeks hurt.
+
+The distribution needs a dozen careers and lives in a probe. What is in `verify.mjs` is that
+each of the three mechanisms still bites, because a green distribution would pass just as
+well on a fix that had quietly stopped working.
+
 The roster, the mentors in `legends.js`, the free agents in `personalities.js` and the
 booking sim's promotions all use LEGAL names and invented companies. No ring names,
 no trademarked match or event names, no catchphrases. The suite's second section
