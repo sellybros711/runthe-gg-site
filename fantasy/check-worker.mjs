@@ -34,7 +34,7 @@ import { parseEventOdds, parseEvents, normName } from './worker/src/parse.mjs';
 import { makeOddsClient, sweepCost, LIMITS, readUsage } from './worker/src/odds.mjs';
 import { sweepOnce, LADDER, MAX_EVENTS_PER_TICK } from './worker/src/sweep.mjs';
 import { seasonAndWeek } from './worker/src/season.mjs';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 let fails = 0, ran = 0;
 const ck = (label, cond, detail) => {
@@ -393,6 +393,88 @@ section('Name normalising');
    the fixture rather than about either one. */
 ck('the two Harrisons collide, which the crosswalk must resolve and this must not',
   normName('Marvin Harrison Jr.') === normName('Marvin Harrison'));
+
+/* ===================================================================
+ * 2b. EVERY FIELD THE PARSER WRITES IS A COLUMN THAT EXISTS
+ *
+ * POSTGREST DISCARDS AN UNKNOWN KEY AND RETURNS 201. That is how
+ * player_name_norm was sent on every insert from the day parse.mjs was
+ * written and stored on none of them: 110 never declared the column, 192 real
+ * quotes went in clean, the poller reported success, and the one field a
+ * stored quote needs in order ever to find its player was dropped at the door.
+ *
+ * Nothing threw. It surfaced only because fantasy_resolve_names() later tried
+ * to JOIN on it and came back 42703. A field that is written and never read
+ * would have stayed missing for ever.
+ *
+ * So the claim is asked of the two files that have to agree, statically, with
+ * no database: the keys rows.push() builds against the columns the migrations
+ * declare. It reads ALTER TABLE ADD COLUMN as well as CREATE TABLE, because
+ * 115 adds this one and a guard that only understood CREATE would fail on the
+ * fix.
+ * ================================================================ */
+section('The parser writes columns that exist');
+{
+  const sqlDir = new URL('../supabase/', import.meta.url);
+  const files = readdirSync(sqlDir)
+    .filter((f) => /^\d+_fantasy_.*\.sql$/.test(f))
+    .sort();
+
+  let cols = new Set();
+  for (const f of files) {
+    const sql = readFileSync(new URL(f, sqlDir), 'utf8');
+
+    /* The CREATE block, taken by its own terminator rather than by the next
+       blank line: this table ends `) partition by list (season);` and a
+       reader that stopped at `);` would silently take the wrong half. */
+    const m = sql.match(
+      /create table if not exists public\.fantasy_odds_snapshots\s*\(([\s\S]*?)\n\)\s*partition by/);
+    if (m) {
+      for (const line of m[1].split('\n')) {
+        const c = line.match(/^\s{2}([a-z_]+)\s+[a-z]/);
+        if (c && !['primary', 'unique', 'constraint', 'foreign', 'check'].includes(c[1])) {
+          cols.add(c[1]);
+        }
+      }
+    }
+
+    for (const a of sql.matchAll(
+      /alter table public\.fantasy_odds_snapshots\s+add column(?:\s+if not exists)?\s+([a-z_]+)/g)) {
+      cols.add(a[1]);
+    }
+  }
+
+  /* Coverage, for check-numbers.mjs's reason. A reader that found no columns
+     would report every key as missing, which at least fails loudly, but one
+     that found the wrong table would pass on nonsense. */
+  ck('the snapshot table was actually read', cols.size >= 14,
+    `${cols.size} columns: ${[...cols].join(', ')}`);
+
+  const parseSrc = readFileSync(
+    new URL('./worker/src/parse.mjs', import.meta.url), 'utf8');
+  const block = parseSrc.match(/rows\.push\(\{([\s\S]*?)\n\s*\}\);/);
+  ck('the parser row was actually read', !!block);
+
+  /* TWO SHAPES, because the row uses both. `book: bookKey` is named and
+     `season, week` are shorthand, and the first draft of this read only the
+     named ones with a `^` that could not get past the indentation. It found
+     ONE key and the orphan check below passed on it, green, having compared
+     almost nothing. The coverage line above is the only reason that was
+     caught, which is its whole purpose. */
+  const keys = new Set();
+  if (block) {
+    for (const line of block[1].split('\n')) {
+      for (const k of line.matchAll(/(?:^|[,{])\s*([a-z_][a-z0-9_]*)\s*:/g)) keys.add(k[1]);
+      for (const k of line.matchAll(/(?:^|[,{])\s*([a-z_][a-z0-9_]*)\s*(?=[,}]|$)/g)) keys.add(k[1]);
+    }
+  }
+  ck('and it has the fields we expect', keys.size >= 10,
+    `${keys.size} keys: ${[...keys].join(', ')}`);
+
+  const orphans = [...keys].filter((k) => !cols.has(k));
+  ck('every field the parser writes is a declared column', orphans.length === 0,
+    `PostgREST will DISCARD these and return 201: ${orphans.join(', ')}`);
+}
 
 /* ===================================================================
  * 3. THE MONEY
