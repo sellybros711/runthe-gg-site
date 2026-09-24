@@ -698,6 +698,89 @@ const main = async () => {
     ok(rounds.length > 0, `the run kept its bracket (${rounds.length} rounds)`);
   }
 
+  head('8. the play-in sits opposite the seat it fills');
+  /*
+   * A round is a centred list and the play-in is not a round. Every other
+   * column holds a whole round, where centring the group is right; the
+   * play-in is ONE game feeding ONE named seat, and centred it floated clear
+   * of the first round pairing it fills. Measured at 390x844 before the fix:
+   * the box at 306 against a target at 259, with the TBD it is about sitting
+   * on the line above it.
+   *
+   * IT HAS TO GO LOOKING FOR A PLAY-IN RUN. About half of runs that reach the
+   * postseason take a bye, so a single walk is a coin toss on whether the
+   * column exists to be wrong about, which is this repo's own note about a
+   * check reporting its own seed.
+   */
+  {
+    const pip = await newPage(browser, boom);
+    await boot(pip);
+    let geo = null, tries = 0;
+    for (; tries < 14 && !geo; tries++) {
+      if (!(await toPlayoffs(pip))) {
+        await pip.evaluate(() => { const h = document.querySelector('#b-home'); if (h) h.click(); });
+        await pip.waitForSelector('#b-start', { timeout: 10000 });
+        await pip.waitForTimeout(120);
+        continue;
+      }
+      /* The alignment runs on a frame after the screen is shown. */
+      await pip.waitForTimeout(400);
+      const read = await pip.evaluate(() => {
+        const cols = [...document.querySelectorAll('#brk-rail .brk-col')];
+        if (!cols.length || !/play-in/i.test(cols[0].querySelector('.brk-h').textContent)) return null;
+        const box = cols[0].querySelector('.brk-g');
+        if (!box || !cols[1]) return null;
+        const seed = Number((box.querySelector('.sd') || {}).textContent || 0);
+        const b = box.getBoundingClientRect();
+        return {
+          seed,
+          pinned: cols[0].classList.contains('pin'),
+          top: Math.round(b.top),
+          firsts: [...cols[1].querySelectorAll('.brk-g')].map((g) => {
+            const r = g.getBoundingClientRect();
+            return { top: Math.round(r.top),
+              seeds: [...g.querySelectorAll('.sd')].map((s) => Number(s.textContent || 0)),
+              /* The seat the play-in fills is the one still waiting. */
+              waiting: !!g.querySelector('.brk-t.tbd') };
+          }),
+        };
+      });
+      if (read) geo = read;
+      else {
+        await pip.evaluate(() => { const h = document.querySelector('#b-home'); if (h) h.click(); });
+        await pip.waitForSelector('#b-start', { timeout: 10000 });
+        await pip.waitForTimeout(120);
+      }
+    }
+
+    ok(!!geo, `a play-in run was found to look at (${tries} runs)`);
+    if (geo) {
+      ok(geo.pinned, 'the play-in column is marked as the one that anchors');
+      /* THE TARGET IS THE SEAT THAT IS WAITING, not the one holding a seed.
+         Matching on the play-in seed was the first draft and it found the
+         WRONG GAME: the winner is the 7 seed, and until the play-in resolves
+         the near side draws that seat as TBD while the FAR conference has a
+         real 7 in its own 2/7 pairing. It reported 378 against 680 and blamed
+         a page that was correct. Exactly one first round pairing is waiting
+         on somebody, and it is this one. */
+      const waiting = geo.firsts.filter((g) => g.waiting);
+      is(waiting.length, 1, 'exactly one first round seat is waiting on the play-in');
+      const target = waiting[0];
+      if (target) {
+        ok(Math.abs(target.top - geo.top) <= 2,
+          `the play-in box is level with that pairing (${geo.top} against ${target.top})`);
+        /* COVERAGE. A layout where the target happened to be the middle of
+           the column would pass the line above with the anchor deleted,
+           because centred is where the box already was. */
+        const tops = geo.firsts.map((g) => g.top);
+        const mid = (Math.min.apply(null, tops) + Math.max.apply(null, tops)) / 2;
+        ok(Math.abs(mid - target.top) > 8,
+          `and centring really would have missed it (middle ${Math.round(mid)})`);
+      }
+    }
+    await pip.context().close();
+  }
+
   ok(boom.length === 0, 'nothing threw and the console stayed clean\n      '
     + boom.slice(0, 4).join('\n      '));
   await browser.close();

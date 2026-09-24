@@ -1039,6 +1039,112 @@ section('dilemmas roll, bite, and come back later');
   await page.close();
 }
 
+/* ---------- 4o. a stipulation only speaks its own language ----------
+   A near-fall is a two count. Every stipulation counts the same drama into
+   MS.nearFalls, so the NUMBER is right everywhere and only the WORD can be
+   wrong, and it was: a ladder match logged "near-falls" off the shared phase
+   banner and a belt shot played the whole 1-2-3 under a result reading
+   "pulled down the prize". commitFinish rewrites an illegal finish TYPE, so
+   none of that ever produced a wrong result, which is exactly why nothing
+   reported it. This reads the WORDS, off the same strings a player sees. */
+section('a stipulation only speaks its own language');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={vocab:[], control:null, noun:{}};
+    const o=(stip)=>({oppName:'Rival', stip, stipLabel:(STIP_RULES[stip]||{}).label||stip,
+                      stakes:'standard', oppOvr:50});
+    // the noun itself, per stipulation, for 0, 1 and 3
+    ['singles','ladder','sub','lms'].forEach(st=>{
+      out.noun[st]=[0,1,3].map(n=>fallNoun(o(st),n));
+    });
+    // no stipulation that is not decided by a fall may use pin vocabulary in
+    // the two places every match writes: the closing log line and the recap
+    const PIN=/near-?fall|time of the fall/i;
+    Object.keys(STIP_RULES).forEach(st=>{
+      const rl=STIP_RULES[st]; if(rl.ends.includes('pin')) return;
+      const ob=o(st);
+      const said=[ timeLabel(ob), fallNoun(ob,3),
+                   matchStory(ob,{quality:70,win:true,finish:{type:rl.ends[0],by:true},
+                                  nearFalls:4,used:[],time:'10:00'}) ].join(' ~ ');
+      if(PIN.test(said)) out.vocab.push({stip:st, said:(said.match(PIN)||[''])[0]});
+    });
+    // and a stipulation that IS decided by a fall must still say it, or this
+    // check would pass just as well on a game that says nothing at all
+    const sg=o('singles');
+    out.control=[ timeLabel(sg), fallNoun(sg,3) ].join(' ~ ');
+    return out;
+  });
+  if(errs.length) bad('stipulation language page errors: '+errs.slice(0,2).join(' | '));
+  r.vocab.length
+    ? r.vocab.forEach(v=>bad(`${v.stip} uses pin vocabulary: "${v.said}"`))
+    : ok('no stipulation decided by anything but a fall uses pin vocabulary');
+  /near-fall/.test(r.control) && /Time of the fall/.test(r.control)
+    ? ok(`a pin stipulation still says it: ${r.control}`)
+    : bad(`the control lost its own vocabulary: ${r.control}`);
+  const L=r.noun.ladder, S=r.noun.sub, P=r.noun.singles;
+  (P[0]==='0 near-falls' && P[1]==='1 near-fall' && P[2]==='3 near-falls')
+    ? ok(`pin: ${P.join(' / ')}`) : bad(`pin nouns wrong: ${P.join(' / ')}`);
+  (L[2]==='3 close calls' && S[2]==='3 escapes')
+    ? ok(`climb: ${L[2]} · submission: ${S[2]}`) : bad(`nouns wrong: ${L[2]} / ${S[2]}`);
+}
+
+/* ---------- 4p. the body heals, and old damage stops compounding ----------
+   The late career was a spiral: wear only ever climbed, so mileage drove
+   injuries, injuries added weeks, and nothing pulled the number back. These
+   are the three things that turned it into an equilibrium. The DISTRIBUTION
+   it produces takes a dozen fourteen-year careers to measure and lives in a
+   probe; what belongs here is that each mechanism still bites at all, because
+   each of them fails silently and the symptom is only visible a decade in. */
+section('the body heals, and old damage stops compounding');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const c=G.car, out={};
+    c.age=35; c.wear=200;
+    const floor=Math.max(0,(c.age-21)*4); out.floor=floor;
+    for(let i=0;i<200;i++){ c.injWeeks=6; c.age=35; advanceWeek(); }
+    out.rested=Math.round(c.wear);
+    c.wear=floor-8; const under=c.wear;
+    for(let i=0;i<10;i++){ c.injWeeks=6; c.age=35; advanceWeek(); }
+    out.underFloorMoved=Math.round(c.wear-under);
+    c.injWeeks=0; c.wear=50; const w=c.wear;
+    for(let i=0;i<20;i++){ advanceWeek(); }
+    out.roadAdded=Math.round((c.wear-w)*10)/10;
+    const risk=(n)=>{ c.chronic=[]; for(let i=0;i<n;i++) c.chronic.push({part:'Knee',attr:'ae',pen:2,y:1});
+                      return +injuryRisk({stip:'singles',mult:1}).toFixed(4); };
+    out.r0=risk(0); out.r4=risk(4); out.r12=risk(12); c.chronic=[];
+    // after a long layoff the worst injuries in the table are off the menu
+    c.wear=200; c.cond=20; c.injuries=[{wk:20,y:c.year,w:c.week,id:'neck'}];
+    const worst=INJURIES.length-1; let seen=0;
+    for(let i=0;i<300;i++){ c.hurt=null; c.injWeeks=0;
+      const h=takeInjury(['slam'],1.2,0); if(INJURIES.indexOf(injById(h.id))>=worst-1) seen++; }
+    out.topOfTable=seen;
+    return out;
+  });
+  if(errs.length) bad('wear page errors: '+errs.slice(0,2).join(' | '));
+  (r.rested<=r.floor+2 && r.rested>=r.floor-2)
+    ? ok(`a long layoff takes wear down to the age floor (200 -> ${r.rested}, floor ${r.floor})`)
+    : bad(`rest did not reach the age floor: ${r.rested} against ${r.floor}`);
+  (r.underFloorMoved>=0) ? ok('wear already under the floor is never pushed lower')
+    : bad(`wear under the floor fell a further ${r.underFloorMoved}`);
+  (r.roadAdded>0) ? ok(`the road still adds mileage (+${r.roadAdded} over 20 weeks)`)
+    : bad(`wear no longer climbs while working (${r.roadAdded})`);
+  (r.r4>r.r0 && r.r12===r.r4)
+    ? ok(`chronic damage compounds to four and stops (${r.r0} -> ${r.r4}, twelve is still ${r.r12})`)
+    : bad(`chronic cap wrong: 0=${r.r0} 4=${r.r4} 12=${r.r12}`);
+  (r.topOfTable===0)
+    ? ok('within two years of a long layoff the worst injuries are off the table')
+    : bad(`${r.topOfTable} of 300 draws still reached the top of the injury table`);
+  await page.close();
+}
+
 /* ---------- 5. careers play out ---------- */
 const KINDS_SEEN={};
 if(!QUICK){
